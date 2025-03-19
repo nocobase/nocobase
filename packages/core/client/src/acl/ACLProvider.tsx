@@ -7,21 +7,31 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+// 注意: 这行必须放到顶部，否则会导致 Data sources 页面报错，原因未知
+import { useBlockRequestContext } from '../block-provider/BlockProvider';
+
 import { Field } from '@formily/core';
 import { Schema, useField, useFieldSchema } from '@formily/react';
 import { omit } from 'lodash';
 import React, { createContext, useCallback, useContext, useEffect, useMemo } from 'react';
-import { Navigate } from 'react-router-dom';
 import { useAPIClient, useRequest } from '../api-client';
 import { useAppSpin } from '../application/hooks/useAppSpin';
-import { useBlockRequestContext } from '../block-provider/BlockProvider';
 import { useResourceActionContext } from '../collection-manager/ResourceActionProvider';
-import { CollectionNotAllowViewPlaceholder, useCollection, useCollectionManager } from '../data-source';
+import {
+  CollectionNotAllowViewPlaceholder,
+  useCollection,
+  useCollectionManager,
+  useCollectionRecordData,
+  useDataBlockProps,
+  useDataBlockRequest,
+} from '../data-source';
 import { useDataSourceKey } from '../data-source/data-source/DataSourceProvider';
-import { useRecord } from '../record-provider';
 import { SchemaComponentOptions, useDesignable } from '../schema-component';
 
 import { useApp } from '../application';
+
+// 注意: 必须要对 useBlockRequestContext 进行引用，否则会导致 Data sources 页面报错，原因未知
+useBlockRequestContext;
 
 export const ACLContext = createContext<any>({});
 ACLContext.displayName = 'ACLContext';
@@ -64,6 +74,7 @@ export const ACLRolesCheckProvider = (props) => {
       url: 'roles:check',
     },
     {
+      manual: !api.auth.token,
       onSuccess(data) {
         if (!data?.data?.snippets.includes('ui.*')) {
           setDesignable(false);
@@ -77,9 +88,6 @@ export const ACLRolesCheckProvider = (props) => {
   );
   if (result.loading) {
     return render();
-  }
-  if (result.error) {
-    return <Navigate replace to={'/signin'} />;
   }
   return <ACLContext.Provider value={result}>{props.children}</ACLContext.Provider>;
 };
@@ -172,18 +180,18 @@ const getIgnoreScope = (options: any = {}) => {
 
 const useAllowedActions = () => {
   const service = useResourceActionContext();
-  const result = useBlockRequestContext();
-  return result?.allowedActions ?? service?.data?.meta?.allowedActions;
+  const dataBlockRequest: any = useDataBlockRequest();
+  return service?.data?.meta?.allowedActions || dataBlockRequest?.data?.meta?.allowedActions;
 };
 
 const useResourceName = () => {
   const service = useResourceActionContext();
-  const result = useBlockRequestContext() || { service };
+  const dataBlockProps = useDataBlockProps();
   return (
-    result?.props?.resource ||
-    result?.props?.association ||
-    result?.props?.collection ||
-    result?.service?.defaultRequest?.resource
+    dataBlockProps?.resource ||
+    dataBlockProps?.association ||
+    dataBlockProps?.collection ||
+    service?.defaultRequest?.resource
   );
 };
 
@@ -283,44 +291,46 @@ export const useACLActionParamsContext = () => {
 
 export const useRecordPkValue = () => {
   const collection = useCollection();
-  const record = useRecord();
+  const recordData = useCollectionRecordData();
 
   if (!collection) {
     return;
   }
 
   const primaryKey = collection.getPrimaryKey();
-  return record?.[primaryKey];
+  return recordData?.[primaryKey];
 };
 
 export const ACLActionProvider = (props) => {
   const collection = useCollection();
   const recordPkValue = useRecordPkValue();
   const resource = useResourceName();
-  const { parseAction } = useACLRoleContext();
+  const { parseAction, uiButtonSchemasBlacklist } = useACLRoleContext();
   const schema = useFieldSchema();
+  const currentUid = schema['x-uid'];
   let actionPath = schema['x-acl-action'];
   const editablePath = ['create', 'update', 'destroy', 'importXlsx'];
 
-  if (!actionPath && resource && schema['x-action']) {
+  if (!actionPath && resource && schema['x-action'] && editablePath.includes(schema['x-action'])) {
     actionPath = `${resource}:${schema['x-action']}`;
   }
-  if (!actionPath?.includes(':')) {
+  if (actionPath && !actionPath?.includes(':')) {
     actionPath = `${resource}:${actionPath}`;
   }
 
   const params = useMemo(
-    () => parseAction(actionPath, { schema, recordPkValue }),
+    () => actionPath && parseAction(actionPath, { schema, recordPkValue }),
     [parseAction, actionPath, schema, recordPkValue],
   );
-
+  if (uiButtonSchemasBlacklist?.includes(currentUid)) {
+    return <ACLActionParamsContext.Provider value={false}>{props.children}</ACLActionParamsContext.Provider>;
+  }
   if (!actionPath) {
     return <>{props.children}</>;
   }
   if (!resource) {
     return <>{props.children}</>;
   }
-
   if (!params) {
     return <ACLActionParamsContext.Provider value={params}>{props.children}</ACLActionParamsContext.Provider>;
   }
@@ -399,16 +409,6 @@ export const ACLCollectionFieldProvider = (props) => {
 };
 
 export const ACLMenuItemProvider = (props) => {
-  const { allowAll, allowMenuItemIds = [], snippets } = useACLRoleContext();
-  const fieldSchema = useFieldSchema();
-  if (allowAll || snippets.includes('ui.*')) {
-    return <>{props.children}</>;
-  }
-  if (!fieldSchema['x-uid']) {
-    return <>{props.children}</>;
-  }
-  if (allowMenuItemIds.includes(fieldSchema['x-uid'])) {
-    return <>{props.children}</>;
-  }
-  return null;
+  // 这里的权限控制已经在后端处理了
+  return <>{props.children}</>;
 };

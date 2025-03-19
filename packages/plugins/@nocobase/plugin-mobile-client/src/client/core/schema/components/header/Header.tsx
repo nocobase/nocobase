@@ -32,7 +32,7 @@ const InternalHeader = (props: HeaderProps) => {
   useEffect(() => {
     // sync title
     setTitle(compiledTitle);
-  }, [compiledTitle]);
+  }, [compiledTitle, setTitle]);
 
   const style = useMemo(() => {
     return {

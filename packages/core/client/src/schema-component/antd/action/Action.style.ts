@@ -19,6 +19,9 @@ const useStyles = genStyleHook('nb-action', (token) => {
       '&.nb-action-link': {
         margin: '-12px',
         padding: '12px',
+        '.nb-action-title': {
+          marginInlineStart: '0px',
+        },
       },
       '> .general-schema-designer': {
         position: 'absolute',

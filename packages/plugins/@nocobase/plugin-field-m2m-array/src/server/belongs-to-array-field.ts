@@ -54,17 +54,6 @@ export class BelongsToArrayField extends RelationField {
     model.set(foreignKey, tks);
   };
 
-  init() {
-    super.init();
-    const { name, ...opts } = this.options;
-    this.collection.model.associations[name] = new BelongsToArrayAssociation({
-      db: this.database,
-      source: this.collection.model,
-      as: name,
-      ...opts,
-    }) as any;
-  }
-
   checkTargetCollection() {
     const { target } = this.options;
     if (!target) {
@@ -115,6 +104,13 @@ export class BelongsToArrayField extends RelationField {
       return false;
     }
     this.checkAssociationKeys();
+    const { name, ...opts } = this.options;
+    this.collection.model.associations[name] = new BelongsToArrayAssociation({
+      db: this.database,
+      source: this.collection.model,
+      as: name,
+      ...opts,
+    }) as any;
     this.on('beforeSave', this.setForeignKeyArray);
   }
 

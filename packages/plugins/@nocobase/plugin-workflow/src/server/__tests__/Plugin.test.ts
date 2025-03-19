@@ -273,7 +273,7 @@ describe('workflow > Plugin', () => {
 
       const p1 = await PostRepo.create({ values: { title: 't1' } });
 
-      await sleep(1000);
+      await sleep(500);
 
       const [e1] = await w1.getExecutions();
       expect(e1.status).toBe(EXECUTION_STATUS.RESOLVED);
@@ -299,11 +299,32 @@ describe('workflow > Plugin', () => {
       const p2 = await PostRepo.create({ values: { title: 't2' } });
       const p3 = await PostRepo.create({ values: { title: 't3' } });
 
-      await sleep(1000);
+      await sleep(500);
 
       const executions = await w1.getExecutions();
       expect(executions.length).toBe(3);
       expect(executions.map((item) => item.status)).toEqual(Array(3).fill(EXECUTION_STATUS.RESOLVED));
+    });
+
+    it('duplicated event trigger', async () => {
+      const w1 = await WorkflowModel.create({
+        enabled: true,
+        type: 'asyncTrigger',
+      });
+
+      const n1 = await w1.createNode({
+        type: 'asyncResume',
+      });
+
+      plugin.trigger(w1, {}, { eventKey: 'a' });
+      plugin.trigger(w1, {}, { eventKey: 'a' });
+
+      await sleep(1000);
+
+      const executions = await w1.getExecutions();
+      expect(executions.length).toBe(1);
+      const jobs = await executions[0].getJobs();
+      expect(jobs.length).toBe(1);
     });
 
     it('when server starts, process all created executions', async () => {
@@ -329,6 +350,9 @@ describe('workflow > Plugin', () => {
           data: p1.get(),
         },
       });
+
+      const e1s = await w1.getExecutions();
+      expect(e1s.length).toBe(1);
 
       await app.start();
 
@@ -510,7 +534,7 @@ describe('workflow > Plugin', () => {
     });
   });
 
-  describe('sync', () => {
+  describe('sync trigger', () => {
     it('sync on trigger class', async () => {
       const w1 = await WorkflowModel.create({
         enabled: true,

@@ -171,14 +171,16 @@ test.describe('filter block schema settings', () => {
 
       // 默认操作符为 “contains”，更改为 “is”
       await page.getByLabel('block-item-CollectionField-').hover();
-      await page.getByLabel('designer-schema-settings-CollectionField-fieldSettings:FilterFormItem-general-').hover();
+      // hover 方法有时会失效，所以用 click 替代，原因未知
+      await page.getByLabel('designer-schema-settings-CollectionField-fieldSettings:FilterFormItem-general-').click();
       await page.getByRole('menuitem', { name: 'Operator contains' }).click();
       await page.getByRole('option', { name: 'is', exact: true }).click();
 
       // 刷新页面后，操作符应该还是 “is”
       await page.reload();
       await page.getByLabel('block-item-CollectionField-').hover();
-      await page.getByLabel('designer-schema-settings-CollectionField-fieldSettings:FilterFormItem-general-').hover();
+      // hover 方法有时会失效，所以用 click 替代，原因未知
+      await page.getByLabel('designer-schema-settings-CollectionField-fieldSettings:FilterFormItem-general-').click();
       await expect(page.getByRole('menuitem', { name: 'Operator is' })).toBeVisible();
     });
   });

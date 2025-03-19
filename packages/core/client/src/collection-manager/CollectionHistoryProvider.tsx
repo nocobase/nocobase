@@ -8,9 +8,8 @@
  */
 
 import React, { createContext, useCallback, useContext, useMemo } from 'react';
-import { useLocation } from 'react-router-dom';
 import { useAPIClient, useRequest } from '../api-client';
-import { useAppSpin } from '../application/hooks/useAppSpin';
+import { useIsAdminPage } from '../application/CustomRouterContextProvider';
 
 export interface CollectionHistoryContextValue {
   historyCollections: any[];
@@ -38,11 +37,8 @@ const options = {
 
 export const CollectionHistoryProvider: React.FC = (props) => {
   const api = useAPIClient();
-  const location = useLocation();
-
-  const isAdminPage = location.pathname.startsWith('/admin');
+  const isAdminPage = useIsAdminPage();
   const token = api.auth.getToken() || '';
-  const { render } = useAppSpin();
 
   const service = useRequest<{
     data: any;
@@ -65,16 +61,12 @@ export const CollectionHistoryProvider: React.FC = (props) => {
     };
   }, [refreshCH, service.data?.data]);
 
-  if (service.loading) {
-    return render();
-  }
-
   return <CollectionHistoryContext.Provider value={value}>{props.children}</CollectionHistoryContext.Provider>;
 };
 
 export const useHistoryCollectionsByNames = (collectionNames: string[]) => {
   const { historyCollections } = useContext(CollectionHistoryContext);
-  return historyCollections.filter((i) => collectionNames.includes(i.name));
+  return historyCollections?.filter((i) => collectionNames.includes(i.name)) || [];
 };
 
 export const useCollectionHistory = () => {

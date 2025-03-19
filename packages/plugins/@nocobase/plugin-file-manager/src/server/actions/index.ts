@@ -8,7 +8,7 @@
  */
 
 import actions from '@nocobase/actions';
-import { createMiddleware, destroyMiddleware } from './attachments';
+import { createMiddleware } from './attachments';
 import * as storageActions from './storages';
 
 export default function ({ app }) {
@@ -18,6 +18,22 @@ export default function ({ app }) {
   });
   app.resourcer.use(createMiddleware, { tag: 'createMiddleware', after: 'auth' });
   app.resourcer.registerActionHandler('upload', actions.create);
-
-  app.resourcer.use(destroyMiddleware);
+  app.resourcer.use(
+    async (ctx, next) => {
+      await next();
+      try {
+        const { resourceName, actionName } = ctx.action;
+        const collection = ctx.db.getCollection(resourceName);
+        if (collection?.options?.template !== 'file') {
+          return;
+        }
+        if (actionName === 'create' || actionName === 'upload') {
+          ctx.body = await ctx.body.reload();
+        }
+      } catch (error) {
+        console.log(error);
+      }
+    },
+    { before: 'dataWrapping' },
+  );
 }

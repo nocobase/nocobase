@@ -7,8 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { RecursionField, useFieldSchema } from '@formily/react';
-import { useCollection, useCollectionRecordData, VariablePopupRecordProvider } from '@nocobase/client';
+import { useFieldSchema } from '@formily/react';
+import {
+  NocoBaseRecursionField,
+  useCollection,
+  useCollectionRecordData,
+  VariablePopupRecordProvider,
+} from '@nocobase/client';
 import React, { FC, useMemo } from 'react';
 
 export const MapBlockDrawer: FC = (props) => {
@@ -32,7 +37,7 @@ export const MapBlockDrawer: FC = (props) => {
 
   return (
     <VariablePopupRecordProvider recordData={recordData} collection={collection}>
-      <RecursionField schema={schema} name={schema.name} />
+      <NocoBaseRecursionField schema={schema} name={schema.name} />
     </VariablePopupRecordProvider>
   );
 };

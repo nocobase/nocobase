@@ -84,7 +84,7 @@ test.describe('z-index of dialog', () => {
     await expect(page.getByTestId('drawer-Action.Drawer-Edit profile')).toBeVisible();
 
     // click the Cancel button to close the drawer
-    await page.getByLabel('action-Action-Cancel').click();
+    await page.getByLabel('drawer-Action.Drawer-Edit profile-mask').click();
     await expect(page.getByTestId('drawer-Action.Drawer-Edit profile')).not.toBeVisible();
   });
 

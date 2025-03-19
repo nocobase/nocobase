@@ -57,5 +57,5 @@ export const AssociationProvider: FC<AssociationProviderProps> = (props) => {
  */
 export const useAssociationName = () => {
   const field = useCollectionField();
-  return field ? `${field.collectionName}.${field.name}` : null;
+  return field?.target ? `${field.collectionName}.${field.name}` : null;
 };

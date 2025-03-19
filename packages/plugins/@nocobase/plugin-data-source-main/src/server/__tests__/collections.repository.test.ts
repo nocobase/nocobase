@@ -31,6 +31,40 @@ describe('collections repository', () => {
     await app.destroy();
   });
 
+  it('should not create collection already exists', async () => {
+    db.collection({
+      name: 'jobs',
+      fields: [
+        {
+          type: 'string',
+          name: 'title',
+        },
+      ],
+    });
+
+    await db.sync();
+
+    let err;
+
+    try {
+      await Collection.repository.create({
+        values: {
+          name: 'jobs',
+          fields: [
+            {
+              type: 'string',
+              name: 'title',
+            },
+          ],
+        },
+      });
+    } catch (e) {
+      err = e;
+    }
+
+    expect(err).toBeTruthy();
+  });
+
   it('should load through table with foreignKey', async () => {
     await Collection.repository.create({
       values: {

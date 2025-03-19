@@ -14,5 +14,5 @@ export * from './functions';
 export * from './logicCalculate';
 export { Trigger } from './triggers';
 export { default as Processor } from './Processor';
-export { default } from './Plugin';
+export { default, EventOptions } from './Plugin';
 export * from './types';

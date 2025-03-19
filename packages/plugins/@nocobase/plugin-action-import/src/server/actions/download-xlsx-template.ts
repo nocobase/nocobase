@@ -9,31 +9,24 @@
 
 import { Context, Next } from '@nocobase/actions';
 import { TemplateCreator } from '../services/template-creator';
-import XLSX from 'xlsx';
+import { Workbook } from 'exceljs';
 
 export async function downloadXlsxTemplate(ctx: Context, next: Next) {
-  let { columns } = ctx.request.body as any;
-  const { explain, title } = ctx.request.body as any;
-  if (typeof columns === 'string') {
-    columns = JSON.parse(columns);
-  }
+  const { resourceName, values = {} } = ctx.action.params;
+  const { collection } = ctx.db;
 
   const templateCreator = new TemplateCreator({
-    explain,
-    title,
-    columns,
+    collection,
+    ...values,
   });
 
   const workbook = await templateCreator.run();
 
-  const buffer = XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
+  const buffer = await (workbook as Workbook).xlsx.writeBuffer();
 
+  ctx.set('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+  ctx.set('Content-Disposition', `attachment; filename="${resourceName}-import-template.xlsx"`);
   ctx.body = buffer;
-
-  ctx.set({
-    'Content-Type': 'application/octet-stream',
-    'Content-Disposition': `attachment; filename=${encodeURIComponent(title)}.xlsx`,
-  });
 
   await next();
 }

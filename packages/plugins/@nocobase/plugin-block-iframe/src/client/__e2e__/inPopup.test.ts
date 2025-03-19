@@ -14,15 +14,15 @@ test.describe('iframe in popup', () => {
   test('open popup, then close it, that should work', async ({ page, mockPage }) => {
     await mockPage(T4940).goto();
 
-    // open popup, then can see the iframe
+    // 1. Open popup and verify iframe is visible
     await page.getByLabel('action-Action.Link-View-view-').click();
     await expect(page.getByLabel('block-item-Iframe-users-iframe')).toBeVisible();
 
-    // close popup
+    // 2. Close popup and verify iframe is hidden
     await page.getByLabel('drawer-Action.Container-users-View record-mask').click();
     await expect(page.getByLabel('block-item-Iframe-users-iframe')).not.toBeVisible();
 
-    // then open popup again, that should work
+    // 3. Reopen popup and verify iframe is visible again
     await page.getByLabel('action-Action.Link-View-view-').click();
     await expect(page.getByLabel('block-item-Iframe-users-iframe')).toBeVisible();
   });

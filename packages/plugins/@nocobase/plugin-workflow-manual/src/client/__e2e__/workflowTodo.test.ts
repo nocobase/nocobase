@@ -91,7 +91,7 @@ test('filter task node', async ({ page, mockPage, mockCollections, mockRecords }
   await page.getByLabel(`designer-schema-settings-CardItem-CreateFormDesigner-${manualNodeCollectionName}`).hover();
   await page.getByRole('menuitem', { name: 'Edit block title' }).click();
   const blockTitle = 'Create record' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
-  await page.getByLabel('Edit block title').getByRole('textbox').fill(blockTitle);
+  await page.getByLabel('block-title').fill(blockTitle);
   await page.getByRole('button', { name: 'OK', exact: true }).click();
   await page
     .locator(`button[aria-label^="schema-initializer-Grid-form:configureFields-${manualNodeCollectionName}"]`)
@@ -121,12 +121,12 @@ test('filter task node', async ({ page, mockPage, mockCollections, mockRecords }
   await page.getByRole('menuitem', { name: 'check-square Workflow todos' }).click();
   await page.mouse.move(300, 0, { steps: 100 });
   await page.waitForTimeout(300);
-  await page.getByLabel('action-Filter.Action-Filter-filter-users_jobs-workflow-todo').click();
-  await page.getByText('Add condition', { exact: true }).click();
-  await page.getByTestId('select-filter-field').click();
-  await page.getByRole('menuitemcheckbox', { name: 'Task right' }).click();
-  await page.getByRole('menuitemcheckbox', { name: 'Title' }).click();
-  await page.getByRole('textbox').fill(manualNodeName);
+  await page.getByLabel('action-Filter.Action-Filter-filter-').click();
+  // await page.getByText('Add condition', { exact: true }).click();
+  // await page.getByTestId('select-filter-field').click();
+  // await page.getByRole('menuitemcheckbox', { name: 'Task right' }).click();
+  // await page.getByRole('menuitemcheckbox', { name: 'Title' }).click();
+  await page.getByRole('textbox').first().fill(manualNodeName);
   await page.getByRole('button', { name: 'Submit' }).click();
 
   // 3、预期结果：列表中出现筛选的工作流
@@ -205,7 +205,7 @@ test('filter workflow name', async ({ page, mockPage, mockCollections, mockRecor
   await page.getByLabel(`designer-schema-settings-CardItem-CreateFormDesigner-${manualNodeCollectionName}`).hover();
   await page.getByRole('menuitem', { name: 'Edit block title' }).click();
   const blockTitle = 'Create record' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
-  await page.getByLabel('Edit block title').getByRole('textbox').fill(blockTitle);
+  await page.getByLabel('block-title').fill(blockTitle);
   await page.getByRole('button', { name: 'OK', exact: true }).click();
   await page
     .locator(`button[aria-label^="schema-initializer-Grid-form:configureFields-${manualNodeCollectionName}"]`)
@@ -235,12 +235,12 @@ test('filter workflow name', async ({ page, mockPage, mockCollections, mockRecor
   await page.getByRole('menuitem', { name: 'check-square Workflow todos' }).click();
   await page.mouse.move(300, 0, { steps: 100 });
   await page.waitForTimeout(300);
-  await page.getByLabel('action-Filter.Action-Filter-filter-users_jobs-workflow-todo').click();
-  await page.getByText('Add condition', { exact: true }).click();
-  await page.getByTestId('select-filter-field').click();
-  await page.getByRole('menuitemcheckbox', { name: 'Workflow right' }).click();
-  await page.getByRole('menuitemcheckbox', { name: 'Name' }).click();
-  await page.getByRole('textbox').fill(workFlowName);
+  await page.getByLabel('action-Filter.Action-Filter-filter-').click();
+  // await page.getByText('Add condition', { exact: true }).click();
+  // await page.getByTestId('select-filter-field').click();
+  // await page.getByRole('menuitemcheckbox', { name: 'Workflow right' }).click();
+  // await page.getByRole('menuitemcheckbox', { name: 'Name' }).click();
+  await page.getByRole('textbox').last().fill(workFlowName);
   await page.getByRole('button', { name: 'Submit' }).click();
 
   // 3、预期结果：列表中出现筛选的工作流

@@ -11,6 +11,8 @@ import { CollectionOptions } from '@nocobase/database';
 
 export default {
   name: 'tags',
+  createdBy: true,
+  updatedBy: true,
   fields: [
     {
       type: 'belongsToMany',
@@ -19,6 +21,14 @@ export default {
     {
       type: 'string',
       name: 'name',
+    },
+    {
+      type: 'date',
+      name: 'createdAt',
+    },
+    {
+      type: 'date',
+      name: 'updatedAt',
     },
   ],
 } as CollectionOptions;

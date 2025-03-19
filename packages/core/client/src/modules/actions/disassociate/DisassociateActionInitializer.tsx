@@ -8,7 +8,7 @@
  */
 
 import React from 'react';
-import { ActionInitializerItem } from '../../../schema-initializer/items/ActionInitializerItem';
+import { ActionInitializer } from '../../../schema-initializer/items/ActionInitializer';
 
 export const DisassociateActionInitializer = (props) => {
   const schema = {
@@ -30,5 +30,5 @@ export const DisassociateActionInitializer = (props) => {
       triggerWorkflows: [],
     },
   };
-  return <ActionInitializerItem {...props} schema={schema} />;
+  return <ActionInitializer {...props} schema={schema} />;
 };

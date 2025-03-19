@@ -7,35 +7,37 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { createStyles } from '@nocobase/client';
+import { genStyleHook } from '@nocobase/client';
 
-export const useMobileActionPageStyle = createStyles(({ css, token }: any) => {
+export const useMobileActionPageStyle = genStyleHook('nb-mobile-action-page', (token) => {
+  const { componentCls } = token;
+
   return {
-    container: css`
-      position: absolute !important;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background-color: ${token.colorBgLayout};
+    [componentCls]: {
+      position: 'absolute !important',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      backgroundColor: token.colorBgLayout,
 
-      .mobile-page-content > .nb-grid-container > .nb-grid > .nb-grid-warp > .ant-btn {
-        margin: 20px;
-      }
-    `,
+      '.mobile-page-content > .nb-grid-container > .nb-grid > .nb-grid-warp > .ant-btn': {
+        margin: 20,
+      },
 
-    footer: css`
-      height: var(--nb-mobile-page-header-height);
-      padding-right: var(--nb-mobile-page-tabs-content-padding);
-      display: flex;
-      align-items: center;
-      justify-content: flex-end;
-      position: fixed;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      background-color: white;
-      z-index: 1000;
-    `,
-  };
+      '.nb-mobile-action-page-footer': {
+        height: 'var(--nb-mobile-page-header-height)',
+        paddingRight: 'var(--nb-mobile-page-tabs-content-padding)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'flex-end',
+        position: 'fixed',
+        bottom: 0,
+        left: 0,
+        right: 0,
+        backgroundColor: 'white',
+        zIndex: 1000,
+      },
+    },
+  } as any;
 });

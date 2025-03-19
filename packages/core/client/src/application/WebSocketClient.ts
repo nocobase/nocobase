@@ -108,6 +108,7 @@ export class WebSocketClient {
     this._reconnectTimes++;
     const ws = new WebSocket(this.getURL(), this.options.protocols);
     let pingIntervalTimer: any;
+
     ws.onopen = () => {
       console.log('[nocobase-ws]: connected.');
       this.serverDown = false;
@@ -121,6 +122,7 @@ export class WebSocketClient {
       }
       pingIntervalTimer = setInterval(() => this.send('ping'), this.pingInterval);
       this.connected = true;
+      this.emit('open', {});
     };
     ws.onerror = async () => {
       // setTimeout(() => this.connect(), this.reconnectInterval);

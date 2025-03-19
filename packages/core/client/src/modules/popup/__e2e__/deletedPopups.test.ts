@@ -13,18 +13,17 @@ test.describe('deleted popups', () => {
   test('should display error info when deleted popups', async ({ page, mockPage }) => {
     const nocoPage = await mockPage().waitForInit();
     const url = await nocoPage.getUrl();
-
-    await page.goto(
+    const path =
       url +
-        '/popups/vygn5ile3xz/filterbytk/1/popups/n24hos465bj/filterbytk/admin/sourceid/1/popups/s32h1ed5g9i/filterbytk/admin/sourceid/1',
-    );
+      '/popups/vygn5ile3xz/filterbytk/1/popups/n24hos465bj/filterbytk/admin/sourceid/1/popups/s32h1ed5g9i/filterbytk/admin/sourceid/1';
 
+    await page.goto(path);
     await expect(page.getByText('Sorry, the page you visited does not exist.')).toHaveCount(3);
 
     // close the popups
-    await page.getByLabel('drawer-Action.Container-Error message-mask').click();
-    await page.getByLabel('drawer-Action.Container-Error message-mask').click();
-    await page.getByLabel('drawer-Action.Container-Error message-mask').click();
+    await page.getByLabel('drawer-Action.Container-Error message-mask').nth(2).click();
+    await page.getByLabel('drawer-Action.Container-Error message-mask').nth(1).click();
+    await page.getByLabel('drawer-Action.Container-Error message-mask').nth(0).click();
 
     await expect(page.getByText('Sorry, the page you visited does not exist.')).toHaveCount(0);
   });

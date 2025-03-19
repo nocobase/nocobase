@@ -36,6 +36,16 @@ export class ErrorHandler {
     };
   }
 
+  renderError(err, ctx) {
+    for (const handler of this.handlers) {
+      if (handler.guard(err)) {
+        return handler.render(err, ctx);
+      }
+    }
+
+    this.defaultHandler(err, ctx);
+  }
+
   middleware() {
     const self = this;
     return async function errorHandler(ctx, next) {
@@ -48,13 +58,7 @@ export class ErrorHandler {
           ctx.status = err.statusCode;
         }
 
-        for (const handler of self.handlers) {
-          if (handler.guard(err)) {
-            return handler.render(err, ctx);
-          }
-        }
-
-        self.defaultHandler(err, ctx);
+        self.renderError(err, ctx);
       }
     };
   }

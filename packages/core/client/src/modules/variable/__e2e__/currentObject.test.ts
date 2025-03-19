@@ -25,7 +25,7 @@ test.describe('variable: current object', () => {
     await page.getByRole('menuitemcheckbox', { name: 'Current object right' }).click();
     await page.getByRole('menuitemcheckbox', { name: 'Role UID' }).click();
     await page.getByRole('button', { name: 'OK', exact: true }).click();
-    await page.getByRole('button', { name: 'Add new' }).click();
+    await page.locator('.nb-sub-table-addNew').click();
     await page.getByRole('row', { name: 'table-index-4 block-item-' }).getByRole('textbox').nth(1).fill('123456');
     await expect(page.getByRole('row', { name: 'table-index-4 block-item-' }).getByRole('textbox').first()).toHaveValue(
       '123456',

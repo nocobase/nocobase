@@ -7,22 +7,21 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { cx } from '@nocobase/client';
 import { SafeArea } from 'antd-mobile';
 import React, { FC } from 'react';
 
 import { useMobilePage } from '../context';
-import { useStyles } from './styles';
+import { mobilePageHeaderStyle } from './styles';
 
 export const MobilePageHeader: FC = ({ children }) => {
   const { displayPageHeader = true } = useMobilePage() || {};
-  const { styles } = useStyles();
+
   if (!displayPageHeader) {
     return null;
   }
 
   return (
-    <div className={cx(styles.mobilePageHeader, 'mobile-page-header')} data-testid="mobile-page-header">
+    <div className="mobile-page-header" data-testid="mobile-page-header" style={mobilePageHeaderStyle}>
       <SafeArea position="top" />
       {children}
     </div>

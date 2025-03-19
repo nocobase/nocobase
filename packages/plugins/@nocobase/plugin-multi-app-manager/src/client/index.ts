@@ -9,7 +9,10 @@
 
 import { Plugin } from '@nocobase/client';
 import { MultiAppManagerProvider } from './MultiAppManagerProvider';
-import { AppManager } from './AppManager';
+// import { AppManager } from './AppManager';
+import { lazy } from '@nocobase/client';
+const { AppManager } = lazy(() => import('./AppManager'), 'AppManager');
+
 import { NAMESPACE } from '../locale';
 
 export class PluginMultiAppManagerClient extends Plugin {

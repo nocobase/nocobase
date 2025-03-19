@@ -9,10 +9,10 @@
 
 import { isArr, isValid, toArr as toArray } from '@formily/shared';
 import { UploadFile } from 'antd/es/upload/interface';
-import { useTranslation } from 'react-i18next';
 import mime from 'mime';
 import match from 'mime-match';
 import React, { useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useAPIClient } from '../../../api-client';
 import { UNKNOWN_FILE_ICON, UPLOAD_PLACEHOLDER } from './placeholder';
 import type { IUploadProps, UploadProps } from './type';
@@ -147,7 +147,6 @@ export function useUploadProps<T extends IUploadProps = UploadProps>(props: T) {
   const api = useAPIClient();
 
   return {
-    ...props,
     // in customRequest method can't modify form's status(e.g: form.disabled=true )
     // that will be trigger Upload component（actual Underlying is AjaxUploader component ）'s  componentWillUnmount method
     // which will cause multiple files upload fail
@@ -180,6 +179,7 @@ export function useUploadProps<T extends IUploadProps = UploadProps>(props: T) {
         },
       };
     },
+    ...props,
   };
 }
 

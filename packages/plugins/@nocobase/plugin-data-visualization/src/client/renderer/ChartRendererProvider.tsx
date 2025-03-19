@@ -50,6 +50,7 @@ export type QueryProps = Partial<{
   }[];
   filter: any;
   limit: number;
+  offset: number;
   sql: {
     fields?: string;
     clauses?: string;

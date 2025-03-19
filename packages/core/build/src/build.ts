@@ -24,10 +24,19 @@ import { buildClient } from './buildClient';
 import { buildCjs } from './buildCjs';
 import { buildPlugin } from './buildPlugin';
 import { buildDeclaration } from './buildDeclaration';
-import { PkgLog, getPkgLog, toUnixPath, getPackageJson, getUserConfig, UserConfig, writeToCache, readFromCache } from './utils';
+import {
+  PkgLog,
+  getPkgLog,
+  toUnixPath,
+  getPackageJson,
+  getUserConfig,
+  UserConfig,
+  writeToCache,
+  readFromCache,
+} from './utils';
 import { getPackages } from './utils/getPackages';
 import { Package } from '@lerna/package';
-import { tarPlugin } from './tarPlugin'
+import { tarPlugin } from './tarPlugin';
 import { buildEsm } from './buildEsm';
 import { addLicense } from './utils/addlicense';
 
@@ -45,9 +54,9 @@ export async function build(pkgs: string[]) {
   if (packages.length === 0) {
     let msg = '';
     if (pkgs.length) {
-      msg = `'${pkgs.join(', ')}' did not match any packages`
+      msg = `'${pkgs.join(', ')}' did not match any packages`;
     } else {
-      msg = 'No package matched'
+      msg = 'No package matched';
     }
     console.warn(chalk.yellow(`[@nocobase/build]: ${msg}`));
     return;
@@ -63,7 +72,7 @@ export async function build(pkgs: string[]) {
   if (clientCore) {
     await buildPackage(clientCore, 'es', buildClient);
   }
-  const esmPackages = packages.filter(pkg => ESM_PACKAGES.includes(pkg.name));
+  const esmPackages = packages.filter((pkg) => ESM_PACKAGES.includes(pkg.name));
   await buildPackages(esmPackages, 'lib', buildCjs);
   await buildPackages(esmPackages, 'es', buildEsm);
 
@@ -78,6 +87,7 @@ export async function build(pkgs: string[]) {
   if (appClient) {
     await runScript(['umi', 'build'], ROOT_PATH, {
       APP_ROOT: path.join(CORE_APP, 'client'),
+      ANALYZE: process.env.BUILD_ANALYZE === 'true' ? '1' : undefined,
     });
   }
   writeToCache(BUILD_ERROR, {});
@@ -89,7 +99,7 @@ export async function buildPackages(
   doBuildPackage: (cwd: string, userConfig: UserConfig, sourcemap: boolean, log?: PkgLog) => Promise<any>,
 ) {
   for await (const pkg of packages) {
-    writeToCache(BUILD_ERROR, { pkg: pkg.name })
+    writeToCache(BUILD_ERROR, { pkg: pkg.name });
     await buildPackage(pkg, targetDir, doBuildPackage);
   }
 }

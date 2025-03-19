@@ -7,23 +7,22 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useState } from 'react';
-import { Card, Row, Col, Tabs, Divider } from 'antd';
+import { ISchema, Schema } from '@formily/react';
 import {
-  CollectionProvider,
   CollectionProvider_deprecated,
   ResourceActionProvider,
   SchemaComponentContext,
   usePlugin,
   useSchemaComponentContext,
 } from '@nocobase/client';
-import { ISchema, Schema } from '@formily/react';
+import { Card, Col, Divider, Row, Tabs } from 'antd';
+import React, { useMemo, useState } from 'react';
+import ACLPlugin from '.';
+import { NewRole } from './NewRole';
+import { RolesManagerContext } from './RolesManagerProvider';
 import { RolesMenu } from './RolesMenu';
 import { useACLTranslation } from './locale';
-import ACLPlugin from '.';
-import { RolesManagerContext } from './RolesManagerProvider';
 import { Permissions } from './permissions/Permissions';
-import { NewRole } from './NewRole';
 
 const collection = {
   name: 'roles',
@@ -75,9 +74,10 @@ export const RolesManagement: React.FC = () => {
   }));
   const [role, setRole] = useState(null);
   const scCtx = useSchemaComponentContext();
+  const schemaComponentContext = useMemo(() => ({ ...scCtx, designable: false }), [scCtx]);
 
   return (
-    <SchemaComponentContext.Provider value={{ ...scCtx, designable: false }}>
+    <SchemaComponentContext.Provider value={schemaComponentContext}>
       <RolesManagerContext.Provider value={{ role, setRole }}>
         <Card>
           <Row gutter={24} style={{ flexWrap: 'nowrap' }}>

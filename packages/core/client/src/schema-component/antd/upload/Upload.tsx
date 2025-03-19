@@ -41,7 +41,16 @@ attachmentFileTypes.add({
     return matchMimetype(file, 'image/*');
   },
   getThumbnailURL(file) {
-    return file.url ? `${file.url}${file.thumbnailRule || ''}` : URL.createObjectURL(file.originFileObj);
+    if (file.preview) {
+      return file.preview;
+    }
+    if (file.url) {
+      return file.url;
+    }
+    if (file.originFileObj) {
+      return URL.createObjectURL(file.originFileObj);
+    }
+    return null;
   },
   Previewer({ index, list, onSwitchIndex }) {
     const onDownload = useCallback(
@@ -80,26 +89,27 @@ attachmentFileTypes.add({
   },
 });
 
-const iframePreviewSupportedTypes = ['application/pdf', 'audio/*', 'image/*', 'video/*'];
+const iframePreviewSupportedTypes = ['application/pdf', 'audio/*', 'image/*', 'video/*', 'text/*'];
 
 function IframePreviewer({ index, list, onSwitchIndex }) {
   const { t } = useTranslation();
   const file = list[index];
+  const url = file.url;
   const onOpen = useCallback(
     (e) => {
       e.preventDefault();
       e.stopPropagation();
-      window.open(file.url);
+      window.open(url);
     },
-    [file],
+    [url],
   );
   const onDownload = useCallback(
     (e) => {
       e.preventDefault();
       e.stopPropagation();
-      saveAs(file.url, `${file.title}${file.extname}`);
+      saveAs(url, `${file.title}${file.extname}`);
     },
-    [file],
+    [file.extname, file.title, url],
   );
   const onClose = useCallback(() => {
     onSwitchIndex(null);
@@ -139,7 +149,7 @@ function IframePreviewer({ index, list, onSwitchIndex }) {
       >
         {iframePreviewSupportedTypes.some((type) => matchMimetype(file, type)) ? (
           <iframe
-            src={file.url}
+            src={url}
             style={{
               width: '100%',
               maxHeight: '90vh',
@@ -170,7 +180,7 @@ function InternalUpload(props: UploadProps) {
   return <AntdUpload {...useUploadProps(rest)} onChange={onFileChange} />;
 }
 
-function ReadPretty({ value, onChange, disabled, multiple, size }: UploadProps) {
+function ReadPretty({ value, onChange, disabled, multiple, size, ...others }: UploadProps) {
   const { wrapSSR, hashId, componentCls: prefixCls } = useStyles();
   const useUploadStyleVal = (useUploadStyle as any).default ? (useUploadStyle as any).default : useUploadStyle;
   // 加载 antd 的样式
@@ -186,7 +196,14 @@ function ReadPretty({ value, onChange, disabled, multiple, size }: UploadProps) 
       )}
     >
       <div className={cls(`${prefixCls}-list`, `${prefixCls}-list-picture-card`)}>
-        <AttachmentList disabled={disabled} readPretty multiple={multiple} value={value} onChange={onChange} />
+        <AttachmentList
+          disabled={disabled}
+          readPretty
+          multiple={multiple}
+          value={value}
+          onChange={onChange}
+          {...others}
+        />
       </div>
     </div>,
   );
@@ -217,7 +234,7 @@ function DefaultThumbnailPreviewer({ file }) {
 }
 
 function AttachmentListItem(props) {
-  const { file, disabled, onPreview, onDelete: propsOnDelete, readPretty } = props;
+  const { file, disabled, onPreview, onDelete: propsOnDelete, readPretty, showFileName } = props;
   const { componentCls: prefixCls } = useStyles();
   const { t } = useTranslation();
   const handleClick = useCallback(
@@ -234,16 +251,16 @@ function AttachmentListItem(props) {
   const onDownload = useCallback(() => {
     saveAs(file.url, `${file.title}${file.extname}`);
   }, [file]);
-
   const { ThumbnailPreviewer = DefaultThumbnailPreviewer } = attachmentFileTypes.getTypeByFile(file) ?? {};
-
   const item = [
     <span key="thumbnail" className={`${prefixCls}-list-item-thumbnail`}>
       <ThumbnailPreviewer file={file} />
     </span>,
-    <span key="title" className={`${prefixCls}-list-item-name`} title={file.title}>
-      {file.status === 'uploading' ? t('Uploading') : file.title}
-    </span>,
+    showFileName !== false && file.title ? (
+      <span key="title" className={`${prefixCls}-list-item-name`} title={file.title}>
+        {file.status === 'uploading' ? t('Uploading') : file.title}
+      </span>
+    ) : null,
   ];
   const wrappedItem = file.url ? (
     <a target="_blank" rel="noopener noreferrer" href={file.url} onClick={handleClick}>
@@ -279,9 +296,13 @@ function AttachmentListItem(props) {
       )}
     </div>
   );
-
   return (
-    <div className={`${prefixCls}-list-picture-card-container ${prefixCls}-list-item-container`}>
+    <div
+      style={{
+        marginBottom: showFileName !== false && file.title ? '28px' : '0px',
+      }}
+      className={`${prefixCls}-list-picture-card-container ${prefixCls}-list-item-container`}
+    >
       {file.status === 'error' ? (
         <Tooltip title={file.response} getPopupContainer={(node) => node.parentNode as HTMLElement}>
           {content}
@@ -303,10 +324,9 @@ function Previewer({ index, onSwitchIndex, list }) {
 }
 
 export function AttachmentList(props) {
-  const { disabled, multiple, value, onChange, readPretty } = props;
+  const { disabled, multiple, value, onChange, readPretty, showFileName } = props;
   const [fileList, setFileList] = useState<any[]>([]);
   const [preview, setPreview] = useState<number>(null);
-
   useEffect(() => {
     const list = toFileList(value);
     setFileList(list);
@@ -341,6 +361,7 @@ export function AttachmentList(props) {
           onPreview={onPreview}
           onDelete={onDelete}
           readPretty={readPretty}
+          showFileName={showFileName}
         />
       ))}
       <Previewer index={preview} onSwitchIndex={setPreview} list={fileList} />
@@ -350,6 +371,7 @@ export function AttachmentList(props) {
 
 export function Uploader({ rules, ...props }: UploadProps) {
   const { disabled, multiple, value, onChange, toValueItem = toValueItemDefault } = props;
+  const [uploadedList, setUploadedList] = useState<any[]>([]);
   const [pendingList, setPendingList] = useState<any[]>([]);
   const { t } = useTranslation();
   const { componentCls: prefixCls } = useStyles();
@@ -369,36 +391,48 @@ export function Uploader({ rules, ...props }: UploadProps) {
     } else {
       field.setFeedback({});
     }
-  }, [field, pendingList]);
+  }, [field, pendingList, t]);
 
   const onUploadChange = useCallback(
     (info) => {
+      const pendingFiles = info.fileList.filter((file) => file.status !== 'done').map(normalizeFile);
+      setPendingList(pendingFiles);
       if (multiple) {
-        const uploadedList = info.fileList.filter((file) => file.status === 'done');
-        if (uploadedList.length) {
-          const valueList = [...(value ?? []), ...uploadedList.map((v) => toValueItem(v.response?.data))];
-          onChange?.(valueList);
+        const uploaded = info.fileList.filter((file) => file.status === 'done');
+        if (uploaded.length) {
+          const valueList = [...uploadedList, ...uploaded.map((v) => toValueItem(v.response?.data))];
+          if (pendingFiles.length) {
+            setUploadedList(valueList);
+          } else {
+            onChange?.([...(value || []), ...valueList]);
+            setUploadedList([]);
+          }
         }
-        setPendingList(info.fileList.filter((file) => file.status !== 'done').map(normalizeFile));
       } else {
         // NOTE: 用 fileList 里的才有附加的验证状态信息，file 没有（不清楚为何）
         const file = info.fileList.find((f) => f.uid === info.file.uid);
         if (file.status === 'done') {
           onChange?.(toValueItem(file.response?.data));
           setPendingList([]);
-        } else {
-          setPendingList([normalizeFile(file)]);
         }
       }
     },
-    [value, multiple, onChange],
+    [multiple, value, uploadedList, toValueItem, onChange],
   );
 
-  const onDelete = useCallback((file) => {
+  const onDeletePending = useCallback((file) => {
     setPendingList((prevPendingList) => {
       const index = prevPendingList.indexOf(file);
       prevPendingList.splice(index, 1);
       return [...prevPendingList];
+    });
+  }, []);
+
+  const onDeleteUploaded = useCallback((file) => {
+    setUploadedList((prevUploadedList) => {
+      const index = prevUploadedList.indexOf(file);
+      prevUploadedList.splice(index, 1);
+      return [...prevUploadedList];
     });
   }, []);
 
@@ -410,8 +444,11 @@ export function Uploader({ rules, ...props }: UploadProps) {
     !disabled && (multiple || ((!value || (Array.isArray(value) && !value.length)) && !pendingList.length));
   return (
     <>
+      {uploadedList.map((file, index) => (
+        <AttachmentListItem key={file.id} file={file} index={index} disabled={disabled} onDelete={onDeleteUploaded} />
+      ))}
       {pendingList.map((file, index) => (
-        <AttachmentListItem key={file.uid} file={file} index={index} disabled={disabled} onDelete={onDelete} />
+        <AttachmentListItem key={file.uid} file={file} index={index} disabled={disabled} onDelete={onDeletePending} />
       ))}
       <div
         className={cls(`${prefixCls}-list-picture-card-container`, `${prefixCls}-list-item-container`)}

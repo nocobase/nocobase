@@ -29,8 +29,8 @@ test.describe('creation form block schema settings', () => {
 
     // 打开编辑弹窗
     await clickOption(page, 'Edit block title');
-    await page.getByRole('textbox').click();
-    await page.getByRole('textbox').fill('Block title 123');
+    await page.getByLabel('block-title').click();
+    await page.getByLabel('block-title').fill('Block title 123');
     await page.getByRole('button', { name: 'OK', exact: true }).click();
 
     const runExpect = async () => {
@@ -41,7 +41,7 @@ test.describe('creation form block schema settings', () => {
 
       // 再次打开编辑弹窗时，显示的是上次设置的值
       await clickOption(page, 'Edit block title');
-      await expect(page.getByRole('textbox')).toHaveValue('Block title 123');
+      await expect(page.getByLabel('block-title')).toHaveValue('Block title 123');
     };
 
     await runExpect();
@@ -143,7 +143,7 @@ test.describe('creation form block schema settings', () => {
 
     // 创建区块的时候，可以选择刚才保存的模板 --------------------------------------------------
     await page.getByLabel('schema-initializer-Grid-page:addBlock').hover();
-    await page.getByRole('menuitem', { name: 'form Form right' }).first().hover();
+    await page.getByRole('menuitem', { name: 'Form right' }).first().hover();
     await page.getByRole('menuitem', { name: 'General right' }).hover();
 
     // Duplicate template
@@ -152,7 +152,7 @@ test.describe('creation form block schema settings', () => {
 
     // Reference template
     await page.getByLabel('schema-initializer-Grid-page:addBlock').hover();
-    await page.getByRole('menuitem', { name: 'form Form right' }).first().hover();
+    await page.getByRole('menuitem', { name: 'Form right' }).first().hover();
     await page.getByRole('menuitem', { name: 'General right' }).hover();
     await page.getByRole('menuitem', { name: 'General right' }).click();
     await page.getByRole('menuitem', { name: 'Reference template right' }).click();

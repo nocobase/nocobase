@@ -94,5 +94,7 @@
   "Trigger in executed workflow cannot be modified": "Trigger in executed workflow cannot be modified",
   "Node in executed workflow cannot be modified": "Node in executed workflow cannot be modified",
   "Can not delete": "Can not delete",
-  "The result of this node has been referenced by other nodes ({{nodes}}), please remove the usage before deleting.": "The result of this node has been referenced by other nodes ({{nodes}}), please remove the usage before deleting."
+  "The result of this node has been referenced by other nodes ({{nodes}}), please remove the usage before deleting.": "The result of this node has been referenced by other nodes ({{nodes}}), please remove the usage before deleting.",
+  "Maximum number of loop calls": "Maximum number of loop calls",
+  "If the number of loop calls is too large, there will be performance issues.": "If the number of loop calls is too large, there will be performance issues."
 }

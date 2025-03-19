@@ -7,13 +7,14 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { observer, RecursionField, useField, useFieldSchema } from '@formily/react';
+import { observer, useField, useFieldSchema } from '@formily/react';
 import { toArr } from '@formily/shared';
 import _ from 'lodash';
-import React, { FC, Fragment, useEffect, useRef, useState } from 'react';
-import { useDesignable } from '../../';
+import React, { FC, Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useDesignable, usePopupSettings } from '../../';
 import { WithoutTableFieldResource } from '../../../block-provider';
 import { CollectionRecordProvider, useCollectionManager, useCollectionRecordData } from '../../../data-source';
+import { NocoBaseRecursionField } from '../../../formily/NocoBaseRecursionField';
 import { useOpenModeContext } from '../../../modules/popup/OpenModeProvider';
 import { VariablePopupRecordProvider } from '../../../modules/variable/variablesProvider/VariablePopupRecordProvider';
 import { useCompile } from '../../hooks';
@@ -47,6 +48,7 @@ export interface ButtonListProps {
     label: string;
     value: string;
   };
+  onClick?: (props: { recordData: any }) => void;
 }
 
 const RenderRecord = React.memo(
@@ -66,6 +68,7 @@ const RenderRecord = React.memo(
     ellipsisWithTooltipRef,
     value,
     setBtnHover,
+    onClick,
   }: {
     fieldNames: any;
     isTreeCollection: boolean;
@@ -82,9 +85,16 @@ const RenderRecord = React.memo(
     ellipsisWithTooltipRef: React.MutableRefObject<IEllipsisWithTooltipRef>;
     value: any;
     setBtnHover: any;
+    onClick?: (props: { recordData: any }) => void;
   }) => {
     const [loading, setLoading] = useState(true);
     const [result, setResult] = useState<React.ReactNode[]>([]);
+    const needWaitForFieldSchemaUpdatedRef = useRef(false);
+    const fieldSchemaRef = useRef(fieldSchema);
+    fieldSchemaRef.current = fieldSchema;
+    const getCustomActionSchema = useCallback(() => {
+      return fieldSchemaRef.current;
+    }, []);
 
     // The map method here maybe quite time-consuming, especially in table blocks.
     // Therefore, we use an asynchronous approach to render the list,
@@ -121,11 +131,25 @@ const RenderRecord = React.memo(
                     setBtnHover(true);
                     e.stopPropagation();
                     e.preventDefault();
-                    if (designable) {
+                    if (designable && !fieldSchema.properties) {
                       insertViewer(schema.Viewer);
+                      needWaitForFieldSchemaUpdatedRef.current = true;
                     }
 
-                    if (fieldSchema.properties) {
+                    if (needWaitForFieldSchemaUpdatedRef.current) {
+                      // When first inserting, the fieldSchema instance will be updated to a new instance.
+                      // We need to wait for the instance update before opening the popup to prevent configuration loss.
+                      setTimeout(() => {
+                        onClick?.({ recordData: record });
+                        openPopup({
+                          recordData: record,
+                          parentRecordData: recordData,
+                          customActionSchema: getCustomActionSchema(),
+                        });
+                      });
+                      needWaitForFieldSchemaUpdatedRef.current = false;
+                    } else if (fieldSchema.properties) {
+                      onClick?.({ recordData: record });
                       openPopup({
                         recordData: record,
                         parentRecordData: recordData,
@@ -154,7 +178,7 @@ const RenderRecord = React.memo(
       ellipsisWithTooltipRef,
       enableLink,
       fieldNames?.label,
-      fieldSchema?.properties,
+      fieldSchema,
       getLabelUiSchema,
       insertViewer,
       isTreeCollection,
@@ -163,6 +187,7 @@ const RenderRecord = React.memo(
       setBtnHover,
       snapshot,
       value,
+      getCustomActionSchema,
     ]);
 
     if (loading) {
@@ -175,7 +200,7 @@ const RenderRecord = React.memo(
 
 RenderRecord.displayName = 'RenderRecord';
 
-const ButtonLinkList: FC<ButtonListProps> = (props) => {
+const ButtonLinkList: FC<ButtonListProps> = observer((props) => {
   const fieldSchema = useFieldSchema();
   const cm = useCollectionManager();
   const { enableLink } = fieldSchema['x-component-props'] || {};
@@ -209,9 +234,12 @@ const ButtonLinkList: FC<ButtonListProps> = (props) => {
       ellipsisWithTooltipRef={ellipsisWithTooltipRef}
       value={props.value}
       setBtnHover={props.setBtnHover}
+      onClick={props.onClick}
     />
   );
-};
+});
+
+ButtonLinkList.displayName = 'ButtonLinkList';
 
 interface ReadPrettyInternalViewerProps {
   ButtonList: FC<ButtonListProps>;
@@ -241,68 +269,89 @@ const getSourceData = (recordData, fieldSchema) => {
   return _.get(recordData, sourceRecordKey);
 };
 
-export const ReadPrettyInternalViewer: React.FC = observer(
-  (props: ReadPrettyInternalViewerProps) => {
-    const { value, ButtonList = ButtonLinkList } = props;
-    const fieldSchema = useFieldSchema();
-    const { enableLink } = fieldSchema['x-component-props'] || {};
-    // value 做了转换，但 props.value 和原来 useField().value 的值不一致
-    const field = useField();
-    const [visible, setVisible] = useState(false);
-    const { options: collectionField } = useAssociationFieldContext();
-    const ellipsisWithTooltipRef = useRef<IEllipsisWithTooltipRef>();
-    const { visibleWithURL, setVisibleWithURL } = usePopupUtils();
-    const [btnHover, setBtnHover] = useState(!!visibleWithURL);
-    const { defaultOpenMode } = useOpenModeContext();
-    const recordData = useCollectionRecordData();
+export const ReadPrettyInternalViewer: React.FC<ReadPrettyInternalViewerProps> = (props) => {
+  const { value, ButtonList = ButtonLinkList } = props;
+  const fieldSchema = useFieldSchema();
+  const { enableLink, openMode, openSize } = fieldSchema['x-component-props'] || {};
+  // value 做了转换，但 props.value 和原来 useField().value 的值不一致
+  const field = useField();
+  const [visible, setVisible] = useState(false);
+  const { options: collectionField } = useAssociationFieldContext();
+  const { visibleWithURL, setVisibleWithURL } = usePopupUtils();
+  const [btnHover, setBtnHover] = useState(!!visibleWithURL);
+  const { defaultOpenMode } = useOpenModeContext();
+  const parentRecordData = useCollectionRecordData();
+  const [recordData, setRecordData] = useState(null);
+  const { isPopupVisibleControlledByURL } = usePopupSettings();
 
-    const btnElement = (
-      <EllipsisWithTooltip ellipsis={true} ref={ellipsisWithTooltipRef}>
-        <CollectionRecordProvider isNew={false} record={getSourceData(recordData, fieldSchema)}>
-          <ButtonList setBtnHover={setBtnHover} value={value} fieldNames={props.fieldNames} />
-        </CollectionRecordProvider>
-      </EllipsisWithTooltip>
-    );
+  const onClickItem = useCallback((props: { recordData: any }) => {
+    setRecordData(props.recordData);
+  }, []);
 
-    if (enableLink === false || !btnHover) {
-      return btnElement;
+  const btnElement = (
+    <EllipsisWithTooltip ellipsis={true}>
+      <CollectionRecordProvider isNew={false} record={getSourceData(parentRecordData, fieldSchema)}>
+        <ButtonList setBtnHover={setBtnHover} value={value} fieldNames={props.fieldNames} onClick={onClickItem} />
+      </CollectionRecordProvider>
+    </EllipsisWithTooltip>
+  );
+
+  const actionContextValue = useMemo(
+    () => ({
+      visible: visible || visibleWithURL,
+      setVisible: (value) => {
+        setVisible?.(value);
+        setVisibleWithURL?.(value);
+      },
+      openMode: openMode || defaultOpenMode,
+      snapshot: collectionField?.interface === 'snapshot',
+      fieldSchema: fieldSchema,
+      openSize,
+    }),
+    [collectionField?.interface, defaultOpenMode, fieldSchema, setVisibleWithURL, visible, visibleWithURL],
+  );
+
+  if (enableLink === false) {
+    return btnElement;
+  }
+
+  const renderWithoutTableFieldResourceProvider = () => {
+    if (isPopupVisibleControlledByURL()) {
+      return (
+        // The recordData here is only provided when the popup is opened, not the current row record
+        <VariablePopupRecordProvider>
+          <WithoutTableFieldResource.Provider value={true}>
+            <NocoBaseRecursionField
+              schema={fieldSchema}
+              onlyRenderProperties
+              basePath={field.address}
+              filterProperties={(v) => {
+                return v['x-component'] !== 'Action';
+              }}
+            />
+          </WithoutTableFieldResource.Provider>
+        </VariablePopupRecordProvider>
+      );
     }
 
-    const renderWithoutTableFieldResourceProvider = () => (
-      // The recordData here is only provided when the popup is opened, not the current row record
-      <VariablePopupRecordProvider>
-        <WithoutTableFieldResource.Provider value={true}>
-          <RecursionField
-            schema={fieldSchema}
-            onlyRenderProperties
-            basePath={field.address}
-            filterProperties={(s) => {
-              return s['x-component'] === 'AssociationField.Viewer';
-            }}
-          />
-        </WithoutTableFieldResource.Provider>
-      </VariablePopupRecordProvider>
-    );
-
     return (
-      <PopupVisibleProvider visible={false}>
-        <ActionContextProvider
-          value={{
-            visible: visible || visibleWithURL,
-            setVisible: (value) => {
-              setVisible?.(value);
-              setVisibleWithURL?.(value);
-            },
-            openMode: defaultOpenMode,
-            snapshot: collectionField?.interface === 'snapshot',
-            fieldSchema: fieldSchema,
-          }}
-        >
-          {btnElement}
-          {renderWithoutTableFieldResourceProvider()}
-        </ActionContextProvider>
-      </PopupVisibleProvider>
+      <CollectionRecordProvider isNew={false} record={recordData} parentRecord={parentRecordData}>
+        {/* The recordData here is only provided when the popup is opened, not the current row record */}
+        <VariablePopupRecordProvider>
+          <WithoutTableFieldResource.Provider value={true}>
+            <NocoBaseRecursionField schema={fieldSchema} onlyRenderProperties basePath={field.address} />
+          </WithoutTableFieldResource.Provider>
+        </VariablePopupRecordProvider>
+      </CollectionRecordProvider>
     );
-  },
-  { displayName: 'ReadPrettyInternalViewer' },
-);
+  };
+
+  return (
+    <PopupVisibleProvider visible={false}>
+      <ActionContextProvider value={actionContextValue}>
+        {btnElement}
+        {btnHover && renderWithoutTableFieldResourceProvider()}
+      </ActionContextProvider>
+    </PopupVisibleProvider>
+  );
+};

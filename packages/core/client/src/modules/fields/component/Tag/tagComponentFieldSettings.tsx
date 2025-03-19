@@ -47,7 +47,6 @@ const enableLink = {
             },
           },
         });
-        dn.refresh();
       },
     };
   },

@@ -21,7 +21,7 @@ export default function defineMyInAppMessages({
   app: Application;
   addClient: any;
   removeClient: any;
-  getClient: any;
+  getClient?: any;
 }) {
   const countTotalUnreadMessages = async (userId: string) => {
     const messagesRepo = app.db.getRepository(MessagesDefinition.name);

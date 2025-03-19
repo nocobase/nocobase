@@ -1,0 +1,20 @@
+{
+  "name": "@nocobase/plugin-ai",
+  "displayName": "AI integration",
+  "displayName.zh-CN": "AI 集成",
+  "description": "Support integration with AI services, providing AI-related workflow nodes to enhance business processing capabilities.",
+  "description.zh-CN": "支持接入 AI 服务，提供 AI 相关的工作流节点，增强业务处理能力。",
+  "version": "1.6.6",
+  "main": "dist/server/index.js",
+  "peerDependencies": {
+    "@nocobase/client": "1.x",
+    "@nocobase/plugin-workflow": "1.x",
+    "@nocobase/server": "1.x",
+    "@nocobase/test": "1.x"
+  },
+  "devDependencies": {
+    "@langchain/core": "^0.3.39",
+    "@langchain/deepseek": "^0.0.1",
+    "@langchain/openai": "^0.4.3"
+  }
+}

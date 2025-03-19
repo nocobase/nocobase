@@ -9,7 +9,7 @@
 
 import { error } from '@nocobase/utils/client';
 import { ItemType } from 'antd/es/menu/hooks/useItems';
-import React, { createContext, useCallback, useContext, useRef } from 'react';
+import React, { createContext, useCallback, useContext, useMemo, useRef } from 'react';
 
 type menuItemsKey =
   | 'version'
@@ -92,8 +92,6 @@ export const useCurrentUserSettingsMenu = () => {
  */
 export const CurrentUserSettingsMenuProvider = ({ children }) => {
   const menuItems = useRef<ItemType[]>([]);
-
-  return (
-    <CurrentUserSettingsMenuContext.Provider value={{ menuItems }}>{children}</CurrentUserSettingsMenuContext.Provider>
-  );
+  const value = useMemo(() => ({ menuItems }), [menuItems]);
+  return <CurrentUserSettingsMenuContext.Provider value={value}>{children}</CurrentUserSettingsMenuContext.Provider>;
 };

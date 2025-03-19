@@ -1,6 +1,6 @@
 # Reporting security issues
 
-If you believe you have found a security issue in the CKEditor software, please contact us immediately.
+If you believe you have found a security issue in the NocoBase software, please contact us immediately.
 
 When reporting a suspected security problem, please bear this in mind:
 

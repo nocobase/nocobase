@@ -15,7 +15,7 @@ import languageCodes from '../locale';
 import { useSystemSettings } from '../system-settings';
 
 export function SwitchLanguage() {
-  const { data } = useSystemSettings();
+  const { data } = useSystemSettings() || {};
   const api = useAPIClient();
   return (
     data?.data?.enabledLanguages.length > 1 && (

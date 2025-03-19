@@ -5,6 +5,7 @@ import { FormItem } from '@formily/antd-v5';
 import { observer, useField } from '@formily/react';
 import { Markdown, SchemaComponent, SchemaComponentProvider } from '@nocobase/client';
 import { Button } from 'antd';
+import { createMemoryHistory } from 'history';
 import React from 'react';
 import { Router } from 'react-router-dom';
 
@@ -47,8 +48,9 @@ const Editable = observer(
 );
 
 export default () => {
+  const history = createMemoryHistory();
   return (
-    <Router location={window.location} navigator={null}>
+    <Router location={history.location} navigator={history}>
       <SchemaComponentProvider components={{ Editable, Markdown, FormItem }}>
         <SchemaComponent schema={schema} />
       </SchemaComponentProvider>

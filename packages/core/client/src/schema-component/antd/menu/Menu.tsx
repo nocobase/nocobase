@@ -11,7 +11,6 @@ import { css } from '@emotion/css';
 import {
   FieldContext,
   observer,
-  RecursionField,
   SchemaContext,
   SchemaExpressionScopeContext,
   useField,
@@ -22,25 +21,26 @@ import { error } from '@nocobase/utils/client';
 import { Menu as AntdMenu, MenuProps } from 'antd';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
-import { createDesignable, DndContext, SortableItem, useDesignable, useDesigner } from '../..';
-import { Icon, useAPIClient, useParseURLAndParams, useSchemaInitializerRender } from '../../../';
+import { createDesignable, DndContext, SchemaComponentContext, SortableItem, useDesignable, useDesigner } from '../..';
+import {
+  Icon,
+  NocoBaseRecursionField,
+  useAllAccessDesktopRoutes,
+  useAPIClient,
+  useParseURLAndParams,
+  useSchemaInitializerRender,
+} from '../../../';
 import { useCollectMenuItems, useMenuItem } from '../../../hooks/useMenuItem';
 import { useProps } from '../../hooks/useProps';
 import { useMenuTranslation } from './locale';
 import { MenuDesigner } from './Menu.Designer';
 import { findKeysByUid, findMenuItem } from './util';
 
-import React, {
-  createContext,
-  // @ts-ignore
-  startTransition,
-  useCallback,
-  useContext,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from 'react';
+import { useUpdate } from 'ahooks';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { useRefreshComponent, useRefreshFieldSchema } from '../../../formily/NocoBaseRecursionField';
+import { NocoBaseDesktopRoute } from '../../../route-switch/antd/admin-layout/convertRoutesToSchema';
+import { withTooltipComponent } from '../../../hoc/withTooltipComponent';
 
 const subMenuDesignerCss = css`
   position: relative;
@@ -97,7 +97,7 @@ const subMenuDesignerCss = css`
 const designerCss = css`
   position: relative;
   display: flex;
-  justify-content: center;
+  // justify-content: center;
   align-items: center;
   margin-left: -20px;
   margin-right: -20px;
@@ -204,45 +204,158 @@ type ComposedMenu = React.FC<any> & {
   Designer?: React.FC<any>;
 };
 
-const HeaderMenu = ({
-  others,
-  schema,
-  mode,
-  onSelect,
-  setLoading,
-  setDefaultSelectedKeys,
-  defaultSelectedKeys,
-  defaultOpenKeys,
-  selectedKeys,
-  designable,
-  render,
-  children,
-}) => {
-  const { Component, getMenuItems } = useMenuItem();
-  const items = useMemo(() => {
-    const designerBtn = {
-      key: 'x-designer-button',
-      style: { padding: '0 8px', order: 9999 },
-      label: render({
-        'data-testid': 'schema-initializer-Menu-header',
-        style: { background: 'none' },
-      }),
-      notdelete: true,
-      disabled: true,
-    };
-    const result = getMenuItems(() => {
-      return children;
-    });
-    if (designable) {
-      result.push(designerBtn);
-    }
+const MenuItemTitle: React.FC<{
+  schema: any;
+  style?: React.CSSProperties;
+}> = ({ schema, style }) => {
+  const { t } = useMenuTranslation();
+  return <span style={style}>{t(schema.title)}</span>;
+};
 
-    return result;
-  }, [children, designable]);
+const MenuItemTitleWithTooltip = withTooltipComponent(MenuItemTitle);
 
-  const handleSelect = useCallback(
-    (info: { item; key; keyPath; domEvent }) => {
-      startTransition(() => {
+export const ParentRouteContext = createContext<NocoBaseDesktopRoute>(null);
+ParentRouteContext.displayName = 'ParentRouteContext';
+
+export const useParentRoute = () => {
+  return useContext(ParentRouteContext);
+};
+
+/**
+ * Note: The routes here are different from React Router routes - these refer specifically to menu routing/navigation items
+ * @param collectionName
+ * @returns
+ */
+export const useNocoBaseRoutes = (collectionName = 'desktopRoutes') => {
+  const api = useAPIClient();
+  const resource = useMemo(() => api.resource(collectionName), [api, collectionName]);
+  const { refresh: refreshRoutes } = useAllAccessDesktopRoutes();
+
+  const createRoute = useCallback(
+    async (values: NocoBaseDesktopRoute, refreshAfterCreate = true) => {
+      const res = await resource.create({
+        values,
+      });
+      refreshAfterCreate && refreshRoutes();
+      return res;
+    },
+    [resource, refreshRoutes],
+  );
+
+  const updateRoute = useCallback(
+    async (filterByTk: any, values: NocoBaseDesktopRoute, refreshAfterUpdate = true) => {
+      const res = await resource.update({
+        filterByTk,
+        values,
+      });
+      refreshAfterUpdate && refreshRoutes();
+      return res;
+    },
+    [resource, refreshRoutes],
+  );
+
+  const deleteRoute = useCallback(
+    async (filterByTk: any, refreshAfterDelete = true) => {
+      const res = await resource.destroy({
+        filterByTk,
+      });
+      refreshAfterDelete && refreshRoutes();
+      return res;
+    },
+    [refreshRoutes, resource],
+  );
+
+  const moveRoute = useCallback(
+    async ({
+      sourceId,
+      targetId,
+      targetScope,
+      sortField,
+      sticky,
+      method,
+      refreshAfterMove = true,
+    }: {
+      sourceId: string | number;
+      targetId?: string | number;
+      targetScope?: any;
+      sortField?: string;
+      sticky?: boolean;
+      /**
+       * Insertion type - specifies whether to insert before or after the target element
+       */
+      method?: 'insertAfter' | 'prepend';
+      refreshAfterMove?: boolean;
+    }) => {
+      const res = await resource.move({ sourceId, targetId, targetScope, sortField, sticky, method });
+      refreshAfterMove && refreshRoutes();
+      return res;
+    },
+    [refreshRoutes, resource],
+  );
+
+  return { createRoute, updateRoute, deleteRoute, moveRoute };
+};
+
+const HeaderMenu = React.memo<{
+  schema: any;
+  mode: any;
+  onSelect: any;
+  setDefaultSelectedKeys: any;
+  defaultSelectedKeys: any;
+  defaultOpenKeys: any;
+  selectedKeys: any;
+  designable: boolean;
+  render: any;
+  children: any;
+  disabled: boolean;
+  onBlur: any;
+  onChange: any;
+  onFocus: any;
+  theme: any;
+}>(
+  ({
+    schema,
+    mode,
+    onSelect,
+    setDefaultSelectedKeys,
+    defaultSelectedKeys,
+    defaultOpenKeys,
+    selectedKeys,
+    designable,
+    render,
+    children,
+    disabled,
+    onBlur,
+    onChange,
+    onFocus,
+    theme,
+  }) => {
+    const { Component, getMenuItems } = useMenuItem();
+    const items = useMemo(() => {
+      const designerBtn = {
+        key: 'x-designer-button',
+        style: { padding: '0 8px', order: 9999 },
+        label: render({
+          'data-testid': 'schema-initializer-Menu-header',
+          style: { background: 'none' },
+        }),
+        notdelete: true,
+        disabled: true,
+      };
+      const result = getMenuItems(() => {
+        return children;
+      });
+
+      if (designable) {
+        result.push(designerBtn);
+      }
+
+      return result;
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [children, designable]);
+
+    const handleSelect = useCallback(
+      (info: { item; key; keyPath; domEvent }) => {
         const s = schema.properties?.[info.key];
 
         if (!s) {
@@ -257,13 +370,8 @@ const HeaderMenu = ({
             if (!menuItemSchema) {
               return onSelect?.(info);
             }
-            // TODO
-            setLoading(true);
             const keys = findKeysByUid(schema, menuItemSchema['x-uid']);
             setDefaultSelectedKeys(keys);
-            setTimeout(() => {
-              setLoading(false);
-            }, 100);
             onSelect?.({
               key: menuItemSchema.name,
               item: {
@@ -276,112 +384,129 @@ const HeaderMenu = ({
         } else {
           onSelect?.(info);
         }
-      });
-    },
-    [schema, mode, onSelect, setLoading, setDefaultSelectedKeys],
-  );
-  return (
-    <>
-      <Component />
-      <AntdMenu
-        {...others}
-        className={headerMenuClass}
-        onClick={handleSelect}
-        mode={mode === 'mix' ? 'horizontal' : mode}
-        defaultOpenKeys={defaultOpenKeys}
-        defaultSelectedKeys={defaultSelectedKeys}
-        selectedKeys={selectedKeys}
-        items={items}
-      />
-    </>
-  );
-};
-
-const SideMenu = ({
-  loading,
-  mode,
-  sideMenuSchema,
-  sideMenuRef,
-  openKeys,
-  setOpenKeys,
-  selectedKeys,
-  onSelect,
-  render,
-  t,
-  api,
-  refresh,
-  designable,
-}) => {
-  const { Component, getMenuItems } = useMenuItem();
-
-  // 使用 ref 用来防止闭包问题
-  const sideMenuSchemaRef = useRef(sideMenuSchema);
-  sideMenuSchemaRef.current = sideMenuSchema;
-
-  const handleSelect = useCallback(
-    (info) => {
-      startTransition(() => {
-        onSelect?.(info);
-      });
-    },
-    [onSelect],
-  );
-
-  const items = useMemo(() => {
-    const result = getMenuItems(() => {
-      return <RecursionField key={uid()} schema={sideMenuSchema} onlyRenderProperties />;
-    });
-
-    if (designable) {
-      result.push({
-        key: 'x-designer-button',
-        disabled: true,
-        label: render({
-          'data-testid': 'schema-initializer-Menu-side',
-          insert: (s) => {
-            const dn = createDesignable({
-              t,
-              api,
-              refresh,
-              current: sideMenuSchemaRef.current,
-            });
-            dn.loadAPIClientEvents();
-            dn.insertAdjacent('beforeEnd', s);
-          },
-        }),
-        order: 1,
-        notdelete: true,
-      });
-    }
-
-    return result;
-  }, [getMenuItems, designable, sideMenuSchema, render, t, api, refresh]);
-
-  if (loading) {
-    return null;
-  }
-
-  return (
-    mode === 'mix' &&
-    sideMenuSchema?.['x-component'] === 'Menu.SubMenu' &&
-    sideMenuRef?.current?.firstChild &&
-    createPortal(
-      <MenuModeContext.Provider value={'inline'}>
+      },
+      [schema, mode, onSelect, setDefaultSelectedKeys],
+    );
+    return (
+      <>
         <Component />
         <AntdMenu
-          mode={'inline'}
-          openKeys={openKeys}
-          selectedKeys={selectedKeys}
+          disabled={disabled}
+          onBlur={onBlur}
+          onChange={onChange}
+          onFocus={onFocus}
+          theme={theme}
+          className={headerMenuClass}
           onClick={handleSelect}
-          onOpenChange={setOpenKeys}
-          className={sideMenuClass}
-          items={items as MenuProps['items']}
+          mode={mode === 'mix' ? 'horizontal' : mode}
+          defaultOpenKeys={defaultOpenKeys}
+          defaultSelectedKeys={defaultSelectedKeys}
+          selectedKeys={selectedKeys}
+          items={items}
         />
-      </MenuModeContext.Provider>,
-      sideMenuRef.current.firstChild,
-    )
-  );
+      </>
+    );
+  },
+);
+
+type SideMenuProps = Omit<MenuProps, 'mode'> & {
+  mode: 'mix' | MenuProps['mode'];
+  [key: string]: any;
 };
+
+const SideMenu = React.memo<SideMenuProps>(
+  ({
+    mode,
+    sideMenuSchema,
+    sideMenuRef,
+    openKeys,
+    setOpenKeys,
+    selectedKeys,
+    onSelect,
+    render,
+    t,
+    api,
+    designable,
+  }) => {
+    const { Component, getMenuItems } = useMenuItem();
+
+    const update = useUpdate();
+    const refreshFieldSchema = useRefreshFieldSchema();
+    const refreshComponent = useRefreshComponent();
+    const refresh = useCallback(
+      (options?: { refreshParentSchema?: boolean }) => {
+        console.log('refresh');
+        // refresh current component
+        update();
+        // refresh fieldSchema context value
+        refreshFieldSchema?.(options);
+        // refresh component context value
+        refreshComponent?.();
+      },
+      [update, refreshFieldSchema, refreshComponent],
+    );
+
+    const handleSelect = useCallback(
+      (info) => {
+        onSelect?.(info);
+      },
+      [onSelect],
+    );
+
+    const items = useMemo(() => {
+      const result = getMenuItems(() => {
+        return <NocoBaseRecursionField key={uid()} schema={sideMenuSchema} onlyRenderProperties />;
+      });
+
+      if (designable) {
+        result.push({
+          key: 'x-designer-button',
+          disabled: true,
+          label: render({
+            'data-testid': 'schema-initializer-Menu-side',
+            insert: (s) => {
+              const dn = createDesignable({
+                t,
+                api,
+                refresh: refresh,
+                current: sideMenuSchema,
+              });
+              dn.loadAPIClientEvents();
+              dn.insertAdjacent('beforeEnd', s);
+            },
+          }),
+          order: 1,
+          notdelete: true,
+        });
+      }
+
+      return result;
+    }, [api, designable, getMenuItems, refresh, render, sideMenuSchema, t]);
+
+    return (
+      mode === 'mix' &&
+      sideMenuSchema?.['x-component'] === 'Menu.SubMenu' &&
+      sideMenuRef?.current?.firstChild &&
+      createPortal(
+        <MenuModeContext.Provider value={'inline'}>
+          <Component />
+          <AntdMenu
+            mode={'inline'}
+            openKeys={openKeys}
+            selectedKeys={selectedKeys}
+            onClick={handleSelect}
+            onOpenChange={setOpenKeys}
+            className={sideMenuClass}
+            items={items as MenuProps['items']}
+          />
+        </MenuModeContext.Provider>,
+        sideMenuRef.current.firstChild,
+      )
+    );
+  },
+);
+
+SideMenu.displayName = 'SideMenu';
 
 const MenuModeContext = createContext(null);
 MenuModeContext.displayName = 'MenuModeContext';
@@ -399,103 +524,136 @@ const useSideMenuRef = () => {
 const MenuItemDesignerContext = createContext(null);
 MenuItemDesignerContext.displayName = 'MenuItemDesignerContext';
 
-export const Menu: ComposedMenu = observer(
-  (props) => {
-    const {
-      onSelect,
-      mode,
-      selectedUid,
-      defaultSelectedUid,
-      sideMenuRefScopeKey,
-      defaultSelectedKeys: dSelectedKeys,
-      defaultOpenKeys: dOpenKeys,
-      children,
-      ...others
-    } = useProps(props);
-    const { t } = useTranslation();
-    const Designer = useDesigner();
-    const schema = useFieldSchema();
-    const { refresh } = useDesignable();
-    const api = useAPIClient();
-    const { render } = useSchemaInitializerRender(schema['x-initializer'], schema['x-initializer-props']);
-    const sideMenuRef = useSideMenuRef();
-    const [selectedKeys, setSelectedKeys] = useState<string[]>();
-    const [defaultSelectedKeys, setDefaultSelectedKeys] = useState(() => {
-      if (dSelectedKeys) {
-        return dSelectedKeys;
-      }
-      if (defaultSelectedUid) {
-        return findKeysByUid(schema, defaultSelectedUid);
-      }
-      return [];
-    });
-    const [loading, setLoading] = useState(false);
-    const [defaultOpenKeys, setDefaultOpenKeys] = useState(() => {
-      if (['inline', 'mix'].includes(mode)) {
-        return dOpenKeys || defaultSelectedKeys;
-      }
-      return dOpenKeys;
-    });
+export const useMenuDragEnd = () => {
+  const { moveRoute } = useNocoBaseRoutes();
 
-    const sideMenuSchema = useMemo(() => {
-      let key;
+  const onDragEnd = useCallback(
+    (event) => {
+      const { active, over } = event;
+      const activeSchema = active?.data?.current?.schema;
+      const overSchema = over?.data?.current?.schema;
 
-      if (selectedUid) {
-        const keys = findKeysByUid(schema, selectedUid);
-        key = keys?.[0] || null;
-      } else {
-        key = defaultSelectedKeys?.[0] || null;
-      }
-
-      if (mode === 'mix' && key) {
-        const s = schema.properties?.[key];
-        // fix T-934
-        if (s?.['x-component'] === 'Menu.SubMenu') {
-          return s;
-        }
-      }
-      return null;
-    }, [defaultSelectedKeys, mode, schema, selectedUid]);
-
-    useEffect(() => {
-      if (!selectedUid) {
-        setSelectedKeys(undefined);
+      if (!activeSchema || !overSchema) {
         return;
       }
 
+      moveRoute({
+        sourceId: activeSchema.__route__.id,
+        targetId: overSchema.__route__.id,
+        sortField: 'sort',
+      });
+    },
+    [moveRoute],
+  );
+
+  return { onDragEnd };
+};
+
+export const Menu: ComposedMenu = React.memo((props) => {
+  const {
+    onSelect,
+    mode,
+    selectedUid,
+    defaultSelectedUid,
+    defaultSelectedKeys: dSelectedKeys,
+    defaultOpenKeys: dOpenKeys,
+    children,
+    disabled,
+    onBlur,
+    onChange,
+    onFocus,
+    theme,
+  } = useProps(props);
+
+  const { t } = useTranslation();
+  const Designer = useDesigner();
+  const schema = useFieldSchema();
+  const api = useAPIClient();
+  const { render } = useSchemaInitializerRender(schema['x-initializer'], schema['x-initializer-props']);
+  const sideMenuRef = useSideMenuRef();
+  const [selectedKeys, setSelectedKeys] = useState<string[]>();
+  const [defaultSelectedKeys, setDefaultSelectedKeys] = useState(() => {
+    if (dSelectedKeys) {
+      return dSelectedKeys;
+    }
+    if (defaultSelectedUid) {
+      return findKeysByUid(schema, defaultSelectedUid);
+    }
+    return [];
+  });
+  const [defaultOpenKeys, setDefaultOpenKeys] = useState(() => {
+    if (['inline', 'mix'].includes(mode)) {
+      return dOpenKeys || defaultSelectedKeys;
+    }
+    return dOpenKeys;
+  });
+
+  const sideMenuSchema: any = useMemo(() => {
+    let key;
+
+    if (selectedUid) {
       const keys = findKeysByUid(schema, selectedUid);
-      setSelectedKeys(keys);
-      if (['inline', 'mix'].includes(mode)) {
-        setDefaultOpenKeys(dOpenKeys || keys);
+      key = keys?.[0] || null;
+    } else {
+      key = defaultSelectedKeys?.[0] || null;
+    }
+
+    if (mode === 'mix' && key) {
+      const s = schema.properties?.[key];
+      // fix T-934
+      if (s?.['x-component'] === 'Menu.SubMenu') {
+        return s;
       }
-    }, [selectedUid]);
-    useEffect(() => {
-      if (['inline', 'mix'].includes(mode)) {
-        setDefaultOpenKeys(defaultSelectedKeys);
-      }
-    }, [defaultSelectedKeys]);
-    const { designable } = useDesignable();
-    return (
-      <DndContext>
-        <MenuItemDesignerContext.Provider value={Designer}>
-          <MenuModeContext.Provider value={mode}>
-            <HeaderMenu
-              others={others}
-              schema={schema}
-              mode={mode}
-              onSelect={onSelect}
-              setLoading={setLoading}
-              setDefaultSelectedKeys={setDefaultSelectedKeys}
-              defaultSelectedKeys={defaultSelectedKeys}
-              defaultOpenKeys={defaultOpenKeys}
-              selectedKeys={selectedKeys}
-              designable={designable}
-              render={render}
-            >
-              {children}
-            </HeaderMenu>
+    }
+    return null;
+  }, [defaultSelectedKeys, mode, schema, selectedUid]);
+
+  useEffect(() => {
+    if (!selectedUid) {
+      setSelectedKeys(undefined);
+      return;
+    }
+
+    const keys = findKeysByUid(schema, selectedUid);
+    setSelectedKeys(keys);
+    if (['inline', 'mix'].includes(mode)) {
+      setDefaultOpenKeys(dOpenKeys || keys);
+    }
+  }, [selectedUid]);
+
+  useEffect(() => {
+    if (['inline', 'mix'].includes(mode)) {
+      setDefaultOpenKeys(defaultSelectedKeys);
+    }
+  }, [defaultSelectedKeys]);
+
+  const ctx = useContext(SchemaComponentContext);
+  const { onDragEnd } = useMenuDragEnd();
+
+  return (
+    <DndContext onDragEnd={onDragEnd}>
+      <MenuItemDesignerContext.Provider value={Designer}>
+        <MenuModeContext.Provider value={mode}>
+          <HeaderMenu
+            disabled={disabled}
+            onBlur={onBlur}
+            onChange={onChange}
+            onFocus={onFocus}
+            theme={theme}
+            schema={schema}
+            mode={mode}
+            onSelect={onSelect}
+            setDefaultSelectedKeys={setDefaultSelectedKeys}
+            defaultSelectedKeys={defaultSelectedKeys}
+            defaultOpenKeys={defaultOpenKeys}
+            selectedKeys={selectedKeys}
+            designable={ctx.designable}
+            render={render}
+          >
+            {children}
+          </HeaderMenu>
+          <ParentRouteContext.Provider value={sideMenuSchema?.__route__}>
             <SideMenu
-              loading={loading}
               mode={mode}
               sideMenuSchema={sideMenuSchema}
               sideMenuRef={sideMenuRef}
@@ -506,29 +664,29 @@ export const Menu: ComposedMenu = observer(
               render={render}
               t={t}
               api={api}
-              refresh={refresh}
-              designable={designable}
+              designable={ctx.designable}
             />
-          </MenuModeContext.Provider>
-        </MenuItemDesignerContext.Provider>
-      </DndContext>
-    );
-  },
-  { displayName: 'Menu' },
-);
+          </ParentRouteContext.Provider>
+        </MenuModeContext.Provider>
+      </MenuItemDesignerContext.Provider>
+    </DndContext>
+  );
+});
+
+Menu.displayName = 'Menu';
 
 const menuItemTitleStyle = {
   overflow: 'hidden',
   textOverflow: 'ellipsis',
   display: 'inline-block',
-  width: '100%',
+  // width: '100%',
   verticalAlign: 'middle',
+  // marginInlineEnd: '4px',
 };
 
 Menu.Item = observer(
   (props) => {
     const { t } = useMenuTranslation();
-    const { designable } = useDesignable();
     const { pushMenuItem } = useCollectMenuItems();
     const { icon, children, hidden, ...others } = props;
     const schema = useFieldSchema();
@@ -537,7 +695,7 @@ Menu.Item = observer(
     const item = useMemo(() => {
       return {
         ...others,
-        hidden: designable ? false : hidden,
+        hidden: hidden,
         className: menuItemClass,
         key: schema.name,
         eventKey: schema.name,
@@ -552,7 +710,11 @@ Menu.Item = observer(
                 removeParentsIfNoChildren={false}
               >
                 <Icon type={icon} />
-                <span style={menuItemTitleStyle}>{t(schema.title)}</span>
+                <MenuItemTitleWithTooltip
+                  schema={schema}
+                  style={menuItemTitleStyle}
+                  tooltip={schema?.['x-component-props']?.tooltip}
+                />
                 <Designer />
               </SortableItem>
             </FieldContext.Provider>
@@ -574,6 +736,7 @@ Menu.Item = observer(
 
 const MenuURLButton = ({ href, params, icon }) => {
   const field = useField();
+  const schema = useFieldSchema();
   const { t } = useMenuTranslation();
   const Designer = useContext(MenuItemDesignerContext);
   const { parseURLAndParams } = useParseURLAndParams();
@@ -603,17 +766,11 @@ const MenuURLButton = ({ href, params, icon }) => {
       aria-label={t(field.title)}
     >
       <Icon type={icon} />
-      <span
-        style={{
-          overflow: 'hidden',
-          textOverflow: 'ellipsis',
-          display: 'inline-block',
-          width: '100%',
-          verticalAlign: 'middle',
-        }}
-      >
-        {t(field.title)}
-      </span>
+      <MenuItemTitleWithTooltip
+        schema={schema}
+        style={menuItemTitleStyle}
+        tooltip={schema?.['x-component-props']?.tooltip}
+      />
       <Designer />
     </SortableItem>
   );
@@ -626,7 +783,6 @@ Menu.URL = observer(
     const { icon, children, hidden, ...others } = props;
     const schema = useFieldSchema();
     const field = useField();
-    const Designer = useContext(MenuItemDesignerContext);
 
     if (!pushMenuItem) {
       error('Menu.URL must be wrapped by GetMenuItemsContext.Provider');
@@ -669,6 +825,7 @@ Menu.SubMenu = observer(
     const field = useField();
     const mode = useContext(MenuModeContext);
     const Designer = useContext(MenuItemDesignerContext);
+
     const submenu = useMemo(() => {
       return {
         ...others,
@@ -685,14 +842,18 @@ Menu.SubMenu = observer(
                 aria-label={t(field.title)}
               >
                 <Icon type={icon} />
-                {t(field.title)}
+                <MenuItemTitleWithTooltip
+                  schema={schema}
+                  style={{ marginInlineStart: 0 }}
+                  tooltip={schema?.['x-component-props']?.tooltip}
+                />
                 <Designer />
               </SortableItem>
             </FieldContext.Provider>
           </SchemaContext.Provider>
         ),
         children: getMenuItems(() => {
-          return <RecursionField schema={schema} onlyRenderProperties />;
+          return <NocoBaseRecursionField schema={schema} onlyRenderProperties />;
         }),
       };
     }, [field.title, icon, schema, children, Designer]);

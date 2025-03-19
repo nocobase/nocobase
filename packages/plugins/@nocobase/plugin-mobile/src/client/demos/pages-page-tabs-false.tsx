@@ -8,10 +8,8 @@ import {
   MobileTitleProvider,
 } from '@nocobase/plugin-mobile/client';
 import React from 'react';
-import { useLocation } from 'react-router-dom';
 
 const Demo = () => {
-  const { pathname } = useLocation();
   return (
     <div style={{ position: 'relative' }}>
       <MobileTitleProvider title="Title">

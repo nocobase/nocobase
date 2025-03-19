@@ -76,4 +76,5 @@ export class CreatedByFieldInterface extends CollectionFieldInterface {
       schema['x-component-props']['ellipsis'] = true;
     }
   }
+  description = '{{t("Store the creation user of each record")}}';
 }

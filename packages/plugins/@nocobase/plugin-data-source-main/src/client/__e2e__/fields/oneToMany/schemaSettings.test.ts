@@ -125,7 +125,8 @@ test.describe('form item & filter form', () => {
       page,
       showMenu: async () => {
         await page.getByLabel('block-item-CollectionField-general-filter-form-general.oneToMany-oneToMany').hover();
-        await page.getByRole('button', { name: 'designer-schema-settings-CollectionField' }).hover();
+        // hover 方法有时会失效，所以这里使用 click 方法。原因未知
+        await page.getByRole('button', { name: 'designer-schema-settings-CollectionField' }).click();
       },
       supportedOptions: [
         'Edit field title',

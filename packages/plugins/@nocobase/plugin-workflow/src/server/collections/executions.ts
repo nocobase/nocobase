@@ -13,6 +13,7 @@ export default {
   dumpRules: {
     group: 'log',
   },
+  migrationRules: ['schema-only'],
   name: 'executions',
   shared: true,
   fields: [
@@ -41,6 +42,14 @@ export default {
     {
       type: 'integer',
       name: 'status',
+    },
+    {
+      type: 'json',
+      name: 'stack',
+    },
+    {
+      type: 'json',
+      name: 'output',
     },
   ],
 } as CollectionOptions;

@@ -16,6 +16,7 @@ import {
   CollectionProvider_deprecated,
   FormBlockContext,
   RecordProvider,
+  RerenderDataBlockProvider,
   parseCollectionName,
   useAPIClient,
   useAssociationNames,
@@ -86,20 +87,22 @@ export function DetailsBlockProvider({ collection, dataPath, children }) {
   return (
     <CollectionProvider_deprecated dataSource={dataSourceName} collection={resolvedCollection}>
       <RecordProvider record={values} parent={null}>
-        <BlockRequestContext_deprecated.Provider value={{ block: 'form', field, service, resource, __parent }}>
-          <FormBlockContext.Provider
-            value={{
-              params,
-              form,
-              field,
-              service,
-              updateAssociationValues,
-              formBlockRef,
-            }}
-          >
-            {children}
-          </FormBlockContext.Provider>
-        </BlockRequestContext_deprecated.Provider>
+        <RerenderDataBlockProvider>
+          <BlockRequestContext_deprecated.Provider value={{ block: 'form', field, service, resource, __parent }}>
+            <FormBlockContext.Provider
+              value={{
+                params,
+                form,
+                field,
+                service,
+                updateAssociationValues,
+                formBlockRef,
+              }}
+            >
+              {children}
+            </FormBlockContext.Provider>
+          </BlockRequestContext_deprecated.Provider>
+        </RerenderDataBlockProvider>
       </RecordProvider>
     </CollectionProvider_deprecated>
   );

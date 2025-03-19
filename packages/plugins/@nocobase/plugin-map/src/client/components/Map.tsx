@@ -17,17 +17,17 @@ import ReadPretty from './ReadPretty';
 
 type MapProps = AMapComponentProps;
 
+const className = css`
+  height: 100%;
+  border: 1px solid transparent;
+  .ant-formily-item-error & {
+    border: 1px solid #ff4d4f;
+  }
+`;
+
 const InternalMap = connect((props: MapProps) => {
   return (
-    <div
-      className={css`
-        height: 100%;
-        border: 1px solid transparent;
-        .ant-formily-item-error & {
-          border: 1px solid #ff4d4f;
-        }
-      `}
-    >
+    <div className={className}>
       <MapComponent {...props} />
     </div>
   );

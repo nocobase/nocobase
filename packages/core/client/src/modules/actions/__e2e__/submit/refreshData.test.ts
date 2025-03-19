@@ -9,9 +9,9 @@
 
 import { expect, test } from '@nocobase/test/e2e';
 import {
+  createFormSubmit,
   shouldRefreshDataWhenSubpageIsClosedByPageMenu,
   submitInReferenceTemplateBlock,
-  createFormSubmit,
 } from './templates';
 
 test.describe('Submit: should refresh data after submit', () => {
@@ -109,7 +109,7 @@ test.describe('Submit: should refresh data after submit', () => {
     await page.getByLabel(pageUid).click();
 
     // 5. The data in the block on the page should be up-to-date
-    await page.getByRole('button', { name: '1234567890', exact: true }).click();
+    await expect(page.getByRole('button', { name: '1234567890', exact: true })).toBeVisible();
   });
 });
 

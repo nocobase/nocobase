@@ -13,18 +13,17 @@ import {
   SchemaSettingsDivider,
   SchemaSettingsItem,
   SchemaSettingsRemove,
-  SchemaSettingsSelectItem,
   gridRowColWrap,
   useCollection_deprecated,
   useDataSource,
   useDesignable,
 } from '@nocobase/client';
 import React, { useContext } from 'react';
+import { ChartDataContext } from '../block/ChartDataProvider';
 import { ChartConfigContext } from '../configure';
 import { useChartsTranslation } from '../locale';
 import { createRendererSchema } from '../utils';
 import { ChartRendererContext } from './ChartRendererProvider';
-import { ChartDataContext } from '../block/ChartDataProvider';
 
 export function ChartRendererDesigner() {
   const { t } = useChartsTranslation();
@@ -33,7 +32,7 @@ export function ChartRendererDesigner() {
   const { service } = useContext(ChartRendererContext);
   const field = useField();
   const schema = useFieldSchema();
-  const { insertAdjacent } = useDesignable();
+  const { insertAdjacent, refresh } = useDesignable();
   const dataSource = useDataSource();
   const { name, title } = useCollection_deprecated();
   return (
@@ -51,7 +50,10 @@ export function ChartRendererDesigner() {
       <SchemaSettingsItem
         title="Duplicate"
         key="duplicate"
-        onClick={() => insertAdjacent('afterEnd', gridRowColWrap(createRendererSchema(schema?.['x-decorator-props'])))}
+        onClick={() => {
+          insertAdjacent('afterEnd', gridRowColWrap(createRendererSchema(schema?.['x-decorator-props'])));
+          refresh({ refreshParentSchema: true });
+        }}
       >
         {t('Duplicate')}
       </SchemaSettingsItem>

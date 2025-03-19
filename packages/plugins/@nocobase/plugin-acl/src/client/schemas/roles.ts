@@ -10,7 +10,7 @@
 import { uid } from '@formily/shared';
 import { useActionContext, useCollectionRecord, useRecord, useRequest } from '@nocobase/client';
 import { useEffect } from 'react';
-import pick from 'lodash/pick';
+import { pick } from 'lodash';
 import { ISchema } from '@formily/react';
 
 export const roleEditSchema = {

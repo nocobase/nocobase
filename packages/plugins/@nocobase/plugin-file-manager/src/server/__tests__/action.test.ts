@@ -9,6 +9,7 @@
 
 import { promises as fs } from 'fs';
 import path from 'path';
+import querystring from 'querystring';
 import { getApp } from '.';
 import { FILE_FIELD_NAME, FILE_SIZE_LIMIT_DEFAULT, STORAGE_TYPE_LOCAL } from '../../constants';
 import PluginFileManagerServer from '../server';
@@ -35,6 +36,7 @@ describe('action', () => {
     local1 = await StorageRepo.create({
       values: {
         name: 'local1',
+        title: 'local1',
         type: STORAGE_TYPE_LOCAL,
         baseUrl: DEFAULT_LOCAL_BASE_URL,
         rules: {
@@ -163,10 +165,10 @@ describe('action', () => {
 
         // 关联的存储引擎是否正确
         const storage = await attachment.getStorage();
-        expect(storage).toMatchObject({
-          type: 'local',
+        expect(storage.get()).toMatchObject({
+          type: STORAGE_TYPE_LOCAL,
           options: { documentRoot: LOCAL_STORAGE_DEST },
-          rules: {},
+          rules: { size: FILE_SIZE_LIMIT_DEFAULT },
           path: '',
           baseUrl: DEFAULT_LOCAL_BASE_URL,
           default: true,
@@ -175,7 +177,7 @@ describe('action', () => {
         const { documentRoot = 'storage/uploads' } = storage.options || {};
         const destPath = path.resolve(
           path.isAbsolute(documentRoot) ? documentRoot : path.join(process.cwd(), documentRoot),
-          storage.path,
+          storage.path || '',
         );
         const file = await fs.readFile(`${destPath}/${attachment.filename}`);
         // 文件是否保存到指定路径
@@ -185,6 +187,34 @@ describe('action', () => {
         const url = attachment.url.replace(`http://localhost:${APP_PORT}`, '');
         const content = await agent.get(url);
         expect(content.text.includes('Hello world!')).toBeTruthy();
+      });
+
+      it('filename with special character (URL)', async () => {
+        const rawText = '[]中文报告! 1%~50.4% (123) {$#}';
+        const rawFilename = `${rawText}.txt`;
+        const { body } = await agent.resource('attachments').create({
+          [FILE_FIELD_NAME]: path.resolve(__dirname, `./files/${rawFilename}`),
+        });
+
+        const matcher = {
+          title: rawText,
+          extname: '.txt',
+          path: '',
+          mimetype: 'text/plain',
+          meta: {},
+          storageId: 1,
+        };
+
+        // 文件上传和解析是否正常
+        expect(body.data).toMatchObject(matcher);
+        // 文件的 url 是否正常生成
+        const encodedFilename = querystring.escape(rawText);
+        expect(body.data.url).toContain(`${DEFAULT_LOCAL_BASE_URL}${body.data.path}/${encodedFilename}`);
+
+        // 文件的 url 是否正常访问
+        // TODO: mock-server is not start within gateway, static url can not be accessed
+        // const res2 = await agent.get(`${DEFAULT_LOCAL_BASE_URL}${body.data.path}/${encodedFilename}`);
+        // expect(res2.text).toBe(rawText);
       });
     });
 
@@ -244,8 +274,53 @@ describe('action', () => {
       });
 
       it('upload to storage which is not default', async () => {
-        const BASE_URL = `http://localhost:${APP_PORT}/storage/uploads/another`;
+        const BASE_URL = `/storage/uploads/another`;
         const urlPath = 'test/path';
+
+        // 动态添加 storage
+        const storage = await StorageRepo.create({
+          values: {
+            name: 'local_private',
+            type: STORAGE_TYPE_LOCAL,
+            rules: {
+              mimetype: ['text/*'],
+            },
+            path: urlPath,
+            baseUrl: BASE_URL,
+            options: {
+              documentRoot: 'storage/uploads/another',
+            },
+          },
+        });
+
+        db.collection({
+          name: 'customers',
+          fields: [
+            {
+              name: 'file',
+              type: 'belongsTo',
+              target: 'attachments',
+              storage: storage.name,
+            },
+          ],
+        });
+
+        const { body } = await agent.resource('attachments').create({
+          attachmentField: 'customers.file',
+          file: path.resolve(__dirname, './files/text.txt'),
+        });
+
+        // 文件的 url 是否正常生成
+        expect(body.data.url).toBe(`${BASE_URL}/${urlPath}/${body.data.filename}`);
+        const url = body.data.url.replace(`http://localhost:${APP_PORT}`, '');
+        const content = await agent.get(url);
+        expect(content.text.includes('Hello world!')).toBe(true);
+      });
+
+      it('path longer than 255', async () => {
+        const BASE_URL = `/storage/uploads/another`;
+        const urlPath =
+          'extreme-test/max-long-path-1234567890-1234567890-1234567890-1234567890-1234567890-1234567890-1234567890-1234567890-1234567890-1234567890-1234567890-1234567890-1234567890-1234567890-1234567890-1234567890-1234567890-1234567890-1234567890-1234567890-1234567890-1234567890';
 
         // 动态添加 storage
         const storage = await StorageRepo.create({
@@ -355,7 +430,7 @@ describe('action', () => {
       const { documentRoot = 'storage/uploads' } = storage.options || {};
       const destPath = path.resolve(
         path.isAbsolute(documentRoot) ? documentRoot : path.join(process.cwd(), documentRoot),
-        storage.path,
+        storage.path || '',
       );
       const file = await fs.stat(path.join(destPath, attachment.filename));
       expect(file).toBeTruthy();
@@ -381,7 +456,7 @@ describe('action', () => {
       const { documentRoot = path.join('storage', 'uploads') } = storage.options || {};
       const destPath = path.resolve(
         path.isAbsolute(documentRoot) ? documentRoot : path.join(process.cwd(), documentRoot),
-        storage.path,
+        storage.path || '',
       );
       const file = await fs.stat(path.join(destPath, attachment.filename));
       expect(file).toBeTruthy();
@@ -413,7 +488,7 @@ describe('action', () => {
       const { documentRoot = path.join('storage', 'uploads') } = storage.options || {};
       const destPath = path.resolve(
         path.isAbsolute(documentRoot) ? documentRoot : path.join(process.cwd(), documentRoot),
-        storage.path,
+        storage.path || '',
       );
       const file1 = await fs.stat(path.join(destPath, f1.data.filename));
       expect(file1).toBeTruthy();
@@ -442,7 +517,7 @@ describe('action', () => {
       const { documentRoot = path.join('storage', 'uploads') } = storage.options || {};
       const destPath = path.resolve(
         path.isAbsolute(documentRoot) ? documentRoot : path.join(process.cwd(), documentRoot),
-        storage.path,
+        storage.path || '',
       );
       const filePath = path.join(destPath, attachment.filename);
       const file = await fs.stat(filePath);
@@ -478,34 +553,40 @@ describe('action', () => {
   });
 
   describe('storage actions', () => {
-    describe('getRules', () => {
-      it('get rules without key as default storage', async () => {
-        const { body, status } = await agent.resource('storages').getRules();
+    describe('getBasicInfo', () => {
+      it('get default storage', async () => {
+        const { body, status } = await agent.resource('storages').getBasicInfo();
         expect(status).toBe(200);
-        expect(body.data).toEqual({ size: FILE_SIZE_LIMIT_DEFAULT });
+        expect(body.data).toMatchObject({ id: 1 });
       });
 
-      it('get rules by storage id as default rules', async () => {
-        const { body, status } = await agent.resource('storages').getRules({ filterByTk: 1 });
-        expect(status).toBe(200);
-        expect(body.data).toEqual({ size: FILE_SIZE_LIMIT_DEFAULT });
-      });
-
-      it('get rules by unexisted id as 404', async () => {
-        const { body, status } = await agent.resource('storages').getRules({ filterByTk: -1 });
+      it('get storage by unexisted id as 404', async () => {
+        const { body, status } = await agent.resource('storages').getBasicInfo({ filterByTk: -1 });
         expect(status).toBe(404);
       });
 
-      it('get rules by storage id', async () => {
-        const { body, status } = await agent.resource('storages').getRules({ filterByTk: local1.id });
+      it('get by storage local id', async () => {
+        const { body, status } = await agent.resource('storages').getBasicInfo({ filterByTk: local1.id });
         expect(status).toBe(200);
-        expect(body.data).toMatchObject({ size: 1024 });
+        expect(body.data).toMatchObject({
+          id: local1.id,
+          title: local1.title,
+          name: local1.name,
+          type: local1.type,
+          rules: local1.rules,
+        });
       });
 
-      it('get rules by storage name', async () => {
-        const { body, status } = await agent.resource('storages').getRules({ filterByTk: local1.name });
+      it('get storage by name', async () => {
+        const { body, status } = await agent.resource('storages').getBasicInfo({ filterByTk: local1.name });
         expect(status).toBe(200);
-        expect(body.data).toMatchObject({ size: 1024 });
+        expect(body.data).toMatchObject({
+          id: local1.id,
+          title: local1.title,
+          name: local1.name,
+          type: local1.type,
+          rules: local1.rules,
+        });
       });
     });
   });

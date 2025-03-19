@@ -9,7 +9,8 @@
 
 import { screen, userEvent, waitFor } from '@nocobase/test/client';
 
-import { useSchemaInitializer, useCurrentSchema, SchemaInitializerSwitch } from '@nocobase/client';
+import { SchemaInitializerSwitch, useCurrentSchema, useSchemaInitializer } from '@nocobase/client';
+import { useUpdate } from 'ahooks';
 import React from 'react';
 import { createAndHover } from './fixtures/createAppAndHover';
 
@@ -50,6 +51,7 @@ describe('SchemaInitializerSwitch', () => {
       const { exists, remove } = useCurrentSchema(schema[actionKey], actionKey);
 
       const { insert } = useSchemaInitializer();
+      const refresh = useUpdate();
       return (
         <SchemaInitializerSwitch
           checked={exists}
@@ -57,10 +59,13 @@ describe('SchemaInitializerSwitch', () => {
           onClick={() => {
             // 如果已插入，则移除
             if (exists) {
-              return remove();
+              remove();
+              refresh();
+              return;
             }
             // 新插入子节点
             insert(schema);
+            refresh();
           }}
         />
       );
@@ -91,16 +96,20 @@ describe('SchemaInitializerSwitch', () => {
           const { exists, remove } = useCurrentSchema(schema[actionKey], actionKey);
 
           const { insert } = useSchemaInitializer();
+          const refresh = useUpdate();
           return {
             checked: exists,
             title: 'A Title',
             onClick() {
               // 如果已插入，则移除
               if (exists) {
-                return remove();
+                remove();
+                refresh();
+                return;
               }
               // 新插入子节点
               insert(schema);
+              refresh();
             },
           };
         },

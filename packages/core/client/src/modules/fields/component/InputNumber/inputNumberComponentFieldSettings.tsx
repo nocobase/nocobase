@@ -7,11 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { useField, useFieldSchema, useForm } from '@formily/react';
+import { useFieldSchema } from '@formily/react';
 import { SchemaSettings } from '../../../../application/schema-settings/SchemaSettings';
 import { SchemaSettingsNumberFormat } from '../../../../schema-settings/SchemaSettingsNumberFormat';
 import { useColumnSchema } from '../../../../schema-component/antd/table-v2/Table.Column.Decorator';
 import { useIsFieldReadPretty } from '../../../../schema-component/antd/form-item/FormItem.Settings';
+import { enableLinkSettingsItem, openModeSettingsItem } from '../Input/inputComponentSettings';
+
 export const inputNumberComponentFieldSettings = new SchemaSettings({
   name: 'fieldSettings:component:InputNumber',
   items: [
@@ -31,5 +33,7 @@ export const inputNumberComponentFieldSettings = new SchemaSettings({
         return isFieldReadPretty;
       },
     },
+    enableLinkSettingsItem,
+    openModeSettingsItem,
   ],
 });

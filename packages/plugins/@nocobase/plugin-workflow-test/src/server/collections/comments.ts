@@ -11,6 +11,8 @@ import { CollectionOptions } from '@nocobase/database';
 
 export default {
   name: 'comments',
+  createdBy: true,
+  updatedBy: true,
   fields: [
     {
       type: 'belongsTo',
@@ -28,6 +30,14 @@ export default {
     {
       type: 'hasMany',
       name: 'replies',
+    },
+    {
+      type: 'date',
+      name: 'createdAt',
+    },
+    {
+      type: 'date',
+      name: 'updatedAt',
     },
   ],
 } as CollectionOptions;

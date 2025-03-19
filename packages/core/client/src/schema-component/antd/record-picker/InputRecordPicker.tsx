@@ -8,7 +8,7 @@
  */
 
 import { ArrayField } from '@formily/core';
-import { RecursionField, useField, useFieldSchema } from '@formily/react';
+import { useField, useFieldSchema } from '@formily/react';
 import { toArr } from '@formily/shared';
 import { Select } from 'antd';
 import { differenceBy, unionBy } from 'lodash';
@@ -18,6 +18,7 @@ import {
   useTableSelectorProps as useTsp,
 } from '../../../block-provider/TableSelectorProvider';
 import { CollectionProvider_deprecated, useCollection_deprecated } from '../../../collection-manager';
+import { NocoBaseRecursionField } from '../../../formily/NocoBaseRecursionField';
 import { FormProvider, SchemaComponentOptions } from '../../core';
 import { useCompile } from '../../hooks';
 import { ActionContextProvider, useActionContext } from '../action';
@@ -277,7 +278,7 @@ const Drawer: React.FunctionComponent<{
           <FormProvider>
             <TableSelectorParamsProvider params={{ filter: getFilter() }}>
               <SchemaComponentOptions scope={{ useTableSelectorProps, usePickActionProps }}>
-                <RecursionField
+                <NocoBaseRecursionField
                   schema={fieldSchema}
                   onlyRenderProperties
                   filterProperties={(s) => {

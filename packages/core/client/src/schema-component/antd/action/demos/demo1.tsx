@@ -9,6 +9,7 @@ import {
   SchemaComponentProvider,
   useActionContext,
 } from '@nocobase/client';
+import { createMemoryHistory } from 'history';
 import React from 'react';
 import { Router } from 'react-router-dom';
 
@@ -66,8 +67,9 @@ const schema: ISchema = {
 };
 
 export default observer(() => {
+  const history = createMemoryHistory();
   return (
-    <Router location={window.location} navigator={null}>
+    <Router location={history.location} navigator={history}>
       <CustomRouterContextProvider>
         <SchemaComponentProvider scope={{ useCloseAction }} components={{ Form, Action, Input, FormItem }}>
           <SchemaComponent schema={schema} />

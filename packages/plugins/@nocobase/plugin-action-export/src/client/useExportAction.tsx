@@ -15,7 +15,7 @@ import {
   useCollectionManager_deprecated,
   useCompile,
   useCurrentAppInfo,
-  useDataBlockRequest,
+  useTableBlockContext,
   useDataBlockResource,
 } from '@nocobase/client';
 import lodash from 'lodash';
@@ -25,8 +25,9 @@ import { useExportTranslation } from './locale';
 import { useMemo } from 'react';
 
 export const useExportAction = () => {
-  const { service, resource, props } = useBlockRequestContext();
+  const { service, props } = useBlockRequestContext();
   const newResource = useDataBlockResource();
+  const { params } = useTableBlockContext();
 
   const appInfo = useCurrentAppInfo();
   const defaultFilter = props?.params.filter;
@@ -54,11 +55,14 @@ export const useExportAction = () => {
         content: t('Export warning', { limit: exportLimit }),
         okText: t('Start export'),
       });
+
       if (!confirmed) {
         return;
       }
+
       field.data.loading = true;
       const { exportSettings } = lodash.cloneDeep(actionSchema?.['x-action-settings'] ?? {});
+
       exportSettings.forEach((es) => {
         const { uiSchema, interface: fieldInterface } =
           getCollectionJoinField(`${name}.${es.dataIndex.join('.')}`) ?? {};
@@ -78,7 +82,7 @@ export const useExportAction = () => {
           title: compile(title),
           appends: service.params[0]?.appends?.join(),
           filter: mergeFilter([...Object.values(filters), defaultFilter]),
-          sort: service.params[0]?.sort,
+          sort: params?.sort,
           values: {
             columns: compile(exportSettings),
           },

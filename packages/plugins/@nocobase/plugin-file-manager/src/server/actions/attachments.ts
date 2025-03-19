@@ -12,14 +12,9 @@ import { koaMulter as multer } from '@nocobase/utils';
 import Path from 'path';
 
 import Plugin from '..';
-import {
-  FILE_FIELD_NAME,
-  FILE_SIZE_LIMIT_DEFAULT,
-  FILE_SIZE_LIMIT_MAX,
-  FILE_SIZE_LIMIT_MIN,
-  LIMIT_FILES,
-} from '../../constants';
+import { FILE_FIELD_NAME, FILE_SIZE_LIMIT_DEFAULT, FILE_SIZE_LIMIT_MIN, LIMIT_FILES } from '../../constants';
 import * as Rules from '../rules';
+import { StorageClassType } from '../storages';
 
 // TODO(optimize): 需要优化错误处理，计算失败后需要抛出对应错误，以便程序处理
 function getFileFilter(storage) {
@@ -33,36 +28,41 @@ function getFileFilter(storage) {
   };
 }
 
-export function getFileData(ctx: Context) {
+export async function getFileData(ctx: Context) {
   const { [FILE_FIELD_NAME]: file, storage } = ctx;
   if (!file) {
     return ctx.throw(400, 'file validation failed');
   }
 
-  const storageConfig = ctx.app.pm.get(Plugin).storageTypes.get(storage.type);
-  const { [storageConfig.filenameKey || 'filename']: name } = file;
+  const plugin = ctx.app.pm.get(Plugin);
+  const StorageType = plugin.storageTypes.get(storage.type) as StorageClassType;
+  const { [StorageType.filenameKey || 'filename']: name } = file;
   // make compatible filename across cloud service (with path)
   const filename = Path.basename(name);
   const extname = Path.extname(filename);
   const path = (storage.path || '').replace(/^\/|\/$/g, '');
-  const baseUrl = storage.baseUrl.replace(/\/+$/, '');
-  const pathname = [path, filename].filter(Boolean).join('/');
 
-  return {
+  let storageInstance = plugin.storagesCache.get(storage.id);
+
+  if (!storageInstance) {
+    await plugin.loadStorages();
+    storageInstance = plugin.storagesCache.get(storage.id);
+  }
+
+  const data = {
     title: Buffer.from(file.originalname, 'latin1').toString('utf8').replace(extname, ''),
     filename,
     extname,
     // TODO(feature): 暂时两者相同，后面 storage.path 模版化以后，这里只是 file 实际的 path
     path,
     size: file.size,
-    // 直接缓存起来
-    url: `${baseUrl}/${pathname}`,
     mimetype: file.mimetype,
-    // @ts-ignore
     meta: ctx.request.body,
     storageId: storage.id,
-    ...(storageConfig.getFileData ? storageConfig.getFileData(file) : {}),
+    ...(storageInstance.getFileData ? storageInstance.getFileData(file) : {}),
   };
+
+  return data;
 }
 
 async function multipart(ctx: Context, next: Next) {
@@ -72,11 +72,12 @@ async function multipart(ctx: Context, next: Next) {
     return ctx.throw(500);
   }
 
-  const storageConfig = ctx.app.pm.get(Plugin).storageTypes.get(storage.type);
-  if (!storageConfig) {
+  const StorageType = ctx.app.pm.get(Plugin).storageTypes.get(storage.type) as StorageClassType;
+  if (!StorageType) {
     ctx.logger.error(`[file-manager] storage type "${storage.type}" is not defined`);
     return ctx.throw(500);
   }
+  const storageInstance = new StorageType(storage);
 
   const multerOptions = {
     fileFilter: getFileFilter(storage),
@@ -84,12 +85,9 @@ async function multipart(ctx: Context, next: Next) {
       // 每次只允许提交一个文件
       files: LIMIT_FILES,
     },
-    storage: storageConfig.make(storage),
+    storage: storageInstance.make(),
   };
-  multerOptions.limits['fileSize'] = Math.min(
-    Math.max(FILE_SIZE_LIMIT_MIN, storage.rules.size ?? FILE_SIZE_LIMIT_DEFAULT),
-    FILE_SIZE_LIMIT_MAX,
-  );
+  multerOptions.limits['fileSize'] = Math.max(FILE_SIZE_LIMIT_MIN, storage.rules.size ?? FILE_SIZE_LIMIT_DEFAULT);
 
   const upload = multer(multerOptions).single(FILE_FIELD_NAME);
   try {
@@ -103,7 +101,7 @@ async function multipart(ctx: Context, next: Next) {
     return ctx.throw(500, err);
   }
 
-  const values = getFileData(ctx);
+  const values = await getFileData(ctx);
 
   ctx.action.mergeParams({
     values,
@@ -125,73 +123,12 @@ export async function createMiddleware(ctx: Context, next: Next) {
   const StorageRepo = ctx.db.getRepository('storages');
   const storage = await StorageRepo.findOne({ filter: storageName ? { name: storageName } : { default: true } });
 
-  ctx.storage = storage;
+  const plugin = ctx.app.pm.get(Plugin);
+  ctx.storage = plugin.parseStorage(storage);
 
-  await multipart(ctx, next);
-}
-
-export async function destroyMiddleware(ctx: Context, next: Next) {
-  const { resourceName, actionName, sourceId } = ctx.action;
-  const collection = ctx.db.getCollection(resourceName);
-
-  if (collection?.options?.template !== 'file' || actionName !== 'destroy') {
-    return next();
+  if (ctx?.request.is('multipart/*')) {
+    await multipart(ctx, next);
+  } else {
+    await next();
   }
-
-  const repository = ctx.db.getRepository(resourceName, sourceId);
-
-  const { filterByTk, filter } = ctx.action.params;
-
-  const records = await repository.find({
-    filterByTk,
-    filter,
-    context: ctx,
-  });
-
-  const storageIds = new Set(records.map((record) => record.storageId));
-  const storageGroupedRecords = records.reduce((result, record) => {
-    const storageId = record.storageId;
-    if (!result[storageId]) {
-      result[storageId] = [];
-    }
-    result[storageId].push(record);
-    return result;
-  }, {});
-
-  const storages = await ctx.db.getRepository('storages').find({
-    filter: {
-      id: [...storageIds] as any[],
-      paranoid: {
-        $ne: true,
-      },
-    },
-  });
-
-  let count = 0;
-  const undeleted = [];
-  await storages.reduce(
-    (promise, storage) =>
-      promise.then(async () => {
-        const storageConfig = ctx.app.pm.get(Plugin).storageTypes.get(storage.type);
-        const result = await storageConfig.delete(storage, storageGroupedRecords[storage.id]);
-        count += result[0];
-        undeleted.push(...result[1]);
-      }),
-    Promise.resolve(),
-  );
-
-  if (undeleted.length) {
-    const ids = undeleted.map((record) => record.id);
-    ctx.action.mergeParams({
-      filter: {
-        id: {
-          $notIn: ids,
-        },
-      },
-    });
-
-    ctx.logger.error('[file-manager] some of attachment files are not successfully deleted: ', { ids });
-  }
-
-  await next();
 }

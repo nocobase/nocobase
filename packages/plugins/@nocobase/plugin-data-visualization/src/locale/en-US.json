@@ -23,6 +23,7 @@
   "Filter": "Filter",
   "Sort": "Sort",
   "Limit": "Limit",
+  "Offset": "Offset",
   "Enable cache": "Enable cache",
   "TTL (second)": "TTL (second)",
   "Field": "Field",

@@ -55,7 +55,7 @@ const collection = {
       uiSchema: {
         title: `{{t("Access base URL", { ns: "${NAMESPACE}" })}}`,
         type: 'string',
-        'x-component': 'Input',
+        'x-component': 'TextAreaWithGlobalScope',
         required: true,
       } as ISchema,
     },
@@ -66,7 +66,7 @@ const collection = {
       uiSchema: {
         title: `{{t("Path", { ns: "${NAMESPACE}" })}}`,
         type: 'string',
-        'x-component': 'Input',
+        'x-component': 'TextAreaWithGlobalScope',
       } as ISchema,
     },
     {

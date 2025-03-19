@@ -18,7 +18,7 @@ test.describe('where map block can be added', () => {
 
     // 1. 在页面中添加地图区块，因为没有配置 Access key 等信息，所以会显示错误提示
     await page.getByLabel('schema-initializer-Grid-page:').hover();
-    await page.getByRole('menuitem', { name: 'table Map right' }).hover();
+    await page.getByRole('menuitem', { name: 'Map right' }).hover();
     await page.getByRole('menuitem', { name: 'map', exact: true }).click();
     await page.getByRole('button', { name: 'OK', exact: true }).click();
     await expect(

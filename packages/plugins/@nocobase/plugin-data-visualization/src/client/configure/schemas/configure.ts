@@ -424,15 +424,33 @@ export const querySchema: ISchema = {
                         order: {
                           type: 'string',
                           'x-decorator': 'FormItem',
-                          'x-component': 'Radio.Group',
+                          'x-component': 'Select',
                           'x-component-props': {
                             defaultValue: 'ASC',
-                            optionType: 'button',
-                            style: {
-                              width: '128px',
-                            },
                           },
                           enum: ['ASC', 'DESC'],
+                        },
+                        nulls: {
+                          type: 'string',
+                          'x-decorator': 'FormItem',
+                          'x-component': 'Select',
+                          'x-component-props': {
+                            defaultValue: 'default',
+                          },
+                          enum: [
+                            {
+                              label: lang('Default'),
+                              value: 'default',
+                            },
+                            {
+                              label: lang('NULLS first'),
+                              value: 'first',
+                            },
+                            {
+                              label: lang('NULLS last'),
+                              value: 'last',
+                            },
+                          ],
                         },
                       },
                       {
@@ -456,6 +474,19 @@ export const querySchema: ISchema = {
               'x-component-props': {
                 defaultValue: 2000,
                 min: 1,
+                style: {
+                  width: '100px',
+                },
+              },
+            },
+            offset: {
+              title: '{{t("Offset")}}',
+              type: 'number',
+              'x-decorator': 'FormItem',
+              'x-component': 'InputNumber',
+              'x-component-props': {
+                defaultValue: 0,
+                min: 0,
                 style: {
                   width: '100px',
                 },

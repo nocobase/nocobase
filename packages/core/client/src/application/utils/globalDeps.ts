@@ -25,13 +25,14 @@ import * as formilyReactiveReact from '@formily/reactive-react';
 import * as formilyShared from '@formily/shared';
 import * as formilyValidator from '@formily/validator';
 import * as nocobaseEvaluators from '@nocobase/evaluators/client';
-import * as nocobaseClientUtils from '@nocobase/utils/client';
 import * as nocobaseSDK from '@nocobase/sdk';
+import * as nocobaseClientUtils from '@nocobase/utils/client';
 import { dayjs } from '@nocobase/utils/client';
 import * as ahooks from 'ahooks';
 import * as antd from 'antd';
 import * as antdStyle from 'antd-style';
 import axios from 'axios';
+import * as FileSaver from 'file-saver';
 import * as i18next from 'i18next';
 import lodash from 'lodash';
 import React from 'react';
@@ -100,5 +101,5 @@ export function defineGlobalDeps(requirejs: RequireJS) {
   requirejs.define('lodash', () => lodash);
   requirejs.define('ahooks', () => ahooks);
   requirejs.define('@emotion/css', () => emotionCss);
-  requirejs.define('dayjs', () => dayjs);
+  requirejs.define('file-saver', () => FileSaver);
 }

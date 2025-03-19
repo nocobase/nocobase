@@ -290,10 +290,7 @@ export const tasksTableBlockSchema: ISchema = {
                       properties: {
                         sync: {
                           type: 'void',
-                          title: '{{ t("Retry") }}',
-                          'x-component': 'Action.Link',
-                          'x-use-component-props': 'useRetryActionProps',
-                          'x-display': '{{ $record.status === "failed" ? "visible" : "hidden" }}',
+                          'x-component': 'Retry',
                         },
                       },
                     },
@@ -433,7 +430,6 @@ export const userDataSyncSourcesSchema: ISchema = {
                   title: '{{ t("Sync") }}',
                   'x-component': 'Action.Link',
                   'x-use-component-props': 'useSyncActionProps',
-                  'x-display': '{{ $record.enabled ? "visible" : "hidden" }}',
                 },
                 tasks: {
                   type: 'void',
@@ -442,7 +438,6 @@ export const userDataSyncSourcesSchema: ISchema = {
                   'x-component-props': {
                     type: 'primary',
                   },
-                  'x-display': '{{ $record.enabled ? "visible" : "hidden" }}',
                 },
                 edit: {
                   type: 'void',

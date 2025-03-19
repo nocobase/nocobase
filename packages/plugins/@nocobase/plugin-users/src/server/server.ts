@@ -8,12 +8,18 @@
  */
 
 import { Collection, Model, Op } from '@nocobase/database';
-import { Plugin } from '@nocobase/server';
+import { InstallOptions, Plugin } from '@nocobase/server';
 import { parse } from '@nocobase/utils';
 import * as actions from './actions/users';
 import { UserModel } from './models/UserModel';
 import PluginUserDataSyncServer from '@nocobase/plugin-user-data-sync';
 import { UserDataSyncResource } from './user-data-sync-resource';
+import {
+  adminProfileCreateFormSchema,
+  adminProfileEditFormSchema,
+  userProfileEditFormSchema,
+} from './profile/edit-form-schema';
+import { UiSchemaRepository } from '@nocobase/plugin-ui-schema-storage';
 
 export default class PluginUsersServer extends Plugin {
   async beforeLoad() {
@@ -150,6 +156,39 @@ export default class PluginUsersServer extends Plugin {
       name: `pm.${this.name}`,
       actions: ['users:*'],
     });
+
+    const getMetaDataForUpdateProfileAction = async (ctx: any) => {
+      return {
+        request: {
+          body: {
+            ...ctx.request.body,
+            password: '******',
+          },
+        },
+      };
+    };
+
+    const getSourceAndTargetForUpdateProfileAction = async (ctx: any) => {
+      const { id } = ctx.state.currentUser;
+      let idStr = '';
+      if (typeof id === 'number') {
+        idStr = id.toString();
+      } else if (typeof id === 'string') {
+        idStr = id;
+      }
+      return {
+        targetCollection: 'users',
+        targetRecordUK: idStr,
+      };
+    };
+
+    this.app.auditManager.registerActions([
+      {
+        name: 'users:updateProfile',
+        getMetaData: getMetaDataForUpdateProfileAction,
+        getSourceAndTarget: getSourceAndTargetForUpdateProfileAction,
+      },
+    ]);
   }
 
   async load() {
@@ -165,6 +204,15 @@ export default class PluginUsersServer extends Plugin {
         // Delete cache when the members of a role changed
         await Promise.all(values.map((userId: number) => ctx.app.emitAsync('cache:del:roles', { userId })));
       }
+    });
+
+    this.app.resourceManager.use(async (ctx, next) => {
+      const { resourceName, actionName } = ctx.action;
+      if (resourceName === 'users' && actionName === 'updateProfile') {
+        // for triggering workflows
+        ctx.action.actionName = 'update';
+      }
+      await next();
     });
 
     const userDataSyncPlugin = this.app.pm.get('user-data-sync') as PluginUserDataSyncServer;
@@ -198,7 +246,7 @@ export default class PluginUsersServer extends Plugin {
     };
   }
 
-  async install(options) {
+  async initUserCollection(options: InstallOptions) {
     const { rootNickname, rootPassword, rootEmail, rootUsername } = this.getInstallingData(options);
     const User = this.db.getCollection('users');
 
@@ -220,5 +268,20 @@ export default class PluginUsersServer extends Plugin {
     if (repo) {
       await repo.db2cm('users');
     }
+  }
+
+  async initProfileSchema() {
+    const uiSchemas = this.db.getRepository<UiSchemaRepository>('uiSchemas');
+    if (!uiSchemas) {
+      return;
+    }
+    await uiSchemas.insert(adminProfileCreateFormSchema);
+    await uiSchemas.insert(adminProfileEditFormSchema);
+    await uiSchemas.insert(userProfileEditFormSchema);
+  }
+
+  async install(options: InstallOptions) {
+    await this.initUserCollection(options);
+    await this.initProfileSchema();
   }
 }

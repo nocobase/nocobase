@@ -11,7 +11,7 @@ import {
   SchemaSettingsModalItem,
   createDesignable,
   useAPIClient,
-  useSchemaComponentContext,
+  useRefreshFieldSchema,
   useSchemaSettings,
   useSchemaSettingsRender,
 } from '@nocobase/client';
@@ -82,16 +82,16 @@ const Demo = () => {
   const fieldSchema = useFieldSchema();
   const field = useField();
   const api = useAPIClient();
-  const { refresh } = useSchemaComponentContext();
+  const refreshFieldSchema = useRefreshFieldSchema();
   const dn = useMemo(
     () =>
       createDesignable({
         current: fieldSchema.parent,
         model: field.parent,
         api,
-        refresh,
+        refresh: () => refreshFieldSchema({ refreshParentSchema: true }),
       }),
-    [],
+    [api, field.parent, fieldSchema.parent, refreshFieldSchema],
   );
   const { render, exists } = useSchemaSettingsRender(fieldSchema['x-settings'], {
     fieldSchema: dn.current,

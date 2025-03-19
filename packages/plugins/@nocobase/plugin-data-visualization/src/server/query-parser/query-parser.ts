@@ -84,14 +84,21 @@ export class QueryParser {
     orders.forEach((item: OrderProps) => {
       const alias = sequelize.getQueryInterface().quoteIdentifier(item.alias);
       const name = hasAgg ? sequelize.literal(alias) : sequelize.col(item.field as string);
-      order.push([name, item.order || 'ASC']);
+      let sort = item.order || 'ASC';
+      if (item.nulls === 'first') {
+        sort += ' NULLS FIRST';
+      }
+      if (item.nulls === 'last') {
+        sort += ' NULLS LAST';
+      }
+      order.push([name, sort]);
     });
     return order;
   }
 
   parse() {
     return async (ctx: Context, next: Next) => {
-      const { measures, dimensions, orders, include, where, limit } = ctx.action.params.values;
+      const { measures, dimensions, orders, include, where, limit, offset } = ctx.action.params.values;
       const { attributes: measureAttributes, fieldMap: measureFieldMap, hasAgg } = this.parseMeasures(ctx, measures);
       const {
         attributes: dimensionAttributes,
@@ -100,18 +107,22 @@ export class QueryParser {
       } = this.parseDimensions(ctx, dimensions, hasAgg, ctx.get?.('x-timezone'));
       const order = this.parseOrders(ctx, orders, hasAgg);
 
+      const queryParams = {
+        where,
+        attributes: [...measureAttributes, ...dimensionAttributes],
+        include,
+        group,
+        order,
+        subQuery: false,
+        raw: true,
+      };
+      if (!hasAgg || dimensions.length) {
+        queryParams['limit'] = limit || 2000;
+        queryParams['offset'] = offset || 0;
+      }
       ctx.action.params.values = {
         ...ctx.action.params.values,
-        queryParams: {
-          where,
-          attributes: [...measureAttributes, ...dimensionAttributes],
-          include,
-          group,
-          order,
-          limit: limit || 2000,
-          subQuery: false,
-          raw: true,
-        },
+        queryParams,
         fieldMap: { ...measureFieldMap, ...dimensionFieldMap },
       };
       await next();

@@ -7,23 +7,29 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React from 'react';
+import {
+  ExtendCollectionsProvider,
+  SchemaComponent,
+  SchemaComponentContext,
+  useSchemaComponentContext,
+} from '@nocobase/client';
 import { Card } from 'antd';
-import { messageLogsManagerSchema } from '../schemas';
-import { SchemaComponent, SchemaComponentContext, useSchemaComponentContext } from '@nocobase/client';
-import { ExtendCollectionsProvider } from '@nocobase/client';
-import { useNotificationTranslation } from '../../../locale';
-import messageLogCollection from '../../../../collections/messageLog';
+import React, { useMemo } from 'react';
 import channelCollection from '../../../../collections/channel';
+import messageLogCollection from '../../../../collections/messageLog';
+import { useNotificationTranslation } from '../../../locale';
 import { useEditFormProps, useNotificationTypes } from '../../channel/hooks';
+import { messageLogsManagerSchema } from '../schemas';
 
 export const LogManager = () => {
   const { t } = useNotificationTranslation();
   const scCtx = useSchemaComponentContext();
   const notificationTypes = useNotificationTypes();
+  const schemaComponentContext = useMemo(() => ({ ...scCtx, designable: false }), [scCtx]);
+
   return (
     <ExtendCollectionsProvider collections={[messageLogCollection, channelCollection]}>
-      <SchemaComponentContext.Provider value={{ ...scCtx, designable: false }}>
+      <SchemaComponentContext.Provider value={schemaComponentContext}>
         <Card bordered={false}>
           <SchemaComponent
             schema={messageLogsManagerSchema}

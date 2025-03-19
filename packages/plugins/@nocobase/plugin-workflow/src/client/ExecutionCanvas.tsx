@@ -7,33 +7,36 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { Breadcrumb, Button, Dropdown, message, Modal, Result, Space, Spin, Tag, Tooltip } from 'antd';
 import React, { useCallback, useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Breadcrumb, Button, Dropdown, message, Modal, Result, Space, Spin, Tag, Tooltip } from 'antd';
 
 import {
   ActionContextProvider,
   cx,
+  Input,
   SchemaComponent,
   useAPIClient,
   useApp,
   useCompile,
   useDocumentTitle,
   usePlugin,
+  useRequest,
   useResourceActionContext,
 } from '@nocobase/client';
 import { str2moment } from '@nocobase/utils/client';
 
+import { DownOutlined, ExclamationCircleFilled, StopOutlined } from '@ant-design/icons';
+import { useTranslation } from 'react-i18next';
 import WorkflowPlugin from '.';
 import { CanvasContent } from './CanvasContent';
+import { StatusButton } from './components/StatusButton';
 import { ExecutionStatusOptionsMap, JobStatusOptions } from './constants';
 import { FlowContext, useFlowContext } from './FlowContext';
 import { lang, NAMESPACE } from './locale';
 import useStyles from './style';
-import { linkNodes, getWorkflowDetailPath, getWorkflowExecutionsPath } from './utils';
-import { DownOutlined, ExclamationCircleFilled, StopOutlined } from '@ant-design/icons';
-import { StatusButton } from './components/StatusButton';
-import { useTranslation } from 'react-i18next';
+import { getWorkflowDetailPath, getWorkflowExecutionsPath, linkNodes } from './utils';
+import { get } from 'lodash';
 
 function attachJobs(nodes, jobs: any[] = []): void {
   const nodesMap = new Map();
@@ -56,6 +59,23 @@ function attachJobs(nodes, jobs: any[] = []): void {
   });
 }
 
+function JobResult(props) {
+  const { viewJob } = useFlowContext();
+  const { data, loading } = useRequest({
+    resource: 'jobs',
+    action: 'get',
+    params: {
+      filterByTk: viewJob.id,
+    },
+  });
+
+  if (loading) {
+    return <Spin />;
+  }
+  const result = get(data, 'data.result');
+  return <Input.JSON {...props} value={result} disabled />;
+}
+
 function JobModal() {
   const { instructions } = usePlugin(WorkflowPlugin);
   const compile = useCompile();
@@ -68,6 +88,9 @@ function JobModal() {
   return (
     <ActionContextProvider value={{ visible: Boolean(job), setVisible: setViewJob }}>
       <SchemaComponent
+        components={{
+          JobResult,
+        }}
         schema={{
           type: 'void',
           properties: {
@@ -108,11 +131,14 @@ function JobModal() {
                   type: 'object',
                   title: `{{t("Node result", { ns: "${NAMESPACE}" })}}`,
                   'x-decorator': 'FormItem',
-                  'x-component': 'Input.JSON',
+                  'x-component': 'JobResult',
                   'x-component-props': {
                     className: styles.nodeJobResultClass,
+                    autoSize: {
+                      minRows: 4,
+                      maxRows: 32,
+                    },
                   },
-                  'x-read-pretty': true,
                 },
               },
             },
@@ -152,7 +178,7 @@ function ExecutionsDropdown(props) {
         setExecutionsBefore(data.data);
       })
       .catch(() => {});
-  }, [execution]);
+  }, [execution.id]);
 
   useEffect(() => {
     if (!execution) {
@@ -175,7 +201,7 @@ function ExecutionsDropdown(props) {
         setExecutionsAfter(data.data.reverse());
       })
       .catch(() => {});
-  }, [execution]);
+  }, [execution.id]);
 
   const onClick = useCallback(
     ({ key }) => {
@@ -183,7 +209,7 @@ function ExecutionsDropdown(props) {
         navigate(getWorkflowExecutionsPath(key));
       }
     },
-    [execution],
+    [execution.id],
   );
 
   return execution ? (
@@ -229,7 +255,7 @@ export function ExecutionCanvas() {
   useEffect(() => {
     const { workflow } = data?.data ?? {};
     setTitle?.(`${workflow?.title ? `${workflow.title} - ` : ''}${lang('Execution history')}`);
-  }, [data?.data]);
+  }, [data?.data, setTitle]);
 
   const onCancel = useCallback(() => {
     Modal.confirm({

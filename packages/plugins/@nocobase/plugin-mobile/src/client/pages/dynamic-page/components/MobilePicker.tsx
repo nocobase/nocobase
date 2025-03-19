@@ -15,12 +15,11 @@ import { useTranslation } from 'react-i18next';
 
 const MobilePicker = connect(
   (props) => {
-    const { value, onChange, options = [], mode } = props;
+    const { value, onChange, disabled, options = [], mode } = props;
     const { t } = useTranslation();
     const [visible, setVisible] = useState(false);
     const [selected, setSelected] = useState(value || []);
     const [searchText, setSearchText] = useState(null);
-
     const filteredItems = useMemo(() => {
       if (searchText) {
         return options.filter((item) => item.label.toLowerCase().includes(searchText.toLowerCase()));
@@ -38,9 +37,9 @@ const MobilePicker = connect(
 
     return (
       <>
-        <div contentEditable="false" onClick={() => setVisible(true)}>
+        <div contentEditable="false" onClick={() => !disabled && setVisible(true)}>
           <Select
-            placeholder={t('Select')}
+            disabled={disabled}
             value={value}
             dropdownStyle={{ display: 'none' }}
             multiple={mode === 'multiple'}

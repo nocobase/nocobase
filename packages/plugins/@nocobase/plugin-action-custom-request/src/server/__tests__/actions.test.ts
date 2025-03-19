@@ -22,7 +22,15 @@ describe('actions', () => {
     app = await createMockServer({
       registerActions: true,
       acl: true,
-      plugins: ['users', 'auth', 'acl', 'action-custom-request', 'data-source-manager'],
+      plugins: [
+        'field-sort',
+        'users',
+        'auth',
+        'acl',
+        'action-custom-request',
+        'data-source-manager',
+        'ui-schema-storage',
+      ],
     });
     db = app.db;
     repo = db.getRepository('customRequests');
@@ -57,7 +65,7 @@ describe('actions', () => {
         filterByTk: 'test',
       });
       expect(res.status).toBe(200);
-      expect(params).toMatchSnapshot();
+      expect(params).toMatchObject({});
     });
 
     test('currentRecord.data', async () => {

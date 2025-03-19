@@ -14,7 +14,7 @@ test.describe('save as template', () => {
     // 1. 创建一个区块，然后保存为模板
     await mockPage().goto();
     await page.getByLabel('schema-initializer-Grid-page:').hover();
-    await page.getByRole('menuitem', { name: 'table Table right' }).hover();
+    await page.getByRole('menuitem', { name: 'Table right' }).hover();
     await page.getByRole('menuitem', { name: 'Users' }).click();
     await page.getByLabel('block-item-CardItem-users-').hover();
     await page.getByLabel('designer-schema-settings-CardItem-blockSettings:table-users').hover();

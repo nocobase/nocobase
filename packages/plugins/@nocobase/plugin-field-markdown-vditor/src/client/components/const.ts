@@ -12,5 +12,9 @@ import { PluginFieldMarkdownVditorClient } from '../';
 
 export const useCDN = () => {
   const plugin = usePlugin(PluginFieldMarkdownVditorClient);
+  if (!plugin.dependencyLoaded) {
+    plugin.initVditorDependency();
+    plugin.dependencyLoaded = true;
+  }
   return plugin.getCDN();
 };

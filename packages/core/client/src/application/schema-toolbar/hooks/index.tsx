@@ -9,9 +9,9 @@
 
 import { ISchema } from '@formily/json-schema';
 import React, { useMemo } from 'react';
+import { ErrorBoundary, FallbackProps } from 'react-error-boundary';
 import { ErrorFallback, useComponent, useDesignable } from '../../../schema-component';
 import { SchemaToolbar, SchemaToolbarProps } from '../../../schema-settings/GeneralSchemaDesigner';
-import { ErrorBoundary, FallbackProps } from 'react-error-boundary';
 
 const SchemaToolbarErrorFallback: React.FC<FallbackProps> = (props) => {
   const { designable } = useDesignable();
@@ -46,7 +46,7 @@ export const useSchemaToolbarRender = (fieldSchema: ISchema) => {
         return null;
       }
       return (
-        <ErrorBoundary FallbackComponent={SchemaToolbarErrorFallback} onError={(err) => console.error(err)}>
+        <ErrorBoundary FallbackComponent={SchemaToolbarErrorFallback} onError={console.error}>
           <C {...fieldSchema['x-toolbar-props']} {...props} />
         </ErrorBoundary>
       );

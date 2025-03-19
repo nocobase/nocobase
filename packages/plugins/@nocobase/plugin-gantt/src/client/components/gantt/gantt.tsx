@@ -8,8 +8,9 @@
  */
 
 import { css, cx } from '@emotion/css';
-import { RecursionField, useFieldSchema } from '@formily/react';
+import { useFieldSchema } from '@formily/react';
 import {
+  NocoBaseRecursionField,
   PopupContextProvider,
   RecordProvider,
   useAPIClient,
@@ -520,8 +521,8 @@ export const Gantt: any = withDynamicSchemaProps((props: any) => {
         <RecordProvider record={record} parent={parentRecordData}>
           <GanttRecordViewer />
         </RecordProvider>
-        <RecursionField name={'anctionBar'} schema={fieldSchema.properties.toolBar} />
-        <RecursionField name={'table'} schema={fieldSchema.properties.table} />
+        <NocoBaseRecursionField name={'anctionBar'} schema={fieldSchema.properties.toolBar} />
+        <NocoBaseRecursionField name={'table'} schema={fieldSchema.properties.table} />
         <div className={styles.wrapper} onKeyDown={handleKeyDown} tabIndex={0} ref={wrapperRef}>
           <TaskGantt
             gridProps={gridProps}

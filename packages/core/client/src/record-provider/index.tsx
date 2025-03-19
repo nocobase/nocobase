@@ -25,7 +25,7 @@ export const RecordProvider: React.FC<{
   parent?: any;
   isNew?: boolean;
   collectionName?: string;
-}> = (props) => {
+}> = React.memo((props) => {
   const { record, children, parent, isNew } = props;
   const collection = useCollection();
   const value = useMemo(() => {
@@ -43,7 +43,9 @@ export const RecordProvider: React.FC<{
       </CollectionRecordProvider>
     </RecordContext_deprecated.Provider>
   );
-};
+});
+
+RecordProvider.displayName = 'RecordProvider';
 
 export const RecordSimpleProvider: React.FC<{ value: Record<string, any>; children: React.ReactNode }> = (props) => {
   return <RecordContext_deprecated.Provider {...props} />;

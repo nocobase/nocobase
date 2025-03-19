@@ -23,8 +23,10 @@ import {
   useCollectionManager_deprecated,
   useDesignable,
   useFormBlockContext,
+  usePopupSettings,
+  useApp,
 } from '@nocobase/client';
-import React from 'react';
+import React, { useMemo } from 'react';
 import { useTranslation } from '../../locale';
 import { useCalendarBlockContext } from '../schema-initializer/CalendarBlockProvider';
 
@@ -72,14 +74,17 @@ export const calendarBlockSettings = new SchemaSettings({
         const fieldNames = fieldSchema?.['x-decorator-props']?.['fieldNames'] || {};
         const { service } = useCalendarBlockContext();
         const { getCollectionFieldsOptions } = useCollectionManager_deprecated();
-        const { name, title } = useCollection();
+        const { name } = useCollection();
+        const app = useApp();
+        const plugin = app.pm.get('calendar') as any;
+        const { titleFieldInterfaces } = plugin;
 
         const field = useField();
         const { dn } = useDesignable();
         return {
           title: t('Title field'),
           value: fieldNames.title,
-          options: getCollectionFieldsOptions(name, 'string'),
+          options: getCollectionFieldsOptions(name, null, Object.keys(titleFieldInterfaces)),
           onChange: (title) => {
             const fieldNames = field.decoratorProps.fieldNames || {};
             fieldNames['title'] = title;
@@ -111,13 +116,14 @@ export const calendarBlockSettings = new SchemaSettings({
         const { name } = useCollection();
         const field = useField();
         const { dn } = useDesignable();
-        const fliedList = getCollectionFieldsOptions(name, 'string');
-        const filteredItems = [
-          { label: t('Not selected'), value: '' },
-          ...fliedList.filter((item) => item.interface === 'radioGroup' || item.interface === 'select'),
-        ];
+        const app = useApp();
+        const plugin = app.pm.get('calendar') as any;
+        const { colorFieldInterfaces } = plugin;
+        const fliedList = getCollectionFieldsOptions(name, null, Object.keys(colorFieldInterfaces));
+        const filteredItems = [{ label: t('Not selected'), value: '' }, ...fliedList];
+
         return {
-          title: t('Background color field'),
+          title: t('Color field'),
           value: fieldNames.colorFieldName || '',
           options: filteredItems,
           onChange: (colorFieldName: string) => {
@@ -149,9 +155,9 @@ export const calendarBlockSettings = new SchemaSettings({
           title: t('Default view'),
           value: field['decoratorProps']['defaultView'] || 'month',
           options: [
-            { value: 'month', label: '月' },
-            { value: 'week', label: '周' },
-            { value: 'day', label: '天' },
+            { value: 'month', label: t('Month') },
+            { value: 'week', label: t('Week') },
+            { value: 'day', label: t('Day') },
           ],
           onChange: (v) => {
             field.decoratorProps.defaultView = v;
@@ -163,6 +169,76 @@ export const calendarBlockSettings = new SchemaSettings({
               },
             });
             dn.refresh();
+          },
+        };
+      },
+    },
+    {
+      name: 'eventOpenMode',
+      Component: SchemaSettingsSelectItem,
+      useComponentProps() {
+        const { t } = useTranslation();
+        const fieldSchema = useFieldSchema();
+        const field = useField();
+        const { dn } = useDesignable();
+        const { isPopupVisibleControlledByURL } = usePopupSettings();
+        const eventSchema = Object.values(fieldSchema['properties'])?.[0]?.['properties']['event'];
+        const modeOptions = useMemo(() => {
+          if (isPopupVisibleControlledByURL()) {
+            return [
+              { label: t('Drawer'), value: 'drawer' },
+              { label: t('Dialog'), value: 'modal' },
+              { label: t('Page'), value: 'page' },
+            ];
+          }
+
+          return [
+            { label: t('Drawer'), value: 'drawer' },
+            { label: t('Dialog'), value: 'modal' },
+          ];
+        }, [t, isPopupVisibleControlledByURL()]);
+        return {
+          title: t('Event open mode'),
+          value: eventSchema['x-component-props']?.['openMode'] || 'drawer',
+          options: modeOptions,
+          onChange: (v) => {
+            if (eventSchema['x-component-props']) {
+              eventSchema['x-component-props']['openMode'] = v;
+            } else {
+              eventSchema['x-component-props'] = {};
+              eventSchema['x-component-props']['openMode'] = v;
+            }
+            dn.emit('patch', {
+              schema: {
+                ['x-uid']: eventSchema['x-uid'],
+                'x-component-props': eventSchema['x-component-props'],
+              },
+            });
+            dn.refresh();
+          },
+        };
+      },
+    },
+    {
+      name: 'quickCreateEvent',
+      Component: SchemaSettingsSwitchItem,
+      useComponentProps() {
+        const { t } = useTranslation();
+        const fieldSchema = useFieldSchema();
+        const field = useField();
+        const { dn } = useDesignable();
+        return {
+          title: t('Quick create event'),
+          checked: field.decoratorProps?.enableQuickCreateEvent ?? true,
+          onChange: (v) => {
+            field.decoratorProps.enableQuickCreateEvent = v;
+            fieldSchema['x-decorator-props']['enableQuickCreateEvent'] = v;
+            dn.emit('patch', {
+              schema: {
+                ['x-uid']: fieldSchema['x-uid'],
+                'x-decorator-props': field.decoratorProps,
+              },
+            });
           },
         };
       },
@@ -183,10 +259,13 @@ export const calendarBlockSettings = new SchemaSettings({
         const { dn } = useDesignable();
         const { service } = useCalendarBlockContext();
         const { name } = useCollection();
+        const app = useApp();
+        const plugin = app.pm.get('calendar') as any;
+        const { dateTimeFields } = plugin;
         return {
           title: t('Start date field'),
           value: fieldNames.start,
-          options: getCollectionFieldsOptions(name, ['date', 'datetime', 'dateOnly', 'datetimeNoTz', 'unixTimestamp'], {
+          options: getCollectionFieldsOptions(name, null, dateTimeFields, {
             association: ['o2o', 'obo', 'oho', 'm2o'],
           }),
           onChange: (start) => {
@@ -218,10 +297,13 @@ export const calendarBlockSettings = new SchemaSettings({
         const { dn } = useDesignable();
         const { name } = useCollection();
         const fieldNames = fieldSchema?.['x-decorator-props']?.['fieldNames'] || {};
+        const app = useApp();
+        const plugin = app.pm.get('calendar') as any;
+        const { dateTimeFields } = plugin;
         return {
           title: t('End date field'),
           value: fieldNames.end,
-          options: getCollectionFieldsOptions(name, ['date', 'datetime', 'dateOnly', 'datetimeNoTz', 'unixTimestamp'], {
+          options: getCollectionFieldsOptions(name, null, dateTimeFields, {
             association: ['o2o', 'obo', 'oho', 'm2o'],
           }),
           onChange: (end) => {

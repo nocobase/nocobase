@@ -17,7 +17,6 @@ import React, { ComponentType, FC, ReactElement, ReactNode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { I18nextProvider } from 'react-i18next';
 import { Link, NavLink, Navigate } from 'react-router-dom';
-
 import { APIClient, APIClientProvider } from '../api-client';
 import { CSSVariableProvider } from '../css-variable';
 import { AntdAppProvider, GlobalThemeProvider } from '../global-theme';
@@ -29,7 +28,8 @@ import { WebSocketClient, WebSocketClientOptions } from './WebSocketClient';
 import { AppComponent, BlankComponent, defaultAppComponents } from './components';
 import { SchemaInitializer, SchemaInitializerManager } from './schema-initializer';
 import * as schemaInitializerComponents from './schema-initializer/components';
-import { SchemaSettings, SchemaSettingsManager } from './schema-settings';
+import { SchemaSettings, SchemaSettingsItemType, SchemaSettingsManager } from './schema-settings';
+
 import { compose, normalizeContainer } from './utils';
 import { defineGlobalDeps } from './utils/globalDeps';
 import { getRequireJs } from './utils/requirejs';
@@ -44,7 +44,14 @@ import type { CollectionFieldInterfaceFactory } from '../data-source';
 import { OpenModeProvider } from '../modules/popup/OpenModeProvider';
 import { AppSchemaComponentProvider } from './AppSchemaComponentProvider';
 import type { Plugin } from './Plugin';
+import { getOperators } from './globalOperators';
+import { useAclSnippets } from './hooks/useAclSnippets';
 import type { RequireJS } from './utils/requirejs';
+
+type JsonLogic = {
+  addOperation: (name: string, fn?: any) => void;
+  rmOperation: (name: string) => void;
+};
 
 declare global {
   interface Window {
@@ -76,6 +83,8 @@ export interface ApplicationOptions {
 }
 
 export class Application {
+  public eventBus = new EventTarget();
+
   public providers: ComponentAndProps[] = [];
   public router: RouterManager;
   public scopes: Record<string, any> = {};
@@ -96,18 +105,48 @@ export class Application {
   public schemaInitializerManager: SchemaInitializerManager;
   public schemaSettingsManager: SchemaSettingsManager;
   public dataSourceManager: DataSourceManager;
-
   public name: string;
-
+  public favicon: string;
+  public globalVars: Record<string, any> = {};
+  public jsonLogic: JsonLogic;
   loading = true;
   maintained = false;
   maintaining = false;
   error = null;
+  hasLoadError = false;
+
+  private wsAuthorized = false;
+
   get pm() {
     return this.pluginManager;
   }
   get disableAcl() {
     return this.options.disableAcl;
+  }
+
+  get isWsAuthorized() {
+    return this.wsAuthorized;
+  }
+
+  updateFavicon(favicon?: string) {
+    let faviconLinkElement: HTMLLinkElement = document.querySelector('link[rel="shortcut icon"]');
+
+    if (favicon) {
+      this.favicon = favicon;
+    }
+
+    if (!faviconLinkElement) {
+      faviconLinkElement = document.createElement('link');
+      faviconLinkElement.rel = 'shortcut icon';
+      faviconLinkElement.href = this.favicon || '/favicon/favicon.ico';
+      document.head.appendChild(faviconLinkElement);
+    } else {
+      faviconLinkElement.href = this.favicon || '/favicon/favicon.ico';
+    }
+  }
+
+  setWsAuthorized(authorized: boolean) {
+    this.wsAuthorized = authorized;
   }
 
   constructor(protected options: ApplicationOptions = {}) {
@@ -140,6 +179,52 @@ export class Application {
     this.i18n.on('languageChanged', (lng) => {
       this.apiClient.auth.locale = lng;
     });
+    this.initListeners();
+    this.jsonLogic = getOperators();
+  }
+
+  private initListeners() {
+    this.eventBus.addEventListener('auth:tokenChanged', (event: CustomEvent) => {
+      this.setTokenInWebSocket(event.detail);
+    });
+
+    this.eventBus.addEventListener('maintaining:end', () => {
+      if (this.apiClient.auth.token) {
+        this.setTokenInWebSocket({
+          token: this.apiClient.auth.token,
+          authenticator: this.apiClient.auth.getAuthenticator(),
+        });
+      }
+    });
+  }
+
+  protected setTokenInWebSocket(options: { token: string; authenticator: string }) {
+    const { token, authenticator } = options;
+    if (this.maintaining) {
+      return;
+    }
+
+    this.ws.send(
+      JSON.stringify({
+        type: 'auth:token',
+        payload: {
+          token,
+          authenticator,
+        },
+      }),
+    );
+  }
+
+  setMaintaining(maintaining: boolean) {
+    // if maintaining is the same, do nothing
+    if (this.maintaining === maintaining) {
+      return;
+    }
+
+    this.maintaining = maintaining;
+    if (!maintaining) {
+      this.eventBus.dispatchEvent(new Event('maintaining:end'));
+    }
   }
 
   private initRequireJs() {
@@ -168,7 +253,7 @@ export class Application {
     this.addComponents({
       Link,
       Navigate: Navigate as ComponentType,
-      NavLink,
+      NavLink: NavLink as ComponentType,
     });
   }
 
@@ -208,6 +293,14 @@ export class Application {
     return this.getPublicPath() + pathname.replace(/^\//g, '');
   }
 
+  getHref(pathname: string) {
+    const name = this.name;
+    if (name && name !== 'main') {
+      return this.getPublicPath() + 'apps/' + name + '/' + pathname.replace(/^\//g, '');
+    }
+    return this.getPublicPath() + pathname.replace(/^\//g, '');
+  }
+
   getCollectionManager(dataSource?: string) {
     return this.dataSourceManager.getDataSource(dataSource)?.collectionManager;
   }
@@ -240,48 +333,23 @@ export class Application {
   }
 
   async load() {
-    let loadFailed = false;
-    this.ws.on('message', (event) => {
-      const data = JSON.parse(event.data);
-      console.log(data.payload);
-      if (data?.payload?.refresh) {
-        window.location.reload();
-        return;
-      }
-      if (data.type === 'notification') {
-        this.notification[data.payload?.type || 'info']({ message: data.payload?.message });
-        return;
-      }
-      const maintaining = data.type === 'maintaining' && data.payload.code !== 'APP_RUNNING';
-      if (maintaining) {
-        this.maintaining = true;
-        this.error = data.payload;
-      } else {
-        // console.log('loadFailed', loadFailed);
-        if (loadFailed) {
-          window.location.reload();
-          return;
-        }
-        this.maintaining = false;
-        this.maintained = true;
-        this.error = null;
-      }
-    });
-    this.ws.on('serverDown', () => {
-      this.maintaining = true;
-      this.maintained = false;
-    });
-    this.ws.connect();
     try {
       this.loading = true;
+      await this.loadWebSocket();
       await this.pm.load();
     } catch (error) {
+      this.hasLoadError = true;
+
+      //not trigger infinite reload when blocked ip
+      if (error?.response?.data?.errors?.[0]?.code === 'BLOCKED_IP') {
+        this.hasLoadError = false;
+      }
+
       if (this.ws.enabled) {
         await new Promise((resolve) => {
           setTimeout(() => resolve(null), 1000);
         });
       }
-      loadFailed = true;
       const toError = (error) => {
         if (typeof error?.response?.data === 'string') {
           const tempElement = document.createElement('div');
@@ -303,6 +371,64 @@ export class Application {
       console.error(error, this.error);
     }
     this.loading = false;
+    this.updateFavicon();
+  }
+
+  async loadWebSocket() {
+    this.eventBus.addEventListener('ws:message:authorized', () => {
+      this.setWsAuthorized(true);
+    });
+
+    this.ws.on('message', (event) => {
+      const data = JSON.parse(event.data);
+
+      if (data?.payload?.refresh) {
+        window.location.reload();
+        return;
+      }
+
+      if (data.type === 'notification') {
+        this.notification[data.payload?.type || 'info']({ message: data.payload?.message });
+        return;
+      }
+
+      const maintaining = data.type === 'maintaining' && data.payload.code !== 'APP_RUNNING';
+      if (maintaining) {
+        this.setMaintaining(true);
+        this.error = data.payload;
+      } else {
+        if (this.hasLoadError) {
+          window.location.reload();
+        }
+
+        this.setMaintaining(false);
+        this.maintained = true;
+        this.error = null;
+
+        const type = data.type;
+        if (!type) {
+          return;
+        }
+
+        const eventName = `ws:message:${type}`;
+        this.eventBus.dispatchEvent(new CustomEvent(eventName, { detail: data.payload }));
+      }
+    });
+
+    this.ws.on('serverDown', () => {
+      this.maintaining = true;
+      this.maintained = false;
+    });
+
+    this.ws.on('open', () => {
+      const token = this.apiClient.auth.token;
+
+      if (token) {
+        this.setTokenInWebSocket({ token, authenticator: this.apiClient.auth.getAuthenticator() });
+      }
+    });
+
+    this.ws.connect();
   }
 
   getComponent<T = any>(Component: ComponentTypeAndString<T>, isShowError = true): ComponentType<T> | undefined {
@@ -380,5 +506,29 @@ export class Application {
       fieldName,
       componentOption,
     );
+  }
+
+  addGlobalVar(key: string, value: any) {
+    set(this.globalVars, key, value);
+  }
+
+  getGlobalVar(key) {
+    return get(this.globalVars, key);
+  }
+  addUserCenterSettingsItem(item: SchemaSettingsItemType & { aclSnippet?: string }) {
+    const useVisibleProp = item.useVisible || (() => true);
+    const useVisible = () => {
+      const { allow } = useAclSnippets();
+      const visible = useVisibleProp();
+      if (!visible) {
+        return false;
+      }
+      return item.aclSnippet ? allow(item.aclSnippet) : true;
+    };
+
+    this.schemaSettingsManager.addItem('userCenterSettings', item.name, {
+      ...item,
+      useVisible: useVisible,
+    });
   }
 }

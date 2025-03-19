@@ -15,12 +15,13 @@ import { ImportContext } from './context';
 import { ImportModal, ImportStatus } from './ImportModal';
 import { useDownloadXlsxTemplateAction, useImportStartAction } from './useImportAction';
 import { useShared } from './useShared';
+import { ImportAction } from './ImportAction';
 
 export const ImportPluginProvider = (props: any) => {
   const { uploadValidator, beforeUploadHandler, validateUpload } = useShared();
   return (
     <SchemaComponentOptions
-      components={{ ImportActionInitializer, ImportDesigner, ImportWarning, DownloadTips }}
+      components={{ ImportActionInitializer, ImportDesigner, ImportWarning, DownloadTips, ImportAction }}
       scope={{
         uploadValidator,
         validateUpload,

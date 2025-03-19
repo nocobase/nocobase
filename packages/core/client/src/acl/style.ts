@@ -7,16 +7,14 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { createStyles } from 'antd-style';
+import { css } from '@emotion/css';
 
-export const useStyles = createStyles(({ css }) => {
-  return css`
-    .ant-table-cell {
-      > .ant-space-horizontal {
-        .ant-space-item-split:has(+ .ant-space-item:empty) {
-          display: none;
-        }
+export const antTableCell = css`
+  .ant-table-cell {
+    > .ant-space-horizontal {
+      .ant-space-item-split:has(+ .ant-space-item:empty) {
+        display: none;
       }
     }
-  `;
-});
+  }
+`;

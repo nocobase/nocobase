@@ -50,14 +50,33 @@ test.describe('direct duplicate & copy into the form and continue to fill in', (
     await page.mouse.move(300, 0);
     await page.getByLabel('schema-initializer-Grid-form:configureFields-general').hover();
     await page.getByRole('menuitem', { name: 'singleLineText' }).click();
-    await page.getByRole('menuitem', { name: 'oneToOneBelongsTo' }).click();
-    await page.getByRole('menuitem', { name: 'oneToOneHasOne' }).click();
+    await page.getByRole('menuitem', { name: 'oneToOneBelongsTo' }).first().click();
+    await page.getByRole('menuitem', { name: 'oneToOneHasOne' }).first().click();
     await page.getByRole('menuitem', { name: 'oneToMany' }).click();
     await page.getByRole('menuitem', { name: 'manyToOne', exact: true }).click();
     await page.getByRole('menuitem', { name: 'manyToMany' }).click();
     await page.getByLabel('schema-initializer-ActionBar-createForm:configureActions-general').click();
     await page.getByRole('menuitem', { name: 'Submit' }).click();
     await page.getByLabel('drawer-Action.Container-general-Duplicate-mask').click();
+
+    // 再次打开弹窗，刚配置的字段应该还在
+    await page.getByLabel('action-Action.Link-Duplicate-duplicate-general-table-0').click();
+    await expect(
+      page.getByLabel('block-item-CollectionField-general-form-general.singleLineText-singleLineText'),
+    ).toBeVisible();
+    await expect(
+      page.getByLabel('block-item-CollectionField-general-form-general.oneToOneBelongsTo-oneToOneBelongsTo'),
+    ).toBeVisible();
+    await expect(
+      page.getByLabel('block-item-CollectionField-general-form-general.oneToOneHasOne-oneToOneHasOne'),
+    ).toBeVisible();
+    await expect(page.getByLabel('block-item-CollectionField-general-form-general.manyToOne-manyToOne')).toBeVisible();
+    await expect(
+      page.getByLabel('block-item-CollectionField-general-form-general.manyToMany-manyToMany'),
+    ).toBeVisible();
+    await expect(page.getByLabel('action-Action-Submit-submit-general-form')).toBeVisible();
+    await page.getByLabel('drawer-Action.Container-general-Duplicate-mask').click();
+
     //同步表单字段
     await page.getByLabel('action-Action.Link-Duplicate-duplicate-general-table-0').hover();
     await page.getByRole('button', { name: 'designer-schema-settings-Action.Link-Action.Designer-general' }).hover();
@@ -124,7 +143,7 @@ test.describe('direct duplicate & copy into the form and continue to fill in', (
       .getByTestId('drawer-Action.Container-general2-Duplicate')
       .getByLabel('schema-initializer-Grid-popup')
       .hover();
-    await page.getByRole('menuitem', { name: 'form Form right' }).hover();
+    await page.getByRole('menuitem', { name: 'Form right' }).hover();
     await page.getByRole('menuitem', { name: 'Current collection' }).click();
     await page
       .getByTestId('drawer-Action.Container-general2-Duplicate')

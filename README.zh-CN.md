@@ -8,7 +8,7 @@ https://github.com/nocobase/nocobase/assets/1267426/29623e45-9a48-4598-bb9e-9dd1
 <a href="https://www.producthunt.com/posts/nocobase?embed=true&utm_source=badge-top-post-topic-badge&utm_medium=badge&utm_souce=badge-nocobase" target="_blank"><img src="https://api.producthunt.com/widgets/embed-image/v1/top-post-topic-badge.svg?post_id=456520&theme=light&period=weekly&topic_id=267" alt="NocoBase - Scalability&#0045;first&#0044;&#0032;open&#0045;source&#0032;no&#0045;code&#0032;platform | Product Hunt" style="width: 250px; height: 54px;" width="250" height="54" /></a>
 
 ## 发布日志
-我们的[博客](https://www.nocobase.com/cn/blog/tags/release-notes)会及时更新发布日志，并每周进行汇总。
+我们的[博客](https://www.nocobase.com/cn/blog/timeline)会及时更新发布日志，并每周进行汇总。
 
 ## NocoBase 是什么
 

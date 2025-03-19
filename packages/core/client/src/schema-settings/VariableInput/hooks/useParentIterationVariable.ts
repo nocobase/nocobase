@@ -25,6 +25,7 @@ export const useParentObjectContext = () => {
     /** 变量的值 */
     parentObjectCtx,
     collectionName: collectionOfParentObject?.name,
+    dataSource: collectionOfParentObject?.dataSource,
   };
 };
 
@@ -47,7 +48,7 @@ export const useParentObjectVariable = ({
 } = {}) => {
   // const { getActiveFieldsName } = useFormActiveFields() || {};
   const { t } = useTranslation();
-  const { shouldDisplayParentObject, parentObjectCtx, collectionName } = useParentObjectContext();
+  const { shouldDisplayParentObject, parentObjectCtx, collectionName, dataSource } = useParentObjectContext();
   const parentObjectSettings = useBaseVariable({
     collectionField,
     uiSchema: schema,
@@ -57,6 +58,7 @@ export const useParentObjectVariable = ({
     title: t('Parent object'),
     collectionName,
     noDisabled,
+    dataSource,
     returnFields: (fields, option) => {
       return fields;
       // const activeFieldsName = getActiveFieldsName?.('nester') || [];

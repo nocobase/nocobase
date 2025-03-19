@@ -65,7 +65,7 @@ export class PluginPublicFormsServer extends Plugin {
             passwordRequired: true,
           };
         }
-        if (instance.get('password') !== password) {
+        if (this.app.environment.renderJsonTemplate(instance.get('password')) !== password) {
           throw new PasswordError('Please enter your password');
         }
       }
@@ -150,6 +150,7 @@ export class PluginPublicFormsServer extends Plugin {
         if (actionName === 'publicSubmit') {
           ctx.action.actionName = 'create';
         }
+        ctx.skipAuthCheck = true;
       } catch (error) {
         ctx.throw(401, error.message);
       }
@@ -170,7 +171,7 @@ export class PluginPublicFormsServer extends Plugin {
     } else if (
       (actionName === 'list' && ctx.PublicForm['targetCollections'].includes(resourceName)) ||
       (collection.options.template === 'file' && actionName === 'create') ||
-      (resourceName === 'storages' && actionName === 'getRules') ||
+      (resourceName === 'storages' && actionName === 'getBasicInfo') ||
       (resourceName === 'map-configuration' && actionName === 'get')
     ) {
       ctx.permission = {
@@ -192,7 +193,7 @@ export class PluginPublicFormsServer extends Plugin {
     });
     this.app.dataSourceManager.afterAddDataSource((dataSource) => {
       dataSource.resourceManager.use(this.parseToken, {
-        before: 'acl',
+        before: 'auth',
       });
       dataSource.acl.use(this.parseACL, {
         before: 'core',

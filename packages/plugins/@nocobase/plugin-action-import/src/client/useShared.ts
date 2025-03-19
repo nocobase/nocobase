@@ -73,6 +73,22 @@ export const useShared = () => {
                       changeOnSelect: false,
                     },
                   },
+                  title: {
+                    type: 'string',
+                    'x-decorator': 'FormItem',
+                    'x-component': 'Input',
+                    'x-component-props': {
+                      placeholder: '{{ t("Custom column title") }}',
+                    },
+                  },
+                  description: {
+                    type: 'string',
+                    'x-decorator': 'FormItem',
+                    'x-component': 'Input',
+                    'x-component-props': {
+                      placeholder: `{{ t("Field description placeholder", {ns: "${NAMESPACE}"}) }}`,
+                    },
+                  },
                   remove: {
                     type: 'void',
                     'x-decorator': 'FormItem',
@@ -113,10 +129,10 @@ export const useShared = () => {
         };
       }
       const file = value[0] ?? {};
-      if (file.size > 10 * 1024 * 1024) {
+      if (file.size > 80 * 1024 * 1024) {
         return {
           type: 'error',
-          message: t('File size cannot exceed 10M'),
+          message: t('File size cannot exceed 80M'),
         };
       }
       if (!INCLUDE_FILE_TYPE.includes(file.type)) {

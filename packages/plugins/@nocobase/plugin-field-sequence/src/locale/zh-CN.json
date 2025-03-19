@@ -24,5 +24,14 @@
   "Monthly": "每月",
   "Yearly": "每年",
   "Operations": "操作",
-  "Customize": "自定义"
+  "Customize": "自定义",
+  "Random character": "随机字符",
+  "Length": "长度",
+  "Will generate random characters with specified length.": "将生成指定长度的随机字符。",
+  "Character sets": "字符集",
+  "Select character sets to generate random characters.": "选择用于生成随机字符的字符集。",
+  "Number": "数字",
+  "Lowercase letters": "小写字母",
+  "Uppercase letters": "大写字母",
+  "Symbols": "符号"
 }

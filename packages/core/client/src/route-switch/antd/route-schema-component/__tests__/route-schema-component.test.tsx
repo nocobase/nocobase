@@ -7,8 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { RouteSchemaComponent } from '@nocobase/client';
-import { renderAppOptions, waitFor, screen } from '@nocobase/test/client';
+import { CurrentPageUidProvider, RouteSchemaComponent } from '@nocobase/client';
+import { renderAppOptions, screen, waitFor } from '@nocobase/test/client';
 import React from 'react';
 
 describe('route-schema-component', () => {
@@ -23,7 +23,11 @@ describe('route-schema-component', () => {
           routes: {
             test: {
               path: '/admin/:name',
-              element: <RouteSchemaComponent />,
+              element: (
+                <CurrentPageUidProvider>
+                  <RouteSchemaComponent />
+                </CurrentPageUidProvider>
+              ),
             },
           },
         },

@@ -11,6 +11,7 @@ import { defineCollection } from '@nocobase/database';
 
 export default defineCollection({
   dumpRules: 'required',
+  migrationRules: ['overwrite', 'schema-only'],
   name: 'storages',
   shared: true,
   fields: [
@@ -47,7 +48,7 @@ export default defineCollection({
     },
     {
       comment: '存储相对路径模板',
-      type: 'string',
+      type: 'text',
       name: 'path',
       defaultValue: '',
     },

@@ -7,31 +7,38 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { css } from '@emotion/css';
+import { useField } from '@formily/react';
 import {
+  ACLCustomContext,
+  Action,
   APIClient,
   APIClientProvider,
+  AssociationField,
   CollectionManager,
   DataSource,
   DataSourceApplicationProvider,
   DataSourceManager,
+  DatePicker,
+  GlobalThemeProvider,
   PoweredBy,
   SchemaComponent,
   SchemaComponentContext,
   useAPIClient,
   useApp,
   useRequest,
-  ACLCustomContext,
   VariablesProvider,
-  GlobalThemeProvider,
 } from '@nocobase/client';
-import { css } from '@emotion/css';
-import { isDesktop } from 'react-device-detect';
-import { useField } from '@formily/react';
 import { Input, Modal, Spin } from 'antd';
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import { isDesktop } from 'react-device-detect';
 import { useParams } from 'react-router';
 import { usePublicSubmitActionProps } from '../hooks';
 import { UnEnabledFormPlaceholder, UnFoundFormPlaceholder } from './UnEnabledFormPlaceholder';
+
+import { Button as MobileButton, Dialog as MobileDialog } from 'antd-mobile';
+import { MobileDateTimePicker } from './components/MobileDatePicker';
+import { MobilePicker } from './components/MobilePicker';
 class PublicDataSource extends DataSource {
   async getDataSource() {
     return {};
@@ -111,13 +118,47 @@ const PublicFormMessageProvider = ({ children }) => {
     </PublicFormMessageContext.Provider>
   );
 };
+function isMobile() {
+  return window.matchMedia('(max-width: 768px)').matches;
+}
 
+const AssociationFieldMobile = (props) => {
+  return <AssociationField {...props} popupMatchSelectWidth={true} />;
+};
+
+AssociationFieldMobile.SubTable = AssociationField.SubTable;
+AssociationFieldMobile.Nester = AssociationField.Nester;
+AssociationFieldMobile.AddNewer = Action.Container;
+AssociationFieldMobile.Selector = Action.Container;
+AssociationFieldMobile.Viewer = Action.Container;
+AssociationFieldMobile.InternalSelect = AssociationField.InternalSelect;
+AssociationFieldMobile.ReadPretty = AssociationField.ReadPretty;
+AssociationFieldMobile.FileSelector = AssociationField.FileSelector;
+
+const DatePickerMobile = (props) => {
+  return <MobileDateTimePicker {...props} />;
+};
+DatePickerMobile.FilterWithPicker = DatePicker.FilterWithPicker;
+DatePickerMobile.RangePicker = DatePicker.RangePicker;
+
+const mobileComponents = {
+  Button: MobileButton,
+  Select: (props) => {
+    return <MobilePicker {...props} />;
+  },
+  DatePicker: DatePickerMobile,
+  UnixTimestamp: MobileDateTimePicker,
+  Modal: MobileDialog,
+  AssociationField: AssociationFieldMobile,
+};
 function InternalPublicForm() {
   const params = useParams();
   const apiClient = useAPIClient();
+  const isMobileMedia = isMobile();
   const { error, data, loading, run } = useRequest<any>(
     {
       url: `publicForms:getMeta/${params.name}`,
+      skipAuth: true,
     },
     {
       onSuccess(data) {
@@ -190,6 +231,7 @@ function InternalPublicForm() {
   if (!data?.data) {
     return <UnEnabledFormPlaceholder />;
   }
+  const components = isMobileMedia ? mobileComponents : {};
   return (
     <ACLCustomContext.Provider value={{ allowAll: true }}>
       <PublicAPIClientProvider>
@@ -202,7 +244,12 @@ function InternalPublicForm() {
           }}
         >
           <div
-            style={{ maxWidth: 800, margin: '0 auto' }}
+            style={{
+              maxWidth: 800,
+              margin: '0 auto',
+              position: 'relative',
+              zIndex: 0 /** create a new z-index context */,
+            }}
             className={css`
               @media (min-width: 1025px) {
                 padding-top: 10vh;
@@ -218,7 +265,7 @@ function InternalPublicForm() {
                     scope={{
                       useCreateActionProps: usePublicSubmitActionProps,
                     }}
-                    components={{ PublicFormMessageProvider: PublicFormMessageProvider }}
+                    components={{ PublicFormMessageProvider: PublicFormMessageProvider, ...components }}
                   />
                 </SchemaComponentContext.Provider>
               </VariablesProvider>

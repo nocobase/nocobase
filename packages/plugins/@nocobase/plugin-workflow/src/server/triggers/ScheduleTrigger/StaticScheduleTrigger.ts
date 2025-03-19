@@ -136,4 +136,8 @@ export default class StaticScheduleTrigger {
   off(workflow) {
     this.schedule(workflow, null, false);
   }
+
+  execute(workflow, values, options) {
+    return this.workflow.trigger(workflow, { ...values, date: values?.date ?? new Date() }, options);
+  }
 }

@@ -14,6 +14,8 @@ import { customizeAddRecordActionSettings } from '../modules/actions/add-record/
 import { bulkDeleteActionSettings } from '../modules/actions/bulk-destroy/bulkDeleteActionSettings';
 import { deleteActionSettings } from '../modules/actions/delete/deleteActionSettings';
 import { disassociateActionSettings } from '../modules/actions/disassociate/disassociateActionSettings';
+import { associateActionSettings } from '../modules/actions/associate/associateActionSettings';
+
 import { expendableActionSettings } from '../modules/actions/expand-collapse/expendableActionSettings';
 import { filterActionSettings } from '../modules/actions/filter/filterActionSettings';
 import { customizeLinkActionSettings } from '../modules/actions/link/customizeLinkActionSettings';
@@ -76,7 +78,7 @@ import { subTablePopoverComponentFieldSettings } from '../modules/fields/compone
 import { tagComponentFieldSettings } from '../modules/fields/component/Tag/tagComponentFieldSettings';
 import { unixTimestampComponentFieldSettings } from '../modules/fields/component/UnixTimestamp/unixTimestampComponentFieldSettings';
 import { dividerSettings } from '../modules/blocks/other-blocks/divider/dividerSettings';
-
+import { timePickerComponentFieldSettings } from '../modules/fields/component/TimePicker/timePickerComponentFieldSettings';
 export class SchemaSettingsPlugin extends Plugin {
   async load() {
     // block settings
@@ -103,6 +105,7 @@ export class SchemaSettingsPlugin extends Plugin {
     this.schemaSettingsManager.add(editActionSettings);
     this.schemaSettingsManager.add(deleteActionSettings);
     this.schemaSettingsManager.add(disassociateActionSettings);
+    this.schemaSettingsManager.add(associateActionSettings);
     this.schemaSettingsManager.add(bulkDeleteActionSettings);
     this.schemaSettingsManager.add(customizeAddRecordActionSettings);
     this.schemaSettingsManager.add(customizePopupActionSettings);
@@ -146,5 +149,6 @@ export class SchemaSettingsPlugin extends Plugin {
     this.schemaSettingsManager.add(uploadAttachmentComponentFieldSettings);
     this.schemaSettingsManager.add(previewComponentFieldSettings);
     this.schemaSettingsManager.add(dividerSettings);
+    this.schemaSettingsManager.add(timePickerComponentFieldSettings);
   }
 }

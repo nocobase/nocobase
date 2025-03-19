@@ -139,9 +139,7 @@ describe('datetimeNoTz date operator test', () => {
       ],
     });
 
-    let count: number;
-
-    count = await repository.count({
+    const count = await repository.count({
       filter: {
         'date1.$dateBefore': '2024-09-08 15:33:55',
       },

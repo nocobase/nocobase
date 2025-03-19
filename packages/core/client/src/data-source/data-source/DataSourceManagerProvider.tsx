@@ -7,7 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { FC, ReactNode, createContext, useContext } from 'react';
+import React, { FC, ReactNode, createContext, useCallback, useContext } from 'react';
+import { InheritanceCollectionMixin } from '../../collection-manager/mixins/InheritanceCollectionMixin';
 import type { DataSourceManager } from './DataSourceManager';
 
 export const DataSourceManagerContext = createContext<DataSourceManager>(null);
@@ -25,4 +26,23 @@ export const DataSourceManagerProvider: FC<DataSourceManagerProviderProps> = ({ 
 export function useDataSourceManager() {
   const context = useContext<DataSourceManager>(DataSourceManagerContext);
   return context;
+}
+
+/**
+ * 获取当前 collection 继承链路上的所有 collection
+ * @returns
+ */
+export function useAllCollectionsInheritChainGetter() {
+  const dm = useDataSourceManager();
+  const getAllCollectionsInheritChain = useCallback(
+    (collectionName: string, customDataSource?: string) => {
+      return dm
+        ?.getDataSource(customDataSource)
+        ?.collectionManager?.getCollection<InheritanceCollectionMixin>(collectionName)
+        ?.getAllCollectionsInheritChain();
+    },
+    [dm],
+  );
+
+  return { getAllCollectionsInheritChain };
 }

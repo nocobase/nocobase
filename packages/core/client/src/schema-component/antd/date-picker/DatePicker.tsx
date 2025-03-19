@@ -7,17 +7,19 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { connect, mapProps, mapReadPretty, useField, useFieldSchema } from '@formily/react';
+import { connect, mapProps, mapReadPretty, useField, useFieldSchema, observer } from '@formily/react';
 import { DatePicker as AntdDatePicker, DatePickerProps as AntdDatePickerProps, Space, Select } from 'antd';
 import { RangePickerProps } from 'antd/es/date-picker';
 import dayjs from 'dayjs';
-import React, { useState } from 'react';
-import { getPickerFormat } from '@nocobase/utils/client';
+import React, { useState, useEffect, useRef } from 'react';
+import { getPickerFormat, getDateTimeFormat } from '@nocobase/utils/client';
 import { useTranslation } from 'react-i18next';
 import { ReadPretty, ReadPrettyComposed } from './ReadPretty';
-import { getDateRanges, mapDatePicker, mapRangePicker, inferPickerType } from './util';
+import { getDateRanges, mapDatePicker, mapRangePicker, inferPickerType, isMobile } from './util';
 import { useCompile } from '../../';
-
+import { useVariables, useLocalVariables, isVariable } from '../../../variables';
+import { autorun } from '@formily/reactive';
+import { log10 } from 'mathjs';
 interface IDatePickerProps {
   utc?: boolean;
 }
@@ -52,9 +54,110 @@ const InternalRangePicker = connect(
 export const DatePicker: ComposedDatePicker = (props: any) => {
   const { utc = true } = useDatePickerContext();
   const value = Array.isArray(props.value) ? props.value[0] : props.value;
+  const { parseVariable } = useVariables() || {};
+  const localVariables = useLocalVariables();
+  const [disabledDate, setDisabledDate] = useState(null);
+  const [disabledTime, setDisabledTime] = useState(null);
+  const disposeRef = useRef(null);
+
+  useEffect(() => {
+    if (disposeRef.current) {
+      disposeRef.current();
+    }
+    disposeRef.current = autorun(() => {
+      limitDate();
+    });
+    return () => {
+      disposeRef.current();
+    };
+  }, [props._maxDate, props._minDate, localVariables, parseVariable]);
+
+  const limitDate = async () => {
+    //dayjs()如果传入undefined可能会被解析成当前时间
+    let minDateTimePromise = props._minDate ? Promise.resolve(dayjs(props._minDate)) : Promise.resolve(null);
+    let maxDateTimePromise = props._maxDate ? Promise.resolve(dayjs(props._maxDate)) : Promise.resolve(null);
+
+    if (isVariable(props._maxDate)) {
+      maxDateTimePromise = parseVariable(props._maxDate, localVariables).then((result) => dayjs(result.value));
+    }
+    if (isVariable(props._minDate)) {
+      minDateTimePromise = parseVariable(props._minDate, localVariables).then((result) => dayjs(result.value));
+    }
+
+    const [minDateTime, maxDateTime] = await Promise.all([minDateTimePromise, maxDateTimePromise]);
+
+    const fullTimeArr = Array.from({ length: 60 }, (_, i) => i);
+
+    // 根据最小日期和最大日期限定日期时间
+    const disabledDate = (current) => {
+      if (!dayjs.isDayjs(current)) return false;
+
+      const currentDate = dayjs(current);
+      const min = minDateTime ? dayjs(minDateTime) : null;
+      const max = maxDateTime ? dayjs(maxDateTime).endOf('day') : null; // 设为 23:59:59
+
+      return (min && currentDate.isBefore(min, 'minute')) || (max && currentDate.isAfter(max, 'minute'));
+    };
+
+    // 禁用时分秒
+    const disabledTime = (current) => {
+      if (!current || (!minDateTime && !maxDateTime)) {
+        return { disabledHours: () => [], disabledMinutes: () => [], disabledSeconds: () => [] };
+      }
+
+      const currentDate = dayjs(current);
+      const isCurrentMinDay = currentDate.isSame(minDateTime, 'day');
+      const isCurrentMaxDay = currentDate.isSame(maxDateTime, 'day');
+
+      const disabledHours = () => {
+        const hours = [];
+        if (isCurrentMinDay) {
+          hours.push(...Array.from({ length: minDateTime.hour() }, (_, i) => i));
+        }
+        if (isCurrentMaxDay) {
+          hours.push(...Array.from({ length: 24 - maxDateTime.hour() }, (_, i) => i + maxDateTime.hour() + 1));
+        }
+        return hours;
+      };
+
+      const getDisabledMinutes = (selectedHour: number) => {
+        if (isCurrentMinDay && selectedHour === minDateTime.hour()) {
+          return fullTimeArr.filter((i) => i < minDateTime.minute());
+        }
+        if (isCurrentMaxDay && selectedHour === maxDateTime.hour()) {
+          return fullTimeArr.filter((i) => i > maxDateTime.minute());
+        }
+        return [];
+      };
+
+      const getDisabledSeconds = (selectedHour: number, selectedMinute: number) => {
+        if (isCurrentMinDay && selectedHour === minDateTime.hour() && selectedMinute === minDateTime.minute()) {
+          return fullTimeArr.filter((i) => i < minDateTime.second());
+        }
+        if (isCurrentMaxDay && selectedHour === maxDateTime.hour() && selectedMinute === maxDateTime.minute()) {
+          return fullTimeArr.filter((i) => i > maxDateTime.second());
+        }
+        return [];
+      };
+
+      return {
+        disabledHours,
+        disabledMinutes: getDisabledMinutes,
+        disabledSeconds: getDisabledSeconds,
+      };
+    };
+    setDisabledDate(() => {
+      return disabledDate;
+    });
+    setDisabledTime(() => {
+      return disabledTime;
+    });
+  };
   const newProps = {
     utc,
     ...props,
+    disabledDate,
+    disabledTime,
     showTime: props.showTime ? { defaultValue: dayjs('00:00:00', 'HH:mm:ss') } : false,
   };
   return <InternalDatePicker {...newProps} value={value} />;
@@ -63,7 +166,7 @@ export const DatePicker: ComposedDatePicker = (props: any) => {
 DatePicker.ReadPretty = ReadPretty.DatePicker;
 
 DatePicker.RangePicker = function RangePicker(props: any) {
-  const { value, picker = 'date', format } = props;
+  const { value, picker = 'date', format, showTime, timeFormat } = props;
   const { t } = useTranslation();
   const fieldSchema = useFieldSchema();
   const field: any = useField();
@@ -93,18 +196,17 @@ DatePicker.RangePicker = function RangePicker(props: any) {
     { label: t('Next 90 days'), value: rangesValue.next90Days },
   ];
 
-  const targetPicker = value ? inferPickerType(value?.[0]) : picker;
-  const targetFormat = getPickerFormat(targetPicker) || format;
+  const targetPicker = value ? inferPickerType(value?.[0], picker) : picker;
+  const targetDateFormat = getPickerFormat(targetPicker) || format;
   const newProps: any = {
     utc,
     presets,
     ...props,
-    format: targetFormat,
+    format: getDateTimeFormat(targetPicker, targetDateFormat, showTime, timeFormat),
     picker: targetPicker,
-    showTime: props.showTime ? { defaultValue: [dayjs('00:00:00', 'HH:mm:ss'), dayjs('00:00:00', 'HH:mm:ss')] } : false,
+    showTime: showTime ? { defaultValue: [dayjs('00:00:00', 'HH:mm:ss'), dayjs('23:59:59', 'HH:mm:ss')] } : false,
   };
   const [stateProps, setStateProps] = useState(newProps);
-
   if (isFilterAction) {
     return (
       <Space.Compact>
@@ -136,17 +238,18 @@ DatePicker.RangePicker = function RangePicker(props: any) {
           ])}
           onChange={(value) => {
             const format = getPickerFormat(value);
+            const dateTimeFormat = getDateTimeFormat(value, format, showTime, timeFormat);
             field.setComponentProps({
               picker: value,
               format,
             });
             newProps.picker = value;
-            newProps.format = format;
+            newProps.format = dateTimeFormat;
             setStateProps(newProps);
             fieldSchema['x-component-props'] = {
               ...props,
               picker: value,
-              format,
+              format: dateTimeFormat,
             };
             field.value = undefined;
           }}
@@ -159,19 +262,21 @@ DatePicker.RangePicker = function RangePicker(props: any) {
 };
 
 DatePicker.FilterWithPicker = function FilterWithPicker(props: any) {
-  const { picker = 'date', format } = props;
+  const { picker = 'date', format, showTime, timeFormat } = props;
+  const isMobileMedia = isMobile();
   const { utc = true } = useDatePickerContext();
   const value = Array.isArray(props.value) ? props.value[0] : props.value;
   const compile = useCompile();
   const fieldSchema = useFieldSchema();
-  const targetPicker = value ? inferPickerType(value) : picker;
-  const targetFormat = getPickerFormat(targetPicker) || format;
+  const targetPicker = value ? inferPickerType(value, picker) : picker;
+  const targetDateFormat = getPickerFormat(targetPicker) || format;
   const newProps = {
     utc,
+    inputReadOnly: isMobileMedia,
     ...props,
     underFilter: true,
-    showTime: props.showTime ? { defaultValue: dayjs('00:00:00', 'HH:mm:ss') } : false,
-    format: targetFormat,
+    showTime: showTime ? { defaultValue: dayjs('00:00:00', 'HH:mm:ss') } : false,
+    format: getDateTimeFormat(targetPicker, targetDateFormat, showTime, timeFormat),
     picker: targetPicker,
     onChange: (val) => {
       props.onChange(undefined);
@@ -182,15 +287,21 @@ DatePicker.FilterWithPicker = function FilterWithPicker(props: any) {
   };
   const field: any = useField();
   const [stateProps, setStateProps] = useState(newProps);
+  useEffect(() => {
+    newProps.picker = targetPicker;
+    const dateTimeFormat = getDateTimeFormat(targetPicker, format, showTime, timeFormat);
+    newProps.format = dateTimeFormat;
+    setStateProps(newProps);
+  }, [targetPicker]);
   return (
-    <Space.Compact>
+    <Space.Compact style={{ width: '100%' }}>
       <Select
         // @ts-ignore
         role="button"
         data-testid="select-picker"
         style={{ width: '100px' }}
         popupMatchSelectWidth={false}
-        defaultValue={targetPicker}
+        value={targetPicker}
         options={compile([
           {
             label: '{{t("Date")}}',
@@ -212,17 +323,18 @@ DatePicker.FilterWithPicker = function FilterWithPicker(props: any) {
         ])}
         onChange={(value) => {
           const format = getPickerFormat(value);
+          const dateTimeFormat = getDateTimeFormat(value, format, showTime, timeFormat);
           field.setComponentProps({
             picker: value,
             format,
           });
           newProps.picker = value;
-          newProps.format = format;
+          newProps.format = dateTimeFormat;
           setStateProps(newProps);
           fieldSchema['x-component-props'] = {
             ...props,
             picker: value,
-            format,
+            format: dateTimeFormat,
           };
           field.value = null;
         }}

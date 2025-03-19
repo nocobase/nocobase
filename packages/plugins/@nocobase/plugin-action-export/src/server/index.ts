@@ -46,9 +46,13 @@ export class PluginActionExportServer extends Plugin {
       dataSource.acl.setAvailableAction('export', {
         displayName: '{{t("Export")}}',
         allowConfigureFields: true,
+        aliases: ['export', 'exportAttachments'],
       });
     });
   }
 }
 
 export default PluginActionExportServer;
+
+export * from './services/base-exporter';
+export * from './services/xlsx-exporter';

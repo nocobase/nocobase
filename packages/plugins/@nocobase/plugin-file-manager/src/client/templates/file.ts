@@ -88,20 +88,20 @@ export class FileCollectionTemplate extends CollectionTemplate {
       // '相对路径（含“/”前缀）',
       {
         interface: 'input',
-        type: 'string',
+        type: 'text',
         name: 'path',
         deletable: false,
         uiSchema: {
           type: 'string',
           title: `{{t("Path", { ns: "${NAMESPACE}" })}}`,
-          'x-component': 'Input',
+          'x-component': 'TextAreaWithGlobalScope',
           'x-read-pretty': true,
         },
       },
       // 文件的可访问地址
       {
         interface: 'url',
-        type: 'string',
+        type: 'text',
         name: 'url',
         deletable: false,
         uiSchema: {
@@ -114,7 +114,7 @@ export class FileCollectionTemplate extends CollectionTemplate {
       // 用于预览
       {
         interface: 'url',
-        type: 'string',
+        type: 'text',
         name: 'preview',
         field: 'url', // 直接引用 url 字段
         deletable: false,

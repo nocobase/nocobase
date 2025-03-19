@@ -7,44 +7,68 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React from 'react';
-import { useFieldSchema } from '@formily/react';
-import { isValid } from '@formily/shared';
-
-import { Plugin, useCompile, WorkflowConfig } from '@nocobase/client';
+import { PagePopups, Plugin, useCompile } from '@nocobase/client';
 import { Registry } from '@nocobase/utils/client';
 
-import { ExecutionPage } from './ExecutionPage';
-import { WorkflowPage } from './WorkflowPage';
-import { WorkflowPane } from './WorkflowPane';
-import { Trigger } from './triggers';
-import CollectionTrigger from './triggers/collection';
-import ScheduleTrigger from './triggers/schedule';
+// import { ExecutionPage } from './ExecutionPage';
+// import { WorkflowPage } from './WorkflowPage';
+// import { WorkflowPane } from './WorkflowPane';
+import { lazy } from '@nocobase/client';
+const { ExecutionPage } = lazy(() => import('./ExecutionPage'), 'ExecutionPage');
+const { WorkflowPage } = lazy(() => import('./WorkflowPage'), 'WorkflowPage');
+const { WorkflowPane } = lazy(() => import('./WorkflowPane'), 'WorkflowPane');
+
+import { NAMESPACE } from './locale';
 import { Instruction } from './nodes';
 import CalculationInstruction from './nodes/calculation';
 import ConditionInstruction from './nodes/condition';
+import CreateInstruction from './nodes/create';
+import DestroyInstruction from './nodes/destroy';
 import EndInstruction from './nodes/end';
 import QueryInstruction from './nodes/query';
-import CreateInstruction from './nodes/create';
 import UpdateInstruction from './nodes/update';
-import DestroyInstruction from './nodes/destroy';
+import { BindWorkflowConfig } from './settings/BindWorkflowConfig';
+import { Trigger } from './triggers';
+import CollectionTrigger from './triggers/collection';
+import ScheduleTrigger from './triggers/schedule';
 import { getWorkflowDetailPath, getWorkflowExecutionsPath } from './utils';
-import { lang, NAMESPACE } from './locale';
-import { customizeSubmitToWorkflowActionSettings } from './settings/customizeSubmitToWorkflowActionSettings';
 import { VariableOption } from './variable';
+import { TasksProvider, TaskTypeOptions, WorkflowTasks } from './WorkflowTasks';
+
+const workflowConfigSettings = {
+  Component: BindWorkflowConfig,
+};
+
+type InstructionGroup = {
+  key?: string;
+  label: string;
+};
 
 export default class PluginWorkflowClient extends Plugin {
   triggers = new Registry<Trigger>();
   instructions = new Registry<Instruction>();
+  instructionGroups = new Registry<InstructionGroup>();
   systemVariables = new Registry<VariableOption>();
+
+  taskTypes = new Registry<TaskTypeOptions>();
 
   useTriggersOptions = () => {
     const compile = useCompile();
-    return Array.from(this.triggers.getEntities()).map(([value, { title, ...options }]) => ({
-      value,
-      label: compile(title),
-      color: 'gold',
-      options,
+    return Array.from(this.triggers.getEntities())
+      .map(([value, { title, ...options }]) => ({
+        value,
+        label: compile(title),
+        color: 'gold',
+        options,
+      }))
+      .sort((a, b) => a.label.localeCompare(b.label));
+  };
+
+  useInstructionGroupOptions = () => {
+    const compile = useCompile();
+    return Array.from(this.instructionGroups.getEntities()).map(([key, { label }]) => ({
+      key,
+      label: compile(label),
     }));
   };
 
@@ -72,24 +96,37 @@ export default class PluginWorkflowClient extends Plugin {
     }
   }
 
+  registerInstructionGroup(key: string, group: InstructionGroup) {
+    this.instructionGroups.register(key, group);
+  }
+
   registerSystemVariable(option: VariableOption) {
     this.systemVariables.register(option.key, option);
   }
 
+  registerTaskType(key: string, option: TaskTypeOptions) {
+    this.taskTypes.register(key, option);
+  }
+
   async load() {
-    this.app.router.add('admin.workflow.workflows.id', {
+    this.router.add('admin.workflow.workflows.id', {
       path: getWorkflowDetailPath(':id'),
-      element: <WorkflowPage />,
+      Component: WorkflowPage,
     });
 
-    this.app.router.add('admin.workflow.executions.id', {
+    this.router.add('admin.workflow.executions.id', {
       path: getWorkflowExecutionsPath(':id'),
-      element: <ExecutionPage />,
+      Component: ExecutionPage,
     });
 
-    this.app.addComponents({
-      WorkflowPage,
-      ExecutionPage,
+    this.router.add('admin.workflow.tasks', {
+      path: '/admin/workflow/tasks/:taskType/:status?',
+      Component: WorkflowTasks,
+    });
+
+    this.router.add('admin.workflow.tasks.popup', {
+      path: '/admin/workflow/tasks/:taskType/:status/popups/*',
+      Component: PagePopups,
     });
 
     this.app.pluginSettingsManager.add(NAMESPACE, {
@@ -99,14 +136,29 @@ export default class PluginWorkflowClient extends Plugin {
       aclSnippet: 'pm.workflow.workflows',
     });
 
-    this.app.schemaSettingsManager.add(customizeSubmitToWorkflowActionSettings);
+    this.app.use(TasksProvider);
 
-    this.app.schemaSettingsManager.addItem('actionSettings:delete', 'workflowConfig', {
-      Component: WorkflowConfig,
-      useVisible() {
-        const fieldSchema = useFieldSchema();
-        return isValid(fieldSchema?.['x-action-settings']?.triggerWorkflows);
-      },
+    this.app.schemaSettingsManager.addItem('actionSettings:submit', 'workflowConfig', workflowConfigSettings);
+    this.app.schemaSettingsManager.addItem('actionSettings:createSubmit', 'workflowConfig', workflowConfigSettings);
+    this.app.schemaSettingsManager.addItem('actionSettings:updateSubmit', 'workflowConfig', workflowConfigSettings);
+    this.app.schemaSettingsManager.addItem('actionSettings:saveRecord', 'workflowConfig', workflowConfigSettings);
+    this.app.schemaSettingsManager.addItem('actionSettings:updateRecord', 'workflowConfig', workflowConfigSettings);
+    this.app.schemaSettingsManager.addItem('actionSettings:delete', 'workflowConfig', workflowConfigSettings);
+    this.app.schemaSettingsManager.addItem('actionSettings:bulkEditSubmit', 'workflowConfig', workflowConfigSettings);
+
+    this.registerInstructionGroup('control', { key: 'control', label: `{{t("Control", { ns: "${NAMESPACE}" })}}` });
+    this.registerInstructionGroup('calculation', {
+      key: 'calculation',
+      label: `{{t("Calculation", { ns: "${NAMESPACE}" })}}`,
+    });
+    this.registerInstructionGroup('collection', {
+      key: 'collection',
+      label: `{{t("Collection operations", { ns: "${NAMESPACE}" })}}`,
+    });
+    this.registerInstructionGroup('manual', { key: 'manual', label: `{{t("Manual", { ns: "${NAMESPACE}" })}}` });
+    this.registerInstructionGroup('extended', {
+      key: 'extended',
+      label: `{{t("Extended types", { ns: "${NAMESPACE}" })}}`,
     });
 
     this.registerTrigger('collection', CollectionTrigger);
@@ -126,130 +178,18 @@ export default class PluginWorkflowClient extends Plugin {
       label: `{{t("System time", { ns: "${NAMESPACE}" })}}`,
       value: 'now',
     });
-    this.registerSystemVariable({
-      key: 'dateRange',
-      label: `{{t("Date range", { ns: "${NAMESPACE}" })}}`,
-      value: 'dateRange',
-      children: [
-        {
-          key: 'yesterday',
-          value: 'yesterday',
-          label: `{{t("Yesterday")}}`,
-        },
-        {
-          key: 'today',
-          value: 'today',
-          label: `{{t("Today")}}`,
-        },
-        {
-          key: 'tomorrow',
-          value: 'tomorrow',
-          label: `{{t("Tomorrow")}}`,
-        },
-        {
-          key: 'lastWeek',
-          value: 'lastWeek',
-          label: `{{t("Last week")}}`,
-        },
-        {
-          key: 'thisWeek',
-          value: 'thisWeek',
-          label: `{{t("This week")}}`,
-        },
-        {
-          key: 'nextWeek',
-          value: 'nextWeek',
-          label: `{{t("Next week")}}`,
-        },
-        {
-          key: 'lastMonth',
-          value: 'lastMonth',
-          label: `{{t("Last month")}}`,
-        },
-        {
-          key: 'thisMonth',
-          value: 'thisMonth',
-          label: `{{t("This month")}}`,
-        },
-        {
-          key: 'nextMonth',
-          value: 'nextMonth',
-          label: `{{t("Next month")}}`,
-        },
-        {
-          key: 'lastQuarter',
-          value: 'lastQuarter',
-          label: `{{t("Last quarter")}}`,
-        },
-        {
-          key: 'thisQuarter',
-          value: 'thisQuarter',
-          label: `{{t("This quarter")}}`,
-        },
-        {
-          key: 'nextQuarter',
-          value: 'nextQuarter',
-          label: `{{t("Next quarter")}}`,
-        },
-        {
-          key: 'lastYear',
-          value: 'lastYear',
-          label: `{{t("Last year")}}`,
-        },
-        {
-          key: 'thisYear',
-          value: 'thisYear',
-          label: `{{t("This year")}}`,
-        },
-        {
-          key: 'nextYear',
-          value: 'nextYear',
-          label: `{{t("Next year")}}`,
-        },
-        {
-          key: 'last7Days',
-          value: 'last7Days',
-          label: `{{t("Last 7 days")}}`,
-        },
-        {
-          key: 'next7Days',
-          value: 'next7Days',
-          label: `{{t("Next 7 days")}}`,
-        },
-        {
-          key: 'last30Days',
-          value: 'last30Days',
-          label: `{{t("Last 30 days")}}`,
-        },
-        {
-          key: 'next30Days',
-          value: 'next30Days',
-          label: `{{t("Next 30 days")}}`,
-        },
-        {
-          key: 'last90Days',
-          value: 'last90Days',
-          label: `{{t("Last 90 days")}}`,
-        },
-        {
-          key: 'next90Days',
-          value: 'next90Days',
-          label: `{{t("Next 90 days")}}`,
-        },
-      ],
-    });
   }
 }
 
 export * from './Branch';
-export * from './FlowContext';
-export * from './constants';
-export * from './nodes';
-export { Trigger, useTrigger } from './triggers';
-export * from './variable';
 export * from './components';
-export * from './utils';
-export * from './hooks';
-export { default as useStyles } from './style';
-export * from './variable';
+export * from './constants';
 export * from './ExecutionContextProvider';
+export * from './FlowContext';
+export * from './hooks';
+export * from './nodes';
+export * from './settings/BindWorkflowConfig';
+export { default as useStyles } from './style';
+export { Trigger, useTrigger } from './triggers';
+export * from './utils';
+export * from './variable';

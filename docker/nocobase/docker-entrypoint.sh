@@ -3,6 +3,8 @@ set -e
 
 echo "COMMIT_HASH: $(cat /app/commit_hash.txt)"
 
+export NOCOBASE_RUNNING_IN_DOCKER=true
+
 if [ ! -d "/app/nocobase" ]; then
   mkdir nocobase
 fi

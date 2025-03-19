@@ -26,11 +26,18 @@ import { NAMESPACE } from './constants';
 import { useImportContext } from './context';
 import { ImportStatus } from './ImportModal';
 import { useEffect } from 'react';
+import { useFields } from './useFields';
+import { initImportSettings } from './ImportActionInitializer';
+import { useImportActionContext } from './ImportActionContext';
 
-const useImportSchema = (s: Schema) => {
-  let schema = s;
+const useImportSchema = () => {
+  const { fieldSchema: actionSchema } = useActionContext();
+  const fieldSchema = useFieldSchema();
+
+  let schema = actionSchema || fieldSchema;
   while (schema && schema['x-action'] !== 'importXlsx') {
     schema = schema.parent;
+    console.log('schema', schema);
   }
   return { schema };
 };
@@ -43,14 +50,12 @@ const toArr = (v: any) => {
 };
 
 export const useDownloadXlsxTemplateAction = () => {
-  const { service, resource } = useBlockRequestContext();
-  const apiClient = useAPIClient();
-  const actionSchema = useFieldSchema();
+  const { resource } = useBlockRequestContext();
   const compile = useCompile();
   const { getCollectionJoinField, getCollectionField } = useCollectionManager_deprecated();
-  const { name, title, getField } = useCollection_deprecated();
-  const { t } = useTranslation(NAMESPACE);
-  const { schema: importSchema } = useImportSchema(actionSchema);
+  const { name, title } = useCollection_deprecated();
+  const { schema: importSchema } = useImportSchema();
+
   return {
     async run() {
       const { importColumns, explain } = lodash.cloneDeep(
@@ -96,25 +101,21 @@ export const useDownloadXlsxTemplateAction = () => {
 };
 
 export const useImportStartAction = () => {
-  const { service, resource } = useBlockRequestContext();
-  const apiClient = useAPIClient();
-  const actionSchema = useFieldSchema();
+  const { service } = useBlockRequestContext();
   const compile = useCompile();
   const { getCollectionJoinField, getCollectionField } = useCollectionManager_deprecated();
-  const { name, title, getField } = useCollection_deprecated();
-  const { t } = useTranslation(NAMESPACE);
-  const { schema: importSchema } = useImportSchema(actionSchema);
+  const { name } = useCollection_deprecated();
+  const { schema: importSchema } = useImportSchema();
   const form = useForm();
-  const { setVisible, fieldSchema } = useActionContext();
+  const { setVisible } = useActionContext();
   const { setImportModalVisible, setImportStatus, setImportResult } = useImportContext();
   const { upload } = form.values;
-  const dataBlockProps = useDataBlockProps() || ({} as any);
-  const headers = useDataSourceHeaders(dataBlockProps.dataSource);
   const newResource = useDataBlockResource();
 
   useEffect(() => {
     form.reset();
   }, []);
+
   return {
     async run() {
       const { importColumns, explain } = lodash.cloneDeep(
@@ -140,11 +141,16 @@ export const useImportStartAction = () => {
           return column;
         })
         .filter(Boolean);
+
       const formData = new FormData();
+
       const uploadFiles = form.values.upload.map((f) => f.originFileObj);
       formData.append('file', uploadFiles[0]);
       formData.append('columns', JSON.stringify(columns));
       formData.append('explain', explain);
+
+      const importMode = importSchema?.['x-action-settings']?.importMode || 'auto';
+
       setVisible(false);
       setImportModalVisible(true);
       setImportStatus(ImportStatus.IMPORTING);
@@ -153,16 +159,23 @@ export const useImportStartAction = () => {
         const { data } = await (newResource as any).importXlsx(
           {
             values: formData,
+            mode: importMode,
           },
           {
             timeout: 10 * 60 * 1000,
           },
         );
 
-        setImportResult(data);
         form.reset();
-        await service?.refresh?.();
-        setImportStatus(ImportStatus.IMPORTED);
+
+        if (!data.data.taskId) {
+          setImportResult(data);
+          await service?.refresh?.();
+          setImportStatus(ImportStatus.IMPORTED);
+        } else {
+          setImportModalVisible(false);
+          setVisible(false);
+        }
       } catch (error) {
         setImportModalVisible(false);
         setVisible(true);

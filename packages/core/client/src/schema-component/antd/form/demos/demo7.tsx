@@ -10,6 +10,7 @@ import {
   useRequest,
 } from '@nocobase/client';
 import { Card } from 'antd';
+import { createMemoryHistory } from 'history';
 import React from 'react';
 import { Router } from 'react-router-dom';
 
@@ -69,8 +70,9 @@ const useValues: FormUseValues = (opts) => {
 };
 
 export default observer(() => {
+  const history = createMemoryHistory();
   return (
-    <Router location={window.location} navigator={null}>
+    <Router location={history.location} navigator={history}>
       <CustomRouterContextProvider>
         <SchemaComponentProvider
           scope={{ useSubmit, useValues }}

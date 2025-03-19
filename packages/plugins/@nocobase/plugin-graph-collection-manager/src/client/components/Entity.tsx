@@ -35,7 +35,7 @@ import {
   useValuesFromRecord,
 } from '../action-hooks';
 import useStyles from '../style';
-import { getPopupContainer, useGCMTranslation, collection } from '../utils';
+import { collection, getPopupContainer, useGCMTranslation } from '../utils';
 import { AddFieldAction } from './AddFieldAction';
 import { CollectionNodeProvder } from './CollectionNodeProvder';
 import { ConnectAssociationAction } from './ConnectAssociationAction';
@@ -59,7 +59,9 @@ const OperationButton: any = React.memo((props: any) => {
     !(property.through ? targetGraph.hasCell(property.through) : targetGraph.hasCell(property.target));
   const {
     data: { database },
-  } = useCurrentAppInfo();
+  } = useCurrentAppInfo() || {
+    data: { database: {} as any },
+  };
   const useNewId = (prefix) => {
     return `${prefix || ''}${uid()}`;
   };
@@ -295,7 +297,15 @@ const PopoverContent = React.forwardRef((props: any, ref) => {
 });
 PopoverContent.displayName = 'PopoverContent';
 
-const PortsCom = React.memo<any>(({ targetGraph, collectionData, setTargetNode, node, loadCollections }) => {
+type PortsComProps = {
+  targetGraph: any;
+  collectionData: any;
+  setTargetNode: any;
+  node: any;
+  loadCollections: any;
+};
+
+const PortsCom = React.memo<PortsComProps>(({ targetGraph, collectionData, setTargetNode, node, loadCollections }) => {
   const {
     store: {
       data: { item, ports, data },
@@ -385,7 +395,9 @@ const Entity: React.FC<{
   } = node;
   const {
     data: { database },
-  } = useCurrentAppInfo();
+  } = useCurrentAppInfo() || {
+    data: { database: {} as any },
+  };
   const collectionData = useRef();
   const categoryData = useContext(CollectionCategoriesContext);
   collectionData.current = { ...item, title, inherits: item.inherits && new Proxy(item.inherits, {}) };

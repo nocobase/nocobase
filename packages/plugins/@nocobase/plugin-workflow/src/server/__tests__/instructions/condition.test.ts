@@ -216,7 +216,6 @@ describe('workflow > instructions > condition', () => {
       expect(execution.status).toBe(EXECUTION_STATUS.RESOLVED);
 
       const jobs = await execution.getJobs({ order: [['id', 'ASC']] });
-      console.log('------', jobs);
       expect(jobs.length).toBe(3);
       expect(jobs[0].result).toBe(false);
       expect(jobs[1].result).toBe(false);

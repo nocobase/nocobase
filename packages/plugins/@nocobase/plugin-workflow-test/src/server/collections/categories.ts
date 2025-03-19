@@ -20,5 +20,13 @@ export default {
       type: 'hasMany',
       name: 'posts',
     },
+    {
+      type: 'date',
+      name: 'createdAt',
+    },
+    {
+      type: 'date',
+      name: 'updatedAt',
+    },
   ],
 } as CollectionOptions;

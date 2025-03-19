@@ -8,7 +8,7 @@
  */
 
 import { useFieldSchema } from '@formily/react';
-import { Action, Icon, useComponent, withDynamicSchemaProps } from '@nocobase/client';
+import { Action, Icon, useCompile, useComponent, withDynamicSchemaProps, ACLActionProvider } from '@nocobase/client';
 import { Avatar } from 'antd';
 import { createStyles } from 'antd-style';
 import React, { useContext } from 'react';
@@ -18,13 +18,20 @@ import { WorkbenchLayout } from './workbenchBlockSettings';
 const useStyles = createStyles(({ token, css }) => ({
   // 支持 css object 的写法
   action: css`
+    display: flex;
     background-color: transparent;
     border: 0;
     height: auto;
     box-shadow: none;
+    padding-top: 8px;
+  `,
+  avatar: css`
+    width: 4em;
   `,
   title: css`
     margin-top: ${token.marginSM}px;
+    width: 100%;
+    white-space: nowrap;
     text-overflow: ellipsis;
     overflow: hidden;
   `,
@@ -36,13 +43,15 @@ function Button() {
   const backgroundColor = fieldSchema['x-component-props']?.['iconColor'];
   const { layout } = useContext(WorkbenchBlockContext);
   const { styles, cx } = useStyles();
+  const compile = useCompile();
+  const title = compile(fieldSchema.title);
   return layout === WorkbenchLayout.Grid ? (
-    <div title={fieldSchema.title} style={{ width: '70px', overflow: 'hidden' }}>
-      <Avatar style={{ backgroundColor }} size={54} icon={<Icon type={icon} />} />
-      <div className={cx(styles.title)}>{fieldSchema.title}</div>
+    <div title={title} className={cx(styles.avatar)}>
+      <Avatar style={{ backgroundColor }} size={48} icon={<Icon type={icon} />} />
+      <div className={cx(styles.title)}>{title}</div>
     </div>
   ) : (
-    <span>{fieldSchema.title}</span>
+    <span>{title}</span>
   );
 }
 
@@ -52,12 +61,15 @@ export const WorkbenchAction = withDynamicSchemaProps((props) => {
   const fieldSchema = useFieldSchema();
   const Component = useComponent(props?.targetComponent) || Action;
   return (
-    <Component
-      className={cx(className, styles.action, 'nb-action-panel')}
-      {...others}
-      icon={null}
-      title={<Button />}
-      confirmTitle={fieldSchema.title}
-    />
+    <ACLActionProvider>
+      <Component
+        className={cx(className, styles.action, 'nb-action-panel')}
+        {...others}
+        type="text"
+        icon={null}
+        title={<Button />}
+        confirmTitle={fieldSchema.title}
+      />
+    </ACLActionProvider>
   );
 });

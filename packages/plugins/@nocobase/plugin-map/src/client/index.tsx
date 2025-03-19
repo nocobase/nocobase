@@ -14,6 +14,10 @@ import { mapActionInitializers, mapActionInitializers_deprecated } from './block
 import { mapBlockSettings } from './block/MapBlock.Settings';
 import { useMapBlockProps } from './block/MapBlockProvider';
 import { Configuration, Map } from './components';
+
+// 懒加载会把 Map.Designer 的值变成 undefined，进而导致地图字段不显示 settings
+// const { Configuration, Map } = lazy(() => import('./components'), 'Configuration', 'Map');
+
 import { fields } from './fields';
 import { fieldSettingsComponentMap } from './fields/fieldSettingsComponentMap';
 import { NAMESPACE, generateNTemplate } from './locale';
@@ -52,7 +56,7 @@ export class PluginMapClient extends Plugin {
       Component: 'MapBlockInitializer',
     });
     this.app.pluginSettingsManager.add(NAMESPACE, {
-      title: `{{t("Map Manager", { ns: "${NAMESPACE}" })}}`,
+      title: `{{t("Map manager", { ns: "${NAMESPACE}" })}}`,
       icon: 'EnvironmentOutlined',
       Component: Configuration,
       aclSnippet: 'pm.map.configuration',

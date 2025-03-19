@@ -82,6 +82,8 @@ const handleChangeOnFilter = (value, picker, showTime) => {
   return value;
 };
 export const handleDateChangeOnForm = (value, dateOnly, utc, picker, showTime, gmt) => {
+  // @ts-ignore
+  const currentTimeZone = dayjs.tz.guess();
   const format = showTime ? 'YYYY-MM-DD HH:mm:ss' : 'YYYY-MM-DD';
   if (!value) {
     return value;
@@ -97,7 +99,8 @@ export const handleDateChangeOnForm = (value, dateOnly, utc, picker, showTime, g
       return dayjs(value).startOf(picker).toISOString();
     }
     const formattedDate = dayjs(value).format(format);
-    return dayjs(formattedDate).toISOString();
+    // @ts-ignore
+    return dayjs(formattedDate).tz(currentTimeZone, true).toISOString();
   }
   if (showTime) {
     return dayjs(value).format(format);
@@ -106,12 +109,14 @@ export const handleDateChangeOnForm = (value, dateOnly, utc, picker, showTime, g
 };
 
 export const mapDatePicker = function () {
+  const isMobileMedia = isMobile();
   return (props: any) => {
     const { dateOnly, showTime, picker = 'date', utc, gmt, underFilter } = props;
     const format = getDefaultFormat(props);
     const onChange = props.onChange;
     return {
       ...props,
+      inputReadOnly: isMobileMedia,
       format: format,
       value: str2moment(props.value, props),
       onChange: (value: Dayjs | null, dateString) => {
@@ -126,8 +131,12 @@ export const mapDatePicker = function () {
     };
   };
 };
+export function isMobile() {
+  return window.matchMedia('(max-width: 768px)').matches;
+}
 
 export const mapRangePicker = function () {
+  const isMobileMedia = isMobile();
   return (props: any) => {
     const format = getDefaultFormat(props) as any;
     const onChange = props.onChange;
@@ -136,6 +145,7 @@ export const mapRangePicker = function () {
       ...props,
       format: format,
       value: str2moment(props.value, props),
+      inputReadOnly: isMobileMedia,
       onChange: (value: Dayjs[]) => {
         if (onChange) {
           if (underFilter) {
@@ -264,7 +274,7 @@ function withParams(value: any[], params: { fieldOperator?: string; isParsingVar
   return value;
 }
 
-export function inferPickerType(dateString: string): 'year' | 'month' | 'quarter' | 'date' {
+export function inferPickerType(dateString: string, picker?): 'year' | 'month' | 'quarter' | 'date' {
   if (/^\d{4}$/.test(dateString)) {
     return 'year';
   } else if (/^\d{4}-\d{2}$/.test(dateString)) {
@@ -274,6 +284,6 @@ export function inferPickerType(dateString: string): 'year' | 'month' | 'quarter
   } else if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
     return 'date';
   } else {
-    return 'date';
+    return picker || 'date';
   }
 }

@@ -9,7 +9,7 @@
 
 import { useFieldSchema } from '@formily/react';
 import { useCallback } from 'react';
-import { useCollection_deprecated } from '../../collection-manager';
+import { useCollection } from '../../data-source/collection/CollectionProvider';
 
 /**
  * label = 'schema-initializer' + x-component + [x-initializer] + [collectionName] + [postfix]
@@ -18,7 +18,7 @@ import { useCollection_deprecated } from '../../collection-manager';
 
 export const useGetAriaLabelOfSchemaInitializer = () => {
   const fieldSchema = useFieldSchema();
-  const { name } = useCollection_deprecated();
+  const { name } = useCollection() || {};
   const getAriaLabel = useCallback(
     (postfix?: string) => {
       if (!fieldSchema) return '';

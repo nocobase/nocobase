@@ -15,6 +15,10 @@ import { getCollectionFieldOptions, useGetCollectionFields } from '../../variabl
 import { Trigger } from '..';
 import { ScheduleConfig } from './ScheduleConfig';
 import { SCHEDULE_MODE } from './constants';
+import { TriggerScheduleConfig } from './TriggerScheduleConfig';
+import { ScheduleModes } from './ScheduleModes';
+import { WorkflowVariableWrapper } from '../../variable';
+import { TriggerCollectionRecordSelect } from '../../components/TriggerCollectionRecordSelect';
 
 function useVariables(config, opts) {
   const [dataSourceName, collection] = parseCollectionName(config.collection);
@@ -66,11 +70,27 @@ export default class extends Trigger {
       'x-component-props': {},
     },
   };
+  triggerFieldset = {
+    proxy: {
+      type: 'void',
+      'x-component': 'TriggerScheduleConfig',
+    },
+  };
+  validate(config) {
+    if (config.mode == null) {
+      return false;
+    }
+    const { validate } = ScheduleModes[config.mode];
+    return validate ? validate(config) : true;
+  }
   scope = {
     useCollectionDataSource,
   };
   components = {
     ScheduleConfig,
+    TriggerScheduleConfig,
+    TriggerCollectionRecordSelect,
+    WorkflowVariableWrapper,
   };
   useVariables = useVariables;
   useInitializers(config): SchemaInitializerItemType | null {

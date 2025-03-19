@@ -113,7 +113,7 @@ test.describe('configure actions', () => {
     await page.getByLabel('schema-initializer-ActionBar-detailsWithPaging:configureActions-general').hover();
     await page.getByRole('menuitem', { name: 'Edit' }).click();
     await page.getByLabel('schema-initializer-ActionBar-detailsWithPaging:configureActions-general').hover();
-    await page.getByRole('menuitem', { name: 'Delete' }).click();
+    await page.getByText('Delete').click();
 
     await page.mouse.move(300, 0);
     await expect(page.getByRole('button', { name: 'Edit' })).toBeVisible();

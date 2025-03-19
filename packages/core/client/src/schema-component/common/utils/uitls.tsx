@@ -14,7 +14,7 @@ import { VariableOption, VariablesContextType } from '../../../variables/types';
 import { isVariable } from '../../../variables/utils/isVariable';
 import { transformVariableValue } from '../../../variables/utils/transformVariableValue';
 import { inferPickerType } from '../../antd/date-picker/util';
-import { getJsonLogic } from '../../common/utils/logic';
+
 type VariablesCtx = {
   /** 当前登录的用户 */
   $user?: Record<string, any>;
@@ -76,32 +76,34 @@ function getAllKeys(obj) {
   return keys;
 }
 
-export const conditionAnalyses = async ({
-  ruleGroup,
-  variables,
-  localVariables,
-  variableNameOfLeftCondition,
-}: {
-  ruleGroup;
-  variables: VariablesContextType;
-  localVariables: VariableOption[];
-  /**
-   * used to parse the variable name of the left condition value
-   * @default '$nForm'
-   */
-  variableNameOfLeftCondition?: string;
-}) => {
+export const conditionAnalyses = async (
+  {
+    ruleGroup,
+    variables,
+    localVariables,
+    variableNameOfLeftCondition,
+  }: {
+    ruleGroup;
+    variables: VariablesContextType;
+    localVariables: VariableOption[];
+    /**
+     * used to parse the variable name of the left condition value
+     * @default '$nForm'
+     */
+    variableNameOfLeftCondition?: string;
+  },
+  jsonLogic: any,
+) => {
   const type = Object.keys(ruleGroup)[0] || '$and';
   const conditions = ruleGroup[type];
 
   let results = conditions.map(async (condition) => {
-    // fix https://nocobase.height.app/T-3152
     if ('$and' in condition || '$or' in condition) {
-      return await conditionAnalyses({ ruleGroup: condition, variables, localVariables });
+      return await conditionAnalyses({ ruleGroup: condition, variables, localVariables }, jsonLogic);
     }
 
-    const jsonlogic = getInnermostKeyAndValue(condition);
-    const operator = jsonlogic?.key;
+    const logicCalculation = getInnermostKeyAndValue(condition);
+    const operator = logicCalculation?.key;
 
     if (!operator) {
       return true;
@@ -114,12 +116,11 @@ export const conditionAnalyses = async ({
       })
       .then(({ value }) => value);
 
-    const parsingResult = isVariable(jsonlogic?.value)
-      ? [variables.parseVariable(jsonlogic?.value, localVariables).then(({ value }) => value), targetValue]
-      : [jsonlogic?.value, targetValue];
+    const parsingResult = isVariable(logicCalculation?.value)
+      ? [variables.parseVariable(logicCalculation?.value, localVariables).then(({ value }) => value), targetValue]
+      : [logicCalculation?.value, targetValue];
 
     try {
-      const jsonLogic = getJsonLogic();
       const [value, targetValue] = await Promise.all(parsingResult);
       const targetCollectionField = await variables.getCollectionField(targetVariableName, localVariables);
       let currentInputValue = transformVariableValue(targetValue, { targetCollectionField });
@@ -155,7 +156,7 @@ export const conditionAnalyses = async ({
  * @param targetField
  * @returns
  */
-export function targetFieldToVariableString(targetField: string[], variableName = '$nForm') {
+function targetFieldToVariableString(targetField: string[], variableName = '$nForm') {
   // Action 中的联动规则虽然没有 form 上下文但是在这里也使用的是 `$nForm` 变量，这样实现更简单
   return `{{ ${variableName}.${targetField.join('.')} }}`;
 }

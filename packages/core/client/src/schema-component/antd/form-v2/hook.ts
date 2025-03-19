@@ -7,13 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { theme } from 'antd';
 import { useFieldSchema } from '@formily/react';
-import { useDataBlockHeight } from '../../hooks/useBlockSize';
+import { theme } from 'antd';
 import { useDesignable } from '../../';
-import { useDataBlockRequest } from '../../../data-source';
-import { useFormDataTemplates } from './Templates';
 import { useBlockHeightProps } from '../../../block-provider/hooks/useBlockHeightProps';
+import { useDataBlockRequestData } from '../../../data-source';
+import { useDataBlockHeight } from '../../hooks/useBlockSize';
+import { useFormDataTemplates } from './Templates';
 
 export const useFormBlockHeight = () => {
   const height = useDataBlockHeight();
@@ -21,7 +21,7 @@ export const useFormBlockHeight = () => {
   const { token } = theme.useToken();
   const { designable } = useDesignable();
   const { heightProps } = useBlockHeightProps() || {};
-  const { title } = heightProps || {};
+  const { title, titleHeight } = heightProps || {};
   const { display, enabled } = useFormDataTemplates();
   const actionSchema: any = schema.reduceProperties((buf, s) => {
     if (s['x-component'] === 'ActionBar') {
@@ -33,12 +33,14 @@ export const useFormBlockHeight = () => {
   const hasFormActions = Object.keys(actionSchema?.properties || {}).length > 0;
   const isFormBlock = schema?.parent?.['x-decorator']?.includes?.('FormBlockProvider');
   const actionBarHeight =
-    hasFormActions || designable ? token.controlHeight + (isFormBlock ? 1 : 2) * token.marginLG : token.marginLG;
-  const blockTitleHeaderHeight = title ? token.fontSizeLG * token.lineHeightLG + token.padding * 2 - 1 : 0;
-  const { data } = useDataBlockRequest() || {};
+    hasFormActions || designable
+      ? token.controlHeight + (isFormBlock ? 1 * token.marginLG : 24 + token.paddingLG)
+      : token.marginLG;
+  const blockTitleHeaderHeight = title ? titleHeight : 0;
+  const data = useDataBlockRequestData();
   const { count, pageSize } = (data as any)?.meta || ({} as any);
   const hasPagination = count > pageSize;
-  const paginationHeight = hasPagination ? token.controlHeightSM + 1 * token.paddingLG : 0;
+  const paginationHeight = hasPagination ? token.controlHeightSM + 24 : 0;
   const dataTemplateHeight = display && enabled ? token.controlHeight + 2 * token.padding + token.margin : 0;
   return height - actionBarHeight - token.paddingLG - blockTitleHeaderHeight - paginationHeight - dataTemplateHeight;
 };

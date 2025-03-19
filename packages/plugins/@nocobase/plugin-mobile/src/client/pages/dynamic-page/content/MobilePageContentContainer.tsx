@@ -7,14 +7,16 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { useToken } from '@nocobase/client';
 import _ from 'lodash';
 import React, { FC, useEffect } from 'react';
-import { useStyles } from './styles';
+import { PageBackgroundColor } from '../../../constants';
 
 export const MobilePageContentContainer: FC<{ hideTabBar?: boolean }> = ({ children, hideTabBar }) => {
-  const { styles } = useStyles();
   const [mobileTabBarHeight, setMobileTabBarHeight] = React.useState(0);
   const [mobilePageHeader, setMobilePageHeader] = React.useState(0);
+  const { token } = useToken();
+
   useEffect(() => {
     const navigationBar = _.last(document.querySelectorAll<HTMLDivElement>('.mobile-page-header'));
     setMobilePageHeader(navigationBar?.offsetHeight);
@@ -29,11 +31,16 @@ export const MobilePageContentContainer: FC<{ hideTabBar?: boolean }> = ({ child
     <>
       {mobilePageHeader ? <div style={{ height: mobilePageHeader }}></div> : null}
       <div
-        className={`${styles.mobilePageContent} mobile-page-content`}
+        className="mobile-page-content"
         data-testid="mobile-page-content"
         style={{
           height: `calc(100% - ${(mobileTabBarHeight || 0) + (mobilePageHeader || 0)}px)`,
           boxSizing: 'border-box',
+          maxWidth: '100%',
+          overflowX: 'hidden',
+          backgroundColor: PageBackgroundColor,
+          paddingInline: token.paddingPageHorizontal,
+          paddingBlock: token.paddingPageVertical,
         }}
       >
         {children}

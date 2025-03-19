@@ -16,6 +16,7 @@ export async function prepareApp(): Promise<MockServer> {
     plugins: [
       'acl',
       'error-handler',
+      'field-sort',
       'users',
       'ui-schema-storage',
       'data-source-main',

@@ -51,5 +51,6 @@ test.describe('tree table block schema settings', () => {
 
 async function showSettingsMenu(page: Page) {
   await page.getByLabel('block-item-CardItem-treeCollection-table').hover();
-  await page.getByLabel('designer-schema-settings-CardItem-TableBlockDesigner-treeCollection').hover();
+  // hover 方法有时会失效，所以这里使用 click 方法。原因未知
+  await page.getByLabel('designer-schema-settings-CardItem-TableBlockDesigner-treeCollection').click();
 }

@@ -59,6 +59,9 @@ export const createCalendarBlockUISchema = (options: {
           event: {
             type: 'void',
             'x-component': 'CalendarV2.Event',
+            'x-component-props': {
+              openMode: 'drawer',
+            },
             properties: {
               drawer: {
                 type: 'void',

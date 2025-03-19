@@ -7,13 +7,17 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { isURL } from '@nocobase/utils';
 import fs from 'fs/promises';
 import mkdirp from 'mkdirp';
 import multer from 'multer';
 import path from 'path';
+import urlJoin from 'url-join';
 import { AttachmentModel, StorageType } from '.';
 import { FILE_SIZE_LIMIT_DEFAULT, STORAGE_TYPE_LOCAL } from '../../constants';
 import { getFilename } from '../utils';
+
+const DEFAULT_BASE_URL = '/storage/uploads';
 
 function getDocumentRoot(storage): string {
   const { documentRoot = process.env.LOCAL_STORAGE_DEST || 'storage/uploads' } = storage.options || {};
@@ -22,31 +26,33 @@ function getDocumentRoot(storage): string {
 }
 
 export default class extends StorageType {
-  make(storage) {
-    return multer.diskStorage({
-      destination: function (req, file, cb) {
-        const destPath = path.join(getDocumentRoot(storage), storage.path);
-        mkdirp(destPath, (err: Error | null) => cb(err, destPath));
-      },
-      filename: getFilename,
-    });
-  }
-  defaults() {
+  static defaults() {
     return {
       title: 'Local storage',
       type: STORAGE_TYPE_LOCAL,
       name: `local`,
-      baseUrl: '/storage/uploads',
+      baseUrl: DEFAULT_BASE_URL,
       options: {
         documentRoot: 'storage/uploads',
       },
+      path: '',
       rules: {
         size: FILE_SIZE_LIMIT_DEFAULT,
       },
     };
   }
-  async delete(storage, records: AttachmentModel[]): Promise<[number, AttachmentModel[]]> {
-    const documentRoot = getDocumentRoot(storage);
+
+  make() {
+    return multer.diskStorage({
+      destination: (req, file, cb) => {
+        const destPath = path.join(getDocumentRoot(this.storage), this.storage.path || '');
+        mkdirp(destPath, (err: Error | null) => cb(err, destPath));
+      },
+      filename: getFilename,
+    });
+  }
+  async delete(records: AttachmentModel[]): Promise<[number, AttachmentModel[]]> {
+    const documentRoot = getDocumentRoot(this.storage);
     let count = 0;
     const undeleted = [];
     await records.reduce(
@@ -69,5 +75,12 @@ export default class extends StorageType {
     );
 
     return [count, undeleted];
+  }
+  async getFileURL(file: AttachmentModel, preview = false) {
+    const url = await super.getFileURL(file, preview);
+    if (isURL(url)) {
+      return url;
+    }
+    return urlJoin(process.env.APP_PUBLIC_PATH, url);
   }
 }

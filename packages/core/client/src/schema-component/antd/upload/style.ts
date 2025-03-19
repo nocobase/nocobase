@@ -68,7 +68,7 @@ export const useStyles = genStyleHook('upload', (token) => {
         },
         [`${componentCls}-list-picture-card ${componentCls}-list-item-name`]: {
           display: 'block !important',
-          marginTop: '10px',
+          marginTop: '5px',
           fontSize: '13px',
           color: '#636363',
         },
@@ -84,7 +84,7 @@ export const useStyles = genStyleHook('upload', (token) => {
           background: 'rgba(0, 0, 0, 0.5)',
         },
         [`${componentCls}-list-picture-card-container`]: {
-          marginBlock: '0 28px !important',
+          // marginBlock: '0 28px !important',
         },
       },
 

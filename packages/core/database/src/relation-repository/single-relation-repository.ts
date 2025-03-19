@@ -13,6 +13,7 @@ import { Model } from '../model';
 import { FindOptions, TargetKey, UpdateOptions } from './types';
 import { updateModelByValues } from '../update-associations';
 import { RelationRepository, transaction } from './relation-repository';
+import lodash from 'lodash';
 
 interface SetOption extends Transactionable {
   tk?: TargetKey;
@@ -100,7 +101,7 @@ export abstract class SingleRelationRepository extends RelationRepository {
     }
 
     await updateModelByValues(target, options?.values, {
-      ...options,
+      ...lodash.omit(options, 'values'),
       transaction,
     });
 

@@ -19,7 +19,8 @@ test('Date display format in form', async ({ page, mockPage }) => {
     showMenu: async () => {
       await page.getByPlaceholder('Select date').hover();
       await page.getByLabel('block-item-CollectionField').hover();
-      await page.getByLabel('designer-schema-settings-CollectionField-fieldSettings:FormItem-general').hover();
+      // hover 方法有时会失效，所以用 click 替代，原因未知
+      await page.getByLabel('designer-schema-settings-CollectionField-fieldSettings:FormItem-general').click();
     },
     supportedOptions: [
       'Edit field title',

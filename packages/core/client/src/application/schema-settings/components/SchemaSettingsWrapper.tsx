@@ -7,19 +7,18 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { FC, useMemo } from 'react';
+import { useField, useFieldSchema } from '@formily/react';
+import React, { FC, useMemo } from 'react';
+import { useDesignable } from '../../../schema-component';
 import { SchemaSettingsDropdown } from '../../../schema-settings';
 import { SchemaSettingOptions } from '../types';
 import { SchemaSettingsChildren } from './SchemaSettingsChildren';
 import { SchemaSettingsIcon } from './SchemaSettingsIcon';
-import React from 'react';
-import { useDesignable } from '../../../schema-component';
-import { useField, useFieldSchema } from '@formily/react';
 
 /**
  * @internal
  */
-export const SchemaSettingsWrapper: FC<SchemaSettingOptions<any>> = (props) => {
+export const SchemaSettingsWrapper: FC<SchemaSettingOptions<any>> = React.memo((props) => {
   const { items, Component = SchemaSettingsIcon, name, componentProps, style, ...others } = props;
   const { dn } = useDesignable();
   const field = useField();
@@ -43,4 +42,6 @@ export const SchemaSettingsWrapper: FC<SchemaSettingOptions<any>> = (props) => {
       <SchemaSettingsChildren>{items}</SchemaSettingsChildren>
     </SchemaSettingsDropdown>
   );
-};
+});
+
+SchemaSettingsWrapper.displayName = 'SchemaSettingsWrapper';

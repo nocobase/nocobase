@@ -13,8 +13,8 @@ import { Empty } from 'antd';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { findFilterTargets, updateFilterTargets } from '../block-provider/hooks';
-import { useCollectionManager_deprecated } from '../collection-manager/hooks/useCollectionManager_deprecated';
 import { useCollection } from '../data-source/collection/CollectionProvider';
+import { useAllCollectionsInheritChainGetter } from '../data-source/data-source/DataSourceManagerProvider';
 import { useFilterBlock } from '../filter-provider/FilterProvider';
 import {
   getSupportFieldsByAssociation,
@@ -43,7 +43,7 @@ export function SchemaSettingsConnectDataBlocks(props) {
   // eslint-disable-next-line prefer-const
   let { targets = [], uid } = findFilterTargets(fieldSchema);
   const compile = useCompile();
-  const { getAllCollectionsInheritChain } = useCollectionManager_deprecated();
+  const { getAllCollectionsInheritChain } = useAllCollectionsInheritChainGetter();
 
   if (!inProvider) {
     return null;

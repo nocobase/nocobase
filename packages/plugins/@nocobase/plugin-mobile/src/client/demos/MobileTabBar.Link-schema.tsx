@@ -15,8 +15,8 @@ const Demo = () => {
           title: 'Link',
           icon: 'AppstoreOutlined',
           options: {
-            url: 'https://github.com'
-          }
+            url: 'https://github.com',
+          },
         }),
       )}
     />

@@ -7,8 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { isURL } from '@nocobase/utils';
 import { StorageEngine } from 'multer';
-import Application from '@nocobase/server';
+import urlJoin from 'url-join';
+import { encodeURL } from '../utils';
 
 export interface StorageModel {
   id?: number;
@@ -27,19 +29,36 @@ export interface AttachmentModel {
   title: string;
   filename: string;
   path: string;
+  url: string;
+  storageId: number;
 }
 
-export interface IStorage {
-  filenameKey?: string;
-  middleware?(app: Application): void;
+export abstract class StorageType {
+  static defaults(): StorageModel {
+    return {} as StorageModel;
+  }
+  static filenameKey?: string;
+  constructor(public storage: StorageModel) {}
+  abstract make(): StorageEngine;
+  abstract delete(records: AttachmentModel[]): [number, AttachmentModel[]] | Promise<[number, AttachmentModel[]]>;
+
   getFileData?(file: { [key: string]: any }): { [key: string]: any };
-  make(storage: StorageModel): StorageEngine;
-  defaults(): StorageModel;
-  delete(storage: StorageModel, records: AttachmentModel[]): Promise<[number, AttachmentModel[]]>;
+  getFileURL(file: AttachmentModel, preview?: boolean): string | Promise<string> {
+    // 兼容历史数据
+    if (file.url && isURL(file.url)) {
+      if (preview) {
+        return encodeURL(file.url) + (this.storage.options.thumbnailRule || '');
+      }
+      return encodeURL(file.url);
+    }
+    const keys = [
+      this.storage.baseUrl,
+      file.path && encodeURI(file.path),
+      encodeURIComponent(file.filename),
+      preview && this.storage.options.thumbnailRule,
+    ].filter(Boolean);
+    return urlJoin(keys);
+  }
 }
 
-export abstract class StorageType implements IStorage {
-  abstract make(storage: StorageModel): StorageEngine;
-  abstract defaults(): StorageModel;
-  abstract delete(storage: StorageModel, records: AttachmentModel[]): Promise<[number, AttachmentModel[]]>;
-}
+export type StorageClassType = { new (storage: StorageModel): StorageType } & typeof StorageType;

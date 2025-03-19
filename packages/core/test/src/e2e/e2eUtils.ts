@@ -13,6 +13,24 @@ import { Browser, Page, test as base, expect, request } from '@playwright/test';
 import _ from 'lodash';
 import { defineConfig } from './defineConfig';
 
+function getPageMenuSchema({ pageSchemaUid, tabSchemaUid, tabSchemaName }) {
+  return {
+    type: 'void',
+    'x-component': 'Page',
+    properties: {
+      [tabSchemaName]: {
+        type: 'void',
+        'x-component': 'Grid',
+        'x-initializer': 'page:addBlock',
+        properties: {},
+        'x-uid': tabSchemaUid,
+        'x-async': true,
+      },
+    },
+    'x-uid': pageSchemaUid,
+  };
+}
+
 export * from '@playwright/test';
 
 export { defineConfig };
@@ -129,7 +147,7 @@ interface AclRoleSetting {
   default?: boolean;
   key?: string;
   //菜单权限配置
-  menuUiSchemas?: string[];
+  desktopRoutes?: number[];
   dataSourceKey?: string;
 }
 
@@ -324,6 +342,7 @@ const APP_BASE_URL = process.env.APP_BASE_URL || `http://localhost:${PORT}`;
 export class NocoPage {
   protected url: string;
   protected uid: string | undefined;
+  protected desktopRouteId: number | undefined;
   protected collectionsName: string[] | undefined;
   protected _waitForInit: Promise<void>;
 
@@ -355,9 +374,11 @@ export class NocoPage {
     );
 
     const result = await Promise.all(waitList);
+    const { schemaUid, routeId } = result[result.length - 1] || {};
 
-    this.uid = result[result.length - 1];
-    this.url = `${this.options?.basePath || '/admin/'}${this.uid}`;
+    this.uid = schemaUid;
+    this.desktopRouteId = routeId;
+    this.url = `${this.options?.basePath || '/admin/'}${this.uid || this.desktopRouteId}`;
   }
 
   async goto() {
@@ -373,6 +394,10 @@ export class NocoPage {
     await this._waitForInit;
     return this.uid;
   }
+  async getDesktopRouteId() {
+    await this._waitForInit;
+    return this.desktopRouteId;
+  }
   /**
    * If you are using mockRecords, then you need to use this method.
    * Wait until the mockRecords create the records successfully before navigating to the page.
@@ -386,9 +411,10 @@ export class NocoPage {
 
   async destroy() {
     const waitList: any[] = [];
-    if (this.uid) {
-      waitList.push(deletePage(this.uid));
+    if (this.uid || this.desktopRouteId !== undefined) {
+      waitList.push(deletePage(this.uid, this.desktopRouteId));
       this.uid = undefined;
+      this.desktopRouteId = undefined;
     }
     if (this.collectionsName?.length) {
       waitList.push(deleteCollections(this.collectionsName));
@@ -399,7 +425,7 @@ export class NocoPage {
 }
 
 export class NocoMobilePage extends NocoPage {
-  protected routeId: number;
+  protected mobileRouteId: number;
   protected title: string;
   constructor(
     protected options?: MobilePageConfig,
@@ -427,7 +453,7 @@ export class NocoMobilePage extends NocoPage {
 
     const { url, pageSchemaUid, routeId, title } = result[result.length - 1];
     this.title = title;
-    this.routeId = routeId;
+    this.mobileRouteId = routeId;
     this.uid = pageSchemaUid;
     if (this.options?.type == 'link') {
       // 内部 URL 和外部 URL
@@ -443,7 +469,7 @@ export class NocoMobilePage extends NocoPage {
 
   async mobileDestroy() {
     // 移除 mobile routes
-    await deleteMobileRoutes(this.routeId);
+    await deleteMobileRoutes(this.mobileRouteId);
     // 移除 schema
     await this.destroy();
   }
@@ -606,7 +632,7 @@ const _test = base.extend<ExtendUtils>({
     const page = await getPage(browser);
 
     const deletePage = async (pageName: string) => {
-      await page.getByText(pageName, { exact: true }).hover();
+      await page.getByLabel(pageName, { exact: true }).hover();
       await page.getByRole('button', { name: 'designer-schema-settings-' }).hover();
       await page.getByRole('menuitem', { name: 'Delete', exact: true }).click();
       await page.getByRole('button', { name: 'OK', exact: true }).click();
@@ -715,75 +741,105 @@ const createPage = async (options?: CreatePageOptions) => {
   const api = await request.newContext({
     storageState: process.env.PLAYWRIGHT_AUTH_FILE,
   });
-  const typeToSchema = {
-    group: {
-      'x-component': 'Menu.SubMenu',
-      'x-component-props': {},
-    },
-    page: {
-      'x-component': 'Menu.Item',
-      'x-component-props': {},
-    },
-    link: {
-      'x-component': 'Menu.URL',
-      'x-component-props': {
-        href: url,
-      },
-    },
-  };
   const state = await api.storageState();
   const headers = getHeaders(state);
-  const pageUid = pageUidFromOptions || uid();
-  const gridName = uid();
+  const newPageSchema = keepUid ? pageSchema : updateUidOfPageSchema(pageSchema);
+  const pageSchemaUid = newPageSchema?.['x-uid'] || uid();
+  const newTabSchemaUid = uid();
+  const newTabSchemaName = uid();
 
-  const result = await api.post(`/api/uiSchemas:insertAdjacent/nocobase-admin-menu?position=beforeEnd`, {
-    headers,
-    data: {
-      schema: {
-        _isJSONSchemaObject: true,
-        version: '2.0',
-        type: 'void',
-        title: name || pageUid,
-        ...typeToSchema[type],
-        'x-decorator': 'ACLMenuItemProvider',
-        'x-server-hooks': [
-          { type: 'onSelfCreate', method: 'bindMenuToRole' },
-          { type: 'onSelfSave', method: 'extractTextToLocale' },
-        ],
-        properties: {
-          page: (keepUid ? pageSchema : updateUidOfPageSchema(pageSchema)) || {
-            _isJSONSchemaObject: true,
-            version: '2.0',
-            type: 'void',
-            'x-component': 'Page',
-            'x-async': true,
-            properties: {
-              [gridName]: {
-                _isJSONSchemaObject: true,
-                version: '2.0',
-                type: 'void',
-                'x-component': 'Grid',
-                'x-initializer': 'page:addBlock',
-                'x-uid': uid(),
-                name: gridName,
-              },
-            },
-            'x-uid': uid(),
-            name: 'page',
-          },
-        },
-        name: uid(),
-        'x-uid': pageUid,
+  const title = name || pageSchemaUid;
+
+  let routeId;
+  let schemaUid;
+
+  if (type === 'group') {
+    const result = await api.post('/api/desktopRoutes:create', {
+      headers,
+      data: {
+        type: 'group',
+        title,
+        hideInMenu: false,
       },
-      wrap: null,
-    },
-  });
+    });
 
-  if (!result.ok()) {
-    throw new Error(await result.text());
+    if (!result.ok()) {
+      throw new Error(await result.text());
+    }
+
+    const data = await result.json();
+    routeId = data.data?.id;
   }
 
-  return pageUid;
+  if (type === 'page') {
+    const routeResult = await api.post('/api/desktopRoutes:create', {
+      headers,
+      data: {
+        type: 'page',
+        title,
+        schemaUid: pageSchemaUid,
+        hideInMenu: false,
+        enableTabs: !!newPageSchema?.['x-component-props']?.enablePageTabs,
+        children: newPageSchema
+          ? schemaToRoutes(newPageSchema)
+          : [
+              {
+                type: 'tabs',
+                title: '{{t("Unnamed")}}',
+                schemaUid: newTabSchemaUid,
+                tabSchemaName: newTabSchemaName,
+                hideInMenu: false,
+              },
+            ],
+      },
+    });
+
+    if (!routeResult.ok()) {
+      throw new Error(await routeResult.text());
+    }
+
+    const schemaResult = await api.post(`/api/uiSchemas:insert`, {
+      headers,
+      data:
+        newPageSchema ||
+        getPageMenuSchema({
+          pageSchemaUid,
+          tabSchemaUid: newTabSchemaUid,
+          tabSchemaName: newTabSchemaName,
+        }),
+    });
+
+    if (!schemaResult.ok()) {
+      throw new Error(await routeResult.text());
+    }
+
+    const data = await routeResult.json();
+    routeId = data.data?.id;
+    schemaUid = pageSchemaUid;
+  }
+
+  if (type === 'link') {
+    const result = await api.post('/api/desktopRoutes:create', {
+      headers,
+      data: {
+        type: 'link',
+        title,
+        hideInMenu: false,
+        options: {
+          href: url,
+        },
+      },
+    });
+
+    if (!result.ok()) {
+      throw new Error(await result.text());
+    }
+
+    const data = await result.json();
+    routeId = data.data?.id;
+  }
+
+  return { schemaUid, routeId };
 };
 
 /**
@@ -977,9 +1033,9 @@ const deleteMobileRoutes = async (mobileRouteId: number) => {
 };
 
 /**
- * 根据页面 uid 删除一个 NocoBase 的页面
+ * 根据页面 uid 删除一个页面的 schema，根据页面路由的 id 删除一个页面的路由
  */
-const deletePage = async (pageUid: string) => {
+const deletePage = async (pageUid: string, routeId: number) => {
   const api = await request.newContext({
     storageState: process.env.PLAYWRIGHT_AUTH_FILE,
   });
@@ -987,12 +1043,24 @@ const deletePage = async (pageUid: string) => {
   const state = await api.storageState();
   const headers = getHeaders(state);
 
-  const result = await api.post(`/api/uiSchemas:remove/${pageUid}`, {
-    headers,
-  });
+  if (routeId !== undefined) {
+    const routeResult = await api.post(`/api/desktopRoutes:destroy?filterByTk=${routeId}`, {
+      headers,
+    });
 
-  if (!result.ok()) {
-    throw new Error(await result.text());
+    if (!routeResult.ok()) {
+      throw new Error(await routeResult.text());
+    }
+  }
+
+  if (pageUid) {
+    const result = await api.post(`/api/uiSchemas:remove/${pageUid}`, {
+      headers,
+    });
+
+    if (!result.ok()) {
+      throw new Error(await result.text());
+    }
   }
 };
 
@@ -1325,13 +1393,14 @@ export async function expectSettingsMenu({
   page,
   unsupportedOptions,
 }: ExpectSettingsMenuParams) {
+  await page.waitForTimeout(100);
   await showMenu();
   for (const option of supportedOptions) {
-    await expect(page.getByRole('menuitem', { name: option })).toBeVisible();
+    await expect(page.getByRole('menuitem', { name: option, exact: option === 'Edit' })).toBeVisible();
   }
   if (unsupportedOptions) {
     for (const option of unsupportedOptions) {
-      await expect(page.getByRole('menuitem', { name: option })).not.toBeVisible();
+      await expect(page.getByRole('menuitem', { name: option, exact: option === 'Edit' })).not.toBeVisible();
     }
   }
 }
@@ -1406,4 +1475,28 @@ export async function expectSupportedVariables(page: Page, variables: string[]) 
   for (const name of variables) {
     await expect(page.getByRole('menuitemcheckbox', { name })).toBeVisible();
   }
+}
+
+function schemaToRoutes(schema: any) {
+  const schemaKeys = Object.keys(schema.properties || {});
+
+  if (schemaKeys.length === 0) {
+    return [];
+  }
+
+  const result = schemaKeys.map((key: string) => {
+    const item = schema.properties[key];
+
+    // Tab
+    return {
+      type: 'tabs',
+      title: item.title || '{{t("Unnamed")}}',
+      icon: item['x-component-props']?.icon,
+      schemaUid: item['x-uid'],
+      tabSchemaName: key,
+      hideInMenu: false,
+    };
+  });
+
+  return result;
 }

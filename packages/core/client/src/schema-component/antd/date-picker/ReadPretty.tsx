@@ -19,6 +19,7 @@ import {
 import cls from 'classnames';
 import dayjs from 'dayjs';
 import React from 'react';
+import { withPopupWrapper } from '../../common/withPopupWrapper';
 
 export type ReadPrettyComposed = {
   DatePicker: React.FC<ReadPrettyDatePickerProps>;
@@ -74,3 +75,4 @@ ReadPretty.DateRangePicker = function DateRangePicker(props: DateRangePickerRead
     </div>
   );
 };
+ReadPretty.DatePicker = withPopupWrapper(ReadPretty.DatePicker);

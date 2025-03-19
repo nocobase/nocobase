@@ -11,7 +11,7 @@ import { FormLayout } from '@formily/antd-v5';
 import { createForm } from '@formily/core';
 import { FormProvider, ISchema, Schema, useFieldSchema, useForm } from '@formily/react';
 import { Alert, Button, Modal, Space, message } from 'antd';
-import React, { useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import {
@@ -39,7 +39,6 @@ import {
   useSchemaInitializer,
   useSchemaInitializerItem,
   useSchemaOptionsContext,
-  useVariableScope,
 } from '@nocobase/client';
 import WorkflowPlugin, {
   DetailsBlockProvider,
@@ -430,6 +429,7 @@ export function SchemaConfig({ value, onChange }) {
   const nodes = useAvailableUpstreams(node);
   const form = useForm();
   const { workflow } = useFlowContext();
+  const refreshRef = useRef(() => {});
 
   const nodeComponents = {};
   nodes.forEach((item) => {
@@ -445,13 +445,15 @@ export function SchemaConfig({ value, onChange }) {
             type: 'void',
             title: `{{t("User interface", { ns: "${NAMESPACE}" })}}`,
             'x-decorator': 'Form',
-            'x-component': 'Action.Drawer',
+            'x-component': 'Action.Container',
             'x-component-props': {
-              className: css`
-                .ant-drawer-body {
-                  background: var(--nb-box-bg);
-                }
-              `,
+              // className: css`
+              //   .ant-drawer-body {
+              //     background: var(--nb-box-bg);
+              //   }
+              // `,
+              // Using ref to call refresh ensures accessing the latest refresh function
+              onClose: () => refreshRef.current(),
             },
             properties: {
               tabs: {
@@ -500,6 +502,8 @@ export function SchemaConfig({ value, onChange }) {
     },
     [form, onChange, schema],
   );
+
+  refreshRef.current = refresh;
 
   return (
     <SchemaComponentContext.Provider
@@ -562,8 +566,8 @@ export function SchemaConfigButton(props) {
         const msg = validateForms(values.forms);
         if (msg) {
           message.error({
-            // eslint-disable-next-line react-hooks/rules-of-hooks
-            title: t('Validation failed'),
+            // message.error does not support title, and it will cause error, so comment it
+            // title: t('Validation failed'),
             content: t(msg),
           });
           return;

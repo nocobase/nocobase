@@ -7,8 +7,15 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { ISchema, observer, RecursionField, useField, useFieldSchema } from '@formily/react';
-import { Action, SchemaComponent, useActionContext, useZIndexContext, zIndexContext } from '@nocobase/client';
+import { ISchema, observer, useField, useFieldSchema } from '@formily/react';
+import {
+  Action,
+  NocoBaseRecursionField,
+  SchemaComponent,
+  useActionContext,
+  useZIndexContext,
+  zIndexContext,
+} from '@nocobase/client';
 import { ConfigProvider } from 'antd';
 import { Popup } from 'antd-mobile';
 import { CloseOutline } from 'antd-mobile-icons';
@@ -22,7 +29,7 @@ export const ActionDrawerUsedInMobile: any = observer((props: { footerNodeName?:
   const field = useField();
   const { visible, setVisible } = useActionContext();
   const { popupContainerRef, visiblePopup } = usePopupContainer(visible);
-  const { styles } = useMobileActionDrawerStyle();
+  const { componentCls, hashId } = useMobileActionDrawerStyle();
   const parentZIndex = useZIndexContext();
 
   // this schema need to add padding in the content area of the popup
@@ -69,22 +76,23 @@ export const ActionDrawerUsedInMobile: any = observer((props: { footerNodeName?:
     <zIndexContext.Provider value={newZIndex}>
       <ConfigProvider theme={theme}>
         <Popup
+          className={`${componentCls} ${hashId}`}
           visible={visiblePopup}
           onClose={closePopup}
           onMaskClick={closePopup}
           getContainer={() => popupContainerRef.current}
-          bodyClassName={styles.body}
+          bodyClassName="nb-mobile-action-drawer-body"
           bodyStyle={zIndexStyle}
           maskStyle={zIndexStyle}
           closeOnSwipe
         >
-          <div className={styles.header}>
+          <div className="nb-mobile-action-drawer-header">
             {/* used to make the title center */}
-            <span className={styles.placeholder}>
+            <span className="nb-mobile-action-drawer-placeholder">
               <CloseOutline />
             </span>
             <span>{title}</span>
-            <span className={styles.closeIcon} onClick={closePopup}>
+            <span className="nb-mobile-action-drawer-close-icon" onClick={closePopup}>
               <CloseOutline />
             </span>
           </div>
@@ -107,8 +115,8 @@ export const ActionDrawerUsedInMobile: any = observer((props: { footerNodeName?:
             />
           )}
           {footerSchema ? (
-            <div className={styles.footer} style={isSpecialSchema ? specialStyle : null}>
-              <RecursionField
+            <div className="nb-mobile-action-drawer-footer" style={isSpecialSchema ? specialStyle : null}>
+              <NocoBaseRecursionField
                 basePath={field.address}
                 schema={fieldSchema}
                 onlyRenderProperties

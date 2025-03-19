@@ -12,6 +12,6 @@
   "Update record action": "更新记录操作",
   "Associations to use": "待使用的关系数据",
   "Trigger data": "触发器数据",
-  "User submitted action": "提交操作的用户",
-  "Role of user submitted action": "提交操作用户的角色"
+  "User acted": "操作者",
+  "Role of user acted": "操作者角色"
 }

@@ -45,5 +45,18 @@ export default {
       name: 'read',
       defaultValue: 0,
     },
+    {
+      type: 'double',
+      name: 'score',
+      defaultValue: 0,
+    },
+    {
+      type: 'date',
+      name: 'createdAt',
+    },
+    {
+      type: 'date',
+      name: 'updatedAt',
+    },
   ],
 } as CollectionOptions;

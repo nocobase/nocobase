@@ -24,10 +24,12 @@
   "Other desktop blocks": "其他桌面端区块",
   "Settings": "设置",
   "Mobile menu": "移动端菜单",
+  "Mobile routes": "移动端路由",
   "No accessible pages found": "没有找到你可以访问的页面",
   "This might be due to permission configuration issues": "这可能是权限配置的问题",
   "Select time": "选择时间",
   "Clear": "清空",
   "Confirm": "确认",
-  "Cancel": "取消"
+  "Cancel": "取消",
+  "Display < back button": "显示 < 返回按钮"
 }

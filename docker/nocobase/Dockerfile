@@ -1,4 +1,4 @@
-FROM node:18-bullseye-slim as builder
+FROM node:20-bookworm-slim as builder
 
 ARG CNA_VERSION
 
@@ -14,7 +14,7 @@ RUN cd /app \
   && rm -rf nocobase.tar.gz \
   && tar -zcf ./nocobase.tar.gz -C /app/my-nocobase-app .
 
-FROM node:18-bullseye-slim
+FROM node:20-bookworm-slim
 
 # COPY ./sources.list /etc/apt/sources.list
 RUN ARCH= && dpkgArch="$(dpkg --print-architecture)" \

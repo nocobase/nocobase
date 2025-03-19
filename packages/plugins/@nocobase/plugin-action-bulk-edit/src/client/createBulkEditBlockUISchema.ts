@@ -39,7 +39,7 @@ export function createBulkEditBlockUISchema(options: {
       association,
     },
     'x-toolbar': 'BlockSchemaToolbar',
-    'x-settings': 'blockSettings:createForm',
+    'x-settings': 'blockSettings:bulkEditForm',
     'x-component': 'CardItem',
     properties: {
       [uid()]: {

@@ -87,6 +87,40 @@ describe('update', () => {
     await db.sync();
   });
 
+  it('should update collection that without primary key', async () => {
+    const collection = db.collection({
+      name: 'without_pk',
+      autoGenId: false,
+      timestamps: false,
+      fields: [{ type: 'string', name: 'nameWithUnderscore' }],
+    });
+
+    await collection.sync();
+
+    await collection.repository.create({
+      values: {
+        nameWithUnderscore: 'item1',
+      },
+    });
+
+    await collection.repository.update({
+      values: {
+        nameWithUnderscore: 'item2',
+      },
+      filter: {
+        nameWithUnderscore: 'item1',
+      },
+    });
+
+    const item = await collection.repository.findOne({
+      filter: {
+        nameWithUnderscore: 'item2',
+      },
+    });
+
+    expect(item).toBeDefined();
+  });
+
   it('should throw error when update data conflicted', async () => {
     const t1 = await Tag.repository.create({
       values: {

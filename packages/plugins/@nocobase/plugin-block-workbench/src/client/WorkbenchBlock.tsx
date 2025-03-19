@@ -7,20 +7,24 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { RecursionField, observer, useFieldSchema } from '@formily/react';
+import { observer, useFieldSchema } from '@formily/react';
 import {
   CollectionContext,
+  createStyles,
+  css,
   DataSourceContext,
   DndContext,
+  Icon,
+  NocoBaseRecursionField,
+  useBlockHeight,
   useDesignable,
+  useOpenModeContext,
   useSchemaInitializerRender,
   withDynamicSchemaProps,
-  Icon,
-  useBlockHeight,
 } from '@nocobase/client';
-import { css } from '@emotion/css';
-import { Space, List, Avatar, theme } from 'antd';
-import React, { createContext, useState, useEffect } from 'react';
+import { Avatar, Space, theme } from 'antd';
+import { Grid, List } from 'antd-mobile';
+import React, { createContext } from 'react';
 import { WorkbenchLayout } from './workbenchBlockSettings';
 
 const ConfigureActionsButton = observer(
@@ -32,79 +36,61 @@ const ConfigureActionsButton = observer(
   { displayName: 'WorkbenchConfigureActionsButton' },
 );
 
-const InternalIcons = () => {
+function isMobile() {
+  return window.matchMedia('(max-width: 768px)').matches;
+}
+
+const gap = 8;
+
+const ResponsiveSpace = () => {
   const fieldSchema = useFieldSchema();
-  const { designable } = useDesignable();
-  const { layout = WorkbenchLayout.Grid } = fieldSchema.parent['x-component-props'] || {};
-  const [gap, setGap] = useState(8); // 初始 gap 值
+  const isMobileMedia = isMobile();
+  const { isMobile: underMobileCtx } = useOpenModeContext() || {};
+  const { itemsPerRow = 4 } = fieldSchema.parent['x-decorator-props'] || {};
 
-  useEffect(() => {
-    const calculateGap = () => {
-      const container = document.getElementsByClassName('mobile-page-content')[0] as any;
-      if (container) {
-        const containerWidth = container.offsetWidth - 48;
-        const itemWidth = 100; // 每个 item 的宽度
-        const itemsPerRow = Math.floor(containerWidth / itemWidth); // 每行能容纳的 item 数
-        // 计算实际需要的 gap 值
-        const totalItemWidth = itemsPerRow * itemWidth;
-        const totalAvailableWidth = containerWidth;
-        const totalGapsWidth = totalAvailableWidth - totalItemWidth;
-
-        if (totalGapsWidth > 0) {
-          setGap(totalGapsWidth / (itemsPerRow - 1));
-        } else {
-          setGap(0); // 如果没有足够的空间，则设置 gap 为 0
-        }
-      }
-    };
-
-    window.addEventListener('resize', calculateGap);
-    calculateGap(); // 初始化时计算 gap
-
-    return () => {
-      window.removeEventListener('resize', calculateGap);
-    };
-  }, [Object.keys(fieldSchema?.properties || {}).length]);
+  if (underMobileCtx || isMobileMedia) {
+    return (
+      <Grid columns={itemsPerRow} gap={gap}>
+        {fieldSchema.mapProperties((s, key) => {
+          return (
+            <Grid.Item style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }} key={key}>
+              <NocoBaseRecursionField name={key} schema={s} />
+            </Grid.Item>
+          );
+        })}
+      </Grid>
+    );
+  }
 
   return (
-    <div style={{ marginBottom: designable ? '1rem' : 0 }} className="nb-action-panel-warp">
+    <Space wrap size={gap} align="start">
+      {fieldSchema.mapProperties((s, key) => {
+        return <NocoBaseRecursionField name={key} schema={s} />;
+      })}
+    </Space>
+  );
+};
+
+const InternalIcons = () => {
+  const fieldSchema = useFieldSchema();
+  const { layout = WorkbenchLayout.Grid } = fieldSchema.parent['x-component-props'] || {};
+  return (
+    <div className="nb-action-panel-warp">
       <DndContext>
         {layout === WorkbenchLayout.Grid ? (
-          <Space wrap size={gap}>
-            {fieldSchema.mapProperties((s, key) => (
-              <RecursionField name={key} schema={s} key={key} />
-            ))}
-          </Space>
+          <ResponsiveSpace />
         ) : (
-          <List itemLayout="horizontal">
+          <List>
             {fieldSchema.mapProperties((s, key) => {
               const icon = s['x-component-props']?.['icon'];
               const backgroundColor = s['x-component-props']?.['iconColor'];
               return (
                 <List.Item
                   key={key}
-                  className={css`
-                    .ant-list-item-meta-avatar {
-                      margin-inline-end: 0px !important;
-                    }
-                    .ant-list-item-meta-title {
-                      overflow: hidden;
-                      text-overflow: ellipsis;
-                      font-size: 14px;
-                    }
-                    .ant-list-item-meta-title button {
-                      font-size: 14px;
-                      overflow: hidden;
-                      text-overflow: ellipsis;
-                      width: 100%;
-                      text-align: left;
-                    }
-                  `}
+                  prefix={<Avatar style={{ backgroundColor }} icon={<Icon type={icon} />} />}
+                  onClick={() => {}}
                 >
-                  <List.Item.Meta
-                    avatar={<Avatar style={{ backgroundColor }} icon={<Icon type={icon} />} />}
-                    title={<RecursionField name={key} schema={s} key={key} />}
-                  ></List.Item.Meta>
+                  <NocoBaseRecursionField name={key} schema={s} />
                 </List.Item>
               );
             })}
@@ -117,34 +103,79 @@ const InternalIcons = () => {
 
 export const WorkbenchBlockContext = createContext({ layout: 'grid' });
 
+const useStyles = createStyles(({ token, css }) => ({
+  containerClass: css`
+    &.list {
+      margin: -${token.paddingLG}px;
+      border-radius: ${(token as any).borderRadiusBlock}px;
+      overflow: hidden;
+
+      .adm-list {
+        --padding-left: ${token.paddingLG}px;
+        --padding-right: ${token.paddingLG}px;
+
+        .adm-list-item-content-main {
+          display: flex;
+
+          button {
+            background-color: transparent;
+            border: none;
+            height: auto;
+            box-shadow: none;
+            padding: 16px 32px;
+            margin: -12px -32px;
+            width: calc(100% + 64px);
+            text-align: start;
+            color: ${token.colorText};
+          }
+        }
+      }
+
+      button[aria-label*='schema-initializer-WorkbenchBlock.ActionBar-workbench:configureActions'] {
+        margin-bottom: ${token.paddingLG}px;
+        margin-left: ${token.paddingLG}px;
+      }
+    }
+  `,
+}));
+
 export const WorkbenchBlock: any = withDynamicSchemaProps(
   (props) => {
     const fieldSchema = useFieldSchema();
     const { layout = 'grid' } = fieldSchema['x-component-props'] || {};
+    const { styles } = useStyles();
+    const { title } = fieldSchema['x-decorator-props'] || {};
     const targetHeight = useBlockHeight();
     const { token } = theme.useToken();
     const { designable } = useDesignable();
+    const titleHeight = title ? token.fontSizeLG * token.lineHeightLG + token.padding * 2 : 0;
+    let containerHeight = targetHeight - 2 * token.paddingLG - titleHeight;
+
+    // 减去 1rem 的 margin，减去 padding，减去按钮高度，给 Initializer 按钮留出空间
+    let wrapperHeight = `calc(${containerHeight}px - 1rem - ${token.controlHeight}px)`;
+
+    if (layout === 'list') {
+      // list 有一个负的 margin
+      containerHeight = targetHeight - titleHeight;
+      wrapperHeight = `calc(${containerHeight}px - 1rem - ${token.controlHeight + token.paddingLG}px)`;
+    }
+
+    const heightClass = css`
+      height: ${targetHeight ? containerHeight + 'px' : '100%'};
+
+      .nb-action-panel-warp {
+        height: ${designable ? wrapperHeight : '100%'};
+        overflow-y: auto;
+      }
+    `;
 
     return (
-      <div className="nb-action-penal-container">
-        <div
-          className={css`
-            .nb-action-panel-warp {
-              height: ${targetHeight ? targetHeight - (designable ? 4 : 2) * token.marginLG + 'px' : '100%'};
-              overflow-y: auto;
-              margin-left: -24px;
-              margin-right: -24px;
-              padding-left: 24px;
-              padding-right: 24px;
-            }
-          `}
-        >
-          <WorkbenchBlockContext.Provider value={{ layout }}>
-            <DataSourceContext.Provider value={undefined}>
-              <CollectionContext.Provider value={undefined}>{props.children}</CollectionContext.Provider>
-            </DataSourceContext.Provider>
-          </WorkbenchBlockContext.Provider>
-        </div>
+      <div className={`nb-action-penal-container ${layout} ${styles.containerClass} ${heightClass}`}>
+        <WorkbenchBlockContext.Provider value={{ layout }}>
+          <DataSourceContext.Provider value={undefined}>
+            <CollectionContext.Provider value={undefined}>{props.children}</CollectionContext.Provider>
+          </DataSourceContext.Provider>
+        </WorkbenchBlockContext.Provider>
       </div>
     );
   },

@@ -8,62 +8,61 @@
  */
 
 import { Model } from '@nocobase/database';
-import PluginUISchemaStorageServer from '@nocobase/plugin-ui-schema-storage';
 import { InstallOptions, OFFICIAL_PLUGIN_PREFIX, Plugin } from '@nocobase/server';
-import deepmerge from 'deepmerge';
-import { resolve } from 'path';
 import localization from './actions/localization';
 import localizationTexts from './actions/localizationTexts';
 import Resources from './resources';
 import { getTextsFromDBRecord } from './utils';
-import { NAMESPACE_COLLECTIONS, NAMESPACE_MENUS } from './constans';
+import { NAMESPACE_COLLECTIONS } from './constants';
+import { SourceManager } from './source-manager';
+import { tval } from '@nocobase/utils';
+// @ts-ignore
+import pkg from '../../package.json';
 
 export class PluginLocalizationServer extends Plugin {
   resources: Resources;
+  sourceManager = new SourceManager();
 
-  registerUISchemahook(plugin?: PluginUISchemaStorageServer) {
-    const uiSchemaStoragePlugin = plugin || this.app.getPlugin<PluginUISchemaStorageServer>('ui-schema-storage');
-    if (!uiSchemaStoragePlugin) {
-      return;
-    }
-
-    uiSchemaStoragePlugin.serverHooks.register('onSelfSave', 'extractTextToLocale', async ({ schemaInstance }) => {
-      const module = `resources.${NAMESPACE_MENUS}`;
-      const schema = schemaInstance.get('schema');
-      const title = schema?.title || schema?.['x-component-props']?.title;
-      if (!title) {
-        return;
-      }
-      const result = await this.resources.filterExists([{ text: title, module }]);
-      if (!result.length) {
-        return;
-      }
-      this.db
-        .getRepository('localizationTexts')
-        .create({
-          values: {
-            module,
-            text: title,
+  addNewTexts = async (texts: { text: string; module: string }[], options?: any) => {
+    texts = await this.resources.filterExists(texts, options?.transaction);
+    this.db
+      .getModel('localizationTexts')
+      .bulkCreate(
+        texts.map(({ text, module }) => ({
+          module,
+          text,
+        })),
+        {
+          transaction: options?.transaction,
+        },
+      )
+      .then((newTexts) => {
+        this.resources.updateCacheTexts(newTexts, options?.transaction);
+        this.sendSyncMessage(
+          {
+            type: 'updateCacheTexts',
+            texts: newTexts,
           },
-        })
-        .then((res) => this.resources.updateCacheTexts([res]))
-        .catch((err) => {});
-    });
-  }
+          { transaction: options?.transaction },
+        );
+      })
+      .catch((err) => {
+        this.log.error(err);
+      });
+  };
 
-  afterAdd() {}
+  afterAdd() {
+    this.app.on('afterLoad', () => this.sourceManager.handleTextsSaved(this.db, this.addNewTexts));
+  }
 
   beforeLoad() {}
 
   async load() {
-    await this.importCollections(resolve(__dirname, 'collections'));
-
-    this.app.resource({
+    this.app.resourceManager.define({
       name: 'localizationTexts',
       actions: localizationTexts,
     });
-
-    this.app.resource({
+    this.app.resourceManager.define({
       name: 'localization',
       actions: localization,
     });
@@ -73,14 +72,70 @@ export class PluginLocalizationServer extends Plugin {
       actions: ['localization:*', 'localizationTexts:*', 'localizationTranslations:*'],
     });
 
-    this.db.on('afterSave', async (instance: Model, options) => {
+    this.app.localeManager.registerResourceStorer('plugin-localization', {
+      getResources: (lang: string) => this.resources.getResources(lang),
+      reset: () => this.resources.reset(),
+    });
+
+    const cache = await this.app.cacheManager.createCache({
+      name: 'localization',
+      prefix: 'localization',
+      store: 'memory',
+    });
+    this.resources = new Resources(this.db, cache);
+
+    this.sourceManager.registerSource('local', {
+      title: tval('System & Plugins', { ns: pkg.name }),
+      sync: async (ctx) => {
+        const resources = await ctx.app.localeManager.getCacheResources(ctx.get('X-Locale') || 'en-US');
+        const result = {};
+        Object.entries(resources).forEach(([module, resource]) => {
+          if (module.startsWith(OFFICIAL_PLUGIN_PREFIX)) {
+            const name = module.replace(OFFICIAL_PLUGIN_PREFIX, '');
+            if (resources[name]) {
+              return;
+            }
+          }
+          result[module] = resource;
+        });
+        return result;
+      },
+    });
+    this.sourceManager.registerSource('db', {
+      title: tval('Collections & Fields', { ns: pkg.name }),
+      namespace: NAMESPACE_COLLECTIONS,
+      sync: async (ctx) => {
+        const db = ctx.db;
+        const result = {};
+        const collections = Array.from(db.collections.values());
+        for (const collection of collections) {
+          const fields = Array.from(collection.fields.values())
+            .filter((field) => field.options?.translation)
+            .map((field) => field.name);
+          if (!fields.length) {
+            continue;
+          }
+          const repo = db.getRepository(collection.name);
+          const records = await repo.find({ fields });
+          records.forEach((record) => {
+            const texts = getTextsFromDBRecord(fields, record);
+            texts.forEach((text) => (result[text] = ''));
+          });
+        }
+        return {
+          [NAMESPACE_COLLECTIONS]: result,
+        };
+      },
+    });
+
+    this.db.on('afterSave', async (instance: Model, options?: any) => {
       const module = `resources.${NAMESPACE_COLLECTIONS}`;
       const model = instance.constructor as typeof Model;
       const collection = model.collection;
       if (!collection) {
         return;
       }
-      let texts = [];
+      const texts = [];
       const fields = Array.from(collection.fields.values())
         .filter((field) => field.options?.translation && instance['_changed'].has(field.name))
         .map((field) => field.name);
@@ -91,48 +146,23 @@ export class PluginLocalizationServer extends Plugin {
       textsFromDB.forEach((text) => {
         texts.push({ text, module });
       });
-      texts = await this.resources.filterExists(texts, options?.transaction);
-      this.db
-        .getModel('localizationTexts')
-        .bulkCreate(
-          texts.map(({ text, module }) => ({
-            module,
-            text,
-          })),
-          {
-            transaction: options?.transaction,
-          },
-        )
-        .then((newTexts) => this.resources.updateCacheTexts(newTexts, options?.transaction))
-        .catch((err) => {});
+      await this.addNewTexts(texts, options);
     });
+  }
 
-    const cache = await this.app.cacheManager.createCache({
-      name: 'localization',
-      prefix: 'localization',
-      store: 'memory',
-    });
-    this.resources = new Resources(this.db, cache);
-
-    this.registerUISchemahook();
-
-    this.app.localeManager.registerResourceStorer('plugin-localization', {
-      getResources: (lang: string) => this.resources.getResources(lang),
-      reset: () => this.resources.reset(),
-    });
+  async handleSyncMessage(message: any): Promise<void> {
+    switch (message.type) {
+      case 'updateCacheTexts':
+        await this.resources.updateCacheTexts(message.texts);
+        return;
+    }
   }
 
   async install(options?: InstallOptions) {}
 
   async afterEnable() {}
 
-  async afterDisable() {
-    const uiSchemaStoragePlugin = this.app.getPlugin<PluginUISchemaStorageServer>('ui-schema-storage');
-    if (!uiSchemaStoragePlugin) {
-      return;
-    }
-    uiSchemaStoragePlugin.serverHooks.remove('onSelfSave', 'extractTextToLocale');
-  }
+  async afterDisable() {}
 
   async remove() {}
 }

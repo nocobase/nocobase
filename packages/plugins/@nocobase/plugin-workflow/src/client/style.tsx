@@ -13,6 +13,7 @@ const useStyles = createStyles(({ css, token }) => {
   return {
     workflowPageClass: css`
       flex-grow: 1;
+      height: 100%;
       overflow: hidden;
       display: flex;
       flex-direction: column;
@@ -29,6 +30,7 @@ const useStyles = createStyles(({ css, token }) => {
         header {
           display: flex;
           align-items: center;
+          gap: 1em;
         }
 
         aside {
@@ -104,17 +106,18 @@ const useStyles = createStyles(({ css, token }) => {
           strong {
             font-weight: normal;
           }
+        }
 
-          > .enabled {
-            strong {
-              font-weight: bold;
-            }
+        &.enabled {
+          strong {
+            font-weight: bold;
           }
+        }
 
-          > .unexecuted {
-            strong {
-              font-style: italic;
-            }
+        &.unexecuted {
+          strong {
+            font-style: italic;
+            opacity: 0.75;
           }
         }
       }
@@ -150,11 +153,22 @@ const useStyles = createStyles(({ css, token }) => {
       flex-direction: column;
       align-items: center;
       position: relative;
-      min-width: 20em;
+      min-width: 16em;
       padding: 0 2em;
 
       .workflow-node-list {
         flex-grow: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+
+        > :last-child {
+          > .workflow-add-node-button {
+            &:after {
+              display: none;
+            }
+          }
+        }
       }
 
       .workflow-branch-lines {
@@ -212,7 +226,7 @@ const useStyles = createStyles(({ css, token }) => {
         align-items: center;
         justify-content: center;
         width: 0;
-        height: 6em;
+        height: 4em;
         border-left: 1px dashed ${token.colorBgLayout};
 
         .anticon {
@@ -240,9 +254,9 @@ const useStyles = createStyles(({ css, token }) => {
 
     nodeCardClass: css`
       position: relative;
-      width: 20em;
+      width: 16em;
       background: ${token.colorBgContainer};
-      padding: 1em;
+      padding: 0.75em;
       box-shadow: ${token.boxShadowTertiary};
       border-radius: ${token.borderRadiusLG}px;
       cursor: pointer;
@@ -252,7 +266,7 @@ const useStyles = createStyles(({ css, token }) => {
         box-shadow: ${token.boxShadow};
 
         .workflow-node-remove-button {
-          display: block;
+          opacity: 1;
         }
       }
 
@@ -261,11 +275,10 @@ const useStyles = createStyles(({ css, token }) => {
       }
 
       .workflow-node-remove-button {
-        display: none;
-        position: absolute;
-        right: 0;
-        top: 0;
+        opacity: 0;
         color: ${token.colorText};
+        font-size: ${token.fontSizeIcon}px;
+        line-height: 1em;
 
         &[disabled] {
           display: none;
@@ -311,9 +324,6 @@ const useStyles = createStyles(({ css, token }) => {
 
     nodeJobButtonClass: css`
       display: flex;
-      position: absolute;
-      top: 0;
-      right: 0;
       justify-content: center;
       align-items: center;
       color: ${token.colorTextLightSolid};
@@ -321,22 +331,29 @@ const useStyles = createStyles(({ css, token }) => {
 
     nodeHeaderClass: css`
       display: flex;
+      justify-content: space-between;
+      align-items: center;
       margin-bottom: 0.5em;
 
       .workflow-node-actions {
-        position: relative;
       }
     `,
 
     nodeMetaClass: css`
       flex-grow: 1;
+      display: flex;
+      align-items: center;
+
+      .ant-tag {
+        max-width: 14em;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        display: inline-flex;
+        align-items: center;
+      }
 
       .workflow-node-id {
-        color: ${token.colorTextDescription};
-
-        &:before {
-          content: '#';
-        }
+        display: none;
       }
     `,
 
@@ -345,7 +362,7 @@ const useStyles = createStyles(({ css, token }) => {
       align-items: center;
       font-weight: normal;
       .workflow-node-id {
-        color: ${token.colorTextDescription};
+        display: none;
       }
     `,
 
@@ -361,13 +378,32 @@ const useStyles = createStyles(({ css, token }) => {
     `,
 
     addButtonClass: css`
+      position: relative;
       flex-shrink: 0;
-      padding: 2em 0;
+      padding: 1em 0;
 
       > .ant-btn {
+        line-height: 1em;
         &:disabled {
           visibility: hidden;
         }
+      }
+
+      &:after {
+        content: '';
+        display: block;
+        position: absolute;
+        bottom: 0.1em;
+        left: calc(50% - 0.25em);
+        width: 0.5em;
+        height: 0.5em;
+        border: 1px solid ${token.colorBorder};
+        border-width: 0 1px 1px 0;
+        transform: rotate(45deg);
+      }
+
+      &:first-child:last-child:after {
+        display: none;
       }
     `,
 
@@ -394,6 +430,9 @@ const useStyles = createStyles(({ css, token }) => {
       transform: translateY(-50%);
       width: 2em;
       height: 6em;
+      flex-shrink: 0;
+      padding: 2em 0;
+      font-size: 14px;
     `,
 
     terminalClass: css`

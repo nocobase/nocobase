@@ -7,7 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { RecursionField, Schema, useFieldSchema } from '@formily/react';
+import { Schema, useFieldSchema } from '@formily/react';
+import { NocoBaseRecursionField } from '@nocobase/client';
 import React, { FC, useMemo } from 'react';
 
 export const CalendarRecordViewer: FC = (props) => {
@@ -18,7 +19,7 @@ export const CalendarRecordViewer: FC = (props) => {
     return null;
   }
 
-  return <RecursionField schema={eventSchema} name={eventSchema.name} />;
+  return <NocoBaseRecursionField schema={eventSchema} name={eventSchema.name} />;
 };
 
 export function findEventSchema(schema: Schema) {

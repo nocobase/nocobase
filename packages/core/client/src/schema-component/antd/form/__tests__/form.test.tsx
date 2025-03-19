@@ -98,6 +98,8 @@ describe('Form', () => {
       await userEvent.click(screen.getByText('Open'));
       expect(screen.getByText(/drawer title/i)).toBeInTheDocument();
     });
+    // wait for drawer content to be rendered
+    await sleep(300);
 
     const input = document.querySelector('.ant-input') as HTMLInputElement;
 
@@ -152,6 +154,9 @@ describe('Form', () => {
 
     const editBtn = screen.getByText('Edit');
     await userEvent.click(editBtn);
+
+    // wait for drawer content to be rendered
+    await sleep(300);
 
     const input = document.querySelector('.ant-input') as HTMLInputElement;
     const closeBtn = screen.getByText('Close');

@@ -7,13 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { css, cx } from '@emotion/css';
 import { Field } from '@formily/core';
 import { useField } from '@formily/react';
 import { Input } from 'antd';
 import { TextAreaProps } from 'antd/es/input';
-import React, { useState, useEffect, Ref } from 'react';
-import { cx, css } from '@emotion/css';
 import JSON5 from 'json5';
+import React, { Ref, useEffect, useState } from 'react';
 
 export type JSONTextAreaProps = TextAreaProps & { value?: string; space?: number; json5?: boolean };
 
@@ -30,7 +30,16 @@ export const Json = React.forwardRef<typeof Input.TextArea, JSONTextAreaProps>(
     useEffect(() => {
       try {
         if (value != null) {
-          setText(_JSON.stringify(value, null, space));
+          if (typeof value === 'string') {
+            try {
+              _JSON.parse(value);
+              setText(value);
+            } catch (error) {
+              setText(_JSON.stringify(value, null, space));
+            }
+          } else {
+            setText(_JSON.stringify(value, null, space));
+          }
         } else {
           setText(undefined);
         }

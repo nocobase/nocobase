@@ -9,9 +9,7 @@
 
 import { faker } from '@faker-js/faker';
 import {
-  CalculationNode,
   CollectionTriggerNode,
-  ConditionBranchNode,
   ConditionYesNode,
   QueryRecordNode,
   apiCreateWorkflow,
@@ -825,7 +823,7 @@ test('create non-branching condition node before first node, the original first 
   mockCollections,
   mockRecords,
 }) => {
-  //数据表后缀标识
+  //数据表后缀标识˝
   const triggerNodeAppendText = faker.string.alphanumeric(5);
 
   //创建触发器节点数据表

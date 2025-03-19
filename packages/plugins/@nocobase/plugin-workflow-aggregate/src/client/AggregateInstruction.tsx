@@ -10,6 +10,7 @@
 import { useForm } from '@formily/react';
 import { Cascader } from 'antd';
 import React, { useCallback, useEffect, useState } from 'react';
+import { BarChartOutlined } from '@ant-design/icons';
 
 import {
   SchemaComponentContext,
@@ -169,6 +170,7 @@ export default class extends Instruction {
   type = 'aggregate';
   group = 'collection';
   description = `{{t("Counting, summing, finding maximum, minimum, and average values for multiple records of a collection or associated data of a record.", { ns: "${NAMESPACE}" })}}`;
+  icon = (<BarChartOutlined style={{}} />);
   fieldset = {
     aggregator: {
       type: 'string',
@@ -336,9 +338,9 @@ export default class extends Instruction {
       properties: {
         distinct: {
           type: 'boolean',
-          title: `{{t("Distinct", { ns: "${NAMESPACE}" })}}`,
           'x-decorator': 'FormItem',
           'x-component': 'Checkbox',
+          'x-content': `{{t("Distinct", { ns: "${NAMESPACE}" })}}`,
           'x-reactions': [
             {
               dependencies: ['collection', 'aggregator'],
@@ -384,6 +386,21 @@ export default class extends Instruction {
           ],
         },
       },
+    },
+    precision: {
+      type: 'number',
+      title: `{{t("Result precision", { ns: "${NAMESPACE}" })}}`,
+      description: `{{t("Number of decimal places for query result.", { ns: "${NAMESPACE}" })}}`,
+      'x-decorator': 'FormItem',
+      'x-component': 'InputNumber',
+      'x-component-props': {
+        min: 0,
+        max: 14,
+        step: 1,
+        precision: 0,
+        className: 'auto-width',
+      },
+      default: 2,
     },
   };
   scope = {

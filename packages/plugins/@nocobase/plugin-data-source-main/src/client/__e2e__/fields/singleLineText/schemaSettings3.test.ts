@@ -80,6 +80,10 @@ test.describe('table column & table', () => {
 
     // 开启排序
     await page.getByRole('menuitem', { name: 'Sortable' }).click();
+
+    // FIXME: 表格样式在开启排序后出现问题，需要刷新页面才能恢复正常
+    await page.reload();
+
     // TODO: 此处菜单在点击后不应该消失
     // await expect(page.getByRole('menuitem', { name: 'Sortable' }).getByRole('switch')).toBeChecked();
     // 鼠标 hover 时，有提示

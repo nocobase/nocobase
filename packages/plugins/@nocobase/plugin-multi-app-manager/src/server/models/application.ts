@@ -29,6 +29,12 @@ export class ApplicationModel extends Model {
       name: appName,
     };
 
-    return new Application(subAppOptions);
+    const subApp = new Application(subAppOptions);
+
+    subApp.on('afterStart', () => {
+      mainApp.emit('subAppStarted', subApp);
+    });
+
+    return subApp;
   }
 }

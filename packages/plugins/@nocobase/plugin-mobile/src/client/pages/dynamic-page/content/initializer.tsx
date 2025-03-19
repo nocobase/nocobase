@@ -21,7 +21,7 @@ export const mobileAddBlockInitializer = new SchemaInitializer({
   items: [
     {
       name: 'dataBlocks',
-      title: '{{t("Desktop data blocks")}}',
+      title: '{{t("Data blocks")}}',
       type: 'itemGroup',
       children: [
         {
@@ -53,7 +53,7 @@ export const mobileAddBlockInitializer = new SchemaInitializer({
     },
     {
       name: 'filterBlocks',
-      title: '{{t("Desktop filter blocks")}}',
+      title: '{{t("Filter blocks")}}',
       type: 'itemGroup',
       children: [
         {
@@ -66,7 +66,7 @@ export const mobileAddBlockInitializer = new SchemaInitializer({
     {
       name: 'otherBlocks',
       type: 'itemGroup',
-      title: '{{t("Other desktop blocks")}}',
+      title: '{{t("Other blocks")}}',
       children: [
         {
           name: 'markdown',

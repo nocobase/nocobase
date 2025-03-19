@@ -20,7 +20,7 @@ import {
  * @returns
  */
 export function useDetailsDecoratorProps(props) {
-  const params = useParamsFromRecord();
+  const params = useParamsFromRecord(props);
   let parentRecord;
 
   // association 的值是固定不变的，所以可以在条件中使用 hooks

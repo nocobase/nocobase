@@ -111,7 +111,7 @@ const insertActiveKeys = (activeKeys: number[], index: number) => {
 
 export const ArrayCollapse: ComposedArrayCollapse = observer(
   (props: IArrayCollapseProps) => {
-    const { styles } = useStyles();
+    const { componentCls, hashId } = useStyles();
     const field = useField<ArrayField>();
     const dataSource = Array.isArray(field.value) ? field.value : [];
     const [activeKeys, setActiveKeys] = useState<number[]>(
@@ -136,7 +136,7 @@ export const ArrayCollapse: ComposedArrayCollapse = observer(
     const renderEmpty = () => {
       if (dataSource.length) return;
       return (
-        <Card className={cls(`${styles.arrayCollapseItem}`, props.className)}>
+        <Card className={cls(componentCls, hashId, props.className)}>
           <Empty />
         </Card>
       );
@@ -148,7 +148,7 @@ export const ArrayCollapse: ComposedArrayCollapse = observer(
           {...props}
           activeKey={activeKeys}
           onChange={(keys: string[]) => setActiveKeys(toArr(keys).map(Number))}
-          className={cls(`${styles.arrayCollapseItem}`, props.className)}
+          className={cls(componentCls, hashId, props.className)}
         >
           {dataSource.map((item, index) => {
             const items = Array.isArray(schema.items) ? schema.items[index] || schema.items[0] : schema.items;

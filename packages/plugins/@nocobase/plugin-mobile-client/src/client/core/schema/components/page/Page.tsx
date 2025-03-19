@@ -7,8 +7,16 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { RecursionField, useField, useFieldSchema } from '@formily/react';
-import { ActionBarProvider, SortableItem, TabsContextProvider, css, cx, useDesigner } from '@nocobase/client';
+import { useField, useFieldSchema } from '@formily/react';
+import {
+  ActionBarProvider,
+  NocoBaseRecursionField,
+  SortableItem,
+  TabsContextProvider,
+  css,
+  cx,
+  useDesigner,
+} from '@nocobase/client';
 import { TabsProps } from 'antd';
 import React, { useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
@@ -106,34 +114,34 @@ const InternalPage: React.FC = (props) => {
         })}
       >
         {isHeaderEnabled && (
-          <RecursionField
+          <NocoBaseRecursionField
             schema={fieldSchema}
             filterProperties={(s) => {
               return 'MHeader' === s['x-component'];
             }}
-          ></RecursionField>
+          ></NocoBaseRecursionField>
         )}
         <TabsContextProvider
           PaneRoot={GlobalActionProvider}
           activeKey={searchParams.get('tab')}
           onChange={onTabsChange}
         >
-          <RecursionField
+          <NocoBaseRecursionField
             schema={isTabsEnabled ? fieldSchema : pageSchema}
             filterProperties={(s) => {
               return 'Tabs' === s['x-component'] || 'Grid' === s['x-component'] || 'Grid.Row' === s['x-component'];
             }}
-          ></RecursionField>
+          ></NocoBaseRecursionField>
         </TabsContextProvider>
       </div>
       <GlobalActionProvider>
         {!tabsSchema && (
-          <RecursionField
+          <NocoBaseRecursionField
             schema={fieldSchema}
             filterProperties={(s) => {
               return s['x-component'] !== 'MHeader';
             }}
-          ></RecursionField>
+          ></NocoBaseRecursionField>
         )}
       </GlobalActionProvider>
     </SortableItem>

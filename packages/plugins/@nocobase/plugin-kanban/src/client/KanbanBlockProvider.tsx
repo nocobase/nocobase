@@ -9,18 +9,19 @@
 
 import { ArrayField } from '@formily/core';
 import { useField, useFieldSchema } from '@formily/react';
-import { Spin } from 'antd';
-import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import {
-  useACLRoleContext,
-  useCollection_deprecated,
-  FixedBlockWrapper,
   BlockProvider,
+  useACLRoleContext,
+  useAPIClient,
   useBlockRequestContext,
   useCollection,
+  useCollection_deprecated,
+  useParsedFilter,
+  useApp,
 } from '@nocobase/client';
+import { Spin } from 'antd';
 import { isEqual } from 'lodash';
-import { toColumns } from './Kanban';
+import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
 
 export const KanbanBlockContext = createContext<any>({});
 KanbanBlockContext.displayName = 'KanbanBlockContext';
@@ -48,35 +49,36 @@ const InternalKanbanBlockProvider = (props) => {
   }
   field.loaded = true;
   return (
-    <FixedBlockWrapper>
-      <KanbanBlockContext.Provider
-        value={{
-          props: {
-            resource: props.resource,
-          },
-          field,
-          service,
-          resource,
-          groupField,
-          // fixedBlock: field?.decoratorProps?.fixedBlock,
-          sortField: props?.sortField,
-        }}
-      >
-        {props.children}
-      </KanbanBlockContext.Provider>
-    </FixedBlockWrapper>
+    <KanbanBlockContext.Provider
+      value={{
+        props: {
+          resource: props.resource,
+        },
+        field,
+        service,
+        resource,
+        groupField,
+        // fixedBlock: field?.decoratorProps?.fixedBlock,
+        sortField: props?.sortField,
+      }}
+    >
+      {props.children}
+    </KanbanBlockContext.Provider>
   );
 };
 
 export const KanbanBlockProvider = (props) => {
-  const params = { ...props.params };
+  const { filter: parsedFilter } = useParsedFilter({
+    filterOption: props.params?.filter,
+  });
+  const params = { ...props.params, filter: parsedFilter };
+
   return (
     <BlockProvider name="kanban" {...props} params={params}>
       <InternalKanbanBlockProvider {...props} params={params} />
     </BlockProvider>
   );
 };
-
 export const useKanbanBlockContext = () => {
   return useContext(KanbanBlockContext);
 };
@@ -96,20 +98,54 @@ const useDisableCardDrag = () => {
   return !result;
 };
 
+export const toColumns = (groupCollectionField: any, dataSource: Array<any> = [], primaryKey, options) => {
+  const columns = {
+    __unknown__: {
+      id: '__unknown__',
+      title: 'Unknown',
+      color: 'default',
+      cards: [],
+    },
+  };
+  options?.forEach((item) => {
+    columns[item.value] = {
+      id: item.value,
+      title: item.label,
+      color: item.color,
+      cards: [],
+    };
+  });
+  dataSource.forEach((ds) => {
+    const value = ds[groupCollectionField.name];
+    if (value && columns[value]) {
+      columns[value].cards.push({ ...ds, id: ds[primaryKey] });
+    } else {
+      columns.__unknown__.cards.push(ds);
+    }
+  });
+  if (columns.__unknown__.cards.length === 0) {
+    delete columns.__unknown__;
+  }
+  return Object.values(columns);
+};
+
 export const useKanbanBlockProps = () => {
   const field = useField<ArrayField>();
   const ctx = useKanbanBlockContext();
   const [dataSource, setDataSource] = useState([]);
   const primaryKey = useCollection()?.getPrimaryKey();
-
+  const app = useApp();
+  const plugin = app.pm.get('kanban') as any;
+  const targetGroupField = plugin.getGroupFieldInterface(ctx.groupField.interface);
+  const { options } = targetGroupField?.useGetGroupOptions(ctx.groupField) || { options: [] };
   useEffect(() => {
-    const data = toColumns(ctx.groupField, ctx?.service?.data?.data, primaryKey);
+    const data = toColumns(ctx.groupField, ctx?.service?.data?.data, primaryKey, options);
     if (isEqual(field.value, data) && dataSource === field.value) {
       return;
     }
     field.value = data;
     setDataSource(field.value);
-  }, [ctx?.service?.loading]);
+  }, [ctx?.service?.loading, options]);
 
   const disableCardDrag = useDisableCardDrag();
 

@@ -10,13 +10,16 @@
 import { css } from '@emotion/css';
 import { FormLayout, IFormLayoutProps } from '@formily/antd-v5';
 import { Field, Form as FormilyForm, createForm, onFieldInit, onFormInputChange } from '@formily/core';
-import { FieldContext, FormContext, RecursionField, observer, useField, useFieldSchema } from '@formily/react';
+import { FieldContext, FormContext, observer, useField, useFieldSchema } from '@formily/react';
 import { uid } from '@formily/shared';
-import { ConfigProvider, Spin, theme } from 'antd';
+import { ConfigProvider, theme } from 'antd';
 import React, { useEffect, useMemo } from 'react';
 import { useActionContext } from '..';
 import { useAttach, useComponent } from '../..';
+import { getCardItemSchema } from '../../../block-provider';
 import { useTemplateBlockContext } from '../../../block-provider/TemplateBlockProvider';
+import { useDataBlockRequest } from '../../../data-source/data-block/DataBlockRequestProvider';
+import { NocoBaseRecursionField } from '../../../formily/NocoBaseRecursionField';
 import { withDynamicSchemaProps } from '../../../hoc/withDynamicSchemaProps';
 import { bindLinkageRulesToFiled } from '../../../schema-settings/LinkageRules/bindLinkageRulesToFiled';
 import { forEachLinkageRule } from '../../../schema-settings/LinkageRules/forEachLinkageRule';
@@ -24,7 +27,7 @@ import { useToken } from '../../../style';
 import { useLocalVariables, useVariables } from '../../../variables';
 import { useProps } from '../../hooks/useProps';
 import { useFormBlockHeight } from './hook';
-import { getCardItemSchema } from '../../../block-provider';
+import { useApp } from '../../../application';
 
 export interface FormProps extends IFormLayoutProps {
   form?: FormilyForm;
@@ -73,7 +76,7 @@ const FormComponent: React.FC<FormProps> = (props) => {
               }
             `}
           >
-            <RecursionField basePath={f.address} schema={fieldSchema} onlyRenderProperties />
+            <NocoBaseRecursionField basePath={f.address} schema={fieldSchema} onlyRenderProperties isUseFormilyField />
           </div>
         </FormLayout>
       </FormContext.Provider>
@@ -96,7 +99,12 @@ const FormDecorator: React.FC<FormProps> = (props) => {
         <FormLayout layout={'vertical'} {...others}>
           <FieldContext.Provider value={f}>
             <Component {...field.componentProps}>
-              <RecursionField basePath={f.address} schema={fieldSchema} onlyRenderProperties />
+              <NocoBaseRecursionField
+                basePath={f.address}
+                schema={fieldSchema}
+                onlyRenderProperties
+                isUseFormilyField
+              />
             </Component>
           </FieldContext.Provider>
           {/* <FieldContext.Provider value={f}>{children}</FieldContext.Provider> */}
@@ -128,6 +136,8 @@ const WithForm = (props: WithFormProps) => {
   const variables = useVariables();
   const localVariables = useLocalVariables({ currentForm: form });
   const { templateFinished } = useTemplateBlockContext();
+  const { loading } = useDataBlockRequest() || {};
+  const app = useApp();
   const linkageRules: any[] =
     (getLinkageRules(fieldSchema) || fieldSchema.parent?.['x-linkage-rules'])?.filter((k) => !k.disabled) || [];
 
@@ -150,29 +160,39 @@ const WithForm = (props: WithFormProps) => {
   }, [form, props.disabled, setFormValueChanged]);
 
   useEffect(() => {
+    if (loading) {
+      return;
+    }
+
     const id = uid();
     const disposes = [];
 
-    form.addEffects(id, () => {
-      forEachLinkageRule(linkageRules, (action, rule) => {
-        if (action.targetFields?.length) {
-          const fields = action.targetFields.join(',');
+    // 如果不延迟执行，那么一开始获取到的 form.values 的值是旧的，会导致详情区块的联动规则出现一些问题
+    setTimeout(() => {
+      form.addEffects(id, () => {
+        forEachLinkageRule(linkageRules, (action, rule) => {
+          if (action.targetFields?.length) {
+            const fields = action.targetFields.join(',');
 
-          // 之前使用的 `onFieldReact` 有问题，没有办法被取消监听，所以这里用 `onFieldInit` 和 `reaction` 代替
-          onFieldInit(`*(${fields})`, (field: any, form) => {
-            disposes.push(
-              bindLinkageRulesToFiled({
-                field,
-                linkageRules,
-                formValues: form.values,
-                localVariables,
-                action,
-                rule,
-                variables,
-              }),
-            );
-          });
-        }
+            // 之前使用的 `onFieldReact` 有问题，没有办法被取消监听，所以这里用 `onFieldInit` 和 `reaction` 代替
+            onFieldInit(`*(${fields})`, (field: any, form) => {
+              disposes.push(
+                bindLinkageRulesToFiled(
+                  {
+                    field,
+                    linkageRules,
+                    formValues: form.values,
+                    localVariables,
+                    action,
+                    rule,
+                    variables,
+                  },
+                  app.jsonLogic,
+                ),
+              );
+            });
+          }
+        });
       });
     });
 
@@ -182,7 +202,7 @@ const WithForm = (props: WithFormProps) => {
         dispose();
       });
     };
-  }, [linkageRules, templateFinished]);
+  }, [linkageRules, templateFinished, loading]);
 
   return fieldSchema['x-decorator'] === 'FormV2' ? <FormDecorator {...props} /> : <FormComponent {...props} />;
 };
@@ -241,13 +261,11 @@ export const Form: React.FC<FormProps> & {
     return (
       <ConfigProvider componentDisabled={formDisabled} theme={theme}>
         <form onSubmit={(e) => e.preventDefault()} className={formLayoutCss}>
-          <Spin spinning={field.loading || false}>
-            {form ? (
-              <WithForm form={form} {...others} disabled={formDisabled} />
-            ) : (
-              <WithoutForm {...others} disabled={formDisabled} />
-            )}
-          </Spin>
+          {form ? (
+            <WithForm form={form} {...others} disabled={formDisabled} />
+          ) : (
+            <WithoutForm {...others} disabled={formDisabled} />
+          )}
         </form>
       </ConfigProvider>
     );

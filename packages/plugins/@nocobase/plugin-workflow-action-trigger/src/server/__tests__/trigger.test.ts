@@ -7,8 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { omit } from 'lodash';
 import Database from '@nocobase/database';
-import { EXECUTION_STATUS } from '@nocobase/plugin-workflow';
+import { EXECUTION_STATUS, JOB_STATUS } from '@nocobase/plugin-workflow';
 import { getApp, sleep } from '@nocobase/plugin-workflow-test';
 import { MockServer } from '@nocobase/test';
 
@@ -22,12 +23,15 @@ describe('workflow > action-trigger', () => {
   let CategoryRepo;
   let WorkflowModel;
   let UserRepo;
+  let root;
+  let rootAgent;
   let users;
   let userAgents;
 
   beforeEach(async () => {
     app = await getApp({
-      plugins: ['users', 'auth', Plugin],
+      plugins: ['users', 'auth', 'acl', 'data-source-manager', 'system-settings', 'error-handler', Plugin],
+      acl: true,
     });
     await app.pm.get('auth').install();
     agent = app.agent();
@@ -37,6 +41,9 @@ describe('workflow > action-trigger', () => {
     CategoryRepo = db.getCollection('categories').repository;
     UserRepo = db.getCollection('users').repository;
 
+    root = await UserRepo.findOne({});
+    rootAgent = await app.agent().login(root);
+
     users = await UserRepo.create({
       values: [
         { id: 2, nickname: 'a', roles: [{ name: 'root' }] },
@@ -44,7 +51,7 @@ describe('workflow > action-trigger', () => {
       ],
     });
 
-    userAgents = users.map((user) => app.agent().login(user));
+    userAgents = await Promise.all(users.map((user) => app.agent().login(user)));
   });
 
   afterEach(() => app.destroy());
@@ -200,6 +207,7 @@ describe('workflow > action-trigger', () => {
         type: 'action',
         config: {
           collection: 'posts',
+          appends: ['createdBy'],
         },
       });
 
@@ -293,152 +301,21 @@ describe('workflow > action-trigger', () => {
     });
   });
 
-  describe('directly trigger', () => {
-    it('no collection configured should not be triggered', async () => {
-      const workflow = await WorkflowModel.create({
-        enabled: true,
-        type: 'action',
-      });
-
-      const res1 = await userAgents[0].resource('workflows').trigger({
-        values: { title: 't1' },
-        triggerWorkflows: `${workflow.key}`,
-      });
-      expect(res1.status).toBe(202);
-
-      await sleep(500);
-
-      const e1s = await workflow.getExecutions();
-      expect(e1s.length).toBe(0);
-    });
-
-    it('trigger on form data', async () => {
-      const workflow = await WorkflowModel.create({
-        enabled: true,
-        type: 'action',
-        config: {
-          collection: 'posts',
-          appends: ['createdBy'],
-        },
-      });
-
-      const res1 = await userAgents[0].resource('workflows').trigger({
-        values: { title: 't1' },
-        triggerWorkflows: `${workflow.key}`,
-      });
-      expect(res1.status).toBe(202);
-
-      await sleep(500);
-
-      const [e1] = await workflow.getExecutions();
-      expect(e1.status).toBe(EXECUTION_STATUS.RESOLVED);
-      expect(e1.context.data).toMatchObject({ title: 't1' });
-      expect(e1.context.data.createdBy).toBeUndefined();
-    });
-
-    it('trigger on record data', async () => {
-      const workflow = await WorkflowModel.create({
-        enabled: true,
-        type: 'action',
-        config: {
-          collection: 'posts',
-          appends: ['createdBy'],
-        },
-      });
-
-      const post = await PostRepo.create({
-        values: { title: 't1', createdBy: users[0].id },
-      });
-
-      const res1 = await userAgents[0].resource('workflows').trigger({
-        values: post.toJSON(),
-        triggerWorkflows: `${workflow.key}`,
-      });
-      expect(res1.status).toBe(202);
-
-      await sleep(500);
-
-      const [e1] = await workflow.getExecutions();
-      expect(e1.status).toBe(EXECUTION_STATUS.RESOLVED);
-      expect(e1.context.data).toMatchObject({ title: 't1' });
-      expect(e1.context.data).toHaveProperty('createdBy');
-      expect(e1.context.data.createdBy.id).toBe(users[0].id);
-    });
-
-    it('multi trigger', async () => {
-      const w1 = await WorkflowModel.create({
-        enabled: true,
-        type: 'action',
-        config: {
-          collection: 'posts',
-        },
-      });
-
-      const w2 = await WorkflowModel.create({
-        enabled: true,
-        type: 'action',
-        config: {
-          collection: 'posts',
-        },
-      });
-
-      const res1 = await userAgents[0].resource('workflows').trigger({
-        values: { title: 't1' },
-        triggerWorkflows: `${w1.key},${w2.key}`,
-      });
-      expect(res1.status).toBe(202);
-
-      await sleep(500);
-
-      const [e1] = await w1.getExecutions();
-      expect(e1.status).toBe(EXECUTION_STATUS.RESOLVED);
-      expect(e1.context.data).toMatchObject({ title: 't1' });
-
-      const [e2] = await w2.getExecutions();
-      expect(e2.status).toBe(EXECUTION_STATUS.RESOLVED);
-      expect(e2.context.data).toMatchObject({ title: 't1' });
-    });
-
-    it('user submitted form', async () => {
-      const workflow = await WorkflowModel.create({
-        enabled: true,
-        type: 'action',
-        config: {
-          collection: 'posts',
-          appends: ['createdBy'],
-        },
-      });
-
-      const res1 = await userAgents[0].resource('posts').create({
-        values: { title: 't1' },
-        triggerWorkflows: `${workflow.key}`,
-      });
-      expect(res1.status).toBe(200);
-
-      await sleep(500);
-
-      const [e1] = await workflow.getExecutions();
-      expect(e1.status).toBe(EXECUTION_STATUS.RESOLVED);
-      expect(e1.context.user).toBeDefined();
-      expect(e1.context.user.id).toBe(users[0].id);
-    });
-  });
-
   describe('context data path', () => {
     it('level: 1', async () => {
       const workflow = await WorkflowModel.create({
         enabled: true,
         type: 'action',
         config: {
-          collection: 'posts',
+          collection: 'categories',
         },
       });
 
-      const res1 = await userAgents[0].resource('workflows').trigger({
+      const res1 = await userAgents[0].resource('posts').create({
         values: { title: 't1', category: { title: 'c1' } },
         triggerWorkflows: `${workflow.key}!category`,
       });
-      expect(res1.status).toBe(202);
+      expect(res1.status).toBe(200);
 
       await sleep(500);
 
@@ -452,15 +329,15 @@ describe('workflow > action-trigger', () => {
         enabled: true,
         type: 'action',
         config: {
-          collection: 'posts',
+          collection: 'categories',
         },
       });
 
-      const res1 = await userAgents[0].resource('workflows').trigger({
+      const res1 = await userAgents[0].resource('comments').create({
         values: { content: 'comment1', post: { category: { title: 'c1' } } },
         triggerWorkflows: `${workflow.key}!post.category`,
       });
-      expect(res1.status).toBe(202);
+      expect(res1.status).toBe(200);
 
       await sleep(500);
 
@@ -509,6 +386,40 @@ describe('workflow > action-trigger', () => {
     });
   });
 
+  describe('manually execute', () => {
+    it('root execute', async () => {
+      const w1 = await WorkflowModel.create({
+        type: 'action',
+        config: {
+          collection: 'posts',
+          appends: ['category'],
+        },
+      });
+
+      const p1 = await PostRepo.create({
+        values: { title: 't1', category: { title: 'c1' } },
+      });
+
+      const { category, ...data } = p1.toJSON();
+      const res1 = await rootAgent.resource('workflows').execute({
+        filterByTk: w1.id,
+        values: {
+          data,
+          userId: users[1].id,
+        },
+      });
+
+      expect(res1.status).toBe(200);
+      expect(res1.body.data.execution.status).toBe(EXECUTION_STATUS.RESOLVED);
+      const [e1] = await w1.getExecutions();
+      expect(e1.id).toBe(res1.body.data.execution.id);
+      expect(e1.context.data).toMatchObject({ id: data.id, categoryId: category.id, category: { title: 'c1' } });
+      expect(e1.context.user).toMatchObject(
+        omit(users[1].toJSON(), ['createdAt', 'updatedAt', 'createdById', 'updatedById']),
+      );
+    });
+  });
+
   describe('workflow key', () => {
     it('revision', async () => {
       const w1 = await WorkflowModel.create({
@@ -519,11 +430,11 @@ describe('workflow > action-trigger', () => {
         },
       });
 
-      const res1 = await userAgents[0].resource('workflows').trigger({
+      const res1 = await userAgents[0].resource('posts').create({
         values: { title: 't1' },
         triggerWorkflows: `${w1.key}`,
       });
-      expect(res1.status).toBe(202);
+      expect(res1.status).toBe(200);
 
       await sleep(500);
 
@@ -542,11 +453,11 @@ describe('workflow > action-trigger', () => {
         enabled: true,
       });
 
-      const res3 = await userAgents[0].resource('workflows').trigger({
+      const res3 = await userAgents[0].resource('posts').create({
         values: { title: 't2' },
         triggerWorkflows: `${w1.key}`,
       });
-      expect(res3.status).toBe(202);
+      expect(res3.status).toBe(200);
 
       await sleep(500);
 
@@ -617,6 +528,72 @@ describe('workflow > action-trigger', () => {
       const e3s = await w1.getExecutions();
       expect(e3s.length).toBe(1);
       expect(e3s[0].status).toBe(EXECUTION_STATUS.RESOLVED);
+    });
+
+    it('execution failed on node error', async () => {
+      const workflow = await WorkflowModel.create({
+        enabled: true,
+        type: 'action',
+        sync: true,
+        config: {
+          collection: 'posts',
+        },
+      });
+
+      const n1 = await workflow.createNode({
+        type: 'error',
+      });
+
+      const res1 = await userAgents[0].resource('posts').create({
+        values: { title: 't1' },
+        triggerWorkflows: `${workflow.key}`,
+      });
+      expect(res1.status).toBe(500);
+    });
+
+    it('execution failed on end node success', async () => {
+      const workflow = await WorkflowModel.create({
+        enabled: true,
+        type: 'action',
+        sync: true,
+        config: {
+          collection: 'posts',
+        },
+      });
+
+      const n1 = await workflow.createNode({
+        type: 'end',
+      });
+
+      const res1 = await userAgents[0].resource('posts').create({
+        values: { title: 't1' },
+        triggerWorkflows: `${workflow.key}`,
+      });
+      expect(res1.status).toBe(200);
+    });
+
+    it('execution failed on end node success', async () => {
+      const workflow = await WorkflowModel.create({
+        enabled: true,
+        type: 'action',
+        sync: true,
+        config: {
+          collection: 'posts',
+        },
+      });
+
+      const n1 = await workflow.createNode({
+        type: 'end',
+        config: {
+          endStatus: JOB_STATUS.FAILED,
+        },
+      });
+
+      const res1 = await userAgents[0].resource('posts').create({
+        values: { title: 't1' },
+        triggerWorkflows: `${workflow.key}`,
+      });
+      expect(res1.status).toBe(400);
     });
   });
 
@@ -725,11 +702,11 @@ describe('workflow > action-trigger', () => {
         },
       });
 
-      const res1 = await userAgents[0].resource('workflows').trigger({
+      const res1 = await userAgents[0].resource('posts').create({
         values: { title: 't1' },
         triggerWorkflows: `${workflow.key}`,
       });
-      expect(res1.status).toBe(202);
+      expect(res1.status).toBe(200);
 
       await sleep(500);
 
@@ -768,8 +745,9 @@ describe('workflow > action-trigger', () => {
       //     values: { title: 't2' },
       //     triggerWorkflows: `${workflow.key}`,
       //   });
-      const res2 = await agent
-        .login(users[0])
+      const res2 = await (
+        await agent.login(users[0])
+      )
         .set('x-data-source', 'another')
         .post('/api/posts:create')
         .query({ triggerWorkflows: `${workflow.key}` })

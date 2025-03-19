@@ -25,7 +25,7 @@ export const FilterAction = withDynamicSchemaProps((props) => {
       Container={(props) => {
         const { visiblePopup, popupContainerRef } = usePopupContainer(props.open);
         const parentZIndex = useZIndexContext();
-        const { styles } = useMobileActionDrawerStyle();
+        const { componentCls, hashId } = useMobileActionDrawerStyle();
         const { t } = useTranslation();
 
         const newZIndex = parentZIndex + MIN_Z_INDEX_INCREMENT;
@@ -62,6 +62,7 @@ export const FilterAction = withDynamicSchemaProps((props) => {
           <ConfigProvider theme={theme}>
             {props.children}
             <Popup
+              className={`${componentCls} ${hashId}`}
               visible={visiblePopup}
               onClose={closePopup}
               onMaskClick={closePopup}
@@ -70,13 +71,13 @@ export const FilterAction = withDynamicSchemaProps((props) => {
               maskStyle={zIndexStyle}
               closeOnSwipe
             >
-              <div className={styles.header}>
+              <div className="nb-mobile-action-drawer-header">
                 {/* used to make the title center */}
-                <span className={styles.placeholder}>
+                <span className="nb-mobile-action-drawer-placeholder">
                   <CloseOutline />
                 </span>
                 <span>{t('Filter')}</span>
-                <span className={styles.closeIcon} onClick={closePopup}>
+                <span className="nb-mobile-action-drawer-close-icon" onClick={closePopup}>
                   <CloseOutline />
                 </span>
               </div>

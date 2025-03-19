@@ -17,7 +17,7 @@ test.describe('Add new: inherit', () => {
     // 1. click the "Add new" button, and then create a block, the block's collection should be "parent"
     await page.getByRole('button', { name: 'plus Add new' }).click();
     await page.getByLabel('schema-initializer-Grid-popup').hover();
-    await page.getByRole('menuitem', { name: 'form Form right' }).hover();
+    await page.getByRole('menuitem', { name: 'Form right' }).hover();
     await page.getByRole('menuitem', { name: 'Current collection' }).click();
     await page.getByLabel('block-item-CardItem-parent-form').hover();
     await expect(page.getByLabel('block-item-CardItem-parent-form').getByText('parent')).toBeVisible();
@@ -28,7 +28,7 @@ test.describe('Add new: inherit', () => {
     await page.getByRole('button', { name: 'down' }).hover();
     await page.getByRole('menuitem', { name: 'child1' }).click();
     await page.getByLabel('schema-initializer-Grid-popup').hover();
-    await page.getByRole('menuitem', { name: 'form Form right' }).hover();
+    await page.getByRole('menuitem', { name: 'Form right' }).hover();
     await page.getByRole('menuitem', { name: 'Current collection' }).click();
     await page.getByLabel('block-item-CardItem-child1-').hover();
     await expect(page.getByLabel('block-item-CardItem-child1-').getByText('child1')).toBeVisible();
@@ -39,7 +39,7 @@ test.describe('Add new: inherit', () => {
     await page.getByRole('button', { name: 'down' }).hover();
     await page.getByRole('menuitem', { name: 'child2' }).click();
     await page.getByLabel('schema-initializer-Grid-popup').hover();
-    await page.getByRole('menuitem', { name: 'form Form right' }).hover();
+    await page.getByRole('menuitem', { name: 'Form right' }).hover();
     await page.getByRole('menuitem', { name: 'Current collection' }).click();
     await page.getByLabel('block-item-CardItem-child2-').hover();
     await expect(page.getByLabel('block-item-CardItem-child2-').getByText('child2')).toBeVisible();

@@ -18,7 +18,7 @@ import fs from 'fs';
 import http, { IncomingMessage, ServerResponse } from 'http';
 import compose from 'koa-compose';
 import { promisify } from 'node:util';
-import { resolve } from 'path';
+import { isAbsolute, resolve } from 'path';
 import qs from 'qs';
 import handler from 'serve-handler';
 import { parse } from 'url';
@@ -29,6 +29,8 @@ import { applyErrorWithArgs, getErrorWithCode } from './errors';
 import { IPCSocketClient } from './ipc-socket-client';
 import { IPCSocketServer } from './ipc-socket-server';
 import { WSServer } from './ws-server';
+import { isMainThread, workerData } from 'node:worker_threads';
+import process from 'node:process';
 
 const compress = promisify(compression());
 
@@ -55,6 +57,16 @@ export interface AppSelectorMiddlewareContext {
   resolvedAppName: string | null;
 }
 
+function getSocketPath() {
+  const { SOCKET_PATH } = process.env;
+
+  if (isAbsolute(SOCKET_PATH)) {
+    return SOCKET_PATH;
+  }
+
+  return resolve(process.cwd(), SOCKET_PATH);
+}
+
 export class Gateway extends EventEmitter {
   private static instance: Gateway;
   /**
@@ -64,18 +76,16 @@ export class Gateway extends EventEmitter {
 
   public server: http.Server | null = null;
   public ipcSocketServer: IPCSocketServer | null = null;
+  public wsServer: WSServer;
   loggers = new Registry<SystemLogger>();
   private port: number = process.env.APP_PORT ? parseInt(process.env.APP_PORT) : null;
   private host = '0.0.0.0';
-  private wsServer: WSServer;
   private socketPath = resolve(process.cwd(), 'storage', 'gateway.sock');
 
   private constructor() {
     super();
     this.reset();
-    if (process.env.SOCKET_PATH) {
-      this.socketPath = resolve(process.cwd(), process.env.SOCKET_PATH);
-    }
+    this.socketPath = getSocketPath();
   }
 
   public static getInstance(options: any = {}): Gateway {
@@ -87,7 +97,7 @@ export class Gateway extends EventEmitter {
   }
 
   static async getIPCSocketClient() {
-    const socketPath = resolve(process.cwd(), process.env.SOCKET_PATH || 'storage/gateway.sock');
+    const socketPath = getSocketPath();
     try {
       return await IPCSocketClient.getConnection(socketPath);
     } catch (error) {
@@ -230,7 +240,14 @@ export class Gateway extends EventEmitter {
       });
     }
 
-    const handleApp = await this.getRequestHandleAppName(req as IncomingRequest);
+    let handleApp = 'main';
+    try {
+      handleApp = await this.getRequestHandleAppName(req as IncomingRequest);
+    } catch (error) {
+      console.log(error);
+      this.responseErrorWithCode('APP_INITIALIZING', res, { appName: handleApp });
+      return;
+    }
     const hasApp = AppSupervisor.getInstance().hasApp(handleApp);
 
     if (!hasApp) {
@@ -346,11 +363,18 @@ export class Gateway extends EventEmitter {
 
     const mainApp = AppSupervisor.getInstance().bootMainApp(options.mainAppOptions);
 
+    // NOTE: to avoid listener number warning (default to 10)
+    // See: https://nodejs.org/api/events.html#emittersetmaxlistenersn
+    mainApp.setMaxListeners(50);
+
+    let runArgs: any = [process.argv, { throwError: true, from: 'node' }];
+
+    if (!isMainThread) {
+      runArgs = [workerData.argv, { throwError: true, from: 'user' }];
+    }
+
     mainApp
-      .runAsCLI(process.argv, {
-        throwError: true,
-        from: 'node',
-      })
+      .runAsCLI(...runArgs)
       .then(async () => {
         if (!isStart && !(await mainApp.isStarted())) {
           await mainApp.stop({ logging: false });
@@ -358,8 +382,13 @@ export class Gateway extends EventEmitter {
       })
       .catch(async (e) => {
         if (e.code !== 'commander.helpDisplayed') {
+          if (!isMainThread) {
+            throw e;
+          }
+
           mainApp.log.error(e);
         }
+
         if (!isStart && !(await mainApp.isStarted())) {
           await mainApp.stop({ logging: false });
         }

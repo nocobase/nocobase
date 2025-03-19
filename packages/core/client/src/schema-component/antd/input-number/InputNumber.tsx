@@ -12,6 +12,7 @@ import { InputNumber as AntdNumber, InputNumberProps as AntdInputNumberProps } f
 import React from 'react';
 import { InputNumberReadPrettyProps, ReadPretty } from './ReadPretty';
 import BigNumber from 'bignumber.js';
+import { omit } from 'lodash';
 
 type ComposedInputNumber = React.ForwardRefExoticComponent<
   Pick<Partial<any>, string | number | symbol> & React.RefAttributes<unknown>
@@ -37,7 +38,14 @@ export const InputNumber: ComposedInputNumber = connect((props: AntdInputNumberP
       onChange(toSafeNumber(v));
     }
   };
-  return <AntdNumber onChange={handleChange} {...others} />;
+  let inputNumberProps = {
+    onChange: handleChange,
+    ...others,
+  };
+  if (others['formatStyle']) {
+    inputNumberProps = omit(inputNumberProps, ['addonAfter', 'addonBefore']);
+  }
+  return <AntdNumber {...inputNumberProps} />;
 }, mapReadPretty(ReadPretty));
 
 InputNumber.ReadPretty = ReadPretty;

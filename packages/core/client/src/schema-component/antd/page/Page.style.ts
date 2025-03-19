@@ -14,13 +14,16 @@ export const useStyles = genStyleHook('nb-page', (token) => {
 
   return {
     [componentCls]: {
-      position: 'relative',
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
       zIndex: 20,
-      flex: 1,
       display: 'flex',
       flexDirection: 'column',
-      overflow: 'auto',
-
+      overflowY: 'auto',
+      overflowX: 'hidden',
       '&:hover': { '> .general-schema-designer': { display: 'block' } },
       '.ant-page-header': { zIndex: 1, position: 'relative' },
       '> .general-schema-designer': {
@@ -114,18 +117,11 @@ export const useStyles = genStyleHook('nb-page', (token) => {
         },
       },
 
-      '.pageWithFixedBlockCss': {
-        height: '100%',
-        '> .nb-grid:not(:last-child)': {
-          '> .nb-schema-initializer-button': { display: 'none' },
-        },
-      },
-
       '.nb-page-wrapper': {
         padding: `${token.paddingPageVertical}px`,
         paddingBottom: 0,
         flex: 1,
       },
     },
-  };
+  } as any;
 });

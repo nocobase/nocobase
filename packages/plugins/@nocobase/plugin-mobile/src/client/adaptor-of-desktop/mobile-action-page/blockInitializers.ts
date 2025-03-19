@@ -24,11 +24,11 @@ export const getMobilePopupBlockInitializers = (desktopPopupBlockInitializers: S
         useChildren: () => {
           return dataBlocks.useChildren().filter((item) => keepItems.includes(item.name));
         },
-        title: '{{t("Desktop data blocks")}}',
+        title: '{{t("Data blocks")}}',
       },
       {
         ...otherBlocks,
-        title: '{{t("Other desktop blocks")}}',
+        title: '{{t("Other blocks")}}',
       },
     ],
   });

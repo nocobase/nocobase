@@ -109,6 +109,68 @@ const RuleTypes = {
       },
     },
   },
+  randomChar: {
+    title: `{{t("Random character", { ns: "${NAMESPACE}" })}}`,
+    optionRenders: {
+      length: function Length({ value }) {
+        return <code>{value}</code>;
+      },
+      charsets: function Charsets({ value }) {
+        const { t } = useTranslation();
+        const charsetLabels = {
+          number: t('Number', { ns: NAMESPACE }),
+          lowercase: t('Lowercase letters', { ns: NAMESPACE }),
+          uppercase: t('Uppercase letters', { ns: NAMESPACE }),
+          symbol: t('Symbols', { ns: NAMESPACE }),
+        };
+        return (
+          <code>{value?.map((charset) => charsetLabels[charset]).join(', ') || t('Number', { ns: NAMESPACE })}</code>
+        );
+      },
+    },
+    fieldset: {
+      length: {
+        type: 'number',
+        title: `{{t("Length", { ns: "${NAMESPACE}" })}}`,
+        description: `{{t("Will generate random characters with specified length.", { ns: "${NAMESPACE}" })}}`,
+        'x-decorator': 'FormItem',
+        'x-component': 'InputNumber',
+        'x-component-props': {
+          min: 1,
+          max: 32,
+        },
+        required: true,
+        default: 6,
+      },
+      charsets: {
+        type: 'array',
+        title: `{{t("Character sets", { ns: "${NAMESPACE}" })}}`,
+        description: `{{t("Select character sets to generate random characters.", { ns: "${NAMESPACE}" })}}`,
+        'x-decorator': 'FormItem',
+        'x-component': 'Select',
+        'x-component-props': {
+          mode: 'multiple',
+          allowClear: false,
+        },
+        enum: [
+          { value: 'number', label: `{{t("Number", { ns: "${NAMESPACE}" })}}` },
+          { value: 'lowercase', label: `{{t("Lowercase letters", { ns: "${NAMESPACE}" })}}` },
+          { value: 'uppercase', label: `{{t("Uppercase letters", { ns: "${NAMESPACE}" })}}` },
+          { value: 'symbol', label: `{{t("Symbols", { ns: "${NAMESPACE}" })}}` },
+        ],
+        required: true,
+        default: ['number'],
+        'x-validator': {
+          minItems: 1,
+          message: `{{t("At least one character set should be selected", { ns: "${NAMESPACE}" })}}`,
+        },
+      },
+    },
+    defaults: {
+      length: 6,
+      charsets: ['number'],
+    },
+  },
   integer: {
     title: `{{t("Autoincrement", { ns: "${NAMESPACE}" })}}`,
     optionRenders: {
@@ -305,14 +367,6 @@ export class SequenceFieldInterface extends CollectionFieldInterface {
     operators: interfacesProperties.operators.string,
   };
   titleUsable = true;
-  schemaInitialize(schema: ISchema, { block, field }) {
-    if (block === 'Form') {
-      Object.assign(schema['x-component-props'], {
-        disabled: !field.inputable,
-      });
-    }
-    return schema;
-  }
   properties = {
     ...interfacesProperties.defaultProps,
     unique: interfacesProperties.unique,

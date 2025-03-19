@@ -113,6 +113,7 @@ export const useCurrentObjectVariable = ({
     title: t('Current object'),
     collectionName: collectionOfCurrentObject?.name || collection?.name,
     noDisabled,
+    dataSource: collection?.dataSource,
     returnFields: (fields, option) => {
       // fix https://nocobase.height.app/T-2277
       return fields;

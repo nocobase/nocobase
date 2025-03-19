@@ -36,9 +36,13 @@ class PluginCollectionTreeServer extends Plugin {
 
           //always define tree path collection
           const options = {};
+
+          options['mainCollection'] = collection.name;
+
           if (collection.options.schema) {
             options['schema'] = collection.options.schema;
           }
+
           this.defineTreePathCollection(name, options);
 
           //afterSync
@@ -101,6 +105,13 @@ class PluginCollectionTreeServer extends Plugin {
               },
               transaction: options.transaction,
             });
+          });
+
+          this.db.on(`${collection.name}.beforeSave`, async (model: Model) => {
+            const tk = collection.filterTargetKey as string;
+            if (model.get(parentForeignKey) === model.get(tk)) {
+              throw new Error('Cannot set itself as the parent node');
+            }
           });
         });
       }

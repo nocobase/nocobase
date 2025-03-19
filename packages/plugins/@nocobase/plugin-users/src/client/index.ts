@@ -9,10 +9,16 @@
 
 import { Plugin } from '@nocobase/client';
 import { tval } from '@nocobase/utils/client';
-import { UsersManagement } from './UsersManagement';
 import ACLPlugin from '@nocobase/plugin-acl/client';
-import { RoleUsersManager } from './RoleUsersManager';
+import { lazy } from '@nocobase/client';
+import { ChangePassword } from './ChangePassword';
+import { EditProfile } from './EditProfile';
+import { NickName } from './NickName';
+import { SignOut } from './SignOut';
 
+const { UsersProvider } = lazy(() => import('./UsersProvider'), 'UsersProvider');
+const { UsersManagement } = lazy(() => import('./UsersManagement'), 'UsersManagement');
+const { RoleUsersManager } = lazy(() => import('./RoleUsersManager'), 'RoleUsersManager');
 class PluginUsersClient extends Plugin {
   async load() {
     this.app.pluginSettingsManager.add('users-permissions', {
@@ -30,6 +36,37 @@ class PluginUsersClient extends Plugin {
     acl.rolesManager.add('users', {
       title: tval('Users'),
       Component: RoleUsersManager,
+    });
+    // 个人中心注册 注册设置项
+    this.app.addUserCenterSettingsItem({
+      name: 'nickName',
+      Component: NickName,
+      sort: 0,
+    });
+    this.app.addUserCenterSettingsItem({
+      name: 'divider1',
+      type: 'divider',
+      sort: 10,
+    });
+    this.app.addUserCenterSettingsItem({
+      name: 'editProfile',
+      Component: EditProfile,
+      sort: 50,
+    });
+    this.app.addUserCenterSettingsItem({
+      name: 'changePassword',
+      Component: ChangePassword,
+      sort: 100,
+    });
+    this.app.addUserCenterSettingsItem({
+      name: 'divider_signOut',
+      type: 'divider',
+      sort: 900,
+    });
+    this.app.addUserCenterSettingsItem({
+      name: 'signOut',
+      Component: SignOut,
+      sort: 1000,
     });
   }
 }

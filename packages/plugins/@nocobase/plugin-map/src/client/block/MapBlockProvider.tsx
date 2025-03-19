@@ -7,17 +7,11 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { useField, useFieldSchema } from '@formily/react';
-import {
-  BlockProvider,
-  FixedBlockWrapper,
-  SchemaComponentOptions,
-  useBlockRequestContext,
-  useParsedFilter,
-} from '@nocobase/client';
-import React, { createContext, useContext, useState } from 'react';
 import { css } from '@emotion/css';
+import { useField, useFieldSchema } from '@formily/react';
+import { BlockProvider, SchemaComponentOptions, useBlockRequestContext, useParsedFilter } from '@nocobase/client';
 import { theme } from 'antd';
+import React, { createContext, useContext, useState } from 'react';
 
 export const MapBlockContext = createContext<any>({});
 MapBlockContext.displayName = 'MapBlockContext';
@@ -31,32 +25,30 @@ const InternalMapBlockProvider = (props) => {
   const { token } = theme.useToken();
 
   return (
-    <FixedBlockWrapper>
-      <SchemaComponentOptions scope={{ selectedRecordKeys }}>
-        <MapBlockContext.Provider
-          value={{
-            field,
-            service,
-            resource,
-            fieldNames,
-            fixedBlock: fieldSchema?.['x-decorator-props']?.fixedBlock,
-            selectedRecordKeys,
-            setSelectedRecordKeys,
-          }}
+    <SchemaComponentOptions scope={{ selectedRecordKeys }}>
+      <MapBlockContext.Provider
+        value={{
+          field,
+          service,
+          resource,
+          fieldNames,
+          fixedBlock: fieldSchema?.['x-decorator-props']?.fixedBlock,
+          selectedRecordKeys,
+          setSelectedRecordKeys,
+        }}
+      >
+        {' '}
+        <div
+          className={css`
+            .nb-action-bar {
+              margin-bottom: ${token.margin}px;
+            }
+          `}
         >
-          {' '}
-          <div
-            className={css`
-              .nb-action-bar {
-                margin-bottom: ${token.margin}px;
-              }
-            `}
-          >
-            {props.children}
-          </div>
-        </MapBlockContext.Provider>
-      </SchemaComponentOptions>
-    </FixedBlockWrapper>
+          {props.children}
+        </div>
+      </MapBlockContext.Provider>
+    </SchemaComponentOptions>
   );
 };
 

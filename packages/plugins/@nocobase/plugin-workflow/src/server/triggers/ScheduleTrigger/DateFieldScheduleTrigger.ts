@@ -12,7 +12,8 @@ import parser from 'cron-parser';
 import type Plugin from '../../Plugin';
 import type { WorkflowModel } from '../../types';
 import { parseDateWithoutMs, SCHEDULE_MODE } from './utils';
-import { parseCollectionName, SequelizeCollectionManager } from '@nocobase/data-source-manager';
+import { parseCollectionName, SequelizeCollectionManager, SequelizeDataSource } from '@nocobase/data-source-manager';
+import { pick } from 'lodash';
 
 export type ScheduleOnField = {
   field: string;
@@ -57,7 +58,7 @@ function getDataOptionTime(record, on, dir = 1) {
       if (!field || !record.get(field)) {
         return null;
       }
-      const second = new Date(record.get(field).getTime());
+      const second = new Date(record.get(field));
       second.setMilliseconds(0);
       return second.getTime() + offset * unit * dir;
     }
@@ -93,7 +94,7 @@ function getHookId(workflow, type: string) {
   return `${type}#${workflow.id}`;
 }
 
-export default class ScheduleTrigger {
+export default class DateFieldScheduleTrigger {
   events = new Map();
 
   private timer: NodeJS.Timeout | null = null;
@@ -142,6 +143,7 @@ export default class ScheduleTrigger {
 
     workflows.forEach(async (workflow) => {
       const records = await this.loadRecordsToSchedule(workflow, now);
+      this.workflow.getLogger(workflow.id).info(`[Schedule on date field] ${records.length} records to schedule`);
       records.forEach((record) => {
         const nextTime = this.getRecordNextTime(workflow, record);
         this.schedule(workflow, record, nextTime, Boolean(nextTime));
@@ -157,20 +159,23 @@ export default class ScheduleTrigger {
   //     i. endsOn after now -> yes
   //     ii. endsOn before now -> no
   async loadRecordsToSchedule(
-    { config: { collection, limit, startsOn, repeat, endsOn }, allExecuted }: WorkflowModel,
+    { id, config: { collection, limit, startsOn, repeat, endsOn }, allExecuted }: WorkflowModel,
     currentDate: Date,
   ) {
     const { dataSourceManager } = this.workflow.app;
     if (limit && allExecuted >= limit) {
+      this.workflow.getLogger(id).warn(`[Schedule on date field] limit reached (all executed ${allExecuted})`);
       return [];
     }
     if (!startsOn) {
+      this.workflow.getLogger(id).warn(`[Schedule on date field] "startsOn" is not configured`);
       return [];
     }
     const timestamp = currentDate.getTime();
 
     const startTimestamp = getOnTimestampWithOffset(startsOn, currentDate);
     if (!startTimestamp) {
+      this.workflow.getLogger(id).warn(`[Schedule on date field] "startsOn.field" is not configured`);
       return [];
     }
 
@@ -203,7 +208,7 @@ export default class ScheduleTrigger {
           const modExp = fn(
             'MOD',
             literal(
-              `${Math.round(timestamp / 1000)} - ${db.sequelize.getQueryInterface().quoteIdentifiers(tsFn(field))}`,
+              `${Math.round(timestamp / 1000)} - ${tsFn(db.sequelize.getQueryInterface().quoteIdentifiers(field))}`,
             ),
             Math.round(repeat / 1000),
           );
@@ -216,21 +221,21 @@ export default class ScheduleTrigger {
       }
 
       if (endsOn) {
-        const now = new Date();
-        const endTimestamp = getOnTimestampWithOffset(endsOn, now);
-        if (!endTimestamp) {
-          return [];
-        }
         if (typeof endsOn === 'string') {
-          if (endTimestamp <= timestamp) {
+          if (parseDateWithoutMs(endsOn) <= timestamp) {
             return [];
           }
         } else {
-          conditions.push({
-            [endsOn.field]: {
-              [Op.gte]: new Date(endTimestamp),
-            },
-          });
+          const endTimestamp = getOnTimestampWithOffset(endsOn, currentDate);
+          if (endTimestamp) {
+            conditions.push({
+              [endsOn.field]: {
+                [Op.gte]: new Date(endTimestamp),
+              },
+            });
+          } else {
+            this.workflow.getLogger(id).warn(`[Schedule on date field] "endsOn.field" is not configured`);
+          }
         }
       }
     } else {
@@ -240,7 +245,7 @@ export default class ScheduleTrigger {
         },
       });
     }
-
+    this.workflow.getLogger(id).debug(`[Schedule on date field] conditions: `, { conditions });
     return model.findAll({
       where: {
         [Op.and]: conditions,
@@ -378,8 +383,9 @@ export default class ScheduleTrigger {
     };
 
     this.events.set(name, listener);
-    // @ts-ignore
-    this.workflow.app.dataSourceManager.dataSources.get(dataSourceName).collectionManager.db.on(event, listener);
+    const dataSource = this.workflow.app.dataSourceManager.dataSources.get(dataSourceName) as SequelizeDataSource;
+    const { db } = dataSource.collectionManager as SequelizeCollectionManager;
+    db.on(event, listener);
   }
 
   off(workflow: WorkflowModel) {
@@ -396,10 +402,48 @@ export default class ScheduleTrigger {
     const name = getHookId(workflow, event);
     const listener = this.events.get(name);
     if (listener) {
-      // @ts-ignore
-      const { db } = this.workflow.app.dataSourceManager.dataSources.get(dataSourceName).collectionManager;
+      const dataSource = this.workflow.app.dataSourceManager.dataSources.get(dataSourceName) as SequelizeDataSource;
+      const { db } = dataSource.collectionManager as SequelizeCollectionManager;
       db.off(event, listener);
       this.events.delete(name);
     }
+  }
+
+  async execute(workflow, values, options) {
+    const [dataSourceName, collectionName] = parseCollectionName(workflow.config.collection);
+    const { collectionManager } = this.workflow.app.dataSourceManager.dataSources.get(dataSourceName);
+    const { filterTargetKey, repository } = collectionManager.getCollection(collectionName);
+
+    let { data } = values;
+    let filterByTk;
+    let loadNeeded = false;
+    if (data && typeof data === 'object') {
+      filterByTk = Array.isArray(filterTargetKey)
+        ? pick(
+            data,
+            filterTargetKey.sort((a, b) => a.localeCompare(b)),
+          )
+        : data[filterTargetKey];
+    } else {
+      filterByTk = data;
+      loadNeeded = true;
+    }
+    if (loadNeeded || workflow.config.appends?.length) {
+      data = await repository.findOne({
+        filterByTk,
+        appends: workflow.config.appends,
+      });
+    }
+
+    return this.workflow.trigger(workflow, { ...values, data, date: values?.date ?? new Date() }, options);
+  }
+
+  validateContext(values) {
+    if (!values?.data) {
+      return {
+        data: 'Data is required',
+      };
+    }
+    return null;
   }
 }

@@ -1,0 +1,12 @@
+{
+  "Parallel branch": "Ramo parallelo",
+  "Run multiple branch processes in parallel.": "Esegui più processi del ramo in parallelo.",
+  "Add branch": "Aggiungi ramo",
+  "Mode": "Modalità di esecuzione",
+  "All succeeded": "Tutti riusciti",
+  "Any succeeded": "Qualsiasi riuscito",
+  "Any succeeded or failed": "Qualsiasi riuscito o fallito",
+  "Continue after all branches succeeded": "Continua dopo che tutti i rami sono riusciti",
+  "Continue after any branch succeeded": "Continua dopo che qualsiasi ramo è riuscito",
+  "Continue after any branch succeeded, or exit after any branch failed.": "Continua dopo che qualsiasi ramo è riuscito, o esci dopo che qualsiasi ramo è fallito."
+}

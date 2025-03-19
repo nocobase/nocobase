@@ -8,12 +8,13 @@
  */
 
 import { Schema, useFieldSchema } from '@formily/react';
-import React, { useContext } from 'react';
+import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { SchemaComponentContext, createDesignable } from '../..';
+import { createDesignable } from '../..';
 import { useAPIClient } from '../../../api-client';
 import { useBlockRequestContext } from '../../../block-provider';
 import { mergeFilter } from '../../../filter-provider/utils';
+import { useRefreshFieldSchema } from '../../../formily/NocoBaseRecursionField';
 import { ActionInitializerItem } from '../../../schema-initializer/items/ActionInitializerItem';
 
 /**
@@ -22,11 +23,11 @@ import { ActionInitializerItem } from '../../../schema-initializer/items/ActionI
  * @returns
  */
 export const ActionBarAssociationFilterAction = (props) => {
-  const { refresh } = useContext(SchemaComponentContext);
+  const refreshFieldSchema = useRefreshFieldSchema();
   const fieldSchema = useFieldSchema();
   const api = useAPIClient();
   const { t } = useTranslation();
-  const dn = createDesignable({ t, api, refresh, current: fieldSchema });
+  const dn = createDesignable({ t, api, refresh: refreshFieldSchema, current: fieldSchema });
   const { service, props: blockProps } = useBlockRequestContext();
 
   dn.loadAPIClientEvents();

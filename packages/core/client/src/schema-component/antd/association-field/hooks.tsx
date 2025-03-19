@@ -37,7 +37,7 @@ export const useInsertSchema = (component) => {
         insertAfterBegin(cloneDeep(ss));
       }
     },
-    [component],
+    [component, fieldSchema, insertAfterBegin],
   );
   return insert;
 };

@@ -52,33 +52,6 @@ export const GridCardDesigner = () => {
   const defaultResource =
     fieldSchema?.['x-decorator-props']?.resource || fieldSchema?.['x-decorator-props']?.association;
 
-  const columnCountSchema = useMemo(() => {
-    return {
-      'x-component': 'Slider',
-      'x-decorator': 'FormItem',
-      'x-component-props': {
-        min: 1,
-        max: 24,
-        marks: columnCountMarks,
-        tooltip: {
-          formatter: (value) => `${value}${t('Column')}`,
-        },
-        step: null,
-      },
-    };
-  }, [t]);
-
-  const columnCountProperties = useMemo(() => {
-    return gridSizes.reduce((o, k) => {
-      o[k] = {
-        ...columnCountSchema,
-        title: t(screenSizeTitleMaps[k]),
-        description: `${t('Screen size')} ${screenSizeMaps[k]} ${t('pixels')}`,
-      };
-      return o;
-    }, {});
-  }, [columnCountSchema, t]);
-
   const sort = defaultSort?.map((item: string) => {
     return item.startsWith('-')
       ? {

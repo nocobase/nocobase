@@ -14,3 +14,9 @@ export const FlowContext = React.createContext<any>({});
 export function useFlowContext() {
   return useContext(FlowContext);
 }
+
+export const CurrentWorkflowContext = React.createContext<any>({});
+
+export function useCurrentWorkflowContext() {
+  return useContext(CurrentWorkflowContext);
+}

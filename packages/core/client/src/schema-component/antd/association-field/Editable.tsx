@@ -18,50 +18,47 @@ import { AssociationFieldProvider } from './AssociationFieldProvider';
 import { CreateRecordAction } from './components/CreateRecordAction';
 import { useAssociationFieldContext } from './hooks';
 
-const EditableAssociationField = observer(
-  (props: any) => {
-    const { multiple } = props;
-    const field: Field = useField();
-    const form = useForm();
-    const { options: collectionField, currentMode } = useAssociationFieldContext();
-    const { getComponent } = useAssociationFieldModeContext();
+const EditableAssociationField = (props: any) => {
+  const { multiple } = props;
+  const field: Field = useField();
+  const form = useForm();
+  const { options: collectionField, currentMode } = useAssociationFieldContext();
+  const { getComponent } = useAssociationFieldModeContext();
 
-    const useCreateActionProps = () => {
-      const { onClick } = useCAP();
-      const actionField: any = useField();
-      const { getPrimaryKey } = useCollection_deprecated();
-      const primaryKey = getPrimaryKey();
-      return {
-        async onClick() {
-          await onClick();
-          const { data } = actionField.data?.data?.data || {};
-          if (data) {
-            if (['m2m', 'o2m'].includes(collectionField?.interface) && multiple !== false) {
-              const values = form.getValuesIn(field.path) || [];
-              if (!values.find((v) => v[primaryKey] === data[primaryKey])) {
-                values.push(data);
-                form.setValuesIn(field.path, values);
-                field.onInput(values);
-              }
-            } else {
-              form.setValuesIn(field.path, data);
-              field.onInput(data);
+  const useCreateActionProps = () => {
+    const { onClick } = useCAP();
+    const actionField: any = useField();
+    const { getPrimaryKey } = useCollection_deprecated();
+    const primaryKey = getPrimaryKey();
+    return {
+      async onClick() {
+        await onClick();
+        const { data } = actionField.data?.data?.data || {};
+        if (data) {
+          if (['m2m', 'o2m'].includes(collectionField?.interface) && multiple !== false) {
+            const values = form.getValuesIn(field.path) || [];
+            if (!values.find((v) => v[primaryKey] === data[primaryKey])) {
+              values.push(data);
+              form.setValuesIn(field.path, values);
+              field.onInput(values);
             }
+          } else {
+            form.setValuesIn(field.path, data);
+            field.onInput(data);
           }
-        },
-      };
+        }
+      },
     };
+  };
 
-    const Component = getComponent(currentMode);
+  const Component = getComponent(currentMode);
 
-    return (
-      <SchemaComponentOptions scope={{ useCreateActionProps }} components={{ CreateRecordAction }}>
-        <Component {...props} />
-      </SchemaComponentOptions>
-    );
-  },
-  { displayName: 'EditableAssociationField' },
-);
+  return (
+    <SchemaComponentOptions scope={{ useCreateActionProps }} components={{ CreateRecordAction }}>
+      <Component {...props} />
+    </SchemaComponentOptions>
+  );
+};
 
 export const Editable = observer(
   (props) => {

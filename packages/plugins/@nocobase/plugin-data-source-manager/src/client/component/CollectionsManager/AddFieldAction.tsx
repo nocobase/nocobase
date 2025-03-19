@@ -11,28 +11,28 @@ import { PlusOutlined } from '@ant-design/icons';
 import { ArrayTable } from '@formily/antd-v5';
 import { useField, useForm } from '@formily/react';
 import { uid } from '@formily/shared';
+import {
+  ActionContextProvider,
+  IField,
+  RecordProvider,
+  SchemaComponent,
+  useActionContext,
+  useAPIClient,
+  useCancelAction,
+  useCollectionManager_deprecated,
+  useCompile,
+  useCurrentAppInfo,
+  useDataSourceManager,
+  useFieldInterfaceOptions,
+  useRecord,
+  useRequest,
+  useResourceActionContext,
+} from '@nocobase/client';
 import { Button, Dropdown, MenuProps } from 'antd';
 import { cloneDeep } from 'lodash';
 import React, { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useParams } from 'react-router-dom';
-import {
-  useRequest,
-  RecordProvider,
-  IField,
-  useRecord,
-  ActionContextProvider,
-  SchemaComponent,
-  useActionContext,
-  useCompile,
-  useResourceActionContext,
-  useCancelAction,
-  useCollectionManager_deprecated,
-  useCurrentAppInfo,
-  useAPIClient,
-  useFieldInterfaceOptions,
-  useDataSourceManager,
-} from '@nocobase/client';
 import { ForeignKey } from './components';
 
 const getSchema = (schema: IField, record: any, compile) => {
@@ -213,7 +213,9 @@ const AddFieldAction = (props) => {
   const { t } = useTranslation();
   const {
     data: { database: currentDatabase },
-  } = useCurrentAppInfo();
+  } = useCurrentAppInfo() || {
+    data: { database: {} as any },
+  };
   const isDialect = (dialect: string) => currentDatabase?.dialect === dialect;
 
   const currentCollections = useMemo(() => {

@@ -37,16 +37,16 @@ const useCloseAction = () => {
 const useSystemSettingsValues = (options) => {
   const { visible } = useActionContext();
   const result = useSystemSettings();
-  return useRequest(() => Promise.resolve(result.data), {
+  return useRequest(() => Promise.resolve(result?.data), {
     ...options,
-    refreshDeps: [visible],
+    refreshDeps: [visible, result?.data],
   });
 };
 
 const useSaveSystemSettingsValues = () => {
   const { setVisible } = useActionContext();
   const form = useForm();
-  const { mutate, data } = useSystemSettings();
+  const { mutate, data } = useSystemSettings() || {};
   const api = useAPIClient();
   const { t } = useTranslation();
   return {
@@ -60,7 +60,7 @@ const useSaveSystemSettingsValues = () => {
         },
       });
       await api.request({
-        url: 'systemSettings:update/1',
+        url: 'systemSettings:put',
         method: 'post',
         data: values,
       });
@@ -88,11 +88,14 @@ const schema: ISchema = {
       type: 'void',
       title: '{{t("System settings")}}',
       properties: {
-        title: {
+        raw_title: {
           type: 'string',
           title: "{{t('System title')}}",
           'x-decorator': 'FormItem',
-          'x-component': 'Input.TextArea',
+          'x-component': 'TextAreaWithGlobalScope',
+          'x-component-props': {
+            supportsLineBreak: true,
+          },
           required: true,
         },
         logo: {

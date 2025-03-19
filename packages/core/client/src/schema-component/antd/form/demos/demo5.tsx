@@ -10,6 +10,7 @@ import {
   useAPIClient,
 } from '@nocobase/client';
 import { Card, Space } from 'antd';
+import { createMemoryHistory } from 'history';
 import React from 'react';
 import { Router } from 'react-router-dom';
 import { apiClient } from './apiClient';
@@ -104,8 +105,9 @@ const useRefresh = () => {
 };
 
 export default observer(() => {
+  const history = createMemoryHistory();
   return (
-    <Router location={window.location} navigator={null}>
+    <Router location={history.location} navigator={history}>
       <CustomRouterContextProvider>
         <APIClientProvider apiClient={apiClient}>
           <SchemaComponentProvider

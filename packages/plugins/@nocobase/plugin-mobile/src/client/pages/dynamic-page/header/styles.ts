@@ -7,15 +7,11 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { createStyles } from 'antd-style';
-
-export const useStyles = createStyles(() => ({
-  mobilePageHeader: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    borderBottom: '1px solid var(--adm-color-border)',
-    backgroundColor: 'var(--adm-color-background)',
-  },
-}));
+export const mobilePageHeaderStyle: any = {
+  position: 'absolute',
+  top: 0,
+  left: 0,
+  right: 0,
+  borderBottom: '1px solid var(--adm-color-border)',
+  backgroundColor: 'var(--adm-color-background)',
+};

@@ -7,14 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import { SchemaComponentOptions } from '..';
 import { CollectionProvider_deprecated } from './CollectionProvider_deprecated';
 import { ResourceActionProvider, useDataSourceFromRAC } from './ResourceActionProvider';
 import * as hooks from './action-hooks';
 import { DataSourceProvider_deprecated, SubFieldDataSourceProvider_deprecated, ds } from './sub-table';
 
-const scope = { cm: { ...hooks, useDataSourceFromRAC }, ds };
 const components = {
   SubFieldDataSourceProvider_deprecated,
   DataSourceProvider_deprecated,
@@ -23,6 +22,7 @@ const components = {
 };
 
 export const CollectionManagerSchemaComponentProvider: React.FC = (props) => {
+  const scope = useMemo(() => ({ cm: { ...hooks, useDataSourceFromRAC }, ds }), []);
   return (
     <SchemaComponentOptions scope={scope} components={components}>
       {props.children}

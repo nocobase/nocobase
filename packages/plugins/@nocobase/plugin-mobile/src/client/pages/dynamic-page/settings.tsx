@@ -7,10 +7,11 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { useFieldSchema } from '@formily/react';
 import { SchemaSettings, createSwitchSettingsItem, useDesignable } from '@nocobase/client';
 import { generatePluginTranslationTemplate, usePluginTranslation } from '../../locale';
-import { useFieldSchema } from '@formily/react';
 import { useMobileApp } from '../../mobile';
+import { useMobileRoutes } from '../../mobile-providers/context/MobileRoutes';
 
 export const mobilePageSettings = new SchemaSettings({
   name: 'mobile:page',
@@ -41,6 +42,23 @@ export const mobilePageSettings = new SchemaSettings({
               checked: showTabBar,
               onChange(v) {
                 setShowTabBar(v);
+                refresh();
+              },
+            };
+          },
+        },
+        {
+          name: 'enableBackAction',
+          type: 'switch',
+          useComponentProps() {
+            const { t } = usePluginTranslation();
+            const { showBackButton, setShowBackButton } = useMobileApp();
+            const { refresh } = useDesignable();
+            return {
+              title: t('Display < back button'),
+              checked: showBackButton,
+              onChange(v) {
+                setShowBackButton(v);
                 refresh();
               },
             };
@@ -95,6 +113,23 @@ export const mobilePageSettings = new SchemaSettings({
           useVisible() {
             const schema = useFieldSchema();
             return schema['x-component-props']?.['displayPageHeader'] !== false;
+          },
+          useComponentProps() {
+            const { resource, activeTabBarItem, refresh } = useMobileRoutes();
+
+            return {
+              async onChange(v) {
+                await resource.update({
+                  filterByTk: activeTabBarItem.id,
+                  values: {
+                    enableTabs: v,
+                  },
+                });
+
+                refresh();
+              },
+              checked: activeTabBarItem.enableTabs,
+            };
           },
         }),
       ],

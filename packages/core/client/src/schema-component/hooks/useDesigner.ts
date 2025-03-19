@@ -13,6 +13,7 @@ import { useMemo } from 'react';
 import { SchemaToolbar } from '../../schema-settings';
 
 const DefaultSchemaToolbar = () => null;
+DefaultSchemaToolbar.isNullComponent = true;
 
 /**
  * @deprecated

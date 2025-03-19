@@ -17,7 +17,7 @@ test.describe('group page side menus schema settings', () => {
     await expectSettingsMenu({
       page,
       showMenu: () => showSettingsInSide(page, 'group page in side'),
-      supportedOptions: ['Edit', 'Move to', 'Insert before', 'Insert after', 'Insert inner', 'Delete'],
+      supportedOptions: ['Edit', 'Edit tooltip', 'Move to', 'Insert before', 'Insert after', 'Insert inner', 'Delete'],
     });
   });
 
@@ -28,7 +28,7 @@ test.describe('group page side menus schema settings', () => {
     await expectSettingsMenu({
       page,
       showMenu: () => showSettingsInSide(page, 'link page in side'),
-      supportedOptions: ['Edit', 'Move to', 'Insert before', 'Insert after', 'Delete'],
+      supportedOptions: ['Edit', 'Edit tooltip', 'Move to', 'Insert before', 'Insert after', 'Delete'],
     });
   });
 
@@ -39,7 +39,7 @@ test.describe('group page side menus schema settings', () => {
     await expectSettingsMenu({
       page,
       showMenu: () => showSettingsInSide(page, 'single page in side'),
-      supportedOptions: ['Edit', 'Move to', 'Insert before', 'Insert after', 'Delete'],
+      supportedOptions: ['Edit', 'Edit tooltip', 'Move to', 'Insert before', 'Insert after', 'Delete'],
     });
   });
 });
@@ -67,7 +67,7 @@ test.describe('single page menu schema settings', () => {
       page,
       showMenu: async () => {
         await page.locator('.ant-layout-header').getByText('single page', { exact: true }).hover();
-        await page.getByRole('button', { name: 'designer-schema-settings-' }).hover();
+        await page.getByRole('button', { name: 'designer-schema-settings-' }).click();
       },
       supportedOptions: ['Edit', 'Move to', 'Insert before', 'Insert after', 'Delete'],
     });

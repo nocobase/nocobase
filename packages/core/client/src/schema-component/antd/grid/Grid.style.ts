@@ -7,62 +7,64 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { createStyles } from 'antd-style';
+import { genStyleHook } from '../__builtins__/style';
 
-const useStyles = createStyles(({ token, css, cx }: any) => {
+const useStyles = genStyleHook('nb-grid-in-css-in-js', (token) => {
+  const { componentCls } = token;
   // 如果相等，说明当前是在 Form 区块中，会加上 !important，否则会导致字段间距收到影响
   const important = token.marginBlock === token.marginLG ? ' !important' : '';
 
   return {
-    wrapper: css``,
-    container: css`
-      .ColDivider {
-        flex-shrink: 0;
-        width: ${token.marginBlock}px${important};
-      }
+    [componentCls]: {
+      position: 'relative',
 
-      .DraggableNode {
-        &::before {
-          content: ' ';
-          width: 100%;
-          height: 100%;
-          position: absolute;
-          cursor: col-resize;
-        }
-        &:hover {
-          &::before {
-            background: var(--colorBgSettingsHover) !important;
-          }
-        }
-        width: ${token.marginBlock}px${important};
-        height: 100%;
-        position: absolute;
-        cursor: col-resize;
-      }
+      '.ColDivider': {
+        flexShrink: 0,
+        width: `${token.marginBlock}px${important}`,
+      },
 
-      .RowDivider {
-        height: ${token.marginBlock}px${important};
-        width: 100%;
-        position: absolute;
-        margin-top: calc(-1 * ${token.marginBlock}px) ${important};
-      }
+      '.DraggableNode': {
+        '&::before': {
+          content: '" "',
+          width: '100%',
+          height: '100%',
+          position: 'absolute',
+          cursor: 'col-resize',
+        },
+        '&:hover': {
+          '&::before': {
+            background: 'var(--colorBgSettingsHover) !important',
+          },
+        },
+        width: `${token.marginBlock}px${important}`,
+        height: '100%',
+        position: 'absolute',
+        cursor: 'col-resize',
+      },
 
-      .CardRow {
-        display: flex;
-        position: relative;
-      }
+      '.RowDivider': {
+        height: `${token.marginBlock}px${important}`,
+        width: '100%',
+        position: 'absolute',
+        marginTop: `calc(-1 * ${token.marginBlock}px)${important}`,
+      },
 
-      .showDivider {
-        margin: 0 calc(-1 * ${token.marginBlock}px) ${important};
-      }
+      '.CardRow': {
+        display: 'flex',
+        position: 'relative',
+      },
 
-      .nb-grid-warp > button:last-child {
-        margin-bottom: ${token.marginBlock}px;
-      }
-      .nb-grid-warp .nb-grid-warp > button:last-child {
-        margin-bottom: ${token.margin}px;
-      }
-    `,
+      '.showDivider': {
+        margin: `0 calc(-1 * ${token.marginBlock}px)${important}`,
+      },
+
+      '.nb-grid-warp > button:last-child': {
+        marginBottom: `${token.marginBlock}px`,
+      },
+      '.nb-grid-warp .nb-grid-warp > button:last-child': {
+        marginBottom: `${token.margin}px`,
+      },
+    } as any,
   };
 });
 
