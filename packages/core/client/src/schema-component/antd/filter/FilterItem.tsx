@@ -93,6 +93,7 @@ export const FilterItem = observer(
             onSearch={onSearch}
             showSearch={{ filter }}
             changeOnSelect={false}
+            onClear={() => setOptions(compile(fields))}
           />
           <Select
             // @ts-ignore
