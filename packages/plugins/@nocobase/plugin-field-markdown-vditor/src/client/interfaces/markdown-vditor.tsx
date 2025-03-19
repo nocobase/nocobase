@@ -7,9 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { ISchema } from '@formily/react';
 import { CollectionFieldInterface, interfacesProperties } from '@nocobase/client';
 import { generateNTemplate } from '../locale';
-import { ISchema } from '@formily/react';
 
 const { defaultProps, operators } = interfacesProperties;
 
@@ -58,7 +58,9 @@ export class MarkdownVditorFieldInterface extends CollectionFieldInterface {
       'x-reactions': {
         fulfill: {
           schema: {
-            description: generateNTemplate('Used to store files uploaded in the Markdown editor'),
+            description: generateNTemplate(
+              'Used to store files uploaded in the Markdown editor (default: attachments)',
+            ),
           },
         },
       },

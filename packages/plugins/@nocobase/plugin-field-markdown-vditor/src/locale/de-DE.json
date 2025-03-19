@@ -1,7 +1,7 @@
 {
   "Vditor": "Markdown(Vditor)",
   "File collection": "Dateisammlung",
-  "Used to store files uploaded in the Markdown editor": "Wird verwendet, um Dateien zu speichern, die im Markdown-Editor hochgeladen wurden",
+  "Used to store files uploaded in the Markdown editor (default: attachments)": "Dateisammlung, die in den Markdown-Editor hochgeladen wurde (Standard: attachments)",
   "Toolbar": "Editor-Symbolleistenkonfiguration",
   "Emoji": "Emoji",
   "Headings": "Überschriften",
