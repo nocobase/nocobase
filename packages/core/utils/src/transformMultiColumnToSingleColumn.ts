@@ -10,16 +10,16 @@
 import { uid } from './uid';
 
 // @ts-ignore
-import pkg from '../package.json';
 import _ from 'lodash';
-import { ISchema, Schema } from '@formily/json-schema';
+import pkg from '../package.json';
 
 /**
  * 将多列布局转换为单列布局
  * @param {Object} schema - 输入的 JSON Schema 对象
+ * @param {Function} [ignore] - 可选的忽略函数，用于判断是否忽略某个列
  * @returns {Object} - 转换后的 JSON Schema 对象
  */
-export const transformMultiColumnToSingleColumn = (schema: any): any => {
+export const transformMultiColumnToSingleColumn = (schema: any, ignore?: (colSchema: any) => boolean): any => {
   if (!schema) return schema;
 
   if (schema.toJSON) {
@@ -28,7 +28,7 @@ export const transformMultiColumnToSingleColumn = (schema: any): any => {
 
   if (schema['x-component'] !== 'Grid') {
     Object.keys(schema.properties || {}).forEach((key) => {
-      schema.properties[key] = transformMultiColumnToSingleColumn(schema.properties[key]);
+      schema.properties[key] = transformMultiColumnToSingleColumn(schema.properties[key], ignore);
     });
     return schema;
   }
@@ -67,6 +67,10 @@ export const transformMultiColumnToSingleColumn = (schema: any): any => {
       if (colIndex === 0) {
         row['x-index'] = ++index;
         newProperties[key] = row;
+        return;
+      }
+
+      if (ignore?.(column)) {
         return;
       }
 
