@@ -45,5 +45,11 @@
   "The maximum time limit allowed for refreshing a Token after it expires. After this time limit, the token cannot be automatically renewed, and the user needs to log in again.": "Il limite di tempo massimo consentito per l'aggiornamento del token dopo la scadenza. Superato questo limite di tempo, il token non può essere rinnovato automaticamente e l'utente dovrà effettuare nuovamente l'accesso.",
   "Your session has expired. Please sign in again.": "La tua sessione è scaduta. Accedi di nuovo.",
   "Unauthenticated. Please sign in to continue.": "Non autenticato. Accedi per continuare.",
-  "User not found. Please sign in again to continue.": "Utente non trovato. Accedi di nuovo per continuare."  
+  "User not found. Please sign in again to continue.": "Utente non trovato. Accedi di nuovo per continuare.",
+  "Select Import data": "Seleziona dati da importare",
+  "Select Import Plugins": "Seleziona plugin di importazione",
+  "Select User Collections": "Seleziona raccolte utente",
+  "Basic Data": "Dati di base",
+  "Optional Data": "Dati opzionali",
+  "User Data": "Dati utente"
 }
