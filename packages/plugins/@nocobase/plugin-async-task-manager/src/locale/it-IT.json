@@ -38,7 +38,7 @@
   "Total records": "Record totali",
   "View result": "Visualizza risultato",
   "ImportResult": "Importati {{success}}, aggiornati {{updated}}, saltati {{skipped}}, totale {{total}}",
-  "Task result": "Risultato attività"
+  "Task result": "Risultato attività",
   "Export {collection} attachments": "Esporta allegati {collection}",
   "Export {collection} data": "Esporta dati {collection}",
   "Import {collection} data": "Importa dati {collection}"
