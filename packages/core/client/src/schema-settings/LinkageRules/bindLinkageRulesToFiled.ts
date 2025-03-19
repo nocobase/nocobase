@@ -357,7 +357,6 @@ export const collectFieldStateOfLinkageRules = (
     case ActionType.Visible:
     case ActionType.None:
     case ActionType.Hidden:
-      console.log(field.props, getTempFieldState(conditionAnalyses(paramsToGetConditionResult, jsonLogic), operator));
       displayResult.push(getTempFieldState(conditionAnalyses(paramsToGetConditionResult, jsonLogic), operator));
       field.stateOfLinkageRules = {
         ...field.stateOfLinkageRules,
