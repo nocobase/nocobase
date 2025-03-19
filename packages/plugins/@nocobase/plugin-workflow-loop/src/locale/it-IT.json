@@ -1,9 +1,22 @@
 {
   "Loop": "Ciclo",
   "Loop target": "Destinazione ciclo",
-  "Loop index": "Indice ciclo",
+  "Loop index (starts from 0)": "Indice del ciclo (inizia da 0)",
+  "Loop sequence (starts from 1)": "Sequenza del ciclo (inizia da 1)",  
   "Loop length": "Lunghezza ciclo",
-  "By using a loop node, you can perform the same operation on multiple sets of data. The source of these sets can be either multiple records from a query node or multiple associated records of a single record. Loop node can also be used for iterating a certain number of times or for looping through each character in a string. However, excessive looping may cause performance issues, so use with caution.": "Utilizzando un nodo ciclo, puoi eseguire la stessa operazione su più insiemi di dati. L' origine di questi insiemi può essere costituita da record multipli di un nodo query o da record multipli associati di singolo record. Il nodo ciclo può essere utilizzato anche per iterare un certo numero di volte o per scorrere ogni carattere in una stringa. Tuttavia, un numero eccessivamente elevato di cicli può causare problemi di prestazioni, quindi usalo con cautela.",
-  "Scope variables": "Variabili ambito",
-  "A single number will be treated as a loop count, a single string will be treated as an array of characters, and other non-array values will be converted to arrays. The loop node ends when the loop count is reached, or when the array loop is completed. You can also add condition nodes to the loop to terminate it.": "Un singolo numero verrà trattato come conteggio del ciclo, una singola stringa verrà trattata come un array di caratteri e altri valori non-array verranno convertiti in array. Il nodo ciclo termina quando viene raggiunto il conteggio del ciclo o quando il ciclo dell'array è completato. Puoi anche aggiungere nodi condizione al ciclo per terminarlo."
+  "By using a loop node, you can perform the same operation on multiple sets of data. The source of these sets can be either multiple records from a query node or multiple associated records of a single record. Loop node can also be used for iterating a certain number of times or for looping through each character in a string. However, excessive looping may cause performance issues, so use with caution.": "Utilizzando un nodo ciclo, puoi eseguire la stessa operazione su più insiemi di dati. L' origine di questi insiemi può essere costituita da record multipli di un nodo query o da record multipli associati di singolo record. Il nodo ciclo può essere utilizzato anche per iterare un certo numero di volte o per scorrere ogni carattere in una stringa. Tuttavia, un numero eccessivamente elevato di cicli può causare problemi di prestazioni, quindi usalo con cautela.",  
+  "A single number will be treated as a loop count, a single string will be treated as an array of characters, and other non-array values will be converted to arrays. The loop node ends when the loop count is reached, or when the array loop is completed. You can also add condition nodes to the loop to terminate it.": "Un singolo numero verrà trattato come conteggio del ciclo, una singola stringa verrà trattata come un array di caratteri e altri valori non-array verranno convertiti in array. Il nodo ciclo termina quando viene raggiunto il conteggio del ciclo o quando il ciclo dell'array è completato. Puoi anche aggiungere nodi condizione al ciclo per terminarlo.",
+  "Enable loop condition": "Abilita condizione del ciclo",
+  "Loop condition on each item": "Condizione del ciclo su ciascun elemento",
+  "When to check": "Quando controllare",
+  "Before each starts": "Prima dell'inizio di ogni ciclo",
+  "After each ends": "Dopo la fine di ogni ciclo",
+  "When condition is not met on item": "Quando la condizione non è soddisfatta sull'elemento",
+  "Exit loop": "Esci dal ciclo",
+  "Continue on next item": "Continua con l'elemento successivo",
+  "Condition": "Condizione",
+  "When node inside loop failed": "Quando il nodo all'interno del ciclo fallisce",
+  "Continue loop on next item": "Continua il ciclo con l'elemento successivo",
+  "Exit loop and continue workflow": "Esci dal ciclo e continua il workflow",
+  "Exit workflow": "Esci dal workflow"
 }
