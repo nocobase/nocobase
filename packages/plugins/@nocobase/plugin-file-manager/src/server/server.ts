@@ -12,7 +12,7 @@ import { isURL, Registry } from '@nocobase/utils';
 
 import { basename } from 'path';
 
-import { Model, Transactionable } from '@nocobase/database';
+import { Collection, Model, Transactionable } from '@nocobase/database';
 import fs from 'fs';
 import { STORAGE_TYPE_ALI_OSS, STORAGE_TYPE_LOCAL, STORAGE_TYPE_S3, STORAGE_TYPE_TX_COS } from '../constants';
 import initActions from './actions';
@@ -23,6 +23,7 @@ import StorageTypeAliOss from './storages/ali-oss';
 import StorageTypeLocal from './storages/local';
 import StorageTypeS3 from './storages/s3';
 import StorageTypeTxCos from './storages/tx-cos';
+import { encodeURL } from './utils';
 
 export type * from './storages';
 
@@ -205,6 +206,20 @@ export class PluginFileManagerServer extends Plugin {
         options.model = 'FileModel';
       }
     });
+    this.db.on('afterDefineCollection', (collection: Collection) => {
+      if (collection.options.template !== 'file') {
+        return;
+      }
+      collection.model.beforeUpdate((model) => {
+        if (!model.changed('url') || !model.changed('preview')) {
+          return;
+        }
+        model.set('url', model.previous('url'));
+        model.set('preview', model.previous('preview'));
+        model.changed('url', false);
+        model.changed('preview', false);
+      });
+    });
     this.app.on('afterStart', async () => {
       await this.loadStorages();
     });
@@ -301,11 +316,11 @@ export class PluginFileManagerServer extends Plugin {
 
   async getFileURL(file: AttachmentModel, preview = false) {
     if (!file.storageId) {
-      return file.url;
+      return encodeURL(file.url);
     }
     const storage = this.storagesCache.get(file.storageId);
     if (!storage) {
-      return file.url;
+      return encodeURL(file.url);
     }
     const storageType = this.storageTypes.get(storage.type);
     return new storageType(storage).getFileURL(file, preview ? storage.options.thumbnailRule : '');

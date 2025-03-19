@@ -358,7 +358,7 @@ function FinallyButton({
         ...buttonStyle,
       }}
     >
-      {props.children}
+      {props.onlyIcon ? props?.children?.[1] : props?.children}
     </Button>
   );
 }
