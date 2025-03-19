@@ -144,6 +144,9 @@ const ToManyNester = observer(
     const update = useUpdate();
     const { isMobileLayout } = useMobileLayout();
 
+    const newSchema = useMemo(() => isMobileLayout ? transformMultiColumnToSingleColumn(fieldSchema) : fieldSchema, [isMobileLayout, fieldSchema]);
+    const newParentSchema = useMemo(() => isMobileLayout ? transformMultiColumnToSingleColumn(fieldSchema.parent) : fieldSchema.parent, [isMobileLayout, fieldSchema.parent]);
+
     const refreshComponent = useRefreshComponent();
     const refresh = useCallback(() => {
       update();
@@ -239,6 +242,7 @@ const ToManyNester = observer(
       const filter = list.length ? { $and: [{ [`${targetKey}.$ne`]: list }] } : {};
       return filter;
     };
+
     return field.value.length > 0 ? (
       <Card
         bordered={true}
@@ -284,7 +288,7 @@ const ToManyNester = observer(
                           <NocoBaseRecursionField
                             onlyRenderProperties
                             basePath={field.address.concat(index)}
-                            schema={isMobileLayout ? transformMultiColumnToSingleColumn(fieldSchema) : fieldSchema}
+                            schema={newSchema}
                           />
                         </DefaultValueProvider>
                       </RecordIndexProvider>
@@ -359,7 +363,7 @@ const ToManyNester = observer(
                     <NocoBaseRecursionField
                       onlyRenderProperties
                       basePath={field.address}
-                      schema={isMobileLayout ? transformMultiColumnToSingleColumn(fieldSchema.parent) : fieldSchema.parent}
+                      schema={newParentSchema}
                       filterProperties={(s) => {
                         return s['x-component'] === 'AssociationField.Selector';
                       }}
