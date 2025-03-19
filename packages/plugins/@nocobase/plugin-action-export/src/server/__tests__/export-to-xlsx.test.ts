@@ -1500,7 +1500,7 @@ describe('export to xlsx', () => {
     expect(sheetData[10]).toEqual(['user9', 9]); // last user
   });
 
-  it.only(`should filter no permission fields`, async () => {
+  it(`should filter no permission fields`, async () => {
     const User = app.db.collection({
       name: 'users',
       fields: [
