@@ -272,6 +272,7 @@ function FinallyButton({
       opacity: designable && (field?.data?.hidden || !aclCtx) && 0.1,
     };
   }, [designable, field?.data?.hidden]);
+
   if (inheritsCollections?.length > 0) {
     if (!linkageFromForm) {
       return allowAddToCurrent === undefined || allowAddToCurrent ? (
@@ -357,7 +358,7 @@ function FinallyButton({
         ...buttonStyle,
       }}
     >
-      {props.onlyIcon ? props.children[1] : props.children}
+      {props.onlyIcon ? props?.children?.[1] : props?.children}
     </Button>
   );
 }
