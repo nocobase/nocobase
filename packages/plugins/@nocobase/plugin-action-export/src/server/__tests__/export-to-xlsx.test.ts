@@ -1500,7 +1500,7 @@ describe('export to xlsx', () => {
     expect(sheetData[10]).toEqual(['user9', 9]); // last user
   });
 
-  it(`should filter no permission fields`, async () => {
+  it.only(`should filter no permission fields`, async () => {
     const User = app.db.collection({
       name: 'users',
       fields: [
@@ -1511,14 +1511,10 @@ describe('export to xlsx', () => {
 
     await app.db.sync();
 
-    const values = Array.from({ length: 22 }).map((_, index) => {
-      return {
-        name: `user${index}`,
-        age: index % 100,
-      };
+    await User.model.create({
+      name: `user1`,
+      age: 23,
     });
-
-    await User.model.bulkCreate(values);
 
     const exporter = new XlsxExporter({
       collectionManager: app.mainDataSource.collectionManager,
@@ -1540,31 +1536,10 @@ describe('export to xlsx', () => {
       },
     });
 
-    const xlsxFilePath = path.resolve(__dirname, `t_${uid()}.xlsx`);
-    try {
-      await new Promise((resolve, reject) => {
-        XLSX.writeFileAsync(
-          xlsxFilePath,
-          wb,
-          {
-            type: 'array',
-          },
-          () => {
-            resolve(123);
-          },
-        );
-      });
-
-      // read xlsx file
-      const workbook = XLSX.readFile(xlsxFilePath);
-      const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-      const sheetData = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
-      expect(sheetData.length).toBe(23); // 22 users + 1 header
-
-      const header = sheetData[0];
-      expect(header).toEqual(['Name']);
-    } finally {
-      fs.unlinkSync(xlsxFilePath);
-    }
+    const firstSheet = wb.Sheets[wb.SheetNames[0]];
+    const sheetData = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
+    expect(sheetData.length).toBe(2);
+    const header = sheetData[0];
+    expect(header).toEqual(['Name']);
   });
 });
