@@ -79,20 +79,14 @@ export class PluginFileManagerClient extends Plugin {
     file: File;
     fileCollectionName?: string;
     storageId?: string;
-    storage?: any;
   }): Promise<{ errorMessage?: string; data?: any }> {
-    // 1. If storage exists, call the upload method directly
-    if (options.storage) {
-      const storageConfig = options.storage;
-      const storageType = this.getStorageType(storageConfig.type);
-      return await storageType?.upload({ file: options.file, storageConfig, apiClient: this.app.apiClient });
-    }
-
-    // 2. Get storage by storageId, then call the upload method
+    // 1. Get storage by storageId, then call the upload method
     if (options?.storageId) {
-      const storageConfig = await this.app.apiClient.resource('storages').get({
-        filterByTk: options.storageId,
+      const { data } = await this.app.apiClient.request({
+        url: `storages:getBasicInfo/${options.storageId}`,
       });
+
+      const storageConfig = data?.data;
 
       if (storageConfig) {
         const storageType = this.getStorageType(storageConfig.type);
@@ -100,14 +94,21 @@ export class PluginFileManagerClient extends Plugin {
       }
     }
 
-    // 3. Get storage by fileCollectionName, then call the upload method
+    // 2. Get storage by fileCollectionName, then call the upload method
     if (options?.fileCollectionName) {
-      const fileCollection = this.app.getCollectionManager().getCollection(options.fileCollectionName);
-      const storageId = fileCollection.getOption('storage');
+      const { data } = await this.app.apiClient.resource('collections').list({
+        filter: {
+          name: options.fileCollectionName,
+        },
+      });
+      const fileCollection = data?.data?.[0];
+      const storageId = fileCollection?.storage;
       if (storageId) {
-        const storageConfig = await this.app.apiClient.resource('storages').get({
-          filterByTk: storageId,
+        const { data } = await this.app.apiClient.request({
+          url: `storages:getBasicInfo/${storageId}`,
         });
+
+        const storageConfig = data?.data;
 
         if (storageConfig) {
           const storageType = this.getStorageType(storageConfig.type);
@@ -121,11 +122,9 @@ export class PluginFileManagerClient extends Plugin {
       }
     }
 
-    // 4. Get the default storage, then call the upload method
-    const { data }: any = await this.app.apiClient.resource('storages').get({
-      filter: {
-        default: true,
-      },
+    // 3. Get the default storage, then call the upload method
+    const { data } = await this.app.apiClient.request({
+      url: `storages:getBasicInfo`,
     });
     const defaultStorage = data?.data;
     if (defaultStorage) {
