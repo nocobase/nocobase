@@ -11,8 +11,7 @@ import { useMemo } from 'react';
 import { useCollection_deprecated, useCollectionFilterOptions } from '../../../../collection-manager';
 import { useCollectionRecordData } from '../../../../data-source';
 import { useTranslation } from 'react-i18next';
-import { useCompile, useDesignable } from '../../../';
-import { useGlobalVariable } from '../../../../application/hooks/useGlobalVariable';
+import { useCompile } from '../../../';
 import { useBlockContext } from '../../../../block-provider/BlockProvider';
 
 export const useAfterSuccessOptions = () => {
@@ -41,10 +40,9 @@ export const useAfterSuccessOptions = () => {
       }),
     ];
   }, [fieldsOptions, userFieldOptions]);
-  const environmentVariables = useGlobalVariable('$env');
+
   return useMemo(() => {
     return [
-      environmentVariables,
       {
         value: '$record',
         label: t('Current record', { ns: 'client' }),
@@ -65,6 +63,6 @@ export const useAfterSuccessOptions = () => {
         label: 'API token',
         children: null,
       },
-    ].filter(Boolean);
+    ];
   }, [recordData, t, fields, blockType, userFields]);
 };
