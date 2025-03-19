@@ -52,11 +52,7 @@ const ResponsiveSpace = () => {
     return (
       <Grid columns={itemsPerRow} gap={gap}>
         {fieldSchema.mapProperties((s, key) => {
-          return (
-            <Grid.Item style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }} key={key}>
-              <NocoBaseRecursionField name={key} schema={s} />
-            </Grid.Item>
-          );
+          return <NocoBaseRecursionField name={key} schema={s} />;
         })}
       </Grid>
     );
