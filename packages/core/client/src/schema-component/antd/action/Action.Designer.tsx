@@ -274,10 +274,16 @@ export function SkipValidation() {
     />
   );
 }
+
+const fieldNames = {
+  value: 'name',
+  label: 'title',
+};
 const useVariableProps = (environmentVariables) => {
   const scope = useAfterSuccessOptions();
   return {
     scope: [environmentVariables, ...scope],
+    fieldNames,
   };
 };
 

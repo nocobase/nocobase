@@ -23,44 +23,29 @@ export const useAfterSuccessOptions = () => {
   const recordData = useCollectionRecordData();
   const { name: blockType } = useBlockContext() || {};
   const [fields, userFields] = useMemo(() => {
-    return [
-      compile(fieldsOptions).map((v) => {
-        return {
-          ...v,
-          value: v.name,
-          label: v.title,
-        };
-      }),
-      compile(userFieldOptions).map((v) => {
-        return {
-          ...v,
-          value: v.name,
-          label: v.title,
-        };
-      }),
-    ];
+    return [compile(fieldsOptions), compile(userFieldOptions)];
   }, [fieldsOptions, userFieldOptions]);
 
   return useMemo(() => {
     return [
       {
-        value: '$record',
-        label: t('Current record', { ns: 'client' }),
+        name: '$record',
+        title: t('Current form', { ns: 'client' }),
         children: [...fields],
       },
       {
-        value: 'currentUser',
-        label: t('Current user', { ns: 'client' }),
+        name: 'currentUser',
+        title: t('Current user', { ns: 'client' }),
         children: userFields,
       },
       {
-        value: 'currentTime',
-        label: t('Current time', { ns: 'client' }),
+        name: 'currentTime',
+        title: t('Current time', { ns: 'client' }),
         children: null,
       },
       {
-        value: '$nToken',
-        label: 'API token',
+        name: '$nToken',
+        title: 'API token',
         children: null,
       },
     ];
