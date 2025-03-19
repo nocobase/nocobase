@@ -22,7 +22,7 @@ import {
   useApp,
   useCompile,
   useDocumentTitle,
-  useIsAdminPage,
+  useIsLoggedIn,
   usePlugin,
   useRequest,
   useToken,
@@ -358,7 +358,7 @@ function TasksCountsProvider(props: any) {
 }
 
 export const TasksProvider = (props: any) => {
-  const isAdminPage = useIsAdminPage();
+  const isLoggedIn = useIsLoggedIn();
 
   const content = (
     <PinnedPluginListProvider
@@ -376,5 +376,5 @@ export const TasksProvider = (props: any) => {
     </PinnedPluginListProvider>
   );
 
-  return isAdminPage ? <TasksCountsProvider>{content}</TasksCountsProvider> : content;
+  return isLoggedIn ? <TasksCountsProvider>{content}</TasksCountsProvider> : content;
 };
