@@ -244,7 +244,6 @@ function getSubscriber(
           field.value = lastState.value;
         }
       } else if (fieldName === 'dateScope') {
-        console.log(lastState.value);
         field.setComponentProps({
           _maxDate: lastState.value?._maxDate?.value || lastState.value?._maxDate,
           _minDate: lastState.value?._minDate?.value || lastState.value?._minDate,
@@ -273,11 +272,18 @@ function getSubscriber(
               state[fieldName] = lastState?.value;
             });
           });
-        } else {
+        } else if (fieldName === 'display' && lastState?.value === 'visible') {
           field[fieldName] = lastState?.value;
           field.data = field.data || {};
           // 在 FormItem 中有使用这个属性来判断字段是否被隐藏
           field.data.hidden = false;
+          requestAnimationFrame(() => {
+            field.setState((state) => {
+              state[fieldName] = lastState?.value;
+            });
+          });
+        } else {
+          field[fieldName] = lastState?.value;
           requestAnimationFrame(() => {
             field.setState((state) => {
               state[fieldName] = lastState?.value;
@@ -351,6 +357,7 @@ export const collectFieldStateOfLinkageRules = (
     case ActionType.Visible:
     case ActionType.None:
     case ActionType.Hidden:
+      console.log(field.props, getTempFieldState(conditionAnalyses(paramsToGetConditionResult, jsonLogic), operator));
       displayResult.push(getTempFieldState(conditionAnalyses(paramsToGetConditionResult, jsonLogic), operator));
       field.stateOfLinkageRules = {
         ...field.stateOfLinkageRules,
