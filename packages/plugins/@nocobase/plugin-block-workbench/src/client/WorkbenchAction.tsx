@@ -14,7 +14,6 @@ import { createStyles } from 'antd-style';
 import React, { useContext } from 'react';
 import { WorkbenchBlockContext } from './WorkbenchBlock';
 import { WorkbenchLayout } from './workbenchBlockSettings';
-import { Grid, List } from 'antd-mobile';
 
 const useStyles = createStyles(({ token, css }) => ({
   // 支持 css object 的写法
