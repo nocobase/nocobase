@@ -100,6 +100,9 @@ export const FormItem: any = withDynamicSchemaProps(
                   ? '100% !important'
                   : null};
               }
+              .ant-formily-item-control {
+                padding: ${showTitle === false ? '5px' : '0px'};
+              }
             `,
           )}
         >

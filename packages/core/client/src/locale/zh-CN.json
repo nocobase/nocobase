@@ -1084,5 +1084,11 @@
   "After hiding, this tab will no longer appear in the tab bar. To show it again, you need to go to the route management page to set it.": "隐藏后，该标签将不再显示在标签栏中。要想再次显示它，你需要到路由管理页面进行设置。",
   "Date scope": "日期范围",
   "Enable index column": "启用序号列",
-  "Icon only": "仅显示图标"
+  "Icon only": "仅显示图标",
+  "Valid range: 100-900": "有效范围：100-900",
+  "Valid range: 10-40": "有效范围：10-40",
+  "Font Size（px）": "字体大小（像素）",
+  "Font Weight": "字体粗细",
+  "Font Style": "字体样式",
+  "Italic": "斜体"
 }

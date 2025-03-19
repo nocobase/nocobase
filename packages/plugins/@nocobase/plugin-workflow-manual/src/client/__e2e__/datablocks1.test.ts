@@ -174,10 +174,7 @@ test.describe('field data', () => {
     await page.getByRole('menuitem', { name: 'check-square Workflow todos' }).click();
     await page.mouse.move(300, 0, { steps: 100 });
     await page.waitForTimeout(300);
-    await page
-      .locator('.itemCss', { hasText: preManualNodeTitle })
-      .getByLabel('action-Action.Link-View-view-')
-      .click();
+    await page.locator('.itemCss', { hasText: preManualNodeTitle }).getByLabel('action-Action.Link-View-view-').click();
     const preManualNodeRecord = triggerNodeFieldDisplayName + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
     await page.getByRole('textbox').fill(preManualNodeRecord);
     await page.getByRole('button', { name: 'Continue the process' }).click();
@@ -334,10 +331,7 @@ test.describe('field data', () => {
     await page.getByRole('menuitem', { name: 'check-square Workflow todos' }).click();
     await page.mouse.move(300, 0, { steps: 100 });
     await page.waitForTimeout(300);
-    await page
-      .locator('.itemCss', { hasText: preManualNodeTitle })
-      .getByLabel('action-Action.Link-View-view-')
-      .click();
+    await page.locator('.itemCss', { hasText: preManualNodeTitle }).getByLabel('action-Action.Link-View-view-').click();
     const preManualNodeRecord = triggerNodeFieldDisplayName + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
     await page.getByRole('textbox').fill(preManualNodeRecord);
     await page.getByRole('button', { name: 'Continue the process' }).click();
@@ -542,10 +536,7 @@ test.describe('field data', () => {
     await page.getByRole('menuitem', { name: 'check-square Workflow todos' }).click();
     await page.mouse.move(300, 0, { steps: 100 });
     await page.waitForTimeout(300);
-    await page
-      .locator('.itemCss', { hasText: preManualNodeTitle })
-      .getByLabel('action-Action.Link-View-view-')
-      .click();
+    await page.locator('.itemCss', { hasText: preManualNodeTitle }).getByLabel('action-Action.Link-View-view-').click();
     const preManualNodeRecord = triggerNodeFieldDisplayName + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
     await page.getByRole('textbox').fill(preManualNodeRecord);
     await page.getByRole('button', { name: 'Continue the process' }).click();
