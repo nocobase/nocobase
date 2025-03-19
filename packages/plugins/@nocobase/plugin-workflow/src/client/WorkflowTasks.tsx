@@ -6,12 +6,12 @@
  * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
+import { CheckCircleOutlined } from '@ant-design/icons';
+import { PageHeader } from '@ant-design/pro-layout';
+import { Badge, Button, Layout, Menu, Tabs, Tooltip } from 'antd';
+import classnames from 'classnames';
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { Link, Outlet, useNavigate, useParams } from 'react-router-dom';
-import { Button, Layout, Menu, Badge, Tooltip, Tabs } from 'antd';
-import { PageHeader } from '@ant-design/pro-layout';
-import { CheckCircleOutlined } from '@ant-design/icons';
-import classnames from 'classnames';
 
 import {
   css,
@@ -22,7 +22,7 @@ import {
   useApp,
   useCompile,
   useDocumentTitle,
-  useIsAdminPage,
+  useIsLoggedIn,
   usePlugin,
   useRequest,
   useToken,
@@ -371,7 +371,7 @@ function TasksCountsProvider(props: any) {
 }
 
 export const TasksProvider = (props: any) => {
-  const isAdminPage = useIsAdminPage();
+  const isLoggedIn = useIsLoggedIn();
 
   const content = (
     <PinnedPluginListProvider
@@ -389,5 +389,5 @@ export const TasksProvider = (props: any) => {
     </PinnedPluginListProvider>
   );
 
-  return isAdminPage ? <TasksCountsProvider>{content}</TasksCountsProvider> : content;
+  return isLoggedIn ? <TasksCountsProvider>{content}</TasksCountsProvider> : content;
 };
