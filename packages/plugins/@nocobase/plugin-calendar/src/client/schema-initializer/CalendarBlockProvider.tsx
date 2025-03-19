@@ -30,7 +30,7 @@ const InternalCalendarBlockProvider = (props) => {
         fieldNames,
         showLunar,
         defaultView,
-        enableQuickCreateEvent: enableQuickCreateEvent === undefined ? true : enableQuickCreateEvent,
+        enableQuickCreateEvent: enableQuickCreateEvent ?? true,
         fixedBlock: field?.decoratorProps?.fixedBlock,
       }}
     >

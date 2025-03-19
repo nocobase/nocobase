@@ -229,10 +229,7 @@ export const calendarBlockSettings = new SchemaSettings({
         const { dn } = useDesignable();
         return {
           title: t('Quick create event'),
-          checked:
-            field.decoratorProps.enableQuickCreateEvent === undefined
-              ? true
-              : field.decoratorProps.enableQuickCreateEvent,
+          checked: field.decoratorProps?.enableQuickCreateEvent ?? true,
           onChange: (v) => {
             field.decoratorProps.enableQuickCreateEvent = v;
             fieldSchema['x-decorator-props']['enableQuickCreateEvent'] = v;
