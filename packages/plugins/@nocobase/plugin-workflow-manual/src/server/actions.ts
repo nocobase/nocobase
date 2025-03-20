@@ -47,7 +47,7 @@ export async function submit(context: Context, next) {
     task.status !== JOB_STATUS.PENDING ||
     task.job.status !== JOB_STATUS.PENDING ||
     task.execution.status !== EXECUTION_STATUS.STARTED ||
-    !task.workflow.enabled ||
+    // !task.workflow.enabled ||
     !actionKey ||
     actionItem?.status == null
   ) {
