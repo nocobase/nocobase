@@ -15,5 +15,6 @@
   "Content": "内容",
   "Content type": "内容格式",
   "Plain text": "纯文本",
-  "Ignore failed sending and continue workflow": "忽略失败的发送并继续工作流"
+  "Ignore failed sending and continue workflow": "忽略失败的发送并继续工作流",
+  "In most cases, if using port 465, set it to true; otherwise, set it to false.": "通常情况下，如果使用端口 465 ，请设置为 true ；否则，请设置为 false 。"
 }
