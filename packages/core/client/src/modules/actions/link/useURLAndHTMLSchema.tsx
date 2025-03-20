@@ -35,7 +35,7 @@ export const getVariableComponentWithScope = (Com, data = []) => {
 export const useURLAndHTMLSchema = () => {
   const { t } = useTranslation();
   const environmentVariables = useGlobalVariable('$env');
-  const Com = useMemo(() => getVariableComponentWithScope(Variable.TextArea, environmentVariables || []), []);
+  const Com = useMemo(() => getVariableComponentWithScope(Variable.TextArea, [environmentVariables] || []), []);
 
   const urlSchema = useMemo(() => {
     return {
