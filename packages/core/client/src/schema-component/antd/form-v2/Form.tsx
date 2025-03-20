@@ -12,24 +12,24 @@ import { FormLayout, IFormLayoutProps } from '@formily/antd-v5';
 import { Field, Form as FormilyForm, createForm, onFieldInit, onFormInputChange } from '@formily/core';
 import { FieldContext, FormContext, observer, useField, useFieldSchema } from '@formily/react';
 import { uid } from '@formily/shared';
+import { transformMultiColumnToSingleColumn } from '@nocobase/utils/client';
 import { ConfigProvider, theme } from 'antd';
 import React, { useEffect, useMemo } from 'react';
 import { useActionContext } from '..';
 import { useAttach, useComponent } from '../..';
+import { useApp } from '../../../application';
 import { getCardItemSchema } from '../../../block-provider';
 import { useTemplateBlockContext } from '../../../block-provider/TemplateBlockProvider';
 import { useDataBlockRequest } from '../../../data-source/data-block/DataBlockRequestProvider';
 import { NocoBaseRecursionField } from '../../../formily/NocoBaseRecursionField';
 import { withDynamicSchemaProps } from '../../../hoc/withDynamicSchemaProps';
+import { useMobileLayout } from '../../../route-switch/antd/admin-layout';
 import { bindLinkageRulesToFiled } from '../../../schema-settings/LinkageRules/bindLinkageRulesToFiled';
 import { forEachLinkageRule } from '../../../schema-settings/LinkageRules/forEachLinkageRule';
 import { useToken } from '../../../style';
 import { useLocalVariables, useVariables } from '../../../variables';
 import { useProps } from '../../hooks/useProps';
 import { useFormBlockHeight } from './hook';
-import { useApp } from '../../../application';
-import { useMobileLayout } from '../../../route-switch/antd/admin-layout';
-import { transformMultiColumnToSingleColumn } from '@nocobase/utils/client';
 
 export interface FormProps extends IFormLayoutProps {
   form?: FormilyForm;
@@ -52,6 +52,7 @@ const FormComponent: React.FC<FormProps> = (props) => {
     labelWrap = true,
   } = cardItemSchema?.['x-component-props'] || {};
   const { isMobileLayout } = useMobileLayout();
+  const newSchema = useMemo(() => isMobileLayout ? transformMultiColumnToSingleColumn(fieldSchema) : fieldSchema, [fieldSchema, isMobileLayout]);
 
   return (
     <FieldContext.Provider value={undefined}>
@@ -82,7 +83,7 @@ const FormComponent: React.FC<FormProps> = (props) => {
           >
             <NocoBaseRecursionField
               basePath={f.address}
-              schema={isMobileLayout ? transformMultiColumnToSingleColumn(fieldSchema) : fieldSchema}
+              schema={newSchema}
               onlyRenderProperties
               isUseFormilyField
             />
@@ -103,7 +104,7 @@ const FormDecorator: React.FC<FormProps> = (props) => {
   const f = useAttach(form.createVoidField({ ...field.props, basePath: '' }));
   const Component = useComponent(fieldSchema['x-component'], Def);
   const { isMobileLayout } = useMobileLayout();
-
+  const newSchema = useMemo(() => isMobileLayout ? transformMultiColumnToSingleColumn(fieldSchema) : fieldSchema, [fieldSchema, isMobileLayout]);
   return (
     <FieldContext.Provider value={undefined}>
       <FormContext.Provider value={form}>
@@ -112,7 +113,7 @@ const FormDecorator: React.FC<FormProps> = (props) => {
             <Component {...field.componentProps}>
               <NocoBaseRecursionField
                 basePath={f.address}
-                schema={isMobileLayout ? transformMultiColumnToSingleColumn(fieldSchema) : fieldSchema}
+                schema={newSchema}
                 onlyRenderProperties
                 isUseFormilyField
               />

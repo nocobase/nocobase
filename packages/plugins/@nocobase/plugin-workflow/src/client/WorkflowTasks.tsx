@@ -37,7 +37,6 @@ const layoutClass = css`
 `;
 
 const contentClass = css`
-  padding: 24px;
   min-height: 280px;
   overflow: auto;
 `;
@@ -52,7 +51,7 @@ export interface TaskTypeOptions {
 }
 
 const TasksCountsContext = createContext<{ reload: () => void; counts: Record<string, number>; total: number }>({
-  reload() {},
+  reload() { },
   counts: {},
   total: 0,
 });
@@ -163,9 +162,7 @@ export function WorkflowTasks() {
   const { setTitle } = useDocumentTitle();
   const navigate = useNavigate();
   const { taskType, status = TASK_STATUS.PENDING } = useParams();
-  const {
-    token: { colorBgContainer },
-  } = useToken();
+  const { token } = useToken();
 
   const items = useTaskTypeItems();
 
@@ -187,7 +184,7 @@ export function WorkflowTasks() {
 
   return (
     <Layout className={layoutClass}>
-      <Layout.Sider theme="light" breakpoint="md" collapsedWidth="0" zeroWidthTriggerStyle={{ top: 38 }}>
+      <Layout.Sider theme="light" breakpoint="md" collapsedWidth="0" zeroWidthTriggerStyle={{ top: 24 }}>
         <Menu mode="inline" selectedKeys={[typeKey]} items={items} style={{ height: '100%' }} />
       </Layout.Sider>
       <Layout
@@ -235,7 +232,7 @@ export function WorkflowTasks() {
                   'x-component-props': {
                     className: classnames('pageHeaderCss'),
                     style: {
-                      background: colorBgContainer,
+                      background: token.colorBgContainer,
                       padding: '12px 24px 0 24px',
                     },
                     title,
@@ -252,6 +249,9 @@ export function WorkflowTasks() {
                   'x-component': 'Layout.Content',
                   'x-component-props': {
                     className: contentClass,
+                    style: {
+                      padding: `${token.paddingPageVertical}px ${token.paddingPageHorizontal}px`,
+                    }
                   },
                   properties: {
                     list: {

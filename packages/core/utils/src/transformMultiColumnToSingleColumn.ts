@@ -7,33 +7,36 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { Schema } from '@formily/json-schema';
+import _ from 'lodash';
 import { uid } from './uid';
 
 // @ts-ignore
 import pkg from '../package.json';
-import _ from 'lodash';
-import { ISchema, Schema } from '@formily/json-schema';
 
 /**
  * 将多列布局转换为单列布局
  * @param {Object} schema - 输入的 JSON Schema 对象
+ * @param {Function} [ignore] - 可选的忽略函数，用于判断是否忽略某个列
  * @returns {Object} - 转换后的 JSON Schema 对象
  */
-export const transformMultiColumnToSingleColumn = (schema: any): any => {
+export const transformMultiColumnToSingleColumn = (schema: any, ignore?: (colSchema: any) => boolean): any => {
   if (!schema) return schema;
-
-  if (schema.toJSON) {
-    schema = schema.toJSON();
-  }
 
   if (schema['x-component'] !== 'Grid') {
     Object.keys(schema.properties || {}).forEach((key) => {
-      schema.properties[key] = transformMultiColumnToSingleColumn(schema.properties[key]);
+      schema.properties[key] = transformMultiColumnToSingleColumn(schema.properties[key], ignore);
     });
     return schema;
   }
 
-  schema = _.cloneDeep(schema);
+  const parent = schema.parent;
+
+  if (schema.toJSON) {
+    schema = schema.toJSON();
+  } else {
+    schema = _.cloneDeep(schema);
+  }
 
   const newProperties: any = {};
   const { properties = {} } = schema;
@@ -70,6 +73,10 @@ export const transformMultiColumnToSingleColumn = (schema: any): any => {
         return;
       }
 
+      if (ignore?.(column)) {
+        return;
+      }
+
       delete row.properties[columnKey];
       // 将列转换为行
       newProperties[`${uid()}_${columnKey}`] = createRow(column, columnKey, ++index);
@@ -77,6 +84,20 @@ export const transformMultiColumnToSingleColumn = (schema: any): any => {
   });
 
   schema.properties = newProperties;
+
+  // 说明传进来的 schema 是一个 Schema 实例，返回的时候也需要实例化，并与上下文关联
+  if (parent) {
+    const result = new Schema(schema, parent);
+    if (parent.properties) {
+      Object.keys(parent.properties).forEach((key) => {
+        if (key === schema.name) {
+          parent.properties[key] = result;
+        }
+      });
+    }
+    return result;
+  }
+
   return schema;
 };
 
