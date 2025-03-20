@@ -14,7 +14,7 @@ interface VariableContextValue {
   value: any;
 }
 
-interface eProviderProps {
+interface VariableProviderProps {
   variableName: string;
   children: React.ReactNode;
 }

@@ -12,7 +12,6 @@ import { css, cx } from '@emotion/css';
 import { autorun } from '@formily/reactive';
 import { useForm, observer } from '@formily/react';
 import { error } from '@nocobase/utils/client';
-import { cloneDeep } from 'lodash';
 import { extractTemplateElements, composeTemplate } from '@nocobase/json-template-parser';
 import {
   Input as AntInput,
@@ -45,6 +44,23 @@ const JT_VALUE_RE = /^\s*{{\s*([^{}]+)\s*}}\s*$/;
 type ParseOptions = {
   stringToDate?: boolean;
 };
+
+/**
+ * Configuration for mapping variables to their allowed filter functions
+ */
+interface VariableHelperRule {
+  /** Pattern to match variables, supports glob patterns */
+  variables: string;
+  /** Array of allowed filter patterns, supports glob patterns */
+  filters: string[];
+}
+
+interface VariableHelperMapping {
+  /** Array of rules defining which filters are allowed for which variables */
+  rules: VariableHelperRule[];
+  /** Optional flag to determine if unlisted combinations should be allowed */
+  strictMode?: boolean;
+}
 
 function parseValue(value: any, options: ParseOptions = {}): string | string[] {
   if (value == null || (Array.isArray(value) && value.length === 0)) {
@@ -200,6 +216,7 @@ export type VariableInputProps = {
   className?: string;
   parseOptions?: ParseOptions;
   hideVariableButton?: boolean;
+  variableHelperMapping?: VariableHelperMapping;
 };
 
 export function Input(props: VariableInputProps) {

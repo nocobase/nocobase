@@ -19,6 +19,48 @@ import { useApp } from '../../../../application';
 import { SchemaComponent } from '../../../core/SchemaComponent';
 import { useVariable } from '../VariableProvider';
 import { helpersObs, rawHelpersObs, removeHelper } from './observables';
+import { VariableHelperMapping } from '../Input';
+import minimatch from 'minimatch';
+
+/**
+ * Escapes special glob characters in a string
+ * @param str The string to escape
+ * @returns The escaped string
+ */
+function escapeGlob(str: string): string {
+  return str.replace(/[?*[\](){}!|+@\\]/g, '\\$&');
+}
+
+/**
+ * Tests if a filter is allowed for a given variable based on the variableHelperMapping configuration
+ * @param variableName The name of the variable to test
+ * @param filterName The name of the filter to test
+ * @param mapping The variable helper mapping configuration
+ * @returns boolean indicating if the filter is allowed for the variable
+ */
+export function isFilterAllowedForVariable(
+  variableName: string,
+  filterName: string,
+  mapping?: VariableHelperMapping,
+): boolean {
+  if (!mapping?.rules) {
+    return true; // If no rules defined, allow all filters
+  }
+
+  // Check each rule
+  for (const rule of mapping.rules) {
+    // Check if variable matches the pattern
+    // We don't escape the pattern since it's meant to be a glob pattern
+    // But we escape the variable name since it's a literal value
+    if (minimatch(escapeGlob(variableName), rule.variables)) {
+      // Check if filter matches any of the allowed patterns
+      return rule.filters.some((pattern) => minimatch(filterName, pattern));
+    }
+  }
+
+  // If no matching rule found and strictMode is true, deny the filter
+  return !mapping.strictMode;
+}
 
 export const HelperConfiguator = observer(
   ({ index, close }: { index: number; close: () => void }) => {

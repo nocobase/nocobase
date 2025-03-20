@@ -25,6 +25,23 @@ import { useCurrentUserVariable } from './hooks/useUserVariable';
 import { useVariableOptions } from './hooks/useVariableOptions';
 import { Option } from './type';
 
+/**
+ * Configuration for mapping variables to their allowed filter functions
+ */
+interface VariableFilterRule {
+  /** Pattern to match variables, supports glob patterns */
+  variables: string;
+  /** Array of allowed filter patterns, supports glob patterns */
+  filters: string[];
+}
+
+interface VariableFilterMapping {
+  /** Array of rules defining which filters are allowed for which variables */
+  rules: VariableFilterRule[];
+  /** Optional flag to determine if unlisted combinations should be allowed */
+  strictMode?: boolean;
+}
+
 interface GetShouldChangeProps {
   collectionField: CollectionFieldOptions_deprecated;
   variables: VariablesContextType;
@@ -43,6 +60,8 @@ type Props = {
   onChange: (value: any, optionPath?: any[]) => void;
   renderSchemaComponent: (props: RenderSchemaComponentProps) => any;
   schema?: any;
+  /** Configuration for mapping variables to their allowed filter functions */
+  variableFilterMapping?: VariableFilterMapping;
   /** 消费变量值的字段 */
   targetFieldSchema?: Schema;
   children?: any;
@@ -343,4 +362,38 @@ export function useCompatOldVariables(props: {
   );
 
   return { compatOldVariables };
+}
+
+/**
+ * Check if a variable and filter combination is allowed according to the mapping rules
+ */
+function isFilterAllowedForVariable(
+  variable: string,
+  filter: string,
+  rules: VariableFilterRule[],
+  strictMode = false,
+): boolean {
+  // If no rules defined and not in strict mode, allow everything
+  if (!rules?.length && !strictMode) {
+    return true;
+  }
+
+  for (const rule of rules) {
+    const variablePattern = new RegExp('^' + rule.variables.replace(/\*/g, '.*') + '$');
+    if (variablePattern.test(variable)) {
+      // If no filters defined for this rule, allow all helpers
+      if (!rule.filters?.length) {
+        return true;
+      }
+
+      // Check if any of the filter patterns match the helper
+      return rule.filters.some((filter) => {
+        const filterPattern = new RegExp('^' + filter.replace(/\*/g, '.*') + '$');
+        return filterPattern.test(filter);
+      });
+    }
+  }
+
+  // If no matching rules found, return !strictMode
+  return !strictMode;
 }
