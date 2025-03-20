@@ -69,7 +69,6 @@ const usePageFullScreenHeight = (props?) => {
     token,
     location.pathname,
   );
-  console.log(pageHeaderHeight);
   return navHeight + pageHeaderHeight + addBlockBtnHeight;
 };
 
@@ -149,7 +148,6 @@ export const useDataBlockHeight = (options?: UseDataBlockHeightOptions) => {
   }
   if (heightMode === HeightMode.FULL_HEIGHT) {
     let res = window.innerHeight - pageFullScreenHeight;
-    console.log(res, pageFullScreenHeight);
     if (options?.removeBlockHeaderHeight) {
       res = res - blockHeaderHeight;
     }
