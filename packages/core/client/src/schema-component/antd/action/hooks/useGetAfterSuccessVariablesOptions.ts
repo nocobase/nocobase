@@ -13,6 +13,7 @@ import { useCollectionRecordData } from '../../../../data-source';
 import { useTranslation } from 'react-i18next';
 import { useCompile } from '../../../';
 import { useBlockContext } from '../../../../block-provider/BlockProvider';
+import { usePopupVariable } from '../../../../schema-settings/VariableInput/hooks';
 
 export const useAfterSuccessOptions = () => {
   const collection = useCollection_deprecated();
@@ -25,29 +26,32 @@ export const useAfterSuccessOptions = () => {
   const [fields, userFields] = useMemo(() => {
     return [compile(fieldsOptions), compile(userFieldOptions)];
   }, [fieldsOptions, userFieldOptions]);
-
+  const { settings: popupRecordSettings, shouldDisplayPopupRecord } = usePopupVariable({});
   return useMemo(() => {
     return [
       {
-        name: '$record',
-        title: t('Current form', { ns: 'client' }),
+        value: '$record',
+        label: t('Current form', { ns: 'client' }),
         children: [...fields],
       },
+      shouldDisplayPopupRecord && {
+        ...popupRecordSettings,
+      },
       {
-        name: 'currentUser',
-        title: t('Current user', { ns: 'client' }),
+        value: 'currentUser',
+        label: t('Current user', { ns: 'client' }),
         children: userFields,
       },
       {
-        name: 'currentTime',
-        title: t('Current time', { ns: 'client' }),
+        value: 'currentTime',
+        label: t('Current time', { ns: 'client' }),
         children: null,
       },
       {
-        name: '$nToken',
-        title: 'API token',
+        value: '$nToken',
+        label: 'API token',
         children: null,
       },
-    ];
+    ].filter(Boolean);
   }, [recordData, t, fields, blockType, userFields]);
 };

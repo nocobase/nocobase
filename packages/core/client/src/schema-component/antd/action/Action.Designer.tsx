@@ -276,8 +276,8 @@ export function SkipValidation() {
 }
 
 const fieldNames = {
-  value: 'name',
-  label: 'title',
+  value: 'value',
+  label: 'label',
 };
 const useVariableProps = (environmentVariables) => {
   const scope = useAfterSuccessOptions();
