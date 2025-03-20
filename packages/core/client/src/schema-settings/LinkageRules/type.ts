@@ -24,6 +24,9 @@ export enum ActionType {
   TextAlign = 'textAlign',
   Options = 'options',
   DateScope = 'dateScope',
+  FontSize = 'fontSize',
+  FontWeight = 'fontWeight',
+  FontStyle = 'fontStyle',
 }
 
 export enum LinkageRuleCategory {

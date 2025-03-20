@@ -30,7 +30,7 @@ export function getFileKey(record) {
   return [record.path.replace(/^\/|\/$/g, ''), record.filename].filter(Boolean).join('/');
 }
 
-function ensureUrlEncoded(value) {
+export function ensureUrlEncoded(value) {
   try {
     // 如果解码后与原字符串不同，说明已经被转义过
     if (decodeURIComponent(value) !== value) {

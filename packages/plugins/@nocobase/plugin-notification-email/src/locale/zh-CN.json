@@ -18,5 +18,6 @@
   "SMTP server host": "SMTP 服务器主机",
   "Content type": "内容格式",
   "Plain text": "纯文本",
-  "Transport": "传输方式"
+  "Transport": "传输方式",
+  "In most cases, if using port 465, set it to true; otherwise, set it to false.": "通常情况下，如果使用端口 465 ，请设置为 true ；否则，请设置为 false 。"
 }
