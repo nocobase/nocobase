@@ -18,7 +18,14 @@ const getActionValue = (operator, value) => {
     } else return null;
   };
   switch (true) {
-    case [ActionType.Color, ActionType.BackgroundColor, ActionType.TextAlign].includes(operator):
+    case [
+      ActionType.Color,
+      ActionType.BackgroundColor,
+      ActionType.TextAlign,
+      ActionType.FontSize,
+      ActionType.FontWeight,
+      ActionType.FontStyle,
+    ].includes(operator):
       return getValueByMode(value);
     default:
       return null;
