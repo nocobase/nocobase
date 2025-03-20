@@ -59,7 +59,6 @@ test.describe('form item & filter form', () => {
         'Field component',
         'Title field',
         'Delete',
-        'Allow multiple selection',
       ],
     });
   });

@@ -443,7 +443,6 @@ export const filterSelectComponentFieldSettings = new SchemaSettings({
         return isSelectFieldMode && !isFieldReadPretty;
       },
     },
-    getAllowMultiple({ title: 'Allow multiple selection' }),
     {
       ...titleField,
       useVisible: useIsAssociationField,
