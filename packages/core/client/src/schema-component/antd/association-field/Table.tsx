@@ -602,12 +602,6 @@ const InternalNocoBaseTable = React.memo(
                   height: 100%;
                   display: flex;
                   flex-direction: column;
-                  .ant-table-expanded-row-fixed {
-                    min-height: ${tableHeight}px;
-                  }
-                  .ant-table-body {
-                    min-height: ${tableHeight}px;
-                  }
                   .ant-table-cell {
                     padding: 16px 8px;
                   }
