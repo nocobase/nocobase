@@ -7,25 +7,22 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { observer } from '@formily/react';
+import { Tag } from 'antd';
 import React from 'react';
-import { observer } from '@formily/reactive-react';
-import { helpersObs } from './observables';
-import { Helper } from './Helper';
-const _HelperList = () => {
+import { useHelperObservables } from './hooks/useHelperObservables';
+
+export const HelperList = observer(() => {
+  const helperObservables = useHelperObservables();
+  const { helpersObs, removeHelper } = helperObservables;
+
   return (
     <>
-      {helpersObs.value.map((helper, index) => {
-        return (
-          <Helper
-            key={index}
-            index={index}
-            configurable={Boolean(helper.config.uiSchema)}
-            label={helper.config.title}
-          />
-        );
-      })}
+      {helpersObs.value.map((helper, index) => (
+        <Tag key={helper.name} closable onClose={() => removeHelper({ index })}>
+          {helper.name}
+        </Tag>
+      ))}
     </>
   );
-};
-
-export const HelperList = observer(_HelperList, { displayName: 'HelperList' });
+});

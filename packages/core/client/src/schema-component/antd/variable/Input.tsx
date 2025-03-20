@@ -37,6 +37,7 @@ import { Json } from '../input';
 import { VariableProvider } from './VariableProvider';
 import { setHelpersFromTemplateStr, helpersObs } from './Helpers/observables';
 import { HelperList, HelperAddition } from './Helpers';
+import { useHelperObservables } from './Helpers/hooks/useHelperObservables';
 
 const { Text } = Typography;
 const JT_VALUE_RE = /^\s*{{\s*([^{}]+)\s*}}\s*$/;
@@ -234,9 +235,11 @@ export function Input(props: VariableInputProps) {
     parseOptions,
     hideVariableButton,
   } = props;
+  variableHelperMapping;
   const scope = typeof props.scope === 'function' ? props.scope() : props.scope;
   const { wrapSSR, hashId, componentCls, rootPrefixCls } = useStyles({ hideVariableButton });
 
+  const helperObservables = useHelperObservables();
   // 添加 antd input 样式，防止样式缺失
   useAntdInputStyle(`${rootPrefixCls}-input`);
 
@@ -250,8 +253,9 @@ export function Input(props: VariableInputProps) {
   );
 
   useEffect(() => {
-    setHelpersFromTemplateStr({ template: typeof value === 'string' ? value : '' });
-  }, [value]);
+    helperObservables.setHelpersFromTemplateStr({ template: typeof value === 'string' ? value : '' });
+  }, [value, helperObservables]);
+
   const { fullVariable, helpers, variableSegments } = useMemo(
     () => extractTemplateElements(typeof value === 'string' ? value : ''),
     [value],
@@ -259,10 +263,10 @@ export function Input(props: VariableInputProps) {
 
   useEffect(() => {
     const dispose = autorun(() => {
-      onChange(composeTemplate({ fullVariable, helpers: helpersObs.value }));
+      onChange(composeTemplate({ fullVariable, helpers: helperObservables.helpersObs.value }));
     });
     return dispose;
-  }, [onChange, fullVariable, helpers]);
+  }, [onChange, fullVariable, helperObservables.helpersObs]);
 
   const parsed = useMemo(() => parseValue(variableSegments, parseOptions), [parseOptions, variableSegments]);
   const isConstant = typeof parsed === 'string';

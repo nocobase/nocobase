@@ -7,41 +7,35 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useState, useMemo, useContext } from 'react';
-import type { MenuProps } from 'antd';
-import { Dropdown, Popover } from 'antd';
+import { observer } from '@formily/react';
+import { Dropdown } from 'antd';
+import React from 'react';
+import { useHelperObservables } from './hooks/useHelperObservables';
+import { allHelpersConfigObs } from './observables';
 import { FilterOutlined } from '@ant-design/icons';
-import { useCompile } from '../../../hooks';
-import { useApp } from '../../../../application';
-import { addHelper } from './observables';
+import { Tag } from 'antd';
 
-export function HelperAddition() {
-  const app = useApp();
-  const compile = useCompile();
-  const filterOptions = app.jsonTemplateParser.filterGroups
-    .sort((a, b) => a.sort - b.sort)
-    .map((group) => ({
-      key: group.name,
-      label: compile(group.title),
-      children: group.filters
-        .sort((a, b) => a.sort - b.sort)
-        .map((filter) => ({ key: filter.name, label: compile(filter.title) })),
-    })) as MenuProps['items'];
+export const HelperAddition = observer(() => {
+  const helperObservables = useHelperObservables();
+  const { addHelper } = helperObservables;
+
+  const items = allHelpersConfigObs.value.map((helper) => ({
+    key: helper.name,
+    label: helper.title,
+  }));
+
   return (
-    <>
-      <span style={{ color: '#bfbfbf', margin: '0 5px' }}>|</span>
-      <Dropdown
-        menu={{
-          items: filterOptions,
-          onClick: ({ key }) => {
-            addHelper({ name: key });
-          },
-        }}
-      >
-        <a onClick={(e) => e.preventDefault()}>
-          <FilterOutlined style={{ color: '#52c41a' }} />
-        </a>
-      </Dropdown>
-    </>
+    <Dropdown
+      menu={{
+        items,
+        onClick: ({ key }) => {
+          addHelper({ name: key });
+        },
+      }}
+    >
+      <Tag style={{ cursor: 'pointer' }}>
+        <FilterOutlined /> Add Filter
+      </Tag>
+    </Dropdown>
   );
-}
+});
