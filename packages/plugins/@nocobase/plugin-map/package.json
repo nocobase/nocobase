@@ -7,8 +7,8 @@
   "description.zh-CN": "地图区块，支持高德地图和 Google 地图，你也可以扩展更多地图类型。",
   "license": "AGPL-3.0",
   "main": "./dist/server/index.js",
-  "homepage": "https://docs.nocobase.com/handbook/map",
-  "homepage.zh-CN": "https://docs-cn.nocobase.com/handbook/map",
+  "homepage": "https://docs.nocobase.com/handbook/block-map",
+  "homepage.zh-CN": "https://docs-cn.nocobase.com/handbook/block-map",
   "devDependencies": {
     "@amap/amap-jsapi-loader": "^1.0.1",
     "@amap/amap-jsapi-types": "^0.0.10",
