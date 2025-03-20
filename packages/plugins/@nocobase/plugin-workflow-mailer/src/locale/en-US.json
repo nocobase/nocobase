@@ -15,5 +15,6 @@
   "Content": "Content",
   "Content type": "Content type",
   "Plain text": "Plain text",
-  "Ignore failed sending and continue workflow": "Ignore failed sending and continue workflow"
+  "Ignore failed sending and continue workflow": "Ignore failed sending and continue workflow",
+  "In most cases, if using port 465, set it to true; otherwise, set it to false.": "In most cases, if using port 465, set it to true; otherwise, set it to false."
 }

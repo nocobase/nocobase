@@ -17,7 +17,7 @@ export const CalendarBlockContext = createContext<any>({});
 CalendarBlockContext.displayName = 'CalendarBlockContext';
 
 const InternalCalendarBlockProvider = (props) => {
-  const { fieldNames, showLunar, defaultView } = props;
+  const { fieldNames, showLunar, defaultView, enableQuickCreateEvent } = props;
   const field = useField();
   const { resource, service } = useBlockRequestContext();
 
@@ -30,6 +30,7 @@ const InternalCalendarBlockProvider = (props) => {
         fieldNames,
         showLunar,
         defaultView,
+        enableQuickCreateEvent: enableQuickCreateEvent ?? true,
         fixedBlock: field?.decoratorProps?.fixedBlock,
       }}
     >
@@ -104,6 +105,7 @@ export const useCalendarBlockProps = () => {
     fieldNames: ctx.fieldNames,
     showLunar: ctx.showLunar,
     defaultView: ctx.defaultView,
+    enableQuickCreateEvent: ctx.enableQuickCreateEvent,
     fixedBlock: ctx.fixedBlock,
     getFontColor,
     getBackgroundColor,

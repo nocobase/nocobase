@@ -13,7 +13,7 @@ export function getSchemaUidByRouteId(routeId: number, treeArray: any[], isMobil
   for (const node of treeArray) {
     if (node.id === routeId) {
       if (node.type === NocoBaseDesktopRouteType.page) {
-        return isMobile ? node.schemaUid : node.menuSchemaUid;
+        return node.schemaUid;
       }
       return node.schemaUid;
     }

@@ -175,7 +175,7 @@ test.describe('field data', () => {
     await page.mouse.move(300, 0, { steps: 100 });
     await page.waitForTimeout(300);
     await page
-      .locator('.ant-list', { hasText: preManualNodeTitle })
+      .locator('.itemCss', { hasText: preManualNodeTitle })
       .getByLabel('action-Action.Link-View-view-')
       .click();
     const preManualNodeRecord = triggerNodeFieldDisplayName + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
@@ -189,7 +189,7 @@ test.describe('field data', () => {
     await page.getByRole('textbox').first().fill(manualNodeName);
     await page.getByRole('button', { name: 'Submit' }).click();
     await page.waitForTimeout(300);
-    await page.locator('.ant-list', { hasText: manualNodeName }).getByLabel('action-Action.Link-View-view-').click();
+    await page.locator('.itemCss', { hasText: manualNodeName }).getByLabel('action-Action.Link-View-view-').click();
     await expect(page.getByText(preManualNodeRecord)).toBeAttached();
     // 4、后置处理：删除工作流
     await apiDeleteWorkflow(workflowId);
@@ -335,7 +335,7 @@ test.describe('field data', () => {
     await page.mouse.move(300, 0, { steps: 100 });
     await page.waitForTimeout(300);
     await page
-      .locator('.ant-list', { hasText: preManualNodeTitle })
+      .locator('.itemCss', { hasText: preManualNodeTitle })
       .getByLabel('action-Action.Link-View-view-')
       .click();
     const preManualNodeRecord = triggerNodeFieldDisplayName + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
@@ -348,7 +348,7 @@ test.describe('field data', () => {
     await page.getByRole('textbox').first().fill(manualNodeName);
     await page.getByRole('button', { name: 'Submit' }).click();
     await page.waitForTimeout(300);
-    await page.locator('.ant-list', { hasText: manualNodeName }).getByLabel('action-Action.Link-View-view-').click();
+    await page.locator('.itemCss', { hasText: manualNodeName }).getByLabel('action-Action.Link-View-view-').click();
     await expect(page.getByText(preManualNodeRecord)).toBeAttached();
 
     const createNodeCollectionData = await apiGetList(preManualNodeCollectionName);
@@ -543,7 +543,7 @@ test.describe('field data', () => {
     await page.mouse.move(300, 0, { steps: 100 });
     await page.waitForTimeout(300);
     await page
-      .locator('.ant-list', { hasText: preManualNodeTitle })
+      .locator('.itemCss', { hasText: preManualNodeTitle })
       .getByLabel('action-Action.Link-View-view-')
       .click();
     const preManualNodeRecord = triggerNodeFieldDisplayName + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
@@ -556,7 +556,7 @@ test.describe('field data', () => {
     await page.getByRole('textbox').first().fill(manualNodeName);
     await page.getByRole('button', { name: 'Submit' }).click();
     await page.waitForTimeout(300);
-    await page.locator('.ant-list', { hasText: manualNodeName }).getByLabel('action-Action.Link-View-view-').click();
+    await page.locator('.itemCss', { hasText: manualNodeName }).getByLabel('action-Action.Link-View-view-').click();
     await expect(page.getByText(preManualNodeRecord)).toBeAttached();
     const filter = `pageSize=20&page=1&filter={"$and":[{"orgname":{"$eq":"${preManualNodeRecord}"}}]}`;
     const createNodeCollectionData = await apiFilterList(preManualNodeCollectionName, filter);

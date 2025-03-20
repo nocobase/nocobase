@@ -42,7 +42,7 @@ export const ChannelConfigForm = () => {
                     type: 'void',
                     'x-component': 'Grid.Col',
                     'x-component-props': {
-                      width: 50,
+                      width: 45,
                     },
                     properties: {
                       host: {
@@ -62,7 +62,7 @@ export const ChannelConfigForm = () => {
                     type: 'void',
                     'x-component': 'Grid.Col',
                     'x-component-props': {
-                      width: 25,
+                      width: 20,
                     },
                     properties: {
                       port: {
@@ -92,7 +92,7 @@ export const ChannelConfigForm = () => {
                     type: 'void',
                     'x-component': 'Grid.Col',
                     'x-component-props': {
-                      width: 25,
+                      width: 35,
                     },
                     properties: {
                       secure: {
@@ -100,6 +100,8 @@ export const ChannelConfigForm = () => {
                         title: '{{t("Secure")}}',
                         'x-decorator': 'FormItem',
                         'x-component': 'TextAreaWithGlobalScope',
+                        description:
+                          '{{t("In most cases, if using port 465, set it to true; otherwise, set it to false.")}}',
                         'x-component-props': {
                           boolean: true,
                           useTypedConstant: [['boolean', { style: { width: '100%' } }]],

@@ -985,12 +985,11 @@ function useFormItemCollectionField() {
 
 export function useIsAssociationField() {
   const collectionField = useFormItemCollectionField();
-  const isAssociationField = ['obo', 'oho', 'o2o', 'o2m', 'm2m', 'm2o', 'updatedBy', 'createdBy', 'mbm'].includes(
-    collectionField?.interface,
-  );
+  const isAssociationField =
+    collectionField &&
+    ['hasOne', 'hasMany', 'belongsTo', 'belongsToMany', 'belongsToArray'].includes(collectionField.type);
   return isAssociationField;
 }
-
 export function useIsFileField() {
   const cm = useCollectionManager();
   const collectionField = useFormItemCollectionField();

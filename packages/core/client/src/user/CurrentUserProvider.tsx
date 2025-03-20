@@ -20,6 +20,11 @@ export const useCurrentUserContext = () => {
   return useContext(CurrentUserContext);
 };
 
+export const useIsLoggedIn = () => {
+  const ctx = useContext(CurrentUserContext);
+  return !!ctx?.data?.data;
+};
+
 export const useCurrentRoles = () => {
   const { allowAnonymous } = useACLRoleContext();
   const { data } = useCurrentUserContext();
@@ -39,14 +44,18 @@ export const useCurrentRoles = () => {
 
 export const CurrentUserProvider = (props) => {
   const api = useAPIClient();
-  const result = useRequest<any>(() =>
-    api
-      .request({
-        url: '/auth:check',
-        skipNotify: true,
-        skipAuth: true,
-      })
-      .then((res) => res?.data),
+  const result = useRequest<any>(
+    () =>
+      api
+        .request({
+          url: '/auth:check',
+          skipNotify: true,
+          skipAuth: true,
+        })
+        .then((res) => res?.data),
+    {
+      manual: !api.auth.token,
+    },
   );
   const { render } = useAppSpin();
 

@@ -32,7 +32,8 @@ const BaseConfiguration: React.FC<BaseConfigurationProps> = ({ type, children })
     return apiClient.resource(MapConfigurationResourceKey);
   }, [apiClient]);
 
-  const onSubmit = (values) => {
+  const onSubmit = async (values) => {
+    await form.validateFields();
     resource
       .set({
         ...values,
@@ -62,10 +63,18 @@ const AMapConfiguration = () => {
   const { t } = useMapTranslation();
   return (
     <BaseConfiguration type="amap">
-      <Form.Item required name="accessKey" label={t('Access key')}>
+      <Form.Item
+        rules={[{ required: true, message: t('Access key is required') }]}
+        name="accessKey"
+        label={t('Access key')}
+      >
         <TextAreaWithGlobalScope />
       </Form.Item>
-      <Form.Item required name="securityJsCode" label={t('securityJsCode or serviceHost')}>
+      <Form.Item
+        rules={[{ required: true, message: t('securityJsCode or serviceHost is required') }]}
+        name="securityJsCode"
+        label={t('securityJsCode or serviceHost')}
+      >
         <TextAreaWithGlobalScope />
       </Form.Item>
     </BaseConfiguration>
@@ -76,7 +85,7 @@ const GoogleMapConfiguration = () => {
   const { t } = useMapTranslation();
   return (
     <BaseConfiguration type="google">
-      <Form.Item required name="accessKey" label={t('Api key')}>
+      <Form.Item rules={[{ required: true, message: t('Api key is required') }]} name="accessKey" label={t('Api key')}>
         <TextAreaWithGlobalScope />
       </Form.Item>
     </BaseConfiguration>

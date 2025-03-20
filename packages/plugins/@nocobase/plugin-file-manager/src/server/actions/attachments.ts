@@ -59,7 +59,7 @@ export async function getFileData(ctx: Context) {
     mimetype: file.mimetype,
     meta: ctx.request.body,
     storageId: storage.id,
-    ...(storageInstance.getFileData ? storageInstance.getFileData(file) : {}),
+    ...StorageType?.['getFileData']?.(file),
   };
 
   return data;

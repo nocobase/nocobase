@@ -40,5 +40,11 @@
   "custom.description": "Dati di raccolta personalizzati",
   "skipped.description": "Dati ignorati",
   "unknown.description": "Dati senza regole di dump configurate",
-  "third-party.description": "Informazioni sul servizio di terze parti"
+  "third-party.description": "Informazioni sul servizio di terze parti",
+  "Select Import data": "Seleziona dati da importare",
+  "Select Import Plugins": "Seleziona plugin di importazione",
+  "Select User Collections": "Seleziona raccolte utente",
+  "Basic Data": "Dati di base",
+  "Optional Data": "Dati opzionali",
+  "User Data": "Dati utente"
 }

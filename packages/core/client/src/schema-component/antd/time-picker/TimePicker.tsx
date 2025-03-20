@@ -27,10 +27,10 @@ export const mapTimeFormat = function () {
       ...props,
       format,
       inputReadOnly: true,
-      value: dayjsable(props.value, format),
+      value: dayjsable(props.value, 'HH:mm:ss'),
       onChange: (value: dayjs.Dayjs | dayjs.Dayjs[]) => {
         if (onChange) {
-          onChange(formatDayjsValue(value, format) || null);
+          onChange(formatDayjsValue(value, 'HH:mm:ss') || null);
         }
       },
     };
