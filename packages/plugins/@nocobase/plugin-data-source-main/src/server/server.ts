@@ -92,7 +92,9 @@ export class PluginDataSourceMainServer extends Plugin {
     this.app.db.on('collections.beforeCreate', beforeCreateForViewCollection(this.db));
 
     this.app.db.on('collections.beforeCreate', async (model: CollectionModel, options) => {
-      if (this.app.db.getCollection(model.get('name')) && model.get('from') !== 'db2cm' && !model.get('isThrough')) {
+      const isDB2cm =
+        this.app.db.options.dialect === 'mssql' ? options.values.from === 'db2cm' : model.get('from') === 'db2cm';
+      if (this.app.db.getCollection(model.get('name')) && !isDB2cm && !model.get('isThrough')) {
         throw new Error(`Collection named ${model.get('name')} already exists`);
       }
     });

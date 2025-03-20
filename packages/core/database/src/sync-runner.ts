@@ -239,11 +239,80 @@ export class SyncRunner {
           const regex = /;ALTER TABLE "[^"]+"(\."[^"]+")? ALTER COLUMN "[^"]+" TYPE [^;]+;?$/;
 
           await this.sequelize.query(sql.replace(regex, ''), options);
+        } else if (this.database.inDialect('mssql')) {
+          if (currentAttribute.comment) {
+            // 处理 comment 重复添加
+            await this.delMSSQLRepeatComment(this.tableName as string, currentAttribute.field, options);
+          }
+
+          await this.sequelize.query(
+            `
+            DECLARE @ConstraintName nvarchar(200);
+            SELECT @ConstraintName = name FROM SYS.DEFAULT_CONSTRAINTS
+            WHERE PARENT_OBJECT_ID = OBJECT_ID('${this.tableName}') 
+            AND PARENT_COLUMN_ID = (
+              SELECT column_id FROM sys.columns 
+              WHERE NAME = N'${columnName}' 
+              AND object_id = OBJECT_ID(N'${this.tableName}')
+            );
+            IF @ConstraintName IS NOT NULL
+            EXEC('ALTER TABLE ${this.tableName} DROP CONSTRAINT ' + @ConstraintName);
+          `,
+            options,
+          );
+
+          const { defaultValue, ...typeAttribute } = changeAttribute;
+          await this.queryInterface.changeColumn(this.tableName, columnName, typeAttribute, options);
+
+          if (defaultValue !== undefined && defaultValue !== null) {
+            const quotedColumn = this.sequelize.getQueryInterface().quoteIdentifier(currentAttribute.field);
+
+            let escapedValue;
+            if (typeof defaultValue === 'boolean') {
+              escapedValue = defaultValue ? 1 : 0;
+            } else {
+              escapedValue = this.sequelize.escape(defaultValue);
+              if (typeof defaultValue === 'string') {
+                escapedValue = `N'${defaultValue.replace(/'/g, "''")}'`;
+              }
+            }
+            await this.sequelize.query(
+              `ALTER TABLE ${this.collection.quotedTableName()} 
+              ADD CONSTRAINT DF_${this.collection.tableName()}_${columnName} 
+              DEFAULT ${escapedValue} FOR ${quotedColumn}`,
+              options,
+            );
+          }
         } else {
           await this.queryInterface.changeColumn(this.tableName, columnName, changeAttribute, options);
         }
       }
     }
+  }
+
+  private async delMSSQLRepeatComment(tableName: string, columnName: string, options) {
+    const schema = options.schema || 'dbo';
+    const escapedSchema = this.sequelize.escape(schema);
+    const escapedTable = this.sequelize.escape(tableName);
+    const escapedColumn = this.sequelize.escape(columnName);
+
+    const commentSql = `
+      IF EXISTS (
+        SELECT 1 FROM sys.extended_properties
+        WHERE major_id = OBJECT_ID(${escapedTable})
+          AND minor_id = COLUMNPROPERTY(OBJECT_ID(${escapedTable}), ${escapedColumn}, 'ColumnId')
+          AND name = 'MS_Description'
+      )
+      BEGIN
+        EXEC sp_dropextendedproperty 
+          @name = N'MS_Description',
+          @level0type = N'SCHEMA', @level0name = ${escapedSchema},
+          @level1type = N'TABLE', @level1name = ${escapedTable},
+          @level2type = N'COLUMN', @level2name = ${escapedColumn};
+      END
+    `;
+
+    await this.sequelize.query(commentSql, options);
   }
 
   async handleUniqueIndex(options) {

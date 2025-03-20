@@ -12,7 +12,8 @@ import { merge } from '@nocobase/utils';
 import { customAlphabet } from 'nanoid';
 import fetch from 'node-fetch';
 import path from 'path';
-import { Database, IDatabaseOptions } from './database';
+import { Database, DatabaseOptions, IDatabaseOptions } from './database';
+import { BaseDialect } from './dialects';
 
 export class MockDatabase extends Database {
   constructor(options: IDatabaseOptions) {
@@ -101,6 +102,34 @@ export function mockDatabase(options: IDatabaseOptions = {}): MockDatabase {
   }
 
   const db = new MockDatabase(dbOptions);
+
+  class MssqlDialect extends BaseDialect {
+    static dialectName = 'mssql';
+
+    getSequelizeOptions(options: DatabaseOptions): IDatabaseOptions {
+      return {
+        ...options,
+        dialect: 'mssql',
+      };
+    }
+
+    async checkDatabaseVersion(db: Database): Promise<boolean> {
+      return true;
+    }
+
+    static init(db) {
+      db.registerFieldTypes(); // 字段类型
+      db.registerOperators(); // 筛选操作符
+    }
+
+    // static createQueryInterface(db) {
+    //   return new MssqlQueryInterface(db);
+    // }
+  }
+
+  Database.registerDialect(MssqlDialect);
+  console.log('=====================================');
+  MssqlDialect.init(db);
 
   return db;
 }

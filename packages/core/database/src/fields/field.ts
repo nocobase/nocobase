@@ -165,7 +165,9 @@ export abstract class Field {
 
   toSequelize(): any {
     const opts = _.omit(this.options, ['name']);
-
+    if (this.options.name.includes('meta')) {
+      console.log(opts);
+    }
     if (this.dataType) {
       // @ts-ignore
       Object.assign(opts, { type: this.database.sequelize.normalizeDataType(this.dataType) });

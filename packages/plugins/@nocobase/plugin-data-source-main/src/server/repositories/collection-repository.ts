@@ -191,6 +191,9 @@ export class CollectionRepository extends Repository {
     if (collectionOptions.schema && collectionOptions.schema == (this.database.options.schema || 'public')) {
       delete collectionOptions.schema;
     }
+    if (collectionName === 'roles') {
+      console.log('555');
+    }
 
     await this.create({
       values: {

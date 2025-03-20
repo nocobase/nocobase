@@ -19,6 +19,9 @@ export class ArrayField extends Field {
       }
       return DataTypes.JSONB;
     }
+    if (this.database.sequelize.getDialect() === 'mssql') {
+      return DataTypes.TEXT;
+    }
 
     return DataTypes.JSON;
   }
@@ -43,6 +46,14 @@ export class ArrayField extends Field {
   unbind() {
     super.unbind();
     this.off('beforeSave', this.sortValue);
+  }
+
+  toSequelize() {
+    const opts = super.toSequelize();
+    if (this.database.sequelize.getDialect() === 'mssql' && Array.isArray(opts.defaultValue)) {
+      opts.defaultValue = JSON.stringify(opts.defaultValue);
+    }
+    return opts;
   }
 }
 

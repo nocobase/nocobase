@@ -9,6 +9,7 @@
 
 import { DataTypes } from 'sequelize';
 import { BaseColumnFieldOptions, Field } from './field';
+import _ from 'lodash';
 
 export class JsonField extends Field {
   get dataType() {
@@ -17,7 +18,21 @@ export class JsonField extends Field {
     if (dialect === 'postgres' && jsonb) {
       return DataTypes.JSONB;
     }
+    if (dialect === 'mssql') {
+      return DataTypes.TEXT;
+    }
     return DataTypes.JSON;
+  }
+
+  toSequelize() {
+    const opts = super.toSequelize();
+    if (opts.name?.includes('attachments') || opts.name?.includes('meta')) {
+      console.log(222);
+    }
+    if (this.database.sequelize.getDialect() === 'mssql' && _.isObjectLike(opts.defaultValue)) {
+      opts.defaultValue = JSON.stringify(opts.defaultValue);
+    }
+    return opts;
   }
 }
 
@@ -31,7 +46,18 @@ export class JsonbField extends Field {
     if (dialect === 'postgres') {
       return DataTypes.JSONB;
     }
+    if (dialect === 'mssql') {
+      return DataTypes.TEXT;
+    }
     return DataTypes.JSON;
+  }
+
+  toSequelize() {
+    const opts = super.toSequelize();
+    if (this.database.sequelize.getDialect() === 'mssql' && _.isObjectLike(opts.defaultValue)) {
+      opts.defaultValue = JSON.stringify(opts.defaultValue);
+    }
+    return opts;
   }
 }
 
