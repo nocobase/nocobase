@@ -7,28 +7,36 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useState, useCallback } from 'react';
-import { observer } from '@formily/reactive-react';
 import { Schema } from '@formily/react';
-import { Card, Descriptions, Button, Spin, Tag, ConfigProvider, Typography, Tooltip, theme } from 'antd';
+import { observer } from '@formily/reactive-react';
 import { dayjs } from '@nocobase/utils/client';
+import { Button, Card, ConfigProvider, Descriptions, Spin, Tag, Tooltip, Typography, theme } from 'antd';
+import React, { useCallback, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLocalTranslation } from '../../locale';
 
+import { useApp } from '@nocobase/client';
 import {
-  selectedChannelNameObs,
   channelMapObs,
   fetchMessages,
+  inboxVisible,
   isFecthingMessageObs,
+  selectedChannelNameObs,
   selectedMessageListObs,
   showMsgLoadingMoreObs,
   updateMessage,
-  inboxVisible,
 } from '../observables';
-import { useApp } from '@nocobase/client';
+
+function removeStringIfStartsWith(text: string, prefix: string): string {
+  if (text.startsWith(prefix)) {
+    return text.slice(prefix.length);
+  }
+  return text;
+}
 
 const MessageList = observer(() => {
   const app = useApp();
+  const basename = app.router.basename.replace(/\/+$/, '');
   const { t } = useLocalTranslation();
   const navigate = useNavigate();
   const { token } = theme.useToken();
@@ -51,7 +59,7 @@ const MessageList = observer(() => {
     if (message.options?.url) {
       inboxVisible.value = false;
       const url = message.options.url;
-      if (url.startsWith('/')) navigate(url);
+      if (url.startsWith('/')) navigate(removeStringIfStartsWith(url, basename));
       else {
         window.location.href = url;
       }
