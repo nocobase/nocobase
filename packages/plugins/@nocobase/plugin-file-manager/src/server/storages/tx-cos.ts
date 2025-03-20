@@ -7,11 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { isURL } from '@nocobase/utils';
+import path from 'path';
+import urlJoin from 'url-join';
 import { promisify } from 'util';
-
 import { AttachmentModel, StorageType } from '.';
 import { STORAGE_TYPE_TX_COS } from '../../constants';
-import { getFilename, getFileKey } from '../utils';
+import { getFileKey, getFilename } from '../utils';
 
 export default class extends StorageType {
   static defaults() {
@@ -30,6 +32,23 @@ export default class extends StorageType {
   }
 
   static filenameKey = 'url';
+
+  getFileURL(file: AttachmentModel, preview?: boolean): string | Promise<string> {
+    // 兼容历史数据
+    if (file.url && isURL(file.url)) {
+      if (preview) {
+        return file.url + (this.storage.options.thumbnailRule || '');
+      }
+      return file.url;
+    }
+    const keys = [
+      this.storage.baseUrl,
+      file.path && encodeURI(file.path),
+      file.filename,
+      preview && this.storage.options.thumbnailRule,
+    ].filter(Boolean);
+    return urlJoin(keys);
+  }
 
   make() {
     const createTxCosStorage = require('multer-cos');
