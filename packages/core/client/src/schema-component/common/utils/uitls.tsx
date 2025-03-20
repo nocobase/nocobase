@@ -183,7 +183,9 @@ export async function getRenderContent(templateEngine, content, variables, local
       const html = renderedContent({ ...variables?.ctxRef?.current, ...data, $nDate: variableDate });
       return await defaultParse(html);
     } catch (error) {
-      console.log(error);
+      if (!/VariablesProvider: .* is not found/.test(error.message)) {
+        console.log(error);
+      }
       return content;
     }
   } else {
@@ -191,7 +193,9 @@ export async function getRenderContent(templateEngine, content, variables, local
       const html = await replaceVariableValue(content, variables, localVariables);
       return await defaultParse(html);
     } catch (error) {
-      console.log(error);
+      if (!/VariablesProvider: .* is not found/.test(error.message)) {
+        console.log(error);
+      }
       return content;
     }
   }
