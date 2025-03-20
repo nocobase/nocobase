@@ -1,0 +1,4 @@
+{
+  "Many to many (array)": "Molti a molti (array)",
+  "Many to many (array) description": "Consente di creare relazioni molti a molti tra due modelli memorizzando un array di chiavi univoche del modello di destinazione."
+}

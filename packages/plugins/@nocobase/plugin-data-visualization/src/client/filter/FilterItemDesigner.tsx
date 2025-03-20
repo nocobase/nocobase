@@ -353,6 +353,10 @@ const EditDataScope: React.FC = () => {
   );
 };
 
+/**
+ * @deprecated
+ * use `chartFilterItemSettings` instead
+ */
 export const ChartFilterItemDesigner: React.FC = () => {
   const { getCollectionJoinField } = useCollectionManager_deprecated();
   const { getField } = useCollection_deprecated();

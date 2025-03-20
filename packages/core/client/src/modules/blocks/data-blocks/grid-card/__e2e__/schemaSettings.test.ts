@@ -18,6 +18,7 @@ test.describe('grid card block schema settings', () => {
       page,
       showMenu: async () => {
         await page.getByLabel('block-item-BlockItem-general-grid-card').hover();
+        await page.waitForTimeout(1000);
         await page.getByLabel('designer-schema-settings-BlockItem-GridCard.Designer-general').hover();
       },
       supportedOptions: [

@@ -83,6 +83,8 @@ const CollectionFieldInternalField_deprecated: React.FC = (props: Props) => {
     setRequired(field, fieldSchema, uiSchema);
     // @ts-ignore
     field.dataSource = uiSchema.enum;
+    field.data = field.data || {};
+    field.data.dataSource = uiSchema?.enum;
     const originalProps = compile(uiSchema['x-component-props']) || {};
     field.componentProps = merge(originalProps, field.componentProps || {}, dynamicProps || {});
   }, [uiSchemaOrigin]);
@@ -108,6 +110,8 @@ const CollectionFieldInternalField = (props) => {
     if (fieldSchema['x-read-pretty'] === true && !field.readPretty) {
       field.readPretty = true;
     }
+    field.data = field.data || {};
+    field.data.dataSource = uiSchema?.enum;
   }, [field, fieldSchema]);
 
   if (!uiSchema) return null;

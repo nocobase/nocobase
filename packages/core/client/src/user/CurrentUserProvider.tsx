@@ -33,7 +33,7 @@ export const useCurrentRoles = () => {
       });
     }
     return roles;
-  }, [allowAnonymous, data?.data?.roles]);
+  }, [allowAnonymous, data?.data?.roles, compile]);
   return options;
 };
 
@@ -48,11 +48,11 @@ export const CurrentUserProvider = (props) => {
       })
       .then((res) => res?.data),
   );
+
   const { render } = useAppSpin();
 
   if (result.loading) {
     return render();
   }
-
   return <CurrentUserContext.Provider value={result}>{props.children}</CurrentUserContext.Provider>;
 };

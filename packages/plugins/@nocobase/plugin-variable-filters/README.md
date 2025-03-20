@@ -1,1 +1,0 @@
-# @nocobase/plugin-variable-filters

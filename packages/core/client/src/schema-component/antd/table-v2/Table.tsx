@@ -66,6 +66,7 @@ import { useToken } from '../__builtins__';
 import { useAssociationFieldContext } from '../association-field/hooks';
 import { TableSkeleton } from './TableSkeleton';
 import { extractIndex, isCollectionFieldComponent, isColumnComponent } from './utils';
+import { withTooltipComponent } from '../../../hoc/withTooltipComponent';
 
 type BodyRowComponentProps = {
   rowIndex?: number;
@@ -198,6 +199,9 @@ const useTableColumns = (
 
   const collection = useCollection();
 
+  // 不能提取到外部，否则 NocoBaseRecursionField 的值在一开始会是 undefined。原因未知
+  const TableColumnTitle = useMemo(() => withTooltipComponent(NocoBaseRecursionField), []);
+
   const columns = useMemo(
     () =>
       columnsSchemas?.map((columnSchema: Schema) => {
@@ -217,11 +221,12 @@ const useTableColumns = (
         return {
           title: (
             <RefreshComponentProvider refresh={refresh}>
-              <NocoBaseRecursionField
+              <TableColumnTitle
                 name={columnSchema.name}
                 schema={columnSchema}
                 onlyRenderSelf
                 isUseFormilyField={false}
+                tooltip={columnSchema?.['x-component-props']?.tooltip}
               />
             </RefreshComponentProvider>
           ),
@@ -846,7 +851,7 @@ export const Table: any = withDynamicSchemaProps(
       const collection = useCollection();
       const isTableSelector = schema?.parent?.['x-decorator'] === 'TableSelectorProvider';
       const ctx = isTableSelector ? useTableSelectorContext() : useTableBlockContext();
-      const { expandFlag, allIncludesChildren } = ctx;
+      const { expandFlag, allIncludesChildren, enableIndexÏColumn } = ctx;
       const onRowDragEnd = useMemoizedFn(others.onRowDragEnd || (() => {}));
       const paginationProps = usePaginationProps(pagination1, pagination2, props);
       const columns = useTableColumns(others, paginationProps);
@@ -1011,73 +1016,76 @@ export const Table: any = withDynamicSchemaProps(
 
       const restProps = useMemo(
         () => ({
-          rowSelection: memoizedRowSelection
-            ? {
-                type: 'checkbox',
-                selectedRowKeys: selectedRowKeys,
-                onChange(selectedRowKeys: any[], selectedRows: any[]) {
-                  field.data = field.data || {};
-                  field.data.selectedRowKeys = selectedRowKeys;
-                  field.data.selectedRowData = selectedRows;
-                  setSelectedRowKeys(selectedRowKeys);
-                  onRowSelectionChange?.(selectedRowKeys, selectedRows, setSelectedRowKeys);
-                },
-                onSelect: (record, selected: boolean, selectedRows, nativeEvent) => {
-                  if (tableBlockContextBasicValue) {
-                    tableBlockContextBasicValue.field.data = tableBlockContextBasicValue.field?.data || {};
-                    tableBlockContextBasicValue.field.data.selectedRecord = record;
-                    tableBlockContextBasicValue.field.data.selected = selected;
-                  }
-                },
-                getCheckboxProps(record) {
-                  return {
-                    'aria-label': `checkbox`,
-                  };
-                },
-                renderCell: (checked, record, index, originNode) => {
-                  if (!dragSort && !showIndex) {
-                    return originNode;
-                  }
-                  const current = paginationProps?.current;
+          rowSelection:
+            enableIndexÏColumn !== false
+              ? memoizedRowSelection
+                ? {
+                    type: 'checkbox',
+                    selectedRowKeys: selectedRowKeys,
+                    onChange(selectedRowKeys: any[], selectedRows: any[]) {
+                      field.data = field.data || {};
+                      field.data.selectedRowKeys = selectedRowKeys;
+                      field.data.selectedRowData = selectedRows;
+                      setSelectedRowKeys(selectedRowKeys);
+                      onRowSelectionChange?.(selectedRowKeys, selectedRows, setSelectedRowKeys);
+                    },
+                    onSelect: (record, selected: boolean, selectedRows, nativeEvent) => {
+                      if (tableBlockContextBasicValue) {
+                        tableBlockContextBasicValue.field.data = tableBlockContextBasicValue.field?.data || {};
+                        tableBlockContextBasicValue.field.data.selectedRecord = record;
+                        tableBlockContextBasicValue.field.data.selected = selected;
+                      }
+                    },
+                    getCheckboxProps(record) {
+                      return {
+                        'aria-label': `checkbox`,
+                      };
+                    },
+                    renderCell: (checked, record, index, originNode) => {
+                      if (!dragSort && !showIndex) {
+                        return originNode;
+                      }
+                      const current = paginationProps?.current;
 
-                  const pageSize = paginationProps?.pageSize || 20;
-                  if (current) {
-                    index = index + (current - 1) * pageSize + 1;
-                  } else {
-                    index = index + 1;
-                  }
-                  if (record.__index) {
-                    index = extractIndex(record.__index);
-                  }
-                  return (
-                    <div
-                      role="button"
-                      aria-label={`table-index-${index}`}
-                      className={classNames(checked ? 'checked' : null, rowSelectCheckboxWrapperClass, {
-                        [rowSelectCheckboxWrapperClassHover]: isRowSelect,
-                      })}
-                    >
-                      <div className={classNames(checked ? 'checked' : null, rowSelectCheckboxContentClass)}>
-                        {dragSort && <SortHandle id={getRowKey(record)} />}
-                        {showIndex && <TableIndex index={index} />}
-                      </div>
-                      {isRowSelect && (
+                      const pageSize = paginationProps?.pageSize || 20;
+                      if (current) {
+                        index = index + (current - 1) * pageSize + 1;
+                      } else {
+                        index = index + 1;
+                      }
+                      if (record.__index) {
+                        index = extractIndex(record.__index);
+                      }
+                      return (
                         <div
-                          className={classNames(
-                            'nb-origin-node',
-                            checked ? 'checked' : null,
-                            rowSelectCheckboxCheckedClassHover,
-                          )}
+                          role="button"
+                          aria-label={`table-index-${index}`}
+                          className={classNames(checked ? 'checked' : null, rowSelectCheckboxWrapperClass, {
+                            [rowSelectCheckboxWrapperClassHover]: isRowSelect,
+                          })}
                         >
-                          {originNode}
+                          <div className={classNames(checked ? 'checked' : null, rowSelectCheckboxContentClass)}>
+                            {dragSort && <SortHandle id={getRowKey(record)} />}
+                            {showIndex && <TableIndex index={index} />}
+                          </div>
+                          {isRowSelect && (
+                            <div
+                              className={classNames(
+                                'nb-origin-node',
+                                checked ? 'checked' : null,
+                                rowSelectCheckboxCheckedClassHover,
+                              )}
+                            >
+                              {originNode}
+                            </div>
+                          )}
                         </div>
-                      )}
-                    </div>
-                  );
-                },
-                ...memoizedRowSelection,
-              }
-            : undefined,
+                      );
+                    },
+                    ...memoizedRowSelection,
+                  }
+                : undefined
+              : undefined,
         }),
         [
           memoizedRowSelection,
@@ -1091,6 +1099,7 @@ export const Table: any = withDynamicSchemaProps(
           memoizedRowSelection,
           paginationProps,
           tableBlockContextBasicValue,
+          enableIndexÏColumn,
         ],
       );
 

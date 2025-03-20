@@ -21,7 +21,7 @@ test.describe('popup of duplicate', () => {
     await page.getByLabel('drawer-Action.Container-users-Duplicate-mask').click();
 
     // click other tab, then open the bulk edit drawer, the Add block in drawer should be visible
-    await page.getByText('new tab').click();
+    await page.getByText('new tab').last().click();
     await page.getByLabel('action-Action.Link-Duplicate').click();
     await expect(page.getByLabel('block-item-Markdown.Void-').getByText('Duplicate markdown 2.')).toBeVisible();
   });

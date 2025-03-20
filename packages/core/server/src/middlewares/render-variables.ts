@@ -8,11 +8,11 @@
  */
 
 import { createJSONTemplateParser } from '@nocobase/json-template-parser';
-import { getDateVars } from '@nocobase/utils';
+import { getDateVars, isDate, parseDate } from '@nocobase/utils';
 import { get } from 'lodash';
 
 function getUser(ctx) {
-  return async ({ fields }) => {
+  const getValue = async ({ fields }) => {
     const userFields = fields.filter((f) => f && ctx.db.getFieldByPath('users.' + f));
     ctx.logger?.info('filter-parse: ', { userFields });
     if (!ctx.state.currentUser) {
@@ -32,13 +32,9 @@ function getUser(ctx) {
       get(user, field);
     };
   };
+  return { getValue };
 }
 
-function isNumeric(str: any) {
-  if (typeof str === 'number') return true;
-  if (typeof str != 'string') return false;
-  return !isNaN(str as any) && !isNaN(parseFloat(str));
-}
 const isDateOperator = (op) => {
   return [
     '$dateOn',
@@ -51,26 +47,28 @@ const isDateOperator = (op) => {
   ].includes(op);
 };
 
-function isDate(input) {
-  return input instanceof Date || Object.prototype.toString.call(input) === '[object Date]';
-}
-
 const dateValueWrapper = (value: any, timezone?: string) => {
   if (!value) {
     return null;
   }
 
   if (Array.isArray(value)) {
-    if (value.length === 2) {
-      value.push('[]', timezone);
+    const valueString = value.map((v) => {
+      if (isDate(v)) {
+        return v.toISOString();
+      }
+      return v;
+    });
+    if (valueString.length === 2) {
+      valueString.push('[]', timezone);
     } else if (value.length === 3) {
-      value.push(timezone);
+      valueString.push(timezone);
     }
-    return value;
+    return valueString;
   }
 
   if (typeof value === 'string') {
-    if (!timezone || /(\+|-)\d\d:\d\d$/.test(value)) {
+    if (!timezone || /((\+|-)\d\d:\d\d|Z)$/.test(value)) {
       return value;
     }
     return value + timezone;
@@ -83,18 +81,29 @@ const dateValueWrapper = (value: any, timezone?: string) => {
 
 const $date = ({ fields, data, context }) => {
   const timezone = context.timezone;
+  const now = new Date().toISOString();
   const dateVars = getDateVars();
-  return (field, keys) => {
-    const value = get(dateVars, field);
+
+  const getValue = ({ field, keys }) => {
+    const val = get(dateVars, field);
+    const operator = keys[keys.length - 1];
+    const value = typeof val === 'function' ? val?.({ field, operator, timezone, now }) : val;
+    const parsedValue = parseDate(value, { timezone });
+    return parsedValue;
+  };
+  const afterApplyHelpers = ({ field, value, keys }) => {
     const operator = keys[keys.length - 1];
     if (isDateOperator(operator)) {
-      const field = context?.getField?.(keys);
-      if (field?.constructor.name === 'DateOnlyField' || field?.constructor.name === 'DatetimeNoTzField') {
+      const ctxField = context?.getField?.(keys);
+      if (ctxField?.constructor.name === 'DateOnlyField' || ctxField?.constructor.name === 'DatetimeNoTzField') {
         return value;
       }
-      return dateValueWrapper(value, field?.timezone || timezone);
+      const result = dateValueWrapper(value, ctxField?.timezone || timezone);
+      return result;
     }
+    return value;
   };
+  return { getValue, afterApplyHelpers };
 };
 
 const parser = createJSONTemplateParser();
@@ -104,23 +113,25 @@ export async function renderVariables(ctx, next) {
   if (!filter) {
     return next();
   }
-  ctx.action.params.filter = await parser.render(
+  const renderedFilter = await parser.render(
     filter,
     {
       $user: getUser(ctx),
       $date,
       $nDate: $date,
-      $nRole: ctx.state.currentRole,
+      $nRole: ctx.state.currentRole === '__union__' ? ctx.state.currentRoles : ctx.state.currentRole,
     },
     {
       timezone: ctx.get('x-timezone'),
       now: new Date().toISOString(),
       getField: (keys) => {
-        const fieldPath = keys.filter((p) => !p.startsWith('$') && !isNumeric(p)).join('.');
+        const fieldPath = keys.filter((p) => typeof p === 'string' && !p.startsWith('$')).join('.');
         const { resourceName } = ctx.action;
-        return ctx.db.getFieldByPath(`${resourceName}.${fieldPath}`);
+        const field = ctx.db.getFieldByPath(`${resourceName}.${fieldPath}`);
+        return field;
       },
     },
   );
+  ctx.action.params.filter = renderedFilter;
   await next();
 }

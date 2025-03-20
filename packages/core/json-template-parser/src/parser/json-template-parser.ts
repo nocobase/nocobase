@@ -25,6 +25,18 @@ type Filter = {
   sort: number;
 };
 
+type ScopeFnWrapperResult = {
+  getValue: (params: { field: string[]; keys: string[] }) => any;
+  afterApplyHelpers: (params: { field: string[]; keys: string[]; value: any }) => any;
+};
+
+type ScopeFnWrapper = (params: {
+  fields: string[];
+  data: any;
+  context?: Record<string, any>;
+}) => Promise<ScopeFnWrapperResult>;
+
+type ScopeMapValue = { fieldSet: Set<string>; scopeFnWrapper: ScopeFnWrapper; scopeFn?: ScopeFnWrapperResult };
 export class JSONTemplateParser {
   private _engine: Liquid;
   private _filterGroups: Array<FilterGroup>;
@@ -64,34 +76,38 @@ export class JSONTemplateParser {
   }
 
   async render(template: string, data: any = {}, context?: Record<string, any>): Promise<any> {
-    const NamespaceMap = new Map<string, { fieldSet: Set<String>; fnWrapper: Function; fn?: any }>();
+    const NamespaceMap = new Map<string, ScopeMapValue>();
     Object.keys(data).forEach((key) => {
       if (key.startsWith('$') || typeof data[key] === 'function') {
-        NamespaceMap.set(escape(key), { fieldSet: new Set<String>(), fnWrapper: data[key] });
+        NamespaceMap.set(escape(key), { fieldSet: new Set<string>(), scopeFnWrapper: data[key] });
       }
     });
     const parsed = this.parse(template, { NamespaceMap });
-    const fnPromises = Array.from(NamespaceMap.entries()).map(async ([key, { fieldSet, fnWrapper }]) => {
-      const fields = Array.from(fieldSet);
-      if (fields.length === 0) {
-        return { key, fn: null };
-      }
-      const fn = await fnWrapper({ fields: Array.from(fields), data, context });
-      return { key, fn };
-    });
-    const fns = await Promise.all(fnPromises);
-    fns.forEach(({ key, fn }) => {
+    const fnPromises = Array.from(NamespaceMap.entries()).map(
+      async ([key, { fieldSet, scopeFnWrapper: fnWrapper }]): Promise<{
+        key: string;
+        scopeFn: ScopeFnWrapperResult;
+      } | null> => {
+        const fields = Array.from(fieldSet);
+        if (fields.length === 0) {
+          return null;
+        }
+        const hooks: Record<'afterApplyHelpers', any> = { afterApplyHelpers: null };
+
+        const scopeFn = await fnWrapper({ fields, data, context });
+        return { key, scopeFn };
+      },
+    );
+    const scopeFns = (await Promise.all(fnPromises)).filter(Boolean);
+    scopeFns.forEach(({ key, scopeFn }) => {
       const NS = NamespaceMap.get(key);
-      NS.fn = fn;
+      NS.scopeFn = scopeFn;
     });
 
     return parsed(data);
   }
 
-  parse = (
-    value: any,
-    opts?: { NamespaceMap: Map<string, { fieldSet: Set<String>; fnWrapper: Function; fn?: Function }> },
-  ) => {
+  parse = (value: any, opts?: { NamespaceMap: Map<string, ScopeMapValue> }) => {
     const engine = this.engine;
     function type(value) {
       let valueType: string = typeof value;
@@ -177,22 +193,32 @@ export class JSONTemplateParser {
               if (opts?.NamespaceMap && opts.NamespaceMap.has(template.variableSegments[0])) {
                 const scopeKey = template.variableSegments[0];
                 const NS = opts.NamespaceMap.get(scopeKey);
-                const fn = NS.fn;
+                const scopeFn = NS.scopeFn;
                 const field = getFieldName({
                   variableName: template.variableName,
                   variableSegments: template.variableSegments,
                 });
-                if (!fn) {
+                if (!scopeFn?.getValue) {
                   throw new Error(`fn not found for ${scopeKey}`);
                 }
-                return fn(revertEscape(field), preKeys);
+                value = scopeFn.getValue({ field: revertEscape(field), keys: preKeys });
+
+                const appliedHelpersValue = template.filters.reduce(
+                  (acc, filter) => filter.handler(...[acc, ...filter.args]),
+                  typeof value === 'function' ? value() : value,
+                );
+
+                if (scopeFn?.afterApplyHelpers) {
+                  return scopeFn.afterApplyHelpers({ field: preKeys, keys: preKeys, value: appliedHelpersValue });
+                }
+                return appliedHelpersValue;
               } else if (typeof ctxVal === 'function') {
                 const ctxVal = get(escapedContext, template.variableName);
                 value = ctxVal();
               } else {
                 value = get(escapedContext, template.variableName);
               }
-              template.filters.reduce(
+              return template.filters.reduce(
                 (acc, filter) => filter.handler(...[acc, ...filter.args]),
                 typeof value === 'function' ? value() : value,
               );

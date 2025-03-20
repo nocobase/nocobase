@@ -13,6 +13,7 @@ import React, { useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { useApp, useNavigateNoUpdate } from '../application';
+import { useMobileLayout } from '../route-switch/antd/admin-layout';
 import { useCompile } from '../schema-component';
 import { useToken } from '../style';
 
@@ -20,6 +21,12 @@ export const PluginManagerLink = () => {
   const { t } = useTranslation();
   const navigate = useNavigateNoUpdate();
   const { token } = useToken();
+  const { isMobileLayout } = useMobileLayout();
+
+  if (isMobileLayout) {
+    return null;
+  }
+
   return (
     <Tooltip title={t('Plugin manager')}>
       <Button
@@ -61,6 +68,12 @@ export const SettingsCenterDropdown = () => {
       app.pluginSettingsManager.clearCache();
     };
   }, [app.pluginSettingsManager]);
+
+  const { isMobileLayout } = useMobileLayout();
+
+  if (isMobileLayout) {
+    return null;
+  }
 
   return (
     <Dropdown

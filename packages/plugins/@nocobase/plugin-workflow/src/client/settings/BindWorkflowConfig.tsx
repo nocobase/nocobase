@@ -171,6 +171,11 @@ export function BindWorkflowConfig() {
     }),
   }[fieldSchema?.['x-action']];
 
+  // NOTE(refactor): hard code
+  if (fieldSchema['x-use-component-props'] === 'usePickActionProps') {
+    return null;
+  }
+
   return (
     <SchemaSettingsActionModalItem
       title={t('Bind workflows', { ns: 'workflow' })}

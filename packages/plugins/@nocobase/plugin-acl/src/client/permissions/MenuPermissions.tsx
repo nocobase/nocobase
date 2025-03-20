@@ -9,9 +9,16 @@
 
 import { createForm, Form, onFormValuesChange } from '@formily/core';
 import { uid } from '@formily/shared';
-import { css, SchemaComponent, useAPIClient, useCompile, useRequest } from '@nocobase/client';
+import {
+  css,
+  SchemaComponent,
+  useAllAccessDesktopRoutes,
+  useAPIClient,
+  useCompile,
+  useRequest,
+} from '@nocobase/client';
 import { useMemoizedFn } from 'ahooks';
-import { Checkbox, message, Table } from 'antd';
+import { Checkbox, message, Table, TableProps } from 'antd';
 import { uniq } from 'lodash';
 import React, { createContext, FC, useContext, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -68,7 +75,8 @@ const style = css`
 
 const translateTitle = (menus: any[], t, compile) => {
   return menus.map((menu) => {
-    const title = menu.title?.match(/^\s*\{\{\s*.+?\s*\}\}\s*$/) ? compile(menu.title) : t(menu.title);
+    const title =
+      (menu.title?.match(/^\s*\{\{\s*.+?\s*\}\}\s*$/) ? compile(menu.title) : t(menu.title)) || t('Unnamed');
     if (menu.children) {
       return {
         ...menu,
@@ -166,6 +174,7 @@ export const MenuPermissions: React.FC<{
   );
   const resource = api.resource('roles.desktopRoutes', role.name);
   const allChecked = allIDList.length === IDList.length;
+  const { refresh: refreshDesktopRoutes } = useAllAccessDesktopRoutes();
 
   const handleChange = async (checked, menuItem) => {
     // 处理取消选中
@@ -214,6 +223,7 @@ export const MenuPermissions: React.FC<{
         values: shouldAdd,
       });
     }
+    refreshDesktopRoutes();
     message.success(t('Saved successfully'));
   };
 
@@ -266,40 +276,43 @@ export const MenuPermissions: React.FC<{
         expandable={{
           defaultExpandAllRows: false,
         }}
-        columns={[
-          {
-            dataIndex: 'title',
-            title: t('Route name'),
-          },
-          {
-            dataIndex: 'accessible',
-            title: (
-              <>
-                <Checkbox
-                  checked={allChecked}
-                  onChange={async (value) => {
-                    if (allChecked) {
-                      await resource.set({
-                        values: [],
-                      });
-                    } else {
-                      await resource.set({
-                        values: allIDList,
-                      });
-                    }
-                    refresh();
-                    message.success(t('Saved successfully'));
-                  }}
-                />{' '}
-                {t('Accessible')}
-              </>
-            ),
-            render: (_, schema) => {
-              const checked = IDList.includes(schema.id);
-              return <Checkbox checked={checked} onChange={() => handleChange(checked, schema)} />;
+        columns={
+          [
+            {
+              dataIndex: 'title',
+              title: t('Route name'),
             },
-          },
-        ]}
+            {
+              dataIndex: 'accessible',
+              title: (
+                <>
+                  <Checkbox
+                    checked={allChecked}
+                    onChange={async (value) => {
+                      if (allChecked) {
+                        await resource.set({
+                          values: [],
+                        });
+                      } else {
+                        await resource.set({
+                          values: allIDList,
+                        });
+                      }
+                      refresh();
+                      refreshDesktopRoutes();
+                      message.success(t('Saved successfully'));
+                    }}
+                  />{' '}
+                  {t('Accessible')}
+                </>
+              ),
+              render: (_, schema) => {
+                const checked = IDList.includes(schema.id);
+                return <Checkbox checked={checked} onChange={() => handleChange(checked, schema)} />;
+              },
+            },
+          ] as TableProps['columns']
+        }
         dataSource={translateTitle(items, t, compile)}
       />
     </>

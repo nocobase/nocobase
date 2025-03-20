@@ -1,0 +1,9 @@
+{
+  "Used for sorting kanban cards, only sorting fields corresponding to grouping fields can be selected": "Utilizzato per ordinare le schede kanban, è possibile selezionare solo i campi di ordinamento corrispondenti ai campi di raggruppamento",
+  "Global sorting": "Ordinamento globale",
+  "Create sort field": "Crea campo di ordinamento",
+  "Convert the following integer fields to sorting fields": "Converti i seguenti campi interi in campi di ordinamento",
+  "Sorting field": "Campo di ordinamento",
+  "Grouped sorting based on": "Ordinamento raggruppato basato su",
+  "Enable drag and drop sorting": "Abilita l'ordinamento con drag and drop"
+}

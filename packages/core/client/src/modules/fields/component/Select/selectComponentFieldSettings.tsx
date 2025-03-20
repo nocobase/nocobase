@@ -228,7 +228,7 @@ const setDefaultSortingRules = {
   Component: SchemaSettingsSortingRule,
 };
 
-const setTheDataScope: any = {
+export const setTheDataScope: any = {
   name: 'setTheDataScope',
   Component: SchemaSettingsDataScope,
   useComponentProps() {

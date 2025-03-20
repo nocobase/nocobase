@@ -7,12 +7,12 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { CloseCircleFilled, FilterOutlined } from '@ant-design/icons';
+import { CloseCircleFilled } from '@ant-design/icons';
 import { css, cx } from '@emotion/css';
-import { autorun } from '@formily/reactive';
-import { useForm, observer } from '@formily/react';
+import { observer, useForm } from '@formily/react';
+import { reaction } from '@formily/reactive';
+import { composeTemplate, extractTemplateElements } from '@nocobase/json-template-parser';
 import { error } from '@nocobase/utils/client';
-import { extractTemplateElements, composeTemplate } from '@nocobase/json-template-parser';
 import {
   Input as AntInput,
   Cascader,
@@ -31,13 +31,12 @@ import dayjs from 'dayjs';
 import React, { useCallback, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCompile } from '../../hooks';
+import { Json } from '../input';
+import { HelperAddition, HelperList } from './Helpers';
+import { useHelperObservables } from './Helpers/hooks/useHelperObservables';
+import { VariableProvider } from './VariableProvider';
 import { XButton } from './XButton';
 import { useStyles } from './style';
-import { Json } from '../input';
-import { VariableProvider } from './VariableProvider';
-import { setHelpersFromTemplateStr, helpersObs } from './Helpers/observables';
-import { HelperList, HelperAddition } from './Helpers';
-import { useHelperObservables } from './Helpers/hooks/useHelperObservables';
 
 const { Text } = Typography;
 const JT_VALUE_RE = /^\s*{{\s*([^{}]+)\s*}}\s*$/;
@@ -220,7 +219,7 @@ export type VariableInputProps = {
   variableHelperMapping?: VariableHelperMapping;
 };
 
-export function Input(props: VariableInputProps) {
+function _Input(props: VariableInputProps) {
   const {
     value = '',
     onChange,
@@ -234,8 +233,9 @@ export function Input(props: VariableInputProps) {
     fieldNames,
     parseOptions,
     hideVariableButton,
+    variableHelperMapping,
   } = props;
-  variableHelperMapping;
+
   const scope = typeof props.scope === 'function' ? props.scope() : props.scope;
   const { wrapSSR, hashId, componentCls, rootPrefixCls } = useStyles({ hideVariableButton });
 
@@ -262,17 +262,22 @@ export function Input(props: VariableInputProps) {
   );
 
   useEffect(() => {
-    const dispose = autorun(() => {
-      onChange(composeTemplate({ fullVariable, helpers: helperObservables.helpersObs.value }));
-    });
+    const dispose = reaction(
+      () => {
+        return composeTemplate({ fullVariable, helpers: helperObservables.helpersObs.value });
+      },
+      (newVal) => {
+        onChange(newVal);
+      },
+    );
     return dispose;
-  }, [onChange, fullVariable, helperObservables.helpersObs]);
+  }, [fullVariable, onChange]);
 
   const parsed = useMemo(() => parseValue(variableSegments, parseOptions), [parseOptions, variableSegments]);
   const isConstant = typeof parsed === 'string';
   const type = isConstant ? parsed : '';
   const variable = isConstant ? null : parsed;
-  // const [prevType, setPrevType] = React.useState<string>(type);
+
   const names = Object.assign(
     {
       label: 'label',
@@ -450,6 +455,8 @@ export function Input(props: VariableInputProps) {
 
   return wrapSSR(
     <Space.Compact style={style} className={classNames(componentCls, hashId, className)}>
+      {/* 确保所有ant input样式都已加载 */}
+      <AntInput style={{ display: 'none' }} />
       {variable ? (
         <div
           className={cx(
@@ -484,7 +491,7 @@ export function Input(props: VariableInputProps) {
             role="button"
             aria-label="variable-tag"
             style={{ overflow: 'hidden' }}
-            className={cx('ant-input', { 'ant-input-disabled': disabled }, hashId)}
+            className={cx('ant-input ant-input-outlined', { 'ant-input-disabled': disabled }, hashId)}
           >
             <Tag color="blue">
               {variableText.map((item, index) => {
@@ -554,4 +561,4 @@ export function Input(props: VariableInputProps) {
   );
 }
 
-// export const Input = observer(_Input, { displayName: 'VariableInput' });
+export const Input = observer(_Input, { displayName: 'VariableInput' });

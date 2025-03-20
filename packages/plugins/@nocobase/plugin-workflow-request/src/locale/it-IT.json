@@ -1,0 +1,20 @@
+{
+  "HTTP request": "Richiesta HTTP",
+  "Send HTTP request to a URL. You can use the variables in the upstream nodes as request headers, parameters and request body.": "Invia una richiesta HTTP a un URL. Puoi usare le variabili nei nodi upstream come intestazioni, parametri e corpo della richiesta.",
+  "HTTP method": "Metodo HTTP",
+  "URL": "URL",
+  "Headers": "Intestazioni",
+  "Add request header": "Aggiungi intestazione richiesta",
+  "Parameters": "Parametri",
+  "Add parameter": "Aggiungi parametro",
+  "Body": "Corpo",
+  "Use variable": "Usa variabile",
+  "Format": "Formato",
+  "Insert": "Inserisci",
+  "Timeout config": "Configurazione timeout",
+  "ms": "ms",
+  "Input request data": "Inserisci dati richiesta",
+  "Only support standard JSON data": "Supporta solo dati JSON standard",
+  "\"Content-Type\" only support \"application/json\", and no need to specify": "\"Content-Type\" supporta solo \"application/json\", e non è necessario specificarlo",
+  "Ignore failed request and continue workflow": "Ignora la richiesta fallita e continua il workflow"
+}

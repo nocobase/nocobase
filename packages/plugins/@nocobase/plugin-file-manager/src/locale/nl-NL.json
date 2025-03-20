@@ -1,0 +1,22 @@
+{
+    "File manager": "Bestandsbeheer",
+    "Attachment": "Bijlage",
+    "MIME type": "MIME-type",
+    "Storage display name": "Weergavenaam van opslag",
+    "Storage name": "Opslagnaam",
+    "Storage type": "Opslagtype",
+    "Default storage": "Standaardopslag",
+    "Storage base URL": "Opslag basis-URL",
+    "Destination": "Bestemming",
+    "Use the built-in static file server": "Gebruik de ingebouwde statische bestandsserver",
+    "Local storage": "Lokale opslag",
+    "Aliyun OSS": "Aliyun OSS",
+    "Tencent COS": "Tencent COS",
+    "Amazon S3": "Amazon S3",
+    "Region": "Regio",
+    "Bucket": "Bucket",
+    "Path": "Pad",
+    "Filename": "Bestandsnaam",
+    "See more": "Bekijk meer",
+    "Will be used for API": "Wordt gebruikt voor API"
+}

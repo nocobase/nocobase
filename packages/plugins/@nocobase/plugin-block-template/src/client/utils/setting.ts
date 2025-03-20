@@ -16,6 +16,7 @@ import {
   SchemaSettingsTemplate,
   SchemaSettingsConnectDataBlocks,
   usePlugin,
+  useSchemaSettings,
 } from '@nocobase/client';
 
 export const hideConvertToBlockSettingItem = (
@@ -27,14 +28,15 @@ export const hideConvertToBlockSettingItem = (
     settingItem['Component'] === SchemaSettingsTemplate ||
     settingItem['Component'] === SchemaSettingsFormItemTemplate
   ) {
-    // const visible = schemaSetting.items[i]['useVisible'] || (() => true);
-    // schemaSetting.items[i]['useVisible'] = () => {
-    //   const notInBlockTemplate = !window.location.pathname.includes('admin/settings/block-templates');
-    //   return notInBlockTemplate && visible();
-    // };
-
     // hide covert to block setting item
-    settingItem['useVisible'] = () => false;
+    settingItem['useVisible'] = function useVisible() {
+      const { template: deprecatedTemplate } = useSchemaSettings();
+      if (deprecatedTemplate && ['formItemTemplate', 'ConvertReferenceToDuplicate'].includes(settingItem['name'])) {
+        // still allow user to convert reference to duplicate, this way user can migrate to new template easily
+        return true;
+      }
+      return false;
+    };
     if (preSettingItem?.['type'] === 'divider') {
       preSettingItem['useVisible'] = () => false;
     }

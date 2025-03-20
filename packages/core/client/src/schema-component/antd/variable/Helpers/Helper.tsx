@@ -29,12 +29,12 @@ const WithPropOver = ({ children, index }) => {
   );
 };
 
-export function Helper({ configurable, index, label }: { configurable: boolean; index: number; label: string }) {
+export function Helper({ index, label }: { index: number; label: string }) {
   const Label = <div style={{ color: '#52c41a', display: 'inline-block', cursor: 'pointer' }}>{label}</div>;
   return (
     <>
       <span style={{ color: '#bfbfbf', margin: '0 5px' }}>|</span>
-      {configurable ? <WithPropOver index={index}>{Label}</WithPropOver> : Label}
+      <WithPropOver index={index}>{Label}</WithPropOver>
     </>
   );
 }

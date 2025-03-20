@@ -7,11 +7,11 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { extractTemplateElements } from '@nocobase/json-template-parser';
 import _ from 'lodash';
 import set from 'lodash/set';
 import moment from 'moment';
-import { extractTemplateElements } from '@nocobase/json-template-parser';
-import { offsetFromString } from './date';
+import { isDate, offsetFromString } from './date';
 import { dayjs } from './dayjs';
 import { getValuesByPath } from './getValuesByPath';
 
@@ -99,10 +99,6 @@ const isDateOperator = (op) => {
     '$dateBetween',
   ].includes(op);
 };
-
-function isDate(input) {
-  return input instanceof Date || Object.prototype.toString.call(input) === '[object Date]';
-}
 
 const dateValueWrapper = (value: any, timezone?: string) => {
   if (!value) {

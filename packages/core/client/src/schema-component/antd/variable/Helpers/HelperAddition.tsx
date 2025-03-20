@@ -7,13 +7,12 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { FilterOutlined } from '@ant-design/icons';
 import { observer } from '@formily/react';
-import { Dropdown } from 'antd';
+import { Dropdown, Tag } from 'antd';
 import React from 'react';
 import { useHelperObservables } from './hooks/useHelperObservables';
 import { allHelpersConfigObs } from './observables';
-import { FilterOutlined } from '@ant-design/icons';
-import { Tag } from 'antd';
 
 export const HelperAddition = observer(() => {
   const helperObservables = useHelperObservables();

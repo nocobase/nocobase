@@ -37,6 +37,7 @@ export const CSSVariableProvider = ({ children }) => {
     document.body.style.setProperty('--colorWarningBg', token.colorWarningBg);
     document.body.style.setProperty('--colorWarningBorder', token.colorWarningBorder);
     document.body.style.setProperty('--colorText', token.colorText);
+    document.body.style.setProperty('--colorTextHeaderMenu', token.colorTextHeaderMenu);
     document.body.style.setProperty('--colorPrimaryText', token.colorPrimaryText);
     document.body.style.setProperty('--colorPrimaryTextActive', token.colorPrimaryTextActive);
     document.body.style.setProperty('--colorPrimaryTextHover', token.colorPrimaryTextHover);
@@ -48,6 +49,7 @@ export const CSSVariableProvider = ({ children }) => {
     document.body.style.setProperty('--colorBgSettingsHover', token.colorBgSettingsHover);
     document.body.style.setProperty('--colorTemplateBgSettingsHover', token.colorTemplateBgSettingsHover);
     document.body.style.setProperty('--colorBorderSettingsHover', token.colorBorderSettingsHover);
+    document.body.style.setProperty('--colorBgMenuItemSelected', token.colorBgHeaderMenuActive);
 
     // 设置登录页面的背景色
     document.body.style.setProperty('background-color', token.colorBgContainer);
@@ -76,6 +78,7 @@ export const CSSVariableProvider = ({ children }) => {
     token.marginXS,
     token.paddingContentVerticalSM,
     token.sizeXXL,
+    token.colorTextHeaderMenu,
   ]);
 
   return children;

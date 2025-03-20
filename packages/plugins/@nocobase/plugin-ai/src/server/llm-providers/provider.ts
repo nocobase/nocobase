@@ -13,7 +13,6 @@ import { parseMessages } from './handlers/parse-messages';
 import { Application } from '@nocobase/server';
 
 export abstract class LLMProvider {
-  baseURL?: string;
   serviceOptions: Record<string, any>;
   modelOptions: Record<string, any>;
   messages: any[];
@@ -21,6 +20,10 @@ export abstract class LLMProvider {
   chatHandlers = new Map<string, () => Promise<void> | void>();
 
   abstract createModel(): BaseChatModel;
+
+  get baseURL() {
+    return null;
+  }
 
   constructor(opts: {
     app: Application;

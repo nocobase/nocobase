@@ -45,6 +45,7 @@ import { useToken } from '../__builtins__';
 import { SubFormProvider, useAssociationFieldContext } from '../association-field/hooks';
 import { ColumnFieldProvider } from '../table-v2/components/ColumnFieldProvider';
 import { extractIndex, isCollectionFieldComponent, isColumnComponent } from '../table-v2/utils';
+import { withTooltipComponent } from '../../../hoc/withTooltipComponent';
 
 const InViewContext = React.createContext(false);
 
@@ -85,6 +86,8 @@ export const useColumnsDeepMemoized = (columns: any[]) => {
   return oldObj.value;
 };
 
+const TableColumnTitle = withTooltipComponent(RecursionField);
+
 const useTableColumns = (props: { showDel?: any; isSubTable?: boolean }, paginationProps) => {
   const { token } = useToken();
   const field = useArrayField(props);
@@ -112,7 +115,6 @@ const useTableColumns = (props: { showDel?: any; isSubTable?: boolean }, paginat
   }, [token.paddingContentVerticalLG, token.marginSM]);
 
   const collection = useCollection();
-
   const columns = useMemo(
     () =>
       columnsSchema?.map((s: Schema) => {
@@ -124,7 +126,7 @@ const useTableColumns = (props: { showDel?: any; isSubTable?: boolean }, paginat
         const dataIndex = collectionFields?.length > 0 ? collectionFields[0].name : s.name;
         const columnHidden = !!s['x-component-props']?.['columnHidden'];
         return {
-          title: <RecursionField name={s.name} schema={s} onlyRenderSelf />,
+          title: <TableColumnTitle name={s.name} schema={s} onlyRenderSelf tooltip={s['x-component-props']?.tooltip} />,
           dataIndex,
           key: s.name,
           sorter: s['x-component-props']?.['sorter'],
@@ -142,7 +144,7 @@ const useTableColumns = (props: { showDel?: any; isSubTable?: boolean }, paginat
                 <RecordIndexProvider index={record.__index || index}>
                   <RecordProvider isNew={isNewRecord(record)} record={record} parent={parentRecordData}>
                     <ColumnFieldProvider schema={s} basePath={basePath}>
-                      <span role="button" className={schemaToolbarBigger}>
+                      <span role="button" className={schemaToolbarBigger} key={index}>
                         <RecursionField basePath={basePath} schema={s} onlyRenderProperties />
                       </span>
                     </ColumnFieldProvider>
@@ -677,6 +679,7 @@ export const Table: any = withDynamicSchemaProps(
       onExpand,
       loading,
       onClickRow,
+      enableIndexÏColumn,
       ...others
     } = { ...others1, ...others2 } as any;
     const field = useArrayField(others);
@@ -829,65 +832,67 @@ export const Table: any = withDynamicSchemaProps(
 
     const restProps = useMemo(
       () => ({
-        rowSelection: memoizedRowSelection
-          ? {
-              type: 'checkbox',
-              selectedRowKeys: selectedRowKeys,
-              onChange(selectedRowKeys: any[], selectedRows: any[]) {
-                field.data = field.data || {};
-                field.data.selectedRowKeys = selectedRowKeys;
-                field.data.selectedRowData = selectedRows;
-                setSelectedRowKeys(selectedRowKeys);
-                onRowSelectionChange?.(selectedRowKeys, selectedRows);
-              },
-              getCheckboxProps(record) {
-                return {
-                  'aria-label': `checkbox`,
-                };
-              },
-              renderCell: (checked, record, index, originNode) => {
-                if (!dragSort && !showIndex) {
-                  return originNode;
-                }
-                const current = paginationProps?.current;
+        rowSelection: enableIndexÏColumn
+          ? memoizedRowSelection
+            ? {
+                type: 'checkbox',
+                selectedRowKeys: selectedRowKeys,
+                onChange(selectedRowKeys: any[], selectedRows: any[]) {
+                  field.data = field.data || {};
+                  field.data.selectedRowKeys = selectedRowKeys;
+                  field.data.selectedRowData = selectedRows;
+                  setSelectedRowKeys(selectedRowKeys);
+                  onRowSelectionChange?.(selectedRowKeys, selectedRows);
+                },
+                getCheckboxProps(record) {
+                  return {
+                    'aria-label': `checkbox`,
+                  };
+                },
+                renderCell: (checked, record, index, originNode) => {
+                  if (!dragSort && !showIndex) {
+                    return originNode;
+                  }
+                  const current = paginationProps?.current;
 
-                const pageSize = paginationProps?.pageSize || 20;
-                if (current) {
-                  index = index + (current - 1) * pageSize + 1;
-                } else {
-                  index = index + 1;
-                }
-                if (record.__index) {
-                  index = extractIndex(record.__index);
-                }
-                return (
-                  <div
-                    role="button"
-                    aria-label={`table-index-${index}`}
-                    className={classNames(checked ? 'checked' : null, rowSelectCheckboxWrapperClass, {
-                      [rowSelectCheckboxWrapperClassHover]: isRowSelect,
-                    })}
-                  >
-                    <div className={classNames(checked ? 'checked' : null, rowSelectCheckboxContentClass)}>
-                      {dragSort && <SortHandle id={getRowKey(record)} />}
-                      {showIndex && <TableIndex index={index} />}
-                    </div>
-                    {isRowSelect && (
-                      <div
-                        className={classNames(
-                          'nb-origin-node',
-                          checked ? 'checked' : null,
-                          rowSelectCheckboxCheckedClassHover,
-                        )}
-                      >
-                        {originNode}
+                  const pageSize = paginationProps?.pageSize || 20;
+                  if (current) {
+                    index = index + (current - 1) * pageSize + 1;
+                  } else {
+                    index = index + 1;
+                  }
+                  if (record.__index) {
+                    index = extractIndex(record.__index);
+                  }
+                  return (
+                    <div
+                      role="button"
+                      aria-label={`table-index-${index}`}
+                      className={classNames(checked ? 'checked' : null, rowSelectCheckboxWrapperClass, {
+                        [rowSelectCheckboxWrapperClassHover]: isRowSelect,
+                      })}
+                    >
+                      <div className={classNames(checked ? 'checked' : null, rowSelectCheckboxContentClass)}>
+                        {dragSort && <SortHandle id={getRowKey(record)} />}
+                        {showIndex && <TableIndex index={index} />}
                       </div>
-                    )}
-                  </div>
-                );
-              },
-              ...memoizedRowSelection,
-            }
+                      {isRowSelect && (
+                        <div
+                          className={classNames(
+                            'nb-origin-node',
+                            checked ? 'checked' : null,
+                            rowSelectCheckboxCheckedClassHover,
+                          )}
+                        >
+                          {originNode}
+                        </div>
+                      )}
+                    </div>
+                  );
+                },
+                ...memoizedRowSelection,
+              }
+            : undefined
           : undefined,
       }),
       [
@@ -901,6 +906,7 @@ export const Table: any = withDynamicSchemaProps(
         isRowSelect,
         memoizedRowSelection,
         paginationProps,
+        enableIndexÏColumn,
       ],
     );
 
