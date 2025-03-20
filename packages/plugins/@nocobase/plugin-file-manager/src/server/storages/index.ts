@@ -10,7 +10,7 @@
 import { isURL } from '@nocobase/utils';
 import { StorageEngine } from 'multer';
 import urlJoin from 'url-join';
-import { encodeURL } from '../utils';
+import { encodeURL, ensureUrlEncoded } from '../utils';
 
 export interface StorageModel {
   id?: number;
@@ -54,7 +54,7 @@ export abstract class StorageType {
     const keys = [
       this.storage.baseUrl,
       file.path && encodeURI(file.path),
-      encodeURIComponent(file.filename),
+      ensureUrlEncoded(file.filename),
       preview && this.storage.options.thumbnailRule,
     ].filter(Boolean);
     return urlJoin(keys);
