@@ -82,7 +82,7 @@ async function create(ctx: Context, next: Next) {
       case 'RateLimit':
         return ctx.throw(429, ctx.t('You are trying so frequently, please slow down', { ns: namespace }));
       default:
-        console.error(error);
+        ctx.log.error(error);
         return ctx.throw(
           500,
           ctx.t('Verification send failed, please try later or contact to administrator', { ns: namespace }),
