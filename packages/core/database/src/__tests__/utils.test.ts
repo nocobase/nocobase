@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import Database, { mockDatabase } from '@nocobase/database';
+import Database, { createMockDatabase } from '@nocobase/database';
 
 describe('database utils', () => {
   let db: Database;
@@ -17,7 +17,7 @@ describe('database utils', () => {
   });
 
   beforeEach(async () => {
-    db = mockDatabase({});
+    db = await createMockDatabase({});
 
     await db.clean({ drop: true });
   });

@@ -7,10 +7,12 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { mockDatabase } from '../index';
-import { HasManyRepository } from '../../relation-repository/hasmany-repository';
-import { BelongsToManyRepository } from '../../relation-repository/belongs-to-many-repository';
-import Database, { Collection } from '@nocobase/database';
+import Database, {
+  BelongsToManyRepository,
+  Collection,
+  createMockDatabase,
+  HasManyRepository,
+} from '@nocobase/database';
 
 describe('has many with target key', function () {
   let db: Database;
@@ -19,7 +21,7 @@ describe('has many with target key', function () {
   });
 
   beforeEach(async () => {
-    db = mockDatabase();
+    db = await createMockDatabase();
     await db.clean({ drop: true });
   });
 
@@ -142,7 +144,7 @@ describe('has many repository', () => {
   });
 
   beforeEach(async () => {
-    db = mockDatabase();
+    db = await createMockDatabase();
     await db.clean({ drop: true });
     User = db.collection({
       name: 'users',
