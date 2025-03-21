@@ -71,6 +71,8 @@ export async function createMockDatabase(options: IDatabaseOptions = {}) {
 
 export function mockDatabase(options: IDatabaseOptions = {}): MockDatabase {
   const dbOptions = merge(getConfigByEnv(), options) as any;
+  // eslint-disable-next-line prefer-const
+  let db: any;
 
   if (process.env['DB_TEST_PREFIX']) {
     let configKey = 'database';
@@ -111,7 +113,7 @@ export function mockDatabase(options: IDatabaseOptions = {}): MockDatabase {
     }
   }
 
-  const db = new MockDatabase(dbOptions);
+  db = new MockDatabase(dbOptions);
 
-  return db;
+  return db as MockDatabase;
 }
