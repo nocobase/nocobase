@@ -32,9 +32,21 @@ export const getVariableComponentWithScope = (Com, data = []) => {
   };
 };
 
+const useEvnVariable = () => {
+  const environmentVariables = useGlobalVariable('$env');
+  if (environmentVariables) {
+    const { children } = environmentVariables;
+    return {
+      ...environmentVariables,
+      children: children.filter((v) => v.type === 'default'),
+    };
+  }
+  return null;
+};
+
 export const useURLAndHTMLSchema = () => {
   const { t } = useTranslation();
-  const environmentVariables = useGlobalVariable('$env');
+  const environmentVariables = useEvnVariable();
   const Com = useMemo(() => getVariableComponentWithScope(Variable.TextArea, [environmentVariables] || []), []);
 
   const urlSchema = useMemo(() => {

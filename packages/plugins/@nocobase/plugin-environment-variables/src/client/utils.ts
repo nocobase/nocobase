@@ -23,7 +23,7 @@ export const useGetEnvironmentVariables = () => {
       label: t('Variables and secrets'),
       children: variables?.data
         .map((v) => {
-          return { title: v.name, name: v.name, value: v.name, label: v.name };
+          return { title: v.name, name: v.name, value: v.name, label: v.name, type: v.type };
         })
         .filter(Boolean),
     };
