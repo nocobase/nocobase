@@ -835,6 +835,7 @@
   "is any of": "è uno di",
   "Plugin dependency version mismatch": "Mancata corrispondenza della versione della dipendenza del plugin",
   "The current dependency version of the plugin does not match the version of the application and may not work properly. Are you sure you want to continue enabling the plugin?": "L'attuale versione della dipendenza del plugin non corrisponde alla versione dell'applicazione e potrebbe non funzionare correttamente. Sei sicuro di voler continuare a abilitare il plugin?",
+    "Allow multiple selection": "Consenti selezione multipla",
   "Parent object": "Oggetto padre",
   "Skip getting the total number of table records during paging to speed up loading. It is recommended to enable this option for data tables with a large amount of data": "Ometti calcolo del numero totale di record della tabella durante l'impaginazione per accelerare il caricamento. Si consiglia di abilitare questa opzione per tabelle con grandi quantità di dati",
   "Enable secondary confirmation": "Abilita conferma secondaria",
