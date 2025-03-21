@@ -7,9 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Collection } from '../collection';
-import { Database } from '../database';
-import { mockDatabase } from './index';
+import { Collection, Database, createMockDatabase } from '@nocobase/database';
 import { IdentifierError } from '../errors/identifier-error';
 
 const pgOnly = () => (process.env.DB_DIALECT == 'postgres' ? it : it.skip);
@@ -17,7 +15,7 @@ describe('collection', () => {
   let db: Database;
 
   beforeEach(async () => {
-    db = mockDatabase();
+    db = await createMockDatabase();
 
     await db.clean({ drop: true });
   });
@@ -265,7 +263,7 @@ describe('collection sync', () => {
   let db: Database;
 
   beforeEach(async () => {
-    db = mockDatabase();
+    db = await createMockDatabase();
     await db.clean({ drop: true });
   });
 

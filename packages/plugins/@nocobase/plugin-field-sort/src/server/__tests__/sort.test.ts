@@ -7,12 +7,12 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Database, mockDatabase } from '@nocobase/database';
+import { createMockDatabase, Database, mockDatabase } from '@nocobase/database';
 import { createMockServer, MockServer } from '@nocobase/test';
 
-import Plugin from '..';
 import { SequelizeCollectionManager, SequelizeDataSource } from '@nocobase/data-source-manager';
 import { uid } from '@nocobase/utils';
+import Plugin from '..';
 
 describe('sort field', () => {
   let app: MockServer;
@@ -30,7 +30,7 @@ describe('sort field', () => {
       new SequelizeDataSource({
         name: 'another',
         collectionManager: {
-          database: mockDatabase({
+          database: await createMockDatabase({
             tablePrefix: `t${uid(5)}`,
           }),
         },
