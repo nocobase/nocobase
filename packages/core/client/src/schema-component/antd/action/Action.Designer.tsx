@@ -282,7 +282,7 @@ const fieldNames = {
 const useVariableProps = (environmentVariables) => {
   const scope = useAfterSuccessOptions();
   return {
-    scope: [environmentVariables, ...scope],
+    scope: [environmentVariables, ...scope].filter(Boolean),
     fieldNames,
   };
 };
