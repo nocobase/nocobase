@@ -14,6 +14,7 @@ import { useTranslation } from 'react-i18next';
 import { useCompile } from '../../../';
 import { useBlockContext } from '../../../../block-provider/BlockProvider';
 import { usePopupVariable } from '../../../../schema-settings/VariableInput/hooks';
+import { useCurrentRoleVariable } from '../../../../schema-settings/VariableInput/hooks';
 
 export const useAfterSuccessOptions = () => {
   const collection = useCollection_deprecated();
@@ -26,7 +27,8 @@ export const useAfterSuccessOptions = () => {
   const [fields, userFields] = useMemo(() => {
     return [compile(fieldsOptions), compile(userFieldOptions)];
   }, [fieldsOptions, userFieldOptions]);
-  const { settings: popupRecordSettings, shouldDisplayPopupRecord } = usePopupVariable({});
+  const { settings: popupRecordSettings, shouldDisplayPopupRecord } = usePopupVariable();
+  const { currentRoleSettings } = useCurrentRoleVariable();
   return useMemo(() => {
     return [
       {
@@ -42,6 +44,7 @@ export const useAfterSuccessOptions = () => {
         label: t('Current user', { ns: 'client' }),
         children: userFields,
       },
+      currentRoleSettings,
       {
         value: 'currentTime',
         label: t('Current time', { ns: 'client' }),
