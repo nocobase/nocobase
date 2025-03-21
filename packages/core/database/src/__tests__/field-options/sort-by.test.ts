@@ -7,8 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { mockDatabase } from '@nocobase/test';
-import { BelongsToManyRepository, Database } from '../../index';
+import { BelongsToManyRepository, Database, createMockDatabase } from '@nocobase/database';
 
 describe('associated field order', () => {
   let db: Database;
@@ -18,7 +17,7 @@ describe('associated field order', () => {
   });
 
   beforeEach(async () => {
-    db = mockDatabase();
+    db = await createMockDatabase();
     await db.clean({ drop: true });
 
     db.collection({
