@@ -8,6 +8,7 @@
  */
 
 import { useField, useFieldSchema } from '@formily/react';
+import _ from 'lodash';
 import { useTranslation } from 'react-i18next';
 import { useBlockContext, useOpenModeContext } from '../../../../';
 import { SchemaSettings } from '../../../../application/schema-settings/SchemaSettings';
@@ -49,7 +50,7 @@ export const ellipsisSettingsItem: SchemaSettingsItemType = {
           formField.componentProps.ellipsis = checked;
         }
 
-        schema['x-component-props']['ellipsis'] = checked;
+        _.set(schema, 'x-component-props.ellipsis', checked);
 
         await dn.emit('patch', {
           schema: {
