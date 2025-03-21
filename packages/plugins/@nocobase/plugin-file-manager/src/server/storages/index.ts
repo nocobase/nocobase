@@ -10,7 +10,7 @@
 import { isURL } from '@nocobase/utils';
 import { StorageEngine } from 'multer';
 import urlJoin from 'url-join';
-import { encodeURL, ensureUrlEncoded } from '../utils';
+import { encodeURL, ensureUrlEncoded, getFileKey } from '../utils';
 
 export interface StorageModel {
   id?: number;
@@ -41,6 +41,10 @@ export abstract class StorageType {
   constructor(public storage: StorageModel) {}
   abstract make(): StorageEngine;
   abstract delete(records: AttachmentModel[]): [number, AttachmentModel[]] | Promise<[number, AttachmentModel[]]>;
+
+  getFileKey(record: AttachmentModel) {
+    return getFileKey(record);
+  }
 
   getFileData?(file: { [key: string]: any }): { [key: string]: any };
   getFileURL(file: AttachmentModel, preview?: boolean): string | Promise<string> {
