@@ -351,7 +351,7 @@ test.describe('filter', () => {
       aggregateNodeCollectionData.reduce((total, currentValue) => {
         return currentValue.staffnum > 3 ? total + currentValue.staffnum : total;
       }, 0) / aggregateNodeCollectionDataCount;
-    expect(aggregateNodeJobResult).toBe(round(aggregateNodeCollectionDataAvg, 14));
+    expect(aggregateNodeJobResult).toBe(round(aggregateNodeCollectionDataAvg, 2));
     // 4、后置处理：删除工作流
     await apiDeleteWorkflow(workflowId);
   });

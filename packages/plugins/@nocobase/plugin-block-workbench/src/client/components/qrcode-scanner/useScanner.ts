@@ -6,14 +6,27 @@
  * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
-
+import { useApp } from '@nocobase/client';
+import MobileManager from '@nocobase/plugin-mobile/client';
 import { Html5Qrcode, Html5QrcodeScannerState } from 'html5-qrcode';
-import { useState, useCallback, useMemo, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
+
+function removeStringIfStartsWith(text: string, prefix: string): string {
+  if (text.startsWith(prefix)) {
+    return text.slice(prefix.length);
+  }
+  return text;
+}
 
 export function useScanner({ onScannerSizeChanged, elementId }) {
+  const app = useApp();
+  const mobileManager = app.pm.get(MobileManager);
+  const basename = mobileManager.mobileRouter.basename.replace(/\/+$/, '');
+
   const [scanner, setScanner] = useState<Html5Qrcode>();
+
   const navigate = useNavigate();
   const { t } = useTranslation('block-workbench');
   const viewPoint = useMemo(() => {
@@ -37,12 +50,12 @@ export function useScanner({ onScannerSizeChanged, elementId }) {
           },
         },
         (text) => {
-          navigate(text);
+          navigate(removeStringIfStartsWith(text, basename));
         },
         undefined,
       );
     },
-    [navigate, onScannerSizeChanged, viewPoint],
+    [navigate, onScannerSizeChanged, viewPoint, basename],
   );
   const stopScanner = useCallback(async (scanner: Html5Qrcode) => {
     const state = scanner.getState();
@@ -56,13 +69,13 @@ export function useScanner({ onScannerSizeChanged, elementId }) {
       await stopScanner(scanner);
       try {
         const { decodedText } = await scanner.scanFileV2(file, false);
-        navigate(decodedText);
+        navigate(removeStringIfStartsWith(decodedText, basename));
       } catch (error) {
         alert(t('QR code recognition failed, please scan again'));
         startScanCamera(scanner);
       }
     },
-    [scanner, stopScanner, startScanCamera, t, navigate],
+    [stopScanner, scanner, navigate, basename, t, startScanCamera],
   );
 
   useEffect(() => {

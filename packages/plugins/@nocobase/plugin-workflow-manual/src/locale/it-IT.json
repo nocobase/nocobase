@@ -7,10 +7,10 @@
   "User interface": "Interfaccia utente",
   "Configure user interface": "Configura interfaccia utente",
   "View user interface": "Visualizza interfaccia utente",
-  "Separately": "Separato",
-  "Each user has own task": "Ogni utente ha il proprio compito",
+  "Separately": "Separato",  
+  "Each user has own task": "Ogni utente ha la propria attività",
   "Collaboratively": "Collaborativo",
-  "Everyone shares one task": "Tutti condividono un compito",
+  "Everyone shares one task": "Tutti condividono un attività",
   "Negotiation": "Negoziazione",
   "All pass": "Tutti passano",
   "Everyone should pass": "Tutti dovrebbero passare",
@@ -25,6 +25,11 @@
   "Create record form": "Modulo creazione record",
   "Update record form": "Modulo aggiornamento record",
   "Filter settings": "Impostazioni filtro",
-  "Workflow todos": "'Da fare' del workflow",
-  "Task": "Compito"
+  "Workflow todos": "Da fare",  
+  "Task node": "Nodo attività",
+  "Unprocessed": "Non elaborato",
+  "Please check one of your update record form, and add at least one filter condition in form settings.": "Verifica uno dei tuoi moduli di aggiornamento record e aggiungi almeno una condizione nel filtro nelle impostazioni del modulo.",
+  "My manual tasks": "Le mie attività manuali",
+  "Task title": "Titolo attività",
+  "Title of each task item. Default to node title.": "Titolo di ogni elemento attività. Predefinito: titolo del nodo."
 }
