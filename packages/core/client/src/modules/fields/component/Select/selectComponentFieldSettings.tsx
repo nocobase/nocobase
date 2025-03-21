@@ -126,6 +126,10 @@ export const getAllowMultiple = (params?: { title: string }) => {
   return {
     name: 'allowMultiple',
     type: 'switch',
+    useVisible() {
+      const isAssociationField = useIsAssociationField();
+      return isAssociationField;
+    },
     useComponentProps() {
       const { t } = useTranslation();
       const field = useField<Field>();
@@ -443,6 +447,7 @@ export const filterSelectComponentFieldSettings = new SchemaSettings({
         return isSelectFieldMode && !isFieldReadPretty;
       },
     },
+    getAllowMultiple({ title: 'Allow multiple selection' }),
     {
       ...titleField,
       useVisible: useIsAssociationField,
