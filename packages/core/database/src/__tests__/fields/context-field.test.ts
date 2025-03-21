@@ -7,15 +7,14 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { createMockDatabase, Database } from '@nocobase/database';
 import { DataTypes } from 'sequelize';
-import { mockDatabase } from '../';
-import { Database } from '../../';
 
 describe('context field', () => {
   let db: Database;
 
   beforeEach(async () => {
-    db = mockDatabase();
+    db = await createMockDatabase();
     await db.clean({ drop: true });
   });
 

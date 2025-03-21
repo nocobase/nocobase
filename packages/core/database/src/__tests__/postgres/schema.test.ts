@@ -7,8 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { mockDatabase } from '../index';
-import { Database } from '../../database';
+import { Database, createMockDatabase } from '@nocobase/database';
 import { randomStr } from '@nocobase/test';
 
 describe('auth', () => {
@@ -22,7 +21,7 @@ describe('auth', () => {
   it('should auto create schema on prepare when schema missing', async () => {
     const schemaName = randomStr();
 
-    db = mockDatabase({
+    db = await createMockDatabase({
       schema: schemaName,
     });
 
@@ -45,7 +44,7 @@ describe('postgres schema', () => {
   let db: Database;
 
   beforeEach(async () => {
-    db = mockDatabase({
+    db = await createMockDatabase({
       schema: 'test_schema',
     });
 

@@ -7,13 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Database, mockDatabase } from '@nocobase/database';
+import { createMockDatabase, Database } from '@nocobase/database';
 
 describe.runIf(process.env.DB_DIALECT === 'mysql')('mysql', async () => {
   let db: Database;
 
   beforeEach(async () => {
-    db = mockDatabase({
+    db = await createMockDatabase({
       logging: console.log,
     });
 
@@ -50,7 +50,7 @@ describe('query interface', async () => {
   let db: Database;
 
   beforeEach(async () => {
-    db = mockDatabase({
+    db = await createMockDatabase({
       logging: console.log,
     });
 

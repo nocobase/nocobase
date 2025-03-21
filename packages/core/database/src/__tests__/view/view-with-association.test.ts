@@ -7,15 +7,15 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { uid } from '@nocobase/utils';
-import { Database, mockDatabase, ViewFieldInference } from '../../index';
+import { createMockDatabase, Database, ViewFieldInference } from '@nocobase/database';
 import { pgOnly } from '@nocobase/test';
+import { uid } from '@nocobase/utils';
 
 pgOnly()('view with association', () => {
   let db: Database;
 
   beforeEach(async () => {
-    db = mockDatabase({
+    db = await createMockDatabase({
       tablePrefix: '',
     });
     await db.clean({ drop: true });

@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { MockDatabase, mockDatabase } from '@nocobase/database';
+import { createMockDatabase, MockDatabase } from '@nocobase/database';
 import { SourceManager } from '../source-manager';
 
 describe('source-manager', async () => {
@@ -16,7 +16,7 @@ describe('source-manager', async () => {
 
   beforeEach(async () => {
     sourceManager = new SourceManager();
-    db = mockDatabase();
+    db = await createMockDatabase();
   });
 
   afterEach(async () => {

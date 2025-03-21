@@ -7,9 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { mockDatabase } from '../index';
-import Database from '../../database';
-import { Collection } from '../../collection';
+import { Collection, createMockDatabase, Database } from '@nocobase/database';
 
 describe('create with hasMany', () => {
   let db: Database;
@@ -21,7 +19,7 @@ describe('create with hasMany', () => {
   });
 
   beforeEach(async () => {
-    db = mockDatabase();
+    db = await createMockDatabase();
 
     await db.clean({ drop: true });
     User = db.collection({
@@ -79,7 +77,7 @@ describe('create with belongsToMany', () => {
   });
 
   beforeEach(async () => {
-    db = mockDatabase();
+    db = await createMockDatabase();
     await db.clean({ drop: true });
     Post = db.collection({
       name: 'posts',
@@ -139,7 +137,7 @@ describe('create', () => {
   let Role: Collection;
 
   beforeEach(async () => {
-    db = mockDatabase();
+    db = await createMockDatabase();
     await db.clean({ drop: true });
 
     Group = db.collection({

@@ -7,13 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import Database, { mockDatabase } from '@nocobase/database';
+import Database, { createMockDatabase } from '@nocobase/database';
 import { EagerLoadingTree } from '../../eager-loading/eager-loading-tree';
 
 describe('Eager loading tree', () => {
   let db: Database;
   beforeEach(async () => {
-    db = mockDatabase({
+    db = await createMockDatabase({
       tablePrefix: '',
     });
 

@@ -10,7 +10,7 @@
 import { describe } from 'vitest';
 import ws from 'ws';
 
-export { MockDatabase, mockDatabase } from '@nocobase/database';
+export { createMockDatabase, MockDatabase, mockDatabase } from '@nocobase/database';
 export { default as supertest } from 'supertest';
 export * from './memory-pub-sub-adapter';
 export * from './mock-isolated-cluster';

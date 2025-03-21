@@ -7,14 +7,14 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Database, mockDatabase } from '../../index';
+import { createMockDatabase, Database } from '@nocobase/database';
 import * as process from 'process';
 
 describe('primary key', () => {
   let db: Database;
 
   beforeEach(async () => {
-    db = mockDatabase({});
+    db = await createMockDatabase({});
 
     await db.clean({ drop: true });
   });
@@ -89,7 +89,7 @@ describe.skipIf(process.env['DB_DIALECT'] === 'sqlite')('primary key not in sqli
   let db: Database;
 
   beforeEach(async () => {
-    db = mockDatabase({});
+    db = await createMockDatabase({});
 
     await db.clean({ drop: true });
   });

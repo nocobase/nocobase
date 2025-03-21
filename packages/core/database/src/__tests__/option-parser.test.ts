@@ -7,10 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Collection } from '../collection';
-import { Database } from '../database';
+import { Collection, createMockDatabase, Database } from '@nocobase/database';
 import { OptionsParser } from '../options-parser';
-import { mockDatabase } from './index';
 
 describe('option parser', () => {
   let db: Database;
@@ -20,7 +18,7 @@ describe('option parser', () => {
   let Tag: Collection;
 
   beforeEach(async () => {
-    db = mockDatabase();
+    db = await createMockDatabase();
     await db.clean({ drop: true });
     User = db.collection<{ id: number; name: string }, { name: string }>({
       name: 'users',

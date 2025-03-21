@@ -32,11 +32,19 @@ const BaseConfiguration: React.FC<BaseConfigurationProps> = ({ type, children })
     return apiClient.resource(MapConfigurationResourceKey);
   }, [apiClient]);
 
+  function removeInvisibleCharsFromObject(obj: Record<string, string>): Record<string, string> {
+    const cleanObj: Record<string, string> = {};
+    for (const [key, value] of Object.entries(obj)) {
+      cleanObj[key] = typeof value === 'string' ? value.replace(/[\p{C}\p{Z}\p{Zl}\p{Zp}]+/gu, '') : value;
+    }
+    return cleanObj;
+  }
+
   const onSubmit = async (values) => {
     await form.validateFields();
     resource
       .set({
-        ...values,
+        ...removeInvisibleCharsFromObject(values),
         type,
       })
       .then((res) => {

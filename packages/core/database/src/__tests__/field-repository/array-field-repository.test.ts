@@ -7,9 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { mockDatabase } from '../index';
-import Database from '../../database';
-import { ArrayFieldRepository } from '../../field-repository/array-field-repository';
+import { ArrayFieldRepository, Database, createMockDatabase } from '@nocobase/database';
 
 describe('Array field repository', () => {
   let db: Database;
@@ -17,7 +15,7 @@ describe('Array field repository', () => {
   let TestCollection;
 
   beforeEach(async () => {
-    db = mockDatabase();
+    db = await createMockDatabase();
     await db.clean({ drop: true });
     TestCollection = db.collection({
       name: 'test',

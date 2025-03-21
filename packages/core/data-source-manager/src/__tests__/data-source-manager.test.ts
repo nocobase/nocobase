@@ -7,10 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { createMockServer, mockDatabase, supertest } from '@nocobase/test';
-import { SequelizeDataSource } from '../sequelize-data-source';
-import { vi } from 'vitest';
 import { DataSourceManager } from '@nocobase/data-source-manager';
+import { createMockDatabase, createMockServer, mockDatabase, supertest } from '@nocobase/test';
+import { vi } from 'vitest';
+import { SequelizeDataSource } from '../sequelize-data-source';
 
 describe('example', () => {
   test.skip('case1', async () => {
@@ -41,7 +41,7 @@ describe('example', () => {
       name: 'test2',
     });
 
-    const database = mockDatabase({
+    const database = await createMockDatabase({
       tablePrefix: 'ds1_',
     });
     await database.clean({ drop: true });
@@ -82,7 +82,7 @@ describe('example', () => {
       name: 'update-filter',
     });
 
-    const database = mockDatabase({
+    const database = await createMockDatabase({
       tablePrefix: 'ds1_',
     });
 
@@ -128,7 +128,7 @@ describe('example', () => {
       name: 'update-filter',
     });
 
-    const database = mockDatabase({
+    const database = await createMockDatabase({
       tablePrefix: 'ds1_',
     });
 
@@ -198,7 +198,7 @@ describe('example', () => {
     // it should be called on main datasource
     expect(hook).toBeCalledTimes(1);
 
-    const database = mockDatabase({
+    const database = await createMockDatabase({
       tablePrefix: 'ds1_',
     });
 

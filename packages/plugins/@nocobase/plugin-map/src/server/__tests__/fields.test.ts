@@ -8,7 +8,7 @@
  */
 
 import Database from '@nocobase/database';
-import { mockDatabase } from '@nocobase/test';
+import { createMockDatabase } from '@nocobase/test';
 import { CircleField, LineStringField, PointField, PolygonField } from '../fields';
 
 const data = {
@@ -32,7 +32,7 @@ describe('fields', () => {
   let db: Database;
 
   beforeEach(async () => {
-    db = mockDatabase();
+    db = await createMockDatabase();
     await db.clean({ drop: true });
     db.registerFieldTypes({
       point: PointField,

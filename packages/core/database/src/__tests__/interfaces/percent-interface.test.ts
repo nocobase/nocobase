@@ -7,15 +7,14 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { mockDatabase } from '..';
-import { Database } from '../../database';
+import { Database, createMockDatabase } from '@nocobase/database';
 import { PercentInterface } from '../../interfaces/percent-interface';
 
 describe('percent interface', () => {
   let db: Database;
 
   beforeEach(async () => {
-    db = mockDatabase();
+    db = await createMockDatabase();
     await db.clean({ drop: true });
   });
 

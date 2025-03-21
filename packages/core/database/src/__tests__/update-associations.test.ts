@@ -7,16 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Collection } from '../collection';
-import { Database } from '../database';
-import { updateAssociations } from '../update-associations';
-import { mockDatabase } from './';
+import { Collection, createMockDatabase, Database, updateAssociations } from '@nocobase/database';
 
 describe('update associations', () => {
   describe('belongsTo', () => {
     let db: Database;
     beforeEach(async () => {
-      db = mockDatabase({});
+      db = await createMockDatabase({});
       await db.clean({
         drop: true,
       });
@@ -304,7 +301,7 @@ describe('update associations', () => {
     let User: Collection;
     let Post: Collection;
     beforeEach(async () => {
-      db = mockDatabase();
+      db = await createMockDatabase();
       await db.clean({ drop: true });
       User = db.collection({
         name: 'users',
@@ -474,7 +471,7 @@ describe('update associations', () => {
     let Comment: Collection;
 
     beforeEach(async () => {
-      db = mockDatabase();
+      db = await createMockDatabase();
       await db.clean({ drop: true });
       User = db.collection({
         name: 'users',
@@ -592,7 +589,7 @@ describe('update associations', () => {
     let PostTag: Collection;
 
     beforeEach(async () => {
-      db = mockDatabase();
+      db = await createMockDatabase();
       await db.clean({ drop: true });
       PostTag = db.collection({
         name: 'posts_tags',
