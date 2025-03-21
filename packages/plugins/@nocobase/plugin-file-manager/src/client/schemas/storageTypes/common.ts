@@ -7,6 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { APIClient } from '@nocobase/client';
 import { FILE_SIZE_LIMIT_DEFAULT } from '../../../constants';
 import { NAMESPACE } from '../../locale';
 
@@ -69,4 +70,30 @@ export default {
     'x-decorator': 'FormItem',
     'x-content': `{{t("Keep file in storage when destroy record", { ns: "${NAMESPACE}" })}}`,
   },
+};
+
+export const commonUpload = async (options: {
+  file: File;
+  apiClient: APIClient;
+  storageConfig: any;
+  fileCollectionName?: string;
+}): Promise<{ errorMessage?: string; data?: any }> => {
+  const formData = new FormData();
+  formData.append('file', options.file);
+
+  try {
+    const res = await options.apiClient.request({
+      url: `${options.fileCollectionName || 'attachments'}:create`,
+      method: 'post',
+      data: formData,
+    });
+
+    return {
+      data: res.data?.data,
+    };
+  } catch (error) {
+    return {
+      errorMessage: error.message,
+    };
+  }
 };

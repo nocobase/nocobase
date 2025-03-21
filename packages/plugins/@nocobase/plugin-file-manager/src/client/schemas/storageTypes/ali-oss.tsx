@@ -10,7 +10,7 @@
 import React from 'react';
 
 import { NAMESPACE } from '../../locale';
-import common from './common';
+import common, { commonUpload } from './common';
 import { useTranslation } from 'react-i18next';
 
 export default {
@@ -72,4 +72,5 @@ export default {
     paranoid: common.paranoid,
   },
   thumbnailRuleLink: 'https://help.aliyun.com/zh/oss/user-guide/resize-images-4',
+  upload: commonUpload,
 };

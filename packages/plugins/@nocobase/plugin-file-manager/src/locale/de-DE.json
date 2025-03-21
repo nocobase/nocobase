@@ -20,7 +20,7 @@
   "Storage type": "Speichertyp",
   "Default storage": "Standardspeicher",
   "Storage base URL": "Basis-URL des Speichers",
-  "Access base URL": "Basis-URL für den Zugriff",
+  "Base URL": "Basis-URL",
   "Base URL for file access, could be your CDN base URL. For example: \"https://cdn.nocobase.com\".": "Basis-URL für den Dateizugriff, könnte Ihre CDN-Basis-URL sein. Zum Beispiel: \"https://cdn.nocobase.com\".",
   "Destination": "Ziel",
   "Use the built-in static file server": "Den integrierten statischen Dateiserver verwenden",

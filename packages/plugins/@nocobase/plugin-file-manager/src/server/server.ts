@@ -8,7 +8,7 @@
  */
 
 import { Plugin } from '@nocobase/server';
-import { isURL, Registry } from '@nocobase/utils';
+import { Registry } from '@nocobase/utils';
 
 import { basename } from 'path';
 
@@ -18,7 +18,7 @@ import { STORAGE_TYPE_ALI_OSS, STORAGE_TYPE_LOCAL, STORAGE_TYPE_S3, STORAGE_TYPE
 import initActions from './actions';
 import { getFileData } from './actions/attachments';
 import { AttachmentInterface } from './interfaces/attachment-interface';
-import { AttachmentModel, StorageClassType, StorageModel, StorageType } from './storages';
+import { AttachmentModel, StorageClassType, StorageModel } from './storages';
 import StorageTypeAliOss from './storages/ali-oss';
 import StorageTypeLocal from './storages/local';
 import StorageTypeS3 from './storages/s3';
@@ -234,8 +234,8 @@ export class PluginFileManagerServer extends Plugin {
     this.storageTypes.register(STORAGE_TYPE_TX_COS, StorageTypeTxCos);
 
     const Storage = this.db.getModel('storages');
-    Storage.afterSave((m, { transaction }) => {
-      this.storagesCache.set(m.id, m.toJSON());
+    Storage.afterSave(async (m, { transaction }) => {
+      await this.loadStorages({ transaction });
       this.sendSyncMessage(
         {
           type: 'storageChange',
@@ -244,8 +244,8 @@ export class PluginFileManagerServer extends Plugin {
         { transaction },
       );
     });
-    Storage.afterDestroy((m, { transaction }) => {
-      this.storagesCache.delete(m.id);
+    Storage.afterDestroy(async (m, { transaction }) => {
+      await this.loadStorages({ transaction });
       this.sendSyncMessage(
         {
           type: 'storageRemove',

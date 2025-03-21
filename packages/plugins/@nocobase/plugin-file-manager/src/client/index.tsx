@@ -8,15 +8,16 @@
  */
 
 import { Plugin, useCollection } from '@nocobase/client';
+import { STORAGE_TYPE_ALI_OSS, STORAGE_TYPE_LOCAL, STORAGE_TYPE_S3, STORAGE_TYPE_TX_COS } from '../constants';
 import { FileManagerProvider } from './FileManagerProvider';
+import { FileSizeField } from './FileSizeField';
 import { FileStoragePane } from './FileStorage';
+import { useAttachmentFieldProps, useFileCollectionStorageRules } from './hooks';
+import { useStorageCfg } from './hooks/useStorageUploadProps';
+import { AttachmentFieldInterface } from './interfaces/attachment';
 import { NAMESPACE } from './locale';
 import { storageTypes } from './schemas/storageTypes';
-import { AttachmentFieldInterface } from './interfaces/attachment';
 import { FileCollectionTemplate } from './templates';
-import { useAttachmentFieldProps, useFileCollectionStorageRules } from './hooks';
-import { FileSizeField } from './FileSizeField';
-import { STORAGE_TYPE_ALI_OSS, STORAGE_TYPE_LOCAL, STORAGE_TYPE_S3, STORAGE_TYPE_TX_COS } from '../constants';
 
 export class PluginFileManagerClient extends Plugin {
   // refer by plugin-field-attachment-url
@@ -58,6 +59,7 @@ export class PluginFileManagerClient extends Plugin {
     this.app.addScopes({
       useAttachmentFieldProps,
       useFileCollectionStorageRules,
+      useStorageCfg,
     });
 
     this.app.addComponents({
@@ -71,6 +73,74 @@ export class PluginFileManagerClient extends Plugin {
 
   getStorageType(name: string) {
     return this.storageTypes.get(name);
+  }
+
+  async uploadFile(options?: {
+    file: File;
+    fileCollectionName?: string;
+    storageId?: string;
+  }): Promise<{ errorMessage?: string; data?: any }> {
+    // 1. Get storage by storageId, then call the upload method
+    if (options?.storageId) {
+      const { data } = await this.app.apiClient.request({
+        url: `storages:getBasicInfo/${options.storageId}`,
+      });
+
+      const storageConfig = data?.data;
+
+      if (storageConfig) {
+        const storageType = this.getStorageType(storageConfig.type);
+        return await storageType?.upload({ file: options.file, storageConfig, apiClient: this.app.apiClient });
+      }
+    }
+
+    // 2. Get storage by fileCollectionName, then call the upload method
+    if (options?.fileCollectionName) {
+      const { data } = await this.app.apiClient.resource('collections').list({
+        filter: {
+          name: options.fileCollectionName,
+        },
+      });
+      const fileCollection = data?.data?.[0];
+      const storageId = fileCollection?.storage;
+      if (storageId) {
+        const { data } = await this.app.apiClient.request({
+          url: `storages:getBasicInfo/${storageId}`,
+        });
+
+        const storageConfig = data?.data;
+
+        if (storageConfig) {
+          const storageType = this.getStorageType(storageConfig.type);
+          return await storageType?.upload({
+            file: options.file,
+            storageConfig,
+            fileCollectionName: options.fileCollectionName,
+            apiClient: this.app.apiClient,
+          });
+        }
+      }
+    }
+
+    // 3. Get the default storage, then call the upload method
+    const { data } = await this.app.apiClient.request({
+      url: `storages:getBasicInfo`,
+    });
+    const defaultStorage = data?.data;
+    if (defaultStorage) {
+      const storageType = this.getStorageType(defaultStorage.type);
+      if (storageType?.upload) {
+        return await storageType.upload({
+          file: options.file,
+          storageConfig: defaultStorage,
+          apiClient: this.app.apiClient,
+        });
+      }
+    }
+
+    return {
+      errorMessage: `{{ t("No storage found", { ns: "${NAMESPACE}" }) }}`,
+    };
   }
 }
 

@@ -9,7 +9,7 @@
 
 import { tval } from '@nocobase/utils/client';
 
-const NAMESPACE = 'field-markdown-vditor';
+export const NAMESPACE = 'field-markdown-vditor';
 
 export function generateNTemplate(key: string) {
   return tval(key, { ns: NAMESPACE })

@@ -30,7 +30,7 @@
   "Allow uploading multiple files": "Consenti caricamento di più file",
   "Storage": "Spazio di archiviazione",
   "Storages": "Spazi di archiviazione",
-  "Access base URL": "URL base accesso",
+  "Base URL": "URL base",
   "Base URL for file access, could be your CDN base URL. For example: \"https://cdn.nocobase.com\".": "URL base per l'accesso ai file, potrebbe essere l'URL base del tuo CDN. Ad esempio: \"https://cdn.nocobase.com\".",
   "Relative path the file will be saved to. Left blank as root path. The leading and trailing slashes \"/\" will be ignored. For example: \"user/avatar\".": "Percorso relativo in cui verrà salvato il file. Lasciare vuoto per il percorso radice. Le barre iniziali e finali \"/\" verranno ignorate. Ad esempio: \"user/avatar\".",
   "Default storage will be used when not selected": "Se non selezionato verrà utilizzato lo spazio di archiviazione predefinito",

@@ -7,19 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import {
-  Input,
-  Upload,
-  useCollection,
-  useCollectionField,
-  useCollectionManager,
-  useCollectionRecordData,
-  usePlugin,
-  useRequest,
-  withDynamicSchemaProps,
-} from '@nocobase/client';
-import React, { useEffect } from 'react';
-import { connect, mapProps, mapReadPretty, useField } from '@formily/react';
+import { useCollection, useCollectionField, useCollectionManager, usePlugin, useRequest } from '@nocobase/client';
+import { useEffect } from 'react';
 import FileManagerPlugin from '../';
 
 export function useStorage(storage) {
@@ -41,14 +30,14 @@ export function useStorage(storage) {
   return (!loading && data?.data) || null;
 }
 
-export function useStorageCfg() {
+export function useStorageCfg(storageId?: number) {
   const field = useCollectionField();
   const cm = useCollectionManager();
   const targetCollection = cm.getCollection(field?.target);
   const collection = useCollection();
   const plugin = usePlugin(FileManagerPlugin);
   const storage = useStorage(
-    field?.storage || collection?.getOption('storage') || targetCollection?.getOption('storage'),
+    storageId || field?.storage || collection?.getOption('storage') || targetCollection?.getOption('storage'),
   );
   const storageType = plugin.getStorageType(storage?.type);
   return {
