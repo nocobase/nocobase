@@ -7,16 +7,15 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { Database, DateValueParser, createMockDatabase } from '@nocobase/database';
 import dayjs from 'dayjs';
-import { Database, mockDatabase } from '../..';
-import { DateValueParser } from '../../value-parsers';
 
 describe('number value parser', () => {
   let parser: DateValueParser;
   let db: Database;
 
   beforeEach(async () => {
-    db = mockDatabase();
+    db = await createMockDatabase();
     await db.clean({ drop: true });
     db.collection({
       name: 'tests',

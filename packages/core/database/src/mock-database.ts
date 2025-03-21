@@ -8,11 +8,11 @@
  */
 
 /* istanbul ignore file -- @preserve */
+import { Database, IDatabaseOptions } from '@nocobase/database';
 import { merge } from '@nocobase/utils';
 import { customAlphabet } from 'nanoid';
 import fetch from 'node-fetch';
 import path from 'path';
-import { Database, IDatabaseOptions } from './database';
 
 export class MockDatabase extends Database {
   constructor(options: IDatabaseOptions) {
@@ -56,6 +56,17 @@ function customLogger(queryString, queryObject) {
   if (queryObject?.bind) {
     console.log(queryObject.bind); // outputs an array
   }
+}
+
+export async function createMockDatabase(options: IDatabaseOptions = {}) {
+  try {
+    // @ts-ignore
+    const { staticImport } = await import('@nocobase/plugin-data-source-external-mssql/server/static-import');
+    await staticImport();
+  } catch (error) {
+    // error
+  }
+  return mockDatabase(options);
 }
 
 export function mockDatabase(options: IDatabaseOptions = {}): MockDatabase {
