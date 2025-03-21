@@ -163,8 +163,12 @@ function getPopupSchemaFromParent(fieldSchema: Schema) {
     return fieldSchema.parent.properties.cardViewer.properties.drawer;
   }
 
-  const cardSchema = findSchemaByUid(fieldSchema['x-uid'], fieldSchema.root);
-  return cardSchema.parent.properties.cardViewer.properties.drawer;
+  try {
+    const cardSchema = findSchemaByUid(fieldSchema['x-uid'], fieldSchema.root);
+    return cardSchema.parent.properties.cardViewer.properties.drawer;
+  } catch (e) {
+    console.warn(e);
+  }
 }
 
 function findSchemaByUid(uid: string, rootSchema: Schema, resultRef: { value: Schema } = { value: null }) {
