@@ -28,7 +28,7 @@ export const getVariableComponentWithScope = (Com, data = []) => {
       uiSchema: fieldSchema,
       noDisabled: true,
     });
-    return <Com {...props} scope={data.concat(scope)} />;
+    return <Com {...props} scope={data.concat(scope).filter(Boolean)} />;
   };
 };
 
