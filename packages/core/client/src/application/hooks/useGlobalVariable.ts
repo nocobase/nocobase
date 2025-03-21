@@ -34,7 +34,7 @@ export const useGlobalVariableCtx = (key: string) => {
   const app = useApp();
 
   const variable = useMemo(() => {
-    return app.getGlobalVarCtx(key);
+    return app?.getGlobalVarCtx?.(key);
   }, [app, key]);
 
   if (isFunction(variable)) {
