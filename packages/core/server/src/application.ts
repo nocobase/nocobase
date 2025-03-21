@@ -572,6 +572,9 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
     this.log.info('app reinitializing');
 
+    await this.emitAsync('beforeStop');
+    await this.emitAsync('afterStop');
+
     if (this.cacheManager) {
       await this.cacheManager.close();
     }
