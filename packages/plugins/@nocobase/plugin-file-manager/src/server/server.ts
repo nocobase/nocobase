@@ -255,6 +255,15 @@ export class PluginFileManagerServer extends Plugin {
       );
     });
     Storage.afterDestroy((m, { transaction }) => {
+      for (const collection of this.db.collections.values()) {
+        if (collection?.options?.template === 'file' && collection?.options?.storage === m.name) {
+          throw new Error(
+            this.t(
+              `The storage "${m.name}" is in use in collection "${collection.name}" and cannot be deleted.`,
+            ) as any,
+          );
+        }
+      }
       this.storagesCache.delete(m.id);
       this.sendSyncMessage(
         {
