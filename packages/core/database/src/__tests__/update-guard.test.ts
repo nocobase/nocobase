@@ -7,11 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Collection } from '../collection';
-import { mockDatabase } from './index';
-import { UpdateGuard } from '../update-guard';
+import { Collection, createMockDatabase, Database } from '@nocobase/database';
 import lodash from 'lodash';
-import { Database } from '../database';
+import { UpdateGuard } from '../update-guard';
 
 describe('update-guard', () => {
   let db: Database;
@@ -21,7 +19,7 @@ describe('update-guard', () => {
   let Tag: Collection;
 
   beforeEach(async () => {
-    db = mockDatabase();
+    db = await createMockDatabase();
     await db.clean({ drop: true });
 
     User = db.collection({
@@ -425,7 +423,7 @@ describe('update-guard', () => {
 
 describe('One2One Association', () => {
   test('associationKeysToBeUpdate hasOne & BelongsTo', async () => {
-    const db = mockDatabase();
+    const db = await createMockDatabase();
     await db.clean({ drop: true });
     const Post = db.collection({
       name: 'posts',
