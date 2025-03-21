@@ -45,10 +45,11 @@ export const ellipsisSettingsItem: SchemaSettingsItemType = {
           tableFieldInstanceList.forEach((fieldInstance) => {
             fieldInstance.componentProps.ellipsis = checked;
           });
-          schema['x-component-props']['ellipsis'] = checked;
         } else {
           formField.componentProps.ellipsis = checked;
         }
+
+        schema['x-component-props']['ellipsis'] = checked;
 
         await dn.emit('patch', {
           schema: {
