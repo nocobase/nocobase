@@ -62,11 +62,21 @@ export class PluginFileManagerServer extends Plugin {
       return;
     }
 
+    if (!record.get('storageId')) {
+      return;
+    }
+
     const storage = this.storagesCache.get(record.get('storageId'));
+    if (!storage) {
+      return;
+    }
     if (storage?.paranoid) {
       return;
     }
     const Type = this.storageTypes.get(storage.type);
+    if (!Type) {
+      return;
+    }
     const storageConfig = new Type(storage);
     const result = await storageConfig.delete([record as unknown as AttachmentModel]);
     if (!result[0]) {

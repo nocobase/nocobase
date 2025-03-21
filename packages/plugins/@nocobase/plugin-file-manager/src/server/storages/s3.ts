@@ -7,11 +7,11 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { S3Client, DeleteObjectCommand } from '@aws-sdk/client-s3';
+import { DeleteObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import crypto from 'crypto';
 import { AttachmentModel, StorageType } from '.';
 import { STORAGE_TYPE_S3 } from '../../constants';
-import { cloudFilenameGetter, getFileKey } from '../utils';
+import { cloudFilenameGetter } from '../utils';
 
 export default class extends StorageType {
   static defaults() {
@@ -87,8 +87,8 @@ export default class extends StorageType {
   async delete(records: AttachmentModel[]): Promise<[number, AttachmentModel[]]> {
     const { Deleted } = await this.deleteS3Objects(
       this.storage.options.bucket,
-      records.map((record) => getFileKey(record)),
+      records.map((record) => this.getFileKey(record)),
     );
-    return [Deleted.length, records.filter((record) => !Deleted.find((item) => item.Key === getFileKey(record)))];
+    return [Deleted.length, records.filter((record) => !Deleted.find((item) => item.Key === this.getFileKey(record)))];
   }
 }
