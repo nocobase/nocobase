@@ -572,6 +572,10 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
     this.log.info('app reinitializing');
 
+    // trigger the stop events to make sure old instances are cleaned up
+    await this.emitAsync('beforeStop');
+    await this.emitAsync('afterStop');
+
     if (this.cacheManager) {
       await this.cacheManager.close();
     }
