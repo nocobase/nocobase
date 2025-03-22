@@ -7,10 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { useFormBlockProps } from '../../../../../block-provider/FormBlockProvider';
-import { useCreateFormBlockEventsDefine } from './useCreateFormBlockEventsDefine';
-
-export function useCreateFormBlockProps() {
-  // useCreateFormBlockEventsDefine();
-  return useFormBlockProps();
-}
+export * from './types';
+export * from './hoc/withSchemaEvent';
+export * from './EventFlowPlugin';
+export * from './hooks/useEvent';
