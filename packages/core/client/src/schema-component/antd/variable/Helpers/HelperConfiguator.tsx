@@ -49,7 +49,7 @@ export function isFilterAllowedForVariable(
     // Check if variable matches the pattern
     // We don't escape the pattern since it's meant to be a glob pattern
     // But we escape the variable name since it's a literal value
-    if (minimatch(escapeGlob(variableName), rule.variables)) {
+    if (minimatch(escapeGlob(variableName), rule.variable)) {
       // Check if filter matches any of the allowed patterns
       return rule.filters.some((pattern) => minimatch(filterName, pattern));
     }

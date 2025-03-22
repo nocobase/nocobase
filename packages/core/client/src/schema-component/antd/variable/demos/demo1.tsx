@@ -5,7 +5,7 @@ import React from 'react';
 
 const scope = [
   { label: 'v1', value: 'v1' },
-  { label: 'nested', value: 'nested', children: [{ label: 'v2', value: 'v2' }] },
+  { label: 'Date', value: '$date', children: [{ label: 'Now', value: 'now' }] },
 ];
 
 const schema = {
