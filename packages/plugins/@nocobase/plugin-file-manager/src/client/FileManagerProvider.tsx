@@ -7,15 +7,28 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { SchemaComponentOptions } from '@nocobase/client';
-import React, { FC } from 'react';
+import React, { createContext, FC, useContext } from 'react';
+import { SchemaComponentOptions, useRequest } from '@nocobase/client';
 import * as hooks from './hooks';
 import { UploadActionInitializer } from './initializers';
 
+export const FileManagerContext = createContext({ storages: [] });
+
+export function useFileManagerContext() {
+  return useContext(FileManagerContext);
+}
+
 export const FileManagerProvider: FC = (props) => {
+  const { data } = useRequest<any>({
+    resource: 'storages',
+    action: 'listBasicInfo',
+  });
+
   return (
-    <SchemaComponentOptions scope={hooks} components={{ UploadActionInitializer }}>
-      {props.children}
-    </SchemaComponentOptions>
+    <FileManagerContext.Provider value={{ storages: data?.data || [] }}>
+      <SchemaComponentOptions scope={hooks} components={{ UploadActionInitializer }}>
+        {props.children}
+      </SchemaComponentOptions>
+    </FileManagerContext.Provider>
   );
 };
