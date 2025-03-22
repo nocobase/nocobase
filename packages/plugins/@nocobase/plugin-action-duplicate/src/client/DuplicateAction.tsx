@@ -117,11 +117,7 @@ export const DuplicateAction = observer(
           }),
         )
       : record[collection.filterTargetKey] || id;
-    const buttonStyle = useMemo(() => {
-      return {
-        opacity: designable && (field?.data?.hidden || !aclCtx) && 0.1,
-      };
-    }, [designable, field?.data?.hidden]);
+
     const template = {
       key: 'duplicate',
       dataId,
@@ -203,7 +199,6 @@ export const DuplicateAction = observer(
                   opacity: designable && field?.data?.hidden && 0.1,
                   cursor: loading ? 'not-allowed' : 'pointer',
                   position: 'relative',
-                  ...buttonStyle,
                 }}
                 onClick={handelDuplicate}
               >
