@@ -34,9 +34,9 @@ import { useCompile } from '../../hooks';
 import { Json } from '../input';
 import { HelperAddition, HelperList } from './Helpers';
 import { useHelperObservables } from './Helpers/hooks/useHelperObservables';
-import { VariableProvider } from './VariableProvider';
-import { XButton } from './XButton';
 import { useStyles } from './style';
+import { VariableHelperMapping, VariableProvider } from './VariableProvider';
+import { XButton } from './XButton';
 
 const { Text } = Typography;
 const JT_VALUE_RE = /^\s*{{\s*([^{}]+)\s*}}\s*$/;
@@ -44,23 +44,6 @@ const JT_VALUE_RE = /^\s*{{\s*([^{}]+)\s*}}\s*$/;
 type ParseOptions = {
   stringToDate?: boolean;
 };
-
-/**
- * Configuration for mapping variables to their allowed filter functions
- */
-interface VariableHelperRule {
-  /** Pattern to match variables, supports glob patterns */
-  variables: string;
-  /** Array of allowed filter patterns, supports glob patterns */
-  filters: string[];
-}
-
-interface VariableHelperMapping {
-  /** Array of rules defining which filters are allowed for which variables */
-  rules: VariableHelperRule[];
-  /** Optional flag to determine if unlisted combinations should be allowed */
-  strictMode?: boolean;
-}
 
 function parseValue(value: any, options: ParseOptions = {}): string | string[] {
   if (value == null || (Array.isArray(value) && value.length === 0)) {
@@ -502,7 +485,7 @@ function _Input(props: VariableInputProps) {
                   </React.Fragment>
                 );
               })}
-              <VariableProvider variableName={fullVariable}>
+              <VariableProvider variableName={fullVariable} variableHelperMapping={variableHelperMapping}>
                 <HelperList />
                 {variableText.length > 0 && <HelperAddition />}
               </VariableProvider>

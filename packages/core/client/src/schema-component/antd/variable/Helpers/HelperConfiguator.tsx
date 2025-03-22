@@ -13,22 +13,19 @@ import { tval, uid } from '@nocobase/utils/client';
 import { Tag } from 'antd';
 import { createMemoryHistory } from 'history';
 import debounce from 'lodash/debounce';
+import minimatch from 'minimatch';
 import React from 'react';
 import { Router } from 'react-router-dom';
 import { useApp } from '../../../../application';
 import { SchemaComponent } from '../../../core/SchemaComponent';
-import { useVariable } from '../VariableProvider';
-import { helpersObs, rawHelpersObs, removeHelper } from './observables';
-import { VariableHelperMapping } from '../Input';
-import minimatch from 'minimatch';
-
+import { useCurrentVariable, VariableHelperMapping } from '../VariableProvider';
 /**
  * Escapes special glob characters in a string
  * @param str The string to escape
  * @returns The escaped string
  */
 function escapeGlob(str: string): string {
-  return str.replace(/[?*[\](){}!|+@\\]/g, '\\$&');
+  return str.replace(/[?$[\](){}!|+@\\]/g, '\\$&');
 }
 
 /**
@@ -65,13 +62,14 @@ export function isFilterAllowedForVariable(
 export const HelperConfiguator = observer(
   ({ index, close }: { index: number; close: () => void }) => {
     const app = useApp();
+    const { value, helperObservables } = useCurrentVariable();
+    const { helpersObs, rawHelpersObs, removeHelper } = helperObservables;
     const helper = helpersObs.value[index];
     const rawHelper = rawHelpersObs.value[index];
     const helperConfigs = app.jsonTemplateParser.filters;
     const helperConfig = helperConfigs.find((item) => item.name === helper.name);
     const history = createMemoryHistory();
     const previousHelpers = helpersObs.value.slice(0, index);
-    const { value } = useVariable();
     const inputValue = previousHelpers.reduce((value, helper) => {
       return helper.handler(value, ...helper.args);
     }, value);

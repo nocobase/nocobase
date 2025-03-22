@@ -11,6 +11,7 @@ import { Cache } from '@nocobase/cache';
 import { Model } from '@nocobase/database';
 import { InstallOptions, Plugin } from '@nocobase/server';
 import { tval } from '@nocobase/utils';
+import { tokenPolicyCollectionName, tokenPolicyRecordKey } from '../constants';
 import { namespace, presetAuthType, presetAuthenticator } from '../preset';
 import authActions from './actions/auth';
 import authenticatorsActions from './actions/authenticators';
@@ -19,7 +20,6 @@ import { AuthModel } from './model/authenticator';
 import { Storer } from './storer';
 import { TokenBlacklistService } from './token-blacklist';
 import { TokenController } from './token-controller';
-import { tokenPolicyCollectionName, tokenPolicyRecordKey } from '../constants';
 
 export class PluginAuthServer extends Plugin {
   cache: Cache;
