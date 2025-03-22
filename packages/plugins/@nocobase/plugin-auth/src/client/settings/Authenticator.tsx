@@ -13,7 +13,10 @@ import {
   useAPIClient,
   useActionContext,
   useAsyncData,
+  useRecord,
   useRequest,
+  useResourceActionContext,
+  useResourceContext,
 } from '@nocobase/client';
 import { Card } from 'antd';
 import React, { useState } from 'react';
@@ -24,7 +27,23 @@ import { AuthTypeContext, AuthTypesContext, useAuthTypes } from './authType';
 import { useValuesFromOptions, Options } from './Options';
 import { useTranslation } from 'react-i18next';
 import { useAuthTranslation } from '../locale';
-import { Schema } from '@formily/react';
+import { Schema, useField, useForm } from '@formily/react';
+
+function recursiveTrim(obj: Record<string, any> | string | any[]) {
+  if (typeof obj === 'string') {
+    return obj.trim();
+  }
+
+  if (Array.isArray(obj)) {
+    return obj.map((item) => recursiveTrim(item));
+  }
+
+  if (typeof obj === 'object' && obj !== null) {
+    return Object.fromEntries(Object.entries(obj).map(([key, value]) => [key, recursiveTrim(value)]));
+  }
+
+  return obj;
+}
 
 const useCloseAction = () => {
   const { setVisible } = useActionContext();
@@ -69,6 +88,71 @@ const useCanNotDelete = () => {
   return false;
 };
 
+export const useCreateAction = () => {
+  const form = useForm();
+  const field = useField();
+  const ctx = useActionContext();
+  const { refresh } = useResourceActionContext();
+  const { resource } = useResourceContext();
+  return {
+    async run() {
+      try {
+        await form.submit();
+        field.data = field.data || {};
+        field.data.loading = true;
+        const options = form.values.options || {};
+        await resource.create({
+          values: {
+            ...form.values,
+            options: recursiveTrim(options),
+          },
+        });
+        ctx.setVisible(false);
+        await form.reset();
+        field.data.loading = false;
+        refresh();
+      } catch (error) {
+        if (field.data) {
+          field.data.loading = false;
+        }
+      }
+    },
+  };
+};
+
+export const useUpdateAction = () => {
+  const field = useField();
+  const form = useForm();
+  const ctx = useActionContext();
+  const { refresh } = useResourceActionContext();
+  const { resource, targetKey } = useResourceContext();
+  const { [targetKey]: filterByTk } = useRecord();
+  return {
+    async run() {
+      await form.submit();
+      field.data = field.data || {};
+      field.data.loading = true;
+      try {
+        const options = form.values.options || {};
+        await resource.update({
+          filterByTk,
+          values: {
+            ...form.values,
+            options: recursiveTrim(options),
+          },
+        });
+        ctx.setVisible(false);
+        await form.reset();
+        refresh();
+      } catch (e) {
+        console.log(e);
+      } finally {
+        field.data.loading = false;
+      }
+    },
+  };
+};
+
 export const Authenticator = () => {
   const { t } = useAuthTranslation();
   const [types, setTypes] = useState([]);
@@ -99,7 +183,7 @@ export const Authenticator = () => {
         <SchemaComponent
           schema={authenticatorsSchema}
           components={{ AddNew, Options }}
-          scope={{ types, useValuesFromOptions, useCanNotDelete, t }}
+          scope={{ types, useValuesFromOptions, useCanNotDelete, t, useUpdateAction, useCreateAction }}
         />
       </AuthTypesContext.Provider>
     </Card>
