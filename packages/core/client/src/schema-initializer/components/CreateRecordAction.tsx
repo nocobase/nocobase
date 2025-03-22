@@ -267,11 +267,6 @@ function FinallyButton({
 }) {
   const { getCollection } = useCollectionManager_deprecated();
   const aclCtx = useACLActionParamsContext();
-  const buttonStyle = useMemo(() => {
-    return {
-      opacity: designable && (field?.data?.hidden || !aclCtx) && 0.1,
-    };
-  }, [designable, field?.data?.hidden]);
 
   if (inheritsCollections?.length > 0) {
     if (!linkageFromForm) {
@@ -281,7 +276,6 @@ function FinallyButton({
           danger={props.danger}
           type={componentType}
           icon={<DownOutlined />}
-          style={{ ...props?.style, ...buttonStyle }}
           buttonsRender={([leftButton, rightButton]) => [
             React.cloneElement(leftButton as React.ReactElement<any, string>, {
               style: props?.style,
@@ -302,13 +296,7 @@ function FinallyButton({
       ) : (
         <Dropdown menu={menu}>
           {
-            <Button
-              aria-label={props['aria-label']}
-              icon={icon}
-              type={componentType}
-              danger={props.danger}
-              style={{ ...props?.style, ...buttonStyle }}
-            >
+            <Button aria-label={props['aria-label']} icon={icon} type={componentType} danger={props.danger}>
               {props.children} <DownOutlined />
             </Button>
           }
@@ -333,7 +321,6 @@ function FinallyButton({
         style={{
           display: !designable && field?.data?.hidden && 'none',
           opacity: designable && field?.data?.hidden && 0.1,
-          ...buttonStyle,
         }}
       >
         {props.children}
@@ -355,7 +342,7 @@ function FinallyButton({
         ...props?.style,
         display: !designable && field?.data?.hidden && 'none',
         opacity: designable && field?.data?.hidden && 0.1,
-        ...buttonStyle,
+        height: '100%',
       }}
     >
       {props.onlyIcon ? props?.children?.[1] : props?.children}
