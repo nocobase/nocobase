@@ -203,6 +203,12 @@ export function useCollectValuesToSubmit() {
   ]);
 }
 
+function interpolateVariables(str: string, scope: Record<string, any>): string {
+  return str.replace(/\{\{\s*([a-zA-Z0-9_$-.]+?)\s*\}\}/g, (_, key) => {
+    return scope[key] !== undefined ? String(scope[key]) : '';
+  });
+}
+
 export const useCreateActionProps = () => {
   const filterByTk = useFilterByTk();
   const record = useCollectionRecord();
@@ -219,11 +225,20 @@ export const useCreateActionProps = () => {
   const collectValues = useCollectValuesToSubmit();
   const action = record.isNew ? actionField.componentProps.saveMode || 'create' : 'update';
   const filterKeys = actionField.componentProps.filterKeys?.checked || [];
+  const localVariables = useLocalVariables();
+  const variables = useVariables();
 
   return {
     async onClick() {
       const { onSuccess, skipValidator, triggerWorkflows } = actionSchema?.['x-action-settings'] ?? {};
-      const { manualClose, redirecting, redirectTo, successMessage, actionAfterSuccess } = onSuccess || {};
+      const {
+        manualClose,
+        redirecting,
+        redirectTo: rawRedirectTo,
+        successMessage,
+        actionAfterSuccess,
+      } = onSuccess || {};
+
       if (!skipValidator) {
         await form.submit();
       }
@@ -241,6 +256,15 @@ export const useCreateActionProps = () => {
             : undefined,
           updateAssociationValues,
         });
+        let redirectTo = rawRedirectTo;
+        if (rawRedirectTo) {
+          const { exp, scope: expScope } = await replaceVariables(rawRedirectTo, {
+            variables,
+            localVariables: [...localVariables, { name: '$record', ctx: new Proxy(data?.data?.data, {}) }],
+          });
+          redirectTo = interpolateVariables(exp, expScope);
+        }
+
         if (actionAfterSuccess === 'previous' || (!actionAfterSuccess && redirecting !== true)) {
           setVisible?.(false);
         }
@@ -588,7 +612,13 @@ export const useCustomizeUpdateActionProps = () => {
         skipValidator,
         triggerWorkflows,
       } = actionSchema?.['x-action-settings'] ?? {};
-      const { manualClose, redirecting, redirectTo, successMessage, actionAfterSuccess } = onSuccess || {};
+      const {
+        manualClose,
+        redirecting,
+        redirectTo: rawRedirectTo,
+        successMessage,
+        actionAfterSuccess,
+      } = onSuccess || {};
       const assignedValues = {};
       const waitList = Object.keys(originalAssignedValues).map(async (key) => {
         const value = originalAssignedValues[key];
@@ -614,7 +644,7 @@ export const useCustomizeUpdateActionProps = () => {
       if (skipValidator === false) {
         await form.submit();
       }
-      await resource.update({
+      const result = await resource.update({
         filterByTk,
         values: { ...assignedValues },
         // TODO(refactor): should change to inject by plugin
@@ -622,6 +652,16 @@ export const useCustomizeUpdateActionProps = () => {
           ? triggerWorkflows.map((row) => [row.workflowKey, row.context].filter(Boolean).join('!')).join(',')
           : undefined,
       });
+
+      let redirectTo = rawRedirectTo;
+      if (rawRedirectTo) {
+        const { exp, scope: expScope } = await replaceVariables(rawRedirectTo, {
+          variables,
+          localVariables: [...localVariables, { name: '$record', ctx: new Proxy(result?.data?.data?.[0], {}) }],
+        });
+        redirectTo = interpolateVariables(exp, expScope);
+      }
+
       if (actionAfterSuccess === 'previous' || (!actionAfterSuccess && redirecting !== true)) {
         setVisible?.(false);
       }
@@ -913,7 +953,13 @@ export const useUpdateActionProps = () => {
         skipValidator,
         triggerWorkflows,
       } = actionSchema?.['x-action-settings'] ?? {};
-      const { manualClose, redirecting, redirectTo, successMessage, actionAfterSuccess } = onSuccess || {};
+      const {
+        manualClose,
+        redirecting,
+        redirectTo: rawRedirectTo,
+        successMessage,
+        actionAfterSuccess,
+      } = onSuccess || {};
       const assignedValues = {};
       const waitList = Object.keys(originalAssignedValues).map(async (key) => {
         const value = originalAssignedValues[key];
@@ -952,7 +998,7 @@ export const useUpdateActionProps = () => {
       actionField.data = field.data || {};
       actionField.data.loading = true;
       try {
-        await resource.update({
+        const result = await resource.update({
           filterByTk,
           values: {
             ...values,
@@ -971,6 +1017,15 @@ export const useUpdateActionProps = () => {
         if (callBack) {
           callBack?.();
         }
+        let redirectTo = rawRedirectTo;
+        if (rawRedirectTo) {
+          const { exp, scope: expScope } = await replaceVariables(rawRedirectTo, {
+            variables,
+            localVariables: [...localVariables, { name: '$record', ctx: new Proxy(result?.data?.data?.[0], {}) }],
+          });
+          redirectTo = interpolateVariables(exp, expScope);
+        }
+
         if (actionAfterSuccess === 'previous' || (!actionAfterSuccess && redirecting !== true)) {
           setVisible?.(false);
         }
