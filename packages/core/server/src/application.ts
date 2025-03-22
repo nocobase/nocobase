@@ -25,6 +25,7 @@ import {
 import { ResourceOptions, Resourcer } from '@nocobase/resourcer';
 import { Telemetry, TelemetryOptions } from '@nocobase/telemetry';
 
+import { createJSONTemplateParser, JSONTemplateParser } from '@nocobase/json-template-parser';
 import { LockManager, LockManagerOptions } from '@nocobase/lock-manager';
 import {
   applyMixins,
@@ -34,7 +35,6 @@ import {
   ToposortOptions,
   wrapMiddlewareWithLogging,
 } from '@nocobase/utils';
-
 import { Command, CommandOptions, ParseOptions } from 'commander';
 import { randomUUID } from 'crypto';
 import glob from 'glob';
@@ -64,7 +64,7 @@ import {
 import { ApplicationVersion } from './helpers/application-version';
 import { Locale } from './locale';
 import { MainDataSource } from './main-data-source';
-import { parseVariables } from './middlewares';
+import { renderVariables } from './middlewares';
 import { dataTemplate } from './middlewares/data-template';
 import validateFilterParams from './middlewares/validate-filter-params';
 import { Plugin } from './plugin';
@@ -250,7 +250,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
   public container = new ServiceContainer();
   public lockManager: LockManager;
-
+  public jsonTemplateParser: JSONTemplateParser;
   constructor(public options: ApplicationOptions) {
     super();
     this.context.reqId = randomUUID();
@@ -260,6 +260,8 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     if (!options.skipSupervisor) {
       this._appSupervisor.addApp(this);
     }
+
+    this.jsonTemplateParser = createJSONTemplateParser();
   }
 
   private static staticCommands = [];
@@ -1262,8 +1264,8 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     this._dataSourceManager.use(this._authManager.middleware(), { tag: 'auth' });
     this._dataSourceManager.use(validateFilterParams, { tag: 'validate-filter-params', before: ['auth'] });
 
-    this._dataSourceManager.use(parseVariables, {
-      group: 'parseVariables',
+    this._dataSourceManager.use(renderVariables, {
+      group: 'renderVariables',
       after: 'acl',
     });
 

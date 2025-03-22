@@ -88,7 +88,7 @@ export const SettingsCenterDropdown = () => {
       <Button
         data-testid="plugin-settings-button"
         icon={<SettingOutlined style={{ color: token.colorTextHeaderMenu }} />}
-      // title={t('All plugin settings')}
+        // title={t('All plugin settings')}
       />
     </Dropdown>
   );

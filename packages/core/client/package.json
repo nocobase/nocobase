@@ -27,6 +27,7 @@
     "@formily/reactive-react": "^2.2.27",
     "@formily/shared": "^2.2.27",
     "@formily/validator": "^2.2.27",
+    "@nocobase/json-template-parser": "1.6.0-alpha.28",
     "@nocobase/evaluators": "1.7.0-alpha.3",
     "@nocobase/sdk": "1.7.0-alpha.3",
     "@nocobase/utils": "1.7.0-alpha.3",

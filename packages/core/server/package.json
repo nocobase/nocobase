@@ -10,6 +10,7 @@
     "@koa/cors": "^5.0.0",
     "@koa/multer": "^3.0.2",
     "@koa/router": "^9.4.0",
+    "@nocobase/json-template-parser": "1.6.0-alpha.28",
     "@nocobase/acl": "1.7.0-alpha.3",
     "@nocobase/actions": "1.7.0-alpha.3",
     "@nocobase/auth": "1.7.0-alpha.3",

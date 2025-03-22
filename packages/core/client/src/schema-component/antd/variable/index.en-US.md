@@ -4,6 +4,8 @@ Variable selector.
 
 ## `Variable.Input`
 
+### 默认值模式
+
 ```ts
 import type { DefaultOptionType } from 'antd/lib/cascader';
  type VariableInputProps = {
@@ -27,6 +29,9 @@ type ParseOptions = {
 ```
 
 <code src="./demos/demo1.tsx"></code>
+
+### 数据范围模式
+数据范围的模式
 
 ### `Variable.TextArea`
 

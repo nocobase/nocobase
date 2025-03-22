@@ -124,8 +124,8 @@ function StatusTabs() {
       tabBarExtraContent={
         ExtraActions
           ? {
-            right: <ExtraActions />,
-          }
+              right: <ExtraActions />,
+            }
           : {}
       }
     />

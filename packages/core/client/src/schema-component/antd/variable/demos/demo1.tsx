@@ -1,12 +1,11 @@
-
-
-import { FormItem } from '@formily/antd-v5';
-import { SchemaComponent, SchemaComponentProvider, Variable } from '@nocobase/client';
+import { AntdSchemaComponentProvider, Plugin, SchemaComponent } from '@nocobase/client';
+import { mockApp } from '@nocobase/client/demo-utils';
+import PluginVariableFiltersClient from '@nocobase/plugin-variable-helpers/client';
 import React from 'react';
 
 const scope = [
   { label: 'v1', value: 'v1' },
-  { label: 'nested', value: 'nested', children: [{ label: 'v2', value: 'v2' }] },
+  { label: 'Date', value: '$date', children: [{ label: 'Now', value: 'now' }] },
 ];
 
 const schema = {
@@ -24,10 +23,20 @@ const schema = {
   },
 };
 
-export default () => {
+const Demo = () => {
   return (
-    <SchemaComponentProvider components={{ Variable, FormItem }}>
+    <AntdSchemaComponentProvider>
       <SchemaComponent schema={schema} />
-    </SchemaComponentProvider>
+    </AntdSchemaComponentProvider>
   );
 };
+
+class DemoPlugin extends Plugin {
+  async load() {
+    this.app.router.add('root', { path: '/', Component: Demo });
+  }
+}
+
+const app = mockApp({ plugins: [DemoPlugin, PluginVariableFiltersClient] });
+
+export default app.getRootComponent();

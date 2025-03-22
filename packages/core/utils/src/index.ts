@@ -11,6 +11,7 @@ import lodash from 'lodash';
 export { lodash };
 export { dayjs } from './dayjs';
 
+export { parse } from '@nocobase/json-template-parser';
 export * from './assign';
 export * from './collections-graph';
 export * from './common';
@@ -21,7 +22,6 @@ export * from './forEach';
 export * from './fs-exists';
 export * from './handlebars';
 export * from './isValidFilter';
-export * from './json-templates';
 export * from './koa-multer';
 export * from './measure-execution-time';
 export * from './merge';
