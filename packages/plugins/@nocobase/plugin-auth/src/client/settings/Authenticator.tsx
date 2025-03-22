@@ -75,7 +75,7 @@ const AddNew = () => {
             {t('Add new')} <DownOutlined />
           </Button>
         </Dropdown>
-        <SchemaComponent scope={{ useCloseAction, types, setType }} schema={createFormSchema} />
+        <SchemaComponent scope={{ useCloseAction, types, setType, useCreateAction }} schema={createFormSchema} />
       </AuthTypeContext.Provider>
     </ActionContextProvider>
   );
@@ -183,7 +183,7 @@ export const Authenticator = () => {
         <SchemaComponent
           schema={authenticatorsSchema}
           components={{ AddNew, Options }}
-          scope={{ types, useValuesFromOptions, useCanNotDelete, t, useUpdateAction, useCreateAction }}
+          scope={{ types, useValuesFromOptions, useCanNotDelete, t, useUpdateAction }}
         />
       </AuthTypesContext.Provider>
     </Card>
