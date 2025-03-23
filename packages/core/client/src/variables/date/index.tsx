@@ -6,7 +6,7 @@
  * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
-
+import { dayjs } from '@nocobase/utils/client';
 // date context
 export type DateVariableContext = {
   timezone: string;
@@ -39,3 +39,9 @@ const dateVars = [
     exampleValue: new Date(),
   },
 ];
+
+export const dateVarsMap = {
+  now: dayjs(),
+  yesterday: dayjs().subtract(1, 'day'),
+  tomorrow: dayjs().add(1, 'day'),
+};

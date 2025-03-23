@@ -6,10 +6,9 @@
  * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
-
 import { createForm, onFormValuesChange } from '@formily/core';
 import { observer, useForm } from '@formily/react';
-import { tval, uid } from '@nocobase/utils/client';
+import { dayjs, tval, uid } from '@nocobase/utils/client';
 import { Tag } from 'antd';
 import { createMemoryHistory } from 'history';
 import debounce from 'lodash/debounce';
@@ -19,6 +18,12 @@ import { Router, useLocation } from 'react-router-dom';
 import { useApp } from '../../../../application';
 import { SchemaComponent } from '../../../core/SchemaComponent';
 import { useCurrentVariable, VariableHelperMapping } from '../VariableProvider';
+
+const displayValue = (val) => {
+  if (dayjs.isDayjs(val)) {
+    return val.toDate().toLocaleString();
+  } else return val;
+};
 /**
  * Escapes special glob characters in a string
  * @param str The string to escape
@@ -78,11 +83,11 @@ const Configurator = observer(
     }, value);
 
     const InputValue = () => {
-      return <Tag color="red">{JSON.stringify(typeof inputValue).slice(1, -1)}</Tag>;
+      return <Tag color="red">{displayValue(inputValue)}</Tag>;
     };
 
     const OuputValue = () => {
-      return <Tag color="green">{outputValue.toDate().toLocaleString()}</Tag>;
+      return <Tag color="green">{displayValue(outputValue)}</Tag>;
     };
 
     const useFormBlockProps = () => {

@@ -7,7 +7,7 @@ import React from 'react';
 
 const scope = [
   { label: 'v1', value: 'v1' },
-  { label: 'Date', value: '$date', children: [{ label: 'Now', value: 'now' }] },
+  { label: 'Date', value: '$nDate', children: [{ label: 'Now', value: 'now' }] },
 ];
 
 const useFormBlockProps = () => {
@@ -33,7 +33,7 @@ const schema = {
         variableHelperMapping: {
           rules: [
             {
-              variable: '$date.*',
+              variable: '$nDate.*',
               helpers: ['date.*'],
             },
           ],

@@ -9,11 +9,12 @@
 
 import { reaction } from '@formily/reactive';
 import { composeTemplate, extractTemplateElements, Helper } from '@nocobase/json-template-parser';
-import { isArray } from 'lodash';
+import { get, isArray } from 'lodash';
 import minimatch from 'minimatch';
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { useLocalVariables, useVariables } from '../../../variables';
 import { useVariablesContext } from '../../../variables/context';
+import { dateVarsMap } from '../../../variables/date';
 import { useHelperObservables } from './Helpers/hooks/useHelperObservables';
 interface VariableContextValue {
   value: any;
@@ -153,8 +154,16 @@ export const VariableProvider: React.FC<VariableProviderProps> = ({
   useEffect(() => {
     async function fetchValue() {
       try {
-        const result = await variables.getVariableValue(variableName, localVariables);
-        setValue(result.value);
+        const vars = {
+          $nDate: dateVarsMap,
+        };
+        const val = get(vars, variableName);
+        if (val) {
+          setValue(val);
+        } else {
+          const result = await variables.getVariableValue(variableName, localVariables);
+          setValue(result.value);
+        }
       } catch (error) {
         console.error(error);
       }
