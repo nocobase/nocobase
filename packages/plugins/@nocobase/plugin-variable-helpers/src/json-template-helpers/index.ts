@@ -40,13 +40,6 @@ export const helpers = [
     sort: 2,
     uiSchema: [
       {
-        name: 'number',
-        title: tval('Amount'),
-        type: 'number',
-        'x-component': 'InputNumber',
-        required: true,
-      },
-      {
         name: 'unit',
         title: tval('Unit'),
         type: 'string',
@@ -61,6 +54,13 @@ export const helpers = [
           { label: tval('Minute'), value: 'minute' },
           { label: tval('Second'), value: 'second' },
         ],
+      },
+      {
+        name: 'number',
+        title: tval('Amount'),
+        type: 'number',
+        'x-component': 'InputNumber',
+        required: true,
       },
     ],
   },
@@ -72,13 +72,6 @@ export const helpers = [
     sort: 3,
     uiSchema: [
       {
-        name: 'number',
-        title: tval('Amount'),
-        type: 'number',
-        'x-component': 'InputNumber',
-        required: true,
-      },
-      {
         name: 'unit',
         title: tval('Unit'),
         type: 'string',
@@ -93,6 +86,13 @@ export const helpers = [
           { label: tval('Minute'), value: 'minute' },
           { label: tval('Second'), value: 'second' },
         ],
+      },
+      {
+        name: 'number',
+        title: tval('Amount'),
+        type: 'number',
+        'x-component': 'InputNumber',
+        required: true,
       },
     ],
   },

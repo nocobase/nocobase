@@ -63,6 +63,7 @@ const Configurator = observer(
   ({ index, close }: { index: number; close: () => void }) => {
     const app = useApp();
     const { value, helperObservables } = useCurrentVariable();
+
     const { helpersObs, rawHelpersObs, removeHelper } = helperObservables;
     const helper = helpersObs.value[index];
     const rawHelper = rawHelpersObs.value[index];
@@ -77,11 +78,11 @@ const Configurator = observer(
     }, value);
 
     const InputValue = () => {
-      return <Tag color="red">{JSON.stringify(inputValue).slice(1, -1)}</Tag>;
+      return <Tag color="red">{JSON.stringify(typeof inputValue).slice(1, -1)}</Tag>;
     };
 
     const OuputValue = () => {
-      return <Tag color="green">{JSON.stringify(outputValue).slice(1, -1)}</Tag>;
+      return <Tag color="green">{outputValue.toDate().toLocaleString()}</Tag>;
     };
 
     const useFormBlockProps = () => {

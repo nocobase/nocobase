@@ -13,6 +13,7 @@ import { isArray } from 'lodash';
 import minimatch from 'minimatch';
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { useLocalVariables, useVariables } from '../../../variables';
+import { useVariablesContext } from '../../../variables/context';
 import { useHelperObservables } from './Helpers/hooks/useHelperObservables';
 interface VariableContextValue {
   value: any;

@@ -47,7 +47,7 @@ export function dateFormat(initialValue: any, format: string) {
   }
 }
 
-export function dateAdd(initialValue: any, number: number, unit: any) {
+export function dateAdd(initialValue: any, unit: any, number: number) {
   const handler = (value: any) => {
     return dayjs.isDayjs(value) ? value.add(number, unit) : dayjs(value).add(number, unit);
   };
@@ -58,7 +58,7 @@ export function dateAdd(initialValue: any, number: number, unit: any) {
   }
 }
 
-export function dateSubtract(initialValue: any, number: number, unit: any) {
+export function dateSubtract(initialValue: any, unit: any, number: number) {
   const handler = (value: any) => {
     return dayjs.isDayjs(value) ? value.subtract(number, unit) : dayjs(value).subtract(number, unit);
   };
