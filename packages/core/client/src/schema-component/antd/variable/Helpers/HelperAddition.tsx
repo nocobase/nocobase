@@ -14,14 +14,11 @@ import { Dropdown, Tag } from 'antd';
 import React from 'react';
 import { useApp } from '../../../../application';
 import { useCompile } from '../../../hooks';
-import { isHelperAllowedForVariable, useVariable } from '../VariableProvider';
-import { useHelperObservables } from './hooks/useHelperObservables';
+import { useVariable } from '../VariableProvider';
 import { allHelpersConfigObs } from './observables';
-
 export const HelperAddition = observer(() => {
   const app = useApp();
-  const helperObservables = useHelperObservables();
-  const { isHelperAllowed } = useVariable();
+  const { isHelperAllowed, helperObservables } = useVariable();
   const { addHelper } = helperObservables;
   const compile = useCompile();
   const filterOptions = app.jsonTemplateParser.filterGroups

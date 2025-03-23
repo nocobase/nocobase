@@ -9,11 +9,13 @@
 
 import { observer } from '@formily/reactive-react';
 import React from 'react';
+import { useVariable } from '../VariableProvider';
 import { Helper } from './Helper';
 import { useHelperObservables } from './hooks/useHelperObservables';
 const _HelperList = () => {
-  const helperObservables = useHelperObservables();
-  const { helpersObs, removeHelper } = helperObservables;
+  const { helperObservables } = useVariable();
+  const { helpersObs, rawHelpersObs } = helperObservables;
+  console.log(rawHelpersObs.value);
   return (
     <>
       {helpersObs.value.map((helper, index) => {

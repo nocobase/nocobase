@@ -128,12 +128,12 @@ export function useCurrentVariable(): VariableContextValue {
 export const VariableProvider: React.FC<VariableProviderProps> = ({
   variableName,
   children,
-  helperObservables,
   variableHelperMapping,
 }) => {
   const [value, setValue] = useState(null);
   const variables = useVariables();
   const localVariables = useLocalVariables();
+  const helperObservables = useHelperObservables();
   isArray(localVariables) ? localVariables : [localVariables];
   useEffect(() => {
     async function fetchValue() {
