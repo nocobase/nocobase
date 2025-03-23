@@ -15,7 +15,7 @@ import { createMemoryHistory } from 'history';
 import debounce from 'lodash/debounce';
 import minimatch from 'minimatch';
 import React from 'react';
-import { Router } from 'react-router-dom';
+import { Router, useLocation } from 'react-router-dom';
 import { useApp } from '../../../../application';
 import { SchemaComponent } from '../../../core/SchemaComponent';
 import { useCurrentVariable, VariableHelperMapping } from '../VariableProvider';
@@ -59,7 +59,7 @@ export function isFilterAllowedForVariable(
   return !mapping.strictMode;
 }
 
-export const HelperConfiguator = observer(
+const Configurator = observer(
   ({ index, close }: { index: number; close: () => void }) => {
     const app = useApp();
     const { value, helperObservables } = useCurrentVariable();
@@ -68,7 +68,6 @@ export const HelperConfiguator = observer(
     const rawHelper = rawHelpersObs.value[index];
     const helperConfigs = app.jsonTemplateParser.filters;
     const helperConfig = helperConfigs.find((item) => item.name === helper.name);
-    const history = createMemoryHistory();
     const previousHelpers = helpersObs.value.slice(0, index);
     const inputValue = previousHelpers.reduce((value, helper) => {
       return helper.handler(value, ...helper.args);
@@ -178,21 +177,48 @@ export const HelperConfiguator = observer(
         },
       },
     };
+
+    return (
+      <SchemaComponent
+        components={{ InputValue, OuputValue }}
+        schema={schema}
+        scope={{
+          t: app.i18n.t,
+          useFormBlockProps,
+          useDeleteActionProps,
+          useCloseActionProps,
+        }}
+        basePath={['']}
+      />
+    );
+  },
+  { displayName: 'Configurator' },
+);
+
+const WithRouter = observer(
+  ({ children }: { children: React.ReactNode }) => {
+    const history = createMemoryHistory();
     return (
       <Router location={history.location} navigator={history}>
-        <SchemaComponent
-          components={{ InputValue, OuputValue }}
-          schema={schema}
-          scope={{
-            t: app.i18n.t,
-            useFormBlockProps,
-            useDeleteActionProps,
-            useCloseActionProps,
-          }}
-          basePath={['']}
-        />
+        {children}
       </Router>
     );
   },
-  { displayName: 'Helper' },
+  { displayName: 'WithRouter' },
+);
+
+export const HelperConfiguator = observer(
+  (props: { index: number; close: () => void }) => {
+    try {
+      useLocation();
+      return <Configurator {...props} />;
+    } catch (error) {
+      return (
+        <WithRouter>
+          <Configurator {...props} />
+        </WithRouter>
+      );
+    }
+  },
+  { displayName: 'HelperConfiguator' },
 );
