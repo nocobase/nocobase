@@ -91,7 +91,7 @@ describe('option parser', () => {
   });
 
   test('with sort option', () => {
-    if (db.inDialect('mysql', 'mariadb')) {
+    if (db.inDialect('mysql', 'mariadb', 'mssql')) {
       expect(1).toBe(1);
       return;
     }

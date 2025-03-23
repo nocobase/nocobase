@@ -66,7 +66,8 @@ describe('array field operator', function () {
 
     let result = await Post.repository.findOne({
       filter: {
-        'tagsFields.$match': ['t2', 't1'],
+        /* mssql 只支持数组顺序完全匹配，因为数组是当字符串处理的 */
+        'tagsFields.$match': db.options.dialect === 'mssql' ? ['t1', 't2'] : ['t2', 't1'],
       },
     });
 
@@ -143,7 +144,7 @@ describe('array field operator', function () {
   test('$match', async () => {
     const filter1 = await Test.repository.find({
       filter: {
-        'selected.$match': ['2', '1', 'a', 'b'],
+        'selected.$match': db.options.dialect === 'mssql' ? ['1', '2', 'a', 'b'] : ['2', '1', 'a', 'b'],
       },
     });
 
@@ -156,7 +157,7 @@ describe('array field operator', function () {
       filter: {
         $and: [
           {
-            selected: { $match: ['2', '1', 'a', 'b'] },
+            selected: { $match: db.options.dialect === 'mssql' ? ['1', '2', 'a', 'b'] : ['2', '1', 'a', 'b'] },
           },
         ],
       },

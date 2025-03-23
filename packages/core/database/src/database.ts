@@ -253,8 +253,8 @@ export class Database extends EventEmitter implements AsyncEmitter {
 
     const sequelizeOptions = this.sequelizeOptions(this.options);
     this.sequelize = new Sequelize(sequelizeOptions);
-
-    this.queryInterface = buildQueryInterface(this);
+    // 必须在sequelize实例创建之后调用
+    this.queryInterface = dialectClass.getQueryInterface(this);
 
     this.collections = new Map();
     this.modelHook = new ModelHook(this);
@@ -268,7 +268,9 @@ export class Database extends EventEmitter implements AsyncEmitter {
     });
 
     // register database field types
-    for (const [name, field] of Object.entries<any>(FieldTypes)) {
+    const defaultFieldTypes = Object.entries<any>(FieldTypes);
+    const customFieldTypes = Object.entries(dialectClass.getFieldTypes() || {});
+    for (const [name, field] of [...defaultFieldTypes, ...customFieldTypes]) {
       if (['Field', 'RelationField'].includes(name)) {
         continue;
       }
@@ -707,9 +709,10 @@ export class Database extends EventEmitter implements AsyncEmitter {
     }
 
     this.operators = operators;
-
+    const dialectClass = Database.getDialect(this.options.dialect);
     this.registerOperators({
-      ...(extendOperators as unknown as MapOf<OperatorFunc>),
+      ...extendOperators,
+      ...(dialectClass.getOperators() || {}),
     });
   }
 

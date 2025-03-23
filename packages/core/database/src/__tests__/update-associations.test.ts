@@ -233,12 +233,16 @@ describe('update associations', () => {
         user,
       });
 
+      const adapterId = (value) => {
+        return db.options.dialect === 'mssql' ? value.toString() : Number(value);
+      };
+
       expect(post1.toJSON()).toMatchObject({
-        id: 1,
+        id: adapterId(1),
         name: 'post1',
-        userId: 1,
+        userId: adapterId(1),
         user: {
-          id: 1,
+          id: adapterId(1),
           name: 'user1',
         },
       });
@@ -249,9 +253,9 @@ describe('update associations', () => {
       });
 
       expect(post2.toJSON()).toMatchObject({
-        id: 2,
+        id: adapterId(2),
         name: 'post2',
-        userId: 1,
+        userId: adapterId(1),
       });
 
       const post3 = await Post.model.create({ name: 'post3' });
@@ -262,11 +266,11 @@ describe('update associations', () => {
       });
 
       expect(post3.toJSON()).toMatchObject({
-        id: 3,
+        id: adapterId(3),
         name: 'post3',
-        userId: 2,
+        userId: adapterId(2),
         user: {
-          id: 2,
+          id: adapterId(2),
           name: 'user3',
         },
       });
@@ -285,11 +289,11 @@ describe('update associations', () => {
       });
 
       expect(p4?.toJSON()).toMatchObject({
-        id: 4,
+        id: adapterId(4),
         name: 'post4',
-        userId: 1,
+        userId: adapterId(1),
         user: {
-          id: 1,
+          id: adapterId(1),
           name: 'user1',
         },
       });

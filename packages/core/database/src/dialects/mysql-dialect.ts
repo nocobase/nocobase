@@ -9,9 +9,16 @@
 
 import { lodash } from '@nocobase/utils';
 import { BaseDialect } from './base-dialect';
+import Database from '../database';
+import MysqlQueryInterface from '../query-interface/mysql-query-interface';
+import QueryInterface from '../query-interface/query-interface';
 
 export class MysqlDialect extends BaseDialect {
   static dialectName = 'mysql';
+
+  static getQueryInterface(db: Database): QueryInterface {
+    return new MysqlQueryInterface(db);
+  }
 
   getVersionGuard() {
     return {

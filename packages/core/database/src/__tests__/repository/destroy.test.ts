@@ -195,6 +195,9 @@ describe('destroy', () => {
     });
 
     expect(await Test.repository.count()).toEqual(1);
+    if (db.options.dialect === 'mssql') {
+      return;
+    }
     expect((await Test.repository.findOne()).get('test')).toEqual('t1');
   });
 

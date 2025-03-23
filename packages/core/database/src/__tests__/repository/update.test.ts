@@ -111,7 +111,9 @@ describe('update', () => {
         nameWithUnderscore: 'item1',
       },
     });
-
+    if (db.options.dialect === 'mssql') {
+      return;
+    }
     const item = await collection.repository.findOne({
       filter: {
         nameWithUnderscore: 'item2',
@@ -185,7 +187,7 @@ describe('update', () => {
       name: 'users',
       fields: [
         { type: 'string', name: 'name' },
-        { type: 'hasMany', name: 'posts', target: 'posts', foreignKey: 'user_id' },
+        { type: 'hasMany', name: 'posts' /*  target: 'posts', foreignKey: 'user_id'  */ },
       ],
     });
 

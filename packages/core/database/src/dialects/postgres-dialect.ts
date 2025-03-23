@@ -9,9 +9,16 @@
 
 import semver from 'semver';
 import { BaseDialect } from './base-dialect';
+import Database from '../database';
+import PostgresQueryInterface from '../query-interface/postgres-query-interface';
+import QueryInterface from '../query-interface/query-interface';
 
 export class PostgresDialect extends BaseDialect {
   static dialectName = 'postgres';
+
+  static getQueryInterface(db: Database): QueryInterface {
+    return new PostgresQueryInterface(db);
+  }
 
   getSequelizeOptions(options: any) {
     if (!options.hooks) {

@@ -84,7 +84,7 @@ export class DateField extends Field {
     }
   }
 
-  setter(value, options) {
+  setter = (value, options) => {
     if (value === null) {
       return value;
     }
@@ -99,7 +99,7 @@ export class DateField extends Field {
     }
 
     return value;
-  }
+  };
 
   additionalSequelizeOptions() {
     const { name } = this.options;
@@ -156,7 +156,7 @@ export interface DateFieldOptions extends BaseColumnFieldOptions {
   type: 'date';
 }
 
-function isIso8601(str) {
+export function isIso8601(str) {
   const iso8601StrictRegex = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/;
   return iso8601StrictRegex.test(str);
 }

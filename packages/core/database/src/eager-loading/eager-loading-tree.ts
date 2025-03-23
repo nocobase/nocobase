@@ -261,18 +261,19 @@ export class EagerLoadingTree {
               };
             }
           });
-
+          const options = {
+            ...this.rootQueryOptions,
+            includeIgnoreAttributes: false,
+            attributes: [primaryKeyField],
+            group: `${node.model.name}.${primaryKeyField}`,
+            transaction,
+            include: includeForFilter,
+          };
+          if (node.model.database.options.dialect === 'mssql' && options.order) {
+            options.order = null;
+          }
           // find all ids
-          const ids = (
-            await node.model.findAll({
-              ...this.rootQueryOptions,
-              includeIgnoreAttributes: false,
-              attributes: [primaryKeyField],
-              group: `${node.model.name}.${primaryKeyField}`,
-              transaction,
-              include: includeForFilter,
-            } as any)
-          ).map((row) => {
+          const ids = (await node.model.findAll(options)).map((row) => {
             return { row, pk: row[primaryKeyField] };
           });
 
@@ -332,10 +333,19 @@ export class EagerLoadingTree {
             };
           }
 
+          let order = params.order || orderOption(association);
+          if (node.model.sequelize.getDialect() === 'mssql') {
+            const seen = new Set();
+            order = order.filter((item) => {
+              const field = Array.isArray(item) ? item[0] : item.split(' ')[0];
+              return seen.has(field) ? false : seen.add(field);
+            });
+          }
+
           const findOptions = {
             where,
             attributes: node.attributes,
-            order: params.order || orderOption(association),
+            order,
             transaction,
           };
 

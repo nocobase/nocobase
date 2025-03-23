@@ -58,3 +58,4 @@ export * from './view-collection';
 export { default as fieldTypeMap } from './view/field-type-map';
 
 export * from './view/view-inference';
+export { default as QueryInterface, TableInfo } from './query-interface/query-interface';

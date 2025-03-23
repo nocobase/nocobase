@@ -51,6 +51,7 @@ describe('timezone', () => {
       await db.sync();
     } catch (e) {
       err = e;
+      console.log(e);
     }
 
     expect(err).toBeUndefined();
