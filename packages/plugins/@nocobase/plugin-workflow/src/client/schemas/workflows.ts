@@ -56,14 +56,6 @@ const workflowFieldset = {
     type: 'object',
     'x-component': 'fieldset',
     properties: {
-      continueWhenDisabled: {
-        type: 'boolean',
-        'x-decorator': 'FormItem',
-        'x-component': 'Checkbox',
-        'x-content': `{{t("Continue process when disabled or upgraded", { ns: "${NAMESPACE}" })}}`,
-        description: `{{t("If checked, all nodes in-progress could continue to be processed in disabled workflow. Otherwise, all nodes in-progress will be aborted automatically.", { ns: "${NAMESPACE}" })}}`,
-        default: false,
-      },
       deleteExecutionOnStatus: {
         type: 'array',
         title: `{{ t("Auto delete history when execution is on end status", { ns: "${NAMESPACE}" }) }}`,
