@@ -7,113 +7,12 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React from 'react';
 import { ISchema } from '@formily/react';
-import { useRecord } from '@nocobase/client';
-import { NAMESPACE } from '../locale';
-// import { triggers } from '../triggers';
-import { executionSchema } from './executions';
-import { TriggerOptionRender } from '../components/TriggerOptionRender';
 
-const collection = {
-  name: 'workflows',
-  fields: [
-    {
-      type: 'string',
-      name: 'title',
-      interface: 'input',
-      uiSchema: {
-        title: '{{t("Name")}}',
-        type: 'string',
-        'x-component': 'Input',
-        required: true,
-      } as ISchema,
-    },
-    {
-      type: 'string',
-      name: 'type',
-      interface: 'select',
-      uiSchema: {
-        title: `{{t("Trigger type", { ns: "${NAMESPACE}" })}}`,
-        type: 'string',
-        'x-decorator': 'FormItem',
-        'x-component': 'Select',
-        enum: '{{useTriggersOptions()}}',
-        'x-component-props': {
-          optionRender: TriggerOptionRender,
-          popupMatchSelectWidth: true,
-          listHeight: 300,
-        },
-        required: true,
-      } as ISchema,
-    },
-    {
-      type: 'boolean',
-      name: 'sync',
-      interface: 'radioGroup',
-      uiSchema: {
-        title: `{{t("Mode", { ns: "${NAMESPACE}" })}}`,
-        type: 'boolean',
-        'x-decorator': 'FormItem',
-        'x-component': 'Radio.Group',
-        enum: [
-          {
-            label: `{{ t("Asynchronously", { ns: "${NAMESPACE}" }) }}`,
-            value: false,
-            color: 'cyan',
-          },
-          {
-            label: `{{ t("Synchronously", { ns: "${NAMESPACE}" }) }}`,
-            value: true,
-            color: 'orange',
-          },
-        ],
-        required: true,
-      } as ISchema,
-    },
-    {
-      type: 'string',
-      name: 'description',
-      interface: 'textarea',
-      uiSchema: {
-        title: '{{t("Description")}}',
-        type: 'string',
-        'x-component': 'Input.TextArea',
-      } as ISchema,
-    },
-    {
-      type: 'boolean',
-      name: 'enabled',
-      interface: 'radioGroup',
-      uiSchema: {
-        title: `{{t("Status", { ns: "${NAMESPACE}" })}}`,
-        type: 'string',
-        enum: [
-          { label: `{{t("On", { ns: "${NAMESPACE}" })}}`, value: true, color: '#52c41a' },
-          { label: `{{t("Off", { ns: "${NAMESPACE}" })}}`, value: false },
-        ],
-        'x-component': 'Radio.Group',
-        'x-decorator': 'FormItem',
-        default: false,
-      } as ISchema,
-    },
-    {
-      type: 'number',
-      name: 'allExecuted',
-      interface: 'integer',
-      uiSchema: {
-        title: `{{t("Executed", { ns: "${NAMESPACE}" })}}`,
-        type: 'number',
-        'x-component': 'InputNumber',
-        'x-decorator': 'FormItem',
-      } as ISchema,
-    },
-    {
-      type: 'object',
-      name: 'options',
-    },
-  ],
-};
+import collection from '../../common/collections/workflows';
+
+import { NAMESPACE } from '../locale';
+import { executionSchema } from './executions';
 
 const workflowFieldset = {
   title: {
@@ -157,6 +56,14 @@ const workflowFieldset = {
     type: 'object',
     'x-component': 'fieldset',
     properties: {
+      continueWhenDisabled: {
+        type: 'boolean',
+        'x-decorator': 'FormItem',
+        'x-component': 'Checkbox',
+        'x-content': `{{t("Continue process when disabled or upgraded", { ns: "${NAMESPACE}" })}}`,
+        description: `{{t("If checked, all nodes in-progress could continue to be processed in disabled workflow. Otherwise, all nodes in-progress will be aborted automatically.", { ns: "${NAMESPACE}" })}}`,
+        default: false,
+      },
       deleteExecutionOnStatus: {
         type: 'array',
         title: `{{ t("Auto delete history when execution is on end status", { ns: "${NAMESPACE}" }) }}`,
@@ -176,6 +83,7 @@ const workflowFieldset = {
         'x-component-props': {
           min: 1,
           precision: 0,
+          className: 'auto-width',
         },
       },
     },
@@ -201,6 +109,7 @@ export const workflowSchema: ISchema = {
             },
             sort: ['-createdAt'],
             except: ['config'],
+            appends: ['stats'],
           },
         },
       },
@@ -380,24 +289,19 @@ export const workflowSchema: ISchema = {
                 },
               },
             },
-            allExecuted: {
+            'stats.executed': {
               type: 'void',
               'x-decorator': 'Table.Column.Decorator',
               'x-component': 'Table.Column',
+              title: `{{ t("Executed", { ns: "${NAMESPACE}" }) }}`,
               properties: {
-                allExecuted: {
+                'stats.executed': {
                   type: 'number',
                   'x-decorator': 'OpenDrawer',
                   'x-decorator-props': {
-                    component: function Com(props) {
-                      const record = useRecord();
-                      return React.createElement('a', {
-                        'aria-label': `executed-${record.title}`,
-                        ...props,
-                      });
-                    },
+                    component: '{{ExecutedLink}}',
                   },
-                  'x-component': 'CollectionField',
+                  'x-component': 'InputNumber',
                   'x-read-pretty': true,
                   properties: {
                     drawer: executionSchema,
