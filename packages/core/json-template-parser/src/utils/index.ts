@@ -7,12 +7,12 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { escapeSpecialChars, escape, revertEscape } from '../escape';
+import { escape, escapeSpecialChars, revertEscape } from '../escape';
 import { createJSONTemplateParser } from '../parser';
 
 const parser = createJSONTemplateParser();
 const engine = parser.engine;
-type Filter = {
+export type Helper = {
   name: string;
   handler: any;
   args: string[];
@@ -31,7 +31,7 @@ export function extractTemplateVariable(template: string): string | null {
 export function extractTemplateElements(template: string): {
   fullVariable: string | null;
   variableSegments: string[];
-  helpers: Filter[];
+  helpers: Helper[];
 } {
   const escapedTemplate = escape(template ?? '');
   try {
@@ -52,7 +52,7 @@ export function extractTemplateElements(template: string): {
   }
 }
 
-const composeFilterTemplate = (filter: Filter) => {
+const composeFilterTemplate = (filter: Helper) => {
   const value = `${filter.name}${
     filter.args.length ? `:${filter.args.map((val) => JSON.stringify(val)).join(',')}` : ''
   }`;

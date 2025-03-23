@@ -51,7 +51,7 @@ export function isFilterAllowedForVariable(
     // But we escape the variable name since it's a literal value
     if (minimatch(escapeGlob(variableName), rule.variable)) {
       // Check if filter matches any of the allowed patterns
-      return rule.filters.some((pattern) => minimatch(filterName, pattern));
+      return rule.helpers.some((pattern) => minimatch(filterName, pattern));
     }
   }
 

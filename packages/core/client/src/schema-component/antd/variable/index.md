@@ -28,10 +28,27 @@ type ParseOptions = {
 
 <code src="./demos/demo1.tsx"></code>
 
-### `Variable.TextArea`
+### 支持 helper 助手函数
+目前变量支持添加助手函数进行二次处理，不同的变量可能支持不同的助手函数，助手函数还支持分组。
+Input 组件支持传入 variableHelperMapping 属性来标记变量支持哪些助手函数。
+例如，日期变量只支持日期相关的助手函数，则可配置
+```ts
+const variableHelperMapping = {
+          rules: [
+            {
+              variable: '$date.*',
+              helpers: ['date.*'],
+            },
+          ],
+        },
+
+```
+<code src="./demos/demo1.tsx"></code>
+
+## `Variable.TextArea`
 
 <code src="./demos/demo2.tsx"></code>
 
-### `Variable.JSON`
+## `Variable.JSON`
 
 <code src="./demos/demo3.tsx"></code>

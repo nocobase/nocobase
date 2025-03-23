@@ -13,11 +13,19 @@ const schema = {
   properties: {
     input: {
       type: 'string',
-      title: `替换模式`,
+      title: `输入项`,
       'x-decorator': 'FormItem',
       'x-component': 'Variable.Input',
       'x-component-props': {
         scope,
+        variableHelperMapping: {
+          rules: [
+            {
+              variable: '$date.*',
+              helpers: ['date.*'],
+            },
+          ],
+        },
       },
     },
   },

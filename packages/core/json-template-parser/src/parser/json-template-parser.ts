@@ -16,7 +16,7 @@ type FilterGroup = {
   sort: number;
 };
 
-type Filter = {
+type Helper = {
   name: string;
   title: string;
   handler: (...args: any[]) => any;
@@ -40,7 +40,7 @@ type ScopeMapValue = { fieldSet: Set<string>; scopeFnWrapper: ScopeFnWrapper; sc
 export class JSONTemplateParser {
   private _engine: Liquid;
   private _filterGroups: Array<FilterGroup>;
-  private _filters: Array<Filter>;
+  private _filters: Array<Helper>;
 
   constructor() {
     this._engine = new Liquid();
@@ -48,7 +48,7 @@ export class JSONTemplateParser {
     this._filters = [];
   }
 
-  get filters(): Array<Filter> {
+  get filters(): Array<Helper> {
     return this._filters;
   }
 
@@ -58,19 +58,19 @@ export class JSONTemplateParser {
 
   get filterGroups(): Array<
     FilterGroup & {
-      filters: Array<Filter>;
+      helpers: Array<Helper>;
     }
   > {
     return this._filterGroups.map((group) => ({
       ...group,
-      filters: this._filters.filter((filter) => filter.group === group.name),
+      helpers: this._filters.filter((filter) => filter.group === group.name),
     }));
   }
 
   registerFilterGroup(group: FilterGroup): void {
     this._filterGroups.push(group);
   }
-  registerFilter(filter: Filter): void {
+  registerFilter(filter: Helper): void {
     this._filters.push(filter);
     this._engine.registerFilter(filter.name, filter.handler);
   }

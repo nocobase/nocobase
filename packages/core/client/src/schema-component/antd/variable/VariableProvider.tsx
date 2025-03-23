@@ -7,6 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { Helper } from '@nocobase/json-template-parser';
 import { isArray } from 'lodash';
 import minimatch from 'minimatch';
 import React, { createContext, useContext, useEffect, useState } from 'react';
@@ -15,6 +16,8 @@ import { useHelperObservables } from './Helpers/hooks/useHelperObservables';
 interface VariableContextValue {
   value: any;
   helperObservables?: ReturnType<typeof useHelperObservables>;
+  variableHelperMapping: VariableHelperMapping;
+  variableName: string;
 }
 
 interface VariableProviderProps {
@@ -28,7 +31,7 @@ export interface VariableHelperRule {
   /** Pattern to match variables, supports glob patterns */
   variable: string;
   /** Array of allowed filter patterns, supports glob patterns */
-  filters: string[];
+  helpers: string[];
 }
 
 export interface VariableHelperMapping {
@@ -50,13 +53,13 @@ function escapeGlob(str: string): string {
 /**
  * Tests if a filter is allowed for a given variable based on the variableHelperMapping configuration
  * @param variableName The name of the variable to test
- * @param filterName The name of the filter to test
+ * @param helperName The name of the filter to test
  * @param mapping The variable helper mapping configuration
  * @returns boolean indicating if the filter is allowed for the variable
  */
-export function isFilterAllowedForVariable(
+export function isHelperAllowedForVariable(
   variableName: string,
-  filterName: string,
+  helperName: string,
   mapping?: VariableHelperMapping,
 ): boolean {
   if (!mapping?.rules) {
@@ -68,30 +71,31 @@ export function isFilterAllowedForVariable(
     // Check if variable matches the pattern
     // We don't escape the pattern since it's meant to be a glob pattern
     // But we escape the variable name since it's a literal value
-    if (minimatch(escapeGlob(variableName), rule.variable)) {
+    const matched = minimatch(variableName, rule.variable);
+    if (matched) {
       // Check if filter matches any of the allowed patterns
-      return rule.filters.some((pattern) => minimatch(filterName, pattern));
+      return rule.helpers.some((pattern) => minimatch(helperName, pattern));
     }
   }
 
   // If no matching rule found and strictMode is true, deny the filter
-  return !mapping.strictMode;
+  return false;
 }
 
 /**
  * Gets all supported filters for a given variable based on the mapping rules
  * @param variableName The name of the variable to check
  * @param mapping The variable helper mapping configuration
- * @param allFilters Array of all available filter names
+ * @param allHelpers Array of all available filter names
  * @returns Array of filter names that are allowed for the variable
  */
 export function getSupportedFiltersForVariable(
   variableName: string,
   mapping?: VariableHelperMapping,
-  allFilters: string[] = [],
-): string[] {
+  allHelpers: Helper[] = [],
+): Helper[] {
   if (!mapping?.rules) {
-    return allFilters; // If no rules defined, all filters are allowed
+    return allHelpers; // If no rules defined, all filters are allowed
   }
 
   // Find matching rule for the variable
@@ -100,14 +104,18 @@ export function getSupportedFiltersForVariable(
   if (!matchingRule) {
     // If no matching rule and strictMode is true, return empty array
     // Otherwise return all filters
-    return mapping.strictMode ? [] : allFilters;
+    return allHelpers;
   }
 
   // Filter the allFilters array based on the matching rule's filter patterns
-  return allFilters.filter((filterName) => matchingRule.filters.some((pattern) => minimatch(filterName, pattern)));
+  return allHelpers.filter(({ name }) => matchingRule.helpers.some((pattern) => minimatch(name, pattern)));
 }
 
-const VariableContext = createContext<VariableContextValue>({ value: null });
+const VariableContext = createContext<VariableContextValue>({
+  variableName: '',
+  value: null,
+  variableHelperMapping: { rules: [] },
+});
 
 export function useCurrentVariable(): VariableContextValue {
   const context = useContext(VariableContext);
@@ -117,7 +125,12 @@ export function useCurrentVariable(): VariableContextValue {
   return context;
 }
 
-export const VariableProvider: React.FC<VariableProviderProps> = ({ variableName, children, helperObservables }) => {
+export const VariableProvider: React.FC<VariableProviderProps> = ({
+  variableName,
+  children,
+  helperObservables,
+  variableHelperMapping,
+}) => {
   const [value, setValue] = useState(null);
   const variables = useVariables();
   const localVariables = useLocalVariables();
@@ -134,5 +147,28 @@ export const VariableProvider: React.FC<VariableProviderProps> = ({ variableName
     fetchValue();
   }, [localVariables, variableName, variables]);
 
-  return <VariableContext.Provider value={{ value, helperObservables }}>{children}</VariableContext.Provider>;
+  return (
+    <VariableContext.Provider value={{ variableName, value, helperObservables, variableHelperMapping }}>
+      {children}
+    </VariableContext.Provider>
+  );
 };
+
+export function useVariable() {
+  const context = useContext(VariableContext);
+  const { value, variableName, variableHelperMapping } = context;
+
+  const isHelperAllowed = (filterName: string) => {
+    return isHelperAllowedForVariable(variableName, filterName, variableHelperMapping);
+  };
+
+  const getSupportedFilters = (allHelpers: Helper[]) => {
+    return getSupportedFiltersForVariable(variableName, variableHelperMapping, allHelpers);
+  };
+
+  return {
+    ...context,
+    isHelperAllowed,
+    getSupportedFilters,
+  };
+}
