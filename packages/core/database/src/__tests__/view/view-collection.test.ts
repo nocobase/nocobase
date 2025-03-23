@@ -7,16 +7,15 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { vi } from 'vitest';
+import { Database, ViewCollection, createMockDatabase } from '@nocobase/database';
 import { uid } from '@nocobase/utils';
-import { Database, mockDatabase } from '../../index';
-import { ViewCollection } from '../../view-collection';
+import { vi } from 'vitest';
 
 describe.runIf(process.env['DB_DIALECT'] === 'postgres')('pg only view', () => {
   let db: Database;
 
   beforeEach(async () => {
-    db = mockDatabase({
+    db = await createMockDatabase({
       tablePrefix: '',
     });
 
@@ -272,7 +271,7 @@ describe('create view', () => {
   let db: Database;
 
   beforeEach(async () => {
-    db = mockDatabase({
+    db = await createMockDatabase({
       tablePrefix: '',
     });
 

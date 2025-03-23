@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { mockDatabase } from '@nocobase/database';
+import { createMockDatabase, mockDatabase } from '@nocobase/database';
 import { uid } from '@nocobase/utils';
 import axios from 'axios';
 import execa from 'execa';
@@ -64,7 +64,7 @@ const createDatabase = async () => {
   if (process.env.DB_DIALECT === 'sqlite') {
     return 'nocobase';
   }
-  const db = mockDatabase();
+  const db = await createMockDatabase();
   const name = `d_${uid()}`;
   await db.sequelize.query(`CREATE DATABASE ${name}`);
   await db.close();

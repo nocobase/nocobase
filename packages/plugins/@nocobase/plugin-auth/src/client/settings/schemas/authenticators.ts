@@ -153,7 +153,7 @@ export const createFormSchema: ISchema = {
               'x-component': 'Action',
               'x-component-props': {
                 type: 'primary',
-                useAction: '{{ cm.useCreateAction }}',
+                useAction: '{{ useCreateAction }}',
               },
             },
           },
@@ -389,7 +389,7 @@ export const authenticatorsSchema: ISchema = {
                               'x-component': 'Action',
                               'x-component-props': {
                                 type: 'primary',
-                                useAction: '{{ cm.useUpdateAction }}',
+                                useAction: '{{ useUpdateAction }}',
                               },
                             },
                           },
