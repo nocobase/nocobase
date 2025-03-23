@@ -33,7 +33,7 @@ export const useAfterSuccessOptions = () => {
     return [
       {
         value: '$record',
-        label: t('Current form', { ns: 'client' }),
+        label: t('Current record', { ns: 'client' }),
         children: [...fields],
       },
       shouldDisplayPopupRecord && {
