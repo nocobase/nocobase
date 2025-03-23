@@ -33,6 +33,11 @@ export const useAfterSuccessOptions = () => {
     return [
       {
         value: '$record',
+        label: t('Response record', { ns: 'client' }),
+        children: [...fields],
+      },
+      recordData && {
+        value: 'currentRecord',
         label: t('Current record', { ns: 'client' }),
         children: [...fields],
       },

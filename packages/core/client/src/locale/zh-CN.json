@@ -1090,5 +1090,6 @@
   "Font Size（px）": "字体大小（像素）",
   "Font Weight": "字体粗细",
   "Font Style": "字体样式",
-  "Italic": "斜体"
+  "Italic": "斜体",
+  "Response record":"响应结果记录"
 }
