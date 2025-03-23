@@ -45,6 +45,8 @@ export const WorkflowPage = () => {
                       'revisions.stats.executed',
                       'revisions.versionStats.executed',
                       'revisions.enabled',
+                      'stats.executed',
+                      'versionStats.executed',
                     ],
                   },
                 },

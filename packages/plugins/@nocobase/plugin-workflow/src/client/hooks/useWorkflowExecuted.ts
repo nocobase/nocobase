@@ -16,5 +16,5 @@ export function useWorkflowExecuted() {
 
 export function useWorkflowAnyExecuted() {
   const { workflow } = useFlowContext();
-  return Boolean(workflow?.stats?.Executed);
+  return Boolean(workflow?.stats?.executed);
 }
