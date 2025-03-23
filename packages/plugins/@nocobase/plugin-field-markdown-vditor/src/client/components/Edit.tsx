@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { useAPIClient, useApp, useCompile, usePlugin, withDynamicSchemaProps } from '@nocobase/client';
+import { useAPIClient, useCompile, usePlugin, withDynamicSchemaProps } from '@nocobase/client';
 import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import Vditor from 'vditor';
@@ -35,7 +35,6 @@ export const Edit = withDynamicSchemaProps((props) => {
   const compileRef = useRef(compile);
   compileRef.current = compile;
   const { t } = useTranslation();
-  const app = useApp();
 
   const lang: any = useMemo(() => {
     const currentLang = locale.replace(/-/g, '_');

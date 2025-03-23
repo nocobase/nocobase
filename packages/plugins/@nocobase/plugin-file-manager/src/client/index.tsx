@@ -96,13 +96,14 @@ export class PluginFileManagerClient extends Plugin {
 
     // 2. Get storage by fileCollectionName, then call the upload method
     if (options?.fileCollectionName) {
-      const { data } = await this.app.apiClient.resource('collections').list({
-        filter: {
-          name: options.fileCollectionName,
+      const { data } = await this.app.apiClient.request({
+        url: `storages:getStorageByCollectionName`,
+        method: 'get',
+        params: {
+          collectionName: options.fileCollectionName,
         },
       });
-      const fileCollection = data?.data?.[0];
-      const storageId = fileCollection?.storage;
+      const storageId = data?.data?.id;
       if (storageId) {
         const { data } = await this.app.apiClient.request({
           url: `storages:getBasicInfo/${storageId}`,
