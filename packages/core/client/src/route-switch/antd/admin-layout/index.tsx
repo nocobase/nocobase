@@ -496,7 +496,82 @@ const collapsedButtonRender = (collapsed, dom) => {
 };
 
 const headerContextValue = { inHeader: true };
-const headerRender = (props: HeaderViewProps, defaultDom: React.ReactNode) => {
+
+/**
+ * Custom hook to style header menu popups
+ * as a workaround for the pro layout style issue, should be removed after the issue is fixed:
+ * - official demo: https://pro-components.antdigital.dev/~demos/packages-layout-src-components-layout-tab-api-demo-theme
+ * - issue: https://github.com/ant-design/pro-components/issues/8593
+ * - issue: https://github.com/ant-design/pro-components/issues/8522
+ */
+const useHeaderMenuStyle = (bgColor: string) => {
+  useEffect(() => {
+    // Function to find and style the menu popup
+    const styleMenuPopup = () => {
+      // Find the menu popups related to the header
+      const headerEl = document.querySelector('.ant-layout-header');
+      if (!headerEl) return;
+
+      // Get header position to identify which popups belong to the header
+      const headerRect = headerEl.getBoundingClientRect();
+
+      // Find all menu popups
+      const menuPopups = document.querySelectorAll('.ant-menu-submenu-popup');
+
+      // Keep track of styled elements for cleanup
+      const styledElements: HTMLElement[] = [];
+
+      menuPopups.forEach((popup) => {
+        const popupRect = popup.getBoundingClientRect();
+
+        // Check if the popup is positioned near the header (likely a header menu popup)
+        // This uses the vertical positioning to determine association
+        if (Math.abs(popupRect.top - headerRect.bottom) < 10) {
+          // This popup is associated with the header
+          const menuElement = popup.querySelector('.ant-menu');
+          if (menuElement) {
+            (menuElement as HTMLElement).style.backgroundColor = bgColor;
+            styledElements.push(menuElement as HTMLElement);
+          }
+        }
+      });
+
+      return styledElements;
+    };
+
+    // Initially style any existing popups
+    let styledElements = styleMenuPopup() || [];
+
+    // Create mutation observer to detect when popups are added to the DOM
+    const observer = new MutationObserver((mutations) => {
+      for (const mutation of mutations) {
+        if (mutation.addedNodes.length) {
+          // When nodes are added to the DOM, check if they're menu popups
+          const newStyledElements = styleMenuPopup() || [];
+          styledElements = [...styledElements, ...newStyledElements];
+        }
+      }
+    });
+
+    // Start observing the document body for added nodes
+    observer.observe(document.body, { childList: true, subtree: true });
+
+    // Cleanup
+    return () => {
+      observer.disconnect();
+      styledElements.forEach((el) => {
+        el.style.backgroundColor = '';
+      });
+    };
+  }, [bgColor]);
+};
+
+const HeaderRender = (props: HeaderViewProps, defaultDom: React.ReactNode) => {
+  const { token } = useToken();
+
+  // Use the hook to apply styles to header menu popups
+  useHeaderMenuStyle(token.colorBgHeader);
+
   return <headerContext.Provider value={headerContextValue}>{defaultDom}</headerContext.Provider>;
 };
 
@@ -605,7 +680,7 @@ export const InternalAdminLayout = () => {
         layout="mix"
         splitMenus
         token={layoutToken}
-        headerRender={headerRender}
+        headerRender={HeaderRender}
         menuItemRender={menuItemRender}
         subMenuItemRender={subMenuItemRender}
         collapsedButtonRender={collapsedButtonRender}
