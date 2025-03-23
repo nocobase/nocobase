@@ -61,8 +61,8 @@ function customLogger(queryString, queryObject) {
 export async function createMockDatabase(options: IDatabaseOptions = {}) {
   try {
     // @ts-ignore
-    const { staticImport } = await import('@nocobase/plugin-data-source-external-mssql/server/static-import');
-    await staticImport();
+    const { runPluginStaticImports } = await import('@nocobase/server');
+    await runPluginStaticImports();
   } catch (error) {
     // error
   }
