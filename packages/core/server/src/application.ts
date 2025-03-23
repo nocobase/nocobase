@@ -955,6 +955,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     }
 
     await this.emitAsync('afterStop', this, options);
+    this.emit('__stopped', this, options);
 
     this.stopped = true;
     log.info(`app has stopped`, { method: 'stop' });
