@@ -23,24 +23,35 @@ export default class extends Migration {
         fields: ['id', 'key', 'executed', 'allExecuted'],
         transaction,
       });
-      const counts = workflows.map((workflow) => workflow.get('executed'));
-      await WorkflowVersionStatsModel.bulkCreate(
-        counts.map((count, index) => ({
-          id: workflows[index].get('id'),
-          executed: count,
-        })),
-        { transaction },
-      );
 
-      const groupCounts = {};
+      const groupCounts: { [key: string]: { key: string; executed: number } } = {};
       for (const workflow of workflows) {
+        await WorkflowVersionStatsModel.findOrCreate({
+          where: {
+            id: workflow.id,
+          },
+          defaults: {
+            id: workflow.id,
+            executed: workflow.get('executed'),
+          },
+          transaction,
+        });
+
         const key = workflow.get('key');
         groupCounts[key] = {
           key,
           executed: workflow.get('allExecuted') || 0,
         };
       }
-      await WorkflowStatsModel.bulkCreate(Object.values(groupCounts), { transaction });
+      for (const values of Object.values(groupCounts)) {
+        await WorkflowStatsModel.findOrCreate({
+          where: {
+            key: values.key,
+          },
+          defaults: values,
+          transaction,
+        });
+      }
     });
   }
 }

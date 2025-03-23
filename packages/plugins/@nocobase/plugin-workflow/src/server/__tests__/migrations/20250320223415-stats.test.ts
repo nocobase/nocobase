@@ -38,11 +38,12 @@ describe('20250320223415-stats', () => {
     test('only one version', async () => {
       workflow = await WorkflowRepo.create({
         values: {
-          enabled: true,
           type: 'syncTrigger',
           executed: 1,
           allExecuted: 1,
+          key: 'abc',
         },
+        hooks: false,
       });
 
       const migration = new Migration({ app, db: app.db } as any);
@@ -68,7 +69,9 @@ describe('20250320223415-stats', () => {
           type: 'syncTrigger',
           executed: 1,
           allExecuted: 2,
+          key: 'abc',
         },
+        hooks: false,
       });
 
       const w2 = await WorkflowRepo.create({
@@ -77,8 +80,9 @@ describe('20250320223415-stats', () => {
           type: 'syncTrigger',
           executed: 1,
           allExecuted: 2,
-          key: w1.get('key'),
+          key: 'abc',
         },
+        hooks: false,
       });
 
       const migration = new Migration({ app, db: app.db } as any);
@@ -114,9 +118,10 @@ describe('20250320223415-stats', () => {
       const WorkflowRepo = app.db.getRepository('workflows');
       workflow = await WorkflowRepo.create({
         values: {
-          enabled: true,
           type: 'syncTrigger',
+          key: 'abc',
         },
+        hooks: false,
       });
     });
 
@@ -125,6 +130,12 @@ describe('20250320223415-stats', () => {
     test('trigger should get correct executed value', async () => {
       const migration = new Migration({ app, db: app.db } as any);
       await migration.up();
+
+      await workflow.update({
+        enabled: true,
+      });
+      workflow.stats = await workflow.getStats();
+      workflow.versionStats = await workflow.getVersionStats();
 
       await plugin.trigger(workflow, {});
 
