@@ -503,6 +503,7 @@ const headerContextValue = { inHeader: true };
  * - official demo: https://pro-components.antdigital.dev/~demos/packages-layout-src-components-layout-tab-api-demo-theme
  * - issue: https://github.com/ant-design/pro-components/issues/8593
  * - issue: https://github.com/ant-design/pro-components/issues/8522
+ * - issue: https://github.com/ant-design/pro-components/issues/8432
  */
 const useHeaderMenuStyle = (bgColor: string) => {
   useEffect(() => {
