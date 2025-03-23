@@ -9,6 +9,7 @@
 
 import { uid } from '@nocobase/utils';
 import path from 'path';
+import urlJoin from 'url-join';
 
 export function getFilename(req, file, cb) {
   const originalname = Buffer.from(file.originalname, 'binary').toString('utf8');
@@ -27,10 +28,10 @@ export const cloudFilenameGetter = (storage) => (req, file, cb) => {
 };
 
 export function getFileKey(record) {
-  return [record.path.replace(/^\/|\/$/g, ''), record.filename].filter(Boolean).join('/');
+  return urlJoin(record.path, record.filename).replace(/^\//, '');
 }
 
-function ensureUrlEncoded(value) {
+export function ensureUrlEncoded(value) {
   try {
     // 如果解码后与原字符串不同，说明已经被转义过
     if (decodeURIComponent(value) !== value) {

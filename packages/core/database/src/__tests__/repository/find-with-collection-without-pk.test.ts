@@ -7,14 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import Database from '../../database';
-import { mockDatabase } from '../index';
+import { Database, createMockDatabase } from '@nocobase/database';
 
 describe('find collection that without primary key', () => {
   let db: Database;
 
   beforeAll(async () => {
-    db = mockDatabase({
+    db = await createMockDatabase({
       tablePrefix: '',
     });
 

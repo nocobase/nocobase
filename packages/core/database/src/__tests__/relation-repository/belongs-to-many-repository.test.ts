@@ -7,10 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Collection } from '@nocobase/database';
-import Database from '../../database';
-import { BelongsToManyRepository } from '../../relation-repository/belongs-to-many-repository';
-import { mockDatabase } from '../index';
+import { BelongsToManyRepository, Collection, createMockDatabase, Database } from '@nocobase/database';
 import { pgOnly } from '@nocobase/test';
 
 pgOnly()('belongs to many with targetCollection', () => {
@@ -23,7 +20,7 @@ pgOnly()('belongs to many with targetCollection', () => {
   let OrgUser: Collection;
 
   beforeEach(async () => {
-    db = mockDatabase();
+    db = await createMockDatabase();
 
     await db.clean({ drop: true });
 
@@ -98,7 +95,7 @@ pgOnly()('belongs to many with targetCollection', () => {
 describe('belongs to many with collection that has no id key', () => {
   let db: Database;
   beforeEach(async () => {
-    db = mockDatabase();
+    db = await createMockDatabase();
 
     await db.clean({ drop: true });
   });
@@ -184,7 +181,7 @@ describe('belongs to many with target key', function () {
   let Color: Collection;
 
   beforeEach(async () => {
-    db = mockDatabase();
+    db = await createMockDatabase();
 
     await db.clean({ drop: true });
     Post = db.collection({
@@ -320,7 +317,7 @@ describe('belongs to many', () => {
   let Color;
 
   beforeEach(async () => {
-    db = mockDatabase();
+    db = await createMockDatabase();
     await db.clean({ drop: true });
     PostTag = db.collection({
       name: 'posts_tags',
