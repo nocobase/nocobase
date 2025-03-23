@@ -244,17 +244,17 @@ function _Input(props: VariableInputProps) {
     [value],
   );
 
-  useEffect(() => {
-    const dispose = reaction(
-      () => {
-        return composeTemplate({ fullVariable, helpers: helperObservables.helpersObs.value });
-      },
-      (newVal) => {
-        onChange(newVal);
-      },
-    );
-    return dispose;
-  }, [fullVariable, onChange]);
+  // useEffect(() => {
+  //   const dispose = reaction(
+  //     () => {
+  //       return composeTemplate({ fullVariable, helpers: helperObservables.helpersObs.value });
+  //     },
+  //     (newVal) => {
+  //       onChange(newVal);
+  //     },
+  //   );
+  //   return dispose;
+  // }, [fullVariable, onChange]);
 
   const parsed = useMemo(() => parseValue(variableSegments, parseOptions), [parseOptions, variableSegments]);
   const isConstant = typeof parsed === 'string';
@@ -485,7 +485,11 @@ function _Input(props: VariableInputProps) {
                   </React.Fragment>
                 );
               })}
-              <VariableProvider variableName={fullVariable} variableHelperMapping={variableHelperMapping}>
+              <VariableProvider
+                variableName={fullVariable}
+                variableHelperMapping={variableHelperMapping}
+                onVariableTemplateChange={onChange}
+              >
                 <HelperList />
                 {variableText.length > 0 && <HelperAddition />}
               </VariableProvider>

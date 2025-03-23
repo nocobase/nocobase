@@ -7,7 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Helper } from '@nocobase/json-template-parser';
+import { reaction } from '@formily/reactive';
+import { composeTemplate, extractTemplateElements, Helper } from '@nocobase/json-template-parser';
 import { isArray } from 'lodash';
 import minimatch from 'minimatch';
 import React, { createContext, useContext, useEffect, useState } from 'react';
@@ -25,6 +26,7 @@ interface VariableProviderProps {
   children: React.ReactNode;
   variableHelperMapping?: VariableHelperMapping;
   helperObservables?: ReturnType<typeof useHelperObservables>;
+  onVariableTemplateChange?: (val) => void;
 }
 
 export interface VariableHelperRule {
@@ -129,12 +131,24 @@ export const VariableProvider: React.FC<VariableProviderProps> = ({
   variableName,
   children,
   variableHelperMapping,
+  onVariableTemplateChange,
 }) => {
   const [value, setValue] = useState(null);
   const variables = useVariables();
   const localVariables = useLocalVariables();
   const helperObservables = useHelperObservables();
   isArray(localVariables) ? localVariables : [localVariables];
+  useEffect(() => {
+    const dispose = reaction(
+      () => {
+        return composeTemplate({ fullVariable: variableName, helpers: helperObservables.helpersObs.value });
+      },
+      (newVal) => {
+        onVariableTemplateChange(newVal);
+      },
+    );
+    return dispose;
+  }, [variableName, onVariableTemplateChange]);
   useEffect(() => {
     async function fetchValue() {
       try {

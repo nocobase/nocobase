@@ -1,3 +1,5 @@
+import { createForm } from '@formily/core';
+import { observer, useField, useForm } from '@formily/react';
 import { AntdSchemaComponentProvider, Plugin, SchemaComponent } from '@nocobase/client';
 import { mockApp } from '@nocobase/client/demo-utils';
 import PluginVariableFiltersClient from '@nocobase/plugin-variable-helpers/client';
@@ -8,8 +10,18 @@ const scope = [
   { label: 'Date', value: '$date', children: [{ label: 'Now', value: 'now' }] },
 ];
 
+const useFormBlockProps = () => {
+  return {
+    form: createForm({
+      initialValues: {},
+    }),
+  };
+};
+
 const schema = {
   type: 'object',
+  'x-component': 'FormV2',
+  'x-use-component-props': 'useFormBlockProps',
   properties: {
     input: {
       type: 'string',
@@ -28,13 +40,24 @@ const schema = {
         },
       },
     },
+    output: {
+      type: 'void',
+      title: `输出`,
+      'x-decorator': 'FormItem',
+      'x-component': 'OutPut',
+    },
   },
 };
+
+const OutPut = observer(() => {
+  const form = useForm();
+  return <div>Current input value: {form.values.input}</div>;
+});
 
 const Demo = () => {
   return (
     <AntdSchemaComponentProvider>
-      <SchemaComponent schema={schema} />
+      <SchemaComponent schema={schema} scope={{ useFormBlockProps }} components={{ OutPut }} />
     </AntdSchemaComponentProvider>
   );
 };

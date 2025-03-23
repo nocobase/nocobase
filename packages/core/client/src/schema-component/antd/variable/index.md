@@ -45,6 +45,8 @@ const variableHelperMapping = {
 ```
 <code src="./demos/demo1.tsx"></code>
 
+### 不同的变量有不同的上下文
+同一个变量在不同的运行时环境它的值也不同，所以有必要为变量提供上下文环境。
 ## `Variable.TextArea`
 
 <code src="./demos/demo2.tsx"></code>

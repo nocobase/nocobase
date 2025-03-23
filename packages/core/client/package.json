@@ -27,8 +27,8 @@
     "@formily/reactive-react": "^2.2.27",
     "@formily/shared": "^2.2.27",
     "@formily/validator": "^2.2.27",
-    "@nocobase/json-template-parser": "1.6.0-alpha.28",
     "@nocobase/evaluators": "1.7.0-alpha.3",
+    "@nocobase/json-template-parser": "1.6.0-alpha.28",
     "@nocobase/sdk": "1.7.0-alpha.3",
     "@nocobase/utils": "1.7.0-alpha.3",
     "ahooks": "^3.7.2",
@@ -67,7 +67,8 @@
     "react-router-dom": "^6.11.2",
     "react-to-print": "^2.14.7",
     "sanitize-html": "2.13.0",
-    "use-deep-compare-effect": "^1.8.1"
+    "use-deep-compare-effect": "^1.8.1",
+    "use-immer": "^0.11.0"
   },
   "peerDependencies": {
     "react": ">=18.0.0",

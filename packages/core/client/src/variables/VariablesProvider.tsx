@@ -26,6 +26,7 @@ import { getPath } from './utils/getPath';
 import { clearRequested, getRequested, hasRequested, stashRequested } from './utils/hasRequested';
 import { isVariable } from './utils/isVariable';
 import { uniq } from './utils/uniq';
+import { processDateVariableContext } from './utils/dateVariableContext';
 
 export const VariablesContext = createContext<VariablesContextType>(null);
 VariablesContext.displayName = 'VariablesContext';
@@ -257,44 +258,51 @@ const VariablesProvider = ({ children, filterVariables }: any) => {
   );
 
   const parseVariable = useCallback(
-    /**
-     * Parse the variable string to the actual value
-     * @param str Variable string
-     * @param localVariables Local variables, will be cleared after parsing
-     * @returns
-     */
     async (
       str: string,
-      localVariables?: VariableOption | VariableOption[],
+      localVariable?: VariableOption | VariableOption[],
       options?: {
-        /** Related fields that need to be included in the first request */
         appends?: string[];
-        /** Do not request when the association field is empty */
         doNotRequest?: boolean;
-        /**
-         * The operator related to the current field, provided when parsing the default value of the field
-         */
         fieldOperator?: string | void;
       },
     ) => {
-      const { fullVariable, helpers } = extractTemplateElements(str);
-      if (!fullVariable) {
-        return str;
+      const list = variablePath.split('.');
+      const variableName = list[0];
+      const variableOption = variablesStore[variableName];
+
+      if (!variableOption) {
+        return {
+          value: undefined,
+        };
       }
 
-      if (localVariables) {
-        localVariables = _.isArray(localVariables) ? localVariables : [localVariables];
-      }
+      const _value = await getResult(variablePath, localVariable, options);
 
-      const path = getPath(str);
-      const result = await getResult(path, localVariables as VariableOption[], options);
-      if (Array.isArray(helpers) && helpers.length > 0) {
-        result.value = helpers.reduce((acc, helper) => helper.handler(...[acc, ...helper.args]), result.value);
+      // 处理变量上下文
+      if (variableOption.variableContext) {
+        const { type, config } = variableOption.variableContext;
+        switch (type) {
+          case 'date':
+            return {
+              value: processDateVariableContext(_value, config),
+              collectionName: variableOption.collectionName,
+              dataSource: variableOption.dataSource,
+            };
+          // 可以添加其他类型的处理
+          default:
+            return {
+              value: _value,
+              collectionName: variableOption.collectionName,
+              dataSource: variableOption.dataSource,
+            };
+        }
       }
 
       return {
-        ...result,
-        value: uniq(filterEmptyValues(result.value)),
+        value: _value === undefined ? variableOption.defaultValue : _value,
+        collectionName: variableOption.collectionName,
+        dataSource: variableOption.dataSource,
       };
     },
     [getResult],
