@@ -73,6 +73,7 @@ export class PluginPublicFormsServer extends Plugin {
     const keys = instance.collection.split(':');
     const collectionName = keys.pop();
     const dataSourceKey = keys.pop() || 'main';
+    const title = instance.get('title');
     const schema = await uiSchema.getJsonSchema(filterByTk);
     const { getAssociationAppends } = parseAssociationNames(dataSourceKey, collectionName, this.app, schema);
     const { appends } = getAssociationAppends();
@@ -94,6 +95,7 @@ export class PluginPublicFormsServer extends Plugin {
         },
       ),
       schema,
+      title,
     };
   }
 
