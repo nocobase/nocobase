@@ -99,7 +99,6 @@ const InternalSortableItem = observer(
         removeParentsIfNoChildren: removeParentsIfNoChildren ?? true,
       };
     }, [schema, removeParentsIfNoChildren]);
-    console.log(id, eid, props.children);
 
     return (
       <SortableProvider id={id} data={data}>
