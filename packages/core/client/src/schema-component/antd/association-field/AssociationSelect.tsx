@@ -14,22 +14,22 @@ import { uid } from '@formily/shared';
 import { Space, message } from 'antd';
 import { isEqual } from 'lodash';
 import { isFunction } from 'mathjs';
-import React, { useEffect, useState, useContext } from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   ClearCollectionFieldContext,
   NocoBaseRecursionField,
   RecordProvider,
+  SchemaComponentContext,
   useAPIClient,
   useCollectionRecordData,
-  SchemaComponentContext,
 } from '../../../';
-import { Action } from '../action';
+import { VariablePopupRecordProvider } from '../../../modules/variable/variablesProvider/VariablePopupRecordProvider';
 import { isVariable } from '../../../variables/utils/isVariable';
 import { getInnermostKeyAndValue } from '../../common/utils/uitls';
+import { Action } from '../action';
 import { RemoteSelect, RemoteSelectProps } from '../remote-select';
 import useServiceOptions, { useAssociationFieldContext } from './hooks';
-import { VariablePopupRecordProvider } from '../../../modules/variable/variablesProvider/VariablePopupRecordProvider';
 
 export const AssociationFieldAddNewer = (props) => {
   const schemaComponentCtxValue = useContext(SchemaComponentContext);
@@ -151,7 +151,6 @@ const InternalAssociationSelect = observer(
         </div>
       );
     };
-    console.log(fieldSchema);
     return (
       <div key={fieldSchema.name}>
         <Space.Compact style={{ display: 'flex' }}>
