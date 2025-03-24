@@ -10,7 +10,7 @@
 import fs from 'fs';
 import _ from 'lodash';
 import { basename } from 'path';
-import { AsyncTasksManager } from '../../../server';
+
 export default {
   name: 'asyncTasks',
   actions: {
@@ -51,7 +51,7 @@ export default {
       await next();
     },
     async fetchFile(ctx, next) {
-      const { filterByTk } = ctx.action.params;
+      const { filterByTk, filename } = ctx.action.params;
       const taskManager = ctx.app.container.get('AsyncTaskManager');
       const taskStatus = await taskManager.getTaskStatus(filterByTk);
       // throw error if task is not success
@@ -67,10 +67,12 @@ export default {
 
       // send file to client
       ctx.body = fs.createReadStream(filePath);
-
+      // 处理文件名
+      let finalFileName = filename ? filename : basename(filePath);
+      finalFileName = encodeURIComponent(finalFileName); // 避免中文或特殊字符问题
       ctx.set({
         'Content-Type': 'application/octet-stream',
-        'Content-Disposition': `attachment; filename=${basename(filePath)}`,
+        'Content-Disposition': `attachment; filename=${finalFileName}`,
       });
 
       await next();

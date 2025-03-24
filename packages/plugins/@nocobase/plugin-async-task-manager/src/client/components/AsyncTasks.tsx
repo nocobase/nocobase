@@ -7,7 +7,16 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { createStyles, Icon, useAPIClient, useApp, usePlugin, useRequest } from '@nocobase/client';
+import {
+  createStyles,
+  Icon,
+  useAPIClient,
+  useApp,
+  usePlugin,
+  useRequest,
+  useCollectionManager,
+  useCompile,
+} from '@nocobase/client';
 import { Button, Empty, Modal, Popconfirm, Popover, Progress, Space, Table, Tag, Tooltip } from 'antd';
 import React, { useCallback, useEffect, useState } from 'react';
 
@@ -51,17 +60,16 @@ const useAsyncTask = () => {
 };
 
 const AsyncTasksButton = (props) => {
-  const { popoverVisible, setPopoverVisible, tasks, refresh, loading } = props;
-  const hasProcessingTasks = false;
+  const { popoverVisible, setPopoverVisible, tasks, refresh, loading, hasProcessingTasks } = props;
   const app = useApp();
   const api = useAPIClient();
   const appInfo = useCurrentAppInfo();
   const t = useT();
   const { styles } = useStyles();
-
+  const plugin = usePlugin<any>('async-task-manager');
+  const cm = useCollectionManager();
+  const compile = useCompile();
   const showTaskResult = (task) => {
-    // setCurrentTask(task);
-    // setResultModalVisible(true);
     setPopoverVisible(false);
   };
 
@@ -84,7 +92,7 @@ const AsyncTasksButton = (props) => {
         if (!title) {
           return '-';
         }
-
+        const collection = cm.getCollection(title.collection);
         const actionTypeMap = {
           export: t('Export'),
           import: t('Import'),
@@ -100,7 +108,7 @@ const AsyncTasksButton = (props) => {
         };
 
         const taskTemplate = taskTypeMap[title.actionType] || `${actionText}`;
-        return taskTemplate.replace('{collection}', title.collection);
+        return taskTemplate.replace('{collection}', compile(collection.title));
       },
     },
     {
@@ -261,8 +269,15 @@ const AsyncTasksButton = (props) => {
                 icon={<Icon type="DownloadOutlined" />}
                 onClick={() => {
                   const token = app.apiClient.auth.token;
+                  const collection = cm.getCollection(record.title.collection);
+                  const compiledTitle = compile(collection.title);
+                  const suffix = record?.title?.actionType === 'export-attachments' ? 'attachments.zip' : '.xlsx';
+                  const fileText = `${compiledTitle}-${suffix}`;
+                  const filename = encodeURIComponent(fileText); // 避免中文或特殊字符问题
                   const url = app.getApiUrl(
-                    `asyncTasks:fetchFile/${record.taskId}?token=${token}&__appName=${appInfo?.data?.name || app.name}`,
+                    `asyncTasks:fetchFile/${record.taskId}?token=${token}&__appName=${encodeURIComponent(
+                      appInfo?.data?.name || app.name,
+                    )}&filename=${filename}`,
                   );
                   window.open(url);
                 }}
@@ -277,7 +292,19 @@ const AsyncTasksButton = (props) => {
                 type="link"
                 size="small"
                 icon={<Icon type="EyeOutlined" />}
-                onClick={() => showTaskResult(record)}
+                onClick={() => {
+                  showTaskResult(record);
+                  const { payload } = record.status;
+                  const renderer = plugin.taskResultRendererManager.get(record.title.actionType);
+                  Modal.info({
+                    title: t('Task result'),
+                    content: renderer ? (
+                      React.createElement(renderer, { payload, task: record })
+                    ) : (
+                      <div>{t(`No renderer available for this task type, payload: ${payload}`)}</div>
+                    ),
+                  });
+                }}
               >
                 {t('View result')}
               </Button>,
@@ -294,6 +321,21 @@ const AsyncTasksButton = (props) => {
               icon={<Icon type="ExclamationCircleOutlined" />}
               onClick={() => {
                 setPopoverVisible(false);
+                Modal.info({
+                  title: t('Error Details'),
+                  content: record.status.errors?.map((error, index) => (
+                    <div key={index} style={{ marginBottom: 16 }}>
+                      <div style={{ color: '#ff4d4f', marginBottom: 8 }}>{error.message}</div>
+                      {error.code && (
+                        <div style={{ color: '#999', fontSize: 12 }}>
+                          {t('Error code')}: {error.code}
+                        </div>
+                      )}
+                    </div>
+                  )),
+                  closable: true,
+                  width: 400,
+                });
               }}
             >
               {t('Error details')}
@@ -341,9 +383,13 @@ export const AsyncTasks = () => {
   const { tasks, refresh, ...others } = useAsyncTask();
   const app = useApp();
   const [popoverVisible, setPopoverVisible] = useState(false);
+  const [hasProcessingTasks, setHasProcessingTasks] = useState(false);
+
+  useEffect(() => {
+    setHasProcessingTasks(tasks.some((task) => task.status.type !== 'success' && task.status.type !== 'failed'));
+  }, [tasks]);
 
   const handleTaskCreated = useCallback(async () => {
-    console.log('handleTaskCreated');
     setPopoverVisible(true);
   }, []);
   const handleTaskProgress = useCallback(() => {
@@ -374,6 +420,8 @@ export const AsyncTasks = () => {
   }, [app, handleTaskCancelled, handleTaskCreated, handleTaskProgress, handleTaskStatus]);
 
   return (
-    tasks?.length > 0 && <AsyncTasksButton {...{ tasks, refresh, popoverVisible, setPopoverVisible, ...others }} />
+    tasks?.length > 0 && (
+      <AsyncTasksButton {...{ tasks, refresh, popoverVisible, setPopoverVisible, hasProcessingTasks, ...others }} />
+    )
   );
 };
