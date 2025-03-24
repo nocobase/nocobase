@@ -7,10 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { useTranslation } from 'react-i18next';
 import { NAMESPACE } from '../../locale';
-import common, { commonUpload } from './common';
-import React from 'react';
+import common from './common';
 
 export default {
   title: `{{t("Tencent COS", { ns: "${NAMESPACE}" })}}`,
@@ -72,5 +70,4 @@ export default {
     paranoid: common.paranoid,
   },
   thumbnailRuleLink: 'https://cloud.tencent.com/document/product/436/42214',
-  upload: commonUpload,
 };

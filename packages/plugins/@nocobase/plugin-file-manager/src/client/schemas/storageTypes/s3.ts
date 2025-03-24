@@ -8,7 +8,7 @@
  */
 
 import { NAMESPACE } from '../../locale';
-import common, { commonUpload } from './common';
+import common from './common';
 
 export default {
   title: `{{t("Amazon S3", { ns: "${NAMESPACE}" })}}`,
@@ -63,5 +63,4 @@ export default {
     default: common.default,
     paranoid: common.paranoid,
   },
-  upload: commonUpload,
 };

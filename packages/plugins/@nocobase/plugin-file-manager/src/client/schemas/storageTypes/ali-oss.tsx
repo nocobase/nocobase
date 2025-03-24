@@ -7,11 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React from 'react';
-
 import { NAMESPACE } from '../../locale';
-import common, { commonUpload } from './common';
-import { useTranslation } from 'react-i18next';
+import common from './common';
 
 export default {
   title: `{{t("Aliyun OSS", { ns: "${NAMESPACE}" })}}`,
@@ -72,5 +69,4 @@ export default {
     paranoid: common.paranoid,
   },
   thumbnailRuleLink: 'https://help.aliyun.com/zh/oss/user-guide/resize-images-4',
-  upload: commonUpload,
 };
