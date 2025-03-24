@@ -19,7 +19,7 @@ export class PluginFieldMarkdownVditorServer extends Plugin {
   async load() {
     await this.copyVditorDist();
     this.setResource();
-    this.app.acl.allow('vditor', 'check', 'public');
+    this.app.acl.allow('vditor', 'check', 'loggedIn');
   }
 
   setResource() {
