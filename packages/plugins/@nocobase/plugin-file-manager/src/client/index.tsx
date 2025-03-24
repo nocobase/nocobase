@@ -78,64 +78,44 @@ export class PluginFileManagerClient extends Plugin {
   async uploadFile(options?: {
     file: File;
     fileCollectionName?: string;
-    storageId?: string;
-  }): Promise<{ errorMessage?: string; data?: any }> {
-    // 1. Get storage by storageId, then call the upload method
-    if (options?.storageId) {
-      const { data } = await this.app.apiClient.request({
-        url: `storages:getBasicInfo/${options.storageId}`,
-      });
-
-      const storageConfig = data?.data;
-
-      if (storageConfig) {
-        const storageType = this.getStorageType(storageConfig.type);
-        return await storageType?.upload({ file: options.file, storageConfig, apiClient: this.app.apiClient });
-      }
-    }
-
-    // 2. Get storage by fileCollectionName, then call the upload method
-    if (options?.fileCollectionName) {
-      const { data } = await this.app.apiClient.request({
-        url: `storages:getStorageByCollectionName`,
-        method: 'get',
-        params: {
-          collectionName: options.fileCollectionName,
-        },
-      });
-
-      const storageConfig = data?.data;
-
-      if (storageConfig) {
-        const storageType = this.getStorageType(storageConfig.type);
-        return await storageType?.upload({
-          file: options.file,
-          storageConfig,
-          fileCollectionName: options.fileCollectionName,
-          apiClient: this.app.apiClient,
-        });
-      }
-    }
-
-    // 3. Get the default storage, then call the upload method
-    const { data } = await this.app.apiClient.request({
-      url: `storages:getBasicInfo`,
-    });
-    const defaultStorage = data?.data;
-    if (defaultStorage) {
-      const storageType = this.getStorageType(defaultStorage.type);
-      if (storageType?.upload) {
-        return await storageType.upload({
-          file: options.file,
-          storageConfig: defaultStorage,
-          apiClient: this.app.apiClient,
-        });
-      }
-    }
-
-    return {
-      errorMessage: `{{ t("No storage found", { ns: "${NAMESPACE}" }) }}`,
+    storageType?: string;
+    /** 后面可能会废弃这个参数 */
+    storageId?: number;
+    storageRules?: {
+      size: number;
     };
+  }): Promise<{ errorMessage?: string; data?: any }> {
+    const storageTypeObj = this.getStorageType(options?.storageType);
+    if (storageTypeObj?.upload) {
+      // 1. If storageType is provided, call the upload method directly
+      return await storageTypeObj.upload({
+        file: options.file,
+        apiClient: this.app.apiClient,
+        storageType: options.storageType,
+        storageId: options.storageId,
+        storageRules: options.storageRules,
+        fileCollectionName: options.fileCollectionName,
+      });
+    }
+
+    // 2. If storageType is not provided, use the default upload method
+    try {
+      const formData = new FormData();
+      formData.append('file', options.file);
+      const res = await this.app.apiClient.request({
+        url: `${options.fileCollectionName || 'attachments'}:create`,
+        method: 'post',
+        data: formData,
+      });
+
+      return {
+        data: res.data?.data,
+      };
+    } catch (error) {
+      return {
+        errorMessage: error.message,
+      };
+    }
   }
 }
 

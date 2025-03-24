@@ -167,10 +167,8 @@ describe('vditor:check', () => {
     expect(response.body.data.isSupportToUploadFiles).toBe(true);
     expect(response.body.data.storage).toMatchInlineSnapshot(`
       {
-        "baseUrl": "https://example.com",
         "id": 3,
         "name": "s3-storage-with-baseurl",
-        "public": true,
         "rules": {},
         "title": null,
         "type": "s3-compatible",
@@ -232,10 +230,8 @@ describe('vditor:check', () => {
     expect(response.body.data.isSupportToUploadFiles).toBe(false);
     expect(response.body.data.storage).toMatchInlineSnapshot(`
       {
-        "baseUrl": "https://example.com",
         "id": 4,
         "name": "s3-storage-with-baseurl-not-public",
-        "public": false,
         "rules": {},
         "title": null,
         "type": "s3-compatible",

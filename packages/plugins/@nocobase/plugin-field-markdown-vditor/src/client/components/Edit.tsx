@@ -94,6 +94,9 @@ export const Edit = withDynamicSchemaProps((props) => {
           const { data, errorMessage } = await fileManagerPlugin.uploadFile({
             file,
             fileCollectionName: fileCollection,
+            storageId: checkData?.data?.storage?.id,
+            storageType: checkData?.data?.storage?.type,
+            storageRules: checkData?.data?.storage?.rules,
           });
 
           if (errorMessage) {
