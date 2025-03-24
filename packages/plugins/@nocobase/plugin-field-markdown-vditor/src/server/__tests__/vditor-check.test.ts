@@ -111,9 +111,15 @@ describe('vditor:check', () => {
 
     expect(response.status).toBe(200);
     expect(response.body.data.isSupportToUploadFiles).toBe(true);
-    expect(response.body.data.storage.name).toBe('default-storage');
-    expect(response.body.data.storage.type).toBe('local');
-    expect(response.body.data.storage.default).toBe(true);
+    expect(response.body.data.storage).toMatchInlineSnapshot(`
+      {
+        "id": 1,
+        "name": "default-storage",
+        "rules": {},
+        "title": null,
+        "type": "local",
+      }
+    `);
   });
 
   it('should return default storage when fileCollectionName without storage is provided', async () => {
@@ -123,7 +129,15 @@ describe('vditor:check', () => {
 
     expect(response.status).toBe(200);
     expect(response.body.data.isSupportToUploadFiles).toBe(true);
-    expect(response.body.data.storage.name).toBe('default-storage');
+    expect(response.body.data.storage).toMatchInlineSnapshot(`
+      {
+        "id": 1,
+        "name": "default-storage",
+        "rules": {},
+        "title": null,
+        "type": "local",
+      }
+    `);
   });
 
   it('should return s3 storage and not support upload when s3 collection without baseUrl is provided', async () => {
@@ -133,8 +147,15 @@ describe('vditor:check', () => {
 
     expect(response.status).toBe(200);
     expect(response.body.data.isSupportToUploadFiles).toBe(false);
-    expect(response.body.data.storage.name).toBe('s3-storage');
-    expect(response.body.data.storage.type).toBe('s3-compatible');
+    expect(response.body.data.storage).toMatchInlineSnapshot(`
+      {
+        "id": 2,
+        "name": "s3-storage",
+        "rules": {},
+        "title": null,
+        "type": "s3-compatible",
+      }
+    `);
   });
 
   it('should return s3 storage and support upload when s3 collection with baseUrl is provided', async () => {
@@ -144,10 +165,17 @@ describe('vditor:check', () => {
 
     expect(response.status).toBe(200);
     expect(response.body.data.isSupportToUploadFiles).toBe(true);
-    expect(response.body.data.storage.name).toBe('s3-storage-with-baseurl');
-    expect(response.body.data.storage.type).toBe('s3-compatible');
-    expect(response.body.data.storage.options.baseUrl).toBe('https://example.com');
-    expect(response.body.data.storage.options.public).toBe(true);
+    expect(response.body.data.storage).toMatchInlineSnapshot(`
+      {
+        "baseUrl": "https://example.com",
+        "id": 3,
+        "name": "s3-storage-with-baseurl",
+        "public": true,
+        "rules": {},
+        "title": null,
+        "type": "s3-compatible",
+      }
+    `);
   });
 
   it('should handle non-existent fileCollectionName gracefully', async () => {
@@ -157,7 +185,15 @@ describe('vditor:check', () => {
 
     expect(response.status).toBe(200);
     expect(response.body.data.isSupportToUploadFiles).toBe(true);
-    expect(response.body.data.storage.name).toBe('default-storage');
+    expect(response.body.data.storage).toMatchInlineSnapshot(`
+      {
+        "id": 1,
+        "name": "default-storage",
+        "rules": {},
+        "title": null,
+        "type": "local",
+      }
+    `);
   });
 
   it('should handle s3 storage with baseUrl but not public attribute', async () => {
@@ -194,8 +230,17 @@ describe('vditor:check', () => {
 
     expect(response.status).toBe(200);
     expect(response.body.data.isSupportToUploadFiles).toBe(false);
-    expect(response.body.data.storage.name).toBe('s3-storage-with-baseurl-not-public');
-    expect(response.body.data.storage.options.public).toBe(false);
+    expect(response.body.data.storage).toMatchInlineSnapshot(`
+      {
+        "baseUrl": "https://example.com",
+        "id": 4,
+        "name": "s3-storage-with-baseurl-not-public",
+        "public": false,
+        "rules": {},
+        "title": null,
+        "type": "s3-compatible",
+      }
+    `);
   });
 
   it('should handle non-s3 storage types correctly', async () => {
@@ -228,7 +273,14 @@ describe('vditor:check', () => {
 
     expect(response.status).toBe(200);
     expect(response.body.data.isSupportToUploadFiles).toBe(true);
-    expect(response.body.data.storage.name).toBe('other-storage-type');
-    expect(response.body.data.storage.type).toBe('oss');
+    expect(response.body.data.storage).toMatchInlineSnapshot(`
+      {
+        "id": 4,
+        "name": "other-storage-type",
+        "rules": {},
+        "title": null,
+        "type": "oss",
+      }
+    `);
   });
 });
