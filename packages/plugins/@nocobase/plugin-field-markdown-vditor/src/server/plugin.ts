@@ -58,9 +58,19 @@ export class PluginFieldMarkdownVditorServer extends Plugin {
           const isSupportToUploadFiles =
             storage?.type !== 's3-compatible' || (storage?.options?.baseUrl && storage?.options?.public);
 
+          const storageConfig = {
+            id: storage.id,
+            title: storage.title,
+            name: storage.name,
+            type: storage.type,
+            rules: storage.rules,
+            baseUrl: storage.options?.baseUrl,
+            public: storage.options?.public,
+          };
+
           context.body = {
             isSupportToUploadFiles: !!isSupportToUploadFiles,
-            storage,
+            storage: storageConfig,
           };
 
           await next();
