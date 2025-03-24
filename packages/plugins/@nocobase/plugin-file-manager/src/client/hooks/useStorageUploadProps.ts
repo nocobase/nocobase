@@ -30,14 +30,14 @@ export function useStorage(storage) {
   return (!loading && data?.data) || null;
 }
 
-export function useStorageCfg(storageId?: number) {
+export function useStorageCfg() {
   const field = useCollectionField();
   const cm = useCollectionManager();
   const targetCollection = cm.getCollection(field?.target);
   const collection = useCollection();
   const plugin = usePlugin(FileManagerPlugin);
   const storage = useStorage(
-    storageId || field?.storage || collection?.getOption('storage') || targetCollection?.getOption('storage'),
+    field?.storage || collection?.getOption('storage') || targetCollection?.getOption('storage'),
   );
   const storageType = plugin.getStorageType(storage?.type);
   return {
