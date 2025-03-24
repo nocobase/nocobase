@@ -103,23 +103,17 @@ export class PluginFileManagerClient extends Plugin {
           collectionName: options.fileCollectionName,
         },
       });
-      const storageId = data?.data?.id;
-      if (storageId) {
-        const { data } = await this.app.apiClient.request({
-          url: `storages:getBasicInfo/${storageId}`,
+
+      const storageConfig = data?.data;
+
+      if (storageConfig) {
+        const storageType = this.getStorageType(storageConfig.type);
+        return await storageType?.upload({
+          file: options.file,
+          storageConfig,
+          fileCollectionName: options.fileCollectionName,
+          apiClient: this.app.apiClient,
         });
-
-        const storageConfig = data?.data;
-
-        if (storageConfig) {
-          const storageType = this.getStorageType(storageConfig.type);
-          return await storageType?.upload({
-            file: options.file,
-            storageConfig,
-            fileCollectionName: options.fileCollectionName,
-            apiClient: this.app.apiClient,
-          });
-        }
       }
     }
 
