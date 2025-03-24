@@ -332,6 +332,7 @@ export class Database extends EventEmitter implements AsyncEmitter {
     patchSequelizeQueryInterface(this);
 
     this.registerCollectionType();
+    dialectClass.init(this);
   }
 
   _instanceId: string;

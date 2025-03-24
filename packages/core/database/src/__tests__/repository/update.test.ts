@@ -187,7 +187,7 @@ describe('update', () => {
       name: 'users',
       fields: [
         { type: 'string', name: 'name' },
-        { type: 'hasMany', name: 'posts' /*  target: 'posts', foreignKey: 'user_id'  */ },
+        { type: 'hasMany', name: 'posts', target: 'posts', foreignKey: 'user_id' },
       ],
     });
 

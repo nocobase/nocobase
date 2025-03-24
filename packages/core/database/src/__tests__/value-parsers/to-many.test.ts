@@ -73,7 +73,8 @@ describe('number value parser', () => {
   it('should be [1]', async () => {
     await setValue('tag1');
     expect(parser.errors.length).toBe(0);
-    expect(parser.getValue()).toEqual([1]);
+    const val = db.options.dialect === 'mssql' ? ['1'] : [1];
+    expect(parser.getValue()).toEqual(val);
   });
 
   it('should be null', async () => {

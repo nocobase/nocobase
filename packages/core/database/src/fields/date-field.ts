@@ -84,7 +84,7 @@ export class DateField extends Field {
     }
   }
 
-  setter = (value, options) => {
+  setter(value, options) {
     if (value === null) {
       return value;
     }
@@ -99,7 +99,7 @@ export class DateField extends Field {
     }
 
     return value;
-  };
+  }
 
   additionalSequelizeOptions() {
     const { name } = this.options;

@@ -216,6 +216,7 @@ describe('targetKey', () => {
     await r2.create({
       values: {
         code: 'b1',
+        a1Code: 'a11',
       },
     });
     const b1 = await r2.create({

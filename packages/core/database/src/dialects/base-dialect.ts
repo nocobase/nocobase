@@ -32,6 +32,8 @@ export abstract class BaseDialect {
     return {};
   }
 
+  static async init(db: Database) {}
+
   getSequelizeOptions(options: DatabaseOptions) {
     return options;
   }

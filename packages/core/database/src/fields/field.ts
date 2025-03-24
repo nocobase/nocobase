@@ -37,7 +37,6 @@ export abstract class Field {
   context: FieldContext;
   database: Database;
   collection: Collection;
-  setter: ((value, options, values, key) => any) | null;
 
   [key: string]: any;
 
