@@ -36,37 +36,3 @@ export async function getBasicInfo(context, next) {
 
   next();
 }
-
-export async function getStorageByCollectionName(context, next) {
-  const { storagesCache } = context.app.pm.get(Plugin) as Plugin;
-  const { collectionName } = context.action.params;
-
-  if (!collectionName) {
-    return context.throw(400, 'Collection name is required');
-  }
-
-  const collection = context.db.getCollection(collectionName);
-  if (!collection) {
-    return context.throw(404, `Collection "${collectionName}" not found`);
-  }
-
-  const storageName = collection.options.storage;
-
-  let storage;
-  if (storageName) {
-    storage = Array.from(storagesCache.values()).find((item) => item.name === storageName);
-    context.body = {
-      id: storage.id,
-      title: storage.title,
-      name: storage.name,
-      type: storage.type,
-      rules: storage.rules,
-      baseUrl: storage.options?.baseUrl,
-      public: storage.options?.public,
-    };
-  } else {
-    context.body = null;
-  }
-
-  await next();
-}
