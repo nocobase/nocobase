@@ -10,7 +10,7 @@
 import fs from 'fs';
 import _ from 'lodash';
 import { basename } from 'path';
-import { AsyncTasksManager } from '../../../server';
+
 export default {
   name: 'asyncTasks',
   actions: {
