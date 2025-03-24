@@ -45,9 +45,9 @@ export const Sortable = (props: any) => {
   const { draggable, droppable } = useContext(SortableContext);
   const { isOver, setNodeRef } = droppable;
   const droppableStyle = { ...style };
-
+  const isLinkComponent = component === 'a' || component?.displayName === 'WrapperComponentLink';
   if (isOver && draggable?.active?.id !== droppable?.over?.id) {
-    droppableStyle[component === 'a' ? 'color' : 'background'] = getComputedColor(token.colorSettings);
+    droppableStyle[isLinkComponent ? 'color' : 'background'] = getComputedColor(token.colorSettings);
     Object.assign(droppableStyle, overStyle);
   }
 
@@ -99,6 +99,7 @@ const InternalSortableItem = observer(
         removeParentsIfNoChildren: removeParentsIfNoChildren ?? true,
       };
     }, [schema, removeParentsIfNoChildren]);
+    console.log(id, eid, props.children);
 
     return (
       <SortableProvider id={id} data={data}>
@@ -118,7 +119,6 @@ export const SortableItem: React.FC<SortableItemProps> = React.memo((props) => {
   if (designable) {
     return <InternalSortableItem {...props} />;
   }
-
   return React.createElement(
     component || 'div',
     _.omit(others, ['children', 'schema', 'overStyle', 'openMode', 'id', 'eid', 'removeParentsIfNoChildren']),
