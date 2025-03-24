@@ -1,0 +1,17 @@
+{
+    "Environment": "Omgeving",
+    "Variables and secrets": "Variabelen en geheimen",
+    "Variables": "Variabelen",
+    "Secrets": "Geheimen",
+    "Add variable": "Variabele toevoegen",
+    "Bulk import": "Bulk importeren",
+    "Name": "Naam",
+    "Value": "Waarde",
+    "Type": "Type",
+    "Plain text": "Tekst",
+    "Encrypted": "Versleuteld",
+    "Delete variable": "Variabele verwijderen",
+    "Restart now": "Nu herstarten",
+    "Variables and secrets have been updated. A restart is required for the changes to take effect.": "Variabelen en geheimen zijn bijgewerkt. Een herstart is vereist voor de wijzigingen om van kracht te worden."
+  }
+  
