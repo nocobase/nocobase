@@ -27,6 +27,22 @@ export default class extends Migration {
     return treeCollections;
   }
 
+  collectionSchema(treeCollection: any) {
+    if (treeCollection.options.schema) {
+      return treeCollection.options.schema;
+    }
+
+    if (this.db.options.schema) {
+      return this.db.options.schema;
+    }
+
+    if (this.db.inDialect('postgres')) {
+      return 'public';
+    }
+
+    return undefined;
+  }
+
   async up() {
     await this.db.sequelize.transaction(async (transaction) => {
       const treeCollections = await this.getTreeCollections({ transaction });
@@ -48,8 +64,7 @@ export default class extends Migration {
           ],
         };
 
-        const collectionInstance = this.db.getCollection(treeCollection.name);
-        const treeCollectionSchema = collectionInstance.collectionSchema();
+        const treeCollectionSchema = this.collectionSchema(treeCollection);
 
         if (this.app.db.inDialect('postgres') && treeCollectionSchema != this.app.db.options.schema) {
           collectionOptions['schema'] = treeCollectionSchema;
