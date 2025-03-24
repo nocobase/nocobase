@@ -14,8 +14,9 @@ import { parseAssociationNames } from './hook';
 class PasswordError extends Error {}
 
 export class PluginPublicFormsServer extends Plugin {
-  async parseCollectionData(formCollection, appends) {
-    const collection = this.db.getCollection(formCollection);
+  async parseCollectionData(dataSourceKey, formCollection, appends) {
+    const dataSource = this.app.dataSourceManager.dataSources.get(dataSourceKey);
+    const collection = dataSource.collectionManager.getCollection(formCollection);
     const collections = [
       {
         name: collection.name,
@@ -77,7 +78,7 @@ export class PluginPublicFormsServer extends Plugin {
     const schema = await uiSchema.getJsonSchema(filterByTk);
     const { getAssociationAppends } = parseAssociationNames(dataSourceKey, collectionName, this.app, schema);
     const { appends } = getAssociationAppends();
-    const collections = await this.parseCollectionData(collectionName, appends);
+    const collections = await this.parseCollectionData(dataSourceKey, collectionName, appends);
     return {
       dataSource: {
         key: dataSourceKey,
