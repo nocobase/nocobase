@@ -23,7 +23,7 @@ import { useLocation } from 'react-router-dom';
 
 const blockDecoratorMenuMaps = {
   TableBlockProvider: ['Table', 'table'],
-  FormBlockProvider: ['Form', 'form'],
+  FormBlockProvider: ['FormItem', 'form'],
   DetailsBlockProvider: ['Details', 'details'],
   'List.Decorator': ['List', 'list'],
   'GridCard.Decorator': ['GridCard', 'gridCard'],
