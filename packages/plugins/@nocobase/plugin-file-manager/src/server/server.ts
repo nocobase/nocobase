@@ -105,6 +105,9 @@ export class PluginFileManagerServer extends Plugin {
   async uploadFile(options: UploadFileOptions) {
     const { storageName, filePath, documentRoot } = options;
 
+    if (!this.storagesCache.size) {
+      await this.loadStorages();
+    }
     const storages = Array.from(this.storagesCache.values());
     const storage = storages.find((item) => item.name === storageName) || storages.find((item) => item.default);
 
