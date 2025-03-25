@@ -37,6 +37,7 @@ export const ActionLink: ComposedAction = withDynamicSchemaProps(
         {...props}
         component={props.component || WrapperComponent}
         className={classnames('nb-action-link', props.className)}
+        isLink
       />
     );
   }),
