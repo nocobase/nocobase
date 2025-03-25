@@ -16,6 +16,7 @@ import {
   SelectWithTitle,
   useCurrentRoleMode,
 } from '@nocobase/client';
+import { Divider } from 'antd';
 
 export const SwitchRole = () => {
   const { t } = useTranslation();
@@ -36,7 +37,22 @@ export const SwitchRole = () => {
           label: 'title',
           value: 'name',
         }}
-        options={roles}
+        options={roles.reduce((acc, role) => {
+          acc.push(role);
+          if (role.name === '__union__') {
+            acc.push({
+              name: 'divider',
+              title: <Divider style={{ margin: '2px 1px' }} />,
+              disabled: true,
+              style: {
+                minHeight: 0,
+                height: 'auto',
+                padding: 0,
+              },
+            });
+          }
+          return acc;
+        }, [])}
         defaultValue={currentRole || roles[0].name}
         onChange={async (roleName) => {
           api.auth.setRole(roleName);
