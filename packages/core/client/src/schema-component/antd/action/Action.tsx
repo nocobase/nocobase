@@ -247,7 +247,6 @@ const InternalAction: React.FC<InternalActionProps> = observer(function Com(prop
   const aclCtx = useACLActionParamsContext();
   const { run, element, disabled: disableAction } = useAction?.(actionCallback) || ({} as any);
   const disabled = form.disabled || field.disabled || field.data?.disabled || propsDisabled || disableAction;
-
   const buttonStyle = useMemo(() => {
     return {
       ...style,
@@ -538,6 +537,7 @@ const RenderButtonInner = observer(
     Designer: React.ElementType;
     designerProps: any;
     title: string;
+    isLink?: boolean;
   }) => {
     const {
       designable,
@@ -558,6 +558,7 @@ const RenderButtonInner = observer(
       Designer,
       designerProps,
       title,
+      isLink,
       ...others
     } = props;
     const debouncedClick = useCallback(
@@ -583,7 +584,7 @@ const RenderButtonInner = observer(
 
     const actionTitle = title || field?.title;
     const { opacity, ...restButtonStyle } = buttonStyle;
-
+    const linkStyle = isLink && opacity ? { opacity } : undefined;
     return (
       <SortableItem
         role="button"
@@ -592,16 +593,16 @@ const RenderButtonInner = observer(
         onMouseEnter={handleMouseEnter}
         // @ts-ignore
         loading={field?.data?.loading || loading}
-        icon={typeof icon === 'string' ? <Icon style={{ opacity }} type={icon} /> : icon}
+        icon={typeof icon === 'string' ? <Icon type={icon} style={linkStyle} /> : icon}
         disabled={disabled}
-        style={restButtonStyle}
+        style={isLink ? restButtonStyle : buttonStyle}
         onClick={process.env.__E2E__ ? handleButtonClick : debouncedClick} // E2E 中的点击操作都是很快的，如果加上 debounce 会导致 E2E 测试失败
         component={tarComponent || Button}
         className={classnames(componentCls, hashId, className, 'nb-action')}
         type={type === 'danger' ? undefined : type}
       >
         {actionTitle && (
-          <span className={icon ? 'nb-action-title' : null} style={{ opacity }}>
+          <span className={icon ? 'nb-action-title' : null} style={linkStyle}>
             {actionTitle}
           </span>
         )}
