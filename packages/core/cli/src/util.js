@@ -165,10 +165,11 @@ exports.promptForTs = () => {
 };
 
 exports.downloadPro = async () => {
-  const { NOCOBASE_PKG_USERNAME, NOCOBASE_PKG_PASSWORD } = process.env;
-  if (!(NOCOBASE_PKG_USERNAME && NOCOBASE_PKG_PASSWORD)) {
-    return;
-  }
+  // 此处不再判定，由pkgg命令处理
+  // const { NOCOBASE_PKG_USERNAME, NOCOBASE_PKG_PASSWORD } = process.env;
+  // if (!(NOCOBASE_PKG_USERNAME && NOCOBASE_PKG_PASSWORD)) {
+  //   return;
+  // }
   await exports.run('yarn', ['nocobase', 'pkg', 'download-pro']);
 };
 
@@ -470,4 +471,12 @@ exports.generatePlugins = function () {
   } catch (error) {
     return;
   }
+};
+
+exports.getKey = function () {
+  const keyFile = resolve(process.cwd(), './.key');
+  if (!fs.existsSync(keyFile)) {
+    return;
+  }
+  return fs.readFileSync(keyFile, 'utf-8');
 };

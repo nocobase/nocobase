@@ -15,6 +15,8 @@ const tar = require('tar');
 const path = require('path');
 const { createStoragePluginsSymlink } = require('@nocobase/utils/plugin-symlink');
 const chalk = require('chalk');
+const { getKey } = require('../util');
+const { keyDecrypt } = require('@nocobase/license-kit');
 
 class Package {
   data;
@@ -248,10 +250,15 @@ module.exports = (cli) => {
         NOCOBASE_PKG_USERNAME,
         NOCOBASE_PKG_PASSWORD,
       } = process.env;
-      if (!(NOCOBASE_PKG_USERNAME && NOCOBASE_PKG_PASSWORD)) {
+      const key = getKey(); // TODO 需执行本地环境校验
+      if (!(NOCOBASE_PKG_USERNAME && NOCOBASE_PKG_PASSWORD) && !key) {
         return;
       }
-      const credentials = { username: NOCOBASE_PKG_USERNAME, password: NOCOBASE_PKG_PASSWORD };
+      const keyDataStr = keyDecrypt(key);
+      const { accessKeyId, accessSecret } = JSON.parse(keyDataStr);
+      const credentials = accessKeyId
+        ? { username: accessKeyId, password: accessSecret }
+        : { username: NOCOBASE_PKG_USERNAME, password: NOCOBASE_PKG_PASSWORD };
       const pm = new PackageManager({ baseURL: NOCOBASE_PKG_URL });
       await pm.login(credentials);
       const file = path.resolve(__dirname, '../../package.json');

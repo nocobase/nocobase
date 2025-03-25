@@ -32,3 +32,5 @@ ncc-cache/
 yarn--**
 v8-compile-cache-**
 vitest.config.mts.timestamp-*
+.key
+InstanceID.*

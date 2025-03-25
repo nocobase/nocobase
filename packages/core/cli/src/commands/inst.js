@@ -10,8 +10,9 @@
 const chalk = require('chalk');
 const { Command } = require('commander');
 const { run, isDev } = require('../util');
-const { keygen } = require('../environment-keygen');
+const { genInstanceId } = require('@nocobase/license-kit');
 const path = require('path');
+const fs = require('fs');
 /**
  *
  * @param {Command} cli
@@ -19,16 +20,17 @@ const path = require('path');
 module.exports = (cli) => {
   cli
     .command('inst')
+    .description('Generate InstanceID')
     .allowUnknownOption()
     .action(() => {
-      // if (!isDev()) {
-      //   return;
-      // }
-      // run('rimraf', ['-rf', './storage/app-dev']);
-      // run('rimraf', ['-rf', 'packages/*/*/{lib,esm,es,dist,node_modules}']);
-      // run('rimraf', ['-rf', 'packages/*/@*/*/{lib,esm,es,dist,node_modules}']);
-      const filePath = path.resolve(process.cwd(), 'instance.enc');
-      keygen({ filePath });
-      console.log(chalk.greenBright(`Instance key saved to ${filePath}`));
+      console.log('Generating InstanceID...');
+      try {
+        const filePath = path.resolve(process.cwd(), 'InstanceID.txt');
+        const instanceId = genInstanceId();
+        fs.writeFileSync(filePath, instanceId);
+        console.log(chalk.greenBright(`InstanceID saved to ${filePath}`));
+      } catch (e) {
+        console.log(e);
+      }
     });
 };
