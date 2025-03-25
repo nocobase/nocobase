@@ -78,6 +78,9 @@ export const Edit = withDynamicSchemaProps((props) => {
         async handler(files: File[]) {
           const file = files[0];
 
+          // Need to ensure focus is in the current input box before uploading
+          vditor.focus();
+
           const { data: checkData } = await apiClient.resource('vditor').check({
             fileCollectionName: fileCollection,
           });
@@ -197,7 +200,7 @@ export const Edit = withDynamicSchemaProps((props) => {
 
   return wrapSSR(
     <div ref={containerParentRef} className={`${hashId} ${containerClassName}`}>
-      <div id={hashId} ref={containerRef}></div>
+      <div ref={containerRef}></div>
     </div>,
   );
 });
