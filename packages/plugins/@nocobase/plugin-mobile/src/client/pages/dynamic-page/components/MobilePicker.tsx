@@ -108,4 +108,6 @@ const MobilePicker = connect(
   mapProps({ dataSource: 'options' }),
 );
 
+MobilePicker.displayName = 'MobilePicker';
+
 export { MobilePicker };

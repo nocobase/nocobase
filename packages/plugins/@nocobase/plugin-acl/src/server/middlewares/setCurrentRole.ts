@@ -10,6 +10,8 @@
 import { Context } from '@nocobase/actions';
 import { Cache } from '@nocobase/cache';
 import { Model, Repository } from '@nocobase/database';
+import { UNION_ROLE_KEY } from '../constants';
+import { SystemRoleMode } from '../enum';
 
 export async function setCurrentRole(ctx: Context, next) {
   const currentRole = ctx.get('X-Role');
@@ -45,6 +47,28 @@ export async function setCurrentRole(ctx: Context, next) {
   roles.forEach((role: any) => rolesMap.set(role.name, role));
   const userRoles = Array.from(rolesMap.values());
   ctx.state.currentUser.roles = userRoles;
+  const systemSettings = await ctx.db.getRepository('systemSettings').findOne();
+  const roleMode = systemSettings?.get('roleMode') || SystemRoleMode.default;
+  if (ctx.state.currentRole === UNION_ROLE_KEY && roleMode === SystemRoleMode.default) {
+    ctx.state.currentRole = userRoles[0].name;
+    ctx.headers['x-role'] = userRoles[0].name;
+  } else if (roleMode === SystemRoleMode.onlyUseUnion) {
+    ctx.state.currentRole = UNION_ROLE_KEY;
+    ctx.headers['x-role'] = UNION_ROLE_KEY;
+    ctx.state.currentRoles = userRoles.map((role) => role.name);
+    return next();
+  } else if (roleMode === SystemRoleMode.allowUseUnion) {
+    ctx.state.currentUser.roles = userRoles.concat({
+      name: UNION_ROLE_KEY,
+      title: ctx.t('Full permissions', { ns: 'acl' }),
+    });
+  }
+
+  if (currentRole === UNION_ROLE_KEY) {
+    ctx.state.currentRole = UNION_ROLE_KEY;
+    ctx.state.currentRoles = userRoles.map((role) => role.name);
+    return next();
+  }
 
   let role: string | undefined;
   // 1. If the X-Role is set, use the specified role
@@ -63,7 +87,8 @@ export async function setCurrentRole(ctx: Context, next) {
     role = (defaultRole || userRoles[0])?.name;
   }
   ctx.state.currentRole = role;
-  if (!ctx.state.currentRole) {
+  ctx.state.currentRoles = [role];
+  if (!ctx.state.currentRoles.length) {
     return ctx.throw(401, {
       code: 'ROLE_NOT_FOUND_ERR',
       message: ctx.t('The user role does not exist. Please try signing in again', { ns: 'acl' }),

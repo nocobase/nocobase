@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Checkbox, message, Table } from 'antd';
+import { Checkbox, message, Table, TableProps } from 'antd';
 import { omit } from 'lodash';
 import React, { createContext, useContext, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -102,44 +102,46 @@ export const SettingsCenterConfigure = () => {
       expandable={{
         defaultExpandAllRows: true,
       }}
-      columns={[
-        {
-          dataIndex: 'title',
-          title: t('Plugin name'),
-          render: (value) => {
-            return compile(value);
+      columns={
+        [
+          {
+            dataIndex: 'title',
+            title: t('Plugin name'),
+            render: (value) => {
+              return compile(value);
+            },
           },
-        },
-        {
-          dataIndex: 'accessible',
-          title: (
-            <>
-              <Checkbox
-                checked={allChecked}
-                onChange={async () => {
-                  const values = allAclSnippets.map((v) => '!' + v);
-                  if (!allChecked) {
-                    await resource.remove({
-                      values,
-                    });
-                  } else {
-                    await resource.add({
-                      values,
-                    });
-                  }
-                  refresh();
-                  message.success(t('Saved successfully'));
-                }}
-              />{' '}
-              {t('Accessible')}
-            </>
-          ),
-          render: (_, record) => {
-            const checked = !snippets.includes('!' + record.aclSnippet);
-            return <Checkbox checked={checked} onChange={() => handleChange(checked, record)} />;
+          {
+            dataIndex: 'accessible',
+            title: (
+              <>
+                <Checkbox
+                  checked={allChecked}
+                  onChange={async () => {
+                    const values = allAclSnippets.map((v) => '!' + v);
+                    if (!allChecked) {
+                      await resource.remove({
+                        values,
+                      });
+                    } else {
+                      await resource.add({
+                        values,
+                      });
+                    }
+                    refresh();
+                    message.success(t('Saved successfully'));
+                  }}
+                />{' '}
+                {t('Accessible')}
+              </>
+            ),
+            render: (_, record) => {
+              const checked = !snippets.includes('!' + record.aclSnippet);
+              return <Checkbox checked={checked} onChange={() => handleChange(checked, record)} />;
+            },
           },
-        },
-      ]}
+        ] as TableProps['columns']
+      }
       dataSource={settings
         .filter((v) => {
           return v.isTopLevel !== false;

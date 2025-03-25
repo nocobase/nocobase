@@ -398,6 +398,8 @@ export function Input(props: VariableInputProps) {
 
   return wrapSSR(
     <Space.Compact style={style} className={classNames(componentCls, hashId, className)}>
+      {/* 确保所有ant input样式都已加载 */}
+      <AntInput style={{ display: 'none' }} />
       {variable ? (
         <div
           className={cx(
@@ -432,7 +434,7 @@ export function Input(props: VariableInputProps) {
             role="button"
             aria-label="variable-tag"
             style={{ overflow: 'hidden' }}
-            className={cx('ant-input', { 'ant-input-disabled': disabled }, hashId)}
+            className={cx('ant-input ant-input-outlined', { 'ant-input-disabled': disabled }, hashId)}
           >
             <Tag color="blue">
               {variableText.map((item, index) => {

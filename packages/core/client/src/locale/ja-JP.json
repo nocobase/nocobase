@@ -145,6 +145,7 @@
   "Chart type": "チャートタイプ",
   "Chart config": "チャート設定",
   "Templates": "テンプレート",
+  "Template": "テンプレート",
   "Select template": "テンプレートを選択してください",
   "Action logs": "操作履歴",
   "Create template": "テンプレートを作成",
@@ -1039,5 +1040,8 @@
   "If selected, the page will display Tab pages.": "選択されている場合、ページはタブページを表示します。",
   "If selected, the route will be displayed in the menu.": "選択されている場合、ルートはメニューに表示されます。",
   "Are you sure you want to hide this tab?": "このタブを非表示にしますか？",
-  "After hiding, this tab will no longer appear in the tab bar. To show it again, you need to go to the route management page to set it.": "非表示にすると、このタブはタブバーに表示されなくなります。再表示するには、ルート管理ページで設定する必要があります。"
+  "After hiding, this tab will no longer appear in the tab bar. To show it again, you need to go to the route management page to set it.": "非表示にすると、このタブはタブバーに表示されなくなります。再表示するには、ルート管理ページで設定する必要があります。",
+  "Deprecated": "非推奨",
+  "The following old template features have been deprecated and will be removed in next version.": "次の古いテンプレート機能は非推奨になり、次のバージョンで削除されます。",
+  "Full permissions": "すべての権限"
 }

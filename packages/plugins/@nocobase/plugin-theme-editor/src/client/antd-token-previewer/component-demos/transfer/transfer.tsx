@@ -17,7 +17,7 @@ const initialTargetKeys = mockData.filter((item) => +item.key > 10).map((item) =
 
 const Demo = () => {
   const [targetKeys, setTargetKeys] = useState(initialTargetKeys);
-  const [selectedKeys, setSelectedKeys] = useState<string[]>(['1', '2']);
+  const [selectedKeys, setSelectedKeys] = useState<React.Key[]>(['1', '2']);
   const onScroll = () => {};
   return (
     <Transfer

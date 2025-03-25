@@ -9,10 +9,11 @@
 
 import { css } from '@emotion/css';
 import { ISchema, useFieldSchema } from '@formily/react';
-import { Action, ActionContextProvider, SchemaComponent, useCompile } from '@nocobase/client';
+import { Action, ActionContextProvider, PopupSettingsProvider, SchemaComponent, useCompile } from '@nocobase/client';
 import React, { useState } from 'react';
 import { NAMESPACE } from './constants';
 import { useTranslation } from 'react-i18next';
+import { UploadOutlined } from '@ant-design/icons';
 
 const importFormSchema: ISchema = {
   type: 'void',

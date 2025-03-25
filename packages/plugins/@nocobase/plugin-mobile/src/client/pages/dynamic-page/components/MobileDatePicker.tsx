@@ -321,5 +321,10 @@ const MobileTimePicker: ComposedMobileTimePicker = connect(
   mapReadPretty(NBTimePicker.ReadPretty),
 );
 
+MobileDateTimePicker.displayName = 'MobileDateTimePicker';
+MobileRangePicker.displayName = 'MobileRangePicker';
+MobileDateFilterWithPicker.displayName = 'MobileDateFilterWithPicker';
+MobileTimePicker.displayName = 'MobileTimePicker';
+
 MobileTimePicker.RangePicker = NBTimePicker.RangePicker;
 export { MobileDateTimePicker, MobileRangePicker, MobileDateFilterWithPicker, MobileTimePicker };
