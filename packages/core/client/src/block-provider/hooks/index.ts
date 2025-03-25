@@ -167,7 +167,7 @@ export function useCollectValuesToSubmit() {
         if (parsedValue !== null && parsedValue !== undefined) {
           assignedValues[key] = transformVariableValue(parsedValue, { targetCollectionField: collectionField });
         }
-      } else if (value != null && value !== '') {
+      } else if (value !== '') {
         assignedValues[key] = value;
       }
     });
@@ -338,7 +338,7 @@ export const useAssociationCreateActionProps = () => {
           if (parsedValue) {
             assignedValues[key] = transformVariableValue(parsedValue, { targetCollectionField: collectionField });
           }
-        } else if (value != null && value !== '') {
+        } else if (value !== '') {
           assignedValues[key] = value;
         }
       });
@@ -605,7 +605,7 @@ export const useCustomizeUpdateActionProps = () => {
           if (parsedValue) {
             assignedValues[key] = transformVariableValue(parsedValue, { targetCollectionField: collectionField });
           }
-        } else if (value != null && value !== '') {
+        } else if (value !== '') {
           assignedValues[key] = value;
         }
       });
@@ -708,7 +708,7 @@ export const useCustomizeBulkUpdateActionProps = () => {
           if (parsedValue) {
             assignedValues[key] = transformVariableValue(parsedValue, { targetCollectionField: collectionField });
           }
-        } else if (value != null && value !== '') {
+        } else if (value !== '') {
           assignedValues[key] = value;
         }
       });
@@ -930,7 +930,7 @@ export const useUpdateActionProps = () => {
           if (parsedValue) {
             assignedValues[key] = transformVariableValue(parsedValue, { targetCollectionField: collectionField });
           }
-        } else if (value != null && value !== '') {
+        } else if (value !== '') {
           assignedValues[key] = value;
         }
       });

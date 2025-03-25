@@ -158,8 +158,12 @@ export function formSchemaPatch(currentSchema: ISchema, options?: any) {
         return key !== 'grid';
       });
       if (actionKey) {
-        _.set(currentSchema, `properties.${comKey}.x-use-component-props`, 'useEditFormBlockProps');
-        _.set(currentSchema, `properties.${comKey}.properties.${actionKey}.x-initializer`, 'editForm:configureActions');
+        _.set(currentSchema, `properties.['${comKey}'].x-use-component-props`, 'useEditFormBlockProps');
+        _.set(
+          currentSchema,
+          `properties.['${comKey}'].properties.['${actionKey}'].x-initializer`,
+          'editForm:configureActions',
+        );
 
         const actionBarSchema = _.get(currentSchema, `properties.${comKey}.properties.${actionKey}.properties`, {});
         for (const key in actionBarSchema) {
