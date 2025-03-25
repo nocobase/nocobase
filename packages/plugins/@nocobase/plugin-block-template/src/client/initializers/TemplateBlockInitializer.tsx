@@ -43,6 +43,10 @@ export function convertTplBlock(
     if (newSchema['x-decorator'] === 'TemplateGridDecorator') {
       delete newSchema['x-decorator'];
     }
+    if (newSchema['x-linkage-rules']) {
+      // linkage rules 有可能保存在Grid组件中
+      delete newSchema['x-linkage-rules'];
+    }
     for (const key in tpl.properties) {
       const t = convertTplBlock(tpl.properties[key], virtual, isRoot, newRootId, templateKey, options);
       if (isRoot) {
@@ -154,8 +158,12 @@ export function formSchemaPatch(currentSchema: ISchema, options?: any) {
         return key !== 'grid';
       });
       if (actionKey) {
-        _.set(currentSchema, `properties.${comKey}.x-use-component-props`, 'useEditFormBlockProps');
-        _.set(currentSchema, `properties.${comKey}.properties.${actionKey}.x-initializer`, 'editForm:configureActions');
+        _.set(currentSchema, `properties.['${comKey}'].x-use-component-props`, 'useEditFormBlockProps');
+        _.set(
+          currentSchema,
+          `properties.['${comKey}'].properties.['${actionKey}'].x-initializer`,
+          'editForm:configureActions',
+        );
 
         const actionBarSchema = _.get(currentSchema, `properties.${comKey}.properties.${actionKey}.properties`, {});
         for (const key in actionBarSchema) {
