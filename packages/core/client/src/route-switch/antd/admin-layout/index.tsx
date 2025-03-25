@@ -502,7 +502,7 @@ const collapsedButtonRender = (collapsed, dom) => {
  * - issue: https://github.com/ant-design/pro-components/issues/8522
  * - issue: https://github.com/ant-design/pro-components/issues/8432
  */
-const useHeaderPopupStyle = createStyles(({ token }: any) => {
+const useHeaderStyle = createStyles(({ token }: any) => {
   return {
     headerPopup: {
       '&.ant-menu-submenu-popup>.ant-menu': {
@@ -518,7 +518,7 @@ const useHeaderPopupStyle = createStyles(({ token }: any) => {
 });
 const headerContextValue = { inHeader: true };
 const HeaderWrapper: FC = (props) => {
-  const { styles } = useHeaderPopupStyle();
+  const { styles } = useHeaderStyle();
 
   return (
     <span className={styles.headerMenuActive}>
@@ -561,7 +561,7 @@ export const InternalAdminLayout = () => {
   const doNotChangeCollapsedRef = useRef(false);
   const { t } = useMenuTranslation();
   const designable = isMobileLayout ? false : _designable;
-  const { styles } = useHeaderPopupStyle();
+  const { styles } = useHeaderStyle();
 
   const route = useMemo(() => {
     return {
