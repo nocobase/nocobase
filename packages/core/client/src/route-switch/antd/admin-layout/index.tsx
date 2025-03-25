@@ -52,6 +52,7 @@ import { KeepAlive } from './KeepAlive';
 import { NocoBaseDesktopRoute, NocoBaseDesktopRouteType } from './convertRoutesToSchema';
 import { MenuSchemaToolbar, ResetThemeTokenAndKeepAlgorithm } from './menuItemSettings';
 import { userCenterSettings } from './userCenterSettings';
+import { createGlobalStyle } from 'antd-style';
 
 export { KeepAlive, NocoBaseDesktopRouteType };
 
@@ -495,9 +496,23 @@ const collapsedButtonRender = (collapsed, dom) => {
   return <CollapsedButton collapsed={collapsed}>{dom}</CollapsedButton>;
 };
 
+/**
+ * 1. 通过 layoutToken 定义的背景色，被 antd 默认的样式覆盖了。所以这里需要重新定义一下。
+ * 2. 用全局的样式定义，是因为这里的菜单不是渲染在 Header 组件下面的，而是渲染到了 body 下面。
+ */
+const HeaderGlobalStyle = createGlobalStyle`
+  .ant-menu-light.ant-menu-submenu-popup>.ant-menu {
+    background-color: ${({ theme }: any) => theme.colorBgHeader};
+  }
+`;
 const headerContextValue = { inHeader: true };
 const headerRender = (props: HeaderViewProps, defaultDom: React.ReactNode) => {
-  return <headerContext.Provider value={headerContextValue}>{defaultDom}</headerContext.Provider>;
+  return (
+    <>
+      <HeaderGlobalStyle />
+      <headerContext.Provider value={headerContextValue}>{defaultDom}</headerContext.Provider>;
+    </>
+  );
 };
 
 const IsMobileLayoutContext = React.createContext<{
