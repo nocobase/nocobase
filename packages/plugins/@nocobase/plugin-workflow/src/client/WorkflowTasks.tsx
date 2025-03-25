@@ -36,21 +36,7 @@ const layoutClass = css`
   overflow: hidden;
 `;
 
-const sideClass = css`
-  overflow: auto;
-  position: sticky;
-  top: 0;
-  bottom: 0;
-  height: 100%;
-
-  .ant-layout-sider-children {
-    width: 200px;
-    height: 100%;
-  }
-`;
-
 const contentClass = css`
-  padding: 24px;
   min-height: 280px;
   overflow: auto;
 `;
@@ -176,9 +162,7 @@ export function WorkflowTasks() {
   const { setTitle } = useDocumentTitle();
   const navigate = useNavigate();
   const { taskType, status = TASK_STATUS.PENDING } = useParams();
-  const {
-    token: { colorBgContainer },
-  } = useToken();
+  const { token } = useToken();
 
   const items = useTaskTypeItems();
 
@@ -200,7 +184,7 @@ export function WorkflowTasks() {
 
   return (
     <Layout className={layoutClass}>
-      <Layout.Sider className={sideClass} theme="light">
+      <Layout.Sider theme="light" breakpoint="md" collapsedWidth="0" zeroWidthTriggerStyle={{ top: 24 }}>
         <Menu mode="inline" selectedKeys={[typeKey]} items={items} style={{ height: '100%' }} />
       </Layout.Sider>
       <Layout
@@ -248,7 +232,7 @@ export function WorkflowTasks() {
                   'x-component-props': {
                     className: classnames('pageHeaderCss'),
                     style: {
-                      background: colorBgContainer,
+                      background: token.colorBgContainer,
                       padding: '12px 24px 0 24px',
                     },
                     title,
@@ -265,6 +249,9 @@ export function WorkflowTasks() {
                   'x-component': 'Layout.Content',
                   'x-component-props': {
                     className: contentClass,
+                    style: {
+                      padding: `${token.paddingPageVertical}px ${token.paddingPageHorizontal}px`,
+                    },
                   },
                   properties: {
                     list: {

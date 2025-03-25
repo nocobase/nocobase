@@ -85,6 +85,11 @@ export const FormFieldLinkageRuleAction = observer(
               }}
               placeholder={t('Select field')}
               treeNodeFilterProp="title"
+              popupClassName={css`
+                .ant-select-tree-list-holder > div {
+                  overflow-y: auto !important;
+                }
+              `}
             />
             <Select
               // @ts-ignore

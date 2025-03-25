@@ -50,6 +50,23 @@ export const useMobileActionDrawerStyle = genStyleHook('nb-mobile-action-drawer'
         overflowX: 'hidden',
         backgroundColor: token.colorBgLayout,
 
+        // 不带 tab 页的半窗
+        '& > .nb-grid-container': {
+          padding: `${token.paddingPageVertical}px ${token.paddingPageHorizontal}px`,
+        },
+
+        // 带有 tab 页的半窗
+        '.ant-tabs-nav': {
+          marginBottom: '0px !important',
+          padding: `0 ${token.paddingPageHorizontal + token.borderRadiusBlock / 2}px`,
+          backgroundColor: token.colorBgContainer,
+        },
+
+        // 带有 tab 页的半窗
+        '.ant-tabs-content-holder': {
+          padding: `${token.paddingPageVertical}px ${token.paddingPageHorizontal}px`,
+        },
+
         // clear the margin-bottom of the last block
         '& > .nb-grid-container > .nb-grid > .nb-grid-warp > .nb-grid-row:nth-last-child(2) .noco-card-item': {
           marginBottom: 0,

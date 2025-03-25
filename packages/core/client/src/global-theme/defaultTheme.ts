@@ -24,11 +24,13 @@ const defaultTheme: ThemeConfig = {
     // UI 配置组件
     colorSettings: '#F18B62',
     colorBgSettingsHover: 'rgba(241, 139, 98, 0.06)',
+    colorTemplateBgSettingsHover: 'rgba(98, 200, 241, 0.06)', // 默认为colorBgSettingsHover的互补色
     colorBorderSettingsHover: 'rgba(241, 139, 98, 0.3)',
 
     // 动画相关
     motionUnit: 0.03,
-    motion: !process.env.__E2E__,
+    // ant design 升级到5.24.2后，Modal.confirm在E2E中如果关闭动画，会出现ant-modal-mask不销毁的问题
+    // motion: !process.env.__E2E__,
   },
 };
 

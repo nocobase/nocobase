@@ -25,7 +25,7 @@ export const useStyles = genStyleHook('nb-action-drawer', (token) => {
           },
         },
         '&.nb-record-picker-selector': {
-          '.ant-drawer-wrapper-body': {
+          '.ant-drawer-content': {
             backgroundColor: token.colorBgLayout,
           },
           '.nb-block-item': {

@@ -80,7 +80,12 @@ export function authCheckMiddleware({ app }: { app: Application }) {
         throw error;
       }
 
-      if (pathname !== app.getHref('signin')) {
+      const isSkippedAuthCheckRoute = app.router.isSkippedAuthCheckRoute(pathname);
+      if (isSkippedAuthCheckRoute) {
+        error.config.skipNotify = true;
+      }
+
+      if (pathname !== app.getHref('signin') && !isSkippedAuthCheckRoute) {
         const redirectPath = removeBasename(pathname, basename);
 
         debouncedRedirect(() => {
