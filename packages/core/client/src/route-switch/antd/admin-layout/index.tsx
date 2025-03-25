@@ -509,13 +509,16 @@ const HeaderGlobalStyle = createGlobalStyle`
   .ant-menu-light.ant-menu-submenu-popup>.ant-menu {
     background-color: ${({ theme }: any) => theme.colorBgHeader};
   }
+  .ant-pro-top-nav-header-base-menu .ant-menu-submenu-selected>.ant-menu-submenu-title {
+    color: ${({ theme }: any) => theme.colorTextHeaderMenuActive};
+  }
 `;
 const headerContextValue = { inHeader: true };
 const headerRender = (props: HeaderViewProps, defaultDom: React.ReactNode) => {
   return (
     <>
       <HeaderGlobalStyle />
-      <headerContext.Provider value={headerContextValue}>{defaultDom}</headerContext.Provider>;
+      <headerContext.Provider value={headerContextValue}>{defaultDom}</headerContext.Provider>
     </>
   );
 };
@@ -564,7 +567,7 @@ export const InternalAdminLayout = () => {
         colorBgHeader: token.colorBgHeader,
         colorTextMenu: token.colorTextHeaderMenu,
         colorTextMenuSelected: token.colorTextHeaderMenuActive,
-        colorTextMenuActive: token.colorTextHeaderMenuActive,
+        colorTextMenuActive: token.colorTextHeaderMenuHover,
         colorBgMenuItemHover: token.colorBgHeaderMenuHover,
         colorBgMenuItemSelected: token.colorBgHeaderMenuActive,
         heightLayoutHeader: 46,
