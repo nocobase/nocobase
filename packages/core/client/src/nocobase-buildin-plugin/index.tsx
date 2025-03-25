@@ -125,10 +125,10 @@ const getProps = (app: Application) => {
     };
   }
 
-  if (app.error.code === 'APP_STARTING') {
+  if (app.error.code === 'APP_WARNING') {
     return {
       status: 'warning',
-      title: 'App starting',
+      title: 'App warning',
       subTitle: app.error?.message,
     };
   }

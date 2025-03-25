@@ -142,11 +142,11 @@ export class APIClient extends APIClientSDK {
       let message = tempElement.textContent || tempElement.innerText;
       if (message.includes('Error occurred while trying')) {
         message = 'The application may be starting up. Please try again later.';
-        return [{ code: 'APP_STARTING', message }];
+        return [{ code: 'APP_WARNING', message }];
       }
       if (message.includes('502 Bad Gateway')) {
         message = 'The application may be starting up. Please try again later.';
-        return [{ code: 'APP_STARTING', message }];
+        return [{ code: 'APP_WARNING', message }];
       }
       return [{ message }];
     }
