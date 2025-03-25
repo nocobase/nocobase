@@ -52,7 +52,7 @@ import { KeepAlive } from './KeepAlive';
 import { NocoBaseDesktopRoute, NocoBaseDesktopRouteType } from './convertRoutesToSchema';
 import { MenuSchemaToolbar, ResetThemeTokenAndKeepAlgorithm } from './menuItemSettings';
 import { userCenterSettings } from './userCenterSettings';
-import { createGlobalStyle } from 'antd-style';
+import { createGlobalStyle, createStyles } from 'antd-style';
 
 export { KeepAlive, NocoBaseDesktopRouteType };
 
@@ -497,30 +497,37 @@ const collapsedButtonRender = (collapsed, dom) => {
 };
 
 /**
- * 1. 通过 layoutToken 定义的背景色，被 antd 默认的样式覆盖了。所以这里需要重新定义一下。
- * 2. 用全局的样式定义，是因为这里的菜单不是渲染在 Header 组件下面的，而是渲染到了 body 下面。
- *
  * 这个问题源自 antd 的一个 bug，等 antd 修复了这个问题后，可以删除这个样式。
  * - issue: https://github.com/ant-design/pro-components/issues/8593
  * - issue: https://github.com/ant-design/pro-components/issues/8522
  * - issue: https://github.com/ant-design/pro-components/issues/8432
  */
-const HeaderGlobalStyle = createGlobalStyle`
-  .ant-menu-light.ant-menu-submenu-popup>.ant-menu {
-    background-color: ${({ theme }: any) => theme.colorBgHeader};
-  }
-  .ant-pro-top-nav-header-base-menu .ant-menu-submenu-selected>.ant-menu-submenu-title {
-    color: ${({ theme }: any) => theme.colorTextHeaderMenuActive};
-  }
-`;
+const useHeaderPopupStyle = createStyles(({ token }: any) => {
+  return {
+    headerPopup: {
+      '&.ant-menu-submenu-popup>.ant-menu': {
+        backgroundColor: `${token.colorBgHeader}`,
+      },
+    },
+    headerMenuActive: {
+      '& .ant-menu-submenu-selected>.ant-menu-submenu-title': {
+        color: token.colorTextHeaderMenuActive,
+      },
+    },
+  };
+});
 const headerContextValue = { inHeader: true };
-const headerRender = (props: HeaderViewProps, defaultDom: React.ReactNode) => {
+const HeaderWrapper: FC = (props) => {
+  const { styles } = useHeaderPopupStyle();
+
   return (
-    <>
-      <HeaderGlobalStyle />
-      <HeaderContext.Provider value={headerContextValue}>{defaultDom}</HeaderContext.Provider>
-    </>
+    <span className={styles.headerMenuActive}>
+      <HeaderContext.Provider value={headerContextValue}>{props.children}</HeaderContext.Provider>
+    </span>
   );
+};
+const headerRender = (props: HeaderViewProps, defaultDom: React.ReactNode) => {
+  return <HeaderWrapper>{defaultDom}</HeaderWrapper>;
 };
 
 const IsMobileLayoutContext = React.createContext<{
@@ -554,6 +561,7 @@ export const InternalAdminLayout = () => {
   const doNotChangeCollapsedRef = useRef(false);
   const { t } = useMenuTranslation();
   const designable = isMobileLayout ? false : _designable;
+  const { styles } = useHeaderPopupStyle();
 
   const route = useMemo(() => {
     return {
@@ -614,6 +622,12 @@ export const InternalAdminLayout = () => {
     });
   }, []);
 
+  const menuProps = useMemo(() => {
+    return {
+      overflowedIndicatorPopupClassName: styles.headerPopup,
+    };
+  }, [styles.headerPopup]);
+
   return (
     <DndContext onDragEnd={onDragEnd}>
       <ProLayout
@@ -635,6 +649,7 @@ export const InternalAdminLayout = () => {
         onCollapse={onCollapse}
         collapsed={collapsed}
         onPageChange={onPageChange}
+        menuProps={menuProps}
       >
         <RouteContext.Consumer>
           {(value: RouteContextType) => {
