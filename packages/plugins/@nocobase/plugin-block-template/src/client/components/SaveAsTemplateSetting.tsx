@@ -23,7 +23,7 @@ import { useLocation } from 'react-router-dom';
 
 const blockDecoratorMenuMaps = {
   TableBlockProvider: ['Table', 'table'],
-  FormBlockProvider: ['Form', 'form'],
+  FormBlockProvider: ['FormItem', 'form'],
   DetailsBlockProvider: ['Details', 'details'],
   'List.Decorator': ['List', 'list'],
   'GridCard.Decorator': ['GridCard', 'gridCard'],
@@ -281,6 +281,7 @@ function getTemplateSchemaFromPage(schema: ISchema) {
     if (s['x-template-root-uid']) {
       return;
     }
+    t = t || {};
     _.merge(t, _.omit(s, ['x-uid', 'properties']));
     t['x-uid'] = uid();
     if (s.properties) {
@@ -288,7 +289,7 @@ function getTemplateSchemaFromPage(schema: ISchema) {
         if (s.properties[key]['x-template-root-uid']) {
           continue;
         }
-        _.set(t, `properties.${key}`, {});
+        _.set(t, `properties.['${key}']`, {});
         traverseSchema(s.properties[key], t.properties[key]);
       }
     }
