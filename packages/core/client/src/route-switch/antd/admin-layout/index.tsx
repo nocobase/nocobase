@@ -269,7 +269,7 @@ const GroupItem: FC<{ item: any }> = (props) => {
 };
 
 const WithTooltip: FC<{ title: string; hidden: boolean }> = (props) => {
-  const { inHeader } = useContext(headerContext);
+  const { inHeader } = useContext(HeaderContext);
 
   return (
     <RouteContext.Consumer>
@@ -407,7 +407,7 @@ const contentStyle = {
   paddingInline: 0,
 };
 
-const headerContext = React.createContext<{ inHeader: boolean }>({ inHeader: false });
+const HeaderContext = React.createContext<{ inHeader: boolean }>({ inHeader: false });
 
 const popoverStyle = css`
   .ant-popover-inner {
@@ -518,7 +518,7 @@ const headerRender = (props: HeaderViewProps, defaultDom: React.ReactNode) => {
   return (
     <>
       <HeaderGlobalStyle />
-      <headerContext.Provider value={headerContextValue}>{defaultDom}</headerContext.Provider>
+      <HeaderContext.Provider value={headerContextValue}>{defaultDom}</HeaderContext.Provider>
     </>
   );
 };
