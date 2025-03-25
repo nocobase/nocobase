@@ -499,6 +499,11 @@ const collapsedButtonRender = (collapsed, dom) => {
 /**
  * 1. 通过 layoutToken 定义的背景色，被 antd 默认的样式覆盖了。所以这里需要重新定义一下。
  * 2. 用全局的样式定义，是因为这里的菜单不是渲染在 Header 组件下面的，而是渲染到了 body 下面。
+ *
+ * 这个问题源自 antd 的一个 bug，等 antd 修复了这个问题后，可以删除这个样式。
+ * - issue: https://github.com/ant-design/pro-components/issues/8593
+ * - issue: https://github.com/ant-design/pro-components/issues/8522
+ * - issue: https://github.com/ant-design/pro-components/issues/8432
  */
 const HeaderGlobalStyle = createGlobalStyle`
   .ant-menu-light.ant-menu-submenu-popup>.ant-menu {
