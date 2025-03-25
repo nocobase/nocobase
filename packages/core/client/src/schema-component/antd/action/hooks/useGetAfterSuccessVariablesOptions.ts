@@ -32,7 +32,7 @@ export const useAfterSuccessOptions = () => {
   const record = useCollectionRecordData();
   return useMemo(() => {
     return [
-      record && {
+      (record || blockType === 'form') && {
         value: '$record',
         label: t('Response record', { ns: 'client' }),
         children: [...fields],
