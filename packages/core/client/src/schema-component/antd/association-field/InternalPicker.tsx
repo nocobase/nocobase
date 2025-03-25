@@ -158,7 +158,10 @@ export const InternalPicker = observer(
       }),
       [],
     );
-    const newSchema = useMemo(() => isMobileLayout ? transformMultiColumnToSingleColumn(fieldSchema) : fieldSchema, [isMobileLayout, fieldSchema]);
+    const newSchema = useMemo(
+      () => (isMobileLayout ? transformMultiColumnToSingleColumn(fieldSchema) : fieldSchema),
+      [isMobileLayout, fieldSchema],
+    );
 
     return (
       <PopupSettingsProvider enableURL={false}>

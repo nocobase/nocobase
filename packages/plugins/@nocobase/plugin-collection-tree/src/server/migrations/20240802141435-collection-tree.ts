@@ -31,6 +31,8 @@ export default class extends Migration {
     await this.db.sequelize.transaction(async (transaction) => {
       const treeCollections = await this.getTreeCollections({ transaction });
       for (const treeCollection of treeCollections) {
+        await treeCollection.load({ transaction });
+
         const name = `main_${treeCollection.name}_path`;
         const collectionOptions = {
           name,
@@ -47,35 +49,16 @@ export default class extends Migration {
             },
           ],
         };
-
         const collectionInstance = this.db.getCollection(treeCollection.name);
         const treeCollectionSchema = collectionInstance.collectionSchema();
-
         if (this.app.db.inDialect('postgres') && treeCollectionSchema != this.app.db.options.schema) {
           collectionOptions['schema'] = treeCollectionSchema;
         }
-
         this.app.db.collection(collectionOptions);
 
         const treeExistsInDb = await this.app.db.getCollection(name).existsInDb({ transaction });
-
         if (!treeExistsInDb) {
           await this.app.db.getCollection(name).sync({ transaction } as SyncOptions);
-          const opts = {
-            name: treeCollection.name,
-            autoGenId: false,
-            timestamps: false,
-            fields: [
-              { type: 'integer', name: 'id' },
-              { type: 'integer', name: 'parentId' },
-            ],
-          };
-
-          if (treeCollectionSchema != this.app.db.options.schema) {
-            opts['schema'] = treeCollectionSchema;
-          }
-
-          this.app.db.collection(opts);
           const chunkSize = 1000;
           await this.app.db.getRepository(treeCollection.name).chunk({
             chunkSize: chunkSize,

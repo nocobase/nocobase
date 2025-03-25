@@ -52,7 +52,10 @@ const FormComponent: React.FC<FormProps> = (props) => {
     labelWrap = true,
   } = cardItemSchema?.['x-component-props'] || {};
   const { isMobileLayout } = useMobileLayout();
-  const newSchema = useMemo(() => isMobileLayout ? transformMultiColumnToSingleColumn(fieldSchema) : fieldSchema, [fieldSchema, isMobileLayout]);
+  const newSchema = useMemo(
+    () => (isMobileLayout ? transformMultiColumnToSingleColumn(fieldSchema) : fieldSchema),
+    [fieldSchema, isMobileLayout],
+  );
 
   return (
     <FieldContext.Provider value={undefined}>
@@ -81,12 +84,7 @@ const FormComponent: React.FC<FormProps> = (props) => {
               }
             `}
           >
-            <NocoBaseRecursionField
-              basePath={f.address}
-              schema={newSchema}
-              onlyRenderProperties
-              isUseFormilyField
-            />
+            <NocoBaseRecursionField basePath={f.address} schema={newSchema} onlyRenderProperties isUseFormilyField />
           </div>
         </FormLayout>
       </FormContext.Provider>
@@ -104,19 +102,17 @@ const FormDecorator: React.FC<FormProps> = (props) => {
   const f = useAttach(form.createVoidField({ ...field.props, basePath: '' }));
   const Component = useComponent(fieldSchema['x-component'], Def);
   const { isMobileLayout } = useMobileLayout();
-  const newSchema = useMemo(() => isMobileLayout ? transformMultiColumnToSingleColumn(fieldSchema) : fieldSchema, [fieldSchema, isMobileLayout]);
+  const newSchema = useMemo(
+    () => (isMobileLayout ? transformMultiColumnToSingleColumn(fieldSchema) : fieldSchema),
+    [fieldSchema, isMobileLayout],
+  );
   return (
     <FieldContext.Provider value={undefined}>
       <FormContext.Provider value={form}>
         <FormLayout layout={'vertical'} {...others}>
           <FieldContext.Provider value={f}>
             <Component {...field.componentProps}>
-              <NocoBaseRecursionField
-                basePath={f.address}
-                schema={newSchema}
-                onlyRenderProperties
-                isUseFormilyField
-              />
+              <NocoBaseRecursionField basePath={f.address} schema={newSchema} onlyRenderProperties isUseFormilyField />
             </Component>
           </FieldContext.Provider>
           {/* <FieldContext.Provider value={f}>{children}</FieldContext.Provider> */}

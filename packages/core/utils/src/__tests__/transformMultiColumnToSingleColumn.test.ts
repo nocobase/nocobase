@@ -37,7 +37,7 @@ vi.mock('@formily/json-schema', () => {
       const result = { ...schema, parent };
       result._isJSONSchemaObject = true;
       return result;
-    })
+    }),
   };
 });
 
@@ -261,26 +261,26 @@ describe('transformMultiColumnToSingleColumn', () => {
       name: 'grid1',
       'x-component': 'Grid',
       properties: {
-      row1: {
-        'x-component': 'Grid.Row',
-        properties: {
-        col1: { 'x-component': 'Input' },
-        col2: { 'x-component': 'Select' },
+        row1: {
+          'x-component': 'Grid.Row',
+          properties: {
+            col1: { 'x-component': 'Input' },
+            col2: { 'x-component': 'Select' },
+          },
         },
       },
-      },
       parent: {
-      properties: {
-        grid1: {} // Will be replaced by result
-      }
+        properties: {
+          grid1: {}, // Will be replaced by result
+        },
       },
-      toJSON: vi.fn().mockImplementation(function() {
-      return {
-        name: this.name,
-        'x-component': this['x-component'],
-        properties: this.properties
-      };
-      })
+      toJSON: vi.fn().mockImplementation(function () {
+        return {
+          name: this.name,
+          'x-component': this['x-component'],
+          properties: this.properties,
+        };
+      }),
     };
 
     const result = transformMultiColumnToSingleColumn(mockSchema);
