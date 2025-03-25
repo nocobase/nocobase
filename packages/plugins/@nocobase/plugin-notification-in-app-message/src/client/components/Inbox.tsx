@@ -16,27 +16,19 @@
  * For more information, please rwefer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useEffect, useCallback } from 'react';
 import { reaction } from '@formily/reactive';
-import { Badge, Button, ConfigProvider, Drawer, Tooltip, notification, theme } from 'antd';
-import { CloseOutlined } from '@ant-design/icons';
-import { createStyles } from 'antd-style';
-import { Icon } from '@nocobase/client';
-import { InboxContent } from './InboxContent';
-import { useLocalTranslation } from '../../locale';
-import { fetchChannels } from '../observables';
 import { observer } from '@formily/reactive-react';
-import { useCurrentUserContext } from '@nocobase/client';
+import { Icon, useCurrentUserContext } from '@nocobase/client';
+import { Badge, Button, ConfigProvider, Drawer, Tooltip, notification, theme } from 'antd';
+import { createStyles } from 'antd-style';
+import React, { FC, useCallback, useEffect } from 'react';
+import { useLocalTranslation } from '../../locale';
 import {
-  updateUnreadMsgsCount,
-  unreadMsgsCountObs,
-  startMsgSSEStreamWithRetry,
-  inboxVisible,
-  userIdObs,
-  liveSSEObs,
+  fetchChannels, inboxVisible, liveSSEObs,
   messageMapObs,
-  selectedChannelNameObs,
+  selectedChannelNameObs, startMsgSSEStreamWithRetry, unreadMsgsCountObs, updateUnreadMsgsCount, userIdObs
 } from '../observables';
+import { InboxContent } from './InboxContent';
 const useStyles = createStyles(({ token }) => {
   return {
     button: {
@@ -45,6 +37,26 @@ const useStyles = createStyles(({ token }) => {
     },
   };
 });
+
+const InboxPopup: FC<{ title: string; visible: boolean; onClose: () => void }> = (props) => {
+  const { token } = theme.useToken();
+  return (
+    <Drawer
+      title={<div style={{ padding: '0', paddingLeft: token.padding }}>{props.title}</div>}
+      open={props.visible}
+      width={900}
+      onClose={props.onClose}
+      styles={{
+        header: {
+          paddingLeft: token.paddingMD,
+        },
+      }}
+    >
+      <InboxContent />
+    </Drawer>
+  )
+}
+
 
 const InnerInbox = (props) => {
   const { t } = useLocalTranslation();
@@ -89,7 +101,6 @@ const InnerInbox = (props) => {
       document.removeEventListener('visibilitychange', onVisibilityChange);
     };
   }, []);
-  const DrawerTitle = <div style={{ padding: '0', paddingLeft: token.padding }}>{t('Message')}</div>;
   useEffect(() => {
     const dispose = reaction(
       () => liveSSEObs.value,
@@ -138,21 +149,7 @@ const InnerInbox = (props) => {
           </Badge>
         </Button>
       </Tooltip>
-      <Drawer
-        title={DrawerTitle}
-        open={inboxVisible.value}
-        width={900}
-        onClose={() => {
-          inboxVisible.value = false;
-        }}
-        styles={{
-          header: {
-            paddingLeft: token.paddingMD,
-          },
-        }}
-      >
-        <InboxContent />
-      </Drawer>
+      <InboxPopup title={t('Message')} visible={inboxVisible.value} onClose={() => { inboxVisible.value = false; }} />
     </ConfigProvider>
   );
 };
