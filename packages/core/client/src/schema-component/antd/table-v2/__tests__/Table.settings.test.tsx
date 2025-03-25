@@ -299,7 +299,12 @@ describe('Table.settings', () => {
 
   test('menu list', async () => {
     await renderSettings(getRenderSettingsOptions());
-    await checkTableSettings();
+    await checkTableSettings([
+      {
+        title: 'Save as template',
+        type: 'modal',
+      },
+    ]);
   });
 
   test('old schema', async () => {
