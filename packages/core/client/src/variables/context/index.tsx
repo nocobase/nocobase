@@ -7,11 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { DateVariableContext } from '../date';
-import { useImmer } from 'use-immer';
-import { Updater } from 'use-immer';
-import React, { createContext, useContext } from 'react';
 import merge from 'lodash/merge';
+import React, { createContext, useContext } from 'react';
+import { Updater, useImmer } from 'use-immer';
+import { DateVariableContext } from '../date';
 
 type VariablesEvalContextType = {
   $dateV2: DateVariableContext;
@@ -54,3 +53,17 @@ export const useVariablesContext = () => {
   }
   return variablesCtx;
 };
+
+const scopes = [
+  {
+    label: 'date',
+    value: '$nDate',
+    children: [
+      {
+        label: 'Now',
+        value: 'now',
+        helpers: ['date.*'],
+      },
+    ],
+  },
+];

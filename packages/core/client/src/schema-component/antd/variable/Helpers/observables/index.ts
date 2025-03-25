@@ -8,14 +8,11 @@
  */
 
 import { observable } from '@formily/reactive';
-import { extractTemplateElements, createJSONTemplateParser } from '@nocobase/json-template-parser';
+import { Helper as _Helper, createJSONTemplateParser, extractTemplateElements } from '@nocobase/json-template-parser';
 
-type Helper = {
-  name: string;
+type Helper = _Helper & {
   argsMap: Record<string, any>;
-  config: any;
-  args: string[];
-  handler: (value: any, ...args: any[]) => any;
+  config: _Helper;
 };
 
 type RawHelper = {

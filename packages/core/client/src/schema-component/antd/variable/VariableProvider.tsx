@@ -8,6 +8,7 @@
  */
 
 import { reaction } from '@formily/reactive';
+import { observer } from '@formily/reactive-react';
 import { composeTemplate, extractTemplateElements, Helper } from '@nocobase/json-template-parser';
 import { get, isArray } from 'lodash';
 import minimatch from 'minimatch';
@@ -19,14 +20,15 @@ import { useHelperObservables } from './Helpers/hooks/useHelperObservables';
 interface VariableContextValue {
   value: any;
   helperObservables?: ReturnType<typeof useHelperObservables>;
-  variableHelperMapping: VariableHelperMapping;
+  variableType: string;
+  valueType: string;
   variableName: string;
 }
 
 interface VariableProviderProps {
   variableName: string;
+  variableType: string | null;
   children: React.ReactNode;
-  variableHelperMapping?: VariableHelperMapping;
   helperObservables?: ReturnType<typeof useHelperObservables>;
   onVariableTemplateChange?: (val) => void;
 }
@@ -61,27 +63,11 @@ function escapeGlob(str: string): string {
  * @param mapping The variable helper mapping configuration
  * @returns boolean indicating if the filter is allowed for the variable
  */
-export function isHelperAllowedForVariable(
-  variableName: string,
-  helperName: string,
-  mapping?: VariableHelperMapping,
-): boolean {
-  if (!mapping?.rules) {
-    return true; // If no rules defined, allow all filters
+export function isHelperAllowedForVariable(helperName: string, valueType: string): boolean {
+  if (valueType) {
+    const matched = minimatch(helperName, `${valueType}.*`);
+    return matched;
   }
-
-  // Check each rule
-  for (const rule of mapping.rules) {
-    // Check if variable matches the pattern
-    // We don't escape the pattern since it's meant to be a glob pattern
-    // But we escape the variable name since it's a literal value
-    const matched = minimatch(variableName, rule.variable);
-    if (matched) {
-      // Check if filter matches any of the allowed patterns
-      return rule.helpers.some((pattern) => minimatch(helperName, pattern));
-    }
-  }
-
   // If no matching rule found and strictMode is true, deny the filter
   return false;
 }
@@ -118,7 +104,8 @@ export function getSupportedFiltersForVariable(
 const VariableContext = createContext<VariableContextValue>({
   variableName: '',
   value: null,
-  variableHelperMapping: { rules: [] },
+  variableType: null,
+  valueType: '',
 });
 
 export function useCurrentVariable(): VariableContextValue {
@@ -129,10 +116,10 @@ export function useCurrentVariable(): VariableContextValue {
   return context;
 }
 
-export const VariableProvider: React.FC<VariableProviderProps> = ({
+const _VariableProvider: React.FC<VariableProviderProps> = ({
   variableName,
   children,
-  variableHelperMapping,
+  variableType,
   onVariableTemplateChange,
 }) => {
   const [value, setValue] = useState(null);
@@ -171,28 +158,30 @@ export const VariableProvider: React.FC<VariableProviderProps> = ({
     fetchValue();
   }, [localVariables, variableName, variables]);
 
+  const valueType =
+    helperObservables.helpersObs.value.length > 0
+      ? helperObservables.helpersObs.value[helperObservables.helpersObs.value.length - 1].config.outputType
+      : variableType;
+
   return (
-    <VariableContext.Provider value={{ variableName, value, helperObservables, variableHelperMapping }}>
+    <VariableContext.Provider value={{ variableName, value, valueType, helperObservables, variableType }}>
       {children}
     </VariableContext.Provider>
   );
 };
 
+export const VariableProvider = observer(_VariableProvider, { displayName: 'VariableProvider' });
+
 export function useVariable() {
   const context = useContext(VariableContext);
-  const { value, variableName, variableHelperMapping } = context;
+  const { value, variableName, valueType } = context;
 
-  const isHelperAllowed = (filterName: string) => {
-    return isHelperAllowedForVariable(variableName, filterName, variableHelperMapping);
-  };
-
-  const getSupportedFilters = (allHelpers: Helper[]) => {
-    return getSupportedFiltersForVariable(variableName, variableHelperMapping, allHelpers);
+  const isHelperAllowed = (helperName: string) => {
+    return isHelperAllowedForVariable(helperName, valueType);
   };
 
   return {
     ...context,
     isHelperAllowed,
-    getSupportedFilters,
   };
 }

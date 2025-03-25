@@ -4,10 +4,9 @@ import { AntdSchemaComponentProvider, Plugin, SchemaComponent } from '@nocobase/
 import { mockApp } from '@nocobase/client/demo-utils';
 import PluginVariableFiltersClient from '@nocobase/plugin-variable-helpers/client';
 import React from 'react';
-
 const scope = [
   { label: 'v1', value: 'v1' },
-  { label: 'Date', value: '$nDate', children: [{ label: 'Now', value: 'now', type: 'date' }] },
+  { label: 'Date', value: '$nDate', children: [{ label: 'Now', value: 'now' }] },
 ];
 
 const useFormBlockProps = () => {
@@ -30,6 +29,14 @@ const schema = {
       'x-component': 'Variable.Input',
       'x-component-props': {
         scope,
+        variableHelperMapping: {
+          rules: [
+            {
+              variable: '$nDate.*',
+              helpers: ['date.*'],
+            },
+          ],
+        },
       },
     },
     output: {

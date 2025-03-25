@@ -9,14 +9,9 @@
 
 import { escape, escapeSpecialChars, revertEscape } from '../escape';
 import { createJSONTemplateParser } from '../parser';
-
+import { Helper } from '../types';
 const parser = createJSONTemplateParser();
 const engine = parser.engine;
-export type Helper = {
-  name: string;
-  handler: any;
-  args: string[];
-};
 
 export function extractTemplateVariable(template: string): string | null {
   const escapedTemplate = escape(template ?? '');

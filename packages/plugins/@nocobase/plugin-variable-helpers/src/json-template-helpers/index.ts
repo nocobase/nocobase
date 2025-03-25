@@ -7,6 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { Helper } from '@nocobase/json-template-parser';
 import { first } from './array';
 import { dateAdd, dateFormat, dateSubtract } from './date';
 const NAMESPACE = 'variable-helpers';
@@ -15,13 +16,16 @@ function tval(text: string) {
   return `{{t(${JSON.stringify(text)}, ${JSON.stringify({ ns: NAMESPACE, nsMode: 'fallback' })})}}`;
 }
 
-export const helpers = [
+export const helpers: Helper[] = [
   {
     name: 'date_format',
     title: 'format',
     handler: dateFormat,
     group: 'date',
+    inputType: 'date',
+    outputType: 'string',
     sort: 1,
+    args: [],
     uiSchema: [
       {
         name: 'format',
@@ -37,7 +41,10 @@ export const helpers = [
     title: 'add',
     handler: dateAdd,
     group: 'date',
+    inputType: 'date',
+    outputType: 'date',
     sort: 2,
+    args: [],
     uiSchema: [
       {
         name: 'unit',
@@ -69,7 +76,10 @@ export const helpers = [
     title: 'substract',
     handler: dateSubtract,
     group: 'date',
+    inputType: 'date',
+    outputType: 'date',
     sort: 3,
+    args: [],
     uiSchema: [
       {
         name: 'unit',
@@ -101,14 +111,20 @@ export const helpers = [
     title: 'first',
     handler: first,
     sort: 4,
+    args: [],
     group: 'array',
+    inputType: 'string',
+    outputType: 'any',
   },
   {
     name: 'array_last',
     title: 'last',
     sort: 5,
+    args: [],
     handler: first,
     group: 'array',
+    inputType: 'string',
+    outputType: 'any',
   },
 ];
 

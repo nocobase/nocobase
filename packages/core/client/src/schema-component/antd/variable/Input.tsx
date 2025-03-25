@@ -230,6 +230,7 @@ function _Input(props: VariableInputProps) {
   const { t } = useTranslation();
   const form = useForm();
   const [options, setOptions] = React.useState<DefaultOptionType[]>([]);
+  const [variableType, setVariableType] = React.useState<string>();
   const [variableText, setVariableText] = React.useState([]);
   const [isFieldValue, setIsFieldValue] = React.useState(
     hideVariableButton || (children && value != null ? true : false),
@@ -382,6 +383,9 @@ function _Input(props: VariableInputProps) {
         return;
       }
       onChange(`{{${next.join('.')}}}`, optionPath);
+      if (Array.isArray(optionPath) && optionPath.length > 0) {
+        setVariableType(optionPath[optionPath.length - 1]?.type ?? null);
+      }
     },
     [type, variable, onChange],
   );
@@ -487,7 +491,7 @@ function _Input(props: VariableInputProps) {
               })}
               <VariableProvider
                 variableName={fullVariable}
-                variableHelperMapping={variableHelperMapping}
+                variableType={variableType}
                 onVariableTemplateChange={onChange}
               >
                 <HelperList />
