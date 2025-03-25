@@ -53,6 +53,7 @@ export function useAssociationFieldContext<F extends GeneralField>() {
   };
 }
 
+// 用于获取关系字段请求数据时所需的一些参数
 export default function useServiceOptions(props) {
   const { action = 'list', service, useOriginalFilter } = props;
   const fieldSchema = useFieldSchema();
