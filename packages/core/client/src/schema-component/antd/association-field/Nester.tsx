@@ -144,8 +144,14 @@ const ToManyNester = observer(
     const update = useUpdate();
     const { isMobileLayout } = useMobileLayout();
 
-    const newSchema = useMemo(() => isMobileLayout ? transformMultiColumnToSingleColumn(fieldSchema) : fieldSchema, [isMobileLayout, fieldSchema]);
-    const newParentSchema = useMemo(() => isMobileLayout ? transformMultiColumnToSingleColumn(fieldSchema.parent) : fieldSchema.parent, [isMobileLayout, fieldSchema.parent]);
+    const newSchema = useMemo(
+      () => (isMobileLayout ? transformMultiColumnToSingleColumn(fieldSchema) : fieldSchema),
+      [isMobileLayout, fieldSchema],
+    );
+    const newParentSchema = useMemo(
+      () => (isMobileLayout ? transformMultiColumnToSingleColumn(fieldSchema.parent) : fieldSchema.parent),
+      [isMobileLayout, fieldSchema.parent],
+    );
 
     const refreshComponent = useRefreshComponent();
     const refresh = useCallback(() => {

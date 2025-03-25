@@ -34,6 +34,8 @@ import {
 import { DefaultValueProvider } from '../../../schema-settings/hooks/useIsAllowToSetDefaultValue';
 import { useLinkageAction } from './hooks';
 import { requestSettingsSchema } from './utils';
+import { useAfterSuccessOptions } from './hooks/useGetAfterSuccessVariablesOptions';
+import { useGlobalVariable } from '../../../application/hooks/useGlobalVariable';
 
 const MenuGroup = (props) => {
   return props.children;
@@ -280,11 +282,24 @@ export function SkipValidation() {
   );
 }
 
+const fieldNames = {
+  value: 'value',
+  label: 'label',
+};
+const useVariableProps = (environmentVariables) => {
+  const scope = useAfterSuccessOptions();
+  return {
+    scope: [environmentVariables, ...scope].filter(Boolean),
+    fieldNames,
+  };
+};
+
 export function AfterSuccess() {
   const { dn } = useDesignable();
   const { t } = useTranslation();
   const fieldSchema = useFieldSchema();
   const { onSuccess } = fieldSchema?.['x-action-settings'] || {};
+  const environmentVariables = useGlobalVariable('$env');
   return (
     <SchemaSettingsModalItem
       title={t('After successful submission')}
@@ -363,8 +378,9 @@ export function AfterSuccess() {
             redirectTo: {
               title: t('Link'),
               'x-decorator': 'FormItem',
-              'x-component': 'Input',
-              'x-component-props': {},
+              'x-component': 'Variable.TextArea',
+              // eslint-disable-next-line react-hooks/rules-of-hooks
+              'x-use-component-props': () => useVariableProps(environmentVariables),
             },
           },
         } as ISchema

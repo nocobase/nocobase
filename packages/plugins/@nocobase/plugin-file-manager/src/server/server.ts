@@ -7,18 +7,16 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { basename } from 'path';
+import fs from 'fs';
+
 import { Plugin } from '@nocobase/server';
 import { isURL, Registry } from '@nocobase/utils';
-
-import { basename } from 'path';
-
 import { Collection, Model, Transactionable } from '@nocobase/database';
-import fs from 'fs';
 import { STORAGE_TYPE_ALI_OSS, STORAGE_TYPE_LOCAL, STORAGE_TYPE_S3, STORAGE_TYPE_TX_COS } from '../constants';
 import initActions from './actions';
-import { getFileData } from './actions/attachments';
 import { AttachmentInterface } from './interfaces/attachment-interface';
-import { AttachmentModel, StorageClassType, StorageModel, StorageType } from './storages';
+import { AttachmentModel, StorageClassType, StorageModel } from './storages';
 import StorageTypeAliOss from './storages/ali-oss';
 import StorageTypeLocal from './storages/local';
 import StorageTypeS3 from './storages/s3';
@@ -106,39 +104,31 @@ export class PluginFileManagerServer extends Plugin {
 
   async uploadFile(options: UploadFileOptions) {
     const { storageName, filePath, documentRoot } = options;
-    const storageRepository = this.db.getRepository('storages');
-    let storageInstance;
 
-    storageInstance = await storageRepository.findOne({
-      filter: storageName
-        ? {
-            name: storageName,
-          }
-        : {
-            default: true,
-          },
-    });
+    if (!this.storagesCache.size) {
+      await this.loadStorages();
+    }
+    const storages = Array.from(this.storagesCache.values());
+    const storage = storages.find((item) => item.name === storageName) || storages.find((item) => item.default);
 
-    const fileStream = fs.createReadStream(filePath);
-
-    if (!storageInstance) {
+    if (!storage) {
       throw new Error('[file-manager] no linked or default storage provided');
     }
 
-    storageInstance = this.parseStorage(storageInstance);
+    const fileStream = fs.createReadStream(filePath);
 
     if (documentRoot) {
-      storageInstance.options['documentRoot'] = documentRoot;
+      storage.options['documentRoot'] = documentRoot;
     }
 
-    const storageType = this.storageTypes.get(storageInstance.type);
-    const storage = new storageType(storageInstance);
+    const StorageType = this.storageTypes.get(storage.type);
+    const storageInstance = new StorageType(storage);
 
-    if (!storage) {
-      throw new Error(`[file-manager] storage type "${storageInstance.type}" is not defined`);
+    if (!storageInstance) {
+      throw new Error(`[file-manager] storage type "${storage.type}" is not defined`);
     }
 
-    const engine = storage.make();
+    const engine = storageInstance.make();
 
     const file = {
       originalname: basename(filePath),
@@ -156,7 +146,7 @@ export class PluginFileManagerServer extends Plugin {
       });
     });
 
-    return getFileData({ app: this.app, file, storage: storageInstance, request: { body: {} } } as any);
+    return storageInstance.getFileData(file, {});
   }
 
   async loadStorages(options?: { transaction: any }) {
@@ -195,17 +185,8 @@ export class PluginFileManagerServer extends Plugin {
   }
 
   async handleSyncMessage(message) {
-    if (message.type === 'storageChange') {
-      const storage = await this.db.getRepository('storages').findOne({
-        filterByTk: message.storageId,
-      });
-      if (storage) {
-        this.storagesCache.set(storage.id, this.parseStorage(storage));
-      }
-    }
-    if (message.type === 'storageRemove') {
-      const id = message.storageId;
-      this.storagesCache.delete(id);
+    if (message.type === 'reloadStorages') {
+      await this.loadStorages();
     }
   }
 
@@ -244,17 +225,11 @@ export class PluginFileManagerServer extends Plugin {
     this.storageTypes.register(STORAGE_TYPE_TX_COS, StorageTypeTxCos);
 
     const Storage = this.db.getModel('storages');
-    Storage.afterSave((m, { transaction }) => {
-      this.storagesCache.set(m.id, m.toJSON());
-      this.sendSyncMessage(
-        {
-          type: 'storageChange',
-          storageId: m.id,
-        },
-        { transaction },
-      );
+    Storage.afterSave(async (m, { transaction }) => {
+      await this.loadStorages({ transaction });
+      this.sendSyncMessage({ type: 'reloadStorages' }, { transaction });
     });
-    Storage.afterDestroy((m, { transaction }) => {
+    Storage.afterDestroy(async (m, { transaction }) => {
       for (const collection of this.db.collections.values()) {
         if (collection?.options?.template === 'file' && collection?.options?.storage === m.name) {
           throw new Error(
@@ -264,14 +239,8 @@ export class PluginFileManagerServer extends Plugin {
           );
         }
       }
-      this.storagesCache.delete(m.id);
-      this.sendSyncMessage(
-        {
-          type: 'storageRemove',
-          storageId: m.id,
-        },
-        { transaction },
-      );
+      await this.loadStorages({ transaction });
+      this.sendSyncMessage({ type: 'reloadStorages' }, { transaction });
     });
 
     this.app.acl.registerSnippet({

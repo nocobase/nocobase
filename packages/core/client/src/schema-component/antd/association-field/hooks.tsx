@@ -60,6 +60,7 @@ export function useAssociationFieldContext<F extends GeneralField>() {
   };
 }
 
+// 用于获取关系字段请求数据时所需的一些参数
 export default function useServiceOptions(props) {
   const { action = 'list', service, useOriginalFilter } = props;
   const fieldSchema = useFieldSchema();
@@ -86,24 +87,24 @@ export default function useServiceOptions(props) {
         mergeFilter([
           isOToAny && !isInFilterFormBlock(fieldSchema) && collectionField?.foreignKey && !useOriginalFilter
             ? {
-              [collectionField.foreignKey]: {
-                $is: null,
-              },
-            }
+                [collectionField.foreignKey]: {
+                  $is: null,
+                },
+              }
             : null,
           parsedFilterParams,
         ]),
         isOToAny &&
-          sourceValue !== undefined &&
-          sourceValue !== null &&
-          !isInFilterFormBlock(fieldSchema) &&
-          collectionField?.foreignKey &&
-          !useOriginalFilter
+        sourceValue !== undefined &&
+        sourceValue !== null &&
+        !isInFilterFormBlock(fieldSchema) &&
+        collectionField?.foreignKey &&
+        !useOriginalFilter
           ? {
-            [collectionField.foreignKey]: {
-              $eq: sourceValue,
-            },
-          }
+              [collectionField.foreignKey]: {
+                $eq: sourceValue,
+              },
+            }
           : null,
         // params?.filter && value?.length
         //   ? {

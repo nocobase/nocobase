@@ -267,6 +267,13 @@ function FinallyButton({
 }) {
   const { getCollection } = useCollectionManager_deprecated();
   const aclCtx = useACLActionParamsContext();
+  const buttonStyle = useMemo(() => {
+    const shouldApplyOpacity = designable && (field?.data?.hidden || !aclCtx);
+    const opacityValue = componentType !== 'link' ? (shouldApplyOpacity ? 0.1 : 1) : 1;
+    return {
+      opacity: opacityValue,
+    };
+  }, [designable, field?.data?.hidden, aclCtx, componentType]);
 
   if (inheritsCollections?.length > 0) {
     if (!linkageFromForm) {
@@ -276,6 +283,7 @@ function FinallyButton({
           danger={props.danger}
           type={componentType}
           icon={<DownOutlined />}
+          style={{ ...props?.style, ...buttonStyle }}
           buttonsRender={([leftButton, rightButton]) => [
             React.cloneElement(leftButton as React.ReactElement<any, string>, {
               style: props?.style,
@@ -296,7 +304,13 @@ function FinallyButton({
       ) : (
         <Dropdown menu={menu}>
           {
-            <Button aria-label={props['aria-label']} icon={icon} type={componentType} danger={props.danger}>
+            <Button
+              aria-label={props['aria-label']}
+              icon={icon}
+              type={componentType}
+              danger={props.danger}
+              style={{ ...props?.style, ...buttonStyle }}
+            >
               {props.children} <DownOutlined />
             </Button>
           }
@@ -321,6 +335,7 @@ function FinallyButton({
         style={{
           display: !designable && field?.data?.hidden && 'none',
           opacity: designable && field?.data?.hidden && 0.1,
+          ...buttonStyle,
         }}
       >
         {props.children}
@@ -342,7 +357,7 @@ function FinallyButton({
         ...props?.style,
         display: !designable && field?.data?.hidden && 'none',
         opacity: designable && field?.data?.hidden && 0.1,
-        height: '100%',
+        ...buttonStyle,
       }}
     >
       {props.onlyIcon ? props?.children?.[1] : props?.children}
