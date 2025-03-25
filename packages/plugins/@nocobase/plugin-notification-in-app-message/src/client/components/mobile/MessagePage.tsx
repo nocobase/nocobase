@@ -7,33 +7,31 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useEffect, useCallback, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { List, Badge, InfiniteScroll, NavBar, DotLoading } from 'antd-mobile';
 import { observer } from '@formily/reactive-react';
-import { useCurrentUserContext, css, useApp } from '@nocobase/client';
-import { useSearchParams } from 'react-router-dom';
+import { css, useApp, useCurrentUserContext } from '@nocobase/client';
 import { dayjs } from '@nocobase/utils/client';
+import { Badge, InfiniteScroll, List, NavBar } from 'antd-mobile';
+import React, { useCallback, useEffect, useState } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 
+import { Schema } from '@formily/react';
 import {
-  MobilePageHeader,
-  MobilePageProvider,
   MobilePageContentContainer,
-  useMobileTitle,
+  MobilePageHeader,
+  MobilePageProvider
 } from '@nocobase/plugin-mobile/client';
+import { useLocalTranslation } from '../../../locale';
 import {
-  userIdObs,
+  fetchChannels,
+  fetchMessages,
   selectedChannelNameObs,
   selectedChannelObs,
   selectedMessageListObs,
-  fetchChannels,
-  updateMessage,
-  fetchMessages,
   showMsgLoadingMoreObs,
+  updateMessage,
+  userIdObs,
 } from '../../observables';
-import { useLocalTranslation } from '../../../locale';
 import InfiniteScrollContent from './InfiniteScrollContent';
-import { Schema } from '@formily/react';
 
 const MobileMessagePageInner = () => {
   const app = useApp();
@@ -58,7 +56,7 @@ const MobileMessagePageInner = () => {
   }, [currUserId]);
   const messages = selectedMessageListObs.value;
   const viewMessageDetail = (message) => {
-    const url = message.options?.mobileUrl;
+    const url = message.options?.mobileUrl || message.options?.url;
     if (url) {
       if (url.startsWith('/m/')) navigate(url.substring(2));
       else if (url.startsWith('/')) navigate(url);
