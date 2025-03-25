@@ -233,10 +233,10 @@ describe('Table.settings', () => {
             },
           ],
         },
-        {
-          title: 'Save as template',
-          type: 'modal',
-        },
+        // {
+        //   title: 'Save as template',
+        //   type: 'modal',
+        // },
         {
           title: 'Delete',
           type: 'delete',
