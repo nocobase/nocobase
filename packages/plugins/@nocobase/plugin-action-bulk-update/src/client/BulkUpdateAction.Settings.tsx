@@ -8,7 +8,6 @@
  */
 
 import { ISchema, useFieldSchema } from '@formily/react';
-import { isValid } from '@formily/shared';
 import {
   ActionDesigner,
   SchemaSettings,
@@ -19,6 +18,8 @@ import {
   useDesignable,
   useSchemaToolbar,
   RefreshDataBlockRequest,
+  useAfterSuccessOptions,
+  useGlobalVariable,
 } from '@nocobase/client';
 import { useTranslation } from 'react-i18next';
 import React from 'react';
@@ -49,11 +50,22 @@ function UpdateMode() {
     />
   );
 }
-
+const fieldNames = {
+  value: 'value',
+  label: 'label',
+};
+const useVariableProps = (environmentVariables) => {
+  const scope = useAfterSuccessOptions();
+  return {
+    scope: [environmentVariables, ...scope].filter(Boolean),
+    fieldNames,
+  };
+};
 function AfterSuccess() {
   const { dn } = useDesignable();
   const { t } = useTranslation();
   const fieldSchema = useFieldSchema();
+  const environmentVariables = useGlobalVariable('$env');
   return (
     <SchemaSettingsModalItem
       title={t('After successful submission')}
@@ -100,8 +112,9 @@ function AfterSuccess() {
             redirectTo: {
               title: t('Link'),
               'x-decorator': 'FormItem',
-              'x-component': 'Input',
-              'x-component-props': {},
+              'x-component': 'Variable.TextArea',
+              // eslint-disable-next-line react-hooks/rules-of-hooks
+              'x-use-component-props': () => useVariableProps(environmentVariables),
             },
           },
         } as ISchema
