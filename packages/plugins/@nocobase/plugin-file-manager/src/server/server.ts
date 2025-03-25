@@ -182,17 +182,8 @@ export class PluginFileManagerServer extends Plugin {
   }
 
   async handleSyncMessage(message) {
-    if (message.type === 'storageChange') {
-      const storage = await this.db.getRepository('storages').findOne({
-        filterByTk: message.storageId,
-      });
-      if (storage) {
-        this.storagesCache.set(storage.id, this.parseStorage(storage));
-      }
-    }
-    if (message.type === 'storageRemove') {
-      const id = message.storageId;
-      this.storagesCache.delete(id);
+    if (message.type === 'reloadStorages') {
+      await this.loadStorages();
     }
   }
 
@@ -231,17 +222,11 @@ export class PluginFileManagerServer extends Plugin {
     this.storageTypes.register(STORAGE_TYPE_TX_COS, StorageTypeTxCos);
 
     const Storage = this.db.getModel('storages');
-    Storage.afterSave((m, { transaction }) => {
-      this.storagesCache.set(m.id, m.toJSON());
-      this.sendSyncMessage(
-        {
-          type: 'storageChange',
-          storageId: m.id,
-        },
-        { transaction },
-      );
+    Storage.afterSave(async (m, { transaction }) => {
+      await this.loadStorages({ transaction });
+      this.sendSyncMessage({ type: 'reloadStorages' }, { transaction });
     });
-    Storage.afterDestroy((m, { transaction }) => {
+    Storage.afterDestroy(async (m, { transaction }) => {
       for (const collection of this.db.collections.values()) {
         if (collection?.options?.template === 'file' && collection?.options?.storage === m.name) {
           throw new Error(
@@ -251,14 +236,8 @@ export class PluginFileManagerServer extends Plugin {
           );
         }
       }
-      this.storagesCache.delete(m.id);
-      this.sendSyncMessage(
-        {
-          type: 'storageRemove',
-          storageId: m.id,
-        },
-        { transaction },
-      );
+      await this.loadStorages({ transaction });
+      this.sendSyncMessage({ type: 'reloadStorages' }, { transaction });
     });
 
     this.app.acl.registerSnippet({
