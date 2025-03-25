@@ -51,7 +51,7 @@ export interface TaskTypeOptions {
 }
 
 const TasksCountsContext = createContext<{ reload: () => void; counts: Record<string, number>; total: number }>({
-  reload() { },
+  reload() {},
   counts: {},
   total: 0,
 });
@@ -124,8 +124,8 @@ function StatusTabs() {
       tabBarExtraContent={
         ExtraActions
           ? {
-            right: <ExtraActions />,
-          }
+              right: <ExtraActions />,
+            }
           : {}
       }
     />
@@ -251,7 +251,7 @@ export function WorkflowTasks() {
                     className: contentClass,
                     style: {
                       padding: `${token.paddingPageVertical}px ${token.paddingPageHorizontal}px`,
-                    }
+                    },
                   },
                   properties: {
                     list: {

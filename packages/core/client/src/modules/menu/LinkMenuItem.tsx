@@ -14,6 +14,14 @@ import React, { useCallback, useContext } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Router } from 'react-router-dom';
 import { SchemaInitializerItem } from '../../application';
+import {
+  CollectionManagerProvider,
+  useCollectionManager,
+} from '../../data-source/collection/CollectionManagerProvider';
+import {
+  DataSourceManagerProvider,
+  useDataSourceManager,
+} from '../../data-source/data-source/DataSourceManagerProvider';
 import { useGlobalTheme } from '../../global-theme';
 import { NocoBaseDesktopRouteType } from '../../route-switch/antd/admin-layout/convertRoutesToSchema';
 import {
@@ -34,6 +42,8 @@ export const LinkMenuItem = () => {
   const { urlSchema, paramsSchema } = useURLAndHTMLSchema();
   const parentRoute = useParentRoute();
   const { createRoute } = useNocoBaseRoutes();
+  const dm = useDataSourceManager();
+  const cm = useCollectionManager();
 
   const handleClick = useCallback(async () => {
     const values = await FormDialog(
@@ -41,31 +51,35 @@ export const LinkMenuItem = () => {
       () => {
         const history = createMemoryHistory();
         return (
-          <Router location={history.location} navigator={history}>
-            <SchemaComponentOptions scope={options.scope} components={{ ...options.components }}>
-              <FormLayout layout={'vertical'}>
-                <SchemaComponent
-                  schema={{
-                    properties: {
-                      title: {
-                        title: t('Menu item title'),
-                        required: true,
-                        'x-component': 'Input',
-                        'x-decorator': 'FormItem',
-                      },
-                      icon: {
-                        title: t('Icon'),
-                        'x-component': 'IconPicker',
-                        'x-decorator': 'FormItem',
-                      },
-                      href: urlSchema,
-                      params: paramsSchema,
-                    },
-                  }}
-                />
-              </FormLayout>
-            </SchemaComponentOptions>
-          </Router>
+          <DataSourceManagerProvider dataSourceManager={dm}>
+            <CollectionManagerProvider instance={cm} dataSource={cm?.dataSource?.key}>
+              <Router location={history.location} navigator={history}>
+                <SchemaComponentOptions scope={options.scope} components={{ ...options.components }}>
+                  <FormLayout layout={'vertical'}>
+                    <SchemaComponent
+                      schema={{
+                        properties: {
+                          title: {
+                            title: t('Menu item title'),
+                            required: true,
+                            'x-component': 'Input',
+                            'x-decorator': 'FormItem',
+                          },
+                          icon: {
+                            title: t('Icon'),
+                            'x-component': 'IconPicker',
+                            'x-decorator': 'FormItem',
+                          },
+                          href: urlSchema,
+                          params: paramsSchema,
+                        },
+                      }}
+                    />
+                  </FormLayout>
+                </SchemaComponentOptions>
+              </Router>
+            </CollectionManagerProvider>
+          </DataSourceManagerProvider>
         );
       },
       theme,

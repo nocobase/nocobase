@@ -17,7 +17,10 @@ export const ChartCardItem = withDynamicSchemaProps(
     const { token } = useToken();
     const filedSchema = useFieldSchema();
     const { isMobileLayout } = useMobileLayout();
-    const schema = useMemo(() => isMobileLayout ? transformMultiColumnToSingleColumn(filedSchema, isAntdStatistic) : filedSchema, [isMobileLayout, filedSchema]);
+    const schema = useMemo(
+      () => (isMobileLayout ? transformMultiColumnToSingleColumn(filedSchema, isAntdStatistic) : filedSchema),
+      [isMobileLayout, filedSchema],
+    );
     return (
       <CardItem
         className="nb-chart-block"
@@ -39,7 +42,10 @@ export const ChartCardItem = withDynamicSchemaProps(
 function isAntdStatistic(columnSchema: any) {
   const chartBlock = Object.values(columnSchema.properties || {})[0];
 
-  if (chartBlock?.['x-decorator'] === "ChartRendererProvider" && chartBlock?.['x-decorator-props']?.config?.chartType === 'antd.statistic') {
+  if (
+    chartBlock?.['x-decorator'] === 'ChartRendererProvider' &&
+    chartBlock?.['x-decorator-props']?.config?.chartType === 'antd.statistic'
+  ) {
     return true;
   }
 

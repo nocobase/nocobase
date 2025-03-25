@@ -16,16 +16,19 @@ import Action from './Action';
 import { ComposedAction } from './types';
 import { Icon } from '../../../icon';
 
-const WrapperComponent = ({ component: Component = 'a', icon, onlyIcon, children, ...restProps }: any) => {
-  return (
-    <Component {...restProps}>
-      <Tooltip title={restProps.title}>
-        <span style={{ marginRight: 3 }}>{icon && typeof icon === 'string' ? <Icon type={icon} /> : icon}</span>
-      </Tooltip>
-      {onlyIcon ? children[1] : children}
-    </Component>
-  );
-};
+const WrapperComponent = React.forwardRef(
+  ({ component: Component = 'a', icon, onlyIcon, children, ...restProps }: any, ref) => {
+    return (
+      <Component ref={ref} {...restProps}>
+        <Tooltip title={restProps.title}>
+          <span style={{ marginRight: 3 }}>{icon && typeof icon === 'string' ? <Icon type={icon} /> : icon}</span>
+        </Tooltip>
+        {onlyIcon ? children[1] : children}
+      </Component>
+    );
+  },
+);
+WrapperComponent.displayName = 'WrapperComponentLink';
 
 export const ActionLink: ComposedAction = withDynamicSchemaProps(
   observer((props: any) => {
@@ -34,6 +37,7 @@ export const ActionLink: ComposedAction = withDynamicSchemaProps(
         {...props}
         component={props.component || WrapperComponent}
         className={classnames('nb-action-link', props.className)}
+        isLink
       />
     );
   }),

@@ -92,7 +92,7 @@ export const useGetFilterFieldOptions = () => {
 
   const getOptions = (fields, depth, usedInVariable?: boolean) => {
     const options = [];
-    fields.forEach((field) => {
+    fields?.forEach((field) => {
       const option = field2option(field, depth, usedInVariable);
       if (option) {
         options.push(option);
