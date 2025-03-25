@@ -343,14 +343,14 @@ export const TableBlockDesigner = () => {
         }}
       />
       <SchemaSettingsConnectDataBlocks type={FilterBlockType.TABLE} emptyDescription={t('No blocks to connect')} />
-      {supportTemplate && <SchemaSettingsDivider />}
+      {/* {supportTemplate && <SchemaSettingsDivider />}
       {supportTemplate && (
         <SchemaSettingsTemplate
           componentName={`${componentNamePrefix}Table`}
           collectionName={name}
           resourceName={defaultResource}
         />
-      )}
+      )} */}
       <SchemaSettingsDivider />
       <SchemaSettingsRemove
         removeParentsIfNoChildren
