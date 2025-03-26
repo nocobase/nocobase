@@ -29,6 +29,7 @@ import { MIN_Z_INDEX_INCREMENT } from './zIndex';
 export interface MobilePopupProps {
   title?: string;
   visible: boolean;
+  minHeight?: number | string;
   onClose: () => void;
   children: ReactNode;
 }
@@ -38,7 +39,8 @@ export const MobilePopup: FC<MobilePopupProps> = (props) => {
     title,
     visible,
     onClose: closePopup,
-    children
+    children,
+    minHeight,
   } = props;
   const { t } = useTranslation();
   const { popupContainerRef } = usePopupContainer(visible);
@@ -51,16 +53,21 @@ export const MobilePopup: FC<MobilePopupProps> = (props) => {
   const zIndexStyle = useMemo(() => {
     return {
       zIndex: newZIndex,
+      minHeight,
     };
-  }, [newZIndex]);
+  }, [newZIndex, minHeight]);
 
   const theme = useMemo(() => {
     return {
       ...globalTheme,
       token: {
         ...globalTheme.token,
-        marginBlock: 12,
         zIndexPopupBase: newZIndex,
+        paddingPageHorizontal: 8,
+        paddingPageVertical: 8,
+        marginBlock: 12,
+        borderRadiusBlock: 8,
+        fontSize: 14,
       },
     };
   }, [globalTheme, newZIndex]);

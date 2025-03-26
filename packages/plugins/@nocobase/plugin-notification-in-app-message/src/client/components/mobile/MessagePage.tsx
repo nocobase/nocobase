@@ -33,7 +33,7 @@ import {
 } from '../../observables';
 import InfiniteScrollContent from './InfiniteScrollContent';
 
-const MobileMessagePageInner = () => {
+const MobileMessagePageInner = (props: {displayPageHeader?: boolean}) => {
   const app = useApp();
   const { t } = useLocalTranslation();
   const navigate = useNavigate();
@@ -99,13 +99,13 @@ const MobileMessagePageInner = () => {
   const title = Schema.compile(selectedChannelObs.value?.title, { t: app.i18n.t }) || t('Message');
 
   return (
-    <MobilePageProvider>
+    <MobilePageProvider displayPageHeader={props.displayPageHeader}>
       <MobilePageHeader>
         <NavBar className="nb-message-back-action" onBack={() => navigate('/page/in-app-message')}>
           {title}
         </NavBar>
       </MobilePageHeader>
-      <MobilePageContentContainer>
+      <MobilePageContentContainer displayPageHeader={props.displayPageHeader}>
         <div
           style={{ height: '100%', overflowY: 'auto' }}
           className={css({

@@ -18,17 +18,21 @@
 
 import { reaction } from '@formily/reactive';
 import { observer } from '@formily/reactive-react';
-import { Icon, useCurrentUserContext } from '@nocobase/client';
-import { Badge, Button, ConfigProvider, Drawer, Tooltip, notification, theme } from 'antd';
+import { Icon, useCurrentUserContext, useMobileLayout } from '@nocobase/client';
+import { MobilePopup } from '@nocobase/plugin-mobile/client';
+import { Badge, Button, ConfigProvider, Drawer, notification, theme, Tooltip } from 'antd';
 import { createStyles } from 'antd-style';
-import React, { FC, useCallback, useEffect } from 'react';
+import React, { FC, useCallback, useEffect, useState } from 'react';
 import { useLocalTranslation } from '../../locale';
+import { Channel } from '../../types';
 import {
   fetchChannels, inboxVisible, liveSSEObs,
   messageMapObs,
   selectedChannelNameObs, startMsgSSEStreamWithRetry, unreadMsgsCountObs, updateUnreadMsgsCount, userIdObs
 } from '../observables';
 import { InboxContent } from './InboxContent';
+import { MobileChannelPage } from './mobile/ChannelPage';
+import { MobileMessagePage } from './mobile/MessagePage';
 const useStyles = createStyles(({ token }) => {
   return {
     button: {
@@ -40,6 +44,22 @@ const useStyles = createStyles(({ token }) => {
 
 const InboxPopup: FC<{ title: string; visible: boolean; onClose: () => void }> = (props) => {
   const { token } = theme.useToken();
+  const { isMobileLayout } = useMobileLayout();
+  const [selectedChannel, setSelectedChannel] = useState<Channel | null>(null);
+
+  if (isMobileLayout) {
+    return (
+      <>
+        <MobilePopup title={props.title} visible={props.visible} onClose={props.onClose} minHeight={'60vh'}>
+          <MobileChannelPage displayNavigationBar={false} onClickItem={setSelectedChannel} />
+        </MobilePopup>
+        <MobilePopup title={selectedChannel?.title} visible={!!selectedChannel} onClose={() => setSelectedChannel(null)} minHeight={'60vh'}>
+          <MobileMessagePage displayPageHeader={false} />
+        </MobilePopup>
+      </>
+    )
+  }
+
   return (
     <Drawer
       title={<div style={{ padding: '0', paddingLeft: token.padding }}>{props.title}</div>}
