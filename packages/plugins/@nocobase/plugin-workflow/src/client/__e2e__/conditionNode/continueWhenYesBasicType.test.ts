@@ -446,6 +446,7 @@ test('Collection event add data trigger, determine trigger node integer variable
     `Trigger variables / Trigger data / ${triggerNodeFieldDisplayName}`,
   );
   await page.getByLabel('variable-button').nth(1).click();
+  await page.waitForTimeout(200);
   await page.getByRole('menuitemcheckbox', { name: 'Node result' }).click();
   await page.getByRole('menuitemcheckbox', { name: preQueryRecordNodeTitle }).click();
   await page.getByRole('menuitemcheckbox', { name: triggerNodeFieldDisplayName }).click();
