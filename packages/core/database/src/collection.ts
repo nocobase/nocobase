@@ -942,6 +942,10 @@ export class Collection<
       return 'public';
     }
 
+    if (this.db.inDialect('mssql')) {
+      return 'dbo';
+    }
+
     return undefined;
   }
 

@@ -16,7 +16,6 @@ describe('relation repository', () => {
   });
 
   afterEach(async () => {
-    await db.clean({ drop: true });
     await db.close();
   });
 

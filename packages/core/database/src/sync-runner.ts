@@ -134,6 +134,18 @@ export class SyncRunner {
       // remove primary key
       if (this.database.inDialect('mariadb', 'mysql')) {
         await this.sequelize.query(`ALTER TABLE ${this.collection.quotedTableName()} DROP PRIMARY KEY;`, options);
+      } else if (this.database.inDialect('mssql')) {
+        const constraintName = await this.sequelize.query(
+          `SELECT name FROM sys.key_constraints
+           WHERE type = 'PK' AND parent_object_id = OBJECT_ID('${this.collection.quotedTableName()}')`,
+          { ...options, type: 'SELECT' },
+        );
+        if (constraintName?.[0] && constraintName[0]['name']) {
+          await this.sequelize.query(
+            `ALTER TABLE ${this.collection.quotedTableName()} DROP CONSTRAINT ${constraintName[0]['name']};`,
+            options,
+          );
+        }
       }
     }
   }
@@ -264,7 +276,6 @@ export class SyncRunner {
       if (!isSingleField) continue;
 
       const columnName = existUniqueIndex.fields[0].attribute;
-
       const currentAttribute = this.findAttributeByColumnName(columnName);
 
       if (!currentAttribute || (!currentAttribute.unique && !currentAttribute.primaryKey)) {
@@ -276,7 +287,21 @@ export class SyncRunner {
           }
         }
 
-        if (this.database.inDialect('sqlite')) {
+        if (this.database.inDialect('mssql')) {
+          const constraintName = await this.sequelize.query(
+            `SELECT name FROM sys.indexes 
+             WHERE object_id = OBJECT_ID('${this.collection.quotedTableName()}')
+             AND name = '${existUniqueIndex.name}'`,
+            { ...options, type: 'SELECT' },
+          );
+
+          if (constraintName?.[0] && constraintName[0]['name']) {
+            await this.sequelize.query(
+              `ALTER TABLE ${this.collection.quotedTableName()} DROP CONSTRAINT ${constraintName[0]['name']};`,
+              options,
+            );
+          }
+        } else if (this.database.inDialect('sqlite')) {
           const changeAttribute = {
             ...currentAttribute,
             unique: false,
@@ -364,7 +389,7 @@ export class SyncRunner {
   async handleZeroColumnModel(options) {
     // @ts-ignore
     if (Object.keys(this.model.tableAttributes).length === 0) {
-      if (this.database.inDialect('sqlite', 'mysql', 'mariadb', 'postgres')) {
+      if (this.database.inDialect('sqlite', 'mysql', 'mariadb', 'postgres', 'mssql')) {
         throw new ZeroColumnTableError(
           `Zero-column tables aren't supported in ${this.database.sequelize.getDialect()}`,
         );
@@ -396,10 +421,23 @@ export class SyncRunner {
     const _schema = this.model._schema;
 
     if (_schema && _schema != 'public') {
-      await this.sequelize.query(`CREATE SCHEMA IF NOT EXISTS "${_schema}";`, {
-        raw: true,
-        transaction: options?.transaction,
-      });
+      if (this.database.inDialect('mssql')) {
+        await this.sequelize.query(
+          `IF NOT EXISTS (SELECT * FROM sys.schemas WHERE name = '${_schema}')
+           BEGIN
+             EXEC('CREATE SCHEMA [${_schema}]')
+           END`,
+          {
+            raw: true,
+            transaction: options?.transaction,
+          },
+        );
+      } else {
+        await this.sequelize.query(`CREATE SCHEMA IF NOT EXISTS "${_schema}";`, {
+          raw: true,
+          transaction: options?.transaction,
+        });
+      }
     }
   }
 }

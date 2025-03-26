@@ -119,15 +119,17 @@ describe.skipIf(process.env['DB_DIALECT'] === 'sqlite')('collection', () => {
     });
 
     const item = await Test.repository.findOne();
-
-    expect(item.toJSON()['id']).toBe(123456);
-    expect(item.id).toBe(123456);
-    expect(item['id']).toBe(123456);
+    const parseValue = (value) => {
+      return db.options.dialect === 'mssql' ? value.toString() : value;
+    };
+    expect(item.toJSON()['id']).toBe(parseValue(123456));
+    expect(item.id).toBe(parseValue(123456));
+    expect(item['id']).toBe(parseValue(123456));
 
     const items = await Test.repository.find({
       raw: true,
     });
 
-    expect(items[0]['id']).toBe(123456);
+    expect(items[0]['id']).toBe(parseValue(123456));
   });
 });

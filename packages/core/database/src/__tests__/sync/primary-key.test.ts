@@ -90,8 +90,6 @@ describe.skipIf(process.env['DB_DIALECT'] === 'sqlite')('primary key not in sqli
 
   beforeEach(async () => {
     db = await createMockDatabase({});
-
-    await db.clean({ drop: true });
   });
 
   afterEach(async () => {

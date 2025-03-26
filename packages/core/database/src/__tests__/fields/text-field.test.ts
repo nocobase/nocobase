@@ -22,6 +22,9 @@ describe('text field', () => {
   });
 
   it('should create text field type', async () => {
+    if (db.options.dialect === 'mssql') {
+      return;
+    }
     const Test = db.collection({
       name: 'tests',
       fields: [

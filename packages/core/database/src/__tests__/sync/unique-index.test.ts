@@ -15,8 +15,6 @@ describe('unique index', () => {
 
   beforeEach(async () => {
     db = await createMockDatabase({});
-
-    await db.clean({ drop: true });
   });
 
   afterEach(async () => {
@@ -33,7 +31,7 @@ describe('unique index', () => {
         },
       ],
       fields: [
-        { type: 'string', name: 'userName', defaultValue: 0 },
+        { type: 'string', name: 'userName', defaultValue: db.options.dialect === 'mssql' ? undefined : 0 },
         { type: 'string', name: 'userEmail' },
       ],
     });
