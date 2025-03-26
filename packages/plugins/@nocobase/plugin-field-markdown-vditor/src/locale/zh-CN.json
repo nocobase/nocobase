@@ -1,7 +1,7 @@
 {
   "Vditor": "Markdown(Vditor)",
   "File collection": "文件数据表",
-  "Used to store files uploaded in the Markdown editor": "用于存储在Markdown编辑器中上传的文件",
+  "Used to store files uploaded in the Markdown editor (default: attachments)": "用于存储在Markdown编辑器中上传的文件 (默认: attachments)",
   "Toolbar": "编辑器工具栏配置",
   "Emoji": "表情",
   "Headings": "标题",
@@ -29,5 +29,10 @@
   "Both": "编辑 & 预览",
   "Preview": "预览",
   "Fullscreen": "全屏切换",
-  "Outline": "大纲"
+  "Outline": "大纲",
+  "uploading": "上传中...",
+  "upload failed": "上传失败",
+  "vditor.uploadError.message": "无法上传文件到当前存储。您正在尝试上传文件到 Markdown 编辑器，但当前的存储配置不支持此操作。要启用上传功能，请完成以下设置：1. 前往「文件管理器」。2. 选择当前正在使用的存储（{{storageTitle}}）。3. 设置「基础 URL」并启用「公开访问」选项。",
+  "Storage configuration not found. Please configure a storage provider first.": "存储配置未找到。请先配置存储提供程序。",
+  "Response data is empty": "接口返回的数据为空"
 }
