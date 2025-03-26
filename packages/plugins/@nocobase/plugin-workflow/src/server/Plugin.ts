@@ -15,7 +15,7 @@ import LRUCache from 'lru-cache';
 
 import { Op } from '@nocobase/database';
 import { Plugin } from '@nocobase/server';
-import { Registry } from '@nocobase/utils';
+import { Registry, uid } from '@nocobase/utils';
 import { SequelizeCollectionManager } from '@nocobase/data-source-manager';
 import { Logger, LoggerOptions } from '@nocobase/logger';
 
@@ -74,6 +74,10 @@ export default class PluginWorkflowServer extends Plugin {
 
   private onBeforeSave = async (instance: WorkflowModel, { transaction }) => {
     const Model = <typeof WorkflowModel>instance.constructor;
+
+    if (!instance.key) {
+      instance.set('key', uid());
+    }
 
     if (instance.enabled) {
       instance.set('current', true);
