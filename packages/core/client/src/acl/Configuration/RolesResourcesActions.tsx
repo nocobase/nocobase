@@ -105,50 +105,48 @@ export const RolesResourcesActions = connect((props) => {
               className={antTableCell}
               size={'small'}
               pagination={false}
-              columns={
-                [
-                  {
-                    dataIndex: 'displayName',
-                    title: t('Action display name'),
-                    render: (value) => compile(value),
-                  },
-                  {
-                    dataIndex: 'onNewRecord',
-                    title: t('Action type'),
-                    render: (onNewRecord) =>
-                      onNewRecord ? (
-                        <Tag color={'green'}>{t('Action on new records')}</Tag>
-                      ) : (
-                        <Tag color={'geekblue'}>{t('Action on existing records')}</Tag>
-                      ),
-                  },
-                  {
-                    dataIndex: 'enabled',
-                    title: t('Allow'),
-                    render: (enabled, action) => (
-                      <Checkbox
-                        checked={enabled}
-                        onChange={() => {
-                          toggleAction(action.name);
+              columns={[
+                {
+                  dataIndex: 'displayName',
+                  title: t('Action display name'),
+                  render: (value) => compile(value),
+                },
+                {
+                  dataIndex: 'onNewRecord',
+                  title: t('Action type'),
+                  render: (onNewRecord) =>
+                    onNewRecord ? (
+                      <Tag color={'green'}>{t('Action on new records')}</Tag>
+                    ) : (
+                      <Tag color={'geekblue'}>{t('Action on existing records')}</Tag>
+                    ),
+                },
+                {
+                  dataIndex: 'enabled',
+                  title: t('Allow'),
+                  render: (enabled, action) => (
+                    <Checkbox
+                      checked={enabled}
+                      onChange={() => {
+                        toggleAction(action.name);
+                      }}
+                    />
+                  ),
+                },
+                {
+                  dataIndex: 'scope',
+                  title: t('Data scope'),
+                  render: (value, action) =>
+                    !action.onNewRecord && (
+                      <ScopeSelect
+                        value={value}
+                        onChange={(scope) => {
+                          setScope(action.name, scope);
                         }}
                       />
                     ),
-                  },
-                  {
-                    dataIndex: 'scope',
-                    title: t('Data scope'),
-                    render: (value, action) =>
-                      !action.onNewRecord && (
-                        <ScopeSelect
-                          value={value}
-                          onChange={(scope) => {
-                            setScope(action.name, scope);
-                          }}
-                        />
-                      ),
-                  },
-                ] as TableProps['columns']
-              }
+                },
+              ] as TableProps['columns']}
               dataSource={availableActions?.map((item) => {
                 let enabled = false;
                 let scope = null;
