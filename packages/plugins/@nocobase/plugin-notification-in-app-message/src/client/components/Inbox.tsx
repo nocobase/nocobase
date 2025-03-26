@@ -53,7 +53,7 @@ const InboxPopup: FC<{ title: string; visible: boolean; onClose: () => void }> =
         <MobilePopup title={props.title} visible={props.visible} onClose={props.onClose} minHeight={'60vh'}>
           <MobileChannelPage displayNavigationBar={false} onClickItem={setSelectedChannel} />
         </MobilePopup>
-        <MobilePopup title={selectedChannel?.title} visible={!!selectedChannel} onClose={() => setSelectedChannel(null)} minHeight={'60vh'}>
+        <MobilePopup title={selectedChannel?.title} visible={props.visible && !!selectedChannel} onClose={() => setSelectedChannel(null)} minHeight={'60vh'}>
           <MobileMessagePage displayPageHeader={false} />
         </MobilePopup>
       </>

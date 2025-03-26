@@ -24,6 +24,7 @@ import { useLocalTranslation } from '../../../locale';
 import {
   fetchChannels,
   fetchMessages,
+  inboxVisible,
   selectedChannelNameObs,
   selectedChannelObs,
   selectedMessageListObs,
@@ -33,7 +34,7 @@ import {
 } from '../../observables';
 import InfiniteScrollContent from './InfiniteScrollContent';
 
-const MobileMessagePageInner = (props: {displayPageHeader?: boolean}) => {
+const MobileMessagePageInner = (props: { displayPageHeader?: boolean }) => {
   const app = useApp();
   const { t } = useLocalTranslation();
   const navigate = useNavigate();
@@ -59,8 +60,10 @@ const MobileMessagePageInner = (props: {displayPageHeader?: boolean}) => {
     const url = message.options?.mobileUrl || message.options?.url;
     if (url) {
       if (url.startsWith('/m/')) navigate(url.substring(2));
-      else if (url.startsWith('/')) navigate(url);
-      else {
+      else if (url.startsWith('/')) {
+        navigate(url);
+        inboxVisible.value = false;
+      } else {
         window.location.href = url;
       }
     }
