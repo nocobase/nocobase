@@ -273,31 +273,43 @@ const InternalPagePopups = (props: { paramsList?: PopupParams[] }) => {
         );
       });
       const schemas = await Promise.all(waitList);
-      const clonedSchemas = schemas.map((schema, index) => {
-        if (_.isEmpty(schema)) {
-          return get404Schema();
-        }
-
-        const params = popupParams[index];
-
-        if (params.puid) {
-          const popupSchema = findSchemaByUid(params.puid, fieldSchema?.root);
-          if (popupSchema) {
-            savePopupSchemaToSchema(_.omit(popupSchema, 'parent'), schema);
+      const clonedSchemas = await Promise.all(
+        schemas.map(async (schema, index) => {
+          if (_.isEmpty(schema)) {
+            return get404Schema();
           }
-        }
 
-        // Using toJSON for deep clone, faster than lodash's cloneDeep
-        const result = _.cloneDeepWith(_.omit(schema, 'parent'), (value) => {
-          // If we clone the Tabs component, it will cause the configuration to be lost when reopening the popup after modifying its settings
-          if (value?.['x-component'] === 'Tabs') {
-            return value;
+          const params = popupParams[index];
+
+          if (params.puid) {
+            const popupSchema = findSchemaByUid(params.puid, fieldSchema?.root);
+            if (popupSchema) {
+              savePopupSchemaToSchema(_.omit(popupSchema, 'parent'), schema);
+            } else {
+              // 当本地找不到 popupSchema 时，通过接口请求 puid 对应的 schema
+              try {
+                const remoteSchema = await requestSchema(params.puid);
+                if (remoteSchema) {
+                  savePopupSchemaToSchema(remoteSchema, schema);
+                }
+              } catch (error) {
+                console.error('Failed to fetch schema for puid:', params.puid, error);
+              }
+            }
           }
-        });
-        result['x-read-pretty'] = true;
 
-        return result;
-      });
+          // Using toJSON for deep clone, faster than lodash's cloneDeep
+          const result = _.cloneDeepWith(_.omit(schema, 'parent'), (value) => {
+            // If we clone the Tabs component, it will cause the configuration to be lost when reopening the popup after modifying its settings
+            if (value?.['x-component'] === 'Tabs') {
+              return value;
+            }
+          });
+          result['x-read-pretty'] = true;
+
+          return result;
+        }),
+      );
       popupPropsRef.current = clonedSchemas.map((schema, index, items) => {
         const schemaContext = getPopupContextFromActionOrAssociationFieldSchema(schema);
         let hidden = false;
