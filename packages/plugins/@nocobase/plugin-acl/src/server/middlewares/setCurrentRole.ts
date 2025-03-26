@@ -58,10 +58,11 @@ export async function setCurrentRole(ctx: Context, next) {
     ctx.state.currentRoles = userRoles.map((role) => role.name);
     return next();
   } else if (roleMode === SystemRoleMode.allowUseUnion) {
-    ctx.state.currentUser.roles = userRoles.concat({
+    userRoles.unshift({
       name: UNION_ROLE_KEY,
       title: ctx.t('Full permissions', { ns: 'acl' }),
     });
+    ctx.state.currentUser.roles = userRoles;
   }
 
   if (currentRole === UNION_ROLE_KEY) {
