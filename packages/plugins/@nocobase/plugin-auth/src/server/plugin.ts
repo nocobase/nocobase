@@ -11,7 +11,6 @@ import { Cache } from '@nocobase/cache';
 import { Model } from '@nocobase/database';
 import { InstallOptions, Plugin } from '@nocobase/server';
 import { tval } from '@nocobase/utils';
-import { tokenPolicyCollectionName, tokenPolicyRecordKey } from '../constants';
 import { namespace, presetAuthType, presetAuthenticator } from '../preset';
 import authActions from './actions/auth';
 import authenticatorsActions from './actions/authenticators';
