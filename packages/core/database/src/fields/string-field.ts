@@ -8,32 +8,31 @@
  */
 
 import { DataTypes } from 'sequelize';
-import { BaseColumnFieldOptions, Field } from './field';
+import { BaseColumnFieldOptions, Field, FieldContext } from './field';
 
 export class StringField extends Field {
+  constructor(options?: any, context?: FieldContext) {
+    super(
+      {
+        set(value) {
+          if (value && options.trim) {
+            this.setDataValue(options.name, value.trim());
+          } else {
+            this.setDataValue(options.name, value);
+          }
+        },
+        ...options,
+      },
+      context,
+    );
+  }
+
   get dataType() {
     if (this.options.length) {
       return DataTypes.STRING(this.options.length);
     }
 
     return DataTypes.STRING;
-  }
-
-  preprocess = (instance) => {
-    const { name } = this.options;
-    if (this.options.trim && instance[name]) {
-      instance.set(name, instance[name].trim());
-    }
-  };
-
-  bind() {
-    super.bind();
-    this.on('beforeSave', this.preprocess);
-  }
-
-  unbind() {
-    super.unbind();
-    this.off('beforeSave', this.preprocess);
   }
 }
 
