@@ -7,12 +7,12 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { basename } from 'path';
 import fs from 'fs';
+import { basename } from 'path';
 
-import { Plugin } from '@nocobase/server';
-import { isURL, Registry } from '@nocobase/utils';
 import { Collection, Model, Transactionable } from '@nocobase/database';
+import { Plugin } from '@nocobase/server';
+import { Registry } from '@nocobase/utils';
 import { STORAGE_TYPE_ALI_OSS, STORAGE_TYPE_LOCAL, STORAGE_TYPE_S3, STORAGE_TYPE_TX_COS } from '../constants';
 import initActions from './actions';
 import { AttachmentInterface } from './interfaces/attachment-interface';

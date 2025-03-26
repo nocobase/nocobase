@@ -32,7 +32,7 @@
   "Allow uploading multiple files": "複数ファイルのアップロードを許可する",
   "Storage": "ストレージ",
   "Storages": "ストレージ",
-  "Access base URL": "アクセスURLのベース",
+  "Base URL": "ベースURL",
   "Base URL for file access, could be your CDN base URL. For example: \"https://cdn.nocobase.com\".": "术语调整，“基礎URL”改为“ベースURL”",
   "Relative path the file will be saved to. Left blank as root path. The leading and trailing slashes \"/\" will be ignored. For example: \"user/avatar\".": "更清晰的表达方式，符合技术描述",
   "Default storage will be used when not selected": "空欄の場合はデフォルトのストレージが使用されます。",
