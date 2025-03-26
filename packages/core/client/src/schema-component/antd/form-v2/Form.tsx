@@ -50,19 +50,20 @@ const FormComponent: React.FC<FormProps> = (props) => {
     labelAlign = 'left',
     labelWidth = 120,
     labelWrap = true,
+    colon = false,
   } = cardItemSchema?.['x-component-props'] || {};
   const { isMobileLayout } = useMobileLayout();
   const newSchema = useMemo(
     () => (isMobileLayout ? transformMultiColumnToSingleColumn(fieldSchema) : fieldSchema),
     [fieldSchema, isMobileLayout],
   );
-
   return (
     <FieldContext.Provider value={undefined}>
       <FormContext.Provider value={form}>
         <FormLayout
           layout={layout}
           {...others}
+          colon={colon}
           labelAlign={labelAlign}
           labelWidth={layout === 'horizontal' ? labelWidth : null}
           labelWrap={labelWrap}
