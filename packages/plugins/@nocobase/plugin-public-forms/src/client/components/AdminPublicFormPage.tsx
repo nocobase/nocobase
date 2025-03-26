@@ -24,6 +24,7 @@ import {
   TextAreaWithGlobalScope,
   ApplicationContext,
   useGlobalVariable,
+  useCompile,
 } from '@nocobase/client';
 import {
   Breadcrumb,
@@ -71,6 +72,7 @@ export function AdminPublicFormPage() {
   const { t } = usePublicFormTranslation();
   const { theme } = useGlobalTheme();
   const apiClient = useAPIClient();
+  const compile = useCompile();
   const { token } = AntdTheme.useToken();
   const app = useApp();
   const environmentCtx = useGlobalVariable('$env');
@@ -150,7 +152,7 @@ export function AdminPublicFormPage() {
               title: <Link to={`/admin/settings/public-forms`}>{t('Public forms', { ns: NAMESPACE })}</Link>,
             },
             {
-              title: title,
+              title: compile(title),
             },
           ]}
         />
