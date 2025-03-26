@@ -12,6 +12,7 @@ import ProLayout, { RouteContext, RouteContextType } from '@ant-design/pro-layou
 import { HeaderViewProps } from '@ant-design/pro-layout/es/components/Header';
 import { css } from '@emotion/css';
 import { theme as antdTheme, ConfigProvider, Popover, Tooltip } from 'antd';
+import { createStyles } from 'antd-style';
 import React, { createContext, FC, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import ReactDOM from 'react-dom';
 import { Link, Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom';
@@ -52,7 +53,6 @@ import { KeepAlive } from './KeepAlive';
 import { NocoBaseDesktopRoute, NocoBaseDesktopRouteType } from './convertRoutesToSchema';
 import { MenuSchemaToolbar, ResetThemeTokenAndKeepAlgorithm } from './menuItemSettings';
 import { userCenterSettings } from './userCenterSettings';
-import { createGlobalStyle, createStyles } from 'antd-style';
 
 export { KeepAlive, NocoBaseDesktopRouteType };
 
@@ -75,7 +75,7 @@ const AllAccessDesktopRoutesContext = createContext<{
   refresh: () => void;
 }>({
   allAccessRoutes: emptyArray,
-  refresh: () => {},
+  refresh: () => { },
 });
 AllAccessDesktopRoutesContext.displayName = 'AllAccessDesktopRoutesContext';
 
@@ -418,9 +418,22 @@ const popoverStyle = css`
 
 const MobileActions: FC = (props) => {
   const { token } = useToken();
+  const [open, setOpen] = useState(false);
+
+  // 点击时立即关闭 Popover，避免影响用户操作
+  const handleContentClick = useCallback(() => {
+    setOpen(false);
+  }, []);
 
   return (
-    <Popover rootClassName={popoverStyle} content={<PinnedPluginList />} color={token.colorBgHeader}>
+    <Popover
+      rootClassName={popoverStyle}
+      content={<PinnedPluginList onClick={handleContentClick} />}
+      color={token.colorBgHeader}
+      trigger="click"
+      open={open}
+      onOpenChange={setOpen}
+    >
       <div style={{ padding: '0 16px', display: 'flex', alignItems: 'center', height: '100%', marginRight: -16 }}>
         <EllipsisOutlined
           style={{
@@ -535,7 +548,7 @@ const IsMobileLayoutContext = React.createContext<{
   setIsMobileLayout: React.Dispatch<React.SetStateAction<boolean>>;
 }>({
   isMobileLayout: false,
-  setIsMobileLayout: () => {},
+  setIsMobileLayout: () => { },
 });
 
 const MobileLayoutProvider: FC = (props) => {
