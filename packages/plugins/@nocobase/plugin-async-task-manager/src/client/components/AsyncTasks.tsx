@@ -271,8 +271,8 @@ const AsyncTasksButton = (props) => {
                   const token = app.apiClient.auth.token;
                   const collection = cm.getCollection(record.title.collection);
                   const compiledTitle = compile(collection.title);
-                  const suffix = record?.title?.actionType === 'export-attachments' ? 'attachments.zip' : '.xlsx';
-                  const fileText = `${compiledTitle}-${suffix}`;
+                  const suffix = record?.title?.actionType === 'export-attachments' ? '-attachments.zip' : '.xlsx';
+                  const fileText = `${compiledTitle}${suffix}`;
                   const filename = encodeURIComponent(fileText); // 避免中文或特殊字符问题
                   const url = app.getApiUrl(
                     `asyncTasks:fetchFile/${record.taskId}?token=${token}&__appName=${encodeURIComponent(
