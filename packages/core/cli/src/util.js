@@ -18,6 +18,7 @@ const dotenv = require('dotenv');
 const fs = require('fs-extra');
 const os = require('os');
 const moment = require('moment-timezone');
+const { keyDecrypt } = require('@nocobase/license-kit');
 
 exports.isPackageValid = (pkg) => {
   try {
@@ -473,10 +474,20 @@ exports.generatePlugins = function () {
   }
 };
 
-exports.getKey = function () {
-  const keyFile = resolve(process.cwd(), './.key');
+exports.getAccessKeyPair = function () {
+  const keyFile = resolve(process.cwd(), 'storage/.license/key');
   if (!fs.existsSync(keyFile)) {
-    return;
+    console.log(chalk.yellow('Key file not found', keyFile));
+    return {};
   }
-  return fs.readFileSync(keyFile, 'utf-8');
+  try {
+    const str = fs.readFileSync(keyFile, 'utf-8');
+    const keyDataStr = keyDecrypt(str);
+    const keyData = JSON.parse(keyDataStr);
+    const { accessKeyId, accessSecret } = keyData;
+    return { accessKeyId, accessSecret };
+  } catch (error) {
+    console.log(chalk.yellow('Key parse failed, please check your key'));
+    return {};
+  }
 };
