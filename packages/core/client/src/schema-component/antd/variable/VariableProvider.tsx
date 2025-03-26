@@ -13,8 +13,7 @@ import { composeTemplate, extractTemplateElements, Helper } from '@nocobase/json
 import { get, isArray } from 'lodash';
 import minimatch from 'minimatch';
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { useLocalVariables, useVariables } from '../../../variables';
-import { useVariablesContext } from '../../../variables/context';
+import { useLocalVariables, useVariableEvaluateContext, useVariables } from '../../../variables';
 import { dateVarsMap } from '../../../variables/date';
 import { useHelperObservables } from './Helpers/hooks/useHelperObservables';
 interface VariableContextValue {
@@ -23,13 +22,15 @@ interface VariableContextValue {
   variableType: string;
   valueType: string;
   variableName: string;
+  openLastHelper?: boolean;
 }
 
 interface VariableProviderProps {
   variableName: string;
   variableType: string | null;
+  openLastHelper?: boolean;
   children: React.ReactNode;
-  helperObservables?: ReturnType<typeof useHelperObservables>;
+  helperObservables: ReturnType<typeof useHelperObservables>;
   onVariableTemplateChange?: (val) => void;
 }
 
@@ -106,6 +107,7 @@ const VariableContext = createContext<VariableContextValue>({
   value: null,
   variableType: null,
   valueType: '',
+  openLastHelper: false,
 });
 
 export function useCurrentVariable(): VariableContextValue {
@@ -120,13 +122,15 @@ const _VariableProvider: React.FC<VariableProviderProps> = ({
   variableName,
   children,
   variableType,
+  openLastHelper,
+  helperObservables,
   onVariableTemplateChange,
 }) => {
   const [value, setValue] = useState(null);
   const variables = useVariables();
   const localVariables = useLocalVariables();
-  const helperObservables = useHelperObservables();
   isArray(localVariables) ? localVariables : [localVariables];
+  const { getValue } = useVariableEvaluateContext();
   useEffect(() => {
     const dispose = reaction(
       () => {
@@ -137,14 +141,11 @@ const _VariableProvider: React.FC<VariableProviderProps> = ({
       },
     );
     return dispose;
-  }, [variableName, onVariableTemplateChange]);
+  }, [variableName, onVariableTemplateChange, helperObservables.helpersObs.value]);
   useEffect(() => {
     async function fetchValue() {
       try {
-        const vars = {
-          $nDate: dateVarsMap,
-        };
-        const val = get(vars, variableName);
+        const val = await getValue(variableName);
         if (val) {
           setValue(val);
         } else {
@@ -156,7 +157,7 @@ const _VariableProvider: React.FC<VariableProviderProps> = ({
       }
     }
     fetchValue();
-  }, [localVariables, variableName, variables]);
+  }, [localVariables, variableName, variables, getValue]);
 
   const valueType =
     helperObservables.helpersObs.value.length > 0
@@ -164,7 +165,9 @@ const _VariableProvider: React.FC<VariableProviderProps> = ({
       : variableType;
 
   return (
-    <VariableContext.Provider value={{ variableName, value, valueType, helperObservables, variableType }}>
+    <VariableContext.Provider
+      value={{ variableName, value, valueType, helperObservables, variableType, openLastHelper }}
+    >
       {children}
     </VariableContext.Provider>
   );

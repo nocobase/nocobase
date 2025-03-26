@@ -11,8 +11,8 @@ import { Popover } from 'antd';
 import React, { useState } from 'react';
 import { HelperConfiguator } from './HelperConfiguator';
 
-const WithPropOver = ({ children, index }) => {
-  const [open, setOpen] = useState(false);
+const WithPropOver = ({ children, index, defaultOpen }) => {
+  const [open, setOpen] = useState(defaultOpen);
 
   const handleOpenChange = (newOpen: boolean) => {
     setOpen(newOpen);
@@ -29,12 +29,14 @@ const WithPropOver = ({ children, index }) => {
   );
 };
 
-export function Helper({ index, label }: { index: number; label: string }) {
+export function Helper({ index, label, defaultOpen }: { index: number; label: string; defaultOpen: boolean }) {
   const Label = <div style={{ color: '#52c41a', display: 'inline-block', cursor: 'pointer' }}>{label}</div>;
   return (
     <>
       <span style={{ color: '#bfbfbf', margin: '0 5px' }}>|</span>
-      <WithPropOver index={index}>{Label}</WithPropOver>
+      <WithPropOver index={index} defaultOpen={defaultOpen}>
+        {Label}
+      </WithPropOver>
     </>
   );
 }

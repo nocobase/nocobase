@@ -30,8 +30,8 @@ export function extractTemplateElements(template: string): {
 } {
   const escapedTemplate = escape(template ?? '');
   try {
-    const fullVariable = engine.fullVariablesSync(escapedTemplate)[0] ?? '';
     const variableSegments = engine.variableSegmentsSync(escapedTemplate)[0] ?? [];
+    const fullVariable = variableSegments.join('.');
     const parsedTemplate = engine.parse(escapedTemplate)[0] ?? {};
     const helpers =
       //@ts-ignore

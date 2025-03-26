@@ -57,7 +57,7 @@ export const createHelperObservables = () => {
       const { fullVariable, helpers, variableSegments } = extractTemplateElements(
         typeof template === 'string' ? template : '',
       );
-      variableNameObs.value = fullVariable;
+      variableNameObs.value = variableSegments.join('.');
       variableSegmentsObs.value = variableSegments;
       const computedHelpers = helpers.map((helper: any) => {
         const config = allHelpersConfigObs.value.find((f) => f.name === helper.name);

@@ -159,7 +159,7 @@ export class JSONTemplateParser {
               fieldSet.add(field);
             }
             return {
-              variableName: fullVariables[0],
+              variableName: variableSegments.join('.'),
               variableSegments,
               tokenKind: rawTemplate.token.kind,
               tokenBegin: rawTemplate.token.begin,

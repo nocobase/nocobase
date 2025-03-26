@@ -231,6 +231,7 @@ function _Input(props: VariableInputProps) {
   const form = useForm();
   const [options, setOptions] = React.useState<DefaultOptionType[]>([]);
   const [variableType, setVariableType] = React.useState<string>();
+  const [showLastHelper, setShowLastHelper] = React.useState<boolean>(false);
   const [variableText, setVariableText] = React.useState([]);
   const [isFieldValue, setIsFieldValue] = React.useState(
     hideVariableButton || (children && value != null ? true : false),
@@ -373,7 +374,10 @@ function _Input(props: VariableInputProps) {
           if (next[1] !== type) {
             // setPrevType(next[1]);
             const newVariable = ConstantTypes[next[1]]?.default?.() ?? null;
-            onChange(composeTemplate({ fullVariable: newVariable, helpers }), optionPath);
+            onChange(
+              composeTemplate({ fullVariable: newVariable, helpers: optionPath[optionPath.length - 1]?.helpers ?? [] }),
+              optionPath,
+            );
           }
         } else {
           if (variable) {
@@ -382,9 +386,12 @@ function _Input(props: VariableInputProps) {
         }
         return;
       }
-      onChange(`{{${next.join('.')}}}`, optionPath);
+      const variableName = next.join('.');
+      const option = optionPath[optionPath.length - 1];
+      onChange(composeTemplate({ fullVariable: variableName, helpers: option?.helpers ?? [] }), optionPath);
       if (Array.isArray(optionPath) && optionPath.length > 0) {
-        setVariableType(optionPath[optionPath.length - 1]?.type ?? null);
+        setVariableType(option.type ?? null);
+        setShowLastHelper(option.showLastHelper ?? false);
       }
     },
     [type, variable, onChange],
@@ -492,6 +499,8 @@ function _Input(props: VariableInputProps) {
               <VariableProvider
                 variableName={fullVariable}
                 variableType={variableType}
+                openLastHelper={showLastHelper}
+                helperObservables={helperObservables}
                 onVariableTemplateChange={onChange}
               >
                 <HelperList />

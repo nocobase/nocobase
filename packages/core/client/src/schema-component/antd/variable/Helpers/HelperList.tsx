@@ -11,15 +11,22 @@ import { observer } from '@formily/reactive-react';
 import React from 'react';
 import { useVariable } from '../VariableProvider';
 import { Helper } from './Helper';
-import { useHelperObservables } from './hooks/useHelperObservables';
+
 const _HelperList = () => {
-  const { helperObservables } = useVariable();
+  const { helperObservables, openLastHelper } = useVariable();
   const { helpersObs, rawHelpersObs } = helperObservables;
-  console.log(rawHelpersObs.value);
+
   return (
     <>
       {helpersObs.value.map((helper, index) => {
-        return <Helper key={index} index={index} label={helper.config.title} />;
+        return (
+          <Helper
+            key={index}
+            index={index}
+            defaultOpen={helpersObs.value.length === index + 1 ? openLastHelper : false}
+            label={helper.config.title}
+          />
+        );
       })}
     </>
   );
