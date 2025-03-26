@@ -1,0 +1,26 @@
+{
+    "AI integration": "AI integratie",
+    "LLM services": "LLM diensten",
+    "LLM service": "LLM dienst",
+    "Model": "Model",
+    "Messages": "Berichten",
+    "Structured output": "Gestructureerde output",
+    "Message": "Bericht",
+    "Role": "Rol",
+    "UID": "UID",
+    "Add content": "Voeg inhoud toe",
+    "Add prompt": "Voeg prompt toe",
+    "Provider": "Provider",
+    "Text": "Tekst",
+    "Image": "Afbeelding",
+    "Timout (ms)": "Timout (ms)",
+    "Max retries": "Max herhalingen",
+    "Frequency penalty description": "Nummer tussen -2.0 en 2.0. Positieve waarden straffen nieuwe tokens op basis van hun bestaande frequentie in de tekst tot nu toe, waardoor de kans van het model om dezelfde regel letterlijk te herhalen afneemt.",
+    "Max completion tokens description": "Een bovengrens voor het aantal tokens dat kan worden gegenereerd voor een voltooiing, inclusief zichtbare outputtokens en redeneertokens.",
+    "Presence penalty description": "Nummer tussen -2.0 en 2.0. Positieve waarden straffen nieuwe tokens op basis van of ze tot nu toe in de tekst voorkomen, waardoor de kans van het model om over nieuwe onderwerpen te praten toeneemt.",
+    "Response format description": "Belangrijk: bij gebruik van de JSON-modus moet u het model ook zelf opdracht geven om JSON te produceren via een systeem- of gebruikersbericht.",
+    "Temperature description": "Welke bemonsteringstemperatuur te gebruiken, tussen 0 en 2. Hogere waarden zoals 0,8 maken de output willekeuriger, terwijl lagere waarden zoals 0,2 deze meer gefocust en deterministisch maken.",
+    "Top P description": "Een alternatief voor bemonstering met temperatuur, genaamd nucleusbemonstering, waarbij het model de resultaten van de tokens met top_p waarschijnlijkheidsmassa overweegt. Dus 0,1 betekent dat alleen de tokens die de top 10% waarschijnlijkheidsmassa vormen, worden overwogen.",
+    "Get models list failed, you can enter a model name manually.": "Het ophalen van de lijst met modellen is mislukt, u kunt een modelnaam handmatig invoeren."
+  }
+  
