@@ -18,9 +18,27 @@ export class StringField extends Field {
 
     return DataTypes.STRING;
   }
+
+  preprocess = (instance) => {
+    const { name } = this.options;
+    if (this.options.trim && instance[name]) {
+      instance.set(name, instance[name].trim());
+    }
+  };
+
+  bind() {
+    super.bind();
+    this.on('beforeSave', this.preprocess);
+  }
+
+  unbind() {
+    super.unbind();
+    this.off('beforeSave', this.preprocess);
+  }
 }
 
 export interface StringFieldOptions extends BaseColumnFieldOptions {
   type: 'string';
   length?: number;
+  trim?: boolean;
 }
