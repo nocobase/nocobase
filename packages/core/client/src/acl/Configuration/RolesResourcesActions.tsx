@@ -169,62 +169,60 @@ export const RolesResourcesActions = connect((props) => {
               className={antTableCell}
               pagination={false}
               dataSource={fieldPermissions}
-              columns={
-                [
-                  {
-                    dataIndex: ['uiSchema', 'title'],
-                    title: t('Field display name'),
-                    render: (value) => compile(value),
-                  },
-                  ...availableActionsWithFields.map((action) => {
-                    const checked = allChecked?.[action.name];
-                    return {
-                      dataIndex: action.name,
-                      title: (
-                        <>
-                          <Checkbox
-                            checked={checked}
-                            onChange={() => {
-                              const item = actionMap[action.name] || {
-                                name: action.name,
-                              };
-                              if (checked) {
-                                item.fields = [];
-                              } else {
-                                item.fields = collectionFields?.map?.((item) => item.name);
-                              }
-                              actionMap[action.name] = item;
-                              onChange(Object.values(actionMap));
-                            }}
-                          />{' '}
-                          {compile(action.displayName)}
-                        </>
-                      ),
-                      render: (checked, field) => (
+              columns={[
+                {
+                  dataIndex: ['uiSchema', 'title'],
+                  title: t('Field display name'),
+                  render: (value) => compile(value),
+                },
+                ...availableActionsWithFields.map((action) => {
+                  const checked = allChecked?.[action.name];
+                  return {
+                    dataIndex: action.name,
+                    title: (
+                      <>
                         <Checkbox
                           checked={checked}
-                          aria-label={`${action.name}_checkbox`}
                           onChange={() => {
                             const item = actionMap[action.name] || {
                               name: action.name,
                             };
-                            const fields: string[] = item.fields || [];
                             if (checked) {
-                              const index = fields.indexOf(field.name);
-                              fields.splice(index, 1);
+                              item.fields = [];
                             } else {
-                              fields.push(field.name);
+                              item.fields = collectionFields?.map?.((item) => item.name);
                             }
-                            item.fields = fields;
                             actionMap[action.name] = item;
                             onChange(Object.values(actionMap));
                           }}
-                        />
-                      ),
-                    };
-                  }),
-                ] as TableProps['columns']
-              }
+                        />{' '}
+                        {compile(action.displayName)}
+                      </>
+                    ),
+                    render: (checked, field) => (
+                      <Checkbox
+                        checked={checked}
+                        aria-label={`${action.name}_checkbox`}
+                        onChange={() => {
+                          const item = actionMap[action.name] || {
+                            name: action.name,
+                          };
+                          const fields: string[] = item.fields || [];
+                          if (checked) {
+                            const index = fields.indexOf(field.name);
+                            fields.splice(index, 1);
+                          } else {
+                            fields.push(field.name);
+                          }
+                          item.fields = fields;
+                          actionMap[action.name] = item;
+                          onChange(Object.values(actionMap));
+                        }}
+                      />
+                    ),
+                  };
+                }),
+              ] as TableProps['columns']}
             />
           </FormItem>
         </FormLayout>
