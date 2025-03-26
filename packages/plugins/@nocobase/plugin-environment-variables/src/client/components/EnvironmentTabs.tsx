@@ -18,8 +18,9 @@ import {
   useGlobalTheme,
   removeNullCondition,
 } from '@nocobase/client';
+import { useLocation } from 'react-router-dom';
 import { Alert, App, Button, Card, Dropdown, Flex, Space, Table, Tag } from 'antd';
-import React, { useContext, useState } from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { VAR_NAME_RE } from '../../re';
 import { EnvAndSecretsContext } from '../EnvironmentVariablesAndSecretsProvider';
@@ -266,6 +267,13 @@ export function EnvironmentTabs() {
   const [selectRowKeys, setSelectRowKeys] = useState([]);
   const resource = api.resource('environmentVariables');
   const { theme } = useGlobalTheme();
+  const location = useLocation();
+  useEffect(() => {
+    const { run, params } = variablesRequest;
+    if (params?.length) {
+      run();
+    }
+  }, [location.key]);
   const handleBulkImport = async (importData) => {
     const arr = Object.entries(importData).map(([type, dataString]) => {
       return parseKeyValuePairs(dataString, type).filter(Boolean);
@@ -373,7 +381,6 @@ export function EnvironmentTabs() {
       options: filterOptions,
       onSubmit: async (values) => {
         run(values);
-
         field.setValue(values);
         const filter = removeNullCondition(values?.filter);
         const items = filter?.$and || filter?.$or;

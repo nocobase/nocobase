@@ -9,7 +9,14 @@
 
 import React from 'react';
 import { EnvironmentTabs } from './EnvironmentTabs';
+import { useLocation } from 'react-router-dom';
 
 export default function EnvironmentPage() {
-  return <EnvironmentTabs />;
+  const location = useLocation();
+  console.log(location.key);
+  return (
+    <div key={location.key}>
+      <EnvironmentTabs />
+    </div>
+  );
 }
