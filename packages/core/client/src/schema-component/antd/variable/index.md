@@ -40,6 +40,10 @@ const scope = [
 
 <code src="./demos/form-default-value.tsx"></code>
 
+#### 数据范围
+
+<code src="./demos/data-scope-demo.tsx"></code>
+
 ### 变量选中并已被禁用的效果
 当变量被禁用时，不影响已经选中的变量显示。在下面的例子中，now 变量已被禁用：
 
