@@ -50,8 +50,8 @@ export default class StaticScheduleTrigger {
     });
   }
 
-  getNextTime({ config, allExecuted }: WorkflowModel, currentDate: Date, nextSecond = false) {
-    if (config.limit && allExecuted >= config.limit) {
+  getNextTime({ config, stats }: WorkflowModel, currentDate: Date, nextSecond = false) {
+    if (config.limit && stats.executed >= config.limit) {
       return null;
     }
     if (!config.startsOn) {
@@ -119,7 +119,7 @@ export default class StaticScheduleTrigger {
 
     this.workflow.trigger(workflow, { date: new Date(time) }, { eventKey });
 
-    if (!workflow.config.repeat || (workflow.config.limit && workflow.allExecuted >= workflow.config.limit - 1)) {
+    if (!workflow.config.repeat || (workflow.config.limit && workflow.stats.executed >= workflow.config.limit - 1)) {
       return;
     }
 

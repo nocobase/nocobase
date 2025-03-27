@@ -125,7 +125,7 @@ test.describe('Any succeeded or failed', () => {
     // 3、预期结果：工作流成功触发,判断节点全部通过，后置计算节点执行成功
     const getWorkflow = await apiGetWorkflow(workflowId);
     const getWorkflowObj = JSON.parse(JSON.stringify(getWorkflow));
-    const getWorkflowExecuted = getWorkflowObj.executed;
+    const getWorkflowExecuted = getWorkflowObj.versionStats.executed;
     expect(getWorkflowExecuted).toBe(1);
 
     const getWorkflowNodeExecutions = await apiGetWorkflowNodeExecutions(workflowId);
@@ -248,7 +248,7 @@ test.describe('Any succeeded or failed', () => {
     // 3、预期结果：工作流成功触发,判断节点全部通过，后置计算节点执行成功
     const getWorkflow = await apiGetWorkflow(workflowId);
     const getWorkflowObj = JSON.parse(JSON.stringify(getWorkflow));
-    const getWorkflowExecuted = getWorkflowObj.executed;
+    const getWorkflowExecuted = getWorkflowObj.versionStats.executed;
     expect(getWorkflowExecuted).toBe(1);
 
     const getWorkflowNodeExecutions = await apiGetWorkflowNodeExecutions(workflowId);

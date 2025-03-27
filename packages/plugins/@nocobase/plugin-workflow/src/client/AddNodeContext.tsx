@@ -23,7 +23,7 @@ import {
   usePlugin,
 } from '@nocobase/client';
 
-import WorkflowPlugin, { Instruction, useStyles } from '.';
+import WorkflowPlugin, { Instruction, useStyles, useWorkflowExecuted } from '.';
 import { useFlowContext } from './FlowContext';
 import { lang, NAMESPACE } from './locale';
 import { RadioWithTooltip } from './components';
@@ -47,6 +47,7 @@ export function AddButton(props: AddButtonProps) {
   const { styles } = useStyles();
   const { onCreate, creating } = useAddNodeContext();
   const groupOptions = engine.useInstructionGroupOptions();
+  const executed = useWorkflowExecuted();
 
   const groups = useMemo(() => {
     return groupOptions
@@ -91,7 +92,7 @@ export function AddButton(props: AddButtonProps) {
           items: groups,
           onClick,
         }}
-        disabled={workflow.executed}
+        disabled={executed}
         overlayClassName={css`
           .ant-dropdown-menu-root {
             max-height: 30em;
