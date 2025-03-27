@@ -100,7 +100,7 @@ test.describe('Configuration Page Path Jump Workflow Management Page', () => {
     await page.waitForTimeout(60000);
     const getWorkflow = await apiGetWorkflow(workflowId);
     const getWorkflowObj = JSON.parse(JSON.stringify(getWorkflow));
-    const getWorkflowExecuted = getWorkflowObj.executed;
+    const getWorkflowExecuted = getWorkflowObj.versionStats.executed;
     expect(getWorkflowExecuted).toBe(1);
     await page.goto(`admin/workflow/workflows/${workflowId}`);
     await page.waitForLoadState('load');
