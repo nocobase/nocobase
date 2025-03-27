@@ -112,7 +112,7 @@ const InternalAssociationSelect = observer(
             field.value &&
             isEqual(fieldPath?.indexes, field?.indexes) &&
             fieldPath?.props?.name !== field.props.name &&
-            isEqual(linageFieldEntire, targetFieldEntire)
+            (!field?.indexes?.length || isEqual(linageFieldEntire, targetFieldEntire))
           ) {
             field.setValue(null);
             setInnerValue(null);
