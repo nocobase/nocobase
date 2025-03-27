@@ -11,28 +11,22 @@ import { DataTypes } from 'sequelize';
 import { BaseColumnFieldOptions, Field, FieldContext } from './field';
 
 export class StringField extends Field {
-  constructor(options?: any, context?: FieldContext) {
-    super(
-      {
-        set(value) {
-          if (value && options.trim) {
-            this.setDataValue(options.name, value.trim());
-          } else {
-            this.setDataValue(options.name, value);
-          }
-        },
-        ...options,
-      },
-      context,
-    );
-  }
-
   get dataType() {
     if (this.options.length) {
       return DataTypes.STRING(this.options.length);
     }
 
     return DataTypes.STRING;
+  }
+
+  additionalSequelizeOptions() {
+    const { name, trim } = this.options;
+
+    return {
+      set(value) {
+        this.setDataValue(name, trim ? value?.trim() : value);
+      },
+    };
   }
 }
 
