@@ -1,0 +1,27 @@
+{
+    "Access control": "Toegangscontrole",
+    "Custom Request": "Aangepaste aanvraag",
+    "Request settings": "Aanvraaginstellingen",
+    "Roles": "Rollen",
+    "If not set, all roles can see this action": "Als niet ingesteld, kunnen alle rollen deze actie zien",
+    "Title": "Titel",
+    "HTTP method": "HTTP-methode",
+    "URL": "URL",
+    "Headers": "Kopteksten",
+    "Parameters": "Parameters",
+    "Add request header": "Voeg aanvraagkop toe",
+    "Add parameter": "Voeg parameter toe",
+    "Enter description info": "Voer beschrijvingsinformatie in",
+    "Body": "Inhoud",
+    "Use variable": "Gebruik variabele",
+    "Format": "Formaat",
+    "Insert": "Invoegen",
+    "Timeout config": "Time-outconfiguratie",
+    "ms": "ms",
+    "Input request data": "Voer aanvraaggegevens in",
+    "Only support standard JSON data": "Ondersteunt alleen standaard JSON-gegevens",
+    "\"Content-Type\" only support \"application/json\", and no need to specify": "\"Content-Type\" ondersteunt alleen \"application/json\", en hoeft niet te worden gespecificeerd",
+    "When the HTTP method is Post, Put or Patch, and this custom request inside the form, the request body will be automatically filled in with the form data": "Wanneer de HTTP-methode Post, Put of Patch is, en deze aangepaste aanvraag zich binnen het formulier bevindt, wordt de aanvraaginhoud automatisch ingevuld met de formuliergegevens",
+    "Please configure the request settings first": "Configureer eerst de aanvraaginstellingen"
+  }
+  

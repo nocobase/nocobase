@@ -14,15 +14,15 @@ import { ErrorBoundary } from 'react-error-boundary';
 import { cx, css, ErrorFallback } from '@nocobase/client';
 
 import { Branch } from './Branch';
-import { useFlowContext } from './FlowContext';
 import { lang } from './locale';
 import useStyles from './style';
 import { TriggerConfig } from './triggers';
 import { AddNodeContextProvider } from './AddNodeContext';
+import { useWorkflowExecuted } from './hooks';
 
 export function CanvasContent({ entry }) {
   const { styles } = useStyles();
-  const { workflow } = useFlowContext();
+  const executed = useWorkflowExecuted();
   const [zoom, setZoom] = React.useState(100);
 
   return (
@@ -39,7 +39,7 @@ export function CanvasContent({ entry }) {
               )}
             >
               <div className={styles.branchClass}>
-                {workflow?.executed ? (
+                {executed ? (
                   <Alert
                     type="warning"
                     message={lang('Executed workflow cannot be modified. Could be copied to a new version to modify.')}

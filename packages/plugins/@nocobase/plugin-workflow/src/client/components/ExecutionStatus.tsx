@@ -20,13 +20,9 @@ import { lang } from '../locale';
 function LabelTag(props) {
   const compile = useCompile();
   const label = compile(props.label);
-  const onPreventMouseDown = useCallback((event: React.MouseEvent<HTMLSpanElement>) => {
-    event.preventDefault();
-    event.stopPropagation();
-  }, []);
   const { color } = ExecutionStatusOptionsMap[props.value] ?? {};
   return (
-    <Tag color={color} onMouseDown={onPreventMouseDown} closable={props.closable} onClose={props.onClose}>
+    <Tag color={color} closable={props.closable} onClose={props.onClose}>
       {label}
     </Tag>
   );

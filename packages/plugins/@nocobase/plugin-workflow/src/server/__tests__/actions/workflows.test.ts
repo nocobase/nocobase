@@ -19,6 +19,8 @@ describe('workflow > actions > workflows', () => {
   let PostRepo;
   let WorkflowModel;
   let ExecutionModel;
+  let WorkflowStatsRepo;
+  let WorkflowVersionStatsRepo;
 
   beforeEach(async () => {
     app = await getApp();
@@ -26,6 +28,8 @@ describe('workflow > actions > workflows', () => {
     db = app.db;
     WorkflowModel = db.getCollection('workflows').model;
     ExecutionModel = db.getCollection('executions').model;
+    WorkflowStatsRepo = db.getCollection('workflowStats').repository;
+    WorkflowVersionStatsRepo = db.getCollection('workflowVersionStats').repository;
     PostModel = db.getCollection('posts').model;
     PostRepo = db.getCollection('posts').repository;
   });
@@ -185,6 +189,12 @@ describe('workflow > actions > workflows', () => {
 
       const j2c = await JobModel.count();
       expect(j2c).toBe(1);
+
+      // NOTE: stats records should be deleted
+      const statsCount = await WorkflowStatsRepo.count();
+      expect(statsCount).toBe(0);
+      const versionStatsCount = await WorkflowVersionStatsRepo.count();
+      expect(versionStatsCount).toBe(0);
     });
   });
 
@@ -211,13 +221,23 @@ describe('workflow > actions > workflows', () => {
       });
 
       expect(status).toBe(200);
-      const { data: w2 } = body;
+      const w2 = await WorkflowModel.findOne({
+        where: {
+          id: body.data.id,
+        },
+        include: ['stats', 'versionStats'],
+      });
       expect(w2.config).toMatchObject(w1.config);
       expect(w2.key).toBe(w1.key);
       expect(w2.current).toBeFalsy();
       expect(w2.enabled).toBe(false);
-      expect(w2.executed).toBe(0);
-      expect(w2.allExecuted).toBe(1);
+      expect(w2.versionStats.executed).toBe(0);
+      expect(w2.stats.executed).toBe(1);
+
+      const s1c = await WorkflowStatsRepo.count();
+      expect(s1c).toBe(1);
+      const sv1c = await WorkflowVersionStatsRepo.count();
+      expect(sv1c).toBe(2);
 
       await WorkflowModel.update(
         {
@@ -237,15 +257,16 @@ describe('workflow > actions > workflows', () => {
 
       const [w1next, w2next] = await WorkflowModel.findAll({
         order: [['id', 'ASC']],
+        include: ['stats', 'versionStats'],
       });
 
       expect(w1next.enabled).toBe(false);
       expect(w1next.current).toBe(null);
-      expect(w1next.allExecuted).toBe(2);
+      expect(w1next.stats.executed).toBe(2);
       expect(w2next.enabled).toBe(true);
       expect(w2next.current).toBe(true);
-      expect(w2next.executed).toBe(1);
-      expect(w2next.allExecuted).toBe(2);
+      expect(w2next.versionStats.executed).toBe(1);
+      expect(w2next.stats.executed).toBe(2);
 
       const [e1] = await w1next.getExecutions();
       const [e2] = await w2next.getExecutions();
@@ -330,12 +351,18 @@ describe('workflow > actions > workflows', () => {
       });
 
       expect(status).toBe(200);
-      const { data: w2 } = body;
+      const w2 = await WorkflowModel.findOne({
+        where: {
+          id: body.data.id,
+        },
+        include: ['stats', 'versionStats'],
+      });
       expect(w2.config).toMatchObject(w1.config);
       expect(w2.key).not.toBe(w1.key);
       expect(w2.current).toBeTruthy();
       expect(w2.enabled).toBe(false);
-      expect(w2.allExecuted).toBe(0);
+      expect(w2.stats.executed).toBe(0);
+      expect(w2.versionStats.executed).toBe(0);
 
       // stop w1
       await WorkflowModel.update(
@@ -368,15 +395,16 @@ describe('workflow > actions > workflows', () => {
 
       const [w1next, w2next] = await WorkflowModel.findAll({
         order: [['id', 'ASC']],
+        include: ['stats', 'versionStats'],
       });
 
       expect(w1next.enabled).toBe(false);
       expect(w1next.current).toBe(true);
-      expect(w1next.executed).toBe(1);
-      expect(w1next.allExecuted).toBe(1);
+      expect(w1next.versionStats.executed).toBe(1);
+      expect(w1next.stats.executed).toBe(1);
       expect(w2next.enabled).toBe(true);
-      expect(w2next.executed).toBe(1);
-      expect(w2next.allExecuted).toBe(1);
+      expect(w2next.versionStats.executed).toBe(1);
+      expect(w2next.stats.executed).toBe(1);
 
       const [e1] = await w1next.getExecutions();
       const [e2] = await w2next.getExecutions();
@@ -402,12 +430,17 @@ describe('workflow > actions > workflows', () => {
       });
 
       expect(status).toBe(200);
-      const { data: w2 } = body;
+      const w2 = await WorkflowModel.findOne({
+        where: {
+          id: body.data.id,
+        },
+        include: ['stats', 'versionStats'],
+      });
       expect(w2.config).toMatchObject(w1.config);
       expect(w2.key).not.toBe(w1.key);
       expect(w2.current).toBeTruthy();
       expect(w2.enabled).toBe(false);
-      expect(w2.allExecuted).toBe(0);
+      expect(w2.stats.executed).toBe(0);
       expect(w2.sync).toBe(true);
 
       // stop w1
@@ -439,15 +472,16 @@ describe('workflow > actions > workflows', () => {
 
       const [w1next, w2next] = await WorkflowModel.findAll({
         order: [['id', 'ASC']],
+        include: ['stats', 'versionStats'],
       });
 
       expect(w1next.enabled).toBe(false);
       expect(w1next.current).toBe(true);
-      expect(w1next.executed).toBe(1);
-      expect(w1next.allExecuted).toBe(1);
+      expect(w1next.versionStats.executed).toBe(1);
+      expect(w1next.stats.executed).toBe(1);
       expect(w2next.enabled).toBe(true);
-      expect(w2next.executed).toBe(1);
-      expect(w2next.allExecuted).toBe(1);
+      expect(w2next.versionStats.executed).toBe(1);
+      expect(w2next.stats.executed).toBe(1);
 
       const [e1] = await w1next.getExecutions();
       const [e2] = await w2next.getExecutions();

@@ -12,6 +12,7 @@ import ProLayout, { RouteContext, RouteContextType } from '@ant-design/pro-layou
 import { HeaderViewProps } from '@ant-design/pro-layout/es/components/Header';
 import { css } from '@emotion/css';
 import { theme as antdTheme, ConfigProvider, Popover, Tooltip } from 'antd';
+import { createStyles } from 'antd-style';
 import React, { createContext, FC, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import ReactDOM from 'react-dom';
 import { Link, Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom';
@@ -52,7 +53,6 @@ import { KeepAlive } from './KeepAlive';
 import { NocoBaseDesktopRoute, NocoBaseDesktopRouteType } from './convertRoutesToSchema';
 import { MenuSchemaToolbar, ResetThemeTokenAndKeepAlgorithm } from './menuItemSettings';
 import { userCenterSettings } from './userCenterSettings';
-import { createGlobalStyle, createStyles } from 'antd-style';
 
 export { KeepAlive, NocoBaseDesktopRouteType };
 
@@ -155,10 +155,7 @@ const layoutContentClass = css`
   display: flex;
   flex-direction: column;
   position: relative;
-  /* 基础高度（所有浏览器支持） */
   height: calc(100vh - var(--nb-header-height));
-  /* 动态视口高度（现代浏览器支持） */
-  height: calc(100dvh - var(--nb-header-height));
   > div {
     position: relative;
   }
@@ -202,10 +199,29 @@ const pageContentStyle: React.CSSProperties = {
   overflowY: 'auto',
 };
 
+// 移动端中需要使用 dvh 单位来计算高度，否则会出现滚动不到最底部的问题
+const mobileHeight = {
+  height: `calc(100dvh - var(--nb-header-height))`,
+};
+
+function isDvhSupported() {
+  // 创建一个测试元素
+  const testEl = document.createElement('div');
+
+  // 尝试设置 dvh 单位
+  testEl.style.height = '1dvh';
+
+  // 如果浏览器支持 dvh，则会解析这个值
+  // 如果不支持，height 将保持为空字符串或被设置为无效值
+  return testEl.style.height === '1dvh';
+}
+
 export const LayoutContent = () => {
+  const style = useMemo(() => (isDvhSupported() ? mobileHeight : undefined), []);
+
   /* Use the "nb-subpages-slot-without-header-and-side" class name to locate the position of the subpages */
   return (
-    <div className={`${layoutContentClass} nb-subpages-slot-without-header-and-side`}>
+    <div className={`${layoutContentClass} nb-subpages-slot-without-header-and-side`} style={style}>
       <div style={pageContentStyle}>
         <Outlet />
       </div>
@@ -418,9 +434,22 @@ const popoverStyle = css`
 
 const MobileActions: FC = (props) => {
   const { token } = useToken();
+  const [open, setOpen] = useState(false);
+
+  // 点击时立即关闭 Popover，避免影响用户操作
+  const handleContentClick = useCallback(() => {
+    setOpen(false);
+  }, []);
 
   return (
-    <Popover rootClassName={popoverStyle} content={<PinnedPluginList />} color={token.colorBgHeader}>
+    <Popover
+      rootClassName={popoverStyle}
+      content={<PinnedPluginList onClick={handleContentClick} />}
+      color={token.colorBgHeader}
+      trigger="click"
+      open={open}
+      onOpenChange={setOpen}
+    >
       <div style={{ padding: '0 16px', display: 'flex', alignItems: 'center', height: '100%', marginRight: -16 }}>
         <EllipsisOutlined
           style={{
@@ -602,7 +631,7 @@ export const InternalAdminLayout = () => {
         paddingPageVertical: 8, // Vertical page padding
         marginBlock: 12, // Spacing between blocks
         borderRadiusBlock: 8, // Block border radius
-        fontSize: 14, // Font size
+        fontSize: 16, // Font size
       },
       algorithm: isDarkTheme ? [antdTheme.compactAlgorithm, antdTheme.darkAlgorithm] : antdTheme.compactAlgorithm, // Set mobile mode to always use compact algorithm
     };

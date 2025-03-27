@@ -122,6 +122,7 @@ const useStyles = createStyles(({ token, css }) => ({
             margin: -12px -32px;
             width: calc(100% + 64px);
             text-align: start;
+            justify-content: start !important;
             color: ${token.colorText};
           }
         }

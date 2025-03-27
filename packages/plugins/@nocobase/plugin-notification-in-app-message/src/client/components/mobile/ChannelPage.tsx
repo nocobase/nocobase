@@ -7,20 +7,20 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useEffect, useCallback } from 'react';
-import { Tabs } from 'antd-mobile';
 import { observer } from '@formily/reactive-react';
-import { useCurrentUserContext, css } from '@nocobase/client';
+import { css, useCurrentUserContext } from '@nocobase/client';
 import {
+  MobilePageContentContainer,
   MobilePageHeader,
   MobilePageNavigationBar,
   MobilePageProvider,
-  MobilePageContentContainer,
 } from '@nocobase/plugin-mobile/client';
-import { userIdObs, fetchChannels, ChannelStatus, channelStatusFilterObs } from '../../observables';
-import { ChannelList } from './ChannelList';
+import { Tabs } from 'antd-mobile';
+import React, { useEffect } from 'react';
 import { useLocalTranslation } from '../../../locale';
-const MobileMessageBoxInner = () => {
+import { ChannelStatus, channelStatusFilterObs, fetchChannels, userIdObs } from '../../observables';
+import { ChannelList } from './ChannelList';
+const MobileMessageBoxInner = (props: { displayNavigationBar?: boolean; onClickItem?: (item: any) => void; }) => {
   const { t } = useLocalTranslation();
   const ctx = useCurrentUserContext();
   const currUserId = ctx.data?.data?.id;
@@ -31,7 +31,7 @@ const MobileMessageBoxInner = () => {
     fetchChannels({});
   }, []);
   return (
-    <MobilePageProvider>
+    <MobilePageProvider displayNavigationBar={props.displayNavigationBar}>
       <MobilePageHeader>
         <MobilePageNavigationBar />
         <Tabs
@@ -57,7 +57,7 @@ const MobileMessageBoxInner = () => {
         </Tabs>
       </MobilePageHeader>
       <MobilePageContentContainer>
-        <ChannelList />
+        <ChannelList onClickItem={props.onClickItem} />
       </MobilePageContentContainer>
     </MobilePageProvider>
   );
