@@ -52,7 +52,6 @@ import { KeepAlive } from './KeepAlive';
 import { NocoBaseDesktopRoute, NocoBaseDesktopRouteType } from './convertRoutesToSchema';
 import { MenuSchemaToolbar, ResetThemeTokenAndKeepAlgorithm } from './menuItemSettings';
 import { userCenterSettings } from './userCenterSettings';
-import { createGlobalStyle, createStyles } from 'antd-style';
 
 export { KeepAlive, NocoBaseDesktopRouteType };
 
@@ -155,10 +154,7 @@ const layoutContentClass = css`
   display: flex;
   flex-direction: column;
   position: relative;
-  /* 基础高度（所有浏览器支持） */
   height: calc(100vh - var(--nb-header-height));
-  /* 动态视口高度（现代浏览器支持） */
-  height: calc(100dvh - var(--nb-header-height));
   > div {
     position: relative;
   }
@@ -202,10 +198,29 @@ const pageContentStyle: React.CSSProperties = {
   overflowY: 'auto',
 };
 
+// 移动端中需要使用 dvh 单位来计算高度，否则会出现滚动不到最底部的问题
+const mobileHeight = {
+  height: `calc(100dvh - var(--nb-header-height))`,
+};
+
+function isDvhSupported() {
+  // 创建一个测试元素
+  const testEl = document.createElement('div');
+
+  // 尝试设置 dvh 单位
+  testEl.style.height = '1dvh';
+
+  // 如果浏览器支持 dvh，则会解析这个值
+  // 如果不支持，height 将保持为空字符串或被设置为无效值
+  return testEl.style.height === '1dvh';
+}
+
 export const LayoutContent = () => {
+  const style = useMemo(() => (isDvhSupported() ? mobileHeight : undefined), []);
+
   /* Use the "nb-subpages-slot-without-header-and-side" class name to locate the position of the subpages */
   return (
-    <div className={`${layoutContentClass} nb-subpages-slot-without-header-and-side`}>
+    <div className={`${layoutContentClass} nb-subpages-slot-without-header-and-side`} style={style}>
       <div style={pageContentStyle}>
         <Outlet />
       </div>
