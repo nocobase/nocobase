@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-locale-tester",
-  "version": "1.6.11",
+  "version": "1.6.12",
   "main": "dist/server/index.js",
   "dependencies": {},
   "peerDependencies": {
