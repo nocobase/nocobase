@@ -15,7 +15,7 @@ import { ScanBox } from './ScanBox';
 import { useScanner } from './useScanner';
 
 const qrcodeEleId = 'qrcode';
-export const QRCodeScannerInner = (props) => {
+export const QRCodeScannerInner = ({ setVisible }) => {
   const containerRef = useRef<HTMLDivElement>();
   const imgUploaderRef = useRef<HTMLInputElement>();
   const { t } = useTranslation('block-workbench');
@@ -26,6 +26,7 @@ export const QRCodeScannerInner = (props) => {
   const { startScanFile } = useScanner({
     onScannerSizeChanged: setOriginVideoSize,
     elementId: qrcodeEleId,
+    onScanSuccess: () => setVisible(false),
   });
 
   const getBoxStyle = (): React.CSSProperties => {
@@ -174,7 +175,7 @@ export const QRCodeScanner = (props) => {
 
   return visible && cameraAvaliable ? (
     <div style={style}>
-      <QRCodeScannerInner />
+      <QRCodeScannerInner setVisible={setVisible} />
       <LeftOutlined style={backIconStyle} onClick={() => setVisible(false)} />
       <div style={titleStyle}>{t('Scan QR code')}</div>
     </div>

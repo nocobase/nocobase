@@ -8,11 +8,11 @@
  */
 
 import { Html5Qrcode, Html5QrcodeScannerState } from 'html5-qrcode';
-import { useState, useCallback, useMemo, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
 
-export function useScanner({ onScannerSizeChanged, elementId }) {
+export function useScanner({ onScannerSizeChanged, elementId, onScanSuccess }) {
   const [scanner, setScanner] = useState<Html5Qrcode>();
   const navigate = useNavigate();
   const { t } = useTranslation('block-workbench');
@@ -38,6 +38,7 @@ export function useScanner({ onScannerSizeChanged, elementId }) {
         },
         (text) => {
           navigate(text);
+          onScanSuccess && onScanSuccess(text);
         },
         undefined,
       );
@@ -57,6 +58,7 @@ export function useScanner({ onScannerSizeChanged, elementId }) {
       try {
         const { decodedText } = await scanner.scanFileV2(file, false);
         navigate(decodedText);
+        onScanSuccess && onScanSuccess(decodedText);
       } catch (error) {
         alert(t('QR code recognition failed, please scan again'));
         startScanCamera(scanner);
