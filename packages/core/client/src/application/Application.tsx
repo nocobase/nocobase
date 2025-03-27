@@ -350,23 +350,9 @@ export class Application {
           setTimeout(() => resolve(null), 1000);
         });
       }
-      const toError = (error) => {
-        if (typeof error?.response?.data === 'string') {
-          const tempElement = document.createElement('div');
-          tempElement.innerHTML = error?.response?.data;
-          return { message: tempElement.textContent || tempElement.innerText };
-        }
-        if (error?.response?.data?.error) {
-          return error?.response?.data?.error;
-        }
-        if (error?.response?.data?.errors?.[0]) {
-          return error?.response?.data?.errors?.[0];
-        }
-        return { message: error?.message };
-      };
       this.error = {
         code: 'LOAD_ERROR',
-        ...toError(error),
+        ...this.apiClient.toErrMessages(error)?.[0],
       };
       console.error(error, this.error);
     }
