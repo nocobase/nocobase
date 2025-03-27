@@ -618,7 +618,7 @@ export const InternalAdminLayout = () => {
         paddingPageVertical: 8, // Vertical page padding
         marginBlock: 12, // Spacing between blocks
         borderRadiusBlock: 8, // Block border radius
-        fontSize: 14, // Font size
+        fontSize: 16, // Font size
       },
       algorithm: isDarkTheme ? [antdTheme.compactAlgorithm, antdTheme.darkAlgorithm] : antdTheme.compactAlgorithm, // Set mobile mode to always use compact algorithm
     };
