@@ -32,7 +32,12 @@ const scope = [
 <code src="./demos/variable-value.tsx"></code>
 
 ### 应用场景
-#### 默认值
+#### 默认值 (由于 demo 所限，默认值不会生效)
+默认值场景需要应用变量，并且同一个字面意义的变量根据字段的类型不同需要有不同的值。
+以日期的今天为例，如果是 dateOnly 类型的字段要输出 2025-01-01，如果是无时区的 dateitme，则需要输出 2025-01-01 00:00:00,
+如果是有时区 datetime, 则要输出 2024-12-31T16:00:00.000Z
+所以今天需要提供三个变量，`today_withtz`, `today_withouttz`, `today_dateonly`
+
 <code src="./demos/form-default-value.tsx"></code>
 
 ### 变量选中并已被禁用的效果
