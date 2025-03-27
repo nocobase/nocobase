@@ -14,12 +14,17 @@ import { Database } from './database';
 import FilterParser from './filter-parser';
 import { Appends, Except, FindOptions } from './repository';
 import qs from 'qs';
+import _ from 'lodash';
 
 const debug = require('debug')('noco-database');
 
 interface OptionsParserContext {
   collection: Collection;
   targetKey?: string;
+}
+
+export interface FieldSortOptions {
+  nullsLast?: (model: ModelStatic<any>, field: string) => any;
 }
 
 export class OptionsParser {
@@ -29,6 +34,7 @@ export class OptionsParser {
   model: ModelStatic<any>;
   filterParser: FilterParser;
   context: OptionsParserContext;
+  static fieldSortMap: Map<string, FieldSortOptions> = new Map();
 
   constructor(options: FindOptions, context: OptionsParserContext) {
     const { collection } = context;
@@ -66,6 +72,10 @@ export class OptionsParser {
       `),
       '__schemaName',
     ]);
+  }
+
+  static registerFieldSort(dialectName: string, options: FieldSortOptions) {
+    this.fieldSortMap.set(dialectName, options);
   }
 
   isAssociation(key: string) {
@@ -158,7 +168,12 @@ export class OptionsParser {
     }
 
     const orderParams = [];
-
+    // remove duplicate sort key, usage: sort = ['-id', 'id'], expect: ['-id']
+    const set = new Set();
+    sort = sort.filter((s) => {
+      const key = s.startsWith('-') ? s.slice(1) : s;
+      return !set.has(key) && set.add(key);
+    });
     for (const sortKey of sort) {
       let direction = sortKey.startsWith('-') ? 'DESC' : 'ASC';
       const sortField: Array<any> = sortKey.startsWith('-') ? sortKey.replace('-', '').split('.') : sortKey.split('.');
@@ -187,6 +202,13 @@ export class OptionsParser {
         // @ts-ignore
         if (this.model.fieldRawAttributesMap[fieldName]) {
           orderParams.push([Sequelize.fn('ISNULL', Sequelize.col(`${this.model.name}.${sortField[0]}`))]);
+        }
+      }
+      const sortOptions = OptionsParser.fieldSortMap.get(this.database.options.dialect);
+      if (_.isFunction(sortOptions?.nullsLast)) {
+        const nullLast = sortOptions.nullsLast(this.model, sortField[0]);
+        if (nullLast) {
+          orderParams.push(nullLast);
         }
       }
       orderParams.push(sortField);

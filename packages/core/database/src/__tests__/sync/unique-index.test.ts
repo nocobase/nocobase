@@ -70,6 +70,9 @@ describe('unique index', () => {
   });
 
   it('should sync unique index', async () => {
+    if (db.options.dialect === 'mssql') {
+      await db.sequelize.getQueryInterface().dropTable('users');
+    }
     const User = db.collection({
       name: 'users',
       fields: [
@@ -93,7 +96,7 @@ describe('unique index', () => {
           return indexField === columnName;
         }
 
-        return indexField.length == 1 && indexField[0].attribute === columnName;
+        return indexField[0].attribute === columnName;
       });
     };
 

@@ -288,16 +288,28 @@ export class SyncRunner {
         }
 
         if (this.database.inDialect('mssql')) {
-          const constraintName = await this.sequelize.query(
-            `SELECT name FROM sys.indexes 
+          // 先检查是否是约束
+          const constraintCheck = await this.sequelize.query(
+            `SELECT OBJECT_NAME(object_id) as name
+             FROM sys.indexes 
              WHERE object_id = OBJECT_ID('${this.collection.quotedTableName()}')
-             AND name = '${existUniqueIndex.name}'`,
-            { ...options, type: 'SELECT' },
+             AND name = '${existUniqueIndex.name}'
+             AND is_unique_constraint = 1`,
+            {
+              type: 'SELECT',
+            },
           );
 
-          if (constraintName?.[0] && constraintName[0]['name']) {
+          if (constraintCheck.length > 0) {
+            // 如果是约束，使用 DROP CONSTRAINT
             await this.sequelize.query(
-              `ALTER TABLE ${this.collection.quotedTableName()} DROP CONSTRAINT ${constraintName[0]['name']};`,
+              `ALTER TABLE ${this.collection.quotedTableName()} DROP CONSTRAINT ${existUniqueIndex.name};`,
+              options,
+            );
+          } else {
+            // 如果是普通索引，使用 DROP INDEX
+            await this.sequelize.query(
+              `DROP INDEX ${existUniqueIndex.name} ON ${this.collection.quotedTableName()};`,
               options,
             );
           }
@@ -316,16 +328,32 @@ export class SyncRunner {
 
     // add unique index that not in database
     for (const uniqueAttribute of uniqueAttributes) {
-      // check index exists or not
-      const indexExists = existsUniqueIndexes.find((index) => {
-        return index.fields.length == 1 && index.fields[0].attribute == this.rawAttributes[uniqueAttribute].field;
+      const field = this.rawAttributes[uniqueAttribute].field;
+
+      // 检查是否存在包含该字段的索引（包括组合索引）
+      const hasFieldIndex = existsUniqueIndexes.some((index) => {
+        return index.fields[0].attribute === field;
       });
 
-      if (!indexExists) {
-        await this.queryInterface.addIndex(this.tableName, [this.rawAttributes[uniqueAttribute].field], {
+      if (!hasFieldIndex) {
+        // 检查是否有重复数据
+        const duplicateCheck = await this.sequelize.query(
+          `SELECT COUNT(*) as count, ${field} 
+           FROM ${this.collection.quotedTableName()} 
+           GROUP BY ${field} 
+           HAVING COUNT(*) > 1`,
+          { ...options, type: 'SELECT' },
+        );
+
+        if (duplicateCheck.length > 0) {
+          console.warn(`Cannot create unique index on ${field} due to duplicate values`);
+          continue;
+        }
+
+        await this.queryInterface.addIndex(this.tableName, [field], {
           unique: true,
           transaction: options?.transaction,
-          name: `${this.collection.tableName()}_${this.rawAttributes[uniqueAttribute].field}_uk`,
+          name: `${this.collection.tableName()}_${field}_uk`,
         });
       }
     }

@@ -156,12 +156,17 @@ export class MagicAttributeModel extends Model {
         // @ts-ignore
         if (!this._isAttribute(key)) {
           // @ts-ignore
-          if (key.includes('.') && this.constructor._jsonAttributes.has(key.split('.')[0])) {
+          if (this.isJsonField(key)) {
             // @ts-ignore
             const previousNestedValue = Dottie.get(this.dataValues, key);
             if (!_.isEqual(previousNestedValue, value)) {
               // @ts-ignore
               this._previousDataValues = _.cloneDeep(this._previousDataValues);
+              const previousValue = _.get(this.dataValues, key.split('.')[0]);
+              if (this.db.options.dialect === 'mssql' && _.isString(previousValue) && !_.isEmpty(previousValue)) {
+                // @ts-ignore
+                this.dataValues[key.split('.')[0]] = JSON.parse(previousValue);
+              }
               // @ts-ignore
               Dottie.set(this.dataValues, key, value);
               this.changed(key.split('.')[0], true);
@@ -226,6 +231,25 @@ export class MagicAttributeModel extends Model {
     return this;
   }
 
+  private isJsonField(key: string) {
+    const [column] = key.split('.');
+    if (!column) {
+      return false;
+    }
+    if (this.db.options.dialect === 'mssql') {
+      return this.getFieldByKey(column)?.type === 'json';
+    }
+    return (this.constructor as any)._jsonAttributes.has(column);
+  }
+
+  private getFieldByKey(key: string) {
+    const collection = this.db.modelNameCollectionMap.get(this.constructor.name);
+    if (!collection) {
+      return null;
+    }
+    return collection.getField(key);
+  }
+
   get(key?: any, value?: any): any {
     if (typeof key === 'string') {
       const [column] = key.split('.');
@@ -239,6 +263,10 @@ export class MagicAttributeModel extends Model {
       return _.get(options, key);
     }
     const data = super.get(key, value);
+    const previousValue = _.get(data, this.magicAttribute);
+    if (this.db.options.dialect === 'mssql' && _.isString(previousValue) && !_.isEmpty(previousValue)) {
+      _.set(data, this.magicAttribute, JSON.parse(previousValue));
+    }
     return {
       ..._.omit(data, this.magicAttribute),
       ...data[this.magicAttribute],

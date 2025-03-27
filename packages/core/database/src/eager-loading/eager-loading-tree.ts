@@ -333,19 +333,10 @@ export class EagerLoadingTree {
             };
           }
 
-          let order = params.order || orderOption(association);
-          if (node.model.sequelize.getDialect() === 'mssql') {
-            const seen = new Set();
-            order = order.filter((item) => {
-              const field = Array.isArray(item) ? item[0] : item.split(' ')[0];
-              return seen.has(field) ? false : seen.add(field);
-            });
-          }
-
           const findOptions = {
             where,
             attributes: node.attributes,
-            order,
+            order: params.order || orderOption(association),
             transaction,
           };
 

@@ -21,7 +21,26 @@ type InferredFieldResult = {
   [key: string]: InferredField;
 };
 
+type InferredViewSchema = {
+  display?: boolean;
+};
+
 export class ViewFieldInference {
+  static FieldTypeMap = FieldTypeMap;
+
+  static ViewSchemaConfig: Record<string, InferredViewSchema> = {
+    postgres: { display: true },
+    mysql: {},
+    sqlite: {},
+  };
+
+  static registerFieldTypes(key: string, fieldTypes: Record<string, any>) {
+    ViewFieldInference.FieldTypeMap[key] = {
+      ...(ViewFieldInference.FieldTypeMap[key] || {}),
+      ...fieldTypes,
+    };
+  }
+
   static extractTypeFromDefinition(typeDefinition) {
     const leftParenIndex = typeDefinition.indexOf('(');
 
@@ -32,13 +51,17 @@ export class ViewFieldInference {
     return typeDefinition.substring(0, leftParenIndex).toLowerCase().trim();
   }
 
+  static registerViewSchema(key: string, config: { display?: boolean }) {
+    ViewFieldInference.ViewSchemaConfig[key] = config;
+  }
+
   static async inferFields(options: {
     db: Database;
     viewName: string;
     viewSchema?: string;
   }): Promise<InferredFieldResult> {
     const { db } = options;
-    if (!db.inDialect('postgres')) {
+    if (!this.ViewSchemaConfig[db.options.dialect]?.display) {
       options.viewSchema = undefined;
     }
 
@@ -139,7 +162,7 @@ export class ViewFieldInference {
 
   static inferToFieldType(options: { name: string; type: string; dialect: string }) {
     const { dialect } = options;
-    const fieldTypeMap = FieldTypeMap[dialect];
+    const fieldTypeMap = this.FieldTypeMap[dialect];
 
     if (!options.type) {
       return {
