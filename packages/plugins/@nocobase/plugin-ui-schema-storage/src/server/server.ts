@@ -51,6 +51,10 @@ export class PluginUISchemaStorageServer extends Plugin {
       }
     });
 
+    db.on('uiSchemas.afterSave', function setUid(model) {
+      console.log('uiSchemas.afterSave', JSON.stringify(model.toJSON(), null, 2));
+    });
+
     db.on('uiSchemas.afterCreate', async function insertSchema(model, options) {
       const { transaction } = options;
       const uiSchemaRepository = db.getCollection('uiSchemas').repository as UiSchemaRepository;
