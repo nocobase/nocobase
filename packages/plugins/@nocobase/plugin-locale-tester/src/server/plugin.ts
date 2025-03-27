@@ -13,7 +13,12 @@ import _ from 'lodash';
 export class PluginLocaleTesterServer extends Plugin {
   async afterAdd() {}
 
-  async beforeLoad() {}
+  async beforeLoad() {
+    this.app.acl.registerSnippet({
+      name: `pm.${this.name}`,
+      actions: ['localeTester:*'],
+    });
+  }
 
   async load() {
     this.app.resourceManager.use(async (ctx, next) => {
