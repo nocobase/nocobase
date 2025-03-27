@@ -48,9 +48,10 @@ const getValue = async (params: {
 }): Promise<any> => {
   const { field, data, context } = params;
   const path = field.split('.');
-  const dataKey = path.slice(1).join('.');
+
   // Handle scope functions (starting with $)
   if (path[0].startsWith('$')) {
+    const dataKey = path.slice(1).join('.');
     const scopeKey = path[0];
     const scopeFn = data[scopeKey];
     if (typeof scopeFn === 'function') {
@@ -62,11 +63,10 @@ const getValue = async (params: {
     return null;
   }
 
-  const value = get(data, dataKey);
-
-  // Handle function values
+  const value = get(data, field);
   if (typeof value === 'function') {
     return value();
   }
+
   return value;
 };

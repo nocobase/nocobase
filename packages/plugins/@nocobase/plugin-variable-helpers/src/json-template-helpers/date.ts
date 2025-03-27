@@ -70,3 +70,15 @@ export function dateSubtract(initialValue: any, unit: any, number: number) {
     return handler(initialValue);
   }
 }
+
+export function dateOffset(initialValue: any, action: 'add' | 'subtract', number: number, unit: any) {
+  const handler = (value: any) => {
+    if (action === 'add') {
+      return dayjs.isDayjs(value) ? value.add(number, unit) : dayjs(value).add(number, unit);
+    } else if (action === 'subtract') {
+      return dayjs.isDayjs(value) ? value.subtract(number, unit) : dayjs(value).subtract(number, unit);
+    }
+    throw new Error('Invalid action');
+  };
+  return handler(initialValue);
+}

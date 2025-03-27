@@ -1,6 +1,6 @@
 import { createForm } from '@formily/core';
 import { observer, useField, useForm } from '@formily/react';
-import { AntdSchemaComponentProvider, Plugin, SchemaComponent } from '@nocobase/client';
+import { AntdSchemaComponentProvider, Plugin, SchemaComponent, Variable } from '@nocobase/client';
 import { mockApp } from '@nocobase/client/demo-utils';
 import PluginVariableFiltersClient from '@nocobase/plugin-variable-helpers/client';
 import React from 'react';

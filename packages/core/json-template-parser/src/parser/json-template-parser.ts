@@ -68,9 +68,11 @@ export class JSONTemplateParser {
   }
 
   registerFilterGroup(group: FilterGroup): void {
+    if (this._filterGroups.find((g) => g.name === group.name)) return;
     this._filterGroups.push(group);
   }
   registerFilter(filter: Helper): void {
+    if (this._filters.find((f) => f.name === filter.name)) return;
     this._filters.push(filter);
     this._engine.registerFilter(filter.name, filter.handler);
   }

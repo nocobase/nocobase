@@ -9,7 +9,7 @@
 
 import { Helper } from '@nocobase/json-template-parser';
 import { first } from './array';
-import { dateAdd, dateFormat, dateSubtract } from './date';
+import { dateAdd, dateFormat, dateOffset, dateSubtract } from './date';
 const NAMESPACE = 'variable-helpers';
 
 function tval(text: string) {
@@ -37,44 +37,9 @@ export const helpers: Helper[] = [
     ],
   },
   {
-    name: 'date_add',
-    title: 'add',
-    handler: dateAdd,
-    group: 'date',
-    inputType: 'date',
-    outputType: 'date',
-    sort: 2,
-    args: [],
-    uiSchema: [
-      {
-        name: 'unit',
-        title: tval('Unit'),
-        type: 'string',
-        required: true,
-        'x-component': 'Select',
-        enum: [
-          { label: tval('Year'), value: 'year' },
-          { label: tval('Quarter'), value: 'quarter' },
-          { label: tval('Week'), value: 'week' },
-          { label: tval('Day'), value: 'day' },
-          { label: tval('Hour'), value: 'hour' },
-          { label: tval('Minute'), value: 'minute' },
-          { label: tval('Second'), value: 'second' },
-        ],
-      },
-      {
-        name: 'number',
-        title: tval('Amount'),
-        type: 'number',
-        'x-component': 'InputNumber',
-        required: true,
-      },
-    ],
-  },
-  {
-    name: 'date_subtract',
-    title: 'substract',
-    handler: dateSubtract,
+    name: 'date_offset',
+    title: 'offset',
+    handler: dateOffset,
     group: 'date',
     inputType: 'date',
     outputType: 'date',
@@ -82,6 +47,24 @@ export const helpers: Helper[] = [
     args: [],
     uiSchema: [
       {
+        name: 'action',
+        title: tval('Action'),
+        type: 'string',
+        required: true,
+        'x-component': 'Select',
+        enum: [
+          { label: tval('Add'), value: 'add' },
+          { label: tval('Sbutract'), value: 'subtract' },
+        ],
+      },
+      {
+        name: 'number',
+        title: tval('Amount'),
+        type: 'number',
+        'x-component': 'InputNumber',
+        required: true,
+      },
+      {
         name: 'unit',
         title: tval('Unit'),
         type: 'string',
@@ -97,34 +80,7 @@ export const helpers: Helper[] = [
           { label: tval('Second'), value: 'second' },
         ],
       },
-      {
-        name: 'number',
-        title: tval('Amount'),
-        type: 'number',
-        'x-component': 'InputNumber',
-        required: true,
-      },
     ],
-  },
-  {
-    name: 'array_first',
-    title: 'first',
-    handler: first,
-    sort: 4,
-    args: [],
-    group: 'array',
-    inputType: 'string',
-    outputType: 'any',
-  },
-  {
-    name: 'array_last',
-    title: 'last',
-    sort: 5,
-    args: [],
-    handler: first,
-    group: 'array',
-    inputType: 'string',
-    outputType: 'any',
   },
 ];
 

@@ -22,6 +22,7 @@ import {
   Select,
   Space,
   Tag,
+  Tooltip,
   Typography,
 } from 'antd';
 import useAntdInputStyle from 'antd/es/input/style';
@@ -35,7 +36,7 @@ import { Json } from '../input';
 import { HelperAddition, HelperList } from './Helpers';
 import { useHelperObservables } from './Helpers/hooks/useHelperObservables';
 import { useStyles } from './style';
-import { VariableHelperMapping, VariableProvider } from './VariableProvider';
+import { useVariable, VariableHelperMapping, VariableProvider } from './VariableProvider';
 import { XButton } from './XButton';
 
 const { Text } = Typography;
@@ -43,6 +44,22 @@ const JT_VALUE_RE = /^\s*{{\s*([^{}]+)\s*}}\s*$/;
 
 type ParseOptions = {
   stringToDate?: boolean;
+};
+
+const findScopeOption = (options: DefaultOptionType[], path: string[]): DefaultOptionType | null => {
+  if (!options || !Array.isArray(options)) {
+    return null;
+  }
+
+  for (const option of options) {
+    if (option.value === path[0]) {
+      if (path.length === 1) {
+        return option;
+      }
+      return findScopeOption(option.children, path.slice(1));
+    }
+  }
+  return null;
 };
 
 function parseValue(value: any, options: ParseOptions = {}): string | string[] {
@@ -220,6 +237,7 @@ function _Input(props: VariableInputProps) {
   } = props;
 
   const scope = typeof props.scope === 'function' ? props.scope() : props.scope;
+
   const { wrapSSR, hashId, componentCls, rootPrefixCls } = useStyles({ hideVariableButton });
 
   const helperObservables = useHelperObservables();
@@ -230,8 +248,6 @@ function _Input(props: VariableInputProps) {
   const { t } = useTranslation();
   const form = useForm();
   const [options, setOptions] = React.useState<DefaultOptionType[]>([]);
-  const [variableType, setVariableType] = React.useState<string>();
-  const [showLastHelper, setShowLastHelper] = React.useState<boolean>(false);
   const [variableText, setVariableText] = React.useState([]);
   const [isFieldValue, setIsFieldValue] = React.useState(
     hideVariableButton || (children && value != null ? true : false),
@@ -246,17 +262,7 @@ function _Input(props: VariableInputProps) {
     [value],
   );
 
-  // useEffect(() => {
-  //   const dispose = reaction(
-  //     () => {
-  //       return composeTemplate({ fullVariable, helpers: helperObservables.helpersObs.value });
-  //     },
-  //     (newVal) => {
-  //       onChange(newVal);
-  //     },
-  //   );
-  //   return dispose;
-  // }, [fullVariable, onChange]);
+  const selectedScopeOption = useMemo(() => findScopeOption(scope, variableSegments), [scope, variableSegments]);
 
   const parsed = useMemo(() => parseValue(variableSegments, parseOptions), [parseOptions, variableSegments]);
   const isConstant = typeof parsed === 'string';
@@ -389,10 +395,6 @@ function _Input(props: VariableInputProps) {
       const variableName = next.join('.');
       const option = optionPath[optionPath.length - 1];
       onChange(composeTemplate({ fullVariable: variableName, helpers: option?.helpers ?? [] }), optionPath);
-      if (Array.isArray(optionPath) && optionPath.length > 0) {
-        setVariableType(option.type ?? null);
-        setShowLastHelper(option.showLastHelper ?? false);
-      }
     },
     [type, variable, onChange],
   );
@@ -488,21 +490,16 @@ function _Input(props: VariableInputProps) {
             className={cx('ant-input ant-input-outlined', { 'ant-input-disabled': disabled }, hashId)}
           >
             <Tag color="blue">
-              {variableText.map((item, index) => {
-                return (
-                  <React.Fragment key={item}>
-                    {index ? ' / ' : ''}
-                    {item}
-                  </React.Fragment>
-                );
-              })}
               <VariableProvider
                 variableName={fullVariable}
-                variableType={variableType}
-                openLastHelper={showLastHelper}
+                variableExampleValue={selectedScopeOption?.example}
+                variableType={selectedScopeOption?.type}
+                openLastHelper={selectedScopeOption?.showLastHelper}
                 helperObservables={helperObservables}
                 onVariableTemplateChange={onChange}
               >
+                <VariableTag variablePath={variableText} />
+
                 <HelperList />
                 {variableText.length > 0 && <HelperAddition />}
               </VariableProvider>
@@ -560,5 +557,23 @@ function _Input(props: VariableInputProps) {
     </Space.Compact>,
   );
 }
+
+const VariableTag = ({ variablePath }: { variablePath: string[] }) => {
+  const { value } = useVariable();
+  return (
+    <Tooltip title={value}>
+      <span>
+        {variablePath.map((item, index) => {
+          return (
+            <React.Fragment key={item}>
+              {index ? ' / ' : ''}
+              {item}
+            </React.Fragment>
+          );
+        })}
+      </span>
+    </Tooltip>
+  );
+};
 
 export const Input = observer(_Input, { displayName: 'VariableInput' });

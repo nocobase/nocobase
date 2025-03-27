@@ -27,6 +27,7 @@ interface VariableContextValue {
 
 interface VariableProviderProps {
   variableName: string;
+  variableExampleValue?: any;
   variableType: string | null;
   openLastHelper?: boolean;
   children: React.ReactNode;
@@ -122,6 +123,7 @@ const _VariableProvider: React.FC<VariableProviderProps> = ({
   variableName,
   children,
   variableType,
+  variableExampleValue,
   openLastHelper,
   helperObservables,
   onVariableTemplateChange,
@@ -145,6 +147,10 @@ const _VariableProvider: React.FC<VariableProviderProps> = ({
   useEffect(() => {
     async function fetchValue() {
       try {
+        if (variableExampleValue !== undefined) {
+          setValue(variableExampleValue);
+          return;
+        }
         const val = await getValue(variableName);
         if (val) {
           setValue(val);
@@ -157,7 +163,7 @@ const _VariableProvider: React.FC<VariableProviderProps> = ({
       }
     }
     fetchValue();
-  }, [localVariables, variableName, variables, getValue]);
+  }, [localVariables, variableName, variables, getValue, variableExampleValue]);
 
   const valueType =
     helperObservables.helpersObs.value.length > 0

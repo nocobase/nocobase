@@ -11,7 +11,7 @@ type ValueType = 'date' | 'string' | 'dateRange' | 'any';
 export type Helper = {
   name: string;
   title: string;
-  handler: Function;
+  handler: (...args: any[]) => any;
   group: string;
   inputType: ValueType;
   outputType: ValueType;
