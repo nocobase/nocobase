@@ -69,6 +69,11 @@ export const filterAnalyses = (filters): any[] => {
   return results;
 };
 
+function getFieldPath(str) {
+  const lastIndex = str.lastIndexOf('.');
+  return lastIndex === -1 ? str : str.slice(0, lastIndex);
+}
+
 const InternalAssociationSelect = observer(
   (props: AssociationSelectProps) => {
     const { objectValue = true, addMode: propsAddMode, ...rest } = props;
@@ -100,11 +105,14 @@ const InternalAssociationSelect = observer(
         //支持深层次子表单
         onFieldInputValueChange('*', (fieldPath: any) => {
           const linkageFields = filterAnalyses(field.componentProps?.service?.params?.filter) || [];
+          const linageFieldEntire = getFieldPath(fieldPath.address.entire);
+          const targetFieldEntire = getFieldPath(field.address.entire);
           if (
             linkageFields.includes(fieldPath?.props?.name) &&
             field.value &&
             isEqual(fieldPath?.indexes, field?.indexes) &&
-            fieldPath?.props?.name !== field.props.name
+            fieldPath?.props?.name !== field.props.name &&
+            isEqual(linageFieldEntire, targetFieldEntire)
           ) {
             field.setValue(null);
             setInnerValue(null);
