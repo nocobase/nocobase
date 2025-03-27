@@ -15,6 +15,8 @@ import { ButtonEditor, RemoveButton } from '../../../schema-component/antd/actio
 import { SchemaSettingOpenModeSchemaItems } from '../../../schema-items';
 import { SchemaSettingsEnableChildCollections } from '../../../schema-settings/SchemaSettings';
 import { useOpenModeContext } from '../../popup/OpenModeProvider';
+import { SchemaSettingsLinkageRules } from '../../../schema-settings';
+import { useDataBlockProps } from '../../../data-source';
 
 export const addNewActionSettings = new SchemaSettings({
   name: 'actionSettings:addNew',
@@ -55,6 +57,24 @@ export const addNewActionSettings = new SchemaSettings({
           [getChildrenCollections, name],
         );
         return isChildCollectionAction;
+      },
+    },
+    {
+      name: 'linkageRules',
+      Component: SchemaSettingsLinkageRules,
+      useVisible() {
+        const { association } = useDataBlockProps() || {};
+        return !!association;
+      },
+      useComponentProps() {
+        const { association } = useDataBlockProps();
+        const { getCollectionField } = useCollectionManager_deprecated();
+        const associationField = getCollectionField(association);
+        const { linkageRulesProps } = useSchemaToolbar();
+        return {
+          ...linkageRulesProps,
+          collectionName: associationField?.collectionName,
+        };
       },
     },
     {

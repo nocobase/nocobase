@@ -20,6 +20,7 @@ import { ErrorFallback, StablePopover, TabsContextProvider, useActionContext } f
 import { useDesignable } from '../../';
 import { useACLActionParamsContext } from '../../../acl';
 import {
+  useCollectionParentRecord,
   useCollectionParentRecordData,
   useCollectionRecordData,
   useDataBlockRequestGetter,
@@ -89,12 +90,15 @@ export const Action: ComposedAction = withDynamicSchemaProps(
     const fieldSchema = useFieldSchema();
     const compile = useCompile();
     const recordData = useCollectionRecordData();
+    const parentRecord = useCollectionParentRecord();
     const confirm = compile(fieldSchema['x-component-props']?.confirm) || propsConfirm;
     const linkageRules = useMemo(() => fieldSchema?.['x-linkage-rules'] || [], [fieldSchema?.['x-linkage-rules']]);
     const { designable } = useDesignable();
     const tarComponent = useComponent(component) || component;
     const variables = useVariables();
-    const localVariables = useLocalVariables({ currentForm: { values: recordData, readPretty: false } as any });
+    const localVariables = useLocalVariables({
+      currentForm: { values: recordData || parentRecord?.data, readPretty: false } as any,
+    });
     const { visibleWithURL, setVisibleWithURL } = usePopupUtils();
     const { setSubmitted } = useActionContext();
     const { getAriaLabel } = useGetAriaLabelOfAction(title);

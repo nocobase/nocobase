@@ -20,6 +20,9 @@ import {
   RefreshDataBlockRequest,
   useAfterSuccessOptions,
   useGlobalVariable,
+  SchemaSettingsLinkageRules,
+  useCollectionManager_deprecated,
+  useDataBlockProps,
 } from '@nocobase/client';
 import { useTranslation } from 'react-i18next';
 import React from 'react';
@@ -164,6 +167,24 @@ const schemaSettingsItems: SchemaSettingsItemType[] = [
     useComponentProps() {
       return {
         isPopupAction: false,
+      };
+    },
+  },
+  {
+    name: 'linkageRules',
+    Component: SchemaSettingsLinkageRules,
+    useVisible() {
+      const { association } = useDataBlockProps() || {};
+      return !!association;
+    },
+    useComponentProps() {
+      const { association } = useDataBlockProps() || {};
+      const { getCollectionField } = useCollectionManager_deprecated();
+      const associationField = getCollectionField(association);
+      const { linkageRulesProps } = useSchemaToolbar();
+      return {
+        ...linkageRulesProps,
+        collectionName: associationField?.collectionName,
       };
     },
   },

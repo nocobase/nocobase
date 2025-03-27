@@ -9,7 +9,15 @@
 
 import { ArrayItems } from '@formily/antd-v5';
 import { ISchema, useField, useFieldSchema } from '@formily/react';
-import { ButtonEditor, SchemaSettings, useDesignable, useSchemaToolbar } from '@nocobase/client';
+import {
+  ButtonEditor,
+  SchemaSettings,
+  useDesignable,
+  useSchemaToolbar,
+  SchemaSettingsLinkageRules,
+  useDataBlockProps,
+  useCollectionManager_deprecated,
+} from '@nocobase/client';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useShared } from './useShared';
@@ -62,6 +70,24 @@ export const exportActionSchemaSettings = new SchemaSettings({
             });
             dn.refresh();
           },
+        };
+      },
+    },
+    {
+      name: 'linkageRules',
+      Component: SchemaSettingsLinkageRules,
+      useVisible() {
+        const { association } = useDataBlockProps() || {};
+        return !!association;
+      },
+      useComponentProps() {
+        const { association } = useDataBlockProps();
+        const { getCollectionField } = useCollectionManager_deprecated();
+        const associationField = getCollectionField(association);
+        const { linkageRulesProps } = useSchemaToolbar();
+        return {
+          ...linkageRulesProps,
+          collectionName: associationField?.collectionName,
         };
       },
     },

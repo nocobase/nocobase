@@ -16,12 +16,14 @@ import { useSchemaToolbar } from '../../../application';
 import { SchemaSettings } from '../../../application/schema-settings/SchemaSettings';
 import { useCollection_deprecated } from '../../../collection-manager';
 import { ButtonEditor, RemoveButton } from '../../../schema-component/antd/action/Action.Designer';
+import { useCollectionManager_deprecated } from '../../../collection-manager';
 import {
   SchemaSettingsLinkageRules,
   SchemaSettingsModalItem,
   SchemaSettingAccessControl,
 } from '../../../schema-settings';
 import { useURLAndHTMLSchema } from './useURLAndHTMLSchema';
+import { useDataBlockProps } from '../../../data-source';
 
 export const SchemaSettingsActionLinkItem: FC = () => {
   const field = useField();
@@ -96,14 +98,18 @@ export const customizeLinkActionSettings = new SchemaSettings({
       Component: SchemaSettingsLinkageRules,
       useVisible() {
         const record = useCollectionRecord();
-        return !_.isEmpty(record?.data);
+        const { association } = useDataBlockProps() || {};
+        return !_.isEmpty(record?.data) || !!association;
       },
       useComponentProps() {
         const { name } = useCollection_deprecated();
         const { linkageRulesProps } = useSchemaToolbar();
+        const { association } = useDataBlockProps() || {};
+        const { getCollectionField } = useCollectionManager_deprecated();
+        const associationField = getCollectionField(association);
         return {
           ...linkageRulesProps,
-          collectionName: name,
+          collectionName: associationField?.collectionName || name,
         };
       },
     },
