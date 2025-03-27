@@ -29,8 +29,12 @@ export interface StorageModel {
 export interface AttachmentModel {
   title: string;
   filename: string;
+  extname: string;
   path: string;
-  url: string;
+  size: number;
+  mimetype: string;
+  meta?: Record<string, any>;
+  url?: string;
   storageId: number;
 }
 
@@ -47,7 +51,7 @@ export abstract class StorageType {
     return getFileKey(record);
   }
 
-  getFileData(file, meta = {}) {
+  getFileData(file, meta = {}): AttachmentModel {
     const { [(this.constructor as typeof StorageType).filenameKey || 'filename']: name } = file;
     // make compatible filename across cloud service (with path)
     const filename = Path.basename(name);

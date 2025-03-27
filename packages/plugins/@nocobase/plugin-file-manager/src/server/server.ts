@@ -94,15 +94,15 @@ export class PluginFileManagerServer extends Plugin {
     }
     const collectionRepository = this.db.getRepository(collectionName);
     const name = storageName || collection.options.storage;
-    const data = await this.uploadFile({ storageName: name, filePath });
-    return await collectionRepository.create({ values: { ...data, ...values }, transaction });
+    const { url, ...data } = await this.uploadFile({ storageName: name, filePath });
+    return collectionRepository.create({ values: { ...data, ...values }, transaction });
   }
 
   parseStorage(instance) {
     return this.app.environment.renderJsonTemplate(instance.toJSON());
   }
 
-  async uploadFile(options: UploadFileOptions) {
+  async uploadFile(options: UploadFileOptions): Promise<AttachmentModel> {
     const { storageName, filePath, documentRoot } = options;
 
     if (!this.storagesCache.size) {
@@ -146,7 +146,12 @@ export class PluginFileManagerServer extends Plugin {
       });
     });
 
-    return storageInstance.getFileData(file, {});
+    const data = storageInstance.getFileData(file, {});
+    if (!data.url) {
+      data.url = await storageInstance.getFileURL(data);
+    }
+
+    return data;
   }
 
   async loadStorages(options?: { transaction: any }) {
