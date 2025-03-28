@@ -20,7 +20,6 @@ import { FilterBlockProvider } from '../../../filter-provider/FilterProvider';
 import {
   NocoBaseRecursionField,
   RefreshComponentProvider,
-  useRefreshComponent,
   useRefreshFieldSchema,
 } from '../../../formily/NocoBaseRecursionField';
 import { DndContext, DndContextProps } from '../../common/dnd-context';
@@ -379,11 +378,9 @@ export const Grid: any = observer(
     }, [fieldSchema, render, InitializerComponent, showDivider]);
 
     const refreshFieldSchema = useRefreshFieldSchema();
-    const refreshComponent = useRefreshComponent();
     const refresh = useCallback(() => {
       refreshFieldSchema?.();
-      refreshComponent?.();
-    }, [refreshComponent, refreshFieldSchema]);
+    }, [refreshFieldSchema]);
 
     return (
       <RefreshComponentProvider refresh={refresh}>
