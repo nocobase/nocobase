@@ -7,8 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import path from 'path';
 import { uid } from '@nocobase/utils';
+import path from 'path';
+import urlJoin from 'url-join';
 
 export function getFilename(req, file, cb) {
   const originalname = Buffer.from(file.originalname, 'binary').toString('utf8');
@@ -27,5 +28,33 @@ export const cloudFilenameGetter = (storage) => (req, file, cb) => {
 };
 
 export function getFileKey(record) {
-  return [record.path.replace(/^\/|\/$/g, ''), record.filename].filter(Boolean).join('/');
+  return urlJoin(record.path || '', record.filename).replace(/^\//, '');
+}
+
+export function ensureUrlEncoded(value) {
+  try {
+    // 如果解码后与原字符串不同，说明已经被转义过
+    if (decodeURIComponent(value) !== value) {
+      return value; // 已经是转义的，直接返回
+    }
+  } catch (e) {
+    // 如果解码出错，说明是非法的编码，直接转义
+    return encodeURIComponent(value);
+  }
+
+  // 如果没问题但字符串未转义过，则进行转义
+  return encodeURIComponent(value);
+}
+
+function encodePathKeepSlash(path) {
+  return path
+    .split('/')
+    .map((segment) => ensureUrlEncoded(segment))
+    .join('/');
+}
+
+export function encodeURL(url) {
+  const parsedUrl = new URL(url);
+  parsedUrl.pathname = encodePathKeepSlash(parsedUrl.pathname);
+  return parsedUrl.toString();
 }

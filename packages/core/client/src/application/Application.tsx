@@ -110,6 +110,7 @@ export class Application {
   public name: string;
   public favicon: string;
   public globalVars: Record<string, any> = {};
+  public globalVarCtxs: Record<string, any> = {};
   public jsonLogic: JsonLogic;
   loading = true;
   maintained = false;
@@ -353,23 +354,9 @@ export class Application {
           setTimeout(() => resolve(null), 1000);
         });
       }
-      const toError = (error) => {
-        if (typeof error?.response?.data === 'string') {
-          const tempElement = document.createElement('div');
-          tempElement.innerHTML = error?.response?.data;
-          return { message: tempElement.textContent || tempElement.innerText };
-        }
-        if (error?.response?.data?.error) {
-          return error?.response?.data?.error;
-        }
-        if (error?.response?.data?.errors?.[0]) {
-          return error?.response?.data?.errors?.[0];
-        }
-        return { message: error?.message };
-      };
       this.error = {
         code: 'LOAD_ERROR',
-        ...toError(error),
+        ...this.apiClient.toErrMessages(error)?.[0],
       };
       console.error(error, this.error);
     }
@@ -511,12 +498,19 @@ export class Application {
     );
   }
 
-  addGlobalVar(key: string, value: any) {
+  addGlobalVar(key: string, value: any, varCtx?: any) {
     set(this.globalVars, key, value);
+    if (varCtx) {
+      set(this.globalVarCtxs, key, varCtx);
+    }
   }
 
   getGlobalVar(key) {
     return get(this.globalVars, key);
+  }
+
+  getGlobalVarCtx(key) {
+    return get(this.globalVarCtxs, key);
   }
   addUserCenterSettingsItem(item: SchemaSettingsItemType & { aclSnippet?: string }) {
     const useVisibleProp = item.useVisible || (() => true);

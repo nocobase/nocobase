@@ -75,6 +75,7 @@ export const WorkbenchAction = withDynamicSchemaProps((props) => {
         icon={null}
         title={<Button />}
         confirmTitle={fieldSchema.title}
+        style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}
       />
     </ACLActionProvider>
   );

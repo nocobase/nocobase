@@ -169,6 +169,7 @@ export class PluginBlockTemplateClient extends Plugin {
             'blockSettings:createForm',
             'blockSettings:details',
             'blockSettings:detailsWithPagination',
+            'blockSettings:stepsForm',
             'blockSettings:filterCollapse',
             'blockSettings:filterForm',
             'blockSettings:gantt',
@@ -176,6 +177,13 @@ export class PluginBlockTemplateClient extends Plugin {
             'blockSettings:kanban',
             'blockSettings:list',
             'blockSettings:table',
+            'blockSettings:tree',
+            'ReadPrettyFormSettings',
+            'GanttBlockSettings',
+            'FormV1Settings',
+            'FormSettings',
+            'FormItemSettings',
+            'FormDetailsSettings',
           ];
           if (blockSettings.includes(key)) {
             // schemaSetting.add('template-saveAsTemplateItem', saveAsTemplateSetting);

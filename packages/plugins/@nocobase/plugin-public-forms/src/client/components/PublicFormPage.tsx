@@ -28,17 +28,20 @@ import {
   useApp,
   useRequest,
   VariablesProvider,
+  useCompile,
 } from '@nocobase/client';
 import { Input, Modal, Spin } from 'antd';
+import { useTranslation } from 'react-i18next';
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { isDesktop } from 'react-device-detect';
 import { useParams } from 'react-router';
 import { usePublicSubmitActionProps } from '../hooks';
 import { UnEnabledFormPlaceholder, UnFoundFormPlaceholder } from './UnEnabledFormPlaceholder';
-
 import { Button as MobileButton, Dialog as MobileDialog } from 'antd-mobile';
 import { MobileDateTimePicker } from './components/MobileDatePicker';
 import { MobilePicker } from './components/MobilePicker';
+import { usePublicFormTranslation } from '../locale';
+
 class PublicDataSource extends DataSource {
   async getDataSource() {
     return {};
@@ -81,6 +84,14 @@ function PublicAPIClientProvider({ children }) {
     return apiClient;
   }, [app]);
   return <APIClientProvider apiClient={apiClient}>{children}</APIClientProvider>;
+}
+
+function useTitle(data) {
+  const compile = useCompile();
+  useEffect(() => {
+    if (!data) return;
+    document.title = compile(data?.data?.title);
+  }, [data]);
 }
 
 export const PublicFormMessageContext = createContext<any>({});
@@ -174,6 +185,7 @@ function InternalPublicForm() {
   );
   const [pwd, setPwd] = useState('');
   const ctx = useContext(SchemaComponentContext);
+  useTitle(data);
   // 设置的移动端 meta
   useEffect(() => {
     if (!isDesktop) {

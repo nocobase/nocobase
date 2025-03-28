@@ -52,11 +52,7 @@ const ResponsiveSpace = () => {
     return (
       <Grid columns={itemsPerRow} gap={gap}>
         {fieldSchema.mapProperties((s, key) => {
-          return (
-            <Grid.Item style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }} key={key}>
-              <NocoBaseRecursionField name={key} schema={s} />
-            </Grid.Item>
-          );
+          return <NocoBaseRecursionField name={key} schema={s} />;
         })}
       </Grid>
     );
@@ -126,6 +122,7 @@ const useStyles = createStyles(({ token, css }) => ({
             margin: -12px -32px;
             width: calc(100% + 64px);
             text-align: start;
+            justify-content: start !important;
             color: ${token.colorText};
           }
         }

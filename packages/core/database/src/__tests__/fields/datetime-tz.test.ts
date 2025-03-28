@@ -7,15 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { mockDatabase } from '../';
-import { Database } from '../../database';
-import { Repository } from '../../repository';
+import { Database, Repository, createMockDatabase } from '@nocobase/database';
 
 describe('timezone', () => {
   let db: Database;
 
   beforeEach(async () => {
-    db = mockDatabase({
+    db = await createMockDatabase({
       timezone: '+08:00',
     });
     await db.clean({ drop: true });
@@ -119,7 +117,7 @@ describe('date-field', () => {
   let repository: Repository;
 
   beforeEach(async () => {
-    db = mockDatabase();
+    db = await createMockDatabase();
     await db.clean({ drop: true });
     db.collection({
       name: 'tests',

@@ -268,10 +268,12 @@ function FinallyButton({
   const { getCollection } = useCollectionManager_deprecated();
   const aclCtx = useACLActionParamsContext();
   const buttonStyle = useMemo(() => {
+    const shouldApplyOpacity = designable && (field?.data?.hidden || !aclCtx);
+    const opacityValue = componentType !== 'link' ? (shouldApplyOpacity ? 0.1 : 1) : 1;
     return {
-      opacity: designable && (field?.data?.hidden || !aclCtx) && 0.1,
+      opacity: opacityValue,
     };
-  }, [designable, field?.data?.hidden]);
+  }, [designable, field?.data?.hidden, aclCtx, componentType]);
 
   if (inheritsCollections?.length > 0) {
     if (!linkageFromForm) {
@@ -358,7 +360,7 @@ function FinallyButton({
         ...buttonStyle,
       }}
     >
-      {props.children}
+      {props.onlyIcon ? props?.children?.[1] : props?.children}
     </Button>
   );
 }

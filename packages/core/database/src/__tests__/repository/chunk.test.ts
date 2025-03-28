@@ -7,9 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { mockDatabase } from '../index';
-import Database from '../../database';
-import { Collection } from '../../collection';
+import { Collection, createMockDatabase, Database } from '@nocobase/database';
 import { vi } from 'vitest';
 
 describe('repository chunk', () => {
@@ -22,7 +20,7 @@ describe('repository chunk', () => {
   });
 
   beforeEach(async () => {
-    db = mockDatabase();
+    db = await createMockDatabase();
 
     await db.clean({ drop: true });
 

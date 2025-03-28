@@ -6,6 +6,8 @@ import React from 'react';
 
 const { apiClient, mockRequest } = mockAPIClient();
 
+apiClient.auth.setToken('test');
+
 mockRequest.onGet('/roles:check').reply(() => {
   return [
     200,

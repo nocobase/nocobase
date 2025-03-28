@@ -7,19 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import {
-  Input,
-  Upload,
-  useCollection,
-  useCollectionField,
-  useCollectionManager,
-  useCollectionRecordData,
-  usePlugin,
-  useRequest,
-  withDynamicSchemaProps,
-} from '@nocobase/client';
-import React, { useEffect } from 'react';
-import { connect, mapProps, mapReadPretty, useField } from '@formily/react';
+import { useCollection, useCollectionField, useCollectionManager, usePlugin, useRequest } from '@nocobase/client';
+import { useEffect } from 'react';
 import FileManagerPlugin from '../';
 
 export function useStorage(storage) {

@@ -120,7 +120,7 @@ test.describe('action button', () => {
     // 3、预期结果：工作流成功触发,待办弹窗表单中显示数据
     const getWorkflow = await apiGetWorkflow(workflowId);
     const getWorkflowObj = JSON.parse(JSON.stringify(getWorkflow));
-    const getWorkflowExecuted = getWorkflowObj.executed;
+    const getWorkflowExecuted = getWorkflowObj.versionStats.executed;
     expect(getWorkflowExecuted).toBe(1);
 
     const newPage = mockPage();
@@ -130,7 +130,7 @@ test.describe('action button', () => {
     await page.getByRole('menuitem', { name: 'check-square Workflow todos' }).click();
     await page.mouse.move(300, 0, { steps: 100 });
     await page.waitForTimeout(300);
-    await page.locator('.ant-list', { hasText: manualNodeName }).getByLabel('action-Action.Link-View-view-').click();
+    await page.locator('.itemCss', { hasText: manualNodeName }).getByLabel('action-Action.Link-View-view-').click();
     const manualNodeRecord = manualNodeFieldDisplayName + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
     await page.getByRole('textbox').fill(manualNodeRecord);
     await page.getByRole('button', { name: 'Continue the process' }).click();
@@ -261,7 +261,7 @@ test.describe('action button', () => {
     // 3、预期结果：工作流成功触发,待办弹窗表单中显示数据
     const getWorkflow = await apiGetWorkflow(workflowId);
     const getWorkflowObj = JSON.parse(JSON.stringify(getWorkflow));
-    const getWorkflowExecuted = getWorkflowObj.executed;
+    const getWorkflowExecuted = getWorkflowObj.versionStats.executed;
     expect(getWorkflowExecuted).toBe(1);
 
     const newPage = mockPage();
@@ -271,7 +271,7 @@ test.describe('action button', () => {
     await page.getByRole('menuitem', { name: 'check-square Workflow todos' }).click();
     await page.mouse.move(300, 0, { steps: 100 });
     await page.waitForTimeout(300);
-    await page.locator('.ant-list', { hasText: manualNodeName }).getByLabel('action-Action.Link-View-view-').click();
+    await page.locator('.itemCss', { hasText: manualNodeName }).getByLabel('action-Action.Link-View-view-').click();
     const manualNodeRecord = manualNodeFieldDisplayName + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
     await page.getByRole('textbox').fill(manualNodeRecord);
     await page.getByRole('button', { name: 'Terminate the process' }).click();
@@ -402,7 +402,7 @@ test.describe('action button', () => {
     // 3、预期结果：工作流成功触发,待办弹窗表单中显示数据
     const getWorkflow = await apiGetWorkflow(workflowId);
     const getWorkflowObj = JSON.parse(JSON.stringify(getWorkflow));
-    const getWorkflowExecuted = getWorkflowObj.executed;
+    const getWorkflowExecuted = getWorkflowObj.versionStats.executed;
     expect(getWorkflowExecuted).toBe(1);
 
     const newPage = mockPage();
@@ -412,7 +412,7 @@ test.describe('action button', () => {
     await page.getByRole('menuitem', { name: 'check-square Workflow todos' }).click();
     await page.mouse.move(300, 0, { steps: 100 });
     await page.waitForTimeout(300);
-    await page.locator('.ant-list', { hasText: manualNodeName }).getByLabel('action-Action.Link-View-view-').click();
+    await page.locator('.itemCss', { hasText: manualNodeName }).getByLabel('action-Action.Link-View-view-').click();
     const manualNodeRecord = manualNodeFieldDisplayName + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
     await page.getByRole('textbox').fill(manualNodeRecord);
     await page.getByRole('button', { name: 'Save temporarily' }).click();

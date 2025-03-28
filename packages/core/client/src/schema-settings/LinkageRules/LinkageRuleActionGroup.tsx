@@ -14,11 +14,8 @@ import React, { useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { withDynamicSchemaProps } from '../../hoc/withDynamicSchemaProps';
 import { useProps } from '../../schema-component/hooks/useProps';
-import {
-  FormButtonLinkageRuleAction,
-  FormFieldLinkageRuleAction,
-  FormStyleLinkageRuleAction,
-} from './LinkageRuleAction';
+import { FormButtonLinkageRuleAction, FormFieldLinkageRuleAction } from './LinkageRuleAction';
+import { FieldStyleLinkageRuleAction } from './FieldStyleLinkageRuleAction';
 import { RemoveActionContext } from './context';
 export const LinkageRuleActions = observer(
   (props: any): any => {
@@ -30,7 +27,7 @@ export const LinkageRuleActions = observer(
     } = {
       button: FormButtonLinkageRuleAction,
       field: FormFieldLinkageRuleAction,
-      style: FormStyleLinkageRuleAction,
+      style: FieldStyleLinkageRuleAction,
     };
     return field?.value?.map((item, index) => {
       return (

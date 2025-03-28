@@ -5,6 +5,154 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v1.6.12](https://github.com/nocobase/nocobase/compare/v1.6.11...v1.6.12) - 2025-03-27
+
+### 🐛 Bug Fixes
+
+- **[Block: Multi-step form]**
+  - the submit button has the same color in its default and highlighted by @jiannx
+
+  - fixed the bug that form reset is invalid when the field is associated with other field by @jiannx
+
+- **[Workflow: Approval]** Fix approval form values to submit by @mytharcher
+
+## [v1.6.11](https://github.com/nocobase/nocobase/compare/v1.6.10...v1.6.11) - 2025-03-27
+
+### 🚀 Improvements
+
+- **[client]**
+  - Optimize 502 error message ([#6547](https://github.com/nocobase/nocobase/pull/6547)) by @chenos
+
+  - Only support plain text file to preview ([#6563](https://github.com/nocobase/nocobase/pull/6563)) by @mytharcher
+
+- **[Collection field: Sequence]** support setting sequence as the title field for calendar block ([#6562](https://github.com/nocobase/nocobase/pull/6562)) by @katherinehhh
+
+- **[Workflow: Approval]** Support to skip validator in settings by @mytharcher
+
+### 🐛 Bug Fixes
+
+- **[client]**
+  - issue with date field display in data scope filtering ([#6564](https://github.com/nocobase/nocobase/pull/6564)) by @katherinehhh
+
+  - The 'Ellipsis overflow content' option requires a page refresh for the toggle state to take effect ([#6520](https://github.com/nocobase/nocobase/pull/6520)) by @zhangzhonghe
+
+  - Unable to open another modal within a modal ([#6535](https://github.com/nocobase/nocobase/pull/6535)) by @zhangzhonghe
+
+- **[API documentation]** API document page cannot scroll ([#6566](https://github.com/nocobase/nocobase/pull/6566)) by @zhangzhonghe
+
+- **[Workflow]** Make sure workflow key is generated before save ([#6567](https://github.com/nocobase/nocobase/pull/6567)) by @mytharcher
+
+- **[Workflow: Post-action event]** Multiple records in bulk action should trigger multiple times ([#6559](https://github.com/nocobase/nocobase/pull/6559)) by @mytharcher
+
+- **[Authentication]** Localization issue for fields of sign up page ([#6556](https://github.com/nocobase/nocobase/pull/6556)) by @2013xile
+
+- **[Public forms]** issue with public form page title displaying 'Loading...' ([#6569](https://github.com/nocobase/nocobase/pull/6569)) by @katherinehhh
+
+## [v1.6.10](https://github.com/nocobase/nocobase/compare/v1.6.9...v1.6.10) - 2025-03-25
+
+### 🐛 Bug Fixes
+
+- **[client]**
+  - Unable to use 'Current User' variable when adding a link page ([#6536](https://github.com/nocobase/nocobase/pull/6536)) by @zhangzhonghe
+
+  - field assignment with null value is ineffective ([#6549](https://github.com/nocobase/nocobase/pull/6549)) by @katherinehhh
+
+  - `yarn doc` command error ([#6540](https://github.com/nocobase/nocobase/pull/6540)) by @gchust
+
+  - Remove the 'Allow multiple selection' option from dropdown single-select fields in filter forms ([#6515](https://github.com/nocobase/nocobase/pull/6515)) by @zhangzhonghe
+
+  - Relational field's data range linkage is not effective ([#6530](https://github.com/nocobase/nocobase/pull/6530)) by @zhangzhonghe
+
+- **[Collection: Tree]** Migration issue for plugin-collection-tree ([#6537](https://github.com/nocobase/nocobase/pull/6537)) by @2013xile
+
+- **[Action: Custom request]** Unable to download UTF-8 encoded files ([#6541](https://github.com/nocobase/nocobase/pull/6541)) by @2013xile
+
+## [v1.6.9](https://github.com/nocobase/nocobase/compare/v1.6.8...v1.6.9) - 2025-03-23
+
+### 🐛 Bug Fixes
+
+- **[client]** action button transparency causing setting display issue on hover ([#6529](https://github.com/nocobase/nocobase/pull/6529)) by @katherinehhh
+
+## [v1.6.8](https://github.com/nocobase/nocobase/compare/v1.6.7...v1.6.8) - 2025-03-22
+
+### 🐛 Bug Fixes
+
+- **[server]** The upgrade command may cause workflow errors ([#6524](https://github.com/nocobase/nocobase/pull/6524)) by @gchust
+
+- **[client]** the height of the subtable in the form is set along with the form height ([#6518](https://github.com/nocobase/nocobase/pull/6518)) by @katherinehhh
+
+- **[Authentication]**
+  - X-Authenticator missing ([#6526](https://github.com/nocobase/nocobase/pull/6526)) by @chenos
+
+  - Trim authenticator options ([#6527](https://github.com/nocobase/nocobase/pull/6527)) by @2013xile
+
+- **[Block: Map]** map block key management issue causing request failures due to invisible characters ([#6521](https://github.com/nocobase/nocobase/pull/6521)) by @katherinehhh
+
+- **[Backup manager]** Restoration may cause workflow execution errors by @gchust
+
+- **[WeCom]** Resolve environment variables and secrets when retrieving notification configuration. by @2013xile
+
+## [v1.6.7](https://github.com/nocobase/nocobase/compare/v1.6.6...v1.6.7) - 2025-03-20
+
+### 🚀 Improvements
+
+- **[Workflow: mailer node]** Add secure field config description. ([#6510](https://github.com/nocobase/nocobase/pull/6510)) by @sheldon66
+
+- **[Notification: Email]** Add secure field config description. ([#6501](https://github.com/nocobase/nocobase/pull/6501)) by @sheldon66
+
+- **[Calendar]** Calendar plugin with optional settings to enable or disable quick event creation ([#6391](https://github.com/nocobase/nocobase/pull/6391)) by @Cyx649312038
+
+### 🐛 Bug Fixes
+
+- **[client]** time field submission error in Chinese locale (invalid input syntax for type time) ([#6511](https://github.com/nocobase/nocobase/pull/6511)) by @katherinehhh
+
+- **[File manager]** Unable to access files stored in COS ([#6512](https://github.com/nocobase/nocobase/pull/6512)) by @chenos
+
+- **[Block: Map]** secret key fields not triggering validation in map management ([#6509](https://github.com/nocobase/nocobase/pull/6509)) by @katherinehhh
+
+- **[WEB client]** The path in the route management table is different from the actual path ([#6483](https://github.com/nocobase/nocobase/pull/6483)) by @zhangzhonghe
+
+- **[Action: Export records Pro]** Unable to export attachments by @chenos
+
+- **[Workflow: Approval]**
+  - Fix null user caused crash by @mytharcher
+
+  - Fix error thrown when add query node result by @mytharcher
+
+## [v1.6.6](https://github.com/nocobase/nocobase/compare/v1.6.5...v1.6.6) - 2025-03-18
+
+### 🎉 New Features
+
+- **[client]** support long text fields as title fields for association field ([#6495](https://github.com/nocobase/nocobase/pull/6495)) by @katherinehhh
+
+- **[Workflow: Aggregate node]** Support to configure precision for aggregation result ([#6491](https://github.com/nocobase/nocobase/pull/6491)) by @mytharcher
+
+### 🚀 Improvements
+
+- **[File storage: S3(Pro)]** Change the text 'Access URL Base' to 'Base URL' by @zhangzhonghe
+
+### 🐛 Bug Fixes
+
+- **[evaluators]** Revert round decimal places to 9 ([#6492](https://github.com/nocobase/nocobase/pull/6492)) by @mytharcher
+
+- **[File manager]** encode url ([#6497](https://github.com/nocobase/nocobase/pull/6497)) by @chenos
+
+- **[Data source: Main]** Unable to create a MySQL view. ([#6477](https://github.com/nocobase/nocobase/pull/6477)) by @aaaaaajie
+
+- **[Workflow]** Fix legacy tasks count after workflow deleted ([#6493](https://github.com/nocobase/nocobase/pull/6493)) by @mytharcher
+
+- **[Embed NocoBase]** Page displays blank by @zhangzhonghe
+
+- **[Backup manager]**
+  - Upload files have not been restored when creating sub-app from backup template by @gchust
+
+  - MySQL database restore failure caused by GTID set overlap by @gchust
+
+- **[Workflow: Approval]**
+  - Change returned approval as todo by @mytharcher
+
+  - Fix action button missed in process table by @mytharcher
+
 ## [v1.6.5](https://github.com/nocobase/nocobase/compare/v1.6.4...v1.6.5) - 2025-03-17
 
 ### 🚀 Improvements

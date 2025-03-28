@@ -8,6 +8,7 @@
  */
 
 import { observer, useField, useFieldSchema } from '@formily/react';
+import { transformMultiColumnToSingleColumn } from '@nocobase/utils/client';
 import { Select, Space } from 'antd';
 import { differenceBy, unionBy } from 'lodash';
 import React, { useContext, useMemo, useState } from 'react';
@@ -37,7 +38,6 @@ import { ActionContextProvider } from '../action';
 import { useAssociationFieldContext, useFieldNames, useInsertSchema } from './hooks';
 import schema from './schema';
 import { flatData, getLabelFormatValue, useLabelUiSchema } from './util';
-import { transformMultiColumnToSingleColumn } from '@nocobase/utils/client';
 
 export const useTableSelectorProps = () => {
   const field: any = useField();
@@ -158,6 +158,10 @@ export const InternalPicker = observer(
       }),
       [],
     );
+    const newSchema = useMemo(
+      () => (isMobileLayout ? transformMultiColumnToSingleColumn(fieldSchema) : fieldSchema),
+      [isMobileLayout, fieldSchema],
+    );
 
     return (
       <PopupSettingsProvider enableURL={false}>
@@ -229,7 +233,7 @@ export const InternalPicker = observer(
                     <NocoBaseRecursionField
                       onlyRenderProperties
                       basePath={field.address}
-                      schema={isMobileLayout ? transformMultiColumnToSingleColumn(fieldSchema) : fieldSchema}
+                      schema={newSchema}
                       filterProperties={(s) => {
                         return s['x-component'] === 'AssociationField.Selector';
                       }}

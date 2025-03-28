@@ -574,6 +574,10 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
     this.log.info('app reinitializing');
 
+    // trigger the stop events to make sure old instances are cleaned up
+    await this.emitAsync('beforeStop');
+    await this.emitAsync('afterStop');
+
     if (this.cacheManager) {
       await this.cacheManager.close();
     }
@@ -953,6 +957,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     }
 
     await this.emitAsync('afterStop', this, options);
+    this.emit('__stopped', this, options);
 
     this.stopped = true;
     log.info(`app has stopped`, { method: 'stop' });

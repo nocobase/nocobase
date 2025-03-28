@@ -14,8 +14,9 @@ import { parseAssociationNames } from './hook';
 class PasswordError extends Error {}
 
 export class PluginPublicFormsServer extends Plugin {
-  async parseCollectionData(formCollection, appends) {
-    const collection = this.db.getCollection(formCollection);
+  async parseCollectionData(dataSourceKey, formCollection, appends) {
+    const dataSource = this.app.dataSourceManager.dataSources.get(dataSourceKey);
+    const collection = dataSource.collectionManager.getCollection(formCollection);
     const collections = [
       {
         name: collection.name,
@@ -73,10 +74,11 @@ export class PluginPublicFormsServer extends Plugin {
     const keys = instance.collection.split(':');
     const collectionName = keys.pop();
     const dataSourceKey = keys.pop() || 'main';
+    const title = instance.get('title');
     const schema = await uiSchema.getJsonSchema(filterByTk);
     const { getAssociationAppends } = parseAssociationNames(dataSourceKey, collectionName, this.app, schema);
     const { appends } = getAssociationAppends();
-    const collections = await this.parseCollectionData(collectionName, appends);
+    const collections = await this.parseCollectionData(dataSourceKey, collectionName, appends);
     return {
       dataSource: {
         key: dataSourceKey,
@@ -94,6 +96,7 @@ export class PluginPublicFormsServer extends Plugin {
         },
       ),
       schema,
+      title,
     };
   }
 
@@ -170,8 +173,9 @@ export class PluginPublicFormsServer extends Plugin {
       };
     } else if (
       (actionName === 'list' && ctx.PublicForm['targetCollections'].includes(resourceName)) ||
-      (collection.options.template === 'file' && actionName === 'create') ||
-      (resourceName === 'storages' && actionName === 'getBasicInfo') ||
+      (collection?.options.template === 'file' && actionName === 'create') ||
+      (resourceName === 'storages' && ['getBasicInfo', 'createPresignedUrl'].includes(actionName)) ||
+      (resourceName === 'vditor' && ['check'].includes(actionName)) ||
       (resourceName === 'map-configuration' && actionName === 'get')
     ) {
       ctx.permission = {

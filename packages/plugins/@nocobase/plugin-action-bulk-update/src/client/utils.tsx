@@ -68,7 +68,7 @@ export const useCustomizeBulkUpdateActionProps = () => {
           if (result) {
             assignedValues[key] = transformVariableValue(result, { targetCollectionField: collectionField });
           }
-        } else if (value != null && value !== '') {
+        } else if (value !== '') {
           assignedValues[key] = value;
         }
       });

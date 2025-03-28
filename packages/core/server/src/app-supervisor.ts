@@ -305,7 +305,7 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
       }
     });
 
-    app.on('afterStop', async () => {
+    app.on('__stopped', async () => {
       this.setAppStatus(app.name, 'stopped');
     });
 

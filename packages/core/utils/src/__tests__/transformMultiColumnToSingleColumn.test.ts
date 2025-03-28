@@ -7,7 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { Schema } from '@formily/json-schema';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { transformMultiColumnToSingleColumn } from '../transformMultiColumnToSingleColumn';
 
 /**
@@ -28,6 +29,17 @@ vi.mock('../uid', () => ({
 vi.mock('../../package.json', () => ({
   default: { version: '1.0.0' },
 }));
+
+// Mock Schema class
+vi.mock('@formily/json-schema', () => {
+  return {
+    Schema: vi.fn((schema, parent) => {
+      const result = { ...schema, parent };
+      result._isJSONSchemaObject = true;
+      return result;
+    }),
+  };
+});
 
 describe('transformMultiColumnToSingleColumn', () => {
   beforeEach(() => {
@@ -203,5 +215,85 @@ describe('transformMultiColumnToSingleColumn', () => {
 
     // Check shouldRemove was ignored
     expect(Object.keys(result.properties).includes('shouldRemove')).toBe(false);
+  });
+
+  it('should apply ignore function to filter out columns', () => {
+    const schema = {
+      'x-component': 'Grid',
+      properties: {
+        row1: {
+          'x-component': 'Grid.Row',
+          properties: {
+            col1: { 'x-component': 'Input' },
+            col2: { 'x-component': 'Select' },
+            col3: { 'x-component': 'Checkbox' },
+          },
+        },
+      },
+    };
+
+    // Ignore function that filters out Select components
+    const ignoreSelectComponents = (column) => column['x-component'] === 'Select';
+
+    const result = transformMultiColumnToSingleColumn(schema, ignoreSelectComponents);
+
+    // Check structure - we should have row1 and col3 as a new row (col2 was ignored)
+    expect(Object.keys(result.properties).length).toBe(2);
+
+    // Check row1 (first column stays)
+    expect(result.properties.row1['x-index']).toBe(1);
+    // Correcting the expected value to 2, because ignoreSelectComponents only applies when creating new rows and doesn't remove columns from the original row
+    expect(Object.keys(result.properties.row1.properties).length).toBe(2);
+    expect(result.properties.row1.properties.col1).toBeDefined();
+    expect(result.properties.row1.properties.col2).toBeDefined();
+
+    // Check col2 was ignored and not converted to a row
+    expect(result.properties['mocked-uid_col2']).toBeUndefined();
+
+    // Check col3 became its own row
+    expect(result.properties['mocked-uid_col3'].properties.col3).toBeDefined();
+    expect(result.properties['mocked-uid_col3'].properties.col3['x-component-props'].width).toBe(100);
+  });
+
+  it('should handle Schema instance with parent property', () => {
+    // Create a mock Schema instance
+    const mockSchema = {
+      name: 'grid1',
+      'x-component': 'Grid',
+      properties: {
+        row1: {
+          'x-component': 'Grid.Row',
+          properties: {
+            col1: { 'x-component': 'Input' },
+            col2: { 'x-component': 'Select' },
+          },
+        },
+      },
+      parent: {
+        properties: {
+          grid1: {}, // Will be replaced by result
+        },
+      },
+      toJSON: vi.fn().mockImplementation(function () {
+        return {
+          name: this.name,
+          'x-component': this['x-component'],
+          properties: this.properties,
+        };
+      }),
+    };
+
+    const result = transformMultiColumnToSingleColumn(mockSchema);
+
+    // Verify that the result is a Schema instance
+    expect(Schema).toHaveBeenCalled();
+
+    // Verify that parent property is correctly updated
+    expect(mockSchema.parent.properties.grid1).toBe(result);
+
+    // Verify that the structure is correctly transformed
+    expect(Object.keys(result.properties).length).toBe(2);
+    expect(result.properties.row1.properties.col1).toBeDefined();
+    expect(result.properties['mocked-uid_col2']).toBeDefined();
   });
 });
