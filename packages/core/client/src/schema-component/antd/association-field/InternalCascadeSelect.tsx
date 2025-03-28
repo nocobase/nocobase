@@ -154,7 +154,11 @@ const CascadeSelect = connect((props) => {
     } else {
       associationField.value = option;
     }
-    onChange?.(options);
+    if (options.length === 1 && !options[0].value) {
+      onChange?.(null);
+    } else {
+      onChange?.(options);
+    }
   };
 
   const onDropdownVisibleChange = async (visible, selectedValue, index) => {
