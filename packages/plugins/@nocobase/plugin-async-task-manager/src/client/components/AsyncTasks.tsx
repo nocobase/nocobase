@@ -270,14 +270,15 @@ const AsyncTasksButton = (props) => {
                 onClick={() => {
                   const token = app.apiClient.auth.token;
                   const collection = cm.getCollection(record.title.collection);
-                  const compiledTitle = compile(collection.title);
+                  const compiledTitle = compile(collection?.title);
                   const suffix = record?.title?.actionType === 'export-attachments' ? '-attachments.zip' : '.xlsx';
                   const fileText = `${compiledTitle}${suffix}`;
-                  const filename = encodeURIComponent(fileText); // 避免中文或特殊字符问题
+                  const filename =
+                    record?.title?.actionType !== 'create migration' ? encodeURIComponent(fileText) : null;
                   const url = app.getApiUrl(
                     `asyncTasks:fetchFile/${record.taskId}?token=${token}&__appName=${encodeURIComponent(
                       appInfo?.data?.name || app.name,
-                    )}&filename=${filename}`,
+                    )}${filename ? `&filename=${filename}` : ''}`,
                   );
                   window.open(url);
                 }}
