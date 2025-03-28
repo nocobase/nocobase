@@ -18,4 +18,5 @@ export type Helper = {
   sort: number;
   args: string[];
   uiSchema?: any[];
+  Component?: React.FC<{ value: any; onChange: (value: any) => void }>;
 };

@@ -1,14 +1,21 @@
 # Variable
 
-变量选择器。
+变量选择器组件，用于在表单和配置中选择和设置变量。
 
 ## `Variable.Input`
 
-### scope 定义
+### Scope 定义
 
-scope 可以定义变量的 label, value , type
-变量的 type 会匹配对应的 helper 函数，对变量进行二次处理。目前内置了 date.format , date.offset 的 helpers。也就是说如果变量的类型是 date, 会匹配到对应的过滤器。如果变量是其他类型或者无类型，都无法匹配到过滤器。
+Scope 用于定义变量的基本属性，包括：
+- `label`: 显示名称
+- `value`: 变量值
+- `type`: 变量类型
 
+变量的 `type` 属性会匹配对应的 helper 函数，用于对变量进行二次处理。目前内置了以下 helper：
+- `date.format`: 日期格式化
+- `date.offset`: 日期偏移
+
+只有类型为 `date` 的变量才能匹配到对应的过滤器，其他类型或无类型的变量无法使用这些过滤器。
 
 ```ts
 const scope = [
@@ -19,79 +26,97 @@ const scope = [
 
 <code src="./demos/scope.tsx"></code>
 
-### helper 示例
+### Helper 示例
+
+目前支持两个内置的 helper 函数：
+
+1. **date.format**
+   - 用于格式化日期变量
+   - 支持常见的日期格式，如 'YYYY-MM-DD'、'YYYY-MM-DD HH:mm:ss' 等
+   - 示例：`{{$date.now | date.format 'YYYY-MM-DD'}}`
+
+2. **date.offset**
+   - 用于对日期进行偏移计算
+   - 支持年、月、日、时、分、秒的偏移
+   - 示例：`{{$date.now | date.offset '1d'}}`（向后偏移1天）
+
 <code src="./demos/helper-demo.tsx"></code>
 
-### 变量值如何获取
-1. VariableEvaluateProvider 上下文获取
-提供 VariableEvaluateProvider 上下文，可以注入 data 属性
-2. 从 scope 中的 example 属性获取
-某些变量在前端无法获取到实际值（如服务端环境下的变量），但是有需要提供一个示例值方便应用 helpers，可以在声明 scope 选项时带上示例值，如 `{label: 'v1' , value: 'v1', example: 'example-value-v1'}`
+### 变量值获取方式
 
-一下是一个完整的例子，变量 v1 由上下文提供值，变量 v2 由 example 提供值。鼠标悬浮在变量名称上即可查看对应变量的值。
+变量值可以通过以下两种方式获取：
+
+1. **VariableEvaluateProvider 上下文**
+   - 通过提供 VariableEvaluateProvider 上下文
+   - 可以注入 data 属性来获取变量值
+
+2. **Scope 中的 example 属性**
+   - 适用于前端无法获取实际值的场景（如服务端环境下的变量）
+   - 通过 example 属性提供示例值，方便应用 helpers
+   - 示例：`{label: 'v1', value: 'v1', example: 'example-value-v1'}`
+
+下面的示例展示了两种方式：
+- 变量 v1 通过上下文获取值
+- 变量 v2 通过 example 获取值
+- 鼠标悬浮在变量名称上可查看对应变量的值
+
 <code src="./demos/variable-value.tsx"></code>
 
 ### 应用场景
-#### 默认值 (由于 demo 所限，默认值不会生效)
-默认值场景需要应用变量，并且同一个字面意义的变量根据字段的类型不同需要有不同的值。
-以日期的今天为例，如果是 dateOnly 类型的字段要输出 2025-01-01，如果是无时区的 dateitme，则需要输出 2025-01-01 00:00:00,
-如果是有时区 datetime, 则要输出 2024-12-31T16:00:00.000Z
-所以今天需要提供三个变量，`today_withtz`, `today_withouttz`, `today_dateonly`
+
+#### 1. 默认值设置
+根据字段类型的不同，同一个变量可能需要不同的值。以"今天"为例：
+- `dateOnly` 类型：输出 `2025-01-01`
+- 无时区 `datetime`：输出 `2025-01-01 00:00:00`
+- 有时区 `datetime`：输出 `2024-12-31T16:00:00.000Z`
+
+因此需要提供三个变量：
+- `today_withtz`
+- `today_withouttz`
+- `today_dateonly`
 
 <code src="./demos/form-default-value.tsx"></code>
 
-#### 数据范围
-
+#### 2. 数据范围
 <code src="./demos/data-scope-demo.tsx"></code>
 
-### 变量选中并已被禁用的效果
-当变量被禁用时，不影响已经选中的变量显示。在下面的例子中，now 变量已被禁用：
+### dateFormat 组件优化
+<code src="./demos/format-configuator.tsx"></code>
+### 变量禁用状态
+当变量被禁用时，已选中的变量值仍然保持显示。下面的示例展示了 `now` 变量被禁用的情况：
 
 <code src="./demos/selected-and-disable.tsx"></code>
 
+### 组件属性
+
 ```ts
 import type { DefaultOptionType } from 'antd/lib/cascader';
- type VariableInputProps = {
-  value?: string;
-  scope?: DefaultOptionType[] | (() => DefaultOptionType[]);
-  onChange: (value: string, optionPath?: any[]) => void;
-  children?: any;
-  button?: React.ReactElement;
-  useTypedConstant?: true | string[];
-  changeOnSelect?: CascaderProps['changeOnSelect'];
-  fieldNames?: CascaderProps['fieldNames'];
-  disabled?: boolean;
-  style?: React.CSSProperties;
-  className?: string;
-  parseOptions?: ParseOptions;
+
+type VariableInputProps = {
+  value?: string;                    // 变量值
+  scope?: DefaultOptionType[] | (() => DefaultOptionType[]);  // 变量范围
+  onChange: (value: string, optionPath?: any[]) => void;      // 值变化回调
+  children?: any;                   // 子组件
+  button?: React.ReactElement;      // 自定义按钮
+  useTypedConstant?: true | string[];  // 使用类型常量
+  changeOnSelect?: CascaderProps['changeOnSelect'];  // 选择时是否触发变化
+  fieldNames?: CascaderProps['fieldNames'];  // 字段名称映射
+  disabled?: boolean;               // 是否禁用
+  style?: React.CSSProperties;      // 样式
+  className?: string;               // 类名
+  parseOptions?: ParseOptions;      // 解析选项
 }
 
 type ParseOptions = {
-  stringToDate?: boolean;
+  stringToDate?: boolean;  // 是否将字符串转换为日期
 };
 ```
 
-<code src="./demos/demo1.tsx"></code>
 
-### 支持 helper 助手函数
-目前变量支持添加助手函数进行二次处理，不同的变量可能支持不同的助手函数，助手函数还支持分组。
-Input 组件支持传入 variableHelperMapping 属性来标记变量支持哪些助手函数。
-例如，日期变量只支持日期相关的助手函数，则可配置
-```ts
-const variableHelperMapping = {
-          rules: [
-            {
-              variable: '$date.*',
-              helpers: ['date.*'],
-            },
-          ],
-        },
+### 变量上下文
 
-```
-<code src="./demos/demo1.tsx"></code>
+同一个变量在不同的运行时环境可能有不同的值，因此需要为变量提供上下文环境。
 
-### 不同的变量有不同的上下文
-同一个变量在不同的运行时环境它的值也不同，所以有必要为变量提供上下文环境。
 ## `Variable.TextArea`
 
 <code src="./demos/demo2.tsx"></code>

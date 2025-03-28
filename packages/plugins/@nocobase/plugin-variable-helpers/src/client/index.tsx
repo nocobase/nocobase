@@ -9,26 +9,26 @@
 
 import { Plugin } from '@nocobase/client';
 import { helperGroups, helpers } from '../json-template-helpers';
+import { HelperComponents } from './components';
 export class PluginVariableFiltersClient extends Plugin {
   async afterAdd() {
     helperGroups.forEach((group) => {
       this.app.jsonTemplateParser.registerFilterGroup(group);
     });
 
-    helpers.forEach((filter) => {
-      this.app.jsonTemplateParser.registerFilter(filter);
+    helpers.forEach((helper) => {
+      const HelperComponent = HelperComponents[helper.name];
+      if (HelperComponent) {
+        helper.Component = HelperComponent;
+      }
+      this.app.jsonTemplateParser.registerFilter(helper);
     });
   }
 
   async beforeLoad() {}
 
   // You can get and modify the app instance here
-  async load() {
-    // this.app.addScopes({})
-    // this.app.addProvider()
-    // this.app.addProviders()
-    // this.app.router.add()
-  }
+  async load() {}
 }
 
 export default PluginVariableFiltersClient;
