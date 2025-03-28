@@ -51,7 +51,11 @@ describe('union role: full permissions', async () => {
         roles: [role1.name, role2.name],
       },
     });
-
+    await rootAgent.resource('roles').setSystemRoleMode({
+      values: {
+        roleMode: SystemRoleMode.allowUseUnion,
+      },
+    });
     agent = await app.agent().login(user, UNION_ROLE_KEY);
   });
 
@@ -415,15 +419,15 @@ describe('union role: full permissions', async () => {
     const rootAgent = await app.agent().login(rootUser);
     let rolesResponse = await agent.resource('roles').check();
     expect(rolesResponse.status).toBe(200);
-    expect(rolesResponse.body.data.roleMode).toStrictEqual(SystemRoleMode.default);
+    expect(rolesResponse.body.data.roleMode).toStrictEqual(SystemRoleMode.allowUseUnion);
     await rootAgent.resource('roles').setSystemRoleMode({
       values: {
-        roleMode: SystemRoleMode.allowUseUnion,
+        roleMode: SystemRoleMode.default,
       },
     });
     rolesResponse = await agent.resource('roles').check();
     expect(rolesResponse.status).toBe(200);
-    expect(rolesResponse.body.data.roleMode).toStrictEqual(SystemRoleMode.allowUseUnion);
+    expect(rolesResponse.body.data.roleMode).toStrictEqual(SystemRoleMode.default);
   });
 
   it(`should response no permission when createdById field is missing in data tables`, async () => {
@@ -500,5 +504,30 @@ describe('union role: full permissions', async () => {
     getRolesResponse = await agent.resource('roles').list({ pageSize: 30 });
     expect(getRolesResponse.statusCode).toBe(200);
     expect(getRolesResponse.body.meta.allowedActions.update.length).toBe(0);
+  });
+
+  it('should login successfully when use __union__ role in allowUseUnion mode #1906', async () => {
+    const rootAgent = await app.agent().login(rootUser);
+    await rootAgent.resource('roles').setSystemRoleMode({
+      values: {
+        roleMode: SystemRoleMode.allowUseUnion,
+      },
+    });
+    agent = await app.agent().login(user);
+    const createRoleResponse = await agent.resource('roles').check();
+    expect(createRoleResponse.statusCode).toBe(200);
+  });
+
+  it('should currentRole not be __union__ when default role mode #1907', async () => {
+    const rootAgent = await app.agent().login(rootUser);
+    await rootAgent.resource('roles').setSystemRoleMode({
+      values: {
+        roleMode: SystemRoleMode.default,
+      },
+    });
+    agent = await app.agent().login(user, UNION_ROLE_KEY);
+    const createRoleResponse = await agent.resource('roles').check();
+    expect(createRoleResponse.statusCode).toBe(200);
+    expect(createRoleResponse.body.data.role).not.toBe(UNION_ROLE_KEY);
   });
 });
