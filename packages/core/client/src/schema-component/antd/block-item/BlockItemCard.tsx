@@ -10,9 +10,9 @@
 import { Card, CardProps } from 'antd';
 import React, { useMemo, useRef, useEffect, createContext, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-
 import { useToken } from '../../../style';
 import { MarkdownReadPretty } from '../markdown';
+import { NAMESPACE_UI_SCHEMA } from '../../../i18n/constant';
 
 export const BlockItemCardContext = createContext({});
 
@@ -41,10 +41,10 @@ export const BlockItemCard = React.forwardRef<HTMLDivElement, CardProps | any>((
   }, [blockTitle, description]);
   const title = (blockTitle || description) && (
     <div ref={titleRef} style={{ padding: '8px 0px 8px' }}>
-      <span> {t(blockTitle, { ns: 'ui-schema-storage' })}</span>
+      <span> {t(blockTitle, { ns: NAMESPACE_UI_SCHEMA })}</span>
       {description && (
         <MarkdownReadPretty
-          value={props.description}
+          value={t(description, { ns: NAMESPACE_UI_SCHEMA })}
           style={{
             overflowWrap: 'break-word',
             whiteSpace: 'normal',
