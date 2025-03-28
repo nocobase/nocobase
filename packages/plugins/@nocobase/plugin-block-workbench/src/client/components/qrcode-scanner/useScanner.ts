@@ -56,7 +56,7 @@ export function useScanner({ onScannerSizeChanged, elementId, onScanSuccess }) {
         undefined,
       );
     },
-    [navigate, onScannerSizeChanged, viewPoint, basename],
+    [navigate, onScannerSizeChanged, viewPoint, basename, onScanSuccess],
   );
   const stopScanner = useCallback(async (scanner: Html5Qrcode) => {
     const state = scanner.getState();
