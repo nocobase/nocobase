@@ -9,7 +9,7 @@
 import { FileImageOutlined, LeftOutlined } from '@ant-design/icons';
 import { useActionContext } from '@nocobase/client';
 import { Html5Qrcode } from 'html5-qrcode';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ScanBox } from './ScanBox';
 import { useScanner } from './useScanner';
@@ -23,10 +23,17 @@ export const QRCodeScannerInner = ({ setVisible }) => {
   const vw = Math.max(document.documentElement.clientWidth || 0, window.innerWidth || 0);
   const vh = Math.max(document.documentElement.clientHeight || 0, window.innerHeight || 0);
 
+  const onScanSuccess = useCallback(
+    (text) => {
+      setVisible(false);
+    },
+    [setVisible],
+  );
+
   const { startScanFile } = useScanner({
     onScannerSizeChanged: setOriginVideoSize,
     elementId: qrcodeEleId,
-    onScanSuccess: () => setVisible(false),
+    onScanSuccess,
   });
 
   const getBoxStyle = (): React.CSSProperties => {

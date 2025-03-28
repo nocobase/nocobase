@@ -50,6 +50,10 @@ export function useScanner({ onScannerSizeChanged, elementId, onScanSuccess }) {
           },
         },
         (text) => {
+          if (text?.startsWith('http')) {
+            window.location.href = text;
+            return;
+          }
           navigate(removeStringIfStartsWith(text, basename));
           onScanSuccess && onScanSuccess(text);
         },
@@ -70,6 +74,10 @@ export function useScanner({ onScannerSizeChanged, elementId, onScanSuccess }) {
       await stopScanner(scanner);
       try {
         const { decodedText } = await scanner.scanFileV2(file, false);
+        if (decodedText?.startsWith('http')) {
+          window.location.href = decodedText;
+          return;
+        }
         navigate(removeStringIfStartsWith(decodedText, basename));
         onScanSuccess && onScanSuccess(decodedText);
       } catch (error) {
