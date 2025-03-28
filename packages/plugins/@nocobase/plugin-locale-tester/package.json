@@ -5,7 +5,6 @@
   "version": "1.7.0-alpha.10",
   "homepage": "https://github.com/nocobase/locales",
   "main": "dist/server/index.js",
-  "dependencies": {},
   "peerDependencies": {
     "@nocobase/client": "1.x",
     "@nocobase/server": "1.x",
