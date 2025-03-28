@@ -8,7 +8,7 @@
  */
 
 import lodash from 'lodash';
-import { FindAttributeOptions, ModelStatic, Op, Sequelize } from 'sequelize';
+import { Dialect, FindAttributeOptions, ModelStatic, Op, Sequelize } from 'sequelize';
 import { Collection } from './collection';
 import { Database } from './database';
 import FilterParser from './filter-parser';
@@ -34,7 +34,7 @@ export class OptionsParser {
   model: ModelStatic<any>;
   filterParser: FilterParser;
   context: OptionsParserContext;
-  static fieldSortMap: Map<string, FieldSortOptions> = new Map();
+  static fieldSortMap: Map<Dialect, FieldSortOptions> = new Map();
 
   constructor(options: FindOptions, context: OptionsParserContext) {
     const { collection } = context;
@@ -74,7 +74,7 @@ export class OptionsParser {
     ]);
   }
 
-  static registerFieldSort(dialectName: string, options: FieldSortOptions) {
+  static registerFieldSort(dialectName: Dialect, options: FieldSortOptions) {
     this.fieldSortMap.set(dialectName, options);
   }
 

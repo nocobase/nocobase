@@ -56,6 +56,10 @@ export abstract class Field {
     return this.options.type;
   }
 
+  get defaultValue() {
+    return this.options.defaultValue;
+  }
+
   abstract get dataType(): any;
 
   isRelationField() {

@@ -104,7 +104,7 @@ describe('belongs to many with collection that has no id key', () => {
     await db.close();
   });
 
-  it.only('should set relation', async () => {
+  it('should set relation', async () => {
     const A = db.collection({
       name: 'a',
       autoGenId: false,

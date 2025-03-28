@@ -14,8 +14,6 @@ describe('default value', () => {
 
   beforeEach(async () => {
     db = await createMockDatabase({});
-
-    await db.clean({ drop: true });
   });
 
   afterEach(async () => {
@@ -23,9 +21,6 @@ describe('default value', () => {
   });
 
   it('should sync field default value', async () => {
-    if (db.options.dialect === 'mssql') {
-      return;
-    }
     const User = db.collection({
       name: 'users',
       fields: [

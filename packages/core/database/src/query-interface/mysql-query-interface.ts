@@ -9,14 +9,14 @@
 
 /* istanbul ignore file -- @preserve */
 
-import { Transaction, Transactionable } from 'sequelize';
+import { ModelStatic, Transaction, Transactionable } from 'sequelize';
 import { Collection } from '../collection';
 import sqlParser from '../sql-parser';
-import QueryInterface, { TableInfo } from './query-interface';
+import QueryInterface, { ChangeColumnOptions, TableInfo } from './query-interface';
 
 export default class MysqlQueryInterface extends QueryInterface {
   constructor(db) {
-    super(db);
+    super(db, { changeColumnMode: 'sequelize' });
   }
 
   async collectionTableExists(collection: Collection, options?: Transactionable) {
@@ -140,5 +140,9 @@ export default class MysqlQueryInterface extends QueryInterface {
       const sql = `ALTER TABLE ${this.quoteIdentifier(tableInfo.tableName)} AUTO_INCREMENT = ${currentVal};`;
       await this.db.sequelize.query(sql, { transaction });
     }
+  }
+
+  changeColumnDefaultValueSQL(options: ChangeColumnOptions): Promise<string> {
+    return null;
   }
 }

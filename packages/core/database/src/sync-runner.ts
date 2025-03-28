@@ -232,6 +232,7 @@ export class SyncRunner {
           defaultValue: attributeDefaultValue,
         };
 
+        // TODO: use dialect QueryInterface to change column default value
         if (this.database.inDialect('postgres')) {
           // @ts-ignore
           const query = this.queryInterface.queryGenerator.attributesToSQL(
@@ -252,7 +253,15 @@ export class SyncRunner {
 
           await this.sequelize.query(sql.replace(regex, ''), options);
         } else {
-          await this.queryInterface.changeColumn(this.tableName, columnName, changeAttribute, options);
+          await this.database.queryInterface.changeColumn({
+            actions: ['setDefaultValue'],
+            tableName: this.tableName as string,
+            columnDescription: changeAttribute,
+            columnName: columnName,
+            model: this.model,
+            schema: options?.schema,
+            options,
+          });
         }
       }
     }
