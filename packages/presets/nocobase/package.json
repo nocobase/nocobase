@@ -43,6 +43,7 @@
     "@nocobase/plugin-gantt": "1.6.12",
     "@nocobase/plugin-graph-collection-manager": "1.6.12",
     "@nocobase/plugin-kanban": "1.6.12",
+    "@nocobase/plugin-locale-tester": "1.6.12",
     "@nocobase/plugin-localization": "1.6.12",
     "@nocobase/plugin-logger": "1.6.12",
     "@nocobase/plugin-map": "1.6.12",
