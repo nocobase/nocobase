@@ -10,18 +10,10 @@
 import { Liquid, TokenKind } from 'liquidjs';
 import { get } from 'lodash';
 import { escape, revertEscape } from '../escape';
+import { Helper } from '../types';
 type FilterGroup = {
   name: string;
   title: string;
-  sort: number;
-};
-
-type Helper = {
-  name: string;
-  title: string;
-  handler: (...args: any[]) => any;
-  group: string;
-  uiSchema?: any;
   sort: number;
 };
 
@@ -48,7 +40,7 @@ export class JSONTemplateParser {
     this._filters = [];
   }
 
-  get filters(): Array<Helper> {
+  get helpers(): Array<Helper> {
     return this._filters;
   }
 

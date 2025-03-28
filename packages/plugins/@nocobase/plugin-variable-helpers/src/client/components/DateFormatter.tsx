@@ -10,11 +10,11 @@
 import { css } from '@emotion/css';
 import { Checkbox, Input, Radio, Space } from 'antd';
 import dayjs from 'dayjs';
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 
 // Component for displaying a date format preview
-const DateFormatPreview = ({ format }) => {
-  const content = format ? dayjs().format(format) : null;
+const DateFormatPreview = ({ format, date }) => {
+  const content = format ? date.format(format) : null;
 
   if (!content) return null;
 
@@ -38,16 +38,24 @@ const DateFormatPreview = ({ format }) => {
 const DateFormat = ({
   value,
   onChange,
+  inputValue,
   picker = 'date',
   showTimeToggle = true,
   defaultShowTime = false,
   timeFormat: initialTimeFormat = 'HH:mm:ss',
   dateFormat: initialDateFormat = 'YYYY-MM-DD',
 }) => {
-  const [selectedFormat, setSelectedFormat] = useState(value || initialDateFormat);
+  const [selectedFormat, setSelectedFormat] = useState(value.format || initialDateFormat);
   const [isCustom, setIsCustom] = useState(false);
   const [showTime, setShowTime] = useState(defaultShowTime);
   const [timeFormat, setTimeFormat] = useState(initialTimeFormat);
+  const date = dayjs.isDayjs(inputValue) ? inputValue : dayjs(inputValue);
+  const onFormatChange = useCallback(
+    (format) => {
+      onChange?.({ format });
+    },
+    [onChange],
+  );
 
   // Date format options
   const dateFormatOptions = [
@@ -55,7 +63,7 @@ const DateFormat = ({
       label: (
         <>
           <span>MMMM Do YYYY</span>
-          <DateFormatPreview format="MMMM Do YYYY" />
+          <DateFormatPreview date={date} format="MMMM Do YYYY" />
         </>
       ),
       value: 'MMMM Do YYYY',
@@ -64,7 +72,7 @@ const DateFormat = ({
       label: (
         <>
           <span>YYYY-MM-DD</span>
-          <DateFormatPreview format="YYYY-MM-DD" />
+          <DateFormatPreview date={date} format="YYYY-MM-DD" />
         </>
       ),
       value: 'YYYY-MM-DD',
@@ -73,7 +81,7 @@ const DateFormat = ({
       label: (
         <>
           <span>MM/DD/YY</span>
-          <DateFormatPreview format="MM/DD/YY" />
+          <DateFormatPreview date={date} format="MM/DD/YY" />
         </>
       ),
       value: 'MM/DD/YY',
@@ -82,7 +90,7 @@ const DateFormat = ({
       label: (
         <>
           <span>YYYY/MM/DD</span>
-          <DateFormatPreview format="YYYY/MM/DD" />
+          <DateFormatPreview date={date} format="YYYY/MM/DD" />
         </>
       ),
       value: 'YYYY/MM/DD',
@@ -91,7 +99,7 @@ const DateFormat = ({
       label: (
         <>
           <span>DD/MM/YYYY</span>
-          <DateFormatPreview format="DD/MM/YYYY" />
+          <DateFormatPreview date={date} format="DD/MM/YYYY" />
         </>
       ),
       value: 'DD/MM/YYYY',
@@ -105,7 +113,7 @@ const DateFormat = ({
       label: (
         <>
           <span>hh:mm:ss a</span>
-          <DateFormatPreview format="hh:mm:ss a" />
+          <DateFormatPreview date={date} format="hh:mm:ss a" />
         </>
       ),
       value: 'hh:mm:ss a',
@@ -114,7 +122,7 @@ const DateFormat = ({
       label: (
         <>
           <span>HH:mm:ss</span>
-          <DateFormatPreview format="HH:mm:ss" />
+          <DateFormatPreview date={date} format="HH:mm:ss" />
         </>
       ),
       value: 'HH:mm:ss',
@@ -143,10 +151,10 @@ const DateFormat = ({
     if (picker !== 'date') {
       const newFormat = getPickerFormat(picker);
       setSelectedFormat(newFormat);
-      onChange?.(newFormat);
+      onFormatChange(newFormat);
       setShowTime(false);
     }
-  }, [picker]);
+  }, [picker, onFormatChange]);
 
   // Update parent component with combined format
   useEffect(() => {
@@ -156,8 +164,8 @@ const DateFormat = ({
       finalFormat = `${selectedFormat} ${timeFormat}`;
     }
 
-    onChange?.(finalFormat);
-  }, [selectedFormat, showTime, timeFormat]);
+    onFormatChange(finalFormat);
+  }, [selectedFormat, showTime, timeFormat, onFormatChange, picker]);
 
   // Handle date format change
   const handleDateFormatChange = (e) => {
@@ -209,7 +217,7 @@ const DateFormat = ({
                       onChange={handleCustomFormatChange}
                       onClick={(e) => e.stopPropagation()}
                     />
-                    <DateFormatPreview format={selectedFormat} />
+                    <DateFormatPreview date={date} format={selectedFormat} />
                   </>
                 ) : (
                   option.label
@@ -251,7 +259,7 @@ const DateFormat = ({
                             onChange={(e) => setTimeFormat(e.target.value)}
                             onClick={(e) => e.stopPropagation()}
                           />
-                          <DateFormatPreview format={timeFormat} />
+                          <DateFormatPreview date={date} format={timeFormat} />
                         </>
                       ) : (
                         option.label

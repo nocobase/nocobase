@@ -9,7 +9,7 @@
 import { createForm, onFormValuesChange } from '@formily/core';
 import { observer, useForm } from '@formily/react';
 import { dayjs, tval, uid } from '@nocobase/utils/client';
-import { Tag } from 'antd';
+import { Button, Card, Space, Tag } from 'antd';
 import { createMemoryHistory } from 'history';
 import debounce from 'lodash/debounce';
 import minimatch from 'minimatch';
@@ -72,8 +72,9 @@ const Configurator = observer(
     const { helpersObs, rawHelpersObs, removeHelper } = helperObservables;
     const helper = helpersObs.value[index];
     const rawHelper = rawHelpersObs.value[index];
-    const helperConfigs = app.jsonTemplateParser.filters;
+    const helperConfigs = app.jsonTemplateParser.helpers;
     const helperConfig = helperConfigs.find((item) => item.name === helper.name);
+    const HelperComponent = helperConfig.Component;
     const previousHelpers = helpersObs.value.slice(0, index);
     const inputValue = previousHelpers.reduce((value, helper) => {
       return helper.handler(value, ...helper.args);
@@ -184,7 +185,16 @@ const Configurator = observer(
       },
     };
 
-    return (
+    return HelperComponent ? (
+      <>
+        <HelperComponent
+          value={helper.argsMap}
+          onChange={(values) => (rawHelper.argsMap = values)}
+          inputValue={inputValue}
+        />
+        <MyButtons onDelete={() => removeHelper({ index: index })} onClose={close} />
+      </>
+    ) : (
       <SchemaComponent
         components={{ InputValue, OuputValue }}
         schema={schema}
@@ -199,6 +209,23 @@ const Configurator = observer(
     );
   },
   { displayName: 'Configurator' },
+);
+
+// Add a new component for custom delete and close buttons
+export const MyButtons = observer(
+  ({ onDelete, onClose }: { onDelete: () => void; onClose: () => void }) => {
+    const app = useApp();
+    const t = app.i18n.t;
+    return (
+      <Space style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '16px' }}>
+        <Button type="primary" danger onClick={onDelete}>
+          {t('Delete', { ns: 'client' })}
+        </Button>
+        <Button onClick={onClose}>{t('Close', { ns: 'client' })}</Button>
+      </Space>
+    );
+  },
+  { displayName: 'MyButtons' },
 );
 
 const WithRouter = observer(

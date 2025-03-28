@@ -22,7 +22,7 @@ type RawHelper = {
 
 const parser = createJSONTemplateParser();
 
-export const allHelpersConfigObs = observable<{ value: any[] }>({ value: parser.filters });
+export const allHelpersConfigObs = observable<{ value: any[] }>({ value: parser.helpers });
 
 export const createHelperObservables = () => {
   const rawHelpersObs = observable<{ value: RawHelper[] }>({ value: [] });
@@ -38,6 +38,7 @@ export const createHelperObservables = () => {
         config,
         args,
         handler: config.handler,
+        Component: config.Component,
       };
     });
   }) as { value: Helper[] };
