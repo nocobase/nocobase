@@ -9,6 +9,8 @@
 
 import { Card, CardProps } from 'antd';
 import React, { useMemo, useRef, useEffect, createContext, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+
 import { useToken } from '../../../style';
 import { MarkdownReadPretty } from '../markdown';
 
@@ -22,6 +24,7 @@ export const BlockItemCard = React.forwardRef<HTMLDivElement, CardProps | any>((
   }, [token.marginBlock]);
   const [titleHeight, setTitleHeight] = useState(0);
   const titleRef = useRef<HTMLDivElement | null>(null);
+  const { t } = useTranslation();
   useEffect(() => {
     const timer = setTimeout(() => {
       if (titleRef.current) {
@@ -38,7 +41,7 @@ export const BlockItemCard = React.forwardRef<HTMLDivElement, CardProps | any>((
   }, [blockTitle, description]);
   const title = (blockTitle || description) && (
     <div ref={titleRef} style={{ padding: '8px 0px 8px' }}>
-      <span>{blockTitle}</span>
+      <span> {t(blockTitle, { ns: 'ui-schema-storage' })}</span>
       {description && (
         <MarkdownReadPretty
           value={props.description}
