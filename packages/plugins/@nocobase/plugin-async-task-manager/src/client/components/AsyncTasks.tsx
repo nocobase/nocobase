@@ -108,7 +108,7 @@ const AsyncTasksButton = (props) => {
         };
 
         const taskTemplate = taskTypeMap[title.actionType] || `${actionText}`;
-        return taskTemplate.replace('{collection}', compile(collection.title));
+        return taskTemplate.replace('{collection}', compile(collection?.title || title.collection));
       },
     },
     {
