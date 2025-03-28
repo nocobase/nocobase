@@ -31,6 +31,11 @@ import { Action } from '../action';
 import { RemoteSelect, RemoteSelectProps } from '../remote-select';
 import useServiceOptions, { useAssociationFieldContext } from './hooks';
 
+const removeIfAllNull = (obj) => {
+  if (!obj || typeof obj !== 'object') return obj;
+  return Object.values(obj).every((v) => v === null) ? null : obj;
+};
+
 export const AssociationFieldAddNewer = (props) => {
   const schemaComponentCtxValue = useContext(SchemaComponentContext);
   return (
@@ -167,7 +172,7 @@ const InternalAssociationSelect = observer(
             {...rest}
             size={'middle'}
             objectValue={objectValue}
-            value={value || innerValue}
+            value={removeIfAllNull(value || innerValue)}
             service={service}
             onChange={(value) => {
               const val = value?.length !== 0 ? value : null;
