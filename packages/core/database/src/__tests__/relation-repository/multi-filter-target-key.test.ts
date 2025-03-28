@@ -7,12 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import Database, { HasManyRepository, mockDatabase } from '../../index';
+import { Database, HasManyRepository, createMockDatabase } from '@nocobase/database';
+
 describe('multi target key in association repository', () => {
   let db: Database;
 
   beforeEach(async () => {
-    db = mockDatabase();
+    db = await createMockDatabase();
     await db.clean({ drop: true });
   });
 

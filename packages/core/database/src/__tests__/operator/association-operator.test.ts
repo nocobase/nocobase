@@ -7,10 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import Database from '../../database';
-import { Collection } from '../../collection';
-
-import { mockDatabase } from '../index';
+import { Collection, Database, createMockDatabase } from '@nocobase/database';
 
 describe('association operator', () => {
   let db: Database;
@@ -27,7 +24,7 @@ describe('association operator', () => {
   });
 
   beforeEach(async () => {
-    db = mockDatabase();
+    db = await createMockDatabase();
     await db.clean({ drop: true });
     Group = db.collection({
       name: 'groups',
