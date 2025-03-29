@@ -5,6 +5,7 @@
   "main": "./lib/server/index.js",
   "dependencies": {
     "@formily/json-schema": "2.x",
+    "@nocobase/json-template-parser": "1.7.0-alpha.10",
     "@nocobase/plugin-acl": "1.7.0-alpha.10",
     "@nocobase/plugin-action-bulk-edit": "1.7.0-alpha.10",
     "@nocobase/plugin-action-bulk-update": "1.7.0-alpha.10",
@@ -123,6 +124,7 @@
     "@nocobase/plugin-ui-schema-storage",
     "@nocobase/plugin-user-data-sync",
     "@nocobase/plugin-users",
+    "@nocobase/plugin-variable-helpers",
     "@nocobase/plugin-verification",
     "@nocobase/plugin-workflow",
     "@nocobase/plugin-workflow-action-trigger",

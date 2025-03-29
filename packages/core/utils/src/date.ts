@@ -235,3 +235,7 @@ export const getDateTimeFormat = (picker, format, showTime, timeFormat) => {
   }
   return format;
 };
+
+export function isDate(input) {
+  return input instanceof Date || Object.prototype.toString.call(input) === '[object Date]' || dayjs.isDayjs(input);
+}

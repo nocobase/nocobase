@@ -7,13 +7,15 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export { default as VariablesProvider, VariablesContext } from './VariablesProvider';
 export { default as useBuiltinVariables } from './hooks/useBuiltinVariables';
 export { default as useContextVariable } from './hooks/useContextVariable';
 export { default as useLocalVariables } from './hooks/useLocalVariables';
 export { default as useVariables } from './hooks/useVariables';
 export * from './utils/isVariable';
 export * from './utils/transformVariableValue';
+export { VariablesContext, default as VariablesProvider } from './VariablesProvider';
 
 export * from './constants';
 export type { VariablesContextType } from './types';
+
+export * from './context/EvaluateContext';
