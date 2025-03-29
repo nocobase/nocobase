@@ -199,6 +199,22 @@ async applyFilter(
 
 Instead of chaining `applyFilter` calls within filters, it's often clearer to register multiple filters for the *same* top-level name (e.g., `core:block:table:props`) and use `priority` and `contextArgs` to manage the transformation.
 
+**Why Nesting `applyFilter` is Discouraged:**
+
+While technically possible, calling `app.filterManager.applyFilter` from *within* a filter function passed to `addFilter` is strongly discouraged for several reasons:
+
+1.  **Bypasses Central Control:** The `FilterManager`'s primary role is to orchestrate the execution of filters based on their registered `priority`. When a filter function internally calls `applyFilter` for another name (or even the same name), that nested execution happens *outside* the main priority-sorted sequence managed by the initial `applyFilter` call. This bypasses the intended central control mechanism.
+2.  **Obscures Execution Flow:** It becomes much harder to understand the complete sequence of transformations applied for a given filter name (e.g., `core:block:table:props`) just by looking at the registered filters and their priorities. The effective flow depends on the internal logic of potentially many different filter functions.
+3.  **Increases Debugging Complexity:** Tracing how a value was transformed becomes more difficult. You can't rely solely on the `FilterManager`'s sorted list; you need to step into the code of each filter function to see if it triggers other, nested filter chains.
+
+**The Recommended Approach (Multiple Filters, Same Name):**
+
+- Register multiple, independent filter functions for the same broad filter name.
+- Use `priority` to precisely control the order of execution.
+- Pass necessary contextual data via the `contextArgs` of the main `applyFilter` call.
+
+This approach keeps individual filter functions focused, makes the overall transformation sequence explicit and centrally managed by the `FilterManager` based on priority, and simplifies debugging.
+
 ```typescript
 // Filter 1: Adjust table height based on context (Synchronous)
 app.filterManager.addFilter('core:block:table:props', (props, context) => {
