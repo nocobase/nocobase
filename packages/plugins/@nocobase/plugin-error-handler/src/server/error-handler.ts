@@ -26,13 +26,16 @@ export class ErrorHandler {
       message += `: ${err.cause.message}`;
     }
 
+    const errorData: { message: string; code: string; title?: string } = {
+      message,
+      code: err.code,
+    };
+
+    if (err?.title) {
+      errorData.title = err.title;
+    }
     ctx.body = {
-      errors: [
-        {
-          message,
-          code: err.code,
-        },
-      ],
+      errors: [errorData],
     };
   }
 

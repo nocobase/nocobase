@@ -74,7 +74,7 @@ const useErrorProps = (app: Application, error: any) => {
   }
 };
 
-const AppError: FC<{ error: Error; app: Application }> = observer(
+const AppError: FC<{ error: Error & { title?: string }; app: Application }> = observer(
   ({ app, error }) => {
     const props = getProps(app);
     return (
@@ -87,7 +87,7 @@ const AppError: FC<{ error: Error; app: Application }> = observer(
             transform: translate(0, -50%);
           `}
           status="error"
-          title={app.i18n.t('App error')}
+          title={error?.title || app.i18n.t('App error', { ns: 'client' })}
           subTitle={app.i18n.t(error?.message)}
           {...props}
           extra={[
