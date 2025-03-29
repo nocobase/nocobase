@@ -15,6 +15,9 @@ import {
   SecondConFirm,
   RefreshDataBlockRequest,
 } from '../../../schema-component/antd/action/Action.Designer';
+import { SchemaSettingsLinkageRules } from '../../../schema-settings';
+import { useCollectionManager_deprecated } from '../../../collection-manager';
+import { useDataBlockProps } from '../../../data-source';
 
 export const bulkDeleteActionSettings = new SchemaSettings({
   name: 'actionSettings:bulkDelete',
@@ -37,6 +40,24 @@ export const bulkDeleteActionSettings = new SchemaSettings({
       useComponentProps() {
         return {
           isPopupAction: false,
+        };
+      },
+    },
+    {
+      name: 'linkageRules',
+      Component: SchemaSettingsLinkageRules,
+      useVisible() {
+        const { association } = useDataBlockProps() || {};
+        return !!association;
+      },
+      useComponentProps() {
+        const { association } = useDataBlockProps() || {};
+        const { getCollectionField } = useCollectionManager_deprecated();
+        const associationField = getCollectionField(association);
+        const { linkageRulesProps } = useSchemaToolbar();
+        return {
+          ...linkageRulesProps,
+          collectionName: associationField?.collectionName,
         };
       },
     },
