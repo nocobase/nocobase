@@ -358,23 +358,30 @@ describe('create view', () => {
 
     const dropViewSQL = `DROP VIEW IF EXISTS ${appendSchema}${viewName}`;
     await db.sequelize.query(dropViewSQL);
-    const viewSql = `CREATE VIEW ${appendSchema}${viewName} AS SELECT users.name, profiles.age FROM ${appendSchema}${UserCollection.model.tableName} as users LEFT JOIN ${appendSchema}${ProfileCollection.model.tableName} as profiles ON users.id = profiles.user_id;`;
+    const viewSql = `CREATE VIEW ${appendSchema}${viewName} AS SELECT users.id, users.name, profiles.age FROM ${appendSchema}${UserCollection.model.tableName} as users LEFT JOIN ${appendSchema}${ProfileCollection.model.tableName} as profiles ON users.id = profiles.user_id;`;
 
     await db.sequelize.query(viewSql);
-
+    const viewFields: any[] = [
+      {
+        name: 'name',
+        type: 'string',
+      },
+      {
+        name: 'age',
+        type: 'integer',
+      },
+    ];
+    if (db.options.dialect === 'mssql') {
+      viewFields.push({
+        type: 'bigInt',
+        name: 'id',
+        primaryKey: true,
+      });
+    }
     db.collection({
       name: viewName,
       view: true,
-      fields: [
-        {
-          type: 'string',
-          name: 'name',
-        },
-        {
-          type: 'integer',
-          name: 'age',
-        },
-      ],
+      fields: viewFields,
     });
     const UserWithProfileView = db.getCollection(viewName);
     expect(UserWithProfileView).toBeInstanceOf(ViewCollection);
@@ -521,23 +528,30 @@ describe('create view', () => {
     `;
 
     await db.sequelize.query(viewSQL);
-
+    const viewFields: any[] = [
+      {
+        name: 'title',
+        type: 'string',
+        source: 'posts.name',
+      },
+      {
+        name: 'user',
+        type: 'belongsTo',
+        source: 'posts.user',
+      },
+    ];
+    if (db.options.dialect === 'mssql') {
+      viewFields.push({
+        type: 'bigInt',
+        name: 'id',
+        primaryKey: true,
+      });
+    }
     // create view collection
     const ViewCollection = db.collection({
       name: viewName,
       view: true,
-      fields: [
-        {
-          name: 'title',
-          type: 'string',
-          source: 'posts.name',
-        },
-        {
-          name: 'user',
-          type: 'belongsTo',
-          source: 'posts.user',
-        },
-      ],
+      fields: viewFields,
       schema: db.inDialect('postgres') ? 'public' : undefined,
     });
 

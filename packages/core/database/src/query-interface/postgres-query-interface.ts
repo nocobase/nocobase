@@ -10,8 +10,8 @@
 import lodash from 'lodash';
 import { Collection } from '../collection';
 import sqlParser from '../sql-parser';
-import QueryInterface, { TableInfo } from './query-interface';
-import { Transaction } from 'sequelize';
+import QueryInterface, { ChangeColumnOptions, TableInfo } from './query-interface';
+import { ModelStatic, Transaction } from 'sequelize';
 
 export default class PostgresQueryInterface extends QueryInterface {
   constructor(db) {
@@ -231,5 +231,9 @@ $BODY$
     );
 
     return res[0]['show_create_table'];
+  }
+
+  changeColumnDefaultValueSQL(options: ChangeColumnOptions): Promise<string> {
+    return null;
   }
 }

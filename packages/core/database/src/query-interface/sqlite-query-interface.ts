@@ -11,12 +11,12 @@
 
 import { Collection } from '../collection';
 import sqlParser from '../sql-parser';
-import QueryInterface, { TableInfo } from './query-interface';
+import QueryInterface, { ChangeColumnOptions, TableInfo } from './query-interface';
 import { Transaction } from 'sequelize';
 
 export default class SqliteQueryInterface extends QueryInterface {
   constructor(db) {
-    super(db);
+    super(db, { changeColumnMode: 'sequelize' });
   }
 
   async collectionTableExists(collection: Collection, options?) {
@@ -145,5 +145,9 @@ export default class SqliteQueryInterface extends QueryInterface {
                  SET seq = ${currentVal}
                  WHERE name = '${tableName}';`;
     await this.db.sequelize.query(sql, { transaction });
+  }
+
+  changeColumnDefaultValueSQL(options: ChangeColumnOptions): Promise<string> {
+    return null;
   }
 }

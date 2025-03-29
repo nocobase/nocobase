@@ -56,6 +56,10 @@ export abstract class Field {
     return this.options.type;
   }
 
+  get defaultValue() {
+    return this.options.defaultValue;
+  }
+
   abstract get dataType(): any;
 
   isRelationField() {
@@ -124,6 +128,14 @@ export abstract class Field {
           AND TABLE_NAME = '${this.collection.model.tableName}'
           AND column_name = '${this.columnName()}'
       `;
+    } else if (this.database.sequelize.getDialect() === 'mssql') {
+      sql = `
+        SELECT column_name 
+        FROM INFORMATION_SCHEMA.COLUMNS 
+        WHERE TABLE_CATALOG = '${this.database.options.database}'
+          AND TABLE_NAME = '${this.collection.model.tableName}'
+          AND COLUMN_NAME = '${this.columnName()}'
+      `;
     } else {
       sql = `
         select column_name
@@ -165,7 +177,6 @@ export abstract class Field {
 
   toSequelize(): any {
     const opts = _.omit(this.options, ['name']);
-
     if (this.dataType) {
       // @ts-ignore
       Object.assign(opts, { type: this.database.sequelize.normalizeDataType(this.dataType) });

@@ -34,6 +34,10 @@ describe('Array field repository', () => {
     await db.close();
   });
 
+  const getValue = (value) => {
+    return db.options.dialect === 'mssql' ? JSON.stringify(value) : value;
+  };
+
   it('should add item into fields', async () => {
     const a1 = await TestCollection.repository.create({});
 
@@ -42,7 +46,7 @@ describe('Array field repository', () => {
       values: 'a',
     });
 
-    expect(await fieldRepository.get()).toEqual(['a']);
+    expect(await fieldRepository.get()).toEqual(getValue(['a']));
   });
 
   it('should remove item', async () => {
@@ -53,12 +57,12 @@ describe('Array field repository', () => {
       values: ['a', 'b', 'c'],
     });
 
-    expect(await fieldRepository.get()).toEqual(['a', 'b', 'c']);
+    expect(await fieldRepository.get()).toEqual(getValue(['a', 'b', 'c']));
     await fieldRepository.remove({
       values: ['c'],
     });
 
-    expect(await fieldRepository.get()).toEqual(['a', 'b']);
+    expect(await fieldRepository.get()).toEqual(getValue(['a', 'b']));
   });
 
   it('should set items', async () => {
@@ -69,12 +73,12 @@ describe('Array field repository', () => {
       values: ['a', 'b', 'c'],
     });
 
-    expect(await fieldRepository.get()).toEqual(['a', 'b', 'c']);
+    expect(await fieldRepository.get()).toEqual(getValue(['a', 'b', 'c']));
     await fieldRepository.set({
       values: ['d', 'e'],
     });
 
-    expect(await fieldRepository.get()).toEqual(['d', 'e']);
+    expect(await fieldRepository.get()).toEqual(getValue(['d', 'e']));
   });
 
   it('should toggle item', async () => {
@@ -84,19 +88,18 @@ describe('Array field repository', () => {
     await fieldRepository.add({
       values: ['a', 'b', 'c'],
     });
-
-    expect(await fieldRepository.get()).toEqual(['a', 'b', 'c']);
-
-    await fieldRepository.toggle({
-      value: 'c',
-    });
-
-    expect(await fieldRepository.get()).toEqual(['a', 'b']);
+    expect(await fieldRepository.get()).toEqual(getValue(['a', 'b', 'c']));
 
     await fieldRepository.toggle({
       value: 'c',
     });
 
-    expect(await fieldRepository.get()).toEqual(['a', 'b', 'c']);
+    expect(await fieldRepository.get()).toEqual(getValue(['a', 'b']));
+
+    await fieldRepository.toggle({
+      value: 'c',
+    });
+
+    expect(await fieldRepository.get()).toEqual(getValue(['a', 'b', 'c']));
   });
 });

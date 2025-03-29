@@ -261,18 +261,19 @@ export class EagerLoadingTree {
               };
             }
           });
-
+          const options = {
+            ...this.rootQueryOptions,
+            includeIgnoreAttributes: false,
+            attributes: [primaryKeyField],
+            group: `${node.model.name}.${primaryKeyField}`,
+            transaction,
+            include: includeForFilter,
+          };
+          if (node.model.database.options.dialect === 'mssql' && options.order) {
+            options.order = null;
+          }
           // find all ids
-          const ids = (
-            await node.model.findAll({
-              ...this.rootQueryOptions,
-              includeIgnoreAttributes: false,
-              attributes: [primaryKeyField],
-              group: `${node.model.name}.${primaryKeyField}`,
-              transaction,
-              include: includeForFilter,
-            } as any)
-          ).map((row) => {
+          const ids = (await node.model.findAll(options)).map((row) => {
             return { row, pk: row[primaryKeyField] };
           });
 

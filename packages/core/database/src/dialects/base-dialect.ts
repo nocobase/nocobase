@@ -9,6 +9,7 @@
 
 import { Database, DatabaseOptions } from '../database';
 import semver from 'semver';
+import QueryInterface from '../query-interface/query-interface';
 
 export interface DialectVersionGuard {
   sql: string;
@@ -18,6 +19,20 @@ export interface DialectVersionGuard {
 
 export abstract class BaseDialect {
   static dialectName: string;
+
+  static getQueryInterface(db: Database): QueryInterface {
+    throw new Error('Query interface must be override');
+  }
+
+  static getFieldTypes() {
+    return {};
+  }
+
+  static getOperators() {
+    return {};
+  }
+
+  static async init(db: Database) {}
 
   getSequelizeOptions(options: DatabaseOptions) {
     return options;

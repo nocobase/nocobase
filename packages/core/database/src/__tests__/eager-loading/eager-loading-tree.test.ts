@@ -57,8 +57,8 @@ describe('Eager loading tree', () => {
     const source = await Source.repository.findOne({
       appends: ['targets'],
     });
-
-    expect(source.get('targets').map((item: any) => item.get('id'))).toEqual([1, 2]);
+    const value = db.options.dialect === 'mssql' ? ['1', '2'] : [1, 2];
+    expect(source.get('targets').map((item: any) => item.get('id'))).toEqual(value);
   });
 
   it('should sort belongs to many default by target primary key', async () => {
@@ -114,8 +114,8 @@ describe('Eager loading tree', () => {
     const source = await Source.repository.findOne({
       appends: ['targets'],
     });
-
-    expect(source.targets.map((t) => t.get('id'))).toEqual([1, 2, 3]);
+    const value = db.options.dialect === 'mssql' ? ['1', '2', '3'] : [1, 2, 3];
+    expect(source.targets.map((t) => t.get('id'))).toEqual(value);
   });
 
   it('should handle eager loading with long field', async () => {

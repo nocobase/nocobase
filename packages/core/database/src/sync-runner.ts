@@ -134,6 +134,18 @@ export class SyncRunner {
       // remove primary key
       if (this.database.inDialect('mariadb', 'mysql')) {
         await this.sequelize.query(`ALTER TABLE ${this.collection.quotedTableName()} DROP PRIMARY KEY;`, options);
+      } else if (this.database.inDialect('mssql')) {
+        const constraintName = await this.sequelize.query(
+          `SELECT name FROM sys.key_constraints
+           WHERE type = 'PK' AND parent_object_id = OBJECT_ID('${this.collection.quotedTableName()}')`,
+          { ...options, type: 'SELECT' },
+        );
+        if (constraintName?.[0] && constraintName[0]['name']) {
+          await this.sequelize.query(
+            `ALTER TABLE ${this.collection.quotedTableName()} DROP CONSTRAINT ${constraintName[0]['name']};`,
+            options,
+          );
+        }
       }
     }
   }
@@ -220,6 +232,7 @@ export class SyncRunner {
           defaultValue: attributeDefaultValue,
         };
 
+        // TODO: use dialect QueryInterface to change column default value
         if (this.database.inDialect('postgres')) {
           // @ts-ignore
           const query = this.queryInterface.queryGenerator.attributesToSQL(
@@ -240,7 +253,15 @@ export class SyncRunner {
 
           await this.sequelize.query(sql.replace(regex, ''), options);
         } else {
-          await this.queryInterface.changeColumn(this.tableName, columnName, changeAttribute, options);
+          await this.database.queryInterface.changeColumn({
+            actions: ['setDefaultValue'],
+            tableName: this.tableName as string,
+            columnDescription: changeAttribute,
+            columnName: columnName,
+            model: this.model,
+            schema: options?.schema,
+            options,
+          });
         }
       }
     }
@@ -264,7 +285,6 @@ export class SyncRunner {
       if (!isSingleField) continue;
 
       const columnName = existUniqueIndex.fields[0].attribute;
-
       const currentAttribute = this.findAttributeByColumnName(columnName);
 
       if (!currentAttribute || (!currentAttribute.unique && !currentAttribute.primaryKey)) {
@@ -276,7 +296,33 @@ export class SyncRunner {
           }
         }
 
-        if (this.database.inDialect('sqlite')) {
+        if (this.database.inDialect('mssql')) {
+          // 先检查是否是约束
+          const constraintCheck = await this.sequelize.query(
+            `SELECT OBJECT_NAME(object_id) as name
+             FROM sys.indexes 
+             WHERE object_id = OBJECT_ID('${this.collection.quotedTableName()}')
+             AND name = '${existUniqueIndex.name}'
+             AND is_unique_constraint = 1`,
+            {
+              type: 'SELECT',
+            },
+          );
+
+          if (constraintCheck.length > 0) {
+            // 如果是约束，使用 DROP CONSTRAINT
+            await this.sequelize.query(
+              `ALTER TABLE ${this.collection.quotedTableName()} DROP CONSTRAINT ${existUniqueIndex.name};`,
+              options,
+            );
+          } else {
+            // 如果是普通索引，使用 DROP INDEX
+            await this.sequelize.query(
+              `DROP INDEX ${existUniqueIndex.name} ON ${this.collection.quotedTableName()};`,
+              options,
+            );
+          }
+        } else if (this.database.inDialect('sqlite')) {
           const changeAttribute = {
             ...currentAttribute,
             unique: false,
@@ -291,16 +337,32 @@ export class SyncRunner {
 
     // add unique index that not in database
     for (const uniqueAttribute of uniqueAttributes) {
-      // check index exists or not
-      const indexExists = existsUniqueIndexes.find((index) => {
-        return index.fields.length == 1 && index.fields[0].attribute == this.rawAttributes[uniqueAttribute].field;
+      const field = this.rawAttributes[uniqueAttribute].field;
+
+      // 检查是否存在包含该字段的索引（包括组合索引）
+      const hasFieldIndex = existsUniqueIndexes.some((index) => {
+        return index.fields[0].attribute === field;
       });
 
-      if (!indexExists) {
-        await this.queryInterface.addIndex(this.tableName, [this.rawAttributes[uniqueAttribute].field], {
+      if (!hasFieldIndex) {
+        // 检查是否有重复数据
+        const duplicateCheck = await this.sequelize.query(
+          `SELECT COUNT(*) as count, ${field} 
+           FROM ${this.collection.quotedTableName()} 
+           GROUP BY ${field} 
+           HAVING COUNT(*) > 1`,
+          { ...options, type: 'SELECT' },
+        );
+
+        if (duplicateCheck.length > 0) {
+          console.warn(`Cannot create unique index on ${field} due to duplicate values`);
+          continue;
+        }
+
+        await this.queryInterface.addIndex(this.tableName, [field], {
           unique: true,
           transaction: options?.transaction,
-          name: `${this.collection.tableName()}_${this.rawAttributes[uniqueAttribute].field}_uk`,
+          name: `${this.collection.tableName()}_${field}_uk`,
         });
       }
     }
@@ -364,7 +426,7 @@ export class SyncRunner {
   async handleZeroColumnModel(options) {
     // @ts-ignore
     if (Object.keys(this.model.tableAttributes).length === 0) {
-      if (this.database.inDialect('sqlite', 'mysql', 'mariadb', 'postgres')) {
+      if (this.database.inDialect('sqlite', 'mysql', 'mariadb', 'postgres', 'mssql')) {
         throw new ZeroColumnTableError(
           `Zero-column tables aren't supported in ${this.database.sequelize.getDialect()}`,
         );
@@ -396,10 +458,23 @@ export class SyncRunner {
     const _schema = this.model._schema;
 
     if (_schema && _schema != 'public') {
-      await this.sequelize.query(`CREATE SCHEMA IF NOT EXISTS "${_schema}";`, {
-        raw: true,
-        transaction: options?.transaction,
-      });
+      if (this.database.inDialect('mssql')) {
+        await this.sequelize.query(
+          `IF NOT EXISTS (SELECT * FROM sys.schemas WHERE name = '${_schema}')
+           BEGIN
+             EXEC('CREATE SCHEMA [${_schema}]')
+           END`,
+          {
+            raw: true,
+            transaction: options?.transaction,
+          },
+        );
+      } else {
+        await this.sequelize.query(`CREATE SCHEMA IF NOT EXISTS "${_schema}";`, {
+          raw: true,
+          transaction: options?.transaction,
+        });
+      }
     }
   }
 }
