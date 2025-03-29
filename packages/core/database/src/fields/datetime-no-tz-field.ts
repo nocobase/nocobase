@@ -78,9 +78,7 @@ export class DatetimeNoTzField extends Field {
         const momentVal = moment(val);
         if ((typeof val === 'string' && isIso8601(val)) || val instanceof Date) {
           momentVal.utcOffset(timezone);
-          if (isPg) {
-            momentVal.utcOffset(-dateOffset, true);
-          }
+          momentVal.utcOffset(-dateOffset, true);
         }
 
         if (isMySQLCompatibleDialect) {
