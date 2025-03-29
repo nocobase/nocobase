@@ -92,7 +92,34 @@ class FilterManager {  // 单例, 可以挂载到app上
 
 #### Filter Naming Convention
 
-Filter names use a modular structure: `[module]:[attribute]` format. Registration requires using this namespace convention.
+Filter names use a structured, hierarchical format similar to filters to ensure clarity and prevent collisions:
+
+`origin:[domain]:[sub-module/component]:attribute`
+
+- **`origin`**: (Required) Identifies the source.
+  - `core`: For filters originating from the NocoBase core.
+  - `plugin:[plugin-name]`: For filters from a specific plugin (e.g., `plugin:workflow`).
+- **`domain`**: (Required) A high-level functional area (e.g., `block`, `collection`, `field`, `ui`, `data`, `auth`). **Note:** For common, unambiguously UI-related components (e.g., `modal`, `button`, `table`, `form`), the `ui` domain *may* be omitted for brevity if the component name clearly implies it. For other domains or less common components, the domain should be included.
+- **`sub-module/component`**: (Optional but Recommended) A more specific component or context (e.g., `table`, `form`, `users`, `props`).
+- **`attribute`**: (Required) The specific data aspect being filtered (e.g., `props`, `data`, `schema`, `options`, `height`, `validationRules`).
+
+**Rationale:** While this format can lead to longer names, the explicitness is crucial for:
+
+1. **Clarity**: Ensuring that the filter's origin and purpose are clear.
+2. **Collision Avoidance**: Preventing naming conflicts between different filters.
+3. **Debugging**: Facilitating easier debugging and maintenance.
+4. **Scalability**: Allowing for future expansion without breaking existing code.
+5. **Use Constants**: Using constants for filter names can help maintain consistency across the application.
+
+**Examples:**
+
+- `core:block:table:props`: Filter props for a core table block.
+- `core:collection:users:schema`: Filter the schema for the core `users` collection.
+- `plugin:workflow:node:approval:conditions`: Filter approval conditions for a node in the `workflow` plugin.
+- `plugin:map:field:coordinates:format`: Filter the display format for a coordinates field from the `map` plugin.
+- `core:field:text:validationRules`: Filter validation rules for a core text field.
+
+Registration requires using this full, structured name. Wildcards are not supported during registration.
 
 #### Methods
 
@@ -140,7 +167,7 @@ app.filterManager.applyFilter(name: string, input: InputType[name]): any
 **Height Filter Example**:
 ```typescript
 // 注册表格高度 filter
-app.filterManager.addFilter('table:props:height', (height, options) => {
+app.filterManager.addFilter('core:block:table:props:height', (height, options) => {
   // 根据选项是否需要高度
   if (options.compact) {
     return Math.min(height, 300);
@@ -149,10 +176,10 @@ app.filterManager.addFilter('table:props:height', (height, options) => {
 }, { priority: 10 });
 
 // 链接多个filter
-app.filterManager.addFilter('table:props', (props) => {
-  const height = app.filterManager.applyFilter('table:props:height', props);
-  const width = app.filterManager.applyFilter('table:props:width', props);
-  const collection = app.filterManager.applyFilter('table:props:collection', props);
+app.filterManager.addFilter('core:block:table:props', (props) => {
+  const height = app.filterManager.applyFilter('core:block:table:props:height', props);
+  const width = app.filterManager.applyFilter('core:block:table:props:width', props);
+  const collection = app.filterManager.applyFilter('core:block:table:props:collection', props);
   return {
     ...props,
     height,
@@ -161,7 +188,7 @@ app.filterManager.addFilter('table:props', (props) => {
   };
 });
 
-<Table props={app.filterManager.applyFilter('table:props')}/>
+<Table props={app.filterManager.applyFilter('core:block:table:props')}/>
 ```
 
 **Complex Filter Examples**:
@@ -170,7 +197,7 @@ const schema = useFieldSchema();
 
 // 应用单个属性 filter
 const height = useMemo(() =>
-  app.filterManager.applyFilter('table:default:height', {
+  app.filterManager.applyFilter('core:block:table:props:height', {
     compact: isCompactMode,
     height: 600
   }),
@@ -179,7 +206,7 @@ const height = useMemo(() =>
 
 // 应用多个属性的综合 filter
 const props = useMemo(() =>
-  app.filterManager.applyFilter('table:props', { ...schema, height }, {
+  app.filterManager.applyFilter('core:block:table:props', { ...schema, height }, {
     mode: 'default',
     context: { currentUser }
   }),
@@ -238,15 +265,28 @@ class EventManager { // 单例, 可以挂载到app上
 
 #### Event Naming Convention
 
-Event names follow the format: `[module]:[action]` such as:
+Event names follow a structured, hierarchical format similar to filters to ensure clarity and prevent collisions:
 
-- `table:row:select` // 表格行选择事件
-- `modal:confirm:click` // 确认模态框按钮事件
-- `form:submit` // 表单提交
+`origin:[domain]:[sub-module/component]:action`
 
-Where:
-- `module(Module)`: Represents the component's context, can span multiple layers
-- `action(Action)`: Indicates the specific action performed
+- **`origin`**: (Required) `core` or `plugin:[plugin-name]`.
+- **`domain`**: (Required) High-level area (e.g., `block`, `collection`, `ui`, `system`, `auth`). **Note:** For common, unambiguously UI-related components (e.g., `modal`, `button`, `table`, `form`), the `ui` domain *may* be omitted for brevity if the component name clearly implies it. For other domains or less common components, the domain should be included.
+- **`sub-module/component`**: (Optional but Recommended) Specific context (e.g., `table`, `form`, `modal`, `row`, `users`).
+- **`action`**: (Required) Describes the event, often combining the action verb with lifecycle prefixes/suffixes. Examples: `beforeCreate`, `afterUpdate`, `loadSuccess`, `validateError`, `submit`, `afterSubmit`, `click`, `open`.
+
+**Rationale & Recommendation:** Same as for Filter Naming Convention (clarity, collision avoidance, debugging, scalability, use constants).
+
+**Examples:**
+
+- `core:collection:posts:beforeCreate` // Before creating a record in the core `posts` collection.
+- `core:block:table:row:select` // A row is selected in a core table block.
+- `core:modal:open` // A generic core modal is opened (omitting `ui` domain).
+- `core:form:afterSubmit` // After a generic form submission (using combined action).
+- `core:auth:login:success` // Successful user login event.
+- `plugin:workflow:execution:start` // A workflow execution starts (from `workflow` plugin).
+- `plugin:audit-log:entry:created` // An audit log entry was created (from `audit-log` plugin).
+
+Listeners can potentially listen using wildcards (e.g., `core:block:table:**`), although dispatching must use a specific event name. (Note: Wildcard support needs confirmation based on `EventManager` implementation details).
 
 #### EventContext
 
