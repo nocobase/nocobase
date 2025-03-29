@@ -190,8 +190,9 @@ async applyFilter(
 4. **Crucially:** If a filter function returns a `Promise`, the manager `await`s its resolution before proceeding to the next filter.
 
 **Returns**:
-- A `Promise` that resolves with the final value after being processed by all matching filters in the chain. 
-- **Breaking Change:** Callers must now use `await` or `.then()` to handle the result.
+- A `Promise` that resolves with the final value after being processed by all matching filters in the chain.
+- If any filter throws or rejects, the Promise is **rejected** with a contextualized error (see Error Handling section).
+- **Breaking Change:** Callers must now use `await` or `.then()` and include `try...catch` blocks to handle potential rejections.
 
 #### Examples
 
@@ -334,8 +335,9 @@ class EventManager { // 单例, 可以挂载到app上
   // 取消事件监听器
   off(eventName, listener) { ... }
   
-  // 触发事件
-  async dispatchEvent(eventName, context = {}) { ... }
+  // 触发事件并收集结果
+  // ALWAYS returns a Promise resolving to the ctx.results object.
+  async dispatchEvent<T = any>(eventName: string | string[], ctx: EventContext<T>): Promise<Record<string, any>>; // Returns ctx.results
   
   // 获取特定事件的所有监听器, 主要用于测试
   getListeners(eventName) { ... }
@@ -364,6 +366,20 @@ Event names follow a structured, hierarchical format similar to filters to ensur
 - `core:auth:login:success` // Successful user login event.
 - `plugin:workflow:execution:start` // A workflow execution starts (from `workflow` plugin).
 - `plugin:audit-log:entry:created` // An audit log entry was created (from `audit-log` plugin).
+
+Listeners can potentially listen using wildcards (e.g., `core:block:table:**`), although dispatching must use a specific event name. (Note: Wildcard support needs confirmation based on `EventManager` implementation details).
+
+**Listener Wildcard Support:**
+
+Event listeners registered via `on()` and `once()` **support the use of wildcards** (`*`) in the `eventName` string to match multiple events. The wildcard `*` matches exactly one segment in the event name hierarchy.
+
+- Example: `core:collection:*:afterCreate` would match `core:collection:posts:afterCreate`, `core:collection:users:afterCreate`, etc.
+- Example: `plugin:workflow:*:start` would match `plugin:workflow:execution:start`, `plugin:workflow:node:start`, etc.
+- Example: `core:*:*:select` would match `core:block:table:select`, `core:field:user:select`, etc.
+
+**Note:**
+- `dispatchEvent` **must** always use a specific, non-wildcard event name.
+- Using many widespread wildcards (e.g., `core:**:**`) might have performance implications, as the `EventManager` needs to perform pattern matching for each dispatched event.
 
 Listeners can potentially listen using wildcards (e.g., `core:block:table:**`), although dispatching must use a specific event name. (Note: Wildcard support needs confirmation based on `EventManager` implementation details).
 
@@ -448,7 +464,14 @@ function filter(ctx: EventContext, options: EventListenerOptions) {
 on(event: string | string[], listener: EventListener, options?: EventListenerOptions): Unsubscriber
 ```
 
-Used to register event listeners. When the specified event is triggered, the listener will execute.
+Used to register event listeners. When an event matching the `event` name (or pattern, if using wildcards) is triggered, the listener will execute.
+
+**Parameters:**
+- `event`: The specific event name, wildcard pattern (using `*`), or array of names/patterns to listen for.
+- `listener`: The function to execute when the event occurs.
+- `options`: Configuration for the listener (priority, blocking, etc.).
+
+**Returns:** An `Unsubscriber` function to remove this specific listener.
 
 ##### once
 
@@ -456,7 +479,11 @@ Used to register event listeners. When the specified event is triggered, the lis
 once(event: string | string[], listener: EventListener, options?: OmitEventListenerOptions, 'once'): Unsubscriber
 ```
 
-Similar to `on()` but the listener is automatically removed after the first execution.
+Similar to `on()` but the listener is automatically removed after the first execution of *any* event matching the `event` name or pattern.
+
+**Parameters:** Same as `on()`.
+
+**Returns:** An `Unsubscriber` function.
 
 ##### off
 
@@ -490,8 +517,40 @@ app.eventManager.dispatchEvent<T = any>(
 5.  Listeners may add properties to the shared `ctx.results` object during their execution.
 
 **Returns**:
-- A `Promise` that resolves with the **final state of the `ctx.results` object** after all relevant listeners have completed execution. This object contains the accumulated outputs from all listeners that contributed to it.
-- **Note:** Callers need to handle the possibility of results being overwritten if multiple listeners target the same key in `ctx.results`.
+- A `Promise` that resolves with the **final state of the `ctx.results` object** after all relevant listeners have completed execution. This object contains accumulated outputs and potentially an `_errors` array (see Error Handling section).
+- If a **blocking** listener fails, the Promise is **rejected** with a contextualized error.
+- Callers need to handle potential rejections (from blocking failures) and check `ctx.results._errors` for non-blocking failures.
+
+## Error Handling Strategy
+
+This section outlines how errors are handled within the Filter and Event systems.
+
+**1. Filter System (`applyFilter`)**
+
+*   **Strategy:** Fail Fast with Context.
+*   **Behavior:** If any filter function within the chain throws an error or returns a rejected Promise, the `FilterManager` immediately stops processing the remaining filters for that specific `applyFilter` call.
+*   **Error Propagation:** The `Promise` returned by `applyFilter` is **rejected**.
+*   **Error Context:** The `FilterManager` catches the internal error and augments it (or wraps it) before rejection, providing crucial debugging information. The rejected error object will typically include:
+    *   `filterName`: The full name of the filter that failed.
+    *   `filterPriority`: The priority of the failing filter.
+    *   `originalError`: The original error thrown by the filter function.
+*   **Logging:** The contextualized error is logged internally by the `FilterManager` (e.g., via `console.error`).
+*   **Rationale:** Filter chains are often critical for data integrity. Immediate failure provides a clear signal, and added context aids debugging.
+
+**2. Event System (`dispatchEvent`)**
+
+*   **Strategy:** Collect Errors for Non-Blocking, Fail Fast for Blocking.
+*   **Behavior (Non-Blocking Listeners):** If a non-blocking listener (`blocking: false` or default) throws an error or returns a rejected Promise, the `EventManager` **does not** stop processing other listeners for that `dispatchEvent` call.
+*   **Behavior (Blocking Listeners):** If a blocking listener (`blocking: true`) throws an error or returns a rejected Promise, the `EventManager` **stops** processing subsequent listeners for that specific `dispatchEvent` call.
+*   **Error Collection (Non-Blocking Failures):**
+    *   The `EventManager` wraps listener executions to catch errors.
+    *   Errors from non-blocking listeners are caught and contextualized with details like `listener` identifier (if possible), `eventName`, and the `originalError`.
+    *   These contextualized errors are added to a dedicated array within the results object: `ctx.results._errors = []`. (The `_errors` property is reserved for this purpose).
+*   **Error Propagation & Return Value:**
+    *   If a **blocking** listener fails, the `Promise` returned by `dispatchEvent` is **rejected** with the contextualized error from that listener.
+    *   If **no blocking** listener fails (even if non-blocking listeners failed), the `Promise` returned by `dispatchEvent` **resolves successfully** with the final `ctx.results` object. Callers **must** check `ctx.results._errors` to detect partial failures from non-blocking listeners.
+*   **Logging:** All caught errors (from both blocking and non-blocking listeners) are logged internally by the `EventManager` with their context.
+*   **Rationale:** This provides resilience for non-critical side effects (non-blocking listeners) while ensuring critical workflows (blocking listeners) fail clearly. Error collection allows awareness of partial failures.
 
 ## Form Submission Flow Example
 
