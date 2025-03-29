@@ -32,15 +32,26 @@ const BaseConfiguration: React.FC<BaseConfigurationProps> = ({ type, children })
     return apiClient.resource(MapConfigurationResourceKey);
   }, [apiClient]);
 
-  function removeInvisibleCharsFromObject(obj: Record<string, string>): Record<string, string> {
-    const cleanObj: Record<string, string> = {};
+  function removeInvisibleCharsFromObject(obj: Record<string, string>): Record<string, string | null> {
+    const cleanObj: Record<string, string | null> = {};
     for (const [key, value] of Object.entries(obj)) {
-      cleanObj[key] = typeof value === 'string' ? value.replace(/[\p{C}\p{Z}\p{Zl}\p{Zp}]+/gu, '') : value;
+      if (typeof value === 'string') {
+        // 去除不可见字符
+        const cleanedValue = value.replace(/[\p{C}\p{Z}\p{Zl}\p{Zp}]+/gu, '');
+        // 如果清理后为空字符串，则赋值为 null
+        cleanObj[key] = cleanedValue || null;
+      }
     }
+
     return cleanObj;
   }
-
   const onSubmit = async (values) => {
+    // 移除不可见字符并更新表单值
+    const result = removeInvisibleCharsFromObject(values);
+    form.setFieldsValue(result);
+
+    // 等待表单值更新完成后再校验
+    await new Promise((resolve) => setTimeout(resolve, 0));
     await form.validateFields();
     resource
       .set({
