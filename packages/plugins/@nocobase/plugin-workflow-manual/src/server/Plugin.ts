@@ -8,11 +8,9 @@
  */
 
 import { Plugin } from '@nocobase/server';
-import actions from '@nocobase/actions';
-import { HandlerType } from '@nocobase/resourcer';
-import WorkflowPlugin, { JOB_STATUS } from '@nocobase/plugin-workflow';
+import WorkflowPlugin from '@nocobase/plugin-workflow';
 
-import * as jobActions from './actions';
+import { submit } from './actions';
 
 import ManualInstruction from './ManualInstruction';
 import { MANUAL_TASK_TYPE } from '../common/constants';
@@ -27,28 +25,7 @@ interface WorkflowManualTaskModel {
 
 export default class extends Plugin {
   async load() {
-    this.app.resourceManager.define({
-      name: 'workflowManualTasks',
-      actions: {
-        list: {
-          filter: {
-            $or: [
-              {
-                'workflow.enabled': true,
-              },
-              {
-                'workflow.enabled': false,
-                status: {
-                  $ne: JOB_STATUS.PENDING,
-                },
-              },
-            ],
-          },
-          handler: actions.list as HandlerType,
-        },
-        ...jobActions,
-      },
-    });
+    this.app.resourceManager.registerActionHandler('workflowManualTasks:submit', submit);
 
     this.app.acl.allow('workflowManualTasks', ['list', 'get', 'submit'], 'loggedIn');
 
