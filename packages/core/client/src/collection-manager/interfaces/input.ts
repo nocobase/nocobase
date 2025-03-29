@@ -62,6 +62,12 @@ export class InputFieldInterface extends CollectionFieldInterface {
   hasDefaultValue = true;
   properties = {
     ...defaultProps,
+    trim: {
+      type: 'boolean',
+      'x-content': '{{t("Automatically remove heading and tailing spaces")}}',
+      'x-decorator': 'FormItem',
+      'x-component': 'Checkbox',
+    },
     layout: {
       type: 'void',
       title: '{{t("Index")}}',

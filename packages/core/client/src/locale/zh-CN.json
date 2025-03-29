@@ -258,6 +258,7 @@
   "Parent collection fields": "父表字段",
   "Basic": "基本类型",
   "Single line text": "单行文本",
+  "Automatically remove heading and tailing spaces": "自动去除首尾空白字符",
   "Long text": "多行文本",
   "Phone": "手机号码",
   "Email": "电子邮箱",
