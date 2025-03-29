@@ -1,6 +1,17 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import XLSX from 'xlsx';
 import { BaseExporter, ExportOptions } from './base-exporter';
 import { NumberField } from '@nocobase/database';
+import { Context } from '@nocobase/actions';
+import _ from 'lodash';
 
 type ExportColumn = {
   dataIndex: Array<string>;
@@ -39,7 +50,7 @@ export class XlsxExporter extends BaseExporter<XlsxExportOptions & { fields: Arr
     this.worksheet = XLSX.utils.sheet_new();
 
     // write headers
-    XLSX.utils.sheet_add_aoa(this.worksheet, [this.renderHeaders(this.options.columns)], {
+    XLSX.utils.sheet_add_aoa(this.worksheet, [this.renderHeaders(this.getExportColumns(ctx))], {
       origin: 'A1',
     });
 
@@ -48,7 +59,7 @@ export class XlsxExporter extends BaseExporter<XlsxExportOptions & { fields: Arr
 
   async handleRow(row: any, ctx?): Promise<void> {
     const rowData = [
-      this.options.columns.map((col) => {
+      this.getExportColumns(ctx).map((col) => {
         return this.formatValue(row, col.dataIndex, ctx);
       }),
     ];
@@ -60,12 +71,22 @@ export class XlsxExporter extends BaseExporter<XlsxExportOptions & { fields: Arr
     this.startRowNumber += 1;
   }
 
-  async finalize(): Promise<XLSX.WorkBook> {
-    for (const col of this.options.columns) {
+  private getExportColumns(ctx: Context): ExportColumn[] {
+    const columns = this.options.columns;
+    return columns.filter((x) =>
+      ctx?.permission?.can?.params?.fields?.length
+        ? _.includes(ctx?.permission?.can?.params?.fields || [], x.dataIndex[0])
+        : true,
+    );
+  }
+
+  async finalize(ctx?: Context): Promise<XLSX.WorkBook> {
+    const columns = this.getExportColumns(ctx);
+    for (const col of columns) {
       const fieldInstance = this.findFieldByDataIndex(col.dataIndex);
       if (fieldInstance instanceof NumberField) {
         // set column cell type to number
-        const colIndex = this.options.columns.indexOf(col);
+        const colIndex = columns.indexOf(col);
         const cellRange = XLSX.utils.decode_range(this.worksheet['!ref']);
 
         for (let r = 1; r <= cellRange.e.r; r++) {
