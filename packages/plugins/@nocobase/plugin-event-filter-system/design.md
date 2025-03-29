@@ -418,6 +418,7 @@ interface EventContext<T = any> {
   
   // 用于收集事件监听器的输出结果
   // Initialized as {} by dispatchEvent. Listeners add properties here.
+  // Can also include reserved control flags like `_stop` or `_errors`.
   results: Record<string, any>; 
   
   // TODO: 是否需要支持事件中断执行?
@@ -429,6 +430,7 @@ interface EventContext<T = any> {
 
 *   **Context Immutability:** Listeners should treat the incoming context properties (`ctx.source`, `ctx.target`, `ctx.payload`, `ctx.meta`) as **read-only**. Modifying these shared objects directly can lead to unpredictable side effects for other listeners or the event dispatcher.
 *   **Providing Results:** To communicate results or data back to the caller or potentially other listeners (depending on execution order), listeners should **add properties** to the `ctx.results` object. The final state of this object is returned by `dispatchEvent`.
+*   **Stopping Propagation:** A listener can prevent subsequent listeners (for the current dispatch) from running by setting `ctx.results._stop = true`. The `dispatchEvent` promise will still resolve normally with the results collected up to that point.
 *   **Overwriting Results:** Be aware that if multiple listeners write to the same property key within `ctx.results`, the value set by the listener that finishes last will prevail in the final returned object.
 
 #### Listener Options
@@ -445,14 +447,39 @@ interface EventListenerOptions {
 
 Default filter function:
 ```typescript
-function filter(ctx: EventContext, options: EventListenerOptions) {
-  if (ctx.target) {
+/**
+ * Default filter function for event listeners.
+ * Determines if a listener should execute based on the event context (ctx)
+ * and the listener's options.
+ *
+ * Logic:
+ * 1. If the event dispatch did not include a target (ctx.target is falsy),
+ *    the listener should always run (multicast).
+ * 2. If the event dispatch included a target (ctx.target exists):
+ *    a. If the listener options include specific targeting criteria (e.g., options.uischema),
+ *       the listener runs only if the target criteria match the context's target.
+ *    b. If the listener options do NOT include specific targeting criteria,
+ *       the listener runs (it accepts any targeted event).
+ */
+function defaultListenerFilter(ctx: EventContext, options: EventListenerOptions): boolean {
+  // 1. Multicast: No target specified in dispatch? Listener runs.
+  if (!ctx.target) {
     return true;
   }
-  if (ctx.target.uischema === options.uischema) {
+
+  // 2. Unicast: Target specified in dispatch. Check listener options.
+  if (options.uischema) {
+    // Listener has uischema targeting. Run only if target uischema exists and matches.
+    // Note: Actual matching logic might be more complex (e.g., comparing specific keys like 'x-uid').
+    // This example assumes a direct comparison or key comparison is intended.
+    const targetSchema = ctx.target.uischema;
+    // Basic check: both schemas exist and have matching 'x-uid' (example key)
+    return !!(targetSchema && options.uischema['x-uid'] && options.uischema['x-uid'] === targetSchema['x-uid']);
+  } else {
+    // Listener has no specific targeting options defined (like uischema).
+    // Therefore, it should run even for targeted dispatches.
     return true;
   }
-  return false;
 }
 ```
 
@@ -513,13 +540,15 @@ app.eventManager.dispatchEvent<T = any>(
 1.  Ensures `ctx.results` exists and is an empty object.
 2.  Finds all listeners matching `eventName`.
 3.  Executes listeners based on priority, blocking options, and filter functions.
-4.  Handles `async` listeners appropriately, awaiting their completion if necessary (especially for blocking listeners or if results depend on them).
+4.  Handles `async` listeners appropriately, awaiting their completion if necessary.
 5.  Listeners may add properties to the shared `ctx.results` object during their execution.
+6.  **After each listener completes:** Checks if `ctx.results._stop === true`. If so, stops processing further listeners for this dispatch.
+7.  Catches errors from listeners and handles them according to the Error Handling strategy (populating `ctx.results._errors` for non-blocking, potentially rejecting the main promise for blocking failures).
 
 **Returns**:
-- A `Promise` that resolves with the **final state of the `ctx.results` object** after all relevant listeners have completed execution. This object contains accumulated outputs and potentially an `_errors` array (see Error Handling section).
+- A `Promise` that resolves with the **final state of the `ctx.results` object** after all relevant listeners have completed execution *or* propagation was stopped via `ctx.results._stop`. This object contains accumulated outputs and potentially control flags (`_stop`, `_errors`).
 - If a **blocking** listener fails, the Promise is **rejected** with a contextualized error.
-- Callers need to handle potential rejections (from blocking failures) and check `ctx.results._errors` for non-blocking failures.
+- Callers need to handle potential rejections and check `ctx.results._errors` and `ctx.results._stop`.
 
 ## Error Handling Strategy
 
