@@ -359,6 +359,50 @@ describe('workflow > triggers > collection', () => {
       const executions = await workflow.getExecutions();
       expect(executions.length).toBe(1);
     });
+
+    it('datetime field not changed', async () => {
+      const workflow = await WorkflowModel.create({
+        enabled: true,
+        sync: true,
+        type: 'collection',
+        config: {
+          mode: 2,
+          collection: 'posts',
+          changed: ['createdAt'],
+        },
+      });
+
+      const post = await PostRepo.create({ values: { title: 't1' } });
+      await PostRepo.update({ filterByTk: post.id, values: { ...post.get(), title: 't2' } });
+
+      const executions = await workflow.getExecutions();
+      expect(executions.length).toBe(0);
+    });
+
+    it('datetimeNoTz field not changed', async () => {
+      db.getCollection('posts').addField('dateOnly', {
+        type: 'datetimeNoTz',
+      });
+
+      await db.sync();
+
+      const workflow = await WorkflowModel.create({
+        enabled: true,
+        sync: true,
+        type: 'collection',
+        config: {
+          mode: 2,
+          collection: 'posts',
+          changed: ['dateOnly'],
+        },
+      });
+
+      const post = await PostRepo.create({ values: { title: 't1', dateOnly: '2020-01-01 00:00:00' } });
+      await PostRepo.update({ filterByTk: post.id, values: { ...post.get(), title: 't2' } });
+
+      const executions = await workflow.getExecutions();
+      expect(executions.length).toBe(0);
+    });
   });
 
   describe('config.condition', () => {
