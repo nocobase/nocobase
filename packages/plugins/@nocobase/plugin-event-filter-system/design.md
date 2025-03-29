@@ -83,10 +83,23 @@ The Filter API provides mechanisms for data transformation with enhanced customi
 #### FilterManager
 
 ```typescript
-class FilterManager {  // 单例, 可以挂载到app上
-  addFilter(name: string, filter: FilterFunction, options?: FilterOptions);  // options目前只有prority
-  removeFilter(name: string, filter?: FilterFunction);
-  applyFilter(name: string, ...inputs: any): any;
+// Define the expected signature for a filter function
+type FilterFunction = (currentValue: any, ...contextArgs: any[]) => any;
+
+// Define options for adding a filter
+interface FilterOptions {
+  priority?: number; // Higher numbers run later
+}
+
+class FilterManager {  // Singleton, typically accessed via app.filterManager
+  // Adds a filter function for a given name.
+  addFilter(name: string, filter: FilterFunction, options?: FilterOptions): () => void; // Returns an unregister function
+
+  // Removes a specific filter function or all filters for a name.
+  removeFilter(name: string, filter?: FilterFunction): void;
+
+  // Applies all registered filters for a name to an initial value.
+  applyFilter(name: string, initialValue: any, ...contextArgs: any[]): any;
 }
 ```
 
@@ -126,95 +139,109 @@ Registration requires using this full, structured name. Wildcards are not suppor
 ##### addFilter
 
 ```typescript
-// 注册 Filter
-app.filterManager.addFilter(name: string, filter: FilterFunction, options?: FilterOptions): Function
+app.filterManager.addFilter(
+  name: string, 
+  filter: FilterFunction, // Must match the FilterFunction signature
+  options?: FilterOptions 
+): () => void // Returns an unregister function
 ```
 
 **Parameters**:
-- `name`: Filter name, format should be `module:attribute`, does not support wildcards!
-- `filter`: Filter function, receives values and returns modified values, uses applyFilter internally
-- `options`: Configuration options, including priority settings
+- `name`: Filter name, following the convention `origin:[domain]:[sub-module]:attribute`. Wildcards are not supported.
+- `filter`: The filter function. It receives the current value (output of the previous filter or the `initialValue` for the first filter) as its first argument, and any `contextArgs` passed to `applyFilter` as subsequent arguments. It should return the transformed value.
+- `options`: Configuration options, currently only `priority` (default 0). Filters with lower priority run first.
 
 **Returns**:
-- A function to unregister the filter
+- A function that, when called, unregisters this specific filter.
 
 ##### removeFilter
 
 ```typescript
-app.filterManager.removeFilter(name: string, filter: FilterFunction, options?: FilterOptions): Function
+app.filterManager.removeFilter(name: string, filter?: FilterFunction): void
 ```
 
 **Parameters**:
-- `name`: Filter name, format should be `module:attribute`
-- `filter`: Filter function; if provided, removes only that specific filter
+- `name`: Filter name, following the convention.
+- `filter`: (Optional) The specific filter function to remove. If omitted, *all* filters registered for `name` are removed.
 
 ##### applyFilter
 
 ```typescript
-// 应用 Filter
-app.filterManager.applyFilter(name: string, input: InputType[name]): any
+app.filterManager.applyFilter(
+  name: string, 
+  initialValue: any, 
+  ...contextArgs: any[]
+): any
 ```
 
 **Parameters**:
-- `name`: Filter name
-- `value`: Original value to be processed by the filter
+- `name`: The name of the filter chain to apply.
+- `initialValue`: The starting value that will be passed as the first argument to the first filter function in the chain.
+- `...contextArgs`: (Optional) Any additional arguments provided here will be passed as the second, third, etc., arguments to *every* filter function in the chain, after the `currentValue`.
+
+**Execution Flow**:
+1. Retrieves all filter functions registered for `name`.
+2. Sorts them based on `priority` (lower priority first).
+3. Passes the `initialValue` to the first filter, along with `contextArgs`.
+4. Passes the *return value* of the first filter to the second filter (as its first argument), along with the same `contextArgs`.
+5. Continues this process for all filters in the chain.
 
 **Returns**:
-- The value after being processed by all matching filters
+- The final value after being processed by all matching filters in the chain.
 
 #### Examples
 
-**Height Filter Example**:
+**Recommended Pattern: Filtering Component Props**
+
+Instead of chaining `applyFilter` calls within filters, it's often clearer to register multiple filters for the *same* top-level name (e.g., `core:block:table:props`) and use `priority` and `contextArgs` to manage the transformation.
+
 ```typescript
-// 注册表格高度 filter
-app.filterManager.addFilter('core:block:table:props:height', (height, options) => {
-  // 根据选项是否需要高度
-  if (options.compact) {
-    return Math.min(height, 300);
+// Filter 1: Adjust table height based on context
+app.filterManager.addFilter('core:block:table:props', (props, context) => {
+  if (context?.compact) {
+    // Ensure props object is mutable or create a new one
+    const newProps = { ...props }; 
+    newProps.height = Math.min(props.height || 600, 300);
+    return newProps;
   }
-  return height;
-}, { priority: 10 });
+  return props; // Return original or potentially modified props
+}, { priority: 10 }); // Runs relatively early
 
-// 链接多个filter
-app.filterManager.addFilter('core:block:table:props', (props) => {
-  const height = app.filterManager.applyFilter('core:block:table:props:height', props);
-  const width = app.filterManager.applyFilter('core:block:table:props:width', props);
-  const collection = app.filterManager.applyFilter('core:block:table:props:collection', props);
-  return {
-    ...props,
-    height,
-    width,
-    collection
-  };
-});
+// Filter 2: Add a specific CSS class based on context
+app.filterManager.addFilter('core:block:table:props', (props, context) => {
+  if (context?.currentUser?.isAdmin) {
+    const newProps = { ...props };
+    newProps.className = `${props.className || ''} admin-table`;
+    return newProps;
+  }
+  return props;
+}, { priority: 20 }); // Runs after the height adjustment
 
-<Table props={app.filterManager.applyFilter('core:block:table:props')}/>
+// --- Component Usage ---
+
+const MyTableComponent = (/* ... */) => {
+  const initialProps = useMemo(() => ({ /* base props like schema, data */ }), [/* deps */]);
+  const context = useMemo(() => ({ 
+    compact: isCompactMode, 
+    currentUser 
+  }), [isCompactMode, currentUser]);
+
+  // Apply all registered filters for 'core:block:table:props'
+  const filteredProps = useMemo(() => 
+    app.filterManager.applyFilter('core:block:table:props', initialProps, context),
+    [initialProps, context]
+  );
+
+  return <Table {...filteredProps} />;
+}
 ```
 
-**Complex Filter Examples**:
-```typescript
-const schema = useFieldSchema();
-
-// 应用单个属性 filter
-const height = useMemo(() =>
-  app.filterManager.applyFilter('core:block:table:props:height', {
-    compact: isCompactMode,
-    height: 600
-  }),
-  [isCompactMode]
-);
-
-// 应用多个属性的综合 filter
-const props = useMemo(() =>
-  app.filterManager.applyFilter('core:block:table:props', { ...schema, height }, {
-    mode: 'default',
-    context: { currentUser }
-  }),
-  [schema, height, currentUser]
-);
-
-return <Table {...props} />;
-```
+**Explanation of Example:**
+- Two separate filters are registered for `core:block:table:props`.
+- The `applyFilter` call provides the `initialProps` and a `context` object.
+- The filter manager runs the priority 10 filter first (adjusting height using `context.compact`), then passes its result to the priority 20 filter (which adds a class using `context.currentUser`).
+- The final `filteredProps` reflect the combined transformations.
+- **Note:** Filter functions should be mindful of object mutability. Returning a new object (`{...props}`) is often safer than modifying the input directly, unless mutation is explicitly intended and documented for that filter chain.
 
 ### Hooks
 
