@@ -1,0 +1,25 @@
+{
+  "name": "@nocobase/plugin-event-filter-system",
+  "version": "0.1.0",
+  "main": "dist/server/index.js",
+  "displayName": "Event Filter System",
+  "displayName.zh-CN": "事件过滤系统",
+  "description": "Provides event management and filtering capabilities",
+  "description.zh-CN": "提供事件管理和过滤功能",
+  "license": "AGPL-3.0",
+  "files": [
+    "dist",
+    "server.js",
+    "server.d.ts",
+    "client.js",
+    "client.d.ts"
+  ],
+  "peerDependencies": {
+    "@nocobase/client": "1.x",
+    "@nocobase/server": "1.x",
+    "@nocobase/test": "1.x"
+  },
+  "keywords": [
+    "Core"
+  ]
+} 
