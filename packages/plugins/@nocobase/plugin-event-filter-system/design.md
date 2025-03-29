@@ -372,6 +372,7 @@ Listeners can potentially listen using wildcards (e.g., `core:block:table:**`), 
 ```typescript
 interface EventContext<T = any> {
   // 事件源 (dispatchEvent调用者) 信息
+  // Listeners SHOULD treat this as read-only.
   source?: {
     id?: string;
     type?: string;  // 'user-interaction', 'system', 'workflow'
@@ -379,15 +380,19 @@ interface EventContext<T = any> {
   };
   
   // 用于指定接收者信息, 主要用于精准触发事件
+  // Listeners SHOULD treat this as read-only.
   target?: {
     id?: string;      // id
     uischema?: ISchema;    // ui schema
   }
   
   // 事件相关数据
-  payload?: T;        // 事件特定的数据, TODO: 列出常用的事件相关数据
+  // Listeners SHOULD treat this as read-only by convention.
+  // Use ctx.results for output.
+  payload?: T;
   
   // 元数据
+  // Listeners SHOULD treat this as read-only.
   meta?: {
     timestamp?: number;     // 事件触发的时间
     userId?: string;      // 当前用户ID (可选)
@@ -395,10 +400,20 @@ interface EventContext<T = any> {
     [table:refresh, form:refresh]
   };
   
+  // 用于收集事件监听器的输出结果
+  // Initialized as {} by dispatchEvent. Listeners add properties here.
+  results: Record<string, any>; 
+  
   // TODO: 是否需要支持事件中断执行?
   // propagation: true; // 可能改成propagation.stop()是否停止继续执行
 }
 ```
+
+**Listener Guidelines:**
+
+*   **Context Immutability:** Listeners should treat the incoming context properties (`ctx.source`, `ctx.target`, `ctx.payload`, `ctx.meta`) as **read-only**. Modifying these shared objects directly can lead to unpredictable side effects for other listeners or the event dispatcher.
+*   **Providing Results:** To communicate results or data back to the caller or potentially other listeners (depending on execution order), listeners should **add properties** to the `ctx.results` object. The final state of this object is returned by `dispatchEvent`.
+*   **Overwriting Results:** Be aware that if multiple listeners write to the same property key within `ctx.results`, the value set by the listener that finishes last will prevail in the final returned object.
 
 #### Listener Options
 
@@ -455,16 +470,28 @@ Removes event listeners.
 ##### dispatchEvent
 
 ```typescript
-app.eventManager.dispatchEvent(eventName, ctx: EventContext, timeout: number): Promise<void>;
+// Note: The timeout parameter might need reconsideration with async results
+app.eventManager.dispatchEvent<T = any>(
+  eventName: string | string[], 
+  ctx: EventContext<T>
+  // timeout?: number // Timeout removed for simplicity with async results for now
+): Promise<Record<string, any>>; // Resolves with ctx.results
 ```
 
 **Parameters**:
-- `eventName`: Event name
-- `ctx`: Event context
-- `timeout`: Event timeout in milliseconds, default 2 minutes
+- `eventName`: Event name or array of names.
+- `ctx`: Event context object. The `EventManager` will ensure `ctx.results` exists before passing it to listeners.
+
+**Execution Flow**:
+1.  Ensures `ctx.results` exists and is an empty object.
+2.  Finds all listeners matching `eventName`.
+3.  Executes listeners based on priority, blocking options, and filter functions.
+4.  Handles `async` listeners appropriately, awaiting their completion if necessary (especially for blocking listeners or if results depend on them).
+5.  Listeners may add properties to the shared `ctx.results` object during their execution.
 
 **Returns**:
-- A Promise that resolves when all listeners have completed processing
+- A `Promise` that resolves with the **final state of the `ctx.results` object** after all relevant listeners have completed execution. This object contains the accumulated outputs from all listeners that contributed to it.
+- **Note:** Callers need to handle the possibility of results being overwritten if multiple listeners target the same key in `ctx.results`.
 
 ## Form Submission Flow Example
 
@@ -478,22 +505,26 @@ sequenceDiagram
     participant AfterSubmitListeners
 
     User->>Form: Click Submit
-    Form->>EventManager: dispatches :beforeSubmit
+    Form->>EventManager: dispatchEvent(':beforeSubmit', ctx)
     EventManager->>BeforeSubmitListeners: route to handlers
-    BeforeSubmitListeners-->>EventManager: return (may include stop flag)
-    alt if beforeSubmitCtx.stop is true
-        EventManager-->>Form: stop submission
-        Form-->>User: Show feedback
+    Note over BeforeSubmitListeners: Handlers may add to ctx.results
+    BeforeSubmitListeners-->>EventManager: complete
+    EventManager-->>Form: return Promise<ctx.results>
+    Form->>Form: process results (e.g., check ctx.results.validation)
+    alt if validation failed or stop requested via ctx.results
+        Form-->>User: Show feedback (stop)
     else proceed with submission
-        EventManager-->>Form: continue
-        Form->>EventManager: dispatches form:submit
+        Form->>EventManager: dispatchEvent('form:submit', ctx)
         EventManager->>SubmitListeners: route to handlers
-        SubmitListeners-->>EventManager: return results
-        EventManager-->>Form: continue
-        Form->>EventManager: dispatches form:afterSubmit
+        Note over SubmitListeners: Handlers may add to ctx.results
+        SubmitListeners-->>EventManager: complete
+        EventManager-->>Form: return Promise<ctx.results>
+        Form->>Form: process results
+        Form->>EventManager: dispatchEvent('form:afterSubmit', ctx)
         EventManager->>AfterSubmitListeners: route to handlers
-        AfterSubmitListeners-->>EventManager: return results
-        EventManager-->>Form: complete
+        Note over AfterSubmitListeners: Handlers may add to ctx.results
+        AfterSubmitListeners-->>EventManager: complete
+        EventManager-->>Form: return Promise<ctx.results>
         Form-->>User: Show success feedback
     end
 ```
@@ -533,17 +564,20 @@ sequenceDiagram
    // block-form.ts
    async function submit() {
      const beforeSubmitCtx = {
+       results: {},
        source: {
          id: actionId
        }
        ...
      };
-     await app.eventManager.dispatchEvent(':beforeSubmit', beforeSubmitCtx);
-     if (beforeSubmitCtx.stop) {
+     // Dispatch and get results
+     const beforeSubmitResults = await app.eventManager.dispatchEvent(':beforeSubmit', beforeSubmitCtx);
+     // Check results for stop conditions or validation failures
+     if (beforeSubmitResults.stopProcessing || beforeSubmitResults.validationFailed) {
        return;
      }
      // 继续提交
-     await app.eventManager.dispatchEvent('form:submit', ctx);
+     const submitResults = await app.eventManager.dispatchEvent('form:submit', ctx);
      await app.eventManager.dispatchEvent('form:afterSubmit', ctx);
    }
    
