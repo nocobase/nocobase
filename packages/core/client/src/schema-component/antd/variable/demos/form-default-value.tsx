@@ -96,7 +96,7 @@ const schema: ISchema = {
     },
     datetime_withTZ: {
       type: 'string',
-      title: 'Nickname',
+      title: 'Datetime with Timezone',
       'x-decorator': 'FormItem',
       'x-component': 'Input',
       'x-settings': 'simpleSettings',
@@ -104,7 +104,7 @@ const schema: ISchema = {
     },
     datetime_withoutTZ: {
       type: 'string',
-      title: 'Datetime without TZ',
+      title: 'Datetime without Timezone',
       'x-decorator': 'FormItem',
       'x-component': 'Input',
       'x-settings': 'simpleSettings',

@@ -8,7 +8,6 @@
  */
 
 export * from './escape';
-export * from './filters';
 export * from './parser';
 export * from './types';
 export * from './utils';

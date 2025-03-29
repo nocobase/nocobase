@@ -161,51 +161,34 @@ const Configurator = observer(
               'x-decorator': 'FormItem',
               title: tval('Output value', { ns: 'client' }),
             },
-            actions: {
-              type: 'void',
-              title: tval('Save'),
-              'x-component': 'ActionBar',
-              properties: {
-                delete: {
-                  type: 'void',
-                  title: tval('Delete'),
-                  'x-component': 'Action',
-                  'x-use-component-props': 'useDeleteActionProps',
-                },
-                close: {
-                  type: 'void',
-                  title: tval('Close'),
-                  'x-component': 'Action',
-                  'x-use-component-props': 'useCloseActionProps',
-                },
-              },
-            },
           },
         },
       },
     };
 
-    return HelperComponent ? (
+    return (
       <>
-        <HelperComponent
-          value={helper.argsMap}
-          onChange={(values) => (rawHelper.argsMap = values)}
-          inputValue={inputValue}
-        />
+        {HelperComponent ? (
+          <HelperComponent
+            value={helper.argsMap}
+            onChange={(values) => (rawHelper.argsMap = values)}
+            inputValue={inputValue}
+          />
+        ) : (
+          <SchemaComponent
+            components={{ InputValue, OuputValue }}
+            schema={schema}
+            scope={{
+              t: app.i18n.t,
+              useFormBlockProps,
+              useDeleteActionProps,
+              useCloseActionProps,
+            }}
+            basePath={['']}
+          />
+        )}
         <MyButtons onDelete={() => removeHelper({ index: index })} onClose={close} />
       </>
-    ) : (
-      <SchemaComponent
-        components={{ InputValue, OuputValue }}
-        schema={schema}
-        scope={{
-          t: app.i18n.t,
-          useFormBlockProps,
-          useDeleteActionProps,
-          useCloseActionProps,
-        }}
-        basePath={['']}
-      />
     );
   },
   { displayName: 'Configurator' },
