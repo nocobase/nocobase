@@ -84,7 +84,8 @@ The Filter API provides mechanisms for data transformation with enhanced customi
 
 ```typescript
 // Define the expected signature for a filter function
-type FilterFunction = (currentValue: any, ...contextArgs: any[]) => any;
+// It can be synchronous or return a Promise
+type FilterFunction = (currentValue: any, ...contextArgs: any[]) => any | Promise<any>;
 
 // Define options for adding a filter
 interface FilterOptions {
@@ -99,9 +100,12 @@ class FilterManager {  // Singleton, typically accessed via app.filterManager
   removeFilter(name: string, filter?: FilterFunction): void;
 
   // Applies all registered filters for a name to an initial value.
-  applyFilter(name: string, initialValue: any, ...contextArgs: any[]): any;
+  // ALWAYS returns a Promise.
+  applyFilter(name: string, initialValue: any, ...contextArgs: any[]): Promise<any>;
 }
 ```
+
+**Note on Asynchronicity:** This API is designed to be fully asynchronous to support filters that need to perform async operations (e.g., API calls). `applyFilter` *always* returns a `Promise`, even if all registered filters are synchronous. Callers *must* use `await` or `.then()` to get the final result.
 
 #### Filter Naming Convention
 
@@ -141,14 +145,14 @@ Registration requires using this full, structured name. Wildcards are not suppor
 ```typescript
 app.filterManager.addFilter(
   name: string, 
-  filter: FilterFunction, // Must match the FilterFunction signature
+  filter: FilterFunction, // Can be sync or async
   options?: FilterOptions 
 ): () => void // Returns an unregister function
 ```
 
 **Parameters**:
 - `name`: Filter name, following the convention `origin:[domain]:[sub-module]:attribute`. Wildcards are not supported.
-- `filter`: The filter function. It receives the current value (output of the previous filter or the `initialValue` for the first filter) as its first argument, and any `contextArgs` passed to `applyFilter` as subsequent arguments. It should return the transformed value.
+- `filter`: The filter function. It receives the current value (output of the previous filter or the `initialValue` for the first filter) as its first argument, and any `contextArgs` passed to `applyFilter` as subsequent arguments. It can return the transformed value directly or a `Promise` resolving to the transformed value.
 - `options`: Configuration options, currently only `priority` (default 0). Filters with lower priority run first.
 
 **Returns**:
@@ -167,11 +171,11 @@ app.filterManager.removeFilter(name: string, filter?: FilterFunction): void
 ##### applyFilter
 
 ```typescript
-app.filterManager.applyFilter(
+async applyFilter(
   name: string, 
   initialValue: any, 
   ...contextArgs: any[]
-): any
+): Promise<any>
 ```
 
 **Parameters**:
@@ -182,12 +186,12 @@ app.filterManager.applyFilter(
 **Execution Flow**:
 1. Retrieves all filter functions registered for `name`.
 2. Sorts them based on `priority` (lower priority first).
-3. Passes the `initialValue` to the first filter, along with `contextArgs`.
-4. Passes the *return value* of the first filter to the second filter (as its first argument), along with the same `contextArgs`.
-5. Continues this process for all filters in the chain.
+3. Sequentially executes each filter function, passing the result of the previous filter (or `initialValue` for the first) and the `contextArgs`.
+4. **Crucially:** If a filter function returns a `Promise`, the manager `await`s its resolution before proceeding to the next filter.
 
 **Returns**:
-- The final value after being processed by all matching filters in the chain.
+- A `Promise` that resolves with the final value after being processed by all matching filters in the chain. 
+- **Breaking Change:** Callers must now use `await` or `.then()` to handle the result.
 
 #### Examples
 
@@ -196,7 +200,7 @@ app.filterManager.applyFilter(
 Instead of chaining `applyFilter` calls within filters, it's often clearer to register multiple filters for the *same* top-level name (e.g., `core:block:table:props`) and use `priority` and `contextArgs` to manage the transformation.
 
 ```typescript
-// Filter 1: Adjust table height based on context
+// Filter 1: Adjust table height based on context (Synchronous)
 app.filterManager.addFilter('core:block:table:props', (props, context) => {
   if (context?.compact) {
     // Ensure props object is mutable or create a new one
@@ -207,9 +211,12 @@ app.filterManager.addFilter('core:block:table:props', (props, context) => {
   return props; // Return original or potentially modified props
 }, { priority: 10 }); // Runs relatively early
 
-// Filter 2: Add a specific CSS class based on context
-app.filterManager.addFilter('core:block:table:props', (props, context) => {
-  if (context?.currentUser?.isAdmin) {
+// Filter 2: Add CSS class based on async user role check (Asynchronous)
+app.filterManager.addFilter('core:block:table:props', async (props, context) => {
+  // Assume context.currentUser exists, but we need to fetch role details
+  const userRole = await fetchUserRole(context.currentUser.id); // Example async call
+  
+  if (userRole === 'admin') {
     const newProps = { ...props };
     newProps.className = `${props.className || ''} admin-table`;
     return newProps;
@@ -220,27 +227,52 @@ app.filterManager.addFilter('core:block:table:props', (props, context) => {
 // --- Component Usage ---
 
 const MyTableComponent = (/* ... */) => {
-  const initialProps = useMemo(() => ({ /* base props like schema, data */ }), [/* deps */]);
-  const context = useMemo(() => ({ 
-    compact: isCompactMode, 
-    currentUser 
-  }), [isCompactMode, currentUser]);
+  const initialProps = useMemo(() => ({ /* base props */ }), [/* deps */]);
+  const context = useMemo(() => ({ /* context */ }), [/* deps */]);
+  const [filteredProps, setFilteredProps] = useState(initialProps);
+  const [isLoading, setIsLoading] = useState(false);
 
-  // Apply all registered filters for 'core:block:table:props'
-  const filteredProps = useMemo(() => 
-    app.filterManager.applyFilter('core:block:table:props', initialProps, context),
-    [initialProps, context]
-  );
+  useEffect(() => {
+    let isMounted = true;
+    const loadFilteredProps = async () => {
+      setIsLoading(true);
+      try {
+        // MUST await the result
+        const result = await app.filterManager.applyFilter(
+          'core:block:table:props', 
+          initialProps, 
+          context
+        );
+        if (isMounted) {
+          setFilteredProps(result);
+        }
+      } catch (error) {
+        console.error("Error applying filters:", error);
+        // Handle error appropriately
+      } finally {
+        if (isMounted) {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    loadFilteredProps();
+
+    return () => { isMounted = false; }; // Cleanup
+  }, [initialProps, context]);
+
+  if (isLoading) {
+    return <Spin />; // Show loading indicator while filters run
+  }
 
   return <Table {...filteredProps} />;
 }
 ```
 
 **Explanation of Example:**
-- Two separate filters are registered for `core:block:table:props`.
-- The `applyFilter` call provides the `initialProps` and a `context` object.
-- The filter manager runs the priority 10 filter first (adjusting height using `context.compact`), then passes its result to the priority 20 filter (which adds a class using `context.currentUser`).
-- The final `filteredProps` reflect the combined transformations.
+- The first filter remains synchronous.
+- The second filter is now `async` and uses `await` to fetch user roles.
+- **Crucially**, the component usage (`MyTableComponent`) now uses `useEffect` and `async`/`await` to call `applyFilter` and handle the resulting `Promise`. It also includes loading and error handling state.
 - **Note:** Filter functions should be mindful of object mutability. Returning a new object (`{...props}`) is often safer than modifying the input directly, unless mutation is explicitly intended and documented for that filter chain.
 
 ### Hooks
@@ -258,10 +290,14 @@ const useAddFilter = (name:string, filterFunction, options) => {
 #### useApplyFilter
 
 ```typescript
+// This hook might need adjustment or a new async version depending on usage patterns.
+// A simple version might just return the function without immediate execution.
 const useApplyFilter = (name: string) => {
-  return useCallback((props) => {
-    return app.filterManager.applyFilter(name, props);
-  }, [app]);
+  // Note: This returns the async function itself. 
+  // The component using this hook would need to call it with await.
+  return useCallback(async (initialValue: any, ...contextArgs: any[]) => {
+    return app.filterManager.applyFilter(name, initialValue, ...contextArgs);
+  }, [app, name]); // Ensure app is stable if passed via context
 }
 ```
 
@@ -326,7 +362,7 @@ interface EventContext<T = any> {
     [key: string]: any // any extra information
   };
   
-  // 用于指定接收者信息, 主要用于精准触发事件监听
+  // 用于指定接收者信息, 主要用于精准触发事件
   target?: {
     id?: string;      // id
     uischema?: ISchema;    // ui schema
