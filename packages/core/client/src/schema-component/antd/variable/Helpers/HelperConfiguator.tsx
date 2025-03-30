@@ -82,12 +82,9 @@ const Configurator = observer(
     const outputValue = helpersObs.value.slice(0, index + 1).reduce((value, helper) => {
       return helper.handler(value, ...helper.args);
     }, value);
-    const onFormValuesChange = useCallback(
-      (values) => {
-        rawHelper.argsMap = values;
-      },
-      [rawHelper],
-    );
+    const onChange = useCallback((values) => {
+      rawHelper.argsMap = values;
+    }, []);
     const InputValue = () => {
       return (
         <div>
@@ -173,7 +170,7 @@ const Configurator = observer(
       <>
         <InputValue />
         {HelperComponent ? (
-          <HelperComponent value={helper.argsMap} onChange={onFormValuesChange} inputValue={inputValue} />
+          <HelperComponent value={helper.argsMap} onChange={onChange} inputValue={inputValue} />
         ) : (
           <SchemaComponent
             schema={schema}
