@@ -13,7 +13,7 @@ Scope 用于定义变量的基本属性，包括：
 
 变量的 `type` 属性会匹配对应的 helper 函数，用于对变量进行二次处理。目前内置了以下 helper：
 - `date.date_format`: 日期格式化
-- `date.date_offset`: 日期偏移
+- `date.date_calculate`: 日期偏移
 
 只有类型为 `date` 的变量才能匹配到对应的过滤器，其他类型或无类型的变量无法使用这些过滤器。
 
@@ -35,10 +35,10 @@ const scope = [
    - 支持常见的日期格式，如 'YYYY-MM-DD'、'YYYY-MM-DD HH:mm:ss' 等
    - 示例：`{{$date.now | date.format 'YYYY-MM-DD'}}`
 
-2. **date_offset**
+2. **date_calculate**
    - 用于对日期进行偏移计算
    - 支持年、月、日、时、分、秒的偏移
-   - 示例：`{{$date.now | date.offset '1d'}}`（向后偏移1天）
+   - 示例：`{{$date.now | date.calculate '1d'}}`（向后偏移1天）
 
 <code src="./demos/helper-demo.tsx"></code>
 
@@ -77,8 +77,8 @@ const scope = [
 
 <code src="./demos/form-default-value.tsx"></code>
 
-#### 2. 数据范围
-<code src="./demos/data-scope-demo.tsx"></code>
+<!-- #### 2. 数据范围
+<code src="./demos/data-scope-demo.tsx"></code> -->
 
 ### 变量禁用状态
 当变量被禁用时，已选中的变量值仍然保持显示。下面的示例展示了 `now` 变量被禁用的情况：

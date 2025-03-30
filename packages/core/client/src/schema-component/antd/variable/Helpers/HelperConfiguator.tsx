@@ -201,7 +201,9 @@ export const MyButtons = observer(
         <Button type="primary" danger onClick={onDelete}>
           {t('Delete', { ns: 'client' })}
         </Button>
-        <Button onClick={onClose}>{t('Submit', { ns: 'client' })}</Button>
+        <Button type="primary" onClick={onClose}>
+          {t('Submit', { ns: 'client' })}
+        </Button>
       </Space>
     );
   },
