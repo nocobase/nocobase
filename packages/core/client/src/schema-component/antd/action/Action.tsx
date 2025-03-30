@@ -142,7 +142,11 @@ export const Action: ComposedAction = withDynamicSchemaProps(
         if (blocksToRefresh.length > 0) {
           getAllDataBlocks().forEach((block) => {
             if (blocksToRefresh.includes(block.uid)) {
-              block.service?.refresh();
+              try {
+                block.service?.refresh();
+              } catch (error) {
+                console.error('Failed to refresh block:', block.uid, error);
+              }
             }
           });
         }
