@@ -9,13 +9,15 @@
 
 import { useForm } from '@formily/react';
 import { ActionProps, ISchema, Plugin, SchemaComponent, useAPIClient, useApp, useRequest } from '@nocobase/client';
-import { App as AntdApp, Card, Spin } from 'antd';
+import { Alert, App as AntdApp, Card, Spin } from 'antd';
 import React from 'react';
+import { useT } from './locale';
 
 function LocaleTester() {
   const { data, loading } = useRequest<any>({
     url: 'localeTester:get',
   });
+  const t = useT();
 
   const schema: ISchema = {
     type: 'void',
@@ -33,12 +35,12 @@ function LocaleTester() {
               autoSize: { minRows: 20, maxRows: 30 },
             },
             default: data?.data?.locale,
-            title: 'Locale',
+            title: t('Translations'),
           },
           button: {
             type: 'void',
             'x-component': 'Action',
-            title: 'Submit',
+            title: t('Submit'),
             'x-use-component-props': 'useSubmitActionProps',
           },
         },
@@ -80,6 +82,18 @@ function LocaleTester() {
   }
   return (
     <Card>
+      <Alert
+        style={{ marginBottom: 12 }}
+        description={
+          <div
+            dangerouslySetInnerHTML={{
+              __html: t(
+                `Please go to <a target="_blank" href="https://github.com/nocobase/locales">nocobase/locales</a> to get the language file that needs translation, then paste it below and provide the translation.`,
+              ),
+            }}
+          ></div>
+        }
+      />
       <SchemaComponent schema={schema} scope={{ useSubmitActionProps }} />
     </Card>
   );
@@ -95,8 +109,8 @@ export class PluginLocaleTesterClient extends Plugin {
   // You can get and modify the app instance here
   async load() {
     this.app.pluginSettingsManager.add('locale-tester', {
-      title: 'Locale tester',
-      icon: 'FormOutlined',
+      title: this.t('Locale tester'),
+      icon: 'TranslationOutlined',
       Component: LocaleTester,
     });
     // this.app.addComponents({})

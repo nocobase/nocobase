@@ -13,7 +13,12 @@ import _ from 'lodash';
 export class PluginLocaleTesterServer extends Plugin {
   async afterAdd() {}
 
-  async beforeLoad() {}
+  async beforeLoad() {
+    this.app.acl.registerSnippet({
+      name: `pm.${this.name}`,
+      actions: ['localeTester:*'],
+    });
+  }
 
   async load() {
     this.app.resourceManager.use(async (ctx, next) => {
@@ -22,9 +27,13 @@ export class PluginLocaleTesterServer extends Plugin {
       if (resourceName === 'app' && actionName === 'getLang') {
         const repository = this.db.getRepository('localeTester');
         const record = await repository.findOne();
-        const locale = record.locale || {};
-        _.set(ctx.body, 'cronstrue', locale['cronstrue'] || {});
-        _.set(ctx.body, 'cron', locale['react-js-cron'] || {});
+        const locale = record?.locale || {};
+        if (locale['cronstrue']) {
+          _.set(ctx.body, 'cronstrue', locale['cronstrue']);
+        }
+        if (locale['react-js-cron']) {
+          _.set(ctx.body, 'cron', locale['react-js-cron']);
+        }
         Object.keys(locale).forEach((key) => {
           if (key === 'cronstrue' || key === 'react-js-cron') {
             return;
