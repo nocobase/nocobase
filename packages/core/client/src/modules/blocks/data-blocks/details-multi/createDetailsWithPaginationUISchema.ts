@@ -52,6 +52,17 @@ export function createDetailsWithPaginationUISchema(options: {
         properties: {
           [uid()]: {
             type: 'void',
+            'x-initializer': hideActionInitializer ? undefined : 'aiEmployees:configure',
+            'x-component': 'ActionBar',
+            'x-component-props': {
+              style: {
+                marginBottom: 16,
+              },
+            },
+            properties: {},
+          },
+          [uid()]: {
+            type: 'void',
             'x-initializer': hideActionInitializer ? undefined : 'details:configureActions',
             'x-component': 'ActionBar',
             'x-component-props': {

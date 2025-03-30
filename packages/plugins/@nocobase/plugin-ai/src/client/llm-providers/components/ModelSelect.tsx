@@ -15,7 +15,7 @@ import { Field } from '@formily/core';
 
 export const ModelSelect: React.FC = () => {
   const field = useField<Field>();
-  const form = useForm();
+  const serviceField = field.query('.llmService').take() as Field;
   const api = useAPIClient();
   const ctx = useActionContext();
   const [options, setOptions] = useState([]);
@@ -29,7 +29,7 @@ export const ModelSelect: React.FC = () => {
       api
         .resource('ai')
         .listModels({
-          llmService: form.values?.llmService,
+          llmService: serviceField?.value,
         })
         .then(
           (res) =>
@@ -42,8 +42,8 @@ export const ModelSelect: React.FC = () => {
             ),
         ),
     {
-      ready: !!form.values?.llmService && ctx.visible,
-      refreshDeps: [form.values?.llmService],
+      ready: !!serviceField?.value && ctx.visible,
+      refreshDeps: [serviceField?.value],
       onSuccess: (data) => setOptions(data),
     },
   );

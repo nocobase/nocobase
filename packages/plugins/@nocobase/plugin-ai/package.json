@@ -13,8 +13,10 @@
     "@nocobase/test": "1.x"
   },
   "devDependencies": {
+    "@ant-design/x": "^1.0.5",
     "@langchain/core": "^0.3.39",
     "@langchain/deepseek": "^0.0.1",
-    "@langchain/openai": "^0.4.3"
+    "@langchain/openai": "^0.4.3",
+    "snowflake-id": "^1.1.0"
   }
 }

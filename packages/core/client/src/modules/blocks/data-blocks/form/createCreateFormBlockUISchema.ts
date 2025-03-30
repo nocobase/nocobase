@@ -62,6 +62,18 @@ export function createCreateFormBlockUISchema(options: CreateFormBlockUISchemaOp
           },
           [uid()]: {
             type: 'void',
+            'x-initializer': 'aiEmployees:configure',
+            'x-component': 'ActionBar',
+            'x-component-props': {
+              layout: 'one-column',
+              style: {
+                marginBottom: 8,
+              },
+            },
+            properties: {},
+          },
+          [uid()]: {
+            type: 'void',
             'x-initializer': 'createForm:configureActions',
             'x-component': 'ActionBar',
             'x-component-props': {
