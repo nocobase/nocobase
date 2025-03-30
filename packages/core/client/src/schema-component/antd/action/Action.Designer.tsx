@@ -295,6 +295,32 @@ const useVariableProps = (environmentVariables) => {
   };
 };
 
+const hideDialog = (dialogClassName: string) => {
+  const dialogMask = document.querySelector<HTMLElement>(`.${dialogClassName} > .ant-modal-mask`);
+  const dialogWrap = document.querySelector<HTMLElement>(`.${dialogClassName} > .ant-modal-wrap`);
+  if (dialogMask) {
+    dialogMask.style.opacity = '0';
+    dialogMask.style.transition = 'opacity 0.5s ease';
+  }
+  if (dialogWrap) {
+    dialogWrap.style.opacity = '0';
+    dialogWrap.style.transition = 'opacity 0.5s ease';
+  }
+}
+
+const showDialog = (dialogClassName: string) => {
+  const dialogMask = document.querySelector<HTMLElement>(`.${dialogClassName} > .ant-modal-mask`);
+  const dialogWrap = document.querySelector<HTMLElement>(`.${dialogClassName} > .ant-modal-wrap`);
+  if (dialogMask) {
+    dialogMask.style.opacity = '1';
+    dialogMask.style.transition = 'opacity 0.5s ease';
+  }
+  if (dialogWrap) {
+    dialogWrap.style.opacity = '1';
+    dialogWrap.style.transition = 'opacity 0.5s ease';
+  }
+}
+
 const BlocksSelector = (props) => {
   const { getAllDataBlocks } = useAllDataBlocks();
   const allDataBlocks = getAllDataBlocks();
@@ -310,9 +336,11 @@ const BlocksSelector = (props) => {
         value: block.uid,
         onMouseEnter() {
           block.highlightBlock();
+          hideDialog('dialog-after-successful-submission');
         },
         onMouseLeave() {
           block.unhighlightBlock();
+          showDialog('dialog-after-successful-submission');
         }
       }
     });
