@@ -9,11 +9,12 @@
 
 import { ISchema, useField, useFieldSchema } from '@formily/react';
 import { isValid, uid } from '@formily/shared';
-import { ModalProps } from 'antd';
-import React, { useCallback } from 'react';
+import { ModalProps, Select } from 'antd';
+import React, { useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCompile, useDesignable } from '../..';
 import { isInitializersSame, useApp } from '../../../application';
+import { useGlobalVariable } from '../../../application/hooks/useGlobalVariable';
 import { SchemaSettingOptions, SchemaSettings } from '../../../application/schema-settings';
 import { useSchemaToolbar } from '../../../application/schema-toolbar';
 import { useCollectionManager_deprecated, useCollection_deprecated } from '../../../collection-manager';
@@ -32,10 +33,10 @@ import {
   SchemaSettingsSwitchItem,
 } from '../../../schema-settings/SchemaSettings';
 import { DefaultValueProvider } from '../../../schema-settings/hooks/useIsAllowToSetDefaultValue';
+import { useAllDataBlocks } from '../page/AllDataBlocksProvider';
 import { useLinkageAction } from './hooks';
-import { requestSettingsSchema } from './utils';
 import { useAfterSuccessOptions } from './hooks/useGetAfterSuccessVariablesOptions';
-import { useGlobalVariable } from '../../../application/hooks/useGlobalVariable';
+import { requestSettingsSchema } from './utils';
 
 const MenuGroup = (props) => {
   return props.children;
@@ -294,6 +295,41 @@ const useVariableProps = (environmentVariables) => {
   };
 };
 
+const BlocksSelector = (props) => {
+  const { getAllDataBlocks } = useAllDataBlocks();
+  const allDataBlocks = getAllDataBlocks();
+  const compile = useCompile();
+  const { t } = useTranslation();
+
+  // 转换 allDataBlocks 为 Select 选项
+  const options = useMemo(() => {
+    return allDataBlocks.map(block => {
+      const title = `${compile(block.collection.title)} #${block.uid.slice(0, 4)}`;
+      return {
+        label: title,
+        value: block.uid,
+        onMouseEnter() {
+          block.highlightBlock();
+        },
+        onMouseLeave() {
+          block.unhighlightBlock();
+        }
+      }
+    });
+  }, [allDataBlocks, t]);
+
+  return (
+    <Select
+      value={props.value}
+      mode="multiple"
+      allowClear
+      placeholder={t('Select data blocks to refresh')}
+      options={options}
+      onChange={props.onChange}
+    />
+  );
+}
+
 export function AfterSuccess() {
   const { dn } = useDesignable();
   const { t } = useTranslation();
@@ -302,19 +338,20 @@ export function AfterSuccess() {
   const environmentVariables = useGlobalVariable('$env');
   return (
     <SchemaSettingsModalItem
+      dialogRootClassName='dialog-after-successful-submission'
       title={t('After successful submission')}
       initialValues={
         onSuccess
           ? {
-              actionAfterSuccess: onSuccess?.redirecting ? 'redirect' : 'previous',
-              ...onSuccess,
-            }
+            actionAfterSuccess: onSuccess?.redirecting ? 'redirect' : 'previous',
+            ...onSuccess,
+          }
           : {
-              manualClose: false,
-              redirecting: false,
-              successMessage: '{{t("Saved successfully")}}',
-              actionAfterSuccess: 'previous',
-            }
+            manualClose: false,
+            redirecting: false,
+            successMessage: '{{t("Saved successfully")}}',
+            actionAfterSuccess: 'previous',
+          }
       }
       schema={
         {
@@ -381,6 +418,12 @@ export function AfterSuccess() {
               'x-component': 'Variable.TextArea',
               // eslint-disable-next-line react-hooks/rules-of-hooks
               'x-use-component-props': () => useVariableProps(environmentVariables),
+            },
+            blocksToRefresh: {
+              type: 'array',
+              title: t('Refresh data blocks'),
+              'x-decorator': 'FormItem',
+              'x-component': BlocksSelector,
             },
           },
         } as ISchema

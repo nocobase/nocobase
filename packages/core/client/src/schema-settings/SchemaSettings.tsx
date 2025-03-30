@@ -817,6 +817,7 @@ export interface SchemaSettingsModalItemProps {
   noRecord?: boolean;
   /** 自定义 Modal 上下文 */
   ModalContextProvider?: React.FC;
+  dialogRootClassName?: string;
 }
 export const SchemaSettingsModalItem: FC<SchemaSettingsModalItemProps> = (props) => {
   const {
@@ -831,6 +832,7 @@ export const SchemaSettingsModalItem: FC<SchemaSettingsModalItemProps> = (props)
     width = 'fit-content',
     noRecord = false,
     ModalContextProvider = (props) => <>{props.children}</>,
+    dialogRootClassName,
     ...others
   } = props;
   const options = useContext(SchemaOptionsContext);
@@ -872,7 +874,7 @@ export const SchemaSettingsModalItem: FC<SchemaSettingsModalItemProps> = (props)
         const values = asyncGetInitialValues ? await asyncGetInitialValues() : initialValues;
         const schema = _.isFunction(props.schema) ? props.schema() : props.schema;
         FormDialog(
-          { title: schema.title || title, width },
+          { title: schema.title || title, width, rootClassName: dialogRootClassName },
           () => {
             return (
               <AllDataBlocksContext.Provider value={allDataBlocks}>
