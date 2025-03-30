@@ -129,7 +129,7 @@ export const DataBlockCollector = ({
   const field = useField();
   const fieldSchema = useFieldSchema();
   const associatedFields = useAssociatedFields();
-  const container = useRef<HTMLElement | null>(null);
+  const container = useRef<HTMLDivElement | null>(null);
   const dataLoadingMode = useDataLoadingMode();
 
   const shouldApplyFilter =
