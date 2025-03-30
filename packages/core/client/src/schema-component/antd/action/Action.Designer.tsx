@@ -331,6 +331,11 @@ const BlocksSelector = (props) => {
   // 转换 allDataBlocks 为 Select 选项
   const options = useMemo(() => {
     return allDataBlocks.map(block => {
+      // 防止列表中出现已关闭的弹窗中的区块
+      if (!block.dom?.isConnected) {
+        return null;
+      }
+
       const title = `${compile(block.collection.title)} #${block.uid.slice(0, 4)}`;
       return {
         label: title,
@@ -349,7 +354,7 @@ const BlocksSelector = (props) => {
           unhighlightBlock();
         }
       }
-    });
+    }).filter(Boolean);
   }, [allDataBlocks, t]);
 
   return (
