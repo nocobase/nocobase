@@ -611,5 +611,6 @@
   "The following old template features have been deprecated and will be removed in next version.": "Aşağıdaki eski şablon özellikleri kullanımdan kaldırıldı ve gelecek sürümlerde kaldırılacaktır.",
   "Full permissions": "Tüm izinler",
   "Refresh data blocks": "Yenile veri blokları",
-  "Select data blocks to refresh": "Veri bloklarını yenilemek için seçin"
+  "Select data blocks to refresh": "Veri bloklarını yenilemek için seçin",
+  "After successful submission, the selected data blocks will be automatically refreshed.": "Başarılı bir şekilde gönderildikten sonra, seçilen veri blokları otomatik olarak yenilenecektir."
 }

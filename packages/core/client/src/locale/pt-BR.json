@@ -784,5 +784,6 @@
   "The following old template features have been deprecated and will be removed in next version.": "As seguintes funcionalidades de modelo antigo foram descontinuadas e serão removidas na próxima versão.",
   "Full permissions": "Todas as permissões",
   "Refresh data blocks": "Atualizar blocos de dados",
-  "Select data blocks to refresh": "Selecionar blocos de dados para atualizar"
+  "Select data blocks to refresh": "Selecionar blocos de dados para atualizar",
+  "After successful submission, the selected data blocks will be automatically refreshed.": "Após a atualização em massa bem sucedida."
 }

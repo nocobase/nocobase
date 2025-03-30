@@ -613,5 +613,6 @@
   "The following old template features have been deprecated and will be removed in next version.": "Следующие старые функции шаблонов устарели и будут удалены в следующей версии.",
   "Full permissions": "Полные права",
   "Refresh data blocks": "Обновить блоки данных",
-  "Select data blocks to refresh": "Выберите блоки данных для обновления"
+  "Select data blocks to refresh": "Выберите блоки данных для обновления",
+  "After successful submission, the selected data blocks will be automatically refreshed.": "После успешной отправки выбранные блоки данных будут автоматически обновлены."
 }

@@ -1097,5 +1097,6 @@
   "Font Weight": "字体粗细",
   "Font Style": "字体样式",
   "Italic": "斜体",
-  "Response record":"响应结果记录"
+  "Response record":"响应结果记录",
+  "After successful submission, the selected data blocks will be automatically refreshed.": "提交成功后，会自动刷新这里选中的数据区块。"
 }

@@ -457,6 +457,11 @@ export function AfterSuccess() {
               type: 'array',
               title: t('Refresh data blocks'),
               'x-decorator': 'FormItem',
+              'x-use-decorator-props': () => {
+                return {
+                  tooltip: t('After successful submission, the selected data blocks will be automatically refreshed.'),
+                };
+              },
               'x-component': BlocksSelector,
             },
           },

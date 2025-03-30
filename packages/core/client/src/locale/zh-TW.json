@@ -918,5 +918,6 @@
   "The following old template features have been deprecated and will be removed in next version.": "以下舊的模板功能已棄用，將在下個版本移除。",
   "Full permissions": "完全權限",
   "Refresh data blocks": "刷新數據區塊",
-  "Select data blocks to refresh": "選擇要刷新的數據區塊"
+  "Select data blocks to refresh": "選擇要刷新的數據區塊",
+  "After successful submission, the selected data blocks will be automatically refreshed.": "提交成功後，選中的數據區塊將自動刷新。"
 }
