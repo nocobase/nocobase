@@ -169,7 +169,6 @@ export class PluginUISchemaStorageServer extends Plugin {
         const resources = {};
         uiSchemas.forEach((route: { schema?: any }) => {
           const changedFields = extractFields(route.schema);
-
           if (changedFields.length) {
             changedFields.forEach((field) => {
               resources[field] = '';
