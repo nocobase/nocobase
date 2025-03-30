@@ -80,10 +80,9 @@ export interface DataBlock {
 export interface FilterContextValue {
   getDataBlocks: () => DataBlock[];
   setDataBlocks: (value: DataBlock[] | ((prev: DataBlock[]) => DataBlock[])) => void;
-  parent: FilterContextValue | null;
 }
 
-const FilterContext = createContext<FilterContextValue | null>(null);
+const FilterContext = createContext<FilterContextValue>(null);
 FilterContext.displayName = 'FilterContext';
 
 /**
@@ -92,7 +91,6 @@ FilterContext.displayName = 'FilterContext';
  * @returns
  */
 export const FilterBlockProvider: React.FC = React.memo(({ children }) => {
-  const parent = React.useContext(FilterContext);
   const dataBlocksRef = React.useRef<DataBlock[]>([]);
 
   const setDataBlocks = useCallback((value) => {
@@ -105,7 +103,7 @@ export const FilterBlockProvider: React.FC = React.memo(({ children }) => {
 
   const getDataBlocks = useCallback(() => dataBlocksRef.current, []);
 
-  const value = useMemo(() => ({ getDataBlocks, setDataBlocks, parent }), [getDataBlocks, setDataBlocks, parent]);
+  const value = useMemo(() => ({ getDataBlocks, setDataBlocks }), [getDataBlocks, setDataBlocks]);
 
   return <FilterContext.Provider value={value}>{children}</FilterContext.Provider>;
 });
