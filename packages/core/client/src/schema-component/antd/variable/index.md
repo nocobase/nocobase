@@ -77,6 +77,9 @@ const scope = [
 
 <code src="./demos/form-default-value.tsx"></code>
 
+#### 2. Filter 组件
+<code src="./demos/filter-demo.tsx"></code>
+
 <!-- #### 2. 数据范围
 <code src="./demos/data-scope-demo.tsx"></code> -->
 

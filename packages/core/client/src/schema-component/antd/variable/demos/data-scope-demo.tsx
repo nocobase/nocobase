@@ -8,28 +8,23 @@ import {
   SchemaSettingsModalItem,
   TableBlockProvider,
   useTableBlockProps,
+  Variable,
 } from '@nocobase/client';
 import { mockApp } from '@nocobase/client/demo-utils';
 import { property } from 'lodash';
 import React from 'react';
 
-const DataScopeEditor = (props) => {
-  // const { getFields } = useCollectionFilterOptionsV2('roles');
-  const getSchema = () => ({
-    type: 'object',
-    title: 'Set the data scope',
-    properties: {
-      // enum: getFields(),
-      filter: {
-        'x-component': 'Filter',
-        'x-component-props': {
-          collectionName: 'users',
-        },
-      },
-    },
-  });
-  return <SchemaSettingsModalItem title="Data Scope" width={800} onSubmit={(v) => null} schema={getSchema} />;
-};
+const scopes = [
+  {
+    label: 'Date',
+    value: '$date',
+    children: [
+      { label: 'Now', value: 'now' },
+      { label: 'Today', value: 'today_with_tz' },
+      { label: 'Today', value: 'today_without_tz' },
+    ],
+  },
+];
 
 const dataScopeSettings = new SchemaSettings({
   name: 'dataScopeSettings',
@@ -38,7 +33,96 @@ const dataScopeSettings = new SchemaSettings({
       name: 'data scope',
       Component: SchemaSettingsDataScope,
       componentProps: {
-        collectionName: 'users',
+        collectionName: 'date_collection',
+      },
+      useComponentProps() {
+        return {
+          collectionName: 'date_collection',
+          dynamicComponent: (props) => {
+            const { collectionField } = props;
+            let scopes = [];
+
+            // For date/datetime fields
+            if (['date', 'datetime'].includes(collectionField?.interface)) {
+              scopes = [
+                {
+                  label: 'Date',
+                  value: '$date',
+                  children: [
+                    {
+                      label: 'Now',
+                      value: 'now',
+                    },
+                    {
+                      label: 'Today',
+                      value: 'today',
+                    },
+                    {
+                      label: 'Yesterday',
+                      value: 'yesterday',
+                    },
+                    {
+                      label: 'Tomorrow',
+                      value: 'tomorrow',
+                    },
+                  ],
+                },
+              ];
+            }
+
+            // For number fields
+            else if (['integer', 'number', 'percent'].includes(collectionField?.interface)) {
+              scopes = [
+                {
+                  label: 'Number',
+                  value: '$number',
+                  children: [
+                    {
+                      label: 'Random',
+                      value: 'random',
+                    },
+                    {
+                      label: 'Maximum',
+                      value: 'max',
+                    },
+                    {
+                      label: 'Minimum',
+                      value: 'min',
+                    },
+                  ],
+                },
+              ];
+            }
+
+            // For string fields
+            else if (['input', 'textarea', 'markdown'].includes(collectionField?.interface)) {
+              scopes = [
+                {
+                  label: 'String',
+                  value: '$string',
+                  children: [
+                    {
+                      label: 'Current User',
+                      value: 'currentUser',
+                      children: [
+                        {
+                          label: 'Name',
+                          value: 'name',
+                        },
+                        {
+                          label: 'Email',
+                          value: 'email',
+                        },
+                      ],
+                    },
+                  ],
+                },
+              ];
+            }
+
+            return <Variable.Input {...props} scope={scopes} />;
+          },
+        };
       },
     },
   ],
