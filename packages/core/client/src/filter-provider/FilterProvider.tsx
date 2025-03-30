@@ -19,6 +19,7 @@ import { mergeFilter, useAssociatedFields } from './utils';
 
 // @ts-ignore
 import React, { createContext, useCallback, useEffect, useMemo, useRef } from 'react';
+import { useAllDataBlocks } from '../schema-component/antd/page/AllDataBlocksProvider';
 
 enum FILTER_OPERATOR {
   AND = '$and',
@@ -77,7 +78,7 @@ export interface DataBlock {
   unhighlightBlock: () => void;
 }
 
-export interface FilterContextValue {
+interface FilterContextValue {
   getDataBlocks: () => DataBlock[];
   setDataBlocks: (value: DataBlock[] | ((prev: DataBlock[]) => DataBlock[])) => void;
 }
@@ -225,12 +226,14 @@ export const DataBlockCollector = ({
  */
 export const useFilterBlock = () => {
   const ctx = React.useContext(FilterContext);
+  const allDataBlocksCtx = useAllDataBlocks();
 
   // 有可能存在页面没有提供 FilterBlockProvider 的情况，比如内部使用的数据表管理页面
   const getDataBlocks = useCallback<() => DataBlock[]>(() => ctx?.getDataBlocks() || [], [ctx]);
 
   const recordDataBlocks = useCallback(
     (block: DataBlock) => {
+      allDataBlocksCtx.recordDataBlocks(block);
       const existingBlock = ctx?.getDataBlocks().find((item) => item.uid === block.uid);
 
       if (existingBlock) {
@@ -246,6 +249,7 @@ export const useFilterBlock = () => {
 
   const removeDataBlock = useCallback(
     (uid: string) => {
+      allDataBlocksCtx.removeDataBlock(uid);
       if (ctx?.getDataBlocks().every((item) => item.uid !== uid)) return;
       ctx?.setDataBlocks((prev) => prev.filter((item) => item.uid !== uid));
     },
