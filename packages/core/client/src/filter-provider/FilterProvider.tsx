@@ -71,9 +71,13 @@ export interface DataBlock {
    * manual: 只有当点击了筛选按钮，才会请求数据
    */
   dataLoadingMode?: 'auto' | 'manual';
+  /** 让整个区块悬浮起来 */
+  highlightBlock: () => void;
+  /** 取消悬浮 */
+  unhighlightBlock: () => void;
 }
 
-interface FilterContextValue {
+export interface FilterContextValue {
   getDataBlocks: () => DataBlock[];
   setDataBlocks: (value: DataBlock[] | ((prev: DataBlock[]) => DataBlock[])) => void;
   parent: FilterContextValue | null;
@@ -174,6 +178,30 @@ export const DataBlockCollector = ({
           field.data?.clearSelectedRowKeys?.();
         }
       },
+      highlightBlock() {
+        const dom = container.current;
+        const designer = dom.querySelector('.ant-nb-schema-toolbar');
+        if (designer) {
+          designer.classList.remove(process.env.__E2E__ ? 'hidden-e2e' : 'hidden');
+        }
+        dom.style.boxShadow = '0 4px 20px rgba(0, 0, 0, 0.15)';
+        dom.style.transition = 'box-shadow 0.3s ease, transform 0.2s ease';
+        dom.style.transform = 'translateY(-2px)';
+        dom.scrollIntoView?.({
+          behavior: 'smooth',
+          block: 'start',
+        });
+      },
+      unhighlightBlock() {
+        const dom = container.current;
+        const designer = dom.querySelector('.ant-nb-schema-toolbar');
+        if (designer) {
+          designer.classList.add(process.env.__E2E__ ? 'hidden-e2e' : 'hidden');
+        }
+        dom.style.boxShadow = 'none';
+        dom.style.transform = 'translateY(0)';
+        dom.style.transition = 'box-shadow 0.3s ease, transform 0.2s ease';
+      }
     });
   }, [
     associatedFields,
