@@ -13,7 +13,7 @@ Scope 用于定义变量的基本属性，包括：
 
 变量的 `type` 属性会匹配对应的 helper 函数，用于对变量进行二次处理。目前内置了以下 helper：
 - `date.date_format`: 日期格式化
-- `date.date_calculate`: 日期偏移
+- `date.date_calculate`: 日期计算
 
 只有类型为 `date` 的变量才能匹配到对应的过滤器，其他类型或无类型的变量无法使用这些过滤器。
 
@@ -36,9 +36,9 @@ const scope = [
    - 示例：`{{$date.now | date.format 'YYYY-MM-DD'}}`
 
 2. **date_calculate**
-   - 用于对日期进行偏移计算
-   - 支持年、月、日、时、分、秒的偏移
-   - 示例：`{{$date.now | date.calculate '1d'}}`（向后偏移1天）
+   - 用于对日期进行计算计算
+   - 支持年、月、日、时、分、秒的计算
+   - 示例：`{{$date.now | date.calculate '1d'}}`（向后计算1天）
 
 <code src="./demos/helper-demo.tsx"></code>
 

@@ -16,8 +16,8 @@ import { dayjs } from '@nocobase/utils/client';
 import React, { useEffect } from 'react';
 const data = {
   today_dateOnly: dayjs().format('YYYY-MM-DD'),
-  today_withTZ: new Date().toISOString(),
-  today_withoutTZ: dayjs().format('YYYY-MM-DD HH:mm:ss'),
+  today_withTZ: dayjs().startOf('date').utc().format(),
+  today_withoutTZ: dayjs().format('YYYY-MM-DD 00:00:00'),
 };
 
 const useDefaultValue = () => {
@@ -48,14 +48,6 @@ const DefaultValueEditor = () => {
 
   const defaultValueSchema = {
     type: 'object',
-    'x-component-props': {
-      data: {
-        today_dateOnly: dayjs().format('YYYY-MM-DD'),
-        today_withTZ: new Date().toISOString(),
-        today_withoutTZ: dayjs().format('YYYY-MM-DD 00:00:00'),
-      },
-      context: {},
-    },
 
     properties: {
       variable: {
