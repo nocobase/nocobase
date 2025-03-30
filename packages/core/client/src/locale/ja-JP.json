@@ -1043,5 +1043,7 @@
   "After hiding, this tab will no longer appear in the tab bar. To show it again, you need to go to the route management page to set it.": "非表示にすると、このタブはタブバーに表示されなくなります。再表示するには、ルート管理ページで設定する必要があります。",
   "Deprecated": "非推奨",
   "The following old template features have been deprecated and will be removed in next version.": "次の古いテンプレート機能は非推奨になり、次のバージョンで削除されます。",
-  "Full permissions": "すべての権限"
+  "Full permissions": "すべての権限",
+  "Refresh data blocks": "データブロックを更新",
+  "Select data blocks to refresh": "データブロックを選択して更新"
 }

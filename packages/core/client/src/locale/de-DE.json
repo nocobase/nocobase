@@ -884,5 +884,7 @@
   "If selected, the page will display Tab pages.": "Wenn ausgewählt, zeigt die Seite Tab-Seiten an.",
   "If selected, the route will be displayed in the menu.": "Wenn ausgewählt, wird die Route im Menü angezeigt.",
   "Are you sure you want to hide this tab?": "Sind Sie sicher, dass Sie diesen Tab ausblenden möchten?",
-  "After hiding, this tab will no longer appear in the tab bar. To show it again, you need to go to the route management page to set it.": "Nach dem Ausblenden wird dieser Tab nicht mehr in der Tableiste angezeigt. Um ihn wieder anzuzeigen, müssen Sie zur Routenverwaltungsseite gehen, um ihn einzustellen."
+  "After hiding, this tab will no longer appear in the tab bar. To show it again, you need to go to the route management page to set it.": "Nach dem Ausblenden wird dieser Tab nicht mehr in der Tableiste angezeigt. Um ihn wieder anzuzeigen, müssen Sie zur Routenverwaltungsseite gehen, um ihn einzustellen.",
+  "Refresh data blocks": "Aktualisieren Sie die Datenblöcke",
+  "Select data blocks to refresh": "Wählen Sie die Datenblöcke aus, die aktualisiert werden sollen."
 }

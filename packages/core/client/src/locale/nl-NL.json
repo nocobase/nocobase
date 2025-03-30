@@ -1,7 +1,7 @@
 {
     "Display <1><0>10</0><1>20</1><2>50</2><3>100</3></1> items per page": "Toon <1><0>10</0><1>20</1><2>50</2><3>100</3></1> items per pagina",
     "Page number": "Paginanummer",
-    "Page size": "Paginagrootte",   
+    "Page size": "Paginagrootte",
     "Meet <1><0>All</0><1>Any</1></1> conditions in the group": "Voldoe aan <1><0>Alle</0><1>Een</1></1> voorwaarde(n) in de groep",
     "Open in<1><0>Modal</0><1>Drawer</1><2>Window</2></1>": "Open in<1><0>Modal</0><1>Drawer</1><2>Venster</2></1>",
     "{{count}} filter items": "{{count}} filter items",
@@ -1054,5 +1054,7 @@
     "Font Size（px）": "Lettergrootte（px）",
     "Font Weight": "Letterdikte",
     "Font Style": "Letterstijl",
-    "Italic": "Cursief"
+    "Italic": "Cursief",
+    "Refresh data blocks": "Vernieuw gegevensblokken",
+    "Select data blocks to refresh": "Selecteer gegevensblokken om te vernieuwen"
 }
