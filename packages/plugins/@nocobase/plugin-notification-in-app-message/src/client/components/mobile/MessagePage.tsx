@@ -34,8 +34,16 @@ import {
 } from '../../observables';
 import InfiniteScrollContent from './InfiniteScrollContent';
 
+function removeStringIfStartsWith(text: string, prefix: string): string {
+  if (text.startsWith(prefix)) {
+    return text.slice(prefix.length);
+  }
+  return text;
+}
+
 const MobileMessagePageInner = (props: { displayPageHeader?: boolean }) => {
   const app = useApp();
+  const basename = app.router.basename.replace(/\/+$/, '');
   const { t } = useLocalTranslation();
   const navigate = useNavigate();
   const ctx = useCurrentUserContext();
@@ -61,7 +69,7 @@ const MobileMessagePageInner = (props: { displayPageHeader?: boolean }) => {
     if (url) {
       if (url.startsWith('/m/')) navigate(url.substring(2));
       else if (url.startsWith('/')) {
-        navigate(url);
+        navigate(removeStringIfStartsWith(url, basename));
         inboxVisible.value = false;
       } else {
         window.location.href = url;
