@@ -9,8 +9,11 @@
 
 import { useField } from '@formily/react';
 import React from 'react';
+import { useTranslation } from 'react-i18next';
+import { NAMESPACE_UI_SCHEMA } from '../../../i18n/constant';
 
 export const TableColumn = (props) => {
   const field = useField();
-  return <div role="button">{field.title}</div>;
+  const { t } = useTranslation();
+  return <div role="button">{t(field.title, { ns: NAMESPACE_UI_SCHEMA })}</div>;
 };
