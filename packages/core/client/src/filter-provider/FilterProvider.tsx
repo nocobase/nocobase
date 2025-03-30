@@ -179,6 +179,9 @@ export const DataBlockCollector = ({
       },
       highlightBlock() {
         const dom = container.current;
+
+        if (!dom) return;
+
         const designer = dom.querySelector('.ant-nb-schema-toolbar');
         if (designer) {
           designer.classList.remove(process.env.__E2E__ ? 'hidden-e2e' : 'hidden');
@@ -193,6 +196,9 @@ export const DataBlockCollector = ({
       },
       unhighlightBlock() {
         const dom = container.current;
+
+        if (!dom) return;
+
         const designer = dom.querySelector('.ant-nb-schema-toolbar');
         if (designer) {
           designer.classList.add(process.env.__E2E__ ? 'hidden-e2e' : 'hidden');
