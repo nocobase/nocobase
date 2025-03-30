@@ -82,9 +82,12 @@ const Configurator = observer(
     const outputValue = helpersObs.value.slice(0, index + 1).reduce((value, helper) => {
       return helper.handler(value, ...helper.args);
     }, value);
-    const onChange = useCallback((values) => {
-      rawHelper.argsMap = values;
-    }, []);
+    const onChange = useCallback(
+      (values) => {
+        rawHelper.argsMap = values;
+      },
+      [rawHelper],
+    );
     const InputValue = () => {
       return (
         <div>
