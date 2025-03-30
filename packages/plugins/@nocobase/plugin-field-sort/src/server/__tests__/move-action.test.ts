@@ -27,6 +27,10 @@ describe('sort action', () => {
     return api.destroy();
   });
 
+  function parseSortValue(value) {
+    return api.db.options.dialect === 'mssql' ? value.toString() : value;
+  }
+
   describe('associations', () => {
     let UserCollection: Collection;
 
@@ -204,19 +208,19 @@ describe('sort action', () => {
         data: [
           {
             title: 't2',
-            sort: 1,
+            sort: parseSortValue(1),
           },
           {
             title: 't3',
-            sort: 2,
+            sort: parseSortValue(2),
           },
           {
             title: 't1',
-            sort: 3,
+            sort: parseSortValue(3),
           },
           {
             title: 't4',
-            sort: 4,
+            sort: parseSortValue(4),
           },
         ],
       });
@@ -239,19 +243,19 @@ describe('sort action', () => {
         data: [
           {
             title: 't3',
-            sort: 1,
+            sort: parseSortValue(1),
           },
           {
             title: 't1',
-            sort: 2,
+            sort: parseSortValue(2),
           },
           {
             title: 't2',
-            sort: 3,
+            sort: parseSortValue(3),
           },
           {
             title: 't4',
-            sort: 4,
+            sort: parseSortValue(4),
           },
         ],
       });
@@ -274,19 +278,19 @@ describe('sort action', () => {
         data: [
           {
             title: 't2',
-            sort2: 1,
+            sort2: parseSortValue(1),
           },
           {
             title: 't3',
-            sort2: 2,
+            sort2: parseSortValue(2),
           },
           {
             title: 't1',
-            sort2: 3,
+            sort2: parseSortValue(3),
           },
           {
             title: 't4',
-            sort2: 4,
+            sort2: parseSortValue(4),
           },
         ],
       });
@@ -308,19 +312,19 @@ describe('sort action', () => {
         data: [
           {
             title: 't3',
-            sort: 0,
+            sort: parseSortValue(0),
           },
           {
             title: 't1',
-            sort: 1,
+            sort: parseSortValue(1),
           },
           {
             title: 't2',
-            sort: 2,
+            sort: parseSortValue(2),
           },
           {
             title: 't4',
-            sort: 4,
+            sort: parseSortValue(4),
           },
         ],
       });
@@ -492,15 +496,15 @@ describe('sort action', () => {
         data: [
           {
             title: 't12',
-            sort: 2,
+            sort: parseSortValue(2),
           },
           {
             title: 't13',
-            sort: 3,
+            sort: parseSortValue(3),
           },
           {
             title: 't14',
-            sort: 4,
+            sort: parseSortValue(4),
           },
         ],
       });
@@ -517,23 +521,23 @@ describe('sort action', () => {
         data: [
           {
             title: 't21',
-            sort: 1,
+            sort: parseSortValue(1),
           },
           {
             title: 't11',
-            sort: 2,
+            sort: parseSortValue(2),
           },
           {
             title: 't22',
-            sort: 3,
+            sort: parseSortValue(3),
           },
           {
             title: 't23',
-            sort: 4,
+            sort: parseSortValue(4),
           },
           {
             title: 't24',
-            sort: 5,
+            sort: parseSortValue(5),
           },
         ],
       });
@@ -558,15 +562,15 @@ describe('sort action', () => {
         data: [
           {
             title: 't12',
-            sort: 2,
+            sort: parseSortValue(2),
           },
           {
             title: 't13',
-            sort: 3,
+            sort: parseSortValue(3),
           },
           {
             title: 't14',
-            sort: 4,
+            sort: parseSortValue(4),
           },
         ],
       });
@@ -581,23 +585,23 @@ describe('sort action', () => {
         data: [
           {
             title: 't21',
-            sort: 1,
+            sort: parseSortValue(1),
           },
           {
             title: 't22',
-            sort: 2,
+            sort: parseSortValue(2),
           },
           {
             title: 't11',
-            sort: 3,
+            sort: parseSortValue(3),
           },
           {
             title: 't23',
-            sort: 4,
+            sort: parseSortValue(4),
           },
           {
             title: 't24',
-            sort: 5,
+            sort: parseSortValue(5),
           },
         ],
       });
@@ -619,23 +623,23 @@ describe('sort action', () => {
         data: [
           {
             title: 't11',
-            sort: 1,
+            sort: parseSortValue(1),
           },
           {
             title: 't22',
-            sort: 2,
+            sort: parseSortValue(2),
           },
           {
             title: 't12',
-            sort: 3,
+            sort: parseSortValue(3),
           },
           {
             title: 't13',
-            sort: 4,
+            sort: parseSortValue(4),
           },
           {
             title: 't14',
-            sort: 5,
+            sort: parseSortValue(5),
           },
         ],
       });
@@ -650,15 +654,15 @@ describe('sort action', () => {
         data: [
           {
             title: 't21',
-            sort: 1,
+            sort: parseSortValue(1),
           },
           {
             title: 't23',
-            sort: 3,
+            sort: parseSortValue(3),
           },
           {
             title: 't24',
-            sort: 4,
+            sort: parseSortValue(4),
           },
         ],
       });
@@ -681,23 +685,23 @@ describe('sort action', () => {
         data: [
           {
             title: 't11',
-            sort: 1,
+            sort: parseSortValue(1),
           },
           {
             title: 't12',
-            sort: 2,
+            sort: parseSortValue(2),
           },
           {
             title: 't22',
-            sort: 3,
+            sort: parseSortValue(3),
           },
           {
             title: 't13',
-            sort: 4,
+            sort: parseSortValue(4),
           },
           {
             title: 't14',
-            sort: 5,
+            sort: parseSortValue(5),
           },
         ],
       });
@@ -712,15 +716,15 @@ describe('sort action', () => {
         data: [
           {
             title: 't21',
-            sort: 1,
+            sort: parseSortValue(1),
           },
           {
             title: 't23',
-            sort: 3,
+            sort: parseSortValue(3),
           },
           {
             title: 't24',
-            sort: 4,
+            sort: parseSortValue(4),
           },
         ],
       });
@@ -747,15 +751,15 @@ describe('sort action', () => {
         data: [
           {
             title: 't12',
-            sort: 2,
+            sort: parseSortValue(2),
           },
           {
             title: 't13',
-            sort: 3,
+            sort: parseSortValue(3),
           },
           {
             title: 't14',
-            sort: 4,
+            sort: parseSortValue(4),
           },
         ],
       });
@@ -770,23 +774,23 @@ describe('sort action', () => {
         data: [
           {
             title: 't21',
-            sort: 1,
+            sort: parseSortValue(1),
           },
           {
             title: 't22',
-            sort: 2,
+            sort: parseSortValue(2),
           },
           {
             title: 't23',
-            sort: 3,
+            sort: parseSortValue(3),
           },
           {
             title: 't24',
-            sort: 4,
+            sort: parseSortValue(4),
           },
           {
             title: 't11',
-            sort: 5,
+            sort: parseSortValue(5),
           },
         ],
       });

@@ -48,6 +48,10 @@ describe('sort field', () => {
     await app.destroy();
   });
 
+  function parseSortValue(value) {
+    return db.options.dialect === 'mssql' ? value.toString() : value;
+  }
+
   describe('main data source', () => {
     it('should init with camelCase scope key', async () => {
       const Test = db.collection({
@@ -213,9 +217,9 @@ describe('sort field', () => {
 
       const records = await Test.repository.find({});
       const r3 = records.find((r) => r.get('name') === 'r3');
-      expect(r3.get('sort')).toBe(2);
+      expect(r3.get('sort')).toBe(parseSortValue(2));
       const r5 = records.find((r) => r.get('name') === 'r5');
-      expect(r5.get('sort')).toBe(1);
+      expect(r5.get('sort')).toBe(parseSortValue(1));
     });
 
     it('should init sorted value by createdAt when primaryKey not exists', async () => {
@@ -249,11 +253,11 @@ describe('sort field', () => {
       await db.sync();
 
       const test1 = await Test.model.create<any>();
-      expect(test1.sort).toBe(1);
+      expect(test1.sort).toBe(parseSortValue(1));
       const test2 = await Test.model.create<any>();
-      expect(test2.sort).toBe(2);
+      expect(test2.sort).toBe(parseSortValue(2));
       const test3 = await Test.model.create<any>();
-      expect(test3.sort).toBe(3);
+      expect(test3.sort).toBe(parseSortValue(3));
     });
 
     it('should init sort value on data already exits', async () => {
@@ -292,7 +296,9 @@ describe('sort field', () => {
       const items = await db.getRepository('tests').find({
         order: ['id'],
       });
-      expect(items.map((item) => item.get('sort'))).toEqual([1, 2, 3]);
+      expect(items[0].get('sort')).toBe(parseSortValue(1));
+      expect(items[1].get('sort')).toBe(parseSortValue(2));
+      expect(items[2].get('sort')).toBe(parseSortValue(3));
     });
 
     test.skip('simultaneously create ', async () => {
@@ -311,7 +317,7 @@ describe('sort field', () => {
       await Promise.all(promise);
       const tests = await Test.model.findAll();
       const sortValues = tests.map((t) => t.get('sort')).sort();
-      expect(sortValues).toEqual([1, 2, 3]);
+      expect(sortValues).toEqual(db.options.dialect === 'mssql' ? ['1', '2', '3'] : [1, 2, 3]);
     });
 
     it('skip if sort value not empty', async () => {
@@ -321,11 +327,11 @@ describe('sort field', () => {
       });
       await db.sync();
       const test1 = await Test.model.create<any>({ sort: 3 });
-      expect(test1.sort).toBe(3);
+      expect(test1.sort).toBe(parseSortValue(3));
       const test2 = await Test.model.create<any>();
-      expect(test2.sort).toBe(4);
+      expect(test2.sort).toBe(parseSortValue(4));
       const test3 = await Test.model.create<any>();
-      expect(test3.sort).toBe(5);
+      expect(test3.sort).toBe(parseSortValue(5));
     });
 
     it('scopeKey', async () => {
@@ -343,16 +349,16 @@ describe('sort field', () => {
       const t3 = await Test.model.create({ status: 'draft' });
       const t4 = await Test.model.create({ status: 'draft' });
 
-      expect(t1.get('sort')).toBe(1);
-      expect(t2.get('sort')).toBe(2);
-      expect(t3.get('sort')).toBe(1);
-      expect(t4.get('sort')).toBe(2);
+      expect(t1.get('sort')).toBe(parseSortValue(1));
+      expect(t2.get('sort')).toBe(parseSortValue(2));
+      expect(t3.get('sort')).toBe(parseSortValue(1));
+      expect(t4.get('sort')).toBe(parseSortValue(2));
 
       t1.set('status', 'draft');
       await t1.save();
 
       await t1.reload();
-      expect(t1.get('sort')).toBe(3);
+      expect(t1.get('sort')).toBe(parseSortValue(3));
     });
   });
 
@@ -374,8 +380,8 @@ describe('sort field', () => {
       const p2 = await anotherDB.getRepository('posts').create({
         values: { title: 'p2' },
       });
-      expect(p1.sort).toBe(1);
-      expect(p2.sort).toBe(2);
+      expect(p1.sort).toBe(parseSortValue(1));
+      expect(p2.sort).toBe(parseSortValue(2));
     });
   });
 });

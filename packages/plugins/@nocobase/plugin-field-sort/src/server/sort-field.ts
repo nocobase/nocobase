@@ -172,6 +172,25 @@ export class SortField extends Field {
     ) AS ordered_table ON ${this.collection.quotedTableName()}.${quotedOrderField} = ordered_table.${quotedOrderField}
     SET ${this.collection.quotedTableName()}.${sortColumnName} = ordered_table.new_sequence_number;
   `;
+      } else if (this.collection.db.inDialect('mssql')) {
+        // TODO: This MSSQL support is intended for external data sources
+        // Since the core database doesn't support MSSQL, this logic needs to be implemented through an extension mechanism
+        // Potential solutions:
+        // 1. Abstract database dialect-specific logic into separate modules
+        // 2. Consider implementing a dialect adapter pattern for better extensibility
+        sql = `
+    WITH ordered_table AS (
+      SELECT *, ROW_NUMBER() OVER (${
+        scopeKey ? `PARTITION BY ${queryInterface.quoteIdentifier(scopeKey)}` : ''
+      } ORDER BY ${quotedOrderField}) AS new_sequence_number
+      FROM ${this.collection.quotedTableName()}
+      ${whereClause}
+    )
+    UPDATE t
+    SET ${sortColumnName} = ot.new_sequence_number
+    FROM ${this.collection.quotedTableName()} t
+    INNER JOIN ordered_table ot ON t.${quotedOrderField} = ot.${quotedOrderField};
+  `;
       }
       await this.collection.db.sequelize.query(sql, {
         transaction,
