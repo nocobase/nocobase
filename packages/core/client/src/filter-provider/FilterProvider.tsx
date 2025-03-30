@@ -129,7 +129,7 @@ export const DataBlockCollector = ({
   const field = useField();
   const fieldSchema = useFieldSchema();
   const associatedFields = useAssociatedFields();
-  const container = useRef(null);
+  const container = useRef<HTMLElement | null>(null);
   const dataLoadingMode = useDataLoadingMode();
 
   const shouldApplyFilter =
@@ -186,9 +186,8 @@ export const DataBlockCollector = ({
         if (designer) {
           designer.classList.remove(process.env.__E2E__ ? 'hidden-e2e' : 'hidden');
         }
-        dom.style.boxShadow = '0 4px 20px rgba(0, 0, 0, 0.15)';
+        dom.style.boxShadow = '0 3px 12px rgba(0, 0, 0, 0.15)';
         dom.style.transition = 'box-shadow 0.3s ease, transform 0.2s ease';
-        dom.style.transform = 'translateY(-2px)';
         dom.scrollIntoView?.({
           behavior: 'smooth',
           block: 'start',
@@ -204,7 +203,6 @@ export const DataBlockCollector = ({
           designer.classList.add(process.env.__E2E__ ? 'hidden-e2e' : 'hidden');
         }
         dom.style.boxShadow = 'none';
-        dom.style.transform = 'translateY(0)';
         dom.style.transition = 'box-shadow 0.3s ease, transform 0.2s ease';
       }
     });

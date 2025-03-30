@@ -18,6 +18,7 @@ import { useGlobalVariable } from '../../../application/hooks/useGlobalVariable'
 import { SchemaSettingOptions, SchemaSettings } from '../../../application/schema-settings';
 import { useSchemaToolbar } from '../../../application/schema-toolbar';
 import { useCollectionManager_deprecated, useCollection_deprecated } from '../../../collection-manager';
+import { highlightBlock, startScrollEndTracking, stopScrollEndTracking, unhighlightBlock } from '../../../filter-provider/highlightBlock';
 import { FlagProvider } from '../../../flag-provider';
 import { SaveMode } from '../../../modules/actions/submit/createSubmitActionSettings';
 import { useOpenModeContext } from '../../../modules/popup/OpenModeProvider';
@@ -337,10 +338,15 @@ const BlocksSelector = (props) => {
         onMouseEnter() {
           block.highlightBlock();
           hideDialog('dialog-after-successful-submission');
+          startScrollEndTracking(block.dom, () => {
+            highlightBlock(block.dom.cloneNode(true) as HTMLElement, block.dom.getBoundingClientRect());
+          });
         },
         onMouseLeave() {
           block.unhighlightBlock();
           showDialog('dialog-after-successful-submission');
+          stopScrollEndTracking(block.dom);
+          unhighlightBlock();
         }
       }
     });
