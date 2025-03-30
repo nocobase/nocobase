@@ -6,32 +6,53 @@ import {
   SchemaSettingsModalItem,
   Variable,
   VariableEvaluateProvider,
+  isVariable,
+  useApp,
+  useDesignable,
   useVariableEvaluateContext,
 } from '@nocobase/client';
 import { mockApp } from '@nocobase/client/demo-utils';
 import { dayjs } from '@nocobase/utils/client';
-import React from 'react';
+import React, { useEffect } from 'react';
+const data = {
+  today_dateOnly: dayjs().format('YYYY-MM-DD'),
+  today_withTZ: new Date().toISOString(),
+  today_withoutTZ: dayjs().format('YYYY-MM-DD HH:mm:ss'),
+};
 
+const useDefaultValue = () => {
+  const field = useField<any>();
+  const fieldSchema = useFieldSchema();
+  const app = useApp();
+  useEffect(() => {
+    if (isVariable(fieldSchema.default)) {
+      app.jsonTemplateParser
+        .render(fieldSchema.default, data, {})
+        .then((value) => {
+          field.setInitialValue?.(value);
+        })
+        .catch((err) => console.error(err));
+    }
+  }, [app.jsonTemplateParser, field, fieldSchema.default]);
+};
 const DefaultValueEditor = () => {
   const fieldSchema = useFieldSchema();
+  const field = useField<any>();
+  const { dn } = useDesignable();
   const TodayKeyMap = {
     dateOnly: 'today_dateOnly',
     datetime_withTZ: 'today_withTZ',
     datetime_withoutTZ: 'today_withoutTZ',
   };
   const scope = [{ label: 'Today', value: `${TodayKeyMap[fieldSchema['x-field-type']]}` }];
-  const data = {
-    today_dateOnly: dayjs().format('YYYY-MM-DD'),
-    today_withTZ: new Date().toISOString(),
-    today_withoutTZ: dayjs().format('YYYY-MM-DD HH:mm:ss'),
-  };
+
   const defaultValueSchema = {
     type: 'object',
     'x-component-props': {
       data: {
         today_dateOnly: dayjs().format('YYYY-MM-DD'),
         today_withTZ: new Date().toISOString(),
-        today_withoutTZ: dayjs().format('YYYY-MM-DD HH:mm:ss'),
+        today_withoutTZ: dayjs().format('YYYY-MM-DD 00:00:00'),
       },
       context: {},
     },
@@ -51,7 +72,7 @@ const DefaultValueEditor = () => {
   const VariableInput = (props) => {
     return (
       <VariableEvaluateProvider data={data} context={{}}>
-        <Variable.Input scope={scope} {...props} />
+        <Variable.Input scope={scope} {...props} useTypedConstant={['string', 'number', 'boolean', 'date']} />
       </VariableEvaluateProvider>
     );
   };
@@ -61,7 +82,20 @@ const DefaultValueEditor = () => {
       <SchemaSettingsModalItem
         title={'Set default value'}
         width={800}
-        onSubmit={(v) => null}
+        onSubmit={(v) => {
+          const schema: ISchema = {
+            ['x-uid']: fieldSchema['x-uid'],
+          };
+          fieldSchema.default = v.variable ?? null;
+          if (!isVariable(v.variable)) {
+            field.setInitialValue?.(v.variable);
+          }
+          schema.default = v.variable ?? null;
+          dn.emit('patch', {
+            schema,
+          });
+          dn.refresh();
+        }}
         schema={defaultValueSchema}
         components={{ VariableInput }}
       />
@@ -88,7 +122,9 @@ const schema: ISchema = {
     dateonly: {
       type: 'string',
       title: 'Dateonly',
+      default: '2023-01-01',
       'x-decorator': 'FormItem',
+      'x-use-decorator-props': 'useDefaultValue',
       'x-component': 'Input',
       'x-settings': 'simpleSettings',
       'x-field-type': 'dateOnly',
@@ -98,6 +134,7 @@ const schema: ISchema = {
       type: 'string',
       title: 'Datetime with Timezone',
       'x-decorator': 'FormItem',
+      'x-use-decorator-props': 'useDefaultValue',
       'x-component': 'Input',
       'x-settings': 'simpleSettings',
       'x-field-type': 'datetime_withTZ',
@@ -106,6 +143,7 @@ const schema: ISchema = {
       type: 'string',
       title: 'Datetime without Timezone',
       'x-decorator': 'FormItem',
+      'x-use-decorator-props': 'useDefaultValue',
       'x-component': 'Input',
       'x-settings': 'simpleSettings',
       'x-field-type': 'datetime_withoutTZ',
@@ -114,7 +152,7 @@ const schema: ISchema = {
 };
 
 const Demo = () => {
-  return <SchemaComponent schema={schema} />;
+  return <SchemaComponent schema={schema} scope={{ useDefaultValue }} />;
 };
 
 class DemoPlugin extends Plugin {
