@@ -133,18 +133,21 @@ export const Action: ComposedAction = withDynamicSchemaProps(
       [onMouseEnter],
     );
 
-    const handleClick = useCallback(async (...args) => {
-      await onClick?.(...args);
+    const handleClick = useMemo(() => {
+      return onClick && (async (e, callback) => {
+        await onClick?.(e, callback);
 
-      const blocksToRefresh = fieldSchema['x-action-settings']?.onSuccess?.blocksToRefresh || []
-      if (blocksToRefresh.length > 0) {
-        getAllDataBlocks().forEach((block) => {
-          if (blocksToRefresh.includes(block.uid)) {
-            block.service?.refresh();
-          }
-        });
-      }
-    }, [fieldSchema, getAllDataBlocks]);
+        // 执行完 onClick 之后，刷新数据区块
+        const blocksToRefresh = fieldSchema['x-action-settings']?.onSuccess?.blocksToRefresh || []
+        if (blocksToRefresh.length > 0) {
+          getAllDataBlocks().forEach((block) => {
+            if (blocksToRefresh.includes(block.uid)) {
+              block.service?.refresh();
+            }
+          });
+        }
+      });
+    }, [onClick, fieldSchema, getAllDataBlocks]);
 
     return (
       <InternalAction
