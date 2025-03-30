@@ -11,7 +11,10 @@ import { Popover } from 'antd';
 import React, { useState } from 'react';
 import { HelperConfiguator } from './HelperConfiguator';
 
-const WithPropOver = ({ children, index, defaultOpen }) => {
+function capitalizeFirstLetter(val) {
+  return String(val).charAt(0).toUpperCase() + String(val).slice(1);
+}
+const WithPropOver = ({ children, index, defaultOpen, title }) => {
   const [open, setOpen] = useState(defaultOpen);
 
   const handleOpenChange = (newOpen: boolean) => {
@@ -20,6 +23,7 @@ const WithPropOver = ({ children, index, defaultOpen }) => {
   return (
     <Popover
       open={open}
+      title={capitalizeFirstLetter(title)}
       onOpenChange={handleOpenChange}
       content={<HelperConfiguator index={index} close={() => setOpen(false)} />}
       trigger={'click'}
@@ -34,7 +38,7 @@ export function Helper({ index, label, defaultOpen }: { index: number; label: st
   return (
     <>
       <span style={{ color: '#bfbfbf', margin: '0 5px' }}>|</span>
-      <WithPropOver index={index} defaultOpen={defaultOpen}>
+      <WithPropOver index={index} defaultOpen={defaultOpen} title={label}>
         {Label}
       </WithPropOver>
     </>

@@ -206,31 +206,31 @@ const DateFormat = ({
         `}
       >
         <Radio.Group value={isCustom ? 'custom' : selectedFormat} onChange={handleDateFormatChange}>
-          <Space direction="vertical">
-            {dateFormatOptions.map((option) => (
-              <Radio key={option.value} value={option.value}>
-                {option.value === 'custom' ? (
-                  <>
-                    <Input
-                      style={{ width: 150, marginRight: 8 }}
-                      value={selectedFormat}
-                      onChange={handleCustomFormatChange}
-                      onClick={(e) => e.stopPropagation()}
-                    />
-                    <DateFormatPreview date={date} format={selectedFormat} />
-                  </>
-                ) : (
-                  option.label
-                )}
-              </Radio>
-            ))}
-          </Space>
+          {/* <Space direction="vertical"> */}
+          {dateFormatOptions.map((option) => (
+            <Radio key={option.value} value={option.value}>
+              {option.value === 'custom' ? (
+                <>
+                  <Input
+                    style={{ width: 150, marginRight: 8 }}
+                    value={selectedFormat}
+                    onChange={handleCustomFormatChange}
+                    onClick={(e) => e.stopPropagation()}
+                  />
+                  <DateFormatPreview date={date} format={selectedFormat} />
+                </>
+              ) : (
+                option.label
+              )}
+            </Radio>
+          ))}
+          {/* </Space> */}
         </Radio.Group>
       </div>
 
       {showTimeToggle && picker === 'date' && (
         <>
-          <div style={{ margin: '12px 0' }}>
+          <div style={{ margin: '6px 0' }}>
             <Checkbox checked={showTime} onChange={handleShowTimeChange}>
               Show time
             </Checkbox>
@@ -246,27 +246,27 @@ const DateFormat = ({
                 }
               `}
             >
-              <div style={{ marginBottom: 8 }}>Time format</div>
+              <div style={{ marginBottom: 3 }}>Time format</div>
               <Radio.Group value={timeFormat} onChange={handleTimeFormatChange}>
-                <Space direction="vertical">
-                  {timeFormatOptions.map((option) => (
-                    <Radio key={option.value} value={option.value}>
-                      {option.value === 'custom' ? (
-                        <>
-                          <Input
-                            style={{ width: 150, marginRight: 8 }}
-                            value={timeFormat}
-                            onChange={(e) => setTimeFormat(e.target.value)}
-                            onClick={(e) => e.stopPropagation()}
-                          />
-                          <DateFormatPreview date={date} format={timeFormat} />
-                        </>
-                      ) : (
-                        option.label
-                      )}
-                    </Radio>
-                  ))}
-                </Space>
+                {/* <Space direction="vertical"> */}
+                {timeFormatOptions.map((option) => (
+                  <Radio key={option.value} value={option.value}>
+                    {option.value === 'custom' ? (
+                      <>
+                        <Input
+                          style={{ width: 150, marginRight: 8 }}
+                          value={timeFormat}
+                          onChange={(e) => setTimeFormat(e.target.value)}
+                          onClick={(e) => e.stopPropagation()}
+                        />
+                        <DateFormatPreview date={date} format={timeFormat} />
+                      </>
+                    ) : (
+                      option.label
+                    )}
+                  </Radio>
+                ))}
+                {/* </Space> */}
               </Radio.Group>
             </div>
           )}

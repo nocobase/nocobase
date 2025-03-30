@@ -13,7 +13,7 @@ import { Button, Card, Space, Tag } from 'antd';
 import { createMemoryHistory } from 'history';
 import debounce from 'lodash/debounce';
 import minimatch from 'minimatch';
-import React from 'react';
+import React, { useCallback } from 'react';
 import { Router, useLocation } from 'react-router-dom';
 import { useApp } from '../../../../application';
 import { SchemaComponent } from '../../../core/SchemaComponent';
@@ -21,7 +21,7 @@ import { useCurrentVariable, VariableHelperMapping } from '../VariableProvider';
 
 const displayValue = (val) => {
   if (dayjs.isDayjs(val)) {
-    return val.toDate().toLocaleString();
+    return val.utc().format();
   } else return val;
 };
 /**
@@ -82,13 +82,28 @@ const Configurator = observer(
     const outputValue = helpersObs.value.slice(0, index + 1).reduce((value, helper) => {
       return helper.handler(value, ...helper.args);
     }, value);
-
+    const onFormValuesChange = useCallback(
+      (values) => {
+        rawHelper.argsMap = values;
+      },
+      [rawHelper],
+    );
     const InputValue = () => {
-      return <Tag color="red">{displayValue(inputValue)}</Tag>;
+      return (
+        <div>
+          <div style={{ marginBottom: '2px', fontWeight: 'bold' }}>Input: </div>
+          <Tag color="red">{displayValue(inputValue)}</Tag>
+        </div>
+      );
     };
 
     const OuputValue = () => {
-      return <Tag color="green">{displayValue(outputValue)}</Tag>;
+      return (
+        <div>
+          <div style={{ marginBottom: '2px', fontWeight: 'bold' }}>Output: </div>
+          <Tag color="green">{displayValue(outputValue)}</Tag>
+        </div>
+      );
     };
 
     const useFormBlockProps = () => {
@@ -138,12 +153,6 @@ const Configurator = observer(
           'x-component': 'FormV2',
           'x-use-component-props': 'useFormBlockProps',
           properties: {
-            '$input-value': {
-              type: 'void',
-              'x-component': 'InputValue',
-              'x-decorator': 'FormItem',
-              title: tval('Input value', { ns: 'client' }),
-            },
             ...Object.fromEntries(
               helperConfig.uiSchema
                 ? helperConfig.uiSchema.map((param) => [
@@ -155,12 +164,6 @@ const Configurator = observer(
                   ])
                 : [],
             ),
-            '$output-value': {
-              type: 'void',
-              'x-component': 'OuputValue',
-              'x-decorator': 'FormItem',
-              title: tval('Output value', { ns: 'client' }),
-            },
           },
         },
       },
@@ -168,15 +171,11 @@ const Configurator = observer(
 
     return (
       <>
+        <InputValue />
         {HelperComponent ? (
-          <HelperComponent
-            value={helper.argsMap}
-            onChange={(values) => (rawHelper.argsMap = values)}
-            inputValue={inputValue}
-          />
+          <HelperComponent value={helper.argsMap} onChange={onFormValuesChange} inputValue={inputValue} />
         ) : (
           <SchemaComponent
-            components={{ InputValue, OuputValue }}
             schema={schema}
             scope={{
               t: app.i18n.t,
@@ -187,6 +186,7 @@ const Configurator = observer(
             basePath={['']}
           />
         )}
+        <OuputValue />
         <MyButtons onDelete={() => removeHelper({ index: index })} onClose={close} />
       </>
     );
@@ -204,7 +204,7 @@ export const MyButtons = observer(
         <Button type="primary" danger onClick={onDelete}>
           {t('Delete', { ns: 'client' })}
         </Button>
-        <Button onClick={onClose}>{t('Close', { ns: 'client' })}</Button>
+        <Button onClick={onClose}>{t('Submit', { ns: 'client' })}</Button>
       </Space>
     );
   },
