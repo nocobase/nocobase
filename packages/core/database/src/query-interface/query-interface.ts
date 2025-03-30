@@ -11,6 +11,7 @@ import {
   ColumnDescription,
   ModelStatic,
   QueryInterface as SequelizeQueryInterface,
+  TableName,
   Transaction,
   Transactionable,
 } from 'sequelize';
@@ -23,7 +24,7 @@ export type TableInfo = {
 };
 
 export interface ChangeColumnOptions {
-  tableName: string;
+  tableName: TableName;
   schema?: string;
   columnName: string;
   columnDescription: ColumnDescription;

@@ -8,7 +8,14 @@
  */
 
 import { mockDatabase } from '@nocobase/database';
-import { Application, ApplicationOptions, AppSupervisor, Gateway, PluginManager } from '@nocobase/server';
+import {
+  Application,
+  ApplicationOptions,
+  AppSupervisor,
+  Gateway,
+  PluginManager,
+  runPluginStaticImports,
+} from '@nocobase/server';
 import { uid } from '@nocobase/utils';
 import jwt from 'jsonwebtoken';
 import qs from 'qs';
@@ -223,7 +230,7 @@ export class MockServer extends Application {
   }
 }
 
-export function mockServer(options: ApplicationOptions = {}) {
+export async function mockServer(options: ApplicationOptions = {}) {
   if (typeof TextEncoder === 'undefined') {
     global.TextEncoder = require('util').TextEncoder;
   }
@@ -231,7 +238,7 @@ export function mockServer(options: ApplicationOptions = {}) {
   if (typeof TextDecoder === 'undefined') {
     global.TextDecoder = require('util').TextDecoder;
   }
-
+  await runPluginStaticImports();
   Gateway.getInstance().reset();
   // AppSupervisor.getInstance().reset();
 
@@ -271,7 +278,7 @@ export function mockServer(options: ApplicationOptions = {}) {
 }
 
 export async function startMockServer(options: ApplicationOptions = {}) {
-  const app = mockServer(options);
+  const app = await mockServer(options);
   await app.runCommand('start');
   return app;
 }
@@ -347,7 +354,7 @@ export async function createMockServer(options: MockServerOptions = {}): Promise
     // ignore errors
   }
   const { version, beforeInstall, skipInstall, skipStart, ...others } = options;
-  const app: MockServer = mockServer(others);
+  const app: MockServer = await mockServer(others);
   if (!skipInstall) {
     if (beforeInstall) {
       await beforeInstall(app);

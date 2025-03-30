@@ -255,7 +255,7 @@ export class SyncRunner {
         } else {
           await this.database.queryInterface.changeColumn({
             actions: ['setDefaultValue'],
-            tableName: this.tableName as string,
+            tableName: this.tableName,
             columnDescription: changeAttribute,
             columnName: columnName,
             model: this.model,
