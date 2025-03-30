@@ -79,8 +79,8 @@ interface FilterContextValue {
   parent: FilterContextValue | null;
 }
 
-const FilterContext = createContext<FilterContextValue | null>(null);
-FilterContext.displayName = 'FilterContext';
+export const DataBlocksContext = createContext<FilterContextValue | null>(null);
+DataBlocksContext.displayName = 'FilterContext';
 
 /**
  * 主要用于记录当前页面中的数据区块的信息，用于在过滤区块中使用
@@ -88,7 +88,7 @@ FilterContext.displayName = 'FilterContext';
  * @returns
  */
 export const FilterBlockProvider: React.FC = React.memo(({ children }) => {
-  const parent = React.useContext(FilterContext);
+  const parent = React.useContext(DataBlocksContext);
   const dataBlocksRef = React.useRef<DataBlock[]>([]);
 
   const setDataBlocks = useCallback((value) => {
@@ -103,7 +103,7 @@ export const FilterBlockProvider: React.FC = React.memo(({ children }) => {
 
   const value = useMemo(() => ({ getDataBlocks, setDataBlocks, parent }), [getDataBlocks, setDataBlocks, parent]);
 
-  return <FilterContext.Provider value={value}>{children}</FilterContext.Provider>;
+  return <DataBlocksContext.Provider value={value}>{children}</DataBlocksContext.Provider>;
 });
 
 FilterBlockProvider.displayName = 'FilterBlockProvider';
@@ -198,7 +198,7 @@ export const DataBlockCollector = ({
  * @returns
  */
 export const useFilterBlock = () => {
-  const ctx = React.useContext(FilterContext);
+  const ctx = React.useContext(DataBlocksContext);
 
   // 有可能存在页面没有提供 FilterBlockProvider 的情况，比如内部使用的数据表管理页面
   const getDataBlocks = useCallback<() => DataBlock[]>(() => ctx?.getDataBlocks() || [], [ctx]);
