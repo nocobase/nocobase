@@ -54,7 +54,7 @@ export class BelongsToArrayAssociation {
     return this.db.getModel(this.targetName);
   }
 
-  generateInclude() {
+  generateInclude(parentAs?: string) {
     if (this.db.sequelize.getDialect() !== 'postgres') {
       throw new Error('Filtering by many to many (array) associations is only supported on postgres');
     }
@@ -63,8 +63,10 @@ export class BelongsToArrayAssociation {
     const sourceCollection = this.db.getCollection(this.source.name);
     const foreignField = sourceCollection.getField(this.foreignKey);
     const queryInterface = this.db.sequelize.getQueryInterface();
-    const left = queryInterface.quoteIdentifiers(`${this.as}.${targetField.columnName()}`);
-    const right = queryInterface.quoteIdentifiers(`${this.source.collection.name}.${foreignField.columnName()}`);
+    const asLeft = parentAs ? `${parentAs}->${this.as}` : this.as;
+    const asRight = parentAs || this.source.collection.name;
+    const left = queryInterface.quoteIdentifiers(`${asLeft}.${targetField.columnName()}`);
+    const right = queryInterface.quoteIdentifiers(`${asRight}.${foreignField.columnName()}`);
     return {
       on: this.db.sequelize.literal(`${left}=any(${right})`),
     };

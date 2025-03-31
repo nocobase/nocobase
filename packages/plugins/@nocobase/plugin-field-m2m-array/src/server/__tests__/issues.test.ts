@@ -324,4 +324,6 @@ describe('issues', () => {
     }
     expect(res.status).toBe(200);
   });
+
+  test('filter by a field of a relation collection with m2m array field', async () => {});
 });
