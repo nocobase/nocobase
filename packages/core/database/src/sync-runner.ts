@@ -8,7 +8,7 @@
  */
 
 import { isPlainObject } from '@nocobase/utils';
-import { Model as SequelizeModel } from 'sequelize';
+import { Op, Model as SequelizeModel } from 'sequelize';
 import { Collection } from './collection';
 import Database from './database';
 import { ZeroColumnTableError } from './errors/zero-column-table-error';
@@ -279,6 +279,7 @@ export class SyncRunner {
       return this.rawAttributes[key].unique == true;
     });
 
+    const rebuildIndexes = [];
     // remove unique index that not in model
     for (const existUniqueIndex of existsUniqueIndexes) {
       const isSingleField = existUniqueIndex.fields.length == 1;
@@ -286,41 +287,68 @@ export class SyncRunner {
 
       const columnName = existUniqueIndex.fields[0].attribute;
       const currentAttribute = this.findAttributeByColumnName(columnName);
+      const needRemove = !currentAttribute || (!currentAttribute.unique && !currentAttribute.primaryKey);
+      if (this.database.inDialect('mssql')) {
+        // 先检查是否是约束
+        const constraintCheck = await this.sequelize.query(
+          `SELECT OBJECT_NAME(object_id) as name, is_unique_constraint
+           FROM sys.indexes 
+           WHERE object_id = OBJECT_ID('${this.collection.quotedTableName()}')
+           AND name = '${existUniqueIndex.name}'`,
+          {
+            type: 'SELECT',
+          },
+        );
 
-      if (!currentAttribute || (!currentAttribute.unique && !currentAttribute.primaryKey)) {
-        if (this.database.inDialect('postgres')) {
-          // @ts-ignore
-          const constraints = await this.queryInterface.showConstraint(this.tableName, existUniqueIndex.name, options);
-          if (constraints.some((c) => c.constraintName === existUniqueIndex.name)) {
-            await this.queryInterface.removeConstraint(this.tableName, existUniqueIndex.name, options);
-          }
-        }
-
-        if (this.database.inDialect('mssql')) {
-          // 先检查是否是约束
-          const constraintCheck = await this.sequelize.query(
-            `SELECT OBJECT_NAME(object_id) as name
-             FROM sys.indexes 
+        if (constraintCheck.length > 0) {
+          const isConstraint = constraintCheck[0]['is_unique_constraint'];
+          // 检查是否是主键约束
+          const isPrimaryKey = await this.sequelize.query(
+            `SELECT 1 FROM sys.indexes 
              WHERE object_id = OBJECT_ID('${this.collection.quotedTableName()}')
              AND name = '${existUniqueIndex.name}'
-             AND is_unique_constraint = 1`,
+             AND is_primary_key = 1`,
             {
               type: 'SELECT',
             },
           );
 
-          if (constraintCheck.length > 0) {
-            // 如果是约束，使用 DROP CONSTRAINT
+          // 跳过主键索引
+          if (isPrimaryKey.length > 0) {
+            continue;
+          }
+
+          if (!needRemove) {
+            rebuildIndexes.push(columnName);
+          }
+
+          if (isConstraint) {
             await this.sequelize.query(
-              `ALTER TABLE ${this.collection.quotedTableName()} DROP CONSTRAINT ${existUniqueIndex.name};`,
+              `ALTER TABLE ${this.collection.quotedTableName()} DROP CONSTRAINT [${existUniqueIndex.name}]`,
               options,
             );
           } else {
-            // 如果是普通索引，使用 DROP INDEX
             await this.sequelize.query(
-              `DROP INDEX ${existUniqueIndex.name} ON ${this.collection.quotedTableName()};`,
+              `DROP INDEX [${existUniqueIndex.name}] ON ${this.collection.quotedTableName()};`,
               options,
             );
+          }
+          await this.sequelize.query(
+            `
+            CREATE UNIQUE INDEX [${this.collection.tableName()}_${columnName}_uk}]
+            ON ${this.tableName} ([${columnName}])
+            WHERE [${columnName}] IS NOT NULL;
+          `,
+            options,
+          );
+        }
+      }
+      if (needRemove) {
+        if (this.database.inDialect('postgres')) {
+          // @ts-ignore
+          const constraints = await this.queryInterface.showConstraint(this.tableName, existUniqueIndex.name, options);
+          if (constraints.some((c) => c.constraintName === existUniqueIndex.name)) {
+            await this.queryInterface.removeConstraint(this.tableName, existUniqueIndex.name, options);
           }
         } else if (this.database.inDialect('sqlite')) {
           const changeAttribute = {
@@ -334,7 +362,6 @@ export class SyncRunner {
         }
       }
     }
-
     // add unique index that not in database
     for (const uniqueAttribute of uniqueAttributes) {
       const field = this.rawAttributes[uniqueAttribute].field;

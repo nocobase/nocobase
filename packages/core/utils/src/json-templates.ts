@@ -13,6 +13,7 @@
 // Created by Curran Kelleher and Chrostophe Serafin.
 // Contributions from Paul Brewer and Javier Blanco Martinez.
 import { get } from 'lodash';
+import { isJsonString } from './common';
 
 // An enhanced version of `typeof` that handles arrays and dates as well.
 function type(value) {
@@ -63,6 +64,9 @@ function Template(fn, parameters) {
 // which is an array of parameter descriptor objects,
 // each of which has a `key` property and possibly a `defaultValue` property.
 export function parse(value) {
+  if (isJsonString(value)) {
+    value = JSON.parse(value);
+  }
   switch (type(value)) {
     case 'string':
       return parseString(value);
