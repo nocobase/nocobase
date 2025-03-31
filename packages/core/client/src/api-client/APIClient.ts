@@ -150,6 +150,9 @@ export class APIClient extends APIClientSDK {
       }
       return [{ message }];
     }
+    if (error?.response?.data?.error) {
+      return [error?.response?.data?.error];
+    }
     return (
       error?.response?.data?.errors ||
       error?.response?.data?.messages ||
