@@ -10,6 +10,7 @@
 import { Database, DatabaseOptions } from '../database';
 import semver from 'semver';
 import QueryInterface from '../query-interface/query-interface';
+import { Model } from '../model';
 
 export interface DialectVersionGuard {
   sql: string;
@@ -30,6 +31,10 @@ export abstract class BaseDialect {
 
   static getOperators() {
     return {};
+  }
+
+  parseModelValue(value: any, model: Model) {
+    return value;
   }
 
   static async init(db: Database) {}
