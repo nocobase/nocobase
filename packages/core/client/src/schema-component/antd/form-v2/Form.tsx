@@ -50,7 +50,7 @@ const FormComponent: React.FC<FormProps> = (props) => {
     labelAlign = 'left',
     labelWidth = 120,
     labelWrap = true,
-    colon = false,
+    colon = true,
   } = cardItemSchema?.['x-component-props'] || {};
   const { isMobileLayout } = useMobileLayout();
   const newSchema = useMemo(

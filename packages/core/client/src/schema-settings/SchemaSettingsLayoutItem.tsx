@@ -111,7 +111,7 @@ export const SchemaSettingsLayoutItem = function LayoutItem() {
               type: 'boolean',
               'x-content': t('Colon'),
               required: true,
-              default: fieldSchema?.['x-component-props']?.colon,
+              default: fieldSchema?.['x-component-props']?.colon !== false,
               'x-decorator': 'FormItem',
               'x-component': 'Checkbox',
             },
