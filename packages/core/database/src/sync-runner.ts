@@ -289,58 +289,74 @@ export class SyncRunner {
       const currentAttribute = this.findAttributeByColumnName(columnName);
       const needRemove = !currentAttribute || (!currentAttribute.unique && !currentAttribute.primaryKey);
       if (this.database.inDialect('mssql')) {
-        // 先检查是否是约束
-        const constraintCheck = await this.sequelize.query(
-          `SELECT OBJECT_NAME(object_id) as name, is_unique_constraint
-           FROM sys.indexes 
-           WHERE object_id = OBJECT_ID('${this.collection.quotedTableName()}')
-           AND name = '${existUniqueIndex.name}'`,
-          {
+        try {
+          // 设置更短的查询超时时间，避免长时间阻塞
+          const queryOptions = {
+            ...options,
             type: 'SELECT',
-          },
-        );
+            timeout: 5000, // 设置5秒超时，可根据实际情况调整
+          };
 
-        if (constraintCheck.length > 0) {
-          const isConstraint = constraintCheck[0]['is_unique_constraint'];
-          // 检查是否是主键约束
-          const isPrimaryKey = await this.sequelize.query(
-            `SELECT 1 FROM sys.indexes 
+          // 优化查询，只查询必要的信息
+          const constraintCheck = await this.sequelize.query(
+            `SELECT OBJECT_NAME(object_id) as name, is_unique_constraint
+             FROM sys.indexes WITH (NOLOCK)
              WHERE object_id = OBJECT_ID('${this.collection.quotedTableName()}')
-             AND name = '${existUniqueIndex.name}'
-             AND is_primary_key = 1`,
-            {
-              type: 'SELECT',
-            },
+             AND name = '${existUniqueIndex.name}'`,
+            queryOptions,
           );
 
-          // 跳过主键索引
-          if (isPrimaryKey.length > 0) {
+          if (constraintCheck.length > 0) {
+            const isConstraint = (<any>constraintCheck)[0]['is_unique_constraint'];
+
+            // 同样使用优化的查询选项
+            const isPrimaryKey = await this.sequelize.query(
+              `SELECT 1 FROM sys.indexes WITH (NOLOCK)
+               WHERE object_id = OBJECT_ID('${this.collection.quotedTableName()}')
+               AND name = '${existUniqueIndex.name}'
+               AND is_primary_key = 1`,
+              queryOptions,
+            );
+
+            // 跳过主键索引
+            if (isPrimaryKey.length > 0) {
+              continue;
+            }
+
+            if (!needRemove) {
+              rebuildIndexes.push(columnName);
+            }
+
+            if (isConstraint) {
+              await this.sequelize.query(
+                `ALTER TABLE ${this.collection.quotedTableName()} DROP CONSTRAINT [${existUniqueIndex.name}]`,
+                options,
+              );
+            } else {
+              await this.sequelize.query(
+                `DROP INDEX [${existUniqueIndex.name}] ON ${this.collection.quotedTableName()};`,
+                options,
+              );
+            }
+
+            // 修复索引名称中的语法错误（多了一个右花括号）
+            await this.sequelize.query(
+              `
+              CREATE UNIQUE INDEX [${this.collection.tableName()}_${columnName}_uk]
+              ON ${this.tableName} ([${columnName}])
+              WHERE [${columnName}] IS NOT NULL;
+            `,
+              options,
+            );
+          }
+        } catch (error) {
+          // 添加错误处理，记录错误但不中断流程
+          console.warn(`Error handling unique index for ${existUniqueIndex.name}: ${error.message}`);
+          // 如果是超时错误，可以继续处理下一个索引
+          if (error.message.includes('Timeout')) {
             continue;
           }
-
-          if (!needRemove) {
-            rebuildIndexes.push(columnName);
-          }
-
-          if (isConstraint) {
-            await this.sequelize.query(
-              `ALTER TABLE ${this.collection.quotedTableName()} DROP CONSTRAINT [${existUniqueIndex.name}]`,
-              options,
-            );
-          } else {
-            await this.sequelize.query(
-              `DROP INDEX [${existUniqueIndex.name}] ON ${this.collection.quotedTableName()};`,
-              options,
-            );
-          }
-          await this.sequelize.query(
-            `
-            CREATE UNIQUE INDEX [${this.collection.tableName()}_${columnName}_uk}]
-            ON ${this.tableName} ([${columnName}])
-            WHERE [${columnName}] IS NOT NULL;
-          `,
-            options,
-          );
+          throw error;
         }
       }
       if (needRemove) {
