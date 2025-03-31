@@ -20,7 +20,7 @@ function removeStringIfStartsWith(text: string, prefix: string): string {
   return text;
 }
 
-export function useScanner({ onScannerSizeChanged, elementId }) {
+export function useScanner({ onScannerSizeChanged, elementId, onScanSuccess }) {
   const app = useApp();
   const mobileManager = app.pm.get(MobileManager);
   const basename = mobileManager.mobileRouter.basename.replace(/\/+$/, '');
@@ -50,12 +50,17 @@ export function useScanner({ onScannerSizeChanged, elementId }) {
           },
         },
         (text) => {
+          if (text?.startsWith('http')) {
+            window.location.href = text;
+            return;
+          }
           navigate(removeStringIfStartsWith(text, basename));
+          onScanSuccess && onScanSuccess(text);
         },
         undefined,
       );
     },
-    [navigate, onScannerSizeChanged, viewPoint, basename],
+    [navigate, onScannerSizeChanged, viewPoint, basename, onScanSuccess],
   );
   const stopScanner = useCallback(async (scanner: Html5Qrcode) => {
     const state = scanner.getState();
@@ -69,13 +74,18 @@ export function useScanner({ onScannerSizeChanged, elementId }) {
       await stopScanner(scanner);
       try {
         const { decodedText } = await scanner.scanFileV2(file, false);
+        if (decodedText?.startsWith('http')) {
+          window.location.href = decodedText;
+          return;
+        }
         navigate(removeStringIfStartsWith(decodedText, basename));
+        onScanSuccess && onScanSuccess(decodedText);
       } catch (error) {
         alert(t('QR code recognition failed, please scan again'));
         startScanCamera(scanner);
       }
     },
-    [stopScanner, scanner, navigate, basename, t, startScanCamera],
+    [stopScanner, scanner, navigate, basename, t, startScanCamera, onScanSuccess],
   );
 
   useEffect(() => {

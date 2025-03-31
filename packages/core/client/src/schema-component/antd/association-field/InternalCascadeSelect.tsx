@@ -154,7 +154,11 @@ const CascadeSelect = connect((props) => {
     } else {
       associationField.value = option;
     }
-    onChange?.(options);
+    if (options.length === 1 && !options[0].value) {
+      onChange?.(null);
+    } else {
+      onChange?.(options);
+    }
   };
 
   const onDropdownVisibleChange = async (visible, selectedValue, index) => {
@@ -297,10 +301,18 @@ export const InternalCascadeSelect = observer(
             'x-component-props': {
               style: {
                 width: '100%',
+                display: 'flex',
               },
               className: css`
                 .ant-formily-item-control {
                   max-width: 100% !important;
+                }
+                .ant-space-item:nth-child(1) {
+                  flex: 0.1;
+                }
+
+                .ant-space-item:nth-child(2) {
+                  flex: 3;
                 }
               `,
             },
