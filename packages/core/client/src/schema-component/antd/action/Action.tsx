@@ -538,6 +538,7 @@ const RenderButtonInner = observer(
     designerProps: any;
     title: string;
     isLink?: boolean;
+    onlyIcon?: boolean;
   }) => {
     const {
       designable,
