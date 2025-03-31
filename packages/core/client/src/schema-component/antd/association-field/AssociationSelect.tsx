@@ -23,6 +23,7 @@ import {
   SchemaComponentContext,
   useAPIClient,
   useCollectionRecordData,
+  useCollectionManager_deprecated,
 } from '../../../';
 import { VariablePopupRecordProvider } from '../../../modules/variable/variablesProvider/VariablePopupRecordProvider';
 import { isVariable } from '../../../variables/utils/isVariable';
@@ -31,9 +32,9 @@ import { Action } from '../action';
 import { RemoteSelect, RemoteSelectProps } from '../remote-select';
 import useServiceOptions, { useAssociationFieldContext } from './hooks';
 
-const removeIfAllNull = (obj) => {
-  if (!obj || typeof obj !== 'object') return obj;
-  return Object.values(obj).every((v) => v === null) ? null : obj;
+const removeIfKeyEmpty = (obj, filterTargetKey) => {
+  if (!obj || typeof obj !== 'object' || !filterTargetKey) return obj;
+  return !obj[filterTargetKey] ? null : obj;
 };
 
 export const AssociationFieldAddNewer = (props) => {
@@ -98,6 +99,9 @@ const InternalAssociationSelect = observer(
     const resource = api.resource(collectionField.target);
     const recordData = useCollectionRecordData();
     const schemaComponentCtxValue = useContext(SchemaComponentContext);
+    const { getCollection } = useCollectionManager_deprecated();
+    const associationCollection = getCollection(collectionField.target);
+    const { filterTargetKey } = associationCollection;
 
     useEffect(() => {
       const initValue = isVariable(field.value) ? undefined : field.value;
@@ -172,7 +176,7 @@ const InternalAssociationSelect = observer(
             {...rest}
             size={'middle'}
             objectValue={objectValue}
-            value={removeIfAllNull(value || innerValue)}
+            value={removeIfKeyEmpty(value || innerValue, filterTargetKey)}
             service={service}
             onChange={(value) => {
               const val = value?.length !== 0 ? value : null;
