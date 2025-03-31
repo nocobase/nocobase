@@ -563,6 +563,7 @@ const RenderButtonInner = observer(
       designerProps,
       title,
       isLink,
+      onlyIcon,
       ...others
     } = props;
     const debouncedClick = useCallback(
@@ -606,7 +607,7 @@ const RenderButtonInner = observer(
         type={type === 'danger' ? undefined : type}
         title={actionTitle}
       >
-        {actionTitle && (
+        {!onlyIcon && actionTitle && (
           <span className={icon ? 'nb-action-title' : null} style={linkStyle}>
             {actionTitle}
           </span>

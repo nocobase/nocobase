@@ -55,6 +55,12 @@ describe('Web client desktopRoutes', async () => {
       },
     });
 
+    await rootAgent.resource('roles').setSystemRoleMode({
+      values: {
+        roleMode: SystemRoleMode.allowUseUnion,
+      },
+    });
+
     agent = await app.agent().login(user, UNION_ROLE_KEY);
   });
 
