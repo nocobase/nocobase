@@ -28,7 +28,7 @@ export const cloudFilenameGetter = (storage) => (req, file, cb) => {
 };
 
 export function getFileKey(record) {
-  return urlJoin(record.path, record.filename).replace(/^\//, '');
+  return urlJoin(record.path || '', record.filename).replace(/^\//, '');
 }
 
 export function ensureUrlEncoded(value) {

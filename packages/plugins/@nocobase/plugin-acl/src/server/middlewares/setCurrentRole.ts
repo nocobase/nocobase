@@ -14,7 +14,7 @@ import { UNION_ROLE_KEY } from '../constants';
 import { SystemRoleMode } from '../enum';
 
 export async function setCurrentRole(ctx: Context, next) {
-  const currentRole = ctx.get('X-Role');
+  let currentRole = ctx.get('X-Role');
 
   if (currentRole === 'anonymous') {
     ctx.state.currentRole = currentRole;
@@ -49,7 +49,8 @@ export async function setCurrentRole(ctx: Context, next) {
   ctx.state.currentUser.roles = userRoles;
   const systemSettings = await ctx.db.getRepository('systemSettings').findOne();
   const roleMode = systemSettings?.get('roleMode') || SystemRoleMode.default;
-  if (ctx.state.currentRole === UNION_ROLE_KEY && roleMode === SystemRoleMode.default) {
+  if ([currentRole, ctx.state.currentRole].includes(UNION_ROLE_KEY) && roleMode === SystemRoleMode.default) {
+    currentRole = userRoles[0].name;
     ctx.state.currentRole = userRoles[0].name;
     ctx.headers['x-role'] = userRoles[0].name;
   } else if (roleMode === SystemRoleMode.onlyUseUnion) {
@@ -58,10 +59,11 @@ export async function setCurrentRole(ctx: Context, next) {
     ctx.state.currentRoles = userRoles.map((role) => role.name);
     return next();
   } else if (roleMode === SystemRoleMode.allowUseUnion) {
-    ctx.state.currentUser.roles = userRoles.concat({
+    userRoles.unshift({
       name: UNION_ROLE_KEY,
       title: ctx.t('Full permissions', { ns: 'acl' }),
     });
+    ctx.state.currentUser.roles = userRoles;
   }
 
   if (currentRole === UNION_ROLE_KEY) {
@@ -84,7 +86,7 @@ export async function setCurrentRole(ctx: Context, next) {
   // 2. If the X-Role is not set, or the X-Role does not belong to the user, use the default role
   if (!role) {
     const defaultRole = userRoles.find((role) => role?.rolesUsers?.default);
-    role = (defaultRole || userRoles[0])?.name;
+    role = (defaultRole || userRoles.find((x) => x.name !== UNION_ROLE_KEY))?.name;
   }
   ctx.state.currentRole = role;
   ctx.state.currentRoles = [role];

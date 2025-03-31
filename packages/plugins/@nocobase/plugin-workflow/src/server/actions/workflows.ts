@@ -22,8 +22,11 @@ export async function update(context: Context, next) {
   });
   // only enable/disable
   if (Object.keys(values).includes('config')) {
-    const workflow = await repository.findById(filterByTk);
-    if (workflow.get('executed')) {
+    const workflow = await repository.findOne({
+      filterByTk,
+      appends: ['versionStats'],
+    });
+    if (workflow.versionStats.executed) {
       return context.throw(400, 'config of executed workflow can not be updated');
     }
   }
