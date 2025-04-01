@@ -107,7 +107,14 @@ export class Model<TModelAttributes extends {} = any, TCreationAttributes extend
           if (data instanceof Model) {
             return data.toJSON();
           }
-
+          if (_.isPlainObject(data)) {
+            for (const [key, value] of Object.entries(data)) {
+              const field = options.collection.getField(key);
+              if (field && field.transform) {
+                data[key] = field.transform.call(field, value, data);
+              }
+            }
+          }
           return data;
         },
         this.hiddenObjKey,

@@ -566,7 +566,7 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
       instance.clearChangedWithAssociations();
     }
 
-    return instance;
+    return instance.toJSON();
   }
 
   /**
@@ -661,7 +661,6 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
         transaction,
       });
     }
-
     if (options.hooks !== false) {
       for (const instance of instances) {
         await this.database.emitAsync(`${this.collection.name}.afterUpdateWithAssociations`, instance, {
@@ -676,7 +675,7 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
       }
     }
 
-    return instances;
+    return instances.map((x) => x.toJSON());
   }
 
   @transaction()

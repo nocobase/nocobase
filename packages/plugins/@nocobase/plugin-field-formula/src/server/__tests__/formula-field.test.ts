@@ -25,6 +25,13 @@ describe('formula field', () => {
     await db.close();
   });
 
+  function parseValue(value) {
+    if (db.options.dialect === 'mssql') {
+      return Number(value);
+    }
+    return value;
+  }
+
   describe('engines', () => {
     describe('math.js', () => {
       it('auto set formula field with create or update data', async () => {
@@ -525,7 +532,7 @@ describe('formula field', () => {
           const test = await Test.model.create<any>({
             a: true,
           });
-          expect(test.get('result')).toBe(1);
+          expect(parseValue(test.get('result'))).toBe(1);
         });
 
         it('false', async () => {
@@ -543,7 +550,7 @@ describe('formula field', () => {
           const test = await Test.model.create<any>({
             a: false,
           });
-          expect(test.get('result')).toBe(0);
+          expect(parseValue(test.get('result'))).toBe(0);
         });
       });
 
@@ -563,7 +570,7 @@ describe('formula field', () => {
           const test = await Test.model.create<any>({
             a: 1.6,
           });
-          expect(test.get('result')).toEqual(1);
+          expect(parseValue(test.get('result'))).toEqual(1);
         });
 
         it('negative', async () => {
@@ -581,7 +588,7 @@ describe('formula field', () => {
           const test = await Test.model.create<any>({
             a: -1.6,
           });
-          expect(test.get('result')).toEqual(-1);
+          expect(parseValue(test.get('result'))).toEqual(-1);
         });
       });
 
@@ -601,7 +608,7 @@ describe('formula field', () => {
           const test = await Test.model.create<any>({
             a: '-123.56',
           });
-          expect(test.get('result')).toEqual(-123);
+          expect(parseValue(test.get('result'))).toEqual(-123);
         });
 
         it('mixed string', async () => {
@@ -619,7 +626,7 @@ describe('formula field', () => {
           const test = await Test.model.create<any>({
             a: '9007199254740991abc',
           });
-          expect(test.get('result')).toEqual(9007199254740991);
+          expect(parseValue(test.get('result'))).toEqual(9007199254740991);
         });
 
         it('invalid number string', async () => {
@@ -676,7 +683,7 @@ describe('formula field', () => {
           const test = await Test.model.create<any>({
             a: now,
           });
-          expect(test.get('result')).toEqual(now.valueOf());
+          expect(parseValue(test.get('result'))).toEqual(now.valueOf());
         });
       });
     });

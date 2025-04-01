@@ -91,7 +91,7 @@ describe('hook', () => {
     expect(log.toJSON()).toMatchObject({
       collectionName: 'posts',
       type: 'create',
-      userId: 1,
+      userId: db.options.dialect === 'mssql' ? '1' : 1,
       recordId: `${post.get('id')}`,
       changes: [
         {
