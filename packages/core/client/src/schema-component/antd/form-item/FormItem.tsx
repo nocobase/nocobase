@@ -37,6 +37,12 @@ const formItemWrapCss = css`
   .ant-description-textarea img {
     max-width: 100%;
   }
+  &.ant-formily-item-layout-vertical .ant-formily-item-label {
+    display: inline;
+    .ant-formily-item-label-content {
+      display: inline;
+    }
+  }
 `;
 
 const formItemLabelCss = css`
@@ -83,7 +89,7 @@ export const FormItem: any = withDynamicSchemaProps(
         [formItemLabelCss]: showTitle === false,
       });
     }, [showTitle]);
-
+    console.log(className);
     // 联动规则中的“隐藏保留值”的效果
     if (field.data?.hidden) {
       return null;
