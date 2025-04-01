@@ -9,9 +9,9 @@
 
 import { AuthConfig, BaseAuth } from '@nocobase/auth';
 import { PasswordField } from '@nocobase/database';
-import crypto from 'crypto';
-import { namespace } from '../preset';
 import _ from 'lodash';
+import { namespace } from '../preset';
+import { getDateVars, parsedValue } from '@nocobase/utils';
 
 export class BasicAuth extends BaseAuth {
   constructor(config: AuthConfig) {
@@ -33,8 +33,8 @@ export class BasicAuth extends BaseAuth {
     const filter = email
       ? { email }
       : {
-          $or: [{ username: account }, { email: account }],
-        };
+        $or: [{ username: account }, { email: account }],
+      };
     const user = await this.userRepository.findOne({
       filter,
     });
@@ -139,19 +139,55 @@ export class BasicAuth extends BaseAuth {
     const {
       values: { email },
     } = ctx.action.params;
+
     if (!email) {
       ctx.throw(400, ctx.t('Please fill in your email address', { ns: namespace }));
     }
+
     const user = await this.userRepository.findOne({
       where: {
         email,
       },
     });
+
     if (!user) {
       ctx.throw(401, ctx.t('The email is incorrect, please re-enter', { ns: namespace }));
     }
-    user.resetToken = crypto.randomBytes(20).toString('hex');
-    await user.save();
+
+    // 通过用户认证的接口获取邮件渠道、主题、内容等
+    const { emailChannel, subject, contentType, content, expiresIn } = this.getEmailConfig();
+
+    // 生成重置密码的 token
+    const resetToken = await ctx.app.authManager.jwt.sign({
+      resetPasswordUserId: user.id,
+    }, {
+      expiresIn, // 配置的过期时间
+    });
+
+    // 通过通知管理插件发送邮件
+    const notificationManager = ctx.app.getPlugin('notification-manager');
+    if (notificationManager) {
+      const emailer = notificationManager.getChannel(emailChannel);
+      if (emailer) {
+        await emailer.send({
+          to: email,
+          subject,
+          content: parsedValue(content, {
+            $user: user,
+            $resetLink: `${ctx.request.protocol}://${ctx.request.host}/reset-password?token=${resetToken}`,
+            $date: getDateVars(),
+            $env: ctx.app.environment.getVariables(),
+          }),
+        });
+      } else {
+        ctx.throw(400, ctx.t('Email channel not found', { ns: namespace }));
+      }
+    } else {
+      ctx.throw(500, ctx.t('Notification manager plugin not found', { ns: namespace }));
+    }
+
+    ctx.logger.info(`Password reset email sent to ${email}`);
+
     return user;
   }
 
