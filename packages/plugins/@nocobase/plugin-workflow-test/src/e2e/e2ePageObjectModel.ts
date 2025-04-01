@@ -260,7 +260,7 @@ export class ApprovalBranchModeNode {
     this.detailsConfigureFieldsButton = page.getByLabel(
       `schema-initializer-Grid-details:configureFields-${collectionName}`,
     );
-    this.addActionsMenu = page.getByRole('menuitem', { name: 'Process form' }).getByRole('switch');
+    this.addActionsMenu = page.getByRole('menuitem', { name: 'Process form' });
     this.actionsConfigureFieldsButton = page.getByLabel('schema-initializer-Grid-FormItemInitializers-approvalRecords');
     this.actionsConfigureActionsButton = page.getByLabel('schema-initializer-ActionBar-');
     this.addApproveButton = page.getByRole('menuitem', { name: 'Approve' }).getByRole('switch');
