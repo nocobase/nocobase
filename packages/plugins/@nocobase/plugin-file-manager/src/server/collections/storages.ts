@@ -21,6 +21,7 @@ export default defineCollection({
       type: 'string',
       name: 'title',
       translation: true,
+      trim: true,
     },
     {
       title: '英文标识',
@@ -28,6 +29,7 @@ export default defineCollection({
       type: 'uid',
       name: 'name',
       unique: true,
+      trim: true,
     },
     {
       comment: '类型标识，如 local/ali-oss 等',
@@ -51,12 +53,14 @@ export default defineCollection({
       type: 'text',
       name: 'path',
       defaultValue: '',
+      trim: true,
     },
     {
       comment: '访问地址前缀',
       type: 'string',
       name: 'baseUrl',
       defaultValue: '',
+      trim: true,
     },
     // TODO(feature): 需要使用一个实现了可设置默认值的字段
     {
