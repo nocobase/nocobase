@@ -7,7 +7,7 @@ import React, { useState } from 'react';
 
 const scope = [
   { label: 'v1', value: 'v1' },
-  { label: 'now', value: 'now', type: 'date' },
+  { label: 'now', value: 'now', helpers: ['date.*'] },
 ];
 
 const tmplateData = { now: dayjs.utc().format(), v1: 'value-v1' };

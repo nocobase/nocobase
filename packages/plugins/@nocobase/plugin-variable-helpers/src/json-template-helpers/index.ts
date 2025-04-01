@@ -22,8 +22,8 @@ export const helpers: Helper[] = [
     title: 'format',
     handler: dateFormat,
     group: 'date',
-    inputType: 'date',
-    outputType: 'string',
+    inputMappingRules: ['date.*'],
+    outputMappingRules: ['string.*'],
     sort: 1,
     args: [],
     uiSchema: [
@@ -41,8 +41,8 @@ export const helpers: Helper[] = [
     title: 'offset',
     handler: dateOffset,
     group: 'date',
-    inputType: 'date',
-    outputType: 'date',
+    inputMappingRules: ['date.*'],
+    outputMappingRules: ['date.*'],
     sort: 3,
     args: [],
     uiSchema: [

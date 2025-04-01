@@ -19,8 +19,8 @@ import { useHelperObservables } from './Helpers/hooks/useHelperObservables';
 interface VariableContextValue {
   value: any;
   helperObservables?: ReturnType<typeof useHelperObservables>;
-  variableType: string;
-  valueType: string;
+  helpersMappingRules: string[];
+  currentMappingRules: string[];
   variableName: string;
   openLastHelper?: boolean;
 }
@@ -28,7 +28,7 @@ interface VariableContextValue {
 interface VariableProviderProps {
   variableName: string;
   variableExampleValue?: any;
-  variableType: string | null;
+  helpersMappingRules: string[] | null;
   openLastHelper?: boolean;
   children: React.ReactNode;
   helperObservables: ReturnType<typeof useHelperObservables>;
@@ -65,13 +65,11 @@ function escapeGlob(str: string): string {
  * @param mapping The variable helper mapping configuration
  * @returns boolean indicating if the helper is allowed for the variable
  */
-export function isHelperAllowedForVariable(helperName: string, valueType: string): boolean {
-  if (valueType) {
-    const matched = minimatch(helperName, `${valueType}.*`);
+export function isHelperAllowedForVariable(helperName: string, patterns: string[]): boolean {
+  return patterns.some((pattern) => {
+    const matched = minimatch(helperName, pattern);
     return matched;
-  }
-  // If no matching rule found and strictMode is true, deny the helper
-  return false;
+  });
 }
 
 /**
@@ -106,8 +104,8 @@ export function getSupportedHelpersForVariable(
 const VariableContext = createContext<VariableContextValue>({
   variableName: '',
   value: null,
-  variableType: null,
-  valueType: '',
+  helpersMappingRules: [],
+  currentMappingRules: [],
   openLastHelper: false,
 });
 
@@ -122,7 +120,7 @@ export function useCurrentVariable(): VariableContextValue {
 const _VariableProvider: React.FC<VariableProviderProps> = ({
   variableName,
   children,
-  variableType,
+  helpersMappingRules = [],
   variableExampleValue,
   openLastHelper,
   helperObservables,
@@ -165,14 +163,14 @@ const _VariableProvider: React.FC<VariableProviderProps> = ({
     fetchValue();
   }, [localVariables, variableName, variables, getValue, variableExampleValue]);
 
-  const valueType =
+  const currentMappingRules =
     helperObservables.helpersObs.value.length > 0
-      ? helperObservables.helpersObs.value[helperObservables.helpersObs.value.length - 1].config.outputType
-      : variableType;
+      ? helperObservables.helpersObs.value[helperObservables.helpersObs.value.length - 1].config.outputMappingRules
+      : helpersMappingRules;
 
   return (
     <VariableContext.Provider
-      value={{ variableName, value, valueType, helperObservables, variableType, openLastHelper }}
+      value={{ variableName, value, helperObservables, helpersMappingRules, openLastHelper, currentMappingRules }}
     >
       {children}
     </VariableContext.Provider>
@@ -183,10 +181,10 @@ export const VariableProvider = observer(_VariableProvider, { displayName: 'Vari
 
 export function useVariable() {
   const context = useContext(VariableContext);
-  const { value, variableName, valueType } = context;
+  const { currentMappingRules } = context;
 
   const isHelperAllowed = (helperName: string) => {
-    return isHelperAllowedForVariable(helperName, valueType);
+    return isHelperAllowedForVariable(helperName, currentMappingRules);
   };
 
   return {

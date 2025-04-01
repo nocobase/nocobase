@@ -7,14 +7,14 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-type ValueType = 'date' | 'string' | 'dateRange' | 'any';
+type ValueType = string[];
 export type Helper = {
   name: string;
   title: string;
   handler: (...args: any[]) => any;
   group: string;
-  inputType: ValueType;
-  outputType: ValueType;
+  inputMappingRules: ValueType;
+  outputMappingRules: ValueType;
   sort: number;
   args: string[];
   uiSchema?: any[];

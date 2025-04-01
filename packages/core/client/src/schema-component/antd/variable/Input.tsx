@@ -493,7 +493,7 @@ function _Input(props: VariableInputProps) {
               <VariableProvider
                 variableName={fullVariable}
                 variableExampleValue={selectedScopeOption?.example}
-                variableType={selectedScopeOption?.type}
+                helpersMappingRules={selectedScopeOption?.helpers ?? []}
                 openLastHelper={selectedScopeOption?.showLastHelper}
                 helperObservables={helperObservables}
                 onVariableTemplateChange={onChange}
