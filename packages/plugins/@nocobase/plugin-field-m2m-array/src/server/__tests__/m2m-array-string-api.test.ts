@@ -186,15 +186,8 @@ describe('m2m array api, string targetKey', () => {
           },
         },
       });
-      if (db.sequelize.getDialect() === 'postgres') {
-        const res = await search;
-        expect(res.length).toBe(1);
-      } else {
-        expect(search).rejects.toThrowError();
-      }
-      if (db.sequelize.getDialect() !== 'postgres') {
-        return;
-      }
+      const res1 = await search;
+      expect(res1.length).toBe(1);
       const search2 = db.getRepository('users').find({
         filter: {
           'tags.title': {
@@ -202,12 +195,8 @@ describe('m2m array api, string targetKey', () => {
           },
         },
       });
-      if (db.sequelize.getDialect() === 'postgres') {
-        const res = await search2;
-        expect(res.length).toBe(2);
-      } else {
-        expect(search2).rejects.toThrowError();
-      }
+      const res2 = await search2;
+      expect(res2.length).toBe(2);
     });
 
     it('should create with belongsToArray', async () => {
