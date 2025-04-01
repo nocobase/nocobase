@@ -590,7 +590,7 @@ describe('union role: full permissions', async () => {
     agent = await app.agent().login(user, UNION_ROLE_KEY);
     const rolesResponse = await agent.resource('roles').check();
     expect(rolesResponse.status).toBe(200);
-    expect(rolesResponse.body.data.actions).toStrictEqual({});
+    expect(rolesResponse.body.data.actions['users:view']).toStrictEqual({});
   });
 
   it('should verify actions configuration for union role with specific scopes', async () => {
@@ -603,7 +603,7 @@ describe('union role: full permissions', async () => {
       .send({
         roleName: role1.name,
         strategy: {
-          actions: ['view', 'create:own1'],
+          actions: ['view', 'create:own', 'update'],
         },
         dataSourceKey: 'main',
       });
@@ -669,8 +669,10 @@ describe('union role: full permissions', async () => {
     const rolesResponse = await agent.resource('roles').check();
     expect(rolesResponse.status).toBe(200);
     expect(rolesResponse.body.data.actions).toHaveProperty('users:create');
-    expect(rolesResponse.body.data.actions).not.toHaveProperty('users:view');
+    expect(rolesResponse.body.data.actions).toHaveProperty('users:view');
+    expect(rolesResponse.body.data.actions['users:view']).toStrictEqual({});
     expect(rolesResponse.body.data.actions['users:create']).toHaveProperty('filter');
     expect(rolesResponse.body.data.actions['users:create']).toHaveProperty('whitelist');
+    expect(rolesResponse.body.data.actions['users:update']).toStrictEqual({});
   });
 });

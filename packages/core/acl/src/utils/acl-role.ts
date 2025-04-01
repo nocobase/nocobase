@@ -30,7 +30,7 @@ export function mergeRole(roles: ACLRole[]) {
     }
   }
   result.snippets = mergeRoleSnippets(allSnippets);
-  adjustActionByStrategy(roles, result);
+  adjustActionByStrategy(result);
   return result;
 }
 
@@ -55,44 +55,19 @@ export function mergeRole(roles: ACLRole[]) {
  *    actions: ['view']
  * }]
  **/
-function adjustActionByStrategy(
-  roles,
-  result: { actions?: Record<string, object>; strategy?: { actions?: string[] } },
-) {
+function adjustActionByStrategy(result: {
+  actions?: Record<string, object>;
+  strategy?: { actions?: string[] };
+  resources?: string[];
+}) {
   const { actions, strategy } = result;
-  if (_.isEmpty(actions) || _.isEmpty(strategy?.actions)) {
-    return;
-  }
-  const adjustActions = calcAdjustActions(roles);
-  if (!adjustActions.length) {
-    return;
-  }
-  for (const key of Object.keys(actions)) {
-    const needRemove = adjustActions.includes(key.split(':')[1]);
-    if (needRemove) {
-      delete actions[key];
-    }
-  }
-}
-
-function calcAdjustActions(roles) {
-  const adjustActionSet = new Set();
-  for (const role of roles) {
-    const r = role.toJSON();
-    if (_.isEmpty(r.actions) && r.strategy?.actions?.length) {
-      r.strategy.actions.forEach((x) => adjustActionSet.add(x));
-      continue;
-    }
-    if (!_.isEmpty(r.actions) && r.strategy?.actions?.length) {
-      for (const action of r.strategy.actions) {
-        const exist = Object.keys(r.actions).some((key) => key.split(':')[1] === action);
-        if (!exist) {
-          adjustActionSet.add(action);
-        }
+  if (!_.isEmpty(actions) && !_.isEmpty(strategy?.actions) && !_.isEmpty(result.resources)) {
+    for (const resource of result.resources) {
+      for (const action of strategy.actions) {
+        actions[`${resource}:${action}`] = {};
       }
     }
   }
-  return [...adjustActionSet];
 }
 
 function mergeRoleNames(sourceRoleNames, newRoleName) {
