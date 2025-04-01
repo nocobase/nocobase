@@ -13,6 +13,7 @@ import { useAPIClient } from '../../../api-client';
 import { CollectionFieldOptions_deprecated } from '../../../collection-manager';
 import { CollectionFieldOptions } from '../../../data-source/collection/Collection';
 import { useBaseVariable } from './useBaseVariable';
+import { string } from '../../../collection-manager/interfaces/properties/operators';
 
 /**
  * @deprecated
@@ -47,6 +48,7 @@ export const useRoleVariable = ({
     noDisabled,
     targetFieldSchema,
     noChildren: true,
+    operators: string,
   });
 
   return result;

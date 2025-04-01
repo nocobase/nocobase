@@ -27,7 +27,14 @@ import { ArrayCollapse } from './components/LinkageHeader';
 export interface Props {
   dynamicComponent: any;
 }
-
+const transformDefaultValue = (values) => {
+  return values.map((v) => {
+    return {
+      conditionType: 'basic',
+      ...v,
+    };
+  });
+};
 export const FormLinkageRules = withDynamicSchemaProps(
   observer((props: Props) => {
     const fieldSchema = useFieldSchema();
@@ -37,13 +44,14 @@ export const FormLinkageRules = withDynamicSchemaProps(
     const parentRecordData = useCollectionParentRecordData();
 
     const components = useMemo(() => ({ ArrayCollapse }), []);
+    console.log(transformDefaultValue(defaultValues));
     const schema = useMemo(
       () => ({
         type: 'object',
         properties: {
           rules: {
             type: 'array',
-            default: defaultValues,
+            default: transformDefaultValue(defaultValues),
             'x-component': 'ArrayCollapse',
             'x-decorator': 'FormItem',
             'x-component-props': {
@@ -72,7 +80,7 @@ export const FormLinkageRules = withDynamicSchemaProps(
                       'x-content': '{{ t("Condition") }}',
                     },
                     condition: {
-                      'x-component': 'Filter',
+                      'x-component': 'LinkageFilter',
                       'x-use-component-props': () => {
                         return {
                           options,
@@ -102,6 +110,22 @@ export const FormLinkageRules = withDynamicSchemaProps(
                           );
                         },
                       },
+                      'x-reactions': [
+                        {
+                          dependencies: ['.conditionType'],
+                          fulfill: {
+                            state: {
+                              componentProps: { conditionType: `{{$deps[0]}}` },
+                            },
+                          },
+                        },
+                      ],
+                    },
+                    conditionType: {
+                      type: 'string',
+                      'x-component': 'Input',
+                      default: 'advanced',
+                      'x-hidden': true,
                     },
                     actions: {
                       'x-component': 'h4',

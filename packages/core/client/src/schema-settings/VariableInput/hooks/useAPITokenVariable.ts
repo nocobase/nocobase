@@ -9,6 +9,7 @@
 
 import { useAPIClient } from '../../../api-client/hooks/useAPIClient';
 import { useBaseVariable } from './useBaseVariable';
+import { string } from '../../../collection-manager/interfaces/properties/operators';
 
 /**
  * 变量：`当前 Token`
@@ -26,6 +27,7 @@ export const useAPITokenVariable = ({
     title: 'API token',
     noDisabled,
     noChildren: true,
+    operators: string,
   });
 
   return {

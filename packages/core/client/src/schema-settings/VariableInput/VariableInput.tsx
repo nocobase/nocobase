@@ -112,6 +112,7 @@ export const VariableInput = (props: Props) => {
     targetFieldSchema,
     noDisabled,
   });
+  console.log(variableOptions);
   const contextVariable = useContextAssociationFields({ schema, maxDepth: 2, contextCollectionName, collectionField });
   const { compatOldVariables } = useCompatOldVariables({
     collectionField,
@@ -127,13 +128,13 @@ export const VariableInput = (props: Props) => {
   const handleChange = useCallback(
     (value: any, optionPath: any[]) => {
       if (!shouldChange) {
-        return onChange(value);
+        return onChange(value, optionPath);
       }
 
       // `shouldChange` 这个函数的运算量比较大，会导致展开变量列表时有明显的卡顿感，在这里加个延迟能有效解决这个问题
       setTimeout(async () => {
         if (await shouldChange(value, optionPath)) {
-          onChange(value);
+          onChange(value, optionPath);
         }
       });
     },

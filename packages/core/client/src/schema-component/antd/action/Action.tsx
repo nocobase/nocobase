@@ -120,6 +120,7 @@ export const Action: ComposedAction = withDynamicSchemaProps(
                 condition: v.condition,
                 variables,
                 localVariables,
+                conditionType: v.conditionType,
               },
               app.jsonLogic,
             );
