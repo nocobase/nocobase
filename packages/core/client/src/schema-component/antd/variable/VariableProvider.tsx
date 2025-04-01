@@ -192,3 +192,12 @@ export function useVariable() {
     isHelperAllowed,
   };
 }
+
+export function getFieldSupportedHelpers(fieldSchema: any): string[] {
+  if (!fieldSchema) {
+    return [];
+  }
+  if (['datetimeNoTz', 'date'].includes(fieldSchema?.type)) {
+    return ['date.*'];
+  }
+}

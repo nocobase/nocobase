@@ -262,7 +262,7 @@ function _Input(props: VariableInputProps) {
     [value],
   );
 
-  const selectedScopeOption = useMemo(() => findScopeOption(scope, variableSegments), [scope, variableSegments]);
+  const selectedScopeOption = useMemo(() => findScopeOption(options, variableSegments), [options, variableSegments]);
 
   const parsed = useMemo(() => parseValue(variableSegments, parseOptions), [parseOptions, variableSegments]);
   const isConstant = typeof parsed === 'string';
@@ -356,7 +356,7 @@ function _Input(props: VariableInputProps) {
         }
       }
       await option.loadChildren(option, activeKey, variable);
-      setOptions((prev) => [...prev]);
+      setOptions([...options]);
     }
   };
 
@@ -381,7 +381,7 @@ function _Input(props: VariableInputProps) {
             // setPrevType(next[1]);
             const newVariable = ConstantTypes[next[1]]?.default?.() ?? null;
             onChange(
-              composeTemplate({ fullVariable: newVariable, helpers: optionPath[optionPath.length - 1]?.helpers ?? [] }),
+              composeTemplate({ fullVariable: newVariable, helpers: helperObservables.helpersObs.value ?? [] }),
               optionPath,
             );
           }
@@ -394,7 +394,10 @@ function _Input(props: VariableInputProps) {
       }
       const variableName = next.join('.');
       const option = optionPath[optionPath.length - 1];
-      onChange(composeTemplate({ fullVariable: variableName, helpers: option?.helpers ?? [] }), optionPath);
+      onChange(
+        composeTemplate({ fullVariable: variableName, helpers: helperObservables.helpersObs.value ?? [] }),
+        optionPath,
+      );
     },
     [type, variable, onChange],
   );
