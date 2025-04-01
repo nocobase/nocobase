@@ -75,8 +75,8 @@ export const SchemaInitializerItem = memo(
       ];
     }, [name, disabled, style, className, children, title, onClick, icon, childrenItems]);
 
-    if (items && items.length > 0 && !disabled) {
-      return <SchemaInitializerMenu items={menuItems}></SchemaInitializerMenu>;
+    if (items && items.length > 0) {
+      return <SchemaInitializerMenu disabled={disabled} items={menuItems}></SchemaInitializerMenu>;
     }
     return (
       <div
