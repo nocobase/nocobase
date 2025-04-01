@@ -7,9 +7,17 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { useEffect, useCallback, useState, useMemo } from 'react';
+import { useEffect, useCallback, useState, useMemo, ComponentProps } from 'react';
 import { useApp } from '@nocobase/client';
-import { FilterFunction, FilterOptions, EventListener, EventListenerOptions } from './types';
+import {
+  FilterFunction,
+  FilterOptions,
+  EventListener,
+  EventListenerOptions,
+  ApplyFilterOptions,
+  FilterContext,
+} from './types';
+import { useFieldSchema } from '@formily/react';
 
 /**
  * Hook for registering a filter function that will be automatically unregistered on component unmount
@@ -40,16 +48,42 @@ export function useAddFilter(name: string, filter: FilterFunction, options: Filt
  * @param name - Filter name to apply
  * @returns A function that applies the filter and returns a Promise
  */
-export function useApplyFilter(name: string) {
+
+export const useApplyFilter = (name: string, options: ApplyFilterOptions) => {
+  const { input, settings, resource, props, resourceParams } = options;
+  const [done, setDone] = useState(false);
+  const [result, setResult] = useState(null);
   const app = useApp();
 
-  return useCallback(
-    async (initialValue: any, ...contextArgs: any[]) => {
-      return app.filterManager.applyFilter(name, initialValue, ...contextArgs);
-    },
-    [app, name],
-  );
-}
+  useEffect(() => {
+    const ctx: FilterContext = {
+      settings,
+      resource,
+      props,
+      resourceParams,
+      _cancel: false,
+    };
+    app.filterManager
+      .applyFilter(name, input, ctx)
+      .then((ret) => {
+        if (!ctx._cancel) {
+          setResult(ret);
+          setDone(true);
+        }
+      })
+      .catch((error) => {
+        if (!ctx._cancel) {
+          console.error('Error applying filter:', error);
+        }
+      });
+
+    return () => {
+      ctx._cancel = true;
+    };
+  }, [app, name, input, settings, resource, props, resourceParams]);
+
+  return { done, result };
+};
 
 /**
  * Hook for registering an event listener that will be automatically unregistered on component unmount
@@ -93,60 +127,4 @@ export function useDispatchEvent() {
     },
     [app],
   );
-}
-
-/**
- * Hook for applying a filter and managing the loading state
- *
- * @param name - Filter name to apply
- * @param initialValue - Initial value to filter
- * @param contextArgs - Additional context arguments to pass to filters
- * @param deps - Dependencies to trigger re-filtering
- * @returns [filteredValue, isLoading, error]
- */
-export function useFilteredValue<T>(
-  name: string,
-  initialValue: T,
-  contextArgs: any[] = [],
-  deps: any[] = [],
-): [T, boolean, Error | null] {
-  const app = useApp();
-  const [filteredValue, setFilteredValue] = useState<T>(initialValue);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [error, setError] = useState<Error | null>(null);
-
-  useEffect(() => {
-    let isMounted = true;
-    setIsLoading(true);
-
-    // Define async function to apply the filter and update state
-    const applyFilterAndUpdateState = async () => {
-      try {
-        const result = await app.filterManager.applyFilter(name, initialValue, ...contextArgs);
-        if (isMounted) {
-          setFilteredValue(result);
-          setError(null);
-        }
-      } catch (err) {
-        if (isMounted) {
-          console.error(`Error applying filter '${name}':`, err);
-          setError(err as Error);
-        }
-      } finally {
-        if (isMounted) {
-          setIsLoading(false);
-        }
-      }
-    };
-
-    // Call the async function immediately
-    applyFilterAndUpdateState();
-
-    // Return cleanup function
-    return () => {
-      isMounted = false;
-    };
-  }, [app.filterManager, name, initialValue, contextArgs, deps]);
-
-  return [filteredValue, isLoading, error];
 }

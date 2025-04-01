@@ -8,6 +8,8 @@
  */
 
 import { ISchema } from '@formily/json-schema';
+import { Resource } from '@nocobase/resourcer';
+import { ComponentProps } from 'react';
 
 // Filter System Types
 export type FilterFunction = (currentValue: any, ...contextArgs: any[]) => any | Promise<any>;
@@ -59,3 +61,51 @@ export interface EventListenerOptions {
 export type EventListener = (context: EventContext) => void | Promise<void>;
 
 export type Unsubscriber = () => void;
+
+export type LinkageRuleItem = {
+  actions: Array<{
+    operator: string;
+    targetFields: string[];
+    value: {
+      mode: string;
+      value: string;
+    };
+  }>;
+  condition: {
+    [type in '$and' | '$or']: Array<{
+      [field: string]: Record<string, string>;
+    }>;
+  };
+};
+
+export type LinkageRuleSettings = {
+  fields: Record<string, LinkageRuleItem>;
+  actions: Record<string, LinkageRuleItem>;
+  recordActions: Record<string, LinkageRuleItem>;
+};
+
+export type FieldSettings = Record<string, {}>;
+
+export type ActionSettings = Record<string, {}>;
+
+export type BlockSettings = {
+  linkageRules: Record<string, LinkageRuleSettings>;
+  fields: Record<string, FieldSettings>;
+  actions: Record<string, ActionSettings>;
+  recordActions: Record<string, ActionSettings>;
+};
+
+export type FilterContext = {
+  settings?: BlockSettings;
+  resource?: Resource;
+  props?: ComponentProps<any>;
+  resourceParams?: {
+    page?: number;
+    pageSize?: number;
+  };
+  _cancel?: boolean;
+};
+
+export type ApplyFilterOptions = {
+  input?: any;
+} & FilterContext;

@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { FilterFunction, FilterOptions, UnregisterFunction } from './types';
+import { FilterContext, FilterFunction, FilterOptions, UnregisterFunction } from './types';
 
 interface RegisteredFilter {
   name: string;
@@ -67,7 +67,7 @@ export class FilterManager {
   /**
    * Applies all registered filters for a name to an initial value
    */
-  async applyFilter(name: string, initialValue: any, ...contextArgs: any[]): Promise<any> {
+  async applyFilter(name: string, initialValue: any, context: FilterContext): Promise<any> {
     if (!this.filters.has(name)) {
       return initialValue;
     }
@@ -81,7 +81,7 @@ export class FilterManager {
 
       for (const { filter, options } of filters) {
         try {
-          const result = filter(currentValue, ...contextArgs);
+          const result = filter(currentValue, context);
 
           // Handle async filter functions
           if (result instanceof Promise) {

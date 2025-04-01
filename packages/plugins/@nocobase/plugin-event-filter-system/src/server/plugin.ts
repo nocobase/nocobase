@@ -7,13 +7,22 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Plugin } from '@nocobase/server';
+import { InstallOptions, Plugin } from '@nocobase/server';
 
 export class PluginEventFilterSystemServer extends Plugin {
-  async load() {
-    // 服务器端仅作为插件加载的必要组成部分
-    // 实际功能主要在客户端实现
-  }
+  afterAdd() {}
+
+  beforeLoad() {}
+
+  async load() {}
+
+  async install(options?: InstallOptions) {}
+
+  async afterEnable() {}
+
+  async afterDisable() {}
+
+  async remove() {}
 }
 
 export default PluginEventFilterSystemServer;
