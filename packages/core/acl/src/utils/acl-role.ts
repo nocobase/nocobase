@@ -30,7 +30,69 @@ export function mergeRole(roles: ACLRole[]) {
     }
   }
   result.snippets = mergeRoleSnippets(allSnippets);
+  adjustActionByStrategy(roles, result);
   return result;
+}
+
+/**
+ * When merging permissions from multiple roles, if strategy.actions allows certain actions, then those actions have higher priority.
+ * For example, [
+ * {
+ *  actions: {
+ *    'users:view': {...},
+ *    'users:create': {...}
+ *  },
+ *  strategy: {
+ *    actions: ['view']
+ *  }
+ * }]
+ * finally result: [{
+ *  actions: {
+ *    'users:create': {...},
+ * },
+ * {
+ *  strategy: {
+ *    actions: ['view']
+ * }]
+ **/
+function adjustActionByStrategy(
+  roles,
+  result: { actions?: Record<string, object>; strategy?: { actions?: string[] } },
+) {
+  const { actions, strategy } = result;
+  if (_.isEmpty(actions) || _.isEmpty(strategy?.actions)) {
+    return;
+  }
+  const adjustActions = calcAdjustActions(roles);
+  if (!adjustActions.length) {
+    return;
+  }
+  for (const key of Object.keys(actions)) {
+    const needRemove = adjustActions.includes(key.split(':')[1]);
+    if (needRemove) {
+      delete actions[key];
+    }
+  }
+}
+
+function calcAdjustActions(roles) {
+  const adjustActionSet = new Set();
+  for (const role of roles) {
+    const r = role.toJSON();
+    if (_.isEmpty(r.actions) && r.strategy?.actions?.length) {
+      r.strategy.actions.forEach((x) => adjustActionSet.add(x));
+      continue;
+    }
+    if (!_.isEmpty(r.actions) && r.strategy?.actions?.length) {
+      for (const action of r.strategy.actions) {
+        const exist = Object.keys(r.actions).some((key) => key.split(':')[1] === action);
+        if (!exist) {
+          adjustActionSet.add(action);
+        }
+      }
+    }
+  }
+  return [...adjustActionSet];
 }
 
 function mergeRoleNames(sourceRoleNames, newRoleName) {
