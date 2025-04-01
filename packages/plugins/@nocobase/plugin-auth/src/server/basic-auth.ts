@@ -10,13 +10,17 @@
 import { AuthConfig, BaseAuth } from '@nocobase/auth';
 import { PasswordField } from '@nocobase/database';
 import _ from 'lodash';
-import { namespace } from '../preset';
+import { namespace, presetAuthType } from '../preset';
 import { getDateVars, parsedValue } from '@nocobase/utils';
 
 export class BasicAuth extends BaseAuth {
   constructor(config: AuthConfig) {
     const userCollection = config.ctx.db.getCollection('users');
     super({ ...config, userCollection });
+  }
+
+  private isEmail(value: string) {
+    return /^[\w-]+(\.[\w-]+)*@[\w-]+(\.[\w-]+)+$/.test(value);
   }
 
   async validate() {
@@ -90,7 +94,7 @@ export class BasicAuth extends BaseAuth {
     }
     const emailSetting = signupFormSettings.find((item: any) => item.field === 'email');
     if (emailSetting && emailSetting.show) {
-      if (email && !/^[\w-]+(\.[\w-]+)*@[\w-]+(\.[\w-]+)+$/.test(email)) {
+      if (email && !this.isEmail(email)) {
         throw new Error('Please enter a valid email address');
       }
       if (emailSetting.required && !email) {
@@ -133,7 +137,18 @@ export class BasicAuth extends BaseAuth {
     return user;
   }
 
-  /* istanbul ignore next -- @preserve */
+  private async getEmailConfig() {
+    const options = this.authenticator.options?.public || {};
+    return options as {
+      enableResetPassword: boolean;
+      emailChannel: string;
+      emailSubject: string;
+      emailContentType: string;
+      emailContent: string;
+      resetTokenExpiresIn: string | number;
+    };
+  }
+
   async lostPassword() {
     const ctx = this.ctx;
     const {
@@ -142,6 +157,10 @@ export class BasicAuth extends BaseAuth {
 
     if (!email) {
       ctx.throw(400, ctx.t('Please fill in your email address', { ns: namespace }));
+    }
+
+    if (!this.isEmail(email)) {
+      ctx.throw(400, ctx.t('Incorrect email format', { ns: namespace }));
     }
 
     const user = await this.userRepository.findOne({
@@ -155,13 +174,17 @@ export class BasicAuth extends BaseAuth {
     }
 
     // 通过用户认证的接口获取邮件渠道、主题、内容等
-    const { emailChannel, subject, contentType, content, expiresIn } = this.getEmailConfig();
+    const { emailChannel, emailContentType, emailContent, emailSubject, enableResetPassword, resetTokenExpiresIn } = await this.getEmailConfig();
+
+    if (!enableResetPassword) {
+      ctx.throw(403, ctx.t('Not allowed to reset password', { ns: namespace }));
+    }
 
     // 生成重置密码的 token
     const resetToken = await ctx.app.authManager.jwt.sign({
       resetPasswordUserId: user.id,
     }, {
-      expiresIn, // 配置的过期时间
+      expiresIn: resetTokenExpiresIn, // 配置的过期时间
     });
 
     // 通过通知管理插件发送邮件
