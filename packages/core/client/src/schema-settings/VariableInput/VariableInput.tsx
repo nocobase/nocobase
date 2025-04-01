@@ -363,37 +363,3 @@ export function useCompatOldVariables(props: {
 
   return { compatOldVariables };
 }
-
-/**
- * Check if a variable and helper combination is allowed according to the mapping rules
- */
-function isHelperAllowedForVariable(
-  variable: string,
-  helper: string,
-  rules: VariableHelperRule[],
-  strictMode = false,
-): boolean {
-  // If no rules defined and not in strict mode, allow everything
-  if (!rules?.length && !strictMode) {
-    return true;
-  }
-
-  for (const rule of rules) {
-    const variablePattern = new RegExp('^' + rule.variables.replace(/\*/g, '.*') + '$');
-    if (variablePattern.test(variable)) {
-      // If no helpers defined for this rule, allow all helpers
-      if (!rule.helpers?.length) {
-        return true;
-      }
-
-      // Check if any of the helper patterns match the helper
-      return rule.helpers.some((helper) => {
-        const helperPattern = new RegExp('^' + helper.replace(/\*/g, '.*') + '$');
-        return helperPattern.test(helper);
-      });
-    }
-  }
-
-  // If no matching rules found, return !strictMode
-  return !strictMode;
-}

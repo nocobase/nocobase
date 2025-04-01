@@ -8,10 +8,10 @@
  */
 
 import { untracked } from '@formily/reactive';
+import { extractTemplateElements } from '@nocobase/json-template-parser';
 import { getValuesByPath } from '@nocobase/utils/client';
 import _ from 'lodash';
 import React, { createContext, useCallback, useEffect, useMemo, useRef } from 'react';
-import { extractTemplateElements } from '@nocobase/json-template-parser';
 import { useAPIClient } from '../api-client';
 import type { CollectionFieldOptions_deprecated } from '../collection-manager';
 import { useCollectionManager_deprecated } from '../collection-manager';
@@ -19,13 +19,13 @@ import { getDataSourceHeaders } from '../data-source/utils';
 import { useCompile } from '../schema-component';
 import useBuiltInVariables from './hooks/useBuiltinVariables';
 import { VariableOption, VariablesContextType } from './types';
+import { processDateVariableContext } from './utils/dateVariableContext';
 import { filterEmptyValues } from './utils/filterEmptyValues';
 import { getAction } from './utils/getAction';
 import { getPath } from './utils/getPath';
 import { clearRequested, getRequested, hasRequested, stashRequested } from './utils/hasRequested';
 import { isVariable } from './utils/isVariable';
 import { uniq } from './utils/uniq';
-import { processDateVariableContext } from './utils/dateVariableContext';
 
 export const VariablesContext = createContext<VariablesContextType>(null);
 VariablesContext.displayName = 'VariablesContext';
@@ -249,8 +249,8 @@ const VariablesProvider = ({ children, filterVariables }: any) => {
 
   const parseVariable = useCallback(
     async (
-      str: string,
-      localVariable?: VariableOption | VariableOption[],
+      variablePath: string,
+      localVariables?: VariableOption[],
       options?: {
         appends?: string[];
         doNotRequest?: boolean;
@@ -267,7 +267,7 @@ const VariablesProvider = ({ children, filterVariables }: any) => {
         };
       }
 
-      const _value = await getResult(variablePath, localVariable, options);
+      const _value = await getResult(variablePath, localVariables, options);
 
       // 处理变量上下文
       if (variableOption.variableContext) {
