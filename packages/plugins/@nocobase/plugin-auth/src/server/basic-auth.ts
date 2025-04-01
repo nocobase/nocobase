@@ -190,17 +190,23 @@ export class BasicAuth extends BaseAuth {
     // 通过通知管理插件发送邮件
     const notificationManager = ctx.app.getPlugin('notification-manager');
     if (notificationManager) {
-      const emailer = notificationManager.getChannel(emailChannel);
+      const emailer = notificationManager.channelTypes.get(emailChannel);
       if (emailer) {
-        await emailer.send({
-          to: email,
-          subject,
-          content: parsedValue(content, {
-            $user: user,
-            $resetLink: `${ctx.request.protocol}://${ctx.request.host}/reset-password?token=${resetToken}`,
-            $date: getDateVars(),
-            $env: ctx.app.environment.getVariables(),
-          }),
+        const parsedContent = parsedValue(emailContent, {
+          $user: user,
+          $resetLink: `${process.env.API_BAST_URL}/reset-password?token=${resetToken}`,
+          $date: getDateVars(),
+          $env: ctx.app.environment.getVariables(),
+        });
+        const content = emailContentType === 'html' ? { html: parsedContent } : { text: parsedContent };
+        await notificationManager.send({
+          channelName: emailChannel,
+          message: {
+            to: [email],
+            subject: emailSubject,
+            contentType: emailContentType,
+            ...content,
+          }
         });
       } else {
         ctx.throw(400, ctx.t('Email channel not found', { ns: namespace }));
