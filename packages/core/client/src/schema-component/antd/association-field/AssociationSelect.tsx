@@ -33,7 +33,7 @@ import { RemoteSelect, RemoteSelectProps } from '../remote-select';
 import useServiceOptions, { useAssociationFieldContext } from './hooks';
 
 const removeIfKeyEmpty = (obj, filterTargetKey) => {
-  if (!obj || typeof obj !== 'object' || !filterTargetKey) return obj;
+  if (!obj || typeof obj !== 'object' || !filterTargetKey || Array.isArray(obj)) return obj;
   return !obj[filterTargetKey] ? null : obj;
 };
 
