@@ -38,7 +38,7 @@ export const helpers: Helper[] = [
   },
   {
     name: 'date_offset',
-    title: 'calculate',
+    title: 'offset',
     handler: dateOffset,
     group: 'date',
     inputType: 'date',

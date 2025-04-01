@@ -26,18 +26,18 @@ import { useVariableOptions } from './hooks/useVariableOptions';
 import { Option } from './type';
 
 /**
- * Configuration for mapping variables to their allowed filter functions
+ * Configuration for mapping variables to their allowed helper functions
  */
-interface VariableFilterRule {
+interface VariableHelperRule {
   /** Pattern to match variables, supports glob patterns */
   variables: string;
-  /** Array of allowed filter patterns, supports glob patterns */
-  filters: string[];
+  /** Array of allowed helper patterns, supports glob patterns */
+  helpers: string[];
 }
 
-interface VariableFilterMapping {
-  /** Array of rules defining which filters are allowed for which variables */
-  rules: VariableFilterRule[];
+interface VariableHelperMapping {
+  /** Array of rules defining which helpers are allowed for which variables */
+  rules: VariableHelperRule[];
   /** Optional flag to determine if unlisted combinations should be allowed */
   strictMode?: boolean;
 }
@@ -60,8 +60,8 @@ type Props = {
   onChange: (value: any, optionPath?: any[]) => void;
   renderSchemaComponent: (props: RenderSchemaComponentProps) => any;
   schema?: any;
-  /** Configuration for mapping variables to their allowed filter functions */
-  variableFilterMapping?: VariableFilterMapping;
+  /** Configuration for mapping variables to their allowed helper functions */
+  variableHelperMapping?: VariableHelperMapping;
   /** 消费变量值的字段 */
   targetFieldSchema?: Schema;
   children?: any;
@@ -365,12 +365,12 @@ export function useCompatOldVariables(props: {
 }
 
 /**
- * Check if a variable and filter combination is allowed according to the mapping rules
+ * Check if a variable and helper combination is allowed according to the mapping rules
  */
-function isFilterAllowedForVariable(
+function isHelperAllowedForVariable(
   variable: string,
-  filter: string,
-  rules: VariableFilterRule[],
+  helper: string,
+  rules: VariableHelperRule[],
   strictMode = false,
 ): boolean {
   // If no rules defined and not in strict mode, allow everything
@@ -381,15 +381,15 @@ function isFilterAllowedForVariable(
   for (const rule of rules) {
     const variablePattern = new RegExp('^' + rule.variables.replace(/\*/g, '.*') + '$');
     if (variablePattern.test(variable)) {
-      // If no filters defined for this rule, allow all helpers
-      if (!rule.filters?.length) {
+      // If no helpers defined for this rule, allow all helpers
+      if (!rule.helpers?.length) {
         return true;
       }
 
-      // Check if any of the filter patterns match the helper
-      return rule.filters.some((filter) => {
-        const filterPattern = new RegExp('^' + filter.replace(/\*/g, '.*') + '$');
-        return filterPattern.test(filter);
+      // Check if any of the helper patterns match the helper
+      return rule.helpers.some((helper) => {
+        const helperPattern = new RegExp('^' + helper.replace(/\*/g, '.*') + '$');
+        return helperPattern.test(helper);
       });
     }
   }

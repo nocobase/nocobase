@@ -38,12 +38,12 @@ interface VariableProviderProps {
 export interface VariableHelperRule {
   /** Pattern to match variables, supports glob patterns */
   variable: string;
-  /** Array of allowed filter patterns, supports glob patterns */
+  /** Array of allowed helper patterns, supports glob patterns */
   helpers: string[];
 }
 
 export interface VariableHelperMapping {
-  /** Array of rules defining which filters are allowed for which variables */
+  /** Array of rules defining which helpers are allowed for which variables */
   rules: VariableHelperRule[];
   /** Optional flag to determine if unlisted combinations should be allowed */
   strictMode?: boolean;
@@ -59,35 +59,35 @@ function escapeGlob(str: string): string {
 }
 
 /**
- * Tests if a filter is allowed for a given variable based on the variableHelperMapping configuration
+ * Tests if a helper is allowed for a given variable based on the variableHelperMapping configuration
  * @param variableName The name of the variable to test
- * @param helperName The name of the filter to test
+ * @param helperName The name of the helper to test
  * @param mapping The variable helper mapping configuration
- * @returns boolean indicating if the filter is allowed for the variable
+ * @returns boolean indicating if the helper is allowed for the variable
  */
 export function isHelperAllowedForVariable(helperName: string, valueType: string): boolean {
   if (valueType) {
     const matched = minimatch(helperName, `${valueType}.*`);
     return matched;
   }
-  // If no matching rule found and strictMode is true, deny the filter
+  // If no matching rule found and strictMode is true, deny the helper
   return false;
 }
 
 /**
- * Gets all supported filters for a given variable based on the mapping rules
+ * Gets all supported helpers for a given variable based on the mapping rules
  * @param variableName The name of the variable to check
  * @param mapping The variable helper mapping configuration
- * @param allHelpers Array of all available filter names
- * @returns Array of filter names that are allowed for the variable
+ * @param allHelpers Array of all available helper names
+ * @returns Array of helper names that are allowed for the variable
  */
-export function getSupportedFiltersForVariable(
+export function getSupportedHelpersForVariable(
   variableName: string,
   mapping?: VariableHelperMapping,
   allHelpers: Helper[] = [],
 ): Helper[] {
   if (!mapping?.rules) {
-    return allHelpers; // If no rules defined, all filters are allowed
+    return allHelpers; // If no rules defined, all helpers are allowed
   }
 
   // Find matching rule for the variable
@@ -95,11 +95,11 @@ export function getSupportedFiltersForVariable(
 
   if (!matchingRule) {
     // If no matching rule and strictMode is true, return empty array
-    // Otherwise return all filters
+    // Otherwise return all helpers
     return allHelpers;
   }
 
-  // Filter the allFilters array based on the matching rule's filter patterns
+  // Filter the allHelpers array based on the matching rule's helper patterns
   return allHelpers.filter(({ name }) => matchingRule.helpers.some((pattern) => minimatch(name, pattern)));
 }
 

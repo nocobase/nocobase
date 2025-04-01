@@ -34,19 +34,19 @@ function escapeGlob(str: string): string {
 }
 
 /**
- * Tests if a filter is allowed for a given variable based on the variableHelperMapping configuration
+ * Tests if a helper is allowed for a given variable based on the variableHelperMapping configuration
  * @param variableName The name of the variable to test
- * @param filterName The name of the filter to test
+ * @param helperName The name of the helper to test
  * @param mapping The variable helper mapping configuration
- * @returns boolean indicating if the filter is allowed for the variable
+ * @returns boolean indicating if the helper is allowed for the variable
  */
-export function isFilterAllowedForVariable(
+export function isHelperAllowedForVariable(
   variableName: string,
-  filterName: string,
+  helperName: string,
   mapping?: VariableHelperMapping,
 ): boolean {
   if (!mapping?.rules) {
-    return true; // If no rules defined, allow all filters
+    return true; // If no rules defined, allow all helpers
   }
 
   // Check each rule
@@ -55,12 +55,12 @@ export function isFilterAllowedForVariable(
     // We don't escape the pattern since it's meant to be a glob pattern
     // But we escape the variable name since it's a literal value
     if (minimatch(escapeGlob(variableName), rule.variable)) {
-      // Check if filter matches any of the allowed patterns
-      return rule.helpers.some((pattern) => minimatch(filterName, pattern));
+      // Check if helper matches any of the allowed patterns
+      return rule.helpers.some((pattern) => minimatch(helperName, pattern));
     }
   }
 
-  // If no matching rule found and strictMode is true, deny the filter
+  // If no matching rule found and strictMode is true, deny the helper
   return !mapping.strictMode;
 }
 
