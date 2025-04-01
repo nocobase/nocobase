@@ -82,7 +82,7 @@ function getAdjustActions(roles: ACLRole[]) {
     const jsonRole = role.toJSON();
     // Within the same role, actions have higher priority than strategy.actions.
     if (!_.isEmpty(jsonRole.strategy?.['actions']) && _.isEmpty(jsonRole.actions)) {
-      jsonRole.strategy['actions'].forEach((x) => actionSet.add(x));
+      jsonRole.strategy['actions'].forEach((x) => !x.includes('own') && actionSet.add(x));
     }
   }
   return actionSet;

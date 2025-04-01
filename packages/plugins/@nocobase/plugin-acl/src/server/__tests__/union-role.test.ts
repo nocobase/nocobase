@@ -671,6 +671,7 @@ describe('union role: full permissions', async () => {
     expect(rolesResponse.body.data.actions).toHaveProperty('users:create');
     expect(rolesResponse.body.data.actions).toHaveProperty('users:view');
     expect(rolesResponse.body.data.actions['users:view']).toStrictEqual({});
+    expect(rolesResponse.body.data.actions).not.toHaveProperty('users:create:own');
     expect(rolesResponse.body.data.actions['users:create']).toHaveProperty('filter');
     expect(rolesResponse.body.data.actions['users:create']).toHaveProperty('whitelist');
     expect(rolesResponse.body.data.actions['users:update']).toStrictEqual({});
