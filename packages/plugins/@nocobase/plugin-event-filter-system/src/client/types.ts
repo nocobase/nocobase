@@ -47,7 +47,7 @@ export interface EventContext<T = any> {
   };
 
   // 用于收集事件监听器的输出结果
-  results: Record<string, any>;
+  results?: Record<string, any>;
 }
 
 export interface EventListenerOptions {

@@ -12,8 +12,9 @@ import { EventManager } from './event-manager';
 import { FilterManager } from './filter-manager';
 import { Resource } from '@nocobase/resourcer';
 import { ComponentProps } from 'react';
-import { LinkageRuleSettings, LinkageRuleItem } from './types';
+import { LinkageRuleSettings, LinkageRuleItem, EventContext } from './types';
 import React from 'react';
+import { Modal, Form, Input } from 'antd';
 export * from './event-manager';
 export * from './filter-manager';
 export * from './hooks';
@@ -106,6 +107,7 @@ export class PluginEventFilterSystemClient extends Plugin {
     this.app.eventManager = this.eventManager;
     this.app.filterManager = this.filterManager;
     this.loadDefaultFilters();
+    this.loadDefaultEventListeners();
   }
 
   loadDefaultFilters() {
@@ -146,18 +148,30 @@ export class PluginEventFilterSystemClient extends Plugin {
       };
     });
 
-    this.filterManager.addFilter('core:block:table', async function actionsFilter(input, ctx) {
+    this.filterManager.addFilter('core:block:table', async (input, ctx) => {
       // get actions from settings and input
       const { settings } = ctx;
       const linkageRules = settings?.linkageRules;
       const actionSettings = settings?.actions;
       const actions = [];
+      const handles = {
+        addNew: (ctx: EventContext) => {
+          this.eventManager.dispatchEvent('core:block:record:addNew', ctx);
+        },
+        delete: (ctx: EventContext) => {
+          this.eventManager.dispatchEvent('core:block:table:record:delete', ctx);
+        },
+        refresh: (ctx: EventContext) => {
+          this.eventManager.dispatchEvent('core:block:table:refresh', ctx);
+        },
+      };
       Object.keys(actionSettings || {}).forEach((key) => {
-        const action = actionSettings[key];
-        actions.push({
-          ...action,
+        const action = {
+          ...actionSettings[key],
           ...linkageRules?.['actions'],
-        });
+        };
+        action['handle'] = handles[action.type];
+        actions.push(action);
       });
 
       return {
@@ -202,6 +216,87 @@ export class PluginEventFilterSystemClient extends Plugin {
         ...input,
         columns,
       };
+    });
+  }
+
+  loadDefaultEventListeners() {
+    this.eventManager.on('core:block:record:addNew', (ctx: EventContext) => {
+      console.log('core:block:record:addNew', ctx);
+
+      // Simple approach using Modal.open with form elements without Form component
+      const modal = Modal.info({
+        title: '新建记录',
+        icon: null,
+        content: (
+          <div style={{ marginTop: 16 }}>
+            <div style={{ marginBottom: 16 }}>
+              <div style={{ marginBottom: 8 }}>
+                <label>名称</label>
+              </div>
+              <Input placeholder="请输入名称" id="record-name-input" />
+            </div>
+            <div>
+              <div style={{ marginBottom: 8 }}>
+                <label>描述</label>
+              </div>
+              <Input.TextArea placeholder="请输入描述" rows={4} id="record-description-input" />
+            </div>
+          </div>
+        ),
+        okText: '确定',
+        cancelText: '取消',
+        // Use footer to replace the default buttons
+        footer: (
+          <div style={{ textAlign: 'right', marginTop: 24 }}>
+            <button
+              onClick={() => {
+                modal.destroy();
+              }}
+              style={{
+                marginRight: 8,
+                padding: '4px 15px',
+                backgroundColor: 'white',
+                border: '1px solid #d9d9d9',
+                borderRadius: 2,
+                cursor: 'pointer',
+              }}
+            >
+              取消
+            </button>
+            <button
+              onClick={() => {
+                const nameInput = document.getElementById('record-name-input') as HTMLInputElement;
+                const descInput = document.getElementById('record-description-input') as HTMLTextAreaElement;
+
+                if (nameInput && nameInput.value) {
+                  const values = {
+                    name: nameInput.value,
+                    description: descInput ? descInput.value : '',
+                  };
+                  console.log('Form values:', values);
+                  modal.destroy();
+                } else {
+                  // Highlight the name input if empty
+                  if (nameInput) {
+                    nameInput.style.borderColor = 'red';
+                    nameInput.focus();
+                  }
+                }
+              }}
+              style={{
+                padding: '4px 15px',
+                backgroundColor: '#1677ff',
+                border: 'none',
+                borderRadius: 2,
+                color: 'white',
+                cursor: 'pointer',
+              }}
+            >
+              确定
+            </button>
+          </div>
+        ),
+      });
     });
   }
 }

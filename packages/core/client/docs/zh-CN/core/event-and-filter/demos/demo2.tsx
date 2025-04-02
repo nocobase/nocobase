@@ -96,8 +96,22 @@ const TableDataBlockInitializer = () => {
           },
           'x-component-settings': {
             height: '1000px',
-            width: '50%',
+            width: '100%',
             linkageRules: {},
+            actions: [
+              {
+                label: '添加',
+                type: 'addNew',
+              },
+              {
+                label: '删除',
+                type: 'delete',
+              },
+              {
+                label: '刷新',
+                type: 'refresh',
+              },
+            ],
           },
         },
       },

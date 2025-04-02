@@ -16,6 +16,7 @@ import {
   EventListenerOptions,
   ApplyFilterOptions,
   FilterContext,
+  EventContext,
 } from './types';
 import { useFieldSchema } from '@formily/react';
 
@@ -46,6 +47,7 @@ export function useAddFilter(name: string, filter: FilterFunction, options: Filt
  * Hook that returns a function that will apply filters to a given value
  *
  * @param name - Filter name to apply
+ * @param options - Apply filter options
  * @returns A function that applies the filter and returns a Promise
  */
 
@@ -91,31 +93,43 @@ export const useApplyFilter = (name: string, options: ApplyFilterOptions) => {
 };
 
 /**
- * Hook for registering an event listener that will be automatically unregistered on component unmount
+ * 事件监听器的默认过滤函数。
+ * 根据事件上下文 (ctx) 和监听器的选项 (options) 确定监听器是否应执行。
  *
- * @param eventName - Event name(s) to listen for
- * @param listener - Event listener function
- * @param options - Event listener options
- * @param deps - Dependency array for memoizing the listener function
+ * 逻辑:
+ * 1. 如果事件分发没有包含目标 (ctx.target 为假值)，则监听器始终运行（多播）。
+ * 2. 如果事件分发包含了目标 (ctx.target 存在):
+ *    a. 如果监听器选项包含特定的目标条件 (例如 options.uischema)，
+ *       则仅当目标条件与上下文的目标匹配时，监听器才运行。
  */
-export function useEventListener(
-  eventName: string | string[],
-  listener: EventListener,
-  options: EventListenerOptions = {},
-  deps: any[] = [],
-) {
+function defaultListenerFilter(ctx: EventContext, options: EventListenerOptions): boolean {
+  // 1. 多播: 分发时未指定目标, 监听器运行。
+  if (!ctx.target) {
+    return true;
+  }
+
+  // 2. 单播: 分发时指定了目标。检查监听器选项。
+  if (options?.uischema) {
+    const targetSchema = ctx.target.uischema;
+    // 基本检查：两个 schema 都存在且具有匹配的 'x-uid'
+    return !!(targetSchema && options.uischema['x-uid'] && options.uischema['x-uid'] === targetSchema['x-uid']);
+  } else {
+    return false;
+  }
+}
+
+export function useAddEventListener(event: string | string[], handler: EventListener, options?: EventListenerOptions) {
+  const fieldSchema = useFieldSchema();
   const app = useApp();
 
-  // Memoize the listener function based on deps
-  const memoizedListener = useCallback(listener, [listener, ...deps]);
-
   useEffect(() => {
-    // Register the listener on mount
-    const unsubscribe = app.eventManager.on(eventName, memoizedListener, options);
-
-    // Unregister on unmount
+    const unsubscribe = app.eventManager.on(event, handler, {
+      filter: defaultListenerFilter,
+      uischema: fieldSchema.toJSON(),
+      ...options,
+    });
     return unsubscribe;
-  }, [app, eventName, memoizedListener, options]);
+  }, [handler, app, event, fieldSchema]);
 }
 
 /**
