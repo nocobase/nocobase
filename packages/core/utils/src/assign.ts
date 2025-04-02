@@ -110,15 +110,22 @@ mergeStrategies.set('intersect', (x, y) =>
 );
 
 export function assign(target: any, source: any, strategies: MergeStrategies = {}) {
-  _.uniq([...getKeys(source), ...getKeys(target)]).forEach((sourceKey) => {
+  const sourceKeys = getKeys(source);
+  const targetKeys = getKeys(target);
+  _.uniq([...sourceKeys, ...targetKeys]).forEach((sourceKey) => {
     const strategy = strategies[sourceKey];
-    let func = mergeStrategies.get('deepMerge');
+    let func: any;
     if (typeof strategy === 'function') {
       func = strategy;
     } else if (typeof strategy === 'string' && mergeStrategies.has(strategy as any)) {
       func = mergeStrategies.get(strategy as any);
     }
-    target[sourceKey] = func(target[sourceKey], source[sourceKey]);
+    if (func) {
+      target[sourceKey] = func(target[sourceKey], source[sourceKey]);
+    } else if (sourceKeys.includes(sourceKey)) {
+      const func = mergeStrategies.get('deepMerge');
+      target[sourceKey] = func(target[sourceKey], source[sourceKey]);
+    }
   });
   return target;
 }

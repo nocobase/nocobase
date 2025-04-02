@@ -444,4 +444,32 @@ describe('merge strategy', () => {
       });
     });
   });
+
+  describe('source is empty', () => {
+    it('case 1', () => {
+      const obj = assign(
+        {
+          resourceName: 'uiSchemas',
+          resourceIndex: 'n0jylid5rqa',
+          actionName: 'getJsonSchema',
+          values: {},
+        },
+        {},
+        {
+          filter: 'andMerge',
+          fields: 'intersect',
+          except: 'union',
+          whitelist: 'intersect',
+          blacklist: 'intersect',
+          sort: 'overwrite',
+        },
+      );
+      expect(obj).toMatchObject({
+        resourceName: 'uiSchemas',
+        resourceIndex: 'n0jylid5rqa',
+        actionName: 'getJsonSchema',
+        values: {},
+      });
+    });
+  });
 });
