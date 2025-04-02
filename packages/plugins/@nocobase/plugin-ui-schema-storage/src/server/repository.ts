@@ -322,7 +322,6 @@ export class UiSchemaRepository extends Repository {
     if (!newSchema['properties']) {
       const s = await this.model.findByPk(rootUid, { transaction });
       s.set('schema', { ...s.toJSON(), ...newSchema });
-      // console.log(s.toJSON());
       await s.save({ transaction, hooks: false });
       await this.emitAfterSaveEvent(s, options);
       if (newSchema['x-server-hooks']) {
@@ -506,8 +505,14 @@ export class UiSchemaRepository extends Repository {
     }
 
     const result = await this[`insert${lodash.upperFirst(position)}`](target, schema, options);
+
+    const s = await this.model.findByPk(schema, { transaction });
+
+    await this.emitAfterSaveEvent(s, options);
+
     // clear target schema path cache
     await this.clearXUidPathCache(result['x-uid'], transaction);
+
     return result;
   }
 
