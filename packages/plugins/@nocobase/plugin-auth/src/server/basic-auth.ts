@@ -137,7 +137,7 @@ export class BasicAuth extends BaseAuth {
     return user;
   }
 
-  private async getEmailConfig() {
+  private getEmailConfig() {
     const options = this.authenticator.options?.public || {};
     return options as {
       enableResetPassword: boolean;
@@ -174,7 +174,7 @@ export class BasicAuth extends BaseAuth {
     }
 
     // 通过用户认证的接口获取邮件渠道、主题、内容等
-    const { emailChannel, emailContentType, emailContent, emailSubject, enableResetPassword, resetTokenExpiresIn } = await this.getEmailConfig();
+    const { emailChannel, emailContentType, emailContent, emailSubject, enableResetPassword, resetTokenExpiresIn } = this.getEmailConfig();
 
     if (!enableResetPassword) {
       ctx.throw(403, ctx.t('Not allowed to reset password', { ns: namespace }));
@@ -187,6 +187,10 @@ export class BasicAuth extends BaseAuth {
       expiresIn: resetTokenExpiresIn, // 配置的过期时间
     });
 
+    // 构建重置密码链接
+    const origin = ctx.request.headers.origin || process.env.API_BASE_URL || '';
+    const resetLink = `${origin}/reset-password?token=${resetToken}`;
+
     // 通过通知管理插件发送邮件
     const notificationManager = ctx.app.getPlugin('notification-manager');
     if (notificationManager) {
@@ -194,7 +198,7 @@ export class BasicAuth extends BaseAuth {
       if (emailer) {
         const parsedContent = parsedValue(emailContent, {
           $user: user,
-          $resetLink: `${process.env.API_BAST_URL}/reset-password?token=${resetToken}`,
+          $resetLink: resetLink,
           $date: getDateVars(),
           $env: ctx.app.environment.getVariables(),
         });
@@ -220,7 +224,6 @@ export class BasicAuth extends BaseAuth {
     return user;
   }
 
-  /* istanbul ignore next -- @preserve */
   async resetPassword() {
     const ctx = this.ctx;
     const {
