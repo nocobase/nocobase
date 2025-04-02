@@ -161,10 +161,8 @@ describe('auth:resetPassword & auth:checkResetToken', () => {
         .post('/auth:resetPassword')
         .set({ 'X-Authenticator': 'basic' })
         .send({
-          values: {
-            resetToken: validToken,
-            password: 'newpassword123',
-          },
+          resetToken: validToken,
+          password: 'newpassword123',
         });
 
       expect(res.statusCode).toBe(204);
@@ -177,10 +175,8 @@ describe('auth:resetPassword & auth:checkResetToken', () => {
         .post('/auth:signIn')
         .set({ 'X-Authenticator': 'basic' })
         .send({
-          values: {
-            account: 'test@example.com',
-            password: 'newpassword123',
-          },
+          account: 'test@example.com',
+          password: 'newpassword123',
         });
 
       expect(signInRes.statusCode).toBe(200);
@@ -191,9 +187,7 @@ describe('auth:resetPassword & auth:checkResetToken', () => {
         .post('/auth:resetPassword')
         .set({ 'X-Authenticator': 'basic' })
         .send({
-          values: {
-            password: 'newpassword123',
-          },
+          password: 'newpassword123',
         });
 
       expect(res.statusCode).toBe(401);
@@ -205,10 +199,8 @@ describe('auth:resetPassword & auth:checkResetToken', () => {
         .post('/auth:resetPassword')
         .set({ 'X-Authenticator': 'basic' })
         .send({
-          values: {
-            resetToken: expiredToken,
-            password: 'newpassword123',
-          },
+          resetToken: expiredToken,
+          password: 'newpassword123',
         });
 
       expect(res.statusCode).toBe(401);
@@ -231,10 +223,8 @@ describe('auth:resetPassword & auth:checkResetToken', () => {
         .post('/auth:resetPassword')
         .set({ 'X-Authenticator': 'basic' })
         .send({
-          values: {
-            resetToken: nonExistentUserToken,
-            password: 'newpassword123',
-          },
+          resetToken: nonExistentUserToken,
+          password: 'newpassword123',
         });
 
       expect(res.statusCode).toBe(404);

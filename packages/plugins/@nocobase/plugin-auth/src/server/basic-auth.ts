@@ -230,11 +230,21 @@ export class BasicAuth extends BaseAuth {
       values: { password, resetToken },
     } = ctx.action.params;
 
-    let decodedToken;
+    // 验证 resetToken 是否存在
+    if (!resetToken) {
+      ctx.throw(401, ctx.t('Token expired', { ns: namespace }));
+    }
 
-    await this.checkResetToken(resetToken);
+    // 先检查令牌有效性
+    try {
+      await this.checkResetToken(resetToken);
+    } catch (error) {
+      // 保持原始错误抛出
+      throw error;
+    }
 
     // 解析 Token
+    let decodedToken;
     try {
       decodedToken = await ctx.app.authManager.jwt.decode(resetToken);
     } catch (error) {
@@ -255,6 +265,7 @@ export class BasicAuth extends BaseAuth {
     user.password = password;
     await user.save();
 
+    // 将使用过的令牌加入黑名单
     await ctx.app.authManager.jwt.block(resetToken);
 
     ctx.logger.info(`Password for user ${user.id} has been reset`);
@@ -266,6 +277,10 @@ export class BasicAuth extends BaseAuth {
    * 检查重置密码的 Token 是否有效
    */
   async checkResetToken(resetToken: string) {
+    if (!resetToken) {
+      this.ctx.throw(401, this.ctx.t('Token expired', { ns: namespace }));
+    }
+
     const blocked = await this.jwt.blacklist.has(resetToken);
 
     if (blocked) {
@@ -274,10 +289,9 @@ export class BasicAuth extends BaseAuth {
 
     try {
       await this.ctx.app.authManager.jwt.decode(resetToken);
+      return true;
     } catch (err) {
       this.ctx.throw(401, this.ctx.t('Token expired', { ns: namespace }));
     }
-
-    return true;
   }
 }

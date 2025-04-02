@@ -22,7 +22,7 @@ export default {
     await next();
   },
   checkResetToken: async (ctx: Context, next: Next) => {
-    const { resetToken } = ctx.action.params;
+    const { resetToken } = ctx.action.params.values;
     ctx.body = await ctx.auth.checkResetToken(resetToken);
     await next();
   },
