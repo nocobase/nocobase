@@ -11,7 +11,7 @@ import { Form } from '@formily/core';
 // @ts-ignore
 import { Schema } from '@formily/json-schema';
 import _ from 'lodash';
-import React, { useCallback } from 'react';
+import React, { useCallback, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { CollectionFieldOptions_deprecated } from '../../collection-manager';
 import { Variable, useVariableScope } from '../../schema-component';
@@ -72,6 +72,7 @@ type Props = {
    */
   noDisabled?: boolean;
   hideVariableButton?: boolean;
+  setScopes?: any; //更新scopes
 };
 
 /**
@@ -98,6 +99,7 @@ export const VariableInput = (props: Props) => {
     targetFieldSchema,
     noDisabled,
     hideVariableButton,
+    setScopes,
   } = props;
   const { name: blockCollectionName } = useBlockCollection();
   const scope = useVariableScope();
@@ -139,16 +141,20 @@ export const VariableInput = (props: Props) => {
     },
     [onChange, shouldChange],
   );
+  const scopes = returnScope(
+    compatOldVariables(_.isEmpty(scope) ? variableOptions : scope, {
+      value,
+    }),
+  );
+  useEffect(() => {
+    setScopes?.(scopes);
+  }, [value, scope]);
   return (
     <Variable.Input
       className={className}
       value={value}
       onChange={handleChange}
-      scope={returnScope(
-        compatOldVariables(_.isEmpty(scope) ? variableOptions : scope, {
-          value,
-        }),
-      )}
+      scope={scopes}
       style={style}
       changeOnSelect
       hideVariableButton={hideVariableButton}

@@ -9,12 +9,13 @@
 
 import { ObjectField as ObjectFieldModel } from '@formily/core';
 import { observer, useField, useFieldSchema } from '@formily/react';
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { UseRequestOptions, useRequest } from '../../../api-client';
 import { withDynamicSchemaProps } from '../../../hoc/withDynamicSchemaProps';
 import { useProps } from '../../hooks/useProps';
 import { FilterGroup } from './FilterGroup';
 import { FilterContext } from './context';
+import { useVariableOptions } from '../../../schema-settings/VariableInput/hooks';
 
 const useDef = (options: UseRequestOptions) => {
   const field = useField<ObjectFieldModel>();
@@ -23,10 +24,11 @@ const useDef = (options: UseRequestOptions) => {
 
 export const LinkageFilter: any = withDynamicSchemaProps(
   observer((props: any) => {
-    const { useDataSource = useDef, conditionType } = props;
+    const { useDataSource = useDef } = props;
 
     // 新版 UISchema（1.0 之后）中已经废弃了 useProps，这里之所以继续保留是为了兼容旧版的 UISchema
-    const { options, dynamicComponent, className, collectionName } = useProps(props);
+    const { dynamicComponent, className, collectionName } = useProps(props);
+    const [scopes, setScopes] = useState([]);
 
     const field = useField<ObjectFieldModel>();
     const fieldSchema: any = useFieldSchema();
@@ -49,9 +51,10 @@ export const LinkageFilter: any = withDynamicSchemaProps(
             field,
             fieldSchema,
             dynamicComponent,
-            options: options || field.dataSource || [],
             disabled: props.disabled,
             collectionName,
+            scopes,
+            setScopes,
           }}
         >
           <FilterGroup {...props} bordered={false} />

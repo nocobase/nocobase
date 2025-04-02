@@ -17,12 +17,14 @@ import { useCompile } from '../../hooks';
 import { DynamicComponent } from './DynamicComponent';
 import { RemoveConditionContext } from './context';
 import { useValues } from './useValues';
+import { FilterContext } from './context';
 
 export const LinkageFilterItem = observer(
   (props: any) => {
     const { t } = useTranslation();
     const compile = useCompile();
     const remove = useContext(RemoveConditionContext);
+    const { setScopes } = useContext(FilterContext) || {};
     const {
       schema,
       fields,
@@ -49,7 +51,7 @@ export const LinkageFilterItem = observer(
       // 添加 nc-filter-item 类名是为了帮助编写测试时更容易选中该元素
       <div style={style} className="nc-filter-item">
         <Space wrap>
-          <DynamicComponent value={leftVar} onChange={setLeftValue} />
+          <DynamicComponent value={leftVar} onChange={setLeftValue} setScopes={setScopes} />
           <Select
             // @ts-ignore
             role="button"

@@ -44,7 +44,6 @@ export const FormLinkageRules = withDynamicSchemaProps(
     const parentRecordData = useCollectionParentRecordData();
 
     const components = useMemo(() => ({ ArrayCollapse }), []);
-    console.log(transformDefaultValue(defaultValues));
     const schema = useMemo(
       () => ({
         type: 'object',

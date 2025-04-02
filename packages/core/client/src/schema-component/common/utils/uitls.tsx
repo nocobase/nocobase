@@ -165,7 +165,6 @@ const processAdvancedCondition = async (condition, variables, localVariables, js
   const operator = condition.op;
   const rightValue = await parseVariableValue(condition.rightVar, variables, localVariables);
   const leftValue = await parseVariableValue(condition.leftVar, variables, localVariables);
-  console.log(leftValue, rightValue);
   return jsonLogic.apply({ [operator]: [leftValue, rightValue] });
 };
 
@@ -197,7 +196,6 @@ const processBasicCondition = async (condition, variables, localVariables, varia
       const picker = inferPickerType(comparisonValue);
       const format = getPickerFormat(picker);
       currentInputValue = dayjs(currentInputValue).format(format);
-      console.log(currentInputValue, comparisonValue, format);
     }
     return jsonLogic.apply({ [operator]: [currentInputValue, comparisonValue] });
   } catch (error) {

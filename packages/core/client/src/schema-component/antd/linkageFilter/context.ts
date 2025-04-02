@@ -16,9 +16,10 @@ export interface FilterContextProps {
   field?: ObjectField & { collectionName?: string };
   fieldSchema?: Schema;
   dynamicComponent?: ComponentType<DynamicComponentProps>;
-  options?: any[];
   disabled?: boolean;
   collectionName?: string;
+  scopes?: any[];
+  setScopes?: any;
 }
 
 export const RemoveConditionContext = createContext(null);

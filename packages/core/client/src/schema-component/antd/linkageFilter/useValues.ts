@@ -9,10 +9,9 @@
 
 import { useField } from '@formily/react';
 import { merge } from '@formily/shared';
-import flat, { unflatten } from 'flat';
 import { cloneDeep, last, get } from 'lodash';
-import { useCallback, useContext, useEffect, useMemo } from 'react';
-import { useCollection_deprecated, useCollectionManager_deprecated } from '../../../collection-manager';
+import { useCallback, useContext, useEffect } from 'react';
+import { useCollection_deprecated } from '../../../collection-manager';
 import { FilterContext } from './context';
 
 interface UseValuesReturn {
@@ -31,23 +30,30 @@ interface UseValuesReturn {
   rightVar: any;
 }
 
-const findOption = (dataIndex = [], options) => {
-  let items = options;
-  let option;
-  dataIndex?.forEach?.((name) => {
-    const item = items.find((item) => item.name === name);
-    if (item) {
-      option = item;
-    }
-    items = item?.children || [];
-  });
+const findOption = (str, options) => {
+  // 使用正则表达式提取 $mainKey 和 childKey
+  const match = str.match(/\{\{\$(.*?)\}\}/); // 提取 $mainKey
+  if (!match) return null;
+
+  const fullKey = match[1]; // 完整的 key 例如 nForm.select 或 nRole
+  const [mainKey, childKey] = fullKey.split('.'); // 通过 '.' 分割，mainKey 为分割前部分，childKey 为分割后的部分
+
+  const mainValue = `$${mainKey}`;
+
+  const option = options.find((option) => option.value === mainValue);
+  if (!option) return null;
+
+  if (childKey && option.isLeaf === false && option.children.length > 0) {
+    return option.children.find((child) => child.value === childKey) || null;
+  }
+
   return option;
 };
 
 export const useValues = (): UseValuesReturn => {
   const { name } = useCollection_deprecated();
   const field = useField<any>();
-  const { options } = useContext(FilterContext) || {};
+  const { scopes } = useContext(FilterContext) || {};
   const { op, leftVar, rightVar } = field.value || {};
 
   const data2value = useCallback(() => {
@@ -61,18 +67,25 @@ export const useValues = (): UseValuesReturn => {
   }, [field]);
 
   const value2data = () => {
-    field.data = field.data || {};
-    if (!field.value) {
-      return;
-    }
+    setTimeout(() => {
+      const option = findOption(leftVar, scopes);
+      field.data = field.data || {};
+      if (!field.value) {
+        return;
+      }
 
-    // field.data.operators = operators;
-    field.data.operator = op;
-    field.data.leftVar = leftVar;
-    field.data.rightVar = rightVar;
+      field.data.operators = option?.operators;
+      field.data.leftVar = leftVar;
+      field.data.rightVar = rightVar;
+      const operator = option?.operators?.find((v) => v.value === op);
+      field.data.operator = operator;
+      const s1 = cloneDeep(option?.schema);
+      const s2 = cloneDeep(operator?.schema);
+      field.data.schema = merge(s1, s2);
+    });
   };
 
-  useEffect(value2data, [field.path]);
+  useEffect(value2data, [field.path, leftVar, scopes]);
 
   const setLeftValue = useCallback(
     (leftVar, paths) => {
@@ -87,21 +100,20 @@ export const useValues = (): UseValuesReturn => {
       field.data.leftVar = leftVar;
       data2value();
     },
-    [data2value, field, options],
+    [data2value, field],
   );
 
   const setOperator = useCallback(
     (operatorValue) => {
       const operator = field.data?.operators?.find?.((item) => item.value === operatorValue);
       field.data.operator = operator;
-      const option = findOption(field.data.dataIndex, options);
-      const s1 = cloneDeep(option?.schema);
+      const s1 = cloneDeep(field.data.schema);
       const s2 = cloneDeep(operator?.schema);
       field.data.schema = merge(s1, s2);
       field.data.value = operator.noValue ? operator.default || true : undefined;
-      // data2value();
+      data2value();
     },
-    [data2value, field.data, options],
+    [data2value, field.data],
   );
 
   const setRightValue = useCallback(
@@ -112,7 +124,6 @@ export const useValues = (): UseValuesReturn => {
     [data2value, field.data],
   );
   return {
-    fields: options,
     ...(field?.data || {}),
     setLeftValue,
     setOperator,

@@ -85,6 +85,7 @@ export const useCurrentRoleVariable = ({
     noDisabled,
     targetFieldSchema,
     noChildren: true,
+    operators: string,
   });
 
   return {

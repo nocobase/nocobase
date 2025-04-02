@@ -10,10 +10,9 @@
 import { createForm, onFieldValueChange } from '@formily/core';
 import { FieldContext, FormContext } from '@formily/react';
 import { merge } from '@formily/shared';
-import React, { useCallback, useContext, useMemo } from 'react';
+import React, { useCallback, useContext, useEffect, useMemo } from 'react';
 import { CollectionFieldOptions_deprecated } from '../../../collection-manager';
 import { SchemaComponent } from '../../core';
-import { useComponent } from '../../hooks';
 import { FilterContext } from './context';
 import { VariableInput, getShouldChange } from '../../../schema-settings/VariableInput/VariableInput';
 import { useCollectionRecordData } from '../../../data-source';
@@ -37,9 +36,11 @@ interface Props {
   style?: React.CSSProperties;
   componentProps?: any;
   schema?: any;
+  setScopes?: any;
 }
 
 export const DynamicComponent = (props: Props) => {
+  const { setScopes } = props;
   const { disabled } = useContext(FilterContext) || {};
   const record = useCollectionRecordData();
   const variables = useVariables();
@@ -52,6 +53,7 @@ export const DynamicComponent = (props: Props) => {
         {...props}
         form={form}
         record={record}
+        setScopes={setScopes}
         shouldChange={getShouldChange({
           collectionField,
           variables,
@@ -74,8 +76,9 @@ export const DynamicComponent = (props: Props) => {
       disabled,
     });
   }, [JSON.stringify(props.value), props.schema]);
-  const renderSchemaComponent = useCallback(() => {
+  const renderSchemaComponent: any = useCallback(() => {
     const componentProps = merge(props?.schema?.['x-component-props'] || {}, props.componentProps || {});
+
     return (
       <FieldContext.Provider value={null}>
         <SchemaComponent
