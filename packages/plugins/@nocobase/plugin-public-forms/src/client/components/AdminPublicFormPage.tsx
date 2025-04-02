@@ -147,6 +147,7 @@ export function AdminPublicFormPage() {
         }}
       >
         <Breadcrumb
+          style={{ marginLeft: '10px' }}
           items={[
             {
               title: <Link to={`/admin/settings/public-forms`}>{t('Public forms', { ns: NAMESPACE })}</Link>,
