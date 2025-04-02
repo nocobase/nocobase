@@ -9,18 +9,17 @@
 Scope 用于定义变量的基本属性，包括：
 - `label`: 显示名称
 - `value`: 变量值
-- `type`: 变量类型
+- `helpers`: 支持的 helpers 配置规则
 
-变量的 `type` 属性会匹配对应的 helper 函数，用于对变量进行二次处理。目前内置了以下 helper：
+变量的 `helpers` 属性会匹配对应的 helper 函数，用于对变量进行二次处理。目前内置了以下 helper：
 - `date.date_format`: 日期格式化
 - `date.date_calculate`: 日期计算
 
-只有类型为 `date` 的变量才能匹配到对应的过滤器，其他类型或无类型的变量无法使用这些过滤器。
 
 ```ts
 const scope = [
   {label: 'v1', value: 'v1'}
-  {label: 'now', value: 'now', type: 'date'}
+  {label: 'now', value: 'now', helpers: ['date.*']}
 ]
 ```
 
@@ -79,9 +78,6 @@ const scope = [
 
 #### 2. Filter 组件
 <code src="./demos/filter-demo.tsx"></code>
-
-<!-- #### 2. 数据范围
-<code src="./demos/data-scope-demo.tsx"></code> -->
 
 ### 变量禁用状态
 当变量被禁用时，已选中的变量值仍然保持显示。下面的示例展示了 `now` 变量被禁用的情况：

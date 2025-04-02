@@ -14,20 +14,9 @@ const scope = [
   {
     label: 'Date',
     value: '$nDate',
-    type: 'date',
-    children: [{ label: 'now', value: 'now', type: 'date', disabled: true }],
+    children: [{ label: 'now', value: 'now', helpers: ['date.*'], disabled: true }],
   },
 ];
-
-const useFormBlockProps = () => {
-  return {
-    form: createForm({
-      initialValues: {
-        input: '{{ $nDate.now }}',
-      },
-    }),
-  };
-};
 
 const schema = {
   type: 'object',

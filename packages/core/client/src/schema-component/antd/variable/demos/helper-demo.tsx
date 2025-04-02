@@ -17,7 +17,7 @@ import { dayjs } from '@nocobase/utils/client';
 import { Form } from 'antd';
 import React, { useEffect, useState } from 'react';
 
-const scope = [{ label: 'now', value: 'now', type: 'date' }];
+const scope = [{ label: 'now', value: 'now', helpers: ['date.*'] }];
 
 const Demo = () => {
   const app = useApp();
