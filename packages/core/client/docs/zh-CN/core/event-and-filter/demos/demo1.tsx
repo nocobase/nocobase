@@ -1,5 +1,4 @@
 import { Application, Plugin } from '@nocobase/client';
-import PluginEventFilterSystemClient from '@nocobase/plugin-event-filter-system/client';
 import React from 'react';
 
 const ProviderDemo = ({ children }) => {
@@ -21,7 +20,7 @@ class DemoPlugin extends Plugin {
 }
 
 const app = new Application({
-  plugins: [PluginEventFilterSystemClient, DemoPlugin],
+  plugins: [DemoPlugin],
   providers: [ProviderDemo],
   router: {
     type: 'memory',

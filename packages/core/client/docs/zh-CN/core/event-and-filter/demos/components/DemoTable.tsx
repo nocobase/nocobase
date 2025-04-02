@@ -1,15 +1,14 @@
 import { useFieldSchema } from '@formily/react';
 import { useBlockResource } from '@nocobase/client';
-import { EventContext, useAddEventListener, useApplyFilter } from '@nocobase/plugin-event-filter-system/client';
 import { Spin, Table, Button, Space, Row, Flex } from 'antd';
 import React, { useMemo } from 'react';
-import { useApp } from '@nocobase/client';
+import { EventContext } from '../libs/types';
+import { useAddEventListener, useApplyFilter } from '../libs/hooks';
 
 const DemoTable = (props) => {
   const { done, result } = useApplyFilter('core:block:table', { props });
   const fieldSchema = useFieldSchema();
   const resource = useBlockResource();
-  const app = useApp();
 
   useAddEventListener('core:block:table:refresh', (ctx: EventContext) => {
     console.log('core:block:table:refresh', ctx);

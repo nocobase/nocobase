@@ -19,6 +19,7 @@ import {
   EventContext,
 } from './types';
 import { useFieldSchema } from '@formily/react';
+import { eventManager, filterManager } from './defaults';
 
 /**
  * Hook for registering a filter function that will be automatically unregistered on component unmount
@@ -29,18 +30,16 @@ import { useFieldSchema } from '@formily/react';
  * @param deps - Dependency array for memoizing the filter function
  */
 export function useAddFilter(name: string, filter: FilterFunction, options: FilterOptions = {}, deps: any[] = []) {
-  const app = useApp();
-
   // Memoize the filter function based on deps
   const memoizedFilter = useCallback(filter, [filter, ...deps]);
 
   useEffect(() => {
     // Register the filter on mount
-    const unregister = app.filterManager.addFilter(name, memoizedFilter, options);
+    const unregister = filterManager.addFilter(name, memoizedFilter, options);
 
     // Unregister on unmount
     return unregister;
-  }, [app, name, memoizedFilter, options]);
+  }, [name, memoizedFilter, options]);
 }
 
 /**
@@ -56,7 +55,6 @@ export const useApplyFilter = (name: string, options: ApplyFilterOptions) => {
   const fieldSchema = useFieldSchema();
   const [done, setDone] = useState(false);
   const [result, setResult] = useState(null);
-  const app = useApp();
   const resource = useBlockResource();
 
   useEffect(() => {
@@ -70,7 +68,7 @@ export const useApplyFilter = (name: string, options: ApplyFilterOptions) => {
       },
       _cancel: false,
     };
-    app.filterManager
+    filterManager
       .applyFilter(name, input, ctx)
       .then((ret) => {
         if (!ctx._cancel) {
@@ -87,7 +85,7 @@ export const useApplyFilter = (name: string, options: ApplyFilterOptions) => {
     return () => {
       ctx._cancel = true;
     };
-  }, [app, name, input, fieldSchema, props, resource]);
+  }, [name, input, fieldSchema, props, resource]);
 
   return { done, result };
 };
@@ -120,16 +118,15 @@ function defaultListenerFilter(ctx: EventContext, options: EventListenerOptions)
 
 export function useAddEventListener(event: string | string[], handler: EventListener, options?: EventListenerOptions) {
   const fieldSchema = useFieldSchema();
-  const app = useApp();
 
   useEffect(() => {
-    const unsubscribe = app.eventManager.on(event, handler, {
+    const unsubscribe = eventManager.on(event, handler, {
       filter: defaultListenerFilter,
       uischema: fieldSchema.toJSON(),
       ...options,
     });
     return unsubscribe;
-  }, [handler, app, event, fieldSchema]);
+  }, [handler, event, fieldSchema]);
 }
 
 /**
@@ -138,12 +135,10 @@ export function useAddEventListener(event: string | string[], handler: EventList
  * @returns A function that dispatches events
  */
 export function useDispatchEvent() {
-  const app = useApp();
-
   return useCallback(
     async (eventName: string | string[], ctx: any) => {
-      return app.eventManager.dispatchEvent(eventName, ctx);
+      return eventManager.dispatchEvent(eventName, ctx);
     },
-    [app],
+    [eventManager],
   );
 }
