@@ -77,39 +77,13 @@ function getAllKeys(obj) {
   return keys;
 }
 
-const parseVariableValue = async (
-  targetVariable,
-  variables,
-  localVariables,
-  // condition,
-  // variableNameOfLeftCondition,
-) => {
-  // const targetVariableName = targetFieldToVariableString(getTargetField(condition), variableNameOfLeftCondition);
-
-  // console.log(getTargetField(condition));
-
+const parseVariableValue = async (targetVariable, variables, localVariables) => {
   const parsingResult = isVariable(targetVariable)
     ? [variables.parseVariable(targetVariable, localVariables).then(({ value }) => value)]
     : [targetVariable];
 
   try {
     const [value] = await Promise.all(parsingResult);
-    //   console.log(value);
-    //   const targetCollectionField = await variables.getCollectionField(targetVariableName, localVariables);
-    //  console.log(targetCollectionField)
-    //   // let currentInputValue = transformVariableValue(targetValue, { targetCollectionField });
-    //   const comparisonValue = transformVariableValue(value, { targetCollectionField });
-
-    //   // if (
-    //   //   targetCollectionField?.type &&
-    //   //   ['datetime', 'date', 'datetimeNoTz', 'dateOnly', 'unixTimestamp'].includes(targetCollectionField.type)
-    //   //   // currentInputValue
-    //   // ) {
-    //   //   const picker = inferPickerType(comparisonValue);
-    //   //   const format = getPickerFormat(picker);
-    //   //   // currentInputValue = dayjs(currentInputValue).format(format);
-    //   // }
-
     return value;
   } catch (error) {
     console.error('Error in parseVariableValue:', error);
