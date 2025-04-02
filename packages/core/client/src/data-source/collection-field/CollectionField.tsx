@@ -110,6 +110,9 @@ const CollectionFieldInternalField = (props) => {
     if (fieldSchema['x-read-pretty'] === true && !field.readPretty) {
       field.readPretty = true;
     }
+    if (fieldSchema['x-disabled'] === true) {
+      field.disabled = true;
+    }
     field.data = field.data || {};
     field.data.dataSource = uiSchema?.enum;
   }, [field, fieldSchema]);
