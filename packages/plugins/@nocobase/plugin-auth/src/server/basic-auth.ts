@@ -221,7 +221,7 @@ export class BasicAuth extends BaseAuth {
 
     ctx.logger.info(`Password reset email sent to ${email}`);
 
-    return user;
+    return null;
   }
 
   async resetPassword() {
@@ -259,21 +259,21 @@ export class BasicAuth extends BaseAuth {
 
     ctx.logger.info(`Password for user ${user.id} has been reset`);
 
-    return user;
+    return null;
   }
 
   /**
    * 检查重置密码的 Token 是否有效
    */
-  async checkResetToken(token: string) {
-    const blocked = await this.jwt.blacklist.has(token);
+  async checkResetToken(resetToken: string) {
+    const blocked = await this.jwt.blacklist.has(resetToken);
 
     if (blocked) {
       this.ctx.throw(401, this.ctx.t('Token expired', { ns: namespace }));
     }
 
     try {
-      await this.ctx.app.authManager.jwt.decode(token);
+      await this.ctx.app.authManager.jwt.decode(resetToken);
     } catch (err) {
       this.ctx.throw(401, this.ctx.t('Token expired', { ns: namespace }));
     }
