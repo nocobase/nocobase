@@ -8,7 +8,7 @@
  */
 
 import { EllipsisOutlined } from '@ant-design/icons';
-import ProLayout, { RouteContext } from '@ant-design/pro-layout';
+import ProLayout, { RouteContext, RouteContextType } from '@ant-design/pro-layout';
 import { HeaderViewProps } from '@ant-design/pro-layout/es/components/Header';
 import { css } from '@emotion/css';
 import { theme as antdTheme, ConfigProvider, Popover, Tooltip } from 'antd';
@@ -53,7 +53,6 @@ import { KeepAlive } from './KeepAlive';
 import { NocoBaseDesktopRoute, NocoBaseDesktopRouteType } from './convertRoutesToSchema';
 import { MenuSchemaToolbar, ResetThemeTokenAndKeepAlgorithm } from './menuItemSettings';
 import { userCenterSettings } from './userCenterSettings';
-import { isMobile } from 'react-device-detect';
 
 export { KeepAlive, NocoBaseDesktopRouteType };
 
@@ -76,7 +75,7 @@ const AllAccessDesktopRoutesContext = createContext<{
   refresh: () => void;
 }>({
   allAccessRoutes: emptyArray,
-  refresh: () => { },
+  refresh: () => {},
 });
 AllAccessDesktopRoutesContext.displayName = 'AllAccessDesktopRoutesContext';
 
@@ -565,11 +564,11 @@ const IsMobileLayoutContext = React.createContext<{
   setIsMobileLayout: React.Dispatch<React.SetStateAction<boolean>>;
 }>({
   isMobileLayout: false,
-  setIsMobileLayout: () => { },
+  setIsMobileLayout: () => {},
 });
 
 const MobileLayoutProvider: FC = (props) => {
-  const [isMobileLayout, setIsMobileLayout] = useState(isMobile);
+  const [isMobileLayout, setIsMobileLayout] = useState(false);
   const value = useMemo(() => ({ isMobileLayout, setIsMobileLayout }), [isMobileLayout]);
 
   return <IsMobileLayoutContext.Provider value={value}>{props.children}</IsMobileLayoutContext.Provider>;
@@ -586,7 +585,7 @@ export const InternalAdminLayout = () => {
   const location = useLocation();
   const { onDragEnd } = useMenuDragEnd();
   const { token } = useToken();
-  const { isMobileLayout } = useMobileLayout();
+  const { isMobileLayout, setIsMobileLayout } = useMobileLayout();
   const [collapsed, setCollapsed] = useState(isMobileLayout);
   const doNotChangeCollapsedRef = useRef(false);
   const { t } = useMenuTranslation();
@@ -681,9 +680,21 @@ export const InternalAdminLayout = () => {
         onPageChange={onPageChange}
         menuProps={menuProps}
       >
-        <ConfigProvider theme={isMobileLayout ? mobileTheme : theme}>
-          <LayoutContent />
-        </ConfigProvider>
+        <RouteContext.Consumer>
+          {(value: RouteContextType) => {
+            const { isMobile: _isMobile } = value;
+
+            if (_isMobile !== isMobileLayout) {
+              setIsMobileLayout(_isMobile);
+            }
+
+            return (
+              <ConfigProvider theme={_isMobile ? mobileTheme : theme}>
+                <LayoutContent />
+              </ConfigProvider>
+            );
+          }}
+        </RouteContext.Consumer>
       </ProLayout>
     </DndContext>
   );
