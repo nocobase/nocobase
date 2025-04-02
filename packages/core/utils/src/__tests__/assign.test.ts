@@ -315,6 +315,34 @@ describe('merge strategy', () => {
         key1: 'val1 + val2',
       });
     });
+    it('case 2', () => {
+      const obj = assign(
+        {
+          filter: { a: 'a2' },
+        },
+        {},
+        {
+          filter: () => '123',
+        },
+      );
+      expect(obj).toMatchObject({
+        filter: '123',
+      });
+    });
+    it('case 3', () => {
+      const obj = assign(
+        {},
+        {
+          filter: { a: 'a2' },
+        },
+        {
+          filter: () => '123',
+        },
+      );
+      expect(obj).toMatchObject({
+        filter: '123',
+      });
+    });
   });
 
   describe('merge', () => {
@@ -413,6 +441,34 @@ describe('merge strategy', () => {
       );
       expect(obj).toMatchObject({
         key1: { a: 'a1', b: 'b1' },
+      });
+    });
+  });
+
+  describe('source is empty', () => {
+    it('case 1', () => {
+      const obj = assign(
+        {
+          resourceName: 'uiSchemas',
+          resourceIndex: 'n0jylid5rqa',
+          actionName: 'getJsonSchema',
+          values: {},
+        },
+        {},
+        {
+          filter: 'andMerge',
+          fields: 'intersect',
+          except: 'union',
+          whitelist: 'intersect',
+          blacklist: 'intersect',
+          sort: 'overwrite',
+        },
+      );
+      expect(obj).toMatchObject({
+        resourceName: 'uiSchemas',
+        resourceIndex: 'n0jylid5rqa',
+        actionName: 'getJsonSchema',
+        values: {},
       });
     });
   });

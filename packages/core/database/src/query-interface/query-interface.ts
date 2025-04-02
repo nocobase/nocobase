@@ -126,6 +126,11 @@ export default abstract class QueryInterface {
     return this.db.sequelize.getQueryInterface().queryGenerator.quoteIdentifier(identifier);
   }
 
+  public generateJoinOnForJSONArray(left: string, right: string) {
+    const dialect = this.db.sequelize.getDialect();
+    throw new Error(`Filtering by many to many (array) associations is not supported on ${dialect}`);
+  }
+
   public async changeColumn(options: ChangeColumnOptions) {
     if (!options.actions.length) {
       throw new Error('Actions invalid');

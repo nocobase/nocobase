@@ -233,6 +233,10 @@ $BODY$
     return res[0]['show_create_table'];
   }
 
+  public generateJoinOnForJSONArray(left: string, right: string) {
+    return this.db.sequelize.literal(`${left}=any(${right})`);
+  }
+
   changeColumnDefaultValueSQL(options: ChangeColumnOptions): Promise<string> {
     return null;
   }

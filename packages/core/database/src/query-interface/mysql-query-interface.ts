@@ -142,6 +142,10 @@ export default class MysqlQueryInterface extends QueryInterface {
     }
   }
 
+  public generateJoinOnForJSONArray(left: string, right: string) {
+    return this.db.sequelize.literal(`JSON_CONTAINS(${right}, JSON_ARRAY(${left}))`);
+  }
+
   changeColumnDefaultValueSQL(options: ChangeColumnOptions): Promise<string> {
     return null;
   }
