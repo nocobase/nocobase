@@ -69,7 +69,7 @@ export class JSONTemplateParser {
     this._engine.registerFilter(filter.name, filter.handler);
   }
 
-  async render(template: string, data: any = {}, context?: Record<string, any>): Promise<any> {
+  async render(template: any, data: any = {}, context?: Record<string, any>): Promise<any> {
     const NamespaceMap = new Map<string, ScopeMapValue>();
     Object.keys(data).forEach((key) => {
       if (key.startsWith('$') || typeof data[key] === 'function') {

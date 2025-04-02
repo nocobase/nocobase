@@ -40,6 +40,8 @@ async function filterDemo() {
   parser.registerFilter({
     name: 'uppercase',
     title: 'To Uppercase',
+    inputMappingRules: ['string.*'],
+    outputMappingRules: ['string.*'],
     handler: (value) => String(value).toUpperCase(),
     group: 'text',
     sort: 1,
@@ -48,6 +50,8 @@ async function filterDemo() {
   parser.registerFilter({
     name: 'append',
     title: 'Append Text',
+    inputMappingRules: ['string.*'],
+    outputMappingRules: ['string.*'],
     handler: (value, suffix) => `${value}${suffix}`,
     group: 'text',
     sort: 2,

@@ -16,7 +16,7 @@ export type Helper = {
   inputMappingRules: ValueType;
   outputMappingRules: ValueType;
   sort: number;
-  args: string[];
+  args?: string[];
   uiSchema?: any[];
   Component?: React.FC<{ value: any; onChange: (value: any) => void; inputValue: any }>;
 };
