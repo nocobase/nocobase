@@ -8,7 +8,7 @@
  */
 
 import deepmerge from 'deepmerge';
-import lodash from 'lodash';
+import _ from 'lodash';
 import { isPlainObject } from './common';
 
 type MergeStrategyType = 'merge' | 'deepMerge' | 'overwrite' | 'andMerge' | 'orMerge' | 'intersect' | 'union';
@@ -88,7 +88,7 @@ mergeStrategies.set('union', (x, y) => {
   if (typeof y === 'string') {
     y = y.split(',');
   }
-  return lodash.uniq((x || []).concat(y || [])).filter(Boolean);
+  return _.uniq((x || []).concat(y || [])).filter(Boolean);
 });
 
 mergeStrategies.set('intersect', (x, y) =>
@@ -110,7 +110,7 @@ mergeStrategies.set('intersect', (x, y) =>
 );
 
 export function assign(target: any, source: any, strategies: MergeStrategies = {}) {
-  getKeys(source).forEach((sourceKey) => {
+  _.uniq([...getKeys(source), ...getKeys(target)]).forEach((sourceKey) => {
     const strategy = strategies[sourceKey];
     let func = mergeStrategies.get('deepMerge');
     if (typeof strategy === 'function') {

@@ -315,6 +315,34 @@ describe('merge strategy', () => {
         key1: 'val1 + val2',
       });
     });
+    it('case 2', () => {
+      const obj = assign(
+        {
+          filter: { a: 'a2' },
+        },
+        {},
+        {
+          filter: () => '123',
+        },
+      );
+      expect(obj).toMatchObject({
+        filter: '123',
+      });
+    });
+    it('case 3', () => {
+      const obj = assign(
+        {},
+        {
+          filter: { a: 'a2' },
+        },
+        {
+          filter: () => '123',
+        },
+      );
+      expect(obj).toMatchObject({
+        filter: '123',
+      });
+    });
   });
 
   describe('merge', () => {
