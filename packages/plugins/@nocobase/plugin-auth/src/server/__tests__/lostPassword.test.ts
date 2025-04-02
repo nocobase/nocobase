@@ -50,7 +50,7 @@ describe('auth:lostPassword', () => {
             emailChannel: 'email',
             emailSubject: 'Reset your password',
             emailContentType: 'html',
-            emailContent: 'Click the link to reset your password: $resetLink',
+            emailContentHTML: 'Click the link to reset your password: $resetLink',
             resetTokenExpiresIn: '1h',
           },
         },

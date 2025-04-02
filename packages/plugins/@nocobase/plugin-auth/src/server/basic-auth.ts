@@ -144,7 +144,8 @@ export class BasicAuth extends BaseAuth {
       emailChannel: string;
       emailSubject: string;
       emailContentType: string;
-      emailContent: string;
+      emailContentText?: string;
+      emailContentHTML?: string;
       resetTokenExpiresIn: string | number;
     };
   }
@@ -174,7 +175,7 @@ export class BasicAuth extends BaseAuth {
     }
 
     // 通过用户认证的接口获取邮件渠道、主题、内容等
-    const { emailChannel, emailContentType, emailContent, emailSubject, enableResetPassword, resetTokenExpiresIn } = this.getEmailConfig();
+    const { emailChannel, emailContentType, emailContentHTML, emailContentText, emailSubject, enableResetPassword, resetTokenExpiresIn } = this.getEmailConfig();
 
     if (!enableResetPassword) {
       ctx.throw(403, ctx.t('Not allowed to reset password', { ns: namespace }));
@@ -196,10 +197,10 @@ export class BasicAuth extends BaseAuth {
     if (notificationManager) {
       const emailer = notificationManager.channelTypes.get(emailChannel);
       if (emailer) {
-        const parsedContent = parsedValue(emailContent, {
+        const parsedContent = parsedValue(emailContentType === 'html' ? emailContentHTML : emailContentText, {
           $user: user,
           $resetLink: resetLink,
-          $date: getDateVars(),
+          $nDate: getDateVars(),
           $env: ctx.app.environment.getVariables(),
         });
         const content = emailContentType === 'html' ? { html: parsedContent } : { text: parsedContent };
