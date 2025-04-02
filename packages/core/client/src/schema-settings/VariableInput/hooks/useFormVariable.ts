@@ -80,7 +80,7 @@ export const useCurrentFormContext = ({ form: _form }: Pick<Props, 'form'> = {})
   const { isVariableParsedInOtherContext } = useFlag();
 
   const formInstance = _form || form;
-
+  console.log(formInstance && !formInstance.readPretty && !isVariableParsedInOtherContext);
   return {
     /** 变量值 */
     currentFormCtx: formInstance?.values,

@@ -112,7 +112,6 @@ export const VariableInput = (props: Props) => {
     targetFieldSchema,
     noDisabled,
   });
-  console.log(variableOptions);
   const contextVariable = useContextAssociationFields({ schema, maxDepth: 2, contextCollectionName, collectionField });
   const { compatOldVariables } = useCompatOldVariables({
     collectionField,

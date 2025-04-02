@@ -62,18 +62,15 @@ export const addNewActionSettings = new SchemaSettings({
     {
       name: 'linkageRules',
       Component: SchemaSettingsLinkageRules,
-      useVisible() {
-        const { association } = useDataBlockProps() || {};
-        return !!association;
-      },
       useComponentProps() {
         const { association } = useDataBlockProps();
+        const { name } = useCollection_deprecated();
         const { getCollectionField } = useCollectionManager_deprecated();
         const associationField = getCollectionField(association);
         const { linkageRulesProps } = useSchemaToolbar();
         return {
           ...linkageRulesProps,
-          collectionName: associationField?.collectionName,
+          collectionName: associationField?.collectionName || name,
         };
       },
     },
