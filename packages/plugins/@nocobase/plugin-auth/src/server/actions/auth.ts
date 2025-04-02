@@ -21,10 +21,6 @@ export default {
   //   ctx.body = await ctx.auth.resetPassword();
   //   await next();
   // },
-  // getUserByResetToken: async (ctx: Context, next: Next) => {
-  //   ctx.body = await ctx.auth.getUserByResetToken();
-  //   await next();
-  // },
   changePassword: async (ctx: Context, next: Next) => {
     const systemSettings = ctx.db.getRepository('systemSettings');
     const settings = await systemSettings.findOne();

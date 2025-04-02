@@ -189,7 +189,7 @@ export class BasicAuth extends BaseAuth {
 
     // 构建重置密码链接
     const origin = ctx.request.headers.origin || process.env.API_BASE_URL || '';
-    const resetLink = `${origin}/reset-password?token=${resetToken}`;
+    const resetLink = `${origin}/reset-password?resetToken=${resetToken}`;
 
     // 通过通知管理插件发送邮件
     const notificationManager = ctx.app.getPlugin('notification-manager');
@@ -227,36 +227,57 @@ export class BasicAuth extends BaseAuth {
   async resetPassword() {
     const ctx = this.ctx;
     const {
-      values: { email, password, resetToken },
+      values: { password, resetToken },
     } = ctx.action.params;
+
+    let decodedToken;
+
+    await this.checkResetToken(resetToken);
+
+    // 解析 Token
+    try {
+      decodedToken = await ctx.app.authManager.jwt.decode(resetToken);
+    } catch (error) {
+      ctx.throw(401, ctx.t('Token expired', { ns: namespace }));
+    }
+
+    // 获取用户信息
     const user = await this.userRepository.findOne({
       where: {
-        email,
-        resetToken,
+        id: decodedToken.resetPasswordUserId,
       },
     });
+
     if (!user) {
-      ctx.throw(404);
+      ctx.throw(404, ctx.t('User not found', { ns: namespace }));
     }
-    user.token = null;
-    user.resetToken = null;
+
     user.password = password;
     await user.save();
+
+    await ctx.app.authManager.jwt.block(resetToken);
+
+    ctx.logger.info(`Password for user ${user.id} has been reset`);
+
     return user;
   }
 
-  /* istanbul ignore next -- @preserve */
-  async getUserByResetToken() {
-    const ctx = this.ctx;
-    const { token } = ctx.action.params;
-    const user = await this.userRepository.findOne({
-      where: {
-        resetToken: token,
-      },
-    });
-    if (!user) {
-      ctx.throw(401);
+  /**
+   * 检查重置密码的 Token 是否有效
+   */
+  async checkResetToken(token: string) {
+    const blocked = await this.jwt.blacklist.has(token);
+
+    if (blocked) {
+      this.ctx.throw(401, this.ctx.t('Token expired', { ns: namespace }));
     }
-    return user;
+
+    try {
+      await this.ctx.app.authManager.jwt.decode(token);
+    } catch (err) {
+      this.ctx.throw(401, this.ctx.t('Token expired', { ns: namespace }));
+    }
+
+    return true;
   }
 }
