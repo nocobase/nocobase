@@ -189,7 +189,7 @@ export default class Processor {
       job.nodeId = node.id;
       job.nodeKey = node.key;
     }
-    const savedJob = await this.saveJob(job);
+    const savedJob = this.saveJob(job);
 
     this.logger.info(
       `execution (${this.execution.id}) run instruction [${node.type}] for node (${node.id}) finished as status: ${savedJob.status}`,
@@ -266,6 +266,9 @@ export default class Processor {
           newJobs.map((job) => job.toJSON()),
           { transaction: this.mainTransaction },
         );
+        for (const job of newJobs) {
+          job.isNewRecord = false;
+        }
       }
       this.jobsToSave.clear();
     }
