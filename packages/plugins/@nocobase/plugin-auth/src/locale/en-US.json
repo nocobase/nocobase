@@ -46,5 +46,10 @@
   "In configuration mode, the entire column becomes transparent. In non-configuration mode, the entire column will be hidden. Even if the entire column is hidden, its configured default values and other settings will still take effect.": "In configuration mode, the entire column becomes transparent. In non-configuration mode, the entire column will be hidden. Even if the entire column is hidden, its configured default values and other settings will still take effect.",
   "Your session has expired. Please sign in again.": "Your session has expired. Please sign in again.",
   "Unauthenticated. Please sign in to continue.": "Unauthenticated. Please sign in to continue.",
-  "User not found. Please sign in again to continue.": "User not found. Please sign in again to continue."
+  "User not found. Please sign in again to continue.": "User not found. Please sign in again to continue.",
+  "Email channel not found": "Email channel not found",
+  "Notification manager plugin not found": "Notification manager plugin not found",
+  "Not allowed to reset password": "Not allowed to reset password",
+  "Token expired": "Token expired",
+  "User not found": "User not found"
 }

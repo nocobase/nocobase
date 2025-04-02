@@ -23,5 +23,10 @@
   "No authentication methods available.": "利用可能な認証方法はありません。",
   "The password is inconsistent, please re-enter": "パスワードが一致しません。再入力してください。",
   "Sign-in": "サインイン",
-  "Password": "パスワード"
+  "Password": "パスワード",
+  "Email channel not found": "メールチャネルが見つかりません",
+  "Notification manager plugin not found": "通知管理プラグインが見つかりません",
+  "Not allowed to reset password": "パスワードのリセットは許可されていません",
+  "Token expired": "トークンの有効期限が切れました",
+  "User not found": "ユーザーが見つかりません"
 }

@@ -45,5 +45,10 @@
   "The maximum time limit allowed for refreshing a Token after it expires. After this time limit, the token cannot be automatically renewed, and the user needs to log in again.": "Token 过期后允许刷新的最大时限，超过此时限后，Token 无法自动更新，用户需重新登录。",
   "Your session has expired. Please sign in again.": "您的会话已过期，请重新登录。",
   "Unauthenticated. Please sign in to continue.": "未认证。请登录以继续。",
-  "User not found. Please sign in again to continue.": "用户不存在。请重新登录以继续。"
+  "User not found. Please sign in again to continue.": "用户不存在。请重新登录以继续。",
+  "Email channel not found": "未找到邮件通道",
+  "Notification manager plugin not found": "未找到通知管理插件",
+  "Not allowed to reset password": "不允许重置密码",
+  "Token expired": "令牌已过期",
+  "User not found": "未找到用户"
 }
