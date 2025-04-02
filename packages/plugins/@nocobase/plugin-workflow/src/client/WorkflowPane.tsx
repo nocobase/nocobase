@@ -61,11 +61,10 @@ function SyncOptionSelect(props) {
       if (trigger.sync != null) {
         field.setValue(trigger.sync);
       } else {
-        field.setInitialValue(false);
+        field.setInitialValue(props.value ?? false);
       }
     }
-  }, [record.id, field, workflowPlugin.triggers]);
-
+  }, [record.id, field, workflowPlugin.triggers, record.type, props.value]);
   return <RadioWithTooltip {...props} />;
 }
 

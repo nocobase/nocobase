@@ -63,7 +63,7 @@ export const SchemaInitializerItem = memo(
           className: className,
           label: children || compile(title),
           onClick: (info) => {
-            if (info.key !== name) return;
+            if (disabled || info.key !== name) return;
             if (closeInitializerMenuWhenClick) {
               setVisible?.(false);
             }
@@ -73,10 +73,10 @@ export const SchemaInitializerItem = memo(
           children: childrenItems,
         },
       ];
-    }, [name, style, className, children, title, onClick, icon, childrenItems]);
+    }, [name, disabled, style, className, children, title, onClick, icon, childrenItems]);
 
     if (items && items.length > 0) {
-      return <SchemaInitializerMenu items={menuItems}></SchemaInitializerMenu>;
+      return <SchemaInitializerMenu disabled={disabled} items={menuItems}></SchemaInitializerMenu>;
     }
     return (
       <div
