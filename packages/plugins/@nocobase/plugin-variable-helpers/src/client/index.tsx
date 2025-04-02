@@ -13,7 +13,7 @@ import { HelperComponents } from './components';
 export class PluginVariableFiltersClient extends Plugin {
   async afterAdd() {
     helperGroups.forEach((group) => {
-      this.app.jsonTemplateParser.registerFilterGroup(group);
+      this.app.jsonTemplateParser.registerHelperGroup(group);
     });
 
     helpers.forEach((helper) => {
@@ -21,7 +21,7 @@ export class PluginVariableFiltersClient extends Plugin {
       if (HelperComponent) {
         helper.Component = HelperComponent;
       }
-      this.app.jsonTemplateParser.registerFilter(helper);
+      this.app.jsonTemplateParser.registerHelper(helper);
     });
   }
 

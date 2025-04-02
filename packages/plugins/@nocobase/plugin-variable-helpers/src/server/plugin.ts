@@ -16,11 +16,11 @@ export class PluginVariableFiltersServer extends Plugin {
 
   async load() {
     helperGroups.forEach((group) => {
-      this.app.jsonTemplateParser.registerFilterGroup(group);
+      this.app.jsonTemplateParser.registerHelperGroup(group);
     });
 
     helpers.forEach((filter) => {
-      this.app.jsonTemplateParser.registerFilter(filter);
+      this.app.jsonTemplateParser.registerHelper(filter);
     });
   }
 

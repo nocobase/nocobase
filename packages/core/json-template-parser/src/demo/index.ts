@@ -30,14 +30,14 @@ async function filterDemo() {
   const parser = createJSONTemplateParser();
 
   // Register filter group
-  parser.registerFilterGroup({
+  parser.registerHelperGroup({
     name: 'text',
     title: 'Text Operations',
     sort: 1,
   });
 
   // Register filters
-  parser.registerFilter({
+  parser.registerHelper({
     name: 'uppercase',
     title: 'To Uppercase',
     inputMappingRules: ['string.*'],
@@ -47,7 +47,7 @@ async function filterDemo() {
     sort: 1,
   });
 
-  parser.registerFilter({
+  parser.registerHelper({
     name: 'append',
     title: 'Append Text',
     inputMappingRules: ['string.*'],
