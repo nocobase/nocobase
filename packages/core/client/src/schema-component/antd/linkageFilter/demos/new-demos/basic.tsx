@@ -82,34 +82,7 @@ const schema = {
                     `,
                   };
                 },
-                // 'x-component-props': {
-                //   collectionName,
-                //   dynamicComponent: (props: DynamicComponentProps) => {
-                //     const { collectionField } = props;
-                //     return (
-                //       <VariableInput
-                //         {...props}
-                //         form={form}
-                //         record={record}
-                //         shouldChange={getShouldChange({
-                //           collectionField,
-                //           variables,
-                //           localVariables,
-                //           getAllCollectionsInheritChain,
-                //         })}
-                //       />
-                //     );
-                //   },
-                // },
               },
-              // actions: {
-              //   'x-component': 'h4',
-              //   'x-content': '{{ t("Properties") }}',
-              // },
-              // action: {
-              //   type: 'void',
-              //   'x-component': (_props) => <LinkageRuleActionGroup {..._props} {...props} />,
-              // },
             },
           },
           remove: {
