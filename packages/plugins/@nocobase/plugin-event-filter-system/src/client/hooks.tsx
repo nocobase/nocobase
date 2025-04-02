@@ -8,7 +8,7 @@
  */
 
 import { useEffect, useCallback, useState, useMemo, ComponentProps } from 'react';
-import { useApp } from '@nocobase/client';
+import { useApp, useBlockResource } from '@nocobase/client';
 import {
   FilterFunction,
   FilterOptions,
@@ -50,17 +50,22 @@ export function useAddFilter(name: string, filter: FilterFunction, options: Filt
  */
 
 export const useApplyFilter = (name: string, options: ApplyFilterOptions) => {
-  const { input, settings, resource, props, resourceParams } = options;
+  const { input, props } = options;
+  const fieldSchema = useFieldSchema();
   const [done, setDone] = useState(false);
   const [result, setResult] = useState(null);
   const app = useApp();
+  const resource = useBlockResource();
 
   useEffect(() => {
     const ctx: FilterContext = {
-      settings,
+      settings: fieldSchema['x-component-settings'],
       resource,
       props,
-      resourceParams,
+      resourceParams: {
+        page: fieldSchema?.['x-decorator-props']?.page,
+        pageSize: fieldSchema?.['x-decorator-props']?.pageSize,
+      },
       _cancel: false,
     };
     app.filterManager
@@ -80,7 +85,7 @@ export const useApplyFilter = (name: string, options: ApplyFilterOptions) => {
     return () => {
       ctx._cancel = true;
     };
-  }, [app, name, input, settings, resource, props, resourceParams]);
+  }, [app, name, input, fieldSchema, props, resource]);
 
   return { done, result };
 };

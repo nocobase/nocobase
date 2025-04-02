@@ -108,4 +108,9 @@ export type FilterContext = {
 
 export type ApplyFilterOptions = {
   input?: any;
-} & FilterContext;
+  props?: ComponentProps<any>;
+};
+
+// export type ApplyFilterOptions = {
+//   input?: any;
+// } & FilterContext;

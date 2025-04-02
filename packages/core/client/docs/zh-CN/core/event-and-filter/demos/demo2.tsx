@@ -79,11 +79,6 @@ const TableDataBlockInitializer = () => {
   const handleClick = ({ item }) => {
     insert({
       type: 'void',
-      'x-decorator': 'DataBlockProvider',
-      'x-decorator-props': {
-        collection: item.value,
-        action: 'list',
-      },
       'x-settings': 'MyTableSettings',
       'x-component': 'CardItem',
       'x-toolbar-props': {
@@ -94,14 +89,19 @@ const TableDataBlockInitializer = () => {
           type: 'array',
           'x-component': 'MyTable',
           'x-use-component-props': 'useTableProps', // 动态 table 属性
+          'x-decorator': 'DataBlockProvider',
+          'x-decorator-props': {
+            collection: item.value,
+            action: 'list',
+          },
+          'x-component-settings': {
+            height: '1000px',
+            width: '50%',
+            linkageRules: {},
+          },
         },
       },
       // new block settings for event and filters
-      'x-block-settings': {
-        height: '800px',
-        width: '80%',
-        linkageRules: {},
-      },
     });
   };
   const compile = useCompile();

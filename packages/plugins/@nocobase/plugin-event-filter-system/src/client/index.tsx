@@ -131,6 +131,7 @@ export class PluginEventFilterSystemClient extends Plugin {
       // get data from resource
       const { resource, settings, resourceParams } = ctx;
       const fields = settings?.fields;
+      // just for demo, normally we already have data in ctx.props... no need to fetch again
       const result = await resource.list({
         params: {
           ...resourceParams,
@@ -140,7 +141,7 @@ export class PluginEventFilterSystemClient extends Plugin {
       return {
         ...input,
         data: {
-          ...result,
+          ...result?.data,
         },
       };
     });
