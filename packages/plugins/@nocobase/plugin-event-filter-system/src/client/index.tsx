@@ -184,7 +184,7 @@ export class PluginEventFilterSystemClient extends Plugin {
       // get columns from settings and input
       const { settings } = ctx;
       const { linkageRules } = input;
-      const columns = [];
+      let columns = [];
       const fieldSettings = settings?.fields;
       const recordActions = settings?.recordActions;
       if (recordActions) {
@@ -203,14 +203,15 @@ export class PluginEventFilterSystemClient extends Plugin {
         });
       });
       if (columns.length === 0) {
-        columns.push({
-          title: 'No Data',
-          dataIndex: 'noData',
-          key: 'noData',
-          render: () => {
-            return <div>No Data</div>;
-          },
-        });
+        columns = ctx?.props?.columns || []; // Just for Demo
+        // columns.push({
+        //   title: 'No Data',
+        //   dataIndex: 'noData',
+        //   key: 'noData',
+        //   render: () => {
+        //     return <div>No Data</div>;
+        //   },
+        // });
       }
       return {
         ...input,

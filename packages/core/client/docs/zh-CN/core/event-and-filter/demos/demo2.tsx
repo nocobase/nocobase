@@ -95,7 +95,7 @@ const TableDataBlockInitializer = () => {
             action: 'list',
           },
           'x-component-settings': {
-            height: '1000px',
+            height: '500px',
             width: '100%',
             linkageRules: {},
             actions: [
