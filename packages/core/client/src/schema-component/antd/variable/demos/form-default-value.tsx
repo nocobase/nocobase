@@ -16,7 +16,7 @@ import { dayjs } from '@nocobase/utils/client';
 import React, { useEffect } from 'react';
 const data = {
   today_dateOnly: dayjs().format('YYYY-MM-DD'),
-  today_withTZ: dayjs().startOf('date').utc().format(),
+  today_withTZ: dayjs().startOf('date').format('YYYY-MM-DD 00:00:00'),
   today_withoutTZ: dayjs().format('YYYY-MM-DD 00:00:00'),
 };
 
