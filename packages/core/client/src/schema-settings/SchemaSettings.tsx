@@ -1149,7 +1149,7 @@ export const SchemaSettingsLinkageRules = function LinkageRules(props) {
     (v) => {
       const rules = [];
       for (const rule of v.fieldReaction.rules) {
-        rules.push(_.pickBy(rule, _.identity));
+        rules.push(_.omit(_.pickBy(rule, _.identity), ['conditionBasic', 'conditionAdvanced']));
       }
       const templateId = gridSchema['x-component'] === 'BlockTemplate' && gridSchema['x-component-props']?.templateId;
       const uid = (templateId && getTemplateById(templateId).uid) || gridSchema['x-uid'];

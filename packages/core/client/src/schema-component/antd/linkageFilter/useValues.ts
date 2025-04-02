@@ -9,9 +9,8 @@
 
 import { useField } from '@formily/react';
 import { merge } from '@formily/shared';
-import { cloneDeep, last, get } from 'lodash';
+import { cloneDeep, last } from 'lodash';
 import { useCallback, useContext, useEffect } from 'react';
-import { useCollection_deprecated } from '../../../collection-manager';
 import { FilterContext } from './context';
 
 interface UseValuesReturn {
@@ -31,31 +30,34 @@ interface UseValuesReturn {
 }
 
 const findOption = (str, options) => {
-  // 使用正则表达式提取 $mainKey 和 childKey
-  const match = str.match(/\{\{\$(.*?)\}\}/); // 提取 $mainKey
+  if (!str) return null;
+  const match = str.match(/\{\{\$(.*?)\}\}/);
   if (!match) return null;
 
-  const fullKey = match[1]; // 完整的 key 例如 nForm.select 或 nRole
-  const [mainKey, childKey] = fullKey.split('.'); // 通过 '.' 分割，mainKey 为分割前部分，childKey 为分割后的部分
+  const [firstKey, ...subKeys] = match[1].split('.'); // 拆分层级
+  const keys = [`$${firstKey}`, ...subKeys]; // 第一层保留 `$`，后续不带 `$`
 
-  const mainValue = `$${mainKey}`;
+  let currentOptions = options;
+  let option = null;
+  for (const key of keys) {
+    option = currentOptions.find((opt) => opt.value === key);
+    if (!option) return null;
 
-  const option = options.find((option) => option.value === mainValue);
-  if (!option) return null;
-
-  if (childKey && option.isLeaf === false && option.children.length > 0) {
-    return option.children.find((child) => child.value === childKey) || null;
+    // 进入下一层 children 查找
+    if (Array.isArray(option.children) && option.isLeaf === false) {
+      currentOptions = option.children;
+    } else {
+      return option; // 没有 children 直接返回
+    }
   }
 
   return option;
 };
 
 export const useValues = (): UseValuesReturn => {
-  const { name } = useCollection_deprecated();
   const field = useField<any>();
   const { scopes } = useContext(FilterContext) || {};
   const { op, leftVar, rightVar } = field.value || {};
-
   const data2value = useCallback(() => {
     field.value = field.data.leftVar
       ? {
@@ -67,25 +69,27 @@ export const useValues = (): UseValuesReturn => {
   }, [field]);
 
   const value2data = () => {
+    /**
+     * 等待获取最新的scopes
+     */
     setTimeout(() => {
       const option = findOption(leftVar, scopes);
       field.data = field.data || {};
       if (!field.value) {
         return;
       }
-
-      field.data.operators = option?.operators;
+      field.data.operators = [...(field.data.operators || []), ...(option?.operators || [])];
       field.data.leftVar = leftVar;
       field.data.rightVar = rightVar;
       const operator = option?.operators?.find((v) => v.value === op);
-      field.data.operator = operator;
+      field.data.operator = field.data.operator || operator;
       const s1 = cloneDeep(option?.schema);
       const s2 = cloneDeep(operator?.schema);
-      field.data.schema = merge(s1, s2);
-    });
+      field.data.schema = field.data?.schema || merge(s1, s2);
+    }, 100);
   };
 
-  useEffect(value2data, [field.path, leftVar, scopes]);
+  useEffect(value2data, [field.path, scopes]);
 
   const setLeftValue = useCallback(
     (leftVar, paths) => {
@@ -98,6 +102,8 @@ export const useValues = (): UseValuesReturn => {
       const s2 = cloneDeep(operator?.schema);
       field.data.schema = merge(s1, s2);
       field.data.leftVar = leftVar;
+      field.data.rightVar = operator?.noValue ? operator.default || true : undefined;
+
       data2value();
     },
     [data2value, field],

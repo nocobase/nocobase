@@ -79,7 +79,21 @@ export const FormLinkageRules = withDynamicSchemaProps(
                       'x-content': '{{ t("Condition") }}',
                     },
                     condition: {
-                      'x-component': 'LinkageFilter',
+                      'x-component': 'Input', // 仅作为数据存储
+                      'x-hidden': true, // 不显示
+                      'x-reactions': [
+                        {
+                          dependencies: ['.conditionType', '.conditionBasic', '.conditionAdvanced'],
+                          fulfill: {
+                            state: {
+                              value: '{{$deps[0] === "basic" ? $deps[1] : $deps[2]}}',
+                            },
+                          },
+                        },
+                      ],
+                    },
+                    conditionBasic: {
+                      'x-component': 'Filter',
                       'x-use-component-props': () => {
                         return {
                           options,
@@ -90,6 +104,7 @@ export const FormLinkageRules = withDynamicSchemaProps(
                           `,
                         };
                       },
+                      'x-visible': '{{$deps[0] === "basic"}}',
                       'x-component-props': {
                         collectionName,
                         dynamicComponent: (props: DynamicComponentProps) => {
@@ -111,10 +126,26 @@ export const FormLinkageRules = withDynamicSchemaProps(
                       },
                       'x-reactions': [
                         {
-                          dependencies: ['.conditionType'],
+                          dependencies: ['.conditionType', '.condition'],
                           fulfill: {
                             state: {
-                              componentProps: { conditionType: `{{$deps[0]}}` },
+                              visible: '{{$deps[0] === "basic"}}',
+                              value: '{{$deps[0] === "basic" ? $deps[1] : undefined}}',
+                            },
+                          },
+                        },
+                      ],
+                    },
+                    conditionAdvanced: {
+                      'x-component': 'LinkageFilter',
+                      'x-visible': '{{$deps[0] === "advanced"}}',
+                      'x-reactions': [
+                        {
+                          dependencies: ['.conditionType', '.condition'],
+                          fulfill: {
+                            state: {
+                              visible: '{{$deps[0] === "advanced"}}',
+                              value: '{{$deps[0] === "advanced" ? $deps[1] : undefined}}',
                             },
                           },
                         },

@@ -15,7 +15,6 @@ import { withDynamicSchemaProps } from '../../../hoc/withDynamicSchemaProps';
 import { useProps } from '../../hooks/useProps';
 import { FilterGroup } from './FilterGroup';
 import { FilterContext } from './context';
-import { useVariableOptions } from '../../../schema-settings/VariableInput/hooks';
 
 const useDef = (options: UseRequestOptions) => {
   const field = useField<ObjectFieldModel>();

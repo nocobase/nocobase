@@ -10,7 +10,7 @@
 import { createForm, onFieldValueChange } from '@formily/core';
 import { FieldContext, FormContext } from '@formily/react';
 import { merge } from '@formily/shared';
-import React, { useCallback, useContext, useEffect, useMemo } from 'react';
+import React, { useCallback, useContext, useMemo } from 'react';
 import { CollectionFieldOptions_deprecated } from '../../../collection-manager';
 import { SchemaComponent } from '../../core';
 import { FilterContext } from './context';
