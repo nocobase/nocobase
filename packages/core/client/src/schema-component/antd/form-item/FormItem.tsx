@@ -50,7 +50,7 @@ const formItemLabelCss = css`
     padding: 0px !important;
   }
   > .ant-formily-item-label {
-    display: none;
+    display: none !important;
   }
 `;
 
