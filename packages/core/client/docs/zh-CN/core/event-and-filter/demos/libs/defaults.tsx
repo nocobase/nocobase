@@ -12,6 +12,8 @@ import { FilterManager } from './filter-manager';
 import { LinkageRuleSettings, LinkageRuleItem, EventContext } from './types';
 import React from 'react';
 import { Modal, Input } from 'antd';
+import { ExclamationCircleFilled } from '@ant-design/icons';
+import { EventFlowManager } from './eventflow-manager';
 export * from './event-manager';
 export * from './filter-manager';
 export * from './hooks';
@@ -92,6 +94,7 @@ function convertLinkageRuleSettings(settings: LinkageRuleSettings) {
 
 export const eventManager = new EventManager();
 export const filterManager = new FilterManager();
+export const eventFlowManager = new EventFlowManager();
 
 function loadDefaultFilters(filterManager: FilterManager) {
   filterManager.addFilter('core:block:table', async function propsFilter(input, ctx) {
@@ -284,5 +287,146 @@ function loadDefaultEventListeners(eventManager: EventManager) {
   });
 }
 
+function loadDefaultEventFlows(eventFlowManager: EventFlowManager) {
+  // listeners
+  window.addEventListener('beforeunload', async (event) => {
+    await eventFlowManager.dispatchEvent('window.beforeUnload', { window, app: this.app, event });
+  });
+  window.document.addEventListener('click', async (event) => {
+    await eventFlowManager.dispatchEvent('window.onClick', { app: this.app, event });
+  });
+
+  // event and actions
+  eventFlowManager.addEventGroup({
+    name: 'windowEvents',
+    title: 'Window events',
+    sort: 0,
+  });
+  eventFlowManager.addEvent({
+    name: 'window.beforeUnload',
+    title: 'window.beforeUnload',
+    sort: 2,
+    description: 'window before unload description',
+    group: 'windowEvents',
+    async handler(params, { event }) {
+      event.preventDefault();
+      event.returnValue = '';
+    },
+    uiSchema: {
+      condition: {
+        type: 'string',
+        title: 'Condition',
+        'x-decorator': 'FormItem',
+        'x-component': 'Input',
+      },
+    },
+  });
+
+  eventFlowManager.addEvent({
+    name: 'window.onClick',
+    title: 'window.onClick',
+    sort: 1,
+    description: 'window onclick description',
+    group: 'windowEvents',
+    uiSchema: {
+      condition: {
+        type: 'string',
+        title: 'Condition',
+        'x-decorator': 'FormItem',
+        'x-component': 'Input',
+      },
+    },
+  });
+
+  eventFlowManager.addActionGroup({
+    name: 'uiFeedback',
+    title: 'UI feedback',
+    sort: 0,
+  });
+
+  eventFlowManager.addAction({
+    name: 'dialog',
+    title: 'Dialog',
+    sort: 0,
+    group: 'uiFeedback',
+    uiSchema: {
+      condition: {
+        type: 'string',
+        title: 'Condition',
+        'x-decorator': 'FormItem',
+        'x-component': 'Input',
+      },
+      'params.title': {
+        type: 'string',
+        title: 'Dialog title',
+        required: true,
+        'x-decorator': 'FormItem',
+        'x-component': 'Input',
+      },
+      'params.content': {
+        type: 'string',
+        title: 'Dialog content',
+        'x-decorator': 'FormItem',
+        'x-component': 'Input',
+      },
+    },
+    async handler(params, context) {
+      if (!params?.title) {
+        return;
+      }
+      await new Promise((resolve, reject) => {
+        Modal.confirm({
+          title: params.title,
+          icon: <ExclamationCircleFilled />,
+          content: params.content,
+          onOk() {
+            resolve(null);
+          },
+          onCancel() {
+            reject(null);
+          },
+        });
+      });
+    },
+  });
+
+  eventFlowManager.addFlow({
+    title: '刷新页面',
+    on: {
+      title: '页面刷新事件',
+      event: 'window.beforeUnload',
+      condition: '{{ctx.window.location.pathname === "/admin/sourf9euc2l"}}',
+    },
+  });
+
+  eventFlowManager.addFlow({
+    title: '点击页面空白处',
+    on: {
+      title: '点击事件',
+      event: 'window.onClick',
+      condition: "{{ ctx.event.target['className'] === 'nb-grid-warp' }}",
+    },
+    steps: [
+      {
+        title: '对话框1',
+        action: 'dialog',
+        params: {
+          title: '对话框标题1',
+          content: '对话框内容1',
+        },
+      },
+      {
+        title: '对话框2',
+        action: 'dialog',
+        params: {
+          title: '对话框标题2',
+          content: '对话框内容2',
+        },
+      },
+    ],
+  });
+}
+
 loadDefaultEventListeners(eventManager);
 loadDefaultFilters(filterManager);
+loadDefaultEventFlows(eventFlowManager);
