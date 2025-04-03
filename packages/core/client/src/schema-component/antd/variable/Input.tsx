@@ -9,9 +9,22 @@
 
 import { CloseCircleFilled } from '@ant-design/icons';
 import { css, cx } from '@emotion/css';
-import { useForm } from '@formily/react';
+import { observer, useForm } from '@formily/react';
+import { reaction } from '@formily/reactive';
+import { composeTemplate, extractTemplateElements } from '@nocobase/json-template-parser';
 import { error } from '@nocobase/utils/client';
-import { Input as AntInput, Cascader, CascaderProps, DatePicker, InputNumber, Select, Space, Tag } from 'antd';
+import {
+  Input as AntInput,
+  Cascader,
+  CascaderProps,
+  DatePicker,
+  InputNumber,
+  Select,
+  Space,
+  Tag,
+  Tooltip,
+  Typography,
+} from 'antd';
 import useAntdInputStyle from 'antd/es/input/style';
 import type { DefaultOptionType } from 'antd/lib/cascader';
 import classNames from 'classnames';
@@ -19,32 +32,50 @@ import dayjs from 'dayjs';
 import React, { useCallback, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCompile } from '../../hooks';
-import { XButton } from './XButton';
-import { useStyles } from './style';
 import { Json } from '../input';
+import { HelperAddition, HelperList } from './Helpers';
+import { useHelperObservables } from './Helpers/hooks/useHelperObservables';
+import { useStyles } from './style';
+import { useVariable, VariableHelperMapping, VariableProvider } from './VariableProvider';
+import { XButton } from './XButton';
 
+const { Text } = Typography;
 const JT_VALUE_RE = /^\s*{{\s*([^{}]+)\s*}}\s*$/;
 
 type ParseOptions = {
   stringToDate?: boolean;
 };
 
+const findScopeOption = (options: DefaultOptionType[], path: string[]): DefaultOptionType | null => {
+  if (!options || !Array.isArray(options)) {
+    return null;
+  }
+
+  for (const option of options) {
+    if (option.value === path[0]) {
+      if (path.length === 1) {
+        return option;
+      }
+      return findScopeOption(option.children, path.slice(1));
+    }
+  }
+  return null;
+};
+
 function parseValue(value: any, options: ParseOptions = {}): string | string[] {
-  if (value == null) {
+  if (value == null || (Array.isArray(value) && value.length === 0)) {
     return 'null';
   }
   const type = typeof value;
-  if (type === 'string') {
-    const matched = value.match(JT_VALUE_RE);
-    if (matched) {
-      return matched[1].split('.');
-    }
-    if (options.stringToDate) {
-      if (!Number.isNaN(Date.parse(value))) {
-        return 'date';
-      }
+  if (Array.isArray(value)) {
+    return value;
+  }
+  if (options.stringToDate) {
+    if (!Number.isNaN(Date.parse(value))) {
+      return 'date';
     }
   }
+
   return type === 'object' && value instanceof Date ? 'date' : type;
 }
 
@@ -185,9 +216,10 @@ export type VariableInputProps = {
   className?: string;
   parseOptions?: ParseOptions;
   hideVariableButton?: boolean;
+  variableHelperMapping?: VariableHelperMapping;
 };
 
-export function Input(props: VariableInputProps) {
+function _Input(props: VariableInputProps) {
   const {
     value = '',
     onChange,
@@ -201,10 +233,14 @@ export function Input(props: VariableInputProps) {
     fieldNames,
     parseOptions,
     hideVariableButton,
+    variableHelperMapping,
   } = props;
+
   const scope = typeof props.scope === 'function' ? props.scope() : props.scope;
+
   const { wrapSSR, hashId, componentCls, rootPrefixCls } = useStyles({ hideVariableButton });
 
+  const helperObservables = useHelperObservables();
   // 添加 antd input 样式，防止样式缺失
   useAntdInputStyle(`${rootPrefixCls}-input`);
 
@@ -217,11 +253,22 @@ export function Input(props: VariableInputProps) {
     hideVariableButton || (children && value != null ? true : false),
   );
 
-  const parsed = useMemo(() => parseValue(value, parseOptions), [parseOptions, value]);
+  useEffect(() => {
+    helperObservables.setHelpersFromTemplateStr({ template: typeof value === 'string' ? value : '' });
+  }, [value, helperObservables]);
+
+  const { fullVariable, helpers, variableSegments } = useMemo(
+    () => extractTemplateElements(typeof value === 'string' ? value : ''),
+    [value],
+  );
+
+  const selectedScopeOption = useMemo(() => findScopeOption(options, variableSegments), [options, variableSegments]);
+
+  const parsed = useMemo(() => parseValue(variableSegments, parseOptions), [parseOptions, variableSegments]);
   const isConstant = typeof parsed === 'string';
   const type = isConstant ? parsed : '';
   const variable = isConstant ? null : parsed;
-  // const [prevType, setPrevType] = React.useState<string>(type);
+
   const names = Object.assign(
     {
       label: 'label',
@@ -309,7 +356,7 @@ export function Input(props: VariableInputProps) {
         }
       }
       await option.loadChildren(option, activeKey, variable);
-      setOptions((prev) => [...prev]);
+      setOptions([...options]);
     }
   };
 
@@ -332,7 +379,11 @@ export function Input(props: VariableInputProps) {
         if (next[1]) {
           if (next[1] !== type) {
             // setPrevType(next[1]);
-            onChange(ConstantTypes[next[1]]?.default?.() ?? null, optionPath);
+            const newVariable = ConstantTypes[next[1]]?.default?.() ?? null;
+            onChange(
+              composeTemplate({ fullVariable: newVariable, helpers: helperObservables.helpersObs.value ?? [] }),
+              optionPath,
+            );
           }
         } else {
           if (variable) {
@@ -341,7 +392,12 @@ export function Input(props: VariableInputProps) {
         }
         return;
       }
-      onChange(`{{${next.join('.')}}}`, optionPath);
+      const variableName = next.join('.');
+      const option = optionPath[optionPath.length - 1];
+      onChange(
+        composeTemplate({ fullVariable: variableName, helpers: helperObservables.helpersObs.value ?? [] }),
+        optionPath,
+      );
     },
     [type, variable, onChange],
   );
@@ -437,14 +493,19 @@ export function Input(props: VariableInputProps) {
             className={cx('ant-input ant-input-outlined', { 'ant-input-disabled': disabled }, hashId)}
           >
             <Tag color="blue">
-              {variableText.map((item, index) => {
-                return (
-                  <React.Fragment key={item}>
-                    {index ? ' / ' : ''}
-                    {item}
-                  </React.Fragment>
-                );
-              })}
+              <VariableProvider
+                variableName={fullVariable}
+                variableExampleValue={selectedScopeOption?.example}
+                helpersMappingRules={selectedScopeOption?.helpers ?? []}
+                openLastHelper={selectedScopeOption?.showLastHelper}
+                helperObservables={helperObservables}
+                onVariableTemplateChange={onChange}
+              >
+                <VariableTag variablePath={variableText} />
+
+                <HelperList />
+                {variableText.length > 0 && <HelperAddition />}
+              </VariableProvider>
             </Tag>
           </div>
           {!disabled ? (
@@ -499,3 +560,23 @@ export function Input(props: VariableInputProps) {
     </Space.Compact>,
   );
 }
+
+const VariableTag = ({ variablePath }: { variablePath: string[] }) => {
+  const { value } = useVariable();
+  return (
+    <Tooltip title={value}>
+      <span>
+        {variablePath.map((item, index) => {
+          return (
+            <React.Fragment key={item}>
+              {index ? ' / ' : ''}
+              {item}
+            </React.Fragment>
+          );
+        })}
+      </span>
+    </Tooltip>
+  );
+};
+
+export const Input = observer(_Input, { displayName: 'VariableInput' });

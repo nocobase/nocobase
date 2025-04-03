@@ -25,6 +25,23 @@ import { useCurrentUserVariable } from './hooks/useUserVariable';
 import { useVariableOptions } from './hooks/useVariableOptions';
 import { Option } from './type';
 
+/**
+ * Configuration for mapping variables to their allowed helper functions
+ */
+interface VariableHelperRule {
+  /** Pattern to match variables, supports glob patterns */
+  variables: string;
+  /** Array of allowed helper patterns, supports glob patterns */
+  helpers: string[];
+}
+
+interface VariableHelperMapping {
+  /** Array of rules defining which helpers are allowed for which variables */
+  rules: VariableHelperRule[];
+  /** Optional flag to determine if unlisted combinations should be allowed */
+  strictMode?: boolean;
+}
+
 interface GetShouldChangeProps {
   collectionField: CollectionFieldOptions_deprecated;
   variables: VariablesContextType;
@@ -43,6 +60,8 @@ type Props = {
   onChange: (value: any, optionPath?: any[]) => void;
   renderSchemaComponent: (props: RenderSchemaComponentProps) => any;
   schema?: any;
+  /** Configuration for mapping variables to their allowed helper functions */
+  variableHelperMapping?: VariableHelperMapping;
   /** 消费变量值的字段 */
   targetFieldSchema?: Schema;
   children?: any;
@@ -183,7 +202,7 @@ export const getShouldChange = ({
       return true;
     }
 
-    const lastOption = optionPath[optionPath.length - 1];
+    const lastOption = Array.isArray(optionPath) ? optionPath[optionPath.length - 1] : null;
 
     // 点击叶子节点时，必须更新 value
     if (lastOption && _.isEmpty(lastOption.children) && !lastOption.loadChildren) {

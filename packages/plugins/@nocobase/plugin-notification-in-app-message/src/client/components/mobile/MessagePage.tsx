@@ -15,11 +15,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 
 import { Schema } from '@formily/react';
-import {
-  MobilePageContentContainer,
-  MobilePageHeader,
-  MobilePageProvider
-} from '@nocobase/plugin-mobile/client';
+import { MobilePageContentContainer, MobilePageHeader, MobilePageProvider } from '@nocobase/plugin-mobile/client';
 import { useLocalTranslation } from '../../../locale';
 import {
   fetchChannels,

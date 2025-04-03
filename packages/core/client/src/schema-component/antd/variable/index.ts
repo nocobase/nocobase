@@ -7,5 +7,6 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export * from './Variable';
 export { TextAreaWithGlobalScope } from './TextAreaWithGlobalScope';
+export * from './Variable';
+export { getFieldSupportedHelpers } from './VariableProvider';
