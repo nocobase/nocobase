@@ -8,18 +8,20 @@
  */
 
 import { connect, mapReadPretty } from '@formily/react';
-import { Input } from 'antd';
+import { Button, Input, Space } from 'antd';
 import { PasswordProps as AntdPasswordProps } from 'antd/es/input';
 import React from 'react';
 import { PasswordStrength } from './PasswordStrength';
+import { useNavigateNoUpdate } from '../../../application/CustomRouterContextProvider';
 
 export interface PasswordProps extends AntdPasswordProps {
   checkStrength?: boolean;
+  showForgotPassword?: boolean;
 }
 
 export const Password = connect(
   (props: PasswordProps) => {
-    const { value, className, checkStrength, ...others } = props;
+    const { value, className, checkStrength, showForgotPassword, ...others } = props;
     const blockStyle: React.CSSProperties = {
       position: 'absolute',
       zIndex: 1,
@@ -29,9 +31,13 @@ export const Password = connect(
       width: 1,
       transform: 'translate(-50%, 0)',
     };
+    const navigate = useNavigateNoUpdate();
     return (
       <span className={className}>
-        <Input.Password {...others} value={value} />
+        <Space.Compact block>
+          <Input.Password {...others} value={value} />
+          {showForgotPassword ? <Button onClick={() => navigate('/forgot-password')}>忘记密码？</Button> : null}
+        </Space.Compact>
         {checkStrength && (
           <PasswordStrength value={value}>
             {(score) => {

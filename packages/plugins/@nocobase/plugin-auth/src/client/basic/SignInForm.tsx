@@ -39,7 +39,7 @@ export const useSignIn = (authenticator: string) => {
   };
 };
 
-const passwordForm: ISchema = {
+const getPasswordForm = ({ showForgotPassword }: { showForgotPassword?: boolean }): ISchema => ({
   type: 'object',
   name: 'passwordForm',
   'x-component': 'FormV2',
@@ -67,7 +67,7 @@ const passwordForm: ISchema = {
       'x-component': 'Password',
       required: true,
       'x-decorator': 'FormItem',
-      'x-component-props': { placeholder: '{{t("Password")}}', style: {} },
+      'x-component-props': { placeholder: '{{t("Password")}}', style: {}, showForgotPassword },
     },
     actions: {
       type: 'void',
@@ -97,7 +97,7 @@ const passwordForm: ISchema = {
       'x-visible': '{{ allowSignUp }}',
     },
   },
-};
+});
 export const SignInForm = (props: { authenticator: Authenticator }) => {
   const { t } = useAuthTranslation();
   const authenticator = props.authenticator;
@@ -110,5 +110,5 @@ export const SignInForm = (props: { authenticator: Authenticator }) => {
   const useBasicSignIn = () => {
     return useSignIn(name);
   };
-  return <SchemaComponent schema={passwordForm} scope={{ useBasicSignIn, allowSignUp, signUpLink, t }} />;
+  return <SchemaComponent schema={getPasswordForm({ showForgotPassword: options?.enableResetPassword })} scope={{ useBasicSignIn, allowSignUp, signUpLink, t }} />;
 };
