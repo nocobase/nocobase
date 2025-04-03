@@ -30,7 +30,62 @@ export function mergeRole(roles: ACLRole[]) {
     }
   }
   result.snippets = mergeRoleSnippets(allSnippets);
+  adjustActionByStrategy(roles, result);
   return result;
+}
+
+/**
+ * When merging permissions from multiple roles, if strategy.actions allows certain actions, then those actions have higher priority.
+ * For example, [
+ * {
+ *  actions: {
+ *    'users:view': {...},
+ *    'users:create': {...}
+ *  },
+ *  strategy: {
+ *    actions: ['view']
+ *  }
+ * }]
+ * finally result: [{
+ *  actions: {
+ *    'users:create': {...},
+ * },
+ * {
+ *  strategy: {
+ *    actions: ['view']
+ * }]
+ **/
+function adjustActionByStrategy(
+  roles,
+  result: {
+    actions?: Record<string, object>;
+    strategy?: { actions?: string[] };
+    resources?: string[];
+  },
+) {
+  const { actions, strategy } = result;
+  const actionSet = getAdjustActions(roles);
+  if (!_.isEmpty(actions) && !_.isEmpty(strategy?.actions) && !_.isEmpty(result.resources)) {
+    for (const resource of result.resources) {
+      for (const action of strategy.actions) {
+        if (actionSet.has(action)) {
+          actions[`${resource}:${action}`] = {};
+        }
+      }
+    }
+  }
+}
+
+function getAdjustActions(roles: ACLRole[]) {
+  const actionSet = new Set<string>();
+  for (const role of roles) {
+    const jsonRole = role.toJSON();
+    // Within the same role, actions have higher priority than strategy.actions.
+    if (!_.isEmpty(jsonRole.strategy?.['actions']) && _.isEmpty(jsonRole.actions)) {
+      jsonRole.strategy['actions'].forEach((x) => !x.includes('own') && actionSet.add(x));
+    }
+  }
+  return actionSet;
 }
 
 function mergeRoleNames(sourceRoleNames, newRoleName) {
