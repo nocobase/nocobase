@@ -55,4 +55,18 @@ describe('text field', () => {
     });
     await Test.sync();
   });
+
+  it('trim', async () => {
+    const collection = db.collection({
+      name: 'tests',
+      fields: [{ type: 'text', name: 'name', trim: true }],
+    });
+    await db.sync();
+    const model = await collection.model.create({
+      name: '  n1\n ',
+    });
+    expect(model.toJSON()).toMatchObject({
+      name: 'n1',
+    });
+  });
 });
