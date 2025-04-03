@@ -13,7 +13,6 @@ import { lang, useAuthTranslation } from '../locale';
 import { FormTab, ArrayTable } from '@formily/antd-v5';
 import { Alert } from 'antd';
 import { uid } from '@formily/shared';
-import { MessageConfigForm } from '@nocobase/plugin-notification-manager/client';
 
 const SignupFormSettings = () => {
   const record = useRecord();
@@ -154,7 +153,7 @@ const useVariableOptionsOfForgetPassword = () => {
   const { datetimeSettings } = useDatetimeVariable({ noDisabled: true });
   return [environmentVariables, currentUserSettings, datetimeSettings, {
     value: '$resetLink',
-    label: t('重置密码的链接'),
+    label: t('Reset password link'),
   }].filter(Boolean);
 }
 
@@ -215,7 +214,7 @@ export const Options = () => {
                       enableResetPassword: {
                         'x-decorator': 'FormItem',
                         type: 'boolean',
-                        title: '{{t("启用忘记密码功能")}}',
+                        title: '{{t("Enable forget password feature")}}',
                         'x-component': 'Checkbox',
                         default: false,
                       },
