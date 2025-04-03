@@ -43,15 +43,6 @@ export const customizePopupActionSettings = new SchemaSettings({
           collectionName: associationField?.collectionName || name,
         };
       },
-      useVisible() {
-        const { collection } = useCurrentPopupRecord() || {};
-        const currentCollection = useCollection();
-        const record = useCollectionRecord();
-        const { association } = useDataBlockProps() || {};
-        return (
-          (!isEmpty(record?.data) && (!collection || collection?.name === currentCollection?.name)) || !!association
-        );
-      },
     },
     {
       name: 'openMode',

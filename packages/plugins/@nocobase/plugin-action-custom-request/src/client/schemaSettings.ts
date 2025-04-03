@@ -52,11 +52,6 @@ export const customizeCustomRequestActionSettings = new SchemaSettings({
           collectionName: associationField?.collectionName || name,
         };
       },
-      useVisible() {
-        const record = useCollectionRecord();
-        const { association } = useDataBlockProps() || {};
-        return (record && record.data && !record?.isNew) || !!association;
-      },
     },
     {
       name: 'secondConFirm',

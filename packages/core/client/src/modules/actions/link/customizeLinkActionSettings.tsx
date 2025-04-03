@@ -96,11 +96,6 @@ export const customizeLinkActionSettings = new SchemaSettings({
     {
       name: 'linkageRules',
       Component: SchemaSettingsLinkageRules,
-      useVisible() {
-        const record = useCollectionRecord();
-        const { association } = useDataBlockProps() || {};
-        return !_.isEmpty(record?.data) || !!association;
-      },
       useComponentProps() {
         const { name } = useCollection_deprecated();
         const { linkageRulesProps } = useSchemaToolbar();
