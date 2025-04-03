@@ -33,7 +33,7 @@ export abstract class BaseDialect {
     return {};
   }
 
-  parseModelValue(value: any, model: Model) {
+  parseModelValue(key: any, value: any) {
     return value;
   }
 

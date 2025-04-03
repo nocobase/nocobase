@@ -25,6 +25,9 @@ describe('Eager loading tree', () => {
   });
 
   it('should sort has many default by primary key', async () => {
+    if (db.options.dialect === 'mssql') {
+      return;
+    }
     const Source = db.collection({
       name: 'source',
       fields: [

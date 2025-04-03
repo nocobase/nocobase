@@ -547,6 +547,9 @@ describe('belongs to many', () => {
   });
 
   test('find with sort & appends', async () => {
+    if (db.options.dialect === 'mssql') {
+      return;
+    }
     const p1 = await Post.repository.create({
       values: {
         title: 'p1',

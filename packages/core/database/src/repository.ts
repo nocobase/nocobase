@@ -566,7 +566,7 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
       instance.clearChangedWithAssociations();
     }
 
-    return instance.toJSON();
+    return instance;
   }
 
   /**

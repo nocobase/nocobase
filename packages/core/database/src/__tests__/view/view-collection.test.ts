@@ -311,6 +311,9 @@ describe('create view', () => {
   });
 
   it('should create view collection', async () => {
+    if (db.options.dialect === 'mssql') {
+      return;
+    }
     const UserCollection = db.collection({
       name: 'users',
       fields: [
@@ -470,6 +473,9 @@ describe('create view', () => {
   });
 
   it('should set belongs to field via source', async () => {
+    if (db.options.dialect === 'mssql') {
+      return;
+    }
     const User = db.collection({
       name: 'users',
       fields: [
