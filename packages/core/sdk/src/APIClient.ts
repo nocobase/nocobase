@@ -242,6 +242,34 @@ export class Auth {
     this.setAuthenticator(null);
     return response;
   }
+
+
+  async lostPassword(values: any): Promise<AxiosResponse<any>> {
+    const response = await this.api.request({
+      method: 'post',
+      url: 'auth:lostPassword',
+      data: values,
+    });
+    return response;
+  }
+
+  async resetPassword(values: any): Promise<AxiosResponse<any>> {
+    const response = await this.api.request({
+      method: 'post',
+      url: 'auth:resetPassword',
+      data: values,
+    });
+    return response;
+  }
+
+  async checkResetToken(values: any): Promise<AxiosResponse<any>> {
+    const response = await this.api.request({
+      method: 'post',
+      url: 'auth:checkResetToken',
+      data: values,
+    });
+    return response;
+  }
 }
 
 export abstract class Storage {

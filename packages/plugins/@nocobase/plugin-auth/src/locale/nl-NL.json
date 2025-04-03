@@ -29,5 +29,10 @@
     "Sign up settings": "Aanmeldinstellingen",
     "Sign up form": "Aanmeldformulier",
     "At least one of the username or email fields is required": "Ten minste één van de velden voor gebruikersnaam of e-mail is verplicht",
-    "Password is not allowed to be changed": "Wachtwoord mag niet worden gewijzigd"
+    "Password is not allowed to be changed": "Wachtwoord mag niet worden gewijzigd",
+    "Email channel not found": "E-mailkanaal niet gevonden",
+    "Notification manager plugin not found": "Notificatiebeheer-plugin niet gevonden",
+    "Not allowed to reset password": "Wachtwoord resetten niet toegestaan",
+    "Token expired": "Token verlopen",
+    "User not found": "Gebruiker niet gevonden"
 }
