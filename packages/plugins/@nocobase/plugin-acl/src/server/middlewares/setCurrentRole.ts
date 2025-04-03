@@ -85,9 +85,9 @@ export async function setCurrentRole(ctx: Context, next) {
   }
   // 2. If the X-Role is not set, or the X-Role does not belong to the user, use the default role
   if (!role) {
-    const defaultRoleModel = await ctx.db
-      .getRepository('rolesUsers')
-      .findOne({ where: { userId: ctx.state.currentUser.id, default: true } });
+    const defaultRoleModel = await cache.wrap(`roles:${ctx.state.currentUser.id}:defaultRole`, () =>
+      ctx.db.getRepository('rolesUsers').findOne({ where: { userId: ctx.state.currentUser.id, default: true } }),
+    );
     role = defaultRoleModel?.roleName || userRoles.find((x) => x.name !== UNION_ROLE_KEY)?.name;
   }
   ctx.state.currentRole = role;
