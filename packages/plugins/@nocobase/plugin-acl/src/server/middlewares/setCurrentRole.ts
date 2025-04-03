@@ -27,11 +27,12 @@ export async function setCurrentRole(ctx: Context, next) {
 
   const attachRoles = ctx.state.attachRoles || [];
   const cache = ctx.cache as Cache;
-  const repository = ctx.db.getRepository('users.roles', ctx.state.currentUser.id) as unknown as Repository;
+  const rolesUsersRepo = ctx.db.getRepository('rolesUsers');
+  const rolesUsers = await rolesUsersRepo.find({ where: { userId: ctx.state.currentUser.id } });
+  const allRoleNames = await rolesUsers.map((x) => x.roleName);
+  const rolesRepo = ctx.db.getRepository('roles');
   const roles = (await cache.wrap(`roles:${ctx.state.currentUser.id}`, () =>
-    repository.find({
-      raw: true,
-    }),
+    rolesRepo.find({ where: { name: allRoleNames } }),
   )) as Model[];
   if (!roles.length && !attachRoles.length) {
     ctx.state.currentRole = undefined;
@@ -85,8 +86,8 @@ export async function setCurrentRole(ctx: Context, next) {
   }
   // 2. If the X-Role is not set, or the X-Role does not belong to the user, use the default role
   if (!role) {
-    const defaultRole = userRoles.find((role) => role?.rolesUsers?.default);
-    role = (defaultRole || userRoles.find((x) => x.name !== UNION_ROLE_KEY))?.name;
+    const defaultRole = rolesUsers.find((x) => x.default)?.roleName;
+    role = defaultRole || allRoleNames.find((x) => x !== UNION_ROLE_KEY);
   }
   ctx.state.currentRole = role;
   ctx.state.currentRoles = [role];
