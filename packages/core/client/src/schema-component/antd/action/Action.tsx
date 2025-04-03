@@ -584,7 +584,8 @@ const RenderButtonInner = observer(
       return null;
     }
 
-    const actionTitle = t(title || field?.title, { ns: NAMESPACE_UI_SCHEMA });
+    const rawTitle = title ?? field?.title;
+    const actionTitle = typeof rawTitle === 'string' ? t(rawTitle, { ns: NAMESPACE_UI_SCHEMA }) : rawTitle;
     const { opacity, ...restButtonStyle } = buttonStyle;
     const linkStyle = isLink && opacity ? { opacity } : undefined;
     return (
