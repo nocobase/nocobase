@@ -88,7 +88,7 @@ export async function setCurrentRole(ctx: Context, next) {
     const defaultRoleModel = await ctx.db
       .getRepository('rolesUsers')
       .findOne({ where: { userId: ctx.state.currentUser.id, default: true } });
-    role = defaultRoleModel?.roleName || userRoles.find((x) => x !== UNION_ROLE_KEY)?.name;
+    role = defaultRoleModel?.roleName || userRoles.find((x) => x.name !== UNION_ROLE_KEY)?.name;
   }
   ctx.state.currentRole = role;
   ctx.state.currentRoles = [role];
