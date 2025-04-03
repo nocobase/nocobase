@@ -290,10 +290,10 @@ function loadDefaultEventListeners(eventManager: EventManager) {
 function loadDefaultEventFlows(eventFlowManager: EventFlowManager) {
   // listeners
   window.addEventListener('beforeunload', async (event) => {
-    await eventFlowManager.dispatchEvent('window.beforeUnload', { window, app: this.app, event });
+    await eventFlowManager.dispatchEvent('window.beforeUnload', { window, event });
   });
   window.document.addEventListener('click', async (event) => {
-    await eventFlowManager.dispatchEvent('window.onClick', { app: this.app, event });
+    await eventFlowManager.dispatchEvent('window.onClick', { event });
   });
 
   // event and actions
