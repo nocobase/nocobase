@@ -7,7 +7,7 @@ import React from 'react';
  */
 const openDialog = (data: any) => {
   Modal.info({
-    title: '按钮事件触发详情',
+    title: '弹窗',
     width: 600,
     content: (
       <pre

@@ -8,5 +8,8 @@
 
 <code src="./demos/events/basic-form.tsx"></code>
 
-<!-- # 事件触发action组 -->
+# action复用
+多个按钮触发同一个action
+
+<code src="./demos/events/action-reuse.tsx"></code>
 

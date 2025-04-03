@@ -114,7 +114,7 @@ export class EventManager {
     if (!ctx.meta) {
       ctx.meta = {};
     }
-    ctx.meta.timestamp = ctx.meta.timestamp ?? Date.now();
+    ctx.meta.timestamp = Date.now();
     ctx.meta.event = eventName;
 
     // For multiple event names, dispatch each one
