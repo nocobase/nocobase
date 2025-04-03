@@ -36,7 +36,7 @@ export const Password = connect(
       <span className={className}>
         <Space.Compact block>
           <Input.Password {...others} value={value} />
-          {showForgotPassword ? <Button onClick={() => navigate('/forgot-password')}>忘记密码？</Button> : null}
+          {showForgotPassword ? <Button onClick={() => navigate('/forgot-password')}>Forgot password?</Button> : null}
         </Space.Compact>
         {checkStrength && (
           <PasswordStrength value={value}>

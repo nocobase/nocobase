@@ -12,24 +12,24 @@ const getResetPasswordForm = (): ISchema => ({
     password: {
       type: 'string',
       'x-component': 'Password',
-      title: '{{t("新密码")}}',
+      title: '{{t("New password")}}',
       required: true,
       'x-decorator': 'FormItem',
-      'x-component-props': { placeholder: '{{t("请输入新密码")}}' },
+      'x-component-props': { placeholder: '{{t("Please enter new password")}}' },
     },
     confirmPassword: {
       type: 'string',
       'x-component': 'Password',
-      title: '{{t("确认密码")}}',
+      title: '{{t("Confirm password")}}',
       required: true,
       'x-decorator': 'FormItem',
-      'x-component-props': { placeholder: '{{t("请再次输入相同的密码")}}' },
+      'x-component-props': { placeholder: '{{t("Please enter the same password again")}}' },
       'x-validator': `{{(value, rules, {form}) => {
         if (!value) {
           return '';
         }
         if (value !== form.values.password) {
-          return t("两次输入的密码不一致");
+          return t("The passwords entered twice are inconsistent");
         }
       }}}`,
     },
@@ -38,7 +38,7 @@ const getResetPasswordForm = (): ISchema => ({
       'x-component': 'div',
       properties: {
         submit: {
-          title: '{{t("确认")}}',
+          title: '{{t("Confirm")}}',
           type: 'void',
           'x-component': 'Action',
           'x-component-props': {
@@ -54,7 +54,7 @@ const getResetPasswordForm = (): ISchema => ({
                 async run() {
                   await form.submit();
                   await api.auth.resetPassword({ ...form.values, resetToken });
-                  message.success(t("密码重置成功"));
+                  message.success(t("Password reset successful"));
                   setTimeout(() => {
                     window.location.href = '/signin';
                   }, 1000);
@@ -71,7 +71,7 @@ const getResetPasswordForm = (): ISchema => ({
       'x-component-props': {
         to: '/signin',
       },
-      'x-content': '{{t("去登录")}}',
+      'x-content': '{{t("Go to login")}}',
     },
   },
 });
@@ -94,8 +94,8 @@ export const ResetPasswordPage = () => {
   if (!resetToken || expired) {
     return <Result
       status="403"
-      title="重置链接已失效"
-      extra={<Button type="primary" onClick={() => navigate('/signin')}>去登录</Button>}
+      title="Reset link has expired"
+      extra={<Button type="primary" onClick={() => navigate('/signin')}>Go to login</Button>}
     />;
   }
 

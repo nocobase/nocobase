@@ -12,7 +12,7 @@ const getForgotPasswordForm = (): ISchema => ({
     email: {
       type: 'string',
       'x-component': 'Input',
-      title: '{{t("重置密码")}}',
+      title: '{{t("Reset password")}}',
       required: true,
       'x-validator': `{{(value) => {
         if (!value) {
@@ -30,7 +30,7 @@ const getForgotPasswordForm = (): ISchema => ({
       'x-component': 'div',
       properties: {
         submit: {
-          title: '{{t("发送重置邮件")}}',
+          title: '{{t("Send reset email")}}',
           type: 'void',
           'x-component': 'Action',
           'x-component-props': {
@@ -59,7 +59,7 @@ const getForgotPasswordForm = (): ISchema => ({
       'x-component-props': {
         to: '/signin',
       },
-      'x-content': '{{t("返回登录")}}',
+      'x-content': '{{t("Back to login")}}',
     },
   },
 });
