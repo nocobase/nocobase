@@ -72,7 +72,7 @@ export const AssociationFieldProvider = observer(
         return api.request({
           resource: collectionField.target,
           action: Array.isArray(ids) ? 'list' : 'get',
-          headers: getDataSourceHeaders(cm.dataSource?.key),
+          headers: getDataSourceHeaders(cm?.dataSource?.key),
           params: {
             filter: {
               [targetKey]: ids,
