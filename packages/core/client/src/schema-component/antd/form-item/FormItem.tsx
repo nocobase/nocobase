@@ -39,6 +39,9 @@ const formItemWrapCss = css`
   }
   &.ant-formily-item-layout-vertical .ant-formily-item-label {
     display: inline;
+    .ant-formily-item-label-tooltip-icon {
+      display: inline;
+    }
     .ant-formily-item-label-content {
       display: inline;
     }
