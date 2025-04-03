@@ -10,7 +10,7 @@
 import { css } from '@emotion/css';
 import { observer, useFieldSchema } from '@formily/react';
 import React, { useMemo } from 'react';
-import { useCollectionManager_deprecated } from '../../collection-manager';
+import { useCollectionManager_deprecated, useCollection_deprecated } from '../../collection-manager';
 import { useCollectionParentRecordData } from '../../data-source/collection-record/CollectionRecordProvider';
 import { CollectionProvider } from '../../data-source/collection/CollectionProvider';
 import { withDynamicSchemaProps } from '../../hoc/withDynamicSchemaProps';
@@ -40,6 +40,7 @@ export const FormLinkageRules = withDynamicSchemaProps(
     const fieldSchema = useFieldSchema();
     const { options, defaultValues, collectionName, form, variables, localVariables, record, dynamicComponent } =
       useProps(props); // 新版 UISchema（1.0 之后）中已经废弃了 useProps，这里之所以继续保留是为了兼容旧版的 UISchema
+    const { name } = useCollection_deprecated();
     const { getAllCollectionsInheritChain } = useCollectionManager_deprecated();
     const parentRecordData = useCollectionParentRecordData();
 
@@ -222,10 +223,10 @@ export const FormLinkageRules = withDynamicSchemaProps(
 
     return (
       // 这里使用 SubFormProvider 包裹，是为了让子表格的联动规则中 “当前对象” 的配置显示正确
-      <SubFormProvider value={{ value: null, collection: { name: collectionName } as any }}>
+      <SubFormProvider value={{ value: null, collection: { name: collectionName || name } as any }}>
         <RecordProvider record={record} parent={parentRecordData}>
           <FilterContext.Provider value={value}>
-            <CollectionProvider name={collectionName}>
+            <CollectionProvider name={collectionName || name}>
               <SchemaComponent components={components} schema={schema} />
             </CollectionProvider>
           </FilterContext.Provider>

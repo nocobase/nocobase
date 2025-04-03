@@ -24,8 +24,8 @@ import {
   SchemaSettingsLinkageRules,
   useDataBlockProps,
   useCollectionManager_deprecated,
+  useCollection_deprecated,
 } from '@nocobase/client';
-import { ModalProps } from 'antd';
 import { isValid } from '@formily/shared';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
@@ -119,6 +119,22 @@ export const deprecatedBulkEditActionSettings = new SchemaSettings({
       Component: UpdateMode,
     },
     {
+      name: 'linkageRules',
+      Component: SchemaSettingsLinkageRules,
+      useComponentProps() {
+        const { association } = useDataBlockProps() || {};
+        const { name } = useCollection_deprecated();
+        const { getCollectionField } = useCollectionManager_deprecated();
+        const associationField = getCollectionField(association);
+        const { linkageRulesProps } = useSchemaToolbar();
+
+        return {
+          ...linkageRulesProps,
+          collectionName: associationField?.collectionName || name,
+        };
+      },
+    },
+    {
       name: 'remove',
       sort: 100,
       Component: RemoveButton as any,
@@ -166,12 +182,14 @@ export const bulkEditActionSettings = new SchemaSettings({
       Component: SchemaSettingsLinkageRules,
       useComponentProps() {
         const { association } = useDataBlockProps() || {};
+        const { name } = useCollection_deprecated();
         const { getCollectionField } = useCollectionManager_deprecated();
         const associationField = getCollectionField(association);
         const { linkageRulesProps } = useSchemaToolbar();
+
         return {
           ...linkageRulesProps,
-          collectionName: associationField?.collectionName,
+          collectionName: associationField?.collectionName || name,
         };
       },
     },
@@ -207,6 +225,19 @@ export const bulkEditFormSubmitActionSettings = new SchemaSettings({
     {
       name: 'afterSuccessfulSubmission',
       Component: AfterSuccess,
+    },
+    {
+      name: 'linkageRules',
+      Component: SchemaSettingsLinkageRules,
+      useComponentProps() {
+        const { name } = useCollection_deprecated();
+        const { linkageRulesProps } = useSchemaToolbar();
+
+        return {
+          ...linkageRulesProps,
+          collectionName: name,
+        };
+      },
     },
     {
       name: 'refreshDataBlockRequest',
