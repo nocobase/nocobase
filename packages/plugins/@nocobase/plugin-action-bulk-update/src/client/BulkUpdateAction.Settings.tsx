@@ -173,10 +173,6 @@ const schemaSettingsItems: SchemaSettingsItemType[] = [
   {
     name: 'linkageRules',
     Component: SchemaSettingsLinkageRules,
-    useVisible() {
-      const { association } = useDataBlockProps() || {};
-      return !!association;
-    },
     useComponentProps() {
       const { association } = useDataBlockProps() || {};
       const { getCollectionField } = useCollectionManager_deprecated();
