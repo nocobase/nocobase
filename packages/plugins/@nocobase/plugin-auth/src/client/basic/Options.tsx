@@ -155,7 +155,7 @@ const useVariableOptionsOfForgetPassword = () => {
   return [environmentVariables, currentUserSettings, datetimeSettings, {
     value: '$resetLink',
     label: t('重置密码的链接'),
-  }];
+  }].filter(Boolean);
 }
 
 export const Options = () => {
@@ -260,7 +260,7 @@ export const Options = () => {
                         'x-decorator': 'FormItem',
                         'x-component': 'Variable.TextArea',
                         'x-component-props': {
-                          scope: forgetPasswordVariableOptions,
+                          scope: [...forgetPasswordVariableOptions],
                         },
                         'x-reactions': [
                           {
@@ -301,7 +301,7 @@ export const Options = () => {
                         'x-decorator': 'FormItem',
                         'x-component': 'Variable.RawTextArea',
                         'x-component-props': {
-                          scope: forgetPasswordVariableOptions,
+                          scope: [...forgetPasswordVariableOptions],
                           placeholder: 'Hi,',
                           autoSize: {
                             minRows: 10,
@@ -325,7 +325,7 @@ export const Options = () => {
                         'x-decorator': 'FormItem',
                         'x-component': 'Variable.RawTextArea',
                         'x-component-props': {
-                          scope: forgetPasswordVariableOptions,
+                          scope: [...forgetPasswordVariableOptions],
                           placeholder: 'Hi,',
                           autoSize: {
                             minRows: 10,
