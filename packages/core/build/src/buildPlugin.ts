@@ -386,7 +386,7 @@ export async function buildProPluginServer(cwd: string, userConfig: UserConfig, 
   await buildServerDeps(cwd, serverFiles, log);
 }
 
-export async function buildPluginClient(cwd: string, userConfig: UserConfig, sourcemap: boolean, log: PkgLog) {
+export async function buildPluginClient(cwd: string, userConfig: any, sourcemap: boolean, log: PkgLog, isProPlugin = false) {
   log('build plugin client');
   const packageJson = getPackageJson(cwd);
   const clientFiles = fg.globSync(clientGlobalFiles, { cwd, absolute: true });
@@ -514,31 +514,51 @@ export async function buildPluginClient(cwd: string, userConfig: UserConfig, sou
         {
           test: /\.tsx$/,
           exclude: /[\\/]node_modules[\\/]/,
-          loader: 'builtin:swc-loader',
-          options: {
-            sourceMap: true,
-            jsc: {
-              parser: {
-                syntax: 'typescript',
-                tsx: true,
+          use: [
+            {
+              loader: 'builtin:swc-loader',
+              options: {
+                sourceMap: true,
+                jsc: {
+                  parser: {
+                    syntax: 'typescript',
+                    tsx: true,
+                  },
+                  target: 'es5',
+                },
               },
-              target: 'es5',
             },
-          },
+            {
+              loader: require.resolve('./plugins/pluginRspackCommercialLoader'),
+              options: {
+                isCommercial: isProPlugin
+              }
+            }
+          ]
         },
         {
           test: /\.ts$/,
           exclude: /[\\/]node_modules[\\/]/,
-          loader: 'builtin:swc-loader',
-          options: {
-            sourceMap: true,
-            jsc: {
-              parser: {
-                syntax: 'typescript',
+          use: [
+            {
+              loader: 'builtin:swc-loader',
+              options: {
+                sourceMap: true,
+                jsc: {
+                  parser: {
+                    syntax: 'typescript',
+                  },
+                  target: 'es5',
+                },
               },
-              target: 'es5',
             },
-          },
+            {
+              loader: require.resolve('./plugins/pluginRspackCommercialLoader'),
+              options: {
+                isCommercial: isProPlugin
+              }
+            }
+          ]
         },
       ],
     },
@@ -645,10 +665,11 @@ __webpack_require__.p = (function() {
 }
 
 export async function buildPlugin(cwd: string, userConfig: UserConfig, sourcemap: boolean, log: PkgLog) {
-  await buildPluginClient(cwd, userConfig, sourcemap, log);
-  if (cwd.includes('/pro-plugins') && !cwd.includes('plugin-commercial')) {
+  if (cwd.includes('/pro-plugins/') && !cwd.includes('plugin-commercial')) {
+    await buildPluginClient(cwd, userConfig, sourcemap, log, true);
     await buildProPluginServer(cwd, userConfig, sourcemap, log);
   } else {
+    await buildPluginClient(cwd, userConfig, sourcemap, log);
     await buildPluginServer(cwd, userConfig, sourcemap, log);
   }
   writeExternalPackageVersion(cwd, log);

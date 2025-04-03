@@ -16,26 +16,26 @@ const pluginEsbuildCommercialInject = {
   setup(build) {
 
     build.onLoad({ filter: /src\/index\.ts$/ }, async (args) => {
-      let text = fs.readFileSync(args.path, 'utf8');
+      let source = fs.readFileSync(args.path, 'utf8');
       const regex = /export\s*\{\s*default\s*\}\s*from\s*(?:'([^']*)'|"([^"]*)");?/; // match: export { default } from './plugin';
-      const match = text.match(regex);
+      const match = source.match(regex);
       if (match) {
-        text = text.replace(regex, ``);
+        source = source.replace(regex, ``);
         const moduleName = match[1] || match[2];
-        text = 
+        source = 
 `
 import { withCommercial } from '@nocobase/plugin-for-commercial/server';
 import _plugin from '${moduleName}';
 export default withCommercial(_plugin);
-${text}
+${source}
 `;
-        console.log(`${args.path} insert commercial server code`);
+        console.log(`Insert commercial server code success`);
       } else {
-        console.error(`${args.path} can't insert commercial code`);
+        console.error(`Insert commercial server code fail`);
       }
 
       return {
-        contents: text,
+        contents: source,
         loader: 'ts',
       }
     })
