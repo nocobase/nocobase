@@ -15,6 +15,7 @@ eventManager.on('button:event1', async (ctx) => {
     data: ctx,
   });
   console.log('对话框结果:', result);
+  console.log('ctx', ctx);
 });
 
 // 监听第二个事件 - 显示通知
@@ -25,20 +26,21 @@ eventManager.on('button:event2', async (ctx) => {
     data: ctx,
   });
   console.log('通知结果:', result);
+  console.log('ctx', ctx);
 });
 
 export default () => {
-  // 处理点击事件 - 同时触发多个事件（异步并行执行）
-  const handleClick = () => {
-    // 触发第一个事件，不等待其完成
-    eventManager.dispatchEvent('button:event1', {
+  // 处理点击事件 - 同时触发多个事件（同步）
+  const handleClick = async () => {
+    // 触发第一个事件，等待完成
+    await eventManager.dispatchEvent('button:event1', {
       payload: {
         eventId: 'event1',
       },
     });
 
-    // 立即触发第二个事件，不等待第一个事件完成
-    eventManager.dispatchEvent('button:event2', {
+    // 完成第一个事件后，触发第二个事件
+    await eventManager.dispatchEvent('button:event2', {
       payload: {
         eventId: 'event2',
       },
