@@ -74,6 +74,7 @@ export default defineCollection({
           },
         },
       },
+      onDelete: 'SET NULL',
     },
     {
       type: 'integer',
