@@ -68,7 +68,7 @@ describe('xlsx importer', () => {
         workbook: template,
       });
 
-      await expect(importer.validate()).rejects.toThrow('No data to import');
+      await expect(importer.validate(null)).rejects.toThrow('No data to import');
     });
 
     it('should pass validation when file has header and data rows', async () => {
@@ -104,7 +104,7 @@ describe('xlsx importer', () => {
       let error;
 
       try {
-        await importer.validate();
+        await importer.validate(null);
       } catch (e) {
         error = e;
       }
@@ -1457,7 +1457,7 @@ describe('xlsx importer', () => {
 
     let error;
     try {
-      await importer.validate();
+      await importer.validate(null);
     } catch (e) {
       error = e;
     }
@@ -1520,7 +1520,7 @@ describe('xlsx importer', () => {
 
     let error;
     try {
-      await importer.getData();
+      await importer.getData(null);
     } catch (e) {
       error = e;
     }
@@ -2154,5 +2154,75 @@ describe('xlsx importer', () => {
     await importer.run();
 
     expect(await Post.repository.count()).toBe(1);
+  });
+
+  it('should filter no permission columns', async () => {
+    const User = app.db.collection({
+      name: 'users',
+      fields: [
+        {
+          type: 'string',
+          name: 'name',
+        },
+        {
+          type: 'string',
+          name: 'email',
+        },
+      ],
+    });
+
+    await app.db.sync();
+
+    const templateCreator = new TemplateCreator({
+      collection: User,
+      explain: 'test',
+      columns: [
+        {
+          dataIndex: ['name'],
+          defaultTitle: '姓名',
+        },
+        {
+          dataIndex: ['email'],
+          defaultTitle: '邮箱',
+        },
+      ],
+    });
+
+    const template = (await templateCreator.run({ returnXLSXWorkbook: true })) as XLSX.WorkBook;
+
+    const worksheet = template.Sheets[template.SheetNames[0]];
+
+    XLSX.utils.sheet_add_aoa(worksheet, [['User1', 'test@test.com']], {
+      origin: 'A3',
+    });
+
+    const importer = new XlsxImporter({
+      collectionManager: app.mainDataSource.collectionManager,
+      collection: User,
+      explain: 'test',
+      columns: [
+        {
+          dataIndex: ['name'],
+          defaultTitle: '姓名',
+        },
+        {
+          dataIndex: ['email'],
+          defaultTitle: '邮箱',
+        },
+      ],
+      workbook: template,
+    });
+    await importer.run({
+      context: {
+        permission: {
+          can: { params: { fields: ['name'] } },
+        },
+      },
+    });
+
+    expect(await User.repository.count()).toBe(1);
+    const user = await User.repository.findOne();
+    expect(user.get('name')).toBe('User1');
+    expect(user.get('email')).not.exist;
   });
 });
