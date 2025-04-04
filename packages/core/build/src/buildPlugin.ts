@@ -665,7 +665,8 @@ __webpack_require__.p = (function() {
 }
 
 export async function buildPlugin(cwd: string, userConfig: UserConfig, sourcemap: boolean, log: PkgLog) {
-  if (cwd.includes('/pro-plugins/') && !cwd.includes('plugin-commercial')) {
+  log('buildPlugin', process.cwd(), cwd, fs.existsSync(path.join(process.cwd(), 'packages/pro-plugins')));
+  if (cwd.includes('/pro-plugins/') && !cwd.includes('plugin-commercial') && fs.existsSync(path.join(process.cwd(), 'packages/pro-plugins/@nocobase/plugin-commercial'))) {
     await buildPluginClient(cwd, userConfig, sourcemap, log, true);
     await buildProPluginServer(cwd, userConfig, sourcemap, log);
   } else {
