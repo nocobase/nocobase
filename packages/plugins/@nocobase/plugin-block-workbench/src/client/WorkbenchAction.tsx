@@ -8,10 +8,18 @@
  */
 
 import { useFieldSchema } from '@formily/react';
-import { Action, Icon, useCompile, useComponent, withDynamicSchemaProps, ACLActionProvider } from '@nocobase/client';
+import {
+  Action,
+  Icon,
+  useComponent,
+  withDynamicSchemaProps,
+  ACLActionProvider,
+  NAMESPACE_UI_SCHEMA,
+} from '@nocobase/client';
 import { Avatar } from 'antd';
 import { createStyles } from 'antd-style';
 import React, { useContext } from 'react';
+import { useTranslation } from 'react-i18next';
 import { WorkbenchBlockContext } from './WorkbenchBlock';
 import { WorkbenchLayout } from './workbenchBlockSettings';
 
@@ -43,8 +51,8 @@ function Button() {
   const backgroundColor = fieldSchema['x-component-props']?.['iconColor'];
   const { layout } = useContext(WorkbenchBlockContext);
   const { styles, cx } = useStyles();
-  const compile = useCompile();
-  const title = compile(fieldSchema.title);
+  const { t } = useTranslation();
+  const title = t(fieldSchema.title, { ns: NAMESPACE_UI_SCHEMA });
   return layout === WorkbenchLayout.Grid ? (
     <div title={title} className={cx(styles.avatar)}>
       <Avatar style={{ backgroundColor }} size={48} icon={<Icon type={icon} />} />

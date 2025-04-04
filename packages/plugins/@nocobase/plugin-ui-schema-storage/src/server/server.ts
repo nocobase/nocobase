@@ -9,6 +9,8 @@
 
 import { MagicAttributeModel } from '@nocobase/database';
 import { Plugin } from '@nocobase/server';
+import PluginLocalizationServer from '@nocobase/plugin-localization';
+import { tval } from '@nocobase/utils';
 import { uid } from '@nocobase/utils';
 import path, { resolve } from 'path';
 import { uiSchemaActions } from './actions/ui-schema-action';
@@ -16,6 +18,17 @@ import { UiSchemaModel } from './model';
 import UiSchemaRepository from './repository';
 import { ServerHooks } from './server-hooks';
 import { ServerHookModel } from './server-hooks/model';
+
+function extractFields(obj) {
+  return [
+    obj.title,
+    obj.description,
+    obj['x-component-props']?.title,
+    obj['x-component-props']?.description,
+    obj['x-decorator-props']?.title,
+    obj['x-decorator-props']?.description,
+  ].filter((value) => value !== undefined); // 过滤掉 undefined 值
+}
 
 export class PluginUISchemaStorageServer extends Plugin {
   serverHooks: ServerHooks;
@@ -28,6 +41,7 @@ export class PluginUISchemaStorageServer extends Plugin {
 
   async beforeLoad() {
     const db = this.app.db;
+    const pm = this.app.pm;
 
     this.serverHooks = new ServerHooks(db);
 
@@ -49,6 +63,19 @@ export class PluginUISchemaStorageServer extends Plugin {
       if (!model.get('name')) {
         model.set('name', uid());
       }
+    });
+
+    db.on('uiSchemas.afterSave', async function setUid(model, options) {
+      const localizationPlugin = pm.get('localization') as PluginLocalizationServer;
+      const texts = [];
+      const changedFields = extractFields(model.toJSON());
+      if (!changedFields.length) {
+        return;
+      }
+      changedFields.forEach((field) => {
+        texts.push({ text: field, module: `resources.ui-schema-storage` });
+      });
+      await localizationPlugin?.addNewTexts?.(texts, options);
     });
 
     db.on('uiSchemas.afterCreate', async function insertSchema(model, options) {
