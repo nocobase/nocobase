@@ -32,5 +32,9 @@ export default defineCollection({
       type: 'string',
       defaultValue: 'text',
     },
+    {
+      name: 'title',
+      type: 'string',
+    },
   ],
 });

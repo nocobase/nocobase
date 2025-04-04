@@ -79,6 +79,7 @@ export default {
         messageId: row.messageId,
         role: row.role,
         content: {
+          title: row.title,
           content: row.content,
           type: row.type,
         },
@@ -86,19 +87,30 @@ export default {
       await next();
     },
     async sendMessages(ctx: Context, next: Next) {
+      ctx.set({
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache',
+        Connection: 'keep-alive',
+      });
       const { sessionId, aiEmployee, messages } = ctx.action.params.values || {};
       if (!sessionId) {
-        ctx.throw(400);
+        ctx.res.write(`data: ${JSON.stringify({ type: 'error', body: 'sessionId is required' })}\n\n`);
+        ctx.res.end();
+        return next();
       }
       const userMessage = messages.find((message: any) => message.role === 'user');
       if (!userMessage) {
-        ctx.throw(400);
+        ctx.res.write(`data: ${JSON.stringify({ type: 'error', body: 'user message is required' })}\n\n`);
+        ctx.res.end();
+        return next();
       }
       const conversation = await ctx.db.getRepository('aiConversations').findOne({
         filterByTk: sessionId,
       });
       if (!conversation) {
-        ctx.throw(400);
+        ctx.res.write(`data: ${JSON.stringify({ type: 'error', body: 'conversation not found' })}\n\n`);
+        ctx.res.end();
+        return next();
       }
       const employee = await ctx.db.getRepository('aiEmployees').findOne({
         filter: {
@@ -106,11 +118,16 @@ export default {
         },
       });
       if (!employee) {
-        ctx.throw(400);
+        ctx.res.write(`data: ${JSON.stringify({ type: 'error', body: 'AI employee not found' })}\n\n`);
+        ctx.res.end();
+        return next();
       }
       const modelSettings = employee.modelSettings;
       if (!modelSettings?.llmService) {
-        ctx.throw(500);
+        ctx.log.error('llmService not configured');
+        ctx.res.write(`data: ${JSON.stringify({ type: 'error', body: 'Chat error warning' })}\n\n`);
+        ctx.res.end();
+        return next();
       }
       const service = await ctx.db.getRepository('llmServices').findOne({
         filter: {
@@ -118,12 +135,18 @@ export default {
         },
       });
       if (!service) {
-        ctx.throw(500);
+        ctx.log.error('llmService not found');
+        ctx.res.write(`data: ${JSON.stringify({ type: 'error', body: 'Chat error warning' })}\n\n`);
+        ctx.res.end();
+        return next();
       }
       const plugin = ctx.app.pm.get('ai') as PluginAIServer;
       const providerOptions = plugin.aiManager.llmProviders.get(service.provider);
       if (!providerOptions) {
-        ctx.throw(500);
+        ctx.log.error('llmService provider not found');
+        ctx.res.write(`data: ${JSON.stringify({ type: 'error', body: 'Chat error warning' })}\n\n`);
+        ctx.res.end();
+        return next();
       }
 
       try {
@@ -133,17 +156,15 @@ export default {
             role: message.role,
             content: message.content.content,
             type: message.content.type,
+            title: message.content.title,
           })),
         });
       } catch (err) {
         ctx.log.error(err);
-        ctx.throw(500);
+        ctx.res.write(`data: ${JSON.stringify({ type: 'error', body: 'Chat error warning' })}\n\n`);
+        ctx.res.end();
+        return next();
       }
-      ctx.set({
-        'Content-Type': 'text/event-stream',
-        'Cache-Control': 'no-cache',
-        Connection: 'keep-alive',
-      });
       ctx.status = 200;
       const userMessages = [];
       for (const msg of messages) {
@@ -177,7 +198,15 @@ export default {
           messages: msgs,
         },
       });
-      const stream = await provider.stream();
+      let stream: any;
+      try {
+        stream = await provider.stream();
+      } catch (err) {
+        ctx.log.error(err);
+        ctx.res.write(`data: ${JSON.stringify({ type: 'error', body: 'Chat error warning' })}\n\n`);
+        ctx.res.end();
+        return next();
+      }
       let message = '';
       for await (const chunk of stream) {
         if (!chunk.content) {
@@ -195,7 +224,7 @@ export default {
         },
       });
       ctx.res.end();
-      // await next();
+      await next();
     },
   },
 };

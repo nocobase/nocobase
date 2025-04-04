@@ -11,14 +11,7 @@ import React, { useContext } from 'react';
 import { createContext } from 'react';
 import { ChatBoxProvider } from './chatbox/ChatBoxProvider';
 import { useAPIClient, useRequest } from '@nocobase/client';
-
-export type AIEmployee = {
-  username: string;
-  nickname?: string;
-  avatar?: string;
-  bio?: string;
-  greeting?: string;
-};
+import { AIEmployee } from './types';
 
 export const AIEmployeesContext = createContext<{
   aiEmployees: AIEmployee[];

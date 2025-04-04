@@ -16,9 +16,14 @@ import { LLMInstruction } from './workflow/nodes/llm';
 import { AIEmployeeInstruction } from './workflow/nodes/employee';
 import { tval } from '@nocobase/utils/client';
 import { namespace } from './locale';
-import { configureAIEmployees } from './ai-employees/initializer/ConfigureAIEmployees';
+import { detailsAIEmployeesInitializer, formAIEmployeesInitializer } from './ai-employees/initializer/AIEmployees';
 import { aiEmployeeButtonSettings } from './ai-employees/settings/AIEmployeeButton';
+import { useDetailsAIEmployeeChatContext, useFormAIEmployeeChatContext } from './ai-employees/useBlockChatContext';
 const { AIEmployeesProvider } = lazy(() => import('./ai-employees/AIEmployeesProvider'), 'AIEmployeesProvider');
+const { AIEmployeeChatProvider } = lazy(
+  () => import('./ai-employees/AIEmployeeChatProvider'),
+  'AIEmployeeChatProvider',
+);
 const { Employees } = lazy(() => import('./ai-employees/manager/Employees'), 'Employees');
 const { LLMServices } = lazy(() => import('./llm-services/LLMServices'), 'LLMServices');
 const { MessagesSettings } = lazy(() => import('./chat-settings/Messages'), 'MessagesSettings');
@@ -39,6 +44,11 @@ export class PluginAIClient extends Plugin {
     this.app.use(AIEmployeesProvider);
     this.app.addComponents({
       AIEmployeeButton,
+      AIEmployeeChatProvider,
+    });
+    this.app.addScopes({
+      useDetailsAIEmployeeChatContext,
+      useFormAIEmployeeChatContext,
     });
     this.app.pluginSettingsManager.add('ai', {
       icon: 'TeamOutlined',
@@ -58,7 +68,16 @@ export class PluginAIClient extends Plugin {
       Component: LLMServices,
     });
 
-    this.app.schemaInitializerManager.add(configureAIEmployees);
+    this.app.schemaInitializerManager.addItem(
+      'details:configureActions',
+      'enableActions.aiEmployees',
+      detailsAIEmployeesInitializer,
+    );
+    this.app.schemaInitializerManager.addItem(
+      'createForm:configureActions',
+      'enableActions.aiEmployees',
+      formAIEmployeesInitializer,
+    );
     this.app.schemaSettingsManager.add(aiEmployeeButtonSettings);
 
     this.aiManager.registerLLMProvider('openai', openaiProviderOptions);

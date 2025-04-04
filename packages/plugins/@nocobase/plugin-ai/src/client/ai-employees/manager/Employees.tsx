@@ -8,7 +8,7 @@
  */
 
 import React, { createContext, useContext, useMemo } from 'react';
-import { Card, Row, Col, Avatar, Input, Space, Button, Tabs, App, Spin, Empty } from 'antd';
+import { Card, Row, Col, Avatar, Input, Space, Button, Tabs, App, Spin, Empty, Typography } from 'antd';
 import {
   CollectionRecordProvider,
   SchemaComponent,
@@ -311,6 +311,7 @@ const useEditActionProps = () => {
 
 export const Employees: React.FC = () => {
   const t = useT();
+  const { message, modal } = App.useApp();
   const { token } = useToken();
   const api = useAPIClient();
   const { data, loading, refresh } = useRequest<
@@ -326,6 +327,20 @@ export const Employees: React.FC = () => {
       .list()
       .then((res) => res?.data?.data),
   );
+
+  const del = (username: string) => {
+    modal.confirm({
+      title: t('Delete AI employee'),
+      content: t('Are you sure to delete this employee?'),
+      onOk: async () => {
+        await api.resource('aiEmployees').destroy({
+          filterByTk: username,
+        });
+        message.success(t('Deleted successfully'));
+        refresh();
+      },
+    });
+  };
 
   return (
     <EmployeeContext.Provider value={{ refresh }}>
@@ -456,13 +471,21 @@ export const Employees: React.FC = () => {
                         },
                       }}
                     />,
-                    <DeleteOutlined key="delete" />,
+                    <DeleteOutlined key="delete" onClick={() => del(employee.username)} />,
                   ]}
                 >
                   <Meta
                     avatar={employee.avatar ? <Avatar src={avatars(employee.avatar)} /> : null}
                     title={employee.nickname}
-                    description={employee.bio}
+                    description={
+                      <Typography.Paragraph
+                        style={{ height: token.fontSize * token.lineHeight * 3 }}
+                        ellipsis={{ rows: 3 }}
+                        type="secondary"
+                      >
+                        {employee.bio}
+                      </Typography.Paragraph>
+                    }
                   />
                 </Card>
               </Col>

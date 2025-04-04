@@ -10,8 +10,6 @@
 import React, { useContext } from 'react';
 import { Avatar, Tag, Popover, Divider, Button } from 'antd';
 import { avatars } from '../avatars';
-import { ChatBoxContext } from '../chatbox/ChatBoxProvider';
-import { AIEmployee } from '../AIEmployeesProvider';
 import {
   SortableItem,
   useBlockContext,
@@ -19,26 +17,64 @@ import {
   useSchemaToolbarRender,
   useToken,
   useVariables,
+  withDynamicSchemaProps,
 } from '@nocobase/client';
 import { useFieldSchema } from '@formily/react';
 import { useT } from '../../locale';
 import { css } from '@emotion/css';
-import { useForm } from '@formily/react';
+import { useAIEmployeeChatContext } from '../AIEmployeeChatProvider';
+import { ChatBoxContext } from '../chatbox/ChatBoxContext';
+import { AIEmployee } from '../types';
+
+async function replaceVariables(template, variables, localVariables = {}) {
+  const regex = /\{\{\s*(.*?)\s*\}\}/g;
+  let result = template;
+
+  const matches = [...template.matchAll(regex)];
+
+  if (matches.length === 0) {
+    return template;
+  }
+
+  for (const match of matches) {
+    const fullMatch = match[0];
+
+    try {
+      let value = await variables?.parseVariable(fullMatch, localVariables).then(({ value }) => value);
+
+      if (typeof value !== 'string') {
+        try {
+          value = JSON.stringify(value);
+        } catch (error) {
+          console.error(error);
+        }
+      }
+
+      if (value) {
+        result = result.replace(fullMatch, value);
+      }
+    } catch (error) {
+      console.error(error);
+    }
+  }
+
+  return result;
+}
 
 export const AIEmployeeButton: React.FC<{
   aiEmployee: AIEmployee;
-  extraInfo?: string;
-}> = ({ aiEmployee, extraInfo }) => {
+  taskDesc?: string;
+  attachments: string[];
+  actions: string[];
+}> = withDynamicSchemaProps(({ aiEmployee, taskDesc, attachments: selectedAttachments, actions: selectedActions }) => {
   const t = useT();
-  const { setOpen, send, setAttachments, setFilterEmployee, setCurrentConversation, setActions } =
-    useContext(ChatBoxContext);
+  const { setOpen, send, setAttachments, setFilterEmployee, setActions, clear } = useContext(ChatBoxContext);
   const { token } = useToken();
   const fieldSchema = useFieldSchema();
   const { render } = useSchemaToolbarRender(fieldSchema);
   const variables = useVariables();
   const localVariables = useLocalVariables();
-  const { name: blockType } = useBlockContext() || {};
-  const form = useForm();
+  const { attachments, actions } = useAIEmployeeChatContext();
 
   return (
     <SortableItem
@@ -46,43 +82,42 @@ export const AIEmployeeButton: React.FC<{
         position: 'relative',
       }}
       onClick={async () => {
+        clear();
         setOpen(true);
-        setCurrentConversation(undefined);
         setFilterEmployee(aiEmployee.username);
-        setAttachments([]);
-        setActions([]);
-        const messages = [];
-        if (blockType === 'form') {
-          console.log(fieldSchema.parent.parent.toJSON());
-          setAttachments((prev) => [
-            ...prev,
-            {
-              type: 'uiSchema',
-              content: fieldSchema.parent.parent['x-uid'],
-            },
-          ]);
-          setActions([
-            {
-              content: 'Fill form',
-              onClick: (content) => {
-                try {
-                  const values = content.replace('```json', '').replace('```', '');
-                  form.setValues(JSON.parse(values));
-                } catch (error) {
-                  console.log(error);
-                }
-              },
-            },
-          ]);
+        if (selectedAttachments && selectedAttachments.length) {
+          setAttachments((prev) => {
+            const newAttachments = selectedAttachments.map((name: string) => {
+              const attachment = attachments[name];
+              return {
+                type: attachment.type,
+                title: attachment.title,
+                content: attachment.content,
+              };
+            });
+            return [...prev, ...newAttachments];
+          });
         }
-        let message = fieldSchema['x-component-props']?.message;
+        if (selectedActions && selectedActions.length) {
+          setActions((prev) => {
+            const newActions = selectedActions.map((name: string) => {
+              const action = actions[name];
+              return {
+                icon: action.icon,
+                content: action.title,
+                onClick: action.action,
+              };
+            });
+            return [...prev, ...newActions];
+          });
+        }
+        const messages = [];
+        const message = fieldSchema['x-component-props']?.message;
         if (message) {
-          message = await variables
-            ?.parseVariable(fieldSchema['x-component-props']?.message, localVariables)
-            .then(({ value }) => value);
+          const content = await replaceVariables(message.content, variables, localVariables);
           messages.push({
-            type: 'text',
-            content: message,
+            type: message.type || 'text',
+            content,
           });
         }
         send({
@@ -134,7 +169,7 @@ export const AIEmployeeButton: React.FC<{
               {t('Bio')}
             </Divider>
             <p>{aiEmployee.bio}</p>
-            {extraInfo && (
+            {taskDesc && (
               <>
                 <Divider
                   orientation="left"
@@ -143,9 +178,9 @@ export const AIEmployeeButton: React.FC<{
                     fontStyle: 'italic',
                   }}
                 >
-                  {t('Extra information')}
+                  {t('Task description')}
                 </Divider>
-                <p>{extraInfo}</p>
+                <p>{taskDesc}</p>
               </>
             )}
           </div>
@@ -164,4 +199,4 @@ export const AIEmployeeButton: React.FC<{
       {render()}
     </SortableItem>
   );
-};
+});

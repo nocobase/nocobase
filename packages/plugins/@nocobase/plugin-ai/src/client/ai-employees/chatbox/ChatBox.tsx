@@ -7,29 +7,24 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useContext, useEffect, useState } from 'react';
-import { Layout, Card, Divider, Button, Avatar, List, Input, Popover, Empty, Spin, Modal, Tag } from 'antd';
-import { Conversations, Sender, Attachments, Bubble } from '@ant-design/x';
+import React, { useContext, useState } from 'react';
+import { Layout, Card, Divider, Button, Avatar, List, Input, Popover, Empty, Spin, App } from 'antd';
+import { Conversations, Sender, Bubble } from '@ant-design/x';
 import type { ConversationsProps } from '@ant-design/x';
-import {
-  CloseOutlined,
-  ExpandOutlined,
-  EditOutlined,
-  LayoutOutlined,
-  DeleteOutlined,
-  BuildOutlined,
-} from '@ant-design/icons';
-import { useAPIClient, useRequest, useToken } from '@nocobase/client';
+import { CloseOutlined, ExpandOutlined, EditOutlined, LayoutOutlined, DeleteOutlined } from '@ant-design/icons';
+import { useAPIClient, useToken } from '@nocobase/client';
 import { useT } from '../../locale';
-import { ChatBoxContext } from './ChatBoxProvider';
 const { Header, Footer, Sider, Content } = Layout;
 import { avatars } from '../avatars';
-import { AIEmployee, AIEmployeesContext, useAIEmployeesContext } from '../AIEmployeesProvider';
+import { useAIEmployeesContext } from '../AIEmployeesProvider';
 import { css } from '@emotion/css';
 import { ReactComponent as EmptyIcon } from '../empty-icon.svg';
 import { Attachment } from './Attachment';
+import { ChatBoxContext } from './ChatBoxContext';
+import { AIEmployee } from '../types';
 
 export const ChatBox: React.FC = () => {
+  const { modal, message } = App.useApp();
   const api = useAPIClient();
   const {
     send,
@@ -46,6 +41,9 @@ export const ChatBox: React.FC = () => {
     setAttachments,
     responseLoading,
     senderRef,
+    senderValue,
+    setSenderValue,
+    clear,
   } = useContext(ChatBoxContext);
   const { loading: ConversationsLoading, data: conversationsRes } = conversationsService;
   const {
@@ -54,7 +52,7 @@ export const ChatBox: React.FC = () => {
   } = useAIEmployeesContext();
   const t = useT();
   const { token } = useToken();
-  const [showConversations, setShowConversations] = useState(true);
+  const [showConversations, setShowConversations] = useState(false);
   const aiEmployeesList = [{ username: 'all' } as AIEmployee, ...(aiEmployees || [])];
   const conversations: ConversationsProps['items'] = (conversationsRes || []).map((conversation) => ({
     key: conversation.sessionId,
@@ -66,9 +64,9 @@ export const ChatBox: React.FC = () => {
     await api.resource('aiConversations').destroy({
       filterByTk: sessionId,
     });
+    message.success(t('Deleted successfully'));
     conversationsService.refresh();
-    setCurrentConversation(undefined);
-    setMessages([]);
+    clear();
   };
 
   const getMessages = async (sessionId: string) => {
@@ -132,7 +130,7 @@ export const ChatBox: React.FC = () => {
                   </Button>
                 ) : (
                   <Popover
-                    placement="bottomLeft"
+                    placement="rightTop"
                     content={
                       <div
                         style={{
@@ -185,7 +183,10 @@ export const ChatBox: React.FC = () => {
                         padding: 0;
                         ${highlight}
                       `}
-                      onClick={() => setFilterEmployee(aiEmployee.username)}
+                      onClick={() => {
+                        clear();
+                        setFilterEmployee(aiEmployee.username);
+                      }}
                     >
                       <Avatar src={avatars(aiEmployee.avatar)} shape="square" size={40} />
                     </Button>
@@ -237,7 +238,7 @@ export const ChatBox: React.FC = () => {
                         onClick: ({ key }) => {
                           switch (key) {
                             case 'delete':
-                              Modal.confirm({
+                              modal.confirm({
                                 title: t('Delete this conversation?'),
                                 content: t('Are you sure to delete this conversation?'),
                                 onOk: () => deleteConversation(conversation.key),
@@ -279,11 +280,7 @@ export const ChatBox: React.FC = () => {
                     icon={<EditOutlined />}
                     type="text"
                     onClick={() => {
-                      setCurrentConversation(undefined);
-                      setMessages([]);
-                      senderRef.current?.focus({
-                        cursor: 'start',
-                      });
+                      clear();
                     }}
                   />
                 ) : null}
@@ -301,6 +298,7 @@ export const ChatBox: React.FC = () => {
               style={{
                 margin: '16px 0',
                 overflow: 'auto',
+                position: 'relative',
               }}
             >
               {messages?.length ? (
@@ -314,10 +312,11 @@ export const ChatBox: React.FC = () => {
               ) : (
                 <div
                   style={{
+                    position: 'absolute',
                     width: '64px',
-                    margin: '0 auto',
-                    marginTop: '50%',
-                    transform: 'translateY(-50%)',
+                    top: '50%',
+                    left: '50%',
+                    transform: 'translate(-50%, -50%)',
                   }}
                 >
                   <EmptyIcon />
@@ -331,7 +330,11 @@ export const ChatBox: React.FC = () => {
               }}
             >
               <Sender
+                value={senderValue}
                 ref={senderRef}
+                onChange={(value) => {
+                  setSenderValue(value);
+                }}
                 onSubmit={(content) =>
                   send({
                     sessionId: currentConversation,

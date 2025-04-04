@@ -10,25 +10,20 @@
 import React from 'react';
 import { Tag } from 'antd';
 import { BuildOutlined } from '@ant-design/icons';
-
-export type AttachmentType = 'image' | 'uiSchema';
-export type AttachmentProps = {
-  type: AttachmentType;
-  content: string;
-};
+import { AttachmentProps } from '../types';
 
 export const Attachment: React.FC<
   AttachmentProps & {
     closeable?: boolean;
     onClose?: () => void;
   }
-> = ({ type, content, closeable, onClose }) => {
+> = ({ type, title, content, closeable, onClose }) => {
   let prefix: React.ReactNode;
   switch (type) {
     case 'uiSchema':
       prefix = (
         <>
-          <BuildOutlined /> UI Schema {'>'}{' '}
+          <BuildOutlined /> {title} {'>'}{' '}
         </>
       );
       break;
