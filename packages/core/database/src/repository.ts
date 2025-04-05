@@ -675,7 +675,7 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
       }
     }
 
-    return instances.map((x) => x.toJSON());
+    return instances;
   }
 
   @transaction()

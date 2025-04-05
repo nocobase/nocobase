@@ -45,11 +45,6 @@ export class Model<TModelAttributes extends {} = any, TCreationAttributes extend
     return this.constructor.database;
   }
 
-  public override get<K extends keyof this>(key: K, options?: { plain?: boolean; clone?: boolean }): this[K] {
-    const value = super.get(key, options);
-    return this.db.dialect.parseModelValue(key, value);
-  }
-
   static async sync(options) {
     const runner = new SyncRunner(this);
     return await runner.runSync(options);

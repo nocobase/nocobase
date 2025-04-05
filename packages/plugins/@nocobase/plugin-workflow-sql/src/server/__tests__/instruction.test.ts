@@ -289,7 +289,7 @@ describe('workflow > instructions > sql', () => {
       const [job] = await execution.getJobs();
       expect(job.result.length).toBe(1);
       // @ts-ignore
-      expect(job.result[0].id).toBe(post.id);
+      expect(db.options.dialect === 'mssql' ? Number(job.result[0].id) : job.result[0].id).toBe(post.id);
     });
   });
 
