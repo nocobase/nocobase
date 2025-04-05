@@ -29,7 +29,7 @@ export type NocoBaseInputProps = InputProps & {
 };
 
 function InputInner(props: NocoBaseInputProps) {
-  const { onChange, trim } = props;
+  const { onChange, trim, ...others } = props;
   const handleChange = useCallback(
     (ev: React.ChangeEvent<HTMLInputElement>) => {
       if (trim) {
@@ -39,7 +39,7 @@ function InputInner(props: NocoBaseInputProps) {
     },
     [onChange, trim],
   );
-  return <AntdInput {...props} onChange={handleChange} />;
+  return <AntdInput {...others} onChange={handleChange} />;
 }
 
 export const Input: ComposedInput = Object.assign(
