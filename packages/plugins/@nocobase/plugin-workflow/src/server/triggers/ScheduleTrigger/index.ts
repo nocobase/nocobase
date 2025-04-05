@@ -68,7 +68,7 @@ export default class ScheduleTrigger extends Trigger {
   // }
 
   validateContext(values) {
-    if (!values?.mode) {
+    if (values?.mode == null) {
       return {
         mode: 'Mode is required',
       };
