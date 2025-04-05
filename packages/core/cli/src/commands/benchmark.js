@@ -20,8 +20,9 @@ module.exports = (cli) => {
   return (
     cli
       .command('benchmark')
+      .description('Run benchmark tests')
       // .option('--single-thread [singleThread]')
-      .option('--all -a [all]')
+      .option('-a, --all [all]', 'Run all benchmark files which ends with .benchmark.{js,ts}')
       .arguments('[paths...]')
       .allowUnknownOption()
       .action(async (paths, opts) => {
@@ -30,16 +31,16 @@ module.exports = (cli) => {
 
         const cliArgs = ['--max_old_space_size=14096'];
 
-        if (process.argv.includes('-h') || process.argv.includes('--help')) {
-          await run('node', cliArgs);
-          return;
-        }
+        // if (process.argv.includes('-h') || process.argv.includes('--help')) {
+        //   await run('node', cliArgs);
+        //   return;
+        // }
 
-        if (!opts.singleThread) {
-          process.argv.splice(process.argv.indexOf('--single-thread=false'), 1);
-        } else {
-          process.argv.push('--poolOptions.threads.singleThread=true');
-        }
+        // if (!opts.singleThread) {
+        //   process.argv.splice(process.argv.indexOf('--single-thread=false'), 1);
+        // } else {
+        //   process.argv.push('--poolOptions.threads.singleThread=true');
+        // }
 
         if (!paths.length) {
           if (opts.all) {
