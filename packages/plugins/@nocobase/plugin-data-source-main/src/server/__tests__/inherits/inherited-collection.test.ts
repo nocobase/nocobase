@@ -14,8 +14,10 @@ import Database, {
   Repository,
 } from '@nocobase/database';
 import Application from '@nocobase/server';
-import { pgOnly } from '@nocobase/test';
+import { isPg } from '@nocobase/test';
 import { createApp } from '..';
+
+const pgOnly = () => (isPg() ? describe : describe.skip);
 
 pgOnly()('Inherited Collection', () => {
   let db: Database;

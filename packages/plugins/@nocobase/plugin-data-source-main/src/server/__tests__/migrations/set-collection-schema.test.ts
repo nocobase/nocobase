@@ -8,9 +8,11 @@
  */
 
 import { Database, MigrationContext } from '@nocobase/database';
-import { MockServer, pgOnly } from '@nocobase/test';
+import { MockServer, isPg } from '@nocobase/test';
 import Migrator from '../../migrations/20230918024546-set-collection-schema';
 import { createApp } from '../index';
+
+const pgOnly = () => (isPg() ? describe : describe.skip);
 
 pgOnly()('set collection schema', () => {
   let app: MockServer;
