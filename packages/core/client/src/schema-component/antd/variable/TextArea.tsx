@@ -10,6 +10,7 @@
 import { css, cx } from '@emotion/css';
 import { useForm } from '@formily/react';
 import { Space, theme } from 'antd';
+import type { CascaderProps, DefaultOptionType } from 'antd/lib/cascader';
 import useInputStyle from 'antd/es/input/style';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { renderToString } from 'react-dom/server';
@@ -110,7 +111,7 @@ function renderHTML(exp: string, keyLabelMap, delimiters: [string, string] = ['{
   });
 }
 
-function createOptionsValueLabelMap(options: any[], fieldNames = { value: 'value', label: 'label' }) {
+function createOptionsValueLabelMap(options: any[], fieldNames: CascaderProps['fieldNames'] = defaultFieldNames) {
   const map = new Map<string, string[]>();
   for (const option of options) {
     map.set(option[fieldNames.value], [option[fieldNames.label]]);
@@ -220,10 +221,24 @@ function useVariablesFromValue(value: string, delimiters: [string, string] = ['{
   }, [value, delimitersString]);
 }
 
-export function TextArea(props) {
+export type TextAreaProps = {
+  value?: string;
+  scope?: Partial<DefaultOptionType>[] | (() => Partial<DefaultOptionType>[]);
+  onChange?(value: string): void;
+  disabled?: boolean;
+  changeOnSelect?: CascaderProps['changeOnSelect'];
+  style?: React.CSSProperties;
+  fieldNames?: CascaderProps['fieldNames'];
+  trim?: boolean;
+  delimiters?: [string, string];
+  addonBefore?: React.ReactNode;
+};
+
+export function TextArea(props: TextAreaProps) {
   const { wrapSSR, hashId, componentCls } = useStyles();
-  const { scope, onChange, changeOnSelect, style, fieldNames, delimiters = ['{{', '}}'], addonBefore } = props;
-  const value = typeof props.value === 'string' ? props.value : props.value == null ? '' : props.value.toString();
+  const { scope, changeOnSelect, style, fieldNames, delimiters = ['{{', '}}'], addonBefore, trim = true } = props;
+  const value =
+    typeof props.value === 'string' ? props.value : props.value == null ? '' : (props.value as any).toString();
   const variables = useVariablesFromValue(value, delimiters);
   const inputRef = useRef<HTMLDivElement>(null);
   const [options, setOptions] = useState([]);
@@ -240,6 +255,14 @@ export function TextArea(props) {
   useInputStyle('ant-input');
   const { token } = theme.useToken();
   const delimitersString = delimiters.join(' ');
+
+  const onChange = useCallback(
+    (target: HTMLDivElement) => {
+      const v = getValue(target, delimiters);
+      props.onChange?.(trim ? v.trim() : v);
+    },
+    [delimitersString, props.onChange, trim],
+  );
 
   useEffect(() => {
     preloadOptions(scope, variables)
@@ -324,9 +347,9 @@ export function TextArea(props) {
 
       setChanged(true);
       setRange(getCurrentRange(current));
-      onChange(getValue(current, delimiters));
+      onChange(current);
     },
-    [keyLabelMap, onChange, range, delimitersString],
+    [keyLabelMap, onChange, range],
   );
 
   const onInput = useCallback(
@@ -336,9 +359,9 @@ export function TextArea(props) {
       }
       setChanged(true);
       setRange(getCurrentRange(currentTarget));
-      onChange(getValue(currentTarget, delimiters));
+      onChange(currentTarget);
     },
-    [ime, onChange, delimitersString],
+    [ime, onChange],
   );
 
   const onBlur = useCallback(function ({ currentTarget }) {
@@ -360,9 +383,9 @@ export function TextArea(props) {
       setIME(false);
       setChanged(true);
       setRange(getCurrentRange(currentTarget));
-      onChange(getValue(currentTarget, delimiters));
+      onChange(currentTarget);
     },
-    [onChange, delimitersString],
+    [onChange],
   );
 
   const onPaste = useCallback(
@@ -393,9 +416,9 @@ export function TextArea(props) {
       setChanged(true);
       pasteHTML(ev.currentTarget, sanitizedHTML);
       setRange(getCurrentRange(ev.currentTarget));
-      onChange(getValue(ev.currentTarget, delimiters));
+      onChange(ev.currentTarget);
     },
-    [onChange, delimitersString],
+    [onChange],
   );
   const disabled = props.disabled || form.disabled;
   return wrapSSR(
