@@ -10,7 +10,7 @@
 import { css } from '@emotion/css';
 import { observer, useFieldSchema } from '@formily/react';
 import React, { useMemo } from 'react';
-import { useCollectionManager_deprecated } from '../../collection-manager';
+import { useCollectionManager_deprecated, useCollection_deprecated } from '../../collection-manager';
 import { useCollectionParentRecordData } from '../../data-source/collection-record/CollectionRecordProvider';
 import { CollectionProvider } from '../../data-source/collection/CollectionProvider';
 import { withDynamicSchemaProps } from '../../hoc/withDynamicSchemaProps';
@@ -27,12 +27,20 @@ import { ArrayCollapse } from './components/LinkageHeader';
 export interface Props {
   dynamicComponent: any;
 }
-
+const transformDefaultValue = (values) => {
+  return values.map((v) => {
+    return {
+      conditionType: 'basic',
+      ...v,
+    };
+  });
+};
 export const FormLinkageRules = withDynamicSchemaProps(
   observer((props: Props) => {
     const fieldSchema = useFieldSchema();
     const { options, defaultValues, collectionName, form, variables, localVariables, record, dynamicComponent } =
       useProps(props); // 新版 UISchema（1.0 之后）中已经废弃了 useProps，这里之所以继续保留是为了兼容旧版的 UISchema
+    const { name } = useCollection_deprecated();
     const { getAllCollectionsInheritChain } = useCollectionManager_deprecated();
     const parentRecordData = useCollectionParentRecordData();
 
@@ -43,7 +51,7 @@ export const FormLinkageRules = withDynamicSchemaProps(
         properties: {
           rules: {
             type: 'array',
-            default: defaultValues,
+            default: transformDefaultValue(defaultValues),
             'x-component': 'ArrayCollapse',
             'x-decorator': 'FormItem',
             'x-component-props': {
@@ -72,6 +80,20 @@ export const FormLinkageRules = withDynamicSchemaProps(
                       'x-content': '{{ t("Condition") }}',
                     },
                     condition: {
+                      'x-component': 'Input', // 仅作为数据存储
+                      'x-hidden': true, // 不显示
+                      'x-reactions': [
+                        {
+                          dependencies: ['.conditionType', '.conditionBasic', '.conditionAdvanced'],
+                          fulfill: {
+                            state: {
+                              value: '{{$deps[0] === "basic" ? $deps[1] : $deps[2]}}',
+                            },
+                          },
+                        },
+                      ],
+                    },
+                    conditionBasic: {
                       'x-component': 'Filter',
                       'x-use-component-props': () => {
                         return {
@@ -83,6 +105,7 @@ export const FormLinkageRules = withDynamicSchemaProps(
                           `,
                         };
                       },
+                      'x-visible': '{{$deps[0] === "basic"}}',
                       'x-component-props': {
                         collectionName,
                         dynamicComponent: (props: DynamicComponentProps) => {
@@ -102,6 +125,38 @@ export const FormLinkageRules = withDynamicSchemaProps(
                           );
                         },
                       },
+                      'x-reactions': [
+                        {
+                          dependencies: ['.conditionType', '.condition'],
+                          fulfill: {
+                            state: {
+                              visible: '{{$deps[0] === "basic"}}',
+                              value: '{{$deps[0] === "basic" ? $deps[1] : undefined}}',
+                            },
+                          },
+                        },
+                      ],
+                    },
+                    conditionAdvanced: {
+                      'x-component': 'LinkageFilter',
+                      'x-visible': '{{$deps[0] === "advanced"}}',
+                      'x-reactions': [
+                        {
+                          dependencies: ['.conditionType', '.condition'],
+                          fulfill: {
+                            state: {
+                              visible: '{{$deps[0] === "advanced"}}',
+                              value: '{{$deps[0] === "advanced" ? $deps[1] : undefined}}',
+                            },
+                          },
+                        },
+                      ],
+                    },
+                    conditionType: {
+                      type: 'string',
+                      'x-component': 'Input',
+                      default: 'advanced',
+                      'x-hidden': true,
                     },
                     actions: {
                       'x-component': 'h4',
@@ -168,10 +223,10 @@ export const FormLinkageRules = withDynamicSchemaProps(
 
     return (
       // 这里使用 SubFormProvider 包裹，是为了让子表格的联动规则中 “当前对象” 的配置显示正确
-      <SubFormProvider value={{ value: null, collection: { name: collectionName } as any }}>
+      <SubFormProvider value={{ value: null, collection: { name: collectionName || name } as any }}>
         <RecordProvider record={record} parent={parentRecordData}>
           <FilterContext.Provider value={value}>
-            <CollectionProvider name={collectionName}>
+            <CollectionProvider name={collectionName || name}>
               <SchemaComponent components={components} schema={schema} />
             </CollectionProvider>
           </FilterContext.Provider>

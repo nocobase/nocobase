@@ -87,6 +87,8 @@ interface BaseProps {
    */
   deprecated?: boolean;
   tooltip?: string;
+  /**支持的操作符 */
+  operators?: any[];
 }
 
 interface BaseVariableProviderProps {
@@ -133,6 +135,8 @@ const getChildren = (
               : isDisabled({ option, collectionField, uiSchema, targetFieldSchema, getCollectionField })),
           isLeaf: true,
           depth,
+          operators: option?.operators,
+          schema: option?.schema,
         };
       }
 
@@ -197,6 +201,7 @@ export const useBaseVariable = ({
   returnFields = (fields) => fields,
   deprecated,
   tooltip,
+  operators = [],
 }: BaseProps) => {
   const compile = useCompile();
   const getFilterOptions = useGetFilterOptions();
@@ -276,6 +281,7 @@ export const useBaseVariable = ({
       children: [],
       disabled: !!deprecated,
       deprecated,
+      operators,
     } as Option;
   }, [uiSchema?.['x-component']]);
 
