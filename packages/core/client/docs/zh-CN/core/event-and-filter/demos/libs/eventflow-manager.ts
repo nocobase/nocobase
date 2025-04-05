@@ -3,8 +3,8 @@ import { observable } from '@formily/reactive';
 import { uid } from '@formily/shared';
 import _ from 'lodash';
 
-export type EventFlowEventHandler = (params: Record<string, any>, context: any) => Promise<void>;
-export type EventFlowActionHandler = (params: Record<string, any>, context: any) => Promise<void>;
+export type EventFlowEventHandler = (params: Record<string, any>, context: any) => Promise<any>;
+export type EventFlowActionHandler = (params: Record<string, any>, context: any) => Promise<any>;
 
 export type EventFlowEventGroupOptions = {
   name: string;

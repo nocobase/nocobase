@@ -1,7 +1,7 @@
 import { Button, Space, Alert, Card, Divider } from 'antd';
 import { EventManager } from '../libs/event-manager';
 import React, { useState } from 'react';
-import openFormDialog from '../actions/open-form-dialog';
+import { openFormDialogAction } from '../actions/open-form-dialog';
 
 async function showFormResult(formData: Record<string, string>) {
   // 触发表单提交成功事件
@@ -16,7 +16,7 @@ async function showFormResult(formData: Record<string, string>) {
 const eventManager = new EventManager();
 // 监听表单提交事件
 eventManager.on('form:submit', async (ctx) => {
-  const formData = await openFormDialog(ctx.payload);
+  const formData = await openFormDialogAction.handler({}, ctx.payload);
   await showFormResult(formData);
 });
 

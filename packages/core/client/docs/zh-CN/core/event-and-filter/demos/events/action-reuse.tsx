@@ -1,11 +1,12 @@
 import React from 'react';
 import { EventManager } from '../libs/event-manager';
-import openDialog from '../actions/open-simple-dialog';
+import { openSimpleDialogAction } from '../actions/open-simple-dialog';
 import { Button, Flex } from 'antd';
 
 const eventManager = new EventManager();
-eventManager.on('button:click', (ctx) => {
-  openDialog(ctx);
+eventManager.on('button:click', async (ctx) => {
+  const result = await openSimpleDialogAction.handler({}, ctx);
+  console.log(`Button ${ctx.source.id} dialog result:`, result);
 });
 
 const Button1 = () => {

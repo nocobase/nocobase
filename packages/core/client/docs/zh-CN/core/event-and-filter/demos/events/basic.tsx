@@ -1,12 +1,13 @@
 import { Button } from 'antd';
 import { EventManager } from '../libs/event-manager';
 import React from 'react';
-import openDialog from '../actions/open-simple-dialog';
+import { openSimpleDialogAction } from '../actions/open-simple-dialog';
 
 // 创建事件管理器实例, 并监听按钮点击事件
 const eventManager = new EventManager();
-eventManager.on('button:click', (ctx) => {
-  openDialog(ctx);
+eventManager.on('button:click', async (ctx) => {
+  const result = await openSimpleDialogAction.handler({}, ctx);
+  console.log('Dialog result:', result);
 });
 
 export default () => {
