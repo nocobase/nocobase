@@ -16,7 +16,7 @@ async function showFormResult(formData: Record<string, string>) {
 const eventManager = new EventManager();
 // 监听表单提交事件
 eventManager.on('form:submit', async (ctx) => {
-  const formData = await openFormDialogAction.handler({}, ctx.payload);
+  const formData = await openFormDialogAction.handler({}, ctx);
   await showFormResult(formData);
 });
 

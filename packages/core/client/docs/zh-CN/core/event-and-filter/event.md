@@ -22,4 +22,7 @@
 
 <code src="./demos/events/multiple-async-events.tsx"></code>
 
-<!-- <code src="./event-demos/eventflow-demo.tsx"></code> -->
+# 事件流顺序执行多个action
+通过EventFlowManager注册事件与多个action，依次执行
+
+<code src="./demos/events/basic-eventflow.tsx"></code>

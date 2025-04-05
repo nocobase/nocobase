@@ -32,7 +32,7 @@ export const openFormDialogAction: EventFlowActionOptions = {
     const { title = '请填写表单', width = 600 } = params;
 
     // 创建初始值，使用context中传入的数据
-    const initialValues = context || {};
+    const initialValues = context?.payload || {};
 
     const formData = await new Promise<Record<string, any>>((resolve) => {
       // 保存表单数据的状态
