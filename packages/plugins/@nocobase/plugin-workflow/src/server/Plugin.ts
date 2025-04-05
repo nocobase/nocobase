@@ -15,7 +15,7 @@ import LRUCache from 'lru-cache';
 
 import { Op } from '@nocobase/database';
 import { Plugin } from '@nocobase/server';
-import { Registry, uid } from '@nocobase/utils';
+import { isJsonString, Registry, uid } from '@nocobase/utils';
 import { SequelizeCollectionManager } from '@nocobase/data-source-manager';
 import { Logger, LoggerOptions } from '@nocobase/logger';
 
@@ -365,6 +365,7 @@ export default class PluginWorkflowServer extends Plugin {
     { silent, transaction }: { silent?: boolean } & Transactionable = {},
   ) {
     const type = workflow.get('type');
+    workflow.config = isJsonString(workflow.config) ? JSON.parse(workflow.config) : workflow.config;
     const trigger = this.triggers.get(type);
     if (!trigger) {
       this.getLogger(workflow.id).error(`trigger type ${workflow.type} of workflow ${workflow.id} is not implemented`);

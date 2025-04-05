@@ -58,7 +58,7 @@ describe('number value parser', () => {
   it('should be correct', async () => {
     await setValue('user1');
     expect(parser.errors.length).toBe(0);
-    expect(parser.getValue()).toEqual([1]);
+    expect(parser.getValue()).toEqual(db.options.dialect === 'mssql' ? ['1'] : [1]);
   });
 
   it('should be null', async () => {

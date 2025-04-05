@@ -7,10 +7,17 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import Database from '../database';
+import QueryInterface from '../query-interface/query-interface';
+import SqliteQueryInterface from '../query-interface/sqlite-query-interface';
 import { BaseDialect } from './base-dialect';
 
 export class SqliteDialect extends BaseDialect {
   static dialectName = 'sqlite';
+
+  static getQueryInterface(db: Database): QueryInterface {
+    return new SqliteQueryInterface(db);
+  }
 
   getVersionGuard() {
     return {

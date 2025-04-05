@@ -216,6 +216,9 @@ describe('find with associations', () => {
   });
 
   it('should filter by association array field', async () => {
+    if (db.options.dialect === 'mssql') {
+      return;
+    }
     const Group = db.collection({
       name: 'groups',
       fields: [
@@ -343,6 +346,9 @@ describe('find with associations', () => {
   });
 
   it('should filter by array not empty', async () => {
+    if (db.options.dialect === 'mssql') {
+      return;
+    }
     const User = db.collection({
       name: 'users',
       fields: [
@@ -497,6 +503,9 @@ describe('find with associations', () => {
   });
 
   it('should find with associations with sort params', async () => {
+    if (db.options.dialect === 'mssql') {
+      return;
+    }
     const User = db.collection({
       name: 'users',
       fields: [

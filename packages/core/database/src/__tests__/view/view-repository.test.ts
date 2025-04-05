@@ -61,6 +61,7 @@ describe('view repository', () => {
         {
           type: 'integer',
           name: 'aaa',
+          primaryKey: db.options.dialect === 'mssql' ? true : undefined,
         },
       ],
     });

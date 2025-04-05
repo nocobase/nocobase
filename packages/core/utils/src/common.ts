@@ -54,3 +54,13 @@ export const hasEmptyValue = (objOrArr: object | any[]) => {
 export const nextTick = (fn: () => void) => {
   setTimeout(fn);
 };
+
+export const isJsonString = (str: string) => {
+  if (!isString(str)) return false;
+  str = str.trim();
+  // no variable
+  if (str.startsWith('{{') && str.endsWith('}}')) {
+    return false;
+  }
+  return (str.startsWith('{') && str.endsWith('}')) || (str.startsWith('[') && str.endsWith(']'));
+};

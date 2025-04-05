@@ -731,10 +731,15 @@ export class UiSchemaRepository extends Repository {
       }
 
       if (nodePosition === 'last') {
+        let isNull = 'ifnull';
+        const dialect = this.database.sequelize.getDialect();
+        if (dialect === 'postgres') {
+          isNull = 'coalesce';
+        } else if (dialect === 'mssql') {
+          isNull = 'ISNULL';
+        }
         const maxSort = await db.sequelize.query(
-          `SELECT ${
-            this.database.sequelize.getDialect() === 'postgres' ? 'coalesce' : 'ifnull'
-          }(MAX(TreeTable.sort), 0) as maxsort FROM ${treeTable} as TreeTable
+          `SELECT ${isNull}(MAX(TreeTable.sort), 0) as maxsort FROM ${treeTable} as TreeTable
                                                         LEFT JOIN ${treeTable} as NodeInfo
                                                                   ON NodeInfo.descendant = TreeTable.descendant and NodeInfo.depth = 0
            WHERE TreeTable.depth = 1 AND TreeTable.ancestor = :ancestor and NodeInfo.type = :type`,
@@ -1085,6 +1090,7 @@ WHERE TreeTable.depth = 1 AND  TreeTable.ancestor = :ancestor and TreeTable.sort
     const db = this.database;
 
     const treeTable = this.uiSchemaTreePathTableName;
+    const isNotTrue = this.database.options.dialect === 'mssql' ? '1' : 'true';
 
     const rawSql = `
         SELECT "SchemaTable"."x-uid" as "x-uid", "SchemaTable"."name" as name, "SchemaTable"."schema" as "schema" ,
@@ -1095,7 +1101,7 @@ WHERE TreeTable.depth = 1 AND  TreeTable.ancestor = :ancestor and TreeTable.sort
                  LEFT JOIN ${treeTable} as NodeInfo ON NodeInfo.descendant = "SchemaTable"."x-uid" and NodeInfo.descendant = NodeInfo.ancestor and NodeInfo.depth = 0
                  LEFT JOIN ${treeTable} as ParentPath ON (ParentPath.descendant = "SchemaTable"."x-uid" AND ParentPath.depth = 1)
         WHERE TreePath.ancestor = :ancestor  ${
-          options?.includeAsyncNode ? '' : 'AND (NodeInfo.async != true or TreePath.depth = 0)'
+          options?.includeAsyncNode ? '' : `AND (NodeInfo.async != ${isNotTrue} or TreePath.depth = 0)`
         }
     `;
 

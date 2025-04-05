@@ -277,17 +277,20 @@ export class EagerLoadingTree {
             throw new Error(`Model ${node.model.name} does not have primary key`);
           }
 
+          const options = {
+            ...this.rootQueryOptions,
+            includeIgnoreAttributes: false,
+            attributes: [primaryKeyField],
+            group: `${node.model.name}.${primaryKeyField}`,
+            transaction,
+            include: processIncludes(includeForFilter, node.model),
+          } as any;
+          if (node.model.database.options.dialect === 'mssql' && options.order) {
+            options.order = null;
+          }
+
           // find all ids
-          const ids = (
-            await node.model.findAll({
-              ...this.rootQueryOptions,
-              includeIgnoreAttributes: false,
-              attributes: [primaryKeyField],
-              group: `${node.model.name}.${primaryKeyField}`,
-              transaction,
-              include: processIncludes(includeForFilter, node.model),
-            } as any)
-          ).map((row) => {
+          const ids = (await node.model.findAll()).map((row) => {
             return { row, pk: row[primaryKeyField] };
           });
 

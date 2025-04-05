@@ -10,8 +10,8 @@
 import lodash from 'lodash';
 import { Collection } from '../collection';
 import sqlParser from '../sql-parser';
-import QueryInterface, { TableInfo } from './query-interface';
-import { Transaction } from 'sequelize';
+import QueryInterface, { ChangeColumnOptions, TableInfo } from './query-interface';
+import { ModelStatic, Transaction } from 'sequelize';
 
 export default class PostgresQueryInterface extends QueryInterface {
   constructor(db) {
@@ -235,5 +235,9 @@ $BODY$
 
   public generateJoinOnForJSONArray(left: string, right: string) {
     return this.db.sequelize.literal(`${left}=any(${right})`);
+  }
+
+  changeColumnDefaultValueSQL(options: ChangeColumnOptions): Promise<string> {
+    return null;
   }
 }
