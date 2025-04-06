@@ -7,7 +7,6 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { ISchema } from '@formily/json-schema';
 import { Resource } from '@nocobase/resourcer';
 import { ComponentProps } from 'react';
 
@@ -15,7 +14,7 @@ import { ComponentProps } from 'react';
 export type FilterFunction = (currentValue: any, ...contextArgs: any[]) => any | Promise<any>;
 
 export interface FilterOptions {
-  priority?: number; // Higher numbers run later
+  sort?: number; // 数值越大运行越靠后，默认为 0
 }
 
 export type UnregisterFunction = () => void;
@@ -32,7 +31,6 @@ export interface EventContext<T = any> {
   // 用于指定接收者信息, 主要用于精准触发事件
   target?: {
     id?: string;
-    uischema?: ISchema;
   };
 
   // 事件相关数据
@@ -51,11 +49,11 @@ export interface EventContext<T = any> {
 }
 
 export interface EventListenerOptions {
-  priority?: number; // 监听器优先级，数值越大优先级越高，默认为 0
+  id?: string; // 监听器唯一标识
+  sort?: number; // 数值越大运行越靠后，默认为 0
   once?: boolean; // 是否只执行一次，默认为 false
   blocking?: boolean; // 是否为阻塞监听器，默认false
-  uischema?: ISchema; // Json Schema，主要用于精准触发事件
-  filter?: (ctx: EventContext, options: EventListenerOptions) => boolean; // 过滤函数
+  condition?: (ctx: EventContext, options: EventListenerOptions) => boolean; // 运行条件
 }
 
 export type EventListener = (context: EventContext) => void | Promise<void>;

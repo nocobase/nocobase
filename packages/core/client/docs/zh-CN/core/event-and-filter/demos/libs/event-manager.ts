@@ -7,6 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { uid } from '@nocobase/utils/client';
 import { EventContext, EventListener, EventListenerOptions, Unsubscriber } from './types';
 
 interface RegisteredListener {
@@ -16,25 +17,15 @@ interface RegisteredListener {
 }
 
 /**
- * Default filter function for event listeners.
+ * Default condition function for event listeners.
  */
-function defaultListenerFilter(ctx: EventContext, options: EventListenerOptions): boolean {
-  // 1. Multicast: No target specified in dispatch? Listener runs.
+export function defaultListenerCondition(ctx: EventContext, options: EventListenerOptions): boolean {
+  // 未指定目标，默认运行
   if (!ctx.target) {
     return true;
   }
 
-  // 2. Unicast: Target specified in dispatch. Check listener options.
-  if (options.uischema) {
-    // Listener has uischema targeting. Run only if target uischema exists and matches.
-    const targetSchema = ctx.target.uischema;
-    // Basic check: both schemas exist and have matching 'x-uid' (example key)
-    return !!(targetSchema && options.uischema['x-uid'] && options.uischema['x-uid'] === targetSchema['x-uid']);
-  } else {
-    // Listener has no specific targeting options defined (like uischema).
-    // Therefore, it should run even for targeted dispatches.
-    return true;
-  }
+  return ctx.target?.id === options?.id;
 }
 
 export class EventManager {
@@ -46,14 +37,13 @@ export class EventManager {
    */
   on(eventName: string | string[], listener: EventListener, options: EventListenerOptions = {}): Unsubscriber {
     const finalOptions: EventListenerOptions = {
-      priority: options.priority ?? 0,
+      sort: options.sort ?? 0,
       once: options.once ?? false,
       blocking: options.blocking ?? false,
-      uischema: options.uischema,
-      filter: options.filter ?? defaultListenerFilter,
+      id: options.id ?? uid(),
+      condition: options.condition ?? defaultListenerCondition,
     };
 
-    // Handle array of event names
     if (Array.isArray(eventName)) {
       const unsubscribers = eventName.map((name) => this.addSingleListener(name, listener, finalOptions));
       return () => unsubscribers.forEach((unsub) => unsub());
@@ -173,23 +163,18 @@ export class EventManager {
     const directListeners = this.listeners.get(eventName) || [];
 
     // Get pattern listeners that might match this event
-    const matchingPatternListeners: RegisteredListener[] = [];
+    const matchingPatternListeners = new Set<RegisteredListener>();
 
     for (const [pattern, listeners] of this.patternListeners.entries()) {
       if (this.patternMatches(pattern, eventName)) {
-        matchingPatternListeners.push(...listeners);
+        listeners.forEach((reg) => matchingPatternListeners.add(reg));
       }
     }
 
-    // Combine and sort all applicable listeners by priority
+    // Combine and sort all applicable listeners by sort
     const allListeners = [...directListeners, ...matchingPatternListeners].sort(
-      (a, b) => (b.options.priority || 0) - (a.options.priority || 0),
+      (a, b) => b.options.sort - a.options.sort,
     );
-
-    // Initialize errors array if needed
-    if (!ctx.results._errors) {
-      ctx.results._errors = [];
-    }
 
     // Execute each listener
     for (const { listener, options } of allListeners) {
@@ -198,8 +183,8 @@ export class EventManager {
         break;
       }
 
-      // Apply filter function to determine if listener should execute
-      if (options.filter && !options.filter(ctx, options)) {
+      // Apply condition function to determine if listener should execute
+      if (options.condition && !options.condition(ctx, options)) {
         continue;
       }
 
@@ -217,6 +202,10 @@ export class EventManager {
           this.off(eventName, listener);
         }
       } catch (error) {
+        // Initialize errors array if needed
+        if (!ctx.results._errors) {
+          ctx.results._errors = [];
+        }
         // Add context to the error
         const contextualizedError = new Error(`Event listener error for '${eventName}': ${error.message}`);
         (contextualizedError as any).originalError = error;

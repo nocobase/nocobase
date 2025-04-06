@@ -6,7 +6,6 @@ import { Button, Flex } from 'antd';
 const eventManager = new EventManager();
 eventManager.on('button:click', async (ctx) => {
   const result = await openSimpleDialogAction.handler({}, ctx);
-  console.log(`Button ${ctx.source.id} dialog result:`, result);
 });
 
 const Button1 = () => {
@@ -14,9 +13,6 @@ const Button1 = () => {
     payload: {
       text: 'From Button1',
       description: 'This is an extra description from Button1',
-    },
-    source: {
-      id: 'button1',
     },
   };
   return <Button onClick={() => eventManager.dispatchEvent('button:click', ctx)}>按钮1</Button>;
@@ -26,9 +22,6 @@ const Button2 = () => {
   const ctx = {
     payload: {
       text: 'From Button2',
-    },
-    source: {
-      id: 'button2',
     },
   };
   return <Button onClick={() => eventManager.dispatchEvent('button:click', ctx)}>按钮2</Button>;

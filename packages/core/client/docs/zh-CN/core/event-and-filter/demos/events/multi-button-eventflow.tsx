@@ -146,10 +146,6 @@ const MultiButtonEventFlow = () => {
           button: buttonNum,
           time: new Date().toLocaleString(),
         },
-        source: {
-          type: 'user-interaction',
-          component: `Button${buttonNum}`,
-        },
       };
 
       // 触发事件

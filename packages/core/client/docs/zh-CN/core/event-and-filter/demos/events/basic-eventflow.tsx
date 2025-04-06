@@ -97,10 +97,6 @@ const BasicEventFlow = () => {
         name: 'eventflow-demo',
         time: new Date().toLocaleString(),
       },
-      source: {
-        type: 'user-interaction',
-        component: 'Button',
-      },
     };
 
     // 触发事件

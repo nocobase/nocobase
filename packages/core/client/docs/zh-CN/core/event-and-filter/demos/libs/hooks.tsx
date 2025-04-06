@@ -7,8 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { useEffect, useCallback, useState, useMemo, ComponentProps } from 'react';
-import { useApp, useBlockResource } from '@nocobase/client';
+import { useEffect, useCallback, useState } from 'react';
+import { useBlockResource } from '@nocobase/client';
 import {
   FilterFunction,
   FilterOptions,
@@ -16,9 +16,9 @@ import {
   EventListenerOptions,
   ApplyFilterOptions,
   FilterContext,
-  EventContext,
 } from './types';
 import { useFieldSchema } from '@formily/react';
+import { defaultListenerCondition } from './event-manager';
 import { eventManager, filterManager } from './defaults';
 
 /**
@@ -90,39 +90,12 @@ export const useApplyFilter = (name: string, options: ApplyFilterOptions) => {
   return { done, result };
 };
 
-/**
- * 事件监听器的默认过滤函数。
- * 根据事件上下文 (ctx) 和监听器的选项 (options) 确定监听器是否应执行。
- *
- * 逻辑:
- * 1. 如果事件分发没有包含目标 (ctx.target 为假值)，则监听器始终运行（多播）。
- * 2. 如果事件分发包含了目标 (ctx.target 存在):
- *    a. 如果监听器选项包含特定的目标条件 (例如 options.uischema)，
- *       则仅当目标条件与上下文的目标匹配时，监听器才运行。
- */
-function defaultListenerFilter(ctx: EventContext, options: EventListenerOptions): boolean {
-  // 1. 多播: 分发时未指定目标, 监听器运行。
-  if (!ctx.target) {
-    return true;
-  }
-
-  // 2. 单播: 分发时指定了目标。检查监听器选项。
-  if (options?.uischema) {
-    const targetSchema = ctx.target.uischema;
-    // 基本检查：两个 schema 都存在且具有匹配的 'x-uid'
-    return !!(targetSchema && options.uischema['x-uid'] && options.uischema['x-uid'] === targetSchema['x-uid']);
-  } else {
-    return false;
-  }
-}
-
 export function useAddEventListener(event: string | string[], handler: EventListener, options?: EventListenerOptions) {
   const fieldSchema = useFieldSchema();
 
   useEffect(() => {
     const unsubscribe = eventManager.on(event, handler, {
-      filter: defaultListenerFilter,
-      uischema: fieldSchema.toJSON(),
+      condition: defaultListenerCondition,
       ...options,
     });
     return unsubscribe;

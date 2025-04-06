@@ -90,10 +90,6 @@ const ConditionalFlowTrigger = () => {
         monitoringEnabled,
         time: new Date().toLocaleString(),
       },
-      source: {
-        type: 'user-interaction',
-        component: 'ThresholdMonitor',
-      },
     };
 
     // 触发事件

@@ -110,10 +110,6 @@ const DataPassingEventFlow = () => {
         initialData: '用户输入的原始数据',
         time: new Date().toLocaleString(),
       },
-      source: {
-        type: 'user-interaction',
-        component: 'Button',
-      },
     };
 
     // 触发事件

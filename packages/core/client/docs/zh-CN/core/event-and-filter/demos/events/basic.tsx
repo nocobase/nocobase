@@ -17,10 +17,6 @@ export default () => {
       payload: {
         name: 'test',
       },
-      source: {
-        type: 'user-interaction',
-        component: 'Button',
-      },
     };
     // 触发事件
     eventManager.dispatchEvent('button:click', ctx);
