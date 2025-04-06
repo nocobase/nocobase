@@ -378,6 +378,7 @@ export function AfterSuccess() {
   return (
     <SchemaSettingsModalItem
       dialogRootClassName='dialog-after-successful-submission'
+      width={700}
       title={t('After successful submission')}
       initialValues={
         onSuccess
