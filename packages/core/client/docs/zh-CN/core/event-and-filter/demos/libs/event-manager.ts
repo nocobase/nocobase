@@ -156,28 +156,46 @@ export class EventManager {
   }
 
   /**
-   * Dispatch a single event
+   * Helper method to find all matching listeners for an event
    */
-  private async dispatchSingleEvent(eventName: string, ctx: EventContext): Promise<void> {
+  private findMatchingListeners(eventName: string): Set<RegisteredListener> {
+    const matchingListeners = new Set<RegisteredListener>();
+
     // Get direct listeners for this exact event name
     const directListeners = this.listeners.get(eventName) || [];
+    directListeners.forEach((reg) => matchingListeners.add(reg));
 
-    // Get pattern listeners that might match this event
-    const matchingPatternListeners = new Set<RegisteredListener>();
-
+    // Get pattern listeners that match this event name
     for (const [pattern, listeners] of this.patternListeners.entries()) {
       if (this.patternMatches(pattern, eventName)) {
-        listeners.forEach((reg) => matchingPatternListeners.add(reg));
+        listeners.forEach((reg) => matchingListeners.add(reg));
       }
     }
 
-    // Combine and sort all applicable listeners by sort
-    const allListeners = [...directListeners, ...matchingPatternListeners].sort(
-      (a, b) => b.options.sort - a.options.sort,
-    );
+    // If the event name itself contains wildcards, also check for concrete listeners that match the pattern
+    if (eventName.includes('*')) {
+      for (const [concreteEvent, listeners] of this.listeners.entries()) {
+        if (this.patternMatches(eventName, concreteEvent)) {
+          listeners.forEach((reg) => matchingListeners.add(reg));
+        }
+      }
+    }
+
+    return matchingListeners;
+  }
+
+  /**
+   * Dispatch a single event
+   */
+  private async dispatchSingleEvent(eventName: string, ctx: EventContext): Promise<void> {
+    // Find all matching listeners
+    const matchingListeners = this.findMatchingListeners(eventName);
+
+    // Sort all applicable listeners by sort
+    const allListeners = Array.from(matchingListeners).sort((a, b) => b.options.sort - a.options.sort);
 
     // Execute each listener
-    for (const { listener, options } of allListeners) {
+    for (const { listener, options, eventName: registeredEventName } of allListeners) {
       // Check if propagation was stopped
       if (ctx.results._stop) {
         break;
@@ -199,7 +217,7 @@ export class EventManager {
 
         // Remove one-time listeners
         if (options.once) {
-          this.off(eventName, listener);
+          this.off(registeredEventName, listener);
         }
       } catch (error) {
         // Initialize errors array if needed
@@ -227,9 +245,10 @@ export class EventManager {
 
   /**
    * Checks if a wildcard pattern matches an event name
+   * @param pattern The pattern to check (can contain wildcards)
+   * @param eventName The event name to match against
    */
   private patternMatches(pattern: string, eventName: string): boolean {
-    // Convert pattern to regex
     // * matches exactly one segment
     const segments = pattern.split(':');
     const eventSegments = eventName.split(':');
