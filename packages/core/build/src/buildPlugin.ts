@@ -377,12 +377,12 @@ export async function buildProPluginServer(cwd: string, userConfig: UserConfig, 
         '.json': 'copy',
       },
       esbuildPlugins: [pluginEsbuildCommercialInject],
-      // onSuccess: async () => {
-      //   const serverFiles = [path.join(cwd, target_dir, 'server', 'index.js')];
-      //   serverFiles.forEach((file) => {
-      //     obfuscate(file);
-      //   });
-      // },
+      onSuccess: async () => {
+        const serverFiles = [path.join(cwd, target_dir, 'server', 'index.js')];
+        serverFiles.forEach((file) => {
+          obfuscate(file);
+        });
+      },
     }),
   );
   fs.removeSync(tsconfig.path);
