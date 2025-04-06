@@ -7,8 +7,6 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { transform } from 'esbuild';
-import * as path from 'path';
 import fs from 'node:fs'
 
 const pluginEsbuildCommercialInject = {

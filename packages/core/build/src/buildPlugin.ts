@@ -352,7 +352,11 @@ export async function buildProPluginServer(cwd: string, userConfig: UserConfig, 
     }),
   );
 
-  const entryFile = path.join(cwd, 'src/index.ts');
+  const entryFile = path.join(cwd, 'src/server/index.ts');
+  if(!fs.existsSync(entryFile)) {
+    log('server entry file not found', entryFile);
+    return;
+  }
   // bundle all files、inject commercial code and obfuscate
   await tsupBuild(
     userConfig.modifyTsupConfig({
@@ -364,7 +368,7 @@ export async function buildProPluginServer(cwd: string, userConfig: UserConfig, 
       treeshake: false,
       target: 'node16',
       sourcemap,
-      outDir: path.join(cwd, target_dir),
+      outDir: path.join(cwd, target_dir, 'server'),
       format: 'cjs',
       skipNodeModulesBundle: true,
       tsconfig: tsconfig.path,
@@ -374,7 +378,7 @@ export async function buildProPluginServer(cwd: string, userConfig: UserConfig, 
       },
       esbuildPlugins: [pluginEsbuildCommercialInject],
       onSuccess: async () => {
-        const serverFiles = [path.join(cwd, target_dir, 'index.js')];
+        const serverFiles = [path.join(cwd, target_dir, 'server', 'index.js')];
         serverFiles.forEach((file) => {
           obfuscate(file);
         });
@@ -665,7 +669,6 @@ __webpack_require__.p = (function() {
 }
 
 export async function buildPlugin(cwd: string, userConfig: UserConfig, sourcemap: boolean, log: PkgLog) {
-  log('buildPlugin', process.cwd(), cwd, fs.existsSync(path.join(process.cwd(), 'packages/pro-plugins')));
   if (cwd.includes('/pro-plugins/') && !cwd.includes('plugin-commercial') && fs.existsSync(path.join(process.cwd(), 'packages/pro-plugins/@nocobase/plugin-commercial'))) {
     await buildPluginClient(cwd, userConfig, sourcemap, log, true);
     await buildProPluginServer(cwd, userConfig, sourcemap, log);
