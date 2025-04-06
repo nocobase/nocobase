@@ -1,4 +1,4 @@
-name: Manual publish npm license-kit
+name: Manual npm publish license-kit
 env:
   DEBUG: napi:*
   APP_NAME: license-kit
@@ -8,7 +8,6 @@ permissions:
   id-token: write
 on:
   workflow_dispatch:
-
 # 'on':
 #   push:
 #     branches:
