@@ -59,9 +59,7 @@ export const BlockTemplatePage = () => {
       </div>
       <div
         style={{
-          marginTop: token.marginXL,
-          marginLeft: -token.margin,
-          marginRight: -token.margin,
+          marginTop: token.marginMD,
           position: 'relative',
           zIndex: 0 /** create a new z-index context */,
         }}
