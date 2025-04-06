@@ -26,7 +26,7 @@ export class FilterManager {
       name,
       filter,
       options: {
-        priority: options.priority ?? 0,
+        sort: options.sort ?? 0,
       },
     };
 
@@ -74,7 +74,7 @@ export class FilterManager {
 
     try {
       // Get all filters for this name and sort by priority
-      const filters = [...this.filters.get(name)].sort((a, b) => (a.options.priority || 0) - (b.options.priority || 0));
+      const filters = [...this.filters.get(name)].sort((a, b) => (a.options.sort || 0) - (b.options.sort || 0));
 
       // Apply each filter in sequence
       let currentValue = initialValue;
@@ -91,12 +91,10 @@ export class FilterManager {
           }
         } catch (error) {
           // Add context to the error
-          const contextualizedError = new Error(
-            `Filter error in '${name}' (priority: ${options.priority}): ${error.message}`,
-          );
+          const contextualizedError = new Error(`Filter error in '${name}' (sort: ${options.sort}): ${error.message}`);
           (contextualizedError as any).originalError = error;
           (contextualizedError as any).filterName = name;
-          (contextualizedError as any).filterPriority = options.priority;
+          (contextualizedError as any).filterSort = options.sort;
 
           console.error(contextualizedError);
           throw contextualizedError;
