@@ -26,3 +26,23 @@
 通过EventFlowManager注册事件与多个action，依次执行
 
 <code src="./demos/events/basic-eventflow.tsx"></code>
+
+# 条件事件流
+根据条件决定执行哪些动作的事件流
+
+<code src="./demos/events/conditional-eventflow.tsx"></code>
+
+# 条件触发事件流
+根据事件级别的条件决定是否触发整个事件流
+
+<code src="./demos/events/conditional-flow-trigger.tsx"></code>
+
+# 事件流数据传递
+演示如何在事件流的各个步骤之间传递数据
+
+<code src="./demos/events/data-passing-eventflow.tsx"></code>
+
+# 多按钮事件流
+为不同按钮注册不同的事件流
+
+<code src="./demos/events/multi-button-eventflow.tsx"></code>
