@@ -1,4 +1,4 @@
-name: Manual build and publish license-kit
+name: Manual publish license-kit
 env:
   DEBUG: napi:*
   APP_NAME: license-kit
@@ -89,6 +89,7 @@ jobs:
         with:
           repository: nocobase/license-kit
           ref: main
+          ssh-key: ${{ secrets.SUBMODULE_SSH_KEY }}
       - name: Setup node
         uses: actions/setup-node@v4
         if: ${{ !matrix.settings.docker }}
@@ -157,6 +158,7 @@ jobs:
         with:
           repository: nocobase/license-kit
           ref: main
+          ssh-key: ${{ secrets.SUBMODULE_SSH_KEY }}
       - name: Build
         id: build
         uses: cross-platform-actions/action@v0.27.0
@@ -219,6 +221,7 @@ jobs:
         with:
           repository: nocobase/license-kit
           ref: main
+          ssh-key: ${{ secrets.SUBMODULE_SSH_KEY }}
       - name: Setup node
         uses: actions/setup-node@v4
         with:
@@ -253,6 +256,7 @@ jobs:
         with:
           repository: nocobase/license-kit
           ref: main
+          ssh-key: ${{ secrets.SUBMODULE_SSH_KEY }}
       - name: Setup node
         uses: actions/setup-node@v4
         with:
@@ -286,6 +290,7 @@ jobs:
         with:
           repository: nocobase/license-kit
           ref: main
+          ssh-key: ${{ secrets.SUBMODULE_SSH_KEY }}
       - name: Setup node
         uses: actions/setup-node@v4
         with:
@@ -321,6 +326,7 @@ jobs:
         with:
           repository: nocobase/license-kit
           ref: main
+          ssh-key: ${{ secrets.SUBMODULE_SSH_KEY }}
       - name: Download artifacts
         uses: actions/download-artifact@v4
         with:
@@ -358,6 +364,7 @@ jobs:
         with:
           repository: nocobase/license-kit
           ref: main
+          ssh-key: ${{ secrets.SUBMODULE_SSH_KEY }}
       - name: Download artifacts
         uses: actions/download-artifact@v4
         with:
@@ -400,6 +407,7 @@ jobs:
         with:
           repository: nocobase/license-kit
           ref: main
+          ssh-key: ${{ secrets.SUBMODULE_SSH_KEY }}
       - name: Download artifacts
         uses: actions/download-artifact@v4
         with:
@@ -436,6 +444,7 @@ jobs:
         with:
           repository: nocobase/license-kit
           ref: main
+          ssh-key: ${{ secrets.SUBMODULE_SSH_KEY }}
       - name: Setup node
         uses: actions/setup-node@v4
         with:
@@ -478,6 +487,7 @@ jobs:
         with:
           repository: nocobase/license-kit
           ref: main
+          ssh-key: ${{ secrets.SUBMODULE_SSH_KEY }}
       - name: Setup node
         uses: actions/setup-node@v4
         with:
