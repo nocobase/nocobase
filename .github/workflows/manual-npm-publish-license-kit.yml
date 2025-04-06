@@ -6,9 +6,8 @@ env:
 permissions:
   contents: write
   id-token: write
-# on:
-#   workflow_dispatch:
-#   pull_request:
+on:
+  workflow_dispatch:
 # 'on':
 #   push:
 #     branches:
