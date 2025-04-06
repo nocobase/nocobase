@@ -24,7 +24,7 @@ const pluginEsbuildCommercialInject = {
         const moduleName = match[1] || match[2];
         source = 
 `
-import { withCommercial } from '@nocobase/plugin-for-commercial/server';
+import { withCommercial } from '@nocobase/plugin-commercial/server';
 import _plugin from '${moduleName}';
 export default withCommercial(_plugin);
 ${source}
