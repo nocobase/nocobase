@@ -1,21 +1,22 @@
 import { Button, Space, Alert, Card, Divider } from 'antd';
-import { EventManager } from '../libs/event-manager';
+import { EventBus } from '../libs/event-bus';
 import React, { useState } from 'react';
 import { openFormDialogAction } from '../actions/open-form-dialog';
 
+// 创建事件总线实例
+const eventBus = new EventBus();
+
 async function showFormResult(formData: Record<string, string>) {
   // 触发表单提交成功事件
-  await eventManager.dispatchEvent('form:afterSubmit', {
+  await eventBus.dispatchEvent('form:afterSubmit', {
     payload: {
       ...formData,
     },
   });
 }
 
-// 创建事件管理器实例
-const eventManager = new EventManager();
 // 监听表单提交事件
-eventManager.on('form:submit', async (ctx) => {
+eventBus.on('form:submit', async (ctx) => {
   const formData = await openFormDialogAction.handler({}, ctx);
   await showFormResult(formData);
 });
@@ -25,10 +26,11 @@ export default () => {
 
   // 初始化注册结果事件监听器
   React.useEffect(() => {
-    const unsubscribe = eventManager.on('form:afterSubmit', (ctx) => {
+    const unsubscribe = eventBus.on('form:afterSubmit', (ctx) => {
       setSubmittedData(ctx.payload);
     });
 
+    // 组件卸载时解除事件监听
     return () => unsubscribe();
   }, []);
 
@@ -44,7 +46,7 @@ export default () => {
       },
     };
     // 触发事件
-    eventManager.dispatchEvent('form:submit', ctx);
+    eventBus.dispatchEvent('form:submit', ctx);
   };
 
   return (

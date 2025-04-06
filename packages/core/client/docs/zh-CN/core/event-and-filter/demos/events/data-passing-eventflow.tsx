@@ -3,10 +3,10 @@ import React from 'react';
 import { EventFlowManager } from '../libs/eventflow-manager';
 import { openSimpleDialogAction } from '../actions/open-simple-dialog';
 import { openNotificationAction } from '../actions/open-notification';
-import { EventManager } from '../libs/event-manager';
+import { EventBus } from '../libs/event-bus';
 
 // Create managers
-const eventManager = new EventManager();
+const eventBus = new EventBus();
 const eventFlowManager = new EventFlowManager();
 
 // Basic setup
@@ -98,7 +98,7 @@ eventFlowManager.addFlow({
   ],
 });
 
-eventManager.on('button:click', (ctx) => {
+eventBus.on('button:click', (ctx) => {
   eventFlowManager.dispatchEvent('eventflow:button:click', ctx);
 });
 
@@ -113,7 +113,7 @@ const DataPassingEventFlow = () => {
     };
 
     // 触发事件
-    eventManager.dispatchEvent('button:click', ctx);
+    eventBus.dispatchEvent('button:click', ctx);
   };
 
   return (

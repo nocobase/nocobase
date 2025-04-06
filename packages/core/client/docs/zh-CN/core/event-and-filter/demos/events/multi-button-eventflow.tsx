@@ -4,10 +4,9 @@ import { EventFlowManager } from '../libs/eventflow-manager';
 import { openSimpleDialogAction } from '../actions/open-simple-dialog';
 import { openNotificationAction } from '../actions/open-notification';
 import { openFormDialogAction } from '../actions/open-form-dialog';
-import { EventManager } from '../libs/event-manager';
+import { EventBus } from '../libs/event-bus';
 
-// Managers
-const eventManager = new EventManager();
+const eventBus = new EventBus();
 const eventFlowManager = new EventFlowManager();
 
 // Basic setup
@@ -125,15 +124,15 @@ eventFlowManager.addFlow({
 });
 
 // Connect event handlers
-eventManager.on('button1:click', (ctx) => {
+eventBus.on('button1:click', (ctx) => {
   eventFlowManager.dispatchEvent('eventflow:button1:click', ctx);
 });
 
-eventManager.on('button2:click', (ctx) => {
+eventBus.on('button2:click', (ctx) => {
   eventFlowManager.dispatchEvent('eventflow:button2:click', ctx);
 });
 
-eventManager.on('button3:click', (ctx) => {
+eventBus.on('button3:click', (ctx) => {
   eventFlowManager.dispatchEvent('eventflow:button3:click', ctx);
 });
 
@@ -149,7 +148,7 @@ const MultiButtonEventFlow = () => {
       };
 
       // 触发事件
-      eventManager.dispatchEvent(`button${buttonNum}:click`, ctx);
+      eventBus.dispatchEvent(`button${buttonNum}:click`, ctx);
     };
   };
 

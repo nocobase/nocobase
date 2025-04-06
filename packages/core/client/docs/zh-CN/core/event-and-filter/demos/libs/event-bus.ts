@@ -28,7 +28,7 @@ export function defaultListenerCondition(ctx: EventContext, options: EventListen
   return ctx.target?.id === options?.id;
 }
 
-export class EventManager {
+export class EventBus {
   private listeners = new Map<string, RegisteredListener[]>();
   private patternListeners = new Map<string, RegisteredListener[]>();
 

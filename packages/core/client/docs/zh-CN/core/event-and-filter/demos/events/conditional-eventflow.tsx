@@ -3,13 +3,11 @@ import React, { useState } from 'react';
 import { EventFlowManager } from '../libs/eventflow-manager';
 import { openSimpleDialogAction } from '../actions/open-simple-dialog';
 import { openNotificationAction } from '../actions/open-notification';
-import { EventManager } from '../libs/event-manager';
+import { EventBus } from '../libs/event-bus';
 
-// Event and flow managers
-const eventManager = new EventManager();
+const eventBus = new EventBus();
 const eventFlowManager = new EventFlowManager();
 
-// Register event groups and events
 eventFlowManager.addEventGroup({
   name: 'component',
   title: '组件事件',
@@ -25,7 +23,6 @@ eventFlowManager.addEvent({
   uiSchema: {},
 });
 
-// Register action groups and actions
 eventFlowManager.addActionGroup({
   name: 'ui',
   title: 'UI操作',
@@ -35,7 +32,6 @@ eventFlowManager.addActionGroup({
 eventFlowManager.addAction(openSimpleDialogAction);
 eventFlowManager.addAction(openNotificationAction);
 
-// Create conditional flow
 eventFlowManager.addFlow({
   key: 'conditional-flow-demo',
   title: '条件流程演示',
@@ -72,8 +68,7 @@ eventFlowManager.addFlow({
   ],
 });
 
-// Connect event manager to eventflow
-eventManager.on('button:click', (ctx) => {
+eventBus.on('button:click', (ctx) => {
   eventFlowManager.dispatchEvent('eventflow:button:click', ctx);
 });
 
@@ -89,7 +84,7 @@ const ConditionalEventFlow = () => {
     };
 
     // 触发事件
-    eventManager.dispatchEvent('button:click', ctx);
+    eventBus.dispatchEvent('button:click', ctx);
   };
 
   return (

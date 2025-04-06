@@ -1,11 +1,11 @@
 import { Button } from 'antd';
-import { EventManager } from '../libs/event-manager';
+import { EventBus } from '../libs/event-bus';
 import React from 'react';
 import { openSimpleDialogAction } from '../actions/open-simple-dialog';
 
-// 创建事件管理器实例, 并监听按钮点击事件
-const eventManager = new EventManager();
-eventManager.on('button:click', async (ctx) => {
+// 创建事件总线实例, 并监听按钮点击事件
+const eventBus = new EventBus();
+eventBus.on('button:click', async (ctx) => {
   const result = await openSimpleDialogAction.handler({}, ctx);
   console.log('Dialog result:', result);
 });
@@ -19,7 +19,7 @@ export default () => {
       },
     };
     // 触发事件
-    eventManager.dispatchEvent('button:click', ctx);
+    eventBus.dispatchEvent('button:click', ctx);
   };
 
   return (

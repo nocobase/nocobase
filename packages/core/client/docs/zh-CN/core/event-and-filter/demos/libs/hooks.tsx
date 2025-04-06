@@ -18,8 +18,8 @@ import {
   FilterContext,
 } from './types';
 import { useFieldSchema } from '@formily/react';
-import { defaultListenerCondition } from './event-manager';
-import { eventManager, filterManager } from './defaults';
+import { defaultListenerCondition } from './event-bus';
+import { eventBus, filterManager } from './defaults';
 
 /**
  * Hook for registering a filter function that will be automatically unregistered on component unmount
@@ -94,7 +94,7 @@ export function useAddEventListener(event: string | string[], handler: EventList
   const fieldSchema = useFieldSchema();
 
   useEffect(() => {
-    const unsubscribe = eventManager.on(event, handler, {
+    const unsubscribe = eventBus.on(event, handler, {
       condition: defaultListenerCondition,
       ...options,
     });
@@ -110,8 +110,8 @@ export function useAddEventListener(event: string | string[], handler: EventList
 export function useDispatchEvent() {
   return useCallback(
     async (eventName: string | string[], ctx: any) => {
-      return eventManager.dispatchEvent(eventName, ctx);
+      return eventBus.dispatchEvent(eventName, ctx);
     },
-    [eventManager],
+    [eventBus],
   );
 }

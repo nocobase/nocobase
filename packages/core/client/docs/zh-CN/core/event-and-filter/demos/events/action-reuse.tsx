@@ -1,13 +1,15 @@
 import React from 'react';
-import { EventManager } from '../libs/event-manager';
+import { EventBus } from '../libs/event-bus';
 import { openSimpleDialogAction } from '../actions/open-simple-dialog';
 import { Button, Flex } from 'antd';
 
-const eventManager = new EventManager();
-eventManager.on('button:click', async (ctx) => {
+const eventBus = new EventBus();
+eventBus.on('button:click', async (ctx) => {
   const result = await openSimpleDialogAction.handler({}, ctx);
+  console.log('Dialog result from button:', result);
 });
 
+// 两个组件，共享同一个事件处理
 const Button1 = () => {
   const ctx = {
     payload: {
@@ -15,7 +17,7 @@ const Button1 = () => {
       description: 'This is an extra description from Button1',
     },
   };
-  return <Button onClick={() => eventManager.dispatchEvent('button:click', ctx)}>按钮1</Button>;
+  return <Button onClick={() => eventBus.dispatchEvent('button:click', ctx)}>按钮1</Button>;
 };
 
 const Button2 = () => {
@@ -24,7 +26,7 @@ const Button2 = () => {
       text: 'From Button2',
     },
   };
-  return <Button onClick={() => eventManager.dispatchEvent('button:click', ctx)}>按钮2</Button>;
+  return <Button onClick={() => eventBus.dispatchEvent('button:click', ctx)}>按钮2</Button>;
 };
 
 export default () => {

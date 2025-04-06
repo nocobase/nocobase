@@ -4,10 +4,10 @@ import { EventFlowManager } from '../libs/eventflow-manager';
 import { openSimpleDialogAction } from '../actions/open-simple-dialog';
 import { openNotificationAction } from '../actions/open-notification';
 import { openFormDialogAction } from '../actions/open-form-dialog';
-import { EventManager } from '../libs/event-manager';
+import { EventBus } from '../libs/event-bus';
 
-// 创建事件管理器
-const eventManager = new EventManager();
+// 创建事件总线实例
+const eventBus = new EventBus();
 
 // 创建事件流管理器实例
 const eventFlowManager = new EventFlowManager();
@@ -84,7 +84,7 @@ eventFlowManager.addFlow({
   ],
 });
 
-eventManager.on('button:click', (ctx) => {
+eventBus.on('button:click', (ctx) => {
   // eventFlowManager的内部事件
   eventFlowManager.dispatchEvent('eventflow:button:click', ctx);
 });
@@ -100,7 +100,7 @@ const BasicEventFlow = () => {
     };
 
     // 触发事件
-    eventManager.dispatchEvent('button:click', ctx);
+    eventBus.dispatchEvent('button:click', ctx);
   };
 
   return (

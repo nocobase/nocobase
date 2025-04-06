@@ -7,14 +7,14 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { EventManager } from './event-manager';
+import { EventBus } from './event-bus';
 import { FilterManager } from './filter-manager';
 import { LinkageRuleSettings, LinkageRuleItem, EventContext } from './types';
 import React from 'react';
 import { Modal, Input } from 'antd';
 import { ExclamationCircleFilled } from '@ant-design/icons';
 import { EventFlowManager } from './eventflow-manager';
-export * from './event-manager';
+export * from './event-bus';
 export * from './filter-manager';
 export * from './hooks';
 export * from './types';
@@ -92,7 +92,7 @@ function convertLinkageRuleSettings(settings: LinkageRuleSettings) {
   return ret;
 }
 
-export const eventManager = new EventManager();
+export const eventBus = new EventBus();
 export const filterManager = new FilterManager();
 export const eventFlowManager = new EventFlowManager();
 
@@ -142,13 +142,13 @@ function loadDefaultFilters(filterManager: FilterManager) {
     const actions = [];
     const handles = {
       addNew: (ctx: EventContext) => {
-        eventManager.dispatchEvent('core:block:record:addNew', ctx);
+        eventBus.dispatchEvent('core:block:record:addNew', ctx);
       },
       delete: (ctx: EventContext) => {
-        eventManager.dispatchEvent('core:block:table:record:delete', ctx);
+        eventBus.dispatchEvent('core:block:table:record:delete', ctx);
       },
       refresh: (ctx: EventContext) => {
-        eventManager.dispatchEvent('core:block:table:refresh', ctx);
+        eventBus.dispatchEvent('core:block:table:refresh', ctx);
       },
     };
     Object.keys(actionSettings || {}).forEach((key) => {
@@ -206,8 +206,8 @@ function loadDefaultFilters(filterManager: FilterManager) {
   });
 }
 
-function loadDefaultEventListeners(eventManager: EventManager) {
-  eventManager.on('core:block:record:addNew', (ctx: EventContext) => {
+function loadDefaultEventListeners(eventBus: EventBus) {
+  eventBus.on('core:block:record:addNew', (ctx: EventContext) => {
     console.log('core:block:record:addNew', ctx);
 
     // Simple approach using Modal.open with form elements without Form component
@@ -427,6 +427,7 @@ function loadDefaultEventFlows(eventFlowManager: EventFlowManager) {
   });
 }
 
-loadDefaultEventListeners(eventManager);
+// Initialize the system with default filters and event listeners
 loadDefaultFilters(filterManager);
+loadDefaultEventListeners(eventBus);
 loadDefaultEventFlows(eventFlowManager);

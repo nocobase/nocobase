@@ -3,12 +3,12 @@ import React, { useState } from 'react';
 import { EventFlowManager } from '../libs/eventflow-manager';
 import { openSimpleDialogAction } from '../actions/open-simple-dialog';
 import { openNotificationAction } from '../actions/open-notification';
-import { EventManager } from '../libs/event-manager';
+import { EventBus } from '../libs/event-bus';
 
 const { Text } = Typography;
 
 // Event and flow managers
-const eventManager = new EventManager();
+const eventBus = new EventBus();
 const eventFlowManager = new EventFlowManager();
 
 // Register event groups and events
@@ -72,7 +72,7 @@ eventFlowManager.addFlow({
 });
 
 // Connect event manager to eventflow
-eventManager.on('threshold:check', (ctx) => {
+eventBus.on('threshold:check', (ctx) => {
   eventFlowManager.dispatchEvent('eventflow:button:click', ctx);
 });
 
@@ -93,7 +93,7 @@ const ConditionalFlowTrigger = () => {
     };
 
     // 触发事件
-    eventManager.dispatchEvent('threshold:check', ctx);
+    eventBus.dispatchEvent('threshold:check', ctx);
   };
 
   return (
