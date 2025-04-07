@@ -37,6 +37,7 @@ interface Props {
   componentProps?: any;
   schema?: any;
   setScopes?: any;
+  testid?: string;
 }
 
 export const DynamicComponent = (props: Props) => {
@@ -103,12 +104,14 @@ export const DynamicComponent = (props: Props) => {
   }, [props.schema]);
   return (
     <FormContext.Provider value={form}>
-      {React.createElement<DynamicComponentProps>(component, {
-        value: props.value,
-        collectionField: props.collectionField,
-        onChange: props?.onChange,
-        renderSchemaComponent,
-      })}
+      <div data-testid={props.testid}>
+        {React.createElement<DynamicComponentProps>(component, {
+          value: props.value,
+          collectionField: props.collectionField,
+          onChange: props?.onChange,
+          renderSchemaComponent,
+        })}
+      </div>
     </FormContext.Provider>
   );
 };
