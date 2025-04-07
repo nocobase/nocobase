@@ -34,9 +34,12 @@ export const BlockTemplatePage = () => {
     <div>
       <div
         style={{
-          margin: -token.margin,
-          marginTop: -token.marginXL,
-          padding: token.paddingSM,
+          marginTop: -token.marginXXL,
+          marginLeft: -token.marginLG,
+          marginRight: -token.marginLG,
+          padding: token.paddingLG,
+          paddingTop: token.paddingMD,
+          paddingBottom: token.paddingMD,
           background: token.colorBgContainer,
           display: 'flex',
           alignItems: 'center',
@@ -54,7 +57,13 @@ export const BlockTemplatePage = () => {
           ]}
         />
       </div>
-      <div style={{ marginTop: token.marginXL, position: 'relative', zIndex: 0 /** create a new z-index context */ }}>
+      <div
+        style={{
+          marginTop: token.marginMD,
+          position: 'relative',
+          zIndex: 0 /** create a new z-index context */,
+        }}
+      >
         <BlockTemplateInfoContext.Provider value={data?.data}>
           <RemoteSchemaComponent uid={schemaUid} />
         </BlockTemplateInfoContext.Provider>
