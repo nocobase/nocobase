@@ -19,6 +19,8 @@ import UiSchemaRepository from './repository';
 import { ServerHooks } from './server-hooks';
 import { ServerHookModel } from './server-hooks/model';
 
+export const compile = (title: string) => (title || '').replace(/{{\s*t\(["|'|`](.*)["|'|`]\)\s*}}/g, '$1');
+
 function extractFields(obj) {
   return [
     obj.title,
@@ -42,7 +44,6 @@ export class PluginUISchemaStorageServer extends Plugin {
   async beforeLoad() {
     const db = this.app.db;
     const pm = this.app.pm;
-
     this.serverHooks = new ServerHooks(db);
 
     this.app.db.registerModels({ MagicAttributeModel, UiSchemaModel, ServerHookModel });
@@ -73,7 +74,7 @@ export class PluginUISchemaStorageServer extends Plugin {
         return;
       }
       changedFields.forEach((field) => {
-        field && texts.push({ text: field, module: `resources.ui-schema-storage` });
+        field && texts.push({ text: compile(field), module: `resources.ui-schema-storage` });
       });
       await localizationPlugin?.addNewTexts?.(texts, options);
     });
