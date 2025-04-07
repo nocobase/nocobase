@@ -129,12 +129,12 @@ export const enumType = [
     label: '{{t("is")}}',
     value: '$eq',
     selected: true,
-    schema: { 'x-component': 'Select' },
+    schema: { 'x-component': 'Select', 'x-component-props': { mode: null } },
   },
   {
     label: '{{t("is not")}}',
     value: '$ne',
-    schema: { 'x-component': 'Select' },
+    schema: { 'x-component': 'Select', 'x-component-props': { mode: null } },
   },
   {
     label: '{{t("is any of")}}',
