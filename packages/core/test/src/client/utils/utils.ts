@@ -20,8 +20,7 @@ export const WaitApp = async () => {
 
   const loadError = screen.queryByText('App Error');
   if (loadError) {
-    console.log(screen);
-    // expectNoTsError(screen.queryByText('App Error')).not.toBeInTheDocument();
+    expectNoTsError(screen.queryByText('App Error')).not.toBeInTheDocument();
   }
 
   const renderError = screen.queryByText('Render Failed');
