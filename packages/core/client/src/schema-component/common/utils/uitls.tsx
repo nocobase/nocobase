@@ -96,7 +96,6 @@ export const conditionAnalyses = async (
 ) => {
   const type = Object.keys(ruleGroup)[0] || '$and';
   const conditions = ruleGroup[type];
-  console.log(ruleGroup);
   let results = conditions.map(async (condition) => {
     if ('$and' in condition || '$or' in condition) {
       return await conditionAnalyses({ ruleGroup: condition, variables, localVariables }, jsonLogic);
