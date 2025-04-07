@@ -10,7 +10,7 @@
 const chalk = require('chalk');
 const { Command } = require('commander');
 const { run, isDev } = require('../util');
-const { genInstanceId } = require('@nocobase/license-kit');
+const { getInstanceIdAsync } = require('@nocobase/license-kit');
 const path = require('path');
 const fs = require('fs');
 
@@ -23,7 +23,7 @@ module.exports = (cli) => {
     .command('generate-instance-id')
     .description('Generate InstanceID')
     .allowUnknownOption()
-    .action(() => {
+    .action(async () => {
       console.log('Generating InstanceID...');
       try {
         const dir = path.resolve(process.cwd(), 'storage/.license');
@@ -31,7 +31,7 @@ module.exports = (cli) => {
           fs.mkdirSync(dir, { recursive: true });
         }
         const filePath = path.resolve(dir, 'InstanceID');
-        const instanceId = genInstanceId();
+        const instanceId = await getInstanceIdAsync();
         fs.writeFileSync(filePath, instanceId);
         console.log(chalk.greenBright(`InstanceID saved to ${filePath}`));
       } catch (e) {
