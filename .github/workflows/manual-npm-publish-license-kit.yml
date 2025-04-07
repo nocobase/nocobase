@@ -85,11 +85,13 @@ jobs:
     name: stable - ${{ matrix.settings.target }} - node@20
     runs-on: ${{ matrix.settings.host }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/create-github-app-token@v1
+        id: app-token
         with:
-          repository: nocobase/license-kit
-          ref: main
-          ssh-key: ${{ secrets.SUBMODULE_SSH_KEY }}
+          app-id: ${{ vars.NOCOBASE_APP_ID }}
+          private-key: ${{ secrets.NOCOBASE_APP_PRIVATE_KEY }}
+          repositories: license-kit
+          skip-token-revoke: true
       - name: Setup node
         uses: actions/setup-node@v4
         if: ${{ !matrix.settings.docker }}
@@ -154,11 +156,13 @@ jobs:
     runs-on: ubuntu-latest
     name: Build FreeBSD
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/create-github-app-token@v1
+        id: app-token
         with:
-          repository: nocobase/license-kit
-          ref: main
-          ssh-key: ${{ secrets.SUBMODULE_SSH_KEY }}
+          app-id: ${{ vars.NOCOBASE_APP_ID }}
+          private-key: ${{ secrets.NOCOBASE_APP_PRIVATE_KEY }}
+          repositories: license-kit
+          skip-token-revoke: true
       - name: Build
         id: build
         uses: cross-platform-actions/action@v0.27.0
@@ -217,11 +221,13 @@ jobs:
           - '20'
     runs-on: ${{ matrix.settings.host }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/create-github-app-token@v1
+        id: app-token
         with:
-          repository: nocobase/license-kit
-          ref: main
-          ssh-key: ${{ secrets.SUBMODULE_SSH_KEY }}
+          app-id: ${{ vars.NOCOBASE_APP_ID }}
+          private-key: ${{ secrets.NOCOBASE_APP_PRIVATE_KEY }}
+          repositories: license-kit
+          skip-token-revoke: true
       - name: Setup node
         uses: actions/setup-node@v4
         with:
@@ -252,11 +258,13 @@ jobs:
           - '20'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/create-github-app-token@v1
+        id: app-token
         with:
-          repository: nocobase/license-kit
-          ref: main
-          ssh-key: ${{ secrets.SUBMODULE_SSH_KEY }}
+          app-id: ${{ vars.NOCOBASE_APP_ID }}
+          private-key: ${{ secrets.NOCOBASE_APP_PRIVATE_KEY }}
+          repositories: license-kit
+          skip-token-revoke: true
       - name: Setup node
         uses: actions/setup-node@v4
         with:
@@ -286,11 +294,13 @@ jobs:
           - '20'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/create-github-app-token@v1
+        id: app-token
         with:
-          repository: nocobase/license-kit
-          ref: main
-          ssh-key: ${{ secrets.SUBMODULE_SSH_KEY }}
+          app-id: ${{ vars.NOCOBASE_APP_ID }}
+          private-key: ${{ secrets.NOCOBASE_APP_PRIVATE_KEY }}
+          repositories: license-kit
+          skip-token-revoke: true
       - name: Setup node
         uses: actions/setup-node@v4
         with:
@@ -322,11 +332,13 @@ jobs:
           - '20'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/create-github-app-token@v1
+        id: app-token
         with:
-          repository: nocobase/license-kit
-          ref: main
-          ssh-key: ${{ secrets.SUBMODULE_SSH_KEY }}
+          app-id: ${{ vars.NOCOBASE_APP_ID }}
+          private-key: ${{ secrets.NOCOBASE_APP_PRIVATE_KEY }}
+          repositories: license-kit
+          skip-token-revoke: true
       - name: Download artifacts
         uses: actions/download-artifact@v4
         with:
@@ -360,11 +372,13 @@ jobs:
       - build
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/create-github-app-token@v1
+        id: app-token
         with:
-          repository: nocobase/license-kit
-          ref: main
-          ssh-key: ${{ secrets.SUBMODULE_SSH_KEY }}
+          app-id: ${{ vars.NOCOBASE_APP_ID }}
+          private-key: ${{ secrets.NOCOBASE_APP_PRIVATE_KEY }}
+          repositories: license-kit
+          skip-token-revoke: true
       - name: Download artifacts
         uses: actions/download-artifact@v4
         with:
@@ -403,11 +417,13 @@ jobs:
           - '20'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/create-github-app-token@v1
+        id: app-token
         with:
-          repository: nocobase/license-kit
-          ref: main
-          ssh-key: ${{ secrets.SUBMODULE_SSH_KEY }}
+          app-id: ${{ vars.NOCOBASE_APP_ID }}
+          private-key: ${{ secrets.NOCOBASE_APP_PRIVATE_KEY }}
+          repositories: license-kit
+          skip-token-revoke: true
       - name: Download artifacts
         uses: actions/download-artifact@v4
         with:
@@ -440,11 +456,13 @@ jobs:
       - build
     runs-on: macos-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/create-github-app-token@v1
+        id: app-token
         with:
-          repository: nocobase/license-kit
-          ref: main
-          ssh-key: ${{ secrets.SUBMODULE_SSH_KEY }}
+          app-id: ${{ vars.NOCOBASE_APP_ID }}
+          private-key: ${{ secrets.NOCOBASE_APP_PRIVATE_KEY }}
+          repositories: license-kit
+          skip-token-revoke: true
       - name: Setup node
         uses: actions/setup-node@v4
         with:
@@ -483,11 +501,13 @@ jobs:
       - test-linux-arm-gnueabihf-binding
       - universal-macOS
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/create-github-app-token@v1
+        id: app-token
         with:
-          repository: nocobase/license-kit
-          ref: main
-          ssh-key: ${{ secrets.SUBMODULE_SSH_KEY }}
+          app-id: ${{ vars.NOCOBASE_APP_ID }}
+          private-key: ${{ secrets.NOCOBASE_APP_PRIVATE_KEY }}
+          repositories: license-kit
+          skip-token-revoke: true
       - name: Setup node
         uses: actions/setup-node@v4
         with:
