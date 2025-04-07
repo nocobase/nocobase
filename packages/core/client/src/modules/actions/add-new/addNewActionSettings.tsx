@@ -63,7 +63,7 @@ export const addNewActionSettings = new SchemaSettings({
       name: 'linkageRules',
       Component: SchemaSettingsLinkageRules,
       useComponentProps() {
-        const { association } = useDataBlockProps();
+        const { association } = useDataBlockProps() || {};
         const { name } = useCollection_deprecated();
         const { getCollectionField } = useCollectionManager_deprecated();
         const associationField = getCollectionField(association);

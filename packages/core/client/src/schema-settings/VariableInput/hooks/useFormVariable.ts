@@ -71,7 +71,7 @@ export const useFormVariable = ({ collectionName, collectionField, schema, noDis
 export const useCurrentFormContext = ({ form: _form }: Pick<Props, 'form'> = {}) => {
   const { form } = useFormBlockContext();
   const { isVariableParsedInOtherContext } = useFlag();
-  const { name } = useBlockContext() || {};
+  const { name } = useBlockContext?.() || {};
   const formInstance = _form || form;
   return {
     /** 变量值 */

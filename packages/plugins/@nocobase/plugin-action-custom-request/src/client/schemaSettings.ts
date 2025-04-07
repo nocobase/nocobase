@@ -44,7 +44,7 @@ export const customizeCustomRequestActionSettings = new SchemaSettings({
       useComponentProps() {
         const { name } = useCollection() || {};
         const { linkageRulesProps } = useSchemaToolbar();
-        const { association } = useDataBlockProps();
+        const { association } = useDataBlockProps() || {};
         const { getCollectionField } = useCollectionManager_deprecated();
         const associationField = getCollectionField(association);
         return {
