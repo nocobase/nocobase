@@ -341,10 +341,16 @@ export class PluginACLServer extends Plugin {
     this.app.db.on('rolesUsers.afterSave', async (model) => {
       const cache = this.app.cache as Cache;
       await cache.del(`roles:${model.get('userId')}`);
+      await cache.del(`roles:${model.get('userId')}:defaultRole`);
+    });
+    this.app.db.on('systemSettings.afterSave', async (model) => {
+      const cache = this.app.cache as Cache;
+      await cache.del(`app:systemSettings`);
     });
     this.app.db.on('rolesUsers.afterDestroy', async (model) => {
       const cache = this.app.cache as Cache;
       await cache.del(`roles:${model.get('userId')}`);
+      await cache.del(`roles:${model.get('userId')}:defaultRole`);
     });
 
     const writeRolesToACL = async (app, options) => {

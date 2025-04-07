@@ -47,7 +47,9 @@ export async function setCurrentRole(ctx: Context, next) {
   roles.forEach((role: any) => rolesMap.set(role.name, role));
   const userRoles = Array.from(rolesMap.values());
   ctx.state.currentUser.roles = userRoles;
-  const systemSettings = await ctx.db.getRepository('systemSettings').findOne();
+  const systemSettings = (await cache.wrap(`app:systemSettings`, () =>
+    ctx.db.getRepository('systemSettings').findOne(),
+  )) as Model;
   const roleMode = systemSettings?.get('roleMode') || SystemRoleMode.default;
   if ([currentRole, ctx.state.currentRole].includes(UNION_ROLE_KEY) && roleMode === SystemRoleMode.default) {
     currentRole = userRoles[0].name;
