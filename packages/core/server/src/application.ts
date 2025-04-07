@@ -64,7 +64,7 @@ import {
 import { ApplicationVersion } from './helpers/application-version';
 import { Locale } from './locale';
 import { MainDataSource } from './main-data-source';
-import { renderVariables } from './middlewares';
+import { parseVariables } from './middlewares';
 import { dataTemplate } from './middlewares/data-template';
 import validateFilterParams from './middlewares/validate-filter-params';
 import { Plugin } from './plugin';
@@ -1265,8 +1265,8 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     this._dataSourceManager.use(this._authManager.middleware(), { tag: 'auth' });
     this._dataSourceManager.use(validateFilterParams, { tag: 'validate-filter-params', before: ['auth'] });
 
-    this._dataSourceManager.use(renderVariables, {
-      group: 'renderVariables',
+    this._dataSourceManager.use(parseVariables, {
+      group: 'parseVariables',
       after: 'acl',
     });
 

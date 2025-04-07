@@ -7,11 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { extractTemplateElements } from '@nocobase/json-template-parser';
 import _ from 'lodash';
 import set from 'lodash/set';
 import moment from 'moment';
-import { isDate, offsetFromString } from './date';
+import { offsetFromString } from './date';
 import { dayjs } from './dayjs';
 import { getValuesByPath } from './getValuesByPath';
 
@@ -100,6 +99,10 @@ const isDateOperator = (op) => {
   ].includes(op);
 };
 
+function isDate(input) {
+  return input instanceof Date || Object.prototype.toString.call(input) === '[object Date]';
+}
+
 const dateValueWrapper = (value: any, timezone?: string) => {
   if (!value) {
     return null;
@@ -172,16 +175,10 @@ export const parseFilter = async (filter: any, opts: ParseFilterOptions = {}) =>
       if (typeof value === 'string') {
         const match = re.exec(value);
         if (match) {
-          const { fullVariable: key, helpers } = extractTemplateElements(value);
+          const key = match[1].trim();
           const val = getValuesByPath(vars, key, null);
           const field = getField?.(path);
-          if (key.startsWith('$date') || key.startsWith('$nDate')) {
-            const filteredNow = helpers.reduce((acc, filter) => filter.handler(...[acc, ...filter.args]), now);
-            value = typeof val === 'function' ? val?.({ field, operator, timezone, now: filteredNow }) : val;
-          } else {
-            value = helpers.reduce((acc, filter) => filter.handler(...[acc, ...filter.args]), value);
-          }
-          return value;
+          value = typeof val === 'function' ? val?.({ field, operator, timezone, now }) : val;
         }
       }
       if (isDateOperator(operator)) {
