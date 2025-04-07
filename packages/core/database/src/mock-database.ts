@@ -8,7 +8,7 @@
  */
 
 /* istanbul ignore file -- @preserve */
-import { Database, IDatabaseOptions } from '@nocobase/database';
+import { Database, IDatabaseOptions, sqlParser } from '@nocobase/database';
 import { merge } from '@nocobase/utils';
 import { customAlphabet } from 'nanoid';
 import fetch from 'node-fetch';
@@ -42,6 +42,7 @@ export function getConfigByEnv() {
     underscored: process.env.DB_UNDERSCORED === 'true',
     schema: process.env.DB_SCHEMA !== 'public' ? process.env.DB_SCHEMA : undefined,
     dialectOptions: {},
+    sqlParser: process.env.DB_DIALECT === 'mssql' ? 'TransactSQL' : undefined,
   };
 
   if (process.env.DB_DIALECT == 'postgres') {

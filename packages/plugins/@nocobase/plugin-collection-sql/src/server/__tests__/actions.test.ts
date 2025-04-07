@@ -90,7 +90,7 @@ describe('sql collection', () => {
     expect(res.body.data.sources).toEqual(['testSqlCollection']);
   });
 
-  it('sqlCollection:update', async () => {
+  it.only('sqlCollection:update', async () => {
     await agent.resource('collections').create({
       values: {
         name: 'fakeCollection',

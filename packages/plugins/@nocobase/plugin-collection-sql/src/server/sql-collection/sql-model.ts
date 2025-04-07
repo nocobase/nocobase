@@ -41,6 +41,10 @@ export class SQLModel extends Model {
       const schema = process.env.DB_SCHEMA || 'public';
       return `${schema}.${table}`;
     }
+    if (this.database.inDialect('mssql') && !table.includes('.')) {
+      const schema = process.env.DB_SCHEMA || 'dbo';
+      return `${schema}.${table}`;
+    }
     return table;
   }
 
@@ -76,7 +80,7 @@ export class SQLModel extends Model {
     table: string;
     columns: { name: string; as?: string }[];
   }[] {
-    let { ast: _ast } = sqlParser.parse(this.sql);
+    let { ast: _ast } = sqlParser.parse(this.sql, { database: this.database.options.sqlParser });
     if (Array.isArray(_ast)) {
       _ast = _ast[0];
     }

@@ -87,6 +87,7 @@ export async function parseDatabaseOptionsFromEnv(): Promise<IDatabaseOptions> {
     tablePrefix: process.env.DB_TABLE_PREFIX,
     schema: process.env.DB_SCHEMA,
     underscored: process.env.DB_UNDERSCORED === 'true',
+    sqlParser: process.env.DB_DIALECT === 'mssql' ? 'TransactSQL' : undefined,
   };
 
   const sslOptions = await extractSSLOptionsFromEnv();

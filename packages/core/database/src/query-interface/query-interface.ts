@@ -166,4 +166,8 @@ export default abstract class QueryInterface {
       throw error;
     }
   }
+
+  public generateJsonPathExpression(field: string, path: string) {
+    return `${field}.${path}`;
+  }
 }
