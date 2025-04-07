@@ -20,6 +20,7 @@ import {
 import { useFieldSchema } from '@formily/react';
 import { defaultListenerCondition } from './event-bus';
 import { eventBus, filterManager } from './defaults';
+import { uid } from '@nocobase/utils/client';
 
 /**
  * Hook for registering a filter function that will be automatically unregistered on component unmount
@@ -96,10 +97,11 @@ export function useAddEventListener(event: string | string[], handler: EventList
   useEffect(() => {
     const unsubscribe = eventBus.on(event, handler, {
       condition: defaultListenerCondition,
+      id: fieldSchema.toJSON()?.['x-uid'] || uid(),
       ...options,
     });
     return unsubscribe;
-  }, [handler, event, fieldSchema]);
+  }, [handler, event, fieldSchema, options, uid]);
 }
 
 /**
