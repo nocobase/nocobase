@@ -19,6 +19,7 @@ import {
   useFlag,
   useSchemaComponentContext,
   BlockContext,
+  useBlockContext,
 } from '../../../';
 import { useToken } from '../__builtins__';
 import { designerCss } from './Table.Column.ActionBar';
@@ -78,6 +79,7 @@ export const TableColumnDecorator = (props) => {
   const compile = useCompile();
   const { isInSubTable } = useFlag() || {};
   const { token } = useToken();
+  const { name } = useBlockContext() || {};
 
   useEffect(() => {
     if (field.title) {
@@ -111,7 +113,7 @@ export const TableColumnDecorator = (props) => {
       })}
     >
       <CollectionFieldContext.Provider value={collectionField}>
-        <BlockContext.Provider value={{ name: 'taleColumn' }}>
+        <BlockContext.Provider value={{ name: isInSubTable ? name : 'taleColumn' }}>
           <Designer fieldSchema={fieldSchema} uiSchema={uiSchema} collectionField={collectionField} />
           <span role="button">
             {fieldSchema?.required && <span className="ant-formily-item-asterisk">*</span>}
