@@ -93,6 +93,8 @@ jobs:
           private-key: ${{ secrets.NOCOBASE_APP_PRIVATE_KEY }}
           repositories: license-kit
           skip-token-revoke: true
+      - name: Change directory to license-kit
+        run: cd license-kit
       - name: Setup node
         uses: actions/setup-node@v4
         if: ${{ !matrix.settings.docker }}
@@ -164,6 +166,8 @@ jobs:
           private-key: ${{ secrets.NOCOBASE_APP_PRIVATE_KEY }}
           repositories: license-kit
           skip-token-revoke: true
+      - name: Change directory to license-kit
+        run: cd license-kit
       - name: Build
         id: build
         uses: cross-platform-actions/action@v0.27.0
@@ -229,6 +233,8 @@ jobs:
           private-key: ${{ secrets.NOCOBASE_APP_PRIVATE_KEY }}
           repositories: license-kit
           skip-token-revoke: true
+      - name: Change directory to license-kit
+        run: cd license-kit
       - name: Setup node
         uses: actions/setup-node@v4
         with:
@@ -266,6 +272,8 @@ jobs:
           private-key: ${{ secrets.NOCOBASE_APP_PRIVATE_KEY }}
           repositories: license-kit
           skip-token-revoke: true
+      - name: Change directory to license-kit
+        run: cd license-kit
       - name: Setup node
         uses: actions/setup-node@v4
         with:
@@ -302,6 +310,8 @@ jobs:
           private-key: ${{ secrets.NOCOBASE_APP_PRIVATE_KEY }}
           repositories: license-kit
           skip-token-revoke: true
+      - name: Change directory to license-kit
+        run: cd license-kit
       - name: Setup node
         uses: actions/setup-node@v4
         with:
@@ -340,6 +350,8 @@ jobs:
           private-key: ${{ secrets.NOCOBASE_APP_PRIVATE_KEY }}
           repositories: license-kit
           skip-token-revoke: true
+      - name: Change directory to license-kit
+        run: cd license-kit
       - name: Download artifacts
         uses: actions/download-artifact@v4
         with:
@@ -380,6 +392,8 @@ jobs:
           private-key: ${{ secrets.NOCOBASE_APP_PRIVATE_KEY }}
           repositories: license-kit
           skip-token-revoke: true
+      - name: Change directory to license-kit
+        run: cd license-kit
       - name: Download artifacts
         uses: actions/download-artifact@v4
         with:
@@ -425,6 +439,8 @@ jobs:
           private-key: ${{ secrets.NOCOBASE_APP_PRIVATE_KEY }}
           repositories: license-kit
           skip-token-revoke: true
+      - name: Change directory to license-kit
+        run: cd license-kit
       - name: Download artifacts
         uses: actions/download-artifact@v4
         with:
@@ -464,6 +480,8 @@ jobs:
           private-key: ${{ secrets.NOCOBASE_APP_PRIVATE_KEY }}
           repositories: license-kit
           skip-token-revoke: true
+      - name: Change directory to license-kit
+        run: cd license-kit
       - name: Setup node
         uses: actions/setup-node@v4
         with:
@@ -509,6 +527,8 @@ jobs:
           private-key: ${{ secrets.NOCOBASE_APP_PRIVATE_KEY }}
           repositories: license-kit
           skip-token-revoke: true
+      - name: Change directory to license-kit
+        run: cd license-kit
       - name: Setup node
         uses: actions/setup-node@v4
         with:
