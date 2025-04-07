@@ -252,7 +252,7 @@ describe('collections repository', () => {
     expect(response1.body.data.length).toBe(2);
   });
 
-  it('case 7', async () => {
+  it.only('case 7', async () => {
     const response = await agent.resource('posts').create({
       values: {
         tags: [

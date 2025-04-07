@@ -8,7 +8,7 @@
  */
 
 import lodash from 'lodash';
-import { Model as SequelizeModel, ModelStatic } from 'sequelize';
+import { Model as SequelizeModel, ModelStatic, FindOptions } from 'sequelize';
 import { Collection } from './collection';
 import { Database } from './database';
 import { Field } from './fields';
@@ -215,5 +215,10 @@ export class Model<TModelAttributes extends {} = any, TCreationAttributes extend
     });
 
     return lodash.orderBy(data, orderItems, orderDirections);
+  }
+
+  public static findAll(options?: FindOptions<any>): Promise<any[]> {
+    this.database.emit('beforeModelFind', this, options);
+    return super.findAll(options);
   }
 }

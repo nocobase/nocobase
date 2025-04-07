@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Database } from '@nocobase/database';
+import { Database, Op } from '@nocobase/database';
 import { FieldIsDependedOnByOtherError } from '../errors/field-is-depended-on-by-other';
 
 export function beforeDestoryField(db: Database) {
@@ -18,20 +18,22 @@ export function beforeDestoryField(db: Database) {
     if (['belongsTo', 'hasOne', 'hasMany', 'belongsToMany'].includes(type)) {
       return;
     }
-
-    const relatedFields = await db.getRepository('fields').find({
-      filter: {
-        $or: [
-          {
-            [db.queryInterface.generateJsonPathExpression('options', 'sourceKey')]: name,
-            collectionName,
-          },
-          {
-            [db.queryInterface.generateJsonPathExpression('options', 'targetKey')]: name,
-            [db.queryInterface.generateJsonPathExpression('options', 'targetKey')]: collectionName,
-          },
+    const $or = [
+      {
+        [Op.and]: [
+          db.sequelize.where(db.queryInterface.generateJsonPathExpression('options', 'sourceKey'), Op.eq, name),
+          { collectionName },
         ],
       },
+      {
+        [Op.and]: [
+          db.sequelize.where(db.queryInterface.generateJsonPathExpression('options', 'targetKey'), Op.eq, name),
+          db.sequelize.where(db.queryInterface.generateJsonPathExpression('options', 'target'), Op.eq, collectionName),
+        ],
+      },
+    ];
+    const relatedFields = await db.getRepository('fields').find({
+      filter: { $or },
       transaction,
     });
 

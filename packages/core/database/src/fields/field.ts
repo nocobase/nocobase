@@ -62,6 +62,10 @@ export abstract class Field {
 
   abstract get dataType(): any;
 
+  get rawDataType() {
+    return this.dataType;
+  }
+
   isRelationField() {
     return false;
   }
@@ -179,7 +183,10 @@ export abstract class Field {
     const opts = _.omit(this.options, ['name']);
     if (this.dataType) {
       // @ts-ignore
-      Object.assign(opts, { type: this.database.sequelize.normalizeDataType(this.dataType) });
+      Object.assign(opts, {
+        type: this.database.sequelize.normalizeDataType(this.dataType),
+        rawDataType: this.rawDataType,
+      });
     }
 
     Object.assign(opts, this.additionalSequelizeOptions());

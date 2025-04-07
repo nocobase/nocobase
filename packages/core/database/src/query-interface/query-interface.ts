@@ -17,6 +17,7 @@ import {
 } from 'sequelize';
 import { Collection } from '../collection';
 import Database from '../database';
+import { Literal } from 'sequelize/types/utils';
 
 export type TableInfo = {
   tableName: string;
@@ -167,7 +168,7 @@ export default abstract class QueryInterface {
     }
   }
 
-  public generateJsonPathExpression(field: string, path: string) {
-    return `${field}.${path}`;
+  public generateJsonPathExpression(field: string, path: string): Literal {
+    return this.db.sequelize.literal(`${field}.${path}`);
   }
 }
