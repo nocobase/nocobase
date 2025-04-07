@@ -147,7 +147,7 @@ jobs:
         if: ${{ matrix.settings.host == 'ubuntu-latest' }}
         run: |
           sudo apt-get update
-          sudo apt-get install -y libssl-dev
+          sudo apt-get install -y pkg-config libssl-dev
       - name: Build in docker
         uses: addnab/docker-run-action@v3
         if: ${{ matrix.settings.docker }}
