@@ -9,7 +9,7 @@ export const highlightBlock = (clonedBlockDom: HTMLElement, boxRect: DOMRect) =>
     container.style.pointerEvents = 'none';
   }
 
-  container.innerHTML = '';
+  container.style.display = 'block';
   container.appendChild(clonedBlockDom);
 
   container.style.opacity = '1';
@@ -23,6 +23,10 @@ export const highlightBlock = (clonedBlockDom: HTMLElement, boxRect: DOMRect) =>
 export const unhighlightBlock = () => {
   if (container) {
     container.style.opacity = '0';
+    setTimeout(() => {
+      container.style.display = 'none';
+      container.innerHTML = '';
+    }, 300);
   }
 }
 
