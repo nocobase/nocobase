@@ -27,7 +27,7 @@ function extractFields(obj) {
     obj['x-component-props']?.description,
     obj['x-decorator-props']?.title,
     obj['x-decorator-props']?.description,
-  ].filter((value) => value !== undefined); // 过滤掉 undefined 值
+  ].filter((value) => value !== undefined && value !== '');
 }
 
 export class PluginUISchemaStorageServer extends Plugin {
@@ -73,7 +73,7 @@ export class PluginUISchemaStorageServer extends Plugin {
         return;
       }
       changedFields.forEach((field) => {
-        texts.push({ text: field, module: `resources.ui-schema-storage` });
+        field && texts.push({ text: field, module: `resources.ui-schema-storage` });
       });
       await localizationPlugin?.addNewTexts?.(texts, options);
     });
@@ -152,6 +152,34 @@ export class PluginUISchemaStorageServer extends Plugin {
     ]);
 
     await this.importCollections(resolve(__dirname, 'collections'));
+    // this.registerLocalizationSource();
+  }
+
+  registerLocalizationSource() {
+    const localizationPlugin = this.app.pm.get('localization') as PluginLocalizationServer;
+    if (!localizationPlugin) {
+      return;
+    }
+    localizationPlugin.sourceManager.registerSource('ui-schema-storage', {
+      title: tval('UiSchema'),
+      sync: async (ctx) => {
+        const uiSchemas = await ctx.db.getRepository('uiSchemas').find({
+          raw: true,
+        });
+        const resources = {};
+        uiSchemas.forEach((route: { schema?: any }) => {
+          const changedFields = extractFields(route.schema);
+          if (changedFields.length) {
+            changedFields.forEach((field) => {
+              resources[field] = '';
+            });
+          }
+        });
+        return {
+          'ui-schema-storage': resources,
+        };
+      },
+    });
   }
 }
 
