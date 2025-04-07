@@ -322,7 +322,7 @@ const showDialog = (dialogClassName: string) => {
   }
 }
 
-const BlocksSelector = (props) => {
+export const BlocksSelector = (props) => {
   const { getAllDataBlocks } = useAllDataBlocks();
   const allDataBlocks = getAllDataBlocks();
   const compile = useCompile();
