@@ -79,7 +79,7 @@ export const TableColumnDecorator = (props) => {
   const compile = useCompile();
   const { isInSubTable } = useFlag() || {};
   const { token } = useToken();
-  const { name } = useBlockContext() || {};
+  const { name } = useBlockContext?.() || {};
 
   useEffect(() => {
     if (field.title) {
