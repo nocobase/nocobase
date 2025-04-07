@@ -26,7 +26,7 @@ import {
   useCollectionManager_deprecated,
   useCollection_deprecated,
 } from '@nocobase/client';
-import { isValid } from '@formily/shared';
+import { ModalProps } from 'antd';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 
