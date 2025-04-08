@@ -1090,7 +1090,7 @@ export const SchemaSettingsDefaultSortingRules = function DefaultSortingRules(pr
 };
 
 export const SchemaSettingsLinkageRules = function LinkageRules(props) {
-  const { collectionName, readPretty, Component, afterSubmit } = props;
+  const { collectionName, readPretty, Component, afterSubmit, title: settingTitle } = props;
   const fieldSchema = useFieldSchema();
   const { form } = useFormBlockContext();
   const { dn } = useDesignable();
@@ -1116,7 +1116,7 @@ export const SchemaSettingsLinkageRules = function LinkageRules(props) {
   const getRules = useCallback(() => {
     return gridSchema?.[dataKey] || fieldSchema?.[dataKey] || [];
   }, [gridSchema, fieldSchema, dataKey]);
-  const title = titleMap[category];
+  const title = settingTitle || titleMap[category];
   const schema = useMemo<ISchema>(
     () => ({
       type: 'object',

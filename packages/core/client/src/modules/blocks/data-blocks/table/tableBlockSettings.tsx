@@ -26,6 +26,7 @@ import { setTheDataScopeSchemaSettingsItem } from '../../../../schema-settings/s
 import { useBlockTemplateContext } from '../../../../schema-templates/BlockTemplateProvider';
 import { setDataLoadingModeSettingsItem } from '../details-multi/setDataLoadingModeSettingsItem';
 import { SchemaSettingsItemType } from '../../../../application';
+import { SchemaSettingsLinkageRules } from '../../../../schema-settings';
 
 const enabledIndexColumn: SchemaSettingsItemType = {
   name: 'enableIndexColumn',
@@ -63,6 +64,18 @@ export const tableBlockSettings = new SchemaSettings({
     {
       name: 'setTheBlockHeight',
       Component: SchemaSettingsBlockHeightItem,
+    },
+    {
+      name: 'linkageRules',
+      Component: SchemaSettingsLinkageRules,
+      useComponentProps() {
+        const { name } = useCollection_deprecated();
+        const { t } = useTranslation();
+        return {
+          collectionName: name,
+          title: t('Block Linkage rules'),
+        };
+      },
     },
     {
       name: 'treeTable',
