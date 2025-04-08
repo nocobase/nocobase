@@ -21,6 +21,7 @@ import {
   useAfterSuccessOptions,
   useGlobalVariable,
   BlocksSelector,
+  usePlugin,
 } from '@nocobase/client';
 import { useTranslation } from 'react-i18next';
 import React from 'react';
@@ -68,9 +69,12 @@ function AfterSuccess() {
   const { t } = useTranslation();
   const fieldSchema = useFieldSchema();
   const environmentVariables = useGlobalVariable('$env');
+  const templatePlugin: any = usePlugin('@nocobase/plugin-block-template');
+  const isInBlockTemplateConfigPage = templatePlugin?.isInBlockTemplateConfigPage?.();
+
   return (
     <SchemaSettingsModalItem
-      dialogRootClassName='dialog-after-successful-submission'
+      dialogRootClassName="dialog-after-successful-submission"
       width={700}
       title={t('After successful submission')}
       initialValues={fieldSchema?.['x-action-settings']?.['onSuccess']}
@@ -130,6 +134,7 @@ function AfterSuccess() {
                 };
               },
               'x-component': BlocksSelector,
+              'x-hidden': isInBlockTemplateConfigPage, // 模板配置页面暂不支持该配置
             },
           },
         } as ISchema
