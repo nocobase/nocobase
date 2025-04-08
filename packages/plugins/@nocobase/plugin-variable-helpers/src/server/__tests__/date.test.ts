@@ -19,21 +19,21 @@ describe('date filters', async () => {
 
   beforeAll(async () => {
     app = await createMockServer({
-      plugins: ['field-sort', 'auth', 'variable-filters'],
+      plugins: ['field-sort', 'auth', 'variable-helpers'],
     });
     db = app.db;
     repo = db.getRepository('authenticators');
     agent = app.agent();
-    parse = app.jsonTemplateParser._parse;
+    parse = app.jsonTemplateParser.parse;
   });
   it('date filters', async () => {
     const template = {
       now: '{{now}}',
       today: '{{now | date_format: "YYYY-MM-DD"}}',
-      yesterday: '{{now | date_subtract: 1, "day" | date_format: "YYYY-MM-DD"}}',
+      yesterday: '{{now | date_calculate: "subtract",  1, "day" | date_format: "YYYY-MM-DD"}}',
     };
 
-    const parsed = app.jsonTemplateParser._parse(template);
+    const parsed = app.jsonTemplateParser.parse(template);
     const now = new Date('2025-01-01 12:00:00');
     const result = parsed({
       now,
@@ -51,7 +51,7 @@ describe('date filters', async () => {
       firstOfArray1: '{{array.0}}',
       firstOfArray2: '{{array[0]}}',
     };
-    const result = app.jsonTemplateParser._parse(template)({
+    const result = app.jsonTemplateParser.parse(template)({
       user: { name: 'john' },
       array: ['first', 'second'],
     });
@@ -69,7 +69,7 @@ describe('date filters', async () => {
       form: '{{form}}',
       $form: '{{$form}}',
     };
-    const result = app.jsonTemplateParser._parse(template)({
+    const result = app.jsonTemplateParser.parse(template)({
       form,
       $form: form,
     });
@@ -84,7 +84,7 @@ describe('date filters', async () => {
       key1: '{{current.key1}}',
       key2: '{{current.key2}}',
     };
-    const result = app.jsonTemplateParser._parse(template)({
+    const result = app.jsonTemplateParser.parse(template)({
       current: { key1: 'value1' },
     });
     expect(result).toEqual({
@@ -97,11 +97,11 @@ describe('date filters', async () => {
     const template = {
       $now: '{{$now}}',
       '@today': '{{ $nDate.today }}',
-      $yesterday: '{{ $now | date_subtract: 1, "day" | date_format: "YYYY-MM-DD" }}',
+      $yesterday: '{{$now | date_calculate: "subtract",  1, "day" | date_format: "YYYY-MM-DD"}}',
     };
 
-    const parsed = app.jsonTemplateParser._parse(template);
-    const $now = new Date('2025-01-01: 12:00:00');
+    const parsed = app.jsonTemplateParser.parse(template);
+    const $now = new Date('2025-01-01 12:00:00');
     const result = parsed({
       $now,
       $nDate: {
