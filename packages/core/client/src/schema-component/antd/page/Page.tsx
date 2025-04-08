@@ -52,6 +52,7 @@ import { useStyles } from './Page.style';
 import { PageDesigner, PageTabDesigner } from './PageTabDesigner';
 import { PopupRouteContextResetter } from './PopupRouteContextResetter';
 import { transformMultiColumnToSingleColumn } from '@nocobase/utils/client';
+import { NAMESPACE_UI_SCHEMA } from '../../../i18n/constant';
 
 interface PageProps {
   currentTabUid: string;
@@ -431,7 +432,8 @@ const NocoBasePageHeader = React.memo(({ activeKey, className }: { activeKey: st
   const { token } = useToken();
 
   useEffect(() => {
-    const title = t(fieldSchema.title) || t(currentRoute?.title);
+    const title =
+      t(fieldSchema.title, { ns: NAMESPACE_UI_SCHEMA }) || t(currentRoute?.title, { ns: NAMESPACE_UI_SCHEMA });
     if (title) {
       setDocumentTitle(title);
       setPageTitle(title);
