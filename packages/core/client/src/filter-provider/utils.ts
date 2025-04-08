@@ -199,6 +199,7 @@ export const useFilterAPI = () => {
     ) => {
       const currentBlock = dataBlocks.find((block) => block.uid === fieldSchema.parent['x-uid']);
       dataBlocks.forEach((block) => {
+        let key = field as string;
         const target = targets.find((target) => target.uid === block.uid);
         if (!target) return;
 
@@ -206,7 +207,7 @@ export const useFilterAPI = () => {
           value = value(target, block, getSourceKey(currentBlock, target.field));
         }
         if (_.isFunction(field)) {
-          field = field(target, block);
+          key = field(target, block);
         }
         if (_.isFunction(operator)) {
           operator = operator(target);
@@ -220,7 +221,7 @@ export const useFilterAPI = () => {
           storedFilter[uid] = {
             $and: [
               {
-                [field]: {
+                [key]: {
                   [operator]: value,
                 },
               },
