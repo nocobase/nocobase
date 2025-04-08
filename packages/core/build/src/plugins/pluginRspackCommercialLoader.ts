@@ -31,7 +31,7 @@ export default function myLoader(
         ${source}
         export default withCommercial(${moduleName});
         `;
-      console.log(this.resourcePath, `Insert commercial client code success`);
+      console.log(`Insert commercial client code success`);
     } else {
       console.error(`Insert commercial client code fail`);
     }
