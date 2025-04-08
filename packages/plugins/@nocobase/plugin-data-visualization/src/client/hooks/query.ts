@@ -14,6 +14,7 @@ import {
   DEFAULT_DATA_SOURCE_KEY,
   useACLRoleContext,
   useDataSourceManager,
+  usePlugin,
 } from '@nocobase/client';
 import { useContext, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -22,6 +23,7 @@ import formatters from '../configure/formatters';
 import { useChartsTranslation } from '../locale';
 import { ChartRendererContext } from '../renderer';
 import { getField, getSelectedFields, parseField, processData } from '../utils';
+import PluginDataVisualiztionClient from '..';
 
 export type FieldOption = {
   value: string;
@@ -228,10 +230,42 @@ export const useOrderReaction = (defaultOptions: any[], fields: FieldOption[]) =
 export const useData = (data?: any[], dataSource?: string, collection?: string) => {
   const { t } = useChartsTranslation();
   const { service, query } = useContext(ChartRendererContext);
+  const plugin = usePlugin(PluginDataVisualiztionClient);
   const fields = useFieldsWithAssociation(dataSource, collection);
   const form = useForm();
-  const selectedFields = getSelectedFields(fields, form?.values?.query || query);
-  return processData(selectedFields, service?.data || data || [], { t });
+  const selectedFields = getSelectedFields(fields, form?.values?.query || query) as (FieldOption & { query?: any })[];
+  const enumFieldInterfaces = plugin.enumFieldInterfaces;
+  const enumFieldsOptions = {};
+  for (const field of selectedFields) {
+    if (field?.query?.aggregation) {
+      continue;
+    }
+    const options = enumFieldInterfaces[field.interface];
+    if (!options) {
+      continue;
+    }
+    const { getOptions } = options;
+    enumFieldsOptions[field.value] = getOptions(field);
+  }
+  const parseEnumValues = (options: { label: string; value: string }[], value: any) => {
+    if (Array.isArray(value)) {
+      return value.map((v) => parseEnumValues(options, v));
+    }
+    const option = options.find((option) => option.value === (value?.toString?.() || value));
+    return Schema.compile(option?.label || value, { t });
+  };
+  return (service?.data || data || []).map((record: any) => {
+    const processed = {};
+    Object.entries(record).forEach(([key, value]) => {
+      const options = enumFieldsOptions[key];
+      if (!options || !Array.isArray(options)) {
+        processed[key] = value;
+        return;
+      }
+      processed[key] = parseEnumValues(options, value);
+    });
+    return processed;
+  });
 };
 
 export const useCollectionFieldsOptions = (dataSource: string, collectionName: string, maxDepth = 2, excludes = []) => {

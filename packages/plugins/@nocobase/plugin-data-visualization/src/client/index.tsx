@@ -42,8 +42,28 @@ import { useChartBlockRefreshActionProps } from './initializers/BlockRefreshActi
 import { ChartRendererToolbar, ChartFilterBlockToolbar, ChartFilterItemToolbar } from './toolbar';
 import { ChartCardItem } from './block/CardItem';
 
+type enumFieldInterfaceOptions = {
+  getOptions: (field: any) => { label: string; value: string }[];
+};
+
+const getOptions = (field: any) => {
+  return field.uiSchema?.enum;
+};
+
 class PluginDataVisualiztionClient extends Plugin {
   public charts: ChartGroup = new ChartGroup();
+
+  enumFieldInterfaces: {
+    [fieldInterface: string]: enumFieldInterfaceOptions;
+  } = {
+    select: { getOptions },
+    multipleSelect: { getOptions },
+    radioGroup: { getOptions },
+  };
+
+  registerEnumFieldInterface(key: string, options: enumFieldInterfaceOptions) {
+    this.enumFieldInterfaces[key] = options;
+  }
 
   async load() {
     this.charts.addGroup('antd', { title: 'Ant Design', charts: antd });
