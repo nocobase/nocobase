@@ -45,6 +45,7 @@
     "@nocobase/plugin-gantt": "1.7.0-alpha.10",
     "@nocobase/plugin-graph-collection-manager": "1.7.0-alpha.10",
     "@nocobase/plugin-kanban": "1.7.0-alpha.10",
+    "@nocobase/plugin-locale-tester": "1.7.0-alpha.10",
     "@nocobase/plugin-localization": "1.7.0-alpha.10",
     "@nocobase/plugin-logger": "1.7.0-alpha.10",
     "@nocobase/plugin-map": "1.7.0-alpha.10",

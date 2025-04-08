@@ -10,6 +10,7 @@
 import path from 'path';
 import { randomUUID } from 'crypto';
 
+import { Snowflake } from 'nodejs-snowflake';
 import { Transaction, Transactionable } from 'sequelize';
 import LRUCache from 'lru-cache';
 
@@ -61,6 +62,7 @@ export default class PluginWorkflowServer extends Plugin {
   triggers: Registry<Trigger> = new Registry();
   functions: Registry<CustomFunction> = new Registry();
   enabledCache: Map<number, WorkflowModel> = new Map();
+  snowflake: Snowflake;
 
   private ready = false;
   private executing: Promise<void> | null = null;
@@ -219,6 +221,14 @@ export default class PluginWorkflowServer extends Plugin {
       WorkflowRepository,
       WorkflowTasksRepository,
     });
+
+    const PluginRepo = this.db.getRepository<any>('applicationPlugins');
+    const pluginRecord = await PluginRepo.findOne({
+      filter: { name: this.name },
+    });
+    this.snowflake = new Snowflake({
+      custom_epoch: pluginRecord?.createdAt.getTime(),
+    });
   }
 
   /**
@@ -376,11 +386,16 @@ export default class PluginWorkflowServer extends Plugin {
       const prev = workflow.previous();
       if (prev.config) {
         trigger.off({ ...workflow.get(), ...prev });
+        this.getLogger(workflow.id).info(`toggle OFF workflow ${workflow.id} based on configuration before updated`);
       }
       trigger.on(workflow);
+      this.getLogger(workflow.id).info(`toggle ON workflow ${workflow.id}`);
+
       this.enabledCache.set(workflow.id, workflow);
     } else {
       trigger.off(workflow);
+      this.getLogger(workflow.id).info(`toggle OFF workflow ${workflow.id}`);
+
       this.enabledCache.delete(workflow.id);
     }
     if (!silent) {

@@ -72,7 +72,13 @@ export class HasManyRepository extends MultipleRelationRepository {
       const filterResult = this.parseFilter(options['filter'], options);
 
       if (filterResult.include && filterResult.include.length > 0) {
-        return await this.destroyByFilter(options['filter'], transaction);
+        return await this.destroyByFilter(
+          {
+            filter: options['filter'],
+            filterByTk: options['filterByTk'],
+          },
+          transaction,
+        );
       }
 
       where.push(filterResult.where);

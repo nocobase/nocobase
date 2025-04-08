@@ -54,7 +54,11 @@ describe('union role mobileRoutes', async () => {
         roles: [role1.name, role2.name],
       },
     });
-
+    await rootAgent.resource('roles').setSystemRoleMode({
+      values: {
+        roleMode: SystemRoleMode.allowUseUnion,
+      },
+    });
     agent = await app.agent().login(user, UNION_ROLE_KEY);
   });
 

@@ -568,13 +568,14 @@ export interface SchemaSettingsSelectItemProps
   extends Omit<SchemaSettingsItemProps, 'onChange' | 'onClick'>,
     Omit<SelectWithTitleProps, 'title' | 'defaultValue'> {
   value?: SelectWithTitleProps['defaultValue'];
+  optionRender?: (option: any, info: { index: number }) => React.ReactNode;
 }
 export const SchemaSettingsSelectItem: FC<SchemaSettingsSelectItemProps> = (props) => {
-  const { title, options, value, onChange, ...others } = props;
+  const { title, options, value, onChange, optionRender, ...others } = props;
 
   return (
     <SchemaSettingsItem title={title} {...others}>
-      <SelectWithTitle {...{ title, defaultValue: value, onChange, options }} />
+      <SelectWithTitle {...{ title, defaultValue: value, onChange, options, optionRender }} />
     </SchemaSettingsItem>
   );
 };

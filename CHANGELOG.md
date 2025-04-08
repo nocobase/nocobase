@@ -5,6 +5,84 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v1.6.16](https://github.com/nocobase/nocobase/compare/v1.6.15...v1.6.16) - 2025-04-03
+
+### 🐛 Bug Fixes
+
+- **[client]**
+  - x-disabled property not taking effect on form fields ([#6610](https://github.com/nocobase/nocobase/pull/6610)) by @katherinehhh
+
+  - field label display issue to prevent truncation by colon ([#6599](https://github.com/nocobase/nocobase/pull/6599)) by @katherinehhh
+
+- **[database]** When deleting one-to-many records, both `filter` and `filterByTk` are passed and `filter` includes an association field, the `filterByTk` is ignored ([#6606](https://github.com/nocobase/nocobase/pull/6606)) by @2013xile
+
+## [v1.6.15](https://github.com/nocobase/nocobase/compare/v1.6.14...v1.6.15) - 2025-04-01
+
+### 🚀 Improvements
+
+- **[database]**
+  - Add trim option for text field ([#6603](https://github.com/nocobase/nocobase/pull/6603)) by @mytharcher
+
+  - Add trim option for string field ([#6565](https://github.com/nocobase/nocobase/pull/6565)) by @mytharcher
+
+- **[File manager]** Add trim option for text fields of storages collection ([#6604](https://github.com/nocobase/nocobase/pull/6604)) by @mytharcher
+
+- **[Workflow]** Improve code ([#6589](https://github.com/nocobase/nocobase/pull/6589)) by @mytharcher
+
+- **[Workflow: Approval]** Support to use block template for approval process form by @mytharcher
+
+### 🐛 Bug Fixes
+
+- **[database]** Avoid "datetimeNoTz" field changes when value not changed in updating record ([#6588](https://github.com/nocobase/nocobase/pull/6588)) by @mytharcher
+
+- **[client]**
+  - association field (select) displaying N/A when exposing related collection fields ([#6582](https://github.com/nocobase/nocobase/pull/6582)) by @katherinehhh
+
+  - Fix `disabled` property not works when `SchemaInitializerItem` has `items` ([#6597](https://github.com/nocobase/nocobase/pull/6597)) by @mytharcher
+
+  - cascade  issue: 'The value of xxx cannot be in array format' when deleting and re-selecting ([#6585](https://github.com/nocobase/nocobase/pull/6585)) by @katherinehhh
+
+- **[Collection field: Many to many (array)]** Issue of filtering by fields in an association collection with a many to many (array) field ([#6596](https://github.com/nocobase/nocobase/pull/6596)) by @2013xile
+
+- **[Public forms]** View permissions include list and get ([#6607](https://github.com/nocobase/nocobase/pull/6607)) by @chenos
+
+- **[Authentication]** token assignment in `AuthProvider` ([#6593](https://github.com/nocobase/nocobase/pull/6593)) by @2013xile
+
+- **[Workflow]** Fix sync option display incorrectly ([#6595](https://github.com/nocobase/nocobase/pull/6595)) by @mytharcher
+
+- **[Block: Map]** map management validation should not pass with space input ([#6575](https://github.com/nocobase/nocobase/pull/6575)) by @katherinehhh
+
+- **[Workflow: Approval]**
+  - Fix client variables to use in approval form by @mytharcher
+
+  - Fix branch mode when `endOnReject` configured as `true` by @mytharcher
+
+## [v1.6.14](https://github.com/nocobase/nocobase/compare/v1.6.13...v1.6.14) - 2025-03-29
+
+### 🐛 Bug Fixes
+
+- **[Calendar]** missing data on boundary dates in weekly calendar view ([#6587](https://github.com/nocobase/nocobase/pull/6587)) by @katherinehhh
+
+- **[Auth: OIDC]** Incorrect redirection occurs when the callback path is the string 'null' by @2013xile
+
+- **[Workflow: Approval]** Fix approval node configuration is incorrect after schema changed by @mytharcher
+
+## [v1.6.13](https://github.com/nocobase/nocobase/compare/v1.6.12...v1.6.13) - 2025-03-28
+
+### 🚀 Improvements
+
+- **[Async task manager]** optimize import/export buttons in Pro ([#6531](https://github.com/nocobase/nocobase/pull/6531)) by @chenos
+
+- **[Action: Export records Pro]** optimize import/export buttons in Pro by @katherinehhh
+
+- **[Migration manager]** allow skip automatic backup and restore for migration by @gchust
+
+### 🐛 Bug Fixes
+
+- **[client]** linkage conflict between same-named association fields in different sub-tables within the same form ([#6577](https://github.com/nocobase/nocobase/pull/6577)) by @katherinehhh
+
+- **[Action: Batch edit]** Click the batch edit button, configure the pop-up window, and then open it again, the pop-up window is blank ([#6578](https://github.com/nocobase/nocobase/pull/6578)) by @zhangzhonghe
+
 ## [v1.6.12](https://github.com/nocobase/nocobase/compare/v1.6.11...v1.6.12) - 2025-03-27
 
 ### 🐛 Bug Fixes

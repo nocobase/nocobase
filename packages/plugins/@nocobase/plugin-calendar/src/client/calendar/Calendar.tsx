@@ -108,7 +108,7 @@ const useEvents = (
     title: string;
   },
   date: Date,
-  view: (typeof Weeks)[number],
+  view: (typeof Weeks)[number] | any = 'month',
 ) => {
   const parseExpression = useLazy<typeof import('cron-parser').parseExpression>(
     () => import('cron-parser'),
@@ -132,8 +132,8 @@ const useEvents = (
       const intervalTime = end.diff(start, 'millisecond', true);
 
       const dateM = dayjs(date);
-      const startDate = dateM.clone().startOf('month');
-      const endDate = startDate.clone().endOf('month');
+      const startDate = dateM.clone().startOf(view);
+      const endDate = startDate.clone().endOf(view);
 
       /**
        * view === month 时，会显示当月日程
@@ -425,7 +425,6 @@ export const Calendar: any = withDynamicSchemaProps(
         };
       };
       const BigCalendar = reactBigCalendar?.BigCalendar;
-
       return wrapSSR(
         <div className={`${hashId} ${containerClassName}`} style={{ height: height || 700 }}>
           <PopupContextProvider visible={visible} setVisible={setVisible}>
