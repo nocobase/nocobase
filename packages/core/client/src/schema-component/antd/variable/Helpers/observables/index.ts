@@ -32,7 +32,7 @@ export const createHelperObservables = () => {
   const helpersObs = observable.computed(() => {
     return rawHelpersObs.value.map((helper) => {
       const config = allHelpersConfigObs.value.find((f) => f.name === helper.name);
-      const args = config.uiSchema ? config.uiSchema.map((param) => helper.argsMap[param.name]) : [];
+      const args = config?.uiSchema ? config.uiSchema.map((param) => helper.argsMap[param.name]) : [];
       return {
         ...helper,
         config,
@@ -62,7 +62,7 @@ export const createHelperObservables = () => {
       variableSegmentsObs.value = variableSegments;
       const computedHelpers = helpers.map((helper: any) => {
         const config = allHelpersConfigObs.value.find((f) => f.name === helper.name);
-        const argsMap = config.uiSchema
+        const argsMap = config?.uiSchema
           ? Object.fromEntries(config.uiSchema.map((param, index) => [param.name, helper.args[index]]))
           : {};
         return {
