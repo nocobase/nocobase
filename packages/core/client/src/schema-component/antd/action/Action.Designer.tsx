@@ -18,12 +18,7 @@ import { useGlobalVariable } from '../../../application/hooks/useGlobalVariable'
 import { SchemaSettingOptions, SchemaSettings } from '../../../application/schema-settings';
 import { useSchemaToolbar } from '../../../application/schema-toolbar';
 import { useCollectionManager_deprecated, useCollection_deprecated } from '../../../collection-manager';
-import {
-  highlightBlock,
-  startScrollEndTracking,
-  stopScrollEndTracking,
-  unhighlightBlock,
-} from '../../../filter-provider/highlightBlock';
+import { highlightBlock, startScrollEndTracking, stopScrollEndTracking, unhighlightBlock } from '../../../filter-provider/highlightBlock';
 import { FlagProvider } from '../../../flag-provider';
 import { SaveMode } from '../../../modules/actions/submit/createSubmitActionSettings';
 import { useOpenModeContext } from '../../../modules/popup/OpenModeProvider';
@@ -312,7 +307,7 @@ const hideDialog = (dialogClassName: string) => {
     dialogWrap.style.opacity = '0';
     dialogWrap.style.transition = 'opacity 0.5s ease';
   }
-};
+}
 
 const showDialog = (dialogClassName: string) => {
   const dialogMask = document.querySelector<HTMLElement>(`.${dialogClassName} > .ant-modal-mask`);
@@ -325,7 +320,7 @@ const showDialog = (dialogClassName: string) => {
     dialogWrap.style.opacity = '1';
     dialogWrap.style.transition = 'opacity 0.5s ease';
   }
-};
+}
 
 export const BlocksSelector = (props) => {
   const { getAllDataBlocks } = useAllDataBlocks();
@@ -335,33 +330,31 @@ export const BlocksSelector = (props) => {
 
   // 转换 allDataBlocks 为 Select 选项
   const options = useMemo(() => {
-    return allDataBlocks
-      .map((block) => {
-        // 防止列表中出现已关闭的弹窗中的区块
-        if (!block.dom?.isConnected) {
-          return null;
-        }
+    return allDataBlocks.map(block => {
+      // 防止列表中出现已关闭的弹窗中的区块
+      if (!block.dom?.isConnected) {
+        return null;
+      }
 
-        const title = `${compile(block.collection.title)} #${block.uid.slice(0, 4)}`;
-        return {
-          label: title,
-          value: block.uid,
-          onMouseEnter() {
-            block.highlightBlock();
-            hideDialog('dialog-after-successful-submission');
-            startScrollEndTracking(block.dom, () => {
-              highlightBlock(block.dom.cloneNode(true) as HTMLElement, block.dom.getBoundingClientRect());
-            });
-          },
-          onMouseLeave() {
-            block.unhighlightBlock();
-            showDialog('dialog-after-successful-submission');
-            stopScrollEndTracking(block.dom);
-            unhighlightBlock();
-          },
-        };
-      })
-      .filter(Boolean);
+      const title = `${compile(block.collection.title)} #${block.uid.slice(0, 4)}`;
+      return {
+        label: title,
+        value: block.uid,
+        onMouseEnter() {
+          block.highlightBlock();
+          hideDialog('dialog-after-successful-submission');
+          startScrollEndTracking(block.dom, () => {
+            highlightBlock(block.dom.cloneNode(true) as HTMLElement, block.dom.getBoundingClientRect());
+          });
+        },
+        onMouseLeave() {
+          block.unhighlightBlock();
+          showDialog('dialog-after-successful-submission');
+          stopScrollEndTracking(block.dom);
+          unhighlightBlock();
+        }
+      }
+    }).filter(Boolean);
   }, [allDataBlocks, t]);
 
   return (
@@ -374,7 +367,7 @@ export const BlocksSelector = (props) => {
       onChange={props.onChange}
     />
   );
-};
+}
 
 export function AfterSuccess() {
   const { dn } = useDesignable();
@@ -387,21 +380,21 @@ export function AfterSuccess() {
 
   return (
     <SchemaSettingsModalItem
-      dialogRootClassName="dialog-after-successful-submission"
+      dialogRootClassName='dialog-after-successful-submission'
       width={700}
       title={t('After successful submission')}
       initialValues={
         onSuccess
           ? {
-              actionAfterSuccess: onSuccess?.redirecting ? 'redirect' : 'previous',
-              ...onSuccess,
-            }
+            actionAfterSuccess: onSuccess?.redirecting ? 'redirect' : 'previous',
+            ...onSuccess,
+          }
           : {
-              manualClose: false,
-              redirecting: false,
-              successMessage: '{{t("Saved successfully")}}',
-              actionAfterSuccess: 'previous',
-            }
+            manualClose: false,
+            redirecting: false,
+            successMessage: '{{t("Saved successfully")}}',
+            actionAfterSuccess: 'previous',
+          }
       }
       schema={
         {
