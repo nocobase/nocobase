@@ -12,8 +12,7 @@ import { uid } from '@formily/shared';
 import lodash from 'lodash';
 import { SelectedField } from './configure';
 import { FieldOption } from './hooks';
-import { ChartRendererContext, QueryProps } from './renderer';
-import { useContext } from 'react';
+import { QueryProps } from './renderer';
 
 export const createRendererSchema = (decoratorProps: any, componentProps = {}) => {
   const { collection, config } = decoratorProps;
@@ -23,7 +22,8 @@ export const createRendererSchema = (decoratorProps: any, componentProps = {}) =
     'x-decorator': 'ChartRendererProvider',
     'x-decorator-props': decoratorProps,
     'x-acl-action': `${collection}:list`,
-    'x-designer': 'ChartRenderer.Designer',
+    'x-toolbar': 'ChartRendererToolbar',
+    'x-settings': 'chart:renderer',
     'x-component': 'CardItem',
     'x-component-props': {
       size: 'small',

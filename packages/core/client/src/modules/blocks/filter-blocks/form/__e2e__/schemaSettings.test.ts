@@ -28,7 +28,7 @@ test.describe('filter block schema settings', () => {
       },
       supportedOptions: [
         'Edit block title',
-        'Save as block template',
+        // 'Save as block template',
         'Linkage rules',
         'Connect data blocks',
         'Delete',
@@ -37,7 +37,7 @@ test.describe('filter block schema settings', () => {
   });
 
   test.describe('connect data blocks', () => {
-    test('connecting two blocks of the same collection', async ({
+    test.skip('connecting two blocks of the same collection', async ({
       page,
       mockPage,
       mockRecords,

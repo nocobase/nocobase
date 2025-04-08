@@ -852,7 +852,7 @@ export const Table: any = withDynamicSchemaProps(
       const collection = useCollection();
       const isTableSelector = schema?.parent?.['x-decorator'] === 'TableSelectorProvider';
       const ctx = isTableSelector ? useTableSelectorContext() : useTableBlockContext();
-      const { expandFlag, allIncludesChildren } = ctx;
+      const { expandFlag, allIncludesChildren, enableIndexÏColumn } = ctx;
       const onRowDragEnd = useMemoizedFn(others.onRowDragEnd || (() => {}));
       const paginationProps = usePaginationProps(pagination1, pagination2, props);
       const columns = useTableColumns(others, paginationProps);
@@ -1017,73 +1017,76 @@ export const Table: any = withDynamicSchemaProps(
 
       const restProps = useMemo(
         () => ({
-          rowSelection: memoizedRowSelection
-            ? {
-                type: 'checkbox',
-                selectedRowKeys: selectedRowKeys,
-                onChange(selectedRowKeys: any[], selectedRows: any[]) {
-                  field.data = field.data || {};
-                  field.data.selectedRowKeys = selectedRowKeys;
-                  field.data.selectedRowData = selectedRows;
-                  setSelectedRowKeys(selectedRowKeys);
-                  onRowSelectionChange?.(selectedRowKeys, selectedRows, setSelectedRowKeys);
-                },
-                onSelect: (record, selected: boolean, selectedRows, nativeEvent) => {
-                  if (tableBlockContextBasicValue) {
-                    tableBlockContextBasicValue.field.data = tableBlockContextBasicValue.field?.data || {};
-                    tableBlockContextBasicValue.field.data.selectedRecord = record;
-                    tableBlockContextBasicValue.field.data.selected = selected;
-                  }
-                },
-                getCheckboxProps(record) {
-                  return {
-                    'aria-label': `checkbox`,
-                  };
-                },
-                renderCell: (checked, record, index, originNode) => {
-                  if (!dragSort && !showIndex) {
-                    return originNode;
-                  }
-                  const current = paginationProps?.current;
+          rowSelection:
+            enableIndexÏColumn !== false
+              ? memoizedRowSelection
+                ? {
+                    type: 'checkbox',
+                    selectedRowKeys: selectedRowKeys,
+                    onChange(selectedRowKeys: any[], selectedRows: any[]) {
+                      field.data = field.data || {};
+                      field.data.selectedRowKeys = selectedRowKeys;
+                      field.data.selectedRowData = selectedRows;
+                      setSelectedRowKeys(selectedRowKeys);
+                      onRowSelectionChange?.(selectedRowKeys, selectedRows, setSelectedRowKeys);
+                    },
+                    onSelect: (record, selected: boolean, selectedRows, nativeEvent) => {
+                      if (tableBlockContextBasicValue) {
+                        tableBlockContextBasicValue.field.data = tableBlockContextBasicValue.field?.data || {};
+                        tableBlockContextBasicValue.field.data.selectedRecord = record;
+                        tableBlockContextBasicValue.field.data.selected = selected;
+                      }
+                    },
+                    getCheckboxProps(record) {
+                      return {
+                        'aria-label': `checkbox`,
+                      };
+                    },
+                    renderCell: (checked, record, index, originNode) => {
+                      if (!dragSort && !showIndex) {
+                        return originNode;
+                      }
+                      const current = paginationProps?.current;
 
-                  const pageSize = paginationProps?.pageSize || 20;
-                  if (current) {
-                    index = index + (current - 1) * pageSize + 1;
-                  } else {
-                    index = index + 1;
-                  }
-                  if (record.__index) {
-                    index = extractIndex(record.__index);
-                  }
-                  return (
-                    <div
-                      role="button"
-                      aria-label={`table-index-${index}`}
-                      className={classNames(checked ? 'checked' : null, rowSelectCheckboxWrapperClass, {
-                        [rowSelectCheckboxWrapperClassHover]: isRowSelect,
-                      })}
-                    >
-                      <div className={classNames(checked ? 'checked' : null, rowSelectCheckboxContentClass)}>
-                        {dragSort && <SortHandle id={getRowKey(record)} />}
-                        {showIndex && <TableIndex index={index} />}
-                      </div>
-                      {isRowSelect && (
+                      const pageSize = paginationProps?.pageSize || 20;
+                      if (current) {
+                        index = index + (current - 1) * pageSize + 1;
+                      } else {
+                        index = index + 1;
+                      }
+                      if (record.__index) {
+                        index = extractIndex(record.__index);
+                      }
+                      return (
                         <div
-                          className={classNames(
-                            'nb-origin-node',
-                            checked ? 'checked' : null,
-                            rowSelectCheckboxCheckedClassHover,
-                          )}
+                          role="button"
+                          aria-label={`table-index-${index}`}
+                          className={classNames(checked ? 'checked' : null, rowSelectCheckboxWrapperClass, {
+                            [rowSelectCheckboxWrapperClassHover]: isRowSelect,
+                          })}
                         >
-                          {originNode}
+                          <div className={classNames(checked ? 'checked' : null, rowSelectCheckboxContentClass)}>
+                            {dragSort && <SortHandle id={getRowKey(record)} />}
+                            {showIndex && <TableIndex index={index} />}
+                          </div>
+                          {isRowSelect && (
+                            <div
+                              className={classNames(
+                                'nb-origin-node',
+                                checked ? 'checked' : null,
+                                rowSelectCheckboxCheckedClassHover,
+                              )}
+                            >
+                              {originNode}
+                            </div>
+                          )}
                         </div>
-                      )}
-                    </div>
-                  );
-                },
-                ...memoizedRowSelection,
-              }
-            : undefined,
+                      );
+                    },
+                    ...memoizedRowSelection,
+                  }
+                : undefined
+              : undefined,
         }),
         [
           memoizedRowSelection,
@@ -1097,6 +1100,7 @@ export const Table: any = withDynamicSchemaProps(
           memoizedRowSelection,
           paginationProps,
           tableBlockContextBasicValue,
+          enableIndexÏColumn,
         ],
       );
 

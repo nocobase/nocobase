@@ -72,6 +72,10 @@ describe('Table.settings', () => {
             expect(screen.queryByText('Drag and drop sorting field')).not.toBeInTheDocument();
           },
         },
+        {
+          title: 'Enable index column',
+          type: 'switch',
+        },
         // {
         //   title: 'Fix block',
         //   type: 'switch',
@@ -229,10 +233,10 @@ describe('Table.settings', () => {
             },
           ],
         },
-        {
-          title: 'Save as template',
-          type: 'modal',
-        },
+        // {
+        //   title: 'Save as template',
+        //   type: 'modal',
+        // },
         {
           title: 'Delete',
           type: 'delete',
@@ -295,7 +299,12 @@ describe('Table.settings', () => {
 
   test('menu list', async () => {
     await renderSettings(getRenderSettingsOptions());
-    await checkTableSettings();
+    await checkTableSettings([
+      {
+        title: 'Save as template',
+        type: 'modal',
+      },
+    ]);
   });
 
   test('old schema', async () => {

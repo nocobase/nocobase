@@ -34,6 +34,8 @@ import {
 import { DefaultValueProvider } from '../../../schema-settings/hooks/useIsAllowToSetDefaultValue';
 import { useLinkageAction } from './hooks';
 import { requestSettingsSchema } from './utils';
+import { useAfterSuccessOptions } from './hooks/useGetAfterSuccessVariablesOptions';
+import { useGlobalVariable } from '../../../application/hooks/useGlobalVariable';
 
 const MenuGroup = (props) => {
   return props.children;
@@ -67,7 +69,24 @@ export function ButtonEditor(props) {
               title: t('Button icon'),
               default: fieldSchema?.['x-component-props']?.icon,
               'x-component-props': {},
-              'x-visible': !isLink,
+            },
+            onlyIcon: {
+              'x-decorator': 'FormItem',
+              'x-component': 'Checkbox',
+              title: t('Icon only'),
+              default: fieldSchema?.['x-component-props']?.onlyIcon,
+              'x-component-props': {},
+              'x-visible': isLink,
+              'x-reactions': [
+                {
+                  dependencies: ['icon'],
+                  fulfill: {
+                    state: {
+                      hidden: '{{!$deps[0]}}',
+                    },
+                  },
+                },
+              ],
             },
             iconColor: {
               title: t('Color'),
@@ -96,13 +115,14 @@ export function ButtonEditor(props) {
           },
         } as ISchema
       }
-      onSubmit={({ title, icon, type, iconColor }) => {
+      onSubmit={({ title, icon, type, iconColor, onlyIcon }) => {
         if (field.address.toString() === fieldSchema.name) {
           field.title = title;
           field.componentProps.iconColor = iconColor;
           field.componentProps.icon = icon;
           field.componentProps.danger = type === 'danger';
           field.componentProps.type = type || field.componentProps.type;
+          field.componentProps.onlyIcon = onlyIcon;
         } else {
           field.form.query(new RegExp(`.${fieldSchema.name}$`)).forEach((fieldItem) => {
             fieldItem.title = title;
@@ -110,6 +130,7 @@ export function ButtonEditor(props) {
             fieldItem.componentProps.icon = icon;
             fieldItem.componentProps.danger = type === 'danger';
             fieldItem.componentProps.type = type || fieldItem.componentProps.type;
+            fieldItem.componentProps.onlyIcon = onlyIcon;
           });
         }
 
@@ -119,6 +140,7 @@ export function ButtonEditor(props) {
         fieldSchema['x-component-props'].icon = icon;
         fieldSchema['x-component-props'].danger = type === 'danger';
         fieldSchema['x-component-props'].type = type || field.componentProps.type;
+        fieldSchema['x-component-props'].onlyIcon = onlyIcon;
 
         dn.emit('patch', {
           schema: {
@@ -167,6 +189,13 @@ export function AssignedFieldValues() {
     'x-component': 'Grid',
     'x-initializer': 'assignFieldValuesForm:configureFields',
   };
+  if (fieldSchema['x-template-uid']) {
+    initialSchema['x-template-root-ref'] = {
+      'x-template-uid': fieldSchema['x-template-uid'],
+      'x-path': 'x-action-settings.schemaUid',
+    };
+  }
+
   const tips = {
     'customize:update': t(
       'After clicking the custom button, the following fields of the current record will be saved according to the following form.',
@@ -253,11 +282,24 @@ export function SkipValidation() {
   );
 }
 
+const fieldNames = {
+  value: 'value',
+  label: 'label',
+};
+const useVariableProps = (environmentVariables) => {
+  const scope = useAfterSuccessOptions();
+  return {
+    scope: [environmentVariables, ...scope].filter(Boolean),
+    fieldNames,
+  };
+};
+
 export function AfterSuccess() {
   const { dn } = useDesignable();
   const { t } = useTranslation();
   const fieldSchema = useFieldSchema();
   const { onSuccess } = fieldSchema?.['x-action-settings'] || {};
+  const environmentVariables = useGlobalVariable('$env');
   return (
     <SchemaSettingsModalItem
       title={t('After successful submission')}
@@ -336,8 +378,9 @@ export function AfterSuccess() {
             redirectTo: {
               title: t('Link'),
               'x-decorator': 'FormItem',
-              'x-component': 'Input',
-              'x-component-props': {},
+              'x-component': 'Variable.TextArea',
+              // eslint-disable-next-line react-hooks/rules-of-hooks
+              'x-use-component-props': () => useVariableProps(environmentVariables),
             },
           },
         } as ISchema

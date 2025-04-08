@@ -1,7 +1,7 @@
-{
+ {
   "Vditor": "Markdown(Vditor)",
   "File collection": "Raccolta file",
-  "Used to store files uploaded in the Markdown editor": "Utilizzato per archiviare i file caricati nell'editor Markdown",
+  "Used to store files uploaded in the Markdown editor (default: attachments)": "Utilizzato per archiviare i file caricati nell'editor Markdown (default: attachments)",
   "Toolbar": "Configurazione barra degli strumenti dell'editor",
   "Emoji": "Emoji",
   "Headings": "Intestazioni",
@@ -29,5 +29,10 @@
   "Both": "Editor e Anteprima",
   "Preview": "Anteprima",
   "Fullscreen": "Attiva/disattiva schermo intero",
-  "Outline": "Struttura"
+  "Outline": "Struttura",
+  "uploading": "Uploading...",
+  "upload failed": "upload failed",
+  "vditor.uploadError.message": "Impossibile caricare file nello storage corrente. Stai tentando di caricare file nell'editor Markdown, ma la configurazione di archiviazione corrente non supporta questa operazione. Per abilitare la funzionalità di caricamento, completa le seguenti impostazioni: 1. Vai a \"Gestione file\". 2. Seleziona lo storage attualmente in uso ({{storageTitle}}). 3. Imposta \"URL di base\" e abilita l'opzione \"Accesso pubblico\".",
+  "Storage configuration not found. Please configure a storage provider first.": "Configurazione dello storage non trovata. Configura prima un provider di storage.",
+  "Response data is empty": "I dati di risposta sono vuoti"
 }

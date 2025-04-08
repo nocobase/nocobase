@@ -10,6 +10,7 @@
 import path from 'path';
 import { randomUUID } from 'crypto';
 
+import { Snowflake } from 'nodejs-snowflake';
 import { Transaction, Transactionable } from 'sequelize';
 import LRUCache from 'lru-cache';
 
@@ -61,6 +62,7 @@ export default class PluginWorkflowServer extends Plugin {
   triggers: Registry<Trigger> = new Registry();
   functions: Registry<CustomFunction> = new Registry();
   enabledCache: Map<number, WorkflowModel> = new Map();
+  snowflake: Snowflake;
 
   private ready = false;
   private executing: Promise<void> | null = null;
@@ -219,6 +221,14 @@ export default class PluginWorkflowServer extends Plugin {
       WorkflowRepository,
       WorkflowTasksRepository,
     });
+
+    const PluginRepo = this.db.getRepository<any>('applicationPlugins');
+    const pluginRecord = await PluginRepo.findOne({
+      filter: { name: this.name },
+    });
+    this.snowflake = new Snowflake({
+      custom_epoch: pluginRecord?.createdAt.getTime(),
+    });
   }
 
   /**
@@ -279,14 +289,24 @@ export default class PluginWorkflowServer extends Plugin {
     });
 
     db.on('workflows.beforeSave', this.onBeforeSave);
-    db.on('workflows.afterCreate', (model: WorkflowModel, { transaction }) => {
+    db.on('workflows.afterCreate', async (model: WorkflowModel, { transaction }) => {
+      const WorkflowStatsModel = this.db.getModel('workflowStats');
+      const [stats, created] = await WorkflowStatsModel.findOrCreate({
+        where: { key: model.key },
+        defaults: { key: model.key },
+        transaction,
+      });
+      model.stats = stats;
+      model.versionStats = await model.createVersionStats({ id: model.id }, { transaction });
       if (model.enabled) {
         this.toggle(model, true, { transaction });
       }
     });
-    db.on('workflows.afterUpdate', (model: WorkflowModel, { transaction }) =>
-      this.toggle(model, model.enabled, { transaction }),
-    );
+    db.on('workflows.afterUpdate', async (model: WorkflowModel, { transaction }) => {
+      model.stats = await model.getStats({ transaction });
+      model.versionStats = await model.getVersionStats({ transaction });
+      this.toggle(model, model.enabled, { transaction });
+    });
     db.on('workflows.afterDestroy', async (model: WorkflowModel, { transaction }) => {
       this.toggle(model, false, { transaction });
 
@@ -536,7 +556,7 @@ export default class PluginWorkflowServer extends Plugin {
       return Promise.reject(new Error('event is not valid'));
     }
 
-    let execution;
+    let execution: ExecutionModel;
     try {
       execution = await workflow.createExecution(
         {
@@ -557,23 +577,21 @@ export default class PluginWorkflowServer extends Plugin {
 
     this.getLogger(workflow.id).info(`execution of workflow ${workflow.id} created as ${execution.id}`);
 
-    await workflow.increment(['executed', 'allExecuted'], { transaction });
+    if (!workflow.stats) {
+      workflow.stats = await workflow.getStats({ transaction });
+    }
+    await workflow.stats.increment('executed', { transaction });
     // NOTE: https://sequelize.org/api/v6/class/src/model.js~model#instance-method-increment
     if (this.db.options.dialect !== 'postgres') {
-      await workflow.reload({ transaction });
+      await workflow.stats.reload({ transaction });
     }
-
-    await (<typeof WorkflowModel>workflow.constructor).update(
-      {
-        allExecuted: workflow.allExecuted,
-      },
-      {
-        where: {
-          key: workflow.key,
-        },
-        transaction,
-      },
-    );
+    if (!workflow.versionStats) {
+      workflow.versionStats = await workflow.getVersionStats({ transaction });
+    }
+    await workflow.versionStats.increment('executed', { transaction });
+    if (this.db.options.dialect !== 'postgres') {
+      await workflow.versionStats.reload({ transaction });
+    }
 
     if (!sameTransaction) {
       await transaction.commit();

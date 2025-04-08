@@ -594,6 +594,7 @@ export const SchemaSettingsCascaderItem: FC<SchemaSettingsCascaderItemProps> = (
           options={options}
           style={{ textAlign: 'right', minWidth: 100 }}
           {...props}
+          multiple={props.multiple}
         />
       </div>
     </SchemaSettingsItem>

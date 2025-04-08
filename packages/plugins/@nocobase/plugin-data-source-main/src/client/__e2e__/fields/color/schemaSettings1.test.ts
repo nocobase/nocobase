@@ -47,12 +47,12 @@ test.describe('form item & create form', () => {
       expectEditable: async () => {
         // 默认情况下显示颜色选择框
         await page.getByLabel('color-picker-normal').hover();
-        await expect(page.getByRole('button', { name: 'right Recommended', exact: true })).toBeVisible();
+        await expect(page.getByRole('button', { name: 'expanded Recommended', exact: true })).toBeVisible();
       },
       expectReadonly: async () => {
         // 只读模式下，不会显示颜色弹窗
         await page.getByLabel('color-picker-normal').hover();
-        await expect(page.getByRole('button', { name: 'right Recommended', exact: true })).not.toBeVisible();
+        await expect(page.getByRole('button', { name: 'expanded Recommended', exact: true })).not.toBeVisible();
       },
       expectEasyReading: async () => {
         await expect(page.getByLabel('color-picker-read-pretty')).toBeVisible();

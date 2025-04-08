@@ -8,7 +8,7 @@
  */
 
 import { css } from '@emotion/css';
-import { observer, RecursionField, useField, useFieldSchema } from '@formily/react';
+import { observer, RecursionField, Schema, useField, useFieldSchema } from '@formily/react';
 import { Tabs as AntdTabs, TabPaneProps, TabsProps } from 'antd';
 import classNames from 'classnames';
 import React, { useMemo } from 'react';
@@ -21,6 +21,8 @@ import { SchemaComponent } from '../../core';
 import { useDesigner } from '../../hooks/useDesigner';
 import { useTabsContext } from './context';
 import { TabsDesigner } from './Tabs.Designer';
+import { useMobileLayout } from '../../../route-switch/antd/admin-layout';
+import { transformMultiColumnToSingleColumn } from '@nocobase/utils/client';
 import { NAMESPACE_UI_SCHEMA } from '../../../i18n/constant';
 
 const MemoizeRecursionField = React.memo(RecursionField);
@@ -34,6 +36,7 @@ export const Tabs: any = React.memo((props: TabsProps) => {
   const { render } = useSchemaInitializerRender(fieldSchema['x-initializer'], fieldSchema['x-initializer-props']);
   const contextProps = useTabsContext();
   const { PaneRoot = React.Fragment as React.FC<any> } = contextProps;
+  const { isMobileLayout } = useMobileLayout();
 
   const items = useMemo(() => {
     const result = fieldSchema.mapProperties((schema, key: string) => {
@@ -42,14 +45,19 @@ export const Tabs: any = React.memo((props: TabsProps) => {
         label: <MemoizeRecursionField name={key} schema={schema} onlyRenderSelf />,
         children: (
           <PaneRoot key={key} {...(PaneRoot !== React.Fragment ? { active: key === contextProps.activeKey } : {})}>
-            <SchemaComponent name={key} schema={schema} onlyRenderProperties distributed />
+            <SchemaComponent
+              name={key}
+              schema={isMobileLayout ? new Schema(transformMultiColumnToSingleColumn(schema)) : schema}
+              onlyRenderProperties
+              distributed
+            />
           </PaneRoot>
         ),
       };
     });
 
     return result;
-  }, [fieldSchema.mapProperties((s, key) => key).join()]);
+  }, [fieldSchema, isMobileLayout]);
 
   const tabBarExtraContent = useMemo(
     () => ({
@@ -104,6 +112,9 @@ const designerCss = css`
     left: 0;
     right: 0;
     pointer-events: none;
+    &.nb-in-template {
+      background: var(--colorTemplateBgSettingsHover);
+    }
     > .general-schema-designer-icons {
       position: absolute;
       right: 2px;

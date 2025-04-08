@@ -252,7 +252,7 @@ export class PluginClientServer extends Plugin {
       const desktopRoutesRepository = ctx.db.getRepository('desktopRoutes');
       const rolesRepository = ctx.db.getRepository('roles');
 
-      if (ctx.state.currentRole === 'root') {
+      if (ctx.state.currentRoles.includes('root')) {
         ctx.body = await desktopRoutesRepository.find({
           tree: true,
           ...ctx.query,
@@ -260,26 +260,12 @@ export class PluginClientServer extends Plugin {
         return await next();
       }
 
-      const role = await rolesRepository.findOne({
-        filterByTk: ctx.state.currentRole,
+      const roles = await rolesRepository.find({
+        filterByTk: ctx.state.currentRoles,
         appends: ['desktopRoutes'],
       });
 
-      // 1. 如果 page 的 children 为空，那么需要把 page 的 children 全部找出来，然后返回。否则前端会因为缺少 tab 路由的数据而导致页面空白
-      // 2. 如果 page 的 children 不为空，不需要做特殊处理
-      const desktopRoutesId = role.get('desktopRoutes').map(async (item, index, items) => {
-        if (item.type === 'page' && !items.some((tab) => tab.parentId === item.id)) {
-          const children = await desktopRoutesRepository.find({
-            filter: {
-              parentId: item.id,
-            },
-          });
-
-          return [item.id, ...(children || []).map((child) => child.id)];
-        }
-
-        return item.id;
-      });
+      const desktopRoutesId = roles.flatMap((x) => x.get('desktopRoutes')).map((item) => item.id);
 
       if (desktopRoutesId) {
         const ids = (await Promise.all(desktopRoutesId)).flat();

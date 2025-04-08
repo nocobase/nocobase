@@ -31,6 +31,7 @@ import {
   useCompile,
 } from '@nocobase/client';
 import { Input, Modal, Spin } from 'antd';
+import { useTranslation } from 'react-i18next';
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { isDesktop } from 'react-device-detect';
 import { useParams } from 'react-router';
@@ -39,6 +40,8 @@ import { UnEnabledFormPlaceholder, UnFoundFormPlaceholder } from './UnEnabledFor
 import { Button as MobileButton, Dialog as MobileDialog } from 'antd-mobile';
 import { MobileDateTimePicker } from './components/MobileDatePicker';
 import { MobilePicker } from './components/MobilePicker';
+import { usePublicFormTranslation } from '../locale';
+
 class PublicDataSource extends DataSource {
   async getDataSource() {
     return {};

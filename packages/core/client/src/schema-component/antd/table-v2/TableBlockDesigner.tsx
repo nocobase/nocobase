@@ -176,6 +176,21 @@ export const TableBlockDesigner = () => {
           });
         }}
       />
+      <SchemaSettingsSwitchItem
+        title={t('Enable index column')}
+        checked={field.decoratorProps?.enableSelectColumn !== false}
+        onChange={async (enableIndexÏColumn) => {
+          field.decoratorProps = field.decoratorProps || {};
+          field.decoratorProps.enableIndexÏColumn = enableIndexÏColumn;
+          fieldSchema['x-decorator-props'].enableIndexÏColumn = enableIndexÏColumn;
+          dn.emit('patch', {
+            schema: {
+              ['x-uid']: fieldSchema['x-uid'],
+              'x-decorator-props': fieldSchema['x-decorator-props'],
+            },
+          });
+        }}
+      />
       {field.decoratorProps.dragSort && <EditSortField />}
       <SchemaSettingsDataScope
         collectionName={name}
@@ -328,14 +343,14 @@ export const TableBlockDesigner = () => {
         }}
       />
       <SchemaSettingsConnectDataBlocks type={FilterBlockType.TABLE} emptyDescription={t('No blocks to connect')} />
-      {supportTemplate && <SchemaSettingsDivider />}
+      {/* {supportTemplate && <SchemaSettingsDivider />}
       {supportTemplate && (
         <SchemaSettingsTemplate
           componentName={`${componentNamePrefix}Table`}
           collectionName={name}
           resourceName={defaultResource}
         />
-      )}
+      )} */}
       <SchemaSettingsDivider />
       <SchemaSettingsRemove
         removeParentsIfNoChildren

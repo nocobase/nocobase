@@ -28,7 +28,33 @@ import { isSubMode } from '../../../../schema-component/antd/association-field/u
 import { useIsAssociationField } from '../../../../schema-component/antd/form-item';
 import { FormLinkageRules } from '../../../../schema-settings/LinkageRules';
 import { SchemaSettingsLinkageRules } from '../../../../schema-settings/SchemaSettings';
+import { SchemaSettingsItemType } from '../../../../application';
 
+const enabledIndexColumn: SchemaSettingsItemType = {
+  name: 'enableIndexColumn',
+  type: 'switch',
+  useComponentProps: () => {
+    const field = useField();
+    const fieldSchema = useFieldSchema();
+    const { t } = useTranslation();
+    const { dn } = useDesignable();
+    return {
+      title: t('Enable index column'),
+      checked: field.componentProps.enableIndexÏColumn !== false,
+      onChange: async (enableIndexÏColumn) => {
+        field.componentProps = field.componentProps || {};
+        field.componentProps.enableIndexÏColumn = enableIndexÏColumn;
+        fieldSchema['x-component-props'].enableIndexÏColumn = enableIndexÏColumn;
+        dn.emit('patch', {
+          schema: {
+            ['x-uid']: fieldSchema['x-uid'],
+            'x-component-props': fieldSchema['x-component-props'],
+          },
+        });
+      },
+    };
+  },
+};
 const fieldComponent: any = {
   name: 'fieldComponent',
   type: 'select',
@@ -365,6 +391,7 @@ export const subTablePopoverComponentFieldSettings = new SchemaSettings({
     allowSelectExistingRecord,
     allowDisassociation,
     setDefaultSortingRules,
+    enabledIndexColumn,
     linkageRules,
     recordPerPage,
   ],
