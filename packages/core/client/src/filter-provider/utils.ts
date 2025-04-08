@@ -193,16 +193,17 @@ export const useFilterAPI = () => {
 
   const doFilter = useCallback(
     (
-      value: any | ((target: FilterTarget['targets'][0], block: DataBlock) => any),
+      value: any | ((target: FilterTarget['targets'][0], block: DataBlock, sourceKey?: string) => any),
       field: string | ((target: FilterTarget['targets'][0], block: DataBlock) => string) = 'id',
       operator: string | ((target: FilterTarget['targets'][0]) => string) = '$eq',
     ) => {
+      const currentBlock = dataBlocks.find((block) => block.uid === fieldSchema.parent['x-uid']);
       dataBlocks.forEach((block) => {
         const target = targets.find((target) => target.uid === block.uid);
         if (!target) return;
 
         if (_.isFunction(value)) {
-          value = value(target, block);
+          value = value(target, block, getSourceKey(currentBlock, target.field));
         }
         if (_.isFunction(field)) {
           field = field(target, block);
@@ -248,7 +249,7 @@ export const useFilterAPI = () => {
         );
       });
     },
-    [dataBlocks, targets, uid],
+    [dataBlocks, targets, uid, fieldSchema],
   );
 
   return {
@@ -268,3 +269,8 @@ export const isInFilterFormBlock = (fieldSchema: Schema) => {
   }
   return false;
 };
+
+function getSourceKey(currentBlock: DataBlock, field: string) {
+  const associationField = currentBlock?.associatedFields?.find((item) => item.foreignKey === field);
+  return associationField?.sourceKey || field?.split?.('.')?.[1];
+}
