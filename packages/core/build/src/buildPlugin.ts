@@ -15,7 +15,7 @@ import fs from 'fs-extra';
 import path from 'path';
 import { build as tsupBuild } from 'tsup';
 import * as bundleRequire from 'bundle-require';
-import { EsbuildSupportExts, globExcludeFiles } from './constant';
+import { EsbuildSupportExts, globExcludeFiles, PLUGIN_COMMERCIAL } from './constant';
 import { PkgLog, UserConfig, getPackageJson } from './utils';
 import {
   buildCheck,
@@ -671,7 +671,8 @@ __webpack_require__.p = (function() {
 }
 
 export async function buildPlugin(cwd: string, userConfig: UserConfig, sourcemap: boolean, log: PkgLog) {
-  if (cwd.includes('/pro-plugins/') && !cwd.includes('plugin-commercial') && fs.existsSync(path.join(process.cwd(), 'packages/pro-plugins/@nocobase/plugin-commercial'))) {
+  console.log('cwd', cwd)
+  if (cwd.includes('/pro-plugins/') && !cwd.includes(PLUGIN_COMMERCIAL) && fs.existsSync(path.join(process.cwd(), 'packages/pro-plugins/', PLUGIN_COMMERCIAL))) {
     await buildPluginClient(cwd, userConfig, sourcemap, log, true);
     await buildProPluginServer(cwd, userConfig, sourcemap, log);
   } else {
