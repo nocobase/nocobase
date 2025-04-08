@@ -7,5 +7,6 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export * from './i18n';
-export * from './constant';
+const NAMESPACE_UI_SCHEMA = 'ui-schema-storage';
+
+export { NAMESPACE_UI_SCHEMA };

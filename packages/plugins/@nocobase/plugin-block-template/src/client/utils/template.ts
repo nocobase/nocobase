@@ -180,14 +180,14 @@ function shouldDeleteNoComponentSchema(schema: ISchema) {
     return true;
   }
   const properties = schema?.properties;
-  return properties && Object.values(properties).some((s) => s['x-component'] === undefined);
+  return properties && Object.values(properties).some((s) => s['x-component'] == null);
 }
 
 function cleanSchema(schema?: any) {
   const properties = schema?.properties || {};
   for (const key of Object.keys(properties)) {
-    // 如果x-component是undefined
-    if (schema.properties[key]['x-component'] === undefined && shouldDeleteNoComponentSchema(schema.properties[key])) {
+    // 如果x-component是undefined/null
+    if (schema.properties[key]['x-component'] == null && shouldDeleteNoComponentSchema(schema.properties[key])) {
       delete schema.properties[key];
     }
     // 如果x-component是Grid.Row，且内部无任何内容，则删除
@@ -337,7 +337,7 @@ export function getFullSchema(
     for (const key in schema.properties) {
       const property = schema.properties[key];
       schema.properties[key] = getFullSchema(property, templateschemacache, templateInfos, savedSchemaUids);
-      if (schema.properties[key]['x-component'] === undefined) {
+      if (schema.properties[key]['x-component'] == null) {
         delete schema.properties[key]; // 说明已经从模板中删除了
       }
     }

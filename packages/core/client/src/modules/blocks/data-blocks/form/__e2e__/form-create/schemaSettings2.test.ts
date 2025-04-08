@@ -37,8 +37,8 @@ test.describe('linkage rules', () => {
     await page.getByText('Add condition', { exact: true }).click();
     await page.getByTestId('select-filter-field').click();
     await page.getByRole('menuitemcheckbox', { name: 'singleLineText' }).click();
-    await page.getByLabel('Linkage rules').locator('input[type="text"]').click();
-    await page.getByLabel('Linkage rules').locator('input[type="text"]').fill('123');
+    await page.getByLabel('Linkage rules').getByRole('tabpanel').getByRole('textbox').click();
+    await page.getByLabel('Linkage rules').getByRole('tabpanel').getByRole('textbox').fill('123');
 
     // action：禁用 longText 字段
     await page.getByText('Add property').click();
