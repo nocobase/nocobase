@@ -7,7 +7,7 @@ import { EventBus } from '../libs/event-bus';
 
 // Create managers
 const eventBus = new EventBus();
-const eventFlowManager = new EventFlowManager();
+const eventFlowManager = new EventFlowManager(eventBus);
 
 // Basic setup
 eventFlowManager.addEventGroup({
@@ -98,10 +98,6 @@ eventFlowManager.addFlow({
   ],
 });
 
-eventBus.on('button:click', (ctx) => {
-  eventFlowManager.dispatchEvent('eventflow:button:click', ctx);
-});
-
 const DataPassingEventFlow = () => {
   const handleClick = () => {
     // 准备事件上下文
@@ -112,7 +108,7 @@ const DataPassingEventFlow = () => {
       },
     };
 
-    // 触发事件
+    // 触发原始事件名称
     eventBus.dispatchEvent('button:click', ctx);
   };
 

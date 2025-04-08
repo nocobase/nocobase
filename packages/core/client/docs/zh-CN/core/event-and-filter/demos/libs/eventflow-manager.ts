@@ -2,6 +2,7 @@ import { ISchema, Schema } from '@formily/json-schema';
 import { observable } from '@formily/reactive';
 import { uid } from '@formily/shared';
 import _ from 'lodash';
+import { EventBus } from './event-bus';
 
 export type EventFlowEventHandler = (params: Record<string, any>, context: any) => Promise<any>;
 export type EventFlowActionHandler = (params: Record<string, any>, context: any) => Promise<any>;
@@ -294,9 +295,11 @@ export class EventFlowManager {
   private actionGroups: Record<string, EventFlowActionGroupOptions> = {};
   private actions: Record<string, EventFlowActionOptions> = {};
   private flows: Record<string, EventFlow> = {};
+  private eventBus?: EventBus;
 
-  constructor() {
+  constructor(eventBus: EventBus) {
     this.flows = observable.shallow({});
+    this.eventBus = eventBus; // 存储 EventBus 实例
   }
 
   // 注册事件分组
@@ -307,6 +310,14 @@ export class EventFlowManager {
   // 注册事件
   addEvent(event: EventFlowEventOptions) {
     this.events[event.name] = event;
+
+    if (this.eventBus) {
+      // 在 EventBus 上注册事件监听
+      this.eventBus.on(event.name, (ctx) => {
+        // 当原始事件触发时，触发对应的 EventFlow 事件
+        this.dispatchEvent(event.name, ctx);
+      });
+    }
   }
 
   getEvent(eventName: string) {
@@ -384,7 +395,7 @@ export class EventFlowManager {
     return eventFlow;
   }
 
-  removeFlow(key) {
+  removeFlow(key: string) {
     delete this.flows[key];
   }
 
@@ -396,10 +407,8 @@ export class EventFlowManager {
     return this.flows;
   }
 
-  // 触发事件
-  async dispatchEvent(eventName: string, context: any): Promise<void> {
+  async dispatchEvent(eventName: string, context: any) {
     const event = this.getEvent(eventName);
-
     if (!event) {
       console.warn(`Event '${eventName}' not found.`);
       return;

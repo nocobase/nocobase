@@ -6,7 +6,7 @@ import { openNotificationAction } from '../actions/open-notification';
 import { EventBus } from '../libs/event-bus';
 
 const eventBus = new EventBus();
-const eventFlowManager = new EventFlowManager();
+const eventFlowManager = new EventFlowManager(eventBus);
 
 eventFlowManager.addEventGroup({
   name: 'component',
@@ -68,10 +68,6 @@ eventFlowManager.addFlow({
   ],
 });
 
-eventBus.on('button:click', (ctx) => {
-  eventFlowManager.dispatchEvent('eventflow:button:click', ctx);
-});
-
 const ConditionalEventFlow = () => {
   const [selectedOption, setSelectedOption] = useState('A');
 
@@ -83,7 +79,7 @@ const ConditionalEventFlow = () => {
       },
     };
 
-    // 触发事件
+    // 触发原始事件名称
     eventBus.dispatchEvent('button:click', ctx);
   };
 

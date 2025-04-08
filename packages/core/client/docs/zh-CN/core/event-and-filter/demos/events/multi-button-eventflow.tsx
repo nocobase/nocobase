@@ -6,8 +6,9 @@ import { openNotificationAction } from '../actions/open-notification';
 import { openFormDialogAction } from '../actions/open-form-dialog';
 import { EventBus } from '../libs/event-bus';
 
+// 创建事件总线和事件流管理器
 const eventBus = new EventBus();
-const eventFlowManager = new EventFlowManager();
+const eventFlowManager = new EventFlowManager(eventBus);
 
 // Basic setup
 eventFlowManager.addEventGroup({
@@ -123,19 +124,6 @@ eventFlowManager.addFlow({
   ],
 });
 
-// Connect event handlers
-eventBus.on('button1:click', (ctx) => {
-  eventFlowManager.dispatchEvent('eventflow:button1:click', ctx);
-});
-
-eventBus.on('button2:click', (ctx) => {
-  eventFlowManager.dispatchEvent('eventflow:button2:click', ctx);
-});
-
-eventBus.on('button3:click', (ctx) => {
-  eventFlowManager.dispatchEvent('eventflow:button3:click', ctx);
-});
-
 const MultiButtonEventFlow = () => {
   const createClickHandler = (buttonNum) => {
     return () => {
@@ -147,7 +135,7 @@ const MultiButtonEventFlow = () => {
         },
       };
 
-      // 触发事件
+      // 触发原始事件名称
       eventBus.dispatchEvent(`button${buttonNum}:click`, ctx);
     };
   };

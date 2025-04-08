@@ -6,7 +6,8 @@ import { configureAction } from '../actions/configure-action';
 
 // 创建事件总线和事件流管理器
 const eventBus = new EventBus();
-const eventFlowManager = new EventFlowManager();
+// 传入 eventBus 实例到 EventFlowManager
+const eventFlowManager = new EventFlowManager(eventBus);
 
 // 注册事件组
 eventFlowManager.addEventGroup({
@@ -148,15 +149,6 @@ eventFlowManager.addFlow({
   ],
 });
 
-// 连接事件总线和事件流管理器
-eventBus.on('button:click', (ctx) => {
-  eventFlowManager.dispatchEvent('eventflow:button:click', ctx);
-});
-
-eventBus.on('configure:click', (ctx) => {
-  eventFlowManager.dispatchEvent('eventflow:configure:click', ctx);
-});
-
 // 主演示组件
 const ConfigurableActionDemo = () => {
   const [currentParams, setCurrentParams] = useState({
@@ -192,7 +184,7 @@ const ConfigurableActionDemo = () => {
       });
     }
 
-    // 触发配置事件
+    // 触发配置事件 - 直接触发原始事件名称
     const ctx = { payload: {} };
     eventBus.dispatchEvent('configure:click', ctx);
   };
@@ -202,6 +194,7 @@ const ConfigurableActionDemo = () => {
     // 触发事件前更新一下当前参数显示
     updateCurrentParams();
 
+    // 触发原始事件名称，EventFlowManager 会自动处理
     const ctx = { payload: {} };
     eventBus.dispatchEvent('button:click', ctx);
   };

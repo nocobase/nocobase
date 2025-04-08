@@ -9,7 +9,7 @@ const { Text } = Typography;
 
 // Event and flow managers
 const eventBus = new EventBus();
-const eventFlowManager = new EventFlowManager();
+const eventFlowManager = new EventFlowManager(eventBus);
 
 // Register event groups and events
 eventFlowManager.addEventGroup({
@@ -71,11 +71,6 @@ eventFlowManager.addFlow({
   ],
 });
 
-// Connect event manager to eventflow
-eventBus.on('threshold:check', (ctx) => {
-  eventFlowManager.dispatchEvent('eventflow:button:click', ctx);
-});
-
 const ConditionalFlowTrigger = () => {
   const [threshold, setThreshold] = useState(50);
   const [currentValue, setCurrentValue] = useState(30);
@@ -92,8 +87,8 @@ const ConditionalFlowTrigger = () => {
       },
     };
 
-    // 触发事件
-    eventBus.dispatchEvent('threshold:check', ctx);
+    // 触发原始事件名称
+    eventBus.dispatchEvent('button:click', ctx);
   };
 
   return (

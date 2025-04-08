@@ -9,8 +9,8 @@ import { EventBus } from '../libs/event-bus';
 // 创建事件总线实例
 const eventBus = new EventBus();
 
-// 创建事件流管理器实例
-const eventFlowManager = new EventFlowManager();
+// 创建事件流管理器实例，并传入 eventBus
+const eventFlowManager = new EventFlowManager(eventBus);
 
 // 注册事件组
 eventFlowManager.addEventGroup({
@@ -84,11 +84,6 @@ eventFlowManager.addFlow({
   ],
 });
 
-eventBus.on('button:click', (ctx) => {
-  // eventFlowManager的内部事件
-  eventFlowManager.dispatchEvent('eventflow:button:click', ctx);
-});
-
 const BasicEventFlow = () => {
   const handleClick = () => {
     // 准备事件上下文
@@ -99,7 +94,6 @@ const BasicEventFlow = () => {
       },
     };
 
-    // 触发事件
     eventBus.dispatchEvent('button:click', ctx);
   };
 
