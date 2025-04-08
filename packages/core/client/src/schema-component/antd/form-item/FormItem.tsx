@@ -92,7 +92,6 @@ export const FormItem: any = withDynamicSchemaProps(
         [formItemLabelCss]: showTitle === false,
       });
     }, [showTitle]);
-    console.log(className);
     // 联动规则中的“隐藏保留值”的效果
     if (field.data?.hidden) {
       return null;

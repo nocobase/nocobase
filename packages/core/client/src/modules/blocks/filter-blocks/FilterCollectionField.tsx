@@ -96,7 +96,7 @@ export const FilterCollectionFieldInternalField: React.FC = (props: Props) => {
     const originalProps =
       compile({ ...(operator?.schema?.['x-component-props'] || {}), ...(uiSchema['x-component-props'] || {}) }) || {};
 
-    field.componentProps = merge(originalProps, field.componentProps || {}, dynamicProps || {});
+    field.componentProps = merge(field.componentProps || {}, originalProps, dynamicProps || {});
   }, [uiSchemaOrigin]);
 
   if (!uiSchemaOrigin) return null;
