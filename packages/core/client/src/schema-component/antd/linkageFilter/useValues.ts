@@ -9,7 +9,7 @@
 
 import { useField } from '@formily/react';
 import { merge } from '@formily/shared';
-import { cloneDeep, last } from 'lodash';
+import { cloneDeep, last, uniqBy } from 'lodash';
 import { useCallback, useContext, useEffect } from 'react';
 import { FilterContext } from './context';
 
@@ -78,7 +78,7 @@ export const useValues = (): UseValuesReturn => {
       if (!field.value) {
         return;
       }
-      field.data.operators = [...(field.data.operators || []), ...(option?.operators || [])];
+      field.data.operators = uniqBy([...(field.data.operators || []), ...(option?.operators || [])], 'value');
       field.data.leftVar = leftVar;
       field.data.rightVar = rightVar;
       const operator = option?.operators?.find((v) => v.value === op);

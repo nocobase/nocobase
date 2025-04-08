@@ -12,6 +12,7 @@ import { observer, RecursionField, Schema, useField, useFieldSchema } from '@for
 import { Tabs as AntdTabs, TabPaneProps, TabsProps } from 'antd';
 import classNames from 'classnames';
 import React, { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useSchemaInitializerRender } from '../../../application';
 import { withDynamicSchemaProps } from '../../../hoc/withDynamicSchemaProps';
 import { Icon } from '../../../icon';
@@ -22,6 +23,7 @@ import { useTabsContext } from './context';
 import { TabsDesigner } from './Tabs.Designer';
 import { useMobileLayout } from '../../../route-switch/antd/admin-layout';
 import { transformMultiColumnToSingleColumn } from '@nocobase/utils/client';
+import { NAMESPACE_UI_SCHEMA } from '../../../i18n/constant';
 
 const MemoizeRecursionField = React.memo(RecursionField);
 MemoizeRecursionField.displayName = 'MemoizeRecursionField';
@@ -136,14 +138,15 @@ Tabs.TabPane = withDynamicSchemaProps(
     (props: TabPaneProps & { icon?: any; hidden?: boolean }) => {
       const Designer = useDesigner();
       const field = useField();
-
+      const { t } = useTranslation();
       if (props.hidden) {
         return null;
       }
 
       return (
         <SortableItem className={classNames('nb-action-link', designerCss, props.className)}>
-          {props.icon && <Icon style={{ marginRight: 2 }} type={props.icon} />} {props.tab || field.title}
+          {props.icon && <Icon style={{ marginRight: 2 }} type={props.icon} />}{' '}
+          {props.tab || t(field.title, { ns: NAMESPACE_UI_SCHEMA })}
           <Designer />
         </SortableItem>
       );

@@ -10,7 +10,7 @@
 import { Cache } from '@nocobase/cache';
 import { Repository, Transaction, Transactionable } from '@nocobase/database';
 import { uid } from '@nocobase/utils';
-import lodash from 'lodash';
+import { default as _, default as lodash } from 'lodash';
 import { ChildOptions, SchemaNode, TargetPosition } from './dao/ui_schema_node_dao';
 
 export interface GetJsonSchemaOptions {
@@ -297,6 +297,23 @@ export class UiSchemaRepository extends Repository {
     );
   }
 
+  async emitAfterSaveEvent(s, options) {
+    if (!s?.schema) {
+      return;
+    }
+    const keys = ['title', 'description', 'x-component-props.title', 'x-decorator-props.title'];
+    let r = false;
+    for (const key of keys) {
+      if (_.get(s?.schema, key)) {
+        r = true;
+        break;
+      }
+    }
+    if (r) {
+      await this.database.emitAsync(`${this.collection.name}.afterSave`, s, options);
+    }
+  }
+
   @transaction()
   async patch(newSchema: any, options?) {
     const { transaction } = options;
@@ -305,8 +322,8 @@ export class UiSchemaRepository extends Repository {
     if (!newSchema['properties']) {
       const s = await this.model.findByPk(rootUid, { transaction });
       s.set('schema', { ...s.toJSON(), ...newSchema });
-      // console.log(s.toJSON());
       await s.save({ transaction, hooks: false });
+      await this.emitAfterSaveEvent(s, options);
       if (newSchema['x-server-hooks']) {
         await this.database.emitAsync(`${this.collection.name}.afterSave`, s, options);
       }
@@ -488,8 +505,14 @@ export class UiSchemaRepository extends Repository {
     }
 
     const result = await this[`insert${lodash.upperFirst(position)}`](target, schema, options);
+
+    const s = await this.model.findByPk(schema, { transaction });
+
+    await this.emitAfterSaveEvent(s, options);
+
     // clear target schema path cache
     await this.clearXUidPathCache(result['x-uid'], transaction);
+
     return result;
   }
 
@@ -868,6 +891,8 @@ WHERE TreeTable.depth = 1 AND  TreeTable.ancestor = :ancestor and TreeTable.sort
         transaction,
       },
     );
+
+    await this.emitAfterSaveEvent(nodeModel, { transaction });
 
     if (schema['x-server-hooks']) {
       await this.database.emitAsync(`${this.collection.name}.afterSave`, nodeModel, { transaction });

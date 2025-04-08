@@ -116,7 +116,14 @@ export const conditionAnalyses = async (
     ),
   );
 
-  return type === '$and' ? every(results, Boolean) : some(results, Boolean);
+  if (type === '$and') {
+    return every(results, (v) => v);
+  } else {
+    if (results.length) {
+      return some(results, (v) => v);
+    }
+    return true;
+  }
 };
 
 const processCondition = async (
