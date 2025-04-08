@@ -12,7 +12,7 @@ import { observer } from '@formily/reactive-react';
 import { composeTemplate, extractTemplateElements, Helper } from '@nocobase/json-template-parser';
 import { get, isArray } from 'lodash';
 import minimatch from 'minimatch';
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { useLocalVariables, useVariableEvaluateContext, useVariables } from '../../../variables';
 import { dateVarsMap } from '../../../variables/date';
 import { useHelperObservables } from './Helpers/hooks/useHelperObservables';
@@ -126,7 +126,7 @@ const _VariableProvider: React.FC<VariableProviderProps> = ({
   helperObservables,
   onVariableTemplateChange,
 }) => {
-  const [value, setValue] = useState(null);
+  const [variableValue, setValue] = useState(null);
   const variables = useVariables();
   const localVariables = useLocalVariables();
   isArray(localVariables) ? localVariables : [localVariables];
@@ -167,10 +167,22 @@ const _VariableProvider: React.FC<VariableProviderProps> = ({
     helperObservables.helpersObs.value.length > 0
       ? helperObservables.helpersObs.value[helperObservables.helpersObs.value.length - 1].config.outputMappingRules
       : helpersMappingRules;
+  const variableValueAppliedHelpers = useMemo(() => {
+    return helperObservables.helpersObs.value.reduce((value, helper) => {
+      return helper.handler(value, ...helper.args);
+    }, variableValue);
+  }, [variableValue, helperObservables.helpersObs.value]);
 
   return (
     <VariableContext.Provider
-      value={{ variableName, value, helperObservables, helpersMappingRules, openLastHelper, currentMappingRules }}
+      value={{
+        variableName,
+        value: variableValueAppliedHelpers,
+        helperObservables,
+        helpersMappingRules,
+        openLastHelper,
+        currentMappingRules,
+      }}
     >
       {children}
     </VariableContext.Provider>
