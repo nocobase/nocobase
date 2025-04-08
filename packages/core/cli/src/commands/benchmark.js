@@ -7,8 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-const path = require('path');
-const { glob } = require('fs/promises');
+const glob = require('glob');
 const { Command } = require('commander');
 const { run } = require('../util');
 
@@ -44,10 +43,10 @@ module.exports = (cli) => {
 
         if (!paths.length) {
           if (opts.all) {
-            paths.push('**/*.benchmark.{js,ts}');
+            paths.push('**/*.benchmark.ts');
           } else {
-            console.log(
-              'No benchmark files specified. Please provide at least 1 benchmark file or path to run. Or use --all to run all "*.benchmark.{js,ts}".',
+            console.warn(
+              'No benchmark files specified. Please provide at least 1 benchmark file or path to run. Or use --all to run all "*.benchmark.ts".',
             );
             return;
           }
@@ -56,7 +55,7 @@ module.exports = (cli) => {
         const files = [];
 
         for (const pattern of paths) {
-          for await (const file of glob(pattern)) {
+          for (const file of glob.sync(pattern)) {
             files.push(file);
           }
         }
