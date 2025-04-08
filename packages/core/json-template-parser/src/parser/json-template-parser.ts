@@ -123,8 +123,6 @@ export class JSONTemplateParser {
     // This regular expression detects instances of the
     // template parameter syntax such as {{foo}} or {{foo:someDefault}}.
     const parseString = (() => {
-      // This regular expression detects instances of the
-      // template parameter syntax such as {{foo}} or {{foo:someDefault}}.
       const getFieldName = ({ variableName, variableSegments }) =>
         revertEscape(variableName.slice(variableSegments[0].length + 1));
       return (str, preKeys: string[]) => {
@@ -229,7 +227,9 @@ export class JSONTemplateParser {
 
         // Accommodate non-string as original values.
 
-        const parameters = templates.map((template) => ({ key: revertEscape(template.variableName) }));
+        const parameters = templates
+          .filter((template) => template.tokenKind === TokenKind.Output)
+          .map((template) => ({ key: revertEscape(template.variableName) }));
 
         return Template(templateFn, parameters);
       };
