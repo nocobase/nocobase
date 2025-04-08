@@ -71,7 +71,7 @@ export function dateSubtract(initialValue: any, unit: any, number: number) {
   }
 }
 
-export function dateOffset(initialValue: any, action: 'add' | 'subtract', number: number, unit: any) {
+export function dateCalculate(initialValue: any, action: 'add' | 'subtract', number: number, unit: any) {
   const handler = (value: any) => {
     if (action === 'add') {
       return dayjs.isDayjs(value) ? value.add(number, unit) : dayjs(value).add(number, unit);
@@ -79,5 +79,11 @@ export function dateOffset(initialValue: any, action: 'add' | 'subtract', number
       return dayjs.isDayjs(value) ? value.subtract(number, unit) : dayjs(value).subtract(number, unit);
     } else return initialValue;
   };
-  return handler(initialValue);
+  const date = handler(initialValue);
+  if (dayjs.isDayjs(date)) {
+    date.toString = function () {
+      return this.format();
+    };
+  }
+  return date;
 }

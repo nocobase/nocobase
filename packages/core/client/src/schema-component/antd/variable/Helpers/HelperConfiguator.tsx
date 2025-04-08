@@ -21,7 +21,7 @@ import { useCurrentVariable, VariableHelperMapping } from '../VariableProvider';
 
 const displayValue = (val) => {
   if (dayjs.isDayjs(val)) {
-    return val.utc().format();
+    return val.format();
   } else return val;
 };
 /**

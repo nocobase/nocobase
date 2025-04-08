@@ -24,7 +24,7 @@ const _HelperList = () => {
             key={index}
             index={index}
             defaultOpen={helpersObs.value.length === index + 1 ? openLastHelper : false}
-            label={helper.config.title}
+            label={helper.config.name}
           />
         );
       })}

@@ -168,9 +168,10 @@ const _VariableProvider: React.FC<VariableProviderProps> = ({
       ? helperObservables.helpersObs.value[helperObservables.helpersObs.value.length - 1].config.outputMappingRules
       : helpersMappingRules;
   const variableValueAppliedHelpers = useMemo(() => {
-    return helperObservables.helpersObs.value.reduce((value, helper) => {
+    const value = helperObservables.helpersObs.value.reduce((value, helper) => {
       return helper.handler(value, ...helper.args);
     }, variableValue);
+    return typeof value === 'string' ? value : value?.toString();
   }, [variableValue, helperObservables.helpersObs.value]);
 
   return (

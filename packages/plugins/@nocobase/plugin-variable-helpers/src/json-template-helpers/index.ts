@@ -8,8 +8,7 @@
  */
 
 import { Helper } from '@nocobase/json-template-parser';
-import { first } from './array';
-import { dateAdd, dateFormat, dateOffset, dateSubtract } from './date';
+import { dateCalculate, dateFormat } from './date';
 const NAMESPACE = 'variable-helpers';
 
 function tval(text: string) {
@@ -37,9 +36,9 @@ export const helpers: Helper[] = [
     ],
   },
   {
-    name: 'date_offset',
-    title: 'offset',
-    handler: dateOffset,
+    name: 'date_calculate',
+    title: 'calculate',
+    handler: dateCalculate,
     group: 'date',
     inputMappingRules: ['date.*'],
     outputMappingRules: ['date.*'],

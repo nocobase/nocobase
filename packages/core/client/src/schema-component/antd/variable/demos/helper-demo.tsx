@@ -22,7 +22,7 @@ const scope = [{ label: 'now', value: 'now', helpers: ['date.*'] }];
 const Demo = () => {
   const app = useApp();
   const [value, setValue] = useState('{{now | date_format: "YYYY-MM-DD"}}');
-  const [value2, setValue2] = useState('{{now |date_offset: "add", 1, "week" | date_format: "YYYY-MM-DD"}}');
+  const [value2, setValue2] = useState('{{now |date_calculate: "add", 1, "week" | date_format: "YYYY-MM-DD"}}');
   const tmplateData = { now: dayjs().format() };
   const { data } = useRequest(
     () => {
