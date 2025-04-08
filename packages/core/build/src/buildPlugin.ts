@@ -371,7 +371,7 @@ export async function buildProPluginServer(cwd: string, userConfig: UserConfig, 
       sourcemap,
       outDir: path.join(cwd, target_dir, 'server'),
       format: 'cjs',
-      noExternal: ['@nocobase/plugin-commercial'],
+      // noExternal: ['@nocobase/plugin-commercial'],
       skipNodeModulesBundle: true,
       tsconfig: tsconfig.path,
       loader: {
@@ -671,7 +671,6 @@ __webpack_require__.p = (function() {
 }
 
 export async function buildPlugin(cwd: string, userConfig: UserConfig, sourcemap: boolean, log: PkgLog) {
-  console.log('cwd', cwd)
   if (cwd.includes('/pro-plugins/') && !cwd.includes(PLUGIN_COMMERCIAL) && fs.existsSync(path.join(process.cwd(), 'packages/pro-plugins/', PLUGIN_COMMERCIAL))) {
     await buildPluginClient(cwd, userConfig, sourcemap, log, true);
     await buildProPluginServer(cwd, userConfig, sourcemap, log);
