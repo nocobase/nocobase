@@ -13,6 +13,7 @@ export default defineCollection({
   dumpRules: 'required',
   name: 'blockTemplates',
   autoGenId: false,
+  migrationRules: ['overwrite', 'schema-only'],
   fields: [
     {
       type: 'uid',
