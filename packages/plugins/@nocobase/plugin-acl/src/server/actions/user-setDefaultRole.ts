@@ -55,11 +55,12 @@ export async function setDefaultRole(ctx: Context, next: Next) {
       },
       transaction,
     });
-
+    let model;
     if (targetUserRole) {
       await repository.model.update({ default: true }, { where: { userId: currentUser.id, roleName }, transaction });
+      model = targetUserRole.set('default', true);
     } else {
-      await repository.create({
+      model = await repository.create({
         values: {
           userId: currentUser.id,
           roleName,
@@ -68,6 +69,7 @@ export async function setDefaultRole(ctx: Context, next: Next) {
         transaction,
       });
     }
+    db.emitAsync('rolesUsers.afterSave', model);
   });
 
   ctx.body = 'ok';
