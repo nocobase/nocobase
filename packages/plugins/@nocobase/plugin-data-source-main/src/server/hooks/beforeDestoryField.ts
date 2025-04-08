@@ -18,22 +18,19 @@ export function beforeDestoryField(db: Database) {
     if (['belongsTo', 'hasOne', 'hasMany', 'belongsToMany'].includes(type)) {
       return;
     }
-    const $or = [
-      {
-        [Op.and]: [
-          db.sequelize.where(db.queryInterface.generateJsonPathExpression('options', 'sourceKey'), Op.eq, name),
-          { collectionName },
-        ],
-      },
-      {
-        [Op.and]: [
-          db.sequelize.where(db.queryInterface.generateJsonPathExpression('options', 'targetKey'), Op.eq, name),
-          db.sequelize.where(db.queryInterface.generateJsonPathExpression('options', 'target'), Op.eq, collectionName),
-        ],
-      },
-    ];
     const relatedFields = await db.getRepository('fields').find({
-      filter: { $or },
+      filter: {
+        $or: [
+          {
+            ['options.sourceKey']: name,
+            collectionName,
+          },
+          {
+            ['options.targetKey']: name,
+            ['options.target']: collectionName,
+          },
+        ],
+      },
       transaction,
     });
 

@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { merge } from '@nocobase/utils';
+import { isJsonString, merge } from '@nocobase/utils';
 import _ from 'lodash';
 import { Utils } from 'sequelize';
 import Database from './database';
@@ -260,7 +260,8 @@ export class MagicAttributeModel extends Model {
         return super.get(key, value);
       }
       const options = super.get(this.magicAttribute, value);
-      return _.get(options, key);
+      const newOptions = this.db.options.dialect === 'mssql' && isJsonString(options) ? JSON.parse(options) : options;
+      return _.get(newOptions, key);
     }
     const data = super.get(key, value);
     const previousValue = _.get(data, this.magicAttribute);
