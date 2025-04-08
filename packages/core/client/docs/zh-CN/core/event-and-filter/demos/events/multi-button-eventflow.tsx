@@ -19,7 +19,7 @@ eventFlowManager.addEventGroup({
 
 // Register events for different buttons
 eventFlowManager.addEvent({
-  name: 'eventflow:button1:click',
+  name: 'button1:click',
   title: '按钮1点击',
   description: '用户点击按钮1时触发',
   group: 'component',
@@ -28,7 +28,7 @@ eventFlowManager.addEvent({
 });
 
 eventFlowManager.addEvent({
-  name: 'eventflow:button2:click',
+  name: 'button2:click',
   title: '按钮2点击',
   description: '用户点击按钮2时触发',
   group: 'component',
@@ -37,7 +37,7 @@ eventFlowManager.addEvent({
 });
 
 eventFlowManager.addEvent({
-  name: 'eventflow:button3:click',
+  name: 'button3:click',
   title: '按钮3点击',
   description: '用户点击按钮3时触发',
   group: 'component',
@@ -62,7 +62,7 @@ eventFlowManager.addFlow({
   key: 'button1-flow',
   title: '按钮1流程',
   on: {
-    event: 'eventflow:button1:click',
+    event: 'button1:click',
     title: '当按钮1被点击时',
   },
   steps: [
@@ -85,7 +85,7 @@ eventFlowManager.addFlow({
   key: 'button2-flow',
   title: '按钮2流程',
   on: {
-    event: 'eventflow:button2:click',
+    event: 'button2:click',
     title: '当按钮2被点击时',
   },
   steps: [
@@ -107,7 +107,7 @@ eventFlowManager.addFlow({
   key: 'button3-flow',
   title: '按钮3流程',
   on: {
-    event: 'eventflow:button3:click',
+    event: 'button3:click',
     title: '当按钮3被点击时',
   },
   steps: [

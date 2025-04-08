@@ -18,7 +18,7 @@ eventFlowManager.addEventGroup({
 
 // 注册事件
 eventFlowManager.addEvent({
-  name: 'eventflow:button:click',
+  name: 'button:click',
   title: '按钮点击',
   description: '用户点击按钮时触发',
   group: 'component',
@@ -27,7 +27,7 @@ eventFlowManager.addEvent({
 });
 
 eventFlowManager.addEvent({
-  name: 'eventflow:configure:click',
+  name: 'configure:click',
   title: '配置按钮点击',
   description: '用户点击配置按钮时触发',
   group: 'component',
@@ -107,7 +107,7 @@ eventFlowManager.addFlow({
   key: 'message-flow',
   title: '消息提示流程',
   on: {
-    event: 'eventflow:button:click',
+    event: 'button:click',
     title: '当按钮被点击时',
   },
   steps: [
@@ -130,7 +130,7 @@ eventFlowManager.addFlow({
   key: 'configure-flow',
   title: '配置流程',
   on: {
-    event: 'eventflow:configure:click',
+    event: 'configure:click',
     title: '当配置按钮被点击时',
   },
   steps: [

@@ -17,7 +17,7 @@ eventFlowManager.addEventGroup({
 });
 
 eventFlowManager.addEvent({
-  name: 'eventflow:button:click',
+  name: 'button:click',
   title: '按钮点击',
   description: '用户点击按钮时触发',
   group: 'component',
@@ -72,7 +72,7 @@ eventFlowManager.addFlow({
   key: 'data-passing-flow',
   title: '数据传递演示流程',
   on: {
-    event: 'eventflow:button:click',
+    event: 'button:click',
     title: '当按钮被点击时',
   },
   steps: [

@@ -19,7 +19,7 @@ eventFlowManager.addEventGroup({
 });
 
 eventFlowManager.addEvent({
-  name: 'eventflow:button:click',
+  name: 'button:click',
   title: '阈值检查',
   description: '检查数值是否超过阈值',
   group: 'component',
@@ -42,7 +42,7 @@ eventFlowManager.addFlow({
   key: 'conditional-trigger-flow',
   title: '条件触发流程演示',
   on: {
-    event: 'eventflow:button:click',
+    event: 'button:click',
     title: '当数值超过阈值时',
     // 添加事件级别的条件：仅在启用监控且值超过阈值时触发
     condition: '{{ctx.payload.monitoringEnabled && ctx.payload.currentValue > ctx.payload.threshold}}',

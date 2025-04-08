@@ -15,7 +15,7 @@ eventFlowManager.addEventGroup({
 });
 
 eventFlowManager.addEvent({
-  name: 'eventflow:button:click',
+  name: 'button:click',
   title: '按钮点击',
   description: '用户点击按钮时触发',
   group: 'component',
@@ -36,7 +36,7 @@ eventFlowManager.addFlow({
   key: 'conditional-flow-demo',
   title: '条件流程演示',
   on: {
-    event: 'eventflow:button:click',
+    event: 'button:click',
     title: '当按钮被点击时',
   },
   steps: [
