@@ -28,7 +28,24 @@ describe.skipIf(process.env.DB_DIALECT === 'sqlite')('20250409164913-remove-jobs
 
   afterEach(() => app.destroy());
 
-  it('no auto increment any more', async () => {
+  it.runIf(process.env.DB_DIALECT === 'postgres')('[PG] no auto increment any more', async () => {
+    const oldColumns = await app.db.sequelize.getQueryInterface().describeTable(OldCollection.getTableNameWithSchema());
+    expect(oldColumns.id.defaultValue).toBe('nextval(jobs_id_seq1::regclass)');
+
+    const JobRepo = app.db.getRepository('jobs');
+    const j1 = await JobRepo.create({});
+    expect(j1.id).toBe(1);
+
+    const migration = new Migration({ app, db: app.db } as any);
+    await migration.up();
+
+    const newColumns = await app.db.sequelize.getQueryInterface().describeTable(OldCollection.getTableNameWithSchema());
+    expect(newColumns.id.defaultValue).toBeFalsy();
+
+    await expect(async () => await JobRepo.create({})).rejects.toThrow();
+  });
+
+  it.runIf(['mysql', 'mariadb'].includes(process.env.DB_DIALECT))('[MySQL] no auto increment any more', async () => {
     const oldColumns = await app.db.sequelize.getQueryInterface().describeTable(OldCollection.getTableNameWithSchema());
     expect(oldColumns.id.autoIncrement).toBe(true);
 
