@@ -7,24 +7,20 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useContext } from 'react';
-import { Avatar, Tag, Popover, Divider, Button } from 'antd';
+import React from 'react';
+import { Avatar, Popover, Button } from 'antd';
 import { avatars } from '../avatars';
 import {
   SortableItem,
-  useBlockContext,
   useLocalVariables,
   useSchemaToolbarRender,
-  useToken,
   useVariables,
   withDynamicSchemaProps,
 } from '@nocobase/client';
 import { useFieldSchema } from '@formily/react';
-import { useT } from '../../locale';
-import { css } from '@emotion/css';
-import { useAIEmployeeChatContext } from '../AIEmployeeChatProvider';
-import { ChatBoxContext } from '../chatbox/ChatBoxContext';
+import { useChatBoxContext } from '../chatbox/ChatBoxContext';
 import { AIEmployee } from '../types';
+import { ProfileCard } from '../ProfileCard';
 
 async function replaceVariables(template, variables, localVariables = {}) {
   const regex = /\{\{\s*(.*?)\s*\}\}/g;
@@ -64,17 +60,18 @@ async function replaceVariables(template, variables, localVariables = {}) {
 export const AIEmployeeButton: React.FC<{
   aiEmployee: AIEmployee;
   taskDesc?: string;
-  attachments: string[];
-  actions: string[];
-}> = withDynamicSchemaProps(({ aiEmployee, taskDesc, attachments: selectedAttachments, actions: selectedActions }) => {
-  const t = useT();
-  const { setOpen, send, setAttachments, setFilterEmployee, setActions, clear } = useContext(ChatBoxContext);
-  const { token } = useToken();
+  autoSend?: boolean;
+  message: {
+    type: string;
+    content: string;
+  };
+  infoForm: any;
+}> = withDynamicSchemaProps(({ aiEmployee, taskDesc, message, infoForm: infoFormValues, autoSend }) => {
+  const { triggerShortcut } = useChatBoxContext();
   const fieldSchema = useFieldSchema();
   const { render } = useSchemaToolbarRender(fieldSchema);
   const variables = useVariables();
   const localVariables = useLocalVariables();
-  const { attachments, actions } = useAIEmployeeChatContext();
 
   return (
     <SortableItem
@@ -82,110 +79,23 @@ export const AIEmployeeButton: React.FC<{
         position: 'relative',
       }}
       onClick={async () => {
-        clear();
-        setOpen(true);
-        setFilterEmployee(aiEmployee.username);
-        if (selectedAttachments && selectedAttachments.length) {
-          setAttachments((prev) => {
-            const newAttachments = selectedAttachments.map((name: string) => {
-              const attachment = attachments[name];
-              return {
-                type: attachment.type,
-                title: attachment.title,
-                content: attachment.content,
-              };
-            });
-            return [...prev, ...newAttachments];
-          });
-        }
-        if (selectedActions && selectedActions.length) {
-          setActions((prev) => {
-            const newActions = selectedActions.map((name: string) => {
-              const action = actions[name];
-              return {
-                icon: action.icon,
-                content: action.title,
-                onClick: action.action,
-              };
-            });
-            return [...prev, ...newActions];
-          });
-        }
-        const messages = [];
-        const message = fieldSchema['x-component-props']?.message;
-        if (message) {
+        let msg;
+        if (message && message.content) {
           const content = await replaceVariables(message.content, variables, localVariables);
-          messages.push({
+          msg = {
             type: message.type || 'text',
             content,
-          });
+          };
         }
-        send({
+        triggerShortcut({
           aiEmployee,
-          messages,
-          greeting: true,
+          message: msg,
+          autoSend,
+          infoFormValues,
         });
       }}
     >
-      <Popover
-        content={
-          <div
-            style={{
-              width: '300px',
-              padding: '8px',
-            }}
-          >
-            <div
-              style={{
-                width: '100%',
-                textAlign: 'center',
-              }}
-            >
-              <Avatar
-                src={avatars(aiEmployee.avatar)}
-                size={60}
-                className={css``}
-                style={{
-                  boxShadow: `0px 0px 2px ${token.colorBorder}`,
-                }}
-              />
-              <div
-                style={{
-                  fontSize: token.fontSizeLG,
-                  fontWeight: token.fontWeightStrong,
-                  margin: '8px 0',
-                }}
-              >
-                {aiEmployee.nickname}
-              </div>
-            </div>
-            <Divider
-              orientation="left"
-              plain
-              style={{
-                fontStyle: 'italic',
-              }}
-            >
-              {t('Bio')}
-            </Divider>
-            <p>{aiEmployee.bio}</p>
-            {taskDesc && (
-              <>
-                <Divider
-                  orientation="left"
-                  plain
-                  style={{
-                    fontStyle: 'italic',
-                  }}
-                >
-                  {t('Task description')}
-                </Divider>
-                <p>{taskDesc}</p>
-              </>
-            )}
-          </div>
-        }
-      >
+      <Popover content={<ProfileCard taskDesc={taskDesc} aiEmployee={aiEmployee} />}>
         <Button
           shape="circle"
           style={{

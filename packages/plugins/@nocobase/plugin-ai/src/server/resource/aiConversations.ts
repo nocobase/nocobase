@@ -10,8 +10,40 @@
 import actions, { Context, Next } from '@nocobase/actions';
 import snowflake from '../snowflake';
 import PluginAIServer from '../plugin';
-import { Model } from '@nocobase/database';
 import { convertUiSchemaToJsonSchema } from '../utils';
+import { Database, Model } from '@nocobase/database';
+
+async function parseInfoMessage(db: Database, aiEmployee: Model, content: Record<string, any>) {
+  const infoForm: {
+    name: string;
+    title: string;
+    type: 'blocks' | 'collections';
+  }[] = aiEmployee.chatSettings?.infoForm;
+  if (!infoForm) {
+    return;
+  }
+  if (!content) {
+    return;
+  }
+  let info = '';
+  for (const key in content) {
+    const field = infoForm.find((item) => item.name === key);
+    if (field.type === 'blocks') {
+      const uiSchemaRepo = db.getRepository('uiSchemas') as any;
+      const schema = await uiSchemaRepo.getJsonSchema(content[key]);
+      if (!schema) {
+        return;
+      }
+      info += `${field.title}: ${JSON.stringify(schema)}; `;
+    } else {
+      info += `${field.title}: ${content[key]}; `;
+    }
+  }
+  if (!info) {
+    return;
+  }
+  return `The following information you can utilize in your conversation: ${info}`;
+}
 
 export default {
   name: 'aiConversations',
@@ -71,19 +103,10 @@ export default {
       if (!conversation) {
         ctx.throw(400);
       }
-      const rows = await ctx.db.getRepository('aiConversations.messages', sessionId).find({
+      ctx.body = await ctx.db.getRepository('aiConversations.messages', sessionId).find({
         sort: ['-messageId'],
         limit: 10,
       });
-      ctx.body = rows.map((row: Model) => ({
-        messageId: row.messageId,
-        role: row.role,
-        content: {
-          title: row.title,
-          content: row.content,
-          type: row.type,
-        },
-      }));
       await next();
     },
     async sendMessages(ctx: Context, next: Next) {
@@ -154,9 +177,7 @@ export default {
           values: messages.map((message: any) => ({
             messageId: snowflake.generate(),
             role: message.role,
-            content: message.content.content,
-            type: message.content.type,
-            title: message.content.title,
+            content: message.content,
           })),
         });
       } catch (err) {
@@ -168,14 +189,12 @@ export default {
       ctx.status = 200;
       const userMessages = [];
       for (const msg of messages) {
-        if (msg.role !== 'user') {
+        if (msg.role !== 'user' && msg.role !== 'info') {
           continue;
         }
         let content = msg.content.content;
-        if (msg.content.type === 'uiSchema') {
-          const uiSchemaRepo = ctx.db.getRepository('uiSchemas');
-          const schema = await uiSchemaRepo.getJsonSchema(content);
-          content = JSON.stringify(convertUiSchemaToJsonSchema(schema));
+        if (msg.content.type === 'info') {
+          content = await parseInfoMessage(ctx.db, employee, content);
         }
         userMessages.push({
           role: 'user',
@@ -215,12 +234,19 @@ export default {
         message += chunk.content;
         ctx.res.write(`data: ${JSON.stringify({ type: 'content', body: chunk.content })}\n\n`);
       }
+      if (!message) {
+        ctx.res.write(`data: ${JSON.stringify({ type: 'error', body: 'No content' })}\n\n`);
+        ctx.res.end();
+        return next();
+      }
       await ctx.db.getRepository('aiConversations.messages', sessionId).create({
         values: {
           messageId: snowflake.generate(),
           role: aiEmployee,
-          content: message,
-          type: 'text',
+          content: {
+            content: message,
+            type: 'text',
+          },
         },
       });
       ctx.res.end();

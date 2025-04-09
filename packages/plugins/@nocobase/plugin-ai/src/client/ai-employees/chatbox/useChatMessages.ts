@@ -18,14 +18,6 @@ export const useChatMessages = () => {
   const api = useAPIClient();
   const [messages, setMessages] = useState<Message[]>([]);
   const [responseLoading, setResponseLoading] = useState(false);
-  const [attachments, setAttachments] = useState<AttachmentProps[]>([]);
-  const [actions, setActions] = useState<Action[]>([]);
-
-  const clearMessages = () => {
-    setMessages([]);
-    setAttachments([]);
-    setActions([]);
-  };
 
   const addMessage = (message: Message) => {
     setMessages((prev) => [...prev, message]);
@@ -108,34 +100,24 @@ export const useChatMessages = () => {
     sessionId,
     aiEmployee,
     messages: sendMsgs,
-    greeting,
+    infoFormValues,
     onConversationCreate,
   }: SendOptions & {
     onConversationCreate?: (sessionId: string) => void;
   }) => {
     const msgs: Message[] = [];
-    if (greeting) {
-      msgs.push({
-        key: uid(),
-        role: aiEmployee.username,
-        content: {
-          type: 'greeting',
-          content: aiEmployee.greeting || t('Default greeting message', { nickname: aiEmployee.nickname }),
-        },
-      });
-    }
     if (!sendMsgs.length) {
-      addMessages(msgs);
       return;
     }
-    if (attachments.length) {
-      msgs.push(
-        ...attachments.map((attachment) => ({
-          key: uid(),
-          role: 'user',
-          content: attachment,
-        })),
-      );
+    if (infoFormValues) {
+      msgs.push({
+        key: uid(),
+        role: 'info',
+        content: {
+          type: 'info',
+          content: infoFormValues,
+        },
+      });
     }
     msgs.push(...sendMsgs.map((msg) => ({ key: uid(), role: 'user', content: msg })));
     addMessages(msgs);
@@ -152,7 +134,6 @@ export const useChatMessages = () => {
       sessionId = conversation.sessionId;
       onConversationCreate?.(sessionId);
     }
-    setAttachments([]);
     setResponseLoading(true);
 
     addMessage({
@@ -183,34 +164,31 @@ export const useChatMessages = () => {
       return;
     }
     const { result, error } = await processStreamResponse(sendRes.data);
-    if (actions.length && !error) {
-      addMessages(
-        actions.map((action) => ({
-          key: uid(),
-          role: 'action',
-          content: {
-            type: 'action',
-            icon: action.icon,
-            content: action.content,
-            onClick: () => {
-              action.onClick(result);
-            },
-          },
-        })),
-      );
-      setActions([]);
-    }
+    // if (actions.length && !error) {
+    //   addMessages(
+    //     actions.map((action) => ({
+    //       key: uid(),
+    //       role: 'action',
+    //       content: {
+    //         type: 'action',
+    //         icon: action.icon,
+    //         content: action.content,
+    //         onClick: () => {
+    //           action.onClick(result);
+    //         },
+    //       },
+    //     })),
+    //   );
+    //   setActions([]);
+    // }
   };
 
   return {
     messages,
+    addMessage,
+    addMessages,
     setMessages,
-    attachments,
-    setAttachments,
-    actions,
-    setActions,
     responseLoading,
     sendMessages,
-    clearMessages,
   };
 };

@@ -8,77 +8,21 @@
  */
 
 import React, { useContext, useState } from 'react';
-import { Layout, Card, Divider, Button, Avatar, List, Input, Popover, Empty, Spin, App } from 'antd';
-import { Conversations, Sender, Bubble } from '@ant-design/x';
-import type { ConversationsProps } from '@ant-design/x';
-import { CloseOutlined, ExpandOutlined, EditOutlined, LayoutOutlined, DeleteOutlined } from '@ant-design/icons';
-import { useAPIClient, useToken } from '@nocobase/client';
-import { useT } from '../../locale';
+import { Layout, Card, Button } from 'antd';
+import { CloseOutlined, ExpandOutlined, EditOutlined, LayoutOutlined } from '@ant-design/icons';
+import { useToken } from '@nocobase/client';
 const { Header, Footer, Sider, Content } = Layout;
-import { avatars } from '../avatars';
-import { useAIEmployeesContext } from '../AIEmployeesProvider';
-import { css } from '@emotion/css';
-import { ReactComponent as EmptyIcon } from '../empty-icon.svg';
-import { Attachment } from './Attachment';
 import { ChatBoxContext } from './ChatBoxContext';
-import { AIEmployee } from '../types';
+import { Conversations } from './Conversations';
+import { Messages } from './Messages';
+import { Sender } from './Sender';
+import { useAISelectionContext } from '../selector/AISelectorProvider';
 
 export const ChatBox: React.FC = () => {
-  const { modal, message } = App.useApp();
-  const api = useAPIClient();
-  const {
-    send,
-    setOpen,
-    filterEmployee,
-    setFilterEmployee,
-    conversations: conversationsService,
-    currentConversation,
-    setCurrentConversation,
-    messages,
-    setMessages,
-    roles,
-    attachments,
-    setAttachments,
-    responseLoading,
-    senderRef,
-    senderValue,
-    setSenderValue,
-    clear,
-  } = useContext(ChatBoxContext);
-  const { loading: ConversationsLoading, data: conversationsRes } = conversationsService;
-  const {
-    aiEmployees,
-    service: { loading },
-  } = useAIEmployeesContext();
-  const t = useT();
+  const { setOpen, startNewConversation, currentEmployee } = useContext(ChatBoxContext);
   const { token } = useToken();
   const [showConversations, setShowConversations] = useState(false);
-  const aiEmployeesList = [{ username: 'all' } as AIEmployee, ...(aiEmployees || [])];
-  const conversations: ConversationsProps['items'] = (conversationsRes || []).map((conversation) => ({
-    key: conversation.sessionId,
-    label: conversation.title,
-    timestamp: new Date(conversation.updatedAt).getTime(),
-  }));
-
-  const deleteConversation = async (sessionId: string) => {
-    await api.resource('aiConversations').destroy({
-      filterByTk: sessionId,
-    });
-    message.success(t('Deleted successfully'));
-    conversationsService.refresh();
-    clear();
-  };
-
-  const getMessages = async (sessionId: string) => {
-    const res = await api.resource('aiConversations').getMessages({
-      sessionId,
-    });
-    const messages = res?.data?.data;
-    if (!messages) {
-      return;
-    }
-    setMessages(messages.reverse());
-  };
+  const { selectable } = useAISelectionContext();
 
   return (
     <div
@@ -90,111 +34,11 @@ export const ChatBox: React.FC = () => {
         maxWidth: '760px',
         height: '90%',
         maxHeight: '560px',
-        zIndex: 1000,
+        zIndex: selectable ? -1 : 1000,
       }}
     >
-      <Card style={{ height: '100%' }} bodyStyle={{ height: '100%', paddingTop: 0 }}>
+      <Card style={{ height: '100%' }} styles={{ body: { height: '100%', paddingTop: 0 } }}>
         <Layout style={{ height: '100%' }}>
-          <Sider
-            width="42px"
-            style={{
-              backgroundColor: token.colorBgContainer,
-              marginRight: '5px',
-            }}
-          >
-            <List
-              loading={loading}
-              dataSource={aiEmployeesList}
-              split={false}
-              itemLayout="horizontal"
-              renderItem={(aiEmployee) => {
-                const highlight =
-                  aiEmployee.username === filterEmployee
-                    ? `color: ${token.colorPrimary};
-                        border-color: ${token.colorPrimary};`
-                    : '';
-                return aiEmployee.username === 'all' ? (
-                  <Button
-                    onClick={() => setFilterEmployee(aiEmployee.username)}
-                    className={css`
-                      width: 40px;
-                      height: 40px;
-                      line-height: 40px;
-                      font-weight: ${token.fontWeightStrong};
-                      margin-top: 10px;
-                      margin-bottom: 8px;
-                      ${highlight}
-                    `}
-                  >
-                    ALL
-                  </Button>
-                ) : (
-                  <Popover
-                    placement="rightTop"
-                    content={
-                      <div
-                        style={{
-                          width: '300px',
-                          padding: '8px',
-                        }}
-                      >
-                        <div
-                          style={{
-                            width: '100%',
-                            textAlign: 'center',
-                          }}
-                        >
-                          <Avatar
-                            src={avatars(aiEmployee.avatar)}
-                            size={60}
-                            className={css``}
-                            style={{
-                              boxShadow: `0px 0px 2px ${token.colorBorder}`,
-                            }}
-                          />
-                          <div
-                            style={{
-                              fontSize: token.fontSizeLG,
-                              fontWeight: token.fontWeightStrong,
-                              margin: '8px 0',
-                            }}
-                          >
-                            {aiEmployee.nickname}
-                          </div>
-                        </div>
-                        <Divider
-                          orientation="left"
-                          plain
-                          style={{
-                            fontStyle: 'italic',
-                          }}
-                        >
-                          {t('Bio')}
-                        </Divider>
-                        <p>{aiEmployee.bio}</p>
-                      </div>
-                    }
-                  >
-                    <Button
-                      className={css`
-                        width: 40px;
-                        height: 40px;
-                        line-height: 40px;
-                        padding: 0;
-                        ${highlight}
-                      `}
-                      onClick={() => {
-                        clear();
-                        setFilterEmployee(aiEmployee.username);
-                      }}
-                    >
-                      <Avatar src={avatars(aiEmployee.avatar)} shape="square" size={40} />
-                    </Button>
-                  </Popover>
-                );
-              }}
-            />
-          </Sider>
           <Sider
             width="30%"
             style={{
@@ -203,57 +47,7 @@ export const ChatBox: React.FC = () => {
               marginRight: '5px',
             }}
           >
-            <Layout>
-              <Header
-                style={{
-                  backgroundColor: token.colorBgContainer,
-                  height: '48px',
-                  lineHeight: '48px',
-                  padding: '0 5px',
-                }}
-              >
-                <Input.Search style={{ verticalAlign: 'middle' }} />
-              </Header>
-              <Content>
-                <Spin spinning={ConversationsLoading}>
-                  {conversations && conversations.length ? (
-                    <Conversations
-                      activeKey={currentConversation}
-                      onActiveChange={(sessionId) => {
-                        if (sessionId === currentConversation) {
-                          return;
-                        }
-                        setCurrentConversation(sessionId);
-                        getMessages(sessionId);
-                      }}
-                      items={conversations}
-                      menu={(conversation) => ({
-                        items: [
-                          {
-                            label: 'Delete',
-                            key: 'delete',
-                            icon: <DeleteOutlined />,
-                          },
-                        ],
-                        onClick: ({ key }) => {
-                          switch (key) {
-                            case 'delete':
-                              modal.confirm({
-                                title: t('Delete this conversation?'),
-                                content: t('Are you sure to delete this conversation?'),
-                                onOk: () => deleteConversation(conversation.key),
-                              });
-                              break;
-                          }
-                        },
-                      })}
-                    />
-                  ) : (
-                    <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} />
-                  )}
-                </Spin>
-              </Content>
-            </Layout>
+            <Conversations />
           </Sider>
           <Layout>
             <Header
@@ -275,15 +69,7 @@ export const ChatBox: React.FC = () => {
                   type="text"
                   onClick={() => setShowConversations(!showConversations)}
                 />
-                {filterEmployee !== 'all' ? (
-                  <Button
-                    icon={<EditOutlined />}
-                    type="text"
-                    onClick={() => {
-                      clear();
-                    }}
-                  />
-                ) : null}
+                {currentEmployee ? <Button icon={<EditOutlined />} type="text" onClick={startNewConversation} /> : null}
               </div>
               <div
                 style={{
@@ -301,27 +87,7 @@ export const ChatBox: React.FC = () => {
                 position: 'relative',
               }}
             >
-              {messages?.length ? (
-                <Bubble.List
-                  style={{
-                    marginRight: '8px',
-                  }}
-                  roles={roles}
-                  items={messages}
-                />
-              ) : (
-                <div
-                  style={{
-                    position: 'absolute',
-                    width: '64px',
-                    top: '50%',
-                    left: '50%',
-                    transform: 'translate(-50%, -50%)',
-                  }}
-                >
-                  <EmptyIcon />
-                </div>
-              )}
+              <Messages />
             </Content>
             <Footer
               style={{
@@ -329,61 +95,8 @@ export const ChatBox: React.FC = () => {
                 padding: 0,
               }}
             >
-              <Sender
-                value={senderValue}
-                ref={senderRef}
-                onChange={(value) => {
-                  setSenderValue(value);
-                }}
-                onSubmit={(content) =>
-                  send({
-                    sessionId: currentConversation,
-                    aiEmployee: { username: filterEmployee },
-                    messages: [
-                      {
-                        type: 'text',
-                        content,
-                      },
-                    ],
-                  })
-                }
-                header={
-                  attachments.length ? (
-                    <div
-                      style={{
-                        padding: '8px 8px 0',
-                      }}
-                    >
-                      {attachments.map((attachment, index) => {
-                        return (
-                          <Attachment
-                            key={index}
-                            closeable={true}
-                            onClose={() => {
-                              setAttachments(attachments.filter((_, i) => i !== index));
-                            }}
-                            {...attachment}
-                          />
-                        );
-                      })}
-                    </div>
-                  ) : null
-                }
-                disabled={filterEmployee === 'all' && !currentConversation}
-                placeholder={filterEmployee === 'all' && !currentConversation ? t('Please choose an AI employee.') : ''}
-                loading={responseLoading}
-              />
+              <Sender />
             </Footer>
-            {/* </Layout> */}
-            {/* <Sider */}
-            {/*   width="25%" */}
-            {/*   style={{ */}
-            {/*     backgroundColor: token.colorBgContainer, */}
-            {/*   }} */}
-            {/* > */}
-            {/*   <Conversations items={employees} /> */}
-            {/* </Sider> */}
-            {/* </Layout> */}
           </Layout>
         </Layout>
       </Card>

@@ -13,13 +13,13 @@ import { CurrentUserContext } from '@nocobase/client';
 import { ChatBox } from './ChatBox';
 import icon from '../icon.svg';
 import { css } from '@emotion/css';
-import { ChatBoxContext, useChatBoxContext } from './ChatBoxContext';
+import { ChatBoxContext, useSetChatBoxContext } from './ChatBoxContext';
 
 export const ChatBoxProvider: React.FC<{
   children: React.ReactNode;
 }> = (props) => {
   const currentUserCtx = useContext(CurrentUserContext);
-  const chatBoxCtx = useChatBoxContext();
+  const chatBoxCtx = useSetChatBoxContext();
   const { open, setOpen } = chatBoxCtx;
 
   if (!currentUserCtx?.data?.data) {

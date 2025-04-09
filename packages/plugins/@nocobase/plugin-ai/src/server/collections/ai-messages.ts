@@ -21,19 +21,10 @@ export default defineCollection({
     },
     {
       name: 'content',
-      type: 'text',
+      type: 'jsonb',
     },
     {
       name: 'role',
-      type: 'string',
-    },
-    {
-      name: 'type',
-      type: 'string',
-      defaultValue: 'text',
-    },
-    {
-      name: 'title',
       type: 'string',
     },
   ],

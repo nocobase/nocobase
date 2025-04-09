@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Plugin, lazy } from '@nocobase/client';
+import { CardItem, CollectionField, FormV2, Plugin, lazy } from '@nocobase/client';
 import { AIManager } from './manager/ai-manager';
 import { openaiProviderOptions } from './llm-providers/openai';
 import { deepseekProviderOptions } from './llm-providers/deepseek';
@@ -19,6 +19,7 @@ import { namespace } from './locale';
 import { detailsAIEmployeesInitializer, formAIEmployeesInitializer } from './ai-employees/initializer/AIEmployees';
 import { aiEmployeeButtonSettings } from './ai-employees/settings/AIEmployeeButton';
 import { useDetailsAIEmployeeChatContext, useFormAIEmployeeChatContext } from './ai-employees/useBlockChatContext';
+import { withAISelectable } from './ai-employees/selector/withAISelectable';
 const { AIEmployeesProvider } = lazy(() => import('./ai-employees/AIEmployeesProvider'), 'AIEmployeesProvider');
 const { AIEmployeeChatProvider } = lazy(
   () => import('./ai-employees/AIEmployeeChatProvider'),
@@ -45,6 +46,12 @@ export class PluginAIClient extends Plugin {
     this.app.addComponents({
       AIEmployeeButton,
       AIEmployeeChatProvider,
+      CardItem: withAISelectable(CardItem, {
+        selectType: 'blocks',
+      }),
+      CollectionField: withAISelectable(CollectionField, {
+        selectType: 'fields',
+      }),
     });
     this.app.addScopes({
       useDetailsAIEmployeeChatContext,

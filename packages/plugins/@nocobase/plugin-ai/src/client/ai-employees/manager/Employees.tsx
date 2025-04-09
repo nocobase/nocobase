@@ -22,12 +22,13 @@ import { useT } from '../../locale';
 const { Meta } = Card;
 import { css } from '@emotion/css';
 import { EditOutlined, DeleteOutlined } from '@ant-design/icons';
-import { AvatarSelect } from './AvatarSelect';
 import { useForm } from '@formily/react';
 import { createForm } from '@formily/core';
 import { uid } from '@formily/shared';
 import { avatars } from '../avatars';
 import { ModelSettings } from './ModelSettings';
+import { ProfileSettings } from './ProfileSettings';
+import { ChatSettings } from './ChatSettings';
 
 const EmployeeContext = createContext(null);
 
@@ -38,63 +39,12 @@ const AIEmployeeForm: React.FC = () => {
         {
           key: 'profile',
           label: 'Profile',
-          children: (
-            <SchemaComponent
-              components={{ AvatarSelect }}
-              schema={{
-                type: 'void',
-                properties: {
-                  username: {
-                    type: 'string',
-                    title: 'Username',
-                    'x-decorator': 'FormItem',
-                    'x-component': 'Input',
-                  },
-                  nickname: {
-                    type: 'string',
-                    title: 'Nickname',
-                    'x-decorator': 'FormItem',
-                    'x-component': 'Input',
-                  },
-                  avatar: {
-                    type: 'string',
-                    title: 'Avatar',
-                    'x-decorator': 'FormItem',
-                    'x-component': 'AvatarSelect',
-                  },
-                  bio: {
-                    type: 'string',
-                    title: 'Bio',
-                    'x-decorator': 'FormItem',
-                    'x-component': 'Input.TextArea',
-                    'x-component-props': {
-                      placeholder:
-                        'The introduction to the AI employee will inform human colleagues about its skills and how to use it. This information will be displayed on the employee’s profile. This will not be part of the prompt of this AI employee.',
-                    },
-                  },
-                  about: {
-                    type: 'string',
-                    title: 'About me',
-                    'x-decorator': 'FormItem',
-                    'x-component': 'Input.TextArea',
-                    'x-component-props': {
-                      placeholder:
-                        'Define the AI employee’s role, guide its work, and instruct it complete user-assigned tasks. This will be part of the prompt of this AI employee.',
-                      autoSize: {
-                        minRows: 15,
-                      },
-                    },
-                  },
-                  greeting: {
-                    type: 'string',
-                    title: 'Greeting message',
-                    'x-decorator': 'FormItem',
-                    'x-component': 'Input.TextArea',
-                  },
-                },
-              }}
-            />
-          ),
+          children: <ProfileSettings />,
+        },
+        {
+          key: 'chat',
+          label: 'Chat settings',
+          children: <ChatSettings />,
         },
         // {
         //   key: 'skills',
@@ -178,41 +128,7 @@ const AIEmployeeForm: React.FC = () => {
         {
           key: 'modelSettings',
           label: 'Model Settings',
-          children: (
-            <SchemaComponent
-              components={{ ModelSettings }}
-              schema={{
-                type: 'object',
-                name: 'modelSettings',
-                properties: {
-                  llmService: {
-                    type: 'string',
-                    title: 'LLM service',
-                    'x-decorator': 'FormItem',
-                    'x-component': 'RemoteSelect',
-                    'x-component-props': {
-                      manual: false,
-                      fieldNames: {
-                        label: 'title',
-                        value: 'name',
-                      },
-                      service: {
-                        resource: 'llmServices',
-                        action: 'list',
-                        params: {
-                          fields: ['title', 'name'],
-                        },
-                      },
-                    },
-                  },
-                  settings: {
-                    type: 'void',
-                    'x-component': 'ModelSettings',
-                  },
-                },
-              }}
-            />
-          ),
+          children: <ModelSettings />,
         },
       ]}
     />

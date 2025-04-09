@@ -8,17 +8,17 @@
  */
 
 import { observer, useForm } from '@formily/react';
-import { useAPIClient, usePlugin, useRequest } from '@nocobase/client';
+import { SchemaComponent, useAPIClient, usePlugin, useRequest } from '@nocobase/client';
 import React from 'react';
 import PluginAIClient from '../../';
 
-export const useModelSettingsForm = (provider: string) => {
+const useModelOptionsForm = (provider: string) => {
   const plugin = usePlugin(PluginAIClient);
   const p = plugin.aiManager.llmProviders.get(provider);
   return p?.components?.ModelSettingsForm;
 };
 
-export const ModelSettings = observer(
+const ModelOptions = observer(
   () => {
     const form = useForm();
     const api = useAPIClient();
@@ -33,11 +33,49 @@ export const ModelSettings = observer(
         refreshDeps: [form.values?.modelSettings?.llmService],
       },
     );
-    const Component = useModelSettingsForm(data?.provider);
+    const Component = useModelOptionsForm(data?.provider);
     if (loading) {
       return null;
     }
     return Component ? <Component /> : null;
   },
-  { displayName: 'AIEmployeeModelSettingsForm' },
+  { displayName: 'AIEmployeeModelOptionsForm' },
 );
+
+export const ModelSettings: React.FC = () => {
+  return (
+    <SchemaComponent
+      components={{ ModelOptions }}
+      schema={{
+        type: 'object',
+        name: 'modelSettings',
+        properties: {
+          llmService: {
+            type: 'string',
+            title: 'LLM service',
+            'x-decorator': 'FormItem',
+            'x-component': 'RemoteSelect',
+            'x-component-props': {
+              manual: false,
+              fieldNames: {
+                label: 'title',
+                value: 'name',
+              },
+              service: {
+                resource: 'llmServices',
+                action: 'list',
+                params: {
+                  fields: ['title', 'name'],
+                },
+              },
+            },
+          },
+          settings: {
+            type: 'void',
+            'x-component': 'ModelOptions',
+          },
+        },
+      }}
+    />
+  );
+};

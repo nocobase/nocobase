@@ -7,10 +7,11 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useMemo } from 'react';
+import React, { memo, useMemo, useState } from 'react';
 import {
+  SchemaComponent,
   SchemaSettings,
-  SchemaSettingsModalItem,
+  SchemaSettingsItem,
   useBlockContext,
   useCollection,
   useCollectionFilterOptions,
@@ -19,10 +20,14 @@ import {
 } from '@nocobase/client';
 import { useT } from '../../locale';
 import { avatars } from '../avatars';
-import { Card, Avatar, Tooltip } from 'antd';
+import { Card, Avatar, Tooltip, Modal } from 'antd';
 const { Meta } = Card;
 import { Schema } from '@formily/react';
-import { useAIEmployeeChatContext } from '../AIEmployeeChatProvider';
+import { createForm } from '@formily/core';
+import { InfoForm } from '../chatbox/InfoForm';
+import { uid } from '@formily/shared';
+import { useAISelectionContext } from '../selector/AISelectorProvider';
+import { AIEmployee } from '../types';
 
 export const useAIEmployeeButtonVariableOptions = () => {
   const collection = useCollection();
@@ -49,6 +54,138 @@ export const useAIEmployeeButtonVariableOptions = () => {
   }, [recordData, t, fields, blockType]);
 };
 
+const SettingsForm: React.FC<{
+  form: any;
+  aiEmployee: AIEmployee;
+}> = memo(({ form, aiEmployee }) => {
+  const { dn } = useSchemaSettings();
+  const t = useT();
+  return (
+    <SchemaComponent
+      components={{ InfoForm }}
+      scope={{ useAIEmployeeButtonVariableOptions }}
+      schema={{
+        type: 'void',
+        properties: {
+          [uid()]: {
+            'x-component': 'FormV2',
+            'x-component-props': {
+              form,
+            },
+            properties: {
+              profile: {
+                type: 'void',
+                'x-decorator': 'FormItem',
+                'x-component': () => (
+                  <Card
+                    variant="borderless"
+                    style={{
+                      maxWidth: 520,
+                    }}
+                  >
+                    <Meta
+                      avatar={aiEmployee.avatar ? <Avatar src={avatars(aiEmployee.avatar)} size={48} /> : null}
+                      title={aiEmployee.nickname}
+                      description={aiEmployee.bio}
+                    />
+                  </Card>
+                ),
+              },
+              taskDesc: {
+                type: 'string',
+                title: t('Task description'),
+                'x-decorator': 'FormItem',
+                'x-component': 'Input.TextArea',
+                description: t(
+                  'Displays the AI employee’s assigned tasks on the profile when hovering over the button.',
+                ),
+                default: dn.getSchemaAttribute('x-component-props.taskDesc'),
+              },
+              messageDivider: {
+                type: 'void',
+                'x-component': 'Divider',
+                'x-component-props': {
+                  children: t('Default message'),
+                },
+              },
+              message: {
+                type: 'object',
+                properties: {
+                  messageType: {
+                    type: 'string',
+                    title: t('Message type'),
+                    'x-decorator': 'FormItem',
+                    'x-component': 'Select',
+                    enum: [
+                      {
+                        label: t('Text'),
+                        value: 'text',
+                      },
+                      {
+                        label: t('Image'),
+                        value: 'image',
+                      },
+                    ],
+                    default: 'text',
+                    'x-component-props': {
+                      placeholder: t('Message type'),
+                    },
+                  },
+                  content: {
+                    title: t('Message content'),
+                    type: 'string',
+                    'x-decorator': 'FormItem',
+                    'x-component': 'Variable.RawTextArea',
+                    'x-component-props': {
+                      scope: '{{ useAIEmployeeButtonVariableOptions }}',
+                      changeOnSelect: true,
+                      fieldNames: {
+                        value: 'name',
+                        label: 'title',
+                      },
+                    },
+                  },
+                },
+                default: dn.getSchemaAttribute('x-component-props.message'),
+                'x-reactions': {
+                  dependencies: ['.manualMessage'],
+                  fulfill: {
+                    state: {
+                      visible: '{{ !$deps[0] }}',
+                    },
+                  },
+                },
+              },
+              autoSend: {
+                type: 'boolean',
+                'x-content': t('Send default message automatically'),
+                'x-decorator': 'FormItem',
+                'x-component': 'Checkbox',
+                default: dn.getSchemaAttribute('x-component-props.autoSend') || false,
+              },
+              formDivider: {
+                type: 'void',
+                'x-component': 'Divider',
+                'x-component-props': {
+                  children: t('Required information form'),
+                },
+              },
+              infoForm: {
+                type: 'object',
+                'x-component': 'InfoForm',
+                'x-component-props': {
+                  aiEmployee,
+                },
+                default: dn.getSchemaAttribute('x-component-props.infoForm'),
+              },
+            },
+          },
+        },
+      }}
+    />
+  );
+});
+
 export const aiEmployeeButtonSettings = new SchemaSettings({
   name: 'aiEmployees:button',
   items: [
@@ -57,171 +194,46 @@ export const aiEmployeeButtonSettings = new SchemaSettings({
       Component: () => {
         const t = useT();
         const { dn } = useSchemaSettings();
+        const [open, setOpen] = useState(false);
         const aiEmployee = dn.getSchemaAttribute('x-component-props.aiEmployee') || {};
-        const { attachments = [], actions = [] } = useAIEmployeeChatContext();
-        const attachmentsOptions = useMemo(
-          () =>
-            Object.entries(attachments).map(([name, item]) => ({
-              label: (
-                <Tooltip title={item.description} placement="right">
-                  {item.title}
-                </Tooltip>
-              ),
-              value: name,
-            })),
-          [attachments],
-        );
-        const actionsOptions = useMemo(
-          () =>
-            Object.entries(actions).map(([name, item]) => ({
-              label: (
-                <Tooltip title={item.description} placement="right">
-                  {item.title}
-                </Tooltip>
-              ),
-              value: name,
-            })),
-          [actions],
-        );
+        const form = useMemo(() => createForm({}), []);
+        const { selectable } = useAISelectionContext();
+
         return (
-          <SchemaSettingsModalItem
-            scope={{ useAIEmployeeButtonVariableOptions }}
-            schema={{
-              type: 'object',
-              title: t('Edit'),
-              properties: {
-                profile: {
-                  type: 'void',
-                  'x-decorator': 'FormItem',
-                  'x-component': () => (
-                    <Card
-                      variant="borderless"
-                      style={{
-                        maxWidth: 520,
-                      }}
-                    >
-                      <Meta
-                        avatar={aiEmployee.avatar ? <Avatar src={avatars(aiEmployee.avatar)} size={48} /> : null}
-                        title={aiEmployee.nickname}
-                        description={aiEmployee.bio}
-                      />
-                    </Card>
-                  ),
+          <div onClick={(e) => e.stopPropagation()}>
+            <SchemaSettingsItem title={t('Edit')} onClick={() => setOpen(true)} />
+            <Modal
+              styles={{
+                mask: {
+                  zIndex: selectable ? -1 : 1000,
                 },
-                taskDesc: {
-                  type: 'string',
-                  title: t('Task description'),
-                  'x-decorator': 'FormItem',
-                  'x-component': 'Input.TextArea',
-                  description: t(
-                    'Displays the AI employee’s assigned tasks on the profile when hovering over the button.',
-                  ),
-                  default: dn.getSchemaAttribute('x-component-props.taskDesc'),
+                wrapper: {
+                  zIndex: selectable ? -1 : 1000,
                 },
-                manualMessage: {
-                  type: 'boolean',
-                  'x-content': t('Requires the user to enter a message manually.'),
-                  'x-decorator': 'FormItem',
-                  'x-component': 'Checkbox',
-                  default: dn.getSchemaAttribute('x-component-props.manualMessage') || false,
-                },
-                message: {
-                  type: 'object',
-                  properties: {
-                    messageType: {
-                      type: 'string',
-                      title: t('Message type'),
-                      'x-decorator': 'FormItem',
-                      'x-component': 'Select',
-                      enum: [
-                        {
-                          label: t('Text'),
-                          value: 'text',
-                        },
-                        {
-                          label: t('Image'),
-                          value: 'image',
-                        },
-                      ],
-                      default: 'text',
-                      'x-component-props': {
-                        placeholder: t('Message type'),
-                      },
-                    },
-                    content: {
-                      title: t('Message content'),
-                      type: 'string',
-                      'x-decorator': 'FormItem',
-                      'x-component': 'Variable.RawTextArea',
-                      'x-component-props': {
-                        scope: '{{ useAIEmployeeButtonVariableOptions }}',
-                        changeOnSelect: true,
-                        fieldNames: {
-                          value: 'name',
-                          label: 'title',
-                        },
-                      },
-                    },
+              }}
+              title={t('Edit')}
+              open={open}
+              onCancel={() => {
+                setOpen(false);
+              }}
+              onOk={() => {
+                const { taskDesc, message, autoSend, infoForm } = form.values;
+                dn.deepMerge({
+                  'x-uid': dn.getSchemaAttribute('x-uid'),
+                  'x-component-props': {
+                    aiEmployee,
+                    message,
+                    taskDesc,
+                    autoSend,
+                    infoForm,
                   },
-                  default: dn.getSchemaAttribute('x-component-props.message'),
-                  'x-reactions': {
-                    dependencies: ['.manualMessage'],
-                    fulfill: {
-                      state: {
-                        visible: '{{ !$deps[0] }}',
-                      },
-                    },
-                  },
-                },
-                attachments: {
-                  type: 'array',
-                  title: t('Attachments'),
-                  'x-component': 'Checkbox.Group',
-                  'x-decorator': 'FormItem',
-                  enum: attachmentsOptions,
-                  default: dn.getSchemaAttribute('x-component-props.attachments'),
-                  'x-reactions': {
-                    target: 'attachments',
-                    fulfill: {
-                      state: {
-                        visible: '{{$self.value.length}}',
-                      },
-                    },
-                  },
-                },
-                actions: {
-                  type: 'array',
-                  title: t('Actions'),
-                  'x-component': 'Checkbox.Group',
-                  'x-decorator': 'FormItem',
-                  enum: actionsOptions,
-                  default: dn.getSchemaAttribute('x-component-props.actions'),
-                  'x-reactions': {
-                    target: 'actions',
-                    fulfill: {
-                      state: {
-                        visible: '{{$self.value.length}}',
-                      },
-                    },
-                  },
-                },
-              },
-            }}
-            title={t('Edit')}
-            onSubmit={({ message, taskDesc, manualMessage, attachments, actions }) => {
-              dn.deepMerge({
-                'x-uid': dn.getSchemaAttribute('x-uid'),
-                'x-component-props': {
-                  aiEmployee,
-                  message,
-                  taskDesc,
-                  manualMessage,
-                  attachments,
-                  actions,
-                },
-              });
-            }}
-          />
+                });
+                setOpen(false);
+              }}
+            >
+              <SettingsForm form={form} aiEmployee={aiEmployee} />
+            </Modal>
+          </div>
         );
       },
     },

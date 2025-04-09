@@ -9,12 +9,24 @@
 
 import type { BubbleProps } from '@ant-design/x';
 
+export type Selector = {
+  onSelect?: (ctx: any) => void;
+};
+
 export type AIEmployee = {
   username: string;
   nickname?: string;
   avatar?: string;
   bio?: string;
   greeting?: string;
+  chatSettings?: {
+    senderPlaceholder?: string;
+    infoForm?: {
+      name: string;
+      title: string;
+      type: string;
+    }[];
+  };
 };
 
 export type Conversation = {
@@ -41,10 +53,17 @@ export type Action = {
 
 export type SendOptions = {
   sessionId?: string;
-  greeting?: boolean;
   aiEmployee?: AIEmployee;
   messages: {
     type: MessageType;
     content: string;
   }[];
+  infoFormValues?: any;
+};
+
+export type ShortcutOptions = {
+  aiEmployee: AIEmployee;
+  message: { type: MessageType; content: string };
+  infoFormValues: any;
+  autoSend: boolean;
 };

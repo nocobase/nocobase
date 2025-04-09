@@ -41,6 +41,10 @@ export default {
       interface: 'textarea',
     },
     {
+      name: 'chatSettings',
+      type: 'jsonb',
+    },
+    {
       name: 'skills',
       type: 'jsonb',
     },
