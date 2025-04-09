@@ -1161,6 +1161,7 @@ export const SchemaSettingsLinkageRules = function LinkageRules(props) {
       };
       gridSchema[dataKey] = rules;
       schema[dataKey] = rules;
+      fieldSchema[dataKey] = rules;
       dn.emit('patch', {
         schema,
       });

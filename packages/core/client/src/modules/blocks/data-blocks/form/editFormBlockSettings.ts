@@ -36,7 +36,7 @@ export const editFormBlockSettings = new SchemaSettings({
       Component: SchemaSettingsBlockHeightItem,
     },
     {
-      name: 'linkageRules',
+      name: 'fieldLinkageRules',
       Component: SchemaSettingsLinkageRules,
       useComponentProps() {
         const { name } = useCollection_deprecated();
@@ -48,7 +48,7 @@ export const editFormBlockSettings = new SchemaSettings({
       },
     },
     {
-      name: 'linkageRules',
+      name: 'blockLinkageRules',
       Component: SchemaSettingsLinkageRules,
       useComponentProps() {
         const { name } = useCollection_deprecated();

@@ -24,6 +24,7 @@ import { SchemaSettingsTemplate } from '../../../../schema-settings/SchemaSettin
 import { useBlockTemplateContext } from '../../../../schema-templates/BlockTemplateProvider';
 import { setDataLoadingModeSettingsItem } from './setDataLoadingModeSettingsItem';
 import { SchemaSettingsLayoutItem } from '../../../../schema-settings/SchemaSettingsLayoutItem';
+import { LinkageRuleCategory } from '../../../../schema-settings/LinkageRules/type';
 
 const commonItems: SchemaSettingsItemType[] = [
   {
@@ -35,13 +36,28 @@ const commonItems: SchemaSettingsItemType[] = [
     Component: SchemaSettingsBlockHeightItem,
   },
   {
-    name: 'linkageRules',
+    name: 'fieldLinkageRules',
     Component: SchemaSettingsLinkageRules,
     useComponentProps() {
       const { name } = useCollection_deprecated();
+      const { t } = useTranslation();
       return {
         collectionName: name,
         readPretty: true,
+        title: t('Field Linkage rules'),
+      };
+    },
+  },
+  {
+    name: 'blockLinkageRules',
+    Component: SchemaSettingsLinkageRules,
+    useComponentProps() {
+      const { name } = useCollection_deprecated();
+      const { t } = useTranslation();
+      return {
+        collectionName: name,
+        title: t('Block Linkage rules'),
+        category: LinkageRuleCategory.block,
       };
     },
   },
