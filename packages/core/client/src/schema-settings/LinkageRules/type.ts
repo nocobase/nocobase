@@ -32,9 +32,11 @@ export enum ActionType {
 export enum LinkageRuleCategory {
   default = 'default',
   style = 'style',
+  block = 'block',
 }
 
 export const LinkageRuleDataKeyMap: Record<`${LinkageRuleCategory}`, string> = {
   [LinkageRuleCategory.style]: 'x-linkage-style-rules',
   [LinkageRuleCategory.default]: 'x-linkage-rules',
+  [LinkageRuleCategory.block]: 'x-block-linkage-rules',
 };

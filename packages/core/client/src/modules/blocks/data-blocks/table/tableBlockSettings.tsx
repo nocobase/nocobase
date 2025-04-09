@@ -74,6 +74,7 @@ export const tableBlockSettings = new SchemaSettings({
         return {
           collectionName: name,
           title: t('Block Linkage rules'),
+          category: 'block',
         };
       },
     },
@@ -151,7 +152,6 @@ export const tableBlockSettings = new SchemaSettings({
         const { resource } = field.decoratorProps;
         const collectionField = resource && getCollectionField(resource);
         const api = useAPIClient();
-
         return {
           title: t('Enable drag and drop sorting'),
           checked: field.decoratorProps.dragSort,
