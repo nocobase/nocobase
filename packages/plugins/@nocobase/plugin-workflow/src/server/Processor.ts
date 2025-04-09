@@ -16,7 +16,6 @@ import type Plugin from './Plugin';
 import { EXECUTION_STATUS, JOB_STATUS } from './constants';
 import { Runner } from './instructions';
 import type { ExecutionModel, FlowNodeModel, JobModel } from './types';
-import { toJSON } from './utils';
 
 export interface ProcessorOptions extends Transactionable {
   plugin: Plugin;

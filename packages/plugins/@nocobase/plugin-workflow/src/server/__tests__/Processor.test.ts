@@ -41,7 +41,7 @@ describe('workflow > Processor', () => {
   afterEach(() => app.destroy());
 
   describe('base', () => {
-    it.skipIf(process.env['DB_DIALECT'] === 'sqlite')('job id out of max safe integer', async () => {
+    it.only('job id out of max safe integer', async () => {
       const JobModel = db.getModel('jobs');
 
       const records = await JobModel.bulkCreate([

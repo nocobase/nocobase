@@ -7,13 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { describe, test } from 'vitest';
-
 import { MockServer } from '@nocobase/test';
 import { getApp } from '@nocobase/plugin-workflow-test';
 
 import Migration from '../../migrations/20250409164913-remove-jobs-auto-increment';
-import PluginWorkflowServer from '../..';
 
 describe.skipIf(process.env.DB_DIALECT === 'sqlite')('20250409164913-remove-jobs-auto-increment', () => {
   let app: MockServer;
