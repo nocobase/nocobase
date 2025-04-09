@@ -60,12 +60,6 @@ export async function setCurrentRole(ctx: Context, next) {
     ctx.headers['x-role'] = UNION_ROLE_KEY;
     ctx.state.currentRoles = userRoles.map((role) => role.name);
     return next();
-  } else if (roleMode === SystemRoleMode.allowUseUnion) {
-    userRoles.unshift({
-      name: UNION_ROLE_KEY,
-      title: ctx.t('Full permissions', { ns: 'acl' }),
-    });
-    ctx.state.currentUser.roles = userRoles;
   }
 
   if (currentRole === UNION_ROLE_KEY) {
@@ -90,10 +84,10 @@ export async function setCurrentRole(ctx: Context, next) {
     const defaultRoleModel = await cache.wrap(`roles:${ctx.state.currentUser.id}:defaultRole`, () =>
       ctx.db.getRepository('rolesUsers').findOne({ where: { userId: ctx.state.currentUser.id, default: true } }),
     );
-    role = defaultRoleModel?.roleName || userRoles.find((x) => x.name !== UNION_ROLE_KEY)?.name;
+    role = defaultRoleModel?.roleName || userRoles[0]?.name;
   }
   ctx.state.currentRole = role;
-  ctx.state.currentRoles = role === UNION_ROLE_KEY ? [userRoles.find((x) => x.name !== UNION_ROLE_KEY)?.name] : [role];
+  ctx.state.currentRoles = role === UNION_ROLE_KEY ? [userRoles[0]?.name] : [role];
   if (!ctx.state.currentRoles.length) {
     return ctx.throw(401, {
       code: 'ROLE_NOT_FOUND_ERR',
