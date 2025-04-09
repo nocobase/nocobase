@@ -42,7 +42,7 @@ interface Props {
 
 export const DynamicComponent = (props: Props) => {
   const { setScopes } = props;
-  const { disabled } = useContext(FilterContext) || {};
+  const { disabled, returnScope } = useContext(FilterContext) || {};
   const record = useCollectionRecordData();
   const variables = useVariables();
   const localVariables = useLocalVariables();
@@ -61,6 +61,7 @@ export const DynamicComponent = (props: Props) => {
           localVariables,
           getAllCollectionsInheritChain,
         })}
+        returnScope={returnScope}
       />
     );
   }, []);

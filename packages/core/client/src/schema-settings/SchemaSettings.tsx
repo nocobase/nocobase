@@ -1152,7 +1152,10 @@ export const SchemaSettingsLinkageRules = function LinkageRules(props) {
         rules.push(_.omit(_.pickBy(rule, _.identity), ['conditionBasic', 'conditionAdvanced']));
       }
       const templateId = gridSchema['x-component'] === 'BlockTemplate' && gridSchema['x-component-props']?.templateId;
-      const uid = (templateId && getTemplateById(templateId).uid) || gridSchema['x-uid'];
+      const uid =
+        category !== LinkageRuleCategory.block
+          ? (templateId && getTemplateById(templateId).uid) || gridSchema['x-uid']
+          : fieldSchema['x-uid'];
       const schema = {
         ['x-uid']: uid,
       };

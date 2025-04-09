@@ -8,6 +8,7 @@
  */
 
 import { useFieldSchema } from '@formily/react';
+import { useTranslation } from 'react-i18next';
 import { SchemaSettings } from '../../../../application/schema-settings/SchemaSettings';
 import { useFormBlockContext } from '../../../../block-provider/FormBlockProvider';
 import { useCollection_deprecated } from '../../../../collection-manager';
@@ -38,8 +39,23 @@ export const editFormBlockSettings = new SchemaSettings({
       Component: SchemaSettingsLinkageRules,
       useComponentProps() {
         const { name } = useCollection_deprecated();
+        const { t } = useTranslation();
         return {
           collectionName: name,
+          title: t('Field Linkage rules'),
+        };
+      },
+    },
+    {
+      name: 'linkageRules',
+      Component: SchemaSettingsLinkageRules,
+      useComponentProps() {
+        const { name } = useCollection_deprecated();
+        const { t } = useTranslation();
+        return {
+          collectionName: name,
+          title: t('Block Linkage rules'),
+          category: 'block',
         };
       },
     },

@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import { useFieldSchema } from '@formily/react';
 import { last } from 'lodash';
 import { useLocalVariables, useVariables } from '../../variables';
@@ -26,11 +26,13 @@ const getLinkageRules = (fieldSchema) => {
 
 export const BlockLinkageRuleProvider = (props) => {
   const schema = useFieldSchema();
-  const linkageRules = getLinkageRules(schema);
   const variables = useVariables();
   const localVariables = useLocalVariables();
   const { designable } = useDesignable();
+  const linkageRules = useMemo(() => getLinkageRules(schema), [schema]);
+  console.log(schema, linkageRules);
   const displayResult = useLinkageDisplayResult(linkageRules, variables, localVariables);
+
   // 还在加载中，避免闪烁
   if (displayResult === null) return null;
 

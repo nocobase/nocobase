@@ -26,9 +26,8 @@ export const LinkageFilter: any = withDynamicSchemaProps(
     const { useDataSource = useDef } = props;
 
     // 新版 UISchema（1.0 之后）中已经废弃了 useProps，这里之所以继续保留是为了兼容旧版的 UISchema
-    const { dynamicComponent, className, collectionName } = useProps(props);
+    const { dynamicComponent, className, collectionName, returnScope } = useProps(props);
     const [scopes, setScopes] = useState([]);
-
     const field = useField<ObjectFieldModel>();
     const fieldSchema: any = useFieldSchema();
     useDataSource({
@@ -54,6 +53,7 @@ export const LinkageFilter: any = withDynamicSchemaProps(
             collectionName,
             scopes,
             setScopes,
+            returnScope,
           }}
         >
           <FilterGroup {...props} bordered={false} />

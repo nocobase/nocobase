@@ -23,7 +23,7 @@ import { VariableInput, getShouldChange } from '../VariableInput/VariableInput';
 import { LinkageRuleActionGroup } from './LinkageRuleActionGroup';
 import { EnableLinkage } from './components/EnableLinkage';
 import { ArrayCollapse } from './components/LinkageHeader';
-
+import { LinkageRuleCategory } from './type';
 export interface Props {
   dynamicComponent: any;
 }
@@ -38,12 +38,20 @@ const transformDefaultValue = (values) => {
 export const FormLinkageRules = withDynamicSchemaProps(
   observer((props: Props) => {
     const fieldSchema = useFieldSchema();
-    const { options, defaultValues, collectionName, form, variables, localVariables, record, dynamicComponent } =
-      useProps(props); // 新版 UISchema（1.0 之后）中已经废弃了 useProps，这里之所以继续保留是为了兼容旧版的 UISchema
+    const {
+      options,
+      defaultValues,
+      collectionName,
+      form,
+      variables,
+      localVariables,
+      record,
+      dynamicComponent,
+      category,
+    } = useProps(props); // 新版 UISchema（1.0 之后）中已经废弃了 useProps，这里之所以继续保留是为了兼容旧版的 UISchema
     const { name } = useCollection_deprecated();
     const { getAllCollectionsInheritChain } = useCollectionManager_deprecated();
     const parentRecordData = useCollectionParentRecordData();
-
     const components = useMemo(() => ({ ArrayCollapse }), []);
     const schema = useMemo(
       () => ({
@@ -140,6 +148,16 @@ export const FormLinkageRules = withDynamicSchemaProps(
                     conditionAdvanced: {
                       'x-component': 'LinkageFilter',
                       'x-visible': '{{$deps[0] === "advanced"}}',
+                      'x-component-props': {
+                        returnScope: (options) => {
+                          return options.filter((v) => {
+                            if (category === LinkageRuleCategory.block) {
+                              return !['$nForm', '$nRecord'].includes(v.value);
+                            }
+                            return true;
+                          });
+                        },
+                      },
                       'x-reactions': [
                         {
                           dependencies: ['.conditionType', '.condition'],

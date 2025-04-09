@@ -80,12 +80,11 @@ export const useLinkageDisplayResult = (
           );
         }
       }
-      console.log(result);
       setDisplayResult(result);
     };
 
     runLinkages();
-  }, []);
+  }, [linkageRules]);
 
   return displayResult;
 };
