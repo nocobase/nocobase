@@ -30,7 +30,7 @@ describe.skipIf(process.env.DB_DIALECT === 'sqlite')('20250409164913-remove-jobs
 
   it.runIf(process.env.DB_DIALECT === 'postgres')('[PG] no auto increment any more', async () => {
     const oldColumns = await app.db.sequelize.getQueryInterface().describeTable(OldCollection.getTableNameWithSchema());
-    expect(oldColumns.id.defaultValue).toBe('nextval(jobs_id_seq1::regclass)');
+    expect(oldColumns.id.defaultValue).toBe('nextval(jobs_id_seq::regclass)');
 
     const JobRepo = app.db.getRepository('jobs');
     const j1 = await JobRepo.create({});
