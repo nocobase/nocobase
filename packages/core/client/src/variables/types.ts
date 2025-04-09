@@ -82,6 +82,26 @@ export interface VariablesContextType {
    * @returns 变量的配置
    */
   getVariable: (variableName: string) => VariableOption;
+
+  /**
+   * 获取变量的值
+   * @param variableName 变量的名称，例如：`$user`
+   * @returns 变量的配置
+   */
+  getVariableValue: (
+    variablePath: string,
+    localVariables?: VariableOption[],
+    options?: {
+      /** Related fields that need to be included in the first request */
+      appends?: string[];
+      /** Do not request when the association field is empty */
+      doNotRequest?: boolean;
+      /**
+       * The operator related to the current field, provided when parsing the default value of the field
+       */
+      fieldOperator?: string | void;
+    },
+  ) => Promise<any>;
   getCollectionField: (
     variableString: string,
     localVariables?: VariableOption | VariableOption[],
@@ -109,4 +129,21 @@ export interface VariableOption {
    * 如果想让数据范围中的 filter 条件被清除掉，可以设置 defaultValue 为 undefined。
    */
   defaultValue?: any;
+  /**
+   * 变量的上下文配置，用于存储变量的额外配置信息
+   * 例如：日期变量的时区配置
+   */
+  variableContext?: {
+    /** 变量类型 */
+    type: 'date' | 'string' | 'number' | 'boolean';
+    /** 变量特定的配置 */
+    config: {
+      /** 时区配置，仅对日期类型有效 */
+      timezone?: string;
+      /** 日期格式配置，仅对日期类型有效 */
+      dateFormat?: string;
+      /** 其他类型特定的配置 */
+      [key: string]: any;
+    };
+  };
 }

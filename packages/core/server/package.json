@@ -5,6 +5,7 @@
   "types": "./lib/index.d.ts",
   "license": "AGPL-3.0",
   "dependencies": {
+    "@nocobase/json-template-parser": "1.7.0-alpha.10",
     "@formily/json-schema": "2.x",
     "@hapi/topo": "^6.0.0",
     "@koa/cors": "^5.0.0",

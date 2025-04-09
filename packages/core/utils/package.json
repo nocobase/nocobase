@@ -5,6 +5,7 @@
   "types": "./lib/index.d.ts",
   "license": "AGPL-3.0",
   "dependencies": {
+    "@nocobase/json-template-parser": "1.7.0-alpha.10",
     "@budibase/handlebars-helpers": "0.14.0",
     "@hapi/topo": "^6.0.0",
     "@rc-component/mini-decimal": "^1.1.0",

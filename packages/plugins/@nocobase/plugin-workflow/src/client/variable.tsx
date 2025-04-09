@@ -10,7 +10,15 @@
 import { uniqBy } from 'lodash';
 import React, { createContext, useCallback, useContext } from 'react';
 
-import { Variable, parseCollectionName, useApp, useCompile, useGlobalVariable, usePlugin } from '@nocobase/client';
+import {
+  Variable,
+  getFieldSupportedHelpers,
+  parseCollectionName,
+  useApp,
+  useCompile,
+  useGlobalVariable,
+  usePlugin,
+} from '@nocobase/client';
 
 import WorkflowPlugin from '.';
 import { useFlowContext } from './FlowContext';
@@ -366,6 +374,7 @@ export function getCollectionFieldOptions(options): VariableOption[] {
       [fieldNames.label]: label,
       key: field.name,
       [fieldNames.value]: field.name,
+      helpers: getFieldSupportedHelpers(field),
       isLeaf,
       loadChildren: isLeaf ? null : boundLoadChildren,
       field,

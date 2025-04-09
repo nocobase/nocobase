@@ -30,6 +30,7 @@
     "@nocobase/evaluators": "1.7.0-alpha.10",
     "@nocobase/sdk": "1.7.0-alpha.10",
     "@nocobase/utils": "1.7.0-alpha.10",
+    "@nocobase/json-template-parser": "1.7.0-alpha.10",
     "ahooks": "^3.7.2",
     "antd": "5.24.2",
     "antd-style": "3.7.1",
@@ -66,7 +67,8 @@
     "react-router-dom": "^6.11.2",
     "react-to-print": "^2.14.7",
     "sanitize-html": "2.13.0",
-    "use-deep-compare-effect": "^1.8.1"
+    "use-deep-compare-effect": "^1.8.1",
+    "use-immer": "^0.11.0"
   },
   "peerDependencies": {
     "react": ">=18.0.0",

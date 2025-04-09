@@ -24,4 +24,17 @@ describe('json-templates', () => {
       age: 18,
     });
   });
+
+  it('when key is class', async () => {
+    const date = new Date();
+    const template = {
+      key1: '{{date}}',
+    };
+    const result = parse(template)({
+      date,
+    });
+    expect(result).toEqual({
+      key1: date,
+    });
+  });
 });

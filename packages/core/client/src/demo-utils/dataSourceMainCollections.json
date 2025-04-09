@@ -996,5 +996,325 @@
     "tree": "adjacencyList",
     "schema": "public",
     "filterTargetKey": "id"
+  },
+  {
+    "origin": "@nocobase/plugin-data-source-main",
+    "key": "s5i8fjvlc6z",
+    "name": "date_collection",
+    "title": "date_collection",
+    "inherit": false,
+    "hidden": false,
+    "description": null,
+    "sort": 3,
+    "fields": [
+      {
+        "name": "id",
+        "key": "s8ybwozs55a",
+        "type": "bigInt",
+        "interface": "integer",
+        "description": null,
+        "collectionName": "date_test",
+        "parentKey": null,
+        "reverseKey": null,
+        "autoIncrement": true,
+        "primaryKey": true,
+        "allowNull": false,
+        "uiSchema": {
+          "type": "number",
+          "title": "{{t(\"ID\")}}",
+          "x-component": "InputNumber",
+          "x-read-pretty": true
+        },
+        "__sort": 1
+      },
+      {
+        "name": "createdAt",
+        "key": "3u0vn4xflhx",
+        "type": "date",
+        "interface": "createdAt",
+        "description": null,
+        "collectionName": "date_test",
+        "parentKey": null,
+        "reverseKey": null,
+        "field": "created_at",
+        "uiSchema": {
+          "type": "datetime",
+          "title": "{{t(\"Created at\")}}",
+          "x-component": "DatePicker",
+          "x-component-props": {},
+          "x-read-pretty": true
+        },
+        "__sort": 2
+      },
+      {
+        "name": "createdBy",
+        "key": "p4ksjkfr9bx",
+        "type": "belongsTo",
+        "interface": "createdBy",
+        "description": null,
+        "collectionName": "date_test",
+        "parentKey": null,
+        "reverseKey": null,
+        "target": "users",
+        "foreignKey": "createdById",
+        "uiSchema": {
+          "type": "object",
+          "title": "{{t(\"Created by\")}}",
+          "x-component": "AssociationField",
+          "x-component-props": {
+            "fieldNames": {
+              "value": "id",
+              "label": "nickname"
+            }
+          },
+          "x-read-pretty": true
+        },
+        "targetKey": "id",
+        "__sort": 3
+      },
+      {
+        "name": "updatedAt",
+        "key": "8ahvnp9pr40",
+        "type": "date",
+        "interface": "updatedAt",
+        "description": null,
+        "collectionName": "date_test",
+        "parentKey": null,
+        "reverseKey": null,
+        "field": "updated_at",
+        "uiSchema": {
+          "type": "datetime",
+          "title": "{{t(\"Last updated at\")}}",
+          "x-component": "DatePicker",
+          "x-component-props": {},
+          "x-read-pretty": true
+        },
+        "__sort": 4
+      },
+      {
+        "name": "updatedBy",
+        "key": "0ok0sl4xsyy",
+        "type": "belongsTo",
+        "interface": "updatedBy",
+        "description": null,
+        "collectionName": "date_test",
+        "parentKey": null,
+        "reverseKey": null,
+        "target": "users",
+        "foreignKey": "updatedById",
+        "uiSchema": {
+          "type": "object",
+          "title": "{{t(\"Last updated by\")}}",
+          "x-component": "AssociationField",
+          "x-component-props": {
+            "fieldNames": {
+              "value": "id",
+              "label": "nickname"
+            }
+          },
+          "x-read-pretty": true
+        },
+        "targetKey": "id",
+        "__sort": 5
+      },
+      {
+        "name": "datetime_tz",
+        "key": "c00l00kjesd",
+        "type": "date",
+        "interface": "datetime",
+        "description": null,
+        "collectionName": "date_test",
+        "parentKey": null,
+        "reverseKey": null,
+        "defaultToCurrentTime": false,
+        "onUpdateToCurrentTime": false,
+        "timezone": true,
+        "uiSchema": {
+          "type": "string",
+          "x-component": "DatePicker",
+          "x-component-props": {
+            "showTime": true,
+            "utc": true,
+            "picker": "date",
+            "dateFormat": "YYYY-MM-DD",
+            "gmt": false,
+            "timeFormat": "HH:mm:ss"
+          },
+          "title": "datetime_tz"
+        },
+        "__sort": 6
+      },
+      {
+        "name": "datetime_without_tz",
+        "key": "3uvpc0euwto",
+        "type": "datetimeNoTz",
+        "interface": "datetimeNoTz",
+        "description": null,
+        "collectionName": "date_test",
+        "parentKey": null,
+        "reverseKey": null,
+        "defaultToCurrentTime": false,
+        "onUpdateToCurrentTime": false,
+        "timezone": false,
+        "uiSchema": {
+          "type": "string",
+          "x-component": "DatePicker",
+          "x-component-props": {
+            "showTime": true,
+            "utc": false,
+            "picker": "date",
+            "dateFormat": "YYYY-MM-DD",
+            "gmt": false,
+            "timeFormat": "HH:mm:ss"
+          },
+          "title": "datetime_without_tz"
+        },
+        "__sort": 7
+      },
+      {
+        "name": "dateonly",
+        "key": "0qhxbeulq7v",
+        "type": "dateOnly",
+        "interface": "date",
+        "description": null,
+        "collectionName": "date_test",
+        "parentKey": null,
+        "reverseKey": null,
+        "uiSchema": {
+          "type": "string",
+          "x-component": "DatePicker",
+          "x-component-props": {
+            "dateOnly": true,
+            "picker": "date",
+            "dateFormat": "YYYY-MM-DD",
+            "timeFormat": "HH:mm:ss"
+          },
+          "title": "dateonly"
+        },
+        "__sort": 8
+      },
+      {
+        "name": "time",
+        "key": "xie8nga5246",
+        "type": "time",
+        "interface": "time",
+        "description": null,
+        "collectionName": "date_test",
+        "parentKey": null,
+        "reverseKey": null,
+        "uiSchema": {
+          "type": "string",
+          "x-component": "TimePicker",
+          "x-component-props": {
+            "format": "HH:mm:ss"
+          },
+          "title": "time"
+        },
+        "__sort": 9
+      },
+      {
+        "name": "unix_ts",
+        "key": "fpxpsaenbs4",
+        "type": "unixTimestamp",
+        "interface": "unixTimestamp",
+        "description": null,
+        "collectionName": "date_test",
+        "parentKey": null,
+        "reverseKey": null,
+        "accuracy": "second",
+        "timezone": true,
+        "defaultToCurrentTime": false,
+        "onUpdateToCurrentTime": false,
+        "uiSchema": {
+          "type": "number",
+          "x-component": "UnixTimestamp",
+          "x-component-props": {
+            "showTime": true,
+            "picker": "date",
+            "dateFormat": "YYYY-MM-DD",
+            "timeFormat": "HH:mm:ss",
+            "accuracy": "second"
+          },
+          "title": "unix_ts_s"
+        },
+        "__sort": 10
+      },
+      {
+        "name": "unix_ts_ms",
+        "key": "4oqyv2w6qaf",
+        "type": "unixTimestamp",
+        "interface": "unixTimestamp",
+        "description": null,
+        "collectionName": "date_test",
+        "parentKey": null,
+        "reverseKey": null,
+        "accuracy": "millisecond",
+        "timezone": true,
+        "defaultToCurrentTime": false,
+        "onUpdateToCurrentTime": false,
+        "uiSchema": {
+          "type": "number",
+          "x-component": "UnixTimestamp",
+          "x-component-props": {
+            "showTime": true,
+            "picker": "date",
+            "dateFormat": "YYYY-MM-DD",
+            "timeFormat": "HH:mm:ss",
+            "accuracy": "millisecond"
+          },
+          "title": "unix_ts_ms"
+        },
+        "__sort": 11
+      },
+      {
+        "name": "single_line_text",
+        "key": "yecx942kcr2",
+        "type": "string",
+        "interface": "input",
+        "description": null,
+        "collectionName": "date_test",
+        "parentKey": null,
+        "reverseKey": null,
+        "uiSchema": {
+          "type": "string",
+          "x-component": "Input",
+          "title": "single_line_text"
+        },
+        "__sort": 12
+      },
+      {
+        "name": "createdById",
+        "type": "context",
+        "dataType": "bigInt",
+        "dataIndex": "state.currentUser.id",
+        "createOnly": true,
+        "visible": true,
+        "index": true
+      },
+      {
+        "name": "updatedById",
+        "type": "context",
+        "dataType": "bigInt",
+        "dataIndex": "state.currentUser.id",
+        "visible": true,
+        "index": true
+      }
+    ],
+    "logging": true,
+    "template": "general",
+    "view": false,
+    "autoGenId": false,
+    "createdAt": true,
+    "createdBy": true,
+    "updatedAt": true,
+    "updatedBy": true,
+    "loadedFromCollectionManager": true,
+    "schema": "public",
+    "dumpRules": {
+      "group": "custom"
+    },
+    "underscored": true,
+    "filterTargetKey": "id",
+    "unavailableActions": []
   }
 ]
