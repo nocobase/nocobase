@@ -53,6 +53,7 @@ const external = [
   '@nocobase/server',
   '@nocobase/test',
   '@nocobase/utils',
+  '@nocobase/license-kit',
 
   // @nocobase/auth
   'jsonwebtoken',
@@ -371,7 +372,7 @@ export async function buildProPluginServer(cwd: string, userConfig: UserConfig, 
       sourcemap,
       outDir: path.join(cwd, target_dir, 'server'),
       format: 'cjs',
-      // noExternal: ['@nocobase/plugin-commercial'],
+      // noExternal: ['@nocobase/plugin-commercial/server'],
       skipNodeModulesBundle: true,
       tsconfig: tsconfig.path,
       loader: {
