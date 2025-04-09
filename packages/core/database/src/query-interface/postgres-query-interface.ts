@@ -10,7 +10,7 @@
 import lodash from 'lodash';
 import { Collection } from '../collection';
 import sqlParser from '../sql-parser';
-import QueryInterface, { ChangeColumnOptions, TableInfo } from './query-interface';
+import QueryInterface, { ChangeColumnOptions, RemoveColumnOptions, TableInfo } from './query-interface';
 import { ModelStatic, Transaction } from 'sequelize';
 
 export default class PostgresQueryInterface extends QueryInterface {
@@ -240,4 +240,7 @@ $BODY$
   changeColumnDefaultValueSQL(options: ChangeColumnOptions): Promise<string> {
     return null;
   }
+
+  async beforeRemoveColumn(options: RemoveColumnOptions): Promise<void> {}
+  async afterRemoveColumn(options: RemoveColumnOptions): Promise<void> {}
 }

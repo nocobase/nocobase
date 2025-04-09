@@ -51,6 +51,13 @@ export type ChangeColumnAction = (typeof ChangeColumnAction)[keyof typeof Change
 type QueryInterfaceConfig = {
   changeColumnMode?: 'default' | 'sequelize';
 };
+
+export interface RemoveColumnOptions {
+  tableName: TableName;
+  columnName: string;
+  model?: ModelStatic<any>;
+  options?: Transactionable;
+}
 export default abstract class QueryInterface {
   sequelizeQueryInterface: SequelizeQueryInterface;
 
@@ -83,6 +90,10 @@ export default abstract class QueryInterface {
   abstract showTableDefinition(tableInfo: TableInfo): Promise<any>;
 
   abstract changeColumnDefaultValueSQL(options: ChangeColumnOptions): Promise<string>;
+
+  abstract beforeRemoveColumn(options: RemoveColumnOptions): Promise<void>;
+
+  abstract afterRemoveColumn(options: RemoveColumnOptions): Promise<void>;
 
   async dropAll(options) {
     if (options.drop !== true) return;
@@ -170,5 +181,12 @@ export default abstract class QueryInterface {
 
   public generateJsonPathExpression(field: string, path: string): Literal {
     return this.db.sequelize.literal(`${field}.${path}`);
+  }
+
+  public async removeColumn(options: RemoveColumnOptions) {
+    await this.beforeRemoveColumn(options);
+    const { tableName, columnName, options: sequelizeOptions } = options;
+    await this.db.sequelize.getQueryInterface().removeColumn(tableName, columnName, sequelizeOptions);
+    await this.afterRemoveColumn(options);
   }
 }

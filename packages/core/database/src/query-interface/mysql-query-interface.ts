@@ -12,7 +12,7 @@
 import { ModelStatic, Transaction, Transactionable } from 'sequelize';
 import { Collection } from '../collection';
 import sqlParser from '../sql-parser';
-import QueryInterface, { ChangeColumnOptions, TableInfo } from './query-interface';
+import QueryInterface, { ChangeColumnOptions, RemoveColumnOptions, TableInfo } from './query-interface';
 
 export default class MysqlQueryInterface extends QueryInterface {
   constructor(db) {
@@ -149,4 +149,7 @@ export default class MysqlQueryInterface extends QueryInterface {
   changeColumnDefaultValueSQL(options: ChangeColumnOptions): Promise<string> {
     return null;
   }
+
+  async beforeRemoveColumn(options: RemoveColumnOptions): Promise<void> {}
+  async afterRemoveColumn(options: RemoveColumnOptions): Promise<void> {}
 }

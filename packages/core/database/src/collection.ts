@@ -616,8 +616,13 @@ export class Collection<
           dropCollection: false,
         });
       } else {
-        const queryInterface = this.db.sequelize.getQueryInterface();
-        await queryInterface.removeColumn(this.getTableNameWithSchema(), field.columnName(), options);
+        const queryInterface = this.db.queryInterface;
+        await queryInterface.removeColumn({
+          tableName: this.getTableNameWithSchema(),
+          columnName: field.columnName(),
+          options,
+          model: this.model,
+        });
       }
     }
 

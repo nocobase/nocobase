@@ -63,5 +63,6 @@ export {
   TableInfo,
   ChangeColumnAction,
   ChangeColumnOptions,
+  RemoveColumnOptions,
 } from './query-interface/query-interface';
 export { OptionsParser, FieldSortOptions } from './options-parser';
