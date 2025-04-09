@@ -7,7 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { ISchema, SchemaSettingsModalItem, useResource, useSchemaSettings } from '@nocobase/client';
+import {
+  ISchema,
+  SchemaSettingsModalItem,
+  useResource,
+  useSchemaSettings,
+  useSchemaTemplateManager,
+} from '@nocobase/client';
 import React from 'react';
 import { useT } from '../locale';
 import { useFieldSchema, useField, useForm } from '@formily/react';
@@ -48,6 +54,7 @@ export const SaveAsTemplateSetting = () => {
   const { templates } = useBlockTemplateMenus();
   const location = useLocation();
   const { template: deprecatedTemplate } = useSchemaSettings();
+  const schemaTemplateManager = useSchemaTemplateManager();
 
   return (
     <SchemaSettingsModalItem
@@ -90,7 +97,7 @@ export const SaveAsTemplateSetting = () => {
         const schemaUid = uid();
         const isMobile = type === 'Mobile';
         const templateSchema = getTemplateSchemaFromPage(fieldSchema.toJSON());
-        if (deprecatedTemplate || containsReferenceTemplate(templateSchema)) {
+        if (deprecatedTemplate || (await containsReferenceTemplate(templateSchema, schemaTemplateManager))) {
           message.error(t('This block is using some reference templates, please convert to duplicate template first.'));
           return;
         }
@@ -298,13 +305,19 @@ function getTemplateSchemaFromPage(schema: ISchema) {
   return templateSchema;
 }
 
-function containsReferenceTemplate(schema: ISchema) {
+async function containsReferenceTemplate(
+  schema: ISchema,
+  schemaTemplateManager: ReturnType<typeof useSchemaTemplateManager>,
+) {
   if (schema['x-component'] === 'BlockTemplate') {
-    return true;
+    const templateId = schema['x-component-props']?.templateId;
+    if (templateId && schemaTemplateManager.getTemplateById(templateId)) {
+      return true;
+    }
   }
   if (schema.properties) {
     for (const key in schema.properties) {
-      if (containsReferenceTemplate(schema.properties[key])) {
+      if (await containsReferenceTemplate(schema.properties[key], schemaTemplateManager)) {
         return true;
       }
     }
