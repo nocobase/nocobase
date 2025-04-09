@@ -15,7 +15,10 @@ import { useLinkageDisplayResult } from './utils';
 import { useDesignable } from '../../';
 
 const getLinkageRules = (fieldSchema) => {
-  let linkageRules = fieldSchema['x-block-linkage-rules'] || [];
+  if (!fieldSchema) {
+    return [];
+  }
+  let linkageRules = fieldSchema?.['x-block-linkage-rules'] || [];
   fieldSchema.mapProperties((schema) => {
     if (schema['x-block-linkage-rules']) {
       linkageRules = schema['x-block-linkage-rules'];
