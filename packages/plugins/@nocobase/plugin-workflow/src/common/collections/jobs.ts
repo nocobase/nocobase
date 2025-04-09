@@ -14,7 +14,14 @@ export default {
   migrationRules: ['schema-only'],
   name: 'jobs',
   shared: true,
+  autoGenId: false,
   fields: [
+    {
+      type: 'bigInt',
+      name: 'id',
+      primaryKey: true,
+      autoIncrement: false,
+    },
     {
       type: 'belongsTo',
       name: 'execution',

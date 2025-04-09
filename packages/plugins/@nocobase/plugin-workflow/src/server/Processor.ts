@@ -16,6 +16,7 @@ import type Plugin from './Plugin';
 import { EXECUTION_STATUS, JOB_STATUS } from './constants';
 import { Runner } from './instructions';
 import type { ExecutionModel, FlowNodeModel, JobModel } from './types';
+import { toJSON } from './utils';
 
 export interface ProcessorOptions extends Transactionable {
   plugin: Plugin;
@@ -264,7 +265,10 @@ export default class Processor {
         const JobsModel = this.options.plugin.db.getModel('jobs');
         await JobsModel.bulkCreate(
           newJobs.map((job) => job.toJSON()),
-          { transaction: this.mainTransaction },
+          {
+            transaction: this.mainTransaction,
+            returning: false,
+          },
         );
         for (const job of newJobs) {
           job.isNewRecord = false;
