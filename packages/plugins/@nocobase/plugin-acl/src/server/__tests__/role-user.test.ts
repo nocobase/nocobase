@@ -22,7 +22,7 @@ describe('role', () => {
 
   beforeEach(async () => {
     api = await createMockServer({
-      plugins: ['field-sort', 'users', 'acl', 'auth', 'data-source-manager', 'system-settings'],
+      plugins: ['field-sort', 'users', 'acl', 'auth', 'data-source-manager', 'system-settings', 'ui-schema-storage'],
     });
     db = api.db;
     usersPlugin = api.getPlugin('users');
@@ -234,5 +234,8 @@ describe('role', () => {
     expect(response2.statusCode).toEqual(200);
     userRole = await db.getRepository('rolesUsers').findOne({ where: { userId: user.get('id'), default: true } });
     expect(userRole.roleName).toEqual(UNION_ROLE_KEY);
+    const agent = await api.agent().login(user);
+    const response3 = await agent.resource('roles').check();
+    expect(response3.statusCode).toEqual(200);
   });
 });

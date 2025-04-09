@@ -93,7 +93,7 @@ export async function setCurrentRole(ctx: Context, next) {
     role = defaultRoleModel?.roleName || userRoles.find((x) => x.name !== UNION_ROLE_KEY)?.name;
   }
   ctx.state.currentRole = role;
-  ctx.state.currentRoles = [role];
+  ctx.state.currentRoles = role === UNION_ROLE_KEY ? [userRoles.find((x) => x.name !== UNION_ROLE_KEY)?.name] : [role];
   if (!ctx.state.currentRoles.length) {
     return ctx.throw(401, {
       code: 'ROLE_NOT_FOUND_ERR',

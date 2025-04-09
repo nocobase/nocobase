@@ -49,6 +49,7 @@ export function mergeRole(roles: ACLRole[]) {
  * finally result: [{
  *  actions: {
  *    'users:create': {...},
+ *    'users:view': {} // all view
  * },
  * {
  *  strategy: {
