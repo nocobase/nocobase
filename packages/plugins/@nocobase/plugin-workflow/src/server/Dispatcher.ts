@@ -7,5 +7,6 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export * from './i18n';
-export * from './constant';
+export default class Dispatcher {
+  constructor() {}
+}
