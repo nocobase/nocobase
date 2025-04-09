@@ -14,6 +14,8 @@ import React, { createContext, useCallback, useContext, useEffect, useMemo, useS
 import { Link, Outlet, useNavigate, useParams } from 'react-router-dom';
 
 import {
+  ActionContextProvider,
+  CollectionRecordProvider,
   css,
   PinnedPluginListProvider,
   SchemaComponent,
@@ -58,9 +60,11 @@ const contentClass = css`
 export interface TaskTypeOptions {
   title: string;
   collection: string;
+  action: string;
   useActionParams: Function;
-  component: React.ComponentType;
-  extraActions?: React.ComponentType;
+  Actions?: React.ComponentType;
+  Item: React.ComponentType;
+  Detail: React.ComponentType;
   // children?: TaskTypeOptions[];
 }
 
@@ -79,7 +83,7 @@ function MenuLink({ type }: any) {
 
   return (
     <Link
-      to={`/admin/workflow/tasks/${type}`}
+      to={`/admin/workflow/tasks/${type}/${TASK_STATUS.PENDING}`}
       className={css`
         display: flex;
         align-items: center;
@@ -99,7 +103,7 @@ function MenuLink({ type }: any) {
   );
 }
 
-const TASK_STATUS = {
+export const TASK_STATUS = {
   ALL: 'all',
   PENDING: 'pending',
   COMPLETED: 'completed',
@@ -109,7 +113,7 @@ function StatusTabs() {
   const navigate = useNavigate();
   const { taskType, status = TASK_STATUS.PENDING } = useParams();
   const type = useCurrentTaskType();
-  const { extraActions: ExtraActions } = type;
+  const { Actions } = type;
   return (
     <Tabs
       activeKey={status}
@@ -136,9 +140,9 @@ function StatusTabs() {
         },
       ]}
       tabBarExtraContent={
-        ExtraActions
+        Actions
           ? {
-              right: <ExtraActions />,
+              right: <Actions />,
             }
           : {}
       }
@@ -171,18 +175,36 @@ function useCurrentTaskType() {
   );
 }
 
+function PopupContext(props: any) {
+  const { popupId } = useParams();
+  const navigate = useNavigate();
+  return (
+    <ActionContextProvider
+      visible={Boolean(popupId)}
+      setVisible={(visible) => {
+        if (!visible) {
+          navigate(-1);
+        }
+      }}
+      openMode="modal"
+    >
+      <CollectionRecordProvider record={{ id: popupId }}>{props.children}</CollectionRecordProvider>
+    </ActionContextProvider>
+  );
+}
+
 export function WorkflowTasks() {
   const compile = useCompile();
   const { setTitle } = useDocumentTitle();
   const navigate = useNavigate();
-  const { taskType, status = TASK_STATUS.PENDING } = useParams();
+  const { taskType, status = TASK_STATUS.PENDING, popupId } = useParams();
   const {
     token: { colorBgContainer },
   } = useToken();
 
   const items = useTaskTypeItems();
 
-  const { title, collection, useActionParams, component: Component } = useCurrentTaskType();
+  const { title, collection, action = 'list', useActionParams, Item, Detail } = useCurrentTaskType();
 
   const params = useActionParams(status);
 
@@ -234,7 +256,7 @@ export function WorkflowTasks() {
               'x-decorator': 'List.Decorator',
               'x-decorator-props': {
                 collection,
-                action: 'list',
+                action,
                 params: {
                   pageSize: 20,
                   sort: ['-createdAt'],
@@ -284,17 +306,21 @@ export function WorkflowTasks() {
                         item: {
                           type: 'object',
                           'x-decorator': 'List.Item',
-                          'x-component': Component,
+                          'x-component': Item,
                           'x-read-pretty': true,
                         },
                       },
                     },
                   },
                 },
+                popup: {
+                  type: 'void',
+                  'x-decorator': PopupContext,
+                  'x-component': Detail,
+                },
               },
             }}
           />
-          <Outlet />
         </SchemaComponentContext.Provider>
       </Layout>
     </Layout>
@@ -309,7 +335,7 @@ function WorkflowTasksLink() {
   return types.length ? (
     <Tooltip title={lang('Workflow todos')}>
       <Button>
-        <Link to={`/admin/workflow/tasks/${types[0]}`} onClick={reload}>
+        <Link to={`/admin/workflow/tasks/${types[0]}/${TASK_STATUS.PENDING}`} onClick={reload}>
           <Badge count={total} size="small">
             <CheckCircleOutlined />
           </Badge>
@@ -370,7 +396,7 @@ function TasksCountsProvider(props: any) {
   return <TasksCountsContext.Provider value={{ reload, total, counts }}>{props.children}</TasksCountsContext.Provider>;
 }
 
-export const TasksProvider = (props: any) => {
+export function TasksProvider(props: any) {
   const isLoggedIn = useIsLoggedIn();
 
   const content = (
@@ -390,4 +416,4 @@ export const TasksProvider = (props: any) => {
   );
 
   return isLoggedIn ? <TasksCountsProvider>{content}</TasksCountsProvider> : content;
-};
+}
