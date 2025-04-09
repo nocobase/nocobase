@@ -97,7 +97,7 @@ export const SubTable: any = observer(
     const labelUiSchema = useLabelUiSchema(collectionField, fieldNames?.label || 'label');
     const recordV2 = useCollectionRecord();
     const collection = useCollection();
-    const { allowSelectExistingRecord, allowAddnew, allowDisassociation } = field.componentProps;
+    const { allowSelectExistingRecord, allowAddnew, allowDisassociation, enableIndexÏColumn } = field.componentProps;
 
     useSubTableSpecialCase({ rootField: field, rootSchema: schema });
 
@@ -189,6 +189,7 @@ export const SubTable: any = observer(
         onChange: (page, pageSize) => {
           setCurrentPage(page);
           setPageSize(pageSize);
+          field.componentProps.pageSize = pageSize;
           field.onInput(field.value);
         },
         showSizeChanger: true,
@@ -217,7 +218,7 @@ export const SubTable: any = observer(
         },
       };
     };
-
+    console.log(props);
     return (
       <div className={subTableContainer}>
         <FlagProvider isInSubTable>
@@ -251,6 +252,7 @@ export const SubTable: any = observer(
                   locale={{
                     emptyText: <span> {field.editable ? t('Please add or select record') : t('No data')}</span>,
                   }}
+                  enableIndexÏColumn={enableIndexÏColumn !== false}
                 />
                 {field.editable && (
                   <Space

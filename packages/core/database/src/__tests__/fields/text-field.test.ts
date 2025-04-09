@@ -7,14 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { mockDatabase } from '../';
-import { Database } from '../../database';
+import { Database, createMockDatabase } from '@nocobase/database';
 
 describe('text field', () => {
   let db: Database;
 
   beforeEach(async () => {
-    db = mockDatabase();
+    db = await createMockDatabase();
     await db.clean({ drop: true });
   });
 
@@ -52,5 +51,19 @@ describe('text field', () => {
       ],
     });
     await Test.sync();
+  });
+
+  it('trim', async () => {
+    const collection = db.collection({
+      name: 'tests',
+      fields: [{ type: 'text', name: 'name', trim: true }],
+    });
+    await db.sync();
+    const model = await collection.model.create({
+      name: '  n1\n ',
+    });
+    expect(model.toJSON()).toMatchObject({
+      name: 'n1',
+    });
   });
 });

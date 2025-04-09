@@ -7,5 +7,8 @@
   "Custom domain": "Dominio personalizzato",
   "Manage applications": "Gestisci applicazioni",
   "Standalone deployment": "Distribuzione autonoma",
-  "Auto start": "Avvio automatico"
+  "Auto start": "Avvio automatico",
+  "Start mode": "Modalità di avvio",
+  "Start on first visit": "Avvia alla prima visita",
+  "Start with main application": "Avvia con l'applicazione principale"
 }

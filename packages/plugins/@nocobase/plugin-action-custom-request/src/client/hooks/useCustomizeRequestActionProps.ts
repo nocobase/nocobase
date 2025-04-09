@@ -52,8 +52,9 @@ export const useCustomizeRequestActionProps = () => {
       actionField.data ??= {};
       actionField.data.loading = true;
       try {
+        const requestId = fieldSchema['x-custom-request-id'] || fieldSchema['x-uid'];
         const res = await apiClient.request({
-          url: `/customRequests:send/${fieldSchema['x-uid']}`,
+          url: `/customRequests:send/${requestId}`,
           method: 'POST',
           data: {
             currentRecord: {
@@ -67,10 +68,13 @@ export const useCustomizeRequestActionProps = () => {
           responseType: fieldSchema['x-response-type'] === 'stream' ? 'blob' : 'json',
         });
         if (res.headers['content-disposition']) {
-          const regex = /attachment;\s*filename="([^"]+)"/;
-          const match = res.headers['content-disposition'].match(regex);
-          if (match?.[1]) {
-            saveAs(res.data, match[1]);
+          const contentDisposition = res.headers['content-disposition'];
+          const utf8Match = contentDisposition.match(/filename\*=utf-8''([^;]+)/i);
+          const asciiMatch = contentDisposition.match(/filename="([^"]+)"/i);
+          if (utf8Match) {
+            saveAs(res.data, decodeURIComponent(utf8Match[1]));
+          } else if (asciiMatch) {
+            saveAs(res.data, asciiMatch[1]);
           }
         }
         actionField.data.loading = false;

@@ -7,14 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Database } from '../database';
-import { mockDatabase } from './index';
+import { createMockDatabase, Database } from '@nocobase/database';
 
 describe.skipIf(process.env['DB_DIALECT'] === 'sqlite')('collection', () => {
   let db: Database;
 
   beforeEach(async () => {
-    db = mockDatabase({
+    db = await createMockDatabase({
       logging: console.log,
     });
 

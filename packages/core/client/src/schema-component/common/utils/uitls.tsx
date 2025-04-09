@@ -96,7 +96,6 @@ export const conditionAnalyses = async (
 ) => {
   const type = Object.keys(ruleGroup)[0] || '$and';
   const conditions = ruleGroup[type];
-
   let results = conditions.map(async (condition) => {
     if ('$and' in condition || '$or' in condition) {
       return await conditionAnalyses({ ruleGroup: condition, variables, localVariables }, jsonLogic);
@@ -147,7 +146,10 @@ export const conditionAnalyses = async (
   if (type === '$and') {
     return every(results, (v) => v);
   } else {
-    return some(results, (v) => v);
+    if (results.length) {
+      return some(results, (v) => v);
+    }
+    return true;
   }
 };
 
@@ -183,7 +185,9 @@ export async function getRenderContent(templateEngine, content, variables, local
       const html = renderedContent({ ...variables?.ctxRef?.current, ...data, $nDate: variableDate });
       return await defaultParse(html);
     } catch (error) {
-      console.log(error);
+      if (!/VariablesProvider: .* is not found/.test(error.message)) {
+        console.log(error);
+      }
       return content;
     }
   } else {
@@ -191,7 +195,9 @@ export async function getRenderContent(templateEngine, content, variables, local
       const html = await replaceVariableValue(content, variables, localVariables);
       return await defaultParse(html);
     } catch (error) {
-      console.log(error);
+      if (!/VariablesProvider: .* is not found/.test(error.message)) {
+        console.log(error);
+      }
       return content;
     }
   }

@@ -17,6 +17,7 @@ import {
   SchemaComponentContext,
   useActionContext,
   useApp,
+  useCollectionRecordData,
   usePlugin,
   useRecord,
   useResourceActionContext,
@@ -29,9 +30,10 @@ import { WorkflowLink } from './WorkflowLink';
 import OpenDrawer from './components/OpenDrawer';
 import { workflowSchema } from './schemas/workflows';
 import { ExecutionStatusSelect, ExecutionStatusColumn } from './components/ExecutionStatus';
-import WorkflowPlugin, { RadioWithTooltip } from '.';
+import WorkflowPlugin, { ExecutionStatusOptions, RadioWithTooltip } from '.';
 import { useRefreshActionProps } from './hooks/useRefreshActionProps';
 import { useTranslation } from 'react-i18next';
+import { TriggerOptionRender } from './components/TriggerOptionRender';
 
 function SyncOptionSelect(props) {
   const field = useField<any>();
@@ -61,11 +63,10 @@ function SyncOptionSelect(props) {
       if (trigger.sync != null) {
         field.setValue(trigger.sync);
       } else {
-        field.setInitialValue(false);
+        field.setInitialValue(props.value ?? false);
       }
     }
-  }, [record.id, field, workflowPlugin.triggers]);
-
+  }, [record.id, field, workflowPlugin.triggers, record.type, props.value]);
   return <RadioWithTooltip {...props} />;
 }
 
@@ -117,6 +118,14 @@ function useRevisionAction() {
   };
 }
 
+function ExecutedLink(props) {
+  const record = useCollectionRecordData();
+  return React.createElement('a', {
+    'aria-label': `executed-${record.title}`,
+    ...props,
+  });
+}
+
 export function WorkflowPane() {
   const ctx = useContext(SchemaComponentContext);
   const { useTriggersOptions } = usePlugin(WorkflowPlugin);
@@ -141,6 +150,9 @@ export function WorkflowPane() {
             useSyncAction,
             useRefreshActionProps,
             useRevisionAction,
+            TriggerOptionRender,
+            ExecutedLink,
+            ExecutionStatusOptions,
           }}
         />
       </SchemaComponentContext.Provider>

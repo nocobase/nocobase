@@ -1,0 +1,21 @@
+{
+  "API keys": "API-Schlüssel",
+  "API key created successfully": "API-Schlüssel erfolgreich erstellt",
+  "Make sure to copy your personal access key now as you will not be able to see this again.": "Stellen Sie sicher, dass Sie Ihren persönlichen Zugriffsschlüssel jetzt kopieren, da Sie ihn später nicht mehr sehen können.",
+  "Key name": "Schlüsselname",
+  "Expiration": "Ablauf",
+  "Delete API key": "API-Schlüssel löschen",
+  "Role": "Rolle",
+  "Keys manager": "Schlüsselverwaltung",
+  "Created at": "Erstellt am",
+  "Add API key": "API-Schlüssel hinzufügen",
+  "Never": "Nie",
+  "Custom": "Benutzerdefiniert",
+  "Never expires": "Läuft nie ab",
+  "1 Day": "1 Tag",
+  "7 Days": "7 Tage",
+  "30 Days": "30 Tage",
+  "90 Days": "90 Tage",
+  "Role not found": "Rolle nicht gefunden",
+  "Allow only your own roles to be selected": "Erlauben Sie nur die Auswahl Ihrer eigenen Rollen"
+}

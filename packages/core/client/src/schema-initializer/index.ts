@@ -149,6 +149,7 @@ export {
   useRecordCollectionDataSourceItems,
   useRemoveGridFormItem,
   useTableColumnInitializerFields,
+  registerInitializerMenusGenerator,
 } from './utils';
 
 export class SchemaInitializerPlugin extends Plugin {

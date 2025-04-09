@@ -1,6 +1,7 @@
 {
-    "Export warning": "You can export up to {{limit}} rows of data at a time, any excess will be ignored.",
-    "Start export": "Start export",
-    "True": "True",
-    "False": "False"
+    "Export warning": "Je kunt maximaal {{limit}} rijen gegevens tegelijk exporteren, eventuele overschrijdingen worden genegeerd.",
+    "Start export": "Start exporteren",
+    "another export action is running, please try again later.": "Er is al een andere exportactie bezig, probeer het later opnieuw.",
+    "True": "Waar",
+    "False": "Onwaar"
 }

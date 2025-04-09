@@ -57,9 +57,11 @@ export const useValues = (): UseValuesReturn => {
   }, [name, path]);
 
   const data2value = useCallback(() => {
-    field.value = flat.unflatten({
-      [`${field.data.dataIndex?.join('.')}.${field.data?.operator?.value}`]: field.data?.value,
-    });
+    field.value = field.data.dataIndex
+      ? flat.unflatten({
+          [`${field.data.dataIndex?.join('.')}.${field.data?.operator?.value}`]: field.data?.value,
+        })
+      : {};
   }, [field]);
 
   const value2data = () => {

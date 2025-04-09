@@ -167,7 +167,7 @@ export function useCollectValuesToSubmit() {
         if (parsedValue !== null && parsedValue !== undefined) {
           assignedValues[key] = transformVariableValue(parsedValue, { targetCollectionField: collectionField });
         }
-      } else if (value != null && value !== '') {
+      } else if (value !== '') {
         assignedValues[key] = value;
       }
     });
@@ -203,6 +203,12 @@ export function useCollectValuesToSubmit() {
   ]);
 }
 
+function interpolateVariables(str: string, scope: Record<string, any>): string {
+  return str.replace(/\{\{\s*([a-zA-Z0-9_$-.]+?)\s*\}\}/g, (_, key) => {
+    return scope[key] !== undefined ? String(scope[key]) : '';
+  });
+}
+
 export const useCreateActionProps = () => {
   const filterByTk = useFilterByTk();
   const record = useCollectionRecord();
@@ -219,11 +225,20 @@ export const useCreateActionProps = () => {
   const collectValues = useCollectValuesToSubmit();
   const action = record.isNew ? actionField.componentProps.saveMode || 'create' : 'update';
   const filterKeys = actionField.componentProps.filterKeys?.checked || [];
+  const localVariables = useLocalVariables();
+  const variables = useVariables();
 
   return {
     async onClick() {
       const { onSuccess, skipValidator, triggerWorkflows } = actionSchema?.['x-action-settings'] ?? {};
-      const { manualClose, redirecting, redirectTo, successMessage, actionAfterSuccess } = onSuccess || {};
+      const {
+        manualClose,
+        redirecting,
+        redirectTo: rawRedirectTo,
+        successMessage,
+        actionAfterSuccess,
+      } = onSuccess || {};
+
       if (!skipValidator) {
         await form.submit();
       }
@@ -241,6 +256,15 @@ export const useCreateActionProps = () => {
             : undefined,
           updateAssociationValues,
         });
+        let redirectTo = rawRedirectTo;
+        if (rawRedirectTo) {
+          const { exp, scope: expScope } = await replaceVariables(rawRedirectTo, {
+            variables,
+            localVariables: [...localVariables, { name: '$record', ctx: new Proxy(data?.data?.data, {}) }],
+          });
+          redirectTo = interpolateVariables(exp, expScope);
+        }
+
         if (actionAfterSuccess === 'previous' || (!actionAfterSuccess && redirecting !== true)) {
           setVisible?.(false);
         }
@@ -338,7 +362,7 @@ export const useAssociationCreateActionProps = () => {
           if (parsedValue) {
             assignedValues[key] = transformVariableValue(parsedValue, { targetCollectionField: collectionField });
           }
-        } else if (value != null && value !== '') {
+        } else if (value !== '') {
           assignedValues[key] = value;
         }
       });
@@ -468,6 +492,10 @@ const useDoFilter = () => {
               block.defaultFilter,
             ]);
 
+            if (_.isEmpty(storedFilter[uid])) {
+              block.clearSelection?.();
+            }
+
             if (doNothingWhenFilterIsEmpty && _.isEmpty(storedFilter[uid])) {
               return;
             }
@@ -584,7 +612,13 @@ export const useCustomizeUpdateActionProps = () => {
         skipValidator,
         triggerWorkflows,
       } = actionSchema?.['x-action-settings'] ?? {};
-      const { manualClose, redirecting, redirectTo, successMessage, actionAfterSuccess } = onSuccess || {};
+      const {
+        manualClose,
+        redirecting,
+        redirectTo: rawRedirectTo,
+        successMessage,
+        actionAfterSuccess,
+      } = onSuccess || {};
       const assignedValues = {};
       const waitList = Object.keys(originalAssignedValues).map(async (key) => {
         const value = originalAssignedValues[key];
@@ -601,7 +635,7 @@ export const useCustomizeUpdateActionProps = () => {
           if (parsedValue) {
             assignedValues[key] = transformVariableValue(parsedValue, { targetCollectionField: collectionField });
           }
-        } else if (value != null && value !== '') {
+        } else if (value !== '') {
           assignedValues[key] = value;
         }
       });
@@ -610,7 +644,7 @@ export const useCustomizeUpdateActionProps = () => {
       if (skipValidator === false) {
         await form.submit();
       }
-      await resource.update({
+      const result = await resource.update({
         filterByTk,
         values: { ...assignedValues },
         // TODO(refactor): should change to inject by plugin
@@ -618,6 +652,16 @@ export const useCustomizeUpdateActionProps = () => {
           ? triggerWorkflows.map((row) => [row.workflowKey, row.context].filter(Boolean).join('!')).join(',')
           : undefined,
       });
+
+      let redirectTo = rawRedirectTo;
+      if (rawRedirectTo) {
+        const { exp, scope: expScope } = await replaceVariables(rawRedirectTo, {
+          variables,
+          localVariables: [...localVariables, { name: '$record', ctx: new Proxy(result?.data?.data?.[0], {}) }],
+        });
+        redirectTo = interpolateVariables(exp, expScope);
+      }
+
       if (actionAfterSuccess === 'previous' || (!actionAfterSuccess && redirecting !== true)) {
         setVisible?.(false);
       }
@@ -704,7 +748,7 @@ export const useCustomizeBulkUpdateActionProps = () => {
           if (parsedValue) {
             assignedValues[key] = transformVariableValue(parsedValue, { targetCollectionField: collectionField });
           }
-        } else if (value != null && value !== '') {
+        } else if (value !== '') {
           assignedValues[key] = value;
         }
       });
@@ -909,7 +953,13 @@ export const useUpdateActionProps = () => {
         skipValidator,
         triggerWorkflows,
       } = actionSchema?.['x-action-settings'] ?? {};
-      const { manualClose, redirecting, redirectTo, successMessage, actionAfterSuccess } = onSuccess || {};
+      const {
+        manualClose,
+        redirecting,
+        redirectTo: rawRedirectTo,
+        successMessage,
+        actionAfterSuccess,
+      } = onSuccess || {};
       const assignedValues = {};
       const waitList = Object.keys(originalAssignedValues).map(async (key) => {
         const value = originalAssignedValues[key];
@@ -926,7 +976,7 @@ export const useUpdateActionProps = () => {
           if (parsedValue) {
             assignedValues[key] = transformVariableValue(parsedValue, { targetCollectionField: collectionField });
           }
-        } else if (value != null && value !== '') {
+        } else if (value !== '') {
           assignedValues[key] = value;
         }
       });
@@ -948,7 +998,7 @@ export const useUpdateActionProps = () => {
       actionField.data = field.data || {};
       actionField.data.loading = true;
       try {
-        await resource.update({
+        const result = await resource.update({
           filterByTk,
           values: {
             ...values,
@@ -967,6 +1017,15 @@ export const useUpdateActionProps = () => {
         if (callBack) {
           callBack?.();
         }
+        let redirectTo = rawRedirectTo;
+        if (rawRedirectTo) {
+          const { exp, scope: expScope } = await replaceVariables(rawRedirectTo, {
+            variables,
+            localVariables: [...localVariables, { name: '$record', ctx: new Proxy(result?.data?.data?.[0], {}) }],
+          });
+          redirectTo = interpolateVariables(exp, expScope);
+        }
+
         if (actionAfterSuccess === 'previous' || (!actionAfterSuccess && redirecting !== true)) {
           setVisible?.(false);
         }
@@ -1153,6 +1212,7 @@ export const useDetailsPaginationProps = () => {
       current: ctx.service?.data?.meta?.page || 1,
       pageSize: 1,
       showSizeChanger: false,
+      align: 'center',
       async onChange(page) {
         const params = ctx.service?.params?.[0];
         ctx.service.run({ ...params, page });
@@ -1178,6 +1238,7 @@ export const useDetailsPaginationProps = () => {
     total: count,
     pageSize: 1,
     showSizeChanger: false,
+    align: 'center',
     async onChange(page) {
       const params = ctx.service?.params?.[0];
       ctx.service.run({ ...params, page });
@@ -1349,6 +1410,7 @@ export const useAssociationFilterBlockProps = () => {
             [filterKey]: value,
           };
         } else {
+          block.clearSelection?.();
           if (block.dataLoadingMode === 'manual') {
             return block.clearData();
           }
@@ -1441,6 +1503,8 @@ async function doReset({
       getDataBlocks().map(async (block) => {
         const target = targets.find((target) => target.uid === block.uid);
         if (!target) return;
+
+        block.clearSelection?.();
 
         if (block.dataLoadingMode === 'manual') {
           return block.clearData();

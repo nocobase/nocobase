@@ -6,12 +6,12 @@
  * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
+import { CheckCircleOutlined } from '@ant-design/icons';
+import { PageHeader } from '@ant-design/pro-layout';
+import { Badge, Button, Layout, Menu, Tabs, Tooltip } from 'antd';
+import classnames from 'classnames';
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { Link, Outlet, useNavigate, useParams } from 'react-router-dom';
-import { Button, Layout, Menu, Badge, Tooltip, Tabs } from 'antd';
-import { PageHeader } from '@ant-design/pro-layout';
-import { CheckCircleOutlined } from '@ant-design/icons';
-import classnames from 'classnames';
 
 import {
   css,
@@ -22,7 +22,7 @@ import {
   useApp,
   useCompile,
   useDocumentTitle,
-  useIsAdminPage,
+  useIsLoggedIn,
   usePlugin,
   useRequest,
   useToken,
@@ -36,21 +36,7 @@ const layoutClass = css`
   overflow: hidden;
 `;
 
-const sideClass = css`
-  overflow: auto;
-  position: sticky;
-  top: 0;
-  bottom: 0;
-  height: 100%;
-
-  .ant-layout-sider-children {
-    width: 200px;
-    height: 100%;
-  }
-`;
-
 const contentClass = css`
-  padding: 24px;
   min-height: 280px;
   overflow: auto;
 `;
@@ -64,7 +50,11 @@ export interface TaskTypeOptions {
   // children?: TaskTypeOptions[];
 }
 
-const TasksCountsContext = createContext<{ counts: Record<string, number>; total: number }>({ counts: {}, total: 0 });
+const TasksCountsContext = createContext<{ reload: () => void; counts: Record<string, number>; total: number }>({
+  reload() {},
+  counts: {},
+  total: 0,
+});
 
 function MenuLink({ type }: any) {
   const workflowPlugin = usePlugin(PluginWorkflowClient);
@@ -172,9 +162,7 @@ export function WorkflowTasks() {
   const { setTitle } = useDocumentTitle();
   const navigate = useNavigate();
   const { taskType, status = TASK_STATUS.PENDING } = useParams();
-  const {
-    token: { colorBgContainer },
-  } = useToken();
+  const { token } = useToken();
 
   const items = useTaskTypeItems();
 
@@ -183,7 +171,7 @@ export function WorkflowTasks() {
   const params = useActionParams(status);
 
   useEffect(() => {
-    setTitle?.(`${lang('Workflow todo')}${title ? `: ${compile(title)}` : ''}`);
+    setTitle?.(`${lang('Workflow todos')}${title ? `: ${compile(title)}` : ''}`);
   }, [taskType, status, setTitle, title, compile]);
 
   useEffect(() => {
@@ -196,7 +184,7 @@ export function WorkflowTasks() {
 
   return (
     <Layout className={layoutClass}>
-      <Layout.Sider className={sideClass} theme="light">
+      <Layout.Sider theme="light" breakpoint="md" collapsedWidth="0" zeroWidthTriggerStyle={{ top: 24 }}>
         <Menu mode="inline" selectedKeys={[typeKey]} items={items} style={{ height: '100%' }} />
       </Layout.Sider>
       <Layout
@@ -244,7 +232,7 @@ export function WorkflowTasks() {
                   'x-component-props': {
                     className: classnames('pageHeaderCss'),
                     style: {
-                      background: colorBgContainer,
+                      background: token.colorBgContainer,
                       padding: '12px 24px 0 24px',
                     },
                     title,
@@ -261,6 +249,9 @@ export function WorkflowTasks() {
                   'x-component': 'Layout.Content',
                   'x-component-props': {
                     className: contentClass,
+                    style: {
+                      padding: `${token.paddingPageVertical}px ${token.paddingPageHorizontal}px`,
+                    },
                   },
                   properties: {
                     list: {
@@ -299,13 +290,13 @@ export function WorkflowTasks() {
 
 function WorkflowTasksLink() {
   const workflowPlugin = usePlugin(PluginWorkflowClient);
-  const { total } = useContext(TasksCountsContext);
+  const { reload, total } = useContext(TasksCountsContext);
 
   const types = Array.from(workflowPlugin.taskTypes.getKeys());
   return types.length ? (
     <Tooltip title={lang('Workflow todos')}>
       <Button>
-        <Link to={`/admin/workflow/tasks/${types[0]}`}>
+        <Link to={`/admin/workflow/tasks/${types[0]}`} onClick={reload}>
           <Badge count={total} size="small">
             <CheckCircleOutlined />
           </Badge>
@@ -326,12 +317,7 @@ function TasksCountsProvider(props: any) {
   const app = useApp();
   const [counts, setCounts] = useState<Record<string, number>>({});
   const onTaskUpdate = useCallback(({ detail = [] }: CustomEvent) => {
-    setCounts((prev) => {
-      return {
-        ...prev,
-        ...transform(detail),
-      };
-    });
+    setCounts(transform(detail));
   }, []);
 
   const { runAsync } = useRequest(
@@ -344,20 +330,19 @@ function TasksCountsProvider(props: any) {
     },
   );
 
-  useEffect(() => {
+  const reload = useCallback(() => {
     runAsync()
       .then((res) => {
-        setCounts((prev) => {
-          return {
-            ...prev,
-            ...transform(res['data']),
-          };
-        });
+        setCounts(transform(res['data']));
       })
       .catch((err) => {
         console.error(err);
       });
   }, [runAsync]);
+
+  useEffect(() => {
+    reload();
+  }, [reload]);
 
   useEffect(() => {
     app.eventBus.addEventListener('ws:message:workflow:tasks:updated', onTaskUpdate);
@@ -369,11 +354,11 @@ function TasksCountsProvider(props: any) {
 
   const total = Object.values(counts).reduce((a, b) => a + b, 0) || 0;
 
-  return <TasksCountsContext.Provider value={{ total, counts }}>{props.children}</TasksCountsContext.Provider>;
+  return <TasksCountsContext.Provider value={{ reload, total, counts }}>{props.children}</TasksCountsContext.Provider>;
 }
 
 export const TasksProvider = (props: any) => {
-  const isAdminPage = useIsAdminPage();
+  const isLoggedIn = useIsLoggedIn();
 
   const content = (
     <PinnedPluginListProvider
@@ -391,5 +376,5 @@ export const TasksProvider = (props: any) => {
     </PinnedPluginListProvider>
   );
 
-  return isAdminPage ? <TasksCountsProvider>{content}</TasksCountsProvider> : content;
+  return isLoggedIn ? <TasksCountsProvider>{content}</TasksCountsProvider> : content;
 };

@@ -53,7 +53,9 @@ import { MobileSettingsBlockInitializer } from './mobile-blocks/settings-block/M
 import { MobileSettingsBlockSchemaSettings } from './mobile-blocks/settings-block/schemaSettings';
 // @ts-ignore
 import pkg from './../../package.json';
+import { MobileComponentsProvider } from './MobileComponentsProvider';
 
+export { MobilePopup } from './adaptor-of-desktop/ActionDrawer';
 export * from './desktop-mode';
 export * from './mobile';
 export * from './mobile-layout';
@@ -104,6 +106,7 @@ export class PluginMobileClient extends Plugin {
   }
 
   async load() {
+    this.app.use(MobileComponentsProvider);
     this.addComponents();
     this.addAppRoutes();
     this.addRoutes();

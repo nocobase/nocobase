@@ -33,7 +33,7 @@ test.describe('multi data details block schema settings', () => {
         'Linkage rules',
         'Set the data scope',
         'Set default sorting rules',
-        'Save as template',
+        // 'Save as template',
         'Delete',
       ],
     });
@@ -76,6 +76,7 @@ test.describe('actions schema settings', () => {
     await expectSettingsMenu({
       page,
       showMenu: async () => {
+        await expect(page.getByRole('button', { name: 'Edit' })).toHaveCount(1);
         await page.getByRole('button', { name: 'Edit' }).hover();
         await page.getByRole('button', { name: 'designer-schema-settings-Action' }).hover();
       },

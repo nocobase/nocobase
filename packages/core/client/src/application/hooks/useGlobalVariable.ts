@@ -29,3 +29,22 @@ export const useGlobalVariable = (key: string) => {
 
   return variable;
 };
+
+export const useGlobalVariableCtx = (key: string) => {
+  const app = useApp();
+
+  const variable = useMemo(() => {
+    return app?.getGlobalVarCtx?.(key);
+  }, [app, key]);
+
+  if (isFunction(variable)) {
+    try {
+      return variable();
+    } catch (error) {
+      console.error(`Error calling global variable function for key: ${key}`, error);
+      return undefined;
+    }
+  }
+
+  return variable;
+};

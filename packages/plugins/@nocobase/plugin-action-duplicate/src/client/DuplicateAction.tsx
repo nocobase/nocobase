@@ -32,8 +32,9 @@ import {
   useCollection,
   useDataSourceHeaders,
   useDataSourceKey,
+  Icon,
 } from '@nocobase/client';
-import { App, Button } from 'antd';
+import { App, Button, Tooltip } from 'antd';
 import _ from 'lodash';
 import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -60,6 +61,10 @@ export const actionDesignerCss = css`
     left: 0;
     right: 0;
     pointer-events: none;
+    '&.nb-in-template': {
+      background: 'var(--colorTemplateBgSettingsHover)';
+    }
+    ,
     > .general-schema-designer-icons {
       position: absolute;
       right: 2px;
@@ -80,7 +85,7 @@ export const actionDesignerCss = css`
 
 export const DuplicateAction = observer(
   (props: any) => {
-    const { children } = props;
+    const { children, onlyIcon, icon, title } = props;
     const { message } = App.useApp();
     const field = useField();
     const fieldSchema = useFieldSchema();
@@ -112,11 +117,7 @@ export const DuplicateAction = observer(
           }),
         )
       : record[collection.filterTargetKey] || id;
-    const buttonStyle = useMemo(() => {
-      return {
-        opacity: designable && (field?.data?.hidden || !aclCtx) && 0.1,
-      };
-    }, [designable, field?.data?.hidden]);
+
     const template = {
       key: 'duplicate',
       dataId,
@@ -198,11 +199,15 @@ export const DuplicateAction = observer(
                   opacity: designable && field?.data?.hidden && 0.1,
                   cursor: loading ? 'not-allowed' : 'pointer',
                   position: 'relative',
-                  ...buttonStyle,
                 }}
                 onClick={handelDuplicate}
               >
-                {loading ? t('Duplicating') : children || t('Duplicate')}
+                <Tooltip title={title}>
+                  <span style={{ marginRight: 3 }}>
+                    {icon && typeof icon === 'string' ? <Icon type={icon} /> : icon}
+                  </span>
+                </Tooltip>
+                {onlyIcon ? children[1] : loading ? t('Duplicating') : children || t('Duplicate')}
               </a>
             ) : (
               <Button

@@ -48,6 +48,7 @@ interface INocoBaseRecursionFieldProps extends IRecursionFieldProps {
    * Whether to use Formily Field class - performance will be reduced but provides better compatibility with Formily
    */
   isUseFormilyField?: boolean;
+  parentSchema?: Schema;
 }
 
 const CollectionFieldUISchemaContext = React.createContext<CollectionFieldOptions>({});
@@ -266,6 +267,7 @@ export const NocoBaseRecursionField: ReactFC<INocoBaseRecursionFieldProps> = Rea
     values,
     isUseFormilyField = true,
     uiSchema,
+    parentSchema,
   } = props;
   const basePath = useBasePath(props);
   const newFieldSchemaRef = useRef(null);
@@ -278,6 +280,14 @@ export const NocoBaseRecursionField: ReactFC<INocoBaseRecursionFieldProps> = Rea
   const { onChange: onChangeFromContext } = useContext(SchemaComponentOnChangeContext);
 
   const fieldSchema: Schema = newFieldSchemaRef.current || oldFieldSchema;
+
+  // Establish connection with the Schema tree
+  if (!fieldSchema.parent && parentSchema) {
+    fieldSchema.parent = parentSchema;
+    if (!fieldSchema.parent?.properties?.[fieldSchema.name] && fieldSchema.name) {
+      _.set(fieldSchema.parent, `properties.${fieldSchema.name}`, fieldSchema);
+    }
+  }
 
   const refresh = useCallback(() => {
     const parent = fieldSchema.parent;

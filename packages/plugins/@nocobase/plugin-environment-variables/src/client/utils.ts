@@ -23,10 +23,31 @@ export const useGetEnvironmentVariables = () => {
       label: t('Variables and secrets'),
       children: variables?.data
         .map((v) => {
-          return { title: v.name, name: v.name, value: v.name, label: v.name };
+          return { title: v.name, name: v.name, value: v.name, label: v.name, type: v.type };
         })
         .filter(Boolean),
     };
+  }
+
+  return null;
+};
+
+const getEnvVariablesValue = (data = []) => {
+  const ctx = data.map((v) => {
+    return { [v.name]: v.value };
+  });
+  return {
+    name: '$env',
+    ctx: Object.assign({}, ...ctx),
+  };
+};
+
+export const useGetEnvironmentVariablesCtx = () => {
+  const { variablesRequest } = useContext(EnvAndSecretsContext);
+  const { data, loading: variablesLoading } = variablesRequest;
+  const envVariablesValue = getEnvVariablesValue(data?.data);
+  if (!variablesLoading && data?.data?.length) {
+    return envVariablesValue;
   }
 
   return null;

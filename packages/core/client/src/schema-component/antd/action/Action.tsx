@@ -48,13 +48,15 @@ import { ActionContextProvider } from './context';
 import { useGetAriaLabelOfAction } from './hooks/useGetAriaLabelOfAction';
 import { ActionContextProps, ActionProps, ComposedAction } from './types';
 import { linkageAction, setInitialActionState } from './utils';
+import { NAMESPACE_UI_SCHEMA } from '../../../i18n/constant';
 
 // 这个要放到最下面，否则会导致前端单测失败
 import { useApp } from '../../../application';
+import { useAllDataBlocks } from '../page/AllDataBlocksProvider';
 
 const useA = () => {
   return {
-    async run() {},
+    async run() { },
   };
 };
 
@@ -100,6 +102,8 @@ export const Action: ComposedAction = withDynamicSchemaProps(
     const { getAriaLabel } = useGetAriaLabelOfAction(title);
     const parentRecordData = useCollectionParentRecordData();
     const app = useApp();
+    const { getAllDataBlocks } = useAllDataBlocks();
+
     useEffect(() => {
       if (field.stateOfLinkageRules) {
         setInitialActionState(field);
@@ -130,6 +134,26 @@ export const Action: ComposedAction = withDynamicSchemaProps(
       [onMouseEnter],
     );
 
+    const handleClick = useMemo(() => {
+      return onClick && (async (e, callback) => {
+        await onClick?.(e, callback);
+
+        // 执行完 onClick 之后，刷新数据区块
+        const blocksToRefresh = fieldSchema['x-action-settings']?.onSuccess?.blocksToRefresh || []
+        if (blocksToRefresh.length > 0) {
+          getAllDataBlocks().forEach((block) => {
+            if (blocksToRefresh.includes(block.uid)) {
+              try {
+                block.service?.refresh();
+              } catch (error) {
+                console.error('Failed to refresh block:', block.uid, error);
+              }
+            }
+          });
+        }
+      });
+    }, [onClick, fieldSchema, getAllDataBlocks]);
+
     return (
       <InternalAction
         containerRefKey={containerRefKey}
@@ -143,7 +167,7 @@ export const Action: ComposedAction = withDynamicSchemaProps(
         className={className}
         type={props.type}
         Designer={Designer}
-        onClick={onClick}
+        onClick={handleClick}
         confirm={confirm}
         confirmTitle={confirmTitle}
         popover={popover}
@@ -247,7 +271,6 @@ const InternalAction: React.FC<InternalActionProps> = observer(function Com(prop
   const aclCtx = useACLActionParamsContext();
   const { run, element, disabled: disableAction } = useAction?.(actionCallback) || ({} as any);
   const disabled = form.disabled || field.disabled || field.data?.disabled || propsDisabled || disableAction;
-
   const buttonStyle = useMemo(() => {
     return {
       ...style,
@@ -538,6 +561,8 @@ const RenderButtonInner = observer(
     Designer: React.ElementType;
     designerProps: any;
     title: string;
+    isLink?: boolean;
+    onlyIcon?: boolean;
   }) => {
     const {
       designable,
@@ -558,8 +583,11 @@ const RenderButtonInner = observer(
       Designer,
       designerProps,
       title,
+      isLink,
+      onlyIcon,
       ...others
     } = props;
+    const { t } = useTranslation();
     const debouncedClick = useCallback(
       debounce(
         (e: React.MouseEvent, checkPortal = true) => {
@@ -581,8 +609,10 @@ const RenderButtonInner = observer(
       return null;
     }
 
-    const actionTitle = title || field?.title;
-
+    const rawTitle = title ?? field?.title;
+    const actionTitle = typeof rawTitle === 'string' ? t(rawTitle, { ns: NAMESPACE_UI_SCHEMA }) : rawTitle;
+    const { opacity, ...restButtonStyle } = buttonStyle;
+    const linkStyle = isLink && opacity ? { opacity } : undefined;
     return (
       <SortableItem
         role="button"
@@ -591,15 +621,20 @@ const RenderButtonInner = observer(
         onMouseEnter={handleMouseEnter}
         // @ts-ignore
         loading={field?.data?.loading || loading}
-        icon={typeof icon === 'string' ? <Icon type={icon} /> : icon}
+        icon={typeof icon === 'string' ? <Icon type={icon} style={linkStyle} /> : icon}
         disabled={disabled}
-        style={buttonStyle}
+        style={isLink ? restButtonStyle : buttonStyle}
         onClick={process.env.__E2E__ ? handleButtonClick : debouncedClick} // E2E 中的点击操作都是很快的，如果加上 debounce 会导致 E2E 测试失败
         component={tarComponent || Button}
         className={classnames(componentCls, hashId, className, 'nb-action')}
         type={type === 'danger' ? undefined : type}
+        title={actionTitle}
       >
-        {actionTitle && <span className={icon ? 'nb-action-title' : null}>{actionTitle}</span>}
+        {!onlyIcon && actionTitle && (
+          <span className={icon ? 'nb-action-title' : null} style={linkStyle}>
+            {actionTitle}
+          </span>
+        )}
         <Designer {...designerProps} />
       </SortableItem>
     );

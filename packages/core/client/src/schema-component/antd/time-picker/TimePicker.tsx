@@ -14,7 +14,9 @@ import { TimePicker as AntdTimePicker } from 'antd';
 import { TimePickerProps as AntdTimePickerProps, TimeRangePickerProps } from 'antd/es/time-picker';
 import { ReadPretty } from './ReadPretty';
 
-type ComposedTimePicker = React.FC<AntdTimePickerProps> & {
+type ComposedTimePicker = React.ForwardRefExoticComponent<
+  React.PropsWithoutRef<Partial<AntdTimePickerProps>> & React.RefAttributes<unknown>
+> & {
   RangePicker?: React.FC<TimeRangePickerProps>;
   ReadPretty?: React.FC<any>;
 };
@@ -27,10 +29,10 @@ export const mapTimeFormat = function () {
       ...props,
       format,
       inputReadOnly: true,
-      value: dayjsable(props.value, format),
+      value: dayjsable(props.value, 'HH:mm:ss'),
       onChange: (value: dayjs.Dayjs | dayjs.Dayjs[]) => {
         if (onChange) {
-          onChange(formatDayjsValue(value, format) || null);
+          onChange(formatDayjsValue(value, 'HH:mm:ss') || null);
         }
       },
     };

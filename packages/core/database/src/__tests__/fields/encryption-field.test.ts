@@ -7,14 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { EncryptionField } from '../../fields/encryption-field';
-import { mockDatabase, MockDatabase } from '../../mock-database';
+import { createMockDatabase, EncryptionField, MockDatabase } from '@nocobase/database';
 
 describe('encryption field', () => {
   let db: MockDatabase;
 
   beforeEach(async () => {
-    db = mockDatabase();
+    db = await createMockDatabase();
     await db.clean({ drop: true });
     db.registerFieldTypes({
       encryption: EncryptionField,

@@ -7,43 +7,27 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { connect, mapProps, mapReadPretty, useField, useFieldSchema, observer } from '@formily/react';
-import { DatePicker as AntdDatePicker, DatePickerProps as AntdDatePickerProps, Space, Select } from 'antd';
-import { RangePickerProps } from 'antd/es/date-picker';
+import { connect, mapProps, mapReadPretty, useField, useFieldSchema } from '@formily/react';
+import { DatePicker as AntdDatePicker, Space, Select } from 'antd';
 import dayjs from 'dayjs';
 import React, { useState, useEffect, useRef } from 'react';
 import { getPickerFormat, getDateTimeFormat } from '@nocobase/utils/client';
 import { useTranslation } from 'react-i18next';
-import { ReadPretty, ReadPrettyComposed } from './ReadPretty';
+import { ReadPretty } from './ReadPretty';
 import { getDateRanges, mapDatePicker, mapRangePicker, inferPickerType, isMobile } from './util';
 import { useCompile } from '../../';
 import { useVariables, useLocalVariables, isVariable } from '../../../variables';
 import { autorun } from '@formily/reactive';
-import { log10 } from 'mathjs';
 interface IDatePickerProps {
   utc?: boolean;
 }
-
-type ComposedDatePicker = React.FC<AntdDatePickerProps> & {
-  ReadPretty?: ReadPrettyComposed['DatePicker'];
-  RangePicker?: ComposedRangePicker;
-  FilterWithPicker?: any;
-};
-
-type ComposedRangePicker = React.FC<RangePickerProps> & {
-  ReadPretty?: ReadPrettyComposed['DateRangePicker'];
-};
 
 const DatePickerContext = React.createContext<IDatePickerProps>({ utc: true });
 
 export const useDatePickerContext = () => React.useContext(DatePickerContext);
 export const DatePickerProvider = DatePickerContext.Provider;
 
-const InternalDatePicker: ComposedDatePicker = connect(
-  AntdDatePicker,
-  mapProps(mapDatePicker()),
-  mapReadPretty(ReadPretty.DatePicker),
-);
+const InternalDatePicker = connect(AntdDatePicker, mapProps(mapDatePicker()), mapReadPretty(ReadPretty.DatePicker));
 
 const InternalRangePicker = connect(
   AntdDatePicker.RangePicker,
@@ -51,7 +35,7 @@ const InternalRangePicker = connect(
   mapReadPretty(ReadPretty.DateRangePicker),
 );
 
-export const DatePicker: ComposedDatePicker = (props: any) => {
+export const DatePicker = (props: any) => {
   const { utc = true } = useDatePickerContext();
   const value = Array.isArray(props.value) ? props.value[0] : props.value;
   const { parseVariable } = useVariables() || {};
@@ -153,9 +137,6 @@ export const DatePicker: ComposedDatePicker = (props: any) => {
       return disabledTime;
     });
   };
-
-  console.log(disabledDate);
-
   const newProps = {
     utc,
     ...props,
@@ -292,10 +273,11 @@ DatePicker.FilterWithPicker = function FilterWithPicker(props: any) {
   const [stateProps, setStateProps] = useState(newProps);
   useEffect(() => {
     newProps.picker = targetPicker;
-    const dateTimeFormat = getDateTimeFormat(targetPicker, format, showTime, timeFormat);
+    const dateTimeFormat = getDateTimeFormat(targetPicker, targetDateFormat, showTime, timeFormat);
     newProps.format = dateTimeFormat;
     setStateProps(newProps);
   }, [targetPicker]);
+
   return (
     <Space.Compact style={{ width: '100%' }}>
       <Select

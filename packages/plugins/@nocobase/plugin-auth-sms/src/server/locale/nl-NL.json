@@ -1,8 +1,8 @@
 {
-    "The email is incorrect, please re-enter": "The email is incorrect, please re-enter",
-    "Please fill in your email address": "Please fill in your email address",
-    "The password is incorrect, please re-enter": "The password is incorrect, please re-enter",
-    "Not a valid cellphone number, please re-enter": "Not a valid cellphone number, please re-enter",
-    "The phone number has been registered, please login directly": "The phone number has been registered, please login directly",
-    "The phone number is not registered, please register first": "The phone number is not registered, please register first"
+    "The email is incorrect, please re-enter": "Het e-mailadres is incorrect, vul het opnieuw in",
+    "Please fill in your email address": "Vul je e-mailadres in",
+    "The password is incorrect, please re-enter": "Het wachtwoord is incorrect, vul het opnieuw in",
+    "Not a valid cellphone number, please re-enter": "Geen geldig telefoonnummer, vul het opnieuw in",
+    "The phone number has been registered, please login directly": "Het telefoonnummer is geregistreerd, log direct in",
+    "The phone number is not registered, please register first": "Het telefoonnummer is niet geregistreerd, registreer het eerst"
 }

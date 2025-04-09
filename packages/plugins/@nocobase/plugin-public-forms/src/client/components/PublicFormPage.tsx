@@ -28,17 +28,20 @@ import {
   useApp,
   useRequest,
   VariablesProvider,
+  useCompile,
 } from '@nocobase/client';
 import { Input, Modal, Spin } from 'antd';
+import { useTranslation } from 'react-i18next';
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
-import { isDesktop } from 'react-device-detect';
+import { isDesktop, isMobile } from 'react-device-detect';
 import { useParams } from 'react-router';
 import { usePublicSubmitActionProps } from '../hooks';
 import { UnEnabledFormPlaceholder, UnFoundFormPlaceholder } from './UnEnabledFormPlaceholder';
-
 import { Button as MobileButton, Dialog as MobileDialog } from 'antd-mobile';
 import { MobileDateTimePicker } from './components/MobileDatePicker';
 import { MobilePicker } from './components/MobilePicker';
+import { usePublicFormTranslation } from '../locale';
+
 class PublicDataSource extends DataSource {
   async getDataSource() {
     return {};
@@ -83,6 +86,14 @@ function PublicAPIClientProvider({ children }) {
   return <APIClientProvider apiClient={apiClient}>{children}</APIClientProvider>;
 }
 
+function useTitle(data) {
+  const compile = useCompile();
+  useEffect(() => {
+    if (!data) return;
+    document.title = compile(data?.data?.title);
+  }, [data]);
+}
+
 export const PublicFormMessageContext = createContext<any>({});
 export const PageBackgroundColor = '#f5f5f5';
 
@@ -118,9 +129,6 @@ const PublicFormMessageProvider = ({ children }) => {
     </PublicFormMessageContext.Provider>
   );
 };
-function isMobile() {
-  return window.matchMedia('(max-width: 768px)').matches;
-}
 
 const AssociationFieldMobile = (props) => {
   return <AssociationField {...props} popupMatchSelectWidth={true} />;
@@ -154,7 +162,6 @@ const mobileComponents = {
 function InternalPublicForm() {
   const params = useParams();
   const apiClient = useAPIClient();
-  const isMobileMedia = isMobile();
   const { error, data, loading, run } = useRequest<any>(
     {
       url: `publicForms:getMeta/${params.name}`,
@@ -174,6 +181,7 @@ function InternalPublicForm() {
   );
   const [pwd, setPwd] = useState('');
   const ctx = useContext(SchemaComponentContext);
+  useTitle(data);
   // 设置的移动端 meta
   useEffect(() => {
     if (!isDesktop) {
@@ -231,7 +239,7 @@ function InternalPublicForm() {
   if (!data?.data) {
     return <UnEnabledFormPlaceholder />;
   }
-  const components = isMobileMedia ? mobileComponents : {};
+  const components = isMobile ? mobileComponents : {};
   return (
     <ACLCustomContext.Provider value={{ allowAll: true }}>
       <PublicAPIClientProvider>

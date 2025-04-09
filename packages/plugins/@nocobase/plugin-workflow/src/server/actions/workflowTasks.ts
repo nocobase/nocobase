@@ -7,6 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { Op } from 'sequelize';
 import { Context, utils } from '@nocobase/actions';
 
 import WorkflowTasksRepository from '../repositories/WorkflowTasksRepository';
@@ -17,8 +18,9 @@ export async function countMine(context: Context, next) {
     (await repository.countAll({
       where: {
         userId: context.state.currentUser.id,
+        workflowId: { [Op.ne]: null },
       },
     })) || [];
 
-  next();
+  await next();
 }

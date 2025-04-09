@@ -108,7 +108,7 @@ const useEvents = (
     title: string;
   },
   date: Date,
-  view: (typeof Weeks)[number],
+  view: (typeof Weeks)[number] | any = 'month',
 ) => {
   const parseExpression = useLazy<typeof import('cron-parser').parseExpression>(
     () => import('cron-parser'),
@@ -132,8 +132,8 @@ const useEvents = (
       const intervalTime = end.diff(start, 'millisecond', true);
 
       const dateM = dayjs(date);
-      let startDate = dateM.clone().startOf('month');
-      let endDate = startDate.clone().endOf('month');
+      const startDate = dateM.clone().startOf(view);
+      const endDate = startDate.clone().endOf(view);
 
       /**
        * view === month 时，会显示当月日程
@@ -141,16 +141,16 @@ const useEvents = (
        * 假设 10.1 号是星期六，我们需要将日程的开始时间调整为这一周的星期一，也就是 9.25 号
        * 而结束时间需要调整为 10.31 号这一周的星期日，也就是 10.5 号
        */
-      if (view === 'month') {
-        startDate = startDate.startOf('week');
-        endDate = endDate.endOf('week');
-      }
+      // if (view === 'month') {
+      //   startDate = startDate.startOf('week');
+      //   endDate = endDate.endOf('week');
+      // }
 
       const push = (eventStart: Dayjs = start.clone()) => {
         // 必须在这个月的开始时间和结束时间，且在日程的开始时间之后
         if (
           eventStart.isBefore(start) || // 开始时间早于 start
-          (!eventStart.isBetween(startDate, endDate) && !end.isBetween(startDate, endDate)) // 开始时间和结束时间不在月份范围内
+          (!eventStart.isBetween(startDate, endDate, null, '[]') && !end.isBetween(startDate, endDate)) // 开始时间和结束时间不在月份范围内
         ) {
           return;
         }
@@ -286,7 +286,15 @@ export const Calendar: any = withDynamicSchemaProps(
       }, [reactBigCalendar]);
 
       // 新版 UISchema（1.0 之后）中已经废弃了 useProps，这里之所以继续保留是为了兼容旧版的 UISchema
-      const { dataSource, fieldNames, showLunar, defaultView, getFontColor, getBackgroundColor } = useProps(props);
+      const {
+        dataSource,
+        fieldNames,
+        showLunar,
+        defaultView,
+        getFontColor,
+        getBackgroundColor,
+        enableQuickCreateEvent,
+      } = useProps(props);
       const height = useCalenderHeight();
       const [date, setDate] = useState<Date>(new Date());
       const [view, setView] = useState<View>(props.defaultView || 'month');
@@ -417,7 +425,6 @@ export const Calendar: any = withDynamicSchemaProps(
         };
       };
       const BigCalendar = reactBigCalendar?.BigCalendar;
-
       return wrapSSR(
         <div className={`${hashId} ${containerClassName}`} style={{ height: height || 700 }}>
           <PopupContextProvider visible={visible} setVisible={setVisible}>
@@ -440,7 +447,7 @@ export const Calendar: any = withDynamicSchemaProps(
               onView={setView}
               onSelectSlot={(slotInfo) => {
                 setCurrentSelectDate(slotInfo);
-                if (canCreate) {
+                if (canCreate && enableQuickCreateEvent) {
                   insertAddNewer(addNew);
                   setVisibleAddNewer(true);
                 }

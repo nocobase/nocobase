@@ -267,6 +267,24 @@ export class BaseAuth extends Auth {
     return null;
   }
 
+  async signNewToken(userId: number) {
+    const tokenInfo = await this.tokenController.add({ userId });
+    const expiresIn = Math.floor((await this.tokenController.getConfig()).tokenExpirationTime / 1000);
+    const token = this.jwt.sign(
+      {
+        userId,
+        temp: true,
+        iat: Math.floor(tokenInfo.issuedTime / 1000),
+        signInTime: tokenInfo.signInTime,
+      },
+      {
+        jwtid: tokenInfo.jti,
+        expiresIn,
+      },
+    );
+    return token;
+  }
+
   async signIn() {
     let user: Model;
     try {
@@ -282,20 +300,7 @@ export class BaseAuth extends Auth {
         code: AuthErrorCode.NOT_EXIST_USER,
       });
     }
-    const tokenInfo = await this.tokenController.add({ userId: user.id });
-    const expiresIn = Math.floor((await this.tokenController.getConfig()).tokenExpirationTime / 1000);
-    const token = this.jwt.sign(
-      {
-        userId: user.id,
-        temp: true,
-        iat: Math.floor(tokenInfo.issuedTime / 1000),
-        signInTime: tokenInfo.signInTime,
-      },
-      {
-        jwtid: tokenInfo.jti,
-        expiresIn,
-      },
-    );
+    const token = await this.signNewToken(user.id);
     return {
       user,
       token,

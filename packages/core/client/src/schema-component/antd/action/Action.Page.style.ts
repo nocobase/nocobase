@@ -20,7 +20,8 @@ export const useActionPageStyle = genStyleHook('nb-action-page', (token) => {
       right: 0,
       bottom: 0,
       backgroundColor: token.colorBgLayout,
-      overflow: 'auto',
+      overflowX: 'hidden',
+      overflowY: 'auto',
 
       '.ant-tabs-nav': {
         background: token.colorBgContainer,

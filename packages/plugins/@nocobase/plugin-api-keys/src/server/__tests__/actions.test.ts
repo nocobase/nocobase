@@ -33,7 +33,7 @@ describe('actions', () => {
     app = await createMockServer({
       registerActions: true,
       acl: true,
-      plugins: ['field-sort', 'users', 'auth', 'api-keys', 'acl', 'data-source-manager'],
+      plugins: ['field-sort', 'users', 'auth', 'api-keys', 'acl', 'data-source-manager', 'system-settings'],
     });
 
     db = app.db;

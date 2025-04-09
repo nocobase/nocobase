@@ -7,11 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { isURL } from '@nocobase/utils';
+import path from 'path';
+import urlJoin from 'url-join';
 import { promisify } from 'util';
-
 import { AttachmentModel, StorageType } from '.';
 import { STORAGE_TYPE_TX_COS } from '../../constants';
-import { getFilename, getFileKey } from '../utils';
+import { getFileKey, getFilename } from '../utils';
 
 export default class extends StorageType {
   static defaults() {

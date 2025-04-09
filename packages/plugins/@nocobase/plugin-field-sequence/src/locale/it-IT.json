@@ -20,5 +20,18 @@
   "Monthly": "Mensile",
   "Yearly": "Annuale",
   "Operations": "Operazioni",
-  "Customize": "Personalizza"
+  "Customize": "Personalizza",
+  "Automatically generate codes based on configured rules, supporting combinations of dates, numbers, and text.": "Genera automaticamente codici basati su regole configurate, supportando combinazioni di date, numeri e testo.",
+  "Date": "Data",
+  "Date format": "Formato data",
+  "Supports all formats of the Day.js library, such as \"YYYYMMDD\", \"YYYY-MM-DD\", etc.": "Supporta tutti i formati della libreria Day.js, come \"YYYYMMDD\", \"YYYY-MM-DD\", ecc.",
+  "Random character": "Carattere casuale",
+  "Length": "Lunghezza",
+  "Will generate random characters with specified length.": "Genererà caratteri casuali con la lunghezza specificata.",
+  "Character sets": "Set di caratteri",
+  "Select character sets to generate random characters.": "Seleziona i set di caratteri per generare caratteri casuali.",
+  "Number": "Numero",
+  "Lowercase letters": "Lettere minuscole",
+  "Uppercase letters": "Lettere maiuscole",
+  "Symbols": "Simboli"
 }
