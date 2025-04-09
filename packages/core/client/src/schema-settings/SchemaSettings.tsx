@@ -1167,7 +1167,7 @@ export const SchemaSettingsLinkageRules = function LinkageRules(props) {
       dn.refresh();
       afterSubmit?.();
     },
-    [dn, getTemplateById, gridSchema, dataKey, afterSubmit],
+    [dn, getTemplateById, gridSchema, dataKey, afterSubmit, category],
   );
 
   return (

@@ -27,6 +27,7 @@ import { useBlockTemplateContext } from '../../../../schema-templates/BlockTempl
 import { setDataLoadingModeSettingsItem } from '../details-multi/setDataLoadingModeSettingsItem';
 import { SchemaSettingsItemType } from '../../../../application';
 import { SchemaSettingsLinkageRules } from '../../../../schema-settings';
+import { LinkageRuleCategory } from '../../../../schema-settings/LinkageRules/type';
 
 const enabledIndexColumn: SchemaSettingsItemType = {
   name: 'enableIndexColumn',
@@ -74,7 +75,7 @@ export const tableBlockSettings = new SchemaSettings({
         return {
           collectionName: name,
           title: t('Block Linkage rules'),
-          category: 'block',
+          category: LinkageRuleCategory.block,
         };
       },
     },

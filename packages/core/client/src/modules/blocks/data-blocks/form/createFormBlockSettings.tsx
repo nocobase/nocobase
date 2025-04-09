@@ -22,6 +22,7 @@ import { SchemaSettingsBlockHeightItem } from '../../../../schema-settings/Schem
 import { SchemaSettingsBlockTitleItem } from '../../../../schema-settings/SchemaSettingsBlockTitleItem';
 import { useBlockTemplateContext } from '../../../../schema-templates/BlockTemplateProvider';
 import { SchemaSettingsLayoutItem } from '../../../../schema-settings/SchemaSettingsLayoutItem';
+import { LinkageRuleCategory } from '../../../../schema-settings/LinkageRules/type';
 
 export const createFormBlockSettings = new SchemaSettings({
   name: 'blockSettings:createForm',
@@ -55,7 +56,7 @@ export const createFormBlockSettings = new SchemaSettings({
         return {
           collectionName: name,
           title: t('Block Linkage rules'),
-          category: 'block',
+          category: LinkageRuleCategory.block,
         };
       },
     },
