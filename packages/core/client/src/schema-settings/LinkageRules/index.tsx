@@ -27,14 +27,57 @@ import { ArrayCollapse } from './components/LinkageHeader';
 export interface Props {
   dynamicComponent: any;
 }
-const transformDefaultValue = (values) => {
-  return values.map((v) => {
+
+type Condition = { [field: string]: { [op: string]: any } } | { $and: Condition[] } | { $or: Condition[] };
+type TransformedCondition =
+  | { leftVar: string; op: string; rightVar: any }
+  | { $and: TransformedCondition[] }
+  | { $or: TransformedCondition[] };
+function transformConditionData(condition: Condition, variableKey: '$nForm' | '$nRecord'): TransformedCondition {
+  if ('$and' in condition) {
     return {
-      conditionType: 'basic',
-      ...v,
+      $and: condition.$and.map((c) => transformConditionData(c, variableKey)),
     };
+  }
+
+  if ('$or' in condition) {
+    return {
+      $or: condition.$or.map((c) => transformConditionData(c, variableKey)),
+    };
+  }
+
+  const [field, expression] = Object.entries(condition)[0];
+  const [op, value] = Object.entries(expression)[0];
+
+  return {
+    leftVar: `{{${variableKey}.${field}}}`,
+    op,
+    rightVar: value,
+  };
+}
+function getActiveContextName(contextList: { name: string; ctx: any }[]): string | null {
+  const priority = ['$nForm', '$nRecord'];
+  for (const name of priority) {
+    const item = contextList.find((ctx) => ctx.name === name && ctx.ctx);
+    if (item) return name;
+  }
+  return '$nRecord';
+}
+
+const transformDefaultValue = (values, variableKey) => {
+  return values.map((v) => {
+    if (v.conditionType !== 'advanced') {
+      const condition = transformConditionData(v.condition, variableKey);
+      return {
+        ...v,
+        condition: variableKey ? condition : v.condition,
+        conditionType: variableKey ? 'advanced' : 'basic',
+      };
+    }
+    return v;
   });
 };
+
 export const FormLinkageRules = withDynamicSchemaProps(
   observer((props: Props) => {
     const fieldSchema = useFieldSchema();
@@ -43,7 +86,8 @@ export const FormLinkageRules = withDynamicSchemaProps(
     const { name } = useCollection_deprecated();
     const { getAllCollectionsInheritChain } = useCollectionManager_deprecated();
     const parentRecordData = useCollectionParentRecordData();
-
+    const variableKey = getActiveContextName(localVariables);
+    console.log(localVariables);
     const components = useMemo(() => ({ ArrayCollapse }), []);
     const schema = useMemo(
       () => ({
@@ -51,7 +95,7 @@ export const FormLinkageRules = withDynamicSchemaProps(
         properties: {
           rules: {
             type: 'array',
-            default: transformDefaultValue(defaultValues),
+            default: transformDefaultValue(defaultValues, variableKey),
             'x-component': 'ArrayCollapse',
             'x-decorator': 'FormItem',
             'x-component-props': {
