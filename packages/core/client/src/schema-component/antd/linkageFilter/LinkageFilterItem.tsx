@@ -59,7 +59,6 @@ export const LinkageFilterItem = observer(
             nullable={false}
             constantAbel={false}
             returnScope={(options) => {
-              console.log(options);
               return options;
             }}
           />

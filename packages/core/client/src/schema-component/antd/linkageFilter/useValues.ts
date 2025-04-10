@@ -107,7 +107,6 @@ export const useValues = (): UseValuesReturn => {
       field.data.schema = merge(s1, s2);
       field.data.leftVar = leftVar;
       field.data.rightVar = operator?.noValue ? operator.default || true : undefined;
-
       data2value();
     },
     [data2value, field],
