@@ -5,15 +5,15 @@ import { FilterFlowManager } from '../libs/filterflow-manager';
 // 创建过滤器管理器实例
 const filterFlowManager = new FilterFlowManager();
 
-// 注册过滤器处理器组
-filterFlowManager.addFilterHandlerGroup({
+// 注册过滤器组
+filterFlowManager.addFilterGroup({
   name: 'dataTransform',
   title: '数据转换',
   sort: 1,
 });
 
-// 注册过滤器处理器
-filterFlowManager.addFilterHandler({
+// 注册过滤器
+filterFlowManager.addFilter({
   name: 'uppercase',
   title: '转换为大写',
   description: '将字符串转换为大写',
@@ -35,7 +35,7 @@ filterFlowManager.addFlow({
   steps: [
     {
       key: 'uppercase-step',
-      filterHandlerName: 'uppercase',
+      filterName: 'uppercase',
       title: '转换为大写',
       params: {},
     },

@@ -5,44 +5,49 @@ import { FilterFlowManager } from '../libs/filterflow-manager';
 // 创建过滤器管理器实例
 const filterFlowManager = new FilterFlowManager();
 
-// 注册过滤器处理器组
-filterFlowManager.addFilterHandlerGroup({
+// 注册过滤器组
+filterFlowManager.addFilterGroup({
   name: 'dataTransform',
   title: '数据转换',
   sort: 1,
 });
 
-// 注册过滤器处理器 - 排序
-filterFlowManager.addFilterHandler({
-  name: 'sortData',
-  title: '数据排序',
-  description: '按指定字段对数据进行排序',
-  group: 'dataTransform',
-  sort: 1,
-  uiSchema: {},
-  handler: (currentValue, params, context) => {
-    if (Array.isArray(currentValue) && params.field) {
-      const sorted = [...currentValue].sort((a, b) => {
-        const valueA = a[params.field];
-        const valueB = b[params.field];
-        if (valueA < valueB) return params.direction === 'desc' ? 1 : -1;
-        if (valueA > valueB) return params.direction === 'desc' ? -1 : 1;
-        return 0;
-      });
-      return sorted;
-    }
-    return currentValue;
-  },
-});
-
-// 注册过滤器处理器 - 过滤
-filterFlowManager.addFilterHandler({
+// 注册过滤器
+filterFlowManager.addFilter({
   name: 'filterData',
   title: '数据过滤',
-  description: '按条件过滤数据',
+  description: '根据条件过滤数据',
   group: 'dataTransform',
-  sort: 2,
-  uiSchema: {},
+  sort: 1,
+  uiSchema: {
+    type: 'object',
+    properties: {
+      field: {
+        type: 'string',
+        title: '字段',
+        'x-decorator': 'FormItem',
+        'x-component': 'Input',
+      },
+      operator: {
+        type: 'string',
+        title: '操作符',
+        enum: [
+          { label: '等于', value: 'equals' },
+          { label: '包含', value: 'contains' },
+          { label: '大于', value: 'gt' },
+          { label: '小于', value: 'lt' },
+        ],
+        'x-decorator': 'FormItem',
+        'x-component': 'Select',
+      },
+      value: {
+        type: 'string',
+        title: '值',
+        'x-decorator': 'FormItem',
+        'x-component': 'Input',
+      },
+    },
+  },
   handler: (currentValue, params, context) => {
     if (Array.isArray(currentValue) && params.field && params.value !== undefined) {
       let filtered;
@@ -72,44 +77,85 @@ filterFlowManager.addFilterHandler({
   },
 });
 
-// 注册过滤器处理器 - 映射
-filterFlowManager.addFilterHandler({
+filterFlowManager.addFilter({
+  name: 'sortData',
+  title: '数据排序',
+  description: '对数据进行排序',
+  group: 'dataTransform',
+  sort: 2,
+  uiSchema: {
+    type: 'object',
+    properties: {
+      field: {
+        type: 'string',
+        title: '排序字段',
+        'x-decorator': 'FormItem',
+        'x-component': 'Input',
+      },
+      order: {
+        type: 'string',
+        title: '排序方向',
+        default: 'asc',
+        enum: [
+          { label: '升序', value: 'asc' },
+          { label: '降序', value: 'desc' },
+        ],
+        'x-decorator': 'FormItem',
+        'x-component': 'Radio.Group',
+      },
+    },
+  },
+  handler: (currentValue, params, context) => {
+    if (Array.isArray(currentValue) && params.field) {
+      const sorted = [...currentValue].sort((a, b) => {
+        const valueA = a[params.field];
+        const valueB = b[params.field];
+        if (valueA < valueB) return params.order === 'desc' ? 1 : -1;
+        if (valueA > valueB) return params.order === 'desc' ? -1 : 1;
+        return 0;
+      });
+      return sorted;
+    }
+    return currentValue;
+  },
+});
+
+filterFlowManager.addFilter({
   name: 'mapData',
   title: '数据映射',
-  description: '转换数据结构',
+  description: '转换数据格式',
   group: 'dataTransform',
   sort: 3,
-  uiSchema: {},
+  uiSchema: {
+    type: 'object',
+    properties: {
+      template: {
+        type: 'string',
+        title: '模板',
+        'x-decorator': 'FormItem',
+        'x-component': 'Input.TextArea',
+        'x-component-props': {
+          placeholder: '例如: {{ item.name }} - {{ item.age }}',
+        },
+      },
+    },
+  },
   handler: (currentValue, params, context) => {
     if (Array.isArray(currentValue)) {
       return currentValue.map((item) => {
         const result = { ...item };
 
         // 应用字段转换
-        if (params.transformations) {
-          for (const [field, transform] of Object.entries(params.transformations)) {
-            if (transform['type'] === 'format' && transform['template']) {
-              // 简单的模板替换
-              let value = transform['template'];
-              const matches = transform['template'].match(/\{([^}]+)\}/g) || [];
+        if (params.template) {
+          let value = params.template;
+          const matches = params.template.match(/\{([^}]+)\}/g) || [];
 
-              for (const match of matches) {
-                const fieldName = match.slice(1, -1);
-                value = value.replace(match, item[fieldName] || '');
-              }
-
-              result[field] = value;
-            } else if (transform['type'] === 'compute' && transform['expression']) {
-              // 简单的计算
-              try {
-                // 安全的表达式求值
-                const compute = new Function(...Object.keys(item), `return ${transform['expression']}`);
-                result[field] = compute(...Object.values(item));
-              } catch (e) {
-                console.error('计算表达式错误', e);
-              }
-            }
+          for (const match of matches) {
+            const fieldName = match.slice(1, -1);
+            value = value.replace(match, item[fieldName] || '');
           }
+
+          result.fullName = value;
         }
 
         return result;
@@ -119,49 +165,36 @@ filterFlowManager.addFilterHandler({
   },
 });
 
-// 创建数据转换过滤器流
+// 创建过滤器流
 filterFlowManager.addFlow({
   name: 'data-transform-flow',
-  title: '数据转换流',
+  title: '数据转换流程',
   steps: [
     {
       key: 'filter-step',
-      filterHandlerName: 'filterData',
-      title: '过滤年龄大于25的数据',
+      filterName: 'filterData',
+      title: '过滤数据',
       params: {
         field: 'age',
-        operator: 'greaterThan',
-        value: 25,
+        operator: 'gt',
+        value: '25',
       },
     },
     {
       key: 'sort-step',
-      filterHandlerName: 'sortData',
-      title: '按姓名排序',
+      filterName: 'sortData',
+      title: '排序数据',
       params: {
-        field: 'name',
-        direction: 'asc',
+        field: 'age',
+        order: 'desc',
       },
     },
     {
       key: 'map-step',
-      filterHandlerName: 'mapData',
-      title: '添加全名和信息字段',
+      filterName: 'mapData',
+      title: '格式化数据',
       params: {
-        transformations: {
-          fullName: {
-            type: 'format',
-            template: '{name} {surname}',
-          },
-          info: {
-            type: 'format',
-            template: '{name} is {age} years old',
-          },
-          ageNextYear: {
-            type: 'compute',
-            expression: 'age + 1',
-          },
-        },
+        template: '{{ item.name }} ({{ item.age }}岁)',
       },
     },
   ],

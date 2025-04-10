@@ -11,8 +11,10 @@ import { useEffect, useCallback } from 'react';
 import { EventListener, EventListenerOptions } from './types';
 import { useFieldSchema } from '@formily/react';
 import { defaultListenerCondition } from './event-bus';
-import { eventBus } from './event-bus';
+import { EventBus } from './event-bus';
 import { uid } from '@nocobase/utils/client';
+
+const eventBus = new EventBus();
 
 // /**
 //  * Hook for registering a filter function that will be automatically unregistered on component unmount

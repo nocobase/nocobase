@@ -5,15 +5,15 @@ import { FilterFlowManager } from '../libs/filterflow-manager';
 // 创建过滤器管理器实例
 const filterFlowManager = new FilterFlowManager();
 
-// 注册过滤器处理器组
-filterFlowManager.addFilterHandlerGroup({
+// 注册过滤器组
+filterFlowManager.addFilterGroup({
   name: 'textTransform',
   title: '文本转换',
   sort: 1,
 });
 
-// 注册过滤器处理器
-filterFlowManager.addFilterHandler({
+// 注册过滤器
+filterFlowManager.addFilter({
   name: 'uppercase',
   title: '转换为大写',
   description: '将字符串转换为大写',
@@ -28,7 +28,7 @@ filterFlowManager.addFilterHandler({
   },
 });
 
-filterFlowManager.addFilterHandler({
+filterFlowManager.addFilter({
   name: 'lowercase',
   title: '转换为小写',
   description: '将字符串转换为小写',
@@ -43,7 +43,7 @@ filterFlowManager.addFilterHandler({
   },
 });
 
-filterFlowManager.addFilterHandler({
+filterFlowManager.addFilter({
   name: 'reverse',
   title: '文本反转',
   description: '将字符串反转',
@@ -65,24 +65,27 @@ filterFlowManager.addFlow({
   steps: [
     {
       key: 'uppercase-step',
-      filterHandlerName: 'uppercase',
+      filterName: 'uppercase',
       title: '转换为大写',
       params: {},
-      condition: 'ctx.props.transformType === "uppercase"',
+      // 条件：仅当输入文本长度大于5时应用
+      condition: '{{ ctx.props.inputText.length > 5 }}',
     },
     {
       key: 'lowercase-step',
-      filterHandlerName: 'lowercase',
+      filterName: 'lowercase',
       title: '转换为小写',
       params: {},
-      condition: 'ctx.props.transformType === "lowercase"',
+      // 条件：仅当输入文本包含大写字母时应用
+      condition: '{{ /[A-Z]/.test(ctx.props.inputText) }}',
     },
     {
       key: 'reverse-step',
-      filterHandlerName: 'reverse',
+      filterName: 'reverse',
       title: '文本反转',
       params: {},
-      condition: 'ctx.props.transformType === "reverse"',
+      // 条件：仅当输入文本包含数字时应用
+      condition: '{{ /[0-9]/.test(ctx.props.inputText) }}',
     },
   ],
 });

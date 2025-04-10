@@ -5,80 +5,88 @@ import { FilterFlowManager } from '../libs/filterflow-manager';
 // 创建过滤器管理器实例
 const filterFlowManager = new FilterFlowManager();
 
-// 注册过滤器处理器组
-filterFlowManager.addFilterHandlerGroup({
-  name: 'stringFilters',
-  title: '字符串过滤器',
+// 注册过滤器组
+filterFlowManager.addFilterGroup({
+  name: 'textTransform',
+  title: '文本转换',
   sort: 1,
 });
 
-// 注册过滤器处理器 - 替换文本
-filterFlowManager.addFilterHandler({
+// 注册过滤器
+filterFlowManager.addFilter({
   name: 'replaceText',
-  title: '替换文本',
+  title: '文本替换',
   description: '替换文本中的指定内容',
-  group: 'stringFilters',
+  group: 'textTransform',
   sort: 1,
   uiSchema: {
     type: 'object',
     properties: {
       search: {
         type: 'string',
-        title: '查找内容',
+        title: '查找',
+        'x-decorator': 'FormItem',
         'x-component': 'Input',
       },
-      replace: {
+      replacement: {
         type: 'string',
         title: '替换为',
+        'x-decorator': 'FormItem',
         'x-component': 'Input',
       },
-      caseSensitive: {
+      useRegex: {
         type: 'boolean',
-        title: '区分大小写',
+        title: '使用正则表达式',
         default: false,
+        'x-decorator': 'FormItem',
         'x-component': 'Switch',
       },
-      replaceAll: {
-        type: 'boolean',
-        title: '替换所有匹配项',
-        default: true,
-        'x-component': 'Switch',
+      flags: {
+        type: 'string',
+        title: '正则标志',
+        default: 'g',
+        'x-decorator': 'FormItem',
+        'x-component': 'Input',
+        'x-component-props': {
+          placeholder: 'g, i, m, s, u, y',
+        },
+        'x-reactions': {
+          dependencies: ['useRegex'],
+          fulfill: {
+            state: {
+              visible: '{{$deps[0]}}',
+            },
+          },
+        },
       },
     },
   },
   handler: (currentValue, params, context) => {
     if (typeof currentValue === 'string' && params.search) {
-      if (params.replaceAll) {
-        // 全局替换
-        const flags = params.caseSensitive ? 'g' : 'gi';
-        const regex = new RegExp(params.search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), flags);
-        return currentValue.replace(regex, params.replace || '');
-      } else {
-        // 替换第一个匹配项
-        if (params.caseSensitive) {
-          return currentValue.replace(params.search, params.replace || '');
-        } else {
-          const index = currentValue.toLowerCase().indexOf(params.search.toLowerCase());
-          if (index >= 0) {
-            return (
-              currentValue.substring(0, index) +
-              (params.replace || '') +
-              currentValue.substring(index + params.search.length)
-            );
-          }
+      if (params.useRegex) {
+        try {
+          const regex = new RegExp(params.search, params.flags || 'g');
+          return currentValue.replace(regex, params.replacement || '');
+        } catch (error) {
+          console.error('正则表达式错误:', error);
+          return currentValue;
         }
+      } else {
+        return currentValue.replace(
+          new RegExp(params.search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'),
+          params.replacement || '',
+        );
       }
     }
     return currentValue;
   },
 });
 
-// 注册过滤器处理器 - 截取文本
-filterFlowManager.addFilterHandler({
+filterFlowManager.addFilter({
   name: 'truncateText',
-  title: '截取文本',
-  description: '截取指定长度的文本，可添加省略号',
-  group: 'stringFilters',
+  title: '文本截断',
+  description: '截断文本到指定长度',
+  group: 'textTransform',
   sort: 2,
   uiSchema: {
     type: 'object',
@@ -87,23 +95,28 @@ filterFlowManager.addFilterHandler({
         type: 'number',
         title: '最大长度',
         default: 10,
-        'x-component': 'InputNumber',
+        'x-decorator': 'FormItem',
+        'x-component': 'NumberPicker',
+        'x-component-props': {
+          min: 1,
+        },
       },
-      addEllipsis: {
-        type: 'boolean',
-        title: '添加省略号',
-        default: true,
-        'x-component': 'Switch',
+      suffix: {
+        type: 'string',
+        title: '后缀',
+        default: '...',
+        'x-decorator': 'FormItem',
+        'x-component': 'Input',
       },
     },
   },
   handler: (currentValue, params, context) => {
-    if (typeof currentValue === 'string' && params.maxLength > 0) {
-      if (currentValue.length <= params.maxLength) {
+    if (typeof currentValue === 'string') {
+      const maxLength = params.maxLength || 10;
+      if (currentValue.length <= maxLength) {
         return currentValue;
       }
-      const truncated = currentValue.substring(0, params.maxLength);
-      return params.addEllipsis ? truncated + '...' : truncated;
+      return currentValue.substring(0, maxLength) + (params.suffix || '...');
     }
     return currentValue;
   },
@@ -111,27 +124,26 @@ filterFlowManager.addFilterHandler({
 
 // 创建可配置过滤器流
 filterFlowManager.addFlow({
-  name: 'configurable-filter-flow',
-  title: '可配置过滤器流',
+  name: 'configurable-text-transform',
+  title: '可配置文本转换',
   steps: [
     {
       key: 'replace-step',
-      filterHandlerName: 'replaceText',
+      filterName: 'replaceText',
       title: '替换文本',
       params: {
-        search: 'NocoBase',
-        replace: 'NocoBase平台',
-        caseSensitive: true,
-        replaceAll: true,
+        search: 'world',
+        replacement: 'NocoBase',
+        useRegex: false,
       },
     },
     {
       key: 'truncate-step',
-      filterHandlerName: 'truncateText',
-      title: '截取文本',
+      filterName: 'truncateText',
+      title: '截断文本',
       params: {
-        maxLength: 50,
-        addEllipsis: true,
+        maxLength: 20,
+        suffix: '...',
       },
     },
   ],
@@ -147,7 +159,7 @@ const ConfigurableFilter = () => {
 
   // 打开配置Modal
   const openConfigModal = (stepKey) => {
-    const flow = filterFlowManager.getFlow('configurable-filter-flow');
+    const flow = filterFlowManager.getFlow('configurable-text-transform');
     const step = flow.getStep(stepKey);
 
     if (step) {
@@ -184,7 +196,7 @@ const ConfigurableFilter = () => {
       };
 
       // 应用过滤器流
-      const result = await filterFlowManager.applyFilters('configurable-filter-flow', inputText, context);
+      const result = await filterFlowManager.applyFilters('configurable-text-transform', inputText, context);
 
       setOutputText(result);
     } catch (error) {
@@ -198,33 +210,33 @@ const ConfigurableFilter = () => {
   const renderConfigForm = () => {
     if (!currentStep) return null;
 
-    const handlerName = currentStep.filterHandlerName;
+    const filterName = currentStep.filterName;
 
-    if (handlerName === 'replaceText') {
+    if (filterName === 'replaceText') {
       return (
         <Form form={configForm} layout="vertical">
-          <Form.Item name="search" label="查找内容" rules={[{ required: true }]}>
+          <Form.Item name="search" label="查找" rules={[{ required: true }]}>
             <Input />
           </Form.Item>
-          <Form.Item name="replace" label="替换为">
+          <Form.Item name="replacement" label="替换为">
             <Input />
           </Form.Item>
-          <Form.Item name="caseSensitive" label="区分大小写" valuePropName="checked">
+          <Form.Item name="useRegex" label="使用正则表达式" valuePropName="checked">
             <Switch />
           </Form.Item>
-          <Form.Item name="replaceAll" label="替换所有匹配项" valuePropName="checked">
-            <Switch />
+          <Form.Item name="flags" label="正则标志" valuePropName="checked">
+            <Input />
           </Form.Item>
         </Form>
       );
-    } else if (handlerName === 'truncateText') {
+    } else if (filterName === 'truncateText') {
       return (
         <Form form={configForm} layout="vertical">
           <Form.Item name="maxLength" label="最大长度" rules={[{ required: true }]}>
             <InputNumber min={1} />
           </Form.Item>
-          <Form.Item name="addEllipsis" label="添加省略号" valuePropName="checked">
-            <Switch />
+          <Form.Item name="suffix" label="后缀">
+            <Input />
           </Form.Item>
         </Form>
       );

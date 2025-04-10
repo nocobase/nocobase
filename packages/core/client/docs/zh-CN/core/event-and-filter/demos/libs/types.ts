@@ -11,13 +11,6 @@ import { ISchema } from '@formily/json-schema';
 import { Resource } from '@nocobase/resourcer';
 import { ComponentProps } from 'react';
 
-// Filter System Types
-export type FilterFunction = (currentValue: any, ...contextArgs: any[]) => any | Promise<any>;
-
-export interface FilterOptions {
-  sort?: number; // 数值越大运行越靠后，默认为 0
-}
-
 export type UnregisterFunction = () => void;
 
 // Event System Types
@@ -105,7 +98,7 @@ export type FilterContext = {
   _cancel?: boolean;
   errors?: Array<{
     stepKey: string;
-    handlerName: string;
+    filterName: string;
     error: Error;
   }>;
 };
@@ -115,31 +108,27 @@ export type ApplyFilterOptions = {
   props?: ComponentProps<any>;
 };
 
-// export type ApplyFilterOptions = {
-//   input?: any;
-// } & FilterContext;
-
 // FilterFlowManager Types
-export type FilterHandlerFunction = (
+export type FilterHandler = (
   currentValue: any,
   params: Record<string, any>,
   context: FilterContext,
 ) => any | Promise<any>;
 
 /**
- * 可注册的 Filter Handler 配置
+ * 可注册的 Filter 配置
  */
-export interface FilterHandlerOptions {
+export interface FilterOptions {
   name: string; // 唯一标识符
   title: string; // 显示名称
   description?: string; // 描述
   group?: string; // 所属分组
   sort?: number; // 排序
   uiSchema: ISchema; // 参数配置的 UI Schema
-  handler: FilterHandlerFunction; // 实际的过滤处理函数
+  handler: FilterHandler; // 实际的过滤处理函数
 }
 
-export interface FilterHandlerGroupOptions {
+export interface FilterGroupOptions {
   name: string;
   title: string;
   sort: number;
@@ -147,7 +136,7 @@ export interface FilterHandlerGroupOptions {
 
 export interface FilterFlowStepOptions {
   key?: string;
-  filterHandlerName: string;
+  filterName: string;
   title?: string;
   params?: Record<string, any>;
   condition?: string;

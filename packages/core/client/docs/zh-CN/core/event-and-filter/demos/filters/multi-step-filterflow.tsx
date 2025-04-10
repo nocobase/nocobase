@@ -5,15 +5,15 @@ import { FilterFlowManager } from '../libs/filterflow-manager';
 // 创建过滤器管理器实例
 const filterFlowManager = new FilterFlowManager();
 
-// 注册过滤器处理器组
-filterFlowManager.addFilterHandlerGroup({
+// 注册过滤器组
+filterFlowManager.addFilterGroup({
   name: 'textTransform',
   title: '文本转换',
   sort: 1,
 });
 
-// 注册过滤器处理器
-filterFlowManager.addFilterHandler({
+// 注册过滤器
+filterFlowManager.addFilter({
   name: 'uppercase',
   title: '转换为大写',
   description: '将字符串转换为大写',
@@ -28,7 +28,7 @@ filterFlowManager.addFilterHandler({
   },
 });
 
-filterFlowManager.addFilterHandler({
+filterFlowManager.addFilter({
   name: 'trim',
   title: '去除两端空格',
   description: '去除字符串两端的空格',
@@ -43,7 +43,7 @@ filterFlowManager.addFilterHandler({
   },
 });
 
-filterFlowManager.addFilterHandler({
+filterFlowManager.addFilter({
   name: 'reverse',
   title: '文本反转',
   description: '将字符串反转',
@@ -58,7 +58,7 @@ filterFlowManager.addFilterHandler({
   },
 });
 
-filterFlowManager.addFilterHandler({
+filterFlowManager.addFilter({
   name: 'addPrefix',
   title: '添加前缀',
   description: '在字符串前添加前缀',
@@ -73,7 +73,7 @@ filterFlowManager.addFilterHandler({
   },
 });
 
-filterFlowManager.addFilterHandler({
+filterFlowManager.addFilter({
   name: 'addSuffix',
   title: '添加后缀',
   description: '在字符串后添加后缀',
@@ -95,31 +95,31 @@ filterFlowManager.addFlow({
   steps: [
     {
       key: 'trim-step',
-      filterHandlerName: 'trim',
+      filterName: 'trim',
       title: '去除空格',
       params: {},
     },
     {
       key: 'uppercase-step',
-      filterHandlerName: 'uppercase',
+      filterName: 'uppercase',
       title: '转换为大写',
       params: {},
     },
     {
       key: 'add-prefix-step',
-      filterHandlerName: 'addPrefix',
+      filterName: 'addPrefix',
       title: '添加前缀',
       params: { prefix: '[PREFIX] ' },
     },
     {
       key: 'add-suffix-step',
-      filterHandlerName: 'addSuffix',
+      filterName: 'addSuffix',
       title: '添加后缀',
       params: { suffix: ' [SUFFIX]' },
     },
     {
       key: 'reverse-step',
-      filterHandlerName: 'reverse',
+      filterName: 'reverse',
       title: '文本反转',
       params: {},
     },
