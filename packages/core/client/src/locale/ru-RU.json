@@ -614,5 +614,7 @@
   "Full permissions": "Полные права",
   "Refresh data blocks": "Обновить блоки данных",
   "Select data blocks to refresh": "Выберите блоки данных для обновления",
-  "After successful submission, the selected data blocks will be automatically refreshed.": "После успешной отправки выбранные блоки данных будут автоматически обновлены."
+  "After successful submission, the selected data blocks will be automatically refreshed.": "После успешной отправки выбранные блоки данных будут автоматически обновлены.",
+  "No pages yet, please configure first": "Пока нет страниц, пожалуйста, настройте сначала",
+  "Click the \"UI Editor\" icon in the upper right corner to enter the UI Editor mode": "Нажмите на значок \"Редактор пользовательского интерфейса\" в правом верхнем углу, чтобы войти в режим редактора пользовательского интерфейса"
 }
