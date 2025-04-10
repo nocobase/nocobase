@@ -7,6 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { ISchema } from '@formily/json-schema';
 import { Resource } from '@nocobase/resourcer';
 import { ComponentProps } from 'react';
 
@@ -102,6 +103,11 @@ export type FilterContext = {
     pageSize?: number;
   };
   _cancel?: boolean;
+  errors?: Array<{
+    stepKey: string;
+    handlerName: string;
+    error: Error;
+  }>;
 };
 
 export type ApplyFilterOptions = {
@@ -112,3 +118,43 @@ export type ApplyFilterOptions = {
 // export type ApplyFilterOptions = {
 //   input?: any;
 // } & FilterContext;
+
+// FilterFlowManager Types
+export type FilterHandlerFunction = (
+  currentValue: any,
+  params: Record<string, any>,
+  context: FilterContext,
+) => any | Promise<any>;
+
+/**
+ * 可注册的 Filter Handler 配置
+ */
+export interface FilterHandlerOptions {
+  name: string; // 唯一标识符
+  title: string; // 显示名称
+  description?: string; // 描述
+  group?: string; // 所属分组
+  sort?: number; // 排序
+  uiSchema: ISchema; // 参数配置的 UI Schema
+  handler: FilterHandlerFunction; // 实际的过滤处理函数
+}
+
+export interface FilterHandlerGroupOptions {
+  name: string;
+  title: string;
+  sort: number;
+}
+
+export interface FilterFlowStepOptions {
+  key?: string;
+  filterHandlerName: string;
+  title?: string;
+  params?: Record<string, any>;
+  condition?: string;
+}
+
+export interface FilterFlowOptions {
+  name: string;
+  title: string;
+  steps: FilterFlowStepOptions[];
+}
