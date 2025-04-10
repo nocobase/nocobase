@@ -884,5 +884,7 @@
   "If selected, the page will display Tab pages.": "If selected, the page will display Tab pages.",
   "If selected, the route will be displayed in the menu.": "If selected, the route will be displayed in the menu.",
   "Are you sure you want to hide this tab?": "Are you sure you want to hide this tab?",
-  "After hiding, this tab will no longer appear in the tab bar. To show it again, you need to go to the route management page to set it.": "After hiding, this tab will no longer appear in the tab bar. To show it again, you need to go to the route management page to set it."
+  "After hiding, this tab will no longer appear in the tab bar. To show it again, you need to go to the route management page to set it.": "After hiding, this tab will no longer appear in the tab bar. To show it again, you need to go to the route management page to set it.",
+  "No pages yet, please configure first": "No pages yet, please configure first",
+  "Click the \"UI Editor\" icon in the upper right corner to enter the UI Editor mode": "Click the \"UI Editor\" icon in the upper right corner to enter the UI Editor mode"
 }

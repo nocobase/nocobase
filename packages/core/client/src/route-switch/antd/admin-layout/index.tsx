@@ -14,6 +14,7 @@ import { css } from '@emotion/css';
 import { Popover, Result, Tooltip } from 'antd';
 import React, { createContext, FC, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import ReactDOM from 'react-dom';
+import { useTranslation } from 'react-i18next';
 import { Link, Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import {
   ACLRolesCheckProvider,
@@ -201,14 +202,15 @@ export const LayoutContent = () => {
   const { allAccessRoutes } = useAllAccessDesktopRoutes();
   const { designable } = useDesignable();
   const { token } = useToken();
+  const { t } = useTranslation();
 
   // Check if there are any pages
   if (allAccessRoutes.length === 0 && !designable) {
     return (
       <Result
         icon={<HighlightOutlined style={{ fontSize: '8em', color: token.colorText }} />}
-        title="No pages yet, please configure first"
-        subTitle={`Click the "UI Editor" icon in the upper right corner to enter the UI Editor mode`}
+        title={t('No pages yet, please configure first')}
+        subTitle={t(`Click the "UI Editor" icon in the upper right corner to enter the UI Editor mode`)}
       />
     );
   }
