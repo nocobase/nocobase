@@ -198,14 +198,15 @@ const pageContentStyle: React.CSSProperties = {
   overflowY: 'auto',
 };
 
-export const LayoutContent = () => {
+const ShowTipWhenNoPages = () => {
   const { allAccessRoutes } = useAllAccessDesktopRoutes();
   const { designable } = useDesignable();
   const { token } = useToken();
   const { t } = useTranslation();
+  const location = useLocation();
 
   // Check if there are any pages
-  if (allAccessRoutes.length === 0 && !designable) {
+  if (allAccessRoutes.length === 0 && !designable && ['/admin', '/admin/'].includes(location.pathname)) {
     return (
       <Result
         icon={<HighlightOutlined style={{ fontSize: '8em', color: token.colorText }} />}
@@ -215,11 +216,16 @@ export const LayoutContent = () => {
     );
   }
 
+  return null;
+};
+
+export const LayoutContent = () => {
   /* Use the "nb-subpages-slot-without-header-and-side" class name to locate the position of the subpages */
   return (
     <div className={`${layoutContentClass} nb-subpages-slot-without-header-and-side`}>
       <div style={pageContentStyle}>
         <Outlet />
+        <ShowTipWhenNoPages />
       </div>
     </div>
   );
