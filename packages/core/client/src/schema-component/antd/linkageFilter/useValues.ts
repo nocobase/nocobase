@@ -53,7 +53,10 @@ const findOption = (str, options) => {
 
   return option;
 };
-
+const operators = [
+  { label: '{{t("is empty")}}', value: '$empty', noValue: true },
+  { label: '{{t("is not empty")}}', value: '$notEmpty', noValue: true },
+];
 export const useValues = (): UseValuesReturn => {
   const field = useField<any>();
   const { scopes } = useContext(FilterContext) || {};
@@ -78,10 +81,11 @@ export const useValues = (): UseValuesReturn => {
       if (!field.value) {
         return;
       }
-      field.data.operators = uniqBy([...(field.data.operators || []), ...(option?.operators || [])], 'value');
+      const combOperators = uniqBy([...(field.data.operators || []), ...(option?.operators || [])], 'value');
+      field.data.operators = combOperators.length ? combOperators : operators;
       field.data.leftVar = leftVar;
       field.data.rightVar = rightVar;
-      const operator = option?.operators?.find((v) => v.value === op);
+      const operator = combOperators?.find((v) => v.value === op);
       field.data.operator = field.data.operator || operator;
       const s1 = cloneDeep(option?.schema);
       const s2 = cloneDeep(operator?.schema);
@@ -96,7 +100,7 @@ export const useValues = (): UseValuesReturn => {
       const option: any = last(paths);
       const operator = option?.operators?.[0];
       field.data = field.data || {};
-      field.data.operators = option?.operators;
+      field.data.operators = option?.operators || operators;
       field.data.operator = operator;
       const s1 = cloneDeep(option?.schema);
       const s2 = cloneDeep(operator?.schema);

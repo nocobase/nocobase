@@ -73,6 +73,8 @@ type Props = {
   noDisabled?: boolean;
   hideVariableButton?: boolean;
   setScopes?: any; //更新scopes
+  nullable?: boolean;
+  constantAbel?: boolean;
 };
 
 /**
@@ -100,6 +102,8 @@ export const VariableInput = (props: Props) => {
     noDisabled,
     hideVariableButton,
     setScopes,
+    nullable = true,
+    constantAbel = true,
   } = props;
   const { name: blockCollectionName } = useBlockCollection();
   const scope = useVariableScope();
@@ -158,6 +162,8 @@ export const VariableInput = (props: Props) => {
       style={style}
       changeOnSelect
       hideVariableButton={hideVariableButton}
+      nullable={nullable}
+      constantAbel={constantAbel}
     >
       <RenderSchemaComponent value={value} onChange={onChange} />
     </Variable.Input>

@@ -51,7 +51,18 @@ export const LinkageFilterItem = observer(
       // 添加 nc-filter-item 类名是为了帮助编写测试时更容易选中该元素
       <div style={style} className="nc-filter-item">
         <Space wrap>
-          <DynamicComponent value={leftVar} onChange={setLeftValue} setScopes={setScopes} testid="left-filter-field" />
+          <DynamicComponent
+            value={leftVar}
+            onChange={setLeftValue}
+            setScopes={setScopes}
+            testid="left-filter-field"
+            nullable={false}
+            constantAbel={false}
+            returnScope={(options) => {
+              console.log(options);
+              return options;
+            }}
+          />
           <Select
             // @ts-ignore
             role="button"

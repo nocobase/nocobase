@@ -38,10 +38,13 @@ interface Props {
   schema?: any;
   setScopes?: any;
   testid?: string;
+  returnScope?: any;
+  nullable?: boolean;
+  constantAbel?: boolean;
 }
 
 export const DynamicComponent = (props: Props) => {
-  const { setScopes } = props;
+  const { setScopes, returnScope, nullable, constantAbel } = props;
   const { disabled } = useContext(FilterContext) || {};
   const record = useCollectionRecordData();
   const variables = useVariables();
@@ -55,6 +58,9 @@ export const DynamicComponent = (props: Props) => {
         form={form}
         record={record}
         setScopes={setScopes}
+        returnScope={returnScope}
+        nullable={nullable}
+        constantAbel={constantAbel}
         shouldChange={getShouldChange({
           collectionField,
           variables,
