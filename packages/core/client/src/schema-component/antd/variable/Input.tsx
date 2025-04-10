@@ -185,6 +185,7 @@ export type VariableInputProps = {
   className?: string;
   parseOptions?: ParseOptions;
   hideVariableButton?: boolean;
+  constantAbel?: boolean;
 };
 
 export function Input(props: VariableInputProps) {
@@ -201,6 +202,7 @@ export function Input(props: VariableInputProps) {
     fieldNames,
     parseOptions,
     hideVariableButton,
+    constantAbel = true,
   } = props;
   const scope = typeof props.scope === 'function' ? props.scope() : props.scope;
   const { wrapSSR, hashId, componentCls, rootPrefixCls } = useStyles({ hideVariableButton });
@@ -232,6 +234,7 @@ export function Input(props: VariableInputProps) {
   );
 
   const constantOption: DefaultOptionType & { component?: React.FC<any> } = useMemo(() => {
+    if (!constantAbel) return null;
     if (children) {
       return {
         value: '$',

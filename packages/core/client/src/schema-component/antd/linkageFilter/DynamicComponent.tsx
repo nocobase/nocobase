@@ -38,10 +38,14 @@ interface Props {
   schema?: any;
   setScopes?: any;
   testid?: string;
+  returnScope?: any;
+  nullable?: boolean;
+  constantAbel?: boolean;
+  changeOnSelect?: boolean;
 }
 
 export const DynamicComponent = (props: Props) => {
-  const { setScopes } = props;
+  const { setScopes, nullable, constantAbel, changeOnSelect } = props;
   const { disabled, returnScope } = useContext(FilterContext) || {};
   const record = useCollectionRecordData();
   const variables = useVariables();
@@ -55,13 +59,16 @@ export const DynamicComponent = (props: Props) => {
         form={form}
         record={record}
         setScopes={setScopes}
+        returnScope={returnScope}
+        nullable={nullable}
+        constantAbel={constantAbel}
+        changeOnSelect={changeOnSelect}
         shouldChange={getShouldChange({
           collectionField,
           variables,
           localVariables,
           getAllCollectionsInheritChain,
         })}
-        returnScope={returnScope}
       />
     );
   }, []);

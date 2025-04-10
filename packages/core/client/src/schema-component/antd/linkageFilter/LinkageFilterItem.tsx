@@ -25,19 +25,7 @@ export const LinkageFilterItem = observer(
     const compile = useCompile();
     const remove = useContext(RemoveConditionContext);
     const { setScopes } = useContext(FilterContext) || {};
-    const {
-      schema,
-      fields,
-      operators,
-      dataIndex,
-      operator,
-      setDataIndex,
-      setOperator,
-      rightVar,
-      leftVar,
-      setLeftValue,
-      setRightValue,
-    } = useValues();
+    const { schema, operators, operator, setOperator, rightVar, leftVar, setLeftValue, setRightValue } = useValues();
     const style = useMemo(() => ({ marginBottom: 8 }), []);
 
     const onOperatorsChange = useCallback(
@@ -51,7 +39,18 @@ export const LinkageFilterItem = observer(
       // 添加 nc-filter-item 类名是为了帮助编写测试时更容易选中该元素
       <div style={style} className="nc-filter-item">
         <Space wrap>
-          <DynamicComponent value={leftVar} onChange={setLeftValue} setScopes={setScopes} testid="left-filter-field" />
+          <DynamicComponent
+            value={leftVar}
+            onChange={setLeftValue}
+            setScopes={setScopes}
+            testid="left-filter-field"
+            nullable={false}
+            constantAbel={false}
+            returnScope={(options) => {
+              return options;
+            }}
+            changeOnSelect={false}
+          />
           <Select
             // @ts-ignore
             role="button"

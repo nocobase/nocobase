@@ -14,6 +14,7 @@ import { CollectionFieldOptions_deprecated } from '../../../collection-manager';
 import { CollectionFieldOptions } from '../../../data-source/collection/Collection';
 import { useBaseVariable } from './useBaseVariable';
 import { string } from '../../../collection-manager/interfaces/properties/operators';
+import { useCurrentRoles } from '../../../user';
 
 /**
  * @deprecated
@@ -75,6 +76,7 @@ export const useCurrentRoleVariable = ({
 } = {}) => {
   const { t } = useTranslation();
   const apiClient = useAPIClient();
+  const roles = useCurrentRoles();
   const currentRoleSettings = useBaseVariable({
     collectionField,
     uiSchema,
@@ -92,6 +94,6 @@ export const useCurrentRoleVariable = ({
     /** 变量配置项 */
     currentRoleSettings,
     /** 变量的值 */
-    currentRoleCtx: apiClient.auth?.role,
+    currentRoleCtx: apiClient.auth?.role === '__union__' ? roles.map((v) => v.name) : apiClient.auth?.role,
   };
 };
