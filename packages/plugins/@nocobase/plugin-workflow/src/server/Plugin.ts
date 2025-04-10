@@ -329,6 +329,7 @@ export default class PluginWorkflowServer extends Plugin {
       const collection = db.getCollection('workflows');
       const workflows = await collection.repository.find({
         filter: { enabled: true },
+        appends: ['stats', 'versionStats'],
       });
 
       workflows.forEach((workflow: WorkflowModel) => {
