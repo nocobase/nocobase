@@ -1,6 +1,6 @@
 import { ISchema, Schema } from '@formily/json-schema';
 import { observable } from '@formily/reactive';
-import { uid } from '@nocobase/utils';
+import { uid } from '@nocobase/utils/client';
 import _ from 'lodash';
 import {
   FilterContext,
