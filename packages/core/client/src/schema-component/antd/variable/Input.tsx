@@ -194,7 +194,7 @@ export function Input(props: VariableInputProps) {
     onChange,
     children,
     button,
-    useTypedConstant = false,
+    useTypedConstant,
     nullable = true,
     style,
     className,

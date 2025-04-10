@@ -25,19 +25,7 @@ export const LinkageFilterItem = observer(
     const compile = useCompile();
     const remove = useContext(RemoveConditionContext);
     const { setScopes } = useContext(FilterContext) || {};
-    const {
-      schema,
-      fields,
-      operators,
-      dataIndex,
-      operator,
-      setDataIndex,
-      setOperator,
-      rightVar,
-      leftVar,
-      setLeftValue,
-      setRightValue,
-    } = useValues();
+    const { schema, operators, operator, setOperator, rightVar, leftVar, setLeftValue, setRightValue } = useValues();
     const style = useMemo(() => ({ marginBottom: 8 }), []);
 
     const onOperatorsChange = useCallback(
@@ -61,6 +49,7 @@ export const LinkageFilterItem = observer(
             returnScope={(options) => {
               return options;
             }}
+            changeOnSelect={false}
           />
           <Select
             // @ts-ignore

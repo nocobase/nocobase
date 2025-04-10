@@ -41,10 +41,11 @@ interface Props {
   returnScope?: any;
   nullable?: boolean;
   constantAbel?: boolean;
+  changeOnSelect?: boolean;
 }
 
 export const DynamicComponent = (props: Props) => {
-  const { setScopes, returnScope, nullable, constantAbel } = props;
+  const { setScopes, returnScope, nullable, constantAbel, changeOnSelect } = props;
   const { disabled } = useContext(FilterContext) || {};
   const record = useCollectionRecordData();
   const variables = useVariables();
@@ -61,6 +62,7 @@ export const DynamicComponent = (props: Props) => {
         returnScope={returnScope}
         nullable={nullable}
         constantAbel={constantAbel}
+        changeOnSelect={changeOnSelect}
         shouldChange={getShouldChange({
           collectionField,
           variables,

@@ -75,6 +75,7 @@ type Props = {
   setScopes?: any; //更新scopes
   nullable?: boolean;
   constantAbel?: boolean;
+  changeOnSelect?: boolean;
 };
 
 /**
@@ -104,6 +105,7 @@ export const VariableInput = (props: Props) => {
     setScopes,
     nullable = true,
     constantAbel = true,
+    changeOnSelect = true,
   } = props;
   const { name: blockCollectionName } = useBlockCollection();
   const scope = useVariableScope();
@@ -160,7 +162,7 @@ export const VariableInput = (props: Props) => {
       onChange={handleChange}
       scope={scopes}
       style={style}
-      changeOnSelect
+      changeOnSelect={changeOnSelect}
       hideVariableButton={hideVariableButton}
       nullable={nullable}
       constantAbel={constantAbel}
