@@ -88,10 +88,10 @@ filterFlowManager.addFilterHandler({
         // 应用字段转换
         if (params.transformations) {
           for (const [field, transform] of Object.entries(params.transformations)) {
-            if (transform.type === 'format' && transform.template) {
+            if (transform['type'] === 'format' && transform['template']) {
               // 简单的模板替换
-              let value = transform.template;
-              const matches = transform.template.match(/\{([^}]+)\}/g) || [];
+              let value = transform['template'];
+              const matches = transform['template'].match(/\{([^}]+)\}/g) || [];
 
               for (const match of matches) {
                 const fieldName = match.slice(1, -1);
@@ -99,11 +99,11 @@ filterFlowManager.addFilterHandler({
               }
 
               result[field] = value;
-            } else if (transform.type === 'compute' && transform.expression) {
+            } else if (transform['type'] === 'compute' && transform['expression']) {
               // 简单的计算
               try {
                 // 安全的表达式求值
-                const compute = new Function(...Object.keys(item), `return ${transform.expression}`);
+                const compute = new Function(...Object.keys(item), `return ${transform['expression']}`);
                 result[field] = compute(...Object.values(item));
               } catch (e) {
                 console.error('计算表达式错误', e);
