@@ -14,7 +14,6 @@ export default class DatabaseUtils {
   constructor(public db: Database) {}
 
   addSchema(tableName, schema?) {
-    if (!this.db.inDialect('postgres')) return tableName;
     if (this.db.options.schema && !schema) {
       schema = this.db.options.schema;
     }

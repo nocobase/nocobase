@@ -64,5 +64,6 @@ export {
   ChangeColumnAction,
   ChangeColumnOptions,
   RemoveColumnOptions,
+  DropTableOptions,
 } from './query-interface/query-interface';
 export { OptionsParser, FieldSortOptions } from './options-parser';

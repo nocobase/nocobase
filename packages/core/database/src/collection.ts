@@ -887,7 +887,7 @@ export class Collection<
   public getTableNameWithSchema() {
     const tableName = this.model.tableName;
 
-    if (this.collectionSchema() && this.db.inDialect('postgres')) {
+    if (this.collectionSchema()) {
       return this.db.utils.addSchema(tableName, this.collectionSchema());
     }
 

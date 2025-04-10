@@ -39,6 +39,16 @@ describe('view collection', function () {
     await app.destroy();
   });
 
+  function getSchemaName() {
+    if (db.inDialect('postgres')) {
+      return 'public';
+    }
+    if (db.inDialect('mssql')) {
+      return 'dbo';
+    }
+    return undefined;
+  }
+
   it('should use id field as only primary key', async () => {
     await collectionRepository.create({
       values: {
@@ -73,11 +83,11 @@ describe('view collection', function () {
       .quotedTableName()}`;
 
     await db.sequelize.query(createSQL);
-
+    const viewSchema = getSchemaName();
     const inferredFields = await ViewFieldInference.inferFields({
       db,
       viewName,
-      viewSchema: 'public',
+      viewSchema,
     });
 
     await collectionRepository.create({
@@ -89,7 +99,7 @@ describe('view collection', function () {
           { name: 'group_id', type: 'bigInt', primaryKey: true },
           { name: 'name', type: 'string' },
         ],
-        schema: db.inDialect('postgres') ? 'public' : undefined,
+        schema: viewSchema,
       },
       context: {},
     });
@@ -123,8 +133,8 @@ describe('view collection', function () {
     const assoc = User.model.associations.group;
     const foreignKey = assoc.foreignKey;
     const foreignField = User.model.rawAttributes[foreignKey].field;
-
     const viewName = `test_view_${uid(6)}`;
+
     await db.sequelize.query(`DROP VIEW IF EXISTS ${viewName}`);
 
     const createSQL = `CREATE VIEW ${viewName} AS SELECT id, ${foreignField}, name FROM ${db
@@ -132,11 +142,11 @@ describe('view collection', function () {
       .quotedTableName()}`;
 
     await db.sequelize.query(createSQL);
-
+    const viewSchema = getSchemaName();
     const inferredFields = await ViewFieldInference.inferFields({
       db,
       viewName,
-      viewSchema: 'public',
+      viewSchema,
     });
 
     if (!db.inDialect('sqlite')) {
@@ -149,7 +159,7 @@ describe('view collection', function () {
           name: viewName,
           view: true,
           fields: Object.values(inferredFields),
-          schema: db.inDialect('postgres') ? 'public' : undefined,
+          schema: viewSchema,
         },
         context: {},
       });
@@ -222,6 +232,7 @@ describe('view collection', function () {
     `;
 
     await db.sequelize.query(viewSQL);
+    const viewSchema = getSchemaName();
 
     await collectionRepository.create({
       values: {
@@ -239,7 +250,7 @@ describe('view collection', function () {
             source: 'posts.user',
           },
         ],
-        schema: db.inDialect('postgres') ? 'public' : undefined,
+        schema: viewSchema,
       },
       context: {},
     });

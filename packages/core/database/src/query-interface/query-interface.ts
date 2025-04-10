@@ -10,6 +10,7 @@
 import {
   ColumnDescription,
   ModelStatic,
+  QueryInterfaceDropTableOptions,
   QueryInterface as SequelizeQueryInterface,
   TableName,
   Transaction,
@@ -32,6 +33,11 @@ export interface ChangeColumnOptions {
   model: ModelStatic<any>;
   options?: Transactionable;
   actions: ChangeColumnAction[];
+}
+
+export interface DropTableOptions {
+  tableName?: TableName;
+  options?: QueryInterfaceDropTableOptions;
 }
 
 export const ChangeColumnAction = {
@@ -188,5 +194,10 @@ export default abstract class QueryInterface {
     const { tableName, columnName, options: sequelizeOptions } = options;
     await this.db.sequelize.getQueryInterface().removeColumn(tableName, columnName, sequelizeOptions);
     await this.afterRemoveColumn(options);
+  }
+
+  public async dropTable(options: DropTableOptions) {
+    const { tableName, options: sequelizeOptions } = options;
+    await this.db.sequelize.getQueryInterface().dropTable(tableName, sequelizeOptions);
   }
 }

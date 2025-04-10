@@ -27,6 +27,7 @@ import {
   QueryOptions,
   Sequelize,
   SyncOptions,
+  TableName,
   Transactionable,
   Utils,
 } from 'sequelize';
@@ -775,18 +776,16 @@ export class Database extends EventEmitter implements AsyncEmitter {
     }
 
     if (this.options.schema) {
-      const tableNames = (await this.sequelize.getQueryInterface().showAllTables()).map((table) => {
-        return `"${this.options.schema}"."${table}"`;
-      });
+      const tableNames = (await this.sequelize.getQueryInterface().showAllTables()) as TableName[];
 
       const skip = options.skip || [];
 
       // @ts-ignore
       for (const tableName of tableNames) {
-        if (skip.includes(tableName)) {
+        if (skip.includes(tableName['tableName'] || tableName)) {
           continue;
         }
-        await this.sequelize.query(`DROP TABLE IF EXISTS ${tableName} CASCADE`);
+        await this.queryInterface.dropTable({ tableName, options: { cascade: true } });
       }
       return;
     }
