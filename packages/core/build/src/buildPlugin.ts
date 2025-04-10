@@ -354,7 +354,7 @@ export async function buildProPluginServer(cwd: string, userConfig: UserConfig, 
   );
 
   const entryFile = path.join(cwd, 'src/server/index.ts');
-  if(!fs.existsSync(entryFile)) {
+  if (!fs.existsSync(entryFile)) {
     log('server entry file not found', entryFile);
     return;
   }
@@ -393,10 +393,14 @@ export async function buildProPluginServer(cwd: string, userConfig: UserConfig, 
   await buildServerDeps(cwd, serverFiles, log);
 }
 
-export async function buildPluginClient(cwd: string, userConfig: any, sourcemap: boolean, log: PkgLog, isProPlugin = false) {
+export async function buildPluginClient(cwd: string, userConfig: any, sourcemap: boolean, log: PkgLog, isCommercial = false) {
   log('build plugin client');
   const packageJson = getPackageJson(cwd);
   const clientFiles = fg.globSync(clientGlobalFiles, { cwd, absolute: true });
+  if (isCommercial) {
+    const commercialFiles = fg.globSync(clientGlobalFiles, { cwd: path.join(process.cwd(), 'packages/pro-plugins', PLUGIN_COMMERCIAL), absolute: true });
+    clientFiles.push(...commercialFiles);
+  }
   const clientFileSource = clientFiles.map((item) => fs.readFileSync(item, 'utf-8'));
   const sourcePackages = getPackagesFromFiles(clientFileSource);
   const excludePackages = getExcludePackages(sourcePackages, external, pluginPrefix);
@@ -538,7 +542,7 @@ export async function buildPluginClient(cwd: string, userConfig: any, sourcemap:
             {
               loader: require.resolve('./plugins/pluginRspackCommercialLoader'),
               options: {
-                isCommercial: isProPlugin
+                isCommercial
               }
             }
           ]
@@ -562,7 +566,7 @@ export async function buildPluginClient(cwd: string, userConfig: any, sourcemap:
             {
               loader: require.resolve('./plugins/pluginRspackCommercialLoader'),
               options: {
-                isCommercial: isProPlugin
+                isCommercial
               }
             }
           ]
@@ -673,7 +677,7 @@ __webpack_require__.p = (function() {
 
 export async function buildPlugin(cwd: string, userConfig: UserConfig, sourcemap: boolean, log: PkgLog) {
   if (cwd.includes('/pro-plugins/') && !cwd.includes(PLUGIN_COMMERCIAL) && fs.existsSync(path.join(process.cwd(), 'packages/pro-plugins/', PLUGIN_COMMERCIAL))) {
-    await buildPluginClient(cwd, userConfig, sourcemap, log, true);
+    await buildPluginClient(cwd, userConfig, sourcemap, log);
     await buildProPluginServer(cwd, userConfig, sourcemap, log);
   } else {
     await buildPluginClient(cwd, userConfig, sourcemap, log);
