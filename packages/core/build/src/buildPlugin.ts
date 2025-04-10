@@ -362,7 +362,7 @@ export async function buildProPluginServer(cwd: string, userConfig: UserConfig, 
   await tsupBuild(
     userConfig.modifyTsupConfig({
       entry: [entryFile],
-      minify: true,
+      // minify: true,
       splitting: false,
       clean: false,
       bundle: true,
@@ -372,7 +372,7 @@ export async function buildProPluginServer(cwd: string, userConfig: UserConfig, 
       sourcemap,
       outDir: path.join(cwd, target_dir, 'server'),
       format: 'cjs',
-      // noExternal: ['@nocobase/plugin-commercial/server'],
+      noExternal: ['@nocobase/plugin-commercial/server'],
       skipNodeModulesBundle: true,
       tsconfig: tsconfig.path,
       loader: {
