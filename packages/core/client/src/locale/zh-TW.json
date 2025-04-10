@@ -912,6 +912,7 @@
   "If selected, the page will display Tab pages.": "如果選中，該頁面將顯示標籤頁。",
   "If selected, the route will be displayed in the menu.": "如果選中，該路由將顯示在菜單中。",
   "Are you sure you want to hide this tab?": "你確定要隱藏這個標籤嗎？",
-  "After hiding, this tab will no longer appear in the tab bar. To show it again, you need to go to the route management page to set it.": "隱藏後，這個標籤將不再出現在標籤欄中。要再次顯示它，你需要到路由管理頁面進行設置。"
+  "After hiding, this tab will no longer appear in the tab bar. To show it again, you need to go to the route management page to set it.": "隱藏後，這個標籤將不再出現在標籤欄中。要再次顯示它，你需要到路由管理頁面進行設置。",
+  "No pages yet, please configure first": "尚未配置頁面，請先配置",
+  "Click the \"UI Editor\" icon in the upper right corner to enter the UI Editor mode": "點擊右上角的 \"介面設定\" 圖示進入介面設定模式"
 }
-
