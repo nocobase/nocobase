@@ -127,99 +127,131 @@ export default {
         ctx.res.end();
         return next();
       }
-      const conversation = await ctx.db.getRepository('aiConversations').findOne({
-        filterByTk: sessionId,
-      });
-      if (!conversation) {
-        ctx.res.write(`data: ${JSON.stringify({ type: 'error', body: 'conversation not found' })}\n\n`);
-        ctx.res.end();
-        return next();
-      }
-      const employee = await ctx.db.getRepository('aiEmployees').findOne({
-        filter: {
-          username: aiEmployee,
-        },
-      });
-      if (!employee) {
-        ctx.res.write(`data: ${JSON.stringify({ type: 'error', body: 'AI employee not found' })}\n\n`);
-        ctx.res.end();
-        return next();
-      }
-      const modelSettings = employee.modelSettings;
-      if (!modelSettings?.llmService) {
-        ctx.log.error('llmService not configured');
-        ctx.res.write(`data: ${JSON.stringify({ type: 'error', body: 'Chat error warning' })}\n\n`);
-        ctx.res.end();
-        return next();
-      }
-      const service = await ctx.db.getRepository('llmServices').findOne({
-        filter: {
-          name: modelSettings.llmService,
-        },
-      });
-      if (!service) {
-        ctx.log.error('llmService not found');
-        ctx.res.write(`data: ${JSON.stringify({ type: 'error', body: 'Chat error warning' })}\n\n`);
-        ctx.res.end();
-        return next();
-      }
-      const plugin = ctx.app.pm.get('ai') as PluginAIServer;
-      const providerOptions = plugin.aiManager.llmProviders.get(service.provider);
-      if (!providerOptions) {
-        ctx.log.error('llmService provider not found');
-        ctx.res.write(`data: ${JSON.stringify({ type: 'error', body: 'Chat error warning' })}\n\n`);
-        ctx.res.end();
-        return next();
-      }
-
-      try {
-        await ctx.db.getRepository('aiConversations.messages', sessionId).create({
-          values: messages.map((message: any) => ({
-            messageId: snowflake.generate(),
-            role: message.role,
-            content: message.content,
-          })),
-        });
-      } catch (err) {
-        ctx.log.error(err);
-        ctx.res.write(`data: ${JSON.stringify({ type: 'error', body: 'Chat error warning' })}\n\n`);
-        ctx.res.end();
-        return next();
-      }
-      ctx.status = 200;
-      const userMessages = [];
-      for (const msg of messages) {
-        if (msg.role !== 'user' && msg.role !== 'info') {
-          continue;
-        }
-        let content = msg.content.content;
-        if (msg.content.type === 'info') {
-          content = await parseInfoMessage(ctx.db, employee, content);
-        }
-        userMessages.push({
-          role: 'user',
-          content,
-        });
-      }
-      const msgs = [
-        {
-          role: 'system',
-          content: employee.about,
-        },
-        ...userMessages,
-      ];
-      const Provider = providerOptions.provider;
-      const provider = new Provider({
-        app: ctx.app,
-        serviceOptions: service.options,
-        chatOptions: {
-          ...modelSettings,
-          messages: msgs,
-        },
-      });
       let stream: any;
       try {
-        stream = await provider.stream();
+        const conversation = await ctx.db.getRepository('aiConversations').findOne({
+          filterByTk: sessionId,
+        });
+        if (!conversation) {
+          ctx.res.write(`data: ${JSON.stringify({ type: 'error', body: 'conversation not found' })}\n\n`);
+          ctx.res.end();
+          return next();
+        }
+        const employee = await ctx.db.getRepository('aiEmployees').findOne({
+          filter: {
+            username: aiEmployee,
+          },
+        });
+        if (!employee) {
+          ctx.res.write(`data: ${JSON.stringify({ type: 'error', body: 'AI employee not found' })}\n\n`);
+          ctx.res.end();
+          return next();
+        }
+        const modelSettings = employee.modelSettings;
+        if (!modelSettings?.llmService) {
+          ctx.log.error('llmService not configured');
+          ctx.res.write(`data: ${JSON.stringify({ type: 'error', body: 'Chat error warning' })}\n\n`);
+          ctx.res.end();
+          return next();
+        }
+        const service = await ctx.db.getRepository('llmServices').findOne({
+          filter: {
+            name: modelSettings.llmService,
+          },
+        });
+        if (!service) {
+          ctx.log.error('llmService not found');
+          ctx.res.write(`data: ${JSON.stringify({ type: 'error', body: 'Chat error warning' })}\n\n`);
+          ctx.res.end();
+          return next();
+        }
+        const plugin = ctx.app.pm.get('ai') as PluginAIServer;
+        const providerOptions = plugin.aiManager.llmProviders.get(service.provider);
+        if (!providerOptions) {
+          ctx.log.error('llmService provider not found');
+          ctx.res.write(`data: ${JSON.stringify({ type: 'error', body: 'Chat error warning' })}\n\n`);
+          ctx.res.end();
+          return next();
+        }
+
+        const historyMessages = await ctx.db.getRepository('aiConversations.messages', sessionId).find({
+          sort: ['messageId'],
+        });
+        const history = [];
+        for (const msg of historyMessages) {
+          let content = msg.content.content;
+          if (msg.content.type === 'info') {
+            content = await parseInfoMessage(ctx.db, employee, content);
+          }
+          let role = msg.role;
+          if (role === 'info' || role === 'user') {
+            role = 'user';
+          } else {
+            role = 'ai';
+          }
+          history.push({
+            role,
+            content,
+          });
+        }
+        try {
+          await ctx.db.getRepository('aiConversations.messages', sessionId).create({
+            values: messages.map((message: any) => ({
+              messageId: snowflake.generate(),
+              role: message.role,
+              content: message.content,
+            })),
+          });
+        } catch (err) {
+          ctx.log.error(err);
+          ctx.res.write(`data: ${JSON.stringify({ type: 'error', body: 'Chat error warning' })}\n\n`);
+          ctx.res.end();
+          return next();
+        }
+        ctx.status = 200;
+        const userMessages = [];
+        for (const msg of messages) {
+          if (msg.role !== 'user' && msg.role !== 'info') {
+            continue;
+          }
+          let content = msg.content.content;
+          if (msg.content.type === 'info') {
+            content = await parseInfoMessage(ctx.db, employee, content);
+          }
+          if (!content) {
+            continue;
+          }
+          userMessages.push({
+            role: 'user',
+            content,
+          });
+        }
+        const msgs = [
+          {
+            role: 'system',
+            content: employee.about,
+          },
+          ...history,
+          ...userMessages,
+        ];
+        console.log(msgs);
+        const Provider = providerOptions.provider;
+        const provider = new Provider({
+          app: ctx.app,
+          serviceOptions: service.options,
+          chatOptions: {
+            ...modelSettings,
+            messages: msgs,
+          },
+        });
+        try {
+          stream = await provider.stream();
+        } catch (err) {
+          ctx.log.error(err);
+          ctx.res.write(`data: ${JSON.stringify({ type: 'error', body: 'Chat error warning' })}\n\n`);
+          ctx.res.end();
+          return next();
+        }
       } catch (err) {
         ctx.log.error(err);
         ctx.res.write(`data: ${JSON.stringify({ type: 'error', body: 'Chat error warning' })}\n\n`);
@@ -239,6 +271,7 @@ export default {
         ctx.res.end();
         return next();
       }
+      console.log(message);
       await ctx.db.getRepository('aiConversations.messages', sessionId).create({
         values: {
           messageId: snowflake.generate(),

@@ -204,7 +204,6 @@ it('should convert ui schema to json schema', async () => {
         _isJSONSchemaObject: true,
         version: '2.0',
         type: 'void',
-        'x-initializer': 'aiEmployees:configure',
         'x-component': 'ActionBar',
         'x-component-props': {
           layout: 'one-column',

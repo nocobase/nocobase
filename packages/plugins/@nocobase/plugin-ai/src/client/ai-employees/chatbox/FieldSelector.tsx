@@ -14,7 +14,10 @@ import { useChatBoxContext } from './ChatBoxContext';
 import { useAISelectionContext } from '../selector/AISelectorProvider';
 
 export const FieldSelector: React.FC = () => {
-  const { currentEmployee, senderValue, setSenderValue, senderRef } = useChatBoxContext();
+  const currentEmployee = useChatBoxContext('currentEmployee');
+  const senderValue = useChatBoxContext('senderValue');
+  const setSenderValue = useChatBoxContext('setSenderValue');
+  const senderRef = useChatBoxContext('senderRef');
   const { startSelect } = useAISelectionContext();
 
   const handleSelect = () => {

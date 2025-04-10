@@ -19,17 +19,15 @@ import { SenderFooter } from './SenderFooter';
 
 export const Sender: React.FC = memo(() => {
   const t = useT();
-  const {
-    senderValue,
-    setSenderValue,
-    senderPlaceholder,
-    send,
-    currentConversation,
-    currentEmployee,
-    responseLoading,
-    showInfoForm,
-    senderRef,
-  } = useChatBoxContext();
+  const senderValue = useChatBoxContext('senderValue');
+  const setSenderValue = useChatBoxContext('setSenderValue');
+  const senderPlaceholder = useChatBoxContext('senderPlaceholder');
+  const send = useChatBoxContext('send');
+  const currentConversation = useChatBoxContext('currentConversation');
+  const currentEmployee = useChatBoxContext('currentEmployee');
+  const responseLoading = useChatBoxContext('responseLoading');
+  const showInfoForm = useChatBoxContext('showInfoForm');
+  const senderRef = useChatBoxContext('senderRef');
   return (
     <AntSender
       value={senderValue}

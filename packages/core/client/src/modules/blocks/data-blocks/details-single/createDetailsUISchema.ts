@@ -53,17 +53,6 @@ export function createDetailsUISchema(options: {
         properties: {
           [uid()]: {
             type: 'void',
-            'x-initializer': 'aiEmployees:configure',
-            'x-component': 'ActionBar',
-            'x-component-props': {
-              style: {
-                marginBottom: 16,
-              },
-            },
-            properties: {},
-          },
-          [uid()]: {
-            type: 'void',
             'x-initializer': 'details:configureActions',
             'x-component': 'ActionBar',
             'x-component-props': {

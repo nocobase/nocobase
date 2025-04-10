@@ -13,7 +13,8 @@ import { useChatBoxContext } from './ChatBoxContext';
 import { ReactComponent as EmptyIcon } from '../empty-icon.svg';
 
 export const Messages: React.FC = () => {
-  const { messages, roles } = useChatBoxContext();
+  const messages = useChatBoxContext('messages');
+  const roles = useChatBoxContext('roles');
   return (
     <>
       {messages?.length ? (

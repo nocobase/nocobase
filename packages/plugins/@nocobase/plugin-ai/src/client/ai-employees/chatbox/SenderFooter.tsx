@@ -18,7 +18,7 @@ export const SenderFooter: React.FC<{
 }> = ({ components }) => {
   const t = useT();
   const { SendButton, LoadingButton } = components;
-  const { responseLoading: loading } = useChatBoxContext();
+  const { responseLoading: loading } = useChatBoxContext('responseLoading');
 
   return (
     <Flex justify="space-between" align="center">

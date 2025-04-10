@@ -19,7 +19,7 @@ import {
 } from '../types';
 import { Avatar, GetProp, GetRef, Button, Alert, Space, Popover } from 'antd';
 import type { Sender } from '@ant-design/x';
-import React, { createContext, useContext, useEffect, useState, useRef, useMemo } from 'react';
+import React, { useContext, useEffect, useState, useRef, useMemo, useCallback } from 'react';
 import { Bubble } from '@ant-design/x';
 import { useAPIClient, useRequest } from '@nocobase/client';
 import { AIEmployeesContext } from '../AIEmployeesProvider';
@@ -31,8 +31,8 @@ import { uid } from '@formily/shared';
 import { useT } from '../../locale';
 import { createForm, Form } from '@formily/core';
 import { ProfileCard } from '../ProfileCard';
-import _ from 'lodash';
 import { InfoFormMessage } from './InfoForm';
+import { createContext, useContextSelector } from 'use-context-selector';
 
 export const ChatBoxContext = createContext<{
   setOpen: (open: boolean) => void;
@@ -213,7 +213,8 @@ export const useSetChatBoxContext = () => {
         conversations.refresh();
       },
     };
-    if (!_.isEmpty(infoForm?.values)) {
+    const hasInfoFormValues = Object.values(infoForm?.values || []).filter(Boolean).length;
+    if (hasInfoFormValues) {
       sendOptions.infoFormValues = { ...infoForm.values };
     }
     setSenderValue('');
@@ -230,71 +231,77 @@ export const useSetChatBoxContext = () => {
     }
   };
 
-  const switchAIEmployee = (aiEmployee: AIEmployee) => {
-    const greetingMsg = {
-      key: uid(),
-      role: aiEmployee.username,
-      content: {
-        type: 'greeting',
-        content: aiEmployee.greeting || t('Default greeting message', { nickname: aiEmployee.nickname }),
-      },
-    };
-    setCurrentEmployee(aiEmployee);
-    setSenderPlaceholder(aiEmployee.chatSettings?.senderPlaceholder);
-    infoForm.reset();
-    senderRef.current?.focus();
-    if (!currentConversation) {
-      setMessages([greetingMsg]);
-    } else {
-      addMessage(greetingMsg);
-      setSenderValue('');
-    }
-  };
-
-  const startNewConversation = () => {
-    setCurrentConversation(undefined);
-    setCurrentEmployee(null);
-    setSenderValue('');
-    infoForm.reset();
-    setMessages([]);
-    senderRef.current?.focus();
-  };
-
-  const triggerShortcut = (options: ShortcutOptions) => {
-    const { aiEmployee, message, infoFormValues, autoSend } = options;
-    updateRole(aiEmployee);
-    if (!open) {
-      setOpen(true);
-    }
-    if (currentConversation) {
-      setCurrentConversation(undefined);
-      setMessages([]);
-    }
-    setCurrentEmployee(aiEmployee);
-    if (message && message.type === 'text') {
-      setSenderValue(message.content);
-    } else {
-      setSenderValue('');
-    }
-    setMessages([
-      {
+  const switchAIEmployee = useCallback(
+    (aiEmployee: AIEmployee) => {
+      const greetingMsg = {
         key: uid(),
         role: aiEmployee.username,
         content: {
           type: 'greeting',
           content: aiEmployee.greeting || t('Default greeting message', { nickname: aiEmployee.nickname }),
         },
-      },
-    ]);
+      };
+      setCurrentEmployee(aiEmployee);
+      setSenderPlaceholder(aiEmployee.chatSettings?.senderPlaceholder);
+      infoForm.reset();
+      senderRef.current?.focus();
+      if (!currentConversation) {
+        setMessages([greetingMsg]);
+      } else {
+        addMessage(greetingMsg);
+        setSenderValue('');
+      }
+    },
+    [currentConversation, infoForm],
+  );
+
+  const startNewConversation = useCallback(() => {
+    setCurrentConversation(undefined);
+    setCurrentEmployee(null);
+    setSenderValue('');
+    infoForm.reset();
+    setMessages([]);
     senderRef.current?.focus();
-    infoForm.setValues(infoFormValues);
-    if (autoSend) {
-      send({
-        aiEmployee,
-        messages: [message],
-      });
-    }
-  };
+  }, [infoForm]);
+
+  const triggerShortcut = useCallback(
+    (options: ShortcutOptions) => {
+      const { aiEmployee, message, infoFormValues, autoSend } = options;
+      updateRole(aiEmployee);
+      if (!open) {
+        setOpen(true);
+      }
+      if (currentConversation) {
+        setCurrentConversation(undefined);
+        setMessages([]);
+      }
+      setCurrentEmployee(aiEmployee);
+      if (message && message.type === 'text') {
+        setSenderValue(message.content);
+      } else {
+        setSenderValue('');
+      }
+      setMessages([
+        {
+          key: uid(),
+          role: aiEmployee.username,
+          content: {
+            type: 'greeting',
+            content: aiEmployee.greeting || t('Default greeting message', { nickname: aiEmployee.nickname }),
+          },
+        },
+      ]);
+      senderRef.current?.focus();
+      infoForm.setValues(infoFormValues);
+      if (autoSend) {
+        send({
+          aiEmployee,
+          messages: [message],
+        });
+      }
+    },
+    [open, currentConversation, infoForm],
+  );
 
   useEffect(() => {
     if (!aiEmployees) {
@@ -343,6 +350,6 @@ export const useSetChatBoxContext = () => {
   };
 };
 
-export const useChatBoxContext = () => {
-  return useContext(ChatBoxContext);
+export const useChatBoxContext = (name: string) => {
+  return useContextSelector(ChatBoxContext, (v) => v[name]);
 };

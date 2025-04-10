@@ -19,13 +19,11 @@ import { Sender } from '@ant-design/x';
 import { ProfileCard } from '../ProfileCard';
 
 export const AIEmployeeHeader: React.FC = () => {
-  const t = useT();
-  const { token } = useToken();
   const {
     service: { loading },
     aiEmployees,
   } = useAIEmployeesContext();
-  const { switchAIEmployee } = useChatBoxContext();
+  const switchAIEmployee = useChatBoxContext('switchAIEmployee');
   return (
     <Sender.Header closable={false}>
       <List

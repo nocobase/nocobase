@@ -67,7 +67,7 @@ export const AIEmployeeButton: React.FC<{
   };
   infoForm: any;
 }> = withDynamicSchemaProps(({ aiEmployee, taskDesc, message, infoForm: infoFormValues, autoSend }) => {
-  const { triggerShortcut } = useChatBoxContext();
+  const triggerShortcut = useChatBoxContext('triggerShortcut');
   const fieldSchema = useFieldSchema();
   const { render } = useSchemaToolbarRender(fieldSchema);
   const variables = useVariables();

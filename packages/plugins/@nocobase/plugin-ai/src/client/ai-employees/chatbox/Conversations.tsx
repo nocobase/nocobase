@@ -22,13 +22,11 @@ export const Conversations: React.FC = () => {
   const api = useAPIClient();
   const { modal, message } = App.useApp();
   const { token } = useToken();
-  const {
-    conversations: conversationsService,
-    currentConversation,
-    setCurrentConversation,
-    setMessages,
-    startNewConversation,
-  } = useChatBoxContext();
+  const conversationsService = useChatBoxContext('conversations');
+  const currentConversation = useChatBoxContext('currentConversation');
+  const setCurrentConversation = useChatBoxContext('setCurrentConversation');
+  const setMessages = useChatBoxContext('setMessages');
+  const startNewConversation = useChatBoxContext('startNewConversation');
   const { loading: ConversationsLoading, data: conversationsRes } = conversationsService;
   const conversations: ConversationsProps['items'] = (conversationsRes || []).map((conversation) => ({
     key: conversation.sessionId,

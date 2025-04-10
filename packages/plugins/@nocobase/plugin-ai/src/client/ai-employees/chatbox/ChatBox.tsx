@@ -7,19 +7,21 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useContext, useState } from 'react';
+import React, { useState } from 'react';
 import { Layout, Card, Button } from 'antd';
 import { CloseOutlined, ExpandOutlined, EditOutlined, LayoutOutlined } from '@ant-design/icons';
 import { useToken } from '@nocobase/client';
 const { Header, Footer, Sider, Content } = Layout;
-import { ChatBoxContext } from './ChatBoxContext';
+import { useChatBoxContext } from './ChatBoxContext';
 import { Conversations } from './Conversations';
 import { Messages } from './Messages';
 import { Sender } from './Sender';
 import { useAISelectionContext } from '../selector/AISelectorProvider';
 
 export const ChatBox: React.FC = () => {
-  const { setOpen, startNewConversation, currentEmployee } = useContext(ChatBoxContext);
+  const setOpen = useChatBoxContext('setOpen');
+  const startNewConversation = useChatBoxContext('startNewConversation');
+  const currentEmployee = useChatBoxContext('currentEmployee');
   const { token } = useToken();
   const [showConversations, setShowConversations] = useState(false);
   const { selectable } = useAISelectionContext();

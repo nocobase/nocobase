@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useMemo } from 'react';
+import React, { memo, useMemo } from 'react';
 import { AIEmployee } from '../types';
 import { SchemaComponent } from '@nocobase/client';
 import { BlockSelector } from '../selector/BlockSelector';
@@ -87,8 +87,8 @@ export const ReadPrettyInfoForm: React.FC<{
 
 export const InfoFormMessage: React.FC<{
   values: any;
-}> = ({ values }) => {
-  const { currentEmployee } = useChatBoxContext();
+}> = memo(({ values }) => {
+  const currentEmployee = useChatBoxContext('currentEmployee');
   const t = useT();
   const form = useMemo(
     () =>
@@ -122,4 +122,4 @@ export const InfoFormMessage: React.FC<{
       />
     </>
   );
-};
+});

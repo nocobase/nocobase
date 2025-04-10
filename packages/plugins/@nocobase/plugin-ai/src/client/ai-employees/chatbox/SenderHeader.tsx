@@ -21,7 +21,10 @@ import { uid } from '@formily/shared';
 export const SenderHeader: React.FC = () => {
   const t = useT();
   const { token } = useToken();
-  const { currentEmployee, startNewConversation, showInfoForm, infoForm: form } = useChatBoxContext();
+  const currentEmployee = useChatBoxContext('currentEmployee');
+  const startNewConversation = useChatBoxContext('startNewConversation');
+  const showInfoForm = useChatBoxContext('showInfoForm');
+  const form = useChatBoxContext('infoForm');
   return currentEmployee ? (
     showInfoForm ? (
       <Sender.Header
