@@ -87,7 +87,6 @@ export const FormLinkageRules = withDynamicSchemaProps(
     const { getAllCollectionsInheritChain } = useCollectionManager_deprecated();
     const parentRecordData = useCollectionParentRecordData();
     const variableKey = getActiveContextName(localVariables);
-    console.log(localVariables);
     const components = useMemo(() => ({ ArrayCollapse }), []);
     const schema = useMemo(
       () => ({
