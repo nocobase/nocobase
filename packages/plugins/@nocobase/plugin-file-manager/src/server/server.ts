@@ -344,6 +344,23 @@ export class PluginFileManagerServer extends Plugin {
     const storageType = this.storageTypes.get(storage.type);
     return new storageType(storage).getFileURL(file, preview ? storage.options.thumbnailRule : '');
   }
+  async isPublicAccessStorage(storageName) {
+    const repository = this.db.getRepository('storages');
+    const storages = await repository.find({
+      filter: { default: true },
+    });
+    let storage;
+    if (!storageName) {
+      storage = storages;
+    } else {
+      storage = this.storageTypes.get(storageName);
+    }
+    console.log(11111, storage);
+    if (['local', 'ali-oss', 's3', 'tx-cos'].includes(storage.type)) {
+      return true;
+    }
+    return !!storage.options?.public;
+  }
 }
 
 export default PluginFileManagerServer;
