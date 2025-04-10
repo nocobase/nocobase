@@ -28,7 +28,6 @@ import {
   useFormBlockContext,
   useColumnSchema,
   SchemaSettingsLinkageRules,
-  useCollection_deprecated,
   LinkageRuleCategory,
 } from '@nocobase/client';
 import _ from 'lodash';
@@ -97,7 +96,7 @@ export const mapBlockSettings = new SchemaSettings({
       name: 'blockLinkageRules',
       Component: SchemaSettingsLinkageRules,
       useComponentProps() {
-        const { name } = useCollection_deprecated();
+        const { name } = useCollection();
         const { t } = useTranslation();
         return {
           collectionName: name,

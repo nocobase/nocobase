@@ -33,7 +33,6 @@ export const BlockLinkageRuleProvider = (props) => {
   const localVariables = useLocalVariables();
   const { designable } = useDesignable();
   const linkageRules = useMemo(() => getLinkageRules(schema), [schema]);
-  console.log(linkageRules, schema);
   const displayResult = useLinkageDisplayResult(linkageRules, variables, localVariables);
 
   // 还在加载中，避免闪烁

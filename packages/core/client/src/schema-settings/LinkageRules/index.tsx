@@ -96,7 +96,6 @@ export const FormLinkageRules = withDynamicSchemaProps(
     const { getAllCollectionsInheritChain } = useCollectionManager_deprecated();
     const parentRecordData = useCollectionParentRecordData();
     const variableKey = getActiveContextName(localVariables);
-    console.log(localVariables);
     const components = useMemo(() => ({ ArrayCollapse }), []);
     const schema = useMemo(
       () => ({
@@ -289,7 +288,7 @@ export const FormLinkageRules = withDynamicSchemaProps(
       <SubFormProvider value={{ value: null, collection: { name: collectionName || name } as any }}>
         <RecordProvider record={record} parent={parentRecordData}>
           <FilterContext.Provider value={value}>
-            <CollectionProvider name={collectionName || name}>
+            <CollectionProvider name={collectionName || name} allowNull>
               <SchemaComponent components={components} schema={schema} />
             </CollectionProvider>
           </FilterContext.Provider>
