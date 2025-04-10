@@ -35,7 +35,6 @@ export const BlockLinkageRuleProvider = (props) => {
   const linkageRules = useMemo(() => getLinkageRules(schema), [schema]);
   const displayResult = useLinkageDisplayResult(linkageRules, variables, localVariables);
 
-  // 还在加载中，避免闪烁
   if (displayResult === null) return null;
 
   if (last(displayResult) === 'hidden') {
