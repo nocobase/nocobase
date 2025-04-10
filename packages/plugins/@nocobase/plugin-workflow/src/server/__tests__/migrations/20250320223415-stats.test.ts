@@ -26,7 +26,7 @@ describe('20250320223415-stats', () => {
   describe('legacy stats should be migrated', () => {
     beforeEach(async () => {
       app = await getApp();
-      app.version.update('1.6.0');
+      await app.version.update('1.6.0');
       plugin = app.pm.get(PluginWorkflowServer) as PluginWorkflowServer;
       WorkflowRepo = app.db.getRepository('workflows');
       WorkflowStatsRepo = app.db.getRepository('workflowStats');
