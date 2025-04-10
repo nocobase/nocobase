@@ -44,7 +44,7 @@ const findOption = (str, options) => {
     if (!option) return null;
 
     // 进入下一层 children 查找
-    if (Array.isArray(option.children) && option.isLeaf === false) {
+    if (Array.isArray(option.children) || option.isLeaf === false) {
       currentOptions = option.children;
     } else {
       return option; // 没有 children 直接返回
@@ -98,9 +98,9 @@ export const useValues = (): UseValuesReturn => {
   const setLeftValue = useCallback(
     (leftVar, paths) => {
       const option: any = last(paths);
-      const operator = option?.operators?.[0];
       field.data = field.data || {};
       field.data.operators = option?.operators || operators;
+      const operator = field.data.operators?.[0];
       field.data.operator = operator;
       const s1 = cloneDeep(option?.schema);
       const s2 = cloneDeep(operator?.schema);
