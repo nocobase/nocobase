@@ -7,13 +7,14 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { EllipsisOutlined } from '@ant-design/icons';
+import { EllipsisOutlined, HighlightOutlined } from '@ant-design/icons';
 import ProLayout, { RouteContext, RouteContextType } from '@ant-design/pro-layout';
 import { HeaderViewProps } from '@ant-design/pro-layout/es/components/Header';
 import { css } from '@emotion/css';
-import { Popover, Tooltip } from 'antd';
+import { Popover, Result, Tooltip } from 'antd';
 import React, { createContext, FC, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import ReactDOM from 'react-dom';
+import { useTranslation } from 'react-i18next';
 import { Link, Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import {
   ACLRolesCheckProvider,
@@ -197,12 +198,34 @@ const pageContentStyle: React.CSSProperties = {
   overflowY: 'auto',
 };
 
+const ShowTipWhenNoPages = () => {
+  const { allAccessRoutes } = useAllAccessDesktopRoutes();
+  const { designable } = useDesignable();
+  const { token } = useToken();
+  const { t } = useTranslation();
+  const location = useLocation();
+
+  // Check if there are any pages
+  if (allAccessRoutes.length === 0 && !designable && ['/admin', '/admin/'].includes(location.pathname)) {
+    return (
+      <Result
+        icon={<HighlightOutlined style={{ fontSize: '8em', color: token.colorText }} />}
+        title={t('No pages yet, please configure first')}
+        subTitle={t(`Click the "UI Editor" icon in the upper right corner to enter the UI Editor mode`)}
+      />
+    );
+  }
+
+  return null;
+};
+
 export const LayoutContent = () => {
   /* Use the "nb-subpages-slot-without-header-and-side" class name to locate the position of the subpages */
   return (
     <div className={`${layoutContentClass} nb-subpages-slot-without-header-and-side`}>
       <div style={pageContentStyle}>
         <Outlet />
+        <ShowTipWhenNoPages />
       </div>
     </div>
   );
