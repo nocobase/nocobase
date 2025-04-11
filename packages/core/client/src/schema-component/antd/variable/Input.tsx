@@ -398,37 +398,35 @@ export function Input(props: VariableInputProps) {
 
   return wrapSSR(
     <>
-      {/* 确保所有ant input样式都已加载, 放到Compact中会导致Compact中的Input样式不对 */}
-      <AntInput style={{ display: 'none' }} />
       <Space.Compact style={style} className={classNames(componentCls, hashId, className)}>
         {variable ? (
           <div
             className={cx(
               'variable',
               css`
-              position: relative;
-              line-height: 0;
+                position: relative;
+                line-height: 0;
 
-              &:hover {
-                .clear-button {
-                  display: inline-block;
+                &:hover {
+                  .clear-button {
+                    display: inline-block;
+                  }
                 }
-              }
 
-              .ant-input {
-                overflow: auto;
-                white-space: nowrap;
-                ${disabled ? '' : 'padding-right: 28px;'}
+                .ant-input {
+                  overflow: auto;
+                  white-space: nowrap;
+                  ${disabled ? '' : 'padding-right: 28px;'}
 
-                .ant-tag {
-                  display: inline;
-                  line-height: 19px;
-                  margin: 0;
-                  padding: 2px 7px;
-                  border-radius: 10px;
+                  .ant-tag {
+                    display: inline;
+                    line-height: 19px;
+                    margin: 0;
+                    padding: 2px 7px;
+                    border-radius: 10px;
+                  }
                 }
-              }
-            `,
+              `,
             )}
           >
             <div
@@ -498,6 +496,8 @@ export function Input(props: VariableInputProps) {
           </Cascader>
         )}
       </Space.Compact>
-    </>
+      {/* 确保所有ant input样式都已加载, 放到Compact中会导致Compact中的Input样式不对 */}
+      <AntInput style={{ display: 'none' }} />
+    </>,
   );
 }

@@ -423,43 +423,41 @@ export function TextArea(props: TextAreaProps) {
   const disabled = props.disabled || form.disabled;
   return wrapSSR(
     <>
-      {/* 确保所有ant input样式都已加载, 放到Compact中会导致Compact中的Input样式不对 */}
-      <AntInput style={{ display: 'none' }} />
       <Space.Compact
         className={cx(
           componentCls,
           hashId,
           css`
-          display: flex;
-          .ant-input {
-            flex-grow: 1;
-            min-width: 200px;
-            word-break: break-all;
-            border-top-left-radius: ${addonBefore ? '0px' : '6px'};
-            border-bottom-left-radius: ${addonBefore ? '0px' : '6px'};
-          }
-          .ant-input-disabled {
-            .ant-tag {
-              color: #bfbfbf;
-              border-color: #d9d9d9;
+            display: flex;
+            .ant-input {
+              flex-grow: 1;
+              min-width: 200px;
+              word-break: break-all;
+              border-top-left-radius: ${addonBefore ? '0px' : '6px'};
+              border-bottom-left-radius: ${addonBefore ? '0px' : '6px'};
             }
-          }
+            .ant-input-disabled {
+              .ant-tag {
+                color: #bfbfbf;
+                border-color: #d9d9d9;
+              }
+            }
 
-          > .x-button {
-            height: min-content;
-          }
-        `,
+            > .x-button {
+              height: min-content;
+            }
+          `,
         )}
       >
         {addonBefore && (
           <div
             className={css`
-            background: rgba(0, 0, 0, 0.02);
-            border: 1px solid rgb(217, 217, 217);
-            padding: 0px 11px;
-            border-radius: 6px 0px 0px 6px;
-            border-right: 0px;
-          `}
+              background: rgba(0, 0, 0, 0.02);
+              border: 1px solid rgb(217, 217, 217);
+              padding: 0px 11px;
+              border-radius: 6px 0px 0px 6px;
+              border-right: 0px;
+            `}
           >
             {addonBefore}
           </div>
@@ -483,23 +481,23 @@ export function TextArea(props: TextAreaProps) {
             { 'ant-input-disabled': disabled },
             // NOTE: `pre-wrap` here for avoid the `&nbsp;` (\x160) issue when paste content, we need normal space (\x32).
             css`
-            min-height: ${token.controlHeight}px;
-            overflow: auto;
-            white-space: pre-wrap;
+              min-height: ${token.controlHeight}px;
+              overflow: auto;
+              white-space: pre-wrap;
 
-            &[placeholder]:empty::before {
-              content: attr(placeholder);
-              color: #ccc;
-            }
+              &[placeholder]:empty::before {
+                content: attr(placeholder);
+                color: #ccc;
+              }
 
-            .ant-tag {
-              display: inline;
-              line-height: 19px;
-              margin: 0 0.5em;
-              padding: 2px 7px;
-              border-radius: 10px;
-            }
-          `,
+              .ant-tag {
+                display: inline;
+                line-height: 19px;
+                margin: 0 0.5em;
+                padding: 2px 7px;
+                border-radius: 10px;
+              }
+            `,
           )}
           ref={inputRef}
           contentEditable={!disabled}
@@ -514,7 +512,9 @@ export function TextArea(props: TextAreaProps) {
           disabled={disabled}
         />
       </Space.Compact>
-    </>
+      {/* 确保所有ant input样式都已加载, 放到Compact中会导致Compact中的Input样式不对 */}
+      <AntInput style={{ display: 'none' }} />
+    </>,
   );
 }
 
