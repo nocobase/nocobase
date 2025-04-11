@@ -9,7 +9,7 @@
 
 import { css, cx } from '@emotion/css';
 import { useForm } from '@formily/react';
-import { Space, theme } from 'antd';
+import { Input as AntInput, Space, theme } from 'antd';
 import type { CascaderProps, DefaultOptionType } from 'antd/lib/cascader';
 import useInputStyle from 'antd/es/input/style';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -448,6 +448,8 @@ export function TextArea(props: TextAreaProps) {
         `,
       )}
     >
+      {/* 确保所有ant input样式都已加载 */}
+      <AntInput style={{ display: 'none' }} />
       {addonBefore && (
         <div
           className={css`
