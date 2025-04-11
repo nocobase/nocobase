@@ -15,6 +15,9 @@ import {
   SchemaSettingsModalItem,
   useOpenModeContext,
   SchemaSettingsItemType,
+  useCollection,
+  SchemaSettingsLinkageRules,
+  LinkageRuleCategory,
 } from '@nocobase/client';
 import { CustomSchemaSettingsBlockTitleItem } from './SchemaSettingsBlockTitleItem';
 import React from 'react';
@@ -135,6 +138,17 @@ export const workbenchBlockSettings = new SchemaSettings({
     {
       name: 'setTheBlockHeight',
       Component: SchemaSettingsBlockHeightItem,
+    },
+    {
+      name: 'blockLinkageRules',
+      Component: SchemaSettingsLinkageRules,
+      useComponentProps() {
+        const { t } = useTranslation();
+        return {
+          title: t('Block Linkage rules'),
+          category: LinkageRuleCategory.block,
+        };
+      },
     },
     {
       name: 'layout',

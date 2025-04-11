@@ -31,3 +31,4 @@ export { default as useParseDataScopeFilter } from './hooks/useParseDataScopeFil
 export * from './isPatternDisabled';
 export { SchemaSettingsPlugin } from './SchemaSettingsPlugin';
 export * from './VariableInput';
+export * from './LinkageRules/type';

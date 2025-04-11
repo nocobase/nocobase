@@ -27,3 +27,11 @@ export function useGridCardBlockDecoratorProps(props) {
     parseVariableLoading,
   };
 }
+
+export function useGridCardBlockItemProps() {
+  return {};
+}
+
+export function useGridCardBlockProps() {
+  return {};
+}

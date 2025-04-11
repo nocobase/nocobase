@@ -15,6 +15,8 @@ import {
   useSchemaInitializerItem,
   ModalActionSchemaInitializerItem,
   SchemaSettingAccessControl,
+  SchemaSettingsLinkageRules,
+  useSchemaToolbar,
 } from '@nocobase/client';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
@@ -32,6 +34,16 @@ export const workbenchActionSettingsLink = new SchemaSettings({
     {
       name: 'editLink',
       Component: SchemaSettingsActionLinkItem,
+    },
+    {
+      name: 'linkageRules',
+      Component: SchemaSettingsLinkageRules,
+      useComponentProps() {
+        const { linkageRulesProps } = useSchemaToolbar();
+        return {
+          ...linkageRulesProps,
+        };
+      },
     },
     {
       ...SchemaSettingAccessControl,

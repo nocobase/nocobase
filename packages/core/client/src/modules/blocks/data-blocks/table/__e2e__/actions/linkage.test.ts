@@ -30,7 +30,6 @@ test('action linkage by row data', async ({ page, mockPage }) => {
       // 添加其他你需要的样式属性
     };
   });
-
   expect(adminEditActionStyle.opacity).not.toBe('0.1');
   expect(rootEditActionStyle.opacity).not.toBe('1');
 });

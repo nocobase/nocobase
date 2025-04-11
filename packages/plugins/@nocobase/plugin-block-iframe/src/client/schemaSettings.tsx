@@ -19,6 +19,8 @@ import {
   useRecord,
   useURLAndHTMLSchema,
   useVariableOptions,
+  SchemaSettingsLinkageRules,
+  LinkageRuleCategory,
 } from '@nocobase/client';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
@@ -199,6 +201,17 @@ const commonOptions: any = {
     {
       name: 'setTheBlockHeight',
       Component: SchemaSettingsBlockHeightItem,
+    },
+    {
+      name: 'blockLinkageRules',
+      Component: SchemaSettingsLinkageRules,
+      useComponentProps() {
+        const { t } = useTranslation();
+        return {
+          title: t('Block Linkage rules'),
+          category: LinkageRuleCategory.block,
+        };
+      },
     },
     {
       name: 'divider',
