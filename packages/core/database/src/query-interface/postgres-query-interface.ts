@@ -15,7 +15,7 @@ import { ModelStatic, Transaction } from 'sequelize';
 
 export default class PostgresQueryInterface extends QueryInterface {
   constructor(db) {
-    super(db);
+    super(db, { defaultSchemaName: 'public' });
   }
 
   async setAutoIncrementVal(options: {

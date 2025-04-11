@@ -11,6 +11,7 @@ import {
   ColumnDescription,
   ModelStatic,
   QueryInterfaceDropTableOptions,
+  QueryInterfaceOptions,
   QueryInterface as SequelizeQueryInterface,
   TableName,
   Transaction,
@@ -56,6 +57,7 @@ export type ChangeColumnAction = (typeof ChangeColumnAction)[keyof typeof Change
 
 type QueryInterfaceConfig = {
   changeColumnMode?: 'default' | 'sequelize';
+  defaultSchemaName?: string;
 };
 
 export interface RemoveColumnOptions {
@@ -74,7 +76,7 @@ export default abstract class QueryInterface {
     config?: QueryInterfaceConfig,
   ) {
     this.sequelizeQueryInterface = db.sequelize.getQueryInterface();
-    this.config = config || { changeColumnMode: 'default' };
+    this.config = { changeColumnMode: 'default', ...(config || {}) };
   }
 
   abstract collectionTableExists(collection: Collection, options?: Transactionable): Promise<boolean>;
@@ -100,6 +102,10 @@ export default abstract class QueryInterface {
   abstract beforeRemoveColumn(options: RemoveColumnOptions): Promise<void>;
 
   abstract afterRemoveColumn(options: RemoveColumnOptions): Promise<void>;
+
+  get defaultSchemaName() {
+    return this.config.defaultSchemaName;
+  }
 
   async dropAll(options) {
     if (options.drop !== true) return;

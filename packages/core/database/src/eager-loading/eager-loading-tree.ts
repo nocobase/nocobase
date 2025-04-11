@@ -290,7 +290,7 @@ export class EagerLoadingTree {
           }
 
           // find all ids
-          const ids = (await node.model.findAll()).map((row) => {
+          const ids = (await node.model.findAll(options)).map((row) => {
             return { row, pk: row[primaryKeyField] };
           });
 

@@ -343,6 +343,14 @@ export class Database extends EventEmitter implements AsyncEmitter {
     return this._instanceId;
   }
 
+  get dialectClass() {
+    return Database.getDialect(this.options.dialect);
+  }
+
+  get schema() {
+    return this.options.schema || this.dialectClass.getQueryInterface(this).defaultSchemaName;
+  }
+
   /**
    * @internal
    */
