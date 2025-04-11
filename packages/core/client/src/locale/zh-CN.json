@@ -1099,5 +1099,7 @@
   "Response record":"响应结果记录",
   "Colon":"冒号",
   "No pages yet, please configure first": "暂无页面，请先配置",
-  "Click the \"UI Editor\" icon in the upper right corner to enter the UI Editor mode": "点击右上角的“界面配置”图标，进入界面配置模式"
+  "Click the \"UI Editor\" icon in the upper right corner to enter the UI Editor mode": "点击右上角的“界面配置”图标，进入界面配置模式",
+  "Block Linkage rules":"区块联动规则",
+  "Field Linkage rules":"字段联动规则"
 }
