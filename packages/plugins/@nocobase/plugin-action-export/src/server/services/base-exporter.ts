@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import {
   FindOptions,
   ICollection,
@@ -10,6 +19,7 @@ import EventEmitter from 'events';
 import { deepGet } from '../utils/deep-get';
 import path from 'path';
 import os from 'os';
+import { Context } from '@nocobase/actions';
 
 export type ExportOptions = {
   collectionManager: ICollectionManager;
@@ -41,19 +51,25 @@ abstract class BaseExporter<T extends ExportOptions = ExportOptions> extends Eve
   }
 
   abstract init(ctx?): Promise<void>;
-  abstract finalize(): Promise<any>;
+  abstract finalize(ctx?): Promise<any>;
   abstract handleRow(row: any, ctx?): Promise<void>;
+
+  getExportFields(ctx: Context) {
+    return this.options.fields.filter((x) =>
+      ctx?.permission?.can?.params?.fields?.length ? (ctx?.permission?.can?.params?.fields || []).includes(x) : true,
+    );
+  }
 
   async run(ctx?): Promise<any> {
     await this.init(ctx);
 
     const { collection, chunkSize, repository } = this.options;
 
-    const total = await (repository || collection.repository).count(this.getFindOptions());
+    const total = await (repository || collection.repository).count(this.getFindOptions(ctx));
     let current = 0;
 
     await (repository || collection.repository).chunk({
-      ...this.getFindOptions(),
+      ...this.getFindOptions(ctx),
       chunkSize: chunkSize || 200,
       callback: async (rows, options) => {
         for (const row of rows) {
@@ -68,11 +84,11 @@ abstract class BaseExporter<T extends ExportOptions = ExportOptions> extends Eve
       },
     });
 
-    return this.finalize();
+    return this.finalize(ctx);
   }
 
-  protected getAppendOptionsFromFields() {
-    return this.options.fields
+  protected getAppendOptionsFromFields(ctx: Context) {
+    return this.getExportFields(ctx)
       .map((field) => {
         const fieldInstance = this.options.collection.getField(field[0]);
         if (!fieldInstance) {
@@ -88,14 +104,14 @@ abstract class BaseExporter<T extends ExportOptions = ExportOptions> extends Eve
       .filter(Boolean);
   }
 
-  protected getFindOptions() {
+  protected getFindOptions(ctx: Context) {
     const { findOptions = {} } = this.options;
 
     if (this.limit) {
       findOptions.limit = this.limit;
     }
 
-    const appendOptions = this.getAppendOptionsFromFields();
+    const appendOptions = this.getAppendOptionsFromFields(ctx);
 
     if (appendOptions.length) {
       return {

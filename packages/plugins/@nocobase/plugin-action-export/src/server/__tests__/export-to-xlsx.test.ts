@@ -1499,4 +1499,47 @@ describe('export to xlsx', () => {
     expect(sheetData[1]).toEqual(['user0', 0]); // first user
     expect(sheetData[10]).toEqual(['user9', 9]); // last user
   });
+
+  it(`should filter no permission fields`, async () => {
+    const User = app.db.collection({
+      name: 'users',
+      fields: [
+        { type: 'string', name: 'name' },
+        { type: 'integer', name: 'age' },
+      ],
+    });
+
+    await app.db.sync();
+
+    await User.model.create({
+      name: `user1`,
+      age: 23,
+    });
+
+    const exporter = new XlsxExporter({
+      collectionManager: app.mainDataSource.collectionManager,
+      collection: User,
+      chunkSize: 10,
+      columns: [
+        { dataIndex: ['name'], defaultTitle: 'Name' },
+        { dataIndex: ['age'], defaultTitle: 'Age' },
+      ],
+    });
+
+    const wb = await exporter.run({
+      permission: {
+        can: {
+          params: {
+            fields: ['name'],
+          },
+        },
+      },
+    });
+
+    const firstSheet = wb.Sheets[wb.SheetNames[0]];
+    const sheetData = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
+    expect(sheetData.length).toBe(2);
+    const header = sheetData[0];
+    expect(header).toEqual(['Name']);
+  });
 });
