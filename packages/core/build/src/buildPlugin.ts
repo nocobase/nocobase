@@ -677,7 +677,7 @@ __webpack_require__.p = (function() {
 
 export async function buildPlugin(cwd: string, userConfig: UserConfig, sourcemap: boolean, log: PkgLog) {
   if (cwd.includes('/pro-plugins/') && !cwd.includes(PLUGIN_COMMERCIAL) && fs.existsSync(path.join(process.cwd(), 'packages/pro-plugins/', PLUGIN_COMMERCIAL))) {
-    await buildPluginClient(cwd, userConfig, sourcemap, log);
+    await buildPluginClient(cwd, userConfig, sourcemap, log, true);
     await buildProPluginServer(cwd, userConfig, sourcemap, log);
   } else {
     await buildPluginClient(cwd, userConfig, sourcemap, log);
