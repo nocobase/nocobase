@@ -15,6 +15,8 @@ import {
   useOpenModeContext,
   ModalActionSchemaInitializerItem,
   SchemaSettingAccessControl,
+  SchemaSettingsLinkageRules,
+  useSchemaToolbar,
 } from '@nocobase/client';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
@@ -29,7 +31,16 @@ export const workbenchActionSettingsPopup = new SchemaSettings({
         return { hasIconColor: true };
       },
     },
-
+    {
+      name: 'linkageRules',
+      Component: SchemaSettingsLinkageRules,
+      useComponentProps() {
+        const { linkageRulesProps } = useSchemaToolbar();
+        return {
+          ...linkageRulesProps,
+        };
+      },
+    },
     {
       name: 'openMode',
       Component: SchemaSettingOpenModeSchemaItems,

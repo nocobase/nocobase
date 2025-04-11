@@ -89,6 +89,7 @@ const InternalCreateRecordAction = (props: any, ref) => {
               condition: v.condition,
               variables,
               localVariables,
+              conditionType: v.conditionType,
             },
             app.jsonLogic,
           );
@@ -208,6 +209,7 @@ export const CreateAction = observer(
                 condition: v.condition,
                 variables,
                 localVariables,
+                conditionType: v.conditionType,
               },
               app.jsonLogic,
             );
