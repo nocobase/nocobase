@@ -14,7 +14,8 @@ import { CollectionFieldOptions_deprecated } from '../../../collection-manager';
 import { CollectionFieldOptions } from '../../../data-source/collection/Collection';
 import { useBaseVariable } from './useBaseVariable';
 import { string } from '../../../collection-manager/interfaces/properties/operators';
-import { useCurrentRoles } from '../../../user';
+import { useCurrentUserContext } from '../../../user/CurrentUserProvider';
+import { useCompile } from '../../../schema-component';
 
 /**
  * @deprecated
@@ -76,7 +77,9 @@ export const useCurrentRoleVariable = ({
 } = {}) => {
   const { t } = useTranslation();
   const apiClient = useAPIClient();
-  const roles = useCurrentRoles();
+  const compile = useCompile();
+  const { data } = useCurrentUserContext() || {};
+  const roles = (data?.data?.roles || []).map(({ name, title }) => ({ name, title: compile(title) }));
   const currentRoleSettings = useBaseVariable({
     collectionField,
     uiSchema,
