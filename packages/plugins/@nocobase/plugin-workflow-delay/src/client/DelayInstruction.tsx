@@ -57,6 +57,9 @@ export default class extends Instruction {
             placeholder: `{{t("Duration", { ns: "${NAMESPACE}" })}}`,
             useTypedConstant: [['number', { min: 1 }]],
             nullable: false,
+            parseOptions: {
+              defaultTypeOnNull: 'number',
+            },
           },
           default: 1,
           required: true,
