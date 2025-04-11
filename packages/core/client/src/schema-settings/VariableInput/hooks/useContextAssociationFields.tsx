@@ -46,7 +46,9 @@ const getChildren = (
         return {
           key: option.name,
           value: option.name,
+          name: option.name,
           label: compile(option.title),
+          title: compile(option.title),
           disabled: disabled,
           isLeaf: true,
           depth,
@@ -59,7 +61,9 @@ const getChildren = (
       return {
         key: option.name,
         value: option.name,
+        name: option.name,
         label: compile(option.title),
+        title: compile(option.title),
         disabled: disabled,
         isLeaf: true,
         field: option,
@@ -77,10 +81,10 @@ export const useContextAssociationFields = ({
   contextCollectionName,
   collectionField,
 }: {
-  schema: any;
+  schema?: any;
   maxDepth?: number;
   contextCollectionName: string;
-  collectionField: CollectionFieldOptions_deprecated;
+  collectionField?: CollectionFieldOptions_deprecated;
 }) => {
   const { t } = useTranslation();
   const compile = useCompile();
@@ -101,10 +105,17 @@ export const useContextAssociationFields = ({
         const children =
           getChildren(
             getFilterOptions(collectionName).filter((v) => {
-              const isAssociationField = ['hasOne', 'hasMany', 'belongsTo', 'belongsToMany', 'belongsToArray'].includes(
-                v.type,
-              );
-              return isAssociationField;
+              if (collectionField) {
+                const isAssociationField = [
+                  'hasOne',
+                  'hasMany',
+                  'belongsTo',
+                  'belongsToMany',
+                  'belongsToArray',
+                ].includes(v.type);
+                return isAssociationField;
+              }
+              return true;
             }),
             {
               schema,

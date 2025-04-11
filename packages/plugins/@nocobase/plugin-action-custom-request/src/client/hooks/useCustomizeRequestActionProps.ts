@@ -16,6 +16,7 @@ import {
   useCompile,
   useDataSourceKey,
   useNavigateNoUpdate,
+  useBlockRequestContext,
 } from '@nocobase/client';
 import { isURL } from '@nocobase/utils/client';
 import { App } from 'antd';
@@ -25,16 +26,17 @@ export const useCustomizeRequestActionProps = () => {
   const apiClient = useAPIClient();
   const navigate = useNavigateNoUpdate();
   const actionSchema = useFieldSchema();
+  const { field } = useBlockRequestContext();
   const compile = useCompile();
   const form = useForm();
   const { name: blockType } = useBlockContext() || {};
-  // const { getPrimaryKey } = useCollection_deprecated();
   const recordData = useCollectionRecordData();
   const fieldSchema = useFieldSchema();
   const actionField = useField();
   const { setVisible } = useActionContext();
   const { modal, message } = App.useApp();
   const dataSourceKey = useDataSourceKey();
+
   return {
     async onClick(e?, callBack?) {
       const { skipValidator, onSuccess } = actionSchema?.['x-action-settings'] ?? {};
@@ -64,6 +66,7 @@ export const useCustomizeRequestActionProps = () => {
               data: currentRecordData,
             },
             $nForm: blockType === 'form' ? form.values : undefined,
+            $context: field.data?.selectedRowData,
           },
           responseType: fieldSchema['x-response-type'] === 'stream' ? 'blob' : 'json',
         });
