@@ -1,4 +1,13 @@
-import { Database } from '@nocobase/database';
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
+import { Database, Op } from '@nocobase/database';
 import { FieldIsDependedOnByOtherError } from '../errors/field-is-depended-on-by-other';
 
 export function beforeDestoryField(db: Database) {
@@ -9,7 +18,6 @@ export function beforeDestoryField(db: Database) {
     if (['belongsTo', 'hasOne', 'hasMany', 'belongsToMany'].includes(type)) {
       return;
     }
-
     const relatedFields = await db.getRepository('fields').find({
       filter: {
         $or: [

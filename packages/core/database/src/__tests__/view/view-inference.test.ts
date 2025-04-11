@@ -15,7 +15,6 @@ describe('view inference', function () {
 
   beforeEach(async () => {
     db = await createMockDatabase();
-    await db.clean({ drop: true });
   });
 
   afterEach(async () => {
@@ -23,7 +22,7 @@ describe('view inference', function () {
   });
 
   it('should infer field with alias', async () => {
-    if (db.options.dialect !== 'postgres') return;
+    if (!['postgres', 'mssql'].includes(db.options.dialect)) return;
 
     const UserCollection = db.collection({
       name: 'users',
@@ -57,7 +56,7 @@ describe('view inference', function () {
     const inferredFields = await ViewFieldInference.inferFields({
       db,
       viewName,
-      viewSchema: 'public',
+      viewSchema: db.options.dialect === 'mssql' ? 'dbo' : 'public',
     });
 
     expect(inferredFields['user_id_field'].source).toBe('users.id');
@@ -123,7 +122,7 @@ describe('view inference', function () {
     const inferredFields = await ViewFieldInference.inferFields({
       db,
       viewName,
-      viewSchema: 'public',
+      viewSchema: db.options.dialect === 'mssql' ? 'dbo' : 'public',
     });
 
     const createdAt = UserCollection.model.rawAttributes['createdAt'].field;

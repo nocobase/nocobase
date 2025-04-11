@@ -118,7 +118,7 @@ describe('query interface', async () => {
     if (db.isMySQLCompatibleDialect()) {
       expect(userD.id).toBe(100);
     } else {
-      expect(userD.id).toBe(101);
+      expect(userD.id).toBe(db.options.dialect === 'mssql' ? '101' : 101);
     }
   });
 });

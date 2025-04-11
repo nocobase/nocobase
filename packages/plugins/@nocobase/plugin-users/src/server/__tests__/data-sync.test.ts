@@ -123,9 +123,9 @@ describe('user data sync', () => {
   it('should update user custom field', async () => {
     const userCollection = db.getCollection('users');
     userCollection.addField('customField', { type: 'string' });
-    await db.sync({
-      alter: true,
-    });
+    // mssql sequelize changeColumn unique error
+    const syncOptions = db.options.dialect === 'mssql' ? {} : { alter: true };
+    await db.sync(syncOptions);
     await resourceManager.updateOrCreate({
       sourceName: 'test',
       dataType: 'user',

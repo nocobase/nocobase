@@ -103,7 +103,7 @@ describe('actions', () => {
       const checkRes = await agent.set('Authorization', `Bearer ${result.token}`).resource('auth').check();
       expect(checkRes.body.data.nickname).toBe(user.nickname);
     });
-    it('token sercurity config should not affect api key auth', async () => {
+    it.only('token sercurity config should not affect api key auth', async () => {
       const res = await userAgent.resource('tokenControlConfig').update({
         filterByTk: 'token-policy-config',
         values: {

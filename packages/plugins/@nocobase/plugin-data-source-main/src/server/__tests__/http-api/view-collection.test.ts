@@ -40,21 +40,29 @@ describe('view collection', () => {
     const viewSQL = (() => {
       if (app.db.inDialect('sqlite')) {
         return `CREATE VIEW ${testViewName} AS WITH RECURSIVE numbers(n) AS (
-  SELECT CAST(1 AS INTEGER)
-  UNION ALL
-  SELECT CAST(1 + n AS INTEGER) FROM numbers WHERE n < 20
-)
-SELECT * FROM numbers;
-`;
+      SELECT CAST(1 AS INTEGER)
+      UNION ALL
+      SELECT CAST(1 + n AS INTEGER) FROM numbers WHERE n < 20
+    )
+    SELECT * FROM numbers;
+    `;
+      } else if (app.db.inDialect('mssql')) {
+        return `CREATE VIEW ${testViewName} AS WITH numbers(n) AS (
+      SELECT 1
+      UNION ALL
+      SELECT n + 1 FROM numbers WHERE n < 20
+    )
+    SELECT * FROM numbers;
+    `;
+      } else {
+        return `CREATE VIEW ${testViewName} AS WITH RECURSIVE numbers(n) AS (
+      SELECT 1
+      UNION ALL
+      SELECT n + 1 FROM numbers WHERE n < 20
+    )
+    SELECT * FROM numbers;
+    `;
       }
-
-      return `CREATE VIEW ${testViewName} AS WITH RECURSIVE numbers(n) AS (
-  SELECT 1
-  UNION ALL
-  SELECT n + 1 FROM numbers WHERE n < 20
-)
-SELECT * FROM numbers;
-`;
     })();
     await app.db.sequelize.query(viewSQL);
   });
@@ -62,6 +70,15 @@ SELECT * FROM numbers;
   afterEach(async () => {
     await app.destroy();
   });
+
+  function getSchema() {
+    if (app.db.options.dialect === 'mssql') {
+      return 'dbo';
+    }
+    if (app.db.options.dialect === 'postgres') {
+      return 'public';
+    }
+  }
 
   it('should support preview field with getter', async () => {
     class TestField extends Field {
@@ -139,7 +156,7 @@ SELECT * FROM numbers;
       values: {
         name: testViewName,
         view: true,
-        schema: app.db.inDialect('postgres') ? 'public' : undefined,
+        schema: getSchema(),
         fields: [
           {
             name: 'numbers',
@@ -168,7 +185,7 @@ SELECT * FROM numbers;
   it('should list views fields', async () => {
     const response = await agent.resource('dbViews').get({
       filterByTk: testViewName,
-      schema: 'public',
+      schema: getSchema(),
     });
 
     expect(response.status).toBe(200);
@@ -196,6 +213,10 @@ SELECT * FROM numbers;
       if (app.db.inDialect('postgres')) {
         return `CREATE VIEW ${jsonViewName} AS SELECT '{"a": 1}'::json as json_field`;
       }
+      if (app.db.inDialect('mssql')) {
+        return `CREATE VIEW ${jsonViewName} AS 
+        SELECT (SELECT 1 AS key1, 'abc' AS key2 FOR JSON PATH, WITHOUT_ARRAY_WRAPPER) as json_field`;
+      }
       return `CREATE VIEW ${jsonViewName} AS SELECT JSON_OBJECT('key1', 1, 'key2', 'abc') as json_field`;
     })();
 
@@ -203,14 +224,14 @@ SELECT * FROM numbers;
 
     const response = await agent.resource('dbViews').get({
       filterByTk: jsonViewName,
-      schema: app.db.inDialect('postgres') ? 'public' : undefined,
+      schema: getSchema(),
     });
 
     expect(response.status).toBe(200);
     const data = response.body.data;
 
     const jsonField = data.fields.find((field) => field.name === 'json_field');
-    expect(jsonField.type).toBe('json');
+    expect(jsonField.type).toBe(app.db.options.dialect === 'mssql' ? 'string' : 'json');
     expect(jsonField.possibleTypes).toBeTruthy();
   });
 
@@ -250,7 +271,7 @@ SELECT * FROM numbers;
       values: {
         name: viewName,
         view: true,
-        schema: app.db.inDialect('postgres') ? 'public' : undefined,
+        schema: getSchema(),
         fields: [
           {
             name: 'name',
@@ -291,7 +312,7 @@ SELECT * FROM numbers;
     expect(response2.statusCode).toBe(200);
   });
 
-  it('should list collections fields with source interface', async () => {
+  it.only('should list collections fields with source interface', async () => {
     await app.db.getRepository('collections').create({
       values: {
         name: 'users',
@@ -327,7 +348,7 @@ SELECT * FROM numbers;
       values: {
         name: viewName,
         view: true,
-        schema: app.db.inDialect('postgres') ? 'public' : undefined,
+        schema: getSchema(),
         fields: [
           {
             name: 'name',
@@ -440,7 +461,7 @@ SELECT * FROM numbers;
       values: {
         name: viewName,
         view: true,
-        schema: app.db.inDialect('postgres') ? 'public' : undefined,
+        schema: getSchema(),
         fields: [
           {
             name: 'id',

@@ -69,6 +69,10 @@ describe('unique field', () => {
   });
 
   it('should transform empty string to null when field is unique', async () => {
+    if (db.options.dialect === 'mssql') {
+      // Empty strings will be converted to NULL, and in MSSQL, fields with unique constraints do not allow multiple NULL values to be inserted.
+      return;
+    }
     const User = db.collection({
       name: 'users',
       fields: [

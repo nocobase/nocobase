@@ -14,8 +14,6 @@ describe('default value', () => {
 
   beforeEach(async () => {
     db = await createMockDatabase({});
-
-    await db.clean({ drop: true });
   });
 
   afterEach(async () => {

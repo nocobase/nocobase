@@ -1,15 +1,13 @@
-import _ from "lodash";
-import React, { useCallback } from "react";
-import { DataBlock } from "../../../filter-provider/FilterProvider";
+import _ from 'lodash';
+import React, { useCallback } from 'react';
+import { DataBlock } from '../../../filter-provider/FilterProvider';
 
 export const AllDataBlocksContext = React.createContext<{
   getAllDataBlocks: () => DataBlock[];
-  setAllDataBlocks: (
-    value: DataBlock[] | ((prev: DataBlock[]) => DataBlock[])
-  ) => void;
+  setAllDataBlocks: (value: DataBlock[] | ((prev: DataBlock[]) => DataBlock[])) => void;
 }>({
   getAllDataBlocks: () => [],
-  setAllDataBlocks: () => { },
+  setAllDataBlocks: () => {},
 });
 
 /**
@@ -20,22 +18,16 @@ export const AllDataBlocksContext = React.createContext<{
 export const AllDataBlocksProvider: React.FC = (props) => {
   const dataBlocksRef = React.useRef<DataBlock[]>([]);
   const setAllDataBlocks = React.useCallback((value) => {
-    if (typeof value === "function") {
+    if (typeof value === 'function') {
       dataBlocksRef.current = value(dataBlocksRef.current);
     } else {
       dataBlocksRef.current = value;
     }
   }, []);
-  const getAllDataBlocks = React.useCallback(
-    () => dataBlocksRef.current,
-    []
-  );
-  const value = React.useMemo(
-    () => ({ getAllDataBlocks, setAllDataBlocks }),
-    [getAllDataBlocks, setAllDataBlocks]
-  );
+  const getAllDataBlocks = React.useCallback(() => dataBlocksRef.current, []);
+  const value = React.useMemo(() => ({ getAllDataBlocks, setAllDataBlocks }), [getAllDataBlocks, setAllDataBlocks]);
   return <AllDataBlocksContext.Provider value={value}>{props.children}</AllDataBlocksContext.Provider>;
-}
+};
 
 export const useAllDataBlocks = () => {
   const ctx = React.useContext(AllDataBlocksContext);

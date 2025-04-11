@@ -68,14 +68,18 @@ const ActionModalContent: FC<{ footerNodeName: string; field: any; schema: any }
 
 export function useDelayedVisible(visible: boolean, delay = 200) {
   const [ready, setReady] = useState(false);
-  useEffect(() => {
-    if (visible) {
-      const timer = setTimeout(() => setReady(true), delay);
-      return () => clearTimeout(timer);
-    } else {
-      setReady(false);
-    }
-  }, [visible]);
+  useEffect(
+    () => {
+      if (visible) {
+        const timer = setTimeout(() => setReady(true), delay);
+        return () => clearTimeout(timer);
+      } else {
+        setReady(false);
+      }
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [visible],
+  );
   return ready;
 }
 

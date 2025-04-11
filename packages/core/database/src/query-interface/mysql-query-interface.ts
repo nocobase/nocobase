@@ -9,14 +9,14 @@
 
 /* istanbul ignore file -- @preserve */
 
-import { Transaction, Transactionable } from 'sequelize';
+import { ModelStatic, Transaction, Transactionable } from 'sequelize';
 import { Collection } from '../collection';
 import sqlParser from '../sql-parser';
-import QueryInterface, { TableInfo } from './query-interface';
+import QueryInterface, { ChangeColumnOptions, RemoveColumnOptions, TableInfo } from './query-interface';
 
 export default class MysqlQueryInterface extends QueryInterface {
   constructor(db) {
-    super(db);
+    super(db, { changeColumnMode: 'sequelize' });
   }
 
   async collectionTableExists(collection: Collection, options?: Transactionable) {
@@ -145,4 +145,11 @@ export default class MysqlQueryInterface extends QueryInterface {
   public generateJoinOnForJSONArray(left: string, right: string) {
     return this.db.sequelize.literal(`JSON_CONTAINS(${right}, JSON_ARRAY(${left}))`);
   }
+
+  changeColumnDefaultValueSQL(options: ChangeColumnOptions): Promise<string> {
+    return null;
+  }
+
+  async beforeRemoveColumn(options: RemoveColumnOptions): Promise<void> {}
+  async afterRemoveColumn(options: RemoveColumnOptions): Promise<void> {}
 }

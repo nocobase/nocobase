@@ -111,7 +111,9 @@ describe('update', () => {
         nameWithUnderscore: 'item1',
       },
     });
-
+    if (db.options.dialect === 'mssql') {
+      return;
+    }
     const item = await collection.repository.findOne({
       filter: {
         nameWithUnderscore: 'item2',

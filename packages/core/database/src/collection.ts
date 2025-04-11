@@ -616,8 +616,13 @@ export class Collection<
           dropCollection: false,
         });
       } else {
-        const queryInterface = this.db.sequelize.getQueryInterface();
-        await queryInterface.removeColumn(this.getTableNameWithSchema(), field.columnName(), options);
+        const queryInterface = this.db.queryInterface;
+        await queryInterface.removeColumn({
+          tableName: this.getTableNameWithSchema(),
+          columnName: field.columnName(),
+          options,
+          model: this.model,
+        });
       }
     }
 
@@ -882,7 +887,7 @@ export class Collection<
   public getTableNameWithSchema() {
     const tableName = this.model.tableName;
 
-    if (this.collectionSchema() && this.db.inDialect('postgres')) {
+    if (this.collectionSchema()) {
       return this.db.utils.addSchema(tableName, this.collectionSchema());
     }
 
@@ -918,7 +923,7 @@ export class Collection<
   public getTableNameWithSchemaAsString() {
     const tableName = this.model.tableName;
 
-    if (this.collectionSchema() && this.db.inDialect('postgres')) {
+    if (this.collectionSchema() && (this.db.inDialect('postgres') || this.db.inDialect('mssql'))) {
       return `${this.collectionSchema()}.${tableName}`;
     }
 
@@ -940,6 +945,10 @@ export class Collection<
 
     if (this.db.inDialect('postgres')) {
       return 'public';
+    }
+
+    if (this.db.inDialect('mssql')) {
+      return 'dbo';
     }
 
     return undefined;

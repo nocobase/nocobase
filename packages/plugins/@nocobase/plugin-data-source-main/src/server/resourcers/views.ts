@@ -78,16 +78,14 @@ export default {
     },
 
     async query(ctx, next) {
-      const { filterByTk, fieldTypes, schema = 'public', page = 1, pageSize = 10 } = ctx.action.params;
-
+      const { filterByTk, fieldTypes, page = 1, pageSize = 10 } = ctx.action.params;
+      const schema = ctx.action.params.schema || ctx.app.db.options.schema || (ctx.app.db as Database).schema;
       const offset = (page - 1) * pageSize;
       const limit = 1 * pageSize;
+      const table = schema ? ctx.app.db.utils.addSchema(filterByTk, schema) : filterByTk;
+      const sql = `SELECT * FROM ${ctx.app.db.utils.quoteTable(table)}`;
 
-      const sql = `SELECT *
-                   FROM ${ctx.app.db.utils.quoteTable(ctx.app.db.utils.addSchema(filterByTk, schema))} LIMIT ${limit}
-                   OFFSET ${offset}`;
-
-      const rawValues = await ctx.app.db.sequelize.query(sql, { type: 'SELECT' });
+      const rawValues = await ctx.app.db.sequelize.query(sql, { type: 'SELECT', limit, offset });
 
       if (fieldTypes) {
         for (const raw of rawValues) {
