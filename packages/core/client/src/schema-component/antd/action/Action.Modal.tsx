@@ -9,7 +9,7 @@
 
 import { css } from '@emotion/css';
 import { observer, useField, useFieldSchema } from '@formily/react';
-import { Modal, ModalProps } from 'antd';
+import { Modal, ModalProps, Skeleton } from 'antd';
 import classNames from 'classnames';
 import React, { FC, startTransition, useEffect, useState } from 'react';
 import { ErrorBoundary, FallbackProps } from 'react-error-boundary';
@@ -53,7 +53,6 @@ const ActionModalContent: FC<{ footerNodeName: string; field: any; schema: any }
     if (!deferredVisible) {
       return null;
     }
-
     return (
       <NocoBaseRecursionField
         basePath={field.address}
@@ -66,6 +65,23 @@ const ActionModalContent: FC<{ footerNodeName: string; field: any; schema: any }
     );
   },
 );
+
+export function useDelayedVisible(visible: boolean, delay = 200) {
+  const [ready, setReady] = useState(false);
+  useEffect(
+    () => {
+      if (visible) {
+        const timer = setTimeout(() => setReady(true), delay);
+        return () => clearTimeout(timer);
+      } else {
+        setReady(false);
+      }
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [visible],
+  );
+  return ready;
+}
 
 export const InternalActionModal: React.FC<ActionDrawerProps<ModalProps>> = observer(
   (props) => {
@@ -90,6 +106,7 @@ export const InternalActionModal: React.FC<ActionDrawerProps<ModalProps>> = obse
     }
 
     const zIndex = getZIndex('modal', _zIndex || parentZIndex, props.level || 0);
+    const ready = useDelayedVisible(visible, 200); // 200ms 与 Modal 动画时间一致
 
     return (
       <ActionContextNoRerender>
@@ -154,7 +171,11 @@ export const InternalActionModal: React.FC<ActionDrawerProps<ModalProps>> = obse
                 )
               }
             >
-              <ActionModalContent footerNodeName={footerNodeName} field={field} schema={schema} />
+              {ready ? (
+                <ActionModalContent footerNodeName={footerNodeName} field={field} schema={schema} />
+              ) : (
+                <Skeleton active paragraph={{ rows: 6 }} />
+              )}
             </Modal>
           </TabsContextProvider>
         </zIndexContext.Provider>

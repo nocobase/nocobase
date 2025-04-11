@@ -34,8 +34,14 @@ function getKeys(target: any) {
 
 export const mergeStrategies = new Map<MergeStrategyType, MergeStrategyFunc>();
 
-mergeStrategies.set('overwrite', (_, y) => {
-  if (typeof y === 'string') {
+mergeStrategies.set('overwrite', (x, y) => {
+  if (y === undefined) {
+    if (typeof x === 'string' && x.includes(',')) {
+      return x.split(',');
+    }
+    return x;
+  }
+  if (typeof y === 'string' && y.includes(',')) {
     y = y.split(',');
   }
   return y;

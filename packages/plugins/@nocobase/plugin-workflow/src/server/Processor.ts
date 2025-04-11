@@ -264,7 +264,10 @@ export default class Processor {
         const JobsModel = this.options.plugin.db.getModel('jobs');
         await JobsModel.bulkCreate(
           newJobs.map((job) => job.toJSON()),
-          { transaction: this.mainTransaction },
+          {
+            transaction: this.mainTransaction,
+            returning: false,
+          },
         );
         for (const job of newJobs) {
           job.isNewRecord = false;

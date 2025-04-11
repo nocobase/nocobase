@@ -886,7 +886,13 @@
   "If selected, the route will be displayed in the menu.": "If selected, the route will be displayed in the menu.",
   "Are you sure you want to hide this tab?": "Are you sure you want to hide this tab?",
   "After hiding, this tab will no longer appear in the tab bar. To show it again, you need to go to the route management page to set it.": "After hiding, this tab will no longer appear in the tab bar. To show it again, you need to go to the route management page to set it.",
+  "No pages yet, please configure first": "No pages yet, please configure first",
+  "Click the \"UI Editor\" icon in the upper right corner to enter the UI Editor mode": "Click the \"UI Editor\" icon in the upper right corner to enter the UI Editor mode",
   "Deprecated": "Deprecated",
   "The following old template features have been deprecated and will be removed in next version.": "The following old template features have been deprecated and will be removed in next version.",
-  "Full permissions": "Full permissions"
+  "Full permissions": "Full permissions",
+  "Refresh data blocks": "Refresh data blocks",
+  "Select data blocks to refresh": "Select data blocks to refresh",
+  "After successful submission, the selected data blocks will be automatically refreshed.": "After successful submission, the selected data blocks will be automatically refreshed."
+
 }

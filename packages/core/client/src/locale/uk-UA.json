@@ -825,5 +825,10 @@
   "After hiding, this tab will no longer appear in the tab bar. To show it again, you need to go to the route management page to set it.": "Після приховування цієї вкладки вона більше не з'явиться в панелі вкладок. Щоб знову показати її, вам потрібно перейти на сторінку керування маршрутами, щоб налаштувати її.",
   "Deprecated": "Застаріло",
   "The following old template features have been deprecated and will be removed in next version.": "Наступні старі функції шаблонів були застарілі і будуть видалені в наступній версії.",
-  "Full permissions": "Повні права"
+  "Full permissions": "Повні права",
+  "Refresh data blocks": "Оновити дані блоків",
+  "Select data blocks to refresh": "Виберіть блоки даних для оновлення",
+  "After successful submission, the selected data blocks will be automatically refreshed.": "Після успішної подачі вибрані блоки даних будуть автоматично оновлені.",
+  "No pages yet, please configure first": "Ще немає сторінок, будь ласка, спочатку налаштуйте",
+  "Click the \"UI Editor\" icon in the upper right corner to enter the UI Editor mode": "Натисніть на значок \"Редактор користувацького інтерфейсу\" в правому верхньому куті, щоб увійти в режим редактора користувацького інтерфейсу."
 }

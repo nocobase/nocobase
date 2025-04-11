@@ -9,6 +9,7 @@
 
 import {
   AdminProvider,
+  AllDataBlocksProvider,
   AntdAppProvider,
   AssociationFieldMode,
   AssociationFieldModeProvider,
@@ -126,7 +127,9 @@ export const Mobile = () => {
                     <AssociationFieldModeProvider modeToComponent={modeToComponent}>
                       {/* the z-index of all popups and subpages will be based on this value */}
                       <zIndexContext.Provider value={100}>
-                        <MobileRouter />
+                        <AllDataBlocksProvider>
+                          <MobileRouter />
+                        </AllDataBlocksProvider>
                       </zIndexContext.Provider>
                     </AssociationFieldModeProvider>
                   </ResetSchemaOptionsProvider>
