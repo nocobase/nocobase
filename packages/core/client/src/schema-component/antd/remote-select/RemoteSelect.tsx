@@ -48,6 +48,7 @@ export type RemoteSelectProps<P = any> = SelectProps<P, any> & {
   CustomDropdownRender?: (v: any) => any;
   optionFilter?: (option: any) => boolean;
   toOptionsItem?: (data) => any;
+  onSuccess?: (data) => any;
 };
 
 const InternalRemoteSelect = withDynamicSchemaProps(
@@ -68,6 +69,7 @@ const InternalRemoteSelect = withDynamicSchemaProps(
         dataSource: propsDataSource,
         toOptionsItem = (value) => value,
         popupMatchSelectWidth = false,
+        onSuccess,
         ...others
       } = props;
       const dataSource = useDataSourceKey();
@@ -178,6 +180,7 @@ const InternalRemoteSelect = withDynamicSchemaProps(
         {
           manual,
           debounceWait: wait,
+          onSuccess,
           ...(service.defaultParams ? { defaultParams: [service.defaultParams] } : {}),
         },
       );
