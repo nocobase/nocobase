@@ -18,6 +18,7 @@ import { useCollectionFieldUISchema, useIsInNocoBaseRecursionFieldContext } from
 import { useDynamicComponentProps } from '../../hoc/withDynamicSchemaProps';
 import { useCompile, useComponent } from '../../schema-component';
 import { useIsAllowToSetDefaultValue } from '../../schema-settings/hooks/useIsAllowToSetDefaultValue';
+import { isVariable } from '../../variables/utils/isVariable';
 import { CollectionFieldProvider, useCollectionField } from './CollectionFieldProvider';
 
 type Props = {
@@ -131,7 +132,14 @@ const CollectionFieldInternalField = (props) => {
 
   if (!uiSchema) return null;
 
-  return <Component {...props} {...dynamicProps} />;
+  const mergedProps = { ...props, ...dynamicProps };
+
+  // Prevent displaying the variable string first, then the variable value
+  if (isVariable(mergedProps.value) && mergedProps.value === fieldSchema.default) {
+    mergedProps.value = undefined;
+  }
+
+  return <Component {...mergedProps} />;
 };
 
 export const CollectionField = connect((props) => {
