@@ -6,17 +6,17 @@
  * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
-
-import { useFieldSchema } from '@formily/react';
+import { isEmpty } from 'lodash';
 import { useSchemaToolbar } from '../../../application';
 import { SchemaSettings } from '../../../application/schema-settings/SchemaSettings';
-import { useCollection_deprecated } from '../../../collection-manager';
-import { useCollection } from '../../../data-source';
+import { useCollection_deprecated, useCollectionManager_deprecated } from '../../../collection-manager';
+import { useCollection, useDataBlockProps } from '../../../data-source';
 import { ButtonEditor, RemoveButton } from '../../../schema-component/antd/action/Action.Designer';
 import { SchemaSettingOpenModeSchemaItems } from '../../../schema-items';
 import { SchemaSettingsLinkageRules, SchemaSettingAccessControl } from '../../../schema-settings';
 import { useOpenModeContext } from '../../popup/OpenModeProvider';
 import { useCurrentPopupRecord } from '../../variable/variablesProvider/VariablePopupRecordProvider';
+import { useCollectionRecord } from '../../../';
 
 export const customizePopupActionSettings = new SchemaSettings({
   name: 'actionSettings:popup',
@@ -35,15 +35,22 @@ export const customizePopupActionSettings = new SchemaSettings({
       useComponentProps() {
         const { name } = useCollection_deprecated();
         const { linkageRulesProps } = useSchemaToolbar();
+        const { association } = useDataBlockProps() || {};
+        const { getCollectionField } = useCollectionManager_deprecated();
+        const associationField = getCollectionField(association);
         return {
           ...linkageRulesProps,
-          collectionName: name,
+          collectionName: associationField?.collectionName || name,
         };
       },
       useVisible() {
         const { collection } = useCurrentPopupRecord() || {};
         const currentCollection = useCollection();
-        return !collection || collection?.name === currentCollection?.name;
+        const record = useCollectionRecord();
+        const { association } = useDataBlockProps() || {};
+        return (
+          (!isEmpty(record?.data) && (!collection || collection?.name === currentCollection?.name)) || !!association
+        );
       },
     },
     {
