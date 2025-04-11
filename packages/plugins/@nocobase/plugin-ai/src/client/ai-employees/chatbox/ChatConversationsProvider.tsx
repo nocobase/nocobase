@@ -48,9 +48,9 @@ export const ChatConversationsProvider: React.FC<{ children: React.ReactNode }> 
           return;
         }
         if (!page || page === 1) {
-          setConversations(data?.data);
+          setConversations(data.data);
         } else {
-          setConversations((prev) => [...prev, ...conversations]);
+          setConversations((prev) => [...prev, ...data.data]);
         }
       },
     },

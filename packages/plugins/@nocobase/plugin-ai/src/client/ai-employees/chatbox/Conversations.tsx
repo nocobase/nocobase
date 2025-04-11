@@ -13,7 +13,7 @@ import { Conversations as AntConversations } from '@ant-design/x';
 import { useAPIClient, useToken } from '@nocobase/client';
 import { useChatBoxContext } from './ChatBoxContext';
 import { useT } from '../../locale';
-import { DeleteOutlined } from '@ant-design/icons';
+import { DeleteOutlined, EditOutlined } from '@ant-design/icons';
 import { useChatConversations } from './ChatConversationsProvider';
 import { useChatMessages } from './ChatMessagesProvider';
 const { Header, Content } = Layout;
@@ -34,11 +34,14 @@ export const Conversations: React.FC = memo(() => {
   const { loading: conversationsLoading } = conversationsService;
 
   const items = useMemo(() => {
-    const result: ConversationsProps['items'] = conversations.map((item, index) => ({
-      key: item.sessionId,
-      timestamp: new Date(item.updatedAt).getTime(),
-      label: index === conversations.length - 1 ? <div ref={lastConversationRef}>{item.title}</div> : item.title,
-    }));
+    const result: ConversationsProps['items'] = conversations.map((item, index) => {
+      const title = item.title || t('New conversation');
+      return {
+        key: item.sessionId,
+        timestamp: new Date(item.updatedAt).getTime(),
+        label: index === conversations.length - 1 ? <div ref={lastConversationRef}>{title}</div> : title,
+      };
+    });
     if (conversationsLoading) {
       result.push({
         key: 'loading',
@@ -60,7 +63,7 @@ export const Conversations: React.FC = memo(() => {
       filterByTk: sessionId,
     });
     message.success(t('Deleted successfully'));
-    conversationsService.refresh();
+    conversationsService.run();
     startNewConversation();
   };
 
@@ -106,7 +109,12 @@ export const Conversations: React.FC = memo(() => {
             menu={(conversation) => ({
               items: [
                 {
-                  label: 'Delete',
+                  label: t('Rename'),
+                  key: 'rename',
+                  icon: <EditOutlined />,
+                },
+                {
+                  label: t('Delete'),
                   key: 'delete',
                   icon: <DeleteOutlined />,
                 },

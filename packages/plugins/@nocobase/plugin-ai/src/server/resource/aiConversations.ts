@@ -68,7 +68,6 @@ export default {
       const repo = ctx.db.getRepository('aiConversations');
       ctx.body = await repo.create({
         values: {
-          title: 'New Conversation',
           userId,
           aiEmployee,
         },
@@ -134,6 +133,7 @@ export default {
       await next();
     },
     async sendMessages(ctx: Context, next: Next) {
+      const plugin = ctx.app.pm.get('ai') as PluginAIServer;
       ctx.set({
         'Content-Type': 'text/event-stream',
         'Cache-Control': 'no-cache',
@@ -152,6 +152,8 @@ export default {
         return next();
       }
       let stream: any;
+      const controller = new AbortController();
+      const { signal } = controller;
       try {
         const conversation = await ctx.db.getRepository('aiConversations').findOne({
           filterByTk: sessionId,
@@ -160,6 +162,16 @@ export default {
           ctx.res.write(`data: ${JSON.stringify({ type: 'error', body: 'conversation not found' })}\n\n`);
           ctx.res.end();
           return next();
+        }
+        if (!conversation.title) {
+          const textUserMessage = messages.find(
+            (message: any) => message.role === 'user' && message.content?.type === 'text' && message.content?.content,
+          );
+          if (textUserMessage) {
+            const content = textUserMessage.content.content;
+            conversation.title = content.substring(0, 10);
+            conversation.save();
+          }
         }
         const employee = await ctx.db.getRepository('aiEmployees').findOne({
           filter: {
@@ -249,7 +261,6 @@ export default {
           ...history,
           ...userMessages,
         ];
-        console.log(msgs);
         const Provider = providerOptions.provider;
         const provider = new Provider({
           app: ctx.app,
@@ -260,7 +271,10 @@ export default {
           },
         });
         try {
-          stream = await provider.stream();
+          stream = await provider.stream({
+            signal,
+          });
+          plugin.aiEmployeesManager.conversationController.set(sessionId, controller);
         } catch (err) {
           ctx.log.error(err);
           ctx.res.write(`data: ${JSON.stringify({ type: 'error', body: 'Chat error warning' })}\n\n`);
@@ -274,30 +288,46 @@ export default {
         return next();
       }
       let message = '';
-      for await (const chunk of stream) {
-        if (!chunk.content) {
-          continue;
+      try {
+        for await (const chunk of stream) {
+          if (!chunk.content) {
+            continue;
+          }
+          ctx.res.write(`data: ${JSON.stringify({ type: 'content', body: chunk.content })}\n\n`);
+          message += chunk.content;
         }
-        message += chunk.content;
-        ctx.res.write(`data: ${JSON.stringify({ type: 'content', body: chunk.content })}\n\n`);
+      } catch (err) {
+        ctx.log.error(err);
       }
-      if (!message) {
+      plugin.aiEmployeesManager.conversationController.delete(sessionId);
+      if (!message && !signal.aborted) {
         ctx.res.write(`data: ${JSON.stringify({ type: 'error', body: 'No content' })}\n\n`);
         ctx.res.end();
         return next();
       }
-      console.log(message);
-      await ctx.db.getRepository('aiConversations.messages', sessionId).create({
-        values: {
-          messageId: snowflake.generate(),
-          role: aiEmployee,
-          content: {
-            content: message,
-            type: 'text',
+      if (message) {
+        const content = {
+          content: message,
+          type: 'text',
+        };
+        if (signal.aborted) {
+          content['interrupted'] = true;
+        }
+        await ctx.db.getRepository('aiConversations.messages', sessionId).create({
+          values: {
+            messageId: snowflake.generate(),
+            role: aiEmployee,
+            content,
           },
-        },
-      });
+        });
+      }
       ctx.res.end();
+      await next();
+    },
+    async abort(ctx: Context, next: Next) {
+      const { sessionId } = ctx.action.params.values || {};
+      const plugin = ctx.app.pm.get('ai') as PluginAIServer;
+      plugin.aiEmployeesManager.abortConversation(sessionId);
       await next();
     },
   },

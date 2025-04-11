@@ -27,6 +27,7 @@ interface ChatMessagesContextValue {
       onConversationCreate?: (sessionId: string) => void;
     },
   ) => Promise<void>;
+  cancelRequest: () => void;
   messagesService: any;
   lastMessageRef: (node: HTMLElement | null) => void;
 }
@@ -41,6 +42,7 @@ export const ChatMessagesProvider: React.FC<{ children: React.ReactNode }> = ({ 
   const [messages, setMessages] = useState<Message[]>([]);
   const [responseLoading, setResponseLoading] = useState(false);
   const { currentConversation } = useChatConversations();
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   const addMessage = (message: Message) => {
     setMessages((prev) => [...prev, message]);
@@ -66,37 +68,44 @@ export const ChatMessagesProvider: React.FC<{ children: React.ReactNode }> = ({ 
     let result = '';
     let error = false;
 
-    // eslint-disable-next-line no-constant-condition
-    while (true) {
-      let content = '';
-      const { done, value } = await reader.read();
-      if (done || error) {
-        setResponseLoading(false);
-        break;
-      }
-
-      const chunk = decoder.decode(value, { stream: true });
-      const lines = chunk.split('\n').filter(Boolean);
-
-      for (const line of lines) {
-        try {
-          const data = JSON.parse(line.replace(/^data: /, ''));
-          if (data.body) content += data.body;
-          if (data.type === 'error') error = true;
-        } catch (e) {
-          console.error('Error parsing stream data:', e);
+    try {
+      // eslint-disable-next-line no-constant-condition
+      while (true) {
+        let content = '';
+        const { done, value } = await reader.read();
+        if (done || error) {
+          setResponseLoading(false);
+          break;
         }
-      }
 
-      result += content;
-      updateLastMessage((last) => ({
-        ...last,
-        content: {
-          ...last.content,
-          content: (last.content as any).content + content,
-        },
-        loading: false,
-      }));
+        const chunk = decoder.decode(value, { stream: true });
+        const lines = chunk.split('\n').filter(Boolean);
+
+        for (const line of lines) {
+          try {
+            const data = JSON.parse(line.replace(/^data: /, ''));
+            if (data.body) content += data.body;
+            if (data.type === 'error') error = true;
+          } catch (e) {
+            console.error('Error parsing stream data:', e);
+          }
+        }
+
+        result += content;
+        updateLastMessage((last) => ({
+          ...last,
+          content: {
+            ...last.content,
+            content: (last.content as any).content + content,
+          },
+          loading: false,
+        }));
+      }
+    } catch (err) {
+      if (err.name !== 'AbortError') {
+        error = true;
+        result = err.message;
+      }
     }
 
     if (error) {
@@ -165,22 +174,49 @@ export const ChatMessagesProvider: React.FC<{ children: React.ReactNode }> = ({ 
       loading: true,
     });
 
-    const sendRes = await api.request({
-      url: 'aiConversations:sendMessages',
-      method: 'POST',
-      headers: { Accept: 'text/event-stream' },
-      data: { aiEmployee: aiEmployee.username, sessionId, messages: msgs },
-      responseType: 'stream',
-      adapter: 'fetch',
-    });
+    abortControllerRef.current = new AbortController();
+    try {
+      const sendRes = await api.request({
+        url: 'aiConversations:sendMessages',
+        method: 'POST',
+        headers: { Accept: 'text/event-stream' },
+        data: { aiEmployee: aiEmployee.username, sessionId, messages: msgs },
+        responseType: 'stream',
+        adapter: 'fetch',
+        signal: abortControllerRef.current?.signal,
+        skipNotify: (err) => err.name === 'CanceledError',
+      });
 
-    if (!sendRes?.data) {
+      if (!sendRes?.data) {
+        setResponseLoading(false);
+        return;
+      }
+
+      await processStreamResponse(sendRes.data);
+    } catch (err) {
+      if (err.name === 'CanceledError') {
+        return;
+      }
       setResponseLoading(false);
+      throw err;
+    } finally {
+      abortControllerRef.current = null;
+    }
+  };
+
+  const cancelRequest = useCallback(async () => {
+    await api.resource('aiConversations').abort({
+      values: {
+        sessionId: currentConversation,
+      },
+    });
+    if (!abortControllerRef.current) {
       return;
     }
-
-    await processStreamResponse(sendRes.data);
-  };
+    abortControllerRef.current.abort();
+    abortControllerRef.current = null;
+    setResponseLoading(false);
+  }, [currentConversation]);
 
   const messagesService = useRequest<{
     data: Message[];
@@ -232,6 +268,7 @@ export const ChatMessagesProvider: React.FC<{ children: React.ReactNode }> = ({ 
         addMessages,
         setMessages,
         sendMessages,
+        cancelRequest,
         messagesService,
         lastMessageRef,
       }}

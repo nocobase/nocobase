@@ -20,7 +20,7 @@ import { useChatMessages } from './ChatMessagesProvider';
 export const Sender: React.FC = memo(() => {
   const t = useT();
   const { currentConversation } = useChatConversations();
-  const { responseLoading } = useChatMessages();
+  const { responseLoading, cancelRequest } = useChatMessages();
   const senderValue = useChatBoxContext('senderValue');
   const setSenderValue = useChatBoxContext('setSenderValue');
   const senderPlaceholder = useChatBoxContext('senderPlaceholder');
@@ -47,6 +47,7 @@ export const Sender: React.FC = memo(() => {
           ],
         })
       }
+      onCancel={cancelRequest}
       prefix={currentConversation || !showInfoForm ? <SenderPrefix /> : null}
       header={!currentConversation ? <SenderHeader /> : null}
       loading={responseLoading}

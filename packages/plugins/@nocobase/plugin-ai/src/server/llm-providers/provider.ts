@@ -55,11 +55,11 @@ export abstract class LLMProvider {
     return this.chatModel.invoke(this.messages);
   }
 
-  async stream() {
+  async stream(options?: any) {
     // for (const handler of this.chatHandlers.values()) {
     //   await handler();
     // }
-    return this.chatModel.stream(this.messages);
+    return this.chatModel.stream(this.messages, options);
   }
 
   async listModels(): Promise<{

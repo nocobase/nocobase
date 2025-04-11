@@ -15,9 +15,11 @@ import aiResource from './resource/ai';
 import PluginWorkflowServer from '@nocobase/plugin-workflow';
 import { LLMInstruction } from './workflow/nodes/llm';
 import aiConversations from './resource/aiConversations';
+import { AIEmployeesManager } from './ai-employees/ai-employees-manager';
 
 export class PluginAIServer extends Plugin {
   aiManager = new AIManager();
+  aiEmployeesManager = new AIEmployeesManager(this);
 
   async afterAdd() {}
 
@@ -45,6 +47,16 @@ export class PluginAIServer extends Plugin {
 
     const workflow = this.app.pm.get('workflow') as PluginWorkflowServer;
     workflow.registerInstruction('llm', LLMInstruction);
+  }
+
+  handleSyncMessage(message: any): Promise<void> {
+    const { type, payload } = message;
+    switch (type) {
+      case 'aiEmployees:abortConversation':
+        return (async () => {
+          this.aiEmployeesManager.onAbortConversation(payload.sessionId);
+        })();
+    }
   }
 
   async install() {}
