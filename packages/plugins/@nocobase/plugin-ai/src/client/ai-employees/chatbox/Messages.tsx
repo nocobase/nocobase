@@ -47,12 +47,15 @@ export const Messages: React.FC = () => {
         <div>
           {messages.map((msg, index) => {
             const role = roles[msg.role];
+            if (!role) {
+              return null;
+            }
             return index === 0 ? (
-              <div ref={lastMessageRef}>
-                <Bubble {...role} key={msg.key} content={msg.content} />
+              <div key={msg.key} ref={lastMessageRef}>
+                <Bubble {...role} loading={msg.loading} content={msg.content} />
               </div>
             ) : (
-              <Bubble {...role} key={msg.key} content={msg.content} />
+              <Bubble {...role} key={msg.key} loading={msg.loading} content={msg.content} />
             );
           })}
         </div>

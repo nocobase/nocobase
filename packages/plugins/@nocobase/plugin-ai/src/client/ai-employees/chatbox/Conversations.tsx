@@ -7,15 +7,15 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Layout, Input, Empty, Spin, App } from 'antd';
 import { Conversations as AntConversations } from '@ant-design/x';
-import type { ConversationsProps } from '@ant-design/x';
 import { useAPIClient, useToken } from '@nocobase/client';
 import { useChatBoxContext } from './ChatBoxContext';
 import { useT } from '../../locale';
 import { DeleteOutlined } from '@ant-design/icons';
 import { useChatConversations } from './ChatConversationsProvider';
+import { useChatMessages } from './ChatMessagesProvider';
 const { Header, Content } = Layout;
 
 export const Conversations: React.FC = () => {
@@ -23,17 +23,35 @@ export const Conversations: React.FC = () => {
   const api = useAPIClient();
   const { modal, message } = App.useApp();
   const { token } = useToken();
-  const { currentConversation, setCurrentConversation, conversationsService } = useChatConversations();
+  const { currentConversation, setCurrentConversation, conversationsService, conversations, lastConversationRef } =
+    useChatConversations();
+  const { messagesService } = useChatMessages();
   const startNewConversation = useChatBoxContext('startNewConversation');
   const setCurrentEmployee = useChatBoxContext('setCurrentEmployee');
   const setSenderValue = useChatBoxContext('setSenderValue');
   const setSenderPlaceholder = useChatBoxContext('setSenderPlaceholder');
-  const { loading: ConversationsLoading, data: conversationsRes } = conversationsService;
-  const conversations: ConversationsProps['items'] = (conversationsRes || []).map((conversation) => ({
-    key: conversation.sessionId,
-    label: conversation.title,
-    timestamp: new Date(conversation.updatedAt).getTime(),
-  }));
+  const { loading: conversationsLoading, data: conversationsRes } = conversationsService;
+
+  const items = useMemo(() => {
+    const result = conversations.map((item, index) => ({
+      ...item,
+      label: index === conversations.length - 1 ? <div ref={lastConversationRef}>{item.label}</div> : item.label,
+    }));
+    if (conversationsLoading) {
+      result.push({
+        key: 'loading',
+        label: (
+          <Spin
+            style={{
+              display: 'block',
+              margin: '8px auto',
+            }}
+          />
+        ),
+      });
+    }
+    return result;
+  }, [conversations, conversationsLoading, lastConversationRef]);
 
   const deleteConversation = async (sessionId: string) => {
     await api.resource('aiConversations').destroy({
@@ -49,14 +67,19 @@ export const Conversations: React.FC = () => {
       return;
     }
     setCurrentConversation(sessionId);
-    const conversation = conversationsRes.find((item) => item.sessionId === sessionId);
+    const conversation = conversationsRes?.data?.find((item) => item.sessionId === sessionId);
     setCurrentEmployee(conversation?.aiEmployee);
     setSenderValue('');
     setSenderPlaceholder(conversation?.aiEmployee?.chatSettings?.senderPlaceholder);
+    messagesService.run(sessionId);
   };
 
   return (
-    <Layout>
+    <Layout
+      style={{
+        height: '100%',
+      }}
+    >
       <Header
         style={{
           backgroundColor: token.colorBgContainer,
@@ -67,38 +90,41 @@ export const Conversations: React.FC = () => {
       >
         <Input.Search style={{ verticalAlign: 'middle' }} />
       </Header>
-      <Content>
-        <Spin spinning={ConversationsLoading}>
-          {conversations && conversations.length ? (
-            <AntConversations
-              activeKey={currentConversation}
-              onActiveChange={selectConversation}
-              items={conversations}
-              menu={(conversation) => ({
-                items: [
-                  {
-                    label: 'Delete',
-                    key: 'delete',
-                    icon: <DeleteOutlined />,
-                  },
-                ],
-                onClick: ({ key }) => {
-                  switch (key) {
-                    case 'delete':
-                      modal.confirm({
-                        title: t('Delete this conversation?'),
-                        content: t('Are you sure to delete this conversation?'),
-                        onOk: () => deleteConversation(conversation.key),
-                      });
-                      break;
-                  }
+      <Content
+        style={{
+          height: '100%',
+          overflow: 'auto',
+        }}
+      >
+        {conversations && conversations.length ? (
+          <AntConversations
+            activeKey={currentConversation}
+            onActiveChange={selectConversation}
+            items={items}
+            menu={(conversation) => ({
+              items: [
+                {
+                  label: 'Delete',
+                  key: 'delete',
+                  icon: <DeleteOutlined />,
                 },
-              })}
-            />
-          ) : (
-            <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} />
-          )}
-        </Spin>
+              ],
+              onClick: ({ key }) => {
+                switch (key) {
+                  case 'delete':
+                    modal.confirm({
+                      title: t('Delete this conversation?'),
+                      content: t('Are you sure to delete this conversation?'),
+                      onOk: () => deleteConversation(conversation.key),
+                    });
+                    break;
+                }
+              },
+            })}
+          />
+        ) : (
+          <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} />
+        )}
       </Content>
     </Layout>
   );

@@ -28,7 +28,7 @@ interface ChatMessagesContextValue {
     },
   ) => Promise<void>;
   messagesService: any;
-  lastMessageRef: React.RefObject<any>;
+  lastMessageRef: (node: HTMLElement | null) => void;
 }
 
 export const ChatMessagesContext = createContext<ChatMessagesContextValue | null>(null);
@@ -189,18 +189,18 @@ export const ChatMessagesProvider: React.FC<{ children: React.ReactNode }> = ({ 
       hasMore?: boolean;
     };
   }>(
-    (cursor?: string) =>
+    (sessionId, cursor?: string) =>
       api
         .resource('aiConversations')
         .getMessages({
-          sessionId: currentConversation,
+          sessionId,
           cursor,
         })
         .then((res) => res?.data),
     {
       manual: true,
       onSuccess: (data, params) => {
-        const cursor = params[0];
+        const cursor = params[1];
         if (!data?.data?.length) {
           return;
         }
@@ -219,15 +219,9 @@ export const ChatMessagesProvider: React.FC<{ children: React.ReactNode }> = ({ 
     if (messagesService.loading || !messagesService.data?.meta?.hasMore) {
       return;
     }
-    await messagesService.runAsync(messagesService.data?.meta?.cursor);
-  }, []);
-  const { ref: lastMessageRef } = useLoadMoreObserver({ loadMore: loadMoreMessages });
-  useEffect(() => {
-    if (!currentConversation) {
-      return;
-    }
-    messagesServiceRef.current.run();
+    await messagesService.runAsync(currentConversation, messagesService.data?.meta?.cursor);
   }, [currentConversation]);
+  const { ref: lastMessageRef } = useLoadMoreObserver({ loadMore: loadMoreMessages });
 
   return (
     <ChatMessagesContext.Provider

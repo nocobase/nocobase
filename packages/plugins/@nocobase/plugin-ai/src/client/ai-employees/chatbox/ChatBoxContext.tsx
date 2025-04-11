@@ -143,7 +143,7 @@ export const useSetChatBoxContext = () => {
       ...options,
       onConversationCreate: (sessionId: string) => {
         setCurrentConversation(sessionId);
-        conversationsService.refresh();
+        conversationsService.run();
       },
     };
     const hasInfoFormValues = Object.values(infoForm?.values || []).filter(Boolean).length;
