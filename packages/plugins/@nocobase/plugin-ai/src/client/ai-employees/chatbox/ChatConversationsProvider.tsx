@@ -11,14 +11,13 @@ import { useAPIClient, useRequest } from '@nocobase/client';
 import React, { createContext, useCallback, useContext, useRef, useState } from 'react';
 import { Conversation } from '../types';
 import { useLoadMoreObserver } from './useLoadMoreObserver';
-import { ConversationsProps } from '@ant-design/x';
 
 type ChatConversationContextValue = {
   currentConversation?: string;
   setCurrentConversation: (sessionId?: string) => void;
   conversationsService: any;
   lastConversationRef: (node: HTMLDivElement | null) => void;
-  conversations: ConversationsProps['items'];
+  conversations: Conversation[];
 };
 
 export const ChatConversationsContext = createContext<ChatConversationContextValue | null>(null);
@@ -28,7 +27,7 @@ export const useChatConversations = () => useContext(ChatConversationsContext);
 export const ChatConversationsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const api = useAPIClient();
   const [currentConversation, setCurrentConversation] = useState<string>();
-  const [conversations, setConversations] = useState<ConversationsProps['items']>([]);
+  const [conversations, setConversations] = useState<Conversation[]>([]);
 
   const conversationsService = useRequest<Conversation[]>(
     (page = 1) =>
@@ -48,13 +47,8 @@ export const ChatConversationsProvider: React.FC<{ children: React.ReactNode }> 
         if (!data?.data?.length) {
           return;
         }
-        const conversations: ConversationsProps['items'] = data.data.map((conversation) => ({
-          key: conversation.sessionId,
-          label: conversation.title,
-          timestamp: new Date(conversation.updatedAt).getTime(),
-        }));
         if (!page || page === 1) {
-          setConversations(conversations);
+          setConversations(data?.data);
         } else {
           setConversations((prev) => [...prev, ...conversations]);
         }

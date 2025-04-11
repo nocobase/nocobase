@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useMemo } from 'react';
+import React, { memo, useMemo } from 'react';
 import { Layout, Input, Empty, Spin, App } from 'antd';
 import { Conversations as AntConversations } from '@ant-design/x';
 import { useAPIClient, useToken } from '@nocobase/client';
@@ -17,8 +17,9 @@ import { DeleteOutlined } from '@ant-design/icons';
 import { useChatConversations } from './ChatConversationsProvider';
 import { useChatMessages } from './ChatMessagesProvider';
 const { Header, Content } = Layout;
+import { ConversationsProps } from '@ant-design/x';
 
-export const Conversations: React.FC = () => {
+export const Conversations: React.FC = memo(() => {
   const t = useT();
   const api = useAPIClient();
   const { modal, message } = App.useApp();
@@ -30,12 +31,13 @@ export const Conversations: React.FC = () => {
   const setCurrentEmployee = useChatBoxContext('setCurrentEmployee');
   const setSenderValue = useChatBoxContext('setSenderValue');
   const setSenderPlaceholder = useChatBoxContext('setSenderPlaceholder');
-  const { loading: conversationsLoading, data: conversationsRes } = conversationsService;
+  const { loading: conversationsLoading } = conversationsService;
 
   const items = useMemo(() => {
-    const result = conversations.map((item, index) => ({
-      ...item,
-      label: index === conversations.length - 1 ? <div ref={lastConversationRef}>{item.label}</div> : item.label,
+    const result: ConversationsProps['items'] = conversations.map((item, index) => ({
+      key: item.sessionId,
+      timestamp: new Date(item.updatedAt).getTime(),
+      label: index === conversations.length - 1 ? <div ref={lastConversationRef}>{item.title}</div> : item.title,
     }));
     if (conversationsLoading) {
       result.push({
@@ -67,7 +69,7 @@ export const Conversations: React.FC = () => {
       return;
     }
     setCurrentConversation(sessionId);
-    const conversation = conversationsRes?.data?.find((item) => item.sessionId === sessionId);
+    const conversation = conversations.find((item) => item.sessionId === sessionId);
     setCurrentEmployee(conversation?.aiEmployee);
     setSenderValue('');
     setSenderPlaceholder(conversation?.aiEmployee?.chatSettings?.senderPlaceholder);
@@ -128,4 +130,4 @@ export const Conversations: React.FC = () => {
       </Content>
     </Layout>
   );
-};
+});
