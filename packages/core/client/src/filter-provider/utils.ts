@@ -49,9 +49,13 @@ export const getSupportFieldsByAssociation = (inheritCollectionsChain: string[],
 
 export const getSupportFieldsByForeignKey = (filterBlockCollection: Collection, block: DataBlock) => {
   return block.foreignKeyFields?.filter((foreignKeyField) => {
-    return filterBlockCollection.fields.some(
-      (field) => field.type !== 'belongsTo' && field.foreignKey === foreignKeyField.name,
-    );
+    return filterBlockCollection.fields.some((field) => {
+      return (
+        field.type !== 'belongsTo' &&
+        field.foreignKey === foreignKeyField.name && // 1. 外键字段的 name 要一致
+        field.target === foreignKeyField.collectionName // 2. 关系字段的目标表要和外键的数据表一致
+      );
+    });
   });
 };
 
