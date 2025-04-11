@@ -15,6 +15,7 @@ import {
   useCollectionRecordData,
   useCompile,
   useGlobalVariable,
+  useContextAssociationFields,
 } from '@nocobase/client';
 import { useMemo } from 'react';
 import { useTranslation } from '../locale';
@@ -31,6 +32,8 @@ export const useCustomRequestVariableOptions = () => {
     return [compile(fieldsOptions), compile(userFieldOptions)];
   }, [fieldsOptions, userFieldOptions]);
   const environmentVariables = useGlobalVariable('$env');
+  const contextVariable = useContextAssociationFields({ maxDepth: 2, contextCollectionName: collection.name });
+
   return useMemo(() => {
     return [
       environmentVariables,
@@ -59,6 +62,7 @@ export const useCustomRequestVariableOptions = () => {
         title: 'API token',
         children: null,
       },
+      { ...contextVariable, name: contextVariable.value, title: contextVariable.label },
     ].filter(Boolean);
   }, [recordData, t, fields, blockType, userFields]);
 };

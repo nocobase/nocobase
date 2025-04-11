@@ -73,6 +73,7 @@ export async function send(this: CustomRequestPlugin, ctx: Context, next: Next) 
       data: {},
     },
     $nForm,
+    $context,
   } = values;
 
   // root role has all permissions
@@ -154,6 +155,7 @@ export async function send(this: CustomRequestPlugin, ctx: Context, next: Next) 
     $nToken: ctx.getBearerToken(),
     $nForm,
     $env: ctx.app.environment.getVariables(),
+    $context,
   };
 
   const axiosRequestConfig = {
