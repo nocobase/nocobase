@@ -277,6 +277,7 @@ export class MagicAttributeModel extends Model {
   async update(values?: any, options?: any) {
     // @ts-ignore
     this._changed = new Set();
+    this.db.emit('magicAttributeModel.beforeUpdate', this, values, options);
     return super.update(values, options);
   }
 }

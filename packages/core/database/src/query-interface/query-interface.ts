@@ -58,6 +58,7 @@ export type ChangeColumnAction = (typeof ChangeColumnAction)[keyof typeof Change
 type QueryInterfaceConfig = {
   changeColumnMode?: 'default' | 'sequelize';
   defaultSchemaName?: string;
+  booleanValues?: { false: boolean | string | number; true: boolean | string | number };
 };
 
 export interface RemoveColumnOptions {
@@ -76,7 +77,14 @@ export default abstract class QueryInterface {
     config?: QueryInterfaceConfig,
   ) {
     this.sequelizeQueryInterface = db.sequelize.getQueryInterface();
-    this.config = { changeColumnMode: 'default', ...(config || {}) };
+    this.config = {
+      changeColumnMode: 'default',
+      booleanValues: {
+        false: false,
+        true: true,
+      },
+      ...(config || {}),
+    };
   }
 
   abstract collectionTableExists(collection: Collection, options?: Transactionable): Promise<boolean>;
@@ -205,5 +213,9 @@ export default abstract class QueryInterface {
   public async dropTable(options: DropTableOptions) {
     const { tableName, options: sequelizeOptions } = options;
     await this.db.sequelize.getQueryInterface().dropTable(tableName, sequelizeOptions);
+  }
+
+  public get booleanValues() {
+    return this.config.booleanValues;
   }
 }
