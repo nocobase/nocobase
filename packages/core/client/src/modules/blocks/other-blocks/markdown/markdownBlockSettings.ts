@@ -12,6 +12,9 @@ import { useTranslation } from 'react-i18next';
 import { SchemaSettings } from '../../../../application/schema-settings/SchemaSettings';
 import { SchemaSettingsBlockHeightItem } from '../../../../schema-settings/SchemaSettingsBlockHeightItem';
 import { SchemaSettingsRenderEngine } from '../../../../schema-settings/SchemaSettingsRenderEngine';
+import { SchemaSettingsLinkageRules } from '../../../../schema-settings';
+import { LinkageRuleCategory } from '../../../../schema-settings/LinkageRules/type';
+
 export const markdownBlockSettings = new SchemaSettings({
   name: 'blockSettings:markdown',
   items: [
@@ -33,6 +36,17 @@ export const markdownBlockSettings = new SchemaSettings({
     {
       name: 'setTheBlockHeight',
       Component: SchemaSettingsBlockHeightItem,
+    },
+    {
+      name: 'blockLinkageRules',
+      Component: SchemaSettingsLinkageRules,
+      useComponentProps() {
+        const { t } = useTranslation();
+        return {
+          title: t('Block Linkage rules'),
+          category: LinkageRuleCategory.block,
+        };
+      },
     },
     {
       name: 'setBlockTemplate',
