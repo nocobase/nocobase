@@ -45,12 +45,10 @@ function transformConditionData(condition: Condition, variableKey: '$nForm' | '$
       $or: condition.$or.map((c) => transformConditionData(c, variableKey)),
     };
   }
-
-  const [field, expression] = Object.entries(condition)[0];
-  const [op, value] = Object.entries(expression)[0];
-
+  const [field, expression] = Object.entries(condition || {})[0] || [];
+  const [op, value] = Object.entries(expression || {})[0] || [];
   return {
-    leftVar: `{{${variableKey}.${field}}}`,
+    leftVar: field ? `{{${variableKey}.${field}}}` : null,
     op,
     rightVar: value,
   };
