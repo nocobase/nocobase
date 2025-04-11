@@ -146,6 +146,21 @@ const schemaSettingsItems: SchemaSettingsItemType[] = [
     },
   },
   {
+    name: 'linkageRules',
+    Component: SchemaSettingsLinkageRules,
+    useComponentProps() {
+      const { name } = useCollection_deprecated();
+      const { association } = useDataBlockProps() || {};
+      const { getCollectionField } = useCollectionManager_deprecated();
+      const associationField = getCollectionField(association);
+      const { linkageRulesProps } = useSchemaToolbar();
+      return {
+        ...linkageRulesProps,
+        collectionName: associationField?.collectionName || name,
+      };
+    },
+  },
+  {
     name: 'updateMode',
     Component: UpdateMode,
     useVisible() {
@@ -168,21 +183,6 @@ const schemaSettingsItems: SchemaSettingsItemType[] = [
     useComponentProps() {
       return {
         isPopupAction: false,
-      };
-    },
-  },
-  {
-    name: 'linkageRules',
-    Component: SchemaSettingsLinkageRules,
-    useComponentProps() {
-      const { name } = useCollection_deprecated();
-      const { association } = useDataBlockProps() || {};
-      const { getCollectionField } = useCollectionManager_deprecated();
-      const associationField = getCollectionField(association);
-      const { linkageRulesProps } = useSchemaToolbar();
-      return {
-        ...linkageRulesProps,
-        collectionName: associationField?.collectionName || name,
       };
     },
   },

@@ -158,6 +158,22 @@ export const bulkEditActionSettings = new SchemaSettings({
       },
     },
     {
+      name: 'linkageRules',
+      Component: SchemaSettingsLinkageRules,
+      useComponentProps() {
+        const { association } = useDataBlockProps() || {};
+        const { name } = useCollection_deprecated();
+        const { getCollectionField } = useCollectionManager_deprecated();
+        const associationField = getCollectionField(association);
+        const { linkageRulesProps } = useSchemaToolbar();
+
+        return {
+          ...linkageRulesProps,
+          collectionName: associationField?.collectionName || name,
+        };
+      },
+    },
+    {
       name: 'openMode',
       Component: SchemaInitializerOpenModeSchemaItems,
       useComponentProps() {
@@ -177,22 +193,7 @@ export const bulkEditActionSettings = new SchemaSettings({
       name: 'updateMode',
       Component: UpdateMode,
     },
-    {
-      name: 'linkageRules',
-      Component: SchemaSettingsLinkageRules,
-      useComponentProps() {
-        const { association } = useDataBlockProps() || {};
-        const { name } = useCollection_deprecated();
-        const { getCollectionField } = useCollectionManager_deprecated();
-        const associationField = getCollectionField(association);
-        const { linkageRulesProps } = useSchemaToolbar();
 
-        return {
-          ...linkageRulesProps,
-          collectionName: associationField?.collectionName || name,
-        };
-      },
-    },
     {
       name: 'remove',
       sort: 100,
