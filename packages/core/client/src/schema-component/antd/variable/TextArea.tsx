@@ -422,11 +422,14 @@ export function TextArea(props: TextAreaProps) {
   );
   const disabled = props.disabled || form.disabled;
   return wrapSSR(
-    <Space.Compact
-      className={cx(
-        componentCls,
-        hashId,
-        css`
+    <>
+      {/* 确保所有ant input样式都已加载, 放到Compact中会导致Compact中的Input样式不对 */}
+      <AntInput style={{ display: 'none' }} />
+      <Space.Compact
+        className={cx(
+          componentCls,
+          hashId,
+          css`
           display: flex;
           .ant-input {
             flex-grow: 1;
@@ -446,42 +449,40 @@ export function TextArea(props: TextAreaProps) {
             height: min-content;
           }
         `,
-      )}
-    >
-      {/* 确保所有ant input样式都已加载 */}
-      <AntInput style={{ display: 'none' }} />
-      {addonBefore && (
-        <div
-          className={css`
+        )}
+      >
+        {addonBefore && (
+          <div
+            className={css`
             background: rgba(0, 0, 0, 0.02);
             border: 1px solid rgb(217, 217, 217);
             padding: 0px 11px;
             border-radius: 6px 0px 0px 6px;
             border-right: 0px;
           `}
-        >
-          {addonBefore}
-        </div>
-      )}
-      <div
-        role="button"
-        aria-label="textbox"
-        onInput={onInput}
-        onBlur={onBlur}
-        onKeyDown={onKeyDown}
-        onPaste={onPaste}
-        onCompositionStart={onCompositionStart}
-        onCompositionEnd={onCompositionEnd}
-        // should use data-placeholder here, but not sure if it is safe to make the change, so add ignore here
-        // @ts-ignore
-        placeholder={props.placeholder}
-        style={style}
-        className={cx(
-          hashId,
-          'ant-input ant-input-outlined',
-          { 'ant-input-disabled': disabled },
-          // NOTE: `pre-wrap` here for avoid the `&nbsp;` (\x160) issue when paste content, we need normal space (\x32).
-          css`
+          >
+            {addonBefore}
+          </div>
+        )}
+        <div
+          role="button"
+          aria-label="textbox"
+          onInput={onInput}
+          onBlur={onBlur}
+          onKeyDown={onKeyDown}
+          onPaste={onPaste}
+          onCompositionStart={onCompositionStart}
+          onCompositionEnd={onCompositionEnd}
+          // should use data-placeholder here, but not sure if it is safe to make the change, so add ignore here
+          // @ts-ignore
+          placeholder={props.placeholder}
+          style={style}
+          className={cx(
+            hashId,
+            'ant-input ant-input-outlined',
+            { 'ant-input-disabled': disabled },
+            // NOTE: `pre-wrap` here for avoid the `&nbsp;` (\x160) issue when paste content, we need normal space (\x32).
+            css`
             min-height: ${token.controlHeight}px;
             overflow: auto;
             white-space: pre-wrap;
@@ -499,20 +500,21 @@ export function TextArea(props: TextAreaProps) {
               border-radius: 10px;
             }
           `,
-        )}
-        ref={inputRef}
-        contentEditable={!disabled}
-        dangerouslySetInnerHTML={{ __html: html }}
-      />
-      <VariableSelect
-        options={options}
-        setOptions={setOptions}
-        onInsert={onInsert}
-        changeOnSelect={changeOnSelect}
-        fieldNames={fieldNames || defaultFieldNames}
-        disabled={disabled}
-      />
-    </Space.Compact>,
+          )}
+          ref={inputRef}
+          contentEditable={!disabled}
+          dangerouslySetInnerHTML={{ __html: html }}
+        />
+        <VariableSelect
+          options={options}
+          setOptions={setOptions}
+          onInsert={onInsert}
+          changeOnSelect={changeOnSelect}
+          fieldNames={fieldNames || defaultFieldNames}
+          disabled={disabled}
+        />
+      </Space.Compact>
+    </>
   );
 }
 
