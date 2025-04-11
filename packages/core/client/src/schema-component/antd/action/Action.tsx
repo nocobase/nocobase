@@ -49,7 +49,7 @@ import { useGetAriaLabelOfAction } from './hooks/useGetAriaLabelOfAction';
 import { ActionContextProps, ActionProps, ComposedAction } from './types';
 import { linkageAction, setInitialActionState } from './utils';
 import { NAMESPACE_UI_SCHEMA } from '../../../i18n/constant';
-import { BlockContext } from '../../../block-provider';
+import { BlockContext } from '../../../block-provider/BlockProvider';
 
 // 这个要放到最下面，否则会导致前端单测失败
 import { useApp } from '../../../application';
@@ -134,7 +134,6 @@ export const Action: ComposedAction = withDynamicSchemaProps(
       },
       [onMouseEnter],
     );
-
     return (
       <BlockContext.Provider value={{ name: 'action' }}>
         <InternalAction
