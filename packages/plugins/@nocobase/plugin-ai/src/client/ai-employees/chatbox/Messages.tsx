@@ -7,24 +7,55 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React from 'react';
+import React, { memo, useEffect, useRef } from 'react';
 import { Bubble } from '@ant-design/x';
 import { useChatBoxContext } from './ChatBoxContext';
 import { ReactComponent as EmptyIcon } from '../empty-icon.svg';
+import { Spin, Layout } from 'antd';
+import { useChatMessages } from './ChatMessagesProvider';
 
 export const Messages: React.FC = () => {
-  const messages = useChatBoxContext('messages');
+  const { messages, messagesService, lastMessageRef } = useChatMessages();
   const roles = useChatBoxContext('roles');
+  const contentRef = useRef(null);
+  const lastMessageContent = messages[messages.length - 1]?.key;
+
+  useEffect(() => {
+    if (contentRef.current) {
+      contentRef.current.scrollTop = contentRef.current.scrollHeight;
+    }
+  }, [lastMessageContent]);
+
   return (
-    <>
-      {messages?.length ? (
-        <Bubble.List
+    <Layout.Content
+      ref={contentRef}
+      style={{
+        margin: '16px 0',
+        overflow: 'auto',
+        position: 'relative',
+      }}
+    >
+      {messagesService.loading && (
+        <Spin
           style={{
-            marginRight: '8px',
+            display: 'block',
+            margin: '8px auto',
           }}
-          roles={roles}
-          items={messages}
         />
+      )}
+      {messages?.length ? (
+        <div>
+          {messages.map((msg, index) => {
+            const role = roles[msg.role];
+            return index === 0 ? (
+              <div ref={lastMessageRef}>
+                <Bubble {...role} key={msg.key} content={msg.content} />
+              </div>
+            ) : (
+              <Bubble {...role} key={msg.key} content={msg.content} />
+            );
+          })}
+        </div>
       ) : (
         <div
           style={{
@@ -38,6 +69,6 @@ export const Messages: React.FC = () => {
           <EmptyIcon />
         </div>
       )}
-    </>
+    </Layout.Content>
   );
 };

@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React from 'react';
+import React, { useCallback } from 'react';
 import { List, Popover, Button, Avatar, Divider } from 'antd';
 import { useToken } from '@nocobase/client';
 import { useAIEmployeesContext } from '../AIEmployeesProvider';
@@ -17,13 +17,48 @@ import { avatars } from '../avatars';
 import { css } from '@emotion/css';
 import { Sender } from '@ant-design/x';
 import { ProfileCard } from '../ProfileCard';
+import { AIEmployee } from '../types';
+import { uid } from '@formily/shared';
+import { useChatMessages } from './ChatMessagesProvider';
+import { useChatConversations } from './ChatConversationsProvider';
 
 export const AIEmployeeHeader: React.FC = () => {
   const {
     service: { loading },
     aiEmployees,
   } = useAIEmployeesContext();
-  const switchAIEmployee = useChatBoxContext('switchAIEmployee');
+  const t = useT();
+  const { setMessages, addMessage } = useChatMessages();
+  const { currentConversation } = useChatConversations();
+  const setCurrentEmployee = useChatBoxContext('setCurrentEmployee');
+  const setSenderPlaceholder = useChatBoxContext('setSenderPlaceholder');
+  const setSenderValue = useChatBoxContext('setSenderValue');
+  const senderRef = useChatBoxContext('senderRef');
+  const infoForm = useChatBoxContext('infoForm');
+  const switchAIEmployee = useCallback(
+    (aiEmployee: AIEmployee) => {
+      const greetingMsg = {
+        key: uid(),
+        role: aiEmployee.username,
+        content: {
+          type: 'greeting' as const,
+          content: aiEmployee.greeting || t('Default greeting message', { nickname: aiEmployee.nickname }),
+        },
+      };
+      setCurrentEmployee(aiEmployee);
+      setSenderPlaceholder(aiEmployee.chatSettings?.senderPlaceholder);
+      infoForm.reset();
+      senderRef.current?.focus();
+      if (!currentConversation) {
+        setMessages([greetingMsg]);
+      } else {
+        addMessage(greetingMsg);
+        setSenderValue('');
+      }
+    },
+    [currentConversation, infoForm],
+  );
+
   return (
     <Sender.Header closable={false}>
       <List

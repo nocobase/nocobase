@@ -11,21 +11,21 @@ import React, { memo } from 'react';
 import { Sender as AntSender } from '@ant-design/x';
 import { useChatBoxContext } from './ChatBoxContext';
 import { SenderPrefix } from './SenderPrefix';
-import { Attachment } from './Attachment';
-import { AIEmployeeHeader } from './AIEmployeeHeader';
 import { useT } from '../../locale';
 import { SenderHeader } from './SenderHeader';
 import { SenderFooter } from './SenderFooter';
+import { useChatConversations } from './ChatConversationsProvider';
+import { useChatMessages } from './ChatMessagesProvider';
 
 export const Sender: React.FC = memo(() => {
   const t = useT();
+  const { currentConversation } = useChatConversations();
+  const { responseLoading } = useChatMessages();
   const senderValue = useChatBoxContext('senderValue');
   const setSenderValue = useChatBoxContext('setSenderValue');
   const senderPlaceholder = useChatBoxContext('senderPlaceholder');
   const send = useChatBoxContext('send');
-  const currentConversation = useChatBoxContext('currentConversation');
   const currentEmployee = useChatBoxContext('currentEmployee');
-  const responseLoading = useChatBoxContext('responseLoading');
   const showInfoForm = useChatBoxContext('showInfoForm');
   const senderRef = useChatBoxContext('senderRef');
   return (

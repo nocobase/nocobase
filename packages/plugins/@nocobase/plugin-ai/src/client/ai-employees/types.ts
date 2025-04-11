@@ -33,6 +33,7 @@ export type Conversation = {
   sessionId: string;
   title: string;
   updatedAt: string;
+  aiEmployee: AIEmployee;
 };
 
 export type AttachmentType = 'image' | 'uiSchema';
@@ -43,8 +44,15 @@ export type AttachmentProps = {
   description?: string;
 };
 
-export type MessageType = 'text' | AttachmentType;
-export type Message = BubbleProps & { key?: string | number; role?: string };
+export type MessageType = 'text' | 'greeting' | 'info' | AttachmentType;
+export type Message = Omit<BubbleProps, 'content'> & {
+  key?: string | number;
+  role?: string;
+  content: {
+    type: MessageType;
+    content: any;
+  };
+};
 export type Action = {
   icon?: React.ReactNode;
   content: string;

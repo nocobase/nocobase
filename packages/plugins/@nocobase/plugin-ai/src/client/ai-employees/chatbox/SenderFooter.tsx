@@ -9,16 +9,14 @@
 
 import React from 'react';
 import { Divider, Flex } from 'antd';
-import { useChatBoxContext } from './ChatBoxContext';
 import { FieldSelector } from './FieldSelector';
-import { useT } from '../../locale';
+import { useChatMessages } from './ChatMessagesProvider';
 
 export const SenderFooter: React.FC<{
   components: any;
 }> = ({ components }) => {
-  const t = useT();
   const { SendButton, LoadingButton } = components;
-  const { responseLoading: loading } = useChatBoxContext('responseLoading');
+  const { responseLoading: loading } = useChatMessages();
 
   return (
     <Flex justify="space-between" align="center">

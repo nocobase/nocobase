@@ -15,6 +15,7 @@ import { useAPIClient, useToken } from '@nocobase/client';
 import { useChatBoxContext } from './ChatBoxContext';
 import { useT } from '../../locale';
 import { DeleteOutlined } from '@ant-design/icons';
+import { useChatConversations } from './ChatConversationsProvider';
 const { Header, Content } = Layout;
 
 export const Conversations: React.FC = () => {
@@ -22,11 +23,11 @@ export const Conversations: React.FC = () => {
   const api = useAPIClient();
   const { modal, message } = App.useApp();
   const { token } = useToken();
-  const conversationsService = useChatBoxContext('conversations');
-  const currentConversation = useChatBoxContext('currentConversation');
-  const setCurrentConversation = useChatBoxContext('setCurrentConversation');
-  const setMessages = useChatBoxContext('setMessages');
+  const { currentConversation, setCurrentConversation, conversationsService } = useChatConversations();
   const startNewConversation = useChatBoxContext('startNewConversation');
+  const setCurrentEmployee = useChatBoxContext('setCurrentEmployee');
+  const setSenderValue = useChatBoxContext('setSenderValue');
+  const setSenderPlaceholder = useChatBoxContext('setSenderPlaceholder');
   const { loading: ConversationsLoading, data: conversationsRes } = conversationsService;
   const conversations: ConversationsProps['items'] = (conversationsRes || []).map((conversation) => ({
     key: conversation.sessionId,
@@ -43,15 +44,15 @@ export const Conversations: React.FC = () => {
     startNewConversation();
   };
 
-  const getMessages = async (sessionId: string) => {
-    const res = await api.resource('aiConversations').getMessages({
-      sessionId,
-    });
-    const messages = res?.data?.data;
-    if (!messages) {
+  const selectConversation = (sessionId: string) => {
+    if (sessionId === currentConversation) {
       return;
     }
-    setMessages(messages.reverse());
+    setCurrentConversation(sessionId);
+    const conversation = conversationsRes.find((item) => item.sessionId === sessionId);
+    setCurrentEmployee(conversation?.aiEmployee);
+    setSenderValue('');
+    setSenderPlaceholder(conversation?.aiEmployee?.chatSettings?.senderPlaceholder);
   };
 
   return (
@@ -71,13 +72,7 @@ export const Conversations: React.FC = () => {
           {conversations && conversations.length ? (
             <AntConversations
               activeKey={currentConversation}
-              onActiveChange={(sessionId) => {
-                if (sessionId === currentConversation) {
-                  return;
-                }
-                setCurrentConversation(sessionId);
-                getMessages(sessionId);
-              }}
+              onActiveChange={selectConversation}
               items={conversations}
               menu={(conversation) => ({
                 items: [

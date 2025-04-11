@@ -31,14 +31,11 @@ export default defineCollection({
       foreignKey: 'userId',
     },
     {
-      name: 'aiEmployees',
-      type: 'belongsToMany',
+      name: 'aiEmployee',
+      type: 'belongsTo',
       target: 'aiEmployees',
-      through: 'aiConversationsEmployees',
-      foreignKey: 'username',
-      otherKey: 'sessionId',
       targetKey: 'username',
-      sourceKey: 'sessionId',
+      foreignKey: 'aiEmployeeUsername',
     },
     {
       name: 'title',

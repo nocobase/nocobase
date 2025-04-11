@@ -13,6 +13,8 @@ import { ChatBoxProvider } from './chatbox/ChatBoxProvider';
 import { useAPIClient, useRequest } from '@nocobase/client';
 import { AIEmployee } from './types';
 import { AISelectionProvider } from './selector/AISelectorProvider';
+import { ChatMessagesProvider } from './chatbox/ChatMessagesProvider';
+import { ChatConversationsProvider } from './chatbox/ChatConversationsProvider';
 
 export const AIEmployeesContext = createContext<{
   aiEmployees: AIEmployee[];
@@ -27,7 +29,11 @@ export const AIEmployeesProvider: React.FC<{
   return (
     <AISelectionProvider>
       <AIEmployeesContext.Provider value={{ aiEmployees, setAIEmployees }}>
-        <ChatBoxProvider>{props.children}</ChatBoxProvider>
+        <ChatConversationsProvider>
+          <ChatMessagesProvider>
+            <ChatBoxProvider>{props.children}</ChatBoxProvider>
+          </ChatMessagesProvider>
+        </ChatConversationsProvider>
       </AIEmployeesContext.Provider>
     </AISelectionProvider>
   );

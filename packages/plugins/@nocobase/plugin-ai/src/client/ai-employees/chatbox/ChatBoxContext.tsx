@@ -7,60 +7,43 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import {
-  AttachmentProps,
-  Conversation,
-  Message,
-  Action,
-  SendOptions,
-  AIEmployee,
-  MessageType,
-  ShortcutOptions,
-} from '../types';
-import { Avatar, GetProp, GetRef, Button, Alert, Space, Popover } from 'antd';
+import { Conversation, Message, SendOptions, AIEmployee, ShortcutOptions } from '../types';
+import { Avatar, GetProp, GetRef, Button, Alert, Popover } from 'antd';
 import type { Sender } from '@ant-design/x';
-import React, { useContext, useEffect, useState, useRef, useMemo, useCallback } from 'react';
+import React, { useContext, useEffect, useState, useRef, useMemo, useCallback, createRef } from 'react';
 import { Bubble } from '@ant-design/x';
-import { useAPIClient, useRequest } from '@nocobase/client';
+import { useAPIClient } from '@nocobase/client';
 import { AIEmployeesContext } from '../AIEmployeesProvider';
-import { Attachment } from './Attachment';
-import { ReloadOutlined, CopyOutlined } from '@ant-design/icons';
+import { ReloadOutlined } from '@ant-design/icons';
 import { avatars } from '../avatars';
-import { useChatMessages } from './useChatMessages';
 import { uid } from '@formily/shared';
 import { useT } from '../../locale';
 import { createForm, Form } from '@formily/core';
 import { ProfileCard } from '../ProfileCard';
-import { InfoFormMessage } from './InfoForm';
 import { createContext, useContextSelector } from 'use-context-selector';
+import { AIMessage, UserMessage } from './MessageRenderer';
+import { useChatMessages } from './ChatMessagesProvider';
+import { useChatConversations } from './ChatConversationsProvider';
 
-export const ChatBoxContext = createContext<{
+type ChatBoxContextValues = {
   setOpen: (open: boolean) => void;
   open: boolean;
   currentEmployee: AIEmployee;
   setCurrentEmployee: React.Dispatch<React.SetStateAction<AIEmployee>>;
-  conversations: {
-    loading: boolean;
-    data?: Conversation[];
-    refresh: () => void;
-  };
-  currentConversation: string;
-  setCurrentConversation: React.Dispatch<React.SetStateAction<string | undefined>>;
-  messages: Message[];
-  setMessages: React.Dispatch<React.SetStateAction<Message[]>>;
   roles: { [role: string]: any };
-  responseLoading: boolean;
   senderValue: string;
   setSenderValue: React.Dispatch<React.SetStateAction<string>>;
   senderRef: React.MutableRefObject<GetRef<typeof Sender>>;
   senderPlaceholder: string;
+  setSenderPlaceholder: React.Dispatch<React.SetStateAction<string>>;
   infoForm: Form;
   showInfoForm: boolean;
-  switchAIEmployee: (aiEmployee: AIEmployee) => void;
   startNewConversation: () => void;
   triggerShortcut: (options: ShortcutOptions) => void;
   send(opts: SendOptions): void;
-}>({} as any);
+};
+
+export const ChatBoxContext = createContext<ChatBoxContextValues>({} as any);
 
 const defaultRoles: GetProp<typeof Bubble.List, 'roles'> = {
   user: {
@@ -68,16 +51,12 @@ const defaultRoles: GetProp<typeof Bubble.List, 'roles'> = {
     styles: {
       content: {
         maxWidth: '400px',
+        margin: '8px 8px 8px 0',
       },
     },
     variant: 'borderless',
     messageRender: (msg: any) => {
-      switch (msg.type) {
-        case 'text':
-          return <Bubble content={msg.content} />;
-        default:
-          return <Attachment {...msg} />;
-      }
+      return <UserMessage msg={msg} />;
     },
   },
   error: {
@@ -95,24 +74,6 @@ const defaultRoles: GetProp<typeof Bubble.List, 'roles'> = {
           showIcon
         />
       );
-    },
-  },
-  info: {
-    placement: 'start',
-    avatar: { icon: '', style: { visibility: 'hidden' } },
-    typing: { step: 5, interval: 20 },
-    style: {
-      maxWidth: 400,
-      marginInlineEnd: 48,
-    },
-    styles: {
-      footer: {
-        width: '100%',
-      },
-    },
-    // variant: 'borderless',
-    messageRender: (msg: any) => {
-      return <InfoFormMessage values={msg.content} />;
     },
   },
   action: {
@@ -148,8 +109,9 @@ const aiEmployeeRole = (aiEmployee: AIEmployee) => ({
   ) : null,
   typing: { step: 5, interval: 20 },
   style: {
-    maxWidth: 400,
+    maxWidth: '80%',
     marginInlineEnd: 48,
+    margin: '8px 0',
   },
   styles: {
     footer: {
@@ -158,33 +120,17 @@ const aiEmployeeRole = (aiEmployee: AIEmployee) => ({
   },
   variant: 'borderless',
   messageRender: (msg: any) => {
-    switch (msg.type) {
-      case 'greeting':
-        return <Bubble content={msg.content} />;
-      case 'text':
-        return (
-          <Bubble
-            content={msg.content}
-            footer={
-              <Space>
-                <Button color="default" variant="text" size="small" icon={<ReloadOutlined />} />
-                <Button color="default" variant="text" size="small" icon={<CopyOutlined />} />
-              </Space>
-            }
-          />
-        );
-    }
+    return <AIMessage msg={msg} />;
   },
 });
 
 export const useSetChatBoxContext = () => {
   const t = useT();
-  const api = useAPIClient();
   const { aiEmployees } = useContext(AIEmployeesContext);
   const [open, setOpen] = useState(false);
   const [currentEmployee, setCurrentEmployee] = useState<AIEmployee>(null);
-  const [currentConversation, setCurrentConversation] = useState<string>();
-  const { messages, setMessages, responseLoading, addMessage, sendMessages } = useChatMessages();
+  const { setMessages, sendMessages } = useChatMessages();
+  const { currentConversation, setCurrentConversation, conversationsService } = useChatConversations();
   const [senderValue, setSenderValue] = useState<string>('');
   const [senderPlaceholder, setSenderPlaceholder] = useState<string>('');
   const senderRef = useRef<GetRef<typeof Sender>>(null);
@@ -192,25 +138,12 @@ export const useSetChatBoxContext = () => {
 
   const infoForm = useMemo(() => createForm(), []);
 
-  const conversations = useRequest<Conversation[]>(
-    () =>
-      api
-        .resource('aiConversations')
-        .list({
-          sort: ['-updatedAt'],
-        })
-        .then((res) => res?.data?.data),
-    {
-      ready: open,
-    },
-  );
-
   const send = (options: SendOptions) => {
     const sendOptions = {
       ...options,
       onConversationCreate: (sessionId: string) => {
         setCurrentConversation(sessionId);
-        conversations.refresh();
+        conversationsService.refresh();
       },
     };
     const hasInfoFormValues = Object.values(infoForm?.values || []).filter(Boolean).length;
@@ -230,30 +163,6 @@ export const useSetChatBoxContext = () => {
       }));
     }
   };
-
-  const switchAIEmployee = useCallback(
-    (aiEmployee: AIEmployee) => {
-      const greetingMsg = {
-        key: uid(),
-        role: aiEmployee.username,
-        content: {
-          type: 'greeting',
-          content: aiEmployee.greeting || t('Default greeting message', { nickname: aiEmployee.nickname }),
-        },
-      };
-      setCurrentEmployee(aiEmployee);
-      setSenderPlaceholder(aiEmployee.chatSettings?.senderPlaceholder);
-      infoForm.reset();
-      senderRef.current?.focus();
-      if (!currentConversation) {
-        setMessages([greetingMsg]);
-      } else {
-        addMessage(greetingMsg);
-        setSenderValue('');
-      }
-    },
-    [currentConversation, infoForm],
-  );
 
   const startNewConversation = useCallback(() => {
     setCurrentConversation(undefined);
@@ -321,6 +230,7 @@ export const useSetChatBoxContext = () => {
 
   useEffect(() => {
     if (open) {
+      conversationsService.run();
       senderRef.current?.focus();
     }
   }, [open]);
@@ -330,26 +240,20 @@ export const useSetChatBoxContext = () => {
     setOpen,
     currentEmployee,
     setCurrentEmployee,
-    conversations,
-    currentConversation,
-    setCurrentConversation,
-    messages,
-    setMessages,
     roles,
-    responseLoading,
     senderRef,
     senderValue,
     setSenderValue,
     senderPlaceholder,
+    setSenderPlaceholder,
     showInfoForm: !!currentEmployee?.chatSettings?.infoForm?.length,
     infoForm,
-    switchAIEmployee,
     startNewConversation,
     triggerShortcut,
     send,
   };
 };
 
-export const useChatBoxContext = (name: string) => {
+export const useChatBoxContext = <K extends keyof ChatBoxContextValues>(name: K) => {
   return useContextSelector(ChatBoxContext, (v) => v[name]);
 };

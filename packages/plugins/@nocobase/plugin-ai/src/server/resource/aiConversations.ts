@@ -10,7 +10,6 @@
 import actions, { Context, Next } from '@nocobase/actions';
 import snowflake from '../snowflake';
 import PluginAIServer from '../plugin';
-import { convertUiSchemaToJsonSchema } from '../utils';
 import { Database, Model } from '@nocobase/database';
 
 async function parseInfoMessage(db: Database, aiEmployee: Model, content: Record<string, any>) {
@@ -28,6 +27,9 @@ async function parseInfoMessage(db: Database, aiEmployee: Model, content: Record
   let info = '';
   for (const key in content) {
     const field = infoForm.find((item) => item.name === key);
+    if (!field) {
+      continue;
+    }
     if (field.type === 'blocks') {
       const uiSchemaRepo = db.getRepository('uiSchemas') as any;
       const schema = await uiSchemaRepo.getJsonSchema(content[key]);
@@ -62,13 +64,13 @@ export default {
     },
     async create(ctx: Context, next: Next) {
       const userId = ctx.auth?.user.id;
-      const { aiEmployees } = ctx.action.params.values || {};
+      const { aiEmployee } = ctx.action.params.values || {};
       const repo = ctx.db.getRepository('aiConversations');
       ctx.body = await repo.create({
         values: {
           title: 'New Conversation',
           userId,
-          aiEmployees,
+          aiEmployee,
         },
       });
       await next();
@@ -90,7 +92,7 @@ export default {
       if (!userId) {
         return ctx.throw(403);
       }
-      const { sessionId } = ctx.action.params || {};
+      const { sessionId, cursor } = ctx.action.params || {};
       if (!sessionId) {
         ctx.throw(400);
       }
@@ -103,10 +105,32 @@ export default {
       if (!conversation) {
         ctx.throw(400);
       }
-      ctx.body = await ctx.db.getRepository('aiConversations.messages', sessionId).find({
+      const pageSize = 10;
+      const rows = await ctx.db.getRepository('aiConversations.messages', sessionId).find({
         sort: ['-messageId'],
-        limit: 10,
+        limit: pageSize + 1,
+        ...(cursor
+          ? {
+              filter: {
+                messageId: {
+                  $lt: cursor,
+                },
+              },
+            }
+          : {}),
       });
+      const hasMore = rows.length > pageSize;
+      const data = hasMore ? rows.slice(0, -1) : rows;
+      const newCursor = data.length ? data[data.length - 1].messageId : null;
+      ctx.body = {
+        rows: data.map((row: Model) => ({
+          key: row.messageId,
+          content: row.content,
+          role: row.role,
+        })),
+        hasMore,
+        cursor: newCursor,
+      };
       await next();
     },
     async sendMessages(ctx: Context, next: Next) {
@@ -183,14 +207,8 @@ export default {
           if (msg.content.type === 'info') {
             content = await parseInfoMessage(ctx.db, employee, content);
           }
-          let role = msg.role;
-          if (role === 'info' || role === 'user') {
-            role = 'user';
-          } else {
-            role = 'ai';
-          }
           history.push({
-            role,
+            role: msg.role === 'user' ? 'user' : 'ai',
             content,
           });
         }
@@ -211,9 +229,6 @@ export default {
         ctx.status = 200;
         const userMessages = [];
         for (const msg of messages) {
-          if (msg.role !== 'user' && msg.role !== 'info') {
-            continue;
-          }
           let content = msg.content.content;
           if (msg.content.type === 'info') {
             content = await parseInfoMessage(ctx.db, employee, content);
@@ -222,7 +237,7 @@ export default {
             continue;
           }
           userMessages.push({
-            role: 'user',
+            role: msg.role === 'user' ? 'user' : 'ai',
             content,
           });
         }

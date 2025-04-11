@@ -64,6 +64,9 @@ export const ProfileSettings: React.FC = () => {
             title: 'Greeting message',
             'x-decorator': 'FormItem',
             'x-component': 'Input.TextArea',
+            'x-component-props': {
+              placeholder: 'Opening message sent to the user when starting a new conversation.',
+            },
           },
         },
       }}

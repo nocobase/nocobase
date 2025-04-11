@@ -9,9 +9,9 @@
 
 import React, { useState } from 'react';
 import { Layout, Card, Button } from 'antd';
-import { CloseOutlined, ExpandOutlined, EditOutlined, LayoutOutlined } from '@ant-design/icons';
+import { CloseOutlined, ExpandOutlined, EditOutlined, LayoutOutlined, ShrinkOutlined } from '@ant-design/icons';
 import { useToken } from '@nocobase/client';
-const { Header, Footer, Sider, Content } = Layout;
+const { Header, Footer, Sider } = Layout;
 import { useChatBoxContext } from './ChatBoxContext';
 import { Conversations } from './Conversations';
 import { Messages } from './Messages';
@@ -24,25 +24,37 @@ export const ChatBox: React.FC = () => {
   const currentEmployee = useChatBoxContext('currentEmployee');
   const { token } = useToken();
   const [showConversations, setShowConversations] = useState(false);
+  const [expanded, setExpanded] = useState(false);
   const { selectable } = useAISelectionContext();
 
   return (
     <div
-      style={{
-        position: 'fixed',
-        right: '16px',
-        bottom: '16px',
-        width: '90%',
-        maxWidth: '760px',
-        height: '90%',
-        maxHeight: '560px',
-        zIndex: selectable ? -1 : 1000,
-      }}
+      style={
+        !expanded
+          ? {
+              position: 'fixed',
+              right: '16px',
+              bottom: '16px',
+              width: '90%',
+              maxWidth: '760px',
+              height: '90%',
+              maxHeight: '560px',
+              zIndex: selectable ? -1 : 1000,
+            }
+          : {
+              position: 'fixed',
+              right: '16px',
+              bottom: '16px',
+              width: '95%',
+              height: '95%',
+              zIndex: selectable ? -1 : 1000,
+            }
+      }
     >
       <Card style={{ height: '100%' }} styles={{ body: { height: '100%', paddingTop: 0 } }}>
         <Layout style={{ height: '100%' }}>
           <Sider
-            width="30%"
+            width={!expanded ? '30%' : '15%'}
             style={{
               display: showConversations ? 'block' : 'none',
               backgroundColor: token.colorBgContainer,
@@ -78,19 +90,15 @@ export const ChatBox: React.FC = () => {
                   float: 'right',
                 }}
               >
-                <Button icon={<ExpandOutlined />} type="text" />
+                <Button
+                  icon={!expanded ? <ExpandOutlined /> : <ShrinkOutlined />}
+                  type="text"
+                  onClick={() => setExpanded(!expanded)}
+                />
                 <Button icon={<CloseOutlined />} type="text" onClick={() => setOpen(false)} />
               </div>
             </Header>
-            <Content
-              style={{
-                margin: '16px 0',
-                overflow: 'auto',
-                position: 'relative',
-              }}
-            >
-              <Messages />
-            </Content>
+            <Messages />
             <Footer
               style={{
                 backgroundColor: token.colorBgContainer,
