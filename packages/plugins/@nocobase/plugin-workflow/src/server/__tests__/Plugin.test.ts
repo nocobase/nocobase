@@ -43,6 +43,11 @@ describe('workflow > Plugin', () => {
       });
 
       expect(workflow.current).toBe(true);
+
+      expect(workflow.stats).toBeDefined();
+      expect(workflow.stats.executed).toBe(0);
+      expect(workflow.versionStats).toBeDefined();
+      expect(workflow.versionStats.executed).toBe(0);
     });
 
     it('create with disabled', async () => {
@@ -357,6 +362,10 @@ describe('workflow > Plugin', () => {
       await app.start();
 
       await sleep(500);
+
+      const w1_1 = plugin.enabledCache.get(w1.id);
+      expect(w1_1.stats).toBeDefined();
+      expect(w1_1.stats.executed).toBe(0);
 
       await e1.reload();
       expect(e1.status).toBe(EXECUTION_STATUS.RESOLVED);
