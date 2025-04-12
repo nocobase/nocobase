@@ -8,10 +8,14 @@
  */
 
 import React, { memo } from 'react';
-import { Button, Space } from 'antd';
+import { Button, Space, App, Alert } from 'antd';
 import { CopyOutlined, ReloadOutlined } from '@ant-design/icons';
 import { Bubble } from '@ant-design/x';
 import { InfoFormMessage } from './InfoForm';
+import { useT } from '../../locale';
+import { useChatMessages } from './ChatMessagesProvider';
+import { useChatBoxContext } from './ChatBoxContext';
+import { useChatConversations } from './ChatConversationsProvider';
 
 const MessageWrapper = React.forwardRef<
   HTMLDivElement,
@@ -28,6 +32,15 @@ const MessageWrapper = React.forwardRef<
 const AIMessageRenderer: React.FC<{
   msg: any;
 }> = ({ msg }) => {
+  const t = useT();
+  const { message } = App.useApp();
+  const copy = () => {
+    navigator.clipboard.writeText(msg.content);
+    message.success(t('Copied to clipboard'));
+  };
+  const { currentConversation } = useChatConversations();
+  const { resendMessages } = useChatMessages();
+  const currentEmployee = useChatBoxContext('currentEmployee');
   switch (msg.type) {
     case 'greeting':
       return <Bubble content={msg.content} />;
@@ -37,8 +50,23 @@ const AIMessageRenderer: React.FC<{
           content={msg.content}
           footer={
             <Space>
-              <Button color="default" variant="text" size="small" icon={<ReloadOutlined />} />
-              <Button color="default" variant="text" size="small" icon={<CopyOutlined />} />
+              <Button
+                color="default"
+                variant="text"
+                size="small"
+                icon={
+                  <ReloadOutlined
+                    onClick={() =>
+                      resendMessages({
+                        sessionId: currentConversation,
+                        messageId: msg.messageId,
+                        aiEmployee: currentEmployee,
+                      })
+                    }
+                  />
+                }
+              />
+              <Button color="default" variant="text" size="small" icon={<CopyOutlined onClick={copy} />} />
             </Space>
           }
         />
@@ -65,5 +93,41 @@ export const UserMessage: React.FC<{
     <MessageWrapper ref={msg.ref}>
       <Bubble content={msg.content} />
     </MessageWrapper>
+  );
+});
+
+export const ErrorMessage: React.FC<{
+  msg: any;
+}> = memo(({ msg }) => {
+  const { currentConversation } = useChatConversations();
+  const { resendMessages, messages } = useChatMessages();
+  const currentEmployee = useChatBoxContext('currentEmployee');
+
+  return (
+    <Alert
+      message={
+        <>
+          {msg.content}{' '}
+          <Button
+            onClick={() => {
+              let messageId: string;
+              const prev = messages[messages.length - 2];
+              if (prev && prev.role !== 'user') {
+                messageId = prev.key as string;
+              }
+              resendMessages({
+                sessionId: currentConversation,
+                messageId,
+                aiEmployee: currentEmployee,
+              });
+            }}
+            icon={<ReloadOutlined />}
+            type="text"
+          />
+        </>
+      }
+      type="warning"
+      showIcon
+    />
   );
 });

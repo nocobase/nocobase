@@ -69,6 +69,12 @@ export type SendOptions = {
   infoFormValues?: any;
 };
 
+export type ResendOptions = {
+  sessionId: string;
+  messageId?: string;
+  aiEmployee: AIEmployee;
+};
+
 export type ShortcutOptions = {
   aiEmployee: AIEmployee;
   message: { type: MessageType; content: string };

@@ -21,7 +21,7 @@ import { useT } from '../../locale';
 import { createForm, Form } from '@formily/core';
 import { ProfileCard } from '../ProfileCard';
 import { createContext, useContextSelector } from 'use-context-selector';
-import { AIMessage, UserMessage } from './MessageRenderer';
+import { AIMessage, ErrorMessage, UserMessage } from './MessageRenderer';
 import { useChatMessages } from './ChatMessagesProvider';
 import { useChatConversations } from './ChatConversationsProvider';
 
@@ -62,19 +62,7 @@ const defaultRoles: GetProp<typeof Bubble.List, 'roles'> = {
   error: {
     placement: 'start',
     variant: 'borderless',
-    messageRender: (msg: any) => {
-      return (
-        <Alert
-          message={
-            <>
-              {msg.content} <Button icon={<ReloadOutlined />} type="text" />
-            </>
-          }
-          type="warning"
-          showIcon
-        />
-      );
-    },
+    messageRender: (msg: any) => <ErrorMessage msg={msg} />,
   },
   action: {
     placement: 'start',

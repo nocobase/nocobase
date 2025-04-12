@@ -7,8 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { createContext, useCallback, useContext, useEffect, useRef } from 'react';
-import { Message, SendOptions } from '../types'; // 假设有这些类型定义
+import { createContext, useCallback, useContext, useRef } from 'react';
+import { Message, ResendOptions, SendOptions } from '../types'; // 假设有这些类型定义
 import React, { useState } from 'react';
 import { uid } from '@formily/shared';
 import { useT } from '../../locale';
@@ -27,6 +27,7 @@ interface ChatMessagesContextValue {
       onConversationCreate?: (sessionId: string) => void;
     },
   ) => Promise<void>;
+  resendMessages: (options: ResendOptions) => void;
   cancelRequest: () => void;
   messagesService: any;
   lastMessageRef: (node: HTMLElement | null) => void;
@@ -43,6 +44,43 @@ export const ChatMessagesProvider: React.FC<{ children: React.ReactNode }> = ({ 
   const [responseLoading, setResponseLoading] = useState(false);
   const { currentConversation } = useChatConversations();
   const abortControllerRef = useRef<AbortController | null>(null);
+
+  const messagesService = useRequest<{
+    data: Message[];
+    meta: {
+      cursor?: string;
+      hasMore?: boolean;
+    };
+  }>(
+    (sessionId, cursor?: string) =>
+      api
+        .resource('aiConversations')
+        .getMessages({
+          sessionId,
+          cursor,
+        })
+        .then((res) => res?.data),
+    {
+      manual: true,
+      onSuccess: (data, params) => {
+        const cursor = params[1];
+        if (!data?.data) {
+          return;
+        }
+        const newMessages = [...data.data].reverse();
+        setMessages((prev) => {
+          const last = prev[prev.length - 1];
+          const result = cursor ? [...newMessages, ...prev] : newMessages;
+          if (last?.role === 'error') {
+            result.push(last);
+          }
+          return result;
+        });
+      },
+    },
+  );
+  const messagesServiceRef = useRef<any>();
+  messagesServiceRef.current = messagesService;
 
   const addMessage = (message: Message) => {
     setMessages((prev) => [...prev, message]);
@@ -102,6 +140,7 @@ export const ChatMessagesProvider: React.FC<{ children: React.ReactNode }> = ({ 
         }));
       }
     } catch (err) {
+      console.error(err);
       if (err.name !== 'AbortError') {
         error = true;
         result = err.message;
@@ -134,6 +173,11 @@ export const ChatMessagesProvider: React.FC<{ children: React.ReactNode }> = ({ 
   }) => {
     const msgs: Message[] = [];
     if (!sendMsgs.length) return;
+
+    const last = messages[messages.length - 1];
+    if (last.role === 'error') {
+      setMessages((prev) => prev.slice(0, -1));
+    }
 
     if (infoFormValues) {
       msgs.push({
@@ -193,6 +237,54 @@ export const ChatMessagesProvider: React.FC<{ children: React.ReactNode }> = ({ 
       }
 
       await processStreamResponse(sendRes.data);
+      messagesServiceRef.current.run(sessionId);
+    } catch (err) {
+      if (err.name === 'CanceledError') {
+        return;
+      }
+      setResponseLoading(false);
+      throw err;
+    } finally {
+      abortControllerRef.current = null;
+    }
+  };
+
+  const resendMessages = async ({ sessionId, messageId, aiEmployee }: ResendOptions) => {
+    const index = messages.findIndex((msg) => msg.key === messageId);
+    setResponseLoading(true);
+    setMessages((prev) => [
+      ...prev.slice(0, index),
+      {
+        key: uid(),
+        role: aiEmployee.username,
+        content: {
+          type: 'text',
+          content: '',
+        },
+        loading: true,
+      },
+    ]);
+
+    abortControllerRef.current = new AbortController();
+    try {
+      const sendRes = await api.request({
+        url: 'aiConversations:resendMessages',
+        method: 'POST',
+        headers: { Accept: 'text/event-stream' },
+        data: { sessionId, messageId },
+        responseType: 'stream',
+        adapter: 'fetch',
+        signal: abortControllerRef.current?.signal,
+        skipNotify: (err) => err.name === 'CanceledError',
+      });
+
+      if (!sendRes?.data) {
+        setResponseLoading(false);
+        return;
+      }
+
+      await processStreamResponse(sendRes.data);
+      messagesServiceRef.current.run(sessionId);
     } catch (err) {
       if (err.name === 'CanceledError') {
         return;
@@ -205,51 +297,20 @@ export const ChatMessagesProvider: React.FC<{ children: React.ReactNode }> = ({ 
   };
 
   const cancelRequest = useCallback(async () => {
-    await api.resource('aiConversations').abort({
-      values: {
-        sessionId: currentConversation,
-      },
-    });
     if (!abortControllerRef.current) {
       return;
     }
     abortControllerRef.current.abort();
     abortControllerRef.current = null;
+    await api.resource('aiConversations').abort({
+      values: {
+        sessionId: currentConversation,
+      },
+    });
+    messagesServiceRef.current.run(currentConversation);
     setResponseLoading(false);
   }, [currentConversation]);
 
-  const messagesService = useRequest<{
-    data: Message[];
-    meta: {
-      cursor?: string;
-      hasMore?: boolean;
-    };
-  }>(
-    (sessionId, cursor?: string) =>
-      api
-        .resource('aiConversations')
-        .getMessages({
-          sessionId,
-          cursor,
-        })
-        .then((res) => res?.data),
-    {
-      manual: true,
-      onSuccess: (data, params) => {
-        const cursor = params[1];
-        if (!data?.data?.length) {
-          return;
-        }
-        const newMessages = [...data.data].reverse();
-
-        setMessages((prev) => {
-          return cursor ? [...newMessages, ...prev] : newMessages;
-        });
-      },
-    },
-  );
-  const messagesServiceRef = useRef<any>();
-  messagesServiceRef.current = messagesService;
   const loadMoreMessages = useCallback(async () => {
     const messagesService = messagesServiceRef.current;
     if (messagesService.loading || !messagesService.data?.meta?.hasMore) {
@@ -268,6 +329,7 @@ export const ChatMessagesProvider: React.FC<{ children: React.ReactNode }> = ({ 
         addMessages,
         setMessages,
         sendMessages,
+        resendMessages,
         cancelRequest,
         messagesService,
         lastMessageRef,

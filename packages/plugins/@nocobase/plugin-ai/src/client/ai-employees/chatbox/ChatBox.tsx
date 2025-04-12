@@ -59,6 +59,7 @@ export const ChatBox: React.FC = () => {
               display: showConversations ? 'block' : 'none',
               backgroundColor: token.colorBgContainer,
               marginRight: '5px',
+              minWidth: '200px',
             }}
           >
             <Conversations />

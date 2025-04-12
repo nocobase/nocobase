@@ -16,7 +16,7 @@ export default defineCollection({
   fields: [
     {
       name: 'messageId',
-      type: 'string',
+      type: 'bigInt',
       primaryKey: true,
     },
     {

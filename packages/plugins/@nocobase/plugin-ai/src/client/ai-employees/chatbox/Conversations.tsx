@@ -10,7 +10,7 @@
 import React, { memo, useMemo } from 'react';
 import { Layout, Input, Empty, Spin, App } from 'antd';
 import { Conversations as AntConversations } from '@ant-design/x';
-import { useAPIClient, useToken } from '@nocobase/client';
+import { SchemaComponent, useAPIClient, useActionContext, useToken } from '@nocobase/client';
 import { useChatBoxContext } from './ChatBoxContext';
 import { useT } from '../../locale';
 import { DeleteOutlined, EditOutlined } from '@ant-design/icons';
@@ -18,6 +18,103 @@ import { useChatConversations } from './ChatConversationsProvider';
 import { useChatMessages } from './ChatMessagesProvider';
 const { Header, Content } = Layout;
 import { ConversationsProps } from '@ant-design/x';
+import { useForm } from '@formily/react';
+
+const useCloseActionProps = () => {
+  const { setVisible } = useActionContext();
+  const form = useForm();
+  return {
+    onClick: () => {
+      setVisible(false);
+      form.reset();
+    },
+  };
+};
+
+const useSubmitActionProps = () => {
+  const { setVisible } = useActionContext();
+  const api = useAPIClient();
+  const form = useForm();
+  const { currentConversation, conversationsService } = useChatConversations();
+  return {
+    onClick: async () => {
+      await form.submit();
+      await api.resource('aiConversations').update({
+        filterByTk: currentConversation,
+        values: {
+          title: form.values.title,
+        },
+      });
+      setVisible(false);
+      form.reset();
+      conversationsService.run();
+    },
+  };
+};
+
+const Rename: React.FC = () => {
+  const t = useT();
+  return (
+    <SchemaComponent
+      scope={{ useCloseActionProps, useSubmitActionProps }}
+      schema={{
+        name: 'rename',
+        type: 'void',
+        'x-component': 'Action',
+        'x-component-props': {
+          component: (props) => <div {...props}>{t('Rename')}</div>,
+        },
+        title: t('Rename'),
+        properties: {
+          drawer: {
+            type: 'void',
+            'x-component': 'Action.Modal',
+            'x-component-props': {
+              styles: {
+                mask: {
+                  zIndex: 1100,
+                },
+                wrapper: {
+                  zIndex: 1100,
+                },
+              },
+            },
+            title: t('Rename convsersation'),
+            'x-decorator': 'FormV2',
+            properties: {
+              title: {
+                type: 'string',
+                title: t('Title'),
+                required: true,
+                'x-decorator': 'FormItem',
+                'x-component': 'Input',
+              },
+              footer: {
+                type: 'void',
+                'x-component': 'Action.Modal.Footer',
+                properties: {
+                  close: {
+                    title: t('Cancel'),
+                    'x-component': 'Action',
+                    'x-use-component-props': 'useCloseActionProps',
+                  },
+                  submit: {
+                    title: t('Submit'),
+                    'x-component': 'Action',
+                    'x-component-props': {
+                      type: 'primary',
+                    },
+                    'x-use-component-props': 'useSubmitActionProps',
+                  },
+                },
+              },
+            },
+          },
+        },
+      }}
+    />
+  );
+};
 
 export const Conversations: React.FC = memo(() => {
   const t = useT();
@@ -109,7 +206,7 @@ export const Conversations: React.FC = memo(() => {
             menu={(conversation) => ({
               items: [
                 {
-                  label: t('Rename'),
+                  label: <Rename />,
                   key: 'rename',
                   icon: <EditOutlined />,
                 },

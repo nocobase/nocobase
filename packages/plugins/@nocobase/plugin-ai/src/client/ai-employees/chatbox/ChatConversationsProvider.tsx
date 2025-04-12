@@ -44,7 +44,7 @@ export const ChatConversationsProvider: React.FC<{ children: React.ReactNode }> 
       manual: true,
       onSuccess: (data, params) => {
         const page = params[0];
-        if (!data?.data?.length) {
+        if (!data?.data) {
           return;
         }
         if (!page || page === 1) {
