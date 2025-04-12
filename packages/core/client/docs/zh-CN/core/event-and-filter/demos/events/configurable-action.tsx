@@ -2,7 +2,7 @@ import { Button, Space, Typography, message } from 'antd';
 import React, { useState } from 'react';
 import { EventFlowManager } from '../libs/eventflow-manager';
 import { EventBus } from '../libs/event-bus';
-import { configureAction } from '../actions/configure-action';
+import { configureAction } from '../actions/open-configure-dialog';
 
 // 创建事件总线和事件流管理器
 const eventBus = new EventBus();

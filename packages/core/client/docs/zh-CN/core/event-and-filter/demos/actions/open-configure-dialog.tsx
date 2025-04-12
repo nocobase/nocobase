@@ -1,4 +1,4 @@
-import { Modal, Form, Input, Select } from 'antd';
+import { Modal, Form, Input, Select, Switch, InputNumber } from 'antd';
 import React, { useState } from 'react';
 import { EventFlowActionOptions, EventFlowManager } from '../libs/eventflow-manager';
 import { EventContext } from '../libs/types';
@@ -37,6 +37,16 @@ export const configureAction: EventFlowActionOptions = {
         mapProps({}),
         mapReadPretty(() => null),
       );
+      const FormSwitch = connect(
+        Switch,
+        mapProps({}),
+        mapReadPretty(() => null),
+      );
+      const FormInputNumber = connect(
+        InputNumber,
+        mapProps({}),
+        mapReadPretty(() => null),
+      );
 
       // 为每个 schema 字段添加装饰器
       const processedSchema = {};
@@ -51,6 +61,8 @@ export const configureAction: EventFlowActionOptions = {
         Input: FormInput,
         'Input.TextArea': FormTextArea,
         Select: FormSelect,
+        Switch: FormSwitch,
+        InputNumber: FormInputNumber,
         FormItem,
       };
 

@@ -1,18 +1,18 @@
-import { Button, Card, Radio, Space, Typography } from 'antd';
+import { Button, Card, Input, Radio, Space, Typography } from 'antd';
 import React, { useState } from 'react';
 import { FilterFlowManager } from '../libs/filterflow-manager';
 
-// 创建过滤器管理器实例
+// 创建FilterFlowManager实例
 const filterFlowManager = new FilterFlowManager();
 
-// 注册过滤器组
+// 注册FilterGroup
 filterFlowManager.addFilterGroup({
   name: 'textTransform',
   title: '文本转换',
   sort: 1,
 });
 
-// 注册过滤器
+// 注册Filter
 filterFlowManager.addFilter({
   name: 'uppercase',
   title: '转换为大写',
@@ -58,7 +58,7 @@ filterFlowManager.addFilter({
   },
 });
 
-// 创建条件过滤器流
+// 创建条件FilterFlow
 filterFlowManager.addFlow({
   name: 'conditional-text-transform',
   title: '条件文本转换',
@@ -93,17 +93,15 @@ filterFlowManager.addFlow({
 const ConditionalFilterFlow = () => {
   const [inputText, setInputText] = useState('Hello, Conditional FilterFlow!');
   const [outputText, setOutputText] = useState('');
-  const [transformType, setTransformType] = useState('uppercase');
   const [isProcessing, setIsProcessing] = useState(false);
 
   const handleApplyFilter = async () => {
     setIsProcessing(true);
     try {
-      // 创建过滤上下文
+      // 创建FilterFlow上下文
       const context = {
         props: {
           inputText,
-          transformType,
         },
       };
 
@@ -112,7 +110,7 @@ const ConditionalFilterFlow = () => {
 
       setOutputText(result);
     } catch (error) {
-      console.error('过滤器应用失败:', error);
+      console.error('FilterFlow应用失败:', error);
     } finally {
       setIsProcessing(false);
     }
@@ -120,45 +118,43 @@ const ConditionalFilterFlow = () => {
 
   return (
     <div style={{ padding: 24, background: '#f5f5f5', borderRadius: 8 }}>
-      <Typography.Title level={4}>条件过滤器流</Typography.Title>
       <Typography.Paragraph>
-        这个示例展示了如何创建一个条件过滤器流，根据选择的转换类型应用不同的过滤器。
+        这个示例展示了如何创建一个条件FilterFlow，根据输入文本的条件应用不同的Filter。
       </Typography.Paragraph>
 
       <Card style={{ marginBottom: 16 }}>
         <Space direction="vertical" style={{ width: '100%' }}>
           <div>
             <Typography.Text strong>输入文本:</Typography.Text>
-            <div style={{ padding: 8, border: '1px dashed #d9d9d9', borderRadius: 4 }}>{inputText}</div>
+            <Input value={inputText} onChange={(e) => setInputText(e.target.value)} />
           </div>
 
           <div>
-            <Typography.Text strong>转换类型:</Typography.Text>
-            <Radio.Group value={transformType} onChange={(e) => setTransformType(e.target.value)}>
-              <Radio value="uppercase">转换为大写</Radio>
-              <Radio value="lowercase">转换为小写</Radio>
-              <Radio value="reverse">文本反转</Radio>
-            </Radio.Group>
+            <Typography.Text strong>该FilterFlow包含以下三个Filter:</Typography.Text>
+            <Typography.Paragraph>
+              <ul>
+                <li>
+                  转换为大写 <Typography.Text code>（仅当输入文本长度大于5时应用）</Typography.Text>
+                </li>
+                <li>
+                  转换为小写 <Typography.Text code>（仅当输入文本包含大写字母时应用）</Typography.Text>
+                </li>
+                <li>
+                  文本反转 <Typography.Text code>（仅当输入文本包含数字时应用）</Typography.Text>
+                </li>
+              </ul>
+            </Typography.Paragraph>
           </div>
 
           <div>
-            <Typography.Text strong>过滤结果:</Typography.Text>
-            <div
-              style={{
-                padding: 8,
-                border: '1px dashed #d9d9d9',
-                borderRadius: 4,
-                background: outputText ? '#f6ffed' : '#f0f0f0',
-              }}
-            >
-              {outputText || '尚未处理'}
-            </div>
+            <Typography.Text strong>FilterFlow 结果:</Typography.Text>
+            <div>{outputText || '尚未处理'}</div>
           </div>
         </Space>
       </Card>
 
       <Button type="primary" onClick={handleApplyFilter} loading={isProcessing}>
-        应用过滤器
+        应用 FilterFlow
       </Button>
     </div>
   );

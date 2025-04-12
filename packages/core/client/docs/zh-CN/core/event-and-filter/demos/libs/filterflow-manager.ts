@@ -43,6 +43,10 @@ export class FilterFlowStep {
     return this.options.condition;
   }
 
+  get configureUiSchema() {
+    return this.getUiSchema();
+  }
+
   /**
    * 获取实际的 Filter 函数
    */
@@ -347,7 +351,7 @@ export class FilterFlowManager {
    * 应用指定的 Filter Flow
    * @param flowKey 要应用的 Filter Flow 的 key
    * @param initialValue 初始值
-   * @param context 过滤器上下文
+   * @param context Filter上下文
    * @returns 应用 Flow 中所有 Filter 后的最终值
    */
   async applyFilters(flowKey: string, initialValue: any, context: FilterContext): Promise<any> {

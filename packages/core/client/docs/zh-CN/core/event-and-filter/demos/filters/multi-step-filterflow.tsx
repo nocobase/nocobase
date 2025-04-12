@@ -1,26 +1,24 @@
-import { Button, Card, Checkbox, Space, Typography } from 'antd';
+import { Button, Card, Input, Space, Typography } from 'antd';
 import React, { useState } from 'react';
 import { FilterFlowManager } from '../libs/filterflow-manager';
 
-// 创建过滤器管理器实例
+// 创建FilterFlowManager实例
 const filterFlowManager = new FilterFlowManager();
 
-// 注册过滤器组
+// 注册FilterGroup
 filterFlowManager.addFilterGroup({
   name: 'textTransform',
   title: '文本转换',
-  sort: 1,
 });
 
-// 注册过滤器
+// 注册Filter
 filterFlowManager.addFilter({
   name: 'uppercase',
   title: '转换为大写',
   description: '将字符串转换为大写',
   group: 'textTransform',
-  sort: 1,
   uiSchema: {},
-  handler: (currentValue, params, context) => {
+  handler: (currentValue) => {
     if (typeof currentValue === 'string') {
       return currentValue.toUpperCase();
     }
@@ -33,9 +31,8 @@ filterFlowManager.addFilter({
   title: '去除两端空格',
   description: '去除字符串两端的空格',
   group: 'textTransform',
-  sort: 2,
   uiSchema: {},
-  handler: (currentValue, params, context) => {
+  handler: (currentValue) => {
     if (typeof currentValue === 'string') {
       return currentValue.trim();
     }
@@ -48,9 +45,8 @@ filterFlowManager.addFilter({
   title: '文本反转',
   description: '将字符串反转',
   group: 'textTransform',
-  sort: 3,
   uiSchema: {},
-  handler: (currentValue, params, context) => {
+  handler: (currentValue) => {
     if (typeof currentValue === 'string') {
       return currentValue.split('').reverse().join('');
     }
@@ -63,9 +59,8 @@ filterFlowManager.addFilter({
   title: '添加前缀',
   description: '在字符串前添加前缀',
   group: 'textTransform',
-  sort: 4,
   uiSchema: {},
-  handler: (currentValue, params, context) => {
+  handler: (currentValue, params) => {
     if (typeof currentValue === 'string') {
       return `${params.prefix || ''}${currentValue}`;
     }
@@ -78,9 +73,8 @@ filterFlowManager.addFilter({
   title: '添加后缀',
   description: '在字符串后添加后缀',
   group: 'textTransform',
-  sort: 5,
   uiSchema: {},
-  handler: (currentValue, params, context) => {
+  handler: (currentValue, params) => {
     if (typeof currentValue === 'string') {
       return `${currentValue}${params.suffix || ''}`;
     }
@@ -88,7 +82,7 @@ filterFlowManager.addFilter({
   },
 });
 
-// 创建多步骤过滤器流
+// 创建多步骤FilterFlow
 filterFlowManager.addFlow({
   name: 'multi-step-text-transform',
   title: '多步骤文本转换',
@@ -129,8 +123,6 @@ filterFlowManager.addFlow({
 const MultiStepFilterFlow = () => {
   const [inputText, setInputText] = useState('  hello, multi-step filterflow!  ');
   const [outputText, setOutputText] = useState('');
-  const [intermediateResults, setIntermediateResults] = useState([]);
-  const [showIntermediateResults, setShowIntermediateResults] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
 
   const handleApplyFilter = async () => {
@@ -143,29 +135,10 @@ const MultiStepFilterFlow = () => {
         },
       };
 
-      // 追踪中间结果
-      const tempResults = [];
-      let currentValue = inputText;
-
-      const flow = filterFlowManager.getFlow('multi-step-text-transform');
-      const steps = flow.getSteps();
-
-      for (const step of steps) {
-        const handler = step.getHandler();
-        if (handler) {
-          currentValue = await handler(currentValue, step.params, context);
-          tempResults.push({
-            stepKey: step.key,
-            title: step.title,
-            result: currentValue,
-          });
-        }
-      }
-
-      setIntermediateResults(tempResults);
-      setOutputText(currentValue);
+      const result = await filterFlowManager.applyFilters('multi-step-text-transform', inputText, context);
+      setOutputText(result);
     } catch (error) {
-      console.error('过滤器应用失败:', error);
+      console.error('FilterFlow应用失败:', error);
     } finally {
       setIsProcessing(false);
     }
@@ -173,64 +146,26 @@ const MultiStepFilterFlow = () => {
 
   return (
     <div style={{ padding: 24, background: '#f5f5f5', borderRadius: 8 }}>
-      <Typography.Title level={4}>多步骤过滤器流</Typography.Title>
-      <Typography.Paragraph>这个示例展示了如何创建一个多步骤过滤器流，每个步骤依次处理文本。</Typography.Paragraph>
+      <Typography.Paragraph>
+        这个示例展示了如何创建一个包含多个Filter的FilterFlow，每个步骤依次处理文本。
+      </Typography.Paragraph>
 
       <Card style={{ marginBottom: 16 }}>
         <Space direction="vertical" style={{ width: '100%' }}>
           <div>
             <Typography.Text strong>输入文本:</Typography.Text>
-            <div style={{ padding: 8, border: '1px dashed #d9d9d9', borderRadius: 4 }}>&quot;{inputText}&quot;</div>
+            <Input value={inputText} onChange={(e) => setInputText(e.target.value)} />
           </div>
-
-          <Checkbox checked={showIntermediateResults} onChange={(e) => setShowIntermediateResults(e.target.checked)}>
-            显示中间步骤结果
-          </Checkbox>
-
-          {showIntermediateResults && intermediateResults.length > 0 && (
-            <div>
-              <Typography.Text strong>中间步骤结果:</Typography.Text>
-              <div style={{ padding: 8, border: '1px dashed #d9d9d9', borderRadius: 4 }}>
-                {intermediateResults.map((item, index) => (
-                  <div key={item.stepKey} style={{ marginBottom: 8 }}>
-                    <Typography.Text type="secondary">
-                      步骤 {index + 1}: {item.title}
-                    </Typography.Text>
-                    <div
-                      style={{
-                        padding: 4,
-                        marginTop: 4,
-                        marginLeft: 16,
-                        borderLeft: '2px solid #1890ff',
-                        paddingLeft: 8,
-                      }}
-                    >
-                      {item.result}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
 
           <div>
             <Typography.Text strong>最终结果:</Typography.Text>
-            <div
-              style={{
-                padding: 8,
-                border: '1px dashed #d9d9d9',
-                borderRadius: 4,
-                background: outputText ? '#f6ffed' : '#f0f0f0',
-              }}
-            >
-              {outputText || '尚未处理'}
-            </div>
+            <div>{outputText || '尚未处理'}</div>
           </div>
         </Space>
       </Card>
 
       <Button type="primary" onClick={handleApplyFilter} loading={isProcessing}>
-        应用过滤器
+        应用 FilterFlow
       </Button>
     </div>
   );

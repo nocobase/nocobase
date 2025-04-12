@@ -116,7 +116,7 @@ export interface Filter {
 export interface FilterGroupOptions {
   name: string;
   title: string;
-  sort: number;
+  sort?: number;
 }
 
 export interface FilterFlowStepOptions {

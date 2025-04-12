@@ -1,5 +1,5 @@
-import { Card, Space, Typography } from 'antd';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { Card, Space } from 'antd';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Filter, FilterContext } from '../libs/types';
 import { SchemaComponent, Checkbox, FormItem } from '@nocobase/client';
 import { createForm, onFormValuesChange } from '@formily/core';
@@ -30,6 +30,7 @@ const caseConvertFilter: Filter = {
   },
 };
 
+// 过滤器设置表单
 const FilterSettingForm = ({ schema, initialValues, onChange }) => {
   const form = useMemo(() => {
     return createForm({
@@ -74,32 +75,20 @@ const BasicFilter = (props) => {
     };
   }, [props.inputText, params]);
 
-  const handleChange = useCallback((values) => {
-    setParams({ uppercase: !!values.uppercase });
-  }, []);
-
   return (
     <>
-      <FilterSettingForm schema={caseConvertFilter.uiSchema} initialValues={params} onChange={handleChange} />
+      <FilterSettingForm
+        schema={caseConvertFilter.uiSchema}
+        initialValues={params}
+        onChange={(values) => {
+          setParams(values);
+        }}
+      />
 
       <Card style={{ marginBottom: 16 }}>
         <Space direction="vertical" style={{ width: '100%' }}>
-          <div>
-            <Typography.Text strong>Props: {JSON.stringify(props)}</Typography.Text>
-          </div>
-          <div>
-            <Typography.Text strong>Filter结果:</Typography.Text>
-            <div
-              style={{
-                padding: 8,
-                border: '1px dashed #d9d9d9',
-                borderRadius: 4,
-                background: outputText ? '#f6ffed' : '#f0f0f0',
-              }}
-            >
-              {outputText}
-            </div>
-          </div>
+          <span>输入： {JSON.stringify(props)}</span>
+          <span>输出： {outputText}</span>
         </Space>
       </Card>
     </>

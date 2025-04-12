@@ -2,17 +2,17 @@ import { Button, Card, Table, Space, Typography } from 'antd';
 import React, { useState } from 'react';
 import { FilterFlowManager } from '../libs/filterflow-manager';
 
-// 创建过滤器管理器实例
+// 创建FilterFlowManager实例
 const filterFlowManager = new FilterFlowManager();
 
-// 注册过滤器组
+// 注册FilterGroup
 filterFlowManager.addFilterGroup({
   name: 'dataTransform',
   title: '数据转换',
   sort: 1,
 });
 
-// 注册过滤器
+// 注册Filter
 filterFlowManager.addFilter({
   name: 'filterData',
   title: '数据过滤',
@@ -29,12 +29,14 @@ filterFlowManager.addFilter({
     operator: {
       type: 'string',
       title: '操作符',
-      enum: [
-        { label: '等于', value: 'equals' },
-        { label: '包含', value: 'contains' },
-        { label: '大于', value: 'gt' },
-        { label: '小于', value: 'lt' },
-      ],
+      'x-component-props': {
+        options: [
+          { label: '等于', value: 'equals' },
+          { label: '包含', value: 'contains' },
+          { label: '大于', value: 'gt' },
+          { label: '小于', value: 'lt' },
+        ],
+      },
       'x-decorator': 'FormItem',
       'x-component': 'Select',
     },
@@ -156,7 +158,7 @@ filterFlowManager.addFilter({
   },
 });
 
-// 创建过滤器流
+// 创建FilterFlow
 filterFlowManager.addFlow({
   name: 'data-transform-flow',
   title: '数据转换流程',
@@ -227,17 +229,17 @@ const DataTransformFilterFlow = () => {
   const handleApplyFilter = async () => {
     setIsProcessing(true);
     try {
-      // 创建过滤上下文
+      // 创建FilterFlow上下文
       const context = {
         props: {},
       };
 
-      // 应用过滤器流
+      // 应用FilterFlow
       const result = await filterFlowManager.applyFilters('data-transform-flow', inputData, context);
 
       setOutputData(result);
     } catch (error) {
-      console.error('过滤器应用失败:', error);
+      console.error('FilterFlow应用失败:', error);
     } finally {
       setIsProcessing(false);
     }
@@ -245,9 +247,8 @@ const DataTransformFilterFlow = () => {
 
   return (
     <div style={{ padding: 24, background: '#f5f5f5', borderRadius: 8 }}>
-      <Typography.Title level={4}>数据转换过滤器流</Typography.Title>
       <Typography.Paragraph>
-        这个示例展示了如何创建一个处理复杂数据的过滤器流。过滤器流程会:
+        这个示例展示了如何创建一个处理复杂数据的FilterFlow。FilterFlow会:
         <ol>
           <li>过滤出年龄大于25的记录</li>
           <li>按姓名字母升序排序结果</li>
@@ -260,7 +261,7 @@ const DataTransformFilterFlow = () => {
       </Card>
 
       <Button type="primary" onClick={handleApplyFilter} loading={isProcessing} style={{ marginBottom: 16 }}>
-        应用过滤器
+        应用 FilterFlow
       </Button>
 
       {outputData.length > 0 && (

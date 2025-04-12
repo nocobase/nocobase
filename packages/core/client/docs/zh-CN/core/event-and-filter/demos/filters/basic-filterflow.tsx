@@ -43,7 +43,7 @@ filterFlowManager.addFlow({
 });
 
 const BasicFilterFlow = () => {
-  const [inputText, setInputText] = useState('Hello, FilterFlow!');
+  const [inputText] = useState('Hello, FilterFlow!');
   const [outputText, setOutputText] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
 
@@ -62,7 +62,7 @@ const BasicFilterFlow = () => {
 
       setOutputText(result);
     } catch (error) {
-      console.error('过滤器应用失败:', error);
+      console.error('FilterFlow应用失败:', error);
     } finally {
       setIsProcessing(false);
     }
@@ -70,9 +70,8 @@ const BasicFilterFlow = () => {
 
   return (
     <div style={{ padding: 24, background: '#f5f5f5', borderRadius: 8 }}>
-      <Typography.Title level={4}>基础过滤器流</Typography.Title>
       <Typography.Paragraph>
-        这个示例展示了如何创建一个简单的过滤器流并应用它。这里我们注册了一个文本转换为大写的过滤器。
+        这个示例展示了如何创建一个简单的FilterFlow并应用它。这里我们注册了一个文本转换为大写的Filter。
       </Typography.Paragraph>
 
       <Card style={{ marginBottom: 16 }}>
@@ -83,23 +82,14 @@ const BasicFilterFlow = () => {
           </div>
 
           <div>
-            <Typography.Text strong>过滤结果:</Typography.Text>
-            <div
-              style={{
-                padding: 8,
-                border: '1px dashed #d9d9d9',
-                borderRadius: 4,
-                background: outputText ? '#f6ffed' : '#f0f0f0',
-              }}
-            >
-              {outputText || '尚未处理'}
-            </div>
+            <Typography.Text strong>FilterFlow 结果:</Typography.Text>
+            <div>{outputText || '尚未处理'}</div>
           </div>
         </Space>
       </Card>
 
       <Button type="primary" onClick={handleApplyFilter} loading={isProcessing}>
-        应用过滤器
+        应用 FilterFlow
       </Button>
     </div>
   );

@@ -1,18 +1,19 @@
 import { Button, Card, Form, Input, Select, Space, Typography, Modal, Switch, InputNumber } from 'antd';
 import React, { useState } from 'react';
 import { FilterFlowManager } from '../libs/filterflow-manager';
+import { configureAction } from '../actions/open-configure-dialog';
 
-// 创建过滤器管理器实例
+// 创建FilterFlowManager实例
 const filterFlowManager = new FilterFlowManager();
 
-// 注册过滤器组
+// 注册FilterGroup
 filterFlowManager.addFilterGroup({
   name: 'textTransform',
   title: '文本转换',
   sort: 1,
 });
 
-// 注册过滤器
+// 注册Filter
 filterFlowManager.addFilter({
   name: 'replaceText',
   title: '文本替换',
@@ -58,7 +59,7 @@ filterFlowManager.addFilter({
       },
     },
   },
-  handler: (currentValue, params, context) => {
+  handler: (currentValue, params) => {
     if (typeof currentValue === 'string' && params.search) {
       if (params.useRegex) {
         try {
@@ -91,7 +92,7 @@ filterFlowManager.addFilter({
       title: '最大长度',
       default: 10,
       'x-decorator': 'FormItem',
-      'x-component': 'NumberPicker',
+      'x-component': 'InputNumber',
       'x-component-props': {
         min: 1,
       },
@@ -104,7 +105,7 @@ filterFlowManager.addFilter({
       'x-component': 'Input',
     },
   },
-  handler: (currentValue, params, context) => {
+  handler: (currentValue, params) => {
     if (typeof currentValue === 'string') {
       const maxLength = params.maxLength || 10;
       if (currentValue.length <= maxLength) {
@@ -116,7 +117,7 @@ filterFlowManager.addFilter({
   },
 });
 
-// 创建可配置过滤器流
+// 创建可配置FilterFlow
 filterFlowManager.addFlow({
   name: 'configurable-text-transform',
   title: '可配置文本转换',
@@ -126,8 +127,8 @@ filterFlowManager.addFlow({
       filterName: 'replaceText',
       title: '替换文本',
       params: {
-        search: 'world',
-        replacement: 'NocoBase',
+        search: 'Hello',
+        replacement: 'hi',
         useRegex: false,
       },
     },
@@ -136,7 +137,7 @@ filterFlowManager.addFlow({
       filterName: 'truncateText',
       title: '截断文本',
       params: {
-        maxLength: 20,
+        maxLength: 10,
         suffix: '...',
       },
     },
@@ -144,45 +145,30 @@ filterFlowManager.addFlow({
 });
 
 const ConfigurableFilter = () => {
-  const [inputText, setInputText] = useState('欢迎使用NocoBase进行低代码开发。NocoBase提供了丰富的组件和工具。');
+  const [inputText, setInputText] = useState('Hello configurable filter demo');
   const [outputText, setOutputText] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
-  const [configModalVisible, setConfigModalVisible] = useState(false);
-  const [currentStep, setCurrentStep] = useState(null);
-  const [configForm] = Form.useForm();
 
   // 打开配置Modal
   const openConfigModal = (stepKey) => {
     const flow = filterFlowManager.getFlow('configurable-text-transform');
     const step = flow.getStep(stepKey);
-
-    if (step) {
-      setCurrentStep(step);
-      configForm.setFieldsValue(step.params);
-      setConfigModalVisible(true);
-    }
+    const actionContext = {
+      payload: {
+        step,
+        onChange: (values) => {
+          step.set('params', values);
+        },
+      },
+    };
+    configureAction.handler({}, actionContext);
   };
 
-  // 保存配置
-  const handleSaveConfig = () => {
-    configForm
-      .validateFields()
-      .then((values) => {
-        if (currentStep) {
-          currentStep.set('params', values);
-          setConfigModalVisible(false);
-        }
-      })
-      .catch((err) => {
-        console.error('Failed to validate form:', err);
-      });
-  };
-
-  // 应用过滤器
+  // 应用FilterFlow
   const handleApplyFilter = async () => {
     setIsProcessing(true);
     try {
-      // 创建过滤上下文
+      // 创建FilterFlow上下文
       const context = {
         props: {
           inputText,
@@ -200,50 +186,10 @@ const ConfigurableFilter = () => {
     }
   };
 
-  // 渲染配置表单
-  const renderConfigForm = () => {
-    if (!currentStep) return null;
-
-    const filterName = currentStep.filterName;
-
-    if (filterName === 'replaceText') {
-      return (
-        <Form form={configForm} layout="vertical">
-          <Form.Item name="search" label="查找" rules={[{ required: true }]}>
-            <Input />
-          </Form.Item>
-          <Form.Item name="replacement" label="替换为">
-            <Input />
-          </Form.Item>
-          <Form.Item name="useRegex" label="使用正则表达式" valuePropName="checked">
-            <Switch />
-          </Form.Item>
-          <Form.Item name="flags" label="正则标志" valuePropName="checked">
-            <Input />
-          </Form.Item>
-        </Form>
-      );
-    } else if (filterName === 'truncateText') {
-      return (
-        <Form form={configForm} layout="vertical">
-          <Form.Item name="maxLength" label="最大长度" rules={[{ required: true }]}>
-            <InputNumber min={1} />
-          </Form.Item>
-          <Form.Item name="suffix" label="后缀">
-            <Input />
-          </Form.Item>
-        </Form>
-      );
-    }
-
-    return null;
-  };
-
   return (
     <div style={{ padding: 24, background: '#f5f5f5', borderRadius: 8 }}>
-      <Typography.Title level={4}>可配置过滤器</Typography.Title>
       <Typography.Paragraph>
-        这个示例展示了如何创建可配置的过滤器。用户可以通过界面修改过滤器参数，然后应用过滤操作。
+        这个示例展示了如何创建可配置的Filter。用户可以通过界面修改Filter参数，然后应用Filter操作。
       </Typography.Paragraph>
 
       <Card style={{ marginBottom: 16 }}>
@@ -259,7 +205,7 @@ const ConfigurableFilter = () => {
           </div>
 
           <div>
-            <Typography.Text strong>过滤器配置:</Typography.Text>
+            <Typography.Text strong>Filter配置:</Typography.Text>
             <Space style={{ marginTop: 8 }}>
               <Button onClick={() => openConfigModal('replace-step')} type="default">
                 配置替换文本
@@ -271,35 +217,15 @@ const ConfigurableFilter = () => {
           </div>
 
           <div>
-            <Typography.Text strong>过滤结果:</Typography.Text>
-            <div
-              style={{
-                padding: 8,
-                border: '1px dashed #d9d9d9',
-                borderRadius: 4,
-                background: outputText ? '#f6ffed' : '#f0f0f0',
-                marginTop: 8,
-                minHeight: 40,
-              }}
-            >
-              {outputText || '尚未处理'}
-            </div>
+            <Typography.Text strong>FilterFlow 结果:</Typography.Text>
+            <div>{outputText || '尚未处理'}</div>
           </div>
         </Space>
       </Card>
 
       <Button type="primary" onClick={handleApplyFilter} loading={isProcessing}>
-        应用过滤器
+        应用 FilterFlow
       </Button>
-
-      <Modal
-        title={`配置${currentStep?.title || '过滤器'}`}
-        open={configModalVisible}
-        onOk={handleSaveConfig}
-        onCancel={() => setConfigModalVisible(false)}
-      >
-        {renderConfigForm()}
-      </Modal>
     </div>
   );
 };
