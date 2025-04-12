@@ -12,15 +12,8 @@ import snowflake from '../snowflake';
 import PluginAIServer from '../plugin';
 import { Database, Model } from '@nocobase/database';
 
-/**
- * Parse and format the information content in the message
- */
 async function parseInfoMessage(db: Database, aiEmployee: Model, content: Record<string, any>) {
-  const infoForm: {
-    name: string;
-    title: string;
-    type: 'blocks' | 'collections';
-  }[] = aiEmployee.chatSettings?.infoForm;
+  const infoForm = aiEmployee.chatSettings?.infoForm;
 
   if (!infoForm || !content) {
     return null;
@@ -50,6 +43,26 @@ async function parseInfoMessage(db: Database, aiEmployee: Model, content: Record
   }
 
   return `The following information you can utilize in your conversation: ${info}`;
+}
+
+async function formatMessages(ctx: Context, messages: any[], employee: Model) {
+  const formattedMessages = [];
+
+  for (const msg of messages) {
+    let content = msg.content.content;
+    if (msg.content.type === 'info') {
+      content = await parseInfoMessage(ctx.db, employee, content);
+    }
+    if (!content) {
+      continue;
+    }
+    formattedMessages.push({
+      role: msg.role === 'user' ? 'user' : 'ai',
+      content,
+    });
+  }
+
+  return formattedMessages;
 }
 
 async function prepareChatStream(ctx: Context, sessionId: string, employee: Model, messages: any[]) {
@@ -191,22 +204,7 @@ async function getConversationHistory(ctx: Context, sessionId: string, employee:
       : {}),
   });
 
-  const history = [];
-  for (const msg of historyMessages) {
-    let content = msg.content.content;
-    if (msg.content.type === 'info') {
-      content = await parseInfoMessage(ctx.db, employee, content);
-    }
-    if (!content) {
-      continue;
-    }
-    history.push({
-      role: msg.role === 'user' ? 'user' : 'ai',
-      content,
-    });
-  }
-
-  return history;
+  return await formatMessages(ctx, historyMessages, employee);
 }
 
 function setupSSEHeaders(ctx: Context) {
@@ -365,7 +363,6 @@ export default {
           return next();
         }
 
-        // If there is no conversation title, extract it from the user message
         if (!conversation.title) {
           const textUserMessage = messages.find(
             (message: any) => message.role === 'user' && message.content?.type === 'text' && message.content?.content,
@@ -404,22 +401,7 @@ export default {
         }
 
         const history = await getConversationHistory(ctx, sessionId, employee);
-
-        const userMessages = [];
-        for (const msg of messages) {
-          let content = msg.content.content;
-          if (msg.content.type === 'info') {
-            content = await parseInfoMessage(ctx.db, employee, content);
-          }
-          if (!content) {
-            continue;
-          }
-          userMessages.push({
-            role: msg.role === 'user' ? 'user' : 'ai',
-            content,
-          });
-        }
-
+        const userMessages = await formatMessages(ctx, messages, employee);
         const formattedMessages = [
           {
             role: 'system',
