@@ -70,12 +70,14 @@ eventFlowManager.addAction({
       title: '类型',
       'x-decorator': 'FormItem',
       'x-component': 'Select',
-      enum: [
-        { label: '成功', value: 'success' },
-        { label: '错误', value: 'error' },
-        { label: '警告', value: 'warning' },
-        { label: '信息', value: 'info' },
-      ],
+      'x-component-props': {
+        options: [
+          { label: '成功', value: 'success' },
+          { label: '错误', value: 'error' },
+          { label: '警告', value: 'warning' },
+          { label: '信息', value: 'info' },
+        ],
+      },
       default: 'info',
     },
   },
@@ -151,7 +153,7 @@ eventFlowManager.addFlow({
 
 // 主演示组件
 const ConfigurableActionDemo = () => {
-  const [currentParams, setCurrentParams] = useState({
+  const [currentParams, setCurrentParams] = useState<Record<string, any>>({
     title: '消息标题',
     content: '这是一条测试消息',
     type: 'info',
@@ -170,22 +172,15 @@ const ConfigurableActionDemo = () => {
 
   // 打开配置弹窗
   const showConfig = () => {
-    // 添加自定义回调到配置流程中，用于更新UI
-    const flow = eventFlowManager.getFlow('configure-flow');
-    const steps = Object.values(flow['eventFlowSteps']);
-    const step = steps.find((step) => step.key === 'configure-step');
-
-    if (step) {
-      step.set('params', {
-        ...step.params,
-        customCallback: (values) => {
+    const step = eventFlowManager.getFlow('message-flow').getStep('message-step');
+    const ctx = {
+      payload: {
+        step,
+        onChange: (values) => {
           setCurrentParams(values);
         },
-      });
-    }
-
-    // 触发配置事件 - 直接触发原始事件名称
-    const ctx = { payload: {} };
+      },
+    };
     eventBus.dispatchEvent('configure:click', ctx);
   };
 

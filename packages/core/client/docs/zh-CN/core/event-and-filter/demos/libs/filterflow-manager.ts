@@ -8,7 +8,7 @@ import {
   FilterFlowStepOptions,
   FilterHandler,
   FilterGroupOptions,
-  FilterOptions,
+  Filter,
 } from './types';
 
 export class FilterFlowStep {
@@ -47,16 +47,16 @@ export class FilterFlowStep {
    * 获取实际的 Filter 函数
    */
   getHandler(): FilterHandler | undefined {
-    const filterOptions = this.filterFlow.getFilter(this.filterName);
-    return filterOptions?.handler;
+    const filter = this.filterFlow.getFilter(this.filterName);
+    return filter?.handler;
   }
 
   /**
    * 获取 Filter 的 UI Schema
    */
   getUiSchema(): ISchema | undefined {
-    const filterOptions = this.filterFlow.getFilter(this.filterName);
-    return filterOptions?.uiSchema;
+    const filter = this.filterFlow.getFilter(this.filterName);
+    return filter?.uiSchema;
   }
 
   get(key: string) {
@@ -162,19 +162,26 @@ export class FilterFlow {
    * 获取指定的 Filter 配置
    * 该方法转发调用到 FilterFlowManager
    */
-  getFilter(filterName: string): FilterOptions | undefined {
+  getFilter(filterName: string): Filter | undefined {
     return this.filterFlowManager.getFilter(filterName);
   }
 
-  // 可根据需要添加 save/remove Flow 的方法
+  async remove() {
+    this.filterFlowManager.removeFlow(this.name);
+  }
+
+  setFilterFlowManager(filterFlowManager: FilterFlowManager) {
+    this.filterFlowManager = filterFlowManager;
+  }
+
+  // TODO: Save Flow
   // async save() { /* ... */ }
-  // async remove() { this.filterFlowManager.removeFlow(this.key); }
 }
 
 // --- FilterFlowManager Class ---
 export class FilterFlowManager {
   private filterGroups: Record<string, FilterGroupOptions> = {};
-  private filters: Record<string, FilterOptions> = {};
+  private filters: Record<string, Filter> = {};
   private filterFlows: Map<string, FilterFlow>;
 
   constructor() {
@@ -195,14 +202,14 @@ export class FilterFlowManager {
   /**
    * 注册 Filter (可复用的 Filter 逻辑)
    */
-  addFilter(filterOptions: FilterOptions) {
-    this.filters[filterOptions.name] = filterOptions;
+  addFilter(filter: Filter) {
+    this.filters[filter.name] = filter;
   }
 
   /**
    * 获取指定的 Filter 配置
    */
-  getFilter(filterName: string): FilterOptions | undefined {
+  getFilter(filterName: string): Filter | undefined {
     return this.filters[filterName];
   }
 
@@ -218,7 +225,7 @@ export class FilterFlowManager {
   }
 
   /**
-   * 按分组获取 Filters (用于 UI 选择等)
+   * 按分组获取 Filters
    */
   getFiltersByGroup() {
     const items = [];
@@ -229,14 +236,7 @@ export class FilterFlowManager {
       // Sort handlers within the group
       const children = Object.values(this.filters)
         .filter((item) => item.group === group.name)
-        .sort((a, b) => (a.sort ?? 0) - (b.sort ?? 0))
-        .map((item) => ({
-          key: item.name,
-          label: item.title,
-          // 可选：可以添加 uiSchema 等信息供 UI 使用
-          // uiSchema: item.uiSchema,
-          // description: item.description,
-        }));
+        .sort((a, b) => (a.sort ?? 0) - (b.sort ?? 0));
 
       if (children.length > 0) {
         items.push({
@@ -250,15 +250,11 @@ export class FilterFlowManager {
     // Add handlers without a group (optional)
     const ungroupedFilters = Object.values(this.filters)
       .filter((item) => !item.group || !this.filterGroups[item.group])
-      .sort((a, b) => (a.sort ?? 0) - (b.sort ?? 0))
-      .map((item) => ({
-        key: item.name,
-        label: item.title,
-      }));
+      .sort((a, b) => (a.sort ?? 0) - (b.sort ?? 0));
     if (ungroupedFilters.length > 0) {
       items.push({
-        key: 'ungrouped', // Or some other identifier
-        label: 'Others', // Or leave it out if only grouped items are needed
+        key: 'ungrouped',
+        label: 'Others',
         type: 'group',
         children: ungroupedFilters,
       });
@@ -278,11 +274,7 @@ export class FilterFlowManager {
     let flowInstance: FilterFlow;
     if (flowOptions instanceof FilterFlow) {
       flowInstance = flowOptions;
-      // 确保 manager 被设置 (如果实例是从外部创建的)
-      if ((flowInstance as any).filterFlowManager !== this) {
-        (flowInstance as any).filterFlowManager = this;
-        // 可能需要递归更新步骤的 manager 引用，但这通常在构造时完成
-      }
+      flowInstance.setFilterFlowManager(this);
     } else {
       if (!flowOptions.name) {
         throw new Error('FilterFlowOptions must have a name.');
@@ -332,7 +324,7 @@ export class FilterFlowManager {
     if (flow) {
       return flow.addFilterStep(stepOptions);
     }
-    console.warn(`FilterFlow with key "${flowKey}" not found. Cannot add step.`);
+    console.error(`FilterFlow with key "${flowKey}" not found. Cannot add step.`);
     return undefined;
   }
 
@@ -347,7 +339,7 @@ export class FilterFlowManager {
     if (flow) {
       return flow.removeFilterStep(stepKey);
     }
-    console.warn(`FilterFlow with key "${flowKey}" not found. Cannot remove step.`);
+    console.error(`FilterFlow with key "${flowKey}" not found. Cannot remove step.`);
     return false;
   }
 
@@ -400,12 +392,7 @@ export class FilterFlowManager {
         }
       } catch (error) {
         console.error(`Error executing filter "${step.filterName}" in step "${step.key}" (flow: "${flowKey}"):`, error);
-        // 可选择是否继续执行后续步骤或直接抛出错误中断流程
-        // throw error; // 如果需要中断
-        // 或者收集错误信息到 context.errors
-        if (!context.errors) context.errors = [];
-        context.errors.push({ stepKey: step.key, filterName: step.filterName, error });
-        // break; // 如果一个步骤出错就停止
+        break; // 如果一个步骤出错就停止
       }
     }
 
@@ -418,7 +405,7 @@ export class FilterFlowManager {
    * @param context 上下文对象
    * @returns boolean
    */
-  private checkCondition(condition: string | undefined, context: FilterContext): boolean {
+  private checkCondition(condition?: string, context?: FilterContext): boolean {
     if (!condition) {
       return true; // 没有条件，默认通过
     }

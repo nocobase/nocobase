@@ -66,9 +66,14 @@ export type EventFlowOptions = {
 
 export class EventFlowStep {
   options: EventFlowStepOptions;
+  protected eventFlow: EventFlow;
 
   constructor(options: EventFlowStepOptions) {
     this.options = observable(options);
+  }
+
+  setEventFlow(eventFlow: EventFlow) {
+    this.eventFlow = eventFlow;
   }
 
   get key() {
@@ -81,6 +86,10 @@ export class EventFlowStep {
 
   get action() {
     return this.options.action;
+  }
+
+  get configureUiSchema() {
+    return this.eventFlow.eventFlowManager.getAction(this.action)?.uiSchema;
   }
 
   get isAwait() {
@@ -118,7 +127,7 @@ export class EventFlowStep {
 }
 
 export class EventFlow {
-  protected eventFlowManager: EventFlowManager;
+  eventFlowManager: EventFlowManager;
   protected options: EventFlowOptions;
   protected changed: Record<string, any> = {};
   protected eventFlowSteps: Record<string, EventFlowStep>;
@@ -137,6 +146,10 @@ export class EventFlow {
 
   getSteps() {
     return Object.values(this.eventFlowSteps);
+  }
+
+  getStep(key: string) {
+    return this.eventFlowSteps[key];
   }
 
   hasSteps() {
@@ -211,6 +224,7 @@ export class EventFlow {
       step.key = uid();
     }
     const instance = new EventFlowStep(step);
+    instance.setEventFlow(this);
     this.eventFlowSteps[step.key] = instance;
   }
 

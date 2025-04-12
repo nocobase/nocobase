@@ -20,42 +20,39 @@ filterFlowManager.addFilter({
   group: 'textTransform',
   sort: 1,
   uiSchema: {
-    type: 'object',
-    properties: {
-      search: {
-        type: 'string',
-        title: '查找',
-        'x-decorator': 'FormItem',
-        'x-component': 'Input',
+    search: {
+      type: 'string',
+      title: '查找',
+      'x-decorator': 'FormItem',
+      'x-component': 'Input',
+    },
+    replacement: {
+      type: 'string',
+      title: '替换为',
+      'x-decorator': 'FormItem',
+      'x-component': 'Input',
+    },
+    useRegex: {
+      type: 'boolean',
+      title: '使用正则表达式',
+      default: false,
+      'x-decorator': 'FormItem',
+      'x-component': 'Switch',
+    },
+    flags: {
+      type: 'string',
+      title: '正则标志',
+      default: 'g',
+      'x-decorator': 'FormItem',
+      'x-component': 'Input',
+      'x-component-props': {
+        placeholder: 'g, i, m, s, u, y',
       },
-      replacement: {
-        type: 'string',
-        title: '替换为',
-        'x-decorator': 'FormItem',
-        'x-component': 'Input',
-      },
-      useRegex: {
-        type: 'boolean',
-        title: '使用正则表达式',
-        default: false,
-        'x-decorator': 'FormItem',
-        'x-component': 'Switch',
-      },
-      flags: {
-        type: 'string',
-        title: '正则标志',
-        default: 'g',
-        'x-decorator': 'FormItem',
-        'x-component': 'Input',
-        'x-component-props': {
-          placeholder: 'g, i, m, s, u, y',
-        },
-        'x-reactions': {
-          dependencies: ['useRegex'],
-          fulfill: {
-            state: {
-              visible: '{{$deps[0]}}',
-            },
+      'x-reactions': {
+        dependencies: ['useRegex'],
+        fulfill: {
+          state: {
+            visible: '{{$deps[0]}}',
           },
         },
       },
@@ -89,25 +86,22 @@ filterFlowManager.addFilter({
   group: 'textTransform',
   sort: 2,
   uiSchema: {
-    type: 'object',
-    properties: {
-      maxLength: {
-        type: 'number',
-        title: '最大长度',
-        default: 10,
-        'x-decorator': 'FormItem',
-        'x-component': 'NumberPicker',
-        'x-component-props': {
-          min: 1,
-        },
+    maxLength: {
+      type: 'number',
+      title: '最大长度',
+      default: 10,
+      'x-decorator': 'FormItem',
+      'x-component': 'NumberPicker',
+      'x-component-props': {
+        min: 1,
       },
-      suffix: {
-        type: 'string',
-        title: '后缀',
-        default: '...',
-        'x-decorator': 'FormItem',
-        'x-component': 'Input',
-      },
+    },
+    suffix: {
+      type: 'string',
+      title: '后缀',
+      default: '...',
+      'x-decorator': 'FormItem',
+      'x-component': 'Input',
     },
   },
   handler: (currentValue, params, context) => {

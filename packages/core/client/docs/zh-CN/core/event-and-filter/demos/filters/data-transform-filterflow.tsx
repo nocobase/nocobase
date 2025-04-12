@@ -20,32 +20,29 @@ filterFlowManager.addFilter({
   group: 'dataTransform',
   sort: 1,
   uiSchema: {
-    type: 'object',
-    properties: {
-      field: {
-        type: 'string',
-        title: '字段',
-        'x-decorator': 'FormItem',
-        'x-component': 'Input',
-      },
-      operator: {
-        type: 'string',
-        title: '操作符',
-        enum: [
-          { label: '等于', value: 'equals' },
-          { label: '包含', value: 'contains' },
-          { label: '大于', value: 'gt' },
-          { label: '小于', value: 'lt' },
-        ],
-        'x-decorator': 'FormItem',
-        'x-component': 'Select',
-      },
-      value: {
-        type: 'string',
-        title: '值',
-        'x-decorator': 'FormItem',
-        'x-component': 'Input',
-      },
+    field: {
+      type: 'string',
+      title: '字段',
+      'x-decorator': 'FormItem',
+      'x-component': 'Input',
+    },
+    operator: {
+      type: 'string',
+      title: '操作符',
+      enum: [
+        { label: '等于', value: 'equals' },
+        { label: '包含', value: 'contains' },
+        { label: '大于', value: 'gt' },
+        { label: '小于', value: 'lt' },
+      ],
+      'x-decorator': 'FormItem',
+      'x-component': 'Select',
+    },
+    value: {
+      type: 'string',
+      title: '值',
+      'x-decorator': 'FormItem',
+      'x-component': 'Input',
     },
   },
   handler: (currentValue, params, context) => {
@@ -84,25 +81,22 @@ filterFlowManager.addFilter({
   group: 'dataTransform',
   sort: 2,
   uiSchema: {
-    type: 'object',
-    properties: {
-      field: {
-        type: 'string',
-        title: '排序字段',
-        'x-decorator': 'FormItem',
-        'x-component': 'Input',
-      },
-      order: {
-        type: 'string',
-        title: '排序方向',
-        default: 'asc',
-        enum: [
-          { label: '升序', value: 'asc' },
-          { label: '降序', value: 'desc' },
-        ],
-        'x-decorator': 'FormItem',
-        'x-component': 'Radio.Group',
-      },
+    field: {
+      type: 'string',
+      title: '排序字段',
+      'x-decorator': 'FormItem',
+      'x-component': 'Input',
+    },
+    order: {
+      type: 'string',
+      title: '排序方向',
+      default: 'asc',
+      enum: [
+        { label: '升序', value: 'asc' },
+        { label: '降序', value: 'desc' },
+      ],
+      'x-decorator': 'FormItem',
+      'x-component': 'Radio.Group',
     },
   },
   handler: (currentValue, params, context) => {
@@ -127,16 +121,13 @@ filterFlowManager.addFilter({
   group: 'dataTransform',
   sort: 3,
   uiSchema: {
-    type: 'object',
-    properties: {
-      template: {
-        type: 'string',
-        title: '模板',
-        'x-decorator': 'FormItem',
-        'x-component': 'Input.TextArea',
-        'x-component-props': {
-          placeholder: '例如: {{ item.name }} - {{ item.age }}',
-        },
+    template: {
+      type: 'string',
+      title: '模板',
+      'x-decorator': 'FormItem',
+      'x-component': 'Input.TextArea',
+      'x-component-props': {
+        placeholder: '例如: {{ item.name }} - {{ item.age }}',
       },
     },
   },

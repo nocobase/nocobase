@@ -88,43 +88,28 @@ export type BlockSettings = {
 };
 
 export type FilterContext = {
-  settings?: BlockSettings;
-  resource?: Resource;
   props?: ComponentProps<any>;
-  resourceParams?: {
-    page?: number;
-    pageSize?: number;
-  };
+  payload?: any;
   _cancel?: boolean;
-  errors?: Array<{
-    stepKey: string;
-    filterName: string;
-    error: Error;
-  }>;
-};
-
-export type ApplyFilterOptions = {
-  input?: any;
-  props?: ComponentProps<any>;
 };
 
 // FilterFlowManager Types
 export type FilterHandler = (
   currentValue: any,
-  params: Record<string, any>,
-  context: FilterContext,
+  params?: Record<string, any>,
+  context?: FilterContext,
 ) => any | Promise<any>;
 
 /**
  * 可注册的 Filter 配置
  */
-export interface FilterOptions {
+export interface Filter {
   name: string; // 唯一标识符
   title: string; // 显示名称
   description?: string; // 描述
   group?: string; // 所属分组
   sort?: number; // 排序
-  uiSchema: ISchema; // 参数配置的 UI Schema
+  uiSchema: Record<string, ISchema>; // 参数配置的 UI Schema
   handler: FilterHandler; // 实际的过滤处理函数
 }
 
