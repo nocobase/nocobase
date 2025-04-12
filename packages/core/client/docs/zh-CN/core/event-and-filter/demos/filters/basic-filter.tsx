@@ -1,5 +1,5 @@
-import { Button, Card, Space, Typography } from 'antd';
-import React, { useEffect, useMemo, useState } from 'react';
+import { Card, Space, Typography } from 'antd';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Filter, FilterContext } from '../libs/types';
 import { SchemaComponent, Checkbox, FormItem } from '@nocobase/client';
 import { createForm, onFormValuesChange } from '@formily/core';
@@ -74,15 +74,13 @@ const BasicFilter = (props) => {
     };
   }, [props.inputText, params]);
 
+  const handleChange = useCallback((values) => {
+    setParams({ uppercase: !!values.uppercase });
+  }, []);
+
   return (
     <>
-      <FilterSettingForm
-        schema={caseConvertFilter.uiSchema}
-        initialValues={{ uppercase: true }}
-        onChange={(values) => {
-          setParams({ uppercase: !!values.uppercase });
-        }}
-      />
+      <FilterSettingForm schema={caseConvertFilter.uiSchema} initialValues={params} onChange={handleChange} />
 
       <Card style={{ marginBottom: 16 }}>
         <Space direction="vertical" style={{ width: '100%' }}>
