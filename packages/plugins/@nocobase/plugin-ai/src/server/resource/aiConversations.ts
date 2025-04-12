@@ -12,39 +12,215 @@ import snowflake from '../snowflake';
 import PluginAIServer from '../plugin';
 import { Database, Model } from '@nocobase/database';
 
+/**
+ * Parse and format the information content in the message
+ */
 async function parseInfoMessage(db: Database, aiEmployee: Model, content: Record<string, any>) {
   const infoForm: {
     name: string;
     title: string;
     type: 'blocks' | 'collections';
   }[] = aiEmployee.chatSettings?.infoForm;
-  if (!infoForm) {
-    return;
+
+  if (!infoForm || !content) {
+    return null;
   }
-  if (!content) {
-    return;
-  }
+
   let info = '';
   for (const key in content) {
     const field = infoForm.find((item) => item.name === key);
     if (!field) {
       continue;
     }
+
     if (field.type === 'blocks') {
       const uiSchemaRepo = db.getRepository('uiSchemas') as any;
       const schema = await uiSchemaRepo.getJsonSchema(content[key]);
       if (!schema) {
-        return;
+        continue;
       }
       info += `${field.title}: ${JSON.stringify(schema)}; `;
     } else {
       info += `${field.title}: ${content[key]}; `;
     }
   }
+
   if (!info) {
+    return null;
+  }
+
+  return `The following information you can utilize in your conversation: ${info}`;
+}
+
+async function prepareChatStream(ctx: Context, sessionId: string, employee: Model, messages: any[]) {
+  const plugin = ctx.app.pm.get('ai') as PluginAIServer;
+  const modelSettings = employee.modelSettings;
+
+  if (!modelSettings?.llmService) {
+    throw new Error('LLM service not configured');
+  }
+
+  const service = await ctx.db.getRepository('llmServices').findOne({
+    filter: {
+      name: modelSettings.llmService,
+    },
+  });
+
+  if (!service) {
+    throw new Error('LLM service not found');
+  }
+
+  const providerOptions = plugin.aiManager.llmProviders.get(service.provider);
+  if (!providerOptions) {
+    throw new Error('LLM service provider not found');
+  }
+
+  const Provider = providerOptions.provider;
+  const provider = new Provider({
+    app: ctx.app,
+    serviceOptions: service.options,
+    chatOptions: {
+      ...modelSettings,
+      messages,
+    },
+  });
+
+  const controller = new AbortController();
+  const { signal } = controller;
+
+  try {
+    const stream = await provider.stream({ signal });
+    plugin.aiEmployeesManager.conversationController.set(sessionId, controller);
+    return { stream, controller, signal };
+  } catch (error) {
+    throw error;
+  }
+}
+
+async function processChatStream(
+  ctx: Context,
+  stream: any,
+  sessionId: string,
+  options: {
+    aiEmployeeUsername: string;
+    signal: AbortSignal;
+    messageId?: string;
+  },
+) {
+  const plugin = ctx.app.pm.get('ai') as PluginAIServer;
+  const { aiEmployeeUsername, signal, messageId } = options;
+
+  let message = '';
+  try {
+    for await (const chunk of stream) {
+      if (!chunk.content) {
+        continue;
+      }
+      ctx.res.write(`data: ${JSON.stringify({ type: 'content', body: chunk.content })}\n\n`);
+      message += chunk.content;
+    }
+  } catch (err) {
+    ctx.log.error(err);
+  }
+
+  plugin.aiEmployeesManager.conversationController.delete(sessionId);
+
+  if (!message && !signal.aborted) {
+    ctx.res.write(`data: ${JSON.stringify({ type: 'error', body: 'No content' })}\n\n`);
+    ctx.res.end();
     return;
   }
-  return `The following information you can utilize in your conversation: ${info}`;
+
+  if (message) {
+    const content = {
+      content: message,
+      type: 'text',
+    };
+
+    if (signal.aborted) {
+      content['interrupted'] = true;
+    }
+
+    if (messageId) {
+      await ctx.db.sequelize.transaction(async (transaction) => {
+        await ctx.db.getRepository('aiMessages').update({
+          filter: {
+            sessionId,
+            messageId,
+          },
+          values: {
+            content,
+          },
+          transaction,
+        });
+        await ctx.db.getRepository('aiMessages').destroy({
+          filter: {
+            sessionId,
+            messageId: {
+              $gt: messageId,
+            },
+          },
+          transaction,
+        });
+      });
+    } else {
+      await ctx.db.getRepository('aiConversations.messages', sessionId).create({
+        values: {
+          messageId: snowflake.generate(),
+          role: aiEmployeeUsername,
+          content,
+        },
+      });
+    }
+  }
+
+  ctx.res.end();
+}
+
+async function getConversationHistory(ctx: Context, sessionId: string, employee: Model, messageIdFilter?: string) {
+  const historyMessages = await ctx.db.getRepository('aiConversations.messages', sessionId).find({
+    sort: ['messageId'],
+    ...(messageIdFilter
+      ? {
+          filter: {
+            messageId: {
+              $lt: messageIdFilter,
+            },
+          },
+        }
+      : {}),
+  });
+
+  const history = [];
+  for (const msg of historyMessages) {
+    let content = msg.content.content;
+    if (msg.content.type === 'info') {
+      content = await parseInfoMessage(ctx.db, employee, content);
+    }
+    if (!content) {
+      continue;
+    }
+    history.push({
+      role: msg.role === 'user' ? 'user' : 'ai',
+      content,
+    });
+  }
+
+  return history;
+}
+
+function setupSSEHeaders(ctx: Context) {
+  ctx.set({
+    'Content-Type': 'text/event-stream',
+    'Cache-Control': 'no-cache',
+    Connection: 'keep-alive',
+  });
+  ctx.status = 200;
+}
+
+function sendErrorResponse(ctx: Context, errorMessage: string) {
+  ctx.res.write(`data: ${JSON.stringify({ type: 'error', body: errorMessage })}\n\n`);
+  ctx.res.end();
 }
 
 export default {
@@ -62,6 +238,7 @@ export default {
       });
       return actions.list(ctx, next);
     },
+
     async create(ctx: Context, next: Next) {
       const userId = ctx.auth?.user.id;
       const { aiEmployee } = ctx.action.params.values || {};
@@ -74,6 +251,7 @@ export default {
       });
       await next();
     },
+
     async update(ctx: Context, next: Next) {
       const userId = ctx.auth?.user.id;
       const { filterByTk: sessionId } = ctx.action.params;
@@ -90,6 +268,7 @@ export default {
       });
       await next();
     },
+
     async destroy(ctx: Context, next: Next) {
       const userId = ctx.auth?.user.id;
       if (!userId) {
@@ -102,26 +281,32 @@ export default {
       });
       return actions.destroy(ctx, next);
     },
+
     async getMessages(ctx: Context, next: Next) {
       const userId = ctx.auth?.user.id;
       if (!userId) {
         return ctx.throw(403);
       }
+
       const { sessionId, cursor } = ctx.action.params || {};
       if (!sessionId) {
         ctx.throw(400);
       }
+
       const conversation = await ctx.db.getRepository('aiConversations').findOne({
         filter: {
           sessionId,
           userId,
         },
       });
+
       if (!conversation) {
         ctx.throw(400);
       }
+
       const pageSize = 10;
-      const rows = await ctx.db.getRepository('aiConversations.messages', sessionId).find({
+      const messageRepository = ctx.db.getRepository('aiConversations.messages', sessionId);
+      const rows = await messageRepository.find({
         sort: ['-messageId'],
         limit: pageSize + 1,
         ...(cursor
@@ -134,9 +319,11 @@ export default {
             }
           : {}),
       });
+
       const hasMore = rows.length > pageSize;
       const data = hasMore ? rows.slice(0, -1) : rows;
       const newCursor = data.length ? data[data.length - 1].messageId : null;
+
       ctx.body = {
         rows: data.map((row: Model) => ({
           key: row.messageId,
@@ -149,100 +336,59 @@ export default {
         hasMore,
         cursor: newCursor,
       };
+
       await next();
     },
+
     async sendMessages(ctx: Context, next: Next) {
-      const plugin = ctx.app.pm.get('ai') as PluginAIServer;
-      ctx.set({
-        'Content-Type': 'text/event-stream',
-        'Cache-Control': 'no-cache',
-        Connection: 'keep-alive',
-      });
+      setupSSEHeaders(ctx);
+
       const { sessionId, aiEmployee, messages } = ctx.action.params.values || {};
       if (!sessionId) {
-        ctx.res.write(`data: ${JSON.stringify({ type: 'error', body: 'sessionId is required' })}\n\n`);
-        ctx.res.end();
+        sendErrorResponse(ctx, 'sessionId is required');
         return next();
       }
+
       const userMessage = messages.find((message: any) => message.role === 'user');
       if (!userMessage) {
-        ctx.res.write(`data: ${JSON.stringify({ type: 'error', body: 'user message is required' })}\n\n`);
-        ctx.res.end();
+        sendErrorResponse(ctx, 'user message is required');
         return next();
       }
-      let stream: any;
-      const controller = new AbortController();
-      const { signal } = controller;
+
       try {
         const conversation = await ctx.db.getRepository('aiConversations').findOne({
           filterByTk: sessionId,
         });
+
         if (!conversation) {
-          ctx.res.write(`data: ${JSON.stringify({ type: 'error', body: 'conversation not found' })}\n\n`);
-          ctx.res.end();
+          sendErrorResponse(ctx, 'conversation not found');
           return next();
         }
+
+        // If there is no conversation title, extract it from the user message
         if (!conversation.title) {
           const textUserMessage = messages.find(
             (message: any) => message.role === 'user' && message.content?.type === 'text' && message.content?.content,
           );
+
           if (textUserMessage) {
             const content = textUserMessage.content.content;
             conversation.title = content.substring(0, 10);
-            conversation.save();
+            await conversation.save();
           }
         }
+
         const employee = await ctx.db.getRepository('aiEmployees').findOne({
           filter: {
             username: aiEmployee,
           },
         });
+
         if (!employee) {
-          ctx.res.write(`data: ${JSON.stringify({ type: 'error', body: 'AI employee not found' })}\n\n`);
-          ctx.res.end();
-          return next();
-        }
-        const modelSettings = employee.modelSettings;
-        if (!modelSettings?.llmService) {
-          ctx.log.error('llmService not configured');
-          ctx.res.write(`data: ${JSON.stringify({ type: 'error', body: 'Chat error warning' })}\n\n`);
-          ctx.res.end();
-          return next();
-        }
-        const service = await ctx.db.getRepository('llmServices').findOne({
-          filter: {
-            name: modelSettings.llmService,
-          },
-        });
-        if (!service) {
-          ctx.log.error('llmService not found');
-          ctx.res.write(`data: ${JSON.stringify({ type: 'error', body: 'Chat error warning' })}\n\n`);
-          ctx.res.end();
-          return next();
-        }
-        const plugin = ctx.app.pm.get('ai') as PluginAIServer;
-        const providerOptions = plugin.aiManager.llmProviders.get(service.provider);
-        if (!providerOptions) {
-          ctx.log.error('llmService provider not found');
-          ctx.res.write(`data: ${JSON.stringify({ type: 'error', body: 'Chat error warning' })}\n\n`);
-          ctx.res.end();
+          sendErrorResponse(ctx, 'AI employee not found');
           return next();
         }
 
-        const historyMessages = await ctx.db.getRepository('aiConversations.messages', sessionId).find({
-          sort: ['messageId'],
-        });
-        const history = [];
-        for (const msg of historyMessages) {
-          let content = msg.content.content;
-          if (msg.content.type === 'info') {
-            content = await parseInfoMessage(ctx.db, employee, content);
-          }
-          history.push({
-            role: msg.role === 'user' ? 'user' : 'ai',
-            content,
-          });
-        }
         try {
           await ctx.db.getRepository('aiConversations.messages', sessionId).create({
             values: messages.map((message: any) => ({
@@ -253,11 +399,12 @@ export default {
           });
         } catch (err) {
           ctx.log.error(err);
-          ctx.res.write(`data: ${JSON.stringify({ type: 'error', body: 'Chat error warning' })}\n\n`);
-          ctx.res.end();
+          sendErrorResponse(ctx, 'Chat error warning');
           return next();
         }
-        ctx.status = 200;
+
+        const history = await getConversationHistory(ctx, sessionId, employee);
+
         const userMessages = [];
         for (const msg of messages) {
           let content = msg.content.content;
@@ -272,7 +419,8 @@ export default {
             content,
           });
         }
-        const msgs = [
+
+        const formattedMessages = [
           {
             role: 'system',
             content: employee.about,
@@ -280,93 +428,36 @@ export default {
           ...history,
           ...userMessages,
         ];
-        const Provider = providerOptions.provider;
-        const provider = new Provider({
-          app: ctx.app,
-          serviceOptions: service.options,
-          chatOptions: {
-            ...modelSettings,
-            messages: msgs,
-          },
+
+        const { stream, signal } = await prepareChatStream(ctx, sessionId, employee, formattedMessages);
+        await processChatStream(ctx, stream, sessionId, {
+          aiEmployeeUsername: aiEmployee,
+          signal,
         });
-        try {
-          stream = await provider.stream({
-            signal,
-          });
-          plugin.aiEmployeesManager.conversationController.set(sessionId, controller);
-        } catch (err) {
-          ctx.log.error(err);
-          ctx.res.write(`data: ${JSON.stringify({ type: 'error', body: 'Chat error warning' })}\n\n`);
-          ctx.res.end();
-          return next();
-        }
       } catch (err) {
         ctx.log.error(err);
-        ctx.res.write(`data: ${JSON.stringify({ type: 'error', body: 'Chat error warning' })}\n\n`);
-        ctx.res.end();
-        return next();
+        sendErrorResponse(ctx, 'Chat error warning');
       }
-      let message = '';
-      try {
-        for await (const chunk of stream) {
-          if (!chunk.content) {
-            continue;
-          }
-          ctx.res.write(`data: ${JSON.stringify({ type: 'content', body: chunk.content })}\n\n`);
-          message += chunk.content;
-        }
-      } catch (err) {
-        ctx.log.error(err);
-      }
-      plugin.aiEmployeesManager.conversationController.delete(sessionId);
-      if (!message && !signal.aborted) {
-        ctx.res.write(`data: ${JSON.stringify({ type: 'error', body: 'No content' })}\n\n`);
-        ctx.res.end();
-        return next();
-      }
-      if (message) {
-        const content = {
-          content: message,
-          type: 'text',
-        };
-        if (signal.aborted) {
-          content['interrupted'] = true;
-        }
-        await ctx.db.getRepository('aiConversations.messages', sessionId).create({
-          values: {
-            messageId: snowflake.generate(),
-            role: aiEmployee,
-            content,
-          },
-        });
-      }
-      ctx.res.end();
+
       await next();
     },
+
     async abort(ctx: Context, next: Next) {
       const { sessionId } = ctx.action.params.values || {};
       const plugin = ctx.app.pm.get('ai') as PluginAIServer;
       plugin.aiEmployeesManager.abortConversation(sessionId);
       await next();
     },
+
     async resendMessages(ctx: Context, next: Next) {
-      const plugin = ctx.app.pm.get('ai') as PluginAIServer;
-      ctx.set({
-        'Content-Type': 'text/event-stream',
-        'Cache-Control': 'no-cache',
-        Connection: 'keep-alive',
-      });
-      ctx.status = 200;
-      let stream: any;
-      let employee: any;
-      const controller = new AbortController();
-      const { signal } = controller;
+      setupSSEHeaders(ctx);
+
       const { sessionId, messageId } = ctx.action.params.values || {};
       if (!sessionId) {
-        ctx.res.write(`data: ${JSON.stringify({ type: 'error', body: 'sessionId and messageId are required' })}\n\n`);
-        ctx.res.end();
+        sendErrorResponse(ctx, 'sessionId is required');
         return next();
       }
+
       try {
         const conversation = await ctx.db.getRepository('aiConversations').findOne({
           filter: {
@@ -374,165 +465,46 @@ export default {
           },
           appends: ['aiEmployee'],
         });
+
         if (!conversation) {
-          ctx.res.write(`data: ${JSON.stringify({ type: 'error', body: 'conversation not found' })}\n\n`);
-          ctx.res.end();
+          sendErrorResponse(ctx, 'conversation not found');
           return next();
         }
+
         if (messageId) {
           const message = await ctx.db.getRepository('aiConversations.messages', sessionId).findOne({
             filter: {
               messageId,
             },
           });
+
           if (!message) {
-            ctx.res.write(`data: ${JSON.stringify({ type: 'error', body: 'message not found' })}\n\n`);
-            ctx.res.end();
+            sendErrorResponse(ctx, 'message not found');
             return next();
           }
         }
-        employee = conversation.aiEmployee;
-        const modelSettings = employee.modelSettings;
-        if (!modelSettings?.llmService) {
-          ctx.log.error('llmService not configured');
-          ctx.res.write(`data: ${JSON.stringify({ type: 'error', body: 'Chat error warning' })}\n\n`);
-          ctx.res.end();
-          return next();
-        }
-        const service = await ctx.db.getRepository('llmServices').findOne({
-          filter: {
-            name: modelSettings.llmService,
-          },
-        });
-        if (!service) {
-          ctx.log.error('llmService not found');
-          ctx.res.write(`data: ${JSON.stringify({ type: 'error', body: 'Chat error warning' })}\n\n`);
-          ctx.res.end();
-          return next();
-        }
-        const providerOptions = plugin.aiManager.llmProviders.get(service.provider);
-        if (!providerOptions) {
-          ctx.log.error('llmService provider not found');
-          ctx.res.write(`data: ${JSON.stringify({ type: 'error', body: 'Chat error warning' })}\n\n`);
-          ctx.res.end();
-          return next();
-        }
-        const historyMessages = await ctx.db.getRepository('aiConversations.messages', sessionId).find({
-          sort: ['messageId'],
-          ...(messageId
-            ? {
-                filter: {
-                  messageId: {
-                    $lt: messageId,
-                  },
-                },
-              }
-            : {}),
-        });
-        const history = [];
-        for (const msg of historyMessages) {
-          let content = msg.content.content;
-          if (msg.content.type === 'info') {
-            content = await parseInfoMessage(ctx.db, employee, content);
-          }
-          history.push({
-            role: msg.role === 'user' ? 'user' : 'ai',
-            content,
-          });
-        }
-        const msgs = [
+
+        const employee = conversation.aiEmployee;
+        const history = await getConversationHistory(ctx, sessionId, employee, messageId);
+        const formattedMessages = [
           {
             role: 'system',
-            content: conversation.aiEmployee.about,
+            content: employee.about,
           },
           ...history,
         ];
-        const Provider = providerOptions.provider;
-        const provider = new Provider({
-          app: ctx.app,
-          serviceOptions: service.options,
-          chatOptions: {
-            ...modelSettings,
-            messages: msgs,
-          },
-        });
 
-        try {
-          stream = await provider.stream({
-            signal,
-          });
-          plugin.aiEmployeesManager.conversationController.set(sessionId, controller);
-        } catch (err) {
-          ctx.log.error(err);
-          ctx.res.write(`data: ${JSON.stringify({ type: 'error', body: 'Chat error warning' })}\n\n`);
-          ctx.res.end();
-          return next();
-        }
+        const { stream, signal } = await prepareChatStream(ctx, sessionId, employee, formattedMessages);
+        await processChatStream(ctx, stream, sessionId, {
+          aiEmployeeUsername: employee.username,
+          signal,
+          messageId,
+        });
       } catch (err) {
         ctx.log.error(err);
-        ctx.res.write(`data: ${JSON.stringify({ type: 'error', body: 'Chat error warning' })}\n\n`);
-        ctx.res.end();
-        return next();
+        sendErrorResponse(ctx, 'Chat error warning');
       }
-      let message = '';
-      try {
-        for await (const chunk of stream) {
-          if (!chunk.content) {
-            continue;
-          }
-          ctx.res.write(`data: ${JSON.stringify({ type: 'content', body: chunk.content })}\n\n`);
-          message += chunk.content;
-        }
-      } catch (err) {
-        ctx.log.error(err);
-      }
-      plugin.aiEmployeesManager.conversationController.delete(sessionId);
-      if (!message && !signal.aborted) {
-        ctx.res.write(`data: ${JSON.stringify({ type: 'error', body: 'No content' })}\n\n`);
-        ctx.res.end();
-        return next();
-      }
-      if (message) {
-        const content = {
-          content: message,
-          type: 'text',
-        };
-        if (signal.aborted) {
-          content['interrupted'] = true;
-        }
-        if (messageId) {
-          await ctx.db.sequelize.transaction(async (transaction) => {
-            await ctx.db.getRepository('aiMessages').update({
-              filter: {
-                sessionId,
-                messageId,
-              },
-              values: {
-                content,
-              },
-              transaction,
-            });
-            await ctx.db.getRepository('aiMessages').destroy({
-              filter: {
-                sessionId,
-                messageId: {
-                  $gt: messageId,
-                },
-              },
-              transaction,
-            });
-          });
-        } else {
-          await ctx.db.getRepository('aiConversations.messages', sessionId).create({
-            values: {
-              messageId: snowflake.generate(),
-              role: employee.username,
-              content,
-            },
-          });
-        }
-      }
-      ctx.res.end();
+
       await next();
     },
   },
