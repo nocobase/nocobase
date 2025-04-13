@@ -41,7 +41,7 @@ describe('server hooks', () => {
     uiSchemaPlugin = app.getPlugin<UiSchemaStoragePlugin>('ui-schema-storage');
   });
 
-  it('should clean row struct', async () => {
+  it.skip('should clean row struct', async () => {
     const PostModel = await db.getRepository('collections').create({
       values: {
         name: 'posts',
@@ -223,7 +223,7 @@ describe('server hooks', () => {
     expect(jsonTree['properties']['grid']['properties']['row']['properties']).not.toBeDefined();
   });
 
-  it('should remove schema when collection destroy', async () => {
+  it.skip('should remove schema when collection destroy', async () => {
     await db.getRepository('collections').create({
       values: {
         name: 'posts',

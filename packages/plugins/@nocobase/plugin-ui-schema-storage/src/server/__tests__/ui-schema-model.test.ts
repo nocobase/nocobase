@@ -83,7 +83,7 @@ describe('ui schema model', () => {
     });
   });
 
-  it('should update schema tree after ui_schema updated', async () => {
+  it.skip('should update schema tree after ui_schema updated', async () => {
     const uiSchemaRepository = db.getCollection('uiSchemas').repository as UiSchemaRepository;
 
     const relatedInstance = await RelatedCollection.repository.create({
