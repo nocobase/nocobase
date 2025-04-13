@@ -312,7 +312,7 @@ describe('view collection', () => {
     expect(response2.statusCode).toBe(200);
   });
 
-  it.only('should list collections fields with source interface', async () => {
+  it('should list collections fields with source interface', async () => {
     await app.db.getRepository('collections').create({
       values: {
         name: 'users',

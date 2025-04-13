@@ -92,14 +92,14 @@ describe('app destroy', () => {
     expect(await app.db.getRepository('test').count()).toBe(0);
   });
   test('app main already exists', async () => {
-    mockServer();
-    expect(() => mockServer()).toThrow('app main already exists');
+    await mockServer();
+    await expect(mockServer()).rejects.toThrow('app main already exists');
   });
   test('command', async () => {
     const loadFn = vi.fn();
     app = await mockServer();
     const command = app.command('foo');
-    command.command('bar').action(() => loadFn());
+    command.command('bar').action(async () => await loadFn());
     await app.runCommand('foo', 'bar');
     expect(loadFn).toBeCalled();
     expect(loadFn).toBeCalledTimes(1);
