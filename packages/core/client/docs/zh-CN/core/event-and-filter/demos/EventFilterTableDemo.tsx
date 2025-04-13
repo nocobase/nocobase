@@ -35,9 +35,8 @@ const fetchDataAction: EventFlowActionOptions = {
     // 实际应用中这里会发起 API 请求
     await new Promise((resolve) => setTimeout(resolve, 300)); // 模拟网络延迟
     // 通过 ctx.payload?.hooks.setState 更新 React 组件的状态
-    ctx.payload?.hooks.setState(initialData);
-    ctx.payload?.hooks.message.success('数据已刷新');
-    return initialData; // 返回数据用于后续步骤
+    ctx.payload?.hooks.setState([...initialData]);
+    ctx.payload?.hooks.message.success(params.messageOnSuccess || '数据已刷新');
   },
   uiSchema: {
     messageOnSuccess: { type: 'string', title: '成功提示信息', 'x-component': 'Input' },
@@ -55,11 +54,17 @@ const deleteDataAction: EventFlowActionOptions = {
       ctx.payload?.hooks.message.warn('请先选择要删除的行');
       return;
     }
-    const idsToDelete = selectedData.map((item) => item.id);
-    console.log('Deleting IDs:', idsToDelete);
-    // 更新 React 状态
-    ctx.payload?.hooks.setState((currentData) => currentData.filter((item) => !idsToDelete.includes(item.id)));
-    ctx.payload?.hooks.message.success(`成功删除 ${idsToDelete.length} 条记录`);
+    Modal.confirm({
+      title: params.confirmTitle || '确认删除',
+      content: params.confirmContent || '确定要删除选中的记录吗？',
+      onOk: () => {
+        const idsToDelete = selectedData.map((item) => item.id);
+        console.log('Deleting IDs:', idsToDelete);
+        // 更新 React 状态
+        ctx.payload?.hooks.setState((currentData) => currentData.filter((item) => !idsToDelete.includes(item.id)));
+        ctx.payload?.hooks.message.success(`成功删除 ${idsToDelete.length} 条记录`);
+      },
+    });
   },
   uiSchema: {
     confirmTitle: { type: 'string', title: '确认弹窗标题', 'x-component': 'Input' },
@@ -122,12 +127,22 @@ const showInitialColumnsFilter: Filter = {
     result.columns = [
       { title: 'ID', field: 'id', width: 80, headerFilter: 'input' },
       { title: '姓名', field: 'name', headerFilter: 'input' },
-      { title: '年龄', field: 'age', hozAlign: 'left', formatter: 'progress', headerFilter: 'input' },
+      { title: '年龄', field: 'age', hozAlign: 'left', headerFilter: 'input' },
       { title: '邮箱', field: 'email', headerFilter: 'input' },
     ];
     if (columns.length > 0) {
       result.columns = result.columns.filter((column) => columns.includes(column.field));
     }
+    result.columns = [
+      {
+        formatter: 'rowSelection',
+        titleFormatter: 'rowSelection',
+        hozAlign: 'center',
+        headerSort: false,
+        width: 40,
+      },
+      ...result.columns,
+    ];
     return result;
   },
   uiSchema: {
@@ -315,6 +330,7 @@ const EventFilterTableDemo: React.FC = (props) => {
       placeholder: '暂无数据',
       paginationButtonCount: 5,
       paginationCounter: 'rows',
+      paginationSize: 10,
       // columns: generateColumnsFromData(tableData),
       // data: tableData
     }),
@@ -402,7 +418,6 @@ const EventFilterTableDemo: React.FC = (props) => {
         step,
         onChange: (value) => {
           step.set('params', value);
-          applyColumnFilter();
         },
       },
     };
@@ -423,11 +438,10 @@ const EventFilterTableDemo: React.FC = (props) => {
       try {
         const tabulator = new Tabulator(tableContainerRef.current, {
           ...tableOptions,
-          columns: tableColumns, // 使用从 FilterFlow 获取的列
-          data: tableData, // 使用 React 状态管理的数据
+          columns: tableColumns,
+          data: tableData,
         });
 
-        // 使用 tableBuilt 事件确保表格完全构建好后再存储引用
         tabulator.on('tableBuilt', function () {
           console.log('Table built completed, Tabulator instance is ready');
           tabulatorInstanceRef.current = tabulator;
@@ -441,13 +455,12 @@ const EventFilterTableDemo: React.FC = (props) => {
     // 清理函数
     return () => {
       if (tabulatorInstanceRef.current) {
-        console.log('Destroying Tabulator instance...');
         tabulatorInstanceRef.current.destroy();
         tabulatorInstanceRef.current = null;
       }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tableOptions, tableColumns]); // 依赖列配置，确保列配置加载后再初始化
+  }, [tableOptions, tableColumns, tableData]); // 依赖列配置，确保列配置加载后再初始化
 
   // 监听数据变化，更新 Tabulator
   useEffect(() => {
