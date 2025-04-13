@@ -28,7 +28,7 @@ describe('command', () => {
   });
 
   test('case1', async () => {
-    app = mockServer({
+    app = await mockServer({
       plugins: [],
     });
 
@@ -53,7 +53,7 @@ describe('command', () => {
   });
 
   test('case2', async () => {
-    app = mockServer({
+    app = await mockServer({
       plugins: [],
     });
 

@@ -18,7 +18,7 @@ describe('set action', () => {
   let PostTag;
 
   beforeEach(async () => {
-    app = mockServer();
+    app = await mockServer();
     await app.db.clean({ drop: true });
     registerActions(app);
 

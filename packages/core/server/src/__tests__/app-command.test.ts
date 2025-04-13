@@ -29,7 +29,7 @@ describe('app command', () => {
   });
 
   beforeEach(async () => {
-    app = mockServer();
+    app = await mockServer();
     await app.runCommand('install');
   });
 

@@ -18,7 +18,7 @@ describe('add action', () => {
   let PostTag;
 
   beforeEach(async () => {
-    app = mockServer();
+    app = await mockServer();
     registerActions(app);
 
     PostTag = app.collection({

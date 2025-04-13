@@ -16,7 +16,7 @@ describe('vditor:check', () => {
   let agent;
 
   beforeEach(async () => {
-    app = mockServer({
+    app = await mockServer({
       cors: {
         origin: '*',
       },

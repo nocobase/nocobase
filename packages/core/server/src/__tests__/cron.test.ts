@@ -14,7 +14,7 @@ import { CronJobManager } from '../cron/cron-job-manager';
 describe('cron service', () => {
   let app: MockServer;
   beforeEach(async () => {
-    app = mockServer();
+    app = await mockServer();
   });
 
   afterEach(async () => {
