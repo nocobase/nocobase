@@ -45,12 +45,10 @@ function transformConditionData(condition: Condition, variableKey: '$nForm' | '$
       $or: condition.$or.map((c) => transformConditionData(c, variableKey)),
     };
   }
-
-  const [field, expression] = Object.entries(condition)[0];
-  const [op, value] = Object.entries(expression)[0];
-
+  const [field, expression] = Object.entries(condition || {})[0] || [];
+  const [op, value] = Object.entries(expression || {})[0] || [];
   return {
-    leftVar: `{{${variableKey}.${field}}}`,
+    leftVar: field ? `{{${variableKey}.${field}}}` : null,
     op,
     rightVar: value,
   };
@@ -269,7 +267,7 @@ export const FormLinkageRules = withDynamicSchemaProps(
       <SubFormProvider value={{ value: null, collection: { name: collectionName || name } as any }}>
         <RecordProvider record={record} parent={parentRecordData}>
           <FilterContext.Provider value={value}>
-            <CollectionProvider name={collectionName || name}>
+            <CollectionProvider name={collectionName || name} allowNull>
               <SchemaComponent components={components} schema={schema} />
             </CollectionProvider>
           </FilterContext.Provider>
