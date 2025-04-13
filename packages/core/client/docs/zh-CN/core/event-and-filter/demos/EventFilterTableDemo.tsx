@@ -34,9 +34,9 @@ const fetchDataAction: EventFlowActionOptions = {
     console.log('Executing fetchData action with params:', params);
     // 实际应用中这里会发起 API 请求
     await new Promise((resolve) => setTimeout(resolve, 300)); // 模拟网络延迟
-    // 通过 ctx.hooks.setState 更新 React 组件的状态
-    ctx.hooks.setState(initialData);
-    ctx.hooks.message.success('数据已刷新');
+    // 通过 ctx.payload?.hooks.setState 更新 React 组件的状态
+    ctx.payload?.hooks.setState(initialData);
+    ctx.payload?.hooks.message.success('数据已刷新');
     return initialData; // 返回数据用于后续步骤
   },
   uiSchema: {
@@ -52,14 +52,14 @@ const deleteDataAction: EventFlowActionOptions = {
     console.log('Executing deleteData action with params:', params, 'context:', ctx);
     const selectedData = ctx.payload.selectedData || [];
     if (!selectedData.length) {
-      ctx.hooks.message.warn('请先选择要删除的行');
+      ctx.payload?.hooks.message.warn('请先选择要删除的行');
       return;
     }
     const idsToDelete = selectedData.map((item) => item.id);
     console.log('Deleting IDs:', idsToDelete);
     // 更新 React 状态
-    ctx.hooks.setState((currentData) => currentData.filter((item) => !idsToDelete.includes(item.id)));
-    ctx.hooks.message.success(`成功删除 ${idsToDelete.length} 条记录`);
+    ctx.payload?.hooks.setState((currentData) => currentData.filter((item) => !idsToDelete.includes(item.id)));
+    ctx.payload?.hooks.message.success(`成功删除 ${idsToDelete.length} 条记录`);
   },
   uiSchema: {
     confirmTitle: { type: 'string', title: '确认弹窗标题', 'x-component': 'Input' },
@@ -75,7 +75,7 @@ const openViewDialogAction: EventFlowActionOptions = {
     console.log('Executing openViewDialog action with params:', params, 'context:', ctx);
     const record = ctx.payload.record;
     if (!record) {
-      ctx.hooks.message.error('未找到记录');
+      ctx.payload?.hooks.message.error('未找到记录');
       return;
     }
     // 使用 Antd Modal 显示详情
@@ -157,6 +157,8 @@ const addActionColumnFilter: Filter = {
     if (params?.show !== true) {
       return currentValue; // 如果参数配置不显示，则不添加
     }
+    const result = currentValue || {};
+    result.columns = result.columns || [];
     const actionColumn = {
       title: '操作',
       field: '__actions', // 虚拟字段
@@ -176,7 +178,8 @@ const addActionColumnFilter: Filter = {
         return button;
       },
     };
-    return [...currentValue, actionColumn];
+    result.columns.push(actionColumn);
+    return result;
   },
   uiSchema: {
     show: {
@@ -195,11 +198,60 @@ filterFlowManager.addFilter(showInitialColumnsFilter);
 filterFlowManager.addFilter(addActionColumnFilter);
 
 // --- EventFlow 定义 ---
+// 配置
+eventFlowManager.addEventGroup({
+  name: 'configure',
+  title: '配置',
+});
+
+eventFlowManager.addEvent({
+  name: 'configure:click',
+  title: '配置按钮点击',
+  group: 'configure',
+  uiSchema: {},
+});
+
+eventFlowManager.addFlow({
+  key: 'configure-flow',
+  title: '配置流程',
+  on: {
+    event: 'configure:click',
+    title: '当配置按钮被点击时',
+  },
+  steps: [
+    {
+      key: 'configure-step',
+      title: '配置消息参数',
+      action: 'configureAction',
+      isAwait: true,
+    },
+  ],
+});
+
+eventFlowManager.addEventGroup({
+  name: 'data',
+  title: '数据',
+});
+
+eventFlowManager.addEvent({
+  name: 'tabulator:refresh',
+  title: '刷新表格数据',
+  group: 'data',
+  uiSchema: {},
+});
+
 eventFlowManager.addFlow({
   key: 'refreshFlow',
   title: '刷新表格数据',
-  on: { event: 'refreshTable' },
+  on: { event: 'tabulator:refresh' },
   steps: [{ key: 'step1', action: 'fetchData', title: '获取最新数据', params: { messageOnSuccess: '刷新成功！' } }],
+});
+
+eventFlowManager.addEvent({
+  name: 'deleteSelected',
+  title: '删除选中行',
+  group: 'data',
+  uiSchema: {},
 });
 
 eventFlowManager.addFlow({
@@ -214,6 +266,13 @@ eventFlowManager.addFlow({
       params: { confirmTitle: '确认删除', confirmContent: '确定要删除选中的记录吗？' },
     },
   ],
+});
+
+eventFlowManager.addEvent({
+  name: 'viewRecord',
+  title: '查看行详情',
+  group: 'data',
+  uiSchema: {},
 });
 
 eventFlowManager.addFlow({
@@ -233,15 +292,11 @@ filterFlowManager.addFlow({
   ],
 });
 
-// --- React 组件 ---
-const EventFilterTableDemo: React.FC = () => {
+const EventFilterTableDemo: React.FC = (props) => {
   useTabulatorBuiltinStyles();
   const [tableData, setTableData] = useState([]);
   const [tableColumns, setTableColumns] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
-  // 注意：Tabulator 的 rowSelectionChanged 回调会提供选中的数据，
-  // 但我们主要通过实例的 getSelectedData 获取，所以这里可以不用 state 存储
-  // const [selectedRows, setSelectedRows] = useState([]);
   const tableContainerRef = useRef(null); // Ref for the div container
   const tabulatorInstanceRef = useRef<Tabulator | null>(null); // Ref for the Tabulator instance
   const compile = useCompile();
@@ -275,9 +330,10 @@ const EventFilterTableDemo: React.FC = () => {
       },
     };
     try {
-      const finalColumns = await filterFlowManager.applyFilters('tabulator:columns', [], context);
-      console.log('Applying filter flow result:', finalColumns);
-      setTableColumns(finalColumns);
+      const result = await filterFlowManager.applyFilters('tabulator:columns', {}, context);
+      console.log('Applying filter flow result:', result);
+      setTableColumns(result.columns);
+      setIsLoading(false);
     } catch (error) {
       console.error('Error applying filter flow:', error);
       hooks.message.error('应用列配置失败');
@@ -293,9 +349,9 @@ const EventFilterTableDemo: React.FC = () => {
       },
     };
     try {
-      await eventFlowManager.dispatchEvent('refreshTable', context);
+      await eventFlowManager.dispatchEvent('tabulator:refresh', context);
     } catch (error) {
-      console.error('Error dispatching refreshTable event:', error);
+      console.error('Error dispatching tabulator:refresh event:', error);
       hooks.message.error('刷新数据失败');
     } finally {
       setIsLoading(false);
@@ -325,18 +381,6 @@ const EventFilterTableDemo: React.FC = () => {
     eventBus.dispatchEvent('deleteSelected', context);
   }, [hooks]);
 
-  // 配置指定步骤的参数
-  const configureStep = (flowKey: string, stepKey: string) => {
-    const context: EventContext = {
-      payload: {
-        flowKey,
-        stepKey,
-        hooks: { message: messageApi, compile, applyColumnFilter, refreshData },
-      },
-    };
-    eventBus.dispatchEvent('openConfigureDialog', context);
-  };
-
   const configureFilterStep = (flowName: string, stepKey: string) => {
     const step = filterFlowManager.getFlow(flowName).getStep(stepKey);
     const context: EventContext = {
@@ -344,10 +388,11 @@ const EventFilterTableDemo: React.FC = () => {
         step,
         onChange: (value) => {
           step.set('params', value);
+          applyColumnFilter();
         },
       },
     };
-    eventBus.dispatchEvent('openConfigureDialog', context);
+    eventBus.dispatchEvent('configure:click', context);
   };
 
   const configureActionStep = (flowName: string, stepKey: string) => {
@@ -357,17 +402,13 @@ const EventFilterTableDemo: React.FC = () => {
         step,
         onChange: (value) => {
           step.set('params', value);
+          applyColumnFilter();
         },
       },
     };
-    eventBus.dispatchEvent('openConfigureDialog', context);
+    eventBus.dispatchEvent('configure:click', context);
   };
 
-  // 初始化 Tabulator
-  // 注意：修复了 "Cannot read properties of null (reading 'firstChild')" 错误
-  // 1. 使用 tableBuilt 事件确保 DOM 完全就绪后再操作 Tabulator
-  // 2. 移除单独的列更新 effect，避免初始化后重复调用 setColumns 导致的竞态问题
-  // 3. 每次列配置变更时创建全新的 Tabulator 实例，而不是尝试更新已有实例的列
   useEffect(() => {
     if (tableContainerRef.current && tableColumns.length > 0) {
       console.log('Initializing Tabulator...');
@@ -428,11 +469,7 @@ const EventFilterTableDemo: React.FC = () => {
   // 组件加载时应用列配置和加载数据
   useEffect(() => {
     setIsLoading(true);
-    applyColumnFilter()
-      .then(() => {
-        refreshData(); // 在列配置完成后加载数据
-      })
-      .catch(() => {});
+    applyColumnFilter();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // 空依赖数组确保只在挂载时执行一次
 

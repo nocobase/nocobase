@@ -140,12 +140,6 @@ eventFlowManager.addFlow({
       key: 'configure-step',
       title: '配置消息参数',
       action: 'configureAction',
-      params: {
-        actionName: 'showMessage',
-        stepKey: 'message-step',
-        flowKey: 'message-flow',
-        eventFlowManager: eventFlowManager,
-      },
       isAwait: true,
     },
   ],

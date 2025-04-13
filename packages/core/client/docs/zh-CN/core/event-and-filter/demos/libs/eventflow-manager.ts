@@ -10,7 +10,7 @@ export type EventFlowActionHandler = (params: Record<string, any>, context: any)
 export type EventFlowEventGroupOptions = {
   name: string;
   title: string;
-  sort: number;
+  sort?: number;
 };
 
 export type EventFlowEventOptions = {
@@ -18,7 +18,7 @@ export type EventFlowEventOptions = {
   title: string;
   description?: string;
   group: string;
-  sort: number;
+  sort?: number;
   uiSchema: Record<string, ISchema>;
   handler?: EventFlowEventHandler;
 };
