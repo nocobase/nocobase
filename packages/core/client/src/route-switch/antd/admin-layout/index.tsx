@@ -892,16 +892,17 @@ function findRouteById(id: string, treeArray: any[]) {
   return null;
 }
 
-function findFirstPageRoute(routes: NocoBaseDesktopRoute[]) {
+export function findFirstPageRoute(routes: NocoBaseDesktopRoute[]) {
   if (!routes) return;
 
-  for (const route of routes) {
+  for (const route of routes.filter((item) => !item.hideInMenu)) {
     if (route.type === NocoBaseDesktopRouteType.page) {
       return route;
     }
 
-    if (route.children?.length) {
-      return findFirstPageRoute(route.children);
+    if (route.type === NocoBaseDesktopRouteType.group && route.children?.length) {
+      const result = findFirstPageRoute(route.children);
+      if (result) return result;
     }
   }
 }
