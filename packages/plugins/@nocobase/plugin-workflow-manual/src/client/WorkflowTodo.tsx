@@ -50,6 +50,7 @@ import WorkflowPlugin, {
   JOB_STATUS,
   WorkflowTitle,
   TASK_STATUS,
+  usePopupRecordContext,
 } from '@nocobase/plugin-workflow/client';
 
 import { NAMESPACE, useLang } from '../locale';
@@ -619,11 +620,13 @@ function TaskItem() {
   const token = useAntdToken();
   const record = useCollectionRecordData();
   const navigate = useNavigate();
+  const { setRecord } = usePopupRecordContext();
   const onOpen = useCallback(
     (e: React.MouseEvent) => {
       const targetElement = e.target as Element; // 将事件目标转换为Element类型
       const currentTargetElement = e.currentTarget as Element;
       if (currentTargetElement.contains(targetElement)) {
+        setRecord(record);
         navigate(`./${record.id}`);
       }
       e.stopPropagation();

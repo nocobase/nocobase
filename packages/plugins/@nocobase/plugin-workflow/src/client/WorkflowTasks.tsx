@@ -11,7 +11,7 @@ import { PageHeader } from '@ant-design/pro-layout';
 import { Badge, Button, Layout, Menu, Tabs, Tooltip } from 'antd';
 import classnames from 'classnames';
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
-import { Link, Outlet, useNavigate, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 
 import {
   ActionContextProvider,
@@ -21,6 +21,7 @@ import {
   SchemaComponent,
   SchemaComponentContext,
   SchemaComponentOptions,
+  useAPIClient,
   useApp,
   useCompile,
   useDocumentTitle,
@@ -163,7 +164,11 @@ function useCurrentTaskType() {
 
 function PopupContext(props: any) {
   const { popupId } = useParams();
+  const { record } = usePopupRecordContext();
   const navigate = useNavigate();
+  if (!popupId) {
+    return null;
+  }
   return (
     <ActionContextProvider
       visible={Boolean(popupId)}
@@ -174,17 +179,24 @@ function PopupContext(props: any) {
       }}
       openMode="modal"
     >
-      <CollectionRecordProvider record={{ id: popupId }}>{props.children}</CollectionRecordProvider>
+      <CollectionRecordProvider record={record}>{props.children}</CollectionRecordProvider>
     </ActionContextProvider>
   );
+}
+
+const PopupRecordContext = createContext<any>({ record: null, setRecord: (record) => {} });
+export function usePopupRecordContext() {
+  return useContext(PopupRecordContext);
 }
 
 export function WorkflowTasks() {
   const compile = useCompile();
   const { setTitle } = useDocumentTitle();
   const navigate = useNavigate();
+  const apiClient = useAPIClient();
   const { taskType, status = TASK_STATUS.PENDING, popupId } = useParams();
   const { token } = useToken();
+  const [currentRecord, setCurrentRecord] = useState<any>(null);
 
   const items = useTaskTypeItems();
 
@@ -201,6 +213,24 @@ export function WorkflowTasks() {
       navigate(`/admin/workflow/tasks/${items[0].key}/${status}`, { replace: true });
     }
   }, [items, navigate, status, taskType]);
+
+  useEffect(() => {
+    if (popupId && !currentRecord) {
+      apiClient
+        .resource(collection)
+        .get({
+          filterByTk: popupId,
+        })
+        .then((res) => {
+          if (res.data?.data) {
+            setCurrentRecord(res.data.data);
+          }
+        })
+        .catch((err) => {
+          console.error(err);
+        });
+    }
+  }, [popupId, collection, currentRecord, apiClient]);
 
   const typeKey = taskType ?? items[0].key;
 
@@ -227,88 +257,95 @@ export function WorkflowTasks() {
           }
         `}
       >
-        <SchemaComponentContext.Provider value={{ designable: false }}>
-          <SchemaComponent
-            components={{
-              Layout,
-              PageHeader,
-              StatusTabs,
-            }}
-            schema={{
-              name: `${taskType}-${status}`,
-              type: 'void',
-              'x-decorator': 'List.Decorator',
-              'x-decorator-props': {
-                collection,
-                action,
-                params: {
-                  pageSize: 20,
-                  sort: ['-createdAt'],
-                  ...params,
-                },
-              },
-              properties: {
-                header: {
-                  type: 'void',
-                  'x-component': 'PageHeader',
-                  'x-component-props': {
-                    className: classnames('pageHeaderCss'),
-                    style: {
-                      background: token.colorBgContainer,
-                      padding: '12px 24px 0 24px',
-                    },
-                    title,
-                  },
-                  properties: {
-                    tabs: {
-                      type: 'void',
-                      'x-component': 'StatusTabs',
-                    },
+        <PopupRecordContext.Provider
+          value={{
+            record: currentRecord,
+            setRecord: setCurrentRecord,
+          }}
+        >
+          <SchemaComponentContext.Provider value={{ designable: false }}>
+            <SchemaComponent
+              components={{
+                Layout,
+                PageHeader,
+                StatusTabs,
+              }}
+              schema={{
+                name: `${taskType}-${status}`,
+                type: 'void',
+                'x-decorator': 'List.Decorator',
+                'x-decorator-props': {
+                  collection,
+                  action,
+                  params: {
+                    pageSize: 20,
+                    sort: ['-createdAt'],
+                    ...params,
                   },
                 },
-                content: {
-                  type: 'void',
-                  'x-component': 'Layout.Content',
-                  'x-component-props': {
-                    className: contentClass,
-                    style: {
-                      padding: `${token.paddingPageVertical}px ${token.paddingPageHorizontal}px`,
-                    },
-                  },
-                  properties: {
-                    list: {
-                      type: 'array',
-                      'x-component': 'List',
-                      'x-component-props': {
-                        className: css`
-                          > .itemCss:not(:last-child) {
-                            border-bottom: none;
-                          }
-                        `,
-                        locale: {
-                          emptyText: `{{ t("No data yet", { ns: "${NAMESPACE}" }) }}`,
-                        },
+                properties: {
+                  header: {
+                    type: 'void',
+                    'x-component': 'PageHeader',
+                    'x-component-props': {
+                      className: classnames('pageHeaderCss'),
+                      style: {
+                        background: token.colorBgContainer,
+                        padding: '12px 24px 0 24px',
                       },
-                      properties: {
-                        item: {
-                          type: 'object',
-                          'x-decorator': 'List.Item',
-                          'x-component': Item,
-                          'x-read-pretty': true,
-                        },
+                      title,
+                    },
+                    properties: {
+                      tabs: {
+                        type: 'void',
+                        'x-component': 'StatusTabs',
                       },
                     },
                   },
+                  content: {
+                    type: 'void',
+                    'x-component': 'Layout.Content',
+                    'x-component-props': {
+                      className: contentClass,
+                      style: {
+                        padding: `${token.paddingPageVertical}px ${token.paddingPageHorizontal}px`,
+                      },
+                    },
+                    properties: {
+                      list: {
+                        type: 'array',
+                        'x-component': 'List',
+                        'x-component-props': {
+                          className: css`
+                            > .itemCss:not(:last-child) {
+                              border-bottom: none;
+                            }
+                          `,
+                          locale: {
+                            emptyText: `{{ t("No data yet", { ns: "${NAMESPACE}" }) }}`,
+                          },
+                        },
+                        properties: {
+                          item: {
+                            type: 'object',
+                            'x-decorator': 'List.Item',
+                            'x-component': Item,
+                            'x-read-pretty': true,
+                          },
+                        },
+                      },
+                    },
+                  },
+                  popup: {
+                    type: 'void',
+                    'x-decorator': PopupContext,
+                    'x-component': Detail,
+                  },
                 },
-                popup: {
-                  type: 'void',
-                  'x-decorator': PopupContext,
-                  'x-component': Detail,
-                },
-              },
-            }}
-          />
-        </SchemaComponentContext.Provider>
+              }}
+            />
+          </SchemaComponentContext.Provider>
+        </PopupRecordContext.Provider>
       </Layout>
     </Layout>
   );
