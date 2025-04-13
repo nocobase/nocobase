@@ -37,8 +37,9 @@ const formItemWrapCss = css`
   .ant-description-textarea img {
     max-width: 100%;
   }
-  &.ant-formily-item-layout-vertical .ant-formily-item-label {
+  &.ant-formily-item-layout-horizontal .ant-formily-item-label {
     display: inline;
+    padding-right: 5px;
     .ant-formily-item-label-tooltip-icon {
       display: inline;
     }
