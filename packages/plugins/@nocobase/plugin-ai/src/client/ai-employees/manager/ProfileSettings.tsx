@@ -23,12 +23,14 @@ export const ProfileSettings: React.FC = () => {
             title: 'Username',
             'x-decorator': 'FormItem',
             'x-component': 'Input',
+            required: true,
           },
           nickname: {
             type: 'string',
             title: 'Nickname',
             'x-decorator': 'FormItem',
             'x-component': 'Input',
+            required: true,
           },
           avatar: {
             type: 'string',
@@ -49,6 +51,7 @@ export const ProfileSettings: React.FC = () => {
           about: {
             type: 'string',
             title: 'About me',
+            required: true,
             'x-decorator': 'FormItem',
             'x-component': 'Input.TextArea',
             'x-component-props': {

@@ -53,6 +53,7 @@ export const ModelSettings: React.FC = () => {
           llmService: {
             type: 'string',
             title: 'LLM service',
+            required: true,
             'x-decorator': 'FormItem',
             'x-component': 'RemoteSelect',
             'x-component-props': {
