@@ -10,11 +10,11 @@
 import { useFieldSchema } from '@formily/react';
 import React from 'react';
 import { withDynamicSchemaProps } from '../hoc/withDynamicSchemaProps';
-import { DatePickerProvider, ActionBarProvider, SchemaComponentOptions } from '../schema-component';
+import { FilterCollectionField } from '../modules/blocks/filter-blocks/FilterCollectionField';
+import { ActionBarProvider, DatePickerProvider, SchemaComponentOptions } from '../schema-component';
 import { DefaultValueProvider } from '../schema-settings';
 import { CollectOperators } from './CollectOperators';
 import { FormBlockProvider } from './FormBlockProvider';
-import { FilterCollectionField } from '../modules/blocks/filter-blocks/FilterCollectionField';
 
 export const FilterFormBlockProvider = withDynamicSchemaProps((props) => {
   const filedSchema = useFieldSchema();
@@ -35,7 +35,7 @@ export const FilterFormBlockProvider = withDynamicSchemaProps((props) => {
             }}
           >
             <DefaultValueProvider isAllowToSetDefaultValue={() => false}>
-              <FormBlockProvider name="filter-form" {...props}></FormBlockProvider>
+              <FormBlockProvider name="filter-form" {...props} confirmBeforeClose={false}></FormBlockProvider>
             </DefaultValueProvider>
           </ActionBarProvider>
         </DatePickerProvider>
