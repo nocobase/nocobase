@@ -1,5 +1,6 @@
 # Filter
 ## 基础过滤器
+可通过配置过滤器参数，改变过滤器的行为
 
 <code src="./demos/filters/basic-filter.tsx"></code>
 
@@ -29,8 +30,3 @@
 通过UI配置过滤器参数，然后应用过滤操作
 
 <code src="./demos/filters/configurable-filter.tsx"></code>
-
-
-## Table
-
-<!-- <code src="./demos/EventFilterTableDemo.tsx"></code> -->

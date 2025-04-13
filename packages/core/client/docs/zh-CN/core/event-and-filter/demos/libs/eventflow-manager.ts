@@ -26,7 +26,7 @@ export type EventFlowEventOptions = {
 export type EventFlowActionGroupOptions = {
   name: string;
   title: string;
-  sort: number;
+  sort?: number;
 };
 
 export type EventFlowActionOptions = {
@@ -34,7 +34,7 @@ export type EventFlowActionOptions = {
   title: string;
   description?: string;
   group: string;
-  sort: number;
+  sort?: number;
   uiSchema: Record<string, ISchema>;
   handler: EventFlowActionHandler;
 };

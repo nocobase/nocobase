@@ -13,6 +13,7 @@ import { useFieldSchema } from '@formily/react';
 import { defaultListenerCondition } from './event-bus';
 import { EventBus } from './event-bus';
 import { uid } from '@nocobase/utils/client';
+import { createStyles } from 'antd-style';
 
 const eventBus = new EventBus();
 
@@ -95,7 +96,7 @@ export function useAddEventListener(event: string | string[], handler: EventList
       ...options,
     });
     return unsubscribe;
-  }, [handler, event, fieldSchema, options, uid]);
+  }, [handler, event, fieldSchema, options]);
 }
 
 /**
@@ -104,10 +105,164 @@ export function useAddEventListener(event: string | string[], handler: EventList
  * @returns A function that dispatches events
  */
 export function useDispatchEvent() {
-  return useCallback(
-    async (eventName: string | string[], ctx: any) => {
-      return eventBus.dispatchEvent(eventName, ctx);
-    },
-    [eventBus],
-  );
+  return useCallback(async (eventName: string | string[], ctx: any) => {
+    return eventBus.dispatchEvent(eventName, ctx);
+  }, []);
 }
+
+export const useTabulatorBuiltinStyles = () => {
+  useEffect(() => {
+    // Check if the link already exists
+    const existingLink = document.querySelector(`link[href*="tabulator.min.css"]`);
+    if (!existingLink) {
+      const link = document.createElement('link');
+      link.rel = 'stylesheet';
+      link.href = 'https://unpkg.com/tabulator-tables@6.3.1/dist/css/tabulator.min.css';
+      document.head.appendChild(link);
+      return () => {
+        document.head.removeChild(link);
+      };
+    }
+  }, []);
+};
+
+export const useTabulatorStyles = createStyles(({ css, token }) => {
+  return {
+    tabulatorWrapper: css`
+      width: 100%;
+      overflow: auto;
+      border: 1px solid ${token.colorBorderSecondary};
+      border-radius: ${token.borderRadiusLG}px;
+      background-color: ${token.colorBgContainer};
+
+      .tabulator {
+        border: none;
+        background-color: transparent;
+
+        .tabulator-header {
+          border-bottom: 1px solid ${token.colorBorderSecondary};
+          background-color: ${token.colorFillAlter};
+
+          .tabulator-col {
+            background-color: transparent;
+            border-right: 1px solid ${token.colorBorderSecondary};
+
+            &:last-child {
+              border-right: none;
+            }
+
+            .tabulator-col-content {
+              padding: 8px;
+
+              .tabulator-col-title {
+                font-weight: 500;
+              }
+
+              .tabulator-arrow {
+                border-bottom-color: ${token.colorTextSecondary};
+              }
+            }
+
+            &.tabulator-sortable[aria-sort='ascending'] .tabulator-col-content .tabulator-arrow {
+              border-bottom-color: ${token.colorPrimary};
+            }
+
+            &.tabulator-sortable[aria-sort='descending'] .tabulator-col-content .tabulator-arrow {
+              border-top-color: ${token.colorPrimary};
+              border-bottom: none;
+            }
+          }
+        }
+
+        .tabulator-tableHolder {
+          .tabulator-table {
+            .tabulator-row {
+              border-bottom: 1px solid ${token.colorBorderSecondary};
+              transition: background-color 0.2s ease;
+
+              &:last-child {
+                border-bottom: none;
+              }
+
+              &.tabulator-row-even {
+                background-color: ${token.colorFillAlter};
+              }
+
+              &.tabulator-selected {
+                background-color: ${token.colorPrimaryBg};
+              }
+
+              &.tabulator-row-highlighted {
+                background-color: ${token.colorWarningBg};
+                transition: background-color 0.3s ease;
+              }
+
+              &.tabulator-row-hover-effect {
+                background-color: ${token.colorInfoBg};
+                transition: background-color 0.2s ease;
+              }
+
+              .tabulator-cell {
+                padding: 8px;
+                border-right: 1px solid ${token.colorBorderSecondary};
+                transition: background-color 0.2s ease;
+
+                &:last-child {
+                  border-right: none;
+                }
+
+                &.tabulator-cell-highlighted {
+                  background-color: ${token.colorInfoBg};
+                  transition: background-color 0.3s ease;
+                }
+
+                &.tabulator-editing {
+                  border: 1px solid ${token.colorPrimary};
+                  background-color: ${token.colorBgContainer};
+                  padding: 0;
+
+                  input,
+                  select,
+                  textarea {
+                    border: none;
+                    outline: none;
+                    width: 100%;
+                    height: 100%;
+                    padding: 7px;
+                    box-sizing: border-box;
+                    font-family: inherit;
+                    font-size: inherit;
+                  }
+                }
+              }
+            }
+          }
+        }
+
+        .tabulator-footer {
+          background-color: ${token.colorFillAlter};
+          border-top: 1px solid ${token.colorBorderSecondary};
+
+          .tabulator-paginator {
+            .tabulator-page {
+              border: 1px solid ${token.colorBorderSecondary};
+              background-color: ${token.colorBgContainer};
+              color: ${token.colorText};
+              border-radius: ${token.borderRadiusSM}px;
+              margin: 0 2px;
+
+              &.active {
+                background-color: ${token.colorPrimary};
+                color: ${token.colorTextLightSolid};
+                border-color: ${token.colorPrimary};
+              }
+            }
+          }
+        }
+      }
+    `,
+    container: css`
+      width: 100%;
+    `,
+  };
+});
