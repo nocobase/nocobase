@@ -13,7 +13,7 @@ import { useAIEmployeesContext } from '../AIEmployeesProvider';
 import { Spin, Avatar } from 'antd';
 import { avatars } from '../avatars';
 
-const getAIEmployeesInitializer = (dynamicChatContextHook: string) => ({
+const getAIEmployeesInitializer = () => ({
   name: 'aiEmployees',
   title: 'AI employees',
   type: 'subMenu',
@@ -37,8 +37,6 @@ const getAIEmployeesInitializer = (dynamicChatContextHook: string) => ({
             const handleClick = () => {
               insert({
                 type: 'void',
-                'x-decorator': 'AIEmployeeChatProvider',
-                'x-use-decorator-props': dynamicChatContextHook,
                 'x-component': 'AIEmployeeButton',
                 'x-toolbar': 'ActionSchemaToolbar',
                 'x-settings': 'aiEmployees:button',
@@ -66,5 +64,4 @@ const getAIEmployeesInitializer = (dynamicChatContextHook: string) => ({
   },
 });
 
-export const detailsAIEmployeesInitializer = getAIEmployeesInitializer('useDetailsAIEmployeeChatContext');
-export const formAIEmployeesInitializer = getAIEmployeesInitializer('useFormAIEmployeeChatContext');
+export const aiEmployeesInitializer = getAIEmployeesInitializer();

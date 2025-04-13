@@ -16,9 +16,8 @@ import { LLMInstruction } from './workflow/nodes/llm';
 import { AIEmployeeInstruction } from './workflow/nodes/employee';
 import { tval } from '@nocobase/utils/client';
 import { namespace } from './locale';
-import { detailsAIEmployeesInitializer, formAIEmployeesInitializer } from './ai-employees/initializer/AIEmployees';
+import { aiEmployeesInitializer } from './ai-employees/initializer/AIEmployees';
 import { aiEmployeeButtonSettings } from './ai-employees/settings/AIEmployeeButton';
-import { useDetailsAIEmployeeChatContext, useFormAIEmployeeChatContext } from './ai-employees/useBlockChatContext';
 import { withAISelectable } from './ai-employees/selector/withAISelectable';
 const { AIEmployeesProvider } = lazy(() => import('./ai-employees/AIEmployeesProvider'), 'AIEmployeesProvider');
 const { AIEmployeeChatProvider } = lazy(
@@ -54,10 +53,6 @@ export class PluginAIClient extends Plugin {
         selectType: 'fields',
       }),
     });
-    this.app.addScopes({
-      useDetailsAIEmployeeChatContext,
-      useFormAIEmployeeChatContext,
-    });
     this.app.pluginSettingsManager.add('ai', {
       icon: 'TeamOutlined',
       title: tval('AI employees', { ns: namespace }),
@@ -77,14 +72,19 @@ export class PluginAIClient extends Plugin {
     });
 
     this.app.schemaInitializerManager.addItem(
+      'table:configureActions',
+      'enableActions.aiEmployees',
+      aiEmployeesInitializer,
+    );
+    this.app.schemaInitializerManager.addItem(
       'details:configureActions',
       'enableActions.aiEmployees',
-      detailsAIEmployeesInitializer,
+      aiEmployeesInitializer,
     );
     this.app.schemaInitializerManager.addItem(
       'createForm:configureActions',
       'enableActions.aiEmployees',
-      formAIEmployeesInitializer,
+      aiEmployeesInitializer,
     );
     this.app.schemaSettingsManager.add(aiEmployeeButtonSettings);
 
