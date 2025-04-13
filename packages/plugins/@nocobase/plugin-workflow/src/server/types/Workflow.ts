@@ -29,8 +29,6 @@ export default class WorkflowModel extends Model {
   declare type: string;
   declare config: any;
   declare options: any;
-  declare executed: number;
-  declare allExecuted: number;
   declare sync: boolean;
 
   declare createdAt: Date;

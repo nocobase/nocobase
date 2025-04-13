@@ -105,4 +105,18 @@ describe('string field', () => {
       name2: 'n2111',
     });
   });
+
+  it('trim', async () => {
+    const collection = db.collection({
+      name: 'tests',
+      fields: [{ type: 'string', name: 'name', trim: true }],
+    });
+    await db.sync();
+    const model = await collection.model.create({
+      name: '  n1\n ',
+    });
+    expect(model.toJSON()).toMatchObject({
+      name: 'n1',
+    });
+  });
 });

@@ -11,6 +11,7 @@ import { DeleteOutlined, DownloadOutlined, InboxOutlined, LoadingOutlined, PlusO
 import { Field } from '@formily/core';
 import { connect, mapProps, mapReadPretty, useField } from '@formily/react';
 import { Alert, Upload as AntdUpload, Button, Modal, Progress, Space, Tooltip } from 'antd';
+import { createGlobalStyle } from 'antd-style';
 import useUploadStyle from 'antd/es/upload/style';
 import cls from 'classnames';
 import { saveAs } from 'file-saver';
@@ -35,6 +36,12 @@ import {
 } from './shared';
 import { useStyles } from './style';
 import type { ComposedUpload, DraggerProps, DraggerV2Props, UploadProps } from './type';
+
+const LightBoxGlobalStyle = createGlobalStyle`
+  .ReactModal__Overlay.ReactModal__Overlay--after-open {
+    z-index: 3000 !important; // 避免预览图片时被遮挡
+  }
+`;
 
 attachmentFileTypes.add({
   match(file) {
@@ -62,34 +69,37 @@ attachmentFileTypes.add({
       [index, list],
     );
     return (
-      <LightBox
-        // discourageDownloads={true}
-        mainSrc={list[index]?.url}
-        nextSrc={list[(index + 1) % list.length]?.url}
-        prevSrc={list[(index + list.length - 1) % list.length]?.url}
-        onCloseRequest={() => onSwitchIndex(null)}
-        onMovePrevRequest={() => onSwitchIndex((index + list.length - 1) % list.length)}
-        onMoveNextRequest={() => onSwitchIndex((index + 1) % list.length)}
-        imageTitle={list[index]?.title}
-        toolbarButtons={[
-          <button
-            key={'preview-img'}
-            style={{ fontSize: 22, background: 'none', lineHeight: 1 }}
-            type="button"
-            aria-label="Download"
-            title="Download"
-            className="ril-zoom-in ril__toolbarItemChild ril__builtinButton"
-            onClick={onDownload}
-          >
-            <DownloadOutlined />
-          </button>,
-        ]}
-      />
+      <>
+        <LightBoxGlobalStyle />
+        <LightBox
+          // discourageDownloads={true}
+          mainSrc={list[index]?.url}
+          nextSrc={list[(index + 1) % list.length]?.url}
+          prevSrc={list[(index + list.length - 1) % list.length]?.url}
+          onCloseRequest={() => onSwitchIndex(null)}
+          onMovePrevRequest={() => onSwitchIndex((index + list.length - 1) % list.length)}
+          onMoveNextRequest={() => onSwitchIndex((index + 1) % list.length)}
+          imageTitle={list[index]?.title}
+          toolbarButtons={[
+            <button
+              key={'preview-img'}
+              style={{ fontSize: 22, background: 'none', lineHeight: 1 }}
+              type="button"
+              aria-label="Download"
+              title="Download"
+              className="ril-zoom-in ril__toolbarItemChild ril__builtinButton"
+              onClick={onDownload}
+            >
+              <DownloadOutlined />
+            </button>,
+          ]}
+        />
+      </>
     );
   },
 });
 
-const iframePreviewSupportedTypes = ['application/pdf', 'audio/*', 'image/*', 'video/*', 'text/*'];
+const iframePreviewSupportedTypes = ['application/pdf', 'audio/*', 'image/*', 'video/*', 'text/plain'];
 
 function IframePreviewer({ index, list, onSwitchIndex }) {
   const { t } = useTranslation();

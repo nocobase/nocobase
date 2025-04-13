@@ -7,13 +7,14 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { EllipsisOutlined } from '@ant-design/icons';
+import { EllipsisOutlined, HighlightOutlined } from '@ant-design/icons';
 import ProLayout, { RouteContext, RouteContextType } from '@ant-design/pro-layout';
 import { HeaderViewProps } from '@ant-design/pro-layout/es/components/Header';
 import { css } from '@emotion/css';
-import { theme as antdTheme, ConfigProvider, Popover, Tooltip } from 'antd';
+import { theme as antdTheme, ConfigProvider, Popover, Result, Tooltip } from 'antd';
 import React, { createContext, FC, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import ReactDOM from 'react-dom';
+import { useTranslation } from 'react-i18next';
 import { Link, Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import {
   ACLRolesCheckProvider,
@@ -52,6 +53,7 @@ import { KeepAlive } from './KeepAlive';
 import { NocoBaseDesktopRoute, NocoBaseDesktopRouteType } from './convertRoutesToSchema';
 import { MenuSchemaToolbar, ResetThemeTokenAndKeepAlgorithm } from './menuItemSettings';
 import { userCenterSettings } from './userCenterSettings';
+import { createStyles } from 'antd-style';
 
 export { KeepAlive, NocoBaseDesktopRouteType };
 
@@ -154,10 +156,7 @@ const layoutContentClass = css`
   display: flex;
   flex-direction: column;
   position: relative;
-  /* 基础高度（所有浏览器支持） */
   height: calc(100vh - var(--nb-header-height));
-  /* 动态视口高度（现代浏览器支持） */
-  height: calc(100dvh - var(--nb-header-height));
   > div {
     position: relative;
   }
@@ -201,12 +200,53 @@ const pageContentStyle: React.CSSProperties = {
   overflowY: 'auto',
 };
 
+const ShowTipWhenNoPages = () => {
+  const { allAccessRoutes } = useAllAccessDesktopRoutes();
+  const { designable } = useDesignable();
+  const { token } = useToken();
+  const { t } = useTranslation();
+  const location = useLocation();
+
+  // Check if there are any pages
+  if (allAccessRoutes.length === 0 && !designable && ['/admin', '/admin/'].includes(location.pathname)) {
+    return (
+      <Result
+        icon={<HighlightOutlined style={{ fontSize: '8em', color: token.colorText }} />}
+        title={t('No pages yet, please configure first')}
+        subTitle={t(`Click the "UI Editor" icon in the upper right corner to enter the UI Editor mode`)}
+      />
+    );
+  }
+
+  return null;
+};
+
+// 移动端中需要使用 dvh 单位来计算高度，否则会出现滚动不到最底部的问题
+const mobileHeight = {
+  height: `calc(100dvh - var(--nb-header-height))`,
+};
+
+function isDvhSupported() {
+  // 创建一个测试元素
+  const testEl = document.createElement('div');
+
+  // 尝试设置 dvh 单位
+  testEl.style.height = '1dvh';
+
+  // 如果浏览器支持 dvh，则会解析这个值
+  // 如果不支持，height 将保持为空字符串或被设置为无效值
+  return testEl.style.height === '1dvh';
+}
+
 export const LayoutContent = () => {
+  const style = useMemo(() => (isDvhSupported() ? mobileHeight : undefined), []);
+
   /* Use the "nb-subpages-slot-without-header-and-side" class name to locate the position of the subpages */
   return (
-    <div className={`${layoutContentClass} nb-subpages-slot-without-header-and-side`}>
+    <div className={`${layoutContentClass} nb-subpages-slot-without-header-and-side`} style={style}>
       <div style={pageContentStyle}>
         <Outlet />
+        <ShowTipWhenNoPages />
       </div>
     </div>
   );
@@ -268,7 +308,7 @@ const GroupItem: FC<{ item: any }> = (props) => {
 };
 
 const WithTooltip: FC<{ title: string; hidden: boolean }> = (props) => {
-  const { inHeader } = useContext(headerContext);
+  const { inHeader } = useContext(HeaderContext);
 
   return (
     <RouteContext.Consumer>
@@ -406,7 +446,7 @@ const contentStyle = {
   paddingInline: 0,
 };
 
-const headerContext = React.createContext<{ inHeader: boolean }>({ inHeader: false });
+const HeaderContext = React.createContext<{ inHeader: boolean }>({ inHeader: false });
 
 const popoverStyle = css`
   .ant-popover-inner {
@@ -495,9 +535,38 @@ const collapsedButtonRender = (collapsed, dom) => {
   return <CollapsedButton collapsed={collapsed}>{dom}</CollapsedButton>;
 };
 
+/**
+ * 这个问题源自 antd 的一个 bug，等 antd 修复了这个问题后，可以删除这个样式。
+ * - issue: https://github.com/ant-design/pro-components/issues/8593
+ * - issue: https://github.com/ant-design/pro-components/issues/8522
+ * - issue: https://github.com/ant-design/pro-components/issues/8432
+ */
+const useHeaderStyle = createStyles(({ token }: any) => {
+  return {
+    headerPopup: {
+      '&.ant-menu-submenu-popup>.ant-menu': {
+        backgroundColor: `${token.colorBgHeader}`,
+      },
+    },
+    headerMenuActive: {
+      '& .ant-menu-submenu-selected>.ant-menu-submenu-title': {
+        color: token.colorTextHeaderMenuActive,
+      },
+    },
+  };
+});
 const headerContextValue = { inHeader: true };
+const HeaderWrapper: FC = (props) => {
+  const { styles } = useHeaderStyle();
+
+  return (
+    <span className={styles.headerMenuActive}>
+      <HeaderContext.Provider value={headerContextValue}>{props.children}</HeaderContext.Provider>
+    </span>
+  );
+};
 const headerRender = (props: HeaderViewProps, defaultDom: React.ReactNode) => {
-  return <headerContext.Provider value={headerContextValue}>{defaultDom}</headerContext.Provider>;
+  return <HeaderWrapper>{defaultDom}</HeaderWrapper>;
 };
 
 const IsMobileLayoutContext = React.createContext<{
@@ -531,6 +600,7 @@ export const InternalAdminLayout = () => {
   const doNotChangeCollapsedRef = useRef(false);
   const { t } = useMenuTranslation();
   const designable = isMobileLayout ? false : _designable;
+  const { styles } = useHeaderStyle();
 
   const route = useMemo(() => {
     return {
@@ -544,7 +614,7 @@ export const InternalAdminLayout = () => {
         colorBgHeader: token.colorBgHeader,
         colorTextMenu: token.colorTextHeaderMenu,
         colorTextMenuSelected: token.colorTextHeaderMenuActive,
-        colorTextMenuActive: token.colorTextHeaderMenuActive,
+        colorTextMenuActive: token.colorTextHeaderMenuHover,
         colorBgMenuItemHover: token.colorBgHeaderMenuHover,
         colorBgMenuItemSelected: token.colorBgHeaderMenuActive,
         heightLayoutHeader: 46,
@@ -571,7 +641,7 @@ export const InternalAdminLayout = () => {
         paddingPageVertical: 8, // Vertical page padding
         marginBlock: 12, // Spacing between blocks
         borderRadiusBlock: 8, // Block border radius
-        fontSize: 14, // Font size
+        fontSize: 16, // Font size
       },
       algorithm: isDarkTheme ? [antdTheme.compactAlgorithm, antdTheme.darkAlgorithm] : antdTheme.compactAlgorithm, // Set mobile mode to always use compact algorithm
     };
@@ -590,6 +660,12 @@ export const InternalAdminLayout = () => {
       doNotChangeCollapsedRef.current = false;
     });
   }, []);
+
+  const menuProps = useMemo(() => {
+    return {
+      overflowedIndicatorPopupClassName: styles.headerPopup,
+    };
+  }, [styles.headerPopup]);
 
   return (
     <DndContext onDragEnd={onDragEnd}>
@@ -612,6 +688,7 @@ export const InternalAdminLayout = () => {
         onCollapse={onCollapse}
         collapsed={collapsed}
         onPageChange={onPageChange}
+        menuProps={menuProps}
       >
         <RouteContext.Consumer>
           {(value: RouteContextType) => {

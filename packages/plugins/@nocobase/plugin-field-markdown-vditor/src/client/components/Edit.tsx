@@ -7,10 +7,12 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { useAPIClient, useApp, withDynamicSchemaProps } from '@nocobase/client';
+import { useAPIClient, useCompile, usePlugin, withDynamicSchemaProps } from '@nocobase/client';
 import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import Vditor from 'vditor';
 import { defaultToolbar } from '../interfaces/markdown-vditor';
+import { NAMESPACE } from '../locale';
 import { useCDN } from './const';
 import useStyle from './style';
 
@@ -24,11 +26,15 @@ export const Edit = withDynamicSchemaProps((props) => {
   const vdFullscreen = useRef(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const containerParentRef = useRef<HTMLDivElement>(null);
-  const app = useApp();
   const apiClient = useAPIClient();
   const cdn = useCDN();
   const { wrapSSR, hashId, componentCls: containerClassName } = useStyle();
   const locale = apiClient.auth.locale || 'en-US';
+  const fileManagerPlugin: any = usePlugin('@nocobase/plugin-file-manager');
+  const compile = useCompile();
+  const compileRef = useRef(compile);
+  compileRef.current = compile;
+  const { t } = useTranslation();
 
   const lang: any = useMemo(() => {
     const currentLang = locale.replace(/-/g, '_');
@@ -41,7 +47,6 @@ export const Edit = withDynamicSchemaProps((props) => {
   useEffect(() => {
     if (!containerRef.current) return;
 
-    const uploadFileCollection = fileCollection || 'attachments';
     const toolbarConfig = toolbar ?? defaultToolbar;
 
     const vditor = new Vditor(containerRef.current, {
@@ -68,24 +73,63 @@ export const Edit = withDynamicSchemaProps((props) => {
         onChange(value);
       },
       upload: {
-        url: app.getApiUrl(`${uploadFileCollection}:create`),
-        headers: apiClient.getHeaders(),
         multiple: false,
         fieldName: 'file',
-        max: 1024 * 1024 * 1024, // 1G
-        format(files, responseText) {
-          const response = JSON.parse(responseText);
-          const formatResponse = {
-            msg: '',
-            code: 0,
-            data: {
-              errFiles: [],
-              succMap: {
-                [response.data.filename]: response.data.url,
-              },
-            },
-          };
-          return JSON.stringify(formatResponse);
+        async handler(files: File[]) {
+          const file = files[0];
+
+          // Need to ensure focus is in the current input box before uploading
+          vditor.focus();
+
+          const { data: checkData } = await apiClient.resource('vditor').check({
+            fileCollectionName: fileCollection,
+          });
+
+          if (!checkData?.data?.isSupportToUploadFiles) {
+            vditor.tip(
+              t('vditor.uploadError.message', { ns: NAMESPACE, storageTitle: checkData.data.storage?.title }),
+              0,
+            );
+            return;
+          }
+
+          vditor.tip(t('uploading'), 0);
+          const { data, errorMessage } = await fileManagerPlugin.uploadFile({
+            file,
+            fileCollectionName: fileCollection,
+            storageId: checkData?.data?.storage?.id,
+            storageType: checkData?.data?.storage?.type,
+            storageRules: checkData?.data?.storage?.rules,
+          });
+
+          if (errorMessage) {
+            vditor.tip(compileRef.current(errorMessage), 3000);
+            return;
+          }
+
+          if (!data) {
+            vditor.tip(t('Response data is empty', { ns: NAMESPACE }), 3000);
+            return;
+          }
+
+          const fileName = data.filename;
+          const fileUrl = data.url;
+
+          // Check if the uploaded file is an image
+          const isImage = file.type.startsWith('image/');
+
+          if (isImage) {
+            // Insert as an image - will be displayed in the editor
+            vditor.insertValue(`![${fileName}](${fileUrl})`);
+          } else {
+            // For non-image files, insert as a download link
+            vditor.insertValue(`[${fileName}](${fileUrl})`);
+          }
+
+          // hide the tip
+          vditor.tip(t(''), 10);
+
+          return null;
         },
       },
     });
@@ -94,7 +138,8 @@ export const Edit = withDynamicSchemaProps((props) => {
       vdRef.current?.destroy();
       vdRef.current = undefined;
     };
-  }, [fileCollection, toolbar?.join(',')]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [toolbar?.join(',')]);
 
   useEffect(() => {
     if (editorReady && vdRef.current) {
@@ -155,7 +200,7 @@ export const Edit = withDynamicSchemaProps((props) => {
 
   return wrapSSR(
     <div ref={containerParentRef} className={`${hashId} ${containerClassName}`}>
-      <div id={hashId} ref={containerRef}></div>
+      <div ref={containerRef}></div>
     </div>,
   );
 });

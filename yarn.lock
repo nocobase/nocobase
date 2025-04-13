@@ -21997,6 +21997,11 @@ node-xlsx@^0.16.1:
     buffer-from "^1.1.1"
     xlsx "^0.17.0"
 
+nodejs-snowflake@2.0.1:
+  version "2.0.1"
+  resolved "https://registry.npmmirror.com/nodejs-snowflake/-/nodejs-snowflake-2.0.1.tgz#d82fb1c7398404c5ac984d6f1cdfb1b5aef7bd80"
+  integrity sha512-zMfDorNNsJm1OWWx/OUUGVT0bQ3TwC2ti4URD8UjnpffVLtLpy3eBDIaV5TnLs91YrRhwBD6L0StqU6YtnZt9A==
+
 nodemailer-mock@^1.5.11:
   version "1.5.12"
   resolved "https://registry.npmmirror.com/nodemailer-mock/-/nodemailer-mock-1.5.12.tgz#607ec52a46a05fc1ed96585d830aad26407c7696"

@@ -14,7 +14,7 @@ import { ActionDrawerUsedInMobile, useToAdaptActionDrawerToMobile } from './adap
 import { useToAdaptFilterActionToMobile } from './adaptor-of-desktop/FilterAction';
 import { mobileComponents } from './pages/dynamic-page/MobilePage';
 
-const GlobalStyle = createGlobalStyle`
+const ResetScrollbar = createGlobalStyle`
   ::-webkit-scrollbar {
     display: none;
   }
@@ -49,7 +49,7 @@ const MobileAdapter: FC = (props) => {
 
   return (
     <>
-      <GlobalStyle />
+      <ResetScrollbar />
       <OpenModeProvider defaultOpenMode="page" isMobile={true} openModeToComponent={openModeToComponent}>
         <SchemaComponentOptions components={mobileComponents}>{props.children}</SchemaComponentOptions>
       </OpenModeProvider>

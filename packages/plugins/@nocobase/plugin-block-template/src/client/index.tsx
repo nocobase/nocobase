@@ -169,8 +169,6 @@ export class PluginBlockTemplateClient extends Plugin {
             'blockSettings:createForm',
             'blockSettings:details',
             'blockSettings:detailsWithPagination',
-            'blockSettings:multiDataDetails',
-            'blockSettings:singleDataDetails',
             'blockSettings:stepsForm',
             'blockSettings:filterCollapse',
             'blockSettings:filterForm',
