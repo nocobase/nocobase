@@ -152,4 +152,8 @@ export default class MysqlQueryInterface extends QueryInterface {
 
   async beforeRemoveColumn(options: RemoveColumnOptions): Promise<void> {}
   async afterRemoveColumn(options: RemoveColumnOptions): Promise<void> {}
+
+  nullSafe(): string {
+    return 'IFNULL';
+  }
 }

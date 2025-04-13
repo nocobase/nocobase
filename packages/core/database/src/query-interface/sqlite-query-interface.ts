@@ -157,4 +157,8 @@ export default class SqliteQueryInterface extends QueryInterface {
 
   async beforeRemoveColumn(options: RemoveColumnOptions): Promise<void> {}
   async afterRemoveColumn(options: RemoveColumnOptions): Promise<void> {}
+
+  nullSafe(): string {
+    return 'IFNULL';
+  }
 }

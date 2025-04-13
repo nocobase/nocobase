@@ -111,6 +111,9 @@ export default abstract class QueryInterface {
 
   abstract afterRemoveColumn(options: RemoveColumnOptions): Promise<void>;
 
+  // Usage: mysql => ifnull, postgres => coalesce, mssql => isnull
+  abstract nullSafe(): string;
+
   get defaultSchemaName() {
     return this.config.defaultSchemaName;
   }
