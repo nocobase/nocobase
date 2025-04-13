@@ -10,7 +10,7 @@
 import React, { memo, useEffect, useRef } from 'react';
 import { Bubble } from '@ant-design/x';
 import { useChatBoxContext } from './ChatBoxContext';
-import { ReactComponent as EmptyIcon } from '../empty-icon.svg';
+import emptyIcon from '../empty-icon.svg';
 import { Spin, Layout } from 'antd';
 import { useChatMessages } from './ChatMessagesProvider';
 
@@ -69,7 +69,7 @@ export const Messages: React.FC = () => {
             transform: 'translate(-50%, -50%)',
           }}
         >
-          <EmptyIcon />
+          <img src={emptyIcon} />
         </div>
       )}
     </Layout.Content>

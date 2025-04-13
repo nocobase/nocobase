@@ -25,7 +25,8 @@ export const Avatar: React.FC<{
 }> = ({ srcs, size, selectable, highlightItem, onClick }) => {
   const { token } = useToken();
   const { wrapSSR, hashId, componentCls: prefixCls } = useUploadStyles();
-  useUploadStyle(prefixCls);
+  const useUploadStyleVal = (useUploadStyle as any).default ? (useUploadStyle as any).default : useUploadStyle;
+  useUploadStyleVal(prefixCls);
 
   const list =
     srcs?.map(([src, name], index) => (

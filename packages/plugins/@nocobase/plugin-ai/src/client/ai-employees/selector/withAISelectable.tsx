@@ -51,7 +51,7 @@ export function withAISelectable<T = any>(
     const { styles } = useStyles();
     const { selectable, selector, stopSelect } = useAISelectionContext();
     const fieldSchema = useFieldSchema();
-    const field = useField();
+    const field = useField() as any;
 
     const handleSelect = () => {
       selector?.onSelect?.({

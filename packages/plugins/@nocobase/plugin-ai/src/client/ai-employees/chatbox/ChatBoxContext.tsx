@@ -50,7 +50,7 @@ const defaultRoles: GetProp<typeof Bubble.List, 'roles'> = {
     placement: 'end',
     styles: {
       content: {
-        maxWidth: '400px',
+        maxWidth: '80%',
         margin: '8px 8px 8px 0',
       },
     },
