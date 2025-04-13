@@ -45,16 +45,16 @@ describe('CollectionSelect', () => {
     expect(container).toMatchInlineSnapshot(`
       <div>
         <div
-          class="css-dev-only-do-not-override-16ehjgr ant-app"
+          class="css-dev-only-do-not-override-11aiz3o ant-app"
           style="height: 100%;"
         >
           <div
             aria-label="block-item-demo title"
-            class="nb-block-item nb-form-item css-1elzyjx ant-nb-block-item css-dev-only-do-not-override-16ehjgr"
+            class="nb-block-item nb-form-item css-1elzyjx ant-nb-block-item css-dev-only-do-not-override-11aiz3o"
             role="button"
           >
             <div
-              class="css-1bfgeae ant-formily-item ant-formily-item-layout-horizontal ant-formily-item-feedback-layout-loose ant-formily-item-label-align-right ant-formily-item-control-align-left css-dev-only-do-not-override-16ehjgr"
+              class="css-a7w9kk ant-formily-item ant-formily-item-layout-horizontal ant-formily-item-feedback-layout-loose ant-formily-item-label-align-right ant-formily-item-control-align-left css-dev-only-do-not-override-11aiz3o"
             >
               <div
                 class="ant-formily-item-label"
@@ -84,7 +84,7 @@ describe('CollectionSelect', () => {
                     class="ant-formily-item-control-content-component"
                   >
                     <div
-                      class="ant-select ant-select-outlined css-dev-only-do-not-override-16ehjgr ant-select-focused ant-select-single ant-select-show-arrow ant-select-show-search"
+                      class="ant-select css-dev-only-do-not-override-11aiz3o ant-select-focused ant-select-single ant-select-show-arrow ant-select-show-search"
                       data-testid="select-collection"
                       role="button"
                     >
@@ -98,31 +98,27 @@ describe('CollectionSelect', () => {
                         class="ant-select-selector"
                       >
                         <span
-                          class="ant-select-selection-wrap"
+                          class="ant-select-selection-search"
                         >
-                          <span
-                            class="ant-select-selection-search"
-                          >
-                            <input
-                              aria-autocomplete="list"
-                              aria-controls="rc_select_TEST_OR_SSR_list"
-                              aria-expanded="false"
-                              aria-haspopup="listbox"
-                              aria-owns="rc_select_TEST_OR_SSR_list"
-                              autocomplete="off"
-                              class="ant-select-selection-search-input"
-                              id="rc_select_TEST_OR_SSR"
-                              role="button"
-                              type="search"
-                              value=""
-                            />
-                          </span>
-                          <span
-                            class="ant-select-selection-item"
-                            title="Users"
-                          >
-                            Users
-                          </span>
+                          <input
+                            aria-autocomplete="list"
+                            aria-controls="rc_select_TEST_OR_SSR_list"
+                            aria-expanded="false"
+                            aria-haspopup="listbox"
+                            aria-owns="rc_select_TEST_OR_SSR_list"
+                            autocomplete="off"
+                            class="ant-select-selection-search-input"
+                            id="rc_select_TEST_OR_SSR"
+                            role="button"
+                            type="search"
+                            value=""
+                          />
+                        </span>
+                        <span
+                          class="ant-select-selection-item"
+                          title="Users"
+                        >
+                          Users
                         </span>
                       </div>
                       <span
@@ -186,16 +182,16 @@ describe('CollectionSelect', () => {
     expect(container).toMatchInlineSnapshot(`
       <div>
         <div
-          class="css-dev-only-do-not-override-16ehjgr ant-app"
+          class="css-dev-only-do-not-override-11aiz3o ant-app"
           style="height: 100%;"
         >
           <div
             aria-label="block-item-demo title"
-            class="nb-block-item nb-form-item css-1elzyjx ant-nb-block-item css-dev-only-do-not-override-16ehjgr"
+            class="nb-block-item nb-form-item css-1elzyjx ant-nb-block-item css-dev-only-do-not-override-11aiz3o"
             role="button"
           >
             <div
-              class="css-1bfgeae ant-formily-item ant-formily-item-layout-horizontal ant-formily-item-feedback-layout-loose ant-formily-item-label-align-right ant-formily-item-control-align-left css-dev-only-do-not-override-16ehjgr"
+              class="css-a7w9kk ant-formily-item ant-formily-item-layout-horizontal ant-formily-item-feedback-layout-loose ant-formily-item-label-align-right ant-formily-item-control-align-left css-dev-only-do-not-override-11aiz3o"
             >
               <div
                 class="ant-formily-item-label"
@@ -226,7 +222,7 @@ describe('CollectionSelect', () => {
                   >
                     <div>
                       <span
-                        class="ant-tag css-dev-only-do-not-override-16ehjgr"
+                        class="ant-tag css-dev-only-do-not-override-11aiz3o"
                       >
                         Users
                       </span>
