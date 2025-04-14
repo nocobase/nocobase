@@ -21,6 +21,9 @@ import {
   SecondConFirm,
   AfterSuccess,
   RefreshDataBlockRequest,
+  SchemaSettingsLinkageRules,
+  useDataBlockProps,
+  useCollectionManager_deprecated,
 } from '@nocobase/client';
 import { ModalProps } from 'antd';
 import { isValid } from '@formily/shared';
@@ -157,6 +160,24 @@ export const bulkEditActionSettings = new SchemaSettings({
     {
       name: 'updateMode',
       Component: UpdateMode,
+    },
+    {
+      name: 'linkageRules',
+      Component: SchemaSettingsLinkageRules,
+      useVisible() {
+        const { association } = useDataBlockProps() || {};
+        return !!association;
+      },
+      useComponentProps() {
+        const { association } = useDataBlockProps() || {};
+        const { getCollectionField } = useCollectionManager_deprecated();
+        const associationField = getCollectionField(association);
+        const { linkageRulesProps } = useSchemaToolbar();
+        return {
+          ...linkageRulesProps,
+          collectionName: associationField?.collectionName,
+        };
+      },
     },
     {
       name: 'remove',
