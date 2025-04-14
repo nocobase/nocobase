@@ -614,5 +614,8 @@
   "Select data blocks to refresh": "Veri bloklarını yenilemek için seçin",
   "After successful submission, the selected data blocks will be automatically refreshed.": "Başarılı bir şekilde gönderildikten sonra, seçilen veri blokları otomatik olarak yenilenecektir.",
   "No pages yet, please configure first": "Henüz sayfa yok, lütfen önce yapılandırın",
-  "Click the \"UI Editor\" icon in the upper right corner to enter the UI Editor mode": "Kullanıcı arayüzü düzenleyici moduna girmek için sağ üst köşedeki \"Kullanıcı Arayüzü Düzenleyici\" simgesine tıklayın"
+  "Click the \"UI Editor\" icon in the upper right corner to enter the UI Editor mode": "Kullanıcı arayüzü düzenleyici moduna girmek için sağ üst köşedeki \"Kullanıcı Arayüzü Düzenleyici\" simgesine tıklayın",
+  "Refresh data blocks": "Yenile veri blokları",
+  "Select data blocks to refresh": "Veri bloklarını yenilemek için seçin",
+  "After successful submission, the selected data blocks will be automatically refreshed.": "Başarılı bir şekilde gönderildikten sonra, seçilen veri blokları otomatik olarak yenilenecektir."
 }
