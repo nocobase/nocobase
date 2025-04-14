@@ -34,6 +34,7 @@
     "@nocobase/plugin-data-visualization": "1.7.0-alpha.10",
     "@nocobase/plugin-environment-variables": "1.7.0-alpha.10",
     "@nocobase/plugin-error-handler": "1.7.0-alpha.10",
+    "@nocobase/plugin-field-attachment-url": "1.7.0-alpha.10",
     "@nocobase/plugin-field-china-region": "1.7.0-alpha.10",
     "@nocobase/plugin-field-formula": "1.7.0-alpha.10",
     "@nocobase/plugin-field-m2m-array": "1.7.0-alpha.10",
@@ -75,7 +76,9 @@
     "@nocobase/plugin-workflow-notification": "1.7.0-alpha.10",
     "@nocobase/plugin-workflow-parallel": "1.7.0-alpha.10",
     "@nocobase/plugin-workflow-request": "1.7.0-alpha.10",
+    "@nocobase/plugin-workflow-response-message": "1.7.0-alpha.10",
     "@nocobase/plugin-workflow-sql": "1.7.0-alpha.10",
+    "@nocobase/plugin-departments": "1.7.0-alpha.10",
     "@nocobase/server": "1.7.0-alpha.10",
     "cronstrue": "^2.11.0",
     "fs-extra": "^11.1.1"
