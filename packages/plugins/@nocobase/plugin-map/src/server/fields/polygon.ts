@@ -8,7 +8,8 @@
  */
 
 import { BaseColumnFieldOptions, DataTypes, Field, FieldContext } from '@nocobase/database';
-import { isMysql, isPg, joinComma, toValue } from '../helpers';
+import { isMssql, isMysql, isPg, joinComma, toValue } from '../helpers';
+import _ from 'lodash';
 
 class Polygon extends DataTypes.ABSTRACT {
   key = 'Polygon';
@@ -38,6 +39,10 @@ export class PolygonField extends Field {
               type: 'Polygon',
               coordinates: [value.concat([value[0]])],
             };
+          } else if (isMssql(context)) {
+            const [lat, lng] = value;
+            const coordStr = `${lng} ${lat}`;
+            value = this.database?.sequelize.literal(`geography::STPolyFromText('POLYGON((${coordStr}))', 4326)`);
           }
           this.setDataValue(name, value);
         },
@@ -52,9 +57,22 @@ export class PolygonField extends Field {
       return Polygon;
     } else if (isMysql(this.context)) {
       return DataTypes.GEOMETRY('POLYGON');
-    } else {
-      return DataTypes.JSON;
     }
+    if (isMssql(this.context)) {
+      return DataTypes.STRING;
+    }
+    return DataTypes.JSON;
+  }
+
+  get rawDataType() {
+    return DataTypes.GEOGRAPHY;
+  }
+
+  setter(value, options) {
+    if (isMssql(this.context) && _.isObjectLike(value)) {
+      return JSON.stringify(value);
+    }
+    return value;
   }
 }
 

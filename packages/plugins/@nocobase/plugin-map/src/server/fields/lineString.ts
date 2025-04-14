@@ -8,7 +8,8 @@
  */
 
 import { BaseColumnFieldOptions, DataTypes, Field, FieldContext } from '@nocobase/database';
-import { isMysql, isPg, joinComma, toValue } from '../helpers';
+import { isMssql, isMysql, isPg, joinComma, toValue } from '../helpers';
+import _ from 'lodash';
 
 class LineString extends DataTypes.ABSTRACT {
   key = 'Path';
@@ -38,6 +39,10 @@ export class LineStringField extends Field {
               type: 'LineString',
               coordinates: value,
             };
+          } else if (isMssql(context)) {
+            const [lat, lng] = value;
+            const coordStr = `${lng} ${lat}`;
+            value = this.database?.sequelize.literal(`geography::STLineFromText('LINESTRING(${coordStr})', 4326)`);
           }
           this.setDataValue(name, value);
         },
@@ -51,11 +56,25 @@ export class LineStringField extends Field {
     if (isPg(this.context)) {
       return LineString;
     }
+    if (isMssql(this.context)) {
+      return DataTypes.STRING;
+    }
     if (isMysql(this.context)) {
       return DataTypes.GEOMETRY('LINESTRING');
     } else {
       return DataTypes.JSON;
     }
+  }
+
+  get rawDataType() {
+    return DataTypes.GEOGRAPHY;
+  }
+
+  setter(value, options) {
+    if (isMssql(this.context) && _.isObjectLike(value)) {
+      return JSON.stringify(value);
+    }
+    return value;
   }
 }
 

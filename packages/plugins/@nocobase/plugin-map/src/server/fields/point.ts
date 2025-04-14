@@ -8,7 +8,8 @@
  */
 
 import { BaseColumnFieldOptions, DataTypes, Field, FieldContext } from '@nocobase/database';
-import { isMysql, isPg, joinComma, toValue } from '../helpers';
+import { isMssql, isMysql, isPg, joinComma, toValue } from '../helpers';
+import _ from 'lodash';
 
 class Point extends DataTypes.ABSTRACT {
   key = 'Point';
@@ -36,6 +37,9 @@ export class PointField extends Field {
           if (!value?.length) value = null;
           else if (isPg(context)) {
             value = joinComma(value);
+          } else if (isMssql(context)) {
+            const [lat, lng] = value;
+            value = this.database?.sequelize.literal(`geography::Point(${lat}, ${lng}, 4326)`);
           } else if (isMysql(context)) {
             value = {
               type: 'Point',
@@ -54,11 +58,25 @@ export class PointField extends Field {
     if (isPg(this.context)) {
       return Point;
     }
+    if (isMssql(this.context)) {
+      return DataTypes.STRING;
+    }
     if (isMysql(this.context)) {
       return DataTypes.GEOMETRY('POINT');
     } else {
       return DataTypes.JSON;
     }
+  }
+
+  get rawDataType() {
+    return DataTypes.GEOGRAPHY;
+  }
+
+  setter(value, options) {
+    if (isMssql(this.context) && _.isObjectLike(value)) {
+      return JSON.stringify(value);
+    }
+    return value;
   }
 }
 

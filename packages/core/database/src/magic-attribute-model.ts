@@ -282,7 +282,7 @@ export class MagicAttributeModel extends Model {
   }
 
   async save(options?: SaveOptions<any>) {
-    if (!options.hooks) {
+    if (!options?.hooks) {
       this.db.emit('magicAttributeModel.beforeSave', this, options);
     }
 

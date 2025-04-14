@@ -32,3 +32,7 @@ export const isSqlite = (ctx) => {
 export const isMysql = (ctx) => {
   return getDialect(ctx) === 'mysql';
 };
+
+export const isMssql = (ctx) => {
+  return getDialect(ctx) === 'mssql';
+};
