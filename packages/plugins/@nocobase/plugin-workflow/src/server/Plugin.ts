@@ -794,21 +794,21 @@ export default class PluginWorkflowServer extends Plugin {
   /**
    * @experimental
    */
-  public async toggleTaskStatus(task: WorkflowTaskModel, done: boolean, { transaction }: Transactionable) {
+  public async toggleTaskStatus(task: WorkflowTaskModel, on: boolean, { transaction }: Transactionable) {
     const { db } = this.app;
     const repository = db.getRepository('workflowTasks') as WorkflowTasksRepository;
-    if (done) {
+    if (on) {
+      await repository.updateOrCreate({
+        filterKeys: ['key', 'type'],
+        values: task,
+        transaction,
+      });
+    } else {
       await repository.destroy({
         filter: {
           type: task.type,
           key: `${task.key}`,
         },
-        transaction,
-      });
-    } else {
-      await repository.updateOrCreate({
-        filterKeys: ['key', 'type'],
-        values: task,
         transaction,
       });
     }

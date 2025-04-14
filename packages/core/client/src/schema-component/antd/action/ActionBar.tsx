@@ -72,7 +72,7 @@ const InternalActionBar: FC = (props: any) => {
       <Portal>
         <DndContext>
           <div
-            style={{ display: 'flex', alignItems: 'center', gap: 8, ...style, marginTop: 0 }}
+            style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 0, ...style }}
             {...others}
             className={cx(others.className, 'nb-action-bar')}
           >
