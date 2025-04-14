@@ -1,18 +1,14 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
-import { Button, Space, Card, Modal, Form, Input, App, Typography, Checkbox, Divider, Popover, Spin } from 'antd';
-import { DeleteOutlined, EditOutlined, EyeOutlined, RedoOutlined, SettingOutlined } from '@ant-design/icons';
-import { EventBus, defaultListenerCondition } from './libs/event-bus';
+import { Button, Space, Card, Modal, App, Typography, Divider, Spin } from 'antd';
+import { DeleteOutlined, RedoOutlined, SettingOutlined } from '@ant-design/icons';
+import { EventBus } from './libs/event-bus';
 import { EventFlowActionOptions, EventFlowManager } from './libs/eventflow-manager';
 import { FilterFlowManager } from './libs/filterflow-manager';
-import { EventContext, EventListener, EventListenerOptions, FilterContext, Filter, Unsubscriber } from './libs/types';
+import { EventContext, FilterContext, Filter } from './libs/types';
 import { configureAction } from './actions/open-configure-dialog';
-import { openSimpleDialogAction } from './actions/open-simple-dialog';
-import { openNotificationAction } from './actions/open-notification';
-import { useAddEventListener, useDispatchEvent, useTabulatorBuiltinStyles, useTabulatorStyles } from './libs/hooks';
-import { SchemaComponent, useAPIClient, useActionContext, useCompile, useRequest } from '@nocobase/client';
-import { ISchema } from '@formily/react';
-import { createForm } from '@formily/core';
-import { TabulatorFull as Tabulator, ColumnDefinition } from 'tabulator-tables';
+import { useTabulatorBuiltinStyles, useTabulatorStyles } from './libs/hooks';
+import { useCompile } from '@nocobase/client';
+import { TabulatorFull as Tabulator } from 'tabulator-tables';
 
 const eventBus = new EventBus();
 const eventFlowManager = new EventFlowManager(eventBus);
@@ -322,7 +318,7 @@ const EventFilterTableDemo: React.FC = (props) => {
   const tableOptions = useMemo(
     () => ({
       selectable: true,
-      layout: 'fitColumns',
+      layout: 'fitDataFill',
       responsiveLayout: 'hide',
       pagination: true,
       paginationSizeSelector: [10, 20, 50, 100],
@@ -483,6 +479,7 @@ const EventFilterTableDemo: React.FC = (props) => {
   useEffect(() => {
     setIsLoading(true);
     applyColumnFilter();
+    refreshData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // 空依赖数组确保只在挂载时执行一次
 

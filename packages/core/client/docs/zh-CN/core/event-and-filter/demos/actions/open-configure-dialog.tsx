@@ -114,17 +114,23 @@ export const configureAction: EventFlowActionOptions = {
       const container = document.createElement('div');
       document.body.appendChild(container);
 
+      const cleanupAndResolve = (result) => {
+        // 检查 container 是否还在 document.body 中
+        if (document.body.contains(container)) {
+          document.body.removeChild(container);
+        }
+        resolve(result);
+      };
+
       const onSave = (values) => {
-        document.body.removeChild(container);
-        resolve({
+        cleanupAndResolve({
           success: true,
           data: values,
         });
       };
 
       const onCancel = () => {
-        document.body.removeChild(container);
-        resolve({
+        cleanupAndResolve({
           success: false,
           canceled: true,
         });
