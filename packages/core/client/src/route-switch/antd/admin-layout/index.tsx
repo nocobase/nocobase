@@ -723,27 +723,11 @@ export const InternalAdminLayout = () => {
   );
 };
 
-function getDefaultPageUid(routes: NocoBaseDesktopRoute[]) {
-  // Find the first route of type "page"
-  for (const route of routes) {
-    if (route.type === NocoBaseDesktopRouteType.page) {
-      return route.schemaUid;
-    }
-
-    if (route.children?.length) {
-      const result = getDefaultPageUid(route.children);
-      if (result) {
-        return result;
-      }
-    }
-  }
-}
-
 const NavigateToDefaultPage: FC = (props) => {
   const { allAccessRoutes } = useAllAccessDesktopRoutes();
   const location = useLocationNoUpdate();
 
-  const defaultPageUid = getDefaultPageUid(allAccessRoutes);
+  const defaultPageUid = findFirstPageRoute(allAccessRoutes)?.schemaUid;
 
   return (
     <>
@@ -975,16 +959,17 @@ function findRouteById(id: string, treeArray: any[]) {
   return null;
 }
 
-function findFirstPageRoute(routes: NocoBaseDesktopRoute[]) {
+export function findFirstPageRoute(routes: NocoBaseDesktopRoute[]) {
   if (!routes) return;
 
-  for (const route of routes) {
+  for (const route of routes.filter((item) => !item.hideInMenu)) {
     if (route.type === NocoBaseDesktopRouteType.page) {
       return route;
     }
 
-    if (route.children?.length) {
-      return findFirstPageRoute(route.children);
+    if (route.type === NocoBaseDesktopRouteType.group && route.children?.length) {
+      const result = findFirstPageRoute(route.children);
+      if (result) return result;
     }
   }
 }
