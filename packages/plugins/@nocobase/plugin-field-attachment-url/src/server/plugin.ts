@@ -24,7 +24,7 @@ export class PluginFieldAttachmentUrlServer extends Plugin {
           },
         });
 
-        const filePlugin = this.pm.get('file-manager') as PluginFileManagerServer;
+        const filePlugin = this.pm.get('file-manager') as PluginFileManagerServer | any;
 
         const options = [];
 
