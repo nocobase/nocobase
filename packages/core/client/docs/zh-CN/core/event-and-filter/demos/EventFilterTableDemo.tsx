@@ -9,6 +9,7 @@ import { configureAction } from './actions/open-configure-dialog';
 import { useTabulatorBuiltinStyles, useTabulatorStyles } from './libs/hooks';
 import { useCompile } from '@nocobase/client';
 import { TabulatorFull as Tabulator } from 'tabulator-tables';
+import ReactDOM from 'react-dom/client';
 
 const eventBus = new EventBus();
 const eventFlowManager = new EventFlowManager(eventBus);
@@ -163,30 +164,48 @@ const addActionColumnFilter: Filter = {
   name: 'addActionColumn',
   title: '添加操作列',
   group: 'columns',
-  sort: 2,
   handler: (currentValue, params, ctx) => {
     if (params?.show !== true) {
-      return currentValue; // 如果参数配置不显示，则不添加
+      return currentValue; // If parameter configures not to show, don't add
     }
     const result = currentValue || {};
     result.columns = result.columns || [];
-    const actionColumn = {
+
+    const actionColumn: ColumnDefinition = {
       title: '操作',
-      field: '__actions', // 虚拟字段
+      field: '__actions', // Virtual field
       hozAlign: 'center',
       headerSort: false,
-      // Tabulator 的 formatter 返回 HTML 或 DOM 节点
+      width: 100,
       formatter: (cell, formatterParams, onRendered) => {
-        const button = document.createElement('button');
-        button.innerText = '查看';
-        button.style.padding = '2px 5px';
-        button.style.cursor = 'pointer';
-        button.onclick = (e) => {
-          e.stopPropagation(); // 阻止事件冒泡，避免触发行点击等
+        // formatter需要返回原始DOM，否则会报错，这里返回undefined, 然后利用onRendered来渲染React组件
+        onRendered(() => {
+          const cellEl = cell.getElement(); // Get the cell's DOM element
           const rowData = cell.getRow().getData();
-          eventBus.dispatchEvent('viewRecord', { payload: { record: rowData, hooks: ctx.payload.hooks } });
-        };
-        return button;
+          const root = ReactDOM.createRoot(cellEl);
+          const handleClick = (e) => {
+            e.stopPropagation(); // 防止触发行点击事件
+            console.log('React Button Clicked for row:', rowData);
+            // 使用事件总线分发事件
+            eventBus.dispatchEvent('viewRecord', { payload: { record: rowData, hooks: ctx.payload.hooks } });
+          };
+
+          root.render(
+            <Button type="link" size="small" onClick={handleClick}>
+              查看
+            </Button>,
+          );
+
+          return () => {
+            setTimeout(() => {
+              try {
+                root.unmount();
+              } catch (error) {
+                console.error('Error unmounting React root from Tabulator cell:', error);
+              }
+            }, 0);
+          };
+        });
       },
     };
     result.columns.push(actionColumn);
