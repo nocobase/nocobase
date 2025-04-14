@@ -113,7 +113,6 @@ const InnerAttachmentUrl = (props) => {
   if (underFilter) {
     return <Input {...props} />;
   }
-  console.log(collectionField);
   return (
     <div style={{ width: '100%', overflow: 'auto' }}>
       <AssociationField.FileSelector
