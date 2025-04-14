@@ -8,7 +8,7 @@ import { EventContext, FilterContext, Filter } from './libs/types';
 import { configureAction } from './actions/open-configure-dialog';
 import { useTabulatorBuiltinStyles, useTabulatorStyles } from './libs/hooks';
 import { useCompile } from '@nocobase/client';
-import { TabulatorFull as Tabulator } from 'tabulator-tables';
+import { TabulatorFull as Tabulator, ColumnDefinition } from 'tabulator-tables';
 import ReactDOM from 'react-dom/client';
 
 const eventBus = new EventBus();
