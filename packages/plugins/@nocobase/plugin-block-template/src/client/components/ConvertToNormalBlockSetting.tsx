@@ -7,23 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import {
-  SchemaSettingsItem,
-  useAPIClient,
-  useDesignable,
-  useFormBlockProps,
-  usePlugin,
-  SchemaSettingsDivider,
-} from '@nocobase/client';
+import { SchemaSettingsItem, useAPIClient, useDesignable, useFormBlockProps } from '@nocobase/client';
 import { useFieldSchema, useForm, useField } from '@formily/react';
 import { App } from 'antd';
 import React from 'react';
 import _ from 'lodash';
-import { blockKeepProps } from '../initializers/TemplateBlockInitializer';
 import { Schema } from '@formily/json-schema';
 import { useT } from '../locale';
-import PluginBlockTemplateClient from '..';
-import { addToolbarClass } from '../utils/template';
 import { uid } from '@nocobase/utils/client';
 
 const findInsertPosition = (parentSchema, uid) => {
@@ -74,6 +64,7 @@ const convertToNormalBlockSchema = (schema) => {
     delete s['x-block-template-key'];
     delete s['x-template-root-ref'];
     delete s['x-template-title'];
+    delete s['x-virtual'];
 
     if (s['x-toolbar-props']?.toolbarClassName?.includes('nb-in-template')) {
       s['x-toolbar-props'].toolbarClassName = s['x-toolbar-props'].toolbarClassName.replace('nb-in-template', '');
