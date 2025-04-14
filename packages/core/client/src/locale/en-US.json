@@ -890,5 +890,9 @@
   "Click the \"UI Editor\" icon in the upper right corner to enter the UI Editor mode": "Click the \"UI Editor\" icon in the upper right corner to enter the UI Editor mode",
   "Deprecated": "Deprecated",
   "The following old template features have been deprecated and will be removed in next version.": "The following old template features have been deprecated and will be removed in next version.",
-  "Full permissions": "Full permissions"
+  "Full permissions": "Full permissions",
+  "Refresh data blocks": "Refresh data blocks",
+  "Select data blocks to refresh": "Select data blocks to refresh",
+  "After successful submission, the selected data blocks will be automatically refreshed.": "After successful submission, the selected data blocks will be automatically refreshed."
+
 }

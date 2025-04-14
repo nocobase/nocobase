@@ -8,3 +8,4 @@
  */
 
 export * from './List';
+export { useListBlockContext } from './List.Decorator';

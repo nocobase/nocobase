@@ -1045,5 +1045,8 @@
   "Click the \"UI Editor\" icon in the upper right corner to enter the UI Editor mode": "ユーザーインターフェースエディターモードに入るには、右上隅の「UIエディタ」アイコンをクリックしてください",
   "Deprecated": "非推奨",
   "The following old template features have been deprecated and will be removed in next version.": "次の古いテンプレート機能は非推奨になり、次のバージョンで削除されます。",
-  "Full permissions": "すべての権限"
+  "Full permissions": "すべての権限",
+  "Refresh data blocks": "データブロックを更新",
+  "Select data blocks to refresh": "データブロックを選択して更新",
+  "After successful submission, the selected data blocks will be automatically refreshed.": "送信後、選択したデータブロックが自動的に更新されます。"
 }

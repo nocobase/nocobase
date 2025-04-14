@@ -784,5 +784,8 @@
   "The following old template features have been deprecated and will be removed in next version.": "As seguintes funcionalidades de modelo antigo foram descontinuadas e serão removidas na próxima versão.",
   "Full permissions": "Todas as permissões",
   "No pages yet, please configure first": "Ainda não há páginas, por favor configure primeiro",
-  "Click the \"UI Editor\" icon in the upper right corner to enter the UI Editor mode": "Cliquez sur l'icône \"Éditeur d'interface utilisateur\" dans le coin supérieur droit pour entrer en mode Éditeur d'interface utilisateur"
+  "Click the \"UI Editor\" icon in the upper right corner to enter the UI Editor mode": "Cliquez sur l'icône \"Éditeur d'interface utilisateur\" dans le coin supérieur droit pour entrer en mode Éditeur d'interface utilisateur",
+  "Refresh data blocks": "Atualizar blocos de dados",
+  "Select data blocks to refresh": "Selecionar blocos de dados para atualizar",
+  "After successful submission, the selected data blocks will be automatically refreshed.": "Após a atualização em massa bem sucedida."
 }
