@@ -7,9 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useRef, useState } from 'react';
 import { css } from '@emotion/css';
 import { Button, Input } from 'antd';
+import React, { useRef, useState } from 'react';
 import { VariableSelect } from './VariableSelect';
 
 // NOTE: https://stackoverflow.com/questions/23892547/what-is-the-best-way-to-trigger-onchange-event-in-react-js/46012210#46012210
@@ -80,6 +80,7 @@ export function RawTextArea(props): JSX.Element {
           setOptions={setOptions}
           onInsert={onInsert}
           changeOnSelect={changeOnSelect}
+          disabled={others.disabled}
         />
       </Button.Group>
     </div>
