@@ -290,6 +290,7 @@ export class PluginDataSourceMainServer extends Plugin {
           },
         };
 
+        this.db.emit('associationsFields.beforeSync', model, options);
         await collection.sync(syncOptions);
 
         this.sendSyncMessage(
