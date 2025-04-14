@@ -7,12 +7,19 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useMemo } from 'react';
-import { useFieldSchema } from '@formily/react';
-import { last } from 'lodash';
+import React, { useMemo, useEffect, useState } from 'react';
+import { useFieldSchema, useForm } from '@formily/react';
+import { last, isEqual } from 'lodash';
+import { uid } from '@formily/shared';
+import { reaction } from '@formily/reactive';
 import { useLocalVariables, useVariables } from '../../variables';
-import { useLinkageDisplayResult } from './utils';
+import { useReactiveLinkageEffect } from './utils';
 import { useDesignable } from '../../';
+import { forEachLinkageRule } from '../../schema-settings/LinkageRules/forEachLinkageRule';
+import {
+  getVariableValuesInCondition,
+  getVariableValuesInExpression,
+} from '../../schema-settings/LinkageRules/bindLinkageRulesToFiled';
 
 const getLinkageRules = (fieldSchema) => {
   if (!fieldSchema) {
@@ -32,8 +39,51 @@ export const BlockLinkageRuleProvider = (props) => {
   const variables = useVariables();
   const localVariables = useLocalVariables();
   const { designable } = useDesignable();
+  const form = useForm();
   const linkageRules = useMemo(() => getLinkageRules(schema), [schema]);
-  const displayResult = useLinkageDisplayResult(linkageRules, variables, localVariables);
+  const [triggerLinkageUpdate, setTriggerLinkageUpdate] = useState(false);
+  const displayResult = useReactiveLinkageEffect(linkageRules, variables, localVariables, triggerLinkageUpdate);
+  const shouldCalculateFormLinkage = schema['x-decorator'] === 'FormItem' && !form.readPretty && linkageRules.length;
+
+  useEffect(() => {
+    if (shouldCalculateFormLinkage) {
+      const id = uid();
+      const disposes = [];
+
+      // 延迟执行，防止一开始获取到的 form.values 值是旧的
+      setTimeout(() => {
+        form.addEffects(id, () => {
+          forEachLinkageRule(linkageRules, (action, rule) => {
+            return reaction(
+              () => {
+                // 获取条件中的变量值
+                const variableValuesInCondition = getVariableValuesInCondition({ linkageRules, localVariables });
+                // 获取 value 表达式中的变量值
+                const variableValuesInExpression = getVariableValuesInExpression({ action, localVariables });
+
+                const result = [variableValuesInCondition, variableValuesInExpression]
+                  .map((item) => JSON.stringify(item))
+                  .join(',');
+                return result;
+              },
+              () => {
+                setTriggerLinkageUpdate((prevFlag) => !prevFlag); // 翻转状态
+              },
+              { fireImmediately: true, equals: isEqual },
+            );
+          });
+        });
+      });
+
+      // 清理副作用
+      return () => {
+        form.removeEffects(id);
+        disposes.forEach((dispose) => {
+          dispose();
+        });
+      };
+    }
+  }, [linkageRules, shouldCalculateFormLinkage]);
 
   if (displayResult === null) return null;
 

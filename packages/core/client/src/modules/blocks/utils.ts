@@ -52,10 +52,11 @@ const linkageAction = async (
   }
 };
 
-export const useLinkageDisplayResult = (
+export const useReactiveLinkageEffect = (
   linkageRules: any[],
   variables: VariablesContextType,
   localVariables: VariableOption[],
+  triggerLinkageUpdate,
 ) => {
   const app = useApp();
   const jsonLogic = app.jsonLogic;
@@ -84,7 +85,7 @@ export const useLinkageDisplayResult = (
     };
 
     runLinkages();
-  }, [linkageRules]);
+  }, [linkageRules, triggerLinkageUpdate]);
 
   return displayResult;
 };

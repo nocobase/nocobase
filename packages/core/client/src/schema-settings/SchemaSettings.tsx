@@ -1090,7 +1090,7 @@ export const SchemaSettingsDefaultSortingRules = function DefaultSortingRules(pr
 };
 
 export const SchemaSettingsLinkageRules = function LinkageRules(props) {
-  const { collectionName, readPretty, Component, afterSubmit, title: settingTitle } = props;
+  const { collectionName, readPretty, Component, afterSubmit, title: settingTitle, returnScope } = props;
   const fieldSchema = useFieldSchema();
   const { form } = useFormBlockContext();
   const { dn } = useDesignable();
@@ -1137,6 +1137,7 @@ export const SchemaSettingsLinkageRules = function LinkageRules(props) {
               localVariables,
               record,
               formBlockType,
+              returnScope,
             };
           },
         },

@@ -89,12 +89,22 @@ export const FormLinkageRules = withDynamicSchemaProps(
       record,
       dynamicComponent,
       category,
+      returnScope,
     } = useProps(props); // 新版 UISchema（1.0 之后）中已经废弃了 useProps，这里之所以继续保留是为了兼容旧版的 UISchema
     const { name } = useCollection_deprecated();
     const { getAllCollectionsInheritChain } = useCollectionManager_deprecated();
     const parentRecordData = useCollectionParentRecordData();
     const variableKey = getActiveContextName(localVariables);
     const components = useMemo(() => ({ ArrayCollapse }), []);
+    const returnTargetScope =
+      returnScope ??
+      ((options) =>
+        options.filter((v) => {
+          if (category === LinkageRuleCategory.block) {
+            return !['$nForm', '$nRecord'].includes(v.value);
+          }
+          return true;
+        }));
     const schema = useMemo(
       () => ({
         type: 'object',
@@ -191,14 +201,7 @@ export const FormLinkageRules = withDynamicSchemaProps(
                       'x-component': 'LinkageFilter',
                       'x-visible': '{{$deps[0] === "advanced"}}',
                       'x-component-props': {
-                        returnScope: (options) => {
-                          return options.filter((v) => {
-                            if (category === LinkageRuleCategory.block) {
-                              return !['$nForm', '$nRecord'].includes(v.value);
-                            }
-                            return true;
-                          });
-                        },
+                        returnScope: returnTargetScope,
                       },
                       'x-reactions': [
                         {
