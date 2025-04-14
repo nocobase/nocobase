@@ -38,7 +38,7 @@ export const useAIEmployeeButtonVariableOptions = () => {
   const fields = useMemo(() => {
     return Schema.compile(fieldsOptions, { t });
   }, [fieldsOptions]);
-  return useMemo(() => {
+  const options = useMemo(() => {
     return [
       recordData && {
         name: 'currentRecord',
@@ -52,6 +52,7 @@ export const useAIEmployeeButtonVariableOptions = () => {
       },
     ].filter(Boolean);
   }, [recordData, t, fields, blockType]);
+  return options;
 };
 
 const SettingsForm: React.FC<{
@@ -71,6 +72,7 @@ const SettingsForm: React.FC<{
             'x-component': 'FormV2',
             'x-component-props': {
               form,
+              disabled: false,
             },
             properties: {
               profile: {
@@ -121,10 +123,10 @@ const SettingsForm: React.FC<{
                         label: t('Text'),
                         value: 'text',
                       },
-                      {
-                        label: t('Image'),
-                        value: 'image',
-                      },
+                      // {
+                      //   label: t('Image'),
+                      //   value: 'image',
+                      // },
                     ],
                     default: 'text',
                     'x-component-props': {
@@ -147,14 +149,6 @@ const SettingsForm: React.FC<{
                   },
                 },
                 default: dn.getSchemaAttribute('x-component-props.message'),
-                'x-reactions': {
-                  dependencies: ['.manualMessage'],
-                  fulfill: {
-                    state: {
-                      visible: '{{ !$deps[0] }}',
-                    },
-                  },
-                },
               },
               autoSend: {
                 type: 'boolean',

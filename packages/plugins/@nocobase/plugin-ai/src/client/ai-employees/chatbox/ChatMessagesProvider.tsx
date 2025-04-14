@@ -175,7 +175,7 @@ export const ChatMessagesProvider: React.FC<{ children: React.ReactNode }> = ({ 
     if (!sendMsgs.length) return;
 
     const last = messages[messages.length - 1];
-    if (last.role === 'error') {
+    if (last?.role === 'error') {
       setMessages((prev) => prev.slice(0, -1));
     }
 
