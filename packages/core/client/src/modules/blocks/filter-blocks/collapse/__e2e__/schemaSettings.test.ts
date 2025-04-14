@@ -25,7 +25,7 @@ test.describe('collapse schema settings', () => {
         await page.getByLabel('block-item-CardItem-general-filter-collapse').hover();
         await page.getByLabel('designer-schema-settings-CardItem-AssociationFilter.BlockDesigner-general').hover();
       },
-      supportedOptions: ['Edit block title', 'Save as template', 'Connect data blocks', 'Delete'],
+      supportedOptions: ['Edit block title', 'Connect data blocks', 'Delete'],
     });
   });
 
@@ -46,7 +46,7 @@ test.describe('collapse schema settings', () => {
       await page.getByRole('menuitem', { name: 'General' }).click();
 
       // 点击一个选项，进行筛选
-      await page.getByRole('button', { name: 'right singleSelect search' }).click();
+      await page.getByRole('button', { name: 'collapsed singleSelect search' }).click();
       await page.getByLabel('block-item-CardItem-general-filter-collapse').getByText('Option1').click();
 
       // 注意：在本地运行时，由于运行结束后不会清空之前创建的数据，所以在第一次运行之后，下面会报错。如果遇到这种情况，可以先不管

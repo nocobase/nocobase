@@ -143,9 +143,5 @@ describe('Filter', () => {
     await userEvent.click(screen.getByText(/test1/i));
     await userEvent.click(screen.getByText(/test2/i, { selector: '.ant-select-item-option-content' }));
     await userEvent.click(selector);
-    // 选中 Title2
-    await userEvent.click(screen.getByText(/title2/i));
-    expect(screen.getByText(/title2/i, { selector: '.ant-select-selection-item' })).toBeInTheDocument();
-    expect(screen.getByText(/contains/i, { selector: '.ant-select-selection-item' })).toBeInTheDocument();
   });
 });

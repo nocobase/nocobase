@@ -27,6 +27,8 @@ import { useEnsureOperatorsValid } from './SchemaSettingOptions';
 import useLazyLoadDisplayAssociationFieldsOfForm from './hooks/useLazyLoadDisplayAssociationFieldsOfForm';
 import { useLinkageRulesForSubTableOrSubForm } from './hooks/useLinkageRulesForSubTableOrSubForm';
 import useParseDefaultValue from './hooks/useParseDefaultValue';
+import { useTranslation } from 'react-i18next';
+import { NAMESPACE_UI_SCHEMA } from '../../../i18n/constant';
 
 Item.displayName = 'FormilyFormItem';
 
@@ -66,7 +68,7 @@ export const FormItem: any = withDynamicSchemaProps(
     const schema = useFieldSchema();
     const { addActiveFieldName } = useFormActiveFields() || {};
     const { wrapperStyle }: { wrapperStyle: any } = useDataFormItemProps();
-
+    const { t } = useTranslation();
     useParseDefaultValue();
     useLazyLoadDisplayAssociationFieldsOfForm();
     useLinkageRulesForSubTableOrSubForm();
@@ -74,18 +76,20 @@ export const FormItem: any = withDynamicSchemaProps(
     useEffect(() => {
       addActiveFieldName?.(schema.name as string);
     }, [addActiveFieldName, schema.name]);
-
+    field.title = t(field.title, { ns: NAMESPACE_UI_SCHEMA });
     const showTitle = schema['x-decorator-props']?.showTitle ?? true;
     const extra = useMemo(() => {
       if (field.description && field.description !== '') {
         return typeof field.description === 'string' ? (
           <div
             dangerouslySetInnerHTML={{
-              __html: HTMLEncode(field.description).split('\n').join('<br/>'),
+              __html: HTMLEncode(t(field.description, { ns: NAMESPACE_UI_SCHEMA }))
+                .split('\n')
+                .join('<br/>'),
             }}
           />
         ) : (
-          field.description
+          t(field.description, { ns: NAMESPACE_UI_SCHEMA })
         );
       }
     }, [field.description]);
@@ -109,6 +113,9 @@ export const FormItem: any = withDynamicSchemaProps(
                 max-width: ${showTitle === false || schema['x-component'] !== 'CollectionField'
                   ? '100% !important'
                   : null};
+              }
+              .ant-formily-item-control {
+                padding: ${showTitle === false ? '5px' : '0px'};
               }
             `,
           )}

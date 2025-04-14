@@ -13,7 +13,7 @@ import { ExpiresSelect } from './ExpiresSelect';
 import { configurationSchema } from './schema';
 
 export const Configuration = () => {
-  const currentRoles = useCurrentRoles();
+  const currentRoles = useCurrentRoles().filter((x) => x.name !== '__union__');
   return (
     <SchemaComponentOptions scope={{ currentRoles }} components={{ ExpiresSelect }}>
       <NocoBaseRecursionField schema={configurationSchema} />

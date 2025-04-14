@@ -18,7 +18,7 @@ import {
   useRequest,
 } from '@nocobase/client';
 import { useMemoizedFn } from 'ahooks';
-import { Checkbox, message, Table } from 'antd';
+import { Checkbox, message, Table, TableProps } from 'antd';
 import { uniq } from 'lodash';
 import React, { createContext, FC, useContext, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -276,41 +276,43 @@ export const MenuPermissions: React.FC<{
         expandable={{
           defaultExpandAllRows: false,
         }}
-        columns={[
-          {
-            dataIndex: 'title',
-            title: t('Route name'),
-          },
-          {
-            dataIndex: 'accessible',
-            title: (
-              <>
-                <Checkbox
-                  checked={allChecked}
-                  onChange={async (value) => {
-                    if (allChecked) {
-                      await resource.set({
-                        values: [],
-                      });
-                    } else {
-                      await resource.set({
-                        values: allIDList,
-                      });
-                    }
-                    refresh();
-                    refreshDesktopRoutes();
-                    message.success(t('Saved successfully'));
-                  }}
-                />{' '}
-                {t('Accessible')}
-              </>
-            ),
-            render: (_, schema) => {
-              const checked = IDList.includes(schema.id);
-              return <Checkbox checked={checked} onChange={() => handleChange(checked, schema)} />;
+        columns={
+          [
+            {
+              dataIndex: 'title',
+              title: t('Route name'),
             },
-          },
-        ]}
+            {
+              dataIndex: 'accessible',
+              title: (
+                <>
+                  <Checkbox
+                    checked={allChecked}
+                    onChange={async (value) => {
+                      if (allChecked) {
+                        await resource.set({
+                          values: [],
+                        });
+                      } else {
+                        await resource.set({
+                          values: allIDList,
+                        });
+                      }
+                      refresh();
+                      refreshDesktopRoutes();
+                      message.success(t('Saved successfully'));
+                    }}
+                  />{' '}
+                  {t('Accessible')}
+                </>
+              ),
+              render: (_, schema) => {
+                const checked = IDList.includes(schema.id);
+                return <Checkbox checked={checked} onChange={() => handleChange(checked, schema)} />;
+              },
+            },
+          ] as TableProps['columns']
+        }
         dataSource={translateTitle(items, t, compile)}
       />
     </>

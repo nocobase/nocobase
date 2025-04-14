@@ -8,7 +8,7 @@
  */
 
 import deepmerge from 'deepmerge';
-import lodash from 'lodash';
+import _ from 'lodash';
 import { isPlainObject } from './common';
 
 type MergeStrategyType = 'merge' | 'deepMerge' | 'overwrite' | 'andMerge' | 'orMerge' | 'intersect' | 'union';
@@ -32,8 +32,14 @@ function getKeys(target: any) {
 
 export const mergeStrategies = new Map<MergeStrategyType, MergeStrategyFunc>();
 
-mergeStrategies.set('overwrite', (_, y) => {
-  if (typeof y === 'string') {
+mergeStrategies.set('overwrite', (x, y) => {
+  if (y === undefined) {
+    if (typeof x === 'string' && x.includes(',')) {
+      return x.split(',');
+    }
+    return x;
+  }
+  if (typeof y === 'string' && y.includes(',')) {
     y = y.split(',');
   }
   return y;
@@ -88,7 +94,7 @@ mergeStrategies.set('union', (x, y) => {
   if (typeof y === 'string') {
     y = y.split(',');
   }
-  return lodash.uniq((x || []).concat(y || [])).filter(Boolean);
+  return _.uniq((x || []).concat(y || [])).filter(Boolean);
 });
 
 mergeStrategies.set('intersect', (x, y) =>
@@ -110,15 +116,22 @@ mergeStrategies.set('intersect', (x, y) =>
 );
 
 export function assign(target: any, source: any, strategies: MergeStrategies = {}) {
-  getKeys(source).forEach((sourceKey) => {
+  const sourceKeys = getKeys(source);
+  const targetKeys = getKeys(target);
+  _.uniq([...sourceKeys, ...targetKeys]).forEach((sourceKey) => {
     const strategy = strategies[sourceKey];
-    let func = mergeStrategies.get('deepMerge');
+    let func: any;
     if (typeof strategy === 'function') {
       func = strategy;
     } else if (typeof strategy === 'string' && mergeStrategies.has(strategy as any)) {
       func = mergeStrategies.get(strategy as any);
     }
-    target[sourceKey] = func(target[sourceKey], source[sourceKey]);
+    if (func) {
+      target[sourceKey] = func(target[sourceKey], source[sourceKey]);
+    } else if (sourceKeys.includes(sourceKey)) {
+      const func = mergeStrategies.get('deepMerge');
+      target[sourceKey] = func(target[sourceKey], source[sourceKey]);
+    }
   });
   return target;
 }

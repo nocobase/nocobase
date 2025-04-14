@@ -22,6 +22,7 @@ import { createWithACLMetaMiddleware } from './middlewares/with-acl-meta';
 import { RoleModel } from './model/RoleModel';
 import { RoleResourceActionModel } from './model/RoleResourceActionModel';
 import { RoleResourceModel } from './model/RoleResourceModel';
+import { setSystemRoleMode } from './actions/union-role';
 
 export class PluginACLServer extends Plugin {
   get acl() {
@@ -162,6 +163,8 @@ export class PluginACLServer extends Plugin {
 
     this.app.resourcer.define(availableActionResource);
     this.app.resourcer.define(roleCollectionsResource);
+
+    this.app.resourcer.registerActionHandler('roles:setSystemRoleMode', setSystemRoleMode);
 
     this.app.resourcer.registerActionHandler('roles:check', checkAction);
 
@@ -338,10 +341,16 @@ export class PluginACLServer extends Plugin {
     this.app.db.on('rolesUsers.afterSave', async (model) => {
       const cache = this.app.cache as Cache;
       await cache.del(`roles:${model.get('userId')}`);
+      await cache.del(`roles:${model.get('userId')}:defaultRole`);
+    });
+    this.app.db.on('systemSettings.afterSave', async (model) => {
+      const cache = this.app.cache as Cache;
+      await cache.del(`app:systemSettings`);
     });
     this.app.db.on('rolesUsers.afterDestroy', async (model) => {
       const cache = this.app.cache as Cache;
       await cache.del(`roles:${model.get('userId')}`);
+      await cache.del(`roles:${model.get('userId')}:defaultRole`);
     });
 
     const writeRolesToACL = async (app, options) => {
@@ -445,7 +454,7 @@ export class PluginACLServer extends Plugin {
     this.app.acl.allow('roles', 'check', 'loggedIn');
 
     this.app.acl.allow('*', '*', (ctx) => {
-      return ctx.state.currentRole === 'root';
+      return ctx.state.currentRoles?.includes('root');
     });
 
     this.app.acl.addFixedParams('collections', 'destroy', () => {

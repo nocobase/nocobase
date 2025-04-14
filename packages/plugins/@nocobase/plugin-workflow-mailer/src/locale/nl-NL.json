@@ -1,0 +1,19 @@
+{
+    "Mailer": "Verzender",
+    "Send email. You can use the variables in the upstream nodes as receivers, subject and content of the email.": "Stuur e-mail door de SMTP-service aan te roepen. Je kan de variabelen in de stroomopwaartse nodes gebruiken als ontvangers, onderwerp en inhoud van de e-mail.",
+    "SMTP host": "SMTP host",
+    "Port": "Poort",
+    "Secure": "Veilig",
+    "User": "Gebruiker",
+    "Password": "Wachtwoord",
+    "From": "Van",
+    "To": "Naar",
+    "CC": "CC",
+    "BCC": "BCC",
+    "Add email address": "E-mailadres toevoegen",
+    "Subject": "Onderwerp",
+    "Content": "Inhoud",
+    "Content type": "Inhoudstype",
+    "Plain text": "Platte tekst",
+    "Ignore failed sending and continue workflow": "Negeer mislukte verzending en ga door met de workflow"
+}

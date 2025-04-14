@@ -1,0 +1,9 @@
+{
+    "Formula": "Formule",
+    "Calculation engine": "Berekeningsengine",
+    "Expression": "Expressie",
+    "Expression syntax error": "Fout in expressiesyntax",
+    "Syntax references": "Syntaxverwijzingen",
+    "Compute a value based on the other fields": "Bereken een waarde op basis van de andere velden",
+    "Configure and store the results of calculations between multiple field values in the same record, supporting both Math.js and Excel formula functions.": "Configureer en sla de resultaten op van berekeningen tussen meerdere veldwaarden in hetzelfde record, met ondersteuning voor zowel Math.js als Excel-formulefuncties."
+}

@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Checkbox, message, Table } from 'antd';
+import { Checkbox, message, Table, TableProps } from 'antd';
 import { uniq } from 'lodash';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -121,40 +121,42 @@ export const MenuConfigure = () => {
       expandable={{
         defaultExpandAllRows: true,
       }}
-      columns={[
-        {
-          dataIndex: 'title',
-          title: t('Menu item title'),
-        },
-        {
-          dataIndex: 'accessible',
-          title: (
-            <>
-              <Checkbox
-                checked={allChecked}
-                onChange={async (value) => {
-                  if (allChecked) {
-                    await resource.set({
-                      values: [],
-                    });
-                  } else {
-                    await resource.set({
-                      values: allUids,
-                    });
-                  }
-                  refresh();
-                  message.success(t('Saved successfully'));
-                }}
-              />{' '}
-              {t('Accessible')}
-            </>
-          ),
-          render: (_, schema) => {
-            const checked = uids.includes(schema.uid);
-            return <Checkbox checked={checked} onChange={() => handleChange(checked, schema)} />;
+      columns={
+        [
+          {
+            dataIndex: 'title',
+            title: t('Menu item title'),
           },
-        },
-      ]}
+          {
+            dataIndex: 'accessible',
+            title: (
+              <>
+                <Checkbox
+                  checked={allChecked}
+                  onChange={async (value) => {
+                    if (allChecked) {
+                      await resource.set({
+                        values: [],
+                      });
+                    } else {
+                      await resource.set({
+                        values: allUids,
+                      });
+                    }
+                    refresh();
+                    message.success(t('Saved successfully'));
+                  }}
+                />{' '}
+                {t('Accessible')}
+              </>
+            ),
+            render: (_, schema: { uid: string }) => {
+              const checked = uids.includes(schema.uid);
+              return <Checkbox checked={checked} onChange={() => handleChange(checked, schema)} />;
+            },
+          },
+        ] as TableProps['columns']
+      }
       dataSource={translateTitle(items)}
     />
   );

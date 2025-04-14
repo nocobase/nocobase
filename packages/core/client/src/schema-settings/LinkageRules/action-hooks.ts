@@ -27,6 +27,13 @@ export const useLinkageCollectionFieldOptions = (collectionName: string, readPre
     { label: t('Required'), value: ActionType.Required, selected: false, schema: {} },
     { label: t('Not required'), value: ActionType.InRequired, selected: false, schema: {} },
     { label: t('Value'), value: ActionType.Value, selected: false, schema: {} },
+    {
+      label: t('Options'),
+      value: ActionType.Options,
+      selected: false,
+      schema: {},
+    },
+    { label: t('Date scope'), value: ActionType.DateScope, selected: false, schema: {} },
   ].filter((v) => {
     if (readPretty) {
       return [ActionType.Visible, ActionType.None, ActionType.Hidden].includes(v.value);
@@ -48,7 +55,7 @@ export const useLinkageCollectionFieldOptions = (collectionName: string, readPre
       operators:
         operators?.filter?.((operator) => {
           if (nested || children || ['formula', 'richText', 'sequence'].includes(fieldInterface.name)) {
-            return operator?.value !== ActionType.Value;
+            return operator?.value !== ActionType.Value && operator?.value !== ActionType.Options;
           }
           return true;
         }) || [],

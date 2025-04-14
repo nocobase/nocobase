@@ -1,0 +1,9 @@
+{
+    "Delay": "Vertraging",
+    "Delay a period of time and then continue or exit the process. Can be used to set wait or timeout times in parallel branches.": "Wacht een periode en ga dan verder of beëindig het proces. Kan worden gebruikt om wachttijden of time-outs in parallelle takken in te stellen.",
+    "Duration": "Duur",
+    "End status": "Eindstatus",
+    "Select status": "Selecteer status",
+    "Succeed and continue": "Succes en ga verder",
+    "Fail and exit": "Mislukt en stop"
+}

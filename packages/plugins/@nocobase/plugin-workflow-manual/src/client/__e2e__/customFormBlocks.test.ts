@@ -130,7 +130,7 @@ test.describe('field data entry', () => {
     // 3、预期结果：工作流成功触发,待办弹窗表单中显示数据
     const getWorkflow = await apiGetWorkflow(workflowId);
     const getWorkflowObj = JSON.parse(JSON.stringify(getWorkflow));
-    const getWorkflowExecuted = getWorkflowObj.executed;
+    const getWorkflowExecuted = getWorkflowObj.versionStats.executed;
     expect(getWorkflowExecuted).toBe(1);
 
     const newPage = mockPage();
@@ -269,7 +269,7 @@ test.describe('field data entry', () => {
     // 3、预期结果：工作流成功触发,待办弹窗表单中显示数据
     const getWorkflow = await apiGetWorkflow(workflowId);
     const getWorkflowObj = JSON.parse(JSON.stringify(getWorkflow));
-    const getWorkflowExecuted = getWorkflowObj.executed;
+    const getWorkflowExecuted = getWorkflowObj.versionStats.executed;
     expect(getWorkflowExecuted).toBe(1);
 
     const newPage = mockPage();
@@ -414,7 +414,7 @@ test.describe('field data entry', () => {
     // 3、预期结果：工作流成功触发,待办弹窗表单中显示数据
     const getWorkflow = await apiGetWorkflow(workflowId);
     const getWorkflowObj = JSON.parse(JSON.stringify(getWorkflow));
-    const getWorkflowExecuted = getWorkflowObj.executed;
+    const getWorkflowExecuted = getWorkflowObj.versionStats.executed;
     expect(getWorkflowExecuted).toBe(1);
 
     const newPage = mockPage();

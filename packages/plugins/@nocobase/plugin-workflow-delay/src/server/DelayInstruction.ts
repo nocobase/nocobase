@@ -109,7 +109,7 @@ export default class extends Instruction {
     // add to schedule
     this.schedule(job);
 
-    return processor.exit();
+    return null;
   }
 
   async resume(node, prevJob, processor: Processor) {

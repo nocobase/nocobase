@@ -1,0 +1,4 @@
+{
+    "field-name-exists": "De veldnaam \"{{name}}\" bestaat al in de collectie \"{{collectionName}}\"",
+    "field-is-depended-on-by-other": "Kan de veldnaam \"{{fieldName}}\" niet verwijderen in \"{{fieldCollectionName}}\", het wordt gebruikt door het veld \"{{dependedFieldName}}\" in \"{{dependedFieldCollectionName}}\" als \"{{dependedFieldAs}}\""
+}

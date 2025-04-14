@@ -18,6 +18,7 @@ import { Collection } from '../../../data-source';
 import { isInFilterFormBlock } from '../../../filter-provider';
 import { mergeFilter } from '../../../filter-provider/utils';
 import { useRecord } from '../../../record-provider';
+import { useMobileLayout } from '../../../route-switch/antd/admin-layout';
 import { useDesignable } from '../../hooks';
 import { AssociationFieldMode } from './AssociationFieldModeProvider';
 import { AssociationFieldContext } from './context';
@@ -25,8 +26,14 @@ import { AssociationFieldContext } from './context';
 export const useInsertSchema = (component) => {
   const fieldSchema = useFieldSchema();
   const { insertAfterBegin } = useDesignable();
+  const { isMobileLayout } = useMobileLayout();
   const insert = useCallback(
     (ss) => {
+      // 移动端的布局更改了本地的 schema 的结构（数据库里的没改），所以不能插入新的 schema，否则可能会导致 schema 的结构出问题
+      if (isMobileLayout) {
+        return;
+      }
+
       const schema = fieldSchema.reduceProperties((buf, s) => {
         if (s['x-component'] === 'AssociationField.' + component) {
           return s;
@@ -37,7 +44,7 @@ export const useInsertSchema = (component) => {
         insertAfterBegin(cloneDeep(ss));
       }
     },
-    [component, fieldSchema, insertAfterBegin],
+    [component, fieldSchema, insertAfterBegin, isMobileLayout],
   );
   return insert;
 };

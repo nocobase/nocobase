@@ -163,12 +163,12 @@ export default class DateFieldScheduleTrigger {
   //     i. endsOn after now -> yes
   //     ii. endsOn before now -> no
   async loadRecordsToSchedule(
-    { id, config: { collection, limit, startsOn, repeat, endsOn }, allExecuted }: WorkflowModel,
+    { id, config: { collection, limit, startsOn, repeat, endsOn }, stats }: WorkflowModel,
     currentDate: Date,
   ) {
     const { dataSourceManager } = this.workflow.app;
-    if (limit && allExecuted >= limit) {
-      this.workflow.getLogger(id).warn(`[Schedule on date field] limit reached (all executed ${allExecuted})`);
+    if (limit && stats.executed >= limit) {
+      this.workflow.getLogger(id).warn(`[Schedule on date field] limit reached (all executed ${stats.executed})`);
       return [];
     }
     if (!startsOn) {
@@ -258,9 +258,9 @@ export default class DateFieldScheduleTrigger {
   getRecordNextTime(workflow: WorkflowModel, record, nextSecond = false) {
     const {
       config: { startsOn, endsOn, repeat, limit },
-      allExecuted,
+      stats,
     } = workflow;
-    if (limit && allExecuted >= limit) {
+    if (limit && stats.executed >= limit) {
       return null;
     }
     const range = this.cacheCycle;
@@ -358,7 +358,7 @@ export default class DateFieldScheduleTrigger {
       },
     );
 
-    if (!workflow.config.repeat || (workflow.config.limit && workflow.allExecuted >= workflow.config.limit - 1)) {
+    if (!workflow.config.repeat || (workflow.config.limit && workflow.stats.executed >= workflow.config.limit - 1)) {
       return;
     }
 
