@@ -17,6 +17,7 @@ import { useChatMessages } from './ChatMessagesProvider';
 import { useChatBoxContext } from './ChatBoxContext';
 import { useChatConversations } from './ChatConversationsProvider';
 import { SchemaComponent } from '@nocobase/client';
+import { uid } from '@formily/shared';
 
 const MessageWrapper = React.forwardRef<
   HTMLDivElement,
@@ -53,7 +54,7 @@ const AIMessageRenderer: React.FC<{
               schema={{
                 type: 'void',
                 properties: {
-                  [msg.key]: {
+                  [uid()]: {
                     type: 'void',
                     'x-component': 'Markdown.Void',
                     'x-component-props': {
