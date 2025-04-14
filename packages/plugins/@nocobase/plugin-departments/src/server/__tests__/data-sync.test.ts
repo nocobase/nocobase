@@ -7,9 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { UserDataResourceManager } from '@nocobase/plugin-user-data-sync';
+import PluginUserDataSyncServer, { UserDataResourceManager } from '@nocobase/plugin-user-data-sync';
 import { MockDatabase, MockServer, createMockServer } from '@nocobase/test';
-import PluginUserDataSyncServer from '@nocobase/plugin-user-data-sync';
 
 describe('department data sync', async () => {
   let app: MockServer;
@@ -18,7 +17,7 @@ describe('department data sync', async () => {
 
   beforeEach(async () => {
     app = await createMockServer({
-      plugins: ['user-data-sync', 'users', 'departments'],
+      plugins: ['field-sort', 'user-data-sync', 'users', 'departments'],
     });
     db = app.db;
     const plugin = app.pm.get('user-data-sync') as PluginUserDataSyncServer;
