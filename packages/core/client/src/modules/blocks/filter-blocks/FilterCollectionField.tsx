@@ -94,7 +94,11 @@ export const FilterCollectionFieldInternalField: React.FC = (props: Props) => {
     // @ts-ignore
     field.dataSource = uiSchema.enum;
     const originalProps =
-      compile({ ...(operator?.schema?.['x-component-props'] || {}), ...(uiSchema['x-component-props'] || {}) }) || {};
+      compile({
+        ...(operator?.schema?.['x-component-props'] || {}),
+        ...(uiSchema['x-component-props'] || {}),
+        ...(fieldSchema?.['x-component-props'] || {}),
+      }) || {};
 
     field.componentProps = merge(field.componentProps || {}, originalProps, dynamicProps || {});
   }, [uiSchemaOrigin]);

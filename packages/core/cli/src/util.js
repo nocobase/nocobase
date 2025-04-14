@@ -461,7 +461,7 @@ exports.initEnv = function initEnv() {
   fs.mkdirpSync(dirname(process.env.SOCKET_PATH), { force: true, recursive: true });
   fs.mkdirpSync(process.env.PM2_HOME, { force: true, recursive: true });
   const pkgDir = resolve(process.cwd(), 'storage/plugins', '@nocobase/plugin-multi-app-manager');
-  fs.existsSync(pkgDir) && fs.rmdirSync(pkgDir, { force: true });
+  fs.existsSync(pkgDir) && fs.rmdirSync(pkgDir, { recursive: true, force: true });
 };
 
 exports.generatePlugins = function () {
