@@ -11,6 +11,9 @@
     "@nocobase/server": "1.x",
     "@nocobase/test": "1.x"
   },
+  "devDependencies": {
+    "@nocobase/plugin-file-manager": "1.x"
+  },
   "keywords": [
     "Collection fields"
   ]

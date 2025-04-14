@@ -14,6 +14,9 @@
     "@nocobase/test": "1.x",
     "@nocobase/utils": "1.x"
   },
+  "devDependencies": {
+    "@nocobase/plugin-user-data-sync": "1.x"
+  },
   "keywords": [
     "Workflow"
   ],
