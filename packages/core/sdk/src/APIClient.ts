@@ -378,7 +378,7 @@ export class APIClient {
         let url = name.split('.').join(`/${encodeURIComponent(of) || '_'}/`);
         url += `:${actionName.toString()}`;
         const config: AxiosRequestConfig = { url };
-        if (['get', 'list'].includes(actionName)) {
+        if (['get'].includes(actionName)) {
           config['method'] = 'get';
         } else {
           config['method'] = 'post';

@@ -18,7 +18,8 @@ function totalPage(total, pageSize): number {
 function findArgs(ctx: Context) {
   const params = ctx.action.params;
 
-  const { fields, filter, appends, except, sort } = params;
+  const { values = {}, others } = params;
+  const { fields, filter, appends, except, sort } = { ...others, ...values };
   let { tree } = params;
   if (tree === true || tree === 'true') {
     tree = true;
