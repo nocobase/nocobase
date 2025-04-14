@@ -9,7 +9,7 @@
 
 import { isJsonString, merge } from '@nocobase/utils';
 import _ from 'lodash';
-import { Utils } from 'sequelize';
+import { SaveOptions, Utils } from 'sequelize';
 import Database from './database';
 import { Model } from './model';
 const Dottie = require('dottie');
@@ -279,5 +279,13 @@ export class MagicAttributeModel extends Model {
     this._changed = new Set();
     this.db.emit('magicAttributeModel.beforeUpdate', this, values, options);
     return super.update(values, options);
+  }
+
+  async save(options?: SaveOptions<any>) {
+    if (!options.hooks) {
+      this.db.emit('magicAttributeModel.beforeSave', this, options);
+    }
+
+    return super.save(options);
   }
 }

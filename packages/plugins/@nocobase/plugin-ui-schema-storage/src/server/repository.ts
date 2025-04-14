@@ -322,7 +322,7 @@ export class UiSchemaRepository extends Repository {
     if (!newSchema['properties']) {
       const s = await this.model.findByPk(rootUid, { transaction });
       s.set('schema', { ...s.toJSON(), ...newSchema });
-      await s.update({ schema: s.schema }, { transaction, hooks: false });
+      await s.save({ transaction, hooks: false });
       await this.emitAfterSaveEvent(s, options);
       if (newSchema['x-server-hooks']) {
         await this.database.emitAsync(`${this.collection.name}.afterSave`, s, options);
@@ -734,7 +734,7 @@ export class UiSchemaRepository extends Repository {
 
         let updateSql: string;
         if (this.database.inDialect('postgres', 'sqlite')) {
-          `UPDATE ${treeTable} as TreeTable
+          updateSql = `UPDATE ${treeTable} as TreeTable
                 SET sort = TreeTable.sort + 1
                 FROM ${treeTable} as NodeInfo
                 WHERE NodeInfo.descendant = TreeTable.descendant and NodeInfo.depth = 0

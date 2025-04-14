@@ -80,8 +80,8 @@ export default abstract class QueryInterface {
     this.config = {
       changeColumnMode: 'default',
       booleanValues: {
-        false: false,
-        true: true,
+        false: 'false',
+        true: 'true',
       },
       ...(config || {}),
     };
