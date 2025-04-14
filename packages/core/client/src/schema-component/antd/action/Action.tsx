@@ -52,10 +52,11 @@ import { NAMESPACE_UI_SCHEMA } from '../../../i18n/constant';
 
 // 这个要放到最下面，否则会导致前端单测失败
 import { useApp } from '../../../application';
+import { useAllDataBlocks } from '../page/AllDataBlocksProvider';
 
 const useA = () => {
   return {
-    async run() {},
+    async run() { },
   };
 };
 
@@ -101,6 +102,8 @@ export const Action: ComposedAction = withDynamicSchemaProps(
     const { getAriaLabel } = useGetAriaLabelOfAction(title);
     const parentRecordData = useCollectionParentRecordData();
     const app = useApp();
+    const { getAllDataBlocks } = useAllDataBlocks();
+
     useEffect(() => {
       if (field.stateOfLinkageRules) {
         setInitialActionState(field);
@@ -131,6 +134,26 @@ export const Action: ComposedAction = withDynamicSchemaProps(
       [onMouseEnter],
     );
 
+    const handleClick = useMemo(() => {
+      return onClick && (async (e, callback) => {
+        await onClick?.(e, callback);
+
+        // 执行完 onClick 之后，刷新数据区块
+        const blocksToRefresh = fieldSchema['x-action-settings']?.onSuccess?.blocksToRefresh || []
+        if (blocksToRefresh.length > 0) {
+          getAllDataBlocks().forEach((block) => {
+            if (blocksToRefresh.includes(block.uid)) {
+              try {
+                block.service?.refresh();
+              } catch (error) {
+                console.error('Failed to refresh block:', block.uid, error);
+              }
+            }
+          });
+        }
+      });
+    }, [onClick, fieldSchema, getAllDataBlocks]);
+
     return (
       <InternalAction
         containerRefKey={containerRefKey}
@@ -144,7 +167,7 @@ export const Action: ComposedAction = withDynamicSchemaProps(
         className={className}
         type={props.type}
         Designer={Designer}
-        onClick={onClick}
+        onClick={handleClick}
         confirm={confirm}
         confirmTitle={confirmTitle}
         popover={popover}
