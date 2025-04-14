@@ -918,5 +918,8 @@
   "The following old template features have been deprecated and will be removed in next version.": "以下舊的模板功能已棄用，將在下個版本移除。",
   "Full permissions": "完全權限",
   "No pages yet, please configure first": "尚未配置頁面，請先配置",
-  "Click the \"UI Editor\" icon in the upper right corner to enter the UI Editor mode": "點擊右上角的 \"介面設定\" 圖示進入介面設定模式"
+  "Click the \"UI Editor\" icon in the upper right corner to enter the UI Editor mode": "點擊右上角的 \"介面設定\" 圖示進入介面設定模式",
+  "Refresh data blocks": "刷新數據區塊",
+  "Select data blocks to refresh": "選擇要刷新的數據區塊",
+  "After successful submission, the selected data blocks will be automatically refreshed.": "提交成功後，選中的數據區塊將自動刷新。"
 }

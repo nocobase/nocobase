@@ -20,6 +20,8 @@ import {
   RefreshDataBlockRequest,
   useAfterSuccessOptions,
   useGlobalVariable,
+  BlocksSelector,
+  usePlugin,
   SchemaSettingsLinkageRules,
   useCollectionManager_deprecated,
   useDataBlockProps,
@@ -65,13 +67,19 @@ const useVariableProps = (environmentVariables) => {
     fieldNames,
   };
 };
+
 function AfterSuccess() {
   const { dn } = useDesignable();
   const { t } = useTranslation();
   const fieldSchema = useFieldSchema();
   const environmentVariables = useGlobalVariable('$env');
+  const templatePlugin: any = usePlugin('@nocobase/plugin-block-template');
+  const isInBlockTemplateConfigPage = templatePlugin?.isInBlockTemplateConfigPage?.();
+
   return (
     <SchemaSettingsModalItem
+      dialogRootClassName='dialog-after-successful-submission'
+      width={700}
       title={t('After successful submission')}
       initialValues={fieldSchema?.['x-action-settings']?.['onSuccess']}
       schema={
@@ -119,6 +127,18 @@ function AfterSuccess() {
               'x-component': 'Variable.TextArea',
               // eslint-disable-next-line react-hooks/rules-of-hooks
               'x-use-component-props': () => useVariableProps(environmentVariables),
+            },
+            blocksToRefresh: {
+              type: 'array',
+              title: t('Refresh data blocks'),
+              'x-decorator': 'FormItem',
+              'x-use-decorator-props': () => {
+                return {
+                  tooltip: t('After successful submission, the selected data blocks will be automatically refreshed.'),
+                };
+              },
+              'x-component': BlocksSelector,
+              'x-hidden': isInBlockTemplateConfigPage, // 模板配置页面暂不支持该配置
             },
           },
         } as ISchema
