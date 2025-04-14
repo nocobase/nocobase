@@ -258,18 +258,16 @@ describe('department data sync', async () => {
     expect(department.customField).toBe('testField');
     await resourceManager.updateOrCreate({
       sourceName: 'test',
-      dataType: 'user',
-      matchKey: 'email',
+      dataType: 'department',
       records: [
         {
           uid: '1',
-          nickname: 'test',
-          email: 'test@nocobase.com',
+          title: 'test',
           customField: 'testField2',
         },
       ],
     });
-    const department2 = await db.getRepository('users').findOne({
+    const department2 = await db.getRepository('departments').findOne({
       filter: {
         id: department.id,
       },
