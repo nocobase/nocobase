@@ -167,6 +167,8 @@
   "Year": "年",
   "QuarterYear": "季度",
   "Select grouping field": "选择分组字段",
+  "Refresh data blocks": "刷新数据区块",
+  "Select data blocks to refresh": "选择要刷新的数据区块",
   "Media": "多媒体",
   "Markdown": "Markdown",
   "Wysiwyg": "富文本",
@@ -1099,5 +1101,6 @@
   "Response record":"响应结果记录",
   "Colon":"冒号",
   "No pages yet, please configure first": "暂无页面，请先配置",
-  "Click the \"UI Editor\" icon in the upper right corner to enter the UI Editor mode": "点击右上角的“界面配置”图标，进入界面配置模式"
+  "Click the \"UI Editor\" icon in the upper right corner to enter the UI Editor mode": "点击右上角的“界面配置”图标，进入界面配置模式",
+  "After successful submission, the selected data blocks will be automatically refreshed.": "提交成功后，会自动刷新这里选中的数据区块。"
 }
