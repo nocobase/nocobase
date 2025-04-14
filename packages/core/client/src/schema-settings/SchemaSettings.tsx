@@ -1116,7 +1116,7 @@ export const SchemaSettingsLinkageRules = function LinkageRules(props) {
   const getRules = useCallback(() => {
     return gridSchema?.[dataKey] || fieldSchema?.[dataKey] || [];
   }, [gridSchema, fieldSchema, dataKey]);
-  const title = settingTitle || titleMap[category];
+  const title = settingTitle || titleMap[category] || t('Linkage rules');
   const schema = useMemo<ISchema>(
     () => ({
       type: 'object',
