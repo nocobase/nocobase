@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { useFieldSchema } from '@formily/react';
+import { useFieldSchema, useField } from '@formily/react';
 import { useCollectionField, useDesignable, useRequest } from '@nocobase/client';
 import { cloneDeep, uniqBy } from 'lodash';
 import { useCallback } from 'react';
@@ -63,15 +63,11 @@ export const useInsertSchema = (component) => {
 
 export const useAttachmentTargetProps = () => {
   const { t } = useTranslation();
-  // TODO(refactor): whitelist should be changed to storage property，url is signed by plugin-s3-pro, this enmus is from plugin-file-manager
-  const buildInStorage = ['local', 'ali-oss', 's3', 'tx-cos'];
+  const field = useField();
   return {
     service: {
-      resource: 'collections',
+      resource: 'collections:listFileCollectionsWithPublicStorage',
       params: {
-        filter: {
-          'options.template': 'file',
-        },
         paginate: false,
       },
     },
@@ -80,27 +76,9 @@ export const useAttachmentTargetProps = () => {
       label: 'title',
       value: 'name',
     },
-    mapOptions: (value) => {
-      if (value.name === 'attachments') {
-        return {
-          ...value,
-          title: t('Attachments'),
-        };
-      }
-      return value;
-    },
-    toOptionsItem: (data) => {
-      data.unshift({
-        name: 'attachments',
-        title: t('Attachments'),
-      });
-      return uniqBy(
-        data.filter((v) => v.name),
-        'name',
-      );
-    },
-    optionFilter: (option) => {
-      return !option.storage || buildInStorage.includes(option.storage);
+    onSuccess: (data) => {
+      field.data = field.data || {};
+      field.data.options = data?.data;
     },
   };
 };

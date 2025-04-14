@@ -8,13 +8,50 @@
  */
 
 import { Plugin } from '@nocobase/server';
+import PluginFileManagerServer from '@nocobase/plugin-file-manager';
 
 export class PluginFieldAttachmentUrlServer extends Plugin {
   async afterAdd() {}
 
   async beforeLoad() {}
 
-  async load() {}
+  async load() {
+    this.app.resourceManager.registerActionHandlers({
+      'collections:listFileCollectionsWithPublicStorage': async (ctx, next) => {
+        const fileCollections = await this.db.getRepository('collections').find({
+          filter: {
+            'options.template': 'file',
+          },
+        });
+
+        const filePlugin = this.pm.get('file-manager') as PluginFileManagerServer | any;
+
+        const options = [];
+
+        const fileCollection = this.db.getCollection('attachments');
+
+        if (await filePlugin.isPublicAccessStorage(fileCollection?.options?.storage)) {
+          options.push({
+            title: '{{t("Attachments")}}',
+            name: 'attachments',
+          });
+        }
+
+        for (const fileCollection of fileCollections) {
+          if (await filePlugin.isPublicAccessStorage(fileCollection?.options?.storage)) {
+            options.push({
+              name: fileCollection.name,
+              title: fileCollection.title,
+            });
+          }
+        }
+
+        ctx.body = options;
+
+        await next();
+      },
+    });
+  }
 
   async install() {}
 
