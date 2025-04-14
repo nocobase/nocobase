@@ -27,17 +27,17 @@ export default {
     },
     {
       name: 'bio',
-      type: 'string',
+      type: 'text',
       interface: 'textarea',
     },
     {
       name: 'about',
-      type: 'string',
+      type: 'text',
       interface: 'textarea',
     },
     {
       name: 'greeting',
-      type: 'string',
+      type: 'text',
       interface: 'textarea',
     },
     {

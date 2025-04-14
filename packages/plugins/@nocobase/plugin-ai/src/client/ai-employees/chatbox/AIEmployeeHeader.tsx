@@ -62,6 +62,9 @@ export const AIEmployeeHeader: React.FC = () => {
   return (
     <Sender.Header closable={false}>
       <List
+        locale={{
+          emptyText: t('No AI employees available'),
+        }}
         loading={loading}
         dataSource={aiEmployees || []}
         split={false}
