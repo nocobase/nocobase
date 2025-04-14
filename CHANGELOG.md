@@ -5,6 +5,39 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v1.6.19](https://github.com/nocobase/nocobase/compare/v1.6.18...v1.6.19) - 2025-04-14
+
+### 🐛 Bug Fixes
+
+- **[client]**
+  - Fix the issue of preview images being obscured ([#6651](https://github.com/nocobase/nocobase/pull/6651)) by @zhangzhonghe
+
+  - In the form block, the default value of the field configuration will first be displayed as the original variable string and then disappear ([#6649](https://github.com/nocobase/nocobase/pull/6649)) by @zhangzhonghe
+
+## [v1.6.18](https://github.com/nocobase/nocobase/compare/v1.6.17...v1.6.18) - 2025-04-11
+
+### 🚀 Improvements
+
+- **[client]**
+  - Add default type fallback API for `Variable.Input` ([#6644](https://github.com/nocobase/nocobase/pull/6644)) by @mytharcher
+
+  - Optimize prompts for unconfigured pages ([#6641](https://github.com/nocobase/nocobase/pull/6641)) by @zhangzhonghe
+
+- **[Workflow: Delay node]** Support to use variable for duration ([#6621](https://github.com/nocobase/nocobase/pull/6621)) by @mytharcher
+
+- **[Workflow: Custom action event]** Add refresh settings for trigger workflow button by @mytharcher
+
+### 🐛 Bug Fixes
+
+- **[client]**
+  - subtable description overlapping with add new button ([#6646](https://github.com/nocobase/nocobase/pull/6646)) by @katherinehhh
+
+  - dashed underline caused by horizontal form layout in modal ([#6639](https://github.com/nocobase/nocobase/pull/6639)) by @katherinehhh
+
+- **[File storage: S3(Pro)]** Fix missing await for next call. by @jiannx
+
+- **[Email manager]** Fix missing await for next call. by @jiannx
+
 ## [v1.6.17](https://github.com/nocobase/nocobase/compare/v1.6.16...v1.6.17) - 2025-04-09
 
 ### 🚀 Improvements

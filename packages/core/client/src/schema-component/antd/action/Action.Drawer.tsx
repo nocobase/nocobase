@@ -121,7 +121,6 @@ export const InternalActionDrawer: React.FC<ActionDrawerProps> = observer(
       },
       [footerNodeName],
     );
-
     return (
       <ActionContextNoRerender>
         <zIndexContext.Provider value={zIndex}>
@@ -129,7 +128,7 @@ export const InternalActionDrawer: React.FC<ActionDrawerProps> = observer(
             <Drawer
               zIndex={zIndex}
               width={openSizeWidthMap.get(openSize)}
-              title={t(field.title, { ns: NAMESPACE_UI_SCHEMA })}
+              title={typeof field.title === 'string' ? t(field.title, { ns: NAMESPACE_UI_SCHEMA }) : field.title}
               {...others}
               {...drawerProps}
               rootStyle={rootStyle}
