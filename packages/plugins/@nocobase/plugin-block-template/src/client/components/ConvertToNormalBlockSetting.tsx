@@ -73,11 +73,21 @@ const convertToNormalBlockSchema = (schema) => {
     delete s['x-template-version'];
     delete s['x-block-template-key'];
     delete s['x-template-root-ref'];
+    delete s['x-template-title'];
 
+    if (s['x-toolbar-props']?.toolbarClassName?.includes('nb-in-template')) {
+      s['x-toolbar-props'].toolbarClassName = s['x-toolbar-props'].toolbarClassName.replace('nb-in-template', '');
+    }
+
+    if (s['x-uid']) {
+      s['x-uid'] = uid();
+    }
     // Process nested properties
     if (s.properties) {
       for (const key in s.properties) {
-        removeTemplateAssociations(s.properties[key]);
+        if (!s.properties[key]['x-template-root-uid']) {
+          removeTemplateAssociations(s.properties[key]);
+        }
       }
     }
   };
@@ -88,7 +98,6 @@ const convertToNormalBlockSchema = (schema) => {
 
 export const ConvertToNormalBlockSetting = () => {
   const { refresh } = useDesignable();
-  const plugin = usePlugin(PluginBlockTemplateClient);
   const t = useT();
   const api = useAPIClient();
   const form = useForm();
@@ -105,46 +114,16 @@ export const ConvertToNormalBlockSetting = () => {
 
   return (
     <SchemaSettingsItem
-      title={t('Convert to Normal Block')}
+      title={t('Convert to normal block')}
       onClick={() => {
         modal.confirm({
-          title: t('Convert to Normal Block'),
+          title: t('Convert to normal block'),
           content: t('Are you sure you want to convert this template block to a normal block?'),
           ...confirm,
           async onOk() {
-            // Find the root template schema
-            const rootSchema = findParentRootTemplateSchema(fieldSchema);
-            const isRoot = rootSchema === fieldSchema;
-
-            // Clone current schema and remove template associations
-            const newSchema = convertToNormalBlockSchema(fieldSchema);
-            newSchema['x-uid'] = uid(); // Generate new UID for the block
-
-            // Keep original index
-            newSchema['x-index'] = fieldSchema['x-index'];
-
-            // Preserve necessary properties
-            for (const p of blockKeepProps) {
-              if (_.hasIn(fieldSchema, p)) {
-                _.set(newSchema, p, _.get(fieldSchema, p));
-              }
-            }
-
-            // Find position for the new schema
+            const newSchema = convertToNormalBlockSchema(fieldSchema.toJSON());
             const position = findInsertPosition(fieldSchema.parent, fieldSchema['x-uid']);
-
-            // Remove association from blockTemplates collection if exists
-            if (rootSchema) {
-              try {
-                await blockTemplatesResource.destroy({
-                  filter: {
-                    blockUid: rootSchema['x-uid'],
-                  },
-                });
-              } catch (e) {
-                // Ignore errors if the association doesn't exist
-              }
-            }
+            // TODO: Remove old schema, and links
 
             // Remove old schema
             await api.request({
@@ -153,7 +132,6 @@ export const ConvertToNormalBlockSetting = () => {
 
             // Insert new schema
             const schema = new Schema(newSchema);
-            schema.name = fieldSchema.name;
             await api.request({
               url: `/uiSchemas:insertAdjacent/${position.insertTarget}?position=${position.insertPosition}`,
               method: 'post',
@@ -165,7 +143,6 @@ export const ConvertToNormalBlockSetting = () => {
             // Update the UI to show the new schema
             fieldSchema.toJSON = () => {
               const ret = schema.toJSON();
-              addToolbarClass(ret);
               return ret;
             };
 
@@ -208,7 +185,7 @@ export const ConvertToNormalBlockSetting = () => {
         });
       }}
     >
-      {t('Convert to Normal Block')}
+      {t('Convert to normal block')}
     </SchemaSettingsItem>
   );
 };

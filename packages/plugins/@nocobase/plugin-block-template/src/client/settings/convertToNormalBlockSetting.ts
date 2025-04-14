@@ -14,7 +14,7 @@ import { useIsInTemplate } from '../hooks/useIsInTemplate';
 
 export const convertToNormalBlockSettingItem = {
   name: 'template-convertToNormalBlockSettingItem',
-  title: tStr('Convert to Normal Block'),
+  title: tStr('Convert to normal block'),
   Component: ConvertToNormalBlockSetting,
   useVisible: () => {
     const fieldSchema = useFieldSchema();
