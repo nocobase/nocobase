@@ -12,7 +12,7 @@
     "@nocobase/test": "1.x"
   },
   "devDependencies": {
-    "@nocobase/plugin-file-manager": "1.x"
+    "@nocobase/plugin-file-manager": "1.6.20"
   },
   "keywords": [
     "Collection fields"

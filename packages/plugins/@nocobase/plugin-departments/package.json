@@ -7,7 +7,7 @@
   "version": "1.7.0-alpha.10",
   "main": "dist/server/index.js",
   "devDependencies": {
-    "@nocobase/plugin-user-data-sync": "1.x"
+    "@nocobase/plugin-user-data-sync": "1.6.20"
   },
   "peerDependencies": {
     "@nocobase/actions": "1.x",
