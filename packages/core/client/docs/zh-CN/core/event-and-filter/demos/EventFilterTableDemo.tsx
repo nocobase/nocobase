@@ -206,6 +206,7 @@ const addActionColumnFilter: Filter = {
             }, 0);
           };
         });
+        return null;
       },
     };
     result.columns.push(actionColumn);
@@ -337,14 +338,14 @@ const EventFilterTableDemo: React.FC = (props) => {
   const tableOptions = useMemo(
     () => ({
       selectable: true,
-      layout: 'fitDataFill',
-      responsiveLayout: 'hide',
+      layout: 'fitDataFill' as const,
+      responsiveLayout: 'hide' as const,
       pagination: true,
       paginationSizeSelector: [10, 20, 50, 100],
       movableColumns: true,
       placeholder: '暂无数据',
       paginationButtonCount: 5,
-      paginationCounter: 'rows',
+      paginationCounter: 'rows' as const,
       paginationSize: 10,
       // columns: generateColumnsFromData(tableData),
       // data: tableData
@@ -460,6 +461,7 @@ const EventFilterTableDemo: React.FC = (props) => {
         tabulator.on('tableBuilt', function () {
           console.log('Table built completed, Tabulator instance is ready');
           tabulatorInstanceRef.current = tabulator;
+          tabulatorInstanceRef.current['_initialized'] = true;
         });
       } catch (error) {
         console.error('Error initializing Tabulator:', error);
@@ -483,7 +485,7 @@ const EventFilterTableDemo: React.FC = (props) => {
       console.log('Updating Tabulator data...');
       try {
         // 确保表格实例已经完全准备好
-        if (tabulatorInstanceRef.current.initialized) {
+        if (tabulatorInstanceRef.current['_initialized']) {
           tabulatorInstanceRef.current.setData(tableData);
         } else {
           console.log('Skip updating data, table not fully initialized yet');
