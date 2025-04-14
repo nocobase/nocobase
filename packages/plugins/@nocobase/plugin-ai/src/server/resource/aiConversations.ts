@@ -370,7 +370,7 @@ export default {
 
           if (textUserMessage) {
             const content = textUserMessage.content.content;
-            conversation.title = content.substring(0, 10);
+            conversation.title = content.substring(0, 20);
             await conversation.save();
           }
         }
