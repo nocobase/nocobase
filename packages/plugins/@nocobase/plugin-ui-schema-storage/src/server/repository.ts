@@ -322,7 +322,7 @@ export class UiSchemaRepository extends Repository {
     if (!newSchema['properties']) {
       const s = await this.model.findByPk(rootUid, { transaction });
       s.set('schema', { ...s.toJSON(), ...newSchema });
-      await s.save({ transaction, hooks: false });
+      await s.update({ schema: s.schema }, { transaction, hooks: false });
       await this.emitAfterSaveEvent(s, options);
       if (newSchema['x-server-hooks']) {
         await this.database.emitAsync(`${this.collection.name}.afterSave`, s, options);
@@ -578,19 +578,22 @@ export class UiSchemaRepository extends Repository {
       ];
     }, []);
 
-    // insert tree path
-    await this.database.sequelize.query(
-      this.sqlAdapter(
-        `INSERT INTO ${
-          this.uiSchemaTreePathTableName
-        } (ancestor, descendant, depth, type, async, sort) VALUES ${treePathData.map((item) => '(?)').join(',')}`,
-      ),
-      {
-        replacements: treePathData,
-        type: 'insert',
-        transaction,
-      },
-    );
+    // insert tree path in chunks of 1000 rows
+    const chunkedData = lodash.chunk(treePathData, 1000);
+    for (const chunk of chunkedData) {
+      await this.database.sequelize.query(
+        this.sqlAdapter(
+          `INSERT INTO ${this.uiSchemaTreePathTableName} (ancestor, descendant, depth, type, async, sort) VALUES ${chunk
+            .map(() => '(?)')
+            .join(',')}`,
+        ),
+        {
+          replacements: chunk,
+          type: 'insert',
+          transaction,
+        },
+      );
+    }
 
     const rootNode = nodes[0];
     if (rootNode['x-server-hooks']) {
@@ -729,18 +732,29 @@ export class UiSchemaRepository extends Repository {
       if (nodePosition === 'first') {
         sort = 1;
 
-        let updateSql = `UPDATE ${treeTable} as TreeTable
+        let updateSql: string;
+        if (this.database.inDialect('postgres', 'sqlite')) {
+          `UPDATE ${treeTable} as TreeTable
                 SET sort = TreeTable.sort + 1
                 FROM ${treeTable} as NodeInfo
                 WHERE NodeInfo.descendant = TreeTable.descendant and NodeInfo.depth = 0
                 AND TreeTable.depth = 1 AND TreeTable.ancestor = :ancestor and NodeInfo.type = :type`;
+        }
 
         // Compatible with mysql
-        if (this.database.isMySQLCompatibleDialect()) {
+        else if (this.database.isMySQLCompatibleDialect()) {
           updateSql = `UPDATE ${treeTable} as TreeTable
           JOIN ${treeTable} as NodeInfo ON (NodeInfo.descendant = TreeTable.descendant and NodeInfo.depth = 0)
           SET TreeTable.sort = TreeTable.sort + 1
           WHERE TreeTable.depth = 1 AND TreeTable.ancestor = :ancestor and NodeInfo.type = :type`;
+        } else {
+          updateSql = `UPDATE TreeTable
+    SET TreeTable.sort = TreeTable.sort + 1
+    FROM ${treeTable} AS TreeTable
+    JOIN ${treeTable} AS NodeInfo ON NodeInfo.descendant = TreeTable.descendant AND NodeInfo.depth = 0
+    WHERE TreeTable.depth = 1
+      AND TreeTable.ancestor = :ancestor
+      AND NodeInfo.type = :type`;
         }
 
         // move all child last index
@@ -755,9 +769,7 @@ export class UiSchemaRepository extends Repository {
 
       if (nodePosition === 'last') {
         const maxSort = await db.sequelize.query(
-          `SELECT ${
-            this.database.sequelize.getDialect() === 'postgres' ? 'coalesce' : 'ifnull'
-          }(MAX(TreeTable.sort), 0) as maxsort FROM ${treeTable} as TreeTable
+          `SELECT ${this.database.queryInterface.nullSafe()}(MAX(TreeTable.sort), 0) as maxsort FROM ${treeTable} as TreeTable
                                                         LEFT JOIN ${treeTable} as NodeInfo
                                                                   ON NodeInfo.descendant = TreeTable.descendant and NodeInfo.depth = 0
            WHERE TreeTable.depth = 1 AND TreeTable.ancestor = :ancestor and NodeInfo.type = :type`,
@@ -799,7 +811,9 @@ export class UiSchemaRepository extends Repository {
           sort += 1;
         }
 
-        let updateSql = `UPDATE ${treeTable} as TreeTable
+        let updateSql: string;
+        if (this.database.inDialect('postgres', 'sqlite')) {
+          updateSql = `UPDATE ${treeTable} as TreeTable
                          SET sort = TreeTable.sort + 1
                              FROM ${treeTable} as NodeInfo
                          WHERE NodeInfo.descendant = TreeTable.descendant
@@ -808,12 +822,20 @@ export class UiSchemaRepository extends Repository {
                            AND TreeTable.ancestor = :ancestor
                            and TreeTable.sort >= :sort
                            and NodeInfo.type = :type`;
-
-        if (this.database.isMySQLCompatibleDialect()) {
+        } else if (this.database.isMySQLCompatibleDialect()) {
           updateSql = `UPDATE  ${treeTable} as TreeTable
 JOIN ${treeTable} as NodeInfo ON (NodeInfo.descendant = TreeTable.descendant and NodeInfo.depth = 0)
 SET TreeTable.sort = TreeTable.sort + 1
 WHERE TreeTable.depth = 1 AND  TreeTable.ancestor = :ancestor and TreeTable.sort >= :sort and NodeInfo.type = :type`;
+        } else {
+          updateSql = `UPDATE TreeTable
+          SET TreeTable.sort = TreeTable.sort + 1
+          FROM ${treeTable} AS TreeTable
+          JOIN ${treeTable} AS NodeInfo ON NodeInfo.descendant = TreeTable.descendant AND NodeInfo.depth = 0
+          WHERE TreeTable.depth = 1
+            AND TreeTable.ancestor = :ancestor
+            AND TreeTable.sort >= :sort
+            AND NodeInfo.type = :type`;
         }
 
         await db.sequelize.query(updateSql, {
@@ -1089,7 +1111,7 @@ WHERE TreeTable.depth = 1 AND  TreeTable.ancestor = :ancestor and TreeTable.sort
                  LEFT JOIN ${this.uiSchemasTableName} as "SchemaTable" ON "SchemaTable"."x-uid" =  TreePath.descendant
                  LEFT JOIN ${this.uiSchemaTreePathTableName} as NodeInfo ON NodeInfo.descendant = "SchemaTable"."x-uid" and NodeInfo.descendant = NodeInfo.ancestor and NodeInfo.depth = 0
                  LEFT JOIN ${this.uiSchemaTreePathTableName} as ParentPath ON (ParentPath.descendant = "SchemaTable"."x-uid" AND ParentPath.depth = 1)
-        WHERE TreePath.ancestor = :ancestor  AND (NodeInfo.async = false or TreePath.depth <= 1)`;
+        WHERE TreePath.ancestor = :ancestor  AND (NodeInfo.async = ${this.database.queryInterface.booleanValues.false} or TreePath.depth <= 1)`;
 
     const nodes = await db.sequelize.query(this.sqlAdapter(rawSql), {
       replacements: {
@@ -1120,7 +1142,9 @@ WHERE TreeTable.depth = 1 AND  TreeTable.ancestor = :ancestor and TreeTable.sort
                  LEFT JOIN ${treeTable} as NodeInfo ON NodeInfo.descendant = "SchemaTable"."x-uid" and NodeInfo.descendant = NodeInfo.ancestor and NodeInfo.depth = 0
                  LEFT JOIN ${treeTable} as ParentPath ON (ParentPath.descendant = "SchemaTable"."x-uid" AND ParentPath.depth = 1)
         WHERE TreePath.ancestor = :ancestor  ${
-          options?.includeAsyncNode ? '' : 'AND (NodeInfo.async != true or TreePath.depth = 0)'
+          options?.includeAsyncNode
+            ? ''
+            : `AND (NodeInfo.async != ${this.database.queryInterface.booleanValues.true} or TreePath.depth = 0)`
         }
     `;
 

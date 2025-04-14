@@ -114,6 +114,8 @@ export default abstract class QueryInterface {
   // Usage: mysql => ifnull, postgres => coalesce, mssql => isnull
   abstract nullSafe(): string;
 
+  abstract ensureSchema(schemaName: string, options: Transactionable): Promise<void>;
+
   get defaultSchemaName() {
     return this.config.defaultSchemaName;
   }

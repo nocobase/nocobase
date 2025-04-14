@@ -156,4 +156,6 @@ export default class MysqlQueryInterface extends QueryInterface {
   nullSafe(): string {
     return 'IFNULL';
   }
+
+  async ensureSchema(schemaName: string): Promise<void> {}
 }

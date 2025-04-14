@@ -16,7 +16,7 @@ import QueryInterface, {
   RemoveColumnOptions,
   TableInfo,
 } from './query-interface';
-import { ModelStatic, Transaction } from 'sequelize';
+import { ModelStatic, Transaction, Transactionable } from 'sequelize';
 
 export default class PostgresQueryInterface extends QueryInterface {
   constructor(db) {
@@ -258,5 +258,15 @@ $BODY$
 
   nullSafe(): string {
     return 'COALESCE';
+  }
+
+  async ensureSchema(schemaName: string, options: Transactionable): Promise<void> {
+    if (schemaName === 'public') {
+      return;
+    }
+    await this.db.sequelize.query(`CREATE SCHEMA IF NOT EXISTS "${schemaName}";`, {
+      raw: true,
+      transaction: options?.transaction,
+    });
   }
 }
