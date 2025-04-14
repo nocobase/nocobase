@@ -10,10 +10,10 @@
   "homepage.zh-CN": "https://docs-cn.nocobase.com/handbook/workflow-response-message",
   "peerDependencies": {
     "@nocobase/client": "1.x",
+    "@nocobase/plugin-workflow": "1.x",
     "@nocobase/server": "1.x",
     "@nocobase/test": "1.x",
-    "@nocobase/utils": "1.x",
-    "@nocobase/plugin-workflow": "1.x"
+    "@nocobase/utils": "1.x"
   },
   "keywords": [
     "Workflow"

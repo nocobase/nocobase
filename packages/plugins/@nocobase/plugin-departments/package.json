@@ -9,9 +9,9 @@
   "peerDependencies": {
     "@nocobase/actions": "1.x",
     "@nocobase/client": "1.x",
+    "@nocobase/plugin-user-data-sync": "1.x",
     "@nocobase/server": "1.x",
-    "@nocobase/test": "1.x",
-    "@nocobase/plugin-user-data-sync": "1.x"
+    "@nocobase/test": "1.x"
   },
   "keywords": [
     "Users & permissions"
