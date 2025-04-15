@@ -12,7 +12,12 @@ import { LLMProvider } from '../llm-providers/provider';
 
 export type LLMProviderOptions = {
   title: string;
-  provider: new (opts: { app: Application; serviceOptions?: any; chatOptions?: any }) => LLMProvider;
+  provider: new (opts: {
+    app: Application;
+    serviceOptions?: any;
+    chatOptions?: any;
+    abortSignal?: AbortSignal;
+  }) => LLMProvider;
 };
 
 export class AIManager {
