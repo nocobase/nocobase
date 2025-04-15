@@ -358,6 +358,18 @@ export async function buildProPluginServer(cwd: string, userConfig: UserConfig, 
     log('server entry file not found', entryFile);
     return;
   }
+
+  // plugin-commercial build to a bundle
+  const externalOptions = {
+    external: [],
+    noExternal: []
+  };
+  // other plugins build to a bundle just include plugin-commercial
+  if (!cwd.includes(PLUGIN_COMMERCIAL)) {
+    externalOptions.external = [/^[./]/];
+    externalOptions.noExternal = [entryFile, /@nocobase\/plugin-commercial\/server/, /dist\/server\/index\.js/];
+  }
+
   // bundle all files、inject commercial code and obfuscate
   await tsupBuild(
     userConfig.modifyTsupConfig({
@@ -372,7 +384,7 @@ export async function buildProPluginServer(cwd: string, userConfig: UserConfig, 
       sourcemap,
       outDir: path.join(cwd, target_dir, 'server'),
       format: 'cjs',
-      noExternal: ['@nocobase/plugin-commercial/server'],
+      ...externalOptions,
       skipNodeModulesBundle: true,
       tsconfig: tsconfig.path,
       loader: {
@@ -676,7 +688,7 @@ __webpack_require__.p = (function() {
 }
 
 export async function buildPlugin(cwd: string, userConfig: UserConfig, sourcemap: boolean, log: PkgLog) {
-  if (cwd.includes('/pro-plugins/') && !cwd.includes(PLUGIN_COMMERCIAL) && fs.existsSync(path.join(process.cwd(), 'packages/pro-plugins/', PLUGIN_COMMERCIAL))) {
+  if (cwd.includes('/pro-plugins/') && fs.existsSync(path.join(process.cwd(), 'packages/pro-plugins/', PLUGIN_COMMERCIAL))) {
     await buildPluginClient(cwd, userConfig, sourcemap, log, true);
     await buildProPluginServer(cwd, userConfig, sourcemap, log);
   } else {
