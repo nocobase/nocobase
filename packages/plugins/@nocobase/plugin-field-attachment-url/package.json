@@ -8,6 +8,7 @@
   "description.zh-CN": "支持 URL 格式的附件。",
   "peerDependencies": {
     "@nocobase/client": "1.x",
+    "@nocobase/plugin-file-manager": "1.x",
     "@nocobase/server": "1.x",
     "@nocobase/test": "1.x"
   },

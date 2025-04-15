@@ -51,12 +51,18 @@ export class AttachmentURLFieldInterface extends CollectionFieldInterface {
     ...defaultProps,
     target: {
       required: true,
-      default: 'attachments',
       type: 'string',
       title: tStr('Which file collection should it be uploaded to'),
       'x-decorator': 'FormItem',
       'x-component': 'RemoteSelect',
       'x-use-component-props': useAttachmentTargetProps,
+      'x-reactions': (field) => {
+        const options = field.data?.options || [];
+        const hasAttachments = options.some((opt) => opt?.name === 'attachments');
+        if (hasAttachments) {
+          !field.initialValue && field.setInitialValue('attachments');
+        }
+      },
     },
     targetKey: {
       'x-hidden': true,
