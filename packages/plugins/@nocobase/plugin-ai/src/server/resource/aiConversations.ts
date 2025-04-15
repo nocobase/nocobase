@@ -179,7 +179,7 @@ async function processChatStream(
     } else {
       await ctx.db.getRepository('aiConversations.messages', sessionId).create({
         values: {
-          messageId: snowflake.generate(),
+          messageId: plugin.snowflake.generate(),
           role: aiEmployeeUsername,
           content,
         },
@@ -339,6 +339,8 @@ export default {
     },
 
     async sendMessages(ctx: Context, next: Next) {
+      const plugin = ctx.app.pm.get('ai') as PluginAIServer;
+
       setupSSEHeaders(ctx);
 
       const { sessionId, aiEmployee, messages } = ctx.action.params.values || {};
@@ -389,7 +391,7 @@ export default {
         try {
           await ctx.db.getRepository('aiConversations.messages', sessionId).create({
             values: messages.map((message: any) => ({
-              messageId: snowflake.generate(),
+              messageId: plugin.snowflake.generate(),
               role: message.role,
               content: message.content,
             })),

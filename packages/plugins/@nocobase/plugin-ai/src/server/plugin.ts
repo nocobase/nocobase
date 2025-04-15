@@ -16,14 +16,23 @@ import PluginWorkflowServer from '@nocobase/plugin-workflow';
 import { LLMInstruction } from './workflow/nodes/llm';
 import aiConversations from './resource/aiConversations';
 import { AIEmployeesManager } from './ai-employees/ai-employees-manager';
+import Snowflake from './snowflake';
 
 export class PluginAIServer extends Plugin {
   aiManager = new AIManager();
   aiEmployeesManager = new AIEmployeesManager(this);
+  snowflake: Snowflake;
 
   async afterAdd() {}
 
-  async beforeLoad() {}
+  async beforeLoad() {
+    const pluginRecord = await this.db.getRepository('applicationPlugins').findOne({
+      filter: {
+        name: this.name,
+      },
+    });
+    this.snowflake = new Snowflake(pluginRecord?.createdAt.getTime());
+  }
 
   async load() {
     this.aiManager.registerLLMProvider('openai', openaiProviderOptions);

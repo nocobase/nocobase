@@ -7,13 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-const SnowflakeId = require('snowflake-id').default;
+import { Snowflake as SnowflakeId } from 'nodejs-snowflake';
 import os from 'os';
 
 class Snowflake {
-  snowflake: typeof SnowflakeId;
+  snowflake: SnowflakeId;
 
-  constructor() {
+  constructor(epoch?: number) {
     const interfaces = os.networkInterfaces();
     let instanceId: number;
     let hasFound = false;
@@ -45,13 +45,14 @@ class Snowflake {
     }
 
     this.snowflake = new SnowflakeId({
-      mid: instanceId,
+      instance_id: instanceId,
+      custom_epoch: epoch,
     });
   }
 
   generate() {
-    return this.snowflake.generate();
+    return this.snowflake.getUniqueID();
   }
 }
 
-export default new Snowflake();
+export default Snowflake;

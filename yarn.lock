@@ -21997,7 +21997,7 @@ node-xlsx@^0.16.1:
     buffer-from "^1.1.1"
     xlsx "^0.17.0"
 
-nodejs-snowflake@2.0.1:
+nodejs-snowflake@2.0.1, nodejs-snowflake@^2.0.1:
   version "2.0.1"
   resolved "https://registry.npmmirror.com/nodejs-snowflake/-/nodejs-snowflake-2.0.1.tgz#d82fb1c7398404c5ac984d6f1cdfb1b5aef7bd80"
   integrity sha512-zMfDorNNsJm1OWWx/OUUGVT0bQ3TwC2ti4URD8UjnpffVLtLpy3eBDIaV5TnLs91YrRhwBD6L0StqU6YtnZt9A==
@@ -27151,13 +27151,6 @@ snapdragon@^0.8.1:
     source-map "^0.5.6"
     source-map-resolve "^0.5.0"
     use "^3.1.0"
-
-snowflake-id@^1.1.0:
-  version "1.1.0"
-  resolved "https://registry.npmjs.org/snowflake-id/-/snowflake-id-1.1.0.tgz#9d14ec33f0a6459e751e7b5e0238abfa3cd61fd1"
-  integrity sha512-aBOppRJ/HIe4PxkIxK5QMO4+X9pO6ejjE1i1gXgGXCEd312vtBZnvOfc2D7W2MKhVhyld7a7AwrO5ZIl297KbA==
-  dependencies:
-    babel-runtime "^6.26.0"
 
 socket.io-adapter@~2.5.2:
   version "2.5.5"

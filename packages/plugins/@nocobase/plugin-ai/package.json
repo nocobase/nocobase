@@ -17,7 +17,7 @@
     "@langchain/core": "^0.3.39",
     "@langchain/deepseek": "^0.0.1",
     "@langchain/openai": "^0.4.3",
-    "snowflake-id": "^1.1.0",
+    "nodejs-snowflake": "^2.0.1",
     "use-context-selector": "^2.0.0"
   }
 }
