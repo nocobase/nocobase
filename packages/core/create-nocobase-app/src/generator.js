@@ -9,7 +9,8 @@
 
 const chalk = require('chalk');
 const crypto = require('crypto');
-const { existsSync } = require('fs');
+const { existsSync, promises } = require('fs');
+const fs = require('fs-extra');
 const { join, resolve } = require('path');
 const { Generator } = require('@umijs/utils');
 const { downloadPackageFromNpm, updateJsonFile } = require('./util');
@@ -190,6 +191,13 @@ class AppGenerator extends Generator {
     });
 
     this.checkDbEnv();
+
+    const skipDevDependencies = this.args.skipDevDependencies;
+    if (skipDevDependencies) {
+      const json = await fs.readJSON(join(this.cwd, 'package.json'), 'utf8');
+      delete json['devDependencies'];
+      await fs.writeJSON(join(this.cwd, 'package.json'), json, { encoding: 'utf8', spaces: 2 });
+    }
 
     console.log('');
     console.log(chalk.green(`$ cd ${name}`));
