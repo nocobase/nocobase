@@ -307,6 +307,8 @@ export const ChatMessagesProvider: React.FC<{ children: React.ReactNode }> = ({ 
         sessionId: currentConversation,
       },
     });
+    // sleep(500)
+    await new Promise((resolve) => setTimeout(resolve, 500));
     messagesServiceRef.current.run(currentConversation);
     setResponseLoading(false);
   }, [currentConversation]);

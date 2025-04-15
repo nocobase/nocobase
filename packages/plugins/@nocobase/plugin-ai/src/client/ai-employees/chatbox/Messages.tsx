@@ -17,18 +17,25 @@ import { useChatMessages } from './ChatMessagesProvider';
 export const Messages: React.FC = () => {
   const { messages, messagesService, lastMessageRef } = useChatMessages();
   const roles = useChatBoxContext('roles');
-  const contentRef = useRef(null);
-  const lastMessageContent = messages[messages.length - 1]?.key;
+  const containerRef = useRef(null);
 
   useEffect(() => {
-    if (contentRef.current) {
-      contentRef.current.scrollTop = contentRef.current.scrollHeight;
-    }
-  }, [lastMessageContent]);
+    if (!containerRef.current) return;
+
+    const container = containerRef.current;
+
+    const resizeObserver = new ResizeObserver(() => {
+      container.scrollTop = container.scrollHeight;
+    });
+
+    resizeObserver.observe(container);
+
+    return () => resizeObserver.disconnect();
+  }, [messages]);
 
   return (
     <Layout.Content
-      ref={contentRef}
+      ref={containerRef}
       style={{
         margin: '16px 0',
         overflow: 'auto',

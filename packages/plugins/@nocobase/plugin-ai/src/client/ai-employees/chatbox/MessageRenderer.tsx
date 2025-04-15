@@ -18,6 +18,7 @@ import { useChatBoxContext } from './ChatBoxContext';
 import { useChatConversations } from './ChatConversationsProvider';
 import { SchemaComponent } from '@nocobase/client';
 import { uid } from '@formily/shared';
+import { Markdown } from './Markdown';
 
 const MessageWrapper = React.forwardRef<
   HTMLDivElement,
@@ -49,23 +50,7 @@ const AIMessageRenderer: React.FC<{
     case 'text':
       return (
         <Bubble
-          content={
-            <SchemaComponent
-              schema={{
-                type: 'void',
-                properties: {
-                  [uid()]: {
-                    type: 'void',
-                    'x-component': 'Markdown.Void',
-                    'x-component-props': {
-                      content: msg.content,
-                    },
-                    'x-read-pretty': true,
-                  },
-                },
-              }}
-            />
-          }
+          content={<Markdown markdown={msg.content} />}
           footer={
             <Space>
               <Button

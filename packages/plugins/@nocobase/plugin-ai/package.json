@@ -18,6 +18,8 @@
     "@langchain/deepseek": "^0.0.1",
     "@langchain/openai": "^0.4.3",
     "nodejs-snowflake": "^2.0.1",
-    "use-context-selector": "^2.0.0"
+    "use-context-selector": "^2.0.0",
+    "react-markdown": "^10.1.0",
+    "react-syntax-highlighter": "^15.6.1"
   }
 }
