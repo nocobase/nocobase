@@ -1,11 +1,10 @@
 import { Card, Space } from 'antd';
 import React, { useEffect, useMemo, useState } from 'react';
-import { Filter, FilterContext } from '../libs/types';
-import { SchemaComponent, Checkbox, FormItem } from '@nocobase/client';
+import { IFilter, FilterHandlerContext, SchemaComponent, Checkbox, FormItem } from '@nocobase/client';
 import { createForm, onFormValuesChange } from '@formily/core';
 import { FormContext } from '@formily/react';
 
-const caseConvertFilter: Filter = {
+const caseConvertFilter: IFilter = {
   name: 'caseConvert',
   title: '大小写转换',
   description: '将输入文本转换为大写或小写',
@@ -18,7 +17,7 @@ const caseConvertFilter: Filter = {
       'x-component': 'Checkbox',
     },
   },
-  handler: async (text, params, context: FilterContext) => {
+  handler: async (text, params, context: FilterHandlerContext) => {
     if (typeof text === 'string') {
       if (params.uppercase) {
         return text.toUpperCase();

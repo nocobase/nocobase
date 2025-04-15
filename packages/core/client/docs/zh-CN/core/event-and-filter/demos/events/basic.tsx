@@ -1,5 +1,5 @@
 import { Button } from 'antd';
-import { EventBus } from '../libs/event-bus';
+import { EventBus } from '@nocobase/client';
 import React from 'react';
 import { openSimpleDialogAction } from '../actions/open-simple-dialog';
 

@@ -1,9 +1,8 @@
 import { Button, InputNumber, Space, Switch, Typography } from 'antd';
 import React, { useState } from 'react';
-import { EventFlowManager } from '../libs/eventflow-manager';
+import { EventFlowManager, EventBus } from '@nocobase/client';
 import { openSimpleDialogAction } from '../actions/open-simple-dialog';
 import { openNotificationAction } from '../actions/open-notification';
-import { EventBus } from '../libs/event-bus';
 
 const { Text } = Typography;
 

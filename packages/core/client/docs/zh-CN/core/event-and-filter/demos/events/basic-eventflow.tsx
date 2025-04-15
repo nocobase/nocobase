@@ -1,10 +1,9 @@
 import { Button } from 'antd';
 import React from 'react';
-import { EventFlowManager } from '../libs/eventflow-manager';
+import { EventFlowManager, EventBus } from '@nocobase/client';
 import { openSimpleDialogAction } from '../actions/open-simple-dialog';
 import { openNotificationAction } from '../actions/open-notification';
 import { openFormDialogAction } from '../actions/open-form-dialog';
-import { EventBus } from '../libs/event-bus';
 
 // 创建事件总线实例
 const eventBus = new EventBus();

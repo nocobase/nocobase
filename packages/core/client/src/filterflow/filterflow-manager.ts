@@ -3,12 +3,12 @@ import { observable } from '@formily/reactive';
 import { uid } from '@nocobase/utils/client';
 import _ from 'lodash';
 import {
-  FilterContext,
+  FilterHandlerContext,
   FilterFlowOptions,
   FilterFlowStepOptions,
   FilterHandler,
   FilterGroupOptions,
-  Filter,
+  IFilter,
 } from './types';
 
 export class FilterFlowStep {
@@ -166,7 +166,7 @@ export class FilterFlow {
    * 获取指定的 Filter 配置
    * 该方法转发调用到 FilterFlowManager
    */
-  getFilter(filterName: string): Filter | undefined {
+  getFilter(filterName: string): IFilter | undefined {
     return this.filterFlowManager.getFilter(filterName);
   }
 
@@ -185,7 +185,7 @@ export class FilterFlow {
 // --- FilterFlowManager Class ---
 export class FilterFlowManager {
   private filterGroups: Record<string, FilterGroupOptions> = {};
-  private filters: Record<string, Filter> = {};
+  private filters: Record<string, IFilter> = {};
   private filterFlows: Map<string, FilterFlow>;
 
   constructor() {
@@ -206,14 +206,14 @@ export class FilterFlowManager {
   /**
    * 注册 Filter (可复用的 Filter 逻辑)
    */
-  addFilter(filter: Filter) {
+  addFilter(filter: IFilter) {
     this.filters[filter.name] = filter;
   }
 
   /**
    * 获取指定的 Filter 配置
    */
-  getFilter(filterName: string): Filter | undefined {
+  getFilter(filterName: string): IFilter | undefined {
     return this.filters[filterName];
   }
 
@@ -354,7 +354,7 @@ export class FilterFlowManager {
    * @param context Filter上下文
    * @returns 应用 Flow 中所有 Filter 后的最终值
    */
-  async applyFilters(flowKey: string, initialValue: any, context: FilterContext): Promise<any> {
+  async applyFilters(flowKey: string, initialValue: any, context: FilterHandlerContext): Promise<any> {
     const flow = this.getFlow(flowKey);
     if (!flow) {
       console.warn(`FilterFlow with key "${flowKey}" not found. Returning initial value.`);
@@ -409,7 +409,7 @@ export class FilterFlowManager {
    * @param context 上下文对象
    * @returns boolean
    */
-  private checkCondition(condition?: string, context?: FilterContext): boolean {
+  private checkCondition(condition?: string, context?: FilterHandlerContext): boolean {
     if (!condition) {
       return true; // 没有条件，默认通过
     }

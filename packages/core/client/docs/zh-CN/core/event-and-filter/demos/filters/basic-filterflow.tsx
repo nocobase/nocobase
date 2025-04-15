@@ -1,6 +1,6 @@
 import { Button, Card, Space, Typography } from 'antd';
 import React, { useState } from 'react';
-import { FilterFlowManager } from '../libs/filterflow-manager';
+import { FilterFlowManager } from '@nocobase/client';
 
 // 创建过滤器管理器实例
 const filterFlowManager = new FilterFlowManager();

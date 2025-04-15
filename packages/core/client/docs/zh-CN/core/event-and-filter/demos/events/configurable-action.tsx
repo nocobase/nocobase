@@ -1,7 +1,6 @@
 import { Button, Space, Typography, message } from 'antd';
 import React, { useState } from 'react';
-import { EventFlowManager } from '../libs/eventflow-manager';
-import { EventBus } from '../libs/event-bus';
+import { EventFlowManager, EventBus } from '@nocobase/client';
 import { configureAction } from '../actions/open-configure-dialog';
 
 // 创建事件总线和事件流管理器

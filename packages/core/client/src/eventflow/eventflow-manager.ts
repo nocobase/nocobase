@@ -3,66 +3,17 @@ import { observable } from '@formily/reactive';
 import { uid } from '@formily/shared';
 import _ from 'lodash';
 import { EventBus } from './event-bus';
-
-export type EventFlowEventHandler = (params: Record<string, any>, context: any) => Promise<any>;
-export type EventFlowActionHandler = (params: Record<string, any>, context: any) => Promise<any>;
-
-export type EventFlowEventGroupOptions = {
-  name: string;
-  title: string;
-  sort?: number;
-};
-
-export type EventFlowEventOptions = {
-  name: string;
-  title: string;
-  description?: string;
-  group: string;
-  sort?: number;
-  uiSchema: Record<string, ISchema>;
-  handler?: EventFlowEventHandler;
-};
-
-export type EventFlowActionGroupOptions = {
-  name: string;
-  title: string;
-  sort?: number;
-};
-
-export type EventFlowActionOptions = {
-  name: string;
-  title: string;
-  description?: string;
-  group: string;
-  sort?: number;
-  uiSchema: Record<string, ISchema>;
-  handler: EventFlowActionHandler;
-};
-
-export type EventFlowStepOptions = {
-  key?: string;
-  action: string;
-  title?: string;
-  params?: Record<string, any>;
-  condition?: string;
-  isAwait?: boolean;
-};
-
-export type EventFlowOnOptions = {
-  event?: string;
-  title?: string;
-  condition?: string;
-  params?: Record<string, any>;
-};
-
-export type EventFlowOptions = {
-  sort?: number;
-  isAwait?: boolean;
-  key?: string;
-  title?: string;
-  on?: EventFlowOnOptions;
-  steps?: EventFlowStepOptions[];
-};
+import type {
+  EventFlowActionHandler,
+  EventFlowActionGroupOptions,
+  EventFlowActionOptions,
+  EventFlowEventHandler,
+  EventFlowEventGroupOptions,
+  EventFlowEventOptions,
+  EventFlowOnOptions,
+  EventFlowOptions,
+  EventFlowStepOptions,
+} from './types';
 
 export class EventFlowStep {
   options: EventFlowStepOptions;

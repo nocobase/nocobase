@@ -1,12 +1,18 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { Button, Space, Card, Modal, App, Typography, Divider, Spin } from 'antd';
 import { DeleteOutlined, RedoOutlined, SettingOutlined } from '@ant-design/icons';
-import { EventBus } from './libs/event-bus';
-import { EventFlowActionOptions, EventFlowManager } from './libs/eventflow-manager';
-import { FilterFlowManager } from './libs/filterflow-manager';
-import { EventContext, FilterContext, Filter } from './libs/types';
+import {
+  EventBus,
+  EventFlowActionOptions,
+  EventFlowManager,
+  FilterFlowManager,
+  EventContext,
+  FilterHandlerContext,
+  IFilter,
+  useTabulatorBuiltinStyles,
+  useTabulatorStyles,
+} from '@nocobase/client';
 import { configureAction } from './actions/open-configure-dialog';
-import { useTabulatorBuiltinStyles, useTabulatorStyles } from './libs/hooks';
 import { useCompile } from '@nocobase/client';
 import { TabulatorFull as Tabulator, ColumnDefinition } from 'tabulator-tables';
 import ReactDOM from 'react-dom/client';
@@ -113,7 +119,7 @@ eventFlowManager.addAction(openViewDialogAction);
 eventFlowManager.addAction(configureAction); // 配置Action
 
 // --- Filter 定义 ---
-const showInitialColumnsFilter: Filter = {
+const showInitialColumnsFilter: IFilter = {
   name: 'showInitialColumns',
   title: '显示初始列',
   group: 'columns',
@@ -160,7 +166,7 @@ const showInitialColumnsFilter: Filter = {
   },
 };
 
-const addActionColumnFilter: Filter = {
+const addActionColumnFilter: IFilter = {
   name: 'addActionColumn',
   title: '添加操作列',
   group: 'columns',
@@ -355,7 +361,7 @@ const EventFilterTableDemo: React.FC = (props) => {
 
   // 应用 FilterFlow 获取列配置
   const applyColumnFilter = useCallback(async () => {
-    const context: FilterContext = {
+    const context: FilterHandlerContext = {
       props: {},
       payload: {
         hooks: hooks,

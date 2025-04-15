@@ -1,9 +1,8 @@
 import { Button } from 'antd';
 import React from 'react';
-import { EventFlowManager } from '../libs/eventflow-manager';
+import { EventFlowManager, EventBus } from '@nocobase/client';
 import { openSimpleDialogAction } from '../actions/open-simple-dialog';
 import { openNotificationAction } from '../actions/open-notification';
-import { EventBus } from '../libs/event-bus';
 
 // Create managers
 const eventBus = new EventBus();
