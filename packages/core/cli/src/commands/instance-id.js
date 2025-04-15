@@ -32,7 +32,7 @@ module.exports = (cli) => {
         }
         const filePath = path.resolve(dir, 'InstanceID');
         const instanceId = await getInstanceIdAsync();
-        fs.writeFileSync(filePath, instanceId);
+        fs.writeFileSync(filePath, instanceId + '\n');
         console.log(chalk.greenBright(`InstanceID saved to ${filePath}`));
       } catch (e) {
         console.log(e);
