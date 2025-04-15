@@ -15,7 +15,7 @@ import LRUCache from 'lru-cache';
 
 import { Op } from '@nocobase/database';
 import { Plugin } from '@nocobase/server';
-import { Registry } from '@nocobase/utils';
+import { Registry, uid } from '@nocobase/utils';
 import { SequelizeCollectionManager } from '@nocobase/data-source-manager';
 import { Logger, LoggerOptions } from '@nocobase/logger';
 
@@ -74,6 +74,10 @@ export default class PluginWorkflowServer extends Plugin {
 
   private onBeforeSave = async (instance: WorkflowModel, { transaction }) => {
     const Model = <typeof WorkflowModel>instance.constructor;
+
+    if (!instance.key) {
+      instance.set('key', uid());
+    }
 
     if (instance.enabled) {
       instance.set('current', true);
@@ -362,11 +366,16 @@ export default class PluginWorkflowServer extends Plugin {
       const prev = workflow.previous();
       if (prev.config) {
         trigger.off({ ...workflow.get(), ...prev });
+        this.getLogger(workflow.id).info(`toggle OFF workflow ${workflow.id} based on configuration before updated`);
       }
       trigger.on(workflow);
+      this.getLogger(workflow.id).info(`toggle ON workflow ${workflow.id}`);
+
       this.enabledCache.set(workflow.id, workflow);
     } else {
       trigger.off(workflow);
+      this.getLogger(workflow.id).info(`toggle OFF workflow ${workflow.id}`);
+
       this.enabledCache.delete(workflow.id);
     }
     if (!silent) {

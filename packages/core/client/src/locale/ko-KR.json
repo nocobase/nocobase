@@ -912,5 +912,7 @@
   "If selected, the page will display Tab pages.": "선택되면 페이지는 탭 페이지를 표시합니다.",
   "If selected, the route will be displayed in the menu.": "선택되면 라우트는 메뉴에 표시됩니다.",
   "Are you sure you want to hide this tab?": "이 탭을 숨기시겠습니까?",
-  "After hiding, this tab will no longer appear in the tab bar. To show it again, you need to go to the route management page to set it.": "숨기면 이 탭은 탭 바에 더 이상 표시되지 않습니다. 다시 표시하려면 라우트 관리 페이지에서 설정해야 합니다."
+  "After hiding, this tab will no longer appear in the tab bar. To show it again, you need to go to the route management page to set it.": "숨기면 이 탭은 탭 바에 더 이상 표시되지 않습니다. 다시 표시하려면 라우트 관리 페이지에서 설정해야 합니다.",
+  "No pages yet, please configure first": "아직 페이지가 없습니다. 먼저 설정하십시오",
+  "Click the \"UI Editor\" icon in the upper right corner to enter the UI Editor mode": "사용자 인터페이스 편집기 모드에 들어가려면 오른쪽 상단의 \"UI 편집기\" 아이콘을 클릭하십시오"
 }

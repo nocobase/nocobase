@@ -70,6 +70,7 @@ export const FilterItem = observer(
             className={css`
               width: 160px;
             `}
+            showSearch
             fieldNames={fieldNames}
             changeOnSelect={false}
             value={dataIndex}

@@ -460,6 +460,16 @@ exports.initEnv = function initEnv() {
   process.env.SOCKET_PATH = generateGatewayPath();
   fs.mkdirpSync(dirname(process.env.SOCKET_PATH), { force: true, recursive: true });
   fs.mkdirpSync(process.env.PM2_HOME, { force: true, recursive: true });
+  const pkgs = [
+    '@nocobase/plugin-multi-app-manager',
+    '@nocobase/plugin-departments',
+    '@nocobase/plugin-field-attachment-url',
+    '@nocobase/plugin-workflow-response-message',
+  ];
+  for (const pkg of pkgs) {
+    const pkgDir = resolve(process.cwd(), 'storage/plugins', pkg);
+    fs.existsSync(pkgDir) && fs.rmdirSync(pkgDir, { recursive: true, force: true });
+  }
 };
 
 exports.generatePlugins = function () {

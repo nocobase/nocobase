@@ -104,50 +104,54 @@ export default class DateFieldScheduleTrigger {
   // caching workflows in range, default to 5min
   cacheCycle = 300_000;
 
+  onAfterStart = () => {
+    if (this.timer) {
+      return;
+    }
+
+    this.timer = setInterval(() => this.reload(), this.cacheCycle);
+
+    this.reload();
+  };
+
+  onBeforeStop = () => {
+    if (this.timer) {
+      clearInterval(this.timer);
+    }
+
+    for (const [key, timer] of this.cache.entries()) {
+      clearTimeout(timer);
+      this.cache.delete(key);
+    }
+  };
+
   constructor(public workflow: Plugin) {
-    workflow.app.on('afterStart', async () => {
-      if (this.timer) {
-        return;
-      }
-
-      this.timer = setInterval(() => this.reload(), this.cacheCycle);
-
-      this.reload();
-    });
-
-    workflow.app.on('beforeStop', () => {
-      if (this.timer) {
-        clearInterval(this.timer);
-      }
-
-      for (const [key, timer] of this.cache.entries()) {
-        clearTimeout(timer);
-        this.cache.delete(key);
-      }
-    });
+    workflow.app.on('afterStart', this.onAfterStart);
+    workflow.app.on('beforeStop', this.onBeforeStop);
   }
 
-  async reload() {
+  reload() {
+    for (const [key, timer] of this.cache.entries()) {
+      clearTimeout(timer);
+      this.cache.delete(key);
+    }
+
     const workflows = Array.from(this.workflow.enabledCache.values()).filter(
       (item) => item.type === 'schedule' && item.config.mode === SCHEDULE_MODE.DATE_FIELD,
     );
 
-    // NOTE: clear cached jobs in last cycle
-    this.cache = new Map();
-
-    this.inspect(workflows);
+    workflows.forEach((workflow) => {
+      this.inspect(workflow);
+    });
   }
 
-  inspect(workflows: WorkflowModel[]) {
+  async inspect(workflow: WorkflowModel) {
     const now = new Date();
-
-    workflows.forEach(async (workflow) => {
-      const records = await this.loadRecordsToSchedule(workflow, now);
-      this.workflow.getLogger(workflow.id).info(`[Schedule on date field] ${records.length} records to schedule`);
-      records.forEach((record) => {
-        const nextTime = this.getRecordNextTime(workflow, record);
-        this.schedule(workflow, record, nextTime, Boolean(nextTime));
-      });
+    const records = await this.loadRecordsToSchedule(workflow, now);
+    this.workflow.getLogger(workflow.id).info(`[Schedule on date field] ${records.length} records to schedule`);
+    records.forEach((record) => {
+      const nextTime = this.getRecordNextTime(workflow, record);
+      this.schedule(workflow, record, nextTime, Boolean(nextTime));
     });
   }
 
@@ -233,8 +237,6 @@ export default class DateFieldScheduleTrigger {
                 [Op.gte]: new Date(endTimestamp),
               },
             });
-          } else {
-            this.workflow.getLogger(id).warn(`[Schedule on date field] "endsOn.field" is not configured`);
           }
         }
       }
@@ -367,7 +369,7 @@ export default class DateFieldScheduleTrigger {
   }
 
   on(workflow: WorkflowModel) {
-    this.inspect([workflow]);
+    this.inspect(workflow);
 
     const { collection } = workflow.config;
     const [dataSourceName, collectionName] = parseCollectionName(collection);

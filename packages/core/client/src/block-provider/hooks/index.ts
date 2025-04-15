@@ -167,7 +167,7 @@ export function useCollectValuesToSubmit() {
         if (parsedValue !== null && parsedValue !== undefined) {
           assignedValues[key] = transformVariableValue(parsedValue, { targetCollectionField: collectionField });
         }
-      } else if (value != null && value !== '') {
+      } else if (value !== '') {
         assignedValues[key] = value;
       }
     });
@@ -338,7 +338,7 @@ export const useAssociationCreateActionProps = () => {
           if (parsedValue) {
             assignedValues[key] = transformVariableValue(parsedValue, { targetCollectionField: collectionField });
           }
-        } else if (value != null && value !== '') {
+        } else if (value !== '') {
           assignedValues[key] = value;
         }
       });
@@ -522,9 +522,11 @@ export const useFilterBlockActionProps = () => {
   const { doFilter } = useDoFilter();
   const actionField = useField();
   actionField.data = actionField.data || {};
+  const form = useForm();
 
   return {
     async onClick() {
+      await form.submit();
       actionField.data.loading = true;
       await doFilter();
       actionField.data.loading = false;
@@ -605,7 +607,7 @@ export const useCustomizeUpdateActionProps = () => {
           if (parsedValue) {
             assignedValues[key] = transformVariableValue(parsedValue, { targetCollectionField: collectionField });
           }
-        } else if (value != null && value !== '') {
+        } else if (value !== '') {
           assignedValues[key] = value;
         }
       });
@@ -708,7 +710,7 @@ export const useCustomizeBulkUpdateActionProps = () => {
           if (parsedValue) {
             assignedValues[key] = transformVariableValue(parsedValue, { targetCollectionField: collectionField });
           }
-        } else if (value != null && value !== '') {
+        } else if (value !== '') {
           assignedValues[key] = value;
         }
       });
@@ -930,7 +932,7 @@ export const useUpdateActionProps = () => {
           if (parsedValue) {
             assignedValues[key] = transformVariableValue(parsedValue, { targetCollectionField: collectionField });
           }
-        } else if (value != null && value !== '') {
+        } else if (value !== '') {
           assignedValues[key] = value;
         }
       });

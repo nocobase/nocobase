@@ -256,8 +256,7 @@ export const SubTable: any = observer(
                 {field.editable && (
                   <Space
                     style={{
-                      marginTop: '10px',
-                      position: field.value?.length ? 'absolute' : 'relative',
+                      position: 'relative',
                       bottom: '0',
                       gap: 15,
                     }}

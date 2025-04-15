@@ -73,6 +73,7 @@ export class PluginPublicFormsServer extends Plugin {
     const keys = instance.collection.split(':');
     const collectionName = keys.pop();
     const dataSourceKey = keys.pop() || 'main';
+    const title = instance.get('title');
     const schema = await uiSchema.getJsonSchema(filterByTk);
     const { getAssociationAppends } = parseAssociationNames(dataSourceKey, collectionName, this.app, schema);
     const { appends } = getAssociationAppends();
@@ -94,6 +95,7 @@ export class PluginPublicFormsServer extends Plugin {
         },
       ),
       schema,
+      title,
     };
   }
 
@@ -169,7 +171,7 @@ export class PluginPublicFormsServer extends Plugin {
         skip: true,
       };
     } else if (
-      (actionName === 'list' && ctx.PublicForm['targetCollections'].includes(resourceName)) ||
+      (['list', 'get'].includes(actionName) && ctx.PublicForm['targetCollections'].includes(resourceName)) ||
       (collection.options.template === 'file' && actionName === 'create') ||
       (resourceName === 'storages' && actionName === 'getBasicInfo') ||
       (resourceName === 'map-configuration' && actionName === 'get')

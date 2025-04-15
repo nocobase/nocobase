@@ -258,6 +258,7 @@
   "Parent collection fields": "父表字段",
   "Basic": "基本类型",
   "Single line text": "单行文本",
+  "Automatically remove heading and tailing spaces": "自动去除首尾空白字符",
   "Long text": "多行文本",
   "Phone": "手机号码",
   "Email": "电子邮箱",
@@ -1080,5 +1081,7 @@
   "If selected, the page will display Tab pages.": "如果选中，该页面将显示标签页。",
   "If selected, the route will be displayed in the menu.": "如果选中，该路由将显示在菜单中。",
   "Are you sure you want to hide this tab?": "你确定要隐藏该标签页吗？",
-  "After hiding, this tab will no longer appear in the tab bar. To show it again, you need to go to the route management page to set it.": "隐藏后，该标签将不再显示在标签栏中。要想再次显示它，你需要到路由管理页面进行设置。"
+  "After hiding, this tab will no longer appear in the tab bar. To show it again, you need to go to the route management page to set it.": "隐藏后，该标签将不再显示在标签栏中。要想再次显示它，你需要到路由管理页面进行设置。",
+  "No pages yet, please configure first": "暂无页面，请先配置",
+  "Click the \"UI Editor\" icon in the upper right corner to enter the UI Editor mode": "点击右上角的“界面配置”图标，进入界面配置模式"
 }

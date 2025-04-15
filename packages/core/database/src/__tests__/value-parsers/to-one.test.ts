@@ -7,15 +7,14 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Database, mockDatabase } from '../..';
-import { ToManyValueParser } from '../../value-parsers';
+import { Database, ToManyValueParser, createMockDatabase } from '@nocobase/database';
 
 describe('number value parser', () => {
   let parser: ToManyValueParser;
   let db: Database;
 
   beforeEach(async () => {
-    db = mockDatabase();
+    db = await createMockDatabase();
     await db.clean({ drop: true });
     db.collection({
       name: 'posts',
