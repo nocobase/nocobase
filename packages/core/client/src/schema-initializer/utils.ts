@@ -727,7 +727,7 @@ export const useCustomFormItemInitializerFields = (options?: any) => {
   const remove = useRemoveGridFormItem();
   return currentFields
     ?.filter((field) => {
-      return field?.interface && field.interface !== 'snapshot' && field.type !== 'sequence';
+      return !field.inherit && field?.interface && field.interface !== 'snapshot' && field.type !== 'sequence';
     })
     ?.map((field) => {
       const interfaceConfig = getInterface(field.interface);
