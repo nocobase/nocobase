@@ -33,7 +33,6 @@ export const useCustomRequestVariableOptions = () => {
   }, [fieldsOptions, userFieldOptions]);
   const environmentVariables = useGlobalVariable('$env');
   const contextVariable = useContextAssociationFields({ maxDepth: 2, contextCollectionName: collection.name });
-
   return useMemo(() => {
     return [
       environmentVariables,
@@ -62,7 +61,7 @@ export const useCustomRequestVariableOptions = () => {
         title: 'API token',
         children: null,
       },
-      { ...contextVariable, name: contextVariable.value, title: contextVariable.label },
+      !recordData && { ...contextVariable, name: contextVariable.value, title: contextVariable.label },
     ].filter(Boolean);
   }, [recordData, t, fields, blockType, userFields]);
 };
