@@ -146,7 +146,7 @@ export class BasicAuth extends BaseAuth {
       emailContentType: string;
       emailContentText?: string;
       emailContentHTML?: string;
-      resetTokenExpiresIn: string | number;
+      resetTokenExpiresIn: number;
     };
   }
 
@@ -185,7 +185,7 @@ export class BasicAuth extends BaseAuth {
     const resetToken = await ctx.app.authManager.jwt.sign({
       resetPasswordUserId: user.id,
     }, {
-      expiresIn: resetTokenExpiresIn, // 配置的过期时间
+      expiresIn: resetTokenExpiresIn * 60, // 配置的过期时间，单位分钟，需要转成秒
     });
 
     // 构建重置密码链接

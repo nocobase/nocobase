@@ -833,5 +833,6 @@
   "Click the \"UI Editor\" icon in the upper right corner to enter the UI Editor mode": "Натисніть на значок \"Редактор користувацького інтерфейсу\" в правому верхньому куті, щоб увійти в режим редактора користувацького інтерфейсу.",
   "Refresh data blocks": "Оновити дані блоків",
   "Select data blocks to refresh": "Виберіть блоки даних для оновлення",
-  "After successful submission, the selected data blocks will be automatically refreshed.": "Після успішної подачі вибрані блоки даних будуть автоматично оновлені."
+  "After successful submission, the selected data blocks will be automatically refreshed.": "Після успішної подачі вибрані блоки даних будуть автоматично оновлені.",
+  "Reset link expiration (minutes)": "Скинути термін дії посилання (хвилини)"
 }

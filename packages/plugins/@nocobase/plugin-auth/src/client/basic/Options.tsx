@@ -341,6 +341,24 @@ export const Options = () => {
                           },
                         ],
                       },
+                      resetTokenExpiresIn: {
+                        type: 'number',
+                        title: '{{t("Reset link expiration (minutes)")}}',
+                        'x-decorator': 'FormItem',
+                        'x-component': 'InputNumber',
+                        default: 60,
+                        required: true,
+                        'x-reactions': [
+                          {
+                            dependencies: ['.enableResetPassword'],
+                            fulfill: {
+                              state: {
+                                visible: '{{$deps[0]}}',
+                              },
+                            },
+                          },
+                        ],
+                      },
                     },
                   },
                 },
