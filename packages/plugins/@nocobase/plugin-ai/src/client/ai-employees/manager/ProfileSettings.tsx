@@ -10,8 +10,10 @@
 import { SchemaComponent } from '@nocobase/client';
 import React from 'react';
 import { AvatarSelect } from './AvatarSelect';
+import { useT } from '../../locale';
 
 export const ProfileSettings: React.FC = () => {
+  const t = useT();
   return (
     <SchemaComponent
       components={{ AvatarSelect }}
@@ -31,6 +33,16 @@ export const ProfileSettings: React.FC = () => {
             'x-decorator': 'FormItem',
             'x-component': 'Input',
             required: true,
+          },
+          position: {
+            type: 'string',
+            title: 'Position',
+            'x-decorator': 'FormItem',
+            'x-component': 'Input',
+            description: t('A short label indicating the AI employee’s responsibility.'),
+            'x-component-props': {
+              placeholder: t('e.g. Translator, etc.'),
+            },
           },
           avatar: {
             type: 'string',

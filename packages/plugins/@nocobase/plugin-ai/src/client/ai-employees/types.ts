@@ -16,6 +16,7 @@ export type Selector = {
 export type AIEmployee = {
   username: string;
   nickname?: string;
+  position?: string;
   avatar?: string;
   bio?: string;
   greeting?: string;

@@ -8,7 +8,7 @@
  */
 
 import React from 'react';
-import { Avatar, Divider } from 'antd';
+import { Avatar, Divider, Typography } from 'antd';
 import { useToken } from '@nocobase/client';
 import { AIEmployee } from './types';
 import { avatars } from './avatars';
@@ -48,10 +48,19 @@ export const ProfileCard: React.FC<{
               style={{
                 fontSize: token.fontSizeLG,
                 fontWeight: token.fontWeightStrong,
-                margin: '8px 0',
+                marginTop: '8px',
               }}
             >
               {aiEmployee.nickname}
+            </div>
+            <div
+              style={{
+                fontSize: token.fontSize,
+                color: token.colorTextSecondary,
+                marginBottom: '8px',
+              }}
+            >
+              {aiEmployee.position}
             </div>
           </div>
           <Divider
@@ -63,7 +72,7 @@ export const ProfileCard: React.FC<{
           >
             {t('Bio')}
           </Divider>
-          <p>{aiEmployee.bio}</p>
+          <Typography.Paragraph>{aiEmployee.bio}</Typography.Paragraph>
           {taskDesc && (
             <>
               <Divider
@@ -75,7 +84,7 @@ export const ProfileCard: React.FC<{
               >
                 {t('Task description')}
               </Divider>
-              <p>{taskDesc}</p>
+              <Typography.Paragraph>{taskDesc}</Typography.Paragraph>
             </>
           )}
         </>

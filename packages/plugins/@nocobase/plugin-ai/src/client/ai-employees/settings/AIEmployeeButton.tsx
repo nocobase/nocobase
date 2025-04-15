@@ -17,10 +17,11 @@ import {
   useCollectionFilterOptions,
   useCollectionRecordData,
   useSchemaSettings,
+  useToken,
 } from '@nocobase/client';
 import { useT } from '../../locale';
 import { avatars } from '../avatars';
-import { Card, Avatar, Tooltip, Modal } from 'antd';
+import { Card, Avatar, Tooltip, Modal, Tag, Typography } from 'antd';
 const { Meta } = Card;
 import { Schema } from '@formily/react';
 import { createForm } from '@formily/core';
@@ -61,6 +62,7 @@ const SettingsForm: React.FC<{
 }> = memo(({ form, aiEmployee }) => {
   const { dn } = useSchemaSettings();
   const t = useT();
+  const { token } = useToken();
   return (
     <SchemaComponent
       components={{ InfoForm }}
@@ -88,7 +90,20 @@ const SettingsForm: React.FC<{
                     <Meta
                       avatar={aiEmployee.avatar ? <Avatar src={avatars(aiEmployee.avatar)} size={48} /> : null}
                       title={aiEmployee.nickname}
-                      description={aiEmployee.bio}
+                      description={
+                        <>
+                          {aiEmployee.position && (
+                            <Tag
+                              style={{
+                                marginBottom: token.marginXS,
+                              }}
+                            >
+                              {aiEmployee.position}
+                            </Tag>
+                          )}
+                          {aiEmployee.bio}
+                        </>
+                      }
                     />
                   </Card>
                 ),
@@ -199,10 +214,10 @@ export const aiEmployeeButtonSettings = new SchemaSettings({
             <Modal
               styles={{
                 mask: {
-                  zIndex: selectable ? -1 : 1000,
+                  zIndex: selectable ? -1 : 311,
                 },
                 wrapper: {
-                  zIndex: selectable ? -1 : 1000,
+                  zIndex: selectable ? -1 : 311,
                 },
               }}
               title={t('Edit')}

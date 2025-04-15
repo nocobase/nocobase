@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { memo } from 'react';
+import React, { memo, useEffect, useRef, useState } from 'react';
 import { Sender as AntSender } from '@ant-design/x';
 import { useChatBoxContext } from './ChatBoxContext';
 import { SenderPrefix } from './SenderPrefix';
@@ -17,7 +17,7 @@ import { SenderFooter } from './SenderFooter';
 import { useChatConversations } from './ChatConversationsProvider';
 import { useChatMessages } from './ChatMessagesProvider';
 
-export const Sender: React.FC = memo(() => {
+export const Sender: React.FC = () => {
   const t = useT();
   const { currentConversation } = useChatConversations();
   const { responseLoading, cancelRequest } = useChatMessages();
@@ -28,12 +28,22 @@ export const Sender: React.FC = memo(() => {
   const currentEmployee = useChatBoxContext('currentEmployee');
   const showInfoForm = useChatBoxContext('showInfoForm');
   const senderRef = useChatBoxContext('senderRef');
+  const [value, setValue] = useState(senderValue);
+
+  useEffect(() => {
+    setSenderValue(value);
+  }, [value]);
+
+  useEffect(() => {
+    setValue(senderValue);
+  }, [senderValue]);
+
   return (
     <AntSender
-      value={senderValue}
+      value={value}
       ref={senderRef}
       onChange={(value) => {
-        setSenderValue(value);
+        setValue(value);
       }}
       onSubmit={(content) =>
         send({
@@ -57,4 +67,4 @@ export const Sender: React.FC = memo(() => {
       actions={false}
     />
   );
-});
+};

@@ -8,7 +8,7 @@
  */
 
 import React, { createContext, useContext, useMemo } from 'react';
-import { Card, Row, Col, Avatar, Input, Space, Button, Tabs, App, Spin, Empty, Typography } from 'antd';
+import { Card, Row, Col, Avatar, Input, Space, Button, Tabs, App, Spin, Empty, Typography, Tag } from 'antd';
 import {
   CollectionRecordProvider,
   SchemaComponent,
@@ -29,6 +29,7 @@ import { avatars } from '../avatars';
 import { ModelSettings } from './ModelSettings';
 import { ProfileSettings } from './ProfileSettings';
 import { ChatSettings } from './ChatSettings';
+import { AIEmployee } from '../types';
 
 const EmployeeContext = createContext(null);
 
@@ -230,14 +231,7 @@ export const Employees: React.FC = () => {
   const { message, modal } = App.useApp();
   const { token } = useToken();
   const api = useAPIClient();
-  const { data, loading, refresh } = useRequest<
-    {
-      username: string;
-      nickname: string;
-      bio: string;
-      avatar: string;
-    }[]
-  >(() =>
+  const { data, loading, refresh } = useRequest<AIEmployee[]>(() =>
     api
       .resource('aiEmployees')
       .list()
@@ -391,16 +385,27 @@ export const Employees: React.FC = () => {
                   ]}
                 >
                   <Meta
-                    avatar={employee.avatar ? <Avatar src={avatars(employee.avatar)} /> : null}
+                    avatar={employee.avatar ? <Avatar size={40} src={avatars(employee.avatar)} /> : null}
                     title={employee.nickname}
                     description={
-                      <Typography.Paragraph
-                        style={{ height: token.fontSize * token.lineHeight * 3 }}
-                        ellipsis={{ rows: 3 }}
-                        type="secondary"
-                      >
-                        {employee.bio}
-                      </Typography.Paragraph>
+                      <>
+                        {employee.position && (
+                          <Tag
+                            style={{
+                              marginBottom: token.marginXS,
+                            }}
+                          >
+                            {employee.position}
+                          </Tag>
+                        )}
+                        <Typography.Paragraph
+                          style={{ height: token.fontSize * token.lineHeight * 3 }}
+                          ellipsis={{ rows: 3 }}
+                          type="secondary"
+                        >
+                          {employee.bio}
+                        </Typography.Paragraph>
+                      </>
                     }
                   />
                 </Card>

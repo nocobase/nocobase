@@ -30,7 +30,7 @@ const useStyles = createStyles(({ token, css }) => {
         background: rgba(0, 210, 255, 0.2);
         opacity: 0;
         transition: opacity 0.3s ease;
-        z-index: 1;
+        z-index: 100;
       }
 
       &:hover::after {

@@ -21,6 +21,11 @@ export default {
       interface: 'input',
     },
     {
+      name: 'position',
+      type: 'string',
+      interface: 'input',
+    },
+    {
       name: 'avatar',
       type: 'string',
       interface: 'image',

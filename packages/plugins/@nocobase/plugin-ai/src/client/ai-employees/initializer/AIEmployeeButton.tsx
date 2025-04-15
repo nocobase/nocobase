@@ -77,6 +77,7 @@ export const AIEmployeeButton: React.FC<{
     <SortableItem
       style={{
         position: 'relative',
+        display: 'flex',
       }}
       onClick={async () => {
         let msg;
@@ -99,11 +100,11 @@ export const AIEmployeeButton: React.FC<{
         <Button
           shape="circle"
           style={{
-            width: '40px',
-            height: '40px',
+            width: '36px',
+            height: '36px',
           }}
         >
-          <Avatar src={avatars(aiEmployee.avatar)} size={40} />
+          <Avatar src={avatars(aiEmployee.avatar)} size={36} />
         </Button>
       </Popover>
       {render()}

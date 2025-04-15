@@ -51,7 +51,12 @@ export const ChatBox: React.FC = () => {
             }
       }
     >
-      <Card style={{ height: '100%' }} styles={{ body: { height: '100%', paddingTop: 0 } }}>
+      <Card
+        style={{ height: '100%' }}
+        styles={{
+          body: { height: '100%', paddingTop: 0, boxShadow: token.boxShadow },
+        }}
+      >
         <Layout style={{ height: '100%' }}>
           <Sider
             width={!expanded ? '30%' : '15%'}
