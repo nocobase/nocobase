@@ -17,6 +17,7 @@ import {
   useDataSourceKey,
   useNavigateNoUpdate,
   useBlockRequestContext,
+  useContextVariable,
 } from '@nocobase/client';
 import { isURL } from '@nocobase/utils/client';
 import { App } from 'antd';
@@ -36,7 +37,7 @@ export const useCustomizeRequestActionProps = () => {
   const { setVisible } = useActionContext();
   const { modal, message } = App.useApp();
   const dataSourceKey = useDataSourceKey();
-
+  const { ctx } = useContextVariable();
   return {
     async onClick(e?, callBack?) {
       const { skipValidator, onSuccess } = actionSchema?.['x-action-settings'] ?? {};
@@ -60,13 +61,11 @@ export const useCustomizeRequestActionProps = () => {
           method: 'POST',
           data: {
             currentRecord: {
-              // id: record[getPrimaryKey()],
-              // appends: result.params[0]?.appends,
               dataSourceKey,
               data: currentRecordData,
             },
             $nForm: blockType === 'form' ? form.values : undefined,
-            $context: field.data?.selectedRowData,
+            $nSelectedRecord: [...ctx, ...(field.data?.selectedRowData || [])],
           },
           responseType: fieldSchema['x-response-type'] === 'stream' ? 'blob' : 'json',
         });

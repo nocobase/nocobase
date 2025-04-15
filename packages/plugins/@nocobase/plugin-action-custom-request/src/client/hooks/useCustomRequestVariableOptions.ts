@@ -61,7 +61,7 @@ export const useCustomRequestVariableOptions = () => {
         title: 'API token',
         children: null,
       },
-      !recordData && { ...contextVariable, name: contextVariable.value, title: contextVariable.label },
+      !recordData && { ...contextVariable, name: '$nSelectedRecord', title: contextVariable.label },
     ].filter(Boolean);
   }, [recordData, t, fields, blockType, userFields]);
 };
