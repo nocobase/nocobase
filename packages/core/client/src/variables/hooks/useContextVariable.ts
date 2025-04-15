@@ -28,7 +28,6 @@ const useContextVariable = (): VariableOption => {
   if (isPopupVisibleControlledByURL()) {
     tableBlockContext = getStoredPopupContext(params?.popupuid)?.tableBlockContext;
   } else {
-    console.log(tableBlockContextBasicValue);
     tableBlockContext = { ...tableBlockContextBasicValue, collection, blockData: _blockData };
   }
 

@@ -65,7 +65,7 @@ export const useCustomizeRequestActionProps = () => {
               data: currentRecordData,
             },
             $nForm: blockType === 'form' ? form.values : undefined,
-            $nSelectedRecord: [...ctx, ...(field.data?.selectedRowData || [])],
+            $nSelectedRecord: [...(ctx || []), ...(field.data?.selectedRowData || [])],
           },
           responseType: fieldSchema['x-response-type'] === 'stream' ? 'blob' : 'json',
         });

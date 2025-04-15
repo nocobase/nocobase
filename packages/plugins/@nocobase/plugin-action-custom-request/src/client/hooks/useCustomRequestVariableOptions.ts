@@ -16,9 +16,25 @@ import {
   useCompile,
   useGlobalVariable,
   useContextAssociationFields,
+  useTableBlockContext,
+  useCurrentPopupContext,
+  getStoredPopupContext,
 } from '@nocobase/client';
 import { useMemo } from 'react';
+import { isEmpty } from 'lodash';
 import { useTranslation } from '../locale';
+
+const useIsShowTableSelectRecord = () => {
+  const { params } = useCurrentPopupContext();
+  const recordData = useCollectionRecordData();
+  const tableBlockContextBasicValue = useTableBlockContext();
+  if (recordData) {
+    return false;
+  }
+
+  const popupTableBlockContext = getStoredPopupContext(params?.popupuid)?.tableBlockContext;
+  return !isEmpty(popupTableBlockContext) || !isEmpty(tableBlockContextBasicValue);
+};
 
 export const useCustomRequestVariableOptions = () => {
   const collection = useCollection_deprecated();
@@ -33,6 +49,7 @@ export const useCustomRequestVariableOptions = () => {
   }, [fieldsOptions, userFieldOptions]);
   const environmentVariables = useGlobalVariable('$env');
   const contextVariable = useContextAssociationFields({ maxDepth: 2, contextCollectionName: collection.name });
+  const shouldShowTableSelectVariable = useIsShowTableSelectRecord();
   return useMemo(() => {
     return [
       environmentVariables,
@@ -61,7 +78,7 @@ export const useCustomRequestVariableOptions = () => {
         title: 'API token',
         children: null,
       },
-      !recordData && { ...contextVariable, name: '$nSelectedRecord', title: contextVariable.label },
+      shouldShowTableSelectVariable && { ...contextVariable, name: '$nSelectedRecord', title: contextVariable.label },
     ].filter(Boolean);
-  }, [recordData, t, fields, blockType, userFields]);
+  }, [recordData, t, fields, blockType, userFields, shouldShowTableSelectVariable]);
 };
