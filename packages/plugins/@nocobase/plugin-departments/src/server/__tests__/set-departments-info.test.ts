@@ -29,7 +29,7 @@ describe('set departments info', () => {
 
   beforeAll(async () => {
     app = await createMockServer({
-      plugins: ['users', 'departments', 'acl', 'data-source-manager'],
+      plugins: ['field-sort', 'users', 'departments', 'acl', 'data-source-manager'],
     });
     db = app.db;
     repo = db.getRepository('departments');

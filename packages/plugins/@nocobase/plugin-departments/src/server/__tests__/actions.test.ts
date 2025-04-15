@@ -27,7 +27,7 @@ describe('actions', () => {
 
   beforeAll(async () => {
     app = await createMockServer({
-      plugins: ['users', 'departments'],
+      plugins: ['field-sort', 'users', 'departments'],
     });
     db = app.db;
     repo = db.getRepository('departments');
