@@ -28,6 +28,7 @@
     "@types/react-dom": "^18.0.0",
     "react-router-dom": "6.28.1",
     "react-router": "6.28.1",
+    "async": "3.2.6",
     "antd": "5.12.8",
     "rollup": "4.24.0"
   },
