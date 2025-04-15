@@ -50,6 +50,7 @@ export const LinkageFilterItem = observer(
               return options;
             }}
             changeOnSelect={false}
+            readOnly={true}
           />
           <Select
             // @ts-ignore

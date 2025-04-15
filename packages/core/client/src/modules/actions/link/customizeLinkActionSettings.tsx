@@ -11,7 +11,7 @@ import { useField, useFieldSchema } from '@formily/react';
 import _ from 'lodash';
 import React, { FC } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useCollectionRecord, useDesignable } from '../../../';
+import { useDesignable } from '../../../';
 import { useSchemaToolbar } from '../../../application';
 import { SchemaSettings } from '../../../application/schema-settings/SchemaSettings';
 import { useCollection_deprecated } from '../../../collection-manager';
