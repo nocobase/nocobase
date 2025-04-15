@@ -38,7 +38,6 @@ interface Props {
   schema?: any;
   setScopes?: any;
   testid?: string;
-  returnScope?: any;
   nullable?: boolean;
   constantAbel?: boolean;
   changeOnSelect?: boolean;
@@ -60,7 +59,6 @@ export const DynamicComponent = (props: Props) => {
         form={form}
         record={record}
         setScopes={setScopes}
-        returnScope={returnScope}
         nullable={nullable}
         constantAbel={constantAbel}
         changeOnSelect={changeOnSelect}
