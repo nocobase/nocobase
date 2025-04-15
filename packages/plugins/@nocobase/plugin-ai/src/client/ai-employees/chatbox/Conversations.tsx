@@ -79,7 +79,7 @@ const Rename: React.FC = () => {
                 },
               },
             },
-            title: t('Rename convsersation'),
+            title: t('Rename conversation'),
             'x-decorator': 'FormV2',
             properties: {
               title: {
