@@ -42,8 +42,8 @@ test.describe('linkage rules', () => {
     await page.getByRole('menuitemcheckbox', { name: 'singleLineText' }).locator('div').click();
 
     // await page.getByRole('menuitemcheckbox', { name: 'singleLineText' }).click();
-    await page.getByLabel('Linkage rules').locator('input[type="text"]').last().click();
-    await page.getByLabel('Linkage rules').locator('input[type="text"]').last().fill('123');
+    await page.getByTestId('right-filter-field').getByRole('textbox').click();
+    await page.getByTestId('right-filter-field').getByRole('textbox').fill('123');
     await page.getByRole('tabpanel').getByRole('textbox').last().fill('123');
     // action：禁用 longText 字段
     await page.getByText('Add property').click();

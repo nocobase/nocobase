@@ -146,7 +146,7 @@ const processAdvancedCondition = async (condition, variables, localVariables, js
   const operator = condition.op;
   const rightValue = await parseVariableValue(condition.rightVar, variables, localVariables);
   const leftValue = await parseVariableValue(condition.leftVar, variables, localVariables);
-  if (operator && leftValue) {
+  if (operator) {
     return jsonLogic.apply({ [operator]: [leftValue, rightValue] });
   }
   return true;
