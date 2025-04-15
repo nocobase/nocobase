@@ -195,7 +195,7 @@ export class BasicAuth extends BaseAuth {
     // 通过通知管理插件发送邮件
     const notificationManager = ctx.app.getPlugin('notification-manager');
     if (notificationManager) {
-      const emailer = notificationManager.channelTypes.get(emailChannel);
+      const emailer = await notificationManager.manager.findChannel(emailChannel);
       if (emailer) {
         const parsedContent = parsedValue(emailContentType === 'html' ? emailContentHTML : emailContentText, {
           $user: user,
