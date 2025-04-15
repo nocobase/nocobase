@@ -347,6 +347,7 @@ export async function buildPluginClient(cwd: string, userConfig: UserConfig, sou
         umdNamedDefine: true,
       },
     },
+    umd: {},
     resolve: {
       tsConfig: path.join(process.cwd(), 'tsconfig.json'),
       extensions: ['.js', '.jsx', '.ts', '.tsx', '.json', '.less', '.css'],
