@@ -172,7 +172,7 @@ export class PluginPublicFormsServer extends Plugin {
         skip: true,
       };
     } else if (
-      (actionName === 'list' && ctx.PublicForm['targetCollections'].includes(resourceName)) ||
+      (['list', 'get'].includes(actionName) && ctx.PublicForm['targetCollections'].includes(resourceName)) ||
       (collection?.options.template === 'file' && actionName === 'create') ||
       (resourceName === 'storages' && ['getBasicInfo', 'createPresignedUrl'].includes(actionName)) ||
       (resourceName === 'vditor' && ['check'].includes(actionName)) ||

@@ -13,6 +13,7 @@ import { css } from '@emotion/css';
 import { FormLayout } from '@formily/antd-v5';
 import { SchemaOptionsContext, useFieldSchema } from '@formily/react';
 import { uid } from '@formily/shared';
+import { transformMultiColumnToSingleColumn } from '@nocobase/utils/client';
 import { Button, Tabs } from 'antd';
 import classNames from 'classnames';
 import React, { FC, memo, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
@@ -48,10 +49,11 @@ import { useCompile, useDesignable } from '../../hooks';
 import { useToken } from '../__builtins__';
 import { ErrorFallback } from '../error-fallback';
 import { useMenuDragEnd, useNocoBaseRoutes } from '../menu/Menu';
+import { AllDataBlocksProvider } from './AllDataBlocksProvider';
 import { useStyles } from './Page.style';
 import { PageDesigner, PageTabDesigner } from './PageTabDesigner';
 import { PopupRouteContextResetter } from './PopupRouteContextResetter';
-import { transformMultiColumnToSingleColumn } from '@nocobase/utils/client';
+import { NAMESPACE_UI_SCHEMA } from '../../../i18n/constant';
 
 interface PageProps {
   currentTabUid: string;
@@ -127,12 +129,14 @@ export const Page = React.memo((props: PageProps) => {
   }
 
   return (
-    <div className={`${componentCls} ${hashId} ${antTableCell}`} style={pageActive ? null : hiddenStyle}>
-      {/* Avoid passing values down to improve rendering performance */}
-      <CurrentTabUidContext.Provider value={''}>
-        <InternalPage currentTabUid={tabUidRef.current} className={props.className} />
-      </CurrentTabUidContext.Provider>
-    </div>
+    <AllDataBlocksProvider>
+      <div className={`${componentCls} ${hashId} ${antTableCell}`} style={pageActive ? null : hiddenStyle}>
+        {/* Avoid passing values down to improve rendering performance */}
+        <CurrentTabUidContext.Provider value={''}>
+          <InternalPage currentTabUid={tabUidRef.current} className={props.className} />
+        </CurrentTabUidContext.Provider>
+      </div>
+    </AllDataBlocksProvider>
   );
 });
 
@@ -431,7 +435,8 @@ const NocoBasePageHeader = React.memo(({ activeKey, className }: { activeKey: st
   const { token } = useToken();
 
   useEffect(() => {
-    const title = t(fieldSchema.title) || t(currentRoute?.title);
+    const title =
+      t(fieldSchema.title, { ns: NAMESPACE_UI_SCHEMA }) || t(currentRoute?.title, { ns: NAMESPACE_UI_SCHEMA });
     if (title) {
       setDocumentTitle(title);
       setPageTitle(title);

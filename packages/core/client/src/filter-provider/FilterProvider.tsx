@@ -19,6 +19,7 @@ import { mergeFilter, useAssociatedFields } from './utils';
 
 // @ts-ignore
 import React, { createContext, useCallback, useEffect, useMemo, useRef } from 'react';
+import { useAllDataBlocks } from '../schema-component/antd/page/AllDataBlocksProvider';
 
 enum FILTER_OPERATOR {
   AND = '$and',
@@ -71,6 +72,10 @@ export interface DataBlock {
    * manual: 只有当点击了筛选按钮，才会请求数据
    */
   dataLoadingMode?: 'auto' | 'manual';
+  /** 让整个区块悬浮起来 */
+  highlightBlock: () => void;
+  /** 取消悬浮 */
+  unhighlightBlock: () => void;
 }
 
 interface FilterContextValue {
@@ -124,7 +129,7 @@ export const DataBlockCollector = ({
   const field = useField();
   const fieldSchema = useFieldSchema();
   const associatedFields = useAssociatedFields();
-  const container = useRef(null);
+  const container = useRef<HTMLDivElement | null>(null);
   const dataLoadingMode = useDataLoadingMode();
 
   const shouldApplyFilter =
@@ -172,6 +177,34 @@ export const DataBlockCollector = ({
           field.data?.clearSelectedRowKeys?.();
         }
       },
+      highlightBlock() {
+        const dom = container.current;
+
+        if (!dom) return;
+
+        const designer = dom.querySelector('.ant-nb-schema-toolbar');
+        if (designer) {
+          designer.classList.remove(process.env.__E2E__ ? 'hidden-e2e' : 'hidden');
+        }
+        dom.style.boxShadow = '0 3px 12px rgba(0, 0, 0, 0.15)';
+        dom.style.transition = 'box-shadow 0.3s ease, transform 0.2s ease';
+        dom.scrollIntoView?.({
+          behavior: 'smooth',
+          block: 'start',
+        });
+      },
+      unhighlightBlock() {
+        const dom = container.current;
+
+        if (!dom) return;
+
+        const designer = dom.querySelector('.ant-nb-schema-toolbar');
+        if (designer) {
+          designer.classList.add(process.env.__E2E__ ? 'hidden-e2e' : 'hidden');
+        }
+        dom.style.boxShadow = 'none';
+        dom.style.transition = 'box-shadow 0.3s ease, transform 0.2s ease';
+      }
     });
   }, [
     associatedFields,
@@ -197,12 +230,14 @@ export const DataBlockCollector = ({
  */
 export const useFilterBlock = () => {
   const ctx = React.useContext(FilterContext);
+  const allDataBlocksCtx = useAllDataBlocks();
 
   // 有可能存在页面没有提供 FilterBlockProvider 的情况，比如内部使用的数据表管理页面
   const getDataBlocks = useCallback<() => DataBlock[]>(() => ctx?.getDataBlocks() || [], [ctx]);
 
   const recordDataBlocks = useCallback(
     (block: DataBlock) => {
+      allDataBlocksCtx.recordDataBlocks(block);
       const existingBlock = ctx?.getDataBlocks().find((item) => item.uid === block.uid);
 
       if (existingBlock) {
@@ -218,6 +253,7 @@ export const useFilterBlock = () => {
 
   const removeDataBlock = useCallback(
     (uid: string) => {
+      allDataBlocksCtx.removeDataBlock(uid);
       if (ctx?.getDataBlocks().every((item) => item.uid !== uid)) return;
       ctx?.setDataBlocks((prev) => prev.filter((item) => item.uid !== uid));
     },

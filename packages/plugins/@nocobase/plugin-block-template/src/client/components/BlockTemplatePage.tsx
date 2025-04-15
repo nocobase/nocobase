@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { useRequest, RemoteSchemaComponent } from '@nocobase/client';
+import { useRequest, RemoteSchemaComponent, AllDataBlocksProvider } from '@nocobase/client';
 import React from 'react';
 import { useT } from '../locale';
 import { useParams } from 'react-router';
@@ -31,12 +31,15 @@ export const BlockTemplatePage = () => {
   const schemaUid = data?.data?.uid;
 
   return (
-    <div>
+    <AllDataBlocksProvider>
       <div
         style={{
-          margin: -token.margin,
-          marginTop: -token.marginXL,
-          padding: token.paddingSM,
+          marginTop: -token.marginXXL,
+          marginLeft: -token.marginLG,
+          marginRight: -token.marginLG,
+          padding: token.paddingLG,
+          paddingTop: token.paddingMD,
+          paddingBottom: token.paddingMD,
           background: token.colorBgContainer,
           display: 'flex',
           alignItems: 'center',
@@ -54,11 +57,17 @@ export const BlockTemplatePage = () => {
           ]}
         />
       </div>
-      <div style={{ marginTop: token.marginXL, position: 'relative', zIndex: 0 /** create a new z-index context */ }}>
+      <div
+        style={{
+          marginTop: token.marginMD,
+          position: 'relative',
+          zIndex: 0 /** create a new z-index context */,
+        }}
+      >
         <BlockTemplateInfoContext.Provider value={data?.data}>
           <RemoteSchemaComponent uid={schemaUid} />
         </BlockTemplateInfoContext.Provider>
       </div>
-    </div>
+    </AllDataBlocksProvider>
   );
 };

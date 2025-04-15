@@ -50,11 +50,11 @@ describe('CollectionSelect', () => {
         >
           <div
             aria-label="block-item-demo title"
-            class="nb-block-item nb-form-item css-9qorhu ant-nb-block-item css-dev-only-do-not-override-1rquknz"
+            class="nb-block-item nb-form-item css-1elzyjx ant-nb-block-item css-dev-only-do-not-override-1rquknz"
             role="button"
           >
             <div
-              class="css-1yh5po ant-formily-item ant-formily-item-layout-horizontal ant-formily-item-feedback-layout-loose ant-formily-item-label-align-right ant-formily-item-control-align-left css-dev-only-do-not-override-1rquknz"
+              class="css-a7w9kk ant-formily-item ant-formily-item-layout-horizontal ant-formily-item-feedback-layout-loose ant-formily-item-label-align-right ant-formily-item-control-align-left css-dev-only-do-not-override-1rquknz"
             >
               <div
                 class="ant-formily-item-label"
@@ -191,11 +191,11 @@ describe('CollectionSelect', () => {
         >
           <div
             aria-label="block-item-demo title"
-            class="nb-block-item nb-form-item css-9qorhu ant-nb-block-item css-dev-only-do-not-override-1rquknz"
+            class="nb-block-item nb-form-item css-1elzyjx ant-nb-block-item css-dev-only-do-not-override-1rquknz"
             role="button"
           >
             <div
-              class="css-1yh5po ant-formily-item ant-formily-item-layout-horizontal ant-formily-item-feedback-layout-loose ant-formily-item-label-align-right ant-formily-item-control-align-left css-dev-only-do-not-override-1rquknz"
+              class="css-a7w9kk ant-formily-item ant-formily-item-layout-horizontal ant-formily-item-feedback-layout-loose ant-formily-item-label-align-right ant-formily-item-control-align-left css-dev-only-do-not-override-1rquknz"
             >
               <div
                 class="ant-formily-item-label"
