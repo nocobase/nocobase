@@ -131,5 +131,5 @@ export const SignInForm = (props: { authenticator: Authenticator }) => {
   const useBasicSignIn = () => {
     return useSignIn(name);
   };
-  return <SchemaComponent schema={getPasswordForm({ showForgotPassword: options?.enableResetPassword })} scope={{ useBasicSignIn, allowSignUp, signUpLink, t }} />;
+  return <SchemaComponent schema={getPasswordForm({ showForgotPassword: !!options?.enableResetPassword })} scope={{ useBasicSignIn, allowSignUp, signUpLink, t }} />;
 };
