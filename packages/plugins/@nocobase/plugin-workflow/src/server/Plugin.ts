@@ -115,11 +115,13 @@ export default class PluginWorkflowServer extends Plugin {
 
   private onAfterCreate = async (model: WorkflowModel, { transaction }) => {
     const WorkflowStatsModel = this.db.getModel('workflowStats');
-    const [stats, created] = await WorkflowStatsModel.findOrCreate({
+    let stats = await WorkflowStatsModel.findOne({
       where: { key: model.key },
-      defaults: { key: model.key },
       transaction,
     });
+    if (!stats) {
+      stats = await model.createStats({ executed: 0 }, { transaction });
+    }
     model.stats = stats;
     model.versionStats = await model.createVersionStats({ id: model.id }, { transaction });
     if (model.enabled) {
