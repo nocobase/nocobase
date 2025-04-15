@@ -42,10 +42,11 @@ interface Props {
   nullable?: boolean;
   constantAbel?: boolean;
   changeOnSelect?: boolean;
+  readOnly?: boolean;
 }
 
 export const DynamicComponent = (props: Props) => {
-  const { setScopes, returnScope, nullable, constantAbel, changeOnSelect } = props;
+  const { setScopes, returnScope, nullable, constantAbel, changeOnSelect, readOnly = false } = props;
   const { disabled } = useContext(FilterContext) || {};
   const record = useCollectionRecordData();
   const variables = useVariables();
@@ -100,6 +101,7 @@ export const DynamicComponent = (props: Props) => {
                 ...props.style,
               },
               utc: false,
+              readOnly: readOnly,
             }),
             name: 'value',
             'x-read-pretty': false,
