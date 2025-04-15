@@ -26,7 +26,7 @@ import { VariableInput, getShouldChange } from '../../../schema-settings/Variabl
 import { Option } from '../../../schema-settings/VariableInput/type';
 import { formatVariableScop } from '../../../schema-settings/VariableInput/utils/formatVariableScop';
 import { useLocalVariables, useVariables } from '../../../variables';
-import { BlockContext } from '../../../block-provider';
+import { BlockContext, useBlockContext } from '../../../block-provider';
 interface AssignedFieldProps {
   value: any;
   onChange: (value: any) => void;
@@ -103,6 +103,7 @@ export const AssignedFieldInner = (props: AssignedFieldProps) => {
   const variables = useVariables();
   const localVariables = useLocalVariables();
   const currentFormFields = useCollectionFilterOptions(collection);
+
   const { name, getField } = collection;
   const collectionField = getField(fieldSchema.name);
 
@@ -149,8 +150,10 @@ export const AssignedFieldInner = (props: AssignedFieldProps) => {
 };
 
 export const AssignedField = (props) => {
+  const { form } = useFormBlockContext();
+  const { name } = useBlockContext();
   return (
-    <BlockContext.Provider value={{ name: 'form' }}>
+    <BlockContext.Provider value={{ name: form ? 'form' : name }}>
       <AssignedFieldInner {...props} />
     </BlockContext.Provider>
   );
