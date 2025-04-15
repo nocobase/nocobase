@@ -11,7 +11,7 @@ import { ISchema } from '@formily/json-schema';
 import { ComponentProps } from 'react';
 
 // Filter System Types
-export type FilterHandlerContext = { props?: ComponentProps<any>; payload?: any; _cancel?: boolean };
+export type FilterHandlerContext = { props?: ComponentProps<any>; payload?: any };
 export type FilterHandler = (
   currentValue: any,
   params?: Record<string, any>,

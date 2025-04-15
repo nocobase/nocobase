@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { ISchema, Schema } from '@formily/json-schema';
 import { observable } from '@formily/reactive';
 import { uid } from '@nocobase/utils/client';
@@ -387,12 +396,6 @@ export class FilterFlowManager {
           currentValue = await result;
         } else {
           currentValue = result;
-        }
-
-        // 检查 context 中是否有中断信号 (例如 context._cancel = true)
-        if (context?._cancel) {
-          console.log(`Filter flow "${flowKey}" cancelled at step "${step.key}".`);
-          break; // 提前退出循环
         }
       } catch (error) {
         console.error(`Error executing filter "${step.filterName}" in step "${step.key}" (flow: "${flowKey}"):`, error);
