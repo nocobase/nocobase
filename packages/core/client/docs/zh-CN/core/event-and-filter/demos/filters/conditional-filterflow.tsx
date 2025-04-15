@@ -69,7 +69,7 @@ filterFlowManager.addFlow({
       title: '转换为大写',
       params: {},
       // 条件：仅当输入文本长度大于5时应用
-      condition: '{{ ctx.props.inputText.length > 5 }}',
+      condition: '{{ ctx.payload.inputText.length > 5 }}',
     },
     {
       key: 'lowercase-step',
@@ -77,7 +77,7 @@ filterFlowManager.addFlow({
       title: '转换为小写',
       params: {},
       // 条件：仅当输入文本包含大写字母时应用
-      condition: '{{ /[A-Z]/.test(ctx.props.inputText) }}',
+      condition: '{{ /[A-Z]/.test(ctx.payload.inputText) }}',
     },
     {
       key: 'reverse-step',
@@ -85,7 +85,7 @@ filterFlowManager.addFlow({
       title: '文本反转',
       params: {},
       // 条件：仅当输入文本包含数字时应用
-      condition: '{{ /[0-9]/.test(ctx.props.inputText) }}',
+      condition: '{{ /[0-9]/.test(ctx.payload.inputText) }}',
     },
   ],
 });
@@ -100,7 +100,7 @@ const ConditionalFilterFlow = () => {
     try {
       // 创建FilterFlow上下文
       const context = {
-        props: {
+        payload: {
           inputText,
         },
       };

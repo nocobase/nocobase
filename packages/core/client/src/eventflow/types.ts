@@ -11,10 +11,22 @@ import { ISchema } from '@formily/json-schema';
 
 // Event System Types
 export interface EventContext<T = any> {
-  source?: { id?: string; type?: string; [key: string]: any };
-  target?: { id?: string };
-  payload?: T;
-  meta?: { timestamp?: number; userId?: string; event?: string | string[]; [key: string]: any };
+  source?: {
+    id?: string;
+    type?: string;
+    [key: string]: any;
+  };
+  target?: {
+    id?: string;
+    type?: string;
+    [key: string]: any;
+  };
+  meta?: {
+    timestamp?: number;
+    userId?: string;
+    event?: string | string[]; // 事件名称， 一个事件是可以触发多个eventflow的，与filterflow不同
+    [key: string]: any;
+  };
   results?: Record<string, any>;
 }
 export interface EventListenerOptions {
@@ -30,7 +42,12 @@ export type Unsubscriber = () => void;
 // EventFlow Types
 export type EventFlowEventHandler = (params: Record<string, any>, context: any) => Promise<any>;
 export type EventFlowActionHandler = (params: Record<string, any>, context: any) => Promise<any>;
-export type EventFlowEventGroupOptions = { name: string; title: string; sort?: number };
+export type EventFlowEventGroupOptions = {
+  name: string;
+  title: string;
+  sort?: number;
+  event?: string;
+};
 export type EventFlowEventOptions = {
   name: string;
   title: string;
@@ -40,7 +57,12 @@ export type EventFlowEventOptions = {
   uiSchema: Record<string, ISchema>;
   handler?: EventFlowEventHandler;
 };
-export type EventFlowActionGroupOptions = { name: string; title: string; sort?: number };
+export type EventFlowActionGroupOptions = {
+  name: string;
+  title: string;
+  sort?: number;
+  event?: string;
+};
 export type EventFlowActionOptions = {
   name: string;
   title: string;
@@ -58,7 +80,12 @@ export type EventFlowStepOptions = {
   condition?: string;
   isAwait?: boolean;
 };
-export type EventFlowOnOptions = { event?: string; title?: string; condition?: string; params?: Record<string, any> };
+export type EventFlowOnOptions = {
+  event?: string;
+  title?: string;
+  condition?: string;
+  params?: Record<string, any>;
+};
 export type EventFlowOptions = {
   sort?: number;
   isAwait?: boolean;

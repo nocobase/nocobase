@@ -8,14 +8,20 @@
  */
 
 import { ISchema } from '@formily/json-schema';
-import { ComponentProps } from 'react';
 
 // Filter System Types
-export type FilterHandlerContext = { props?: ComponentProps<any>; payload?: any };
-export type FilterHandler = (
+export type FilterHandlerContext<T = any> = {
+  payload?: T;
+  meta?: {
+    flowKey?: string;
+    flowName?: string;
+  };
+};
+
+export type FilterHandler<T = any> = (
   currentValue: any,
   params?: Record<string, any>,
-  context?: FilterHandlerContext,
+  context?: FilterHandlerContext<T>,
 ) => any | Promise<any>;
 export interface IFilter {
   name: string;

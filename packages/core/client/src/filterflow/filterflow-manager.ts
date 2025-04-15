@@ -373,6 +373,13 @@ export class FilterFlowManager {
     let currentValue = initialValue;
     const steps = flow.getSteps(); // 获取有序的步骤数组
 
+    if (!context.meta) {
+      context.meta = {
+        flowKey,
+        flowName: flow.name,
+      };
+    }
+
     for (const step of steps) {
       // 1. 检查条件
       if (step.condition && !this.checkCondition(step.condition, context)) {
