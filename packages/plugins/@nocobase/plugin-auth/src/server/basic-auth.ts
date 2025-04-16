@@ -10,10 +10,12 @@
 import { AuthConfig, BaseAuth } from '@nocobase/auth';
 import { PasswordField } from '@nocobase/database';
 import _ from 'lodash';
-import { namespace, presetAuthType } from '../preset';
+import { namespace } from '../preset';
 import { getDateVars, parsedValue } from '@nocobase/utils';
 
 export class BasicAuth extends BaseAuth {
+  static optionsKeysNotAllowedInEnv = ['emailContentText', 'emailContentHTML', 'emailSubject'];
+
   constructor(config: AuthConfig) {
     const userCollection = config.ctx.db.getCollection('users');
     super({ ...config, userCollection });
@@ -138,8 +140,9 @@ export class BasicAuth extends BaseAuth {
   }
 
   private getEmailConfig() {
-    const options = this.authenticator.options?.public || {};
-    return options as {
+    const options = this.authenticator.options;
+    const publicConfig = this.authenticator.options?.public || {};
+    return { ...publicConfig, ...options } as {
       enableResetPassword: boolean;
       emailChannel: string;
       emailSubject: string;
@@ -189,7 +192,7 @@ export class BasicAuth extends BaseAuth {
     });
 
     // 构建重置密码链接
-    const origin = ctx.request.headers.origin || process.env.API_BASE_URL || '';
+    const origin = ctx.request.headers.origin || '';
     const resetLink = `${origin}/reset-password?resetToken=${resetToken}`;
 
     // 通过通知管理插件发送邮件
