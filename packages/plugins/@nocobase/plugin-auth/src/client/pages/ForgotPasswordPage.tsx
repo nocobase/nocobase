@@ -41,12 +41,17 @@ const getForgotPasswordForm = (): ISchema => ({
               const form = useForm();
               const api = useAPIClient();
               const { t } = useAuthTranslation();
+              const [loading, setLoading] = React.useState(false);
               return {
                 async run() {
                   await form.submit();
+                  setLoading(true);
                   await api.auth.lostPassword(form.values);
                   message.success(t("Reset email sent successfully"));
+                  setLoading(false);
+                  form.reset();
                 },
+                loading,
               };
             },
           },
