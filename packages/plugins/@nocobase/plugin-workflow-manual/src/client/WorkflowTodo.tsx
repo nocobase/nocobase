@@ -44,14 +44,13 @@ import WorkflowPlugin, {
   useAvailableUpstreams,
   useFlowContext,
   EXECUTION_STATUS,
-  JOB_STATUS,
   WorkflowTitle,
 } from '@nocobase/plugin-workflow/client';
 
 import { NAMESPACE, useLang } from '../locale';
 import { FormBlockProvider } from './instruction/FormBlockProvider';
 import { ManualFormType, manualFormTypes } from './instruction/SchemaConfig';
-import { TaskStatusOptionsMap } from '../common/constants';
+import { TaskStatusOptionsMap, TASK_STATUS } from '../common/constants';
 
 function TaskStatusColumn(props) {
   const recordData = useCollectionRecordData();
@@ -667,11 +666,11 @@ function TaskItem() {
 
 const StatusFilterMap = {
   pending: {
-    status: JOB_STATUS.PENDING,
+    status: TASK_STATUS.PENDING,
     'execution.status': EXECUTION_STATUS.STARTED,
   },
   completed: {
-    status: JOB_STATUS.RESOLVED,
+    status: [TASK_STATUS.RESOLVED, TASK_STATUS.REJECTED],
   },
 };
 
