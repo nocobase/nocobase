@@ -84,6 +84,9 @@ export const BlockLinkageRuleProvider = (props) => {
       };
     }
   }, [linkageRules, shouldCalculateFormLinkage]);
+  if (!linkageRules.length) {
+    return props.children;
+  }
 
   if (displayResult === null) return null;
 
