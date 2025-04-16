@@ -1,0 +1,20 @@
+{
+  "name": "@nocobase/plugin-filter-operator-multiple-keywords",
+  "version": "1.7.0-beta.18",
+  "main": "dist/server/index.js",
+  "displayName": "Multiple keywords",
+  "displayName.zh-CN": "多关键词筛选",
+  "description": "Support for filtering multiple keywords in a single line text field.",
+  "description.zh-CN": "单行文本字段支持多关键词筛选。",
+  "homepage": "https://docs.nocobase.com/handbook/",
+  "homepage.zh-CN": "https://docs-cn.nocobase.com/handbook/",
+  "keywords": [
+    "Multiple keywords"
+  ],
+  "dependencies": {},
+  "peerDependencies": {
+    "@nocobase/client": "1.x",
+    "@nocobase/server": "1.x",
+    "@nocobase/test": "1.x"
+  }
+}
