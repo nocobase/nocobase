@@ -27,13 +27,13 @@ import { ArrayCollapse } from './components/LinkageHeader';
 export interface Props {
   dynamicComponent: any;
 }
-function getFirstBusinessEntry(obj, path = []) {
+function extractFieldPath(obj, path = []) {
   if (typeof obj !== 'object' || obj === null) return null;
 
   const [key, value] = Object.entries(obj)[0] || [];
 
   if (typeof value === 'object' && value !== null && !key.startsWith('$')) {
-    return getFirstBusinessEntry(value, [...path, key]);
+    return extractFieldPath(value, [...path, key]);
   }
 
   return [path.join('.'), obj];
@@ -55,7 +55,7 @@ function transformConditionData(condition: Condition, variableKey: '$nForm' | '$
       $or: condition.$or.map((c) => transformConditionData(c, variableKey)),
     };
   }
-  const [field, expression] = getFirstBusinessEntry(condition || {}) || [];
+  const [field, expression] = extractFieldPath(condition || {}) || [];
 
   const [op, value] = Object.entries(expression || {})[0] || [];
   return {
