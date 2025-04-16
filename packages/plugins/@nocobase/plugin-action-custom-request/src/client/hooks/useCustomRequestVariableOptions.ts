@@ -19,6 +19,7 @@ import {
   useTableBlockContext,
   useCurrentPopupContext,
   getStoredPopupContext,
+  useFormBlockContext,
 } from '@nocobase/client';
 import { useMemo } from 'react';
 import { isEmpty } from 'lodash';
