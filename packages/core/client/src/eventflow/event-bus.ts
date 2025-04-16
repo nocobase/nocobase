@@ -64,9 +64,20 @@ export class EventBus {
   }
 
   /**
+   * Removes an event listener or all listeners for eventName
+   */
+  off(eventName: string | string[], listener?: EventListener): void {
+    if (Array.isArray(eventName)) {
+      eventName.forEach((name) => this.singleOff(name, listener));
+    } else {
+      this.singleOff(eventName, listener);
+    }
+  }
+
+  /**
    * Removes an event listener or all listeners for an event
    */
-  off(eventName: string, listener?: EventListener): void {
+  private singleOff(eventName: string, listener?: EventListener): void {
     // Check if this is a wildcard pattern
     const isWildcard = eventName.includes('*');
     const listenersMap = isWildcard ? this.patternListeners : this.listeners;
@@ -152,7 +163,7 @@ export class EventBus {
     listenersMap.get(eventName).push(registeredListener);
 
     // Return unsubscribe function
-    return () => this.off(eventName, listener);
+    return () => this.singleOff(eventName, listener);
   }
 
   /**
@@ -211,7 +222,7 @@ export class EventBus {
         const result = listener(ctx);
 
         // Handle async listeners
-        if (result instanceof Promise) {
+        if (result instanceof Promise && options.blocking) {
           await result;
         }
 
