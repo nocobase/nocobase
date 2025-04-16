@@ -7,24 +7,23 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { ArrayTable, FormButtonGroup, FormDrawer, FormLayout, Submit } from '@formily/antd-v5';
-import { onFieldValueChange } from '@formily/core';
-import { ISchema, SchemaOptionsContext, useForm, useFormEffects } from '@formily/react';
+import { ArrayTable } from '@formily/antd-v5';
+import { createForm, onFieldValueChange } from '@formily/core';
+import { SchemaOptionsContext, useForm, useFormEffects } from '@formily/react';
 import {
   CollectionFieldInterface,
   Cron,
   SchemaComponent,
-  SchemaComponentOptions,
   css,
   interfacesProperties,
+  useActionContext,
   useCompile,
   useToken,
 } from '@nocobase/client';
-import { error } from '@nocobase/utils/client';
-import { Button, Select } from 'antd';
-import React, { useContext } from 'react';
+import React, { createContext, useContext, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { NAMESPACE, lang } from './locale';
+import { Select } from 'antd';
 
 function RuleTypeSelect(props) {
   const compile = useCompile();
@@ -285,63 +284,109 @@ const RuleTypes = {
   },
 };
 
-export function RuleConfigForm() {
-  const { t } = useTranslation();
-  const compile = useCompile();
-  const schemaOptions = useContext(SchemaOptionsContext);
-  const { values, setValuesIn } = useForm();
+const ParentFormContext = createContext({} as any);
+ParentFormContext.displayName = 'ParentFormContext';
+
+function useRuleUpdateAction() {
+  const parentForm = useContext(ParentFormContext);
   const index = ArrayTable.useIndex();
-  const { type, options } = values.patterns[index];
+  const { type, options } = parentForm.values.patterns[index];
+  const form = useForm();
+  const { setVisible } = useActionContext();
+
+  return {
+    run() {
+      parentForm.setValuesIn(`patterns.${index}`, { type, options: { ...form.values } });
+      setVisible(false);
+    },
+  };
+}
+
+function useRuleCancelAction() {
+  const form = useForm();
+  const { setVisible } = useActionContext();
+
+  return {
+    run() {
+      form.reset();
+      setVisible(false);
+    },
+  };
+}
+
+export function RuleConfigForm() {
+  const parentForm = useForm();
+  const index = ArrayTable.useIndex();
+  const { type, options } = parentForm.values.patterns[index];
   const ruleType = RuleTypes[type];
-  const { token } = useToken();
+  const form = useMemo(
+    () =>
+      createForm({
+        initialValues: options,
+        values: options,
+      }),
+    [options],
+  );
+
   return ruleType?.fieldset ? (
-    <Button
-      type="link"
-      onClick={() => {
-        // fix https://nocobase.height.app/T-2868
-        FormDrawer({ title: compile(ruleType.title), zIndex: token.zIndexPopupBase + 1000 }, () => {
-          return (
-            <FormLayout layout="vertical">
-              <SchemaComponentOptions scope={schemaOptions.scope} components={schemaOptions.components}>
-                <SchemaComponent
-                  schema={{
-                    type: 'object',
-                    'x-component': 'fieldset',
-                    properties: ruleType.fieldset,
-                  }}
-                />
-              </SchemaComponentOptions>
-              <FormDrawer.Footer>
-                <FormButtonGroup
-                  className={css`
-                    justify-content: flex-end;
-                  `}
-                >
-                  <Submit
-                    onSubmit={(values) => {
-                      return values;
-                    }}
-                  >
-                    {t('Submit')}
-                  </Submit>
-                </FormButtonGroup>
-              </FormDrawer.Footer>
-            </FormLayout>
-          );
-        })
-          .open({
-            initialValues: options,
-          })
-          .then((values) => {
-            setValuesIn(`patterns.${index}`, { type, options: { ...values } });
-          })
-          .catch((err) => {
-            error(err);
-          });
-      }}
-    >
-      {t('Configure')}
-    </Button>
+    <ParentFormContext.Provider value={parentForm}>
+      <SchemaComponent
+        scope={{
+          useRuleCancelAction,
+          useRuleUpdateAction,
+        }}
+        schema={{
+          name: 'action',
+          type: 'void',
+          'x-component': 'Action.Link',
+          'x-component-props': {
+            openMode: 'modal',
+            openSize: 'small',
+          },
+          title: `{{t("Configure", { ns: "${NAMESPACE}" })}}`,
+          properties: {
+            container: {
+              type: 'void',
+              title: `{{t("Configure", { ns: "${NAMESPACE}" })}}`,
+              'x-decorator': 'FormV2',
+              'x-decorator-props': {
+                form,
+              },
+              'x-component': 'Action.Container',
+              'x-component-props': {
+                delay: 0,
+              },
+              properties: {
+                ...ruleType.fieldset,
+                actions: {
+                  type: 'void',
+                  'x-component': 'ActionBar',
+                  properties: {
+                    cancel: {
+                      type: 'void',
+                      'x-component': 'Action',
+                      title: `{{t("Cancel", { ns: "${NAMESPACE}" })}}`,
+                      'x-component-props': {
+                        useAction: '{{useRuleCancelAction}}',
+                      },
+                    },
+                    submit: {
+                      type: 'void',
+                      'x-component': 'Action',
+                      title: `{{t("Submit", { ns: "${NAMESPACE}" })}}`,
+                      'x-component-props': {
+                        type: 'primary',
+                        useAction: '{{useRuleUpdateAction}}',
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        }}
+      />
+    </ParentFormContext.Provider>
   ) : null;
 }
 
@@ -464,15 +509,17 @@ export class SequenceFieldInterface extends CollectionFieldInterface {
     },
     inputable: {
       type: 'boolean',
-      title: `{{t("Inputable", { ns: "${NAMESPACE}" })}}`,
       'x-decorator': 'FormItem',
       'x-component': 'Checkbox',
+      'x-content': `{{t("Inputable", { ns: "${NAMESPACE}" })}}`,
+      description: `{{t("Allow users to input values manually.", { ns: "${NAMESPACE}" })}}`,
     },
     match: {
       type: 'boolean',
-      title: `{{t("Match rules", { ns: "${NAMESPACE}" })}}`,
       'x-decorator': 'FormItem',
       'x-component': 'Checkbox',
+      'x-content': `{{t("Match rules", { ns: "${NAMESPACE}" })}}`,
+      description: `{{t("Input value must match the rules set above. Otherwise an invalid error will show when submit.", { ns: "${NAMESPACE}" })}}`,
       'x-reactions': {
         dependencies: ['inputable'],
         fulfill: {
