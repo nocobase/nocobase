@@ -19,6 +19,7 @@ const cli = new Command('create-nocobase');
 cli
   .arguments('<name>', 'directory of new NocoBase app')
   .option('--quickstart', 'quickstart app creation')
+  .option('--skip-dev-dependencies')
   .option('-a, --all-db-dialect', 'install all database dialect dependencies')
   .option('-d, --db-dialect <dbDialect>', 'database dialect, current support sqlite/mysql/postgres', 'sqlite')
   .option('-e, --env <env>', 'environment variables write into .env file', concat, [])

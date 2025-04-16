@@ -42,6 +42,8 @@ function InputInner(props: NocoBaseInputProps) {
   return <AntdInput {...others} onChange={handleChange} />;
 }
 
+InputInner.Password = AntdInput.Password;
+
 export const Input: ComposedInput = Object.assign(
   connect(
     InputInner,

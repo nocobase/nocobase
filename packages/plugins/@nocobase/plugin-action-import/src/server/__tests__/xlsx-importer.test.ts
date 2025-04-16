@@ -2225,4 +2225,53 @@ describe('xlsx importer', () => {
     expect(user.get('name')).toBe('User1');
     expect(user.get('email')).not.exist;
   });
+
+  it('should import time field successfully', async () => {
+    const TimeCollection = app.db.collection({
+      name: 'time_tests',
+      fields: [
+        {
+          type: 'time',
+          name: 'brithtime',
+        },
+      ],
+    });
+
+    await app.db.sync();
+    const templateCreator = new TemplateCreator({
+      collection: TimeCollection,
+      explain: 'test',
+      columns: [
+        {
+          dataIndex: ['birthtime'],
+          defaultTitle: '出生时间',
+        },
+      ],
+    });
+
+    const template = (await templateCreator.run({ returnXLSXWorkbook: true })) as XLSX.WorkBook;
+
+    const worksheet = template.Sheets[template.SheetNames[0]];
+
+    XLSX.utils.sheet_add_aoa(worksheet, [['12:12:12']], {
+      origin: 'A3',
+    });
+
+    const importer = new XlsxImporter({
+      collectionManager: app.mainDataSource.collectionManager,
+      collection: TimeCollection,
+      explain: 'test',
+      columns: [
+        {
+          dataIndex: ['brithtime'],
+          defaultTitle: '出生时间',
+        },
+      ],
+      workbook: template,
+    });
+
+    await importer.run();
+    const count = await TimeCollection.repository.count();
+    expect(count).toBe(1);
+  });
 });
