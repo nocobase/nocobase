@@ -796,7 +796,7 @@ export function useDesignable() {
           return component;
         }
         const c = get(components, component);
-        return c[LAZY_COMPONENT_KEY] ?? c;
+        return c?.[LAZY_COMPONENT_KEY] ?? c;
       },
       [get],
     ),
