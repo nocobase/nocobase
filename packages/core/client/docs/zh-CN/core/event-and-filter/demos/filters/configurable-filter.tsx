@@ -170,7 +170,7 @@ const ConfigurableFilter = () => {
     try {
       // 创建FilterFlow上下文
       const context = {
-        props: {
+        payload: {
           inputText,
         },
       };

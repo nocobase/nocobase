@@ -1,5 +1,5 @@
 import { notification, Button, Flex } from 'antd';
-import { EventFlowActionOptions } from '../libs/eventflow-manager';
+import { EventFlowActionOptions } from '@nocobase/client';
 import React from 'react';
 
 /**

@@ -362,7 +362,6 @@ const EventFilterTableDemo: React.FC = (props) => {
   // 应用 FilterFlow 获取列配置
   const applyColumnFilter = useCallback(async () => {
     const context: FilterHandlerContext = {
-      props: {},
       payload: {
         hooks: hooks,
       },

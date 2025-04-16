@@ -27,6 +27,7 @@ export interface EventContext<T = any> {
     event?: string | string[]; // 事件名称， 一个事件是可以触发多个eventflow的，与filterflow不同
     [key: string]: any;
   };
+  payload?: T;
   results?: Record<string, any>;
 }
 export interface EventListenerOptions {

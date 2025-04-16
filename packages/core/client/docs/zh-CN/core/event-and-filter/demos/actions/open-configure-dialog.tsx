@@ -1,7 +1,7 @@
 import { Modal, Form, Input, Select, Switch, InputNumber } from 'antd';
 import React, { useState } from 'react';
-import { EventFlowActionOptions, EventFlowManager } from '../libs/eventflow-manager';
-import { EventContext } from '../libs/types';
+import { EventFlowActionOptions } from '@nocobase/client';
+import { EventContext } from '@nocobase/client';
 import { SchemaComponent, SchemaComponentProvider } from '@nocobase/client';
 import { createForm } from '@formily/core';
 import { ISchema, connect, mapProps, mapReadPretty } from '@formily/react';

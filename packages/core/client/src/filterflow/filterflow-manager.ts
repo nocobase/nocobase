@@ -64,14 +64,6 @@ export class FilterFlowStep {
     return filter?.handler;
   }
 
-  /**
-   * 获取 Filter 的 UI Schema
-   */
-  getUiSchema(): ISchema | undefined {
-    const filter = this.filterFlow.getFilter(this.filterName);
-    return filter?.uiSchema;
-  }
-
   get(key: string) {
     return _.get(this.options, key);
   }
@@ -91,6 +83,14 @@ export class FilterFlowStep {
 
   // 可根据需要添加 save 等方法，如果需要持久化步骤配置
   // async save() { /* ... */ }
+
+  /**
+   * 获取 Filter 的 UI Schema
+   */
+  private getUiSchema(): ISchema | undefined {
+    const filter = this.filterFlow.getFilter(this.filterName);
+    return filter?.uiSchema;
+  }
 }
 
 export class FilterFlow {

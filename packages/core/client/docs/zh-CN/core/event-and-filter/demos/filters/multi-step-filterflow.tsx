@@ -130,7 +130,7 @@ const MultiStepFilterFlow = () => {
     try {
       // 创建过滤上下文
       const context = {
-        props: {
+        payload: {
           inputText,
         },
       };

@@ -1,4 +1,4 @@
-import { Button, Space, Alert, Card, Divider } from 'antd';
+import { Button, Space, Card } from 'antd';
 import { EventBus } from '@nocobase/client';
 import React, { useState } from 'react';
 import { openFormDialogAction } from '../actions/open-form-dialog';
