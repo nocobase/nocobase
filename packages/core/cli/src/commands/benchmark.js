@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-const glob = require('glob');
+const glob = require('fast-glob');
 const { Command } = require('commander');
 const { run } = require('../util');
 
