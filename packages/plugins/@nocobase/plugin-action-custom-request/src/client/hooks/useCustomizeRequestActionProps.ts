@@ -38,8 +38,10 @@ export const useCustomizeRequestActionProps = () => {
   const { modal, message } = App.useApp();
   const dataSourceKey = useDataSourceKey();
   const { ctx } = useContextVariable();
+
   return {
     async onClick(e?, callBack?) {
+      const selectedRecord = field.data?.selectedRowData ? field.data?.selectedRowData : ctx;
       const { skipValidator, onSuccess } = actionSchema?.['x-action-settings'] ?? {};
       const { manualClose, redirecting, redirectTo, successMessage, actionAfterSuccess } = onSuccess || {};
       const xAction = actionSchema?.['x-action'];
@@ -65,7 +67,7 @@ export const useCustomizeRequestActionProps = () => {
               data: currentRecordData,
             },
             $nForm: blockType === 'form' ? form.values : undefined,
-            $nSelectedRecord: [...(ctx || []), ...(field.data?.selectedRowData || [])],
+            $nSelectedRecord: selectedRecord,
           },
           responseType: fieldSchema['x-response-type'] === 'stream' ? 'blob' : 'json',
         });
