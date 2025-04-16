@@ -219,92 +219,98 @@ function getGroupItemForTable({
   depth: number;
   t: any;
 }) {
-  const subFields = getCollectionFields(field.target);
-  const items = subFields
-    ?.filter(
-      (subField) => subField?.interface && !['subTable'].includes(subField?.interface) && !subField?.treeChildren,
-    )
-    ?.map((subField) => {
-      const interfaceConfig = getInterface(subField.interface);
-      const newSchemaName = `${schemaName}.${subField.name}`;
-      const schema = {
-        // type: 'string',
-        name: newSchemaName,
-        // title: subField?.uiSchema?.title || subField.name,
-        'x-component': 'CollectionField',
-        'x-read-pretty': true,
-        'x-collection-field': `${field.target}.${subField.name}`,
-        'x-component-props': {},
-      };
+  const getChildren = () => {
+    const subFields = getCollectionFields(field.target);
+    const items = subFields
+      ?.filter(
+        (subField) => subField?.interface && !['subTable'].includes(subField?.interface) && !subField?.treeChildren,
+      )
+      ?.map((subField) => {
+        const interfaceConfig = getInterface(subField.interface);
+        const newSchemaName = `${schemaName}.${subField.name}`;
+        const schema = {
+          // type: 'string',
+          name: newSchemaName,
+          // title: subField?.uiSchema?.title || subField.name,
+          'x-component': 'CollectionField',
+          'x-read-pretty': true,
+          'x-collection-field': `${field.target}.${subField.name}`,
+          'x-component-props': {},
+        };
 
-      return {
-        type: 'item',
-        key: `${field.target}_${subField.name}_${newSchemaName}`,
-        name: newSchemaName,
-        title: subField?.uiSchema?.title || subField.name,
-        Component: 'TableCollectionFieldInitializer',
-        find: findTableColumn,
-        remove: removeTableColumn,
-        schemaInitialize: (s) => {
-          interfaceConfig?.schemaInitialize?.(s, {
-            field: subField,
-            readPretty: true,
-            block: 'Table',
-            targetCollection: getCollection(field.target),
-          });
-        },
-        field: subField,
-        schema,
-      } as SchemaInitializerItemType;
-    });
-
-  const displayCollectionFields = {
-    type: 'itemGroup',
-    key: `${field.target}_${schemaName}_displayFields`,
-    name: `${schemaName}-displayCollectionFields`,
-    title: t('Display fields'),
-    children: items,
-  };
-
-  const children = [displayCollectionFields];
-
-  if (depth < maxDepth) {
-    const subChildren = subFields
-      ?.filter((subField) => {
-        return ['o2o', 'oho', 'obo', 'm2o'].includes(subField.interface);
-      })
-      .map((subField) => {
-        return getGroupItemForTable({
-          getCollectionFields,
+        return {
+          type: 'item',
+          key: `${field.target}_${subField.name}_${newSchemaName}`,
+          name: newSchemaName,
+          title: subField?.uiSchema?.title || subField.name,
+          Component: 'TableCollectionFieldInitializer',
+          find: findTableColumn,
+          remove: removeTableColumn,
+          schemaInitialize: (s) => {
+            interfaceConfig?.schemaInitialize?.(s, {
+              field: subField,
+              readPretty: true,
+              block: 'Table',
+              targetCollection: getCollection(field.target),
+            });
+          },
           field: subField,
-          getInterface,
-          getCollection,
-          schemaName: `${schemaName}.${subField.name}`,
-          maxDepth,
-          depth: depth + 1,
-          t,
-        });
+          schema,
+        } as SchemaInitializerItemType;
       });
 
-    if (subChildren.length) {
-      const group: any = {
-        type: 'itemGroup',
-        key: `${field.target}_${schemaName}_associationFields`,
-        name: `${schemaName}-associationFields`,
-        title: t('Display association fields'),
-        children: subChildren,
-      };
+    const displayCollectionFields = {
+      type: 'itemGroup',
+      key: `${field.target}_${schemaName}_displayFields`,
+      name: `${schemaName}-displayCollectionFields`,
+      title: t('Display fields'),
+      children: items,
+    };
 
-      children.push(group);
+    const children = [displayCollectionFields];
+
+    if (depth < maxDepth) {
+      const subChildren = subFields
+        ?.filter((subField) => {
+          return ['o2o', 'oho', 'obo', 'm2o'].includes(subField.interface);
+        })
+        .map((subField) => {
+          return getGroupItemForTable({
+            getCollectionFields,
+            field: subField,
+            getInterface,
+            getCollection,
+            schemaName: `${schemaName}.${subField.name}`,
+            maxDepth,
+            depth: depth + 1,
+            t,
+          });
+        });
+
+      if (subChildren.length) {
+        const group: any = {
+          type: 'itemGroup',
+          key: `${field.target}_${schemaName}_associationFields`,
+          name: `${schemaName}-associationFields`,
+          title: t('Display association fields'),
+          children: subChildren,
+        };
+
+        children.push(group);
+      }
     }
-  }
+
+    return children;
+  };
 
   return {
     type: 'subMenu',
     key: `${field.target}_${schemaName}_submenu`,
     name: schemaName,
     title: field.uiSchema?.title,
-    children,
+    useChildren() {
+      return getChildren() || [];
+    },
   } as SchemaInitializerItemType;
 }
 

@@ -147,22 +147,30 @@ export function useMenuSearch({
   const currentItems = useMemo(() => {
     if (isMuliSource) {
       if (!openKey) return [];
-      return data.find((item) => (item.key || item.name) === openKey)?.children || [];
+      let result = data.find((item) => (item.key || item.name) === openKey);
+      result = result.item_deprecated || result;
+
+      return result?.children || [];
     }
-    return data[0]?.children || [];
+
+    let result = data[0];
+    result = result.item_deprecated || result;
+    return result?.children || [];
   }, [data, isMuliSource, openKey]);
 
   // 根据搜索的值进行处理
   const searchedItems = useMemo(() => {
     if (!searchValue) return currentItems;
     const lowerSearchValue = searchValue.toLocaleLowerCase();
-    return currentItems.filter(
-      (item) =>
+    return currentItems.filter((item) => {
+      item = item.item_deprecated || item;
+      return (
         (item.label || item.title) &&
         String(item.label || item.title)
           .toLocaleLowerCase()
-          .includes(lowerSearchValue),
-    );
+          .includes(lowerSearchValue)
+      );
+    });
   }, [searchValue, currentItems]);
 
   const shouldLoadMore = useMemo(() => searchedItems.length > count, [count, searchedItems]);
@@ -248,6 +256,8 @@ export function useMenuSearch({
   const res = useMemo(() => {
     if (!isMuliSource) return resultItems;
     return data.map((item) => {
+      item = item.item_deprecated || item;
+
       if (openKey && item.key === openKey) {
         return {
           ...item,

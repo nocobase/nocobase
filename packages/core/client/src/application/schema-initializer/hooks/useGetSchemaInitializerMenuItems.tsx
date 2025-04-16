@@ -68,12 +68,17 @@ export function useGetSchemaInitializerMenuItems(onClick?: (args: any) => void) 
           };
         }
         if (item.type === 'subMenu') {
-          const label = compiledTitle;
           const key = item.key || item.name || `${parentKey}-sub-menu-${indexA}`;
+
           return {
             key,
-            label,
-            children: item?.children?.length ? getMenuItems(item.children, key) : [],
+            label: <SchemaInitializerChild {...item} title={compiledTitle} />,
+            // 子菜单的内容已经完全交给 SchemaInitializerChild 处理了，所以这些属性不需要传递下去。但是为了兼容旧版的代码，这里还暂时保留。
+            item_deprecated: {
+              key,
+              label: compiledTitle,
+              children: item?.children?.length ? getMenuItems(item.children, key) : [],
+            },
           };
         }
         if (item.isMenuType) {

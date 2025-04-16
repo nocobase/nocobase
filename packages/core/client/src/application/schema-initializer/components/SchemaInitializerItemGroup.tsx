@@ -15,7 +15,6 @@ import { SchemaInitializerOptions } from '../types';
 import { SchemaInitializerChildren } from './SchemaInitializerChildren';
 import { SchemaInitializerDivider } from './SchemaInitializerDivider';
 import { useSchemaInitializerStyles } from './style';
-import { useMenuSearch } from './SchemaInitializerItemSearchFields';
 export interface SchemaInitializerItemGroupProps {
   title: string;
   children?: SchemaInitializerOptions['items'];
@@ -47,11 +46,5 @@ export const SchemaInitializerItemGroup: FC<SchemaInitializerItemGroupProps> = (
 
 export const SchemaInitializerItemGroupInternal = () => {
   const itemConfig: any = useSchemaInitializerItem<SchemaInitializerItemGroupProps>();
-
-  const searchedChildren = useMenuSearch(itemConfig);
-  if (itemConfig.name && itemConfig.name !== 'displayFields') {
-    return <SchemaInitializerItemGroup {...itemConfig} />;
-  }
-  /* eslint-disable react/no-children-prop */
-  return <SchemaInitializerItemGroup {...itemConfig} children={searchedChildren} />;
+  return <SchemaInitializerItemGroup {...itemConfig} />;
 };
