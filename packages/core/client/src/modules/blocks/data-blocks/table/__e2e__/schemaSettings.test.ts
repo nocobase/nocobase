@@ -904,6 +904,7 @@ test.describe('actions schema settings', () => {
       await page.getByRole('menuitem', { name: 'Submit' }).click();
       await page.mouse.move(300, 0);
       await page.getByRole('button', { name: 'Submit' }).click();
+      await page.waitForTimeout(1000);
 
       await page.getByLabel('designer-schema-settings-CardItem-TableBlockDesigner-treeCollection').hover();
       await page.getByRole('menuitem', { name: 'Tree table' }).click();

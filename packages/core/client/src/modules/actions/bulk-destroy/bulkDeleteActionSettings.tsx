@@ -31,19 +31,6 @@ export const bulkDeleteActionSettings = new SchemaSettings({
       },
     },
     {
-      name: 'secondConFirm',
-      Component: SecondConFirm,
-    },
-    {
-      name: 'refreshDataBlockRequest',
-      Component: RefreshDataBlockRequest,
-      useComponentProps() {
-        return {
-          isPopupAction: false,
-        };
-      },
-    },
-    {
       name: 'linkageRules',
       Component: SchemaSettingsLinkageRules,
       useComponentProps() {
@@ -54,6 +41,19 @@ export const bulkDeleteActionSettings = new SchemaSettings({
         return {
           ...linkageRulesProps,
           collectionName: associationField?.collectionName,
+        };
+      },
+    },
+    {
+      name: 'secondConFirm',
+      Component: SecondConFirm,
+    },
+    {
+      name: 'refreshDataBlockRequest',
+      Component: RefreshDataBlockRequest,
+      useComponentProps() {
+        return {
+          isPopupAction: false,
         };
       },
     },

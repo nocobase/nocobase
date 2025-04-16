@@ -12,12 +12,9 @@ import { ISchema, useField, useFieldSchema } from '@formily/react';
 import {
   ButtonEditor,
   SchemaSettings,
-  type,
   useDesignable,
   useSchemaToolbar,
   SchemaSettingsLinkageRules,
-  useDataBlockProps,
-  useCollectionManager_deprecated,
 } from '@nocobase/client';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -25,7 +22,6 @@ import { useShared } from './useShared';
 import { Button, Space } from 'antd';
 import { Action } from '@nocobase/client';
 import React from 'react';
-import { useDownloadXlsxTemplateAction } from './useImportAction';
 
 export const importActionSchemaSettings = new SchemaSettings({
   name: 'actionSettings:import',
@@ -36,6 +32,16 @@ export const importActionSchemaSettings = new SchemaSettings({
       useComponentProps() {
         const { buttonEditorProps } = useSchemaToolbar();
         return buttonEditorProps;
+      },
+    },
+    {
+      name: 'linkageRules',
+      Component: SchemaSettingsLinkageRules,
+      useComponentProps() {
+        const { linkageRulesProps } = useSchemaToolbar();
+        return {
+          ...linkageRulesProps,
+        };
       },
     },
     {
@@ -81,20 +87,7 @@ export const importActionSchemaSettings = new SchemaSettings({
         };
       },
     },
-    {
-      name: 'linkageRules',
-      Component: SchemaSettingsLinkageRules,
-      useComponentProps() {
-        const { association } = useDataBlockProps() || {};
-        const { getCollectionField } = useCollectionManager_deprecated();
-        const associationField = getCollectionField(association);
-        const { linkageRulesProps } = useSchemaToolbar();
-        return {
-          ...linkageRulesProps,
-          collectionName: associationField?.collectionName,
-        };
-      },
-    },
+
     {
       name: 'divider',
       type: 'divider',

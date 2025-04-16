@@ -30,6 +30,16 @@ export const addNewActionSettings = new SchemaSettings({
       },
     },
     {
+      name: 'linkageRules',
+      Component: SchemaSettingsLinkageRules,
+      useComponentProps() {
+        const { linkageRulesProps } = useSchemaToolbar();
+        return {
+          ...linkageRulesProps,
+        };
+      },
+    },
+    {
       name: 'openMode',
       Component: SchemaSettingOpenModeSchemaItems,
       useComponentProps() {
@@ -57,21 +67,6 @@ export const addNewActionSettings = new SchemaSettings({
           [getChildrenCollections, name],
         );
         return isChildCollectionAction;
-      },
-    },
-    {
-      name: 'linkageRules',
-      Component: SchemaSettingsLinkageRules,
-      useComponentProps() {
-        const { association } = useDataBlockProps() || {};
-        const { name } = useCollection_deprecated();
-        const { getCollectionField } = useCollectionManager_deprecated();
-        const associationField = getCollectionField(association);
-        const { linkageRulesProps } = useSchemaToolbar();
-        return {
-          ...linkageRulesProps,
-          collectionName: associationField?.collectionName || name,
-        };
       },
     },
     {
