@@ -46,10 +46,6 @@ export const updateSubmitActionSettings = new SchemaSettings({
           collectionName: name,
         };
       },
-      useVisible() {
-        const fieldSchema = useFieldSchema();
-        return !fieldSchema.parent['x-initializer'].includes('bulkEditForm');
-      },
     },
     {
       name: 'secondConfirmation',

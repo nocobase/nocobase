@@ -26,7 +26,7 @@ import { VariableInput, getShouldChange } from '../../../schema-settings/Variabl
 import { Option } from '../../../schema-settings/VariableInput/type';
 import { formatVariableScop } from '../../../schema-settings/VariableInput/utils/formatVariableScop';
 import { useLocalVariables, useVariables } from '../../../variables';
-
+import { BlockContext, useBlockContext } from '../../../block-provider';
 interface AssignedFieldProps {
   value: any;
   onChange: (value: any) => void;
@@ -93,7 +93,7 @@ export enum AssignedFieldValueType {
   DynamicValue = 'dynamicValue',
 }
 
-export const AssignedField = (props: AssignedFieldProps) => {
+export const AssignedFieldInner = (props: AssignedFieldProps) => {
   const { value, onChange } = props;
   const { getCollectionFields, getAllCollectionsInheritChain } = useCollectionManager_deprecated();
   const collection = useCollection_deprecated();
@@ -146,5 +146,15 @@ export const AssignedField = (props: AssignedFieldProps) => {
       returnScope={returnScope}
       targetFieldSchema={fieldSchema}
     />
+  );
+};
+
+export const AssignedField = (props) => {
+  const { form } = useFormBlockContext();
+  const { name } = useBlockContext();
+  return (
+    <BlockContext.Provider value={{ name: form ? 'form' : name }}>
+      <AssignedFieldInner {...props} />
+    </BlockContext.Provider>
   );
 };

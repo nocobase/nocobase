@@ -49,6 +49,7 @@ import { useGetAriaLabelOfAction } from './hooks/useGetAriaLabelOfAction';
 import { ActionContextProps, ActionProps, ComposedAction } from './types';
 import { linkageAction, setInitialActionState } from './utils';
 import { NAMESPACE_UI_SCHEMA } from '../../../i18n/constant';
+import { BlockContext } from '../../../block-provider/BlockProvider';
 
 // 这个要放到最下面，否则会导致前端单测失败
 import { useApp } from '../../../application';
@@ -96,7 +97,9 @@ export const Action: ComposedAction = withDynamicSchemaProps(
     const { designable } = useDesignable();
     const tarComponent = useComponent(component) || component;
     const variables = useVariables();
-    const localVariables = useLocalVariables({ currentForm: { values: recordData, readPretty: false } as any });
+    const localVariables = useLocalVariables({
+      currentForm: { values: recordData, readPretty: false } as any,
+    });
     const { visibleWithURL, setVisibleWithURL } = usePopupUtils();
     const { setSubmitted } = useActionContext();
     const { getAriaLabel } = useGetAriaLabelOfAction(title);
@@ -120,6 +123,7 @@ export const Action: ComposedAction = withDynamicSchemaProps(
                 condition: v.condition,
                 variables,
                 localVariables,
+                conditionType: v.conditionType,
               },
               app.jsonLogic,
             );
@@ -155,36 +159,38 @@ export const Action: ComposedAction = withDynamicSchemaProps(
     }, [onClick, fieldSchema, getAllDataBlocks]);
 
     return (
-      <InternalAction
-        containerRefKey={containerRefKey}
-        fieldSchema={fieldSchema}
-        designable={designable}
-        field={field}
-        icon={icon}
-        loading={loading}
-        handleMouseEnter={handleMouseEnter}
-        tarComponent={tarComponent}
-        className={className}
-        type={props.type}
-        Designer={Designer}
-        onClick={handleClick}
-        confirm={confirm}
-        confirmTitle={confirmTitle}
-        popover={popover}
-        addChild={addChild}
-        recordData={recordData}
-        title={title}
-        style={style}
-        propsDisabled={propsDisabled}
-        useAction={useAction}
-        visibleWithURL={visibleWithURL}
-        setVisibleWithURL={setVisibleWithURL}
-        setSubmitted={setSubmitted}
-        getAriaLabel={getAriaLabel}
-        parentRecordData={parentRecordData}
-        actionCallback={actionCallback}
-        {...others}
-      />
+      <BlockContext.Provider value={{ name: 'action' }}>
+        <InternalAction
+          containerRefKey={containerRefKey}
+          fieldSchema={fieldSchema}
+          designable={designable}
+          field={field}
+          icon={icon}
+          loading={loading}
+          handleMouseEnter={handleMouseEnter}
+          tarComponent={tarComponent}
+          className={className}
+          type={props.type}
+          Designer={Designer}
+          onClick={onClick}
+          confirm={confirm}
+          confirmTitle={confirmTitle}
+          popover={popover}
+          addChild={addChild}
+          recordData={recordData}
+          title={title}
+          style={style}
+          propsDisabled={propsDisabled}
+          useAction={useAction}
+          visibleWithURL={visibleWithURL}
+          setVisibleWithURL={setVisibleWithURL}
+          setSubmitted={setSubmitted}
+          getAriaLabel={getAriaLabel}
+          parentRecordData={parentRecordData}
+          actionCallback={actionCallback}
+          {...others}
+        />
+      </BlockContext.Provider>
     );
   }),
   { displayName: 'Action' },
