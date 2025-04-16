@@ -39,15 +39,13 @@ const formItemWrapCss = css`
   .ant-description-textarea img {
     max-width: 100%;
   }
-  &.ant-formily-item-layout-horizontal.ant-formily-item-label-wrap {
-    .ant-formily-item-label {
+  &.ant-formily-item-layout-vertical .ant-formily-item-label {
+    display: inline;
+    .ant-formily-item-label-tooltip-icon {
       display: inline;
-      padding-right: 5px;
-
-      .ant-formily-item-label-tooltip-icon,
-      .ant-formily-item-label-content {
-        display: inline;
-      }
+    }
+    .ant-formily-item-label-content {
+      display: inline;
     }
   }
 `;
@@ -89,7 +87,7 @@ export const FormItem: any = withDynamicSchemaProps(
             }}
           />
         ) : (
-          t(field.description, { ns: NAMESPACE_UI_SCHEMA })
+          field.description
         );
       }
     }, [field.description]);
@@ -113,9 +111,6 @@ export const FormItem: any = withDynamicSchemaProps(
                 max-width: ${showTitle === false || schema['x-component'] !== 'CollectionField'
                   ? '100% !important'
                   : null};
-              }
-              .ant-formily-item-control {
-                padding: ${showTitle === false ? '5px' : '0px'};
               }
             `,
           )}
