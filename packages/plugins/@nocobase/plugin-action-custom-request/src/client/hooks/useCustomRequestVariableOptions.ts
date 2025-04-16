@@ -15,6 +15,7 @@ import {
   useCollectionRecordData,
   useCompile,
   useGlobalVariable,
+  useFormBlockContext,
 } from '@nocobase/client';
 import { useMemo } from 'react';
 import { useTranslation } from '../locale';
@@ -27,6 +28,7 @@ export const useCustomRequestVariableOptions = () => {
   const compile = useCompile();
   const recordData = useCollectionRecordData();
   const { name: blockType } = useBlockContext() || {};
+  const { form } = useFormBlockContext();
   const [fields, userFields] = useMemo(() => {
     return [compile(fieldsOptions), compile(userFieldOptions)];
   }, [fieldsOptions, userFieldOptions]);
@@ -39,7 +41,7 @@ export const useCustomRequestVariableOptions = () => {
         title: t('Current record', { ns: 'client' }),
         children: [...fields],
       },
-      blockType === 'form' && {
+      (blockType === 'form' || form) && {
         name: '$nForm',
         title: t('Current form', { ns: 'client' }),
         children: [...fields],

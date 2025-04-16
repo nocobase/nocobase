@@ -16,7 +16,6 @@ import {
   useSchemaToolbar,
   SchemaSettingsLinkageRules,
   useDataBlockProps,
-  useCollectionManager_deprecated,
 } from '@nocobase/client';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -31,6 +30,16 @@ export const exportActionSchemaSettings = new SchemaSettings({
       useComponentProps() {
         const { buttonEditorProps } = useSchemaToolbar();
         return buttonEditorProps;
+      },
+    },
+    {
+      name: 'linkageRules',
+      Component: SchemaSettingsLinkageRules,
+      useComponentProps() {
+        const { linkageRulesProps } = useSchemaToolbar();
+        return {
+          ...linkageRulesProps,
+        };
       },
     },
     {
@@ -73,20 +82,7 @@ export const exportActionSchemaSettings = new SchemaSettings({
         };
       },
     },
-    {
-      name: 'linkageRules',
-      Component: SchemaSettingsLinkageRules,
-      useComponentProps() {
-        const { association } = useDataBlockProps() || {};
-        const { getCollectionField } = useCollectionManager_deprecated();
-        const associationField = getCollectionField(association);
-        const { linkageRulesProps } = useSchemaToolbar();
-        return {
-          ...linkageRulesProps,
-          collectionName: associationField?.collectionName,
-        };
-      },
-    },
+
     {
       name: 'divider',
       type: 'divider',

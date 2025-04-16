@@ -904,7 +904,6 @@ test.describe('actions schema settings', () => {
       await page.getByRole('menuitem', { name: 'Submit' }).click();
       await page.mouse.move(300, 0);
       await page.getByRole('button', { name: 'Submit' }).click();
-
       await page.getByLabel('designer-schema-settings-CardItem-TableBlockDesigner-treeCollection').hover();
       await page.getByRole('menuitem', { name: 'Tree table' }).click();
 
@@ -930,6 +929,7 @@ test.describe('actions schema settings', () => {
       await page.getByLabel('schema-initializer-Grid-form:').hover();
       await page.getByRole('menuitem', { name: 'Parent', exact: true }).click();
       await page.mouse.move(300, 0);
+      await page.reload();
       await expect(
         page
           .getByLabel('block-item-CollectionField-')

@@ -32,6 +32,16 @@ export const workbenchActionSettingsLink = new SchemaSettings({
       },
     },
     {
+      name: 'linkageRules',
+      Component: SchemaSettingsLinkageRules,
+      useComponentProps() {
+        const { linkageRulesProps } = useSchemaToolbar();
+        return {
+          ...linkageRulesProps,
+        };
+      },
+    },
+    {
       name: 'editLink',
       Component: SchemaSettingsActionLinkItem,
     },

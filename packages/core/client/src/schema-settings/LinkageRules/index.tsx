@@ -27,7 +27,17 @@ import { LinkageRuleCategory } from './type';
 export interface Props {
   dynamicComponent: any;
 }
+function extractFieldPath(obj, path = []) {
+  if (typeof obj !== 'object' || obj === null) return null;
 
+  const [key, value] = Object.entries(obj)[0] || [];
+
+  if (typeof value === 'object' && value !== null && !key.startsWith('$')) {
+    return extractFieldPath(value, [...path, key]);
+  }
+
+  return [path.join('.'), obj];
+}
 type Condition = { [field: string]: { [op: string]: any } } | { $and: Condition[] } | { $or: Condition[] };
 type TransformedCondition =
   | { leftVar: string; op: string; rightVar: any }
@@ -45,7 +55,8 @@ function transformConditionData(condition: Condition, variableKey: '$nForm' | '$
       $or: condition.$or.map((c) => transformConditionData(c, variableKey)),
     };
   }
-  const [field, expression] = Object.entries(condition || {})[0] || [];
+  const [field, expression] = extractFieldPath(condition || {}) || [];
+
   const [op, value] = Object.entries(expression || {})[0] || [];
   return {
     leftVar: field ? `{{${variableKey}.${field}}}` : null,

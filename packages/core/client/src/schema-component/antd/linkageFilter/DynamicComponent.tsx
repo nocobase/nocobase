@@ -46,7 +46,7 @@ interface Props {
 
 export const DynamicComponent = (props: Props) => {
   const { setScopes, nullable, constantAbel, changeOnSelect, readOnly = false } = props;
-  const { disabled, returnScope } = useContext(FilterContext) || {};
+  const { disabled } = useContext(FilterContext) || {};
   const record = useCollectionRecordData();
   const variables = useVariables();
   const localVariables = useLocalVariables();

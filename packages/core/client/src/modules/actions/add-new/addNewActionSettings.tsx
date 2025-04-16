@@ -30,6 +30,16 @@ export const addNewActionSettings = new SchemaSettings({
       },
     },
     {
+      name: 'linkageRules',
+      Component: SchemaSettingsLinkageRules,
+      useComponentProps() {
+        const { linkageRulesProps } = useSchemaToolbar();
+        return {
+          ...linkageRulesProps,
+        };
+      },
+    },
+    {
       name: 'openMode',
       Component: SchemaSettingOpenModeSchemaItems,
       useComponentProps() {

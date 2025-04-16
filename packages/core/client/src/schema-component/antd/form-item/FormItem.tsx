@@ -87,7 +87,7 @@ export const FormItem: any = withDynamicSchemaProps(
             }}
           />
         ) : (
-          t(field.description, { ns: NAMESPACE_UI_SCHEMA })
+          field.description
         );
       }
     }, [field.description]);

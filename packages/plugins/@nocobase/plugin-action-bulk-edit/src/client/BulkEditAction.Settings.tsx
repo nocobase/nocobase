@@ -23,8 +23,6 @@ import {
   RefreshDataBlockRequest,
   SchemaSettingsLinkageRules,
   useDataBlockProps,
-  useCollectionManager_deprecated,
-  useCollection_deprecated,
 } from '@nocobase/client';
 import { ModalProps } from 'antd';
 import React from 'react';
@@ -100,6 +98,16 @@ export const deprecatedBulkEditActionSettings = new SchemaSettings({
       },
     },
     {
+      name: 'linkageRules',
+      Component: SchemaSettingsLinkageRules,
+      useComponentProps() {
+        const { linkageRulesProps } = useSchemaToolbar();
+        return {
+          ...linkageRulesProps,
+        };
+      },
+    },
+    {
       name: 'openMode',
       Component: SchemaInitializerOpenModeSchemaItems,
       useComponentProps() {
@@ -161,15 +169,9 @@ export const bulkEditActionSettings = new SchemaSettings({
       name: 'linkageRules',
       Component: SchemaSettingsLinkageRules,
       useComponentProps() {
-        const { association } = useDataBlockProps() || {};
-        const { name } = useCollection_deprecated();
-        const { getCollectionField } = useCollectionManager_deprecated();
-        const associationField = getCollectionField(association);
         const { linkageRulesProps } = useSchemaToolbar();
-
         return {
           ...linkageRulesProps,
-          collectionName: associationField?.collectionName || name,
         };
       },
     },
@@ -231,12 +233,10 @@ export const bulkEditFormSubmitActionSettings = new SchemaSettings({
       name: 'linkageRules',
       Component: SchemaSettingsLinkageRules,
       useComponentProps() {
-        const { name } = useCollection_deprecated();
         const { linkageRulesProps } = useSchemaToolbar();
 
         return {
           ...linkageRulesProps,
-          collectionName: name,
         };
       },
     },

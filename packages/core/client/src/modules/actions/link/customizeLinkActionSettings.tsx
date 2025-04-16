@@ -14,7 +14,6 @@ import { useTranslation } from 'react-i18next';
 import { useDesignable } from '../../../';
 import { useSchemaToolbar } from '../../../application';
 import { SchemaSettings } from '../../../application/schema-settings/SchemaSettings';
-import { useCollection_deprecated } from '../../../collection-manager';
 import { ButtonEditor, RemoveButton } from '../../../schema-component/antd/action/Action.Designer';
 import { useCollectionManager_deprecated } from '../../../collection-manager';
 import {
@@ -97,14 +96,12 @@ export const customizeLinkActionSettings = new SchemaSettings({
       name: 'linkageRules',
       Component: SchemaSettingsLinkageRules,
       useComponentProps() {
-        const { name } = useCollection_deprecated();
         const { linkageRulesProps } = useSchemaToolbar();
         const { association } = useDataBlockProps() || {};
         const { getCollectionField } = useCollectionManager_deprecated();
         const associationField = getCollectionField(association);
         return {
           ...linkageRulesProps,
-          collectionName: associationField?.collectionName || name,
         };
       },
     },

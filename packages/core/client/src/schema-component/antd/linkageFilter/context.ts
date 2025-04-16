@@ -20,7 +20,6 @@ export interface FilterContextProps {
   collectionName?: string;
   scopes?: any[];
   setScopes?: any;
-  returnScope?: any;
 }
 
 export const RemoveConditionContext = createContext(null);

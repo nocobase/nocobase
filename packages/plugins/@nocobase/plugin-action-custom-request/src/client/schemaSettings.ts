@@ -42,14 +42,12 @@ export const customizeCustomRequestActionSettings = new SchemaSettings({
       name: 'linkageRules',
       Component: SchemaSettingsLinkageRules,
       useComponentProps() {
-        const { name } = useCollection() || {};
         const { linkageRulesProps } = useSchemaToolbar();
         const { association } = useDataBlockProps() || {};
         const { getCollectionField } = useCollectionManager_deprecated();
         const associationField = getCollectionField(association);
         return {
           ...linkageRulesProps,
-          collectionName: associationField?.collectionName || name,
         };
       },
     },
