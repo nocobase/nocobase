@@ -26,16 +26,21 @@ export default class extends Migration {
 
       const groupCounts: { [key: string]: { key: string; executed: number } } = {};
       for (const workflow of workflows) {
-        await WorkflowVersionStatsModel.findOrCreate({
+        const versionStats = await WorkflowVersionStatsModel.findOne({
           where: {
             id: workflow.id,
           },
-          defaults: {
-            id: workflow.id,
-            executed: workflow.get('executed'),
-          },
           transaction,
         });
+        if (!versionStats) {
+          await WorkflowVersionStatsModel.create(
+            {
+              id: workflow.id,
+              executed: workflow.get('executed'),
+            },
+            { transaction },
+          );
+        }
 
         const key = workflow.get('key');
         groupCounts[key] = {
@@ -44,13 +49,15 @@ export default class extends Migration {
         };
       }
       for (const values of Object.values(groupCounts)) {
-        await WorkflowStatsModel.findOrCreate({
+        const stats = await WorkflowStatsModel.findOne({
           where: {
             key: values.key,
           },
-          defaults: values,
           transaction,
         });
+        if (!stats) {
+          await WorkflowStatsModel.create(values, { transaction });
+        }
       }
     });
   }
