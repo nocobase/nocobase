@@ -43,7 +43,7 @@ export const BlockLinkageRuleProvider = (props) => {
   const linkageRules = useMemo(() => getLinkageRules(schema), [schema]);
   const [triggerLinkageUpdate, setTriggerLinkageUpdate] = useState(false);
   const displayResult = useReactiveLinkageEffect(linkageRules, variables, localVariables, triggerLinkageUpdate);
-  const shouldCalculateFormLinkage = schema['x-decorator'] === 'FormItem' && !form.readPretty && linkageRules.length;
+  const shouldCalculateFormLinkage = schema?.['x-decorator'] === 'FormItem' && !form.readPretty && linkageRules.length;
 
   useEffect(() => {
     if (shouldCalculateFormLinkage) {
