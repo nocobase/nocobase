@@ -55,13 +55,9 @@ export const bulkDeleteActionSettings = new SchemaSettings({
       name: 'linkageRules',
       Component: SchemaSettingsLinkageRules,
       useComponentProps() {
-        const { association } = useDataBlockProps() || {};
-        const { getCollectionField } = useCollectionManager_deprecated();
-        const associationField = getCollectionField(association);
         const { linkageRulesProps } = useSchemaToolbar();
         return {
           ...linkageRulesProps,
-          collectionName: associationField?.collectionName,
         };
       },
     },
