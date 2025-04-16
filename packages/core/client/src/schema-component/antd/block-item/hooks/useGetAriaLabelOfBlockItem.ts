@@ -27,7 +27,7 @@ export const useGetAriaLabelOfBlockItem = (name?: string) => {
   let { name: blockName } = useBlockContext() || {};
   // eslint-disable-next-line prefer-const
   let { name: collectionName, getField } = useCollection_deprecated();
-  blockName = name || blockName;
+  blockName = name || (blockName !== 'action' ? blockName : '');
 
   const title = compile(fieldSchema['title']) || compile(getField(fieldSchema.name)?.uiSchema?.title);
 

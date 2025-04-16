@@ -22,14 +22,14 @@ test.describe('variable: Current Record', () => {
     await page.getByRole('menuitem', { name: 'Linkage rules' }).click();
     await page.getByRole('button', { name: 'plus Add linkage rule' }).click();
     await page.getByText('Add condition', { exact: true }).click();
-    await page.getByLabel('variable-button').click();
+    await page.getByLabel('variable-button').first().click();
 
     // 当前表单中应该包含 “Nickname” 字段
     await page.getByRole('menuitemcheckbox', { name: 'Current form right' }).click();
     await page.getByRole('menuitemcheckbox', { name: 'Nickname' }).click();
 
     // 当前对象中应该包含 “Role UID” 字段
-    await page.getByLabel('variable-button').click();
+    await page.getByLabel('variable-button').first().click();
     await page.getByText('Current object').click();
     await page.getByRole('menuitemcheckbox', { name: 'Current object right' }).click();
     await page.getByRole('menuitemcheckbox', { name: 'Role UID' }).click();
@@ -43,12 +43,12 @@ test.describe('variable: Current Record', () => {
     await page.getByRole('menuitem', { name: 'Linkage rules' }).click();
     await page.getByRole('button', { name: 'plus Add linkage rule' }).click();
     await page.getByText('Add condition', { exact: true }).click();
-    await page.getByLabel('variable-button').click();
+    await page.getByLabel('variable-button').first().click();
 
     // 当前记录中应该包含 “Nickname” 字段
     await page.getByRole('menuitemcheckbox', { name: 'Current record right' }).click();
     await page.getByRole('menuitemcheckbox', { name: 'Nickname' }).click();
-    await page.getByLabel('variable-button').click();
+    await page.getByLabel('variable-button').first().click();
 
     // 当前对象中应该包含 “Role UID” 字段
     await page.getByRole('menuitemcheckbox', { name: 'Current object right' }).click();

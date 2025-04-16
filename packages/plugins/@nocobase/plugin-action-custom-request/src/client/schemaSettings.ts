@@ -20,6 +20,8 @@ import {
   useCollectionRecord,
   useSchemaToolbar,
   SchemaSettingAccessControl,
+  useDataBlockProps,
+  useCollectionManager_deprecated,
 } from '@nocobase/client';
 import { CustomRequestSettingsItem } from './components/CustomRequestActionDesigner';
 
@@ -40,16 +42,10 @@ export const customizeCustomRequestActionSettings = new SchemaSettings({
       name: 'linkageRules',
       Component: SchemaSettingsLinkageRules,
       useComponentProps() {
-        const { name } = useCollection() || {};
         const { linkageRulesProps } = useSchemaToolbar();
         return {
           ...linkageRulesProps,
-          collectionName: name,
         };
-      },
-      useVisible() {
-        const record = useCollectionRecord();
-        return record && record.data && !record?.isNew;
       },
     },
     {
