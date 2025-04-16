@@ -22,20 +22,25 @@ module.exports = (cli) => {
   cli
     .command('generate-instance-id')
     .description('Generate InstanceID')
-    .allowUnknownOption()
-    .action(async () => {
+    .option('--force', 'Force generate InstanceID')
+    .action(async (options) => {
       console.log('Generating InstanceID...');
-      try {
-        const dir = path.resolve(process.cwd(), 'storage/.license');
+      const dir = path.resolve(process.cwd(), 'storage/.license');
+      const filePath = path.resolve(dir, 'instance-id');
+      if (fs.existsSync(filePath) && !options.force) {
+        console.log('InstanceID already exists at ' + filePath);
+        return;
+      } else {
         if (!fs.existsSync(dir)) {
           fs.mkdirSync(dir, { recursive: true });
         }
-        const filePath = path.resolve(dir, 'InstanceID');
-        const instanceId = await getInstanceIdAsync();
-        fs.writeFileSync(filePath, instanceId + '\n');
-        console.log(chalk.greenBright(`InstanceID saved to ${filePath}`));
-      } catch (e) {
-        console.log(e);
+        try {
+          const instanceId = await getInstanceIdAsync();
+          fs.writeFileSync(filePath, instanceId + '\n');
+          console.log(chalk.greenBright(`InstanceID saved to ${filePath}`));
+        } catch (e) {
+          console.log(e);
+        }
       }
     });
 };

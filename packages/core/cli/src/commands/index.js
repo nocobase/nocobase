@@ -34,6 +34,7 @@ module.exports = (cli) => {
   require('./postinstall')(cli);
   require('./pkg')(cli);
   require('./instance-id')(cli);
+  require('./view-license-key')(cli);
   if (isPackageValid('@umijs/utils')) {
     require('./create-plugin')(cli);
   }
