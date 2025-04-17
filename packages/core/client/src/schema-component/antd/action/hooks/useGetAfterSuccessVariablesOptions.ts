@@ -12,7 +12,7 @@ import { useCollection_deprecated, useCollectionFilterOptions } from '../../../.
 import { useCollectionRecordData } from '../../../../data-source';
 import { useTranslation } from 'react-i18next';
 import { useCompile } from '../../../';
-import { useBlockContext } from '../../../../block-provider/BlockProvider';
+import { useFormBlockContext } from '../../../../block-provider/FormBlockProvider';
 import { usePopupVariable } from '../../../../schema-settings/VariableInput/hooks';
 import { useCurrentRoleVariable } from '../../../../schema-settings/VariableInput/hooks';
 
@@ -23,7 +23,7 @@ export const useAfterSuccessOptions = () => {
   const userFieldOptions = useCollectionFilterOptions('users', 'main');
   const compile = useCompile();
   const recordData = useCollectionRecordData();
-  const { name: blockType } = useBlockContext() || {};
+  const { form } = useFormBlockContext();
   const [fields, userFields] = useMemo(() => {
     return [compile(fieldsOptions), compile(userFieldOptions)];
   }, [fieldsOptions, userFieldOptions]);
@@ -32,7 +32,7 @@ export const useAfterSuccessOptions = () => {
   const record = useCollectionRecordData();
   return useMemo(() => {
     return [
-      (record || blockType === 'form') && {
+      (record || form) && {
         value: '$record',
         label: t('Response record', { ns: 'client' }),
         children: [...fields],
@@ -62,5 +62,5 @@ export const useAfterSuccessOptions = () => {
         children: null,
       },
     ].filter(Boolean);
-  }, [recordData, t, fields, blockType, userFields]);
+  }, [recordData, t, fields, form, userFields]);
 };
