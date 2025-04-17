@@ -8,6 +8,7 @@
  */
 
 import { Plugin } from '@nocobase/client';
+import { MultipleKeywordsInput } from './MultipleKeywordsInput';
 
 export class PluginFilterOperatorMultipleKeywordsClient extends Plugin {
   async afterAdd() {
@@ -18,7 +19,24 @@ export class PluginFilterOperatorMultipleKeywordsClient extends Plugin {
 
   // You can get and modify the app instance here
   async load() {
-    
+    this.app.addFieldInterfaceOperator('input', {
+      label: '{{t("等于任意一个")}}',
+      value: '$in',
+      schema: {
+        'x-component': 'MultipleKeywordsInput',
+      },
+    });
+    this.app.addFieldInterfaceOperator('input', {
+      label: '{{t("不等于任意一个")}}',
+      value: '$notIn',
+      schema: {
+        'x-component': 'MultipleKeywordsInput',
+      },
+    });
+
+    this.app.addComponents({
+      MultipleKeywordsInput,
+    });
   }
 }
 
