@@ -20,8 +20,8 @@
     "p-all": "3.0.0",
     "pm2": "^6.0.5",
     "portfinder": "^1.0.28",
-    "tree-kill": "^1.2.2",
     "tar": "^7.4.3",
+    "tree-kill": "^1.2.2",
     "tsx": "^4.19.0"
   },
   "devDependencies": {
