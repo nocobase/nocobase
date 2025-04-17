@@ -11,7 +11,9 @@
   "keywords": [
     "Multiple keywords"
   ],
-  "dependencies": {},
+  "dependencies": {
+    "xlsx": "0.18.5"
+  },
   "peerDependencies": {
     "@nocobase/client": "1.x",
     "@nocobase/server": "1.x",
