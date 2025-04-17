@@ -20,6 +20,7 @@ import { SubFormProvider } from '../../schema-component/antd/association-field/h
 import { DynamicComponentProps } from '../../schema-component/antd/filter/DynamicComponent';
 import { FilterContext } from '../../schema-component/antd/filter/context';
 import { VariableInput, getShouldChange } from '../VariableInput/VariableInput';
+import { useCurrentFormContext } from '../VariableInput/hooks/useFormVariable';
 import { LinkageRuleActionGroup } from './LinkageRuleActionGroup';
 import { EnableLinkage } from './components/EnableLinkage';
 import { ArrayCollapse } from './components/LinkageHeader';
@@ -27,15 +28,17 @@ import { ArrayCollapse } from './components/LinkageHeader';
 export interface Props {
   dynamicComponent: any;
 }
-function extractFieldPath(obj, path = []) {
+function getFirstBusinessEntry(obj, path = []) {
   if (typeof obj !== 'object' || obj === null) return null;
 
   const [key, value] = Object.entries(obj)[0] || [];
 
+  // 如果是对象并且 key 不是 $ 开头，就继续深入
   if (typeof value === 'object' && value !== null && !key.startsWith('$')) {
-    return extractFieldPath(value, [...path, key]);
+    return getFirstBusinessEntry(value, [...path, key]);
   }
 
+  // 如果遇到 $ 开头的 key，说明业务字段路径就是上面一层
   return [path.join('.'), obj];
 }
 type Condition = { [field: string]: { [op: string]: any } } | { $and: Condition[] } | { $or: Condition[] };
@@ -55,7 +58,7 @@ function transformConditionData(condition: Condition, variableKey: '$nForm' | '$
       $or: condition.$or.map((c) => transformConditionData(c, variableKey)),
     };
   }
-  const [field, expression] = extractFieldPath(condition || {}) || [];
+  const [field, expression] = getFirstBusinessEntry(condition || {}) || [];
 
   const [op, value] = Object.entries(expression || {})[0] || [];
   return {
@@ -95,6 +98,7 @@ export const FormLinkageRules = withDynamicSchemaProps(
     const { name } = useCollection_deprecated();
     const { getAllCollectionsInheritChain } = useCollectionManager_deprecated();
     const parentRecordData = useCollectionParentRecordData();
+    const { shouldDisplayCurrentForm } = useCurrentFormContext();
     const variableKey = getActiveContextName(localVariables);
     const components = useMemo(() => ({ ArrayCollapse }), []);
     const schema = useMemo(
@@ -103,7 +107,7 @@ export const FormLinkageRules = withDynamicSchemaProps(
         properties: {
           rules: {
             type: 'array',
-            default: transformDefaultValue(defaultValues, variableKey),
+            default: transformDefaultValue(defaultValues, shouldDisplayCurrentForm ? variableKey : '$nRecord'),
             'x-component': 'ArrayCollapse',
             'x-decorator': 'FormItem',
             'x-component-props': {
