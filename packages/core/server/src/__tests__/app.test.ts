@@ -19,7 +19,7 @@ describe('app destroy', () => {
     }
   });
   test.skip('case1', async () => {
-    app = mockServer();
+    app = await mockServer();
     await app.runCommand('install', ['-f']);
     app.pm.collection.addField('foo', {
       type: 'string',
@@ -29,7 +29,7 @@ describe('app destroy', () => {
     expect(exists).toBeTruthy();
   });
   test.skip('case2', async () => {
-    app = mockServer();
+    app = await mockServer();
     await app.load();
     app.db.addMigration({
       name: 'test',
@@ -46,7 +46,7 @@ describe('app destroy', () => {
     expect(exists).toBeTruthy();
   });
   test.skip('case3', async () => {
-    app = mockServer();
+    app = await mockServer();
     await app.cleanDb();
     await app.load();
     const tableNameWithSchema = app.db.getCollection('applicationPlugins').getTableNameWithSchema();
@@ -80,7 +80,7 @@ describe('app destroy', () => {
         });
       }
     }
-    app = mockServer({
+    app = await mockServer({
       plugins: [P],
     });
     await app.runCommand('install', '-f');
@@ -92,14 +92,14 @@ describe('app destroy', () => {
     expect(await app.db.getRepository('test').count()).toBe(0);
   });
   test('app main already exists', async () => {
-    mockServer();
-    expect(() => mockServer()).toThrow('app main already exists');
+    await mockServer();
+    await expect(mockServer()).rejects.toThrow('app main already exists');
   });
   test('command', async () => {
     const loadFn = vi.fn();
-    app = mockServer();
+    app = await mockServer();
     const command = app.command('foo');
-    command.command('bar').action(() => loadFn());
+    command.command('bar').action(async () => await loadFn());
     await app.runCommand('foo', 'bar');
     expect(loadFn).toBeCalled();
     expect(loadFn).toBeCalledTimes(1);

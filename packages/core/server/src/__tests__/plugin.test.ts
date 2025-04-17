@@ -18,7 +18,7 @@ describe('plugin', () => {
   let app: MockServer;
 
   beforeEach(async () => {
-    app = mockServer();
+    app = await mockServer();
     await app.db.clean({ drop: true });
 
     await app.db.sync();

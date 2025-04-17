@@ -11,12 +11,12 @@
 
 import { Collection } from '../collection';
 import sqlParser from '../sql-parser';
-import QueryInterface, { TableInfo } from './query-interface';
+import QueryInterface, { ChangeColumnOptions, RemoveColumnOptions, TableInfo } from './query-interface';
 import { Transaction } from 'sequelize';
 
 export default class SqliteQueryInterface extends QueryInterface {
   constructor(db) {
-    super(db);
+    super(db, { changeColumnMode: 'sequelize' });
   }
 
   async collectionTableExists(collection: Collection, options?) {
@@ -150,4 +150,17 @@ export default class SqliteQueryInterface extends QueryInterface {
   public generateJoinOnForJSONArray(left: string, right: string) {
     return this.db.sequelize.literal(`${left} in (SELECT value from json_each(${right}))`);
   }
+
+  changeColumnDefaultValueSQL(options: ChangeColumnOptions): Promise<string> {
+    return null;
+  }
+
+  async beforeRemoveColumn(options: RemoveColumnOptions): Promise<void> {}
+  async afterRemoveColumn(options: RemoveColumnOptions): Promise<void> {}
+
+  nullSafe(): string {
+    return 'IFNULL';
+  }
+
+  async ensureSchema(schemaName: string): Promise<void> {}
 }

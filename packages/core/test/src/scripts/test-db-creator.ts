@@ -7,13 +7,14 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import http from 'http';
-import url from 'url';
-import pg from 'pg';
 import dotenv from 'dotenv';
-import path from 'path';
-import mysql from 'mysql2/promise';
+import http from 'http';
 import mariadb from 'mariadb';
+import mysql from 'mysql2/promise';
+import path from 'path';
+import pg from 'pg';
+import { Connection, Request } from 'tedious';
+import url from 'url';
 
 dotenv.config({ path: path.resolve(process.cwd(), '.env.test') });
 
@@ -135,6 +136,63 @@ class MariaDBClient extends BaseClient<any> {
   }
 }
 
+class MSSQLClient extends BaseClient<Connection> {
+  async _createConnection(): Promise<Connection> {
+    return new Promise((resolve, reject) => {
+      const connection = new Connection({
+        server: process.env['DB_HOST'],
+        authentication: {
+          type: 'default',
+          options: {
+            userName: process.env['DB_USER'],
+            password: process.env['DB_PASSWORD'],
+          },
+        },
+        options: {
+          port: Number(process.env['DB_PORT']),
+          database: 'master',
+          trustServerCertificate: true,
+        },
+      });
+
+      connection.on('connect', (err) => {
+        if (err) return reject(err);
+        resolve(connection);
+      });
+
+      connection.connect();
+    });
+  }
+
+  async _createDB(name: string): Promise<void> {
+    return new Promise((resolve, reject) => {
+      const sql = `IF DB_ID('${name}') IS NULL CREATE DATABASE [${name}]`;
+      const request = new Request(sql, (err) => {
+        if (err) return reject(err);
+        resolve();
+      });
+      this._client.execSql(request);
+    });
+  }
+
+  async _removeDB(name: string): Promise<void> {
+    return new Promise((resolve, reject) => {
+      const sql = `
+        IF DB_ID('${name}') IS NOT NULL
+        BEGIN
+          ALTER DATABASE [${name}] SET SINGLE_USER WITH ROLLBACK IMMEDIATE;
+          DROP DATABASE [${name}];
+        END
+      `;
+      const request = new Request(sql, (err) => {
+        if (err) return reject(err);
+        resolve();
+      });
+      this._client.execSql(request);
+    });
+  }
+}
+
 const client = {
   postgres: () => {
     return new PostgresClient();
@@ -144,6 +202,9 @@ const client = {
   },
   mariadb: () => {
     return new MariaDBClient();
+  },
+  mssql: () => {
+    return new MSSQLClient();
   },
 };
 

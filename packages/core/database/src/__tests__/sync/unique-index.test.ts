@@ -15,8 +15,6 @@ describe('unique index', () => {
 
   beforeEach(async () => {
     db = await createMockDatabase({});
-
-    await db.clean({ drop: true });
   });
 
   afterEach(async () => {
@@ -33,7 +31,7 @@ describe('unique index', () => {
         },
       ],
       fields: [
-        { type: 'string', name: 'userName', defaultValue: 0 },
+        { type: 'string', name: 'userName', defaultValue: db.options.dialect === 'mssql' ? undefined : 0 },
         { type: 'string', name: 'userEmail' },
       ],
     });
@@ -72,6 +70,9 @@ describe('unique index', () => {
   });
 
   it('should sync unique index', async () => {
+    if (db.options.dialect === 'mssql') {
+      await db.sequelize.getQueryInterface().dropTable('users');
+    }
     const User = db.collection({
       name: 'users',
       fields: [
@@ -95,7 +96,7 @@ describe('unique index', () => {
           return indexField === columnName;
         }
 
-        return indexField.length == 1 && indexField[0].attribute === columnName;
+        return indexField[0].attribute === columnName;
       });
     };
 

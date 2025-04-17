@@ -531,7 +531,7 @@ describe('dumper', () => {
     await db.getRepository('collections').create({
       values: {
         name: 'tests',
-        sql: `select count(*) as count
+        sql: `select 1 as id,count(*) as count
               from ${userCollection.getTableNameWithSchemaAsString()}`,
         fields: [
           {

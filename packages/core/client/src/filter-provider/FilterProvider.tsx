@@ -204,7 +204,7 @@ export const DataBlockCollector = ({
         }
         dom.style.boxShadow = 'none';
         dom.style.transition = 'box-shadow 0.3s ease, transform 0.2s ease';
-      }
+      },
     });
   }, [
     associatedFields,
@@ -248,6 +248,7 @@ export const useFilterBlock = () => {
 
       ctx?.setDataBlocks((prev) => [...prev, block]);
     },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [ctx],
   );
 
@@ -257,6 +258,7 @@ export const useFilterBlock = () => {
       if (ctx?.getDataBlocks().every((item) => item.uid !== uid)) return;
       ctx?.setDataBlocks((prev) => prev.filter((item) => item.uid !== uid));
     },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [ctx],
   );
 

@@ -65,7 +65,7 @@ describe('workflow > instructions > aggregate', () => {
 
       const [execution] = await workflow.getExecutions();
       const [job] = await execution.getJobs();
-      expect(job.result).toBe(1);
+      expect(Number(job.result)).toBe(1);
     });
 
     it('count without data matched', async () => {
@@ -87,7 +87,7 @@ describe('workflow > instructions > aggregate', () => {
 
       const [execution] = await workflow.getExecutions();
       const [job] = await execution.getJobs();
-      expect(job.result).toBe(0);
+      expect(Number(job.result)).toBe(0);
     });
 
     it('sum', async () => {
@@ -106,13 +106,13 @@ describe('workflow > instructions > aggregate', () => {
 
       const [e1] = await workflow.getExecutions();
       const [j1] = await e1.getJobs();
-      expect(j1.result).toBe(1);
+      expect(Number(j1.result)).toBe(1);
 
       const p2 = await PostRepo.create({ values: { title: 't2', read: 2 } });
 
       const [e2] = await workflow.getExecutions({ order: [['id', 'desc']] });
       const [j2] = await e2.getJobs();
-      expect(j2.result).toBe(3);
+      expect(Number(j2.result)).toBe(3);
     });
 
     it('sum double field', async () => {
@@ -131,13 +131,13 @@ describe('workflow > instructions > aggregate', () => {
 
       const [e1] = await workflow.getExecutions();
       const [j1] = await e1.getJobs();
-      expect(j1.result).toBe(0.1);
+      expect(Number(j1.result)).toBe(0.1);
 
       const p2 = await PostRepo.create({ values: { title: 't2', score: 0.2 } });
 
       const [e2] = await workflow.getExecutions({ order: [['id', 'desc']] });
       const [j2] = await e2.getJobs();
-      expect(j2.result).toBe(0.3);
+      expect(Number(j2.result)).toBe(0.3);
     });
 
     it('sum number will be rounded to 2 decimal places by default', async () => {
@@ -156,13 +156,13 @@ describe('workflow > instructions > aggregate', () => {
 
       const [e1] = await workflow.getExecutions();
       const [j1] = await e1.getJobs();
-      expect(j1.result).toBe(0.12);
+      expect(Number(j1.result)).toBe(0.12);
 
       const p2 = await PostRepo.create({ values: { title: 't2', score: 0.456 } });
 
       const [e2] = await workflow.getExecutions({ order: [['id', 'desc']] });
       const [j2] = await e2.getJobs();
-      expect(j2.result).toBe(0.58);
+      expect(Number(j2.result)).toBe(0.58);
     });
 
     it('sum precision configured -1 as 0', async () => {
@@ -182,13 +182,13 @@ describe('workflow > instructions > aggregate', () => {
 
       const [e1] = await workflow.getExecutions();
       const [j1] = await e1.getJobs();
-      expect(j1.result).toBe(0);
+      expect(Number(j1.result)).toBe(0);
 
       const p2 = await PostRepo.create({ values: { title: 't2', score: 0.456 } });
 
       const [e2] = await workflow.getExecutions({ order: [['id', 'desc']] });
       const [j2] = await e2.getJobs();
-      expect(j2.result).toBe(1);
+      expect(Number(j2.result)).toBe(1);
     });
 
     it('sum precision configured over 14 as 14', async () => {
@@ -208,13 +208,13 @@ describe('workflow > instructions > aggregate', () => {
 
       const [e1] = await workflow.getExecutions();
       const [j1] = await e1.getJobs();
-      expect(j1.result).toBe(0.1);
+      expect(Number(j1.result)).toBe(0.1);
 
       const p2 = await PostRepo.create({ values: { title: 't2', score: 0.200000000000001 } });
 
       const [e2] = await workflow.getExecutions({ order: [['id', 'desc']] });
       const [j2] = await e2.getJobs();
-      expect(j2.result).toBe(0.3);
+      expect(Number(j2.result)).toBe(0.3);
     });
 
     it('sum null will be 0', async () => {
@@ -233,7 +233,7 @@ describe('workflow > instructions > aggregate', () => {
 
       const [e1] = await workflow.getExecutions();
       const [j1] = await e1.getJobs();
-      expect(j1.result).toBe(0);
+      expect(Number(j1.result)).toBe(0);
     });
 
     it('avg', async () => {
@@ -252,13 +252,13 @@ describe('workflow > instructions > aggregate', () => {
 
       const [e1] = await workflow.getExecutions();
       const [j1] = await e1.getJobs();
-      expect(j1.result).toBe(1);
+      expect(Number(j1.result)).toBe(1);
 
       const p2 = await PostRepo.create({ values: { title: 't2', read: 2 } });
 
       const [e2] = await workflow.getExecutions({ order: [['id', 'desc']] });
       const [j2] = await e2.getJobs();
-      expect(j2.result).toBe(1.5);
+      expect(Number(j2.result)).toBe(1.5);
     });
 
     it('min', async () => {
@@ -277,13 +277,13 @@ describe('workflow > instructions > aggregate', () => {
 
       const [e1] = await workflow.getExecutions();
       const [j1] = await e1.getJobs();
-      expect(j1.result).toBe(1);
+      expect(Number(j1.result)).toBe(1);
 
       const p2 = await PostRepo.create({ values: { title: 't2', read: 2 } });
 
       const [e2] = await workflow.getExecutions({ order: [['id', 'desc']] });
       const [j2] = await e2.getJobs();
-      expect(j2.result).toBe(1);
+      expect(Number(j2.result)).toBe(1);
     });
 
     it('max', async () => {
@@ -302,13 +302,13 @@ describe('workflow > instructions > aggregate', () => {
 
       const [e1] = await workflow.getExecutions();
       const [j1] = await e1.getJobs();
-      expect(j1.result).toBe(1);
+      expect(Number(j1.result)).toBe(1);
 
       const p2 = await PostRepo.create({ values: { title: 't2', read: 2 } });
 
       const [e2] = await workflow.getExecutions({ order: [['id', 'desc']] });
       const [j2] = await e2.getJobs();
-      expect(j2.result).toBe(2);
+      expect(Number(j2.result)).toBe(2);
     });
   });
 
@@ -358,8 +358,8 @@ describe('workflow > instructions > aggregate', () => {
 
       const [e1] = await workflow.getExecutions();
       const [j1, j2] = await e1.getJobs({ order: [['id', 'ASC']] });
-      expect(j1.result).toBe(2);
-      expect(j2.result).toBe(1);
+      expect(Number(j1.result)).toBe(2);
+      expect(Number(j2.result)).toBe(1);
     });
 
     it('sum', async () => {
@@ -423,8 +423,8 @@ describe('workflow > instructions > aggregate', () => {
 
       const [e1] = await workflow.getExecutions();
       const [j1, j2, j3] = await e1.getJobs({ order: [['id', 'ASC']] });
-      expect(j2.result).toBe(3);
-      expect(j3.result).toBe(1);
+      expect(Number(j2.result)).toBe(3);
+      expect(Number(j3.result)).toBe(1);
     });
   });
 
@@ -451,7 +451,7 @@ describe('workflow > instructions > aggregate', () => {
       const [execution] = await workflow.getExecutions();
       expect(execution.status).toBe(EXECUTION_STATUS.RESOLVED);
       const [job] = await execution.getJobs();
-      expect(job.result).toBe(1);
+      expect(Number(job.result)).toBe(1);
     });
 
     it('transaction in sync workflow', async () => {
@@ -484,7 +484,7 @@ describe('workflow > instructions > aggregate', () => {
       expect(e1s.length).toBe(1);
       expect(e1s[0].status).toBe(EXECUTION_STATUS.RESOLVED);
       const [job] = await e1s[0].getJobs();
-      expect(job.result).toBe(1);
+      expect(Number(job.result)).toBe(1);
     });
   });
 });

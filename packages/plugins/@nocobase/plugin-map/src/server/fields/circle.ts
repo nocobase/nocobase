@@ -8,7 +8,8 @@
  */
 
 import { BaseColumnFieldOptions, DataTypes, Field, FieldContext } from '@nocobase/database';
-import { isPg, toValue } from '../helpers';
+import { isMssql, isPg, toValue } from '../helpers';
+import _ from 'lodash';
 
 class Circle extends DataTypes.ABSTRACT {
   key = 'Circle';
@@ -34,6 +35,9 @@ export class CircleField extends Field {
           if (!value?.length) value = null;
           else if (isPg(context)) {
             value = value.join(',');
+          } else if (isMssql(context)) {
+            const [lat, lng] = value;
+            value = this.database?.sequelize.literal(`geography::Point(${lat}, ${lng}, 4326)`);
           }
           this.setDataValue(name, value);
         },
@@ -46,9 +50,22 @@ export class CircleField extends Field {
   get dataType() {
     if (isPg(this.context)) {
       return Circle;
+    } else if (isMssql(this.context)) {
+      return DataTypes.STRING;
     } else {
       return DataTypes.JSON;
     }
+  }
+
+  get rawDataType() {
+    return DataTypes.GEOGRAPHY;
+  }
+
+  setter(value, options) {
+    if (isMssql(this.context) && _.isObjectLike(value)) {
+      return JSON.stringify(value);
+    }
+    return value;
   }
 }
 

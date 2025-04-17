@@ -132,8 +132,8 @@ export class SortableCollection {
   async sameScopeMove(sourceInstance: Model, targetInstance: Model, options: MoveOptions) {
     const fieldName = this.field.get('name');
 
-    const sourceSort = sourceInstance.get(fieldName);
-    let targetSort = targetInstance.get(fieldName);
+    const sourceSort = Number(sourceInstance.get(fieldName));
+    let targetSort = Number(targetInstance.get(fieldName));
 
     if (options.insertAfter) {
       targetSort = targetSort + 1;

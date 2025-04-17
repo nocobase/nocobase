@@ -10,7 +10,7 @@ import { MockServer, mockServer } from '@nocobase/test';
 import { SourceAndTarget, UserInfo } from '../audit-manager';
 
 async function createApp(options: any = {}) {
-  const app = mockServer({
+  const app = await mockServer({
     ...options,
     // 还会有些其他参数配置
   });

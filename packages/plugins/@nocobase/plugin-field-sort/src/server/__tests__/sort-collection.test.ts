@@ -30,6 +30,10 @@ describe('sort collections', () => {
     await app.destroy();
   });
 
+  function parseSortValue(value) {
+    return db.options.dialect === 'mssql' ? value.toString() : value;
+  }
+
   describe('sort collection', () => {
     beforeEach(async () => {
       Post = app.db.collection({
@@ -68,7 +72,7 @@ describe('sort collections', () => {
       await db.sync();
       const instance = await model.create();
       expect(model.rawAttributes['sort']).toBeDefined();
-      expect(instance.get('sort')).toBe(1);
+      expect(instance.get('sort')).toBe(parseSortValue(1));
     });
 
     test('sortable=string', async () => {
@@ -82,7 +86,7 @@ describe('sort collections', () => {
       await db.sync();
       const instance = await model.create();
       expect(model.rawAttributes['order']).toBeDefined();
-      expect(instance.get('order')).toBe(1);
+      expect(instance.get('order')).toBe(parseSortValue(1));
     });
 
     test('sortable=object', async () => {
@@ -102,10 +106,10 @@ describe('sort collections', () => {
       const t3 = await Test.model.create({ status: 'draft' });
       const t4 = await Test.model.create({ status: 'draft' });
 
-      expect(t1.get('sort')).toBe(1);
-      expect(t2.get('sort')).toBe(2);
-      expect(t3.get('sort')).toBe(1);
-      expect(t4.get('sort')).toBe(2);
+      expect(t1.get('sort')).toBe(parseSortValue(1));
+      expect(t2.get('sort')).toBe(parseSortValue(2));
+      expect(t3.get('sort')).toBe(parseSortValue(1));
+      expect(t4.get('sort')).toBe(parseSortValue(2));
     });
 
     test('forward insert', async () => {
@@ -133,11 +137,11 @@ describe('sort collections', () => {
       });
 
       expect(results).toEqual([
-        { title: 't1', sort: 1 },
-        { title: 't3', sort: 2 },
-        { title: 't4', sort: 3 },
-        { title: 't2', sort: 4 },
-        { title: 't5', sort: 5 },
+        { title: 't1', sort: parseSortValue(1) },
+        { title: 't3', sort: parseSortValue(2) },
+        { title: 't4', sort: parseSortValue(3) },
+        { title: 't2', sort: parseSortValue(4) },
+        { title: 't5', sort: parseSortValue(5) },
       ]);
     });
 
@@ -166,11 +170,11 @@ describe('sort collections', () => {
       });
 
       expect(results).toEqual([
-        { title: 't1', sort: 1 },
-        { title: 't4', sort: 2 },
-        { title: 't2', sort: 3 },
-        { title: 't3', sort: 4 },
-        { title: 't5', sort: 5 },
+        { title: 't1', sort: parseSortValue(1) },
+        { title: 't4', sort: parseSortValue(2) },
+        { title: 't2', sort: parseSortValue(3) },
+        { title: 't3', sort: parseSortValue(4) },
+        { title: 't5', sort: parseSortValue(5) },
       ]);
     });
   });
@@ -245,11 +249,11 @@ describe('sort collections', () => {
       });
 
       expect(results).toEqual([
-        { title: 's1:t1', sort: 1 },
-        { title: 's1:t3', sort: 2 },
-        { title: 's1:t4', sort: 3 },
-        { title: 's1:t2', sort: 4 },
-        { title: 's1:t5', sort: 5 },
+        { title: 's1:t1', sort: parseSortValue(1) },
+        { title: 's1:t3', sort: parseSortValue(2) },
+        { title: 's1:t4', sort: parseSortValue(3) },
+        { title: 's1:t2', sort: parseSortValue(4) },
+        { title: 's1:t5', sort: parseSortValue(5) },
       ]);
 
       const s2results = (
@@ -264,11 +268,11 @@ describe('sort collections', () => {
       });
 
       expect(s2results).toEqual([
-        { title: 's2:t1', sort: 1 },
-        { title: 's2:t2', sort: 2 },
-        { title: 's2:t3', sort: 3 },
-        { title: 's2:t4', sort: 4 },
-        { title: 's2:t5', sort: 5 },
+        { title: 's2:t1', sort: parseSortValue(1) },
+        { title: 's2:t2', sort: parseSortValue(2) },
+        { title: 's2:t3', sort: parseSortValue(3) },
+        { title: 's2:t4', sort: parseSortValue(4) },
+        { title: 's2:t5', sort: parseSortValue(5) },
       ]);
     });
 
@@ -319,12 +323,12 @@ describe('sort collections', () => {
       });
 
       expect(results).toEqual([
-        { title: 's2:t1', sort: 1 },
-        { title: 's2:t2', sort: 2 },
-        { title: 's1:t1', sort: 3 },
-        { title: 's2:t3', sort: 4 },
-        { title: 's2:t4', sort: 5 },
-        { title: 's2:t5', sort: 6 },
+        { title: 's2:t1', sort: parseSortValue(1) },
+        { title: 's2:t2', sort: parseSortValue(2) },
+        { title: 's1:t1', sort: parseSortValue(3) },
+        { title: 's2:t3', sort: parseSortValue(4) },
+        { title: 's2:t4', sort: parseSortValue(5) },
+        { title: 's2:t5', sort: parseSortValue(6) },
       ]);
     });
   });

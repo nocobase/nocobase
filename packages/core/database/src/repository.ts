@@ -661,7 +661,6 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
         transaction,
       });
     }
-
     if (options.hooks !== false) {
       for (const instance of instances) {
         await this.database.emitAsync(`${this.collection.name}.afterUpdateWithAssociations`, instance, {

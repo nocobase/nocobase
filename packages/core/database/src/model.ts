@@ -8,7 +8,7 @@
  */
 
 import lodash from 'lodash';
-import { Model as SequelizeModel, ModelStatic } from 'sequelize';
+import { Model as SequelizeModel, ModelStatic, FindOptions } from 'sequelize';
 import { Collection } from './collection';
 import { Database } from './database';
 import { Field } from './fields';
@@ -102,7 +102,14 @@ export class Model<TModelAttributes extends {} = any, TCreationAttributes extend
           if (data instanceof Model) {
             return data.toJSON();
           }
-
+          if (_.isPlainObject(data)) {
+            for (const [key, value] of Object.entries(data)) {
+              const field = options.collection.getField(key);
+              if (field && field.transform) {
+                data[key] = field.transform.call(field, value, data);
+              }
+            }
+          }
           return data;
         },
         this.hiddenObjKey,
@@ -208,5 +215,10 @@ export class Model<TModelAttributes extends {} = any, TCreationAttributes extend
     });
 
     return lodash.orderBy(data, orderItems, orderDirections);
+  }
+
+  public static findAll(options?: FindOptions<any>): Promise<any[]> {
+    this.database.emit('beforeModelFind', this, options);
+    return super.findAll(options);
   }
 }

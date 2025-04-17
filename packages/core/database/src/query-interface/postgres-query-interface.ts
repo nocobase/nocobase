@@ -10,12 +10,17 @@
 import lodash from 'lodash';
 import { Collection } from '../collection';
 import sqlParser from '../sql-parser';
-import QueryInterface, { TableInfo } from './query-interface';
-import { Transaction } from 'sequelize';
+import QueryInterface, {
+  ChangeColumnOptions,
+  DropTableOptions,
+  RemoveColumnOptions,
+  TableInfo,
+} from './query-interface';
+import { ModelStatic, Transaction, Transactionable } from 'sequelize';
 
 export default class PostgresQueryInterface extends QueryInterface {
   constructor(db) {
-    super(db);
+    super(db, { defaultSchemaName: 'public' });
   }
 
   async setAutoIncrementVal(options: {
@@ -235,5 +240,33 @@ $BODY$
 
   public generateJoinOnForJSONArray(left: string, right: string) {
     return this.db.sequelize.literal(`${left}=any(${right})`);
+  }
+
+  changeColumnDefaultValueSQL(options: ChangeColumnOptions): Promise<string> {
+    return null;
+  }
+
+  async beforeRemoveColumn(options: RemoveColumnOptions): Promise<void> {}
+  async afterRemoveColumn(options: RemoveColumnOptions): Promise<void> {}
+
+  public async dropTable(options: DropTableOptions) {
+    const { tableName, options: sequelizeOptions } = options;
+    await this.db.sequelize
+      .getQueryInterface()
+      .dropTable({ tableName, schema: this.db.schema } as any, sequelizeOptions);
+  }
+
+  nullSafe(): string {
+    return 'COALESCE';
+  }
+
+  async ensureSchema(schemaName: string, options: Transactionable): Promise<void> {
+    if (schemaName === 'public') {
+      return;
+    }
+    await this.db.sequelize.query(`CREATE SCHEMA IF NOT EXISTS "${schemaName}";`, {
+      raw: true,
+      transaction: options?.transaction,
+    });
   }
 }

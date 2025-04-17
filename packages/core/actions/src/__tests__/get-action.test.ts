@@ -19,7 +19,7 @@ describe('get action', () => {
   let Profile;
 
   beforeEach(async () => {
-    app = mockServer();
+    app = await mockServer();
     registerActions(app);
 
     PostTag = app.collection({

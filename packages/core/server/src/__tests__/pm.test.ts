@@ -21,7 +21,7 @@ describe('pm', () => {
   });
   test('addPreset', async () => {
     class Plugin1 extends Plugin {}
-    app = mockServer({
+    app = await mockServer({
       plugins: [
         [
           Plugin1,
@@ -39,7 +39,7 @@ describe('pm', () => {
   });
   test('addPreset', async () => {
     class Plugin1 extends Plugin {}
-    app = mockServer({
+    app = await mockServer({
       plugins: [Plugin1],
     });
     await app.load();
@@ -48,14 +48,14 @@ describe('pm', () => {
   });
   test('add', async () => {
     class Plugin1 extends Plugin {}
-    app = mockServer();
+    app = await mockServer();
     await app.pm.add(Plugin1);
     expect(app.pm.get(Plugin1).enabled).toBeFalsy();
     expect(app.pm.get(Plugin1).options.isPreset).toBeFalsy();
   });
   test('add', async () => {
     class Plugin1 extends Plugin {}
-    app = mockServer();
+    app = await mockServer();
     await app.pm.add(Plugin1, {
       enabled: true,
     });
@@ -63,7 +63,7 @@ describe('pm', () => {
   });
   test('add', async () => {
     class Plugin1 extends Plugin {}
-    app = mockServer();
+    app = await mockServer();
     await app.pm.add(Plugin1, {
       name: 'plugin1',
       enabled: true,
@@ -111,7 +111,7 @@ describe('pm', () => {
         arr.push(9);
       }
     }
-    app = mockServer({
+    app = await mockServer({
       plugins: [Plugin1, Plugin2],
     });
     await app.pm.initPlugins();
@@ -140,7 +140,7 @@ describe('pm', () => {
         arr.push(3);
       }
     }
-    app = mockServer({
+    app = await mockServer({
       plugins: [Plugin1, Plugin2],
     });
     await app.load();
@@ -149,7 +149,7 @@ describe('pm', () => {
     expect(arr).toEqual([1, 2, 3]);
   });
   test('enable', async () => {
-    app = mockServer();
+    app = await mockServer();
     await app.load();
     await expect(() => app.pm.enable('Plugin0')).rejects.toThrow('Plugin0 plugin does not exist');
   });
@@ -166,7 +166,7 @@ describe('pm', () => {
         loadFn();
       }
     }
-    app = mockServer({
+    app = await mockServer({
       plugins: [
         [
           Plugin1,
@@ -197,7 +197,7 @@ describe('pm', () => {
         loadFn();
       }
     }
-    app = mockServer();
+    app = await mockServer();
     await app.cleanDb();
     await app.load();
     await app.install();
@@ -235,7 +235,7 @@ describe('pm', () => {
         loadFn();
       }
     }
-    app = mockServer();
+    app = await mockServer();
     await app.cleanDb();
     await app.load();
     await app.install();
@@ -268,7 +268,7 @@ describe('pm', () => {
         loadFn();
       }
     }
-    app = mockServer();
+    app = await mockServer();
     await app.cleanDb();
     await app.load();
     await app.install();
@@ -321,7 +321,7 @@ describe('pm', () => {
 
     const loadFn = vi.fn();
 
-    app = mockServer();
+    app = await mockServer();
     await app.cleanDb();
     await app.load();
     await app.install();
@@ -370,7 +370,7 @@ describe('pm', () => {
 
     const loadFn = vi.fn();
 
-    app = mockServer();
+    app = await mockServer();
     await app.cleanDb();
     await app.load();
     await app.install();
@@ -402,7 +402,7 @@ describe('pm', () => {
         loadFn();
       }
     }
-    app = mockServer();
+    app = await mockServer();
     await app.cleanDb();
     await app.load();
     await app.install();
@@ -431,7 +431,7 @@ describe('pm', () => {
         loadFn();
       }
     }
-    app = mockServer();
+    app = await mockServer();
     await app.cleanDb();
     await app.load();
     await app.install();
@@ -481,7 +481,7 @@ describe('pm', () => {
         Plugin2,
       }[pluginName];
     };
-    app = mockServer({
+    app = await mockServer({
       plugins: ['Plugin0'],
     });
     await app.cleanDb();
@@ -538,7 +538,7 @@ describe('pm', () => {
         result.push(this.prop === 'a');
       }
     }
-    app = mockServer();
+    app = await mockServer();
     await app.cleanDb();
     await app.load();
     await app.install();

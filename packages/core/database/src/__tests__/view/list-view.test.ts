@@ -30,8 +30,8 @@ describe('list view', () => {
     const dropViewSQL2 = `DROP VIEW IF EXISTS test2`;
     await db.sequelize.query(dropViewSQL2);
 
-    const sql1 = `CREATE VIEW test1 AS SELECT 1`;
-    const sql2 = `CREATE VIEW test2 AS SELECT 2`;
+    const sql1 = `CREATE VIEW test1 AS SELECT 1 as value`;
+    const sql2 = `CREATE VIEW test2 AS SELECT 2 as value`;
 
     await db.sequelize.query(sql1);
     await db.sequelize.query(sql2);

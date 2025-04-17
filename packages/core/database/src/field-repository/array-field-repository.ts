@@ -92,11 +92,16 @@ export class ArrayFieldRepository {
       transaction,
     });
 
-    const oldValue = instance.get(this.fieldName) || [];
+    const isMSSQL = instance.db.options.dialect === 'mssql';
+    const oldValue = isMSSQL
+      ? this.parseJSONSafely(instance.get(this.fieldName) || [])
+      : instance.get(this.fieldName || []);
+
+    instance.get(this.fieldName) || [];
     const newValue = oldValue.includes(options.value)
       ? lodash.without(oldValue, options.value)
       : [...oldValue, options.value];
-    instance.set(this.fieldName, newValue);
+    instance.set(this.fieldName, isMSSQL ? this.stringifyJSONSafely(newValue) : newValue);
     await instance.save({ transaction });
 
     if (options.hooks !== false) {
@@ -152,7 +157,15 @@ export class ArrayFieldRepository {
     });
 
     const oldValue = instance.get(this.fieldName) || [];
-    instance.set(this.fieldName, lodash.without(oldValue, ...lodash.castArray(options.values)));
+    const isMSSQL = instance.db.options.dialect === 'mssql';
+
+    const currentValues = isMSSQL ? this.parseJSONSafely(oldValue) : oldValue || [];
+    const valuesToRemove = isMSSQL ? this.parseJSONSafely(options.values) : options.values;
+
+    const updatedValues = lodash.without(currentValues, ...lodash.castArray(valuesToRemove));
+
+    const finalValue = isMSSQL ? this.stringifyJSONSafely(updatedValues) : updatedValues;
+    instance.set(this.fieldName, finalValue);
     await instance.save({ transaction });
 
     if (options.hooks !== false) {
@@ -164,5 +177,13 @@ export class ArrayFieldRepository {
     return this.collection.repository.findOne({
       filterByTk: this.targetValue,
     });
+  }
+
+  private parseJSONSafely(value: any): any {
+    return typeof value === 'string' ? JSON.parse(value) : value;
+  }
+
+  private stringifyJSONSafely(value: any): any {
+    return Array.isArray(value) ? JSON.stringify(value) : value;
   }
 }

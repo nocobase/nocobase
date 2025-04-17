@@ -34,7 +34,7 @@ describe('application life cycle', () => {
 
   describe('reInitEvents', () => {
     it('should be called', async () => {
-      app = mockServer();
+      app = await mockServer();
       const loadFn = vi.fn();
       app.on('event1', () => {
         loadFn();
@@ -76,7 +76,7 @@ describe('application life cycle', () => {
 
   describe('load', () => {
     it('should be called', async () => {
-      app = mockServer();
+      app = await mockServer();
       const loadFn = vi.fn();
       app.on('beforeLoad', () => {
         loadFn();
@@ -94,7 +94,7 @@ describe('application life cycle', () => {
       expect(loadFn).toBeCalledTimes(3);
     });
     it('should be called', async () => {
-      app = mockServer();
+      app = await mockServer();
       const loadFn = vi.fn();
       class Plugin1 extends Plugin {
         afterAdd() {
@@ -123,7 +123,7 @@ describe('application life cycle', () => {
         }
       }
 
-      app = mockServer({
+      app = await mockServer({
         plugins: [Plugin1],
       });
 
@@ -135,7 +135,7 @@ describe('application life cycle', () => {
 
     it('should init after app.load()', async () => {
       class Plugin1 extends Plugin {}
-      app = mockServer({
+      app = await mockServer({
         plugins: [Plugin1],
       });
       expect(app.pm.has(Plugin1)).toBeFalsy();
@@ -146,7 +146,7 @@ describe('application life cycle', () => {
     it('should init after app.load()', async () => {
       class Plugin1 extends Plugin {}
       class Plugin2 extends Plugin {}
-      app = mockServer({
+      app = await mockServer({
         plugins: [Plugin1],
       });
       app.pm.addPreset(Plugin2);
@@ -159,7 +159,7 @@ describe('application life cycle', () => {
 
     it('should throw error', async () => {
       class Plugin1 extends Plugin {}
-      app = mockServer();
+      app = await mockServer();
       await app.load();
       expect(() => app.pm.addPreset(Plugin1)).toThrow(AddPresetError);
     });

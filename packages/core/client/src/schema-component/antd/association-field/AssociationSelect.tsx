@@ -132,7 +132,7 @@ const InternalAssociationSelect = observer(
       return () => {
         form.removeEffects(id);
       };
-    }, []);
+    }, [] as any);
 
     const handleCreateAction = async (props) => {
       const { search: value, callBack } = props;

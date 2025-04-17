@@ -41,6 +41,7 @@ describe('set field', () => {
     await a.save();
 
     const setValue = a.get('set');
-    expect(setValue).toEqual(['a', 'b', 'c']);
+    const actual = ['a', 'b', 'c'];
+    expect(setValue).toEqual(db.options.dialect === 'mssql' ? JSON.stringify(actual) : actual);
   });
 });

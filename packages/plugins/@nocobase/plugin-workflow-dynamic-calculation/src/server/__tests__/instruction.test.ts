@@ -71,7 +71,7 @@ describe('workflow > instructions > calculation', () => {
 
       const [execution] = await workflow.getExecutions();
       const [job] = await execution.getJobs();
-      expect(job.result).toBe(1);
+      expect(Number(job.result)).toBe(1);
     });
 
     it('dynamic expression field in association table', async () => {
@@ -118,7 +118,7 @@ describe('workflow > instructions > calculation', () => {
       const [execution] = await workflow.getExecutions();
       const jobs = await execution.getJobs({ order: [['id', 'ASC']] });
       expect(jobs.length).toBe(2);
-      expect(jobs[1].result).toBe(1);
+      expect(Number(jobs[1].result)).toBe(1);
     });
   });
 });

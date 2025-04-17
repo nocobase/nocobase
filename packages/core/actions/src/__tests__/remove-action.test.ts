@@ -19,7 +19,7 @@ describe('remove action', () => {
   let Profile;
 
   beforeEach(async () => {
-    app = mockServer();
+    app = await mockServer();
     registerActions(app);
 
     await app.db.clean({ drop: true });

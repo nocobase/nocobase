@@ -13,12 +13,13 @@ import moment from 'moment/moment';
 
 type WriterFunc = (val: any, database: Database) => any;
 
-const getMapFieldWriter = (field: Field) => {
+const getMapFieldWriter = (field: Field, database: Database) => {
   return (val) => {
     const mockObj = {
       setDataValue: (name, newVal) => {
         val = newVal;
       },
+      database,
     };
 
     field.options.set.call(mockObj, val);
@@ -31,9 +32,14 @@ export class FieldValueWriter {
 
   static write(field: Field, val, database) {
     if (val === null) return val;
-
-    if (field.type == 'point' || field.type == 'lineString' || field.type == 'circle' || field.type === 'polygon') {
-      return getMapFieldWriter(field)(lodash.isString(val) ? JSON.parse(val) : val);
+    const getGeographyType = () => {
+      if (field.rawDataType.key?.toLowerCase() === DataTypes.GEOGRAPHY.key.toLowerCase()) {
+        return field.rawDataType.type;
+      }
+    };
+    const geographyType = getGeographyType();
+    if (geographyType) {
+      return getMapFieldWriter(field, database)(lodash.isString(val) ? JSON.parse(val) : val);
     }
 
     const fieldType = field.typeToString();

@@ -11,6 +11,9 @@ import { BaseColumnFieldOptions, CreateOptions, DataTypes, Field, Model } from '
 
 export class SnapshotField extends Field {
   get dataType() {
+    if (this.database.options.dialect === 'mssql') {
+      return DataTypes.TEXT;
+    }
     return DataTypes.JSON;
   }
 

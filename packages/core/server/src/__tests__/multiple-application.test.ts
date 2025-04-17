@@ -15,7 +15,7 @@ import Application from '../application';
 describe('multiple application', () => {
   let app: MockServer;
   beforeEach(async () => {
-    app = mockServer({
+    app = await mockServer({
       acl: false,
     });
   });

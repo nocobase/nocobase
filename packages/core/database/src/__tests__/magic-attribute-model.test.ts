@@ -86,8 +86,9 @@ describe('magic-attribute-model', () => {
     });
 
     test.set('x-component-props', { arr2: [1, 2, 3] });
-
-    expect(test.previous('options')['x-component-props']['arr2']).toEqual([4, 5]);
+    const previous = test.previous('options');
+    const options = db.options.dialect === 'mssql' ? JSON.parse(previous) : previous;
+    expect(options['x-component-props']['arr2']).toEqual([4, 5]);
   });
 
   it('case 1', async () => {

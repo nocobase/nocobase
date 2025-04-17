@@ -18,7 +18,7 @@ describe('application version', () => {
   });
 
   it('should get application version', async () => {
-    app = mockServer();
+    app = await mockServer();
     await app.db.sync();
     const appVersion = app.version;
 

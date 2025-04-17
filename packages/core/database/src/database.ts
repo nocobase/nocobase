@@ -27,6 +27,7 @@ import {
   QueryOptions,
   Sequelize,
   SyncOptions,
+  TableName,
   Transactionable,
   Utils,
 } from 'sequelize';
@@ -105,6 +106,7 @@ export interface IDatabaseOptions extends Options {
   logger?: LoggerOptions | Logger;
   customHooks?: any;
   instanceId?: string;
+  sqlParser?: string;
 }
 
 export type DatabaseOptions = IDatabaseOptions;
@@ -253,8 +255,8 @@ export class Database extends EventEmitter implements AsyncEmitter {
 
     const sequelizeOptions = this.sequelizeOptions(this.options);
     this.sequelize = new Sequelize(sequelizeOptions);
-
-    this.queryInterface = buildQueryInterface(this);
+    // 必须在sequelize实例创建之后调用
+    this.queryInterface = dialectClass.getQueryInterface(this);
 
     this.collections = new Map();
     this.modelHook = new ModelHook(this);
@@ -268,7 +270,9 @@ export class Database extends EventEmitter implements AsyncEmitter {
     });
 
     // register database field types
-    for (const [name, field] of Object.entries<any>(FieldTypes)) {
+    const defaultFieldTypes = Object.entries<any>(FieldTypes);
+    const customFieldTypes = Object.entries(dialectClass.getFieldTypes() || {});
+    for (const [name, field] of [...defaultFieldTypes, ...customFieldTypes]) {
       if (['Field', 'RelationField'].includes(name)) {
         continue;
       }
@@ -330,12 +334,21 @@ export class Database extends EventEmitter implements AsyncEmitter {
     patchSequelizeQueryInterface(this);
 
     this.registerCollectionType();
+    dialectClass.init(this);
   }
 
   _instanceId: string;
 
   get instanceId() {
     return this._instanceId;
+  }
+
+  get dialectClass() {
+    return Database.getDialect(this.options.dialect);
+  }
+
+  get schema() {
+    return this.options.schema || this.dialectClass.getQueryInterface(this).defaultSchemaName;
   }
 
   /**
@@ -707,9 +720,10 @@ export class Database extends EventEmitter implements AsyncEmitter {
     }
 
     this.operators = operators;
-
+    const dialectClass = Database.getDialect(this.options.dialect);
     this.registerOperators({
-      ...(extendOperators as unknown as MapOf<OperatorFunc>),
+      ...extendOperators,
+      ...(dialectClass.getOperators() || {}),
     });
   }
 
@@ -770,18 +784,16 @@ export class Database extends EventEmitter implements AsyncEmitter {
     }
 
     if (this.options.schema) {
-      const tableNames = (await this.sequelize.getQueryInterface().showAllTables()).map((table) => {
-        return `"${this.options.schema}"."${table}"`;
-      });
+      const tableNames = (await this.sequelize.getQueryInterface().showAllTables()) as TableName[];
 
       const skip = options.skip || [];
 
       // @ts-ignore
       for (const tableName of tableNames) {
-        if (skip.includes(tableName)) {
+        if (skip.includes(tableName['tableName'] || tableName)) {
           continue;
         }
-        await this.sequelize.query(`DROP TABLE IF EXISTS ${tableName} CASCADE`);
+        await this.queryInterface.dropTable({ tableName, options: { cascade: true } });
       }
       return;
     }
