@@ -151,7 +151,7 @@ export const AssignedFieldInner = (props: AssignedFieldProps) => {
 
 export const AssignedField = (props) => {
   const { form } = useFormBlockContext();
-  const { name } = useBlockContext();
+  const { name } = useBlockContext() || {};
   return (
     <BlockContext.Provider value={{ name: form ? 'form' : name }}>
       <AssignedFieldInner {...props} />
