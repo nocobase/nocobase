@@ -69,11 +69,6 @@ eventFlowManager.addFlow({
       key: 'step1',
       title: '显示通知',
       action: 'openNotification',
-      params: {
-        title: '按钮1的通知',
-        description: '您点击了按钮1',
-        duration: 3,
-      },
       isAwait: true,
     },
   ],
@@ -92,10 +87,6 @@ eventFlowManager.addFlow({
       key: 'step1',
       title: '显示对话框',
       action: 'openSimpleDialog',
-      params: {
-        title: '按钮2的对话框',
-        width: 500,
-      },
       isAwait: true,
     },
   ],
@@ -114,10 +105,6 @@ eventFlowManager.addFlow({
       key: 'step1',
       title: '打开表单对话框',
       action: 'openFormDialog',
-      params: {
-        title: '按钮3的表单',
-        width: 500,
-      },
       isAwait: true,
     },
   ],
@@ -126,11 +113,43 @@ eventFlowManager.addFlow({
 const MultiButtonEventFlow = () => {
   const createClickHandler = (buttonNum) => {
     return () => {
+      let stepParams = null;
+      switch (buttonNum) {
+        case 1:
+          stepParams = {
+            title: '按钮1的通知',
+            description: '您点击了按钮1',
+            duration: 3,
+          };
+          break;
+        case 2:
+          stepParams = {
+            title: '按钮2的对话框',
+            width: 500,
+          };
+          break;
+        case 3:
+          stepParams = {
+            title: '按钮3的表单',
+            width: 500,
+          };
+          break;
+        default:
+          break;
+      }
+
       // 准备事件上下文
       const ctx = {
         payload: {
           button: buttonNum,
           time: new Date().toLocaleString(),
+        },
+        meta: {
+          params: {
+            steps: {
+              step1: stepParams,
+            },
+          },
         },
       };
 

@@ -53,31 +53,18 @@ eventFlowManager.addFlow({
       key: 'step1',
       title: '打开简单对话框',
       action: 'openSimpleDialog',
-      params: {
-        title: '第一步：简单对话框',
-        width: 600,
-      },
       isAwait: true, // 等待对话框关闭后再继续
     },
     {
       key: 'step2',
       title: '显示通知',
       action: 'openNotification',
-      params: {
-        title: '第二步：通知',
-        description: '这是事件流的第二步，显示通知消息',
-        duration: 3,
-      },
       isAwait: true, // 等待通知操作完成后再继续
     },
     {
       key: 'step3',
       title: '打开表单对话框',
       action: 'openFormDialog',
-      params: {
-        title: '第三步：表单对话框',
-        width: 500,
-      },
       isAwait: true, // 等待表单对话框关闭后再继续
     },
   ],
@@ -90,6 +77,25 @@ const BasicEventFlow = () => {
       payload: {
         name: 'eventflow-demo',
         time: new Date().toLocaleString(),
+      },
+      meta: {
+        params: {
+          steps: {
+            step1: {
+              title: '第一步：简单对话框',
+              width: 600,
+            },
+            step2: {
+              title: '第二步：通知',
+              description: '这是事件流的第二步，显示通知消息',
+              duration: 3,
+            },
+            step3: {
+              title: '第三步：表单对话框',
+              width: 500,
+            },
+          },
+        },
       },
     };
 

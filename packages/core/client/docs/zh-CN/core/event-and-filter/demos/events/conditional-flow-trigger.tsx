@@ -51,20 +51,12 @@ eventFlowManager.addFlow({
       key: 'step1',
       title: '显示警告对话框',
       action: 'openSimpleDialog',
-      params: {
-        title: '阈值警告',
-        width: 500,
-      },
       isAwait: true,
     },
     {
       key: 'step2',
       title: '发送通知',
       action: 'openNotification',
-      params: {
-        title: '阈值超限警告',
-        duration: 5,
-      },
       isAwait: true,
     },
   ],
@@ -83,6 +75,18 @@ const ConditionalFlowTrigger = () => {
         currentValue,
         monitoringEnabled,
         time: new Date().toLocaleString(),
+      },
+      params: {
+        steps: {
+          step1: {
+            title: '阈值警告',
+            width: 500,
+          },
+          step2: {
+            title: '阈值超限警告',
+            duration: 5,
+          },
+        },
       },
     };
 

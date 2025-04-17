@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { ISchema, Schema } from '@formily/json-schema';
 import { observable } from '@formily/reactive';
 import { uid } from '@formily/shared';
@@ -10,7 +19,6 @@ import type {
   EventFlowEventHandler,
   EventFlowEventGroupOptions,
   EventFlowEventOptions,
-  EventFlowOnOptions,
   EventFlowOptions,
   EventFlowStepOptions,
 } from './types';
@@ -45,10 +53,6 @@ export class EventFlowStep {
 
   get isAwait() {
     return this.options.isAwait;
-  }
-
-  get params() {
-    return this.options.params;
   }
 
   get condition() {
@@ -206,7 +210,8 @@ export class EventFlow {
       return;
     }
     // 触发器执行函数
-    await this.executeHandler(event.handler, trigger.params, context);
+    const eventParams = context?.meta?.params?.['event'];
+    await this.executeHandler(event.handler, eventParams, context);
 
     if (!this.hasSteps()) {
       console.warn(`Event '${eventName}' has no steps defined.`);
@@ -243,10 +248,11 @@ export class EventFlow {
       const action = this.eventFlowManager.getAction(step.action);
       if (action) {
         if (this.checkCondition(step.condition, context)) {
+          const stepParams = context?.meta?.params?.steps?.[step.key];
           if (step.isAwait !== false) {
-            await this.executeHandler(action.handler, step.params, context);
+            await this.executeHandler(action.handler, stepParams, context);
           } else {
-            this.executeHandler(action.handler, step.params, context);
+            this.executeHandler(action.handler, stepParams, context);
           }
         }
       }

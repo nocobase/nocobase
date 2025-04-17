@@ -26,6 +26,7 @@ export interface EventContext<T = any> {
     userId?: string;
     event?: string | string[]; // 事件名称， 一个事件是可以触发多个eventflow的，与filterflow不同
     [key: string]: any;
+    params?: Record<string, Record<string, any>>;
   };
   payload?: T;
   results?: Record<string, any>;
@@ -77,7 +78,6 @@ export type EventFlowStepOptions = {
   key?: string;
   action: string;
   title?: string;
-  params?: Record<string, any>;
   condition?: string;
   isAwait?: boolean;
 };
@@ -85,7 +85,6 @@ export type EventFlowOnOptions = {
   event?: string;
   title?: string;
   condition?: string;
-  params?: Record<string, any>;
 };
 export type EventFlowOptions = {
   sort?: number;

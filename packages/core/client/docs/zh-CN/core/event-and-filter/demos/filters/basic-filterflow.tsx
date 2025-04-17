@@ -37,7 +37,6 @@ filterFlowManager.addFlow({
       key: 'uppercase-step',
       filterName: 'uppercase',
       title: '转换为大写',
-      params: {},
     },
   ],
 });

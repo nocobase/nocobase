@@ -44,10 +44,6 @@ export class FilterFlowStep {
     return this.options.filterName;
   }
 
-  get params() {
-    return this.options.params || {};
-  }
-
   get condition() {
     return this.options.condition;
   }
@@ -106,7 +102,7 @@ export class FilterFlow {
     this.options = observable(options);
 
     if (Array.isArray(options.steps)) {
-      options.steps.forEach((step) => this.addFilterStep(step));
+      options.steps.forEach((step) => this.addStep(step));
     }
     // 清除原始数组，因为现在步骤由 map 管理
     delete this.options.steps;
@@ -140,7 +136,7 @@ export class FilterFlow {
    * @param stepOptions 步骤配置
    * @returns 创建的 FilterFlowStep 实例
    */
-  addFilterStep(stepOptions: FilterFlowStepOptions): FilterFlowStep {
+  addStep(stepOptions: FilterFlowStepOptions): FilterFlowStep {
     const instance = new FilterFlowStep(stepOptions, this);
     this.filterSteps.set(instance.key, instance);
     return instance;
@@ -335,7 +331,7 @@ export class FilterFlowManager {
   addFilterStep(flowKey: string, stepOptions: FilterFlowStepOptions): FilterFlowStep | undefined {
     const flow = this.getFlow(flowKey);
     if (flow) {
-      return flow.addFilterStep(stepOptions);
+      return flow.addStep(stepOptions);
     }
     console.error(`FilterFlow with key "${flowKey}" not found. Cannot add step.`);
     return undefined;
@@ -397,7 +393,7 @@ export class FilterFlowManager {
 
       // 3. 执行 Handler
       try {
-        const result = handler(currentValue, step.params, context);
+        const result = handler(currentValue, context?.meta?.params?.[step.key], context);
         // 处理异步 Handler
         if (result instanceof Promise) {
           currentValue = await result;

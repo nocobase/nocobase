@@ -67,7 +67,6 @@ filterFlowManager.addFlow({
       key: 'uppercase-step',
       filterName: 'uppercase',
       title: '转换为大写',
-      params: {},
       // 条件：仅当输入文本长度大于5时应用
       condition: '{{ ctx.payload.inputText.length > 5 }}',
     },
@@ -75,7 +74,6 @@ filterFlowManager.addFlow({
       key: 'lowercase-step',
       filterName: 'lowercase',
       title: '转换为小写',
-      params: {},
       // 条件：仅当输入文本包含大写字母时应用
       condition: '{{ /[A-Z]/.test(ctx.payload.inputText) }}',
     },
@@ -83,7 +81,6 @@ filterFlowManager.addFlow({
       key: 'reverse-step',
       filterName: 'reverse',
       title: '文本反转',
-      params: {},
       // 条件：仅当输入文本包含数字时应用
       condition: '{{ /[0-9]/.test(ctx.payload.inputText) }}',
     },

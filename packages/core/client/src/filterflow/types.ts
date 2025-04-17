@@ -15,6 +15,7 @@ export type FilterHandlerContext<T = any> = {
   meta?: {
     flowKey?: string;
     flowName?: string;
+    params?: Record<string, Record<string, any>>;
   };
 };
 
@@ -41,7 +42,6 @@ export interface FilterFlowStepOptions {
   key?: string;
   filterName: string;
   title?: string;
-  params?: Record<string, any>;
   condition?: string;
 }
 export interface FilterFlowOptions {

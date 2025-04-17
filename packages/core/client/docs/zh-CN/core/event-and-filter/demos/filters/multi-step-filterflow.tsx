@@ -91,13 +91,11 @@ filterFlowManager.addFlow({
       key: 'trim-step',
       filterName: 'trim',
       title: '去除空格',
-      params: {},
     },
     {
       key: 'uppercase-step',
       filterName: 'uppercase',
       title: '转换为大写',
-      params: {},
     },
     {
       key: 'add-prefix-step',
@@ -115,7 +113,6 @@ filterFlowManager.addFlow({
       key: 'reverse-step',
       filterName: 'reverse',
       title: '文本反转',
-      params: {},
     },
   ],
 });

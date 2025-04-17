@@ -45,10 +45,6 @@ eventFlowManager.addFlow({
       action: 'openSimpleDialog',
       // 根据用户选择的选项决定操作
       condition: '{{ctx.payload.option === "A"}}',
-      params: {
-        title: '选项A的对话框',
-        width: 500,
-      },
       isAwait: true,
     },
     {
@@ -57,11 +53,6 @@ eventFlowManager.addFlow({
       action: 'openNotification',
       // 仅在用户选择选项B时执行
       condition: '{{ctx.payload.option === "B"}}',
-      params: {
-        title: '选项B的通知',
-        description: '您选择了选项B',
-        duration: 3,
-      },
       isAwait: true,
     },
   ],
@@ -75,6 +66,21 @@ const ConditionalEventFlow = () => {
     const ctx = {
       payload: {
         option: selectedOption,
+      },
+      meta: {
+        params: {
+          steps: {
+            step1: {
+              title: '第一步：简单对话框',
+              width: 600,
+            },
+            step2: {
+              title: '选项B的通知',
+              description: '您选择了选项B',
+              duration: 3,
+            },
+          },
+        },
       },
     };
 

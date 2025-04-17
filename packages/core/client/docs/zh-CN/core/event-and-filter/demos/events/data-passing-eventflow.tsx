@@ -79,19 +79,12 @@ eventFlowManager.addFlow({
       key: 'step1',
       title: '处理数据',
       action: 'processData',
-      params: {
-        prefix: '已处理: ',
-      },
       isAwait: true,
     },
     {
       key: 'step2',
       title: '显示处理结果',
       action: 'openNotification',
-      params: {
-        title: '数据处理结果',
-        duration: 5,
-      },
       isAwait: true,
     },
   ],
@@ -104,6 +97,17 @@ const DataPassingEventFlow = () => {
       payload: {
         initialData: '用户输入的原始数据',
         time: new Date().toLocaleString(),
+      },
+      params: {
+        stpes: {
+          step1: {
+            prefix: '已处理: ',
+          },
+          step2: {
+            title: '数据处理结果',
+            duration: 5,
+          },
+        },
       },
     };
 
