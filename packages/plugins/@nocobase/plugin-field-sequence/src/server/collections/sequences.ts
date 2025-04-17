@@ -65,7 +65,7 @@ export default defineCollection({
       });
     },
   },
-  migrationRules: ['overwrite', 'schema-only'],
+  migrationRules: ['schema-only', 'overwrite'],
   name: 'sequences',
   shared: true,
   fields: [
