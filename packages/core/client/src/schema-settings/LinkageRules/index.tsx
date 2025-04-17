@@ -28,17 +28,15 @@ import { ArrayCollapse } from './components/LinkageHeader';
 export interface Props {
   dynamicComponent: any;
 }
-function getFirstBusinessEntry(obj, path = []) {
+function extractFieldPath(obj, path = []) {
   if (typeof obj !== 'object' || obj === null) return null;
 
   const [key, value] = Object.entries(obj)[0] || [];
 
-  // 如果是对象并且 key 不是 $ 开头，就继续深入
   if (typeof value === 'object' && value !== null && !key.startsWith('$')) {
-    return getFirstBusinessEntry(value, [...path, key]);
+    return extractFieldPath(value, [...path, key]);
   }
 
-  // 如果遇到 $ 开头的 key，说明业务字段路径就是上面一层
   return [path.join('.'), obj];
 }
 type Condition = { [field: string]: { [op: string]: any } } | { $and: Condition[] } | { $or: Condition[] };
@@ -58,7 +56,7 @@ function transformConditionData(condition: Condition, variableKey: '$nForm' | '$
       $or: condition.$or.map((c) => transformConditionData(c, variableKey)),
     };
   }
-  const [field, expression] = getFirstBusinessEntry(condition || {}) || [];
+  const [field, expression] = extractFieldPath(condition || {}) || [];
 
   const [op, value] = Object.entries(expression || {})[0] || [];
   return {
