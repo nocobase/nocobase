@@ -26,7 +26,16 @@ export interface EventContext<T = any> {
     userId?: string;
     event?: string | string[]; // 事件名称， 一个事件是可以触发多个eventflow的，与filterflow不同
     [key: string]: any;
-    params?: Record<string, Record<string, any>>;
+    // params?: Record<string, Record<string, any>>;
+    eventParams?: {
+      flow?: string;
+      params?: Record<string, Record<string, any>>;
+    }[];
+    actionParams?: {
+      flow?: string;
+      event?: string;
+      params?: Record<string, Record<string, any>>;
+    }[];
   };
   payload?: T;
   results?: Record<string, any>;

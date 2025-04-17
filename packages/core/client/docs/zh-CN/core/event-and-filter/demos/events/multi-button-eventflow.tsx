@@ -145,11 +145,14 @@ const MultiButtonEventFlow = () => {
           time: new Date().toLocaleString(),
         },
         meta: {
-          params: {
-            steps: {
-              step1: stepParams,
+          actionParams: [
+            {
+              flow: `button${buttonNum}-flow`,
+              params: {
+                step1: stepParams,
+              },
             },
-          },
+          ],
         },
       };
 

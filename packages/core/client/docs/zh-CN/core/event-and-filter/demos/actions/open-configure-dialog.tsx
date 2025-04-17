@@ -19,7 +19,7 @@ export const configureAction: EventFlowActionOptions = {
     const step = context.payload?.step;
     const onChange = context.payload?.onChange;
     const uiSchema = step.configureUiSchema;
-    const initialValues = step.params || {};
+    const initialValues = context.payload?.currentParams || {};
 
     return new Promise((resolve) => {
       const FormInput = connect(
@@ -78,7 +78,6 @@ export const configureAction: EventFlowActionOptions = {
           form
             .submit()
             .then((values) => {
-              step.set('params', values);
               if (typeof onChange === 'function') {
                 onChange(values);
               }

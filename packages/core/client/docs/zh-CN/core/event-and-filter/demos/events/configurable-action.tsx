@@ -116,11 +116,6 @@ eventFlowManager.addFlow({
       key: 'message-step',
       title: '显示消息提示',
       action: 'showMessage',
-      params: {
-        title: '消息标题',
-        content: '这是一条测试消息',
-        type: 'info',
-      },
       isAwait: true,
     },
   ],
@@ -152,17 +147,6 @@ const ConfigurableActionDemo = () => {
     type: 'info',
   });
 
-  // 更新当前显示的参数配置
-  const updateCurrentParams = () => {
-    const flow = eventFlowManager.getFlow('message-flow');
-    const steps = Object.values(flow['eventFlowSteps']);
-    const step = steps.find((step) => step.key === 'message-step');
-
-    if (step && step.params) {
-      setCurrentParams(step.params);
-    }
-  };
-
   // 打开配置弹窗
   const showConfig = () => {
     const step = eventFlowManager.getFlow('message-flow').getStep('message-step');
@@ -172,6 +156,7 @@ const ConfigurableActionDemo = () => {
         onChange: (values) => {
           setCurrentParams(values);
         },
+        currentParams,
       },
     };
     eventBus.dispatchEvent('configure:click', ctx);
@@ -179,11 +164,19 @@ const ConfigurableActionDemo = () => {
 
   // 触发消息动作
   const triggerAction = () => {
-    // 触发事件前更新一下当前参数显示
-    updateCurrentParams();
-
-    // 触发原始事件名称，EventFlowManager 会自动处理
-    const ctx = { payload: {} };
+    const ctx = {
+      payload: {},
+      meta: {
+        actionParams: [
+          {
+            flow: 'message-flow',
+            params: {
+              'message-step': currentParams,
+            },
+          },
+        ],
+      },
+    };
     eventBus.dispatchEvent('button:click', ctx);
   };
 

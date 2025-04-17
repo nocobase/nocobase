@@ -167,28 +167,16 @@ filterFlowManager.addFlow({
       key: 'filter-step',
       filterName: 'filterData',
       title: '过滤数据',
-      params: {
-        field: 'age',
-        operator: 'gt',
-        value: '25',
-      },
     },
     {
       key: 'sort-step',
       filterName: 'sortData',
       title: '排序数据',
-      params: {
-        field: 'age',
-        order: 'desc',
-      },
     },
     {
       key: 'map-step',
       filterName: 'mapData',
       title: '格式化数据',
-      params: {
-        template: '{{ item.name }} ({{ item.age }}岁)',
-      },
     },
   ],
 });
@@ -232,6 +220,22 @@ const DataTransformFilterFlow = () => {
       // 创建FilterFlow上下文
       const context = {
         payload: {},
+        meta: {
+          params: {
+            'filter-step': {
+              field: 'age',
+              operator: 'gt',
+              value: '25',
+            },
+            'sort-step': {
+              field: 'age',
+              order: 'desc',
+            },
+            'map-step': {
+              template: '{{ item.name }} ({{ item.age }}岁)',
+            },
+          },
+        },
       };
 
       // 应用FilterFlow

@@ -101,13 +101,11 @@ filterFlowManager.addFlow({
       key: 'add-prefix-step',
       filterName: 'addPrefix',
       title: '添加前缀',
-      params: { prefix: '[PREFIX] ' },
     },
     {
       key: 'add-suffix-step',
       filterName: 'addSuffix',
       title: '添加后缀',
-      params: { suffix: ' [SUFFIX]' },
     },
     {
       key: 'reverse-step',
@@ -130,8 +128,17 @@ const MultiStepFilterFlow = () => {
         payload: {
           inputText,
         },
+        meta: {
+          params: {
+            'add-prefix-step': {
+              prefix: '[PREFIX] ',
+            },
+            'add-suffix-step': {
+              suffix: ' [SUFFIX]',
+            },
+          },
+        },
       };
-
       const result = await filterFlowManager.applyFilters('multi-step-text-transform', inputText, context);
       setOutputText(result);
     } catch (error) {

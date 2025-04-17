@@ -68,19 +68,22 @@ const ConditionalEventFlow = () => {
         option: selectedOption,
       },
       meta: {
-        params: {
-          steps: {
-            step1: {
-              title: '第一步：简单对话框',
-              width: 600,
-            },
-            step2: {
-              title: '选项B的通知',
-              description: '您选择了选项B',
-              duration: 3,
+        actionParams: [
+          {
+            flow: 'conditional-flow-demo',
+            params: {
+              step1: {
+                title: '第一步：简单对话框',
+                width: 600,
+              },
+              step2: {
+                title: '选项B的通知',
+                description: '您选择了选项B',
+                duration: 3,
+              },
             },
           },
-        },
+        ],
       },
     };
 

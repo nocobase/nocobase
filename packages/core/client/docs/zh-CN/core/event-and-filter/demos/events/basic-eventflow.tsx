@@ -79,23 +79,28 @@ const BasicEventFlow = () => {
         time: new Date().toLocaleString(),
       },
       meta: {
-        params: {
-          steps: {
-            step1: {
-              title: '第一步：简单对话框',
-              width: 600,
-            },
-            step2: {
-              title: '第二步：通知',
-              description: '这是事件流的第二步，显示通知消息',
-              duration: 3,
-            },
-            step3: {
-              title: '第三步：表单对话框',
-              width: 500,
+        actionParams: [
+          {
+            flow: 'demo-button-click-flow',
+            params: {
+              steps: {
+                step1: {
+                  title: '第一步：简单对话框',
+                  width: 600,
+                },
+                step2: {
+                  title: '第二步：通知',
+                  description: '这是事件流的第二步，显示通知消息',
+                  duration: 3,
+                },
+                step3: {
+                  title: '第三步：表单对话框',
+                  width: 500,
+                },
+              },
             },
           },
-        },
+        ],
       },
     };
 

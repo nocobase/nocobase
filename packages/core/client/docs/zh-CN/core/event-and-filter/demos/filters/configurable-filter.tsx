@@ -126,20 +126,11 @@ filterFlowManager.addFlow({
       key: 'replace-step',
       filterName: 'replaceText',
       title: '替换文本',
-      params: {
-        search: 'Hello',
-        replacement: 'hi',
-        useRegex: false,
-      },
     },
     {
       key: 'truncate-step',
       filterName: 'truncateText',
       title: '截断文本',
-      params: {
-        maxLength: 10,
-        suffix: '...',
-      },
     },
   ],
 });
@@ -147,6 +138,17 @@ filterFlowManager.addFlow({
 const ConfigurableFilter = () => {
   const [inputText, setInputText] = useState('Hello configurable filter demo');
   const [outputText, setOutputText] = useState('');
+  const [stepParams, setStepParams] = useState({
+    'replace-step': {
+      search: 'Hello',
+      replacement: 'hi',
+      useRegex: false,
+    },
+    'truncate-step': {
+      maxLength: 10,
+      suffix: '...',
+    },
+  });
   const [isProcessing, setIsProcessing] = useState(false);
 
   // 打开配置Modal
@@ -156,8 +158,12 @@ const ConfigurableFilter = () => {
     const actionContext = {
       payload: {
         step,
+        currentParams: stepParams[stepKey],
         onChange: (values) => {
-          step.set('params', values);
+          setStepParams({
+            ...stepParams,
+            [stepKey]: values,
+          });
         },
       },
     };
@@ -172,6 +178,9 @@ const ConfigurableFilter = () => {
       const context = {
         payload: {
           inputText,
+        },
+        meta: {
+          params: stepParams,
         },
       };
 

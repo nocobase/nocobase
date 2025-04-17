@@ -98,16 +98,21 @@ const DataPassingEventFlow = () => {
         initialData: '用户输入的原始数据',
         time: new Date().toLocaleString(),
       },
-      params: {
-        stpes: {
-          step1: {
-            prefix: '已处理: ',
+      meta: {
+        actionParams: [
+          {
+            flow: 'data-passing-flow',
+            params: {
+              step1: {
+                prefix: '已处理: ',
+              },
+              step2: {
+                title: '数据处理结果',
+                duration: 5,
+              },
+            },
           },
-          step2: {
-            title: '数据处理结果',
-            duration: 5,
-          },
-        },
+        ],
       },
     };
 

@@ -281,7 +281,13 @@ eventFlowManager.addFlow({
   key: 'refreshFlow',
   title: '刷新表格数据',
   on: { event: 'tabulator:refresh' },
-  steps: [{ key: 'step1', action: 'fetchData', title: '获取最新数据', params: { messageOnSuccess: '刷新成功！' } }],
+  steps: [
+    {
+      key: 'step1',
+      action: 'fetchData',
+      title: '获取最新数据',
+    },
+  ],
 });
 
 eventFlowManager.addEvent({
@@ -300,7 +306,6 @@ eventFlowManager.addFlow({
       key: 'step1',
       action: 'deleteData',
       title: '执行删除',
-      params: { confirmTitle: '确认删除', confirmContent: '确定要删除选中的记录吗？' },
     },
   ],
 });
@@ -324,8 +329,16 @@ filterFlowManager.addFlow({
   name: 'tabulator:columns',
   title: '表格列展示流程',
   steps: [
-    { key: 'step1', filterName: 'showInitialColumns', title: '显示基础列' },
-    { key: 'step2', filterName: 'addActionColumn', title: '添加操作列', params: { show: true } }, // 默认显示操作列
+    {
+      key: 'step1',
+      filterName: 'showInitialColumns',
+      title: '显示基础列',
+    },
+    {
+      key: 'step2',
+      filterName: 'addActionColumn',
+      title: '添加操作列',
+    },
   ],
 });
 
@@ -340,6 +353,37 @@ const EventFilterTableDemo: React.FC = (props) => {
   const { message: messageApi } = App.useApp();
   const { styles } = useTabulatorStyles();
   const hooks = useMemo(() => ({ compile, message: messageApi, setState: setTableData }), [compile, messageApi]);
+  const [eventFlowParams, setEventFlowParams] = useState({
+    actionParams: [
+      {
+        flow: 'deleteFlow',
+        event: 'deleteSelected',
+        params: {
+          step1: {
+            confirmTitle: '确认删除',
+            confirmContent: '确定要删除选中的记录吗？',
+          },
+        },
+      },
+      {
+        flow: 'refreshFlow',
+        event: 'tabulator:refresh',
+        params: {
+          step1: {
+            messageOnSuccess: '刷新成功！',
+          },
+        },
+      },
+    ],
+  });
+  const [filterFlowParams, setFilterFlowParams] = useState({
+    step1: {
+      show: true,
+    },
+    step2: {
+      show: true,
+    },
+  });
 
   const tableOptions = useMemo(
     () => ({
@@ -384,6 +428,7 @@ const EventFilterTableDemo: React.FC = (props) => {
       payload: {
         hooks: hooks,
       },
+      meta: eventFlowParams,
     };
     try {
       await eventFlowManager.dispatchEvent('tabulator:refresh', context);
@@ -393,7 +438,7 @@ const EventFilterTableDemo: React.FC = (props) => {
     } finally {
       setIsLoading(false);
     }
-  }, [hooks]);
+  }, [hooks, eventFlowParams]);
 
   // 删除选中行
   const deleteSelectedRows = useCallback(() => {
@@ -414,9 +459,10 @@ const EventFilterTableDemo: React.FC = (props) => {
         selectedData: selectedData,
         hooks,
       },
+      meta: eventFlowParams,
     };
     eventBus.dispatchEvent('deleteSelected', context);
-  }, [hooks]);
+  }, [hooks, eventFlowParams]);
 
   const configureFilterStep = (flowName: string, stepKey: string) => {
     const step = filterFlowManager.getFlow(flowName).getStep(stepKey);
@@ -424,7 +470,10 @@ const EventFilterTableDemo: React.FC = (props) => {
       payload: {
         step,
         onChange: (value) => {
-          step.set('params', value);
+          setFilterFlowParams((prev) => ({
+            ...prev,
+            [stepKey]: value,
+          }));
           applyColumnFilter();
         },
       },
@@ -438,7 +487,18 @@ const EventFilterTableDemo: React.FC = (props) => {
       payload: {
         step,
         onChange: (value) => {
-          step.set('params', value);
+          // step.set('params', value);
+          setEventFlowParams((prev) => {
+            const newParams = {
+              ...prev,
+              actionParams: [...prev.actionParams],
+            };
+            const stepsParams = newParams.actionParams.find((item) => item.flow === flowName)?.params;
+            if (stepsParams) {
+              stepsParams[stepKey] = value;
+            }
+            return newParams;
+          });
         },
       },
     };
