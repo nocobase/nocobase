@@ -67,21 +67,24 @@ const ActionModalContent: FC<{ footerNodeName: string; field: any; schema: any }
 );
 
 export function useDelayedVisible(visible: boolean, delay = 200) {
-  const [ready, setReady] = useState(false);
+  const [ready, setReady] = useState(delay === 0);
   useEffect(() => {
+    if (ready) {
+      return;
+    }
     if (visible) {
       const timer = setTimeout(() => setReady(true), delay);
       return () => clearTimeout(timer);
     } else {
       setReady(false);
     }
-  }, [visible]);
+  }, [delay, ready, visible]);
   return ready;
 }
 
 export const InternalActionModal: React.FC<ActionDrawerProps<ModalProps>> = observer(
   (props) => {
-    const { footerNodeName = 'Action.Modal.Footer', width, zIndex: _zIndex, ...others } = props;
+    const { footerNodeName = 'Action.Modal.Footer', width, zIndex: _zIndex, delay = 200, ...others } = props;
     const { visible, setVisible, openSize = 'middle', modalProps } = useActionContext();
     const actualWidth = width ?? openSizeWidthMap.get(openSize);
     const schema = useFieldSchema();
@@ -102,7 +105,7 @@ export const InternalActionModal: React.FC<ActionDrawerProps<ModalProps>> = obse
     }
 
     const zIndex = getZIndex('modal', _zIndex || parentZIndex, props.level || 0);
-    const ready = useDelayedVisible(visible, 200); // 200ms 与 Modal 动画时间一致
+    const ready = useDelayedVisible(visible, delay); // 200ms 与 Modal 动画时间一致
 
     return (
       <ActionContextNoRerender>
