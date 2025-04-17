@@ -78,7 +78,7 @@ function AfterSuccess() {
 
   return (
     <SchemaSettingsModalItem
-      dialogRootClassName='dialog-after-successful-submission'
+      dialogRootClassName="dialog-after-successful-submission"
       width={700}
       title={t('After successful submission')}
       initialValues={fieldSchema?.['x-action-settings']?.['onSuccess']}

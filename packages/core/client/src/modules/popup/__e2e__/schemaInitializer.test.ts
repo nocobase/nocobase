@@ -57,6 +57,7 @@ test.describe('add blocks to the popup', () => {
     await page.getByRole('menuitem', { name: 'Details right' }).hover();
     await page.getByRole('menuitem', { name: 'Associated records' }).last().hover();
     await page.getByRole('menuitem', { name: 'Roles' }).click();
+    await page.mouse.move(300, 0);
     await page.getByLabel('schema-initializer-Grid-details:configureFields-roles').hover();
     await page.getByRole('menuitem', { name: 'Role UID' }).click();
     await page.mouse.move(300, 0);

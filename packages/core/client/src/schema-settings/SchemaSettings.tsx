@@ -365,8 +365,8 @@ export const SchemaSettingsFormItemTemplate = function FormItemTemplate(props) {
                         required: true,
                         default: collection
                           ? `${compile(collection?.title || collection?.name)}_${t(
-                            componentTitle[componentName] || componentName,
-                          )}`
+                              componentTitle[componentName] || componentName,
+                            )}`
                           : t(componentTitle[componentName] || componentName),
                         'x-decorator': 'FormItem',
                         'x-component': 'Input',
@@ -567,7 +567,7 @@ export const SchemaSettingsRemove: FC<SchemaSettingsRemoveProps> = (props) => {
 
 export interface SchemaSettingsSelectItemProps
   extends Omit<SchemaSettingsItemProps, 'onChange' | 'onClick'>,
-  Omit<SelectWithTitleProps, 'title' | 'defaultValue'> {
+    Omit<SelectWithTitleProps, 'title' | 'defaultValue'> {
   value?: SelectWithTitleProps['defaultValue'];
   optionRender?: (option: any, info: { index: number }) => React.ReactNode;
 }
@@ -900,26 +900,32 @@ export const SchemaSettingsModalItem: FC<SchemaSettingsModalItemProps> = (props)
                                   >
                                     <LocationSearchContext.Provider value={locationSearch}>
                                       <BlockRequestContext_deprecated.Provider value={ctx}>
-                                        <DataSourceApplicationProvider dataSourceManager={dm} dataSource={dataSourceKey}>
+                                        <DataSourceApplicationProvider
+                                          dataSourceManager={dm}
+                                          dataSource={dataSourceKey}
+                                        >
                                           <AssociationOrCollectionProvider
                                             allowNull
                                             collection={collection?.name}
                                             association={association}
                                           >
-                                            <SchemaComponentOptions scope={options.scope} components={options.components}>
+                                            <SchemaComponentOptions
+                                              scope={options.scope}
+                                              components={options.components}
+                                            >
                                               <FormLayout
                                                 layout={'vertical'}
                                                 className={css`
-                                                // screen > 576px
-                                                @media (min-width: 576px) {
-                                                  min-width: 520px;
-                                                }
+                                                  // screen > 576px
+                                                  @media (min-width: 576px) {
+                                                    min-width: 520px;
+                                                  }
 
-                                                // screen <= 576px
-                                                @media (max-width: 576px) {
-                                                  min-width: 320px;
-                                                }
-                                              `}
+                                                  // screen <= 576px
+                                                  @media (max-width: 576px) {
+                                                    min-width: 320px;
+                                                  }
+                                                `}
                                               >
                                                 <ApplicationContext.Provider value={app}>
                                                   <APIClientProvider apiClient={apiClient}>
@@ -984,13 +990,13 @@ export const SchemaSettingsDefaultSortingRules = function DefaultSortingRules(pr
   const sort = defaultSort?.map((item: string) => {
     return item.startsWith('-')
       ? {
-        field: item.substring(1),
-        direction: 'desc',
-      }
+          field: item.substring(1),
+          direction: 'desc',
+        }
       : {
-        field: item,
-        direction: 'asc',
-      };
+          field: item,
+          direction: 'asc',
+        };
   });
   const sortFields = useSortFields(props.name || collection?.name);
 
