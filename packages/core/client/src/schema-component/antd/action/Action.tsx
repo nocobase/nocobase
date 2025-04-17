@@ -57,7 +57,7 @@ import { useAllDataBlocks } from '../page/AllDataBlocksProvider';
 
 const useA = () => {
   return {
-    async run() { },
+    async run() {},
   };
 };
 
@@ -139,23 +139,26 @@ export const Action: ComposedAction = withDynamicSchemaProps(
     );
 
     const handleClick = useMemo(() => {
-      return onClick && (async (e, callback) => {
-        await onClick?.(e, callback);
+      return (
+        onClick &&
+        (async (e, callback) => {
+          await onClick?.(e, callback);
 
-        // 执行完 onClick 之后，刷新数据区块
-        const blocksToRefresh = fieldSchema['x-action-settings']?.onSuccess?.blocksToRefresh || []
-        if (blocksToRefresh.length > 0) {
-          getAllDataBlocks().forEach((block) => {
-            if (blocksToRefresh.includes(block.uid)) {
-              try {
-                block.service?.refresh();
-              } catch (error) {
-                console.error('Failed to refresh block:', block.uid, error);
+          // 执行完 onClick 之后，刷新数据区块
+          const blocksToRefresh = fieldSchema['x-action-settings']?.onSuccess?.blocksToRefresh || [];
+          if (blocksToRefresh.length > 0) {
+            getAllDataBlocks().forEach((block) => {
+              if (blocksToRefresh.includes(block.uid)) {
+                try {
+                  block.service?.refresh();
+                } catch (error) {
+                  console.error('Failed to refresh block:', block.uid, error);
+                }
               }
-            }
-          });
-        }
-      });
+            });
+          }
+        })
+      );
     }, [onClick, fieldSchema, getAllDataBlocks]);
 
     return (
