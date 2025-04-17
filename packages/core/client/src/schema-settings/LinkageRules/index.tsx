@@ -20,6 +20,7 @@ import { SubFormProvider } from '../../schema-component/antd/association-field/h
 import { DynamicComponentProps } from '../../schema-component/antd/filter/DynamicComponent';
 import { FilterContext } from '../../schema-component/antd/filter/context';
 import { VariableInput, getShouldChange } from '../VariableInput/VariableInput';
+import { useCurrentFormContext } from '../VariableInput/hooks/useFormVariable';
 import { LinkageRuleActionGroup } from './LinkageRuleActionGroup';
 import { EnableLinkage } from './components/EnableLinkage';
 import { ArrayCollapse } from './components/LinkageHeader';
@@ -105,6 +106,7 @@ export const FormLinkageRules = withDynamicSchemaProps(
     const { name } = useCollection_deprecated();
     const { getAllCollectionsInheritChain } = useCollectionManager_deprecated();
     const parentRecordData = useCollectionParentRecordData();
+    const { shouldDisplayCurrentForm } = useCurrentFormContext();
     const variableKey = getActiveContextName(localVariables);
     const components = useMemo(() => ({ ArrayCollapse }), []);
     const returnTargetScope =
@@ -122,7 +124,7 @@ export const FormLinkageRules = withDynamicSchemaProps(
         properties: {
           rules: {
             type: 'array',
-            default: transformDefaultValue(defaultValues, variableKey),
+            default: transformDefaultValue(defaultValues, shouldDisplayCurrentForm ? variableKey : '$nRecord'),
             'x-component': 'ArrayCollapse',
             'x-decorator': 'FormItem',
             'x-component-props': {
