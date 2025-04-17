@@ -301,7 +301,7 @@ DatePicker.FilterWithPicker = function FilterWithPicker(props: any) {
         data-testid="select-picker"
         style={{ width: '100px' }}
         popupMatchSelectWidth={false}
-        value={targetPicker}
+        value={stateProps.picker}
         options={compile([
           {
             label: '{{t("Date")}}',
