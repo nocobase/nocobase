@@ -56,6 +56,7 @@ function useFieldComponentName(): string {
   const map = {
     // AssociationField 的 mode 默认值是 Select
     AssociationField: 'Select',
+    'DatePicker.FilterWithPicker': 'DatePicker',
   };
   const fieldComponentName =
     fieldSchema?.['x-component-props']?.['mode'] ||
