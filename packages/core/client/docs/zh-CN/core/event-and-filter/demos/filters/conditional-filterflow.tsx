@@ -1,6 +1,6 @@
 import { Button, Card, Input, Radio, Space, Typography } from 'antd';
-import React, { useState } from 'react';
-import { FilterFlowManager } from '@nocobase/client';
+import React, { useMemo, useState } from 'react';
+import { FilterFlowManager, useApplyFilters } from '@nocobase/client';
 
 // 创建FilterFlowManager实例
 const filterFlowManager = new FilterFlowManager();
@@ -68,50 +68,28 @@ filterFlowManager.addFlow({
       filterName: 'uppercase',
       title: '转换为大写',
       // 条件：仅当输入文本长度大于5时应用
-      condition: '{{ ctx.payload.inputText.length > 5 }}',
+      condition: '{{ input.length > 5 }}',
     },
     {
       key: 'lowercase-step',
       filterName: 'lowercase',
       title: '转换为小写',
       // 条件：仅当输入文本包含大写字母时应用
-      condition: '{{ /[A-Z]/.test(ctx.payload.inputText) }}',
+      condition: '{{ /[A-Z]/.test(input) }}',
     },
     {
       key: 'reverse-step',
       filterName: 'reverse',
       title: '文本反转',
       // 条件：仅当输入文本包含数字时应用
-      condition: '{{ /[0-9]/.test(ctx.payload.inputText) }}',
+      condition: '{{ /[0-9]/.test(input) }}',
     },
   ],
 });
 
 const ConditionalFilterFlow = () => {
   const [inputText, setInputText] = useState('Hello, Conditional FilterFlow!');
-  const [outputText, setOutputText] = useState('');
-  const [isProcessing, setIsProcessing] = useState(false);
-
-  const handleApplyFilter = async () => {
-    setIsProcessing(true);
-    try {
-      // 创建FilterFlow上下文
-      const context = {
-        payload: {
-          inputText,
-        },
-      };
-
-      // 应用过滤器流
-      const result = await filterFlowManager.applyFilters('conditional-text-transform', inputText, context);
-
-      setOutputText(result);
-    } catch (error) {
-      console.error('FilterFlow应用失败:', error);
-    } finally {
-      setIsProcessing(false);
-    }
-  };
+  const outputText = useApplyFilters(filterFlowManager, 'conditional-text-transform', inputText);
 
   return (
     <div style={{ padding: 24, background: '#f5f5f5', borderRadius: 8 }}>
@@ -149,10 +127,6 @@ const ConditionalFilterFlow = () => {
           </div>
         </Space>
       </Card>
-
-      <Button type="primary" onClick={handleApplyFilter} loading={isProcessing}>
-        应用 FilterFlow
-      </Button>
     </div>
   );
 };

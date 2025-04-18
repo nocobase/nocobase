@@ -378,7 +378,7 @@ export class FilterFlowManager {
 
     for (const step of steps) {
       // 1. 检查条件
-      if (step.condition && !this.checkCondition(step.condition, context)) {
+      if (step.condition && !this.checkCondition(step.condition, currentValue, context)) {
         continue; // 条件不满足，跳过此步骤
       }
 
@@ -415,12 +415,12 @@ export class FilterFlowManager {
    * @param context 上下文对象
    * @returns boolean
    */
-  private checkCondition(condition?: string, context?: FilterHandlerContext): boolean {
+  private checkCondition(condition?: string, input?: any, context?: FilterHandlerContext): boolean {
     if (!condition) {
       return true; // 没有条件，默认通过
     }
     try {
-      const result = Schema.compile(condition, { ctx: context });
+      const result = Schema.compile(condition, { ctx: context, input });
       return !!result;
     } catch (error) {
       console.error(`Error evaluating condition "${condition}":`, error);

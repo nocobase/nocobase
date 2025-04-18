@@ -1,6 +1,6 @@
 import { Button, Card, Form, Input, Select, Space, Typography, Modal, Switch, InputNumber } from 'antd';
-import React, { useState } from 'react';
-import { FilterFlowManager } from '@nocobase/client';
+import React, { useMemo, useState } from 'react';
+import { FilterFlowManager, useApplyFilters } from '@nocobase/client';
 import { configureAction } from '../actions/open-configure-dialog';
 
 // 创建FilterFlowManager实例
@@ -137,7 +137,6 @@ filterFlowManager.addFlow({
 
 const ConfigurableFilter = () => {
   const [inputText, setInputText] = useState('Hello configurable filter demo');
-  const [outputText, setOutputText] = useState('');
   const [stepParams, setStepParams] = useState({
     'replace-step': {
       search: 'Hello',
@@ -149,7 +148,17 @@ const ConfigurableFilter = () => {
       suffix: '...',
     },
   });
-  const [isProcessing, setIsProcessing] = useState(false);
+
+  const context = useMemo(
+    () => ({
+      meta: {
+        params: stepParams,
+      },
+    }),
+    [inputText, stepParams],
+  );
+
+  const outputText = useApplyFilters(filterFlowManager, 'configurable-text-transform', inputText, context);
 
   // 打开配置Modal
   const openConfigModal = (stepKey) => {
@@ -168,31 +177,6 @@ const ConfigurableFilter = () => {
       },
     };
     configureAction.handler({}, actionContext);
-  };
-
-  // 应用FilterFlow
-  const handleApplyFilter = async () => {
-    setIsProcessing(true);
-    try {
-      // 创建FilterFlow上下文
-      const context = {
-        payload: {
-          inputText,
-        },
-        meta: {
-          params: stepParams,
-        },
-      };
-
-      // 应用过滤器流
-      const result = await filterFlowManager.applyFilters('configurable-text-transform', inputText, context);
-
-      setOutputText(result);
-    } catch (error) {
-      console.error('过滤器应用失败:', error);
-    } finally {
-      setIsProcessing(false);
-    }
   };
 
   return (
@@ -227,14 +211,10 @@ const ConfigurableFilter = () => {
 
           <div>
             <Typography.Text strong>FilterFlow 结果:</Typography.Text>
-            <div>{outputText || '尚未处理'}</div>
+            <div>{outputText}</div>
           </div>
         </Space>
       </Card>
-
-      <Button type="primary" onClick={handleApplyFilter} loading={isProcessing}>
-        应用 FilterFlow
-      </Button>
     </div>
   );
 };

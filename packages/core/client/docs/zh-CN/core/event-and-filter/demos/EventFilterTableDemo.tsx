@@ -11,6 +11,7 @@ import {
   IFilter,
   useTabulatorBuiltinStyles,
   useTabulatorStyles,
+  useApplyFilters,
 } from '@nocobase/client';
 import { configureAction } from './actions/open-configure-dialog';
 import { useCompile } from '@nocobase/client';
@@ -345,7 +346,6 @@ filterFlowManager.addFlow({
 const EventFilterTableDemo: React.FC = (props) => {
   useTabulatorBuiltinStyles();
   const [tableData, setTableData] = useState([]);
-  const [tableColumns, setTableColumns] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const tableContainerRef = useRef(null); // Ref for the div container
   const tabulatorInstanceRef = useRef<Tabulator | null>(null); // Ref for the Tabulator instance
@@ -403,23 +403,20 @@ const EventFilterTableDemo: React.FC = (props) => {
     [],
   );
 
-  // 应用 FilterFlow 获取列配置
-  const applyColumnFilter = useCallback(async () => {
-    const context: FilterHandlerContext = {
+  const filterContext: FilterHandlerContext = useMemo(
+    () => ({
       payload: {
         hooks: hooks,
       },
-    };
-    try {
-      const result = await filterFlowManager.applyFilters('tabulator:columns', {}, context);
-      console.log('Applying filter flow result:', result);
-      setTableColumns(result.columns);
-      setIsLoading(false);
-    } catch (error) {
-      console.error('Error applying filter flow:', error);
-      hooks.message.error('应用列配置失败');
-    }
-  }, [hooks]);
+      meta: {
+        flowKey: 'tabulator:columns',
+        params: filterFlowParams,
+      },
+    }),
+    [hooks, filterFlowParams],
+  );
+
+  const tableColumns = useApplyFilters(filterFlowManager, 'tabulator:columns', {}, filterContext);
 
   // 初始化和刷新数据
   const refreshData = useCallback(async () => {
@@ -474,7 +471,6 @@ const EventFilterTableDemo: React.FC = (props) => {
             ...prev,
             [stepKey]: value,
           }));
-          applyColumnFilter();
         },
       },
     };
@@ -564,7 +560,6 @@ const EventFilterTableDemo: React.FC = (props) => {
   // 组件加载时应用列配置和加载数据
   useEffect(() => {
     setIsLoading(true);
-    applyColumnFilter();
     refreshData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // 空依赖数组确保只在挂载时执行一次

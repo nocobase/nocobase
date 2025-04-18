@@ -1,6 +1,6 @@
 import { Button, Card, Input, Space, Typography } from 'antd';
-import React, { useState } from 'react';
-import { FilterFlowManager } from '@nocobase/client';
+import React, { useMemo, useState } from 'react';
+import { FilterFlowManager, useApplyFilters } from '@nocobase/client';
 
 // 创建FilterFlowManager实例
 const filterFlowManager = new FilterFlowManager();
@@ -117,36 +117,23 @@ filterFlowManager.addFlow({
 
 const MultiStepFilterFlow = () => {
   const [inputText, setInputText] = useState('  hello, multi-step filterflow!  ');
-  const [outputText, setOutputText] = useState('');
-  const [isProcessing, setIsProcessing] = useState(false);
-
-  const handleApplyFilter = async () => {
-    setIsProcessing(true);
-    try {
-      // 创建过滤上下文
-      const context = {
-        payload: {
-          inputText,
-        },
-        meta: {
-          params: {
-            'add-prefix-step': {
-              prefix: '[PREFIX] ',
-            },
-            'add-suffix-step': {
-              suffix: ' [SUFFIX]',
-            },
+  const context = useMemo(
+    () => ({
+      meta: {
+        params: {
+          'add-prefix-step': {
+            prefix: '[PREFIX] ',
+          },
+          'add-suffix-step': {
+            suffix: ' [SUFFIX]',
           },
         },
-      };
-      const result = await filterFlowManager.applyFilters('multi-step-text-transform', inputText, context);
-      setOutputText(result);
-    } catch (error) {
-      console.error('FilterFlow应用失败:', error);
-    } finally {
-      setIsProcessing(false);
-    }
-  };
+      },
+    }),
+    [],
+  );
+
+  const outputText = useApplyFilters(filterFlowManager, 'multi-step-text-transform', inputText, context);
 
   return (
     <div style={{ padding: 24, background: '#f5f5f5', borderRadius: 8 }}>
@@ -163,14 +150,10 @@ const MultiStepFilterFlow = () => {
 
           <div>
             <Typography.Text strong>最终结果:</Typography.Text>
-            <div>{outputText || '尚未处理'}</div>
+            <div>{outputText}</div>
           </div>
         </Space>
       </Card>
-
-      <Button type="primary" onClick={handleApplyFilter} loading={isProcessing}>
-        应用 FilterFlow
-      </Button>
     </div>
   );
 };

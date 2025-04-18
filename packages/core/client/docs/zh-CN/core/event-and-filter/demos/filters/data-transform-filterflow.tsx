@@ -1,6 +1,6 @@
 import { Button, Card, Table, Space, Typography } from 'antd';
-import React, { useState } from 'react';
-import { FilterFlowManager } from '@nocobase/client';
+import React, { useMemo, useState } from 'react';
+import { FilterFlowManager, useApplyFilters } from '@nocobase/client';
 
 // 创建FilterFlowManager实例
 const filterFlowManager = new FilterFlowManager();
@@ -192,8 +192,31 @@ const sampleData = [
 
 const DataTransformFilterFlow = () => {
   const [inputData] = useState(sampleData);
-  const [outputData, setOutputData] = useState([]);
-  const [isProcessing, setIsProcessing] = useState(false);
+
+  const context = useMemo(
+    () => ({
+      payload: {},
+      meta: {
+        params: {
+          'filter-step': {
+            field: 'age',
+            operator: 'gt',
+            value: '25',
+          },
+          'sort-step': {
+            field: 'age',
+            order: 'desc',
+          },
+          'map-step': {
+            template: '{{ item.name }} ({{ item.age }}岁)',
+          },
+        },
+      },
+    }),
+    [],
+  );
+
+  const outputData = useApplyFilters(filterFlowManager, 'data-transform-flow', inputData, context);
 
   const inputColumns = [
     { title: 'ID', dataIndex: 'id', key: 'id' },
@@ -214,41 +237,6 @@ const DataTransformFilterFlow = () => {
     { title: '城市', dataIndex: 'city', key: 'city' },
   ];
 
-  const handleApplyFilter = async () => {
-    setIsProcessing(true);
-    try {
-      // 创建FilterFlow上下文
-      const context = {
-        payload: {},
-        meta: {
-          params: {
-            'filter-step': {
-              field: 'age',
-              operator: 'gt',
-              value: '25',
-            },
-            'sort-step': {
-              field: 'age',
-              order: 'desc',
-            },
-            'map-step': {
-              template: '{{ item.name }} ({{ item.age }}岁)',
-            },
-          },
-        },
-      };
-
-      // 应用FilterFlow
-      const result = await filterFlowManager.applyFilters('data-transform-flow', inputData, context);
-
-      setOutputData(result);
-    } catch (error) {
-      console.error('FilterFlow应用失败:', error);
-    } finally {
-      setIsProcessing(false);
-    }
-  };
-
   return (
     <div style={{ padding: 24, background: '#f5f5f5', borderRadius: 8 }}>
       <Typography.Paragraph>
@@ -263,10 +251,6 @@ const DataTransformFilterFlow = () => {
       <Card title="输入数据" style={{ marginBottom: 16 }}>
         <Table dataSource={inputData} columns={inputColumns} rowKey="id" pagination={false} size="small" />
       </Card>
-
-      <Button type="primary" onClick={handleApplyFilter} loading={isProcessing} style={{ marginBottom: 16 }}>
-        应用 FilterFlow
-      </Button>
 
       {outputData.length > 0 && (
         <Card title="过滤和转换后的数据" style={{ marginBottom: 16 }}>
