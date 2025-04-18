@@ -24,6 +24,7 @@ import { useCurrentFormContext } from '../VariableInput/hooks/useFormVariable';
 import { LinkageRuleActionGroup } from './LinkageRuleActionGroup';
 import { EnableLinkage } from './components/EnableLinkage';
 import { ArrayCollapse } from './components/LinkageHeader';
+import { useFlag } from '../../flag-provider';
 
 export interface Props {
   dynamicComponent: any;
@@ -65,11 +66,12 @@ function transformConditionData(condition: Condition, variableKey: '$nForm' | '$
     rightVar: value,
   };
 }
-function getActiveContextName(contextList: { name: string; ctx: any }[]): string | null {
-  const priority = ['$nForm', '$nRecord'];
-  for (const name of priority) {
-    const item = contextList.find((ctx) => ctx.name === name && ctx.ctx);
-    if (item) return name;
+function getActiveContextName(underNester, shouldDisplayCurrentForm): string | null {
+  if (underNester) {
+    return '$iteration';
+  }
+  if (shouldDisplayCurrentForm) {
+    return '$nForm';
   }
   return '$nRecord';
 }
@@ -84,7 +86,6 @@ const transformDefaultValue = (values, variableKey) => {
         conditionType: variableKey ? 'advanced' : 'basic',
       };
     }
-    return v;
   });
 };
 
@@ -97,15 +98,16 @@ export const FormLinkageRules = withDynamicSchemaProps(
     const { getAllCollectionsInheritChain } = useCollectionManager_deprecated();
     const parentRecordData = useCollectionParentRecordData();
     const { shouldDisplayCurrentForm } = useCurrentFormContext();
-    const variableKey = getActiveContextName(localVariables);
     const components = useMemo(() => ({ ArrayCollapse }), []);
+    const { isInSubTable, isInSubForm } = useFlag();
+    const variableKey = getActiveContextName(isInSubTable || isInSubForm, shouldDisplayCurrentForm);
     const schema = useMemo(
       () => ({
         type: 'object',
         properties: {
           rules: {
             type: 'array',
-            default: transformDefaultValue(defaultValues, shouldDisplayCurrentForm ? variableKey : '$nRecord'),
+            default: transformDefaultValue(defaultValues, variableKey),
             'x-component': 'ArrayCollapse',
             'x-decorator': 'FormItem',
             'x-component-props': {
