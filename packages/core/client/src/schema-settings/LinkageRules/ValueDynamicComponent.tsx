@@ -97,6 +97,9 @@ export const ValueDynamicComponent = (props: ValueDynamicComponentProps) => {
           .ant-input-affix-wrapper {
             border-radius: 0px;
           }
+          .ant-checkbox-wrapper {
+            margin-left: 50%;
+          }
         `}
       >
         {React.createElement(DynamicComponent, {
