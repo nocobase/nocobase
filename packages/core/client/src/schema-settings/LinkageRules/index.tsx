@@ -86,6 +86,7 @@ const transformDefaultValue = (values, variableKey) => {
         conditionType: variableKey ? 'advanced' : 'basic',
       };
     }
+    return v;
   });
 };
 
