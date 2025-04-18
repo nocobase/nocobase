@@ -27,7 +27,8 @@ test.describe('options of  Select field in linkage rule', () => {
     await page.getByRole('switch', { name: 'On Off' }).click();
     await page.getByRole('button', { name: 'OK' }).click();
     await page.reload();
-    await expect(page.getByRole('option', { name: 'option2' })).toBeVisible();
+    await page.getByLabel('block-item-CollectionField-').click();
+    await expect(page.getByRole('option', { name: 'option2' }).last()).toBeVisible();
     await expect(page.getByRole('option', { name: 'option3' })).toBeVisible();
   });
 });

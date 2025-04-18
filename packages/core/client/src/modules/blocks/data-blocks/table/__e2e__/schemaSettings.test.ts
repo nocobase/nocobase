@@ -316,7 +316,8 @@ test.describe('actions schema settings', () => {
 
       // 添加一个条件：ID 等于 1
       await page.getByText('Add condition', { exact: true }).click();
-      await page.getByTestId('select-filter-field').click();
+      await page.getByTestId('left-filter-field').getByLabel('variable-button').click();
+      await page.getByText('Current record').last().click();
       await page.getByRole('menuitemcheckbox', { name: 'ID', exact: true }).click();
       await page.getByRole('spinbutton').click();
       await page.getByRole('spinbutton').fill('1');
@@ -340,7 +341,8 @@ test.describe('actions schema settings', () => {
 
       // 添加一个条件：ID 等于 1
       await page.getByRole('tabpanel').getByText('Add condition', { exact: true }).last().click();
-      await page.getByRole('button', { name: 'Select field' }).click();
+      await page.getByTestId('left-filter-field').getByLabel('variable-button').last().click();
+      await page.getByText('Current record').last().click();
       await page.getByRole('menuitemcheckbox', { name: 'ID', exact: true }).click();
       await page.getByRole('spinbutton').click();
       await page.getByRole('spinbutton').fill('1');
@@ -902,7 +904,6 @@ test.describe('actions schema settings', () => {
       await page.getByRole('menuitem', { name: 'Submit' }).click();
       await page.mouse.move(300, 0);
       await page.getByRole('button', { name: 'Submit' }).click();
-
       await page.getByLabel('designer-schema-settings-CardItem-TableBlockDesigner-treeCollection').hover();
       await page.getByRole('menuitem', { name: 'Tree table' }).click();
 
@@ -928,6 +929,7 @@ test.describe('actions schema settings', () => {
       await page.getByLabel('schema-initializer-Grid-form:').hover();
       await page.getByRole('menuitem', { name: 'Parent', exact: true }).click();
       await page.mouse.move(300, 0);
+      await page.reload();
       await expect(
         page
           .getByLabel('block-item-CollectionField-')

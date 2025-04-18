@@ -27,8 +27,8 @@
     "mkdirp": "^1.0.4",
     "object-path": "^0.11.8",
     "react": "^18.2.0",
-    "semver": "^7.5.4",
-    "tar": "^6.1.13"
+    "semver": "^7.7.1",
+    "tar": "^7.4.3"
   },
   "peerDependencies": {
     "@nocobase/actions": "1.x",
