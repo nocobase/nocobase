@@ -70,7 +70,7 @@ function Button() {
 }
 
 export const WorkbenchAction = withDynamicSchemaProps((props) => {
-  const { className, ...others } = props;
+  const { className, targetComponent, iconColor, ...others } = props;
   const { styles, cx } = useStyles() as any;
   const fieldSchema = useFieldSchema();
   const Component = useComponent(props?.targetComponent) || Action;

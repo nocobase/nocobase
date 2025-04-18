@@ -127,6 +127,22 @@ export const deprecatedBulkEditActionSettings = new SchemaSettings({
       Component: UpdateMode,
     },
     {
+      name: 'linkageRules',
+      Component: SchemaSettingsLinkageRules,
+      useComponentProps() {
+        const { association } = useDataBlockProps() || {};
+        const { name } = useCollection_deprecated();
+        const { getCollectionField } = useCollectionManager_deprecated();
+        const associationField = getCollectionField(association);
+        const { linkageRulesProps } = useSchemaToolbar();
+
+        return {
+          ...linkageRulesProps,
+          collectionName: associationField?.collectionName || name,
+        };
+      },
+    },
+    {
       name: 'remove',
       sort: 100,
       Component: RemoveButton as any,

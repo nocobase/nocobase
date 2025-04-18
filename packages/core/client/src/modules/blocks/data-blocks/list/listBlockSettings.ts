@@ -22,6 +22,8 @@ import { SchemaSettingsTemplate } from '../../../../schema-settings/SchemaSettin
 import { useBlockTemplateContext } from '../../../../schema-templates/BlockTemplateProvider';
 import { setDataLoadingModeSettingsItem } from '../details-multi/setDataLoadingModeSettingsItem';
 import { SchemaSettingsLayoutItem } from '../../../../schema-settings/SchemaSettingsLayoutItem';
+import { LinkageRuleCategory } from '../../../../schema-settings/LinkageRules/type';
+import { SchemaSettingsLinkageRules } from '../../../../schema-settings';
 
 export const listBlockSettings = new SchemaSettings({
   name: 'blockSettings:list',
@@ -33,6 +35,19 @@ export const listBlockSettings = new SchemaSettings({
     {
       name: 'setTheBlockHeight',
       Component: SchemaSettingsBlockHeightItem,
+    },
+    {
+      name: 'blockLinkageRules',
+      Component: SchemaSettingsLinkageRules,
+      useComponentProps() {
+        const { name } = useCollection_deprecated();
+        const { t } = useTranslation();
+        return {
+          collectionName: name,
+          title: t('Block Linkage rules'),
+          category: LinkageRuleCategory.block,
+        };
+      },
     },
     {
       name: 'SetTheDataScope',

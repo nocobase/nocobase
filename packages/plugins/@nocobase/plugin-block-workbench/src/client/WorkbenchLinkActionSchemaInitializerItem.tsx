@@ -46,6 +46,16 @@ export const workbenchActionSettingsLink = new SchemaSettings({
       Component: SchemaSettingsActionLinkItem,
     },
     {
+      name: 'linkageRules',
+      Component: SchemaSettingsLinkageRules,
+      useComponentProps() {
+        const { linkageRulesProps } = useSchemaToolbar();
+        return {
+          ...linkageRulesProps,
+        };
+      },
+    },
+    {
       ...SchemaSettingAccessControl,
       useVisible() {
         return true;

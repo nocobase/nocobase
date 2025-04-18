@@ -6,10 +6,9 @@
  * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
-
+import React, { useMemo } from 'react';
 import { useFieldSchema } from '@formily/react';
 import cls from 'classnames';
-import React, { useMemo } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 import { useSchemaToolbarRender } from '../../../application';
 import { withDynamicSchemaProps } from '../../../hoc/withDynamicSchemaProps';
@@ -18,6 +17,8 @@ import { useProps } from '../../hooks';
 import { ErrorFallback } from '../error-fallback';
 import { useStyles } from './BlockItem.style';
 import { useGetAriaLabelOfBlockItem } from './hooks/useGetAriaLabelOfBlockItem';
+import { useCollection } from '../../../data-source';
+import { BlockLinkageRuleProvider } from '../../../modules/blocks/BlockLinkageRuleProvider';
 
 export interface BlockItemProps {
   name?: string;
@@ -35,8 +36,9 @@ export const BlockItem: React.FC<BlockItemProps> = withDynamicSchemaProps(
     const { render } = useSchemaToolbarRender(fieldSchema);
     const { getAriaLabel } = useGetAriaLabelOfBlockItem(props.name);
     const label = useMemo(() => getAriaLabel(), [getAriaLabel]);
-
-    return (
+    const collection = useCollection();
+    const markdownField = fieldSchema['x-decorator'] === 'FormItem' && fieldSchema['x-block-linkage-rules'];
+    const content = (
       <SortableItem
         role="button"
         aria-label={label}
@@ -49,6 +51,8 @@ export const BlockItem: React.FC<BlockItemProps> = withDynamicSchemaProps(
         </ErrorBoundary>
       </SortableItem>
     );
+
+    return collection && !markdownField ? content : <BlockLinkageRuleProvider>{content}</BlockLinkageRuleProvider>;
   },
   { displayName: 'BlockItem' },
 );

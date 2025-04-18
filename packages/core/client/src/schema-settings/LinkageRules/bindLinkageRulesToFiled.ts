@@ -122,7 +122,7 @@ function getFieldValuesInCondition({ linkageRules, formValues }) {
   });
 }
 
-function getVariableValuesInCondition({
+export function getVariableValuesInCondition({
   linkageRules,
   localVariables,
 }: {
@@ -166,7 +166,7 @@ function getVariableValuesInCondition({
   });
 }
 
-function getVariableValuesInExpression({ action, localVariables }) {
+export function getVariableValuesInExpression({ action, localVariables }) {
   const actionValue = action.value;
   const mode = actionValue?.mode;
   const value = actionValue?.value || actionValue?.result;

@@ -34,20 +34,6 @@ export interface SchemaSettingsChildrenProps {
   children: SchemaSettingsItemType[];
 }
 
-const typeComponentMap = {
-  item: SchemaSettingsItem,
-  itemGroup: SchemaSettingsItemGroup,
-  subMenu: SchemaSettingsSubMenu,
-  divider: SchemaSettingsDivider,
-  remove: SchemaSettingsRemove,
-  select: SchemaSettingsSelectItem,
-  cascader: SchemaSettingsCascaderItem,
-  switch: SchemaSettingsSwitchItem,
-  popup: SchemaSettingsPopupItem,
-  actionModal: SchemaSettingsActionModalItem,
-  modal: SchemaSettingsModalItem,
-};
-
 const SchemaSettingsChildErrorFallback: FC<
   FallbackProps & {
     title: string;
@@ -113,6 +99,19 @@ export const SchemaSettingsChild: FC<SchemaSettingsItemType> = (props) => {
     hideIfNoChildren,
     componentProps,
   } = props as any;
+  const typeComponentMap = {
+    item: SchemaSettingsItem,
+    itemGroup: SchemaSettingsItemGroup,
+    subMenu: SchemaSettingsSubMenu,
+    divider: SchemaSettingsDivider,
+    remove: SchemaSettingsRemove,
+    select: SchemaSettingsSelectItem,
+    cascader: SchemaSettingsCascaderItem,
+    switch: SchemaSettingsSwitchItem,
+    popup: SchemaSettingsPopupItem,
+    actionModal: SchemaSettingsActionModalItem,
+    modal: SchemaSettingsModalItem,
+  };
   const useChildrenRes = useChildren();
   const useComponentPropsRes = useComponentProps();
   const findComponent = useFindComponent();

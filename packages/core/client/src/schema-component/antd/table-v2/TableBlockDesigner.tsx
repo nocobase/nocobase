@@ -27,6 +27,7 @@ import {
   SchemaSettingsRemove,
   SchemaSettingsSelectItem,
   SchemaSettingsSwitchItem,
+  SchemaSettingsLinkageRules,
 } from '../../../schema-settings';
 import { SchemaSettingsBlockHeightItem } from '../../../schema-settings/SchemaSettingsBlockHeightItem';
 import { SchemaSettingsBlockTitleItem } from '../../../schema-settings/SchemaSettingsBlockTitleItem';
@@ -127,10 +128,12 @@ export const TableBlockDesigner = () => {
     [dn, field.decoratorProps, fieldSchema, service],
   );
   const api = useAPIClient();
+
   return (
     <GeneralSchemaDesigner template={template} title={title || name}>
       <SchemaSettingsBlockTitleItem />
       <SchemaSettingsBlockHeightItem />
+      <SchemaSettingsLinkageRules category="block" title={t('Block Linkage rules')} />
       {collection?.tree && collectionField?.collectionName === collectionField?.target && (
         <SchemaSettingsSwitchItem
           title={t('Tree table')}

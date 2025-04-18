@@ -14,7 +14,10 @@ import {
   SchemaSettingsSwitchItem,
   useDesignable,
   useToken,
+  SchemaSettingsLinkageRules,
+  LinkageRuleCategory,
 } from '@nocobase/client';
+import { useTranslation } from 'react-i18next';
 import { useChartsTranslation } from '../locale';
 import { useField, useFieldSchema } from '@formily/react';
 
@@ -24,6 +27,18 @@ export const chartBlockSettings = new SchemaSettings({
     {
       name: 'title',
       Component: SchemaSettingsBlockTitleItem,
+    },
+    {
+      name: 'blockLinkageRules',
+      Component: SchemaSettingsLinkageRules,
+      useComponentProps() {
+        const { t } = useTranslation();
+        return {
+          collectionName: name,
+          title: t('Block Linkage rules'),
+          category: LinkageRuleCategory.block,
+        };
+      },
     },
     {
       name: 'background',

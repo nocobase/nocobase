@@ -34,6 +34,10 @@ describe('Table.settings', () => {
           type: 'modal',
         },
         {
+          title: 'Block linkage rules',
+          type: 'modal',
+        },
+        {
           title: 'Enable drag and drop sorting',
           type: 'switch',
           async afterFirstClick() {

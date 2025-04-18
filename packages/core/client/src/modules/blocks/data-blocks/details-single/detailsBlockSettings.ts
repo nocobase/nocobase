@@ -8,14 +8,17 @@
  */
 
 import { useFieldSchema } from '@formily/react';
+import { useTranslation } from 'react-i18next';
 import { SchemaSettings } from '../../../../application/schema-settings/SchemaSettings';
 import { SchemaSettingsItemType } from '../../../../application/schema-settings/types';
 import { useCollection } from '../../../../data-source/collection/CollectionProvider';
+import { useCollection_deprecated } from '../../../../collection-manager';
 import { SchemaSettingsFormItemTemplate, SchemaSettingsLinkageRules } from '../../../../schema-settings';
 import { SchemaSettingsBlockHeightItem } from '../../../../schema-settings/SchemaSettingsBlockHeightItem';
 import { SchemaSettingsBlockTitleItem } from '../../../../schema-settings/SchemaSettingsBlockTitleItem';
 import { useBlockTemplateContext } from '../../../../schema-templates/BlockTemplateProvider';
 import { SchemaSettingsLayoutItem } from '../../../../schema-settings/SchemaSettingsLayoutItem';
+import { LinkageRuleCategory } from '../../../../schema-settings/LinkageRules/type';
 
 const commonItems: SchemaSettingsItemType[] = [
   {
@@ -27,13 +30,28 @@ const commonItems: SchemaSettingsItemType[] = [
     Component: SchemaSettingsBlockHeightItem,
   },
   {
-    name: 'linkageRules',
+    name: 'fieldLinkageRules',
     Component: SchemaSettingsLinkageRules,
     useComponentProps() {
       const { name } = useCollection();
+      const { t } = useTranslation();
       return {
         collectionName: name,
         readPretty: true,
+        title: t('Field Linkage rules'),
+      };
+    },
+  },
+  {
+    name: 'blockLinkageRules',
+    Component: SchemaSettingsLinkageRules,
+    useComponentProps() {
+      const { name } = useCollection_deprecated();
+      const { t } = useTranslation();
+      return {
+        collectionName: name,
+        title: t('Block Linkage rules'),
+        category: LinkageRuleCategory.block,
       };
     },
   },

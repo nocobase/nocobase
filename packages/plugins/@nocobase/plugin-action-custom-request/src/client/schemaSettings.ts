@@ -43,6 +43,9 @@ export const customizeCustomRequestActionSettings = new SchemaSettings({
       Component: SchemaSettingsLinkageRules,
       useComponentProps() {
         const { linkageRulesProps } = useSchemaToolbar();
+        const { association } = useDataBlockProps() || {};
+        const { getCollectionField } = useCollectionManager_deprecated();
+        const associationField = getCollectionField(association);
         return {
           ...linkageRulesProps,
         };

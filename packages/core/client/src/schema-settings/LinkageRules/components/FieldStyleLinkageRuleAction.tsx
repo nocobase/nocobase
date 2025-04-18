@@ -10,15 +10,14 @@
 import { CloseCircleOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
 import { observer } from '@formily/react';
-import { uid } from '@formily/shared';
 import { Select, Space } from 'antd';
 import React, { useCallback, useContext, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useCompile } from '../..';
-import { ValueDynamicComponent } from './ValueDynamicComponent';
-import { RemoveActionContext } from './context';
-import { ActionType } from './type';
-import { useValues } from './useValues';
+import { useCompile } from '../../..';
+import { ValueDynamicComponent } from '../ValueDynamicComponent';
+import { RemoveActionContext } from '../context';
+import { ActionType } from '../type';
+import { useValues } from '../useValues';
 
 const colorSchema = {
   type: 'string',
