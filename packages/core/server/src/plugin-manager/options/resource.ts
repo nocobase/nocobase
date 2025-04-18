@@ -171,5 +171,11 @@ export default {
       // ctx.body = await pm.get(filterByTk).toJSON({ locale });
       await next();
     },
+    async useMethod(ctx, next) {
+      ctx.body = {
+        method: process.env.NOCOBASE_PKG_USERNAME && process.env.NOCOBASE_PKG_PASSWORD ? 'account' : '',
+      };
+      await next();
+    },
   },
 };

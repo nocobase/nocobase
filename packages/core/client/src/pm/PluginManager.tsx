@@ -25,6 +25,7 @@ import { PluginCard } from './PluginCard';
 import { PluginAddModal } from './PluginForm/modal/PluginAddModal';
 import { useStyles } from './style';
 import { IPluginData } from './types';
+import { PluginManagerAccountAlert } from './PluginManagerAccountAlert';
 
 export interface TData {
   data: IPluginData[];
@@ -269,8 +270,8 @@ const LocalPlugins = () => {
           // if (isRefresh) refresh();
         }}
       />
-
       <div style={{ width: '100%' }}>
+        <PluginManagerAccountAlert />
         <div
           style={{ marginBottom: theme.marginLG }}
           className={css`
