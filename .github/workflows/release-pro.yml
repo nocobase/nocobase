@@ -13,8 +13,7 @@ jobs:
     secrets: inherit
   push-docker:
     runs-on: ubuntu-latest
-    needs:
-      - get-plugins
+    needs: get-plugins
     services:
       verdaccio:
         image: verdaccio/verdaccio:5
