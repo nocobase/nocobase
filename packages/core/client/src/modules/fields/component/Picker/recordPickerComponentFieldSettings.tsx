@@ -17,7 +17,7 @@ import { useDesignable, useFieldModeOptions, useIsAddNewForm } from '../../../..
 import { isSubMode } from '../../../../schema-component/antd/association-field/util';
 import { allowAddNew, useIsFieldReadPretty } from '../../../../schema-component/antd/form-item/FormItem.Settings';
 import { useColumnSchema } from '../../../../schema-component/antd/table-v2/Table.Column.Decorator';
-import { titleField } from '../Select/selectComponentFieldSettings';
+import { getAllowMultiple, titleField } from '../Select/selectComponentFieldSettings';
 
 const allowMultiple: any = {
   name: 'allowMultiple',
@@ -145,6 +145,55 @@ export const recordPickerComponentFieldSettings = new SchemaSettings({
     },
     allowAddNew,
     allowMultiple,
+    titleField,
+  ],
+});
+
+// For filter form fields
+export const filterRecordPickerComponentFieldSettings = new SchemaSettings({
+  name: 'fieldSettings:component:FilterPicker',
+  items: [
+    fieldComponent,
+    {
+      name: 'popupSize',
+      type: 'select',
+      useVisible() {
+        const isFieldReadPretty = useIsFieldReadPretty();
+        return !isFieldReadPretty;
+      },
+      useComponentProps() {
+        const { t } = useTranslation();
+        const field = useField<Field>();
+        const { fieldSchema: tableColumnSchema } = useColumnSchema();
+        const schema = useFieldSchema();
+        const fieldSchema = tableColumnSchema || schema;
+        const { dn } = useDesignable();
+        return {
+          title: t('Popup size'),
+          options: [
+            { label: t('Small'), value: 'small' },
+            { label: t('Middle'), value: 'middle' },
+            { label: t('Large'), value: 'large' },
+          ],
+          value:
+            fieldSchema?.['x-component-props']?.['openSize'] ??
+            (fieldSchema?.['x-component-props']?.['openMode'] == 'modal' ? 'large' : 'middle'),
+          onChange: (value) => {
+            field.componentProps.openSize = value;
+            fieldSchema['x-component-props'] = { ...fieldSchema['x-component-props'], openSize: value };
+            dn.emit('patch', {
+              schema: {
+                'x-uid': fieldSchema['x-uid'],
+                'x-component-props': fieldSchema['x-component-props'],
+              },
+            });
+            dn.refresh();
+          },
+        };
+      },
+    },
+    allowAddNew,
+    getAllowMultiple({ title: 'Allow multiple selection' }),
     titleField,
   ],
 });
