@@ -14,7 +14,7 @@ import { namespace } from '../preset';
 import { getDateVars, parsedValue } from '@nocobase/utils';
 
 export class BasicAuth extends BaseAuth {
-  static optionsKeysNotAllowedInEnv = ['emailContentText', 'emailContentHTML', 'emailSubject'];
+  static readonly optionsKeysNotAllowedInEnv = ['emailContentText', 'emailContentHTML', 'emailSubject'];
 
   constructor(config: AuthConfig) {
     const userCollection = config.ctx.db.getCollection('users');
@@ -200,22 +200,57 @@ export class BasicAuth extends BaseAuth {
     if (notificationManager) {
       const emailer = await notificationManager.manager.findChannel(emailChannel);
       if (emailer) {
-        const parsedContent = parsedValue(emailContentType === 'html' ? emailContentHTML : emailContentText, {
-          $user: user,
-          $resetLink: resetLink,
-          $nDate: getDateVars(),
-          $env: ctx.app.environment.getVariables(),
-        });
-        const content = emailContentType === 'html' ? { html: parsedContent } : { text: parsedContent };
-        await notificationManager.send({
-          channelName: emailChannel,
-          message: {
-            to: [email],
-            subject: emailSubject,
-            contentType: emailContentType,
-            ...content,
+        try {
+          const parsedSubject = parsedValue(emailSubject, {
+            $user: user,
+            $resetLink: resetLink,
+            $nDate: getDateVars(),
+            $env: ctx.app.environment.getVariables(),
+          });
+
+          const parsedContent = parsedValue(emailContentType === 'html' ? emailContentHTML : emailContentText, {
+            $user: user,
+            $resetLink: resetLink,
+            $nDate: getDateVars(),
+            $env: ctx.app.environment.getVariables(),
+          });
+
+          const content = emailContentType === 'html' ? { html: parsedContent } : { text: parsedContent };
+
+          try {
+            await notificationManager.send({
+              channelName: emailChannel,
+              message: {
+                to: [email],
+                subject: parsedSubject,
+                contentType: emailContentType,
+                ...content,
+              }
+            });
+
+            ctx.logger.info(`Password reset email sent to ${email}`);
+          } catch (error) {
+            ctx.logger.error(`Failed to send reset password email: ${error.message}`, {
+              error,
+              email,
+              emailChannel
+            });
+            ctx.throw(500, ctx.t('Failed to send email. Error: {{error}}', {
+              ns: namespace,
+              error: error.message
+            }));
           }
-        });
+        } catch (error) {
+          ctx.logger.error(`Error parsing email template variables: ${error.message}`, {
+            error,
+            emailSubject,
+            emailContentType
+          });
+          ctx.throw(500, ctx.t('Error parsing email template. Error: {{error}}', {
+            ns: namespace,
+            error: error.message
+          }));
+        }
       } else {
         ctx.throw(400, ctx.t('Email channel not found', { ns: namespace }));
       }

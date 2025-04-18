@@ -47,12 +47,12 @@ describe('auth:lostPassword', () => {
         options: {
           public: {
             enableResetPassword: true,
-            emailChannel: 'email',
-            emailSubject: 'Reset your password',
-            emailContentType: 'html',
-            emailContentHTML: 'Click the link to reset your password: $resetLink',
-            resetTokenExpiresIn: '1h',
           },
+          emailChannel: 'email',
+          emailSubject: 'Reset your password',
+          emailContentType: 'html',
+          emailContentHTML: 'Click the link to reset your password: {{$resetLink}}',
+          resetTokenExpiresIn: 60,
         },
       },
     });
@@ -61,6 +61,16 @@ describe('auth:lostPassword', () => {
     notificationManagerMock = {
       channelTypes: new Map(),
       send: vi.fn().mockResolvedValue(true),
+      manager: {
+        findChannel: vi.fn().mockImplementation((name) => {
+          if (notificationManagerMock.channelTypes.has(name)) {
+            return {
+              send: vi.fn().mockResolvedValue(true),
+            };
+          }
+          return null;
+        }),
+      }
     };
 
     // Add mock email channel
@@ -185,6 +195,48 @@ describe('auth:lostPassword', () => {
           subject: 'Reset your password',
           contentType: 'html',
           html: expect.stringContaining('Click the link to reset your password'),
+        }),
+      }),
+    );
+  });
+
+  it('should correctly parse variables in email subject', async () => {
+    // Update authenticator configuration to use variables in subject
+    const authRepo = db.getRepository('authenticators');
+    await authRepo.update({
+      filter: {
+        name: 'basic',
+      },
+      values: {
+        options: {
+          public: {
+            enableResetPassword: true,
+          },
+          emailChannel: 'email',
+          emailSubject: 'Reset password for {{$user.username}}',
+          emailContentType: 'html',
+          emailContentHTML: 'Click the link to reset your password: {{$user.username}}',
+          resetTokenExpiresIn: 60,
+        },
+      },
+    });
+
+    const res = await agent.post('/auth:lostPassword').set({ 'X-Authenticator': 'basic' }).send({
+      email: 'test@example.com',
+    });
+
+    expect(res.statusCode).toBe(204);
+
+    // Verify notification manager send method was called with parsed variables in subject
+    expect(notificationManagerMock.send).toHaveBeenCalledTimes(1);
+    expect(notificationManagerMock.send).toHaveBeenCalledWith(
+      expect.objectContaining({
+        channelName: 'email',
+        message: expect.objectContaining({
+          to: ['test@example.com'],
+          subject: 'Reset password for testuser',
+          contentType: 'html',
+          html: 'Click the link to reset your password: testuser',
         }),
       }),
     );
