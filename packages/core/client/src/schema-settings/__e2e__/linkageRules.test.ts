@@ -10,6 +10,7 @@
 import { expect, test } from '@nocobase/test/e2e';
 import {
   formFieldDependsOnSubtableFieldsWithLinkageRules,
+  whenARequiredFieldIsSetToHideRetainValueItShouldBeAbleToSubmitTheFormNormally,
   whenClearingARelationshipFieldTheValueOfTheAssociatedFieldShouldBeCleared,
   whenSetToHideRetainedValueItShouldNotImpactTheFieldSDefaultValueVariables,
 } from './template';
@@ -80,6 +81,28 @@ test.describe('linkage rules', () => {
     await page.getByRole('button', { name: 'action-Action-Refresh-refresh' }).click();
     await expect(
       page.getByRole('button', { name: 'block-item-CardItem-roles-' }).getByRole('row', { name: '123456789' }),
+    ).toBeVisible();
+  });
+
+  test('When a required field is set to "Hide (retain value)", it should be able to submit the form normally', async ({
+    mockPage,
+    page,
+  }) => {
+    await mockPage(whenARequiredFieldIsSetToHideRetainValueItShouldBeAbleToSubmitTheFormNormally).goto();
+
+    // 1. 输入昵称
+    await page
+      .getByLabel('block-item-CollectionField-users-form-users.nickname-Nickname')
+      .getByRole('textbox')
+      .fill('123456');
+
+    // 2. 点击提交
+    await page.getByLabel('action-Action-Submit-submit-').click();
+
+    // 3. 应该能正常提交，不应该被拦截
+    await page.reload();
+    await expect(
+      page.getByLabel('block-item-CardItem-users-table').getByRole('cell', { name: '123456' }),
     ).toBeVisible();
   });
 
