@@ -46,9 +46,12 @@ const getForgotPasswordForm = (): ISchema => ({
                 async run() {
                   await form.submit();
                   setLoading(true);
-                  await api.auth.lostPassword(form.values);
+                  try {
+                    await api.auth.lostPassword(form.values);
+                  } finally {
+                    setLoading(false);
+                  }
                   message.success(t("Reset email sent successfully"));
-                  setLoading(false);
                   form.reset();
                 },
                 loading,
