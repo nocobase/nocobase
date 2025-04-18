@@ -13,8 +13,8 @@
     "Users & permissions"
   ],
   "devDependencies": {
-    "@types/jsonwebtoken": "^8.5.8",
-    "jsonwebtoken": "^8.5.1",
+    "@types/jsonwebtoken": "^9.0.9",
+    "jsonwebtoken": "^9.0.2",
     "react": "^18.2.0",
     "react-dom": "^18.2.0"
   },
