@@ -30,7 +30,8 @@
     "react-router": "6.28.1",
     "async": "3.2.6",
     "antd": "5.12.8",
-    "rollup": "4.24.0"
+    "rollup": "4.24.0",
+    "semver": "^7.7.1"
   },
   "dependencies": {
     "@nocobase/cli": "{{{version}}}",
