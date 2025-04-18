@@ -1,4 +1,4 @@
-import { Card, Space, Typography } from 'antd';
+import { Card, Space, Typography, Input } from 'antd';
 import React, { Suspense, useState } from 'react';
 import { FilterFlowManager, useApplyFilters } from '@nocobase/client';
 
@@ -42,7 +42,7 @@ filterFlowManager.addFlow({
 });
 
 const BasicFilterFlow = () => {
-  const [inputText] = useState('Hello, FilterFlow!');
+  const [inputText, setInputText] = useState('Hello, FilterFlow!');
   const outputText = useApplyFilters(filterFlowManager, 'basic-text-transform', inputText);
 
   return (
@@ -55,13 +55,10 @@ const BasicFilterFlow = () => {
         <Space direction="vertical" style={{ width: '100%' }}>
           <div>
             <Typography.Text strong>输入文本:</Typography.Text>
-            <div style={{ padding: 8, border: '1px dashed #d9d9d9', borderRadius: 4 }}>{inputText}</div>
+            <Input value={inputText} onChange={(e) => setInputText(e.target.value)} />
           </div>
-
-          <div>
-            <Typography.Text strong>FilterFlow 结果:</Typography.Text>
-            <div>{outputText || '尚未处理'}</div>
-          </div>
+          <Typography.Text strong>FilterFlow 结果:</Typography.Text>
+          <div>{outputText || '尚未处理'}</div>
         </Space>
       </Card>
     </div>

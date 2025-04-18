@@ -7,13 +7,12 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { FilterFlowManager, FilterHandlerContext } from '@nocobase/client'; // 确认 FilterFlowManager 和类型的实际路径
-import { uid } from '@nocobase/utils/client';
 
 // 使用 Map 作为简单的内存缓存
 const filterCache = new Map<
-  string,
+  any,
   {
     status: 'pending' | 'resolved' | 'rejected';
     promise?: Promise<any>;
@@ -28,15 +27,36 @@ export function useApplyFilters<T = any>(
   initialValue: any,
   context?: FilterHandlerContext,
 ): T {
-  const cacheKey = useMemo(() => `${flowName}}`, [flowName]);
-  // const prevCacheKey = useRef(cacheKey);
+  const [, forceUpdate] = useState(0);
 
-  // useEffect(() => {
-  //   if (prevCacheKey.current !== cacheKey) {
-  //     filterCache.delete(prevCacheKey.current);
-  //     prevCacheKey.current = cacheKey;
-  //   }
-  // }, [cacheKey]);
+  const cacheKey = useMemo(() => {
+    const key = JSON.stringify([flowName, context]);
+    return key;
+  }, [flowName, context]);
+
+  const prevValue = useRef(initialValue);
+  const prevCacheKey = useRef(cacheKey);
+
+  useEffect(() => {
+    if (prevValue.current !== initialValue) {
+      setTimeout(async () => {
+        const cachedEntry = filterCache.get(cacheKey);
+        if (cachedEntry?.status === 'resolved') {
+          const newData = await filterFlowManager.applyFilters(flowName, initialValue, context);
+          filterCache.set(cacheKey, { status: 'resolved', data: newData, promise: Promise.resolve(newData) });
+          forceUpdate((prev) => prev + 1);
+        }
+      }, 0);
+      prevValue.current = initialValue;
+    }
+  }, [initialValue]);
+
+  useEffect(() => {
+    if (prevCacheKey.current !== cacheKey) {
+      filterCache.delete(prevCacheKey.current);
+      prevCacheKey.current = cacheKey;
+    }
+  }, [cacheKey]);
 
   // 检查缓存
   const cachedEntry = filterCache.get(cacheKey);
