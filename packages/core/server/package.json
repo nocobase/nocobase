@@ -9,7 +9,7 @@
     "@hapi/topo": "^6.0.0",
     "@koa/cors": "^5.0.0",
     "@koa/multer": "^3.0.2",
-    "@koa/router": "^9.4.0",
+    "@koa/router": "^13.1.0",
     "@nocobase/acl": "1.6.21",
     "@nocobase/actions": "1.6.21",
     "@nocobase/auth": "1.6.21",
