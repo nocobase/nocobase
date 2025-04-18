@@ -309,15 +309,15 @@ export const ACLActionProvider = (props) => {
   const schema = useFieldSchema();
   const currentUid = schema['x-uid'];
   let actionPath = schema['x-acl-action'];
-  const editablePath = ['create', 'update', 'destroy', 'importXlsx'];
+  // 只兼容这些数据表资源按钮
+  const resourceActionPath = ['create', 'update', 'destroy', 'importXlsx', 'export'];
 
-  if (!actionPath && resource && schema['x-action'] && editablePath.includes(schema['x-action'])) {
+  if (!actionPath && resource && schema['x-action'] && resourceActionPath.includes(schema['x-action'])) {
     actionPath = `${resource}:${schema['x-action']}`;
   }
   if (actionPath && !actionPath?.includes(':')) {
     actionPath = `${resource}:${actionPath}`;
   }
-
   const params = useMemo(
     () => actionPath && parseAction(actionPath, { schema, recordPkValue }),
     [parseAction, actionPath, schema, recordPkValue],
@@ -335,7 +335,7 @@ export const ACLActionProvider = (props) => {
     return <ACLActionParamsContext.Provider value={params}>{props.children}</ACLActionParamsContext.Provider>;
   }
   //视图表无编辑权限时不显示
-  if (editablePath.includes(actionPath) || editablePath.includes(actionPath?.split(':')[1])) {
+  if (resourceActionPath.includes(actionPath) || resourceActionPath.includes(actionPath?.split(':')[1])) {
     if ((collection && collection.template !== 'view') || collection?.writableView) {
       return <ACLActionParamsContext.Provider value={params}>{props.children}</ACLActionParamsContext.Provider>;
     }
