@@ -20,30 +20,53 @@ jobs:
         ports:
           - 4873:4873
     steps:
-      - name: Wait for Verdaccio
-        run: |
-          for i in {1..10}; do
-            nc -z localhost 4873 && break
-            sleep 2
-          done
-          if ! nc -z localhost 4873; then
-            echo "Verdaccio is not running on port 4873" >&2
-            exit 1
-          fi
+      - name: Set Node.js 20
+        uses: actions/setup-node@v3
+        with:
+          node-version: 20
       - name: Get info
         id: get-info
         shell: bash
         run: |
           if [[ "${{ github.ref_name }}" =~ "beta" ]]; then
             echo "defaultTag=$(echo 'beta')" >> $GITHUB_OUTPUT
+            echo "proRepos=$(echo '${{ needs.get-plugins.outputs.beta-plugins }}')" >> $GITHUB_OUTPUT
           elif [[ "${{ github.ref_name }}" =~ "alpha" ]]; then
             echo "defaultTag=$(echo 'alpha')" >> $GITHUB_OUTPUT
+            echo "proRepos=$(echo '${{ needs.get-plugins.outputs.alpha-plugins }}')" >> $GITHUB_OUTPUT
           else
             # rc
             echo "defaultTag=$(echo 'latest')" >> $GITHUB_OUTPUT
+            echo "proRepos=$(echo '${{ needs.get-plugins.outputs.rc-plugins }}')" >> $GITHUB_OUTPUT
           fi
+      - uses: actions/create-github-app-token@v1
+        id: app-token
+        with:
+          app-id: ${{ vars.NOCOBASE_APP_ID }}
+          private-key: ${{ secrets.NOCOBASE_APP_PRIVATE_KEY }}
+          repositories: nocobase,pro-plugins,${{ join(fromJSON(steps.get-info.outputs.proRepos), ',') }},${{ join(fromJSON(needs.get-plugins.outputs.custom-plugins), ',') }}
+          skip-token-revoke: true
       - name: Checkout
         uses: actions/checkout@v3
+        with:
+          ref: ${{ github.ref_name }}
+      - name: yarn install
+        run: |
+          yarn install
+      - name: Checkout pro-plugins
+        uses: actions/checkout@v3
+        with:
+          repository: nocobase/pro-plugins
+          path: packages/pro-plugins
+          ref: ${{ github.ref_name }}
+          token: ${{ steps.app-token.outputs.token }}
+      - name: Clone pro repos
+        shell: bash
+        run: |
+          for repo in ${{ join(fromJSON(steps.get-info.outputs.proRepos), ' ') }} ${{ join(fromJSON(needs.get-plugins.outputs.custom-plugins), ' ') }}
+          do
+          git clone -b ${{ github.ref_name }} https://x-access-token:${{ steps.app-token.outputs.token }}@github.com/nocobase/$repo.git packages/pro-plugins/@nocobase/$repo
+          done
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v2
       - name: Set up Docker Buildx
