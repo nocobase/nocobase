@@ -20,6 +20,16 @@ jobs:
         ports:
           - 4873:4873
     steps:
+      - name: Wait for Verdaccio
+        run: |
+          for i in {1..10}; do
+            nc -z localhost 4873 && break
+            sleep 2
+          done
+          if ! nc -z localhost 4873; then
+            echo "Verdaccio is not running on port 4873" >&2
+            exit 1
+          fi
       - name: Get info
         id: get-info
         shell: bash
