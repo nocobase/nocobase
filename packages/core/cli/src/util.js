@@ -477,9 +477,9 @@ exports.generatePlugins = function () {
 };
 
 exports.getAccessKeyPair = function () {
-  const keyFile = resolve(process.cwd(), 'storage/.license/key');
+  const keyFile = resolve(process.cwd(), 'storage/.license/license-key');
   if (!fs.existsSync(keyFile)) {
-    console.log(chalk.yellow('Key file not found', keyFile));
+    console.log(chalk.yellow('license-key file not found', keyFile));
     return {};
   }
   try {
