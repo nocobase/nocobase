@@ -368,7 +368,7 @@ export class FilterFlowManager {
 
     let currentValue = initialValue;
     const steps = flow.getSteps(); // 获取有序的步骤数组
-
+    context = context || {};
     if (!context.meta) {
       context.meta = {
         flowKey,

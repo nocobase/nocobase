@@ -1,6 +1,6 @@
-import { Button, Card, Space, Typography } from 'antd';
-import React, { useState } from 'react';
-import { FilterFlowManager } from '@nocobase/client';
+import { Card, Space, Typography } from 'antd';
+import React, { Suspense, useState } from 'react';
+import { FilterFlowManager, useApplyFilters } from '@nocobase/client';
 
 // 创建过滤器管理器实例
 const filterFlowManager = new FilterFlowManager();
@@ -43,29 +43,7 @@ filterFlowManager.addFlow({
 
 const BasicFilterFlow = () => {
   const [inputText] = useState('Hello, FilterFlow!');
-  const [outputText, setOutputText] = useState('');
-  const [isProcessing, setIsProcessing] = useState(false);
-
-  const handleApplyFilter = async () => {
-    setIsProcessing(true);
-    try {
-      // 创建过滤上下文
-      const context = {
-        payload: {
-          inputText,
-        },
-      };
-
-      // 应用过滤器流
-      const result = await filterFlowManager.applyFilters('basic-text-transform', inputText, context);
-
-      setOutputText(result);
-    } catch (error) {
-      console.error('FilterFlow应用失败:', error);
-    } finally {
-      setIsProcessing(false);
-    }
-  };
+  const outputText = useApplyFilters(filterFlowManager, 'basic-text-transform', inputText);
 
   return (
     <div style={{ padding: 24, background: '#f5f5f5', borderRadius: 8 }}>
@@ -86,12 +64,14 @@ const BasicFilterFlow = () => {
           </div>
         </Space>
       </Card>
-
-      <Button type="primary" onClick={handleApplyFilter} loading={isProcessing}>
-        应用 FilterFlow
-      </Button>
     </div>
   );
 };
 
-export default BasicFilterFlow;
+export default function Demo() {
+  return (
+    <Suspense fallback={<div>Loading1...</div>}>
+      <BasicFilterFlow />
+    </Suspense>
+  );
+}
