@@ -15,9 +15,11 @@ export type FilterHandlerContext<T = any> = {
   meta?: {
     flowKey?: string;
     flowName?: string;
-    params?: Record<string, Record<string, any>>;
+    params?: FilterStepParams;
   };
 };
+
+export type FilterStepParams = Record<string, Record<string, any>>;
 
 export type FilterHandler<T = any> = (
   currentValue: any,
@@ -45,7 +47,7 @@ export interface FilterFlowStepOptions {
   condition?: string;
 }
 export interface FilterFlowOptions {
-  name: string;
+  key: string;
   title: string;
   steps: FilterFlowStepOptions[];
 }

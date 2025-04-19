@@ -39,14 +39,15 @@ export function useApplyFilters<T = any>(
 
   useEffect(() => {
     if (prevValue.current !== initialValue) {
-      setTimeout(async () => {
+      const refreshData = async () => {
         const cachedEntry = filterCache.get(cacheKey);
         if (cachedEntry?.status === 'resolved') {
           const newData = await filterFlowManager.applyFilters(flowName, initialValue, context);
           filterCache.set(cacheKey, { status: 'resolved', data: newData, promise: Promise.resolve(newData) });
           forceUpdate((prev) => prev + 1);
         }
-      }, 0);
+      };
+      refreshData();
       prevValue.current = initialValue;
     }
   }, [initialValue]);

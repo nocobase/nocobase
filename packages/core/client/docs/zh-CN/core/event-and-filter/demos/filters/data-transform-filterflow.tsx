@@ -160,7 +160,7 @@ filterFlowManager.addFilter({
 
 // 创建FilterFlow
 filterFlowManager.addFlow({
-  name: 'data-transform-flow',
+  key: 'data-transform-flow',
   title: '数据转换流程',
   steps: [
     {

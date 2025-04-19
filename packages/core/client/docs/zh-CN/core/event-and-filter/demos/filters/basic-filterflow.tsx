@@ -30,7 +30,7 @@ filterFlowManager.addFilter({
 
 // 创建过滤器流
 filterFlowManager.addFlow({
-  name: 'basic-text-transform',
+  key: 'basic-text-transform',
   title: '基础文本转换',
   steps: [
     {

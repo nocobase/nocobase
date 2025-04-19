@@ -327,7 +327,7 @@ eventFlowManager.addFlow({
 
 // --- FilterFlow 定义 ---
 filterFlowManager.addFlow({
-  name: 'tabulator:columns',
+  key: 'tabulator:columns',
   title: '表格列展示流程',
   steps: [
     {
@@ -416,7 +416,7 @@ const EventFilterTableDemo: React.FC = (props) => {
     [hooks, filterFlowParams],
   );
 
-  const tableColumns = useApplyFilters(filterFlowManager, 'tabulator:columns', {}, filterContext);
+  const { columns: tableColumns } = useApplyFilters(filterFlowManager, 'tabulator:columns', null, filterContext);
 
   // 初始化和刷新数据
   const refreshData = useCallback(async () => {

@@ -108,8 +108,8 @@ export class FilterFlow {
     delete this.options.steps;
   }
 
-  get name() {
-    return this.options.name;
+  get key() {
+    return this.options.key;
   }
 
   get title() {
@@ -176,7 +176,7 @@ export class FilterFlow {
   }
 
   async remove() {
-    this.filterFlowManager.removeFlow(this.name);
+    this.filterFlowManager.removeFlow(this.key);
   }
 
   setFilterFlowManager(filterFlowManager: FilterFlowManager) {
@@ -285,16 +285,16 @@ export class FilterFlowManager {
       flowInstance = flowOptions;
       flowInstance.setFilterFlowManager(this);
     } else {
-      if (!flowOptions.name) {
-        throw new Error('FilterFlowOptions must have a name.');
+      if (!flowOptions.key) {
+        throw new Error('FilterFlowOptions must have a key.');
       }
       flowInstance = new FilterFlow(flowOptions, this);
     }
 
-    if (this.filterFlows.has(flowInstance.name)) {
-      console.warn(`FilterFlow with name "${flowInstance.name}" is being overwritten.`);
+    if (this.filterFlows.has(flowInstance.key)) {
+      console.warn(`FilterFlow with key "${flowInstance.key}" is being overwritten.`);
     }
-    this.filterFlows.set(flowInstance.name, flowInstance);
+    this.filterFlows.set(flowInstance.key, flowInstance);
     return flowInstance;
   }
 
@@ -371,8 +371,7 @@ export class FilterFlowManager {
     context = context || {};
     if (!context.meta) {
       context.meta = {
-        flowKey,
-        flowName: flow.name,
+        flowKey: flow.key,
       };
     }
 

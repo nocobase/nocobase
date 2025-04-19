@@ -119,7 +119,7 @@ filterFlowManager.addFilter({
 
 // 创建可配置FilterFlow
 filterFlowManager.addFlow({
-  name: 'configurable-text-transform',
+  key: 'configurable-text-transform',
   title: '可配置文本转换',
   steps: [
     {

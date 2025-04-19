@@ -84,7 +84,7 @@ filterFlowManager.addFilter({
 
 // 创建多步骤FilterFlow
 filterFlowManager.addFlow({
-  name: 'multi-step-text-transform',
+  key: 'multi-step-text-transform',
   title: '多步骤文本转换',
   steps: [
     {

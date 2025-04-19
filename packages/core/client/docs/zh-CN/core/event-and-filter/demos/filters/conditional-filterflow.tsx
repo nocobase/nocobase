@@ -1,5 +1,5 @@
-import { Button, Card, Input, Radio, Space, Typography } from 'antd';
-import React, { useMemo, useState } from 'react';
+import { Card, Input, Space, Typography } from 'antd';
+import React, { useState } from 'react';
 import { FilterFlowManager, useApplyFilters } from '@nocobase/client';
 
 // 创建FilterFlowManager实例
@@ -60,7 +60,7 @@ filterFlowManager.addFilter({
 
 // 创建条件FilterFlow
 filterFlowManager.addFlow({
-  name: 'conditional-text-transform',
+  key: 'conditional-text-transform',
   title: '条件文本转换',
   steps: [
     {
