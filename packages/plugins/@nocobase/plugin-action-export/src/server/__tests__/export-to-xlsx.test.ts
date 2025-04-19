@@ -1499,4 +1499,37 @@ describe('export to xlsx', () => {
     expect(sheetData[1]).toEqual(['user0', 0]); // first user
     expect(sheetData[10]).toEqual(['user9', 9]); // last user
   });
+
+  it('should import rich text field successfully when long text', async () => {
+    const Test = app.db.collection({
+      name: 'tests',
+      fields: [
+        {
+          interface: 'richText',
+          type: 'text',
+          name: 'richText',
+        },
+      ],
+    });
+
+    await app.db.sync();
+    const data = require('./data/rich-text.json');
+    const longText = data.longText;
+    await Test.repository.create({
+      values: {
+        richText: longText /* .slice(0, 10000) */,
+      },
+    });
+    const exporter = new XlsxExporter({
+      collectionManager: app.mainDataSource.collectionManager,
+      collection: Test,
+      chunkSize: 10,
+      limit: 10,
+      columns: [{ dataIndex: ['richText'], defaultTitle: 'richText' }],
+    });
+
+    const wb = await exporter.run();
+    const buffer = XlsxExporter.xlsxSafeWrite(wb, { type: 'buffer', bookType: 'xlsx' });
+    expect(buffer).exist;
+  });
 });
