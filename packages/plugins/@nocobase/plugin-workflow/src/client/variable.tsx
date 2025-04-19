@@ -125,20 +125,8 @@ export const systemOptions = {
 export const BaseTypeSets = {
   boolean: new Set(['checkbox']),
   number: new Set(['integer', 'number', 'percent']),
-  string: new Set([
-    'input',
-    'password',
-    'email',
-    'phone',
-    'select',
-    'radioGroup',
-    'text',
-    'markdown',
-    'richText',
-    'expression',
-    'time',
-  ]),
-  date: new Set(['date', 'createdAt', 'updatedAt']),
+  string: new Set(['input', 'password', 'email', 'phone', 'select', 'radioGroup', 'text', 'markdown', 'richText']),
+  date: new Set(['datetime', 'datetimeNoTz', 'dateOnly', 'createdAt', 'updatedAt']),
 };
 
 // { type: 'reference', options: { collection: 'users', multiple: false } }
