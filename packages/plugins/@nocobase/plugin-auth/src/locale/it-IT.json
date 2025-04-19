@@ -51,5 +51,10 @@
   "Select User Collections": "Seleziona raccolte utente",
   "Basic Data": "Dati di base",
   "Optional Data": "Dati opzionali",
-  "User Data": "Dati utente"
+  "User Data": "Dati utente",
+  "Email channel not found": "Canale email non trovato",
+  "Notification manager plugin not found": "Plugin di gestione delle notifiche non trovato",
+  "Not allowed to reset password": "Reimpostazione della password non consentita",
+  "Token expired": "Token scaduto",
+  "User not found": "Utente non trovato"
 }

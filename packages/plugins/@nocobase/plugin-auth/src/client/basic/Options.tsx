@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { SchemaComponent, useCollectionManager, useRecord } from '@nocobase/client';
+import { SchemaComponent, useCollectionManager, useCurrentUserVariable, useDatetimeVariable, useGlobalVariable, useRecord } from '@nocobase/client';
 import React, { useEffect, useMemo } from 'react';
 import { lang, useAuthTranslation } from '../locale';
 import { FormTab, ArrayTable } from '@formily/antd-v5';
@@ -53,7 +53,7 @@ const SignupFormSettings = () => {
       schema={{
         type: 'void',
         properties: {
-          signupForm: {
+          'public.signupForm': {
             title: '{{t("Sign up form")}}',
             type: 'array',
             'x-decorator': 'FormItem',
@@ -146,8 +146,21 @@ const SignupFormSettings = () => {
   );
 };
 
+const useVariableOptionsOfForgetPassword = () => {
+  const { t } = useAuthTranslation();
+  const environmentVariables = useGlobalVariable('$env');
+  const { currentUserSettings } = useCurrentUserVariable({ maxDepth: 1 });
+  const { datetimeSettings } = useDatetimeVariable({ noDisabled: true });
+  return [environmentVariables, currentUserSettings, datetimeSettings, {
+    value: '$resetLink',
+    label: t('Reset password link'),
+  }].filter(Boolean);
+}
+
 export const Options = () => {
   const { t } = useAuthTranslation();
+  const forgetPasswordVariableOptions = useVariableOptionsOfForgetPassword();
+
   return (
     <SchemaComponent
       scope={{ t }}
@@ -164,32 +177,184 @@ export const Options = () => {
               message: '{{t("The authentication allows users to sign in via username or email.")}}',
             },
           },
-          public: {
-            type: 'object',
+          collapse: {
+            type: 'void',
+            'x-component': 'FormTab',
             properties: {
-              collapse: {
+              basic: {
                 type: 'void',
-                'x-component': 'FormTab',
+                'x-component': 'FormTab.TabPane',
+                'x-component-props': {
+                  tab: lang('Sign up settings'),
+                },
                 properties: {
-                  basic: {
+                  'public.allowSignUp': {
+                    'x-decorator': 'FormItem',
+                    type: 'boolean',
+                    title: '{{t("Allow to sign up")}}',
+                    'x-component': 'Checkbox',
+                    default: true,
+                  },
+                  [uid()]: {
                     type: 'void',
-                    'x-component': 'FormTab.TabPane',
+                    'x-component': 'SignupFormSettings',
+                  },
+                },
+              },
+              forgetPassword: {
+                type: 'void',
+                'x-component': 'FormTab.TabPane',
+                'x-component-props': {
+                  tab: lang('Forget password'),
+                },
+                properties: {
+                  'public.enableResetPassword': {
+                    'x-decorator': 'FormItem',
+                    type: 'boolean',
+                    title: '{{t("Enable forget password feature")}}',
+                    'x-component': 'Checkbox',
+                    default: false,
+                  },
+                  notificationChannel: {
+                    type: 'string',
+                    title: '{{t("Notification Channel (Email)")}}',
+                    required: true,
+                    'x-decorator': 'FormItem',
+                    'x-component': 'RemoteSelect',
                     'x-component-props': {
-                      tab: lang('Sign up settings'),
-                    },
-                    properties: {
-                      allowSignUp: {
-                        'x-decorator': 'FormItem',
-                        type: 'boolean',
-                        title: '{{t("Allow to sign up")}}',
-                        'x-component': 'Checkbox',
-                        default: true,
+                      multiple: false,
+                      manual: false,
+                      fieldNames: {
+                        label: 'title',
+                        value: 'name',
                       },
-                      [uid()]: {
-                        type: 'void',
-                        'x-component': 'SignupFormSettings',
+                      service: {
+                        resource: 'notificationChannels',
+                        action: 'list',
+                        params: {
+                          filter: {
+                            notificationType: 'email',
+                          },
+                        },
                       },
                     },
+                    'x-reactions': [
+                      {
+                        dependencies: ['.public.enableResetPassword'],
+                        fulfill: {
+                          state: {
+                            visible: '{{$deps[0]}}',
+                          },
+                        },
+                      },
+                    ],
+                  },
+                  emailSubject: {
+                    type: 'string',
+                    required: true,
+                    title: `{{t("Subject")}}`,
+                    'x-decorator': 'FormItem',
+                    'x-component': 'Variable.TextArea',
+                    'x-component-props': {
+                      scope: [...forgetPasswordVariableOptions],
+                    },
+                    'x-reactions': [
+                      {
+                        dependencies: ['.public.enableResetPassword'],
+                        fulfill: {
+                          state: {
+                            visible: '{{$deps[0]}}',
+                          },
+                        },
+                      },
+                    ],
+                  },
+                  emailContentType: {
+                    type: 'string',
+                    title: `{{t("Content type")}}`,
+                    'x-decorator': 'FormItem',
+                    'x-component': 'Radio.Group',
+                    enum: [
+                      { label: 'HTML', value: 'html' },
+                      { label: `{{t("Plain text")}}`, value: 'text' },
+                    ],
+                    default: 'html',
+                    'x-reactions': [
+                      {
+                        dependencies: ['.public.enableResetPassword'],
+                        fulfill: {
+                          state: {
+                            visible: '{{$deps[0]}}',
+                          },
+                        },
+                      },
+                    ],
+                  },
+                  emailContentHTML: {
+                    type: 'string',
+                    required: true,
+                    title: `{{t("Content")}}`,
+                    'x-decorator': 'FormItem',
+                    'x-component': 'Variable.RawTextArea',
+                    'x-component-props': {
+                      scope: [...forgetPasswordVariableOptions],
+                      placeholder: 'Hi,',
+                      autoSize: {
+                        minRows: 10,
+                      },
+                    },
+                    'x-reactions': [
+                      {
+                        dependencies: ['.public.enableResetPassword', '.emailContentType'],
+                        fulfill: {
+                          state: {
+                            visible: '{{$deps[0] && $deps[1] === "html"}}',
+                          },
+                        },
+                      },
+                    ],
+                  },
+                  emailContentText: {
+                    type: 'string',
+                    required: true,
+                    title: `{{t("Content")}}`,
+                    'x-decorator': 'FormItem',
+                    'x-component': 'Variable.RawTextArea',
+                    'x-component-props': {
+                      scope: [...forgetPasswordVariableOptions],
+                      placeholder: 'Hi,',
+                      autoSize: {
+                        minRows: 10,
+                      },
+                    },
+                    'x-reactions': [
+                      {
+                        dependencies: ['.public.enableResetPassword', '.emailContentType'],
+                        fulfill: {
+                          state: {
+                            visible: '{{$deps[0] && $deps[1] === "text"}}',
+                          },
+                        },
+                      },
+                    ],
+                  },
+                  resetTokenExpiresIn: {
+                    type: 'number',
+                    title: '{{t("Reset link expiration (minutes)")}}',
+                    'x-decorator': 'FormItem',
+                    'x-component': 'InputNumber',
+                    default: 60,
+                    required: true,
+                    'x-reactions': [
+                      {
+                        dependencies: ['.public.enableResetPassword'],
+                        fulfill: {
+                          state: {
+                            visible: '{{$deps[0]}}',
+                          },
+                        },
+                      },
+                    ],
                   },
                 },
               },

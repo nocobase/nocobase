@@ -924,5 +924,6 @@
   "Click the \"UI Editor\" icon in the upper right corner to enter the UI Editor mode": "點擊右上角的 \"介面設定\" 圖示進入介面設定模式",
   "Refresh data blocks": "刷新數據區塊",
   "Select data blocks to refresh": "選擇要刷新的數據區塊",
-  "After successful submission, the selected data blocks will be automatically refreshed.": "提交成功後，選中的數據區塊將自動刷新。"
+  "After successful submission, the selected data blocks will be automatically refreshed.": "提交成功後，選中的數據區塊將自動刷新。",
+  "Reset link expiration (minutes)": "重置連結過的期時間（分鐘）"
 }

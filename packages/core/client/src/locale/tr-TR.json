@@ -617,5 +617,6 @@
   "Click the \"UI Editor\" icon in the upper right corner to enter the UI Editor mode": "Kullanıcı arayüzü düzenleyici moduna girmek için sağ üst köşedeki \"Kullanıcı Arayüzü Düzenleyici\" simgesine tıklayın",
   "Refresh data blocks": "Yenile veri blokları",
   "Select data blocks to refresh": "Veri bloklarını yenilemek için seçin",
-  "After successful submission, the selected data blocks will be automatically refreshed.": "Başarılı bir şekilde gönderildikten sonra, seçilen veri blokları otomatik olarak yenilenecektir."
+  "After successful submission, the selected data blocks will be automatically refreshed.": "Başarılı bir şekilde gönderildikten sonra, seçilen veri blokları otomatik olarak yenilenecektir.",
+  "Reset link expiration (minutes)": "Bağlantı süresini sıfırla (dakika)"
 }
