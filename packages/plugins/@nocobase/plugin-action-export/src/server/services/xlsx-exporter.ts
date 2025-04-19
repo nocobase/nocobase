@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import XLSX from 'xlsx';
 import { BaseExporter, ExportOptions } from './base-exporter';
 import { NumberField } from '@nocobase/database';
@@ -11,6 +20,8 @@ type ExportColumn = {
 type XlsxExportOptions = Omit<ExportOptions, 'fields'> & {
   columns: Array<ExportColumn>;
 };
+
+const XLSX_LIMIT_CHAER = 32767;
 
 export class XlsxExporter extends BaseExporter<XlsxExportOptions & { fields: Array<Array<string>> }> {
   /**
@@ -87,6 +98,19 @@ export class XlsxExporter extends BaseExporter<XlsxExportOptions & { fields: Arr
       const fieldInstance = this.findFieldByDataIndex(col.dataIndex);
       return col.title || fieldInstance?.options.title || col.defaultTitle;
     });
+  }
+
+  static xlsxSafeWrite(wb: XLSX.WorkBook, opts: XLSX.WritingOptions) {
+    if (opts.type === 'buffer') {
+      const data = wb.Sheets.Data as object;
+      for (const key of Object.keys(data)) {
+        const v = data[key]?.v;
+        if (v?.length > XLSX_LIMIT_CHAER) {
+          data[key].v = v.slice(0, XLSX_LIMIT_CHAER);
+        }
+      }
+    }
+    return XLSX.write(wb, opts);
   }
 }
 

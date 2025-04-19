@@ -45,7 +45,7 @@ async function exportXlsxAction(ctx: Context, next: Next) {
 
   const wb = await xlsxExporter.run(ctx);
 
-  ctx.body = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
+  ctx.body = XlsxExporter.xlsxSafeWrite(wb, { type: 'buffer', bookType: 'xlsx' });
 
   ctx.set({
     'Content-Type': 'application/octet-stream',
