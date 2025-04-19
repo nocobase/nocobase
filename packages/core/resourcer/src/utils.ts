@@ -67,17 +67,25 @@ export function parseRequest(request: ParseRequest, options: ParseOptions = {}):
     ...(options.accessors || {}),
   };
   const keys = [];
-  const regexp = pathToRegexp('/resourcer/{:associatedName.}?:resourceName{\\::actionName}', keys);
+
+  const regexp = pathToRegexp('/resourcer/:rest(.*)', keys);
   const reqPath = decodeURI(request.path);
   const matches = regexp.exec(reqPath);
   if (matches) {
     const params = {};
-    keys.forEach((obj, index) => {
-      if (matches[index + 1] === undefined) {
-        return;
+    const [resource, action] = matches[1].split(':');
+    const [res1, res2] = resource.split('.');
+    if (res1) {
+      if (res2) {
+        params['associatedName'] = res1;
+        params['resourceName'] = res2;
+      } else {
+        params['resourceName'] = res1;
       }
-      params[obj.name] = matches[index + 1];
-    });
+    }
+    if (action) {
+      params['actionName'] = action;
+    }
     return params;
   }
   const defaults = {
