@@ -12,6 +12,8 @@ import type { Readable } from 'stream';
 import { StorageEngine } from 'multer';
 import { AxiosRequestConfig } from 'axios';
 import axios from 'axios';
+import fs from 'fs';
+import fse from 'fs-extra';
 import urlJoin from 'url-join';
 import { isURL } from '@nocobase/utils';
 import { encodeURL, ensureUrlEncoded, getFileKey } from '../utils';
@@ -45,7 +47,6 @@ export abstract class StorageType {
   constructor(public storage: StorageModel) {}
   abstract make(): StorageEngine;
   abstract delete(records: AttachmentModel[]): [number, AttachmentModel[]] | Promise<[number, AttachmentModel[]]>;
-  abstract getFileStream(file: AttachmentModel): Promise<{ stream: Readable }>;
 
   getFileKey(record: AttachmentModel) {
     return getFileKey(record);
@@ -71,6 +72,34 @@ export abstract class StorageType {
     };
 
     return data;
+  }
+
+  async getFileStream(file: AttachmentModel): Promise<{ stream: Readable; contentType?: string }> {
+    if (file.url.startsWith('/')) {
+      const filePath = Path.join(process.cwd(), 'storage/uploads', file.path || '', file.filename);
+      if (await fse.exists(filePath)) {
+        return {
+          stream: fs.createReadStream(filePath),
+        };
+      }
+    }
+    if (file.url.startsWith('http')) {
+      const fileURL = await this.getFileURL(file);
+      const requestOptions: AxiosRequestConfig = {
+        responseType: 'stream',
+        validateStatus: (status) => status === 200,
+        timeout: 30000, // 30 seconds timeout
+      };
+
+      const response = await axios.get(fileURL, requestOptions);
+
+      return {
+        stream: response.data,
+        contentType: response.headers['content-type'],
+      };
+    }
+
+    throw new Error(`Unsupported URL format: ${file.url}`);
   }
 
   getFileURL(file: AttachmentModel, preview?: boolean): string | Promise<string> {

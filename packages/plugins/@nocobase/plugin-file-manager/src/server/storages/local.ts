@@ -6,9 +6,9 @@
  * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
+
 import { isURL } from '@nocobase/utils';
-import type { Readable } from 'stream';
-import fs from 'fs';
+import fs from 'fs/promises';
 import mkdirp from 'mkdirp';
 import multer from 'multer';
 import path from 'path';
@@ -59,7 +59,7 @@ export default class extends StorageType {
       (promise, record) =>
         promise.then(async () => {
           try {
-            await fs.promises.unlink(path.join(documentRoot, record.path, record.filename));
+            await fs.unlink(path.join(documentRoot, record.path, record.filename));
             count += 1;
           } catch (ex) {
             if (ex.code === 'ENOENT') {
@@ -82,16 +82,5 @@ export default class extends StorageType {
       return url;
     }
     return urlJoin(process.env.APP_PUBLIC_PATH, url);
-  }
-
-  async getFileStream(file: AttachmentModel): Promise<{ stream: Readable }> {
-    const { url } = file;
-    const rootPath = process.cwd();
-    const filePath = path.join(rootPath, url);
-    // Check if file exists before creating stream
-    await fs.promises.access(filePath, fs.constants.F_OK);
-    return {
-      stream: fs.createReadStream(filePath),
-    };
   }
 }

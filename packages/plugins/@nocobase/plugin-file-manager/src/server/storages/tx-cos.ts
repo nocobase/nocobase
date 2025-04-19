@@ -7,7 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import type { Readable } from 'stream';
+import { isURL } from '@nocobase/utils';
+import path from 'path';
+import urlJoin from 'url-join';
 import { promisify } from 'util';
 import { AttachmentModel, StorageType } from '.';
 import { STORAGE_TYPE_TX_COS } from '../../constants';
@@ -49,9 +51,5 @@ export default class extends StorageType {
       Objects: records.map((record) => ({ Key: getFileKey(record) })),
     });
     return [Deleted.length, records.filter((record) => !Deleted.find((item) => item.Key === getFileKey(record)))];
-  }
-  async getFileStream(file: AttachmentModel): Promise<{ stream: Readable }> {
-    const URL = await super.getFileURL(file);
-    return await super.getFileStreamFromURL(URL);
   }
 }

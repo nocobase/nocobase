@@ -8,7 +8,6 @@
  */
 
 import { AttachmentModel, StorageType } from '.';
-import type { Readable } from 'stream';
 import { STORAGE_TYPE_ALI_OSS } from '../../constants';
 import { cloudFilenameGetter, getFileKey } from '../utils';
 
@@ -39,9 +38,5 @@ export default class extends StorageType {
     const { client } = this.make();
     const { deleted } = await client.deleteMulti(records.map(getFileKey));
     return [deleted.length, records.filter((record) => !deleted.find((item) => item.Key === getFileKey(record)))];
-  }
-  async getFileStream(file: AttachmentModel): Promise<{ stream: Readable }> {
-    const URL = await super.getFileURL(file);
-    return await super.getFileStreamFromURL(URL);
   }
 }
