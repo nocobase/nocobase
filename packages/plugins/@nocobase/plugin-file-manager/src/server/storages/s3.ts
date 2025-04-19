@@ -12,6 +12,7 @@ import crypto from 'crypto';
 import { AttachmentModel, StorageType } from '.';
 import { STORAGE_TYPE_S3 } from '../../constants';
 import { cloudFilenameGetter } from '../utils';
+import { Readable } from 'stream';
 
 export default class extends StorageType {
   static defaults() {
@@ -90,5 +91,9 @@ export default class extends StorageType {
       records.map((record) => this.getFileKey(record)),
     );
     return [Deleted.length, records.filter((record) => !Deleted.find((item) => item.Key === this.getFileKey(record)))];
+  }
+  async getFileStream(file: AttachmentModel): Promise<{ stream: Readable }> {
+    const URL = await super.getFileURL(file);
+    return await super.getFileStreamFromURL(URL);
   }
 }

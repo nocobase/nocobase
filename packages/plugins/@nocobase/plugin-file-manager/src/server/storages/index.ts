@@ -8,7 +8,10 @@
  */
 
 import Path from 'path';
+import type { Readable } from 'stream';
 import { StorageEngine } from 'multer';
+import { AxiosRequestConfig } from 'axios';
+import axios from 'axios';
 import urlJoin from 'url-join';
 import { isURL } from '@nocobase/utils';
 import { encodeURL, ensureUrlEncoded, getFileKey } from '../utils';
@@ -42,6 +45,7 @@ export abstract class StorageType {
   constructor(public storage: StorageModel) {}
   abstract make(): StorageEngine;
   abstract delete(records: AttachmentModel[]): [number, AttachmentModel[]] | Promise<[number, AttachmentModel[]]>;
+  abstract getFileStream(file: AttachmentModel): Promise<{ stream: Readable }>;
 
   getFileKey(record: AttachmentModel) {
     return getFileKey(record);
@@ -84,6 +88,24 @@ export abstract class StorageType {
       preview && this.storage.options.thumbnailRule,
     ].filter(Boolean);
     return urlJoin(keys);
+  }
+
+  async getFileStreamFromURL(url: string): Promise<{ stream: Readable; contentType: string }> {
+    if (url.startsWith('http')) {
+      const requestOptions: AxiosRequestConfig = {
+        responseType: 'stream',
+        validateStatus: (status) => status === 200,
+        timeout: 30000, // 30 seconds timeout
+      };
+
+      const response = await axios.get(url, requestOptions);
+
+      return {
+        stream: response.data,
+        contentType: response.headers['content-type'],
+      };
+    }
+    throw new Error('Unsupported URL');
   }
 }
 

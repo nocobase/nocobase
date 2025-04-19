@@ -22,6 +22,7 @@ import StorageTypeLocal from './storages/local';
 import StorageTypeS3 from './storages/s3';
 import StorageTypeTxCos from './storages/tx-cos';
 import { encodeURL } from './utils';
+import { Readable } from 'stream';
 
 export type * from './storages';
 
@@ -333,6 +334,25 @@ export class PluginFileManagerServer extends Plugin {
       return true;
     }
     return !!storage.options?.public;
+  }
+
+  async getFileStream(file: AttachmentModel): Promise<{ stream: Readable }> {
+    if (!file.storageId) {
+      throw new Error('File storageId not found');
+    }
+    const storage = this.storagesCache.get(file.storageId);
+    if (!storage) {
+      throw new Error('[file-manager] no linked or default storage provided');
+    }
+
+    const StorageType = this.storageTypes.get(storage.type);
+    const storageInstance = new StorageType(storage);
+
+    if (!storageInstance) {
+      throw new Error(`[file-manager] storage type "${storage.type}" is not defined`);
+    }
+
+    return storageInstance.getFileStream(file);
   }
 }
 
