@@ -118,24 +118,6 @@ export abstract class StorageType {
     ].filter(Boolean);
     return urlJoin(keys);
   }
-
-  async getFileStreamFromURL(url: string): Promise<{ stream: Readable; contentType: string }> {
-    if (url.startsWith('http')) {
-      const requestOptions: AxiosRequestConfig = {
-        responseType: 'stream',
-        validateStatus: (status) => status === 200,
-        timeout: 30000, // 30 seconds timeout
-      };
-
-      const response = await axios.get(url, requestOptions);
-
-      return {
-        stream: response.data,
-        contentType: response.headers['content-type'],
-      };
-    }
-    throw new Error('Unsupported URL');
-  }
 }
 
 export type StorageClassType = { new (storage: StorageModel): StorageType } & typeof StorageType;
