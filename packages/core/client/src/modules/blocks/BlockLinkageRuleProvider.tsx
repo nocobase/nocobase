@@ -67,7 +67,7 @@ export const BlockLinkageRuleProvider = (props) => {
                 return result;
               },
               () => {
-                setTriggerLinkageUpdate((prevFlag) => !prevFlag); // 翻转状态
+                setTriggerLinkageUpdate((prevFlag) => !prevFlag);
               },
               { fireImmediately: true, equals: isEqual },
             );

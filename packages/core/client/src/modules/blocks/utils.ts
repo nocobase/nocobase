@@ -7,11 +7,11 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import type { ISchema } from '@formily/react';
 import { useEffect, useState } from 'react';
 import { VariableOption, VariablesContextType } from '../../variables/types';
 import { conditionAnalyses } from '../../schema-component/common/utils/uitls';
 import { useApp } from '../../application';
+import { useCollectionRecord } from '../../data-source';
 
 enum ActionType {
   Visible = 'visible',
@@ -61,7 +61,7 @@ export const useReactiveLinkageEffect = (
   const app = useApp();
   const jsonLogic = app.jsonLogic;
   const [displayResult, setDisplayResult] = useState<string[] | null>(null);
-
+  const record = useCollectionRecord();
   useEffect(() => {
     const runLinkages = async () => {
       const result: string[] = [];
@@ -85,7 +85,7 @@ export const useReactiveLinkageEffect = (
     };
 
     runLinkages();
-  }, [linkageRules, triggerLinkageUpdate]);
+  }, [linkageRules, triggerLinkageUpdate, record]);
 
   return displayResult;
 };
