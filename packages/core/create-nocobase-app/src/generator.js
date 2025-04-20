@@ -61,7 +61,7 @@ class AppGenerator extends Generator {
 
   checkDialect() {
     const dialect = this.args.dbDialect;
-    const supportDialects = ['mysql', 'mariadb', 'sqlite', 'postgres'];
+    const supportDialects = ['mysql', 'mariadb', 'postgres'];
     if (!supportDialects.includes(dialect)) {
       console.log(
         `dialect ${chalk.red(dialect)} is not supported, currently supported dialects are ${chalk.green(
@@ -83,16 +83,9 @@ class AppGenerator extends Generator {
       dependencies.push(`"mariadb": "^2.5.6"`);
       dependencies.push(`"pg": "^8.7.3"`);
       dependencies.push(`"pg-hstore": "^2.3.4"`);
-      dependencies.push(`"sqlite3": "^5.0.8"`);
     }
 
     switch (dbDialect) {
-      case 'sqlite':
-        if (!allDbDialect) {
-          dependencies.push(`"sqlite3": "^5.0.8"`);
-        }
-        envs.push(`DB_STORAGE=${env.DB_STORAGE || 'storage/db/nocobase.sqlite'}`);
-        break;
       case 'mysql':
         if (!allDbDialect) {
           dependencies.push(`"mysql2": "^3.11.0"`);
