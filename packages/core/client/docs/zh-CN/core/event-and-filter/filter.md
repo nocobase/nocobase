@@ -21,6 +21,11 @@
 
 <code src="./demos/filters/multi-step-filterflow.tsx"></code>
 
+## 控制元素可见性过滤器流
+演示如何控制元素的可见性
+
+<code src="./demos/filters/hide-show-filterflow.tsx"></code>
+
 ## 数据转换过滤器流
 展示如何使用过滤器流转换数据
 

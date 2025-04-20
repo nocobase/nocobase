@@ -1,6 +1,6 @@
 import { Button, Card, Form, Input, Select, Space, Typography, Modal, Switch, InputNumber } from 'antd';
-import React, { useMemo, useState } from 'react';
-import { FilterFlowManager, useApplyFilters } from '@nocobase/client';
+import React, { useCallback, useMemo, useState } from 'react';
+import { FilterFlowManager, FilterHandlerContext, FilterStepParams, useApplyFilters } from '@nocobase/client';
 import { configureAction } from '../actions/open-configure-dialog';
 
 // 创建FilterFlowManager实例
@@ -135,42 +135,65 @@ filterFlowManager.addFlow({
   ],
 });
 
-const ConfigurableFilter = () => {
-  const [inputText, setInputText] = useState('Hello configurable filter demo');
-  const [stepParams, setStepParams] = useState({
-    'replace-step': {
-      search: 'Hello',
-      replacement: 'hi',
-      useRegex: false,
+const PARAMS = {
+  filters: {
+    'demo-id': {
+      'replace-step': {
+        search: 'Hello',
+        replacement: 'hi',
+        useRegex: false,
+      },
+      'truncate-step': {
+        maxLength: 10,
+        suffix: '...',
+      },
     },
-    'truncate-step': {
-      maxLength: 10,
-      suffix: '...',
-    },
-  });
+  },
+};
 
-  const context = useMemo(
-    () => ({
+const getParams = async (id: string): Promise<FilterStepParams> => {
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      resolve(PARAMS['filters'][id]); // 模拟异步获取
+    }, 1000);
+  });
+};
+
+const setParams = async (id: string, params: Record<string, any>) => {
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      PARAMS['filters'][id] = params; // 模拟异步更新
+      resolve(params);
+    }, 1000);
+  });
+};
+const ConfigurableFilter = () => {
+  const demoId = 'demo-id';
+  const [inputText, setInputText] = useState('Hello configurable filter demo');
+
+  const getContext = useCallback(
+    async (): Promise<FilterHandlerContext> => ({
       meta: {
-        params: stepParams,
+        params: await getParams(demoId),
       },
     }),
-    [inputText, stepParams],
+    [demoId],
   );
 
-  const outputText = useApplyFilters(filterFlowManager, 'configurable-text-transform', inputText, context);
+  const outputText = useApplyFilters(filterFlowManager, 'configurable-text-transform', inputText, getContext, demoId);
 
   // 打开配置Modal
-  const openConfigModal = (stepKey) => {
+  const openConfigModal = async (stepKey) => {
     const flow = filterFlowManager.getFlow('configurable-text-transform');
     const step = flow.getStep(stepKey);
     const actionContext = {
       payload: {
         step,
-        currentParams: stepParams[stepKey],
-        onChange: (values) => {
-          setStepParams({
-            ...stepParams,
+        currentParams: (await getParams(demoId))?.[stepKey],
+        onChange: async (values) => {
+          // await setParams(demoId, PARAMS['filters'][demoId]);
+          await setParams(demoId, {
+            ...PARAMS['filters'][demoId],
             [stepKey]: values,
           });
         },

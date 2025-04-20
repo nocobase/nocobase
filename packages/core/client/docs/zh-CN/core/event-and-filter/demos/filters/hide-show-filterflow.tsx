@@ -197,15 +197,6 @@ const HideShowFilterFlow = () => {
           </div>
         </Space>
       </Card>
-
-      <Card title="过滤器结果" style={{ marginBottom: 16 }}>
-        <Space direction="vertical" style={{ width: '100%' }}>
-          <div>
-            <Typography.Text code>visibilityConfig:</Typography.Text>
-            <pre>{JSON.stringify(visibilityConfig, null, 2)}</pre>
-          </div>
-        </Space>
-      </Card>
     </div>
   );
 };

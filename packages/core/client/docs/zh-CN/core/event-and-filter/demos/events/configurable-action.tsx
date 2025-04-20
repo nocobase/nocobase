@@ -139,36 +139,63 @@ eventFlowManager.addFlow({
   ],
 });
 
+const PARAMS = {
+  events: {
+    'button-id': {
+      stepParams: {
+        'message-step': {
+          title: '消息标题',
+          content: '这是一条测试消息',
+          type: 'info',
+        },
+      },
+    },
+  },
+  filters: {},
+};
+
+const getParams = async (id: string) => {
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      resolve(PARAMS['events'][id]); // 模拟异步获取
+    }, 1000);
+  });
+};
+
+const setParams = async (id: string, params: Record<string, any>) => {
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      PARAMS['events'][id] = params; // 模拟异步更新
+      resolve(params);
+    }, 1000);
+  });
+};
+
 // 主演示组件
 const ConfigurableActionDemo = () => {
-  const [currentParams, setCurrentParams] = useState<Record<string, any>>({
-    title: '消息标题',
-    content: '这是一条测试消息',
-    type: 'info',
-  });
-
+  const componentId = 'button-id';
   // 打开配置弹窗
-  const showConfig = () => {
+  const showConfig = async () => {
     const step = eventFlowManager.getFlow('message-flow').getStep('message-step');
     const ctx = {
       payload: {
         step,
-        onChange: (values) => {
-          setCurrentParams(values);
+        onChange: async (values) => {
+          await setParams(componentId, values);
         },
-        currentParams,
+        currentParams: await getParams(componentId),
       },
     };
     eventBus.dispatchEvent('configure:click', ctx);
   };
 
   // 触发消息动作
-  const triggerAction = () => {
+  const triggerAction = async () => {
     const ctx = {
       payload: {},
       meta: {
         stepParams: {
-          'message-step': currentParams,
+          'message-step': await getParams(componentId),
         },
       },
     };
@@ -181,15 +208,6 @@ const ConfigurableActionDemo = () => {
       <Typography.Paragraph>
         点击&quot;配置参数&quot;按钮修改消息的标题、内容和类型，然后点击&quot;执行动作&quot;查看效果。
       </Typography.Paragraph>
-
-      <div style={{ marginBottom: 16 }}>
-        <Typography.Text strong>当前配置:</Typography.Text>
-        <ul>
-          <li>标题: {currentParams.title}</li>
-          <li>内容: {currentParams.content}</li>
-          <li>类型: {currentParams.type}</li>
-        </ul>
-      </div>
 
       <Space>
         <Button type="primary" onClick={showConfig}>

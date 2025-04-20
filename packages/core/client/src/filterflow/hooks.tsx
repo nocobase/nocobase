@@ -25,24 +25,36 @@ export function useApplyFilters<T = any>(
   filterFlowManager: FilterFlowManager,
   flowName: string,
   initialValue: any,
-  context?: FilterHandlerContext,
+  context?: FilterHandlerContext | (() => Promise<FilterHandlerContext>),
+  id?: string,
 ): T {
   const [, forceUpdate] = useState(0);
 
   const cacheKey = useMemo(() => {
-    const key = JSON.stringify([flowName, context]);
-    return key;
-  }, [flowName, context]);
+    if (id) {
+      return `${flowName}-${id}`;
+    }
+    return JSON.stringify([flowName, context]);
+  }, [flowName, context, id]);
 
   const prevValue = useRef(initialValue);
   const prevCacheKey = useRef(cacheKey);
+  const contextPromise = new Promise<FilterHandlerContext>((resolve, reject) => {
+    if (typeof context === 'function') {
+      context().then(resolve).catch(reject);
+    } else {
+      resolve(context);
+    }
+  });
 
   useEffect(() => {
     if (prevValue.current !== initialValue) {
       const refreshData = async () => {
         const cachedEntry = filterCache.get(cacheKey);
         if (cachedEntry?.status === 'resolved') {
-          const newData = await filterFlowManager.applyFilters(flowName, initialValue, context);
+          const newData = await contextPromise.then((ctx) =>
+            filterFlowManager.applyFilters(flowName, initialValue, ctx),
+          );
           filterCache.set(cacheKey, { status: 'resolved', data: newData, promise: Promise.resolve(newData) });
           forceUpdate((prev) => prev + 1);
         }
@@ -50,7 +62,8 @@ export function useApplyFilters<T = any>(
       refreshData();
       prevValue.current = initialValue;
     }
-  }, [initialValue]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialValue]); //输入变化时，应该重新计算
 
   useEffect(() => {
     if (prevCacheKey.current !== cacheKey) {
@@ -77,8 +90,8 @@ export function useApplyFilters<T = any>(
   }
 
   // 创建新的 Promise
-  const promise = filterFlowManager
-    .applyFilters(flowName, initialValue, context)
+  const promise = contextPromise
+    .then((ctx) => filterFlowManager.applyFilters(flowName, initialValue, ctx))
     .then((result) => {
       // 成功时更新缓存
       filterCache.set(cacheKey, { status: 'resolved', data: result, promise });
