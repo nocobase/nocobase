@@ -248,7 +248,10 @@ export class Auth {
     const response = await this.api.request({
       method: 'post',
       url: 'auth:lostPassword',
-      data: values,
+      data: {
+        ...values,
+        baseURL: window.location.href.replace('/forgot-password', ''),
+      },
     });
     return response;
   }

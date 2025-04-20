@@ -241,4 +241,48 @@ describe('auth:lostPassword', () => {
       }),
     );
   });
+
+  it('should successfully send a password reset email with baseURL parameter', async () => {
+    const baseURL = 'https://example.com';
+
+    const res = await agent.post('/auth:lostPassword').set({ 'X-Authenticator': 'basic' }).send({
+      email: 'test@example.com',
+      baseURL: baseURL,
+    });
+
+    expect(res.statusCode).toBe(204);
+
+    // Verify JWT sign was called
+    expect(app.authManager.jwt.sign).toHaveBeenCalled();
+
+    // Verify notification manager send method was called with the correct reset link
+    expect(notificationManagerMock.send).toHaveBeenCalledTimes(1);
+    expect(notificationManagerMock.send).toHaveBeenCalledWith(
+      expect.objectContaining({
+        channelName: 'email',
+        message: expect.objectContaining({
+          to: ['test@example.com'],
+          html: expect.stringContaining(`${baseURL}/reset-password?resetToken=mock-reset-token`),
+        }),
+      }),
+    );
+  });
+
+  it('should handle baseURL with subdirectory correctly', async () => {
+    const baseURL = 'https://example.com/app';
+
+    const res = await agent.post('/auth:lostPassword').set({ 'X-Authenticator': 'basic' }).send({
+      email: 'test@example.com',
+      baseURL: baseURL,
+    });
+
+    expect(res.statusCode).toBe(204);
+    expect(notificationManagerMock.send).toHaveBeenCalledWith(
+      expect.objectContaining({
+        message: expect.objectContaining({
+          html: expect.stringContaining(`${baseURL}/reset-password?resetToken=mock-reset-token`),
+        }),
+      }),
+    );
+  });
 });

@@ -156,7 +156,7 @@ export class BasicAuth extends BaseAuth {
   async lostPassword() {
     const ctx = this.ctx;
     const {
-      values: { email },
+      values: { email, baseURL },
     } = ctx.action.params;
 
     if (!email) {
@@ -192,8 +192,7 @@ export class BasicAuth extends BaseAuth {
     });
 
     // 构建重置密码链接
-    const origin = ctx.request.headers.origin || '';
-    const resetLink = `${origin}/reset-password?resetToken=${resetToken}`;
+    const resetLink = `${baseURL}/reset-password?resetToken=${resetToken}`;
 
     // 通过通知管理插件发送邮件
     const notificationManager = ctx.app.getPlugin('notification-manager');
