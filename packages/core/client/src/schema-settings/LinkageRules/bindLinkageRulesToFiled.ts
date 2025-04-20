@@ -274,6 +274,13 @@ function getSubscriber(
           // 在 FormItem 中有使用这个属性来判断字段是否被隐藏
           field.data.hidden = true;
 
+          // 如果字段是必填的，并且被隐藏（保留值）了，那么就需要把 required 设置为 false，否则有可能会导致表单验证失败；
+          // 进而导致点击提交按钮无效的问题。
+          if (field.required) {
+            field.required = false;
+            field.data.prevRequired = true;
+          }
+
           requestAnimationFrame(() => {
             field.setState((state) => {
               state.display = 'visible';
@@ -295,6 +302,13 @@ function getSubscriber(
           field.data = field.data || {};
           // 在 FormItem 中有使用这个属性来判断字段是否被隐藏
           field.data.hidden = false;
+
+          // 当“隐藏（保留值）”的字段再次显示时，恢复“必填”的状态
+          if (fieldName === 'display' && lastState?.value === 'visible' && field.data.prevRequired) {
+            delete field.data.prevRequired;
+            field.required = true;
+          }
+
           requestAnimationFrame(() => {
             field.setState((state) => {
               state[fieldName] = lastState?.value;
