@@ -77,21 +77,16 @@ const ConditionalFlowTrigger = () => {
         time: new Date().toLocaleString(),
       },
       meta: {
-        actionParams: [
-          {
-            flow: 'conditional-trigger-flow',
-            params: {
-              step1: {
-                title: '阈值警告',
-                width: 500,
-              },
-              step2: {
-                title: '阈值超限警告',
-                duration: 5,
-              },
-            },
+        stepParams: {
+          step1: {
+            title: '阈值警告',
+            width: 500,
           },
-        ],
+          step2: {
+            title: '阈值超限警告',
+            duration: 5,
+          },
+        },
       },
     };
 

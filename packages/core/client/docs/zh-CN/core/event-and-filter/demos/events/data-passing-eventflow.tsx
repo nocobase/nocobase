@@ -99,20 +99,15 @@ const DataPassingEventFlow = () => {
         time: new Date().toLocaleString(),
       },
       meta: {
-        actionParams: [
-          {
-            flow: 'data-passing-flow',
-            params: {
-              step1: {
-                prefix: '已处理: ',
-              },
-              step2: {
-                title: '数据处理结果',
-                duration: 5,
-              },
-            },
+        stepParams: {
+          step1: {
+            prefix: '已处理: ',
           },
-        ],
+          step2: {
+            title: '数据处理结果',
+            duration: 5,
+          },
+        },
       },
     };
 

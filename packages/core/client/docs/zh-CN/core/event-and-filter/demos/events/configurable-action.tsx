@@ -167,14 +167,9 @@ const ConfigurableActionDemo = () => {
     const ctx = {
       payload: {},
       meta: {
-        actionParams: [
-          {
-            flow: 'message-flow',
-            params: {
-              'message-step': currentParams,
-            },
-          },
-        ],
+        stepParams: {
+          'message-step': currentParams,
+        },
       },
     };
     eventBus.dispatchEvent('button:click', ctx);

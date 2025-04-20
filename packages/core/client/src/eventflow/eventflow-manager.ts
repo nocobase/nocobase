@@ -210,7 +210,7 @@ export class EventFlow {
       return;
     }
     // 触发器执行函数
-    const eventParams = context?.meta?.eventParams?.find((item) => item.flow === this.key)?.params;
+    const eventParams = context?.meta?.eventParams?.[this.key];
     await this.executeHandler(event.handler, eventParams, context);
 
     if (!this.hasSteps()) {
@@ -248,7 +248,7 @@ export class EventFlow {
       const action = this.eventFlowManager.getAction(step.action);
       if (action) {
         if (this.checkCondition(step.condition, context)) {
-          const stepParams = context?.meta?.actionParams?.find((item) => item.flow === this.key)?.params?.[step.key];
+          const stepParams = context?.meta?.stepParams?.[step.key];
           if (step.isAwait !== false) {
             await this.executeHandler(action.handler, stepParams, context);
           } else {
