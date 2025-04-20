@@ -56,6 +56,7 @@ function useFieldComponentName(): string {
   const map = {
     // AssociationField 的 mode 默认值是 Select
     AssociationField: 'Select',
+    'DatePicker.FilterWithPicker': 'DatePicker',
   };
   const fieldComponentName =
     fieldSchema?.['x-component-props']?.['mode'] ||
@@ -163,15 +164,15 @@ const EditOperator = () => {
 
   const setOperatorComponent = (operator: any, component: any, props = {}) => {
     const componentProps = field.componentProps || {};
-    field.component = component;
     field.componentProps = {
       ...componentProps,
+      component,
       'filter-operator': operator,
       ...props,
     };
-    fieldSchema['x-component'] = component;
     fieldSchema['x-component-props'] = {
       ...fieldSchema['x-component-props'],
+      component,
       'filter-operator': operator,
       ...props,
     };
@@ -179,9 +180,9 @@ const EditOperator = () => {
     dn.emit('patch', {
       schema: {
         'x-uid': fieldSchema['x-uid'],
-        'x-component': component,
         'x-component-props': {
           ...fieldSchema['x-component-props'],
+          component,
           'filter-operator': operator,
           ...props,
         },
