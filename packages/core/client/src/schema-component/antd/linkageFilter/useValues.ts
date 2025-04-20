@@ -93,7 +93,7 @@ export const useValues = (): UseValuesReturn => {
     }, 100);
   };
 
-  useEffect(value2data, [field.value, scopes]);
+  useEffect(value2data, [field.value.leftVar, scopes]);
 
   const setLeftValue = useCallback(
     (leftVar, paths) => {
