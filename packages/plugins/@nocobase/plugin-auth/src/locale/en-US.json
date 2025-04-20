@@ -51,5 +51,15 @@
   "Notification manager plugin not found": "Notification manager plugin not found",
   "Not allowed to reset password": "Not allowed to reset password",
   "Token expired": "Token expired",
-  "User not found": "User not found"
+  "User not found": "User not found",
+  "Forgot password": "Forgot password",
+  "Please enter your email": "Please enter your email",
+  "Reset password": "Reset password",
+  "Back to login": "Back to login",
+  "Send reset email": "Send reset email",
+  "Reset link has expired": "Reset link has expired",
+  "Go to login": "Go to login",
+  "Please enter new password": "Please enter new password",
+  "Please enter the same password again": "Please enter the same password again",
+  "The passwords entered twice are inconsistent": "The passwords entered twice are inconsistent"
 }

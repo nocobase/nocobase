@@ -28,5 +28,15 @@
   "Notification manager plugin not found": "通知管理プラグインが見つかりません",
   "Not allowed to reset password": "パスワードのリセットは許可されていません",
   "Token expired": "トークンの有効期限が切れました",
-  "User not found": "ユーザーが見つかりません"
+  "User not found": "ユーザーが見つかりません",
+  "Forgot password": "パスワードを忘れました",
+  "Please enter your email": "メールアドレスを入力してください。",
+  "Reset password": "パスワードをリセット",
+  "Back to login": "ログインに戻る",
+  "Send reset email": "リセットメールを送信",
+  "Reset link has expired": "リセットリンクの有効期限が切れています",
+  "Go to login": "ログインに移動",
+  "Please enter new password": "新しいパスワードを入力してください。",
+  "Please enter the same password again": "同じパスワードを再度入力してください。",
+  "The passwords entered twice are inconsistent": "2回入力されたパスワードが一致しません"
 }

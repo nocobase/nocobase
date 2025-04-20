@@ -56,5 +56,15 @@
   "Notification manager plugin not found": "Plugin di gestione delle notifiche non trovato",
   "Not allowed to reset password": "Reimpostazione della password non consentita",
   "Token expired": "Token scaduto",
-  "User not found": "Utente non trovato"
+  "User not found": "Utente non trovato",
+  "Forgot password": "Password dimenticata",
+  "Please enter your email": "Si prega di inserire un'email",
+  "Reset password": "Reimposta password",
+  "Back to login": "Torna al login",
+  "Send reset email": "Invia email di reset",
+  "Reset link has expired": "Il link di reset è scaduto",
+  "Go to login": "Vai al login",
+  "Please enter new password": "Si prega di inserire una nuova password",
+  "Please enter the same password again": "Si prega di reinserire la stessa password",
+  "The passwords entered twice are inconsistent": "Le password inserite due volte non corrispondono"
 }

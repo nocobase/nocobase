@@ -50,5 +50,15 @@
   "Notification manager plugin not found": "未找到通知管理插件",
   "Not allowed to reset password": "不允许重置密码",
   "Token expired": "令牌已过期",
-  "User not found": "未找到用户"
+  "User not found": "未找到用户",
+  "Forgot password": "忘记密码",
+  "Please enter your email": "请输入您的邮箱",
+  "Reset password": "重置密码",
+  "Back to login": "返回登录",
+  "Send reset email": "发送重置邮件",
+  "Reset link has expired": "重置链接已过期",
+  "Go to login": "前往登录",
+  "Please enter new password": "请输入新密码",
+  "Please enter the same password again": "请再次输入相同的密码",
+  "The passwords entered twice are inconsistent": "两次输入的密码不一致"
 }

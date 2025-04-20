@@ -94,8 +94,8 @@ export const ResetPasswordPage = () => {
   if (!resetToken || expired) {
     return <Result
       status="403"
-      title="Reset link has expired"
-      extra={<Button type="primary" onClick={() => navigate('/signin')}>Go to login</Button>}
+      title={t('Reset link has expired')}
+      extra={<Button type="primary" onClick={() => navigate('/signin')}>{t('Go to login')}</Button>}
     />;
   }
 

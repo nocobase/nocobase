@@ -51,5 +51,15 @@
   "Notification manager plugin not found": "Benachrichtigungsmanager-Plugin nicht gefunden",
   "Not allowed to reset password": "Zurücksetzen des Passworts nicht erlaubt",
   "Token expired": "Token abgelaufen",
-  "User not found": "Benutzer nicht gefunden"
+  "User not found": "Benutzer nicht gefunden",
+  "Forgot password": "Passwort vergessen",
+  "Please enter your email": "Bitte geben Sie Ihre E-Mail-Adresse ein",
+  "Reset password": "Passwort zurücksetzen",
+  "Back to login": "Zurück zur Anmeldung",
+  "Send reset email": "Zurücksetzen der E-Mail senden",
+  "Reset link has expired": "Der Zurücksetzen-Link ist abgelaufen",
+  "Go to login": "Zur Anmeldung gehen",
+  "Please enter new password": "Bitte geben Sie ein neues Passwort ein",
+  "Please enter the same password again": "Bitte geben Sie dasselbe Passwort erneut ein",
+  "The passwords entered twice are inconsistent": "Die zweimal eingegebenen Passwörter stimmen nicht überein"
 }
