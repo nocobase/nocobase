@@ -39,5 +39,13 @@
   "Please enter new password": "新しいパスワードを入力してください。",
   "Please enter the same password again": "同じパスワードを再度入力してください。",
   "The passwords entered twice are inconsistent": "2回入力されたパスワードが一致しません",
-  "Password reset successful": "パスワードリセット成功"
+  "Password reset successful": "パスワードリセット成功",
+  "Enable forget password feature": "パスワードを忘れた機能を有効にする",
+  "Notification Channel (Email)": "通知チャネル（メール）",
+  "Subject": "件名",
+  "Content type": "コンテンツタイプ",
+  "Plain text": "プレーンテキスト",
+  "defaultResetPasswordEmailSubject": "[アプリ/ウェブサイト名] のパスワードをリセットしてください",
+  "defaultResetPasswordEmailContentHTML": "<p>{{$user.username}} 様、</p>\n\n<p>[アプリ/ウェブサイト名] アカウントのパスワードリセットリクエストを受け付けました。</p>\n\n<p>以下のリンクをクリックして新しいパスワードを設定してください:</p>\n\n<p>\n  <a href=\"{{$resetLink}}\">パスワードをリセット</a>\n</p>\n\n<p>\n  パスワードのリセットをリクエストしていない場合は、このメールを無視してください。パスワードは変更されません。\n</p>\n\n<p>\n  注意: セキュリティのため、このパスワードリセットリンクは <strong>[有効期間、例: 24時間]</strong> で期限切れになります。\n</p>\n\n<p>パスワードのリセットで問題が発生した場合は、サポートチームにお問い合わせください。</p>\n\n<p>\n  ありがとうございます、<br>\n  [会社名] チーム\n</p>",
+  "defaultResetPasswordEmailContentText": "{{$user.username}} 様、\n\n[アプリ/ウェブサイト名] アカウントのパスワードリセットリクエストを受け付けました。\n\n以下のリンクをクリックして新しいパスワードを設定してください:\n\n{{$resetLink}}\n\nパスワードのリセットをリクエストしていない場合は、このメールを無視してください。パスワードは変更されません。\n\n注意: セキュリティのため、このパスワードリセットリンクは [有効期間、例: 24時間] で期限切れになります。\n\nパスワードのリセットで問題が発生した場合は、サポートチームにお問い合わせください。\n\nありがとうございます、[会社名] チーム"
 }

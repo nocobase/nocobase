@@ -62,5 +62,13 @@
   "Please enter new password": "Bitte geben Sie ein neues Passwort ein",
   "Please enter the same password again": "Bitte geben Sie dasselbe Passwort erneut ein",
   "The passwords entered twice are inconsistent": "Die zweimal eingegebenen Passwörter stimmen nicht überein",
-  "Password reset successful": "Passwort zurücksetzen erfolgreich"
+  "Password reset successful": "Passwort zurücksetzen erfolgreich",
+  "Enable forget password feature": "Funktion zum Zurücksetzen des Passworts aktivieren",
+  "Notification Channel (Email)": "Benachrichtigungskanal (E-Mail)",
+  "Subject": "Betreff",
+  "Content type": "Inhaltstyp",
+  "Plain text": "Reiner Text",
+  "defaultResetPasswordEmailSubject": "Setzen Sie Ihr Passwort für [Ihr App-/Website-Name] zurück",
+  "defaultResetPasswordEmailContentHTML": "<p>Hallo {{$user.username}},</p>\n\n<p>Wir haben eine Anfrage zum Zurücksetzen des Passworts für Ihr [Ihr App-/Website-Name]-Konto erhalten.</p>\n\n<p>Bitte klicken Sie auf den untenstehenden Link, um Ihr neues Passwort festzulegen:</p>\n\n<p>\n  <a href=\"{{$resetLink}}\">Passwort zurücksetzen</a>\n</p>\n\n<p>\n  Wenn Sie keine Passwortzurücksetzung angefordert haben, ignorieren Sie bitte diese E-Mail. Ihr Passwort bleibt unverändert.\n</p>\n\n<p>\n  Bitte beachten Sie: Zu Ihrer Sicherheit läuft dieser Link zum Zurücksetzen des Passworts in <strong>[Gültigkeitsdauer, z. B. 24 Stunden]</strong> ab.\n</p>\n\n<p>Wenn Sie Probleme beim Zurücksetzen Ihres Passworts haben, wenden Sie sich bitte an unser Support-Team.</p>\n\n<p>\n  Danke,<br>\n  Das [Ihr Firmenname]-Team\n</p>",
+  "defaultResetPasswordEmailContentText": "Hallo {{$user.username}},\n\nWir haben eine Anfrage zum Zurücksetzen des Passworts für Ihr [Ihr App-/Website-Name]-Konto erhalten.\n\nBitte klicken Sie auf den untenstehenden Link, um Ihr neues Passwort festzulegen:\n\n{{$resetLink}}\n\nWenn Sie keine Passwortzurücksetzung angefordert haben, ignorieren Sie bitte diese E-Mail. Ihr Passwort bleibt unverändert.\n\nBitte beachten Sie: Zu Ihrer Sicherheit läuft dieser Link zum Zurücksetzen des Passworts in [Gültigkeitsdauer, z. B. 24 Stunden] ab.\n\nWenn Sie Probleme beim Zurücksetzen Ihres Passworts haben, wenden Sie sich bitte an unser Support-Team.\n\nDanke, Das [Ihr Firmenname]-Team"
 }

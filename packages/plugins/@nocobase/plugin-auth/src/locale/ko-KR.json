@@ -39,5 +39,13 @@
   "Please enter new password": "새 비밀번호를 입력하세요",
   "Please enter the same password again": "같은 비밀번호를 다시 입력하세요",
   "The passwords entered twice are inconsistent": "입력한 두 개의 비밀번호가 일치하지 않습니다",
-  "Password reset successful": "비밀번호 재설정 성공"
+  "Password reset successful": "비밀번호 재설정 성공",
+  "Enable forget password feature": "비밀번호 분실 기능 활성화",
+  "Notification Channel (Email)": "알림 채널 (이메일)",
+  "Subject": "제목",
+  "Content type": "콘텐츠 유형",
+  "Plain text": "일반 텍스트",
+  "defaultResetPasswordEmailSubject": "[앱/웹사이트 이름]의 비밀번호를 재설정하세요",
+  "defaultResetPasswordEmailContentHTML": "<p>안녕하세요 {{$user.username}}님,</p>\n\n<p>[앱/웹사이트 이름] 계정의 비밀번호 재설정 요청을 받았습니다.</p>\n\n<p>아래 링크를 클릭하여 새 비밀번호를 설정하세요:</p>\n\n<p>\n  <a href=\"{{$resetLink}}\">비밀번호 재설정</a>\n</p>\n\n<p>\n  비밀번호 재설정을 요청하지 않으셨다면 이 이메일을 무시하세요. 비밀번호는 변경되지 않습니다.\n</p>\n\n<p>\n  참고: 보안을 위해 이 비밀번호 재설정 링크는 <strong>[유효 기간, 예: 24시간]</strong> 후에 만료됩니다.\n</p>\n\n<p>비밀번호 재설정에 문제가 발생하면 지원팀에 문의하세요.</p>\n\n<p>\n  감사합니다,<br>\n  [회사 이름] 팀 드림\n</p>",
+  "defaultResetPasswordEmailContentText": "안녕하세요 {{$user.username}}님,\n\n[앱/웹사이트 이름] 계정의 비밀번호 재설정 요청을 받았습니다.\n\n아래 링크를 클릭하여 새 비밀번호를 설정하세요:\n\n{{$resetLink}}\n\n비밀번호 재설정을 요청하지 않으셨다면 이 이메일을 무시하세요. 비밀번호는 변경되지 않습니다.\n\n참고: 보안을 위해 이 비밀번호 재설정 링크는 [유효 기간, 예: 24시간] 후에 만료됩니다.\n\n비밀번호 재설정에 문제가 발생하면 지원팀에 문의하세요.\n\n감사합니다, [회사 이름] 팀 드림"
 }

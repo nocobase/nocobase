@@ -67,5 +67,13 @@
   "Please enter new password": "Si prega di inserire una nuova password",
   "Please enter the same password again": "Si prega di reinserire la stessa password",
   "The passwords entered twice are inconsistent": "Le password inserite due volte non corrispondono",
-  "Password reset successful": "Reimpostazione password riuscita"
+  "Password reset successful": "Reimpostazione password riuscita",
+  "Enable forget password feature": "Abilita la funzione di password dimenticata",
+  "Notification Channel (Email)": "Canale di notifica (Email)",
+  "Subject": "Oggetto",
+  "Content type": "Tipo di contenuto",
+  "Plain text": "Testo semplice",
+  "defaultResetPasswordEmailSubject": "Reimposta la tua password per [Nome App/Sito Web]",
+  "defaultResetPasswordEmailContentHTML": "<p>Ciao {{$user.username}},</p>\n\n<p>Abbiamo ricevuto una richiesta per reimpostare la password del tuo account [Nome App/Sito Web].</p>\n\n<p>Per favore, clicca sul link sottostante per impostare la tua nuova password:</p>\n\n<p>\n  <a href=\"{{$resetLink}}\">Reimposta la tua password</a>\n</p>\n\n<p>\n  Se non hai richiesto la reimpostazione della password, ignora questa email. La tua password rimarrà invariata.\n</p>\n\n<p>\n  Nota bene: Per la tua sicurezza, questo link per la reimpostazione della password scadrà tra <strong>[Periodo di validità, es. 24 ore]</strong>.\n</p>\n\n<p>Se riscontri problemi nel reimpostare la password, contatta il nostro team di supporto.</p>\n\n<p>\n  Grazie,<br>\n  Il Team di [Nome Azienda]\n</p>",
+  "defaultResetPasswordEmailContentText": "Ciao {{$user.username}},\n\nAbbiamo ricevuto una richiesta per reimpostare la password del tuo account [Nome App/Sito Web].\n\nPer favore, clicca sul link sottostante per impostare la tua nuova password:\n\n{{$resetLink}}\n\nSe non hai richiesto la reimpostazione della password, ignora questa email. La tua password rimarrà invariata.\n\nNota bene: Per la tua sicurezza, questo link per la reimpostazione della password scadrà tra [Periodo di validità, es. 24 ore].\n\nSe riscontri problemi nel reimpostare la password, contatta il nostro team di supporto.\n\nGrazie, Il Team di [Nome Azienda]"
 }

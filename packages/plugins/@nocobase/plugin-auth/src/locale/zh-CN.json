@@ -61,5 +61,13 @@
   "Please enter new password": "请输入新密码",
   "Please enter the same password again": "请再次输入相同的密码",
   "The passwords entered twice are inconsistent": "两次输入的密码不一致",
-  "Password reset successful": "密码重置成功"
+  "Password reset successful": "密码重置成功",
+  "Enable forget password feature": "启用忘记密码功能",
+  "Notification Channel (Email)": "通知渠道（电子邮件）",
+  "Subject": "主题",
+  "Content type": "内容类型",
+  "Plain text": "普通文本",
+  "defaultResetPasswordEmailSubject": "重置您的 [应用/网站名称] 密码",
+  "defaultResetPasswordEmailContentHTML": "<p>您好 {{$user.username}}，</p>\n\n<p>我们收到了重置您 [应用/网站名称] 账户密码的请求。</p>\n\n<p>请点击下面的链接设置您的新密码：</p>\n\n<p>\n  <a href=\"{{$resetLink}}\">重置您的密码</a>\n</p>\n\n<p>\n  如果您没有请求重置密码，请忽略此邮件。您的密码将保持不变。\n</p>\n\n<p>\n  请注意：为了您的安全，此密码重置链接将在 <strong>[有效期，例如 24 小时]</strong> 后过期。\n</p>\n\n<p>如果您在重置密码时遇到任何问题，请联系我们的支持团队。</p>\n\n<p>\n  谢谢，<br>\n  [您的公司名称] 团队\n</p>",
+  "defaultResetPasswordEmailContentText": "您好 {{$user.username}}，\n\n我们收到了重置您 [应用/网站名称] 账户密码的请求。\n\n请点击下面的链接设置您的新密码：\n\n{{$resetLink}}\n\n如果您没有请求重置密码，请忽略此邮件。您的密码将保持不变。\n\n请注意：为了您的安全，此密码重置链接将在 [有效期，例如 24 小时] 后过期。\n\n如果您在重置密码时遇到任何问题，请联系我们的支持团队。\n\n谢谢，[您的公司名称] 团队"
 }

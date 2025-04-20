@@ -205,7 +205,7 @@ export const Options = () => {
                 type: 'void',
                 'x-component': 'FormTab.TabPane',
                 'x-component-props': {
-                  tab: lang('Forget password'),
+                  tab: lang('Forgot password'),
                 },
                 properties: {
                   'public.enableResetPassword': {
@@ -268,6 +268,7 @@ export const Options = () => {
                         },
                       },
                     ],
+                    default: `{{t("defaultResetPasswordEmailSubject")}}`,
                   },
                   emailContentType: {
                     type: 'string',
@@ -313,6 +314,7 @@ export const Options = () => {
                         },
                       },
                     ],
+                    default: `{{t("defaultResetPasswordEmailContentHTML")}}`,
                   },
                   emailContentText: {
                     type: 'string',
@@ -337,6 +339,7 @@ export const Options = () => {
                         },
                       },
                     ],
+                    default: `{{t("defaultResetPasswordEmailContentText")}}`,
                   },
                   resetTokenExpiresIn: {
                     type: 'number',
