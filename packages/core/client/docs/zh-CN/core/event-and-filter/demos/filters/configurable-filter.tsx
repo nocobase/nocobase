@@ -180,7 +180,13 @@ const ConfigurableFilter = () => {
     [demoId],
   );
 
-  const outputText = useApplyFilters(filterFlowManager, 'configurable-text-transform', inputText, getContext, demoId);
+  const { data: outputText, reApplyFilters } = useApplyFilters(
+    filterFlowManager,
+    'configurable-text-transform',
+    inputText,
+    getContext,
+    demoId,
+  );
 
   // 打开配置Modal
   const openConfigModal = async (stepKey) => {
@@ -196,6 +202,7 @@ const ConfigurableFilter = () => {
             ...PARAMS['filters'][demoId],
             [stepKey]: values,
           });
+          reApplyFilters();
         },
       },
     };

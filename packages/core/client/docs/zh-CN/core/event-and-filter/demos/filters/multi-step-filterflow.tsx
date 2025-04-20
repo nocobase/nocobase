@@ -133,7 +133,7 @@ const MultiStepFilterFlow = () => {
     [],
   );
 
-  const outputText = useApplyFilters(filterFlowManager, 'multi-step-text-transform', inputText, context);
+  const { data: outputText } = useApplyFilters(filterFlowManager, 'multi-step-text-transform', inputText, context);
 
   return (
     <div style={{ padding: 24, background: '#f5f5f5', borderRadius: 8 }}>

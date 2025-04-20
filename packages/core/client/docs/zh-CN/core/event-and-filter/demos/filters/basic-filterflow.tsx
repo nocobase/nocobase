@@ -43,7 +43,7 @@ filterFlowManager.addFlow({
 
 const BasicFilterFlow = () => {
   const [inputText, setInputText] = useState('Hello, FilterFlow!');
-  const outputText = useApplyFilters(filterFlowManager, 'basic-text-transform', inputText);
+  const { data: outputText } = useApplyFilters(filterFlowManager, 'basic-text-transform', inputText);
 
   return (
     <div style={{ padding: 24, background: '#f5f5f5', borderRadius: 8 }}>

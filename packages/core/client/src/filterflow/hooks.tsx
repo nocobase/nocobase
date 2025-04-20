@@ -27,8 +27,8 @@ export function useApplyFilters<T = any>(
   initialValue: any,
   context?: FilterHandlerContext | (() => Promise<FilterHandlerContext>),
   id?: string,
-): T {
-  const [, forceUpdate] = useState(0);
+): { data: T; reApplyFilters: () => void } {
+  const [, forceUpdate] = useState(true);
 
   const cacheKey = useMemo(() => {
     if (id) {
@@ -56,7 +56,7 @@ export function useApplyFilters<T = any>(
             filterFlowManager.applyFilters(flowName, initialValue, ctx),
           );
           filterCache.set(cacheKey, { status: 'resolved', data: newData, promise: Promise.resolve(newData) });
-          forceUpdate((prev) => prev + 1);
+          forceUpdate((prev) => !prev);
         }
       };
       refreshData();
@@ -85,7 +85,13 @@ export function useApplyFilters<T = any>(
         throw cachedEntry.error;
       case 'resolved':
         // 如果已成功，返回数据
-        return cachedEntry.data as T;
+        return {
+          data: cachedEntry.data as T,
+          reApplyFilters: () => {
+            filterCache.delete(cacheKey);
+            forceUpdate((prev) => !prev);
+          },
+        };
     }
   }
 

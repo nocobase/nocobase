@@ -89,7 +89,7 @@ filterFlowManager.addFlow({
 
 const ConditionalFilterFlow = () => {
   const [inputText, setInputText] = useState('Hello, Conditional FilterFlow!');
-  const outputText = useApplyFilters(filterFlowManager, 'conditional-text-transform', inputText);
+  const { data: outputText } = useApplyFilters(filterFlowManager, 'conditional-text-transform', inputText);
 
   return (
     <div style={{ padding: 24, background: '#f5f5f5', borderRadius: 8 }}>
@@ -123,7 +123,7 @@ const ConditionalFilterFlow = () => {
 
           <div>
             <Typography.Text strong>FilterFlow 结果:</Typography.Text>
-            <div>{outputText || '尚未处理'}</div>
+            <div>{outputText}</div>
           </div>
         </Space>
       </Card>

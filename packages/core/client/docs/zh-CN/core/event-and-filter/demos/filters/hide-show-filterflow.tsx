@@ -82,7 +82,7 @@ const HideShowFilterFlow = () => {
     };
   }, [filterParams]);
   // 应用过滤器获取可见性配置
-  const visibilityConfig = useApplyFilters(filterFlowManager, 'visibility-control', null, filterContext);
+  const { data: visibilityConfig } = useApplyFilters(filterFlowManager, 'visibility-control', null, filterContext);
 
   // 渲染 Action 按钮
   const renderActions = () => {

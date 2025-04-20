@@ -216,7 +216,7 @@ const DataTransformFilterFlow = () => {
     [],
   );
 
-  const outputData = useApplyFilters(filterFlowManager, 'data-transform-flow', inputData, context);
+  const { data: outputData } = useApplyFilters(filterFlowManager, 'data-transform-flow', inputData, context);
 
   const inputColumns = [
     { title: 'ID', dataIndex: 'id', key: 'id' },

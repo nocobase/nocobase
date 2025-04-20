@@ -258,7 +258,7 @@ eventFlowManager.addFlow({
   },
   steps: [
     {
-      key: 'configure-step',
+      key: 'step-configure',
       title: '配置消息参数',
       action: 'configureAction',
       isAwait: true,
@@ -284,7 +284,7 @@ eventFlowManager.addFlow({
   on: { event: 'tabulator:refresh' },
   steps: [
     {
-      key: 'step1',
+      key: 'step-refresh',
       action: 'fetchData',
       title: '获取最新数据',
     },
@@ -304,7 +304,7 @@ eventFlowManager.addFlow({
   on: { event: 'deleteSelected' },
   steps: [
     {
-      key: 'step1',
+      key: 'step-delete',
       action: 'deleteData',
       title: '执行删除',
     },
@@ -322,7 +322,7 @@ eventFlowManager.addFlow({
   key: 'viewFlow',
   title: '查看行详情',
   on: { event: 'viewRecord' },
-  steps: [{ key: 'step1', action: 'openViewDialog', title: '打开弹窗' }],
+  steps: [{ key: 'step-view', action: 'openViewDialog', title: '打开弹窗' }],
 });
 
 // --- FilterFlow 定义 ---
@@ -331,17 +331,66 @@ filterFlowManager.addFlow({
   title: '表格列展示流程',
   steps: [
     {
-      key: 'step1',
+      key: 'step-show-initial-columns',
       filterName: 'showInitialColumns',
       title: '显示基础列',
     },
     {
-      key: 'step2',
+      key: 'step-show-action-column',
       filterName: 'addActionColumn',
       title: '添加操作列',
     },
   ],
 });
+
+const PARAMS = {
+  filters: {
+    'tabulator-demo-id': {
+      'step-show-action-column': {
+        show: true,
+      },
+      'step-show-initial-columns': {
+        columns: ['id', 'name', 'age', 'email'],
+      },
+    },
+  },
+  events: {
+    'tabulator-demo-id': {
+      stepParams: {
+        'step-delete': {
+          confirmTitle: '确认删除',
+          confirmContent: '确定要删除选中的记录吗？',
+        },
+        'step-refresh': {
+          messageOnSuccess: '刷新成功！',
+        },
+      },
+    },
+  },
+};
+
+// 模拟异步获取相关参数
+const getParams = async (id: string) => {
+  return new Promise<{
+    events: EventContext['meta']['params'];
+    filters: FilterHandlerContext['meta']['params'];
+  }>((resolve) => {
+    resolve({
+      events: PARAMS.events[id],
+      filters: PARAMS.filters[id],
+    });
+  });
+};
+
+// 模拟异步设置相关参数
+const setParams = async (id: string, params: any) => {
+  return new Promise((resolve) => {
+    // PARAMS[id] = params;
+    PARAMS.events[id] = params.events;
+    PARAMS.filters[id] = params.filters;
+    resolve(params);
+  });
+};
 
 const EventFilterTableDemo: React.FC = (props) => {
   useTabulatorBuiltinStyles();
@@ -353,37 +402,7 @@ const EventFilterTableDemo: React.FC = (props) => {
   const { message: messageApi } = App.useApp();
   const { styles } = useTabulatorStyles();
   const hooks = useMemo(() => ({ compile, message: messageApi, setState: setTableData }), [compile, messageApi]);
-  const [eventFlowParams, setEventFlowParams] = useState({
-    actionParams: [
-      {
-        flow: 'deleteFlow',
-        event: 'deleteSelected',
-        params: {
-          step1: {
-            confirmTitle: '确认删除',
-            confirmContent: '确定要删除选中的记录吗？',
-          },
-        },
-      },
-      {
-        flow: 'refreshFlow',
-        event: 'tabulator:refresh',
-        params: {
-          step1: {
-            messageOnSuccess: '刷新成功！',
-          },
-        },
-      },
-    ],
-  });
-  const [filterFlowParams, setFilterFlowParams] = useState({
-    step1: {
-      show: true,
-    },
-    step2: {
-      show: true,
-    },
-  });
+  const demoId = 'tabulator-demo-id';
 
   const tableOptions = useMemo(
     () => ({
@@ -403,29 +422,30 @@ const EventFilterTableDemo: React.FC = (props) => {
     [],
   );
 
-  const filterContext: FilterHandlerContext = useMemo(
-    () => ({
-      payload: {
-        hooks: hooks,
-      },
-      meta: {
-        flowKey: 'tabulator:columns',
-        params: filterFlowParams,
-      },
-    }),
-    [hooks, filterFlowParams],
-  );
+  const getFilterContext = useCallback(async () => {
+    const params = await getParams(demoId);
+    return {
+      payload: { hooks: hooks },
+      meta: { params: params.filters },
+    } as FilterHandlerContext;
+  }, [hooks]);
 
-  const { columns: tableColumns } = useApplyFilters(filterFlowManager, 'tabulator:columns', null, filterContext);
+  const {
+    data: { columns: tableColumns },
+    reApplyFilters,
+  } = useApplyFilters(filterFlowManager, 'tabulator:columns', null, getFilterContext);
 
   // 初始化和刷新数据
   const refreshData = useCallback(async () => {
     setIsLoading(true);
+    const params = await getParams(demoId);
     const context: EventContext = {
       payload: {
         hooks: hooks,
       },
-      meta: eventFlowParams,
+      meta: {
+        stepParams: params.events?.stepParams,
+      },
     };
     try {
       await eventFlowManager.dispatchEvent('tabulator:refresh', context);
@@ -435,10 +455,10 @@ const EventFilterTableDemo: React.FC = (props) => {
     } finally {
       setIsLoading(false);
     }
-  }, [hooks, eventFlowParams]);
+  }, [hooks]);
 
   // 删除选中行
-  const deleteSelectedRows = useCallback(() => {
+  const deleteSelectedRows = useCallback(async () => {
     if (!tabulatorInstanceRef.current) {
       hooks.message.error('表格尚未初始化');
       return;
@@ -451,26 +471,34 @@ const EventFilterTableDemo: React.FC = (props) => {
       return;
     }
 
+    const params = await getParams(demoId);
     const context: EventContext = {
       payload: {
         selectedData: selectedData,
         hooks,
       },
-      meta: eventFlowParams,
+      meta: {
+        stepParams: params.events?.stepParams,
+      },
     };
     eventBus.dispatchEvent('deleteSelected', context);
-  }, [hooks, eventFlowParams]);
+  }, [hooks]);
 
   const configureFilterStep = (flowName: string, stepKey: string) => {
     const step = filterFlowManager.getFlow(flowName).getStep(stepKey);
     const context: EventContext = {
       payload: {
         step,
+        currentParams: PARAMS.filters[demoId],
         onChange: (value) => {
-          setFilterFlowParams((prev) => ({
-            ...prev,
-            [stepKey]: value,
-          }));
+          setParams(demoId, {
+            filters: {
+              ...PARAMS.filters[demoId],
+              [stepKey]: value,
+            },
+            events: PARAMS.events[demoId],
+          });
+          reApplyFilters();
         },
       },
     };
@@ -482,18 +510,21 @@ const EventFilterTableDemo: React.FC = (props) => {
     const context: EventContext = {
       payload: {
         step,
+        currentParams: PARAMS.events[demoId]['stepParams'][stepKey],
         onChange: (value) => {
-          // step.set('params', value);
-          setEventFlowParams((prev) => {
-            const newParams = {
-              ...prev,
-              actionParams: [...prev.actionParams],
-            };
-            const stepsParams = newParams.actionParams.find((item) => item.flow === flowName)?.params;
-            if (stepsParams) {
-              stepsParams[stepKey] = value;
-            }
-            return newParams;
+          const newParams = {
+            ...PARAMS.events[demoId],
+            ...{
+              stepParams: {
+                ...PARAMS.events[demoId].stepParams,
+                [stepKey]: value,
+              },
+            },
+          };
+
+          setParams(demoId, {
+            events: newParams,
+            filters: PARAMS.filters[demoId],
           });
         },
       },
@@ -570,16 +601,22 @@ const EventFilterTableDemo: React.FC = (props) => {
         <Space direction="vertical" style={{ width: '100%' }}>
           <Typography.Title level={5}>配置区域</Typography.Title>
           <Space wrap>
-            <Button icon={<SettingOutlined />} onClick={() => configureFilterStep('tabulator:columns', 'step2')}>
+            <Button
+              icon={<SettingOutlined />}
+              onClick={() => configureFilterStep('tabulator:columns', 'step-show-action-column')}
+            >
               配置操作列Filter
             </Button>
-            <Button icon={<SettingOutlined />} onClick={() => configureFilterStep('tabulator:columns', 'step1')}>
+            <Button
+              icon={<SettingOutlined />}
+              onClick={() => configureFilterStep('tabulator:columns', 'step-show-initial-columns')}
+            >
               配置显示列Filter
             </Button>
-            <Button icon={<SettingOutlined />} onClick={() => configureActionStep('refreshFlow', 'step1')}>
+            <Button icon={<SettingOutlined />} onClick={() => configureActionStep('refreshFlow', 'step-refresh')}>
               配置刷新数据Action
             </Button>
-            <Button icon={<SettingOutlined />} onClick={() => configureActionStep('deleteFlow', 'step1')}>
+            <Button icon={<SettingOutlined />} onClick={() => configureActionStep('deleteFlow', 'step-delete')}>
               配置删除数据Action
             </Button>
           </Space>
