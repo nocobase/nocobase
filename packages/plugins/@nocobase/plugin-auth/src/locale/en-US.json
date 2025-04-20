@@ -61,5 +61,6 @@
   "Go to login": "Go to login",
   "Please enter new password": "Please enter new password",
   "Please enter the same password again": "Please enter the same password again",
-  "The passwords entered twice are inconsistent": "The passwords entered twice are inconsistent"
+  "The passwords entered twice are inconsistent": "The passwords entered twice are inconsistent",
+  "Password reset successful": "Password reset successful"
 }

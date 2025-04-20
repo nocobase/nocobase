@@ -44,5 +44,6 @@
   "Go to login": "Ga naar inloggen",
   "Please enter new password": "Voer een nieuw wachtwoord in",
   "Please enter the same password again": "Voer hetzelfde wachtwoord opnieuw in",
-  "The passwords entered twice are inconsistent": "De twee ingevoerde wachtwoorden zijn inconsistent"
+  "The passwords entered twice are inconsistent": "De twee ingevoerde wachtwoorden zijn inconsistent",
+  "Password reset successful": "Wachtwoord opnieuw instellen succesvol"
 }

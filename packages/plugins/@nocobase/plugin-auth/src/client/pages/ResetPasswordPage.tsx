@@ -50,15 +50,22 @@ const getResetPasswordForm = (): ISchema => ({
               const api = useAPIClient();
               const { t } = useAuthTranslation();
               const resetToken = new URLSearchParams(window.location.search).get('resetToken');
+              const [loading, setLoading] = React.useState(false);
               return {
                 async run() {
                   await form.submit();
-                  await api.auth.resetPassword({ ...form.values, resetToken });
+                  setLoading(true);
+                  try {
+                    await api.auth.resetPassword({ ...form.values, resetToken });
+                  } finally {
+                    setLoading(false);
+                  }
                   message.success(t("Password reset successful"));
                   setTimeout(() => {
                     window.location.href = '/signin';
                   }, 1000);
                 },
+                loading,
               };
             },
           },

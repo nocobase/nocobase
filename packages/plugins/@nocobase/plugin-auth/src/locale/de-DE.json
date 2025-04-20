@@ -61,5 +61,6 @@
   "Go to login": "Zur Anmeldung gehen",
   "Please enter new password": "Bitte geben Sie ein neues Passwort ein",
   "Please enter the same password again": "Bitte geben Sie dasselbe Passwort erneut ein",
-  "The passwords entered twice are inconsistent": "Die zweimal eingegebenen Passwörter stimmen nicht überein"
+  "The passwords entered twice are inconsistent": "Die zweimal eingegebenen Passwörter stimmen nicht überein",
+  "Password reset successful": "Passwort zurücksetzen erfolgreich"
 }

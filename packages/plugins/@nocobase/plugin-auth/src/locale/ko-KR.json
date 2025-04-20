@@ -38,5 +38,6 @@
   "Go to login": "로그인으로 가기",
   "Please enter new password": "새 비밀번호를 입력하세요",
   "Please enter the same password again": "같은 비밀번호를 다시 입력하세요",
-  "The passwords entered twice are inconsistent": "입력한 두 개의 비밀번호가 일치하지 않습니다"
+  "The passwords entered twice are inconsistent": "입력한 두 개의 비밀번호가 일치하지 않습니다",
+  "Password reset successful": "비밀번호 재설정 성공"
 }

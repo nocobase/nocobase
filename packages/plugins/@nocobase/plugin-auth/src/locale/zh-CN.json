@@ -60,5 +60,6 @@
   "Go to login": "前往登录",
   "Please enter new password": "请输入新密码",
   "Please enter the same password again": "请再次输入相同的密码",
-  "The passwords entered twice are inconsistent": "两次输入的密码不一致"
+  "The passwords entered twice are inconsistent": "两次输入的密码不一致",
+  "Password reset successful": "密码重置成功"
 }
