@@ -11,8 +11,9 @@ import { SchemaComponent, useCollectionManager, useCurrentUserVariable, useDatet
 import React, { useEffect, useMemo } from 'react';
 import { lang, useAuthTranslation } from '../locale';
 import { FormTab, ArrayTable } from '@formily/antd-v5';
-import { Alert } from 'antd';
+import { Alert, Divider } from 'antd';
 import { uid } from '@formily/shared';
+import { Link } from 'react-router-dom';
 
 const SignupFormSettings = () => {
   const record = useRecord();
@@ -160,6 +161,12 @@ const useVariableOptionsOfForgetPassword = () => {
 export const Options = () => {
   const { t } = useAuthTranslation();
   const forgetPasswordVariableOptions = useVariableOptionsOfForgetPassword();
+  const noChannelsFoundMessage = (
+    <span>
+      {t('No notification channels found. Please ')}
+      <Link to="/admin/settings/notification-manager/channels">{t('add one first')}</Link>.
+    </span>
+  );
 
   return (
     <SchemaComponent
@@ -215,6 +222,22 @@ export const Options = () => {
                     'x-component': 'Checkbox',
                     default: false,
                   },
+                  divider1: {
+                    type: 'void',
+                    'x-component': () => {
+                      return <Divider orientation="left" orientationMargin="0">{t('1. Select a notification channel (Currently only email is supported)')}</Divider>;
+                    },
+                    'x-reactions': [
+                      {
+                        dependencies: ['.public.enableResetPassword'],
+                        fulfill: {
+                          state: {
+                            visible: '{{$deps[0]}}',
+                          },
+                        },
+                      },
+                    ],
+                  },
                   notificationChannel: {
                     type: 'string',
                     title: '{{t("Notification Channel (Email)")}}',
@@ -237,6 +260,23 @@ export const Options = () => {
                           },
                         },
                       },
+                      notFoundContent: noChannelsFoundMessage,
+                    },
+                    'x-reactions': [
+                      {
+                        dependencies: ['.public.enableResetPassword'],
+                        fulfill: {
+                          state: {
+                            visible: '{{$deps[0]}}',
+                          },
+                        },
+                      },
+                    ],
+                  },
+                  divider2: {
+                    type: 'void',
+                    'x-component': () => {
+                      return <Divider orientation="left" orientationMargin="0">{t('2. Configure the password reset email')}</Divider>;
                     },
                     'x-reactions': [
                       {
