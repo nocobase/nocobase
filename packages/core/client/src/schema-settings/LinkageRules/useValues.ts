@@ -33,7 +33,12 @@ export const useValues = (options) => {
     const dataIndex = field.data?.targetFields;
     const option = (dataIndex && findOption(dataIndex, options)) || {};
     const operators = option?.operators || [];
-    field.data.operators = operators;
+    field.data.operators = operators?.filter((v) => {
+      if (dataIndex.length > 1) {
+        return v.value !== 'value';
+      }
+      return true;
+    });
     field.data.schema = option?.schema;
   };
   useEffect(value2data, [logic]);
