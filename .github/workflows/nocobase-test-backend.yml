@@ -63,7 +63,7 @@ jobs:
       - name: Install project dependencies
         run: |
           yarn install
-          yarn add sqlite3 -D -W
+          yarn add sqlite3 --no-save -W
       - name: Test with Sqlite
         run: yarn test --server --single-thread=false
         env:
