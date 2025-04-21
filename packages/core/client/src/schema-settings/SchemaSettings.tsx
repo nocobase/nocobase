@@ -84,7 +84,7 @@ import { AssociationOrCollectionProvider, useDataBlockProps } from '../data-sour
 import { useDataSourceManager } from '../data-source/data-source/DataSourceManagerProvider';
 import { useDataSourceKey } from '../data-source/data-source/DataSourceProvider';
 import { useFilterBlock } from '../filter-provider/FilterProvider';
-import { FlagProvider } from '../flag-provider';
+import { FlagProvider, useFlag } from '../flag-provider';
 import { useGlobalTheme } from '../global-theme';
 import { useCollectMenuItem, useCollectMenuItems, useMenuItem } from '../hooks/useMenuItem';
 import {
@@ -365,8 +365,8 @@ export const SchemaSettingsFormItemTemplate = function FormItemTemplate(props) {
                         required: true,
                         default: collection
                           ? `${compile(collection?.title || collection?.name)}_${t(
-                            componentTitle[componentName] || componentName,
-                          )}`
+                              componentTitle[componentName] || componentName,
+                            )}`
                           : t(componentTitle[componentName] || componentName),
                         'x-decorator': 'FormItem',
                         'x-component': 'Input',
@@ -567,7 +567,7 @@ export const SchemaSettingsRemove: FC<SchemaSettingsRemoveProps> = (props) => {
 
 export interface SchemaSettingsSelectItemProps
   extends Omit<SchemaSettingsItemProps, 'onChange' | 'onClick'>,
-  Omit<SelectWithTitleProps, 'title' | 'defaultValue'> {
+    Omit<SelectWithTitleProps, 'title' | 'defaultValue'> {
   value?: SelectWithTitleProps['defaultValue'];
   optionRender?: (option: any, info: { index: number }) => React.ReactNode;
 }
@@ -900,26 +900,32 @@ export const SchemaSettingsModalItem: FC<SchemaSettingsModalItemProps> = (props)
                                   >
                                     <LocationSearchContext.Provider value={locationSearch}>
                                       <BlockRequestContext_deprecated.Provider value={ctx}>
-                                        <DataSourceApplicationProvider dataSourceManager={dm} dataSource={dataSourceKey}>
+                                        <DataSourceApplicationProvider
+                                          dataSourceManager={dm}
+                                          dataSource={dataSourceKey}
+                                        >
                                           <AssociationOrCollectionProvider
                                             allowNull
                                             collection={collection?.name}
                                             association={association}
                                           >
-                                            <SchemaComponentOptions scope={options.scope} components={options.components}>
+                                            <SchemaComponentOptions
+                                              scope={options.scope}
+                                              components={options.components}
+                                            >
                                               <FormLayout
                                                 layout={'vertical'}
                                                 className={css`
-                                                // screen > 576px
-                                                @media (min-width: 576px) {
-                                                  min-width: 520px;
-                                                }
+                                                  // screen > 576px
+                                                  @media (min-width: 576px) {
+                                                    min-width: 520px;
+                                                  }
 
-                                                // screen <= 576px
-                                                @media (max-width: 576px) {
-                                                  min-width: 320px;
-                                                }
-                                              `}
+                                                  // screen <= 576px
+                                                  @media (max-width: 576px) {
+                                                    min-width: 320px;
+                                                  }
+                                                `}
                                               >
                                                 <ApplicationContext.Provider value={app}>
                                                   <APIClientProvider apiClient={apiClient}>
@@ -984,13 +990,13 @@ export const SchemaSettingsDefaultSortingRules = function DefaultSortingRules(pr
   const sort = defaultSort?.map((item: string) => {
     return item.startsWith('-')
       ? {
-        field: item.substring(1),
-        direction: 'desc',
-      }
+          field: item.substring(1),
+          direction: 'desc',
+        }
       : {
-        field: item,
-        direction: 'asc',
-      };
+          field: item,
+          direction: 'asc',
+        };
   });
   const sortFields = useSortFields(props.name || collection?.name);
 
@@ -1122,7 +1128,8 @@ export const SchemaSettingsLinkageRules = function LinkageRules(props) {
   const getRules = useCallback(() => {
     return gridSchema?.[dataKey] || fieldSchema?.[dataKey] || [];
   }, [gridSchema, fieldSchema, dataKey]);
-  const title = titleMap[category];
+  const title = titleMap[category] || t('Linkage rules');
+  const flagVales = useFlag();
   const schema = useMemo<ISchema>(
     () => ({
       type: 'object',
@@ -1155,7 +1162,7 @@ export const SchemaSettingsLinkageRules = function LinkageRules(props) {
     (v) => {
       const rules = [];
       for (const rule of v.fieldReaction.rules) {
-        rules.push(_.pickBy(rule, _.identity));
+        rules.push(_.omit(_.pickBy(rule, _.identity), ['conditionBasic', 'conditionAdvanced']));
       }
       const templateId = gridSchema['x-component'] === 'BlockTemplate' && gridSchema['x-component-props']?.templateId;
       const uid = (templateId && getTemplateById(templateId).uid) || gridSchema['x-uid'];
@@ -1174,7 +1181,16 @@ export const SchemaSettingsLinkageRules = function LinkageRules(props) {
   );
 
   return (
-    <SchemaSettingsModalItem title={title} components={components} width={770} schema={schema} onSubmit={onSubmit} />
+    <SchemaSettingsModalItem
+      title={title}
+      components={components}
+      width={770}
+      schema={schema}
+      onSubmit={onSubmit}
+      ModalContextProvider={(props) => {
+        return <FlagProvider {...flagVales}>{props.children}</FlagProvider>;
+      }}
+    />
   );
 };
 

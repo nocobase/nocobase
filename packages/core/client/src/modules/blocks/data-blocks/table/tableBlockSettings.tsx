@@ -37,7 +37,7 @@ const enabledIndexColumn: SchemaSettingsItemType = {
     const { dn } = useDesignable();
     return {
       title: t('Enable index column'),
-      checked: field.decoratorProps.enableSelectColumn !== false,
+      checked: field.decoratorProps.enableIndexÏColumn !== false,
       onChange: async (enableIndexÏColumn) => {
         field.decoratorProps = field.decoratorProps || {};
         field.decoratorProps.enableIndexÏColumn = enableIndexÏColumn;

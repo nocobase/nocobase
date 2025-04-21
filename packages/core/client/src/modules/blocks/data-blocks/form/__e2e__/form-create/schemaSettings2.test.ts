@@ -35,11 +35,16 @@ test.describe('linkage rules', () => {
     // 条件：singleLineText 字段的值包含 123 时
     await page.getByRole('button', { name: 'plus Add linkage rule' }).click();
     await page.getByText('Add condition', { exact: true }).click();
-    await page.getByTestId('select-filter-field').click();
-    await page.getByRole('menuitemcheckbox', { name: 'singleLineText' }).click();
-    await page.getByLabel('Linkage rules').getByRole('tabpanel').getByRole('textbox').click();
-    await page.getByLabel('Linkage rules').getByRole('tabpanel').getByRole('textbox').fill('123');
 
+    await page.getByLabel('variable-button').first().click();
+    await page.getByText('Current form').last().click();
+    await page.getByText('Current form').last().click();
+    await page.getByRole('menuitemcheckbox', { name: 'singleLineText' }).locator('div').click();
+
+    // await page.getByRole('menuitemcheckbox', { name: 'singleLineText' }).click();
+    await page.getByTestId('right-filter-field').getByRole('textbox').click();
+    await page.getByTestId('right-filter-field').getByRole('textbox').fill('123');
+    await page.getByRole('tabpanel').getByRole('textbox').last().fill('123');
     // action：禁用 longText 字段
     await page.getByText('Add property').click();
     await page.getByTestId('select-linkage-property-field').click();
@@ -81,7 +86,7 @@ test.describe('linkage rules', () => {
     // 修改第一组规则，使其条件中包含一个变量 --------------------------------------------------------------------------
     // 当 singleLineText 字段的值包含 longText 字段的值时，禁用 longText 字段
     await openLinkageRules();
-    await page.getByLabel('variable-button').click();
+    await page.getByLabel('variable-button').last().click();
     await expectSupportedVariables(page, [
       'Constant',
       'Current user',
@@ -136,8 +141,13 @@ test.describe('linkage rules', () => {
       .getByText('Add condition', { exact: true })
       .last()
       .click();
-    await page.getByRole('button', { name: 'Select field' }).click();
-    await page.getByRole('menuitemcheckbox', { name: 'number' }).click();
+    // await page.getByRole('button', { name: 'Select field' }).click();
+
+    await page.getByTestId('left-filter-field').getByLabel('variable-button').last().click();
+    await page.getByText('Current form').last().click();
+    await page.getByText('Current form').last().click();
+    await page.getByRole('menuitemcheckbox', { name: 'number' }).locator('div').click();
+
     await page.getByLabel('Linkage rules').getByRole('spinbutton').click();
     await page.getByLabel('Linkage rules').getByRole('spinbutton').fill('123');
 

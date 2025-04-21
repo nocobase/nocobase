@@ -38,7 +38,12 @@ const getSatisfiedActions = async ({ rules, variables, localVariables }, jsonLog
       rules
         .filter((k) => !k.disabled)
         .map(async (rule) => {
-          if (await conditionAnalyses({ ruleGroup: rule.condition, variables, localVariables }, jsonLogic)) {
+          if (
+            await conditionAnalyses(
+              { ruleGroup: rule.condition, variables, localVariables, conditionType: rule.conditionType },
+              jsonLogic,
+            )
+          ) {
             return rule;
           } else return null;
         }),

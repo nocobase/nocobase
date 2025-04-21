@@ -32,11 +32,9 @@ export const disassociateActionSettings = new SchemaSettings({
       name: 'linkageRules',
       Component: SchemaSettingsLinkageRules,
       useComponentProps() {
-        const { name } = useCollection_deprecated();
         const { linkageRulesProps } = useSchemaToolbar();
         return {
           ...linkageRulesProps,
-          collectionName: name,
         };
       },
     },
