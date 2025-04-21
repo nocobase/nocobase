@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { dayjs, getPickerFormat, Handlebars } from '@nocobase/utils/client';
+import { dayjs, getPickerFormat, Handlebars, getFormatFromDateStr } from '@nocobase/utils/client';
 import _, { every, findIndex, some } from 'lodash';
 import { replaceVariableValue } from '../../../block-provider/hooks';
 import { VariableOption, VariablesContextType } from '../../../variables/types';
@@ -145,7 +145,15 @@ const processCondition = async (
 const processAdvancedCondition = async (condition, variables, localVariables, jsonLogic) => {
   const operator = condition.op;
   const rightValue = await parseVariableValue(condition.rightVar, variables, localVariables);
-  const leftValue = await parseVariableValue(condition.leftVar, variables, localVariables);
+  let leftValue = await parseVariableValue(condition.leftVar, variables, localVariables);
+  const leftCollectionField = await variables.getCollectionField(condition.leftVar, localVariables);
+  if (
+    leftValue &&
+    ['datetime', 'date', 'datetimeNoTz', 'dateOnly', 'unixTimestamp'].includes(leftCollectionField.type)
+  ) {
+    const format = getFormatFromDateStr(rightValue);
+    leftValue = dayjs.utc(leftValue).local().format(format);
+  }
   if (operator) {
     return jsonLogic.apply({ [operator]: [leftValue, rightValue] });
   }
