@@ -167,7 +167,7 @@ export function getOperators() {
       const dateA = parseDate(a);
       const dateB = parseDate(b);
       if (!dateA || !dateB) {
-        throw new Error('Invalid date format');
+        return false;
       }
       return dateA < dateB;
     },
@@ -657,12 +657,16 @@ function parseDate(targetDateStr) {
   } else if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(dateStr)) {
     return new Date(dateStr.replace(' ', 'T'));
   } else if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+    // YYYY-MM-DD 格式
     return parseFullDate(dateStr);
   } else if (/^\d{4}-\d{2}$/.test(dateStr)) {
+    // YYYY-MM 格式
     return parseMonth(dateStr);
   } else if (/^\d{4}Q[1-4]$/.test(dateStr)) {
+    // YYYYQn 格式
     return parseQuarter(dateStr);
   } else if (/^\d{4}$/.test(dateStr)) {
+    // YYYY 格式
     return parseYear(dateStr);
   }
 
