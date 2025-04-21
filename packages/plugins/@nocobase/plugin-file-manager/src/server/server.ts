@@ -13,6 +13,7 @@ import { basename } from 'path';
 import { Collection, Model, Transactionable } from '@nocobase/database';
 import { Plugin } from '@nocobase/server';
 import { Registry } from '@nocobase/utils';
+import { Readable } from 'stream';
 import { STORAGE_TYPE_ALI_OSS, STORAGE_TYPE_LOCAL, STORAGE_TYPE_S3, STORAGE_TYPE_TX_COS } from '../constants';
 import initActions from './actions';
 import { AttachmentInterface } from './interfaces/attachment-interface';
@@ -333,6 +334,27 @@ export class PluginFileManagerServer extends Plugin {
       return true;
     }
     return !!storage.options?.public;
+  }
+  async getFileStream(file: AttachmentModel): Promise<{ stream: Readable }> {
+    if (!file.storageId) {
+      throw new Error('File storageId not found');
+    }
+    const storage = this.storagesCache.get(file.storageId);
+    if (!storage) {
+      throw new Error('[file-manager] no linked or default storage provided');
+    }
+
+    const StorageType = this.storageTypes.get(storage.type);
+    if (!StorageType) {
+      throw new Error(`[file-manager] storage type "${storage.type}" is not defined`);
+    }
+    const storageInstance = new StorageType(storage);
+
+    if (!storageInstance) {
+      throw new Error(`[file-manager] storage type "${storage.type}" is not defined`);
+    }
+
+    return storageInstance.getFileStream(file);
   }
 }
 
