@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import {
   FindOptions,
   ICollection,
@@ -5,20 +14,23 @@ import {
   IField,
   IModel,
   IRelationField,
+  IRepository,
 } from '@nocobase/data-source-manager';
 import EventEmitter from 'events';
 import { deepGet } from '../utils/deep-get';
 import path from 'path';
 import os from 'os';
+import { Logger } from '@nocobase/logger';
 
 export type ExportOptions = {
   collectionManager: ICollectionManager;
   collection: ICollection;
-  repository?: any;
+  repository?: IRepository;
   fields: Array<Array<string>>;
   findOptions?: FindOptions;
   chunkSize?: number;
   limit?: number;
+  logger?: Logger;
 };
 
 abstract class BaseExporter<T extends ExportOptions = ExportOptions> extends EventEmitter {
@@ -35,9 +47,14 @@ abstract class BaseExporter<T extends ExportOptions = ExportOptions> extends Eve
    */
   protected limit: number;
 
+  protected logger: Logger;
+
+  protected _batchQueryStartTime: [number, number] | null = null;
+
   protected constructor(protected options: T) {
     super();
     this.limit = options.limit ?? (process.env['EXPORT_LIMIT'] ? parseInt(process.env['EXPORT_LIMIT']) : 2000);
+    this.logger = options.logger;
   }
 
   abstract init(ctx?): Promise<void>;
@@ -45,30 +62,72 @@ abstract class BaseExporter<T extends ExportOptions = ExportOptions> extends Eve
   abstract handleRow(row: any, ctx?): Promise<void>;
 
   async run(ctx?): Promise<any> {
-    await this.init(ctx);
+    try {
+      this.logger?.info('Export started......');
+      await this.init(ctx);
 
-    const { collection, chunkSize, repository } = this.options;
+      const { collection, chunkSize, repository } = this.options;
 
-    const total = await (repository || collection.repository).count(this.getFindOptions());
-    let current = 0;
+      const total = (await (repository || collection.repository).count(this.getFindOptions())) as number;
+      this.logger?.info(`Found ${total} records to export from collection [${collection.name}]`);
+      const totalCountStartTime = process.hrtime();
+      let current = 0;
+      this.logger?.debug(`findOptions: ${JSON.stringify(this.getFindOptions())}`);
+      await (repository || collection.repository).chunk({
+        ...this.getFindOptions(),
+        chunkSize: chunkSize || 200,
+        beforeFind: async (options) => {
+          this._batchQueryStartTime = process.hrtime();
+        },
+        afterFind: async (rows, options) => {
+          this.logger?.debug(`findOptions123: ${JSON.stringify(options)}`);
+          if (this._batchQueryStartTime) {
+            const diff = process.hrtime(this._batchQueryStartTime);
+            const executionTime = (diff[0] * 1000 + diff[1] / 1000000).toFixed(2);
+            if (Number(executionTime) > 1200) {
+              this.logger?.warn(
+                `Query took too long: ${executionTime}ms, fetched ${rows.length} records, options: ${JSON.stringify(
+                  options,
+                )}`,
+              );
+            } else {
+              this.logger?.debug(`Query completed in ${executionTime}ms, fetched ${rows.length} records`);
+            }
+            this._batchQueryStartTime = null;
+          }
+        },
+        callback: async (rows, options) => {
+          for (const row of rows) {
+            const startTime = process.hrtime();
+            await this.handleRow(row, ctx);
+            const diff = process.hrtime(startTime);
+            const executionTime = (diff[0] * 1000 + diff[1] / 1000000).toFixed(2);
+            if (Number(executionTime) > 500) {
+              this.logger?.debug(`HandleRow took too long, completed in ${executionTime}ms`);
+            }
+            current += 1;
 
-    await (repository || collection.repository).chunk({
-      ...this.getFindOptions(),
-      chunkSize: chunkSize || 200,
-      callback: async (rows, options) => {
-        for (const row of rows) {
-          await this.handleRow(row, ctx);
-          current += 1;
+            this.emit('progress', {
+              total,
+              current,
+            });
+          }
+          const diff = process.hrtime(totalCountStartTime);
+          const currentTotalCountTime = (diff[0] * 1000 + diff[1] / 1000000).toFixed(2);
+          this.logger?.info(
+            `Processed ${current}/${total} records (${Math.round(
+              (current / total) * 100,
+            )}%), totalCountTime: ${currentTotalCountTime}ms`,
+          );
+        },
+      });
 
-          this.emit('progress', {
-            total,
-            current,
-          });
-        }
-      },
-    });
-
-    return this.finalize();
+      this.logger?.info(`Export completed...... processed ${current} records in total`);
+      return this.finalize();
+    } catch (error) {
+      this.logger?.error(`Export failed: ${error.message}`, { error });
+      throw error;
+    }
   }
 
   protected getAppendOptionsFromFields() {

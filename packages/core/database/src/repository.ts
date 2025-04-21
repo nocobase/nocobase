@@ -353,9 +353,14 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
   }
 
   async chunk(
-    options: FindOptions & { chunkSize: number; callback: (rows: Model[], options: FindOptions) => Promise<void> },
+    options: FindOptions & {
+      chunkSize: number;
+      callback: (rows: Model[], options: FindOptions) => Promise<void>;
+      beforeFind?: (options: FindOptions) => Promise<void>;
+      afterFind?: (rows: Model[], options: FindOptions & { offset: number }) => Promise<void>;
+    },
   ) {
-    const { chunkSize, callback, limit: overallLimit } = options;
+    const { chunkSize, callback, limit: overallLimit, beforeFind, afterFind } = options;
     const transaction = await this.getTransaction(options);
 
     let offset = 0;
@@ -365,20 +370,24 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
     while (true) {
       // Calculate the limit for the current chunk
       const currentLimit = overallLimit !== undefined ? Math.min(chunkSize, overallLimit - totalProcessed) : chunkSize;
-
-      const rows = await this.find({
+      const findOptions = {
         ...options,
         limit: currentLimit,
         offset,
         transaction,
-      });
-
+      };
+      if (beforeFind) {
+        await beforeFind(findOptions);
+      }
+      const rows = await this.find(findOptions);
+      if (afterFind) {
+        await afterFind(rows, { ...findOptions, offset });
+      }
       if (rows.length === 0) {
         break;
       }
 
       await callback(rows, options);
-
       offset += currentLimit;
       totalProcessed += rows.length;
 
