@@ -140,11 +140,10 @@ export class BasicAuth extends BaseAuth {
   }
 
   private getEmailConfig() {
-    const options = this.authenticator.options;
-    const publicConfig = this.authenticator.options?.public || {};
-    return { ...publicConfig, ...options } as {
+    const options = _.omit(this.authenticator.options, 'public') || {};
+    return { ...options, enableResetPassword: this.authenticator.options?.public?.enableResetPassword } as {
       enableResetPassword: boolean;
-      emailChannel: string;
+      notificationChannel: string;
       emailSubject: string;
       emailContentType: string;
       emailContentText?: string;
@@ -178,7 +177,7 @@ export class BasicAuth extends BaseAuth {
     }
 
     // 通过用户认证的接口获取邮件渠道、主题、内容等
-    const { emailChannel, emailContentType, emailContentHTML, emailContentText, emailSubject, enableResetPassword, resetTokenExpiresIn } = this.getEmailConfig();
+    const { notificationChannel, emailContentType, emailContentHTML, emailContentText, emailSubject, enableResetPassword, resetTokenExpiresIn } = this.getEmailConfig();
 
     if (!enableResetPassword) {
       ctx.throw(403, ctx.t('Not allowed to reset password', { ns: namespace }));
@@ -197,7 +196,7 @@ export class BasicAuth extends BaseAuth {
     // 通过通知管理插件发送邮件
     const notificationManager = ctx.app.getPlugin('notification-manager');
     if (notificationManager) {
-      const emailer = await notificationManager.manager.findChannel(emailChannel);
+      const emailer = await notificationManager.manager.findChannel(notificationChannel);
       if (emailer) {
         try {
           const parsedSubject = parsedValue(emailSubject, {
@@ -218,7 +217,7 @@ export class BasicAuth extends BaseAuth {
 
           try {
             await notificationManager.send({
-              channelName: emailChannel,
+              channelName: notificationChannel,
               message: {
                 to: [email],
                 subject: parsedSubject,
@@ -232,7 +231,7 @@ export class BasicAuth extends BaseAuth {
             ctx.logger.error(`Failed to send reset password email: ${error.message}`, {
               error,
               email,
-              emailChannel
+              notificationChannel
             });
             ctx.throw(500, ctx.t('Failed to send email. Error: {{error}}', {
               ns: namespace,
