@@ -890,5 +890,5 @@
   "Refresh data blocks": "Aktualisieren Sie die Datenblöcke",
   "Select data blocks to refresh": "Wählen Sie die Datenblöcke aus, die aktualisiert werden sollen.",
   "After successful submission, the selected data blocks will be automatically refreshed.": "Nach erfolgreicher Übermittlung werden die ausgewählten Datenblöcke automatisch aktualisiert.",
-  "Reset link expiration (minutes)": "Linkablauf zurücksetzen (Minuten)"
+  "Reset link expiration": "Linkablauf zurücksetzen"
 }

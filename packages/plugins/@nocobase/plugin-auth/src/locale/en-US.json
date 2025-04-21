@@ -62,8 +62,8 @@
   "Please enter new password": "Please enter new password",
   "Please enter the same password again": "Please enter the same password again",
   "The passwords entered twice are inconsistent": "The passwords entered twice are inconsistent",
-  "Enable forget password feature": "Enable forget password feature",
-  "Notification Channel (Email)": "Notification Channel (Email)",
+  "Enable forget password": "Enable forget password",
+  "Notification channel (Email)": "Notification channel (Email)",
   "Subject": "Subject",
   "Content type": "Content type",
   "Plain text": "Plain text",
@@ -73,6 +73,7 @@
   "No notification channels found. Please ": "No notification channels found. Please ",
   "add one first": "add one first",
   "Reset password email": "Reset password email",
-  "1. Select a notification channel (Currently only email is supported)": "1. Select a notification channel (Currently only email is supported)",
-  "2. Configure the password reset email": "2. Configure the password reset email"
+  "1. Select notification channel": "1. Select notification channel",
+  "2. Configure reset email": "2. Configure reset email",
+  "The notification channel used to send the reset password email, only support email channel": "The notification channel used to send the reset password email, only support email channel"
 }

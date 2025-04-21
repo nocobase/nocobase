@@ -1058,5 +1058,5 @@
     "Refresh data blocks": "Vernieuw gegevensblokken",
     "Select data blocks to refresh": "Selecteer gegevensblokken om te vernieuwen",
     "After successful submission, the selected data blocks will be automatically refreshed.": "Na succesvolle indiening worden de geselecteerde gegevensblokken automatisch vernieuwd.",
-    "Reset link expiration (minutes)": "Reset linkverval (minuten)"
+    "Reset link expiration": "Reset linkverval"
 }

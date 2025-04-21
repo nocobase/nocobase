@@ -811,5 +811,5 @@
   "Refresh data blocks": "Actualizar bloques de datos",
   "Select data blocks to refresh": "Actualizar bloques de datos",
   "After successful submission, the selected data blocks will be automatically refreshed.": "Después de enviar correctamente, los bloques de datos seleccionados se actualizarán automáticamente.",
-  "Reset link expiration (minutes)": "Restablecer la expiración del enlace (minutos)"
+  "Reset link expiration": "Restablecer la expiración del enlace"
 }

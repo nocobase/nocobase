@@ -46,8 +46,8 @@
   "Please enter the same password again": "Voer hetzelfde wachtwoord opnieuw in",
   "The passwords entered twice are inconsistent": "De twee ingevoerde wachtwoorden zijn inconsistent",
   "Password reset successful": "Wachtwoord opnieuw instellen succesvol",
-  "Enable forget password feature": "Vergeet wachtwoord functie inschakelen",
-  "Notification Channel (Email)": "Notificatiekanaal (E-mail)",
+  "Enable forget password": "Vergeet wachtwoord functie inschakelen",
+  "Notification channel (Email)": "Notificatiekanaal (E-mail)",
   "Subject": "Onderwerp",
   "Content type": "Contenttype",
   "Plain text": "Gewone tekst",
@@ -57,6 +57,7 @@
   "No notification channels found. Please ": "Geen meldingskanalen gevonden. Gelieve ",
   "add one first": "een toe te voegen",
   "Reset password email": "Wachtwoord opnieuw instellen e-mail",
-  "1. Select a notification channel (Currently only email is supported)": "1. Selecteer een meldingskanaal (Momenteel wordt alleen e-mail ondersteund)",
-  "2. Configure the password reset email": "2. Configureer de e-mail voor het resetten van het wachtwoord"
+  "1. Select notification channel": "1. Selecteer meldingskanaal",
+  "2. Configure reset email": "2. Configureer reset e-mail",
+  "The notification channel used to send the reset password email, only support email channel": "Het notificatiekanaal dat wordt gebruikt om de e-mail voor het opnieuw instellen van het wachtwoord te verzenden, ondersteunt alleen het e-mailkanaal"
 }

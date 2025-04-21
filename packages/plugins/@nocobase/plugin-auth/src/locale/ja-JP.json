@@ -40,8 +40,8 @@
   "Please enter the same password again": "同じパスワードを再度入力してください。",
   "The passwords entered twice are inconsistent": "2回入力されたパスワードが一致しません",
   "Password reset successful": "パスワードリセット成功",
-  "Enable forget password feature": "パスワードを忘れた機能を有効にする",
-  "Notification Channel (Email)": "通知チャネル（メール）",
+  "Enable forget password": "パスワードを忘れた機能を有効にする",
+  "Notification channel (Email)": "通知チャネル（メール）",
   "Subject": "件名",
   "Content type": "コンテンツタイプ",
   "Plain text": "プレーンテキスト",
@@ -51,6 +51,7 @@
   "No notification channels found. Please ": "通知チャネルが見つかりません。",
   "add one first": "最初に追加してください",
   "Reset password email": "パスワードリセットメール",
-  "1. Select a notification channel (Currently only email is supported)": "1. 通知チャネルを選択（現在はメールのみサポート）",
-  "2. Configure the password reset email": "2. パスワードリセット用のメールを設定する"
+  "1. Select notification channel": "1. 通知チャネルを選択",
+  "2. Configure reset email": "2. リセットメールを設定",
+  "The notification channel used to send the reset password email, only support email channel": "パスワードリセットメールを送信するために使用される通知チャネル、メールチャネルのみサポート"
 }

@@ -68,8 +68,8 @@
   "Please enter the same password again": "Si prega di reinserire la stessa password",
   "The passwords entered twice are inconsistent": "Le password inserite due volte non corrispondono",
   "Password reset successful": "Reimpostazione password riuscita",
-  "Enable forget password feature": "Abilita la funzione di password dimenticata",
-  "Notification Channel (Email)": "Canale di notifica (Email)",
+  "Enable forget password": "Abilita la funzione di password dimenticata",
+  "Notification channel (Email)": "Canale di notifica (Email)",
   "Subject": "Oggetto",
   "Content type": "Tipo di contenuto",
   "Plain text": "Testo semplice",
@@ -79,6 +79,7 @@
   "No notification channels found. Please ": "Nessun canale di notifica trovato. Per favore ",
   "add one first": "aggiungine uno prima",
   "Reset password email": "Email di reimpostazione della password",
-  "1. Select a notification channel (Currently only email is supported)": "1. Seleziona un canale di notifica (Attualmente è supportata solo l'email)",
-  "2. Configure the password reset email": "2. Configurare l'email per il reset della password"
+  "1. Select notification channel": "1. Seleziona il canale di notifica",
+  "2. Configure reset email": "2. Configura l'email di reset",
+  "The notification channel used to send the reset password email, only support email channel": "Il canale di notifica utilizzato per inviare l'email di reimpostazione della password supporta solo il canale email"
 }

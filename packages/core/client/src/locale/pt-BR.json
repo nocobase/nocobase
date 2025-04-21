@@ -791,5 +791,5 @@
   "Refresh data blocks": "Atualizar blocos de dados",
   "Select data blocks to refresh": "Selecionar blocos de dados para atualizar",
   "After successful submission, the selected data blocks will be automatically refreshed.": "Após a atualização em massa bem sucedida.",
-  "Reset link expiration (minutes)": "Redefinir expiração do link (minutos)"
+  "Reset link expiration": "Redefinir expiração do link"
 }

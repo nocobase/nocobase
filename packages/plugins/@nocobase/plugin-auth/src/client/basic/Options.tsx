@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { SchemaComponent, useCollectionManager, useCurrentUserVariable, useDatetimeVariable, useGlobalVariable, useRecord } from '@nocobase/client';
+import { SchemaComponent, useCollectionManager, useCurrentUserVariable, useDatetimeVariable, useGlobalVariable, useRecord, useSystemSettingsVariable } from '@nocobase/client';
 import React, { useEffect, useMemo } from 'react';
 import { lang, useAuthTranslation } from '../locale';
 import { FormTab, ArrayTable } from '@formily/antd-v5';
@@ -151,11 +151,16 @@ const useVariableOptionsOfForgetPassword = () => {
   const { t } = useAuthTranslation();
   const environmentVariables = useGlobalVariable('$env');
   const { currentUserSettings } = useCurrentUserVariable({ maxDepth: 1 });
+  const { systemSettings } = useSystemSettingsVariable();
   const { datetimeSettings } = useDatetimeVariable({ noDisabled: true });
-  return [environmentVariables, currentUserSettings, datetimeSettings, {
+
+  return [environmentVariables, currentUserSettings, datetimeSettings, systemSettings, {
     value: '$resetLink',
     label: t('Reset password link'),
-  }].filter(Boolean);
+  }, {
+      value: '$validityPeriod',
+      label: t('Validity period'),
+    }].filter(Boolean);
 }
 
 export const Options = () => {
@@ -218,14 +223,14 @@ export const Options = () => {
                   'public.enableResetPassword': {
                     'x-decorator': 'FormItem',
                     type: 'boolean',
-                    title: '{{t("Enable forget password feature")}}',
+                    title: '{{t("Enable forget password")}}',
                     'x-component': 'Checkbox',
                     default: false,
                   },
                   divider1: {
                     type: 'void',
                     'x-component': () => {
-                      return <Divider orientation="left" orientationMargin="0">{t('1. Select a notification channel (Currently only email is supported)')}</Divider>;
+                      return <Divider orientation="left" orientationMargin="0">{t('1. Select notification channel')}</Divider>;
                     },
                     'x-reactions': [
                       {
@@ -240,7 +245,7 @@ export const Options = () => {
                   },
                   notificationChannel: {
                     type: 'string',
-                    title: '{{t("Notification Channel (Email)")}}',
+                    title: '{{t("Notification channel (Email)")}}',
                     required: true,
                     'x-decorator': 'FormItem',
                     'x-component': 'RemoteSelect',
@@ -272,11 +277,12 @@ export const Options = () => {
                         },
                       },
                     ],
+                    description: '{{t("The notification channel used to send the reset password email, only support email channel")}}',
                   },
                   divider2: {
                     type: 'void',
                     'x-component': () => {
-                      return <Divider orientation="left" orientationMargin="0">{t('2. Configure the password reset email')}</Divider>;
+                      return <Divider orientation="left" orientationMargin="0">{t('2. Configure reset email')}</Divider>;
                     },
                     'x-reactions': [
                       {
@@ -364,7 +370,6 @@ export const Options = () => {
                     'x-component': 'Variable.RawTextArea',
                     'x-component-props': {
                       scope: [...forgetPasswordVariableOptions],
-                      placeholder: 'Hi,',
                       autoSize: {
                         minRows: 10,
                       },
@@ -383,9 +388,15 @@ export const Options = () => {
                   },
                   resetTokenExpiresIn: {
                     type: 'number',
-                    title: '{{t("Reset link expiration (minutes)")}}',
+                    title: '{{t("Reset link expiration")}}',
                     'x-decorator': 'FormItem',
                     'x-component': 'InputNumber',
+                    'x-component-props': {
+                      suffix: t('Minutes'),
+                      style: {
+                        width: '100%',
+                      }
+                    },
                     default: 60,
                     required: true,
                     'x-reactions': [
