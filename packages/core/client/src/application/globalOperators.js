@@ -651,22 +651,20 @@ function parseYear(dateStr) {
 }
 
 function parseDate(targetDateStr) {
-  let dateStr = Array.isArray(targetDateStr) ? targetDateStr[1] : targetDateStr;
-  if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z$/.test(dateStr)) {
-    // ISO 8601 格式：YYYY-MM-DDTHH:mm:ss.sssZ
-    return new Date(dateStr); // 直接解析为 Date 对象
+  let dateStr = Array.isArray(targetDateStr) ? targetDateStr[1] ?? targetDateStr[0] : targetDateStr;
+  if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/.test(dateStr)) {
+    return new Date(dateStr);
+  } else if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(dateStr)) {
+    return new Date(dateStr.replace(' ', 'T'));
   } else if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
-    // YYYY-MM-DD 格式
     return parseFullDate(dateStr);
   } else if (/^\d{4}-\d{2}$/.test(dateStr)) {
-    // YYYY-MM 格式
     return parseMonth(dateStr);
   } else if (/^\d{4}Q[1-4]$/.test(dateStr)) {
-    // YYYYQn 格式
     return parseQuarter(dateStr);
   } else if (/^\d{4}$/.test(dateStr)) {
-    // YYYY 格式
     return parseYear(dateStr);
   }
-  return null; // Invalid format
+
+  return null;
 }
