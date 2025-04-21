@@ -19,7 +19,7 @@ const mockServer = (options?: ApplicationOptions) => {
   });
 };
 
-describe('app command test', () => {
+describe('app command', () => {
   let app: Application;
 
   afterEach(async () => {
