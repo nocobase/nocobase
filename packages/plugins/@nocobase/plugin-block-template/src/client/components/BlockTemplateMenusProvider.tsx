@@ -68,7 +68,7 @@ export const BlockTemplateMenusProvider = ({ children }) => {
       method: 'get',
       params: {
         filter: {
-          configured: true,
+          configured: { $isTruly: true },
           type: isMobile ? 'Mobile' : { $ne: 'Mobile' },
         },
         paginate: false,
