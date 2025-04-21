@@ -100,6 +100,14 @@ export const ValueDynamicComponent = (props: ValueDynamicComponentProps) => {
           .ant-checkbox-wrapper {
             margin-left: 50%;
           }
+          .ant-select-selector {
+            border-top-left-radius: 0;
+            border-bottom-left-radius: 0;
+          }
+          .ant-picker {
+            border-top-left-radius: 0;
+            border-bottom-left-radius: 0;
+          }
         `}
       >
         {React.createElement(DynamicComponent, {
