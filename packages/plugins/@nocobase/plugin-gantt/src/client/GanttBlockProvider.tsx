@@ -104,10 +104,6 @@ export const GanttBlockProvider = (props) => {
   const collection = cm.getCollection(props.collection, props.dataSource);
   const params = { filter: props.params?.filter, paginate: false, sort: [collection?.primaryKey || 'id'] };
 
-  if (collection?.tree) {
-    params['tree'] = true;
-  }
-
   return (
     <div aria-label="block-item-gantt" role="button">
       <TableBlockProvider {...props} params={params}>

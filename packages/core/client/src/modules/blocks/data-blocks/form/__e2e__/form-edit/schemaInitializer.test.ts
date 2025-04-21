@@ -85,7 +85,7 @@ test.describe('configure fields', () => {
     await page.getByRole('menuitem', { name: 'manyToOne2 right' }).hover();
     await page.getByRole('menuitem', { name: 'manyToOne3' }).click();
     await page.mouse.move(600, 0);
-
+    await page.reload();
     await expect(page.getByLabel('block-item-CollectionField-general-form-general.manyToOne1-manyToOne1')).toHaveText(
       `manyToOne1:${record.manyToOne1.id}`,
     );

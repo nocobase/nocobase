@@ -34,7 +34,37 @@ export const useValues = (options) => {
     const dataIndex = field.data?.targetFields;
     const option = (dataIndex && findOption(dataIndex, options)) || {};
     const operators = option?.operators || [];
-    field.data.operators = operators;
+    field.data.operators = operators?.filter((v) => {
+      const isOptionField = ['select', 'radioGroup', 'multipleSelect', 'checkboxGroup'].includes(
+        option?.interface || '',
+      );
+      const isDateField = [
+        'date',
+        'datetime',
+        'dateOnly',
+        'datetimeNoTz',
+        'unixTimestamp',
+        'createdAt',
+        'updatedAt',
+      ].includes(option?.interface || '');
+
+      // 如果 多个字段，则排除 Value、DateScope、Options
+      if (dataIndex.length > 1 && [ActionType.Value, ActionType.DateScope, ActionType.Options].includes(v.value)) {
+        return false;
+      }
+
+      // 非选项字段，去掉 Options
+      if (!isOptionField && v.value === ActionType.Options) {
+        return false;
+      }
+
+      // 非时间字段，去掉 DateScope
+      if (!isDateField && v.value === ActionType.DateScope) {
+        return false;
+      }
+
+      return true;
+    });
     field.data.schema = option?.schema;
   };
   useEffect(value2data, [logic]);

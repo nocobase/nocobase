@@ -48,9 +48,12 @@ import { ActionContextProvider } from './context';
 import { useGetAriaLabelOfAction } from './hooks/useGetAriaLabelOfAction';
 import { ActionContextProps, ActionProps, ComposedAction } from './types';
 import { linkageAction, setInitialActionState } from './utils';
+import { NAMESPACE_UI_SCHEMA } from '../../../i18n/constant';
+import { BlockContext } from '../../../block-provider/BlockProvider';
 
 // 这个要放到最下面，否则会导致前端单测失败
 import { useApp } from '../../../application';
+import { useAllDataBlocks } from '../page/AllDataBlocksProvider';
 
 const useA = () => {
   return {
@@ -94,12 +97,16 @@ export const Action: ComposedAction = withDynamicSchemaProps(
     const { designable } = useDesignable();
     const tarComponent = useComponent(component) || component;
     const variables = useVariables();
-    const localVariables = useLocalVariables({ currentForm: { values: recordData, readPretty: false } as any });
+    const localVariables = useLocalVariables({
+      currentForm: { values: recordData, readPretty: false } as any,
+    });
     const { visibleWithURL, setVisibleWithURL } = usePopupUtils();
     const { setSubmitted } = useActionContext();
     const { getAriaLabel } = useGetAriaLabelOfAction(title);
     const parentRecordData = useCollectionParentRecordData();
     const app = useApp();
+    const { getAllDataBlocks } = useAllDataBlocks();
+
     useEffect(() => {
       if (field.stateOfLinkageRules) {
         setInitialActionState(field);
@@ -116,6 +123,7 @@ export const Action: ComposedAction = withDynamicSchemaProps(
                 condition: v.condition,
                 variables,
                 localVariables,
+                conditionType: v.conditionType,
               },
               app.jsonLogic,
             );
@@ -130,37 +138,62 @@ export const Action: ComposedAction = withDynamicSchemaProps(
       [onMouseEnter],
     );
 
+    const handleClick = useMemo(() => {
+      return (
+        onClick &&
+        (async (e, callback) => {
+          await onClick?.(e, callback);
+
+          // 执行完 onClick 之后，刷新数据区块
+          const blocksToRefresh = fieldSchema['x-action-settings']?.onSuccess?.blocksToRefresh || [];
+          if (blocksToRefresh.length > 0) {
+            getAllDataBlocks().forEach((block) => {
+              if (blocksToRefresh.includes(block.uid)) {
+                try {
+                  block.service?.refresh();
+                } catch (error) {
+                  console.error('Failed to refresh block:', block.uid, error);
+                }
+              }
+            });
+          }
+        })
+      );
+    }, [onClick, fieldSchema, getAllDataBlocks]);
+
     return (
-      <InternalAction
-        containerRefKey={containerRefKey}
-        fieldSchema={fieldSchema}
-        designable={designable}
-        field={field}
-        icon={icon}
-        loading={loading}
-        handleMouseEnter={handleMouseEnter}
-        tarComponent={tarComponent}
-        className={className}
-        type={props.type}
-        Designer={Designer}
-        onClick={onClick}
-        confirm={confirm}
-        confirmTitle={confirmTitle}
-        popover={popover}
-        addChild={addChild}
-        recordData={recordData}
-        title={title}
-        style={style}
-        propsDisabled={propsDisabled}
-        useAction={useAction}
-        visibleWithURL={visibleWithURL}
-        setVisibleWithURL={setVisibleWithURL}
-        setSubmitted={setSubmitted}
-        getAriaLabel={getAriaLabel}
-        parentRecordData={parentRecordData}
-        actionCallback={actionCallback}
-        {...others}
-      />
+      <BlockContext.Provider value={{ name: 'action' }}>
+        <InternalAction
+          containerRefKey={containerRefKey}
+          fieldSchema={fieldSchema}
+          designable={designable}
+          field={field}
+          icon={icon}
+          loading={loading}
+          handleMouseEnter={handleMouseEnter}
+          tarComponent={tarComponent}
+          className={className}
+          type={props.type}
+          Designer={Designer}
+          onClick={onClick}
+          confirm={confirm}
+          confirmTitle={confirmTitle}
+          popover={popover}
+          addChild={addChild}
+          recordData={recordData}
+          title={title}
+          style={style}
+          propsDisabled={propsDisabled}
+          useAction={useAction}
+          visibleWithURL={visibleWithURL}
+          setVisibleWithURL={setVisibleWithURL}
+          setSubmitted={setSubmitted}
+          getAriaLabel={getAriaLabel}
+          parentRecordData={parentRecordData}
+          actionCallback={actionCallback}
+          {...others}
+        />
+      </BlockContext.Provider>
     );
   }),
   { displayName: 'Action' },
@@ -538,6 +571,7 @@ const RenderButtonInner = observer(
     designerProps: any;
     title: string;
     isLink?: boolean;
+    onlyIcon?: boolean;
   }) => {
     const {
       designable,
@@ -559,8 +593,10 @@ const RenderButtonInner = observer(
       designerProps,
       title,
       isLink,
+      onlyIcon,
       ...others
     } = props;
+    const { t } = useTranslation();
     const debouncedClick = useCallback(
       debounce(
         (e: React.MouseEvent, checkPortal = true) => {
@@ -582,7 +618,8 @@ const RenderButtonInner = observer(
       return null;
     }
 
-    const actionTitle = title || field?.title;
+    const rawTitle = title ?? field?.title;
+    const actionTitle = typeof rawTitle === 'string' ? t(rawTitle, { ns: NAMESPACE_UI_SCHEMA }) : rawTitle;
     const { opacity, ...restButtonStyle } = buttonStyle;
     const linkStyle = isLink && opacity ? { opacity } : undefined;
     return (
@@ -602,7 +639,7 @@ const RenderButtonInner = observer(
         type={type === 'danger' ? undefined : type}
         title={actionTitle}
       >
-        {actionTitle && (
+        {!onlyIcon && actionTitle && (
           <span className={icon ? 'nb-action-title' : null} style={linkStyle}>
             {actionTitle}
           </span>

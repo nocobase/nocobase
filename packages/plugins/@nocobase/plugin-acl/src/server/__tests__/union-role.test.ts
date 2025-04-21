@@ -51,7 +51,11 @@ describe('union role: full permissions', async () => {
         roles: [role1.name, role2.name],
       },
     });
-
+    await rootAgent.resource('roles').setSystemRoleMode({
+      values: {
+        roleMode: SystemRoleMode.allowUseUnion,
+      },
+    });
     agent = await app.agent().login(user, UNION_ROLE_KEY);
   });
 
@@ -415,15 +419,15 @@ describe('union role: full permissions', async () => {
     const rootAgent = await app.agent().login(rootUser);
     let rolesResponse = await agent.resource('roles').check();
     expect(rolesResponse.status).toBe(200);
-    expect(rolesResponse.body.data.roleMode).toStrictEqual(SystemRoleMode.default);
+    expect(rolesResponse.body.data.roleMode).toStrictEqual(SystemRoleMode.allowUseUnion);
     await rootAgent.resource('roles').setSystemRoleMode({
       values: {
-        roleMode: SystemRoleMode.allowUseUnion,
+        roleMode: SystemRoleMode.default,
       },
     });
     rolesResponse = await agent.resource('roles').check();
     expect(rolesResponse.status).toBe(200);
-    expect(rolesResponse.body.data.roleMode).toStrictEqual(SystemRoleMode.allowUseUnion);
+    expect(rolesResponse.body.data.roleMode).toStrictEqual(SystemRoleMode.default);
   });
 
   it(`should response no permission when createdById field is missing in data tables`, async () => {
@@ -500,5 +504,176 @@ describe('union role: full permissions', async () => {
     getRolesResponse = await agent.resource('roles').list({ pageSize: 30 });
     expect(getRolesResponse.statusCode).toBe(200);
     expect(getRolesResponse.body.meta.allowedActions.update.length).toBe(0);
+  });
+
+  it('should login successfully when use __union__ role in allowUseUnion mode #1906', async () => {
+    const rootAgent = await app.agent().login(rootUser);
+    await rootAgent.resource('roles').setSystemRoleMode({
+      values: {
+        roleMode: SystemRoleMode.allowUseUnion,
+      },
+    });
+    agent = await app.agent().login(user);
+    const createRoleResponse = await agent.resource('roles').check();
+    expect(createRoleResponse.statusCode).toBe(200);
+  });
+
+  it('should currentRole not be __union__ when default role mode #1907', async () => {
+    const rootAgent = await app.agent().login(rootUser);
+    await rootAgent.resource('roles').setSystemRoleMode({
+      values: {
+        roleMode: SystemRoleMode.default,
+      },
+    });
+    agent = await app.agent().login(user, UNION_ROLE_KEY);
+    const createRoleResponse = await agent.resource('roles').check();
+    expect(createRoleResponse.statusCode).toBe(200);
+    expect(createRoleResponse.body.data.role).not.toBe(UNION_ROLE_KEY);
+  });
+
+  it('should general action permissions override specific resource permissions when using union role #1924', async () => {
+    const rootAgent = await app.agent().login(rootUser);
+    await rootAgent
+      .post(`/dataSources/main/roles:update`)
+      .query({
+        filterByTk: role1.name,
+      })
+      .send({
+        roleName: role1.name,
+        strategy: {
+          actions: ['view'],
+        },
+        dataSourceKey: 'main',
+      });
+
+    const ownDataSourceScopeRole = await db.getRepository('dataSourcesRolesResourcesScopes').findOne({
+      where: {
+        key: 'own',
+        dataSourceKey: 'main',
+      },
+    });
+    const scopeFields = ['id', 'createdBy', 'createdById'];
+    const dataSourceResourcesResponse = await rootAgent
+      .post(`/roles/${role2.name}/dataSourceResources:create`)
+      .query({
+        filterByTk: 'users',
+        filter: {
+          dataSourceKey: 'main',
+          name: 'users',
+        },
+      })
+      .send({
+        usingActionsConfig: true,
+        actions: [
+          {
+            name: 'view',
+            fields: scopeFields,
+            scope: {
+              id: ownDataSourceScopeRole.id,
+              createdAt: '2025-02-19T08:57:17.385Z',
+              updatedAt: '2025-02-19T08:57:17.385Z',
+              key: 'own',
+              dataSourceKey: 'main',
+              name: '{{t("Own records")}}',
+              resourceName: null,
+              scope: {
+                createdById: '{{ ctx.state.currentUser.id }}',
+              },
+            },
+          },
+        ],
+        name: 'users',
+        dataSourceKey: 'main',
+      });
+    expect(dataSourceResourcesResponse.statusCode).toBe(200);
+
+    agent = await app.agent().login(user, UNION_ROLE_KEY);
+    const rolesResponse = await agent.resource('roles').check();
+    expect(rolesResponse.status).toBe(200);
+    expect(rolesResponse.body.data.actions['users:view']).toStrictEqual({});
+  });
+
+  it('should verify actions configuration for union role with specific scopes', async () => {
+    const rootAgent = await app.agent().login(rootUser);
+    await rootAgent
+      .post(`/dataSources/main/roles:update`)
+      .query({
+        filterByTk: role1.name,
+      })
+      .send({
+        roleName: role1.name,
+        strategy: {
+          actions: ['view', 'create:own', 'update'],
+        },
+        dataSourceKey: 'main',
+      });
+
+    const ownDataSourceScopeRole = await db.getRepository('dataSourcesRolesResourcesScopes').findOne({
+      where: {
+        key: 'own',
+        dataSourceKey: 'main',
+      },
+    });
+    const scopeFields = ['id', 'createdBy', 'createdById'];
+    const dataSourceResourcesResponse = await rootAgent
+      .post(`/roles/${role2.name}/dataSourceResources:create`)
+      .query({
+        filterByTk: 'users',
+        filter: {
+          dataSourceKey: 'main',
+          name: 'users',
+        },
+      })
+      .send({
+        usingActionsConfig: true,
+        actions: [
+          {
+            name: 'view',
+            fields: scopeFields,
+            scope: {
+              id: ownDataSourceScopeRole.id,
+              createdAt: '2025-02-19T08:57:17.385Z',
+              updatedAt: '2025-02-19T08:57:17.385Z',
+              key: 'own',
+              dataSourceKey: 'main',
+              name: '{{t("Own records")}}',
+              resourceName: null,
+              scope: {
+                createdById: '{{ ctx.state.currentUser.id }}',
+              },
+            },
+          },
+          {
+            name: 'create',
+            fields: scopeFields,
+            scope: {
+              id: ownDataSourceScopeRole.id,
+              createdAt: '2025-02-19T08:57:17.385Z',
+              updatedAt: '2025-02-19T08:57:17.385Z',
+              key: 'own',
+              dataSourceKey: 'main',
+              name: '{{t("Own records")}}',
+              resourceName: null,
+              scope: {
+                createdById: '{{ ctx.state.currentUser.id }}',
+              },
+            },
+          },
+        ],
+        name: 'users',
+        dataSourceKey: 'main',
+      });
+    expect(dataSourceResourcesResponse.statusCode).toBe(200);
+
+    agent = await app.agent().login(user, UNION_ROLE_KEY);
+    const rolesResponse = await agent.resource('roles').check();
+    expect(rolesResponse.status).toBe(200);
+    expect(rolesResponse.body.data.actions).toHaveProperty('users:create');
+    expect(rolesResponse.body.data.actions).toHaveProperty('users:view');
+    expect(rolesResponse.body.data.actions['users:view']).toStrictEqual({});
+    expect(rolesResponse.body.data.actions).not.toHaveProperty('users:create:own');
+    expect(rolesResponse.body.data.actions['users:create']).toHaveProperty('filter');
+    expect(rolesResponse.body.data.actions['users:create']).toHaveProperty('whitelist');
+    expect(rolesResponse.body.data.actions['users:update']).toStrictEqual({});
   });
 });

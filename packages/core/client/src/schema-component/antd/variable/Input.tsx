@@ -43,6 +43,7 @@ const { Text } = Typography;
 const JT_VALUE_RE = /^\s*{{\s*([^{}]+)\s*}}\s*$/;
 
 type ParseOptions = {
+  defaultTypeOnNull?: string;
   stringToDate?: boolean;
 };
 
@@ -64,7 +65,7 @@ const findScopeOption = (options: DefaultOptionType[], path: string[]): DefaultO
 
 function parseValue(value: any, options: ParseOptions = {}): string | string[] {
   if (value == null || (Array.isArray(value) && value.length === 0)) {
-    return 'null';
+    return options.defaultTypeOnNull ?? 'null';
   }
   const type = typeof value;
   if (Array.isArray(value)) {
@@ -217,6 +218,7 @@ export type VariableInputProps = {
   parseOptions?: ParseOptions;
   hideVariableButton?: boolean;
   variableHelperMapping?: VariableHelperMapping;
+  constantAbel?: boolean;
 };
 
 function _Input(props: VariableInputProps) {
@@ -234,6 +236,7 @@ function _Input(props: VariableInputProps) {
     parseOptions,
     hideVariableButton,
     variableHelperMapping,
+    constantAbel = true,
   } = props;
 
   const scope = typeof props.scope === 'function' ? props.scope() : props.scope;
@@ -279,6 +282,7 @@ function _Input(props: VariableInputProps) {
   );
 
   const constantOption: DefaultOptionType & { component?: React.FC<any> } = useMemo(() => {
+    if (!constantAbel) return null;
     if (children) {
       return {
         value: '$',
@@ -453,27 +457,26 @@ function _Input(props: VariableInputProps) {
   const disabled = props.disabled || form.disabled;
 
   return wrapSSR(
-    <Space.Compact style={style} className={classNames(componentCls, hashId, className)}>
-      {/* 确保所有ant input样式都已加载 */}
-      <AntInput style={{ display: 'none' }} />
-      {variable ? (
-        <div
-          className={cx(
-            'variable',
-            css`
-              position: relative;
-              line-height: 0;
+    <>
+      <Space.Compact style={style} className={classNames(componentCls, hashId, className)}>
+        {variable ? (
+          <div
+            className={cx(
+              'variable',
+              css`
+                position: relative;
+                line-height: 0;
 
-              &:hover {
-                .clear-button {
-                  display: inline-block;
+                &:hover {
+                  .clear-button {
+                    display: inline-block;
+                  }
                 }
-              }
 
-              .ant-input {
-                overflow: auto;
-                white-space: nowrap;
-                ${disabled ? '' : 'padding-right: 28px;'}
+                .ant-input {
+                  overflow: auto;
+                  white-space: nowrap;
+                  ${disabled ? '' : 'padding-right: 28px;'}
 
                 .ant-tag {
                   display: inline;
@@ -551,13 +554,16 @@ function _Input(props: VariableInputProps) {
               className={css(`
               margin-left: -1px;
             `)}
-              type={variable ? 'primary' : 'default'}
-              disabled={disabled}
-            />
-          )}
-        </Cascader>
-      )}
-    </Space.Compact>,
+                type={variable ? 'primary' : 'default'}
+                disabled={disabled}
+              />
+            )}
+          </Cascader>
+        )}
+      </Space.Compact>
+      {/* 确保所有ant input样式都已加载, 放到Compact中会导致Compact中的Input样式不对 */}
+      <AntInput style={{ display: 'none' }} />
+    </>,
   );
 }
 
