@@ -16,13 +16,14 @@ import * as jobActions from './actions';
 
 import ManualInstruction from './ManualInstruction';
 import { MANUAL_TASK_TYPE } from '../common/constants';
+import { Model } from '@nocobase/database';
 
-interface WorkflowManualTaskModel {
-  id: number;
-  userId: number;
-  workflowId: number;
-  executionId: number;
-  status: number;
+class WorkflowManualTaskModel extends Model {
+  declare id: number;
+  declare userId: number;
+  declare workflowId: number;
+  declare executionId: number;
+  declare status: number;
 }
 
 export default class extends Plugin {
@@ -50,12 +51,18 @@ export default class extends Plugin {
       },
     });
 
-    this.app.acl.allow('workflowManualTasks', ['list', 'get', 'submit'], 'loggedIn');
+    this.app.acl.allow('workflowManualTasks', ['list', 'listMine', 'get', 'submit'], 'loggedIn');
 
     const workflowPlugin = this.app.pm.get(WorkflowPlugin) as WorkflowPlugin;
     workflowPlugin.registerInstruction('manual', ManualInstruction);
 
-    this.db.on('workflowManualTasks.afterSave', async (task: WorkflowManualTaskModel, options) => {
+    this.db.on('workflowManualTasks.afterSave', async (task: WorkflowManualTaskModel, { transaction }) => {
+      // const allCount = await (task.constructor as typeof WorkflowManualTaskModel).count({
+      //   where: {
+      //     userId: task.userId,
+      //   },
+      //   transaction,
+      // });
       await workflowPlugin.toggleTaskStatus(
         {
           type: MANUAL_TASK_TYPE,
@@ -63,8 +70,9 @@ export default class extends Plugin {
           userId: task.userId,
           workflowId: task.workflowId,
         },
-        Boolean(task.status),
-        options,
+        task.status === JOB_STATUS.PENDING,
+        // allCount,
+        { transaction },
       );
     });
   }

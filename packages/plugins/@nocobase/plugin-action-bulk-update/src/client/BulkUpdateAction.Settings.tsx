@@ -22,6 +22,10 @@ import {
   useGlobalVariable,
   BlocksSelector,
   usePlugin,
+  SchemaSettingsLinkageRules,
+  useCollectionManager_deprecated,
+  useDataBlockProps,
+  useCollection_deprecated,
 } from '@nocobase/client';
 import { useTranslation } from 'react-i18next';
 import React from 'react';
@@ -74,7 +78,7 @@ function AfterSuccess() {
 
   return (
     <SchemaSettingsModalItem
-      dialogRootClassName='dialog-after-successful-submission'
+      dialogRootClassName="dialog-after-successful-submission"
       width={700}
       title={t('After successful submission')}
       initialValues={fieldSchema?.['x-action-settings']?.['onSuccess']}
@@ -159,6 +163,21 @@ const schemaSettingsItems: SchemaSettingsItemType[] = [
     useComponentProps() {
       const { buttonEditorProps } = useSchemaToolbar();
       return buttonEditorProps;
+    },
+  },
+  {
+    name: 'linkageRules',
+    Component: SchemaSettingsLinkageRules,
+    useComponentProps() {
+      const { name } = useCollection_deprecated();
+      const { association } = useDataBlockProps() || {};
+      const { getCollectionField } = useCollectionManager_deprecated();
+      const associationField = getCollectionField(association);
+      const { linkageRulesProps } = useSchemaToolbar();
+      return {
+        ...linkageRulesProps,
+        collectionName: associationField?.collectionName || name,
+      };
     },
   },
   {

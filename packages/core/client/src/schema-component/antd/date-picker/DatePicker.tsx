@@ -252,8 +252,9 @@ DatePicker.FilterWithPicker = function FilterWithPicker(props: any) {
   const value = Array.isArray(props.value) ? props.value[0] : props.value;
   const compile = useCompile();
   const fieldSchema = useFieldSchema();
-  const targetPicker = value ? inferPickerType(value, picker) : picker;
-  const targetDateFormat = getPickerFormat(targetPicker) || format;
+  const initPicker = value ? inferPickerType(value, picker) : picker;
+  const [targetPicker, setTargetPicker] = useState(initPicker);
+  const targetDateFormat = getPickerFormat(initPicker) || format;
   const newProps = {
     utc,
     inputReadOnly: isMobileMedia,
@@ -271,13 +272,6 @@ DatePicker.FilterWithPicker = function FilterWithPicker(props: any) {
   };
   const field: any = useField();
   const [stateProps, setStateProps] = useState(newProps);
-  useEffect(() => {
-    newProps.picker = targetPicker;
-    const dateTimeFormat = getDateTimeFormat(targetPicker, targetDateFormat, showTime, timeFormat);
-    newProps.format = dateTimeFormat;
-    setStateProps(newProps);
-  }, [targetPicker]);
-
   return (
     <Space.Compact style={{ width: '100%' }}>
       <Select
@@ -307,6 +301,7 @@ DatePicker.FilterWithPicker = function FilterWithPicker(props: any) {
           },
         ])}
         onChange={(value) => {
+          setTargetPicker(value);
           const format = getPickerFormat(value);
           const dateTimeFormat = getDateTimeFormat(value, format, showTime, timeFormat);
           field.setComponentProps({

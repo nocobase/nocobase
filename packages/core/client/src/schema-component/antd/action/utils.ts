@@ -87,12 +87,14 @@ export const linkageAction = async (
     condition,
     variables,
     localVariables,
+    conditionType,
   }: {
     operator;
     field;
     condition;
     variables: VariablesContextType;
     localVariables: VariableOption[];
+    conditionType: 'advanced' | 'basic';
   },
   jsonLogic: any,
 ) => {
@@ -101,7 +103,7 @@ export const linkageAction = async (
 
   switch (operator) {
     case ActionType.Visible:
-      if (await conditionAnalyses({ ruleGroup: condition, variables, localVariables }, jsonLogic)) {
+      if (await conditionAnalyses({ ruleGroup: condition, variables, localVariables, conditionType }, jsonLogic)) {
         displayResult.push(operator);
         field.data = field.data || {};
         field.data.hidden = false;
@@ -113,7 +115,7 @@ export const linkageAction = async (
       field.display = last(displayResult);
       break;
     case ActionType.Hidden:
-      if (await conditionAnalyses({ ruleGroup: condition, variables, localVariables }, jsonLogic)) {
+      if (await conditionAnalyses({ ruleGroup: condition, variables, localVariables, conditionType }, jsonLogic)) {
         field.data = field.data || {};
         field.data.hidden = true;
       } else {
@@ -122,7 +124,7 @@ export const linkageAction = async (
       }
       break;
     case ActionType.Disabled:
-      if (await conditionAnalyses({ ruleGroup: condition, variables, localVariables }, jsonLogic)) {
+      if (await conditionAnalyses({ ruleGroup: condition, variables, localVariables, conditionType }, jsonLogic)) {
         disableResult.push(true);
       }
       field.stateOfLinkageRules = {
@@ -133,7 +135,7 @@ export const linkageAction = async (
       field.componentProps['disabled'] = last(disableResult);
       break;
     case ActionType.Active:
-      if (await conditionAnalyses({ ruleGroup: condition, variables, localVariables }, jsonLogic)) {
+      if (await conditionAnalyses({ ruleGroup: condition, variables, localVariables, conditionType }, jsonLogic)) {
         disableResult.push(false);
       } else {
         disableResult.push(!!field.componentProps?.['disabled']);

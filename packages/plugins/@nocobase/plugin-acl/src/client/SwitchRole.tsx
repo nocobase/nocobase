@@ -17,14 +17,20 @@ import {
   useCurrentRoleMode,
 } from '@nocobase/client';
 import { Divider } from 'antd';
+import _ from 'lodash';
 
 export const SwitchRole = () => {
   const { t } = useTranslation();
   const api = useAPIClient();
-  const roles = useCurrentRoles();
+  const roles = _.cloneDeep(useCurrentRoles());
   const roleMode = useCurrentRoleMode();
   const currentRole = roles.find((role) => role.name === api.auth.role)?.name;
-
+  if (roleMode === 'allow-use-union') {
+    roles.unshift({
+      name: '__union__',
+      title: t('Full permissions', { ns: 'acl' }),
+    });
+  }
   // 当角色数量小于等于1 或者 是仅使用合并角色模式时，不显示切换角色选项
   if (roles.length <= 1 || roleMode === 'only-use-union') {
     return null;
