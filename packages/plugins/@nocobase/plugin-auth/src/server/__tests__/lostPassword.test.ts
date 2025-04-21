@@ -48,7 +48,7 @@ describe('auth:lostPassword', () => {
           public: {
             enableResetPassword: true,
           },
-          emailChannel: 'email',
+          notificationChannel: 'email',
           emailSubject: 'Reset your password',
           emailContentType: 'html',
           emailContentHTML: 'Click the link to reset your password: {{$resetLink}}',
@@ -212,7 +212,7 @@ describe('auth:lostPassword', () => {
           public: {
             enableResetPassword: true,
           },
-          emailChannel: 'email',
+          notificationChannel: 'email',
           emailSubject: 'Reset password for {{$user.username}}',
           emailContentType: 'html',
           emailContentHTML: 'Click the link to reset your password: {{$user.username}}',

@@ -193,6 +193,8 @@ export class BasicAuth extends BaseAuth {
     // 构建重置密码链接
     const resetLink = `${baseURL}/reset-password?resetToken=${resetToken}`;
 
+    const systemSettings = await ctx.db.getRepository('systemSettings')?.findOne() || {};
+
     // 通过通知管理插件发送邮件
     const notificationManager = ctx.app.getPlugin('notification-manager');
     if (notificationManager) {
@@ -204,6 +206,8 @@ export class BasicAuth extends BaseAuth {
             $resetLink: resetLink,
             $nDate: getDateVars(),
             $env: ctx.app.environment.getVariables(),
+            $resetLinkExpiration: resetTokenExpiresIn,
+            $systemSettings: systemSettings,
           });
 
           const parsedContent = parsedValue(emailContentType === 'html' ? emailContentHTML : emailContentText, {
@@ -211,6 +215,8 @@ export class BasicAuth extends BaseAuth {
             $resetLink: resetLink,
             $nDate: getDateVars(),
             $env: ctx.app.environment.getVariables(),
+            $resetLinkExpiration: resetTokenExpiresIn,
+            $systemSettings: systemSettings,
           });
 
           const content = emailContentType === 'html' ? { html: parsedContent } : { text: parsedContent };

@@ -28,12 +28,6 @@ export const useSystemSettingsVariable = () => {
         label: t('System title'),
         isLeaf: true,
       },
-      {
-        key: 'logo',
-        value: 'logo',
-        label: t('Logo (URL)'),
-        isLeaf: true,
-      },
     ]
   };
 
