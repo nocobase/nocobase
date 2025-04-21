@@ -26,12 +26,13 @@ export const Sender: React.FC = () => {
   const senderPlaceholder = useChatBoxContext('senderPlaceholder');
   const send = useChatBoxContext('send');
   const currentEmployee = useChatBoxContext('currentEmployee');
-  const showInfoForm = useChatBoxContext('showInfoForm');
   const senderRef = useChatBoxContext('senderRef');
   const [value, setValue] = useState(senderValue);
 
   useEffect(() => {
-    setSenderValue(value);
+    if (value !== senderValue) {
+      setSenderValue(value);
+    }
   }, [value]);
 
   useEffect(() => {
@@ -58,8 +59,8 @@ export const Sender: React.FC = () => {
         })
       }
       onCancel={cancelRequest}
-      prefix={currentConversation || !showInfoForm ? <SenderPrefix /> : null}
-      header={!currentConversation ? <SenderHeader /> : null}
+      prefix={<SenderPrefix />}
+      // header={!currentConversation ? <SenderHeader /> : null}
       loading={responseLoading}
       footer={({ components }) => <SenderFooter components={components} />}
       disabled={!currentEmployee}

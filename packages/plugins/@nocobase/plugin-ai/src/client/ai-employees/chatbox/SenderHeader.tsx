@@ -23,59 +23,53 @@ export const SenderHeader: React.FC = () => {
   const { token } = useToken();
   const currentEmployee = useChatBoxContext('currentEmployee');
   const startNewConversation = useChatBoxContext('startNewConversation');
-  const showInfoForm = useChatBoxContext('showInfoForm');
-  const form = useChatBoxContext('infoForm');
-  return currentEmployee ? (
-    showInfoForm ? (
-      <Sender.Header
-        onOpenChange={startNewConversation}
-        title={
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'flex-start',
-            }}
-          >
-            <Avatar src={avatars(currentEmployee.avatar)} />
-            <div
-              style={{
-                marginLeft: '4px',
-                paddingTop: '4px',
-              }}
-            >
-              <div
-                style={{
-                  color: token.colorTextDisabled,
-                }}
-              >
-                {t('Please tell me the following information')}
-              </div>
-            </div>
-          </div>
-        }
-      >
-        <SchemaComponent
-          components={{ InfoForm }}
-          schema={{
-            type: 'void',
-            properties: {
-              [uid()]: {
-                type: 'void',
-                'x-decorator': 'FormV2',
-                'x-decorator-props': {
-                  form,
-                },
-                'x-component': 'InfoForm',
-                'x-component-props': {
-                  aiEmployee: currentEmployee,
-                },
-              },
-            },
-          }}
-        />
-      </Sender.Header>
-    ) : null
-  ) : (
-    <AIEmployeeHeader />
-  );
+  return null;
+  //   <Sender.Header
+  //     onOpenChange={startNewConversation}
+  //     title={
+  //       <div
+  //         style={{
+  //           display: 'flex',
+  //           alignItems: 'flex-start',
+  //         }}
+  //       >
+  //         <Avatar src={avatars(currentEmployee.avatar)} />
+  //         <div
+  //           style={{
+  //             marginLeft: '4px',
+  //             paddingTop: '4px',
+  //           }}
+  //         >
+  //           <div
+  //             style={{
+  //               color: token.colorTextDisabled,
+  //             }}
+  //           >
+  //             {t('Please tell me the following information')}
+  //           </div>
+  //         </div>
+  //       </div>
+  //     }
+  //   >
+  //     <SchemaComponent
+  //       components={{ InfoForm }}
+  //       schema={{
+  //         type: 'void',
+  //         properties: {
+  //           [uid()]: {
+  //             type: 'void',
+  //             'x-decorator': 'FormV2',
+  //             'x-decorator-props': {
+  //               form,
+  //             },
+  //             'x-component': 'InfoForm',
+  //             'x-component-props': {
+  //               aiEmployee: currentEmployee,
+  //             },
+  //           },
+  //         },
+  //       }}
+  //     />
+  //   </Sender.Header>
+  // ) : null;
 };

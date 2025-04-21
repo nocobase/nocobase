@@ -9,13 +9,13 @@
 
 import React from 'react';
 import { Button, Tooltip } from 'antd';
-import { SelectOutlined } from '@ant-design/icons';
+import { BuildOutlined } from '@ant-design/icons';
 import { useChatBoxContext } from './ChatBoxContext';
 import { useAISelectionContext } from '../selector/AISelectorProvider';
 import { useT } from '../../locale';
 import { useOnInsert } from '../useOnInsert';
 
-export const FieldSelector: React.FC = () => {
+export const UISchemaSelector: React.FC = () => {
   const currentEmployee = useChatBoxContext('currentEmployee');
   const senderRef = useChatBoxContext('senderRef');
   const { startSelect, selectable } = useAISelectionContext();
@@ -23,11 +23,12 @@ export const FieldSelector: React.FC = () => {
   const { onInsert } = useOnInsert();
 
   const handleSelect = () => {
-    startSelect('fields', {
-      onSelect: ({ value }) => {
-        if (!value) {
+    startSelect('blocks', {
+      onSelect: ({ uid }) => {
+        if (!uid) {
           return;
         }
+        const value = `{{$nUISchema.${uid}}}`;
         onInsert(() => {
           return senderRef.current?.nativeElement.querySelector('.ant-input');
         }, value);
@@ -37,12 +38,12 @@ export const FieldSelector: React.FC = () => {
   };
 
   return (
-    <Tooltip title={t('Select field values')} arrow={false}>
+    <Tooltip title={t('Select block UI schemas')} arrow={false}>
       <Button
         disabled={!currentEmployee}
         variant="text"
-        color={selectable === 'fields' ? 'primary' : 'default'}
-        icon={<SelectOutlined />}
+        color={selectable === 'blocks' ? 'primary' : 'default'}
+        icon={<BuildOutlined />}
         onClick={handleSelect}
       />
     </Tooltip>

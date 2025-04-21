@@ -128,6 +128,8 @@ export const Conversations: React.FC = memo(() => {
   const setCurrentEmployee = useChatBoxContext('setCurrentEmployee');
   const setSenderValue = useChatBoxContext('setSenderValue');
   const setSenderPlaceholder = useChatBoxContext('setSenderPlaceholder');
+  const expanded = useChatBoxContext('expanded');
+  const setShowConversations = useChatBoxContext('setShowConversations');
   const { loading: conversationsLoading } = conversationsService;
 
   const items = useMemo(() => {
@@ -175,12 +177,17 @@ export const Conversations: React.FC = memo(() => {
     setSenderPlaceholder(conversation?.aiEmployee?.chatSettings?.senderPlaceholder);
     setMessages([]);
     messagesService.run(sessionId);
+    if (!expanded) {
+      setShowConversations(false);
+    }
   };
 
   return (
     <Layout
       style={{
         height: '100%',
+        paddingLeft: '16px',
+        paddingRight: '8px',
       }}
     >
       <Header

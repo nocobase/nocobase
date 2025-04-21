@@ -8,19 +8,18 @@
  */
 
 import React, { useContext } from 'react';
-import { FloatButton, Avatar } from 'antd';
 import { CurrentUserContext } from '@nocobase/client';
-import { ChatBox } from './ChatBox';
-import icon from '../icon.svg';
-import { css } from '@emotion/css';
+import { ChatBoxWrapper } from './ChatBox';
 import { ChatBoxContext, useSetChatBoxContext } from './ChatBoxContext';
+import { Helmet } from 'react-helmet';
+import { ChatButton } from './ChatButton';
 
 export const ChatBoxProvider: React.FC<{
   children: React.ReactNode;
 }> = (props) => {
   const currentUserCtx = useContext(CurrentUserContext);
   const chatBoxCtx = useSetChatBoxContext();
-  const { open, setOpen } = chatBoxCtx;
+  const { open, expanded } = chatBoxCtx;
 
   if (!currentUserCtx?.data?.data) {
     return <>{props.children}</>;
@@ -28,38 +27,27 @@ export const ChatBoxProvider: React.FC<{
   return (
     <ChatBoxContext.Provider value={chatBoxCtx}>
       {props.children}
-      {!open && (
-        <div
-          className={css`
-            .ant-float-btn {
-              width: 40px;
-            }
-            .ant-float-btn .ant-float-btn-body .ant-float-btn-content {
-              padding: 0;
-            }
-            .ant-float-btn .ant-float-btn-body .ant-float-btn-content .ant-float-btn-icon {
-              width: 40px;
-            }
-          `}
-        >
-          <FloatButton
-            icon={
-              <Avatar
-                src={icon}
-                size={40}
-                style={{
-                  marginBottom: '4px',
-                }}
-              />
-            }
-            onClick={() => {
-              setOpen(true);
-            }}
-            shape="square"
-          />
-        </div>
-      )}
-      {open ? <ChatBox /> : null}
+      <ChatButton />
+      {open && !expanded ? (
+        <Helmet>
+          <style type="text/css">
+            {`
+html {
+  padding-left: 450px;
+}
+html body {
+  position: relative;
+  overflow: hidden;
+  transform: translateX(-450px);
+}
+.ant-dropdown-placement-bottomLeft {
+  transform: translateX(450px) !important;
+}
+`}
+          </style>
+        </Helmet>
+      ) : null}
+      {open ? <ChatBoxWrapper /> : null}
     </ChatBoxContext.Provider>
   );
 };

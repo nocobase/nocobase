@@ -8,53 +8,17 @@
  */
 
 import React, { memo, useMemo, useState } from 'react';
-import {
-  SchemaComponent,
-  SchemaSettings,
-  SchemaSettingsItem,
-  useBlockContext,
-  useCollection,
-  useCollectionFilterOptions,
-  useCollectionRecordData,
-  useSchemaSettings,
-  useToken,
-} from '@nocobase/client';
+import { SchemaComponent, SchemaSettings, SchemaSettingsItem, useSchemaSettings, useToken } from '@nocobase/client';
 import { useT } from '../../locale';
 import { avatars } from '../avatars';
 import { Card, Avatar, Tooltip, Modal, Tag, Typography } from 'antd';
 const { Meta } = Card;
-import { Schema } from '@formily/react';
 import { createForm } from '@formily/core';
-import { InfoForm } from '../chatbox/InfoForm';
 import { uid } from '@formily/shared';
 import { useAISelectionContext } from '../selector/AISelectorProvider';
 import { AIEmployee } from '../types';
-
-export const useAIEmployeeButtonVariableOptions = () => {
-  const collection = useCollection();
-  const t = useT();
-  const fieldsOptions = useCollectionFilterOptions(collection);
-  const recordData = useCollectionRecordData();
-  const { name: blockType } = useBlockContext() || {};
-  const fields = useMemo(() => {
-    return Schema.compile(fieldsOptions, { t });
-  }, [fieldsOptions]);
-  const options = useMemo(() => {
-    return [
-      recordData && {
-        name: 'currentRecord',
-        title: t('Current record'),
-        children: [...fields],
-      },
-      blockType === 'form' && {
-        name: '$nForm',
-        title: t('Current form'),
-        children: [...fields],
-      },
-    ].filter(Boolean);
-  }, [recordData, t, fields, blockType]);
-  return options;
-};
+import { AIVariableRawTextArea } from './AIVariableRawTextArea';
+import { useFieldSchema } from '@formily/react';
 
 const SettingsForm: React.FC<{
   form: any;
@@ -63,10 +27,12 @@ const SettingsForm: React.FC<{
   const { dn } = useSchemaSettings();
   const t = useT();
   const { token } = useToken();
+  const fieldSchema = useFieldSchema();
+  const currentSchema = fieldSchema?.parent?.parent?.parent;
+
   return (
     <SchemaComponent
-      components={{ InfoForm }}
-      scope={{ useAIEmployeeButtonVariableOptions }}
+      components={{ AIVariableRawTextArea }}
       schema={{
         type: 'void',
         properties: {
@@ -122,7 +88,7 @@ const SettingsForm: React.FC<{
                 type: 'void',
                 'x-component': 'Divider',
                 'x-component-props': {
-                  children: t('Default message'),
+                  children: t('Task instruction'),
                 },
               },
               message: {
@@ -152,14 +118,9 @@ const SettingsForm: React.FC<{
                     title: t('Message content'),
                     type: 'string',
                     'x-decorator': 'FormItem',
-                    'x-component': 'Variable.RawTextArea',
+                    'x-component': 'AIVariableRawTextArea',
                     'x-component-props': {
-                      scope: '{{ useAIEmployeeButtonVariableOptions }}',
-                      changeOnSelect: true,
-                      fieldNames: {
-                        value: 'name',
-                        label: 'title',
-                      },
+                      currentSchema,
                     },
                   },
                 },
@@ -171,21 +132,6 @@ const SettingsForm: React.FC<{
                 'x-decorator': 'FormItem',
                 'x-component': 'Checkbox',
                 default: dn.getSchemaAttribute('x-component-props.autoSend') || false,
-              },
-              formDivider: {
-                type: 'void',
-                'x-component': 'Divider',
-                'x-component-props': {
-                  children: t('Required information form'),
-                },
-              },
-              infoForm: {
-                type: 'object',
-                'x-component': 'InfoForm',
-                'x-component-props': {
-                  aiEmployee,
-                },
-                default: dn.getSchemaAttribute('x-component-props.infoForm'),
               },
             },
           },
@@ -210,7 +156,7 @@ export const aiEmployeeButtonSettings = new SchemaSettings({
 
         return (
           <div onClick={(e) => e.stopPropagation()}>
-            <SchemaSettingsItem title={t('Edit')} onClick={() => setOpen(true)} />
+            <SchemaSettingsItem title={t('Edit task')} onClick={() => setOpen(true)} />
             <Modal
               styles={{
                 mask: {
@@ -220,13 +166,13 @@ export const aiEmployeeButtonSettings = new SchemaSettings({
                   zIndex: selectable ? -1 : 311,
                 },
               }}
-              title={t('Edit')}
+              title={t('Edit task')}
               open={open}
               onCancel={() => {
                 setOpen(false);
               }}
               onOk={() => {
-                const { taskDesc, message, autoSend, infoForm } = form.values;
+                const { taskDesc, message, autoSend } = form.values;
                 dn.deepMerge({
                   'x-uid': dn.getSchemaAttribute('x-uid'),
                   'x-component-props': {
@@ -234,7 +180,6 @@ export const aiEmployeeButtonSettings = new SchemaSettings({
                     message,
                     taskDesc,
                     autoSend,
-                    infoForm,
                   },
                 });
                 setOpen(false);

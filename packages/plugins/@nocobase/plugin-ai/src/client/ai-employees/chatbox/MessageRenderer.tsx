@@ -50,6 +50,13 @@ const AIMessageRenderer: React.FC<{
     case 'text':
       return (
         <Bubble
+          styles={{
+            content: {
+              width: '100%',
+              minHeight: 0,
+            },
+          }}
+          variant="borderless"
           content={<Markdown markdown={msg.content} />}
           footer={
             <Space>

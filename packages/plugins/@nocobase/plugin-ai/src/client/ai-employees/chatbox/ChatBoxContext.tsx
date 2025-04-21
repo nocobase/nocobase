@@ -26,8 +26,12 @@ import { useChatMessages } from './ChatMessagesProvider';
 import { useChatConversations } from './ChatConversationsProvider';
 
 type ChatBoxContextValues = {
-  setOpen: (open: boolean) => void;
   open: boolean;
+  setOpen: React.Dispatch<React.SetStateAction<boolean>>;
+  expanded: boolean;
+  setExpanded: React.Dispatch<React.SetStateAction<boolean>>;
+  showConversations: boolean;
+  setShowConversations: React.Dispatch<React.SetStateAction<boolean>>;
   currentEmployee: AIEmployee;
   setCurrentEmployee: React.Dispatch<React.SetStateAction<AIEmployee>>;
   roles: { [role: string]: any };
@@ -36,8 +40,6 @@ type ChatBoxContextValues = {
   senderRef: React.MutableRefObject<GetRef<typeof Sender>>;
   senderPlaceholder: string;
   setSenderPlaceholder: React.Dispatch<React.SetStateAction<string>>;
-  infoForm: Form;
-  showInfoForm: boolean;
   startNewConversation: () => void;
   triggerShortcut: (options: ShortcutOptions) => void;
   send(opts: SendOptions): void;
@@ -72,11 +74,6 @@ const defaultRoles: GetProp<typeof Bubble.List, 'roles'> = {
       maxWidth: 400,
       marginInlineEnd: 48,
     },
-    styles: {
-      footer: {
-        width: '100%',
-      },
-    },
     variant: 'borderless',
     messageRender: (msg: any) => {
       return (
@@ -96,17 +93,14 @@ const aiEmployeeRole = (aiEmployee: AIEmployee) => ({
     </Popover>
   ) : null,
   typing: { step: 5, interval: 20 },
-  style: {
-    maxWidth: '80%',
-    marginInlineEnd: 48,
-    margin: '8px 0',
-  },
+  variant: 'borderless',
   styles: {
-    footer: {
-      width: '100%',
+    content: {
+      width: '95%',
+      margin: '8px 0',
+      marginInlineEnd: 16,
     },
   },
-  variant: 'borderless',
   messageRender: (msg: any) => {
     return <AIMessage msg={msg} />;
   },
@@ -116,6 +110,8 @@ export const useSetChatBoxContext = () => {
   const t = useT();
   const { aiEmployees } = useContext(AIEmployeesContext);
   const [open, setOpen] = useState(false);
+  const [expanded, setExpanded] = useState(false);
+  const [showConversations, setShowConversations] = useState(false);
   const [currentEmployee, setCurrentEmployee] = useState<AIEmployee>(null);
   const { setMessages, sendMessages } = useChatMessages();
   const { currentConversation, setCurrentConversation, conversationsService } = useChatConversations();
@@ -123,8 +119,6 @@ export const useSetChatBoxContext = () => {
   const [senderPlaceholder, setSenderPlaceholder] = useState<string>('');
   const senderRef = useRef<GetRef<typeof Sender>>(null);
   const [roles, setRoles] = useState<GetProp<typeof Bubble.List, 'roles'>>(defaultRoles);
-
-  const infoForm = useMemo(() => createForm(), []);
 
   const send = (options: SendOptions) => {
     const sendOptions = {
@@ -134,12 +128,7 @@ export const useSetChatBoxContext = () => {
         conversationsService.run();
       },
     };
-    const hasInfoFormValues = Object.values(infoForm?.values || []).filter(Boolean).length;
-    if (hasInfoFormValues) {
-      sendOptions.infoFormValues = { ...infoForm.values };
-    }
     setSenderValue('');
-    infoForm.reset();
     sendMessages(sendOptions);
   };
 
@@ -153,17 +142,23 @@ export const useSetChatBoxContext = () => {
   };
 
   const startNewConversation = useCallback(() => {
+    const greetingMsg = {
+      key: uid(),
+      role: currentEmployee.username,
+      content: {
+        type: 'greeting' as const,
+        content: currentEmployee.greeting || t('Default greeting message', { nickname: currentEmployee.nickname }),
+      },
+    };
     setCurrentConversation(undefined);
-    setCurrentEmployee(null);
     setSenderValue('');
-    infoForm.reset();
-    setMessages([]);
+    setMessages([greetingMsg]);
     senderRef.current?.focus();
-  }, [infoForm]);
+  }, [currentEmployee]);
 
   const triggerShortcut = useCallback(
     (options: ShortcutOptions) => {
-      const { aiEmployee, message, infoFormValues, autoSend } = options;
+      const { aiEmployee, message, autoSend } = options;
       updateRole(aiEmployee);
       if (!open) {
         setOpen(true);
@@ -189,7 +184,6 @@ export const useSetChatBoxContext = () => {
         },
       ]);
       senderRef.current?.focus();
-      infoForm.setValues(infoFormValues);
       if (autoSend) {
         send({
           aiEmployee,
@@ -197,7 +191,7 @@ export const useSetChatBoxContext = () => {
         });
       }
     },
-    [open, currentConversation, infoForm],
+    [open, currentConversation],
   );
 
   useEffect(() => {
@@ -217,6 +211,10 @@ export const useSetChatBoxContext = () => {
   }, [aiEmployees]);
 
   useEffect(() => {
+    senderRef.current?.focus();
+  }, [currentEmployee]);
+
+  useEffect(() => {
     if (open) {
       conversationsService.run();
       senderRef.current?.focus();
@@ -226,6 +224,10 @@ export const useSetChatBoxContext = () => {
   return {
     open,
     setOpen,
+    expanded,
+    setExpanded,
+    showConversations,
+    setShowConversations,
     currentEmployee,
     setCurrentEmployee,
     roles,
@@ -234,8 +236,6 @@ export const useSetChatBoxContext = () => {
     setSenderValue,
     senderPlaceholder,
     setSenderPlaceholder,
-    showInfoForm: !!currentEmployee?.chatSettings?.infoForm?.length,
-    infoForm,
     startNewConversation,
     triggerShortcut,
     send,

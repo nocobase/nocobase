@@ -8,51 +8,37 @@
  */
 
 import actions, { Context, Next } from '@nocobase/actions';
-import snowflake from '../snowflake';
 import PluginAIServer from '../plugin';
-import { Database, Model } from '@nocobase/database';
+import { Model } from '@nocobase/database';
 
-async function parseInfoMessage(db: Database, aiEmployee: Model, content: Record<string, any>) {
-  const infoForm = aiEmployee.chatSettings?.infoForm;
+async function parseUISchema(ctx: Context, content: string) {
+  const regex = /\{\{\$nUISchema\.([^}]+)\}\}/g;
+  const uiSchemaRepo = ctx.db.getRepository('uiSchemas') as any;
+  const matches = [...content.matchAll(regex)];
+  let result = content;
 
-  if (!infoForm || !content) {
-    return null;
-  }
-
-  let info = '';
-  for (const key in content) {
-    const field = infoForm.find((item) => item.name === key);
-    if (!field) {
-      continue;
-    }
-
-    if (field.type === 'blocks') {
-      const uiSchemaRepo = db.getRepository('uiSchemas') as any;
-      const schema = await uiSchemaRepo.getJsonSchema(content[key]);
-      if (!schema) {
-        continue;
+  for (const match of matches) {
+    const fullMatch = match[0];
+    const uid = match[1];
+    try {
+      const schema = await uiSchemaRepo.getJsonSchema(uid);
+      if (schema) {
+        result = result.replace(fullMatch, JSON.stringify(schema));
       }
-      info += `${field.title}: ${JSON.stringify(schema)}; `;
-    } else {
-      info += `${field.title}: ${content[key]}; `;
+    } catch (error) {
+      ctx.log.error(error, { module: 'aiConversations', method: 'parseUISchema', uid });
     }
   }
 
-  if (!info) {
-    return null;
-  }
-
-  return `The following information you can utilize in your conversation: ${info}`;
+  return result;
 }
 
-async function formatMessages(ctx: Context, messages: any[], employee: Model) {
+async function formatMessages(ctx: Context, messages: any[]) {
   const formattedMessages = [];
 
   for (const msg of messages) {
     let content = msg.content.content;
-    if (msg.content.type === 'info') {
-      content = await parseInfoMessage(ctx.db, employee, content);
-    }
+    content = await parseUISchema(ctx, content);
     if (!content) {
       continue;
     }
@@ -204,7 +190,7 @@ async function getConversationHistory(ctx: Context, sessionId: string, employee:
       : {}),
   });
 
-  return await formatMessages(ctx, historyMessages, employee);
+  return await formatMessages(ctx, historyMessages);
 }
 
 function setupSSEHeaders(ctx: Context) {

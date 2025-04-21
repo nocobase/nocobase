@@ -8,8 +8,15 @@
  */
 
 import React, { useState } from 'react';
-import { Layout, Card, Button } from 'antd';
-import { CloseOutlined, ExpandOutlined, EditOutlined, LayoutOutlined, ShrinkOutlined } from '@ant-design/icons';
+import { Layout, Card, Button, Divider, Tooltip } from 'antd';
+import {
+  CloseOutlined,
+  ExpandOutlined,
+  EditOutlined,
+  MenuUnfoldOutlined,
+  MenuFoldOutlined,
+  ShrinkOutlined,
+} from '@ant-design/icons';
 import { useToken } from '@nocobase/client';
 const { Header, Footer, Sider } = Layout;
 import { useChatBoxContext } from './ChatBoxContext';
@@ -17,105 +24,151 @@ import { Conversations } from './Conversations';
 import { Messages } from './Messages';
 import { Sender } from './Sender';
 import { useAISelectionContext } from '../selector/AISelectorProvider';
+import { css } from '@emotion/css';
+import { useT } from '../../locale';
 
 export const ChatBox: React.FC = () => {
   const setOpen = useChatBoxContext('setOpen');
   const startNewConversation = useChatBoxContext('startNewConversation');
   const currentEmployee = useChatBoxContext('currentEmployee');
+  const expanded = useChatBoxContext('expanded');
+  const setExpanded = useChatBoxContext('setExpanded');
+  const showConversations = useChatBoxContext('showConversations');
+  const setShowConversations = useChatBoxContext('setShowConversations');
   const { token } = useToken();
-  const [showConversations, setShowConversations] = useState(false);
-  const [expanded, setExpanded] = useState(false);
-  const { selectable } = useAISelectionContext();
+  const t = useT();
 
   return (
-    <div
-      style={
-        !expanded
-          ? {
-              position: 'fixed',
-              right: '16px',
-              bottom: '16px',
-              width: '90%',
-              maxWidth: '760px',
-              height: '90%',
-              maxHeight: '560px',
-              zIndex: selectable ? -1 : 1000,
-            }
-          : {
-              position: 'fixed',
-              right: '16px',
-              bottom: '16px',
-              width: '95%',
-              height: '95%',
-              zIndex: selectable ? -1 : 1000,
-            }
-      }
-    >
-      <Card
-        style={{ height: '100%' }}
-        styles={{
-          body: { height: '100%', paddingTop: 0, boxShadow: token.boxShadow },
+    <Layout style={{ height: '100%' }}>
+      <Sider
+        width={!expanded ? '350px' : '20%'}
+        style={{
+          display: showConversations ? 'block' : 'none',
+          backgroundColor: token.colorBgContainer,
+          marginRight: '5px',
         }}
       >
-        <Layout style={{ height: '100%' }}>
-          <Sider
-            width={!expanded ? '30%' : '15%'}
+        <Conversations />
+      </Sider>
+      <Layout
+        style={{
+          padding: '0 16px 16px',
+        }}
+        className={
+          showConversations && !expanded
+            ? css`
+                position: relative;
+                &::after {
+                  content: '';
+                  position: absolute;
+                  top: 0;
+                  left: 0;
+                  background-color: rgba(0, 0, 0, 0.5);
+                  width: 100%;
+                  height: 100%;
+                  cursor: pointer;
+                }
+              `
+            : ''
+        }
+        onClick={() => {
+          if (showConversations && !expanded) {
+            setShowConversations(false);
+          }
+        }}
+      >
+        <Header
+          style={{
+            backgroundColor: token.colorBgContainer,
+            height: '48px',
+            lineHeight: '48px',
+            padding: 0,
+            borderBottom: `1px solid ${token.colorBorder}`,
+          }}
+        >
+          <div
             style={{
-              display: showConversations ? 'block' : 'none',
-              backgroundColor: token.colorBgContainer,
-              marginRight: '5px',
-              minWidth: '200px',
+              float: 'left',
             }}
           >
-            <Conversations />
-          </Sider>
-          <Layout>
-            <Header
-              style={{
-                backgroundColor: token.colorBgContainer,
-                height: '48px',
-                lineHeight: '48px',
-                padding: 0,
-                borderBottom: '1px solid #f0f0f0',
-              }}
-            >
-              <div
-                style={{
-                  float: 'left',
-                }}
-              >
-                <Button
-                  icon={<LayoutOutlined />}
-                  type="text"
-                  onClick={() => setShowConversations(!showConversations)}
-                />
-                {currentEmployee ? <Button icon={<EditOutlined />} type="text" onClick={startNewConversation} /> : null}
-              </div>
-              <div
-                style={{
-                  float: 'right',
-                }}
-              >
-                <Button
-                  icon={!expanded ? <ExpandOutlined /> : <ShrinkOutlined />}
-                  type="text"
-                  onClick={() => setExpanded(!expanded)}
-                />
-                <Button icon={<CloseOutlined />} type="text" onClick={() => setOpen(false)} />
-              </div>
-            </Header>
-            <Messages />
-            <Footer
-              style={{
-                backgroundColor: token.colorBgContainer,
-                padding: 0,
-              }}
-            >
-              <Sender />
-            </Footer>
-          </Layout>
-        </Layout>
-      </Card>
+            <Button
+              icon={showConversations ? <MenuFoldOutlined /> : <MenuUnfoldOutlined />}
+              type="text"
+              onClick={() => setShowConversations(!showConversations)}
+            />
+          </div>
+          <div
+            style={{
+              float: 'right',
+            }}
+          >
+            {currentEmployee ? (
+              <Tooltip arrow={false} title={t('New convsersation')}>
+                <Button icon={<EditOutlined />} type="text" onClick={startNewConversation} />
+              </Tooltip>
+            ) : null}
+            <Divider type="vertical" />
+            <Button
+              icon={!expanded ? <ExpandOutlined /> : <ShrinkOutlined />}
+              type="text"
+              onClick={() => setExpanded(!expanded)}
+            />
+            <Button icon={<CloseOutlined />} type="text" onClick={() => setOpen(false)} />
+          </div>
+        </Header>
+        <Messages />
+        <Footer
+          style={{
+            backgroundColor: token.colorBgContainer,
+            padding: 0,
+          }}
+        >
+          <Sender />
+        </Footer>
+      </Layout>
+    </Layout>
+  );
+};
+
+export const ChatBoxWrapper: React.FC = () => {
+  const expanded = useChatBoxContext('expanded');
+  const showConversations = useChatBoxContext('showConversations');
+  const { selectable } = useAISelectionContext();
+
+  return expanded ? (
+    <Card
+      style={{
+        position: 'fixed',
+        transform: 'translate(-50%, -50%)',
+        left: '50%',
+        top: '50%',
+        width: '95%',
+        height: '95%',
+        zIndex: selectable ? -1 : 1000,
+      }}
+      styles={{
+        body: {
+          height: '100%',
+          padding: 0,
+        },
+      }}
+    >
+      <ChatBox />
+    </Card>
+  ) : (
+    <div
+      style={{
+        position: 'fixed',
+        right: showConversations ? '-800px' : '-450px',
+        zIndex: 1,
+        top: 0,
+        width: showConversations ? '800px' : '450px',
+        height: '100vh',
+        overflow: 'hidden',
+        borderInlineStart: '1px solid rgba(5, 5, 5, 0.06)',
+      }}
+    >
+      <ChatBox />
     </div>
   );
 };

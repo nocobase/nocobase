@@ -54,6 +54,10 @@ export function withAISelectable<T = any>(
     const field = useField() as any;
 
     const handleSelect = () => {
+      if (selectable !== selectType) {
+        return;
+      }
+      console.log(fieldSchema);
       selector?.onSelect?.({
         uid: fieldSchema['x-uid'],
         value: field?.value,
