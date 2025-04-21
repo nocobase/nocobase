@@ -108,8 +108,11 @@ const InternalAssociationSelect = observer(
       const value = Array.isArray(initValue) ? initValue.filter(Boolean) : initValue;
       const result = removeIfKeyEmpty(value, filterTargetKey);
       setInnerValue(result);
-      field.value = result;
-    }, [field.value]);
+      if (!isEqual(field.value, result)) {
+        field.value = result;
+      }
+    }, [field.value, filterTargetKey]);
+
     useEffect(() => {
       const id = uid();
       form.addEffects(id, () => {
