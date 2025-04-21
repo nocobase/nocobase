@@ -130,15 +130,9 @@ export const deprecatedBulkEditActionSettings = new SchemaSettings({
       name: 'linkageRules',
       Component: SchemaSettingsLinkageRules,
       useComponentProps() {
-        const { association } = useDataBlockProps() || {};
-        const { name } = useCollection_deprecated();
-        const { getCollectionField } = useCollectionManager_deprecated();
-        const associationField = getCollectionField(association);
         const { linkageRulesProps } = useSchemaToolbar();
-
         return {
           ...linkageRulesProps,
-          collectionName: associationField?.collectionName || name,
         };
       },
     },
