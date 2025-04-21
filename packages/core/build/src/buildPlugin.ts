@@ -362,12 +362,21 @@ export async function buildProPluginServer(cwd: string, userConfig: UserConfig, 
   // plugin-commercial build to a bundle
   const externalOptions = {
     external: [],
-    noExternal: []
+    noExternal: [],
+    onSuccess: async () => {},
+    esbuildPlugins: [],
   };
   // other plugins build to a bundle just include plugin-commercial
   if (!cwd.includes(PLUGIN_COMMERCIAL)) {
     externalOptions.external = [/^[./]/];
     externalOptions.noExternal = [entryFile, /@nocobase\/plugin-commercial\/server/, /dist\/server\/index\.js/];
+    externalOptions.onSuccess = async () => {
+      const serverFiles = [path.join(cwd, target_dir, 'server', 'index.js')];
+      serverFiles.forEach((file) => {
+        obfuscate(file);
+      });
+    };
+    externalOptions.esbuildPlugins = [pluginEsbuildCommercialInject];
   }
 
   // bundle all files、inject commercial code and obfuscate
@@ -384,20 +393,14 @@ export async function buildProPluginServer(cwd: string, userConfig: UserConfig, 
       sourcemap,
       outDir: path.join(cwd, target_dir, 'server'),
       format: 'cjs',
-      ...externalOptions,
       skipNodeModulesBundle: true,
       tsconfig: tsconfig.path,
       loader: {
         ...otherExts.reduce((prev, cur) => ({ ...prev, [cur]: 'copy' }), {}),
         '.json': 'copy',
       },
-      esbuildPlugins: [pluginEsbuildCommercialInject],
-      onSuccess: async () => {
-        const serverFiles = [path.join(cwd, target_dir, 'server', 'index.js')];
-        serverFiles.forEach((file) => {
-          obfuscate(file);
-        });
-      },
+
+      ...externalOptions,
     }),
   );
   fs.removeSync(tsconfig.path);
