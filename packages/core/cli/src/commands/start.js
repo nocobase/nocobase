@@ -8,7 +8,7 @@
  */
 const _ = require('lodash');
 const { Command } = require('commander');
-const { run, postCheck, downloadPro, promptForTs } = require('../util');
+const { run, postCheck, downloadPro, promptForTs, checkDBDialect } = require('../util');
 const { existsSync, rmSync } = require('fs');
 const { resolve, isAbsolute } = require('path');
 const chalk = require('chalk');
@@ -50,6 +50,7 @@ module.exports = (cli) => {
     .option('--quickstart')
     .allowUnknownOption()
     .action(async (opts) => {
+      checkDBDialect();
       if (opts.quickstart) {
         await downloadPro();
       }

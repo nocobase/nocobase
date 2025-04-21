@@ -15,7 +15,7 @@ const deps: Record<string, string> = {
   '@formily': '2.x',
 
   '@formily/antd-v5': '1.x',
-  jsonwebtoken: '8.x',
+  jsonwebtoken: '9.x',
   'cache-manager': '5.x',
   sequelize: '6.x',
   umzug: '3.x',
@@ -26,7 +26,7 @@ const deps: Record<string, string> = {
   'winston-daily-rotate-file': '4.x',
   koa: '2.x',
   '@koa/cors': '5.x',
-  '@koa/router': '9.x',
+  '@koa/router': '13.x',
   multer: '1.x',
   '@koa/multer': '3.x',
   'koa-bodyparser': '4.x',

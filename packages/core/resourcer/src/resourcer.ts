@@ -367,7 +367,7 @@ export class ResourceManager {
           : params.resourceName;
         ctx.action.params.filterByTk = params.resourceIndex;
         const query = parseQuery(ctx.request.querystring);
-        if (pathToRegexp('/resourcer/{:associatedName.}?:resourceName{\\::actionName}').test(ctx.request.path)) {
+        if (pathToRegexp('/resourcer/:rest(.*)').test(ctx.request.path)) {
           ctx.action.mergeParams({
             ...query,
             ...params,
