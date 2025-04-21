@@ -29,8 +29,9 @@
     "react-router-dom": "6.28.1",
     "react-router": "6.28.1",
     "antd": "5.24.2",
-    "async": "3.2.6",
-    "rollup": "4.24.0"
+    "async": "^3.2.6",
+    "rollup": "4.24.0",
+    "semver": "^7.7.1"
   },
   "dependencies": {
     "@nocobase/cli": "{{{version}}}",

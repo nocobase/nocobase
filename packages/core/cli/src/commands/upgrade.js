@@ -10,7 +10,7 @@
 const chalk = require('chalk');
 const { Command } = require('commander');
 const { resolve } = require('path');
-const { run, promptForTs, runAppCommand, hasCorePackages, downloadPro, hasTsNode } = require('../util');
+const { run, promptForTs, runAppCommand, hasCorePackages, downloadPro, hasTsNode, checkDBDialect } = require('../util');
 const { existsSync, rmSync } = require('fs');
 
 /**
@@ -26,6 +26,7 @@ module.exports = (cli) => {
     .option('--next')
     .option('-S|--skip-code-update')
     .action(async (options) => {
+      checkDBDialect();
       if (hasTsNode()) promptForTs();
       if (hasCorePackages()) {
         // await run('yarn', ['install']);

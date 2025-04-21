@@ -61,7 +61,7 @@ class AppGenerator extends Generator {
 
   checkDialect() {
     const dialect = this.args.dbDialect;
-    const supportDialects = ['mysql', 'mariadb', 'sqlite', 'postgres'];
+    const supportDialects = ['mysql', 'mariadb', 'postgres'];
     if (!supportDialects.includes(dialect)) {
       console.log(
         `dialect ${chalk.red(dialect)} is not supported, currently supported dialects are ${chalk.green(
@@ -76,27 +76,15 @@ class AppGenerator extends Generator {
     const env = this.env;
     const envs = [];
     const dependencies = [];
-    const { dbDialect, allDbDialect } = this.args;
+    const { dbDialect } = this.args;
 
-    if (allDbDialect) {
-      dependencies.push(`"mysql2": "^3.11.0"`);
-      dependencies.push(`"mariadb": "^2.5.6"`);
-      dependencies.push(`"pg": "^8.7.3"`);
-      dependencies.push(`"pg-hstore": "^2.3.4"`);
-      dependencies.push(`"sqlite3": "^5.0.8"`);
-    }
+    dependencies.push(`"mysql2": "^3.14.0"`);
+    dependencies.push(`"mariadb": "^3.4.1"`);
+    dependencies.push(`"pg": "^8.14.1"`);
+    dependencies.push(`"pg-hstore": "^2.3.4"`);
 
     switch (dbDialect) {
-      case 'sqlite':
-        if (!allDbDialect) {
-          dependencies.push(`"sqlite3": "^5.0.8"`);
-        }
-        envs.push(`DB_STORAGE=${env.DB_STORAGE || 'storage/db/nocobase.sqlite'}`);
-        break;
       case 'mysql':
-        if (!allDbDialect) {
-          dependencies.push(`"mysql2": "^3.11.0"`);
-        }
         envs.push(`DB_HOST=${env.DB_HOST || 'localhost'}`);
         envs.push(`DB_PORT=${env.DB_PORT || 3306}`);
         envs.push(`DB_DATABASE=${env.DB_DATABASE || ''}`);
@@ -104,9 +92,6 @@ class AppGenerator extends Generator {
         envs.push(`DB_PASSWORD=${env.DB_PASSWORD || ''}`);
         break;
       case 'mariadb':
-        if (!allDbDialect) {
-          dependencies.push(`"mariadb": "^2.5.6"`);
-        }
         envs.push(`DB_HOST=${env.DB_HOST || 'localhost'}`);
         envs.push(`DB_PORT=${env.DB_PORT || 3306}`);
         envs.push(`DB_DATABASE=${env.DB_DATABASE || ''}`);
@@ -115,10 +100,6 @@ class AppGenerator extends Generator {
         break;
       case 'kingbase':
       case 'postgres':
-        if (!allDbDialect) {
-          dependencies.push(`"pg": "^8.7.3"`);
-          dependencies.push(`"pg-hstore": "^2.3.4"`);
-        }
         envs.push(`DB_HOST=${env.DB_HOST || 'localhost'}`);
         envs.push(`DB_PORT=${env.DB_PORT || 5432}`);
         envs.push(`DB_DATABASE=${env.DB_DATABASE || ''}`);
