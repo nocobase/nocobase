@@ -18,6 +18,6 @@ export const convertToNormalBlockSettingItem = {
   Component: ConvertToNormalBlockSetting,
   useVisible: () => {
     const fieldSchema = useFieldSchema();
-    return fieldSchema['x-template-root-uid'];
+    return fieldSchema?.['x-template-root-uid'];
   },
 };
