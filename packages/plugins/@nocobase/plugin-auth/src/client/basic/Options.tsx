@@ -158,8 +158,8 @@ const useVariableOptionsOfForgetPassword = () => {
     value: '$resetLink',
     label: t('Reset password link'),
   }, {
-      value: '$validityPeriod',
-      label: t('Validity period'),
+      value: '$resetLinkExpiration',
+      label: t('Reset link expiration (minutes)'),
     }].filter(Boolean);
 }
 
@@ -397,7 +397,7 @@ export const Options = () => {
                         width: '100%',
                       }
                     },
-                    default: 60,
+                    default: 120,
                     required: true,
                     'x-reactions': [
                       {

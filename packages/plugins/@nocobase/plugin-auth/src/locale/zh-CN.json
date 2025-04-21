@@ -67,13 +67,15 @@
   "Subject": "主题",
   "Content type": "内容类型",
   "Plain text": "普通文本",
-  "defaultResetPasswordEmailSubject": "重置您的 [应用/网站名称] 密码",
-  "defaultResetPasswordEmailContentHTML": "<p>您好 {{$user.username}}，</p>\n\n<p>我们收到了重置您 [应用/网站名称] 账户密码的请求。</p>\n\n<p>请点击下面的链接设置您的新密码：</p>\n\n<p>\n  <a href=\"{{$resetLink}}\">重置您的密码</a>\n</p>\n\n<p>\n  如果您没有请求重置密码，请忽略此邮件。您的密码将保持不变。\n</p>\n\n<p>\n  请注意：为了您的安全，此密码重置链接将在 <strong>[有效期，例如 24 小时]</strong> 后过期。\n</p>\n\n<p>如果您在重置密码时遇到任何问题，请联系我们的支持团队。</p>\n\n<p>\n  谢谢，<br>\n  [您的公司名称] 团队\n</p>",
-  "defaultResetPasswordEmailContentText": "您好 {{$user.username}}，\n\n我们收到了重置您 [应用/网站名称] 账户密码的请求。\n\n请点击下面的链接设置您的新密码：\n\n{{$resetLink}}\n\n如果您没有请求重置密码，请忽略此邮件。您的密码将保持不变。\n\n请注意：为了您的安全，此密码重置链接将在 [有效期，例如 24 小时] 后过期。\n\n如果您在重置密码时遇到任何问题，请联系我们的支持团队。\n\n谢谢，[您的公司名称] 团队",
+  "defaultResetPasswordEmailSubject": "重置您的 {{$systemSettings.title}} 密码",
+  "defaultResetPasswordEmailContentHTML": "<p>您好 {{$user.username}}，</p>\n\n<p>我们收到了重置您 {{$systemSettings.title}} 账户密码的请求。</p>\n\n<p>请点击下面的链接设置您的新密码：</p>\n\n<p>\n  <a href=\"{{$resetLink}}\">重置您的密码</a>\n</p>\n\n<p>\n  如果您没有请求重置密码，请忽略此邮件。您的密码将保持不变。\n</p>\n\n<p>\n  请注意：为了您的安全，此密码重置链接将在 <strong>{{$resetLinkExpiration}} 分钟</strong>后过期。\n</p>\n\n<p>如果您在重置密码时遇到任何问题，请联系我们的支持团队。</p>\n\n<p>\n  谢谢，<br>\n  {{$systemSettings.title}} 团队\n</p>",
+  "defaultResetPasswordEmailContentText": "您好 {{$user.username}}，\n\n我们收到了重置您 {{$systemSettings.title}} 账户密码的请求。\n\n请点击下面的链接设置您的新密码：\n\n{{$resetLink}}\n\n如果您没有请求重置密码，请忽略此邮件。您的密码将保持不变。\n\n请注意：为了您的安全，此密码重置链接将在 {{$resetLinkExpiration}} 分钟后过期。\n\n如果您在重置密码时遇到任何问题，请联系我们的支持团队。\n\n谢谢，{{$systemSettings.title}} 团队",
   "No notification channels found. Please ": "未找到通知渠道，请",
   "add one first": "先添加一个",
   "Reset password email": "重置密码邮件",
   "1. Select notification channel": "1. 选择通知渠道",
   "2. Configure reset email": "2. 配置重置邮件",
-  "The notification channel used to send the reset password email, only support email channel": "发送重置密码邮件所使用的通知渠道，仅支持电子邮件通道"
+  "The notification channel used to send the reset password email, only support email channel": "发送重置密码邮件所使用的通知渠道，仅支持电子邮件通道",
+  "Reset link expiration (minutes)": "重置链接有效期（分钟）",
+  "Reset password link": "重置密码链接"
 }

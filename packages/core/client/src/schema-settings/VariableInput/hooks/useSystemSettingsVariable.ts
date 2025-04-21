@@ -31,13 +31,7 @@ export const useSystemSettingsVariable = () => {
       {
         key: 'logo',
         value: 'logo',
-        label: t('Logo'),
-        isLeaf: true,
-      },
-      {
-        key: 'enabledLanguages',
-        value: 'enabledLanguages',
-        label: t('Enabled languages'),
+        label: t('Logo (URL)'),
         isLeaf: true,
       },
     ]
