@@ -106,7 +106,9 @@ const InternalAssociationSelect = observer(
     useEffect(() => {
       const initValue = isVariable(field.value) ? undefined : field.value;
       const value = Array.isArray(initValue) ? initValue.filter(Boolean) : initValue;
-      setInnerValue(value);
+      const result = removeIfKeyEmpty(value, filterTargetKey);
+      setInnerValue(result);
+      field.value = result;
     }, [field.value]);
     useEffect(() => {
       const id = uid();
