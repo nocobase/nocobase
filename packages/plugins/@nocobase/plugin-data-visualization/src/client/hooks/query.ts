@@ -22,7 +22,7 @@ import { ChartConfigContext } from '../configure';
 import formatters from '../configure/formatters';
 import { useChartsTranslation } from '../locale';
 import { ChartRendererContext } from '../renderer';
-import { getField, getSelectedFields, parseField, processData } from '../utils';
+import { getField, getSelectedFields, parseField } from '../utils';
 import PluginDataVisualiztionClient from '..';
 
 export type FieldOption = {
@@ -228,41 +228,33 @@ export const useOrderReaction = (defaultOptions: any[], fields: FieldOption[]) =
 };
 
 export const useData = (data?: any[], dataSource?: string, collection?: string) => {
-  const { t } = useChartsTranslation();
   const { service, query } = useContext(ChartRendererContext);
   const plugin = usePlugin(PluginDataVisualiztionClient);
   const fields = useFieldsWithAssociation(dataSource, collection);
   const form = useForm();
   const selectedFields = getSelectedFields(fields, form?.values?.query || query) as (FieldOption & { query?: any })[];
-  const enumFieldInterfaces = plugin.enumFieldInterfaces;
-  const enumFieldsOptions = {};
+  const fieldInterfaceConfigs = plugin.fieldInterfaceConfigs;
+  const formatters = {};
   for (const field of selectedFields) {
     if (field?.query?.aggregation) {
       continue;
     }
-    const options = enumFieldInterfaces[field.interface];
-    if (!options) {
+    const config = fieldInterfaceConfigs[field.interface];
+    if (!config) {
       continue;
     }
-    const { getOptions } = options;
-    enumFieldsOptions[field.value] = getOptions(field);
+    const { valueFormatter } = config;
+    formatters[field.value] = (value: any) => valueFormatter(field, value);
   }
-  const parseEnumValues = (options: { label: string; value: string }[], value: any) => {
-    if (Array.isArray(value)) {
-      return value.map((v) => parseEnumValues(options, v));
-    }
-    const option = options.find((option) => option.value === (value?.toString?.() || value));
-    return Schema.compile(option?.label || value, { t });
-  };
   return (service?.data || data || []).map((record: any) => {
     const processed = {};
     Object.entries(record).forEach(([key, value]) => {
-      const options = enumFieldsOptions[key];
-      if (!options || !Array.isArray(options)) {
+      const formatter = formatters[key];
+      if (!formatter) {
         processed[key] = value;
         return;
       }
-      processed[key] = parseEnumValues(options, value);
+      processed[key] = formatter(value);
     });
     return processed;
   });

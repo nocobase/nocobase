@@ -41,28 +41,40 @@ import { useChartRefreshActionProps } from './initializers/RefreshAction';
 import { useChartBlockRefreshActionProps } from './initializers/BlockRefreshAction';
 import { ChartRendererToolbar, ChartFilterBlockToolbar, ChartFilterItemToolbar } from './toolbar';
 import { ChartCardItem } from './block/CardItem';
+import { Schema } from '@formily/react';
 
-type enumFieldInterfaceOptions = {
-  getOptions: (field: any) => { label: string; value: string }[];
+type fieldInterfaceConfig = {
+  valueFormatter: (field: any, value: any) => any;
 };
 
-const getOptions = (field: any) => {
-  return field.uiSchema?.enum;
+const valueFormatter = (field: any, value: any) => {
+  const options = field.uiSchema?.enum;
+  const parseEnumValues = (options: { label: string; value: string }[], value: any) => {
+    if (Array.isArray(value)) {
+      return value.map((v) => parseEnumValues(options, v));
+    }
+    const option = options.find((option) => option.value === (value?.toString?.() || value));
+    return Schema.compile(option?.label || value, { t: lang });
+  };
+  if (!options || !Array.isArray(options)) {
+    return value;
+  }
+  return parseEnumValues(options, value);
 };
 
 class PluginDataVisualiztionClient extends Plugin {
   public charts: ChartGroup = new ChartGroup();
 
-  enumFieldInterfaces: {
-    [fieldInterface: string]: enumFieldInterfaceOptions;
+  fieldInterfaceConfigs: {
+    [fieldInterface: string]: fieldInterfaceConfig;
   } = {
-    select: { getOptions },
-    multipleSelect: { getOptions },
-    radioGroup: { getOptions },
+    select: { valueFormatter },
+    multipleSelect: { valueFormatter },
+    radioGroup: { valueFormatter },
   };
 
-  registerEnumFieldInterface(key: string, options: enumFieldInterfaceOptions) {
-    this.enumFieldInterfaces[key] = options;
+  registerFieldInterfaceConfig(key: string, config: fieldInterfaceConfig) {
+    this.fieldInterfaceConfigs[key] = config;
   }
 
   async load() {
