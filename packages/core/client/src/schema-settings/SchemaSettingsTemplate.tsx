@@ -40,7 +40,7 @@ export function SchemaSettingsTemplate(props) {
   if (template) {
     return (
       <SchemaSettingsItem
-        title="Convert reference to duplicate"
+        title={t('Convert reference to duplicate')}
         onClick={async () => {
           const schema = await copyTemplateSchema(template);
           const removed = tdn.removeWithoutEmit();
@@ -59,7 +59,7 @@ export function SchemaSettingsTemplate(props) {
   }
   return (
     <SchemaSettingsItem
-      title="Save as reference template"
+      title={t('Save as reference template')}
       onClick={async () => {
         setVisible(false);
         const collection = collectionName && getCollection(collectionName);

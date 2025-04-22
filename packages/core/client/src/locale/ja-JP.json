@@ -473,6 +473,7 @@
   "Blank block": "空のブロック",
   "Duplicate template": "テンプレートをコピー",
   "Reference template": "テンプレートを参照",
+  "Inherited template": "継承テンプレート",
   "Create calendar block": "カレンダーブロックの作成",
   "Create kanban block": "かんばんブロックの作成",
   "Grouping field": "グループフィールド",

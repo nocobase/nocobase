@@ -16,12 +16,12 @@ import {
   SchemaSettingsTemplate,
   SchemaSettingsConnectDataBlocks,
   usePlugin,
-  useSchemaSettings,
 } from '@nocobase/client';
-import { useFieldSchema } from '@formily/react';
 
 export const hideConvertToBlockSettingItem = (
   settingItem: SchemaSettingsItemType,
+  preSettingItem: SchemaSettingsItemType,
+  nextSettingItem: SchemaSettingsItemType,
 ) => {
   if (
     settingItem['Component'] === SchemaSettingsTemplate ||
@@ -30,13 +30,20 @@ export const hideConvertToBlockSettingItem = (
     // hide covert to block setting item
     const visible = settingItem['useVisible'] || (() => true);
     settingItem['useVisible'] = function useVisible() {
-      const fieldSchema = useFieldSchema();
-      if (fieldSchema?.['x-template-uid']) {
-        // hide reference template setting item
-        return false;
-      }
-      return visible();
+      return useIsInTemplate() && visible();
     };
+    if (preSettingItem?.['type'] === 'divider') {
+      const preVisible = preSettingItem['useVisible'] || (() => true);
+      preSettingItem['useVisible'] = function useVisible() {
+        return useIsInTemplate() && preVisible();
+      };
+    }
+    if (nextSettingItem?.['type'] === 'divider') {
+      const nextVisible = nextSettingItem['useVisible'] || (() => true);
+      nextSettingItem['useVisible'] = function useVisible() {
+        return useIsInTemplate() && nextVisible();
+      };
+    }
   }
 };
 

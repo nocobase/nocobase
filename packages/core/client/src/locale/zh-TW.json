@@ -603,6 +603,7 @@
   "Blank block": "空區塊",
   "Duplicate template": "複製模板",
   "Reference template": "引用模板",
+  "Inherited template": "繼承模板",
   "Create calendar block": "建立日曆區塊",
   "Create kanban block": "建立看板區塊",
   "Grouping field": "群組欄位",

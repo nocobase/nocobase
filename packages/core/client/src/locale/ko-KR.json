@@ -602,6 +602,7 @@
   "Blank block": "빈 블록",
   "Duplicate template": "템플릿 복제",
   "Reference template": "참조 템플릿",
+  "Inherited template": "상속 템플릿",
   "Create calendar block": "캘린더 블록 생성",
   "Create kanban block": "칸반 블록 생성",
   "Grouping field": "그루핑 필드",

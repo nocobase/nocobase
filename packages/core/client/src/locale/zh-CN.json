@@ -612,6 +612,7 @@
   "Blank block": "空区块",
   "Duplicate template": "复制模板",
   "Reference template": "引用模板",
+  "Inherited template": "继承模板",
   "Create calendar block": "创建日历区块",
   "Create kanban block": "创建看板区块",
   "Grouping field": "分组字段",
