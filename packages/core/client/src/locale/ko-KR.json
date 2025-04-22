@@ -919,7 +919,6 @@
   "No pages yet, please configure first": "아직 페이지가 없습니다. 먼저 설정하십시오",
   "Click the \"UI Editor\" icon in the upper right corner to enter the UI Editor mode": "사용자 인터페이스 편집기 모드에 들어가려면 오른쪽 상단의 \"UI 편집기\" 아이콘을 클릭하십시오",
   "Deprecated": "사용 중단됨",
-  "The following old template features have been deprecated and will be removed in next version.": "다음 오래된 템플릿 기능은 사용 중단되었으며 다음 버전에서 제거될 것입니다.",
   "Full permissions": "모든 권한",
   "Refresh data blocks": "데이터 블록 새로 고침",
   "Select data blocks to refresh": "데이터 블록을 선택하여 새로 고침",
