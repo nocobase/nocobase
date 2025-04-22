@@ -29,6 +29,19 @@ import { ISchema, useFieldSchema } from '@formily/react';
 import { useTranslation } from 'react-i18next';
 import { CustomRequestSettingsItem } from './components/CustomRequestActionDesigner';
 
+const useVariableOptions = () => {
+  const scopes = useAfterSuccessOptions();
+  const { t } = useTranslation();
+  return [
+    ...scopes,
+    {
+      value: '$nResponse',
+      label: t('Response', { ns: 'client' }),
+      children: null,
+    },
+  ].filter(Boolean);
+};
+
 export function AfterSuccess() {
   const { dn } = useDesignable();
   const { t } = useTranslation();
@@ -67,14 +80,8 @@ export function AfterSuccess() {
               'x-decorator': 'FormItem',
               'x-component': 'Variable.RawTextArea',
               'x-component-props': {
-                scope: [
-                  ...scopes,
-                  {
-                    value: '$nResponse',
-                    label: t('Response', { ns: 'client' }),
-                    children: null,
-                  },
-                ].filter(Boolean),
+                scope: useVariableOptions,
+                style: { minWidth: '220px' },
               },
             },
             manualClose: {
