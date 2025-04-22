@@ -12,9 +12,9 @@ import { useCollection_deprecated, useCollectionFilterOptions } from '../../../.
 import { useCollectionRecordData } from '../../../../data-source';
 import { useTranslation } from 'react-i18next';
 import { useCompile } from '../../../';
-import { useFormBlockContext } from '../../../../block-provider/FormBlockProvider';
 import { usePopupVariable } from '../../../../schema-settings/VariableInput/hooks';
 import { useCurrentRoleVariable } from '../../../../schema-settings/VariableInput/hooks';
+import { useFormBlockContext } from '../../../../block-provider';
 
 export const useAfterSuccessOptions = () => {
   const collection = useCollection_deprecated();

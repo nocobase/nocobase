@@ -8,7 +8,7 @@
  */
 
 import path from 'path';
-import tar from 'tar';
+import { create } from 'tar';
 import fg from 'fast-glob';
 import fs from 'fs-extra';
 
@@ -38,5 +38,5 @@ export function tarPlugin(cwd: string, log: PkgLog) {
 
   fs.mkdirpSync(path.dirname(tarball));
   fs.rmSync(tarball, { force: true });
-  return tar.c({ gzip: true, file: tarball, cwd }, tarFiles);
+  return create({ gzip: true, file: tarball, cwd }, tarFiles);
 }

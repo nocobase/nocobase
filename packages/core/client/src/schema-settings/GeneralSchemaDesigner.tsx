@@ -352,11 +352,6 @@ const InternalSchemaToolbar: FC<SchemaToolbarProps> = React.memo((props) => {
       }
     }
 
-    // const style = window.getComputedStyle(parentElement);
-    // if (style.position === 'static') {
-    //   parentElement.style.position = 'relative';
-    // }
-
     el.addEventListener('mouseenter', show);
     el.addEventListener('mouseleave', hide);
     return () => {

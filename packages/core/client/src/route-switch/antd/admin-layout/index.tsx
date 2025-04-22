@@ -503,6 +503,8 @@ const subMenuItemRender = (item, dom) => {
 };
 
 const CollapsedButton: FC<{ collapsed: boolean }> = (props) => {
+  const { token } = useToken();
+
   return (
     <RouteContext.Consumer>
       {(context) =>
@@ -515,7 +517,7 @@ const CollapsedButton: FC<{ collapsed: boolean }> = (props) => {
                 // Fix the issue where the collapse/expand button is covered by subpages
                 .ant-pro-sider-collapsed-button {
                   top: 64px;
-                  left: ${props.collapsed ? 52 : 188}px;
+                  left: ${props.collapsed ? 52 : (token.siderWidth || 200) - 12}px;
                   z-index: 200;
                   transition: left 0.2s;
                 }
@@ -671,7 +673,7 @@ export const InternalAdminLayout = () => {
     <DndContext onDragEnd={onDragEnd}>
       <ProLayout
         contentStyle={contentStyle}
-        siderWidth={200}
+        siderWidth={token.siderWidth || 200}
         className={resetStyle}
         location={location}
         route={route}

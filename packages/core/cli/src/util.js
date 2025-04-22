@@ -360,7 +360,7 @@ exports.initEnv = function initEnv() {
     API_BASE_PATH: '/api/',
     API_CLIENT_STORAGE_PREFIX: 'NOCOBASE_',
     API_CLIENT_STORAGE_TYPE: 'localStorage',
-    DB_DIALECT: 'sqlite',
+    // DB_DIALECT: 'sqlite',
     DB_STORAGE: 'storage/db/nocobase.sqlite',
     // DB_TIMEZONE: '+00:00',
     DB_UNDERSCORED: parseEnv('DB_UNDERSCORED'),
@@ -469,6 +469,12 @@ exports.initEnv = function initEnv() {
   for (const pkg of pkgs) {
     const pkgDir = resolve(process.cwd(), 'storage/plugins', pkg);
     fs.existsSync(pkgDir) && fs.rmdirSync(pkgDir, { recursive: true, force: true });
+  }
+};
+
+exports.checkDBDialect = function () {
+  if (!process.env.DB_DIALECT) {
+    throw new Error('DB_DIALECT is required.');
   }
 };
 

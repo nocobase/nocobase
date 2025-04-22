@@ -15,6 +15,17 @@ import Application from '@nocobase/server';
 import axios from 'axios';
 import CustomRequestPlugin from '../plugin';
 
+function toJSON(value) {
+  if (typeof value === 'string') {
+    try {
+      return JSON.parse(value);
+    } catch (error) {
+      return value;
+    }
+  }
+  return value;
+}
+
 const getHeaders = (headers: Record<string, any>) => {
   return Object.keys(headers).reduce((hds, key) => {
     if (key.toLocaleLowerCase().startsWith('x-')) {
@@ -168,7 +179,7 @@ export async function send(this: CustomRequestPlugin, ctx: Context, next: Next) 
       ...omitNullAndUndefined(getParsedValue(arrayToObject(headers), variables)),
     },
     params: getParsedValue(arrayToObject(params), variables),
-    data: getParsedValue(data, variables),
+    data: getParsedValue(toJSON(data), variables),
   };
 
   const requestUrl = axios.getUri(axiosRequestConfig);

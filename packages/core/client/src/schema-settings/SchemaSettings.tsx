@@ -48,6 +48,7 @@ import {
   SchemaSettingsItemType,
   SchemaToolbarVisibleContext,
   VariablesContext,
+  getZIndex,
   useCollection,
   useCollectionManager,
   useZIndexContext,
@@ -84,7 +85,7 @@ import { AssociationOrCollectionProvider, useDataBlockProps } from '../data-sour
 import { useDataSourceManager } from '../data-source/data-source/DataSourceManagerProvider';
 import { useDataSourceKey } from '../data-source/data-source/DataSourceProvider';
 import { useFilterBlock } from '../filter-provider/FilterProvider';
-import { FlagProvider } from '../flag-provider';
+import { FlagProvider, useFlag } from '../flag-provider';
 import { useGlobalTheme } from '../global-theme';
 import { useCollectMenuItem, useCollectMenuItems, useMenuItem } from '../hooks/useMenuItem';
 import {
@@ -697,7 +698,7 @@ export const SchemaSettingsActionModalItem: FC<SchemaSettingsActionModalItemProp
   const upLevelActiveFields = useFormActiveFields();
   const parentZIndex = useZIndexContext();
 
-  const zIndex = parentZIndex + 10;
+  const zIndex = getZIndex('modal', parentZIndex + 10, 0);
 
   const form = useMemo(
     () =>
@@ -1129,6 +1130,7 @@ export const SchemaSettingsLinkageRules = function LinkageRules(props) {
     return gridSchema?.[dataKey] || fieldSchema?.[dataKey] || [];
   }, [gridSchema, fieldSchema, dataKey]);
   const title = titleMap[category] || t('Linkage rules');
+  const flagVales = useFlag();
   const schema = useMemo<ISchema>(
     () => ({
       type: 'object',
@@ -1180,7 +1182,16 @@ export const SchemaSettingsLinkageRules = function LinkageRules(props) {
   );
 
   return (
-    <SchemaSettingsModalItem title={title} components={components} width={770} schema={schema} onSubmit={onSubmit} />
+    <SchemaSettingsModalItem
+      title={title}
+      components={components}
+      width={770}
+      schema={schema}
+      onSubmit={onSubmit}
+      ModalContextProvider={(props) => {
+        return <FlagProvider {...flagVales}>{props.children}</FlagProvider>;
+      }}
+    />
   );
 };
 

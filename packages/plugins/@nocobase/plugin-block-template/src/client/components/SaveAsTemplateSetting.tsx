@@ -74,7 +74,7 @@ export const SaveAsTemplateSetting = () => {
             key: {
               type: 'string',
               'x-decorator': 'FormItem',
-              title: t('Key'),
+              title: t('Name'),
               'x-component': 'Input',
               'x-validator': 'uid',
               required: true,
@@ -298,6 +298,10 @@ function getTemplateSchemaFromPage(schema: ISchema) {
         }
         _.set(t, `properties.['${key}']`, {});
         traverseSchema(s.properties[key], t.properties[key]);
+        // array's key will be set to number when render, so we need to set the name to the key
+        if (s.type === 'array' && t['properties']?.[key]?.name) {
+          _.set(t, `properties.['${key}'].name`, key);
+        }
       }
     }
   };
