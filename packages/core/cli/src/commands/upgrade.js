@@ -21,7 +21,7 @@ async function updatePackage() {
   const sourceJson = await readJSON(sourcePath, 'utf8');
   const descJson = await readJSON(descPath, 'utf8');
   const json = deepmerge(descJson, sourceJson);
-  await writeJSON(desc, json, { spaces: 2, encoding: 'utf8' });
+  await writeJSON(descPath, json, { spaces: 2, encoding: 'utf8' });
 }
 
 /**

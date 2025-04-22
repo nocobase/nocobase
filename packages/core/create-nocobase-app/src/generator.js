@@ -173,14 +173,16 @@ class AppGenerator extends Generator {
       target: this.cwd,
     });
 
-    const json = await fs.readJSON(join(this.cwd, 'package.json'), 'utf8');
+    const json = {
+      name: context.name,
+      ...(await fs.readJSON(join(this.cwd, 'package.json'), 'utf8')),
+    };
 
-    json['name'] = context.name;
+    json['dependencies']['@nocobase/cli'] = context.version;
 
     if (!this.args.skipDevDependencies) {
-      json['devDependencies'] = {
-        '@nocobase/devtools': context.version,
-      };
+      json['devDependencies'] = json['devDependencies'] || {};
+      json['devDependencies']['@nocobase/devtools'] = context.version;
     }
 
     await fs.writeJSON(join(this.cwd, 'package.json'), json, { encoding: 'utf8', spaces: 2 });
