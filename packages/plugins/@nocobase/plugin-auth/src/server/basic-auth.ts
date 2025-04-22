@@ -155,7 +155,7 @@ export class BasicAuth extends BaseAuth {
   async lostPassword() {
     const ctx = this.ctx;
     const {
-      values: { email, baseURL },
+      values: { email, baseURL, authenticatorName },
     } = ctx.action.params;
 
     if (!email) {
@@ -191,7 +191,7 @@ export class BasicAuth extends BaseAuth {
     });
 
     // 构建重置密码链接
-    const resetLink = `${baseURL}/reset-password?resetToken=${resetToken}`;
+    const resetLink = `${baseURL}/reset-password?resetToken=${resetToken}&name=${authenticatorName}`;
 
     const systemSettings = await ctx.db.getRepository('systemSettings')?.findOne() || {};
 

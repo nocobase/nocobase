@@ -3,6 +3,8 @@ import { SchemaComponent, useAPIClient, useNavigateNoUpdate } from '@nocobase/cl
 import { useAuthTranslation } from '../locale';
 import React, { useEffect } from 'react';
 import { Button, message, Result } from 'antd';
+import { Navigate, useSearchParams } from 'react-router-dom';
+import { useAuthenticator } from '../authenticator';
 
 const getResetPasswordForm = (): ISchema => ({
   type: 'object',
@@ -86,9 +88,12 @@ const getResetPasswordForm = (): ISchema => ({
 export const ResetPasswordPage = () => {
   const { t } = useAuthTranslation();
   const api = useAPIClient();
-  const resetToken = new URLSearchParams(window.location.search).get('resetToken');
+  const [searchParams] = useSearchParams();
+  const resetToken = searchParams.get('resetToken');
   const navigate = useNavigateNoUpdate();
   const [expired, setExpired] = React.useState(false);
+  const name = searchParams.get('name');
+  const authenticator = useAuthenticator(name);
 
   useEffect(() => {
     api.auth.checkResetToken({ resetToken }).then(() => {
@@ -97,6 +102,10 @@ export const ResetPasswordPage = () => {
       setExpired(true);
     });
   }, []);
+
+  if (!authenticator?.options?.enableResetPassword) {
+    return <Navigate to="/not-found" replace={true} />;
+  }
 
   if (!resetToken || expired) {
     return <Result

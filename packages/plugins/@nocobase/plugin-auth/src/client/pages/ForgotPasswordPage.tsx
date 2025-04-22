@@ -3,6 +3,8 @@ import { SchemaComponent, useAPIClient } from '@nocobase/client';
 import { useAuthTranslation } from '../locale';
 import React from 'react';
 import { message } from 'antd';
+import { Navigate, useSearchParams } from 'react-router-dom';
+import { useAuthenticator } from '../authenticator';
 
 const getForgotPasswordForm = (): ISchema => ({
   type: 'object',
@@ -74,5 +76,14 @@ const getForgotPasswordForm = (): ISchema => ({
 
 export const ForgotPasswordPage = () => {
   const { t } = useAuthTranslation();
+  const [searchParams] = useSearchParams();
+  const name = searchParams.get('name');
+  const authenticator = useAuthenticator(name);
+
+
+  if (!authenticator?.options?.enableResetPassword) {
+    return <Navigate to="/not-found" replace={true} />;
+  }
+
   return <SchemaComponent schema={getForgotPasswordForm()} scope={{ t }} />;
 };

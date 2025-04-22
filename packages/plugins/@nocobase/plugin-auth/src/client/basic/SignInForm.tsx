@@ -110,7 +110,7 @@ const getPasswordForm = ({ showForgotPassword }: { showForgotPassword?: boolean 
           type: 'void',
           'x-component': 'Link',
           'x-component-props': {
-            to: '/forgot-password',
+            to: '{{"/forgot-password?name=" + authenticator.name}}',
           },
           'x-content': '{{t("Forgot password")}}',
           'x-visible': showForgotPassword,
@@ -131,5 +131,5 @@ export const SignInForm = (props: { authenticator: Authenticator }) => {
   const useBasicSignIn = () => {
     return useSignIn(name);
   };
-  return <SchemaComponent schema={getPasswordForm({ showForgotPassword: !!options?.enableResetPassword })} scope={{ useBasicSignIn, allowSignUp, signUpLink, t }} />;
+  return <SchemaComponent schema={getPasswordForm({ showForgotPassword: !!options?.enableResetPassword })} scope={{ useBasicSignIn, allowSignUp, signUpLink, t, authenticator }} />;
 };

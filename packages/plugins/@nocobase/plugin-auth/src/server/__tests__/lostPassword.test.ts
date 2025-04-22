@@ -285,4 +285,32 @@ describe('auth:lostPassword', () => {
       }),
     );
   });
+
+  it('should include authenticatorName in the reset password link', async () => {
+    const baseURL = 'https://example.com';
+    const authenticatorName = 'basic';
+
+    const res = await agent.post('/auth:lostPassword').set({ 'X-Authenticator': 'basic' }).send({
+      email: 'test@example.com',
+      baseURL: baseURL,
+      authenticatorName: authenticatorName,
+    });
+
+    expect(res.statusCode).toBe(204);
+
+    // Verify JWT sign was called
+    expect(app.authManager.jwt.sign).toHaveBeenCalled();
+
+    // Verify notification manager send method was called with the correct reset link including authenticator name
+    expect(notificationManagerMock.send).toHaveBeenCalledTimes(1);
+    expect(notificationManagerMock.send).toHaveBeenCalledWith(
+      expect.objectContaining({
+        channelName: 'email',
+        message: expect.objectContaining({
+          to: ['test@example.com'],
+          html: expect.stringContaining(`${baseURL}/reset-password?resetToken=mock-reset-token&name=${authenticatorName}`),
+        }),
+      }),
+    );
+  });
 });

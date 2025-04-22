@@ -245,12 +245,19 @@ export class Auth {
 
 
   async lostPassword(values: any): Promise<AxiosResponse<any>> {
+    // 获取当前 URL 的查询参数
+    const searchParams = new URLSearchParams(window.location.search);
+
+    // 转换为对象
+    const paramsObject = Object.fromEntries(searchParams.entries());
+
     const response = await this.api.request({
       method: 'post',
       url: 'auth:lostPassword',
       data: {
         ...values,
-        baseURL: window.location.href.replace('/forgot-password', ''),
+        baseURL: window.location.href.split('/forgot-password')[0],
+        authenticatorName: paramsObject.name,
       },
     });
     return response;
