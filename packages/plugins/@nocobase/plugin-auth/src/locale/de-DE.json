@@ -78,5 +78,7 @@
   "2. Configure reset email": "2. Konfigurieren Sie die Rücksetz-E-Mail",
   "The notification channel used to send the reset password email, only support email channel": "Der Benachrichtigungskanal, der verwendet wird, um die E-Mail zum Zurücksetzen des Passworts zu senden, unterstützt nur den E-Mail-Kanal",
   "Reset link expiration (minutes)": "Ablauf des Rücksetzlinks (Minuten)",
-  "Reset password link": "Zurücksetzen des Passwortlinks"
+  "Reset password link": "Zurücksetzen des Passwortlinks",
+  "Missing X-Authenticator in request header": "Fehlendes X-Authenticator im Anfrage-Header",
+  "Reset email sent successfully": "E-Mail zum Zurücksetzen erfolgreich gesendet"
 }

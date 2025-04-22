@@ -77,5 +77,7 @@
   "2. Configure reset email": "2. 配置重置邮件",
   "The notification channel used to send the reset password email, only support email channel": "发送重置密码邮件所使用的通知渠道，仅支持电子邮件通道",
   "Reset link expiration (minutes)": "重置链接有效期（分钟）",
-  "Reset password link": "重置密码链接"
+  "Reset password link": "重置密码链接",
+  "Missing X-Authenticator in request header": "请求头中缺少了 X-Authenticator",
+  "Reset email sent successfully": "重置邮件发送成功"
 }

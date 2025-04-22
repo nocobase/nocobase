@@ -55,5 +55,7 @@
   "2. Configure reset email": "2. リセットメールを設定",
   "The notification channel used to send the reset password email, only support email channel": "パスワードリセットメールを送信するために使用される通知チャネル、メールチャネルのみサポート",
   "Reset link expiration (minutes)": "リセットリンクの有効期限（分）",
-  "Reset password link": "パスワードリセットリンク"
+  "Reset password link": "パスワードリセットリンク",
+  "Missing X-Authenticator in request header": "リクエストヘッダーにX-Authenticatorがありません",
+  "Reset email sent successfully": "リセットメールが正常に送信されました"
 }

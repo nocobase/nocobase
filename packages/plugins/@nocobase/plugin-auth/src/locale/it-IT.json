@@ -83,5 +83,7 @@
   "2. Configure reset email": "2. Configura l'email di reset",
   "The notification channel used to send the reset password email, only support email channel": "Il canale di notifica utilizzato per inviare l'email di reimpostazione della password supporta solo il canale email",
   "Reset link expiration (minutes)": "Scadenza del link di reset (minuti)",
-  "Reset password link": "Link per reimpostare la password"
+  "Reset password link": "Link per reimpostare la password",
+  "Missing X-Authenticator in request header": "Manca X-Authenticator nell'intestazione della richiesta",
+  "Reset email sent successfully": "Email di reset inviata con successo"
 }

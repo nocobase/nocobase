@@ -55,5 +55,7 @@
   "2. Configure reset email": "2. 리셋 이메일 설정",
   "The notification channel used to send the reset password email, only support email channel": "비밀번호 재설정 이메일을 보내는 데 사용되는 알림 채널, 이메일 채널만 지원합니다",
   "Reset link expiration (minutes)": "리셋 링크 만료 (분)",
-  "Reset password link": "비밀번호 재설정 링크"
+  "Reset password link": "비밀번호 재설정 링크",
+  "Missing X-Authenticator in request header": "요청 헤더에 X-Authenticator가 없습니다",
+  "Reset email sent successfully": "리셋 이메일이 성공적으로 전송되었습니다"
 }

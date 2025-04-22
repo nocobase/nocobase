@@ -155,8 +155,13 @@ export class BasicAuth extends BaseAuth {
   async lostPassword() {
     const ctx = this.ctx;
     const {
-      values: { email, baseURL, authenticatorName },
+      values: { email, baseURL },
     } = ctx.action.params;
+    const authenticatorName = ctx.headers['x-authenticator'];
+
+    if (!authenticatorName) {
+      ctx.throw(400, ctx.t('Missing X-Authenticator in request header', { ns: namespace }));
+    }
 
     if (!email) {
       ctx.throw(400, ctx.t('Please fill in your email address', { ns: namespace }));

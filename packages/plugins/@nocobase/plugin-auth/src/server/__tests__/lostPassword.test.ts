@@ -290,10 +290,9 @@ describe('auth:lostPassword', () => {
     const baseURL = 'https://example.com';
     const authenticatorName = 'basic';
 
-    const res = await agent.post('/auth:lostPassword').set({ 'X-Authenticator': 'basic' }).send({
+    const res = await agent.post('/auth:lostPassword').set({ 'X-Authenticator': authenticatorName }).send({
       email: 'test@example.com',
       baseURL: baseURL,
-      authenticatorName: authenticatorName,
     });
 
     expect(res.statusCode).toBe(204);

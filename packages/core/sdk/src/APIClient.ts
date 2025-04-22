@@ -257,7 +257,9 @@ export class Auth {
       data: {
         ...values,
         baseURL: window.location.href.split('/forgot-password')[0],
-        authenticatorName: paramsObject.name,
+      },
+      headers: {
+        'X-Authenticator': paramsObject.name,
       },
     });
     return response;
