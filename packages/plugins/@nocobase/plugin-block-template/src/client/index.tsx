@@ -205,7 +205,7 @@ export class PluginBlockTemplateClient extends Plugin {
                 item['Component'] === SchemaSettingsTemplate || item['Component'] === SchemaSettingsFormItemTemplate,
             );
             if (referenceTemplateItemIndex !== -1) {
-              schemaSetting.items.splice(referenceTemplateItemIndex, 0, {
+              schemaSetting.items.splice(referenceTemplateItemIndex + 1, 0, {
                 ...saveAsTemplateSetting,
                 sort: schemaSetting.items[referenceTemplateItemIndex].sort,
               });
