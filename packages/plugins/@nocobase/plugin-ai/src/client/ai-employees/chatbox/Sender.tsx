@@ -16,6 +16,7 @@ import { SenderHeader } from './SenderHeader';
 import { SenderFooter } from './SenderFooter';
 import { useChatConversations } from './ChatConversationsProvider';
 import { useChatMessages } from './ChatMessagesProvider';
+import { AIEmployeeHeader } from './AIEmployeeHeader';
 
 export const Sender: React.FC = () => {
   const t = useT();
@@ -60,7 +61,7 @@ export const Sender: React.FC = () => {
       }
       onCancel={cancelRequest}
       prefix={<SenderPrefix />}
-      // header={!currentConversation ? <SenderHeader /> : null}
+      header={!currentEmployee ? <AIEmployeeHeader /> : null}
       loading={responseLoading}
       footer={({ components }) => <SenderFooter components={components} />}
       disabled={!currentEmployee}

@@ -41,7 +41,7 @@ const getAIEmployeesInitializer = () => ({
                 'x-toolbar': 'ActionSchemaToolbar',
                 'x-settings': 'aiEmployees:button',
                 'x-component-props': {
-                  aiEmployee,
+                  username: aiEmployee.username,
                 },
               });
             };

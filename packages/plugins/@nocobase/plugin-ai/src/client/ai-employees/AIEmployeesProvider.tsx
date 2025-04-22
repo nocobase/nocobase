@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useContext } from 'react';
+import React, { useContext, useMemo } from 'react';
 import { createContext } from 'react';
 import { ChatBoxProvider } from './chatbox/ChatBoxProvider';
 import { useAPIClient, useRequest } from '@nocobase/client';
@@ -46,12 +46,18 @@ export const useAIEmployeesContext = () => {
     () =>
       api
         .resource('aiEmployees')
-        .list()
+        .listByUser()
         .then((res) => res?.data?.data),
     {
       ready: !aiEmployees,
       onSuccess: (aiEmployees) => setAIEmployees(aiEmployees),
     },
   );
-  return { aiEmployees, service };
+  const aiEmployeesMap = useMemo(() => {
+    return (aiEmployees || []).reduce((acc, aiEmployee) => {
+      acc[aiEmployee.username] = aiEmployee;
+      return acc;
+    }, {});
+  }, [aiEmployees]);
+  return { aiEmployees, aiEmployeesMap, service };
 };

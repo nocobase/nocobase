@@ -23,7 +23,9 @@ export const useAISelectionContext = () => {
   return useContext(AISelectionContext);
 };
 
-export const AISelectionProvider: React.FC = (props) => {
+export const AISelectionProvider: React.FC<{
+  children: React.ReactNode;
+}> = (props) => {
   const [selectable, setSelectable] = useState('');
   const [selector, setSelector] = useState<Selector>(null);
 

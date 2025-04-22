@@ -19,6 +19,7 @@ import { useAISelectionContext } from '../selector/AISelectorProvider';
 import { AIEmployee } from '../types';
 import { AIVariableRawTextArea } from './AIVariableRawTextArea';
 import { useFieldSchema } from '@formily/react';
+import { useAIEmployeesContext } from '../AIEmployeesProvider';
 
 const SettingsForm: React.FC<{
   form: any;
@@ -150,9 +151,11 @@ export const aiEmployeeButtonSettings = new SchemaSettings({
         const t = useT();
         const { dn } = useSchemaSettings();
         const [open, setOpen] = useState(false);
-        const aiEmployee = dn.getSchemaAttribute('x-component-props.aiEmployee') || {};
+        const username = dn.getSchemaAttribute('x-component-props.username') || {};
         const form = useMemo(() => createForm({}), []);
         const { selectable } = useAISelectionContext();
+        const { aiEmployeesMap } = useAIEmployeesContext();
+        const aiEmployee = aiEmployeesMap[username];
 
         return (
           <div onClick={(e) => e.stopPropagation()}>
@@ -176,7 +179,7 @@ export const aiEmployeeButtonSettings = new SchemaSettings({
                 dn.deepMerge({
                   'x-uid': dn.getSchemaAttribute('x-uid'),
                   'x-component-props': {
-                    aiEmployee,
+                    username,
                     message,
                     taskDesc,
                     autoSend,

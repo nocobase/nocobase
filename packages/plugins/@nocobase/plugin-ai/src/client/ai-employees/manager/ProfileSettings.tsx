@@ -12,7 +12,9 @@ import React from 'react';
 import { AvatarSelect } from './AvatarSelect';
 import { useT } from '../../locale';
 
-export const ProfileSettings: React.FC = () => {
+export const ProfileSettings: React.FC<{
+  edit?: boolean;
+}> = ({ edit }) => {
   const t = useT();
   return (
     <SchemaComponent
@@ -26,6 +28,7 @@ export const ProfileSettings: React.FC = () => {
             'x-decorator': 'FormItem',
             'x-component': 'Input',
             required: true,
+            'x-disabled': edit,
           },
           nickname: {
             type: 'string',

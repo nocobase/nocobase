@@ -79,6 +79,5 @@ export type ResendOptions = {
 export type ShortcutOptions = {
   aiEmployee: AIEmployee;
   message: { type: MessageType; content: string };
-  infoFormValues: any;
   autoSend: boolean;
 };

@@ -14,5 +14,14 @@ import { Avatar } from 'antd';
 
 export const SenderPrefix: React.FC = () => {
   const currentEmployee = useChatBoxContext('currentEmployee');
-  return currentEmployee ? <Avatar src={avatars(currentEmployee.avatar)} /> : null;
+  const switchAIEmployee = useChatBoxContext('switchAIEmployee');
+  return currentEmployee ? (
+    <Avatar
+      src={avatars(currentEmployee.avatar)}
+      style={{
+        cursor: 'pointer',
+      }}
+      onClick={() => switchAIEmployee(null)}
+    />
+  ) : null;
 };

@@ -17,6 +17,7 @@ import { LLMInstruction } from './workflow/nodes/llm';
 import aiConversations from './resource/aiConversations';
 import { AIEmployeesManager } from './ai-employees/ai-employees-manager';
 import Snowflake from './snowflake';
+import { listByUser } from './resource/aiEmployees';
 
 export class PluginAIServer extends Plugin {
   aiManager = new AIManager();
@@ -40,6 +41,7 @@ export class PluginAIServer extends Plugin {
 
     this.app.resourceManager.define(aiResource);
     this.app.resourceManager.define(aiConversations);
+    this.app.resourceManager.registerActionHandler('aiEmployees:listByUser', listByUser);
     this.app.acl.registerSnippet({
       name: `pm.${this.name}.llm-services`,
       actions: ['ai:*', 'llmServices:*'],
@@ -48,6 +50,7 @@ export class PluginAIServer extends Plugin {
       name: `pm.${this.name}.ai-employees`,
       actions: ['aiEmployees:*'],
     });
+    this.app.acl.allow('aiEmployees', 'listByUser', 'loggedIn');
     this.app.acl.allow('aiConversations', '*', 'loggedIn');
     const workflowSnippet = this.app.acl.snippetManager.snippets.get('pm.workflow.workflows');
     if (workflowSnippet) {

@@ -8,7 +8,7 @@
  */
 
 import React from 'react';
-import { Avatar, Popover, Button } from 'antd';
+import { Avatar, Popover, Button, Spin } from 'antd';
 import { avatars } from '../avatars';
 import {
   SortableItem,
@@ -21,6 +21,7 @@ import { useFieldSchema } from '@formily/react';
 import { useChatBoxContext } from '../chatbox/ChatBoxContext';
 import { AIEmployee } from '../types';
 import { ProfileCard } from '../ProfileCard';
+import { useAIEmployeesContext } from '../AIEmployeesProvider';
 
 async function replaceVariables(template, variables, localVariables = {}) {
   const regex = /\{\{\s*(.*?)\s*\}\}/g;
@@ -58,20 +59,24 @@ async function replaceVariables(template, variables, localVariables = {}) {
 }
 
 export const AIEmployeeButton: React.FC<{
-  aiEmployee: AIEmployee;
+  username: string;
   taskDesc?: string;
   autoSend?: boolean;
   message: {
     type: string;
     content: string;
   };
-  infoForm: any;
-}> = withDynamicSchemaProps(({ aiEmployee, taskDesc, message, infoForm: infoFormValues, autoSend }) => {
+}> = withDynamicSchemaProps(({ username, taskDesc, message, autoSend }) => {
   const triggerShortcut = useChatBoxContext('triggerShortcut');
   const fieldSchema = useFieldSchema();
   const { render } = useSchemaToolbarRender(fieldSchema);
   const variables = useVariables();
   const localVariables = useLocalVariables();
+  const {
+    aiEmployeesMap,
+    service: { loading },
+  } = useAIEmployeesContext();
+  const aiEmployee = aiEmployeesMap[username];
 
   return (
     <SortableItem
@@ -92,22 +97,23 @@ export const AIEmployeeButton: React.FC<{
           aiEmployee,
           message: msg,
           autoSend,
-          infoFormValues,
         });
       }}
     >
-      <Popover content={<ProfileCard taskDesc={taskDesc} aiEmployee={aiEmployee} />}>
-        <Button
-          shape="circle"
-          style={{
-            width: '36px',
-            height: '36px',
-          }}
-        >
-          <Avatar src={avatars(aiEmployee.avatar)} size={36} />
-        </Button>
-      </Popover>
-      {render()}
+      <Spin spinning={loading}>
+        <Popover content={<ProfileCard taskDesc={taskDesc} aiEmployee={aiEmployee} />}>
+          <Button
+            shape="circle"
+            style={{
+              width: '36px',
+              height: '36px',
+            }}
+          >
+            {aiEmployee && <Avatar src={avatars(aiEmployee.avatar)} size={36} />}
+          </Button>
+        </Popover>
+        {render()}
+      </Spin>
     </SortableItem>
   );
 });

@@ -42,6 +42,7 @@ type ChatBoxContextValues = {
   setSenderPlaceholder: React.Dispatch<React.SetStateAction<string>>;
   startNewConversation: () => void;
   triggerShortcut: (options: ShortcutOptions) => void;
+  switchAIEmployee: (aiEmployee: AIEmployee) => void;
   send(opts: SendOptions): void;
 };
 
@@ -113,7 +114,7 @@ export const useSetChatBoxContext = () => {
   const [expanded, setExpanded] = useState(false);
   const [showConversations, setShowConversations] = useState(false);
   const [currentEmployee, setCurrentEmployee] = useState<AIEmployee>(null);
-  const { setMessages, sendMessages } = useChatMessages();
+  const { setMessages, sendMessages, addMessage } = useChatMessages();
   const { currentConversation, setCurrentConversation, conversationsService } = useChatConversations();
   const [senderValue, setSenderValue] = useState<string>('');
   const [senderPlaceholder, setSenderPlaceholder] = useState<string>('');
@@ -155,6 +156,33 @@ export const useSetChatBoxContext = () => {
     setMessages([greetingMsg]);
     senderRef.current?.focus();
   }, [currentEmployee]);
+
+  const switchAIEmployee = useCallback(
+    (aiEmployee: AIEmployee) => {
+      setCurrentEmployee(aiEmployee);
+      setSenderValue('');
+      if (aiEmployee) {
+        const greetingMsg = {
+          key: uid(),
+          role: aiEmployee.username,
+          content: {
+            type: 'greeting' as const,
+            content: aiEmployee.greeting || t('Default greeting message', { nickname: aiEmployee.nickname }),
+          },
+        };
+        setSenderPlaceholder(aiEmployee.chatSettings?.senderPlaceholder);
+        senderRef.current?.focus();
+        if (!currentConversation) {
+          setMessages([greetingMsg]);
+        } else {
+          addMessage(greetingMsg);
+        }
+      } else {
+        setMessages([]);
+      }
+    },
+    [currentConversation],
+  );
 
   const triggerShortcut = useCallback(
     (options: ShortcutOptions) => {
@@ -238,6 +266,7 @@ export const useSetChatBoxContext = () => {
     setSenderPlaceholder,
     startNewConversation,
     triggerShortcut,
+    switchAIEmployee,
     send,
   };
 };
