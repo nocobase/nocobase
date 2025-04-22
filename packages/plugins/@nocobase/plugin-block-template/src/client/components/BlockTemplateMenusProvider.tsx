@@ -82,8 +82,8 @@ export const BlockTemplateMenusProvider = ({ children }) => {
 
   useEffect(() => {
     const isLeavingTemplatesPage =
-      previousPathRef.current.includes('/settings/block-templates') &&
-      !location.pathname.includes('/settings/block-templates');
+      previousPathRef.current.includes('/settings/block-templates/inherited') &&
+      !location.pathname.includes('/settings/block-templates/inherited');
     if (isLeavingTemplatesPage) {
       refresh();
     }

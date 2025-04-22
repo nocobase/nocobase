@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Plugin, SchemaSettingsFormItemTemplate, SchemaSettingsTemplate } from '@nocobase/client';
+import { BlockTemplatesPane, Plugin, SchemaSettingsFormItemTemplate, SchemaSettingsTemplate } from '@nocobase/client';
 import { templateBlockInitializerItem } from './initializers';
 import { NAMESPACE } from './constants';
 import { BlockTemplateList, BlockTemplatePage } from './components';
@@ -47,7 +47,7 @@ export class PluginBlockTemplateClient extends Plugin {
     // await this.app.pm.add()
   }
 
-  async beforeLoad() { }
+  async beforeLoad() {}
 
   async load() {
     Schema.registerPatches((s: ISchema) => {
@@ -91,10 +91,20 @@ export class PluginBlockTemplateClient extends Plugin {
     this.app.pluginSettingsManager.add('block-templates', {
       title: `{{t("Block templates", { ns: "${NAMESPACE}" })}}`,
       icon: 'ProfileOutlined',
+      // Component: BlockTemplateList,
+    });
+
+    this.app.pluginSettingsManager.add(`block-templates.reference`, {
+      title: this.t('Reference templates'),
+      Component: BlockTemplatesPane,
+    });
+
+    this.app.pluginSettingsManager.add(`block-templates.inherited`, {
+      title: this.t('Inherited templates'),
       Component: BlockTemplateList,
     });
 
-    this.app.pluginSettingsManager.add(`block-templates/:key`, {
+    this.app.pluginSettingsManager.add(`block-templates/inherited/:key`, {
       title: false,
       pluginKey: 'block-templates',
       isTopLevel: false,
@@ -103,14 +113,15 @@ export class PluginBlockTemplateClient extends Plugin {
 
     // add mobile router
     this.app.pluginManager.get<PluginMobileClient>('mobile')?.mobileRouter?.add('mobile.schema.blockTemplate', {
-      path: `/block-templates/:key/:pageSchemaUid`,
+      path: `/block-templates/inherited/:key/:pageSchemaUid`,
       Component: BlockTemplateMobilePage,
     });
   }
 
   isInBlockTemplateConfigPage() {
-    const mobilePath = this.app.pluginManager.get<PluginMobileClient>('mobile')?.mobileBasename + '/block-templates';
-    const desktopPath = 'admin/settings/block-templates';
+    const mobilePath =
+      this.app.pluginManager.get<PluginMobileClient>('mobile')?.mobileBasename + '/block-templates/inherited';
+    const desktopPath = 'admin/settings/block-templates/inherited';
     return window.location.pathname.includes(desktopPath) || window.location.pathname.includes(mobilePath);
   }
 
@@ -142,7 +153,11 @@ export class PluginBlockTemplateClient extends Plugin {
           if (schemaSetting && !key.startsWith('fieldSettings:component:')) {
             for (let i = 0; i < schemaSetting.items.length; i++) {
               // hide reference template setting item
-              hideConvertToBlockSettingItem(schemaSetting.items[i], schemaSetting.items[i - 1], schemaSetting.items[i + 1]);
+              hideConvertToBlockSettingItem(
+                schemaSetting.items[i],
+                schemaSetting.items[i - 1],
+                schemaSetting.items[i + 1],
+              );
               // hide connect data blocks setting item from template configure page
               hideConnectDataBlocksFromTemplate(schemaSetting.items[i]);
               // hide delete setting item
@@ -186,12 +201,14 @@ export class PluginBlockTemplateClient extends Plugin {
           ];
           if (blockSettings.includes(key)) {
             const referenceTemplateItemIndex = schemaSetting.items.findIndex(
-              (item) => item['Component'] === SchemaSettingsTemplate || item['Component'] === SchemaSettingsFormItemTemplate,
+              (item) =>
+                item['Component'] === SchemaSettingsTemplate || item['Component'] === SchemaSettingsFormItemTemplate,
             );
             if (referenceTemplateItemIndex !== -1) {
-              schemaSetting.items.splice(referenceTemplateItemIndex, 0,
-                { ...saveAsTemplateSetting, sort: schemaSetting.items[referenceTemplateItemIndex].sort },
-              );
+              schemaSetting.items.splice(referenceTemplateItemIndex, 0, {
+                ...saveAsTemplateSetting,
+                sort: schemaSetting.items[referenceTemplateItemIndex].sort,
+              });
             }
           }
         }
