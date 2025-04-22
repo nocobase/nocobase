@@ -12,6 +12,17 @@ const { Command } = require('commander');
 const { resolve } = require('path');
 const { run, promptForTs, runAppCommand, hasCorePackages, downloadPro, hasTsNode, checkDBDialect } = require('../util');
 const { existsSync, rmSync } = require('fs');
+const { readJSON, writeJSON } = require('fs-extra');
+const deepmerge = require('deepmerge');
+
+async function updatePackage() {
+  const sourcePath = resolve(__dirname, '../../templates/create-app-package.json');
+  const descPath = resolve(process.cwd(), 'package.json');
+  const sourceJson = await readJSON(sourcePath, 'utf8');
+  const descJson = await readJSON(descPath, 'utf8');
+  const json = deepmerge(descJson, sourceJson);
+  await writeJSON(desc, json, { spaces: 2, encoding: 'utf8' });
+}
 
 /**
  *
@@ -70,6 +81,7 @@ module.exports = (cli) => {
         return;
       }
       await run('yarn', ['add', `@nocobase/cli@${distTag}`, `@nocobase/devtools@${distTag}`, '-W']);
+      await updatePackage();
       await run('yarn', ['install']);
       await downloadPro();
       await runAppCommand('upgrade');
