@@ -38,6 +38,7 @@ interface Props {
    */
   variableNameOfLeftCondition?: string;
   action?: any;
+  conditionType?: 'advanced' | 'basic';
 }
 
 export function bindLinkageRulesToFiled(
@@ -83,7 +84,6 @@ export function bindLinkageRulesToFiled(
     () => {
       // 获取条件中的字段值
       const fieldValuesInCondition = getFieldValuesInCondition({ linkageRules, formValues });
-
       // 获取条件中的变量值
       const variableValuesInCondition = getVariableValuesInCondition({ linkageRules, localVariables });
 
@@ -132,20 +132,37 @@ function getVariableValuesInCondition({
   return linkageRules.map((rule) => {
     const type = Object.keys(rule.condition)[0] || '$and';
     const conditions = rule.condition[type];
+    if (rule.conditionType === 'advanced') {
+      return conditions
+        .map((condition) => {
+          if (!condition) {
+            return null;
+          }
 
-    return conditions
-      .map((condition) => {
-        const jsonlogic = getInnermostKeyAndValue(condition);
-        if (!jsonlogic) {
-          return null;
-        }
-        if (isVariable(jsonlogic.value)) {
-          return getVariableValue(jsonlogic.value, localVariables);
-        }
+          const resolveVariable = (varName) =>
+            isVariable(varName) ? getVariableValue(varName, localVariables) : varName;
 
-        return jsonlogic.value;
-      })
-      .filter(Boolean);
+          return {
+            leftVar: resolveVariable(condition.leftVar),
+            rightVar: resolveVariable(condition.rightVar),
+          };
+        })
+        .filter(Boolean);
+    } else {
+      return conditions
+        .map((condition) => {
+          const jsonlogic = getInnermostKeyAndValue(condition);
+          if (!jsonlogic) {
+            return null;
+          }
+          if (isVariable(jsonlogic.value)) {
+            return getVariableValue(jsonlogic.value, localVariables);
+          }
+
+          return jsonlogic.value;
+        })
+        .filter(Boolean);
+    }
   });
 }
 
@@ -216,6 +233,7 @@ function getSubscriber(
         localVariables,
         variableNameOfLeftCondition,
         action,
+        conditionType: rule.conditionType,
       },
       jsonLogic,
     );
@@ -256,6 +274,13 @@ function getSubscriber(
           // 在 FormItem 中有使用这个属性来判断字段是否被隐藏
           field.data.hidden = true;
 
+          // 如果字段是必填的，并且被隐藏（保留值）了，那么就需要把 required 设置为 false，否则有可能会导致表单验证失败；
+          // 进而导致点击提交按钮无效的问题。
+          if (field.required) {
+            field.required = false;
+            field.data.prevRequired = true;
+          }
+
           requestAnimationFrame(() => {
             field.setState((state) => {
               state.display = 'visible';
@@ -277,6 +302,13 @@ function getSubscriber(
           field.data = field.data || {};
           // 在 FormItem 中有使用这个属性来判断字段是否被隐藏
           field.data.hidden = false;
+
+          // 当“隐藏（保留值）”的字段再次显示时，恢复“必填”的状态
+          if (fieldName === 'display' && lastState?.value === 'visible' && field.data.prevRequired) {
+            delete field.data.prevRequired;
+            field.required = true;
+          }
+
           requestAnimationFrame(() => {
             field.setState((state) => {
               state[fieldName] = lastState?.value;
@@ -327,7 +359,17 @@ function getFieldNameByOperator(operator: ActionType) {
 }
 
 export const collectFieldStateOfLinkageRules = (
-  { operator, value, field, condition, variables, localVariables, variableNameOfLeftCondition, action }: Props,
+  {
+    operator,
+    value,
+    field,
+    condition,
+    variables,
+    localVariables,
+    variableNameOfLeftCondition,
+    action,
+    conditionType,
+  }: Props,
   jsonLogic: any,
 ) => {
   const requiredResult = field?.stateOfLinkageRules?.required || [field?.initStateOfLinkageRules?.required];
@@ -336,7 +378,13 @@ export const collectFieldStateOfLinkageRules = (
   const valueResult = field?.stateOfLinkageRules?.value || [field?.initStateOfLinkageRules?.value];
   const optionsResult = field?.stateOfLinkageRules?.dataSource || [field?.initStateOfLinkageRules?.dataSource];
   const { evaluate } = evaluators.get('formula.js');
-  const paramsToGetConditionResult = { ruleGroup: condition, variables, localVariables, variableNameOfLeftCondition };
+  const paramsToGetConditionResult = {
+    ruleGroup: condition,
+    variables,
+    localVariables,
+    variableNameOfLeftCondition,
+    conditionType,
+  };
   const dateScopeResult = field?.stateOfLinkageRules?.dateScope || [field?.initStateOfLinkageRules?.dateScope];
 
   switch (operator) {

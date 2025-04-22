@@ -546,9 +546,11 @@ export const useFilterBlockActionProps = () => {
   const { doFilter } = useDoFilter();
   const actionField = useField();
   actionField.data = actionField.data || {};
+  const form = useForm();
 
   return {
     async onClick() {
+      await form.submit();
       actionField.data.loading = true;
       await doFilter();
       actionField.data.loading = false;
@@ -1580,7 +1582,7 @@ export const getAppends = ({
           const fieldNames = getTargetField(item);
 
           // 只应该收集关系字段，只有大于 1 的时候才是关系字段
-          if (fieldNames.length > 1) {
+          if (fieldNames.length > 1 && !item.op) {
             appends.add(fieldNames.join('.'));
           }
         });

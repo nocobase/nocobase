@@ -29,7 +29,7 @@ export function useDataSourceManager() {
 }
 
 /**
- * 获取当前 collection 继承链路上的所有 collection
+ * 获取当前 collection 继承链路上的所有 collection（不包括兄弟表）
  * @returns
  */
 export function useAllCollectionsInheritChainGetter() {
@@ -39,7 +39,7 @@ export function useAllCollectionsInheritChainGetter() {
       return dm
         ?.getDataSource(customDataSource)
         ?.collectionManager?.getCollection<InheritanceCollectionMixin>(collectionName)
-        ?.getAllCollectionsInheritChain();
+        ?.getInheritChain();
     },
     [dm],
   );

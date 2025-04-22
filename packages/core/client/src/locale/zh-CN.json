@@ -167,6 +167,8 @@
   "Year": "年",
   "QuarterYear": "季度",
   "Select grouping field": "选择分组字段",
+  "Refresh data blocks": "刷新数据区块",
+  "Select data blocks to refresh": "选择要刷新的数据区块",
   "Media": "多媒体",
   "Markdown": "Markdown",
   "Wysiwyg": "富文本",
@@ -819,6 +821,7 @@
   "File size should not exceed {{size}}.": "文件大小不能超过 {{size}}",
   "File size exceeds the limit": "文件大小超过限制",
   "File type is not allowed": "文件类型不允许",
+  "Uploading": "上传中",
   "Incomplete uploading files need to be resolved": "未完成上传的文件需要处理",
   "Default title for each record": "用作数据的默认标题",
   "If collection inherits, choose inherited collections as templates": "当前表有继承关系时，可选择继承链路上的表作为模板来源",
@@ -1097,5 +1100,8 @@
   "Font Style": "字体样式",
   "Italic": "斜体",
   "Response record":"响应结果记录",
-  "Colon":"冒号"
+  "Colon":"冒号",
+  "No pages yet, please configure first": "暂无页面，请先配置",
+  "Click the \"UI Editor\" icon in the upper right corner to enter the UI Editor mode": "点击右上角的“界面配置”图标，进入界面配置模式",
+  "After successful submission, the selected data blocks will be automatically refreshed.": "提交成功后，会自动刷新这里选中的数据区块。"
 }

@@ -71,7 +71,7 @@ test.describe('sub page', () => {
     expect(page.url()).not.toContain('/popups/');
 
     // 确认是否回到了主页面
-    await page.getByText('Users单层子页面Configure').hover();
+    // await page.getByText('Users单层子页面Configure').hover();
     await expect(
       page.getByRole('button', { name: 'designer-schema-settings-CardItem-blockSettings:table-users' }),
     ).toBeVisible();

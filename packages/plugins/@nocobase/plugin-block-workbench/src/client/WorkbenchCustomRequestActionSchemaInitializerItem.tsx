@@ -14,6 +14,8 @@ import {
   useSchemaInitializer,
   ModalActionSchemaInitializerItem,
   SchemaSettingAccessControl,
+  SchemaSettingsLinkageRules,
+  useSchemaToolbar,
 } from '@nocobase/client';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
@@ -25,6 +27,16 @@ export const workbenchActionSettingsCustomRequest = new SchemaSettings({
       Component: ButtonEditor,
       useComponentProps() {
         return { hasIconColor: true };
+      },
+    },
+    {
+      name: 'linkageRules',
+      Component: SchemaSettingsLinkageRules,
+      useComponentProps() {
+        const { linkageRulesProps } = useSchemaToolbar();
+        return {
+          ...linkageRulesProps,
+        };
       },
     },
     {

@@ -47,8 +47,10 @@ export async function setCurrentRole(ctx: Context, next) {
   roles.forEach((role: any) => rolesMap.set(role.name, role));
   const userRoles = Array.from(rolesMap.values());
   ctx.state.currentUser.roles = userRoles;
-  const systemSettings = await ctx.db.getRepository('systemSettings').findOne();
-  const roleMode = systemSettings?.get('roleMode') || SystemRoleMode.default;
+  const systemSettings = (await cache.wrap(`app:systemSettings`, () =>
+    ctx.db.getRepository('systemSettings').findOne({ raw: true }),
+  )) as Model;
+  const roleMode = systemSettings?.roleMode || SystemRoleMode.default;
   if ([currentRole, ctx.state.currentRole].includes(UNION_ROLE_KEY) && roleMode === SystemRoleMode.default) {
     currentRole = userRoles[0].name;
     ctx.state.currentRole = userRoles[0].name;
@@ -58,12 +60,6 @@ export async function setCurrentRole(ctx: Context, next) {
     ctx.headers['x-role'] = UNION_ROLE_KEY;
     ctx.state.currentRoles = userRoles.map((role) => role.name);
     return next();
-  } else if (roleMode === SystemRoleMode.allowUseUnion) {
-    userRoles.unshift({
-      name: UNION_ROLE_KEY,
-      title: ctx.t('Full permissions', { ns: 'acl' }),
-    });
-    ctx.state.currentUser.roles = userRoles;
   }
 
   if (currentRole === UNION_ROLE_KEY) {
@@ -85,11 +81,13 @@ export async function setCurrentRole(ctx: Context, next) {
   }
   // 2. If the X-Role is not set, or the X-Role does not belong to the user, use the default role
   if (!role) {
-    const defaultRole = userRoles.find((role) => role?.rolesUsers?.default);
-    role = (defaultRole || userRoles.find((x) => x.name !== UNION_ROLE_KEY))?.name;
+    const defaultRoleModel = await cache.wrap(`roles:${ctx.state.currentUser.id}:defaultRole`, () =>
+      ctx.db.getRepository('rolesUsers').findOne({ where: { userId: ctx.state.currentUser.id, default: true } }),
+    );
+    role = defaultRoleModel?.roleName || userRoles[0]?.name;
   }
   ctx.state.currentRole = role;
-  ctx.state.currentRoles = [role];
+  ctx.state.currentRoles = role === UNION_ROLE_KEY ? [userRoles[0]?.name] : [role];
   if (!ctx.state.currentRoles.length) {
     return ctx.throw(401, {
       code: 'ROLE_NOT_FOUND_ERR',

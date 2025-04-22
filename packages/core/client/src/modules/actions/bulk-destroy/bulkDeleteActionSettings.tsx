@@ -15,6 +15,7 @@ import {
   SecondConFirm,
   RefreshDataBlockRequest,
 } from '../../../schema-component/antd/action/Action.Designer';
+import { SchemaSettingsLinkageRules } from '../../../schema-settings';
 
 export const bulkDeleteActionSettings = new SchemaSettings({
   name: 'actionSettings:bulkDelete',
@@ -25,6 +26,16 @@ export const bulkDeleteActionSettings = new SchemaSettings({
       useComponentProps() {
         const { buttonEditorProps } = useSchemaToolbar();
         return buttonEditorProps;
+      },
+    },
+    {
+      name: 'linkageRules',
+      Component: SchemaSettingsLinkageRules,
+      useComponentProps() {
+        const { linkageRulesProps } = useSchemaToolbar();
+        return {
+          ...linkageRulesProps,
+        };
       },
     },
     {
