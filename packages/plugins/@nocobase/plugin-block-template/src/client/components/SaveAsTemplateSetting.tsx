@@ -74,7 +74,7 @@ export const SaveAsTemplateSetting = () => {
             key: {
               type: 'string',
               'x-decorator': 'FormItem',
-              title: t('Key'),
+              title: t('Name'),
               'x-component': 'Input',
               'x-validator': 'uid',
               required: true,
