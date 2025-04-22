@@ -18,31 +18,25 @@ import {
   usePlugin,
   useSchemaSettings,
 } from '@nocobase/client';
+import { useFieldSchema } from '@formily/react';
 
 export const hideConvertToBlockSettingItem = (
   settingItem: SchemaSettingsItemType,
-  preSettingItem: SchemaSettingsItemType,
-  nextSettingItem: SchemaSettingsItemType,
 ) => {
   if (
     settingItem['Component'] === SchemaSettingsTemplate ||
     settingItem['Component'] === SchemaSettingsFormItemTemplate
   ) {
     // hide covert to block setting item
+    const visible = settingItem['useVisible'] || (() => true);
     settingItem['useVisible'] = function useVisible() {
-      const { template: deprecatedTemplate } = useSchemaSettings();
-      if (deprecatedTemplate && ['formItemTemplate', 'ConvertReferenceToDuplicate'].includes(settingItem['name'])) {
-        // still allow user to convert reference to duplicate, this way user can migrate to new template easily
-        return true;
+      const fieldSchema = useFieldSchema();
+      if (fieldSchema?.['x-template-uid']) {
+        // hide reference template setting item
+        return false;
       }
-      return false;
+      return visible();
     };
-    if (preSettingItem?.['type'] === 'divider') {
-      preSettingItem['useVisible'] = () => false;
-    }
-    if (nextSettingItem?.['type'] === 'divider') {
-      nextSettingItem['useVisible'] = () => false;
-    }
   }
 };
 

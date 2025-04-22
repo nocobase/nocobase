@@ -58,11 +58,11 @@ export const SaveAsTemplateSetting = () => {
 
   return (
     <SchemaSettingsModalItem
-      title={t('Save as template')}
+      title={t('Save as inherited template')}
       schema={
         {
           type: 'object',
-          title: t('Save as template'),
+          title: t('Save as inherited template'),
           properties: {
             title: {
               type: 'string',

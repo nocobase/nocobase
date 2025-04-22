@@ -139,12 +139,8 @@ export class PluginBlockTemplateClient extends Plugin {
           // if not filter out fieldSettings:component:, we will show two revert setting item
           if (schemaSetting && !key.startsWith('fieldSettings:component:')) {
             for (let i = 0; i < schemaSetting.items.length; i++) {
-              // hide convert to block setting item
-              hideConvertToBlockSettingItem(
-                schemaSetting.items[i],
-                schemaSetting.items[i - 1],
-                schemaSetting.items[i + 1],
-              );
+              // hide reference template setting item
+              hideConvertToBlockSettingItem(schemaSetting.items[i]);
               // hide connect data blocks setting item from template configure page
               hideConnectDataBlocksFromTemplate(schemaSetting.items[i]);
               // hide delete setting item
