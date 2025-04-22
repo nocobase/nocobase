@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Plugin } from '@nocobase/client';
+import { Plugin, SchemaSettingsFormItemTemplate, SchemaSettingsTemplate } from '@nocobase/client';
 import { templateBlockInitializerItem } from './initializers';
 import { NAMESPACE } from './constants';
 import { BlockTemplateList, BlockTemplatePage } from './components';
@@ -47,7 +47,7 @@ export class PluginBlockTemplateClient extends Plugin {
     // await this.app.pm.add()
   }
 
-  async beforeLoad() {}
+  async beforeLoad() { }
 
   async load() {
     Schema.registerPatches((s: ISchema) => {
@@ -185,13 +185,13 @@ export class PluginBlockTemplateClient extends Plugin {
             'FormDetailsSettings',
           ];
           if (blockSettings.includes(key)) {
-            // schemaSetting.add('template-saveAsTemplateItem', saveAsTemplateSetting);
-            // 放到template-revertSettingItem上方
-            const revertItemIndex = schemaSetting.items.findIndex((item) => item.name === 'template-revertSettingItem');
-            if (revertItemIndex !== -1) {
-              schemaSetting.items.splice(revertItemIndex, 0, saveAsTemplateSetting);
-            } else {
-              schemaSetting.items.push(saveAsTemplateSetting);
+            const referenceTemplateItemIndex = schemaSetting.items.findIndex(
+              (item) => item['Component'] === SchemaSettingsTemplate || item['Component'] === SchemaSettingsFormItemTemplate,
+            );
+            if (referenceTemplateItemIndex !== -1) {
+              schemaSetting.items.splice(referenceTemplateItemIndex, 0,
+                { ...saveAsTemplateSetting, sort: schemaSetting.items[referenceTemplateItemIndex].sort },
+              );
             }
           }
         }

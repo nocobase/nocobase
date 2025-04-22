@@ -30,18 +30,18 @@ export const hideConvertToBlockSettingItem = (
     // hide covert to block setting item
     const visible = settingItem['useVisible'] || (() => true);
     settingItem['useVisible'] = function useVisible() {
-      return useIsInTemplate() && visible();
+      return !useIsInTemplate() && visible();
     };
     if (preSettingItem?.['type'] === 'divider') {
       const preVisible = preSettingItem['useVisible'] || (() => true);
       preSettingItem['useVisible'] = function useVisible() {
-        return useIsInTemplate() && preVisible();
+        return !useIsInTemplate() && preVisible();
       };
     }
     if (nextSettingItem?.['type'] === 'divider') {
       const nextVisible = nextSettingItem['useVisible'] || (() => true);
       nextSettingItem['useVisible'] = function useVisible() {
-        return useIsInTemplate() && nextVisible();
+        return !useIsInTemplate() && nextVisible();
       };
     }
   }
