@@ -35,6 +35,7 @@
   },
   "dependencies": {
     "@nocobase/cli": "{{{version}}}",
+    "pm2": "^6.0.5",
     {{{dependencies}}}
   },
   "devDependencies": {
