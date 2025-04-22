@@ -10,7 +10,7 @@
 import { dayjs } from '@nocobase/utils/client';
 import { useMemo } from 'react';
 import { DEFAULT_DATA_SOURCE_KEY } from '../../data-source/data-source/DataSourceManager';
-import { useCurrentUserVariable, useDatetimeVariable } from '../../schema-settings';
+import { useCurrentUserVariable, useDatetimeVariable, useDateTimeVariables } from '../../schema-settings';
 import { useAPITokenVariable } from '../../schema-settings/VariableInput/hooks/useAPITokenVariable';
 import { useCurrentRoleVariable } from '../../schema-settings/VariableInput/hooks/useRoleVariable';
 import { useURLSearchParamsVariable } from '../../schema-settings/VariableInput/hooks/useURLSearchParamsVariable';
@@ -26,6 +26,8 @@ const useBuiltInVariables = () => {
   const { currentRoleCtx } = useCurrentRoleVariable();
   const { apiTokenCtx } = useAPITokenVariable();
   const { datetimeCtx } = useDatetimeVariable();
+  const { dateTimePresetCtx } = useDateTimeVariables();
+
   const { urlSearchParamsCtx, name: urlSearchParamsName, defaultValue } = useURLSearchParamsVariable();
   const envVariableCtx = useGlobalVariableCtx('$env');
   const builtinVariables: VariableOption[] = useMemo(() => {
@@ -60,6 +62,10 @@ const useBuiltInVariables = () => {
         name: '$nDate',
         ctx: datetimeCtx,
       },
+      {
+        name: '$nDateTime',
+        ctx: dateTimePresetCtx,
+      },
       /**
        * @deprecated
        * 兼容旧版本的 `$date` 变量，新版本已弃用
@@ -68,6 +74,7 @@ const useBuiltInVariables = () => {
         name: '$date',
         ctx: datetimeCtx,
       },
+
       /**
        * @deprecated
        * 兼容旧版本的 `$system` 变量，新版本已弃用

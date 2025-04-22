@@ -210,36 +210,17 @@ export const getDateRanges = (props?: {
     };
     return {
       now: () => toString(dayjs()),
-      today: (params?: any) => withParams(toString([getStart(0, 'day'), getEnd(0, 'day')]), params),
-      yesterday: (params?: any) => withParams(toString([getStart(-1, 'day'), getEnd(-1, 'day')]), params),
-      tomorrow: (params?: any) => withParams(toString([getStart(1, 'day'), getEnd(1, 'day')]), params),
-      thisWeek: (params?: any) => withParams(toString([getStart(0, 'isoWeek'), getEnd(0, 'isoWeek')]), params),
-      lastWeek: (params?: any) => withParams(toString([getStart(-1, 'isoWeek'), getEnd(-1, 'isoWeek')]), params),
-      nextWeek: (params?: any) => withParams(toString([getStart(1, 'isoWeek'), getEnd(1, 'isoWeek')]), params),
-      thisIsoWeek: (params?: any) => withParams(toString([getStart(0, 'isoWeek'), getEnd(0, 'isoWeek')]), params),
-      lastIsoWeek: (params?: any) => withParams(toString([getStart(-1, 'isoWeek'), getEnd(-1, 'isoWeek')]), params),
-      nextIsoWeek: (params?: any) => withParams(toString([getStart(1, 'isoWeek'), getEnd(1, 'isoWeek')]), params),
-      thisMonth: (params?: any) => withParams(toString([getStart(0, 'month'), getEnd(0, 'month')]), params),
-      lastMonth: (params?: any) => withParams(toString([getStart(-1, 'month'), getEnd(-1, 'month')]), params),
-      nextMonth: (params?: any) => withParams(toString([getStart(1, 'month'), getEnd(1, 'month')]), params),
-      thisQuarter: (params?: any) => withParams(toString([getStart(0, 'quarter'), getEnd(0, 'quarter')]), params),
-      lastQuarter: (params?: any) => withParams(toString([getStart(-1, 'quarter'), getEnd(-1, 'quarter')]), params),
-      nextQuarter: (params?: any) => withParams(toString([getStart(1, 'quarter'), getEnd(1, 'quarter')]), params),
-      thisYear: (params?: any) => withParams(toString([getStart(0, 'year'), getEnd(0, 'year')]), params),
-      lastYear: (params?: any) => withParams(toString([getStart(-1, 'year'), getEnd(-1, 'year')]), params),
-      nextYear: (params?: any) => withParams(toString([getStart(1, 'year'), getEnd(1, 'year')]), params),
-      last7Days: (params?: any) => withParams(toString([getStart(-6, 'days'), getEnd(0, 'days')]), params),
-      next7Days: (params?: any) => withParams(toString([getStart(1, 'day'), getEnd(7, 'days')]), params),
-      last30Days: (params?: any) => withParams(toString([getStart(-29, 'days'), getEnd(0, 'days')]), params),
-      next30Days: (params?: any) => withParams(toString([getStart(1, 'day'), getEnd(30, 'days')]), params),
-      last90Days: (params?: any) => withParams(toString([getStart(-89, 'days'), getEnd(0, 'days')]), params),
-      next90Days: (params?: any) => withParams(toString([getStart(1, 'day'), getEnd(90, 'days')]), params),
+      today: () => toString(getStart(0, 'day')),
+      yesterday: () => toString(getStart(-1, 'day')),
+      tomorrow: () => toString(getStart(1, 'day')),
     };
   }
 
   return {
     now: () => dayjs().toISOString(),
-    today: (params?: any) => withParams([getStart(0, 'day'), getEnd(0, 'day')], params),
+    today: (params?: any) => getStart(0, 'day').toISOString(),
+    // today: (params?: any) => withParams([getStart(0, 'day'), getEnd(0, 'day')], params),
+
     yesterday: (params?: any) => withParams([getStart(-1, 'day'), getEnd(-1, 'day')], params),
     tomorrow: (params?: any) => withParams([getStart(1, 'day'), getEnd(1, 'day')], params),
     thisWeek: (params?: any) => withParams([getStart(0, 'isoWeek'), getEnd(0, 'isoWeek')], params),

@@ -216,9 +216,9 @@ export const useDateVariable = ({ operator, schema, noDisabled }: Props) => {
  * 变量：`日期变量`的上下文
  * @returns
  */
-export const useDatetimeVariableContext = () => {
+export const useDatetimeVariableContext = (shouldBeString = false) => {
   const { utc = true } = useDatePickerContext();
-  const datetimeCtx = useMemo(() => getDateRanges({ shouldBeString: true, utc }), [utc]);
+  const datetimeCtx = useMemo(() => getDateRanges({ shouldBeString, utc }), [utc]);
 
   return {
     datetimeCtx,
@@ -226,6 +226,9 @@ export const useDatetimeVariableContext = () => {
 };
 
 /**
+ * @deprecated
+ * 该 hook 已废弃，请使用 `useDateTimeVariables` 代替
+ *
  * 变量：`日期变量`
  * @param param0
  * @returns
@@ -244,163 +247,218 @@ export const useDatetimeVariable = ({ operator, schema, noDisabled, targetFieldS
         key: 'now',
         value: 'now',
         label: t('Current time'),
-        disabled: noDisabled ? false : schema?.['x-component'] !== 'DatePicker' || operatorValue === '$dateBetween',
+        disabled: true,
         operators: datetime,
       },
       {
         key: 'yesterday',
         value: 'yesterday',
         label: t('Yesterday'),
-        disabled,
+        disabled: true,
         operators: datetime,
       },
       {
         key: 'today',
         value: 'today',
         label: t('Today'),
-        disabled,
+        disabled: true,
         operators: datetime,
       },
       {
         key: 'tomorrow',
         value: 'tomorrow',
         label: t('Tomorrow'),
-        disabled,
+        disabled: true,
         operators: datetime,
       },
       {
         key: 'lastIsoWeek',
         value: 'lastIsoWeek',
         label: t('Last week'),
-        disabled,
+        disabled: true,
         operators: datetime,
       },
       {
         key: 'thisIsoWeek',
         value: 'thisIsoWeek',
         label: t('This week'),
-        disabled,
+        disabled: true,
         operators: datetime,
       },
       {
         key: 'nextIsoWeek',
         value: 'nextIsoWeek',
         label: t('Next week'),
-        disabled,
+        disabled: true,
         operators: datetime,
       },
       {
         key: 'lastMonth',
         value: 'lastMonth',
         label: t('Last month'),
-        disabled,
+        disabled: true,
         operators: datetime,
       },
       {
         key: 'thisMonth',
         value: 'thisMonth',
         label: t('This month'),
-        disabled,
+        disabled: true,
         operators: datetime,
       },
       {
         key: 'nextMonth',
         value: 'nextMonth',
         label: t('Next month'),
-        disabled,
+        disabled: true,
         operators: datetime,
       },
       {
         key: 'lastQuarter',
         value: 'lastQuarter',
         label: t('Last quarter'),
-        disabled,
+        disabled: true,
         operators: datetime,
       },
       {
         key: 'thisQuarter',
         value: 'thisQuarter',
         label: t('This quarter'),
-        disabled,
+        disabled: true,
         operators: datetime,
       },
       {
         key: 'nextQuarter',
         value: 'nextQuarter',
         label: t('Next quarter'),
-        disabled,
+        disabled: true,
         operators: datetime,
       },
       {
         key: 'lastYear',
         value: 'lastYear',
         label: t('Last year'),
-        disabled,
+        disabled: true,
         operators: datetime,
       },
       {
         key: 'thisYear',
         value: 'thisYear',
         label: t('This year'),
-        disabled,
+        disabled: true,
         operators: datetime,
       },
       {
         key: 'nextYear',
         value: 'nextYear',
         label: t('Next year'),
-        disabled,
+        disabled: true,
         operators: datetime,
       },
       {
         key: 'last7Days',
         value: 'last7Days',
         label: t('Last 7 days'),
-        disabled,
+        disabled: true,
         operators: datetime,
       },
       {
         key: 'next7Days',
         value: 'next7Days',
         label: t('Next 7 days'),
-        disabled,
+        disabled: true,
         operators: datetime,
       },
       {
         key: 'last30Days',
         value: 'last30Days',
         label: t('Last 30 days'),
-        disabled,
+        disabled: true,
         operators: datetime,
       },
       {
         key: 'next30Days',
         value: 'next30Days',
         label: t('Next 30 days'),
-        disabled,
+        disabled: true,
         operators: datetime,
       },
       {
         key: 'last90Days',
         value: 'last90Days',
         label: t('Last 90 days'),
-        disabled,
+        disabled: true,
         operators: datetime,
       },
       {
         key: 'next90Days',
         value: 'next90Days',
         label: t('Next 90 days'),
-        disabled,
+        disabled: true,
+        operators: datetime,
+      },
+    ];
+
+    return {
+      label: t('Date variables(Deprecated)'),
+      value: '$nDate',
+      key: '$nDate',
+      disabled: true,
+      children: dateOptions,
+    };
+  }, [schema?.['x-component'], targetFieldSchema]);
+
+  const { datetimeCtx } = useDatetimeVariableContext(true);
+
+  return {
+    datetimeSettings,
+    datetimeCtx,
+  };
+};
+
+/**
+ * 变量：`日期变量`
+ * @param param0
+ * @returns
+ */
+export const useDateTimeVariables = ({ operator, schema, noDisabled, targetFieldSchema }: Props = {}) => {
+  const { t } = useTranslation();
+  const { getOperator } = useOperators();
+
+  const dateTimePresetSettings = useMemo(() => {
+    const operatorValue = operator?.value || getOperator(targetFieldSchema?.name) || '';
+
+    const dateOptions = [
+      {
+        key: 'now',
+        value: 'now',
+        label: t('Current time'),
+        operators: datetime,
+      },
+      {
+        key: 'yesterday',
+        value: 'yesterday',
+        label: t('Yesterday'),
+        operators: datetime,
+      },
+      {
+        key: 'today',
+        value: 'today',
+        label: t('Today'),
+        operators: datetime,
+      },
+      {
+        key: 'tomorrow',
+        value: 'tomorrow',
+        label: t('Tomorrow'),
         operators: datetime,
       },
     ];
 
     return {
       label: t('Date variables'),
-      value: '$nDate',
-      key: '$nDate',
-      disabled: dateOptions.every((option) => option.disabled),
+      value: '$nDateTime',
+      key: '$nDateTime',
       children: dateOptions,
     };
   }, [schema?.['x-component'], targetFieldSchema]);
@@ -408,7 +466,7 @@ export const useDatetimeVariable = ({ operator, schema, noDisabled, targetFieldS
   const { datetimeCtx } = useDatetimeVariableContext();
 
   return {
-    datetimeSettings,
-    datetimeCtx,
+    dateTimePresetSettings,
+    dateTimePresetCtx: datetimeCtx,
   };
 };
