@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-const { run } = require('../util');
+const { run, checkDBDialect } = require('../util');
 const fg = require('fast-glob');
 
 const coreClientPackages = ['packages/core/client', 'packages/core/sdk'];
@@ -30,6 +30,7 @@ const getPackagesDir = (isClient) => {
 
 module.exports = (cli) => {
   cli.command('test-coverage:server').action(async () => {
+    checkDBDialect();
     const packageRoots = getPackagesDir(false);
     for (const dir of packageRoots) {
       try {
@@ -41,6 +42,7 @@ module.exports = (cli) => {
   });
 
   cli.command('test-coverage:client').action(async () => {
+    checkDBDialect();
     const packageRoots = getPackagesDir(true);
     for (const dir of packageRoots) {
       try {
