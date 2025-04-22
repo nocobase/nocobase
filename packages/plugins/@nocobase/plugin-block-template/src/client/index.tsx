@@ -28,6 +28,8 @@ import {
 import { BlockTemplateMenusProvider } from './components/BlockTemplateMenusProvider';
 import { disabledDeleteSettingItem } from './settings/disabledDeleteSetting';
 import { saveAsTemplateSetting } from './settings/saveAsTemplateSetting';
+import { convertToNormalBlockSettingItem } from './settings/convertToNormalBlockSetting';
+
 export class PluginBlockTemplateClient extends Plugin {
   templateInfos = new Map();
   templateschemacache = {};
@@ -154,9 +156,10 @@ export class PluginBlockTemplateClient extends Plugin {
               deleteItemIndex !== -1 &&
               !schemaSetting.items.find((item) => item.name === 'template-revertSettingItem')
             ) {
-              schemaSetting.items.splice(deleteItemIndex, 0, revertSettingItem);
+              schemaSetting.items.splice(deleteItemIndex, 0, revertSettingItem, convertToNormalBlockSettingItem);
             } else {
               schemaSetting.add('template-revertSettingItem', revertSettingItem);
+              schemaSetting.add('template-convertToNormalBlockSettingItem', convertToNormalBlockSettingItem);
             }
             schemaSetting.add('template-disabledDeleteItem', disabledDeleteSettingItem);
           }
