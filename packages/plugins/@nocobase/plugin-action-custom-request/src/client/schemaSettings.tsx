@@ -65,7 +65,7 @@ export function AfterSuccess() {
             successMessage: {
               title: t('Popup message'),
               'x-decorator': 'FormItem',
-              'x-component': 'Variable.JSON',
+              'x-component': 'Variable.RawTextArea',
               'x-component-props': {
                 scope: [
                   ...scopes,
