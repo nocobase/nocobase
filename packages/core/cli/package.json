@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/cli",
-  "version": "1.6.21",
+  "version": "1.6.22",
   "description": "",
   "license": "AGPL-3.0",
   "main": "./src/index.js",
@@ -8,7 +8,7 @@
     "nocobase": "./bin/index.js"
   },
   "dependencies": {
-    "@nocobase/app": "1.6.21",
+    "@nocobase/app": "1.6.22",
     "@types/fs-extra": "^11.0.1",
     "@umijs/utils": "3.5.20",
     "chalk": "^4.1.1",
@@ -19,12 +19,12 @@
     "fs-extra": "^11.1.1",
     "p-all": "3.0.0",
     "portfinder": "^1.0.28",
-    "tree-kill": "^1.2.2",
     "tar": "^7.4.3",
+    "tree-kill": "^1.2.2",
     "tsx": "^4.19.0"
   },
   "devDependencies": {
-    "@nocobase/devtools": "1.6.21"
+    "@nocobase/devtools": "1.6.22"
   },
   "repository": {
     "type": "git",
