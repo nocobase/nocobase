@@ -39,52 +39,9 @@ module.exports = (cli) => {
     .action(async (options) => {
       checkDBDialect();
       if (hasTsNode()) promptForTs();
-      if (hasCorePackages()) {
-        // await run('yarn', ['install']);
-        await downloadPro();
-        await runAppCommand('upgrade');
-        return;
+      if (!options.skipCodeUpdate) {
+        await run('nocobase', ['update-deps']);
       }
-      if (options.skipCodeUpdate) {
-        await downloadPro();
-        await runAppCommand('upgrade');
-        return;
-      }
-      // await runAppCommand('upgrade');
-      if (!hasTsNode()) {
-        await downloadPro();
-        await runAppCommand('upgrade');
-        return;
-      }
-      const rmAppDir = () => {
-        // If ts-node is not installed, do not do the following
-        const appDevDir = resolve(process.cwd(), './storage/.app-dev');
-        if (existsSync(appDevDir)) {
-          rmSync(appDevDir, { recursive: true, force: true });
-        }
-      };
-      const pkg = require('../../package.json');
-      let distTag = 'latest';
-      if (pkg.version.includes('alpha')) {
-        distTag = 'alpha';
-      } else if (pkg.version.includes('beta')) {
-        distTag = 'beta';
-      }
-      // get latest version
-      const { stdout } = await run('npm', ['info', `@nocobase/cli@${distTag}`, 'version'], {
-        stdio: 'pipe',
-      });
-      if (pkg.version === stdout) {
-        await downloadPro();
-        await runAppCommand('upgrade');
-        await rmAppDir();
-        return;
-      }
-      await run('yarn', ['add', `@nocobase/cli@${distTag}`, `@nocobase/devtools@${distTag}`, '-W']);
-      await updatePackage();
-      await run('yarn', ['install']);
-      await downloadPro();
       await runAppCommand('upgrade');
-      await rmAppDir();
     });
 };

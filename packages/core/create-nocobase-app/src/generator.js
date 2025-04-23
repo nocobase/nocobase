@@ -61,7 +61,7 @@ class AppGenerator extends Generator {
 
   checkDialect() {
     const dialect = this.args.dbDialect;
-    const supportDialects = ['mysql', 'mariadb', 'postgres'];
+    const supportDialects = ['mysql', 'mariadb', 'postgres', 'kingbase'];
     if (!supportDialects.includes(dialect)) {
       console.log(
         `dialect ${chalk.red(dialect)} is not supported, currently supported dialects are ${chalk.green(
