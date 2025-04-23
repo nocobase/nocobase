@@ -38,7 +38,7 @@ const useVariableOptions = () => {
       label: t('Response', { ns: 'client' }),
       children: null,
     },
-    ...scopes.filter((v) => ['currentUser', 'currentTime', '$nRole'].includes(v.value)),
+    ...scopes.filter((v: any) => ['currentUser', 'currentTime', '$nRole'].includes(v.value)),
   ].filter(Boolean);
 };
 
