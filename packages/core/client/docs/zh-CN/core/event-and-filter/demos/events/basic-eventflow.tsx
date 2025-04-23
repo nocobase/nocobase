@@ -87,6 +87,9 @@ const BasicEventFlow = () => {
           step2: {
             title: '第二步：通知',
           },
+          step3: {
+            title: '第三步：表单对话框',
+          },
         },
       },
     };

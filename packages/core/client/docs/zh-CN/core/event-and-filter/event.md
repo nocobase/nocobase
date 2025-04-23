@@ -5,7 +5,7 @@
 
 <code src="./demos/events/basic.tsx"></code>
 
-## 事件顺序触发多个action
+## action触发另一个事件
 
 <code src="./demos/events/basic-form.tsx"></code>
 
