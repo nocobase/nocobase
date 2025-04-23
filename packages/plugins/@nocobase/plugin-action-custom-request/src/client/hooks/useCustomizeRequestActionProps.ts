@@ -87,7 +87,10 @@ export const useCustomizeRequestActionProps = () => {
         try {
           const { exp, scope: expScope } = await replaceVariables(successMessage, {
             variables,
-            localVariables: [...localVariables, { name: '$nResponse', ctx: new Proxy(res?.data?.data, {}) }],
+            localVariables: [
+              ...localVariables,
+              { name: '$nResponse', ctx: new Proxy({ ...res?.data, ...res?.data?.data }, {}) },
+            ],
           });
           successMessage = interpolateVariables(exp, expScope);
         } catch (error) {
