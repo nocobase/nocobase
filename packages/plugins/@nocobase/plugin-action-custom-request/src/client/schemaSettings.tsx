@@ -33,12 +33,12 @@ const useVariableOptions = () => {
   const scopes = useAfterSuccessOptions();
   const { t } = useTranslation();
   return [
-    ...scopes,
     {
       value: '$nResponse',
       label: t('Response', { ns: 'client' }),
       children: null,
     },
+    ...scopes.filter((v) => ['currentUser', 'currentTime', '$nRole'].includes(v.value)),
   ].filter(Boolean);
 };
 
