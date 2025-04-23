@@ -15,7 +15,6 @@ export const editActionSchema = {
   'x-component': 'Action.Link',
   'x-component-props': {
     openMode: 'drawer',
-    icon: 'EditOutlined',
   },
   properties: {
     drawer: {
