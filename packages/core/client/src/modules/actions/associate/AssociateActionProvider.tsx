@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useState, useContext } from 'react';
+import React, { useState, useContext, useEffect } from 'react';
 import { RecordPickerProvider, RecordPickerContext } from '../../../schema-component/antd/record-picker';
 import {
   SchemaComponentOptions,
@@ -44,6 +44,13 @@ export const AssociateActionProvider = (props) => {
   const { resource, service, block, __parent } = useBlockRequestContext();
   const actionCtx = useActionContext();
   const { isMobile } = useOpenModeContext() || {};
+  const [associationData, setAssociationData] = useState([]);
+  useEffect(() => {
+    resource?.list?.().then((res) => {
+      setAssociationData(res.data?.data || []);
+    });
+  }, []);
+
   const pickerProps = {
     size: 'small',
     onChange: props?.onChange,
@@ -73,8 +80,8 @@ export const AssociateActionProvider = (props) => {
   };
   const getFilter = () => {
     const targetKey = collection?.filterTargetKey || 'id';
-    if (service.data?.data) {
-      const list = service.data?.data.map((option) => option[targetKey]).filter(Boolean);
+    if (associationData) {
+      const list = associationData.map((option) => option[targetKey]).filter(Boolean);
       const filter = list.length ? { $and: [{ [`${targetKey}.$ne`]: list }] } : {};
       return filter;
     }
