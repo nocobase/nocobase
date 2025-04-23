@@ -34,7 +34,7 @@ import useServiceOptions, { useAssociationFieldContext } from './hooks';
 
 const removeIfKeyEmpty = (obj, filterTargetKey) => {
   if (!obj || typeof obj !== 'object' || !filterTargetKey || Array.isArray(obj)) return obj;
-  return !obj[filterTargetKey] ? null : obj;
+  return !obj[filterTargetKey] ? undefined : obj;
 };
 
 export const AssociationFieldAddNewer = (props) => {
