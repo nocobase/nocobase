@@ -898,7 +898,7 @@ export const useRecordCollectionDataSourceItems = (
       type: 'subMenu',
       name: 'inherited_templates',
       key: `associationFiled_${componentName}_table_subMenu_${index}_inherited`,
-      title: t('Inherited templates'),
+      title: t('Inherited template'),
       children: inheritedTemplatesMenuItems,
     });
   }
@@ -1612,7 +1612,7 @@ const getChildren = ({
           name: 'inherited_templates',
           key: `associationFiled_${componentName}_table_subMenu_${index}_inherited`,
           dataSource,
-          title: t('Inherited templates'),
+          title: t('Inherited template'),
           children: inheritedTemplatesMenuItems,
         });
       }
@@ -1892,7 +1892,7 @@ function useAssociationFields({
             name: 'inherited_templates',
             key: `associationFiled_${componentName}_table_subMenu_${index}_inherited`,
             dataSource,
-            title: t('Inherited templates'),
+            title: t('Inherited template'),
             children: inheritedTemplatesMenuItems,
           });
         }

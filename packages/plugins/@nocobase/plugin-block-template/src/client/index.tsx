@@ -95,12 +95,12 @@ export class PluginBlockTemplateClient extends Plugin {
     });
 
     this.app.pluginSettingsManager.add(`block-templates.reference`, {
-      title: this.t('Reference templates'),
+      title: this.t('Reference template'),
       Component: BlockTemplatesPane,
     });
 
     this.app.pluginSettingsManager.add(`block-templates.inherited`, {
-      title: this.t('Inherited templates'),
+      title: this.t('Inherited template'),
       Component: BlockTemplateList,
     });
 
