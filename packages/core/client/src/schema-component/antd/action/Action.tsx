@@ -354,11 +354,7 @@ const InternalAction: React.FC<InternalActionProps> = observer(function Com(prop
   }
 
   if (addChild) {
-    return wrapSSR(
-      <RecordProvider record={null} parent={parentRecordData}>
-        <TreeRecordProvider parent={recordData}>{result}</TreeRecordProvider>
-      </RecordProvider>,
-    ) as React.ReactElement;
+    return wrapSSR(<TreeRecordProvider parent={recordData}>{result}</TreeRecordProvider>) as React.ReactElement;
   }
 
   return wrapSSR(result) as React.ReactElement;
