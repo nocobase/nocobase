@@ -115,26 +115,24 @@ export const ErrorMessage: React.FC<{
 
   return (
     <Alert
-      message={
-        <>
-          {msg.content}{' '}
-          <Button
-            onClick={() => {
-              let messageId: string;
-              const prev = messages[messages.length - 2];
-              if (prev && prev.role !== 'user') {
-                messageId = prev.key as string;
-              }
-              resendMessages({
-                sessionId: currentConversation,
-                messageId,
-                aiEmployee: currentEmployee,
-              });
-            }}
-            icon={<ReloadOutlined />}
-            type="text"
-          />
-        </>
+      message={<>{msg.content} </>}
+      action={
+        <Button
+          onClick={() => {
+            let messageId: string;
+            const prev = messages[messages.length - 2];
+            if (prev && prev.role !== 'user') {
+              messageId = prev.key as string;
+            }
+            resendMessages({
+              sessionId: currentConversation,
+              messageId,
+              aiEmployee: currentEmployee,
+            });
+          }}
+          icon={<ReloadOutlined />}
+          type="text"
+        />
       }
       type="warning"
       showIcon

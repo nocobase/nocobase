@@ -34,6 +34,39 @@ export const listByUser = async (ctx: Context, next: Next) => {
     avatar: row.avatar,
     bio: row.bio,
     greeting: row.greeting,
+    userConfig: {
+      prompt: row.userConfigs?.[0]?.prompt,
+    },
   }));
+  await next();
+};
+
+export const updateUserPrompt = async (ctx: Context, next: Next) => {
+  const { aiEmployee, prompt } = ctx.action.params.values || {};
+  if (!aiEmployee || !prompt) {
+    ctx.throw(400);
+  }
+  const user = ctx.auth.user;
+  const repo = ctx.db.getRepository('usersAiEmployees');
+  const record = await repo.findOne({
+    filter: {
+      userId: user.id,
+      aiEmployee,
+    },
+  });
+  if (record) {
+    await record.update({
+      prompt,
+    });
+    return next();
+  }
+  await repo.create({
+    values: {
+      aiEmployee,
+      userId: user.id,
+      prompt,
+      sort: null,
+    },
+  });
   await next();
 };

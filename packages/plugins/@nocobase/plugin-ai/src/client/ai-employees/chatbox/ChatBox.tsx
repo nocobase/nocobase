@@ -26,6 +26,7 @@ import { Sender } from './Sender';
 import { useAISelectionContext } from '../selector/AISelectorProvider';
 import { css } from '@emotion/css';
 import { useT } from '../../locale';
+import { UserPrompt } from './UserPrompt';
 
 export const ChatBox: React.FC = () => {
   const setOpen = useChatBoxContext('setOpen');
@@ -103,11 +104,14 @@ export const ChatBox: React.FC = () => {
             }}
           >
             {currentEmployee ? (
-              <Tooltip arrow={false} title={t('New convsersation')}>
-                <Button icon={<EditOutlined />} type="text" onClick={startNewConversation} />
-              </Tooltip>
+              <>
+                <Tooltip arrow={false} title={t('New convsersation')}>
+                  <Button icon={<EditOutlined />} type="text" onClick={startNewConversation} />
+                </Tooltip>
+                <UserPrompt />
+                <Divider type="vertical" />
+              </>
             ) : null}
-            <Divider type="vertical" />
             <Button
               icon={!expanded ? <ExpandOutlined /> : <ShrinkOutlined />}
               type="text"

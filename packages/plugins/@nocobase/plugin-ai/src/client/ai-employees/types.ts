@@ -20,6 +20,9 @@ export type AIEmployee = {
   avatar?: string;
   bio?: string;
   greeting?: string;
+  userConfig?: {
+    prompt?: string;
+  };
   chatSettings?: {
     senderPlaceholder?: string;
     infoForm?: {

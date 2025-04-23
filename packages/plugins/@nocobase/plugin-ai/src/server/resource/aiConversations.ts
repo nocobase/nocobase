@@ -389,12 +389,19 @@ export default {
         }
 
         const history = await getConversationHistory(ctx, sessionId, employee);
-        const userMessages = await formatMessages(ctx, messages, employee);
+        const userMessages = await formatMessages(ctx, messages);
+        const userConfig = await ctx.db.getRepository('usersAiEmployees').findOne({
+          filter: {
+            userId: ctx.auth?.user.id,
+            aiEmployee,
+          },
+        });
         const formattedMessages = [
           {
             role: 'system',
             content: employee.about,
           },
+          ...(userConfig?.prompt ? [{ role: 'user', content: userConfig.prompt }] : []),
           ...history,
           ...userMessages,
         ];
@@ -456,11 +463,18 @@ export default {
 
         const employee = conversation.aiEmployee;
         const history = await getConversationHistory(ctx, sessionId, employee, messageId);
+        const userConfig = await ctx.db.getRepository('usersAiEmployees').findOne({
+          filter: {
+            userId: ctx.auth?.user.id,
+            aiEmployee: employee.username,
+          },
+        });
         const formattedMessages = [
           {
             role: 'system',
             content: employee.about,
           },
+          ...(userConfig?.prompt ? [{ role: 'user', content: userConfig.prompt }] : []),
           ...history,
         ];
 

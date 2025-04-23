@@ -207,6 +207,9 @@ const useCreateActionProps = () => {
   const form = useForm();
   const api = useAPIClient();
   const { refresh } = useDataBlockRequest();
+  const {
+    service: { refresh: refreshAIEmployees },
+  } = useAIEmployeesContext();
   const t = useT();
 
   return {
@@ -221,6 +224,7 @@ const useCreateActionProps = () => {
       message.success(t('Saved successfully'));
       setVisible(false);
       form.reset();
+      refreshAIEmployees();
     },
   };
 };
@@ -231,6 +235,9 @@ const useEditActionProps = () => {
   const form = useForm();
   const resource = useDataBlockResource();
   const { refresh } = useDataBlockRequest();
+  const {
+    service: { refresh: refreshAIEmployees },
+  } = useAIEmployeesContext();
   const collection = useCollection();
   const filterTk = collection.getFilterTargetKey();
   const t = useT();
@@ -248,6 +255,7 @@ const useEditActionProps = () => {
       message.success(t('Saved successfully'));
       setVisible(false);
       form.reset();
+      refreshAIEmployees();
     },
   };
 };

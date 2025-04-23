@@ -19,6 +19,8 @@ import { ChatConversationsProvider } from './chatbox/ChatConversationsProvider';
 export const AIEmployeesContext = createContext<{
   aiEmployees: AIEmployee[];
   setAIEmployees: (aiEmployees: AIEmployee[]) => void;
+  service: any;
+  aiEmployeesMap: Record<string, AIEmployee>;
 }>({} as any);
 
 export const AIEmployeesProvider: React.FC<{
@@ -26,9 +28,27 @@ export const AIEmployeesProvider: React.FC<{
 }> = (props) => {
   const [aiEmployees, setAIEmployees] = React.useState<AIEmployee[]>(null);
 
+  const api = useAPIClient();
+  const service = useRequest<AIEmployee[]>(
+    () =>
+      api
+        .resource('aiEmployees')
+        .listByUser()
+        .then((res) => res?.data?.data),
+    {
+      onSuccess: (aiEmployees) => setAIEmployees(aiEmployees),
+    },
+  );
+  const aiEmployeesMap = useMemo(() => {
+    return (aiEmployees || []).reduce((acc, aiEmployee) => {
+      acc[aiEmployee.username] = aiEmployee;
+      return acc;
+    }, {});
+  }, [aiEmployees]);
+
   return (
     <AISelectionProvider>
-      <AIEmployeesContext.Provider value={{ aiEmployees, setAIEmployees }}>
+      <AIEmployeesContext.Provider value={{ aiEmployees, setAIEmployees, service, aiEmployeesMap }}>
         <ChatConversationsProvider>
           <ChatMessagesProvider>
             <ChatBoxProvider>{props.children}</ChatBoxProvider>
@@ -40,24 +60,6 @@ export const AIEmployeesProvider: React.FC<{
 };
 
 export const useAIEmployeesContext = () => {
-  const { aiEmployees, setAIEmployees } = useContext(AIEmployeesContext);
-  const api = useAPIClient();
-  const service = useRequest<AIEmployee[]>(
-    () =>
-      api
-        .resource('aiEmployees')
-        .listByUser()
-        .then((res) => res?.data?.data),
-    {
-      ready: !aiEmployees,
-      onSuccess: (aiEmployees) => setAIEmployees(aiEmployees),
-    },
-  );
-  const aiEmployeesMap = useMemo(() => {
-    return (aiEmployees || []).reduce((acc, aiEmployee) => {
-      acc[aiEmployee.username] = aiEmployee;
-      return acc;
-    }, {});
-  }, [aiEmployees]);
-  return { aiEmployees, aiEmployeesMap, service };
+  const ctx = useContext(AIEmployeesContext);
+  return ctx;
 };
