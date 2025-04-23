@@ -45,7 +45,14 @@ const useVariableOptions = () => {
 const useLinkVariableOptions = () => {
   const scopes = useAfterSuccessOptions();
   const environmentVariables = useGlobalVariable('$env');
-  return [...scopes, environmentVariables].filter((v: any) => v & (v.value !== '$record'));
+  return [...scopes.filter((v: any) => v.value !== '$record'), environmentVariables].filter(Boolean);
+};
+const useLinkVariableProps = () => {
+  const scope = useLinkVariableOptions();
+  return {
+    scope,
+    useTypedConstant: true,
+  };
 };
 export function AfterSuccess() {
   const { dn } = useDesignable();
@@ -138,10 +145,7 @@ export function AfterSuccess() {
               title: t('Link'),
               'x-decorator': 'FormItem',
               'x-component': 'Variable.TextArea',
-              // eslint-disable-next-line react-hooks/rules-of-hooks
-              'x-component-props': {
-                scope: useLinkVariableOptions,
-              },
+              'x-use-component-props': useLinkVariableProps,
             },
             blocksToRefresh: {
               type: 'array',
