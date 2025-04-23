@@ -42,16 +42,18 @@ const useVariableOptions = () => {
   ].filter(Boolean);
 };
 
+const useLinkVariableOptions = () => {
+  const scopes = useAfterSuccessOptions();
+  const environmentVariables = useGlobalVariable('$env');
+  return [...scopes, environmentVariables].filter((v: any) => v & (v.value !== '$record'));
+};
 export function AfterSuccess() {
   const { dn } = useDesignable();
   const { t } = useTranslation();
   const fieldSchema = useFieldSchema();
   const { onSuccess } = fieldSchema?.['x-action-settings'] || {};
-  const environmentVariables = useGlobalVariable('$env');
   const templatePlugin: any = usePlugin('@nocobase/plugin-block-template');
   const isInBlockTemplateConfigPage = templatePlugin?.isInBlockTemplateConfigPage?.();
-  const scopes = useAfterSuccessOptions();
-
   return (
     <SchemaSettingsModalItem
       dialogRootClassName="dialog-after-successful-submission"
@@ -138,7 +140,7 @@ export function AfterSuccess() {
               'x-component': 'Variable.TextArea',
               // eslint-disable-next-line react-hooks/rules-of-hooks
               'x-component-props': {
-                scope: [...scopes, environmentVariables].filter(Boolean),
+                scope: useLinkVariableOptions,
               },
             },
             blocksToRefresh: {
