@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { dayjs, getPickerFormat, Handlebars } from '@nocobase/utils/client';
+import { dayjs, getPickerFormat, Handlebars, getFormatFromDateStr } from '@nocobase/utils/client';
 import _, { every, findIndex, some } from 'lodash';
 import { replaceVariableValue } from '../../../block-provider/hooks';
 import { VariableOption, VariablesContextType } from '../../../variables/types';

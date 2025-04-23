@@ -10,8 +10,8 @@
   "homepage": "https://docs.nocobase.com/handbook/users",
   "homepage.zh-CN": "https://docs-cn.nocobase.com/handbook/users",
   "devDependencies": {
-    "@types/jsonwebtoken": "^8.5.8",
-    "jsonwebtoken": "^8.5.1"
+    "@types/jsonwebtoken": "^9.0.9",
+    "jsonwebtoken": "^9.0.2"
   },
   "peerDependencies": {
     "@nocobase/actions": "1.x",

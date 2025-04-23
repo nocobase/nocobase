@@ -29,14 +29,13 @@ export default (app: Application) => {
         'migrations',
         `${dayjs().format('YYYYMMDDHHmmss')}-${name}.ts`,
       );
-      const version = app.getVersion();
-      // 匹配主版本号、次版本号、小版本号和后缀的正则表达式
+      const version = app.getPackageVersion();
       const regex = /(\d+)\.(\d+)\.(\d+)(-[\w.]+)?/;
       const nextVersion = version.replace(regex, (match, major, minor, patch, suffix) => {
-        // 将小版本号转换为整数并加1
-        const newPatch = parseInt(patch) + 1;
-        // 返回新的版本号
-        return `${major}.${minor}.${newPatch}${suffix || ''}`;
+        if (version.includes('beta') || version.includes('alpha')) {
+          return `${major}.${minor}.${patch}`;
+        }
+        return `${major}.${1 + 1 * minor}.0`;
       });
       const from = pkg === '@nocobase/server' ? `../migration` : '@nocobase/server';
       const data = `import { Migration } from '${from}';
