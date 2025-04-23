@@ -165,21 +165,27 @@ class AppGenerator extends Generator {
     console.log(`Creating a new NocoBase application at ${chalk.green(name)}`);
     console.log('Creating files');
 
+    const context = this.getContext();
+
     this.copyDirectory({
-      context: this.getContext(),
+      context,
       path: join(__dirname, '../templates/app'),
       target: this.cwd,
     });
 
-    this.checkDbEnv();
+    const json = {
+      name: context.name,
+      ...(await fs.readJSON(join(this.cwd, 'package.json'), 'utf8')),
+    };
 
-    const skipDevDependencies = this.args.skipDevDependencies;
-    if (skipDevDependencies) {
-      const json = await fs.readJSON(join(this.cwd, 'package.json'), 'utf8');
-      delete json['devDependencies'];
-      await fs.writeJSON(join(this.cwd, 'package.json'), json, { encoding: 'utf8', spaces: 2 });
+    json['dependencies']['@nocobase/cli'] = context.version;
+
+    if (!this.args.skipDevDependencies) {
+      json['devDependencies'] = json['devDependencies'] || {};
+      json['devDependencies']['@nocobase/devtools'] = context.version;
     }
 
+    await fs.writeJSON(join(this.cwd, 'package.json'), json, { encoding: 'utf8', spaces: 2 });
     console.log('');
     console.log(chalk.green(`$ cd ${name}`));
     console.log(chalk.green(`$ yarn install`));
