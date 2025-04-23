@@ -29,7 +29,6 @@ async function updatePackage() {
  * @param {Command} cli
  */
 module.exports = (cli) => {
-  const { APP_PACKAGE_ROOT } = process.env;
   cli
     .command('upgrade')
     .allowUnknownOption()
@@ -38,10 +37,11 @@ module.exports = (cli) => {
     .option('-S|--skip-code-update')
     .action(async (options) => {
       checkDBDialect();
-      if (hasTsNode()) promptForTs();
-      if (!options.skipCodeUpdate) {
+      if (options.skipCodeUpdate) {
+        await runAppCommand('upgrade');
+      } else {
         await run('nocobase', ['update-deps']);
+        await run('nocobase', ['upgrade', '--skip-code-update']);
       }
-      await runAppCommand('upgrade');
     });
 };

@@ -30,8 +30,9 @@ const rmAppDir = () => {
 module.exports = (cli) => {
   cli
     .command('update-deps')
+    .option('--force')
     .allowUnknownOption()
-    .action(async () => {
+    .action(async (options) => {
       if (hasCorePackages() || !hasTsNode()) {
         await downloadPro();
         return;
@@ -46,19 +47,21 @@ module.exports = (cli) => {
       const { stdout } = await run('npm', ['info', `@nocobase/cli@${distTag}`, 'version'], {
         stdio: 'pipe',
       });
-      if (pkg.version === stdout) {
+      if (!options.force && pkg.version === stdout) {
         await downloadPro();
         rmAppDir();
         return;
       }
       const descPath = resolve(process.cwd(), 'package.json');
       const descJson = await readJSON(descPath, 'utf8');
-      await run('yarn', ['add', `@nocobase/cli@${distTag}`, '-W']);
-      if (descJson['devDependencies']?.['@nocobase/devtools']) {
-        await run('yarn', ['add', `@nocobase/devtools@${distTag}`, '-W', '-D']);
-      }
       const sourcePath = resolve(__dirname, '../../templates/create-app-package.json');
       const sourceJson = await readJSON(sourcePath, 'utf8');
+      if (descJson['dependencies']?.['@nocobase/cli']) {
+        descJson['dependencies']['@nocobase/cli'] = stdout;
+      }
+      if (descJson['devDependencies']?.['@nocobase/devtools']) {
+        descJson['devDependencies']['@nocobase/devtools'] = stdout;
+      }
       const json = deepmerge(descJson, sourceJson);
       await writeJSON(descPath, json, { spaces: 2, encoding: 'utf8' });
       await run('yarn', ['install']);
