@@ -41,7 +41,7 @@ const useTableSelectorProps = () => {
 export const AssociateActionProvider = (props) => {
   const [selectedRows, setSelectedRows] = useState([]);
   const collection = useCollection();
-  const { resource, service, block, __parent } = useBlockRequestContext();
+  const { resource, block, __parent } = useBlockRequestContext();
   const actionCtx = useActionContext();
   const { isMobile } = useOpenModeContext() || {};
   const [associationData, setAssociationData] = useState([]);
@@ -49,7 +49,7 @@ export const AssociateActionProvider = (props) => {
     resource?.list?.().then((res) => {
       setAssociationData(res.data?.data || []);
     });
-  }, []);
+  }, [resource]);
 
   const pickerProps = {
     size: 'small',
