@@ -11,13 +11,7 @@ import { autorun, observable } from '@formily/reactive';
 import { merge } from '@nocobase/utils/client';
 import { InAppMessagesDefinition, Message } from '../../types';
 import { getAPIClient } from '../utils';
-import {
-  channelMapObs,
-  channelStatusFilterObs,
-  fetchChannels,
-  InappChannelStatusEnum,
-  selectedChannelNameObs,
-} from './channel';
+import { channelMapObs, channelStatusFilterObs, selectedChannelNameObs } from './channel';
 import { userIdObs } from './user';
 
 export const messageMapObs = observable<{ value: Record<string, Message> }>({ value: {} });

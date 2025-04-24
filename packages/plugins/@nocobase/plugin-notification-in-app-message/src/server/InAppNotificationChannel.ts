@@ -7,14 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { BaseNotificationChannel, SendFnType } from '@nocobase/plugin-notification-manager';
 import { Application } from '@nocobase/server';
-import { SendFnType, BaseNotificationChannel } from '@nocobase/plugin-notification-manager';
-import { InAppMessageFormValues } from '../types';
 import { PassThrough } from 'stream';
-import { InAppMessagesDefinition as MessagesDefinition } from '../types';
-import { parseUserSelectionConf } from './parseUserSelectionConf';
-import defineMyInAppMessages from './defineMyInAppMessages';
+import { InAppMessageFormValues, InAppMessagesDefinition as MessagesDefinition } from '../types';
 import defineMyInAppChannels from './defineMyInAppChannels';
+import defineMyInAppMessages from './defineMyInAppMessages';
+import { parseUserSelectionConf } from './parseUserSelectionConf';
 
 type UserID = string;
 type ClientID = string;
@@ -76,6 +75,7 @@ export default class InAppNotificationChannel extends BaseNotificationChannel {
 
   saveMessageToDB = async ({
     content,
+    contentType,
     status,
     userId,
     title,
@@ -85,6 +85,7 @@ export default class InAppNotificationChannel extends BaseNotificationChannel {
   }: {
     content: string;
     userId: number;
+    contentType: 'text' | 'HTML';
     title: string;
     channelName: string;
     status: 'read' | 'unread';
@@ -97,6 +98,7 @@ export default class InAppNotificationChannel extends BaseNotificationChannel {
         content,
         title,
         channelName,
+        contentType,
         status,
         userId,
         receiveTimestamp: receiveTimestamp ?? Date.now(),
@@ -109,7 +111,7 @@ export default class InAppNotificationChannel extends BaseNotificationChannel {
   send: SendFnType<InAppMessageFormValues> = async (params) => {
     const { channel, message, receivers } = params;
     let userIds: number[];
-    const { content, title, options = {} } = message;
+    const { content, contentType, title, options = {} } = message;
     const userRepo = this.app.db.getRepository('users');
     if (receivers?.type === 'userId') {
       userIds = receivers.value;
@@ -123,6 +125,7 @@ export default class InAppNotificationChannel extends BaseNotificationChannel {
           content,
           status: 'unread',
           userId,
+          contentType,
           channelName: channel.name,
           options,
         });

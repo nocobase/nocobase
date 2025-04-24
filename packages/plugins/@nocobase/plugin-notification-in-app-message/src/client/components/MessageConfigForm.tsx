@@ -7,12 +7,12 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React from 'react';
 import { SchemaComponent, css } from '@nocobase/client';
-import { useLocalTranslation, NAMESPACE } from '../../locale';
-import { UsersSelect } from './UsersSelect';
-import { UsersAddition } from './UsersAddition';
 import { tval } from '@nocobase/utils/client';
+import React from 'react';
+import { NAMESPACE, useLocalTranslation } from '../../locale';
+import { UsersAddition } from './UsersAddition';
+import { UsersSelect } from './UsersSelect';
 
 export const MessageConfigForm = ({ variableOptions }) => {
   const { t } = useLocalTranslation();
@@ -83,6 +83,17 @@ export const MessageConfigForm = ({ variableOptions }) => {
               scope: variableOptions,
               useTypedConstant: ['string'],
             },
+          },
+          contentType: {
+            type: 'string',
+            title: `{{t("Content type")}}`,
+            'x-decorator': 'FormItem',
+            'x-component': 'Radio.Group',
+            enum: [
+              { label: `{{t("Plain text")}}`, value: 'text' },
+              { label: 'HTML', value: 'HTML' },
+            ],
+            default: 'text',
           },
           content: {
             type: 'string',

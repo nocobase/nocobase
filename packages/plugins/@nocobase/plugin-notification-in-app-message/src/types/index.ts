@@ -21,6 +21,7 @@ export interface Message {
   title: string;
   userId: string;
   channelName: string;
+  contentType: 'text' | 'HTML';
   content: string;
   receiveTimestamp: number;
   status: 'read' | 'unread';
@@ -35,6 +36,7 @@ export type SSEData = {
 export interface InAppMessageFormValues {
   receivers: string[];
   content: string;
+  contentType: 'text' | 'HTML';
   senderName: string;
   senderId: string;
   url: string;
@@ -49,6 +51,7 @@ export const InAppMessagesDefinition = {
     channelName: 'channelName',
     userId: 'userId',
     content: 'content',
+    contentType: 'contentType',
     status: 'status',
     title: 'title',
     receiveTimestamp: 'receiveTimestamp',
