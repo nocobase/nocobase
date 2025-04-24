@@ -32,6 +32,7 @@ export type ExportOptions = {
   chunkSize?: number;
   limit?: number;
   logger?: Logger;
+  outputPath?: string;
 };
 
 abstract class BaseExporter<T extends ExportOptions = ExportOptions> extends EventEmitter {

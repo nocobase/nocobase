@@ -42,10 +42,10 @@ export class XlsxExporter extends BaseExporter<XlsxExportOptions & { fields: Arr
   constructor(options: XlsxExportOptions) {
     const fields = options.columns.map((col) => col.dataIndex);
     super({ ...options, fields });
+    this.outputPath = options.outputPath || this.generateOutputPath('xlsx', '.xlsx');
   }
 
   async init(ctx?): Promise<void> {
-    this.outputPath = this.generateOutputPath('xlsx', '.xlsx');
     this.workbook = new Excel.stream.xlsx.WorkbookWriter({
       filename: this.outputPath,
       useStyles: true,
@@ -56,7 +56,7 @@ export class XlsxExporter extends BaseExporter<XlsxExportOptions & { fields: Arr
     });
     this.worksheet.columns = this.options.columns.map((x) => ({
       key: x.dataIndex[0],
-      header: x.title || x.defaultTitle,
+      header: this.renderHeader(x),
     }));
     this.worksheet.getRow(1).font = { bold: true };
     this.worksheet.getRow(1).commit();
@@ -83,5 +83,10 @@ export class XlsxExporter extends BaseExporter<XlsxExportOptions & { fields: Arr
   getXlsxBuffer() {
     const buffer = fs.readFileSync(this.outputPath);
     return buffer;
+  }
+
+  private renderHeader(col: ExportColumn) {
+    const fieldInstance = this.findFieldByDataIndex(col.dataIndex);
+    return col.title || fieldInstance?.options.title || col.defaultTitle;
   }
 }
