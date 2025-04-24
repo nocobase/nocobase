@@ -12,6 +12,7 @@ import ProLayout, { RouteContext, RouteContextType } from '@ant-design/pro-layou
 import { HeaderViewProps } from '@ant-design/pro-layout/es/components/Header';
 import { css } from '@emotion/css';
 import { theme as antdTheme, ConfigProvider, Popover, Result, Tooltip } from 'antd';
+import { createStyles } from 'antd-style';
 import React, { createContext, FC, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import ReactDOM from 'react-dom';
 import { useTranslation } from 'react-i18next';
@@ -53,7 +54,6 @@ import { KeepAlive } from './KeepAlive';
 import { NocoBaseDesktopRoute, NocoBaseDesktopRouteType } from './convertRoutesToSchema';
 import { MenuSchemaToolbar, ResetThemeTokenAndKeepAlgorithm } from './menuItemSettings';
 import { userCenterSettings } from './userCenterSettings';
-import { createStyles } from 'antd-style';
 
 export { KeepAlive, NocoBaseDesktopRouteType };
 
@@ -457,9 +457,22 @@ const popoverStyle = css`
 
 const MobileActions: FC = (props) => {
   const { token } = useToken();
+  const [open, setOpen] = useState(false);
+
+  // 点击时立即关闭 Popover，避免影响用户操作
+  const handleContentClick = useCallback(() => {
+    setOpen(false);
+  }, []);
 
   return (
-    <Popover rootClassName={popoverStyle} content={<PinnedPluginList />} color={token.colorBgHeader}>
+    <Popover
+      rootClassName={popoverStyle}
+      content={<PinnedPluginList onClick={handleContentClick} />}
+      color={token.colorBgHeader}
+      trigger="click"
+      open={open}
+      onOpenChange={setOpen}
+    >
       <div style={{ padding: '0 16px', display: 'flex', alignItems: 'center', height: '100%', marginRight: -16 }}>
         <EllipsisOutlined
           style={{
@@ -503,6 +516,8 @@ const subMenuItemRender = (item, dom) => {
 };
 
 const CollapsedButton: FC<{ collapsed: boolean }> = (props) => {
+  const { token } = useToken();
+
   return (
     <RouteContext.Consumer>
       {(context) =>
@@ -515,7 +530,7 @@ const CollapsedButton: FC<{ collapsed: boolean }> = (props) => {
                 // Fix the issue where the collapse/expand button is covered by subpages
                 .ant-pro-sider-collapsed-button {
                   top: 64px;
-                  left: ${props.collapsed ? 52 : 188}px;
+                  left: ${props.collapsed ? 52 : (token.siderWidth || 200) - 12}px;
                   z-index: 200;
                   transition: left 0.2s;
                 }
@@ -671,7 +686,7 @@ export const InternalAdminLayout = () => {
     <DndContext onDragEnd={onDragEnd}>
       <ProLayout
         contentStyle={contentStyle}
-        siderWidth={200}
+        siderWidth={token.siderWidth || 200}
         className={resetStyle}
         location={location}
         route={route}
@@ -710,27 +725,11 @@ export const InternalAdminLayout = () => {
   );
 };
 
-function getDefaultPageUid(routes: NocoBaseDesktopRoute[]) {
-  // Find the first route of type "page"
-  for (const route of routes) {
-    if (route.type === NocoBaseDesktopRouteType.page) {
-      return route.schemaUid;
-    }
-
-    if (route.children?.length) {
-      const result = getDefaultPageUid(route.children);
-      if (result) {
-        return result;
-      }
-    }
-  }
-}
-
 const NavigateToDefaultPage: FC = (props) => {
   const { allAccessRoutes } = useAllAccessDesktopRoutes();
   const location = useLocationNoUpdate();
 
-  const defaultPageUid = getDefaultPageUid(allAccessRoutes);
+  const defaultPageUid = findFirstPageRoute(allAccessRoutes)?.schemaUid;
 
   return (
     <>
@@ -962,16 +961,17 @@ function findRouteById(id: string, treeArray: any[]) {
   return null;
 }
 
-function findFirstPageRoute(routes: NocoBaseDesktopRoute[]) {
+export function findFirstPageRoute(routes: NocoBaseDesktopRoute[]) {
   if (!routes) return;
 
-  for (const route of routes) {
+  for (const route of routes.filter((item) => !item.hideInMenu)) {
     if (route.type === NocoBaseDesktopRouteType.page) {
       return route;
     }
 
-    if (route.children?.length) {
-      return findFirstPageRoute(route.children);
+    if (route.type === NocoBaseDesktopRouteType.group && route.children?.length) {
+      const result = findFirstPageRoute(route.children);
+      if (result) return result;
     }
   }
 }

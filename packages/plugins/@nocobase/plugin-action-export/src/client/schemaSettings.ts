@@ -9,7 +9,14 @@
 
 import { ArrayItems } from '@formily/antd-v5';
 import { ISchema, useField, useFieldSchema } from '@formily/react';
-import { ButtonEditor, SchemaSettings, useDesignable, useSchemaToolbar } from '@nocobase/client';
+import {
+  ButtonEditor,
+  SchemaSettings,
+  useDesignable,
+  useSchemaToolbar,
+  SchemaSettingsLinkageRules,
+  useDataBlockProps,
+} from '@nocobase/client';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useShared } from './useShared';
@@ -23,6 +30,16 @@ export const exportActionSchemaSettings = new SchemaSettings({
       useComponentProps() {
         const { buttonEditorProps } = useSchemaToolbar();
         return buttonEditorProps;
+      },
+    },
+    {
+      name: 'linkageRules',
+      Component: SchemaSettingsLinkageRules,
+      useComponentProps() {
+        const { linkageRulesProps } = useSchemaToolbar();
+        return {
+          ...linkageRulesProps,
+        };
       },
     },
     {
@@ -65,6 +82,7 @@ export const exportActionSchemaSettings = new SchemaSettings({
         };
       },
     },
+
     {
       name: 'divider',
       type: 'divider',

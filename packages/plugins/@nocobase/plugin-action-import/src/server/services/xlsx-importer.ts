@@ -14,6 +14,8 @@ import { Collection as DBCollection, Database } from '@nocobase/database';
 import { Transaction } from 'sequelize';
 import EventEmitter from 'events';
 import { ImportValidationError, ImportError } from '../errors';
+import { Context } from '@nocobase/actions';
+import _ from 'lodash';
 
 export type ImportColumn = {
   dataIndex: Array<string>;
@@ -54,8 +56,9 @@ export class XlsxImporter extends EventEmitter {
     this.repository = options.repository ? options.repository : options.collection.repository;
   }
 
-  async validate() {
-    if (this.options.columns.length == 0) {
+  async validate(ctx?: Context) {
+    const columns = this.getColumnsByPermission(ctx);
+    if (columns.length == 0) {
       throw new ImportValidationError('Columns configuration is empty');
     }
 
@@ -66,7 +69,7 @@ export class XlsxImporter extends EventEmitter {
       }
     }
 
-    const data = await this.getData();
+    const data = await this.getData(ctx);
     return data;
   }
 
@@ -80,7 +83,7 @@ export class XlsxImporter extends EventEmitter {
     }
 
     try {
-      await this.validate();
+      await this.validate(options.context);
       const imported = await this.performImport(options);
 
       // @ts-ignore
@@ -111,7 +114,7 @@ export class XlsxImporter extends EventEmitter {
     }
 
     let hasImportedAutoIncrementPrimary = false;
-    for (const importedDataIndex of this.options.columns) {
+    for (const importedDataIndex of this.getColumnsByPermission(options?.context)) {
       if (importedDataIndex.dataIndex[0] === autoIncrementAttribute) {
         hasImportedAutoIncrementPrimary = true;
         break;
@@ -150,9 +153,18 @@ export class XlsxImporter extends EventEmitter {
     this.emit('seqReset', { maxVal, seqName: autoIncrInfo.seqName });
   }
 
+  private getColumnsByPermission(ctx: Context): ImportColumn[] {
+    const columns = this.options.columns;
+    return columns.filter((x) =>
+      _.isEmpty(ctx?.permission?.can?.params)
+        ? true
+        : _.includes(ctx?.permission?.can?.params?.fields || [], x.dataIndex[0]),
+    );
+  }
+
   async performImport(options?: RunOptions): Promise<any> {
     const transaction = options?.transaction;
-    const data = await this.getData();
+    const data = await this.getData(options?.context);
     const chunks = lodash.chunk(data.slice(1), this.options.chunkSize || 200);
 
     let handingRowIndex = 1;
@@ -271,25 +283,26 @@ export class XlsxImporter extends EventEmitter {
     return str;
   }
 
-  private getExpectedHeaders(): string[] {
-    return this.options.columns.map((col) => col.title || col.defaultTitle);
+  private getExpectedHeaders(ctx?: Context): string[] {
+    const columns = this.getColumnsByPermission(ctx);
+    return columns.map((col) => col.title || col.defaultTitle);
   }
 
-  async getData() {
+  async getData(ctx?: Context) {
     const workbook = this.options.workbook;
     const worksheet = workbook.Sheets[workbook.SheetNames[0]];
 
-    const data = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: null }) as string[][];
+    let data = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: null }) as string[][];
 
     // Find and validate header row
-    const expectedHeaders = this.getExpectedHeaders();
-    const { headerRowIndex, headers } = this.findAndValidateHeaders(data);
+    const expectedHeaders = this.getExpectedHeaders(ctx);
+    const { headerRowIndex, headers } = this.findAndValidateHeaders({ data, expectedHeaders });
     if (headerRowIndex === -1) {
       throw new ImportValidationError('Headers not found. Expected headers: {{headers}}', {
         headers: expectedHeaders.join(', '),
       });
     }
-
+    data = this.alignWithHeaders({ data, expectedHeaders, headers });
     // Extract data rows
     const rows = data.slice(headerRowIndex + 1);
 
@@ -301,8 +314,18 @@ export class XlsxImporter extends EventEmitter {
     return [headers, ...rows];
   }
 
-  private findAndValidateHeaders(data: string[][]): { headerRowIndex: number; headers: string[] } {
-    const expectedHeaders = this.getExpectedHeaders();
+  private alignWithHeaders(params: { headers: string[]; expectedHeaders: string[]; data: string[][] }): string[][] {
+    const { expectedHeaders, headers, data } = params;
+    const keepCols = headers.map((x, i) => (expectedHeaders.includes(x) ? i : -1)).filter((i) => i > -1);
+
+    return data.map((row) => keepCols.map((i) => row[i]));
+  }
+
+  private findAndValidateHeaders(options: { expectedHeaders: string[]; data: string[][] }): {
+    headerRowIndex: number;
+    headers: string[];
+  } {
+    const { data, expectedHeaders } = options;
 
     // Find header row and validate
     for (let rowIndex = 0; rowIndex < data.length; rowIndex++) {
@@ -310,31 +333,11 @@ export class XlsxImporter extends EventEmitter {
       const actualHeaders = row.filter((cell) => cell !== null && cell !== '');
 
       const allHeadersFound = expectedHeaders.every((header) => actualHeaders.includes(header));
-      const noExtraHeaders = actualHeaders.length === expectedHeaders.length;
 
-      if (allHeadersFound && noExtraHeaders) {
-        const mismatchIndex = expectedHeaders.findIndex((title, index) => actualHeaders[index] !== title);
-
-        if (mismatchIndex === -1) {
-          // All headers match
-          return { headerRowIndex: rowIndex, headers: actualHeaders };
-        } else {
-          // Found potential header row but with mismatch
-          throw new ImportValidationError(
-            'Header mismatch at column {{column}}: expected "{{expected}}", but got "{{actual}}"',
-            {
-              column: mismatchIndex + 1,
-              expected: expectedHeaders[mismatchIndex],
-              actual: actualHeaders[mismatchIndex] || 'empty',
-            },
-          );
-        }
+      if (allHeadersFound) {
+        const orderedHeaders = expectedHeaders.filter((h) => actualHeaders.includes(h));
+        return { headerRowIndex: rowIndex, headers: orderedHeaders };
       }
     }
-
-    // No row with matching headers found
-    throw new ImportValidationError('Headers not found. Expected headers: {{headers}}', {
-      headers: expectedHeaders.join(', '),
-    });
   }
 }

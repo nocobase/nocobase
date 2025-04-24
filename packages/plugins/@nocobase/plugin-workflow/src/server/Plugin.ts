@@ -115,11 +115,13 @@ export default class PluginWorkflowServer extends Plugin {
 
   private onAfterCreate = async (model: WorkflowModel, { transaction }) => {
     const WorkflowStatsModel = this.db.getModel('workflowStats');
-    const [stats, created] = await WorkflowStatsModel.findOrCreate({
+    let stats = await WorkflowStatsModel.findOne({
       where: { key: model.key },
-      defaults: { key: model.key },
       transaction,
     });
+    if (!stats) {
+      stats = await model.createStats({ executed: 0 }, { transaction });
+    }
     model.stats = stats;
     model.versionStats = await model.createVersionStats({ id: model.id }, { transaction });
     if (model.enabled) {
@@ -793,21 +795,21 @@ export default class PluginWorkflowServer extends Plugin {
   /**
    * @experimental
    */
-  public async toggleTaskStatus(task: WorkflowTaskModel, done: boolean, { transaction }: Transactionable) {
+  public async toggleTaskStatus(task: WorkflowTaskModel, on: boolean, { transaction }: Transactionable) {
     const { db } = this.app;
     const repository = db.getRepository('workflowTasks') as WorkflowTasksRepository;
-    if (done) {
+    if (on) {
+      await repository.updateOrCreate({
+        filterKeys: ['key', 'type'],
+        values: task,
+        transaction,
+      });
+    } else {
       await repository.destroy({
         filter: {
           type: task.type,
           key: `${task.key}`,
         },
-        transaction,
-      });
-    } else {
-      await repository.updateOrCreate({
-        filterKeys: ['key', 'type'],
-        values: task,
         transaction,
       });
     }

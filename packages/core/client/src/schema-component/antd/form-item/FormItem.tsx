@@ -87,7 +87,7 @@ export const FormItem: any = withDynamicSchemaProps(
             }}
           />
         ) : (
-          t(field.description, { ns: NAMESPACE_UI_SCHEMA })
+          field.description
         );
       }
     }, [field.description]);
@@ -111,9 +111,6 @@ export const FormItem: any = withDynamicSchemaProps(
                 max-width: ${showTitle === false || schema['x-component'] !== 'CollectionField'
                   ? '100% !important'
                   : null};
-              }
-              .ant-formily-item-control {
-                padding: ${showTitle === false ? '5px' : '0px'};
               }
             `,
           )}
