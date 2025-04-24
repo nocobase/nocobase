@@ -47,6 +47,7 @@ import { RelationRepository } from './relation-repository/relation-repository';
 import { updateAssociations, updateModelByValues } from './update-associations';
 import { UpdateGuard } from './update-guard';
 import { valuesToFilter } from './utils/filter-utils';
+import _ from 'lodash';
 
 const debug = require('debug')('noco-database');
 
@@ -394,6 +395,51 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
       if (overallLimit !== undefined && totalProcessed >= overallLimit) {
         break;
       }
+    }
+  }
+
+  /**
+   * Cursor-based pagination query function.
+   * Ideal for large datasets (e.g., millions of rows)
+   * Note:
+   *  1. does not support jumping to arbitrary pages (e.g., "Page 5")
+   *  2. Requires a stable, indexed sort field (e.g. ID, createdAt)
+   *  3. If custom orderBy is used, it must match the cursor field(s) and direction, otherwise results may be incorrect or unstable.
+   * @param options
+   */
+  async chunkWithCursor(
+    options: FindOptions & {
+      chunkSize: number;
+      callback: (rows: Model[], options: FindOptions) => Promise<void>;
+      beforeFind?: (options: FindOptions) => Promise<void>;
+      afterFind?: (rows: Model[], options: FindOptions) => Promise<void>;
+    },
+  ) {
+    const index = this.collection.model.primaryKeyAttribute || this.collection.model['_indexes'][0];
+    let cursor = null;
+    let hasMoreData = true;
+    let isFirst = true;
+    while (hasMoreData) {
+      if (!isFirst) {
+        options.where = { ...options.where, [index]: { [Op.gt]: cursor } };
+      }
+      if (isFirst) {
+        isFirst = false;
+      }
+      options.limit = options.chunkSize || 1000;
+      if (options.beforeFind) {
+        await options.beforeFind(options);
+      }
+      const records = await this.find(options);
+      if (options.afterFind) {
+        await options.afterFind(records, options);
+      }
+      if (records.length === 0) {
+        hasMoreData = false;
+        continue;
+      }
+      await options.callback(records, options);
+      cursor = records[records.length - 1][index];
     }
   }
 

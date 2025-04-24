@@ -11,7 +11,6 @@ import { Context, Next } from '@nocobase/actions';
 import { Repository } from '@nocobase/database';
 
 import { XlsxExporter } from '../services/xlsx-exporter';
-import XLSX from 'xlsx';
 import { Mutex } from 'async-mutex';
 import { DataSource } from '@nocobase/data-source-manager';
 import { Logger } from '@nocobase/logger';
@@ -45,9 +44,11 @@ async function exportXlsxAction(ctx: Context, next: Next, logger: Logger) {
     },
   });
 
-  const wb = await xlsxExporter.run(ctx);
   try {
-    ctx.body = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
+    await xlsxExporter.run(ctx);
+    const buffer = xlsxExporter.getXlsxBuffer();
+    xlsxExporter.cleanOutputFile();
+    ctx.body = buffer;
   } catch (error) {
     logger.error('Error writing XLSX file:', error);
     throw error;

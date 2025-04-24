@@ -67,20 +67,21 @@ abstract class BaseExporter<T extends ExportOptions = ExportOptions> extends Eve
       await this.init(ctx);
 
       const { collection, chunkSize, repository } = this.options;
-
-      const total = (await (repository || collection.repository).count(this.getFindOptions())) as number;
+      const repo = repository || collection.repository;
+      const total = (await repo.count(this.getFindOptions())) as number;
       this.logger?.info(`Found ${total} records to export from collection [${collection.name}]`);
       const totalCountStartTime = process.hrtime();
       let current = 0;
-      this.logger?.debug(`findOptions: ${JSON.stringify(this.getFindOptions())}`);
-      await (repository || collection.repository).chunk({
+
+      // gt 200000, offset + limit will be slow,so use cursor
+      const chunkHandle = (total > 200000 ? repo.chunkWithCursor : repo.chunk).bind(repo);
+      const findOptions = {
         ...this.getFindOptions(),
         chunkSize: chunkSize || 200,
         beforeFind: async (options) => {
           this._batchQueryStartTime = process.hrtime();
         },
         afterFind: async (rows, options) => {
-          this.logger?.debug(`findOptions123: ${JSON.stringify(options)}`);
           if (this._batchQueryStartTime) {
             const diff = process.hrtime(this._batchQueryStartTime);
             const executionTime = (diff[0] * 1000 + diff[1] / 1000000).toFixed(2);
@@ -105,13 +106,11 @@ abstract class BaseExporter<T extends ExportOptions = ExportOptions> extends Eve
             if (Number(executionTime) > 500) {
               this.logger?.debug(`HandleRow took too long, completed in ${executionTime}ms`);
             }
-            current += 1;
-
-            this.emit('progress', {
-              total,
-              current,
-            });
           }
+          this.emit('progress', {
+            total,
+            current: (current += rows.length),
+          });
           const diff = process.hrtime(totalCountStartTime);
           const currentTotalCountTime = (diff[0] * 1000 + diff[1] / 1000000).toFixed(2);
           this.logger?.info(
@@ -120,8 +119,8 @@ abstract class BaseExporter<T extends ExportOptions = ExportOptions> extends Eve
             )}%), totalCountTime: ${currentTotalCountTime}ms`,
           );
         },
-      });
-
+      };
+      await chunkHandle(findOptions);
       this.logger?.info(`Export completed...... processed ${current} records in total`);
       return this.finalize();
     } catch (error) {
