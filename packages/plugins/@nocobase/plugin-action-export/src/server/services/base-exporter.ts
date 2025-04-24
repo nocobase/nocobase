@@ -21,6 +21,7 @@ import { deepGet } from '../utils/deep-get';
 import path from 'path';
 import os from 'os';
 import { Logger } from '@nocobase/logger';
+import _ from 'lodash';
 
 export type ExportOptions = {
   collectionManager: ICollectionManager;
@@ -68,7 +69,7 @@ abstract class BaseExporter<T extends ExportOptions = ExportOptions> extends Eve
 
       const { collection, chunkSize, repository } = this.options;
       const repo = repository || collection.repository;
-      const total = (await repo.count(this.getFindOptions())) as number;
+      const total = (await repo.count(this.getFindOptions(ctx))) as number;
       this.logger?.info(`Found ${total} records to export from collection [${collection.name}]`);
       const totalCountStartTime = process.hrtime();
       let current = 0;
@@ -76,7 +77,7 @@ abstract class BaseExporter<T extends ExportOptions = ExportOptions> extends Eve
       // gt 200000, offset + limit will be slow,so use cursor
       const chunkHandle = (total > 200000 ? repo.chunkWithCursor : repo.chunk).bind(repo);
       const findOptions = {
-        ...this.getFindOptions(),
+        ...this.getFindOptions(ctx),
         chunkSize: chunkSize || 200,
         beforeFind: async (options) => {
           this._batchQueryStartTime = process.hrtime();
@@ -129,31 +130,34 @@ abstract class BaseExporter<T extends ExportOptions = ExportOptions> extends Eve
     }
   }
 
-  protected getAppendOptionsFromFields() {
-    return this.options.fields
+  protected getAppendOptionsFromFields(ctx?) {
+    const fields = this.options.fields.map((x) => x[0]);
+    const hasPermissionFields = _.isEmpty(ctx?.permission?.can?.params)
+      ? fields
+      : _.intersection(ctx?.permission?.can?.params?.appends || [], fields);
+    return hasPermissionFields
       .map((field) => {
-        const fieldInstance = this.options.collection.getField(field[0]);
+        const fieldInstance = this.options.collection.getField(field);
         if (!fieldInstance) {
-          throw new Error(`Field "${field[0]}" not found: , please check the fields configuration.`);
+          throw new Error(`Field "${field}" not found: , please check the fields configuration.`);
         }
 
         if (fieldInstance.isRelationField()) {
-          return field.join('.');
+          return field;
         }
 
         return null;
       })
       .filter(Boolean);
   }
-
-  protected getFindOptions() {
+  protected getFindOptions(ctx?) {
     const { findOptions = {} } = this.options;
 
     if (this.limit) {
       findOptions.limit = this.limit;
     }
 
-    const appendOptions = this.getAppendOptionsFromFields();
+    const appendOptions = this.getAppendOptionsFromFields(ctx);
 
     if (appendOptions.length) {
       return {

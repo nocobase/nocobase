@@ -37,37 +37,9 @@ class AppGenerator extends Generator {
     return items;
   }
 
-  checkDbEnv() {
-    const dialect = this.args.dbDialect;
-    const env = this.env;
-    if (dialect === 'sqlite') {
-      return;
-    }
-    if (!env.DB_DATABASE || !env.DB_USER || !env.DB_PASSWORD) {
-      console.log(
-        chalk.red(
-          `Please set DB_HOST, DB_PORT, DB_DATABASE, DB_USER, DB_PASSWORD in .env file to complete database settings`,
-        ),
-      );
-    }
-  }
-
   checkProjectPath() {
     if (existsSync(this.cwd)) {
       console.log(chalk.red('Project directory already exists'));
-      process.exit(1);
-    }
-  }
-
-  checkDialect() {
-    const dialect = this.args.dbDialect;
-    const supportDialects = ['mysql', 'mariadb', 'postgres'];
-    if (!supportDialects.includes(dialect)) {
-      console.log(
-        `dialect ${chalk.red(dialect)} is not supported, currently supported dialects are ${chalk.green(
-          supportDialects.join(','),
-        )}.`,
-      );
       process.exit(1);
     }
   }
@@ -158,28 +130,33 @@ class AppGenerator extends Generator {
 
   async writing() {
     this.checkProjectPath();
-    this.checkDialect();
 
     const { name } = this.context;
 
     console.log(`Creating a new NocoBase application at ${chalk.green(name)}`);
     console.log('Creating files');
 
+    const context = this.getContext();
+
     this.copyDirectory({
-      context: this.getContext(),
+      context,
       path: join(__dirname, '../templates/app'),
       target: this.cwd,
     });
 
-    this.checkDbEnv();
+    const json = {
+      name: context.name,
+      ...(await fs.readJSON(join(this.cwd, 'package.json'), 'utf8')),
+    };
 
-    const skipDevDependencies = this.args.skipDevDependencies;
-    if (skipDevDependencies) {
-      const json = await fs.readJSON(join(this.cwd, 'package.json'), 'utf8');
-      delete json['devDependencies'];
-      await fs.writeJSON(join(this.cwd, 'package.json'), json, { encoding: 'utf8', spaces: 2 });
+    json['dependencies']['@nocobase/cli'] = context.version;
+
+    if (!this.args.skipDevDependencies) {
+      json['devDependencies'] = json['devDependencies'] || {};
+      json['devDependencies']['@nocobase/devtools'] = context.version;
     }
 
+    await fs.writeJSON(join(this.cwd, 'package.json'), json, { encoding: 'utf8', spaces: 2 });
     console.log('');
     console.log(chalk.green(`$ cd ${name}`));
     console.log(chalk.green(`$ yarn install`));

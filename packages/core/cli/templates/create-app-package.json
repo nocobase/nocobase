@@ -1,10 +1,6 @@
 {
-  "name": "{{{name}}}",
   "private": true,
-  "workspaces": [
-    "packages/*/*",
-    "packages/*/*/*"
-  ],
+  "workspaces": ["packages/*/*", "packages/*/*/*"],
   "engines": {
     "node": ">=18"
   },
@@ -34,11 +30,10 @@
     "semver": "^7.7.1"
   },
   "dependencies": {
-    "@nocobase/cli": "{{{version}}}",
     "pm2": "^6.0.5",
-    {{{dependencies}}}
-  },
-  "devDependencies": {
-    "@nocobase/devtools": "{{{version}}}"
+    "mysql2": "^3.14.0",
+    "mariadb": "^3.4.1",
+    "pg": "^8.14.1",
+    "pg-hstore": "^2.3.4"
   }
 }
