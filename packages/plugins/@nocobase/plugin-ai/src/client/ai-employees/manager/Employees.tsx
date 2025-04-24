@@ -50,6 +50,7 @@ import { ChatSettings } from './ChatSettings';
 import { AIEmployee } from '../types';
 import aiEmployees from '../../../collections/ai-employees';
 import { useAIEmployeesContext } from '../AIEmployeesProvider';
+import { SkillsSettings } from './SkillsSettings';
 
 const EmployeeContext = createContext(null);
 
@@ -70,85 +71,11 @@ const AIEmployeeForm: React.FC<{
         //   label: 'Chat settings',
         //   children: <ChatSettings />,
         // },
-        // {
-        //   key: 'skills',
-        //   label: 'Skills',
-        //   // children: (
-        //   //   <>
-        //   //     <List
-        //   //       itemLayout="vertical"
-        //   //       size="small"
-        //   //       dataSource={[
-        //   //         {
-        //   //           title: 'Customer Background Lookup',
-        //   //           type: 'API request',
-        //   //           color: 'green',
-        //   //           description:
-        //   //             'Retrieves customer data from CRM systems, social media, and public databases to build a comprehensive customer profile.',
-        //   //         },
-        //   //         {
-        //   //           title: 'Sentiment Analysis Engine',
-        //   //           type: 'Script execution',
-        //   //           color: 'blue',
-        //   //           description:
-        //   //             'Analyzes customer interactions (emails, chats, calls) to detect sentiment and engagement levels.',
-        //   //         },
-        //   //         {
-        //   //           title: 'Lead Qualification Scoring',
-        //   //           type: 'SQL execution',
-        //   //           color: 'purple',
-        //   //           description:
-        //   //             'Queries customer interaction history and purchase data to assign a lead score based on engagement and potential conversion.',
-        //   //         },
-        //   //         {
-        //   //           title: 'Profile Enrichment Workflow',
-        //   //           type: 'Call workflows',
-        //   //           color: 'orange',
-        //   //           description:
-        //   //             'Automates the process of merging customer data from multiple sources to enhance and complete missing profile details.',
-        //   //         },
-        //   //       ]}
-        //   //       renderItem={(item) => (
-        //   //         <List.Item key={item.title} extra={<RightOutlined />}>
-        //   //           <List.Item.Meta
-        //   //             // avatar={<Avatar src={item.avatar} />}
-        //   //             title={item.title}
-        //   //             description={<Tag color={item.color}>{item.type}</Tag>}
-        //   //           />
-        //   //           {item.description}
-        //   //         </List.Item>
-        //   //       )}
-        //   //     />
-        //   //     <Dropdown
-        //   //       menu={{
-        //   //         items: [
-        //   //           {
-        //   //             key: 'workflow',
-        //   //             label: 'Call workflows',
-        //   //           },
-        //   //           {
-        //   //             key: 'sql',
-        //   //             label: 'SQL execution',
-        //   //           },
-        //   //           {
-        //   //             key: 'api',
-        //   //             label: 'API request',
-        //   //           },
-        //   //           {
-        //   //             key: 'script',
-        //   //             label: 'Script execution',
-        //   //           },
-        //   //         ],
-        //   //       }}
-        //   //       placement="bottomLeft"
-        //   //     >
-        //   //       <Button type="primary" icon={<PlusOutlined />}>
-        //   //         Add
-        //   //       </Button>
-        //   //     </Dropdown>
-        //   //   </>
-        //   // ),
-        // },
+        {
+          key: 'skills',
+          label: 'Skills',
+          children: <SkillsSettings />,
+        },
         {
           key: 'modelSettings',
           label: 'Model Settings',

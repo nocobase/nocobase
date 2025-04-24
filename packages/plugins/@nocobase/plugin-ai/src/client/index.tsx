@@ -19,6 +19,7 @@ import { namespace } from './locale';
 import { aiEmployeesInitializer } from './ai-employees/initializer/AIEmployees';
 import { aiEmployeeButtonSettings } from './ai-employees/settings/AIEmployeeButton';
 import { withAISelectable } from './ai-employees/selector/withAISelectable';
+import { useAISelectionContext } from './ai-employees/selector/AISelectorProvider';
 const { AIEmployeesProvider } = lazy(() => import('./ai-employees/AIEmployeesProvider'), 'AIEmployeesProvider');
 const { AIEmployeeChatProvider } = lazy(
   () => import('./ai-employees/AIEmployeeChatProvider'),
@@ -93,6 +94,26 @@ export class PluginAIClient extends Plugin {
     this.aiManager.chatSettings.set('messages', {
       title: tval('Messages'),
       Component: MessagesSettings,
+    });
+    this.aiManager.registerTool('formFiller', {
+      useAction() {
+        const { ctx } = useAISelectionContext();
+        console.log(ctx);
+        return {
+          callAction: (params) => {
+            const { form: uid, data } = params;
+            if (!uid || !data) {
+              return;
+            }
+            const form = ctx[uid]?.form;
+            if (!form) {
+              return;
+            }
+            console.log(form, data);
+            form.values = data;
+          },
+        };
+      },
     });
 
     const workflow = this.app.pm.get('workflow') as PluginWorkflowClient;

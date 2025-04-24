@@ -160,6 +160,7 @@ export const useSetChatBoxContext = () => {
   const switchAIEmployee = useCallback(
     (aiEmployee: AIEmployee) => {
       setCurrentEmployee(aiEmployee);
+      setCurrentConversation(undefined);
       setSenderValue('');
       if (aiEmployee) {
         const greetingMsg = {
@@ -172,11 +173,7 @@ export const useSetChatBoxContext = () => {
         };
         setSenderPlaceholder(aiEmployee.chatSettings?.senderPlaceholder);
         senderRef.current?.focus();
-        if (!currentConversation) {
-          setMessages([greetingMsg]);
-        } else {
-          addMessage(greetingMsg);
-        }
+        setMessages([greetingMsg]);
       } else {
         setMessages([]);
       }

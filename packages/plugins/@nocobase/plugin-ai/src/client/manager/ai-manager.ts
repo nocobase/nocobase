@@ -17,6 +17,12 @@ export type LLMProviderOptions = {
   };
 };
 
+export type ToolOptions = {
+  useAction: () => {
+    callAction: (params: any) => void | Promise<void>;
+  };
+};
+
 export class AIManager {
   llmProviders = new Registry<LLMProviderOptions>();
   chatSettings = new Map<
@@ -26,8 +32,13 @@ export class AIManager {
       Component: ComponentType;
     }
   >();
+  tools = new Registry<ToolOptions>();
 
   registerLLMProvider(name: string, options: LLMProviderOptions) {
     this.llmProviders.register(name, options);
+  }
+
+  registerTool(name: string, options: ToolOptions) {
+    this.tools.register(name, options);
   }
 }

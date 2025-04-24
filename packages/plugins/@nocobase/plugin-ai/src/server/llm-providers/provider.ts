@@ -11,6 +11,7 @@ import { BaseChatModel } from '@langchain/core/language_models/chat_models';
 import axios from 'axios';
 import { parseMessages } from './handlers/parse-messages';
 import { Application } from '@nocobase/server';
+import { z } from 'zod';
 
 export abstract class LLMProvider {
   serviceOptions: Record<string, any>;
@@ -30,16 +31,20 @@ export abstract class LLMProvider {
     serviceOptions: any;
     chatOptions?: {
       messages?: any[];
+      tools?: any[];
       [key: string]: any;
     };
   }) {
     const { app, serviceOptions, chatOptions } = opts;
     this.serviceOptions = app.environment.renderJsonTemplate(serviceOptions);
     if (chatOptions) {
-      const { messages, ...modelOptions } = chatOptions;
+      const { messages, tools, ...modelOptions } = chatOptions;
       this.modelOptions = modelOptions;
       this.messages = messages;
       this.chatModel = this.createModel();
+      if (tools?.length) {
+        this.chatModel = this.chatModel.bindTools(tools);
+      }
       this.registerChatHandler('parse-messages', parseMessages);
     }
   }

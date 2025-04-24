@@ -8,9 +8,10 @@
  */
 
 import { createStyles } from '@nocobase/client';
-import React, { ComponentType, forwardRef } from 'react';
+import React, { ComponentType, forwardRef, useEffect, useMemo } from 'react';
 import { useAISelectionContext } from './AISelectorProvider';
 import { useFieldSchema, useField } from '@formily/react';
+import { useForm } from '@formily/react';
 
 const useStyles = createStyles(({ token, css }) => {
   return {
@@ -49,15 +50,19 @@ export function withAISelectable<T = any>(
   const { selectType } = options;
   const SelectableComponent: ComponentType<T> = (props) => {
     const { styles } = useStyles();
-    const { selectable, selector, stopSelect } = useAISelectionContext();
+    const { selectable, selector, stopSelect, collect } = useAISelectionContext();
     const fieldSchema = useFieldSchema();
     const field = useField() as any;
+    const form = useForm();
+
+    useEffect(() => {
+      collect(fieldSchema['x-uid'], 'form', form);
+    }, [form, field, fieldSchema, collect]);
 
     const handleSelect = () => {
       if (selectable !== selectType) {
         return;
       }
-      console.log(fieldSchema);
       selector?.onSelect?.({
         uid: fieldSchema['x-uid'],
         value: field?.value,

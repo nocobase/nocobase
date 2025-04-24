@@ -11,10 +11,11 @@ import React from 'react';
 import ReactMarkdown from 'react-markdown';
 import { css } from '@emotion/css';
 import { default as SyntaxHighlighter } from 'react-syntax-highlighter';
+import { dark, defaultStyle } from 'react-syntax-highlighter/dist/esm/styles/hljs';
 import { Card, App, Button, Typography } from 'antd';
 import { useT } from '../../locale';
 import { CopyOutlined } from '@ant-design/icons';
-import { useToken } from '@nocobase/client';
+import { useGlobalTheme, useToken } from '@nocobase/client';
 
 type Props = {
   markdown: string;
@@ -25,6 +26,7 @@ const Code = (props: any) => {
   const match = /language-(\w+)/.exec(className || '');
   const language = match ? match[1] : '';
   const { token } = useToken();
+  const { isDarkTheme } = useGlobalTheme();
   const t = useT();
   const content = String(children).replace(/\n$/, '');
   const { message } = App.useApp();
@@ -53,7 +55,7 @@ const Code = (props: any) => {
         </Button>
       }
     >
-      <SyntaxHighlighter {...rest} PreTag="div" language={language}>
+      <SyntaxHighlighter {...rest} PreTag="div" language={language} style={isDarkTheme ? dark : defaultStyle}>
         {String(children).replace(/\n$/, '')}
       </SyntaxHighlighter>
     </Card>

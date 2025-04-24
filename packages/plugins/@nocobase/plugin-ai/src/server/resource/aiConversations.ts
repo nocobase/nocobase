@@ -10,6 +10,7 @@
 import actions, { Context, Next } from '@nocobase/actions';
 import PluginAIServer from '../plugin';
 import { Model } from '@nocobase/database';
+import { concat } from '@langchain/core/utils/stream';
 
 async function parseUISchema(ctx: Context, content: string) {
   const regex = /\{\{\$nUISchema\.([^}]+)\}\}/g;
@@ -23,7 +24,8 @@ async function parseUISchema(ctx: Context, content: string) {
     try {
       const schema = await uiSchemaRepo.getJsonSchema(uid);
       if (schema) {
-        result = result.replace(fullMatch, JSON.stringify(schema));
+        const s = JSON.stringify(schema);
+        result = result.replace(fullMatch, `UI schema id: ${uid}, UI schema: ${s}`);
       }
     } catch (error) {
       ctx.log.error(error, { module: 'aiConversations', method: 'parseUISchema', uid });
@@ -74,6 +76,16 @@ async function prepareChatStream(ctx: Context, sessionId: string, employee: Mode
     throw new Error('LLM service provider not found');
   }
 
+  const tools = [];
+  const skills = employee.skills;
+  if (skills?.length) {
+    for (const skill of skills) {
+      const tool = plugin.aiManager.getTool(skill);
+      if (tool) {
+        tools.push(tool);
+      }
+    }
+  }
   const Provider = providerOptions.provider;
   const provider = new Provider({
     app: ctx.app,
@@ -81,6 +93,7 @@ async function prepareChatStream(ctx: Context, sessionId: string, employee: Mode
     chatOptions: {
       ...modelSettings,
       messages,
+      tools,
     },
   });
 
@@ -110,8 +123,10 @@ async function processChatStream(
   const { aiEmployeeUsername, signal, messageId } = options;
 
   let message = '';
+  let gathered: any;
   try {
     for await (const chunk of stream) {
+      gathered = gathered !== undefined ? concat(gathered, chunk) : chunk;
       if (!chunk.content) {
         continue;
       }
@@ -124,22 +139,26 @@ async function processChatStream(
 
   plugin.aiEmployeesManager.conversationController.delete(sessionId);
 
-  if (!message && !signal.aborted) {
+  message = message.trim();
+  if (!message && !gathered?.tool_calls?.length && !signal.aborted) {
     ctx.res.write(`data: ${JSON.stringify({ type: 'error', body: 'No content' })}\n\n`);
     ctx.res.end();
     return;
   }
-
   if (message) {
     const content = {
       content: message,
       type: 'text',
     };
-
     if (signal.aborted) {
       content['interrupted'] = true;
     }
-
+    if (gathered?.tool_calls?.length) {
+      content['tool_calls'] = gathered.tool_calls;
+    }
+    if (gathered?.usage_metadata) {
+      content['usage_metadata'] = gathered.usage_metadata;
+    }
     if (messageId) {
       await ctx.db.sequelize.transaction(async (transaction) => {
         await ctx.db.getRepository('aiMessages').update({
@@ -489,6 +508,39 @@ export default {
         sendErrorResponse(ctx, 'Chat error warning');
       }
 
+      await next();
+    },
+
+    async getTools(ctx: Context, next: Next) {
+      const plugin = ctx.app.pm.get('ai') as PluginAIServer;
+      const { sessionId, messageId } = ctx.action.params.values || {};
+      if (!sessionId || !messageId) {
+        ctx.throw(400);
+      }
+      const conversation = await ctx.db.getRepository('aiConversations').findOne({
+        filter: {
+          sessionId,
+          userId: ctx.auth?.user.id,
+        },
+      });
+      if (!conversation) {
+        ctx.throw(400);
+      }
+      const message = await ctx.db.getRepository('aiConversations.messages', sessionId).findOne({
+        filter: {
+          messageId,
+        },
+      });
+      const tools = message?.content?.tool_calls || [];
+      const toolNames = tools.map((tool: any) => tool.name);
+      const result = {};
+      for (const toolName of toolNames) {
+        const tool = plugin.aiManager.getTool(toolName);
+        if (tool) {
+          result[toolName] = tool;
+        }
+      }
+      ctx.body = result;
       await next();
     },
   },

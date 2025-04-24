@@ -86,6 +86,16 @@ const Edit: React.FC = () => {
           modal: {
             type: 'void',
             'x-component': 'Action.Modal',
+            'x-component-props': {
+              styles: {
+                wrapper: {
+                  zIndex: 1000,
+                },
+                mask: {
+                  zIndex: 1000,
+                },
+              },
+            },
             title: t('Edit personalized content'),
             'x-decorator': 'FormV2',
             'x-decorator-props': 'useEditFormProps',

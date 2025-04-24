@@ -15,9 +15,11 @@ import aiResource from './resource/ai';
 import PluginWorkflowServer from '@nocobase/plugin-workflow';
 import { LLMInstruction } from './workflow/nodes/llm';
 import aiConversations from './resource/aiConversations';
+import aiTools from './resource/aiTools';
 import { AIEmployeesManager } from './ai-employees/ai-employees-manager';
 import Snowflake from './snowflake';
 import * as aiEmployeeActions from './resource/aiEmployees';
+import { z } from 'zod';
 
 export class PluginAIServer extends Plugin {
   aiManager = new AIManager();
@@ -38,16 +40,32 @@ export class PluginAIServer extends Plugin {
   async load() {
     this.aiManager.registerLLMProvider('openai', openaiProviderOptions);
     this.aiManager.registerLLMProvider('deepseek', deepseekProviderOptions);
+    this.aiManager.registerTool('formFiller', {
+      title: '{{t("Form filler")}}',
+      description: '{{t("Fill the form with the given content")}}',
+      schema: z.object({
+        form: z.string().describe('The UI Schema ID of the target form to be filled.'),
+        data: z
+          .record(z.any())
+          .describe("Structured data matching the form's JSON Schema, to be assigned to form.values."),
+      }),
+    });
+    this.aiManager.registerTool('workflowCaller', {
+      title: '{{t("Call workflows")}}',
+      description: '{{t("Developing...")}}',
+      schema: {},
+    });
 
     this.app.resourceManager.define(aiResource);
     this.app.resourceManager.define(aiConversations);
+    this.app.resourceManager.define(aiTools);
     this.app.acl.registerSnippet({
       name: `pm.${this.name}.llm-services`,
       actions: ['ai:*', 'llmServices:*'],
     });
     this.app.acl.registerSnippet({
       name: `pm.${this.name}.ai-employees`,
-      actions: ['aiEmployees:*'],
+      actions: ['aiEmployees:*', 'aiTools:*'],
     });
     this.app.acl.allow('aiConversations', '*', 'loggedIn');
 

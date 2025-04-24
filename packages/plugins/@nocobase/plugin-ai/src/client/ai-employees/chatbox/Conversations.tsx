@@ -19,6 +19,7 @@ import { useChatMessages } from './ChatMessagesProvider';
 const { Header, Content } = Layout;
 import { ConversationsProps } from '@ant-design/x';
 import { useForm } from '@formily/react';
+import { useAIEmployeesContext } from '../AIEmployeesProvider';
 
 const useCloseActionProps = () => {
   const { setVisible } = useActionContext();
@@ -121,6 +122,7 @@ export const Conversations: React.FC = memo(() => {
   const api = useAPIClient();
   const { modal, message } = App.useApp();
   const { token } = useToken();
+  const { aiEmployeesMap } = useAIEmployeesContext();
   const { currentConversation, setCurrentConversation, conversationsService, conversations, lastConversationRef } =
     useChatConversations();
   const { messagesService, setMessages } = useChatMessages();
@@ -172,7 +174,7 @@ export const Conversations: React.FC = memo(() => {
     }
     setCurrentConversation(sessionId);
     const conversation = conversations.find((item) => item.sessionId === sessionId);
-    setCurrentEmployee(conversation?.aiEmployee);
+    setCurrentEmployee(aiEmployeesMap[conversation?.aiEmployee?.username]);
     setSenderValue('');
     setSenderPlaceholder(conversation?.aiEmployee?.chatSettings?.senderPlaceholder);
     setMessages([]);

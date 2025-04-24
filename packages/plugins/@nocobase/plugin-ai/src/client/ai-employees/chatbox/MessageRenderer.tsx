@@ -19,6 +19,7 @@ import { useChatConversations } from './ChatConversationsProvider';
 import { SchemaComponent } from '@nocobase/client';
 import { uid } from '@formily/shared';
 import { Markdown } from './Markdown';
+import { ToolCard } from './ToolCard';
 
 const MessageWrapper = React.forwardRef<
   HTMLDivElement,
@@ -57,7 +58,12 @@ const AIMessageRenderer: React.FC<{
             },
           }}
           variant="borderless"
-          content={<Markdown markdown={msg.content} />}
+          content={
+            <>
+              <Markdown markdown={msg.content} />
+              {msg.tool_calls?.length && <ToolCard tools={msg.tool_calls} messageId={msg.messageId} />}
+            </>
+          }
           footer={
             <Space>
               <Button

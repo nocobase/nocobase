@@ -56,21 +56,21 @@ const SettingsForm: React.FC<{
                   >
                     <Meta
                       avatar={aiEmployee.avatar ? <Avatar src={avatars(aiEmployee.avatar)} size={48} /> : null}
-                      title={aiEmployee.nickname}
-                      description={
+                      title={
                         <>
+                          {aiEmployee.nickname}
                           {aiEmployee.position && (
                             <Tag
                               style={{
-                                marginBottom: token.marginXS,
+                                marginLeft: token.margin,
                               }}
                             >
                               {aiEmployee.position}
                             </Tag>
                           )}
-                          {aiEmployee.bio}
                         </>
                       }
+                      description={<>{aiEmployee.bio}</>}
                     />
                   </Card>
                 ),
