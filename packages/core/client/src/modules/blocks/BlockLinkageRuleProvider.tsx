@@ -41,7 +41,7 @@ export const BlockLinkageRuleProvider = (props) => {
   const { designable } = useDesignable();
   const form = useForm();
   const linkageRules = useMemo(() => getLinkageRules(schema), [schema]);
-  const [triggerLinkageUpdate, setTriggerLinkageUpdate] = useState(false);
+  const [triggerLinkageUpdate, setTriggerLinkageUpdate] = useState(null);
   const displayResult = useReactiveLinkageEffect(linkageRules, variables, localVariables, triggerLinkageUpdate);
   const shouldCalculateFormLinkage = schema?.['x-decorator'] === 'FormItem' && !form.readPretty && linkageRules.length;
 
@@ -60,14 +60,13 @@ export const BlockLinkageRuleProvider = (props) => {
                 const variableValuesInCondition = getVariableValuesInCondition({ linkageRules, localVariables });
                 // 获取 value 表达式中的变量值
                 const variableValuesInExpression = getVariableValuesInExpression({ action, localVariables });
-
                 const result = [variableValuesInCondition, variableValuesInExpression]
                   .map((item) => JSON.stringify(item))
                   .join(',');
                 return result;
               },
               () => {
-                setTriggerLinkageUpdate((prevFlag) => !prevFlag);
+                setTriggerLinkageUpdate(uid());
               },
               { fireImmediately: true, equals: isEqual },
             );
@@ -89,7 +88,7 @@ export const BlockLinkageRuleProvider = (props) => {
   }
 
   if (displayResult === null) return null;
-
+  console.log(displayResult);
   if (last(displayResult) === 'hidden') {
     if (designable) {
       return <div style={{ opacity: 0.3 }}>{props.children}</div>;
