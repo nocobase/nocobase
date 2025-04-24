@@ -34,7 +34,7 @@ export class PluginActionImportClient extends Plugin {
           skipScopeCheck: true,
         },
       },
-      useVisible: () => useActionAvailable('import'),
+      useVisible: () => useActionAvailable('importXlsx'),
     };
 
     const tableActionInitializers = this.app.schemaInitializerManager.get('table:configureActions');
