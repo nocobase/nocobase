@@ -47,7 +47,7 @@ export const useCustomizeRequestActionProps = () => {
 
   return {
     async onClick(e?, callBack?) {
-      const selectedRecord = field.data?.selectedRowData ? field.data?.selectedRowData : ctx;
+      const selectedRecord = field?.data?.selectedRowData ? field?.data?.selectedRowData : ctx;
       const { skipValidator, onSuccess } = actionSchema?.['x-action-settings'] ?? {};
       const {
         manualClose,
