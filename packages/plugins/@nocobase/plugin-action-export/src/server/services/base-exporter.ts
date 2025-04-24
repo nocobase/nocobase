@@ -94,7 +94,7 @@ abstract class BaseExporter<T extends ExportOptions = ExportOptions> extends Eve
                 )}`,
               );
             } else {
-              this.logger?.debug(`Query completed in ${executionTime}ms, fetched ${rows.length} records`);
+              this.logger?.info(`Query completed in ${executionTime}ms, fetched ${rows.length} records`);
             }
             this._batchQueryStartTime = null;
           }
@@ -106,19 +106,23 @@ abstract class BaseExporter<T extends ExportOptions = ExportOptions> extends Eve
             const diff = process.hrtime(startTime);
             const executionTime = (diff[0] * 1000 + diff[1] / 1000000).toFixed(2);
             if (Number(executionTime) > 500) {
-              this.logger?.debug(`HandleRow took too long, completed in ${executionTime}ms`);
+              this.logger?.info(`HandleRow took too long, completed in ${executionTime}ms`);
+            } else {
+              this.logger?.info(`HandleRow completed, ${executionTime}ms`);
             }
           }
           this.emit('progress', {
             total,
             current: (current += rows.length),
           });
-          const diff = process.hrtime(totalCountStartTime);
-          const currentTotalCountTime = (diff[0] * 1000 + diff[1] / 1000000).toFixed(2);
+          const totalDiff = process.hrtime(totalCountStartTime);
+          const elapsedSeconds = totalDiff[0] + totalDiff[1] / 1e9;
+          const estimatedTimeRemaining = (elapsedSeconds * (total - current)) / current;
+
           this.logger?.info(
-            `Processed ${current}/${total} records (${Math.round(
-              (current / total) * 100,
-            )}%), totalCountTime: ${currentTotalCountTime}ms`,
+            `Processed ${current}/${total} records (${Math.round((current / total) * 100)}%), ` +
+              `elapsed time: ${elapsedSeconds.toFixed(2)}s, ` +
+              `estimated remaining: ${estimatedTimeRemaining.toFixed(2)}s`,
           );
         },
       };
