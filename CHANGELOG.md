@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v1.6.24](https://github.com/nocobase/nocobase/compare/v1.6.23...v1.6.24) - 2025-04-24
+
+### 🚀 Improvements
+
+- **[client]** Adjust upload message ([#6757](https://github.com/nocobase/nocobase/pull/6757)) by @mytharcher
+
+### 🐛 Bug Fixes
+
+- **[client]**
+  - only export action in view collection is support  when writableView is false ([#6763](https://github.com/nocobase/nocobase/pull/6763)) by @katherinehhh
+
+  - unexpected  association data creation when displaying association field under sub-form/sub-table in create form ([#6727](https://github.com/nocobase/nocobase/pull/6727)) by @katherinehhh
+
+  - Incorrect data retrieved for many-to-many array fields from related tables in forms ([#6744](https://github.com/nocobase/nocobase/pull/6744)) by @2013xile
+
 ## [v1.6.23](https://github.com/nocobase/nocobase/compare/v1.6.22...v1.6.23) - 2025-04-23
 
 ### 🚀 Improvements
