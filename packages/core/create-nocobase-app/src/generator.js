@@ -37,37 +37,9 @@ class AppGenerator extends Generator {
     return items;
   }
 
-  checkDbEnv() {
-    const dialect = this.args.dbDialect;
-    const env = this.env;
-    if (dialect === 'sqlite') {
-      return;
-    }
-    if (!env.DB_DATABASE || !env.DB_USER || !env.DB_PASSWORD) {
-      console.log(
-        chalk.red(
-          `Please set DB_HOST, DB_PORT, DB_DATABASE, DB_USER, DB_PASSWORD in .env file to complete database settings`,
-        ),
-      );
-    }
-  }
-
   checkProjectPath() {
     if (existsSync(this.cwd)) {
       console.log(chalk.red('Project directory already exists'));
-      process.exit(1);
-    }
-  }
-
-  checkDialect() {
-    const dialect = this.args.dbDialect;
-    const supportDialects = ['mysql', 'mariadb', 'sqlite', 'postgres'];
-    if (!supportDialects.includes(dialect)) {
-      console.log(
-        `dialect ${chalk.red(dialect)} is not supported, currently supported dialects are ${chalk.green(
-          supportDialects.join(','),
-        )}.`,
-      );
       process.exit(1);
     }
   }
@@ -76,27 +48,15 @@ class AppGenerator extends Generator {
     const env = this.env;
     const envs = [];
     const dependencies = [];
-    const { dbDialect, allDbDialect } = this.args;
+    const { dbDialect } = this.args;
 
-    if (allDbDialect) {
-      dependencies.push(`"mysql2": "^3.11.0"`);
-      dependencies.push(`"mariadb": "^2.5.6"`);
-      dependencies.push(`"pg": "^8.7.3"`);
-      dependencies.push(`"pg-hstore": "^2.3.4"`);
-      dependencies.push(`"sqlite3": "^5.0.8"`);
-    }
+    dependencies.push(`"mysql2": "^3.14.0"`);
+    dependencies.push(`"mariadb": "^3.4.1"`);
+    dependencies.push(`"pg": "^8.14.1"`);
+    dependencies.push(`"pg-hstore": "^2.3.4"`);
 
     switch (dbDialect) {
-      case 'sqlite':
-        if (!allDbDialect) {
-          dependencies.push(`"sqlite3": "^5.0.8"`);
-        }
-        envs.push(`DB_STORAGE=${env.DB_STORAGE || 'storage/db/nocobase.sqlite'}`);
-        break;
       case 'mysql':
-        if (!allDbDialect) {
-          dependencies.push(`"mysql2": "^3.11.0"`);
-        }
         envs.push(`DB_HOST=${env.DB_HOST || 'localhost'}`);
         envs.push(`DB_PORT=${env.DB_PORT || 3306}`);
         envs.push(`DB_DATABASE=${env.DB_DATABASE || ''}`);
@@ -104,9 +64,6 @@ class AppGenerator extends Generator {
         envs.push(`DB_PASSWORD=${env.DB_PASSWORD || ''}`);
         break;
       case 'mariadb':
-        if (!allDbDialect) {
-          dependencies.push(`"mariadb": "^2.5.6"`);
-        }
         envs.push(`DB_HOST=${env.DB_HOST || 'localhost'}`);
         envs.push(`DB_PORT=${env.DB_PORT || 3306}`);
         envs.push(`DB_DATABASE=${env.DB_DATABASE || ''}`);
@@ -115,10 +72,6 @@ class AppGenerator extends Generator {
         break;
       case 'kingbase':
       case 'postgres':
-        if (!allDbDialect) {
-          dependencies.push(`"pg": "^8.7.3"`);
-          dependencies.push(`"pg-hstore": "^2.3.4"`);
-        }
         envs.push(`DB_HOST=${env.DB_HOST || 'localhost'}`);
         envs.push(`DB_PORT=${env.DB_PORT || 5432}`);
         envs.push(`DB_DATABASE=${env.DB_DATABASE || ''}`);
@@ -177,28 +130,33 @@ class AppGenerator extends Generator {
 
   async writing() {
     this.checkProjectPath();
-    this.checkDialect();
 
     const { name } = this.context;
 
     console.log(`Creating a new NocoBase application at ${chalk.green(name)}`);
     console.log('Creating files');
 
+    const context = this.getContext();
+
     this.copyDirectory({
-      context: this.getContext(),
+      context,
       path: join(__dirname, '../templates/app'),
       target: this.cwd,
     });
 
-    this.checkDbEnv();
+    const json = {
+      name: context.name,
+      ...(await fs.readJSON(join(this.cwd, 'package.json'), 'utf8')),
+    };
 
-    const skipDevDependencies = this.args.skipDevDependencies;
-    if (skipDevDependencies) {
-      const json = await fs.readJSON(join(this.cwd, 'package.json'), 'utf8');
-      delete json['devDependencies'];
-      await fs.writeJSON(join(this.cwd, 'package.json'), json, { encoding: 'utf8', spaces: 2 });
+    json['dependencies']['@nocobase/cli'] = context.version;
+
+    if (!this.args.skipDevDependencies) {
+      json['devDependencies'] = json['devDependencies'] || {};
+      json['devDependencies']['@nocobase/devtools'] = context.version;
     }
 
+    await fs.writeJSON(join(this.cwd, 'package.json'), json, { encoding: 'utf8', spaces: 2 });
     console.log('');
     console.log(chalk.green(`$ cd ${name}`));
     console.log(chalk.green(`$ yarn install`));
