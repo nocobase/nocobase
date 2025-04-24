@@ -316,6 +316,8 @@ export const ACLActionProvider = (props) => {
   let actionPath = schema['x-acl-action'];
   // 只兼容这些数据表资源按钮
   const resourceActionPath = ['create', 'update', 'destroy', 'importXlsx', 'export'];
+  // 视图表无编辑权限时不支持的操作
+  const writableViewCollectionAction = ['create', 'update', 'destroy', 'importXlsx', 'bulkDestroy', 'bulkUpdate'];
 
   if (!actionPath && resource && schema['x-action'] && resourceActionPath.includes(schema['x-action'])) {
     actionPath = `${resource}:${schema['x-action']}`;
@@ -339,15 +341,15 @@ export const ACLActionProvider = (props) => {
   if (!params) {
     return <ACLActionParamsContext.Provider value={params}>{props.children}</ACLActionParamsContext.Provider>;
   }
-  //视图表无编辑权限时仅支持显示导出按钮
+  //视图表无编辑权限时不支持 writableViewCollectionAction 的按钮
   if (
-    ['create', 'update', 'destroy', 'importXlsx'].includes(actionPath) ||
-    ['create', 'update', 'destroy', 'importXlsx'].includes(actionPath?.split(':')[1])
+    writableViewCollectionAction.includes(actionPath) ||
+    writableViewCollectionAction.includes(actionPath?.split(':')[1])
   ) {
     if ((collection && collection.template !== 'view') || collection?.writableView) {
       return <ACLActionParamsContext.Provider value={params}>{props.children}</ACLActionParamsContext.Provider>;
     }
-    return null;
+    return <ACLActionParamsContext.Provider value={false}>{props.children}</ACLActionParamsContext.Provider>;
   }
   return <ACLActionParamsContext.Provider value={params}>{props.children}</ACLActionParamsContext.Provider>;
 };
