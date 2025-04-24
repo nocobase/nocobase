@@ -82,8 +82,8 @@ export const BlockTemplateMenusProvider = ({ children }) => {
 
   useEffect(() => {
     const isLeavingTemplatesPage =
-      previousPathRef.current.includes('/settings/block-templates') &&
-      !location.pathname.includes('/settings/block-templates');
+      previousPathRef.current.includes('/settings/block-templates/inherited') &&
+      !location.pathname.includes('/settings/block-templates/inherited');
     if (isLeavingTemplatesPage) {
       refresh();
     }
@@ -159,7 +159,7 @@ export const BlockTemplateMenusProvider = ({ children }) => {
         collectionName = field?.target;
       }
       const isDetails = name === 'details' || componentName === 'ReadPrettyFormItem';
-      const children = data?.data
+      const children: SchemaInitializerItemType[] = data?.data
         ?.filter(
           (d) =>
             (d.componentType === componentName ||
@@ -197,16 +197,7 @@ export const BlockTemplateMenusProvider = ({ children }) => {
       if (!children?.length) {
         return null;
       }
-      return [
-        {
-          type: 'divider',
-        },
-        {
-          type: 'itemGroup',
-          title: t('Block template'),
-          children,
-        },
-      ] as SchemaInitializerItemType[];
+      return children;
     };
     registerInitializerMenusGenerator('block_template', generator);
   }, [data?.data, plugin.isInBlockTemplateConfigPage, handleTemplateClick, t, plugin]);
