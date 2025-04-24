@@ -88,7 +88,6 @@ export const BlockLinkageRuleProvider = (props) => {
   }
 
   if (displayResult === null) return null;
-  console.log(displayResult);
   if (last(displayResult) === 'hidden') {
     if (designable) {
       return <div style={{ opacity: 0.3 }}>{props.children}</div>;
