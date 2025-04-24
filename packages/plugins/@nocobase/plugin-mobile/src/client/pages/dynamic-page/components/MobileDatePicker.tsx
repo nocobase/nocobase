@@ -140,8 +140,8 @@ const MobileDateTimePicker = connect(
           }}
           precision={showTime && picker === 'date' ? getPrecision(timeFormat) : picker === 'date' ? 'day' : picker}
           renderLabel={labelRenderer}
-          min={minDate || rest.min || new Date(1000, 0, 1)}
-          max={maxDate || rest.max || new Date(9999, 11, 31)}
+          min={minDate || rest.min || new Date(1950, 0, 1)}
+          max={maxDate || rest.max || new Date(2050, 11, 31)}
           onConfirm={(val) => {
             handleConfirm(val);
           }}

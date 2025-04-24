@@ -101,6 +101,10 @@ const useLazyLoadDisplayAssociationFieldsOfForm = () => {
             field.value = null;
           } else {
             field.value = result;
+            field.componentProps = {
+              ...field.componentProps,
+              readOnlySubmit: true,
+            }; // 让它不参与提交
           }
         });
       })
