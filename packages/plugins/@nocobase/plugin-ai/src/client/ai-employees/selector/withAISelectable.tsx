@@ -8,7 +8,7 @@
  */
 
 import { createStyles } from '@nocobase/client';
-import React, { ComponentType, forwardRef, useEffect, useMemo } from 'react';
+import React, { ComponentType, forwardRef, useEffect, useMemo, useReducer } from 'react';
 import { useAISelectionContext } from './AISelectorProvider';
 import { useFieldSchema, useField } from '@formily/react';
 import { useForm } from '@formily/react';
@@ -41,6 +41,34 @@ const useStyles = createStyles(({ token, css }) => {
   };
 });
 
+function addListenerToFormV2(schema) {
+  function traverse(current) {
+    if (current && current['x-component'] === 'FormV2') {
+      current.addProperty('__aiCtxCollector__', {
+        type: 'void',
+        'x-component': 'AIContextCollector',
+        'x-component-props': {
+          uid: schema['x-uid'],
+        },
+      });
+      return true;
+    }
+
+    if (current.properties) {
+      const propertyKeys = Object.keys(current.properties);
+      for (const key of propertyKeys) {
+        if (traverse(current.properties[key])) {
+          return true;
+        }
+      }
+    }
+
+    return false;
+  }
+
+  traverse(schema);
+}
+
 export function withAISelectable<T = any>(
   WrappedComponent: React.ComponentType,
   options: {
@@ -50,14 +78,12 @@ export function withAISelectable<T = any>(
   const { selectType } = options;
   const SelectableComponent: ComponentType<T> = (props) => {
     const { styles } = useStyles();
-    const { selectable, selector, stopSelect, collect } = useAISelectionContext();
+    const { selectable, selector, stopSelect } = useAISelectionContext();
     const fieldSchema = useFieldSchema();
     const field = useField() as any;
-    const form = useForm();
-
-    useEffect(() => {
-      collect(fieldSchema['x-uid'], 'form', form);
-    }, [form, field, fieldSchema, collect]);
+    if (selectType === 'blocks') {
+      addListenerToFormV2(fieldSchema);
+    }
 
     const handleSelect = () => {
       if (selectable !== selectType) {

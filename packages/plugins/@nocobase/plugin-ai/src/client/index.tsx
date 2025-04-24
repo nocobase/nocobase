@@ -31,6 +31,7 @@ const { MessagesSettings } = lazy(() => import('./chat-settings/Messages'), 'Mes
 const { Chat } = lazy(() => import('./llm-providers/components/Chat'), 'Chat');
 const { ModelSelect } = lazy(() => import('./llm-providers/components/ModelSelect'), 'ModelSelect');
 const { AIEmployeeButton } = lazy(() => import('./ai-employees/initializer/AIEmployeeButton'), 'AIEmployeeButton');
+const { AIContextCollector } = lazy(() => import('./ai-employees/selector/AIContextCollector'), 'AIContextCollector');
 
 export class PluginAIClient extends Plugin {
   aiManager = new AIManager();
@@ -47,6 +48,7 @@ export class PluginAIClient extends Plugin {
     this.app.addComponents({
       AIEmployeeButton,
       AIEmployeeChatProvider,
+      AIContextCollector,
       CardItem: withAISelectable(CardItem, {
         selectType: 'blocks',
       }),
@@ -98,7 +100,6 @@ export class PluginAIClient extends Plugin {
     this.aiManager.registerTool('formFiller', {
       useAction() {
         const { ctx } = useAISelectionContext();
-        console.log(ctx);
         return {
           callAction: (params) => {
             const { form: uid, data } = params;
@@ -109,7 +110,6 @@ export class PluginAIClient extends Plugin {
             if (!form) {
               return;
             }
-            console.log(form, data);
             form.values = data;
           },
         };
