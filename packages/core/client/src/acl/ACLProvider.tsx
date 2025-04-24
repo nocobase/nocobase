@@ -339,8 +339,11 @@ export const ACLActionProvider = (props) => {
   if (!params) {
     return <ACLActionParamsContext.Provider value={params}>{props.children}</ACLActionParamsContext.Provider>;
   }
-  //视图表无编辑权限时不显示
-  if (resourceActionPath.includes(actionPath) || resourceActionPath.includes(actionPath?.split(':')[1])) {
+  //视图表无编辑权限时仅支持显示导出按钮
+  if (
+    ['create', 'update', 'destroy', 'importXlsx'].includes(actionPath) ||
+    ['create', 'update', 'destroy', 'importXlsx'].includes(actionPath?.split(':')[1])
+  ) {
     if ((collection && collection.template !== 'view') || collection?.writableView) {
       return <ACLActionParamsContext.Provider value={params}>{props.children}</ACLActionParamsContext.Provider>;
     }
@@ -348,7 +351,6 @@ export const ACLActionProvider = (props) => {
   }
   return <ACLActionParamsContext.Provider value={params}>{props.children}</ACLActionParamsContext.Provider>;
 };
-
 export const useACLFieldWhitelist = () => {
   const params = useContext(ACLActionParamsContext);
   const whitelist = useMemo(() => {
