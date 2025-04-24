@@ -23,7 +23,14 @@ export const listByUser = async (ctx: Context, next: Next) => {
       },
     ],
     order: [
-      [sequelize.literal('CASE WHEN userConfigs.sort IS NOT NULL THEN 0 ELSE 1 END'), 'ASC'],
+      [
+        sequelize.literal(
+          `CASE WHEN ${sequelize
+            .getQueryInterface()
+            .quoteIdentifiers('userConfigs.sort')} IS NOT NULL THEN 0 ELSE 1 END`,
+        ),
+        'ASC',
+      ],
       [sequelize.fn('COALESCE', sequelize.col('userConfigs.sort'), sequelize.col('aiEmployees.sort')), 'ASC'],
     ],
   });
