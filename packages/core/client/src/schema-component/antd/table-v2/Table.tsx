@@ -194,7 +194,7 @@ const useTableColumns = (
     return css`
       .nb-action-link {
         margin: -${token.paddingContentVerticalLG}px -${token.marginSM}px;
-        padding: ${token.paddingContentVerticalLG}px ${token.paddingSM + 4}px;
+        padding: ${token.paddingContentVerticalLG}px ${token.paddingSM}px;
       }
     `;
   }, [token.paddingContentVerticalLG, token.marginSM, token.margin]);

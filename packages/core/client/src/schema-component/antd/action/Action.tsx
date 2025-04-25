@@ -622,9 +622,13 @@ const RenderButtonInner = observer(
       ({ component: Component = tarComponent || Button, icon, onlyIcon, children, ...restProps }: any, ref) => {
         return (
           <Component ref={ref} {...restProps}>
-            <Tooltip title={restProps.title}>
+            {onlyIcon ? (
+              <Tooltip title={restProps.title}>
+                <span style={{ marginRight: 3 }}>{icon && typeof icon === 'string' ? <Icon type={icon} /> : icon}</span>
+              </Tooltip>
+            ) : (
               <span style={{ marginRight: 3 }}>{icon && typeof icon === 'string' ? <Icon type={icon} /> : icon}</span>
-            </Tooltip>
+            )}
             {onlyIcon ? children[1] : children}
           </Component>
         );
@@ -646,6 +650,7 @@ const RenderButtonInner = observer(
         className={classnames(componentCls, hashId, className, 'nb-action')}
         type={type === 'danger' ? undefined : type}
         title={actionTitle}
+        onlyIcon={onlyIcon}
       >
         {!onlyIcon && actionTitle && (
           <span className={icon ? 'nb-action-title' : null} style={linkStyle}>
