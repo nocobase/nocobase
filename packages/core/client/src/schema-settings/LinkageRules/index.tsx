@@ -25,7 +25,7 @@ import { LinkageRuleActionGroup } from './LinkageRuleActionGroup';
 import { EnableLinkage } from './components/EnableLinkage';
 import { ArrayCollapse } from './components/LinkageHeader';
 import { useFlag } from '../../flag-provider';
-
+import { LinkageRuleCategory } from './type';
 export interface Props {
   dynamicComponent: any;
 }
@@ -93,8 +93,18 @@ const transformDefaultValue = (values, variableKey) => {
 export const FormLinkageRules = withDynamicSchemaProps(
   observer((props: Props) => {
     const fieldSchema = useFieldSchema();
-    const { options, defaultValues, collectionName, form, variables, localVariables, record, dynamicComponent } =
-      useProps(props); // 新版 UISchema（1.0 之后）中已经废弃了 useProps，这里之所以继续保留是为了兼容旧版的 UISchema
+    const {
+      options,
+      defaultValues,
+      collectionName,
+      form,
+      variables,
+      localVariables,
+      record,
+      dynamicComponent,
+      category,
+      returnScope,
+    } = useProps(props); // 新版 UISchema（1.0 之后）中已经废弃了 useProps，这里之所以继续保留是为了兼容旧版的 UISchema
     const { name } = useCollection_deprecated();
     const { getAllCollectionsInheritChain } = useCollectionManager_deprecated();
     const parentRecordData = useCollectionParentRecordData();
@@ -102,6 +112,16 @@ export const FormLinkageRules = withDynamicSchemaProps(
     const components = useMemo(() => ({ ArrayCollapse }), []);
     const { isInSubTable, isInSubForm } = useFlag();
     const variableKey = getActiveContextName(isInSubTable || isInSubForm, shouldDisplayCurrentForm);
+    const returnTargetScope =
+      returnScope ??
+      ((options) =>
+        options.filter((v) => {
+          console.log(category);
+          if (category === LinkageRuleCategory.block) {
+            return !['$nForm', '$nRecord'].includes(v.value);
+          }
+          return true;
+        }));
     const schema = useMemo(
       () => ({
         type: 'object',
@@ -197,6 +217,9 @@ export const FormLinkageRules = withDynamicSchemaProps(
                     conditionAdvanced: {
                       'x-component': 'LinkageFilter',
                       'x-visible': '{{$deps[0] === "advanced"}}',
+                      'x-component-props': {
+                        returnScope: returnTargetScope,
+                      },
                       'x-reactions': [
                         {
                           dependencies: ['.conditionType', '.condition'],

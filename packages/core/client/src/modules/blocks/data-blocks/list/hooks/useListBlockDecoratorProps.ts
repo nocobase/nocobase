@@ -22,3 +22,7 @@ export function useListBlockDecoratorProps(props) {
     parentRecord,
   };
 }
+
+export function useListBlockProps() {
+  return {};
+}

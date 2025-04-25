@@ -18,7 +18,7 @@ test.describe('deprecated variables', () => {
     await page.getByLabel('action-Action.Link-Edit').click();
     await page.getByLabel('block-item-CardItem-users-form').hover();
     await page.getByLabel('designer-schema-settings-CardItem-blockSettings:editForm-users').hover();
-    await page.getByRole('menuitem', { name: 'Linkage rules' }).click();
+    await page.getByRole('menuitem', { name: 'Field linkage rules' }).click();
     await expect(page.getByLabel('variable-tag').getByText('Current record / Nickname')).toBeVisible();
 
     // 2. 但是变量列表中是禁用状态
@@ -57,7 +57,7 @@ test.describe('deprecated variables', () => {
     // 4. 再次打开弹窗，变量列表中的弃用变量不再显示
     await page.getByLabel('block-item-CardItem-users-form').hover();
     await page.getByLabel('designer-schema-settings-CardItem-blockSettings:editForm-users').hover();
-    await page.getByRole('menuitem', { name: 'Linkage rules' }).click();
+    await page.getByRole('menuitem', { name: 'Field linkage rules' }).click();
     await page.locator('button').filter({ hasText: /^x$/ }).last().click();
     await expect(page.getByRole('menuitemcheckbox', { name: 'Current record right' })).toBeHidden();
     // 使下拉菜单消失
