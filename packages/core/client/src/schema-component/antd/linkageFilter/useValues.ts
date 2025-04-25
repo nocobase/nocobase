@@ -44,7 +44,7 @@ const findOption = (str, options) => {
 
     // 进入下一层 children 查找
     if (Array.isArray(option.children) || option.isLeaf === false) {
-      currentOptions = option.children || option.field.children;
+      currentOptions = option.children || option?.field?.children || [];
     } else {
       return option; // 没有 children 直接返回
     }
