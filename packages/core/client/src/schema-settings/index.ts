@@ -32,3 +32,4 @@ export * from './isPatternDisabled';
 export { SchemaSettingsPlugin } from './SchemaSettingsPlugin';
 export * from './VariableInput';
 export { replaceVariables } from './LinkageRules/bindLinkageRulesToFiled';
+export * from './LinkageRules/type';

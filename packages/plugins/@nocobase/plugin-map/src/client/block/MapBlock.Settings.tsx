@@ -27,8 +27,11 @@ import {
   useDesignable,
   useFormBlockContext,
   useColumnSchema,
+  SchemaSettingsLinkageRules,
+  LinkageRuleCategory,
 } from '@nocobase/client';
 import _ from 'lodash';
+import { useTranslation } from 'react-i18next';
 import { useMapTranslation } from '../locale';
 import { useMapBlockContext } from './MapBlockProvider';
 import { findNestedOption } from './utils';
@@ -88,6 +91,19 @@ export const mapBlockSettings = new SchemaSettings({
     {
       name: 'setTheBlockHeight',
       Component: SchemaSettingsBlockHeightItem,
+    },
+    {
+      name: 'blockLinkageRules',
+      Component: SchemaSettingsLinkageRules,
+      useComponentProps() {
+        const { name } = useCollection();
+        const { t } = useTranslation();
+        return {
+          collectionName: name,
+          title: t('Block Linkage rules'),
+          category: LinkageRuleCategory.block,
+        };
+      },
     },
     {
       name: 'mapField',
