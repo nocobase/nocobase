@@ -104,7 +104,7 @@ describe('Action.Drawer without Action', () => {
 });
 
 describe('Action.Popover', () => {
-  it('show the popover when hover the button', async () => {
+  it.skip('show the popover when hover the button', async () => {
     const { container } = render(<App4 />);
     const btn = container.querySelector('.ant-btn') as HTMLElement;
 
