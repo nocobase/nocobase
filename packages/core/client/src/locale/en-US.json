@@ -893,6 +893,5 @@
   "Full permissions": "Full permissions",
   "Refresh data blocks": "Refresh data blocks",
   "Select data blocks to refresh": "Select data blocks to refresh",
-  "After successful submission, the selected data blocks will be automatically refreshed.": "After successful submission, the selected data blocks will be automatically refreshed.",
-  "You currently manage plugins using your account password. This has now been updated to an license-based management system. Please refer to the relevant documentation.": "You currently manage plugins using your account password. This has now been updated to an license-based management system. Please refer to the relevant documentation."
+  "After successful submission, the selected data blocks will be automatically refreshed.": "After successful submission, the selected data blocks will be automatically refreshed."
 }

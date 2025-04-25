@@ -271,7 +271,6 @@ const LocalPlugins = () => {
         }}
       />
       <div style={{ width: '100%' }}>
-        <PluginManagerAccountAlert />
         <div
           style={{ marginBottom: theme.marginLG }}
           className={css`

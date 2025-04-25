@@ -1102,8 +1102,6 @@
   "Response record":"响应结果记录",
   "Colon":"冒号",
   "After successful submission, the selected data blocks will be automatically refreshed.": "提交成功后，会自动刷新这里选中的数据区块。",
-  "You currently manage plugins using your account password. This has now been updated to an license-based management system. Please refer to the relevant documentation.": "您目前使用账号密码管理插件，现已调整为授权管理模式。请查阅相关文档。",
   "No pages yet, please configure first": "暂无页面，请先配置",
-  "Click the \"UI Editor\" icon in the upper right corner to enter the UI Editor mode": "点击右上角的“界面配置”图标，进入界面配置模式",
-  "After successful submission, the selected data blocks will be automatically refreshed.": "提交成功后，会自动刷新这里选中的数据区块。"
+  "Click the \"UI Editor\" icon in the upper right corner to enter the UI Editor mode": "点击右上角的“界面配置”图标，进入界面配置模式"
 }
