@@ -7,6 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { useSchemaSettings } from '@nocobase/client';
 import { SaveAsTemplateSetting } from '../components/SaveAsTemplateSetting';
 import { useIsPageBlock } from '../hooks/useIsPageBlock';
 
@@ -15,6 +16,7 @@ export const saveAsTemplateSetting = {
   Component: SaveAsTemplateSetting,
   useVisible: () => {
     const isPageBlock = useIsPageBlock();
-    return isPageBlock;
+    const { template: deprecatedTemplate } = useSchemaSettings();
+    return isPageBlock && !deprecatedTemplate;
   },
 };

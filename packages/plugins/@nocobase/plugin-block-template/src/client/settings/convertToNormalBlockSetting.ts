@@ -10,7 +10,6 @@
 import { useFieldSchema } from '@formily/react';
 import { ConvertToNormalBlockSetting } from '../components/ConvertToNormalBlockSetting';
 import { tStr } from '../locale';
-import { useIsInTemplate } from '../hooks/useIsInTemplate';
 
 export const convertToNormalBlockSettingItem = {
   name: 'template-convertToNormalBlockSettingItem',

@@ -342,13 +342,13 @@ export const SchemaSettingsFormItemTemplate = function FormItemTemplate(props) {
   }
   return (
     <SchemaSettingsItem
-      title="Save as block template"
+      title={t('Save as reference template')}
       onClick={async () => {
         setVisible(false);
         const collection = collectionName && cm?.getCollection(collectionName);
         const gridSchema = findGridSchema(fieldSchema);
         const values = await FormDialog(
-          t('Save as template'),
+          t('Save as reference template'),
           () => {
             const componentTitle = {
               FormItem: t('Form'),
@@ -414,7 +414,7 @@ export const SchemaSettingsFormItemTemplate = function FormItemTemplate(props) {
         dn.refresh();
       }}
     >
-      {t('Save as block template')}
+      {t('Save as reference template')}
     </SchemaSettingsItem>
   );
 };

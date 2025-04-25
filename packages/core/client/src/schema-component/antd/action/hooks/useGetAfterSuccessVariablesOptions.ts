@@ -29,10 +29,9 @@ export const useAfterSuccessOptions = () => {
   }, [fieldsOptions, userFieldOptions]);
   const { settings: popupRecordSettings, shouldDisplayPopupRecord } = usePopupVariable();
   const { currentRoleSettings } = useCurrentRoleVariable();
-  const record = useCollectionRecordData();
   return useMemo(() => {
     return [
-      (record || form) && {
+      form && {
         value: '$record',
         label: t('Response record', { ns: 'client' }),
         children: [...fields],
