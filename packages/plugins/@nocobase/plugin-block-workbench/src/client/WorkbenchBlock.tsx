@@ -85,6 +85,7 @@ const InternalIcons = () => {
                   key={key}
                   prefix={<Avatar style={{ backgroundColor }} icon={<Icon type={icon} />} />}
                   onClick={() => {}}
+                  style={{ marginTop: '5px' }}
                 >
                   <NocoBaseRecursionField name={key} schema={s} />
                 </List.Item>
