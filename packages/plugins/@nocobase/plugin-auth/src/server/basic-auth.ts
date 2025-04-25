@@ -11,7 +11,7 @@ import { AuthConfig, BaseAuth } from '@nocobase/auth';
 import { PasswordField } from '@nocobase/database';
 import _ from 'lodash';
 import { namespace } from '../preset';
-import { getDateVars, parsedValue } from '@nocobase/utils';
+import { parsedValue } from '@nocobase/utils';
 
 export class BasicAuth extends BaseAuth {
   static readonly optionsKeysNotAllowedInEnv = ['emailContentText', 'emailContentHTML', 'emailSubject'];
@@ -209,7 +209,6 @@ export class BasicAuth extends BaseAuth {
           const parsedSubject = parsedValue(emailSubject, {
             $user: user,
             $resetLink: resetLink,
-            $nDate: getDateVars(),
             $env: ctx.app.environment.getVariables(),
             $resetLinkExpiration: resetTokenExpiresIn,
             $systemSettings: systemSettings,
@@ -218,7 +217,6 @@ export class BasicAuth extends BaseAuth {
           const parsedContent = parsedValue(emailContentType === 'html' ? emailContentHTML : emailContentText, {
             $user: user,
             $resetLink: resetLink,
-            $nDate: getDateVars(),
             $env: ctx.app.environment.getVariables(),
             $resetLinkExpiration: resetTokenExpiresIn,
             $systemSettings: systemSettings,

@@ -152,9 +152,8 @@ const useVariableOptionsOfForgetPassword = () => {
   const environmentVariables = useGlobalVariable('$env');
   const { currentUserSettings } = useCurrentUserVariable({ maxDepth: 1 });
   const { systemSettings } = useSystemSettingsVariable();
-  const { datetimeSettings } = useDatetimeVariable({ noDisabled: true });
 
-  return [environmentVariables, currentUserSettings, datetimeSettings, systemSettings, {
+  return [environmentVariables, currentUserSettings, systemSettings, {
     value: '$resetLink',
     label: t('Reset password link'),
   }, {
