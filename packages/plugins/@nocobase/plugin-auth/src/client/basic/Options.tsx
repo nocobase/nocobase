@@ -309,6 +309,7 @@ export const Options = () => {
                         fulfill: {
                           state: {
                             visible: '{{$deps[0]}}',
+                            initialValue: `{{t("defaultResetPasswordEmailSubject")}}`,
                           },
                         },
                       },
@@ -318,6 +319,7 @@ export const Options = () => {
                   emailContentType: {
                     type: 'string',
                     title: `{{t("Content type")}}`,
+                    required: true,
                     'x-decorator': 'FormItem',
                     'x-component': 'Radio.Group',
                     enum: [
@@ -331,6 +333,7 @@ export const Options = () => {
                         fulfill: {
                           state: {
                             visible: '{{$deps[0]}}',
+                            initialValue: 'html',
                           },
                         },
                       },
@@ -355,6 +358,7 @@ export const Options = () => {
                         fulfill: {
                           state: {
                             visible: '{{$deps[0] && $deps[1] === "html"}}',
+                            initialValue: `{{t("defaultResetPasswordEmailContentHTML")}}`,
                           },
                         },
                       },
@@ -379,6 +383,7 @@ export const Options = () => {
                         fulfill: {
                           state: {
                             visible: '{{$deps[0] && $deps[1] === "text"}}',
+                            initialValue: `{{t("defaultResetPasswordEmailContentText")}}`,
                           },
                         },
                       },
@@ -404,6 +409,7 @@ export const Options = () => {
                         fulfill: {
                           state: {
                             visible: '{{$deps[0]}}',
+                            initialValue: 120,
                           },
                         },
                       },
