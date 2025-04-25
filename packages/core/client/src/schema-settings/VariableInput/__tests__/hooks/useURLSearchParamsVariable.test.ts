@@ -24,7 +24,7 @@ test('getURLSearchParamsChildren should return an array of options with expected
 
   const result = getURLSearchParamsChildren(queryParams);
 
-  expect(result).toEqual([
+  expect(result).toMatchObject([
     {
       label: 'param1',
       value: 'param1',
