@@ -10,7 +10,7 @@
 import { parse } from '../json-templates';
 
 describe('json-templates', () => {
-  it('parse json with string template', async () => {
+  it('parse json with string template', () => {
     const template = {
       name: '{{id}}-{{name}}.',
       age: 18,
@@ -22,6 +22,29 @@ describe('json-templates', () => {
     expect(result).toEqual({
       name: '1-test.',
       age: 18,
+    });
+  });
+
+  it('parse nested key with options.nestedKey as true', () => {
+    expect(parse('{{a.b}}', { nestedKey: true })({ a: { b: 1 } })).toBe(1);
+  });
+
+  it('not parse nested key without options.nestedKey as true', () => {
+    expect(parse('{{a.b}}')({ 'a.b': 2 })).toBe(2);
+  });
+
+  it('parse with variable path contains chinese characters', () => {
+    const template = {
+      name: '{{中文id}}-{{user.中文name}}.',
+    };
+    const result = parse(template, { nestedKey: true })({
+      中文id: 123,
+      user: {
+        中文name: 'abc',
+      },
+    });
+    expect(result).toEqual({
+      name: '123-abc.',
     });
   });
 });
