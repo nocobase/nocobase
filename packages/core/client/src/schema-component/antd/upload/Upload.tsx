@@ -393,10 +393,11 @@ export function Uploader({ rules, ...props }: UploadProps) {
 
   useEffect(() => {
     if (pendingList.length) {
+      const errorFiles = pendingList.filter((item) => item.status === 'error');
       field.setFeedback({
         type: 'error',
         code: 'ValidateError',
-        messages: [t('Incomplete uploading files need to be resolved')],
+        messages: [errorFiles.length ? t('Some files are not uploaded correctly, please check.') : ' '],
       });
     } else {
       field.setFeedback({});

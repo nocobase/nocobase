@@ -227,8 +227,8 @@ export function useCollectValuesToSubmit() {
   ]);
 }
 
-function interpolateVariables(str: string, scope: Record<string, any>): string {
-  return str.replace(/\{\{\s*([a-zA-Z0-9_$-.]+?)\s*\}\}/g, (_, key) => {
+export function interpolateVariables(str: string, scope: Record<string, any>): string {
+  return str.replace(/\{\{\s*([a-zA-Z0-9_$.-]+?)\s*\}\}/g, (_, key) => {
     return scope[key] !== undefined ? String(scope[key]) : '';
   });
 }
