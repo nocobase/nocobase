@@ -79,7 +79,7 @@ describe('role', () => {
     const throwFn = vi.fn();
     ctx.throw = throwFn;
     await setCurrentRole(ctx, () => {});
-    expect(throwFn).lastCalledWith(401, {
+    expect(throwFn).lastCalledWith(403, {
       code: 'ROLE_NOT_FOUND_FOR_USER',
       message: 'The role does not belong to the user',
     });
@@ -214,7 +214,7 @@ describe('role', () => {
     const throwFn = vi.fn();
     ctx.throw = throwFn;
     await setCurrentRole(ctx, () => {});
-    expect(throwFn).lastCalledWith(401, {
+    expect(throwFn).lastCalledWith(403, {
       code: 'USER_HAS_NO_ROLES_ERR',
       message: 'The current user has no roles. Please try another account.',
     });

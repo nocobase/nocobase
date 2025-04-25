@@ -33,7 +33,7 @@ export async function setCurrentRole(ctx: Context, next) {
   )) as Model[];
   if (!roles.length && !attachRoles.length) {
     ctx.state.currentRole = undefined;
-    return ctx.throw(401, {
+    return ctx.throw(403, {
       code: 'USER_HAS_NO_ROLES_ERR',
       message: ctx.t('The current user has no roles. Please try another account.', { ns: 'acl' }),
     });
@@ -51,7 +51,7 @@ export async function setCurrentRole(ctx: Context, next) {
   if (currentRole) {
     role = userRoles.find((role) => role.name === currentRole)?.name;
     if (!role) {
-      return ctx.throw(401, {
+      return ctx.throw(403, {
         code: 'ROLE_NOT_FOUND_FOR_USER',
         message: ctx.t('The role does not belong to the user', { ns: 'acl' }),
       });
@@ -64,7 +64,7 @@ export async function setCurrentRole(ctx: Context, next) {
   }
   ctx.state.currentRole = role;
   if (!ctx.state.currentRole) {
-    return ctx.throw(401, {
+    return ctx.throw(403, {
       code: 'ROLE_NOT_FOUND_ERR',
       message: ctx.t('The user role does not exist. Please try signing in again', { ns: 'acl' }),
     });
