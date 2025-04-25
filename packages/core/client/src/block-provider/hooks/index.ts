@@ -97,6 +97,30 @@ const filterValue = (value) => {
   return obj;
 };
 
+function getFilteredFormValues(form) {
+  const values = _.cloneDeep(form.values);
+  const allFields = [];
+  form.query('*').forEach((field) => {
+    if (field) {
+      allFields.push(field);
+    }
+  });
+  const readonlyPaths = allFields
+    .filter((field) => field?.componentProps?.readOnlySubmit)
+    .map((field) => {
+      const segments = field.path?.segments || [];
+      if (segments.length <= 1) {
+        return segments.join('.');
+      }
+      return segments.slice(0, -1).join('.');
+    });
+  for (const path of readonlyPaths) {
+    _.unset(values, path);
+  }
+
+  return values;
+}
+
 export function getFormValues({
   filterByTk,
   field,
@@ -124,7 +148,7 @@ export function getFormValues({
     }
   }
 
-  return form.values;
+  return getFilteredFormValues(form);
 }
 
 export function useCollectValuesToSubmit() {
@@ -203,8 +227,8 @@ export function useCollectValuesToSubmit() {
   ]);
 }
 
-function interpolateVariables(str: string, scope: Record<string, any>): string {
-  return str.replace(/\{\{\s*([a-zA-Z0-9_$-.]+?)\s*\}\}/g, (_, key) => {
+export function interpolateVariables(str: string, scope: Record<string, any>): string {
+  return str.replace(/\{\{\s*([a-zA-Z0-9_$.-]+?)\s*\}\}/g, (_, key) => {
     return scope[key] !== undefined ? String(scope[key]) : '';
   });
 }

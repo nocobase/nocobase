@@ -263,7 +263,7 @@ const InternalSchemaToolbar: FC<SchemaToolbarProps> = React.memo((props) => {
     if (typeof title === 'string') return [compile(title)];
     if (Array.isArray(title)) {
       if (title.length === 1 && fieldSchema['x-template-title']) {
-        templateTitleLabel.current = t('Template');
+        templateTitleLabel.current = t('Inherited template');
         return compile([title[0], fieldSchema['x-template-title']]);
       }
       return compile(title);
@@ -351,11 +351,6 @@ const InternalSchemaToolbar: FC<SchemaToolbarProps> = React.memo((props) => {
         props.onVisibleChange?.(false);
       }
     }
-
-    // const style = window.getComputedStyle(parentElement);
-    // if (style.position === 'static') {
-    //   parentElement.style.position = 'relative';
-    // }
 
     el.addEventListener('mouseenter', show);
     el.addEventListener('mouseleave', hide);

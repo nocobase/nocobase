@@ -106,40 +106,6 @@ export const getSelectedFields = (fields: FieldOption[], query: QueryProps) => {
   return selectedFields;
 };
 
-export const processData = (selectedFields: (FieldOption & { query?: any })[], data: any[], scope: any) => {
-  const parseEnum = (field: FieldOption, value: any) => {
-    const options = field.uiSchema?.enum as { value: string; label: string }[];
-    if (!options || !Array.isArray(options)) {
-      return value;
-    }
-    if (Array.isArray(value)) {
-      return value.map((v) => parseEnum(field, v));
-    }
-    const option = options.find((option) => option.value === (value?.toString?.() || value));
-    return Schema.compile(option?.label || value, scope);
-  };
-  return data.map((record) => {
-    const processed = {};
-    Object.entries(record).forEach(([key, value]) => {
-      const field = selectedFields.find((field) => field.value === key && !field?.query?.aggregation);
-      if (!field) {
-        processed[key] = value;
-        return;
-      }
-      switch (field.interface) {
-        case 'select':
-        case 'radioGroup':
-        case 'multipleSelect':
-          processed[key] = parseEnum(field, value);
-          break;
-        default:
-          processed[key] = value;
-      }
-    });
-    return processed;
-  });
-};
-
 export const removeUnparsableFilter = (filter: any) => {
   if (typeof filter === 'object' && filter !== null) {
     if (Array.isArray(filter)) {

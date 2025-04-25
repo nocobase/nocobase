@@ -88,9 +88,6 @@ export const blockTemplatesSchema: ISchema = {
           type: 'void',
           title: '{{ t("Title") }}',
           'x-component': 'TableV2.Column',
-          'x-component-props': {
-            width: 150,
-          },
           properties: {
             title: {
               type: 'string',

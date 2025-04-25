@@ -167,7 +167,7 @@ export function getOperators() {
       const dateA = parseDate(a);
       const dateB = parseDate(b);
       if (!dateA || !dateB) {
-        throw new Error('Invalid date format');
+        return false;
       }
       return dateA < dateB;
     },
@@ -651,10 +651,11 @@ function parseYear(dateStr) {
 }
 
 function parseDate(targetDateStr) {
-  let dateStr = Array.isArray(targetDateStr) ? targetDateStr[1] : targetDateStr;
-  if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z$/.test(dateStr)) {
-    // ISO 8601 格式：YYYY-MM-DDTHH:mm:ss.sssZ
-    return new Date(dateStr); // 直接解析为 Date 对象
+  let dateStr = Array.isArray(targetDateStr) ? targetDateStr[1] ?? targetDateStr[0] : targetDateStr;
+  if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/.test(dateStr)) {
+    return new Date(dateStr);
+  } else if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(dateStr)) {
+    return new Date(dateStr.replace(' ', 'T'));
   } else if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
     // YYYY-MM-DD 格式
     return parseFullDate(dateStr);
@@ -668,5 +669,6 @@ function parseDate(targetDateStr) {
     // YYYY 格式
     return parseYear(dateStr);
   }
-  return null; // Invalid format
+
+  return null;
 }
