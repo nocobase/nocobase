@@ -48,6 +48,7 @@ import {
   SchemaSettingsItemType,
   SchemaToolbarVisibleContext,
   VariablesContext,
+  getZIndex,
   useCollection,
   useCollectionManager,
   useZIndexContext,
@@ -695,7 +696,7 @@ export const SchemaSettingsActionModalItem: FC<SchemaSettingsActionModalItemProp
   const upLevelActiveFields = useFormActiveFields();
   const parentZIndex = useZIndexContext();
 
-  const zIndex = parentZIndex + 10;
+  const zIndex = getZIndex('modal', parentZIndex + 10, 0);
 
   const form = useMemo(
     () =>

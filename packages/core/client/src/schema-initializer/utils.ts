@@ -727,7 +727,7 @@ export const useCustomFormItemInitializerFields = (options?: any) => {
   const remove = useRemoveGridFormItem();
   return currentFields
     ?.filter((field) => {
-      return field?.interface && field.interface !== 'snapshot' && field.type !== 'sequence';
+      return !field.inherit && field?.interface && field.interface !== 'snapshot' && field.type !== 'sequence';
     })
     ?.map((field) => {
       const interfaceConfig = getInterface(field.interface);
@@ -767,7 +767,7 @@ export const findSchema = (schema: Schema, key: string, action: string, name?: s
     if (s[key] === action && (!name || s.name === name)) {
       return s;
     }
-    if (s['x-component'] !== 'Action.Container' && !s['x-component'].includes('AssociationField')) {
+    if (s['x-component'] && s['x-component'] !== 'Action.Container' && !s['x-component'].includes('AssociationField')) {
       const c = findSchema(s, key, action, name);
       if (c) {
         return c;

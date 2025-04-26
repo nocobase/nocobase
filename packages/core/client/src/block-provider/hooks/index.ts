@@ -97,6 +97,30 @@ const filterValue = (value) => {
   return obj;
 };
 
+function getFilteredFormValues(form) {
+  const values = _.cloneDeep(form.values);
+  const allFields = [];
+  form.query('*').forEach((field) => {
+    if (field) {
+      allFields.push(field);
+    }
+  });
+  const readonlyPaths = allFields
+    .filter((field) => field?.componentProps?.readOnlySubmit)
+    .map((field) => {
+      const segments = field.path?.segments || [];
+      if (segments.length <= 1) {
+        return segments.join('.');
+      }
+      return segments.slice(0, -1).join('.');
+    });
+  for (const path of readonlyPaths) {
+    _.unset(values, path);
+  }
+
+  return values;
+}
+
 export function getFormValues({
   filterByTk,
   field,
@@ -124,7 +148,7 @@ export function getFormValues({
     }
   }
 
-  return form.values;
+  return getFilteredFormValues(form);
 }
 
 export function useCollectValuesToSubmit() {
@@ -522,9 +546,11 @@ export const useFilterBlockActionProps = () => {
   const { doFilter } = useDoFilter();
   const actionField = useField();
   actionField.data = actionField.data || {};
+  const form = useForm();
 
   return {
     async onClick() {
+      await form.submit();
       actionField.data.loading = true;
       await doFilter();
       actionField.data.loading = false;

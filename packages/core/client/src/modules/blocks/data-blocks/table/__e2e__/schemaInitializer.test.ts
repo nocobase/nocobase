@@ -306,6 +306,7 @@ test.describe('configure actions column', () => {
     await page.getByText('Actions', { exact: true }).hover();
     await page.getByLabel('designer-schema-initializer-TableV2.Column-TableV2.ActionColumnDesigner-').hover();
     await page.getByRole('menuitem', { name: 'Delete' }).click();
+    await page.mouse.move(500, 0);
 
     await page.getByText('Actions', { exact: true }).hover();
     await page.getByLabel('designer-schema-initializer-TableV2.Column-TableV2.ActionColumnDesigner-').hover();
