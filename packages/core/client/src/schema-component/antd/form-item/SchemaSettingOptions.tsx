@@ -535,7 +535,8 @@ export const EditOperator = () => {
         }
 
         field.componentProps = componentProps;
-        _.set(fieldSchema, 'default', null);
+        fieldSchema['x-component-props'] = componentProps;
+        fieldSchema.default = null;
 
         dn.emit('patch', {
           schema: {
