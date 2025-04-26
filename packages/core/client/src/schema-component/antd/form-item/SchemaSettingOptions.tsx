@@ -535,11 +535,16 @@ export const EditOperator = () => {
         }
 
         field.componentProps = componentProps;
+        _.set(fieldSchema, 'default', null);
+
         dn.emit('patch', {
           schema: {
             ['x-uid']: fieldSchema['x-uid'],
             ['x-component-props']: componentProps,
             ['x-filter-operator']: v,
+            // Clear default value when switching operators. Some operators require the default value to be an array,
+            // while others don't. Without clearing it, the filtering API would throw an error
+            default: null,
           },
         });
         dn.refresh();
