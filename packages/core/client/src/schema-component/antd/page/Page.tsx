@@ -223,7 +223,10 @@ const InternalPageContent = (props: PageContentProps) => {
     // Create a clean search string or empty string if only '?' remains
     const searchString = searchParams.toString() ? `?${searchParams.toString()}` : '';
 
-    navigate(location.pathname.replace(activeKey, oldTab.schemaUid) + searchString);
+    const newPath =
+      location.pathname + (location.pathname.endsWith('/') ? `tabs/${oldTab.schemaUid}` : `/tabs/${oldTab.schemaUid}`);
+    navigate(newPath + searchString);
+
     return null;
   }
 

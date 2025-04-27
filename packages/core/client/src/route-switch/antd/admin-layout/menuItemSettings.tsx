@@ -47,6 +47,11 @@ const components = { TreeSelect };
 const toItems = (routes: NocoBaseDesktopRoute[], { t, compile }) => {
   const items = [];
   for (const route of routes) {
+    // filter out the tabs
+    if (route.type === NocoBaseDesktopRouteType.tabs) {
+      continue;
+    }
+
     const item = {
       label: isVariable(route.title) ? compile(route.title) : t(route.title),
       value: `${route.id}||${route.type}`,
