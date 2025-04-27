@@ -8,6 +8,7 @@
  */
 
 import { Plugin } from '@nocobase/server';
+import { Model } from '@nocobase/database';
 import actions from '@nocobase/actions';
 import { HandlerType } from '@nocobase/resourcer';
 import WorkflowPlugin, { JOB_STATUS } from '@nocobase/plugin-workflow';
@@ -15,17 +16,95 @@ import WorkflowPlugin, { JOB_STATUS } from '@nocobase/plugin-workflow';
 import * as jobActions from './actions';
 
 import ManualInstruction from './ManualInstruction';
-import { MANUAL_TASK_TYPE } from '../common/constants';
-
-interface WorkflowManualTaskModel {
-  id: number;
-  userId: number;
-  workflowId: number;
-  executionId: number;
-  status: number;
-}
+import { MANUAL_TASK_TYPE, TASK_STATUS } from '../common/constants';
 
 export default class extends Plugin {
+  onWorkflowStatusChange = async (workflow, { transaction }) => {
+    const workflowPlugin = this.app.pm.get(WorkflowPlugin) as WorkflowPlugin;
+    const WorkflowManualTaskModel = this.db.getModel('workflowManualTasks');
+    const enalbedSet = new Set(workflowPlugin.enabledCache.keys());
+    let pendingCounts = [];
+    let allCounts = [];
+    const userStatsMap = new Map();
+    if (workflow.enabled) {
+      enalbedSet.add(workflow.id);
+      const workflowId = [...enalbedSet];
+      pendingCounts = await WorkflowManualTaskModel.count({
+        where: {
+          status: TASK_STATUS.PENDING,
+          workflowId,
+        },
+        col: 'id',
+        group: ['userId'],
+        transaction,
+      });
+      allCounts = await WorkflowManualTaskModel.count({
+        where: {
+          workflowId,
+        },
+        col: 'id',
+        group: ['userId'],
+        transaction,
+      });
+    } else {
+      enalbedSet.delete(workflow.id);
+      const workflowId = [...enalbedSet];
+      // 查找所有该工作流的人工任务
+      const tasksByUser = await WorkflowManualTaskModel.count({
+        col: 'userId',
+        where: {
+          status: TASK_STATUS.PENDING,
+          workflowId: workflow.id,
+        },
+        distinct: true,
+        group: ['userId'],
+        transaction,
+      });
+      // 涉及人员集合
+      const userId = [];
+      for (const item of tasksByUser) {
+        userId.push(item.userId);
+        userStatsMap.set(item.userId, {});
+      }
+
+      // 调整所有任务中的负责人的统计数字
+      pendingCounts = await WorkflowManualTaskModel.count({
+        where: {
+          status: TASK_STATUS.PENDING,
+          userId,
+          workflowId,
+        },
+        col: 'id',
+        group: ['userId'],
+        transaction,
+      });
+      allCounts = await WorkflowManualTaskModel.count({
+        where: {
+          userId,
+          workflowId,
+        },
+        col: 'id',
+        group: ['userId'],
+        transaction,
+      });
+    }
+    for (const row of pendingCounts) {
+      if (!userStatsMap.get(row.userId)) {
+        userStatsMap.set(row.userId, {});
+      }
+      userStatsMap.set(row.userId, { ...userStatsMap.get(row.userId), pending: row.count });
+    }
+    for (const row of allCounts) {
+      if (!userStatsMap.get(row.userId)) {
+        userStatsMap.set(row.userId, {});
+      }
+      userStatsMap.set(row.userId, { ...userStatsMap.get(row.userId), all: row.count });
+    }
+    for (const [userId, stats] of userStatsMap.entries()) {
+      await workflowPlugin.updateTasksStats(userId, MANUAL_TASK_TYPE, stats, { transaction });
+    }
+  };
+
   async load() {
     this.app.resourceManager.define({
       name: 'workflowManualTasks',
@@ -55,17 +134,30 @@ export default class extends Plugin {
     const workflowPlugin = this.app.pm.get(WorkflowPlugin) as WorkflowPlugin;
     workflowPlugin.registerInstruction('manual', ManualInstruction);
 
-    this.db.on('workflowManualTasks.afterSave', async (task: WorkflowManualTaskModel, options) => {
-      await workflowPlugin.toggleTaskStatus(
-        {
-          type: MANUAL_TASK_TYPE,
-          key: `${task.id}`,
+    this.db.on('workflowManualTasks.afterSave', async (task: Model, { transaction }) => {
+      const workflowId = Array.from(workflowPlugin.enabledCache.keys());
+      const ModelClass = task.constructor as unknown as Model;
+      const pending = await ModelClass.count({
+        where: {
           userId: task.userId,
-          workflowId: task.workflowId,
+          workflowId,
+          status: TASK_STATUS.PENDING,
         },
-        Boolean(task.status),
-        options,
-      );
+        col: 'id',
+        transaction,
+      });
+      const all = await ModelClass.count({
+        where: {
+          userId: task.userId,
+          workflowId,
+        },
+        col: 'id',
+        transaction,
+      });
+      await workflowPlugin.updateTasksStats(task.userId, MANUAL_TASK_TYPE, { pending, all }, { transaction });
     });
+
+    this.db.on('workflows.afterUpdate', this.onWorkflowStatusChange);
+    // this.db.on('workflows.afterDestroy', this.onWorkflowStatusChange);
   }
 }

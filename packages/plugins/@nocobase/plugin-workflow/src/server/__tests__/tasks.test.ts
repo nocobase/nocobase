@@ -32,7 +32,7 @@ describe('workflow > tasks', () => {
     WorkflowModel = db.getCollection('workflows').model;
     PostRepo = db.getCollection('posts').repository;
     plugin = app.pm.get(Plugin) as Plugin;
-    TaskRepo = db.getCollection('workflowTasks').repository;
+    TaskRepo = db.getCollection('userWorkflowTasks').repository;
     UserRepo = db.getCollection('users').repository;
 
     await UserRepo.create({});
@@ -50,48 +50,52 @@ describe('workflow > tasks', () => {
         type: 'syncTrigger',
       });
 
-      await plugin.trigger(workflow, {});
-
-      const e1s = await workflow.getExecutions();
-      expect(e1s.length).toBe(1);
-
       const tasks = await TaskRepo.createMany({
         records: [
           {
             userId: users[0].id,
-            workflowId: workflow.id,
-            type: 'test',
-          },
-          {
-            userId: users[0].id,
-            workflowId: workflow.id,
-            type: 'test',
+            type: 'test1',
+            stats: { pending: 1, all: 2 },
           },
           {
             userId: users[1].id,
-            workflowId: workflow.id,
-            type: 'test',
+            type: 'test1',
+            stats: { pending: 0, all: 3 },
+          },
+          {
+            userId: users[0].id,
+            type: 'test2',
+            stats: { pending: 0, all: 0 },
+          },
+          {
+            userId: users[1].id,
+            type: 'test2',
+            stats: { pending: 2, all: 2 },
+          },
+          {
+            userId: users[1].id,
+            type: 'test3',
+            stats: { pending: 0, all: 1 },
           },
         ],
       });
 
-      const res1 = await userAgents[0].resource('workflowTasks').countMine();
+      const res1 = await userAgents[0].resource('userWorkflowTasks').listMine();
 
       expect(res1.status).toBe(200);
-      expect(res1.body.data[0].count).toBe(2);
+      expect(res1.body.data.length).toBe(2);
+      expect(res1.body.data.find((item) => item.type === 'test1')).toMatchObject({
+        userId: users[0].id,
+        stats: { pending: 1, all: 2 },
+      });
 
-      const res2 = await userAgents[1].resource('workflowTasks').countMine();
+      const res2 = await userAgents[1].resource('userWorkflowTasks').listMine();
       expect(res2.status).toBe(200);
-      expect(res2.body.data[0].count).toBe(1);
-
-      await workflow.destroy();
-
-      const res3 = await userAgents[0].resource('workflowTasks').countMine();
-      expect(res3.status).toBe(200);
-      expect(res3.body.data.length).toBe(0);
-      const res4 = await userAgents[1].resource('workflowTasks').countMine();
-      expect(res4.status).toBe(200);
-      expect(res4.body.data.length).toBe(0);
+      expect(res2.body.data.length).toBe(3);
+      expect(res1.body.data.find((item) => item.type === 'test3')).toMatchObject({
+        userId: users[1].id,
+        stats: { pending: 0, all: 0 },
+      });
     });
   });
 });

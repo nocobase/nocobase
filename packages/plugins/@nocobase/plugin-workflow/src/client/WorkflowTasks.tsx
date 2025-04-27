@@ -64,7 +64,9 @@ export interface TaskTypeOptions {
   // children?: TaskTypeOptions[];
 }
 
-const TasksCountsContext = createContext<{ reload: () => void; counts: Record<string, number>; total: number }>({
+type Stats = Record<string, { pending: number; all: number }>;
+
+const TasksCountsContext = createContext<{ reload: () => void; counts: Stats; total: number }>({
   reload() {},
   counts: {},
   total: 0,
@@ -94,7 +96,7 @@ function MenuLink({ type }: any) {
       `}
     >
       <span>{typeTitle}</span>
-      <Badge count={counts[type] || 0} size="small" />
+      <Badge count={counts[type]?.pending || 0} size="small" />
     </Link>
   );
 }
@@ -148,16 +150,19 @@ function StatusTabs() {
 
 function useTaskTypeItems() {
   const workflowPlugin = usePlugin(PluginWorkflowClient);
+  const { counts } = useContext(TasksCountsContext);
 
   return useMemo(
     () =>
-      Array.from(workflowPlugin.taskTypes.getKeys()).map((key: string) => {
-        return {
-          key,
-          label: <MenuLink type={key} />,
-        };
-      }),
-    [workflowPlugin.taskTypes],
+      Array.from(workflowPlugin.taskTypes.getKeys())
+        .filter((key) => Boolean(counts[key]?.all))
+        .map((key: string) => {
+          return {
+            key,
+            label: <MenuLink type={key} />,
+          };
+        }),
+    [counts, workflowPlugin.taskTypes],
   );
 }
 
@@ -306,10 +311,10 @@ function WorkflowTasksLink() {
   const { reload, total } = useContext(TasksCountsContext);
 
   const types = Array.from(workflowPlugin.taskTypes.getKeys());
-  return types.length ? (
+  return types.length && total ? (
     <Tooltip title={lang('Workflow todos')}>
       <Button>
-        <Link to={`/admin/workflow/tasks/${types[0]}`} onClick={reload}>
+        <Link to={`/admin/workflow/tasks/${types[0]}/${TASK_STATUS.PENDING}`} onClick={reload}>
           <Badge count={total} size="small">
             <CheckCircleOutlined />
           </Badge>
@@ -319,24 +324,27 @@ function WorkflowTasksLink() {
   ) : null;
 }
 
-function transform(detail) {
-  return detail.reduce((result, stats) => {
-    result[stats.type] = stats.count;
+function transform(records) {
+  return records.reduce((result, record) => {
+    result[record.type] = record.stats;
     return result;
   }, {});
 }
 
 function TasksCountsProvider(props: any) {
   const app = useApp();
-  const [counts, setCounts] = useState<Record<string, number>>({});
-  const onTaskUpdate = useCallback(({ detail = [] }: CustomEvent) => {
-    setCounts(transform(detail));
+  const [counts, setCounts] = useState<Stats>({});
+  const onTaskUpdate = useCallback(({ detail }: CustomEvent) => {
+    setCounts((prev) => ({
+      ...prev,
+      ...transform([detail]),
+    }));
   }, []);
 
   const { runAsync } = useRequest(
     {
-      resource: 'workflowTasks',
-      action: 'countMine',
+      resource: 'userWorkflowTasks',
+      action: 'listMine',
     },
     {
       manual: true,
@@ -365,7 +373,7 @@ function TasksCountsProvider(props: any) {
     };
   }, [app.eventBus, onTaskUpdate]);
 
-  const total = Object.values(counts).reduce((a, b) => a + b, 0) || 0;
+  const total = Object.values(counts).reduce((result, item) => result + item.pending, 0) || 0;
 
   return <TasksCountsContext.Provider value={{ reload, total, counts }}>{props.children}</TasksCountsContext.Provider>;
 }

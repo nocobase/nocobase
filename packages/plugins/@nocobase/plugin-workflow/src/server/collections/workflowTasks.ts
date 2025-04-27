@@ -9,6 +9,9 @@
 
 import { CollectionOptions } from '@nocobase/database';
 
+/**
+ * @deprecated
+ */
 export default function () {
   return {
     dumpRules: 'required',
