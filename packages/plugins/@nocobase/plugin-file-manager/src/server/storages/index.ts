@@ -7,12 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import Path from 'path';
-import { StorageEngine } from 'multer';
-import urlJoin from 'url-join';
 import { isURL } from '@nocobase/utils';
+import axios, { AxiosRequestConfig } from 'axios';
+import { StorageEngine } from 'multer';
+import Path from 'path';
+import type { Readable } from 'stream';
+import urlJoin from 'url-join';
 import { encodeURL, ensureUrlEncoded, getFileKey } from '../utils';
-
 export interface StorageModel {
   id?: number;
   title: string;
@@ -32,6 +33,7 @@ export interface AttachmentModel {
   path: string;
   url: string;
   storageId: number;
+  mimetype: string;
 }
 
 export abstract class StorageType {
@@ -84,6 +86,26 @@ export abstract class StorageType {
       preview && this.storage.options.thumbnailRule,
     ].filter(Boolean);
     return urlJoin(keys);
+  }
+
+  async getFileStream(file: AttachmentModel): Promise<{ stream: Readable; contentType?: string }> {
+    try {
+      const fileURL = await this.getFileURL(file);
+      const requestOptions: AxiosRequestConfig = {
+        responseType: 'stream',
+        validateStatus: (status) => status === 200,
+        timeout: 30000, // 30 seconds timeout
+      };
+
+      const response = await axios.get(fileURL, requestOptions);
+
+      return {
+        stream: response.data,
+        contentType: response.headers['content-type'],
+      };
+    } catch (err) {
+      throw new Error(`fetch file failed: ${err}`);
+    }
   }
 }
 
