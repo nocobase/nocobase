@@ -29,10 +29,10 @@ import {
   useNavigateNoUpdate,
   useRouterBasename,
 } from '../../../application/CustomRouterContextProvider';
+import { AppNotFound } from '../../../common/AppNotFound';
 import { useDocumentTitle } from '../../../document-title';
 import { useGlobalTheme } from '../../../global-theme';
 import { Icon } from '../../../icon';
-import { AppNotFound } from '../../../nocobase-buildin-plugin';
 import {
   NocoBaseDesktopRouteType,
   NocoBaseRouteContext,
