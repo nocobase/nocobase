@@ -20,6 +20,7 @@ import { AIEmployeesManager } from './ai-employees/ai-employees-manager';
 import Snowflake from './snowflake';
 import * as aiEmployeeActions from './resource/aiEmployees';
 import { z } from 'zod';
+import { googleGenAIProviderOptions } from './llm-providers/google-genai';
 
 export class PluginAIServer extends Plugin {
   aiManager = new AIManager();
@@ -40,6 +41,7 @@ export class PluginAIServer extends Plugin {
   async load() {
     this.aiManager.registerLLMProvider('openai', openaiProviderOptions);
     this.aiManager.registerLLMProvider('deepseek', deepseekProviderOptions);
+    this.aiManager.registerLLMProvider('google-genai', googleGenAIProviderOptions);
     this.aiManager.registerTool('formFiller', {
       title: '{{t("Form filler")}}',
       description: '{{t("Fill the form with the given content")}}',

@@ -103,7 +103,6 @@ const Edit: React.FC = () => {
               prompt: {
                 type: 'string',
                 title: t('Personalized content'),
-                required: true,
                 'x-decorator': 'FormItem',
                 'x-component': 'Input.TextArea',
                 default: currentEmployee?.userConfig?.prompt,

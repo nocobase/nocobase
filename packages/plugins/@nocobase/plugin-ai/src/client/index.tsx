@@ -20,6 +20,7 @@ import { aiEmployeesInitializer } from './ai-employees/initializer/AIEmployees';
 import { aiEmployeeButtonSettings } from './ai-employees/settings/AIEmployeeButton';
 import { withAISelectable } from './ai-employees/selector/withAISelectable';
 import { useAISelectionContext } from './ai-employees/selector/AISelectorProvider';
+import { googleGenAIProviderOptions } from './llm-providers/google-genai';
 const { AIEmployeesProvider } = lazy(() => import('./ai-employees/AIEmployeesProvider'), 'AIEmployeesProvider');
 const { AIEmployeeChatProvider } = lazy(
   () => import('./ai-employees/AIEmployeeChatProvider'),
@@ -93,6 +94,7 @@ export class PluginAIClient extends Plugin {
 
     this.aiManager.registerLLMProvider('openai', openaiProviderOptions);
     this.aiManager.registerLLMProvider('deepseek', deepseekProviderOptions);
+    this.aiManager.registerLLMProvider('google-genai', googleGenAIProviderOptions);
     this.aiManager.chatSettings.set('messages', {
       title: tval('Messages'),
       Component: MessagesSettings,

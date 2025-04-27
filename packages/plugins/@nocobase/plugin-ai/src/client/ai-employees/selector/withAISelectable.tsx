@@ -8,10 +8,9 @@
  */
 
 import { createStyles } from '@nocobase/client';
-import React, { ComponentType, forwardRef, useEffect, useMemo, useReducer } from 'react';
+import React, { ComponentType } from 'react';
 import { useAISelectionContext } from './AISelectorProvider';
 import { useFieldSchema, useField } from '@formily/react';
-import { useForm } from '@formily/react';
 
 const useStyles = createStyles(({ token, css }) => {
   return {

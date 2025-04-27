@@ -118,15 +118,5 @@ export const ToolCard: React.FC<{
     },
   }));
 
-  return (
-    <Collapse
-      style={{
-        marginTop: '32px',
-      }}
-      items={items}
-      size="small"
-      bordered={false}
-      defaultActiveKey={[tools[0].name]}
-    />
-  );
+  return <Collapse items={items} size="small" bordered={false} defaultActiveKey={[tools[0].name]} />;
 };

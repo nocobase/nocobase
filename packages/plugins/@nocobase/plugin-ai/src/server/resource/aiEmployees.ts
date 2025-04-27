@@ -50,7 +50,7 @@ export const listByUser = async (ctx: Context, next: Next) => {
 
 export const updateUserPrompt = async (ctx: Context, next: Next) => {
   const { aiEmployee, prompt } = ctx.action.params.values || {};
-  if (!aiEmployee || !prompt) {
+  if (!aiEmployee) {
     ctx.throw(400);
   }
   const user = ctx.auth.user;

@@ -59,10 +59,16 @@ const AIMessageRenderer: React.FC<{
           }}
           variant="borderless"
           content={
-            <>
-              <Markdown markdown={msg.content} />
+            <div
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 16,
+              }}
+            >
+              {typeof msg.content === 'string' && <Markdown markdown={msg.content} />}
               {msg.tool_calls?.length && <ToolCard tools={msg.tool_calls} messageId={msg.messageId} />}
-            </>
+            </div>
           }
           footer={
             <Space>
@@ -82,7 +88,9 @@ const AIMessageRenderer: React.FC<{
                   />
                 }
               />
-              <Button color="default" variant="text" size="small" icon={<CopyOutlined onClick={copy} />} />
+              {typeof msg.content === 'string' && (
+                <Button color="default" variant="text" size="small" icon={<CopyOutlined onClick={copy} />} />
+              )}
             </Space>
           }
         />

@@ -20,6 +20,7 @@
     "nodejs-snowflake": "^2.0.1",
     "use-context-selector": "^2.0.0",
     "react-markdown": "^10.1.0",
-    "react-syntax-highlighter": "^15.6.1"
+    "react-syntax-highlighter": "^15.6.1",
+    "@langchain/google-genai": "^0.2.5"
   }
 }

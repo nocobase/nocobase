@@ -11,7 +11,6 @@ import { BaseChatModel } from '@langchain/core/language_models/chat_models';
 import axios from 'axios';
 import { parseMessages } from './handlers/parse-messages';
 import { Application } from '@nocobase/server';
-import { z } from 'zod';
 
 export abstract class LLMProvider {
   serviceOptions: Record<string, any>;

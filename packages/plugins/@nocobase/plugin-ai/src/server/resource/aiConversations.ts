@@ -40,12 +40,15 @@ async function formatMessages(ctx: Context, messages: any[]) {
 
   for (const msg of messages) {
     let content = msg.content.content;
+    if (typeof content !== 'string') {
+      continue;
+    }
     content = await parseUISchema(ctx, content);
     if (!content) {
       continue;
     }
     formattedMessages.push({
-      role: msg.role === 'user' ? 'user' : 'ai',
+      role: msg.role === 'user' ? 'user' : 'assistant',
       content,
     });
   }
@@ -122,16 +125,15 @@ async function processChatStream(
   const plugin = ctx.app.pm.get('ai') as PluginAIServer;
   const { aiEmployeeUsername, signal, messageId } = options;
 
-  let message = '';
   let gathered: any;
   try {
     for await (const chunk of stream) {
+      console.log(chunk);
       gathered = gathered !== undefined ? concat(gathered, chunk) : chunk;
       if (!chunk.content) {
         continue;
       }
       ctx.res.write(`data: ${JSON.stringify({ type: 'content', body: chunk.content })}\n\n`);
-      message += chunk.content;
     }
   } catch (err) {
     ctx.log.error(err);
@@ -139,7 +141,7 @@ async function processChatStream(
 
   plugin.aiEmployeesManager.conversationController.delete(sessionId);
 
-  message = message.trim();
+  const message = gathered.content;
   if (!message && !gathered?.tool_calls?.length && !signal.aborted) {
     ctx.res.write(`data: ${JSON.stringify({ type: 'error', body: 'No content' })}\n\n`);
     ctx.res.end();
