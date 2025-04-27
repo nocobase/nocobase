@@ -53,14 +53,33 @@ export const filterActionSettings = new SchemaSettings({
                 default: fieldSchema?.['x-component-props']?.icon,
                 'x-component-props': {},
               },
+              onlyIcon: {
+                'x-decorator': 'FormItem',
+                'x-component': 'Checkbox',
+                title: t('Icon only'),
+                default: fieldSchema?.['x-component-props']?.onlyIcon,
+                'x-component-props': {},
+                'x-reactions': [
+                  {
+                    dependencies: ['icon'],
+                    fulfill: {
+                      state: {
+                        hidden: '{{!$deps[0]}}',
+                      },
+                    },
+                  },
+                ],
+              },
             },
           } as ISchema,
-          onSubmit: ({ title, icon }) => {
+          onSubmit: ({ title, icon, onlyIcon }) => {
             fieldSchema.title = title;
             field.title = title;
             field.componentProps.icon = icon;
+            field.componentProps.onlyIcon = onlyIcon;
             fieldSchema['x-component-props'] = fieldSchema['x-component-props'] || {};
             fieldSchema['x-component-props'].icon = icon;
+            fieldSchema['x-component-props'].onlyIcon = onlyIcon;
             dn.emit('patch', {
               schema: {
                 ['x-uid']: fieldSchema['x-uid'],

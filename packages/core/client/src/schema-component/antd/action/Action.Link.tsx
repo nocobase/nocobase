@@ -35,7 +35,7 @@ export const ActionLink: ComposedAction = withDynamicSchemaProps(
     return (
       <Action
         {...props}
-        component={props.component || WrapperComponent}
+        component={props.component || 'a'}
         className={classnames('nb-action-link', props.className)}
         isLink
       />
