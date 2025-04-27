@@ -335,7 +335,7 @@ export class PluginFileManagerServer extends Plugin {
     }
     return !!storage.options?.public;
   }
-  async getFileStream(file: AttachmentModel): Promise<{ stream: Readable }> {
+  async getFileStream(file: AttachmentModel): Promise<{ stream: Readable; contentType?: string }> {
     if (!file.storageId) {
       throw new Error('File storageId not found');
     }

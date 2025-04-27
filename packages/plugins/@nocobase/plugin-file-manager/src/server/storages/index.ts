@@ -9,8 +9,6 @@
 
 import { isURL } from '@nocobase/utils';
 import axios, { AxiosRequestConfig } from 'axios';
-import fs from 'fs';
-import fse from 'fs-extra';
 import { StorageEngine } from 'multer';
 import Path from 'path';
 import type { Readable } from 'stream';
