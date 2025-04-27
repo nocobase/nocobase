@@ -362,6 +362,10 @@ const InternalAction: React.FC<InternalActionProps> = observer(function Com(prop
 
 InternalAction.displayName = 'InternalAction';
 
+const MemoizedButton = React.memo(({ button }: any) => {
+  return button;
+});
+
 Action.Popover = function ActionPopover(props) {
   const { button, visible, setVisible } = useActionContext();
   const content = (
@@ -369,6 +373,7 @@ Action.Popover = function ActionPopover(props) {
       {props.children}
     </ErrorBoundary>
   );
+
   return (
     <StablePopover
       {...props}
@@ -379,7 +384,7 @@ Action.Popover = function ActionPopover(props) {
       }}
       content={content}
     >
-      {button}
+      <MemoizedButton button={button} />
     </StablePopover>
   );
 };
