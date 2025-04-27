@@ -362,10 +362,6 @@ const InternalAction: React.FC<InternalActionProps> = observer(function Com(prop
 
 InternalAction.displayName = 'InternalAction';
 
-const MemoizedButton = React.memo(({ button }: any) => {
-  return button;
-});
-
 Action.Popover = function ActionPopover(props) {
   const { button, visible, setVisible } = useActionContext();
   const content = (
@@ -384,7 +380,7 @@ Action.Popover = function ActionPopover(props) {
       }}
       content={content}
     >
-      <MemoizedButton button={button} />
+      {button}
     </StablePopover>
   );
 };
@@ -651,7 +647,7 @@ const RenderButtonInner = observer(
         disabled={disabled}
         style={isLink ? restButtonStyle : buttonStyle}
         onClick={process.env.__E2E__ ? handleButtonClick : debouncedClick} // E2E 中的点击操作都是很快的，如果加上 debounce 会导致 E2E 测试失败
-        component={WrapperComponent}
+        component={onlyIcon || tarComponent ? WrapperComponent : tarComponent || Button}
         className={classnames(componentCls, hashId, className, 'nb-action')}
         type={type === 'danger' ? undefined : type}
         title={actionTitle}
