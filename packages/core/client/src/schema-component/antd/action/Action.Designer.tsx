@@ -7,18 +7,16 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { ISchema, useField, useFieldSchema } from '@formily/react';
+import { ISchema, useField, useFieldSchema, useForm } from '@formily/react';
 import { isValid, uid } from '@formily/shared';
-import { ModalProps, Select } from 'antd';
-import React, { useCallback, useMemo } from 'react';
+import { ModalProps } from 'antd';
+import React, { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCompile, useDesignable } from '../..';
-import { isInitializersSame, useApp, usePlugin } from '../../../application';
-import { useGlobalVariable } from '../../../application/hooks/useGlobalVariable';
+import { isInitializersSame, useApp } from '../../../application';
 import { SchemaSettingOptions, SchemaSettings } from '../../../application/schema-settings';
 import { useSchemaToolbar } from '../../../application/schema-toolbar';
 import { useCollectionManager_deprecated, useCollection_deprecated } from '../../../collection-manager';
-import { highlightBlock, startScrollEndTracking, stopScrollEndTracking, unhighlightBlock } from '../../../filter-provider/highlightBlock';
 import { FlagProvider } from '../../../flag-provider';
 import { SaveMode } from '../../../modules/actions/submit/createSubmitActionSettings';
 import { useOpenModeContext } from '../../../modules/popup/OpenModeProvider';
@@ -34,10 +32,10 @@ import {
   SchemaSettingsSwitchItem,
 } from '../../../schema-settings/SchemaSettings';
 import { DefaultValueProvider } from '../../../schema-settings/hooks/useIsAllowToSetDefaultValue';
-import { useAllDataBlocks } from '../page/AllDataBlocksProvider';
 import { useLinkageAction } from './hooks';
-import { useAfterSuccessOptions } from './hooks/useGetAfterSuccessVariablesOptions';
 import { requestSettingsSchema } from './utils';
+import { useVariableOptions } from '../../../schema-settings/VariableInput/hooks/useVariableOptions';
+import { useCollectionRecordData } from '../../../data-source';
 
 const MenuGroup = (props) => {
   return props.children;
@@ -71,24 +69,7 @@ export function ButtonEditor(props) {
               title: t('Button icon'),
               default: fieldSchema?.['x-component-props']?.icon,
               'x-component-props': {},
-            },
-            onlyIcon: {
-              'x-decorator': 'FormItem',
-              'x-component': 'Checkbox',
-              title: t('Icon only'),
-              default: fieldSchema?.['x-component-props']?.onlyIcon,
-              'x-component-props': {},
-              'x-visible': isLink,
-              'x-reactions': [
-                {
-                  dependencies: ['icon'],
-                  fulfill: {
-                    state: {
-                      hidden: '{{!$deps[0]}}',
-                    },
-                  },
-                },
-              ],
+              'x-visible': !isLink,
             },
             iconColor: {
               title: t('Color'),
@@ -117,14 +98,13 @@ export function ButtonEditor(props) {
           },
         } as ISchema
       }
-      onSubmit={({ title, icon, type, iconColor, onlyIcon }) => {
+      onSubmit={({ title, icon, type, iconColor }) => {
         if (field.address.toString() === fieldSchema.name) {
           field.title = title;
           field.componentProps.iconColor = iconColor;
           field.componentProps.icon = icon;
           field.componentProps.danger = type === 'danger';
           field.componentProps.type = type || field.componentProps.type;
-          field.componentProps.onlyIcon = onlyIcon;
         } else {
           field.form.query(new RegExp(`.${fieldSchema.name}$`)).forEach((fieldItem) => {
             fieldItem.title = title;
@@ -132,7 +112,6 @@ export function ButtonEditor(props) {
             fieldItem.componentProps.icon = icon;
             fieldItem.componentProps.danger = type === 'danger';
             fieldItem.componentProps.type = type || fieldItem.componentProps.type;
-            fieldItem.componentProps.onlyIcon = onlyIcon;
           });
         }
 
@@ -142,7 +121,6 @@ export function ButtonEditor(props) {
         fieldSchema['x-component-props'].icon = icon;
         fieldSchema['x-component-props'].danger = type === 'danger';
         fieldSchema['x-component-props'].type = type || field.componentProps.type;
-        fieldSchema['x-component-props'].onlyIcon = onlyIcon;
 
         dn.emit('patch', {
           schema: {
@@ -191,13 +169,6 @@ export function AssignedFieldValues() {
     'x-component': 'Grid',
     'x-initializer': 'assignFieldValuesForm:configureFields',
   };
-  if (fieldSchema['x-template-uid']) {
-    initialSchema['x-template-root-ref'] = {
-      'x-template-uid': fieldSchema['x-template-uid'],
-      'x-path': 'x-action-settings.schemaUid',
-    };
-  }
-
   const tips = {
     'customize:update': t(
       'After clicking the custom button, the following fields of the current record will be saved according to the following form.',
@@ -284,117 +255,26 @@ export function SkipValidation() {
   );
 }
 
-const fieldNames = {
-  value: 'value',
-  label: 'label',
-};
-const useVariableProps = (environmentVariables) => {
-  const scope = useAfterSuccessOptions();
-  return {
-    scope: [environmentVariables, ...scope].filter(Boolean),
-    fieldNames,
-  };
-};
-
-const hideDialog = (dialogClassName: string) => {
-  const dialogMask = document.querySelector<HTMLElement>(`.${dialogClassName} > .ant-modal-mask`);
-  const dialogWrap = document.querySelector<HTMLElement>(`.${dialogClassName} > .ant-modal-wrap`);
-  if (dialogMask) {
-    dialogMask.style.opacity = '0';
-    dialogMask.style.transition = 'opacity 0.5s ease';
-  }
-  if (dialogWrap) {
-    dialogWrap.style.opacity = '0';
-    dialogWrap.style.transition = 'opacity 0.5s ease';
-  }
-}
-
-const showDialog = (dialogClassName: string) => {
-  const dialogMask = document.querySelector<HTMLElement>(`.${dialogClassName} > .ant-modal-mask`);
-  const dialogWrap = document.querySelector<HTMLElement>(`.${dialogClassName} > .ant-modal-wrap`);
-  if (dialogMask) {
-    dialogMask.style.opacity = '1';
-    dialogMask.style.transition = 'opacity 0.5s ease';
-  }
-  if (dialogWrap) {
-    dialogWrap.style.opacity = '1';
-    dialogWrap.style.transition = 'opacity 0.5s ease';
-  }
-}
-
-export const BlocksSelector = (props) => {
-  const { getAllDataBlocks } = useAllDataBlocks();
-  const allDataBlocks = getAllDataBlocks();
-  const compile = useCompile();
-  const { t } = useTranslation();
-
-  // 转换 allDataBlocks 为 Select 选项
-  const options = useMemo(() => {
-    return allDataBlocks.map(block => {
-      // 防止列表中出现已关闭的弹窗中的区块
-      if (!block.dom?.isConnected) {
-        return null;
-      }
-
-      const title = `${compile(block.collection.title)} #${block.uid.slice(0, 4)}`;
-      return {
-        label: title,
-        value: block.uid,
-        onMouseEnter() {
-          block.highlightBlock();
-          hideDialog('dialog-after-successful-submission');
-          startScrollEndTracking(block.dom, () => {
-            highlightBlock(block.dom.cloneNode(true) as HTMLElement, block.dom.getBoundingClientRect());
-          });
-        },
-        onMouseLeave() {
-          block.unhighlightBlock();
-          showDialog('dialog-after-successful-submission');
-          stopScrollEndTracking(block.dom);
-          unhighlightBlock();
-        }
-      }
-    }).filter(Boolean);
-  }, [allDataBlocks, t]);
-
-  return (
-    <Select
-      value={props.value}
-      mode="multiple"
-      allowClear
-      placeholder={t('Select data blocks to refresh')}
-      options={options}
-      onChange={props.onChange}
-    />
-  );
-}
-
 export function AfterSuccess() {
   const { dn } = useDesignable();
   const { t } = useTranslation();
   const fieldSchema = useFieldSchema();
   const { onSuccess } = fieldSchema?.['x-action-settings'] || {};
-  const environmentVariables = useGlobalVariable('$env');
-  const templatePlugin: any = usePlugin('@nocobase/plugin-block-template');
-  const isInBlockTemplateConfigPage = templatePlugin?.isInBlockTemplateConfigPage?.();
-
   return (
     <SchemaSettingsModalItem
-      dialogRootClassName='dialog-after-successful-submission'
-      width={700}
       title={t('After successful submission')}
       initialValues={
         onSuccess
           ? {
-            actionAfterSuccess: onSuccess?.redirecting ? 'redirect' : 'previous',
-            ...onSuccess,
-          }
+              actionAfterSuccess: onSuccess?.redirecting ? 'redirect' : 'previous',
+              ...onSuccess,
+            }
           : {
-            manualClose: false,
-            redirecting: false,
-            successMessage: '{{t("Saved successfully")}}',
-            actionAfterSuccess: 'previous',
-          }
+              manualClose: false,
+              redirecting: false,
+              successMessage: '{{t("Saved successfully")}}',
+              actionAfterSuccess: 'previous',
+            }
       }
       schema={
         {
@@ -458,21 +338,8 @@ export function AfterSuccess() {
             redirectTo: {
               title: t('Link'),
               'x-decorator': 'FormItem',
-              'x-component': 'Variable.TextArea',
-              // eslint-disable-next-line react-hooks/rules-of-hooks
-              'x-use-component-props': () => useVariableProps(environmentVariables),
-            },
-            blocksToRefresh: {
-              type: 'array',
-              title: t('Refresh data blocks'),
-              'x-decorator': 'FormItem',
-              'x-use-decorator-props': () => {
-                return {
-                  tooltip: t('After successful submission, the selected data blocks will be automatically refreshed.'),
-                };
-              },
-              'x-component': BlocksSelector,
-              'x-hidden': isInBlockTemplateConfigPage, // 模板配置页面暂不支持该配置
+              'x-component': 'Input',
+              'x-component-props': {},
             },
           },
         } as ISchema
@@ -704,6 +571,20 @@ export const actionSettingsItems: SchemaSettingOptions['items'] = [
     ],
   },
 ];
+
+const useSecondConFirmVariables = () => {
+  const fieldSchema = useFieldSchema();
+  const form = useForm();
+  const record = useCollectionRecordData();
+  const scope = useVariableOptions({
+    collectionField: { uiSchema: fieldSchema },
+    form,
+    record,
+    uiSchema: fieldSchema,
+    noDisabled: true,
+  });
+  return scope;
+};
 export function SecondConFirm() {
   const { dn } = useDesignable();
   const fieldSchema = useFieldSchema();
@@ -738,9 +619,11 @@ export function SecondConFirm() {
             },
             title: {
               'x-decorator': 'FormItem',
-              'x-component': 'Input.TextArea',
+              'x-component': 'Variable.RawTextArea',
               title: t('Title'),
-
+              'x-component-props': {
+                scope: useSecondConFirmVariables,
+              },
               'x-reactions': {
                 dependencies: ['enable'],
                 fulfill: {
@@ -752,8 +635,11 @@ export function SecondConFirm() {
             },
             content: {
               'x-decorator': 'FormItem',
-              'x-component': 'Input.TextArea',
+              'x-component': 'Variable.RawTextArea',
               title: t('Content'),
+              'x-component-props': {
+                scope: useSecondConFirmVariables,
+              },
               'x-reactions': {
                 dependencies: ['enable'],
                 fulfill: {

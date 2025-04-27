@@ -50,6 +50,7 @@ import { ActionContextProps, ActionProps, ComposedAction } from './types';
 import { linkageAction, setInitialActionState } from './utils';
 import { NAMESPACE_UI_SCHEMA } from '../../../i18n/constant';
 import { BlockContext } from '../../../block-provider/BlockProvider';
+import { useGetVariableValue } from '../../../common/useGetVariableValue';
 
 // 这个要放到最下面，否则会导致前端单测失败
 import { useApp } from '../../../application';
@@ -449,18 +450,26 @@ const RenderButton = ({
   const { t } = useTranslation();
   const { isPopupVisibleControlledByURL } = usePopupSettings();
   const { openPopup } = usePopupUtils();
-
+  const variables = useVariables();
+  const localVariables = useLocalVariables();
   const openPopupRef = useRef(null);
   openPopupRef.current = openPopup;
+  const scopes = {
+    variables,
+    localVariables,
+  };
 
   const handleButtonClick = useCallback(
-    (e: React.MouseEvent, checkPortal = true) => {
+    async (e: React.MouseEvent, checkPortal = true) => {
       if (checkPortal && isPortalInBody(e.target as Element)) {
         return;
       }
       e.preventDefault();
       e.stopPropagation();
-
+      // eslint-disable-next-line react-hooks/rules-of-hooks
+      const resultTitle = await useGetVariableValue(confirm?.title, scopes);
+      // eslint-disable-next-line react-hooks/rules-of-hooks
+      const resultContent = await useGetVariableValue(confirm?.content, scopes);
       if (!disabled && aclCtx) {
         const onOk = () => {
           if (onClick) {
@@ -488,8 +497,8 @@ const RenderButton = ({
         };
         if (confirm?.enable !== false && confirm?.content) {
           modal.confirm({
-            title: t(confirm.title, { title: confirmTitle || title || field?.title }),
-            content: t(confirm.content, { title: confirmTitle || title || field?.title }),
+            title: t(resultTitle, { title: confirmTitle || title || field?.title }),
+            content: t(resultContent, { title: confirmTitle || title || field?.title }),
             onOk,
           });
         } else {

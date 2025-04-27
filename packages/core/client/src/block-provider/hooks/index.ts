@@ -52,6 +52,7 @@ import { useBlockRequestContext, useFilterByTk, useParamsFromRecord } from '../B
 import { useOperators } from '../CollectOperators';
 import { useDetailsBlockContext } from '../DetailsBlockProvider';
 import { TableFieldResource } from '../TableFieldProvider';
+import { useGetVariableValue } from '../../common/useGetVariableValue';
 
 export * from './useBlockHeightProps';
 export * from './useDataBlockParentRecord';
@@ -227,12 +228,6 @@ export function useCollectValuesToSubmit() {
   ]);
 }
 
-export function interpolateVariables(str: string, scope: Record<string, any>): string {
-  return str.replace(/\{\{\s*([a-zA-Z0-9_$.-]+?)\s*\}\}/g, (_, key) => {
-    return scope[key] !== undefined ? String(scope[key]) : '';
-  });
-}
-
 export const useCreateActionProps = () => {
   const filterByTk = useFilterByTk();
   const record = useCollectionRecord();
@@ -282,11 +277,11 @@ export const useCreateActionProps = () => {
         });
         let redirectTo = rawRedirectTo;
         if (rawRedirectTo) {
-          const { exp, scope: expScope } = await replaceVariables(rawRedirectTo, {
+          // eslint-disable-next-line react-hooks/rules-of-hooks
+          redirectTo = await useGetVariableValue(rawRedirectTo, {
             variables,
             localVariables: [...localVariables, { name: '$record', ctx: new Proxy(data?.data?.data, {}) }],
           });
-          redirectTo = interpolateVariables(exp, expScope);
         }
 
         if (actionAfterSuccess === 'previous' || (!actionAfterSuccess && redirecting !== true)) {
@@ -681,11 +676,11 @@ export const useCustomizeUpdateActionProps = () => {
 
       let redirectTo = rawRedirectTo;
       if (rawRedirectTo) {
-        const { exp, scope: expScope } = await replaceVariables(rawRedirectTo, {
+        // eslint-disable-next-line react-hooks/rules-of-hooks
+        redirectTo = await useGetVariableValue(rawRedirectTo, {
           variables,
-          localVariables: [...localVariables, { name: '$record', ctx: new Proxy(result?.data?.data?.[0], {}) }],
+          localVariables: [...localVariables, { name: '$record', ctx: new Proxy(data?.data?.data, {}) }],
         });
-        redirectTo = interpolateVariables(exp, expScope);
       }
 
       if (actionAfterSuccess === 'previous' || (!actionAfterSuccess && redirecting !== true)) {
@@ -1045,11 +1040,11 @@ export const useUpdateActionProps = () => {
         }
         let redirectTo = rawRedirectTo;
         if (rawRedirectTo) {
-          const { exp, scope: expScope } = await replaceVariables(rawRedirectTo, {
+          // eslint-disable-next-line react-hooks/rules-of-hooks
+          redirectTo = await useGetVariableValue(rawRedirectTo, {
             variables,
-            localVariables: [...localVariables, { name: '$record', ctx: new Proxy(result?.data?.data?.[0], {}) }],
+            localVariables: [...localVariables, { name: '$record', ctx: new Proxy(data?.data?.data, {}) }],
           });
-          redirectTo = interpolateVariables(exp, expScope);
         }
 
         if (actionAfterSuccess === 'previous' || (!actionAfterSuccess && redirecting !== true)) {

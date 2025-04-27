@@ -20,8 +20,7 @@ import {
   useContextVariable,
   useLocalVariables,
   useVariables,
-  replaceVariables,
-  interpolateVariables,
+  useGetVariableValue,
 } from '@nocobase/client';
 import { isURL } from '@nocobase/utils/client';
 import { App } from 'antd';
@@ -84,19 +83,14 @@ export const useCustomizeRequestActionProps = () => {
           },
           responseType: fieldSchema['x-response-type'] === 'stream' ? 'blob' : 'json',
         });
-        try {
-          const { exp, scope: expScope } = await replaceVariables(successMessage, {
-            variables,
-            localVariables: [
-              ...localVariables,
-              { name: '$nResponse', ctx: new Proxy({ ...res?.data, ...res?.data?.data }, {}) },
-            ],
-          });
-          successMessage = interpolateVariables(exp, expScope);
-        } catch (error) {
-          console.log(error);
-        }
-
+        // eslint-disable-next-line react-hooks/rules-of-hooks
+        successMessage = await useGetVariableValue(successMessage, {
+          variables,
+          localVariables: [
+            ...localVariables,
+            { name: '$nResponse', ctx: new Proxy({ ...res?.data, ...res?.data?.data }, {}) },
+          ],
+        });
         if (res.headers['content-disposition']) {
           const contentDisposition = res.headers['content-disposition'];
           const utf8Match = contentDisposition.match(/filename\*=utf-8''([^;]+)/i);
