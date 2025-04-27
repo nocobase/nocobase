@@ -60,14 +60,16 @@ export default class InAppNotificationChannel extends BaseNotificationChannel {
       for (const clientId in clients) {
         const stream = clients[clientId];
         stream.write(
-          `data: ${JSON.stringify({
-            type: message.type,
-            data: {
-              ...message.data,
-              title: message.data.title || '',
-              content: message.data.content || '',
-            },
-          })}\n\n`,
+          `data: ${encodeURIComponent(
+            JSON.stringify({
+              type: message.type,
+              data: {
+                ...message.data,
+                title: message.data.title || '',
+                content: message.data.content || '',
+              },
+            }),
+          )}\n\n`,
         );
       }
     }

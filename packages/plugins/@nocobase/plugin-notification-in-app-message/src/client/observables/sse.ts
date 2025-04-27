@@ -8,11 +8,11 @@
  */
 
 import { observable, reaction } from '@formily/reactive';
-import { SSEData } from '../../types';
-import { messageMapObs, updateUnreadMsgsCount } from './message';
-import { fetchChannels } from './channel';
-import { getAPIClient } from '../utils';
 import { uid } from '@nocobase/utils/client';
+import { SSEData } from '../../types';
+import { getAPIClient } from '../utils';
+import { fetchChannels } from './channel';
+import { messageMapObs, updateUnreadMsgsCount } from './message';
 
 export const liveSSEObs = observable<{ value: SSEData | null }>({ value: null });
 reaction(
@@ -66,7 +66,8 @@ export const startMsgSSEStreamWithRetry: () => () => void = () => {
       if (done) break;
       const messages = value.split('\n\n').filter(Boolean);
       for (const message of messages) {
-        const sseData: SSEData = JSON.parse(message.replace(/^data:\s*/, '').trim());
+        const decodedMessage = decodeURIComponent(message);
+        const sseData: SSEData = JSON.parse(decodedMessage.replace(/^data:\s*/, '').trim());
         liveSSEObs.value = sseData;
       }
     }
