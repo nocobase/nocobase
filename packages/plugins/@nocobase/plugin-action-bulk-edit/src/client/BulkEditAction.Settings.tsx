@@ -127,6 +127,16 @@ export const deprecatedBulkEditActionSettings = new SchemaSettings({
       Component: UpdateMode,
     },
     {
+      name: 'linkageRules',
+      Component: SchemaSettingsLinkageRules,
+      useComponentProps() {
+        const { linkageRulesProps } = useSchemaToolbar();
+        return {
+          ...linkageRulesProps,
+        };
+      },
+    },
+    {
       name: 'remove',
       sort: 100,
       Component: RemoveButton as any,
