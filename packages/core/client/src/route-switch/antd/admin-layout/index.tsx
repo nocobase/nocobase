@@ -18,7 +18,6 @@ import { useTranslation } from 'react-i18next';
 import { Link, Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import {
   ACLRolesCheckProvider,
-  AppNotFound,
   CurrentAppInfoProvider,
   DndContext,
   Icon,
@@ -46,6 +45,7 @@ import {
   useLocationNoUpdate,
 } from '../../../application/CustomRouterContextProvider';
 import { Plugin } from '../../../application/Plugin';
+import { AppNotFound } from '../../../common/AppNotFound';
 import { withTooltipComponent } from '../../../hoc/withTooltipComponent';
 import { menuItemInitializer } from '../../../modules/menu/menuItemInitializer';
 import { useMenuTranslation } from '../../../schema-component/antd/menu/locale';
