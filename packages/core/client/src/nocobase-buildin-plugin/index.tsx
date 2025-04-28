@@ -14,12 +14,13 @@ import { getSubAppName } from '@nocobase/sdk';
 import { tval } from '@nocobase/utils/client';
 import { Button, Modal, Result, Spin } from 'antd';
 import React, { FC } from 'react';
-import { Navigate, useNavigate } from 'react-router-dom';
+import { Navigate } from 'react-router-dom';
 import { ACLPlugin } from '../acl';
 import { Application } from '../application';
 import { Plugin } from '../application/Plugin';
 import { BlockSchemaComponentPlugin } from '../block-provider';
 import { CollectionPlugin } from '../collection-manager';
+import { AppNotFound } from '../common/AppNotFound';
 import { RemoteDocumentTitlePlugin } from '../document-title';
 import { PinnedListPlugin } from '../plugin-manager';
 import { PMPlugin } from '../pm';
@@ -259,22 +260,6 @@ const AppMaintainingDialog: FC<{ app: Application; error: Error }> = observer(
   },
   { displayName: 'AppMaintainingDialog' },
 );
-
-export const AppNotFound = () => {
-  const navigate = useNavigate();
-  return (
-    <Result
-      status="404"
-      title="404"
-      subTitle="Sorry, the page you visited does not exist."
-      extra={
-        <Button onClick={() => navigate('/', { replace: true })} type="primary">
-          Back Home
-        </Button>
-      }
-    />
-  );
-};
 
 export class NocoBaseBuildInPlugin extends Plugin {
   async afterAdd() {

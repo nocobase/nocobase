@@ -15,6 +15,7 @@ import { useDesignable } from '../../../';
 import { useSchemaToolbar } from '../../../application';
 import { SchemaSettings } from '../../../application/schema-settings/SchemaSettings';
 import { ButtonEditor, RemoveButton } from '../../../schema-component/antd/action/Action.Designer';
+import { useCollectionManager_deprecated } from '../../../collection-manager';
 import {
   SchemaSettingsLinkageRules,
   SchemaSettingsModalItem,
@@ -96,6 +97,9 @@ export const customizeLinkActionSettings = new SchemaSettings({
       Component: SchemaSettingsLinkageRules,
       useComponentProps() {
         const { linkageRulesProps } = useSchemaToolbar();
+        const { association } = useDataBlockProps() || {};
+        const { getCollectionField } = useCollectionManager_deprecated();
+        const associationField = getCollectionField(association);
         return {
           ...linkageRulesProps,
         };

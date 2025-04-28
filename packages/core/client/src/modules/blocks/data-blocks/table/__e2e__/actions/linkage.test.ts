@@ -17,14 +17,14 @@ test('action linkage by row data', async ({ page, mockPage }) => {
     .getByLabel('action-Action.Link-Edit-update-roles-table-admin')
     .locator('.nb-action-title');
   const adminEditActionStyle = await adminEditAction.evaluate((element) => {
-    const computedStyle = window.getComputedStyle(element);
+    const computedStyle = window.getComputedStyle(element.querySelector('.nb-action-title'));
     return {
       opacity: computedStyle.opacity,
     };
   });
   const rootEditAction = page.getByLabel('action-Action.Link-Edit-update-roles-table-root').locator('.nb-action-title');
   const rootEditActionStyle = await rootEditAction.evaluate((element) => {
-    const computedStyle = window.getComputedStyle(element);
+    const computedStyle = window.getComputedStyle(element.querySelector('.nb-action-title'));
     return {
       opacity: computedStyle.opacity,
       // 添加其他你需要的样式属性
