@@ -19,6 +19,30 @@ import ManualInstruction from './ManualInstruction';
 import { MANUAL_TASK_TYPE, TASK_STATUS } from '../common/constants';
 
 export default class extends Plugin {
+  onTaskSave = async (task: Model, { transaction }) => {
+    const workflowPlugin = this.app.pm.get(WorkflowPlugin) as WorkflowPlugin;
+    const workflowId = Array.from(workflowPlugin.enabledCache.keys());
+    const ModelClass = task.constructor as unknown as Model;
+    const pending = await ModelClass.count({
+      where: {
+        userId: task.userId,
+        workflowId,
+        status: TASK_STATUS.PENDING,
+      },
+      col: 'id',
+      transaction,
+    });
+    const all = await ModelClass.count({
+      where: {
+        userId: task.userId,
+        workflowId,
+      },
+      col: 'id',
+      transaction,
+    });
+    await workflowPlugin.updateTasksStats(task.userId, MANUAL_TASK_TYPE, { pending, all }, { transaction });
+  };
+
   onWorkflowStatusChange = async (workflow, { transaction }) => {
     const workflowPlugin = this.app.pm.get(WorkflowPlugin) as WorkflowPlugin;
     const WorkflowManualTaskModel = this.db.getModel('workflowManualTasks');
@@ -64,7 +88,7 @@ export default class extends Plugin {
       const userId = [];
       for (const item of tasksByUser) {
         userId.push(item.userId);
-        userStatsMap.set(item.userId, {});
+        userStatsMap.set(item.userId, { pending: 0, all: 0 });
       }
 
       // 调整所有任务中的负责人的统计数字
@@ -90,13 +114,13 @@ export default class extends Plugin {
     }
     for (const row of pendingCounts) {
       if (!userStatsMap.get(row.userId)) {
-        userStatsMap.set(row.userId, {});
+        userStatsMap.set(row.userId, { pending: 0, all: 0 });
       }
       userStatsMap.set(row.userId, { ...userStatsMap.get(row.userId), pending: row.count });
     }
     for (const row of allCounts) {
       if (!userStatsMap.get(row.userId)) {
-        userStatsMap.set(row.userId, {});
+        userStatsMap.set(row.userId, { pending: 0, all: 0 });
       }
       userStatsMap.set(row.userId, { ...userStatsMap.get(row.userId), all: row.count });
     }
@@ -134,30 +158,9 @@ export default class extends Plugin {
     const workflowPlugin = this.app.pm.get(WorkflowPlugin) as WorkflowPlugin;
     workflowPlugin.registerInstruction('manual', ManualInstruction);
 
-    this.db.on('workflowManualTasks.afterSave', async (task: Model, { transaction }) => {
-      const workflowId = Array.from(workflowPlugin.enabledCache.keys());
-      const ModelClass = task.constructor as unknown as Model;
-      const pending = await ModelClass.count({
-        where: {
-          userId: task.userId,
-          workflowId,
-          status: TASK_STATUS.PENDING,
-        },
-        col: 'id',
-        transaction,
-      });
-      const all = await ModelClass.count({
-        where: {
-          userId: task.userId,
-          workflowId,
-        },
-        col: 'id',
-        transaction,
-      });
-      await workflowPlugin.updateTasksStats(task.userId, MANUAL_TASK_TYPE, { pending, all }, { transaction });
-    });
+    this.db.on('workflowManualTasks.afterSave', this.onTaskSave);
+    this.db.on('workflowManualTasks.afterDestroy', this.onTaskSave);
 
     this.db.on('workflows.afterUpdate', this.onWorkflowStatusChange);
-    // this.db.on('workflows.afterDestroy', this.onWorkflowStatusChange);
   }
 }

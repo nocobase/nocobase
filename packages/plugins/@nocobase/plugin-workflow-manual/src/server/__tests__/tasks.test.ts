@@ -24,7 +24,8 @@ describe('workflow > instructions > manual > tasks', () => {
   let workflow;
   let UserModel;
   let users;
-  let UserJobModel;
+  let ManualTaskModel;
+  let UserTaskRepo;
 
   beforeEach(async () => {
     app = await getApp({
@@ -37,7 +38,8 @@ describe('workflow > instructions > manual > tasks', () => {
     PostRepo = db.getCollection('posts').repository;
     AnotherPostRepo = app.dataSourceManager.dataSources.get('another').collectionManager.getRepository('posts');
     UserModel = db.getCollection('users').model;
-    UserJobModel = db.getModel('workflowManualTasks');
+    ManualTaskModel = db.getModel('workflowManualTasks');
+    UserTaskRepo = db.getRepository('userWorkflowTasks');
 
     users = await UserModel.bulkCreate([
       { id: 2, nickname: 'a' },
@@ -79,11 +81,17 @@ describe('workflow > instructions > manual > tasks', () => {
 
       await sleep(500);
 
-      const UserJobModel = db.getModel('workflowManualTasks');
-      const pendingJobs = await UserJobModel.findAll({
+      const pendingJobs = await ManualTaskModel.findAll({
         order: [['userId', 'ASC']],
       });
       expect(pendingJobs.length).toBe(1);
+
+      const s1s = await UserTaskRepo.find();
+      expect(s1s.length).toBe(1);
+      expect(s1s[0].get('stats')).toMatchObject({
+        pending: 1,
+        all: 1,
+      });
 
       const res1 = await userAgents[0].resource('workflowManualTasks').submit({
         filterByTk: pendingJobs[0].get('id'),
@@ -104,6 +112,87 @@ describe('workflow > instructions > manual > tasks', () => {
       const posts = await AnotherPostRepo.find();
       expect(posts.length).toBe(1);
       expect(posts[0]).toMatchObject({ title: 't1' });
+
+      const s2s = await UserTaskRepo.find();
+      expect(s2s.length).toBe(1);
+      expect(s2s[0].get('stats')).toMatchObject({
+        pending: 0,
+        all: 1,
+      });
+    });
+  });
+
+  describe('workflow status', () => {
+    it('workflow disabled', async () => {
+      const n1 = await workflow.createNode({
+        type: 'manual',
+        config: {
+          assignees: [users[0].id],
+          forms: {
+            f1: {
+              type: 'create',
+              actions: [{ status: JOB_STATUS.RESOLVED, key: 'resolve' }],
+              collection: 'posts',
+            },
+          },
+        },
+      });
+
+      const post = await PostRepo.create({ values: { title: 't1' } });
+
+      await sleep(500);
+
+      const s1s = await UserTaskRepo.find();
+      expect(s1s.length).toBe(1);
+      expect(s1s[0].get('stats')).toMatchObject({
+        pending: 1,
+        all: 1,
+      });
+
+      await workflow.update({ enabled: false });
+
+      const s2s = await UserTaskRepo.find();
+      expect(s2s.length).toBe(1);
+      expect(s2s[0].get('stats')).toMatchObject({
+        pending: 0,
+        all: 0,
+      });
+    });
+
+    it('workflow destroy', async () => {
+      const n1 = await workflow.createNode({
+        type: 'manual',
+        config: {
+          assignees: [users[0].id],
+          forms: {
+            f1: {
+              type: 'create',
+              actions: [{ status: JOB_STATUS.RESOLVED, key: 'resolve' }],
+              collection: 'posts',
+            },
+          },
+        },
+      });
+
+      const post = await PostRepo.create({ values: { title: 't1' } });
+
+      await sleep(500);
+
+      const s1s = await UserTaskRepo.find();
+      expect(s1s.length).toBe(1);
+      expect(s1s[0].get('stats')).toMatchObject({
+        pending: 1,
+        all: 1,
+      });
+
+      await workflow.destroy();
+
+      const s2s = await UserTaskRepo.find();
+      expect(s2s.length).toBe(1);
+      expect(s2s[0].get('stats')).toMatchObject({
+        pending: 0,
+        all: 0,
+      });
     });
   });
 });
