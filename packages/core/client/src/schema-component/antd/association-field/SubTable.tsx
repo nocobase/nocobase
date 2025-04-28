@@ -218,7 +218,6 @@ export const SubTable: any = observer(
         },
       };
     };
-    console.log(props);
     return (
       <div className={subTableContainer}>
         <FlagProvider isInSubTable>
