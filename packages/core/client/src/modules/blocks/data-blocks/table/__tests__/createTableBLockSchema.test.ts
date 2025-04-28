@@ -63,6 +63,7 @@ describe('createTableBLockSchemaV2', () => {
             "type": "array",
             "x-component": "TableV2",
             "x-component-props": {
+              "rowKey": "id",
               "rowSelection": {
                 "type": "checkbox",
               },
