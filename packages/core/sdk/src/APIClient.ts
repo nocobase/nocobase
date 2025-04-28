@@ -363,6 +363,7 @@ export class APIClient {
       if (config.url.endsWith(':list')) {
         config.method = 'post';
         if (config?.params?.filter) {
+          delete config.params.filter;
           config.data = {
             // @ts-ignore
             filter: toJSON(config.params.filter),
