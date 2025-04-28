@@ -763,7 +763,7 @@ export default class PluginWorkflowServer extends Plugin {
     } else {
       record = await repository.create({
         values: {
-          id: userId,
+          userId,
           type,
           stats,
         },
