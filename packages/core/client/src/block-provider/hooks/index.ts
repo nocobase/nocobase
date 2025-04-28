@@ -114,10 +114,12 @@ function getFilteredFormValues(form) {
       }
       return segments.slice(0, -1).join('.');
     });
-  for (const path of readonlyPaths) {
-    _.unset(values, path);
-  }
-
+  readonlyPaths.forEach((path, index) => {
+    if (index !== 0) {
+      // 清空值，但跳过第一个路径
+      _.unset(values, path);
+    }
+  });
   return values;
 }
 
