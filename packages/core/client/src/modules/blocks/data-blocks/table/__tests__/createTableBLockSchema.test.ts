@@ -17,7 +17,7 @@ vi.mock('@formily/shared', () => {
 
 describe('createTableBLockSchemaV2', () => {
   it('should create a default table block schema with minimum options', () => {
-    const options = { dataSource: 'abc', collectionName: 'users', association: 'users.roles', rowKey: 'rowKey' };
+    const options = { dataSource: 'abc', collectionName: 'users', association: 'users.roles' };
     const schema = createTableBlockUISchema(options);
 
     expect(schema).toMatchInlineSnapshot(`
@@ -63,7 +63,6 @@ describe('createTableBLockSchemaV2', () => {
             "type": "array",
             "x-component": "TableV2",
             "x-component-props": {
-              "rowKey": "id",
               "rowSelection": {
                 "type": "checkbox",
               },
@@ -85,7 +84,6 @@ describe('createTableBLockSchemaV2', () => {
           "params": {
             "pageSize": 20,
           },
-          "rowKey": "rowKey",
           "showIndex": true,
         },
         "x-filter-targets": [],
