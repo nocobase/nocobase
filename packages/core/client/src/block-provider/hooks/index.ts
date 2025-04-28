@@ -684,7 +684,7 @@ export const useCustomizeUpdateActionProps = () => {
         // eslint-disable-next-line react-hooks/rules-of-hooks
         redirectTo = await useGetVariableValue(rawRedirectTo, {
           variables,
-          localVariables: [...localVariables, { name: '$record', ctx: new Proxy(data?.data?.data, {}) }],
+          localVariables: [...localVariables, { name: '$record', ctx: new Proxy(result?.data?.data, {}) }],
         });
       }
 
@@ -1048,7 +1048,7 @@ export const useUpdateActionProps = () => {
           // eslint-disable-next-line react-hooks/rules-of-hooks
           redirectTo = await useGetVariableValue(rawRedirectTo, {
             variables,
-            localVariables: [...localVariables, { name: '$record', ctx: new Proxy(data?.data?.data, {}) }],
+            localVariables: [...localVariables, { name: '$record', ctx: new Proxy(result?.data?.data, {}) }],
           });
         }
 
