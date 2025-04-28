@@ -89,7 +89,7 @@ export const useCustomizeRequestActionProps = () => {
             variables,
             localVariables: [
               ...localVariables,
-              { name: '$nResponse', ctx: new Proxy({ ...res?.data, ...res?.data?.data }, {}) },
+              { name: '$nResponse', ctx: new Proxy({ ...res?.data?.data, ...res?.data }, {}) },
             ],
           });
           successMessage = interpolateVariables(exp, expScope);
