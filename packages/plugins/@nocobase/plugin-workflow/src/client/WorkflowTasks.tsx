@@ -155,7 +155,7 @@ function useTaskTypeItems() {
   return useMemo(
     () =>
       Array.from(workflowPlugin.taskTypes.getKeys())
-        .filter((key) => Boolean(counts[key]?.all))
+        .filter((key: string) => Boolean(counts[key]?.all))
         .map((key: string) => {
           return {
             key,
