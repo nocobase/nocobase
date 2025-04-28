@@ -10,6 +10,7 @@
 import { CloseCircleOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
 import { observer } from '@formily/react';
+import { sortTree } from '@nocobase/utils/client';
 import { Cascader, Select, Space } from 'antd';
 import React, { useCallback, useContext, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -25,7 +26,7 @@ export const FilterItem = observer(
     const remove = useContext(RemoveConditionContext);
     const {
       schema,
-      fields,
+      fields: _fields,
       operators,
       dataIndex,
       operator,
@@ -35,6 +36,7 @@ export const FilterItem = observer(
       setValue,
       collectionField,
     } = useValues();
+    const fields = sortTree(_fields, 'children', 'children', false);
     const style = useMemo(() => ({ marginBottom: 8 }), []);
     const fieldNames = useMemo(
       () => ({
@@ -69,6 +71,12 @@ export const FilterItem = observer(
             data-testid="select-filter-field"
             className={css`
               width: 160px;
+            `}
+            popupClassName={css`
+              .ant-cascader-menu {
+                height: fit-content;
+                max-height: 50vh;
+              }
             `}
             showSearch
             fieldNames={fieldNames}
