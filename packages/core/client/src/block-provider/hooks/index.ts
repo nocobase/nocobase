@@ -1451,6 +1451,7 @@ export const useAssociationFilterBlockProps = () => {
     run,
     valueKey,
     labelKey,
+    dataScopeFilter: filter,
   };
 };
 async function doReset({
