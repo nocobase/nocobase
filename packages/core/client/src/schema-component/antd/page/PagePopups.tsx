@@ -10,12 +10,11 @@
 import { ISchema, Schema } from '@formily/json-schema';
 import { useFieldSchema } from '@formily/react';
 import { uid } from '@formily/shared';
-import { Result } from 'antd';
 import _ from 'lodash';
 import { FC, default as React, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useTranslation } from 'react-i18next';
 import { Location, useLocation } from 'react-router-dom';
 import { useAPIClient } from '../../../api-client';
+import { AppNotFound } from '../../../common/AppNotFound';
 import { DataBlockProvider } from '../../../data-source/data-block/DataBlockProvider';
 import { BlockRequestContextProvider } from '../../../data-source/data-block/DataBlockRequestProvider';
 import { useKeepAlive } from '../../../route-switch/antd/admin-layout/KeepAlive';
@@ -475,10 +474,7 @@ function get404Schema() {
                     version: '2.0',
                     type: 'void',
                     'x-component': function Com() {
-                      const { t } = useTranslation();
-                      return (
-                        <Result status="404" title="404" subTitle={t('Sorry, the page you visited does not exist.')} />
-                      );
+                      return <AppNotFound />;
                     },
                     'x-uid': uid(),
                     'x-async': false,

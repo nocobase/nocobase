@@ -50,11 +50,6 @@ class AppGenerator extends Generator {
     const dependencies = [];
     const { dbDialect } = this.args;
 
-    dependencies.push(`"mysql2": "^3.14.0"`);
-    dependencies.push(`"mariadb": "^3.4.1"`);
-    dependencies.push(`"pg": "^8.14.1"`);
-    dependencies.push(`"pg-hstore": "^2.3.4"`);
-
     switch (dbDialect) {
       case 'mysql':
         envs.push(`DB_HOST=${env.DB_HOST || 'localhost'}`);
