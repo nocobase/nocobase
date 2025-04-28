@@ -7,5 +7,6 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+export * from './AppNotFound';
 export * from './SelectWithTitle';
 export * from './useFieldComponentName';
