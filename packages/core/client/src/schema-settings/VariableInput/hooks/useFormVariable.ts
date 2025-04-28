@@ -78,7 +78,10 @@ export const useCurrentFormContext = ({ form: _form }: Pick<Props, 'form'> = {})
     currentFormCtx: formInstance?.values,
     /** 用来判断是否可以显示`当前表单`变量 */
     shouldDisplayCurrentForm:
-      name === 'form' && formInstance && !formInstance.readPretty && !isVariableParsedInOtherContext,
+      ['form', 'filter-form'].includes(name) &&
+      formInstance &&
+      !formInstance.readPretty &&
+      !isVariableParsedInOtherContext,
   };
 };
 
