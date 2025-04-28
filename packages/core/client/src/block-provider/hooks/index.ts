@@ -122,6 +122,7 @@ function getFilteredFormValues(form) {
       _.unset(values, path);
     }
   });
+
   return values;
 }
 
