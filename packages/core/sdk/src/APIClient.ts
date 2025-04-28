@@ -350,6 +350,25 @@ export class APIClient {
           arrayFormat: 'brackets',
         });
       };
+      const toJSON = (filter) => {
+        if (typeof filter === 'string') {
+          try {
+            return JSON.parse(filter);
+          } catch (error) {
+            return filter;
+          }
+        }
+        return filter;
+      };
+      if (config.url.endsWith(':list')) {
+        config.method = 'post';
+        if (config?.params?.filter) {
+          config.data = {
+            // @ts-ignore
+            filter: toJSON(config.params.filter),
+          };
+        }
+      }
       return config;
     });
   }

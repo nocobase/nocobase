@@ -374,11 +374,20 @@ export class ResourceManager {
             ...ctx.request.body,
           });
         } else {
-          ctx.action.mergeParams({
-            ...query,
-            ...params,
-            values: ctx.request.body,
-          });
+          if (ctx.action.actionName === 'list' && ctx.request?.body?.filter) {
+            ctx.action.mergeParams({
+              ...query,
+              ...params,
+              values: ctx.request.body,
+              filter: ctx.request?.body?.filter,
+            });
+          } else {
+            ctx.action.mergeParams({
+              ...query,
+              ...params,
+              values: ctx.request.body,
+            });
+          }
         }
         return compose(ctx.action.getHandlers())(ctx, next);
       } catch (error) {
