@@ -29,6 +29,7 @@ import { useIsAssociationField } from '../../../../schema-component/antd/form-it
 import { FormLinkageRules } from '../../../../schema-settings/LinkageRules';
 import { SchemaSettingsLinkageRules } from '../../../../schema-settings/SchemaSettings';
 import { SchemaSettingsItemType } from '../../../../application';
+import { useColumnSchema } from '../../../../schema-component';
 
 const enabledIndexColumn: SchemaSettingsItemType = {
   name: 'enableIndexColumn',
@@ -338,11 +339,12 @@ export const linkageRules = {
   Component: SchemaSettingsLinkageRules,
   useComponentProps() {
     const field = useField();
-    const fieldSchema = useFieldSchema();
+    const schema = useFieldSchema();
+    const { fieldSchema: columnSchema } = useColumnSchema();
+    const fieldSchema = columnSchema || schema;
     const cm = useCollectionManager();
     const collectionField = cm.getCollectionField(fieldSchema['x-collection-field']);
     const { rerenderDataBlock } = useRerenderDataBlock();
-
     return {
       collectionName: collectionField?.target,
       Component: LinkageRulesComponent,
