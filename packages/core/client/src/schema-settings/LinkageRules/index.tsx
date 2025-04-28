@@ -116,7 +116,6 @@ export const FormLinkageRules = withDynamicSchemaProps(
       returnScope ??
       ((options) =>
         options.filter((v) => {
-          console.log(category);
           if (category === LinkageRuleCategory.block) {
             return !['$nForm', '$nRecord'].includes(v.value);
           }

@@ -32,6 +32,7 @@ export default class extends StorageType {
     return new createAliOssStorage({
       config: this.storage.options,
       filename: cloudFilenameGetter(this.storage),
+      timeout: this.storage.options.timeout || 600_000,
     });
   }
   async delete(records: AttachmentModel[]): Promise<[number, AttachmentModel[]]> {
