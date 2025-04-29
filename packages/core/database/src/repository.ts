@@ -48,6 +48,7 @@ import { updateAssociations, updateModelByValues } from './update-associations';
 import { UpdateGuard } from './update-guard';
 import { valuesToFilter } from './utils/filter-utils';
 import _ from 'lodash';
+import { SmartCursorBuilder } from './cursor-builder';
 
 const debug = require('debug')('noco-database');
 
@@ -247,11 +248,14 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
   database: Database;
   collection: Collection;
   model: ModelStatic<Model>;
+  cursorBuilder: SmartCursorBuilder;
 
   constructor(collection: Collection) {
     this.database = collection.context.database;
     this.collection = collection;
     this.model = collection.model;
+
+    this.cursorBuilder = new SmartCursorBuilder(this.database.sequelize, this.model.tableName, this.collection);
   }
 
   public static valuesToFilter = valuesToFilter;
@@ -415,32 +419,10 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
       afterFind?: (rows: Model[], options: FindOptions) => Promise<void>;
     },
   ) {
-    const index = this.collection.model.primaryKeyAttribute || this.collection.model['_indexes'][0];
-    let cursor = null;
-    let hasMoreData = true;
-    let isFirst = true;
-    while (hasMoreData) {
-      if (!isFirst) {
-        options.where = { ...options.where, [index]: { [Op.gt]: cursor } };
-      }
-      if (isFirst) {
-        isFirst = false;
-      }
-      options.limit = options.chunkSize || 1000;
-      if (options.beforeFind) {
-        await options.beforeFind(options);
-      }
-      const records = await this.find(options);
-      if (options.afterFind) {
-        await options.afterFind(records, options);
-      }
-      if (records.length === 0) {
-        hasMoreData = false;
-        continue;
-      }
-      await options.callback(records, options);
-      cursor = records[records.length - 1][index];
-    }
+    return await this.cursorBuilder.chunk({
+      ...options,
+      find: this.find.bind(this),
+    });
   }
 
   /**
@@ -870,7 +852,7 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
       collection: this.collection,
     });
 
-    const params = parser.toSequelizeParams();
+    const params = parser.toSequelizeParams({ parseSort: _.isBoolean(options?.parseSort) ? options.parseSort : true });
     debug('sequelize query params %o', params);
 
     if (options.where && params.where) {
