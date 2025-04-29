@@ -308,27 +308,18 @@ function loadChildren(option) {
     types: option.types,
     appends,
     depth: option.depth - 1,
-    ...this, // 'this' contains compile, getCollectionFields, fieldNames
+    ...this,
   });
-
-  let isLeaf = false;
-  let children = null;
-  let disabled = option.disabled; // Preserve original disabled state unless overridden
-
+  option.loadChildren = null;
   if (result.length) {
-    children = result;
-    isLeaf = false;
+    option.children = result;
   } else {
-    isLeaf = true;
+    option.isLeaf = true;
     const matchingType = option.types ? option.types.some((type) => matchFieldType(option.field, type)) : true;
     if (!matchingType) {
-      // If the parent itself doesn't match the type and has no matching children, disable it.
-      disabled = true;
+      option.disabled = true;
     }
   }
-
-  // Return the new state instead of mutating
-  return { children, isLeaf, disabled };
 }
 
 export function getCollectionFieldOptions(options): VariableOption[] {
