@@ -42,7 +42,8 @@
     "@nocobase/resourcer": "1.x",
     "@nocobase/server": "1.x",
     "@nocobase/test": "1.x",
-    "@nocobase/utils": "1.x"
+    "@nocobase/utils": "1.x",
+    "tinybench": "^4.0.1"
   },
   "gitHead": "d0b4efe4be55f8c79a98a331d99d9f8cf99021a1",
   "keywords": [
