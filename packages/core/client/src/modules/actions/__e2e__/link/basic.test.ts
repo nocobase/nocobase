@@ -31,7 +31,11 @@ test.describe('Link', () => {
     await expect(
       page.getByRole('button', { name: 'designer-schema-settings-Action.Link-actionSettings:link-users' }),
     ).toHaveCount(1);
-    await page.getByRole('button', { name: 'designer-schema-settings-Action.Link-actionSettings:link-users' }).hover();
+    await page
+      .getByRole('button', { name: 'designer-schema-settings-Action.Link-actionSettings:link-users' })
+      .first()
+      .hover();
+    await page.getByLabel('designer-schema-settings-Action.Link-actionSettings:link-users').first().hover();
     await page.getByRole('menuitem', { name: 'Edit link' }).click();
     await page.getByLabel('block-item-users-URL').getByLabel('textbox').click();
     await page
@@ -96,12 +100,13 @@ test.describe('Link', () => {
 
   test('open in new window', async ({ page, mockPage, mockRecords }) => {
     await mockPage(openInNewWidow).goto();
+    const users = await mockRecords('users', 2, 0);
     const otherPage = mockPage();
     const otherPageUrl = await otherPage.getUrl();
 
     // 默认情况下，点击链接按钮会在当前窗口打开
-    await page.getByLabel('action-Action.Link-Link-').hover();
-    await page.getByLabel('designer-schema-settings-Action.Link-actionSettings:link-users').hover();
+    await page.getByLabel('action-Action.Link-Link-').first().hover();
+    await page.getByLabel('designer-schema-settings-Action.Link-actionSettings:link-users').first().hover();
     await page.getByRole('menuitem', { name: 'Edit link' }).click();
     await page.getByLabel('block-item-users-URL').getByLabel('textbox').fill(otherPageUrl);
     await page.getByRole('button', { name: 'OK', exact: true }).click();
@@ -112,7 +117,7 @@ test.describe('Link', () => {
     // 开启 “Open in new window” 选项后，点击链接按钮会在新窗口打开
     await page.goBack();
     await page.getByLabel('action-Action.Link-Link-').hover();
-    await page.getByLabel('designer-schema-settings-Action.Link-actionSettings:link-users').hover();
+    await page.getByLabel('designer-schema-settings-Action.Link-actionSettings:link-users').first().hover();
     await page.getByRole('menuitem', { name: 'Edit link' }).click();
     await page.getByLabel('Open in new window').check();
     await page.getByRole('button', { name: 'OK', exact: true }).click();
