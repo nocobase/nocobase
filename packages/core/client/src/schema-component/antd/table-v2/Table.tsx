@@ -949,6 +949,9 @@ export const Table: any = withDynamicSchemaProps(
       const getRowKey = useCallback(
         (record: any, index) => {
           if (Array.isArray(rowKey)) {
+            if (rowKey.length === 1) {
+              return record[rowKey[0]];
+            }
             return index;
           } else if (typeof rowKey === 'string') {
             return record[rowKey];
