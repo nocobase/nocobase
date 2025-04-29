@@ -24,7 +24,13 @@ export class StringField extends Field {
 
     return {
       set(value) {
-        this.setDataValue(name, trim ? value?.trim() : value);
+        if (value == null) {
+          return value;
+        }
+        if (typeof value !== 'string') {
+          value = value.toString();
+        }
+        this.setDataValue(name, trim ? value.trim() : value);
       },
     };
   }
