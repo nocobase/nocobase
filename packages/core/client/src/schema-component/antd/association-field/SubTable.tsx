@@ -70,6 +70,15 @@ const subTableContainer = css`
   .ant-table-thead .ant-table-cell {
     font-weight: normal;
   }
+  .ant-pagination {
+    position: absolute;
+    right: 0px;
+    bottom: 0px;
+  }
+  .ant-table-footer {
+    margin-top: 10px;
+    background: inherit;
+  }
 `;
 
 const tableClassName = css`
@@ -252,38 +261,39 @@ export const SubTable: any = observer(
                   locale={{
                     emptyText: <span> {field.editable ? t('Please add or select record') : t('No data')}</span>,
                   }}
+                  footer={() => (
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      {field.editable && (
+                        <Space
+                          style={{
+                            gap: 15,
+                          }}
+                        >
+                          {allowAddnew !== false && (
+                            <Action.Link
+                              useAction={useSubTableAddNewProps}
+                              title={
+                                <Space style={{ gap: 2 }} className="nb-sub-table-addNew">
+                                  <PlusOutlined /> {t('Add new')}
+                                </Space>
+                              }
+                            />
+                          )}
+                          {allowSelectExistingRecord && (
+                            <Action.Link
+                              useAction={useSubTableSelectProps}
+                              title={
+                                <Space style={{ gap: 2 }}>
+                                  <ZoomInOutlined /> {t('Select record')}
+                                </Space>
+                              }
+                            />
+                          )}
+                        </Space>
+                      )}
+                    </div>
+                  )}
                 />
-                {field.editable && (
-                  <Space
-                    style={{
-                      marginTop: '10px',
-                      position: field.value?.length ? 'absolute' : 'relative',
-                      bottom: '0',
-                      gap: 15,
-                    }}
-                  >
-                    {allowAddnew !== false && (
-                      <Action.Link
-                        useAction={useSubTableAddNewProps}
-                        title={
-                          <Space style={{ gap: 2 }} className="nb-sub-table-addNew">
-                            <PlusOutlined /> {t('Add new')}
-                          </Space>
-                        }
-                      />
-                    )}
-                    {allowSelectExistingRecord && (
-                      <Action.Link
-                        useAction={useSubTableSelectProps}
-                        title={
-                          <Space style={{ gap: 2 }}>
-                            <ZoomInOutlined /> {t('Select record')}
-                          </Space>
-                        }
-                      />
-                    )}
-                  </Space>
-                )}
               </SubFormProvider>
             </FormActiveFieldsProvider>
           </CollectionRecordProvider>

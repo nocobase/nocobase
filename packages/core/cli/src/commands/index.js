@@ -31,6 +31,7 @@ module.exports = (cli) => {
   require('./test-coverage')(cli);
   require('./benchmark')(cli);
   require('./umi')(cli);
+  require('./update-deps')(cli);
   require('./upgrade')(cli);
   require('./postinstall')(cli);
   require('./pkg')(cli);

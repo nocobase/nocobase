@@ -13,10 +13,9 @@ import { uid } from '@formily/shared';
 export const createTableBlockUISchema = (options: {
   dataSource: string;
   collectionName?: string;
-  rowKey?: string;
   association?: string;
 }): ISchema => {
-  const { collectionName, dataSource, rowKey, association } = options;
+  const { collectionName, dataSource, association } = options;
 
   if (!dataSource) {
     throw new Error('dataSource is required');
@@ -35,7 +34,6 @@ export const createTableBlockUISchema = (options: {
       params: {
         pageSize: 20,
       },
-      rowKey,
       showIndex: true,
       dragSort: false,
     },

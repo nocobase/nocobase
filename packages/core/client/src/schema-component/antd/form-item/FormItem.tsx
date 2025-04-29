@@ -37,13 +37,15 @@ const formItemWrapCss = css`
   .ant-description-textarea img {
     max-width: 100%;
   }
-  &.ant-formily-item-layout-vertical .ant-formily-item-label {
-    display: inline;
-    .ant-formily-item-label-tooltip-icon {
+  &.ant-formily-item-layout-horizontal.ant-formily-item-label-wrap {
+    .ant-formily-item-label {
       display: inline;
-    }
-    .ant-formily-item-label-content {
-      display: inline;
+      padding-right: 5px;
+
+      .ant-formily-item-label-tooltip-icon,
+      .ant-formily-item-label-content {
+        display: inline;
+      }
     }
   }
 `;
@@ -92,7 +94,6 @@ export const FormItem: any = withDynamicSchemaProps(
         [formItemLabelCss]: showTitle === false,
       });
     }, [showTitle]);
-    console.log(className);
     // 联动规则中的“隐藏保留值”的效果
     if (field.data?.hidden) {
       return null;

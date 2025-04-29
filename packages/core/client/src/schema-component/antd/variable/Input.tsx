@@ -26,12 +26,13 @@ import { Json } from '../input';
 const JT_VALUE_RE = /^\s*{{\s*([^{}]+)\s*}}\s*$/;
 
 type ParseOptions = {
+  defaultTypeOnNull?: string;
   stringToDate?: boolean;
 };
 
 function parseValue(value: any, options: ParseOptions = {}): string | string[] {
   if (value == null) {
-    return 'null';
+    return options.defaultTypeOnNull ?? 'null';
   }
   const type = typeof value;
   if (type === 'string') {

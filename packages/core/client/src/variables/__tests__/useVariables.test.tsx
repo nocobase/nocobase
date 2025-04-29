@@ -129,7 +129,7 @@ mockRequest.onGet('/users/0/belongsToField:get').reply(() => {
     },
   ];
 });
-mockRequest.onGet('/users/0/hasManyField:list?pageSize=9999').reply(() => {
+mockRequest.onGet('/users/0/hasManyField:list?paginate=false').reply(() => {
   return [
     200,
     {
@@ -142,7 +142,7 @@ mockRequest.onGet('/users/0/hasManyField:list?pageSize=9999').reply(() => {
     },
   ];
 });
-mockRequest.onGet('/users/0/belongsToManyField:list?pageSize=9999').reply(() => {
+mockRequest.onGet('/users/0/belongsToManyField:list?paginate=false').reply(() => {
   return [
     200,
     {
@@ -156,7 +156,7 @@ mockRequest.onGet('/users/0/belongsToManyField:list?pageSize=9999').reply(() => 
     },
   ];
 });
-mockRequest.onGet('/test/0/hasManyField:list?pageSize=9999').reply(() => {
+mockRequest.onGet('/test/0/hasManyField:list?paginate=false').reply(() => {
   return [
     200,
     {

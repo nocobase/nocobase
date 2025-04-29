@@ -7,17 +7,17 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { EllipsisOutlined } from '@ant-design/icons';
+import { EllipsisOutlined, HighlightOutlined } from '@ant-design/icons';
 import ProLayout, { RouteContext, RouteContextType } from '@ant-design/pro-layout';
 import { HeaderViewProps } from '@ant-design/pro-layout/es/components/Header';
 import { css } from '@emotion/css';
-import { Popover, Tooltip } from 'antd';
+import { Popover, Result, Tooltip } from 'antd';
 import React, { createContext, FC, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import ReactDOM from 'react-dom';
+import { useTranslation } from 'react-i18next';
 import { Link, Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import {
   ACLRolesCheckProvider,
-  AppNotFound,
   CurrentAppInfoProvider,
   DndContext,
   Icon,
@@ -44,6 +44,7 @@ import {
   useLocationNoUpdate,
 } from '../../../application/CustomRouterContextProvider';
 import { Plugin } from '../../../application/Plugin';
+import { AppNotFound } from '../../../common/AppNotFound';
 import { withTooltipComponent } from '../../../hoc/withTooltipComponent';
 import { menuItemInitializer } from '../../../modules/menu/menuItemInitializer';
 import { useMenuTranslation } from '../../../schema-component/antd/menu/locale';
@@ -197,12 +198,34 @@ const pageContentStyle: React.CSSProperties = {
   overflowY: 'auto',
 };
 
+const ShowTipWhenNoPages = () => {
+  const { allAccessRoutes } = useAllAccessDesktopRoutes();
+  const { designable } = useDesignable();
+  const { token } = useToken();
+  const { t } = useTranslation();
+  const location = useLocation();
+
+  // Check if there are any pages
+  if (allAccessRoutes.length === 0 && !designable && ['/admin', '/admin/'].includes(location.pathname)) {
+    return (
+      <Result
+        icon={<HighlightOutlined style={{ fontSize: '8em', color: token.colorText }} />}
+        title={t('No pages yet, please configure first')}
+        subTitle={t(`Click the "UI Editor" icon in the upper right corner to enter the UI Editor mode`)}
+      />
+    );
+  }
+
+  return null;
+};
+
 export const LayoutContent = () => {
   /* Use the "nb-subpages-slot-without-header-and-side" class name to locate the position of the subpages */
   return (
     <div className={`${layoutContentClass} nb-subpages-slot-without-header-and-side`}>
       <div style={pageContentStyle}>
         <Outlet />
+        <ShowTipWhenNoPages />
       </div>
     </div>
   );
@@ -588,27 +611,11 @@ export const InternalAdminLayout = () => {
   );
 };
 
-function getDefaultPageUid(routes: NocoBaseDesktopRoute[]) {
-  // Find the first route of type "page"
-  for (const route of routes) {
-    if (route.type === NocoBaseDesktopRouteType.page) {
-      return route.schemaUid;
-    }
-
-    if (route.children?.length) {
-      const result = getDefaultPageUid(route.children);
-      if (result) {
-        return result;
-      }
-    }
-  }
-}
-
 const NavigateToDefaultPage: FC = (props) => {
   const { allAccessRoutes } = useAllAccessDesktopRoutes();
   const location = useLocationNoUpdate();
 
-  const defaultPageUid = getDefaultPageUid(allAccessRoutes);
+  const defaultPageUid = findFirstPageRoute(allAccessRoutes)?.schemaUid;
 
   return (
     <>
@@ -717,36 +724,6 @@ export function findRouteBySchemaUid(schemaUid: string, treeArray: any[]) {
   }
   return null;
 }
-
-const MenuItemIcon: FC<{ icon: string; title: string }> = (props) => {
-  const { inHeader } = useContext(headerContext);
-
-  return (
-    <RouteContext.Consumer>
-      {(value: RouteContextType) => {
-        const { collapsed } = value;
-
-        if (collapsed && !inHeader) {
-          return props.icon ? (
-            <Icon type={props.icon} />
-          ) : (
-            <span
-              style={{
-                display: 'inline-block',
-                width: '100%',
-                textAlign: 'center',
-              }}
-            >
-              {props.title.charAt(0)}
-            </span>
-          );
-        }
-
-        return props.icon ? <Icon type={props.icon} /> : null;
-      }}
-    </RouteContext.Consumer>
-  );
-};
 
 const MenuDesignerButton: FC<{ testId: string }> = (props) => {
   const { render: renderInitializer } = useSchemaInitializerRender(menuItemInitializer);
@@ -869,16 +846,17 @@ function findRouteById(id: string, treeArray: any[]) {
   return null;
 }
 
-function findFirstPageRoute(routes: NocoBaseDesktopRoute[]) {
+export function findFirstPageRoute(routes: NocoBaseDesktopRoute[]) {
   if (!routes) return;
 
-  for (const route of routes) {
+  for (const route of routes.filter((item) => !item.hideInMenu)) {
     if (route.type === NocoBaseDesktopRouteType.page) {
       return route;
     }
 
-    if (route.children?.length) {
-      return findFirstPageRoute(route.children);
+    if (route.type === NocoBaseDesktopRouteType.group && route.children?.length) {
+      const result = findFirstPageRoute(route.children);
+      if (result) return result;
     }
   }
 }

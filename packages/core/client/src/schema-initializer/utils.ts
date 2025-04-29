@@ -470,7 +470,6 @@ export const useFilterFormItemInitializerFields = (options?: any) => {
         'x-collection-field': `${name}.${field.name}`,
         'x-component-props': {
           utc: false,
-          underFilter: true,
         },
       };
       if (isAssocField(field)) {
@@ -485,7 +484,7 @@ export const useFilterFormItemInitializerFields = (options?: any) => {
           'x-decorator': 'FormItem',
           'x-use-decorator-props': 'useFormItemProps',
           'x-collection-field': `${name}.${field.name}`,
-          'x-component-props': { ...field.uiSchema?.['x-component-props'], utc: false, underFilter: true },
+          'x-component-props': { ...field.uiSchema?.['x-component-props'], utc: false },
         };
       }
       const resultItem = {
@@ -580,7 +579,7 @@ const associationFieldToMenu = (
       interface: field.interface,
     },
     'x-component': 'CollectionField',
-    'x-component-props': { utc: false, underFilter: true },
+    'x-component-props': { utc: false },
     'x-read-pretty': false,
     'x-decorator': 'FormItem',
     'x-collection-field': `${collectionName}.${schemaName}`,
@@ -697,7 +696,7 @@ export const useFilterInheritsFormItemInitializerFields = (options?) => {
             'x-component': 'CollectionField',
             'x-decorator': 'FormItem',
             'x-collection-field': `${name}.${field.name}`,
-            'x-component-props': { utc: false, underFilter: true },
+            'x-component-props': { utc: false },
             'x-read-pretty': field?.uiSchema?.['x-read-pretty'],
           };
           return {
@@ -728,7 +727,7 @@ export const useCustomFormItemInitializerFields = (options?: any) => {
   const remove = useRemoveGridFormItem();
   return currentFields
     ?.filter((field) => {
-      return field?.interface && field.interface !== 'snapshot' && field.type !== 'sequence';
+      return !field.inherit && field?.interface && field.interface !== 'snapshot' && field.type !== 'sequence';
     })
     ?.map((field) => {
       const interfaceConfig = getInterface(field.interface);
@@ -768,7 +767,7 @@ export const findSchema = (schema: Schema, key: string, action: string, name?: s
     if (s[key] === action && (!name || s.name === name)) {
       return s;
     }
-    if (s['x-component'] !== 'Action.Container' && !s['x-component'].includes('AssociationField')) {
+    if (s['x-component'] && s['x-component'] !== 'Action.Container' && !s['x-component'].includes('AssociationField')) {
       const c = findSchema(s, key, action, name);
       if (c) {
         return c;
