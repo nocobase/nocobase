@@ -114,7 +114,7 @@ describe('SchemaInitializerDivider', () => {
     await userEvent.click(screen.getByText('button text'));
 
     // wait for modal content to be rendered
-    await sleep(300);
+    await sleep(800);
 
     await waitFor(() => {
       expect(screen.queryByText('Modal title')).toBeInTheDocument();
