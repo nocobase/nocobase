@@ -59,6 +59,7 @@ import {
 } from '../../../formily/NocoBaseRecursionField';
 import { withDynamicSchemaProps } from '../../../hoc/withDynamicSchemaProps';
 import { withSkeletonComponent } from '../../../hoc/withSkeletonComponent';
+import { withTooltipComponent } from '../../../hoc/withTooltipComponent';
 import { LinkageRuleDataKeyMap } from '../../../schema-settings/LinkageRules/type';
 import { GetStyleRules } from '../../../schema-settings/LinkageRules/useActionValues';
 import { HighPerformanceSpin } from '../../common/high-performance-spin/HighPerformanceSpin';
@@ -66,7 +67,6 @@ import { useToken } from '../__builtins__';
 import { useAssociationFieldContext } from '../association-field/hooks';
 import { TableSkeleton } from './TableSkeleton';
 import { extractIndex, isCollectionFieldComponent, isColumnComponent } from './utils';
-import { withTooltipComponent } from '../../../hoc/withTooltipComponent';
 
 type BodyRowComponentProps = {
   rowIndex?: number;
@@ -929,9 +929,9 @@ export const Table: any = withDynamicSchemaProps(
        * @param record
        * @returns
        */
-      const defaultRowKey = useCallback((record: any) => {
+      const defaultRowKey = useCallback((record: any, index) => {
         if (rowKey) {
-          return getRowKey(record);
+          return getRowKey(record, index);
         }
         if (record.key) {
           return record.key;
@@ -947,14 +947,9 @@ export const Table: any = withDynamicSchemaProps(
       }, []);
 
       const getRowKey = useCallback(
-        (record: any) => {
+        (record: any, index) => {
           if (Array.isArray(rowKey)) {
-            // 使用多个字段值组合生成唯一键
-            return rowKey
-              .map((keyField) => {
-                return record[keyField]?.toString() || '';
-              })
-              .join('-');
+            return index;
           } else if (typeof rowKey === 'string') {
             return record[rowKey];
           } else {
@@ -1063,7 +1058,7 @@ export const Table: any = withDynamicSchemaProps(
                       })}
                     >
                       <div className={classNames(checked ? 'checked' : null, rowSelectCheckboxContentClass)}>
-                        {dragSort && <SortHandle id={getRowKey(record)} />}
+                        {dragSort && <SortHandle id={getRowKey(record, index)} />}
                         {showIndex && <TableIndex index={index} />}
                       </div>
                       {isRowSelect && (
