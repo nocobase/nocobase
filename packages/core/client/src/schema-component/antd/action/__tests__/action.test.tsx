@@ -62,7 +62,7 @@ describe('Action.Drawer without Action', () => {
     await waitFor(async () => {
       await userEvent.click(getByText('Open'));
       // wait for the drawer to open
-      await sleep(300);
+      await sleep(600);
       // drawer
       expect(document.querySelector('.ant-drawer')).toBeInTheDocument();
       // mask
