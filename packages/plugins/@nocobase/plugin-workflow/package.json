@@ -28,7 +28,8 @@
     "react-i18next": "^11.15.1",
     "react-js-cron": "^3.1.0",
     "react-router-dom": "^6.11.2",
-    "sequelize": "^6.26.0"
+    "sequelize": "^6.26.0",
+    "tinybench": "4.x"
   },
   "peerDependencies": {
     "@nocobase/actions": "1.x",
@@ -42,8 +43,7 @@
     "@nocobase/resourcer": "1.x",
     "@nocobase/server": "1.x",
     "@nocobase/test": "1.x",
-    "@nocobase/utils": "1.x",
-    "tinybench": "^4.0.1"
+    "@nocobase/utils": "1.x"
   },
   "gitHead": "d0b4efe4be55f8c79a98a331d99d9f8cf99021a1",
   "keywords": [
