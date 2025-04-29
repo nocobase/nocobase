@@ -303,17 +303,35 @@ export function Input(props: VariableInputProps) {
   const loadData = async (selectedOptions: DefaultOptionType[]) => {
     const option = selectedOptions[selectedOptions.length - 1];
     if (!option.children?.length && !option.isLeaf && option.loadChildren) {
-      let activeKey;
-      if (variable && variable.length >= 2) {
-        for (const key of variable) {
-          if (key === option[names.value]) {
-            activeKey = key;
-            break;
-          }
-        }
-      }
-      await option.loadChildren(option, activeKey, variable);
-      setOptions((prev) => [...prev]);
+      // Call the modified loadChildren which returns { children, isLeaf, disabled }
+      // Remove extra arguments (activeKey, variable) as they are no longer needed
+      const loadedData = await option.loadChildren(option);
+
+      // Update local options state immutably
+      setOptions((prev) => {
+        const updateNode = (nodes) =>
+          nodes.map((node) => {
+            // Use the correct key from the names mapping
+            if (node[names.value] === option[names.value]) {
+              // Found the target node, update it with new data
+              return {
+                ...node,
+                children: loadedData.children,
+                isLeaf: loadedData.isLeaf,
+                disabled: loadedData.disabled,
+                // loadChildren is implicitly handled by Cascader based on isLeaf/children
+              };
+            }
+            // Recursively update children if they exist
+            if (node.children) {
+              return { ...node, children: updateNode(node.children) };
+            }
+            // Return node unchanged
+            return node;
+          });
+        // Apply the update to the previous state
+        return updateNode(prev);
+      });
     }
   };
 
@@ -376,7 +394,7 @@ export function Input(props: VariableInputProps) {
             if (prevOption.loadChildren && !prevOption.children?.length) {
               await prevOption.loadChildren(prevOption, key, variable);
             }
-            prevOption = prevOption.children.find((item) => item[names.value] === key);
+            prevOption = prevOption.children?.find((item) => item[names.value] === key);
           }
 
           // 如果为空则说明相关字段已被删除
@@ -484,7 +502,7 @@ export function Input(props: VariableInputProps) {
             value={variable ?? cValue}
             onChange={onSwitch}
             loadData={loadData as any}
-            changeOnSelect={changeOnSelect}
+            changeOnSelect={true} // Force changeOnSelect to true
             fieldNames={fieldNames}
             disabled={disabled}
           >
