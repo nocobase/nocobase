@@ -81,7 +81,7 @@ export function getDepsConfig(cwd: string, outDir: string, depsName: string[], e
     acc[depEntryPath] = {
       nccConfig: {
         minify: true,
-        target: 'node',
+        target: 'es2023',
         quiet: true,
         externals: {},
       },
