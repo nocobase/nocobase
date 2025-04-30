@@ -28,6 +28,7 @@ import { isSubMode } from '../../../../schema-component/antd/association-field/u
 import { useIsAssociationField } from '../../../../schema-component/antd/form-item';
 import { FormLinkageRules } from '../../../../schema-settings/LinkageRules';
 import { SchemaSettingsLinkageRules } from '../../../../schema-settings/SchemaSettings';
+import { useColumnSchema } from '../../../../schema-component';
 import { SchemaSettingsItemType } from '../../../../application';
 import { useColumnSchema } from '../../../../schema-component';
 
