@@ -13,7 +13,7 @@ import { SMS_OTP_VERIFICATION_TYPE } from '../../constants';
 
 export default class extends Migration {
   on = 'afterLoad'; // 'beforeLoad' or 'afterLoad'
-  appVersion = '<1.6.1';
+  appVersion = '<1.7.0';
 
   async up() {
     const providers = await this.db.getRepository('verifications_providers').find();
