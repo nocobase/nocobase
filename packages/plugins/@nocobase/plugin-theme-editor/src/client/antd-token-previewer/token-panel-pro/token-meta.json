@@ -1592,6 +1592,14 @@
     "type": "boolean",
     "source": "seed"
   },
+  "siderWidth": {
+    "name": "侧边栏宽度（px）",
+    "nameEn": "Sider width (px)",
+    "desc": "调整侧边栏展示区域的宽度，宽度单位通常为像素（px）",
+    "descEn": "Adjust the width of the sidebar display area. The width is usually measured in pixels (px).",
+    "type": "number",
+    "source": "map"
+  },
   "zIndexBase": {
     "name": "基础 zIndex",
     "nameEn": "Base zIndex",
@@ -1685,6 +1693,14 @@
     "nameEn": "Background color of settings when hover",
     "desc": "鼠标悬浮时显示的背景色",
     "descEn": "Background color of settings when hover",
+    "type": "string",
+    "source": "seed"
+  },
+  "colorTemplateBgSettingsHover": {
+    "name": "UI 配置模板区块背景色悬浮态",
+    "nameEn": "Background color of template block's settings when hover",
+    "desc": "UI 配置模板区块的背景色悬浮态",
+    "descEn": "Background color of template block's settings when hover",
     "type": "string",
     "source": "seed"
   },

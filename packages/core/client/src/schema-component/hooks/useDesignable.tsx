@@ -25,6 +25,7 @@ import { addAppVersion } from './addAppVersion';
 
 // @ts-ignore
 import clientPkg from '../../../package.json';
+import { useMobileLayout } from '../../route-switch/antd/admin-layout';
 
 interface CreateDesignableProps {
   current: Schema;
@@ -780,9 +781,11 @@ export function useDesignable() {
     dn.loadAPIClientEvents();
   }, [dn]);
 
+  const { isMobileLayout } = useMobileLayout();
+
   return {
     dn,
-    designable,
+    designable: isMobileLayout ? false : designable,
     reset,
     refresh,
     setDesignable,
@@ -796,7 +799,7 @@ export function useDesignable() {
           return component;
         }
         const c = get(components, component);
-        return c[LAZY_COMPONENT_KEY] ?? c;
+        return c?.[LAZY_COMPONENT_KEY] ?? c;
       },
       [get],
     ),

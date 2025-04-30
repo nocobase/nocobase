@@ -7,9 +7,11 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { DeleteObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import crypto from 'crypto';
 import { AttachmentModel, StorageType } from '.';
 import { STORAGE_TYPE_S3 } from '../../constants';
-import { cloudFilenameGetter, getFileKey } from '../utils';
+import { cloudFilenameGetter } from '../utils';
 
 export default class extends StorageType {
   static defaults() {
@@ -30,7 +32,6 @@ export default class extends StorageType {
   static filenameKey = 'key';
 
   make() {
-    const { S3Client } = require('@aws-sdk/client-s3');
     const multerS3 = require('multer-s3');
     const { accessKeyId, secretAccessKey, bucket, acl = 'public-read', ...options } = this.storage.options;
     if (options.endpoint) {
@@ -62,18 +63,32 @@ export default class extends StorageType {
     });
   }
 
-  async delete(records: AttachmentModel[]): Promise<[number, AttachmentModel[]]> {
-    const { DeleteObjectsCommand } = require('@aws-sdk/client-s3');
-    const { s3 } = this.make();
-    const { Deleted } = await s3.send(
-      new DeleteObjectsCommand({
-        Bucket: this.storage.options.bucket,
-        Delete: {
-          Objects: records.map((record) => ({ Key: getFileKey(record) })),
-        },
-      }),
-    );
+  calculateContentMD5(body) {
+    const hash = crypto.createHash('md5').update(body).digest('base64');
+    return hash;
+  }
 
-    return [Deleted.length, records.filter((record) => !Deleted.find((item) => item.Key === getFileKey(record)))];
+  async deleteS3Objects(bucketName: string, objects: string[]) {
+    const { s3 } = this.make();
+    const Deleted = [];
+    for (const Key of objects) {
+      const deleteCommand = new DeleteObjectCommand({
+        Bucket: bucketName,
+        Key,
+      });
+      await s3.send(deleteCommand);
+      Deleted.push({ Key });
+    }
+    return {
+      Deleted,
+    };
+  }
+
+  async delete(records: AttachmentModel[]): Promise<[number, AttachmentModel[]]> {
+    const { Deleted } = await this.deleteS3Objects(
+      this.storage.options.bucket,
+      records.map((record) => this.getFileKey(record)),
+    );
+    return [Deleted.length, records.filter((record) => !Deleted.find((item) => item.Key === this.getFileKey(record)))];
   }
 }

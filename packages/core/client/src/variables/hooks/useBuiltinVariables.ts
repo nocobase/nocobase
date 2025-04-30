@@ -15,6 +15,7 @@ import { useAPITokenVariable } from '../../schema-settings/VariableInput/hooks/u
 import { useCurrentRoleVariable } from '../../schema-settings/VariableInput/hooks/useRoleVariable';
 import { useURLSearchParamsVariable } from '../../schema-settings/VariableInput/hooks/useURLSearchParamsVariable';
 import { VariableOption } from '../types';
+import { useGlobalVariableCtx } from '../../application/hooks/useGlobalVariable';
 
 /**
  * 相当于全局的变量
@@ -26,8 +27,10 @@ const useBuiltInVariables = () => {
   const { apiTokenCtx } = useAPITokenVariable();
   const { datetimeCtx } = useDatetimeVariable();
   const { urlSearchParamsCtx, name: urlSearchParamsName, defaultValue } = useURLSearchParamsVariable();
+  const envVariableCtx = useGlobalVariableCtx('$env');
   const builtinVariables: VariableOption[] = useMemo(() => {
     return [
+      envVariableCtx,
       {
         name: '$user',
         ctx: currentUserCtx as any,
@@ -88,9 +91,16 @@ const useBuiltInVariables = () => {
         ctx: urlSearchParamsCtx,
         defaultValue,
       },
-    ];
-  }, [currentRoleCtx, currentUserCtx, datetimeCtx, defaultValue, urlSearchParamsCtx, urlSearchParamsName]);
-
+    ].filter(Boolean);
+  }, [
+    currentRoleCtx,
+    currentUserCtx,
+    datetimeCtx,
+    defaultValue,
+    urlSearchParamsCtx,
+    urlSearchParamsName,
+    envVariableCtx,
+  ]);
   return { builtinVariables };
 };
 

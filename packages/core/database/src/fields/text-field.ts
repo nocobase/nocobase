@@ -23,9 +23,26 @@ export class TextField extends Field {
       this.options.defaultValue = null;
     }
   }
+
+  additionalSequelizeOptions() {
+    const { name, trim } = this.options;
+
+    return {
+      set(value) {
+        if (value == null) {
+          return value;
+        }
+        if (typeof value !== 'string') {
+          value = value.toString();
+        }
+        this.setDataValue(name, trim ? value.trim() : value);
+      },
+    };
+  }
 }
 
 export interface TextFieldOptions extends BaseColumnFieldOptions {
   type: 'text';
   length?: 'tiny' | 'medium' | 'long';
+  trim?: boolean;
 }

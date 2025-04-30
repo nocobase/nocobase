@@ -12,7 +12,6 @@ import {
   SchemaSettings,
   SchemaSettingsItemType,
   SchemaSettingsLinkageRules,
-  useCollection_deprecated,
   useSchemaToolbar,
 } from '@nocobase/client';
 
@@ -35,11 +34,9 @@ const schemaSettingsItems: SchemaSettingsItemType[] = [
         name: 'linkageRules',
         Component: SchemaSettingsLinkageRules,
         useComponentProps() {
-          const { name } = useCollection_deprecated();
           const { linkageRulesProps } = useSchemaToolbar();
           return {
             ...linkageRulesProps,
-            collectionName: name,
           };
         },
       },

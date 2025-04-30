@@ -12,22 +12,25 @@ import { FormLayout, IFormLayoutProps } from '@formily/antd-v5';
 import { Field, Form as FormilyForm, createForm, onFieldInit, onFormInputChange } from '@formily/core';
 import { FieldContext, FormContext, observer, useField, useFieldSchema } from '@formily/react';
 import { uid } from '@formily/shared';
+import { transformMultiColumnToSingleColumn } from '@nocobase/utils/client';
 import { ConfigProvider, theme } from 'antd';
 import React, { useEffect, useMemo } from 'react';
 import { useActionContext } from '..';
 import { useAttach, useComponent } from '../..';
+import { useApp } from '../../../application';
 import { getCardItemSchema } from '../../../block-provider';
 import { useTemplateBlockContext } from '../../../block-provider/TemplateBlockProvider';
+import { useDataBlockProps } from '../../../data-source';
 import { useDataBlockRequest } from '../../../data-source/data-block/DataBlockRequestProvider';
 import { NocoBaseRecursionField } from '../../../formily/NocoBaseRecursionField';
 import { withDynamicSchemaProps } from '../../../hoc/withDynamicSchemaProps';
+import { useMobileLayout } from '../../../route-switch/antd/admin-layout';
 import { bindLinkageRulesToFiled } from '../../../schema-settings/LinkageRules/bindLinkageRulesToFiled';
 import { forEachLinkageRule } from '../../../schema-settings/LinkageRules/forEachLinkageRule';
 import { useToken } from '../../../style';
 import { useLocalVariables, useVariables } from '../../../variables';
 import { useProps } from '../../hooks/useProps';
 import { useFormBlockHeight } from './hook';
-import { useApp } from '../../../application';
 
 export interface FormProps extends IFormLayoutProps {
   form?: FormilyForm;
@@ -48,13 +51,20 @@ const FormComponent: React.FC<FormProps> = (props) => {
     labelAlign = 'left',
     labelWidth = 120,
     labelWrap = true,
+    colon = true,
   } = cardItemSchema?.['x-component-props'] || {};
+  const { isMobileLayout } = useMobileLayout();
+  const newSchema = useMemo(
+    () => (isMobileLayout ? transformMultiColumnToSingleColumn(fieldSchema) : fieldSchema),
+    [fieldSchema, isMobileLayout],
+  );
   return (
     <FieldContext.Provider value={undefined}>
       <FormContext.Provider value={form}>
         <FormLayout
           layout={layout}
           {...others}
+          colon={colon}
           labelAlign={labelAlign}
           labelWidth={layout === 'horizontal' ? labelWidth : null}
           labelWrap={labelWrap}
@@ -76,7 +86,7 @@ const FormComponent: React.FC<FormProps> = (props) => {
               }
             `}
           >
-            <NocoBaseRecursionField basePath={f.address} schema={fieldSchema} onlyRenderProperties isUseFormilyField />
+            <NocoBaseRecursionField basePath={f.address} schema={newSchema} onlyRenderProperties isUseFormilyField />
           </div>
         </FormLayout>
       </FormContext.Provider>
@@ -93,18 +103,18 @@ const FormDecorator: React.FC<FormProps> = (props) => {
   // TODO: component 里 useField 会与当前 field 存在偏差
   const f = useAttach(form.createVoidField({ ...field.props, basePath: '' }));
   const Component = useComponent(fieldSchema['x-component'], Def);
+  const { isMobileLayout } = useMobileLayout();
+  const newSchema = useMemo(
+    () => (isMobileLayout ? transformMultiColumnToSingleColumn(fieldSchema) : fieldSchema),
+    [fieldSchema, isMobileLayout],
+  );
   return (
     <FieldContext.Provider value={undefined}>
       <FormContext.Provider value={form}>
         <FormLayout layout={'vertical'} {...others}>
           <FieldContext.Provider value={f}>
             <Component {...field.componentProps}>
-              <NocoBaseRecursionField
-                basePath={f.address}
-                schema={fieldSchema}
-                onlyRenderProperties
-                isUseFormilyField
-              />
+              <NocoBaseRecursionField basePath={f.address} schema={newSchema} onlyRenderProperties isUseFormilyField />
             </Component>
           </FieldContext.Provider>
           {/* <FieldContext.Provider value={f}>{children}</FieldContext.Provider> */}
@@ -141,12 +151,15 @@ const WithForm = (props: WithFormProps) => {
   const linkageRules: any[] =
     (getLinkageRules(fieldSchema) || fieldSchema.parent?.['x-linkage-rules'])?.filter((k) => !k.disabled) || [];
 
+  // 关闭弹窗之前，如果有未保存的数据，是否要二次确认
+  const { confirmBeforeClose = true } = useDataBlockProps() || ({} as any);
+
   useEffect(() => {
     const id = uid();
 
     form.addEffects(id, () => {
       onFormInputChange(() => {
-        setFormValueChanged?.(true);
+        setFormValueChanged?.(confirmBeforeClose);
       });
     });
 
@@ -157,7 +170,7 @@ const WithForm = (props: WithFormProps) => {
     return () => {
       form.removeEffects(id);
     };
-  }, [form, props.disabled, setFormValueChanged]);
+  }, [form, props.disabled, setFormValueChanged, confirmBeforeClose]);
 
   useEffect(() => {
     if (loading) {
@@ -210,17 +223,19 @@ const WithForm = (props: WithFormProps) => {
 const WithoutForm = (props) => {
   const fieldSchema = useFieldSchema();
   const { setFormValueChanged } = useActionContext();
+  // 关闭弹窗之前，如果有未保存的数据，是否要二次确认
+  const { confirmBeforeClose = true } = useDataBlockProps() || ({} as any);
   const form = useMemo(
     () =>
       createForm({
         disabled: props.disabled,
         effects() {
           onFormInputChange((form) => {
-            setFormValueChanged?.(true);
+            setFormValueChanged?.(confirmBeforeClose);
           });
         },
       }),
-    [],
+    [confirmBeforeClose],
   );
   return fieldSchema['x-decorator'] === 'FormV2' ? (
     <FormDecorator form={form} {...props} />
@@ -250,7 +265,7 @@ export const Form: React.FC<FormProps> & {
     const theme: any = useMemo(() => {
       return {
         token: {
-          // 这里是为了防止区块内部也收到 marginBlock 的影响（marginBlock：区块之间的间距）
+          // 这里是为了防止区块内部也受到 marginBlock 的影响（marginBlock：区块之间的间距）
           // @ts-ignore
           marginBlock: token.marginLG,
         },

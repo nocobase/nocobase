@@ -20,7 +20,6 @@ import { FilterBlockProvider } from '../../../filter-provider/FilterProvider';
 import {
   NocoBaseRecursionField,
   RefreshComponentProvider,
-  useRefreshComponent,
   useRefreshFieldSchema,
 } from '../../../formily/NocoBaseRecursionField';
 import { DndContext, DndContextProps } from '../../common/dnd-context';
@@ -379,11 +378,9 @@ export const Grid: any = observer(
     }, [fieldSchema, render, InitializerComponent, showDivider]);
 
     const refreshFieldSchema = useRefreshFieldSchema();
-    const refreshComponent = useRefreshComponent();
     const refresh = useCallback(() => {
       refreshFieldSchema?.();
-      refreshComponent?.();
-    }, [refreshComponent, refreshFieldSchema]);
+    }, [refreshFieldSchema]);
 
     return (
       <RefreshComponentProvider refresh={refresh}>
@@ -563,7 +560,7 @@ Grid.Col = observer(
 
     return (
       <GridColContext.Provider value={value}>
-        <div ref={setNodeRef} style={colStyle} className={cls('nb-grid-col')}>
+        <div ref={setNodeRef} style={colStyle} className={cls('nb-grid-col', props.className)}>
           {props.children}
         </div>
       </GridColContext.Provider>

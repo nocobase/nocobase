@@ -9,7 +9,7 @@
 
 import { ArrayField } from '@formily/core';
 import { connect, useField } from '@formily/react';
-import { Checkbox, Select, Table, Tag } from 'antd';
+import { Checkbox, Select, Table, Tag, TableProps } from 'antd';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCompile } from '@nocobase/client';
@@ -55,62 +55,64 @@ export const StrategyActions = connect((props) => {
         rowKey={'name'}
         size={'small'}
         pagination={false}
-        columns={[
-          {
-            dataIndex: 'displayName',
-            title: t('Action display name'),
-            render: (value) => compile(value),
-          },
-          {
-            dataIndex: 'onNewRecord',
-            title: t('Action type'),
-            render: (onNewRecord) =>
-              onNewRecord ? (
-                <Tag color={'green'}>{t('Action on new records')}</Tag>
-              ) : (
-                <Tag color={'geekblue'}>{t('Action on existing records')}</Tag>
-              ),
-          },
-          {
-            dataIndex: 'enabled',
-            title: t('Allow'),
-            render: (enabled, action) => (
-              <Checkbox
-                checked={enabled}
-                aria-label={`${action.name}_checkbox`}
-                onChange={(e) => {
-                  if (enabled) {
-                    delete scopes[action.name];
-                  } else {
-                    scopes[action.name] = 'all';
-                  }
-                  onChange(toFieldValue(scopes));
-                }}
-              />
-            ),
-          },
-          {
-            dataIndex: 'scope',
-            title: t('Data scope'),
-            render: (scope, action) =>
-              !action.onNewRecord && (
-                <Select
-                  data-testid="select-data-scope"
-                  popupMatchSelectWidth={false}
-                  size={'small'}
-                  value={scope}
-                  options={[
-                    { label: t('All records'), value: 'all' },
-                    { label: t('Own records'), value: 'own' },
-                  ]}
-                  onChange={(value) => {
-                    scopes[action.name] = value;
+        columns={
+          [
+            {
+              dataIndex: 'displayName',
+              title: t('Action display name'),
+              render: (value) => compile(value),
+            },
+            {
+              dataIndex: 'onNewRecord',
+              title: t('Action type'),
+              render: (onNewRecord) =>
+                onNewRecord ? (
+                  <Tag color={'green'}>{t('Action on new records')}</Tag>
+                ) : (
+                  <Tag color={'geekblue'}>{t('Action on existing records')}</Tag>
+                ),
+            },
+            {
+              dataIndex: 'enabled',
+              title: t('Allow'),
+              render: (enabled, action) => (
+                <Checkbox
+                  checked={enabled}
+                  aria-label={`${action.name}_checkbox`}
+                  onChange={(e) => {
+                    if (enabled) {
+                      delete scopes[action.name];
+                    } else {
+                      scopes[action.name] = 'all';
+                    }
                     onChange(toFieldValue(scopes));
                   }}
                 />
               ),
-          },
-        ]}
+            },
+            {
+              dataIndex: 'scope',
+              title: t('Data scope'),
+              render: (scope, action) =>
+                !action.onNewRecord && (
+                  <Select
+                    data-testid="select-data-scope"
+                    popupMatchSelectWidth={false}
+                    size={'small'}
+                    value={scope}
+                    options={[
+                      { label: t('All records'), value: 'all' },
+                      { label: t('Own records'), value: 'own' },
+                    ]}
+                    onChange={(value) => {
+                      scopes[action.name] = value;
+                      onChange(toFieldValue(scopes));
+                    }}
+                  />
+                ),
+            },
+          ] as TableProps['columns']
+        }
         dataSource={availableActions?.map((item) => {
           let scope = 'all';
           let enabled = false;

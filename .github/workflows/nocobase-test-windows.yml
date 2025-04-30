@@ -63,7 +63,9 @@ jobs:
             ${{ runner.os }}-yarn-
 
       - name: Install project dependencies
-        run: yarn --prefer-offline
+        run: |
+          yarn --prefer-offline
+          yarn add sqlite3 --no-save -W
 
       - name: Test with Sqlite
         run: yarn test --server --single-thread=false

@@ -28,7 +28,6 @@ import {
   useGlobalTheme,
   useNavigateNoUpdate,
   useNocoBaseRoutes,
-  useToken,
   useURLAndHTMLSchema,
 } from '../../..';
 import { getPageMenuSchema } from '../../../';
@@ -48,6 +47,11 @@ const components = { TreeSelect };
 const toItems = (routes: NocoBaseDesktopRoute[], { t, compile }) => {
   const items = [];
   for (const route of routes) {
+    // filter out the tabs
+    if (route.type === NocoBaseDesktopRouteType.tabs) {
+      continue;
+    }
+
     const item = {
       label: isVariable(route.title) ? compile(route.title) : t(route.title),
       value: `${route.id}||${route.type}`,
@@ -61,7 +65,7 @@ const toItems = (routes: NocoBaseDesktopRoute[], { t, compile }) => {
 };
 
 const insertPositionToMethod = {
-  beforeBegin: 'prepend',
+  beforeBegin: 'insertBefore',
   afterEnd: 'insertAfter',
 };
 
@@ -490,28 +494,43 @@ const MoveToMenuItem = () => {
 
   const { moveRoute } = useNocoBaseRoutes();
   const currentRoute = useCurrentRoute();
-  const onMoveToSubmit: (values: any) => void = useCallback(async ({ target, position }) => {
-    const [targetId] = target?.split?.('||') || [];
-    if (!targetId) {
-      return;
-    }
+  const onMoveToSubmit: (values: any) => void = useCallback(
+    async ({ target, position }) => {
+      const [targetId] = target?.split?.('||') || [];
+      if (!targetId) {
+        return;
+      }
 
-    if (targetId === undefined || !currentRoute) {
-      return;
-    }
+      if (targetId === undefined || !currentRoute) {
+        return;
+      }
 
-    const positionToMethod = {
-      beforeBegin: 'prepend',
-      afterEnd: 'insertAfter',
-    };
+      const positionToMethod = {
+        beforeBegin: 'insertBefore',
+        afterEnd: 'insertAfter',
+      };
 
-    await moveRoute({
-      sourceId: currentRoute.id as any,
-      targetId: targetId,
-      sortField: 'sort',
-      method: positionToMethod[position],
-    });
-  }, []);
+      // 'beforeEnd' 表示的是插入到一个分组的里面
+      const options =
+        position === 'beforeEnd'
+          ? {
+              targetScope: {
+                parentId: targetId,
+              },
+            }
+          : {
+              targetId: targetId,
+            };
+
+      await moveRoute({
+        sourceId: currentRoute.id as any,
+        sortField: 'sort',
+        method: positionToMethod[position],
+        ...options,
+      });
+    },
+    [currentRoute, moveRoute],
+  );
 
   return (
     <SchemaSettingsModalItem

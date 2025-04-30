@@ -1,22 +1,4 @@
-/**
- * This file is part of the NocoBase (R) project.
- * Copyright (c) 2020-2024 NocoBase Co., Ltd.
- * Authors: NocoBase Team.
- *
- * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
- * For more information, please refer to: https://www.nocobase.com/agreement.
- */
-
-/**
- * This file is part of the NocoBase (R) project.
- * Copyright (c) 2020-2024 NocoBase Co., Ltd.
- * Authors: NocoBase Team.
- *
- * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
- * For more information, please refer to: https://www.nocobase.com/agreement.
- */
-
-export default {
+{
   "Configure calendar": "Configura calendario",
   "Title field": "Campo titolo",
   "Custom title": "Titolo personalizzato",
@@ -41,14 +23,15 @@ export default {
   "Calendar collection": "Raccolta calendario",
   "Create calendar block": "Crea blocco calendario",
   "Filter": "Filtro",
-  "Configure actions": "Configura operazioni",
-  "Enable actions": "Abilita operazioni",
+  "Configure actions": "Configura azioni",
+  "Enable actions": "Abilita azioni",
   "Turn pages": "Cambia pagina",
   "Select view": "Seleziona vista",
   "Add new": "Aggiungi nuovo",
   "View record": "Visualizza record",
   "Details": "Dettagli",
   "Customize": "Personalizza",
+  "Update record": "Aggiorna record",
   "Popup": "Popup",
   "Updated successfully": "Aggiornato con successo",
   "Custom request": "Richiesta personalizzata",
@@ -59,7 +42,13 @@ export default {
   "Weekly": "Settimanale",
   "Monthly": "Mensile",
   "Yearly": "Annuale",
-  "Repeats": "Ripeti",
-  "Background color field": "Campo colore sfondo",
-  "Not selected": "Non selezionato"
-};
+  "Repeats": "Ripeti",  
+  "Title": "Titolo",
+  "Month": "Mese",
+  "Week": "Settimana",
+  "{{count}} more items": "{{count}} altri elementi",
+  "Not selected": "Non selezionato",
+  "Color field": "Campo colore",
+  "Default view": "Vista predefinita",
+  "Event open mode": "Modalità apertura evento"
+}

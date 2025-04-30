@@ -8,8 +8,8 @@
  */
 
 import { Model, Transaction } from '@nocobase/database';
-import { Plugin } from '@nocobase/server';
 import PluginLocalizationServer from '@nocobase/plugin-localization';
+import { Plugin } from '@nocobase/server';
 import { tval } from '@nocobase/utils';
 import _ from 'lodash';
 
@@ -94,7 +94,14 @@ export class PluginMobileServer extends Plugin {
         const createModels = tabs
           .map((x) => !modelsByRouteId[x.get('id')] && { mobileRouteId: x.get('id'), roleName })
           .filter(Boolean);
-        return await repository.create({ values: createModels, transaction });
+        for (const values of createModels) {
+          await repository.firstOrCreate({
+            values,
+            filterKeys: ['mobileRouteId', 'roleName'],
+            transaction,
+          });
+        }
+        return;
       }
 
       if (action === 'remove') {
@@ -118,7 +125,7 @@ export class PluginMobileServer extends Plugin {
       const mobileRoutesRepository = ctx.db.getRepository('mobileRoutes');
       const rolesRepository = ctx.db.getRepository('roles');
 
-      if (ctx.state.currentRole === 'root') {
+      if (ctx.state.currentRoles.includes('root')) {
         ctx.body = await mobileRoutesRepository.find({
           tree: true,
           ...ctx.query,
@@ -126,12 +133,12 @@ export class PluginMobileServer extends Plugin {
         return await next();
       }
 
-      const role = await rolesRepository.findOne({
-        filterByTk: ctx.state.currentRole,
+      const roles = await rolesRepository.find({
+        filterByTk: ctx.state.currentRoles,
         appends: ['mobileRoutes'],
       });
 
-      const mobileRoutesId = role.get('mobileRoutes').map((item) => item.id);
+      const mobileRoutesId = roles.flatMap((x) => x.get('mobileRoutes').map((x) => x.id));
 
       ctx.body = await mobileRoutesRepository.find({
         tree: true,

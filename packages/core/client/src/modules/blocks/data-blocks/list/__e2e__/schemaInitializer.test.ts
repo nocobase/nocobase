@@ -12,6 +12,7 @@ import { oneEmptyTableWithUsers } from '../../details-multi/__e2e__/templatesOfB
 
 const deleteButton = async (page: Page, name: string) => {
   await page.getByRole('button', { name }).hover();
+  await page.getByRole('menuitem', { name: 'Delete' }).waitFor({ state: 'detached' });
   await page.getByRole('button', { name }).getByLabel('designer-schema-settings-').hover();
   await page.getByRole('menuitem', { name: 'Delete' }).click();
   await page.getByRole('button', { name: 'OK', exact: true }).click();
@@ -40,6 +41,7 @@ test.describe('where list block can be added', () => {
     await page.getByLabel('schema-initializer-Grid-').nth(1).hover();
     await page.getByRole('menuitem', { name: 'Role name' }).click();
     await page.mouse.move(300, 0);
+    await page.reload();
     await expect(page.getByLabel('block-item-CollectionField-').getByText('Root')).toBeVisible();
     await expect(page.getByLabel('block-item-CollectionField-').getByText('Admin')).toBeVisible();
     await expect(page.getByLabel('block-item-CollectionField-').getByText('Member')).toBeVisible();
@@ -71,6 +73,9 @@ test.describe('configure global actions', () => {
     await page.getByRole('menuitem', { name: 'Refresh' }).click();
 
     await page.mouse.move(300, 0);
+    await expect(page.getByRole('button', { name: 'Filter' })).toHaveCount(1);
+    await expect(page.getByRole('button', { name: 'Add new' })).toHaveCount(1);
+    await expect(page.getByRole('button', { name: 'Refresh' })).toHaveCount(1);
     await expect(page.getByRole('button', { name: 'Filter' })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Add new' })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Refresh' })).toBeVisible();

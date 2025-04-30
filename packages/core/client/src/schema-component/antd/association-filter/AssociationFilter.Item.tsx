@@ -41,6 +41,7 @@ export const AssociationFilterItem = withDynamicSchemaProps(
       handleSearchInput: _handleSearchInput,
       params,
       run,
+      dataScopeFilter,
       valueKey: _valueKey,
       labelKey: _labelKey,
       defaultCollapse,
@@ -94,7 +95,7 @@ export const AssociationFilterItem = withDynamicSchemaProps(
       if (searchVisible || filter) {
         run({
           ...params?.[0],
-          filter: undefined,
+          filter: dataScopeFilter,
         });
       }
       setSearchVisible(!searchVisible);

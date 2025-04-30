@@ -19,6 +19,7 @@ import { SchemaSettingsBlockTitleItem } from '../../../../schema-settings/Schema
 import { SchemaSettingsConnectDataBlocks } from '../../../../schema-settings/SchemaSettingsConnectDataBlocks';
 import { useBlockTemplateContext } from '../../../../schema-templates/BlockTemplateProvider';
 import { SchemaSettingsLayoutItem } from '../../../../schema-settings/SchemaSettingsLayoutItem';
+import { LinkageRuleCategory } from '../../../../schema-settings/LinkageRules/type';
 
 export const filterFormBlockSettings = new SchemaSettings({
   name: 'blockSettings:filterForm',
@@ -48,12 +49,27 @@ export const filterFormBlockSettings = new SchemaSettings({
       },
     },
     {
-      name: 'linkageRules',
+      name: 'fieldLinkageRules',
       Component: SchemaSettingsLinkageRules,
       useComponentProps() {
         const { name } = useCollection_deprecated();
+        const { t } = useTranslation();
         return {
           collectionName: name,
+          title: t('Field Linkage rules'),
+        };
+      },
+    },
+    {
+      name: 'blockLinkageRules',
+      Component: SchemaSettingsLinkageRules,
+      useComponentProps() {
+        const { name } = useCollection();
+        const { t } = useTranslation();
+        return {
+          collectionName: name,
+          title: t('Block Linkage rules'),
+          category: LinkageRuleCategory.block,
         };
       },
     },

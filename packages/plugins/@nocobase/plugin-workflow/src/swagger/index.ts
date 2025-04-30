@@ -426,9 +426,9 @@ export default {
         },
       },
     },
-    '/users_jobs:list': {
+    '/workflowManualTasks:list': {
       get: {
-        tags: ['users_jobs'],
+        tags: ['workflowManualTasks'],
         description: 'List manual jobs',
         parameters: [],
         responses: {
@@ -449,9 +449,9 @@ export default {
         },
       },
     },
-    '/users_jobs:get': {
+    '/workflowManualTasks:get': {
       get: {
-        tags: ['users_jobs'],
+        tags: ['workflowManualTasks'],
         description: 'Single user job',
         parameters: [],
         responses: {
@@ -480,9 +480,9 @@ export default {
         },
       },
     },
-    '/users_jobs:submit': {
+    '/workflowManualTasks:submit': {
       post: {
-        tags: ['users_jobs'],
+        tags: ['workflowManualTasks'],
         description: '',
         parameters: [
           {
@@ -579,14 +579,6 @@ export default {
               type: 'array',
               description: 'Revisions',
             },
-            executed: {
-              type: 'integer',
-              description: 'Executed count for a single version',
-            },
-            allExecuted: {
-              type: 'integer',
-              description: 'Executed count for all versions of the same workflow',
-            },
           },
         },
         filterByTk: {
@@ -622,12 +614,6 @@ export default {
               },
               key: {
                 $ref: '#/components/schemas/workflow/model/properties/key',
-              },
-              executed: {
-                $ref: '#/components/schemas/workflow/model/properties/executed',
-              },
-              allExecuted: {
-                $ref: '#/components/schemas/workflow/model/properties/allExecuted',
               },
             },
           },

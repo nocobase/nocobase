@@ -882,7 +882,7 @@ export const builtinExpression = {
                 value: 'formula.js',
                 label: 'Formula.js',
                 tooltip: '{{t("Formula.js supports most Microsoft Excel formula functions.")}}',
-                link: 'https://formulajs.info/functions/',
+                link: 'https://docs.nocobase.com/handbook/calculation-engines/formula',
               },
             ],
             default: 'formula.js',

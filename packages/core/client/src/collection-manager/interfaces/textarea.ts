@@ -28,8 +28,15 @@ export class TextareaFieldInterface extends CollectionFieldInterface {
   };
   availableTypes = ['text', 'json', 'string'];
   hasDefaultValue = true;
+  titleUsable = true;
   properties = {
     ...defaultProps,
+    trim: {
+      type: 'boolean',
+      'x-content': '{{t("Automatically remove heading and tailing spaces")}}',
+      'x-decorator': 'FormItem',
+      'x-component': 'Checkbox',
+    },
   };
   schemaInitialize(schema: ISchema, { block }) {
     if (['Table', 'Kanban'].includes(block)) {

@@ -120,13 +120,8 @@ export default class PluginWorkflowClient extends Plugin {
     });
 
     this.router.add('admin.workflow.tasks', {
-      path: '/admin/workflow/tasks/:taskType?',
+      path: '/admin/workflow/tasks/:taskType/:status/:popupId?',
       Component: WorkflowTasks,
-    });
-
-    this.router.add('admin.workflow.tasks.popup', {
-      path: '/admin/workflow/tasks/:taskType/popups/*',
-      Component: PagePopups,
     });
 
     this.app.pluginSettingsManager.add(NAMESPACE, {
@@ -193,3 +188,4 @@ export { default as useStyles } from './style';
 export { Trigger, useTrigger } from './triggers';
 export * from './utils';
 export * from './variable';
+export { TASK_STATUS, usePopupRecordContext } from './WorkflowTasks';

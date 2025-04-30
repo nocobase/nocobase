@@ -7,6 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { HighlightOutlined } from '@ant-design/icons';
 import { useDesignable } from '@nocobase/client';
 import { ErrorBlock } from 'antd-mobile';
 import _ from 'lodash';
@@ -19,14 +20,15 @@ export const ShowTipWhenNoPages: FC = ({ children }) => {
   const { designable } = useDesignable();
   const { routeList } = useMobileRoutes();
   const { t } = usePluginTranslation();
+  const isInBlockTemplateSettingsPage = window.location.pathname?.includes('/m/block-templates/inherited/');
 
-  if ((!designable || isMobile) && _.isEmpty(routeList)) {
+  if (!isInBlockTemplateSettingsPage && (!designable || isMobile) && _.isEmpty(routeList)) {
     return (
       <ErrorBlock
-        status="empty"
+        image={<HighlightOutlined style={{ fontSize: '8em' }} />}
         fullPage
-        title={t('No accessible pages found')}
-        description={t('This might be due to permission configuration issues')}
+        title={t('No pages yet, please configure first')}
+        description={t('Click the "UI Editor" icon in the upper right corner to enter the UI Editor mode')}
       />
     );
   }

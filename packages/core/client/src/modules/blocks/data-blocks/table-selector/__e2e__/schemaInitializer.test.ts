@@ -90,7 +90,7 @@ test.describe('configure actions column', () => {
     // 列宽度默认为 100
     await expectActionsColumnWidth(100);
 
-    await page.getByText('Actions', { exact: true }).hover();
+    await page.getByText('Actions', { exact: true }).hover({ force: true });
     await page.getByLabel('designer-schema-settings-TableV2.Column-fieldSettings:TableColumn-users').hover();
     await page.getByRole('menuitem', { name: 'Column width' }).click();
 

@@ -12,6 +12,7 @@ import type { AxiosResponse } from 'axios';
 import debounce from 'lodash/debounce';
 import { AuthErrorCode } from '@nocobase/auth/client';
 
+
 function removeBasename(pathname, basename) {
   // Escape special characters in basename for use in regex
   const escapedBasename = basename.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -69,7 +70,12 @@ export function authCheckMiddleware({ app }: { app: Application }) {
         throw error;
       }
 
-      if (pathname !== app.getHref('signin')) {
+      const isSkippedAuthCheckRoute = app.router.isSkippedAuthCheckRoute(pathname);
+      if (isSkippedAuthCheckRoute) {
+        error.config.skipNotify = true;
+      }
+
+      if (pathname !== app.getHref('signin') && !isSkippedAuthCheckRoute) {
         const redirectPath = removeBasename(pathname, basename);
 
         debouncedRedirect(() => {

@@ -81,6 +81,7 @@ export interface ActionProps extends ButtonProps {
    * @internal
    */
   addChild?: boolean;
+  onlyIcon?: boolean;
 }
 
 export type ComposedAction = React.FC<ActionProps> & {
@@ -92,6 +93,7 @@ export type ActionDrawerProps<T = DrawerProps> = T & {
   footerNodeName?: string;
   /** 当前弹窗嵌套的层级 */
   level?: number;
+  delay?: number;
 };
 
 export type ComposedActionDrawer<T = DrawerProps> = React.FC<ActionDrawerProps<T>> & {

@@ -1,11 +1,23 @@
 {
-  "Theme": "Tema",
-  "Local": "Locale",
+  "Theme editor": "Editor temi",
+  "Themes": "Temi",  
   "Dark theme": "Tema scuro",
   "Optional": "Opzionale",
   "Non-optional": "Non opzionale",
   "Current": "Corrente",
-  "Default": "Predefinito",
+  "Default": "Predefinito",  
+  "Delete theme": "Elimina tema",
+  "Deletion is unrecoverable. Confirm deletion?": "L'eliminazione è irreversibile. Confermare l'eliminazione?",
+  "Deleted successfully": "Eliminato con successo",
+  "Updated successfully": "Aggiornato con successo",
+  "User selectable": "Selezionabile dall'utente",
+  "Default theme": "Tema predefinito",
+  "Add new theme": "Aggiungi nuovo tema",
+  "Edit based on current theme": "Modifica basata sul tema corrente",
+  "Create a brand new theme": "Crea un tema completamente nuovo",
+  "Dark": "Scuro",
+  "Compact": "Compatto",
+  "Compact dark": "Scuro compatto",
   "Theme Editor": "Editor Tema",
   "Save": "Salva",
   "Close": "Chiudi",
@@ -18,5 +30,5 @@
   "Initializing Editor...": "Inizializzazione Editor...",
   "Save theme": "Salva tema",
   "Please set a name for this theme": "Imposta un nome per questo tema",
-  "Please input the theme name": "Inserisci il nome del tema"
+  "Please input the theme name": "Inserisci il nome del tema"     
 }

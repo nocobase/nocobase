@@ -10,14 +10,16 @@
 import path from 'path';
 import { randomUUID } from 'crypto';
 
+import { Snowflake } from 'nodejs-snowflake';
 import { Transaction, Transactionable } from 'sequelize';
 import LRUCache from 'lru-cache';
 
 import { Op } from '@nocobase/database';
 import { Plugin } from '@nocobase/server';
-import { Registry } from '@nocobase/utils';
-
+import { Registry, uid } from '@nocobase/utils';
+import { SequelizeCollectionManager } from '@nocobase/data-source-manager';
 import { Logger, LoggerOptions } from '@nocobase/logger';
+
 import Processor from './Processor';
 import initActions from './actions';
 import { EXECUTION_STATUS } from './constants';
@@ -34,10 +36,9 @@ import DestroyInstruction from './instructions/DestroyInstruction';
 import QueryInstruction from './instructions/QueryInstruction';
 import UpdateInstruction from './instructions/UpdateInstruction';
 
-import type { ExecutionModel, JobModel, WorkflowModel } from './types';
+import type { ExecutionModel, JobModel, WorkflowModel, WorkflowTaskModel } from './types';
 import WorkflowRepository from './repositories/WorkflowRepository';
-import { Context } from '@nocobase/actions';
-import { SequelizeCollectionManager } from '@nocobase/data-source-manager';
+import WorkflowTasksRepository from './repositories/WorkflowTasksRepository';
 
 type ID = number | string;
 
@@ -61,6 +62,7 @@ export default class PluginWorkflowServer extends Plugin {
   triggers: Registry<Trigger> = new Registry();
   functions: Registry<CustomFunction> = new Registry();
   enabledCache: Map<number, WorkflowModel> = new Map();
+  snowflake: Snowflake;
 
   private ready = false;
   private executing: Promise<void> | null = null;
@@ -74,6 +76,10 @@ export default class PluginWorkflowServer extends Plugin {
 
   private onBeforeSave = async (instance: WorkflowModel, { transaction }) => {
     const Model = <typeof WorkflowModel>instance.constructor;
+
+    if (!instance.key) {
+      instance.set('key', uid());
+    }
 
     if (instance.enabled) {
       instance.set('current', true);
@@ -104,6 +110,99 @@ export default class PluginWorkflowServer extends Plugin {
       );
 
       this.toggle(previous, false, { transaction });
+    }
+  };
+
+  private onAfterCreate = async (model: WorkflowModel, { transaction }) => {
+    const WorkflowStatsModel = this.db.getModel('workflowStats');
+    let stats = await WorkflowStatsModel.findOne({
+      where: { key: model.key },
+      transaction,
+    });
+    if (!stats) {
+      stats = await model.createStats({ executed: 0 }, { transaction });
+    }
+    model.stats = stats;
+    model.versionStats = await model.createVersionStats({ id: model.id }, { transaction });
+    if (model.enabled) {
+      this.toggle(model, true, { transaction });
+    }
+  };
+
+  private onAfterUpdate = async (model: WorkflowModel, { transaction }) => {
+    model.stats = await model.getStats({ transaction });
+    model.versionStats = await model.getVersionStats({ transaction });
+    this.toggle(model, model.enabled, { transaction });
+  };
+
+  private onAfterDestroy = async (model: WorkflowModel, { transaction }) => {
+    this.toggle(model, false, { transaction });
+
+    const TaskRepo = this.db.getRepository('workflowTasks');
+    await TaskRepo.destroy({
+      filter: {
+        workflowId: model.id,
+      },
+      transaction,
+    });
+  };
+
+  // [Life Cycle]:
+  //   * load all workflows in db
+  //   * add all hooks for enabled workflows
+  //   * add hooks for create/update[enabled]/delete workflow to add/remove specific hooks
+  private onAfterStart = async () => {
+    this.ready = true;
+
+    const collection = this.db.getCollection('workflows');
+    const workflows = await collection.repository.find({
+      filter: { enabled: true },
+      appends: ['stats', 'versionStats'],
+    });
+
+    for (const workflow of workflows) {
+      // NOTE: workflow stats may not be created in migration (for compatibility)
+      if (!workflow.stats) {
+        workflow.stats = await workflow.createStats({ executed: 0 });
+      }
+      // NOTE: workflow stats may not be created in migration (for compatibility)
+      if (!workflow.versionStats) {
+        workflow.versionStats = await workflow.createVersionStats({ executed: 0 });
+      }
+
+      this.toggle(workflow, true, { silent: true });
+    }
+
+    this.checker = setInterval(() => {
+      this.getLogger('dispatcher').info(`(cycling) check for queueing executions`);
+      this.dispatch();
+    }, 300_000);
+
+    this.app.on('workflow:dispatch', () => {
+      this.app.logger.info('workflow:dispatch');
+      this.dispatch();
+    });
+
+    // check for queueing executions
+    this.getLogger('dispatcher').info('(starting) check for queueing executions');
+    this.dispatch();
+  };
+
+  private onBeforeStop = async () => {
+    for (const workflow of this.enabledCache.values()) {
+      this.toggle(workflow, false, { silent: true });
+    }
+
+    this.ready = false;
+    if (this.events.length) {
+      await this.prepare();
+    }
+    if (this.executing) {
+      await this.executing;
+    }
+
+    if (this.checker) {
+      clearInterval(this.checker);
     }
   };
 
@@ -213,6 +312,15 @@ export default class PluginWorkflowServer extends Plugin {
   async beforeLoad() {
     this.db.registerRepositories({
       WorkflowRepository,
+      WorkflowTasksRepository,
+    });
+
+    const PluginRepo = this.db.getRepository<any>('applicationPlugins');
+    const pluginRecord = await PluginRepo.findOne({
+      filter: { name: this.name },
+    });
+    this.snowflake = new Snowflake({
+      custom_epoch: pluginRecord?.createdAt.getTime(),
     });
   }
 
@@ -262,6 +370,7 @@ export default class PluginWorkflowServer extends Plugin {
       actions: ['workflows:list'],
     });
 
+    this.app.acl.allow('workflowTasks', 'countMine', 'loggedIn');
     this.app.acl.allow('*', ['trigger'], 'loggedIn');
 
     this.db.addMigrations({
@@ -273,66 +382,12 @@ export default class PluginWorkflowServer extends Plugin {
     });
 
     db.on('workflows.beforeSave', this.onBeforeSave);
-    db.on('workflows.afterCreate', (model: WorkflowModel, { transaction }) => {
-      if (model.enabled) {
-        this.toggle(model, true, { transaction });
-      }
-    });
-    db.on('workflows.afterUpdate', (model: WorkflowModel, { transaction }) =>
-      this.toggle(model, model.enabled, { transaction }),
-    );
-    db.on('workflows.afterDestroy', (model: WorkflowModel, { transaction }) =>
-      this.toggle(model, false, { transaction }),
-    );
+    db.on('workflows.afterCreate', this.onAfterCreate);
+    db.on('workflows.afterUpdate', this.onAfterUpdate);
+    db.on('workflows.afterDestroy', this.onAfterDestroy);
 
-    // [Life Cycle]:
-    //   * load all workflows in db
-    //   * add all hooks for enabled workflows
-    //   * add hooks for create/update[enabled]/delete workflow to add/remove specific hooks
-    this.app.on('afterStart', async () => {
-      this.ready = true;
-
-      const collection = db.getCollection('workflows');
-      const workflows = await collection.repository.find({
-        filter: { enabled: true },
-      });
-
-      workflows.forEach((workflow: WorkflowModel) => {
-        this.toggle(workflow, true, { silent: true });
-      });
-
-      this.checker = setInterval(() => {
-        this.getLogger('dispatcher').info(`(cycling) check for queueing executions`);
-        this.dispatch();
-      }, 300_000);
-
-      this.app.on('workflow:dispatch', () => {
-        this.app.logger.info('workflow:dispatch');
-        this.dispatch();
-      });
-
-      // check for queueing executions
-      this.getLogger('dispatcher').info('(starting) check for queueing executions');
-      this.dispatch();
-    });
-
-    this.app.on('beforeStop', async () => {
-      for (const workflow of this.enabledCache.values()) {
-        this.toggle(workflow, false, { silent: true });
-      }
-
-      this.ready = false;
-      if (this.events.length) {
-        await this.prepare();
-      }
-      if (this.executing) {
-        await this.executing;
-      }
-
-      if (this.checker) {
-        clearInterval(this.checker);
-      }
-    });
+    this.app.on('afterStart', this.onAfterStart);
+    this.app.on('beforeStop', this.onBeforeStop);
   }
 
   private toggle(
@@ -352,11 +407,16 @@ export default class PluginWorkflowServer extends Plugin {
       const prev = workflow.previous();
       if (prev.config) {
         trigger.off({ ...workflow.get(), ...prev });
+        this.getLogger(workflow.id).info(`toggle OFF workflow ${workflow.id} based on configuration before updated`);
       }
       trigger.on(workflow);
+      this.getLogger(workflow.id).info(`toggle ON workflow ${workflow.id}`);
+
       this.enabledCache.set(workflow.id, workflow);
     } else {
       trigger.off(workflow);
+      this.getLogger(workflow.id).info(`toggle OFF workflow ${workflow.id}`);
+
       this.enabledCache.delete(workflow.id);
     }
     if (!silent) {
@@ -517,7 +577,7 @@ export default class PluginWorkflowServer extends Plugin {
       return Promise.reject(new Error('event is not valid'));
     }
 
-    let execution;
+    let execution: ExecutionModel;
     try {
       execution = await workflow.createExecution(
         {
@@ -538,23 +598,21 @@ export default class PluginWorkflowServer extends Plugin {
 
     this.getLogger(workflow.id).info(`execution of workflow ${workflow.id} created as ${execution.id}`);
 
-    await workflow.increment(['executed', 'allExecuted'], { transaction });
+    if (!workflow.stats) {
+      workflow.stats = await workflow.getStats({ transaction });
+    }
+    await workflow.stats.increment('executed', { transaction });
     // NOTE: https://sequelize.org/api/v6/class/src/model.js~model#instance-method-increment
     if (this.db.options.dialect !== 'postgres') {
-      await workflow.reload({ transaction });
+      await workflow.stats.reload({ transaction });
     }
-
-    await (<typeof WorkflowModel>workflow.constructor).update(
-      {
-        allExecuted: workflow.allExecuted,
-      },
-      {
-        where: {
-          key: workflow.key,
-        },
-        transaction,
-      },
-    );
+    if (!workflow.versionStats) {
+      workflow.versionStats = await workflow.getVersionStats({ transaction });
+    }
+    await workflow.versionStats.increment('executed', { transaction });
+    if (this.db.options.dialect !== 'postgres') {
+      await workflow.versionStats.reload({ transaction });
+    }
 
     if (!sameTransaction) {
       await transaction.commit();
@@ -731,6 +789,48 @@ export default class PluginWorkflowServer extends Plugin {
     }
     if (create) {
       return db.sequelize.transaction();
+    }
+  }
+
+  /**
+   * @experimental
+   */
+  public async toggleTaskStatus(task: WorkflowTaskModel, on: boolean, { transaction }: Transactionable) {
+    const { db } = this.app;
+    const repository = db.getRepository('workflowTasks') as WorkflowTasksRepository;
+    if (on) {
+      await repository.updateOrCreate({
+        filterKeys: ['key', 'type'],
+        values: task,
+        transaction,
+      });
+    } else {
+      await repository.destroy({
+        filter: {
+          type: task.type,
+          key: `${task.key}`,
+        },
+        transaction,
+      });
+    }
+
+    // NOTE:
+    // 1. `ws` not works in backend test cases for now.
+    // 2. `userId` here for compatibility of no user approvals (deprecated).
+    if (task.userId) {
+      const counts =
+        (await repository.countAll({
+          where: {
+            userId: task.userId,
+            workflowId: { [Op.ne]: null },
+          },
+          transaction,
+        })) || [];
+      this.app.emit('ws:sendToTag', {
+        tagKey: 'userId',
+        tagValue: `${task.userId}`,
+        message: { type: 'workflow:tasks:updated', payload: counts },
+      });
     }
   }
 }

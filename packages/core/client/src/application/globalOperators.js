@@ -124,7 +124,7 @@ export function getOperators() {
       return !a.includes(b);
     },
     $anyOf: function (a, b) {
-      if (a.length === 0) {
+      if (a == null || a.length === 0) {
         return false;
       }
       if (Array.isArray(a) && Array.isArray(b) && a.some((element) => Array.isArray(element))) {
@@ -167,7 +167,7 @@ export function getOperators() {
       const dateA = parseDate(a);
       const dateB = parseDate(b);
       if (!dateA || !dateB) {
-        throw new Error('Invalid date format');
+        return false;
       }
       return dateA < dateB;
     },
@@ -347,7 +347,7 @@ export function getOperators() {
 
   /*
       This helper will defer to the JsonLogic spec as a tie-breaker when different language interpreters define different behavior for the truthiness of primitives.  E.g., PHP considers empty arrays to be falsy, but Javascript considers them to be truthy. JsonLogic, as an ecosystem, needs one consistent answer.
-  
+
       Spec and rationale here: http://jsonlogic.com/truthy
       */
   jsonLogic.truthy = function (value) {
@@ -397,7 +397,7 @@ export function getOperators() {
           if( 0 ){ 1 }else{ 2 };
           if( 0 ){ 1 }else if( 2 ){ 3 }else{ 4 };
           if( 0 ){ 1 }else if( 2 ){ 3 }else if( 4 ){ 5 }else{ 6 };
-  
+
           The implementation is:
           For pairs of values (0,1 then 2,3 then 4,5 etc)
           If the first evaluates truthy, evaluate and return the second
@@ -651,10 +651,11 @@ function parseYear(dateStr) {
 }
 
 function parseDate(targetDateStr) {
-  let dateStr = Array.isArray(targetDateStr) ? targetDateStr[1] : targetDateStr;
-  if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z$/.test(dateStr)) {
-    // ISO 8601 格式：YYYY-MM-DDTHH:mm:ss.sssZ
-    return new Date(dateStr); // 直接解析为 Date 对象
+  let dateStr = Array.isArray(targetDateStr) ? targetDateStr[1] ?? targetDateStr[0] : targetDateStr;
+  if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/.test(dateStr)) {
+    return new Date(dateStr);
+  } else if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(dateStr)) {
+    return new Date(dateStr.replace(' ', 'T'));
   } else if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
     // YYYY-MM-DD 格式
     return parseFullDate(dateStr);
@@ -668,5 +669,6 @@ function parseDate(targetDateStr) {
     // YYYY 格式
     return parseYear(dateStr);
   }
-  return null; // Invalid format
+
+  return null;
 }

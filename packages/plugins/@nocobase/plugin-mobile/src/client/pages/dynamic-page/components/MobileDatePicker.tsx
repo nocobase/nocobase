@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { DatePicker, Picker } from 'antd-mobile';
 import { Space, Select } from 'antd';
 import {
@@ -18,7 +18,11 @@ import {
   inferPickerType,
   TimePicker as NBTimePicker,
   mapTimeFormat,
+  useVariables,
+  isVariable,
+  useLocalVariables,
 } from '@nocobase/client';
+import { autorun } from '@formily/reactive';
 import dayjs from 'dayjs';
 import { connect, mapProps, mapReadPretty, useField, useFieldSchema } from '@formily/react';
 import { getPickerFormat } from '@nocobase/utils/client';
@@ -52,8 +56,41 @@ const MobileDateTimePicker = connect(
       ...rest
     } = props;
     const [visible, setVisible] = useState(false);
+    const { parseVariable } = useVariables() || {};
+    const localVariables = useLocalVariables();
+    const [minDate, setMinDate] = useState(null);
+    const [maxDate, setMaxDate] = useState(null);
+    const disposeRef = useRef(null);
 
-    // 性能优化：使用 useCallback 缓存函数
+    useEffect(() => {
+      if (disposeRef.current) {
+        disposeRef.current();
+      }
+      disposeRef.current = autorun(() => {
+        limitDate();
+      });
+      return () => {
+        disposeRef.current();
+      };
+    }, [props._maxDate, props._minDate, localVariables, parseVariable]);
+
+    const limitDate = async () => {
+      // dayjs() 如果传入 undefined 可能会被解析成当前时间
+      let minDateTimePromise = props._minDate ? Promise.resolve(dayjs(props._minDate)) : Promise.resolve(null);
+      let maxDateTimePromise = props._maxDate ? Promise.resolve(dayjs(props._maxDate)) : Promise.resolve(null);
+
+      if (isVariable(props._maxDate)) {
+        maxDateTimePromise = parseVariable(props._maxDate, localVariables).then((result) => dayjs(result.value));
+      }
+      if (isVariable(props._minDate)) {
+        minDateTimePromise = parseVariable(props._minDate, localVariables).then((result) => dayjs(result.value));
+      }
+
+      const [minDateTime, maxDateTime] = await Promise.all([minDateTimePromise, maxDateTimePromise]);
+      setMinDate(minDateTime ? minDateTime.toDate() : null);
+      setMaxDate(maxDateTime ? maxDateTime.toDate() : null);
+    };
+
     const handleConfirm = useCallback(
       (value) => {
         setVisible(false);
@@ -79,7 +116,6 @@ const MobileDateTimePicker = connect(
           return data;
       }
     }, []);
-
     return (
       <>
         <div contentEditable="false" onClick={() => !disabled && setVisible(true)}>
@@ -104,8 +140,8 @@ const MobileDateTimePicker = connect(
           }}
           precision={showTime && picker === 'date' ? getPrecision(timeFormat) : picker === 'date' ? 'day' : picker}
           renderLabel={labelRenderer}
-          min={rest.min || new Date(1000, 0, 1)}
-          max={rest.max || new Date(9999, 11, 31)}
+          min={minDate || rest.min || new Date(1950, 0, 1)}
+          max={maxDate || rest.max || new Date(2050, 11, 31)}
           onConfirm={(val) => {
             handleConfirm(val);
           }}
@@ -284,6 +320,11 @@ const MobileTimePicker: ComposedMobileTimePicker = connect(
   mapProps(mapTimeFormat()),
   mapReadPretty(NBTimePicker.ReadPretty),
 );
+
+MobileDateTimePicker.displayName = 'MobileDateTimePicker';
+MobileRangePicker.displayName = 'MobileRangePicker';
+MobileDateFilterWithPicker.displayName = 'MobileDateFilterWithPicker';
+MobileTimePicker.displayName = 'MobileTimePicker';
 
 MobileTimePicker.RangePicker = NBTimePicker.RangePicker;
 export { MobileDateTimePicker, MobileRangePicker, MobileDateFilterWithPicker, MobileTimePicker };

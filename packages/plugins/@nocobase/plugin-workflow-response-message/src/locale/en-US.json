@@ -1,0 +1,6 @@
+{
+  "Response message": "Response message",
+  "Add response message, will be send to client when process of request ends.": "Add response message, will be send to client when process of request ends.",
+  "Message content": "Message content",
+  "Supports variables in template.": "Supports variables in template."
+}

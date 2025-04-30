@@ -20,9 +20,14 @@ export const useCurrentUserContext = () => {
   return useContext(CurrentUserContext);
 };
 
+export const useIsLoggedIn = () => {
+  const ctx = useContext(CurrentUserContext);
+  return !!ctx?.data?.data;
+};
+
 export const useCurrentRoles = () => {
   const { allowAnonymous } = useACLRoleContext();
-  const { data } = useCurrentUserContext();
+  const { data } = useCurrentUserContext() || {};
   const compile = useCompile();
   const options = useMemo(() => {
     const roles = (data?.data?.roles || []).map(({ name, title }) => ({ name, title: compile(title) }));
@@ -33,26 +38,30 @@ export const useCurrentRoles = () => {
       });
     }
     return roles;
-  }, [allowAnonymous, data?.data?.roles]);
+  }, [allowAnonymous, data?.data?.roles, compile]);
   return options;
 };
 
 export const CurrentUserProvider = (props) => {
   const api = useAPIClient();
-  const result = useRequest<any>(() =>
-    api
-      .request({
-        url: '/auth:check',
-        skipNotify: true,
-        skipAuth: true,
-      })
-      .then((res) => res?.data),
+  const result = useRequest<any>(
+    () =>
+      api
+        .request({
+          url: '/auth:check',
+          skipNotify: true,
+          skipAuth: true,
+        })
+        .then((res) => res?.data),
+    {
+      manual: !api.auth.token,
+    },
   );
+
   const { render } = useAppSpin();
 
   if (result.loading) {
     return render();
   }
-
   return <CurrentUserContext.Provider value={result}>{props.children}</CurrentUserContext.Provider>;
 };

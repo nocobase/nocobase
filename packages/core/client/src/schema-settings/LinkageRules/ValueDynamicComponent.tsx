@@ -65,7 +65,7 @@ export const ValueDynamicComponent = (props: ValueDynamicComponentProps) => {
     [mode, setValue],
   );
   const expressStyle = useMemo(() => {
-    return { minWidth: 150, maxWidth: 430, fontSize: 13 };
+    return { minWidth: 150, maxWidth: 430, fontSize: 13, display: 'inline-block', verticalAlign: 'middle' };
   }, []);
   const handleChangeOfExpress = useCallback(
     (value) => {
@@ -97,6 +97,17 @@ export const ValueDynamicComponent = (props: ValueDynamicComponentProps) => {
           .ant-input-affix-wrapper {
             border-radius: 0px;
           }
+          .ant-checkbox-wrapper {
+            margin-left: 50%;
+          }
+          .ant-select-selector {
+            border-top-left-radius: 0;
+            border-bottom-left-radius: 0;
+          }
+          .ant-picker {
+            border-top-left-radius: 0;
+            border-bottom-left-radius: 0;
+          }
         `}
       >
         {React.createElement(DynamicComponent, {
@@ -116,14 +127,14 @@ export const ValueDynamicComponent = (props: ValueDynamicComponentProps) => {
           scope={compatScope}
           style={textAreaStyle}
         />
-        <>
+        <div>
           <span style={{ marginLeft: '.25em' }} className={'ant-formily-item-extra'}>
             {t('Syntax references')}:
           </span>
-          <a href="https://formulajs.info/functions/" target="_blank" rel="noreferrer">
+          <a href="https://docs.nocobase.com/handbook/calculation-engines/formula" target="_blank" rel="noreferrer">
             Formula.js
           </a>
-        </>
+        </div>
       </div>
     ),
   };

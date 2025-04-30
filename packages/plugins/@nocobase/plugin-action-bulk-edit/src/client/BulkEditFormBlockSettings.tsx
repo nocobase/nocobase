@@ -8,18 +8,17 @@
  */
 
 import { useFieldSchema } from '@formily/react';
+import { useTranslation } from 'react-i18next';
 import {
   SchemaSettings,
   useBlockTemplateContext,
   SchemaSettingsLayoutItem,
-  SchemaSettingsDataTemplates,
-  useFormBlockContext,
   SchemaSettingsFormItemTemplate,
   useCollection,
-  useCollection_deprecated,
   SchemaSettingsBlockHeightItem,
   SchemaSettingsBlockTitleItem,
   SchemaSettingsLinkageRules,
+  LinkageRuleCategory,
 } from '@nocobase/client';
 
 export const bulkEditFormBlockSettings = new SchemaSettings({
@@ -34,12 +33,23 @@ export const bulkEditFormBlockSettings = new SchemaSettings({
       Component: SchemaSettingsBlockHeightItem,
     },
     {
-      name: 'linkageRules',
+      name: 'fieldLinkageRules',
       Component: SchemaSettingsLinkageRules,
       useComponentProps() {
-        const { name } = useCollection_deprecated();
+        const { t } = useTranslation();
         return {
-          collectionName: name,
+          title: t('Field Linkage rules'),
+        };
+      },
+    },
+    {
+      name: 'blockLinkageRules',
+      Component: SchemaSettingsLinkageRules,
+      useComponentProps() {
+        const { t } = useTranslation();
+        return {
+          title: t('Block Linkage rules'),
+          category: LinkageRuleCategory.block,
         };
       },
     },

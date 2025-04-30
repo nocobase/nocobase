@@ -15,11 +15,21 @@ import WorkflowPlugin, { JOB_STATUS } from '@nocobase/plugin-workflow';
 import * as jobActions from './actions';
 
 import ManualInstruction from './ManualInstruction';
+import { MANUAL_TASK_TYPE } from '../common/constants';
+import { Model } from '@nocobase/database';
+
+class WorkflowManualTaskModel extends Model {
+  declare id: number;
+  declare userId: number;
+  declare workflowId: number;
+  declare executionId: number;
+  declare status: number;
+}
 
 export default class extends Plugin {
   async load() {
     this.app.resourceManager.define({
-      name: 'users_jobs',
+      name: 'workflowManualTasks',
       actions: {
         list: {
           filter: {
@@ -41,9 +51,29 @@ export default class extends Plugin {
       },
     });
 
-    this.app.acl.allow('users_jobs', ['list', 'get', 'submit', 'countMine'], 'loggedIn');
+    this.app.acl.allow('workflowManualTasks', ['list', 'listMine', 'get', 'submit'], 'loggedIn');
 
     const workflowPlugin = this.app.pm.get(WorkflowPlugin) as WorkflowPlugin;
     workflowPlugin.registerInstruction('manual', ManualInstruction);
+
+    this.db.on('workflowManualTasks.afterSave', async (task: WorkflowManualTaskModel, { transaction }) => {
+      // const allCount = await (task.constructor as typeof WorkflowManualTaskModel).count({
+      //   where: {
+      //     userId: task.userId,
+      //   },
+      //   transaction,
+      // });
+      await workflowPlugin.toggleTaskStatus(
+        {
+          type: MANUAL_TASK_TYPE,
+          key: `${task.id}`,
+          userId: task.userId,
+          workflowId: task.workflowId,
+        },
+        task.status === JOB_STATUS.PENDING,
+        // allCount,
+        { transaction },
+      );
+    });
   }
 }

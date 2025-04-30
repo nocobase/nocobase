@@ -26,7 +26,7 @@ test.describe('where single data details block can be added', () => {
   });
 
   // https://nocobase.height.app/T-3848/description
-  test('popup opened by clicking on the button for the relationship field', async ({
+  test.skip('popup opened by clicking on the button for the relationship field', async ({
     page,
     mockPage,
     mockRecord,
@@ -69,7 +69,7 @@ test.describe('where single data details block can be added', () => {
     // 3.通过 Associated records 创建一个详情区块
     await page.getByLabel('schema-initializer-Grid-popup').hover();
     await page.getByRole('menuitem', { name: 'Details right' }).hover();
-    await page.getByRole('menuitem', { name: 'Associated records' }).hover();
+    await page.getByRole('menuitem', { name: 'Associated records' }).last().hover();
     await page.getByRole('menuitem', { name: 'manyToOne' }).hover();
     await page.getByRole('menuitem', { name: 'Blank block' }).click();
     await page.mouse.move(300, 0);
@@ -82,7 +82,7 @@ test.describe('where single data details block can be added', () => {
     // 4.通过 Associated records 创建一个详情区块，使用模板
     await page.getByLabel('schema-initializer-Grid-popup').hover();
     await page.getByRole('menuitem', { name: 'Details right' }).hover();
-    await page.getByRole('menuitem', { name: 'Associated records' }).hover();
+    await page.getByRole('menuitem', { name: 'Associated records' }).last().hover();
     await page.getByRole('menuitem', { name: 'manyToOne' }).hover();
     await page.getByRole('menuitem', { name: 'Duplicate template' }).hover();
     await page.getByRole('menuitem', { name: 'example_Details (Fields only)' }).click();

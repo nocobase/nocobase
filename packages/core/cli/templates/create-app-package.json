@@ -1,0 +1,39 @@
+{
+  "private": true,
+  "workspaces": ["packages/*/*", "packages/*/*/*"],
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "nocobase": "nocobase",
+    "pm": "nocobase pm",
+    "pm2": "nocobase pm2",
+    "dev": "nocobase dev",
+    "start": "nocobase start",
+    "clean": "nocobase clean",
+    "build": "nocobase build",
+    "test": "nocobase test",
+    "e2e": "nocobase e2e",
+    "tar": "nocobase tar",
+    "postinstall": "nocobase postinstall",
+    "lint": "eslint ."
+  },
+  "resolutions": {
+    "cytoscape": "3.28.0",
+    "@types/react": "18.3.18",
+    "@types/react-dom": "^18.0.0",
+    "react-router-dom": "6.28.1",
+    "react-router": "6.28.1",
+    "async": "^3.2.6",
+    "antd": "5.12.8",
+    "rollup": "4.24.0",
+    "semver": "^7.7.1"
+  },
+  "dependencies": {
+    "pm2": "^6.0.5",
+    "mysql2": "^3.14.0",
+    "mariadb": "^2.5.6",
+    "pg": "^8.14.1",
+    "pg-hstore": "^2.3.4"
+  }
+}

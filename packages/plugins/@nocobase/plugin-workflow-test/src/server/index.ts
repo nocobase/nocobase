@@ -10,13 +10,20 @@
 import path from 'path';
 
 import { ApplicationOptions, Plugin } from '@nocobase/server';
-import { MockClusterOptions, MockServer, createMockCluster, createMockServer, mockDatabase } from '@nocobase/test';
+import {
+  MockClusterOptions,
+  MockServer,
+  createMockCluster,
+  createMockDatabase,
+  createMockServer,
+  mockDatabase,
+} from '@nocobase/test';
 
-import functions from './functions';
-import triggers from './triggers';
-import instructions from './instructions';
 import { SequelizeCollectionManager, SequelizeDataSource } from '@nocobase/data-source-manager';
 import { uid } from '@nocobase/utils';
+import functions from './functions';
+import instructions from './instructions';
+import triggers from './triggers';
 export { sleep } from '@nocobase/test';
 
 interface WorkflowMockServerOptions extends ApplicationOptions {
@@ -62,7 +69,7 @@ export async function getApp({
     new SequelizeDataSource({
       name: 'another',
       collectionManager: {
-        database: mockDatabase({
+        database: await createMockDatabase({
           tablePrefix: `t${uid(5)}`,
         }),
       },

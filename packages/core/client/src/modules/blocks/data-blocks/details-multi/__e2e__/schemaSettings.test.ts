@@ -33,7 +33,7 @@ test.describe('multi data details block schema settings', () => {
         'Linkage rules',
         'Set the data scope',
         'Set default sorting rules',
-        'Save as template',
+        // 'Save as template',
         'Delete',
       ],
     });
@@ -45,7 +45,7 @@ test.describe('multi data details block schema settings', () => {
     // 禁用规则，联动规则失效
     await page.getByLabel('block-item-CardItem-users-').hover();
     await page.getByLabel('designer-schema-settings-CardItem-blockSettings:detailsWithPagination-users').hover();
-    await page.getByText('Linkage rules').click();
+    await page.getByText('Field Linkage rules').click();
     await page.getByRole('switch', { name: 'On Off' }).click();
     await page.getByRole('button', { name: 'OK' }).click();
     await page.reload();
@@ -76,6 +76,7 @@ test.describe('actions schema settings', () => {
     await expectSettingsMenu({
       page,
       showMenu: async () => {
+        await expect(page.getByRole('button', { name: 'Edit' })).toHaveCount(1);
         await page.getByRole('button', { name: 'Edit' }).hover();
         await page.getByRole('button', { name: 'designer-schema-settings-Action' }).hover();
       },

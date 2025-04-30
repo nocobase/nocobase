@@ -17,6 +17,7 @@ const PopupSettingsContext = React.createContext({
 export const PopupSettingsProvider: FC<{
   /**
    * @default true
+   * Whether the popup should be controlled by URL
    */
   enableURL?: boolean;
 }> = (props) => {
@@ -40,12 +41,19 @@ export const usePopupSettings = () => {
     const isOldMobileMode = pathname?.includes('/mobile/') || hash?.includes('/mobile/');
     const isNewMobileMode = pathname?.includes('/m/');
     const isPCMode = pathname?.includes('/admin/');
+    const isMobileTemplateSettingsPage = pathname?.includes('/m/block-templates/inherited');
 
-    return (isPCMode || isNewMobileMode) && !isOldMobileMode && enableURL && !isInSettingsPage;
+    return (
+      (isPCMode || isNewMobileMode) &&
+      !isOldMobileMode &&
+      enableURL &&
+      !isInSettingsPage &&
+      !isMobileTemplateSettingsPage
+    );
   }, [enableURL, isInSettingsPage]);
 
   return {
-    /** 弹窗窗口的显隐是否由 URL 控制 */
+    /** Whether the visibility of the popup window is controlled by URL */
     isPopupVisibleControlledByURL,
   };
 };

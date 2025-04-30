@@ -164,7 +164,7 @@ test.describe('field data', () => {
     // 3、预期结果：工作流成功触发,待办弹窗表单中显示数据
     const getWorkflow = await apiGetWorkflow(workflowId);
     const getWorkflowObj = JSON.parse(JSON.stringify(getWorkflow));
-    const getWorkflowExecuted = getWorkflowObj.executed;
+    const getWorkflowExecuted = getWorkflowObj.versionStats.executed;
     expect(getWorkflowExecuted).toBe(1);
 
     const newPage = mockPage();
@@ -174,18 +174,19 @@ test.describe('field data', () => {
     await page.getByRole('menuitem', { name: 'check-square Workflow todos' }).click();
     await page.mouse.move(300, 0, { steps: 100 });
     await page.waitForTimeout(300);
-    await page.locator('tr', { hasText: preManualNodeTitle }).getByLabel('action-Action.Link-View-view-').click();
+    await page.locator('.itemCss', { hasText: preManualNodeTitle }).getByLabel('action-Action.Link-View-view-').click();
     const preManualNodeRecord = triggerNodeFieldDisplayName + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
     await page.getByRole('textbox').fill(preManualNodeRecord);
     await page.getByRole('button', { name: 'Continue the process' }).click();
-    await page.getByLabel('action-Filter.Action-Filter-filter-users_jobs-workflow-todo').click();
-    await page.getByText('Add condition', { exact: true }).click();
-    await page.getByTestId('select-filter-field').click();
-    await page.getByRole('menuitemcheckbox', { name: 'Task right' }).click();
-    await page.getByRole('menuitemcheckbox', { name: 'Title' }).click();
-    await page.getByRole('textbox').fill(manualNodeName);
+    await page.waitForTimeout(300);
+    await page.getByLabel('action-Filter.Action-Filter-').click();
+    // await page.getByText('Add condition', { exact: true }).click();
+    // await page.getByRole('button', { name: 'Task title' }).click();
+    // await page.getByRole('menuitemcheckbox', { name: 'Task title' }).click();
+    await page.getByRole('textbox').first().fill(manualNodeName);
     await page.getByRole('button', { name: 'Submit' }).click();
-    await page.locator('tr', { hasText: manualNodeName }).getByLabel('action-Action.Link-View-view-').click();
+    await page.waitForTimeout(300);
+    await page.locator('.itemCss', { hasText: manualNodeName }).getByLabel('action-Action.Link-View-view-').click();
     await expect(page.getByText(preManualNodeRecord)).toBeAttached();
     // 4、后置处理：删除工作流
     await apiDeleteWorkflow(workflowId);
@@ -320,7 +321,7 @@ test.describe('field data', () => {
     // 3、预期结果：工作流成功触发,待办弹窗表单中显示数据
     const getWorkflow = await apiGetWorkflow(workflowId);
     const getWorkflowObj = JSON.parse(JSON.stringify(getWorkflow));
-    const getWorkflowExecuted = getWorkflowObj.executed;
+    const getWorkflowExecuted = getWorkflowObj.versionStats.executed;
     expect(getWorkflowExecuted).toBe(1);
 
     const newPage = mockPage();
@@ -330,18 +331,18 @@ test.describe('field data', () => {
     await page.getByRole('menuitem', { name: 'check-square Workflow todos' }).click();
     await page.mouse.move(300, 0, { steps: 100 });
     await page.waitForTimeout(300);
-    await page.locator('tr', { hasText: preManualNodeTitle }).getByLabel('action-Action.Link-View-view-').click();
+    await page.locator('.itemCss', { hasText: preManualNodeTitle }).getByLabel('action-Action.Link-View-view-').click();
     const preManualNodeRecord = triggerNodeFieldDisplayName + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
     await page.getByRole('textbox').fill(preManualNodeRecord);
     await page.getByRole('button', { name: 'Continue the process' }).click();
-    await page.getByLabel('action-Filter.Action-Filter-filter-users_jobs-workflow-todo').click();
-    await page.getByText('Add condition', { exact: true }).click();
-    await page.getByTestId('select-filter-field').click();
-    await page.getByRole('menuitemcheckbox', { name: 'Task right' }).click();
-    await page.getByRole('menuitemcheckbox', { name: 'Title' }).click();
-    await page.getByRole('textbox').fill(manualNodeName);
+    await page.getByLabel('action-Filter.Action-Filter-').click();
+    // await page.getByText('Add condition', { exact: true }).click();
+    // await page.getByTestId('select-filter-field').click();
+    // await page.getByRole('menuitemcheckbox', { name: 'Task title' }).click();
+    await page.getByRole('textbox').first().fill(manualNodeName);
     await page.getByRole('button', { name: 'Submit' }).click();
-    await page.locator('tr', { hasText: manualNodeName }).getByLabel('action-Action.Link-View-view-').click();
+    await page.waitForTimeout(300);
+    await page.locator('.itemCss', { hasText: manualNodeName }).getByLabel('action-Action.Link-View-view-').click();
     await expect(page.getByText(preManualNodeRecord)).toBeAttached();
 
     const createNodeCollectionData = await apiGetList(preManualNodeCollectionName);
@@ -525,7 +526,7 @@ test.describe('field data', () => {
     // 3、预期结果：工作流成功触发,待办弹窗表单中显示数据
     const getWorkflow = await apiGetWorkflow(workflowId);
     const getWorkflowObj = JSON.parse(JSON.stringify(getWorkflow));
-    const getWorkflowExecuted = getWorkflowObj.executed;
+    const getWorkflowExecuted = getWorkflowObj.versionStats.executed;
     expect(getWorkflowExecuted).toBe(1);
 
     const newPage = mockPage();
@@ -535,18 +536,18 @@ test.describe('field data', () => {
     await page.getByRole('menuitem', { name: 'check-square Workflow todos' }).click();
     await page.mouse.move(300, 0, { steps: 100 });
     await page.waitForTimeout(300);
-    await page.locator('tr', { hasText: preManualNodeTitle }).getByLabel('action-Action.Link-View-view-').click();
+    await page.locator('.itemCss', { hasText: preManualNodeTitle }).getByLabel('action-Action.Link-View-view-').click();
     const preManualNodeRecord = triggerNodeFieldDisplayName + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
     await page.getByRole('textbox').fill(preManualNodeRecord);
     await page.getByRole('button', { name: 'Continue the process' }).click();
-    await page.getByLabel('action-Filter.Action-Filter-filter-users_jobs-workflow-todo').click();
-    await page.getByText('Add condition', { exact: true }).click();
-    await page.getByTestId('select-filter-field').click();
-    await page.getByRole('menuitemcheckbox', { name: 'Task right' }).click();
-    await page.getByRole('menuitemcheckbox', { name: 'Title' }).click();
-    await page.getByRole('textbox').fill(manualNodeName);
+    await page.getByLabel('action-Filter.Action-Filter-').click();
+    // await page.getByText('Add condition', { exact: true }).click();
+    // await page.getByTestId('select-filter-field').click();
+    // await page.getByRole('menuitemcheckbox', { name: 'Task title' }).click();
+    await page.getByRole('textbox').first().fill(manualNodeName);
     await page.getByRole('button', { name: 'Submit' }).click();
-    await page.locator('tr', { hasText: manualNodeName }).getByLabel('action-Action.Link-View-view-').click();
+    await page.waitForTimeout(300);
+    await page.locator('.itemCss', { hasText: manualNodeName }).getByLabel('action-Action.Link-View-view-').click();
     await expect(page.getByText(preManualNodeRecord)).toBeAttached();
     const filter = `pageSize=20&page=1&filter={"$and":[{"orgname":{"$eq":"${preManualNodeRecord}"}}]}`;
     const createNodeCollectionData = await apiFilterList(preManualNodeCollectionName, filter);

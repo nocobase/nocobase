@@ -234,6 +234,10 @@ export default defineConfig({
               "title": "Filter",
               "link": "/components/filter"
             },
+            {
+              "title": "LinkageFilter",
+              "link": "/components/linkage-filter"
+            },
           ]
         },
         {

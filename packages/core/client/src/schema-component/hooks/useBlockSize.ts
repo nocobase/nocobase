@@ -37,7 +37,9 @@ const getPageHeaderHeight = (disablePageHeader, enablePageTabs, hidePageTitle, t
           token.paddingContentHorizontalLG
         );
       }
-      return token.controlHeight + token.marginXS + (token.paddingXXS + 2) * 2 + token.paddingContentHorizontalLG;
+      return (
+        token.controlHeight + token.marginXS + (token.paddingContentVertical + 2) * 2 + token.paddingContentHorizontalLG
+      );
     } else {
       if (enablePageTabs) {
         return (
@@ -93,7 +95,7 @@ const useFullScreenHeight = (props?) => {
   return pageReservedHeight;
 };
 
-const InternalWorkflowCollection = ['users_jobs', 'approvals', 'approvalRecords'];
+const InternalWorkflowCollection = ['workflowManualTasks', 'approvals', 'approvalRecords'];
 // 表格区块高度计算
 const useTableHeight = () => {
   const { token } = theme.useToken();
@@ -140,12 +142,12 @@ export const useDataBlockHeight = (options?: UseDataBlockHeightOptions) => {
   const { heightMode, height, title, titleHeight } = heightProps || {};
 
   const blockHeaderHeight = title ? titleHeight : 0;
+
   if (!heightProps?.heightMode || heightMode === HeightMode.DEFAULT) {
     return;
   }
   if (heightMode === HeightMode.FULL_HEIGHT) {
     let res = window.innerHeight - pageFullScreenHeight;
-    console.log(res);
     if (options?.removeBlockHeaderHeight) {
       res = res - blockHeaderHeight;
     }
