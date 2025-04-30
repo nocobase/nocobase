@@ -30,7 +30,6 @@ import { FormLinkageRules } from '../../../../schema-settings/LinkageRules';
 import { SchemaSettingsLinkageRules } from '../../../../schema-settings/SchemaSettings';
 import { useColumnSchema } from '../../../../schema-component';
 import { SchemaSettingsItemType } from '../../../../application';
-import { useColumnSchema } from '../../../../schema-component';
 
 const enabledIndexColumn: SchemaSettingsItemType = {
   name: 'enableIndexColumn',
