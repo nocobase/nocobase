@@ -20,7 +20,7 @@ import {
   useContextVariable,
   useLocalVariables,
   useVariables,
-  useGetVariableValue,
+  getVariableValue,
 } from '@nocobase/client';
 import { isURL } from '@nocobase/utils/client';
 import { App } from 'antd';
@@ -83,8 +83,7 @@ export const useCustomizeRequestActionProps = () => {
           },
           responseType: fieldSchema['x-response-type'] === 'stream' ? 'blob' : 'json',
         });
-        // eslint-disable-next-line react-hooks/rules-of-hooks
-        successMessage = await useGetVariableValue(successMessage, {
+        successMessage = await getVariableValue(successMessage, {
           variables,
           localVariables: [
             ...localVariables,

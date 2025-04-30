@@ -50,7 +50,7 @@ import { ActionContextProps, ActionProps, ComposedAction } from './types';
 import { linkageAction, setInitialActionState } from './utils';
 import { NAMESPACE_UI_SCHEMA } from '../../../i18n/constant';
 import { BlockContext } from '../../../block-provider/BlockProvider';
-import { useGetVariableValue } from '../../../common/useGetVariableValue';
+import { getVariableValue } from '../../../common/getVariableValue';
 
 // 这个要放到最下面，否则会导致前端单测失败
 import { useApp } from '../../../application';
@@ -467,10 +467,8 @@ const RenderButton = ({
       }
       e.preventDefault();
       e.stopPropagation();
-      // eslint-disable-next-line react-hooks/rules-of-hooks
-      const resultTitle = await useGetVariableValue(confirm?.title, scopes);
-      // eslint-disable-next-line react-hooks/rules-of-hooks
-      const resultContent = await useGetVariableValue(confirm?.content, scopes);
+      const resultTitle = await getVariableValue(confirm?.title, scopes);
+      const resultContent = await getVariableValue(confirm?.content, scopes);
       if (!disabled && aclCtx) {
         const onOk = () => {
           if (onClick) {

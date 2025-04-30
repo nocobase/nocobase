@@ -52,7 +52,7 @@ import { useBlockRequestContext, useFilterByTk, useParamsFromRecord } from '../B
 import { useOperators } from '../CollectOperators';
 import { useDetailsBlockContext } from '../DetailsBlockProvider';
 import { TableFieldResource } from '../TableFieldProvider';
-import { useGetVariableValue } from '../../common/useGetVariableValue';
+import { getVariableValue } from '../../common/getVariableValue';
 
 export * from './useBlockHeightProps';
 export * from './useDataBlockParentRecord';
@@ -282,8 +282,7 @@ export const useCreateActionProps = () => {
         });
         let redirectTo = rawRedirectTo;
         if (rawRedirectTo) {
-          // eslint-disable-next-line react-hooks/rules-of-hooks
-          redirectTo = await useGetVariableValue(rawRedirectTo, {
+          redirectTo = await getVariableValue(rawRedirectTo, {
             variables,
             localVariables: [...localVariables, { name: '$record', ctx: new Proxy(data?.data?.data, {}) }],
           });
@@ -682,7 +681,7 @@ export const useCustomizeUpdateActionProps = () => {
       let redirectTo = rawRedirectTo;
       if (rawRedirectTo) {
         // eslint-disable-next-line react-hooks/rules-of-hooks
-        redirectTo = await useGetVariableValue(rawRedirectTo, {
+        redirectTo = await getVariableValue(rawRedirectTo, {
           variables,
           localVariables: [...localVariables, { name: '$record', ctx: new Proxy(result?.data?.data, {}) }],
         });
@@ -1046,7 +1045,7 @@ export const useUpdateActionProps = () => {
         let redirectTo = rawRedirectTo;
         if (rawRedirectTo) {
           // eslint-disable-next-line react-hooks/rules-of-hooks
-          redirectTo = await useGetVariableValue(rawRedirectTo, {
+          redirectTo = await getVariableValue(rawRedirectTo, {
             variables,
             localVariables: [...localVariables, { name: '$record', ctx: new Proxy(result?.data?.data, {}) }],
           });

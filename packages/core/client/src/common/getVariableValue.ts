@@ -10,7 +10,7 @@
 import { evaluators } from '@nocobase/evaluators/client';
 import { replaceVariables } from '../schema-settings/LinkageRules/bindLinkageRulesToFiled';
 
-export const useGetVariableValue = async (text, scopes) => {
+export const getVariableValue = async (text: string, scopes) => {
   if (!text) {
     return text;
   }
