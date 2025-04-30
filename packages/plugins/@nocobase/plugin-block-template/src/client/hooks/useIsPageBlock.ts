@@ -22,8 +22,9 @@ export const useIsPageBlock = () => {
     const isPage = location.pathname.startsWith('/admin/') || location.pathname.startsWith('/page/');
     const notInPopup = !location.pathname.includes('/popups/');
     const notInSetting = !location.pathname.startsWith('/admin/settings/');
-    const notInBlockTemplate = !location.pathname.startsWith('/block-templates/');
-    return isPage && notInPopup && notInSetting && notInBlockTemplate;
+    const notInWorkflow = !location.pathname.startsWith('/admin/workflow/workflows/');
+    const notInBlockTemplate = !location.pathname.startsWith('/block-templates/inherited/');
+    return isPage && notInPopup && notInSetting && notInWorkflow && notInBlockTemplate;
   }, [location.pathname, fieldSchema]);
 
   return isPageBlock;

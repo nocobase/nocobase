@@ -83,6 +83,7 @@
     "ghooks": "^2.0.4",
     "lint-staged": "^13.2.3",
     "patch-package": "^8.0.0",
+    "pm2": "^6.0.5",
     "pretty-format": "^24.0.0",
     "pretty-quick": "^3.1.0",
     "react": "^18.0.0",

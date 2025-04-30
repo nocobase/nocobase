@@ -34,7 +34,7 @@ import useServiceOptions, { useAssociationFieldContext } from './hooks';
 
 const removeIfKeyEmpty = (obj, filterTargetKey) => {
   if (!obj || typeof obj !== 'object' || !filterTargetKey || Array.isArray(obj)) return obj;
-  return !obj[filterTargetKey] ? null : obj;
+  return !obj[filterTargetKey] ? undefined : obj;
 };
 
 export const AssociationFieldAddNewer = (props) => {
@@ -106,8 +106,13 @@ const InternalAssociationSelect = observer(
     useEffect(() => {
       const initValue = isVariable(field.value) ? undefined : field.value;
       const value = Array.isArray(initValue) ? initValue.filter(Boolean) : initValue;
-      setInnerValue(value);
-    }, [field.value]);
+      const result = removeIfKeyEmpty(value, filterTargetKey);
+      setInnerValue(result);
+      if (!isEqual(field.value, result)) {
+        field.value = result;
+      }
+    }, [field.value, filterTargetKey]);
+
     useEffect(() => {
       const id = uid();
       form.addEffects(id, () => {

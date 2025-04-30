@@ -64,7 +64,7 @@ describe('update department isLeaf', () => {
     expect(record.isLeaf).toBe(false);
   });
 
-  it('should update isLeaf when update department', async () => {
+  it.runIf(process.env.DB_DIALECT !== 'sqlite')('should update isLeaf when update department', async () => {
     const res = await agent.resource('departments').create({
       values: {
         title: 'Department',

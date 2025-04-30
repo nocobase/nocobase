@@ -51,7 +51,7 @@ const InternalFilterAction = React.memo((props: FilterActionProps) => {
   const form = useMemo<Form>(() => props.form || createForm(), []);
 
   // 新版 UISchema（1.0 之后）中已经废弃了 useProps，这里之所以继续保留是为了兼容旧版的 UISchema
-  const { options, onSubmit, onReset, Container = StablePopover, icon } = useProps(props);
+  const { options, onSubmit, onReset, Container = StablePopover, icon, onlyIcon } = useProps(props);
 
   const onOpenChange = useCallback((visible: boolean): void => {
     setVisible(visible);
@@ -77,7 +77,6 @@ const InternalFilterAction = React.memo((props: FilterActionProps) => {
       />
     );
   }, [field, fieldSchema, form, onReset, onSubmit, options]);
-
   return (
     <FilterActionContext.Provider value={filterActionContextValue}>
       <Container
@@ -90,7 +89,7 @@ const InternalFilterAction = React.memo((props: FilterActionProps) => {
       >
         {/* Adding a div here can prevent unnecessary re-rendering of Action */}
         <div>
-          <Action onClick={handleClick} icon={icon} />
+          <Action onClick={handleClick} icon={icon} onlyIcon={onlyIcon} />
         </div>
       </Container>
     </FilterActionContext.Provider>

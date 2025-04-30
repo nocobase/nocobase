@@ -2155,4 +2155,123 @@ describe('xlsx importer', () => {
 
     expect(await Post.repository.count()).toBe(1);
   });
+
+  it('should filter no permission columns', async () => {
+    const User = app.db.collection({
+      name: 'users',
+      fields: [
+        {
+          type: 'string',
+          name: 'name',
+        },
+        {
+          type: 'string',
+          name: 'email',
+        },
+      ],
+    });
+
+    await app.db.sync();
+
+    const templateCreator = new TemplateCreator({
+      collection: User,
+      explain: 'test',
+      columns: [
+        {
+          dataIndex: ['name'],
+          defaultTitle: '姓名',
+        },
+        {
+          dataIndex: ['email'],
+          defaultTitle: '邮箱',
+        },
+      ],
+    });
+
+    const template = (await templateCreator.run({ returnXLSXWorkbook: true })) as XLSX.WorkBook;
+
+    const worksheet = template.Sheets[template.SheetNames[0]];
+
+    XLSX.utils.sheet_add_aoa(worksheet, [['User1', 'test@test.com']], {
+      origin: 'A3',
+    });
+
+    const importer = new XlsxImporter({
+      collectionManager: app.mainDataSource.collectionManager,
+      collection: User,
+      explain: 'test',
+      columns: [
+        {
+          dataIndex: ['name'],
+          defaultTitle: '姓名',
+        },
+        {
+          dataIndex: ['email'],
+          defaultTitle: '邮箱',
+        },
+      ],
+      workbook: template,
+    });
+    await importer.run({
+      context: {
+        permission: {
+          can: { params: { fields: ['name'] } },
+        },
+      },
+    });
+
+    expect(await User.repository.count()).toBe(1);
+    const user = await User.repository.findOne();
+    expect(user.get('name')).toBe('User1');
+    expect(user.get('email')).not.exist;
+  });
+
+  it('should import time field successfully', async () => {
+    const TimeCollection = app.db.collection({
+      name: 'time_tests',
+      fields: [
+        {
+          type: 'time',
+          name: 'brithtime',
+        },
+      ],
+    });
+
+    await app.db.sync();
+    const templateCreator = new TemplateCreator({
+      collection: TimeCollection,
+      explain: 'test',
+      columns: [
+        {
+          dataIndex: ['birthtime'],
+          defaultTitle: '出生时间',
+        },
+      ],
+    });
+
+    const template = (await templateCreator.run({ returnXLSXWorkbook: true })) as XLSX.WorkBook;
+
+    const worksheet = template.Sheets[template.SheetNames[0]];
+
+    XLSX.utils.sheet_add_aoa(worksheet, [['12:12:12']], {
+      origin: 'A3',
+    });
+
+    const importer = new XlsxImporter({
+      collectionManager: app.mainDataSource.collectionManager,
+      collection: TimeCollection,
+      explain: 'test',
+      columns: [
+        {
+          dataIndex: ['brithtime'],
+          defaultTitle: '出生时间',
+        },
+      ],
+      workbook: template,
+    });
+
+    await importer.run();
+    const count = await TimeCollection.repository.count();
+    expect(count).toBe(1);
+  });
 });

@@ -49,6 +49,8 @@ export interface CustomToken extends AliasToken {
   marginBlock: number;
   /** 区块的圆角 */
   borderRadiusBlock: number;
+
+  siderWidth: number;
 }
 
 export interface ThemeConfig extends _ThemeConfig {

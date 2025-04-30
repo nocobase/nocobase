@@ -36,16 +36,15 @@ const findOption = (str, options) => {
 
   const [firstKey, ...subKeys] = match[1].split('.'); // 拆分层级
   const keys = [`$${firstKey}`, ...subKeys]; // 第一层保留 `$`，后续不带 `$`
-
   let currentOptions = options;
   let option = null;
   for (const key of keys) {
-    option = currentOptions.find((opt) => opt.value === key);
+    option = currentOptions.find((opt) => opt.value === key || opt.name === key);
     if (!option) return null;
 
     // 进入下一层 children 查找
     if (Array.isArray(option.children) || option.isLeaf === false) {
-      currentOptions = option.children;
+      currentOptions = option.children || option?.field?.children || [];
     } else {
       return option; // 没有 children 直接返回
     }
@@ -93,7 +92,7 @@ export const useValues = (): UseValuesReturn => {
     }, 100);
   };
 
-  useEffect(value2data, [field.value, scopes]);
+  useEffect(value2data, [field.value.leftVar, scopes]);
 
   const setLeftValue = useCallback(
     (leftVar, paths) => {

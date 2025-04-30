@@ -20,10 +20,12 @@ import { SubFormProvider } from '../../schema-component/antd/association-field/h
 import { DynamicComponentProps } from '../../schema-component/antd/filter/DynamicComponent';
 import { FilterContext } from '../../schema-component/antd/filter/context';
 import { VariableInput, getShouldChange } from '../VariableInput/VariableInput';
+import { useCurrentFormContext } from '../VariableInput/hooks/useFormVariable';
 import { LinkageRuleActionGroup } from './LinkageRuleActionGroup';
 import { EnableLinkage } from './components/EnableLinkage';
 import { ArrayCollapse } from './components/LinkageHeader';
-
+import { useFlag } from '../../flag-provider';
+import { LinkageRuleCategory } from './type';
 export interface Props {
   dynamicComponent: any;
 }
@@ -64,11 +66,12 @@ function transformConditionData(condition: Condition, variableKey: '$nForm' | '$
     rightVar: value,
   };
 }
-function getActiveContextName(contextList: { name: string; ctx: any }[]): string | null {
-  const priority = ['$nForm', '$nRecord'];
-  for (const name of priority) {
-    const item = contextList.find((ctx) => ctx.name === name && ctx.ctx);
-    if (item) return name;
+function getActiveContextName(underNester, shouldDisplayCurrentForm): string | null {
+  if (underNester) {
+    return '$iteration';
+  }
+  if (shouldDisplayCurrentForm) {
+    return '$nForm';
   }
   return '$nRecord';
 }
@@ -90,13 +93,34 @@ const transformDefaultValue = (values, variableKey) => {
 export const FormLinkageRules = withDynamicSchemaProps(
   observer((props: Props) => {
     const fieldSchema = useFieldSchema();
-    const { options, defaultValues, collectionName, form, variables, localVariables, record, dynamicComponent } =
-      useProps(props); // 新版 UISchema（1.0 之后）中已经废弃了 useProps，这里之所以继续保留是为了兼容旧版的 UISchema
+    const {
+      options,
+      defaultValues,
+      collectionName,
+      form,
+      variables,
+      localVariables,
+      record,
+      dynamicComponent,
+      category,
+      returnScope,
+    } = useProps(props); // 新版 UISchema（1.0 之后）中已经废弃了 useProps，这里之所以继续保留是为了兼容旧版的 UISchema
     const { name } = useCollection_deprecated();
     const { getAllCollectionsInheritChain } = useCollectionManager_deprecated();
     const parentRecordData = useCollectionParentRecordData();
-    const variableKey = getActiveContextName(localVariables);
+    const { shouldDisplayCurrentForm } = useCurrentFormContext();
     const components = useMemo(() => ({ ArrayCollapse }), []);
+    const { isInSubTable, isInSubForm } = useFlag();
+    const variableKey = getActiveContextName(isInSubTable || isInSubForm, shouldDisplayCurrentForm);
+    const returnTargetScope =
+      returnScope ??
+      ((options) =>
+        options.filter((v) => {
+          if (category === LinkageRuleCategory.block) {
+            return !['$nForm', '$nRecord'].includes(v.value);
+          }
+          return true;
+        }));
     const schema = useMemo(
       () => ({
         type: 'object',
@@ -192,6 +216,9 @@ export const FormLinkageRules = withDynamicSchemaProps(
                     conditionAdvanced: {
                       'x-component': 'LinkageFilter',
                       'x-visible': '{{$deps[0] === "advanced"}}',
+                      'x-component-props': {
+                        returnScope: returnTargetScope,
+                      },
                       'x-reactions': [
                         {
                           dependencies: ['.conditionType', '.condition'],

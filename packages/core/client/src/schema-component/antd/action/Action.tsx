@@ -10,7 +10,7 @@
 import { Field } from '@formily/core';
 import { observer, Schema, useField, useFieldSchema, useForm } from '@formily/react';
 import { isPortalInBody } from '@nocobase/utils/client';
-import { App, Button } from 'antd';
+import { App, Button, Tooltip } from 'antd';
 import classnames from 'classnames';
 import debounce from 'lodash/debounce';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -57,7 +57,7 @@ import { useAllDataBlocks } from '../page/AllDataBlocksProvider';
 
 const useA = () => {
   return {
-    async run() { },
+    async run() {},
   };
 };
 
@@ -139,23 +139,26 @@ export const Action: ComposedAction = withDynamicSchemaProps(
     );
 
     const handleClick = useMemo(() => {
-      return onClick && (async (e, callback) => {
-        await onClick?.(e, callback);
+      return (
+        onClick &&
+        (async (e, callback) => {
+          await onClick?.(e, callback);
 
-        // 执行完 onClick 之后，刷新数据区块
-        const blocksToRefresh = fieldSchema['x-action-settings']?.onSuccess?.blocksToRefresh || []
-        if (blocksToRefresh.length > 0) {
-          getAllDataBlocks().forEach((block) => {
-            if (blocksToRefresh.includes(block.uid)) {
-              try {
-                block.service?.refresh();
-              } catch (error) {
-                console.error('Failed to refresh block:', block.uid, error);
+          // 执行完 onClick 之后，刷新数据区块
+          const blocksToRefresh = fieldSchema['x-action-settings']?.onSuccess?.blocksToRefresh || [];
+          if (blocksToRefresh.length > 0) {
+            getAllDataBlocks().forEach((block) => {
+              if (blocksToRefresh.includes(block.uid)) {
+                try {
+                  block.service?.refresh();
+                } catch (error) {
+                  console.error('Failed to refresh block:', block.uid, error);
+                }
               }
-            }
-          });
-        }
-      });
+            });
+          }
+        })
+      );
     }, [onClick, fieldSchema, getAllDataBlocks]);
 
     return (
@@ -172,7 +175,7 @@ export const Action: ComposedAction = withDynamicSchemaProps(
           className={className}
           type={props.type}
           Designer={Designer}
-          onClick={onClick}
+          onClick={handleClick}
           confirm={confirm}
           confirmTitle={confirmTitle}
           popover={popover}
@@ -351,11 +354,7 @@ const InternalAction: React.FC<InternalActionProps> = observer(function Com(prop
   }
 
   if (addChild) {
-    return wrapSSR(
-      <RecordProvider record={null} parent={parentRecordData}>
-        <TreeRecordProvider parent={recordData}>{result}</TreeRecordProvider>
-      </RecordProvider>,
-    ) as React.ReactElement;
+    return wrapSSR(<TreeRecordProvider parent={recordData}>{result}</TreeRecordProvider>) as React.ReactElement;
   }
 
   return wrapSSR(result) as React.ReactElement;
@@ -370,6 +369,7 @@ Action.Popover = function ActionPopover(props) {
       {props.children}
     </ErrorBoundary>
   );
+
   return (
     <StablePopover
       {...props}
@@ -619,6 +619,22 @@ const RenderButtonInner = observer(
     const actionTitle = typeof rawTitle === 'string' ? t(rawTitle, { ns: NAMESPACE_UI_SCHEMA }) : rawTitle;
     const { opacity, ...restButtonStyle } = buttonStyle;
     const linkStyle = isLink && opacity ? { opacity } : undefined;
+    const WrapperComponent = React.forwardRef(
+      ({ component: Component = tarComponent || Button, icon, onlyIcon, children, ...restProps }: any, ref) => {
+        return (
+          <Component ref={ref} {...restProps}>
+            {onlyIcon ? (
+              <Tooltip title={restProps.title}>
+                <span style={{ marginRight: 3 }}>{icon && typeof icon === 'string' ? <Icon type={icon} /> : icon}</span>
+              </Tooltip>
+            ) : (
+              <span style={{ marginRight: 3 }}>{icon && typeof icon === 'string' ? <Icon type={icon} /> : icon}</span>
+            )}
+            {onlyIcon ? children[1] : children}
+          </Component>
+        );
+      },
+    );
     return (
       <SortableItem
         role="button"
@@ -631,10 +647,11 @@ const RenderButtonInner = observer(
         disabled={disabled}
         style={isLink ? restButtonStyle : buttonStyle}
         onClick={process.env.__E2E__ ? handleButtonClick : debouncedClick} // E2E 中的点击操作都是很快的，如果加上 debounce 会导致 E2E 测试失败
-        component={tarComponent || Button}
+        component={onlyIcon || tarComponent ? WrapperComponent : tarComponent || Button}
         className={classnames(componentCls, hashId, className, 'nb-action')}
         type={type === 'danger' ? undefined : type}
         title={actionTitle}
+        onlyIcon={onlyIcon}
       >
         {!onlyIcon && actionTitle && (
           <span className={icon ? 'nb-action-title' : null} style={linkStyle}>
