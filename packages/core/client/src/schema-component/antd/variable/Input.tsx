@@ -484,7 +484,7 @@ export function Input(props: VariableInputProps) {
             value={variable ?? cValue}
             onChange={onSwitch}
             loadData={loadData as any}
-            changeOnSelect={changeOnSelect}
+            changeOnSelect={changeOnSelect ?? true}
             fieldNames={fieldNames}
             disabled={disabled}
           >
