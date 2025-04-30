@@ -50,6 +50,7 @@ const InternalFormBlockProvider = (props) => {
   const form = useMemo(
     () =>
       createForm({
+        validateFirst: true,
         readPretty,
       }),
     [readPretty],
