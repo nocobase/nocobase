@@ -10,10 +10,12 @@
 import { LLMProviderOptions } from '../../manager/ai-manager';
 import { ModelSettingsForm } from './ModelSettings';
 import { ProviderSettingsForm } from './ProviderSettings';
+import { MessageRenderer } from './MessageRenderer';
 
 export const googleGenAIProviderOptions: LLMProviderOptions = {
   components: {
     ProviderSettingsForm,
     ModelSettingsForm,
+    MessageRenderer,
   },
 };

@@ -20,12 +20,20 @@ export default defineCollection({
       primaryKey: true,
     },
     {
+      name: 'role',
+      type: 'string',
+    },
+    {
       name: 'content',
       type: 'jsonb',
     },
     {
-      name: 'role',
-      type: 'string',
+      name: 'toolCalls',
+      type: 'jsonb',
+    },
+    {
+      name: 'metadata',
+      type: 'jsonb',
     },
   ],
 });

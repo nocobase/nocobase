@@ -57,7 +57,7 @@ export const Messages: React.FC = () => {
             if (!role) {
               return null;
             }
-            return index === 0 ? (
+            return index === 0 && msg.content?.type !== 'greeting' ? (
               <div key={msg.key} ref={lastMessageRef}>
                 <Bubble {...role} loading={msg.loading} content={msg.content} />
               </div>

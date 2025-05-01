@@ -11,6 +11,7 @@ import actions, { Context, Next } from '@nocobase/actions';
 import PluginAIServer from '../plugin';
 import { Model } from '@nocobase/database';
 import { concat } from '@langchain/core/utils/stream';
+import { LLMProvider } from '../../../server';
 
 async function parseUISchema(ctx: Context, content: string) {
   const regex = /\{\{\$nUISchema\.([^}]+)\}\}/g;
@@ -40,23 +41,38 @@ async function formatMessages(ctx: Context, messages: any[]) {
 
   for (const msg of messages) {
     let content = msg.content.content;
-    if (typeof content !== 'string') {
-      continue;
+    if (typeof content === 'string') {
+      content = await parseUISchema(ctx, content);
     }
-    content = await parseUISchema(ctx, content);
     if (!content) {
       continue;
     }
+    if (msg.role === 'user') {
+      formattedMessages.push({
+        role: 'user',
+        content,
+      });
+      continue;
+    }
+    if (msg.role === 'tool') {
+      formattedMessages.push({
+        role: 'tool',
+        content,
+        tool_call_id: msg.toolCalls?.id,
+      });
+      continue;
+    }
     formattedMessages.push({
-      role: msg.role === 'user' ? 'user' : 'assistant',
+      role: 'assistant',
       content,
+      tool_calls: msg.toolCalls,
     });
   }
 
   return formattedMessages;
 }
 
-async function prepareChatStream(ctx: Context, sessionId: string, employee: Model, messages: any[]) {
+async function getLLMService(ctx: Context, employee: Model, messages: any[]) {
   const plugin = ctx.app.pm.get('ai') as PluginAIServer;
   const modelSettings = employee.modelSettings;
 
@@ -80,10 +96,10 @@ async function prepareChatStream(ctx: Context, sessionId: string, employee: Mode
   }
 
   const tools = [];
-  const skills = employee.skills;
+  const skills = employee.skillSettings?.skills || [];
   if (skills?.length) {
     for (const skill of skills) {
-      const tool = plugin.aiManager.getTool(skill);
+      const tool = await plugin.aiManager.getTool(skill);
       if (tool) {
         tools.push(tool);
       }
@@ -100,6 +116,11 @@ async function prepareChatStream(ctx: Context, sessionId: string, employee: Mode
     },
   });
 
+  return { provider, model: modelSettings.model, service };
+}
+
+async function prepareChatStream(ctx: Context, sessionId: string, provider: LLMProvider) {
+  const plugin = ctx.app.pm.get('ai') as PluginAIServer;
   const controller = new AbortController();
   const { signal } = controller;
 
@@ -117,18 +138,19 @@ async function processChatStream(
   stream: any,
   sessionId: string,
   options: {
-    aiEmployeeUsername: string;
+    aiEmployee: Model;
     signal: AbortSignal;
     messageId?: string;
+    model: string;
+    provider: string;
   },
 ) {
   const plugin = ctx.app.pm.get('ai') as PluginAIServer;
-  const { aiEmployeeUsername, signal, messageId } = options;
+  const { aiEmployee, signal, messageId, model, provider } = options;
 
   let gathered: any;
   try {
     for await (const chunk of stream) {
-      console.log(chunk);
       gathered = gathered !== undefined ? concat(gathered, chunk) : chunk;
       if (!chunk.content) {
         continue;
@@ -148,18 +170,25 @@ async function processChatStream(
     return;
   }
   if (message) {
-    const content = {
-      content: message,
-      type: 'text',
+    const values = {
+      content: {
+        type: 'text',
+        content: message,
+      },
+      metadata: {
+        model,
+        provider,
+        autoCallTool: aiEmployee.skillSettings?.autoCall,
+      },
     };
     if (signal.aborted) {
-      content['interrupted'] = true;
+      values.metadata['interrupted'] = true;
     }
     if (gathered?.tool_calls?.length) {
-      content['tool_calls'] = gathered.tool_calls;
+      values['toolCalls'] = gathered.tool_calls;
     }
     if (gathered?.usage_metadata) {
-      content['usage_metadata'] = gathered.usage_metadata;
+      values.metadata['usage_metadata'] = gathered.usage_metadata;
     }
     if (messageId) {
       await ctx.db.sequelize.transaction(async (transaction) => {
@@ -168,9 +197,7 @@ async function processChatStream(
             sessionId,
             messageId,
           },
-          values: {
-            content,
-          },
+          values,
           transaction,
         });
         await ctx.db.getRepository('aiMessages').destroy({
@@ -187,17 +214,21 @@ async function processChatStream(
       await ctx.db.getRepository('aiConversations.messages', sessionId).create({
         values: {
           messageId: plugin.snowflake.generate(),
-          role: aiEmployeeUsername,
-          content,
+          role: aiEmployee.username,
+          ...values,
         },
       });
     }
   }
 
+  if (gathered?.tool_calls?.length && aiEmployee.skillSettings?.autoCall) {
+    await callTool(ctx, gathered.tool_calls[0], sessionId, aiEmployee);
+  }
+
   ctx.res.end();
 }
 
-async function getConversationHistory(ctx: Context, sessionId: string, employee: Model, messageIdFilter?: string) {
+async function getConversationHistory(ctx: Context, sessionId: string, messageIdFilter?: string) {
   const historyMessages = await ctx.db.getRepository('aiConversations.messages', sessionId).find({
     sort: ['messageId'],
     ...(messageIdFilter
@@ -212,6 +243,86 @@ async function getConversationHistory(ctx: Context, sessionId: string, employee:
   });
 
   return await formatMessages(ctx, historyMessages);
+}
+
+async function getHistoryMessages(ctx: Context, sessionId: string, aiEmployee: Model, messageId?: string) {
+  const history = await getConversationHistory(ctx, sessionId, messageId);
+  const userConfig = await ctx.db.getRepository('usersAiEmployees').findOne({
+    filter: {
+      userId: ctx.auth?.user.id,
+      aiEmployee: aiEmployee.username,
+    },
+  });
+  const historyMessages = [
+    {
+      role: 'system',
+      content: aiEmployee.about,
+    },
+    ...(userConfig?.prompt ? [{ role: 'user', content: userConfig.prompt }] : []),
+    ...history,
+  ];
+  return historyMessages;
+}
+
+async function callTool(
+  ctx: Context,
+  toolCall: {
+    id: string;
+    name: string;
+    args: any;
+  },
+  sessionId: string,
+  aiEmployee: Model,
+) {
+  const plugin = ctx.app.pm.get('ai') as PluginAIServer;
+  try {
+    const tool = await plugin.aiManager.getTool(toolCall.name);
+    if (!tool) {
+      sendErrorResponse(ctx, 'Tool not found');
+    }
+    const result = await tool.invoke(plugin, toolCall.args);
+    if (result.status === 'error') {
+      sendErrorResponse(ctx, result.content);
+    }
+    const historyMessages = await getHistoryMessages(ctx, sessionId, aiEmployee);
+    const formattedMessages = [
+      ...historyMessages,
+      {
+        role: 'tool',
+        name: toolCall.name,
+        content: result.content,
+        tool_call_id: toolCall.id,
+      },
+    ];
+    const { provider, model, service } = await getLLMService(ctx, aiEmployee, formattedMessages);
+    await ctx.db.getRepository('aiConversations.messages', sessionId).create({
+      values: {
+        messageId: plugin.snowflake.generate(),
+        role: 'tool',
+        content: {
+          type: 'text',
+          content: result.content,
+        },
+        toolCalls: toolCall,
+        metadata: {
+          model,
+          provider: service.provider,
+          autoCallTool: aiEmployee.skillSettings?.autoCall,
+        },
+      },
+    });
+
+    const { stream, signal } = await prepareChatStream(ctx, sessionId, provider);
+    await processChatStream(ctx, stream, sessionId, {
+      aiEmployee,
+      signal,
+      model,
+      provider: service.provider,
+    });
+  } catch (err) {
+    ctx.log.error(err);
+    sendErrorResponse(ctx, 'Tool call error');
+  }
 }
 
 function setupSSEHeaders(ctx: Context) {
@@ -311,18 +422,20 @@ export default {
 
       const pageSize = 10;
       const messageRepository = ctx.db.getRepository('aiConversations.messages', sessionId);
+      const filter = {
+        role: {
+          $notIn: ['tool'],
+        },
+      };
+      if (cursor) {
+        filter['messageId'] = {
+          $lt: cursor,
+        };
+      }
       const rows = await messageRepository.find({
         sort: ['-messageId'],
         limit: pageSize + 1,
-        ...(cursor
-          ? {
-              filter: {
-                messageId: {
-                  $lt: cursor,
-                },
-              },
-            }
-          : {}),
+        filter,
       });
 
       const hasMore = rows.length > pageSize;
@@ -330,14 +443,21 @@ export default {
       const newCursor = data.length ? data[data.length - 1].messageId : null;
 
       ctx.body = {
-        rows: data.map((row: Model) => ({
-          key: row.messageId,
-          content: {
+        rows: data.map((row: Model) => {
+          const content = {
             ...row.content,
             messageId: row.messageId,
-          },
-          role: row.role,
-        })),
+            metadata: row.metadata,
+          };
+          if (!row.metadata?.autoCallTool && row.toolCalls) {
+            content.tool_calls = row.toolCalls;
+          }
+          return {
+            key: row.messageId,
+            content,
+            role: row.role,
+          };
+        }),
         hasMore,
         cursor: newCursor,
       };
@@ -409,28 +529,17 @@ export default {
           return next();
         }
 
-        const history = await getConversationHistory(ctx, sessionId, employee);
         const userMessages = await formatMessages(ctx, messages);
-        const userConfig = await ctx.db.getRepository('usersAiEmployees').findOne({
-          filter: {
-            userId: ctx.auth?.user.id,
-            aiEmployee,
-          },
-        });
-        const formattedMessages = [
-          {
-            role: 'system',
-            content: employee.about,
-          },
-          ...(userConfig?.prompt ? [{ role: 'user', content: userConfig.prompt }] : []),
-          ...history,
-          ...userMessages,
-        ];
+        const historyMessages = await getHistoryMessages(ctx, sessionId, employee);
+        const formattedMessages = [...historyMessages, ...userMessages];
 
-        const { stream, signal } = await prepareChatStream(ctx, sessionId, employee, formattedMessages);
+        const { provider, model, service } = await getLLMService(ctx, employee, formattedMessages);
+        const { stream, signal } = await prepareChatStream(ctx, sessionId, provider);
         await processChatStream(ctx, stream, sessionId, {
-          aiEmployeeUsername: aiEmployee,
+          aiEmployee,
           signal,
+          model,
+          provider: service.provider,
         });
       } catch (err) {
         ctx.log.error(err);
@@ -483,27 +592,15 @@ export default {
         }
 
         const employee = conversation.aiEmployee;
-        const history = await getConversationHistory(ctx, sessionId, employee, messageId);
-        const userConfig = await ctx.db.getRepository('usersAiEmployees').findOne({
-          filter: {
-            userId: ctx.auth?.user.id,
-            aiEmployee: employee.username,
-          },
-        });
-        const formattedMessages = [
-          {
-            role: 'system',
-            content: employee.about,
-          },
-          ...(userConfig?.prompt ? [{ role: 'user', content: userConfig.prompt }] : []),
-          ...history,
-        ];
-
-        const { stream, signal } = await prepareChatStream(ctx, sessionId, employee, formattedMessages);
+        const historyMessages = await getHistoryMessages(ctx, sessionId, employee, messageId);
+        const { provider, model, service } = await getLLMService(ctx, employee, historyMessages);
+        const { stream, signal } = await prepareChatStream(ctx, sessionId, provider);
         await processChatStream(ctx, stream, sessionId, {
-          aiEmployeeUsername: employee.username,
+          aiEmployee: employee,
           signal,
           messageId,
+          model,
+          provider: service.provider,
         });
       } catch (err) {
         ctx.log.error(err);
@@ -533,16 +630,56 @@ export default {
           messageId,
         },
       });
-      const tools = message?.content?.tool_calls || [];
+      const tools = message?.toolCalls || [];
       const toolNames = tools.map((tool: any) => tool.name);
       const result = {};
       for (const toolName of toolNames) {
-        const tool = plugin.aiManager.getTool(toolName);
+        const tool = await plugin.aiManager.getTool(toolName);
         if (tool) {
-          result[toolName] = tool;
+          result[toolName] = {
+            name: tool.name,
+            title: tool.title,
+            description: tool.description,
+          };
         }
       }
       ctx.body = result;
+      await next();
+    },
+
+    async callTool(ctx: Context, next: Next) {
+      setupSSEHeaders(ctx);
+
+      const { sessionId, messageId } = ctx.action.params.values || {};
+      if (!sessionId || !messageId) {
+        sendErrorResponse(ctx, 'sessionId and messageId are required');
+      }
+      try {
+        const conversation = await ctx.db.getRepository('aiConversations').findOne({
+          filter: {
+            sessionId,
+            userId: ctx.auth?.user.id,
+          },
+          appends: ['aiEmployee'],
+        });
+        if (!conversation) {
+          sendErrorResponse(ctx, 'conversation not found');
+        }
+        const employee = conversation.aiEmployee;
+        const message = await ctx.db.getRepository('aiConversations.messages', sessionId).findOne({
+          filter: {
+            messageId,
+          },
+        });
+        const tools = message.toolCalls;
+        if (!tools?.length) {
+          sendErrorResponse(ctx, 'No tool calls found');
+        }
+        await callTool(ctx, tools[0], sessionId, employee);
+      } catch (err) {
+        ctx.log.error(err);
+        sendErrorResponse(ctx, 'Tool call error');
+      }
       await next();
     },
   },

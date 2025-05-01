@@ -19,11 +19,12 @@ import aiTools from './resource/aiTools';
 import { AIEmployeesManager } from './ai-employees/ai-employees-manager';
 import Snowflake from './snowflake';
 import * as aiEmployeeActions from './resource/aiEmployees';
-import { z } from 'zod';
 import { googleGenAIProviderOptions } from './llm-providers/google-genai';
+import { AIEmployeeTrigger } from './workflow/triggers/ai-employee';
+import { formFillter, workflowCaller } from './tools';
 
 export class PluginAIServer extends Plugin {
-  aiManager = new AIManager();
+  aiManager = new AIManager(this);
   aiEmployeesManager = new AIEmployeesManager(this);
   snowflake: Snowflake;
 
@@ -42,21 +43,8 @@ export class PluginAIServer extends Plugin {
     this.aiManager.registerLLMProvider('openai', openaiProviderOptions);
     this.aiManager.registerLLMProvider('deepseek', deepseekProviderOptions);
     this.aiManager.registerLLMProvider('google-genai', googleGenAIProviderOptions);
-    this.aiManager.registerTool('formFiller', {
-      title: '{{t("Form filler")}}',
-      description: '{{t("Fill the form with the given content")}}',
-      schema: z.object({
-        form: z.string().describe('The UI Schema ID of the target form to be filled.'),
-        data: z
-          .record(z.any())
-          .describe("Structured data matching the form's JSON Schema, to be assigned to form.values."),
-      }),
-    });
-    this.aiManager.registerTool('workflowCaller', {
-      title: '{{t("Call workflows")}}',
-      description: '{{t("Developing...")}}',
-      schema: {},
-    });
+    this.aiManager.registerTool('formFiller', formFillter);
+    this.aiManager.registerTool('workflowCaller', workflowCaller);
 
     this.app.resourceManager.define(aiResource);
     this.app.resourceManager.define(aiConversations);
@@ -82,6 +70,7 @@ export class PluginAIServer extends Plugin {
     }
 
     const workflow = this.app.pm.get('workflow') as PluginWorkflowServer;
+    workflow.registerTrigger('ai-employee', AIEmployeeTrigger);
     workflow.registerInstruction('llm', LLMInstruction);
   }
 

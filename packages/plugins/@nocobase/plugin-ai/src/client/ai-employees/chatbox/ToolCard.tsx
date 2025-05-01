@@ -18,16 +18,34 @@ import { useAPIClient, useGlobalTheme, usePlugin, useRequest, useToken } from '@
 import { useChatConversations } from './ChatConversationsProvider';
 import { Schema } from '@formily/react';
 import PluginAIClient from '../..';
+import { useChatMessages } from './ChatMessagesProvider';
+import { useChatBoxContext } from './ChatBoxContext';
+
+const useDefaultAction = (messageId: string) => {
+  const currentEmployee = useChatBoxContext('currentEmployee');
+  const { currentConversation } = useChatConversations();
+  const { callTool } = useChatMessages();
+  return {
+    callAction: () => {
+      callTool({
+        sessionId: currentConversation,
+        messageId,
+        aiEmployee: currentEmployee,
+      });
+    },
+  };
+};
 
 const CallButton: React.FC<{
+  messageId: string;
   name: string;
   args: any;
-}> = ({ name, args }) => {
+}> = ({ name, messageId, args }) => {
   const t = useT();
   const plugin = usePlugin('ai') as PluginAIClient;
   const tool = plugin.aiManager.tools.get(name);
-  const useAction = tool.useAction;
-  const { callAction } = useAction();
+  const useAction = tool?.useAction || useDefaultAction;
+  const { callAction } = useAction(messageId);
 
   return (
     <Button
@@ -91,7 +109,7 @@ export const ToolCard: React.FC<{
         )}
       </div>
     ),
-    extra: <CallButton name={tool.name} args={tool.args} />,
+    extra: <CallButton messageId={messageId} name={tool.name} args={tool.args} />,
     children: (
       <ReactMarkdown
         components={{

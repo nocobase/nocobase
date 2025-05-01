@@ -84,3 +84,11 @@ export type ShortcutOptions = {
   message: { type: MessageType; content: string };
   autoSend: boolean;
 };
+
+export type Tool = {
+  name: string;
+  title: string;
+  description: string;
+  schema?: any;
+  children?: Tool[];
+};

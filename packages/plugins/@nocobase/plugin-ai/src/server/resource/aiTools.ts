@@ -15,7 +15,7 @@ export const aiTools: ResourceOptions = {
   actions: {
     list: async (ctx, next) => {
       const plugin = ctx.app.pm.get('ai') as PluginAIServer;
-      const tools = plugin.aiManager.listTools();
+      const tools = await plugin.aiManager.listTools();
       ctx.body = tools;
       await next();
     },

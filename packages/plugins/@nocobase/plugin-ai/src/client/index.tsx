@@ -21,6 +21,7 @@ import { aiEmployeeButtonSettings } from './ai-employees/settings/AIEmployeeButt
 import { withAISelectable } from './ai-employees/selector/withAISelectable';
 import { useAISelectionContext } from './ai-employees/selector/AISelectorProvider';
 import { googleGenAIProviderOptions } from './llm-providers/google-genai';
+import { AIEmployeeTrigger } from './workflow/triggers/ai-employee';
 const { AIEmployeesProvider } = lazy(() => import('./ai-employees/AIEmployeesProvider'), 'AIEmployeesProvider');
 const { AIEmployeeChatProvider } = lazy(
   () => import('./ai-employees/AIEmployeeChatProvider'),
@@ -119,6 +120,7 @@ export class PluginAIClient extends Plugin {
     });
 
     const workflow = this.app.pm.get('workflow') as PluginWorkflowClient;
+    workflow.registerTrigger('ai-employee', AIEmployeeTrigger);
     workflow.registerInstructionGroup('ai', { label: tval('AI', { ns: namespace }) });
     workflow.registerInstruction('llm', LLMInstruction);
     workflow.registerInstruction('ai-employee', AIEmployeeInstruction);

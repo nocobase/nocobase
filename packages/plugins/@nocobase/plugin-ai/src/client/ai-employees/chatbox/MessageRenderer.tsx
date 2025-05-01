@@ -16,10 +16,11 @@ import { useT } from '../../locale';
 import { useChatMessages } from './ChatMessagesProvider';
 import { useChatBoxContext } from './ChatBoxContext';
 import { useChatConversations } from './ChatConversationsProvider';
-import { SchemaComponent } from '@nocobase/client';
+import { SchemaComponent, usePlugin } from '@nocobase/client';
 import { uid } from '@formily/shared';
 import { Markdown } from './Markdown';
 import { ToolCard } from './ToolCard';
+import PluginAIClient from '../..';
 
 const MessageWrapper = React.forwardRef<
   HTMLDivElement,
@@ -32,6 +33,29 @@ const MessageWrapper = React.forwardRef<
   }
   return props.children;
 });
+
+const AITextMessageRenderer: React.FC<{
+  msg: any;
+}> = ({ msg }) => {
+  const plugin = usePlugin('ai') as PluginAIClient;
+  const provider = plugin.aiManager.llmProviders.get(msg.metadata?.provider);
+  if (!provider?.components?.MessageRenderer) {
+    return (
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 16,
+        }}
+      >
+        {typeof msg.content === 'string' && <Markdown markdown={msg.content} />}
+        {msg.tool_calls?.length && <ToolCard tools={msg.tool_calls} messageId={msg.messageId} />}
+      </div>
+    );
+  }
+  const M = provider.components.MessageRenderer;
+  return <M msg={msg} />;
+};
 
 const AIMessageRenderer: React.FC<{
   msg: any;
@@ -58,18 +82,7 @@ const AIMessageRenderer: React.FC<{
             },
           }}
           variant="borderless"
-          content={
-            <div
-              style={{
-                display: 'flex',
-                flexDirection: 'column',
-                gap: 16,
-              }}
-            >
-              {typeof msg.content === 'string' && <Markdown markdown={msg.content} />}
-              {msg.tool_calls?.length && <ToolCard tools={msg.tool_calls} messageId={msg.messageId} />}
-            </div>
-          }
+          content={<AITextMessageRenderer msg={msg} />}
           footer={
             <Space>
               <Button

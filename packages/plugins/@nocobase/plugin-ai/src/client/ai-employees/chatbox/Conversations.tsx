@@ -226,7 +226,8 @@ export const Conversations: React.FC = memo(() => {
                   icon: <DeleteOutlined />,
                 },
               ],
-              onClick: ({ key }) => {
+              onClick: ({ key, domEvent }) => {
+                domEvent.stopPropagation();
                 switch (key) {
                   case 'delete':
                     modal.confirm({

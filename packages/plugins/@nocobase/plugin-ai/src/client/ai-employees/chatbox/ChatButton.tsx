@@ -8,12 +8,13 @@
  */
 
 import React, { useMemo } from 'react';
-import { FloatButton, Avatar, Dropdown } from 'antd';
+import { FloatButton, Avatar, Dropdown, Popover } from 'antd';
 import icon from '../icon.svg';
 import { css } from '@emotion/css';
 import { useChatBoxContext } from './ChatBoxContext';
 import { useAIEmployeesContext } from '../AIEmployeesProvider';
 import { avatars } from '../avatars';
+import { ProfileCard } from '../ProfileCard';
 
 export const ChatButton: React.FC = () => {
   const { aiEmployees } = useAIEmployeesContext();
@@ -36,13 +37,16 @@ export const ChatButton: React.FC = () => {
             switchAIEmployee(employee);
           }}
         >
-          <Avatar
-            src={avatars(employee.avatar)}
-            size={28}
-            style={{
-              marginRight: '8px',
-            }}
-          />
+          <Popover content={<ProfileCard aiEmployee={employee} />} placement="leftTop">
+            <Avatar
+              src={avatars(employee.avatar)}
+              size={28}
+              style={{
+                marginRight: '8px',
+              }}
+            />
+          </Popover>
+
           {employee.nickname}
         </div>
       ),

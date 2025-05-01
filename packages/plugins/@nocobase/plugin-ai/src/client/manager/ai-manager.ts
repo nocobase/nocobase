@@ -14,6 +14,9 @@ export type LLMProviderOptions = {
   components: {
     ProviderSettingsForm?: ComponentType;
     ModelSettingsForm?: ComponentType;
+    MessageRenderer?: ComponentType<{
+      msg: any;
+    }>;
   };
 };
 

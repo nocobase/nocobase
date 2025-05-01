@@ -8,17 +8,18 @@
  */
 
 import React from 'react';
-import { List, Button, Dropdown, Tooltip, Card, Popover, Space } from 'antd';
+import { List, Button, Dropdown, Tooltip, Card, Popover, Space, Switch } from 'antd';
 import { InfoCircleOutlined, PlusOutlined, QuestionCircleOutlined, DeleteOutlined } from '@ant-design/icons';
 import { useT } from '../../locale';
 import { SchemaComponent, useAPIClient, useRequest, useToken } from '@nocobase/client';
 import { Schema, useField } from '@formily/react';
 import { Field } from '@formily/core';
+import { Tool } from '../types';
 
 const ToolInfo: React.FC<{
   title: string;
   description: string;
-  schema: any;
+  schema?: any;
 }> = ({ title, description, schema }) => {
   const t = useT();
   const { token } = useToken();
@@ -43,6 +44,7 @@ const ToolInfo: React.FC<{
               color: token.colorTextSecondary,
               fontSize: token.fontSizeSM,
               fontWeight: 400,
+              whiteSpace: 'pre-wrap',
             }}
           >
             {Schema.compile(description, { t })}
@@ -60,13 +62,14 @@ const ToolInfo: React.FC<{
         </div>
         <List
           itemLayout="vertical"
-          dataSource={Object.entries(schema.properties || {})}
+          dataSource={Object.entries(schema?.properties || {})}
           size="small"
           renderItem={([name, option]: [
             string,
             {
               name: string;
               type: string;
+              title?: string;
               description?: string;
             },
           ]) => {
@@ -78,7 +81,7 @@ const ToolInfo: React.FC<{
                       fontWeight: token.fontWeightStrong,
                     }}
                   >
-                    {name}
+                    {option.title || name}
                   </span>
                   <span
                     style={{
@@ -118,41 +121,81 @@ const ToolInfo: React.FC<{
   );
 };
 
+export const SkillsListItem: React.FC<{
+  name: string;
+  title: string;
+  description: string;
+  isRoot?: boolean;
+}> = ({ name, title, description, isRoot }) => {
+  const t = useT();
+  const { token } = useToken();
+  const field = useField<Field>();
+
+  return (
+    <div
+      style={{
+        minWidth: '150px',
+        maxWidth: '300px',
+      }}
+    >
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+        }}
+      >
+        <div>{Schema.compile(title, { t })}</div>
+        {!isRoot && (
+          <div>
+            <Switch size="small" value={field.value?.includes(name)} disabled={field.value?.includes(name)} />
+          </div>
+        )}
+      </div>
+      <div style={{ color: token.colorTextSecondary, fontSize: token.fontSizeSM }}>
+        {Schema.compile(description, { t })}
+      </div>
+    </div>
+  );
+};
+
 export const Skills: React.FC = () => {
   const t = useT();
   const { token } = useToken();
   const field = useField<Field>();
   const api = useAPIClient();
-  const { data, loading } = useRequest<
-    {
-      name: string;
-      title: string;
-      description: string;
-      schema: any;
-    }[]
-  >(() =>
+  const { data, loading } = useRequest<Tool[]>(() =>
     api
       .resource('aiTools')
       .list()
       .then((res) => res?.data?.data),
   );
+
+  const handleAdd = (name: string) => {
+    const skills = [...(field.value || [])];
+    skills.push(name);
+    field.value = Array.from(new Set(skills));
+  };
+
   const items =
-    data?.map((item) => ({
-      key: item.name,
-      label: (
-        <div>
-          <div>{Schema.compile(item.title, { t })}</div>
-          <div style={{ color: token.colorTextSecondary, fontSize: token.fontSizeSM }}>
-            {Schema.compile(item.description, { t })}
-          </div>
-        </div>
-      ),
-      onClick: () => {
-        const skills = [...(field.value || [])];
-        skills.push(item.name);
-        field.value = Array.from(new Set(skills));
-      },
-    })) || [];
+    data?.map((item) => {
+      const result: any = {
+        key: item.name,
+      };
+      if (item.children) {
+        result.label = <SkillsListItem {...item} isRoot={true} />;
+        result.children = item.children.map((child) => {
+          return {
+            key: child.name,
+            label: <SkillsListItem {...child} />,
+            onClick: () => handleAdd(child.name),
+          };
+        });
+      } else {
+        result.label = <SkillsListItem {...item} />;
+        result.onClick = () => handleAdd(item.name);
+      }
+      return result;
+    }) || [];
   return (
     <>
       <div
@@ -188,7 +231,17 @@ export const Skills: React.FC = () => {
           bordered
           dataSource={field.value || []}
           renderItem={(item: string) => {
-            const tool = data?.find((tool) => tool.name === item);
+            const [name] = item.split('.');
+            const root = data?.find((tool) => tool.name === name);
+            if (!root) {
+              return null;
+            }
+            let tool: any;
+            if (root.children) {
+              tool = root.children.find((tool) => tool.name === item);
+            } else {
+              tool = root;
+            }
             if (!tool) {
               return null;
             }
@@ -242,15 +295,31 @@ export const Skills: React.FC = () => {
 };
 
 export const SkillsSettings: React.FC = () => {
+  const t = useT();
   return (
     <SchemaComponent
       components={{ Skills }}
       schema={{
         type: 'void',
         properties: {
-          skills: {
-            type: 'array',
-            'x-component': 'Skills',
+          skillSettings: {
+            type: 'object',
+            properties: {
+              skills: {
+                type: 'array',
+                'x-component': 'Skills',
+                'x-decorator': 'FormItem',
+              },
+              autoCall: {
+                type: 'boolean',
+                title: t('Automatically use skills when available'),
+                'x-component': 'Checkbox',
+                'x-decorator': 'FormItem',
+                description: t(
+                  'When auto skill usage is enabled, the AI employee will invoke tools automatically without returning tool parameters to the frontend. If disabled, the tool call parameters will be returned in the conversation for the user to review and trigger manually.',
+                ),
+              },
+            },
           },
         },
       }}

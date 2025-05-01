@@ -8,7 +8,7 @@
  */
 
 import { createContext, useCallback, useContext, useRef } from 'react';
-import { Message, ResendOptions, SendOptions } from '../types'; // 假设有这些类型定义
+import { AIEmployee, Message, ResendOptions, SendOptions } from '../types'; // 假设有这些类型定义
 import React, { useState } from 'react';
 import { uid } from '@formily/shared';
 import { useT } from '../../locale';
@@ -29,6 +29,7 @@ interface ChatMessagesContextValue {
   ) => Promise<void>;
   resendMessages: (options: ResendOptions) => void;
   cancelRequest: () => void;
+  callTool: (options: { sessionId: string; messageId: string; aiEmployee: AIEmployee }) => void;
   messagesService: any;
   lastMessageRef: (node: HTMLElement | null) => void;
 }
@@ -166,7 +167,6 @@ export const ChatMessagesProvider: React.FC<{ children: React.ReactNode }> = ({ 
     sessionId,
     aiEmployee,
     messages: sendMsgs,
-    infoFormValues,
     onConversationCreate,
   }: SendOptions & {
     onConversationCreate?: (sessionId: string) => void;
@@ -177,17 +177,6 @@ export const ChatMessagesProvider: React.FC<{ children: React.ReactNode }> = ({ 
     const last = messages[messages.length - 1];
     if (last?.role === 'error') {
       setMessages((prev) => prev.slice(0, -1));
-    }
-
-    if (infoFormValues) {
-      msgs.push({
-        key: uid(),
-        role: aiEmployee.username,
-        content: {
-          type: 'info',
-          content: infoFormValues,
-        },
-      });
     }
 
     msgs.push(
@@ -313,6 +302,31 @@ export const ChatMessagesProvider: React.FC<{ children: React.ReactNode }> = ({ 
     setResponseLoading(false);
   }, [currentConversation]);
 
+  const callTool = useCallback(async ({ sessionId, messageId, aiEmployee }) => {
+    addMessage({
+      key: uid(),
+      role: aiEmployee.username,
+      content: { type: 'text', content: '' },
+      loading: true,
+    });
+
+    try {
+      const sendRes = await api.request({
+        url: 'aiConversations:callTool',
+        method: 'POST',
+        headers: { Accept: 'text/event-stream' },
+        data: { sessionId, messageId },
+        responseType: 'stream',
+        adapter: 'fetch',
+      });
+
+      await processStreamResponse(sendRes.data);
+      messagesServiceRef.current.run(sessionId);
+    } catch (err) {
+      throw err;
+    }
+  }, []);
+
   const loadMoreMessages = useCallback(async () => {
     const messagesService = messagesServiceRef.current;
     if (messagesService.loading || !messagesService.data?.meta?.hasMore) {
@@ -333,6 +347,7 @@ export const ChatMessagesProvider: React.FC<{ children: React.ReactNode }> = ({ 
         sendMessages,
         resendMessages,
         cancelRequest,
+        callTool,
         messagesService,
         lastMessageRef,
       }}

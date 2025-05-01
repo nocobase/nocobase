@@ -50,7 +50,7 @@ export default {
       type: 'jsonb',
     },
     {
-      name: 'skills',
+      name: 'skillSettings',
       type: 'jsonb',
     },
     {
