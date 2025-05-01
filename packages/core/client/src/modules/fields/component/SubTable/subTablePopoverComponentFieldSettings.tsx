@@ -28,6 +28,7 @@ import { isSubMode } from '../../../../schema-component/antd/association-field/u
 import { useIsAssociationField } from '../../../../schema-component/antd/form-item';
 import { FormLinkageRules } from '../../../../schema-settings/LinkageRules';
 import { SchemaSettingsLinkageRules } from '../../../../schema-settings/SchemaSettings';
+import { useColumnSchema } from '../../../../schema-component';
 
 const fieldComponent: any = {
   name: 'fieldComponent',
@@ -312,7 +313,9 @@ export const linkageRules = {
   Component: SchemaSettingsLinkageRules,
   useComponentProps() {
     const field = useField();
-    const fieldSchema = useFieldSchema();
+    const schema = useFieldSchema();
+    const { fieldSchema: columnSchema } = useColumnSchema();
+    const fieldSchema = columnSchema || schema;
     const cm = useCollectionManager();
     const collectionField = cm.getCollectionField(fieldSchema['x-collection-field']);
     const { rerenderDataBlock } = useRerenderDataBlock();
