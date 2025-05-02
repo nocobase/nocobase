@@ -62,7 +62,7 @@ export interface CancelledStatus {
 }
 
 export interface AsyncTasksManager extends EventEmitter {
-  queue: PQueue;
+  queue: any;
   setLogger(logger: Logger): void;
   setApp(app: Application): void;
   registerTaskType(taskType: TaskConstructor): void;
