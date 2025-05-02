@@ -26,7 +26,7 @@ export class BaseTaskManager extends EventEmitter implements AsyncTasksManager {
 
   private app: Application;
 
-  public queue: PQueue;
+  public queue: any;
 
   private queueOptions: {};
 
