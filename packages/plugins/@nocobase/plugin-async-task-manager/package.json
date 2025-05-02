@@ -12,7 +12,7 @@
     "@nocobase/server": "1.x",
     "@nocobase/test": "1.x"
   },
-  "dependencies": {
+  "devDependencies": {
     "p-queue": "^8.1.0"
   }
 }

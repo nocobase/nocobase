@@ -11,7 +11,6 @@ import { Logger } from '@nocobase/logger';
 import { ITask, TaskConstructor } from './task';
 import { Application } from '@nocobase/server';
 import { EventEmitter } from 'events';
-import PQueue from 'p-queue';
 
 export type TaskOptions = any;
 
