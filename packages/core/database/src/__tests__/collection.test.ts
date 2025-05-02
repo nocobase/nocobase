@@ -9,8 +9,10 @@
 
 import { Collection, Database, createMockDatabase } from '@nocobase/database';
 import { IdentifierError } from '../errors/identifier-error';
+import { isPg } from '@nocobase/test';
 
-const pgOnly = () => (process.env.DB_DIALECT == 'postgres' ? it : it.skip);
+const pgOnly = () => (isPg() ? it : it.skip);
+
 describe('collection', () => {
   let db: Database;
 
