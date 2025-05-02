@@ -13,8 +13,15 @@ import { ToolOptions } from '../manager/ai-manager';
 export const formFillter: ToolOptions = {
   title: '{{t("Form filler")}}',
   description: '{{t("Fill the form with the given content")}}',
+  execution: 'frontend',
   schema: z.object({
     form: z.string().describe('The UI Schema ID of the target form to be filled.'),
     data: z.record(z.any()).describe("Structured data matching the form's JSON Schema, to be assigned to form.values."),
   }),
+  invoke: async () => {
+    return {
+      status: 'success',
+      content: 'I have filled the form with the provided data.',
+    };
+  },
 };

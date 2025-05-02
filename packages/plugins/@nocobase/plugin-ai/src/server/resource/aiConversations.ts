@@ -12,6 +12,7 @@ import PluginAIServer from '../plugin';
 import { Model } from '@nocobase/database';
 import { concat } from '@langchain/core/utils/stream';
 import { LLMProvider } from '../../../server';
+import { parseResponseMessage } from '../utils';
 
 async function parseUISchema(ctx: Context, content: string) {
   const regex = /\{\{\$nUISchema\.([^}]+)\}\}/g;
@@ -58,7 +59,7 @@ async function formatMessages(ctx: Context, messages: any[]) {
       formattedMessages.push({
         role: 'tool',
         content,
-        tool_call_id: msg.toolCalls?.id,
+        tool_call_id: msg.metadata?.toolCall?.id,
       });
       continue;
     }
@@ -222,7 +223,7 @@ async function processChatStream(
   }
 
   if (gathered?.tool_calls?.length && aiEmployee.skillSettings?.autoCall) {
-    await callTool(ctx, gathered.tool_calls[0], sessionId, aiEmployee);
+    await callTool(ctx, gathered.tool_calls[0], sessionId, aiEmployee, true);
   }
 
   ctx.res.end();
@@ -273,14 +274,21 @@ async function callTool(
   },
   sessionId: string,
   aiEmployee: Model,
+  autoCall = false,
 ) {
   const plugin = ctx.app.pm.get('ai') as PluginAIServer;
   try {
     const tool = await plugin.aiManager.getTool(toolCall.name);
     if (!tool) {
       sendErrorResponse(ctx, 'Tool not found');
+      return;
     }
-    const result = await tool.invoke(plugin, toolCall.args);
+    if (tool.execution === 'frontend' && autoCall) {
+      ctx.res.write(`data: ${JSON.stringify({ type: 'tool', body: toolCall })}\n\n`);
+      ctx.res.end();
+      return;
+    }
+    const result = await tool.invoke(ctx, toolCall.args);
     if (result.status === 'error') {
       sendErrorResponse(ctx, result.content);
     }
@@ -303,11 +311,11 @@ async function callTool(
           type: 'text',
           content: result.content,
         },
-        toolCalls: toolCall,
         metadata: {
           model,
           provider: service.provider,
           autoCallTool: aiEmployee.skillSettings?.autoCall,
+          toolCall,
         },
       },
     });
@@ -399,6 +407,7 @@ export default {
     },
 
     async getMessages(ctx: Context, next: Next) {
+      const plugin = ctx.app.pm.get('ai') as PluginAIServer;
       const userId = ctx.auth?.user.id;
       if (!userId) {
         return ctx.throw(403);
@@ -444,19 +453,15 @@ export default {
 
       ctx.body = {
         rows: data.map((row: Model) => {
-          const content = {
-            ...row.content,
-            messageId: row.messageId,
-            metadata: row.metadata,
-          };
-          if (!row.metadata?.autoCallTool && row.toolCalls) {
-            content.tool_calls = row.toolCalls;
+          const providerOptions = plugin.aiManager.llmProviders.get(row.metadata?.provider);
+          if (!providerOptions) {
+            return parseResponseMessage(row);
           }
-          return {
-            key: row.messageId,
-            content,
-            role: row.role,
-          };
+          const Provider = providerOptions.provider;
+          const provider = new Provider({
+            app: ctx.app,
+          });
+          return provider.parseResponseMessage(row);
         }),
         hasMore,
         cursor: newCursor,
@@ -536,7 +541,7 @@ export default {
         const { provider, model, service } = await getLLMService(ctx, employee, formattedMessages);
         const { stream, signal } = await prepareChatStream(ctx, sessionId, provider);
         await processChatStream(ctx, stream, sessionId, {
-          aiEmployee,
+          aiEmployee: employee,
           signal,
           model,
           provider: service.provider,
@@ -651,8 +656,9 @@ export default {
       setupSSEHeaders(ctx);
 
       const { sessionId, messageId } = ctx.action.params.values || {};
-      if (!sessionId || !messageId) {
-        sendErrorResponse(ctx, 'sessionId and messageId are required');
+      if (!sessionId) {
+        sendErrorResponse(ctx, 'sessionId is required');
+        return next();
       }
       try {
         const conversation = await ctx.db.getRepository('aiConversations').findOne({
@@ -664,16 +670,31 @@ export default {
         });
         if (!conversation) {
           sendErrorResponse(ctx, 'conversation not found');
+          return next();
         }
         const employee = conversation.aiEmployee;
-        const message = await ctx.db.getRepository('aiConversations.messages', sessionId).findOne({
-          filter: {
-            messageId,
-          },
-        });
+        let message: Model;
+        if (messageId) {
+          message = await ctx.db.getRepository('aiConversations.messages', sessionId).findOne({
+            filter: {
+              messageId,
+            },
+          });
+        } else {
+          message = await ctx.db.getRepository('aiConversations.messages', sessionId).findOne({
+            sort: ['-messageId'],
+          });
+        }
+
+        if (!message) {
+          sendErrorResponse(ctx, 'message not found');
+          return next();
+        }
+
         const tools = message.toolCalls;
         if (!tools?.length) {
           sendErrorResponse(ctx, 'No tool calls found');
+          return next();
         }
         await callTool(ctx, tools[0], sessionId, employee);
       } catch (err) {

@@ -13,6 +13,7 @@ import { Registry } from '@nocobase/utils';
 import { ZodObject } from 'zod';
 import zodToJsonSchema from 'zod-to-json-schema';
 import PluginAIServer from '../plugin';
+import { Context } from '@nocobase/actions';
 
 export type LLMProviderOptions = {
   title: string;
@@ -27,10 +28,11 @@ export type LLMProviderOptions = {
 interface BaseToolProps {
   title: string;
   description: string;
+  execution?: 'frontend' | 'backend';
   name?: string;
   schema?: any;
-  invoke?: (
-    plugin: PluginAIServer,
+  invoke: (
+    ctx: Context,
     args: Record<string, any>,
   ) => Promise<{
     status: 'success' | 'error';
@@ -107,6 +109,7 @@ export class AIManager {
     } else {
       result.invoke = tool.invoke;
       result.schema = processSchema(tool.schema);
+      result.execution = tool.execution;
     }
 
     return result;

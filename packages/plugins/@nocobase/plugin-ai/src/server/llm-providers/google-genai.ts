@@ -10,6 +10,7 @@
 import { ChatGoogleGenerativeAI } from '@langchain/google-genai';
 import { LLMProvider } from './provider';
 import axios from 'axios';
+import { Model } from '@nocobase/database';
 
 export class GoogleGenAIProvider extends LLMProvider {
   declare chatModel: ChatGoogleGenerativeAI;
@@ -61,6 +62,40 @@ export class GoogleGenAIProvider extends LLMProvider {
     } catch (e) {
       return { code: 500, errMsg: e.message };
     }
+  }
+
+  parseResponseMessage(message: Model) {
+    const { content: rawContent, messageId, metadata, role, toolCalls } = message;
+    const autoCallTool = metadata?.autoCallTool;
+    const content = {
+      ...rawContent,
+      messageId,
+      metadata,
+    };
+
+    if (!autoCallTool && toolCalls) {
+      content.tool_calls = toolCalls;
+    }
+
+    if (Array.isArray(content.content) && autoCallTool) {
+      const messages = content.content.filter((msg) => msg.type !== 'functionCaller');
+      const hasText = messages.some((msg) => msg.type === 'text');
+
+      if (!hasText && toolCalls?.length) {
+        messages.unshift({
+          type: 'text',
+          text: 'I’m trying to use my skills to complete the task.',
+        });
+      }
+
+      content.content = messages;
+    }
+
+    return {
+      key: messageId,
+      content,
+      role,
+    };
   }
 }
 

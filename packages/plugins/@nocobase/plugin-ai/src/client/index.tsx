@@ -23,10 +23,6 @@ import { useAISelectionContext } from './ai-employees/selector/AISelectorProvide
 import { googleGenAIProviderOptions } from './llm-providers/google-genai';
 import { AIEmployeeTrigger } from './workflow/triggers/ai-employee';
 const { AIEmployeesProvider } = lazy(() => import('./ai-employees/AIEmployeesProvider'), 'AIEmployeesProvider');
-const { AIEmployeeChatProvider } = lazy(
-  () => import('./ai-employees/AIEmployeeChatProvider'),
-  'AIEmployeeChatProvider',
-);
 const { Employees } = lazy(() => import('./ai-employees/manager/Employees'), 'Employees');
 const { LLMServices } = lazy(() => import('./llm-services/LLMServices'), 'LLMServices');
 const { MessagesSettings } = lazy(() => import('./chat-settings/Messages'), 'MessagesSettings');
@@ -49,7 +45,6 @@ export class PluginAIClient extends Plugin {
     this.app.use(AIEmployeesProvider);
     this.app.addComponents({
       AIEmployeeButton,
-      AIEmployeeChatProvider,
       AIContextCollector,
       CardItem: withAISelectable(CardItem, {
         selectType: 'blocks',
@@ -101,21 +96,18 @@ export class PluginAIClient extends Plugin {
       Component: MessagesSettings,
     });
     this.aiManager.registerTool('formFiller', {
-      useAction() {
-        const { ctx } = useAISelectionContext();
-        return {
-          callAction: (params) => {
-            const { form: uid, data } = params;
-            if (!uid || !data) {
-              return;
-            }
-            const form = ctx[uid]?.form;
-            if (!form) {
-              return;
-            }
-            form.values = data;
-          },
-        };
+      invoke: (ctx, params) => {
+        const { form: uid, data } = params;
+        console.log(params);
+        if (!uid || !data) {
+          return;
+        }
+        const form = ctx[uid]?.form;
+        if (!form) {
+          return;
+        }
+        form.values = data;
+        console.log('====', form.values);
       },
     });
 

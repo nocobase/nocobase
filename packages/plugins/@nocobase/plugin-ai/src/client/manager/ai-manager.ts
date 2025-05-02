@@ -21,9 +21,7 @@ export type LLMProviderOptions = {
 };
 
 export type ToolOptions = {
-  useAction: () => {
-    callAction: (params: any) => void | Promise<void>;
-  };
+  invoke: (ctx: any, params: any) => void | Promise<void>;
 };
 
 export class AIManager {

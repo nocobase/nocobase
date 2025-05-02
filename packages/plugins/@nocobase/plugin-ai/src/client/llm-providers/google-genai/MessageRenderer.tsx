@@ -42,9 +42,7 @@ export const MessageRenderer: React.FC<{
       }}
     >
       {typeof content === 'string' && <Markdown markdown={content} />}
-      {msg.tool_calls?.length && !msg.metadata?.autoCallTool && (
-        <ToolCard tools={msg.tool_calls} messageId={msg.messageId} />
-      )}
+      {msg.tool_calls?.length && <ToolCard tools={msg.tool_calls} messageId={msg.messageId} />}
     </div>
   );
 };

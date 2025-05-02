@@ -11,6 +11,7 @@ import { ToolOptions } from '../manager/ai-manager';
 import { z } from 'zod';
 import PluginAIServer from '../plugin';
 import PluginWorkflowServer, { Processor, EXECUTION_STATUS } from '@nocobase/plugin-workflow';
+import { Context } from '@nocobase/actions';
 
 interface ParameterConfig {
   name: string;
@@ -81,8 +82,8 @@ const buildSchema = (config: ToolConfig): z.ZodObject<any> => {
   return schema.describe(config.description || '');
 };
 
-const invoke = async (plugin: PluginAIServer, workflow: Workflow, args: Record<string, any>) => {
-  const workflowPlugin = plugin.app.pm.get('workflow') as PluginWorkflowServer;
+const invoke = async (ctx: Context, workflow: Workflow, args: Record<string, any>) => {
+  const workflowPlugin = ctx.app.pm.get('workflow') as PluginWorkflowServer;
   const processor = (await workflowPlugin.trigger(workflow as any, {
     ...args,
   })) as Processor;
@@ -114,7 +115,7 @@ export const workflowCaller: ToolOptions = {
         title: workflow.title,
         description: workflow.description,
         schema: buildSchema(config),
-        invoke: async (plugin: PluginAIServer, args: Record<string, any>) => invoke(plugin, workflow, args),
+        invoke: async (ctx: Context, args: Record<string, any>) => invoke(ctx, workflow, args),
       };
     });
   },
@@ -133,7 +134,7 @@ export const workflowCaller: ToolOptions = {
       title: workflow.title,
       description: workflow.description,
       schema: buildSchema(config),
-      invoke: async (plugin: PluginAIServer, args: Record<string, any>) => invoke(plugin, workflow, args),
+      invoke: async (ctx: Context, args: Record<string, any>) => invoke(ctx, workflow, args),
     };
   },
 };

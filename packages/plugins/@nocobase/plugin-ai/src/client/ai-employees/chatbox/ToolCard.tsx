@@ -20,13 +20,14 @@ import { Schema } from '@formily/react';
 import PluginAIClient from '../..';
 import { useChatMessages } from './ChatMessagesProvider';
 import { useChatBoxContext } from './ChatBoxContext';
+import { useAISelectionContext } from '../selector/AISelectorProvider';
 
 const useDefaultAction = (messageId: string) => {
   const currentEmployee = useChatBoxContext('currentEmployee');
   const { currentConversation } = useChatConversations();
   const { callTool } = useChatMessages();
   return {
-    callAction: () => {
+    invoke: () => {
       callTool({
         sessionId: currentConversation,
         messageId,
@@ -42,16 +43,20 @@ const CallButton: React.FC<{
   args: any;
 }> = ({ name, messageId, args }) => {
   const t = useT();
+  const { ctx } = useAISelectionContext();
   const plugin = usePlugin('ai') as PluginAIClient;
   const tool = plugin.aiManager.tools.get(name);
-  const useAction = tool?.useAction || useDefaultAction;
-  const { callAction } = useAction(messageId);
+  const { invoke: invokeDefault } = useDefaultAction(messageId);
+  const invoke = async () => {
+    await tool?.invoke?.(ctx, args);
+    invokeDefault();
+  };
 
   return (
     <Button
       onClick={(e) => {
         e.stopPropagation();
-        callAction(args);
+        invoke();
       }}
       variant="link"
       color="primary"

@@ -12,9 +12,11 @@ import { AIEmployee, Message, ResendOptions, SendOptions } from '../types'; // å
 import React, { useState } from 'react';
 import { uid } from '@formily/shared';
 import { useT } from '../../locale';
-import { useAPIClient, useRequest } from '@nocobase/client';
+import { useAPIClient, usePlugin, useRequest } from '@nocobase/client';
 import { useChatConversations } from './ChatConversationsProvider';
 import { useLoadMoreObserver } from './useLoadMoreObserver';
+import { useAISelectionContext } from '../selector/AISelectorProvider';
+import PluginAIClient from '../..';
 
 interface ChatMessagesContextValue {
   messages: Message[];
@@ -41,6 +43,8 @@ export const useChatMessages = () => useContext(ChatMessagesContext);
 export const ChatMessagesProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const t = useT();
   const api = useAPIClient();
+  const { ctx } = useAISelectionContext();
+  const plugin = usePlugin('ai') as PluginAIClient;
   const [messages, setMessages] = useState<Message[]>([]);
   const [responseLoading, setResponseLoading] = useState(false);
   const { currentConversation } = useChatConversations();
@@ -101,11 +105,15 @@ export const ChatMessagesProvider: React.FC<{ children: React.ReactNode }> = ({ 
     });
   };
 
-  const processStreamResponse = async (stream: any) => {
+  const processStreamResponse = async (stream: any, sessionId: string, aiEmployee: AIEmployee) => {
     const reader = stream.getReader();
     const decoder = new TextDecoder();
     let result = '';
     let error = false;
+    let tool: {
+      name: string;
+      args: any;
+    };
 
     try {
       // eslint-disable-next-line no-constant-condition
@@ -123,22 +131,42 @@ export const ChatMessagesProvider: React.FC<{ children: React.ReactNode }> = ({ 
         for (const line of lines) {
           try {
             const data = JSON.parse(line.replace(/^data: /, ''));
-            if (data.body) content += data.body;
-            if (data.type === 'error') error = true;
+            if (data.body && typeof data.body === 'string') {
+              content += data.body;
+            }
+            if (data.type === 'error') {
+              error = true;
+            }
+            if (data.type === 'tool') {
+              tool = data.body;
+            }
           } catch (e) {
             console.error('Error parsing stream data:', e);
           }
         }
 
         result += content;
-        updateLastMessage((last) => ({
-          ...last,
-          content: {
-            ...last.content,
-            content: (last.content as any).content + content,
-          },
-          loading: false,
-        }));
+        if (result) {
+          updateLastMessage((last) => ({
+            ...last,
+            content: {
+              ...last.content,
+              content: (last.content as any).content + content,
+            },
+            loading: false,
+          }));
+        }
+        if (tool) {
+          console.log(ctx, tool);
+          const t = plugin.aiManager.tools.get(tool.name);
+          if (t) {
+            await t.invoke(ctx, tool.args);
+            callTool({
+              sessionId,
+              aiEmployee,
+            });
+          }
+        }
       }
     } catch (err) {
       console.error(err);
@@ -225,7 +253,7 @@ export const ChatMessagesProvider: React.FC<{ children: React.ReactNode }> = ({ 
         return;
       }
 
-      await processStreamResponse(sendRes.data);
+      await processStreamResponse(sendRes.data, sessionId, aiEmployee);
       messagesServiceRef.current.run(sessionId);
     } catch (err) {
       if (err.name === 'CanceledError') {
@@ -272,7 +300,7 @@ export const ChatMessagesProvider: React.FC<{ children: React.ReactNode }> = ({ 
         return;
       }
 
-      await processStreamResponse(sendRes.data);
+      await processStreamResponse(sendRes.data, sessionId, aiEmployee);
       messagesServiceRef.current.run(sessionId);
     } catch (err) {
       if (err.name === 'CanceledError') {
@@ -302,30 +330,33 @@ export const ChatMessagesProvider: React.FC<{ children: React.ReactNode }> = ({ 
     setResponseLoading(false);
   }, [currentConversation]);
 
-  const callTool = useCallback(async ({ sessionId, messageId, aiEmployee }) => {
-    addMessage({
-      key: uid(),
-      role: aiEmployee.username,
-      content: { type: 'text', content: '' },
-      loading: true,
-    });
-
-    try {
-      const sendRes = await api.request({
-        url: 'aiConversations:callTool',
-        method: 'POST',
-        headers: { Accept: 'text/event-stream' },
-        data: { sessionId, messageId },
-        responseType: 'stream',
-        adapter: 'fetch',
+  const callTool = useCallback(
+    async ({ sessionId, messageId, aiEmployee }: { sessionId: string; messageId?: string; aiEmployee: AIEmployee }) => {
+      addMessage({
+        key: uid(),
+        role: aiEmployee.username,
+        content: { type: 'text', content: '' },
+        loading: true,
       });
 
-      await processStreamResponse(sendRes.data);
-      messagesServiceRef.current.run(sessionId);
-    } catch (err) {
-      throw err;
-    }
-  }, []);
+      try {
+        const sendRes = await api.request({
+          url: 'aiConversations:callTool',
+          method: 'POST',
+          headers: { Accept: 'text/event-stream' },
+          data: { sessionId, messageId },
+          responseType: 'stream',
+          adapter: 'fetch',
+        });
+
+        await processStreamResponse(sendRes.data, sessionId, aiEmployee);
+        messagesServiceRef.current.run(sessionId);
+      } catch (err) {
+        throw err;
+      }
+    },
+    [],
+  );
 
   const loadMoreMessages = useCallback(async () => {
     const messagesService = messagesServiceRef.current;

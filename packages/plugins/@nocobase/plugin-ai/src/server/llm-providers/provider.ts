@@ -11,6 +11,8 @@ import { BaseChatModel } from '@langchain/core/language_models/chat_models';
 import axios from 'axios';
 import { parseMessages } from './handlers/parse-messages';
 import { Application } from '@nocobase/server';
+import { Model } from '@nocobase/database';
+import { parseResponseMessage } from '../utils';
 
 export abstract class LLMProvider {
   serviceOptions: Record<string, any>;
@@ -27,7 +29,7 @@ export abstract class LLMProvider {
 
   constructor(opts: {
     app: Application;
-    serviceOptions: any;
+    serviceOptions?: any;
     chatOptions?: {
       messages?: any[];
       tools?: any[];
@@ -96,5 +98,9 @@ export abstract class LLMProvider {
     } catch (e) {
       return { code: 500, errMsg: e.message };
     }
+  }
+
+  parseResponseMessage(message: Model) {
+    return parseResponseMessage(message);
   }
 }
