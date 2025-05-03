@@ -43,6 +43,10 @@ html body {
 .ant-dropdown-placement-bottomLeft {
   transform: translateX(450px) !important;
 }
+.ant-dropdown-menu-submenu-placement-rightTop {
+  transform: translateX(450px) !important;
+}
+
 `}
           </style>
         </Helmet>

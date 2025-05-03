@@ -28,7 +28,6 @@ export class GoogleGenAIProvider extends LLMProvider {
       ...this.modelOptions,
       model,
       json: responseFormat === 'json',
-      verbose: true,
     });
   }
 
@@ -84,7 +83,7 @@ export class GoogleGenAIProvider extends LLMProvider {
       if (!hasText && toolCalls?.length) {
         messages.unshift({
           type: 'text',
-          text: 'I’m trying to use my skills to complete the task.',
+          text: 'I’m trying to use my skills to complete the task...',
         });
       }
 

@@ -98,7 +98,6 @@ export class PluginAIClient extends Plugin {
     this.aiManager.registerTool('formFiller', {
       invoke: (ctx, params) => {
         const { form: uid, data } = params;
-        console.log(params);
         if (!uid || !data) {
           return;
         }
@@ -107,7 +106,6 @@ export class PluginAIClient extends Plugin {
           return;
         }
         form.values = data;
-        console.log('====', form.values);
       },
     });
 

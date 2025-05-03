@@ -23,5 +23,6 @@
   "Top P description": "An alternative to sampling with temperature, called nucleus sampling, where the model considers the results of the tokens with top_p probability mass. So 0.1 means only the tokens comprising the top 10% probability mass are considered.",
   "Get models list failed, you can enter a model name manually.": "Get models list failed, you can enter a model name manually.",
   "Default greeting message": "Hi, I am {{ nickname }}",
-  "Chat error warning": "Failed to send message. Please contact the administrator or try again later."
+  "Chat error warning": "Failed to send message. Please contact the administrator or try again later.",
+  "Data source settings description": "The selected collections will be included in the AI employee’s system definition. Metadata such as collection names and field details will be provided to the LLM at the start of each conversation, helping the AI understand and respond to natural language queries for data access or retrieval."
 }

@@ -36,6 +36,7 @@ export class OpenAIProvider extends LLMProvider {
       configuration: {
         baseURL: baseURL || this.baseURL,
       },
+      verbose: true,
     });
   }
 }

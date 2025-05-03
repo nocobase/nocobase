@@ -10,17 +10,25 @@
 import { Model } from '@nocobase/database';
 
 export function parseResponseMessage(row: Model) {
+  const { content: rawContent, messageId, metadata, role, toolCalls } = row;
+  const autoCallTool = metadata?.autoCallTool;
   const content = {
-    ...row.content,
-    messageId: row.messageId,
-    metadata: row.metadata,
+    ...rawContent,
+    messageId: messageId,
+    metadata: metadata,
   };
-  if (!row.metadata?.autoCallTool && row.toolCalls) {
-    content.tool_calls = row.toolCalls;
+  if (!autoCallTool && toolCalls) {
+    content.tool_calls = toolCalls;
+  }
+  if (autoCallTool) {
+    const hasText = content.content;
+    if (!hasText && toolCalls?.length) {
+      content.content = 'I’m trying to use my skills to complete the task...';
+    }
   }
   return {
-    key: row.messageId,
+    key: messageId,
     content,
-    role: row.role,
+    role,
   };
 }

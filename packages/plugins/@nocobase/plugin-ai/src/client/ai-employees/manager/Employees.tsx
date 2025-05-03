@@ -33,36 +33,29 @@ import {
   useCollectionRecordData,
   useDataBlockRequest,
   useDataBlockResource,
-  useRequest,
-  useToken,
 } from '@nocobase/client';
 import { useT } from '../../locale';
-const { Meta } = Card;
-import { css } from '@emotion/css';
-import { EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import { useForm, useField } from '@formily/react';
 import { createForm, Field } from '@formily/core';
 import { uid } from '@formily/shared';
 import { avatars } from '../avatars';
 import { ModelSettings } from './ModelSettings';
 import { ProfileSettings } from './ProfileSettings';
-import { ChatSettings } from './ChatSettings';
-import { AIEmployee } from '../types';
 import aiEmployees from '../../../collections/ai-employees';
 import { useAIEmployeesContext } from '../AIEmployeesProvider';
-import { SkillsSettings } from './SkillsSettings';
-
-const EmployeeContext = createContext(null);
+import { SkillSettings } from './SkillSettings';
+import { DataSourceSettings } from './DataSourceSettings';
 
 const AIEmployeeForm: React.FC<{
   edit?: boolean;
 }> = ({ edit }) => {
+  const t = useT();
   return (
     <Tabs
       items={[
         {
           key: 'profile',
-          label: 'Profile',
+          label: t('Profile'),
           children: <ProfileSettings edit={edit} />,
           forceRender: true,
         },
@@ -72,15 +65,20 @@ const AIEmployeeForm: React.FC<{
         //   children: <ChatSettings />,
         // },
         {
-          key: 'skills',
-          label: 'Skills',
-          children: <SkillsSettings />,
-        },
-        {
           key: 'modelSettings',
-          label: 'Model Settings',
+          label: t('Model Settings'),
           children: <ModelSettings />,
           forceRender: true,
+        },
+        {
+          key: 'skills',
+          label: t('Skills'),
+          children: <SkillSettings />,
+        },
+        {
+          key: 'dataSources',
+          label: t('Data sources'),
+          children: <DataSourceSettings />,
         },
       ]}
     />

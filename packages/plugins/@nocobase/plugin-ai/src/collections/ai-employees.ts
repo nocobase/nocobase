@@ -57,5 +57,9 @@ export default {
       name: 'modelSettings',
       type: 'jsonb',
     },
+    {
+      name: 'dataSourceSettings',
+      type: 'jsonb',
+    },
   ],
 };

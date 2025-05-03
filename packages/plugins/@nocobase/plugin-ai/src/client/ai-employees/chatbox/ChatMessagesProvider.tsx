@@ -156,17 +156,6 @@ export const ChatMessagesProvider: React.FC<{ children: React.ReactNode }> = ({ 
             loading: false,
           }));
         }
-        if (tool) {
-          console.log(ctx, tool);
-          const t = plugin.aiManager.tools.get(tool.name);
-          if (t) {
-            await t.invoke(ctx, tool.args);
-            callTool({
-              sessionId,
-              aiEmployee,
-            });
-          }
-        }
       }
     } catch (err) {
       console.error(err);
@@ -188,7 +177,17 @@ export const ChatMessagesProvider: React.FC<{ children: React.ReactNode }> = ({ 
       }));
     }
 
-    return { result, error };
+    await messagesServiceRef.current.runAsync(sessionId);
+    if (tool) {
+      const t = plugin.aiManager.tools.get(tool.name);
+      if (t) {
+        await t.invoke(ctx, tool.args);
+        await callTool({
+          sessionId,
+          aiEmployee,
+        });
+      }
+    }
   };
 
   const sendMessages = async ({
@@ -254,7 +253,6 @@ export const ChatMessagesProvider: React.FC<{ children: React.ReactNode }> = ({ 
       }
 
       await processStreamResponse(sendRes.data, sessionId, aiEmployee);
-      messagesServiceRef.current.run(sessionId);
     } catch (err) {
       if (err.name === 'CanceledError') {
         return;
@@ -301,7 +299,6 @@ export const ChatMessagesProvider: React.FC<{ children: React.ReactNode }> = ({ 
       }
 
       await processStreamResponse(sendRes.data, sessionId, aiEmployee);
-      messagesServiceRef.current.run(sessionId);
     } catch (err) {
       if (err.name === 'CanceledError') {
         return;
@@ -332,6 +329,7 @@ export const ChatMessagesProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
   const callTool = useCallback(
     async ({ sessionId, messageId, aiEmployee }: { sessionId: string; messageId?: string; aiEmployee: AIEmployee }) => {
+      setResponseLoading(true);
       addMessage({
         key: uid(),
         role: aiEmployee.username,
@@ -349,9 +347,14 @@ export const ChatMessagesProvider: React.FC<{ children: React.ReactNode }> = ({ 
           adapter: 'fetch',
         });
 
+        if (!sendRes?.data) {
+          setResponseLoading(false);
+          return;
+        }
+
         await processStreamResponse(sendRes.data, sessionId, aiEmployee);
-        messagesServiceRef.current.run(sessionId);
       } catch (err) {
+        setResponseLoading(false);
         throw err;
       }
     },

@@ -294,7 +294,7 @@ export const Skills: React.FC = () => {
   );
 };
 
-export const SkillsSettings: React.FC = () => {
+export const SkillSettings: React.FC = () => {
   const t = useT();
   return (
     <SchemaComponent
