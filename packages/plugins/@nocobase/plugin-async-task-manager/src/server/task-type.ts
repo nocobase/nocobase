@@ -150,6 +150,7 @@ export abstract class TaskType extends EventEmitter implements ITask {
       if (error instanceof CancelError) {
         this.statusChange({ type: 'cancelled' });
         this.logger?.info(`Task ${this.taskId} was cancelled during execution`);
+        return;
       } else {
         this.status = {
           type: 'failed',
@@ -158,9 +159,8 @@ export abstract class TaskType extends EventEmitter implements ITask {
         };
 
         this.logger?.error(`Task ${this.taskId} failed with error: ${error.message}`);
+        this.emit('statusChange', this.status);
       }
-
-      this.emit('statusChange', this.status);
     } finally {
       this.fulfilledAt = new Date();
       const duration = this.fulfilledAt.getTime() - this.startedAt.getTime();
