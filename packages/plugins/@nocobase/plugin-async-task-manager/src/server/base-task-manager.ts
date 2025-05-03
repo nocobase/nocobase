@@ -66,14 +66,17 @@ export class BaseTaskManager extends EventEmitter implements AsyncTasksManager {
   }
 
   private enqueueTask(task: ITask): void {
-    this.queue.add(async () => {
-      try {
-        this.logger.debug(`Starting execution of task ${task.taskId} from queue`);
-        await task.run();
-      } catch (error) {
-        this.logger.error(`Error executing task ${task.taskId} from queue: ${error.message}`);
+    const taskHandler = async () => {
+      if (task.status.type === 'pending') {
+        try {
+          this.logger.debug(`Starting execution of task ${task.taskId} from queue`);
+          await task.run();
+        } catch (error) {
+          this.logger.error(`Error executing task ${task.taskId} from queue: ${error.message}`);
+        }
       }
-    });
+    };
+    this.queue.add(taskHandler);
   }
 
   pauseQueue(): void {
@@ -95,8 +98,11 @@ export class BaseTaskManager extends EventEmitter implements AsyncTasksManager {
       this.logger.warn(`Attempted to cancel non-existent task ${taskId}`);
       return false;
     }
-
     this.logger.info(`Cancelling task ${taskId}, type: ${task.constructor.name}, tags: ${JSON.stringify(task.tags)}`);
+    if (task.status.type === 'pending') {
+      await task.statusChange({ type: 'cancelled' });
+      return true;
+    }
     return task.cancel();
   }
 
