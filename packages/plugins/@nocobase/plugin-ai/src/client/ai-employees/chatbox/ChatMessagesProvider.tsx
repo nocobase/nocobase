@@ -8,7 +8,7 @@
  */
 
 import { createContext, useCallback, useContext, useRef } from 'react';
-import { AIEmployee, Message, ResendOptions, SendOptions } from '../types'; // 假设有这些类型定义
+import { AIEmployee, Message, ResendOptions, SendOptions } from '../types';
 import React, { useState } from 'react';
 import { uid } from '@formily/shared';
 import { useT } from '../../locale';

@@ -9,7 +9,6 @@
 
 import { ToolOptions } from '../manager/ai-manager';
 import { z } from 'zod';
-import PluginAIServer from '../plugin';
 import PluginWorkflowServer, { Processor, EXECUTION_STATUS } from '@nocobase/plugin-workflow';
 import { Context } from '@nocobase/actions';
 

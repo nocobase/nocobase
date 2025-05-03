@@ -11,7 +11,7 @@ import actions, { Context, Next } from '@nocobase/actions';
 import PluginAIServer from '../plugin';
 import { Database, Model } from '@nocobase/database';
 import { concat } from '@langchain/core/utils/stream';
-import { LLMProvider } from '../../../server';
+import { LLMProvider } from '../llm-providers/provider';
 import { parseResponseMessage } from '../utils';
 
 async function parseUISchema(ctx: Context, content: string) {
