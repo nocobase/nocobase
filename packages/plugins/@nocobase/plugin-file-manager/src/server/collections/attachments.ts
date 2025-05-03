@@ -38,7 +38,7 @@ export default defineCollection({
     },
     {
       comment: '文件体积（字节）',
-      type: 'integer',
+      type: 'bigInt',
       name: 'size',
     },
     // TODO: 使用暂不明确，以后再考虑
