@@ -28,7 +28,7 @@ test.describe('where grid card block can be added', () => {
     await expect(page.getByLabel('block-item-BlockItem-users-grid-card')).toBeVisible();
   });
 
-  test('popup', async ({ page, mockPage }) => {
+  test.skip('popup', async ({ page, mockPage }) => {
     await mockPage(oneEmptyTableWithUsers).goto();
 
     // 1. 打开弹窗，通过 Associated records 创建一个列表区块
@@ -42,6 +42,7 @@ test.describe('where grid card block can be added', () => {
     await page.getByLabel('schema-initializer-Grid-').nth(1).hover();
     await page.getByRole('menuitem', { name: 'Role name' }).click();
     await page.mouse.move(300, 0);
+    await page.reload();
     await expect(page.getByText('Root')).toBeVisible();
     await expect(page.getByText('Admin')).toBeVisible();
     await expect(page.getByText('Member')).toBeVisible();

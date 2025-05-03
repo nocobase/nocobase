@@ -27,7 +27,7 @@ export const useIsLoggedIn = () => {
 
 export const useCurrentRoles = () => {
   const { allowAnonymous } = useACLRoleContext();
-  const { data } = useCurrentUserContext();
+  const { data } = useCurrentUserContext() || {};
   const compile = useCompile();
   const options = useMemo(() => {
     const roles = (data?.data?.roles || []).map(({ name, title }) => ({ name, title: compile(title) }));

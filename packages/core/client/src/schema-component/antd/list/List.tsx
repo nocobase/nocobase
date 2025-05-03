@@ -158,7 +158,7 @@ const InternalList = withSkeletonComponent(
             >
               <AntdList
                 {...props}
-                pagination={!meta || !field.value?.length ? false : paginationProps}
+                pagination={!meta || !field.value?.length || count <= field.value?.length ? false : paginationProps}
                 loading={service?.loading}
               >
                 {field.value?.length

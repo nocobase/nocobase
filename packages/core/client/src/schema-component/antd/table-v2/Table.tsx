@@ -67,6 +67,7 @@ import { useAssociationFieldContext } from '../association-field/hooks';
 import { TableSkeleton } from './TableSkeleton';
 import { extractIndex, isCollectionFieldComponent, isColumnComponent } from './utils';
 import { withTooltipComponent } from '../../../hoc/withTooltipComponent';
+import { NAMESPACE_UI_SCHEMA } from '../../../i18n/constant';
 
 type BodyRowComponentProps = {
   rowIndex?: number;
@@ -164,6 +165,7 @@ const useTableColumns = (
   props: { showDel?: any; isSubTable?: boolean; optimizeTextCellRender: boolean },
   paginationProps,
 ) => {
+  const { t } = useTranslation();
   const { token } = useToken();
   const field = useArrayField(props);
   const schema = useFieldSchema();
@@ -192,7 +194,8 @@ const useTableColumns = (
     return css`
       .nb-action-link {
         margin: -${token.paddingContentVerticalLG}px -${token.marginSM}px;
-        padding: ${token.paddingContentVerticalLG}px ${token.paddingSM + 4}px;
+        padding: ${token.paddingContentVerticalLG}px ${token.paddingContentVerticalLG}px ${token.paddingSM}px
+          ${token.paddingSM}px;
       }
     `;
   }, [token.paddingContentVerticalLG, token.marginSM, token.margin]);
@@ -213,11 +216,10 @@ const useTableColumns = (
         const dataIndex = collectionFields?.length > 0 ? collectionFields[0].name : columnSchema.name;
         const columnHidden = !!columnSchema['x-component-props']?.['columnHidden'];
         const { uiSchema, defaultValue, interface: _interface } = collection?.getField(dataIndex) || {};
-
+        columnSchema.title = t(columnSchema?.title, { ns: NAMESPACE_UI_SCHEMA });
         if (uiSchema) {
           uiSchema.default = defaultValue;
         }
-
         return {
           title: (
             <RefreshComponentProvider refresh={refresh}>

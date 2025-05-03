@@ -9,7 +9,7 @@
 
 import { HighlightOutlined } from '@ant-design/icons';
 import { Button, Tooltip } from 'antd';
-import React from 'react';
+import React, { FC } from 'react';
 import { useHotkeys } from 'react-hotkeys-hook';
 import { useTranslation } from 'react-i18next';
 import { useDesignable } from '..';
@@ -24,7 +24,7 @@ const unDesignableStyle = {
   backgroundColor: 'transparent',
 };
 
-export const DesignableSwitch = () => {
+export const DesignableSwitch: FC<{ style?: React.CSSProperties }> = (props) => {
   const { designable, setDesignable } = useDesignable();
   const { t } = useTranslation();
   const { token } = useToken();
@@ -46,7 +46,7 @@ export const DesignableSwitch = () => {
         icon={<HighlightOutlined style={{ color: token.colorTextHeaderMenu }} />}
         title={t('UI Editor')}
         // subtitle={'Ctrl+Shift+U'}
-        style={style}
+        style={{ ...style, ...props.style }}
         onClick={() => {
           setDesignable(!designable);
         }}

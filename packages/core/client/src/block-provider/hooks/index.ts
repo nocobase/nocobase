@@ -52,6 +52,7 @@ import { useBlockRequestContext, useFilterByTk, useParamsFromRecord } from '../B
 import { useOperators } from '../CollectOperators';
 import { useDetailsBlockContext } from '../DetailsBlockProvider';
 import { TableFieldResource } from '../TableFieldProvider';
+import { getVariableValue } from '../../common/getVariableValue';
 
 export * from './useBlockHeightProps';
 export * from './useDataBlockParentRecord';
@@ -97,6 +98,35 @@ const filterValue = (value) => {
   return obj;
 };
 
+function getFilteredFormValues(form) {
+  const values = _.cloneDeep(form.values);
+  const allFields = [];
+  form.query('*').forEach((field) => {
+    if (field) {
+      allFields.push(field);
+    }
+  });
+  const readonlyPaths = _.uniq(
+    allFields
+      .filter((field) => field?.componentProps?.readOnlySubmit)
+      .map((field) => {
+        const segments = field.path?.segments || [];
+        if (segments.length <= 1) {
+          return segments.join('.');
+        }
+        return segments.slice(0, -1).join('.');
+      }),
+  );
+  readonlyPaths.forEach((path, index) => {
+    if (index !== 0 || path.includes('.')) {
+      // 清空值，但跳过第一层
+      _.unset(values, path);
+    }
+  });
+
+  return values;
+}
+
 export function getFormValues({
   filterByTk,
   field,
@@ -124,7 +154,7 @@ export function getFormValues({
     }
   }
 
-  return form.values;
+  return getFilteredFormValues(form);
 }
 
 export function useCollectValuesToSubmit() {
@@ -203,12 +233,6 @@ export function useCollectValuesToSubmit() {
   ]);
 }
 
-function interpolateVariables(str: string, scope: Record<string, any>): string {
-  return str.replace(/\{\{\s*([a-zA-Z0-9_$-.]+?)\s*\}\}/g, (_, key) => {
-    return scope[key] !== undefined ? String(scope[key]) : '';
-  });
-}
-
 export const useCreateActionProps = () => {
   const filterByTk = useFilterByTk();
   const record = useCollectionRecord();
@@ -258,11 +282,10 @@ export const useCreateActionProps = () => {
         });
         let redirectTo = rawRedirectTo;
         if (rawRedirectTo) {
-          const { exp, scope: expScope } = await replaceVariables(rawRedirectTo, {
+          redirectTo = await getVariableValue(rawRedirectTo, {
             variables,
             localVariables: [...localVariables, { name: '$record', ctx: new Proxy(data?.data?.data, {}) }],
           });
-          redirectTo = interpolateVariables(exp, expScope);
         }
 
         if (actionAfterSuccess === 'previous' || (!actionAfterSuccess && redirecting !== true)) {
@@ -546,9 +569,11 @@ export const useFilterBlockActionProps = () => {
   const { doFilter } = useDoFilter();
   const actionField = useField();
   actionField.data = actionField.data || {};
+  const form = useForm();
 
   return {
     async onClick() {
+      await form.submit();
       actionField.data.loading = true;
       await doFilter();
       actionField.data.loading = false;
@@ -655,11 +680,11 @@ export const useCustomizeUpdateActionProps = () => {
 
       let redirectTo = rawRedirectTo;
       if (rawRedirectTo) {
-        const { exp, scope: expScope } = await replaceVariables(rawRedirectTo, {
+        // eslint-disable-next-line react-hooks/rules-of-hooks
+        redirectTo = await getVariableValue(rawRedirectTo, {
           variables,
-          localVariables: [...localVariables, { name: '$record', ctx: new Proxy(result?.data?.data?.[0], {}) }],
+          localVariables: [...localVariables, { name: '$record', ctx: new Proxy(result?.data?.data, {}) }],
         });
-        redirectTo = interpolateVariables(exp, expScope);
       }
 
       if (actionAfterSuccess === 'previous' || (!actionAfterSuccess && redirecting !== true)) {
@@ -1019,11 +1044,11 @@ export const useUpdateActionProps = () => {
         }
         let redirectTo = rawRedirectTo;
         if (rawRedirectTo) {
-          const { exp, scope: expScope } = await replaceVariables(rawRedirectTo, {
+          // eslint-disable-next-line react-hooks/rules-of-hooks
+          redirectTo = await getVariableValue(rawRedirectTo, {
             variables,
-            localVariables: [...localVariables, { name: '$record', ctx: new Proxy(result?.data?.data?.[0], {}) }],
+            localVariables: [...localVariables, { name: '$record', ctx: new Proxy(result?.data?.data, {}) }],
           });
-          redirectTo = interpolateVariables(exp, expScope);
         }
 
         if (actionAfterSuccess === 'previous' || (!actionAfterSuccess && redirecting !== true)) {
@@ -1482,6 +1507,7 @@ export const useAssociationFilterBlockProps = () => {
     run,
     valueKey,
     labelKey,
+    dataScopeFilter: filter,
   };
 };
 async function doReset({
@@ -1580,7 +1606,7 @@ export const getAppends = ({
           const fieldNames = getTargetField(item);
 
           // 只应该收集关系字段，只有大于 1 的时候才是关系字段
-          if (fieldNames.length > 1) {
+          if (fieldNames.length > 1 && !item.op) {
             appends.add(fieldNames.join('.'));
           }
         });

@@ -10,6 +10,7 @@
 import { Form } from '@formily/core';
 import { Schema } from '@formily/json-schema';
 import { useTranslation } from 'react-i18next';
+import { useBlockContext } from '../../../block-provider';
 import { useFormBlockContext } from '../../../block-provider/FormBlockProvider';
 import { CollectionFieldOptions_deprecated } from '../../../collection-manager';
 import { useDataBlockRequestData, useDataSource } from '../../../data-source';
@@ -62,14 +63,6 @@ export const useFormVariable = ({ collectionName, collectionField, schema, noDis
   return result;
 };
 
-const useCurrentFormData = () => {
-  const data = useDataBlockRequestData();
-  if (data?.data?.length > 1) {
-    return;
-  }
-  return data?.data?.[0] || data?.data;
-};
-
 /**
  * 变量：`当前表单` 相关的 hook
  * @param param0
@@ -78,14 +71,17 @@ const useCurrentFormData = () => {
 export const useCurrentFormContext = ({ form: _form }: Pick<Props, 'form'> = {}) => {
   const { form } = useFormBlockContext();
   const { isVariableParsedInOtherContext } = useFlag();
-
+  const { name } = useBlockContext?.() || {};
   const formInstance = _form || form;
-
   return {
     /** 变量值 */
     currentFormCtx: formInstance?.values,
     /** 用来判断是否可以显示`当前表单`变量 */
-    shouldDisplayCurrentForm: formInstance && !formInstance.readPretty && !isVariableParsedInOtherContext,
+    shouldDisplayCurrentForm:
+      ['form', 'filter-form'].includes(name) &&
+      formInstance &&
+      !formInstance.readPretty &&
+      !isVariableParsedInOtherContext,
   };
 };
 

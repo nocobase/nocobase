@@ -7,7 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { ISchema, SchemaSettingsModalItem, useResource, useSchemaSettings } from '@nocobase/client';
+import {
+  ISchema,
+  SchemaSettingsModalItem,
+  useResource,
+  useSchemaSettings,
+  useSchemaTemplateManager,
+} from '@nocobase/client';
 import React from 'react';
 import { useT } from '../locale';
 import { useFieldSchema, useField, useForm } from '@formily/react';
@@ -48,14 +54,15 @@ export const SaveAsTemplateSetting = () => {
   const { templates } = useBlockTemplateMenus();
   const location = useLocation();
   const { template: deprecatedTemplate } = useSchemaSettings();
+  const schemaTemplateManager = useSchemaTemplateManager();
 
   return (
     <SchemaSettingsModalItem
-      title={t('Save as template')}
+      title={t('Save as inherited template')}
       schema={
         {
           type: 'object',
-          title: t('Save as template'),
+          title: t('Save as inherited template'),
           properties: {
             title: {
               type: 'string',
@@ -67,7 +74,7 @@ export const SaveAsTemplateSetting = () => {
             key: {
               type: 'string',
               'x-decorator': 'FormItem',
-              title: t('Key'),
+              title: t('Name'),
               'x-component': 'Input',
               'x-validator': 'uid',
               required: true,
@@ -90,7 +97,7 @@ export const SaveAsTemplateSetting = () => {
         const schemaUid = uid();
         const isMobile = type === 'Mobile';
         const templateSchema = getTemplateSchemaFromPage(fieldSchema.toJSON());
-        if (deprecatedTemplate || containsReferenceTemplate(templateSchema)) {
+        if (deprecatedTemplate || (await containsReferenceTemplate(templateSchema, schemaTemplateManager))) {
           message.error(t('This block is using some reference templates, please convert to duplicate template first.'));
           return;
         }
@@ -291,6 +298,10 @@ function getTemplateSchemaFromPage(schema: ISchema) {
         }
         _.set(t, `properties.['${key}']`, {});
         traverseSchema(s.properties[key], t.properties[key]);
+        // array's key will be set to number when render, so we need to set the name to the key
+        if (s.type === 'array' && t['properties']?.[key]?.name) {
+          _.set(t, `properties.['${key}'].name`, key);
+        }
       }
     }
   };
@@ -298,13 +309,19 @@ function getTemplateSchemaFromPage(schema: ISchema) {
   return templateSchema;
 }
 
-function containsReferenceTemplate(schema: ISchema) {
+async function containsReferenceTemplate(
+  schema: ISchema,
+  schemaTemplateManager: ReturnType<typeof useSchemaTemplateManager>,
+) {
   if (schema['x-component'] === 'BlockTemplate') {
-    return true;
+    const templateId = schema['x-component-props']?.templateId;
+    if (templateId && schemaTemplateManager.getTemplateById(templateId)) {
+      return true;
+    }
   }
   if (schema.properties) {
     for (const key in schema.properties) {
-      if (containsReferenceTemplate(schema.properties[key])) {
+      if (await containsReferenceTemplate(schema.properties[key], schemaTemplateManager)) {
         return true;
       }
     }

@@ -28,6 +28,7 @@ export const useStyles = genStyleHook('nb-mobile-tab-bar', (token) => {
         alignItems: 'center',
         gap: '1em',
         height: '100%',
+        minHeight: 49,
       },
 
       '.mobile-tab-bar-list': {

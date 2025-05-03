@@ -16,6 +16,11 @@ import {
   useCompile,
   useDataSourceKey,
   useNavigateNoUpdate,
+  useBlockRequestContext,
+  useContextVariable,
+  useLocalVariables,
+  useVariables,
+  getVariableValue,
 } from '@nocobase/client';
 import { isURL } from '@nocobase/utils/client';
 import { App } from 'antd';
@@ -25,20 +30,32 @@ export const useCustomizeRequestActionProps = () => {
   const apiClient = useAPIClient();
   const navigate = useNavigateNoUpdate();
   const actionSchema = useFieldSchema();
+  const { field } = useBlockRequestContext();
   const compile = useCompile();
   const form = useForm();
   const { name: blockType } = useBlockContext() || {};
-  // const { getPrimaryKey } = useCollection_deprecated();
   const recordData = useCollectionRecordData();
   const fieldSchema = useFieldSchema();
   const actionField = useField();
   const { setVisible } = useActionContext();
   const { modal, message } = App.useApp();
   const dataSourceKey = useDataSourceKey();
+  const { ctx } = useContextVariable();
+  const localVariables = useLocalVariables();
+  const variables = useVariables();
+
   return {
     async onClick(e?, callBack?) {
+      const selectedRecord = field?.data?.selectedRowData ? field?.data?.selectedRowData : ctx;
       const { skipValidator, onSuccess } = actionSchema?.['x-action-settings'] ?? {};
-      const { manualClose, redirecting, redirectTo, successMessage, actionAfterSuccess } = onSuccess || {};
+      const {
+        manualClose,
+        redirecting,
+        redirectTo,
+        successMessage: rawSuccessMessage,
+        actionAfterSuccess,
+      } = onSuccess || {};
+      let successMessage = rawSuccessMessage;
       const xAction = actionSchema?.['x-action'];
       if (skipValidator !== true && xAction === 'customize:form:request') {
         await form.submit();
@@ -58,14 +75,20 @@ export const useCustomizeRequestActionProps = () => {
           method: 'POST',
           data: {
             currentRecord: {
-              // id: record[getPrimaryKey()],
-              // appends: result.params[0]?.appends,
               dataSourceKey,
               data: currentRecordData,
             },
             $nForm: blockType === 'form' ? form.values : undefined,
+            $nSelectedRecord: selectedRecord,
           },
           responseType: fieldSchema['x-response-type'] === 'stream' ? 'blob' : 'json',
+        });
+        successMessage = await getVariableValue(successMessage, {
+          variables,
+          localVariables: [
+            ...localVariables,
+            { name: '$nResponse', ctx: new Proxy({ ...res?.data?.data, ...res?.data }, {}) },
+          ],
         });
         if (res.headers['content-disposition']) {
           const contentDisposition = res.headers['content-disposition'];

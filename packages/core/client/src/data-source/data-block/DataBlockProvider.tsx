@@ -23,6 +23,7 @@ import {
 import { CollectionRecord } from '../collection-record';
 import { BlockRequestProvider } from './DataBlockRequestProvider';
 import { DataBlockResourceProvider } from './DataBlockResourceProvider';
+import { BlockLinkageRuleProvider } from '../../modules/blocks/BlockLinkageRuleProvider';
 
 export interface AllDataBlockProps {
   collection: string | CollectionOptions;
@@ -189,13 +190,15 @@ export const DataBlockProvider: FC<Partial<AllDataBlockProps>> = withDynamicSche
         <CollectionManagerProvider dataSource={dataSource}>
           <AssociationOrCollectionProvider collection={collection} association={association}>
             <ACLCollectionProvider>
-              <DataBlockResourceProvider>
-                <BlockRequestProvider>
-                  <DataBlockCollector params={props.params}>
-                    <RerenderDataBlockProvider>{children}</RerenderDataBlockProvider>
-                  </DataBlockCollector>
-                </BlockRequestProvider>
-              </DataBlockResourceProvider>
+              <BlockLinkageRuleProvider>
+                <DataBlockResourceProvider>
+                  <BlockRequestProvider>
+                    <DataBlockCollector params={props.params}>
+                      <RerenderDataBlockProvider>{children}</RerenderDataBlockProvider>
+                    </DataBlockCollector>
+                  </BlockRequestProvider>
+                </DataBlockResourceProvider>
+              </BlockLinkageRuleProvider>
             </ACLCollectionProvider>
           </AssociationOrCollectionProvider>
         </CollectionManagerProvider>

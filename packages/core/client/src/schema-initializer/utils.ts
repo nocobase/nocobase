@@ -36,7 +36,6 @@ import { isAssocField } from '../filter-provider/utils';
 import { useActionContext, useCompile, useDesignable } from '../schema-component';
 import { useSchemaTemplateManager } from '../schema-templates';
 import { useBlockTemplateContext } from '../schema-templates/BlockTemplateProvider';
-import { DeprecatedTemplateTitleElement } from './components/DeprecatedTemplateTitle';
 
 export const itemsMerge = (items1) => {
   return items1;
@@ -471,7 +470,6 @@ export const useFilterFormItemInitializerFields = (options?: any) => {
         'x-collection-field': `${name}.${field.name}`,
         'x-component-props': {
           utc: false,
-          underFilter: true,
         },
       };
       if (isAssocField(field)) {
@@ -486,7 +484,7 @@ export const useFilterFormItemInitializerFields = (options?: any) => {
           'x-decorator': 'FormItem',
           'x-use-decorator-props': 'useFormItemProps',
           'x-collection-field': `${name}.${field.name}`,
-          'x-component-props': { ...field.uiSchema?.['x-component-props'], utc: false, underFilter: true },
+          'x-component-props': { ...field.uiSchema?.['x-component-props'], utc: false },
         };
       }
       const resultItem = {
@@ -581,7 +579,7 @@ const associationFieldToMenu = (
       interface: field.interface,
     },
     'x-component': 'CollectionField',
-    'x-component-props': { utc: false, underFilter: true },
+    'x-component-props': { utc: false },
     'x-read-pretty': false,
     'x-decorator': 'FormItem',
     'x-collection-field': `${collectionName}.${schemaName}`,
@@ -601,9 +599,9 @@ const associationFieldToMenu = (
 export const useFilterAssociatedFormItemInitializerFields = () => {
   const { name, fields } = useCollection_deprecated();
   const { getCollectionFields } = useCollectionManager_deprecated();
-  const interfaces = ['o2o', 'oho', 'obo', 'm2o', 'm2m'];
+  const excludedInterfaces = ['attachmentURL'];
   return fields
-    ?.filter((field) => field.target && field.uiSchema && interfaces.includes(field.interface))
+    ?.filter((field) => field.target && field.uiSchema && !excludedInterfaces.includes(field.interface))
     .map((field) => associationFieldToMenu(field, field.name, name, getCollectionFields, []))
     .filter(Boolean);
 };
@@ -698,7 +696,7 @@ export const useFilterInheritsFormItemInitializerFields = (options?) => {
             'x-component': 'CollectionField',
             'x-decorator': 'FormItem',
             'x-collection-field': `${name}.${field.name}`,
-            'x-component-props': { utc: false, underFilter: true },
+            'x-component-props': { utc: false },
             'x-read-pretty': field?.uiSchema?.['x-read-pretty'],
           };
           return {
@@ -729,7 +727,7 @@ export const useCustomFormItemInitializerFields = (options?: any) => {
   const remove = useRemoveGridFormItem();
   return currentFields
     ?.filter((field) => {
-      return field?.interface && field.interface !== 'snapshot' && field.type !== 'sequence';
+      return !field.inherit && field?.interface && field.interface !== 'snapshot' && field.type !== 'sequence';
     })
     ?.map((field) => {
       const interfaceConfig = getInterface(field.interface);
@@ -769,7 +767,7 @@ export const findSchema = (schema: Schema, key: string, action: string, name?: s
     if (s[key] === action && (!name || s.name === name)) {
       return s;
     }
-    if (s['x-component'] !== 'Action.Container' && !s['x-component'].includes('AssociationField')) {
+    if (s['x-component'] && s['x-component'] !== 'Action.Container' && !s['x-component'].includes('AssociationField')) {
       const c = findSchema(s, key, action, name);
       if (c) {
         return c;
@@ -839,65 +837,70 @@ export const useRecordCollectionDataSourceItems = (
     .filter((template) => {
       return ['FormItem', 'ReadPrettyFormItem'].includes(componentName) || template.resourceName === resourceName;
     });
-  const extralCollectionMenuItems = Array.from(initializerMenusGenerators.values())
+  const inheritedTemplatesMenuItems = Array.from(initializerMenusGenerators.values())
     .map((generator) => generator({ collection, componentName }))
     .filter(Boolean)
     .flat();
-  if ((!templates.length && !extralCollectionMenuItems.length) || isInTemplateSettingPage()) {
+  if ((!templates.length && !inheritedTemplatesMenuItems.length) || isInTemplateSettingPage()) {
     return [];
   }
   const index = 0;
-  const deprecatedTemplatesMenuItems = [];
+  const allTemplatesMenuItems: SchemaInitializerItemType[] = [
+    {
+      type: 'divider',
+      name: 'divider',
+    },
+  ];
   if (templates.length) {
-    deprecatedTemplatesMenuItems.push(
+    allTemplatesMenuItems.push(
       {
-        type: 'divider',
+        key: `${collectionName || componentName}_table_subMenu_${index}_copy`,
+        type: 'subMenu',
+        name: 'copy',
+        title: t('Duplicate template'),
+        children: templates.map((template) => {
+          const templateName = ['FormItem', 'ReadPrettyFormItem'].includes(template?.componentName)
+            ? `${template?.name} ${t('(Fields only)')}`
+            : template?.name;
+          return {
+            type: 'item',
+            mode: 'copy',
+            name: collection.name,
+            template,
+            item,
+            title: templateName || t('Untitled'),
+          };
+        }),
       },
       {
-        type: 'itemGroup',
-        title: DeprecatedTemplateTitleElement,
-        children: [
-          {
-            key: `${collectionName || componentName}_table_subMenu_${index}_copy`,
-            type: 'subMenu',
-            name: 'copy',
-            title: t('Duplicate template'),
-            children: templates.map((template) => {
-              const templateName = ['FormItem', 'ReadPrettyFormItem'].includes(template?.componentName)
-                ? `${template?.name} ${t('(Fields only)')}`
-                : template?.name;
-              return {
-                type: 'item',
-                mode: 'copy',
-                name: collection.name,
-                template,
-                item,
-                title: templateName || t('Untitled'),
-              };
-            }),
-          },
-          {
-            key: `${collectionName || componentName}_table_subMenu_${index}_ref`,
-            type: 'subMenu',
-            name: 'ref',
-            title: t('Reference template'),
-            children: templates.map((template) => {
-              const templateName = ['FormItem', 'ReadPrettyFormItem'].includes(template?.componentName)
-                ? `${template?.name} ${t('(Fields only)')}`
-                : template?.name;
-              return {
-                type: 'item',
-                mode: 'reference',
-                name: collection.name,
-                template,
-                item,
-                title: templateName || t('Untitled'),
-              };
-            }),
-          },
-        ],
+        key: `${collectionName || componentName}_table_subMenu_${index}_ref`,
+        type: 'subMenu',
+        name: 'ref',
+        title: t('Reference template'),
+        children: templates.map((template) => {
+          const templateName = ['FormItem', 'ReadPrettyFormItem'].includes(template?.componentName)
+            ? `${template?.name} ${t('(Fields only)')}`
+            : template?.name;
+          return {
+            type: 'item',
+            mode: 'reference',
+            name: collection.name,
+            template,
+            item,
+            title: templateName || t('Untitled'),
+          };
+        }),
       },
     );
+  }
+  if (inheritedTemplatesMenuItems.length) {
+    allTemplatesMenuItems.push({
+      type: 'subMenu',
+      name: 'inherited_templates',
+      key: `associationFiled_${componentName}_table_subMenu_${index}_inherited`,
+      title: t('Inherited template'),
+      children: inheritedTemplatesMenuItems,
+    });
   }
   return [
     {
@@ -907,8 +910,7 @@ export const useRecordCollectionDataSourceItems = (
       title: t('Blank block'),
       item,
     },
-    ...extralCollectionMenuItems,
-    ...deprecatedTemplatesMenuItems,
+    ...allTemplatesMenuItems,
   ];
 };
 
@@ -1534,13 +1536,13 @@ const getChildren = ({
 
         return componentName && template.componentName === componentName;
       });
-      const extralCollectionMenuItems = Array.from(initializerMenusGenerators.values())
+      const inheritedTemplatesMenuItems = Array.from(initializerMenusGenerators.values())
         .map((generator) => {
           return generator({ item, index, componentName, association });
         })
         .filter(Boolean)
         .flat();
-      if ((!templates.length && !extralCollectionMenuItems.length) || isInTemplateSettingPage()) {
+      if ((!templates.length && !inheritedTemplatesMenuItems.length) || isInTemplateSettingPage()) {
         return {
           type: 'item',
           name: item.name,
@@ -1548,65 +1550,71 @@ const getChildren = ({
           dataSource,
         };
       }
-      const deprecatedTemplatesMenuItems = [];
+      const allTemplatesMenuItems: SchemaInitializerItemType[] = [
+        {
+          type: 'divider',
+          name: 'divider',
+        },
+      ];
       if (templates.length) {
-        deprecatedTemplatesMenuItems.push(
+        allTemplatesMenuItems.push(
           {
-            type: 'divider',
+            key: `${componentName}_table_subMenu_${index}_copy`,
+            type: 'subMenu',
+            name: 'copy',
+            dataSource,
+            title: t('Duplicate template'),
+            children: templates.map((template) => {
+              const templateName = [
+                componentNamePrefix + 'FormItem',
+                componentNamePrefix + 'ReadPrettyFormItem',
+              ].includes(template?.componentName)
+                ? `${template?.name} ${t('(Fields only)')}`
+                : template?.name;
+              return {
+                type: 'item',
+                mode: 'copy',
+                name: item.name,
+                template,
+                dataSource,
+                title: templateName || t('Untitled'),
+              };
+            }),
           },
           {
-            type: 'itemGroup',
-            title: DeprecatedTemplateTitleElement,
-            children: [
-              {
-                key: `${componentName}_table_subMenu_${index}_copy`,
-                type: 'subMenu',
-                name: 'copy',
+            key: `${componentName}_table_subMenu_${index}_ref`,
+            type: 'subMenu',
+            name: 'ref',
+            dataSource,
+            title: t('Reference template'),
+            children: templates.map((template) => {
+              const templateName = [
+                componentNamePrefix + 'FormItem',
+                componentNamePrefix + 'ReadPrettyFormItem',
+              ].includes(template?.componentName)
+                ? `${template?.name} ${t('(Fields only)')}`
+                : template?.name;
+              return {
+                type: 'item',
+                mode: 'reference',
+                name: item.name,
+                template,
                 dataSource,
-                title: t('Duplicate template'),
-                children: templates.map((template) => {
-                  const templateName = [
-                    componentNamePrefix + 'FormItem',
-                    componentNamePrefix + 'ReadPrettyFormItem',
-                  ].includes(template?.componentName)
-                    ? `${template?.name} ${t('(Fields only)')}`
-                    : template?.name;
-                  return {
-                    type: 'item',
-                    mode: 'copy',
-                    name: item.name,
-                    template,
-                    dataSource,
-                    title: templateName || t('Untitled'),
-                  };
-                }),
-              },
-              {
-                key: `${componentName}_table_subMenu_${index}_ref`,
-                type: 'subMenu',
-                name: 'ref',
-                dataSource,
-                title: t('Reference template'),
-                children: templates.map((template) => {
-                  const templateName = [
-                    componentNamePrefix + 'FormItem',
-                    componentNamePrefix + 'ReadPrettyFormItem',
-                  ].includes(template?.componentName)
-                    ? `${template?.name} ${t('(Fields only)')}`
-                    : template?.name;
-                  return {
-                    type: 'item',
-                    mode: 'reference',
-                    name: item.name,
-                    template,
-                    dataSource,
-                    title: templateName || t('Untitled'),
-                  };
-                }),
-              },
-            ],
+                title: templateName || t('Untitled'),
+              };
+            }),
           },
         );
+      }
+      if (inheritedTemplatesMenuItems.length) {
+        allTemplatesMenuItems.push({
+          type: 'subMenu',
+          name: 'inherited_templates',
+          key: `associationFiled_${componentName}_table_subMenu_${index}_inherited`,
+          dataSource,
+          title: t('Inherited template'),
+          children: inheritedTemplatesMenuItems,
+        });
       }
       return {
         key: `${componentName}_table_subMenu_${index}`,
@@ -1621,8 +1629,7 @@ const getChildren = ({
             dataSource,
             title: t('Blank block'),
           },
-          ...extralCollectionMenuItems,
-          ...deprecatedTemplatesMenuItems,
+          ...allTemplatesMenuItems,
         ],
       };
     });
@@ -1805,11 +1812,11 @@ function useAssociationFields({
           return template.componentName === componentName;
         });
         const keyPrefix = `associationFiled_table_subMenu`;
-        const extralCollectionMenuItems = Array.from(initializerMenusGenerators.values())
+        const inheritedTemplatesMenuItems = Array.from(initializerMenusGenerators.values())
           .map((generator) => generator({ collection, index, field, componentName, keyPrefix, name }))
           .filter(Boolean)
           .flat();
-        if ((!templates.length && !extralCollectionMenuItems.length) || isInTemplateSettingPage()) {
+        if ((!templates.length && !inheritedTemplatesMenuItems.length) || isInTemplateSettingPage()) {
           return {
             type: 'item',
             name: `${field.collectionName}.${field.name}`,
@@ -1819,70 +1826,77 @@ function useAssociationFields({
             associationField: field,
           };
         }
-        const deprecatedTemplatesMenuItems = [];
+        const allTemplatesMenuItems: SchemaInitializerItemType[] = [
+          {
+            type: 'divider',
+            name: 'divider',
+          },
+        ];
         if (templates.length) {
-          deprecatedTemplatesMenuItems.push(
+          allTemplatesMenuItems.push(
             {
-              type: 'divider',
+              key: `associationFiled_${componentName}_table_subMenu_${index}_copy`,
+              type: 'subMenu',
+              name: 'copy',
+              dataSource,
+              title: t('Duplicate template'),
+              children: templates.map((template) => {
+                const templateName = [
+                  componentNamePrefix + 'FormItem',
+                  componentNamePrefix + 'ReadPrettyFormItem',
+                ].includes(template?.componentName)
+                  ? `${template?.name} ${t('(Fields only)')}`
+                  : template?.name;
+                return {
+                  type: 'item',
+                  mode: 'copy',
+                  name: `${field.collectionName}.${field.name}`,
+                  collectionName: field.target,
+                  template,
+                  dataSource,
+                  title: templateName || t('Untitled'),
+                  associationField: field,
+                };
+              }),
             },
             {
-              type: 'itemGroup',
-              title: DeprecatedTemplateTitleElement,
-              children: [
-                {
-                  key: `associationFiled_${componentName}_table_subMenu_${index}_copy`,
-                  type: 'subMenu',
-                  name: 'copy',
+              key: `associationFiled_${componentName}_table_subMenu_${index}_ref`,
+              type: 'subMenu',
+              name: 'ref',
+              dataSource,
+              title: t('Reference template'),
+              children: templates.map((template) => {
+                const templateName = [
+                  componentNamePrefix + 'FormItem',
+                  componentNamePrefix + 'ReadPrettyFormItem',
+                ].includes(template?.componentName)
+                  ? `${template?.name} ${t('(Fields only)')}`
+                  : template?.name;
+                return {
+                  type: 'item',
+                  mode: 'reference',
+                  name: `${field.collectionName}.${field.name}`,
+                  collectionName: field.target,
+                  template,
                   dataSource,
-                  title: t('Duplicate template'),
-                  children: templates.map((template) => {
-                    const templateName = [
-                      componentNamePrefix + 'FormItem',
-                      componentNamePrefix + 'ReadPrettyFormItem',
-                    ].includes(template?.componentName)
-                      ? `${template?.name} ${t('(Fields only)')}`
-                      : template?.name;
-                    return {
-                      type: 'item',
-                      mode: 'copy',
-                      name: `${field.collectionName}.${field.name}`,
-                      collectionName: field.target,
-                      template,
-                      dataSource,
-                      title: templateName || t('Untitled'),
-                      associationField: field,
-                    };
-                  }),
-                },
-                {
-                  key: `associationFiled_${componentName}_table_subMenu_${index}_ref`,
-                  type: 'subMenu',
-                  name: 'ref',
-                  dataSource,
-                  title: t('Reference template'),
-                  children: templates.map((template) => {
-                    const templateName = [
-                      componentNamePrefix + 'FormItem',
-                      componentNamePrefix + 'ReadPrettyFormItem',
-                    ].includes(template?.componentName)
-                      ? `${template?.name} ${t('(Fields only)')}`
-                      : template?.name;
-                    return {
-                      type: 'item',
-                      mode: 'reference',
-                      name: `${field.collectionName}.${field.name}`,
-                      collectionName: field.target,
-                      template,
-                      dataSource,
-                      title: templateName || t('Untitled'),
-                      associationField: field,
-                    };
-                  }),
-                },
-              ],
+                  title: templateName || t('Untitled'),
+                  associationField: field,
+                };
+              }),
             },
           );
         }
+        if (inheritedTemplatesMenuItems.length) {
+          allTemplatesMenuItems.push({
+            type: 'subMenu',
+            name: 'inherited_templates',
+            key: `associationFiled_${componentName}_table_subMenu_${index}_inherited`,
+            dataSource,
+            title: t('Inherited template'),
+            children: inheritedTemplatesMenuItems,
+          });
+        }
+
         return {
           key: `associationFiled_${componentName}_table_subMenu_${index}`,
           type: 'subMenu',
@@ -1898,8 +1912,7 @@ function useAssociationFields({
               title: t('Blank block'),
               associationField: field,
             },
-            ...extralCollectionMenuItems,
-            ...deprecatedTemplatesMenuItems,
+            ...allTemplatesMenuItems,
           ],
         };
       });
@@ -1918,7 +1931,7 @@ function useAssociationFields({
   ]);
 }
 
-const isInTemplateSettingPage = () => window.location.pathname.includes('/block-templates/');
+const isInTemplateSettingPage = () => window.location.pathname.includes('/block-templates/inherited');
 
 const initializerMenusGenerators = new Map<
   string,

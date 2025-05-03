@@ -1,0 +1,1 @@
+# @nocobase/plugin-department

@@ -376,7 +376,7 @@ function shouldDeleteNoComponentSchema(schema: Schema) {
     return true;
   }
   const properties = schema?.properties;
-  return properties && Object.values(properties).some((s) => s['x-component'] === undefined);
+  return properties && Object.values(properties).some((s) => s['x-component'] == null);
 }
 
 export function cleanSchema(schema?: Schema, templateId?: string) {
@@ -390,7 +390,7 @@ export function cleanSchema(schema?: Schema, templateId?: string) {
   }
   for (const key of Object.keys(properties)) {
     if (
-      schema.properties[key]['x-component'] === undefined &&
+      schema.properties[key]['x-component'] == null &&
       !schema.properties[key]['x-template-root-uid'] &&
       shouldDeleteNoComponentSchema(schema.properties[key])
     ) {

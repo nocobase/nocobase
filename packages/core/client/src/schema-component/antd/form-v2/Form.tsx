@@ -20,6 +20,7 @@ import { useAttach, useComponent } from '../..';
 import { useApp } from '../../../application';
 import { getCardItemSchema } from '../../../block-provider';
 import { useTemplateBlockContext } from '../../../block-provider/TemplateBlockProvider';
+import { useDataBlockProps } from '../../../data-source';
 import { useDataBlockRequest } from '../../../data-source/data-block/DataBlockRequestProvider';
 import { NocoBaseRecursionField } from '../../../formily/NocoBaseRecursionField';
 import { withDynamicSchemaProps } from '../../../hoc/withDynamicSchemaProps';
@@ -50,19 +51,20 @@ const FormComponent: React.FC<FormProps> = (props) => {
     labelAlign = 'left',
     labelWidth = 120,
     labelWrap = true,
+    colon = true,
   } = cardItemSchema?.['x-component-props'] || {};
   const { isMobileLayout } = useMobileLayout();
   const newSchema = useMemo(
     () => (isMobileLayout ? transformMultiColumnToSingleColumn(fieldSchema) : fieldSchema),
     [fieldSchema, isMobileLayout],
   );
-
   return (
     <FieldContext.Provider value={undefined}>
       <FormContext.Provider value={form}>
         <FormLayout
           layout={layout}
           {...others}
+          colon={colon}
           labelAlign={labelAlign}
           labelWidth={layout === 'horizontal' ? labelWidth : null}
           labelWrap={labelWrap}
@@ -149,12 +151,15 @@ const WithForm = (props: WithFormProps) => {
   const linkageRules: any[] =
     (getLinkageRules(fieldSchema) || fieldSchema.parent?.['x-linkage-rules'])?.filter((k) => !k.disabled) || [];
 
+  // 关闭弹窗之前，如果有未保存的数据，是否要二次确认
+  const { confirmBeforeClose = true } = useDataBlockProps() || ({} as any);
+
   useEffect(() => {
     const id = uid();
 
     form.addEffects(id, () => {
       onFormInputChange(() => {
-        setFormValueChanged?.(true);
+        setFormValueChanged?.(confirmBeforeClose);
       });
     });
 
@@ -165,7 +170,7 @@ const WithForm = (props: WithFormProps) => {
     return () => {
       form.removeEffects(id);
     };
-  }, [form, props.disabled, setFormValueChanged]);
+  }, [form, props.disabled, setFormValueChanged, confirmBeforeClose]);
 
   useEffect(() => {
     if (loading) {
@@ -218,17 +223,19 @@ const WithForm = (props: WithFormProps) => {
 const WithoutForm = (props) => {
   const fieldSchema = useFieldSchema();
   const { setFormValueChanged } = useActionContext();
+  // 关闭弹窗之前，如果有未保存的数据，是否要二次确认
+  const { confirmBeforeClose = true } = useDataBlockProps() || ({} as any);
   const form = useMemo(
     () =>
       createForm({
         disabled: props.disabled,
         effects() {
           onFormInputChange((form) => {
-            setFormValueChanged?.(true);
+            setFormValueChanged?.(confirmBeforeClose);
           });
         },
       }),
-    [],
+    [confirmBeforeClose],
   );
   return fieldSchema['x-decorator'] === 'FormV2' ? (
     <FormDecorator form={form} {...props} />

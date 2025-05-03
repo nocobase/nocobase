@@ -1,7 +1,7 @@
 {
     "Display <1><0>10</0><1>20</1><2>50</2><3>100</3></1> items per page": "Toon <1><0>10</0><1>20</1><2>50</2><3>100</3></1> items per pagina",
     "Page number": "Paginanummer",
-    "Page size": "Paginagrootte",   
+    "Page size": "Paginagrootte",
     "Meet <1><0>All</0><1>Any</1></1> conditions in the group": "Voldoe aan <1><0>Alle</0><1>Een</1></1> voorwaarde(n) in de groep",
     "Open in<1><0>Modal</0><1>Drawer</1><2>Window</2></1>": "Open in<1><0>Modal</0><1>Drawer</1><2>Venster</2></1>",
     "{{count}} filter items": "{{count}} filter items",
@@ -504,7 +504,8 @@
     "Turn pages": "Pagina's omslaan",
     "Others": "Overigen",
     "Other records": "Andere records",
-    "Save as template": "Opslaan als sjabloon",
+    "Save as reference template": "Opslaan als referentiesjabloon",
+    "Save as inherited template": "Opslaan als overerfde sjabloon",
     "Save as block template": "Opslaan als bloksjabloon",
     "Block templates": "Bloksjablonen",
     "Block template": "Bloksjabloon",
@@ -593,6 +594,7 @@
     "Blank block": "Leeg blok",
     "Duplicate template": "Sjabloon dupliceren",
     "Reference template": "Sjabloon refereren",
+    "Inherited template": "Overerfde sjabloon",
     "Create calendar block": "Kalenderblok maken",
     "Create kanban block": "Kanbanblok maken",
     "Grouping field": "Groepeer veld",
@@ -1054,5 +1056,8 @@
     "Font Size（px）": "Lettergrootte（px）",
     "Font Weight": "Letterdikte",
     "Font Style": "Letterstijl",
-    "Italic": "Cursief"
+    "Italic": "Cursief",
+    "Refresh data blocks": "Vernieuw gegevensblokken",
+    "Select data blocks to refresh": "Selecteer gegevensblokken om te vernieuwen",
+    "After successful submission, the selected data blocks will be automatically refreshed.": "Na succesvolle indiening worden de geselecteerde gegevensblokken automatisch vernieuwd."
 }
