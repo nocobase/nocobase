@@ -80,7 +80,7 @@ export const DataSourceSettings: React.FC = () => {
                 properties: {
                   add: {
                     type: 'void',
-                    title: '添加条目',
+                    title: t('Add collection'),
                     'x-component': 'ArrayItems.Addition',
                   },
                 },

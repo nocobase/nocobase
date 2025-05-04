@@ -25,5 +25,16 @@ export default defineCollection({
       foreignKey: 'aiEmployee',
       onDelete: 'CASCADE',
     },
+    {
+      type: 'belongsToMany',
+      name: 'roles',
+      through: 'rolesAiEmployees',
+      target: 'roles',
+      onDelete: 'CASCADE',
+      foreignKey: 'aiEmployee',
+      otherKey: 'roleName',
+      sourceKey: 'username',
+      targetKey: 'name',
+    },
   ],
 });

@@ -22,6 +22,7 @@ import * as aiEmployeeActions from './resource/aiEmployees';
 import { googleGenAIProviderOptions } from './llm-providers/google-genai';
 import { AIEmployeeTrigger } from './workflow/triggers/ai-employee';
 import { formFillter, workflowCaller } from './tools';
+import { Model } from '@nocobase/database';
 
 export class PluginAIServer extends Plugin {
   aiManager = new AIManager(this);
@@ -55,7 +56,7 @@ export class PluginAIServer extends Plugin {
     });
     this.app.acl.registerSnippet({
       name: `pm.${this.name}.ai-employees`,
-      actions: ['aiEmployees:*', 'aiTools:*'],
+      actions: ['aiEmployees:*', 'aiTools:*', 'roles.aiEmployees:*'],
     });
     this.app.acl.allow('aiConversations', '*', 'loggedIn');
 
@@ -72,6 +73,24 @@ export class PluginAIServer extends Plugin {
     const workflow = this.app.pm.get('workflow') as PluginWorkflowServer;
     workflow.registerTrigger('ai-employee', AIEmployeeTrigger);
     workflow.registerInstruction('llm', LLMInstruction);
+
+    this.app.db.on('roles.beforeCreate', async (instance: Model) => {
+      instance.set('allowNewAiEmployee', ['admin', 'member'].includes(instance.name));
+    });
+    this.app.db.on('aiEmployees.afterCreate', async (instance: Model, { transaction }) => {
+      const roles = await this.app.db.getRepository('roles').find({
+        filter: {
+          allowNewAiEmployee: true,
+        },
+        transaction,
+      });
+
+      // @ts-ignore
+      await this.app.db.getRepository('aiEmployees.roles', instance.username).add({
+        tk: roles.map((role: { name: string }) => role.name),
+        transaction,
+      });
+    });
   }
 
   handleSyncMessage(message: any): Promise<void> {

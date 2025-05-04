@@ -78,6 +78,10 @@ export const AIEmployeeButton: React.FC<{
   } = useAIEmployeesContext();
   const aiEmployee = aiEmployeesMap[username];
 
+  if (!aiEmployee) {
+    return null;
+  }
+
   return (
     <SortableItem
       style={{

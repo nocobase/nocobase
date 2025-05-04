@@ -28,7 +28,7 @@ export const UISchemaSelector: React.FC = () => {
         if (!uid) {
           return;
         }
-        const value = `{{$nUISchema.${uid}}}`;
+        const value = `{{$UISchema.${uid}}}`;
         onInsert(() => {
           return senderRef.current?.nativeElement.querySelector('.ant-input');
         }, value);

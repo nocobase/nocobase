@@ -15,6 +15,7 @@ import { ParameterAddition, Parameter, EditParameter, ParameterDesc } from './Pa
 import pkg from '../../../../../package.json';
 
 export class AIEmployeeTrigger extends Trigger {
+  sync = true;
   title = tval('AI employee event', { ns: pkg.name });
   description = tval('Triggered by AI employees through tool calling.', { ns: pkg.name });
   components = {

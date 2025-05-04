@@ -7,11 +7,12 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { CardItem, CollectionField, FormV2, Plugin, lazy } from '@nocobase/client';
+import PluginACLClient from '@nocobase/plugin-acl/client';
+import PluginWorkflowClient from '@nocobase/plugin-workflow/client';
+import { CardItem, CollectionField, Plugin, lazy } from '@nocobase/client';
 import { AIManager } from './manager/ai-manager';
 import { openaiProviderOptions } from './llm-providers/openai';
 import { deepseekProviderOptions } from './llm-providers/deepseek';
-import PluginWorkflowClient from '@nocobase/plugin-workflow/client';
 import { LLMInstruction } from './workflow/nodes/llm';
 import { AIEmployeeInstruction } from './workflow/nodes/employee';
 import { tval } from '@nocobase/utils/client';
@@ -19,9 +20,9 @@ import { namespace } from './locale';
 import { aiEmployeesInitializer } from './ai-employees/initializer/AIEmployees';
 import { aiEmployeeButtonSettings } from './ai-employees/settings/AIEmployeeButton';
 import { withAISelectable } from './ai-employees/selector/withAISelectable';
-import { useAISelectionContext } from './ai-employees/selector/AISelectorProvider';
 import { googleGenAIProviderOptions } from './llm-providers/google-genai';
 import { AIEmployeeTrigger } from './workflow/triggers/ai-employee';
+import { PermissionsTab } from './ai-employees/permissions/PermissionsTab';
 const { AIEmployeesProvider } = lazy(() => import('./ai-employees/AIEmployeesProvider'), 'AIEmployeesProvider');
 const { Employees } = lazy(() => import('./ai-employees/manager/Employees'), 'Employees');
 const { LLMServices } = lazy(() => import('./llm-services/LLMServices'), 'LLMServices');
@@ -30,6 +31,7 @@ const { Chat } = lazy(() => import('./llm-providers/components/Chat'), 'Chat');
 const { ModelSelect } = lazy(() => import('./llm-providers/components/ModelSelect'), 'ModelSelect');
 const { AIEmployeeButton } = lazy(() => import('./ai-employees/initializer/AIEmployeeButton'), 'AIEmployeeButton');
 const { AIContextCollector } = lazy(() => import('./ai-employees/selector/AIContextCollector'), 'AIContextCollector');
+// const { PermissionsTab } = lazy(() => import('./ai-employees/permissions/PermissionsTab'), 'PermissionsTab');
 
 export class PluginAIClient extends Plugin {
   aiManager = new AIManager();
@@ -87,6 +89,11 @@ export class PluginAIClient extends Plugin {
       aiEmployeesInitializer,
     );
     this.app.schemaSettingsManager.add(aiEmployeeButtonSettings);
+
+    const aclPlugin = this.app.pm.get(PluginACLClient);
+    if (aclPlugin) {
+      aclPlugin.settingsUI.addPermissionsTab(PermissionsTab);
+    }
 
     this.aiManager.registerLLMProvider('openai', openaiProviderOptions);
     this.aiManager.registerLLMProvider('deepseek', deepseekProviderOptions);

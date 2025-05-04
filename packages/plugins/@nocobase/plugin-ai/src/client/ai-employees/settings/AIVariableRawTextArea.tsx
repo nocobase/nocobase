@@ -63,7 +63,7 @@ export const UISchemaSelector: React.FC<{
         if (!uid) {
           return;
         }
-        onSelect?.(['$nUISchema', uid]);
+        onSelect?.(['$UISchema', uid]);
       },
     });
   };
@@ -74,7 +74,7 @@ export const UISchemaSelector: React.FC<{
     if (!uid) {
       return;
     }
-    onSelect?.(['$nUISchema', uid]);
+    onSelect?.(['$UISchema', uid]);
   };
 
   return (

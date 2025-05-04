@@ -13,7 +13,24 @@ export const listByUser = async (ctx: Context, next: Next) => {
   const user = ctx.auth.user;
   const model = ctx.db.getModel('aiEmployees');
   const sequelize = ctx.db.sequelize;
+  const roles = ctx.state.currentRoles;
+  let where = {};
+  if (!roles?.includes('root')) {
+    const aiEmployees = await ctx.db.getRepository('rolesAiEmployees').find({
+      filter: {
+        roleName: ctx.state.currentRoles,
+      },
+    });
+    if (!aiEmployees) {
+      ctx.body = [];
+      return next();
+    }
+    where = {
+      username: aiEmployees.map((item: { aiEmployee: string }) => item.aiEmployee),
+    };
+  }
   const rows = await model.findAll({
+    where,
     include: [
       {
         model: ctx.db.getModel('usersAiEmployees'),

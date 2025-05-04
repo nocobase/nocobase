@@ -178,7 +178,7 @@ export const ChatMessagesProvider: React.FC<{ children: React.ReactNode }> = ({ 
     }
 
     await messagesServiceRef.current.runAsync(sessionId);
-    if (tool) {
+    if (!error && tool) {
       const t = plugin.aiManager.tools.get(tool.name);
       if (t) {
         await t.invoke(ctx, tool.args);

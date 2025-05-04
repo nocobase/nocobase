@@ -52,6 +52,9 @@ export const ChatButton: React.FC = () => {
       ),
     }));
   }, [aiEmployees]);
+  if (!aiEmployees?.length) {
+    return null;
+  }
   return (
     <div
       className={css`
