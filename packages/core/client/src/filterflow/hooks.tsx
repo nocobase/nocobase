@@ -21,6 +21,69 @@ const filterCache = new Map<
   }
 >();
 
+// 安全地获取对象的可序列化表示
+function safeStringify(obj: any, visited = new Set(), depth = 0, maxDepth = 5): string {
+  // 深度限制，防止过深递归
+  if (depth > maxDepth) {
+    return '[MaxDepthExceeded]';
+  }
+
+  // 处理基本类型
+  if (obj === null || obj === undefined) {
+    return String(obj);
+  }
+  
+  if (typeof obj !== 'object' && typeof obj !== 'function') {
+    return String(obj);
+  }
+  
+  // 处理函数
+  if (typeof obj === 'function') {
+    // 对于函数，可以使用函数名或为匿名函数生成一个标识符
+    return `function:${obj.name || 'anonymous'}`;
+  }
+  
+  // 处理循环引用
+  if (visited.has(obj)) {
+    return '[Circular]';
+  }
+  
+  // 添加到已访问集合
+  visited.add(obj);
+  
+  // 处理数组
+  if (Array.isArray(obj)) {
+    try {
+      // 限制处理的数组元素数量
+      const maxItems = 100;
+      const items = obj.slice(0, maxItems);
+      const result = '[' + items.map(item => safeStringify(item, visited, depth + 1, maxDepth)).join(',') + 
+        (obj.length > maxItems ? ',...' : '') + ']';
+      return result;
+    } catch (e) {
+      return '[Array]';
+    }
+  }
+  
+  // 处理普通对象
+  try {
+    const keys = Object.keys(obj).sort(); // 排序确保稳定性
+    // 限制处理的属性数量
+    const maxKeys = 50;
+    const limitedKeys = keys.slice(0, maxKeys);
+    
+    const pairs = limitedKeys.map(key => {
+      const value = obj[key];
+      return `${key}:${safeStringify(value, visited, depth + 1, maxDepth)}`;
+    });
+    
+    return '{' + pairs.join(',') + (keys.length > maxKeys ? ',...' : '') + '}';
+  } catch (e) {
+    // 如果无法序列化，返回一个简单的标识
+    return '[Object]';
+  }
+}
+
 export function useApplyFilters<T = any>(
   filterFlowManager: FilterFlowManager,
   flowName: string,
@@ -34,7 +97,21 @@ export function useApplyFilters<T = any>(
     if (id) {
       return `${flowName}-${id}`;
     }
-    return JSON.stringify([flowName, context]);
+    
+    // 对于函数类型的context，我们不能序列化其内容，只能基于引用
+    if (typeof context === 'function') {
+      return `${flowName}-function`;
+    }
+    
+    // 对于对象类型，尝试安全地序列化其内容
+    try {
+      const contextHash = safeStringify(context);
+      return `${flowName}-${contextHash}`;
+    } catch (e) {
+      // 如果序列化失败，使用一个通用标识符
+      console.warn('Failed to create stable cache key for context', e);
+      return `${flowName}-object`;
+    }
   }, [flowName, context, id]);
 
   const prevValue = useRef(initialValue);
