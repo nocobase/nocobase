@@ -18,8 +18,7 @@ function totalPage(total, pageSize): number {
 function findArgs(ctx: Context) {
   const params = ctx.action.params;
 
-  const { values = {}, others } = params;
-  const { fields, filter, appends, except, sort } = { ...others, ...values };
+  const { fields, filter, appends, except, sort } = params;
   let { tree } = params;
   if (tree === true || tree === 'true') {
     tree = true;
@@ -30,9 +29,7 @@ function findArgs(ctx: Context) {
 }
 
 async function listWithPagination(ctx: Context) {
-  const params = ctx.action.params;
-  const { values = {}, others } = params;
-  const { page = DEFAULT_PAGE, pageSize = DEFAULT_PER_PAGE } = { ...others, ...values };
+  const { page = DEFAULT_PAGE, pageSize = DEFAULT_PER_PAGE } = ctx.action.params;
 
   const repository = getRepositoryFromParams(ctx);
 
