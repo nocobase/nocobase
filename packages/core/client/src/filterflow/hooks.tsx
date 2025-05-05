@@ -8,7 +8,7 @@
  */
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { FilterFlowManager, FilterHandlerContext } from '@nocobase/client'; // 确认 FilterFlowManager 和类型的实际路径
+import { FilterFlowManager, FilterHandlerContext, useBlockConfigs } from '@nocobase/client'; // 确认 FilterFlowManager 和类型的实际路径
 
 // 使用 Map 作为简单的内存缓存
 const filterCache = new Map<
@@ -92,6 +92,7 @@ export function useApplyFilters<T = any>(
   id?: string,
 ): { data: T; reApplyFilters: () => void } {
   const [, forceUpdate] = useState(true);
+  const { setConfigs, subscribe } = useBlockConfigs();
 
   const cacheKey = useMemo(() => {
     if (id) {
@@ -149,6 +150,13 @@ export function useApplyFilters<T = any>(
     }
   }, [cacheKey]);
 
+  useEffect(() => {
+    return subscribe(() => {
+      filterCache.delete(cacheKey);
+      forceUpdate((prev) => !prev);
+    });
+  }, []);
+
   // 检查缓存
   const cachedEntry = filterCache.get(cacheKey);
 
@@ -162,6 +170,7 @@ export function useApplyFilters<T = any>(
         throw cachedEntry.error;
       case 'resolved':
         // 如果已成功，返回数据
+        setConfigs(cachedEntry.data?.blockConfig, false);
         return {
           data: cachedEntry.data as T,
           reApplyFilters: () => {
