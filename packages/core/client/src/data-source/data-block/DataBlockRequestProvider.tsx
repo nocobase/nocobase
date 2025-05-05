@@ -57,14 +57,7 @@ function useRecordRequest<T>(options: Omit<AllDataBlockProps, 'type'>) {
     }
 
     const paramsValue = params.filterByTk === undefined ? _.omit(params, 'filterByTk') : params;
-    let mergedParams = { ...paramsValue, ...customParams };
-
-    if (action === 'list') {
-      mergedParams = {
-        values: mergedParams,
-      };
-    }
-
+    const mergedParams = { ...paramsValue, ...customParams };
     return resource[action]?.(mergedParams).then((res) => res.data);
   };
 
