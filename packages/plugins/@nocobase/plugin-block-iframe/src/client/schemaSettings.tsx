@@ -231,6 +231,7 @@ const commonOptions: any = {
                   return (
                     <Select
                       {...props}
+                      allowClear
                       options={[
                         { value: 'autoplay', label: <AllowOptionsHelp type="autoplay" /> },
                         { value: 'camera', label: <AllowOptionsHelp type="camera" /> },
