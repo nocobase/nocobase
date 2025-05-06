@@ -16,6 +16,11 @@ export default class extends Migration {
   appVersion = '<1.7.0';
 
   async up() {
+    const verificatorsRepo = this.db.getRepository('verificators');
+    if (await verificatorsRepo.count()) {
+      // migration already done
+      return;
+    }
     const repo = this.db.getRepository('verifications_providers');
     if (!repo) {
       return;
