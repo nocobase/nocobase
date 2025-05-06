@@ -16,7 +16,19 @@ export default class extends Migration {
   appVersion = '<1.7.0';
 
   async up() {
+    const verificatorsRepo = this.db.getRepository('verificators');
+    if (await verificatorsRepo.count()) {
+      // migration already done
+      return;
+    }
+    const repo = this.db.getRepository('verifications_providers');
+    if (!repo) {
+      return;
+    }
     const providers = await this.db.getRepository('verifications_providers').find();
+    if (!providers.length) {
+      return;
+    }
     const verificators = [];
     let defaultVerificator: any;
     providers.forEach((provider: any) => {
@@ -34,6 +46,9 @@ export default class extends Migration {
         defaultVerificator = verificator;
       }
     });
+    if (!defaultVerificator) {
+      defaultVerificator = verificators[0];
+    }
     const smsAuth = await this.db.getRepository('authenticators').find({
       filter: {
         authType: 'SMS',
@@ -49,7 +64,7 @@ export default class extends Migration {
               ...item.options,
               public: {
                 ...item.options?.public,
-                verificator: defaultVerificator.name,
+                verificator: defaultVerificator?.name,
               },
             },
           },
