@@ -279,7 +279,7 @@ const InternalAction: React.FC<InternalActionProps> = observer(function Com(prop
   const { modal } = App.useApp();
   const form = useForm();
   const aclCtx = useACLActionParamsContext();
-  const { run, element, disabled: disableAction } = useAction?.(actionCallback) || ({} as any);
+  const { run, element, disabled: disableAction, loading: loadingOfUseAction } = useAction?.(actionCallback) || ({} as any);
   const disabled = form.disabled || field.disabled || field.data?.disabled || propsDisabled || disableAction;
   const buttonStyle = useMemo(() => {
     return {
@@ -294,7 +294,7 @@ const InternalAction: React.FC<InternalActionProps> = observer(function Com(prop
     field,
     aclCtx,
     icon,
-    loading,
+    loading: typeof loadingOfUseAction === 'boolean' ? loadingOfUseAction : loading,
     disabled,
     buttonStyle,
     handleMouseEnter,

@@ -1090,5 +1090,6 @@
   "Click the \"UI Editor\" icon in the upper right corner to enter the UI Editor mode": "Cliquez sur l'icône \"Éditeur d'interface utilisateur\" dans le coin supérieur droit pour entrer en mode Éditeur d'interface utilisateur",
   "Refresh data blocks": "Aggiorna blocchi di dati",
   "Select data blocks to refresh": "Aggiorna blocchi di dati",
-  "After successful submission, the selected data blocks will be automatically refreshed.": "Dopo una soumission réussie, les blocs de données sélectionnés seront automatiquement actualisés."
+  "After successful submission, the selected data blocks will be automatically refreshed.": "Dopo una soumission réussie, les blocs de données sélectionnés seront automatiquement actualisés.",
+  "Reset link expiration": "Reimposta scadenza link"
 }
