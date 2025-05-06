@@ -349,6 +349,7 @@ export const authenticatorsSchema: ISchema = {
                         name: {
                           'x-component': 'CollectionField',
                           'x-decorator': 'FormItem',
+                          'x-disabled': true,
                         },
                         authType: {
                           'x-component': 'CollectionField',

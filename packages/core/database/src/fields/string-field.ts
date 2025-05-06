@@ -20,11 +20,21 @@ export class StringField extends Field {
   }
 
   additionalSequelizeOptions() {
-    const { name, trim } = this.options;
+    const { name, trim, unique } = this.options;
 
     return {
       set(value) {
-        this.setDataValue(name, trim ? value?.trim() : value);
+        if (unique && value === '') {
+          value = null;
+        }
+        if (value == null) {
+          this.setDataValue(name, null);
+          return;
+        }
+        if (typeof value !== 'string') {
+          value = value.toString();
+        }
+        this.setDataValue(name, trim ? value.trim() : value);
       },
     };
   }
