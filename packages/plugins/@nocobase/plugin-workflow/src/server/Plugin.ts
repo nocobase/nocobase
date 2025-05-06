@@ -74,6 +74,18 @@ export default class PluginWorkflowServer extends Plugin {
   private meter = null;
   private checker: NodeJS.Timeout = null;
 
+  private onQueueEvent = async (event) => {
+    const ExecutionRepo = this.db.getRepository('executions');
+    const execution = await ExecutionRepo.findOne({
+      filterByTk: event.executionId,
+    });
+    if (!execution || execution.status !== EXECUTION_STATUS.QUEUEING) {
+      return;
+    }
+    this.pending.push([execution]);
+    this.dispatch();
+  };
+
   private onBeforeSave = async (instance: WorkflowModel, { transaction }) => {
     const Model = <typeof WorkflowModel>instance.constructor;
 
@@ -321,6 +333,12 @@ export default class PluginWorkflowServer extends Plugin {
     });
     this.snowflake = new Snowflake({
       custom_epoch: pluginRecord?.createdAt.getTime(),
+    });
+
+    this.app.eventQueue.subscribe(this.name, {
+      topic: 'pendingExecution',
+      idle: () => !this.executing,
+      process: this.onQueueEvent,
     });
   }
 
