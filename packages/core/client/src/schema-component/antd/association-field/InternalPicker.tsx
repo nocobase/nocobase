@@ -144,7 +144,7 @@ export const InternalPicker = observer(
           setVisible(false);
         },
         style: {
-          display: multiple !== false && ['o2m', 'm2m', 'mbm'].includes(collectionField?.interface) ? 'block' : 'none',
+          display: multiple === false ? 'none' : 'block',
         },
       };
     };
