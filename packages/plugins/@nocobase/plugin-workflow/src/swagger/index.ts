@@ -579,14 +579,6 @@ export default {
               type: 'array',
               description: 'Revisions',
             },
-            executed: {
-              type: 'integer',
-              description: 'Executed count for a single version',
-            },
-            allExecuted: {
-              type: 'integer',
-              description: 'Executed count for all versions of the same workflow',
-            },
           },
         },
         filterByTk: {
@@ -622,12 +614,6 @@ export default {
               },
               key: {
                 $ref: '#/components/schemas/workflow/model/properties/key',
-              },
-              executed: {
-                $ref: '#/components/schemas/workflow/model/properties/executed',
-              },
-              allExecuted: {
-                $ref: '#/components/schemas/workflow/model/properties/allExecuted',
               },
             },
           },

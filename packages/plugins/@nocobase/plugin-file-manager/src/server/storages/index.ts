@@ -8,10 +8,12 @@
  */
 
 import { isURL } from '@nocobase/utils';
+import axios, { AxiosRequestConfig } from 'axios';
 import { StorageEngine } from 'multer';
+import Path from 'path';
+import type { Readable } from 'stream';
 import urlJoin from 'url-join';
 import { encodeURL, ensureUrlEncoded, getFileKey } from '../utils';
-
 export interface StorageModel {
   id?: number;
   title: string;
@@ -31,6 +33,7 @@ export interface AttachmentModel {
   path: string;
   url: string;
   storageId: number;
+  mimetype: string;
 }
 
 export abstract class StorageType {
@@ -46,7 +49,28 @@ export abstract class StorageType {
     return getFileKey(record);
   }
 
-  getFileData?(file: { [key: string]: any }): { [key: string]: any };
+  getFileData(file, meta = {}) {
+    const { [(this.constructor as typeof StorageType).filenameKey || 'filename']: name } = file;
+    // make compatible filename across cloud service (with path)
+    const filename = Path.basename(name);
+    const extname = Path.extname(filename);
+    const path = (this.storage.path || '').replace(/^\/|\/$/g, '');
+
+    const data = {
+      title: Buffer.from(file.originalname, 'latin1').toString('utf8').replace(extname, ''),
+      filename,
+      extname,
+      // TODO(feature): 暂时两者相同，后面 storage.path 模版化以后，这里只是 file 实际的 path
+      path,
+      size: file.size,
+      mimetype: file.mimetype,
+      meta,
+      storageId: this.storage.id,
+    };
+
+    return data;
+  }
+
   getFileURL(file: AttachmentModel, preview?: boolean): string | Promise<string> {
     // 兼容历史数据
     if (file.url && isURL(file.url)) {
@@ -62,6 +86,26 @@ export abstract class StorageType {
       preview && this.storage.options.thumbnailRule,
     ].filter(Boolean);
     return urlJoin(keys);
+  }
+
+  async getFileStream(file: AttachmentModel): Promise<{ stream: Readable; contentType?: string }> {
+    try {
+      const fileURL = await this.getFileURL(file);
+      const requestOptions: AxiosRequestConfig = {
+        responseType: 'stream',
+        validateStatus: (status) => status === 200,
+        timeout: 30000, // 30 seconds timeout
+      };
+
+      const response = await axios.get(fileURL, requestOptions);
+
+      return {
+        stream: response.data,
+        contentType: response.headers['content-type'],
+      };
+    } catch (err) {
+      throw new Error(`fetch file failed: ${err}`);
+    }
   }
 }
 

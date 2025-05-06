@@ -18,7 +18,7 @@ export default class WorkflowRepository extends Repository {
       const origin = await this.findOne({
         filterByTk,
         filter,
-        appends: ['nodes'],
+        appends: ['nodes', 'stats', 'versionStats'],
         context,
         transaction,
       });
@@ -30,7 +30,6 @@ export default class WorkflowRepository extends Repository {
             key: filter.key,
             title: origin.title,
             triggerTitle: origin.triggerTitle,
-            allExecuted: origin.allExecuted,
             current: null,
             ...values,
           }

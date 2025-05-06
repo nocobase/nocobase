@@ -7,5 +7,16 @@
   "General": "通用",
   "Desktop menu": "桌面端菜单",
   "Plugin settings": "插件设置",
-  "Data sources": "数据源"
+  "Data sources": "数据源",
+  "Independent roles": "独立角色",
+  "Allow roles union": "允许角色并集",
+  "Roles union only": "仅角色并集",
+  "Role mode": "角色模式",
+  "Saved successfully": "保存成功",
+  "Please select role mode": "请选择角色模式",
+  "Full permissions": "全部权限",
+  "Role mode doc": "https://docs-cn.nocobase.com/handbook/acl/manual",
+  "Do not use role union. Users need to switch between their roles individually.": "不使用角色并集，用户需要逐个切换自己拥有的角色。",
+  "Allow users to use role union, which means they can use permissions from all their roles simultaneously, or switch between individual roles.": "允许用户使用角色并集，即可以同时使用自己拥有的所有角色的权限，也允许用户逐个切换自己的角色。",
+  "Force users to use only role union. They cannot switch between individual roles.": "强制用户仅能使用角色并集，不能逐个切换角色。"
 }

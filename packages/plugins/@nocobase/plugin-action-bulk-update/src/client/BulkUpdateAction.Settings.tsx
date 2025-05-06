@@ -8,7 +8,6 @@
  */
 
 import { ISchema, useFieldSchema } from '@formily/react';
-import { isValid } from '@formily/shared';
 import {
   ActionDesigner,
   SchemaSettings,
@@ -19,6 +18,14 @@ import {
   useDesignable,
   useSchemaToolbar,
   RefreshDataBlockRequest,
+  useAfterSuccessOptions,
+  useGlobalVariable,
+  BlocksSelector,
+  usePlugin,
+  SchemaSettingsLinkageRules,
+  useCollectionManager_deprecated,
+  useDataBlockProps,
+  useCollection_deprecated,
 } from '@nocobase/client';
 import { useTranslation } from 'react-i18next';
 import React from 'react';
@@ -49,13 +56,30 @@ function UpdateMode() {
     />
   );
 }
+const fieldNames = {
+  value: 'value',
+  label: 'label',
+};
+const useVariableProps = (environmentVariables) => {
+  const scope = useAfterSuccessOptions();
+  return {
+    scope: [environmentVariables, ...scope].filter(Boolean),
+    fieldNames,
+  };
+};
 
 function AfterSuccess() {
   const { dn } = useDesignable();
   const { t } = useTranslation();
   const fieldSchema = useFieldSchema();
+  const environmentVariables = useGlobalVariable('$env');
+  const templatePlugin: any = usePlugin('@nocobase/plugin-block-template');
+  const isInBlockTemplateConfigPage = templatePlugin?.isInBlockTemplateConfigPage?.();
+
   return (
     <SchemaSettingsModalItem
+      dialogRootClassName="dialog-after-successful-submission"
+      width={700}
       title={t('After successful submission')}
       initialValues={fieldSchema?.['x-action-settings']?.['onSuccess']}
       schema={
@@ -100,8 +124,21 @@ function AfterSuccess() {
             redirectTo: {
               title: t('Link'),
               'x-decorator': 'FormItem',
-              'x-component': 'Input',
-              'x-component-props': {},
+              'x-component': 'Variable.TextArea',
+              // eslint-disable-next-line react-hooks/rules-of-hooks
+              'x-use-component-props': () => useVariableProps(environmentVariables),
+            },
+            blocksToRefresh: {
+              type: 'array',
+              title: t('Refresh data blocks'),
+              'x-decorator': 'FormItem',
+              'x-use-decorator-props': () => {
+                return {
+                  tooltip: t('After successful submission, the selected data blocks will be automatically refreshed.'),
+                };
+              },
+              'x-component': BlocksSelector,
+              'x-hidden': isInBlockTemplateConfigPage, // 模板配置页面暂不支持该配置
             },
           },
         } as ISchema
@@ -126,6 +163,21 @@ const schemaSettingsItems: SchemaSettingsItemType[] = [
     useComponentProps() {
       const { buttonEditorProps } = useSchemaToolbar();
       return buttonEditorProps;
+    },
+  },
+  {
+    name: 'linkageRules',
+    Component: SchemaSettingsLinkageRules,
+    useComponentProps() {
+      const { name } = useCollection_deprecated();
+      const { association } = useDataBlockProps() || {};
+      const { getCollectionField } = useCollectionManager_deprecated();
+      const associationField = getCollectionField(association);
+      const { linkageRulesProps } = useSchemaToolbar();
+      return {
+        ...linkageRulesProps,
+        collectionName: associationField?.collectionName || name,
+      };
     },
   },
   {

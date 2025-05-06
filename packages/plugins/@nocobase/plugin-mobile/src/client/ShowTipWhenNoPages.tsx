@@ -20,8 +20,9 @@ export const ShowTipWhenNoPages: FC = ({ children }) => {
   const { designable } = useDesignable();
   const { routeList } = useMobileRoutes();
   const { t } = usePluginTranslation();
+  const isInBlockTemplateSettingsPage = window.location.pathname?.includes('/m/block-templates/inherited/');
 
-  if ((!designable || isMobile) && _.isEmpty(routeList)) {
+  if (!isInBlockTemplateSettingsPage && (!designable || isMobile) && _.isEmpty(routeList)) {
     return (
       <ErrorBlock
         image={<HighlightOutlined style={{ fontSize: '8em' }} />}

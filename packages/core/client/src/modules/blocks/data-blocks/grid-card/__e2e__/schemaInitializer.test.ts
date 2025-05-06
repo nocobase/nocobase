@@ -13,6 +13,7 @@ import { oneGridCardWithInheritFields } from './templatesOfBug';
 
 const deleteButton = async (page: Page, name: string) => {
   await page.getByRole('button', { name }).hover();
+  await page.getByRole('menuitem', { name: 'Delete' }).waitFor({ state: 'detached' });
   await page.getByRole('button', { name }).getByLabel('designer-schema-settings-').hover();
   await page.getByRole('menuitem', { name: 'Delete' }).click();
   await page.getByRole('button', { name: 'OK', exact: true }).click();
@@ -41,12 +42,14 @@ test.describe('where grid card block can be added', () => {
     await page.getByLabel('schema-initializer-Grid-').nth(1).hover();
     await page.getByRole('menuitem', { name: 'Role name' }).click();
     await page.mouse.move(300, 0);
+    await page.reload();
     await expect(page.getByText('Root')).toBeVisible();
     await expect(page.getByText('Admin')).toBeVisible();
     await expect(page.getByText('Member')).toBeVisible();
 
     // 2. 通过 Other records 创建一个列表区块
     await page.getByLabel('schema-initializer-Grid-popup').hover();
+    await page.getByRole('menuitem', { name: 'Other records right' }).waitFor({ state: 'detached' });
     await page.getByRole('menuitem', { name: 'Grid Card right' }).hover();
     await page.getByRole('menuitem', { name: 'Other records right' }).hover();
     await page.getByRole('menuitem', { name: 'Users' }).click();
@@ -151,10 +154,10 @@ test.describe('configure fields', () => {
 
     // add association fields
     await page.mouse.wheel(0, 300);
-    await page.getByRole('menuitem', { name: 'Many to one' }).nth(1).hover();
+    await page.getByRole('menuitem', { name: 'Many to one right' }).hover();
     await page.getByRole('menuitem', { name: 'Nickname' }).click();
 
-    await page.getByRole('menuitem', { name: 'Many to one' }).nth(1).hover();
+    await page.getByRole('menuitem', { name: 'Many to one right' }).hover();
     await expect(page.getByRole('menuitem', { name: 'Nickname' }).getByRole('switch')).toBeChecked();
 
     await page.mouse.move(300, 0);
@@ -165,14 +168,14 @@ test.describe('configure fields', () => {
 
     // delete fields
     await formItemInitializer.hover();
-    await page.getByRole('menuitem', { name: 'ID', exact: true }).click();
-    await expect(page.getByRole('menuitem', { name: 'ID', exact: true }).getByRole('switch')).not.toBeChecked();
+    await page.getByRole('menuitem', { name: 'ID', exact: true }).first().click();
+    await expect(page.getByRole('menuitem', { name: 'ID', exact: true }).getByRole('switch').first()).not.toBeChecked();
 
     await page.mouse.wheel(0, 300);
-    await page.getByRole('menuitem', { name: 'Many to one' }).nth(1).hover();
+    await page.getByRole('menuitem', { name: 'Many to one right' }).hover();
     await page.getByRole('menuitem', { name: 'Nickname' }).click();
 
-    await page.getByRole('menuitem', { name: 'Many to one' }).nth(1).hover();
+    await page.getByRole('menuitem', { name: 'Many to one right' }).hover();
     await expect(page.getByRole('menuitem', { name: 'Nickname' }).getByRole('switch')).not.toBeChecked();
 
     await page.mouse.move(300, 0);
@@ -185,7 +188,7 @@ test.describe('configure fields', () => {
 
     // add markdown
     await formItemInitializer.hover();
-    await page.getByRole('menuitem', { name: 'ID', exact: true }).hover();
+    await page.getByRole('menuitem', { name: 'ID', exact: true }).first().hover();
     await page.mouse.wheel(0, 300);
     await page.getByRole('menuitem', { name: 'Add Markdown' }).click();
 

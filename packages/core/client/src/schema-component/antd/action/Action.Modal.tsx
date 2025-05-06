@@ -199,4 +199,17 @@ ActionModal.Footer = observer(
   { displayName: 'ActionModal.Footer' },
 );
 
+ActionModal.FootBar = observer(
+  () => {
+    const field = useField();
+    const schema = useFieldSchema();
+    return (
+      <div className="ant-modal-footer">
+        <NocoBaseRecursionField basePath={field.address} schema={schema} onlyRenderProperties />
+      </div>
+    );
+  },
+  { displayName: 'ActionModal.FootBar' },
+);
+
 export default ActionModal;

@@ -29,7 +29,7 @@ import {
 } from '@nocobase/client';
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { useDepartmentManager } from '../hooks';
-import { Table, TablePaginationConfig } from 'antd';
+import { Table, TablePaginationConfig, TableProps } from 'antd';
 import { departmentCollection } from '../collections/departments';
 import { useDepartmentTranslation } from '../locale';
 import { useField } from '@formily/react';
@@ -134,13 +134,15 @@ const InternalDepartmentTable: React.FC<{
   return (
     <Table
       rowKey="id"
-      columns={[
-        {
-          dataIndex: 'title',
-          title: t('Department name'),
-          render: (text, record) => (hasFilter ? getDepartmentTitle(record) : text),
-        },
-      ]}
+      columns={
+        [
+          {
+            dataIndex: 'title',
+            title: t('Department name'),
+            render: (text, record) => (hasFilter ? getDepartmentTitle(record) : text),
+          },
+        ] as TableProps['columns']
+      }
       rowSelection={{
         selectedRowKeys: (field?.value || []).map((dept: any) => dept.id),
         onChange: (keys, depts) => field?.setValue?.(depts),

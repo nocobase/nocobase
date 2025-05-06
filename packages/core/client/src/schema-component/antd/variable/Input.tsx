@@ -186,6 +186,7 @@ export type VariableInputProps = {
   className?: string;
   parseOptions?: ParseOptions;
   hideVariableButton?: boolean;
+  constantAbel?: boolean;
 };
 
 export function Input(props: VariableInputProps) {
@@ -202,6 +203,7 @@ export function Input(props: VariableInputProps) {
     fieldNames,
     parseOptions,
     hideVariableButton,
+    constantAbel = true,
   } = props;
   const scope = typeof props.scope === 'function' ? props.scope() : props.scope;
   const { wrapSSR, hashId, componentCls, rootPrefixCls } = useStyles({ hideVariableButton });
@@ -233,6 +235,7 @@ export function Input(props: VariableInputProps) {
   );
 
   const constantOption: DefaultOptionType & { component?: React.FC<any> } = useMemo(() => {
+    if (!constantAbel) return null;
     if (children) {
       return {
         value: '$',
@@ -398,103 +401,107 @@ export function Input(props: VariableInputProps) {
   const disabled = props.disabled || form.disabled;
 
   return wrapSSR(
-    <Space.Compact style={style} className={classNames(componentCls, hashId, className)}>
-      {variable ? (
-        <div
-          className={cx(
-            'variable',
-            css`
-              position: relative;
-              line-height: 0;
-
-              &:hover {
-                .clear-button {
-                  display: inline-block;
-                }
-              }
-
-              .ant-input {
-                overflow: auto;
-                white-space: nowrap;
-                ${disabled ? '' : 'padding-right: 28px;'}
-
-                .ant-tag {
-                  display: inline;
-                  line-height: 19px;
-                  margin: 0;
-                  padding: 2px 7px;
-                  border-radius: 10px;
-                }
-              }
-            `,
-          )}
-        >
+    <>
+      <Space.Compact style={style} className={classNames(componentCls, hashId, className)}>
+        {variable ? (
           <div
-            role="button"
-            aria-label="variable-tag"
-            style={{ overflow: 'hidden' }}
-            className={cx('ant-input', { 'ant-input-disabled': disabled }, hashId)}
+            className={cx(
+              'variable',
+              css`
+                position: relative;
+                line-height: 0;
+
+                &:hover {
+                  .clear-button {
+                    display: inline-block;
+                  }
+                }
+
+                .ant-input {
+                  overflow: auto;
+                  white-space: nowrap;
+                  ${disabled ? '' : 'padding-right: 28px;'}
+
+                  .ant-tag {
+                    display: inline;
+                    line-height: 19px;
+                    margin: 0;
+                    padding: 2px 7px;
+                    border-radius: 10px;
+                  }
+                }
+              `,
+            )}
           >
-            <Tag color="blue">
-              {variableText.map((item, index) => {
-                return (
-                  <React.Fragment key={item}>
-                    {index ? ' / ' : ''}
-                    {item}
-                  </React.Fragment>
-                );
-              })}
-            </Tag>
-          </div>
-          {!disabled ? (
-            <span
+            <div
               role="button"
-              aria-label="icon-close"
-              className={cx('clear-button')}
-              // eslint-disable-next-line react/no-unknown-property
-              unselectable="on"
-              onClick={onClearVariable}
+              aria-label="variable-tag"
+              style={{ overflow: 'hidden' }}
+              className={cx('ant-input ant-input-outlined', { 'ant-input-disabled': disabled }, hashId)}
             >
-              <CloseCircleFilled />
-            </span>
-          ) : null}
-        </div>
-      ) : (
-        <div style={{ flex: 1 }}>
-          {children && (isFieldValue || !nullable) ? (
-            children
-          ) : ConstantComponent ? (
-            <ConstantComponent
-              role="button"
-              aria-label="variable-constant"
-              {...constantComponentProps}
-              value={value}
-              onChange={onChange}
-            />
-          ) : null}
-        </div>
-      )}
-      {hideVariableButton ? null : (
-        <Cascader
-          options={options}
-          value={variable ?? cValue}
-          onChange={onSwitch}
-          loadData={loadData as any}
-          changeOnSelect={changeOnSelect}
-          fieldNames={fieldNames}
-          disabled={disabled}
-        >
-          {button ?? (
-            <XButton
-              className={css(`
+              <Tag color="blue">
+                {variableText.map((item, index) => {
+                  return (
+                    <React.Fragment key={item}>
+                      {index ? ' / ' : ''}
+                      {item}
+                    </React.Fragment>
+                  );
+                })}
+              </Tag>
+            </div>
+            {!disabled ? (
+              <span
+                role="button"
+                aria-label="icon-close"
+                className={cx('clear-button')}
+                // eslint-disable-next-line react/no-unknown-property
+                unselectable="on"
+                onClick={onClearVariable}
+              >
+                <CloseCircleFilled />
+              </span>
+            ) : null}
+          </div>
+        ) : (
+          <div style={{ flex: 1 }}>
+            {children && (isFieldValue || !nullable) ? (
+              children
+            ) : ConstantComponent ? (
+              <ConstantComponent
+                role="button"
+                aria-label="variable-constant"
+                {...constantComponentProps}
+                value={value}
+                onChange={onChange}
+              />
+            ) : null}
+          </div>
+        )}
+        {hideVariableButton ? null : (
+          <Cascader
+            options={options}
+            value={variable ?? cValue}
+            onChange={onSwitch}
+            loadData={loadData as any}
+            changeOnSelect={changeOnSelect ?? true}
+            fieldNames={fieldNames}
+            disabled={disabled}
+          >
+            {button ?? (
+              <XButton
+                className={css(`
               margin-left: -1px;
             `)}
-              type={variable ? 'primary' : 'default'}
-              disabled={disabled}
-            />
-          )}
-        </Cascader>
-      )}
-    </Space.Compact>,
+                type={variable ? 'primary' : 'default'}
+                disabled={disabled}
+              />
+            )}
+          </Cascader>
+        )}
+      </Space.Compact>
+      {/* 确保所有ant input样式都已加载, 放到Compact中会导致Compact中的Input样式不对 */}
+      <AntInput style={{ display: 'none' }} />
+    </>,
   );
 }

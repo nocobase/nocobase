@@ -183,6 +183,7 @@
   "Chart type": "차트 유형",
   "Chart config": "차트 구성",
   "Templates": "템플릿",
+  "Template": "템플릿",
   "Select template": "템플릿 선택",
   "Action logs": "작업 로그",
   "Create template": "템플릿 생성",
@@ -516,7 +517,8 @@
   "Turn pages": "페이지 넘김",
   "Others": "기타",
   "Other records": "기타 레코드",
-  "Save as template": "템플릿으로 저장",
+  "Save as reference template": "참조 템플릿으로 저장",
+  "Save as inherited template": "상속 템플릿으로 저장",
   "Save as block template": "블록 템플릿으로 저장",
   "Block templates": "블록 템플릿",
   "Block template": "블록 템플릿",
@@ -600,6 +602,7 @@
   "Blank block": "빈 블록",
   "Duplicate template": "템플릿 복제",
   "Reference template": "참조 템플릿",
+  "Inherited template": "상속 템플릿",
   "Create calendar block": "캘린더 블록 생성",
   "Create kanban block": "칸반 블록 생성",
   "Grouping field": "그루핑 필드",
@@ -914,5 +917,10 @@
   "Are you sure you want to hide this tab?": "이 탭을 숨기시겠습니까?",
   "After hiding, this tab will no longer appear in the tab bar. To show it again, you need to go to the route management page to set it.": "숨기면 이 탭은 탭 바에 더 이상 표시되지 않습니다. 다시 표시하려면 라우트 관리 페이지에서 설정해야 합니다.",
   "No pages yet, please configure first": "아직 페이지가 없습니다. 먼저 설정하십시오",
-  "Click the \"UI Editor\" icon in the upper right corner to enter the UI Editor mode": "사용자 인터페이스 편집기 모드에 들어가려면 오른쪽 상단의 \"UI 편집기\" 아이콘을 클릭하십시오"
+  "Click the \"UI Editor\" icon in the upper right corner to enter the UI Editor mode": "사용자 인터페이스 편집기 모드에 들어가려면 오른쪽 상단의 \"UI 편집기\" 아이콘을 클릭하십시오",
+  "Deprecated": "사용 중단됨",
+  "Full permissions": "모든 권한",
+  "Refresh data blocks": "데이터 블록 새로 고침",
+  "Select data blocks to refresh": "데이터 블록을 선택하여 새로 고침",
+  "After successful submission, the selected data blocks will be automatically refreshed.": "전송 후, 선택한 데이터 블록이 자동으로 새로 고쳐집니다."
 }

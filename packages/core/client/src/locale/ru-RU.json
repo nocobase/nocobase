@@ -102,6 +102,7 @@
   "Chart type": "Тип диаграммы",
   "Chart config": "Конфиг. диаграммы",
   "Templates": "Шаблоны",
+  "Template": "Шаблон",
   "Select template": "Выбрать шаблон",
   "Action logs": "Журналы действий",
   "Create template": "Создать шаблон",
@@ -336,7 +337,8 @@
   "Turn pages": "Перелистывать страницы",
   "Others": "Другие",
   "Other records": "Другие записи",
-  "Save as template": "Сохранить как шаблон",
+  "Save as reference template": "Сохранить как шаблон ссылки",
+  "Save as inherited template": "Сохранить как шаблон наследования",
   "Save as block template": "Сохранить как шаблон Блока",
   "Block templates": "Шаблоны блоков",
   "Convert reference to duplicate": "Преобразовать ссылку в дубликат",
@@ -410,6 +412,7 @@
   "Blank block": "Пустой блок",
   "Duplicate template": "Дублировать шаблон",
   "Reference template": "Справочный шаблон",
+  "Inherited template": "Наследуемый шаблон",
   "Create calendar block": "Создать блок календаря",
   "Create kanban block": "Создать блок Канбан",
   "Grouping field": "Поле группировки",
@@ -608,6 +611,11 @@
   "If selected, the route will be displayed in the menu.": "Если выбран, маршрут будет отображаться в меню.",
   "Are you sure you want to hide this tab?": "Вы уверены, что хотите скрыть эту вкладку?",
   "After hiding, this tab will no longer appear in the tab bar. To show it again, you need to go to the route management page to set it.": "После скрытия этой вкладки она больше не будет отображаться во вкладке. Чтобы снова отобразить ее, вам нужно будет перейти на страницу управления маршрутами, чтобы установить ее.",
+  "Deprecated": "Устаревший",
+  "Full permissions": "Полные права",
   "No pages yet, please configure first": "Пока нет страниц, пожалуйста, настройте сначала",
-  "Click the \"UI Editor\" icon in the upper right corner to enter the UI Editor mode": "Нажмите на значок \"Редактор пользовательского интерфейса\" в правом верхнем углу, чтобы войти в режим редактора пользовательского интерфейса"
+  "Click the \"UI Editor\" icon in the upper right corner to enter the UI Editor mode": "Нажмите на значок \"Редактор пользовательского интерфейса\" в правом верхнем углу, чтобы войти в режим редактора пользовательского интерфейса",
+  "Refresh data blocks": "Обновить блоки данных",
+  "Select data blocks to refresh": "Выберите блоки данных для обновления",
+  "After successful submission, the selected data blocks will be automatically refreshed.": "После успешной отправки выбранные блоки данных будут автоматически обновлены."
 }

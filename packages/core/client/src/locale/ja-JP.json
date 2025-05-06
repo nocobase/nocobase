@@ -145,6 +145,7 @@
   "Chart type": "チャートタイプ",
   "Chart config": "チャート設定",
   "Templates": "テンプレート",
+  "Template": "テンプレート",
   "Select template": "テンプレートを選択してください",
   "Action logs": "操作履歴",
   "Create template": "テンプレートを作成",
@@ -396,7 +397,8 @@
   "Turn pages": "ページをめくる",
   "Others": "その他",
   "Other records": "他のレコード",
-  "Save as template": "テンプレートとして保存",
+  "Save as reference template": "参照テンプレートとして保存",
+  "Save as inherited template": "継承テンプレートとして保存",
   "Save as block template": "ブロックテンプレートとして保存",
   "Block templates": "ブロックテンプレート",
   "Block template": "ブロックテンプレート",
@@ -471,6 +473,7 @@
   "Blank block": "空のブロック",
   "Duplicate template": "テンプレートをコピー",
   "Reference template": "テンプレートを参照",
+  "Inherited template": "継承テンプレート",
   "Create calendar block": "カレンダーブロックの作成",
   "Create kanban block": "かんばんブロックの作成",
   "Grouping field": "グループフィールド",
@@ -1041,5 +1044,10 @@
   "Are you sure you want to hide this tab?": "このタブを非表示にしますか？",
   "After hiding, this tab will no longer appear in the tab bar. To show it again, you need to go to the route management page to set it.": "非表示にすると、このタブはタブバーに表示されなくなります。再表示するには、ルート管理ページで設定する必要があります。",
   "No pages yet, please configure first": "まだページがありません。最初に設定してください",
-  "Click the \"UI Editor\" icon in the upper right corner to enter the UI Editor mode": "ユーザーインターフェースエディターモードに入るには、右上隅の「UIエディタ」アイコンをクリックしてください"
+  "Click the \"UI Editor\" icon in the upper right corner to enter the UI Editor mode": "ユーザーインターフェースエディターモードに入るには、右上隅の「UIエディタ」アイコンをクリックしてください",
+  "Deprecated": "非推奨",
+  "Full permissions": "すべての権限",
+  "Refresh data blocks": "データブロックを更新",
+  "Select data blocks to refresh": "データブロックを選択して更新",
+  "After successful submission, the selected data blocks will be automatically refreshed.": "送信後、選択したデータブロックが自動的に更新されます。"
 }

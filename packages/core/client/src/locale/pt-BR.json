@@ -112,6 +112,7 @@
   "Chart type": "Tipo de gráfico",
   "Chart config": "Configuração do gráfico",
   "Templates": "Modelos",
+  "Template": "Modelo",
   "Select template": "Selecione um modelo",
   "Action logs": "Registros de ação",
   "Create template": "Criar modelo",
@@ -432,7 +433,8 @@
   "Turn pages": "Virar páginas",
   "Others": "Outros",
   "Other records": "Outros registros",
-  "Save as template": "Salvar como modelo",
+  "Save as reference template": "Salvar como modelo de referência",
+  "Save as inherited template": "Salvar como modelo herdado",
   "Save as block template": "Salvar como modelo de bloco",
   "Block templates": "Modelos de bloco",
   "Block template": "Modelo de bloco",
@@ -524,6 +526,7 @@
   "Blank block": "Bloco em branco",
   "Duplicate template": "Duplicar modelo",
   "Reference template": "Modelo de referência",
+  "Inherited template": "Modelo herdado",
   "Create calendar block": "Criar bloco de calendário",
   "Create kanban block": "Criar bloco Kanban",
   "Grouping field": "Campo de agrupamento",
@@ -779,6 +782,11 @@
   "If selected, the route will be displayed in the menu.": "Se selecionado, a rota será exibida no menu.",
   "Are you sure you want to hide this tab?": "Tem certeza de que deseja ocultar esta guia?",
   "After hiding, this tab will no longer appear in the tab bar. To show it again, you need to go to the route management page to set it.": "Depois de ocultar, esta guia não aparecerá mais na barra de guias. Para mostrá-la novamente, você precisa ir à página de gerenciamento de rotas para configurá-la.",
+  "Deprecated": "Descontinuado",
+  "Full permissions": "Todas as permissões",
   "No pages yet, please configure first": "Ainda não há páginas, por favor configure primeiro",
-  "Click the \"UI Editor\" icon in the upper right corner to enter the UI Editor mode": "Cliquez sur l'icône \"Éditeur d'interface utilisateur\" dans le coin supérieur droit pour entrer en mode Éditeur d'interface utilisateur"
+  "Click the \"UI Editor\" icon in the upper right corner to enter the UI Editor mode": "Cliquez sur l'icône \"Éditeur d'interface utilisateur\" dans le coin supérieur droit pour entrer en mode Éditeur d'interface utilisateur",
+  "Refresh data blocks": "Atualizar blocos de dados",
+  "Select data blocks to refresh": "Selecionar blocos de dados para atualizar",
+  "After successful submission, the selected data blocks will be automatically refreshed.": "Após a atualização em massa bem sucedida."
 }

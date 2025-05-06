@@ -10,9 +10,18 @@ import { DeleteOutlined, DownOutlined, PlusOutlined, ReloadOutlined } from '@ant
 import { Checkbox, FormButtonGroup, FormItem, FormLayout, Input, Radio, Reset, Submit } from '@formily/antd-v5';
 import { registerValidateRules } from '@formily/core';
 import { createSchemaField, useField } from '@formily/react';
-import { SchemaComponent, SchemaComponentOptions, useAPIClient, FormDrawer, useGlobalTheme } from '@nocobase/client';
+import {
+  SchemaComponent,
+  SchemaComponentOptions,
+  useAPIClient,
+  FormDrawer,
+  useGlobalTheme,
+  removeNullCondition,
+} from '@nocobase/client';
+import { useLocation } from 'react-router-dom';
 import { Alert, App, Button, Card, Dropdown, Flex, Space, Table, Tag } from 'antd';
-import React, { useContext, useState } from 'react';
+import React, { useContext, useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { VAR_NAME_RE } from '../../re';
 import { EnvAndSecretsContext } from '../EnvironmentVariablesAndSecretsProvider';
 import { useT } from '../locale';
@@ -258,6 +267,13 @@ export function EnvironmentTabs() {
   const [selectRowKeys, setSelectRowKeys] = useState([]);
   const resource = api.resource('environmentVariables');
   const { theme } = useGlobalTheme();
+  const location = useLocation();
+  useEffect(() => {
+    const { run, params } = variablesRequest;
+    if (params?.length) {
+      run();
+    }
+  }, [location.key]);
   const handleBulkImport = async (importData) => {
     const arr = Object.entries(importData).map(([type, dataString]) => {
       return parseKeyValuePairs(dataString, type).filter(Boolean);
@@ -359,13 +375,20 @@ export function EnvironmentTabs() {
   const useFilterActionProps = () => {
     const field = useField<any>();
     const { run } = variablesRequest;
+    const { t } = useTranslation();
 
     return {
       options: filterOptions,
       onSubmit: async (values) => {
         run(values);
-
         field.setValue(values);
+        const filter = removeNullCondition(values?.filter);
+        const items = filter?.$and || filter?.$or;
+        if (items?.length) {
+          field.title = t('{{count}} filter items', { count: items?.length || 0 });
+        } else {
+          field.title = t('Filter');
+        }
       },
       onReset: (values) => {
         field.setValue(values);
@@ -407,7 +430,7 @@ export function EnvironmentTabs() {
                 $and: [{ name: { $includes: '' } }],
               },
               'x-component': 'Filter.Action',
-
+              'x-component-props': { icon: 'FilterOutlined' },
               enum: filterOptions,
               'x-use-component-props': useFilterActionProps,
             }}
@@ -426,7 +449,7 @@ export function EnvironmentTabs() {
             <Dropdown
               menu={{
                 onClick(info) {
-                  FormDrawer(
+                  const drawer = FormDrawer(
                     {
                       variable: t('Add variable'),
                       bulk: t('Bulk import'),
@@ -440,7 +463,13 @@ export function EnvironmentTabs() {
                           </SchemaComponentOptions>
                           <FormDrawer.Footer>
                             <FormButtonGroup align="right">
-                              <Reset>{t('Cancel')}</Reset>
+                              <Reset
+                                onClick={() => {
+                                  drawer.close();
+                                }}
+                              >
+                                {t('Cancel')}
+                              </Reset>
                               <Submit
                                 onSubmit={async (data) => {
                                   if (info.key === 'bulk') {
@@ -466,7 +495,8 @@ export function EnvironmentTabs() {
                       );
                     },
                     theme,
-                  )
+                  );
+                  drawer
                     .open({
                       initialValues: {},
                     })

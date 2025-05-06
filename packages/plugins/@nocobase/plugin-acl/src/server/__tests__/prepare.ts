@@ -23,6 +23,7 @@ export async function prepareApp(): Promise<MockServer> {
       'auth',
       'data-source-manager',
       'collection-tree',
+      'system-settings',
     ],
   });
 

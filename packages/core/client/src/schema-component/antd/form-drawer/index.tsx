@@ -153,7 +153,7 @@ const DrawerExtra: ReactFC = (props) => {
   const extraRef = useRef<HTMLDivElement>();
   const prefixCls = usePrefixCls('drawer');
   useLayoutEffect(() => {
-    const content = ref.current?.closest(`.${prefixCls}-wrapper-body`)?.querySelector(`.${prefixCls}-header`);
+    const content = ref.current?.closest(`.${prefixCls}-content`)?.querySelector(`.${prefixCls}-header`);
     if (content) {
       if (!extraRef.current) {
         extraRef.current = content.querySelector(`.${prefixCls}-extra`);
@@ -182,7 +182,7 @@ const DrawerFooter: ReactFC = (props) => {
   const footerRef = useRef<HTMLDivElement>();
   const prefixCls = usePrefixCls('drawer');
   useLayoutEffect(() => {
-    const content = ref.current?.closest(`.${prefixCls}-wrapper-body`);
+    const content = ref.current?.closest(`.${prefixCls}-content`);
     if (content) {
       if (!footerRef.current) {
         footerRef.current = content.querySelector(`.${prefixCls}-footer`);

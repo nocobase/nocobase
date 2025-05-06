@@ -108,6 +108,7 @@ export class Application {
   public name: string;
   public favicon: string;
   public globalVars: Record<string, any> = {};
+  public globalVarCtxs: Record<string, any> = {};
   public jsonLogic: JsonLogic;
   loading = true;
   maintained = false;
@@ -494,12 +495,19 @@ export class Application {
     );
   }
 
-  addGlobalVar(key: string, value: any) {
+  addGlobalVar(key: string, value: any, varCtx?: any) {
     set(this.globalVars, key, value);
+    if (varCtx) {
+      set(this.globalVarCtxs, key, varCtx);
+    }
   }
 
   getGlobalVar(key) {
     return get(this.globalVars, key);
+  }
+
+  getGlobalVarCtx(key) {
+    return get(this.globalVarCtxs, key);
   }
   addUserCenterSettingsItem(item: SchemaSettingsItemType & { aclSnippet?: string }) {
     const useVisibleProp = item.useVisible || (() => true);

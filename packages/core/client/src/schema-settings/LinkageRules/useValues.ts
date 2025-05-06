@@ -10,6 +10,7 @@
 import { useField } from '@formily/react';
 import { useEffect, useContext } from 'react';
 import { LinkageLogicContext } from './context';
+import { ActionType } from './type';
 
 const findOption = (dataIndex = [], options) => {
   let items = options;
@@ -34,9 +35,34 @@ export const useValues = (options) => {
     const option = (dataIndex && findOption(dataIndex, options)) || {};
     const operators = option?.operators || [];
     field.data.operators = operators?.filter((v) => {
-      if (dataIndex.length > 1) {
-        return v.value !== 'value';
+      const isOptionField = ['select', 'radioGroup', 'multipleSelect', 'checkboxGroup'].includes(
+        option?.interface || '',
+      );
+      const isDateField = [
+        'date',
+        'datetime',
+        'dateOnly',
+        'datetimeNoTz',
+        'unixTimestamp',
+        'createdAt',
+        'updatedAt',
+      ].includes(option?.interface || '');
+
+      // 如果 多个字段，则排除 Value、DateScope、Options
+      if (dataIndex.length > 1 && [ActionType.Value, ActionType.DateScope, ActionType.Options].includes(v.value)) {
+        return false;
       }
+
+      // 非选项字段，去掉 Options
+      if (!isOptionField && v.value === ActionType.Options) {
+        return false;
+      }
+
+      // 非时间字段，去掉 DateScope
+      if (!isDateField && v.value === ActionType.DateScope) {
+        return false;
+      }
+
       return true;
     });
     field.data.schema = option?.schema;
@@ -50,9 +76,34 @@ export const useValues = (options) => {
       field.data = field.data || {};
       const operators = option?.operators;
       field.data.operators = operators?.filter((v) => {
-        if (dataIndex.length > 1) {
-          return v.value !== 'value';
+        const isOptionField = ['select', 'radioGroup', 'multipleSelect', 'checkboxGroup'].includes(
+          option?.interface || '',
+        );
+        const isDateField = [
+          'date',
+          'datetime',
+          'dateOnly',
+          'datetimeNoTz',
+          'unixTimestamp',
+          'createdAt',
+          'updatedAt',
+        ].includes(option?.interface || '');
+
+        // 如果 多个字段，则排除 Value、DateScope、Options
+        if (dataIndex.length > 1 && [ActionType.Value, ActionType.DateScope, ActionType.Options].includes(v.value)) {
+          return false;
         }
+
+        // 非选项字段，去掉 Options
+        if (!isOptionField && v.value === ActionType.Options) {
+          return false;
+        }
+
+        // 非时间字段，去掉 DateScope
+        if (!isDateField && v.value === ActionType.DateScope) {
+          return false;
+        }
+
         return true;
       });
       field.data.schema = option?.schema;

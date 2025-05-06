@@ -22,17 +22,10 @@ export class PluginAuthSMSServer extends Plugin {
       this.app.logger.warn('auth-sms: @nocobase/plugin-verification is required');
       return;
     }
-    verificationPlugin.interceptors.register('auth:signIn', {
+    verificationPlugin.verificationManager.registerAction('auth:signIn', {
       manual: true,
-      getReceiver: (ctx) => {
-        return ctx.action.params.values.phone;
-      },
-      expiresIn: 120,
-      validate: async (ctx, phone) => {
-        if (!phone) {
-          throw new Error(ctx.t('Not a valid cellphone number, please re-enter'));
-        }
-        return true;
+      getBoundInfoFromCtx: (ctx) => {
+        return ctx.action.params.values || {};
       },
     });
 

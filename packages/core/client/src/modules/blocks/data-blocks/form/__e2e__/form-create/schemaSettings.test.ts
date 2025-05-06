@@ -279,7 +279,7 @@ test.describe('set default value', () => {
     await page.getByRole('button', { name: 'OK', exact: true }).click();
 
     // 2. 设置的 ‘abcd’ 应该立即显示在 Nickname 字段的输入框中
-    await expect(page.getByLabel('block-item-CollectionField-').getByRole('textbox')).toHaveValue('abcd');
+    await expect(page.getByLabel('block-item-CollectionField-').getByRole('textbox').last()).toHaveValue('abcd');
   });
 
   test('Current popup record', async ({ page, mockPage }) => {
@@ -310,7 +310,7 @@ test.describe('set default value', () => {
     // 设置联动规则
     await page.getByLabel('block-item-CardItem-users-form').hover();
     await page.getByLabel('designer-schema-settings-CardItem-blockSettings:createForm-users').hover();
-    await page.getByRole('menuitem', { name: 'Linkage rules' }).click();
+    await page.getByRole('menuitem', { name: 'Field linkage rules' }).click();
     await page.mouse.move(300, 0);
     await page.getByRole('button', { name: 'plus Add linkage rule' }).click();
     await page.getByText('Add property').click();
@@ -438,7 +438,7 @@ test.describe('set default value', () => {
     // 设置联动规则
     await page.getByLabel('block-item-CardItem-users-form').hover();
     await page.getByLabel('designer-schema-settings-CardItem-blockSettings:createForm-users').hover();
-    await page.getByRole('menuitem', { name: 'Linkage rules' }).click();
+    await page.getByRole('menuitem', { name: 'Field linkage rules' }).click();
     await page.mouse.move(300, 0);
     await page.getByRole('button', { name: 'plus Add linkage rule' }).click();
     await page.getByText('Add property').click();
@@ -563,7 +563,7 @@ test.describe('set default value', () => {
     // 设置联动规则
     await page.getByLabel('block-item-CardItem-users-form').hover();
     await page.getByLabel('designer-schema-settings-CardItem-blockSettings:createForm-users').hover();
-    await page.getByRole('menuitem', { name: 'Linkage rules' }).click();
+    await page.getByRole('menuitem', { name: 'Field linkage rules' }).click();
     await page.mouse.move(300, 0);
     await page.getByRole('button', { name: 'plus Add linkage rule' }).click();
     await page.getByText('Add property').click();
@@ -701,7 +701,7 @@ test.describe('set default value', () => {
     // 设置联动规则
     await page.getByLabel('block-item-CardItem-users-form').hover();
     await page.getByLabel('designer-schema-settings-CardItem-blockSettings:createForm-users').hover();
-    await page.getByRole('menuitem', { name: 'Linkage rules' }).click();
+    await page.getByRole('menuitem', { name: 'Field linkage rules' }).click();
     await page.mouse.move(300, 0);
     await page.getByRole('button', { name: 'plus Add linkage rule' }).click();
     await page.getByText('Add property').click();

@@ -47,6 +47,7 @@ export const CSSVariableProvider = ({ children }) => {
     document.body.style.setProperty('--colorBgScrollBarActive', colorBgScrollBarActive);
     document.body.style.setProperty('--colorSettings', token.colorSettings || defaultTheme.token.colorSettings);
     document.body.style.setProperty('--colorBgSettingsHover', token.colorBgSettingsHover);
+    document.body.style.setProperty('--colorTemplateBgSettingsHover', token.colorTemplateBgSettingsHover);
     document.body.style.setProperty('--colorBorderSettingsHover', token.colorBorderSettingsHover);
     document.body.style.setProperty('--colorBgMenuItemSelected', token.colorBgHeaderMenuActive);
 
@@ -60,6 +61,7 @@ export const CSSVariableProvider = ({ children }) => {
     token.colorBgContainer,
     token.colorBgLayout,
     token.colorBgSettingsHover,
+    token.colorTemplateBgSettingsHover,
     token.colorBorderSettingsHover,
     token.colorInfoBg,
     token.colorInfoBorder,

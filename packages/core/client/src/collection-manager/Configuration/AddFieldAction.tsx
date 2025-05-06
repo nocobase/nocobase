@@ -25,6 +25,7 @@ import { useCollectionManager_deprecated } from '../hooks';
 import useDialect from '../hooks/useDialect';
 import * as components from './components';
 import { useFieldInterfaceOptions } from './interfaces';
+import { ItemType, MenuItemType } from 'antd/es/menu/interface';
 
 const getSchema = (schema: CollectionFieldInterface, record: any, compile) => {
   if (!schema) {
@@ -231,7 +232,7 @@ export const AddFieldAction = (props) => {
   }, [getTemplate, record]);
   const items = useMemo<MenuProps['items']>(() => {
     return getFieldOptions()
-      .map((option) => {
+      .map((option): ItemType & { title: string; children?: ItemType[] } => {
         if (option?.children?.length === 0) {
           return null;
         }

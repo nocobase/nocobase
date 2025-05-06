@@ -81,6 +81,7 @@ export interface ActionProps extends ButtonProps {
    * @internal
    */
   addChild?: boolean;
+  onlyIcon?: boolean;
 }
 
 export type ComposedAction = React.FC<ActionProps> & {

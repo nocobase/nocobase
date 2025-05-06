@@ -183,6 +183,7 @@
   "Chart type": "圖表型別",
   "Chart config": "圖表設定",
   "Templates": "模板",
+  "Template": "模板",
   "Select template": "選擇模板",
   "Action logs": "動作日誌",
   "Create template": "建立模板",
@@ -517,7 +518,8 @@
   "Turn pages": "翻頁",
   "Others": "其他",
   "Other records": "其他記錄",
-  "Save as template": "儲存為模板",
+  "Save as reference template": "儲存為引用模板",
+  "Save as inherited template": "儲存為繼承模板",
   "Save as block template": "儲存為區塊模板",
   "Block templates": "區塊模板",
   "Block template": "區塊模板",
@@ -601,6 +603,7 @@
   "Blank block": "空區塊",
   "Duplicate template": "複製模板",
   "Reference template": "引用模板",
+  "Inherited template": "繼承模板",
   "Create calendar block": "建立日曆區塊",
   "Create kanban block": "建立看板區塊",
   "Grouping field": "群組欄位",
@@ -913,6 +916,11 @@
   "If selected, the route will be displayed in the menu.": "如果選中，該路由將顯示在菜單中。",
   "Are you sure you want to hide this tab?": "你確定要隱藏這個標籤嗎？",
   "After hiding, this tab will no longer appear in the tab bar. To show it again, you need to go to the route management page to set it.": "隱藏後，這個標籤將不再出現在標籤欄中。要再次顯示它，你需要到路由管理頁面進行設置。",
+  "Deprecated": "已棄用",
+  "Full permissions": "完全權限",
   "No pages yet, please configure first": "尚未配置頁面，請先配置",
-  "Click the \"UI Editor\" icon in the upper right corner to enter the UI Editor mode": "點擊右上角的 \"介面設定\" 圖示進入介面設定模式"
+  "Click the \"UI Editor\" icon in the upper right corner to enter the UI Editor mode": "點擊右上角的 \"介面設定\" 圖示進入介面設定模式",
+  "Refresh data blocks": "刷新數據區塊",
+  "Select data blocks to refresh": "選擇要刷新的數據區塊",
+  "After successful submission, the selected data blocks will be automatically refreshed.": "提交成功後，選中的數據區塊將自動刷新。"
 }

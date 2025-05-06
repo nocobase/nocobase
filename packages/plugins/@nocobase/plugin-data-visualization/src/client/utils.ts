@@ -12,8 +12,7 @@ import { uid } from '@formily/shared';
 import lodash from 'lodash';
 import { SelectedField } from './configure';
 import { FieldOption } from './hooks';
-import { ChartRendererContext, QueryProps } from './renderer';
-import { useContext } from 'react';
+import { QueryProps } from './renderer';
 
 export const createRendererSchema = (decoratorProps: any, componentProps = {}) => {
   const { collection, config } = decoratorProps;
@@ -23,7 +22,8 @@ export const createRendererSchema = (decoratorProps: any, componentProps = {}) =
     'x-decorator': 'ChartRendererProvider',
     'x-decorator-props': decoratorProps,
     'x-acl-action': `${collection}:list`,
-    'x-designer': 'ChartRenderer.Designer',
+    'x-toolbar': 'ChartRendererToolbar',
+    'x-settings': 'chart:renderer',
     'x-component': 'CardItem',
     'x-component-props': {
       size: 'small',
@@ -104,40 +104,6 @@ export const getSelectedFields = (fields: FieldOption[], query: QueryProps) => {
   const map = new Map([...process(measures), ...process(dimensions)].map((item) => [item.value, item]));
   const selectedFields = [...map.values()];
   return selectedFields;
-};
-
-export const processData = (selectedFields: (FieldOption & { query?: any })[], data: any[], scope: any) => {
-  const parseEnum = (field: FieldOption, value: any) => {
-    const options = field.uiSchema?.enum as { value: string; label: string }[];
-    if (!options || !Array.isArray(options)) {
-      return value;
-    }
-    if (Array.isArray(value)) {
-      return value.map((v) => parseEnum(field, v));
-    }
-    const option = options.find((option) => option.value === (value?.toString?.() || value));
-    return Schema.compile(option?.label || value, scope);
-  };
-  return data.map((record) => {
-    const processed = {};
-    Object.entries(record).forEach(([key, value]) => {
-      const field = selectedFields.find((field) => field.value === key && !field?.query?.aggregation);
-      if (!field) {
-        processed[key] = value;
-        return;
-      }
-      switch (field.interface) {
-        case 'select':
-        case 'radioGroup':
-        case 'multipleSelect':
-          processed[key] = parseEnum(field, value);
-          break;
-        default:
-          processed[key] = value;
-      }
-    });
-    return processed;
-  });
 };
 
 export const removeUnparsableFilter = (filter: any) => {

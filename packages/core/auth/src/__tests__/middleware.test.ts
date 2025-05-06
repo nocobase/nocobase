@@ -22,7 +22,7 @@ describe('middleware', () => {
     app = await createMockServer({
       registerActions: true,
       acl: true,
-      plugins: ['users', 'auth', 'acl', 'field-sort', 'data-source-manager', 'error-handler'],
+      plugins: ['users', 'auth', 'acl', 'field-sort', 'data-source-manager', 'error-handler', 'system-settings'],
     });
 
     // app.plugin(ApiKeysPlugin);
