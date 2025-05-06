@@ -80,7 +80,7 @@ export const actionDesignerCss = css`
 
 export const DuplicateAction = observer(
   (props: any) => {
-    const { children } = props;
+    const { children, ...others } = props;
     const { message } = App.useApp();
     const field = useField();
     const fieldSchema = useFieldSchema();
@@ -161,6 +161,7 @@ export const DuplicateAction = observer(
 
     return (
       <div
+        ref={others.setNodeRef}
         className={cx(actionDesignerCss, {
           [css`
             .general-schema-designer {
@@ -191,6 +192,7 @@ export const DuplicateAction = observer(
                 //@ts-ignore
                 disabled={disabled}
                 style={{
+                  ...others.style,
                   opacity: designable && field?.data?.hidden && 0.1,
                   cursor: loading ? 'not-allowed' : 'pointer',
                   position: 'relative',
