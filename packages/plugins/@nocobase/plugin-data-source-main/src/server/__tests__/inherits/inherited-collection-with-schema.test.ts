@@ -9,8 +9,10 @@
 
 import Database, { Repository } from '@nocobase/database';
 import Application from '@nocobase/server';
+import { isPg } from '@nocobase/test';
 import { createApp } from '..';
-import { pgOnly } from '@nocobase/test';
+
+const pgOnly = () => (isPg() ? describe : describe.skip);
 
 pgOnly()('Inherited Collection with schema options', () => {
   let db: Database;

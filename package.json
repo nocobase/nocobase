@@ -32,6 +32,7 @@
     "e2e": "nocobase e2e",
     "ts": "nocobase test:server",
     "tc": "nocobase test:client",
+    "benchmark": "nocobase benchmark",
     "doc": "nocobase doc",
     "doc:cn": "nocobase doc --lang=zh-CN",
     "postinstall": "nocobase postinstall",

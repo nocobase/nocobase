@@ -15,6 +15,7 @@ import fs from 'fs-extra';
 import path from 'path';
 import { build as tsupBuild } from 'tsup';
 
+import { RsdoctorRspackPlugin } from '@rsdoctor/rspack-plugin';
 import { EsbuildSupportExts, globExcludeFiles } from './constant';
 import { PkgLog, UserConfig, getPackageJson } from './utils';
 import {
@@ -26,12 +27,15 @@ import {
   getSourcePackages,
 } from './utils/buildPluginUtils';
 import { getDepPkgPath, getDepsConfig } from './utils/getDepsConfig';
-import { RsdoctorRspackPlugin } from '@rsdoctor/rspack-plugin';
 
 const validExts = ['.ts', '.tsx', '.js', '.jsx', '.mjs'];
 const serverGlobalFiles: string[] = ['src/**', '!src/client/**', ...globExcludeFiles];
 const clientGlobalFiles: string[] = ['src/**', '!src/server/**', ...globExcludeFiles];
-const sourceGlobalFiles: string[] = ['src/**/*.{ts,js,tsx,jsx,mjs}', '!src/**/__tests__'];
+const sourceGlobalFiles: string[] = [
+  'src/**/*.{ts,js,tsx,jsx,mjs}',
+  '!src/**/__tests__',
+  '!src/**/__benchmarks__',
+];
 
 const external = [
   // nocobase
