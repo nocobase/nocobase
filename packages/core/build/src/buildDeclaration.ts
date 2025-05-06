@@ -25,6 +25,7 @@ export const buildDeclaration = (cwd: string, targetDir: string) => {
       `!${path.join(srcPath, '**/demos{,/**}')}`,
       `!${path.join(srcPath, '**/__test__{,/**}')}`,
       `!${path.join(srcPath, '**/__tests__{,/**}')}`,
+      `!${path.join(srcPath, '**/__benchmarks__{,/**}')}`,
       `!${path.join(srcPath, '**/__e2e__{,/**}')}`,
       `!${path.join(srcPath, '**/*.mdx')}`,
       `!${path.join(srcPath, '**/*.md')}`,
