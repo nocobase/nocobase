@@ -30,7 +30,7 @@ export class OTPVerification extends Verification {
           $dateAfter: new Date(),
         },
         status: CODE_STATUS_UNUSED,
-        verificatorName: this.verificator.name,
+        verifierName: this.verifier.name,
       },
     });
 
@@ -47,7 +47,7 @@ export class OTPVerification extends Verification {
   async bind(userId: number, resource?: string, action?: string): Promise<{ uuid: string; meta?: any }> {
     const { uuid, code } = this.ctx.action.params.values || {};
     await this.verify({
-      resource: resource || 'verificators',
+      resource: resource || 'verifiers',
       action: action || 'bind',
       boundInfo: { uuid },
       verifyParams: { code },

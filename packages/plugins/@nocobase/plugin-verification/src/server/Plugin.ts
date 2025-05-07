@@ -14,7 +14,7 @@ import { PROVIDER_TYPE_SMS_ALIYUN, PROVIDER_TYPE_SMS_TENCENT } from '../constant
 import { VerificationManager } from './verification-manager';
 import { SMSOTPProviderManager, SMSOTPVerification } from './otp-verification/sms';
 import { SMS_OTP_VERIFICATION_TYPE } from '../constants';
-import verificatorsActions from './actions/verificators';
+import verifiersActions from './actions/verifiers';
 import smsAliyun from './otp-verification/sms/providers/sms-aliyun';
 import smsTencent from './otp-verification/sms/providers/sms-tencent';
 import smsOTPProviders from './otp-verification/sms/resource/sms-otp-providers';
@@ -30,19 +30,19 @@ export default class PluginVerficationServer extends Plugin {
     this.app.resourceManager.define(smsOTPProviders);
     this.app.resourceManager.define(smsOTP);
 
-    Object.entries(verificatorsActions).forEach(([action, handler]) =>
-      this.app.resourceManager.registerActionHandler(`verificators:${action}`, handler),
+    Object.entries(verifiersActions).forEach(([action, handler]) =>
+      this.app.resourceManager.registerActionHandler(`verifiers:${action}`, handler),
     );
 
-    this.app.acl.allow('verificators', 'listByUser', 'loggedIn');
-    this.app.acl.allow('verificators', 'listForVerify', 'loggedIn');
-    this.app.acl.allow('verificators', 'bind', 'loggedIn');
-    this.app.acl.allow('verificators', 'unbind', 'loggedIn');
+    this.app.acl.allow('verifiers', 'listByUser', 'loggedIn');
+    this.app.acl.allow('verifiers', 'listForVerify', 'loggedIn');
+    this.app.acl.allow('verifiers', 'bind', 'loggedIn');
+    this.app.acl.allow('verifiers', 'unbind', 'loggedIn');
     this.app.acl.allow('smsOTP', 'create', 'loggedIn');
     this.app.acl.allow('smsOTP', 'publicCreate');
     this.app.acl.registerSnippet({
-      name: `pm.${this.name}.verificators`,
-      actions: ['verificators:*', 'smsOTPProviders:*'],
+      name: `pm.${this.name}.verifiers`,
+      actions: ['verifiers:*', 'smsOTPProviders:*'],
     });
 
     this.verificationManager.registerVerificationType(SMS_OTP_VERIFICATION_TYPE, {
@@ -55,17 +55,17 @@ export default class PluginVerficationServer extends Plugin {
     });
     this.verificationManager.addSceneRule(
       (scene, verificationType) =>
-        ['auth-sms', 'unbind-verificator'].includes(scene) && verificationType === SMS_OTP_VERIFICATION_TYPE,
+        ['auth-sms', 'unbind-verifier'].includes(scene) && verificationType === SMS_OTP_VERIFICATION_TYPE,
     );
-    this.verificationManager.registerAction('verificators:bind', {
+    this.verificationManager.registerAction('verifiers:bind', {
       manual: true,
       getBoundInfoFromCtx: (ctx) => {
         return ctx.action.params.values || {};
       },
     });
-    this.verificationManager.registerScene('unbind-verificator', {
+    this.verificationManager.registerScene('unbind-verifier', {
       actions: {
-        'verificators:unbind': {},
+        'verifiers:unbind': {},
       },
     });
     this.smsOTPProviderManager.registerProvider(PROVIDER_TYPE_SMS_ALIYUN, {
