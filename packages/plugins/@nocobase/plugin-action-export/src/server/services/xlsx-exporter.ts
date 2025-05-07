@@ -100,17 +100,15 @@ export class XlsxExporter extends BaseExporter<XlsxExportOptions & { fields: Arr
     });
   }
 
-  static xlsxSafeWrite(wb: XLSX.WorkBook, opts: XLSX.WritingOptions) {
-    if (opts.type === 'buffer') {
-      const data = wb.Sheets.Data as object;
-      for (const key of Object.keys(data)) {
-        const v = data[key]?.v;
-        if (v?.length > XLSX_LIMIT_CHAER) {
-          data[key].v = v.slice(0, XLSX_LIMIT_CHAER);
-        }
+  static xlsxSafeWrite(wb: XLSX.WorkBook, opts: XLSX.WritingOptions, path?: string) {
+    const data = wb.Sheets.Data as object;
+    for (const key of Object.keys(data)) {
+      const v = data[key]?.v;
+      if (v?.length > XLSX_LIMIT_CHAER) {
+        data[key].v = v.slice(0, XLSX_LIMIT_CHAER);
       }
     }
-    return XLSX.write(wb, opts);
+    return path ? XLSX.writeFileXLSX(wb, path) : XLSX.write(wb, opts);
   }
 }
 
