@@ -78,6 +78,7 @@ const subTableContainer = css`
   .ant-table-footer {
     margin-top: 10px;
     background: inherit;
+    min-height: 22px;
   }
 `;
 
