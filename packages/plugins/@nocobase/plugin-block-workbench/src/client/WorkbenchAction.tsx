@@ -34,7 +34,7 @@ const useStyles = createStyles(({ token, css }) => ({
     padding-top: 8px;
   `,
   avatar: css`
-    width: 4em;
+    width: 5em;
   `,
   title: css`
     margin-top: ${token.marginSM}px;
