@@ -7,6 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { LinkOutlined, QuestionCircleOutlined } from '@ant-design/icons';
 import { ISchema, useField, useFieldSchema } from '@formily/react';
 import { uid } from '@formily/shared';
 import {
@@ -20,6 +21,7 @@ import {
   useURLAndHTMLSchema,
   useVariableOptions,
 } from '@nocobase/client';
+import { Select, Tooltip } from 'antd';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -39,6 +41,84 @@ const getVariableComponentWithScope = (Com) => {
   };
 };
 
+const AllowOptionsHelp = ({ type }) => {
+  const { t, i18n } = useTranslation();
+  const typeToDescription = {
+    autoplay: t(
+      'Controls whether the current document is allowed to autoplay media requested through the HTMLMediaElement interface. When this policy is disabled and there were no user gestures, the Promise returned by HTMLMediaElement.play() will reject with a NotAllowedError DOMException. The autoplay attribute on <audio> and <video> elements will be ignored.',
+    ),
+    camera: t(
+      'Controls whether the current document is allowed to use video input devices. When this policy is disabled, the Promise returned by getUserMedia() will reject with a NotAllowedError DOMException.',
+    ),
+    'document-domain': t(
+      'Controls whether the current document is allowed to set document.domain. When this policy is disabled, attempting to set document.domain will fail and cause a SecurityError DOMException to be thrown.',
+    ),
+    'encrypted-media': t(
+      'Controls whether the current document is allowed to use the Encrypted Media Extensions API (EME). When this policy is disabled, the Promise returned by Navigator.requestMediaKeySystemAccess() will reject with a SecurityError DOMException.',
+    ),
+    fullscreen: t(
+      'Controls whether the current document is allowed to use Element.requestFullscreen(). When this policy is disabled, the returned Promise rejects with a TypeError.',
+    ),
+    geolocation: t(
+      'Controls whether the current document is allowed to use the Geolocation Interface. When this policy is disabled, calls to getCurrentPosition() and watchPosition() will cause those functions callbacks to be invoked with a GeolocationPositionError code of PERMISSION_DENIED.',
+    ),
+    microphone: t(
+      'Controls whether the current document is allowed to use audio input devices. When this policy is disabled, the Promise returned by MediaDevices.getUserMedia() will reject with a NotAllowedError DOMException.',
+    ),
+    midi: t(
+      'Controls whether the current document is allowed to use the Web MIDI API. When this policy is disabled, the Promise returned by Navigator.requestMIDIAccess() will reject with a SecurityError DOMException.',
+    ),
+    payment: t(
+      'Controls whether the current document is allowed to use the Payment Request API. When this policy is enabled, the PaymentRequest() constructor will throw a SecurityError DOMException.',
+    ),
+  };
+
+  const description = typeToDescription[type];
+
+  return (
+    <span>
+      {type}{' '}
+      <Tooltip
+        zIndex={9999}
+        title={
+          <span>
+            {description}{' '}
+            <a
+              href={`https://developer.mozilla.org/${
+                i18n.language === 'zh-CN' ? 'zh-CN' : 'en-US'
+              }/docs/Web/HTTP/Reference/Headers/Permissions-Policy/${type}`}
+              target="_blank"
+              rel="noreferrer"
+            >
+              <LinkOutlined />
+            </a>
+          </span>
+        }
+      >
+        <QuestionCircleOutlined />
+      </Tooltip>
+    </span>
+  );
+};
+
+const AllowDescription = () => {
+  const { t, i18n } = useTranslation();
+  const helpURL =
+    i18n.language === 'zh-CN'
+      ? 'https://developer.mozilla.org/zh-CN/docs/Web/HTML/Reference/Elements/iframe#allow'
+      : 'https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/iframe#allow';
+  return (
+    <span>
+      {t(
+        'Specifies a Permissions Policy for the <iframe>. The policy defines what features are available to the <iframe> (for example, access to the microphone, camera, battery, web-share, etc.) based on the origin of the request.',
+      )}{' '}
+      <a href={helpURL} target="_blank" rel="noreferrer">
+        <LinkOutlined />
+      </a>
+    </span>
+  );
+};
+
 const commonOptions: any = {
   items: [
     {
@@ -50,7 +130,7 @@ const commonOptions: any = {
         const { t, i18n } = useTranslation();
         const { dn } = useDesignable();
         const api = useAPIClient();
-        const { mode, url, params, htmlId, height = '60vh', engine } = fieldSchema['x-component-props'] || {};
+        const { mode, url, params, htmlId, height = '60vh', engine, allow } = fieldSchema['x-component-props'] || {};
         const saveHtml = async (html: string) => {
           const options = {
             values: { html },
@@ -66,13 +146,14 @@ const commonOptions: any = {
           }
         };
         const { urlSchema, paramsSchema } = useURLAndHTMLSchema();
-        const submitHandler = async ({ mode, url, html, height, params, engine }) => {
+        const submitHandler = async ({ mode, url, html, height, params, engine, allow }) => {
           const componentProps = fieldSchema['x-component-props'] || {};
           componentProps['mode'] = mode;
           componentProps['height'] = height;
           componentProps['engine'] = engine || 'string';
           componentProps['params'] = params;
           componentProps['url'] = url;
+          componentProps['allow'] = allow;
           if (mode === 'html') {
             const data = await saveHtml(html);
             componentProps['htmlId'] = data.id;
@@ -114,6 +195,7 @@ const commonOptions: any = {
               height,
               engine,
               params,
+              allow,
             };
             if (htmlId) {
               // eslint-disable-next-line no-unsafe-optional-chaining
@@ -140,6 +222,31 @@ const commonOptions: any = {
               url: {
                 ...urlSchema,
                 required: true,
+              },
+              allow: {
+                title: 'Allow',
+                type: 'string',
+                'x-decorator': 'FormItem',
+                'x-component': (props) => {
+                  return (
+                    <Select
+                      {...props}
+                      allowClear
+                      options={[
+                        { value: 'autoplay', label: <AllowOptionsHelp type="autoplay" /> },
+                        { value: 'camera', label: <AllowOptionsHelp type="camera" /> },
+                        { value: 'document-domain', label: <AllowOptionsHelp type="document-domain" /> },
+                        { value: 'encrypted-media', label: <AllowOptionsHelp type="encrypted-media" /> },
+                        { value: 'fullscreen', label: <AllowOptionsHelp type="fullscreen" /> },
+                        { value: 'geolocation', label: <AllowOptionsHelp type="geolocation" /> },
+                        { value: 'microphone', label: <AllowOptionsHelp type="microphone" /> },
+                        { value: 'midi', label: <AllowOptionsHelp type="midi" /> },
+                        { value: 'payment', label: <AllowOptionsHelp type="payment" /> },
+                      ]}
+                    />
+                  );
+                },
+                description: <AllowDescription />,
               },
               params: paramsSchema,
               engine: {
@@ -193,6 +300,7 @@ const commonOptions: any = {
           } as ISchema,
           onSubmit: submitHandler,
           noRecord: true,
+          width: 600,
         };
       },
     },
