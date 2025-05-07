@@ -112,6 +112,7 @@ export function withInitializer<T>(C: ComponentType<T>) {
               React.createElement(C, cProps)
             ) : (
               <Popover
+                zIndex={9999}
                 placement={'bottomLeft'}
                 {...popoverProps}
                 arrow={false}
