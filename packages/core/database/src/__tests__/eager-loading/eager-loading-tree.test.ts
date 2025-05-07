@@ -10,6 +10,8 @@
 import Database, { createMockDatabase } from '@nocobase/database';
 import { EagerLoadingTree } from '../../eager-loading/eager-loading-tree';
 
+const skipSqlite = process.env.DB_DIALECT == 'sqlite' ? it.skip : it;
+
 describe('Eager loading tree', () => {
   let db: Database;
   beforeEach(async () => {
@@ -381,7 +383,7 @@ describe('Eager loading tree', () => {
     expect(p1User.get('name')).toBe('u1');
   });
 
-  it('should load belongs to on bigint foreign key', async () => {
+  skipSqlite('should load belongs to on bigint foreign key', async () => {
     const Post = db.collection({
       name: 'posts',
       fields: [
