@@ -49,13 +49,13 @@ export const useExactDateVariableContext = () => {
  */
 export const useExactDateVariable = ({ schema, targetFieldSchema }: Props = {}) => {
   const { collectionField } = useFlag();
-  const { dateOnly, utc, accuracy } = collectionField?.uiSchema?.['x-component-props'] || {};
+  const { dateOnly, utc, accuracy, picker } = collectionField?.uiSchema?.['x-component-props'] || {};
   const { t } = useTranslation();
   // 根据传入的 utc 和 dateOnly 参数决定时区和日期格式
   const exactDateTimeSettings = useMemo(() => {
     // 获取字段的实际值，决定是否包含时区和是否为日期格式
     const getDateKeys = (key: string): string => {
-      if (!dateOnly && !utc && !accuracy) {
+      if (!picker) {
         // 如果 dateOnly 和 utc 都没有提供，则返回特定值
         if (key === 'now') return 'nowLocal';
         if (key === 'today') return 'todayDate';
