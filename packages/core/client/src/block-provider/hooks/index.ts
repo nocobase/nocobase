@@ -116,9 +116,8 @@ function getFilteredFormValues(form) {
         return segments.slice(0, -1).join('.');
       }),
   );
-
   readonlyPaths.forEach((path, index) => {
-    if (path.includes('.') || !values[path]) {
+    if ((index !== 0 || path.includes('.')) && !values[path]) {
       // 清空值，但跳过第一层
       _.unset(values, path);
     }
