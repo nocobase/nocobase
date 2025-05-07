@@ -381,7 +381,7 @@ describe('Eager loading tree', () => {
     expect(p1User.get('name')).toBe('u1');
   });
 
-  it.skip('should load belongs to on bigint foreign key', async () => {
+  it('should load belongs to on bigint foreign key', async () => {
     const Post = db.collection({
       name: 'posts',
       fields: [
