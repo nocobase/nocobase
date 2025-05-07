@@ -26,8 +26,10 @@ import { useDesignable } from '../../hooks/useDesignable';
 import { VariableSelect } from '../variable/VariableSelect';
 import { MarkdownVoidDesigner } from './Markdown.Void.Designer';
 import { registerQrcodeWebComponent } from './qrcode-webcom';
+import { FlagProvider } from '../../../flag-provider';
 import { useStyles } from './style';
 import { parseMarkdown } from './util';
+
 export interface MarkdownEditorProps extends Omit<TextAreaProps, 'onSubmit'> {
   scope: any[];
   defaultValue?: string;
@@ -130,7 +132,7 @@ const useMarkdownHeight = () => {
   return height - 2 * token.paddingLG;
 };
 
-export const MarkdownVoid: any = withDynamicSchemaProps(
+export const MarkdownVoidInner: any = withDynamicSchemaProps(
   observer((props: any) => {
     const { isDarkTheme } = useGlobalTheme();
     const { componentCls, hashId } = useStyles({ isDarkTheme });
@@ -208,4 +210,11 @@ export const MarkdownVoid: any = withDynamicSchemaProps(
   { displayName: 'MarkdownVoid' },
 );
 
+export const MarkdownVoid = (props) => {
+  return (
+    <FlagProvider collectionField={true}>
+      <MarkdownVoidInner {...props} />
+    </FlagProvider>
+  );
+};
 MarkdownVoid.Designer = MarkdownVoidDesigner;
