@@ -500,8 +500,8 @@ exports.getAccessKeyPair = function () {
     const str = fs.readFileSync(keyFile, 'utf-8');
     const keyDataStr = keyDecrypt(str);
     const keyData = JSON.parse(keyDataStr);
-    const { accessKeyId, accessSecret } = keyData;
-    return { accessKeyId, accessSecret };
+    const { accessKeyId, accessKeySecret } = keyData;
+    return { accessKeyId, accessKeySecret };
   } catch (error) {
     console.log(chalk.yellow('Key parse failed, please check your key'));
     return {};

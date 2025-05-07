@@ -249,12 +249,12 @@ module.exports = (cli) => {
         NOCOBASE_PKG_USERNAME,
         NOCOBASE_PKG_PASSWORD,
       } = process.env;
-      const { accessKeyId, accessSecret } = getAccessKeyPair();
-      if (!(NOCOBASE_PKG_USERNAME && NOCOBASE_PKG_PASSWORD) && !(accessKeyId && accessSecret)) {
+      const { accessKeyId, accessKeySecret } = getAccessKeyPair();
+      if (!(NOCOBASE_PKG_USERNAME && NOCOBASE_PKG_PASSWORD) && !(accessKeyId && accessKeySecret)) {
         return;
       }
       const credentials = accessKeyId
-        ? { username: accessKeyId, password: accessSecret }
+        ? { username: accessKeyId, password: accessKeySecret }
         : { username: NOCOBASE_PKG_USERNAME, password: NOCOBASE_PKG_PASSWORD };
       const pm = new PackageManager({ baseURL: NOCOBASE_PKG_URL });
       await pm.login(credentials);

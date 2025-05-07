@@ -37,8 +37,8 @@ module.exports = (cli) => {
         return;
       }
       const keyData = JSON.parse(keyDataStr);
-      const { accessKeyId, accessSecret } = keyData;
+      const { accessKeyId, accessKeySecret } = keyData;
       console.log(chalk.greenBright(`Access Key ID: ${accessKeyId}`));
-      console.log(chalk.greenBright(`Access Secret: ${accessSecret}`));
+      console.log(chalk.greenBright(`Access Key Secret: ${accessKeySecret}`));
     });
 };
