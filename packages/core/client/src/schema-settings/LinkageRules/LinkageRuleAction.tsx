@@ -131,7 +131,7 @@ export const FormFieldLinkageRuleAction = observer(
               />
             )}
             {!props.disabled && (
-              <a role="button" aria-label="icon-close">
+              <a role="button" aria-label="icon-close" style={{ verticalAlign: 'text-top' }}>
                 <CloseCircleOutlined onClick={() => remove()} style={{ color: '#bfbfbf' }} />
               </a>
             )}
