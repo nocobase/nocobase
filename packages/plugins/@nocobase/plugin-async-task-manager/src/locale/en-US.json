@@ -1,5 +1,6 @@
 {
   "Export {collection} attachments": "{collection} attachments export",
   "Export {collection} data": "{collection} data export",
-  "Import {collection} data": "{collection} data import"
+  "Import {collection} data": "{collection} data import",
+  "Waiting": "Being in a queue..."
 }

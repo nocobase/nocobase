@@ -17,7 +17,7 @@ import {
   useCollectionManager,
   useCompile,
 } from '@nocobase/client';
-import { Button, Empty, Modal, Popconfirm, Popover, Progress, Space, Table, Tag, Tooltip } from 'antd';
+import { Alert, Button, Empty, Modal, Popconfirm, Popover, Progress, Space, Table, Tag, Tooltip } from 'antd';
 import React, { useCallback, useEffect, useState } from 'react';
 
 import { useCurrentAppInfo } from '@nocobase/client';
@@ -155,17 +155,7 @@ const AsyncTasksButton = (props) => {
 
           switch (status.indicator) {
             case 'spinner':
-              return (
-                <Progress
-                  type="line"
-                  size="small"
-                  strokeWidth={4}
-                  percent={100}
-                  status="active"
-                  showInfo={false}
-                  style={commonStyle}
-                />
-              );
+              return <Alert showIcon={false} message={text} banner />;
             case 'progress':
               return (
                 <Progress

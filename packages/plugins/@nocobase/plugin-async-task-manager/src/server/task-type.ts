@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { v4 as uuidv4 } from 'uuid';
 import EventEmitter from 'events';
 import { Logger } from '@nocobase/logger';
@@ -51,6 +60,7 @@ export abstract class TaskType extends EventEmitter implements ITask {
     this.taskId = uuidv4();
     this.tags = tags || {};
     this.createdAt = new Date();
+    this.options.argv?.push(`--taskId=${this.taskId}`);
   }
 
   setLogger(logger: Logger) {
@@ -73,6 +83,11 @@ export abstract class TaskType extends EventEmitter implements ITask {
     this.abortController.abort();
     this.logger?.debug(`Task ${this.taskId} cancelled`);
     return true;
+  }
+
+  async statusChange(status: TaskStatus) {
+    this.status = status;
+    this.emit('statusChange', this.status);
   }
 
   /**
@@ -133,10 +148,9 @@ export abstract class TaskType extends EventEmitter implements ITask {
       this.emit('statusChange', this.status);
     } catch (error) {
       if (error instanceof CancelError) {
-        this.status = {
-          type: 'cancelled',
-        };
+        this.statusChange({ type: 'cancelled' });
         this.logger?.info(`Task ${this.taskId} was cancelled during execution`);
+        return;
       } else {
         this.status = {
           type: 'failed',
@@ -145,9 +159,8 @@ export abstract class TaskType extends EventEmitter implements ITask {
         };
 
         this.logger?.error(`Task ${this.taskId} failed with error: ${error.message}`);
+        this.emit('statusChange', this.status);
       }
-
-      this.emit('statusChange', this.status);
     } finally {
       this.fulfilledAt = new Date();
       const duration = this.fulfilledAt.getTime() - this.startedAt.getTime();
