@@ -79,6 +79,7 @@ export class AttachmentURLFieldInterface extends CollectionFieldInterface {
     }
   }
   filterable = {
+    nested: true,
     operators: operators.bigField,
   };
   titleUsable = true;

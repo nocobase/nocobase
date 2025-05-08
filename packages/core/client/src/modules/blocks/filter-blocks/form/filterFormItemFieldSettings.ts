@@ -17,12 +17,15 @@ import { SchemaSettings } from '../../../../application/schema-settings/SchemaSe
 import { useCollectionManager_deprecated, useCollection_deprecated } from '../../../../collection-manager';
 import { useFieldComponentName } from '../../../../common/useFieldComponentName';
 import { fieldComponentSettingsItem } from '../../../../data-source/commonsSettingsItem';
-import { EditOperator, useDesignable, useValidateSchema, useCompile } from '../../../../schema-component';
+import { EditOperator, useCompile, useDesignable, useValidateSchema } from '../../../../schema-component';
 import { SchemaSettingsDefaultValue } from '../../../../schema-settings/SchemaSettingsDefaultValue';
 
 const fieldComponentNameMap = (name: string) => {
   if (name === 'Select') {
     return 'FilterSelect';
+  }
+  if (name === 'Picker') {
+    return 'FilterPicker';
   }
   return name;
 };
