@@ -105,6 +105,51 @@ const schema = (record?: any) => ({
       title: '{{t("Parameter description")}}',
       default: record?.description,
     },
+    enumOptions: {
+      type: 'array',
+      'x-decorator': 'FormItem',
+      'x-component': 'ArrayItems',
+      title: '{{t("Options")}}',
+      items: {
+        type: 'void',
+        'x-component': 'Space',
+        properties: {
+          sort: {
+            type: 'void',
+            'x-decorator': 'FormItem',
+            'x-component': 'ArrayItems.SortHandle',
+          },
+          input: {
+            type: 'string',
+            'x-decorator': 'FormItem',
+            'x-component': 'Input',
+          },
+          remove: {
+            type: 'void',
+            'x-decorator': 'FormItem',
+            'x-component': 'ArrayItems.Remove',
+          },
+        },
+      },
+      properties: {
+        add: {
+          type: 'void',
+          title: '{{t("Add option")}}',
+          'x-component': 'ArrayItems.Addition',
+        },
+      },
+      'x-reactions': [
+        {
+          dependencies: ['.type'],
+          fulfill: {
+            state: {
+              visible: '{{$deps[0] === "enum"}}',
+              required: '{{$deps[0] === "enum"}}',
+            },
+          },
+        },
+      ],
+    },
     required: {
       type: 'boolean',
       'x-decorator': 'FormItem',

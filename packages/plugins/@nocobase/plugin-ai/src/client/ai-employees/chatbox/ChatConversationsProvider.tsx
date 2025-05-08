@@ -30,7 +30,7 @@ export const ChatConversationsProvider: React.FC<{ children: React.ReactNode }> 
   const [conversations, setConversations] = useState<Conversation[]>([]);
 
   const conversationsService = useRequest<Conversation[]>(
-    (page = 1) =>
+    (page = 1, title = '') =>
       api
         .resource('aiConversations')
         .list({
@@ -38,6 +38,7 @@ export const ChatConversationsProvider: React.FC<{ children: React.ReactNode }> 
           appends: ['aiEmployee'],
           page,
           pageSize: 15,
+          filter: title ? { title: { $includes: title } } : {},
         })
         .then((res) => res?.data),
     {

@@ -200,7 +200,13 @@ export const Conversations: React.FC = memo(() => {
           padding: '0 5px',
         }}
       >
-        <Input.Search style={{ verticalAlign: 'middle' }} />
+        <Input.Search
+          style={{ verticalAlign: 'middle' }}
+          placeholder={t('Search')}
+          onSearch={(val) => conversationsService.run(1, val)}
+          onClear={() => conversationsService.run(1)}
+          allowClear={true}
+        />
       </Header>
       <Content
         style={{
