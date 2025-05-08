@@ -40,6 +40,7 @@ export const FormFieldLinkageRuleAction = observer(
       value: fieldValue,
       operators,
     } = useValues(options);
+    console.log(props.disabled);
     return (
       <LinkageLogicContext.Provider value={uid()}>
         <div
