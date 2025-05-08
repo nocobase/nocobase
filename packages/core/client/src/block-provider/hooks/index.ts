@@ -117,7 +117,7 @@ function getFilteredFormValues(form) {
       }),
   );
   readonlyPaths.forEach((path, index) => {
-    if (index !== 0 || path.includes('.')) {
+    if ((index !== 0 || path.includes('.')) && !values[path]) {
       // 清空值，但跳过第一层
       _.unset(values, path);
     }
