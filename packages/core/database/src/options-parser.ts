@@ -44,7 +44,7 @@ export class OptionsParser {
       },
     });
     this.context = {
-      targetKey: options['__targetKey'],
+      targetKey: options?.['__targetKey'],
       ...context,
     };
   }
