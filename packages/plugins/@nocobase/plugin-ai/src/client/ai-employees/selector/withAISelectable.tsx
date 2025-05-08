@@ -7,10 +7,12 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { createStyles } from '@nocobase/client';
-import React, { ComponentType } from 'react';
+import { createStyles, useCollection } from '@nocobase/client';
+import React, { ComponentType, useEffect } from 'react';
 import { useAISelectionContext } from './AISelectorProvider';
 import { useFieldSchema, useField } from '@formily/react';
+
+type SelectType = 'blocks' | 'fields';
 
 const useStyles = createStyles(({ token, css }) => {
   return {
@@ -45,7 +47,7 @@ function addListenerToFormV2(schema) {
     if (current && current['x-component'] === 'FormV2') {
       current.addProperty('__aiCtxCollector__', {
         type: 'void',
-        'x-component': 'AIContextCollector',
+        'x-component': 'AIFormContextCollector',
         'x-component-props': {
           uid: schema['x-uid'],
         },
@@ -68,10 +70,24 @@ function addListenerToFormV2(schema) {
   traverse(schema);
 }
 
+const useCollectContext = (selectType: SelectType) => {
+  const { collect } = useAISelectionContext();
+  const fieldSchema = useFieldSchema();
+  if (selectType === 'blocks') {
+    addListenerToFormV2(fieldSchema);
+  }
+  const collection = useCollection();
+  useEffect(() => {
+    if (selectType === 'blocks') {
+      collect(fieldSchema['x-uid'], 'collection', collection);
+    }
+  }, [collection, fieldSchema]);
+};
+
 export function withAISelectable<T = any>(
   WrappedComponent: React.ComponentType,
   options: {
-    selectType: string;
+    selectType: SelectType;
   },
 ) {
   const { selectType } = options;
@@ -80,9 +96,8 @@ export function withAISelectable<T = any>(
     const { selectable, selector, stopSelect } = useAISelectionContext();
     const fieldSchema = useFieldSchema();
     const field = useField() as any;
-    if (selectType === 'blocks') {
-      addListenerToFormV2(fieldSchema);
-    }
+
+    useCollectContext(selectType);
 
     const handleSelect = () => {
       if (selectable !== selectType) {

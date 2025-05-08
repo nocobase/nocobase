@@ -7,16 +7,16 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { memo, useEffect, useRef, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Sender as AntSender } from '@ant-design/x';
 import { useChatBoxContext } from './ChatBoxContext';
 import { SenderPrefix } from './SenderPrefix';
 import { useT } from '../../locale';
-import { SenderHeader } from './SenderHeader';
 import { SenderFooter } from './SenderFooter';
 import { useChatConversations } from './ChatConversationsProvider';
 import { useChatMessages } from './ChatMessagesProvider';
 import { AIEmployeeHeader } from './AIEmployeeHeader';
+import { VariableInput } from './VariableInput';
 
 export const Sender: React.FC = () => {
   const t = useT();
@@ -42,6 +42,9 @@ export const Sender: React.FC = () => {
 
   return (
     <AntSender
+      // components={{
+      //   input: VariableInput,
+      // }}
       value={value}
       ref={senderRef}
       onChange={(value) => {

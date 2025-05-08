@@ -30,7 +30,10 @@ const { MessagesSettings } = lazy(() => import('./chat-settings/Messages'), 'Mes
 const { Chat } = lazy(() => import('./llm-providers/components/Chat'), 'Chat');
 const { ModelSelect } = lazy(() => import('./llm-providers/components/ModelSelect'), 'ModelSelect');
 const { AIEmployeeButton } = lazy(() => import('./ai-employees/initializer/AIEmployeeButton'), 'AIEmployeeButton');
-const { AIContextCollector } = lazy(() => import('./ai-employees/selector/AIContextCollector'), 'AIContextCollector');
+const { AIFormContextCollector } = lazy(
+  () => import('./ai-employees/selector/AIContextCollector'),
+  'AIFormContextCollector',
+);
 // const { PermissionsTab } = lazy(() => import('./ai-employees/permissions/PermissionsTab'), 'PermissionsTab');
 
 export class PluginAIClient extends Plugin {
@@ -47,7 +50,7 @@ export class PluginAIClient extends Plugin {
     this.app.use(AIEmployeesProvider);
     this.app.addComponents({
       AIEmployeeButton,
-      AIContextCollector,
+      AIFormContextCollector,
       CardItem: withAISelectable(CardItem, {
         selectType: 'blocks',
       }),

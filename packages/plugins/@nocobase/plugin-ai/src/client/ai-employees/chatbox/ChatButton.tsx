@@ -26,18 +26,18 @@ export const ChatButton: React.FC = () => {
     return aiEmployees?.map((employee) => ({
       key: employee.username,
       label: (
-        <div
-          className={css`
-            display: flex;
-            align-items: center;
-            min-width: 150px;
-          `}
-          onClick={() => {
-            setOpen(true);
-            switchAIEmployee(employee);
-          }}
-        >
-          <Popover content={<ProfileCard aiEmployee={employee} />} placement="leftTop">
+        <Popover content={<ProfileCard aiEmployee={employee} />} placement="leftTop">
+          <div
+            className={css`
+              display: flex;
+              align-items: center;
+              min-width: 150px;
+            `}
+            onClick={() => {
+              setOpen(true);
+              switchAIEmployee(employee);
+            }}
+          >
             <Avatar
               src={avatars(employee.avatar)}
               size={28}
@@ -45,10 +45,10 @@ export const ChatButton: React.FC = () => {
                 marginRight: '8px',
               }}
             />
-          </Popover>
 
-          {employee.nickname}
-        </div>
+            {employee.nickname}
+          </div>
+        </Popover>
       ),
     }));
   }, [aiEmployees]);

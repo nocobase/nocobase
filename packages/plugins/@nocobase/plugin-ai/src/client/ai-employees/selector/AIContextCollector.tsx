@@ -11,7 +11,7 @@ import { useEffect } from 'react';
 import { useAISelectionContext } from './AISelectorProvider';
 import { useForm } from '@formily/react';
 
-export const AIContextCollector: React.FC<{
+export const AIFormContextCollector: React.FC<{
   uid: string;
 }> = (props) => {
   const { uid } = props;

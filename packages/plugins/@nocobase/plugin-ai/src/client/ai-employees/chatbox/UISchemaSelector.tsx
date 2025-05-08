@@ -18,11 +18,15 @@ import { useOnInsert } from '../useOnInsert';
 export const UISchemaSelector: React.FC = () => {
   const currentEmployee = useChatBoxContext('currentEmployee');
   const senderRef = useChatBoxContext('senderRef');
-  const { startSelect, selectable } = useAISelectionContext();
+  const { startSelect, stopSelect, selectable } = useAISelectionContext();
   const t = useT();
   const { onInsert } = useOnInsert();
 
   const handleSelect = () => {
+    if (selectable === 'blocks') {
+      stopSelect();
+      return;
+    }
     startSelect('blocks', {
       onSelect: ({ uid }) => {
         if (!uid) {

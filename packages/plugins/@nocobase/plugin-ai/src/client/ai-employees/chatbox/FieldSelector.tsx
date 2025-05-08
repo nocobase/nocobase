@@ -18,11 +18,15 @@ import { useOnInsert } from '../useOnInsert';
 export const FieldSelector: React.FC = () => {
   const currentEmployee = useChatBoxContext('currentEmployee');
   const senderRef = useChatBoxContext('senderRef');
-  const { startSelect, selectable } = useAISelectionContext();
+  const { startSelect, stopSelect, selectable } = useAISelectionContext();
   const t = useT();
   const { onInsert } = useOnInsert();
 
   const handleSelect = () => {
+    if (selectable === 'fields') {
+      stopSelect();
+      return;
+    }
     startSelect('fields', {
       onSelect: ({ value }) => {
         if (!value) {

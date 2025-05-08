@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { memo } from 'react';
+import React, { memo, useEffect } from 'react';
 import { Button, Space, App, Alert } from 'antd';
 import { CopyOutlined, ReloadOutlined } from '@ant-design/icons';
 import { Bubble } from '@ant-design/x';
@@ -16,22 +16,27 @@ import { useT } from '../../locale';
 import { useChatMessages } from './ChatMessagesProvider';
 import { useChatBoxContext } from './ChatBoxContext';
 import { useChatConversations } from './ChatConversationsProvider';
-import { SchemaComponent, usePlugin } from '@nocobase/client';
-import { uid } from '@formily/shared';
+import { usePlugin } from '@nocobase/client';
 import { Markdown } from './Markdown';
 import { ToolCard } from './ToolCard';
 import PluginAIClient from '../..';
+import { useRenderUISchemaTag } from './useRenderUISchemaTag';
+import { cx } from '@emotion/css';
 
 const MessageWrapper = React.forwardRef<
   HTMLDivElement,
-  {
+  React.HTMLAttributes<HTMLDivElement> & {
     children: React.ReactNode;
   }
 >((props, ref) => {
   if (ref) {
-    return <div ref={ref}>{props.children}</div>;
+    return (
+      <div ref={ref} {...props}>
+        {props.children}
+      </div>
+    );
   }
-  return props.children;
+  return <div {...props}>{props.children}</div>;
 });
 
 const AITextMessageRenderer: React.FC<{
@@ -126,10 +131,16 @@ export const AIMessage: React.FC<{
 export const UserMessage: React.FC<{
   msg: any;
 }> = memo(({ msg }) => {
-  return (
-    <MessageWrapper ref={msg.ref}>
-      <Bubble content={msg.content} />
-    </MessageWrapper>
+  const {
+    html,
+    styles: { hashId, wrapSSR, componentCls },
+    handleClick,
+  } = useRenderUISchemaTag(msg.content);
+
+  return wrapSSR(
+    <MessageWrapper ref={msg.ref} className={cx(hashId, componentCls)}>
+      <Bubble onClick={handleClick} content={<div dangerouslySetInnerHTML={{ __html: html }} />} />
+    </MessageWrapper>,
   );
 });
 
