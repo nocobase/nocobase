@@ -79,7 +79,7 @@ export const ValueDynamicComponent = (props: ValueDynamicComponentProps) => {
     [collectionName, mode, setValue],
   );
   const textAreaStyle = useMemo(() => {
-    return { minWidth: 460, borderRadius: 0 };
+    return { minWidth: 390, borderRadius: 0 };
   }, []);
   const compatScope = useMemo(() => {
     return compatOldVariables(scope, {
@@ -120,7 +120,16 @@ export const ValueDynamicComponent = (props: ValueDynamicComponentProps) => {
 
     // 表达式
     express: (
-      <div role="button" aria-label="dynamic-component-linkage-rules" style={expressStyle}>
+      <div
+        role="button"
+        aria-label="dynamic-component-linkage-rules"
+        style={expressStyle}
+        className={css`
+          .x-button {
+            height: auto !important;
+          }
+        `}
+      >
         <Variable.TextArea
           value={fieldValue?.value}
           onChange={handleChangeOfExpress}
