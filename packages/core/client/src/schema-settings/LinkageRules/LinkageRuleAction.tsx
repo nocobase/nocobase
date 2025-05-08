@@ -40,7 +40,6 @@ export const FormFieldLinkageRuleAction = observer(
       value: fieldValue,
       operators,
     } = useValues(options);
-    console.log(props.disabled);
     return (
       <LinkageLogicContext.Provider value={uid()}>
         <div
@@ -132,7 +131,7 @@ export const FormFieldLinkageRuleAction = observer(
               />
             )}
             {!props.disabled && (
-              <a role="button" aria-label="icon-close">
+              <a role="button" aria-label="icon-close" style={{ verticalAlign: 'text-top' }}>
                 <CloseCircleOutlined onClick={() => remove()} style={{ color: '#bfbfbf' }} />
               </a>
             )}
