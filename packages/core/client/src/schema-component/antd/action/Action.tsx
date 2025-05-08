@@ -454,6 +454,7 @@ const RenderButton = ({
   const variables = useVariables();
   const localVariables = useLocalVariables();
   const openPopupRef = useRef(null);
+  const compile = useCompile();
   openPopupRef.current = openPopup;
   const scopes = {
     variables,
@@ -467,8 +468,9 @@ const RenderButton = ({
       }
       e.preventDefault();
       e.stopPropagation();
-      const resultTitle = await getVariableValue(confirm?.title, scopes);
-      const resultContent = await getVariableValue(confirm?.content, scopes);
+
+      const resultTitle = await getVariableValue(t(confirm?.title, { title: compile(fieldSchema.title) }), scopes);
+      const resultContent = await getVariableValue(t(confirm?.content, { title: compile(fieldSchema.title) }), scopes);
       if (!disabled && aclCtx) {
         const onOk = () => {
           if (onClick) {
