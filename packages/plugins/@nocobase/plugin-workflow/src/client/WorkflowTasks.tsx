@@ -62,6 +62,7 @@ export interface TaskTypeOptions {
   component: React.ComponentType;
   extraActions?: React.ComponentType;
   // children?: TaskTypeOptions[];
+  alwaysShow?: boolean;
 }
 
 type Stats = Record<string, { pending: number; all: number }>;
@@ -151,18 +152,19 @@ function StatusTabs() {
 function useTaskTypeItems() {
   const workflowPlugin = usePlugin(PluginWorkflowClient);
   const { counts } = useContext(TasksCountsContext);
+  const types = workflowPlugin.taskTypes.getKeys();
 
   return useMemo(
     () =>
-      Array.from(workflowPlugin.taskTypes.getKeys())
-        .filter((key: string) => Boolean(counts[key]?.all))
+      Array.from(types)
+        .filter((key: string) => workflowPlugin.taskTypes.get(key)?.alwaysShow || Boolean(counts[key]?.all))
         .map((key: string) => {
           return {
             key,
             label: <MenuLink type={key} />,
           };
         }),
-    [counts, workflowPlugin.taskTypes],
+    [counts, types, workflowPlugin.taskTypes],
   );
 }
 
@@ -307,14 +309,12 @@ export function WorkflowTasks() {
 }
 
 function WorkflowTasksLink() {
-  const workflowPlugin = usePlugin(PluginWorkflowClient);
   const { reload, total } = useContext(TasksCountsContext);
-
-  const types = Array.from(workflowPlugin.taskTypes.getKeys());
-  return types.length && total ? (
+  const items = useTaskTypeItems();
+  return items.length ? (
     <Tooltip title={lang('Workflow todos')}>
       <Button>
-        <Link to={`/admin/workflow/tasks/${types[0]}/${TASK_STATUS.PENDING}`} onClick={reload}>
+        <Link to={`/admin/workflow/tasks/${items[0].key}/${TASK_STATUS.PENDING}`} onClick={reload}>
           <Badge count={total} size="small">
             <CheckCircleOutlined />
           </Badge>
@@ -373,7 +373,7 @@ function TasksCountsProvider(props: any) {
     };
   }, [app.eventBus, onTaskUpdate]);
 
-  const total = Object.values(counts).reduce((result, item) => result + item.pending, 0) || 0;
+  const total = Object.values(counts).reduce((result, item) => result + (item.pending || 0), 0) || 0;
 
   return <TasksCountsContext.Provider value={{ reload, total, counts }}>{props.children}</TasksCountsContext.Provider>;
 }
