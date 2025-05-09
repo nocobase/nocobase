@@ -315,9 +315,7 @@ export const SkillSettings: React.FC = () => {
                 title: t('Automatically use skills when available'),
                 'x-component': 'Checkbox',
                 'x-decorator': 'FormItem',
-                description: t(
-                  'When auto skill usage is enabled, the AI employee will invoke tools automatically without returning tool parameters to the frontend. If disabled, the tool call parameters will be returned in the conversation for the user to review and trigger manually.',
-                ),
+                description: t('Auto skill description'),
               },
             },
           },

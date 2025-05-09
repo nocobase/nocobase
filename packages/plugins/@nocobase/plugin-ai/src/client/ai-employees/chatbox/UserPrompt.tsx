@@ -96,13 +96,13 @@ const Edit: React.FC = () => {
                 },
               },
             },
-            title: t('Edit personalized content'),
+            title: t('Edit personalized prompt'),
             'x-decorator': 'FormV2',
             'x-decorator-props': 'useEditFormProps',
             properties: {
               prompt: {
                 type: 'string',
-                title: t('Personalized content'),
+                title: t('Personalized prompt'),
                 'x-decorator': 'FormItem',
                 'x-component': 'Input.TextArea',
                 default: currentEmployee?.userConfig?.prompt,
@@ -160,7 +160,7 @@ export const UserPrompt: React.FC = () => {
                 fontSize: token.fontSize,
               }}
             >
-              {t('My prompt for the current AI employee')}
+              {t('Personalized prompt')}
             </div>
           }
           extra={<Edit />}
@@ -174,12 +174,7 @@ export const UserPrompt: React.FC = () => {
               {currentEmployee.userConfig.prompt}
             </div>
           ) : (
-            <Alert
-              message={t(
-                'You can set personalized prompt for the current AI employee which will be sent to the LLM at the start of each new conversation.',
-              )}
-              type="info"
-            />
+            <Alert message={t('Personalized prompt description')} type="info" />
           )}
         </Card>
       }

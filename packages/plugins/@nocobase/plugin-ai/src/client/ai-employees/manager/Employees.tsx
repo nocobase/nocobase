@@ -66,7 +66,7 @@ const AIEmployeeForm: React.FC<{
         // },
         {
           key: 'modelSettings',
-          label: t('Model Settings'),
+          label: t('Model settings'),
           children: <ModelSettings />,
           forceRender: true,
         },
@@ -397,6 +397,7 @@ export const Employees = () => {
       <SchemaComponent
         components={{ AIEmployeeForm, Avatar }}
         scope={{
+          t,
           useCreateFormProps,
           useEditFormProps,
           useCancelActionProps,
@@ -452,7 +453,7 @@ export const Employees = () => {
                         drawer: {
                           type: 'void',
                           'x-component': 'Action.Drawer',
-                          title: 'New AI employee',
+                          title: '{{t("New AI employee")}}',
                           'x-decorator': 'FormV2',
                           'x-use-decorator-props': 'useCreateFormProps',
                           properties: {
@@ -473,7 +474,7 @@ export const Employees = () => {
                                   'x-use-component-props': 'useCancelActionProps',
                                 },
                                 submit: {
-                                  title: 'Submit',
+                                  title: '{{t("Submit")}}',
                                   'x-component': 'Action',
                                   'x-component-props': {
                                     type: 'primary',
@@ -563,7 +564,7 @@ export const Employees = () => {
                     },
                     column5: {
                       type: 'void',
-                      title: 'Actions',
+                      title: '{{t("Actions")}}',
                       'x-decorator': 'TableV2.Column.ActionBar',
                       'x-component': 'TableV2.Column',
                       properties: {
@@ -576,7 +577,7 @@ export const Employees = () => {
                           properties: {
                             edit: {
                               type: 'void',
-                              title: 'Edit',
+                              title: '{{t("Edit") }}',
                               'x-action': 'update',
                               'x-component': 'Action.Link',
                               'x-component-props': {
@@ -607,7 +608,7 @@ export const Employees = () => {
                                           'x-use-component-props': 'useCancelActionProps',
                                         },
                                         submit: {
-                                          title: 'Submit',
+                                          title: '{{t("Submit")}}',
                                           'x-component': 'Action',
                                           'x-use-component-props': 'useEditActionProps',
                                         },

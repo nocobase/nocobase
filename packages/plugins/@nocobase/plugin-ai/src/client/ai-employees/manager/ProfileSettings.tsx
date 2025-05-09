@@ -18,13 +18,14 @@ export const ProfileSettings: React.FC<{
   const t = useT();
   return (
     <SchemaComponent
+      scope={{ t }}
       components={{ AvatarSelect }}
       schema={{
         type: 'void',
         properties: {
           username: {
             type: 'string',
-            title: 'Username',
+            title: '{{t("Username")}}',
             'x-decorator': 'FormItem',
             'x-component': 'Input',
             required: true,
@@ -32,46 +33,44 @@ export const ProfileSettings: React.FC<{
           },
           nickname: {
             type: 'string',
-            title: 'Nickname',
+            title: '{{t("Nickname")}}',
             'x-decorator': 'FormItem',
             'x-component': 'Input',
             required: true,
           },
           position: {
             type: 'string',
-            title: 'Position',
+            title: '{{t("Position")}}',
             'x-decorator': 'FormItem',
             'x-component': 'Input',
-            description: t('A short label indicating the AI employee’s responsibility.'),
+            description: t('Position description'),
             'x-component-props': {
-              placeholder: t('e.g. Translator, etc.'),
+              placeholder: t('Position placeholder'),
             },
           },
           avatar: {
             type: 'string',
-            title: 'Avatar',
+            title: '{{t("Avatar")}}',
             'x-decorator': 'FormItem',
             'x-component': 'AvatarSelect',
           },
           bio: {
             type: 'string',
-            title: 'Bio',
+            title: '{{t("Bio")}}',
             'x-decorator': 'FormItem',
             'x-component': 'Input.TextArea',
             'x-component-props': {
-              placeholder:
-                'The introduction to the AI employee will inform human colleagues about its skills and how to use it. This information will be displayed on the employee’s profile. This will not be part of the prompt of this AI employee.',
+              placeholder: t('Bio placeholder'),
             },
           },
           about: {
             type: 'string',
-            title: 'About me',
+            title: '{{t("About me")}}',
             required: true,
             'x-decorator': 'FormItem',
             'x-component': 'Input.TextArea',
             'x-component-props': {
-              placeholder:
-                'Define the AI employee’s role, guide its work, and instruct it complete user-assigned tasks. This will be part of the prompt of this AI employee.',
+              placeholder: t('About me placeholder'),
               autoSize: {
                 minRows: 15,
               },
@@ -79,11 +78,11 @@ export const ProfileSettings: React.FC<{
           },
           greeting: {
             type: 'string',
-            title: 'Greeting message',
+            title: '{{t("Greeting message")}}',
             'x-decorator': 'FormItem',
             'x-component': 'Input.TextArea',
             'x-component-props': {
-              placeholder: 'Opening message sent to the user when starting a new conversation.',
+              placeholder: t('Greeting message placeholder'),
             },
           },
         },
