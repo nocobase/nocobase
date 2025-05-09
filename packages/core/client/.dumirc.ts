@@ -99,7 +99,7 @@ export default defineConfig({
               link: '/core/event-and-filter/tabulator',
             },
             {
-              title: 'TableBlock',
+              title: 'Table',
               link: '/core/event-and-filter/table',
             }
           ],
