@@ -1,17 +1,21 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { Table, Button, Space, Card, App, Spin } from 'antd';
+import React, { useState } from 'react';
+import { Table, Button, Space, Card, App } from 'antd';
 import { RedoOutlined, EyeOutlined, PlusOutlined } from '@ant-design/icons';
 import {
     EventBus,
     EventFlowManager,
     FilterFlowManager,
-    EventContext,
-    FilterHandlerContext,
     IFilter,
     useApplyFilters,
-    BlockConfigsProvider
+    BlockConfigsProvider,
+    SchemaComponent,
+    SchemaComponentProvider,
+    SchemaSettings,
+    useCompile,
+    useBlockConfigs
 } from '@nocobase/client';
 import _ from 'lodash';
+import { configureAction } from './actions/open-configure-dialog';
 
 // 创建事件总线和事件/过滤流管理器
 const eventBus = new EventBus();
@@ -45,17 +49,11 @@ const mockBlockConfigs = {
     configData: {
         filterSteps: {
             'block:demo:table': {
-                'block:common:title': {
-                    title: '用户表格',
-                    description: '这是一个使用event和filter的简单表格demo'
+                'block:common:linkages': {
+                    rule: ''
                 },
                 'block:common:fields': {
-                    fields: [
-                        { name: 'id', title: 'ID', type: 'number', visible: true },
-                        { name: 'name', title: '姓名', type: 'string', visible: true },
-                        { name: 'age', title: '年龄', type: 'number', visible: true },
-                        { name: 'email', title: '邮箱', type: 'string', visible: true }
-                    ]
+                    fields: ['id', 'name', 'age', 'email']
                 },
                 'block:common:actions': {
                     actions: {
@@ -164,6 +162,10 @@ eventFlowManager.addEvent({
 eventFlowManager.addFlow({
     key: 'refreshFlow',
     title: '刷新数据流程',
+    on: {
+        event: 'block:demo:refresh',
+        title: '当刷新按钮被点击时',
+    },
     steps: [
         {
             key: 'step-refresh',
@@ -176,6 +178,10 @@ eventFlowManager.addFlow({
 eventFlowManager.addFlow({
     key: 'viewFlow',
     title: '查看记录流程',
+    on: {
+        event: 'block:demo:view',
+        title: '当查看按钮被点击时',
+    },
     steps: [
         {
             key: 'step-view',
@@ -188,6 +194,10 @@ eventFlowManager.addFlow({
 eventFlowManager.addFlow({
     key: 'createFlow',
     title: '新增记录流程',
+    on: {
+        event: 'block:demo:create',
+        title: '当新增按钮被点击时',
+    },
     steps: [
         {
             key: 'step-create',
@@ -203,7 +213,6 @@ eventFlowManager.addAction({
     title: '获取数据',
     group: 'data',
     handler: async (params, ctx) => {
-        console.log('执行 refreshData action，参数:', params);
         if (ctx.payload?.refresh) {
             await ctx.payload.refresh();
             ctx.payload?.hooks.message.success(params.messageOnSuccess || '数据已刷新');
@@ -234,6 +243,34 @@ eventFlowManager.addAction({
     },
     uiSchema: {},
 });
+
+// 定义配置相关事件
+// 配置
+eventFlowManager.addEvent({
+    name: 'block:configure:click',
+    title: '配置参数',
+    group: 'configure',
+    uiSchema: {},
+});
+
+eventFlowManager.addFlow({
+    key: 'block:demo:configure',
+    title: '配置流程',
+    on: {
+        event: 'block:configure:click',
+        title: '当配置按钮被点击时',
+    },
+    steps: [
+        {
+            key: 'step-configure',
+            title: '配置消息参数',
+            action: 'configureAction',
+            isAwait: true,
+        },
+    ],
+});
+
+eventFlowManager.addAction(configureAction);
 
 // --- 定义过滤器 ---
 // 加载配置数据
@@ -269,27 +306,22 @@ const linkagesFilter: IFilter = {
     name: 'block:common:linkages',
     group: 'block',
     title: '联动规则',
-    uiSchema: {},
+    uiSchema: {
+        rule: {
+            type: 'string',
+            title: '联动规则',
+            'x-component': 'Input',
+            'x-component-props': {
+                placeholder: '值设置为{{true}}时，表格将隐藏'
+            }
+        }
+    },
     handler: (input, params, context) => {
         const result = input || {};
         const compile = context.payload?.compile;
-        if (compile(params.linkages)) {
+        if (compile(params?.rule) === true) {
             result.$break = true;
         }
-        return result;
-    },
-};
-
-// 标题过滤器
-const titleFilter: IFilter = {
-    name: 'block:common:title',
-    group: 'block',
-    title: '获取标题信息',
-    uiSchema: {},
-    handler: (input, params, context) => {
-        const result = input || {};
-        result.title = params?.title || '';
-        result.description = params?.description || '';
         return result;
     },
 };
@@ -299,7 +331,22 @@ const fieldsFilter: IFilter = {
     name: 'block:common:fields',
     group: 'block',
     title: '获取字段配置',
-    uiSchema: {},
+    uiSchema: {
+        fields: {
+          type: 'array',
+          title: '显示列',
+          'x-component': 'Select',
+          'x-component-props': {
+            mode: 'multiple',
+            options: [
+              { label: 'ID', value: 'id' },
+              { label: '姓名', value: 'name' },
+              { label: '年龄', value: 'age' },
+              { label: '邮箱', value: 'email' },
+            ],
+          },
+        },
+      },
     handler: (input, params, context) => {
         const result = input || {};
         result.fields = params?.fields || [];
@@ -325,22 +372,33 @@ const dataFilter: IFilter = {
     name: 'block:common:data',
     group: 'block',
     title: '获取数据',
-    uiSchema: {},
+    uiSchema: {
+        pageSize: {
+            type: 'number',
+            title: '默认每页条数',
+            enum: [5, 10, 20, 30, 40, 50],
+            'x-component': 'Select',
+            'x-component-props': {
+                placeholder: '请选择默认每页条数',
+                options: [
+                    { label: '5', value: 5 },
+                    { label: '10', value: 10 },
+                    { label: '20', value: 20 },
+                    { label: '30', value: 30 },
+                    { label: '40', value: 40 },
+                    { label: '50', value: 50 },
+                ]
+            }
+        }
+    },
     handler: async (input, params, context) => {
         const result = input || {};
         const { apiClient } = context.payload;
-        const { collectionName, page = 1, pageSize = 10 } = params as { collectionName: string; page?: number; pageSize?: number };
-
-        if (!collectionName) {
-            result.data = { data: [], meta: { count: 0, page, pageSize } };
-            return result;
-        }
-
+        const { collectionName, page = 1, pageSize = 10 } = params;
         const response = await apiClient.resource(collectionName).list({
             page,
             pageSize,
         });
-
         result.data = response?.data || {};
         result.page = response?.data?.meta?.page || 1;
         result.pageSize = response?.data?.meta?.pageSize || 10;
@@ -361,9 +419,9 @@ const tableColumnsFilter: IFilter = {
 
         // 将字段转换为表格列配置
         result.columns = fields.filter(field => field.visible !== false).map(field => ({
-            title: field.title,
-            dataIndex: field.name,
-            key: field.name,
+            title: field,
+            dataIndex: field,
+            key: field,
         }));
 
         return result;
@@ -450,7 +508,7 @@ const tableActionsFilter: IFilter = {
 
 // 注册过滤器
 filterFlowManager.addFilter(configDataFilter);
-filterFlowManager.addFilter(titleFilter);
+filterFlowManager.addFilter(linkagesFilter);
 filterFlowManager.addFilter(fieldsFilter);
 filterFlowManager.addFilter(actionsFilter);
 filterFlowManager.addFilter(dataFilter);
@@ -460,66 +518,95 @@ filterFlowManager.addFilter(tableActionsFilter);
 // 注册过滤流程
 filterFlowManager.addFlow({
     key: 'block:demo:table',
-    title: '表格区块过滤流',
+    title: '表格区块filterflow',
     steps: [
         {
-            key: 'block:common:linkages',
-            filterName: 'block:common:linkages'
-        },
-        {
             key: 'block:common:configData',
-            filterName: 'block:common:configData'
+            filterName: 'block:common:configData',
+            title: '数据配置' //写死的，不放开配置
         },
         {
-            key: 'block:common:title',
-            filterName: 'block:common:title'
+            key: 'block:common:linkages',
+            filterName: 'block:common:linkages',
+            title: '联动规则' // 配置规则，是否显示表格
         },
         {
             key: 'block:common:fields',
-            filterName: 'block:common:fields'
+            filterName: 'block:common:fields',
+            title: '字段配置', // 配置显示列
         },
         {
             key: 'block:common:actions',
-            filterName: 'block:common:actions'
+            filterName: 'block:common:actions',
+            title: '操作配置' // 配置操作
         },
         {
             key: 'block:common:data',
-            filterName: 'block:common:data'
+            filterName: 'block:common:data',
+            title: '数据配置' // 数据加载
         },
         {
             key: 'block:demo:columns',
-            filterName: 'block:demo:columns'
+            filterName: 'block:demo:columns',
+            title: '表格列配置' // 表格列转换，不放开配置
         },
         {
             key: 'block:demo:actions',
-            filterName: 'block:demo:actions'
+            filterName: 'block:demo:actions',
+            title: '表格操作配置' // 表格操作转换，不放开配置
         }
     ]
 });
 
+const updateStepConfig = function(type: 'event' | 'filter', flowName: string, stepKey: string, setConfigs?) {
+    const flow = type === 'event' ? eventFlowManager.getFlow(flowName) : filterFlowManager.getFlow(flowName);
+    const step = flow.getStep(stepKey);
+
+    eventBus.dispatchEvent('block:configure:click', {
+        payload: {
+            step,
+            currentParams: mockBlockConfigs.configData[`${type}Steps`][flowName][stepKey],
+            onChange: (value) => {
+                _.set(mockBlockConfigs.configData[`${type}Steps`][flowName], stepKey, value);
+                setConfigs?.(mockBlockConfigs, true);
+            }
+        }
+    });
+}
+
+// 更改配置的按钮，真实场景中用x-settings
+const ConfigureButtons = () => {
+    const { setConfigs } = useBlockConfigs();
+    
+    return (
+        <Space>
+            <Button type="default" onClick={() => {
+                updateStepConfig('filter', 'block:demo:table', 'block:common:fields', setConfigs);
+            }}>配置显示列</Button>
+            <Button type="default" onClick={() => {
+                updateStepConfig('filter', 'block:demo:table', 'block:common:linkages', setConfigs);
+            }}>联动规则</Button>
+            <Button type="default" onClick={() => {
+                updateStepConfig('filter', 'block:demo:table', 'block:common:data', setConfigs);
+            }}>默认每页条数</Button>
+        </Space>
+    );
+};
+
 // 主表格组件
 const DemoTable: React.FC<{ configKey: string }> = ({ configKey }) => {
+    const compile = useCompile();
     const filterContext = {
         payload: {
-            configKey: configKey,
+            configKey,
             apiClient: mockApiClient,
+            compile,
         }
     };
 
-    // 应用过滤器
-    const {
-        data: filterResult,
-        reApplyFilters
-    } = useApplyFilters(
-        filterFlowManager,
-        'block:demo:table',
-        null,
-        filterContext
-    );
+    const { data: filterResult } = useApplyFilters(filterFlowManager, 'block:demo:table', null, filterContext);
 
     const {
-        title,
-        description,
         columns = [],
         data = { data: [], meta: { count: 0 } },
         tableActions = { toolbar: [], row: [] },
@@ -528,41 +615,17 @@ const DemoTable: React.FC<{ configKey: string }> = ({ configKey }) => {
         $break = false
     } = filterResult || {};
 
+    
+
     return (
         <>
             {
                 $break ? null : (
-                    <Card
-                        title={title}
-                        extra={
-                            <Space>
-                                {tableActions.toolbar?.map((action, index) => (
-                                    <Button
-                                        key={action.key || index}
-                                        type={action.key === 'create' ? 'primary' : 'default'}
-                                        icon={action.icon}
-                                        onClick={action.onClick}
-                                    >
-                                        {action.title}
-                                    </Button>
-                                ))}
-                            </Space>
-                        }
-                    >
-                        <div>
-                            {description && <p>{description}</p>}
-                            <Table
-                                dataSource={data?.data}
-                                columns={columns}
-                                rowKey="id"
-                                pagination={{
-                                    current: page,
-                                    pageSize: pageSize,
-                                    total: data?.meta?.count || 0,
-                                }}
-                            />
-                        </div>
-                    </Card>
+                    <Table dataSource={data?.data} columns={columns} rowKey="id" pagination={{
+                        current: page,
+                        pageSize: pageSize,
+                        total: data?.meta?.count || 0,
+                    }} />
                 )
             }
         </>
@@ -574,7 +637,28 @@ const EventFilterTableDemo2: React.FC = () => {
     return (
         <App>
             <BlockConfigsProvider value={mockBlockConfigs}>
-                <DemoTable configKey={mockBlockConfigs.key} />
+                <SchemaComponentProvider>
+                    <ConfigureButtons />
+                    <SchemaComponent
+                        schema={{
+                            type: 'void',
+                            name: 'demoTable',
+                            'x-component': 'div',
+                            properties: {
+                                table: {
+                                    type: 'void',
+                                    'x-component': 'DemoTable',
+                                    'x-component-props': {
+                                        configKey: mockBlockConfigs.key
+                                    }
+                                }
+                            }
+                        }}
+                        components={{
+                            DemoTable
+                        }}
+                    />
+                </SchemaComponentProvider>
             </BlockConfigsProvider>
         </App>
     );
