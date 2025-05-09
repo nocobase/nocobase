@@ -116,7 +116,7 @@ export class PluginAIClient extends Plugin {
         if (!form) {
           return;
         }
-        form.values = data;
+        form.setValues(data);
       },
     });
 
