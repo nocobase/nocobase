@@ -123,8 +123,15 @@ export const Conversations: React.FC = memo(() => {
   const { modal, message } = App.useApp();
   const { token } = useToken();
   const { aiEmployeesMap } = useAIEmployeesContext();
-  const { currentConversation, setCurrentConversation, conversationsService, conversations, lastConversationRef } =
-    useChatConversations();
+  const {
+    currentConversation,
+    setCurrentConversation,
+    conversationsService,
+    conversations,
+    lastConversationRef,
+    keyword,
+    setKeyword,
+  } = useChatConversations();
   const { messagesService, setMessages } = useChatMessages();
   const startNewConversation = useChatBoxContext('startNewConversation');
   const setCurrentEmployee = useChatBoxContext('setCurrentEmployee');
@@ -201,6 +208,10 @@ export const Conversations: React.FC = memo(() => {
         }}
       >
         <Input.Search
+          value={keyword}
+          onChange={(e) => {
+            setKeyword(e.target.value);
+          }}
           style={{ verticalAlign: 'middle' }}
           placeholder={t('Search')}
           onSearch={(val) => conversationsService.run(1, val)}

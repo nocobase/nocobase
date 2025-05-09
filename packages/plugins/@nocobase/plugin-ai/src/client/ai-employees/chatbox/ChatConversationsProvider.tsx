@@ -14,10 +14,12 @@ import { useLoadMoreObserver } from './useLoadMoreObserver';
 
 type ChatConversationContextValue = {
   currentConversation?: string;
-  setCurrentConversation: (sessionId?: string) => void;
+  setCurrentConversation: React.Dispatch<React.SetStateAction<string | undefined>>;
   conversationsService: any;
   lastConversationRef: (node: HTMLDivElement | null) => void;
   conversations: Conversation[];
+  keyword: string;
+  setKeyword: React.Dispatch<React.SetStateAction<string>>;
 };
 
 export const ChatConversationsContext = createContext<ChatConversationContextValue | null>(null);
@@ -28,9 +30,10 @@ export const ChatConversationsProvider: React.FC<{ children: React.ReactNode }> 
   const api = useAPIClient();
   const [currentConversation, setCurrentConversation] = useState<string>();
   const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [keyword, setKeyword] = useState<string>('');
 
   const conversationsService = useRequest<Conversation[]>(
-    (page = 1, title = '') =>
+    (page = 1, keyword = '') =>
       api
         .resource('aiConversations')
         .list({
@@ -38,7 +41,7 @@ export const ChatConversationsProvider: React.FC<{ children: React.ReactNode }> 
           appends: ['aiEmployee'],
           page,
           pageSize: 15,
-          filter: title ? { title: { $includes: title } } : {},
+          filter: keyword ? { title: { $includes: keyword } } : {},
         })
         .then((res) => res?.data),
     {
@@ -64,8 +67,8 @@ export const ChatConversationsProvider: React.FC<{ children: React.ReactNode }> 
     if (conversationsService.loading || (meta && meta.page >= meta.totalPage)) {
       return;
     }
-    await conversationsService.runAsync(meta.page + 1);
-  }, []);
+    await conversationsService.runAsync(meta.page + 1, keyword);
+  }, [keyword]);
   const { ref: lastConversationRef } = useLoadMoreObserver({ loadMore: loadMoreConversations });
 
   const value = {
@@ -74,6 +77,8 @@ export const ChatConversationsProvider: React.FC<{ children: React.ReactNode }> 
     conversationsService,
     lastConversationRef,
     conversations,
+    keyword,
+    setKeyword,
   };
 
   return <ChatConversationsContext.Provider value={value}>{children}</ChatConversationsContext.Provider>;

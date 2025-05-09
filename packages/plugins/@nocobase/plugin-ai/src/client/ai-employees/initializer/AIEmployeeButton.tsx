@@ -36,6 +36,10 @@ async function replaceVariables(template, variables, localVariables = {}) {
   for (const match of matches) {
     const fullMatch = match[0];
 
+    if (fullMatch.includes('$UISchema')) {
+      continue;
+    }
+
     try {
       let value = await variables?.parseVariable(fullMatch, localVariables).then(({ value }) => value);
 
@@ -48,6 +52,9 @@ async function replaceVariables(template, variables, localVariables = {}) {
       }
 
       if (value) {
+        if (value === 'null' || value === 'undefined') {
+          value = '';
+        }
         result = result.replace(fullMatch, value);
       }
     } catch (error) {
