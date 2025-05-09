@@ -392,12 +392,15 @@ export class FilterFlowManager {
 
       // 3. 执行 Handler
       try {
-        const result = handler(currentValue, context?.meta?.params?.[step.key], context);
+        const result = handler(currentValue, context?.meta?.params?.[flow.key]?.[step.key], context);
         // 处理异步 Handler
         if (result instanceof Promise) {
           currentValue = await result;
         } else {
           currentValue = result;
+        }
+        if (currentValue.$break) {
+          break;
         }
       } catch (error) {
         console.error(`Error executing filter "${step.filterName}" in step "${step.key}" (flow: "${flowKey}"):`, error);
