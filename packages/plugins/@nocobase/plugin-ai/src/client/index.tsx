@@ -108,7 +108,7 @@ export class PluginAIClient extends Plugin {
     this.aiManager.registerTool('formFiller', {
       invoke: (ctx, params) => {
         const { form: uid, data } = params;
-        console.log(uid, data);
+        console.log(uid, data, ctx[uid]);
         if (!uid || !data) {
           return;
         }

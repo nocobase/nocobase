@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { createContext, useCallback, useContext, useRef } from 'react';
+import { createContext, useCallback, useContext, useEffect, useRef } from 'react';
 import { AIEmployee, Message, ResendOptions, SendOptions } from '../types';
 import React, { useState } from 'react';
 import { uid } from '@formily/shared';
@@ -49,6 +49,7 @@ export const ChatMessagesProvider: React.FC<{ children: React.ReactNode }> = ({ 
   const [responseLoading, setResponseLoading] = useState(false);
   const { currentConversation } = useChatConversations();
   const abortControllerRef = useRef<AbortController | null>(null);
+  const ctxRef = useRef(ctx);
 
   const messagesService = useRequest<{
     data: Message[];
@@ -181,7 +182,7 @@ export const ChatMessagesProvider: React.FC<{ children: React.ReactNode }> = ({ 
     if (!error && tool) {
       const t = plugin.aiManager.tools.get(tool.name);
       if (t) {
-        await t.invoke(ctx, tool.args);
+        await t.invoke(ctxRef.current, tool.args);
         await callTool({
           sessionId,
           aiEmployee,
@@ -369,6 +370,10 @@ export const ChatMessagesProvider: React.FC<{ children: React.ReactNode }> = ({ 
     await messagesService.runAsync(currentConversation, messagesService.data?.meta?.cursor);
   }, [currentConversation]);
   const { ref: lastMessageRef } = useLoadMoreObserver({ loadMore: loadMoreMessages });
+
+  useEffect(() => {
+    ctxRef.current = ctx;
+  }, [ctx]);
 
   return (
     <ChatMessagesContext.Provider
