@@ -299,14 +299,17 @@ function getSubscriber(
           });
         } else if (fieldName === 'display' && lastState?.value === 'visible') {
           field[fieldName] = lastState?.value;
-          field.data = field.data || {};
-          // 在 FormItem 中有使用这个属性来判断字段是否被隐藏
-          field.data.hidden = false;
 
-          // 当“隐藏（保留值）”的字段再次显示时，恢复“必填”的状态
-          if (fieldName === 'display' && lastState?.value === 'visible' && field.data.prevRequired) {
-            delete field.data.prevRequired;
-            field.required = true;
+          if (fieldName === 'display' && lastState?.value === 'visible') {
+            field.data = field.data || {};
+            // 在 FormItem 中有使用这个属性来判断字段是否被隐藏
+            field.data.hidden = false;
+
+            // 当“隐藏（保留值）”的字段再次显示时，恢复“必填”的状态
+            if (field.data.prevRequired) {
+              delete field.data.prevRequired;
+              field.required = true;
+            }
           }
 
           requestAnimationFrame(() => {
