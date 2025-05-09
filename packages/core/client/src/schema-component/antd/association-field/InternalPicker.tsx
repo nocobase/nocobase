@@ -109,7 +109,8 @@ export const InternalPicker = observer(
     const pickerProps = {
       size: 'small',
       fieldNames,
-      multiple: multiple !== false && ['o2m', 'm2m', 'mbm'].includes(collectionField?.interface),
+      multiple:
+        multiple === true ? true : multiple !== false && ['o2m', 'm2m', 'mbm'].includes(collectionField?.interface),
       association: {
         target: collectionField?.target,
       },
@@ -147,7 +148,7 @@ export const InternalPicker = observer(
           setVisible(false);
         },
         style: {
-          display: multiple !== false && ['o2m', 'm2m', 'mbm'].includes(collectionField?.interface) ? 'block' : 'none',
+          display: multiple === false ? 'none' : 'block',
         },
       };
     };
