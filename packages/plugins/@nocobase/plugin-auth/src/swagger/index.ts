@@ -287,46 +287,6 @@ export default {
     //     },
     //   },
     // },
-    // '/auth:getUserByResetToken': {
-    //   get: {
-    //     description: 'Get user by reset token',
-    //     tags: ['Basic auth'],
-    //     security: [],
-    //     parameters: [
-    //       {
-    //         name: 'token',
-    //         in: 'query',
-    //         description: '重置密码的token',
-    //         required: true,
-    //         schema: {
-    //           type: 'string',
-    //         },
-    //       },
-    //     ],
-    //     responses: {
-    //       200: {
-    //         description: 'ok',
-    //         content: {
-    //           'application/json': {
-    //             schema: {
-    //               $ref: '#/components/schemas/user',
-    //             },
-    //           },
-    //         },
-    //       },
-    //       401: {
-    //         description: 'Unauthorized',
-    //         content: {
-    //           'application/json': {
-    //             schema: {
-    //               $ref: '#/components/schemas/error',
-    //             },
-    //           },
-    //         },
-    //       },
-    //     },
-    //   },
-    // },
     '/auth:changePassword': {
       post: {
         description: 'Change password',
@@ -780,7 +740,6 @@ export default {
 /api/auth:signOut
 /api/auth:lostPassword
 /api/auth:resetPassword
-/api/auth:getUserByResetToken
 /api/auth:changePassword
 /api/authenticators:listTypes
 /api/authenticators:publicList

@@ -889,9 +889,11 @@
   "After hiding, this tab will no longer appear in the tab bar. To show it again, you need to go to the route management page to set it.": "After hiding, this tab will no longer appear in the tab bar. To show it again, you need to go to the route management page to set it.",
   "No pages yet, please configure first": "No pages yet, please configure first",
   "Click the \"UI Editor\" icon in the upper right corner to enter the UI Editor mode": "Click the \"UI Editor\" icon in the upper right corner to enter the UI Editor mode",
+  "Specifies a Permissions Policy for the <iframe>. The policy defines what features are available to the <iframe> (for example, access to the microphone, camera, battery, web-share, etc.) based on the origin of the request.": "Specifies a Permissions Policy for the <iframe>. The policy defines what features are available to the <iframe> (for example, access to the microphone, camera, battery, web-share, etc.) based on the origin of the request.",
   "Deprecated": "Deprecated",
   "Full permissions": "Full permissions",
   "Refresh data blocks": "Refresh data blocks",
   "Select data blocks to refresh": "Select data blocks to refresh",
-  "After successful submission, the selected data blocks will be automatically refreshed.": "After successful submission, the selected data blocks will be automatically refreshed."
+  "After successful submission, the selected data blocks will be automatically refreshed.": "After successful submission, the selected data blocks will be automatically refreshed.",
+  "Reset link expiration": "Reset link expiration"
 }

@@ -33,7 +33,11 @@ import pluginEsbuildCommercialInject from './plugins/pluginEsbuildCommercialInje
 const validExts = ['.ts', '.tsx', '.js', '.jsx', '.mjs'];
 const serverGlobalFiles: string[] = ['src/**', '!src/client/**', ...globExcludeFiles];
 const clientGlobalFiles: string[] = ['src/**', '!src/server/**', ...globExcludeFiles];
-const sourceGlobalFiles: string[] = ['src/**/*.{ts,js,tsx,jsx,mjs}', '!src/**/__tests__'];
+const sourceGlobalFiles: string[] = [
+  'src/**/*.{ts,js,tsx,jsx,mjs}',
+  '!src/**/__tests__',
+  '!src/**/__benchmarks__',
+];
 
 const external = [
   // nocobase
