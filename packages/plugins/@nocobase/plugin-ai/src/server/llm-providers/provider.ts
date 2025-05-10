@@ -11,6 +11,8 @@ import { BaseChatModel } from '@langchain/core/language_models/chat_models';
 import axios from 'axios';
 import { parseMessages } from './handlers/parse-messages';
 import { Application } from '@nocobase/server';
+import { Model } from '@nocobase/database';
+import { parseResponseMessage } from '../utils';
 
 export abstract class LLMProvider {
   serviceOptions: Record<string, any>;
@@ -27,19 +29,23 @@ export abstract class LLMProvider {
 
   constructor(opts: {
     app: Application;
-    serviceOptions: any;
+    serviceOptions?: any;
     chatOptions?: {
       messages?: any[];
+      tools?: any[];
       [key: string]: any;
     };
   }) {
     const { app, serviceOptions, chatOptions } = opts;
     this.serviceOptions = app.environment.renderJsonTemplate(serviceOptions);
     if (chatOptions) {
-      const { messages, ...modelOptions } = chatOptions;
+      const { messages, tools, ...modelOptions } = chatOptions;
       this.modelOptions = modelOptions;
       this.messages = messages;
       this.chatModel = this.createModel();
+      if (tools?.length) {
+        this.chatModel = this.chatModel.bindTools(tools);
+      }
       this.registerChatHandler('parse-messages', parseMessages);
     }
   }
@@ -53,6 +59,13 @@ export abstract class LLMProvider {
       await handler();
     }
     return this.chatModel.invoke(this.messages);
+  }
+
+  async stream(options?: any) {
+    // for (const handler of this.chatHandlers.values()) {
+    //   await handler();
+    // }
+    return this.chatModel.stream(this.messages, options);
   }
 
   async listModels(): Promise<{
@@ -85,5 +98,9 @@ export abstract class LLMProvider {
     } catch (e) {
       return { code: 500, errMsg: e.message };
     }
+  }
+
+  parseResponseMessage(message: Model) {
+    return parseResponseMessage(message);
   }
 }
