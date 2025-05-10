@@ -12,9 +12,8 @@
 //
 // Created by Curran Kelleher and Chrostophe Serafin.
 // Contributions from Paul Brewer and Javier Blanco Martinez.
-import { get } from 'lodash';
+import { get } from 'object-path';
 
-// An enhanced version of `typeof` that handles arrays and dates as well.
 function type(value) {
   let valueType: string = typeof value;
   if (Array.isArray(value)) {
@@ -28,107 +27,71 @@ function type(value) {
   return valueType;
 }
 
-// Constructs a parameter object from a match result.
-// e.g. "['{{foo}}']" --> { key: "foo" }
-// e.g. "['{{foo:bar}}']" --> { key: "foo", defaultValue: "bar" }
-function Parameter(match) {
-  let param;
-  const matchValue = match.substr(2, match.length - 4).trim();
-  const i = matchValue.indexOf(':');
-
-  if (i !== -1) {
-    param = {
-      key: matchValue.substr(0, i),
-      defaultValue: matchValue.substr(i + 1),
-    };
-  } else {
-    param = { key: matchValue };
-  }
-
-  return param;
-}
-
 // Constructs a template function with deduped `parameters` property.
 function Template(fn, parameters) {
   fn.parameters = Array.from(new Map(parameters.map((parameter) => [parameter.key, parameter])).values());
   return fn;
 }
 
-// Parses the given template object.
-//
-// Returns a function `template(context)` that will "fill in" the template
-// with the context object passed to it.
-//
-// The returned function has a `parameters` property,
-// which is an array of parameter descriptor objects,
-// each of which has a `key` property and possibly a `defaultValue` property.
-export function parse(value) {
-  switch (type(value)) {
-    case 'string':
-      return parseString(value);
-    case 'object':
-      return parseObject(value);
-    case 'array':
-      return parseArray(value);
-    default:
-      return Template(function () {
-        return value;
-      }, []);
-  }
-}
+type ParseOptions = {
+  nestedKey?: boolean;
+};
+
+type Parameter = { key: string; defaultValue?: string };
 
 // Parses leaf nodes of the template object that are strings.
 // Also used for parsing keys that contain templates.
-const parseString = (() => {
-  // This regular expression detects instances of the
-  // template parameter syntax such as {{foo}} or {{foo:someDefault}}.
-  const regex = /{{(\w|:|[\s-+.,@/()?=*_$])+}}/g;
+function parseString(str, options: ParseOptions = {}) {
+  const regex = /\{\{\s*([\p{L}_.$][\p{L}\p{N}_.$-]*)(?::([^}]*))?\s*\}\}/gu;
 
-  return (str) => {
-    let parameters = [];
-    let templateFn = (context) => str;
+  let templateFn = () => str;
 
-    const matches = str.match(regex);
-    if (matches) {
-      parameters = matches.map(Parameter);
-      templateFn = (context) => {
-        context = context || {};
-        return matches.reduce((result, match, i) => {
-          const parameter = parameters[i];
-          let value = get(context, parameter.key);
-
-          if (typeof value === 'undefined') {
-            value = parameter.defaultValue;
-          }
-
-          if (typeof value === 'function') {
-            value = value();
-          }
-
-          // Accommodate non-string as original values.
-          if (matches.length === 1 && str.startsWith('{{') && str.endsWith('}}')) {
-            return value;
-          }
-
-          // Treat Date value inside string to ISO string.
-          if (value instanceof Date) {
-            value = value.toISOString();
-          }
-
-          return result.replace(match, value == null ? '' : value);
-        }, str);
-      };
+  const matches = Array.from(str.matchAll(regex));
+  const parameters: Parameter[] = matches.map((match) => {
+    const r: Parameter = {
+      key: match[1],
+    };
+    if (match[2]) {
+      r.defaultValue = match[2];
     }
+    return r;
+  });
 
-    return Template(templateFn, parameters);
-  };
-})();
+  if (matches.length > 0) {
+    templateFn = (context = {}) => {
+      return matches.reduce((result, match, i) => {
+        const parameter = parameters[i];
+        let value = get(context, options.nestedKey ? parameter.key : [parameter.key]);
+
+        if (typeof value === 'undefined') {
+          value = parameter.defaultValue;
+        }
+
+        if (typeof value === 'function') {
+          value = value();
+        }
+
+        if (matches.length === 1 && str.trim() === match[0]) {
+          return value;
+        }
+
+        if (value instanceof Date) {
+          value = value.toISOString();
+        }
+
+        return (<string>result).replace(match[0], value == null ? '' : value);
+      }, str);
+    };
+  }
+
+  return Template(templateFn, parameters);
+}
 
 // Parses non-leaf-nodes in the template object that are objects.
-function parseObject(object) {
+function parseObject(object, options) {
   const children = Object.keys(object).map((key) => ({
-    keyTemplate: parseString(key),
-    valueTemplate: parse(object[key]),
+    keyTemplate: parseString(key, options),
+    valueTemplate: parse(object[key], options),
   }));
   const templateParameters = children.reduce(
     (parameters, child) => parameters.concat(child.valueTemplate.parameters, child.keyTemplate.parameters),
@@ -145,10 +108,33 @@ function parseObject(object) {
 }
 
 // Parses non-leaf-nodes in the template object that are arrays.
-function parseArray(array) {
-  const templates = array.map(parse);
+function parseArray(array, options) {
+  const templates = array.map((t) => parse(t, options));
   const templateParameters = templates.reduce((parameters, template) => parameters.concat(template.parameters), []);
   const templateFn = (context) => templates.map((template) => template(context));
 
   return Template(templateFn, templateParameters);
+}
+
+// Parses the given template object.
+//
+// Returns a function `template(context)` that will "fill in" the template
+// with the context object passed to it.
+//
+// The returned function has a `parameters` property,
+// which is an array of parameter descriptor objects,
+// each of which has a `key` property and possibly a `defaultValue` property.
+export function parse(value, options?: ParseOptions) {
+  switch (type(value)) {
+    case 'string':
+      return parseString(value, options);
+    case 'object':
+      return parseObject(value, options);
+    case 'array':
+      return parseArray(value, options);
+    default:
+      return Template(function () {
+        return value;
+      }, []);
+  }
 }
