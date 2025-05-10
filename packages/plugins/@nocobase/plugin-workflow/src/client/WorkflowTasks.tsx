@@ -58,13 +58,17 @@ const contentClass = css`
 export interface TaskTypeOptions {
   title: string;
   collection: string;
+  action?: string;
   useActionParams: Function;
   component: React.ComponentType;
   extraActions?: React.ComponentType;
   // children?: TaskTypeOptions[];
+  alwaysShow?: boolean;
 }
 
-const TasksCountsContext = createContext<{ reload: () => void; counts: Record<string, number>; total: number }>({
+type Stats = Record<string, { pending: number; all: number }>;
+
+const TasksCountsContext = createContext<{ reload: () => void; counts: Stats; total: number }>({
   reload() {},
   counts: {},
   total: 0,
@@ -94,7 +98,7 @@ function MenuLink({ type }: any) {
       `}
     >
       <span>{typeTitle}</span>
-      <Badge count={counts[type] || 0} size="small" />
+      <Badge count={counts[type]?.pending || 0} size="small" />
     </Link>
   );
 }
@@ -148,16 +152,20 @@ function StatusTabs() {
 
 function useTaskTypeItems() {
   const workflowPlugin = usePlugin(PluginWorkflowClient);
+  const { counts } = useContext(TasksCountsContext);
+  const types = workflowPlugin.taskTypes.getKeys();
 
   return useMemo(
     () =>
-      Array.from(workflowPlugin.taskTypes.getKeys()).map((key: string) => {
-        return {
-          key,
-          label: <MenuLink type={key} />,
-        };
-      }),
-    [workflowPlugin.taskTypes],
+      Array.from(types)
+        .filter((key: string) => workflowPlugin.taskTypes.get(key)?.alwaysShow || Boolean(counts[key]?.all))
+        .map((key: string) => {
+          return {
+            key,
+            label: <MenuLink type={key} />,
+          };
+        }),
+    [counts, types, workflowPlugin.taskTypes],
   );
 }
 
@@ -182,7 +190,7 @@ export function WorkflowTasks() {
 
   const items = useTaskTypeItems();
 
-  const { title, collection, useActionParams, component: Component } = useCurrentTaskType();
+  const { title, collection, action = 'list', useActionParams, component: Component } = useCurrentTaskType();
 
   const params = useActionParams(status);
 
@@ -234,7 +242,7 @@ export function WorkflowTasks() {
               'x-decorator': 'List.Decorator',
               'x-decorator-props': {
                 collection,
-                action: 'list',
+                action,
                 params: {
                   pageSize: 20,
                   sort: ['-createdAt'],
@@ -302,14 +310,12 @@ export function WorkflowTasks() {
 }
 
 function WorkflowTasksLink() {
-  const workflowPlugin = usePlugin(PluginWorkflowClient);
   const { reload, total } = useContext(TasksCountsContext);
-
-  const types = Array.from(workflowPlugin.taskTypes.getKeys());
-  return types.length ? (
+  const items = useTaskTypeItems();
+  return items.length ? (
     <Tooltip title={lang('Workflow todos')}>
       <Button>
-        <Link to={`/admin/workflow/tasks/${types[0]}`} onClick={reload}>
+        <Link to={`/admin/workflow/tasks/${items[0].key}/${TASK_STATUS.PENDING}`} onClick={reload}>
           <Badge count={total} size="small">
             <CheckCircleOutlined />
           </Badge>
@@ -319,24 +325,27 @@ function WorkflowTasksLink() {
   ) : null;
 }
 
-function transform(detail) {
-  return detail.reduce((result, stats) => {
-    result[stats.type] = stats.count;
+function transform(records) {
+  return records.reduce((result, record) => {
+    result[record.type] = record.stats;
     return result;
   }, {});
 }
 
 function TasksCountsProvider(props: any) {
   const app = useApp();
-  const [counts, setCounts] = useState<Record<string, number>>({});
-  const onTaskUpdate = useCallback(({ detail = [] }: CustomEvent) => {
-    setCounts(transform(detail));
+  const [counts, setCounts] = useState<Stats>({});
+  const onTaskUpdate = useCallback(({ detail }: CustomEvent) => {
+    setCounts((prev) => ({
+      ...prev,
+      ...transform([detail]),
+    }));
   }, []);
 
   const { runAsync } = useRequest(
     {
-      resource: 'workflowTasks',
-      action: 'countMine',
+      resource: 'userWorkflowTasks',
+      action: 'listMine',
     },
     {
       manual: true,
@@ -365,7 +374,7 @@ function TasksCountsProvider(props: any) {
     };
   }, [app.eventBus, onTaskUpdate]);
 
-  const total = Object.values(counts).reduce((a, b) => a + b, 0) || 0;
+  const total = Object.values(counts).reduce((result, item) => result + (item.pending || 0), 0) || 0;
 
   return <TasksCountsContext.Provider value={{ reload, total, counts }}>{props.children}</TasksCountsContext.Provider>;
 }

@@ -51,6 +51,7 @@ export default defineCollection({
     {
       type: 'belongsTo',
       name: 'execution',
+      onDelete: 'CASCADE',
     },
     {
       type: 'belongsTo',
@@ -62,6 +63,7 @@ export default defineCollection({
       name: 'workflow',
       target: 'workflows',
       foreignKey: 'workflowId',
+      onDelete: 'CASCADE',
       interface: 'm2o',
       uiSchema: {
         type: 'object',

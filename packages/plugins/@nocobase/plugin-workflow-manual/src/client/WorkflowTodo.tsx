@@ -678,10 +678,7 @@ function useTodoActionParams(status) {
   const { data: user } = useCurrentUserContext();
   const filter = StatusFilterMap[status] ?? {};
   return {
-    filter: {
-      ...filter,
-      userId: user?.data?.id,
-    },
+    filter,
     appends: [
       'job.id',
       'job.status',
@@ -733,6 +730,7 @@ function TodoExtraActions() {
 export const manualTodo = {
   title: `{{t("My manual tasks", { ns: "${NAMESPACE}" })}}`,
   collection: 'workflowManualTasks',
+  action: 'listMine',
   useActionParams: useTodoActionParams,
   component: TaskItem,
   extraActions: TodoExtraActions,
