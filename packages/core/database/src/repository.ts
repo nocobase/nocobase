@@ -125,6 +125,7 @@ export interface CommonFindOptions extends Transactionable {
   sort?: Sort;
   context?: any;
   tree?: boolean;
+  hooks?: boolean;
 }
 
 export type FindOneOptions = Omit<FindOptions, 'limit'> & {
