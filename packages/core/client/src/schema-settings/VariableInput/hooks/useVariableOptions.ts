@@ -102,6 +102,7 @@ export const useVariableOptions = ({
     noDisabled,
     targetFieldSchema,
   });
+  console.log(shouldDisplayCurrentRecord);
   const { settings: popupRecordSettings, shouldDisplayPopupRecord } = usePopupVariable({
     schema: uiSchema,
     collectionField,

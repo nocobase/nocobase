@@ -48,8 +48,6 @@ export const BlockLinkageRuleProvider = (props) => {
   useEffect(() => {
     if (shouldCalculateFormLinkage) {
       const id = uid();
-      const disposes = [];
-
       // 延迟执行，防止一开始获取到的 form.values 值是旧的
       setTimeout(() => {
         form.addEffects(id, () => {
@@ -77,9 +75,6 @@ export const BlockLinkageRuleProvider = (props) => {
       // 清理副作用
       return () => {
         form.removeEffects(id);
-        disposes.forEach((dispose) => {
-          dispose();
-        });
       };
     }
   }, [linkageRules, shouldCalculateFormLinkage]);
