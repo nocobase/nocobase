@@ -82,19 +82,21 @@ abstract class BaseExporter<T extends ExportOptions = ExportOptions> extends Eve
   }
 
   protected getAppendOptionsFromFields(ctx?) {
-    const fields = this.options.fields.map((x) => x[0]);
-    const hasPermissionFields = _.isEmpty(ctx?.permission?.can?.params)
-      ? fields
-      : _.intersection(ctx?.permission?.can?.params?.appends || [], fields);
-    return hasPermissionFields
-      .map((field) => {
-        const fieldInstance = this.options.collection.getField(field);
+    return this.options.fields
+      .filter((fieldPath) => {
+        const field = fieldPath[0];
+        const hasPermission =
+          _.isEmpty(ctx?.permission?.can?.params) || (ctx?.permission?.can?.params?.appends || []).includes(field);
+        return hasPermission;
+      })
+      .map((fieldPath) => {
+        const fieldInstance = this.options.collection.getField(fieldPath[0]);
         if (!fieldInstance) {
-          throw new Error(`Field "${field}" not found: , please check the fields configuration.`);
+          throw new Error(`Field "${fieldPath[0]}" not found: , please check the fields configuration.`);
         }
 
         if (fieldInstance.isRelationField()) {
-          return field;
+          return fieldPath.join('.');
         }
 
         return null;
