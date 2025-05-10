@@ -226,7 +226,7 @@ export const useDatetimeVariableContext = () => {
 };
 
 /**
- * 变量：`日期变量`
+ * 变量：`日期变量`，主要用于筛选、联动规则条件场景
  * @param param0
  * @returns
  */
