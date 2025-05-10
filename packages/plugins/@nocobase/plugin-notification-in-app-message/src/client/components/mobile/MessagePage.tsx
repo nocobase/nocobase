@@ -7,33 +7,32 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useEffect, useCallback, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { List, Badge, InfiniteScroll, NavBar, DotLoading } from 'antd-mobile';
 import { observer } from '@formily/reactive-react';
-import { useCurrentUserContext, css, useApp } from '@nocobase/client';
-import { useSearchParams } from 'react-router-dom';
+import { css, useApp, useCurrentUserContext } from '@nocobase/client';
 import { dayjs } from '@nocobase/utils/client';
+import { Badge, DotLoading, InfiniteScroll, List, NavBar } from 'antd-mobile';
+import React, { useCallback, useEffect, useState } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 
+import { Schema } from '@formily/react';
 import {
+  MobilePageContentContainer,
   MobilePageHeader,
   MobilePageProvider,
-  MobilePageContentContainer,
   useMobileTitle,
 } from '@nocobase/plugin-mobile/client';
+import { useLocalTranslation } from '../../../locale';
 import {
-  userIdObs,
+  fetchChannels,
+  fetchMessages,
   selectedChannelNameObs,
   selectedChannelObs,
   selectedMessageListObs,
-  fetchChannels,
-  updateMessage,
-  fetchMessages,
   showMsgLoadingMoreObs,
+  updateMessage,
+  userIdObs,
 } from '../../observables';
-import { useLocalTranslation } from '../../../locale';
 import InfiniteScrollContent from './InfiniteScrollContent';
-import { Schema } from '@formily/react';
 
 const MobileMessagePageInner = () => {
   const app = useApp();
@@ -100,6 +99,12 @@ const MobileMessagePageInner = () => {
   }, [messages]);
   const title = Schema.compile(selectedChannelObs.value?.title, { t: app.i18n.t }) || t('Message');
 
+  const renderContent = useCallback((content: string, contentType: string) => {
+    if (contentType === 'HTML') {
+      return <div dangerouslySetInnerHTML={{ __html: content }} />;
+    }
+    return content;
+  }, []);
   return (
     <MobilePageProvider>
       <MobilePageHeader>
@@ -131,7 +136,7 @@ const MobileMessagePageInner = () => {
                       <Badge key={item.id} content={item.status === 'unread' ? Badge.dot : null} />
                     </div>
                   }
-                  description={item.content}
+                  description={renderContent(item.content, item.contentType)}
                   extra={dayjs(item.receiveTimestamp).fromNow(true)}
                   onClick={() => {
                     onMessageClick(item);

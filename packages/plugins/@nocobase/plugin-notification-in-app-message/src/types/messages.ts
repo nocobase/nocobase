@@ -8,7 +8,7 @@
  */
 
 import { CollectionOptions } from '@nocobase/client';
-import { InAppMessagesDefinition, ChannelsDefinition } from './index';
+import { ChannelsDefinition, InAppMessagesDefinition } from './index';
 
 export const messageCollection: CollectionOptions = {
   name: InAppMessagesDefinition.name,
@@ -59,6 +59,27 @@ export const messageCollection: CollectionOptions = {
         'x-component': 'Input',
         title: '{{t("Title")}}',
         required: true,
+      },
+    },
+    {
+      name: InAppMessagesDefinition.fieldNameMap.contentType,
+      type: 'string',
+      uiSchema: {
+        type: 'string',
+        title: '{{t("Content type")}}',
+        interface: 'select',
+        uiSchema: {
+          type: 'string',
+          title: '{{t("Content type")}}',
+          'x-component': 'Select',
+          'x-component-props': {
+            options: [
+              { label: '{{t("Text")}}', value: 'text' },
+              { label: '{{t("HTML")}}', value: 'HTML' },
+            ],
+          },
+          required: true,
+        },
       },
     },
     {
