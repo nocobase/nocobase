@@ -23,28 +23,28 @@ vi.mock('react-router-dom', () => ({
         if (key === 'name') return 'basic';
         if (key === 'resetToken') return 'valid-token';
         return null;
-      }
-    }
+      },
+    },
   ]),
-  Navigate: vi.fn(() => <div data-testid="navigate">Navigate to not-found</div>)
+  Navigate: vi.fn(() => <div data-testid="navigate">Navigate to not-found</div>),
 }));
 
 vi.mock('../authenticator', () => ({
-  useAuthenticator: vi.fn()
+  useAuthenticator: vi.fn(),
 }));
 
 vi.mock('@nocobase/client', () => ({
   SchemaComponent: vi.fn(({ schema, scope }) => <div data-testid="schema-component">Schema Component</div>),
   useAPIClient: vi.fn(() => ({
     auth: {
-      checkResetToken: vi.fn().mockResolvedValue(true)
-    }
+      checkResetToken: vi.fn().mockResolvedValue(true),
+    },
   })),
-  useNavigateNoUpdate: vi.fn(() => vi.fn())
+  useNavigateNoUpdate: vi.fn(() => vi.fn()),
 }));
 
 vi.mock('../locale', () => ({
-  useAuthTranslation: vi.fn(() => ({ t: (key: string) => key }))
+  useAuthTranslation: vi.fn(() => ({ t: (key: string) => key })),
 }));
 
 vi.mock('antd', () => ({
@@ -56,8 +56,8 @@ vi.mock('antd', () => ({
     </div>
   )),
   message: {
-    success: vi.fn()
-  }
+    success: vi.fn(),
+  },
 }));
 
 describe('ResetPasswordPage', () => {
@@ -69,8 +69,8 @@ describe('ResetPasswordPage', () => {
     // 模拟认证器允许重置密码
     vi.mocked(useAuthenticator).mockReturnValue({
       options: {
-        enableResetPassword: true
-      }
+        enableResetPassword: true,
+      },
     } as any);
 
     // 模拟有效的重置令牌
@@ -80,8 +80,8 @@ describe('ResetPasswordPage', () => {
           if (key === 'name') return 'basic';
           if (key === 'resetToken') return 'valid-token';
           return null;
-        }
-      }
+        },
+      },
     ] as any);
 
     render(<ResetPasswordPage />);
@@ -96,8 +96,8 @@ describe('ResetPasswordPage', () => {
     // 模拟认证器不允许重置密码
     vi.mocked(useAuthenticator).mockReturnValue({
       options: {
-        enableResetPassword: false
-      }
+        enableResetPassword: false,
+      },
     } as any);
 
     render(<ResetPasswordPage />);
@@ -118,15 +118,15 @@ describe('ResetPasswordPage', () => {
     // 模拟认证器允许重置密码
     vi.mocked(useAuthenticator).mockReturnValue({
       options: {
-        enableResetPassword: true
-      }
+        enableResetPassword: true,
+      },
     } as any);
 
     // 模拟过期或无效的令牌
     vi.mocked(useAPIClient).mockReturnValue({
       auth: {
-        checkResetToken: vi.fn().mockRejectedValue(new Error('Token expired'))
-      }
+        checkResetToken: vi.fn().mockRejectedValue(new Error('Token expired')),
+      },
     } as any);
 
     render(<ResetPasswordPage />);
@@ -146,15 +146,15 @@ describe('ResetPasswordPage', () => {
           if (key === 'name') return mockName;
           if (key === 'resetToken') return 'valid-token';
           return null;
-        }
-      }
+        },
+      },
     ] as any);
 
     // 模拟认证器允许重置密码
     vi.mocked(useAuthenticator).mockReturnValue({
       options: {
-        enableResetPassword: true
-      }
+        enableResetPassword: true,
+      },
     } as any);
 
     render(<ResetPasswordPage />);

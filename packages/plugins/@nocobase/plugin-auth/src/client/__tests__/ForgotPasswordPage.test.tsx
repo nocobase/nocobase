@@ -18,23 +18,23 @@ import { useSearchParams } from 'react-router-dom';
 vi.mock('react-router-dom', () => ({
   useSearchParams: vi.fn(() => [
     {
-      get: (key: string) => key === 'name' ? 'basic' : null
-    }
+      get: (key: string) => (key === 'name' ? 'basic' : null),
+    },
   ]),
-  Navigate: vi.fn(() => <div data-testid="navigate">Navigate to not-found</div>)
+  Navigate: vi.fn(() => <div data-testid="navigate">Navigate to not-found</div>),
 }));
 
 vi.mock('../authenticator', () => ({
-  useAuthenticator: vi.fn()
+  useAuthenticator: vi.fn(),
 }));
 
 vi.mock('@nocobase/client', () => ({
   SchemaComponent: vi.fn(({ schema, scope }) => <div data-testid="schema-component">Schema Component</div>),
-  useAPIClient: vi.fn()
+  useAPIClient: vi.fn(),
 }));
 
 vi.mock('../locale', () => ({
-  useAuthTranslation: vi.fn(() => ({ t: (key: string) => key }))
+  useAuthTranslation: vi.fn(() => ({ t: (key: string) => key })),
 }));
 
 describe('ForgotPasswordPage', () => {
@@ -46,8 +46,8 @@ describe('ForgotPasswordPage', () => {
     // 模拟认证器允许重置密码
     vi.mocked(useAuthenticator).mockReturnValue({
       options: {
-        enableResetPassword: true
-      }
+        enableResetPassword: true,
+      },
     } as any);
 
     render(<ForgotPasswordPage />);
@@ -58,8 +58,8 @@ describe('ForgotPasswordPage', () => {
     // 模拟认证器不允许重置密码
     vi.mocked(useAuthenticator).mockReturnValue({
       options: {
-        enableResetPassword: false
-      }
+        enableResetPassword: false,
+      },
     } as any);
 
     render(<ForgotPasswordPage />);
@@ -79,15 +79,15 @@ describe('ForgotPasswordPage', () => {
     const mockName = 'custom-auth';
     vi.mocked(useSearchParams).mockReturnValue([
       {
-        get: (key: string) => key === 'name' ? mockName : null
-      }
+        get: (key: string) => (key === 'name' ? mockName : null),
+      },
     ] as any);
 
     // 模拟认证器允许重置密码
     vi.mocked(useAuthenticator).mockReturnValue({
       options: {
-        enableResetPassword: true
-      }
+        enableResetPassword: true,
+      },
     } as any);
 
     render(<ForgotPasswordPage />);

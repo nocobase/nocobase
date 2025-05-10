@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { parsedValue } from "../parsedValue";
+import { parsedValue } from '../parsedValue';
 
 describe('parsedValue', () => {
   it('should correctly parse simple templates', () => {

@@ -243,7 +243,6 @@ export class Auth {
     return response;
   }
 
-
   async lostPassword(values: any): Promise<AxiosResponse<any>> {
     // 获取当前 URL 的查询参数
     const searchParams = new URLSearchParams(window.location.search);

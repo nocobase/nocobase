@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { useTranslation } from "react-i18next";
+import { useTranslation } from 'react-i18next';
 
 /**
  * 变量：`系统设置`
@@ -28,7 +28,7 @@ export const useSystemSettingsVariable = () => {
         label: t('System title'),
         isLeaf: true,
       },
-    ]
+    ],
   };
 
   return {

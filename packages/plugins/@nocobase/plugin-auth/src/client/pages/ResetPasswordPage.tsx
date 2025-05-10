@@ -62,7 +62,7 @@ const getResetPasswordForm = (): ISchema => ({
                   } finally {
                     setLoading(false);
                   }
-                  message.success(t("Password reset successful"));
+                  message.success(t('Password reset successful'));
                   setTimeout(() => {
                     window.location.href = '/signin';
                   }, 1000);
@@ -96,11 +96,14 @@ export const ResetPasswordPage = () => {
   const authenticator = useAuthenticator(name);
 
   useEffect(() => {
-    api.auth.checkResetToken({ resetToken }).then(() => {
-      setExpired(false);
-    }).catch((error) => {
-      setExpired(true);
-    });
+    api.auth
+      .checkResetToken({ resetToken })
+      .then(() => {
+        setExpired(false);
+      })
+      .catch((error) => {
+        setExpired(true);
+      });
   }, []);
 
   if (!authenticator?.options?.enableResetPassword) {
@@ -108,11 +111,17 @@ export const ResetPasswordPage = () => {
   }
 
   if (!resetToken || expired) {
-    return <Result
-      status="403"
-      title={t('Reset link has expired')}
-      extra={<Button type="primary" onClick={() => navigate('/signin')}>{t('Go to login')}</Button>}
-    />;
+    return (
+      <Result
+        status="403"
+        title={t('Reset link has expired')}
+        extra={
+          <Button type="primary" onClick={() => navigate('/signin')}>
+            {t('Go to login')}
+          </Button>
+        }
+      />
+    );
   }
 
   return <SchemaComponent schema={getResetPasswordForm()} scope={{ t }} />;
