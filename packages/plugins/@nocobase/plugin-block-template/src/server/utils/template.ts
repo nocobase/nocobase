@@ -400,6 +400,9 @@ export function cleanSchema(schema?: Schema, templateId?: string) {
     if (schema.properties[key]['x-template-root-uid'] && schema.properties[key]['x-template-root-uid'] !== templateId) {
       continue;
     }
+    if (properties[key]?.['x-component-props'] === null) {
+      delete properties[key]['x-component-props'];
+    }
     if (properties[key]?.['x-component'] === 'Grid.Row') {
       let hasProperties = false;
       const cols = Object.values(properties[key]?.['properties'] || {});
