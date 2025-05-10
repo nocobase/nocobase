@@ -58,6 +58,7 @@ const contentClass = css`
 export interface TaskTypeOptions {
   title: string;
   collection: string;
+  action?: string;
   useActionParams: Function;
   component: React.ComponentType;
   extraActions?: React.ComponentType;
@@ -189,7 +190,7 @@ export function WorkflowTasks() {
 
   const items = useTaskTypeItems();
 
-  const { title, collection, useActionParams, component: Component } = useCurrentTaskType();
+  const { title, collection, action = 'list', useActionParams, component: Component } = useCurrentTaskType();
 
   const params = useActionParams(status);
 
@@ -241,7 +242,7 @@ export function WorkflowTasks() {
               'x-decorator': 'List.Decorator',
               'x-decorator-props': {
                 collection,
-                action: 'list',
+                action,
                 params: {
                   pageSize: 20,
                   sort: ['-createdAt'],
