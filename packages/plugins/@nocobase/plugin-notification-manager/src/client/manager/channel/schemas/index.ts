@@ -181,7 +181,7 @@ export const channelsSchema: ISchema = {
           properties: {
             edit: {
               type: 'void',
-              title: 'Edit',
+              title: '{{t("Edit")}}',
               'x-component': 'Action.Link',
               'x-component-props': {
                 openMode: 'drawer',

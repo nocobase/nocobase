@@ -8,11 +8,11 @@
  */
 
 import { observable, reaction } from '@formily/reactive';
-import { SSEData } from '../../types';
-import { messageMapObs, updateUnreadMsgsCount } from './message';
-import { fetchChannels } from './channel';
-import { getAPIClient } from '../utils';
 import { uid } from '@nocobase/utils/client';
+import { SSEData } from '../../types';
+import { getAPIClient } from '../utils';
+import { fetchChannels } from './channel';
+import { messageMapObs, updateUnreadMsgsCount } from './message';
 
 export const liveSSEObs = observable<{ value: SSEData | null }>({ value: null });
 reaction(
