@@ -7,7 +7,15 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { SchemaComponent, useCollectionManager, useCurrentUserVariable, useDatetimeVariable, useGlobalVariable, useRecord, useSystemSettingsVariable } from '@nocobase/client';
+import {
+  SchemaComponent,
+  useCollectionManager,
+  useCurrentUserVariable,
+  useDatetimeVariable,
+  useGlobalVariable,
+  useRecord,
+  useSystemSettingsVariable,
+} from '@nocobase/client';
 import React, { useEffect, useMemo } from 'react';
 import { lang, useAuthTranslation } from '../locale';
 import { FormTab, ArrayTable } from '@formily/antd-v5';
@@ -153,14 +161,20 @@ const useVariableOptionsOfForgetPassword = () => {
   const { currentUserSettings } = useCurrentUserVariable({ maxDepth: 1 });
   const { systemSettings } = useSystemSettingsVariable();
 
-  return [environmentVariables, currentUserSettings, systemSettings, {
-    value: '$resetLink',
-    label: t('Reset password link'),
-  }, {
+  return [
+    environmentVariables,
+    currentUserSettings,
+    systemSettings,
+    {
+      value: '$resetLink',
+      label: t('Reset password link'),
+    },
+    {
       value: '$resetLinkExpiration',
       label: t('Reset link expiration (minutes)'),
-    }].filter(Boolean);
-}
+    },
+  ].filter(Boolean);
+};
 
 export const Options = () => {
   const { t } = useAuthTranslation();
@@ -229,7 +243,11 @@ export const Options = () => {
                   divider1: {
                     type: 'void',
                     'x-component': () => {
-                      return <Divider orientation="left" orientationMargin="0">{t('1. Select notification channel')}</Divider>;
+                      return (
+                        <Divider orientation="left" orientationMargin="0">
+                          {t('1. Select notification channel')}
+                        </Divider>
+                      );
                     },
                     'x-reactions': [
                       {
@@ -276,12 +294,17 @@ export const Options = () => {
                         },
                       },
                     ],
-                    description: '{{t("The notification channel used to send the reset password email, only support email channel")}}',
+                    description:
+                      '{{t("The notification channel used to send the reset password email, only support email channel")}}',
                   },
                   divider2: {
                     type: 'void',
                     'x-component': () => {
-                      return <Divider orientation="left" orientationMargin="0">{t('2. Configure reset email')}</Divider>;
+                      return (
+                        <Divider orientation="left" orientationMargin="0">
+                          {t('2. Configure reset email')}
+                        </Divider>
+                      );
                     },
                     'x-reactions': [
                       {
@@ -399,7 +422,7 @@ export const Options = () => {
                       suffix: t('Minutes'),
                       style: {
                         width: '100%',
-                      }
+                      },
                     },
                     default: 120,
                     required: true,

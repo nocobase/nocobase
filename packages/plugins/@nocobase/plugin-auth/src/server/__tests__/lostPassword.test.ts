@@ -70,7 +70,7 @@ describe('auth:lostPassword', () => {
           }
           return null;
         }),
-      }
+      },
     };
 
     // Add mock email channel
@@ -307,7 +307,9 @@ describe('auth:lostPassword', () => {
         channelName: 'email',
         message: expect.objectContaining({
           to: ['test@example.com'],
-          html: expect.stringContaining(`${baseURL}/reset-password?resetToken=mock-reset-token&name=${authenticatorName}`),
+          html: expect.stringContaining(
+            `${baseURL}/reset-password?resetToken=mock-reset-token&name=${authenticatorName}`,
+          ),
         }),
       }),
     );

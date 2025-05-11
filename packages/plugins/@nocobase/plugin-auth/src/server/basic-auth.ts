@@ -39,8 +39,8 @@ export class BasicAuth extends BaseAuth {
     const filter = email
       ? { email }
       : {
-        $or: [{ username: account }, { email: account }],
-      };
+          $or: [{ username: account }, { email: account }],
+        };
     const user = await this.userRepository.findOne({
       filter,
     });
@@ -182,23 +182,34 @@ export class BasicAuth extends BaseAuth {
     }
 
     // 通过用户认证的接口获取邮件渠道、主题、内容等
-    const { notificationChannel, emailContentType, emailContentHTML, emailContentText, emailSubject, enableResetPassword, resetTokenExpiresIn } = this.getEmailConfig();
+    const {
+      notificationChannel,
+      emailContentType,
+      emailContentHTML,
+      emailContentText,
+      emailSubject,
+      enableResetPassword,
+      resetTokenExpiresIn,
+    } = this.getEmailConfig();
 
     if (!enableResetPassword) {
       ctx.throw(403, ctx.t('Not allowed to reset password', { ns: namespace }));
     }
 
     // 生成重置密码的 token
-    const resetToken = await ctx.app.authManager.jwt.sign({
-      resetPasswordUserId: user.id,
-    }, {
-      expiresIn: resetTokenExpiresIn * 60, // 配置的过期时间，单位分钟，需要转成秒
-    });
+    const resetToken = await ctx.app.authManager.jwt.sign(
+      {
+        resetPasswordUserId: user.id,
+      },
+      {
+        expiresIn: resetTokenExpiresIn * 60, // 配置的过期时间，单位分钟，需要转成秒
+      },
+    );
 
     // 构建重置密码链接
     const resetLink = `${baseURL}/reset-password?resetToken=${resetToken}&name=${authenticatorName}`;
 
-    const systemSettings = await ctx.db.getRepository('systemSettings')?.findOne() || {};
+    const systemSettings = (await ctx.db.getRepository('systemSettings')?.findOne()) || {};
 
     // 通过通知管理插件发送邮件
     const notificationManager = ctx.app.getPlugin('notification-manager');
@@ -232,7 +243,7 @@ export class BasicAuth extends BaseAuth {
                 subject: parsedSubject,
                 contentType: emailContentType,
                 ...content,
-              }
+              },
             });
 
             ctx.logger.info(`Password reset email sent to ${email}`);
@@ -240,23 +251,29 @@ export class BasicAuth extends BaseAuth {
             ctx.logger.error(`Failed to send reset password email: ${error.message}`, {
               error,
               email,
-              notificationChannel
+              notificationChannel,
             });
-            ctx.throw(500, ctx.t('Failed to send email. Error: {{error}}', {
-              ns: namespace,
-              error: error.message
-            }));
+            ctx.throw(
+              500,
+              ctx.t('Failed to send email. Error: {{error}}', {
+                ns: namespace,
+                error: error.message,
+              }),
+            );
           }
         } catch (error) {
           ctx.logger.error(`Error parsing email template variables: ${error.message}`, {
             error,
             emailSubject,
-            emailContentType
+            emailContentType,
           });
-          ctx.throw(500, ctx.t('Error parsing email template. Error: {{error}}', {
-            ns: namespace,
-            error: error.message
-          }));
+          ctx.throw(
+            500,
+            ctx.t('Error parsing email template. Error: {{error}}', {
+              ns: namespace,
+              error: error.message,
+            }),
+          );
         }
       } else {
         ctx.throw(400, ctx.t('Email channel not found', { ns: namespace }));

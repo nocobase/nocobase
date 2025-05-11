@@ -15,6 +15,7 @@ const tar = require('tar');
 const path = require('path');
 const { createStoragePluginsSymlink } = require('@nocobase/utils/plugin-symlink');
 const chalk = require('chalk');
+const { getAccessKeyPair } = require('../util');
 
 class Package {
   data;
@@ -248,10 +249,13 @@ module.exports = (cli) => {
         NOCOBASE_PKG_USERNAME,
         NOCOBASE_PKG_PASSWORD,
       } = process.env;
-      if (!(NOCOBASE_PKG_USERNAME && NOCOBASE_PKG_PASSWORD)) {
+      const { accessKeyId, accessKeySecret } = getAccessKeyPair();
+      if (!(NOCOBASE_PKG_USERNAME && NOCOBASE_PKG_PASSWORD) && !(accessKeyId && accessKeySecret)) {
         return;
       }
-      const credentials = { username: NOCOBASE_PKG_USERNAME, password: NOCOBASE_PKG_PASSWORD };
+      const credentials = accessKeyId
+        ? { username: accessKeyId, password: accessKeySecret }
+        : { username: NOCOBASE_PKG_USERNAME, password: NOCOBASE_PKG_PASSWORD };
       const pm = new PackageManager({ baseURL: NOCOBASE_PKG_URL });
       await pm.login(credentials);
       const file = path.resolve(__dirname, '../../package.json');

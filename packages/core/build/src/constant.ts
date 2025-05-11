@@ -43,8 +43,11 @@ export const PLUGINS_DIR = ['plugins', 'samples', 'pro-plugins']
   .filter(Boolean)
   .map((name) => path.join(PACKAGES_PATH, name));
 export const PRESETS_DIR = path.join(PACKAGES_PATH, 'presets');
+export const PLUGIN_COMMERCIAL = '@nocobase/plugin-commercial';
 export const getPluginPackages = (packages: Package[]) =>
-  packages.filter((item) => PLUGINS_DIR.some((pluginDir) => item.location.startsWith(pluginDir)));
+  packages.filter((item) => PLUGINS_DIR.some((pluginDir) => item.location.startsWith(pluginDir))).sort((a, b) => {
+    return a.name === PLUGIN_COMMERCIAL ? -1 : 1;
+  });
 export const getPresetsPackages = (packages: Package[]) =>
   packages.filter((item) => item.location.startsWith(PRESETS_DIR));
 export const CORE_APP = path.join(PACKAGES_PATH, 'core/app');

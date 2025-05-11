@@ -1,4 +1,4 @@
-import { parse } from "./json-templates";
+import { parse } from './json-templates';
 
 function appendArrayColumn(scope, key) {
   const paths = key.split('.');

@@ -53,7 +53,7 @@ const getForgotPasswordForm = (): ISchema => ({
                   } finally {
                     setLoading(false);
                   }
-                  message.success(t("Reset email sent successfully"));
+                  message.success(t('Reset email sent successfully'));
                   form.reset();
                 },
                 loading,
@@ -79,7 +79,6 @@ export const ForgotPasswordPage = () => {
   const [searchParams] = useSearchParams();
   const name = searchParams.get('name');
   const authenticator = useAuthenticator(name);
-
 
   if (!authenticator?.options?.enableResetPassword) {
     return <Navigate to="/not-found" replace={true} />;

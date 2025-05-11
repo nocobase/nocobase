@@ -80,11 +80,14 @@ describe('auth:resetPassword & auth:checkResetToken', () => {
     });
 
     // Create a valid reset token
-    validToken = await app.authManager.jwt.sign({
-      resetPasswordUserId: testUser.id,
-    }, {
-      expiresIn: '1h',
-    });
+    validToken = await app.authManager.jwt.sign(
+      {
+        resetPasswordUserId: testUser.id,
+      },
+      {
+        expiresIn: '1h',
+      },
+    );
 
     // Create an expired token for testing
     expiredToken = 'expired.token.value';
@@ -116,24 +119,18 @@ describe('auth:resetPassword & auth:checkResetToken', () => {
   // Tests for auth:checkResetToken
   describe('auth:checkResetToken', () => {
     it('should return true when token is valid', async () => {
-      const res = await agent
-        .post('/auth:checkResetToken')
-        .set({ 'X-Authenticator': 'basic' })
-        .send({
-          resetToken: validToken,
-        });
+      const res = await agent.post('/auth:checkResetToken').set({ 'X-Authenticator': 'basic' }).send({
+        resetToken: validToken,
+      });
 
       expect(res.statusCode).toBe(200);
       expect(res.body.data).toBe(true);
     });
 
     it('should return an error when token is expired', async () => {
-      const res = await agent
-        .post('/auth:checkResetToken')
-        .set({ 'X-Authenticator': 'basic' })
-        .send({
-          resetToken: expiredToken,
-        });
+      const res = await agent.post('/auth:checkResetToken').set({ 'X-Authenticator': 'basic' }).send({
+        resetToken: expiredToken,
+      });
 
       expect(res.statusCode).toBe(401);
       expect(res.error.text).toContain('Token expired');
@@ -142,12 +139,9 @@ describe('auth:resetPassword & auth:checkResetToken', () => {
     it('should return an error when token is invalid', async () => {
       app.authManager.jwt.decode = vi.fn().mockRejectedValue(new Error('Invalid token'));
 
-      const res = await agent
-        .post('/auth:checkResetToken')
-        .set({ 'X-Authenticator': 'basic' })
-        .send({
-          resetToken: 'invalid.token',
-        });
+      const res = await agent.post('/auth:checkResetToken').set({ 'X-Authenticator': 'basic' }).send({
+        resetToken: 'invalid.token',
+      });
 
       expect(res.statusCode).toBe(401);
       expect(res.error.text).toContain('Token expired');
@@ -157,13 +151,10 @@ describe('auth:resetPassword & auth:checkResetToken', () => {
   // Tests for auth:resetPassword
   describe('auth:resetPassword', () => {
     it('should successfully reset password with valid token', async () => {
-      const res = await agent
-        .post('/auth:resetPassword')
-        .set({ 'X-Authenticator': 'basic' })
-        .send({
-          resetToken: validToken,
-          password: 'newpassword123',
-        });
+      const res = await agent.post('/auth:resetPassword').set({ 'X-Authenticator': 'basic' }).send({
+        resetToken: validToken,
+        password: 'newpassword123',
+      });
 
       expect(res.statusCode).toBe(204);
 
@@ -171,37 +162,28 @@ describe('auth:resetPassword & auth:checkResetToken', () => {
       expect(app.authManager.jwt.block).toHaveBeenCalledWith(validToken);
 
       // Verify user password was changed by trying to sign in with the new password
-      const signInRes = await agent
-        .post('/auth:signIn')
-        .set({ 'X-Authenticator': 'basic' })
-        .send({
-          account: 'test@example.com',
-          password: 'newpassword123',
-        });
+      const signInRes = await agent.post('/auth:signIn').set({ 'X-Authenticator': 'basic' }).send({
+        account: 'test@example.com',
+        password: 'newpassword123',
+      });
 
       expect(signInRes.statusCode).toBe(200);
     });
 
     it('should return an error when resetToken is not provided', async () => {
-      const res = await agent
-        .post('/auth:resetPassword')
-        .set({ 'X-Authenticator': 'basic' })
-        .send({
-          password: 'newpassword123',
-        });
+      const res = await agent.post('/auth:resetPassword').set({ 'X-Authenticator': 'basic' }).send({
+        password: 'newpassword123',
+      });
 
       expect(res.statusCode).toBe(401);
       expect(res.error.text).toContain('Token expired');
     });
 
     it('should return an error when resetToken is expired', async () => {
-      const res = await agent
-        .post('/auth:resetPassword')
-        .set({ 'X-Authenticator': 'basic' })
-        .send({
-          resetToken: expiredToken,
-          password: 'newpassword123',
-        });
+      const res = await agent.post('/auth:resetPassword').set({ 'X-Authenticator': 'basic' }).send({
+        resetToken: expiredToken,
+        password: 'newpassword123',
+      });
 
       expect(res.statusCode).toBe(401);
       expect(res.error.text).toContain('Token expired');
@@ -219,13 +201,10 @@ describe('auth:resetPassword & auth:checkResetToken', () => {
 
       app.authManager.jwt.blacklist.has = vi.fn().mockResolvedValue(false);
 
-      const res = await agent
-        .post('/auth:resetPassword')
-        .set({ 'X-Authenticator': 'basic' })
-        .send({
-          resetToken: nonExistentUserToken,
-          password: 'newpassword123',
-        });
+      const res = await agent.post('/auth:resetPassword').set({ 'X-Authenticator': 'basic' }).send({
+        resetToken: nonExistentUserToken,
+        password: 'newpassword123',
+      });
 
       expect(res.statusCode).toBe(404);
       expect(res.error.text).toContain('User not found');
