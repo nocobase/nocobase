@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { Table, Button, Space, Card, App } from 'antd';
-import { RedoOutlined, EyeOutlined, PlusOutlined } from '@ant-design/icons';
+import { Table, Button, Space, Card, App, Flex } from 'antd';
+import Icon, { RedoOutlined, EyeOutlined, PlusOutlined, DeleteOutlined } from '@ant-design/icons';
 import {
     EventBus,
     EventFlowManager,
@@ -12,7 +12,8 @@ import {
     SchemaComponentProvider,
     SchemaSettings,
     useCompile,
-    useBlockConfigs
+    useBlockConfigs,
+    FilterHandlerContext
 } from '@nocobase/client';
 import _ from 'lodash';
 import { configureAction } from './actions/open-configure-dialog';
@@ -42,6 +43,94 @@ const mockData = [
     { id: 16, name: '沈十八', age: 33, email: 'shenshi@example.com' },
 ];
 
+const defaultEventConfigs: {
+    event: string,
+    filterSteps: Record<string, any>,
+    eventSteps: Record<string, any>
+}[] = [
+    {
+        event: 'block:demo:event:refresh',
+        filterSteps: {
+            'block:demo:action': {
+                'block:demo:action:options': {
+                    text: '刷新',
+                    icon: 'RedoOutlined',
+                    type: 'primary',
+                    size: 'small'
+                }
+            }
+        },
+        eventSteps: {
+            'refreshFlow': {
+                'step-refresh': {
+                    messageOnSuccess: '数据已成功刷新！',
+                    showNotification: true
+                }
+            }
+        }
+    },
+    {
+        event: 'block:demo:event:view',
+        filterSteps: {
+            'block:demo:action': {
+                'block:demo:action:options': {
+                    text: '查看',
+                    icon: 'EyeOutlined',
+                    type: 'primary',
+                    size: 'small'
+                }
+            }
+        },
+        eventSteps: {
+            'viewFlow': {
+                'step-view': {
+                    messageOnSuccess: '查看记录详情'
+                }
+            }
+        }
+    },
+    {
+        event: 'block:demo:event:create',
+        filterSteps: {
+            'block:demo:action': {
+                'block:demo:action:options': {
+                    text: '新建',
+                    icon: 'PlusOutlined',
+                    type: 'primary',
+                    size: 'small'
+                }
+            }
+        },
+        eventSteps: {
+            'createFlow': {
+                'step-create': {
+                    messageOnSuccess: '新建记录'
+                }
+            }
+        }
+    },
+    {
+        event: 'block:demo:event:delete',
+        filterSteps: {
+            'block:demo:action': {
+                'block:demo:action:options': {
+                    text: '删除',
+                    icon: 'DeleteOutlined',
+                    type: 'primary',
+                    size: 'small'
+                }
+            }
+        },
+        eventSteps: {
+            'deleteFlow': {
+                'step-delete': {
+                    messageOnSuccess: '删除记录'
+                }
+            }
+        }
+    }
+]
+
 // --- Mock blockConfigs ---
 const mockBlockConfigs = {
     key: 'demo-block-id',
@@ -55,14 +144,13 @@ const mockBlockConfigs = {
                 'block:common:fields': {
                     fields: ['id', 'name', 'age', 'email']
                 },
-                'block:common:actions': {
+                'block:demo:actions': {
                     actions: {
                         toolbar: [
-                            { key: 'create', title: '新增', event: 'block:demo:create', icon: 'PlusOutlined' },
-                            { key: 'refresh', title: '刷新', event: 'block:demo:refresh', icon: 'RedoOutlined' }
+                            { key: 'action-refresh-id' },
                         ],
                         row: [
-                            { key: 'view', title: '查看', event: 'block:demo:view', icon: 'EyeOutlined' }
+                            { key: 'action-view-id' }
                         ]
                     }
                 },
@@ -90,8 +178,44 @@ const mockBlockConfigs = {
                 }
             }
         }
+    },
+    actionConfigs: {
+        'action-refresh-id': {
+            event: 'block:demo:event:refresh',
+            filterSteps: {
+                'action:demo:toolbar': {
+                    'action:demo:toolbar:options': {
+                        text: '刷新',
+                        icon: 'RedoOutlined',
+                        buttonType: 'primary',
+                        size: 'small'
+                    },
+                    'block:common:linkages': {
+                        rule: ''
+                    },
+                    'action:demo:tirgger': {
+                        'on': 'onClick'
+                    },
+                }
+            },
+            eventSteps: {
+                'refreshFlow': {
+                    'step-refresh': {
+                        messageOnSuccess: '数据已成功刷新！',
+                        showNotification: true
+                    }
+                }
+            }
+        },
+        'action-view-id': {
+            event: 'block:demo:event:view',
+            filterSteps: {},
+            eventSteps: {}
+        }
     }
 };
+
+
 
 // 模拟API请求
 const mockApiClient = {
@@ -296,7 +420,8 @@ const configDataFilter: IFilter = {
         _.merge(context.meta.params, data?.data?.configData?.filterSteps || {});
 
         result.blockConfig = data?.data || null;
-
+        result.actionConfigs = data?.data?.actionConfigs || null;
+        
         return result;
     },
 };
@@ -356,13 +481,26 @@ const fieldsFilter: IFilter = {
 
 // 获取操作配置
 const actionsFilter: IFilter = {
-    name: 'block:common:actions',
+    name: 'block:demo:actions',
     group: 'block',
     title: '获取操作配置',
     uiSchema: {},
     handler: (input, params, context) => {
         const result = input || {};
-        result.actions = params?.actions || { toolbar: [], row: [] };
+        const { toolbar, row } = params?.actions || { toolbar: [], row: [] };
+        result.actions = {
+            toolbar: toolbar.map(action => {
+                return {
+                    ...result?.actionConfigs?.[action.key]
+                };
+            }),
+            row: row.map(action => {
+                return {
+                    ...result?.actionConfigs?.[action.key]
+                };
+            })
+        };
+        
         return result;
     },
 };
@@ -428,82 +566,91 @@ const tableColumnsFilter: IFilter = {
     }
 };
 
-// 转换为表格操作
-const tableActionsFilter: IFilter = {
-    name: 'block:demo:actions',
-    group: 'demo',
-    title: '转换表格操作',
-    uiSchema: {},
+// 工具栏按钮选项配置过滤器
+const toolbarOptionsFilter: IFilter = {
+    name: 'action:demo:toolbar:options',
+    group: 'action',
+    title: '工具栏按钮配置',
+    uiSchema: {
+        text: {
+            type: 'string',
+            title: '按钮文本',
+            'x-component': 'Input',
+        },
+        icon: {
+            type: 'string',
+            title: '图标',
+            enum: ['RedoOutlined', 'EyeOutlined', 'PlusOutlined', 'DeleteOutlined'],
+            'x-component': 'Select',
+        },
+        buttonType: {
+            type: 'string',
+            title: '按钮类型',
+            enum: ['primary', 'default', 'dashed', 'link', 'text'],
+            'x-component': 'Select',
+        },
+        size: {
+            type: 'string',
+            title: '按钮大小',
+            enum: ['large', 'middle', 'small'],
+            'x-component': 'Select',
+        }
+    },
     handler: (input, params, context) => {
         const result = input || {};
-        const { actions, hooks } = result;
-
-        if (!actions) {
-            result.tableActions = { toolbar: [], row: [] };
-            return result;
-        }
-
-        // 工具栏操作
-        result.tableActions = {
-            toolbar: actions.toolbar.map(action => ({
-                ...action,
-                icon: action.icon === 'PlusOutlined' ? <PlusOutlined /> :
-                    action.icon === 'RedoOutlined' ? <RedoOutlined /> : null,
-                onClick: () => {
-                    eventBus.dispatchEvent(action.event, {
-                        payload: {
-                            refresh: context.payload.refresh,
-                            hooks: hooks
-                        },
-                        meta: {
-                            stepParams: result.configData?.eventSteps?.[action.event.split(':')[2] + 'Flow'] || {}
-                        }
-                    });
-                }
-            })),
-
-            // 行操作
-            row: actions.row.map(action => ({
-                ...action,
-                icon: action.icon === 'EyeOutlined' ? <EyeOutlined /> : null,
-                render: (_, record) => (
-                    <Button
-                        type="link"
-                        icon={action.icon === 'EyeOutlined' ? <EyeOutlined /> : null}
-                        onClick={() => {
-                            eventBus.dispatchEvent(action.event, {
-                                payload: {
-                                    record,
-                                    refresh: context.payload.refresh,
-                                    hooks: hooks
-                                },
-                                meta: {
-                                    stepParams: result.configData?.eventSteps?.[action.event.split(':')[2] + 'Flow'] || {}
-                                }
-                            });
-                        }}
-                    >
-                        {action.title}
-                    </Button>
-                )
-            }))
+        result.buttonOptions = {
+            text: params?.text || '按钮',
+            icon: params?.icon || 'RedoOutlined',
+            buttonType: params?.buttonType || 'default',
+            size: params?.size || 'middle'
         };
-
-        // 如果有行操作，添加操作列
-        if (result.tableActions.row.length > 0) {
-            result.columns.push({
-                title: '操作',
-                key: 'action',
-                render: (_, record) => (
-                    <Space size="small">
-                        {result.tableActions.row.map(action => action.render(_, record))}
-                    </Space>
-                ),
-            });
-        }
-
         return result;
-    }
+    },
+};
+
+// 触发器配置过滤器
+const actionOnFilter: IFilter = {
+    name: 'action:demo:on',
+    group: 'action',
+    title: '触发器配置',
+    uiSchema: {
+        on: {
+            type: 'string',
+            title: '触发方式',
+            enum: ['onClick', 'onDoubleClick', 'onHover'],
+            'x-component': 'Select',
+        }
+    },
+    handler: (input, params, context) => {
+        const result = input || {};
+        result.on = params?.on || 'onClick';
+        return result;
+    },
+};
+
+// 事件触发过滤器（触发指定事件）
+const eventTriggerFilter: IFilter = {
+    name: 'action:demo:trigger',
+    group: 'action',
+    title: '事件触发',
+    uiSchema: {
+        event: {
+            type: 'string',
+            title: '要触发的事件',
+            'x-component': 'Input',
+        }
+    },
+    handler: (input, params, context) => {
+        const result = input || {};
+        // 从params中获取要触发的事件名称
+        const eventName = context?.payload?.event;
+        if (eventName) {
+            result.triggerEvent = (payload) => {
+                eventBus.dispatchEvent(eventName, payload);
+            };
+        }
+        return result;
+    },
 };
 
 // 注册过滤器
@@ -513,7 +660,10 @@ filterFlowManager.addFilter(fieldsFilter);
 filterFlowManager.addFilter(actionsFilter);
 filterFlowManager.addFilter(dataFilter);
 filterFlowManager.addFilter(tableColumnsFilter);
-filterFlowManager.addFilter(tableActionsFilter);
+filterFlowManager.addFilter(toolbarOptionsFilter);
+filterFlowManager.addFilter(actionOnFilter);
+filterFlowManager.addFilter(eventTriggerFilter);
+
 
 // 注册过滤流程
 filterFlowManager.addFlow({
@@ -536,11 +686,6 @@ filterFlowManager.addFlow({
             title: '字段配置', // 配置显示列
         },
         {
-            key: 'block:common:actions',
-            filterName: 'block:common:actions',
-            title: '操作配置' // 配置操作
-        },
-        {
             key: 'block:common:data',
             filterName: 'block:common:data',
             title: '数据配置' // 数据加载
@@ -554,6 +699,34 @@ filterFlowManager.addFlow({
             key: 'block:demo:actions',
             filterName: 'block:demo:actions',
             title: '表格操作配置' // 表格操作转换，不放开配置
+        }
+    ]
+});
+
+// 注册工具栏按钮过滤流程
+filterFlowManager.addFlow({
+    key: 'action:demo:toolbar',
+    title: '工具栏按钮过滤流程',
+    steps: [
+        {
+            key: 'action:demo:toolbar:options',
+            filterName: 'action:demo:toolbar:options',
+            title: '按钮配置'
+        },
+        {
+            key: 'block:common:linkages',
+            filterName: 'block:common:linkages',
+            title: '联动规则'
+        },
+        {
+            key: 'action:demo:on',
+            filterName: 'action:demo:on',
+            title: '触发方式配置'
+        },
+        {
+            key: 'action:demo:trigger',
+            filterName: 'action:demo:trigger',
+            title: '事件触发'
         }
     ]
 });
@@ -593,6 +766,57 @@ const ConfigureButtons = () => {
     );
 };
 
+// 图标映射
+const IconComponents = {
+    RedoOutlined,
+    EyeOutlined,
+    PlusOutlined,
+    DeleteOutlined
+};
+
+interface ToolbarActionProps {  
+    event: string;
+    filterSteps: Record<string, any>;
+    eventSteps: Record<string, any>;
+}
+
+const ToolbarAction = (props: ToolbarActionProps) => {
+    const compile = useCompile();
+    const { event, filterSteps, eventSteps } = props;
+    const filterContext: FilterHandlerContext = {
+        meta: {
+            params: {
+                ...filterSteps
+            }
+        },
+        payload: {
+            event,
+            compile,
+            eventParams: eventSteps
+        }
+    };
+    const { data: filterResult } = useApplyFilters(filterFlowManager, 'action:demo:toolbar', null, filterContext);
+    const {
+        buttonOptions,
+        on,
+        triggerEvent,
+    } = filterResult || {};
+
+    // 获取图标组件
+    const IconComponent = buttonOptions?.icon ? IconComponents[buttonOptions.icon] : null;
+
+    return (
+        <Button
+            type={buttonOptions?.buttonType}
+            icon={IconComponent && <IconComponent />}
+            size={buttonOptions?.size}
+            {...{[on]: triggerEvent}}
+        >
+            {buttonOptions?.text}
+        </Button>
+    );
+};
+
 // 主表格组件
 const DemoTable: React.FC<{ configKey: string }> = ({ configKey }) => {
     const compile = useCompile();
@@ -609,7 +833,7 @@ const DemoTable: React.FC<{ configKey: string }> = ({ configKey }) => {
     const {
         columns = [],
         data = { data: [], meta: { count: 0 } },
-        tableActions = { toolbar: [], row: [] },
+        actions = { toolbar: [], row: [] },
         page = 1,
         pageSize = 10,
         $break = false
@@ -621,11 +845,20 @@ const DemoTable: React.FC<{ configKey: string }> = ({ configKey }) => {
         <>
             {
                 $break ? null : (
+                    <>
+                    <Flex justify="flex-end" style={{ marginBottom: '8px' }}>
+                        <Space>
+                            {actions.toolbar.map((action: any) => (
+                                <ToolbarAction key={action.key} event={action.event} filterSteps={action.filterSteps} eventSteps={action.eventSteps} />
+                            ))}
+                        </Space>
+                    </Flex>
                     <Table dataSource={data?.data} columns={columns} rowKey="id" pagination={{
                         current: page,
                         pageSize: pageSize,
-                        total: data?.meta?.count || 0,
-                    }} />
+                            total: data?.meta?.count || 0,
+                        }} />
+                    </>
                 )
             }
         </>
