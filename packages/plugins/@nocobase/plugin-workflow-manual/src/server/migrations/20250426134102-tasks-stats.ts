@@ -70,16 +70,34 @@ export default class extends Migration {
         userStatsMap.set(row.userId, { ...userStatsMap.get(row.userId), all: row.count });
       }
       for (const [userId, stats] of userStatsMap.entries()) {
-        await UserTaskModel.upsert(
-          {
+        const existed = await UserTaskModel.findOne({
+          where: {
             type: MANUAL_TASK_TYPE,
             userId,
-            stats,
           },
-          {
-            transaction,
-          },
-        );
+          transaction,
+        });
+        if (existed) {
+          await existed.update(
+            {
+              stats,
+            },
+            {
+              transaction,
+            },
+          );
+        } else {
+          await UserTaskModel.create(
+            {
+              type: MANUAL_TASK_TYPE,
+              userId,
+              stats,
+            },
+            {
+              transaction,
+            },
+          );
+        }
       }
     });
   }
