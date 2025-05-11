@@ -71,7 +71,10 @@ export default class PluginWorkflowServer extends Plugin {
   private meter = null;
   private checker: NodeJS.Timeout = null;
 
-  private onBeforeSave = async (instance: WorkflowModel, { transaction }) => {
+  private onBeforeSave = async (instance: WorkflowModel, { transaction, cycling }) => {
+    if (cycling) {
+      return;
+    }
     const Model = <typeof WorkflowModel>instance.constructor;
 
     if (!instance.key) {
@@ -94,15 +97,14 @@ export default class PluginWorkflowServer extends Plugin {
     });
     if (!previous) {
       instance.set('current', true);
-    }
-
-    if (instance.current && previous) {
+    } else if (instance.current) {
       // NOTE: set to `null` but not `false` will not violate the unique index
+      // @ts-ignore
       await previous.update(
         { enabled: false, current: null },
         {
           transaction,
-          hooks: false,
+          cycling: true,
         },
       );
 
