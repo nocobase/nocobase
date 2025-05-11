@@ -126,9 +126,17 @@ export class MemoryEventQueueAdapter implements IEventQueueAdapter {
       queue.set(topic, []);
     }
     queue.get(topic).push(message);
+
+    const events = this.events.get(channel);
+    if (!events) {
+      return;
+    }
+    for (const event of events) {
+      this.consume(channel, event, true);
+    }
   }
 
-  async consume(channel, event) {
+  async consume(channel: string, event: QueueEventOptions, once = false) {
     while (this.connected && this.events.get(channel)?.has(event)) {
       let processor: Callback;
       let interval = QUEUE_DEFAULT_INTERVAL;
@@ -137,6 +145,9 @@ export class MemoryEventQueueAdapter implements IEventQueueAdapter {
       if (typeof event === 'function') {
         processor = event();
         if (!processor) {
+          if (once) {
+            break;
+          }
           await sleep(interval);
           continue;
         }
@@ -147,6 +158,9 @@ export class MemoryEventQueueAdapter implements IEventQueueAdapter {
         topic = event.topic ?? QUEUE_DEFAULT_TOPIC;
 
         if (!event.idle()) {
+          if (once) {
+            break;
+          }
           await sleep(interval);
           continue;
         }
@@ -154,6 +168,9 @@ export class MemoryEventQueueAdapter implements IEventQueueAdapter {
 
       const queue = this.queues.get(channel);
       if (!queue || !queue.get(topic)?.length) {
+        if (once) {
+          break;
+        }
         await sleep(interval);
         continue;
       }
@@ -169,6 +186,9 @@ export class MemoryEventQueueAdapter implements IEventQueueAdapter {
         }
       }
 
+      if (once) {
+        break;
+      }
       await sleep(interval);
     }
   }
