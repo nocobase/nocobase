@@ -148,6 +148,7 @@ const mockBlockConfigs = {
                     actions: {
                         toolbar: [
                             { key: 'action-refresh-id' },
+                            { key: 'action-delete-id' }
                         ],
                         row: [
                             { key: 'action-view-id' }
@@ -187,7 +188,7 @@ const mockBlockConfigs = {
                     'action:demo:toolbar:options': {
                         text: '刷新',
                         icon: 'RedoOutlined',
-                        buttonType: 'primary',
+                        buttonType: 'default',
                         size: 'small'
                     },
                     'block:common:linkages': {
@@ -203,6 +204,27 @@ const mockBlockConfigs = {
                     'step-refresh': {
                         messageOnSuccess: '数据已成功刷新！',
                         showNotification: true
+                    }
+                }
+            }
+        },
+        'action-delete-id': {
+            event: 'block:demo:event:delete',
+            filterSteps: {
+                'action:demo:toolbar': {
+                    'action:demo:toolbar:options': {
+                        text: '删除',
+                        icon: 'DeleteOutlined',
+                        buttonType: 'primary',
+                        size: 'small',
+                        danger: true
+                    },
+                }
+            },
+            eventSteps: {
+                'deleteFlow': {
+                    'step-delete': {
+                        messageOnSuccess: '删除记录'
                     }
                 }
             }
@@ -594,6 +616,11 @@ const toolbarOptionsFilter: IFilter = {
             title: '按钮大小',
             enum: ['large', 'middle', 'small'],
             'x-component': 'Select',
+        },
+        danger: {
+            type: 'boolean',
+            title: '危险按钮',
+            'x-component': 'Switch',
         }
     },
     handler: (input, params, context) => {
@@ -602,7 +629,8 @@ const toolbarOptionsFilter: IFilter = {
             text: params?.text || '按钮',
             icon: params?.icon || 'RedoOutlined',
             buttonType: params?.buttonType || 'default',
-            size: params?.size || 'middle'
+            size: params?.size || 'middle',
+            danger: params?.danger || false
         };
         return result;
     },
@@ -747,6 +775,11 @@ const updateStepConfig = function(type: 'event' | 'filter', flowName: string, st
     });
 }
 
+const updateActionConfig = function() {
+    // 显示
+}
+
+
 // 更改配置的按钮，真实场景中用x-settings
 const ConfigureButtons = () => {
     const { setConfigs } = useBlockConfigs();
@@ -762,6 +795,10 @@ const ConfigureButtons = () => {
             <Button type="default" onClick={() => {
                 updateStepConfig('filter', 'block:demo:table', 'block:common:data', setConfigs);
             }}>默认每页条数</Button>
+            {/* <Button type="default" onClick={() => {
+                // updateStepConfig('filter', 'block:demo:table', 'block:common:fields', setConfigs);
+                updateActionConfig();
+            }}>配置操作</Button> */}
         </Space>
     );
 };
@@ -810,6 +847,7 @@ const ToolbarAction = (props: ToolbarActionProps) => {
             type={buttonOptions?.buttonType}
             icon={IconComponent && <IconComponent />}
             size={buttonOptions?.size}
+            danger={buttonOptions?.danger}
             {...{[on]: triggerEvent}}
         >
             {buttonOptions?.text}
