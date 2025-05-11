@@ -47,7 +47,7 @@ export interface EventQueueOptions {
 }
 
 export const QUEUE_DEFAULT_TOPIC = 'DEFAULT';
-export const QUEUE_DEFAULT_INTERVAL = 2000;
+export const QUEUE_DEFAULT_INTERVAL = 1000;
 export const QUEUE_DEFAULT_CONCURRENCY = 1;
 
 async function sleep(time = QUEUE_DEFAULT_INTERVAL) {
@@ -56,12 +56,12 @@ async function sleep(time = QUEUE_DEFAULT_INTERVAL) {
   });
 }
 
-class MemoryEventQueueAdapter implements IEventQueueAdapter {
+export class MemoryEventQueueAdapter implements IEventQueueAdapter {
   private connected = false;
 
   private events: Map<string, Set<QueueEventOptions>> = new Map();
 
-  private queues: Map<string, Map<string, any[]>> = new Map();
+  protected queues: Map<string, Map<string, any[]>> = new Map();
 
   isConnected(): boolean {
     return this.connected;
@@ -72,11 +72,14 @@ class MemoryEventQueueAdapter implements IEventQueueAdapter {
       return;
     }
     this.connected = true;
-    for (const [channel, events] of this.events.entries()) {
-      for (const event of events) {
-        this.consume(channel, event);
+
+    setImmediate(() => {
+      for (const [channel, events] of this.events.entries()) {
+        for (const event of events) {
+          this.consume(channel, event);
+        }
       }
-    }
+    });
   }
 
   close() {
@@ -90,6 +93,10 @@ class MemoryEventQueueAdapter implements IEventQueueAdapter {
       return;
     }
     event.add(options);
+
+    if (this.connected) {
+      this.consume(channel, options);
+    }
   }
   unsubscribe(channel: string, options: QueueEventOptions) {
     if (!this.events.has(channel)) {
@@ -119,13 +126,11 @@ class MemoryEventQueueAdapter implements IEventQueueAdapter {
       queue.set(topic, []);
     }
     queue.get(topic).push(message);
-
-    // setImmediate(this.consume);
   }
 
   async consume(channel, event) {
-    while (this.connected) {
-      let processor;
+    while (this.connected && this.events.get(channel)?.has(event)) {
+      let processor: Callback;
       let interval = QUEUE_DEFAULT_INTERVAL;
       let concurrency = QUEUE_DEFAULT_CONCURRENCY;
       let topic = QUEUE_DEFAULT_TOPIC;
@@ -156,8 +161,15 @@ class MemoryEventQueueAdapter implements IEventQueueAdapter {
       const messages = queue.get(topic);
       for (let i = 0; i < concurrency || messages.length; i += 1) {
         const message = messages.shift();
-        await processor(message);
+        try {
+          await processor(message);
+        } catch (ex) {
+          messages.unshift(message);
+          console.error(ex);
+        }
       }
+
+      await sleep(interval);
     }
   }
 }
@@ -167,7 +179,7 @@ export class EventQueue {
   protected events: Map<string, Set<QueueEventOptions>> = new Map();
 
   get channelPrefix() {
-    return this.options?.channelPrefix ? `${this.options.channelPrefix}.` : '';
+    return this.options?.channelPrefix;
   }
 
   constructor(
@@ -185,7 +197,9 @@ export class EventQueue {
       await this.close();
     });
   }
-
+  getFullChannel(channel: string) {
+    return [this.app.name, this.channelPrefix, channel].filter(Boolean).join('.');
+  }
   setAdapter<A extends IEventQueueAdapter>(adapter: A) {
     this.adapter = adapter;
   }
@@ -203,7 +217,7 @@ export class EventQueue {
 
     for (const [channel, events] of this.events.entries()) {
       for (const event of events) {
-        this.adapter.subscribe([this.app.name, this.channelPrefix, channel].filter(Boolean).join('.'), event);
+        this.adapter.subscribe(this.getFullChannel(channel), event);
       }
     }
   }
@@ -213,7 +227,7 @@ export class EventQueue {
     }
     for (const [channel, events] of this.events.entries()) {
       for (const event of events) {
-        this.adapter.unsubscribe([this.app.name, this.channelPrefix, channel].filter(Boolean).join('.'), event);
+        this.adapter.unsubscribe(this.getFullChannel(channel), event);
       }
     }
     return this.adapter.close();
@@ -225,6 +239,10 @@ export class EventQueue {
       return;
     }
     event.add(options);
+
+    if (this.isConnected()) {
+      this.adapter.subscribe(this.getFullChannel(channel), options);
+    }
   }
   unsubscribe(channel: string, options: QueueEventOptions) {
     if (!this.events.has(channel)) {
@@ -239,6 +257,10 @@ export class EventQueue {
     if (events.size === 0) {
       this.events.delete(channel);
     }
+
+    if (this.isConnected()) {
+      this.adapter.unsubscribe(this.getFullChannel(channel), options);
+    }
   }
   async publish(channel: string | QueueChannelWithTopic, message: any) {
     if (!this.adapter) {
@@ -247,7 +269,8 @@ export class EventQueue {
     if (!this.isConnected()) {
       return;
     }
-    await this.adapter.publish(channel, message);
+    const c = Array.isArray(channel) ? [this.getFullChannel(channel[0]), channel[1]] : this.getFullChannel(channel);
+    await this.adapter.publish(c as string | QueueChannelWithTopic, message);
   }
 }
 
