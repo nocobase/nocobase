@@ -200,8 +200,17 @@ export default class extends Plugin {
           status: TASK_STATUS.PENDING,
           userId,
           workflowId,
-          'execution.status': EXECUTION_STATUS.STARTED,
         },
+        include: [
+          {
+            association: 'execution',
+            attributes: [],
+            where: {
+              status: EXECUTION_STATUS.STARTED,
+            },
+            required: true,
+          },
+        ],
         col: 'id',
         group: ['userId'],
         transaction,
