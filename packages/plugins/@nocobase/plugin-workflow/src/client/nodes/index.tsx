@@ -225,7 +225,7 @@ export function RemoveButton() {
         title: lang('Can not delete'),
         content: lang(
           'The result of this node has been referenced by other nodes ({{nodes}}), please remove the usage before deleting.',
-          { nodes: usingNodes.map((item) => `#${item.id}`).join(', ') },
+          { nodes: usingNodes.map((item) => item.title).join(', ') },
         ),
       });
       return;
