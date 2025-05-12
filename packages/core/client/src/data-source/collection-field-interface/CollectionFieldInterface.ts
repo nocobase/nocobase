@@ -163,7 +163,7 @@ export abstract class CollectionFieldInterface {
   }
 
   addOperator(operatorOption: any) {
-    set(this, 'filterable.operators', [...this.filterable.operators]);
+    set(this, 'filterable.operators', [...(this.filterable.operators || [])]);
 
     if (this.filterable.operators.find((item) => item.value === operatorOption.value)) {
       return;
