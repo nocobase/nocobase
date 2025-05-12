@@ -10,7 +10,7 @@
 import * as XLSX from 'xlsx';
 import lodash from 'lodash';
 import { ICollection, ICollectionManager, IRelationField } from '@nocobase/data-source-manager';
-import { Collection as DBCollection, Database } from '@nocobase/database';
+import { Collection as DBCollection, Database, Repository } from '@nocobase/database';
 import { Transaction } from 'sequelize';
 import EventEmitter from 'events';
 import { ImportValidationError, ImportError } from '../errors';
@@ -42,7 +42,7 @@ export type RunOptions = {
 };
 
 export class XlsxImporter extends EventEmitter {
-  private repository;
+  private repository: Repository;
 
   logger: Logger;
 
@@ -171,9 +171,9 @@ export class XlsxImporter extends EventEmitter {
   }
 
   async performImport(options?: RunOptions): Promise<any> {
-    const transaction = options?.transaction;
     const data = await this.getData(options?.context);
-    const chunks = lodash.chunk(data.slice(1), this.options.chunkSize || 200);
+    const chunkSize = this.options.chunkSize || 1000;
+    const chunks = lodash.chunk(data.slice(1), chunkSize);
 
     let handingRowIndex = 1;
     let imported = 0;
@@ -186,105 +186,108 @@ export class XlsxImporter extends EventEmitter {
     }
 
     for (const chunkRows of chunks) {
-      for (const row of chunkRows) {
-        const rowValues = {};
-        handingRowIndex += 1;
-        try {
-          for (let index = 0; index < this.options.columns.length; index++) {
-            const column = this.options.columns[index];
-
-            const field = this.options.collection.getField(column.dataIndex[0]);
-
-            if (!field) {
-              throw new ImportValidationError('Import validation.Field not found', {
-                field: column.dataIndex[0],
-              });
-            }
-
-            const str = row[index];
-
-            const dataKey = column.dataIndex[0];
-
-            const fieldOptions = field.options;
-
-            const interfaceName = fieldOptions.interface;
-
-            const InterfaceClass = this.options.collectionManager.getFieldInterface(interfaceName);
-
-            if (!InterfaceClass) {
-              rowValues[dataKey] = str;
-              continue;
-            }
-
-            const interfaceInstance = new InterfaceClass(field.options);
-
-            const ctx: any = {
-              transaction,
-              field,
-            };
-
-            if (column.dataIndex.length > 1) {
-              ctx.associationField = field;
-              ctx.targetCollection = (field as IRelationField).targetCollection();
-              ctx.filterKey = column.dataIndex[1];
-            }
-
-            rowValues[dataKey] = await interfaceInstance.toValue(this.trimString(str), ctx);
-          }
-
-          const startTime = process.hrtime();
-          await this.performInsert({
-            values: rowValues,
-            transaction,
-            context: options?.context,
-          });
-          const endTime = process.hrtime(startTime);
-          const executionTimeMs = (endTime[0] * 1000 + endTime[1] / 1000000).toFixed(2);
-          this.logger?.debug(`Record insertion completed in ${executionTimeMs}ms`);
-
-          imported += 1;
-
-          // Emit progress event
-          this.emit('progress', {
-            total,
-            current: imported,
-          });
-
-          await new Promise((resolve) => setTimeout(resolve, 5));
-        } catch (error) {
-          this.logger?.error(`Import error at row ${handingRowIndex}: ${error.message}`, {
-            rowIndex: handingRowIndex,
-            rowData: Object.entries(rowValues)
-              .map(([key, value]) => `${key}: ${value}`)
-              .join(', '),
-            originalError: error.stack || error.toString(),
-          });
-
-          throw new ImportError(`Import failed at row ${handingRowIndex}`, {
-            rowIndex: handingRowIndex,
-            rowData: Object.entries(rowValues)
-              .map(([key, value]) => `${key}: ${value}`)
-              .join(', '),
-            cause: error,
-          });
-        }
-      }
-
-      await new Promise((resolve) => setTimeout(resolve, 50));
+      await this.handleChuckRows(chunkRows, options, { handingRowIndex, context: options?.context });
+      imported += chunkSize;
+      this.emit('progress', {
+        total,
+        current: imported,
+      });
     }
 
     return imported;
   }
 
-  async performInsert(insertOptions: { values: any; transaction: Transaction; context: any; hooks?: boolean }) {
-    const { values, transaction, context } = insertOptions;
+  async handleRowValuesWithColumns(row: any, rowValues: any, options: RunOptions) {
+    for (let index = 0; index < this.options.columns.length; index++) {
+      const column = this.options.columns[index];
+      const field = this.options.collection.getField(column.dataIndex[0]);
+      if (!field) {
+        throw new ImportValidationError('Import validation.Field not found', {
+          field: column.dataIndex[0],
+        });
+      }
 
-    return this.repository.create({
-      values,
-      context,
+      const str = row[index];
+      const dataKey = column.dataIndex[0];
+      const fieldOptions = field.options;
+      const interfaceName = fieldOptions.interface;
+      const InterfaceClass = this.options.collectionManager.getFieldInterface(interfaceName);
+      if (!InterfaceClass) {
+        rowValues[dataKey] = str;
+        continue;
+      }
+
+      const interfaceInstance = new InterfaceClass(field.options);
+
+      const ctx: any = {
+        transaction: options.transaction,
+        field,
+      };
+
+      if (column.dataIndex.length > 1) {
+        ctx.associationField = field;
+        ctx.targetCollection = (field as IRelationField).targetCollection();
+        ctx.filterKey = column.dataIndex[1];
+      }
+
+      rowValues[dataKey] = await interfaceInstance.toValue(this.trimString(str), ctx);
+    }
+  }
+
+  async handleChuckRows(
+    chunkRows: string[][],
+    runOptions?: RunOptions,
+    options?: {
+      handingRowIndex: number;
+      context: any;
+    },
+  ) {
+    let { handingRowIndex = 1 } = options;
+    const { transaction } = runOptions;
+    const rows = [];
+    for (const row of chunkRows) {
+      const rowValues = {};
+      handingRowIndex += 1;
+      await this.handleRowValuesWithColumns(row, rowValues, runOptions);
+      rows.push(rowValues);
+    }
+
+    try {
+      const startTime = process.hrtime();
+      await this.performInsert({
+        values: rows,
+        transaction,
+        context: options?.context,
+      });
+      const endTime = process.hrtime(startTime);
+      const executionTimeMs = (endTime[0] * 1000 + endTime[1] / 1000000).toFixed(2);
+      this.logger?.info(`Record insertion completed in ${executionTimeMs}ms`);
+      await new Promise((resolve) => setTimeout(resolve, 5));
+    } catch (error) {
+      this.logger?.error(`Import error at row ${handingRowIndex}: ${error.message}`, {
+        rowIndex: handingRowIndex,
+        rowData: rows[handingRowIndex],
+        originalError: error.stack || error.toString(),
+      });
+
+      throw new ImportError(`Import failed at row ${handingRowIndex}`, {
+        rowIndex: handingRowIndex,
+        rowData: rows[handingRowIndex],
+        cause: error,
+      });
+    }
+
+    return;
+  }
+
+  async performInsert(insertOptions: { values: any; transaction: Transaction; context: any; hooks?: boolean }) {
+    const { values, transaction } = insertOptions;
+
+    const result = await this.repository.model.bulkCreate(values, {
       transaction,
       hooks: insertOptions.hooks == undefined ? true : insertOptions.hooks,
     });
+    return result;
   }
 
   renderErrorMessage(error) {
