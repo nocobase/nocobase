@@ -337,7 +337,8 @@ function FlowContextProvider(props) {
         appends: ['node', 'job', 'workflow', 'workflow.nodes', 'execution', 'execution.jobs'],
       })
       .then(({ data }) => {
-        const { node, workflow: { nodes = [], ...workflow } = {}, execution, ...userJob } = data?.data ?? {};
+        const { node, workflow: workflowWithNodes, execution, ...userJob } = data?.data ?? {};
+        const { nodes = [], ...workflow } = workflowWithNodes || {};
         linkNodes(nodes);
         setNode(node);
         setFlowContext({
@@ -681,6 +682,9 @@ function useTodoActionParams(status) {
     filter: {
       ...filter,
       userId: user?.data?.id,
+      workflowId: {
+        $ne: null,
+      },
     },
     appends: [
       'job.id',
