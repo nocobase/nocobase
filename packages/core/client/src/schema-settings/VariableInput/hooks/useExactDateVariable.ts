@@ -97,8 +97,6 @@ export const useExactDateVariable = ({ schema, targetFieldSchema }: Props = {}) 
         operators: datetime,
       },
     ].filter((v) => v.value);
-    console.log(dateOptions);
-
     return {
       label: t('Date variables'),
       value: '$nExactDate',

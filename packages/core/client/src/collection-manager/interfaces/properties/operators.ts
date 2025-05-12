@@ -64,13 +64,13 @@ export const datetime = [
     label: "{{ t('is') }}",
     value: '$dateOn',
     selected: true,
-    schema: { 'x-component': 'DatePicker.FilterWithPicker' },
+    schema: { 'x-component': 'DateFilterDynamicComponent' },
     onlyFilterAction: true, //schema 仅在Filter.Action生效，筛选表单中不生效
   },
   {
     label: "{{ t('is not') }}",
     value: '$dateNotOn',
-    schema: { 'x-component': 'DatePicker.FilterWithPicker' },
+    schema: { 'x-component': 'DateFilterDynamicComponent' },
     onlyFilterAction: true,
   },
   {
@@ -100,7 +100,7 @@ export const datetime = [
   {
     label: "{{ t('is between') }}",
     value: '$dateBetween',
-    schema: { 'x-component': 'DatePicker.RangePicker' },
+    schema: { 'x-component': 'DateFilterDynamicComponent' },
   },
   { label: "{{ t('is empty') }}", value: '$empty', noValue: true },
   { label: "{{ t('is not empty') }}", value: '$notEmpty', noValue: true },
