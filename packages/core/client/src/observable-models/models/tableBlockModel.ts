@@ -10,10 +10,9 @@ export class TableBlockModel<TDataItem = any> extends DataBlockModel {
   constructor(
     uid: string,
     initialProps: IModelComponentProps = {},
-    initialHidden = false,
     initialResource?: ArrayResource<TDataItem>
   ) {
-    super(uid, initialProps, initialHidden);
+    super(uid, initialProps);
     this.resource = initialResource || new ArrayResource<TDataItem>();
   }
 

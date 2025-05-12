@@ -4,20 +4,23 @@ export interface IModelComponentProps {
   [key: string]: any;
 }
 
+// 定义只读版本的props类型
+export type ReadonlyModelProps = Readonly<IModelComponentProps>;
+
 export class BaseModel {
   public uid: string;
   public props: IModelComponentProps;
-  public hidden: { value: boolean };
+  public hidden: boolean;
 
-  constructor(uid: string, initialProps: IModelComponentProps = {}, initialHidden = false) {
+  constructor(uid: string, initialProps: IModelComponentProps = {}) {
     this.uid = uid;
     this.props = initialProps;
-    this.hidden = observable.ref(initialHidden);
+    this.hidden = false;
 
     define(this, {
       props: observable,
+      hidden: observable,
       setProps: action,
-      setHidden: action,
     });
   }
 
@@ -33,15 +36,7 @@ export class BaseModel {
     }
   }
 
-  getProps(): IModelComponentProps {
-    return { ...this.props }; // Return a shallow copy
-  }
-
-  setHidden(hiddenVal: boolean) {
-    this.hidden.value = hiddenVal;
-  }
-
-  isHidden(): boolean {
-    return this.hidden.value;
+  getProps(): ReadonlyModelProps {
+    return this.props;
   }
 } 

@@ -9,10 +9,9 @@ export class FormBlockModel<TData = Record<string, any>> extends DataBlockModel 
   constructor(
     uid: string,
     initialProps: IModelComponentProps = {},
-    initialHidden = false,
     initialResource: ObjectResource<TData>
   ) {
-    super(uid, initialProps, initialHidden);
+    super(uid, initialProps);
     this.resource = initialResource;
   }
 
