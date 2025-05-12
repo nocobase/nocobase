@@ -341,7 +341,7 @@ export default class PluginWorkflowServer extends Plugin {
 
     this.app.eventQueue.subscribe(this.name, {
       topic: 'pendingExecution',
-      idle: () => !this.executing,
+      idle: () => !this.executing && !this.pending.length && !this.events.length,
       process: this.onQueueExecution,
     });
   }

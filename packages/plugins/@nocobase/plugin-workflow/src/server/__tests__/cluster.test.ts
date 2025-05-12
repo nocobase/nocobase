@@ -125,7 +125,7 @@ describe('workflow > cluster', () => {
 
       await sleep(200);
 
-      const e1s = await w1.getExecutions();
+      const e1s = await w1.getExecutions({ order: [['id', 'ASC']] });
       expect(e1s.length).toBe(4);
       expect(e1s[0].status).toBe(EXECUTION_STATUS.STARTED);
       expect(e1s[1].status).toBe(EXECUTION_STATUS.QUEUEING);
@@ -134,7 +134,7 @@ describe('workflow > cluster', () => {
 
       await sleep(1500);
 
-      const e2s = await w1.getExecutions({ include: ['jobs'] });
+      const e2s = await w1.getExecutions({ order: [['id', 'ASC']], include: ['jobs'] });
       expect(e2s.length).toBe(4);
       expect(e2s[0].status).toBe(EXECUTION_STATUS.RESOLVED);
       expect(e2s[1].status).toBe(EXECUTION_STATUS.RESOLVED);

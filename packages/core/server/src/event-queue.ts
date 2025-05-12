@@ -118,6 +118,10 @@ export class MemoryEventQueueAdapter implements IEventQueueAdapter {
       topic = channel[1];
       channel = channel[0];
     }
+    const events = this.events.get(channel);
+    if (!events) {
+      return;
+    }
     if (!this.queues.get(channel)) {
       this.queues.set(channel, new Map());
     }
@@ -127,10 +131,6 @@ export class MemoryEventQueueAdapter implements IEventQueueAdapter {
     }
     queue.get(topic).push(message);
 
-    const events = this.events.get(channel);
-    if (!events) {
-      return;
-    }
     for (const event of events) {
       this.consume(channel, event, true);
     }
