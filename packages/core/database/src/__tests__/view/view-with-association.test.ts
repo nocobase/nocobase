@@ -8,8 +8,10 @@
  */
 
 import { createMockDatabase, Database, ViewFieldInference } from '@nocobase/database';
-import { pgOnly } from '@nocobase/test';
 import { uid } from '@nocobase/utils';
+import { isPg } from '@nocobase/test';
+
+const pgOnly = () => (isPg() ? describe : describe.skip);
 
 pgOnly()('view with association', () => {
   let db: Database;

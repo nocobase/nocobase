@@ -98,7 +98,7 @@ export default class extends Trigger {
     const { currentUser, currentRole } = context.state;
     const { model: UserModel } = this.workflow.db.getCollection('users');
     const userInfo = {
-      user: UserModel.build(currentUser).desensitize(),
+      user: UserModel.build(currentUser).desensitize().toJSON(),
       roleName: currentRole,
     };
 

@@ -440,6 +440,105 @@ describe('export to xlsx with preset', () => {
     }
   });
 
+  it('should export with attachment url field and associations', async () => {
+    const Post = app.db.collection({
+      name: 'posts',
+      fields: [
+        { type: 'string', name: 'title' },
+        {
+          name: 'attachment1',
+          type: 'belongsTo',
+          interface: 'm2o',
+          onDelete: 'SET NULL',
+          targetKey: 'id',
+          target: 'attachments',
+          uiSchema: {
+            'x-component-props': {
+              accept: 'image/*',
+              multiple: false,
+            },
+            'x-component': 'AssociationField',
+            title: 'attachment1',
+          },
+          storage: 'local',
+          foreignKey: 'f_63ni7i8z7cx',
+        },
+      ],
+    });
+
+    const Tag = app.db.collection({
+      name: 'tags',
+      fields: [
+        { type: 'string', name: 'name' },
+        {
+          name: 'post',
+          type: 'belongsTo',
+          target: 'posts',
+          targetKey: 'id',
+          foreignKey: 'aaa',
+        },
+      ],
+    });
+
+    await app.db.sync();
+    await Post.repository.create({
+      values: {
+        title: 'p1',
+        attachment1: {
+          title: 'nocobase-logo1',
+          filename: '682e5ad037dd02a0fe4800a3e91c283b.png',
+          extname: '.png',
+          mimetype: 'image/png',
+          url: '',
+          storageId: 1,
+        },
+      },
+    });
+
+    await Tag.repository.create({
+      values: [
+        {
+          name: 'tag1',
+          post: {
+            id: 1,
+          },
+        },
+      ],
+    });
+
+    const exporter = new XlsxExporter({
+      collectionManager: app.mainDataSource.collectionManager,
+      collection: Tag,
+      chunkSize: 10,
+      columns: [
+        { dataIndex: ['name'], defaultTitle: 'Name' },
+        {
+          dataIndex: ['post', 'attachment1', 'url'],
+          defaultTitle: 'URL',
+        },
+      ],
+    });
+
+    const wb = await exporter.run();
+    const xlsxFilePath = path.resolve(__dirname, `t_${uid()}.xlsx`);
+    try {
+      XLSX.writeFile(wb, xlsxFilePath);
+
+      // read xlsx file
+      const workbook = XLSX.readFile(xlsxFilePath);
+      const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+      const sheetData = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
+
+      const header = sheetData[0];
+      expect(header).toEqual(['Name', 'URL']);
+
+      const result = sheetData[1];
+      expect(result[1]).toEqual('/storage/uploads/682e5ad037dd02a0fe4800a3e91c283b.png');
+    } finally {
+      fs.unlinkSync(xlsxFilePath);
+    }
+  });
+
   it('should export with china region field', async () => {
     const Post = app.db.collection({
       name: 'posts',
@@ -1498,5 +1597,38 @@ describe('export to xlsx', () => {
     expect(sheetData[0]).toEqual(['Name', 'Age']); // header
     expect(sheetData[1]).toEqual(['user0', 0]); // first user
     expect(sheetData[10]).toEqual(['user9', 9]); // last user
+  });
+
+  it('should import rich text field successfully when long text', async () => {
+    const Test = app.db.collection({
+      name: 'tests',
+      fields: [
+        {
+          interface: 'richText',
+          type: 'text',
+          name: 'richText',
+        },
+      ],
+    });
+
+    await app.db.sync();
+    const data = require('./data/rich-text.json');
+    const longText = data.longText;
+    await Test.repository.create({
+      values: {
+        richText: longText /* .slice(0, 10000) */,
+      },
+    });
+    const exporter = new XlsxExporter({
+      collectionManager: app.mainDataSource.collectionManager,
+      collection: Test,
+      chunkSize: 10,
+      limit: 10,
+      columns: [{ dataIndex: ['richText'], defaultTitle: 'richText' }],
+    });
+
+    const wb = await exporter.run();
+    const buffer = XlsxExporter.xlsxSafeWrite(wb, { type: 'buffer', bookType: 'xlsx' });
+    expect(buffer).exist;
   });
 });
