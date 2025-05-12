@@ -272,8 +272,10 @@ function WorkflowMenu() {
 
   const onDelete = useCallback(async () => {
     const content = workflow.current
-      ? lang('Delete a main version will cause all other revisions to be deleted too.')
-      : '';
+      ? lang(
+          'This is a main version, delete it will cause the whole workflow to be deleted (including all other revisions).',
+        )
+      : lang('Current version will be deleted (without affecting other versions).');
     modal.confirm({
       title: t('Are you sure you want to delete it?'),
       content,
@@ -309,10 +311,6 @@ function WorkflowMenu() {
     [onDelete, onRevision],
   );
 
-  const revisionable =
-    workflow.executed &&
-    !revisions.find((item) => !item.executed && new Date(item.createdAt) > new Date(workflow.createdAt));
-
   return (
     <>
       <Dropdown
@@ -338,7 +336,6 @@ function WorkflowMenu() {
               'aria-label': 'revision',
               key: 'revision',
               label: lang('Copy to new version'),
-              disabled: !revisionable,
             },
             {
               type: 'divider',
