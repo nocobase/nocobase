@@ -16,8 +16,13 @@ export default {
   shared: true,
   fields: [
     {
+      name: 'userId',
+      type: 'bigInt',
+    },
+    {
       name: 'user',
       type: 'belongsTo',
+      foreignKey: 'userId',
     },
     {
       name: 'type',
