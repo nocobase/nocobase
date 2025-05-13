@@ -82,6 +82,31 @@ export interface ApplicationOptions {
   disableAcl?: boolean;
 }
 
+/**
+ * Reference: https://ant.design/components/cascader-cn#option
+ */
+interface VariableOption {
+  /** Unique identifier of the variable */
+  value: string | number;
+  /** Variable name displayed in UI */
+  label?: React.ReactNode;
+  disabled?: boolean;
+  children?: VariableOption[];
+}
+
+interface Variable {
+  /** Unique identifier of the variable */
+  name: string;
+  /** Variable name displayed in UI */
+  label: string;
+  /** A React hook used to get variable options */
+  useOption: () => VariableOption;
+  /** A React hook used to get the variable context */
+  useCtx: () => (any | ((param: { variableName: string }) => Promise<any>));
+  /** A React hook used to determine if the variable should be displayed */
+  useVisible?: () => boolean;
+}
+
 export class Application {
   public eventBus = new EventTarget();
 
@@ -117,6 +142,7 @@ export class Application {
   hasLoadError = false;
 
   private wsAuthorized = false;
+  private variables: Variable[] = [];
 
   get pm() {
     return this.pluginManager;
@@ -524,5 +550,26 @@ export class Application {
       ...item,
       useVisible: useVisible,
     });
+  }
+
+  /**
+   * Register a variable for use in the frontend
+   * @param variable
+   * @returns
+   */
+  registerVariable(variable: Variable) {
+    if (this.variables.find((item) => item.name === variable.name)) {
+      console.warn(`Variable ${variable.name} already registered`);
+      return;
+    }
+    this.variables.push(variable);
+  }
+
+  /**
+   * Get all registered variables
+   * @returns
+   */
+  getVariables() {
+    return this.variables;
   }
 }
