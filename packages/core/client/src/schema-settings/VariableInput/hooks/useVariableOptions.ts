@@ -10,7 +10,7 @@
 import { Form } from '@formily/core';
 import { ISchema, Schema } from '@formily/react';
 import { useMemo } from 'react';
-import { useVariables } from '../../../';
+import { useApp, useVariables } from '../../../';
 import { CollectionFieldOptions_deprecated } from '../../../collection-manager';
 import { useAPITokenVariable } from './useAPITokenVariable';
 import { useDatetimeVariable } from './useDateVariable';
@@ -60,6 +60,14 @@ export const useVariableOptions = ({
   targetFieldSchema,
   record,
 }: Props) => {
+  const app = useApp();
+  const customVariables = app.getVariables().map((variable) => {
+    return {
+      visible: variable.useVisible?.() ?? true,
+      option: variable.useOption() as any,
+    }
+  }).filter(({ visible }) => visible);
+
   const { filterVariables = () => true } = useVariables() || {};
   const blockParentCollectionName = record?.__parent?.__collectionName;
   const { currentUserSettings } = useCurrentUserVariable({
@@ -136,6 +144,7 @@ export const useVariableOptions = ({
       shouldDisplayPopupRecord && popupRecordSettings,
       shouldDisplayParentPopupRecord && parentPopupRecordSettings,
       shouldDisplayURLSearchParams && urlSearchParamsSettings,
+      ...customVariables,
     ]
       .filter(Boolean)
       .filter(filterVariables);

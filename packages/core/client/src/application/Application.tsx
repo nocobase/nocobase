@@ -554,6 +554,8 @@ export class Application {
 
   /**
    * Register a variable for use in the frontend
+   *
+   * Note: It is not recommended to register variables in components as it may cause rendering errors
    * @param variable
    * @returns
    */

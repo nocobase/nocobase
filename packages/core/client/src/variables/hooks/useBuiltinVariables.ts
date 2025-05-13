@@ -16,12 +16,21 @@ import { useCurrentRoleVariable } from '../../schema-settings/VariableInput/hook
 import { useURLSearchParamsVariable } from '../../schema-settings/VariableInput/hooks/useURLSearchParamsVariable';
 import { VariableOption } from '../types';
 import { useGlobalVariableCtx } from '../../application/hooks/useGlobalVariable';
+import { useApp } from '../../application/hooks/useApp';
 
 /**
  * 相当于全局的变量
  * @returns
  */
 const useBuiltInVariables = () => {
+  const app = useApp();
+  const customVariables = app.getVariables().map((variable) => {
+    return {
+      name: variable.name,
+      ctx: variable.useCtx(),
+    }
+  })
+
   const { currentUserCtx } = useCurrentUserVariable();
   const { currentRoleCtx } = useCurrentRoleVariable();
   const { apiTokenCtx } = useAPITokenVariable();
@@ -101,6 +110,9 @@ const useBuiltInVariables = () => {
     urlSearchParamsName,
     envVariableCtx,
   ]);
+
+  builtinVariables.push(...customVariables);
+
   return { builtinVariables };
 };
 
