@@ -9,9 +9,13 @@
 
 import React, { useState } from 'react';
 import { InputNumber, Select, Space } from 'antd';
+import { DatePickerProps } from 'antd';
+import dayjs from 'dayjs';
+
 import { useCompile } from '../../../schema-component';
 import { useTranslation } from 'react-i18next';
 import { DatePicker } from '../../antd/date-picker';
+
 const options = [
   {
     value: 'exact',
@@ -35,6 +39,24 @@ const options = [
   { value: 'past', label: '{{t("Past")}}' },
   { value: 'future', label: '{{t("Future")}}' },
 ];
+
+type SmartDatePickerProps = {
+  isRange?: boolean;
+} & (
+  | (Omit<DatePickerProps, 'onChange' | 'value'> & {
+      value?: dayjs.Dayjs;
+      onChange?: (value: dayjs.Dayjs | null) => void;
+    })
+  | (Omit<DatePickerProps, 'onChange' | 'value'> & {
+      value?: [dayjs.Dayjs, dayjs.Dayjs] | null;
+      onChange?: (value: [dayjs.Dayjs, dayjs.Dayjs] | null) => void;
+    })
+);
+
+const SmartDatePicker: React.FC<SmartDatePickerProps> = (props) => {
+  const { isRange, ...rest } = props as any;
+  return isRange ? <DatePicker.RangePicker {...rest} /> : <DatePicker {...rest} />;
+};
 
 export const DateFilterDynamicComponent = (props) => {
   const { value, onChange } = props;
@@ -91,7 +113,7 @@ export const DateFilterDynamicComponent = (props) => {
           ]}
         />,
       ]}
-      {(value?.type === 'exact' || !value?.type) && <DatePicker {...props} />}
+      {(value?.type === 'exact' || !value?.type) && <SmartDatePicker {...props} />}
     </Space.Compact>
   );
 };
