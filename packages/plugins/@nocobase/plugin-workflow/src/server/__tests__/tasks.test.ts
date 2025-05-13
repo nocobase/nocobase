@@ -92,9 +92,9 @@ describe('workflow > tasks', () => {
       const res2 = await userAgents[1].resource('userWorkflowTasks').listMine();
       expect(res2.status).toBe(200);
       expect(res2.body.data.length).toBe(3);
-      expect(res1.body.data.find((item) => item.type === 'test3')).toMatchObject({
+      expect(res2.body.data.find((item) => item.type === 'test3')).toMatchObject({
         userId: users[1].id,
-        stats: { pending: 0, all: 0 },
+        stats: { pending: 0, all: 1 },
       });
     });
   });
