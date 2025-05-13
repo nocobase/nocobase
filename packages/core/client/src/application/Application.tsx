@@ -118,7 +118,7 @@ export class Application {
   public globalVars: Record<string, any> = {};
   public globalVarCtxs: Record<string, any> = {};
   public jsonLogic: JsonLogic;
-  public filterflowManager: FilterFlowManager;
+  public filterFlowManager: FilterFlowManager;
   public observableModelManager: ObservableModelManager;
   public appEventFlowManager: EventFlowManager;
   public eventFlowEventBus: EventBus;
@@ -181,7 +181,7 @@ export class Application {
     this.pluginManager = new PluginManager(options.plugins, options.loadRemotePlugins, this);
     this.schemaInitializerManager = new SchemaInitializerManager(options.schemaInitializers, this);
     this.dataSourceManager = new DataSourceManager(options.dataSourceManager, this);
-    this.filterflowManager = new FilterFlowManager();
+    this.filterFlowManager = new FilterFlowManager();
     this.observableModelManager = new ObservableModelManager();
     this.eventFlowEventBus = new EventBus();
     this.eventFlowManager = new EventFlowManager(this.eventFlowEventBus);
@@ -264,7 +264,7 @@ export class Application {
     this.use(AntdAppProvider);
     this.use(DataSourceApplicationProvider, { dataSourceManager: this.dataSourceManager });
     this.use(OpenModeProvider);
-    this.use(FilterFlowProvider, { filterFlowManager: this.filterflowManager });
+    this.use(FilterFlowProvider, { filterFlowManager: this.filterFlowManager });
     this.use(ObservableModelProvider, { observableModelManager: this.observableModelManager });
     this.use(EventFlowProvider, { eventFlowManager: this.appEventFlowManager });
     this.use(EventFlowEventBusProvider, { eventFlowEventBus: this.eventFlowEventBus });

@@ -94,7 +94,7 @@ export function useApplyFilters(
   const [, forceUpdate] = useState(true);
   const { setConfigs, subscribe } = useBlockConfigs();
   const app = useApp();
-  const filterFlowManager = app.filterflowManager;
+  const filterFlowManager = app.filterFlowManager;
 
   const cacheKey = useMemo(() => {
     if (id) {
