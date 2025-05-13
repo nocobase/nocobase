@@ -162,19 +162,18 @@ export function getOperators() {
     },
     //日期比较操作符
     $dateOn: function (a, b) {
-      let rightVal = b;
       if (!a || !b) {
         return false;
       }
-      if (rightVal.type) {
-        rightVal = getDayRangeByParams(b);
+      if (b.type) {
+        b = getDayRangeByParams(b);
       }
-      if (Array.isArray(rightVal)) {
-        return operations.$dateBetween(a, rightVal);
+      if (Array.isArray(b)) {
+        return operations.$dateBetween(a, b);
       }
 
       const dateA = parseDate(a);
-      const dateB = parseDate(rightVal);
+      const dateB = parseDate(b);
       if (!dateA || !dateB) {
         return false;
       }
@@ -184,6 +183,9 @@ export function getOperators() {
     $dateBefore: function (a, b) {
       if (!a || !b) {
         return false;
+      }
+      if (b.type) {
+        b = getDayRangeByParams(b);
       }
       if (Array.isArray(b)) {
         b = b[0];
@@ -199,6 +201,9 @@ export function getOperators() {
     $dateNotBefore: function (a, b) {
       if (!a || !b) {
         return false;
+      }
+      if (b.type) {
+        b = getDayRangeByParams(b);
       }
       if (Array.isArray(b)) {
         b = b[0];
@@ -217,6 +222,9 @@ export function getOperators() {
       if (!a || !b) {
         return false;
       }
+      if (b.type) {
+        b = getDayRangeByParams(b);
+      }
       if (Array.isArray(b)) {
         b = b[1];
       }
@@ -229,6 +237,9 @@ export function getOperators() {
     $dateNotAfter: function (a, b) {
       if (!a || !b) {
         return false;
+      }
+      if (b.type) {
+        b = getDayRangeByParams(b);
       }
       if (Array.isArray(b)) {
         b = b[1];
@@ -245,6 +256,9 @@ export function getOperators() {
       if (!a || !b) {
         return false;
       }
+      if (b.type) {
+        b = getDayRangeByParams(b);
+      }
       const dateA = parseFullDate(a);
       const dateBStart = parseFullDate(b[0]);
       const dateBEnd = parseFullDate(b[1]);
@@ -257,6 +271,9 @@ export function getOperators() {
     $dateNotOn: function (a, b) {
       if (!a || !b) {
         return false;
+      }
+      if (b.type) {
+        b = getDayRangeByParams(b);
       }
       if (Array.isArray(b)) {
         return !operations.$dateBetween(a, b);

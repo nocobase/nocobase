@@ -7,11 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useState } from 'react';
+import React from 'react';
 import { InputNumber, Select, Space } from 'antd';
 import { DatePickerProps } from 'antd';
 import dayjs from 'dayjs';
-
 import { useCompile } from '../../../schema-component';
 import { useTranslation } from 'react-i18next';
 import { DatePicker } from '../../antd/date-picker';
@@ -67,7 +66,7 @@ export const DateFilterDynamicComponent = (props) => {
       <Select
         options={compile(options)}
         {...props}
-        style={{ width: '100%', minWidth: 120, maxWidth: 200 }}
+        style={{ width: '100%', minWidth: 120, maxWidth: 130 }}
         value={value?.type || 'exact'}
         onChange={(val) => {
           const obj: any = {
