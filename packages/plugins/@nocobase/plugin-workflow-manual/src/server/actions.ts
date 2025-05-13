@@ -112,19 +112,23 @@ export async function submit(context: Context, next) {
   plugin.resume(task.job);
 }
 
-export async function listMine(context, next) {
+export async function listMine(context: Context, next) {
   context.action.mergeParams({
     filter: {
-      userId: context.state.currentUser.id,
-      $or: [
+      $and: [
+        { userId: context.state.currentUser.id },
         {
-          'workflow.enabled': true,
-        },
-        {
-          'workflow.enabled': false,
-          status: {
-            $ne: JOB_STATUS.PENDING,
-          },
+          $or: [
+            {
+              'workflow.enabled': true,
+            },
+            {
+              'workflow.enabled': false,
+              status: {
+                $ne: JOB_STATUS.PENDING,
+              },
+            },
+          ],
         },
       ],
     },

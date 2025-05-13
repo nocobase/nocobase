@@ -664,10 +664,7 @@ function useTodoActionParams(status) {
   const { data: user } = useCurrentUserContext();
   const filter = StatusFilterMap[status] ?? {};
   return {
-    filter: {
-      ...filter,
-      userId: user?.data?.id,
-    },
+    filter,
     appends: [
       'job.id',
       'job.status',

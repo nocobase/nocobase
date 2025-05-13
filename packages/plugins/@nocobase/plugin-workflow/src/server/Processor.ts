@@ -116,6 +116,7 @@ export default class Processor {
     }
 
     const nodes = await execution.workflow.getNodes({ transaction });
+    execution.workflow.nodes = nodes;
 
     this.makeNodes(nodes);
 
@@ -123,6 +124,8 @@ export default class Processor {
       order: [['id', 'ASC']],
       transaction,
     });
+
+    execution.jobs = jobs;
 
     this.makeJobs(jobs);
   }
