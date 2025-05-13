@@ -62,23 +62,26 @@ export class BaseModel {
   ): void {
     // 处理三个参数的情况: setFilterParams(flowKey, stepKey, params)
     if (typeof flowKeyOrParams === 'string' && typeof stepKeyOrParams === 'string' && params !== undefined) {
-      if (!this.filterParams[flowKeyOrParams]) {
-        this.filterParams[flowKeyOrParams] = {};
-      }
-      this.filterParams[flowKeyOrParams][stepKeyOrParams] = params;
+      const flowKey = flowKeyOrParams;
+      const stepKey = stepKeyOrParams;
+      const currentFlowParams = this.filterParams[flowKey] || {};
+      this.filterParams[flowKey] = {
+        ...currentFlowParams,
+        [stepKey]: params,
+      };
     } 
     // 处理两个参数的情况: setFilterParams(flowKey, stepsParams)
-    else if (typeof flowKeyOrParams === 'string' && typeof stepKeyOrParams === 'object') {
-      if (!this.filterParams[flowKeyOrParams]) {
-        this.filterParams[flowKeyOrParams] = {};
-      }
-      this.filterParams[flowKeyOrParams] = { 
-        ...this.filterParams[flowKeyOrParams], 
-        ...stepKeyOrParams 
+    else if (typeof flowKeyOrParams === 'string' && typeof stepKeyOrParams === 'object' && stepKeyOrParams !== null) {
+      const flowKey = flowKeyOrParams;
+      const newStepsForFlow = stepKeyOrParams as Record<string, any>;
+      const currentFlowParams = this.filterParams[flowKey] || {};
+      this.filterParams[flowKey] = {
+        ...currentFlowParams,
+        ...newStepsForFlow,
       };
     } 
     // 处理一个参数的情况: setFilterParams(params)
-    else if (typeof flowKeyOrParams === 'object') {
+    else if (typeof flowKeyOrParams === 'object' && flowKeyOrParams !== null) {
       this.filterParams = { ...this.filterParams, ...flowKeyOrParams };
     }
   }
@@ -97,23 +100,26 @@ export class BaseModel {
   ): void {
     // 处理三个参数的情况: setEventParams(flowKey, stepKey, params)
     if (typeof flowKeyOrParams === 'string' && typeof stepKeyOrParams === 'string' && params !== undefined) {
-      if (!this.eventParams[flowKeyOrParams]) {
-        this.eventParams[flowKeyOrParams] = {};
-      }
-      this.eventParams[flowKeyOrParams][stepKeyOrParams] = params;
+      const flowKey = flowKeyOrParams;
+      const stepKey = stepKeyOrParams;
+      const currentFlowParams = this.eventParams[flowKey] || {};
+      this.eventParams[flowKey] = {
+        ...currentFlowParams,
+        [stepKey]: params,
+      };
     } 
     // 处理两个参数的情况: setEventParams(flowKey, stepsParams)
-    else if (typeof flowKeyOrParams === 'string' && typeof stepKeyOrParams === 'object') {
-      if (!this.eventParams[flowKeyOrParams]) {
-        this.eventParams[flowKeyOrParams] = {};
-      }
-      this.eventParams[flowKeyOrParams] = { 
-        ...this.eventParams[flowKeyOrParams], 
-        ...stepKeyOrParams 
+    else if (typeof flowKeyOrParams === 'string' && typeof stepKeyOrParams === 'object' && stepKeyOrParams !== null) {
+      const flowKey = flowKeyOrParams;
+      const newStepsForFlow = stepKeyOrParams as Record<string, any>;
+      const currentFlowParams = this.eventParams[flowKey] || {};
+      this.eventParams[flowKey] = {
+        ...currentFlowParams,
+        ...newStepsForFlow,
       };
     } 
     // 处理一个参数的情况: setEventParams(params)
-    else if (typeof flowKeyOrParams === 'object') {
+    else if (typeof flowKeyOrParams === 'object' && flowKeyOrParams !== null) {
       this.eventParams = { ...this.eventParams, ...flowKeyOrParams };
     }
   }

@@ -1,9 +1,11 @@
-import React, { useState } from 'react';
-import { Card, Divider, Form, Input, InputNumber, Select, Button } from 'antd';
-import { FilterFlowManager, FilterHandler, BaseModel, useObservableModel, useApplyFilters } from '@nocobase/client';
+
+import React from 'react';
+import { Card, Divider, Input, InputNumber, Select } from 'antd';
+import { FilterFlowManager, BaseModel, useObservableModel, useApplyFilters } from '@nocobase/client';
 import MarkdownIt from 'markdown-it';
 import Handlebars from 'handlebars';
 import { observableModelManager } from '@nocobase/client';
+import { observer } from '@formily/react';
 
 // 创建过滤器管理器实例
 const filterFlowManager = new FilterFlowManager();
@@ -16,7 +18,7 @@ filterFlowManager.addFilter({
   uiSchema: {},
   handler: ((model: BaseModel, params) => {
     // 获取参数
-    const { content: srcContent, height, template } = params || {};
+    const { content: srcContent, height, template } = params || {};    
     let content = srcContent;
     if (template === 'handlebars') { // 使用handlebars模板
         content = Handlebars.compile(srcContent)({
@@ -25,6 +27,7 @@ filterFlowManager.addFilter({
             var3: 'variable 3',
         });
     }
+    // 使用setProps更新模型的属性
     model.setProps({
       content: MarkdownIt().render(content),
       height,
@@ -46,18 +49,30 @@ filterFlowManager.addFlow({
   ],
 });
 
-// 新增测试model
+// 新增测试model并设置初始参数
 const model = observableModelManager.getModel('markdown-block');
+// 设置过滤器参数
 model.setFilterParams('block:markdown', {
     'block:markdown:options': {
-        content: 'Hello, world!',
+        content: '# Hello NocoBase\n\n这是一个**响应式**的 {{var1}} 示例',
         height: 200,
         template: 'handlebars',
     }
 });
 
-const MarkdownSettings = ({ model }: { model: BaseModel }) => {
+const MarkdownSettings = observer(({ model }: { model: BaseModel }) => {
   const props = model.getProps();
+
+  // 更新函数 - 只更新filterParams，依赖autorun自动检测和应用过滤器
+  const updateModelValue = (key, value) => {
+    // 更新过滤器参数
+    const currentParams = model.filterParams['block:markdown']?.['block:markdown:options'] || {};
+    model.setFilterParams('block:markdown', 'block:markdown:options', {
+      ...currentParams,
+      [key]: value
+    });
+    // 不需要手动调用过滤器应用，autorun会自动检测到变化并调用reApplyFilters
+  };
 
   return <>
     <Card title="Markdown选项">
@@ -68,7 +83,7 @@ const MarkdownSettings = ({ model }: { model: BaseModel }) => {
         <Input.TextArea 
           value={props.content} 
           onChange={(e) => {
-            model.setProps('content', e.target.value);
+            updateModelValue('content', e.target.value);
           }}
           rows={6}
           placeholder="请输入Markdown内容"
@@ -80,7 +95,7 @@ const MarkdownSettings = ({ model }: { model: BaseModel }) => {
         <InputNumber 
           value={props.height} 
           onChange={(value) => {
-            model.setProps('height', value);
+            updateModelValue('height', value);
           }}
           placeholder="高度"
           style={{ width: 120 }}
@@ -93,7 +108,7 @@ const MarkdownSettings = ({ model }: { model: BaseModel }) => {
         <Select 
           value={props.template} 
           onChange={(value) => {
-            model.setProps('template', value);
+            updateModelValue('template', value);
           }}
           style={{ width: 200 }}
           placeholder="请选择模板类型"
@@ -105,26 +120,28 @@ const MarkdownSettings = ({ model }: { model: BaseModel }) => {
       </div>
     </Card>
   </>
-}
+});
 
-const Markdonw = ({ content, height }) => {
+// 修改Markdown渲染组件，支持显示原始内容
+const Markdown = ({ content, height }) => {
     return <div dangerouslySetInnerHTML={{ __html: content }} style={{ height }} />
 }
 
-// Markdown区块组件
-const MarkdownBlock = ({ uid }: { uid: string }) => {
+// Markdown区块组件 - 使用observer包装以响应数据变化
+const MarkdownBlock = observer(({ uid }: { uid: string }) => {
   const model = useObservableModel(uid);
   useApplyFilters(filterFlowManager, 'block:markdown', model);
+
   const props = model.getProps();
   
   return (
     <div style={{ padding: 24, background: '#f5f5f5', borderRadius: 8 }}>
         <MarkdownSettings model={model} />
         <Divider />
-        <Markdonw content={props.content} height={props.height} />
+        <Markdown content={props.content} height={props.height} />
     </div>
   );
-};
+});
 
 export default function Demo() {
   return <MarkdownBlock uid="markdown-block" />;

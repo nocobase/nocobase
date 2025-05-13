@@ -9,6 +9,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { BaseModel, FilterFlowManager, FilterHandlerContext, useBlockConfigs } from '@nocobase/client'; // 确认 FilterFlowManager 和类型的实际路径
+import { autorun } from '@formily/reactive';
 
 // 使用 Map 作为简单的内存缓存
 const filterCache = new Map<
@@ -84,13 +85,13 @@ function safeStringify(obj: any, visited = new Set(), depth = 0, maxDepth = 5): 
   }
 }
 
-export function useApplyFilters<T = any>(
+export function useApplyFilters(
   filterFlowManager: FilterFlowManager,
   flowName: string,
   model: BaseModel,
   context?: FilterHandlerContext | (() => Promise<FilterHandlerContext>),
   id?: string,
-): { data: T; reApplyFilters: () => void } {
+): { reApplyFilters: () => void } {
   const [, forceUpdate] = useState(true);
   const { setConfigs, subscribe } = useBlockConfigs();
 
@@ -126,8 +127,18 @@ export function useApplyFilters<T = any>(
   });
 
   useEffect(() => {
-    if (prevValue.current !== model) {
-      const refreshData = async () => {
+    let isFirstRun = true;
+    let timer: any = null;
+    const dispose = autorun(() => {
+      // 监听filterParams[flowName]变化
+      const params = model.filterParams?.[flowName];
+      console.log('params', params);
+      if (isFirstRun) {
+        isFirstRun = false;
+        return;
+      }
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(async () => {
         const cachedEntry = filterCache.get(cacheKey);
         if (cachedEntry?.status === 'resolved') {
           const newData = await contextPromise.then((ctx) =>
@@ -136,12 +147,14 @@ export function useApplyFilters<T = any>(
           filterCache.set(cacheKey, { status: 'resolved', data: newData, promise: Promise.resolve(newData) });
           forceUpdate((prev) => !prev);
         }
-      };
-      refreshData();
-      prevValue.current = model;
-    }
+      }, 300);
+    });
+    return () => {
+      dispose();
+      if (timer) clearTimeout(timer);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [model]); //输入变化时，应该重新计算
+  }, [model.filterParams, flowName, cacheKey]);
 
   useEffect(() => {
     if (prevCacheKey.current !== cacheKey) {
@@ -172,7 +185,6 @@ export function useApplyFilters<T = any>(
         // 如果已成功，返回数据
         setConfigs(cachedEntry.data?.blockConfig, false);
         return {
-          data: cachedEntry.data as T,
           reApplyFilters: () => {
             filterCache.delete(cacheKey);
             forceUpdate((prev) => !prev);
