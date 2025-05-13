@@ -1,70 +1,36 @@
-import React, {  } from 'react';
-import { Card, Divider } from 'antd';
-import { FilterFlowManager, FilterHandler, BaseModel, useObservableModel } from '@nocobase/client';
-import markdown from 'markdown-it';
+import React, { useState } from 'react';
+import { Card, Divider, Form, Input, InputNumber, Select, Button } from 'antd';
+import { FilterFlowManager, FilterHandler, BaseModel, useObservableModel, useApplyFilters } from '@nocobase/client';
+import MarkdownIt from 'markdown-it';
+import Handlebars from 'handlebars';
+import { observableModelManager } from '@nocobase/client';
 
 // 创建过滤器管理器实例
 const filterFlowManager = new FilterFlowManager();
-
-// 注册过滤器组
-filterFlowManager.addFilterGroup({
-  name: 'block',
-  title: '区块处理',
-  sort: 1,
-});
 
 // 注册Markdown渲染过滤器
 filterFlowManager.addFilter({
   name: 'block:markdown',
   title: 'Markdown区块',
   description: '处理Markdown内容',
-  group: 'block',
   uiSchema: {},
-  handler: ((model: BaseModel, params) => {    
+  handler: ((model: BaseModel, params) => {
     // 获取参数
-    const { content, height, useTemplate, templateData } = params || {};
-    
-    // 处理内容
-    let processedContent = content || '';
-    
-    // 如果启用模板，处理简单的模板语法
-    if (useTemplate && templateData && processedContent) {
-      // 替换简单变量 {{variable}}
-      Object.entries(templateData).forEach(([key, value]) => {
-        if (typeof value === 'string' || typeof value === 'number') {
-          processedContent = processedContent.replace(
-            new RegExp(`{{\\s*${key}\\s*}}`, 'g'), 
-            String(value)
-          );
-        }
-      });
-      
-      // 处理列表 {{#each items}} {{this}} {{/each}}
-      const eachRegex = /{{#each\s+(\w+)\s*}}([\s\S]*?){{\/each}}/g;
-      processedContent = processedContent.replace(eachRegex, (match, arrayName, template) => {
-        const array = templateData[arrayName];
-        if (Array.isArray(array)) {
-          return array.map(item => 
-            template.replace(/{{this}}/g, item)
-          ).join('');
-        }
-        return '';
-      });
+    const { content: srcContent, height, template } = params || {};
+    let content = srcContent;
+    if (template === 'handlebars') { // 使用handlebars模板
+        content = Handlebars.compile(srcContent)({
+            var1: 'variable 1',
+            var2: 'variable 2',
+            var3: 'variable 3',
+        });
     }
-    
-    // 渲染Markdown
-    const md = markdown();
-    const html = md.render(processedContent);
-    
-    // 更新模型属性
     model.setProps({
-      content: processedContent,
-      html,
-      height: height || 200,
-      useTemplate: useTemplate || false,
-      templateData: templateData || {}
+      content: MarkdownIt().render(content),
+      height,
+      template,
     });
-  }) as FilterHandler<BaseModel>,
+  }),
 });
 
 // 创建过滤器流
@@ -74,87 +40,61 @@ filterFlowManager.addFlow({
   steps: [
     {
       key: 'block:markdown:options',
-      filterName: 'block:markdown',
+      filterName: 'block:markdown:options',
       title: 'Markdown选项',
     }
   ],
 });
 
-// Markdown设置组件
-interface MarkdownSettingsProps {
-//   height: number;
-//   useTemplate: boolean;
-//   onHeightChange: (height: number) => void;
-//   onTemplateChange: (enabled: boolean) => void;
+// 新增测试model
+const model = observableModelManager.getModel('markdown-block');
+model.setFilterParams('block:markdown', {
+    'block:markdown:options': {
+        content: 'Hello, world!',
+        height: 200,
+        template: 'handlebars',
+    }
+});
+
+const MarkdownSettings = ({ model }: { model: BaseModel }) => {
+  const props = model.getProps();
+
+  return <>
+    <Card title="Markdown选项">
+        <Input.TextArea value={props.content} onChange={(e) => {
+            model.setProps({
+                content: e.target.value,
+            });
+        }} />
+        <InputNumber value={props.height} onChange={(value) => {
+            model.setProps({
+                height: value,
+            });
+        }} />
+        <Select value={props.template} onChange={(value) => {
+            model.setProps({
+                template: value,
+            });
+        }} />
+    </Card>
+  </>
 }
 
-// const MarkdownSettings: React.FC<MarkdownSettingsProps> = ({
-// //   height,
-// //   useTemplate,
-// //   onHeightChange,
-// //   onTemplateChange
-// }) => {
-//   return (
-//     <Space>
-//       <Card title="设置区块高度" size="small" style={{ minWidth: 200 }}>
-//         <InputNumber 
-//           value={height} 
-//           onChange={value => onHeightChange(value as number)}
-//           min={100}
-//           max={800}
-//           style={{ width: '100%' }}
-//         />
-//       </Card>
-      
-//       <Card title="使用模板" size="small" style={{ minWidth: 200 }}>
-//         <Switch 
-//           checked={useTemplate}
-//           onChange={onTemplateChange}
-//           checkedChildren="启用"
-//           unCheckedChildren="禁用"
-//         />
-//       </Card>
-//       <Card title="内容" size="small" style={{ minWidth: 200 }}>
-//         {/* <Input.TextArea 
-//           value={templateData}
-//           onChange={e => setTemplateData(e.target.value)}
-//           rows={6}
-//           placeholder="输入模板数据"
-//         /> */}
-//       </Card>
-//     </Space>
-//   );
-// };
-
-const MarkdownSettings = () => {
-  return <></>
+const Markdonw = ({ content, height }) => {
+    return <div dangerouslySetInnerHTML={{ __html: content }} style={{ height }} />
 }
 
 // Markdown区块组件
 const MarkdownBlock = ({ uid }: { uid: string }) => {
   const model = useObservableModel(uid);
-  
-  // 从模型中获取属性
+  useApplyFilters(filterFlowManager, 'block:markdown', model);
   const props = model.getProps();
   
   return (
     <div style={{ padding: 24, background: '#f5f5f5', borderRadius: 8 }}>
-        
-        <MarkdownSettings />
+        <MarkdownSettings model={model} />
         <Divider />
-        
-        <Card title="Markdown 渲染结果">
-          <div 
-            style={{ 
-              height: props.height, 
-              overflow: 'auto', 
-              padding: 16,
-              border: '1px solid #eee',
-              borderRadius: 4
-            }}
-            dangerouslySetInnerHTML={{ __html: props.html }}
-          />
-        </Card>
+        <Markdonw content={props.content} height={props.height} />
     </div>
   );
 };
