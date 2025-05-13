@@ -10,7 +10,14 @@
 import * as XLSX from 'xlsx';
 import lodash from 'lodash';
 import { ICollection, ICollectionManager, IRelationField } from '@nocobase/data-source-manager';
-import { Collection as DBCollection, Database, Repository } from '@nocobase/database';
+import {
+  Collection as DBCollection,
+  Database,
+  Model,
+  Repository,
+  UpdateGuard,
+  updateAssociations,
+} from '@nocobase/database';
 import { Transaction } from 'sequelize';
 import EventEmitter from 'events';
 import { ImportValidationError, ImportError } from '../errors';
@@ -61,6 +68,10 @@ export class XlsxImporter extends EventEmitter {
     this.logger = options.logger;
   }
 
+  async beforePerformImport(data: string[][], options: RunOptions): Promise<string[][]> {
+    return data;
+  }
+
   async validate(ctx?: Context) {
     const columns = this.getColumnsByPermission(ctx);
     if (columns.length == 0) {
@@ -89,9 +100,9 @@ export class XlsxImporter extends EventEmitter {
 
     try {
       this.logger?.info('Starting import validation');
-      await this.validate(options.context);
+      const data = await this.validate(options.context);
       this.logger?.info('Validation completed successfully, beginning data import');
-      const imported = await this.performImport(options);
+      const imported = await this.performImport(data, options);
       this.logger?.info(`Import completed successfully, imported ${imported} records`);
 
       // @ts-ignore
@@ -170,8 +181,7 @@ export class XlsxImporter extends EventEmitter {
     );
   }
 
-  async performImport(options?: RunOptions): Promise<any> {
-    const data = await this.getData(options?.context);
+  async performImport(data: string[][], options?: RunOptions): Promise<any> {
     const chunkSize = this.options.chunkSize || 1000;
     const chunks = lodash.chunk(data.slice(1), chunkSize);
 
@@ -232,6 +242,14 @@ export class XlsxImporter extends EventEmitter {
 
       rowValues[dataKey] = await interfaceInstance.toValue(this.trimString(str), ctx);
     }
+    const guard = UpdateGuard.fromOptions(this.repository.model, {
+      ...options,
+      action: 'create',
+      underscored: this.repository.collection.options.underscored,
+    });
+
+    rowValues = (this.repository.model as typeof Model).callSetters(guard.sanitize(rowValues || {}), options);
+    console.log('rowValues', rowValues);
   }
 
   async handleChuckRows(
@@ -283,11 +301,16 @@ export class XlsxImporter extends EventEmitter {
   async performInsert(insertOptions: { values: any; transaction: Transaction; context: any; hooks?: boolean }) {
     const { values, transaction } = insertOptions;
 
-    const result = await this.repository.model.bulkCreate(values, {
+    const instances = await this.repository.model.bulkCreate(values, {
       transaction,
       hooks: insertOptions.hooks == undefined ? true : insertOptions.hooks,
     });
-    return result;
+    // for (const instance of instances) {
+    //   await updateAssociations(instance, values, {
+    //     transaction,
+    //   });
+    // }
+    return instances;
   }
 
   renderErrorMessage(error) {

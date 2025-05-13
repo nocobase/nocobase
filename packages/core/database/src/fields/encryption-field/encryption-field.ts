@@ -79,11 +79,13 @@ export class EncryptionField extends Field {
     // @ts-ignore
     this.on('afterFind', this.findListener);
     this.on('beforeSave', this.writeListener);
+    this.on('beforeBulkCreate', this.writeListener);
   }
 
   unbind() {
     super.unbind();
     this.off('afterFind', this.findListener);
     this.off('beforeSave', this.writeListener);
+    this.off('beforeBulkCreate', this.writeListener);
   }
 }
