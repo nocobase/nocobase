@@ -8,6 +8,7 @@
  */
 
 import { ISchema } from '@formily/json-schema';
+import { BaseModel } from '@nocobase/client';
 
 // Filter System Types
 export type FilterHandlerContext<T = any> = {
@@ -21,31 +22,35 @@ export type FilterHandlerContext<T = any> = {
 
 export type FilterStepParams = Record<string, Record<string, any>>;
 
-export type FilterHandler<T = any> = (
-  currentValue: any,
-  params?: Record<string, any>,
-  context?: FilterHandlerContext<T>,
-) => any | Promise<any>;
-export interface IFilter {
+export type FilterHandler<M extends BaseModel = BaseModel, CtxPayload = any> = (
+  model: M,
+  params: any,
+  context: FilterHandlerContext<CtxPayload>,
+) => void | Promise<void>;
+
+export interface IFilter<M extends BaseModel = BaseModel> {
   name: string;
   title: string;
   description?: string;
   group?: string;
   sort?: number;
   uiSchema: Record<string, ISchema>;
-  handler: FilterHandler;
+  handler: FilterHandler<M>;
 }
+
 export interface FilterGroupOptions {
   name: string;
   title: string;
   sort?: number;
 }
+
 export interface FilterFlowStepOptions {
   key?: string;
   filterName: string;
   title?: string;
   condition?: string;
 }
+
 export interface FilterFlowOptions {
   key: string;
   title: string;

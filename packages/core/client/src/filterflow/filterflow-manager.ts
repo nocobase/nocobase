@@ -11,13 +11,14 @@ import { ISchema, Schema } from '@formily/json-schema';
 import { observable } from '@formily/reactive';
 import { uid } from '@nocobase/utils/client';
 import _ from 'lodash';
+import { BaseModel } from '@nocobase/client';
 import {
   FilterHandlerContext,
   FilterFlowOptions,
   FilterFlowStepOptions,
-  FilterHandler,
   FilterGroupOptions,
   IFilter,
+  FilterHandler,
 } from './types';
 
 export class FilterFlowStep {
@@ -55,9 +56,9 @@ export class FilterFlowStep {
   /**
    * 获取实际的 Filter 函数
    */
-  getHandler(): FilterHandler | undefined {
+  getHandler(): FilterHandler<BaseModel> | undefined {
     const filter = this.filterFlow.getFilter(this.filterName);
-    return filter?.handler;
+    return filter?.handler as FilterHandler<BaseModel>;
   }
 
   get(key: string) {
@@ -171,7 +172,7 @@ export class FilterFlow {
    * 获取指定的 Filter 配置
    * 该方法转发调用到 FilterFlowManager
    */
-  getFilter(filterName: string): IFilter | undefined {
+  getFilter(filterName: string): IFilter<BaseModel> | undefined {
     return this.filterFlowManager.getFilter(filterName);
   }
 
@@ -190,7 +191,7 @@ export class FilterFlow {
 // --- FilterFlowManager Class ---
 export class FilterFlowManager {
   private filterGroups: Record<string, FilterGroupOptions> = {};
-  private filters: Record<string, IFilter> = {};
+  private filters: Record<string, IFilter<BaseModel>> = {};
   private filterFlows: Map<string, FilterFlow>;
 
   constructor() {
@@ -211,14 +212,14 @@ export class FilterFlowManager {
   /**
    * 注册 Filter (可复用的 Filter 逻辑)
    */
-  addFilter(filter: IFilter) {
+  addFilter(filter: IFilter<BaseModel>) {
     this.filters[filter.name] = filter;
   }
 
   /**
    * 获取指定的 Filter 配置
    */
-  getFilter(filterName: string): IFilter | undefined {
+  getFilter(filterName: string): IFilter<BaseModel> | undefined {
     return this.filters[filterName];
   }
 
@@ -355,18 +356,20 @@ export class FilterFlowManager {
   /**
    * 应用指定的 Filter Flow
    * @param flowKey 要应用的 Filter Flow 的 key
-   * @param initialValue 初始值
+   * @param model 初始值
    * @param context Filter上下文
-   * @returns 应用 Flow 中所有 Filter 后的最终值
    */
-  async applyFilters(flowKey: string, initialValue: any, context: FilterHandlerContext): Promise<any> {
+  async applyFilters<T extends BaseModel = BaseModel>(
+    flowKey: string,
+    model: T,
+    context: FilterHandlerContext,
+  ): Promise<void> {
     const flow = this.getFlow(flowKey);
     if (!flow) {
-      console.warn(`FilterFlow with key "${flowKey}" not found. Returning initial value.`);
-      return initialValue;
+      console.warn(`FilterFlow with key "${flowKey}" not found.`);
+      return;
     }
 
-    let currentValue = initialValue;
     const steps = flow.getSteps(); // 获取有序的步骤数组
     context = context || {};
     if (!context.meta) {
@@ -376,13 +379,18 @@ export class FilterFlowManager {
     }
 
     for (const step of steps) {
+      // 检查模型是否被隐藏，如果隐藏则中断执行
+      if (model.hidden) {
+        break;
+      }
+
       // 1. 检查条件
-      if (step.condition && !this.checkCondition(step.condition, currentValue, context)) {
+      if (step.condition && !this.checkCondition(step.condition, model, context)) {
         continue; // 条件不满足，跳过此步骤
       }
 
       // 2. 获取 Handler
-      const handler = step.getHandler();
+      const handler = step.getHandler() as FilterHandler<T>;
       if (!handler) {
         console.warn(
           `Filter "${step.filterName}" for step "${step.key}" in flow "${flowKey}" not found. Skipping step.`,
@@ -392,37 +400,29 @@ export class FilterFlowManager {
 
       // 3. 执行 Handler
       try {
-        const result = handler(currentValue, context?.meta?.params?.[flow.key]?.[step.key], context);
-        // 处理异步 Handler
-        if (result instanceof Promise) {
-          currentValue = await result;
-        } else {
-          currentValue = result;
-        }
-        if (currentValue.$break) {
-          break;
-        }
+        // 直接从model.filterParams获取参数，使用flow.key和step.key组合获取
+        const stepParams = model.filterParams?.[flowKey]?.[step.key];
+        await handler(model, stepParams, context);
       } catch (error) {
         console.error(`Error executing filter "${step.filterName}" in step "${step.key}" (flow: "${flowKey}"):`, error);
         break; // 如果一个步骤出错就停止
       }
     }
-
-    return currentValue;
   }
 
   /**
    * 检查条件是否满足
    * @param condition 条件表达式字符串
+   * @param model 当前的模型实例，用于条件判断的上下文
    * @param context 上下文对象
    * @returns boolean
    */
-  private checkCondition(condition?: string, input?: any, context?: FilterHandlerContext): boolean {
+  private checkCondition(condition?: string, model?: BaseModel, context?: FilterHandlerContext): boolean {
     if (!condition) {
       return true; // 没有条件，默认通过
     }
     try {
-      const result = Schema.compile(condition, { ctx: context, input });
+      const result = Schema.compile(condition, { ctx: context, model: model, input: model });
       return !!result;
     } catch (error) {
       console.error(`Error evaluating condition "${condition}":`, error);
