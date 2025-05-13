@@ -95,6 +95,10 @@ export default defineConfig({
               link: '/core/event-and-filter/filter',
             },
             {
+              title: 'Model',
+              link: '/core/event-and-filter/model',
+            },
+            {
               title: 'Tabulator',
               link: '/core/event-and-filter/tabulator',
             },

@@ -8,7 +8,7 @@
  */
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { FilterFlowManager, FilterHandlerContext, useBlockConfigs } from '@nocobase/client'; // 确认 FilterFlowManager 和类型的实际路径
+import { BaseModel, FilterFlowManager, FilterHandlerContext, useBlockConfigs } from '@nocobase/client'; // 确认 FilterFlowManager 和类型的实际路径
 
 // 使用 Map 作为简单的内存缓存
 const filterCache = new Map<
@@ -87,7 +87,7 @@ function safeStringify(obj: any, visited = new Set(), depth = 0, maxDepth = 5): 
 export function useApplyFilters<T = any>(
   filterFlowManager: FilterFlowManager,
   flowName: string,
-  initialValue: any,
+  model: BaseModel,
   context?: FilterHandlerContext | (() => Promise<FilterHandlerContext>),
   id?: string,
 ): { data: T; reApplyFilters: () => void } {
@@ -115,7 +115,7 @@ export function useApplyFilters<T = any>(
     }
   }, [flowName, context, id]);
 
-  const prevValue = useRef(initialValue);
+  const prevValue = useRef(model);
   const prevCacheKey = useRef(cacheKey);
   const contextPromise = new Promise<FilterHandlerContext>((resolve, reject) => {
     if (typeof context === 'function') {
@@ -126,22 +126,22 @@ export function useApplyFilters<T = any>(
   });
 
   useEffect(() => {
-    if (prevValue.current !== initialValue) {
+    if (prevValue.current !== model) {
       const refreshData = async () => {
         const cachedEntry = filterCache.get(cacheKey);
         if (cachedEntry?.status === 'resolved') {
           const newData = await contextPromise.then((ctx) =>
-            filterFlowManager.applyFilters(flowName, initialValue, ctx),
+            filterFlowManager.applyFilters(flowName, model, ctx),
           );
           filterCache.set(cacheKey, { status: 'resolved', data: newData, promise: Promise.resolve(newData) });
           forceUpdate((prev) => !prev);
         }
       };
       refreshData();
-      prevValue.current = initialValue;
+      prevValue.current = model;
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [initialValue]); //输入变化时，应该重新计算
+  }, [model]); //输入变化时，应该重新计算
 
   useEffect(() => {
     if (prevCacheKey.current !== cacheKey) {
@@ -183,7 +183,7 @@ export function useApplyFilters<T = any>(
 
   // 创建新的 Promise
   const promise = contextPromise
-    .then((ctx) => filterFlowManager.applyFilters(flowName, initialValue, ctx))
+    .then((ctx) => filterFlowManager.applyFilters(flowName, model, ctx))
     .then((result) => {
       // 成功时更新缓存
       filterCache.set(cacheKey, { status: 'resolved', data: result, promise });

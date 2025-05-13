@@ -1,9 +1,6 @@
 import { observable, action, define } from '@formily/reactive';
 import { BaseModel, IModelComponentProps } from './baseModel';
 
-// 重新导出IModelComponentProps
-export { IModelComponentProps };
-
 export interface IModelField {
   id: string;
   sort?: number;

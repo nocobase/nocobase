@@ -1,4 +1,6 @@
-import { DataBlockModel, IModelComponentProps } from './dataBlockModel';
+
+import { DataBlockModel } from './dataBlockModel';
+import { IModelComponentProps } from './baseModel';
 import { ObjectResource } from '../resources/objectResource';
 
 // TODO: 未完成
