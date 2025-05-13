@@ -10,7 +10,7 @@ const filterFlowManager = new FilterFlowManager();
 
 // 注册Markdown渲染过滤器
 filterFlowManager.addFilter({
-  name: 'block:markdown',
+  name: 'block:markdown:options',
   title: 'Markdown区块',
   description: '处理Markdown内容',
   uiSchema: {},
@@ -61,21 +61,48 @@ const MarkdownSettings = ({ model }: { model: BaseModel }) => {
 
   return <>
     <Card title="Markdown选项">
-        <Input.TextArea value={props.content} onChange={(e) => {
-            model.setProps({
-                content: e.target.value,
-            });
-        }} />
-        <InputNumber value={props.height} onChange={(value) => {
-            model.setProps({
-                height: value,
-            });
-        }} />
-        <Select value={props.template} onChange={(value) => {
-            model.setProps({
-                template: value,
-            });
-        }} />
+      <div style={{ marginBottom: 16 }}>
+        <div style={{ marginBottom: 8 }}>
+          <label style={{ fontWeight: 'bold' }}>Markdown内容：</label>
+        </div>
+        <Input.TextArea 
+          value={props.content} 
+          onChange={(e) => {
+            model.setProps('content', e.target.value);
+          }}
+          rows={6}
+          placeholder="请输入Markdown内容"
+        />
+      </div>
+      
+      <div style={{ marginBottom: 16, display: 'flex', alignItems: 'center' }}>
+        <label style={{ fontWeight: 'bold', marginRight: 8, width: 80 }}>高度设置：</label>
+        <InputNumber 
+          value={props.height} 
+          onChange={(value) => {
+            model.setProps('height', value);
+          }}
+          placeholder="高度"
+          style={{ width: 120 }}
+          addonAfter="px"
+        />
+      </div>
+      
+      <div style={{ display: 'flex', alignItems: 'center' }}>
+        <label style={{ fontWeight: 'bold', marginRight: 8, width: 80 }}>模板类型：</label>
+        <Select 
+          value={props.template} 
+          onChange={(value) => {
+            model.setProps('template', value);
+          }}
+          style={{ width: 200 }}
+          placeholder="请选择模板类型"
+          options={[
+            { label: '普通文本', value: 'plain' },
+            { label: 'Handlebars模板', value: 'handlebars' }
+          ]}
+        />
+      </div>
     </Card>
   </>
 }
