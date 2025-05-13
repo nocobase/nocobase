@@ -8,12 +8,8 @@ import { ObjectResource } from '../resources/objectResource';
 export class FormBlockModel<TData = Record<string, any>> extends DataBlockModel {
   public resource: ObjectResource<TData>;
 
-  constructor(
-    uid: string,
-    initialProps: IModelComponentProps = {},
-    initialResource: ObjectResource<TData>
-  ) {
-    super(uid, initialProps);
+  constructor(uid: string, initialResource: ObjectResource<TData>) {
+    super(uid);
     this.resource = initialResource;
   }
 

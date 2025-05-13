@@ -14,9 +14,9 @@ export class BaseModel {
   public filterParams: Record<string, Record<string, any>>;
   public eventParams: Record<string, Record<string, any>>;
 
-  constructor(uid: string, initialProps: IModelComponentProps = {}) {
+  constructor(uid: string) {
     this.uid = uid;
-    this.props = initialProps;
+    this.props = {};
     this.hidden = false;
     this.filterParams = {};
     this.eventParams = {};

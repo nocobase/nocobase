@@ -51,7 +51,7 @@ filterFlowManager.addFlow({
 
 // 新增测试model并设置初始参数
 const model = observableModelManager.getModel('markdown-block');
-// 设置过滤器参数
+// 设置FilterFlow的参数
 model.setFilterParams('block:markdown', {
     'block:markdown:options': {
         content: '# Hello NocoBase\n\n这是一个**响应式**的 {{var1}} 示例',
@@ -119,7 +119,6 @@ const MarkdownSettings = observer(({ model }: { model: BaseModel }) => {
   </>
 });
 
-// 修改Markdown渲染组件，支持显示原始内容
 const Markdown = ({ content, height }) => {
     return <div dangerouslySetInnerHTML={{ __html: content }} style={{ height }} />
 }

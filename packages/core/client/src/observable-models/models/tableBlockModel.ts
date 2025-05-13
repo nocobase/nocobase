@@ -8,12 +8,8 @@ import { IModelComponentProps } from './baseModel';
 export class TableBlockModel<TDataItem = any> extends DataBlockModel {
   public resource: ArrayResource<TDataItem>;
 
-  constructor(
-    uid: string,
-    initialProps: IModelComponentProps = {},
-    initialResource?: ArrayResource<TDataItem>
-  ) {
-    super(uid, initialProps);
+  constructor(uid: string, initialResource?: ArrayResource<TDataItem>) {
+    super(uid);
     this.resource = initialResource || new ArrayResource<TDataItem>();
   }
 
