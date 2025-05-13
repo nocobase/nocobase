@@ -72,6 +72,20 @@ export const messageCollection: CollectionOptions = {
       },
     },
     {
+      name: InAppMessagesDefinition.fieldNameMap.duration,
+      type: 'double',
+      interface: 'number',
+      uiSchema: {
+        type: 'number',
+        'x-component': 'InputNumber',
+        'x-component-props': {
+          stringMode: true,
+          step: '0.1',
+        },
+        title: '{{t("Duration")}}',
+      },
+    },
+    {
       name: InAppMessagesDefinition.fieldNameMap.status,
       type: 'string',
       uiSchema: {

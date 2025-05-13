@@ -82,6 +82,7 @@ export default class InAppNotificationChannel extends BaseNotificationChannel {
     channelName,
     receiveTimestamp,
     options = {},
+    duration,
   }: {
     content: string;
     userId: number;
@@ -90,6 +91,7 @@ export default class InAppNotificationChannel extends BaseNotificationChannel {
     status: 'read' | 'unread';
     receiveTimestamp?: number;
     options?: Record<string, any>;
+    duration?: number;
   }): Promise<any> => {
     const messagesRepo = this.app.db.getRepository(MessagesDefinition.name);
     const message = await messagesRepo.create({
@@ -101,6 +103,7 @@ export default class InAppNotificationChannel extends BaseNotificationChannel {
         userId,
         receiveTimestamp: receiveTimestamp ?? Date.now(),
         options,
+        duration,
       },
     });
     return message;
@@ -109,7 +112,7 @@ export default class InAppNotificationChannel extends BaseNotificationChannel {
   send: SendFnType<InAppMessageFormValues> = async (params) => {
     const { channel, message, receivers } = params;
     let userIds: number[];
-    const { content, title, options = {} } = message;
+    const { content, title, options = {}, duration } = message;
     const userRepo = this.app.db.getRepository('users');
     if (receivers?.type === 'userId') {
       userIds = receivers.value;
@@ -125,6 +128,7 @@ export default class InAppNotificationChannel extends BaseNotificationChannel {
           userId,
           channelName: channel.name,
           options,
+          duration,
         });
       }),
     );

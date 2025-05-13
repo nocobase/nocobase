@@ -26,6 +26,7 @@ export interface Message {
   status: 'read' | 'unread';
   url: string;
   options: Record<string, any>;
+  duration?: number;
 }
 
 export type SSEData = {
@@ -40,6 +41,7 @@ export interface InAppMessageFormValues {
   url: string;
   title: string;
   options: Record<string, any>;
+  duration?: number;
 }
 
 export const InAppMessagesDefinition = {
@@ -53,6 +55,7 @@ export const InAppMessagesDefinition = {
     title: 'title',
     receiveTimestamp: 'receiveTimestamp',
     options: 'options',
+    duration: 'duration',
   },
 } as const;
 

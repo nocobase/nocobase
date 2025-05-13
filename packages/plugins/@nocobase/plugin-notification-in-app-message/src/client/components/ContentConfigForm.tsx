@@ -11,6 +11,8 @@ import React from 'react';
 import { SchemaComponent, css } from '@nocobase/client';
 import { useLocalTranslation } from '../../locale';
 import { tval } from '@nocobase/utils/client';
+import { Tooltip } from 'antd';
+import { QuestionCircleOutlined } from '@ant-design/icons';
 
 export const ContentConfigForm = ({ variableOptions }) => {
   const { t } = useLocalTranslation();
@@ -44,6 +46,21 @@ export const ContentConfigForm = ({ variableOptions }) => {
                 minRows: 10,
               },
             },
+          },
+          duration: {
+            type: 'number',
+            required: false,
+            title: (
+              <span>
+                {t('Notification  duration')}
+                <Tooltip title={t('Setting this value to 0 will cancel the automatic shutdown')}>
+                  <QuestionCircleOutlined style={{ marginLeft: 4, opacity: 0.65 }} />
+                </Tooltip>
+              </span>
+            ),
+            default: 4.5,
+            'x-decorator': 'FormItem',
+            'x-component': 'InputNumber',
           },
           options: {
             type: 'object',
