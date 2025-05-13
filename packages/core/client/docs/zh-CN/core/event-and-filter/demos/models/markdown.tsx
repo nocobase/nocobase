@@ -62,16 +62,13 @@ model.setFilterParams('block:markdown', {
 
 const MarkdownSettings = observer(({ model }: { model: BaseModel }) => {
   const props = model.getProps();
-
-  // 更新函数 - 只更新filterParams，依赖autorun自动检测和应用过滤器
+  const filterParams = model.filterParams['block:markdown']?.['block:markdown:options'];
   const updateModelValue = (key, value) => {
-    // 更新过滤器参数
     const currentParams = model.filterParams['block:markdown']?.['block:markdown:options'] || {};
     model.setFilterParams('block:markdown', 'block:markdown:options', {
       ...currentParams,
       [key]: value
     });
-    // 不需要手动调用过滤器应用，autorun会自动检测到变化并调用reApplyFilters
   };
 
   return <>
@@ -81,7 +78,7 @@ const MarkdownSettings = observer(({ model }: { model: BaseModel }) => {
           <label style={{ fontWeight: 'bold' }}>Markdown内容：</label>
         </div>
         <Input.TextArea 
-          value={props.content} 
+          value={filterParams.content} 
           onChange={(e) => {
             updateModelValue('content', e.target.value);
           }}
@@ -93,7 +90,7 @@ const MarkdownSettings = observer(({ model }: { model: BaseModel }) => {
       <div style={{ marginBottom: 16, display: 'flex', alignItems: 'center' }}>
         <label style={{ fontWeight: 'bold', marginRight: 8, width: 80 }}>高度设置：</label>
         <InputNumber 
-          value={props.height} 
+          value={filterParams.height} 
           onChange={(value) => {
             updateModelValue('height', value);
           }}
@@ -106,7 +103,7 @@ const MarkdownSettings = observer(({ model }: { model: BaseModel }) => {
       <div style={{ display: 'flex', alignItems: 'center' }}>
         <label style={{ fontWeight: 'bold', marginRight: 8, width: 80 }}>模板类型：</label>
         <Select 
-          value={props.template} 
+          value={filterParams.template} 
           onChange={(value) => {
             updateModelValue('template', value);
           }}
