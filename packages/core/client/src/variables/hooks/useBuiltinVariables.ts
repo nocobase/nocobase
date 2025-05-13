@@ -111,9 +111,7 @@ const useBuiltInVariables = () => {
     envVariableCtx,
   ]);
 
-  builtinVariables.push(...customVariables);
-
-  return { builtinVariables };
+  return { builtinVariables: [...builtinVariables, ...customVariables] };
 };
 
 export default useBuiltInVariables;
