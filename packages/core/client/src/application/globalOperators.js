@@ -169,8 +169,6 @@ export function getOperators() {
       if (rightVal.type) {
         rightVal = getDayRangeByParams(b);
       }
-      console.log(b);
-      console.log(rightVal);
       if (Array.isArray(rightVal)) {
         return operations.$dateBetween(a, rightVal);
       }

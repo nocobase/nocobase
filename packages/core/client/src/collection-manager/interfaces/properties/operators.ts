@@ -76,25 +76,25 @@ export const datetime = [
   {
     label: "{{ t('is before') }}",
     value: '$dateBefore',
-    schema: { 'x-component': 'DatePicker.FilterWithPicker' },
+    schema: { 'x-component': 'DateFilterDynamicComponent' },
     onlyFilterAction: true,
   },
   {
     label: "{{ t('is after') }}",
     value: '$dateAfter',
-    schema: { 'x-component': 'DatePicker.FilterWithPicker' },
+    schema: { 'x-component': 'DateFilterDynamicComponent' },
     onlyFilterAction: true,
   },
   {
     label: "{{ t('is on or after') }}",
     value: '$dateNotBefore',
-    schema: { 'x-component': 'DatePicker.FilterWithPicker' },
+    schema: { 'x-component': 'DateFilterDynamicComponent' },
     onlyFilterAction: true,
   },
   {
     label: "{{ t('is on or before') }}",
     value: '$dateNotAfter',
-    schema: { 'x-component': 'DatePicker.FilterWithPicker' },
+    schema: { 'x-component': 'DateFilterDynamicComponent' },
     onlyFilterAction: true,
   },
   {
