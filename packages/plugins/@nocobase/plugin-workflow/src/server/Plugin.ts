@@ -13,7 +13,7 @@ import { randomUUID } from 'crypto';
 import { Transaction, Transactionable } from 'sequelize';
 import LRUCache from 'lru-cache';
 
-import { Op } from '@nocobase/database';
+import { FindOptions, Op } from '@nocobase/database';
 import { Plugin } from '@nocobase/server';
 import { Registry, uid } from '@nocobase/utils';
 import { SequelizeCollectionManager } from '@nocobase/data-source-manager';
@@ -35,9 +35,8 @@ import DestroyInstruction from './instructions/DestroyInstruction';
 import QueryInstruction from './instructions/QueryInstruction';
 import UpdateInstruction from './instructions/UpdateInstruction';
 
-import type { ExecutionModel, JobModel, WorkflowModel, WorkflowTaskModel } from './types';
+import type { ExecutionModel, JobModel, WorkflowModel } from './types';
 import WorkflowRepository from './repositories/WorkflowRepository';
-import WorkflowTasksRepository from './repositories/WorkflowTasksRepository';
 
 type ID = number | string;
 
@@ -72,7 +71,10 @@ export default class PluginWorkflowServer extends Plugin {
   private meter = null;
   private checker: NodeJS.Timeout = null;
 
-  private onBeforeSave = async (instance: WorkflowModel, { transaction }) => {
+  private onBeforeSave = async (instance: WorkflowModel, { transaction, cycling }) => {
+    if (cycling) {
+      return;
+    }
     const Model = <typeof WorkflowModel>instance.constructor;
 
     if (!instance.key) {
@@ -95,15 +97,14 @@ export default class PluginWorkflowServer extends Plugin {
     });
     if (!previous) {
       instance.set('current', true);
-    }
-
-    if (instance.current && previous) {
+    } else if (instance.current) {
       // NOTE: set to `null` but not `false` will not violate the unique index
+      // @ts-ignore
       await previous.update(
         { enabled: false, current: null },
         {
           transaction,
-          hooks: false,
+          cycling: true,
         },
       );
 
@@ -217,7 +218,6 @@ export default class PluginWorkflowServer extends Plugin {
   async beforeLoad() {
     this.db.registerRepositories({
       WorkflowRepository,
-      WorkflowTasksRepository,
     });
   }
 
@@ -267,16 +267,8 @@ export default class PluginWorkflowServer extends Plugin {
       actions: ['workflows:list'],
     });
 
-    this.app.acl.allow('workflowTasks', 'countMine', 'loggedIn');
+    this.app.acl.allow('userWorkflowTasks', 'listMine', 'loggedIn');
     this.app.acl.allow('*', ['trigger'], 'loggedIn');
-
-    this.db.addMigrations({
-      namespace: this.name,
-      directory: path.resolve(__dirname, 'migrations'),
-      context: {
-        plugin: this,
-      },
-    });
 
     db.on('workflows.beforeSave', this.onBeforeSave);
     db.on('workflows.afterCreate', (model: WorkflowModel, { transaction }) => {
@@ -289,14 +281,6 @@ export default class PluginWorkflowServer extends Plugin {
     );
     db.on('workflows.afterDestroy', async (model: WorkflowModel, { transaction }) => {
       this.toggle(model, false, { transaction });
-
-      const TaskRepo = this.db.getRepository('workflowTasks');
-      await TaskRepo.destroy({
-        filter: {
-          workflowId: model.id,
-        },
-        transaction,
-      });
     });
 
     // [Life Cycle]:
@@ -756,21 +740,35 @@ export default class PluginWorkflowServer extends Plugin {
   /**
    * @experimental
    */
-  public async toggleTaskStatus(task: WorkflowTaskModel, done: boolean, { transaction }: Transactionable) {
+  public async updateTasksStats(
+    userId: number,
+    type: string,
+    stats: { pending: number; all: number } = { pending: 0, all: 0 },
+    { transaction }: Transactionable,
+  ) {
     const { db } = this.app;
-    const repository = db.getRepository('workflowTasks') as WorkflowTasksRepository;
-    if (done) {
-      await repository.destroy({
-        filter: {
-          type: task.type,
-          key: `${task.key}`,
+    const repository = db.getRepository('userWorkflowTasks');
+    let record = await repository.findOne({
+      filter: {
+        userId,
+        type,
+      },
+      transaction,
+    });
+    if (record) {
+      await record.update(
+        {
+          stats,
         },
-        transaction,
-      });
+        { transaction },
+      );
     } else {
-      await repository.updateOrCreate({
-        filterKeys: ['key', 'type'],
-        values: task,
+      record = await repository.create({
+        values: {
+          userId,
+          type,
+          stats,
+        },
         transaction,
       });
     }
@@ -778,19 +776,11 @@ export default class PluginWorkflowServer extends Plugin {
     // NOTE:
     // 1. `ws` not works in backend test cases for now.
     // 2. `userId` here for compatibility of no user approvals (deprecated).
-    if (task.userId) {
-      const counts =
-        (await repository.countAll({
-          where: {
-            userId: task.userId,
-            workflowId: { [Op.ne]: null },
-          },
-          transaction,
-        })) || [];
+    if (userId) {
       this.app.emit('ws:sendToTag', {
         tagKey: 'userId',
-        tagValue: `${task.userId}`,
-        message: { type: 'workflow:tasks:updated', payload: counts },
+        tagValue: `${userId}`,
+        message: { type: 'workflow:tasks:updated', payload: record.get() },
       });
     }
   }
