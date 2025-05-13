@@ -62,9 +62,11 @@ export const LinkageFilterItem = observer(
             onChange={onOperatorsChange}
             placeholder={t('Comparision')}
           />
-          {!operator?.noValue ? (
+
+          <div style={{ display: !operator?.noValue ? 'inline-flex' : 'none' }}>
             <DynamicComponent value={rightVar} schema={schema} onChange={setRightValue} testid="right-filter-field" />
-          ) : null}
+          </div>
+
           {!props.disabled && (
             <a role="button" aria-label="icon-close">
               <CloseCircleOutlined onClick={remove} style={removeStyle} />
