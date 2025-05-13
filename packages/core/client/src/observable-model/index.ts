@@ -2,6 +2,7 @@
 export * from './models/baseModel';
 export * from './observableModelManager';
 export * from './hooks/useObservableModel';
+export * from './observableModelProvider';
 
 // 资源类
 export * from './resources/objectResource';

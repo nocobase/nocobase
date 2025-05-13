@@ -11,3 +11,5 @@ export * from './event-bus';
 export * from './eventflow-manager';
 export * from './hooks';
 export * from './types';
+export * from './eventFlowProvider';
+export * from './eventFlowEventBusProvider';

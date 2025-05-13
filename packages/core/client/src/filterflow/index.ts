@@ -10,3 +10,4 @@
 export * from './filterflow-manager';
 export * from './types';
 export * from './hooks';
+export * from './FilterFlowProvider';

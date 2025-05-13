@@ -8,7 +8,7 @@
  */
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { BaseModel, FilterFlowManager, FilterHandlerContext, useBlockConfigs } from '@nocobase/client'; // 确认 FilterFlowManager 和类型的实际路径
+import { BaseModel, FilterFlowManager, FilterHandlerContext, useBlockConfigs, useApp } from '@nocobase/client'; // 确认 FilterFlowManager 和类型的实际路径
 import { autorun } from '@formily/reactive';
 
 // 使用 Map 作为简单的内存缓存
@@ -86,7 +86,6 @@ function safeStringify(obj: any, visited = new Set(), depth = 0, maxDepth = 5): 
 }
 
 export function useApplyFilters(
-  filterFlowManager: FilterFlowManager,
   flowName: string,
   model: BaseModel,
   context?: FilterHandlerContext | (() => Promise<FilterHandlerContext>),
@@ -94,6 +93,8 @@ export function useApplyFilters(
 ): { reApplyFilters: () => void } {
   const [, forceUpdate] = useState(true);
   const { setConfigs, subscribe } = useBlockConfigs();
+  const app = useApp();
+  const filterFlowManager = app.filterflowManager;
 
   const cacheKey = useMemo(() => {
     if (id) {

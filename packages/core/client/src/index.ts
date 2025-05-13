@@ -62,7 +62,7 @@ export * from './user';
 export * from './variables';
 export * from './eventflow';
 export * from './filterflow';
-export * from './observable-models';
+export * from './observable-model';
 
 export { withDynamicSchemaProps } from './hoc/withDynamicSchemaProps';
 export { withSkeletonComponent } from './hoc/withSkeletonComponent';

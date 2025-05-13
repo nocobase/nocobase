@@ -4,7 +4,7 @@ export interface ModelConstructor<T extends BaseModel> {
   new (uid: string, initialProps?: IModelComponentProps, ...args: any[]): T;
 }
 
-class ObservableModelManager {
+export class ObservableModelManager {
   private models: Map<string, BaseModel> = new Map();
 
   public getModel<T extends BaseModel>(

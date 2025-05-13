@@ -47,6 +47,14 @@ import type { Plugin } from './Plugin';
 import { getOperators } from './globalOperators';
 import { useAclSnippets } from './hooks/useAclSnippets';
 import type { RequireJS } from './utils/requirejs';
+import { FilterFlowProvider } from '../filterflow/FilterFlowProvider';
+import { FilterFlowManager } from '../filterflow/filterflow-manager';
+import { ObservableModelManager } from '../observable-model/observableModelManager';
+import { ObservableModelProvider } from '../observable-model/observableModelProvider';
+import { EventFlowManager } from '../eventflow/eventflow-manager';
+import { EventFlowProvider } from '../eventflow/eventFlowProvider';
+import { EventBus } from '../eventflow/event-bus';
+import { EventFlowEventBusProvider } from '../eventflow/eventFlowEventBusProvider';
 
 type JsonLogic = {
   addOperation: (name: string, fn?: any) => void;
@@ -110,6 +118,10 @@ export class Application {
   public globalVars: Record<string, any> = {};
   public globalVarCtxs: Record<string, any> = {};
   public jsonLogic: JsonLogic;
+  public filterflowManager: FilterFlowManager;
+  public observableModelManager: ObservableModelManager;
+  public appEventFlowManager: EventFlowManager;
+  public eventFlowEventBus: EventBus;
   loading = true;
   maintained = false;
   maintaining = false;
@@ -169,6 +181,10 @@ export class Application {
     this.pluginManager = new PluginManager(options.plugins, options.loadRemotePlugins, this);
     this.schemaInitializerManager = new SchemaInitializerManager(options.schemaInitializers, this);
     this.dataSourceManager = new DataSourceManager(options.dataSourceManager, this);
+    this.filterflowManager = new FilterFlowManager();
+    this.observableModelManager = new ObservableModelManager();
+    this.eventFlowEventBus = new EventBus();
+    this.eventFlowManager = new EventFlowManager(this.eventFlowEventBus);
     this.addDefaultProviders();
     this.addReactRouterComponents();
     this.addProviders(options.providers || []);
@@ -248,6 +264,10 @@ export class Application {
     this.use(AntdAppProvider);
     this.use(DataSourceApplicationProvider, { dataSourceManager: this.dataSourceManager });
     this.use(OpenModeProvider);
+    this.use(FilterFlowProvider, { filterFlowManager: this.filterflowManager });
+    this.use(ObservableModelProvider, { observableModelManager: this.observableModelManager });
+    this.use(EventFlowProvider, { eventFlowManager: this.appEventFlowManager });
+    this.use(EventFlowEventBusProvider, { eventFlowEventBus: this.eventFlowEventBus });
   }
 
   private addReactRouterComponents() {
@@ -509,6 +529,19 @@ export class Application {
   getGlobalVarCtx(key) {
     return get(this.globalVarCtxs, key);
   }
+
+  getObservableModelManager() {
+    return this.observableModelManager;
+  }
+
+  getAppEventFlowManager() {
+    return this.appEventFlowManager;
+  }
+
+  getEventFlowEventBus() {
+    return this.eventFlowEventBus;
+  }
+
   addUserCenterSettingsItem(item: SchemaSettingsItemType & { aclSnippet?: string }) {
     const useVisibleProp = item.useVisible || (() => true);
     const useVisible = () => {
