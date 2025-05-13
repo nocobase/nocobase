@@ -163,7 +163,6 @@ export const DuplicateAction = observer(
         }
       }
     };
-
     return (
       <div
         ref={others.setNodeRef}
@@ -230,7 +229,9 @@ export const DuplicateAction = observer(
               <CollectionProvider_deprecated name={duplicateCollection || name}>
                 {/* 这里的 record 就是弹窗中创建表单的 sourceRecord */}
                 <RecordProvider record={{ ...parentRecordData, __collection: duplicateCollection || __collection }}>
-                  <ActionContextProvider value={{ ...ctx, visible, setVisible }}>
+                  <ActionContextProvider
+                    value={{ visible, setVisible, openMode: ctx.openMode, openSize: ctx.openSize }}
+                  >
                     <PopupSettingsProvider enableURL={false}>
                       <RefreshComponentProvider refresh={_.noop}>
                         <NocoBaseRecursionField schema={fieldSchema} basePath={field.address} onlyRenderProperties />
