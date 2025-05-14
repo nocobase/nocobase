@@ -170,7 +170,7 @@ function useCurrentTaskType() {
 }
 
 function PopupContext(props: any) {
-  const { popupId } = useParams();
+  const { taskType, status = TASK_STATUS.PENDING, popupId } = useParams();
   const { record } = usePopupRecordContext();
   const navigate = useNavigate();
   if (!popupId) {
@@ -181,7 +181,11 @@ function PopupContext(props: any) {
       visible={Boolean(popupId)}
       setVisible={(visible) => {
         if (!visible) {
-          navigate(-1);
+          if (window.history.state.idx) {
+            navigate(-1);
+          } else {
+            navigate(`/admin/workflow/tasks/${taskType}/${status}`);
+          }
         }
       }}
       openMode="modal"
