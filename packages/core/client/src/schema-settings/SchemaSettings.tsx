@@ -1190,7 +1190,7 @@ export const SchemaSettingsLinkageRules = function LinkageRules(props) {
     <SchemaSettingsModalItem
       title={title}
       components={components}
-      width={925}
+      width={950}
       schema={schema}
       onSubmit={onSubmit}
       ModalContextProvider={(props) => {
