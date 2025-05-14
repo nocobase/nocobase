@@ -6,24 +6,13 @@
  * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
-import { useMemo } from 'react';
-import { Cascader, css, useCollection_deprecated } from '@nocobase/client';
+import { useCompile, css, useCollection_deprecated } from '@nocobase/client';
 import { useFields } from './useFields';
 
 export const useShared = () => {
   const { name } = useCollection_deprecated();
+  const compile = useCompile();
   const fields = useFields(name);
-  const options = useMemo(() => {
-    return fields.map((v) => {
-      return {
-        name: v.name,
-        title: v.title,
-        children: v.children,
-      };
-    });
-  }, []);
-  console.log(fields);
-  console.log(options);
   return {
     schema: {
       type: 'void',
@@ -70,7 +59,7 @@ export const useShared = () => {
                     },
                     'x-use-component-props': () => {
                       return {
-                        options,
+                        options: compile(fields),
                       };
                     },
                   },
