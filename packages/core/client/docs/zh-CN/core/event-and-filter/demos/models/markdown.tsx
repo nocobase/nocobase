@@ -10,6 +10,7 @@ const Demo = () => {
     const uid = 'markdown-block';
     return (
         <div style={{ padding: 24, background: '#f5f5f5', borderRadius: 8 }}>
+            {/* 配置 filterflow 的组件， 为通用组件，动态渲染配置输入框 */}
             <FilterFlowSettings uid={uid} flowKey="block:markdown" />
             <Divider />
             <MarkdownBlock uid={uid} content="Hello, NocoBase!" height={300} />
@@ -17,6 +18,7 @@ const Demo = () => {
     );
 }
 
+// Markdown区块组件，通过 useObservableModel 获取 model 实例，并应用 filterflow
 const MarkdownBlock = observer(({ uid, ...defaultProps }: { uid: string, [key: string]: any }) => {
     const model = useObservableModel(uid, { initialProps: defaultProps });
     useApplyFilters('block:markdown', model);
@@ -31,6 +33,7 @@ const Markdown = ({ content, height }) => {
 
 class DemoPlugin extends Plugin {
     async load() {
+        // 注册filterflow的相关信息
         this.app.filterFlowManager.addFilter({
             name: 'block:markdown:template',
             title: '模板引擎',
