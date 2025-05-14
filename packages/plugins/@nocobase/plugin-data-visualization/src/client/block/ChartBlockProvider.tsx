@@ -20,17 +20,15 @@ export const ChartBlockProvider: React.FC = (props) => {
   const popupCtxReady =
     _.isEmpty(currentPopupContext) || !popupRecordVariable?.collectionName || popupRecordVariable?.ctx;
 
-  if (!popupCtxReady) {
-    return null;
-  }
-
   return (
     <SchemaComponentOptions
       components={{
         BlockRefreshButton,
       }}
     >
-      <GlobalAutoRefreshProvider>{props.children}</GlobalAutoRefreshProvider>
+      <GlobalAutoRefreshProvider key={popupCtxReady ? 'ready' : 'not-ready'}>
+        {props.children}
+      </GlobalAutoRefreshProvider>
     </SchemaComponentOptions>
   );
 };
