@@ -996,4 +996,114 @@ describe('useVariables', () => {
       `);
     });
   });
+
+  it('should handle function values with correct parameters', async () => {
+    const { result } = renderHook(() => useVariables(), {
+      wrapper: Providers,
+    });
+
+    await waitFor(() => {
+      result.current.registerVariable({
+        name: '$func',
+        ctx: ({ fieldOperator, isParsingVariable, variableName }) => {
+          // 函数应该接收到两个参数：fieldOperator 和 isParsingVariable
+          return {
+            fieldOperator,
+            isParsingVariable,
+            variableName,
+            value: 'function result'
+          };
+        },
+      });
+    });
+
+    await waitFor(async () => {
+      const { value } = await result.current.parseVariable('{{ $func }}');
+      expect(value).toEqual({
+        fieldOperator: undefined,
+        isParsingVariable: true,
+        variableName: '$func',
+        value: 'function result'
+      });
+    });
+
+    await waitFor(async () => {
+      const { value } = await result.current.parseVariable('{{ $func }}', [], { fieldOperator: '$contains' });
+      expect(value).toEqual({
+        fieldOperator: '$contains',
+        isParsingVariable: true,
+        variableName: '$func',
+        value: 'function result'
+      });
+    });
+  });
+
+  it('should handle nested function values', async () => {
+    const { result } = renderHook(() => useVariables(), {
+      wrapper: Providers,
+    });
+
+    await waitFor(() => {
+      result.current.registerVariable({
+        name: '$nestedFunc',
+        ctx: {
+          level1: ({ fieldOperator, variableName }) => {
+            return {
+              fromLevel1: true,
+              fieldOperator,
+              variableName,
+            };
+          }
+        },
+      });
+    });
+
+    await waitFor(async () => {
+      const { value } = await result.current.parseVariable('{{ $nestedFunc.level1 }}');
+      expect(value).toEqual({
+        fromLevel1: true,
+        fieldOperator: undefined,
+        variableName: '$nestedFunc.level1'
+      });
+    });
+
+    await waitFor(async () => {
+      const { value } = await result.current.parseVariable('{{ $nestedFunc.level1 }}', [], { fieldOperator: '$eq' });
+      expect(value).toEqual({
+        fromLevel1: true,
+        fieldOperator: '$eq',
+        variableName: '$nestedFunc.level1'
+      });
+    });
+  });
+
+  it('should handle function that returns a promise', async () => {
+    const { result } = renderHook(() => useVariables(), {
+      wrapper: Providers,
+    });
+
+    await waitFor(() => {
+      result.current.registerVariable({
+        name: '$asyncFunc',
+        ctx: async ({ fieldOperator, variableName }) => {
+          // 模拟异步操作
+          await sleep(10);
+          return {
+            asyncResult: true,
+            fieldOperator,
+            variableName
+          };
+        },
+      });
+    });
+
+    await waitFor(async () => {
+      const { value } = await result.current.parseVariable('{{ $asyncFunc }}');
+      expect(value).toEqual({
+        asyncResult: true,
+        fieldOperator: undefined,
+        variableName: '$asyncFunc'
+      });
+    });
+  });
 });
