@@ -4,7 +4,7 @@ import { observableModelManager, ModelConstructor } from '../observableModelMana
 
 export interface UseObservableModelOptions<T extends BaseModel> {
   ModelClass?: ModelConstructor<T>;
-  initialProps?: IModelComponentProps;
+  defaultProps?: IModelComponentProps;
 }
 
 export function useObservableModel<T extends BaseModel = BaseModel>(
@@ -18,7 +18,7 @@ export function useObservableModel<T extends BaseModel = BaseModel>(
     }
     const model = observableModelManager.getModel<T>(uid, {
       ModelClass: options?.ModelClass,
-      initialProps: options?.initialProps,
+      defaultProps: options?.defaultProps,
     });
     return model;
   }, [uid]);

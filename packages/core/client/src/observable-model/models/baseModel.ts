@@ -13,10 +13,12 @@ export class BaseModel {
   public hidden: boolean;
   public filterParams: Record<string, Record<string, any>>;
   public eventParams: Record<string, Record<string, any>>;
+  private _defaultProps: IModelComponentProps | null;
 
-  constructor(uid: string, initialProps?: IModelComponentProps) {
+  constructor(uid: string, defaultProps?: IModelComponentProps) {
     this.uid = uid;
-    this.props = initialProps ? { ...initialProps } : {};
+    this._defaultProps = defaultProps ? { ...defaultProps } : null;
+    this.props = {};
     this.hidden = false;
     this.filterParams = {};
     this.eventParams = {};
@@ -32,6 +34,18 @@ export class BaseModel {
     });
   }
 
+  // 获取默认属性
+  getDefaultProps(): ReadonlyModelProps | null {
+    return this._defaultProps;
+  }
+
+  // 设置默认属性
+  setDefaultProps(props: IModelComponentProps): void {
+    if (this._defaultProps === null) {
+      this._defaultProps = { ...props };
+    }
+  }
+
   setProps(props: IModelComponentProps): void;
   setProps(key: string, value: any): void;
   setProps(props: IModelComponentProps | string, value?: any): void {
@@ -45,7 +59,23 @@ export class BaseModel {
   }
 
   getProps(): ReadonlyModelProps {
-    return this.props;
+    // 创建代理对象，当属性在 props 中不存在时，尝试从 defaultProps 中读取
+    const handler = {
+      get: (target: IModelComponentProps, prop: string | symbol) => {
+        // 如果属性存在于 props 中，直接返回
+        if (prop in target) {
+          return target[prop as string];
+        }
+        // 如果 props 中不存在，且 defaultProps 不为 null，尝试从 defaultProps 中读取
+        if (this._defaultProps !== null && typeof prop === 'string' && prop in this._defaultProps) {
+          return this._defaultProps[prop];
+        }
+        // 都不存在则返回 undefined
+        return undefined;
+      }
+    };
+
+    return new Proxy(this.props, handler) as ReadonlyModelProps;
   }
 
   // 为特定flowKey和stepKey设置过滤器参数

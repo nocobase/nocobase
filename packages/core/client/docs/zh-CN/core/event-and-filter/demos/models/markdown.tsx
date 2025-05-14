@@ -20,7 +20,7 @@ const Demo = () => {
 
 // Markdown区块组件，通过 useObservableModel 获取 model 实例，并应用 filterflow
 const MarkdownBlock = observer(({ uid, ...defaultProps }: { uid: string, [key: string]: any }) => {
-    const model = useObservableModel(uid, { initialProps: defaultProps });
+    const model = useObservableModel(uid, { defaultProps });
     useApplyFilters('block:markdown', model);
     const props = model.getProps();
 
@@ -90,9 +90,7 @@ class DemoPlugin extends Plugin {
                 }
             },
             handler: ((model: BaseModel, params) => {
-                if (params?.content != null) {
-                    model.setProps('content', params?.content);
-                }
+                model.setProps('content', params?.content || model.getDefaultProps()?.content);
             }),
         });
 

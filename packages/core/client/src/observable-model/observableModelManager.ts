@@ -1,7 +1,7 @@
 import { BaseModel, IModelComponentProps } from './models/baseModel';
 
 export interface ModelConstructor<T extends BaseModel> {
-  new (uid: string, initialProps?: IModelComponentProps, ...args: any[]): T;
+  new (uid: string, defaultProps?: IModelComponentProps, ...args: any[]): T;
 }
 
 export class ObservableModelManager {
@@ -11,18 +11,20 @@ export class ObservableModelManager {
     uid: string,
     options?: {
       ModelClass?: ModelConstructor<T>;
-      initialProps?: IModelComponentProps;
+      defaultProps?: IModelComponentProps;
     },
   ): T {
     if (!this.models.has(uid)) {
       const ModelToUse = options?.ModelClass || BaseModel;
-      const newModel = new ModelToUse(uid, options?.initialProps) as T;
+      const newModel = new ModelToUse(uid, options?.defaultProps) as T;
       this.models.set(uid, newModel);
       return newModel;
     }
+    
     const model = this.models.get(uid);
-    if (options?.initialProps && Object.keys(model.getProps()).length === 0) {
-      model.setProps(options?.initialProps);
+    // 只要模型的 defaultProps 为 null 且传入了 defaultProps，就设置 defaultProps
+    if (options?.defaultProps && model.getDefaultProps() === null) {
+      model.setDefaultProps(options.defaultProps);
     }
     return model as T;
   }
