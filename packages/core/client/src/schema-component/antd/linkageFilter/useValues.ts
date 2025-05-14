@@ -118,11 +118,9 @@ export const useValues = (): UseValuesReturn => {
       const s1 = cloneDeep(field.data.schema);
       const s2 = cloneDeep(operator?.schema);
       field.data.schema = merge(s1, s2);
-      field.data.value = operator.noValue ? operator.default || true : undefined;
       if (!operator.noValue) {
         setRightValue(undefined);
       }
-      console.log(field);
       data2value();
     },
     [data2value, field.data],

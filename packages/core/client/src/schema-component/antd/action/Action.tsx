@@ -137,6 +137,7 @@ export const Action: ComposedAction = withDynamicSchemaProps(
                       variables,
                       localVariables,
                       conditionType: rule.conditionType,
+                      variableNameOfLeftCondition: '$nRecord',
                     },
                     app.jsonLogic,
                   );
