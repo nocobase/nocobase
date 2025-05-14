@@ -20,7 +20,11 @@ export class ObservableModelManager {
       this.models.set(uid, newModel);
       return newModel;
     }
-    return this.models.get(uid) as T;
+    const model = this.models.get(uid);
+    if (options?.initialProps && Object.keys(model.getProps()).length === 0) {
+      model.setProps(options?.initialProps);
+    }
+    return model as T;
   }
 
   public removeModel(uid: string): boolean {

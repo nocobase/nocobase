@@ -20,9 +20,6 @@ export function useObservableModel<T extends BaseModel = BaseModel>(
       ModelClass: options?.ModelClass,
       initialProps: options?.initialProps,
     });
-    if (options?.initialProps && Object.keys(model.getProps()).length === 0) {
-      model.setProps(options?.initialProps);
-    }
     return model;
   }, [uid]);
 
