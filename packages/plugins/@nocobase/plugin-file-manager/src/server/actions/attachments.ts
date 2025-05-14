@@ -28,43 +28,6 @@ function getFileFilter(storage) {
   };
 }
 
-export async function getFileData(ctx: Context) {
-  const { [FILE_FIELD_NAME]: file, storage } = ctx;
-  if (!file) {
-    return ctx.throw(400, 'file validation failed');
-  }
-
-  const plugin = ctx.app.pm.get(Plugin);
-  const StorageType = plugin.storageTypes.get(storage.type) as StorageClassType;
-  const { [StorageType.filenameKey || 'filename']: name } = file;
-  // make compatible filename across cloud service (with path)
-  const filename = Path.basename(name);
-  const extname = Path.extname(filename);
-  const path = (storage.path || '').replace(/^\/|\/$/g, '');
-
-  let storageInstance = plugin.storagesCache.get(storage.id);
-
-  if (!storageInstance) {
-    await plugin.loadStorages();
-    storageInstance = plugin.storagesCache.get(storage.id);
-  }
-
-  const data = {
-    title: Buffer.from(file.originalname, 'latin1').toString('utf8').replace(extname, ''),
-    filename,
-    extname,
-    // TODO(feature): 暂时两者相同，后面 storage.path 模版化以后，这里只是 file 实际的 path
-    path,
-    size: file.size,
-    mimetype: file.mimetype,
-    meta: ctx.request.body,
-    storageId: storage.id,
-    ...StorageType?.['getFileData']?.(file),
-  };
-
-  return data;
-}
-
 async function multipart(ctx: Context, next: Next) {
   const { storage } = ctx;
   if (!storage) {
@@ -101,7 +64,12 @@ async function multipart(ctx: Context, next: Next) {
     return ctx.throw(500, err);
   }
 
-  const values = await getFileData(ctx);
+  const { [FILE_FIELD_NAME]: file } = ctx;
+  if (!file) {
+    return ctx.throw(400, 'file validation failed');
+  }
+
+  const values = storageInstance.getFileData(file, ctx.request.body);
 
   ctx.action.mergeParams({
     values,
@@ -119,16 +87,30 @@ export async function createMiddleware(ctx: Context, next: Next) {
     return next();
   }
 
-  const storageName = ctx.db.getFieldByPath(attachmentField)?.options?.storage || collection.options.storage;
-  const StorageRepo = ctx.db.getRepository('storages');
-  const storage = await StorageRepo.findOne({ filter: storageName ? { name: storageName } : { default: true } });
-
-  const plugin = ctx.app.pm.get(Plugin);
-  ctx.storage = plugin.parseStorage(storage);
+  const storageName =
+    resourceName === 'attachments'
+      ? ctx.db.getFieldByPath(attachmentField)?.options?.storage
+      : collection.options.storage;
+  // const StorageRepo = ctx.db.getRepository('storages');
+  // const storage = await StorageRepo.findOne({ filter: storageName ? { name: storageName } : { default: true } });
+  const plugin = ctx.app.pm.get(Plugin) as Plugin;
+  const storage = Array.from(plugin.storagesCache.values()).find((storage) =>
+    storageName ? storage.name === storageName : storage.default,
+  );
+  if (!storage) {
+    ctx.logger.error(`[file-manager] no storage found`);
+    return ctx.throw(500);
+  }
+  ctx.storage = storage;
 
   if (ctx?.request.is('multipart/*')) {
     await multipart(ctx, next);
   } else {
+    ctx.action.mergeParams({
+      values: {
+        storage: { id: storage.id },
+      },
+    });
     await next();
   }
 }

@@ -216,6 +216,33 @@ describe('action', () => {
         // const res2 = await agent.get(`${DEFAULT_LOCAL_BASE_URL}${body.data.path}/${encodedFilename}`);
         // expect(res2.text).toBe(rawText);
       });
+
+      it('create file record should be ok', async () => {
+        db.collection({
+          name: 'customers',
+          fields: [
+            {
+              name: 'avatar',
+              type: 'belongsTo',
+              target: 'attachments',
+            },
+          ],
+        });
+        const record = {
+          title: 'text',
+          extname: '.txt',
+          path: '',
+          // size: 13,
+          meta: {},
+          storageId: 1,
+        };
+        const { status, body } = await agent.resource('attachments').create({
+          attachmentField: 'customers.avatar',
+          values: record,
+        });
+        expect(status).toBe(200);
+        expect(body.data).toMatchObject(record);
+      });
     });
 
     describe('specific storage', () => {
@@ -286,6 +313,50 @@ describe('action', () => {
               mimetype: ['text/*'],
             },
             path: urlPath,
+            baseUrl: BASE_URL,
+            options: {
+              documentRoot: 'storage/uploads/another',
+            },
+          },
+        });
+
+        db.collection({
+          name: 'customers',
+          fields: [
+            {
+              name: 'file',
+              type: 'belongsTo',
+              target: 'attachments',
+              storage: storage.name,
+            },
+          ],
+        });
+
+        const { body } = await agent.resource('attachments').create({
+          attachmentField: 'customers.file',
+          file: path.resolve(__dirname, './files/text.txt'),
+        });
+
+        // 文件的 url 是否正常生成
+        expect(body.data.url).toBe(`${BASE_URL}/${urlPath}/${body.data.filename}`);
+        const url = body.data.url.replace(`http://localhost:${APP_PORT}`, '');
+        const content = await agent.get(url);
+        expect(content.text.includes('Hello world!')).toBe(true);
+      });
+
+      it('path with heading or tailing slash', async () => {
+        const BASE_URL = `/storage/uploads/another`;
+        const urlPath = 'test/path';
+
+        // 动态添加 storage
+        const storage = await StorageRepo.create({
+          values: {
+            name: 'local_private',
+            type: STORAGE_TYPE_LOCAL,
+            rules: {
+              mimetype: ['text/*'],
+            },
+            path: `/${urlPath}//`,
             baseUrl: BASE_URL,
             options: {
               documentRoot: 'storage/uploads/another',
