@@ -19,9 +19,11 @@ import {
   FilterGroupOptions,
   IFilter,
   FilterHandler,
+  IFilterFlowStep,
 } from './types';
 
-export class FilterFlowStep {
+// 配置型的FilterFlowStep
+export class ConfigFilterFlowStep implements IFilterFlowStep {
   options: FilterFlowStepOptions;
   protected filterFlow: FilterFlow;
 
@@ -61,6 +63,11 @@ export class FilterFlowStep {
     return filter?.handler as FilterHandler<BaseModel>;
   }
 
+  getUiSchema(): ISchema | undefined {
+    const filter = this.filterFlow.getFilter(this.filterName);
+    return filter?.uiSchema;
+  }
+
   get(key: string) {
     return _.get(this.options, key);
   }
@@ -77,16 +84,34 @@ export class FilterFlowStep {
       _.set(this.options, key as string, value);
     }
   }
+}
 
-  // 可根据需要添加 save 等方法，如果需要持久化步骤配置
-  // async save() { /* ... */ }
+// 直接使用函数的FilterFlowStep
+export class FunctionFilterFlowStep implements IFilterFlowStep {
+  private readonly _handler: FilterHandler;
+  private readonly _key: string;
+  protected filterFlow: FilterFlow;
 
-  /**
-   * 获取 Filter 的 UI Schema
-   */
-  private getUiSchema(): ISchema | undefined {
-    const filter = this.filterFlow.getFilter(this.filterName);
-    return filter?.uiSchema;
+  constructor(handler: FilterHandler, flow: FilterFlow) {
+    this._handler = handler;
+    this._key = uid();
+    this.filterFlow = flow;
+  }
+
+  get key() {
+    return this._key;
+  }
+
+  get condition() {
+    return undefined;
+  }
+
+  getHandler(): FilterHandler<BaseModel> | undefined {
+    return this._handler;
+  }
+
+  getUiSchema(): ISchema | undefined {
+    return undefined;
   }
 }
 
@@ -94,11 +119,11 @@ export class FilterFlow {
   protected filterFlowManager: FilterFlowManager;
   protected options: FilterFlowOptions;
   // 使用 Map 来保持插入顺序，并方便按 key 访问
-  protected filterSteps: Map<string, FilterFlowStep>;
+  protected filterSteps: Map<string, IFilterFlowStep>;
 
   constructor(options: FilterFlowOptions, manager: FilterFlowManager) {
     this.filterFlowManager = manager;
-    this.filterSteps = observable(new Map<string, FilterFlowStep>());
+    this.filterSteps = observable(new Map<string, IFilterFlowStep>());
     // 确保 options 是响应式的
     this.options = observable(options);
 
@@ -120,11 +145,11 @@ export class FilterFlow {
   /**
    * 以数组形式获取所有步骤，保持添加顺序
    */
-  getSteps(): FilterFlowStep[] {
+  getSteps(): IFilterFlowStep[] {
     return Array.from(this.filterSteps.values());
   }
 
-  getStep(key: string): FilterFlowStep | undefined {
+  getStep(key: string): IFilterFlowStep | undefined {
     return this.filterSteps.get(key);
   }
 
@@ -134,11 +159,18 @@ export class FilterFlow {
 
   /**
    * 添加一个 Filter 步骤
-   * @param stepOptions 步骤配置
+   * @param step 步骤配置或函数
    * @returns 创建的 FilterFlowStep 实例
    */
-  addStep(stepOptions: FilterFlowStepOptions): FilterFlowStep {
-    const instance = new FilterFlowStep(stepOptions, this);
+  addStep(step: FilterFlowStepOptions | FilterHandler): IFilterFlowStep {
+    let instance: IFilterFlowStep;
+    
+    if (typeof step === 'function') {
+      instance = new FunctionFilterFlowStep(step, this);
+    } else {
+      instance = new ConfigFilterFlowStep(step, this);
+    }
+    
     this.filterSteps.set(instance.key, instance);
     return instance;
   }
@@ -326,13 +358,13 @@ export class FilterFlowManager {
   /**
    * 添加一个 Filter 步骤到指定的 Flow
    * @param flowKey 目标 Flow 的 key
-   * @param stepOptions 要添加的步骤的配置
+   * @param step 要添加的步骤的配置或函数
    * @returns 添加的 FilterFlowStep 实例，如果 Flow 不存在则返回 undefined
    */
-  addFilterStep(flowKey: string, stepOptions: FilterFlowStepOptions): FilterFlowStep | undefined {
+  addFilterStep(flowKey: string, step: FilterFlowStepOptions | FilterHandler): IFilterFlowStep | undefined {
     const flow = this.getFlow(flowKey);
     if (flow) {
-      return flow.addStep(stepOptions);
+      return flow.addStep(step);
     }
     console.error(`FilterFlow with key "${flowKey}" not found. Cannot add step.`);
     return undefined;
@@ -392,19 +424,29 @@ export class FilterFlowManager {
       // 2. 获取 Handler
       const handler = step.getHandler() as FilterHandler<T>;
       if (!handler) {
-        console.warn(
-          `Filter "${step.filterName}" for step "${step.key}" in flow "${flowKey}" not found. Skipping step.`,
-        );
+        if (step instanceof ConfigFilterFlowStep) {
+          console.warn(
+            `Filter "${step.filterName}" for step "${step.key}" in flow "${flowKey}" not found. Skipping step.`,
+          );
+        } else {
+          console.warn(`Handler for step "${step.key}" in flow "${flowKey}" not found. Skipping step.`);
+        }
         continue;
       }
 
       // 3. 执行 Handler
       try {
-        // 直接从model.filterParams获取参数，使用flow.key和step.key组合获取
-        const stepParams = model.filterParams?.[flowKey]?.[step.key];
-        await handler(model, stepParams, context);
+        if (step instanceof ConfigFilterFlowStep) {
+          // 配置型步骤，从model.filterParams获取参数
+          const stepParams = step.key ? model.filterParams?.[flowKey]?.[step.key] : null;
+          await handler(model, stepParams, context);
+        } else {
+          // 函数型步骤，直接执行函数
+          await handler(model, null, context);
+        }
       } catch (error) {
-        console.error(`Error executing filter "${step.filterName}" in step "${step.key}" (flow: "${flowKey}"):`, error);
+        const stepName = step instanceof ConfigFilterFlowStep ? step.filterName : 'function';
+        console.error(`Error executing filter "${stepName}" in step "${step.key}" (flow: "${flowKey}"):`, error);
         break; // 如果一个步骤出错就停止
       }
     }

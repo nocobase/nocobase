@@ -94,27 +94,6 @@ class DemoPlugin extends Plugin {
             }),
         });
 
-        this.app.filterFlowManager.addFilter({
-            name: 'block:markdown:render',
-            title: 'Markdown解析',
-            description: '解析Markdown内容',
-            uiSchema: {},
-            handler: ((model: BaseModel, params) => {
-                const props = model.getProps();
-                let content = props.content;
-
-                if (props.template === 'handlebars') {
-                    content = Handlebars.compile(content)({
-                        var1: 'variable 1',
-                        var2: 'variable 2',
-                        var3: 'variable 3',
-                    });
-                }
-
-                model.setProps('content', MarkdownIt().render(content));
-            }),
-        });
-
         this.app.filterFlowManager.addFlow({
             key: 'block:markdown',
             title: 'Markdown区块流程',
@@ -134,10 +113,20 @@ class DemoPlugin extends Plugin {
                     filterName: 'block:markdown:content',
                     title: '内容',
                 },
-                {
-                    key: 'block:markdown:render',
-                    filterName: 'block:markdown:render',
-                },
+                (model: BaseModel, params) => {
+                    const props = model.getProps();
+                    let content = props.content;
+    
+                    if (props.template === 'handlebars') {
+                        content = Handlebars.compile(content)({
+                            var1: 'variable 1',
+                            var2: 'variable 2',
+                            var3: 'variable 3',
+                        });
+                    }
+    
+                    model.setProps('content', MarkdownIt().render(content));
+                }
             ],
         });
 

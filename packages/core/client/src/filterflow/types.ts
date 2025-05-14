@@ -44,6 +44,13 @@ export interface FilterGroupOptions {
   sort?: number;
 }
 
+export interface IFilterFlowStep {
+  key: string;
+  getHandler(): FilterHandler | undefined;
+  getUiSchema?(): ISchema | undefined;
+  condition?: string;
+}
+
 export interface FilterFlowStepOptions {
   key?: string;
   filterName: string;
@@ -54,5 +61,5 @@ export interface FilterFlowStepOptions {
 export interface FilterFlowOptions {
   key: string;
   title: string;
-  steps: FilterFlowStepOptions[];
+  steps: (FilterFlowStepOptions | FilterHandler)[];
 }
