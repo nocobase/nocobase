@@ -11,14 +11,15 @@ import { LoadingOutlined } from '@ant-design/icons';
 import { ArrayField } from '@formily/core';
 import { connect, mapProps, mapReadPretty, useField } from '@formily/react';
 import { toArr } from '@formily/shared';
-import { Cascader as AntdCascader, CascaderProps as AntdCascaderProps, Space } from 'antd';
+import { Cascader as AntdCascader, CascaderProps as AntdCascaderProps, Space, Button, Modal } from 'antd';
 import { BaseOptionType } from 'antd/es/select';
-import { isBoolean, omit, isFunction } from 'lodash';
-import React from 'react';
+import { isBoolean, omit, isFunction, toArray } from 'lodash';
+import React, { useState, useMemo } from 'react';
 import { UseRequestResult, useRequest } from '../../../api-client';
 import { withDynamicSchemaProps } from '../../../hoc/withDynamicSchemaProps';
 import { ReadPretty } from './ReadPretty';
 import { defaultFieldNames } from './defaultFieldNames';
+import { useCompile } from '../../../schema-component';
 
 const useDefDataSource = (options, props: any) => {
   const field = useField<ArrayField>();
@@ -70,6 +71,7 @@ export const Cascader = withDynamicSchemaProps(
         maxLevel,
         ...others
       } = props;
+      const compile = useCompile();
       const fieldNames = { ...defaultFieldNames, ...props.fieldNames };
       const loadData = isFunction(useLoadData) ? useLoadData(props) : [];
       const { loading, run } = isFunction(useLoadData)
@@ -96,12 +98,12 @@ export const Cascader = withDynamicSchemaProps(
           <Space split={'/'}>
             {labels.map((label, index) => {
               if (selectedOptions[index]) {
-                return <span key={index}>{label}</span>;
+                return <span key={index}>{compile(label)}</span>;
               }
               const item = toArr(value)
                 .filter(Boolean)
                 .find((item) => item[fieldNames.value] === label);
-              return <span key={index}>{item?.[fieldNames.label] || label}</span>;
+              return <span key={index}>{compile(item?.[fieldNames.label] || label)}</span>;
             })}
           </Space>
         );
