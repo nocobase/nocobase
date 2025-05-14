@@ -17,8 +17,7 @@ export const ChartBlockProvider: React.FC = (props) => {
   const currentPopupContext = useCurrentPopupContext();
   const localVariables = useLocalVariables();
   const popupRecordVariable = localVariables?.find((variable) => variable.name === '$nPopupRecord');
-  const popupCtxReady =
-    _.isEmpty(currentPopupContext) || !popupRecordVariable?.collectionName || popupRecordVariable?.ctx;
+  const popupCtxReady = _.isEmpty(currentPopupContext) || popupRecordVariable?.ctx;
 
   return (
     <SchemaComponentOptions
