@@ -8,7 +8,7 @@
  */
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { BaseModel, FilterFlowManager, FilterHandlerContext, useBlockConfigs, useApp } from '@nocobase/client'; // 确认 FilterFlowManager 和类型的实际路径
+import { BaseModel, FilterHandlerContext, useBlockConfigs, useApp } from '@nocobase/client'; // 确认 FilterFlowManager 和类型的实际路径
 import { autorun } from '@formily/reactive';
 
 // 使用 Map 作为简单的内存缓存
@@ -117,7 +117,6 @@ export function useApplyFilters(
     }
   }, [flowName, context, id]);
 
-  const prevValue = useRef(model);
   const prevCacheKey = useRef(cacheKey);
   const contextPromise = new Promise<FilterHandlerContext>((resolve, reject) => {
     if (typeof context === 'function') {

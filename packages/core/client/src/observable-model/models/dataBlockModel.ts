@@ -21,8 +21,8 @@ export class DataBlockModel extends BaseModel {
   public fields: Map<string, IModelField>;
   public actions: Map<string, IModelAction>;
 
-  constructor(uid: string) {
-    super(uid);
+  constructor(uid: string, initialProps?: IModelComponentProps) {
+    super(uid, initialProps);
 
     this.fields = observable(new Map<string, IModelField>());
     this.actions = observable(new Map<string, IModelAction>());

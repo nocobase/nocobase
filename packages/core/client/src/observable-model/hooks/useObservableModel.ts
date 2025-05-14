@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import { BaseModel, IModelComponentProps } from '../models/baseModel';
 import { observableModelManager, ModelConstructor } from '../observableModelManager';
 
@@ -16,10 +16,14 @@ export function useObservableModel<T extends BaseModel = BaseModel>(
       console.warn('useObservableModel was called without a UID.');
       return null;
     }
-    return observableModelManager.getModel<T>(uid, {
+    const model = observableModelManager.getModel<T>(uid, {
       ModelClass: options?.ModelClass,
       initialProps: options?.initialProps,
     });
+    if (options?.initialProps && Object.keys(model.getProps()).length === 0) {
+      model.setProps(options?.initialProps);
+    }
+    return model;
   }, [uid]);
 
   return modelInstance;
