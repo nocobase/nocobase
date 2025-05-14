@@ -45,6 +45,16 @@ export type Unsubscriber = () => void;
 // EventFlow Types
 export type EventFlowEventHandler = (params: Record<string, any>, context: any) => Promise<any>;
 export type EventFlowActionHandler = (params: Record<string, any>, context: any) => Promise<any>;
+
+export interface IEventFlowStep {
+  key: string;
+  getHandler(): EventFlowActionHandler | undefined;
+  getUiSchema?(): Record<string, ISchema> | undefined;
+  condition?: string;
+  isAwait?: boolean;
+  setEventFlow(eventFlow: any): void;
+}
+
 export type EventFlowEventGroupOptions = {
   name: string;
   title: string;
@@ -93,5 +103,5 @@ export type EventFlowOptions = {
   key?: string;
   title?: string;
   on?: EventFlowOnOptions;
-  steps?: EventFlowStepOptions[];
+  steps?: (EventFlowStepOptions | EventFlowActionHandler)[];
 };

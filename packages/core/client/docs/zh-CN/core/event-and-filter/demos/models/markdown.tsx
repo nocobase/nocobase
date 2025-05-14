@@ -13,7 +13,7 @@ const Demo = () => {
             {/* 配置 filterflow 的组件， 为通用组件，动态渲染配置输入框 */}
             <FilterFlowSettings uid={uid} flowKey="block:markdown" />
             <Divider />
-            <MarkdownBlock uid={uid} content="Hello, NocoBase!" height={300} />
+            <MarkdownBlock uid={uid} content="Hello, NocoBase! {{var1}}" height={300} />
         </div>
     );
 }
@@ -113,7 +113,7 @@ class DemoPlugin extends Plugin {
                     filterName: 'block:markdown:content',
                     title: '内容',
                 },
-                (model: BaseModel, params) => {
+                (model) => {
                     const props = model.getProps();
                     let content = props.content;
     

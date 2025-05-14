@@ -21,9 +21,10 @@ import type {
   EventFlowEventOptions,
   EventFlowOptions,
   EventFlowStepOptions,
+  IEventFlowStep,
 } from './types';
 
-export class EventFlowStep {
+export class ConfigEventFlowStep implements IEventFlowStep {
   options: EventFlowStepOptions;
   protected eventFlow: EventFlow;
 
@@ -47,7 +48,7 @@ export class EventFlowStep {
     return this.options.action;
   }
 
-  get configureUiSchema() {
+  getUiSchema(): Record<string, ISchema> | undefined {
     return this.eventFlow.eventFlowManager.getAction(this.action)?.uiSchema;
   }
 
@@ -76,8 +77,53 @@ export class EventFlowStep {
     }
   }
 
+  getHandler(): EventFlowActionHandler | undefined {
+    const action = this.eventFlow.eventFlowManager.getAction(this.action);
+    return action?.handler;
+  }
+
   async save() {
     // TODO;
+  }
+}
+
+export class FunctionEventFlowStep implements IEventFlowStep {
+  private readonly _handler: EventFlowActionHandler;
+  private readonly _key: string;
+  protected eventFlow: EventFlow;
+  private _isAwait: boolean = true;
+
+  constructor(handler: EventFlowActionHandler) {
+    this._handler = handler;
+    this._key = uid();
+  }
+
+  setEventFlow(eventFlow: EventFlow) {
+    this.eventFlow = eventFlow;
+  }
+
+  get key() {
+    return this._key;
+  }
+
+  get isAwait() {
+    return this._isAwait;
+  }
+
+  set isAwait(value: boolean) {
+    this._isAwait = value;
+  }
+
+  get condition() {
+    return undefined;
+  }
+
+  getHandler(): EventFlowActionHandler | undefined {
+    return this._handler;
+  }
+
+  getUiSchema(): Record<string, ISchema> | undefined {
+    return undefined;
   }
 }
 
@@ -85,7 +131,7 @@ export class EventFlow {
   eventFlowManager: EventFlowManager;
   protected options: EventFlowOptions;
   protected changed: Record<string, any> = {};
-  protected eventFlowSteps: Record<string, EventFlowStep>;
+  protected eventFlowSteps: Record<string, IEventFlowStep>;
 
   isNew = false;
 
@@ -111,7 +157,7 @@ export class EventFlow {
     return Object.values(this.eventFlowSteps).length > 0;
   }
 
-  eachStep(callback: (step: EventFlowStep) => any) {
+  eachStep(callback: (step: IEventFlowStep) => any) {
     return Object.values(this.eventFlowSteps).map(callback);
   }
 
@@ -174,13 +220,21 @@ export class EventFlow {
     this.eventFlowManager = eventFlowManager;
   }
 
-  addStep(step: EventFlowStepOptions) {
-    if (!step.key) {
-      step.key = uid();
+  addStep(step: EventFlowStepOptions | EventFlowActionHandler) {
+    let instance: IEventFlowStep;
+
+    if (typeof step === 'function') {
+      instance = new FunctionEventFlowStep(step);
+    } else {
+      if (!step.key) {
+        step.key = uid();
+      }
+      instance = new ConfigEventFlowStep(step);
     }
-    const instance = new EventFlowStep(step);
+    
     instance.setEventFlow(this);
-    this.eventFlowSteps[step.key] = instance;
+    this.eventFlowSteps[instance.key] = instance;
+    return instance;
   }
 
   removeStep(key: string) {
@@ -245,16 +299,27 @@ export class EventFlow {
   // 执行事件流中的步骤
   private async executeSteps(context: any): Promise<void> {
     for (const step of this.getSteps()) {
-      const action = this.eventFlowManager.getAction(step.action);
-      if (action) {
-        if (this.checkCondition(step.condition, context)) {
-          const stepParams = context?.meta?.stepParams?.[step.key];
-          if (step.isAwait !== false) {
-            await this.executeHandler(action.handler, stepParams, context);
-          } else {
-            this.executeHandler(action.handler, stepParams, context);
-          }
+      // 获取处理器
+      const handler = step.getHandler();
+      if (!handler) {
+        continue;
+      }
+
+      // 检查条件
+      if (step.condition && !this.checkCondition(step.condition, context)) {
+        continue;
+      }
+
+      // 执行处理器
+      try {
+        const stepParams = context?.meta?.stepParams?.[step.key];
+        if (step.isAwait !== false) {
+          await this.executeHandler(handler, stepParams, context);
+        } else {
+          this.executeHandler(handler, stepParams, context);
         }
+      } catch (error) {
+        console.error(`Error executing step "${step.key}":`, error);
       }
     }
   }
