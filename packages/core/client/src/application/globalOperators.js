@@ -153,15 +153,29 @@ export function getOperators() {
       }
       return false;
     },
+    //日期比较操作符
     $dateOn: function (a, b) {
       if (!a || !b) {
         return false;
       }
-      return a === b;
+      if (Array.isArray(b)) {
+        return operations.$dateBetween(a, b);
+      }
+
+      const dateA = parseDate(a);
+      const dateB = parseDate(b);
+      if (!dateA || !dateB) {
+        return false;
+      }
+
+      return dateA.getTime() === dateB.getTime();
     },
     $dateBefore: function (a, b) {
       if (!a || !b) {
         return false;
+      }
+      if (Array.isArray(b)) {
+        b = b[0];
       }
       // Parse both date strings
       const dateA = parseDate(a);
@@ -169,11 +183,14 @@ export function getOperators() {
       if (!dateA || !dateB) {
         return false;
       }
-      return dateA < dateB;
+      return dateA.getTime() < dateB.getTime();
     },
     $dateNotBefore: function (a, b) {
       if (!a || !b) {
         return false;
+      }
+      if (Array.isArray(b)) {
+        b = b[0];
       }
       const dateA = parseDate(a);
       const dateB = parseDate(b);
@@ -183,21 +200,27 @@ export function getOperators() {
       }
 
       // Compare the two dates
-      return dateA >= dateB;
+      return dateA.getTime() >= dateB.getTime();
     },
     $dateAfter: function (a, b) {
       if (!a || !b) {
         return false;
       }
+      if (Array.isArray(b)) {
+        b = b[1];
+      }
       // Parse both date strings
       const dateA = parseDate(a);
       const dateB = parseDate(b);
 
-      return dateA > dateB;
+      return dateA.getTime() > dateB.getTime();
     },
     $dateNotAfter: function (a, b) {
       if (!a || !b) {
         return false;
+      }
+      if (Array.isArray(b)) {
+        b = b[1];
       }
       const dateA = parseDate(a);
       const dateB = parseDate(b);
@@ -205,7 +228,7 @@ export function getOperators() {
       if (!dateA || !dateB) {
         throw new Error('Invalid date format');
       }
-      return dateA <= dateB;
+      return dateA.getTime() <= dateB.getTime();
     },
     $dateBetween: function (a, b) {
       if (!a || !b) {
@@ -218,13 +241,18 @@ export function getOperators() {
       if (!dateA || !dateBStart || !dateBEnd) {
         throw new Error('Invalid date format');
       }
-      return dateA >= dateBStart && dateA <= dateBEnd;
+      return dateA.getTime() >= dateBStart.getTime() && dateA.getTime() <= dateBEnd.getTime();
     },
     $dateNotOn: function (a, b) {
       if (!a || !b) {
         return false;
       }
-      return a !== b;
+      if (Array.isArray(b)) {
+        return !operations.$dateBetween(a, b);
+      }
+      const dateA = parseDate(a);
+      const dateB = parseDate(b);
+      return dateA.getTime() !== dateB.getTime();
     },
     $isTruly: function (a) {
       if (Array.isArray(a)) return a.some((k) => k === true || k === 1);
