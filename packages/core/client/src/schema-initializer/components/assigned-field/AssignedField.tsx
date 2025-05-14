@@ -26,7 +26,7 @@ import { VariableInput, getShouldChange } from '../../../schema-settings/Variabl
 import { Option } from '../../../schema-settings/VariableInput/type';
 import { formatVariableScop } from '../../../schema-settings/VariableInput/utils/formatVariableScop';
 import { useLocalVariables, useVariables } from '../../../variables';
-import { BlockContext, useBlockContext } from '../../../block-provider';
+import { useBlockContext } from '../../../block-provider';
 import { FlagProvider } from '../../../flag-provider';
 interface AssignedFieldProps {
   value: any;
@@ -155,9 +155,5 @@ export const AssignedFieldInner = (props: AssignedFieldProps) => {
 export const AssignedField = (props) => {
   const { form } = useFormBlockContext();
   const { name } = useBlockContext() || {};
-  return (
-    <BlockContext.Provider value={{ name: form ? 'form' : name }}>
-      <AssignedFieldInner {...props} />
-    </BlockContext.Provider>
-  );
+  return <AssignedFieldInner {...props} />;
 };

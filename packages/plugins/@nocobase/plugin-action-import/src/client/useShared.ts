@@ -8,7 +8,7 @@
  */
 
 import type { VoidField } from '@formily/core';
-import { Cascader, css, useCollection_deprecated } from '@nocobase/client';
+import { Cascader, css, useCollection_deprecated, useCompile } from '@nocobase/client';
 import { useTranslation } from 'react-i18next';
 import { NAMESPACE } from './constants';
 import { useFields } from './useFields';
@@ -23,6 +23,7 @@ export const useShared = () => {
   const { t } = useTranslation(NAMESPACE);
   const { name } = useCollection_deprecated();
   const fields = useFields(name);
+  const compile = useCompile();
   return {
     importSettingsSchema: {
       type: 'void',
@@ -63,7 +64,12 @@ export const useShared = () => {
                     'x-decorator': 'FormItem',
                     'x-component': Cascader,
                     required: true,
-                    enum: fields,
+                    // enum: fields,
+                    'x-use-component-props': () => {
+                      return {
+                        options: compile(fields),
+                      };
+                    },
                     'x-component-props': {
                       fieldNames: {
                         label: 'title',
