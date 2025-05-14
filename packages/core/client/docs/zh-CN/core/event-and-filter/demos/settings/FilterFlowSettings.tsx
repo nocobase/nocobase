@@ -1,12 +1,9 @@
-import React, { useEffect, useState } from 'react';
-import { Card, Collapse, Divider, Spin, Empty, Alert } from 'antd';
-import { BaseModel, useObservableModel, useFilterFlow } from '@nocobase/client';
+import React, { useEffect } from 'react';
+import { Card, Empty, Alert, Input, InputNumber, Select, Switch, Form } from 'antd';
+import { useObservableModel, useFilterFlow } from '@nocobase/client';
 import { observer } from '@formily/react';
-import { createForm } from '@formily/core';
-import { FormProvider, FormConsumer } from '@formily/react';
-import { SchemaComponent } from '@nocobase/client';
 
-const { Panel } = Collapse;
+const { Item: FormItem } = Form;
 
 interface FilterFlowSettingsProps {
   uid: string;
@@ -21,17 +18,6 @@ interface FilterFlowSettingsProps {
 const FilterFlowSettings: React.FC<FilterFlowSettingsProps> = observer(({ uid, flowKey }) => {
   const filterFlowManager = useFilterFlow();
   const model = useObservableModel(uid);
-  const [activeKeys, setActiveKeys] = useState<string[]>([]);
-
-  useEffect(() => {
-    // 初始化时展开第一个面板
-    if (flowKey && filterFlowManager) {
-      const flow = filterFlowManager.getFlow(flowKey);
-      if (flow && flow.getSteps().length > 0) {
-        setActiveKeys([flow.getSteps()[0].key]);
-      }
-    }
-  }, [flowKey, filterFlowManager]);
 
   if (!filterFlowManager) {
     return <Alert message="filterFlowManager未初始化" type="error" />;
@@ -52,63 +38,114 @@ const FilterFlowSettings: React.FC<FilterFlowSettingsProps> = observer(({ uid, f
   }
 
   // 更新模型的FilterParams
-  const updateModelValue = (stepKey, filterKey, values) => {
-    model.setFilterParams(flowKey, stepKey, values);
+  const updateModelValue = (stepKey, filterKey, fieldKey, value) => {
+    const currentParams = model.filterParams[flowKey]?.[stepKey] || {};
+    model.setFilterParams(flowKey, stepKey, {
+      ...currentParams,
+      [fieldKey]: value
+    });
   };
 
-  return (
-    <Card title={`${flow.title || flow.key} 配置`}>
-      <Collapse 
-        accordion 
-        activeKey={activeKeys}
-        onChange={(keys) => setActiveKeys(Array.isArray(keys) ? keys : [keys])}
-      >
-        {steps.map((step) => {
-          const filter = filterFlowManager.getFilter(step.filterName);
-          if (!filter) return null;
-          
-          // 获取当前步骤的参数
-          const filterParams = model.filterParams[flowKey]?.[step.key] || {};
-          
-          // 创建formily表单
-          const form = createForm({
-            initialValues: filterParams,
-            effects() {
-              // 当表单值变化时更新model
-              this.onFormValuesChange((form) => {
-                updateModelValue(step.key, step.filterName, form.values);
-              });
-            },
-          });
-
+  // 渲染表单控件
+  const renderFormField = (field, fieldSchema, stepKey, filterName) => {
+    const filterParams = model.filterParams[flowKey]?.[stepKey] || {};
+    const fieldValue = filterParams[field] !== undefined ? filterParams[field] : (fieldSchema.default || '');
+    
+    // 根据字段类型渲染不同控件
+    switch (fieldSchema.type) {
+      case 'string':
+        if (fieldSchema['x-component'] === 'Select') {
+          const options = fieldSchema.enum || [];
           return (
-            <Panel header={step.title || step.key} key={step.key}>
-              <div style={{ padding: '8px 0' }}>
-                {filter.uiSchema ? (
-                  <FormProvider form={form}>
-                    <SchemaComponent schema={{
-                      type: 'object',
-                      properties: filter.uiSchema,
-                    }} />
-                    <FormConsumer>
-                      {() => {
-                        return null; // 仅用于监听表单变化
-                      }}
-                    </FormConsumer>
-                  </FormProvider>
-                ) : (
-                  <Alert 
-                    message="此步骤没有配置界面" 
-                    description={`过滤器 ${filter.name || filter.title} 没有定义uiSchema`}
-                    type="warning" 
-                    showIcon
-                  />
-                )}
-              </div>
-            </Panel>
+            <Select
+              value={fieldValue}
+              onChange={(value) => updateModelValue(stepKey, filterName, field, value)}
+              placeholder={fieldSchema.title || field}
+              style={{ width: '100%' }}
+              options={options}
+            />
           );
+        }
+        
+        if (fieldSchema['x-component'] === 'Input.TextArea') {
+          return (
+            <Input.TextArea
+              value={fieldValue}
+              onChange={(e) => updateModelValue(stepKey, filterName, field, e.target.value)}
+              placeholder={fieldSchema.title || field}
+              rows={fieldSchema['x-component-props']?.rows || 3}
+            />
+          );
+        }
+        
+        return (
+          <Input
+            value={fieldValue}
+            onChange={(e) => updateModelValue(stepKey, filterName, field, e.target.value)}
+            placeholder={fieldSchema.title || field}
+          />
+        );
+        
+      case 'number':
+        return (
+          <InputNumber
+            value={fieldValue}
+            onChange={(value) => updateModelValue(stepKey, filterName, field, value)}
+            placeholder={fieldSchema.title || field}
+            style={{ width: '100%' }}
+            min={fieldSchema['x-component-props']?.min}
+            max={fieldSchema['x-component-props']?.max}
+            addonAfter={fieldSchema['x-component-props']?.addonAfter}
+          />
+        );
+        
+      case 'boolean':
+        return (
+          <Switch
+            checked={!!fieldValue}
+            onChange={(checked) => updateModelValue(stepKey, filterName, field, checked)}
+          />
+        );
+        
+      default:
+        return null;
+    }
+  };
+
+  // 获取所有有效的步骤和对应的过滤器
+  const validSteps = steps
+    .map(step => {
+      const filter = filterFlowManager.getFilter(step.filterName);
+      if (!filter || !filter.uiSchema) return null;
+      return { step, filter };
+    })
+    .filter(Boolean);
+
+  if (validSteps.length === 0) {
+    return <Empty description="没有可配置的步骤" />;
+  }
+
+  return (
+    <Card title={`${flow.title || flow.key}`}>
+      <Form layout="vertical">
+        {validSteps.map(({ step, filter }) => {
+          const uiSchema = filter.uiSchema;
+          return Object.entries(uiSchema).map(([field, fieldSchema]) => (
+            <FormItem 
+              key={`${step.key}-${field}`}
+              label={
+                <span>
+                  {step.title && <span style={{ color: '#8c8c8c' }}>[{step.title}] </span>}
+                  {fieldSchema.title || field}
+                </span>
+              }
+              tooltip={fieldSchema.description}
+            >
+              {renderFormField(field, fieldSchema, step.key, step.filterName)}
+            </FormItem>
+          ));
         })}
-      </Collapse>
+      </Form>
     </Card>
   );
 });

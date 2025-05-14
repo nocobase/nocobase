@@ -1,9 +1,8 @@
 import React from 'react';
 import { Divider } from 'antd';
-import { BaseModel, useObservableModel, useApplyFilters, Plugin, Application } from '@nocobase/client';
+import { BaseModel, useObservableModel, useApplyFilters, Plugin, Application, observableModelManager } from '@nocobase/client';
 import MarkdownIt from 'markdown-it';
 import Handlebars from 'handlebars';
-import { observableModelManager } from '@nocobase/client';
 import { observer } from '@formily/react';
 import FilterFlowSettings from '../settings/FilterFlowSettings';
 
@@ -29,7 +28,6 @@ const Markdown = ({ content, height }) => {
 // 自定义插件类
 class DemoPlugin extends Plugin {
     async load() {
-        // 注册模板过滤器
         this.app.filterFlowManager.addFilter({
             name: 'block:markdown:template',
             title: '模板引擎',
@@ -81,7 +79,6 @@ class DemoPlugin extends Plugin {
             }),
         });
 
-        // 注册内容过滤器
         this.app.filterFlowManager.addFilter({
             name: 'block:markdown:content',
             title: '内容设置',
@@ -99,9 +96,7 @@ class DemoPlugin extends Plugin {
                 }
             },
             handler: ((model: BaseModel, params) => {
-                // 获取参数
                 const { content } = params || {};
-                // 使用setProps更新模型的属性
                 model.setProps({
                     rawContent: content,
                 });
@@ -166,9 +161,7 @@ class DemoPlugin extends Plugin {
         // 添加路由
         this.app.router.add('root', { path: '/', Component: DemoComponent });
 
-        // 新增测试model并设置初始参数
         const model = observableModelManager.getModel('markdown-block');
-        // 设置FilterFlow的参数
         model.setFilterParams('block:markdown', 'block:markdown:template', {
             template: 'handlebars',
         });
