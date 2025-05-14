@@ -109,7 +109,6 @@ export const Action: ComposedAction = withDynamicSchemaProps(
     const app = useApp();
     const { getAllDataBlocks } = useAllDataBlocks();
     const form = useForm();
-
     useEffect(() => {
       if (field.stateOfLinkageRules) {
         setInitialActionState(field);
@@ -129,7 +128,6 @@ export const Action: ComposedAction = withDynamicSchemaProps(
                   return result;
                 },
                 () => {
-                  console.log(action);
                   field.stateOfLinkageRules = {};
                   linkageAction(
                     {
