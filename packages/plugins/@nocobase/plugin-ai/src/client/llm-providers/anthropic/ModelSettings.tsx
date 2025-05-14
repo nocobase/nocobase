@@ -49,12 +49,13 @@ const Options: React.FC = () => {
                         max: 2.0,
                       },
                     },
-                    maxOutputTokens: {
-                      title: tval('Max output tokens', { ns: namespace }),
+                    maxCompletionTokens: {
+                      title: tval('Max completion tokens', { ns: namespace }),
                       description: tval('Max completion tokens description', { ns: namespace }),
                       type: 'number',
                       'x-decorator': 'FormItem',
                       'x-component': 'InputNumber',
+                      default: -1,
                     },
                     presencePenalty: {
                       title: tval('Presence penalty', { ns: namespace }),

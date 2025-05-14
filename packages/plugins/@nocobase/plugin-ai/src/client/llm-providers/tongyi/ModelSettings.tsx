@@ -34,7 +34,7 @@ const Options: React.FC = () => {
               <SchemaComponent
                 schema={{
                   type: 'void',
-                  name: 'openai',
+                  name: 'deepseek',
                   properties: {
                     frequencyPenalty: {
                       title: tval('Frequency penalty', { ns: namespace }),
@@ -49,12 +49,13 @@ const Options: React.FC = () => {
                         max: 2.0,
                       },
                     },
-                    maxOutputTokens: {
-                      title: tval('Max output tokens', { ns: namespace }),
+                    maxCompletionTokens: {
+                      title: tval('Max completion tokens', { ns: namespace }),
                       description: tval('Max completion tokens description', { ns: namespace }),
                       type: 'number',
                       'x-decorator': 'FormItem',
                       'x-component': 'InputNumber',
+                      default: -1,
                     },
                     presencePenalty: {
                       title: tval('Presence penalty', { ns: namespace }),
@@ -109,10 +110,6 @@ const Options: React.FC = () => {
                         {
                           label: t('JSON'),
                           value: 'json_object',
-                        },
-                        {
-                          label: t('JSON Schema'),
-                          value: 'json_schema',
                         },
                       ],
                       default: 'text',

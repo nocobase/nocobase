@@ -10,7 +10,7 @@
 import { z } from 'zod';
 import { ToolOptions } from '../manager/ai-manager';
 
-export const formFillter: ToolOptions = {
+export const formFiller: ToolOptions = {
   title: '{{t("Form filler")}}',
   description: '{{t("Fill the form with the given content")}}',
   execution: 'frontend',

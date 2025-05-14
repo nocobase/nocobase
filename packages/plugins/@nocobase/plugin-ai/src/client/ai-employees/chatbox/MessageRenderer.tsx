@@ -54,7 +54,9 @@ const AITextMessageRenderer: React.FC<{
         }}
       >
         {typeof msg.content === 'string' && <Markdown markdown={msg.content} />}
-        {msg.tool_calls?.length && <ToolCard tools={msg.tool_calls} messageId={msg.messageId} />}
+        {msg.tool_calls?.length && (
+          <ToolCard tools={msg.tool_calls} messageId={msg.messageId} autoCall={msg.metadata?.autoCallTool} />
+        )}
       </div>
     );
   }
@@ -106,7 +108,7 @@ const AIMessageRenderer: React.FC<{
                   />
                 }
               />
-              {typeof msg.content === 'string' && (
+              {typeof msg.content === 'string' && msg.content && (
                 <Button color="default" variant="text" size="small" icon={<CopyOutlined onClick={copy} />} />
               )}
             </Space>

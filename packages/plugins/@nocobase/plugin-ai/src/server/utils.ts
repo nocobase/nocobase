@@ -9,22 +9,25 @@
 
 import { Model } from '@nocobase/database';
 
+export function stripToolCallTags(content: string): string | null {
+  if (typeof content !== 'string') {
+    return content;
+  }
+  return content
+    .replace(/<[|｜]tool▁(?:calls▁begin|calls▁end|call▁begin|call▁end|sep)[|｜]>/g, '')
+    .replace(/function/, '');
+}
+
 export function parseResponseMessage(row: Model) {
   const { content: rawContent, messageId, metadata, role, toolCalls } = row;
-  const autoCallTool = metadata?.autoCallTool;
   const content = {
     ...rawContent,
+    content: stripToolCallTags(rawContent.content),
     messageId: messageId,
     metadata: metadata,
   };
-  if (!autoCallTool && toolCalls) {
+  if (toolCalls) {
     content.tool_calls = toolCalls;
-  }
-  if (autoCallTool) {
-    const hasText = content.content;
-    if (!hasText && toolCalls?.length) {
-      content.content = 'I’m trying to use my skills to complete the task...';
-    }
   }
   return {
     key: messageId,

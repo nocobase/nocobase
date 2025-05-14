@@ -21,7 +21,7 @@ export abstract class LLMProvider {
   chatModel: any;
   chatHandlers = new Map<string, () => Promise<void> | void>();
 
-  abstract createModel(): BaseChatModel;
+  abstract createModel(): BaseChatModel | any;
 
   get baseURL() {
     return null;

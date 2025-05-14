@@ -248,8 +248,8 @@ export const Conversations: React.FC = memo(() => {
                 switch (key) {
                   case 'delete':
                     modal.confirm({
-                      title: t('Delete this conversation?'),
-                      content: t('Are you sure to delete this conversation?'),
+                      title: t('Delete conversation'),
+                      content: t('Are you sure you want to delete it?'),
                       onOk: () => deleteConversation(conversation.key),
                     });
                     break;

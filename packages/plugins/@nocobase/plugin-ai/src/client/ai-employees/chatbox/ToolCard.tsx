@@ -8,9 +8,9 @@
  */
 
 import React from 'react';
-import { Button, Collapse, Tooltip } from 'antd';
+import { Button, Collapse, Tooltip, Tag } from 'antd';
 import { useT } from '../../locale';
-import { CaretRightOutlined, QuestionCircleOutlined } from '@ant-design/icons';
+import { CaretRightOutlined, QuestionCircleOutlined, ToolOutlined } from '@ant-design/icons';
 import ReactMarkdown from 'react-markdown';
 import { default as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { dark, defaultStyle } from 'react-syntax-highlighter/dist/esm/styles/hljs';
@@ -74,7 +74,8 @@ export const ToolCard: React.FC<{
     name: string;
     args: any;
   }[];
-}> = ({ tools, messageId }) => {
+  autoCall?: boolean;
+}> = ({ tools, messageId, autoCall }) => {
   const t = useT();
   const { token } = useToken();
   const { isDarkTheme } = useGlobalTheme();
@@ -106,15 +107,24 @@ export const ToolCard: React.FC<{
           fontSize: token.fontSize,
         }}
       >
-        {data?.[tool.name]?.title ? Schema.compile(data[tool.name].title, { t }) : tool.name}{' '}
-        {data?.[tool.name]?.description && (
-          <Tooltip title={Schema.compile(data[tool.name].description, { t })}>
-            <QuestionCircleOutlined />
-          </Tooltip>
-        )}
+        <span>
+          <ToolOutlined /> {t('Use skill')}
+        </span>
+        <Tag
+          style={{
+            marginLeft: 8,
+          }}
+        >
+          {data?.[tool.name]?.title ? Schema.compile(data[tool.name].title, { t }) : tool.name}{' '}
+          {data?.[tool.name]?.description && (
+            <Tooltip title={Schema.compile(data[tool.name].description, { t })}>
+              <QuestionCircleOutlined />
+            </Tooltip>
+          )}
+        </Tag>
       </div>
     ),
-    extra: <CallButton messageId={messageId} name={tool.name} args={tool.args} />,
+    extra: !autoCall && <CallButton messageId={messageId} name={tool.name} args={tool.args} />,
     children: (
       <ReactMarkdown
         components={{
@@ -141,5 +151,5 @@ export const ToolCard: React.FC<{
     },
   }));
 
-  return <Collapse items={items} size="small" bordered={false} defaultActiveKey={[tools[0].name]} />;
+  return <Collapse items={items} size="small" bordered={false} defaultActiveKey={!autoCall ? [tools[0].name] : []} />;
 };

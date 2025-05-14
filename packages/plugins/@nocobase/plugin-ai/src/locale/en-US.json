@@ -48,7 +48,7 @@
   "Workflow caller": "Workflow caller",
   "Use workflow as a tool": "Use workflow as a tool",
   "Automatically use skills when available": "Automatically use skills when available",
-  "Auto skill description": "When auto skill usage is enabled, the AI employee will invoke tools automatically without returning tool parameters to the conversation. If disabled, the tool call parameters will be returned in the conversation for the user to review and trigger manually.",
+  "Auto skill description": "When auto skill usage is enabled, the AI employee will invoke tools automatically when needed. Otherwise, the tool call parameters will be returned in the conversation for the user to review and trigger manually.",
   "Parameters": "Parameters",
   "Add collection": "Add collection",
   "Edit task": "Edit task",
@@ -65,5 +65,10 @@
   "Rename": "Rename",
   "Personalized prompt": "Personalized prompt",
   "Personalized prompt description": "You can set personalized prompt for the current AI employee which will be sent to the LLM at the start of each new conversation.",
-  "Edit personalized prompt": "Edit personalized prompt"
+  "Edit personalized prompt": "Edit personalized prompt",
+  "New conversation": "New conversation",
+  "Delete conversation": "Delete conversation",
+  "Deleted successfully": "Deleted successfully",
+  "Rename conversation": "Rename conversation",
+  "Use skill": "Use skill"
 }

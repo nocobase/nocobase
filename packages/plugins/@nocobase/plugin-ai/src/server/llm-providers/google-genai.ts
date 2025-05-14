@@ -72,22 +72,13 @@ export class GoogleGenAIProvider extends LLMProvider {
       metadata,
     };
 
-    if (!autoCallTool && toolCalls) {
+    if (toolCalls) {
       content.tool_calls = toolCalls;
     }
 
     if (Array.isArray(content.content) && autoCallTool) {
-      const messages = content.content.filter((msg) => msg.type !== 'functionCaller');
-      const hasText = messages.some((msg) => msg.type === 'text');
-
-      if (!hasText && toolCalls?.length) {
-        messages.unshift({
-          type: 'text',
-          text: 'I’m trying to use my skills to complete the task...',
-        });
-      }
-
-      content.content = messages;
+      const textMessage = content.content.find((msg) => msg.type === 'text');
+      content.content = textMessage?.text;
     }
 
     return {

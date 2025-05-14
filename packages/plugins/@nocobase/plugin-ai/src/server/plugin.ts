@@ -21,8 +21,10 @@ import Snowflake from './snowflake';
 import * as aiEmployeeActions from './resource/aiEmployees';
 import { googleGenAIProviderOptions } from './llm-providers/google-genai';
 import { AIEmployeeTrigger } from './workflow/triggers/ai-employee';
-import { formFillter, workflowCaller } from './tools';
+import { formFiller, workflowCaller } from './tools';
 import { Model } from '@nocobase/database';
+import { anthropicProviderOptions } from './llm-providers/anthropic';
+import { tongyiProviderOptions } from './llm-providers/tongyi';
 
 export class PluginAIServer extends Plugin {
   aiManager = new AIManager(this);
@@ -44,7 +46,9 @@ export class PluginAIServer extends Plugin {
     this.aiManager.registerLLMProvider('openai', openaiProviderOptions);
     this.aiManager.registerLLMProvider('deepseek', deepseekProviderOptions);
     this.aiManager.registerLLMProvider('google-genai', googleGenAIProviderOptions);
-    this.aiManager.registerTool('formFiller', formFillter);
+    this.aiManager.registerLLMProvider('anthropic', anthropicProviderOptions);
+    // this.aiManager.registerLLMProvider('tongyi', tongyiProviderOptions);
+    this.aiManager.registerTool('formFiller', formFiller);
     this.aiManager.registerTool('workflowCaller', workflowCaller);
 
     this.app.resourceManager.define(aiResource);

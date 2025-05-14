@@ -105,7 +105,7 @@ export const ChatBox: React.FC = () => {
           >
             {currentEmployee ? (
               <>
-                <Tooltip arrow={false} title={t('New convsersation')}>
+                <Tooltip arrow={false} title={t('New conversation')}>
                   <Button icon={<EditOutlined />} type="text" onClick={startNewConversation} />
                 </Tooltip>
                 <UserPrompt />

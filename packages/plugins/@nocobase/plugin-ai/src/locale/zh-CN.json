@@ -45,7 +45,7 @@
   "Workflow caller": "调用工作流",
   "Use workflow as a tool": "使用工作流作为工具",
   "Automatically use skills when available": "自动使用可用技能",
-  "Auto skill description": "当允许自动使用技能时，AI 员工将自动调用工具，不会将工具参数显示到对话中。不开启自动使用技能，AI 员工会将工具调用参数返回到对话中，供用户确认后手动调用。",
+  "Auto skill description": "当允许自动使用技能时，AI 员工将在必要时自动调用工具，否则AI 员工会将工具调用参数返回到对话中，供用户确认后手动调用。",
   "Parameters": "参数",
   "Chat error warning": "发送消息失败，请联系管理员或稍后再试。",
   "Data source settings description": "被选中的数据表模型将作为 AI 员工系统定义的一部分，系统会将数据表标识、字段信息等元数据提供给 LLM，当你定义的员工需要这些信息的时候会很有帮助，比如一个用于查询系统数据的 AI 员工。",
@@ -64,5 +64,11 @@
   "Rename": "重命名",
   "Personalized prompt": "个性化提示词",
   "Personalized prompt description": "你可以针对当前 AI 员工设置个性化的提示词，将在每轮新对话时发送给大模型",
-  "Edit personalized prompt": "编辑个性化提示词"
+  "Edit personalized prompt": "编辑个性化提示词",
+  "Tongyi": "通义千问",
+  "New conversation": "新建对话",
+  "Delete conversation": "删除对话",
+  "Deleted successfully": "删除成功",
+  "Rename conversation": "重命名对话",
+  "Use skill": "使用技能"
 }
