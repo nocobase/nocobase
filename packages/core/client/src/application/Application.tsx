@@ -118,6 +118,7 @@ export class Application {
   public globalVars: Record<string, any> = {};
   public globalVarCtxs: Record<string, any> = {};
   public jsonLogic: JsonLogic;
+  // @ts-ignore
   public filterFlowManager: FilterFlowManager;
   public observableModelManager: ObservableModelManager;
   public appEventFlowManager: EventFlowManager;

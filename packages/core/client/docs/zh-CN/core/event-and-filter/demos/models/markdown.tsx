@@ -47,9 +47,7 @@ class DemoPlugin extends Plugin {
             },
             handler: ((model: BaseModel, params) => {
                 const { template } = params || {};
-                model.setProps({
-                    template,
-                });
+                model.setProps('template', template);
             }),
         });
 
@@ -73,9 +71,7 @@ class DemoPlugin extends Plugin {
             },
             handler: ((model: BaseModel, params) => {
                 const { height } = params || {};
-                model.setProps({
-                    height,
-                });
+                model.setProps('height', height);
             }),
         });
 
@@ -97,9 +93,7 @@ class DemoPlugin extends Plugin {
             },
             handler: ((model: BaseModel, params) => {
                 const { content } = params || {};
-                model.setProps({
-                    rawContent: content,
-                });
+                model.setProps('rawContent', content);
             }),
         });
 
@@ -124,9 +118,7 @@ class DemoPlugin extends Plugin {
                 }
 
                 // 渲染Markdown内容
-                model.setProps({
-                    content: MarkdownIt().render(content),
-                });
+                model.setProps('content', MarkdownIt().render(content));
             }),
         });
 
