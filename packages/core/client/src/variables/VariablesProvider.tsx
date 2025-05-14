@@ -189,7 +189,7 @@ const VariablesProvider = ({ children, filterVariables }: any) => {
       }
 
       const _value = compile(
-        _.isFunction(current) ? current({ fieldOperator: options?.fieldOperator, isParsingVariable: true }) : current,
+        _.isFunction(current) ? await current({ fieldOperator: options?.fieldOperator, isParsingVariable: true }) : current,
       );
       return {
         value: _value === undefined ? variableOption.defaultValue : _value,

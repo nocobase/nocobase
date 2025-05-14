@@ -17,6 +17,11 @@ import { mockAPIClient } from '../../testUtils';
 import { CurrentUserProvider } from '../../user';
 import VariablesProvider from '../VariablesProvider';
 import useVariables from '../hooks/useVariables';
+import { Application } from '../../application/Application';
+
+const app = new Application();
+
+const Root = app.getRootComponent();
 
 vi.mock('../../collection-manager', async () => {
   return {
@@ -185,7 +190,7 @@ mockRequest.onGet('/someBelongsToField/0/belongsToField:get').reply(() => {
 const Providers = ({ children }) => {
   const history = createMemoryHistory();
   return (
-    <Router location={history.location} navigator={history}>
+    <Root>
       <APIClientProvider apiClient={apiClient}>
         <CurrentUserProvider>
           <SchemaOptionsContext.Provider value={{}}>
@@ -195,7 +200,7 @@ const Providers = ({ children }) => {
           </SchemaOptionsContext.Provider>
         </CurrentUserProvider>
       </APIClientProvider>
-    </Router>
+    </Root>
   );
 };
 
