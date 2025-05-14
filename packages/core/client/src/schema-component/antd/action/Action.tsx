@@ -12,10 +12,13 @@ import { observer, Schema, useField, useFieldSchema, useForm } from '@formily/re
 import { isPortalInBody } from '@nocobase/utils/client';
 import { App, Button, Tooltip } from 'antd';
 import classnames from 'classnames';
+import { isEqual } from 'lodash';
 import debounce from 'lodash/debounce';
+import { reaction } from '@formily/reactive';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 import { useTranslation } from 'react-i18next';
+import { uid } from '@formily/shared';
 import { ErrorFallback, StablePopover, TabsContextProvider, useActionContext } from '../..';
 import { useDesignable } from '../../';
 import { useACLActionParamsContext } from '../../../acl';
@@ -29,7 +32,6 @@ import { withDynamicSchemaProps } from '../../../hoc/withDynamicSchemaProps';
 import { Icon } from '../../../icon';
 import { TreeRecordProvider } from '../../../modules/blocks/data-blocks/table/TreeRecordProvider';
 import { VariablePopupRecordProvider } from '../../../modules/variable/variablesProvider/VariablePopupRecordProvider';
-import { RecordProvider } from '../../../record-provider';
 import { useLocalVariables, useVariables } from '../../../variables';
 import { SortableItem } from '../../common';
 import { useCompile, useComponent, useDesigner } from '../../hooks';
@@ -49,7 +51,8 @@ import { useGetAriaLabelOfAction } from './hooks/useGetAriaLabelOfAction';
 import { ActionContextProps, ActionProps, ComposedAction } from './types';
 import { linkageAction, setInitialActionState } from './utils';
 import { NAMESPACE_UI_SCHEMA } from '../../../i18n/constant';
-import { BlockContext } from '../../../block-provider/BlockProvider';
+import { forEachLinkageRule } from '../../../schema-settings/LinkageRules/forEachLinkageRule';
+import { getVariableValuesInCondition } from '../../../schema-settings/LinkageRules/bindLinkageRulesToFiled';
 import { getVariableValue } from '../../../common/getVariableValue';
 
 // 这个要放到最下面，否则会导致前端单测失败
@@ -98,39 +101,61 @@ export const Action: ComposedAction = withDynamicSchemaProps(
     const { designable } = useDesignable();
     const tarComponent = useComponent(component) || component;
     const variables = useVariables();
-    const localVariables = useLocalVariables({
-      currentForm: { values: recordData, readPretty: false } as any,
-    });
+    const localVariables = useLocalVariables();
     const { visibleWithURL, setVisibleWithURL } = usePopupUtils();
     const { setSubmitted } = useActionContext();
     const { getAriaLabel } = useGetAriaLabelOfAction(title);
     const parentRecordData = useCollectionParentRecordData();
     const app = useApp();
     const { getAllDataBlocks } = useAllDataBlocks();
-
+    const form = useForm();
     useEffect(() => {
       if (field.stateOfLinkageRules) {
         setInitialActionState(field);
       }
-      field.stateOfLinkageRules = {};
-      linkageRules
-        .filter((k) => !k.disabled)
-        .forEach((v) => {
-          v.actions?.forEach((h) => {
-            linkageAction(
-              {
-                operator: h.operator,
-                field,
-                condition: v.condition,
-                variables,
-                localVariables,
-                conditionType: v.conditionType,
-              },
-              app.jsonLogic,
+      const id = uid();
+      const disposes = [];
+      // 如果不延迟执行，那么一开始获取到的 form.values 的值是旧的，会导致详情区块的联动规则出现一些问题
+      setTimeout(() => {
+        form.addEffects(id, () => {
+          forEachLinkageRule(linkageRules, (action, rule) => {
+            disposes.push(
+              reaction(
+                () => {
+                  // 获取条件中的变量值
+                  const variableValuesInCondition = getVariableValuesInCondition({ linkageRules, localVariables });
+                  const result = [variableValuesInCondition].map((item) => JSON.stringify(item)).join(',');
+                  return result;
+                },
+                () => {
+                  field.stateOfLinkageRules = {};
+                  linkageAction(
+                    {
+                      operator: action.operator,
+                      field,
+                      condition: rule.condition,
+                      variables,
+                      localVariables,
+                      conditionType: rule.conditionType,
+                      variableNameOfLeftCondition: '$nRecord',
+                    },
+                    app.jsonLogic,
+                  );
+                },
+                { fireImmediately: true, equals: isEqual },
+              ),
             );
           });
         });
-    }, [field, linkageRules, localVariables, variables]);
+      });
+
+      return () => {
+        form.removeEffects(id);
+        disposes.forEach((dispose) => {
+          dispose();
+        });
+      };
+    }, [linkageRules]);
 
     const handleMouseEnter = useCallback(
       (e) => {
@@ -163,38 +188,36 @@ export const Action: ComposedAction = withDynamicSchemaProps(
     }, [onClick, fieldSchema, getAllDataBlocks]);
 
     return (
-      <BlockContext.Provider value={{ name: 'action' }}>
-        <InternalAction
-          containerRefKey={containerRefKey}
-          fieldSchema={fieldSchema}
-          designable={designable}
-          field={field}
-          icon={icon}
-          loading={loading}
-          handleMouseEnter={handleMouseEnter}
-          tarComponent={tarComponent}
-          className={className}
-          type={props.type}
-          Designer={Designer}
-          onClick={handleClick}
-          confirm={confirm}
-          confirmTitle={confirmTitle}
-          popover={popover}
-          addChild={addChild}
-          recordData={recordData}
-          title={title}
-          style={style}
-          propsDisabled={propsDisabled}
-          useAction={useAction}
-          visibleWithURL={visibleWithURL}
-          setVisibleWithURL={setVisibleWithURL}
-          setSubmitted={setSubmitted}
-          getAriaLabel={getAriaLabel}
-          parentRecordData={parentRecordData}
-          actionCallback={actionCallback}
-          {...others}
-        />
-      </BlockContext.Provider>
+      <InternalAction
+        containerRefKey={containerRefKey}
+        fieldSchema={fieldSchema}
+        designable={designable}
+        field={field}
+        icon={icon}
+        loading={loading}
+        handleMouseEnter={handleMouseEnter}
+        tarComponent={tarComponent}
+        className={className}
+        type={props.type}
+        Designer={Designer}
+        onClick={handleClick}
+        confirm={confirm}
+        confirmTitle={confirmTitle}
+        popover={popover}
+        addChild={addChild}
+        recordData={recordData}
+        title={title}
+        style={style}
+        propsDisabled={propsDisabled}
+        useAction={useAction}
+        visibleWithURL={visibleWithURL}
+        setVisibleWithURL={setVisibleWithURL}
+        setSubmitted={setSubmitted}
+        getAriaLabel={getAriaLabel}
+        parentRecordData={parentRecordData}
+        actionCallback={actionCallback}
+        {...others}
+      />
     );
   }),
   { displayName: 'Action' },

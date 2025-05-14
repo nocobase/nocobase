@@ -130,7 +130,7 @@ export function WorkflowPane() {
   const ctx = useContext(SchemaComponentContext);
   const { useTriggersOptions } = usePlugin(WorkflowPlugin);
   return (
-    <Card bordered={false}>
+    <Card variant="borderless">
       <SchemaComponentContext.Provider value={{ ...ctx, designable: false }}>
         <SchemaComponent
           schema={workflowSchema}

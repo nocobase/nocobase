@@ -596,6 +596,7 @@ export async function buildPluginClient(cwd: string, userConfig: any, sourcemap:
     plugins: [
       new rspack.DefinePlugin({
         'process.env.NODE_ENV': JSON.stringify('production'),
+        'process.env.NODE_DEBUG': false,
       }),
       {
         apply(compiler) {
