@@ -118,6 +118,9 @@ export const transformToFilter = (
       ) {
         return true;
       }
+      if (value.type) {
+        return true;
+      }
 
       const collectionField = getCollectionJoinField(`${collectionName}.${path}`);
       if (collectionField?.target) {
@@ -132,7 +135,6 @@ export const transformToFilter = (
       return false;
     },
   });
-
   const result = {
     $and: Object.keys(values)
       .map((key) => {

@@ -14,11 +14,7 @@ Using a Universal Module Loader that should be browser, require, and AMD friendl
 http://ricostacruz.com/cheatsheets/umdjs.html
 */
 
-const dayjs = require('dayjs');
-const quarterOfYear = require('dayjs/plugin/quarterOfYear');
-const isoWeek = require('dayjs/plugin/isoWeek');
-dayjs.extend(isoWeek);
-dayjs.extend(quarterOfYear);
+const { getDayRangeByParams } = require('@nocobase/utils/client');
 
 export function getOperators() {
   'use strict';
@@ -165,9 +161,11 @@ export function getOperators() {
       if (!a || !b) {
         return false;
       }
+      console.log(b);
       if (b.type) {
         b = getDayRangeByParams(b);
       }
+      console.log(b);
       if (Array.isArray(b)) {
         return operations.$dateBetween(a, b);
       }
@@ -727,52 +725,52 @@ function parseDate(targetDateStr) {
   return null;
 }
 
-const getStart = (offset, unit) => {
-  const actualUnit = unit === 'isoWeek' ? 'week' : unit;
-  return dayjs().add(offset, actualUnit).startOf(unit);
-};
+// const getStart = (offset, unit) => {
+//   const actualUnit = unit === 'isoWeek' ? 'week' : unit;
+//   return dayjs().add(offset, actualUnit).startOf(unit);
+// };
 
-const getEnd = (offset, unit) => {
-  const actualUnit = unit === 'isoWeek' ? 'week' : unit;
-  return dayjs().add(offset, actualUnit).endOf(unit);
-};
+// const getEnd = (offset, unit) => {
+//   const actualUnit = unit === 'isoWeek' ? 'week' : unit;
+//   return dayjs().add(offset, actualUnit).endOf(unit);
+// };
 
-const getOffsetRangeByParams = (params) => {
-  const { type, unit, number } = params;
-  const actualUnit = unit === 'week' ? 'isoWeek' : unit;
-  const base = type === 'past' ? dayjs().subtract(number, unit) : dayjs().add(number, unit);
+// const getOffsetRangeByParams = (params) => {
+//   const { type, unit, number } = params;
+//   const actualUnit = unit === 'week' ? 'isoWeek' : unit;
+//   const base = type === 'past' ? dayjs().subtract(number, unit) : dayjs().add(number, unit);
 
-  return [base.startOf(actualUnit).format('YYYY-MM-DD HH:mm:ss'), base.endOf(actualUnit).format('YYYY-MM-DD HH:mm:ss')];
-};
+//   return [base.startOf(actualUnit).format('YYYY-MM-DD HH:mm:ss'), base.endOf(actualUnit).format('YYYY-MM-DD HH:mm:ss')];
+// };
 
-const strategies = {
-  today: () => [getStart(0, 'day'), getEnd(0, 'day')],
-  yesterday: () => [getStart(-1, 'day'), getEnd(-1, 'day')],
-  tomorrow: () => [getStart(1, 'day'), getEnd(1, 'day')],
+// const strategies = {
+//   today: () => [getStart(0, 'day'), getEnd(0, 'day')],
+//   yesterday: () => [getStart(-1, 'day'), getEnd(-1, 'day')],
+//   tomorrow: () => [getStart(1, 'day'), getEnd(1, 'day')],
 
-  thisWeek: () => [getStart(0, 'isoWeek'), getEnd(0, 'isoWeek')],
-  lastWeek: () => [getStart(-1, 'isoWeek'), getEnd(-1, 'isoWeek')],
-  nextWeek: () => [getStart(1, 'isoWeek'), getEnd(1, 'isoWeek')],
+//   thisWeek: () => [getStart(0, 'isoWeek'), getEnd(0, 'isoWeek')],
+//   lastWeek: () => [getStart(-1, 'isoWeek'), getEnd(-1, 'isoWeek')],
+//   nextWeek: () => [getStart(1, 'isoWeek'), getEnd(1, 'isoWeek')],
 
-  thisMonth: () => [getStart(0, 'month'), getEnd(0, 'month')],
-  lastMonth: () => [getStart(-1, 'month'), getEnd(-1, 'month')],
-  nextMonth: () => [getStart(1, 'month'), getEnd(1, 'month')],
+//   thisMonth: () => [getStart(0, 'month'), getEnd(0, 'month')],
+//   lastMonth: () => [getStart(-1, 'month'), getEnd(-1, 'month')],
+//   nextMonth: () => [getStart(1, 'month'), getEnd(1, 'month')],
 
-  thisQuarter: () => [getStart(0, 'quarter'), getEnd(0, 'quarter')],
-  lastQuarter: () => [getStart(-1, 'quarter'), getEnd(-1, 'quarter')],
-  nextQuarter: () => [getStart(1, 'quarter'), getEnd(1, 'quarter')],
+//   thisQuarter: () => [getStart(0, 'quarter'), getEnd(0, 'quarter')],
+//   lastQuarter: () => [getStart(-1, 'quarter'), getEnd(-1, 'quarter')],
+//   nextQuarter: () => [getStart(1, 'quarter'), getEnd(1, 'quarter')],
 
-  thisYear: () => [getStart(0, 'year'), getEnd(0, 'year')],
-  lastYear: () => [getStart(-1, 'year'), getEnd(-1, 'year')],
-  nextYear: () => [getStart(1, 'year'), getEnd(1, 'year')],
+//   thisYear: () => [getStart(0, 'year'), getEnd(0, 'year')],
+//   lastYear: () => [getStart(-1, 'year'), getEnd(-1, 'year')],
+//   nextYear: () => [getStart(1, 'year'), getEnd(1, 'year')],
 
-  past: getOffsetRangeByParams,
-  future: getOffsetRangeByParams,
-};
+//   past: getOffsetRangeByParams,
+//   future: getOffsetRangeByParams,
+// };
 
-const getDayRangeByParams = (params) => {
-  const fn = strategies[params.type];
-  if (!fn) throw new Error(`Unsupported type: ${params.type}`);
-  const [start, end] = fn(params);
-  return [dayjs(start).format('YYYY-MM-DD HH:mm:ss'), dayjs(end).format('YYYY-MM-DD HH:mm:ss')];
-};
+// const getDayRangeByParams = (params) => {
+//   const fn = strategies[params.type];
+//   if (!fn) throw new Error(`Unsupported type: ${params.type}`);
+//   const [start, end] = fn(params);
+//   return [dayjs(start).format('YYYY-MM-DD HH:mm:ss'), dayjs(end).format('YYYY-MM-DD HH:mm:ss')];
+// };

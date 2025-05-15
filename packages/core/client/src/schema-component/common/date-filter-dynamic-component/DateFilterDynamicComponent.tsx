@@ -66,7 +66,7 @@ export const DateFilterDynamicComponent = (props) => {
       <Select
         options={compile(options)}
         {...props}
-        style={{ width: '100%', minWidth: 120, maxWidth: 130 }}
+        style={{ width: '100%', minWidth: 120 }}
         value={value?.type || 'exact'}
         onChange={(val) => {
           const obj: any = {
