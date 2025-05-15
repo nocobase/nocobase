@@ -26,6 +26,6 @@
   "Details page for mobile": "Details page for mobile",
   "The message page has already been created.": "The message page has already been created.",
   "When select receivers from node result, only support ID of user (or IDs array of users). Others will not match any user.": "When select receivers from node result, only support ID of user (or IDs array of users). Others will not match any user.",
-  "Notification  duration": "Notification  duration",
+  "Notification duration": "Notification duration",
   "Setting this value to 0 will cancel the automatic shutdown": "Setting this value to 0 will cancel the automatic shutdown"
 }

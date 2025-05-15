@@ -82,7 +82,7 @@ export const messageCollection: CollectionOptions = {
           stringMode: true,
           step: '0.1',
         },
-        title: '{{t("Duration")}}',
+        title: '{{t("Notification duration")}}',
       },
     },
     {

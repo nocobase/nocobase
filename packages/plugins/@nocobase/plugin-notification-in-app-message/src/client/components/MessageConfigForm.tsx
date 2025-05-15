@@ -13,8 +13,6 @@ import { useLocalTranslation, NAMESPACE } from '../../locale';
 import { UsersSelect } from './UsersSelect';
 import { UsersAddition } from './UsersAddition';
 import { tval } from '@nocobase/utils/client';
-import { Tooltip } from 'antd';
-import { QuestionCircleOutlined } from '@ant-design/icons';
 
 export const MessageConfigForm = ({ variableOptions }) => {
   const { t } = useLocalTranslation();
@@ -103,14 +101,8 @@ export const MessageConfigForm = ({ variableOptions }) => {
           duration: {
             type: 'number',
             required: false,
-            title: (
-              <span>
-                {t('Notification  duration')}
-                <Tooltip title={t('Setting this value to 0 will cancel the automatic shutdown')}>
-                  <QuestionCircleOutlined style={{ marginLeft: 4, opacity: 0.65 }} />
-                </Tooltip>
-              </span>
-            ),
+            title: `{{t("Notification duration")}}`,
+            description: `{{t('Setting this value to 0 will cancel the automatic shutdown')}}`,
             default: 4.5,
             'x-decorator': 'FormItem',
             'x-component': 'InputNumber',
