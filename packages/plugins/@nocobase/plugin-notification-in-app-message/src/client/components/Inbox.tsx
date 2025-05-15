@@ -16,27 +16,26 @@
  * For more information, please rwefer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useEffect, useCallback } from 'react';
-import { reaction } from '@formily/reactive';
-import { Badge, Button, ConfigProvider, Drawer, Tooltip, notification } from 'antd';
 import { CloseOutlined } from '@ant-design/icons';
-import { createStyles } from 'antd-style';
-import { Icon } from '@nocobase/client';
-import { InboxContent } from './InboxContent';
-import { useLocalTranslation } from '../../locale';
-import { fetchChannels } from '../observables';
+import { reaction } from '@formily/reactive';
 import { observer } from '@formily/reactive-react';
-import { useCurrentUserContext } from '@nocobase/client';
+import { Icon, useCurrentUserContext } from '@nocobase/client';
+import { Badge, Button, ConfigProvider, Drawer, Tooltip, notification } from 'antd';
+import { createStyles } from 'antd-style';
+import React, { useCallback, useEffect } from 'react';
+import { useLocalTranslation } from '../../locale';
 import {
-  updateUnreadMsgsCount,
-  unreadMsgsCountObs,
-  startMsgSSEStreamWithRetry,
+  fetchChannels,
   inboxVisible,
-  userIdObs,
   liveSSEObs,
   messageMapObs,
   selectedChannelNameObs,
+  startMsgSSEStreamWithRetry,
+  unreadMsgsCountObs,
+  updateUnreadMsgsCount,
+  userIdObs,
 } from '../observables';
+import { InboxContent } from './InboxContent';
 const useStyles = createStyles(({ token }) => {
   return {
     button: {
@@ -94,6 +93,12 @@ const InnerInbox = (props) => {
       <CloseOutlined />
     </div>
   );
+  const renderContent = useCallback((content: string, contentType: string) => {
+    if (contentType === 'HTML') {
+      return <div dangerouslySetInnerHTML={{ __html: content }} />;
+    }
+    return content.slice(0, 100) + (content.length > 100 ? '...' : '');
+  }, []);
   useEffect(() => {
     const dispose = reaction(
       () => liveSSEObs.value,
@@ -116,7 +121,7 @@ const InnerInbox = (props) => {
                   {data.title}
                 </div>
               ),
-              description: data.content.slice(0, 100) + (data.content.length > 100 ? '...' : ''),
+              description: renderContent(data.content, data.contentType),
               onClick: () => {
                 inboxVisible.value = true;
                 selectedChannelNameObs.value = data.channelName;

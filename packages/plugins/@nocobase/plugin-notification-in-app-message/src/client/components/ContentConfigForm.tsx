@@ -7,10 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React from 'react';
 import { SchemaComponent, css } from '@nocobase/client';
-import { useLocalTranslation } from '../../locale';
 import { tval } from '@nocobase/utils/client';
+import React from 'react';
+import { useLocalTranslation } from '../../locale';
 
 export const ContentConfigForm = ({ variableOptions }) => {
   const { t } = useLocalTranslation();
@@ -30,6 +30,17 @@ export const ContentConfigForm = ({ variableOptions }) => {
               scope: variableOptions,
               useTypedConstant: ['string'],
             },
+          },
+          contentType: {
+            type: 'string',
+            title: `{{t("Content type")}}`,
+            'x-decorator': 'FormItem',
+            'x-component': 'Radio.Group',
+            enum: [
+              { label: 'HTML', value: 'html' },
+              { label: `{{t("Plain text")}}`, value: 'text' },
+            ],
+            default: 'html',
           },
           content: {
             type: 'string',
