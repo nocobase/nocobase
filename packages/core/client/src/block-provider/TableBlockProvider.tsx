@@ -62,6 +62,7 @@ interface Props {
   children?: any;
   expandFlag?: boolean;
   dragSortBy?: string;
+  association?: string;
   enableIndexÏColumn?: boolean;
 }
 
@@ -75,6 +76,7 @@ const InternalTableBlockProvider = (props: Props) => {
     expandFlag: propsExpandFlag = false,
     fieldNames,
     collection,
+    association,
     enableIndexÏColumn,
   } = props;
   const field: any = useField();
@@ -133,6 +135,7 @@ const InternalTableBlockProvider = (props: Props) => {
       allIncludesChildren,
       setExpandFlag: setExpandFlagValue,
       heightProps,
+      association,
       enableIndexÏColumn,
     }),
     [
@@ -149,6 +152,7 @@ const InternalTableBlockProvider = (props: Props) => {
       service,
       setExpandFlagValue,
       showIndex,
+      association,
       enableIndexÏColumn,
     ],
   );
