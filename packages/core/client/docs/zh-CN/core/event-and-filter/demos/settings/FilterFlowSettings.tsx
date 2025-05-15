@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { Card, Empty, Alert, Input, InputNumber, Select, Switch, Form } from 'antd';
-import { useObservableModel, useFilterFlow, ConfigFilterFlowStep } from '@nocobase/client';
+import { useObservableModel, useFilterFlowManager, ConfigFilterFlowStep } from '@nocobase/client';
 import { observer } from '@formily/react';
 
 const { Item: FormItem } = Form;
@@ -16,7 +16,7 @@ interface FilterFlowSettingsProps {
  * @param flowKey - 流程的key
  */
 const FilterFlowSettings: React.FC<FilterFlowSettingsProps> = observer(({ uid, flowKey }) => {
-  const filterFlowManager = useFilterFlow();
+  const filterFlowManager = useFilterFlowManager();
   const model = useObservableModel(uid);
 
   if (!filterFlowManager) {

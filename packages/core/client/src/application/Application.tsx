@@ -52,7 +52,7 @@ import { FilterFlowManager } from '../filterflow/filterflow-manager';
 import { ObservableModelManager } from '../observable-model/observableModelManager';
 import { ObservableModelProvider } from '../observable-model/observableModelProvider';
 import { EventFlowManager } from '../eventflow/eventflow-manager';
-import { EventFlowProvider } from '../eventflow/eventFlowProvider';
+import { EventFlowManagerProvider } from '../eventflow/eventFlowProvider';
 import { EventBus } from '../eventflow/event-bus';
 import { EventFlowEventBusProvider } from '../eventflow/eventFlowEventBusProvider';
 
@@ -267,7 +267,7 @@ export class Application {
     this.use(OpenModeProvider);
     this.use(FilterFlowProvider, { filterFlowManager: this.filterFlowManager });
     this.use(ObservableModelProvider, { observableModelManager: this.observableModelManager });
-    this.use(EventFlowProvider, { eventFlowManager: this.appEventFlowManager });
+    this.use(EventFlowManagerProvider, { eventFlowManager: this.appEventFlowManager });
     this.use(EventFlowEventBusProvider, { eventFlowEventBus: this.eventFlowEventBus });
   }
 

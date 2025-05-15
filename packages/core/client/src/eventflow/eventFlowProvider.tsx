@@ -10,29 +10,31 @@
 import React, { createContext, useContext } from 'react';
 import { EventFlowManager } from './eventflow-manager';
 
-export const EventFlowContext = createContext<{
+export const EventFlowManagerContext = createContext<{
   eventFlowManager: EventFlowManager;
 }>(null);
 
 export const useEventFlowManager = () => {
-  const context = useContext(EventFlowContext);
+  const context = useContext(EventFlowManagerContext);
   if (!context) {
-    throw new Error('useEventFlowManager must be used within a EventFlowProvider');
+    throw new Error('useEventFlowManager must be used within a EventFlowManagerProvider');
   }
   return context.eventFlowManager;
 };
 
-export const EventFlowProvider: React.FC<{
+export const EventFlowManagerProvider: React.FC<{
   children?: React.ReactNode;
   eventFlowManager: EventFlowManager;
 }> = (props) => {
   return (
-    <EventFlowContext.Provider
+    <EventFlowManagerContext.Provider
       value={{
         eventFlowManager: props.eventFlowManager,
       }}
     >
       {props.children}
-    </EventFlowContext.Provider>
+    </EventFlowManagerContext.Provider>
   );
 }; 
+
+EventFlowManagerProvider.displayName = 'EventFlowManagerProvider';

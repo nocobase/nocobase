@@ -1,14 +1,14 @@
 import React, { createContext, useContext } from 'react';
 import { FilterFlowManager } from './filterflow-manager';
 
-export const FilterFlowContext = createContext<{
+export const FilterFlowManagerContext = createContext<{
   filterFlowManager: FilterFlowManager;
 }>(null);
 
-export const useFilterFlow = () => {
-  const context = useContext(FilterFlowContext);
+export const useFilterFlowManager = () => {
+  const context = useContext(FilterFlowManagerContext);
   if (!context) {
-    throw new Error('useFilterFlow must be used within a FilterFlowProvider');
+    throw new Error('useFilterFlowManager must be used within a FilterFlowManagerProvider');
   }
   return context.filterFlowManager;
 };
@@ -18,12 +18,14 @@ export const FilterFlowProvider: React.FC<{
   filterFlowManager: FilterFlowManager;
 }> = (props) => {
   return (
-    <FilterFlowContext.Provider
+    <FilterFlowManagerContext.Provider
       value={{
         filterFlowManager: props.filterFlowManager,
       }}
     >
       {props.children}
-    </FilterFlowContext.Provider>
+    </FilterFlowManagerContext.Provider>
   );
 }; 
+
+FilterFlowProvider.displayName = 'FilterFlowProvider';
