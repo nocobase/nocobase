@@ -92,7 +92,7 @@ export function useAddEventListener(event: string | string[], handler: EventList
   useEffect(() => {
     const unsubscribe = eventBus.on(event, handler, {
       condition: defaultListenerCondition,
-      id: fieldSchema.toJSON()?.['x-uid'] || uid(),
+      id: fieldSchema?.toJSON()?.['x-uid'] || uid(),
       ...options,
     });
     return unsubscribe;

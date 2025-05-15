@@ -1,16 +1,39 @@
-
-import { DataBlockModel } from './dataBlockModel';
+import { DataBlockModel, IModelAction } from './dataBlockModel';
 import { ArrayResource } from '../resources/arrayResource';
 import { IModelComponentProps } from './baseModel';
+import { observable } from '@formily/reactive';
 
 // TODO: 未完成
 
 export class TableBlockModel<TDataItem = any> extends DataBlockModel {
   public resource: ArrayResource<TDataItem>;
+  public rowActions: Map<string, IModelAction>;
 
-  constructor(uid: string, initialProps?: IModelComponentProps, initialResource?: ArrayResource<TDataItem>) {
-    super(uid, initialProps);
+  constructor(uid: string, defaultProps?: IModelComponentProps, initialResource?: ArrayResource<TDataItem>) {
+    super(uid, defaultProps);
     this.resource = initialResource || new ArrayResource<TDataItem>();
+    this.rowActions = observable(new Map<string, IModelAction>());
+  }
+
+  setRowActions(actions: IModelAction[]) {
+    this.rowActions.clear();
+    actions.forEach(action => this.rowActions.set(action.id, action));
+  }
+
+  addRowAction(action: IModelAction) {
+    this.rowActions.set(action.id, action);
+  }
+
+  getRowAction(id: string): IModelAction | undefined {
+    return this.rowActions.get(id);
+  }
+
+  removeRowAction(id: string): boolean {
+    return this.rowActions.delete(id);
+  }
+
+  getRowActions(): IModelAction[] {
+    return Array.from(this.rowActions.values());
   }
 
   async reload(): Promise<TDataItem[] | null> {
