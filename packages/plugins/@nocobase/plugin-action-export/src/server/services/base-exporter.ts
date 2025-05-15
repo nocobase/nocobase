@@ -16,10 +16,10 @@ import {
   IRelationField,
 } from '@nocobase/data-source-manager';
 import EventEmitter from 'events';
-import { deepGet } from '../utils/deep-get';
-import path from 'path';
-import os from 'os';
 import _ from 'lodash';
+import os from 'os';
+import path from 'path';
+import { deepGet } from '../utils/deep-get';
 
 export type ExportOptions = {
   collectionManager: ICollectionManager;
@@ -82,21 +82,26 @@ abstract class BaseExporter<T extends ExportOptions = ExportOptions> extends Eve
   }
 
   protected getAppendOptionsFromFields(ctx?) {
-    return this.options.fields
-      .filter((fieldPath) => {
-        const field = fieldPath[0];
-        const hasPermission =
-          _.isEmpty(ctx?.permission?.can?.params) || (ctx?.permission?.can?.params?.appends || []).includes(field);
-        return hasPermission;
-      })
-      .map((fieldPath) => {
-        const fieldInstance = this.options.collection.getField(fieldPath[0]);
+    const fields = this.options.fields.map((x) => x[0]);
+    const hasPermissionFields = _.isEmpty(ctx?.permission?.can?.params)
+      ? fields
+      : _.intersection(ctx?.permission?.can?.params?.appends || [], fields);
+    return hasPermissionFields
+      .map((field) => {
+        const fieldInstance = this.options.collection.getField(field);
         if (!fieldInstance) {
-          throw new Error(`Field "${fieldPath[0]}" not found: , please check the fields configuration.`);
+          throw new Error(`Field "${field}" not found: , please check the fields configuration.`);
+        }
+
+        const keys = field.split('.');
+        keys.pop();
+
+        if (_.get(fieldInstance, 'collection.options.template') === 'file') {
+          return keys.join('.');
         }
 
         if (fieldInstance.isRelationField()) {
-          return fieldPath.join('.');
+          return field;
         }
 
         return null;
