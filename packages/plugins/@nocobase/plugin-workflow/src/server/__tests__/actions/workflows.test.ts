@@ -10,6 +10,7 @@
 import { MockServer } from '@nocobase/test';
 import Database from '@nocobase/database';
 import { getApp, sleep } from '@nocobase/plugin-workflow-test';
+import Plugin from '../../Plugin';
 
 describe('workflow > actions > workflows', () => {
   let app: MockServer;
@@ -117,6 +118,58 @@ describe('workflow > actions > workflows', () => {
 
       const c2 = await workflow.countExecutions();
       expect(c2).toBe(1);
+    });
+
+    it('update options should be ok', async () => {
+      const workflow = await WorkflowModel.create({
+        enabled: true,
+        type: 'collection',
+        config: {
+          mode: 3,
+          collection: 'posts',
+        },
+      });
+      await workflow.createNode({
+        type: 'create',
+        config: {
+          collection: 'posts',
+          values: {
+            title: 't-{{$context.data.id}}',
+          },
+        },
+      });
+
+      const p1 = await PostRepo.create({ values: { title: 't1' } });
+
+      await sleep(500);
+
+      const c1 = await workflow.countExecutions();
+      expect(c1).toBe(1);
+
+      const { status, body } = await agent.resource('workflows').update({
+        filterByTk: workflow.id,
+        values: {
+          options: {
+            stackLimit: 3,
+          },
+        },
+      });
+      expect(status).toBe(200);
+      expect(body.data[0].options.stackLimit).toBe(3);
+
+      const plugin = app.pm.get(Plugin) as Plugin;
+      const w1 = plugin.enabledCache.get(workflow.id);
+      expect(w1.options.stackLimit).toBe(3);
+
+      const p2 = await PostRepo.create({ values: { title: 't2' } });
+
+      await sleep(500);
+
+      const c2 = await workflow.countExecutions();
+      expect(c2).toBe(4);
+
+      const p2s = await PostRepo.find();
+      expect(p2s.length).toBe(6);
     });
   });
 
