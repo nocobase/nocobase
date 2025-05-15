@@ -13,7 +13,9 @@ import {
     SchemaSettings,
     useCompile,
     useBlockConfigs,
-    FilterHandlerContext
+    FilterHandlerContext,
+    BaseModel,
+    FilterFlowProvider
 } from '@nocobase/client';
 import _ from 'lodash';
 import { configureAction } from './actions/open-configure-dialog';
@@ -361,12 +363,9 @@ eventFlowManager.addAction({
     handler: async (params, ctx) => {
         if (ctx.payload?.refresh) {
             await ctx.payload.refresh();
-            ctx.payload?.hooks.message.success(params.messageOnSuccess || '数据已刷新');
         }
     },
-    uiSchema: {
-        messageOnSuccess: { type: 'string', title: '成功提示信息', default: '刷新成功' },
-    },
+    uiSchema: {},
 });
 
 eventFlowManager.addAction({
@@ -419,37 +418,8 @@ eventFlowManager.addFlow({
 eventFlowManager.addAction(configureAction);
 
 // --- 定义过滤器 ---
-// 加载配置数据
-const configDataFilter: IFilter = {
-    name: 'block:common:configData',
-    group: 'block',
-    title: '加载配置数据',
-    uiSchema: {},
-    handler: async (input, params, context) => {
-        const result = input || {};
-        const { apiClient, configKey } = context.payload;
-
-        if (!configKey) {
-            result.blockConfig = null;
-            return result;
-        }
-
-        const { data } = await apiClient.resource('blockConfigs').get({
-            filterByTk: configKey
-        });
-
-        context.meta.params = context.meta.params || {};
-        _.merge(context.meta.params, data?.data?.configData?.filterSteps || {});
-
-        result.blockConfig = data?.data || null;
-        result.actionConfigs = data?.data?.actionConfigs || null;
-        
-        return result;
-    },
-};
-
 // linkages过滤器
-const linkagesFilter: IFilter = {
+const linkagesFilter: IFilter<BaseModel> = {
     name: 'block:common:linkages',
     group: 'block',
     title: '联动规则',
@@ -463,18 +433,16 @@ const linkagesFilter: IFilter = {
             }
         }
     },
-    handler: (input, params, context) => {
-        const result = input || {};
+    handler: (model, params, context) => {
         const compile = context.payload?.compile;
-        if (compile(params?.rule) === true) {
-            result.$break = true;
+        if (compile && compile(params?.rule) === true) {
+            model.setProps('$break', true);
         }
-        return result;
     },
 };
 
 // 获取字段配置
-const fieldsFilter: IFilter = {
+const fieldsFilter: IFilter<BaseModel> = {
     name: 'block:common:fields',
     group: 'block',
     title: '获取字段配置',
@@ -494,41 +462,38 @@ const fieldsFilter: IFilter = {
           },
         },
       },
-    handler: (input, params, context) => {
-        const result = input || {};
-        result.fields = params?.fields || [];
-        return result;
+    handler: (model, params, context) => {
+        model.setProps('fields', params?.fields || []);
     },
 };
 
 // 获取操作配置
-const actionsFilter: IFilter = {
+const actionsFilter: IFilter<BaseModel> = {
     name: 'block:demo:actions',
     group: 'block',
     title: '获取操作配置',
     uiSchema: {},
-    handler: (input, params, context) => {
-        const result = input || {};
+    handler: (model, params, context) => {
         const { toolbar, row } = params?.actions || { toolbar: [], row: [] };
-        result.actions = {
+        const actionConfigs = model.getProps().actionConfigs || {};
+        
+        model.setProps('actions', {
             toolbar: toolbar.map(action => {
                 return {
-                    ...result?.actionConfigs?.[action.key]
+                    ...actionConfigs[action.key]
                 };
             }),
             row: row.map(action => {
                 return {
-                    ...result?.actionConfigs?.[action.key]
+                    ...actionConfigs[action.key]
                 };
             })
-        };
-        
-        return result;
+        });
     },
 };
 
 // 获取数据
-const dataFilter: IFilter = {
+const dataFilter: IFilter<BaseModel> = {
     name: 'block:common:data',
     group: 'block',
     title: '获取数据',
@@ -551,45 +516,44 @@ const dataFilter: IFilter = {
             }
         }
     },
-    handler: async (input, params, context) => {
-        const result = input || {};
+    handler: async (model, params, context) => {
         const { apiClient } = context.payload;
         const { collectionName, page = 1, pageSize = 10 } = params;
         const response = await apiClient.resource(collectionName).list({
             page,
             pageSize,
         });
-        result.data = response?.data || {};
-        result.page = response?.data?.meta?.page || 1;
-        result.pageSize = response?.data?.meta?.pageSize || 10;
-
-        return result;
+        
+        model.setProps({
+            data: response?.data || {},
+            page: response?.data?.meta?.page || 1,
+            pageSize: response?.data?.meta?.pageSize || 10
+        });
     },
 };
 
 // 转换为表格列
-const tableColumnsFilter: IFilter = {
+const tableColumnsFilter: IFilter<BaseModel> = {
     name: 'block:demo:columns',
     group: 'demo',
     title: '转换表格列',
     uiSchema: {},
-    handler: (input, params, context) => {
-        const result = input || {};
-        const fields = result.fields || [];
+    handler: (model, params, context) => {
+        const fields = model.getProps().fields || [];
 
         // 将字段转换为表格列配置
-        result.columns = fields.filter(field => field.visible !== false).map(field => ({
+        const columns = fields.filter(field => field.visible !== false).map(field => ({
             title: field,
             dataIndex: field,
             key: field,
         }));
-
-        return result;
-    }
+        
+        model.setProps('columns', columns);
+    },
 };
 
 // 工具栏按钮选项配置过滤器
-const toolbarOptionsFilter: IFilter = {
+const toolbarOptionsFilter: IFilter<BaseModel> = {
     name: 'action:demo:toolbar:options',
     group: 'action',
     title: '工具栏按钮配置',
@@ -623,21 +587,19 @@ const toolbarOptionsFilter: IFilter = {
             'x-component': 'Switch',
         }
     },
-    handler: (input, params, context) => {
-        const result = input || {};
-        result.buttonOptions = {
+    handler: (model, params, context) => {
+        model.setProps('buttonOptions', {
             text: params?.text || '按钮',
             icon: params?.icon || 'RedoOutlined',
             buttonType: params?.buttonType || 'default',
             size: params?.size || 'middle',
             danger: params?.danger || false
-        };
-        return result;
+        });
     },
 };
 
 // 触发器配置过滤器
-const actionOnFilter: IFilter = {
+const actionOnFilter: IFilter<BaseModel> = {
     name: 'action:demo:on',
     group: 'action',
     title: '触发器配置',
@@ -649,15 +611,13 @@ const actionOnFilter: IFilter = {
             'x-component': 'Select',
         }
     },
-    handler: (input, params, context) => {
-        const result = input || {};
-        result.on = params?.on || 'onClick';
-        return result;
+    handler: (model, params, context) => {
+        model.setProps('on', params?.on || 'onClick');
     },
 };
 
 // 事件触发过滤器（触发指定事件）
-const eventTriggerFilter: IFilter = {
+const eventTriggerFilter: IFilter<BaseModel> = {
     name: 'action:demo:trigger',
     group: 'action',
     title: '事件触发',
@@ -668,21 +628,18 @@ const eventTriggerFilter: IFilter = {
             'x-component': 'Input',
         }
     },
-    handler: (input, params, context) => {
-        const result = input || {};
+    handler: (model, params, context) => {
         // 从params中获取要触发的事件名称
         const eventName = context?.payload?.event;
         if (eventName) {
-            result.triggerEvent = (payload) => {
+            model.setProps('triggerEvent', (payload) => {
                 eventBus.dispatchEvent(eventName, payload);
-            };
+            });
         }
-        return result;
     },
 };
 
 // 注册过滤器
-filterFlowManager.addFilter(configDataFilter);
 filterFlowManager.addFilter(linkagesFilter);
 filterFlowManager.addFilter(fieldsFilter);
 filterFlowManager.addFilter(actionsFilter);
@@ -698,11 +655,6 @@ filterFlowManager.addFlow({
     key: 'block:demo:table',
     title: '表格区块filterflow',
     steps: [
-        {
-            key: 'block:common:configData',
-            filterName: 'block:common:configData',
-            title: '数据配置' //写死的，不放开配置
-        },
         {
             key: 'block:common:linkages',
             filterName: 'block:common:linkages',
@@ -832,25 +784,41 @@ const ToolbarAction = (props: ToolbarActionProps) => {
             eventParams: eventSteps
         }
     };
-    const { data: filterResult } = useApplyFilters(filterFlowManager, 'action:demo:toolbar', null, filterContext);
+    
+    // 创建模型
+    const [model] = useState(() => new BaseModel('toolbar-action-model'));
+    const { reApplyFilters } = useApplyFilters('action:demo:toolbar', model, filterContext);
+
     const {
         buttonOptions,
         on,
         triggerEvent,
-    } = filterResult || {};
+    } = model.getProps();
 
-    // 获取图标组件
-    const IconComponent = buttonOptions?.icon ? IconComponents[buttonOptions.icon] : null;
+    if (!buttonOptions) return null;
+
+    const { text, icon, buttonType, size, danger } = buttonOptions;
+    const IconComponent = icon ? IconComponents[icon] : null;
+
+    const handleClick = () => {
+        triggerEvent && triggerEvent({
+            payload: {
+                params: eventSteps
+            }
+        });
+    };
 
     return (
-        <Button
-            type={buttonOptions?.buttonType}
+        <Button 
+            type={buttonType as any} 
+            size={size as any} 
+            danger={danger}
             icon={IconComponent && <IconComponent />}
-            size={buttonOptions?.size}
-            danger={buttonOptions?.danger}
-            {...{[on]: triggerEvent}}
+            onClick={on === 'onClick' ? handleClick : undefined}
+            onDoubleClick={on === 'onDoubleClick' ? handleClick : undefined}
+            onMouseEnter={on === 'onHover' ? handleClick : undefined}
         >
-            {buttonOptions?.text}
+            {text}
         </Button>
     );
 };
@@ -866,7 +834,9 @@ const DemoTable: React.FC<{ configKey: string }> = ({ configKey }) => {
         }
     };
 
-    const { data: filterResult } = useApplyFilters(filterFlowManager, 'block:demo:table', null, filterContext);
+    // 创建模型
+    const [model] = useState(() => new BaseModel('table-model'));
+    const { reApplyFilters } = useApplyFilters('block:demo:table', model, filterContext);
 
     const {
         columns = [],
@@ -875,7 +845,7 @@ const DemoTable: React.FC<{ configKey: string }> = ({ configKey }) => {
         page = 1,
         pageSize = 10,
         $break = false
-    } = filterResult || {};
+    } = model.getProps();
 
     
 
@@ -907,9 +877,10 @@ const DemoTable: React.FC<{ configKey: string }> = ({ configKey }) => {
 const EventFilterTableDemo2: React.FC = () => {
     return (
         <App>
-            <BlockConfigsProvider value={mockBlockConfigs}>
-                <SchemaComponentProvider>
-                    <ConfigureButtons />
+            <FilterFlowProvider filterFlowManager={filterFlowManager}>
+                <BlockConfigsProvider value={mockBlockConfigs}>
+                    <SchemaComponentProvider>
+                        <ConfigureButtons />
                     <SchemaComponent
                         schema={{
                             type: 'void',
@@ -929,8 +900,9 @@ const EventFilterTableDemo2: React.FC = () => {
                             DemoTable
                         }}
                     />
-                </SchemaComponentProvider>
-            </BlockConfigsProvider>
+                    </SchemaComponentProvider>
+                </BlockConfigsProvider>
+            </FilterFlowProvider>
         </App>
     );
 };

@@ -207,23 +207,23 @@ const DataTransformFilterFlow = () => {
   useEffect(() => {
     // 创建模型实例
     const model = new DataModel(inputData);
-    
+
     // 设置过滤器参数
     model.setFilterParams('data-transform-flow', 'filter-step', {
       field: 'age',
       operator: 'gt',
       value: '25',
     });
-    
+
     model.setFilterParams('data-transform-flow', 'sort-step', {
       field: 'age',
       order: 'desc',
     });
-    
+
     model.setFilterParams('data-transform-flow', 'map-step', {
       template: '{{ item.name }} ({{ item.age }}岁)',
     });
-    
+
     // 应用过滤器流
     filterFlowManager.applyFilters('data-transform-flow', model, {})
       .then(() => {

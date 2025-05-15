@@ -118,7 +118,7 @@ filterFlowManager.addFlow({
 const MultiStepFilterFlow = () => {
   const [inputText, setInputText] = useState('  hello, multi-step filterflow!  ');
   const [outputText, setOutputText] = useState('');
-  
+
   const params = useMemo(
     () => ({
       'add-prefix-step': {
@@ -135,12 +135,12 @@ const MultiStepFilterFlow = () => {
     // 创建模型实例
     const model = new BaseModel('text-model');
     model.setProps({ text: inputText });
-    
+
     // 为特定流程的特定步骤设置参数
     Object.entries(params).forEach(([stepKey, stepParams]) => {
       model.setFilterParams('multi-step-text-transform', stepKey, stepParams);
     });
-    
+
     // 应用过滤器流
     filterFlowManager.applyFilters('multi-step-text-transform', model, {})
       .then(() => {

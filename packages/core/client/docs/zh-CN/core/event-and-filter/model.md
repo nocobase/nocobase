@@ -2,7 +2,7 @@
 
 ## Markdown Block
 
-通过 filterflow + obserable models 方式构建的简单 Markdown 区块。分为两部分
+通过 filterflow + observable models 方式构建的简单 Markdown 区块。分为两部分
 1. filterFlow的注册初始化，Plugin 启动时通过 this.app.filterFlowManager 注册必要的 filters
 2. Markdown组件: 该组件会读取对应的model信息，并应用filterflow获得最终可渲染的组件属性
 

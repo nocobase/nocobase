@@ -11,7 +11,7 @@ import {
   IFilter,
   useTabulatorBuiltinStyles,
   useTabulatorStyles,
-  useApplyFilters,
+  BaseModel
 } from '@nocobase/client';
 import { configureAction } from './actions/open-configure-dialog';
 import { useCompile } from '@nocobase/client';
@@ -120,34 +120,43 @@ eventFlowManager.addAction(openViewDialogAction);
 eventFlowManager.addAction(configureAction); // 配置Action
 
 // --- Filter 定义 ---
-const showInitialColumnsFilter: IFilter = {
+const showInitialColumnsFilter: IFilter<BaseModel> = {
   name: 'showInitialColumns',
   title: '显示初始列',
   group: 'columns',
   sort: 1,
-  handler: (currentValue, params, ctx) => {
-    const result = currentValue || {};
+  handler: (model, params, ctx) => {
+    // 从模型中获取当前配置
     const columns = params?.columns || [];
-    result.columns = [
+    
+    // 设置基础列
+    let tableColumns: ColumnDefinition[] = [
       { title: 'ID', field: 'id', width: 80, headerFilter: 'input' },
       { title: '姓名', field: 'name', headerFilter: 'input' },
       { title: '年龄', field: 'age', hozAlign: 'left', headerFilter: 'input' },
       { title: '邮箱', field: 'email', headerFilter: 'input' },
     ];
+    
+    // 根据配置过滤列
     if (columns.length > 0) {
-      result.columns = result.columns.filter((column) => columns.includes(column.field));
+      tableColumns = tableColumns.filter((column) => columns.includes(column.field));
     }
-    result.columns = [
+    
+    // 添加选择列
+    tableColumns = [
       {
         formatter: 'rowSelection',
         titleFormatter: 'rowSelection',
+        title: '选择',
         hozAlign: 'center',
         headerSort: false,
         width: 40,
       },
-      ...result.columns,
+      ...tableColumns,
     ];
-    return result;
+    
+    // 更新模型
+    model.setProps('columns', tableColumns);
   },
   uiSchema: {
     columns: {
@@ -167,27 +176,28 @@ const showInitialColumnsFilter: IFilter = {
   },
 };
 
-const addActionColumnFilter: IFilter = {
+const addActionColumnFilter: IFilter<BaseModel> = {
   name: 'addActionColumn',
   title: '添加操作列',
   group: 'columns',
-  handler: (currentValue, params, ctx) => {
+  handler: (model, params, ctx) => {
     if (params?.show !== true) {
-      return currentValue; // If parameter configures not to show, don't add
+      return; // 如果配置为不显示，则不添加
     }
-    const result = currentValue || {};
-    result.columns = result.columns || [];
-
+    
+    // 获取当前列配置
+    const columns = model.getProps().columns || [];
+    
     const actionColumn: ColumnDefinition = {
       title: '操作',
-      field: '__actions', // Virtual field
+      field: '__actions', // 虚拟字段
       hozAlign: 'center',
       headerSort: false,
       width: 100,
       formatter: (cell, formatterParams, onRendered) => {
         // formatter需要返回原始DOM，否则会报错，这里返回undefined, 然后利用onRendered来渲染React组件
         onRendered(() => {
-          const cellEl = cell.getElement(); // Get the cell's DOM element
+          const cellEl = cell.getElement(); // 获取单元格DOM元素
           const rowData = cell.getRow().getData();
           const root = ReactDOM.createRoot(cellEl);
           const handleClick = (e) => {
@@ -216,8 +226,9 @@ const addActionColumnFilter: IFilter = {
         return null;
       },
     };
-    result.columns.push(actionColumn);
-    return result;
+    
+    // 添加操作列
+    model.setProps('columns', [...columns, actionColumn]);
   },
   uiSchema: {
     show: {
@@ -416,24 +427,42 @@ const EventFilterTableDemo: React.FC = (props) => {
       paginationButtonCount: 5,
       paginationCounter: 'rows' as const,
       paginationSize: 10,
-      // columns: generateColumnsFromData(tableData),
-      // data: tableData
     }),
     [],
   );
 
-  const getFilterContext = useCallback(async () => {
-    const params = await getParams(demoId);
-    return {
-      payload: { hooks: hooks },
-      meta: { params: params.filters },
-    } as FilterHandlerContext;
-  }, [hooks]);
-
-  const {
-    data: { columns: tableColumns },
-    reApplyFilters,
-  } = useApplyFilters(filterFlowManager, 'tabulator:columns', null, getFilterContext);
+  // 表格模型
+  const [tableModel] = useState(() => {
+    const model = new BaseModel('table-model');
+    return model;
+  });
+  
+  // 应用过滤器并获取表格列
+  const [tableColumns, setTableColumns] = useState([]);
+  
+  // 重新应用过滤器
+  const reApplyFilters = useCallback(async () => {
+    try {
+      // 获取参数
+      const params = await getParams(demoId);
+      
+      // 设置过滤器参数
+      Object.entries(params.filters || {}).forEach(([stepKey, stepParams]) => {
+        tableModel.setFilterParams('tabulator:columns', stepKey, stepParams);
+      });
+      
+      // 应用过滤器
+      await filterFlowManager.applyFilters('tabulator:columns', tableModel, {
+        payload: { hooks: hooks }
+      });
+      
+      // 获取处理后的列配置
+      setTableColumns(tableModel.getProps().columns || []);
+    } catch (error) {
+      console.error('Error applying filters:', error);
+      hooks.message.error('应用过滤器失败');
+    }
+  }, [demoId, hooks, tableModel]);
 
   // 初始化和刷新数据
   const refreshData = useCallback(async () => {
@@ -489,7 +518,7 @@ const EventFilterTableDemo: React.FC = (props) => {
     const context: EventContext = {
       payload: {
         step,
-        currentParams: PARAMS.filters[demoId],
+        currentParams: PARAMS.filters[demoId][stepKey],
         onChange: (value) => {
           setParams(demoId, {
             filters: {
@@ -591,7 +620,14 @@ const EventFilterTableDemo: React.FC = (props) => {
   // 组件加载时应用列配置和加载数据
   useEffect(() => {
     setIsLoading(true);
-    refreshData();
+    // 先应用过滤器获取列配置
+    reApplyFilters().then(() => {
+      // 然后加载数据
+      refreshData();
+    }).catch(error => {
+      console.error('Error initializing table:', error);
+      setIsLoading(false);
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // 空依赖数组确保只在挂载时执行一次
 

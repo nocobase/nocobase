@@ -107,14 +107,14 @@ filterFlowManager.addFilter({
       'x-component': 'Input',
     },
   },
-  handler: (model: BaseModel, params, context) => {
+  handler: (model, params) => {
     const text = model.getProps()['text'] as string;
     if (typeof text === 'string') {
       const maxLength = params?.maxLength || 10;
       let result = text;
       if (text.length > maxLength) {
         result = text.substring(0, maxLength) + (params?.suffix || '...');
-      }
+    }
       model.setProps('text', result);
     }
   },
@@ -138,9 +138,8 @@ filterFlowManager.addFlow({
   ],
 });
 
-const PARAMS = {
-  filters: {
-    'demo-id': {
+// 初始参数
+const initialParams = {
       'replace-step': {
         search: 'Hello',
         replacement: 'hi',
@@ -150,50 +149,27 @@ const PARAMS = {
         maxLength: 10,
         suffix: '...',
       },
-    },
-  },
-};
-
-const getParams = async (id: string) => {
-  return new Promise<Record<string, any>>((resolve) => {
-    setTimeout(() => {
-      resolve(PARAMS['filters'][id]); // 模拟异步获取
-    }, 1000);
-  });
-};
-
-const setParams = async (id: string, params: Record<string, any>) => {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      PARAMS['filters'][id] = params; // 模拟异步更新
-      resolve(params);
-    }, 1000);
-  });
 };
 
 const ConfigurableFilter = () => {
-  const demoId = 'demo-id';
   const [inputText, setInputText] = useState('Hello configurable filter demo');
   const [outputText, setOutputText] = useState('');
+  const [filterParams, setFilterParams] = useState(initialParams);
   
   const applyFilters = useCallback(async () => {
     // 创建模型实例
     const model = new BaseModel('text-model');
     model.setProps({ text: inputText });
     
-    // 获取上下文
-    const context: FilterHandlerContext = {
-      meta: {
-        params: await getParams(demoId),
-      },
-    };
+    // 设置过滤器参数
+    model.setFilterParams('configurable-text-transform', filterParams);
     
     // 应用过滤器流
-    await filterFlowManager.applyFilters('configurable-text-transform', model, context);
+    await filterFlowManager.applyFilters('configurable-text-transform', model, {});
     
     // 获取处理后的结果
     setOutputText(model.getProps()['text'] as string);
-  }, [inputText, demoId]);
+  }, [inputText, filterParams]);
   
   // 初始应用过滤器
   useEffect(() => {
@@ -207,13 +183,12 @@ const ConfigurableFilter = () => {
     const actionContext = {
       payload: {
         step,
-        currentParams: (await getParams(demoId))?.[stepKey],
-        onChange: async (values) => {
-          await setParams(demoId, {
-            ...PARAMS['filters'][demoId],
+        currentParams: filterParams[stepKey],
+        onChange: (values) => {
+          setFilterParams(prev => ({
+            ...prev,
             [stepKey]: values,
-          });
-          applyFilters();
+          }));
         },
       },
     };
