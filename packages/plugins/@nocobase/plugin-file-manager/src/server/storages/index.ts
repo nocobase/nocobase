@@ -31,7 +31,7 @@ export interface AttachmentModel {
   title: string;
   filename: string;
   path: string;
-  url: string;
+  url?: string;
   storageId: number;
   mimetype: string;
 }
