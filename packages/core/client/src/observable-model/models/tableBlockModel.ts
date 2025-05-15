@@ -1,58 +1,58 @@
-import { DataBlockModel, IModelAction } from './dataBlockModel';
-import { ArrayResource } from '../resources/arrayResource';
+import { DataBlockModel } from './dataBlockModel';
 import { IModelComponentProps } from './baseModel';
+import { ActionModel } from './actionModel';
 import { observable } from '@formily/reactive';
+import { ArrayResource } from '../resources/arrayResource';
 
 // TODO: 未完成
 
-export class TableBlockModel<TDataItem = any> extends DataBlockModel {
-  public resource: ArrayResource<TDataItem>;
-  public rowActions: Map<string, IModelAction>;
+export class TableBlockModel<TData = any> extends DataBlockModel {
+  public rowActions: Map<string, ActionModel>;
+  declare public resource: ArrayResource<TData>;
 
-  constructor(uid: string, defaultProps?: IModelComponentProps, initialResource?: ArrayResource<TDataItem>) {
-    super(uid, defaultProps);
-    this.resource = initialResource || new ArrayResource<TDataItem>();
-    this.rowActions = observable(new Map<string, IModelAction>());
+  constructor(uid: string, defaultProps?: IModelComponentProps, resource?: ArrayResource<TData>) {
+    super(uid, defaultProps, resource);
+    this.rowActions = observable(new Map<string, ActionModel>());
   }
 
-  setRowActions(actions: IModelAction[]) {
+  setRowActions(actions: ActionModel[]) {
     this.rowActions.clear();
-    actions.forEach(action => this.rowActions.set(action.id, action));
+    actions.forEach(action => this.rowActions.set(action.uid, action));
   }
 
-  addRowAction(action: IModelAction) {
-    this.rowActions.set(action.id, action);
+  addRowAction(action: ActionModel) {
+    this.rowActions.set(action.uid, action);
   }
 
-  getRowAction(id: string): IModelAction | undefined {
-    return this.rowActions.get(id);
+  getRowAction(uid: string): ActionModel | undefined {
+    return this.rowActions.get(uid);
   }
 
-  removeRowAction(id: string): boolean {
-    return this.rowActions.delete(id);
+  removeRowAction(uid: string): boolean {
+    return this.rowActions.delete(uid);
   }
 
-  getRowActions(): IModelAction[] {
+  getRowActions(): ActionModel[] {
     return Array.from(this.rowActions.values());
   }
 
-  async reload(): Promise<TDataItem[] | null> {
+  async reload(): Promise<any[] | null> {
     return this.resource.reload();
   }
 
-  async reset(): Promise<TDataItem[] | null> {
+  async reset(): Promise<any[] | null> {
     this.resource.pagination.page = 1;
     this.resource.filter = {};
     this.resource.sort = [];
     return this.resource.load();
   }
 
-  async applyFilter(filter: Record<string, any>): Promise<TDataItem[] | null> {
+  async applyFilter(filter: Record<string, any>): Promise<any[] | null> {
     this.resource.setFilter(filter);
     return this.resource.load();
   }
 
-  async applySort(field: string, direction: 'asc' | 'desc'): Promise<TDataItem[] | null> {
+  async applySort(field: string, direction: 'asc' | 'desc'): Promise<any[] | null> {
     this.resource.setSort({
       field,
       direction
@@ -60,15 +60,15 @@ export class TableBlockModel<TDataItem = any> extends DataBlockModel {
     return this.resource.load();
   }
 
-  getSelectedRows(): TDataItem[] {
+  getSelectedRows(): any[] {
     return this.props.selectedRows || [];
   }
 
-  setSelectedRows(rows: TDataItem[]): void {
+  setSelectedRows(rows: any[]): void {
     this.setProps('selectedRows', rows);
   }
 
-  getData(): TDataItem[] | null {
+  getData(): any[] | null {
     return this.resource.data;
   }
 
@@ -90,7 +90,7 @@ export class TableBlockModel<TDataItem = any> extends DataBlockModel {
         }
       },
       selectedRows: this.getSelectedRows(),
-      onSelectRow: (row: TDataItem) => {
+      onSelectRow: (row: any) => {
         this.setSelectedRows([row]);
       },
       actions: this.actions,

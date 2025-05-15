@@ -5,11 +5,10 @@ import { ObjectResource } from '../resources/objectResource';
 // TODO: 未完成
 
 export class FormBlockModel<TData = Record<string, any>> extends DataBlockModel {
-  public resource: ObjectResource<TData>;
+  declare public resource: ObjectResource<TData>;
 
   constructor(uid: string, defaultProps?: IModelComponentProps, initialResource?: ObjectResource<TData>) {
-    super(uid, defaultProps);
-    this.resource = initialResource;
+    super(uid, defaultProps, initialResource);
   }
 
   // 加载表单数据
