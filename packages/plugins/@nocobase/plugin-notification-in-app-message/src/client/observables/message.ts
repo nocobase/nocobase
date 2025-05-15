@@ -11,7 +11,7 @@ import { autorun, observable } from '@formily/reactive';
 import { merge } from '@nocobase/utils/client';
 import { InAppMessagesDefinition, Message } from '../../types';
 import { getAPIClient } from '../utils';
-import { channelMapObs, channelStatusFilterObs, selectedChannelNameObs } from './channel';
+import { channelMapObs, channelStatusFilterObs, fetchChannels, selectedChannelNameObs } from './channel';
 import { userIdObs } from './user';
 
 export const messageMapObs = observable<{ value: Record<string, Message> }>({ value: {} });
@@ -69,7 +69,7 @@ export const updateMessage = async (params: { filterByTk: any; values: Record<an
   });
   const unupdatedMessage = messageMapObs.value[params.filterByTk];
   messageMapObs.value[params.filterByTk] = { ...unupdatedMessage, ...params.values };
-  // fetchChannels({ filter: { name: unupdatedMessage.channelName, status: InappChannelStatusEnum.all } });
+  fetchChannels({ filter: { name: unupdatedMessage.channelName, status: 'all' } });
   updateUnreadMsgsCount();
 };
 
@@ -86,6 +86,7 @@ export const markAllMessagesAsRead = async ({ channelName }: { channelName: stri
       message.status = 'read';
     }
   });
+  fetchChannels({ filter: { name: channelName, status: 'all' } });
   updateUnreadMsgsCount();
 };
 

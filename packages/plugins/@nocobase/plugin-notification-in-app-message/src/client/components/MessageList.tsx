@@ -18,6 +18,7 @@ import { useLocalTranslation } from '../../locale';
 import { useApp } from '@nocobase/client';
 import {
   channelMapObs,
+  channelStatusFilterObs,
   fetchMessages,
   inboxVisible,
   isFecthingMessageObs,
@@ -43,6 +44,7 @@ const MessageList = observer(() => {
   const { token } = theme.useToken();
   const [hoveredMessageId, setHoveredMessageId] = useState<string | null>(null);
   const selectedChannelName = selectedChannelNameObs.value;
+  const selectedChannel = selectedChannelName ? channelMapObs.value[selectedChannelName] : null;
   const isFetchingMessages = isFecthingMessageObs.value;
   const messages = selectedMessageListObs.value;
   const msgStatusDict = {
@@ -103,7 +105,12 @@ const MessageList = observer(() => {
         <Typography.Title level={4} style={{ margin: 0 }}>
           {title}
         </Typography.Title>
-        <Button onClick={onMarkAllReadClick}>{t('Mark all as read')}</Button>
+        <Button
+          disabled={selectedChannel?.unreadMsgCnt === 0 || channelStatusFilterObs.value === 'read'}
+          onClick={onMarkAllReadClick}
+        >
+          {t('Mark all as read')}
+        </Button>
       </div>
 
       {messages.length === 0 && isFecthingMessageObs.value ? (
