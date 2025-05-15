@@ -250,6 +250,9 @@ describe('workflow > actions > workflows', () => {
           mode: 1,
           collection: 'posts',
         },
+        options: {
+          stackLimit: 2,
+        },
       });
 
       const p1 = await PostRepo.create({ values: { title: 't1' } });
@@ -271,6 +274,7 @@ describe('workflow > actions > workflows', () => {
       expect(w2.enabled).toBe(false);
       expect(w2.executed).toBe(0);
       expect(w2.allExecuted).toBe(1);
+      expect(w2.options.stackLimit).toBe(2);
 
       await WorkflowModel.update(
         {
@@ -299,6 +303,7 @@ describe('workflow > actions > workflows', () => {
       expect(w2next.current).toBe(true);
       expect(w2next.executed).toBe(1);
       expect(w2next.allExecuted).toBe(2);
+      expect(w2next.options.stackLimit).toBe(2);
 
       const [e1] = await w1next.getExecutions();
       const [e2] = await w2next.getExecutions();

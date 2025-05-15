@@ -40,6 +40,7 @@ export default class WorkflowRepository extends Repository {
         values: {
           title: `${origin.title} copy`,
           description: origin.description,
+          options: origin.options,
           ...revisionData,
           sync: origin.sync,
           type: origin.type,
