@@ -155,7 +155,7 @@ export const Action: ComposedAction = withDynamicSchemaProps(
           dispose();
         });
       };
-    }, [linkageRules]);
+    }, [linkageRules, recordData]);
 
     const handleMouseEnter = useCallback(
       (e) => {
