@@ -45,10 +45,15 @@ export const AssociateActionProvider = (props) => {
   const actionCtx = useActionContext();
   const { isMobile } = useOpenModeContext() || {};
   const [associationData, setAssociationData] = useState([]);
+
   useEffect(() => {
-    resource?.list?.().then((res) => {
-      setAssociationData(res.data?.data || []);
-    });
+    resource
+      ?.list?.({
+        paginate: false,
+      })
+      .then((res) => {
+        setAssociationData(res.data?.data || []);
+      });
   }, [resource]);
 
   const pickerProps = {
