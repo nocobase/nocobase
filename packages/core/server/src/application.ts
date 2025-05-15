@@ -43,6 +43,7 @@ import { i18n, InitOptions } from 'i18next';
 import Koa, { DefaultContext as KoaDefaultContext, DefaultState as KoaDefaultState } from 'koa';
 import compose from 'koa-compose';
 import lodash from 'lodash';
+import { nanoid } from 'nanoid';
 import { RecordableHistogram } from 'node:perf_hooks';
 import path, { basename, resolve } from 'path';
 import semver from 'semver';
@@ -105,6 +106,7 @@ export interface AppTelemetryOptions extends TelemetryOptions {
 }
 
 export interface ApplicationOptions {
+  instanceId?: string;
   database?: IDatabaseOptions | Database;
   cacheManager?: CacheManagerOptions;
   /**
@@ -205,6 +207,7 @@ export type MaintainingCommandStatus = {
 };
 
 export class Application<StateT = DefaultState, ContextT = DefaultContext> extends Koa implements AsyncEmitter {
+  public readonly instanceId: string;
   /**
    * @internal
    */
@@ -256,6 +259,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
   constructor(public options: ApplicationOptions) {
     super();
+    this.instanceId = options.instanceId || process.env.INSTANCE_ID || nanoid();
     this.context.reqId = randomUUID();
     this.rawOptions = this.name == 'main' ? lodash.cloneDeep(options) : {};
     this.init();

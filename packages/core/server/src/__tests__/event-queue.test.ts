@@ -34,7 +34,7 @@ class MockPlugin extends Plugin {
   }
 }
 
-const memoryQueues: Map<string, Map<string, any[]>> = new Map();
+const memoryQueues: Map<string, any[]> = new Map();
 
 class MockMemoryEventQueueAdapter extends MemoryEventQueueAdapter {
   protected queues = memoryQueues;

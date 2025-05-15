@@ -339,8 +339,7 @@ export default class PluginWorkflowServer extends Plugin {
       custom_epoch: pluginRecord?.createdAt.getTime(),
     });
 
-    this.app.eventQueue.subscribe(this.name, {
-      topic: 'pendingExecution',
+    this.app.eventQueue.subscribe(`${this.name}.pendingExecution`, {
       idle: () => !this.executing && !this.pending.length && !this.events.length,
       process: this.onQueueExecution,
     });
@@ -669,7 +668,7 @@ export default class PluginWorkflowServer extends Plugin {
           this.pending.push([execution]);
         } else {
           logger.info(`local pending list is not empty, sending execution (${execution.id}) to queue`);
-          this.app.eventQueue.publish([this.name, 'pendingExecution'], { executionId: execution.id });
+          this.app.eventQueue.publish(`${this.name}.pendingExecution`, { executionId: execution.id });
         }
       }
     } catch (error) {

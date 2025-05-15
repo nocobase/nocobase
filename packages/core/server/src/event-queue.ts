@@ -15,15 +15,12 @@ type WrappedCallback = () => Callback | null;
 
 export type QueueEventOptions =
   | {
-      topic?: string;
       interval?: number;
       concurrency?: number;
       idle(): boolean;
       process: Callback;
     }
   | WrappedCallback;
-
-type QueueChannelWithTopic = [string, string];
 
 const defaultEventOptions: QueueEventOptions = {
   interval: 2000,
@@ -39,14 +36,13 @@ export interface IEventQueueAdapter {
   close(): Promise<void> | void;
   subscribe(channel: string, event: QueueEventOptions): void;
   unsubscribe(channel: string, event?: QueueEventOptions): void;
-  publish(channel: string | QueueChannelWithTopic, message: any): Promise<void> | void;
+  publish(channel: string, message: any): Promise<void> | void;
 }
 
 export interface EventQueueOptions {
   channelPrefix?: string;
 }
 
-export const QUEUE_DEFAULT_TOPIC = 'DEFAULT';
 export const QUEUE_DEFAULT_INTERVAL = 1000;
 export const QUEUE_DEFAULT_CONCURRENCY = 1;
 
@@ -61,7 +57,7 @@ export class MemoryEventQueueAdapter implements IEventQueueAdapter {
 
   private events: Map<string, Set<QueueEventOptions>> = new Map();
 
-  protected queues: Map<string, Map<string, any[]>> = new Map();
+  protected queues: Map<string, any[]> = new Map();
 
   isConnected(): boolean {
     return this.connected;
@@ -112,24 +108,16 @@ export class MemoryEventQueueAdapter implements IEventQueueAdapter {
       this.events.delete(channel);
     }
   }
-  publish(channel: string | QueueChannelWithTopic, message: any) {
-    let topic = QUEUE_DEFAULT_TOPIC;
-    if (Array.isArray(channel)) {
-      topic = channel[1];
-      channel = channel[0];
-    }
+  publish(channel: string, message: any) {
     const events = this.events.get(channel);
     if (!events) {
       return;
     }
     if (!this.queues.get(channel)) {
-      this.queues.set(channel, new Map());
+      this.queues.set(channel, []);
     }
     const queue = this.queues.get(channel);
-    if (!queue.get(topic)) {
-      queue.set(topic, []);
-    }
-    queue.get(topic).push(message);
+    queue.push(message);
 
     for (const event of events) {
       this.consume(channel, event, true);
@@ -141,7 +129,6 @@ export class MemoryEventQueueAdapter implements IEventQueueAdapter {
       let processor: Callback;
       let interval = QUEUE_DEFAULT_INTERVAL;
       let concurrency = QUEUE_DEFAULT_CONCURRENCY;
-      let topic = QUEUE_DEFAULT_TOPIC;
       if (typeof event === 'function') {
         processor = event();
         if (!processor) {
@@ -155,7 +142,6 @@ export class MemoryEventQueueAdapter implements IEventQueueAdapter {
         processor = event.process;
         interval = event.interval ?? QUEUE_DEFAULT_INTERVAL;
         concurrency = event.concurrency ?? QUEUE_DEFAULT_CONCURRENCY;
-        topic = event.topic ?? QUEUE_DEFAULT_TOPIC;
 
         if (!event.idle()) {
           if (once) {
@@ -167,7 +153,7 @@ export class MemoryEventQueueAdapter implements IEventQueueAdapter {
       }
 
       const queue = this.queues.get(channel);
-      if (!queue || !queue.get(topic)?.length) {
+      if (!queue || !queue.length) {
         if (once) {
           break;
         }
@@ -175,13 +161,12 @@ export class MemoryEventQueueAdapter implements IEventQueueAdapter {
         continue;
       }
 
-      const messages = queue.get(topic);
-      for (let i = 0; i < concurrency || messages.length; i += 1) {
-        const message = messages.shift();
+      for (let i = 0; i < concurrency || queue.length; i += 1) {
+        const message = queue.shift();
         try {
           await processor(message);
         } catch (ex) {
-          messages.unshift(message);
+          queue.unshift(message);
           console.error(ex);
         }
       }
@@ -213,7 +198,7 @@ export class EventQueue {
     app.on('afterStart', async () => {
       await this.connect();
     });
-    app.on('beforeStop', async () => {
+    app.on('afterStop', async () => {
       await this.close();
     });
   }
@@ -231,7 +216,7 @@ export class EventQueue {
   }
   async connect() {
     if (!this.adapter) {
-      return;
+      throw new Error('no adapter set, cannot connect');
     }
     await this.adapter.connect();
 
@@ -282,15 +267,16 @@ export class EventQueue {
       this.adapter.unsubscribe(this.getFullChannel(channel), options);
     }
   }
-  async publish(channel: string | QueueChannelWithTopic, message: any) {
+  async publish(channel: string, message: any) {
     if (!this.adapter) {
-      return;
+      throw new Error('no adapter set, cannot publish');
     }
     if (!this.isConnected()) {
-      return;
+      throw new Error('event queue not connected, cannot publish');
     }
-    const c = Array.isArray(channel) ? [this.getFullChannel(channel[0]), channel[1]] : this.getFullChannel(channel);
-    await this.adapter.publish(c as string | QueueChannelWithTopic, message);
+    const c = this.getFullChannel(channel);
+    this.app.logger.debug('event queue publishing:', { channel: c, message });
+    await this.adapter.publish(c, message);
   }
 }
 
