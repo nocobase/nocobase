@@ -1,6 +1,6 @@
 import { Card, Space, Typography, Input, Button, Form, Checkbox } from 'antd';
 import React, { useState, useEffect, useMemo } from 'react';
-import { FilterFlowManager, useApplyFilters } from '@nocobase/client';
+import { FilterFlowManager, BaseModel } from '@nocobase/client';
 
 // 创建过滤器管理器实例
 const filterFlowManager = new FilterFlowManager();
@@ -11,6 +11,17 @@ filterFlowManager.addFilterGroup({
   title: '可见性控制',
   sort: 1,
 });
+
+// 创建一个可观察的模型，包含UI配置属性
+class VisibilityModel extends BaseModel {
+  constructor() {
+    super('visibility-model');
+    this.setProps({
+      visibleActions: [],
+      visibleFields: [],
+    });
+  }
+}
 
 // 注册过滤器
 filterFlowManager.addFilter({
@@ -45,12 +56,12 @@ filterFlowManager.addFilter({
       'x-component': 'Checkbox.Group',
     },
   },
-  handler: (currentValue, params, context) => {
-    // 过滤器处理函数，返回应显示的元素配置
-    return {
-      visibleActions: params.showActions || [],
-      visibleFields: params.showFields || [],
-    };
+  handler: (model: BaseModel, params, context) => {
+    // 设置可见性
+    model.setProps({
+      visibleActions: params?.showActions || [],
+      visibleFields: params?.showFields || [],
+    });
   },
 });
 
@@ -72,17 +83,30 @@ const HideShowFilterFlow = () => {
     showActions: ['action1', 'action2', 'action3'],
     showFields: ['field1', 'field2', 'field3'],
   });
-  const filterContext = useMemo(() => {
-    return {
-      meta: {
-        params: {
-          'show-hide-step': filterParams,
-        },
-      },
-    };
+  
+  const [visibilityConfig, setVisibilityConfig] = useState({
+    visibleActions: ['action1', 'action2', 'action3'],
+    visibleFields: ['field1', 'field2', 'field3'],
+  });
+  
+  useEffect(() => {
+    // 创建模型实例
+    const model = new VisibilityModel();
+    
+    // 设置过滤器参数
+    model.setFilterParams('visibility-control', 'show-hide-step', filterParams);
+    
+    // 应用过滤器流
+    filterFlowManager.applyFilters('visibility-control', model, {})
+      .then(() => {
+        // 获取处理后的配置
+        setVisibilityConfig({
+          visibleActions: model.getProps().visibleActions || [],
+          visibleFields: model.getProps().visibleFields || [],
+        });
+      })
+      .catch(console.error);
   }, [filterParams]);
-  // 应用过滤器获取可见性配置
-  const { data: visibilityConfig } = useApplyFilters(filterFlowManager, 'visibility-control', null, filterContext);
 
   // 渲染 Action 按钮
   const renderActions = () => {

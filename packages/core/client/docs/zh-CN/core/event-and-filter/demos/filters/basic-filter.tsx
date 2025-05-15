@@ -1,10 +1,10 @@
 import { Card, Space } from 'antd';
 import React, { useEffect, useMemo, useState } from 'react';
-import { IFilter, FilterHandlerContext, SchemaComponent, Checkbox, FormItem } from '@nocobase/client';
+import { IFilter, SchemaComponent, Checkbox, FormItem, BaseModel } from '@nocobase/client';
 import { createForm, onFormValuesChange } from '@formily/core';
 import { FormContext } from '@formily/react';
 
-const caseConvertFilter: IFilter = {
+const caseConvertFilter: IFilter<BaseModel> = {
   name: 'caseConvert',
   title: '大小写转换',
   description: '将输入文本转换为大写或小写',
@@ -17,15 +17,15 @@ const caseConvertFilter: IFilter = {
       'x-component': 'Checkbox',
     },
   },
-  handler: async (text, params, context: FilterHandlerContext) => {
+  handler: async (model, params) => {
+    const text = model.getProps()['text'] as string;
     if (typeof text === 'string') {
-      if (params.uppercase) {
-        return text.toUpperCase();
+      if (params?.uppercase) {
+        model.setProps('text', text.toUpperCase());
       } else {
-        return text.toLowerCase();
+        model.setProps('text', text.toLowerCase());
       }
     }
-    return text;
   },
 };
 
@@ -61,14 +61,20 @@ const BasicFilter = (props) => {
 
   useEffect(() => {
     let unmounted = false;
-    caseConvertFilter
-      .handler(props.inputText, params, {})
-      .then((result) => {
-        if (!unmounted) {
-          setOutputText(result);
-        }
-      })
-      .catch(() => {});
+    // 创建模型实例, 过滤器必要参数
+    const model = new BaseModel('text-model');
+    model.setProps({ text: props.inputText });
+    
+    // 执行过滤器
+    const processFilter = async () => {
+      await caseConvertFilter.handler(model, params, {});
+      if (!unmounted) {
+        setOutputText(model.getProps()['text'] as string);
+      }
+    };
+    
+    processFilter().catch(console.error);
+    
     return () => {
       unmounted = true;
     };

@@ -464,7 +464,7 @@ export class FilterFlowManager {
       return true; // 没有条件，默认通过
     }
     try {
-      const result = Schema.compile(condition, { ctx: context, model: model, input: model });
+      const result = Schema.compile(condition, { ctx: context, model: model });
       return !!result;
     } catch (error) {
       console.error(`Error evaluating condition "${condition}":`, error);

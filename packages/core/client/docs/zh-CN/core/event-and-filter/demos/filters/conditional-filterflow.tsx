@@ -1,6 +1,6 @@
 import { Card, Input, Space, Typography } from 'antd';
-import React, { useState } from 'react';
-import { FilterFlowManager, useApplyFilters } from '@nocobase/client';
+import React, { useState, useEffect } from 'react';
+import { FilterFlowManager, BaseModel } from '@nocobase/client';
 
 // 创建FilterFlowManager实例
 const filterFlowManager = new FilterFlowManager();
@@ -20,26 +20,11 @@ filterFlowManager.addFilter({
   group: 'textTransform',
   sort: 1,
   uiSchema: {},
-  handler: (currentValue, params, context) => {
-    if (typeof currentValue === 'string') {
-      return currentValue.toUpperCase();
+  handler: (model) => {
+    const text = model.getProps()['text'];
+    if (typeof text === 'string') {
+      model.setProps('text', text.toUpperCase());
     }
-    return currentValue;
-  },
-});
-
-filterFlowManager.addFilter({
-  name: 'lowercase',
-  title: '转换为小写',
-  description: '将字符串转换为小写',
-  group: 'textTransform',
-  sort: 2,
-  uiSchema: {},
-  handler: (currentValue, params, context) => {
-    if (typeof currentValue === 'string') {
-      return currentValue.toLowerCase();
-    }
-    return currentValue;
   },
 });
 
@@ -50,11 +35,11 @@ filterFlowManager.addFilter({
   group: 'textTransform',
   sort: 3,
   uiSchema: {},
-  handler: (currentValue, params, context) => {
-    if (typeof currentValue === 'string') {
-      return currentValue.split('').reverse().join('');
+  handler: (model) => {
+    const text = model.getProps()['text'];
+    if (typeof text === 'string') {
+      model.setProps('text', text.split('').reverse().join(''));
     }
-    return currentValue;
   },
 });
 
@@ -68,28 +53,35 @@ filterFlowManager.addFlow({
       filterName: 'uppercase',
       title: '转换为大写',
       // 条件：仅当输入文本长度大于5时应用
-      condition: '{{ input.length > 5 }}',
-    },
-    {
-      key: 'lowercase-step',
-      filterName: 'lowercase',
-      title: '转换为小写',
-      // 条件：仅当输入文本包含大写字母时应用
-      condition: '{{ /[A-Z]/.test(input) }}',
+      condition: '{{ model.getProps()["text"]?.length > 5 }}',
     },
     {
       key: 'reverse-step',
       filterName: 'reverse',
       title: '文本反转',
       // 条件：仅当输入文本包含数字时应用
-      condition: '{{ /[0-9]/.test(input) }}',
+      condition: '{{ /[0-9]/.test(model.getProps()["text"]) }}',
     },
   ],
 });
 
 const ConditionalFilterFlow = () => {
   const [inputText, setInputText] = useState('Hello, Conditional FilterFlow!');
-  const { data: outputText } = useApplyFilters(filterFlowManager, 'conditional-text-transform', inputText);
+  const [outputText, setOutputText] = useState('');
+
+  useEffect(() => {
+    // 创建模型实例
+    const model = new BaseModel('text-model');
+    model.setProps({ text: inputText });
+    
+    // 应用过滤器流
+    filterFlowManager.applyFilters('conditional-text-transform', model, {})
+      .then(() => {
+        // 获取处理后的结果
+        setOutputText(model.getProps()['text'] as string);
+      })
+      .catch(console.error);
+  }, [inputText]);
 
   return (
     <div style={{ padding: 24, background: '#f5f5f5', borderRadius: 8 }}>
@@ -110,9 +102,6 @@ const ConditionalFilterFlow = () => {
               <ul>
                 <li>
                   转换为大写 <Typography.Text code>（仅当输入文本长度大于5时应用）</Typography.Text>
-                </li>
-                <li>
-                  转换为小写 <Typography.Text code>（仅当输入文本包含大写字母时应用）</Typography.Text>
                 </li>
                 <li>
                   文本反转 <Typography.Text code>（仅当输入文本包含数字时应用）</Typography.Text>

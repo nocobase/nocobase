@@ -1,6 +1,6 @@
 import { Button, Card, Form, Input, Select, Space, Typography, Modal, Switch, InputNumber } from 'antd';
-import React, { useCallback, useMemo, useState } from 'react';
-import { FilterFlowManager, FilterHandlerContext, FilterStepParams, useApplyFilters } from '@nocobase/client';
+import React, { useCallback, useMemo, useState, useEffect } from 'react';
+import { FilterFlowManager, FilterHandlerContext, BaseModel } from '@nocobase/client';
 import { configureAction } from '../actions/open-configure-dialog';
 
 // 创建FilterFlowManager实例
@@ -59,24 +59,26 @@ filterFlowManager.addFilter({
       },
     },
   },
-  handler: (currentValue, params) => {
-    if (typeof currentValue === 'string' && params.search) {
+  handler: (model, params) => {
+    const text = model.getProps()['text'] as string;
+    if (typeof text === 'string' && params?.search) {
+      let result;
       if (params.useRegex) {
         try {
           const regex = new RegExp(params.search, params.flags || 'g');
-          return currentValue.replace(regex, params.replacement || '');
+          result = text.replace(regex, params.replacement || '');
         } catch (error) {
           console.error('正则表达式错误:', error);
-          return currentValue;
+          result = text;
         }
       } else {
-        return currentValue.replace(
+        result = text.replace(
           new RegExp(params.search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'),
           params.replacement || '',
         );
       }
+      model.setProps('text', result);
     }
-    return currentValue;
   },
 });
 
@@ -105,15 +107,16 @@ filterFlowManager.addFilter({
       'x-component': 'Input',
     },
   },
-  handler: (currentValue, params) => {
-    if (typeof currentValue === 'string') {
-      const maxLength = params.maxLength || 10;
-      if (currentValue.length <= maxLength) {
-        return currentValue;
+  handler: (model: BaseModel, params, context) => {
+    const text = model.getProps()['text'] as string;
+    if (typeof text === 'string') {
+      const maxLength = params?.maxLength || 10;
+      let result = text;
+      if (text.length > maxLength) {
+        result = text.substring(0, maxLength) + (params?.suffix || '...');
       }
-      return currentValue.substring(0, maxLength) + (params.suffix || '...');
+      model.setProps('text', result);
     }
-    return currentValue;
   },
 });
 
@@ -151,8 +154,8 @@ const PARAMS = {
   },
 };
 
-const getParams = async (id: string): Promise<FilterStepParams> => {
-  return new Promise((resolve) => {
+const getParams = async (id: string) => {
+  return new Promise<Record<string, any>>((resolve) => {
     setTimeout(() => {
       resolve(PARAMS['filters'][id]); // 模拟异步获取
     }, 1000);
@@ -167,26 +170,35 @@ const setParams = async (id: string, params: Record<string, any>) => {
     }, 1000);
   });
 };
+
 const ConfigurableFilter = () => {
   const demoId = 'demo-id';
   const [inputText, setInputText] = useState('Hello configurable filter demo');
-
-  const getContext = useCallback(
-    async (): Promise<FilterHandlerContext> => ({
+  const [outputText, setOutputText] = useState('');
+  
+  const applyFilters = useCallback(async () => {
+    // 创建模型实例
+    const model = new BaseModel('text-model');
+    model.setProps({ text: inputText });
+    
+    // 获取上下文
+    const context: FilterHandlerContext = {
       meta: {
         params: await getParams(demoId),
       },
-    }),
-    [demoId],
-  );
-
-  const { data: outputText, reApplyFilters } = useApplyFilters(
-    filterFlowManager,
-    'configurable-text-transform',
-    inputText,
-    getContext,
-    demoId,
-  );
+    };
+    
+    // 应用过滤器流
+    await filterFlowManager.applyFilters('configurable-text-transform', model, context);
+    
+    // 获取处理后的结果
+    setOutputText(model.getProps()['text'] as string);
+  }, [inputText, demoId]);
+  
+  // 初始应用过滤器
+  useEffect(() => {
+    applyFilters();
+  }, [applyFilters]);
 
   // 打开配置Modal
   const openConfigModal = async (stepKey) => {
@@ -197,12 +209,11 @@ const ConfigurableFilter = () => {
         step,
         currentParams: (await getParams(demoId))?.[stepKey],
         onChange: async (values) => {
-          // await setParams(demoId, PARAMS['filters'][demoId]);
           await setParams(demoId, {
             ...PARAMS['filters'][demoId],
             [stepKey]: values,
           });
-          reApplyFilters();
+          applyFilters();
         },
       },
     };

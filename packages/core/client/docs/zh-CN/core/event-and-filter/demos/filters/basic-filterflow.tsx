@@ -1,6 +1,6 @@
 import { Card, Space, Typography, Input } from 'antd';
-import React, { Suspense, useState } from 'react';
-import { FilterFlowManager, useApplyFilters } from '@nocobase/client';
+import React, { Suspense, useState, useEffect } from 'react';
+import { FilterFlowManager, BaseModel } from '@nocobase/client';
 
 // 创建过滤器管理器实例
 const filterFlowManager = new FilterFlowManager();
@@ -12,7 +12,7 @@ filterFlowManager.addFilterGroup({
   sort: 1,
 });
 
-// 注册过滤器
+// 注册文本转换过滤器
 filterFlowManager.addFilter({
   name: 'uppercase',
   title: '转换为大写',
@@ -20,11 +20,13 @@ filterFlowManager.addFilter({
   group: 'dataTransform',
   sort: 1,
   uiSchema: {},
-  handler: (currentValue, params, context) => {
-    if (typeof currentValue === 'string') {
-      return currentValue.toUpperCase();
+  handler: (model) => {
+    // 从模型中获取文本
+    const text = model.getProps()['text'];
+    if (typeof text === 'string') {
+      // 设置转换后的文本
+      model.setProps('text', text.toUpperCase());
     }
-    return currentValue;
   },
 });
 
@@ -43,7 +45,21 @@ filterFlowManager.addFlow({
 
 const BasicFilterFlow = () => {
   const [inputText, setInputText] = useState('Hello, FilterFlow!');
-  const { data: outputText } = useApplyFilters(filterFlowManager, 'basic-text-transform', inputText);
+  const [outputText, setOutputText] = useState('');
+
+  useEffect(() => {
+    // 创建模型实例
+    const model = new BaseModel('text-model');
+    model.setProps('text', inputText);
+    
+    // 应用过滤器流
+    filterFlowManager.applyFilters('basic-text-transform', model, {})
+      .then(() => {
+        // 获取处理后的结果
+        setOutputText(model.getProps()['text'] as string);
+      })
+      .catch(console.error);
+  }, [inputText]);
 
   return (
     <div style={{ padding: 24, background: '#f5f5f5', borderRadius: 8 }}>
@@ -67,7 +83,7 @@ const BasicFilterFlow = () => {
 
 export default function Demo() {
   return (
-    <Suspense fallback={<div>Loading1...</div>}>
+    <Suspense fallback={<div>Loading...</div>}>
       <BasicFilterFlow />
     </Suspense>
   );

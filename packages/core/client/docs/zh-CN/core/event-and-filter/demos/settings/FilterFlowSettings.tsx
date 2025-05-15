@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { Card, Empty, Alert, Input, InputNumber, Select, Switch, Form } from 'antd';
-import { useObservableModel, useFilterFlow } from '@nocobase/client';
+import { useObservableModel, useFilterFlow, ConfigFilterFlowStep } from '@nocobase/client';
 import { observer } from '@formily/react';
 
 const { Item: FormItem } = Form;
@@ -112,12 +112,14 @@ const FilterFlowSettings: React.FC<FilterFlowSettingsProps> = observer(({ uid, f
     }
   };
 
-  // 获取所有有效的步骤和对应的过滤器
+  // 获取所有可配置的步骤和对应的过滤器
   const validSteps = steps
+    .filter(step => step instanceof ConfigFilterFlowStep) // 使用instanceof进行类型检查
     .map(step => {
-      const filter = filterFlowManager.getFilter(step.filterName);
+      const configStep = step as ConfigFilterFlowStep;
+      const filter = filterFlowManager.getFilter(configStep.filterName);
       if (!filter || !filter.uiSchema) return null;
-      return { step, filter };
+      return { step: configStep, filter };
     })
     .filter(Boolean);
 

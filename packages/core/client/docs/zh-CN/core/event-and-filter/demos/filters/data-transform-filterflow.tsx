@@ -1,6 +1,6 @@
 import { Button, Card, Table, Space, Typography } from 'antd';
-import React, { useMemo, useState } from 'react';
-import { FilterFlowManager, useApplyFilters } from '@nocobase/client';
+import React, { useMemo, useState, useEffect } from 'react';
+import { FilterFlowManager, BaseModel } from '@nocobase/client';
 
 // 创建FilterFlowManager实例
 const filterFlowManager = new FilterFlowManager();
@@ -11,6 +11,17 @@ filterFlowManager.addFilterGroup({
   title: '数据转换',
   sort: 1,
 });
+
+// 创建一个数据转换模型
+class DataModel extends BaseModel {
+  constructor(data: any[]) {
+    super('data-model');
+    this.setProps({
+      data: data, // 原始数据
+      processedData: [...data], // 处理后的数据，初始值为原始数据的副本
+    });
+  }
+}
 
 // 注册Filter
 filterFlowManager.addFilter({
@@ -47,32 +58,32 @@ filterFlowManager.addFilter({
       'x-component': 'Input',
     },
   },
-  handler: (currentValue, params, context) => {
-    if (Array.isArray(currentValue) && params.field && params.value !== undefined) {
+  handler: (model: DataModel, params, context) => {
+    const data = model.getProps().processedData as any[];
+    if (Array.isArray(data) && params?.field && params?.value !== undefined) {
       let filtered;
 
       switch (params.operator) {
         case 'equals':
-          filtered = currentValue.filter((item) => item[params.field] === params.value);
+          filtered = data.filter((item) => item[params.field] === params.value);
           break;
         case 'contains':
-          filtered = currentValue.filter((item) =>
+          filtered = data.filter((item) =>
             String(item[params.field]).toLowerCase().includes(String(params.value).toLowerCase()),
           );
           break;
-        case 'greaterThan':
-          filtered = currentValue.filter((item) => item[params.field] > params.value);
+        case 'gt':
+          filtered = data.filter((item) => item[params.field] > Number(params.value));
           break;
-        case 'lessThan':
-          filtered = currentValue.filter((item) => item[params.field] < params.value);
+        case 'lt':
+          filtered = data.filter((item) => item[params.field] < Number(params.value));
           break;
         default:
-          filtered = currentValue;
+          filtered = data;
       }
 
-      return filtered;
+      model.setProps('processedData', filtered);
     }
-    return currentValue;
   },
 });
 
@@ -101,18 +112,18 @@ filterFlowManager.addFilter({
       'x-component': 'Radio.Group',
     },
   },
-  handler: (currentValue, params, context) => {
-    if (Array.isArray(currentValue) && params.field) {
-      const sorted = [...currentValue].sort((a, b) => {
+  handler: (model: DataModel, params, context) => {
+    const data = model.getProps().processedData as any[];
+    if (Array.isArray(data) && params?.field) {
+      const sorted = [...data].sort((a, b) => {
         const valueA = a[params.field];
         const valueB = b[params.field];
         if (valueA < valueB) return params.order === 'desc' ? 1 : -1;
         if (valueA > valueB) return params.order === 'desc' ? -1 : 1;
         return 0;
       });
-      return sorted;
+      model.setProps('processedData', sorted);
     }
-    return currentValue;
   },
 });
 
@@ -133,28 +144,27 @@ filterFlowManager.addFilter({
       },
     },
   },
-  handler: (currentValue, params, context) => {
-    if (Array.isArray(currentValue)) {
-      return currentValue.map((item) => {
+  handler: (model: DataModel, params, context) => {
+    const data = model.getProps().processedData as any[];
+    if (Array.isArray(data)) {
+      const mappedData = data.map((item) => {
         const result = { ...item };
 
         // 应用字段转换
-        if (params.template) {
+        if (params?.template) {
           let value = params.template;
-          const matches = params.template.match(/\{([^}]+)\}/g) || [];
-
-          for (const match of matches) {
-            const fieldName = match.slice(1, -1);
-            value = value.replace(match, item[fieldName] || '');
-          }
-
+          // 简化处理：将 {{ item.xxx }} 替换为对应的值
+          Object.keys(item).forEach(fieldName => {
+            const pattern = new RegExp(`\\{\\{\\s*item\\.${fieldName}\\s*\\}\\}`, 'g');
+            value = value.replace(pattern, item[fieldName] || '');
+          });
           result.fullName = value;
         }
 
         return result;
       });
+      model.setProps('processedData', mappedData);
     }
-    return currentValue;
   },
 });
 
@@ -192,31 +202,36 @@ const sampleData = [
 
 const DataTransformFilterFlow = () => {
   const [inputData] = useState(sampleData);
+  const [outputData, setOutputData] = useState([]);
 
-  const context = useMemo(
-    () => ({
-      payload: {},
-      meta: {
-        params: {
-          'filter-step': {
-            field: 'age',
-            operator: 'gt',
-            value: '25',
-          },
-          'sort-step': {
-            field: 'age',
-            order: 'desc',
-          },
-          'map-step': {
-            template: '{{ item.name }} ({{ item.age }}岁)',
-          },
-        },
-      },
-    }),
-    [],
-  );
-
-  const { data: outputData } = useApplyFilters(filterFlowManager, 'data-transform-flow', inputData, context);
+  useEffect(() => {
+    // 创建模型实例
+    const model = new DataModel(inputData);
+    
+    // 设置过滤器参数
+    model.setFilterParams('data-transform-flow', 'filter-step', {
+      field: 'age',
+      operator: 'gt',
+      value: '25',
+    });
+    
+    model.setFilterParams('data-transform-flow', 'sort-step', {
+      field: 'age',
+      order: 'desc',
+    });
+    
+    model.setFilterParams('data-transform-flow', 'map-step', {
+      template: '{{ item.name }} ({{ item.age }}岁)',
+    });
+    
+    // 应用过滤器流
+    filterFlowManager.applyFilters('data-transform-flow', model, {})
+      .then(() => {
+        // 获取处理后的结果
+        setOutputData(model.getProps().processedData || []);
+      })
+      .catch(console.error);
+  }, [inputData]);
 
   const inputColumns = [
     { title: 'ID', dataIndex: 'id', key: 'id' },
@@ -232,8 +247,6 @@ const DataTransformFilterFlow = () => {
     { title: '姓氏', dataIndex: 'surname', key: 'surname' },
     { title: '全名', dataIndex: 'fullName', key: 'fullName' },
     { title: '年龄', dataIndex: 'age', key: 'age' },
-    { title: '明年年龄', dataIndex: 'ageNextYear', key: 'ageNextYear' },
-    { title: '信息', dataIndex: 'info', key: 'info' },
     { title: '城市', dataIndex: 'city', key: 'city' },
   ];
 
@@ -243,8 +256,8 @@ const DataTransformFilterFlow = () => {
         这个示例展示了如何创建一个处理复杂数据的FilterFlow。FilterFlow会:
         <ol>
           <li>过滤出年龄大于25的记录</li>
-          <li>按姓名字母升序排序结果</li>
-          <li>添加全名、信息和明年年龄字段</li>
+          <li>按年龄降序排序结果</li>
+          <li>添加全名字段</li>
         </ol>
       </Typography.Paragraph>
 

@@ -1,6 +1,6 @@
 import { Button, Card, Input, Space, Typography } from 'antd';
-import React, { useMemo, useState } from 'react';
-import { FilterFlowManager, useApplyFilters } from '@nocobase/client';
+import React, { useMemo, useState, useEffect } from 'react';
+import { FilterFlowManager, BaseModel } from '@nocobase/client';
 
 // 创建FilterFlowManager实例
 const filterFlowManager = new FilterFlowManager();
@@ -18,11 +18,11 @@ filterFlowManager.addFilter({
   description: '将字符串转换为大写',
   group: 'textTransform',
   uiSchema: {},
-  handler: (currentValue) => {
-    if (typeof currentValue === 'string') {
-      return currentValue.toUpperCase();
+  handler: (model: BaseModel, params, context) => {
+    const text = model.getProps()['text'] as string;
+    if (typeof text === 'string') {
+      model.setProps('text', text.toUpperCase());
     }
-    return currentValue;
   },
 });
 
@@ -32,11 +32,11 @@ filterFlowManager.addFilter({
   description: '去除字符串两端的空格',
   group: 'textTransform',
   uiSchema: {},
-  handler: (currentValue) => {
-    if (typeof currentValue === 'string') {
-      return currentValue.trim();
+  handler: (model: BaseModel, params, context) => {
+    const text = model.getProps()['text'] as string;
+    if (typeof text === 'string') {
+      model.setProps('text', text.trim());
     }
-    return currentValue;
   },
 });
 
@@ -46,11 +46,11 @@ filterFlowManager.addFilter({
   description: '将字符串反转',
   group: 'textTransform',
   uiSchema: {},
-  handler: (currentValue) => {
-    if (typeof currentValue === 'string') {
-      return currentValue.split('').reverse().join('');
+  handler: (model: BaseModel, params, context) => {
+    const text = model.getProps()['text'] as string;
+    if (typeof text === 'string') {
+      model.setProps('text', text.split('').reverse().join(''));
     }
-    return currentValue;
   },
 });
 
@@ -60,11 +60,11 @@ filterFlowManager.addFilter({
   description: '在字符串前添加前缀',
   group: 'textTransform',
   uiSchema: {},
-  handler: (currentValue, params) => {
-    if (typeof currentValue === 'string') {
-      return `${params.prefix || ''}${currentValue}`;
+  handler: (model: BaseModel, params, context) => {
+    const text = model.getProps()['text'] as string;
+    if (typeof text === 'string') {
+      model.setProps('text', `${params?.prefix || ''}${text}`);
     }
-    return currentValue;
   },
 });
 
@@ -74,11 +74,11 @@ filterFlowManager.addFilter({
   description: '在字符串后添加后缀',
   group: 'textTransform',
   uiSchema: {},
-  handler: (currentValue, params) => {
-    if (typeof currentValue === 'string') {
-      return `${currentValue}${params.suffix || ''}`;
+  handler: (model: BaseModel, params, context) => {
+    const text = model.getProps()['text'] as string;
+    if (typeof text === 'string') {
+      model.setProps('text', `${text}${params?.suffix || ''}`);
     }
-    return currentValue;
   },
 });
 
@@ -117,23 +117,38 @@ filterFlowManager.addFlow({
 
 const MultiStepFilterFlow = () => {
   const [inputText, setInputText] = useState('  hello, multi-step filterflow!  ');
-  const context = useMemo(
+  const [outputText, setOutputText] = useState('');
+  
+  const params = useMemo(
     () => ({
-      meta: {
-        params: {
-          'add-prefix-step': {
-            prefix: '[PREFIX] ',
-          },
-          'add-suffix-step': {
-            suffix: ' [SUFFIX]',
-          },
-        },
+      'add-prefix-step': {
+        prefix: '[PREFIX] ',
+      },
+      'add-suffix-step': {
+        suffix: ' [SUFFIX]',
       },
     }),
-    [],
+    []
   );
 
-  const { data: outputText } = useApplyFilters(filterFlowManager, 'multi-step-text-transform', inputText, context);
+  useEffect(() => {
+    // 创建模型实例
+    const model = new BaseModel('text-model');
+    model.setProps({ text: inputText });
+    
+    // 为特定流程的特定步骤设置参数
+    Object.entries(params).forEach(([stepKey, stepParams]) => {
+      model.setFilterParams('multi-step-text-transform', stepKey, stepParams);
+    });
+    
+    // 应用过滤器流
+    filterFlowManager.applyFilters('multi-step-text-transform', model, {})
+      .then(() => {
+        // 获取处理后的结果
+        setOutputText(model.getProps()['text'] as string);
+      })
+      .catch(console.error);
+  }, [inputText, params]);
 
   return (
     <div style={{ padding: 24, background: '#f5f5f5', borderRadius: 8 }}>
