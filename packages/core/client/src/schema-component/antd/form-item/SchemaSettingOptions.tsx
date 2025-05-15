@@ -507,7 +507,7 @@ export const EditOperator = () => {
       title={t('Operator')}
       value={getOperator(fieldSchema.name as string)}
       options={compile(operatorList)}
-      onChange={(v) => {
+      onChange={async (v) => {
         collectOperator(fieldSchema.name as string, v);
         _.set(fieldSchema, 'x-filter-operator', v);
 
@@ -540,17 +540,24 @@ export const EditOperator = () => {
         field.value = null;
         field.initialValue = null;
 
-        dn.emit('patch', {
-          schema: {
-            ['x-uid']: fieldSchema['x-uid'],
-            ['x-component-props']: componentProps,
-            ['x-filter-operator']: v,
-            // Clear default value when switching operators. Some operators require the default value to be an array,
-            // while others don't. Without clearing it, the filtering API would throw an error
-            default: null,
-          },
+        const schema = {
+          'x-uid': fieldSchema['x-uid'],
+          'x-component-props': componentProps,
+          'x-filter-operator': v,
+          // Clear default value when switching operators. Some operators require the default value to be an array,
+          // while others don't. Without clearing it, the filtering API would throw an error
+          default: null,
+        };
+
+        // Clear validators immediately. Otherwise, they would only be cleared after refreshing the page
+        if (operator.schema?.['x-validator'] === null) {
+          field.validator = null;
+          schema['x-validator'] = null;
+        }
+
+        await dn.emit('patch', {
+          schema,
         });
-        dn.refresh();
       }}
     />
   ) : null;
