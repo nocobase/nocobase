@@ -136,7 +136,12 @@ export const linkageAction = async (
       }
       break;
     case ActionType.Disabled:
-      if (await conditionAnalyses({ ruleGroup: condition, variables, localVariables, conditionType }, jsonLogic)) {
+      if (
+        await conditionAnalyses(
+          { ruleGroup: condition, variables, localVariables, conditionType, variableNameOfLeftCondition },
+          jsonLogic,
+        )
+      ) {
         disableResult.push(true);
       }
       field.stateOfLinkageRules = {
