@@ -134,6 +134,7 @@ export const Conversations: React.FC = memo(() => {
   } = useChatConversations();
   const { messagesService, setMessages } = useChatMessages();
   const startNewConversation = useChatBoxContext('startNewConversation');
+  const currentEmployee = useChatBoxContext('currentEmployee');
   const setCurrentEmployee = useChatBoxContext('setCurrentEmployee');
   const setSenderValue = useChatBoxContext('setSenderValue');
   const setSenderPlaceholder = useChatBoxContext('setSenderPlaceholder');
@@ -172,7 +173,9 @@ export const Conversations: React.FC = memo(() => {
     });
     message.success(t('Deleted successfully'));
     conversationsService.run();
-    startNewConversation();
+    if (currentEmployee) {
+      startNewConversation();
+    }
   };
 
   const selectConversation = (sessionId: string) => {

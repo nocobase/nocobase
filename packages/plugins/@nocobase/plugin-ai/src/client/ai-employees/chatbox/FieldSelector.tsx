@@ -14,10 +14,20 @@ import { useChatBoxContext } from './ChatBoxContext';
 import { useAISelectionContext } from '../selector/AISelectorProvider';
 import { useT } from '../../locale';
 import { useOnInsert } from '../useOnInsert';
+import { useChatMessages } from './ChatMessagesProvider';
+
+const isAttachment = (value: any) => {
+  let file = value;
+  if (Array.isArray(value)) {
+    file = value[0];
+  }
+  return file?.filename || file?.url;
+};
 
 export const FieldSelector: React.FC = () => {
   const currentEmployee = useChatBoxContext('currentEmployee');
   const senderRef = useChatBoxContext('senderRef');
+  const { addAttachments } = useChatMessages();
   const { startSelect, stopSelect, selectable } = useAISelectionContext();
   const t = useT();
   const { onInsert } = useOnInsert();
@@ -32,10 +42,17 @@ export const FieldSelector: React.FC = () => {
         if (!value) {
           return;
         }
-        onInsert(() => {
-          return senderRef.current?.nativeElement.querySelector('.ant-input');
-        }, value);
+        console.log(value);
         senderRef.current?.focus();
+        if (isAttachment(value)) {
+          addAttachments(value);
+          return;
+        }
+        if (typeof value === 'string') {
+          onInsert(() => {
+            return senderRef.current?.nativeElement.querySelector('.ant-input');
+          }, value);
+        }
       },
     });
   };

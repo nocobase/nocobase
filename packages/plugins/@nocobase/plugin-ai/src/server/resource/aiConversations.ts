@@ -157,7 +157,7 @@ export default {
           }
           const Provider = providerOptions.provider;
           const provider = new Provider({
-            app: ctx.app,
+            ctx,
           });
           return provider.parseResponseMessage(row);
         }),
@@ -219,6 +219,7 @@ export default {
               messageId: plugin.snowflake.generate(),
               role: message.role,
               content: message.content,
+              attachments: message.attachments,
             })),
           });
         } catch (err) {

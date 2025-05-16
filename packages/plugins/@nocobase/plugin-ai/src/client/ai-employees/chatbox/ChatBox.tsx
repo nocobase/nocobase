@@ -29,6 +29,7 @@ import { useT } from '../../locale';
 import { UserPrompt } from './UserPrompt';
 
 export const ChatBox: React.FC = () => {
+  const chatBoxRef = useChatBoxContext('chatBoxRef');
   const setOpen = useChatBoxContext('setOpen');
   const startNewConversation = useChatBoxContext('startNewConversation');
   const currentEmployee = useChatBoxContext('currentEmployee');
@@ -40,7 +41,7 @@ export const ChatBox: React.FC = () => {
   const t = useT();
 
   return (
-    <Layout style={{ height: '100%' }}>
+    <Layout style={{ height: '100%' }} ref={chatBoxRef}>
       <Sider
         width={!expanded ? '350px' : '20%'}
         style={{

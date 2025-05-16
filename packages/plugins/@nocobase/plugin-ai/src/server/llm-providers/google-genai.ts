@@ -11,6 +11,8 @@ import { ChatGoogleGenerativeAI } from '@langchain/google-genai';
 import { LLMProvider } from './provider';
 import axios from 'axios';
 import { Model } from '@nocobase/database';
+import { encodeFile } from '../utils';
+import { PluginFileManagerServer } from '@nocobase/plugin-file-manager';
 
 export class GoogleGenAIProvider extends LLMProvider {
   declare chatModel: ChatGoogleGenerativeAI;
@@ -28,6 +30,7 @@ export class GoogleGenAIProvider extends LLMProvider {
       ...this.modelOptions,
       model,
       json: responseFormat === 'json',
+      verbose: true,
     });
   }
 
@@ -64,12 +67,13 @@ export class GoogleGenAIProvider extends LLMProvider {
   }
 
   parseResponseMessage(message: Model) {
-    const { content: rawContent, messageId, metadata, role, toolCalls } = message;
+    const { content: rawContent, messageId, metadata, role, toolCalls, attachments } = message;
     const autoCallTool = metadata?.autoCallTool;
     const content = {
       ...rawContent,
       messageId,
       metadata,
+      attachments,
     };
 
     if (toolCalls) {
@@ -86,6 +90,25 @@ export class GoogleGenAIProvider extends LLMProvider {
       content,
       role,
     };
+  }
+
+  async parseAttachment(attachment: any) {
+    const fileManager = this.ctx.app.pm.get('file-manager') as PluginFileManagerServer;
+    const url = await fileManager.getFileURL(attachment);
+    const data = await encodeFile(url);
+    if (attachment.mimetype.startsWith('image/')) {
+      return {
+        type: 'image_url',
+        image_url: {
+          url: data,
+        },
+      };
+    } else {
+      return {
+        type: attachment.mimetype,
+        data,
+      };
+    }
   }
 }
 

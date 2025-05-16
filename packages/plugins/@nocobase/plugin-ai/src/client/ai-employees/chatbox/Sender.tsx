@@ -16,7 +16,7 @@ import { SenderFooter } from './SenderFooter';
 import { useChatConversations } from './ChatConversationsProvider';
 import { useChatMessages } from './ChatMessagesProvider';
 import { AIEmployeeHeader } from './AIEmployeeHeader';
-import { VariableInput } from './VariableInput';
+import { AttachmentsHeader } from './AttachmentsHeader';
 
 export const Sender: React.FC = () => {
   const t = useT();
@@ -64,7 +64,7 @@ export const Sender: React.FC = () => {
       }
       onCancel={cancelRequest}
       prefix={<SenderPrefix />}
-      header={!currentEmployee ? <AIEmployeeHeader /> : null}
+      header={!currentEmployee ? <AIEmployeeHeader /> : <AttachmentsHeader />}
       loading={responseLoading}
       footer={({ components }) => <SenderFooter components={components} />}
       disabled={!currentEmployee}

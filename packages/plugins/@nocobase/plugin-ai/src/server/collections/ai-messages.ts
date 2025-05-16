@@ -32,6 +32,10 @@ export default defineCollection({
       type: 'jsonb',
     },
     {
+      name: 'attachments',
+      type: 'jsonb',
+    },
+    {
       name: 'metadata',
       type: 'jsonb',
     },

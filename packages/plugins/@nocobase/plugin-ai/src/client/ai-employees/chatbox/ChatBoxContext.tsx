@@ -26,6 +26,7 @@ import { useChatMessages } from './ChatMessagesProvider';
 import { useChatConversations } from './ChatConversationsProvider';
 
 type ChatBoxContextValues = {
+  chatBoxRef: React.MutableRefObject<HTMLElement>;
   open: boolean;
   setOpen: React.Dispatch<React.SetStateAction<boolean>>;
   expanded: boolean;
@@ -114,12 +115,13 @@ export const useSetChatBoxContext = () => {
   const [expanded, setExpanded] = useState(false);
   const [showConversations, setShowConversations] = useState(false);
   const [currentEmployee, setCurrentEmployee] = useState<AIEmployee>(null);
-  const { setMessages, sendMessages, addMessage } = useChatMessages();
+  const { setMessages, sendMessages, setAttachments } = useChatMessages();
   const { currentConversation, setCurrentConversation, conversationsService } = useChatConversations();
   const [senderValue, setSenderValue] = useState<string>('');
   const [senderPlaceholder, setSenderPlaceholder] = useState<string>('');
   const senderRef = useRef<GetRef<typeof Sender>>(null);
   const [roles, setRoles] = useState<GetProp<typeof Bubble.List, 'roles'>>(defaultRoles);
+  const chatBoxRef = useRef<HTMLElement>(null);
 
   const send = (options: SendOptions) => {
     const sendOptions = {
@@ -130,6 +132,7 @@ export const useSetChatBoxContext = () => {
       },
     };
     setSenderValue('');
+    setAttachments([]);
     sendMessages(sendOptions);
   };
 
@@ -153,6 +156,7 @@ export const useSetChatBoxContext = () => {
     };
     setCurrentConversation(undefined);
     setSenderValue('');
+    setAttachments([]);
     setMessages([greetingMsg]);
     senderRef.current?.focus();
   }, [currentEmployee]);
@@ -161,6 +165,7 @@ export const useSetChatBoxContext = () => {
     (aiEmployee: AIEmployee) => {
       setCurrentEmployee(aiEmployee);
       setCurrentConversation(undefined);
+      setAttachments([]);
       setSenderValue('');
       if (aiEmployee) {
         const greetingMsg = {
@@ -247,6 +252,7 @@ export const useSetChatBoxContext = () => {
   }, [open]);
 
   return {
+    chatBoxRef,
     open,
     setOpen,
     expanded,

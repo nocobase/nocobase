@@ -10,11 +10,13 @@
 import { BaseChatModel } from '@langchain/core/language_models/chat_models';
 import axios from 'axios';
 import { parseMessages } from './handlers/parse-messages';
-import { Application } from '@nocobase/server';
 import { Model } from '@nocobase/database';
-import { parseResponseMessage } from '../utils';
+import { encodeFile, parseResponseMessage } from '../utils';
+import { Context } from '@nocobase/actions';
+import { PluginFileManagerServer } from '@nocobase/plugin-file-manager';
 
 export abstract class LLMProvider {
+  ctx: Context;
   serviceOptions: Record<string, any>;
   modelOptions: Record<string, any>;
   messages: any[];
@@ -28,7 +30,7 @@ export abstract class LLMProvider {
   }
 
   constructor(opts: {
-    app: Application;
+    ctx: Context;
     serviceOptions?: any;
     chatOptions?: {
       messages?: any[];
@@ -36,8 +38,9 @@ export abstract class LLMProvider {
       [key: string]: any;
     };
   }) {
-    const { app, serviceOptions, chatOptions } = opts;
-    this.serviceOptions = app.environment.renderJsonTemplate(serviceOptions);
+    const { ctx, serviceOptions, chatOptions } = opts;
+    this.ctx = ctx;
+    this.serviceOptions = ctx.app.environment.renderJsonTemplate(serviceOptions);
     if (chatOptions) {
       const { messages, tools, ...modelOptions } = chatOptions;
       this.modelOptions = modelOptions;
@@ -62,9 +65,9 @@ export abstract class LLMProvider {
   }
 
   async stream(options?: any) {
-    // for (const handler of this.chatHandlers.values()) {
-    //   await handler();
-    // }
+    for (const handler of this.chatHandlers.values()) {
+      await handler();
+    }
     return this.chatModel.stream(this.messages, options);
   }
 
@@ -102,5 +105,25 @@ export abstract class LLMProvider {
 
   parseResponseMessage(message: Model) {
     return parseResponseMessage(message);
+  }
+
+  async parseAttachment(attachment: any): Promise<any> {
+    const fileManager = this.ctx.app.pm.get('file-manager') as PluginFileManagerServer;
+    const url = await fileManager.getFileURL(attachment);
+    const data = await encodeFile(url);
+    if (attachment.mimetype.startsWith('image/')) {
+      return {
+        type: 'image_url',
+        image_url: {
+          url: `data:image/${attachment.mimetype.split('/')[1]};base64,${data}`,
+        },
+      };
+    } else {
+      return {
+        type: 'input_file',
+        filename: attachment.filename,
+        file_data: data,
+      };
+    }
   }
 }

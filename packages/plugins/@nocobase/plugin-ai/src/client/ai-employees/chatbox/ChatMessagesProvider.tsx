@@ -8,7 +8,7 @@
  */
 
 import { createContext, useCallback, useContext, useEffect, useRef } from 'react';
-import { AIEmployee, Message, ResendOptions, SendOptions } from '../types';
+import { AIEmployee, Attachment, Message, ResendOptions, SendOptions } from '../types';
 import React, { useState } from 'react';
 import { uid } from '@formily/shared';
 import { useT } from '../../locale';
@@ -19,8 +19,8 @@ import { useAISelectionContext } from '../selector/AISelectorProvider';
 import PluginAIClient from '../..';
 
 interface ChatMessagesContextValue {
-  messages: Message[];
   responseLoading: boolean;
+  messages: Message[];
   addMessage: (message: Message) => void;
   addMessages: (messages: Message[]) => void;
   setMessages: (messages: Message[]) => void;
@@ -34,6 +34,10 @@ interface ChatMessagesContextValue {
   callTool: (options: { sessionId: string; messageId: string; aiEmployee: AIEmployee }) => void;
   messagesService: any;
   lastMessageRef: (node: HTMLElement | null) => void;
+  attachments: Attachment[];
+  setAttachments: React.Dispatch<React.SetStateAction<any[]>>;
+  addAttachments: (attachments: Attachment | Attachment[]) => void;
+  removeAttachment: (index: number) => void;
 }
 
 export const ChatMessagesContext = createContext<ChatMessagesContextValue | null>(null);
@@ -45,6 +49,7 @@ export const ChatMessagesProvider: React.FC<{ children: React.ReactNode }> = ({ 
   const api = useAPIClient();
   const { ctx } = useAISelectionContext();
   const plugin = usePlugin('ai') as PluginAIClient;
+  const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [messages, setMessages] = useState<Message[]>([]);
   const [responseLoading, setResponseLoading] = useState(false);
   const { currentConversation } = useChatConversations();
@@ -103,6 +108,23 @@ export const ChatMessagesProvider: React.FC<{ children: React.ReactNode }> = ({ 
       const updated = [...prev];
       updated[lastIndex] = updater(updated[lastIndex]);
       return updated;
+    });
+  };
+
+  const addAttachments = (attachments: Attachment | Attachment[]) => {
+    setAttachments((prev) => {
+      if (Array.isArray(attachments)) {
+        return [...prev, ...attachments];
+      }
+      return [...prev, attachments];
+    });
+  };
+
+  const removeAttachment = (index: number) => {
+    setAttachments((prev) => {
+      const newAttachments = [...prev];
+      newAttachments.splice(index, 1);
+      return newAttachments;
     });
   };
 
@@ -199,7 +221,6 @@ export const ChatMessagesProvider: React.FC<{ children: React.ReactNode }> = ({ 
   }: SendOptions & {
     onConversationCreate?: (sessionId: string) => void;
   }) => {
-    const msgs: Message[] = [];
     if (!sendMsgs.length) return;
 
     const last = messages[messages.length - 1];
@@ -207,15 +228,22 @@ export const ChatMessagesProvider: React.FC<{ children: React.ReactNode }> = ({ 
       setMessages((prev) => prev.slice(0, -1));
     }
 
-    msgs.push(
-      ...sendMsgs.map((msg) => ({
+    const msgs = sendMsgs.map((msg, index) => ({
+      key: uid(),
+      role: 'user',
+      content: msg,
+      attachments: index === 0 ? attachments : undefined,
+    }));
+    addMessages(
+      sendMsgs.map((msg, index) => ({
         key: uid(),
         role: 'user',
-        content: msg,
+        content: {
+          ...msg,
+          attachments: index === 0 ? attachments : undefined,
+        },
       })),
     );
-
-    addMessages(msgs);
 
     if (!sessionId) {
       const createRes = await api.resource('aiConversations').create({
@@ -378,8 +406,8 @@ export const ChatMessagesProvider: React.FC<{ children: React.ReactNode }> = ({ 
   return (
     <ChatMessagesContext.Provider
       value={{
-        messages,
         responseLoading,
+        messages,
         addMessage,
         addMessages,
         setMessages,
@@ -389,6 +417,10 @@ export const ChatMessagesProvider: React.FC<{ children: React.ReactNode }> = ({ 
         callTool,
         messagesService,
         lastMessageRef,
+        attachments,
+        setAttachments,
+        addAttachments,
+        removeAttachment,
       }}
     >
       {children}

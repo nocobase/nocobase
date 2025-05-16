@@ -36,7 +36,7 @@ const aiResource: ResourceOptions = {
       const options = service.options;
       const Provider = providerOptions.provider;
       const provider = new Provider({
-        app: ctx.app,
+        ctx: ctx as any,
         serviceOptions: options,
       });
       const res = await provider.listModels();

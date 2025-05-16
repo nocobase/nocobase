@@ -48,13 +48,14 @@ export type AttachmentProps = {
   description?: string;
 };
 
-export type MessageType = 'text' | 'greeting' | 'info' | AttachmentType;
+export type MessageType = 'text' | 'greeting';
 export type Message = Omit<BubbleProps, 'content'> & {
   key?: string | number;
   role?: string;
   content: {
     type: MessageType;
     content: any;
+    attachments?: Attachment[];
   };
 };
 export type Action = {
@@ -70,7 +71,7 @@ export type SendOptions = {
     type: MessageType;
     content: string;
   }[];
-  infoFormValues?: any;
+  attachments?: Attachment[];
 };
 
 export type ResendOptions = {
@@ -81,7 +82,7 @@ export type ResendOptions = {
 
 export type ShortcutOptions = {
   aiEmployee: AIEmployee;
-  message: { type: MessageType; content: string };
+  message: { type?: MessageType; content: string };
   autoSend: boolean;
 };
 
@@ -92,3 +93,5 @@ export type Tool = {
   schema?: any;
   children?: Tool[];
 };
+
+export type Attachment = any;

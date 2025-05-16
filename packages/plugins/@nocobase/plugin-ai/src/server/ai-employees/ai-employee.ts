@@ -14,6 +14,7 @@ import { Database } from '@nocobase/database';
 import { concat } from '@langchain/core/utils/stream';
 import PluginAIServer from '../plugin';
 import { stripToolCallTags } from '../utils';
+import { PluginFileManagerServer } from '@nocobase/plugin-file-manager';
 
 export class AIEmployee {
   private employee: Model;
@@ -65,7 +66,7 @@ export class AIEmployee {
 
     const Provider = providerOptions.provider;
     const provider = new Provider({
-      app: this.ctx.app,
+      ctx: this.ctx,
       serviceOptions: service.options,
       chatOptions: {
         ...modelSettings,
@@ -209,17 +210,33 @@ export class AIEmployee {
     const formattedMessages = [];
 
     for (const msg of messages) {
+      const attachments = msg.attachments;
       let content = msg.content.content;
       if (typeof content === 'string') {
         content = await this.parseUISchema(content);
       }
-      if (!content && !msg.toolCalls?.length) {
+      if (!content && !attachments && !msg.toolCalls?.length) {
         continue;
       }
       if (msg.role === 'user') {
+        const contents = [];
+        if (attachments?.length) {
+          for (const attachment of attachments) {
+            contents.push({
+              type: 'file',
+              content: attachment,
+            });
+          }
+          if (content) {
+            contents.push({
+              type: 'text',
+              content,
+            });
+          }
+        }
         formattedMessages.push({
           role: 'user',
-          content,
+          content: contents.length ? contents : content,
         });
         continue;
       }

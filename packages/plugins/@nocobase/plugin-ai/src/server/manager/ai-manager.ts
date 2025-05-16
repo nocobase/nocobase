@@ -7,7 +7,6 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Application } from '@nocobase/server';
 import { LLMProvider } from '../llm-providers/provider';
 import { Registry } from '@nocobase/utils';
 import { ZodObject } from 'zod';
@@ -18,7 +17,7 @@ import { Context } from '@nocobase/actions';
 export type LLMProviderOptions = {
   title: string;
   provider: new (opts: {
-    app: Application;
+    ctx: Context;
     serviceOptions?: any;
     chatOptions?: any;
     abortSignal?: AbortSignal;

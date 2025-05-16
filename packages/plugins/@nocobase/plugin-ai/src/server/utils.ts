@@ -8,6 +8,9 @@
  */
 
 import { Model } from '@nocobase/database';
+import path from 'path';
+import fs from 'fs';
+import axios from 'axios';
 
 export function stripToolCallTags(content: string): string | null {
   if (typeof content !== 'string') {
@@ -19,12 +22,13 @@ export function stripToolCallTags(content: string): string | null {
 }
 
 export function parseResponseMessage(row: Model) {
-  const { content: rawContent, messageId, metadata, role, toolCalls } = row;
+  const { content: rawContent, messageId, metadata, role, toolCalls, attachments } = row;
   const content = {
     ...rawContent,
     content: stripToolCallTags(rawContent.content),
-    messageId: messageId,
-    metadata: metadata,
+    messageId,
+    metadata,
+    attachments,
   };
   if (toolCalls) {
     content.tool_calls = toolCalls;
@@ -34,4 +38,18 @@ export function parseResponseMessage(row: Model) {
     content,
     role,
   };
+}
+
+export async function encodeLocalFile(url: string) {
+  url = path.join(process.cwd(), url);
+  const data = await fs.promises.readFile(url);
+  return Buffer.from(data).toString('base64');
+}
+
+export async function encodeFile(url: string) {
+  if (!url.startsWith('http')) {
+    return encodeLocalFile(url);
+  }
+  const response = await axios.get(url, { responseType: 'arraybuffer' });
+  return Buffer.from(response.data).toString('base64');
 }

@@ -7,11 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { memo, useEffect } from 'react';
+import React, { memo, useEffect, useMemo } from 'react';
 import { Button, Space, App, Alert } from 'antd';
 import { CopyOutlined, ReloadOutlined } from '@ant-design/icons';
-import { Bubble } from '@ant-design/x';
-import { InfoFormMessage } from './InfoForm';
+import { Attachments, Bubble } from '@ant-design/x';
 import { useT } from '../../locale';
 import { useChatMessages } from './ChatMessagesProvider';
 import { useChatBoxContext } from './ChatBoxContext';
@@ -21,7 +20,7 @@ import { Markdown } from './Markdown';
 import { ToolCard } from './ToolCard';
 import PluginAIClient from '../..';
 import { useRenderUISchemaTag } from './useRenderUISchemaTag';
-import { cx } from '@emotion/css';
+import { cx, css } from '@emotion/css';
 
 const MessageWrapper = React.forwardRef<
   HTMLDivElement,
@@ -79,7 +78,7 @@ const AIMessageRenderer: React.FC<{
   switch (msg.type) {
     case 'greeting':
       return <Bubble content={msg.content} />;
-    case 'text':
+    default:
       return (
         <Bubble
           styles={{
@@ -115,8 +114,6 @@ const AIMessageRenderer: React.FC<{
           }
         />
       );
-    case 'info':
-      return <Bubble content={<InfoFormMessage values={msg.content} />} />;
   }
 };
 
@@ -138,9 +135,41 @@ export const UserMessage: React.FC<{
     styles: { hashId, wrapSSR, componentCls },
     handleClick,
   } = useRenderUISchemaTag(msg.content);
+  const items = msg.attachments?.map((item, index) => ({
+    uid: index.toString(),
+    name: item.filename,
+    status: 'done' as const,
+    url: item.url,
+    size: item.size,
+    thumbUrl: item.preview,
+    ...item,
+  }));
 
   return wrapSSR(
-    <MessageWrapper ref={msg.ref} className={cx(hashId, componentCls)}>
+    <MessageWrapper
+      ref={msg.ref}
+      className={cx(
+        hashId,
+        componentCls,
+        css`
+          display: flex;
+          flex-direction: column;
+          align-items: flex-end;
+        `,
+      )}
+    >
+      {items?.length ? (
+        <Attachments
+          styles={{
+            list: {
+              paddingInline: 0,
+              justifyContent: 'end',
+            },
+          }}
+          items={items}
+          disabled={true}
+        />
+      ) : null}
       <Bubble onClick={handleClick} content={<div dangerouslySetInnerHTML={{ __html: html }} />} />
     </MessageWrapper>,
   );

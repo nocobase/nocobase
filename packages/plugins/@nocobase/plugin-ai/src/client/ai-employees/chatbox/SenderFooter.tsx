@@ -12,6 +12,7 @@ import { Divider, Flex } from 'antd';
 import { FieldSelector } from './FieldSelector';
 import { useChatMessages } from './ChatMessagesProvider';
 import { UISchemaSelector } from './UISchemaSelector';
+import { Upload } from './Upload';
 
 export const SenderFooter: React.FC<{
   components: any;
@@ -25,6 +26,8 @@ export const SenderFooter: React.FC<{
         <FieldSelector />
         <Divider type="vertical" />
         <UISchemaSelector />
+        <Divider type="vertical" />
+        <Upload />
       </Flex>
       <Flex align="center">
         {loading ? <LoadingButton type="default" /> : <SendButton type="primary" disabled={false} />}
