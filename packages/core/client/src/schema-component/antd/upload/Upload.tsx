@@ -14,6 +14,7 @@ import { Alert, Upload as AntdUpload, Button, Modal, Progress, Space, Tooltip } 
 import { createGlobalStyle } from 'antd-style';
 import useUploadStyle from 'antd/es/upload/style';
 import cls from 'classnames';
+import { css } from '@emotion/css';
 import { saveAs } from 'file-saver';
 import filesize from 'filesize';
 import React, { useCallback, useEffect, useState } from 'react';
@@ -203,6 +204,12 @@ function ReadPretty({ value, onChange, disabled, multiple, size, ...others }: Up
         `nb-upload`,
         size ? `nb-upload-${size}` : null,
         hashId,
+        css`
+          .ant-upload-list-picture-card-container {
+            width: ${size}px !important;
+            height: ${size}px !important;
+          }
+        `,
       )}
     >
       <div className={cls(`${prefixCls}-list`, `${prefixCls}-list-picture-card`)}>

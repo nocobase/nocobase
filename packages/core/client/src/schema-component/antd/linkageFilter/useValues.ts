@@ -115,8 +115,12 @@ export const useValues = (): UseValuesReturn => {
     (operatorValue) => {
       const operator = field.data?.operators?.find?.((item) => item.value === operatorValue);
       field.data.operator = operator;
-      field.data.schema = cloneDeep(operator?.schema);
-      field.data.value = operator.noValue ? operator.default || true : undefined;
+      const s1 = cloneDeep(field.data.schema);
+      const s2 = cloneDeep(operator?.schema);
+      field.data.schema = merge(s1, s2);
+      if (!operator.noValue) {
+        setRightValue(undefined);
+      }
       data2value();
     },
     [data2value, field.data],
