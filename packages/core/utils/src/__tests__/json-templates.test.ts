@@ -33,6 +33,20 @@ describe('json-templates', () => {
     expect(parse('{{a.b}}')({ 'a.b': 2 })).toBe(2);
   });
 
+  it('parse with variable path contains number', () => {
+    const template = {
+      name: '{{user.123}}',
+    };
+    const result = parse(template, { nestedKey: true })({
+      user: {
+        123: 'abc',
+      },
+    });
+    expect(result).toEqual({
+      name: 'abc',
+    });
+  });
+
   it('parse with variable path contains chinese characters', () => {
     const template = {
       name: '{{中文id}}-{{user.中文name}}.',
