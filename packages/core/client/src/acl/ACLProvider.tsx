@@ -209,9 +209,9 @@ export function useACLRoleContext() {
     },
     [allowedActions, getActionAlias],
   );
-
   return {
     ...data,
+    snippets: data?.snippets || [],
     parseAction: useCallback(
       (actionPath: string, options: any = {}) => {
         const [resourceName, actionName] = actionPath?.split(':') || [];
