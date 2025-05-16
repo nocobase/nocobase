@@ -54,7 +54,11 @@ type SmartDatePickerProps = {
 
 const SmartDatePicker: React.FC<SmartDatePickerProps> = (props) => {
   const { isRange, ...rest } = props as any;
-  return isRange ? <DatePicker.RangePicker {...rest} /> : <DatePicker.FilterWithPicker {...rest} />;
+  return isRange ? (
+    <DatePicker.RangePicker {...rest} style={{ minWidth: 350 }} />
+  ) : (
+    <DatePicker.FilterWithPicker {...rest} />
+  );
 };
 
 export const DateFilterDynamicComponent = (props) => {
@@ -66,7 +70,11 @@ export const DateFilterDynamicComponent = (props) => {
       <Select
         options={compile(options)}
         {...props}
-        style={{ width: '100%', minWidth: 120 }}
+        style={{
+          width: '100%',
+          minWidth: 120,
+          maxWidth: ['past', 'future', 'exact', undefined].includes(value?.type) ? 300 : null,
+        }}
         value={value?.type || 'exact'}
         onChange={(val) => {
           const obj: any = {
@@ -83,7 +91,7 @@ export const DateFilterDynamicComponent = (props) => {
         <InputNumber
           key="number"
           value={value?.number}
-          style={{ width: 120 }}
+          style={{ minWidth: 120 }}
           onChange={(val) => {
             const obj = {
               ...value,
@@ -95,7 +103,7 @@ export const DateFilterDynamicComponent = (props) => {
         <Select
           key="unit"
           value={value?.unit}
-          style={{ width: 130 }}
+          style={{ minWidth: 130 }}
           onChange={(val) => {
             const obj = {
               ...value,
