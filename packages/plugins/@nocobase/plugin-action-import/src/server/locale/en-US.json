@@ -6,5 +6,6 @@
   "Incorrect time format": "Incorrect time format",
   "Incorrect date format": "Incorrect date format",
   "Incorrect email format": "Incorrect email format",
-  "Illegal percentage format": "Illegal percentage format"
+  "Illegal percentage format": "Illegal percentage format",
+  "Imported template does not match, please download again.": "Imported template does not match, please download again."
 }

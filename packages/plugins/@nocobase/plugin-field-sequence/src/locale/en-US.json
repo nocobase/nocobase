@@ -1,5 +1,6 @@
 {
   "Sequence": "Sequence",
+  "Automatically generate codes based on configured rules, supporting combinations of dates, numbers, and text.": "Automatically generate codes based on configured rules, supporting combinations of dates, numbers, and text.",
   "Sequence rules": "Sequence rules",
   "Add rule": "Add rule",
   "Inputable": "Inputable",
@@ -8,6 +9,9 @@
   "Autoincrement": "Autoincrement",
   "Fixed text": "Fixed text",
   "Text content": "Text content",
+  "Date": "Date",
+  "Date format": "Date format",
+  "Supports all formats of the Day.js library, such as \"YYYYMMDD\", \"YYYY-MM-DD\", etc.": "Supports all formats of the Day.js library, such as \"YYYYMMDD\", \"YYYY-MM-DD\", etc.",
   "Rule content": "Rule content",
   "{{value}} Digits": "{{value}} Digits",
   "Digits": "Digits",
@@ -20,5 +24,14 @@
   "Monthly": "Monthly",
   "Yearly": "Yearly",
   "Operations": "Operations",
-  "Customize": "Customize"
+  "Customize": "Customize",
+  "Random character": "Random character",
+  "Length": "Length",
+  "Will generate random characters with specified length.": "Will generate random characters with specified length.",
+  "Character sets": "Character sets",
+  "Select character sets to generate random characters.": "Select character sets to generate random characters.",
+  "Number": "Number",
+  "Lowercase letters": "Lowercase letters",
+  "Uppercase letters": "Uppercase letters",
+  "Symbols": "Symbols"
 }

@@ -1,8 +1,10 @@
 {
-  "The email is incorrect, please re-enter": "The email is incorrect, please re-enter",
-  "Please fill in your email address": "Please fill in your email address",
+  "The username or email is incorrect, please re-enter": "The username or email is incorrect, please re-enter",
   "The password is incorrect, please re-enter": "The password is incorrect, please re-enter",
   "Not a valid cellphone number, please re-enter": "Not a valid cellphone number, please re-enter",
   "The phone number has been registered, please login directly": "The phone number has been registered, please login directly",
-  "The phone number is not registered, please register first": "The phone number is not registered, please register first"
+  "The phone number is not registered, please register first": "The phone number is not registered, please register first",
+  "Please keep and enable at least one authenticator": "Please keep and enable at least one authenticator",
+  "Please enter your username or email": "Please enter your username or email",
+  "Please enter a valid username": "Please enter a valid username"
 }

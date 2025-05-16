@@ -4,5 +4,5 @@
   "Expression": "Expression",
   "Expression syntax error": "Expression syntax error",
   "Syntax references": "Syntax references",
-  "Compute a value based on the other fields": "Compute a value based on the other fields"
+  "Configure and store the results of calculations between multiple field values in the same record, supporting both Math.js and Excel formula functions.": "Configure and store the results of calculations between multiple field values in the same record, supporting both Math.js and Excel formula functions."
 }

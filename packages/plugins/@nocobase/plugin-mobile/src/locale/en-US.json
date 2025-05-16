@@ -1,8 +1,9 @@
 {
+  "Fill": "Fill",
   "App settings": "App settings",
-  "Page settings": "Page settings",
   "Info": "Info",
   "Back": "Back",
+  "Page settings": "Page settings",
   "Link": "Link",
   "Remove": "Remove",
   "Add page": "Add page",
@@ -26,5 +27,9 @@
   "Mobile routes": "Mobile routes",
   "No accessible pages found": "No accessible pages found",
   "This might be due to permission configuration issues": "This might be due to permission configuration issues",
-  "Select time":"Select time"
+  "Select time": "Select time",
+  "Clear": "Clear",
+  "Confirm": "Confirm",
+  "Cancel": "Cancel",
+  "Display < back button": "Display < back button"
 }

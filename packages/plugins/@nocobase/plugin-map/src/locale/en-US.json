@@ -47,5 +47,8 @@
   "Create map block": "Create map block",
   "Start point": "Start point",
   "End point": "End point",
-  "Concatenation order field": "Concatenation order field"
+  "Concatenation order field": "Concatenation order field",
+  "securityJsCode or serviceHost is required": "securityJsCode or serviceHost is required",
+  "Access key is required": "Access key is required",
+  "Api key is required": "Api key is required"
 }

@@ -7,5 +7,8 @@
   "Custom domain": "Custom domain",
   "Manage applications": "Manage applications",
   "Standalone deployment": "Standalone deployment",
-  "Auto start": "Auto start"
+  "Auto start": "Auto start",
+  "Start mode": "Start mode",
+  "Start on first visit": "Start on first visit",
+  "Start with main application": "Start with main application"
 }

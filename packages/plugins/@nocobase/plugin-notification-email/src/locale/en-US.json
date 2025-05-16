@@ -11,12 +11,13 @@
   "Port": "Port",
   "Secure": "Secure",
   "Account": "Account",
-  "Password" : "Password",
+  "Password": "Password",
   "Configure": "Configure",
   "The email address that will be used as the sender": "The email address that will be used as the sender",
   "SMTP mail": "SMTP mail",
   "SMTP server host": "SMTP server host",
   "Content type": "Content type",
   "Plain text": "Plain text",
-  "Transport": "Transport"
+  "Transport": "Transport",
+  "In most cases, if using port 465, set it to true; otherwise, set it to false.": "In most cases, if using port 465, set it to true; otherwise, set it to false."
 }

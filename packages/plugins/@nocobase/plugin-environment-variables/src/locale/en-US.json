@@ -1,1 +1,16 @@
-{}
+{
+  "Environment": "Environment",
+  "Variables and secrets": "Variables and secrets",
+  "Variables": "Variables",
+  "Secrets": "Secrets",
+  "Add variable": "Add variable",
+  "Bulk import": "Bulk import",
+  "Name": "Name",
+  "Value": "Value",
+  "Type": "Type",
+  "Plain text": "Plain text",
+  "Encrypted": "Encrypted",
+  "Delete variable": "Delete variable",
+  "Restart now": "Restart now",
+  "Variables and secrets have been updated. A restart is required for the changes to take effect.": "Variables and secrets have been updated. A restart is required for the changes to take effect."
+}

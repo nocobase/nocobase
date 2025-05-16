@@ -1,6 +1,7 @@
 {
   "Title field": "Title field",
   "Time scale": "Time scale",
-  "Start date field":"Start date field",
-  "Progress field":"Progress field"
+  "Start date field": "Start date field",
+  "End date field": "End date field",
+  "Progress field": "Progress field"
 }

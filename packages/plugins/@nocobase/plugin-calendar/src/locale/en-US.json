@@ -31,6 +31,7 @@
   "View record": "View record",
   "Details": "Details",
   "Customize": "Customize",
+  "Update record": "Update record",
   "Popup": "Popup",
   "Updated successfully": "Updated successfully",
   "Custom request": "Custom request",
@@ -42,6 +43,13 @@
   "Monthly": "Monthly",
   "Yearly": "Yearly",
   "Repeats": "Repeats",
+  "Title": "Title",
+  "Month": "Month",
+  "Week": "Week",
+  "{{count}} more items": "{{count}} more items",
   "Color field": "Color field",
-  "Not selected": "Not selected"
+  "Not selected": "Not selected",
+  "Default view": "Default view",
+  "Event open mode": "Event open mode",
+  "Quick create event": "Quick create event"
 }

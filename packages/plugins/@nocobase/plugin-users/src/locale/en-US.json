@@ -5,5 +5,8 @@
   "Remove user": "Remove user",
   "Are you sure you want to remove it?": "Are you sure you want to remove it?",
   "Random password": "Random password",
+  "Users manager": "Users manager",
+  "Allow edit profile": "Allow edit profile",
+  "Allow change password": "Allow change password",
   "User profile is not allowed to be edited": "User profile is not allowed to be edited"
 }
