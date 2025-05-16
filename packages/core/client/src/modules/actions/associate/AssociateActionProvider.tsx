@@ -41,12 +41,11 @@ const useTableSelectorProps = () => {
 export const AssociateActionProvider = (props) => {
   const [selectedRows, setSelectedRows] = useState([]);
   const collection = useCollection();
-  const { resource, block, __parent } = useBlockRequestContext();
+  const { resource, block, __parent, service } = useBlockRequestContext();
   const actionCtx = useActionContext();
   const { isMobile } = useOpenModeContext() || {};
   const [associationData, setAssociationData] = useState([]);
-  const [flag, setFlag] = useState(false);
-
+  const { data } = service || {};
   useEffect(() => {
     resource
       ?.list?.({
@@ -55,7 +54,7 @@ export const AssociateActionProvider = (props) => {
       .then((res) => {
         setAssociationData(res.data?.data || []);
       });
-  }, [resource, flag]);
+  }, [resource, data?.meta.count]);
 
   const pickerProps = {
     size: 'small',
@@ -81,7 +80,6 @@ export const AssociateActionProvider = (props) => {
           setVisible?.(false);
           setFormValueChanged?.(false);
         }
-        setFlag(!flag);
       },
     };
   };
