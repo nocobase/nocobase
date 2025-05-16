@@ -35,11 +35,11 @@ describe('json-templates', () => {
 
   it('parse with variable path contains number', () => {
     const template = {
-      name: '{{user.123}}',
+      name: '{{123.456}}',
     };
     const result = parse(template, { nestedKey: true })({
-      user: {
-        123: 'abc',
+      123: {
+        456: 'abc',
       },
     });
     expect(result).toEqual({
