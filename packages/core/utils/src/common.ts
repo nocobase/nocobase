@@ -7,6 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import _ from 'lodash';
+
 export const isString = (value: any): value is string => {
   return typeof value === 'string';
 };
@@ -56,12 +58,12 @@ export const nextTick = (fn: () => void) => {
 };
 
 /**
- * 通用树节点深度优先遍历函数
- * @param {Object|Array} tree - 要遍历的树结构
- * @param {Function} callback - 遍历每个节点时执行的回调函数，返回真值时停止遍历并返回当前节点
- * @param {Object} options - 配置选项
- * @param {string|Function} options.childrenKey - 子节点的属性名，默认为'children'，也可以是一个函数
- * @returns {any|undefined} - 找到的节点或undefined
+ * Generic tree node depth-first traversal function
+ * @param {Object|Array} tree - The tree structure to traverse
+ * @param {Function} callback - The callback function executed for each node, stops traversing and returns the current node when a truthy value is returned
+ * @param {Object} options - Configuration options
+ * @param {string|Function} options.childrenKey - The property name of child nodes, defaults to 'children', can also be a function
+ * @returns {any|undefined} - The found node or undefined
  */
 export function treeFind<T = any>(
   tree: T | T[],
@@ -74,20 +76,20 @@ export function treeFind<T = any>(
 
   const { childrenKey = 'children' } = options;
 
-  // 处理根节点是数组的情况
+  // Handle case where the root node is an array
   const nodes = Array.isArray(tree) ? [...tree] : [tree];
 
-  // 深度优先搜索
+  // Depth-first search
   for (const node of nodes) {
-    // 对当前节点调用回调函数
+    // Call callback function on the current node
     if (callback(node)) {
       return node;
     }
 
-    // 获取子节点
+    // Get child nodes
     const children = typeof childrenKey === 'function' ? childrenKey(node) : (node as any)[childrenKey];
 
-    // 递归处理子节点
+    // Recursively process child nodes
     if (Array.isArray(children) && children.length > 0) {
       const found = treeFind(children, callback, options);
       if (found !== undefined) {
@@ -97,4 +99,32 @@ export function treeFind<T = any>(
   }
 
   return undefined;
+}
+
+/**
+ * Sort a tree structure
+ * @param {Array} tree - Tree structure array
+ * @param {string|Function} sortBy - Sort field or sort function
+ * @param {string} childrenKey - The key name of child nodes, defaults to 'children'
+ * @param {boolean} isAsc - Whether to sort in ascending order, defaults to true
+ * @returns {Array} - The sorted tree structure
+ */
+export function sortTree(tree: any[], sortBy: string | Function, childrenKey = 'children', isAsc = true) {
+  if (!tree || !Array.isArray(tree) || tree.length === 0) {
+    return tree;
+  }
+
+  // Sort nodes at the current level
+  const sortedTree = _.orderBy(tree, sortBy, isAsc ? 'asc' : 'desc');
+
+  // Recursively sort child nodes
+  return sortedTree.map((node) => {
+    if (node[childrenKey] && node[childrenKey].length > 0) {
+      return {
+        ...node,
+        [childrenKey]: sortTree(node[childrenKey], sortBy, childrenKey, isAsc),
+      };
+    }
+    return node;
+  });
 }

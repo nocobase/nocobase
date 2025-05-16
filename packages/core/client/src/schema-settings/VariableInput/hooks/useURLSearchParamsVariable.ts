@@ -16,6 +16,7 @@ import { useLocationSearch } from '../../../application/CustomRouterContextProvi
 import { useFlag } from '../../../flag-provider/hooks/useFlag';
 import { Option } from '../type';
 import { getLabelWithTooltip } from './useBaseVariable';
+import { string } from '../../../collection-manager/interfaces/properties/operators';
 
 export const getURLSearchParams = (search: string) => {
   if (search.startsWith('?')) {
@@ -32,6 +33,7 @@ export const getURLSearchParamsChildren = (queryParams: Record<string, any>): Op
       value: key,
       key,
       isLeaf: true,
+      operators: string,
     };
   });
 };

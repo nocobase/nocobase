@@ -16,6 +16,7 @@ import EventEmitter from 'events';
 import { ImportValidationError, ImportError } from '../errors';
 import { Context } from '@nocobase/actions';
 import _ from 'lodash';
+import { Logger } from '@nocobase/logger';
 
 export type ImportColumn = {
   dataIndex: Array<string>;
@@ -32,6 +33,7 @@ export type ImporterOptions = {
   chunkSize?: number;
   explain?: string;
   repository?: any;
+  logger?: Logger;
 };
 
 export type RunOptions = {
@@ -41,6 +43,8 @@ export type RunOptions = {
 
 export class XlsxImporter extends EventEmitter {
   private repository;
+
+  logger: Logger;
 
   constructor(protected options: ImporterOptions) {
     super();
@@ -54,6 +58,7 @@ export class XlsxImporter extends EventEmitter {
     }
 
     this.repository = options.repository ? options.repository : options.collection.repository;
+    this.logger = options.logger;
   }
 
   async validate(ctx?: Context) {
@@ -83,8 +88,11 @@ export class XlsxImporter extends EventEmitter {
     }
 
     try {
+      this.logger?.info('Starting import validation');
       await this.validate(options.context);
+      this.logger?.info('Validation completed successfully, beginning data import');
       const imported = await this.performImport(options);
+      this.logger?.info(`Import completed successfully, imported ${imported} records`);
 
       // @ts-ignore
       if (this.options.collectionManager.db) {
@@ -224,11 +232,15 @@ export class XlsxImporter extends EventEmitter {
             rowValues[dataKey] = await interfaceInstance.toValue(this.trimString(str), ctx);
           }
 
+          const startTime = process.hrtime();
           await this.performInsert({
             values: rowValues,
             transaction,
             context: options?.context,
           });
+          const endTime = process.hrtime(startTime);
+          const executionTimeMs = (endTime[0] * 1000 + endTime[1] / 1000000).toFixed(2);
+          this.logger?.debug(`Record insertion completed in ${executionTimeMs}ms`);
 
           imported += 1;
 
@@ -240,6 +252,14 @@ export class XlsxImporter extends EventEmitter {
 
           await new Promise((resolve) => setTimeout(resolve, 5));
         } catch (error) {
+          this.logger?.error(`Import error at row ${handingRowIndex}: ${error.message}`, {
+            rowIndex: handingRowIndex,
+            rowData: Object.entries(rowValues)
+              .map(([key, value]) => `${key}: ${value}`)
+              .join(', '),
+            originalError: error.stack || error.toString(),
+          });
+
           throw new ImportError(`Import failed at row ${handingRowIndex}`, {
             rowIndex: handingRowIndex,
             rowData: Object.entries(rowValues)

@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Plugin } from '@nocobase/client';
+import { BlockTemplatesPane, Plugin, SchemaSettingsFormItemTemplate, SchemaSettingsTemplate } from '@nocobase/client';
 import { templateBlockInitializerItem } from './initializers';
 import { NAMESPACE } from './constants';
 import { BlockTemplateList, BlockTemplatePage } from './components';
@@ -91,10 +91,20 @@ export class PluginBlockTemplateClient extends Plugin {
     this.app.pluginSettingsManager.add('block-templates', {
       title: `{{t("Block templates", { ns: "${NAMESPACE}" })}}`,
       icon: 'ProfileOutlined',
+      // Component: BlockTemplateList,
+    });
+
+    this.app.pluginSettingsManager.add(`block-templates.reference`, {
+      title: `{{t("Reference template")}}`,
+      Component: BlockTemplatesPane,
+    });
+
+    this.app.pluginSettingsManager.add(`block-templates.inherited`, {
+      title: `{{t("Inherited template")}}`,
       Component: BlockTemplateList,
     });
 
-    this.app.pluginSettingsManager.add(`block-templates/:key`, {
+    this.app.pluginSettingsManager.add(`block-templates/inherited/:key`, {
       title: false,
       pluginKey: 'block-templates',
       isTopLevel: false,
@@ -103,14 +113,15 @@ export class PluginBlockTemplateClient extends Plugin {
 
     // add mobile router
     this.app.pluginManager.get<PluginMobileClient>('mobile')?.mobileRouter?.add('mobile.schema.blockTemplate', {
-      path: `/block-templates/:key/:pageSchemaUid`,
+      path: `/block-templates/inherited/:key/:pageSchemaUid`,
       Component: BlockTemplateMobilePage,
     });
   }
 
   isInBlockTemplateConfigPage() {
-    const mobilePath = this.app.pluginManager.get<PluginMobileClient>('mobile')?.mobileBasename + '/block-templates';
-    const desktopPath = 'admin/settings/block-templates';
+    const mobilePath =
+      this.app.pluginManager.get<PluginMobileClient>('mobile')?.mobileBasename + '/block-templates/inherited';
+    const desktopPath = 'admin/settings/block-templates/inherited';
     return window.location.pathname.includes(desktopPath) || window.location.pathname.includes(mobilePath);
   }
 
@@ -141,7 +152,7 @@ export class PluginBlockTemplateClient extends Plugin {
           // if not filter out fieldSettings:component:, we will show two revert setting item
           if (schemaSetting && !key.startsWith('fieldSettings:component:')) {
             for (let i = 0; i < schemaSetting.items.length; i++) {
-              // hide convert to block setting item
+              // hide reference template setting item
               hideConvertToBlockSettingItem(
                 schemaSetting.items[i],
                 schemaSetting.items[i - 1],
@@ -189,13 +200,15 @@ export class PluginBlockTemplateClient extends Plugin {
             'FormDetailsSettings',
           ];
           if (blockSettings.includes(key)) {
-            // schemaSetting.add('template-saveAsTemplateItem', saveAsTemplateSetting);
-            // 放到template-revertSettingItem上方
-            const revertItemIndex = schemaSetting.items.findIndex((item) => item.name === 'template-revertSettingItem');
-            if (revertItemIndex !== -1) {
-              schemaSetting.items.splice(revertItemIndex, 0, saveAsTemplateSetting);
-            } else {
-              schemaSetting.items.push(saveAsTemplateSetting);
+            const referenceTemplateItemIndex = schemaSetting.items.findIndex(
+              (item) =>
+                item['Component'] === SchemaSettingsTemplate || item['Component'] === SchemaSettingsFormItemTemplate,
+            );
+            if (referenceTemplateItemIndex !== -1) {
+              schemaSetting.items.splice(referenceTemplateItemIndex + 1, 0, {
+                ...saveAsTemplateSetting,
+                sort: schemaSetting.items[referenceTemplateItemIndex].sort,
+              });
             }
           }
         }

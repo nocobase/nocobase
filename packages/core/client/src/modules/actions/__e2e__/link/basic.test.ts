@@ -31,10 +31,15 @@ test.describe('Link', () => {
     await expect(
       page.getByRole('button', { name: 'designer-schema-settings-Action.Link-actionSettings:link-users' }),
     ).toHaveCount(1);
-    await page.getByRole('button', { name: 'designer-schema-settings-Action.Link-actionSettings:link-users' }).hover();
-    await page.getByRole('menuitem', { name: 'Edit link' }).click();
     await page
-      .getByLabel('block-item-users-table-URL')
+      .getByRole('button', { name: 'designer-schema-settings-Action.Link-actionSettings:link-users' })
+      .first()
+      .hover();
+    await page.getByLabel('designer-schema-settings-Action.Link-actionSettings:link-users').first().hover();
+    await page.getByRole('menuitem', { name: 'Edit link' }).click();
+    await page.getByLabel('block-item-users-URL').getByLabel('textbox').click();
+    await page
+      .getByLabel('block-item-users-URL')
       .getByLabel('textbox')
       .fill(await nocoPage.getUrl());
     await page.getByPlaceholder('Name').fill('id');
@@ -102,10 +107,10 @@ test.describe('Link', () => {
     await page.getByLabel('action-Action.Link-Link-').hover();
     await page.getByLabel('designer-schema-settings-Action.Link-actionSettings:link-users').hover();
     await page.getByRole('menuitem', { name: 'Edit link' }).click();
-    await page.getByLabel('block-item-users-table-URL').getByLabel('textbox').fill(otherPageUrl);
+    await page.getByLabel('block-item-users-URL').getByLabel('textbox').fill(otherPageUrl);
     await page.getByRole('button', { name: 'OK', exact: true }).click();
 
-    await page.getByLabel('action-Action.Link-Link-').click();
+    await page.getByLabel('action-Action.Link-Link-').first().click();
     expect(page.url().endsWith(otherPageUrl)).toBe(true);
 
     // 开启 “Open in new window” 选项后，点击链接按钮会在新窗口打开

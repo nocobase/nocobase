@@ -342,13 +342,13 @@ export const SchemaSettingsFormItemTemplate = function FormItemTemplate(props) {
   }
   return (
     <SchemaSettingsItem
-      title="Save as block template"
+      title={t('Save as reference template')}
       onClick={async () => {
         setVisible(false);
         const collection = collectionName && cm?.getCollection(collectionName);
         const gridSchema = findGridSchema(fieldSchema);
         const values = await FormDialog(
-          t('Save as template'),
+          t('Save as reference template'),
           () => {
             const componentTitle = {
               FormItem: t('Form'),
@@ -414,7 +414,7 @@ export const SchemaSettingsFormItemTemplate = function FormItemTemplate(props) {
         dn.refresh();
       }}
     >
-      {t('Save as block template')}
+      {t('Save as reference template')}
     </SchemaSettingsItem>
   );
 };
@@ -1103,7 +1103,7 @@ export const SchemaSettingsDefaultSortingRules = function DefaultSortingRules(pr
 };
 
 export const SchemaSettingsLinkageRules = function LinkageRules(props) {
-  const { collectionName, readPretty, Component, afterSubmit } = props;
+  const { collectionName, readPretty, Component, afterSubmit, title: settingTitle, returnScope } = props;
   const fieldSchema = useFieldSchema();
   const { form } = useFormBlockContext();
   const { dn } = useDesignable();
@@ -1129,7 +1129,7 @@ export const SchemaSettingsLinkageRules = function LinkageRules(props) {
   const getRules = useCallback(() => {
     return gridSchema?.[dataKey] || fieldSchema?.[dataKey] || [];
   }, [gridSchema, fieldSchema, dataKey]);
-  const title = titleMap[category] || t('Linkage rules');
+  const title = settingTitle || titleMap[category] || t('Linkage rules');
   const flagVales = useFlag();
   const schema = useMemo<ISchema>(
     () => ({
@@ -1151,6 +1151,7 @@ export const SchemaSettingsLinkageRules = function LinkageRules(props) {
               localVariables,
               record,
               formBlockType,
+              returnScope,
             };
           },
         },
@@ -1166,19 +1167,23 @@ export const SchemaSettingsLinkageRules = function LinkageRules(props) {
         rules.push(_.omit(_.pickBy(rule, _.identity), ['conditionBasic', 'conditionAdvanced']));
       }
       const templateId = gridSchema['x-component'] === 'BlockTemplate' && gridSchema['x-component-props']?.templateId;
-      const uid = (templateId && getTemplateById(templateId).uid) || gridSchema['x-uid'];
+      const uid =
+        category !== LinkageRuleCategory.block
+          ? (templateId && getTemplateById(templateId).uid) || gridSchema['x-uid']
+          : fieldSchema['x-uid'];
       const schema = {
         ['x-uid']: uid,
       };
       gridSchema[dataKey] = rules;
       schema[dataKey] = rules;
+      fieldSchema[dataKey] = rules;
       dn.emit('patch', {
         schema,
       });
       dn.refresh();
       afterSubmit?.();
     },
-    [dn, getTemplateById, gridSchema, dataKey, afterSubmit],
+    [dn, getTemplateById, gridSchema, dataKey, afterSubmit, category],
   );
 
   return (

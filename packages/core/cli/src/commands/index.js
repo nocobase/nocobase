@@ -29,11 +29,14 @@ module.exports = (cli) => {
   require('./pm2')(cli);
   require('./test')(cli);
   require('./test-coverage')(cli);
+  require('./benchmark')(cli);
   require('./umi')(cli);
   require('./update-deps')(cli);
   require('./upgrade')(cli);
   require('./postinstall')(cli);
   require('./pkg')(cli);
+  require('./instance-id')(cli);
+  require('./view-license-key')(cli);
   if (isPackageValid('@umijs/utils')) {
     require('./create-plugin')(cli);
   }

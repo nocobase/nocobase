@@ -32,7 +32,7 @@
   "dependencies": {
     "pm2": "^6.0.5",
     "mysql2": "^3.14.0",
-    "mariadb": "^3.4.1",
+    "mariadb": "^2.5.6",
     "pg": "^8.14.1",
     "pg-hstore": "^2.3.4"
   }

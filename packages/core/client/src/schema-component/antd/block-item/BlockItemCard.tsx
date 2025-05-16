@@ -13,6 +13,7 @@ import { useTranslation } from 'react-i18next';
 import { useToken } from '../../../style';
 import { MarkdownReadPretty } from '../markdown';
 import { NAMESPACE_UI_SCHEMA } from '../../../i18n/constant';
+import { useCollection } from '../../../data-source';
 
 export const BlockItemCardContext = createContext({});
 
@@ -25,6 +26,8 @@ export const BlockItemCard = React.forwardRef<HTMLDivElement, CardProps | any>((
   const [titleHeight, setTitleHeight] = useState(0);
   const titleRef = useRef<HTMLDivElement | null>(null);
   const { t } = useTranslation();
+  const collection = useCollection();
+  console.log();
   useEffect(() => {
     const timer = setTimeout(() => {
       if (titleRef.current) {

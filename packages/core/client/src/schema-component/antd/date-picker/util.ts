@@ -75,7 +75,7 @@ export const moment2str = (value?: Dayjs | null, options: Moment2strOptions = {}
 };
 
 const handleChangeOnFilter = (value, picker, showTime) => {
-  const format = showTime ? 'YYYY-MM-DD HH:mm:ss' : getPickerFormat(picker);
+  const format = showTime && picker === 'date' ? 'YYYY-MM-DD HH:mm:ss' : getPickerFormat(picker);
   if (value) {
     return dayjs(value).format(format);
   }

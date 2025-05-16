@@ -357,7 +357,7 @@ function FinallyButton({
       }}
       style={{
         ...props?.style,
-        display: !designable && field?.data?.hidden && 'none',
+        display: !designable && field?.data?.hidden ? 'none' : 'inline-block',
         opacity: designable && field?.data?.hidden && 0.1,
         ...buttonStyle,
       }}

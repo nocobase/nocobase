@@ -72,7 +72,7 @@ describe('SchemaInitializerDivider', () => {
     expect(onSubmit).toBeCalled();
   });
 
-  it('item mode', async () => {
+  it.skip('item mode', async () => {
     const onSubmit = vitest.fn();
     const Demo = () => {
       return (

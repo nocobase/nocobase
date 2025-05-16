@@ -19,9 +19,9 @@ import dayjs from 'dayjs';
 import React, { useCallback, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCompile } from '../../hooks';
+import { Json } from '../input';
 import { XButton } from './XButton';
 import { useStyles } from './style';
-import { Json } from '../input';
 
 const JT_VALUE_RE = /^\s*{{\s*([^{}]+)\s*}}\s*$/;
 
@@ -204,6 +204,7 @@ export function Input(props: VariableInputProps) {
     parseOptions,
     hideVariableButton,
     constantAbel = true,
+    ...otherProps
   } = props;
   const scope = typeof props.scope === 'function' ? props.scope() : props.scope;
   const { wrapSSR, hashId, componentCls, rootPrefixCls } = useStyles({ hideVariableButton });
@@ -484,7 +485,7 @@ export function Input(props: VariableInputProps) {
             value={variable ?? cValue}
             onChange={onSwitch}
             loadData={loadData as any}
-            changeOnSelect={changeOnSelect}
+            changeOnSelect={changeOnSelect ?? true}
             fieldNames={fieldNames}
             disabled={disabled}
           >
@@ -501,7 +502,7 @@ export function Input(props: VariableInputProps) {
         )}
       </Space.Compact>
       {/* 确保所有ant input样式都已加载, 放到Compact中会导致Compact中的Input样式不对 */}
-      <AntInput style={{ display: 'none' }} />
+      <AntInput style={{ display: 'none' }} {...otherProps} />
     </>,
   );
 }

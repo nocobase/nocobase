@@ -108,7 +108,6 @@ export const useCreateAction = () => {
           },
         });
         ctx.setVisible(false);
-        await form.reset();
         field.data.loading = false;
         refresh();
       } catch (error) {
@@ -142,7 +141,6 @@ export const useUpdateAction = () => {
           },
         });
         ctx.setVisible(false);
-        await form.reset();
         refresh();
       } catch (e) {
         console.log(e);
