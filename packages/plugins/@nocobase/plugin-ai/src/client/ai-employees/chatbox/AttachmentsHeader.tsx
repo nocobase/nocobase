@@ -10,8 +10,10 @@
 import React, { useMemo } from 'react';
 import { Attachments } from '@ant-design/x';
 import { useChatMessages } from './ChatMessagesProvider';
+import { useUploadFiles } from './useUploadFiles';
 
 export const AttachmentsHeader: React.FC = () => {
+  const uploadProps = useUploadFiles();
   const { attachments, removeAttachment } = useChatMessages();
   const items = useMemo(() => {
     return attachments?.map((item, index) => ({
@@ -35,6 +37,7 @@ export const AttachmentsHeader: React.FC = () => {
       }
       items={items}
       onRemove={({ uid }) => removeAttachment(Number(uid))}
+      {...uploadProps}
     />
   );
 };

@@ -13,11 +13,12 @@ import { ZodObject } from 'zod';
 import zodToJsonSchema from 'zod-to-json-schema';
 import PluginAIServer from '../plugin';
 import { Context } from '@nocobase/actions';
+import { Application } from '@nocobase/server';
 
 export type LLMProviderOptions = {
   title: string;
   provider: new (opts: {
-    ctx: Context;
+    app: Application;
     serviceOptions?: any;
     chatOptions?: any;
     abortSignal?: AbortSignal;

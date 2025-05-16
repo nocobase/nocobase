@@ -24,7 +24,7 @@ import { AIEmployeeTrigger } from './workflow/triggers/ai-employee';
 import { formFiller, workflowCaller } from './tools';
 import { Model } from '@nocobase/database';
 import { anthropicProviderOptions } from './llm-providers/anthropic';
-import { tongyiProviderOptions } from './llm-providers/tongyi';
+// import { tongyiProviderOptions } from './llm-providers/tongyi';
 
 export class PluginAIServer extends Plugin {
   aiManager = new AIManager(this);
@@ -63,6 +63,7 @@ export class PluginAIServer extends Plugin {
       actions: ['aiEmployees:*', 'aiTools:*', 'roles.aiEmployees:*'],
     });
     this.app.acl.allow('aiConversations', '*', 'loggedIn');
+    this.app.acl.allow('aiFiles', 'create', 'loggedIn');
 
     Object.entries(aiEmployeeActions).forEach(([name, action]) => {
       this.app.resourceManager.registerActionHandler(`aiEmployees:${name}`, action);

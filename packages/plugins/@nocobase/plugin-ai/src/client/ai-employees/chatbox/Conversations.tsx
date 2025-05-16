@@ -132,7 +132,7 @@ export const Conversations: React.FC = memo(() => {
     keyword,
     setKeyword,
   } = useChatConversations();
-  const { messagesService, setMessages } = useChatMessages();
+  const { messagesService, setMessages, setAttachments } = useChatMessages();
   const startNewConversation = useChatBoxContext('startNewConversation');
   const currentEmployee = useChatBoxContext('currentEmployee');
   const setCurrentEmployee = useChatBoxContext('setCurrentEmployee');
@@ -188,6 +188,7 @@ export const Conversations: React.FC = memo(() => {
     setSenderValue('');
     setSenderPlaceholder(conversation?.aiEmployee?.chatSettings?.senderPlaceholder);
     setMessages([]);
+    setAttachments([]);
     messagesService.run(sessionId);
     if (!expanded) {
       setShowConversations(false);

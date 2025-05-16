@@ -104,9 +104,9 @@ export class AnthropicProvider extends LLMProvider {
   }
 
   async parseAttachment(attachment: any): Promise<any> {
-    const fileManager = this.ctx.app.pm.get('file-manager') as PluginFileManagerServer;
+    const fileManager = this.app.pm.get('file-manager') as PluginFileManagerServer;
     const url = await fileManager.getFileURL(attachment);
-    const data = await encodeFile(url);
+    const data = await encodeFile(decodeURIComponent(url));
     if (attachment.mimetype.startsWith('image/')) {
       return {
         type: 'image_url',

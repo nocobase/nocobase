@@ -66,7 +66,7 @@ export class AIEmployee {
 
     const Provider = providerOptions.provider;
     const provider = new Provider({
-      ctx: this.ctx,
+      app: this.ctx.app,
       serviceOptions: service.options,
       chatOptions: {
         ...modelSettings,

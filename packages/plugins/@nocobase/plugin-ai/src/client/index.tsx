@@ -24,11 +24,11 @@ import { googleGenAIProviderOptions } from './llm-providers/google-genai';
 import { AIEmployeeTrigger } from './workflow/triggers/ai-employee';
 import { PermissionsTab } from './ai-employees/permissions/PermissionsTab';
 import { anthropicProviderOptions } from './llm-providers/anthropic';
-import { tongyiProviderOptions } from './llm-providers/tongyi';
 const { AIEmployeesProvider } = lazy(() => import('./ai-employees/AIEmployeesProvider'), 'AIEmployeesProvider');
 const { Employees } = lazy(() => import('./ai-employees/manager/Employees'), 'Employees');
 const { LLMServices } = lazy(() => import('./llm-services/LLMServices'), 'LLMServices');
 const { MessagesSettings } = lazy(() => import('./chat-settings/Messages'), 'MessagesSettings');
+const { AdminSettings } = lazy(() => import('./admin-settings/AdminSettings'), 'AdminSettings');
 const { Chat } = lazy(() => import('./llm-providers/components/Chat'), 'Chat');
 const { ModelSelect } = lazy(() => import('./llm-providers/components/ModelSelect'), 'ModelSelect');
 const { AIEmployeeButton } = lazy(() => import('./ai-employees/initializer/AIEmployeeButton'), 'AIEmployeeButton');
@@ -76,6 +76,12 @@ export class PluginAIClient extends Plugin {
       title: tval('LLM services', { ns: namespace }),
       aclSnippet: 'pm.ai.llm-services',
       Component: LLMServices,
+    });
+    this.app.pluginSettingsManager.add('ai.settings', {
+      icon: 'SettingOutlined',
+      title: tval('Settings'),
+      aclSnippet: 'pm.ai.settings',
+      Component: AdminSettings,
     });
 
     this.app.schemaInitializerManager.addItem(

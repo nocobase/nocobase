@@ -14,9 +14,10 @@ import { Model } from '@nocobase/database';
 import { encodeFile, parseResponseMessage, stripToolCallTags } from '../utils';
 import { Context } from '@nocobase/actions';
 import { PluginFileManagerServer } from '@nocobase/plugin-file-manager';
+import { Application } from '@nocobase/server';
 
 export abstract class LLMProvider {
-  ctx: Context;
+  app: Application;
   serviceOptions: Record<string, any>;
   modelOptions: Record<string, any>;
   messages: any[];
@@ -30,7 +31,7 @@ export abstract class LLMProvider {
   }
 
   constructor(opts: {
-    ctx: Context;
+    app: Application;
     serviceOptions?: any;
     chatOptions?: {
       messages?: any[];
@@ -38,9 +39,9 @@ export abstract class LLMProvider {
       [key: string]: any;
     };
   }) {
-    const { ctx, serviceOptions, chatOptions } = opts;
-    this.ctx = ctx;
-    this.serviceOptions = ctx.app.environment.renderJsonTemplate(serviceOptions);
+    const { app, serviceOptions, chatOptions } = opts;
+    this.app = app;
+    this.serviceOptions = app.environment.renderJsonTemplate(serviceOptions);
     if (chatOptions) {
       const { messages, tools, ...modelOptions } = chatOptions;
       this.modelOptions = modelOptions;
@@ -112,9 +113,9 @@ export abstract class LLMProvider {
   }
 
   async parseAttachment(attachment: any): Promise<any> {
-    const fileManager = this.ctx.app.pm.get('file-manager') as PluginFileManagerServer;
+    const fileManager = this.app.pm.get('file-manager') as PluginFileManagerServer;
     const url = await fileManager.getFileURL(attachment);
-    const data = await encodeFile(url);
+    const data = await encodeFile(decodeURIComponent(url));
     if (attachment.mimetype.startsWith('image/')) {
       return {
         type: 'image_url',

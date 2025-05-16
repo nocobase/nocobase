@@ -157,7 +157,7 @@ export default {
           }
           const Provider = providerOptions.provider;
           const provider = new Provider({
-            ctx,
+            app: ctx.app,
           });
           return provider.parseResponseMessage(row);
         }),

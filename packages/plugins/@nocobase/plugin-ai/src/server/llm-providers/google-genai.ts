@@ -93,14 +93,14 @@ export class GoogleGenAIProvider extends LLMProvider {
   }
 
   async parseAttachment(attachment: any) {
-    const fileManager = this.ctx.app.pm.get('file-manager') as PluginFileManagerServer;
+    const fileManager = this.app.pm.get('file-manager') as PluginFileManagerServer;
     const url = await fileManager.getFileURL(attachment);
-    const data = await encodeFile(url);
+    const data = await encodeFile(decodeURIComponent(url));
     if (attachment.mimetype.startsWith('image/')) {
       return {
         type: 'image_url',
         image_url: {
-          url: data,
+          url: `data:image/${attachment.mimetype.split('/')[1]};base64,${data}`,
         },
       };
     } else {
