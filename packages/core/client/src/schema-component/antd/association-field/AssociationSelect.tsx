@@ -184,7 +184,7 @@ const InternalAssociationSelect = observer(
             value={removeIfKeyEmpty(value || innerValue, filterTargetKey)}
             service={service}
             onChange={(value) => {
-              const val = value?.length !== 0 ? value : null;
+              const val = Array.isArray(value) && value?.length === 0 ? null : value;
               props.onChange?.(val);
             }}
             CustomDropdownRender={addMode === 'quickAdd' && QuickAddContent}
