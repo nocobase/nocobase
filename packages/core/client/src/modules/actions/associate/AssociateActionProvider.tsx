@@ -45,6 +45,7 @@ export const AssociateActionProvider = (props) => {
   const actionCtx = useActionContext();
   const { isMobile } = useOpenModeContext() || {};
   const [associationData, setAssociationData] = useState([]);
+  const [flag, setFlag] = useState(false);
 
   useEffect(() => {
     resource
@@ -54,7 +55,7 @@ export const AssociateActionProvider = (props) => {
       .then((res) => {
         setAssociationData(res.data?.data || []);
       });
-  }, [resource]);
+  }, [resource, flag]);
 
   const pickerProps = {
     size: 'small',
@@ -80,6 +81,7 @@ export const AssociateActionProvider = (props) => {
           setVisible?.(false);
           setFormValueChanged?.(false);
         }
+        setFlag(!flag);
       },
     };
   };
