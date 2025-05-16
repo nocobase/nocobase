@@ -11,7 +11,7 @@ import { BaseChatModel } from '@langchain/core/language_models/chat_models';
 import axios from 'axios';
 import { parseMessages } from './handlers/parse-messages';
 import { Model } from '@nocobase/database';
-import { encodeFile, parseResponseMessage } from '../utils';
+import { encodeFile, parseResponseMessage, stripToolCallTags } from '../utils';
 import { Context } from '@nocobase/actions';
 import { PluginFileManagerServer } from '@nocobase/plugin-file-manager';
 
@@ -105,6 +105,10 @@ export abstract class LLMProvider {
 
   parseResponseMessage(message: Model) {
     return parseResponseMessage(message);
+  }
+
+  parseResponseChunk(chunk: any) {
+    return stripToolCallTags(chunk);
   }
 
   async parseAttachment(attachment: any): Promise<any> {

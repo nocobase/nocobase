@@ -9,7 +9,10 @@
 
 import { LLMProvider } from './provider';
 import { ChatAnthropic } from '@langchain/anthropic';
+import { PluginFileManagerServer } from '@nocobase/plugin-file-manager';
 import axios from 'axios';
+import { encodeFile, stripToolCallTags } from '../utils';
+import { Model } from '@nocobase/database';
 
 export class AnthropicProvider extends LLMProvider {
   declare chatModel: ChatAnthropic;
@@ -63,6 +66,63 @@ export class AnthropicProvider extends LLMProvider {
       };
     } catch (e) {
       return { code: 500, errMsg: e.message };
+    }
+  }
+
+  parseResponseMessage(message: Model) {
+    const { content: rawContent, messageId, metadata, role, toolCalls, attachments } = message;
+    const content = {
+      ...rawContent,
+      messageId,
+      metadata,
+      attachments,
+    };
+
+    if (toolCalls) {
+      content.tool_calls = toolCalls;
+    }
+
+    if (Array.isArray(content.content)) {
+      const textMessage = content.content.find((msg) => msg.type === 'text');
+      content.content = textMessage?.text;
+    }
+
+    return {
+      key: messageId,
+      content,
+      role,
+    };
+  }
+
+  parseResponseChunk(chunk: any) {
+    if (chunk && Array.isArray(chunk)) {
+      if (chunk[0] && chunk[0].type === 'text') {
+        chunk = chunk[0].text;
+      }
+    }
+    return stripToolCallTags(chunk);
+  }
+
+  async parseAttachment(attachment: any): Promise<any> {
+    const fileManager = this.ctx.app.pm.get('file-manager') as PluginFileManagerServer;
+    const url = await fileManager.getFileURL(attachment);
+    const data = await encodeFile(url);
+    if (attachment.mimetype.startsWith('image/')) {
+      return {
+        type: 'image_url',
+        image_url: {
+          url: `data:image/${attachment.mimetype.split('/')[1]};base64,${data}`,
+        },
+      };
+    } else {
+      return {
+        type: 'document',
+        source: {
+          type: 'base64',
+          media_type: attachment.mimetype,
+          data,
+        },
+      };
     }
   }
 }
