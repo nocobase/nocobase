@@ -1,6 +1,6 @@
 import React from 'react';
 import { Divider } from 'antd';
-import { BaseModel, useObservableModel, useApplyFilters, Plugin, Application, observableModelManager } from '@nocobase/client';
+import { BaseModel, useObservableModel, useApplyFilters, Plugin, Application, BlockModel } from '@nocobase/client';
 import MarkdownIt from 'markdown-it';
 import Handlebars from 'handlebars';
 import { observer } from '@formily/react';
@@ -20,7 +20,7 @@ const Demo = () => {
 
 // Markdown区块组件，通过 useObservableModel 获取 model 实例，并应用 filterflow
 const MarkdownBlock = observer(({ uid, ...defaultProps }: { uid: string, [key: string]: any }) => {
-    const model = useObservableModel(uid, { defaultProps });
+    const model = useObservableModel(uid, { ModelClass: BlockModel, defaultProps });
     useApplyFilters('block:markdown', model);
     const props = model.getProps();
 

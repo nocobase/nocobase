@@ -22,12 +22,14 @@ export class ArrayResource<TDataItem = any> extends ObjectResource<TDataItem[]> 
     initialPagination: IPagination = { page: 1, pageSize: 10 },
     initialSort: ISort[] = [],
     initialFilter: Record<string, any> = {},
+    resourceApi?: any
   ) {
     super(initialData);
     
     this.pagination = initialPagination;
     this.sort = initialSort;
     this.filter = initialFilter;
+    this.resourceApi = resourceApi;
     
     define(this, {
       pagination: observable.deep,
@@ -73,21 +75,23 @@ export class ArrayResource<TDataItem = any> extends ObjectResource<TDataItem[]> 
     // this.pagination.page = 1;
   }
 
-  // 重写 load 和 reload 方法，以包含分页、排序、过滤条件
   async load(): Promise<TDataItem[] | null> {
-    console.log('ArrayResource load 被调用，参数：', {
-      filter: this.filter,
-      sort: this.sort,
-      pagination: this.pagination,
-    });
-    
-    // 实际实现中，会调用 API 获取数据：
-    // TODO: 这里需要调用 API 获取数据
-    // result = apiClient.get()
-    // if (result.success) {
-    //   this.setData(result.items);
-    //   this.pagination.total = result.total;
-    // }
+    if (this.resourceApi) {
+      try {
+        const result = await this.resourceApi.get({
+          filter: this.filter,
+          sort: this.sort,
+          pagination: this.pagination,
+        });
+        if (result.success) {
+          this.setData(result.items);
+          this.pagination.total = result.total;
+          return result.items;
+        }
+      } catch (e) {
+        console.error('resourceApi 加载数据失败', e);
+      }
+    }
     return this.data;
   }
 

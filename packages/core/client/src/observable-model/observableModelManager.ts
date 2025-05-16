@@ -1,7 +1,8 @@
 import { BaseModel, IModelComponentProps } from './models/baseModel';
+import { ObjectResource } from './resources/objectResource';
 
 export interface ModelConstructor<T extends BaseModel> {
-  new (uid: string, defaultProps?: IModelComponentProps, ...args: any[]): T;
+  new (uid: string, defaultProps?: IModelComponentProps, resource?: ObjectResource): T;
 }
 
 export class ObservableModelManager {
@@ -12,11 +13,12 @@ export class ObservableModelManager {
     options?: {
       ModelClass?: ModelConstructor<T>;
       defaultProps?: IModelComponentProps;
+      resource?: ObjectResource;
     },
   ): T {
     if (!this.models.has(uid)) {
       const ModelToUse = options?.ModelClass || BaseModel;
-      const newModel = new ModelToUse(uid, options?.defaultProps) as T;
+      const newModel = new ModelToUse(uid, options?.defaultProps, options?.resource) as T;
       this.models.set(uid, newModel);
       return newModel;
     }
