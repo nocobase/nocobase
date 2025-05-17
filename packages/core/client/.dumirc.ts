@@ -65,10 +65,6 @@ export default defineConfig({
               link: '/core/application/application',
             },
             {
-              title: 'Plugin',
-              link: '/core/application/plugin',
-            },
-            {
               title: 'PluginManager',
               link: '/core/application/plugin-manager',
             },
@@ -84,6 +80,32 @@ export default defineConfig({
               title: 'Request',
               link: '/core/request',
             },
+          ],
+        },
+        {
+          title: 'Event and Filter',
+          type: 'group',
+          children: [
+            {
+              title: 'Event',
+              link: '/core/event-and-filter/event',
+            },
+            {
+              title: 'Filter',
+              link: '/core/event-and-filter/filter',
+            },
+            {
+              title: 'Model',
+              link: '/core/event-and-filter/model',
+            },
+            {
+              title: 'Tabulator',
+              link: '/core/event-and-filter/tabulator',
+            },
+            {
+              title: 'Table',
+              link: '/core/event-and-filter/table',
+            }
           ],
         },
         {
