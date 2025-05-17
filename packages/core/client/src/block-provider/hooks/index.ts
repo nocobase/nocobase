@@ -107,7 +107,11 @@ function getFilteredFormValues(form) {
   });
   const readonlyPaths = _.uniq(
     allFields
-      .filter((field) => field?.componentProps?.readOnlySubmit)
+      .filter((field) => {
+        const segments = field.path?.segments || [];
+        const path = segments.length <= 1 ? segments.join('.') : segments.slice(0, -1).join('.');
+        return field?.componentProps?.readOnlySubmit && !get(values, path)[field?.componentProps.filterTargetKey];
+      })
       .map((field) => {
         const segments = field.path?.segments || [];
         if (segments.length <= 1) {
@@ -122,7 +126,6 @@ function getFilteredFormValues(form) {
       _.unset(values, path);
     }
   });
-
   return values;
 }
 
