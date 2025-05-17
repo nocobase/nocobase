@@ -12,7 +12,7 @@ import { useField, useFieldSchema, useForm } from '@formily/react';
 import { useTranslation } from 'react-i18next';
 import { SchemaSettings } from '../../../../application/schema-settings/SchemaSettings';
 import { useFieldComponentName } from '../../../../common/useFieldComponentName';
-import { useDesignable, useFieldModeOptions, useIsAddNewForm } from '../../../../schema-component';
+import { useDesignable, useFieldModeOptions, useIsAddNewForm, useCompile } from '../../../../schema-component';
 import { isSubMode } from '../../../../schema-component/antd/association-field/util';
 import {
   useIsAssociationField,
@@ -21,6 +21,15 @@ import {
 import { useColumnSchema } from '../../../../schema-component/antd/table-v2/Table.Column.Decorator';
 import { useIsShowMultipleSwitch } from '../../../../schema-settings/hooks/useIsShowMultipleSwitch';
 import { getAllowMultiple } from '../Select/selectComponentFieldSettings';
+
+export const fileSizeOptions = [
+  { label: "{{t('Large')}}", value: 'large' },
+  { label: "{{t('Default')}}", value: 'default' },
+  { label: "{{t('Small')}}", value: 'small' },
+  { label: 500, value: 500 },
+  { label: 400, value: 400 },
+  { label: 300, value: 300 },
+];
 
 const fieldComponent: any = {
   name: 'fieldComponent',
@@ -35,7 +44,6 @@ const fieldComponent: any = {
     const fieldSchema = tableColumnSchema || schema;
     const fieldModeOptions = useFieldModeOptions({ fieldSchema: tableColumnSchema, collectionField });
     const { dn } = useDesignable();
-
     return {
       title: t('Field component'),
       options: fieldModeOptions,
@@ -60,6 +68,41 @@ const fieldComponent: any = {
         }
 
         void dn.emit('patch', {
+          schema,
+        });
+        dn.refresh();
+      },
+    };
+  },
+};
+export const fileSizeSetting: any = {
+  name: 'size',
+  type: 'select',
+  useVisible() {
+    const readPretty = useIsFieldReadPretty();
+    const { fieldSchema: tableColumnSchema } = useColumnSchema();
+    return readPretty && !tableColumnSchema;
+  },
+  useComponentProps() {
+    const { t } = useTranslation();
+    const field = useField<Field>();
+    const fieldSchema = useFieldSchema();
+    const { dn } = useDesignable();
+    const compile = useCompile();
+    return {
+      title: t('Size'),
+      options: compile(fileSizeOptions),
+      value: field?.componentProps?.size || 'default',
+      onChange(size) {
+        const schema = {
+          ['x-uid']: fieldSchema['x-uid'],
+        };
+        fieldSchema['x-component-props'] = fieldSchema['x-component-props'] || {};
+        fieldSchema['x-component-props']['size'] = size;
+        schema['x-component-props'] = fieldSchema['x-component-props'];
+        field.componentProps = field.componentProps || {};
+        field.componentProps.size = size;
+        dn.emit('patch', {
           schema,
         });
         dn.refresh();
@@ -174,44 +217,7 @@ export const fileManagerComponentFieldSettings = new SchemaSettings({
         return !isReadPretty;
       },
     },
-    {
-      name: 'size',
-      type: 'select',
-      useVisible() {
-        const readPretty = useIsFieldReadPretty();
-        const { fieldSchema: tableColumnSchema } = useColumnSchema();
-        return readPretty && !tableColumnSchema;
-      },
-      useComponentProps() {
-        const { t } = useTranslation();
-        const field = useField<Field>();
-        const fieldSchema = useFieldSchema();
-        const { dn } = useDesignable();
-        return {
-          title: t('Size'),
-          options: [
-            { label: t('Large'), value: 'large' },
-            { label: t('Default'), value: 'default' },
-            { label: t('Small'), value: 'small' },
-          ],
-          value: field?.componentProps?.size || 'default',
-          onChange(size) {
-            const schema = {
-              ['x-uid']: fieldSchema['x-uid'],
-            };
-            fieldSchema['x-component-props'] = fieldSchema['x-component-props'] || {};
-            fieldSchema['x-component-props']['size'] = size;
-            schema['x-component-props'] = fieldSchema['x-component-props'];
-            field.componentProps = field.componentProps || {};
-            field.componentProps.size = size;
-            dn.emit('patch', {
-              schema,
-            });
-            dn.refresh();
-          },
-        };
-      },
-    },
+    fileSizeSetting,
     showFileName,
     {
       ...getAllowMultiple(),

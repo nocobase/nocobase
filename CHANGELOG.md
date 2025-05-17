@@ -5,6 +5,51 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v1.6.30](https://github.com/nocobase/nocobase/compare/v1.6.29...v1.6.30) - 2025-05-15
+
+### 🚀 Improvements
+
+- **[client]** add more built-in size settings for read status image ([#6868](https://github.com/nocobase/nocobase/pull/6868)) by @katherinehhh
+
+### 🐛 Bug Fixes
+
+- **[File manager]**
+  - Fix types ([#6873](https://github.com/nocobase/nocobase/pull/6873)) by @mytharcher
+
+  - Fix create file record without foreign key permission ([#6863](https://github.com/nocobase/nocobase/pull/6863)) by @mytharcher
+
+- **[Action: Export records]** improve performance when deleting fields in import/export field settings ([#6861](https://github.com/nocobase/nocobase/pull/6861)) by @katherinehhh
+
+- **[Data visualization]** Chart blocks do not display when added to popups triggered from block-level actions ([#6864](https://github.com/nocobase/nocobase/pull/6864)) by @2013xile
+
+- **[Action: Export records Pro]** improve performance when deleting fields in import/export pro field settings by @katherinehhh
+
+- **[File storage: S3(Pro)]** Change to use collection field to locate storage by @mytharcher
+
+- **[Backup manager]** Fix type error in build by @mytharcher
+
+## [v1.6.29](https://github.com/nocobase/nocobase/compare/v1.6.28...v1.6.29) - 2025-05-13
+
+### 🚀 Improvements
+
+- **[Workflow]** Allow to revision more than one draft ([#6851](https://github.com/nocobase/nocobase/pull/6851)) by @mytharcher
+
+### 🐛 Bug Fixes
+
+- **[Action: Export records]** Fixed   exporting empty values in nested associations and attachment url ([#6845](https://github.com/nocobase/nocobase/pull/6845)) by @aaaaaajie
+
+- **[Workflow: Manual node]** Fix stats number count wrong on tasks ([#6783](https://github.com/nocobase/nocobase/pull/6783)) by @mytharcher
+
+- **[Workflow: test kit]** Fix failed test cases due to required preset plugin ([#6839](https://github.com/nocobase/nocobase/pull/6839)) by @mytharcher
+
+- **[Data visualization]** Fix error when filtering nested m2m fields ([#6855](https://github.com/nocobase/nocobase/pull/6855)) by @2013xile
+
+- **[Workflow: Subflow]** Fix undefined trigger caused page crash by @mytharcher
+
+- **[File storage: S3(Pro)]** access url expiration invalid by @jiannx
+
+- **[Workflow: Approval]** Fix stats number count wrong on tasks by @mytharcher
+
 ## [v1.6.28](https://github.com/nocobase/nocobase/compare/v1.6.27...v1.6.28) - 2025-05-09
 
 ### 🐛 Bug Fixes

@@ -5,6 +5,51 @@
 格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/),
 并且本项目遵循 [语义化版本](https://semver.org/spec/v2.0.0.html)。
 
+## [v1.6.30](https://github.com/nocobase/nocobase/compare/v1.6.29...v1.6.30) - 2025-05-15
+
+### 🚀 优化
+
+- **[client]** 增加阅读状态图片的内置尺寸选项 ([#6868](https://github.com/nocobase/nocobase/pull/6868)) by @katherinehhh
+
+### 🐛 修复
+
+- **[文件管理器]**
+  - 修复类型 ([#6873](https://github.com/nocobase/nocobase/pull/6873)) by @mytharcher
+
+  - 修复无外键权限时创建文件记录 URL 无效的问题 ([#6863](https://github.com/nocobase/nocobase/pull/6863)) by @mytharcher
+
+- **[操作：导出记录]** 导入导出字段配置中删除字段严重卡顿 ([#6861](https://github.com/nocobase/nocobase/pull/6861)) by @katherinehhh
+
+- **[数据可视化]** 在区块级别操作中打开弹窗，添加图表不显示 ([#6864](https://github.com/nocobase/nocobase/pull/6864)) by @2013xile
+
+- **[操作：导出记录 Pro]** pro 导入导出字段配置中删除字段卡顿 by @katherinehhh
+
+- **[文件存储：S3 (Pro)]** 变更为使用数据表字段来定位存储引擎 by @mytharcher
+
+- **[备份管理器]** 修复编译时的类型错误 by @mytharcher
+
+## [v1.6.29](https://github.com/nocobase/nocobase/compare/v1.6.28...v1.6.29) - 2025-05-13
+
+### 🚀 优化
+
+- **[工作流]** 支持复制任意多版本的草稿 ([#6851](https://github.com/nocobase/nocobase/pull/6851)) by @mytharcher
+
+### 🐛 修复
+
+- **[操作：导出记录]** 导出多级关联关系和附件 URL 时的空值问题。 ([#6845](https://github.com/nocobase/nocobase/pull/6845)) by @aaaaaajie
+
+- **[工作流：人工处理节点]** 修复待办中心计数错误问题 ([#6783](https://github.com/nocobase/nocobase/pull/6783)) by @mytharcher
+
+- **[工作流：测试工具包]** 修复由于缺少必要插件造成失败的测试用例 ([#6839](https://github.com/nocobase/nocobase/pull/6839)) by @mytharcher
+
+- **[数据可视化]** 修复筛选嵌套多对多字段报错 ([#6855](https://github.com/nocobase/nocobase/pull/6855)) by @2013xile
+
+- **[工作流：子流程]** 修复不存在触发器时导致的页面崩溃 by @mytharcher
+
+- **[文件存储：S3 (Pro)]** 访问地址有效期无效 by @jiannx
+
+- **[工作流：审批]** 修复待办中心计数错误问题 by @mytharcher
+
 ## [v1.6.28](https://github.com/nocobase/nocobase/compare/v1.6.27...v1.6.28) - 2025-05-09
 
 ### 🐛 修复

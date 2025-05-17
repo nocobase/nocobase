@@ -154,11 +154,17 @@ export const parseFieldAndAssociations = async (ctx: Context, next: Next) => {
     const stack = [...filterInclude];
     while (stack.length) {
       const item = stack.pop();
-      if (fields.get(item.association)?.type === 'belongsToMany') {
+
+      const parentCollection = db.getCollection(item.parentCollection || collectionName);
+      const field = parentCollection.fields.get(item.association);
+      if (field?.type === 'belongsToMany') {
         item.through = { attributes: [] };
       }
-      if (item.include) {
-        stack.push(...item.include);
+      if (field?.target && item.include?.length) {
+        for (const child of item.include) {
+          child.parentCollection = field.target;
+          stack.push(child);
+        }
       }
     }
   }
