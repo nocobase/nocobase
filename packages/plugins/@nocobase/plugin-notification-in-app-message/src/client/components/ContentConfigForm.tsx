@@ -45,6 +45,15 @@ export const ContentConfigForm = ({ variableOptions }) => {
               },
             },
           },
+          duration: {
+            type: 'number',
+            required: false,
+            title: `{{t("Notification duration")}}`,
+            description: `{{t('Setting this value to 0 will cancel the automatic shutdown')}}`,
+            default: 4.5,
+            'x-decorator': 'FormItem',
+            'x-component': 'InputNumber',
+          },
           options: {
             type: 'object',
             properties: {
