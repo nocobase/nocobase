@@ -243,8 +243,8 @@ export const InternalCascadeSelect = observer(
     const field: any = useField();
     const fieldSchema = useFieldSchema();
     const { loading, data: formData } = useDataBlockRequest() || {};
-    const initialValue = formData?.data?.[fieldSchema.name];
-
+    const initialValue = useMemo(() => formData?.data?.[fieldSchema.name], [loading]);
+    const associationDataFlag = !formData || fieldSchema.name in (formData?.data || {});
     const handleFormValuesChange = debounce((form) => {
       if (collectionField.interface === 'm2o') {
         // 对 m2o 类型字段，提取最后一个非 null 值
@@ -349,7 +349,8 @@ export const InternalCascadeSelect = observer(
     };
 
     return (
-      !loading && (
+      !loading &&
+      associationDataFlag && (
         <FormProvider form={selectForm}>
           {collectionField.interface === 'm2o' ? (
             <SchemaComponent
