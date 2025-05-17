@@ -12,6 +12,7 @@ import { HasOne, MultiAssociationAccessors, Sequelize, Transaction } from 'seque
 import injectTargetCollection from '../decorators/target-collection-decorator';
 import { updateModelByValues } from '../update-associations';
 import { UpdateGuard } from '../update-guard';
+import { valuesToFilter } from '../utils/filter-utils';
 import { RelationRepository, transaction } from './relation-repository';
 import {
   AssociatedOptions,
@@ -19,11 +20,10 @@ import {
   DestroyOptions,
   Filter,
   FindOptions,
+  FirstOrCreateOptions,
   TargetKey,
   UpdateOptions,
-  FirstOrCreateOptions,
 } from './types';
-import { valuesToFilter } from '../utils/filter-utils';
 
 export abstract class MultipleRelationRepository extends RelationRepository {
   async targetRepositoryFilterOptionsBySourceValue(): Promise<any> {
@@ -63,6 +63,8 @@ export abstract class MultipleRelationRepository extends RelationRepository {
 
     return targetRepository.find({
       include: [appendFilter],
+      // @ts-ignore
+      __targetKey: association.targetKey,
       ...options,
     });
   }
@@ -118,6 +120,7 @@ export abstract class MultipleRelationRepository extends RelationRepository {
   async findOne(options?: FindOptions): Promise<any> {
     const transaction = await this.getTransaction(options, false);
     const rows = await this.find({ ...options, limit: 1, transaction });
+    console.log('rows', rows);
     return rows.length == 1 ? rows[0] : null;
   }
 
