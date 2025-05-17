@@ -25,19 +25,19 @@ describe('json-templates', () => {
     });
   });
 
-  it('parse nested key with options.nestedKey as true', () => {
-    expect(parse('{{a.b}}', { nestedKey: true })({ a: { b: 1 } })).toBe(1);
+  it('parse nested key with options.rawKey as true', () => {
+    expect(parse('{{a.b}}', { rawKey: true })({ 'a.b': 2 })).toBe(2);
   });
 
-  it('not parse nested key without options.nestedKey as true', () => {
-    expect(parse('{{a.b}}')({ 'a.b': 2 })).toBe(2);
+  it('not parse nested key without options.rawKey as true', () => {
+    expect(parse('{{a.b}}')({ a: { b: 1 } })).toBe(1);
   });
 
   it('parse with variable path contains number', () => {
     const template = {
       name: '{{123.456}}',
     };
-    const result = parse(template, { nestedKey: true })({
+    const result = parse(template)({
       123: {
         456: 'abc',
       },
@@ -51,7 +51,7 @@ describe('json-templates', () => {
     const template = {
       name: '{{中文id}}-{{user.中文name}}.',
     };
-    const result = parse(template, { nestedKey: true })({
+    const result = parse(template)({
       中文id: 123,
       user: {
         中文name: 'abc',
@@ -59,6 +59,22 @@ describe('json-templates', () => {
     });
     expect(result).toEqual({
       name: '123-abc.',
+    });
+  });
+
+  it('parse more than one key path', () => {
+    const template = {
+      name: '{{a.b.c}}',
+    };
+    const result = parse(template)({
+      a: {
+        b: {
+          c: 1,
+        },
+      },
+    });
+    expect(result).toEqual({
+      name: 1,
     });
   });
 });

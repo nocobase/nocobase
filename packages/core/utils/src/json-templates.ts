@@ -34,7 +34,7 @@ function Template(fn, parameters) {
 }
 
 type ParseOptions = {
-  nestedKey?: boolean;
+  rawKey?: boolean;
 };
 
 type Parameter = { key: string; defaultValue?: string };
@@ -61,7 +61,7 @@ function parseString(str, options: ParseOptions = {}) {
     templateFn = (context = {}) => {
       return matches.reduce((result, match, i) => {
         const parameter = parameters[i];
-        let value = get(context, options.nestedKey ? parameter.key : [parameter.key]);
+        let value = get(context, options.rawKey ? [parameter.key] : parameter.key);
 
         if (typeof value === 'undefined') {
           value = parameter.defaultValue;
