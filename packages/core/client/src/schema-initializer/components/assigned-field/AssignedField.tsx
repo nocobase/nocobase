@@ -27,6 +27,7 @@ import { Option } from '../../../schema-settings/VariableInput/type';
 import { formatVariableScop } from '../../../schema-settings/VariableInput/utils/formatVariableScop';
 import { useLocalVariables, useVariables } from '../../../variables';
 import { useBlockContext } from '../../../block-provider';
+import { FlagProvider } from '../../../flag-provider';
 interface AssignedFieldProps {
   value: any;
   onChange: (value: any) => void;
@@ -135,17 +136,19 @@ export const AssignedFieldInner = (props: AssignedFieldProps) => {
     [JSON.stringify(_.omit(props, 'value'))],
   );
   return (
-    <VariableInput
-      form={form}
-      record={record}
-      value={value}
-      onChange={onChange}
-      renderSchemaComponent={renderSchemaComponent}
-      collectionField={collectionField}
-      shouldChange={shouldChange}
-      returnScope={returnScope}
-      targetFieldSchema={fieldSchema}
-    />
+    <FlagProvider collectionField={collectionField}>
+      <VariableInput
+        form={form}
+        record={record}
+        value={value}
+        onChange={onChange}
+        renderSchemaComponent={renderSchemaComponent}
+        collectionField={collectionField}
+        shouldChange={shouldChange}
+        returnScope={returnScope}
+        targetFieldSchema={fieldSchema}
+      />
+    </FlagProvider>
   );
 };
 

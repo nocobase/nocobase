@@ -12,7 +12,6 @@ import { FormLayout, IFormLayoutProps } from '@formily/antd-v5';
 import { Field, Form as FormilyForm, createForm, onFieldInit, onFormInputChange } from '@formily/core';
 import { FieldContext, FormContext, observer, useField, useFieldSchema } from '@formily/react';
 import { uid } from '@formily/shared';
-import { transformMultiColumnToSingleColumn } from '@nocobase/utils/client';
 import { ConfigProvider, theme } from 'antd';
 import React, { useEffect, useMemo } from 'react';
 import { useActionContext } from '..';
@@ -24,7 +23,6 @@ import { useDataBlockProps } from '../../../data-source';
 import { useDataBlockRequest } from '../../../data-source/data-block/DataBlockRequestProvider';
 import { NocoBaseRecursionField } from '../../../formily/NocoBaseRecursionField';
 import { withDynamicSchemaProps } from '../../../hoc/withDynamicSchemaProps';
-import { useMobileLayout } from '../../../route-switch/antd/admin-layout';
 import { bindLinkageRulesToFiled } from '../../../schema-settings/LinkageRules/bindLinkageRulesToFiled';
 import { forEachLinkageRule } from '../../../schema-settings/LinkageRules/forEachLinkageRule';
 import { useToken } from '../../../style';
@@ -51,20 +49,13 @@ const FormComponent: React.FC<FormProps> = (props) => {
     labelAlign = 'left',
     labelWidth = 120,
     labelWrap = true,
-    colon = true,
   } = cardItemSchema?.['x-component-props'] || {};
-  const { isMobileLayout } = useMobileLayout();
-  const newSchema = useMemo(
-    () => (isMobileLayout ? transformMultiColumnToSingleColumn(fieldSchema) : fieldSchema),
-    [fieldSchema, isMobileLayout],
-  );
   return (
     <FieldContext.Provider value={undefined}>
       <FormContext.Provider value={form}>
         <FormLayout
           layout={layout}
           {...others}
-          colon={colon}
           labelAlign={labelAlign}
           labelWidth={layout === 'horizontal' ? labelWidth : null}
           labelWrap={labelWrap}
@@ -86,7 +77,7 @@ const FormComponent: React.FC<FormProps> = (props) => {
               }
             `}
           >
-            <NocoBaseRecursionField basePath={f.address} schema={newSchema} onlyRenderProperties isUseFormilyField />
+            <NocoBaseRecursionField basePath={f.address} schema={fieldSchema} onlyRenderProperties isUseFormilyField />
           </div>
         </FormLayout>
       </FormContext.Provider>
@@ -103,18 +94,18 @@ const FormDecorator: React.FC<FormProps> = (props) => {
   // TODO: component 里 useField 会与当前 field 存在偏差
   const f = useAttach(form.createVoidField({ ...field.props, basePath: '' }));
   const Component = useComponent(fieldSchema['x-component'], Def);
-  const { isMobileLayout } = useMobileLayout();
-  const newSchema = useMemo(
-    () => (isMobileLayout ? transformMultiColumnToSingleColumn(fieldSchema) : fieldSchema),
-    [fieldSchema, isMobileLayout],
-  );
   return (
     <FieldContext.Provider value={undefined}>
       <FormContext.Provider value={form}>
         <FormLayout layout={'vertical'} {...others}>
           <FieldContext.Provider value={f}>
             <Component {...field.componentProps}>
-              <NocoBaseRecursionField basePath={f.address} schema={newSchema} onlyRenderProperties isUseFormilyField />
+              <NocoBaseRecursionField
+                basePath={f.address}
+                schema={fieldSchema}
+                onlyRenderProperties
+                isUseFormilyField
+              />
             </Component>
           </FieldContext.Provider>
           {/* <FieldContext.Provider value={f}>{children}</FieldContext.Provider> */}
@@ -228,6 +219,7 @@ const WithoutForm = (props) => {
   const form = useMemo(
     () =>
       createForm({
+        validateFirst: true,
         disabled: props.disabled,
         effects() {
           onFormInputChange((form) => {
@@ -265,7 +257,7 @@ export const Form: React.FC<FormProps> & {
     const theme: any = useMemo(() => {
       return {
         token: {
-          // 这里是为了防止区块内部也受到 marginBlock 的影响（marginBlock：区块之间的间距）
+          // 这里是为了防止区块内部也收到 marginBlock 的影响（marginBlock：区块之间的间距）
           // @ts-ignore
           marginBlock: token.marginLG,
         },
