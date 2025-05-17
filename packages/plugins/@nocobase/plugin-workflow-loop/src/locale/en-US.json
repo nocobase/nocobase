@@ -1,9 +1,22 @@
 {
   "Loop": "Loop",
   "Loop target": "Loop target",
-  "Loop index": "Loop index",
+  "Loop index (starts from 0)": "Loop index (starts from 0)",
+  "Loop sequence (starts from 1)": "Loop sequence (starts from 1)",
   "Loop length": "Loop length",
   "By using a loop node, you can perform the same operation on multiple sets of data. The source of these sets can be either multiple records from a query node or multiple associated records of a single record. Loop node can also be used for iterating a certain number of times or for looping through each character in a string. However, excessive looping may cause performance issues, so use with caution.": "By using a loop node, you can perform the same operation on multiple sets of data. The source of these sets can be either multiple records from a query node or multiple associated records of a single record. Loop node can also be used for iterating a certain number of times or for looping through each character in a string. However, excessive looping may cause performance issues, so use with caution.",
-  "Scope variables": "Scope variables",
-  "A single number will be treated as a loop count, a single string will be treated as an array of characters, and other non-array values will be converted to arrays. The loop node ends when the loop count is reached, or when the array loop is completed. You can also add condition nodes to the loop to terminate it.": "A single number will be treated as a loop count, a single string will be treated as an array of characters, and other non-array values will be converted to arrays. The loop node ends when the loop count is reached, or when the array loop is completed. You can also add condition nodes to the loop to terminate it."
+  "A single number will be treated as a loop count, a single string will be treated as an array of characters, and other non-array values will be converted to arrays. The loop node ends when the loop count is reached, or when the array loop is completed. You can also add condition nodes to the loop to terminate it.": "A single number will be treated as a loop count, a single string will be treated as an array of characters, and other non-array values will be converted to arrays. The loop node ends when the loop count is reached, or when the array loop is completed. You can also add condition nodes to the loop to terminate it.",
+  "Enable loop condition": "Enable loop condition",
+  "Loop condition on each item": "Loop condition on each item",
+  "When to check": "When to check",
+  "Before each starts": "Before each starts",
+  "After each ends": "After each ends",
+  "When condition is not met on item": "When condition is not met on item",
+  "Exit loop": "Exit loop",
+  "Continue on next item": "Continue on next item",
+  "Condition": "Condition",
+  "When node inside loop failed": "When node inside loop failed",
+  "Continue loop on next item": "Continue loop on next item",
+  "Exit loop and continue workflow": "Exit loop and continue workflow",
+  "Exit workflow": "Exit workflow"
 }
