@@ -8,7 +8,7 @@
  */
 
 import type { ISchema } from '@formily/react';
-import { cloneDeep, capitalize } from 'lodash';
+import { cloneDeep, capitalize, set } from 'lodash';
 import type { CollectionFieldOptions } from '../collection';
 import { CollectionFieldInterfaceManager } from './CollectionFieldInterfaceManager';
 import { defaultProps } from '../../collection-manager/interfaces/properties';
@@ -160,5 +160,15 @@ export abstract class CollectionFieldInterface {
         ],
       },
     };
+  }
+
+  addOperator(operatorOption: any) {
+    set(this, 'filterable.operators', [...(this.filterable.operators || [])]);
+
+    if (this.filterable.operators.find((item) => item.value === operatorOption.value)) {
+      return;
+    }
+
+    this.filterable.operators.push(operatorOption);
   }
 }

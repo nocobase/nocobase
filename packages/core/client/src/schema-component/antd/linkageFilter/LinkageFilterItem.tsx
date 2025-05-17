@@ -76,5 +76,5 @@ export const LinkageFilterItem = observer(
       </div>
     );
   },
-  { displayName: 'FilterItem' },
+  { displayName: 'LinkageFilterItem' },
 );
