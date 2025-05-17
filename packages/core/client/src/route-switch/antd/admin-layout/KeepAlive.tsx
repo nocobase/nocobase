@@ -11,7 +11,7 @@ import { RouteContext } from '@ant-design/pro-layout';
 import { SchemaComponentsContext, SchemaExpressionScopeContext, SchemaOptionsContext } from '@formily/react';
 import _ from 'lodash';
 import { Context as MotionContext } from 'rc-motion/es/context';
-import React, { createContext, FC, useContext, useRef } from 'react';
+import React, { createContext, FC, useContext, useEffect, useRef } from 'react';
 import {
   UNSAFE_DataRouterContext,
   UNSAFE_DataRouterStateContext,
@@ -83,6 +83,25 @@ export const KeepAliveProvider: FC<{ active: boolean }> = ({ children, active })
   const prevMotionContextRef = useRef(motionContext);
   const prevRouteContextValueRef = useRef(routeContextValue);
 
+  const contentRef = useRef<HTMLDivElement>(null);
+  const commentNodeRef = useRef<Comment>(null);
+
+  // Use useEffect to handle DOM attachment and detachment
+  useEffect(() => {
+    if (!contentRef.current) return;
+    if (!commentNodeRef.current) {
+      commentNodeRef.current = document.createComment('');
+    }
+
+    if (!active && contentRef.current.isConnected) {
+      contentRef.current.parentElement.insertBefore(commentNodeRef.current, contentRef.current);
+      contentRef.current.parentElement.removeChild(contentRef.current);
+    } else if (commentNodeRef.current.isConnected) {
+      commentNodeRef.current.parentElement.insertBefore(contentRef.current, commentNodeRef.current);
+      commentNodeRef.current.parentElement.removeChild(commentNodeRef.current);
+    }
+  }, [active]);
+
   if (active) {
     prevDataRouterContextRef.current = currentDataRouterContext;
     prevDataRouterStateContextRef.current = currentDataRouterStateContext;
@@ -109,7 +128,7 @@ export const KeepAliveProvider: FC<{ active: boolean }> = ({ children, active })
   // 1. When Context value changes, React traverses the component tree from top to bottom
   // 2. During traversal, React finds components using that Context and marks them for update
   // 3. When encountering the same Context Provider, traversal stops, avoiding unnecessary child component updates
-  return (
+  const contextProviders = (
     <RouteContext.Provider value={prevRouteContextValueRef.current}>
       <MotionContext.Provider value={prevMotionContextRef.current}>
         <UNSAFE_DataRouterContext.Provider value={prevDataRouterContextRef.current}>
@@ -130,6 +149,8 @@ export const KeepAliveProvider: FC<{ active: boolean }> = ({ children, active })
       </MotionContext.Provider>
     </RouteContext.Provider>
   );
+
+  return <div ref={contentRef}>{contextProviders}</div>;
 };
 
 /**
