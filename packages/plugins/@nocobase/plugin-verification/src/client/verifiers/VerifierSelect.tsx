@@ -27,7 +27,7 @@ const ReadPretty: React.FC = () => {
   ) : null;
 };
 
-export const VerificatorSelect = connect((props) => {
+export const VerifierSelect = connect((props) => {
   const { t } = useVerificationTranslation();
   const { scene, value, title, onChange } = props;
   let { multiple } = props;
@@ -35,26 +35,26 @@ export const VerificatorSelect = connect((props) => {
   const api = useAPIClient();
   const { data } = useRequest(() =>
     api
-      .resource('verificators')
+      .resource('verifiers')
       .listByScene({
         scene,
       })
       .then((res) => res?.data?.data),
   );
-  const { verificators = [], availableTypes = [] } = (data as any) || {};
+  const { verifiers = [], availableTypes = [] } = (data as any) || {};
   const options = useMemo(
-    () => verificators?.map((item: { title: string; name: string }) => ({ label: item.title, value: item.name })),
-    [verificators],
+    () => verifiers?.map((item: { title: string; name: string }) => ({ label: item.title, value: item.name })),
+    [verifiers],
   );
   return (
     <FormItem
-      label={title || t('Verificators')}
+      label={title || t('Verifiers')}
       extra={
         <>
-          {t('The following types of verificators are available:')}
+          {t('The following types of verifiers are available:')}
           {availableTypes.map((item: { title: string }) => Schema.compile(item.title, { t })).join(', ')}
           {'. '}
-          {t('Go to')} <Link to="/admin/settings/verification">{t('create verificators')}</Link>
+          {t('Go to')} <Link to="/admin/settings/verification">{t('create verifiers')}</Link>
         </>
       }
     >

@@ -59,7 +59,7 @@ describe('action and verify', async () => {
         },
       },
     });
-    await app.db.getRepository('verificators').create({
+    await app.db.getRepository('verifiers').create({
       values: {
         name: 'test',
         verificationType: 'test',
@@ -97,7 +97,7 @@ describe('action and verify', async () => {
     }
   });
 
-  it('should check verificator', async () => {
+  it('should check verifier', async () => {
     manager.registerAction('test:verify', {});
     expect.assertions(2);
     try {
@@ -116,7 +116,7 @@ describe('action and verify', async () => {
         async () => {},
       );
     } catch (error) {
-      expect(error.message).toBe('Invalid verificator');
+      expect(error.message).toBe('Invalid verifier');
     }
     try {
       await manager.verify(
@@ -127,7 +127,7 @@ describe('action and verify', async () => {
             actionName: 'verify',
             params: {
               values: {
-                verificator: 'invalid',
+                verifier: 'invalid',
               },
             },
           },
@@ -136,11 +136,11 @@ describe('action and verify', async () => {
         async () => {},
       );
     } catch (error) {
-      expect(error.message).toBe('Invalid verificator');
+      expect(error.message).toBe('Invalid verifier');
     }
   });
 
-  it('should check verificator for scene, check by type', async () => {
+  it('should check verifier for scene, check by type', async () => {
     manager.registerScene('test', {
       actions: {
         'test:verify': {
@@ -159,7 +159,7 @@ describe('action and verify', async () => {
             actionName: 'verify',
             params: {
               values: {
-                verificator: 'test',
+                verifier: 'test',
               },
             },
           },
@@ -168,7 +168,7 @@ describe('action and verify', async () => {
         async () => {},
       );
     } catch (error) {
-      expect(error.message).toBe('Invalid verificator');
+      expect(error.message).toBe('Invalid verifier');
     }
     manager.addSceneRule((scene, type) => scene === 'test' && type === 'test');
     await manager.verify(
@@ -180,7 +180,7 @@ describe('action and verify', async () => {
           actionName: 'verify',
           params: {
             values: {
-              verificator: 'test',
+              verifier: 'test',
             },
           },
         },
@@ -190,9 +190,9 @@ describe('action and verify', async () => {
     );
   });
 
-  it('should check verificator for scene, check by verificators', async () => {
+  it('should check verifier for scene, check by verifiers', async () => {
     manager.registerScene('test', {
-      getVerificators: async () => ['valid'],
+      getVerifiers: async () => ['valid'],
       actions: {
         'test:verify': {
           getUserIdFromCtx: () => 1,
@@ -200,7 +200,7 @@ describe('action and verify', async () => {
       },
     });
     manager.registerScene('test2', {
-      getVerificators: async () => ['test'],
+      getVerifiers: async () => ['test'],
       actions: {
         'test:verify2': {
           getUserIdFromCtx: () => 1,
@@ -219,7 +219,7 @@ describe('action and verify', async () => {
             actionName: 'verify',
             params: {
               values: {
-                verificator: 'test',
+                verifier: 'test',
               },
             },
           },
@@ -228,7 +228,7 @@ describe('action and verify', async () => {
         async () => {},
       );
     } catch (error) {
-      expect(error.message).toBe('Invalid verificator');
+      expect(error.message).toBe('Invalid verifier');
     }
     await manager.verify(
       {
@@ -239,7 +239,7 @@ describe('action and verify', async () => {
           actionName: 'verify2',
           params: {
             values: {
-              verificator: 'test',
+              verifier: 'test',
             },
           },
         },
@@ -263,7 +263,7 @@ describe('action and verify', async () => {
             actionName: 'verify',
             params: {
               values: {
-                verificator: 'test',
+                verifier: 'test',
               },
             },
           },
@@ -293,7 +293,7 @@ describe('action and verify', async () => {
           actionName: 'verify',
           params: {
             values: {
-              verificator: 'test',
+              verifier: 'test',
             },
           },
         },
@@ -319,7 +319,7 @@ describe('action and verify', async () => {
           actionName: 'verify',
           params: {
             values: {
-              verificator: 'test',
+              verifier: 'test',
             },
           },
         },
@@ -343,7 +343,7 @@ describe('action and verify', async () => {
             actionName: 'verify',
             params: {
               values: {
-                verificator: 'test',
+                verifier: 'test',
               },
             },
           },
@@ -371,7 +371,7 @@ describe('action and verify', async () => {
             actionName: 'verify',
             params: {
               values: {
-                verificator: 'test',
+                verifier: 'test',
               },
             },
           },
@@ -396,7 +396,7 @@ describe('action and verify', async () => {
           actionName: 'verify',
           params: {
             values: {
-              verificator: 'test',
+              verifier: 'test',
             },
           },
         },
@@ -426,7 +426,7 @@ describe('action and verify', async () => {
           actionName: 'verify',
           params: {
             values: {
-              verificator: 'test',
+              verifier: 'test',
             },
           },
         },
@@ -459,7 +459,7 @@ describe('action and verify', async () => {
             actionName: 'verify',
             params: {
               values: {
-                verificator: 'test',
+                verifier: 'test',
               },
             },
           },
@@ -489,7 +489,7 @@ describe('action and verify', async () => {
           actionName: 'verify',
           params: {
             values: {
-              verificator: 'test',
+              verifier: 'test',
             },
           },
         },

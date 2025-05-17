@@ -35,7 +35,7 @@ const schema: ISchema = {
       'x-component-props': {
         targetFieldName: 'phone',
         actionType: '{{ actionType }}',
-        verificator: '{{ verificator }}',
+        verifier: '{{ verifier }}',
       },
       'x-decorator': 'FormItem',
     },
@@ -43,6 +43,6 @@ const schema: ISchema = {
 };
 
 export const BindForm = (props: BindFormProps) => {
-  const { verificator, actionType } = props;
-  return <SchemaComponent scope={{ verificator, actionType }} schema={schema} components={{ VerificationCode }} />;
+  const { verifier, actionType } = props;
+  return <SchemaComponent scope={{ verifier, actionType }} schema={schema} components={{ VerificationCode }} />;
 };

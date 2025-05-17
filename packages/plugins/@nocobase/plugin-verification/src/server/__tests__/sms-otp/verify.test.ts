@@ -54,7 +54,7 @@ describe('verify', async () => {
     manager.registerAction('test:verify', {
       getBoundInfoFromCtx: async (ctx) => ctx.action.params.values || {},
     });
-    await app.db.getRepository('verificators').create({
+    await app.db.getRepository('verifiers').create({
       values: {
         name: 'test',
         title: 'Test',
@@ -67,7 +67,7 @@ describe('verify', async () => {
     });
     const res = await agent.resource('smsOTP').create({
       values: {
-        verificator: 'test',
+        verifier: 'test',
         uuid: '13888888888',
         action: 'test:verify',
       },
@@ -77,7 +77,7 @@ describe('verify', async () => {
       filter: {
         action: 'test:verify',
         receiver: '13888888888',
-        verificatorName: 'test',
+        verifierName: 'test',
       },
     });
     expect(record).toBeTruthy();
@@ -87,7 +87,7 @@ describe('verify', async () => {
     manager.registerAction('test:verify', {
       getBoundInfoFromCtx: async (ctx) => ctx.action.params.values || {},
     });
-    await app.db.getRepository('verificators').create({
+    await app.db.getRepository('verifiers').create({
       values: {
         name: 'test',
         title: 'Test',
@@ -100,7 +100,7 @@ describe('verify', async () => {
     });
     const res = await agent.resource('smsOTP').create({
       values: {
-        verificator: 'test',
+        verifier: 'test',
         uuid: '13888888888',
         action: 'test:verify',
       },
@@ -108,7 +108,7 @@ describe('verify', async () => {
     expect(res.status).toBe(200);
     const res1 = await agent.resource('smsOTP').create({
       values: {
-        verificator: 'test',
+        verifier: 'test',
         uuid: '13888888888',
         action: 'test:verify',
       },
@@ -120,7 +120,7 @@ describe('verify', async () => {
     manager.registerAction('test:verify', {
       getBoundInfoFromCtx: async (ctx) => ctx.action.params.values || {},
     });
-    await app.db.getRepository('verificators').create({
+    await app.db.getRepository('verifiers').create({
       values: {
         name: 'test',
         title: 'Test',
@@ -133,7 +133,7 @@ describe('verify', async () => {
     });
     const res = await agent.resource('smsOTP').create({
       values: {
-        verificator: 'test',
+        verifier: 'test',
         uuid: '13888888888',
         action: 'test:verify',
       },
@@ -143,12 +143,12 @@ describe('verify', async () => {
       filter: {
         action: 'test:verify',
         receiver: '13888888888',
-        verificatorName: 'test',
+        verifierName: 'test',
       },
     });
     const res1 = await agent.resource('test').verify({
       values: {
-        verificator: 'test',
+        verifier: 'test',
         uuid: '13888888888',
       },
     });
@@ -156,7 +156,7 @@ describe('verify', async () => {
     expect(res1.error.text).toBe('Verification code is invalid');
     const res2 = await agent.resource('test').verify({
       values: {
-        verificator: 'test',
+        verifier: 'test',
         uuid: '13888888888',
         code: '123456',
       },
@@ -169,7 +169,7 @@ describe('verify', async () => {
     manager.registerAction('test:verify', {
       getBoundInfoFromCtx: async (ctx) => ctx.action.params.values || {},
     });
-    await app.db.getRepository('verificators').create({
+    await app.db.getRepository('verifiers').create({
       values: {
         name: 'test',
         title: 'Test',
@@ -182,7 +182,7 @@ describe('verify', async () => {
     });
     const res = await agent.resource('smsOTP').create({
       values: {
-        verificator: 'test',
+        verifier: 'test',
         uuid: '13888888888',
         action: 'test:verify',
       },
@@ -192,13 +192,13 @@ describe('verify', async () => {
       filter: {
         action: 'test:verify',
         receiver: '13888888888',
-        verificatorName: 'test',
+        verifierName: 'test',
       },
     });
     expect(record.status).toBe(0);
     const res1 = await agent.resource('test').verify({
       values: {
-        verificator: 'test',
+        verifier: 'test',
         uuid: '13888888888',
         code: record.code,
       },
@@ -208,7 +208,7 @@ describe('verify', async () => {
       filter: {
         action: 'test:verify',
         receiver: '13888888888',
-        verificatorName: 'test',
+        verifierName: 'test',
       },
     });
     expect(record2.status).toBe(1);
@@ -218,7 +218,7 @@ describe('verify', async () => {
     manager.registerAction('test:verify', {
       getBoundInfoFromCtx: async (ctx) => ctx.action.params.values || {},
     });
-    await app.db.getRepository('verificators').create({
+    await app.db.getRepository('verifiers').create({
       values: {
         name: 'test',
         title: 'Test',
@@ -231,7 +231,7 @@ describe('verify', async () => {
     });
     const res = await agent.resource('smsOTP').create({
       values: {
-        verificator: 'test',
+        verifier: 'test',
         uuid: '13888888888',
         action: 'test:verify',
       },
@@ -241,7 +241,7 @@ describe('verify', async () => {
       filter: {
         action: 'test:verify',
         receiver: '13888888888',
-        verificatorName: 'test',
+        verifierName: 'test',
       },
     });
     await record.update({
@@ -249,7 +249,7 @@ describe('verify', async () => {
     });
     const res1 = await agent.resource('test').verify({
       values: {
-        verificator: 'test',
+        verifier: 'test',
         uuid: '13888888888',
         code: record.code,
       },
