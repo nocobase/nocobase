@@ -23,7 +23,11 @@ function removeStringIfStartsWith(text: string, prefix: string): string {
 export function useScanner({ onScannerSizeChanged, elementId, onScanSuccess }) {
   const app = useApp();
   const mobileManager = app.pm.get(MobileManager);
-  const basename = mobileManager.mobileRouter.basename.replace(/\/+$/, '');
+  const { mobileRouter } = mobileManager;
+  const appRouter = app.router;
+
+  const rawBasename = mobileRouter?.router ? mobileRouter?.basename : appRouter.basename;
+  const basename = rawBasename.replace(/\/+$/, '');
 
   const [scanner, setScanner] = useState<Html5Qrcode>();
 
