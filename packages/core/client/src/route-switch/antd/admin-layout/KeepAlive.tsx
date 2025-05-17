@@ -7,12 +7,22 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { RouteContext } from '@ant-design/pro-layout';
 import { SchemaComponentsContext, SchemaExpressionScopeContext, SchemaOptionsContext } from '@formily/react';
 import _ from 'lodash';
+import { Context as MotionContext } from 'rc-motion/es/context';
 import React, { createContext, FC, useContext, useRef } from 'react';
-import { UNSAFE_LocationContext, UNSAFE_RouteContext } from 'react-router-dom';
+import {
+  UNSAFE_DataRouterContext,
+  UNSAFE_DataRouterStateContext,
+  UNSAFE_LocationContext,
+  UNSAFE_RouteContext,
+} from 'react-router-dom';
 import { ACLContext } from '../../../acl/ACLProvider';
-import { CurrentPageUidContext } from '../../../application/CustomRouterContextProvider';
+import {
+  CurrentPageUidContext,
+  IsSubPageClosedByPageMenuContext,
+} from '../../../application/CustomRouterContextProvider';
 import { SchemaComponentContext } from '../../../schema-component/context';
 
 const KeepAliveContext = createContext(true);
@@ -59,8 +69,27 @@ const DesignableInterceptor: FC<{ active: boolean }> = ({ children, active }) =>
 export const KeepAliveProvider: FC<{ active: boolean }> = ({ children, active }) => {
   const currentLocationContext = useContext(UNSAFE_LocationContext);
   const currentRouteContext = useContext(UNSAFE_RouteContext);
+  const currentDataRouterContext = useContext(UNSAFE_DataRouterContext);
+  const currentDataRouterStateContext = useContext(UNSAFE_DataRouterStateContext);
+  const subPageClosedContext = useContext(IsSubPageClosedByPageMenuContext);
+  const motionContext = useContext(MotionContext);
+  const routeContextValue = useContext(RouteContext);
+
   const prevLocationContextRef = useRef(currentLocationContext);
   const prevRouteContextRef = useRef(currentRouteContext);
+  const prevDataRouterContextRef = useRef(currentDataRouterContext);
+  const prevDataRouterStateContextRef = useRef(currentDataRouterStateContext);
+  const prevSubPageClosedContextRef = useRef(subPageClosedContext);
+  const prevMotionContextRef = useRef(motionContext);
+  const prevRouteContextValueRef = useRef(routeContextValue);
+
+  if (active) {
+    prevDataRouterContextRef.current = currentDataRouterContext;
+    prevDataRouterStateContextRef.current = currentDataRouterStateContext;
+    prevSubPageClosedContextRef.current = subPageClosedContext;
+    prevMotionContextRef.current = motionContext;
+    prevRouteContextValueRef.current = routeContextValue;
+  }
 
   if (
     active &&
@@ -81,13 +110,25 @@ export const KeepAliveProvider: FC<{ active: boolean }> = ({ children, active })
   // 2. During traversal, React finds components using that Context and marks them for update
   // 3. When encountering the same Context Provider, traversal stops, avoiding unnecessary child component updates
   return (
-    <KeepAliveContext.Provider value={active}>
-      <DesignableInterceptor active={active}>
-        <UNSAFE_LocationContext.Provider value={prevLocationContextRef.current}>
-          <UNSAFE_RouteContext.Provider value={prevRouteContextRef.current}>{children}</UNSAFE_RouteContext.Provider>
-        </UNSAFE_LocationContext.Provider>
-      </DesignableInterceptor>
-    </KeepAliveContext.Provider>
+    <RouteContext.Provider value={prevRouteContextValueRef.current}>
+      <MotionContext.Provider value={prevMotionContextRef.current}>
+        <UNSAFE_DataRouterContext.Provider value={prevDataRouterContextRef.current}>
+          <UNSAFE_DataRouterStateContext.Provider value={prevDataRouterStateContextRef.current}>
+            <UNSAFE_LocationContext.Provider value={prevLocationContextRef.current}>
+              <UNSAFE_RouteContext.Provider value={prevRouteContextRef.current}>
+                <KeepAliveContext.Provider value={active}>
+                  <DesignableInterceptor active={active}>
+                    <IsSubPageClosedByPageMenuContext.Provider value={prevSubPageClosedContextRef.current}>
+                      {children}
+                    </IsSubPageClosedByPageMenuContext.Provider>
+                  </DesignableInterceptor>
+                </KeepAliveContext.Provider>
+              </UNSAFE_RouteContext.Provider>
+            </UNSAFE_LocationContext.Provider>
+          </UNSAFE_DataRouterStateContext.Provider>
+        </UNSAFE_DataRouterContext.Provider>
+      </MotionContext.Provider>
+    </RouteContext.Provider>
   );
 };
 
@@ -117,9 +158,9 @@ interface KeepAliveProps {
 // Range: minimum 5, maximum 20
 const getMaxPageCount = () => {
   // If keep-alive is enabled in e2e environment, it makes locator selection difficult. So we disable keep-alive in e2e environment
-  if (process.env.__E2E__) {
-    return 1;
-  }
+  // if (process.env.__E2E__) {
+  //   return 1;
+  // }
 
   const baseCount = 5;
   let performanceScore = baseCount;
