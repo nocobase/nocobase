@@ -244,7 +244,7 @@ export const InternalCascadeSelect = observer(
     const fieldSchema = useFieldSchema();
     const { loading, data: formData } = useDataBlockRequest() || {};
     const initialValue = useMemo(() => formData?.data?.[fieldSchema.name], [loading]);
-    const associationDataFlag = fieldSchema.name in (formData?.data || {});
+    const associationDataFlag = !formData || fieldSchema.name in (formData?.data || {});
     const handleFormValuesChange = debounce((form) => {
       if (collectionField.interface === 'm2o') {
         // 对 m2o 类型字段，提取最后一个非 null 值
