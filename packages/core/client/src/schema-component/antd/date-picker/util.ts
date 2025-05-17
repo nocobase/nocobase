@@ -266,6 +266,21 @@ export const getDateRanges = (props?: {
   };
 };
 
+export const getDateExact = () => {
+  return {
+    nowUtc: () => dayjs().toISOString(),
+    nowLocal: () => dayjs().format('YYYY-MM-DD HH:mm:ss'),
+    todayUtc: () => dayjs().startOf('day').utc().toISOString(),
+    todayLocal: () => dayjs().startOf('day').format('YYYY-MM-DD HH:mm:ss'),
+    todayDate: () => dayjs().format('YYYY-MM-DD'),
+    yesterdayUtc: () => dayjs().subtract(1, 'day').startOf('day').utc().toISOString(),
+    yesterdayLocal: () => dayjs().subtract(1, 'day').startOf('day').format('YYYY-MM-DD HH:mm:ss'),
+    yesterdayDate: () => dayjs().subtract(1, 'day').format('YYYY-MM-DD'),
+    tomorrowUtc: () => dayjs().add(1, 'day').startOf('day').utc().toISOString(),
+    tomorrowLocal: () => dayjs().add(1, 'day').startOf('day').format('YYYY-MM-DD HH:mm:ss'),
+    tomorrowDate: () => dayjs().add(1, 'day').format('YYYY-MM-DD'),
+  };
+};
 function withParams(value: any[], params: { fieldOperator?: string; isParsingVariable?: boolean }) {
   if (params?.isParsingVariable && params?.fieldOperator && params.fieldOperator !== '$dateBetween') {
     return value[0];

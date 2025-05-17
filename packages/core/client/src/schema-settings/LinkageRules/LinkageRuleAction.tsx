@@ -23,6 +23,7 @@ import { LinkageLogicContext, RemoveActionContext } from './context';
 import { ActionType } from './type';
 import { useValues } from './useValues';
 import { DateScopeComponent } from './DateScopeComponent';
+import { FlagProvider } from '../../flag-provider';
 
 export const FormFieldLinkageRuleAction = observer(
   (props: any) => {
@@ -107,12 +108,14 @@ export const FormFieldLinkageRuleAction = observer(
               placeholder={t('action')}
             />
             {[ActionType.Value].includes(operator) && (
-              <ValueDynamicComponent
-                fieldValue={fieldValue}
-                schema={schema}
-                setValue={setValue}
-                collectionName={collectionName}
-              />
+              <FlagProvider collectionField={{ uiSchema: schema }}>
+                <ValueDynamicComponent
+                  fieldValue={fieldValue}
+                  schema={schema}
+                  setValue={setValue}
+                  collectionName={collectionName}
+                />
+              </FlagProvider>
             )}
             {[ActionType.Options].includes(operator) && (
               <OptionsComponent
