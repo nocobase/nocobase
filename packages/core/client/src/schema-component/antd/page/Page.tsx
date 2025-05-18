@@ -155,14 +155,6 @@ const className1 = css`
   }
 `;
 
-const displayBlock = {
-  display: 'block',
-};
-
-const displayNone = {
-  display: 'none',
-};
-
 // Add a TabPane component to manage caching, implementing an effect similar to Vue's keep-alive
 const TabPane = React.memo(({ active: tabActive, uid }: { active: boolean; uid: string }) => {
   const mountedRef = useRef(false);
@@ -177,11 +169,9 @@ const TabPane = React.memo(({ active: tabActive, uid }: { active: boolean; uid: 
   }
 
   return (
-    <div style={tabActive ? displayBlock : displayNone}>
-      <KeepAliveProvider active={pageActive && tabActive}>
-        <RemoteSchemaComponent uid={uid} />
-      </KeepAliveProvider>
-    </div>
+    <KeepAliveProvider active={pageActive && tabActive}>
+      <RemoteSchemaComponent uid={uid} />
+    </KeepAliveProvider>
   );
 });
 
