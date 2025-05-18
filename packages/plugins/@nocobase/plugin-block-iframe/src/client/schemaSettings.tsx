@@ -29,7 +29,6 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 
 const IframeProvider = (props) => {
-  console.log(props);
   return <FlagProvider collectionField={true}>{props.children}</FlagProvider>;
 };
 const getVariableComponentWithScope = (Com) => {
