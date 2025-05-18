@@ -83,6 +83,16 @@ export default defineConfig({
           ],
         },
         {
+          title: 'Flow engine',
+          type: 'group',
+          children: [
+            {
+              title: 'Flow engine',
+              link: '/core/flow-engine',
+            },
+          ],
+        },
+        {
           title: 'Event and Filter',
           type: 'group',
           children: [
