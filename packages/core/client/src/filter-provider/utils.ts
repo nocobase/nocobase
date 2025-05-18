@@ -118,7 +118,7 @@ export const transformToFilter = (
       ) {
         return true;
       }
-      if (value.type) {
+      if (value?.type) {
         return true;
       }
 
@@ -135,6 +135,7 @@ export const transformToFilter = (
       return false;
     },
   });
+
   const result = {
     $and: Object.keys(values)
       .map((key) => {
