@@ -21,8 +21,6 @@ type UserContext = Partial<Omit<FlowContext, 'engine' | '$exit' | 'app'>>;
 
 // Helper to generate a stable cache key
 function generateCacheKey(prefix: string, flowKey: string, modelUid: string, context?: UserContext): string {
-  // Context needs to be stringified stably. Using a library like fast-json-stable-stringify is robust.
-  // For simplicity here, we just use JSON.stringify, but be aware of object key order issues.
   const contextString = context ? stableStringify(context) : '';
   return `${prefix}:${flowKey}:${modelUid}:${contextString}`;
 }
@@ -51,8 +49,6 @@ export function useModel<T extends BaseModel = BaseModel>(
     }
     return instance;
   }, [engine, app, modelClassName, uid]);
-  // Keep the component in sync with model.props changes (and other observable fields if necessary)
-  // We use a state to trigger re-render. The actual data is read from model.getProps() in render.
   const [, forceUpdate] = useState({});
   useEffect(() => {
     const dispose = autorun(() => {
@@ -60,14 +56,13 @@ export function useModel<T extends BaseModel = BaseModel>(
       // This will re-run autorun when any of these change, then forceUpdate re-renders component.
       Object.keys(model.props).forEach(key => model.props[key]);
       model.hidden; // track hidden state
-      // model.stepParams; // track stepParams if components depend on it directly
+      model.stepParams; // track stepParams
       forceUpdate({});
     });
     return () => {
       dispose();
-      // TODO: Decide on model destruction strategy (e.g., engine.destroyModel(uid) if appropriate).
     };
-  }, [model]); // Removed uid, engine from deps as destroyModel is not called here yet
+  }, [model]);
   return model;
 }
 

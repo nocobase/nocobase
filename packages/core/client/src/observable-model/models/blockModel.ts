@@ -1,12 +1,13 @@
 import { BaseModel, IModelComponentProps } from './baseModel';
 import { ActionModel } from './actionModel';
 import { define, observable } from '@formily/reactive';
+import { Application } from '../../application';
 
 export class BlockModel extends BaseModel {
   public actions: Map<string, ActionModel>;
 
-  constructor(uid: string, defaultProps?: IModelComponentProps) {
-    super(uid, defaultProps);
+  constructor(uid: string, app: Application) {
+    super(uid, app);
     this.actions = observable(new Map<string, ActionModel>());
     define(this, {
       actions: observable,

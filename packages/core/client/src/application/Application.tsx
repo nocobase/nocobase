@@ -47,7 +47,6 @@ import type { Plugin } from './Plugin';
 import { getOperators } from './globalOperators';
 import { useAclSnippets } from './hooks/useAclSnippets';
 import type { RequireJS } from './utils/requirejs';
-import { EventFlowManager } from '../eventflow/eventflow-manager';
 import { FlowEngine } from '../flowengine/flow-engine';
 import { FlowEngineProvider } from '../flowengine/provider';
 

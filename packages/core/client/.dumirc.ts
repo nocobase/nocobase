@@ -87,14 +87,6 @@ export default defineConfig({
           type: 'group',
           children: [
             {
-              title: 'Event',
-              link: '/core/event-and-filter/event',
-            },
-            {
-              title: 'Filter',
-              link: '/core/event-and-filter/filter',
-            },
-            {
               title: 'Model',
               link: '/core/event-and-filter/model',
             },

@@ -4,6 +4,7 @@ import {
   ModelConstructor,
 } from './types';
 import { Application } from '../application';
+import { BaseModel } from '../observable-model';
 
 export class FlowEngine {
   private actions: Map<string, ActionDefinition> = new Map();
@@ -35,8 +36,7 @@ export class FlowEngine {
     return this.modelClasses.get(name);
   }
 
-  // Updated createModel
-  public createModel<T extends import('@nocobase/client').BaseModel = import('@nocobase/client').BaseModel>(
+  public createModel<T extends BaseModel = BaseModel>(
     app: Application,
     modelClassName: string,
     uid: string,

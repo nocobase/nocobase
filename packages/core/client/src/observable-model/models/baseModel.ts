@@ -1,5 +1,5 @@
 import { observable, action, define } from '@formily/reactive';
-import type { FlowEngine } from '../../flowengine/flow-engine';
+import { FlowEngine } from '../../flowengine/flow-engine';
 import type { FlowContext, ActionStepDefinition, InlineStepDefinition } from '../../flowengine/types';
 import type { Application } from '../../application/Application';
 
@@ -15,11 +15,11 @@ export class BaseModel {
   public props: IModelComponentProps;
   public hidden: boolean;
   public stepParams: Record<string, Record<string, any>>;
-  public app?: Application;
+  public app: Application;
 
   constructor(
     uid: string,
-    app?: Application,
+    app: Application,
   ) {
     this.uid = uid;
     this.props = {};
@@ -38,8 +38,18 @@ export class BaseModel {
   }
 
   get flowEngine(): FlowEngine | undefined {
-    if (this.app && typeof this.app.flowEngine === 'object' && this.app.flowEngine !== null) {
-      return this.app.flowEngine;
+    if (this.app && this.app.flowEngine) {
+      if (this.app.flowEngine instanceof FlowEngine) {
+        return this.app.flowEngine;
+      }
+      // Duck typing with type assertion to any for property access
+      if (typeof this.app.flowEngine === 'object' && 
+          this.app.flowEngine !== null &&
+          typeof (this.app.flowEngine as any).getFlow === 'function' &&  
+          typeof (this.app.flowEngine as any).getAction === 'function') {
+        console.warn(`[BaseModel uid: ${this.uid}] flowEngine getter: this.app.flowEngine is not an instanceof FlowEngine, but seems to have core methods. Module identity issue?`);
+        return this.app.flowEngine as FlowEngine;
+      }
     }
     return undefined;
   }
@@ -105,8 +115,8 @@ export class BaseModel {
   async applyFlow(flowKey: string, context?: Partial<Omit<FlowContext, 'engine' | '$exit' | 'app'>>): Promise<any> {
     const currentFlowEngine = this.flowEngine;
     if (!currentFlowEngine || !this.app) {
-      console.warn('FlowEngine or Application not available on this model. Cannot applyFlow.');
-      return Promise.reject(new Error('FlowEngine or Application not available'));
+      console.warn('FlowEngine or Application not available on this model for applyFlow. Check model.app and model.app.flowEngine setup.');
+      return Promise.reject(new Error('FlowEngine or Application not available for applyFlow'));
     }
     
     const flow = currentFlowEngine.getFlow(flowKey);
@@ -177,7 +187,7 @@ export class BaseModel {
   dispatchEvent(eventName: string, context?: Partial<Omit<FlowContext, 'engine' | '$exit' | 'app'>>): void {
     const currentFlowEngine = this.flowEngine;
     if (!currentFlowEngine || !this.app) {
-      console.warn('FlowEngine or Application not available on this model. Cannot dispatchEvent.');
+      console.warn('FlowEngine or Application not available on this model for dispatchEvent. Check model.app and model.app.flowEngine setup.');
       return;
     }
     const flows = currentFlowEngine.getFlows();

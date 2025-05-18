@@ -1,13 +1,14 @@
 import { BlockModel } from './blockModel';
 import { IModelComponentProps } from './baseModel';
 import { ObjectResource } from '../resources/objectResource';
+import { Application } from '../../application';
 
 export class DataBlockModel extends BlockModel {
   public resource: ObjectResource;
   public fields: any[];
 
-  constructor(uid: string, defaultProps?: IModelComponentProps, resource?: ObjectResource) {
-    super(uid, defaultProps);
+  constructor(uid: string, app: Application, resource?: ObjectResource) {
+    super(uid, app);
     this.resource = resource;
     this.fields = [];
   }

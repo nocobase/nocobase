@@ -60,8 +60,7 @@ export * from './system-settings';
 export * from './testUtils';
 export * from './user';
 export * from './variables';
-export * from './eventflow';
-export * from './filterflow';
+export * from './flowengine';
 export * from './observable-model';
 
 export { withDynamicSchemaProps } from './hoc/withDynamicSchemaProps';

@@ -18,7 +18,7 @@ export interface ActionDefinition {
   name: string; // Unique identifier for the action
   title?: string;
   handler: (ctx: FlowContext, model: BaseModel, params: any) => Promise<any> | any;
-  uiSchema?: ISchema;
+  uiSchema?: Record<string, ISchema>;
   defaultParams?: Record<string, any>;
 }
 
@@ -51,7 +51,7 @@ interface BaseStepDefinition {
  */
 export interface ActionStepDefinition extends BaseStepDefinition {
   use: string; // Name of the registered ActionDefinition
-  uiSchema?: ISchema; // Optional: overrides uiSchema from ActionDefinition
+  uiSchema?: Record<string, ISchema>; // Optional: overrides uiSchema from ActionDefinition
   defaultParams?: Record<string, any>; // Optional: overrides/extends defaultParams from ActionDefinition
   // Cannot have its own handler
   handler?: undefined; 
@@ -62,7 +62,7 @@ export interface ActionStepDefinition extends BaseStepDefinition {
  */
 export interface InlineStepDefinition extends BaseStepDefinition {
   handler: (ctx: FlowContext, model: BaseModel, params: any) => Promise<any> | any;
-  uiSchema?: ISchema; // Optional: uiSchema for this inline step
+  uiSchema?: Record<string, ISchema>; // Optional: uiSchema for this inline step
   defaultParams?: Record<string, any>; // Optional: defaultParams for this inline step
   // Cannot use a registered action
   use?: undefined;

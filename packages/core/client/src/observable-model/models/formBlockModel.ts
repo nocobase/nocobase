@@ -1,14 +1,15 @@
 import { DataBlockModel } from './dataBlockModel';
 import { IModelComponentProps } from './baseModel';
 import { ObjectResource } from '../resources/objectResource';
+import { Application } from '../../application';
 
 // TODO: 未完成
 
 export class FormBlockModel<TData = Record<string, any>> extends DataBlockModel {
   declare public resource: ObjectResource<TData>;
 
-  constructor(uid: string, defaultProps?: IModelComponentProps, initialResource?: ObjectResource<TData>) {
-    super(uid, defaultProps, initialResource);
+  constructor(uid: string, app: Application, resource?: ObjectResource<TData>) {
+    super(uid, app, resource);
   }
 
   // 加载表单数据
