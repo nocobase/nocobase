@@ -20,9 +20,7 @@ const Demo = () => {
 // Markdown区块组件，通过 useModel 获取 model 实例，并应用 flow
 const MarkdownBlock = observer(({ uid }: { uid: string }) => {
     const model = useModel('BlockModel', uid);
-
     useApplyFlow(model, 'block:markdown');
-    
     const props = model.getProps();
 
     return <Markdown content={props.content} height={props.height} />
@@ -37,7 +35,7 @@ const Markdown = ({ content, height }) => {
 
 class DemoPlugin extends Plugin {
     async load() {
-        this.app.flowEngine.registerModelClass('BlockModel', BlockModel as any);
+        this.app.flowEngine.registerModelClass('BlockModel', BlockModel);
 
         this.app.flowEngine.registerAction({
             name: 'block:markdown:template',

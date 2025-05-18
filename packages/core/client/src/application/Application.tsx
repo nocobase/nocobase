@@ -47,8 +47,8 @@ import type { Plugin } from './Plugin';
 import { getOperators } from './globalOperators';
 import { useAclSnippets } from './hooks/useAclSnippets';
 import type { RequireJS } from './utils/requirejs';
-import { FlowEngine } from '../flowengine/flow-engine';
-import { FlowEngineProvider } from '../flowengine/provider';
+import { FlowEngine } from '../flow-engine/flow-engine';
+import { FlowEngineProvider } from '../flow-engine/provider';
 
 type JsonLogic = {
   addOperation: (name: string, fn?: any) => void;
