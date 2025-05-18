@@ -82,7 +82,8 @@ export type ResendOptions = {
 
 export type ShortcutOptions = {
   aiEmployee: AIEmployee;
-  message: { type?: MessageType; content: string };
+  message: { type: MessageType; content: string };
+  attachments?: Attachment[];
   autoSend: boolean;
 };
 

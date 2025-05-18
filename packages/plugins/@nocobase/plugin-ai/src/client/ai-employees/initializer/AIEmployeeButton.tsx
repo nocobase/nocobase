@@ -71,7 +71,8 @@ export const AIEmployeeButton: React.FC<{
   autoSend?: boolean;
   message: {
     type: string;
-    content: string;
+    content?: string;
+    attachments?: any[];
   };
 }> = withDynamicSchemaProps(({ username, taskDesc, message, autoSend }) => {
   const triggerShortcut = useChatBoxContext('triggerShortcut');
@@ -96,17 +97,38 @@ export const AIEmployeeButton: React.FC<{
         display: 'flex',
       }}
       onClick={async () => {
-        let msg;
-        if (message && message.content) {
+        let msg: any;
+        if (message?.content) {
           const content = await replaceVariables(message.content, variables, localVariables);
           msg = {
             type: message.type || 'text',
             content,
           };
         }
+        const attachments = [];
+        if (message?.attachments?.length) {
+          for (const attachment of message.attachments) {
+            const obj = await variables?.parseVariable(attachment, localVariables).then(({ value }) => value);
+            if (!obj) {
+              continue;
+            }
+            if (Array.isArray(obj)) {
+              for (const item of obj) {
+                if (item.filename) {
+                  attachments.push(item);
+                }
+              }
+            } else {
+              if (obj.filename) {
+                attachments.push(obj);
+              }
+            }
+          }
+        }
         triggerShortcut({
           aiEmployee,
           message: msg,
+          attachments,
           autoSend,
         });
       }}

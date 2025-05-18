@@ -52,7 +52,7 @@ export const Upload: React.FC = () => {
       items={items}
       {...uploadProps}
     >
-      <Tooltip title={t('Upload attachments')} arrow={false}>
+      <Tooltip title={t('Upload files')} arrow={false}>
         <Button type="text" icon={<UploadOutlined />} />
       </Tooltip>
     </Attachments>

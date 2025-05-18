@@ -17,7 +17,7 @@ import { createForm } from '@formily/core';
 import { uid } from '@formily/shared';
 import { useAISelectionContext } from '../selector/AISelectorProvider';
 import { AIEmployee } from '../types';
-import { AIVariableRawTextArea } from './AIVariableRawTextArea';
+import { AIVariableRawTextArea, useAIEmployeeButtonVariableOptions } from './AIVariableRawTextArea';
 import { useFieldSchema } from '@formily/react';
 import { useAIEmployeesContext } from '../AIEmployeesProvider';
 
@@ -30,6 +30,7 @@ const SettingsForm: React.FC<{
   const { token } = useToken();
   const fieldSchema = useFieldSchema();
   const currentSchema = fieldSchema?.parent?.parent?.parent;
+  const scope = useAIEmployeeButtonVariableOptions();
 
   return (
     <SchemaComponent
@@ -95,26 +96,26 @@ const SettingsForm: React.FC<{
               message: {
                 type: 'object',
                 properties: {
-                  messageType: {
-                    type: 'string',
-                    title: t('Message type'),
-                    'x-decorator': 'FormItem',
-                    'x-component': 'Select',
-                    enum: [
-                      {
-                        label: t('Text'),
-                        value: 'text',
-                      },
-                      // {
-                      //   label: t('Image'),
-                      //   value: 'image',
-                      // },
-                    ],
-                    default: 'text',
-                    'x-component-props': {
-                      placeholder: t('Message type'),
-                    },
-                  },
+                  // messageType: {
+                  //   type: 'string',
+                  //   title: t('Message type'),
+                  //   'x-decorator': 'FormItem',
+                  //   'x-component': 'Select',
+                  //   enum: [
+                  //     {
+                  //       label: t('Text'),
+                  //       value: 'text',
+                  //     },
+                  //     // {
+                  //     //   label: t('Image'),
+                  //     //   value: 'image',
+                  //     // },
+                  //   ],
+                  //   default: 'text',
+                  //   'x-component-props': {
+                  //     placeholder: t('Message type'),
+                  //   },
+                  // },
                   content: {
                     title: t('Message content'),
                     type: 'string',
@@ -122,6 +123,49 @@ const SettingsForm: React.FC<{
                     'x-component': 'AIVariableRawTextArea',
                     'x-component-props': {
                       currentSchema,
+                    },
+                  },
+                  attachments: {
+                    title: t('Files'),
+                    type: 'array',
+                    description: t('Please select file objects.'),
+                    'x-decorator': 'FormItem',
+                    'x-component': 'ArrayItems',
+                    items: {
+                      type: 'void',
+                      'x-component': 'Space',
+                      properties: {
+                        sort: {
+                          type: 'void',
+                          'x-decorator': 'FormItem',
+                          'x-component': 'ArrayItems.SortHandle',
+                        },
+                        input: {
+                          type: 'string',
+                          'x-decorator': 'FormItem',
+                          'x-component': 'Variable.Input',
+                          'x-component-props': {
+                            scope,
+                            changeOnSelect: true,
+                            fieldNames: {
+                              value: 'name',
+                              label: 'title',
+                            },
+                          },
+                        },
+                        remove: {
+                          type: 'void',
+                          'x-decorator': 'FormItem',
+                          'x-component': 'ArrayItems.Remove',
+                        },
+                      },
+                    },
+                    properties: {
+                      add: {
+                        type: 'void',
+                        title: t('Add file'),
+                        'x-component': 'ArrayItems.Addition',
+                      },
                     },
                   },
                 },

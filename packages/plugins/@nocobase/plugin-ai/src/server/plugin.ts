@@ -24,6 +24,7 @@ import { AIEmployeeTrigger } from './workflow/triggers/ai-employee';
 import { formFiller, workflowCaller } from './tools';
 import { Model } from '@nocobase/database';
 import { anthropicProviderOptions } from './llm-providers/anthropic';
+import aiSettings from './resource/aiSettings';
 // import { tongyiProviderOptions } from './llm-providers/tongyi';
 
 export class PluginAIServer extends Plugin {
@@ -54,6 +55,21 @@ export class PluginAIServer extends Plugin {
     this.app.resourceManager.define(aiResource);
     this.app.resourceManager.define(aiConversations);
     this.app.resourceManager.define(aiTools);
+    this.app.resourceManager.define(aiSettings);
+
+    this.app.resourceManager.use(
+      async (ctx, next) => {
+        const { resourceName, actionName } = ctx.action;
+        if (resourceName === 'aiFiles' && actionName === 'create') {
+          const settings = await this.db.getRepository('aiSettings').findOne();
+          const collection = ctx.db.getCollection('aiFiles');
+          collection.options.storage = settings?.options?.storage;
+        }
+        await next();
+      },
+      { before: 'createMiddleware' },
+    );
+
     this.app.acl.registerSnippet({
       name: `pm.${this.name}.llm-services`,
       actions: ['ai:*', 'llmServices:*'],
@@ -62,8 +78,13 @@ export class PluginAIServer extends Plugin {
       name: `pm.${this.name}.ai-employees`,
       actions: ['aiEmployees:*', 'aiTools:*', 'roles.aiEmployees:*'],
     });
+    this.app.acl.registerSnippet({
+      name: `pm.${this.name}.ai-settings`,
+      actions: ['aiSettings:*'],
+    });
     this.app.acl.allow('aiConversations', '*', 'loggedIn');
     this.app.acl.allow('aiFiles', 'create', 'loggedIn');
+    this.app.acl.allow('aiSettings', 'publicGet', 'loggedIn');
 
     Object.entries(aiEmployeeActions).forEach(([name, action]) => {
       this.app.resourceManager.registerActionHandler(`aiEmployees:${name}`, action);
@@ -108,7 +129,13 @@ export class PluginAIServer extends Plugin {
     }
   }
 
-  async install() {}
+  async install() {
+    const aiSettings = await this.db.getRepository('aiSettings').findOne();
+    if (aiSettings) {
+      return;
+    }
+    await this.db.getRepository('aiSettings').create({});
+  }
 
   async afterEnable() {}
 

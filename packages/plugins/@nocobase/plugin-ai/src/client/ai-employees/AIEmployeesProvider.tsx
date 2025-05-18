@@ -15,6 +15,7 @@ import { AIEmployee } from './types';
 import { AISelectionProvider } from './selector/AISelectorProvider';
 import { ChatMessagesProvider } from './chatbox/ChatMessagesProvider';
 import { ChatConversationsProvider } from './chatbox/ChatConversationsProvider';
+import { AISettingsProvider } from './AISettingsProvider';
 
 export const AIEmployeesContext = createContext<{
   aiEmployees: AIEmployee[];
@@ -48,13 +49,15 @@ export const AIEmployeesProvider: React.FC<{
 
   return (
     <AISelectionProvider>
-      <AIEmployeesContext.Provider value={{ aiEmployees, setAIEmployees, service, aiEmployeesMap }}>
-        <ChatConversationsProvider>
-          <ChatMessagesProvider>
-            <ChatBoxProvider>{props.children}</ChatBoxProvider>
-          </ChatMessagesProvider>
-        </ChatConversationsProvider>
-      </AIEmployeesContext.Provider>
+      <AISettingsProvider>
+        <AIEmployeesContext.Provider value={{ aiEmployees, setAIEmployees, service, aiEmployeesMap }}>
+          <ChatConversationsProvider>
+            <ChatMessagesProvider>
+              <ChatBoxProvider>{props.children}</ChatBoxProvider>
+            </ChatMessagesProvider>
+          </ChatConversationsProvider>
+        </AIEmployeesContext.Provider>
+      </AISettingsProvider>
     </AISelectionProvider>
   );
 };

@@ -71,5 +71,9 @@
   "Deleted successfully": "删除成功",
   "Rename conversation": "重命名对话",
   "Use skill": "使用技能",
-  "Upload attachments": "上传附件"
+  "Upload files": "上传文件",
+  "Files storage": "文件存储",
+  "Files": "文件",
+  "Add file": "添加文件",
+  "Please select file objects.": "请选择文件对象。"
 }

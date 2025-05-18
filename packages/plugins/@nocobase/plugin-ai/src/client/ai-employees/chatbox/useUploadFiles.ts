@@ -10,6 +10,7 @@
 import { useAPIClient, usePlugin, useRequest } from '@nocobase/client';
 import PluginFileManagerClient from '@nocobase/plugin-file-manager/client';
 import { useChatMessages } from './ChatMessagesProvider';
+import { useAISettingsContext } from '../AISettingsProvider';
 
 export function useStorage(storage: string) {
   const name = storage ?? '';
@@ -27,9 +28,10 @@ export function useStorage(storage: string) {
 }
 
 export function useStorageUploadProps(props: any) {
+  const { storage: storageName } = useAISettingsContext();
   const plugin = usePlugin(PluginFileManagerClient);
-  const storage = useStorage('local');
-  const storageType = plugin.getStorageType('local');
+  const storage = useStorage(storageName);
+  const storageType = plugin.getStorageType(storageName);
   const useStorageTypeUploadProps = storageType?.useUploadProps;
   const storageTypeUploadProps = useStorageTypeUploadProps?.({ storage, rules: storage.rules, ...props }) || {};
   return {
@@ -80,7 +82,6 @@ export const useUploadFiles = () => {
   const uploadProps = {
     action: 'aiFiles:create',
     onChange({ fileList }) {
-      console.log(fileList);
       setAttachments(
         fileList.map((file) => {
           if (file.status === 'done') {

@@ -188,7 +188,7 @@ export const useSetChatBoxContext = () => {
 
   const triggerShortcut = useCallback(
     (options: ShortcutOptions) => {
-      const { aiEmployee, message, autoSend } = options;
+      const { aiEmployee, message, attachments, autoSend } = options;
       updateRole(aiEmployee);
       if (!open) {
         setOpen(true);
@@ -202,6 +202,9 @@ export const useSetChatBoxContext = () => {
         setSenderValue(message.content);
       } else {
         setSenderValue('');
+      }
+      if (attachments) {
+        setAttachments(attachments);
       }
       setMessages([
         {
@@ -218,6 +221,7 @@ export const useSetChatBoxContext = () => {
         send({
           aiEmployee,
           messages: [message],
+          attachments,
         });
       }
     },

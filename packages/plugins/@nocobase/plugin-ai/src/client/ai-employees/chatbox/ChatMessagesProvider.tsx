@@ -217,6 +217,7 @@ export const ChatMessagesProvider: React.FC<{ children: React.ReactNode }> = ({ 
     sessionId,
     aiEmployee,
     messages: sendMsgs,
+    attachments,
     onConversationCreate,
   }: SendOptions & {
     onConversationCreate?: (sessionId: string) => void;

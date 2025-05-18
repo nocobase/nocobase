@@ -12,10 +12,11 @@ import { SchemaInitializerItem, useSchemaInitializer } from '@nocobase/client';
 import { useAIEmployeesContext } from '../AIEmployeesProvider';
 import { Spin, Avatar } from 'antd';
 import { avatars } from '../avatars';
+import { tval } from '@nocobase/utils/client';
 
 const getAIEmployeesInitializer = () => ({
   name: 'aiEmployees',
-  title: 'AI employees',
+  title: tval('AI employees', { ns: 'ai' }),
   type: 'subMenu',
   useChildren() {
     const {

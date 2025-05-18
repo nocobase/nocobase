@@ -71,5 +71,9 @@
   "Deleted successfully": "Deleted successfully",
   "Rename conversation": "Rename conversation",
   "Use skill": "Use skill",
-  "Upload attachments": "Upload attachments"
+  "Upload files": "Upload files",
+  "Files storage": "Files storage",
+  "Files": "Files",
+  "Add file": "Add file",
+  "Please select file objects.": "Please select file objects."
 }

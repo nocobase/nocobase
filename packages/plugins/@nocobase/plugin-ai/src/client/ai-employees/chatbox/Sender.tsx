@@ -21,7 +21,7 @@ import { AttachmentsHeader } from './AttachmentsHeader';
 export const Sender: React.FC = () => {
   const t = useT();
   const { currentConversation } = useChatConversations();
-  const { responseLoading, cancelRequest } = useChatMessages();
+  const { responseLoading, cancelRequest, attachments } = useChatMessages();
   const senderValue = useChatBoxContext('senderValue');
   const setSenderValue = useChatBoxContext('setSenderValue');
   const senderPlaceholder = useChatBoxContext('senderPlaceholder');
@@ -60,6 +60,7 @@ export const Sender: React.FC = () => {
               content,
             },
           ],
+          attachments,
         })
       }
       onCancel={cancelRequest}
