@@ -61,7 +61,7 @@ export * from './testUtils';
 export * from './user';
 export * from './variables';
 export * from './flowengine';
-export * from './observable-model';
+export * from './flow-model';
 
 export { withDynamicSchemaProps } from './hoc/withDynamicSchemaProps';
 export { withSkeletonComponent } from './hoc/withSkeletonComponent';

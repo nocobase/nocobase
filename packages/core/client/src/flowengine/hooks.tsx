@@ -1,8 +1,8 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, useRef } from 'react';
 import { useFlowEngine } from './provider';
 import type { BaseModel } from '@nocobase/client';
 import type { FlowContext } from './types';
-import { autorun } from '@formily/reactive';
+import { autorun, toJS } from '@formily/reactive';
 import stableStringify from 'fast-json-stable-stringify';
 import { useApp } from '@nocobase/client';
 
@@ -49,55 +49,101 @@ export function useModel<T extends BaseModel = BaseModel>(
     }
     return instance;
   }, [engine, app, modelClassName, uid]);
-  const [, forceUpdate] = useState({});
-  useEffect(() => {
-    const dispose = autorun(() => {
-      // Access observable properties to track them
-      // This will re-run autorun when any of these change, then forceUpdate re-renders component.
-      Object.keys(model.props).forEach(key => model.props[key]);
-      model.hidden; // track hidden state
-      model.stepParams; // track stepParams
-      forceUpdate({});
-    });
-    return () => {
-      dispose();
-    };
-  }, [model]);
   return model;
 }
 
 /**
  * Hook to apply a flow on a model instance, supporting React Suspense.
- * The component will suspend if the flow execution is pending.
- * Throws an error for Error Boundaries if the flow execution fails.
+ * Reactively re-applies the flow if model.props or model.stepParams change.
  */
 export function useApplyFlow(
-  model: BaseModel, // Model is now required
+  model: BaseModel, 
   flowKey: string,
   context?: UserContext, 
 ): any { 
-  // Engine is obtained from the model instance
-  if (!model.flowEngine) {
-    throw new Error('FlowEngine not available on the provided model for useApplyFlow. Ensure model is created via FlowEngine or app is set.');
-  }
-
-  // Cache key now definitely uses model.uid
+  const engine = useFlowEngine(); // Still needed for the executionContext for model.applyFlow
   const cacheKey = useMemo(() => generateCacheKey('applyFlow', flowKey, model.uid, context), [flowKey, model.uid, context]);
-  const cachedEntry = flowEngineCache.get(cacheKey);
+  const [, forceUpdate] = useState({});
+  const isMounted = useRef(true);
 
+  useEffect(() => {
+    isMounted.current = true;
+    return () => {
+      isMounted.current = false;
+    };
+  }, []);
+
+  // Effect for reactive re-application due to model changes
+  useEffect(() => {
+    let debounceTimer: NodeJS.Timeout | null = null;
+    let isInitialAutorunForEffect = true;
+
+    const disposeAutorun = autorun(async () => {
+      // Track dependencies for re-running the flow
+      // These are the same dependencies that should cause a component using this model to re-render
+      JSON.stringify(toJS(model.props)); // Track all props
+      JSON.stringify(toJS(model.stepParams)); // Track all stepParams
+      // model.hidden; // if hidden state should also trigger re-application
+
+      if (isInitialAutorunForEffect) {
+        isInitialAutorunForEffect = false;
+        return; // Don't re-fetch on the very first autorun trigger by this effect's setup
+      }
+
+      if (debounceTimer) clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(async () => {
+        if (!isMounted.current) return;
+
+        const cachedEntry = flowEngineCache.get(cacheKey);
+        // Only re-fetch if the flow was previously resolved. 
+        // If it was pending/errored, the main suspense logic will handle it upon next render triggered by model change.
+        if (cachedEntry?.status === 'resolved' || !cachedEntry) { // Or if not cached yet (e.g. context changed, then model internal change)
+          console.log(`[useApplyFlow] Reactive re-apply for flow: ${flowKey}, model: ${model.uid}`);
+          try {
+            // The context for model.applyFlow doesn't include engine, app, $exit
+            const executionUserContext = context;
+            const newResult = await model.applyFlow(flowKey, executionUserContext); 
+            if (isMounted.current) {
+              flowEngineCache.set(cacheKey, { status: 'resolved', data: newResult, promise: Promise.resolve(newResult) });
+              forceUpdate({}); 
+            }
+          } catch (newError) {
+            if (isMounted.current) {
+              flowEngineCache.set(cacheKey, { status: 'rejected', error: newError, promise: Promise.reject(newError) });
+              forceUpdate({}); 
+            }
+          }
+        }
+      }, 300); // Debounce
+    });
+
+    return () => {
+      if (debounceTimer) clearTimeout(debounceTimer);
+      disposeAutorun();
+    };
+  // model, flowKey, context, cacheKey, engine are dependencies for re-subscribing autorun if hook params change
+  // The model object itself changing would re-run this whole effect.
+  // Internal changes to model.props/stepParams are caught by autorun.
+  }, [model, flowKey, context, cacheKey, engine]);
+
+
+  // Initial Suspense data fetching logic
+  const cachedEntry = flowEngineCache.get(cacheKey);
   if (cachedEntry) {
     if (cachedEntry.status === 'resolved') return cachedEntry.data;
     if (cachedEntry.status === 'rejected') throw cachedEntry.error;
     if (cachedEntry.status === 'pending') throw cachedEntry.promise; 
   }
 
-  const promise = model.applyFlow(flowKey, context) // model.applyFlow handles context correctly
+  // The context for model.applyFlow doesn't include engine, app, $exit
+  const initialUserContext = context;
+  const promise = model.applyFlow(flowKey, initialUserContext) 
     .then(result => {
-      flowEngineCache.set(cacheKey, { status: 'resolved', data: result, promise });
+      if(isMounted.current) flowEngineCache.set(cacheKey, { status: 'resolved', data: result, promise });
       return result;
     })
     .catch(err => {
-      flowEngineCache.set(cacheKey, { status: 'rejected', error: err, promise });
+      if(isMounted.current) flowEngineCache.set(cacheKey, { status: 'rejected', error: err, promise });
       throw err;
     });
 
@@ -113,12 +159,11 @@ export function useDispatchEvent(
   eventName: string,
 ) {
   if (!model.flowEngine) {
-    // Though model.dispatchEvent handles this, good to be explicit in hook if it relies on it.
     console.warn('FlowEngine not available on the provided model for useDispatchEvent. Dispatch might not work as expected.');
   }
 
-  const dispatch = (context?: UserContext) => { // runtimeContext is now just context
-    model.dispatchEvent(eventName, context); // model.dispatchEvent handles context correctly
+  const dispatch = (context?: UserContext) => {
+    model.dispatchEvent(eventName, context);
   };
 
   return { dispatch };

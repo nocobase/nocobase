@@ -1,6 +1,6 @@
 import React from 'react';
 import { Divider } from 'antd';
-import { BaseModel, Application, BlockModel, useModel, useApplyFlow, FlowContext, Plugin } from '@nocobase/client';
+import { BaseModel, Application, BlockModel, useModel, useApplyFlow, FlowContext, Plugin, ISchema } from '@nocobase/client';
 import MarkdownIt from 'markdown-it';
 import Handlebars from 'handlebars';
 import { observer } from '@formily/react';
@@ -52,7 +52,7 @@ class DemoPlugin extends Plugin {
                         { label: '普通文本', value: 'plain' },
                         { label: 'Handlebars模板', value: 'handlebars' }
                     ],
-                }
+                } 
             },
             defaultParams: { template: 'plain' },
             handler: ((ctx: FlowContext, model: BaseModel, params: any) => {
@@ -72,7 +72,7 @@ class DemoPlugin extends Plugin {
                     'x-decorator': 'FormItem',
                     'x-component': 'InputNumber',
                     'x-component-props': { addonAfter: 'px' },
-                }
+                } 
             },
             handler: ((ctx: FlowContext, model: BaseModel, params: any) => {
                 if (params?.height != null) {
@@ -90,7 +90,7 @@ class DemoPlugin extends Plugin {
                     title: 'Markdown内容',
                     'x-decorator': 'FormItem',
                     'x-component': 'Input.TextArea',
-                }
+                } 
             },
             handler: ((ctx: FlowContext, model: BaseModel, params: any) => {
                 model.setProps('content', params?.content);
@@ -100,25 +100,22 @@ class DemoPlugin extends Plugin {
         this.app.flowEngine.registerFlow({
             key: 'block:markdown',
             title: 'Markdown区块流程',
-            steps: [
-                {
-                    key: 'template_config',
+            steps: {
+                setTemplate: {
                     use: 'block:markdown:template',
                     title: '模板引擎',
                 },
-                {
-                    key: 'height_config',
+                setHeight: {
                     use: 'block:markdown:height',
                     title: '高度',
                     defaultParams: { height: 300 }
                 },
-                {
-                    key: 'content_config',
+                setContent: {
                     use: 'block:markdown:content',
                     title: '内容',
                     defaultParams: { content: "Hello, NocoBase! {{var1}}" }
                 },
-                {
+                renderMarkdown: {
                     handler: async (ctx: FlowContext, model: BaseModel, params: any) => {
                         const props = model.getProps();
                         let content = props.content;
@@ -134,7 +131,7 @@ class DemoPlugin extends Plugin {
                         model.setProps('content', MarkdownIt().render(content || ''));
                     }
                 }
-            ],
+            },
         });
 
         this.app.router.add('root', { path: '/', Component: Demo });

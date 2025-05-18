@@ -4,7 +4,7 @@ import {
   ModelConstructor,
 } from './types';
 import { Application } from '../application';
-import { BaseModel } from '../observable-model';
+import { BaseModel } from '../flow-model';
 
 export class FlowEngine {
   private actions: Map<string, ActionDefinition> = new Map();

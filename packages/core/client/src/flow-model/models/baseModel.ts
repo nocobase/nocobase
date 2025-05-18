@@ -30,7 +30,7 @@ export class BaseModel {
     define(this, {
       props: observable,
       hidden: observable,
-      stepParams: observable,
+      stepParams: observable.deep,
       setProps: action,
       setStepParams: action,
       setHidden: action,
