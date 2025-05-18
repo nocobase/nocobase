@@ -34,14 +34,13 @@ export interface FlowDefinition {
   on?: {
     eventName: string;
   };
-  steps: StepDefinition[];
+  steps: Record<string, StepDefinition>;
 }
 
 /**
  * Base interface for a step definition.
  */
 interface BaseStepDefinition {
-  key?: string; // Optional unique key for the step, useful for step-specific params in model
   title?: string;
   isAwait?: boolean; // Whether to await the handler, defaults to true
 }

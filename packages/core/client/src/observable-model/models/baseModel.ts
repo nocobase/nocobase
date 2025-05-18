@@ -1,6 +1,6 @@
 import { observable, action, define } from '@formily/reactive';
 import { FlowEngine } from '../../flowengine/flow-engine';
-import type { FlowContext, ActionStepDefinition, InlineStepDefinition } from '../../flowengine/types';
+import type { FlowContext, ActionStepDefinition, InlineStepDefinition, StepDefinition } from '../../flowengine/types';
 import type { Application } from '../../application/Application';
 
 export interface IModelComponentProps {
@@ -135,50 +135,51 @@ export class BaseModel {
       ...(context || {}),
     };
 
-    for (const step of flow.steps) {
-      if (exited) break;
+    for (const stepKey in flow.steps) {
+      if (Object.prototype.hasOwnProperty.call(flow.steps, stepKey)) {
+        const step: StepDefinition = flow.steps[stepKey];
+        if (exited) break;
 
-      const stepContext: FlowContext = { ...baseContextForSteps, $exit: exitFlow } as FlowContext;
-      
-      let handler: ((ctx: FlowContext, model: BaseModel, params: any) => Promise<any> | any) | undefined;
-      let combinedParams: Record<string, any> = {};
-      let actionDefinition;
+        const stepContext: FlowContext = { ...baseContextForSteps, $exit: exitFlow } as FlowContext;
+        
+        let handler: ((ctx: FlowContext, model: BaseModel, params: any) => Promise<any> | any) | undefined;
+        let combinedParams: Record<string, any> = {};
+        let actionDefinition;
 
-      if ((step as ActionStepDefinition).use) {
-        const actionStep = step as ActionStepDefinition;
-        actionDefinition = currentFlowEngine.getAction(actionStep.use);
-        if (!actionDefinition) {
-          console.error(`BaseModel.applyFlow: Action '${actionStep.use}' not found for step in flow '${flowKey}'. Skipping.`);
+        if ((step as ActionStepDefinition).use) {
+          const actionStep = step as ActionStepDefinition;
+          actionDefinition = currentFlowEngine.getAction(actionStep.use);
+          if (!actionDefinition) {
+            console.error(`BaseModel.applyFlow: Action '${actionStep.use}' not found for step '${stepKey}' in flow '${flowKey}'. Skipping.`);
+            continue;
+          }
+          handler = actionDefinition.handler;
+          combinedParams = { ...actionDefinition.defaultParams, ...actionStep.defaultParams };
+        } else if ((step as InlineStepDefinition).handler) {
+          const inlineStep = step as InlineStepDefinition;
+          handler = inlineStep.handler;
+          combinedParams = { ...inlineStep.defaultParams };
+        } else {
+          console.error(`BaseModel.applyFlow: Step '${stepKey}' in flow '${flowKey}' has neither 'use' nor 'handler'. Skipping.`);
           continue;
         }
-        handler = actionDefinition.handler;
-        combinedParams = { ...actionDefinition.defaultParams, ...actionStep.defaultParams };
-      } else if ((step as InlineStepDefinition).handler) {
-        const inlineStep = step as InlineStepDefinition;
-        handler = inlineStep.handler;
-        combinedParams = { ...inlineStep.defaultParams };
-      } else {
-        console.error(`BaseModel.applyFlow: Step in flow '${flowKey}' has neither 'use' nor 'handler'. Skipping.`);
-        continue;
-      }
 
-      if (step.key) {
-        const modelStepParams = this.getStepParams(flowKey, step.key);
+        const modelStepParams = this.getStepParams(flowKey, stepKey);
         if (modelStepParams !== undefined) {
           combinedParams = { ...combinedParams, ...modelStepParams };
         }
-      }
 
-      try {
-        const currentStepResult = handler!(stepContext, this, combinedParams);
-        if (step.isAwait !== false) {
-          lastResult = await currentStepResult;
-        } else {
-          lastResult = currentStepResult;
+        try {
+          const currentStepResult = handler!(stepContext, this, combinedParams);
+          if (step.isAwait !== false) {
+            lastResult = await currentStepResult;
+          } else {
+            lastResult = currentStepResult;
+          }
+        } catch (error) {
+          console.error(`BaseModel.applyFlow: Error executing step '${stepKey}' in flow '${flowKey}':`, error);
+          return Promise.reject(error);
         }
-      } catch (error) {
-        console.error(`BaseModel.applyFlow: Error executing step '${step.key || actionDefinition?.name || 'inline'}' in flow '${flowKey}':`, error);
-        return Promise.reject(error);
       }
     }
     return Promise.resolve(lastResult);
