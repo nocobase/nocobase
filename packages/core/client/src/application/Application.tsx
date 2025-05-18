@@ -47,14 +47,9 @@ import type { Plugin } from './Plugin';
 import { getOperators } from './globalOperators';
 import { useAclSnippets } from './hooks/useAclSnippets';
 import type { RequireJS } from './utils/requirejs';
-import { FilterFlowProvider } from '../filterflow/FilterFlowProvider';
-import { FilterFlowManager } from '../filterflow/filterflow-manager';
-import { ObservableModelManager } from '../observable-model/observableModelManager';
-import { ObservableModelProvider } from '../observable-model/observableModelProvider';
 import { EventFlowManager } from '../eventflow/eventflow-manager';
-import { EventFlowManagerProvider } from '../eventflow/eventFlowProvider';
-import { EventBus } from '../eventflow/event-bus';
-import { EventFlowEventBusProvider } from '../eventflow/eventFlowEventBusProvider';
+import { FlowEngine } from '../flowengine/flow-engine';
+import { FlowEngineProvider } from '../flowengine/provider';
 
 type JsonLogic = {
   addOperation: (name: string, fn?: any) => void;
@@ -118,11 +113,7 @@ export class Application {
   public globalVars: Record<string, any> = {};
   public globalVarCtxs: Record<string, any> = {};
   public jsonLogic: JsonLogic;
-  // @ts-ignore
-  public filterFlowManager: FilterFlowManager;
-  public observableModelManager: ObservableModelManager;
-  public appEventFlowManager: EventFlowManager;
-  public eventFlowEventBus: EventBus;
+  public flowEngine: FlowEngine;
   loading = true;
   maintained = false;
   maintaining = false;
@@ -182,10 +173,7 @@ export class Application {
     this.pluginManager = new PluginManager(options.plugins, options.loadRemotePlugins, this);
     this.schemaInitializerManager = new SchemaInitializerManager(options.schemaInitializers, this);
     this.dataSourceManager = new DataSourceManager(options.dataSourceManager, this);
-    this.filterFlowManager = new FilterFlowManager();
-    this.observableModelManager = new ObservableModelManager();
-    this.eventFlowEventBus = new EventBus();
-    this.eventFlowManager = new EventFlowManager(this.eventFlowEventBus);
+    this.flowEngine = new FlowEngine();
     this.addDefaultProviders();
     this.addReactRouterComponents();
     this.addProviders(options.providers || []);
@@ -265,10 +253,7 @@ export class Application {
     this.use(AntdAppProvider);
     this.use(DataSourceApplicationProvider, { dataSourceManager: this.dataSourceManager });
     this.use(OpenModeProvider);
-    this.use(FilterFlowProvider, { filterFlowManager: this.filterFlowManager });
-    this.use(ObservableModelProvider, { observableModelManager: this.observableModelManager });
-    this.use(EventFlowManagerProvider, { eventFlowManager: this.appEventFlowManager });
-    this.use(EventFlowEventBusProvider, { eventFlowEventBus: this.eventFlowEventBus });
+    this.use(FlowEngineProvider, { engine: this.flowEngine });
   }
 
   private addReactRouterComponents() {
@@ -529,18 +514,6 @@ export class Application {
 
   getGlobalVarCtx(key) {
     return get(this.globalVarCtxs, key);
-  }
-
-  getObservableModelManager() {
-    return this.observableModelManager;
-  }
-
-  getAppEventFlowManager() {
-    return this.appEventFlowManager;
-  }
-
-  getEventFlowEventBus() {
-    return this.eventFlowEventBus;
   }
 
   addUserCenterSettingsItem(item: SchemaSettingsItemType & { aclSnippet?: string }) {

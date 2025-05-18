@@ -1,4 +1,7 @@
 import { observable, action, define } from '@formily/reactive';
+import type { FlowEngine } from '../../flowengine/flow-engine';
+import type { FlowContext, ActionStepDefinition, InlineStepDefinition } from '../../flowengine/types';
+import type { Application } from '../../application/Application';
 
 export interface IModelComponentProps {
   [key: string]: any;
@@ -8,149 +11,191 @@ export interface IModelComponentProps {
 export type ReadonlyModelProps = Readonly<IModelComponentProps>;
 
 export class BaseModel {
-  public uid: string;
+  public readonly uid: string;
   public props: IModelComponentProps;
   public hidden: boolean;
-  public filterParams: Record<string, Record<string, any>>;
-  public eventParams: Record<string, Record<string, any>>;
-  private _defaultProps: IModelComponentProps | null;
+  public stepParams: Record<string, Record<string, any>>;
+  public app?: Application;
 
-  constructor(uid: string, defaultProps?: IModelComponentProps) {
+  constructor(
+    uid: string,
+    app?: Application,
+  ) {
     this.uid = uid;
-    this._defaultProps = defaultProps ? { ...defaultProps } : null;
     this.props = {};
     this.hidden = false;
-    this.filterParams = {};
-    this.eventParams = {};
+    this.stepParams = {};
+    this.app = app;
 
     define(this, {
       props: observable,
       hidden: observable,
-      filterParams: observable,
-      eventParams: observable,
+      stepParams: observable,
       setProps: action,
-      setFilterParams: action,
-      setEventParams: action,
+      setStepParams: action,
+      setHidden: action,
     });
   }
 
-  // 获取默认属性
-  getDefaultProps(): ReadonlyModelProps | null {
-    return this._defaultProps;
-  }
-
-  // 设置默认属性
-  setDefaultProps(props: IModelComponentProps): void {
-    if (this._defaultProps === null) {
-      this._defaultProps = { ...props };
+  get flowEngine(): FlowEngine | undefined {
+    if (this.app && typeof this.app.flowEngine === 'object' && this.app.flowEngine !== null) {
+      return this.app.flowEngine;
     }
+    return undefined;
   }
 
   setProps(props: IModelComponentProps): void;
   setProps(key: string, value: any): void;
   setProps(props: IModelComponentProps | string, value?: any): void {
     if (typeof props === 'string') {
-      // 如果是两个参数形式: setProps(key, value)
       this.props[props] = value;
     } else {
-      // 如果是一个参数形式: setProps(newProps)，完全覆盖现有props
       this.props = { ...props };
     }
   }
 
   getProps(): ReadonlyModelProps {
-    // 创建代理对象，当属性在 props 中不存在时，尝试从 defaultProps 中读取
-    const handler = {
-      get: (target: IModelComponentProps, prop: string | symbol) => {
-        // 如果属性存在于 props 中，直接返回
-        if (prop in target) {
-          return target[prop as string];
+    return this.props as ReadonlyModelProps;
+  }
+
+  setHidden(hidden: boolean): void {
+    this.hidden = hidden;
+  }
+
+  setStepParams(flowKey: string, stepKey: string, params: any): void;
+  setStepParams(flowKey: string, stepsParams: Record<string, any>): void;
+  setStepParams(allParams: Record<string, Record<string, any>>): void;
+  setStepParams(
+    flowKeyOrAllParams: string | Record<string, Record<string, any>>,
+    stepKeyOrStepsParams?: string | Record<string, any>,
+    params?: any,
+  ): void {
+    if (typeof flowKeyOrAllParams === 'string') {
+      const flowKey = flowKeyOrAllParams;
+      if (typeof stepKeyOrStepsParams === 'string' && params !== undefined) {
+        if (!this.stepParams[flowKey]) {
+          this.stepParams[flowKey] = {};
         }
-        // 如果 props 中不存在，且 defaultProps 不为 null，尝试从 defaultProps 中读取
-        if (this._defaultProps !== null && typeof prop === 'string' && prop in this._defaultProps) {
-          return this._defaultProps[prop];
-        }
-        // 都不存在则返回 undefined
-        return undefined;
+        this.stepParams[flowKey][stepKeyOrStepsParams] = params;
+      } else if (typeof stepKeyOrStepsParams === 'object' && stepKeyOrStepsParams !== null) {
+        this.stepParams[flowKey] = { ...(this.stepParams[flowKey] || {}), ...stepKeyOrStepsParams };
       }
+    } else if (typeof flowKeyOrAllParams === 'object' && flowKeyOrAllParams !== null) {
+      for (const fk in flowKeyOrAllParams) {
+        if (Object.prototype.hasOwnProperty.call(flowKeyOrAllParams, fk)) {
+          this.stepParams[fk] = { ...(this.stepParams[fk] || {}), ...flowKeyOrAllParams[fk] };
+        }
+      }
+    }
+  }
+
+  getStepParams(flowKey: string, stepKey: string): any | undefined;
+  getStepParams(flowKey: string): Record<string, any> | undefined;
+  getStepParams(): Record<string, Record<string, any>>;
+  getStepParams(flowKey?: string, stepKey?: string): any {
+    if (flowKey && stepKey) {
+      return this.stepParams[flowKey]?.[stepKey];
+    }
+    if (flowKey) {
+      return this.stepParams[flowKey];
+    }
+    return this.stepParams;
+  }
+
+  async applyFlow(flowKey: string, context?: Partial<Omit<FlowContext, 'engine' | '$exit' | 'app'>>): Promise<any> {
+    const currentFlowEngine = this.flowEngine;
+    if (!currentFlowEngine || !this.app) {
+      console.warn('FlowEngine or Application not available on this model. Cannot applyFlow.');
+      return Promise.reject(new Error('FlowEngine or Application not available'));
+    }
+    
+    const flow = currentFlowEngine.getFlow(flowKey);
+    if (!flow) {
+      console.error(`BaseModel.applyFlow: Flow with key '${flowKey}' not found.`);
+      return Promise.reject(new Error(`Flow '${flowKey}' not found.`));
+    }
+
+    let lastResult: any;
+    let exited = false;
+    const exitFlow = () => { exited = true; console.log(`Flow '${flowKey}' on model '${this.uid}' exited via ctx.$exit().`); };
+
+    const baseContextForSteps: Omit<FlowContext, '$exit'> = {
+      engine: currentFlowEngine,
+      app: this.app,
+      ...(context || {}),
     };
 
-    return new Proxy(this.props, handler) as ReadonlyModelProps;
+    for (const step of flow.steps) {
+      if (exited) break;
+
+      const stepContext: FlowContext = { ...baseContextForSteps, $exit: exitFlow } as FlowContext;
+      
+      let handler: ((ctx: FlowContext, model: BaseModel, params: any) => Promise<any> | any) | undefined;
+      let combinedParams: Record<string, any> = {};
+      let actionDefinition;
+
+      if ((step as ActionStepDefinition).use) {
+        const actionStep = step as ActionStepDefinition;
+        actionDefinition = currentFlowEngine.getAction(actionStep.use);
+        if (!actionDefinition) {
+          console.error(`BaseModel.applyFlow: Action '${actionStep.use}' not found for step in flow '${flowKey}'. Skipping.`);
+          continue;
+        }
+        handler = actionDefinition.handler;
+        combinedParams = { ...actionDefinition.defaultParams, ...actionStep.defaultParams };
+      } else if ((step as InlineStepDefinition).handler) {
+        const inlineStep = step as InlineStepDefinition;
+        handler = inlineStep.handler;
+        combinedParams = { ...inlineStep.defaultParams };
+      } else {
+        console.error(`BaseModel.applyFlow: Step in flow '${flowKey}' has neither 'use' nor 'handler'. Skipping.`);
+        continue;
+      }
+
+      if (step.key) {
+        const modelStepParams = this.getStepParams(flowKey, step.key);
+        if (modelStepParams !== undefined) {
+          combinedParams = { ...combinedParams, ...modelStepParams };
+        }
+      }
+
+      try {
+        const currentStepResult = handler!(stepContext, this, combinedParams);
+        if (step.isAwait !== false) {
+          lastResult = await currentStepResult;
+        } else {
+          lastResult = currentStepResult;
+        }
+      } catch (error) {
+        console.error(`BaseModel.applyFlow: Error executing step '${step.key || actionDefinition?.name || 'inline'}' in flow '${flowKey}':`, error);
+        return Promise.reject(error);
+      }
+    }
+    return Promise.resolve(lastResult);
   }
 
-  // 为特定flowKey和stepKey设置过滤器参数
-  setFilterParams(flowKey: string, stepKey: string, params: any): void;
-  // 为特定flowKey设置所有步骤的参数
-  setFilterParams(flowKey: string, stepsParams: Record<string, any>): void;
-  // 批量设置多个flow的参数
-  setFilterParams(params: Record<string, Record<string, any>>): void;
-  
-  setFilterParams(
-    flowKeyOrParams: string | Record<string, Record<string, any>>, 
-    stepKeyOrParams?: string | Record<string, any>, 
-    params?: any
-  ): void {
-    // 处理三个参数的情况: setFilterParams(flowKey, stepKey, params)
-    if (typeof flowKeyOrParams === 'string' && typeof stepKeyOrParams === 'string' && params !== undefined) {
-      const flowKey = flowKeyOrParams;
-      const stepKey = stepKeyOrParams;
-      const currentFlowParams = this.filterParams[flowKey] || {};
-      this.filterParams[flowKey] = {
-        ...currentFlowParams,
-        [stepKey]: params,
-      };
-    } 
-    // 处理两个参数的情况: setFilterParams(flowKey, stepsParams)
-    else if (typeof flowKeyOrParams === 'string' && typeof stepKeyOrParams === 'object' && stepKeyOrParams !== null) {
-      const flowKey = flowKeyOrParams;
-      const newStepsForFlow = stepKeyOrParams as Record<string, any>;
-      const currentFlowParams = this.filterParams[flowKey] || {};
-      this.filterParams[flowKey] = {
-        ...currentFlowParams,
-        ...newStepsForFlow,
-      };
-    } 
-    // 处理一个参数的情况: setFilterParams(params)
-    else if (typeof flowKeyOrParams === 'object' && flowKeyOrParams !== null) {
-      this.filterParams = { ...this.filterParams, ...flowKeyOrParams };
+  dispatchEvent(eventName: string, context?: Partial<Omit<FlowContext, 'engine' | '$exit' | 'app'>>): void {
+    const currentFlowEngine = this.flowEngine;
+    if (!currentFlowEngine || !this.app) {
+      console.warn('FlowEngine or Application not available on this model. Cannot dispatchEvent.');
+      return;
     }
-  }
+    const flows = currentFlowEngine.getFlows();
 
-  // 为特定flowKey和stepKey设置事件参数
-  setEventParams(flowKey: string, stepKey: string, params: any): void;
-  // 为特定flowKey设置所有步骤的参数
-  setEventParams(flowKey: string, stepsParams: Record<string, any>): void;
-  // 批量设置多个flow的参数
-  setEventParams(params: Record<string, Record<string, any>>): void;
-  
-  setEventParams(
-    flowKeyOrParams: string | Record<string, Record<string, any>>, 
-    stepKeyOrParams?: string | Record<string, any>, 
-    params?: any
-  ): void {
-    // 处理三个参数的情况: setEventParams(flowKey, stepKey, params)
-    if (typeof flowKeyOrParams === 'string' && typeof stepKeyOrParams === 'string' && params !== undefined) {
-      const flowKey = flowKeyOrParams;
-      const stepKey = stepKeyOrParams;
-      const currentFlowParams = this.eventParams[flowKey] || {};
-      this.eventParams[flowKey] = {
-        ...currentFlowParams,
-        [stepKey]: params,
-      };
-    } 
-    // 处理两个参数的情况: setEventParams(flowKey, stepsParams)
-    else if (typeof flowKeyOrParams === 'string' && typeof stepKeyOrParams === 'object' && stepKeyOrParams !== null) {
-      const flowKey = flowKeyOrParams;
-      const newStepsForFlow = stepKeyOrParams as Record<string, any>;
-      const currentFlowParams = this.eventParams[flowKey] || {};
-      this.eventParams[flowKey] = {
-        ...currentFlowParams,
-        ...newStepsForFlow,
-      };
-    } 
-    // 处理一个参数的情况: setEventParams(params)
-    else if (typeof flowKeyOrParams === 'object' && flowKeyOrParams !== null) {
-      this.eventParams = { ...this.eventParams, ...flowKeyOrParams };
-    }
+    const baseContextForFlow: Omit<FlowContext, '$exit'> = {
+        engine: currentFlowEngine,
+        app: this.app,
+        event: { name: eventName, modelUid: this.uid },
+        ...(context || {}),
+    };
+
+    flows.forEach((flow) => {
+      if (flow.on && flow.on.eventName === eventName) {
+        console.log(`BaseModel '${this.uid}' dispatching event '${eventName}' to flow '${flow.key}'.`);
+        this.applyFlow(flow.key, baseContextForFlow as any).catch(error => {
+          console.error(`BaseModel.dispatchEvent: Error executing event-triggered flow '${flow.key}' for event '${eventName}':`, error);
+        });
+      }
+    });
   }
 } 
