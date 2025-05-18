@@ -9,25 +9,25 @@
 
 import Application from './application';
 
-type Callback = (message: any) => Promise<void> | void;
-
-type WrappedCallback = () => Callback | null;
-
-export type QueueEventOptions =
-  | {
-      interval?: number;
-      concurrency?: number;
-      idle(): boolean;
-      process: Callback;
-    }
-  | WrappedCallback;
-
-const defaultEventOptions: QueueEventOptions = {
-  interval: 2000,
-  idle() {
-    return true;
+type Callback = (
+  message: any,
+  options: {
+    id?: string;
+    signal?: AbortSignal;
   },
-  process(message) {},
+) => Promise<void> | void;
+
+export type QueueEventOptions = {
+  interval?: number;
+  concurrency?: number;
+  idle(): boolean;
+  process: Callback;
+};
+
+export type QueueMessageOptions = {
+  timeout?: number;
+  maxRetries?: number;
+  retried?: number;
 };
 
 export interface IEventQueueAdapter {
@@ -36,19 +36,20 @@ export interface IEventQueueAdapter {
   close(): Promise<void> | void;
   subscribe(channel: string, event: QueueEventOptions): void;
   unsubscribe(channel: string, event?: QueueEventOptions): void;
-  publish(channel: string, message: any): Promise<void> | void;
+  publish(channel: string, message: any, options: QueueMessageOptions): Promise<void> | void;
 }
 
 export interface EventQueueOptions {
   channelPrefix?: string;
 }
 
-export const QUEUE_DEFAULT_INTERVAL = 1000;
+export const QUEUE_DEFAULT_INTERVAL = 1_000;
 export const QUEUE_DEFAULT_CONCURRENCY = 1;
+export const QUEUE_DEFAULT_ACK_TIMEOUT = 15_000;
 
-async function sleep(time = QUEUE_DEFAULT_INTERVAL) {
-  return new Promise((resolve) => {
-    setTimeout(resolve, time);
+async function sleep(time = QUEUE_DEFAULT_INTERVAL, timeout = false) {
+  return new Promise((resolve, reject) => {
+    setTimeout(timeout ? reject : resolve, time);
   });
 }
 
@@ -57,7 +58,7 @@ export class MemoryEventQueueAdapter implements IEventQueueAdapter {
 
   private events: Map<string, Set<QueueEventOptions>> = new Map();
 
-  protected queues: Map<string, any[]> = new Map();
+  protected queues: Map<string, { content: any; timeout?: number }[]> = new Map();
 
   isConnected(): boolean {
     return this.connected;
@@ -108,7 +109,7 @@ export class MemoryEventQueueAdapter implements IEventQueueAdapter {
       this.events.delete(channel);
     }
   }
-  publish(channel: string, message: any) {
+  publish(channel: string, content: any, options: QueueMessageOptions = {}) {
     const events = this.events.get(channel);
     if (!events) {
       return;
@@ -117,7 +118,7 @@ export class MemoryEventQueueAdapter implements IEventQueueAdapter {
       this.queues.set(channel, []);
     }
     const queue = this.queues.get(channel);
-    queue.push(message);
+    queue.push({ content, timeout: options.timeout });
 
     for (const event of events) {
       this.consume(channel, event, true);
@@ -126,30 +127,16 @@ export class MemoryEventQueueAdapter implements IEventQueueAdapter {
 
   async consume(channel: string, event: QueueEventOptions, once = false) {
     while (this.connected && this.events.get(channel)?.has(event)) {
-      let processor: Callback;
-      let interval = QUEUE_DEFAULT_INTERVAL;
-      let concurrency = QUEUE_DEFAULT_CONCURRENCY;
-      if (typeof event === 'function') {
-        processor = event();
-        if (!processor) {
-          if (once) {
-            break;
-          }
-          await sleep(interval);
-          continue;
-        }
-      } else {
-        processor = event.process;
-        interval = event.interval ?? QUEUE_DEFAULT_INTERVAL;
-        concurrency = event.concurrency ?? QUEUE_DEFAULT_CONCURRENCY;
+      const interval = event.interval || QUEUE_DEFAULT_INTERVAL;
+      const concurrency = event.concurrency || QUEUE_DEFAULT_CONCURRENCY;
+      const processor = event.process;
 
-        if (!event.idle()) {
-          if (once) {
-            break;
-          }
-          await sleep(interval);
-          continue;
+      if (!event.idle()) {
+        if (once) {
+          break;
         }
+        await sleep(interval);
+        continue;
       }
 
       const queue = this.queues.get(channel);
@@ -164,7 +151,9 @@ export class MemoryEventQueueAdapter implements IEventQueueAdapter {
       for (let i = 0; i < concurrency || queue.length; i += 1) {
         const message = queue.shift();
         try {
-          await processor(message);
+          await processor(message.content, {
+            signal: AbortSignal.timeout(message.timeout || QUEUE_DEFAULT_ACK_TIMEOUT),
+          });
         } catch (ex) {
           queue.unshift(message);
           console.error(ex);
@@ -267,7 +256,7 @@ export class EventQueue {
       this.adapter.unsubscribe(this.getFullChannel(channel), options);
     }
   }
-  async publish(channel: string, message: any) {
+  async publish(channel: string, message: any, options: QueueMessageOptions = {}) {
     if (!this.adapter) {
       throw new Error('no adapter set, cannot publish');
     }
@@ -276,7 +265,7 @@ export class EventQueue {
     }
     const c = this.getFullChannel(channel);
     this.app.logger.debug('event queue publishing:', { channel: c, message });
-    await this.adapter.publish(c, message);
+    await this.adapter.publish(c, message, { timeout: QUEUE_DEFAULT_ACK_TIMEOUT, ...options });
   }
 }
 

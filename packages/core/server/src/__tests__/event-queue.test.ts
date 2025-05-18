@@ -55,24 +55,35 @@ describe('single node', () => {
   });
 
   test('not connected', async () => {
+    expect(app.eventQueue.isConnected()).toBe(false);
     const mockListener = vi.fn();
-    await app.eventQueue.subscribe('test1', () => mockListener);
-    await app.eventQueue.publish('test1', 'message1');
+    await app.eventQueue.subscribe('test1', {
+      idle: () => true,
+      process: mockListener,
+    });
+    await expect(app.eventQueue.publish('test1', 'message1')).rejects.toThrowError();
     expect(mockListener).not.toHaveBeenCalled();
   });
 
   test('closed', async () => {
     const mockListener = vi.fn();
     await app.eventQueue.connect();
-    await app.eventQueue.subscribe('test1', () => mockListener);
+    await app.eventQueue.subscribe('test1', {
+      idle: () => true,
+      process: mockListener,
+    });
     await app.eventQueue.close();
-    await app.eventQueue.publish('test1', 'message1');
+    expect(app.eventQueue.isConnected()).toBe(false);
+    await expect(app.eventQueue.publish('test1', 'message1')).rejects.toThrowError();
     expect(mockListener).not.toHaveBeenCalled();
   });
 
   test('subscribe before connect', async () => {
     const mockListener = vi.fn();
-    await app.eventQueue.subscribe('test1', () => mockListener);
+    await app.eventQueue.subscribe('test1', {
+      idle: () => true,
+      process: mockListener,
+    });
     await app.eventQueue.connect();
     await app.eventQueue.publish('test1', 'message1');
     await sleep(1000);
@@ -84,7 +95,10 @@ describe('single node', () => {
   test('subscribe after connect', async () => {
     const mockListener = vi.fn();
     await app.eventQueue.connect();
-    await app.eventQueue.subscribe('test1', () => mockListener);
+    await app.eventQueue.subscribe('test1', {
+      idle: () => true,
+      process: mockListener,
+    });
     await app.eventQueue.publish('test1', 'message1');
     await sleep(1000);
     expect(mockListener).toHaveBeenCalled();
@@ -94,7 +108,10 @@ describe('single node', () => {
 
   test('subscribe twice', async () => {
     const mockListener = vi.fn();
-    const idleListener = () => mockListener;
+    const idleListener = {
+      idle: () => true,
+      process: mockListener,
+    };
     await app.eventQueue.subscribe('test1', idleListener);
     await app.eventQueue.subscribe('test1', idleListener);
     await app.eventQueue.connect();
@@ -107,8 +124,10 @@ describe('single node', () => {
 
   test('idle', async () => {
     const mockListener = vi.fn();
-    const idleListener = () => null;
-    await app.eventQueue.subscribe('test1', idleListener);
+    await app.eventQueue.subscribe('test1', {
+      idle: () => false,
+      process: mockListener,
+    });
     await app.eventQueue.connect();
     await app.eventQueue.publish('test1', 'message1');
     await sleep(1000);

@@ -259,7 +259,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
   constructor(public options: ApplicationOptions) {
     super();
-    this.instanceId = options.instanceId || process.env.INSTANCE_ID || nanoid();
+    this.instanceId = options.instanceId || nanoid();
     this.context.reqId = randomUUID();
     this.rawOptions = this.name == 'main' ? lodash.cloneDeep(options) : {};
     this.init();
