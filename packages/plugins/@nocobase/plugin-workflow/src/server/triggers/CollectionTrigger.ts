@@ -52,7 +52,8 @@ export default class CollectionTrigger extends Trigger {
   events = new Map();
 
   // async function, should return promise
-  private static async handler(this: CollectionTrigger, workflow: WorkflowModel, data: Model, options) {
+  private static async handler(this: CollectionTrigger, workflowId: number, data: Model, options) {
+    const workflow = this.workflow.enabledCache.get(workflowId);
     const { skipWorkflow = false, stack } = options.context ?? {};
     if (skipWorkflow) {
       return;
@@ -169,7 +170,7 @@ export default class CollectionTrigger extends Trigger {
       const name = getHookId(workflow, `${collection}.${type}`);
       if (mode & key) {
         if (!this.events.has(name)) {
-          const listener = (<typeof CollectionTrigger>this.constructor).handler.bind(this, workflow);
+          const listener = (<typeof CollectionTrigger>this.constructor).handler.bind(this, workflow.id);
           this.events.set(name, listener);
           db.on(event, listener);
         }
