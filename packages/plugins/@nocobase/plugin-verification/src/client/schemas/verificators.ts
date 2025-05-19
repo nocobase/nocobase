@@ -73,6 +73,7 @@ export const createVerificatorSchema = {
 
 export const verficatorsSchema: ISchema = {
   type: 'void',
+  name: 'verifiers',
   properties: {
     card: {
       type: 'void',
