@@ -16,6 +16,10 @@ import { Card, App, Button, Typography } from 'antd';
 import { useT } from '../../locale';
 import { CopyOutlined } from '@ant-design/icons';
 import { useGlobalTheme, useToken } from '@nocobase/client';
+import ReactECharts from 'echarts-for-react';
+import remarkGfm from 'remark-gfm';
+import rehypeRaw from 'rehype-raw';
+import rehypeSanitize, { defaultSchema } from 'rehype-sanitize';
 
 type Props = {
   markdown: string;
@@ -66,6 +70,19 @@ const Code = (props: any) => {
   );
 };
 
+const Echarts = (props: any) => {
+  const { children } = props;
+  const { isDarkTheme } = useGlobalTheme();
+  let option = {};
+  try {
+    const configStr = React.Children.toArray(children).join('');
+    option = JSON.parse(configStr);
+  } catch (err) {
+    return <div style={{ color: 'red' }}>Invalid ECharts JSON</div>;
+  }
+  return <ReactECharts option={option} theme={!isDarkTheme ? 'default' : 'defaultDark'} />;
+};
+
 export const Markdown: React.FC<Props> = ({ markdown }) => {
   return (
     <div
@@ -76,7 +93,20 @@ export const Markdown: React.FC<Props> = ({ markdown }) => {
       <ReactMarkdown
         components={{
           code: Code,
+          // @ts-ignore
+          echarts: Echarts,
         }}
+        rehypePlugins={[
+          rehypeRaw,
+          [
+            rehypeSanitize,
+            {
+              ...defaultSchema,
+              tagNames: [...defaultSchema.tagNames, 'echarts'],
+            },
+          ],
+        ]}
+        remarkPlugins={[remarkGfm]}
       >
         {markdown}
       </ReactMarkdown>
