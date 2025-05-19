@@ -17,9 +17,10 @@ import { createForm } from '@formily/core';
 import { uid } from '@formily/shared';
 import { useAISelectionContext } from '../selector/AISelectorProvider';
 import { AIEmployee } from '../types';
-import { AIVariableRawTextArea, useAIEmployeeButtonVariableOptions } from './AIVariableRawTextArea';
+import { AIVariableRawTextArea } from './AIVariableRawTextArea';
 import { useFieldSchema } from '@formily/react';
 import { useAIEmployeesContext } from '../AIEmployeesProvider';
+import { useAIEmployeeButtonVariableOptions } from './useVariableOptions';
 
 const SettingsForm: React.FC<{
   form: any;
@@ -147,10 +148,6 @@ const SettingsForm: React.FC<{
                           'x-component-props': {
                             scope,
                             changeOnSelect: true,
-                            fieldNames: {
-                              value: 'name',
-                              label: 'title',
-                            },
                           },
                         },
                         remove: {

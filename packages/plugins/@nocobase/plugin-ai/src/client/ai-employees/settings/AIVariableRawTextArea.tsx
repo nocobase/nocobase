@@ -7,48 +7,16 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useCallback, useMemo, useRef, useState } from 'react';
-import {
-  Variable,
-  VariableSelect,
-  useBlockContext,
-  useCollection,
-  useCollectionFilterOptions,
-  useCollectionRecordData,
-} from '@nocobase/client';
+import React, { useCallback, useRef, useState } from 'react';
+import { VariableSelect } from '@nocobase/client';
 import { useT } from '../../locale';
-import { Schema, connect } from '@formily/react';
+import { connect } from '@formily/react';
 import { Button, Input, Space } from 'antd';
 import { BuildOutlined, BlockOutlined } from '@ant-design/icons';
 import { useAISelectionContext } from '../selector/AISelectorProvider';
 import { css } from '@emotion/css';
 import { useOnInsert } from '../useOnInsert';
-
-export const useAIEmployeeButtonVariableOptions = () => {
-  const collection = useCollection();
-  const t = useT();
-  const fieldsOptions = useCollectionFilterOptions(collection);
-  const recordData = useCollectionRecordData();
-  const { name: blockType } = useBlockContext() || {};
-  const fields = useMemo(() => {
-    return Schema.compile(fieldsOptions, { t });
-  }, [fieldsOptions]);
-  const options = useMemo(() => {
-    return [
-      recordData && {
-        name: 'currentRecord',
-        title: t('Current record'),
-        children: [...fields],
-      },
-      blockType === 'form' && {
-        name: '$nForm',
-        title: t('Current form'),
-        children: [...fields],
-      },
-    ].filter(Boolean);
-  }, [recordData, t, fields, blockType]);
-  return options;
-};
+import { useAIEmployeeButtonVariableOptions } from './useVariableOptions';
 
 export const UISchemaSelector: React.FC<{
   onSelect?: (value: any) => void;
@@ -145,6 +113,7 @@ export const AIVariableRawTextArea: React.FC = connect((props) => {
   const { currentSchema, ...rest } = props;
   const inputRef = useRef<any>(null);
   const { onInsert: onInsertValue } = useOnInsert();
+  const scope = useAIEmployeeButtonVariableOptions();
 
   const onInsert = useCallback(
     (selected) => {
@@ -168,12 +137,8 @@ export const AIVariableRawTextArea: React.FC = connect((props) => {
       }}
     >
       <RawTextArea
-        scope={useAIEmployeeButtonVariableOptions}
+        scope={scope}
         changeOnSelect={true}
-        fieldNames={{
-          value: 'name',
-          label: 'title',
-        }}
         autoSize={{ minRows: 3 }}
         onInsert={onInsert}
         inputRef={inputRef}

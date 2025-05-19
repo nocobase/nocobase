@@ -7,15 +7,36 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { SchemaComponent } from '@nocobase/client';
+import { SchemaComponent, useCurrentRoleVariable, useCurrentUserVariable } from '@nocobase/client';
 import React from 'react';
 import { AvatarSelect } from './AvatarSelect';
 import { useT } from '../../locale';
+
+const useVariableOptions = () => {
+  const t = useT();
+  const { currentUserSettings } = useCurrentUserVariable({
+    maxDepth: 3,
+    noDisabled: true,
+  });
+  const { currentRoleSettings } = useCurrentRoleVariable({
+    noDisabled: true,
+  });
+  return [
+    currentUserSettings,
+    currentRoleSettings,
+    {
+      key: '$nLang',
+      value: '$nLang',
+      label: t('Current language'),
+    },
+  ];
+};
 
 export const ProfileSettings: React.FC<{
   edit?: boolean;
 }> = ({ edit }) => {
   const t = useT();
+  const options = useVariableOptions();
   return (
     <SchemaComponent
       scope={{ t }}
@@ -68,8 +89,9 @@ export const ProfileSettings: React.FC<{
             title: '{{t("About me")}}',
             required: true,
             'x-decorator': 'FormItem',
-            'x-component': 'Input.TextArea',
+            'x-component': 'Variable.RawTextArea',
             'x-component-props': {
+              scope: options,
               placeholder: t('About me placeholder'),
               autoSize: {
                 minRows: 15,

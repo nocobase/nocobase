@@ -11,6 +11,8 @@ import { Model } from '@nocobase/database';
 import path from 'path';
 import fs from 'fs';
 import axios from 'axios';
+import { parse, parseFilter } from '@nocobase/utils';
+import { Context } from '@nocobase/actions';
 
 export function stripToolCallTags(content: string): string | null {
   if (typeof content !== 'string') {
@@ -52,4 +54,35 @@ export async function encodeFile(url: string) {
   }
   const response = await axios.get(url, { responseType: 'arraybuffer' });
   return Buffer.from(response.data).toString('base64');
+}
+
+async function getUser(ctx: Context, fields: string[]) {
+  const userFields = fields.filter((f) => f && ctx.db.getFieldByPath('users.' + f));
+  if (!ctx.state.currentUser) {
+    return;
+  }
+  if (!userFields.length) {
+    return;
+  }
+  const user = await ctx.db.getRepository('users').findOne({
+    filterByTk: ctx.state.currentUser.id,
+    fields: userFields,
+  });
+  return user;
+}
+
+export async function parseVariables(ctx: Context, value: string) {
+  const re = /\{\{\$user\.([^}]+)\}\}/g;
+  const userFieldsSet = new Set<string>();
+  const matches = value.matchAll(re);
+  for (const match of matches) {
+    const key = match[1].trim();
+    userFieldsSet.add(key);
+  }
+  const $user = await getUser(ctx, [...userFieldsSet.values()]);
+  return parse(value)({
+    $user,
+    $nRole: ctx.state.currentRole === '__union__' ? ctx.state.currentRoles : ctx.state.currentRole,
+    $nLang: ctx.getCurrentLocale(),
+  });
 }

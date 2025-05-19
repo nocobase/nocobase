@@ -99,6 +99,11 @@ export class PluginAIClient extends Plugin {
       'enableActions.aiEmployees',
       aiEmployeesInitializer,
     );
+    this.app.schemaInitializerManager.addItem(
+      'editForm:configureActions',
+      'enableActions.aiEmployees',
+      aiEmployeesInitializer,
+    );
     this.app.schemaSettingsManager.add(aiEmployeeButtonSettings);
 
     const aclPlugin = this.app.pm.get(PluginACLClient);

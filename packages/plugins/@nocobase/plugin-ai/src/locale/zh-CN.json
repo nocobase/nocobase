@@ -75,5 +75,6 @@
   "Files storage": "文件存储",
   "Files": "文件",
   "Add file": "添加文件",
-  "Please select file objects.": "请选择文件对象。"
+  "Please select file objects.": "请选择文件对象。",
+  "Current language": "当前语言"
 }

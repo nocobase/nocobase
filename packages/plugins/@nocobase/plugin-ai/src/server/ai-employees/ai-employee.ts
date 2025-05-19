@@ -13,8 +13,7 @@ import { LLMProvider } from '../llm-providers/provider';
 import { Database } from '@nocobase/database';
 import { concat } from '@langchain/core/utils/stream';
 import PluginAIServer from '../plugin';
-import { stripToolCallTags } from '../utils';
-import { PluginFileManagerServer } from '@nocobase/plugin-file-manager';
+import { parseVariables } from '../utils';
 
 export class AIEmployee {
   private employee: Model;
@@ -370,7 +369,7 @@ ${message}`;
       },
     });
 
-    let systemMessage = this.employee.about;
+    let systemMessage = await parseVariables(this.ctx, this.employee.about);
     const dataSourceMessage = this.getDataSources();
     if (dataSourceMessage) {
       systemMessage = `${systemMessage}\n${dataSourceMessage}
