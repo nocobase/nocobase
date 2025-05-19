@@ -11,7 +11,7 @@ import { RouteContext } from '@ant-design/pro-layout';
 import { SchemaComponentsContext, SchemaExpressionScopeContext, SchemaOptionsContext } from '@formily/react';
 import _ from 'lodash';
 import { Context as MotionContext } from 'rc-motion/es/context';
-import React, { createContext, FC, useContext, useEffect, useRef } from 'react';
+import React, { createContext, FC, useContext, useEffect, useInsertionEffect, useRef } from 'react';
 import {
   UNSAFE_DataRouterContext,
   UNSAFE_DataRouterStateContext,
@@ -86,7 +86,20 @@ export const KeepAliveProvider: FC<{ active: boolean }> = ({ children, active })
   const contentRef = useRef<HTMLDivElement>(null);
   const commentNodeRef = useRef<Comment>(null);
 
-  // Use useEffect to handle DOM attachment and detachment
+  // 1. Insert the page into the DOM tree before React processes the DOM
+  useInsertionEffect(() => {
+    if (!contentRef.current) return;
+    if (!commentNodeRef.current) {
+      commentNodeRef.current = document.createComment('');
+    }
+
+    if (active && commentNodeRef.current.isConnected) {
+      commentNodeRef.current.parentElement.insertBefore(contentRef.current, commentNodeRef.current);
+      commentNodeRef.current.parentElement.removeChild(commentNodeRef.current);
+    }
+  }, [active]);
+
+  // 2. After React processes the entire effect (using setTimeout), remove the page from the DOM tree to prevent errors
   useEffect(() => {
     if (!contentRef.current) return;
     if (!commentNodeRef.current) {
@@ -94,11 +107,10 @@ export const KeepAliveProvider: FC<{ active: boolean }> = ({ children, active })
     }
 
     if (!active && contentRef.current.isConnected) {
-      contentRef.current.parentElement.insertBefore(commentNodeRef.current, contentRef.current);
-      contentRef.current.parentElement.removeChild(contentRef.current);
-    } else if (commentNodeRef.current.isConnected) {
-      commentNodeRef.current.parentElement.insertBefore(contentRef.current, commentNodeRef.current);
-      commentNodeRef.current.parentElement.removeChild(commentNodeRef.current);
+      setTimeout(() => {
+        contentRef.current.parentElement.insertBefore(commentNodeRef.current, contentRef.current);
+        contentRef.current.parentElement.removeChild(contentRef.current);
+      });
     }
   }, [active]);
 
