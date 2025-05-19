@@ -19,10 +19,7 @@ import {
   UNSAFE_RouteContext,
 } from 'react-router-dom';
 import { ACLContext } from '../../../acl/ACLProvider';
-import {
-  CurrentPageUidContext,
-  IsSubPageClosedByPageMenuContext,
-} from '../../../application/CustomRouterContextProvider';
+import { IsSubPageClosedByPageMenuContext } from '../../../application/CustomRouterContextProvider';
 import { SchemaComponentContext } from '../../../schema-component/context';
 
 const KeepAliveContext = createContext(true);
@@ -253,9 +250,9 @@ export const KeepAlive: FC<KeepAliveProps> = React.memo(({ children, uid }) => {
   return (
     <>
       {renderedUidListRef.current.map((renderedUid) => (
-        <CurrentPageUidContext.Provider value={renderedUid} key={renderedUid}>
-          <KeepAliveProvider active={renderedUid === uid}>{children(renderedUid)}</KeepAliveProvider>
-        </CurrentPageUidContext.Provider>
+        <KeepAliveProvider active={renderedUid === uid} key={renderedUid}>
+          {children(renderedUid)}
+        </KeepAliveProvider>
       ))}
     </>
   );

@@ -37,6 +37,7 @@ import {
   useToken,
 } from '../../../';
 import {
+  CurrentPageUidContext,
   CurrentPageUidProvider,
   CurrentTabUidProvider,
   IsSubPageClosedByPageMenuProvider,
@@ -142,9 +143,11 @@ export const AdminDynamicPage = () => {
   return (
     <KeepAlive uid={currentPageUid}>
       {(uid) => (
-        <CurrentRouteProvider uid={uid}>
-          <RemoteSchemaComponent uid={uid} />
-        </CurrentRouteProvider>
+        <CurrentPageUidContext.Provider value={uid}>
+          <CurrentRouteProvider uid={uid}>
+            <RemoteSchemaComponent uid={uid} />
+          </CurrentRouteProvider>
+        </CurrentPageUidContext.Provider>
       )}
     </KeepAlive>
   );
