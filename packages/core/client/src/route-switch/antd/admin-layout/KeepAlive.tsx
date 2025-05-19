@@ -11,7 +11,7 @@ import { RouteContext } from '@ant-design/pro-layout';
 import { SchemaComponentsContext, SchemaExpressionScopeContext, SchemaOptionsContext } from '@formily/react';
 import _ from 'lodash';
 import { Context as MotionContext } from 'rc-motion/es/context';
-import React, { createContext, FC, useContext, useEffect, useInsertionEffect, useRef } from 'react';
+import React, { createContext, FC, memo, useContext, useInsertionEffect, useLayoutEffect, useRef } from 'react';
 import {
   UNSAFE_DataRouterContext,
   UNSAFE_DataRouterStateContext,
@@ -66,7 +66,7 @@ const DesignableInterceptor: FC<{ active: boolean }> = ({ children, active }) =>
   );
 };
 
-export const KeepAliveProvider: FC<{ active: boolean }> = ({ children, active }) => {
+export const KeepAliveProvider: FC<{ active: boolean }> = memo(({ children, active }) => {
   const currentLocationContext = useContext(UNSAFE_LocationContext);
   const currentRouteContext = useContext(UNSAFE_RouteContext);
   const currentDataRouterContext = useContext(UNSAFE_DataRouterContext);
@@ -99,18 +99,16 @@ export const KeepAliveProvider: FC<{ active: boolean }> = ({ children, active })
     }
   }, [active]);
 
-  // 2. After React processes the entire effect (using setTimeout), remove the page from the DOM tree to prevent errors
-  useEffect(() => {
+  // 2. Remove the page from the DOM tree after React processes the DOM
+  useLayoutEffect(() => {
     if (!contentRef.current) return;
     if (!commentNodeRef.current) {
       commentNodeRef.current = document.createComment('');
     }
 
     if (!active && contentRef.current.isConnected) {
-      setTimeout(() => {
-        contentRef.current.parentElement.insertBefore(commentNodeRef.current, contentRef.current);
-        contentRef.current.parentElement.removeChild(contentRef.current);
-      });
+      contentRef.current.parentElement.insertBefore(commentNodeRef.current, contentRef.current);
+      contentRef.current.parentElement.removeChild(contentRef.current);
     }
   }, [active]);
 
@@ -163,7 +161,7 @@ export const KeepAliveProvider: FC<{ active: boolean }> = ({ children, active })
   );
 
   return <div ref={contentRef}>{contextProviders}</div>;
-};
+});
 
 /**
  * Used on components that don't need KeepAlive context, to improve performance when Context values change
