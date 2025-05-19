@@ -28,12 +28,12 @@ describe('getDayRangeByParams', () => {
   });
 
   it('should return nextWeek range using offset timezone +08:00', () => {
-    const [start, end] = getDayRangeByParams({ type: 'nextWeek', timezone: '+08:00' });
+    const [start, end] = getDayRangeByParams({ type: 'nextWeek', timezone: '+08:00', unit: 'week' });
     const now = dayjs()
       .utcOffset(8 * 60)
       .add(1, 'week');
-    expect(start).toBe(now.startOf('week').format(format));
-    expect(end).toBe(now.endOf('week').format(format));
+    expect(start).toBe(now.startOf('isoWeek').format(format));
+    expect(end).toBe(now.endOf('isoWeek').format(format));
   });
 
   it('should return future range by 2 months', () => {
@@ -50,7 +50,7 @@ describe('getDayRangeByParams', () => {
 
   it('should throw error for invalid timezone', () => {
     expect(() => getDayRangeByParams({ type: 'today', timezone: 'Invalid/Zone' })).toThrow(
-      'Invalid timezone format: Invalid/Zone',
+      'Invalid time zone specified: Invalid/Zone',
     );
   });
 
