@@ -1,7 +1,7 @@
 import { ISchema } from '@formily/json-schema';
-import type { FlowEngine } from './flow-engine';
 import type { FlowModel } from '@nocobase/client';
 import type { Application } from '../application/Application';
+import { FlowEngine } from './flow-engine';
 
 /**
  * Constructor for model classes.
@@ -78,4 +78,18 @@ export interface FlowContext {
   event?: any; // Information about the triggering event, if applicable
   $exit: () => void;
   [key: string]: any; // Allow for additional custom context data
+}
+
+/**
+ * User context for hooks - omitting internal engine properties
+ */
+export type UserContext = Partial<Omit<FlowContext, 'engine' | '$exit' | 'app'>>;
+
+/**
+ * Action options for registering actions
+ */
+export interface ActionOptions<P = any, R = any> {
+  handler: (ctx: any, model: FlowModel, params: P) => Promise<R> | R;
+  uiSchema?: Record<string, any>;
+  defaultParams?: Partial<P>;
 } 

@@ -1,5 +1,5 @@
 import { observable, action, define } from '@formily/reactive';
-import { FlowEngine } from '../../flow-engine/flow-engine';
+import { FlowEngine } from '../../flow-engine';
 import type { FlowContext, ActionStepDefinition, InlineStepDefinition, StepDefinition } from '../../flow-engine/types';
 import type { Application } from '../../application/Application';
 
