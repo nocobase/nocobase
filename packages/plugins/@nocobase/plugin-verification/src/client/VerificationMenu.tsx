@@ -89,16 +89,16 @@ const useCancelActionProps = () => {
   };
 };
 
-const useFormProps = (verifiers: string, unbindVerifier: string) => {
+const useFormProps = (verifier: string, unbindVerifier: string) => {
   const form = useMemo(
     () =>
       createForm({
         initialValues: {
-          verifiers,
+          verifier,
           unbindVerifier,
         },
       }),
-    [verifiers, unbindVerifier],
+    [verifier, unbindVerifier],
   );
   return {
     form,
