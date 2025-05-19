@@ -20,7 +20,7 @@ import { SchemaSettingsModalItem } from './SchemaSettings';
 import { VariableInput, getShouldChange } from './VariableInput/VariableInput';
 import { BaseVariableProvider, IsDisabledParams } from './VariableInput/hooks/useBaseVariable';
 import { DataScopeProps } from './types';
-import { BlockContext, useBlockContext } from '../block-provider';
+import { BlockContext, useBlockContext } from '../block-provider/BlockProvider';
 
 export const SchemaSettingsDataScope: FC<DataScopeProps> = function DataScopeConfigure(props) {
   const { t } = useTranslation();
@@ -31,7 +31,7 @@ export const SchemaSettingsDataScope: FC<DataScopeProps> = function DataScopeCon
   const localVariables = useLocalVariables();
   const { getAllCollectionsInheritChain } = useCollectionManager_deprecated();
   const { isInSubForm, isInSubTable } = useFlag() || {};
-  const blockOptions = useBlockContext();
+  const blockOptions = useBlockContext?.();
 
   const dynamicComponent = useCallback(
     (props: DynamicComponentProps) => {
