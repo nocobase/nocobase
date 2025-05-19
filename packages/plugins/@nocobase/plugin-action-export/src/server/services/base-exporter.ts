@@ -16,10 +16,10 @@ import {
   IRelationField,
 } from '@nocobase/data-source-manager';
 import EventEmitter from 'events';
-import { deepGet } from '../utils/deep-get';
-import path from 'path';
-import os from 'os';
 import _ from 'lodash';
+import os from 'os';
+import path from 'path';
+import { deepGet } from '../utils/deep-get';
 
 export type ExportOptions = {
   collectionManager: ICollectionManager;
@@ -91,6 +91,13 @@ abstract class BaseExporter<T extends ExportOptions = ExportOptions> extends Eve
         const fieldInstance = this.options.collection.getField(field);
         if (!fieldInstance) {
           throw new Error(`Field "${field}" not found: , please check the fields configuration.`);
+        }
+
+        const keys = field.split('.');
+        keys.pop();
+
+        if (_.get(fieldInstance, 'collection.options.template') === 'file') {
+          return keys.join('.');
         }
 
         if (fieldInstance.isRelationField()) {

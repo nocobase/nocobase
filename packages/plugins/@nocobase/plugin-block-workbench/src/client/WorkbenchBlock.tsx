@@ -20,6 +20,7 @@ import {
   useDesignable,
   useOpenModeContext,
   useSchemaInitializerRender,
+  useToken,
   withDynamicSchemaProps,
 } from '@nocobase/client';
 import { Avatar, Space, theme } from 'antd';
@@ -70,13 +71,24 @@ const ResponsiveSpace = () => {
 const InternalIcons = () => {
   const fieldSchema = useFieldSchema();
   const { layout = WorkbenchLayout.Grid } = fieldSchema.parent['x-component-props'] || {};
+  const { token } = useToken();
   return (
     <div className="nb-action-panel-warp">
       <DndContext>
         {layout === WorkbenchLayout.Grid ? (
           <ResponsiveSpace />
         ) : (
-          <List>
+          <List
+            style={
+              {
+                '--adm-color-background': token.colorBgContainer,
+                '--active-background-color': token.colorBorderSecondary,
+                '--border-inner': `solid 1px ${token.colorBorderSecondary}`,
+                '--border-bottom': `none`,
+                '--border-top': `none`,
+              } as any
+            }
+          >
             {fieldSchema.mapProperties((s, key) => {
               const icon = s['x-component-props']?.['icon'];
               const backgroundColor = s['x-component-props']?.['iconColor'];

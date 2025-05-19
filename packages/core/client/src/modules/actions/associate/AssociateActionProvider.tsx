@@ -41,15 +41,20 @@ const useTableSelectorProps = () => {
 export const AssociateActionProvider = (props) => {
   const [selectedRows, setSelectedRows] = useState([]);
   const collection = useCollection();
-  const { resource, block, __parent } = useBlockRequestContext();
+  const { resource, block, __parent, service } = useBlockRequestContext();
   const actionCtx = useActionContext();
   const { isMobile } = useOpenModeContext() || {};
   const [associationData, setAssociationData] = useState([]);
+  const { data } = service || {};
   useEffect(() => {
-    resource?.list?.().then((res) => {
-      setAssociationData(res.data?.data || []);
-    });
-  }, [resource]);
+    resource
+      ?.list?.({
+        paginate: false,
+      })
+      .then((res) => {
+        setAssociationData(res.data?.data || []);
+      });
+  }, [resource, data?.meta.count]);
 
   const pickerProps = {
     size: 'small',

@@ -61,6 +61,24 @@ export class CollectionFieldInterfaceManager {
     fieldInterface.addComponentOption(componentOption);
   }
 
+  /**
+   * 为指定的字段接口添加操作符选项
+   *
+   * @param name 字段接口的名称
+   * @param operatorOption 要添加的操作符选项
+   *
+   * @example
+   * // 为"单行文本"类型字段添加"等于任意一个"操作符
+   * fieldInterfaceManager.addFieldInterfaceOperator('input', {
+   *   label: '{{t("equals any of")}}',
+   *   value: '$in',
+   * });
+   */
+  addFieldInterfaceOperator(name: string, operatorOption: any) {
+    const fieldInterface = this.getFieldInterface(name);
+    fieldInterface?.addOperator(operatorOption);
+  }
+
   getFieldInterface<T extends CollectionFieldInterface>(name: string) {
     return this.collectionFieldInterfaceInstances[name] as T;
   }

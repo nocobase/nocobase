@@ -108,7 +108,11 @@ function getFilteredFormValues(form) {
   });
   const readonlyPaths = _.uniq(
     allFields
-      .filter((field) => field?.componentProps?.readOnlySubmit)
+      .filter((field) => {
+        const segments = field.path?.segments || [];
+        const path = segments.length <= 1 ? segments.join('.') : segments.slice(0, -1).join('.');
+        return field?.componentProps?.readOnlySubmit && !get(values, path)[field?.componentProps.filterTargetKey];
+      })
       .map((field) => {
         const segments = field.path?.segments || [];
         if (segments.length <= 1) {
@@ -118,12 +122,11 @@ function getFilteredFormValues(form) {
       }),
   );
   readonlyPaths.forEach((path, index) => {
-    if (index !== 0 || path.includes('.')) {
+    if ((index !== 0 || path.includes('.')) && !values[path]) {
       // 清空值，但跳过第一层
       _.unset(values, path);
     }
   });
-
   return values;
 }
 

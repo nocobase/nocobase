@@ -190,6 +190,9 @@ function cleanSchema(schema?: any) {
     if (schema.properties[key]['x-component'] == null && shouldDeleteNoComponentSchema(schema.properties[key])) {
       delete schema.properties[key];
     }
+    if (properties[key]?.['x-component-props'] === null) {
+      delete properties[key]['x-component-props'];
+    }
     // 如果x-component是Grid.Row，且内部无任何内容，则删除
     if (properties[key]?.['x-component'] === 'Grid.Row') {
       let hasProperties = false;
