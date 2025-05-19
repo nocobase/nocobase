@@ -1,5 +1,5 @@
 import { DataBlockModel } from './dataBlockModel';
-import { IModelComponentProps } from './baseModel';
+import { IModelComponentProps } from './flowModel';
 import { ObjectResource } from '../resources/objectResource';
 import { Application } from '../../application';
 

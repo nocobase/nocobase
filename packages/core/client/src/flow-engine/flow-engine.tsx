@@ -1,15 +1,24 @@
+import React from 'react';
+import { observer } from '@formily/react';
 import {
   ActionDefinition,
   FlowDefinition,
   ModelConstructor,
 } from './types';
 import { Application } from '../application';
-import { BaseModel } from '../flow-model';
+import type { BaseModel, ReadonlyModelProps } from '@nocobase/client';
+import { useApplyFlow, useFlowContext } from './hooks';
+import type { UserContext } from '../../src-flow-engine/types';
+
+type FlowModelComponentProps<P extends React.ComponentProps<any>> = 
+  {
+    model: BaseModel;
+  } & P;
 
 export class FlowEngine {
   private actions: Map<string, ActionDefinition> = new Map();
   private modelClasses: Map<string, ModelConstructor> = new Map();
-  private modelInstances: Map<string, any> = new Map(); // Storing BaseModel instances, type as any to avoid circular deps if BaseModel imports FlowEngine for type of app.flowEngine
+  private modelInstances: Map<string, any> = new Map();
   private flows: Map<string, FlowDefinition> = new Map();
 
   // Public API is now for registration and retrieval of definitions/instances
@@ -49,13 +58,12 @@ export class FlowEngine {
       console.warn(`FlowEngine: Model instance with UID '${uid}' already exists. Returning existing instance.`);
       return this.modelInstances.get(uid) as T;
     }
-    // Call constructor with uid and app
     const modelInstance = new ModelClass(uid, app);
     this.modelInstances.set(uid, modelInstance);
     return modelInstance;
   }
 
-  public getModel<T extends import('@nocobase/client').BaseModel = import('@nocobase/client').BaseModel>(uid: string): T | undefined {
+  public getModel<T extends BaseModel = BaseModel>(uid: string): T | undefined {
     return this.modelInstances.get(uid) as T | undefined;
   }
 
@@ -79,5 +87,26 @@ export class FlowEngine {
 
   public getFlows(): Map<string, FlowDefinition> {
     return this.flows;
+  }
+
+  public static withFlowModel<P extends object>(
+    WrappedComponent: React.ComponentType<P>,
+    options: { defaultFlowKey: string; }
+  ) {
+    
+    const EnhancedComponentInner = 
+      observer((props: FlowModelComponentProps<P>) => {
+        const { model, ...restPassthroughProps } = props;
+        const flowContext = useFlowContext();
+        useApplyFlow(model, options.defaultFlowKey, flowContext);
+
+        const modelProps = model.getProps();
+        const combinedProps = { ...restPassthroughProps, ...modelProps } as unknown as P;
+
+        return <WrappedComponent {...combinedProps} />;
+    });
+
+    EnhancedComponentInner.displayName = `WithFlowModel(${WrappedComponent.displayName || WrappedComponent.name || 'Component'})`;
+    return EnhancedComponentInner;
   }
 } 

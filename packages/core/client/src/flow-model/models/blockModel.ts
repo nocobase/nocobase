@@ -1,4 +1,4 @@
-import { BaseModel, IModelComponentProps } from './baseModel';
+import { BaseModel, IModelComponentProps } from './flowModel';
 import { ActionModel } from './actionModel';
 import { define, observable } from '@formily/reactive';
 import { Application } from '../../application';

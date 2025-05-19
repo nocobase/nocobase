@@ -1,5 +1,4 @@
 import { BlockModel } from './blockModel';
-import { IModelComponentProps } from './baseModel';
 import { ObjectResource } from '../resources/objectResource';
 import { Application } from '../../application';
 

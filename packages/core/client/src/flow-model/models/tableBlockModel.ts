@@ -1,5 +1,5 @@
 import { DataBlockModel } from './dataBlockModel';
-import { IModelComponentProps } from './baseModel';
+import { IModelComponentProps } from './flowModel';
 import { ActionModel } from './actionModel';
 import { observable } from '@formily/reactive';
 import { ArrayResource } from '../resources/arrayResource';

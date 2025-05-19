@@ -1,4 +1,4 @@
-export * from './baseModel';
+export * from './flowModel';
 export * from './blockModel';
 export * from './actionModel';
 export * from './dataBlockModel';

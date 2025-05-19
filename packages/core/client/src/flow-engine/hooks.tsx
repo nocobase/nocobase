@@ -168,3 +168,19 @@ export function useDispatchEvent(
 
   return { dispatch };
 }
+
+/**
+ * Hook to get the flow context.
+ * @returns The flow context.
+ */
+export function useFlowContext() {
+  const engine = useFlowEngine();
+  const app = useApp(); 
+  // TODO: add more context here
+  const context = useMemo(() => ({
+    engine,
+    app,
+  }), [engine, app]);
+  return context;
+}
+

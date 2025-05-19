@@ -1,4 +1,4 @@
-import { BaseModel, IModelComponentProps } from './baseModel';
+import { BaseModel, IModelComponentProps } from './flowModel';
 import { Application } from '../../application';
 
 export class ActionModel extends BaseModel {
