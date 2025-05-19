@@ -24,6 +24,7 @@ import { ImportValidationError, ImportError } from '../errors';
 import { Context } from '@nocobase/actions';
 import _ from 'lodash';
 import { Logger } from '@nocobase/logger';
+import { LoggerService } from '../utils';
 
 export type ImportColumn = {
   dataIndex: Array<string>;
@@ -51,11 +52,12 @@ export type RunOptions = {
 export class XlsxImporter extends EventEmitter {
   private repository: Repository;
 
-  logger: Logger;
+  protected loggerService: LoggerService;
+
+  protected logger: Logger;
 
   constructor(protected options: ImporterOptions) {
     super();
-
     if (typeof options.columns === 'string') {
       options.columns = JSON.parse(options.columns);
     }
@@ -66,6 +68,7 @@ export class XlsxImporter extends EventEmitter {
 
     this.repository = options.repository ? options.repository : options.collection.repository;
     this.logger = options.logger;
+    this.loggerService = new LoggerService({ logger: this.logger });
   }
 
   async beforePerformImport(data: string[][], options: RunOptions): Promise<string[][]> {
@@ -99,15 +102,24 @@ export class XlsxImporter extends EventEmitter {
     }
 
     try {
-      this.logger?.info('Starting import validation');
-      const data = await this.validate(options.context);
-      this.logger?.info('Validation completed successfully, beginning data import');
-      const imported = await this.performImport(data, options);
+      const data = await this.loggerService.measureExecutedTime(
+        async () => this.validate(options.context),
+        'Validation completed in {time}ms',
+      );
+
+      const imported = await this.loggerService.measureExecutedTime(
+        async () => this.performImport(data, options),
+        'Data import completed in {time}ms',
+      );
+
       this.logger?.info(`Import completed successfully, imported ${imported} records`);
 
       // @ts-ignore
       if (this.options.collectionManager.db) {
-        await this.resetSeq(options);
+        await this.loggerService.measureExecutedTime(
+          async () => this.resetSeq(options),
+          'Sequence reset completed in {time}ms',
+        );
       }
 
       transaction && (await transaction.commit());
@@ -115,6 +127,9 @@ export class XlsxImporter extends EventEmitter {
       return imported;
     } catch (error) {
       transaction && (await transaction.rollback());
+      this.logger?.error(`Import failed: ${this.renderErrorMessage(error)}`, {
+        originalError: error.stack || error.toString(),
+      });
       throw error;
     }
   }
@@ -249,7 +264,6 @@ export class XlsxImporter extends EventEmitter {
     });
 
     rowValues = (this.repository.model as typeof Model).callSetters(guard.sanitize(rowValues || {}), options);
-    console.log('rowValues', rowValues);
   }
 
   async handleChuckRows(
@@ -271,15 +285,15 @@ export class XlsxImporter extends EventEmitter {
     }
 
     try {
-      const startTime = process.hrtime();
-      await this.performInsert({
-        values: rows,
-        transaction,
-        context: options?.context,
-      });
-      const endTime = process.hrtime(startTime);
-      const executionTimeMs = (endTime[0] * 1000 + endTime[1] / 1000000).toFixed(2);
-      this.logger?.info(`Record insertion completed in ${executionTimeMs}ms`);
+      await this.loggerService.measureExecutedTime(
+        async () =>
+          this.performInsert({
+            values: rows,
+            transaction,
+            context: options?.context,
+          }),
+        'Record insertion completed in {time}ms',
+      );
       await new Promise((resolve) => setTimeout(resolve, 5));
     } catch (error) {
       this.logger?.error(`Import error at row ${handingRowIndex}: ${error.message}`, {
@@ -298,18 +312,47 @@ export class XlsxImporter extends EventEmitter {
     return;
   }
 
-  async performInsert(insertOptions: { values: any; transaction: Transaction; context: any; hooks?: boolean }) {
-    const { values, transaction } = insertOptions;
+  async performInsert(insertOptions: { values: any[]; transaction: Transaction; context: any; hooks?: boolean }) {
+    const { values, transaction, context } = insertOptions;
 
-    const instances = await this.repository.model.bulkCreate(values, {
-      transaction,
-      hooks: insertOptions.hooks == undefined ? true : insertOptions.hooks,
-    });
-    // for (const instance of instances) {
-    //   await updateAssociations(instance, values, {
-    //     transaction,
-    //   });
-    // }
+    const instances = await this.loggerService.measureExecutedTime(
+      async () =>
+        this.repository.model.bulkCreate(values, {
+          transaction,
+          hooks: insertOptions.hooks == undefined ? true : insertOptions.hooks,
+          returning: true,
+        }),
+      'Row {{rowIndex}}: bulkCreate completed in {time}ms',
+    );
+
+    // @ts-ignore
+    const db = this.options.collectionManager.db as Database;
+    for (let i = 0; i < instances.length; i++) {
+      const instance = instances[i];
+      const value = values[i];
+
+      await this.loggerService.measureExecutedTime(
+        async () => updateAssociations(instance, value, { transaction }),
+        `Row ${i + 1}: updateAssociations completed in {time}ms`,
+        'debug',
+      );
+
+      if (context.skipWorkflow !== true) {
+        await this.loggerService.measureExecutedTime(
+          async () => {
+            await db.emitAsync(`${this.repository.collection.name}.afterCreateWithAssociations`, instance, {
+              transaction,
+            });
+            await db.emitAsync(`${this.repository.collection.name}.afterSaveWithAssociations`, instance, {
+              transaction,
+            });
+            instance.clearChangedWithAssociations();
+          },
+          `Row ${i + 1}: afterCreate event emitted in {time}ms`,
+          'debug',
+        );
+      }
+    }
     return instances;
   }
 
