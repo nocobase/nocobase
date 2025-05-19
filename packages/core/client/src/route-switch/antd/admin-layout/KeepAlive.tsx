@@ -241,18 +241,18 @@ const MAX_RENDERED_PAGE_COUNT = getMaxPageCount();
  * Implements a Vue-like KeepAlive effect
  */
 export const KeepAlive: FC<KeepAliveProps> = React.memo(({ children, uid }) => {
-  const renderedPageRef = useRef([]);
+  const renderedUidListRef = useRef([]);
 
-  if (!renderedPageRef.current.includes(uid)) {
-    renderedPageRef.current.push(uid);
-    if (renderedPageRef.current.length > MAX_RENDERED_PAGE_COUNT) {
-      renderedPageRef.current = renderedPageRef.current.slice(-MAX_RENDERED_PAGE_COUNT);
+  if (!renderedUidListRef.current.includes(uid)) {
+    renderedUidListRef.current.push(uid);
+    if (renderedUidListRef.current.length > MAX_RENDERED_PAGE_COUNT) {
+      renderedUidListRef.current = renderedUidListRef.current.slice(-MAX_RENDERED_PAGE_COUNT);
     }
   }
 
   return (
     <>
-      {renderedPageRef.current.map((renderedUid) => (
+      {renderedUidListRef.current.map((renderedUid) => (
         <CurrentPageUidContext.Provider value={renderedUid} key={renderedUid}>
           <KeepAliveProvider active={renderedUid === uid}>{children(renderedUid)}</KeepAliveProvider>
         </CurrentPageUidContext.Provider>
