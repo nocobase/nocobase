@@ -1,5 +1,5 @@
 import { notification, Button, Flex } from 'antd';
-import { ActionDefinition, FlowContext, BaseFlowModel } from '@nocobase/client';
+import { ActionDefinition, FlowContext, FlowModel } from '@nocobase/client';
 import React from 'react';
 
 /**
@@ -33,7 +33,7 @@ export const openNotificationAction: ActionDefinition = {
     description: '默认通知内容。可以在步骤参数中覆盖。',
     duration: 4.5,
   },
-  handler: async (ctx: FlowContext, model: BaseFlowModel, params: any) => {
+  handler: async (ctx: FlowContext, model: FlowModel, params: any) => {
     const key = `notification-${Date.now()}`;
     const { title, description, duration } = params;
 

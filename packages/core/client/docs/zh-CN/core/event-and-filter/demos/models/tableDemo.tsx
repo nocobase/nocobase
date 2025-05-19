@@ -1,18 +1,23 @@
 import React from 'react';
 import { Space, Button, message, Divider, Modal, Tag } from 'antd';
-import { 
-    Application, 
-    Plugin, 
-    TableBlockModel, 
-    BaseFlowModel,
-    useModel, 
-    useApplyFlow,
+import {
+    Application,
+    Plugin,
+    TableBlockModel,
+    FlowModel,
     FlowContext,
     ISchema,
-    useApp
+    useApp,
+    FlowEngine
 } from '@nocobase/client';
 import { observer } from '@formily/react';
 import FlowSettings from '../settings/FlowSettings';
+
+const {
+    useModelById,
+    useApplyFlow,
+    useContext: useFlowEngineContext
+} = FlowEngine;
 
 // Default data/config constants for the demo
 const DEMO_DEFAULT_TABLE_DATA = [
@@ -28,13 +33,14 @@ const DEMO_DEFAULT_COLUMNS = [
   { key: 'tags', title: '标签', dataIndex: 'tags' /* Render logic will be in a flow step */ },
 ];
 const DEMO_DEFAULT_ROW_ACTIONS = [
-    { name: 'tabledemo:rowEdit', title: '编辑' }, 
+    { name: 'tabledemo:rowEdit', title: '编辑' },
     { name: 'tabledemo:rowDelete', title: '删除' }
 ];
 const DEMO_DEFAULT_HEADER_ACTIONS = [
     { name: 'tabledemo:reload', title: '刷新' },
     { name: 'tabledemo:create', title: '新增' }
 ];
+
 
 const Demo = () => {
     const uid = 'table-demo-001';
@@ -48,8 +54,9 @@ const Demo = () => {
 };
 
 const TableBlock = observer(({ uid }: { uid: string }) => {
-    const model = useModel('TableBlockModel', uid);
-    useApplyFlow(model, 'block:tabledemo'); 
+    const model = useModelById(uid, 'TableBlockModel');
+    const flowContext = useFlowEngineContext();
+    useApplyFlow(model, 'block:tabledemo', flowContext);
 
     const props = model.getProps();
     const columns = props.columns || DEMO_DEFAULT_COLUMNS;
@@ -57,30 +64,27 @@ const TableBlock = observer(({ uid }: { uid: string }) => {
     const headerActions = props.headerActions || DEMO_DEFAULT_HEADER_ACTIONS;
     const rowActions = props.rowActions || DEMO_DEFAULT_ROW_ACTIONS;
 
-    // A more robust Table component would be used in a real app
     const antTableColumns = (columns as any[]).map(col => ({
         ...col,
-        render: col.dataIndex === 'tags' && Array.isArray(col.tags) 
+        render: col.dataIndex === 'tags' && Array.isArray(col.tags)
             ? (tags: string[]) => tags.map(tag => <Tag color="blue" key={tag}>{tag}</Tag>)
-            : undefined
+            : col.tagsRenderer
+                ? (value, record) => col.tagsRenderer(record[col.dataIndex])
+                : undefined
     }));
 
     return (
         <div>
             <Space style={{ marginBottom: 16 }}>
                 {(headerActions as any[]).map((action: {name: string, title: string}) => (
-                    <Button 
-                        key={action.name} 
-                        onClick={() => model.dispatchEvent(action.name, {})}
+                    <Button
+                        key={action.name}
+                        onClick={() => model!.dispatchEvent(action.name, {})}
                     >
                         {action.title}
                     </Button>
                 ))}
             </Space>
-            {/* This is a highly simplified table rendering for demo. 
-                In a real app, you'd use Ant Design Table or a similar component 
-                and pass columns (with renderers) and data to it. 
-            */}
             <table border={1} style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <thead>
                     <tr>
@@ -100,10 +104,10 @@ const TableBlock = observer(({ uid }: { uid: string }) => {
                                 <td>
                                     <Space>
                                         {(rowActions as any[]).map((action: {name: string, title: string}) => (
-                                            <Button 
-                                                key={action.name} 
+                                            <Button
+                                                key={action.name}
                                                 size="small"
-                                                onClick={() => model.dispatchEvent(action.name, { record: row, rowIndex })}
+                                                onClick={() => model!.dispatchEvent(action.name, { record: row, rowIndex })}
                                             >
                                                 {action.title}
                                             </Button>
@@ -123,21 +127,20 @@ class DemoPlugin extends Plugin {
     async load() {
         this.app.flowEngine.registerModelClass('TableBlockModel', TableBlockModel as any);
 
-        // Configuration Actions
         this.app.flowEngine.registerAction({
             name: 'tabledemo:config:fields',
             title: '字段配置',
-            uiSchema: { 
-                fieldsJson: { 
+            uiSchema: {
+                fieldsJson: {
                     type: 'string', title: '字段 (JSON)', 'x-component': 'Input.TextArea',
                     description: '列配置的JSON数组',
                     default: JSON.stringify(DEMO_DEFAULT_COLUMNS)
                 } as ISchema
             },
-            handler(ctx: FlowContext, model: BaseFlowModel, params: any) {
-                try { model.setProps('columns', JSON.parse(params.fieldsJson || JSON.stringify(DEMO_DEFAULT_COLUMNS))); } 
-                catch (e) { 
-                    console.error('Invalid fields JSON, using default:', params.fieldsJson, e); 
+            handler(ctx: FlowContext, model: FlowModel, params: any) {
+                try { model.setProps('columns', JSON.parse(params.fieldsJson || JSON.stringify(DEMO_DEFAULT_COLUMNS))); }
+                catch (e) {
+                    console.error('Invalid fields JSON, using default:', params.fieldsJson, e);
                     model.setProps('columns', DEMO_DEFAULT_COLUMNS);
                 }
             },
@@ -146,17 +149,17 @@ class DemoPlugin extends Plugin {
         this.app.flowEngine.registerAction({
             name: 'tabledemo:config:data',
             title: '数据源配置',
-            uiSchema: { 
-                dataJson: { 
+            uiSchema: {
+                dataJson: {
                     type: 'string', title: '数据 (JSON)', 'x-component': 'Input.TextArea',
                     description: '表格数据的JSON数组',
                     default: JSON.stringify(DEMO_DEFAULT_TABLE_DATA)
-                } as ISchema 
+                } as ISchema
             },
-            handler(ctx: FlowContext, model: BaseFlowModel, params: any) {
-                try { model.setProps('data', JSON.parse(params.dataJson || JSON.stringify(DEMO_DEFAULT_TABLE_DATA))); } 
-                catch (e) { 
-                    console.error('Invalid data JSON, using default:', params.dataJson, e); 
+            handler(ctx: FlowContext, model: FlowModel, params: any) {
+                try { model.setProps('data', JSON.parse(params.dataJson || JSON.stringify(DEMO_DEFAULT_TABLE_DATA))); }
+                catch (e) {
+                    console.error('Invalid data JSON, using default:', params.dataJson, e);
                     model.setProps('data', DEMO_DEFAULT_TABLE_DATA);
                 }
             },
@@ -165,54 +168,48 @@ class DemoPlugin extends Plugin {
         this.app.flowEngine.registerAction({
             name: 'tabledemo:config:rowactions',
             title: '行操作配置',
-            uiSchema: { 
-                rowActionsJson: { 
+            uiSchema: {
+                rowActionsJson: {
                     type: 'string', title: '行操作 (JSON)', 'x-component': 'Input.TextArea',
                     description: '行操作的JSON数组',
                     default: JSON.stringify(DEMO_DEFAULT_ROW_ACTIONS)
                  } as ISchema
             },
-            handler(ctx: FlowContext, model: BaseFlowModel, params: any) {
+            handler(ctx: FlowContext, model: FlowModel, params: any) {
                 try { model.setProps('rowActions', JSON.parse(params.rowActionsJson || JSON.stringify(DEMO_DEFAULT_ROW_ACTIONS))); }
-                catch (e) { 
-                    console.error('Invalid rowActions JSON, using default:', params.rowActionsJson, e); 
+                catch (e) {
+                    console.error('Invalid rowActions JSON, using default:', params.rowActionsJson, e);
                     model.setProps('rowActions', DEMO_DEFAULT_ROW_ACTIONS);
                 }
             },
         });
-        
+
         this.app.flowEngine.registerAction({
             name: 'tabledemo:config:headeractions',
             title: '头部操作配置',
-            uiSchema: { 
-                headerActionsJson: { 
+            uiSchema: {
+                headerActionsJson: {
                     type: 'string', title: '头部操作 (JSON)', 'x-component': 'Input.TextArea',
                     description: '头部操作的JSON数组',
                     default: JSON.stringify(DEMO_DEFAULT_HEADER_ACTIONS)
                  } as ISchema
             },
-            handler(ctx: FlowContext, model: BaseFlowModel, params: any) {
+            handler(ctx: FlowContext, model: FlowModel, params: any) {
                 try { model.setProps('headerActions', JSON.parse(params.headerActionsJson || JSON.stringify(DEMO_DEFAULT_HEADER_ACTIONS))); }
-                catch (e) { 
-                    console.error('Invalid headerActions JSON, using default:', params.headerActionsJson, e); 
+                catch (e) {
+                    console.error('Invalid headerActions JSON, using default:', params.headerActionsJson, e);
                     model.setProps('headerActions', DEMO_DEFAULT_HEADER_ACTIONS);
                 }
             },
         });
 
-        // Action for custom tag rendering logic (replaces inline step from original demo)
         this.app.flowEngine.registerAction({
             name: 'action:tabledemo:renderTags',
             title: '渲染标签列',
-            handler(ctx: FlowContext, model: BaseFlowModel, params: any) {
+            handler(ctx: FlowContext, model: FlowModel, params: any) {
                 const columns = model.getProps().columns || [];
                 const updatedColumns = columns.map(col => {
                     if (col.dataIndex === 'tags') {
-                        // This action directly modifies the 'columns' prop by adding a render function.
-                        // Note: In a real scenario, a component like Ant Design Table would accept a `render` function
-                        // directly in its column definition. Storing functions on model.props might work but can be tricky.
-                        // For this demo, we assume the TableBlock component knows how to use a `tagsRenderer` function if present.
-                        // A cleaner way might be for the UI component to handle rendering based on data type or a specific 'component' prop in column definition.
                         return { ...col, tagsRenderer: (tags: string[]) => tags.map(tag => <Tag color="blue" key={tag}>{tag}</Tag>) };
                     }
                     return col;
@@ -221,27 +218,26 @@ class DemoPlugin extends Plugin {
             }
         });
 
-        // Event-Handling Actions
-        this.app.flowEngine.registerAction({ name: 'action:tabledemo:reload', title: '执行刷新', handler(ctx,model,params) { 
-            message.info(`Table [${model.uid}] Reload.`); 
+        this.app.flowEngine.registerAction({ name: 'action:tabledemo:reload', title: '执行刷新', handler(ctx,model,params) {
+            message.info(`Table [${model.uid}] Reload.`);
             const dataAction = ctx.engine.getAction('tabledemo:config:data');
             if(dataAction?.defaultParams?.dataJson) {
                 try { model.setProps('data', JSON.parse(dataAction.defaultParams.dataJson)); }
                 catch(e) { model.setProps('data', DEMO_DEFAULT_TABLE_DATA); }
             } else { model.setProps('data', DEMO_DEFAULT_TABLE_DATA); }
         } });
-        this.app.flowEngine.registerAction({ name: 'action:tabledemo:create', title: '执行创建', handler(ctx,model,params) { 
+        this.app.flowEngine.registerAction({ name: 'action:tabledemo:create', title: '执行创建', handler(ctx,model,params) {
             const data = model.getProps().data || [];
             const newId = Math.max(0, ...data.map(item => item.id || 0)) + 1;
             const newEntry = {id: newId, name: '新用户', age: Math.floor(Math.random()*40+20), address: '新地址'};
             model.setProps('data', [...data, newEntry]);
             message.success(`Table [${model.uid}] Created: ${newEntry.name}`);
         } });
-        this.app.flowEngine.registerAction({ name: 'action:tabledemo:edit', title: '执行编辑', handler(ctx,model,params) { 
+        this.app.flowEngine.registerAction({ name: 'action:tabledemo:edit', title: '执行编辑', handler(ctx,model,params) {
             message.info(`Table [${model.uid}] Edit: ${JSON.stringify(params.record)}`);
             Modal.info({ title: '编辑记录', content: JSON.stringify(params.record) });
         } });
-        this.app.flowEngine.registerAction({ name: 'action:tabledemo:delete', title: '执行删除', handler(ctx,model,params) { 
+        this.app.flowEngine.registerAction({ name: 'action:tabledemo:delete', title: '执行删除', handler(ctx,model,params) {
             Modal.confirm({
                 title: '确认删除', content: `删除 ${params.record?.name}?`,
                 onOk: () => {
@@ -252,7 +248,6 @@ class DemoPlugin extends Plugin {
             });
         } });
 
-        // Main Configuration Flow
         this.app.flowEngine.registerFlow({
             key: 'block:tabledemo',
             title: '表格区块配置流程',
@@ -261,15 +256,15 @@ class DemoPlugin extends Plugin {
                 configureData: { use: 'tabledemo:config:data' },
                 configureHeaderActions: { use: 'tabledemo:config:headeractions' },
                 configureRowActions: { use: 'tabledemo:config:rowactions' },
-                // renderTagsStep: { use: 'action:tabledemo:renderTags' } // Apply tag rendering logic
+                renderTagsStep: { use: 'action:tabledemo:renderTags' }
             },
         });
 
-        // Event-Triggered Flows
         this.app.flowEngine.registerFlow({ key: 'flow:tabledemo:reload', title:'表格刷新', on: { eventName: 'tabledemo:reload' }, steps: { run: { use: 'action:tabledemo:reload' } } });
         this.app.flowEngine.registerFlow({ key: 'flow:tabledemo:create', title:'新增记录', on: { eventName: 'tabledemo:create' }, steps: { run: { use: 'action:tabledemo:create' } } });
         this.app.flowEngine.registerFlow({ key: 'flow:tabledemo:edit', title:'编辑记录', on: { eventName: 'tabledemo:rowEdit' }, steps: { run: { use: 'action:tabledemo:edit' } } });
         this.app.flowEngine.registerFlow({ key: 'flow:tabledemo:delete', title:'删除记录', on: { eventName: 'tabledemo:rowDelete' }, steps: { run: { use: 'action:tabledemo:delete' } } });
+
 
         this.app.router.add('root', { path: '/', Component: Demo });
     }

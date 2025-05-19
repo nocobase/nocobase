@@ -10,7 +10,7 @@ export interface IModelComponentProps {
 // 定义只读版本的props类型
 export type ReadonlyModelProps = Readonly<IModelComponentProps>;
 
-export class BaseFlowModel {
+export class FlowModel {
   public readonly uid: string;
   public props: IModelComponentProps;
   public hidden: boolean;
@@ -142,7 +142,7 @@ export class BaseFlowModel {
 
         const stepContext: FlowContext = { ...baseContextForSteps, $exit: exitFlow } as FlowContext;
         
-        let handler: ((ctx: FlowContext, model: BaseFlowModel, params: any) => Promise<any> | any) | undefined;
+        let handler: ((ctx: FlowContext, model: FlowModel, params: any) => Promise<any> | any) | undefined;
         let combinedParams: Record<string, any> = {};
         let actionDefinition;
 

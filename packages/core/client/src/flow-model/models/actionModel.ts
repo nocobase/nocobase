@@ -1,7 +1,7 @@
-import { BaseFlowModel, IModelComponentProps } from './flowModel';
+import { FlowModel, IModelComponentProps } from './flowModel';
 import { Application } from '../../application';
 
-export class ActionModel extends BaseFlowModel {
+export class ActionModel extends FlowModel {
   public event?: string;
   constructor(uid: string, app: Application, event?: string) {
     super(uid, app);

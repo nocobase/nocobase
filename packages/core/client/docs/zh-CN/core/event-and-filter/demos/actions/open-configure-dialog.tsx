@@ -1,6 +1,6 @@
 import { Modal } from 'antd';
 import React, { useMemo } from 'react';
-import { ActionDefinition, FlowContext, BaseFlowModel, ISchema } from '@nocobase/client';
+import { ActionDefinition, FlowContext, FlowModel, ISchema } from '@nocobase/client';
 import { SchemaComponent, SchemaComponentProvider } from '@nocobase/client';
 import { createForm } from '@formily/core';
 import { FormItem, Input, Select, Switch, Form } from '@formily/antd-v5';
@@ -44,7 +44,7 @@ export const configureAction: ActionDefinition = {
     }),
     initialValuesJson: JSON.stringify({ field1: '默认值' }),
   },
-  handler: async (ctx: FlowContext, model: BaseFlowModel, params: any) => {
+  handler: async (ctx: FlowContext, model: FlowModel, params: any) => {
     const { modalTitle, formUiSchemaJson, initialValuesJson } = params;
 
     let formUiSchema: ISchema;

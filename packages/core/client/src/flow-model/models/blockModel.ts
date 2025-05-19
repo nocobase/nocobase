@@ -1,9 +1,9 @@
-import { BaseFlowModel, IModelComponentProps } from './flowModel';
+import { FlowModel, IModelComponentProps } from './flowModel';
 import { ActionModel } from './actionModel';
 import { define, observable } from '@formily/reactive';
 import { Application } from '../../application';
 
-export class BlockModel extends BaseFlowModel {
+export class BlockModel extends FlowModel {
   public actions: Map<string, ActionModel>;
 
   constructor(uid: string, app: Application) {

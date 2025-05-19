@@ -1,12 +1,12 @@
 import { ISchema } from '@formily/json-schema';
 import type { FlowEngine } from './flow-engine';
-import type { BaseFlowModel } from '@nocobase/client';
+import type { FlowModel } from '@nocobase/client';
 import type { Application } from '../application/Application';
 
 /**
  * Constructor for model classes.
  */
-export type ModelConstructor<T extends BaseFlowModel = BaseFlowModel> = new (
+export type ModelConstructor<T extends FlowModel = FlowModel> = new (
   uid: string,
   app?: Application,
 ) => T;
@@ -17,7 +17,7 @@ export type ModelConstructor<T extends BaseFlowModel = BaseFlowModel> = new (
 export interface ActionDefinition {
   name: string; // Unique identifier for the action
   title?: string;
-  handler: (ctx: FlowContext, model: BaseFlowModel, params: any) => Promise<any> | any;
+  handler: (ctx: FlowContext, model: FlowModel, params: any) => Promise<any> | any;
   uiSchema?: Record<string, ISchema>;
   defaultParams?: Record<string, any>;
 }
@@ -60,7 +60,7 @@ export interface ActionStepDefinition extends BaseStepDefinition {
  * Step that defines its handler inline.
  */
 export interface InlineStepDefinition extends BaseStepDefinition {
-  handler: (ctx: FlowContext, model: BaseFlowModel, params: any) => Promise<any> | any;
+  handler: (ctx: FlowContext, model: FlowModel, params: any) => Promise<any> | any;
   uiSchema?: Record<string, ISchema>; // Optional: uiSchema for this inline step
   defaultParams?: Record<string, any>; // Optional: defaultParams for this inline step
   // Cannot use a registered action

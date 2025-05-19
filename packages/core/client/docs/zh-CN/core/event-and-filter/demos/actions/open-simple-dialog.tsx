@@ -1,5 +1,5 @@
 import { Modal } from 'antd';
-import { ActionDefinition, FlowContext, BaseFlowModel } from '@nocobase/client';
+import { ActionDefinition, FlowContext, FlowModel } from '@nocobase/client';
 import React from 'react';
 
 /**
@@ -34,7 +34,7 @@ export const openSimpleDialogAction: ActionDefinition = {
     width: 600,
     content: '这是通过 FlowEngine Action 显示的简单对话框。\n参数可以在步骤配置中提供。'
   },
-  handler: async (ctx: FlowContext, model: BaseFlowModel, params: any) => {
+  handler: async (ctx: FlowContext, model: FlowModel, params: any) => {
     const { title, width, content } = params;
 
     return new Promise<boolean>((resolve) => {

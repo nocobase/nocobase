@@ -1,5 +1,5 @@
 import { Modal, Input } from 'antd';
-import { ActionDefinition, FlowContext, BaseFlowModel } from '@nocobase/client';
+import { ActionDefinition, FlowContext, FlowModel } from '@nocobase/client';
 import React from 'react';
 
 /**
@@ -39,7 +39,7 @@ export const openFormDialogAction: ActionDefinition = {
       notes: '一些初始备注'
     }),
   },
-  handler: async (ctx: FlowContext, model: BaseFlowModel, params: any) => {
+  handler: async (ctx: FlowContext, model: FlowModel, params: any) => {
     const { title, width, formFieldsJson } = params;
     let initialValues: Record<string, any> = {};
     try {

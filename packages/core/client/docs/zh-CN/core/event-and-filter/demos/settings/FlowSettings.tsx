@@ -1,9 +1,11 @@
 import React from 'react';
 import { Card, Empty, Alert, Input, InputNumber, Select, Switch, Form } from 'antd';
-import { useModel, useFlowEngine, ActionStepDefinition, ISchema } from '@nocobase/client';
+import { useFlowEngine, ActionStepDefinition, ISchema, FlowEngine } from '@nocobase/client';
 import { observer } from '@formily/react';
 
 const { Item: FormItem } = Form;
+
+const { useModelById } = FlowEngine;
 
 interface FlowSettingsProps {
   uid: string;
@@ -18,7 +20,7 @@ interface FlowSettingsProps {
  */
 const FlowSettings: React.FC<FlowSettingsProps> = observer(({ uid, flowKey, modelClassName }) => {
   const flowEngine = useFlowEngine();
-  const model = useModel(modelClassName, uid);
+  const model = useModelById(uid, modelClassName);
 
   if (!flowEngine) {
     return <Alert message="flowEngine未初始化" type="error" />;

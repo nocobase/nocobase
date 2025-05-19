@@ -1,10 +1,17 @@
 import React from 'react';
 import { Divider } from 'antd';
-import { BaseFlowModel, Application, BlockModel, useModel, useApplyFlow, FlowContext, Plugin, ISchema } from '@nocobase/client';
+import { FlowModel, Application, BlockModel, FlowContext, Plugin, ISchema, FlowEngine } from '@nocobase/client';
 import MarkdownIt from 'markdown-it';
 import Handlebars from 'handlebars';
 import { observer } from '@formily/react';
 import FlowSettings from '../settings/FlowSettings';
+
+// 从 FlowEngine 解构出所需的 Hooks
+const {
+    useModelById,
+    useApplyFlow,
+    useContext: useFlowEngineContext // 重命名以避免与 React.useContext 冲突, 造成理解困难
+} = FlowEngine;
 
 const Demo = () => {
     const uid = 'markdown-block';
@@ -17,10 +24,11 @@ const Demo = () => {
     );
 }
 
-// Markdown区块组件，通过 useModel 获取 model 实例，并应用 flow
+// Markdown区块组件，通过 FlowEngine.useModelById 获取 model 实例，并应用 flow
 const MarkdownBlock = observer(({ uid }: { uid: string }) => {
-    const model = useModel('BlockModel', uid);
-    useApplyFlow(model, 'block:markdown');
+    const model = useModelById(uid, 'BlockModel');
+    const flowContext = useFlowEngineContext();
+    useApplyFlow(model, 'block:markdown', flowContext);
     const props = model.getProps();
 
     return <Markdown content={props.content} height={props.height} />
@@ -50,10 +58,10 @@ class DemoPlugin extends Plugin {
                         { label: '普通文本', value: 'plain' },
                         { label: 'Handlebars模板', value: 'handlebars' }
                     ],
-                } 
+                }
             },
             defaultParams: { template: 'plain' },
-            handler: ((ctx: FlowContext, model: BaseFlowModel, params: any) => {
+            handler: ((ctx: FlowContext, model: FlowModel, params: any) => {
                 if (params?.template != null) {
                     model.setProps('template', params.template);
                 }
@@ -70,9 +78,9 @@ class DemoPlugin extends Plugin {
                     'x-decorator': 'FormItem',
                     'x-component': 'InputNumber',
                     'x-component-props': { addonAfter: 'px' },
-                } 
+                }
             },
-            handler: ((ctx: FlowContext, model: BaseFlowModel, params: any) => {
+            handler: ((ctx: FlowContext, model: FlowModel, params: any) => {
                 if (params?.height != null) {
                     model.setProps('height', params.height);
                 }
@@ -88,9 +96,9 @@ class DemoPlugin extends Plugin {
                     title: 'Markdown内容',
                     'x-decorator': 'FormItem',
                     'x-component': 'Input.TextArea',
-                } 
+                }
             },
-            handler: ((ctx: FlowContext, model: BaseFlowModel, params: any) => {
+            handler: ((ctx: FlowContext, model: FlowModel, params: any) => {
                 model.setProps('content', params?.content);
             }),
         });
@@ -114,10 +122,10 @@ class DemoPlugin extends Plugin {
                     defaultParams: { content: "Hello, NocoBase! {{var1}}" }
                 },
                 renderMarkdown: {
-                    handler: async (ctx: FlowContext, model: BaseFlowModel, params: any) => {
+                    handler: async (ctx: FlowContext, model: FlowModel, params: any) => {
                         const props = model.getProps();
                         let content = props.content;
-        
+
                         if (props.template === 'handlebars') {
                             content = Handlebars.compile(content || '')({
                                 var1: 'variable 1',
@@ -125,7 +133,7 @@ class DemoPlugin extends Plugin {
                                 var3: 'variable 3',
                             });
                         }
-        
+
                         model.setProps('content', MarkdownIt().render(content || ''));
                     }
                 }
