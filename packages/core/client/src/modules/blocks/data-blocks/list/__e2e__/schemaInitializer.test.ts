@@ -41,7 +41,6 @@ test.describe('where list block can be added', () => {
     await page.getByLabel('schema-initializer-Grid-').nth(1).hover();
     await page.getByRole('menuitem', { name: 'Role name' }).click();
     await page.mouse.move(300, 0);
-    await page.reload();
     await expect(page.getByLabel('block-item-CollectionField-').getByText('Root')).toBeVisible();
     await expect(page.getByLabel('block-item-CollectionField-').getByText('Admin')).toBeVisible();
     await expect(page.getByLabel('block-item-CollectionField-').getByText('Member')).toBeVisible();

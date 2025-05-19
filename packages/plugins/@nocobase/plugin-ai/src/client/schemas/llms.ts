@@ -59,6 +59,7 @@ export const createLLMSchema = {
 
 export const llmsSchema = {
   type: 'void',
+  name: 'llm-services',
   properties: {
     card: {
       type: 'void',

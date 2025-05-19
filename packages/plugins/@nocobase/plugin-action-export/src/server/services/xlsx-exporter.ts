@@ -21,6 +21,8 @@ type XlsxExportOptions = Omit<ExportOptions, 'fields'> & {
   columns: Array<ExportColumn>;
 };
 
+const XLSX_LIMIT_CHAER = 32767;
+
 export class XlsxExporter extends BaseExporter<XlsxExportOptions & { fields: Array<Array<string>> }> {
   /**
    * You can adjust the maximum number of exported rows based on business needs and system

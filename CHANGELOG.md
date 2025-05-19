@@ -5,6 +5,135 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v1.6.31](https://github.com/nocobase/nocobase/compare/v1.6.30...v1.6.31) - 2025-05-18
+
+### 🚀 Improvements
+
+- **[Workflow]** Add all missed en-US locale keys ([#6885](https://github.com/nocobase/nocobase/pull/6885)) by @mytharcher
+
+### 🐛 Bug Fixes
+
+- **[database]** handle empty string cells during field import to prevent errors ([#6880](https://github.com/nocobase/nocobase/pull/6880)) by @aaaaaajie
+
+- **[client]**
+  - association select record table did not filter already associate record ([#6874](https://github.com/nocobase/nocobase/pull/6874)) by @katherinehhh
+
+  - association data not submitted when exposing association fields  in subForm ([#6883](https://github.com/nocobase/nocobase/pull/6883)) by @katherinehhh
+
+  - draggable sort fields not displaying available options correctly ([#6875](https://github.com/nocobase/nocobase/pull/6875)) by @katherinehhh
+
+- **[Workflow]** Fix stack limit works incorrectly for collection event ([#6876](https://github.com/nocobase/nocobase/pull/6876)) by @mytharcher
+
+- **[Block: Action panel]** Read the route basename from the scanner to adapt for the desktop environment. ([#6877](https://github.com/nocobase/nocobase/pull/6877)) by @sheldon66
+
+- **[Workflow: Manual node]** Fix render error when show unprocessed item ([#6879](https://github.com/nocobase/nocobase/pull/6879)) by @mytharcher
+
+- **[Workflow: Approval]** Fix assignees scope of delegate and add to other assignees by @mytharcher
+
+## [v1.6.30](https://github.com/nocobase/nocobase/compare/v1.6.29...v1.6.30) - 2025-05-15
+
+### 🚀 Improvements
+
+- **[client]** add more built-in size settings for read status image ([#6868](https://github.com/nocobase/nocobase/pull/6868)) by @katherinehhh
+
+### 🐛 Bug Fixes
+
+- **[File manager]**
+  - Fix types ([#6873](https://github.com/nocobase/nocobase/pull/6873)) by @mytharcher
+
+  - Fix create file record without foreign key permission ([#6863](https://github.com/nocobase/nocobase/pull/6863)) by @mytharcher
+
+- **[Action: Export records]** improve performance when deleting fields in import/export field settings ([#6861](https://github.com/nocobase/nocobase/pull/6861)) by @katherinehhh
+
+- **[Data visualization]** Chart blocks do not display when added to popups triggered from block-level actions ([#6864](https://github.com/nocobase/nocobase/pull/6864)) by @2013xile
+
+- **[Action: Export records Pro]** improve performance when deleting fields in import/export pro field settings by @katherinehhh
+
+- **[File storage: S3(Pro)]** Change to use collection field to locate storage by @mytharcher
+
+- **[Backup manager]** Fix type error in build by @mytharcher
+
+## [v1.6.29](https://github.com/nocobase/nocobase/compare/v1.6.28...v1.6.29) - 2025-05-13
+
+### 🚀 Improvements
+
+- **[Workflow]** Allow to revision more than one draft ([#6851](https://github.com/nocobase/nocobase/pull/6851)) by @mytharcher
+
+### 🐛 Bug Fixes
+
+- **[Action: Export records]** Fixed   exporting empty values in nested associations and attachment url ([#6845](https://github.com/nocobase/nocobase/pull/6845)) by @aaaaaajie
+
+- **[Workflow: Manual node]** Fix stats number count wrong on tasks ([#6783](https://github.com/nocobase/nocobase/pull/6783)) by @mytharcher
+
+- **[Workflow: test kit]** Fix failed test cases due to required preset plugin ([#6839](https://github.com/nocobase/nocobase/pull/6839)) by @mytharcher
+
+- **[Data visualization]** Fix error when filtering nested m2m fields ([#6855](https://github.com/nocobase/nocobase/pull/6855)) by @2013xile
+
+- **[Workflow: Subflow]** Fix undefined trigger caused page crash by @mytharcher
+
+- **[File storage: S3(Pro)]** access url expiration invalid by @jiannx
+
+- **[Workflow: Approval]** Fix stats number count wrong on tasks by @mytharcher
+
+## [v1.6.28](https://github.com/nocobase/nocobase/compare/v1.6.27...v1.6.28) - 2025-05-09
+
+### 🐛 Bug Fixes
+
+- **[database]** Import failed due to text field values. ([#6699](https://github.com/nocobase/nocobase/pull/6699)) by @aaaaaajie
+
+- **[client]** The hidden fields are still displayed ([#6844](https://github.com/nocobase/nocobase/pull/6844)) by @zhangzhonghe
+
+- **[Action: Export records]** Fix the error of exporting long texts. ([#6713](https://github.com/nocobase/nocobase/pull/6713)) by @aaaaaajie
+
+- **[Workflow: Post-action event]** Fix user acted variable not accessible in Hanldebars template ([#6837](https://github.com/nocobase/nocobase/pull/6837)) by @mytharcher
+
+- **[Block: Action panel]** The color of the Action panel is incorrect in dark mode ([#6842](https://github.com/nocobase/nocobase/pull/6842)) by @zhangzhonghe
+
+- **[Action: Export records Pro]** Fix the error of exporting long texts. by @aaaaaajie
+
+## [v1.6.27](https://github.com/nocobase/nocobase/compare/v1.6.26...v1.6.27) - 2025-05-08
+
+### 🐛 Bug Fixes
+
+- **[client]**
+  - unable to drag other buttons onto the duplicate button ([#6822](https://github.com/nocobase/nocobase/pull/6822)) by @katherinehhh
+
+  - multiple association field failed to submit when showing fields from association collection ([#6833](https://github.com/nocobase/nocobase/pull/6833)) by @katherinehhh
+
+## [v1.6.26](https://github.com/nocobase/nocobase/compare/v1.6.25...v1.6.26) - 2025-05-07
+
+### 🎉 New Features
+
+- **[Block: iframe]** Iframe block supports configuring the allow attribute ([#6824](https://github.com/nocobase/nocobase/pull/6824)) by @zhangzhonghe
+
+- **[Template print]** Feature: Support `{ label, value }` Select options in template printing. by @sheldon66
+
+### 🐛 Bug Fixes
+
+- **[client]**
+  - In nested subpages, the block list is not displayed when hovering the mouse over the "Add block" button ([#6832](https://github.com/nocobase/nocobase/pull/6832)) by @zhangzhonghe
+
+  - When the relation field component of the filter form is changed to a data selector, there is no "Allow multiple selection" configuration item ([#6656](https://github.com/nocobase/nocobase/pull/6656)) by @zhangzhonghe
+
+  - multiple error messages displayed when validation rule is violated in form fields ([#6805](https://github.com/nocobase/nocobase/pull/6805)) by @katherinehhh
+
+  - issue with configuring linkage rules in subform (popup) within subtable ([#6803](https://github.com/nocobase/nocobase/pull/6803)) by @katherinehhh
+
+  - Fix the issue where one-to-many field sub-fields cannot be selected as filtering options in filter forms ([#6809](https://github.com/nocobase/nocobase/pull/6809)) by @zhangzhonghe
+
+  - subtable pagination bar style issue in read-only mode ([#6830](https://github.com/nocobase/nocobase/pull/6830)) by @katherinehhh
+
+  - Table selector in the filter form, abnormal style ([#6827](https://github.com/nocobase/nocobase/pull/6827)) by @zhangzhonghe
+
+- **[database]**
+  - Fix belongs-to association not loaded in appends when foreign key is bigInt under MariaDB ([#6823](https://github.com/nocobase/nocobase/pull/6823)) by @mytharcher
+
+  - Fix test cases ([#6811](https://github.com/nocobase/nocobase/pull/6811)) by @mytharcher
+
+- **[Collection field: Attachment(URL)]** attachment (URL) fields should not allow value configuration in linkage rule ([#6831](https://github.com/nocobase/nocobase/pull/6831)) by @katherinehhh
+
+- **[Workflow: Custom action event]** triggered workflow action linkage issue by @katherinehhh
+
 ## [v1.6.25](https://github.com/nocobase/nocobase/compare/v1.6.24...v1.6.25) - 2025-04-29
 
 ### 🎉 New Features

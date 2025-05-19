@@ -7,12 +7,12 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { isURL } from '@nocobase/utils';
 import axios, { AxiosRequestConfig } from 'axios';
-import { StorageEngine } from 'multer';
 import Path from 'path';
+import { StorageEngine } from 'multer';
 import type { Readable } from 'stream';
 import urlJoin from 'url-join';
+import { isURL } from '@nocobase/utils';
 import { encodeURL, ensureUrlEncoded, getFileKey } from '../utils';
 export interface StorageModel {
   id?: number;
@@ -31,7 +31,7 @@ export interface AttachmentModel {
   title: string;
   filename: string;
   path: string;
-  url: string;
+  url?: string;
   storageId: number;
   mimetype: string;
 }

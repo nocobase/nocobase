@@ -147,6 +147,13 @@ abstract class BaseExporter<T extends ExportOptions = ExportOptions> extends Eve
           throw new Error(`Field "${field}" not found: , please check the fields configuration.`);
         }
 
+        const keys = field.split('.');
+        keys.pop();
+
+        if (_.get(fieldInstance, 'collection.options.template') === 'file') {
+          return keys.join('.');
+        }
+
         if (fieldInstance.isRelationField()) {
           return field;
         }
