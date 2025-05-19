@@ -25,6 +25,12 @@ const flowEngineCache = new Map<string, FlowCacheEntry>();
 // Context for useApplyFlow and useDispatchEvent should not include engine or $exit or app
 type UserContext = Partial<Omit<FlowContext, 'engine' | '$exit' | 'app'>>;
 
+export interface ActionOptions<P = any, R = any> {
+  handler: (ctx: any, model: FlowModel, params: P) => Promise<R> | R;
+  uiSchema?: Record<string, any>;
+  defaultParams?: Partial<P>;
+}
+
 // Helper to generate a stable cache key
 function generateCacheKey(prefix: string, flowKey: string, modelUid: string, context?: UserContext): string {
   const contextString = context ? safeStringify(context) : '';
@@ -108,7 +114,20 @@ export class FlowEngine {
 
   // Public API is now for registration and retrieval of definitions/instances
 
-  public registerAction(definition: ActionDefinition): void {
+  public registerAction(nameOrDefinition: string | ActionDefinition, options?: ActionOptions): void {
+    let definition: ActionDefinition;
+    
+    if (typeof nameOrDefinition === 'string' && options) {
+      definition = {
+        ...options,
+        name: nameOrDefinition,
+      };
+    } else if (typeof nameOrDefinition === 'object') {
+      definition = nameOrDefinition as ActionDefinition;
+    } else {
+      throw new Error('Invalid arguments for registerAction');
+    }
+    
     if (this.actions.has(definition.name)) {
       console.warn(`FlowEngine: Action with name '${definition.name}' is already registered and will be overwritten.`);
     }
@@ -156,11 +175,27 @@ export class FlowEngine {
     return false;
   }
   
-  public registerFlow(definition: FlowDefinition): void {
-    if (this.flows.has(definition.key)) {
-      console.warn(`FlowEngine: Flow with key '${definition.key}' is already registered and will be overwritten.`);
+  public registerFlow(keyOrDefinition: string | FlowDefinition, flowDefinition?: FlowDefinition): void {
+    let definition: FlowDefinition;
+    let key: string;
+    
+    if (typeof keyOrDefinition === 'string' && flowDefinition) {
+      key = keyOrDefinition;
+      definition = {
+        ...flowDefinition,
+        key
+      };
+    } else if (typeof keyOrDefinition === 'object' && 'key' in keyOrDefinition) {
+      key = keyOrDefinition.key;
+      definition = keyOrDefinition;
+    } else {
+      throw new Error('Invalid arguments for registerFlow');
     }
-    this.flows.set(definition.key, definition);
+    
+    if (this.flows.has(key)) {
+      console.warn(`FlowEngine: Flow with key '${key}' is already registered and will be overwritten.`);
+    }
+    this.flows.set(key, definition);
   }
 
   public getFlow(key: string): FlowDefinition | undefined {
@@ -200,8 +235,8 @@ export class FlowEngine {
   }
 
   public static useApplyFlow(
-    model: FlowModel,
     flowKey: string,
+    model: FlowModel,
     context?: UserContext,
   ): any {
     const engine = useFlowEngine();
@@ -282,33 +317,51 @@ export class FlowEngine {
   }
 
   public static useDispatchEvent(
-    model: FlowModel,
     eventName: string,
+    model: FlowModel,
+    context?: UserContext
   ) {
-    const dispatch = useCallback((context?: UserContext) => {
+    const dispatch = useCallback(() => {
       model.dispatchEvent(eventName, context);
-    }, [model, eventName]);
+    }, [model, eventName, context]);
     return { dispatch };
   }
 
   public static withFlowModel<P extends object>(
     WrappedComponent: React.ComponentType<P>,
-    options: { defaultFlowKey: string; }
+    options: { defaultFlow?: string; }
   ) {
+    const defaultFlowKey = options.defaultFlow || '';
 
-    const EnhancedComponentInner =
-      observer((props: FlowModelComponentProps<P>) => {
+    // 根据是否提供 defaultFlow 选择不同的增强组件
+    if (defaultFlowKey) {
+      // 带有默认 flow 的增强组件
+      const WithFlowModelAndApply = observer((props: FlowModelComponentProps<P>) => {
         const { model, ...restPassthroughProps } = props;
-        const flowContext = FlowEngine.useContext(); // Use static method
-        FlowEngine.useApplyFlow(model, options.defaultFlowKey, flowContext as UserContext); // Use static method, cast context
+        const flowContext = FlowEngine.useContext();
+        // 始终应用默认流程
+        FlowEngine.useApplyFlow(defaultFlowKey, model, flowContext as UserContext);
 
         const modelProps = model.getProps();
         const combinedProps = { ...restPassthroughProps, ...modelProps } as unknown as P;
 
         return <WrappedComponent {...combinedProps} />;
-    });
+      });
 
-    EnhancedComponentInner.displayName = `WithFlowModel(${WrappedComponent.displayName || WrappedComponent.name || 'Component'})`;
-    return EnhancedComponentInner;
+      WithFlowModelAndApply.displayName = `WithFlowModelAndApply(${WrappedComponent.displayName || WrappedComponent.name || 'Component'})`;
+      return WithFlowModelAndApply;
+    } else {
+      // 不带默认 flow 的简单增强组件
+      const WithFlowModelOnly = observer((props: FlowModelComponentProps<P>) => {
+        const { model, ...restPassthroughProps } = props;
+        const modelProps = model.getProps();
+        const combinedProps = { ...restPassthroughProps, ...modelProps } as unknown as P;
+
+        return <WrappedComponent {...combinedProps} />;
+      });
+
+      WithFlowModelOnly.displayName = `WithFlowModelOnly(${WrappedComponent.displayName || WrappedComponent.name || 'Component'})`;
+      return WithFlowModelOnly;
+    }
   }
 } 

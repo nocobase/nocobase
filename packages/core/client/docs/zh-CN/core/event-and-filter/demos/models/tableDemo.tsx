@@ -56,7 +56,7 @@ const Demo = () => {
 const TableBlock = observer(({ uid }: { uid: string }) => {
     const model = useModelById(uid, 'TableBlockModel');
     const flowContext = useFlowEngineContext();
-    useApplyFlow(model, 'block:tabledemo', flowContext);
+    useApplyFlow('block:tabledemo', model, flowContext);
 
     const props = model.getProps();
     const columns = props.columns || DEMO_DEFAULT_COLUMNS;

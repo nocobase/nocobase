@@ -28,7 +28,7 @@ const Demo = () => {
 const MarkdownBlock = observer(({ uid }: { uid: string }) => {
     const model = useModelById(uid, 'BlockModel');
     const flowContext = useFlowEngineContext();
-    useApplyFlow(model, 'block:markdown', flowContext);
+    useApplyFlow('block:markdown', model, flowContext);
     const props = model.getProps();
 
     return <Markdown content={props.content} height={props.height} />

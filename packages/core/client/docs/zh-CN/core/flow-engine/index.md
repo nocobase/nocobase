@@ -207,7 +207,7 @@ const HTML = ({ content, height }) => {
   )
 }
 
-const Markdown = FlowEngine.withFlowModel(HTML, { defaultFlowKey: 'setMarkdownPropsFlow' });
+const Markdown = FlowEngine.withFlowModel(HTML, { defaultFlow: 'setMarkdownPropsFlow' });
 
 <Markdown model={model} />;
 ```
@@ -283,7 +283,7 @@ const model = new ButtonModel({
 });
 
 // 5. 在 React 组件中集成
-const DeleteButton = FlowEngine.withFlowModel(Button, { defaultFlowKey: 'setDeletePropsFlow' });
+const DeleteButton = FlowEngine.withFlowModel(Button, { defaultFlow: 'setDeletePropsFlow' });
 
 <DeleteButton model={model} />;
 ```
@@ -351,7 +351,7 @@ const model = new TableModel({
   ],
 });
 
-const Table = FlowEngine.withFlowModel(AntdTable, { defaultFlowKey: 'setTablePropsFlow' });
+const Table = FlowEngine.withFlowModel(AntdTable, { defaultFlow: 'setTablePropsFlow' });
 
 <Table model={model} />;
 ```
