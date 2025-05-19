@@ -45,9 +45,19 @@ const FlowSettings: React.FC<FlowSettingsProps> = observer(({ uid, flowKey, mode
 
   const renderFormField = (fieldKey: string, fieldSchema: ISchema, stepKey: string) => {
     const stepRuntimeParams = model.getStepParams(flowKey, stepKey) || {};
+    
+    // 获取对应步骤的定义
+    const stepDefinition = flow.steps[stepKey] as ActionStepDefinition;
+    
+    // 根据优先级获取字段值：
+    // 1. 用户设置的参数值 (stepRuntimeParams)
+    // 2. 步骤定义的默认参数值 (defaultParams)
+    const stepDefaultParams = stepDefinition.defaultParams || {};
     const fieldValue = stepRuntimeParams[fieldKey] !== undefined 
         ? stepRuntimeParams[fieldKey] 
-        : (fieldSchema.default !== undefined ? fieldSchema.default : '');
+        : (stepDefaultParams[fieldKey] !== undefined 
+            ? stepDefaultParams[fieldKey]
+            : (fieldSchema.default !== undefined ? fieldSchema.default : ''));
     
     switch (fieldSchema.type) {
       case 'string':

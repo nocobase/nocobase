@@ -110,6 +110,7 @@ class DemoPlugin extends Plugin {
                 setTemplate: {
                     use: 'block:markdown:template',
                     title: '模板引擎',
+                    defaultParams: { template: 'plain' }
                 },
                 setHeight: {
                     use: 'block:markdown:height',
