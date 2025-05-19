@@ -1,23 +1,19 @@
 import { Modal } from 'antd';
-import { EventFlowActionOptions } from '@nocobase/client';
+import { ActionDefinition, FlowContext, BaseFlowModel } from '@nocobase/client';
 import React from 'react';
 
 /**
  * 打开简单对话框的action配置
  */
-export const openSimpleDialogAction: EventFlowActionOptions = {
+export const openSimpleDialogAction: ActionDefinition = {
   name: 'openSimpleDialog',
   title: '显示简单对话框',
-  description: '在界面上显示一个简单的对话框，用于展示信息',
-  group: 'ui',
-  sort: 101,
   uiSchema: {
     title: {
       type: 'string',
       title: '对话框标题',
       'x-decorator': 'FormItem',
       'x-component': 'Input',
-      default: '对话框',
       required: true,
     },
     width: {
@@ -25,15 +21,26 @@ export const openSimpleDialogAction: EventFlowActionOptions = {
       title: '对话框宽度',
       'x-decorator': 'FormItem',
       'x-component': 'InputNumber',
-      default: 600,
+    },
+    content: {
+      type: 'string',
+      title: '对话框内容',
+      'x-decorator': 'FormItem',
+      'x-component': 'Input.TextArea',
     },
   },
-  handler: async (params, context) => {
-    const { title = '对话框', width = 600 } = params;
+  defaultParams: {
+    title: '对话框',
+    width: 600,
+    content: '这是通过 FlowEngine Action 显示的简单对话框。\n参数可以在步骤配置中提供。'
+  },
+  handler: async (ctx: FlowContext, model: BaseFlowModel, params: any) => {
+    const { title, width, content } = params;
+
     return new Promise<boolean>((resolve) => {
       Modal.confirm({
-        title,
-        width,
+        title: title,
+        width: width,
         content: (
           <pre
             style={{
@@ -44,18 +51,16 @@ export const openSimpleDialogAction: EventFlowActionOptions = {
               overflow: 'auto',
             }}
           >
-            {JSON.stringify(context, null, 2)}
+            {content}
           </pre>
         ),
         okText: '确定',
         cancelText: '取消',
         onOk: () => {
           resolve(true);
-          return true;
         },
         onCancel: () => {
           resolve(false);
-          return false;
         },
       });
     });

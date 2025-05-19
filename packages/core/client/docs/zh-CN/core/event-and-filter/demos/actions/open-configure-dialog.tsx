@@ -1,144 +1,122 @@
-import { Modal, Form, Input, Select, Switch, InputNumber } from 'antd';
-import React, { useState } from 'react';
-import { EventFlowActionOptions } from '@nocobase/client';
-import { EventContext } from '@nocobase/client';
+import { Modal } from 'antd';
+import React, { useMemo } from 'react';
+import { ActionDefinition, FlowContext, BaseFlowModel, ISchema } from '@nocobase/client';
 import { SchemaComponent, SchemaComponentProvider } from '@nocobase/client';
 import { createForm } from '@formily/core';
-import { ISchema, connect, mapProps, mapReadPretty } from '@formily/react';
-import { FormItem } from '@formily/antd-v5';
+import { FormItem, Input, Select, Switch, Form } from '@formily/antd-v5';
 
-// 通用的配置动作定义
-export const configureAction: EventFlowActionOptions = {
-  name: 'configureAction',
-  title: '配置动作',
-  description: '打开配置弹窗，修改动作参数',
-  group: 'ui',
-  sort: 1,
-  uiSchema: {},
-  handler: async (params: Record<string, any>, context: EventContext) => {
-    const step = context.payload?.step;
-    const onChange = context.payload?.onChange;
-    const uiSchema = step.configureUiSchema;
-    const initialValues = context.payload?.currentParams || {};
+
+// Define a components object for SchemaComponentProvider
+const formilyComponents = {
+    FormItem,
+    Input,
+    Select,
+    Switch,
+    TextArea: Input.TextArea,
+};
+
+export const configureAction: ActionDefinition = {
+  name: 'system:configureStep',
+  title: '打开配置对话框',
+  uiSchema: {
+    modalTitle: { type: 'string', title: '弹窗标题', 'x-component': 'Input' } as ISchema,
+    formUiSchemaJson: { 
+        type: 'string', 
+        title: '表单UI Schema (JSON)', 
+        'x-component': 'TextArea',
+        'x-component-props': { rows: 5 } 
+    } as ISchema,
+    initialValuesJson: { 
+        type: 'string', 
+        title: '表单初始值 (JSON)', 
+        'x-component': 'TextArea',
+        'x-component-props': { rows: 3 }
+    } as ISchema,
+  },
+  defaultParams: {
+    modalTitle: '参数配置',
+    formUiSchemaJson: JSON.stringify({ 
+        type: 'object', 
+        properties: { 
+            info: { type: 'string', title:'提示', default:'请为此步骤提供有效的表单Schema以配置参数。' , 'x-component': 'Input', 'x-read-pretty': true },
+            field1: { type: 'string', title: '参数一', 'x-component': 'Input' }
+        }
+    }),
+    initialValuesJson: JSON.stringify({ field1: '默认值' }),
+  },
+  handler: async (ctx: FlowContext, model: BaseFlowModel, params: any) => {
+    const { modalTitle, formUiSchemaJson, initialValuesJson } = params;
+
+    let formUiSchema: ISchema;
+    let initialValues: Record<string, any>;
+
+    try {
+      formUiSchema = JSON.parse(formUiSchemaJson);
+      if (typeof formUiSchema !== 'object' || formUiSchema === null || !formUiSchema.properties) { 
+          throw new Error('formUiSchema must be an object with a properties field.');
+      }
+    } catch (e) {
+      console.error('Invalid formUiSchemaJson:', e);
+      formUiSchema = { type: 'object', properties: { error: { type: 'string', title: '错误', default: `无效的表单Schema配置: ${(e as Error).message}`, 'x-component':'Input', 'x-read-pretty': true } } };
+      initialValues = {};
+    }
+
+    try {
+      initialValues = JSON.parse(initialValuesJson);
+      if (typeof initialValues !== 'object' || initialValues === null) throw new Error('initialValues must be an object.');
+    } catch (e) {
+      console.error('Invalid initialValuesJson, using empty object:', e);
+      initialValues = {}; 
+    }
+    
+    const processedProperties = {};
+    if (formUiSchema.properties) {
+        for (const [key, fieldSchemaValue] of Object.entries(formUiSchema.properties)) {
+            const fieldS = fieldSchemaValue as ISchema;
+            processedProperties[key] = {
+                ...fieldS,
+                'x-decorator': fieldS['x-decorator'] || 'FormItem',
+            };
+        }
+    }
+    const finalSchemaToRender: ISchema = { ...formUiSchema, properties: processedProperties };
 
     return new Promise((resolve) => {
-      const FormInput = connect(
-        Input,
-        mapProps({}),
-        mapReadPretty(() => null),
-      );
-      const FormTextArea = connect(
-        Input.TextArea,
-        mapProps({}),
-        mapReadPretty(() => null),
-      );
-      const FormSelect = connect(
-        Select,
-        mapProps({}),
-        mapReadPretty(() => null),
-      );
-      const FormSwitch = connect(
-        Switch,
-        mapProps({}),
-        mapReadPretty(() => null),
-      );
-      const FormInputNumber = connect(
-        InputNumber,
-        mapProps({}),
-        mapReadPretty(() => null),
-      );
-
-      // 为每个 schema 字段添加装饰器
-      const processedSchema = {};
-      Object.entries(uiSchema).forEach(([key, schema]) => {
-        processedSchema[key] = {
-          ...(schema as ISchema),
-          'x-decorator': 'FormItem',
-        };
-      });
-
-      const components = {
-        Input: FormInput,
-        'Input.TextArea': FormTextArea,
-        Select: FormSelect,
-        Switch: FormSwitch,
-        InputNumber: FormInputNumber,
-        FormItem,
-      };
-
-      const ConfigurationModal = ({ onSave, onCancel }) => {
-        const [visible, setVisible] = useState(true);
-        const [form] = useState(() =>
-          createForm({
-            initialValues,
-          }),
-        );
-
-        const handleSubmit = () => {
-          form
-            .submit()
-            .then((values) => {
-              if (typeof onChange === 'function') {
-                onChange(values);
-              }
-              setVisible(false);
-              onSave(values);
-            })
-            .catch(() => {});
-        };
-
-        const handleCancel = () => {
-          setVisible(false);
-          onCancel();
-        };
-
-        // 构建完整的 schema
-        const schema = {
-          type: 'object',
-          properties: processedSchema,
-        };
+      const ConfigurationModal = ({ onOkSubmit, onModalCancel }: { onOkSubmit: (values: any) => void, onModalCancel: () => void }) => {
+        const form = useMemo(() => createForm({ initialValues }), [initialValues]);
 
         return (
-          <Modal title={`配置 ${step.title}`} open={visible} onOk={handleSubmit} onCancel={handleCancel} destroyOnClose>
-            <SchemaComponentProvider form={form} components={components}>
-              <Form layout="vertical">
-                <SchemaComponent schema={schema} />
+          <Modal title={modalTitle} open={true} onOk={() => form.submit().then(onOkSubmit)} onCancel={onModalCancel} destroyOnClose>
+            <SchemaComponentProvider form={form} components={formilyComponents}> 
+              <Form form={form} layout="vertical"> 
+                <SchemaComponent schema={finalSchemaToRender} />
               </Form>
             </SchemaComponentProvider>
           </Modal>
         );
       };
 
-      // 渲染弹窗并设置回调
       const container = document.createElement('div');
       document.body.appendChild(container);
+      const { createRoot } = require('react-dom/client');
+      const root = createRoot(container);
 
-      const cleanupAndResolve = (result) => {
-        // 检查 container 是否还在 document.body 中
+      const cleanup = (result: any) => {
+        root.unmount();
         if (document.body.contains(container)) {
           document.body.removeChild(container);
         }
         resolve(result);
       };
 
-      const onSave = (values) => {
-        cleanupAndResolve({
-          success: true,
-          data: values,
-        });
-      };
-
-      const onCancel = () => {
-        cleanupAndResolve({
-          success: false,
-          canceled: true,
-        });
-      };
-
-      // 使用 React 渲染弹窗
-      const { createRoot } = require('react-dom/client');
-      const root = createRoot(container);
-      root.render(<ConfigurationModal onSave={onSave} onCancel={onCancel} />);
+      root.render(
+        <ConfigurationModal 
+          onOkSubmit={(values) => cleanup({ success: true, data: values })}
+          onModalCancel={() => cleanup({ success: false, canceled: true })}
+        />
+      );
     });
   },
 };
+
+export default configureAction;

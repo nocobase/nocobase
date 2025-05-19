@@ -6,13 +6,12 @@ import {
   ModelConstructor,
 } from './types';
 import { Application } from '../application';
-import type { BaseModel, ReadonlyModelProps } from '@nocobase/client';
+import type { BaseFlowModel } from '@nocobase/client';
 import { useApplyFlow, useFlowContext } from './hooks';
-import type { UserContext } from '../../src-flow-engine/types';
 
 type FlowModelComponentProps<P extends React.ComponentProps<any>> = 
   {
-    model: BaseModel;
+    model: BaseFlowModel;
   } & P;
 
 export class FlowEngine {
@@ -45,7 +44,7 @@ export class FlowEngine {
     return this.modelClasses.get(name);
   }
 
-  public createModel<T extends BaseModel = BaseModel>(
+  public createModel<T extends BaseFlowModel = BaseFlowModel>(
     app: Application,
     modelClassName: string,
     uid: string,
@@ -63,7 +62,7 @@ export class FlowEngine {
     return modelInstance;
   }
 
-  public getModel<T extends BaseModel = BaseModel>(uid: string): T | undefined {
+  public getModel<T extends BaseFlowModel = BaseFlowModel>(uid: string): T | undefined {
     return this.modelInstances.get(uid) as T | undefined;
   }
 

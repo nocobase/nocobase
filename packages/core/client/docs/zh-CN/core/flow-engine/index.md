@@ -57,7 +57,7 @@ class FlowEngine {
   static useDispatchEvent(eventName: string, model: FlowModel, ctx?: any): void;
   static withFlowModel<P>(
     Component: React.ComponentType<P>,
-    options: { filterFlow?: string }
+    options: { defaultFlow?: string }
   ): React.ComponentType<P & { modelId: string }>;
 }
 ```
@@ -99,7 +99,7 @@ FlowEngine.useApplyFlow('myFlow', model, ctx);
 FlowEngine.useDispatchEvent('onClick', model, ctx);
 
 // 高阶组件用法
-const MyButton = FlowEngine.withFlowModel(Button, { filterFlow: 'myFlow' });
+const MyButton = FlowEngine.withFlowModel(Button, { defaultFlow: 'myFlow' });
 ```
 
 ---

@@ -1,6 +1,6 @@
 import React from 'react';
 import { Divider } from 'antd';
-import { BaseModel, Application, BlockModel, useModel, useApplyFlow, FlowContext, Plugin, ISchema } from '@nocobase/client';
+import { BaseFlowModel, Application, BlockModel, useModel, useApplyFlow, FlowContext, Plugin, ISchema } from '@nocobase/client';
 import MarkdownIt from 'markdown-it';
 import Handlebars from 'handlebars';
 import { observer } from '@formily/react';
@@ -53,7 +53,7 @@ class DemoPlugin extends Plugin {
                 } 
             },
             defaultParams: { template: 'plain' },
-            handler: ((ctx: FlowContext, model: BaseModel, params: any) => {
+            handler: ((ctx: FlowContext, model: BaseFlowModel, params: any) => {
                 if (params?.template != null) {
                     model.setProps('template', params.template);
                 }
@@ -72,7 +72,7 @@ class DemoPlugin extends Plugin {
                     'x-component-props': { addonAfter: 'px' },
                 } 
             },
-            handler: ((ctx: FlowContext, model: BaseModel, params: any) => {
+            handler: ((ctx: FlowContext, model: BaseFlowModel, params: any) => {
                 if (params?.height != null) {
                     model.setProps('height', params.height);
                 }
@@ -90,7 +90,7 @@ class DemoPlugin extends Plugin {
                     'x-component': 'Input.TextArea',
                 } 
             },
-            handler: ((ctx: FlowContext, model: BaseModel, params: any) => {
+            handler: ((ctx: FlowContext, model: BaseFlowModel, params: any) => {
                 model.setProps('content', params?.content);
             }),
         });
@@ -114,7 +114,7 @@ class DemoPlugin extends Plugin {
                     defaultParams: { content: "Hello, NocoBase! {{var1}}" }
                 },
                 renderMarkdown: {
-                    handler: async (ctx: FlowContext, model: BaseModel, params: any) => {
+                    handler: async (ctx: FlowContext, model: BaseFlowModel, params: any) => {
                         const props = model.getProps();
                         let content = props.content;
         

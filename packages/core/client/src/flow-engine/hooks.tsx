@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, useRef } from 'react';
 import { useFlowEngine } from './provider';
-import type { BaseModel } from '@nocobase/client';
+import type { BaseFlowModel } from '@nocobase/client';
 import type { FlowContext } from './types';
 import { autorun, toJS } from '@formily/reactive';
 import stableStringify from 'fast-json-stable-stringify';
@@ -34,7 +34,7 @@ function generateCacheKey(prefix: string, flowKey: string, modelUid: string, con
  * @param uid Unique identifier for the model instance.
  * @returns The model instance.
  */
-export function useModel<T extends BaseModel = BaseModel>(
+export function useModel<T extends BaseFlowModel = BaseFlowModel>(
   modelClassName: string,
   uid: string,
 ): T {
@@ -57,7 +57,7 @@ export function useModel<T extends BaseModel = BaseModel>(
  * Reactively re-applies the flow if model.props or model.stepParams change.
  */
 export function useApplyFlow(
-  model: BaseModel, 
+  model: BaseFlowModel, 
   flowKey: string,
   context?: UserContext, 
 ): any { 
@@ -155,7 +155,7 @@ export function useApplyFlow(
  * Hook to dispatch an event from a model instance.
  */
 export function useDispatchEvent(
-  model: BaseModel, // Model is now required
+  model: BaseFlowModel, // Model is now required
   eventName: string,
 ) {
   if (!model.flowEngine) {
