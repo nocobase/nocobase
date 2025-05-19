@@ -10,6 +10,10 @@
 
 <code src="./demos/models/markdown.tsx"></code>
 
+## Action
+这个示例演示了如何使用FlowEngine实现一个删除按钮，包含确认弹窗和请求处理
+<code src="./demos/models/action.tsx"></code>
+
 ## Table Block
 
 <!-- <code src="./demos/models/tableDemo.tsx"></code> -->

@@ -117,13 +117,41 @@ const FlowSettings: React.FC<FlowSettingsProps> = observer(({ uid, flowKey, mode
 
   const configurableSteps = Object.entries(flow.steps)
     .map(([stepKey, stepDefinition]) => {
-      if ((stepDefinition as ActionStepDefinition).use) {
-        const actionStep = stepDefinition as ActionStepDefinition;
+      const actionStep = stepDefinition as ActionStepDefinition;
+      
+      // 从step获取uiSchema（如果存在）
+      const stepUiSchema = actionStep.uiSchema || {};
+      
+      // 如果step使用了action，也获取action的uiSchema
+      let actionUiSchema = {};
+      if (actionStep.use) {
         const action = flowEngine.getAction(actionStep.use);
-        if (!action || !action.uiSchema) return null;
-        return { stepKey, step: actionStep, uiSchema: action.uiSchema };
+        if (action && action.uiSchema) {
+          actionUiSchema = action.uiSchema;
+        }
       }
-      return null;
+      
+      // 合并uiSchema，确保step的uiSchema优先级更高
+      // 先复制action的uiSchema，然后用step的uiSchema覆盖相同的字段
+      const mergedUiSchema = { ...actionUiSchema };
+      
+      // 将stepUiSchema中的字段合并到mergedUiSchema
+      Object.entries(stepUiSchema).forEach(([fieldKey, schema]) => {
+        if (mergedUiSchema[fieldKey]) {
+          // 如果字段已存在，则合并schema对象，保持step中的属性优先级更高
+          mergedUiSchema[fieldKey] = { ...mergedUiSchema[fieldKey], ...schema };
+        } else {
+          // 如果字段不存在，则直接添加
+          mergedUiSchema[fieldKey] = schema;
+        }
+      });
+      
+      // 如果没有可配置的UI Schema，返回null
+      if (Object.keys(mergedUiSchema).length === 0) {
+        return null;
+      }
+      
+      return { stepKey, step: actionStep, uiSchema: mergedUiSchema };
     })
     .filter(Boolean);
 
