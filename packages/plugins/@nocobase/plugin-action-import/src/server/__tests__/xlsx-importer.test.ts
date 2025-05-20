@@ -636,7 +636,7 @@ describe('xlsx importer', () => {
       expect(profile.get('name')).toBe('test');
     });
 
-    it.only('should import with association field', async () => {
+    it('should import with association field', async () => {
       const columns = [
         {
           dataIndex: ['name'],
