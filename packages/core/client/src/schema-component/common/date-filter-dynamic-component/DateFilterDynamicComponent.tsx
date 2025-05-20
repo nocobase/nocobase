@@ -70,13 +70,17 @@ export const DateFilterDynamicComponent = (props) => {
       <Select
         options={compile(options)}
         {...props}
+        allowClear
         style={{
           width: '100%',
           minWidth: 120,
-          maxWidth: ['past', 'future', 'exact', undefined].includes(value?.type) ? 300 : null,
+          maxWidth: ['past', 'future', 'exact', undefined].includes(value?.type) ? 150 : null,
         }}
         value={value?.type || 'exact'}
         onChange={(val) => {
+          if (val === 'exact') {
+            return onChange(undefined);
+          }
           const obj: any = {
             type: val,
           };
