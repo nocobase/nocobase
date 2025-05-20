@@ -97,7 +97,10 @@ export const Action: ComposedAction = withDynamicSchemaProps(
     const compile = useCompile();
     const recordData = useCollectionRecordData();
     const confirm = compile(fieldSchema['x-component-props']?.confirm) || propsConfirm;
-    const linkageRules = useMemo(() => fieldSchema?.['x-linkage-rules'] || [], [fieldSchema?.['x-linkage-rules']]);
+    const linkageRules = useMemo(
+      () => fieldSchema?.['x-linkage-rules']?.filter((k) => !k.disabled) || [],
+      [fieldSchema?.['x-linkage-rules']],
+    );
     const { designable } = useDesignable();
     const tarComponent = useComponent(component) || component;
     const variables = useVariables();
