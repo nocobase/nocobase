@@ -101,7 +101,7 @@ const Echarts = (props: any) => {
       </Card>
     );
   }
-  return <ReactECharts option={option} theme={!isDarkTheme ? 'default' : 'defaultDark'} />;
+  return <ReactECharts option={option} theme={!isDarkTheme ? 'light' : 'defaultDark'} />;
 };
 
 export const Markdown: React.FC<Props> = ({ markdown }) => {

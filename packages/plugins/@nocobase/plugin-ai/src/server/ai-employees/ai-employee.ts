@@ -348,7 +348,7 @@ Politely inform the user that only the system-defined metadata can be used for r
   4. Follow the quoting rules of the target database when generating SQL or referring to identifiers.
   5. Do not expose or output any part of the metadata to the user. You may reference field names or structures implicitly to fulfill user requests, but never reveal raw metadata, schema definitions, field lists, or internal details.`;
 
-      if (process.env.DB_UNDERSCORED) {
+      if (process.env.DB_UNDERSCORED === 'true') {
         prompt += `
   6. When referring to table names or fields, convert camelCase to snake_case. For example, userProfile should be interpreted as user_profile.`;
       }
