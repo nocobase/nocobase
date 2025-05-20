@@ -5,6 +5,11 @@ echo "COMMIT_HASH: $(cat /app/commit_hash.txt)"
 
 export NOCOBASE_RUNNING_IN_DOCKER=true
 
+if [ -f /opt/libreoffice24.8.zip ] && [ ! -d /opt/libreoffice24.8 ]; then
+  echo "Unzipping /opt/libreoffice24.8.zip..."
+  unzip /opt/libreoffice24.8.zip -d /opt/
+fi
+
 if [ ! -d "/app/nocobase" ]; then
   mkdir nocobase
 fi
