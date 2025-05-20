@@ -7,17 +7,12 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { useKeepAlive } from '@nocobase/client';
 import React from 'react';
 import { Draggable } from 'react-beautiful-dnd';
 
 function Card({ children, index, renderCard, disableCardDrag }) {
-  const { active: pageActive } = useKeepAlive();
   return (
-    // react-beautiful-dnd uses document.querySelectorAll to get elements.
-    // When the page is hidden, the entire DOM is also removed from the DOM tree, and elements cannot be obtained through document.querySelectorAll.
-    // Therefore, when the page is hidden, drag and drop functionality must be disabled to prevent errors.
-    <Draggable draggableId={String(children.id)} index={index} isDragDisabled={disableCardDrag || !pageActive}>
+    <Draggable draggableId={String(children.id)} index={index} isDragDisabled={disableCardDrag}>
       {(provided, { isDragging }) => {
         return (
           <div
