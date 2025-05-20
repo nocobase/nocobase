@@ -176,6 +176,52 @@ describe('file manager > server', () => {
 
         process.env.APP_PUBLIC_PATH = originalPath;
       });
+
+      it('get file url with preview parameters on image', async () => {
+        const storage = await StorageRepo.create({
+          values: {
+            name: 'local2',
+            type: STORAGE_TYPE_LOCAL,
+            rules: {
+              size: 1024,
+            },
+            options: {
+              thumbnailRule: '?small',
+            },
+            default: true,
+          },
+        });
+
+        const { body } = await agent.resource('attachments').create({
+          [FILE_FIELD_NAME]: path.resolve(__dirname, './files/image.png'),
+        });
+
+        const url = await plugin.getFileURL(body.data, true);
+        expect(url).toBe(`${process.env.APP_PUBLIC_PATH?.replace(/\/$/g, '') || ''}${body.data.url}?small`);
+      });
+
+      it('get file url with preview parameters on non-image file', async () => {
+        const storage = await StorageRepo.create({
+          values: {
+            name: 'local2',
+            type: STORAGE_TYPE_LOCAL,
+            rules: {
+              size: 1024,
+            },
+            options: {
+              thumbnailRule: '?small',
+            },
+            default: true,
+          },
+        });
+
+        const { body } = await agent.resource('attachments').create({
+          [FILE_FIELD_NAME]: path.resolve(__dirname, './files/text.txt'),
+        });
+
+        const url = await plugin.getFileURL(body.data, true);
+        expect(url).toBe(`${process.env.APP_PUBLIC_PATH?.replace(/\/$/g, '') || ''}${body.data.url}`);
+      });
     });
   });
 });
