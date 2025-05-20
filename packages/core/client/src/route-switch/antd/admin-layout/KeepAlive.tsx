@@ -11,7 +11,7 @@ import { RouteContext } from '@ant-design/pro-layout';
 import { SchemaComponentsContext, SchemaExpressionScopeContext, SchemaOptionsContext } from '@formily/react';
 import _ from 'lodash';
 import { Context as MotionContext } from 'rc-motion/es/context';
-import React, { createContext, FC, memo, useContext, useInsertionEffect, useLayoutEffect, useRef } from 'react';
+import React, { createContext, FC, memo, useContext, useRef } from 'react';
 import {
   UNSAFE_DataRouterContext,
   UNSAFE_DataRouterStateContext,
@@ -63,6 +63,8 @@ const DesignableInterceptor: FC<{ active: boolean }> = ({ children, active }) =>
   );
 };
 
+const hidden = { display: 'none' };
+
 export const KeepAliveProvider: FC<{ active: boolean; parentActive: boolean }> = memo(
   ({ children, active, parentActive }) => {
     const currentLocationContext = useContext(UNSAFE_LocationContext);
@@ -80,35 +82,6 @@ export const KeepAliveProvider: FC<{ active: boolean; parentActive: boolean }> =
     const prevSubPageClosedContextRef = useRef(subPageClosedContext);
     const prevMotionContextRef = useRef(motionContext);
     const prevRouteContextValueRef = useRef(routeContextValue);
-
-    const contentRef = useRef<HTMLDivElement>(null);
-    const commentNodeRef = useRef<Comment>(null);
-
-    // 1. Insert the page into the DOM tree before React processes the DOM
-    useInsertionEffect(() => {
-      if (!contentRef.current) return;
-      if (!commentNodeRef.current) {
-        commentNodeRef.current = document.createComment('');
-      }
-
-      if (active && commentNodeRef.current.isConnected) {
-        commentNodeRef.current.parentElement.insertBefore(contentRef.current, commentNodeRef.current);
-        commentNodeRef.current.parentElement.removeChild(commentNodeRef.current);
-      }
-    }, [active]);
-
-    // 2. Remove the page from the DOM tree after React processes the DOM
-    useLayoutEffect(() => {
-      if (!contentRef.current) return;
-      if (!commentNodeRef.current) {
-        commentNodeRef.current = document.createComment('');
-      }
-
-      if (!active && contentRef.current.isConnected) {
-        contentRef.current.parentElement.insertBefore(commentNodeRef.current, contentRef.current);
-        contentRef.current.parentElement.removeChild(contentRef.current);
-      }
-    }, [active]);
 
     if (active) {
       prevDataRouterContextRef.current = currentDataRouterContext;
@@ -158,12 +131,7 @@ export const KeepAliveProvider: FC<{ active: boolean; parentActive: boolean }> =
       </RouteContext.Provider>
     );
 
-    return (
-      // Only extract the inner div from the DOM tree, keep the root element of the component to prevent React errors when unmounting
-      <div>
-        <div ref={contentRef}>{contextProviders}</div>
-      </div>
-    );
+    return <div style={active ? null : hidden}>{contextProviders}</div>;
   },
 );
 
