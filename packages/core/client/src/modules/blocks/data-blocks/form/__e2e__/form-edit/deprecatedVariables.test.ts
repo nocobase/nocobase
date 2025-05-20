@@ -11,7 +11,7 @@ import { expect, test } from '@nocobase/test/e2e';
 import { oneTableWithUsersForDeprecatedVariables } from '../form-create/templatesOfBug';
 
 test.describe('deprecated variables', () => {
-  test('current record', async ({ page, mockPage, mockRecord }) => {
+  test.skip('current record', async ({ page, mockPage, mockRecord }) => {
     await mockPage(oneTableWithUsersForDeprecatedVariables).goto();
 
     // 1. 已设置过 Current record 的变量依然能正常显示

@@ -51,7 +51,7 @@ export class RouterManager {
   protected routes: Record<string, RouteType> = {};
   protected options: RouterOptions;
   public app: Application;
-  private router;
+  public router;
   get basename() {
     return this.router.basename;
   }
