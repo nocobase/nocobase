@@ -7,15 +7,15 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { createMockServer } from '@nocobase/test';
 import { describe, test } from 'vitest';
+import { getApp } from '@nocobase/plugin-workflow-test';
 
 import Migration from '../../migrations/20250426134102-tasks-stats';
 
 describe('20250426134102-tasks-stats', () => {
   test(`stats of tasks should be create for each user`, async () => {
-    const app = await createMockServer({
-      plugins: ['nocobase'],
+    const app = await getApp({
+      plugins: ['users', 'auth', 'workflow-manual'],
     });
     await app.version.update('1.6.0');
     const workflowPlugin: any = app.pm.get('workflow');
