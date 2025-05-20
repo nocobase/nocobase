@@ -34,7 +34,7 @@ jobs:
           context: ./docker/nocobase
           file: ./docker/nocobase/Dockerfile-cn
           build-args: |
-            CNA_VERSION=latest
+            CNA_VERSION=beta
           platforms: linux/amd64,linux/arm64
           push: true
-          tags: nocobase/nocobase:latest-full,${{ secrets.ALI_DOCKER_PUBLIC_REGISTRY }}/nocobase/nocobase:latest-full
+          tags: nocobase/nocobase:beta-full,${{ secrets.ALI_DOCKER_PUBLIC_REGISTRY }}/nocobase/nocobase:beta-full
