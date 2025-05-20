@@ -34,5 +34,6 @@
   "Verifiers": "Verifiers",
   "The following types of verifiers are available:": "The following types of verifiers are available: ",
   "Go to": "Go to",
-  "create verifiers": "create verifiers"
+  "create verifiers": "create verifiers",
+  "Too many failed attempts. Please request a new verification code.": "Too many failed attempts. Please request a new verification code."
 }

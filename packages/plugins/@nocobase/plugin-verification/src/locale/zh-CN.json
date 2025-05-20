@@ -35,5 +35,6 @@
   "Verifiers": "验证器",
   "The following types of verifiers are available:": "以下类型的验证器可选：",
   "Go to": "前往",
-  "create verifiers": "创建验证器"
+  "create verifiers": "创建验证器",
+  "Too many failed attempts. Please request a new verification code.": "验证失败次数过多，请重新获取验证码。"
 }

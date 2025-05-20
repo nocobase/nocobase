@@ -19,10 +19,24 @@ import smsAliyun from './otp-verification/sms/providers/sms-aliyun';
 import smsTencent from './otp-verification/sms/providers/sms-tencent';
 import smsOTPProviders from './otp-verification/sms/resource/sms-otp-providers';
 import smsOTP from './otp-verification/sms/resource/sms-otp';
+import { Counter } from '@nocobase/cache';
 
 export default class PluginVerficationServer extends Plugin {
   verificationManager = new VerificationManager({ db: this.db });
   smsOTPProviderManager = new SMSOTPProviderManager();
+  smsOTPCounter: Counter;
+
+  async afterAdd() {
+    this.app.on('afterLoad', async () => {
+      this.smsOTPCounter = await this.app.cacheManager.createCounter(
+        {
+          name: 'smsOTPCounter',
+          prefix: 'sms-otp:attempts',
+        },
+        this.app.lockManager,
+      );
+    });
+  }
 
   async load() {
     // add middleware to action
