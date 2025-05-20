@@ -74,7 +74,7 @@ export const DateFilterDynamicComponent = (props) => {
         style={{
           width: '100%',
           minWidth: 100,
-          maxWidth: ['past', 'future', 'exact', undefined].includes(value?.type) ? 110 : null,
+          maxWidth: ['past', 'future', 'exact', undefined].includes(value?.type) ? 100 : null,
         }}
         value={value?.type || 'exact'}
         onChange={(val) => {
