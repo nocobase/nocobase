@@ -63,107 +63,109 @@ const DesignableInterceptor: FC<{ active: boolean }> = ({ children, active }) =>
   );
 };
 
-export const KeepAliveProvider: FC<{ active: boolean }> = memo(({ children, active }) => {
-  const currentLocationContext = useContext(UNSAFE_LocationContext);
-  const currentRouteContext = useContext(UNSAFE_RouteContext);
-  const currentDataRouterContext = useContext(UNSAFE_DataRouterContext);
-  const currentDataRouterStateContext = useContext(UNSAFE_DataRouterStateContext);
-  const subPageClosedContext = useContext(IsSubPageClosedByPageMenuContext);
-  const motionContext = useContext(MotionContext);
-  const routeContextValue = useContext(RouteContext);
+export const KeepAliveProvider: FC<{ active: boolean; parentActive: boolean }> = memo(
+  ({ children, active, parentActive }) => {
+    const currentLocationContext = useContext(UNSAFE_LocationContext);
+    const currentRouteContext = useContext(UNSAFE_RouteContext);
+    const currentDataRouterContext = useContext(UNSAFE_DataRouterContext);
+    const currentDataRouterStateContext = useContext(UNSAFE_DataRouterStateContext);
+    const subPageClosedContext = useContext(IsSubPageClosedByPageMenuContext);
+    const motionContext = useContext(MotionContext);
+    const routeContextValue = useContext(RouteContext);
 
-  const prevLocationContextRef = useRef(currentLocationContext);
-  const prevRouteContextRef = useRef(currentRouteContext);
-  const prevDataRouterContextRef = useRef(currentDataRouterContext);
-  const prevDataRouterStateContextRef = useRef(currentDataRouterStateContext);
-  const prevSubPageClosedContextRef = useRef(subPageClosedContext);
-  const prevMotionContextRef = useRef(motionContext);
-  const prevRouteContextValueRef = useRef(routeContextValue);
+    const prevLocationContextRef = useRef(currentLocationContext);
+    const prevRouteContextRef = useRef(currentRouteContext);
+    const prevDataRouterContextRef = useRef(currentDataRouterContext);
+    const prevDataRouterStateContextRef = useRef(currentDataRouterStateContext);
+    const prevSubPageClosedContextRef = useRef(subPageClosedContext);
+    const prevMotionContextRef = useRef(motionContext);
+    const prevRouteContextValueRef = useRef(routeContextValue);
 
-  const contentRef = useRef<HTMLDivElement>(null);
-  const commentNodeRef = useRef<Comment>(null);
+    const contentRef = useRef<HTMLDivElement>(null);
+    const commentNodeRef = useRef<Comment>(null);
 
-  // 1. Insert the page into the DOM tree before React processes the DOM
-  useInsertionEffect(() => {
-    if (!contentRef.current) return;
-    if (!commentNodeRef.current) {
-      commentNodeRef.current = document.createComment('');
+    // 1. Insert the page into the DOM tree before React processes the DOM
+    useInsertionEffect(() => {
+      if (!contentRef.current) return;
+      if (!commentNodeRef.current) {
+        commentNodeRef.current = document.createComment('');
+      }
+
+      if (active && commentNodeRef.current.isConnected) {
+        commentNodeRef.current.parentElement.insertBefore(contentRef.current, commentNodeRef.current);
+        commentNodeRef.current.parentElement.removeChild(commentNodeRef.current);
+      }
+    }, [active]);
+
+    // 2. Remove the page from the DOM tree after React processes the DOM
+    useLayoutEffect(() => {
+      if (!contentRef.current) return;
+      if (!commentNodeRef.current) {
+        commentNodeRef.current = document.createComment('');
+      }
+
+      if (!active && contentRef.current.isConnected) {
+        contentRef.current.parentElement.insertBefore(commentNodeRef.current, contentRef.current);
+        contentRef.current.parentElement.removeChild(contentRef.current);
+      }
+    }, [active]);
+
+    if (active) {
+      prevDataRouterContextRef.current = currentDataRouterContext;
+      prevDataRouterStateContextRef.current = currentDataRouterStateContext;
+      prevSubPageClosedContextRef.current = subPageClosedContext;
+      prevMotionContextRef.current = motionContext;
+      prevRouteContextValueRef.current = routeContextValue;
     }
 
-    if (active && commentNodeRef.current.isConnected) {
-      commentNodeRef.current.parentElement.insertBefore(contentRef.current, commentNodeRef.current);
-      commentNodeRef.current.parentElement.removeChild(commentNodeRef.current);
-    }
-  }, [active]);
-
-  // 2. Remove the page from the DOM tree after React processes the DOM
-  useLayoutEffect(() => {
-    if (!contentRef.current) return;
-    if (!commentNodeRef.current) {
-      commentNodeRef.current = document.createComment('');
+    if (
+      active &&
+      // Skip comparing location key to improve LocationContext rendering performance
+      !_.isEqual(_.omit(prevLocationContextRef.current.location, 'key'), _.omit(currentLocationContext.location, 'key'))
+    ) {
+      prevLocationContextRef.current = currentLocationContext;
     }
 
-    if (!active && contentRef.current.isConnected) {
-      contentRef.current.parentElement.insertBefore(commentNodeRef.current, contentRef.current);
-      contentRef.current.parentElement.removeChild(contentRef.current);
+    if (active && !_.isEqual(prevRouteContextRef.current, currentRouteContext)) {
+      prevRouteContextRef.current = currentRouteContext;
     }
-  }, [active]);
 
-  if (active) {
-    prevDataRouterContextRef.current = currentDataRouterContext;
-    prevDataRouterStateContextRef.current = currentDataRouterStateContext;
-    prevSubPageClosedContextRef.current = subPageClosedContext;
-    prevMotionContextRef.current = motionContext;
-    prevRouteContextValueRef.current = routeContextValue;
-  }
+    // When the page is inactive, we use UNSAFE_LocationContext and UNSAFE_RouteContext to prevent child components
+    // from receiving Context updates, thereby optimizing performance.
+    // This is based on how React Context works:
+    // 1. When Context value changes, React traverses the component tree from top to bottom
+    // 2. During traversal, React finds components using that Context and marks them for update
+    // 3. When encountering the same Context Provider, traversal stops, avoiding unnecessary child component updates
+    const contextProviders = (
+      <RouteContext.Provider value={prevRouteContextValueRef.current}>
+        <MotionContext.Provider value={prevMotionContextRef.current}>
+          <UNSAFE_DataRouterContext.Provider value={prevDataRouterContextRef.current}>
+            <UNSAFE_DataRouterStateContext.Provider value={prevDataRouterStateContextRef.current}>
+              <UNSAFE_LocationContext.Provider value={prevLocationContextRef.current}>
+                <UNSAFE_RouteContext.Provider value={prevRouteContextRef.current}>
+                  <KeepAliveContext.Provider value={parentActive === false ? false : active}>
+                    <DesignableInterceptor active={active}>
+                      <IsSubPageClosedByPageMenuContext.Provider value={prevSubPageClosedContextRef.current}>
+                        {children}
+                      </IsSubPageClosedByPageMenuContext.Provider>
+                    </DesignableInterceptor>
+                  </KeepAliveContext.Provider>
+                </UNSAFE_RouteContext.Provider>
+              </UNSAFE_LocationContext.Provider>
+            </UNSAFE_DataRouterStateContext.Provider>
+          </UNSAFE_DataRouterContext.Provider>
+        </MotionContext.Provider>
+      </RouteContext.Provider>
+    );
 
-  if (
-    active &&
-    // Skip comparing location key to improve LocationContext rendering performance
-    !_.isEqual(_.omit(prevLocationContextRef.current.location, 'key'), _.omit(currentLocationContext.location, 'key'))
-  ) {
-    prevLocationContextRef.current = currentLocationContext;
-  }
-
-  if (active && !_.isEqual(prevRouteContextRef.current, currentRouteContext)) {
-    prevRouteContextRef.current = currentRouteContext;
-  }
-
-  // When the page is inactive, we use UNSAFE_LocationContext and UNSAFE_RouteContext to prevent child components
-  // from receiving Context updates, thereby optimizing performance.
-  // This is based on how React Context works:
-  // 1. When Context value changes, React traverses the component tree from top to bottom
-  // 2. During traversal, React finds components using that Context and marks them for update
-  // 3. When encountering the same Context Provider, traversal stops, avoiding unnecessary child component updates
-  const contextProviders = (
-    <RouteContext.Provider value={prevRouteContextValueRef.current}>
-      <MotionContext.Provider value={prevMotionContextRef.current}>
-        <UNSAFE_DataRouterContext.Provider value={prevDataRouterContextRef.current}>
-          <UNSAFE_DataRouterStateContext.Provider value={prevDataRouterStateContextRef.current}>
-            <UNSAFE_LocationContext.Provider value={prevLocationContextRef.current}>
-              <UNSAFE_RouteContext.Provider value={prevRouteContextRef.current}>
-                <KeepAliveContext.Provider value={active}>
-                  <DesignableInterceptor active={active}>
-                    <IsSubPageClosedByPageMenuContext.Provider value={prevSubPageClosedContextRef.current}>
-                      {children}
-                    </IsSubPageClosedByPageMenuContext.Provider>
-                  </DesignableInterceptor>
-                </KeepAliveContext.Provider>
-              </UNSAFE_RouteContext.Provider>
-            </UNSAFE_LocationContext.Provider>
-          </UNSAFE_DataRouterStateContext.Provider>
-        </UNSAFE_DataRouterContext.Provider>
-      </MotionContext.Provider>
-    </RouteContext.Provider>
-  );
-
-  return (
-    // Only extract the inner div from the DOM tree, keep the root element of the component to prevent React errors when unmounting
-    <div>
-      <div ref={contentRef}>{contextProviders}</div>
-    </div>
-  );
-});
+    return (
+      // Only extract the inner div from the DOM tree, keep the root element of the component to prevent React errors when unmounting
+      <div>
+        <div ref={contentRef}>{contextProviders}</div>
+      </div>
+    );
+  },
+);
 
 /**
  * Used on components that don't need KeepAlive context, to improve performance when Context values change
@@ -243,6 +245,7 @@ const MAX_RENDERED_PAGE_COUNT = getMaxPageCount();
  * Implements a Vue-like KeepAlive effect
  */
 export const KeepAlive: FC<KeepAliveProps> = React.memo(({ children, uid }) => {
+  const { active } = useKeepAlive();
   const renderedUidListRef = useRef([]);
 
   if (!renderedUidListRef.current.includes(uid)) {
@@ -255,7 +258,7 @@ export const KeepAlive: FC<KeepAliveProps> = React.memo(({ children, uid }) => {
   return (
     <>
       {renderedUidListRef.current.map((renderedUid) => (
-        <KeepAliveProvider active={renderedUid === uid} key={renderedUid}>
+        <KeepAliveProvider active={renderedUid === uid} key={renderedUid} parentActive={active}>
           {children(renderedUid)}
         </KeepAliveProvider>
       ))}
