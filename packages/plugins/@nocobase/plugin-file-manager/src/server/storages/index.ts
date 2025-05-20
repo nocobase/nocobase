@@ -34,7 +34,6 @@ export interface AttachmentModel {
   path: string;
   url?: string;
   storageId: number;
-  mimetype: string;
 }
 
 export abstract class StorageType {
