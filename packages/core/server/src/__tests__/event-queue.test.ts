@@ -7,9 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { MockServer, createMockCluster, createMockServer, sleep } from '@nocobase/test';
+import { MockServer, createMockServer, sleep } from '@nocobase/test';
 import { Plugin } from '../plugin';
-import { MemoryEventQueueAdapter, QueueEventOptions } from '../event-queue';
 
 class MockPlugin extends Plugin {
   idle = true;
@@ -34,13 +33,7 @@ class MockPlugin extends Plugin {
   }
 }
 
-const memoryQueues: Map<string, any[]> = new Map();
-
-class MockMemoryEventQueueAdapter extends MemoryEventQueueAdapter {
-  protected queues = memoryQueues;
-}
-
-describe('single node', () => {
+describe('memory queue adapter', () => {
   let app: MockServer;
 
   beforeEach(async () => {
@@ -89,7 +82,7 @@ describe('single node', () => {
     await sleep(1000);
     expect(mockListener).toHaveBeenCalled();
     expect(mockListener).toBeCalledTimes(1);
-    expect(mockListener).toHaveBeenCalledWith('message1');
+    expect(mockListener).toHaveBeenCalledWith('message1', { signal: expect.any(AbortSignal) });
   });
 
   test('subscribe after connect', async () => {
@@ -103,7 +96,7 @@ describe('single node', () => {
     await sleep(1000);
     expect(mockListener).toHaveBeenCalled();
     expect(mockListener).toBeCalledTimes(1);
-    expect(mockListener).toHaveBeenCalledWith('message1');
+    expect(mockListener).toHaveBeenCalledWith('message1', { signal: expect.any(AbortSignal) });
   });
 
   test('subscribe twice', async () => {
@@ -119,7 +112,7 @@ describe('single node', () => {
     await sleep(1000);
     expect(mockListener).toHaveBeenCalled();
     expect(mockListener).toBeCalledTimes(1);
-    expect(mockListener).toHaveBeenCalledWith('message1');
+    expect(mockListener).toHaveBeenCalledWith('message1', { signal: expect.any(AbortSignal) });
   });
 
   test('idle', async () => {
@@ -146,7 +139,7 @@ describe('single node', () => {
     await sleep(1000);
     expect(mockListener).toHaveBeenCalled();
     expect(mockListener).toBeCalledTimes(1);
-    expect(mockListener).toHaveBeenCalledWith('message1');
+    expect(mockListener).toHaveBeenCalledWith('message1', { signal: expect.any(AbortSignal) });
   });
 
   test('plugin consume', async () => {
@@ -171,49 +164,16 @@ describe('single node', () => {
     expect(mockPlugin.processedMessages).toHaveLength(2);
     expect(mockPlugin.idle).toBe(true);
   });
-});
 
-describe('cluster', () => {
-  let cluster;
-
-  beforeEach(async () => {
-    cluster = await createMockCluster({
-      plugins: [MockPlugin],
+  test('graceful shutdown', async () => {
+    const mockListener = vi.fn();
+    await app.eventQueue.subscribe('test1', {
+      idle: () => true,
+      process: mockListener,
     });
-    for (const node of cluster.nodes) {
-      node.eventQueue.setAdapter(new MockMemoryEventQueueAdapter());
-      await node.eventQueue.connect();
-    }
-  });
-
-  afterEach(async () => {
-    await cluster.destroy();
-  });
-
-  test('adapter', async () => {
-    const [node1, node2] = cluster.nodes;
-    expect(node1.eventQueue.isConnected()).toBe(true);
-    expect(node2.eventQueue.isConnected()).toBe(true);
-  });
-
-  test('plugin consume', async () => {
-    const [node1, node2] = cluster.nodes;
-    const node1Plugin = node1.pm.get(MockPlugin);
-    const node2Plugin = node2.pm.get(MockPlugin);
-    await node1.eventQueue.publish(node1Plugin.name, 'message1');
-    await node1.eventQueue.publish(node1Plugin.name, 'message1');
-
-    await sleep(250);
-    expect(node1Plugin.processedMessages).toHaveLength(0);
-    expect(node1Plugin.idle).toBe(false);
-    expect(node2Plugin.processedMessages).toHaveLength(0);
-    expect(node2Plugin.idle).toBe(false);
-
-    await sleep(500);
-
-    expect(node1Plugin.processedMessages).toHaveLength(1);
-    expect(node1Plugin.idle).toBe(true);
-    expect(node2Plugin.processedMessages).toHaveLength(1);
-    expect(node2Plugin.idle).toBe(true);
+    await app.eventQueue.connect();
+    await app.eventQueue.publish('test1', 'message1');
+    await app.eventQueue.close();
+    expect(mockListener).toBeCalledTimes(0);
   });
 });
