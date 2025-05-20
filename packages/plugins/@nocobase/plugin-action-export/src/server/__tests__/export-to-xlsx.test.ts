@@ -1465,7 +1465,7 @@ describe('export to xlsx', () => {
       limit: 10,
       columns: [{ dataIndex: ['richText'], defaultTitle: 'richText' }],
     });
-
+    await exporter.run();
     const buffer = exporter.getXlsxBuffer();
     exporter.cleanOutputFile();
     expect(buffer).exist;
