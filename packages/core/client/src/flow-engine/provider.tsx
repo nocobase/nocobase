@@ -1,5 +1,5 @@
 import React, { createContext, useContext } from 'react';
-import { FlowEngine } from './flow-engine';
+import { FlowEngine } from './flowEngine';
 
 interface FlowEngineProviderProps {
   engine: FlowEngine;
@@ -10,10 +10,6 @@ const FlowEngineContext = createContext<FlowEngine | null>(null);
 
 export const FlowEngineProvider: React.FC<FlowEngineProviderProps> = (props) => {
   const { engine, children } = props;
-
-  // engine is now guaranteed to be provided by props.
-  // No need for useMemo here as the stability of the engine instance 
-  // is the responsibility of the parent component providing it.
   return <FlowEngineContext.Provider value={engine}>{children}</FlowEngineContext.Provider>;
 };
 

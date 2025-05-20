@@ -82,7 +82,7 @@ class DemoPlugin extends Plugin {
     });
 
     // 3. 注册设置删除属性的流程
-    this.app.flowEngine.registerFlow({
+    this.app.flowEngine.registerFlow('ButtonModel', {
       key: 'setDeletePropsFlow',
       title: '设置删除按钮属性',
       steps: {
@@ -139,7 +139,7 @@ class DemoPlugin extends Plugin {
     });
 
     // 4. 注册按钮操作流程
-    this.app.flowEngine.registerFlow({
+    this.app.flowEngine.registerFlow('ButtonModel', {
       key: 'buttonActionFlow',
       title: '按钮操作流程',
       on: {

@@ -248,7 +248,7 @@ class DemoPlugin extends Plugin {
             });
         } });
 
-        this.app.flowEngine.registerFlow({
+        this.app.flowEngine.registerFlow('TableBlockModel', {
             key: 'block:tabledemo',
             title: '表格区块配置流程',
             steps: {
@@ -260,10 +260,10 @@ class DemoPlugin extends Plugin {
             },
         });
 
-        this.app.flowEngine.registerFlow({ key: 'flow:tabledemo:reload', title:'表格刷新', on: { eventName: 'tabledemo:reload' }, steps: { run: { use: 'action:tabledemo:reload' } } });
-        this.app.flowEngine.registerFlow({ key: 'flow:tabledemo:create', title:'新增记录', on: { eventName: 'tabledemo:create' }, steps: { run: { use: 'action:tabledemo:create' } } });
-        this.app.flowEngine.registerFlow({ key: 'flow:tabledemo:edit', title:'编辑记录', on: { eventName: 'tabledemo:rowEdit' }, steps: { run: { use: 'action:tabledemo:edit' } } });
-        this.app.flowEngine.registerFlow({ key: 'flow:tabledemo:delete', title:'删除记录', on: { eventName: 'tabledemo:rowDelete' }, steps: { run: { use: 'action:tabledemo:delete' } } });
+        this.app.flowEngine.registerFlow('TableBlockModel', { key: 'flow:tabledemo:reload', title:'表格刷新', on: { eventName: 'tabledemo:reload' }, steps: { run: { use: 'action:tabledemo:reload' } } });
+        this.app.flowEngine.registerFlow('TableBlockModel', { key: 'flow:tabledemo:create', title:'新增记录', on: { eventName: 'tabledemo:create' }, steps: { run: { use: 'action:tabledemo:create' } } });
+        this.app.flowEngine.registerFlow('TableBlockModel', { key: 'flow:tabledemo:edit', title:'编辑记录', on: { eventName: 'tabledemo:rowEdit' }, steps: { run: { use: 'action:tabledemo:edit' } } });
+        this.app.flowEngine.registerFlow('TableBlockModel', { key: 'flow:tabledemo:delete', title:'删除记录', on: { eventName: 'tabledemo:rowDelete' }, steps: { run: { use: 'action:tabledemo:delete' } } });
 
 
         this.app.router.add('root', { path: '/', Component: Demo });

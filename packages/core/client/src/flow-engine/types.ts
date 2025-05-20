@@ -1,7 +1,7 @@
 import { ISchema } from '@formily/json-schema';
 import type { FlowModel } from '@nocobase/client';
 import type { Application } from '../application/Application';
-import { FlowEngine } from './flow-engine';
+import { FlowEngine } from './flowEngine';
 
 /**
  * Constructor for model classes.

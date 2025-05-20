@@ -19,18 +19,14 @@ interface FlowSettingsProps {
  * @param flowKey - 流程的key
  */
 const FlowSettings: React.FC<FlowSettingsProps> = observer(({ uid, flowKey, modelClassName }) => {
-  const flowEngine = useFlowEngine();
   const model = useModelById(uid, modelClassName);
-
-  if (!flowEngine) {
-    return <Alert message="flowEngine未初始化" type="error" />;
-  }
-
+  const flowEngine = model.flowEngine;
+  
   if (!model) {
     return <Alert message={`未找到ID为 ${uid} 的模型`} type="error" />;
   }
 
-  const flow = flowEngine.getFlow(flowKey);
+  const flow = model.getFlow(flowKey);
   if (!flow || !flow.steps) {
     return <Alert message={`未找到Key为 ${flowKey} 的流程或流程没有步骤`} type="error" />;
   }

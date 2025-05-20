@@ -1,6 +1,6 @@
 import { observable, action, define } from '@formily/reactive';
 import { FlowEngine } from '../../flow-engine';
-import type { FlowContext, ActionStepDefinition, InlineStepDefinition, StepDefinition } from '../../flow-engine/types';
+import type { FlowContext, ActionStepDefinition, InlineStepDefinition, StepDefinition, FlowDefinition } from '../../flow-engine/types';
 import type { Application } from '../../application/Application';
 
 export interface IModelComponentProps {
@@ -10,7 +10,93 @@ export interface IModelComponentProps {
 // 定义只读版本的props类型
 export type ReadonlyModelProps = Readonly<IModelComponentProps>;
 
+// 存储所有已注册的流程
+const flows: Map<string, FlowDefinition> = new Map();
+
 export class FlowModel {
+  /**
+   * 注册一个流程 (Flow)。
+   * @param {string | FlowDefinition} keyOrDefinition 流程的 Key 或 FlowDefinition 对象。
+   *        如果为字符串，则为流程 Key，需要配合 flowDefinition 参数。
+   *        如果为对象，则为包含 key 属性的完整 FlowDefinition。
+   * @param {FlowDefinition} [flowDefinition] 当第一个参数为流程 Key 时，此参数为流程的定义。
+   * @returns {void}
+   */
+  public static registerFlow(keyOrDefinition: string | FlowDefinition, flowDefinition?: FlowDefinition): void {
+    let definition: FlowDefinition;
+    let key: string;
+    
+    if (typeof keyOrDefinition === 'string' && flowDefinition) {
+      key = keyOrDefinition;
+      definition = {
+        ...flowDefinition,
+        key
+      };
+    } else if (typeof keyOrDefinition === 'object' && 'key' in keyOrDefinition) {
+      key = keyOrDefinition.key;
+      definition = keyOrDefinition;
+    } else {
+      throw new Error('Invalid arguments for registerFlow');
+    }
+    
+    if (flows.has(key)) {
+      console.warn(`FlowModel: Flow with key '${key}' is already registered and will be overwritten.`);
+    }
+    flows.set(key, definition);
+  }
+
+  /**
+   * 获取已注册的流程定义。
+   * 如果当前类不存在对应的flow，会继续往父类查找。
+   * @param {string} key 流程 Key。
+   * @returns {FlowDefinition | undefined} 流程定义，如果未找到则返回 undefined。
+   */
+  public getFlow(key: string): FlowDefinition | undefined {
+    // 先从当前类的flows中查找
+    const flow = flows.get(key);
+    if (flow) {
+      return flow;
+    }
+    
+    // 如果当前类没有找到，尝试在父类中查找
+    // 在静态方法中，this指向的是当前类本身
+    const currentClass = this as any;
+    const parentClass = Object.getPrototypeOf(currentClass);
+    
+    // 检查父类是否有getFlow方法
+    if (parentClass && typeof parentClass.getFlow === 'function') {
+      return parentClass.getFlow(key);
+    }
+    
+    return undefined;
+  }
+
+  /**
+   * 获取所有已注册的流程定义，包括从父类继承的流程。
+   * @returns {Map<string, FlowDefinition>} 一个包含所有流程定义的 Map 对象，Key 为流程 Key，Value 为流程定义。
+   */
+  public static getFlows(): Map<string, FlowDefinition> {
+    // 创建一个新的Map来存储所有流程
+    const allFlows = new Map(flows);
+    
+    // 尝试从父类获取流程
+    // 在静态方法中，this指向的是当前类本身
+    const currentClass = this as any;
+    const parentClass = Object.getPrototypeOf(currentClass);
+    
+    if (parentClass && typeof parentClass.getFlows === 'function') {
+      const parentFlows = parentClass.getFlows();
+      // 合并父类的流程，但如果当前类已有同名流程则不覆盖
+      for (const [key, flow] of parentFlows.entries()) {
+        if (!allFlows.has(key)) {
+          allFlows.set(key, flow);
+        }
+      }
+    }
+    
+    return allFlows;
+  }
+
   public readonly uid: string;
   public props: IModelComponentProps;
   public hidden: boolean;
@@ -119,7 +205,8 @@ export class FlowModel {
       return Promise.reject(new Error('FlowEngine or Application not available for applyFlow'));
     }
     
-    const flow = currentFlowEngine.getFlow(flowKey);
+    let flow = this.getFlow(flowKey);
+    
     if (!flow) {
       console.error(`BaseModel.applyFlow: Flow with key '${flowKey}' not found.`);
       return Promise.reject(new Error(`Flow '${flowKey}' not found.`));
@@ -191,7 +278,10 @@ export class FlowModel {
       console.warn('FlowEngine or Application not available on this model for dispatchEvent. Check model.app and model.app.flowEngine setup.');
       return;
     }
-    const flows = currentFlowEngine.getFlows();
+    
+    // 获取所有流程
+    const constructor = this.constructor as typeof FlowModel;
+    const allFlows = constructor.getFlows();
 
     const baseContextForFlow: Omit<FlowContext, '$exit'> = {
         engine: currentFlowEngine,
@@ -200,7 +290,7 @@ export class FlowModel {
         ...(context || {}),
     };
 
-    flows.forEach((flow) => {
+    allFlows.forEach((flow) => {
       if (flow.on && flow.on.eventName === eventName) {
         console.log(`BaseModel '${this.uid}' dispatching event '${eventName}' to flow '${flow.key}'.`);
         this.applyFlow(flow.key, baseContextForFlow as any).catch(error => {

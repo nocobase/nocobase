@@ -72,8 +72,6 @@ export class FlowEngine {
   private modelClasses: Map<string, ModelConstructor> = new Map();
   /** @private Stores created model instances. */
   private modelInstances: Map<string, any> = new Map();
-  /** @private Stores registered flow definitions. */
-  private flows: Map<string, FlowDefinition> = new Map();
 
   /**
    * 注册一个 Action。
@@ -193,54 +191,25 @@ export class FlowEngine {
   /**
    * 注册一个流程 (Flow)。
    * 流程是一系列步骤的定义，可以由事件触发或手动应用。
-   * @param {string | FlowDefinition} keyOrDefinition 流程的 Key 或 FlowDefinition 对象。
-   *        如果为字符串，则为流程 Key，需要配合 flowDefinition 参数。
-   *        如果为对象，则为包含 key 属性的完整 FlowDefinition。
-   * @param {FlowDefinition} [flowDefinition] 当第一个参数为流程 Key 时，此参数为流程的定义。
+   * @param {string} modelClass 模型类名称。
+   * @param {string} flowKey 流程名称。
+   * @param {FlowDefinition} flowDefinition 流程定义。
    * @returns {void}
-   * @example
-   * // 方式一: 传入 Key 和定义
-   * flowEngine.registerFlow('myFlow', { steps: { ... } });
-   * // 方式二: 传入包含 key 的 FlowDefinition 对象
-   * flowEngine.registerFlow({ key: 'myFlow', steps: { ... } });
    */
-  public registerFlow(keyOrDefinition: string | FlowDefinition, flowDefinition?: FlowDefinition): void {
-    let definition: FlowDefinition;
-    let key: string;
+  public registerFlow(modelClassName: string, flowDefinition: FlowDefinition): void {
+    const ModelClass = this.getModelClass(modelClassName);
     
-    if (typeof keyOrDefinition === 'string' && flowDefinition) {
-      key = keyOrDefinition;
-      definition = {
-        ...flowDefinition,
-        key
-      };
-    } else if (typeof keyOrDefinition === 'object' && 'key' in keyOrDefinition) {
-      key = keyOrDefinition.key;
-      definition = keyOrDefinition;
-    } else {
-      throw new Error('Invalid arguments for registerFlow');
+    // 检查ModelClass是否存在
+    if (!ModelClass) {
+      console.warn(`FlowEngine: Model class '${modelClassName}' not found. Flow '${flowDefinition.key}' will not be registered.`);
+      return;
     }
     
-    if (this.flows.has(key)) {
-      console.warn(`FlowEngine: Flow with key '${key}' is already registered and will be overwritten.`);
+    if (typeof (ModelClass as any).registerFlow !== 'function') {
+      console.warn(`FlowEngine: Model class '${modelClassName}' does not have a static registerFlow method. Flow '${flowDefinition.key}' will not be registered.`);
+      return;
     }
-    this.flows.set(key, definition);
-  }
-
-  /**
-   * 获取已注册的流程定义。
-   * @param {string} key 流程 Key。
-   * @returns {FlowDefinition | undefined} 流程定义，如果未找到则返回 undefined。
-   */
-  public getFlow(key: string): FlowDefinition | undefined {
-    return this.flows.get(key);
-  }
-
-  /**
-   * 获取所有已注册的流程定义。
-   * @returns {Map<string, FlowDefinition>} 一个包含所有流程定义的 Map 对象，Key 为流程 Key，Value 为流程定义。
-   */
-  public getFlows(): Map<string, FlowDefinition> {
-    return this.flows;
+    
+    (ModelClass as any).registerFlow(flowDefinition);
   }
 } 

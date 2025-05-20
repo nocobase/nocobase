@@ -103,7 +103,7 @@ class DemoPlugin extends Plugin {
             }),
         });
 
-        this.app.flowEngine.registerFlow({
+        this.app.flowEngine.registerFlow('BlockModel', {
             key: 'block:markdown',
             title: 'Markdown区块流程',
             steps: {
