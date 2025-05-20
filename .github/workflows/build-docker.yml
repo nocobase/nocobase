@@ -1,15 +1,15 @@
 name: Build full docker image
 
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
-
 on:
   workflow_dispatch:
     inputs:
       tag_name:
         description: 'Tag name'
         required: true
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}-${{ inputs.tag_name }}
+  cancel-in-progress: true
 
 jobs:
   push-docker:
