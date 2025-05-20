@@ -1,11 +1,15 @@
-name: Release
+name: Build full docker image
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 on:
-  push:
+  workflow_dispatch:
+    inputs:
+      tag_name:
+        description: 'Tag name'
+        required: true
 
 jobs:
   push-docker:
@@ -34,7 +38,7 @@ jobs:
           context: ./docker/nocobase
           file: ./docker/nocobase/Dockerfile-cn
           build-args: |
-            CNA_VERSION=beta
+            CNA_VERSION=${{ inputs.tag_name }}
           platforms: linux/amd64,linux/arm64
           push: true
-          tags: nocobase/nocobase:beta-full,${{ secrets.ALI_DOCKER_PUBLIC_REGISTRY }}/nocobase/nocobase:beta-full
+          tags: nocobase/nocobase:${{ inputs.tag_name }}-full,${{ secrets.ALI_DOCKER_PUBLIC_REGISTRY }}/nocobase/nocobase:${{ inputs.tag_name }}-full
