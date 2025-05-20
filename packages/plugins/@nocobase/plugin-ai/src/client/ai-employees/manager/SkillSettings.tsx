@@ -231,7 +231,7 @@ export const Skills: React.FC = () => {
           bordered
           dataSource={field.value || []}
           renderItem={(item: string) => {
-            const [name] = item.split('.');
+            const [name] = item.split('-');
             const root = data?.find((tool) => tool.name === name);
             if (!root) {
               return null;

@@ -36,7 +36,7 @@ const Code = (props: any) => {
   const { message } = App.useApp();
   const copy = () => {
     navigator.clipboard.writeText(content);
-    message.success(t('Copied to clipboard'));
+    message.success(t('Copied'));
   };
 
   return match ? (
@@ -71,14 +71,35 @@ const Code = (props: any) => {
 };
 
 const Echarts = (props: any) => {
-  const { children } = props;
+  const { children, className, ...rest } = props;
+  const t = useT();
+  const { token } = useToken();
   const { isDarkTheme } = useGlobalTheme();
   let option = {};
   try {
     const configStr = React.Children.toArray(children).join('');
     option = JSON.parse(configStr);
   } catch (err) {
-    return <div style={{ color: 'red' }}>Invalid ECharts JSON</div>;
+    return (
+      <Card
+        size="small"
+        title={t('ECharts')}
+        styles={{
+          title: {
+            fontSize: token.fontSize,
+            fontWeight: 400,
+          },
+          body: {
+            width: '100%',
+            fontSize: token.fontSizeSM,
+          },
+        }}
+      >
+        <SyntaxHighlighter {...rest} PreTag="div" language={'json'} style={isDarkTheme ? dark : defaultStyle}>
+          {String(children).replace(/\n$/, '')}
+        </SyntaxHighlighter>
+      </Card>
+    );
   }
   return <ReactECharts option={option} theme={!isDarkTheme ? 'default' : 'defaultDark'} />;
 };

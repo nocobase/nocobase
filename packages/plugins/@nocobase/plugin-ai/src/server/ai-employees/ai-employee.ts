@@ -140,7 +140,9 @@ export class AIEmployee {
           model,
           provider: service.provider,
           autoCallTool: this.employee.skillSettings?.autoCall,
+          usage_metadata: {},
         },
+        toolCalls: null,
       };
 
       if (signal.aborted) {
@@ -148,11 +150,11 @@ export class AIEmployee {
       }
 
       if (toolCalls?.length) {
-        values['toolCalls'] = toolCalls;
+        values.toolCalls = toolCalls;
       }
 
       if (gathered?.usage_metadata) {
-        values.metadata['usage_metadata'] = gathered.usage_metadata;
+        values.metadata.usage_metadata = gathered.usage_metadata;
       }
 
       if (messageId) {

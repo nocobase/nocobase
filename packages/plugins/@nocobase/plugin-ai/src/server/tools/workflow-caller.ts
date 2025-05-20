@@ -110,7 +110,7 @@ export const workflowCaller: ToolOptions = {
     return workflows.map((workflow: Workflow) => {
       const config = workflow.config;
       return {
-        name: `workflowCaller.${workflow.key}`,
+        name: `workflowCaller-${workflow.key}`,
         title: workflow.title,
         description: workflow.description,
         schema: buildSchema(config),
@@ -129,7 +129,7 @@ export const workflowCaller: ToolOptions = {
     }
     const config = workflow.config;
     return {
-      name: `workflowCaller.${workflow.key}`,
+      name: `workflowCaller-${workflow.key}`,
       title: workflow.title,
       description: workflow.description,
       schema: buildSchema(config),

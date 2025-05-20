@@ -75,7 +75,7 @@ export class AIManager {
   }
 
   async getTool(name: string, raw = false) {
-    const [root, child] = name.split('.');
+    const [root, child] = name.split('-');
     const tool = this.tools.get(root);
     if (!tool) return null;
 
