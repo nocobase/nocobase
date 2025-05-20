@@ -157,7 +157,12 @@ export const KeepAliveProvider: FC<{ active: boolean }> = memo(({ children, acti
     </RouteContext.Provider>
   );
 
-  return <div ref={contentRef}>{contextProviders}</div>;
+  return (
+    // Only extract the inner div from the DOM tree, keep the root element of the component to prevent React errors when unmounting
+    <div>
+      <div ref={contentRef}>{contextProviders}</div>
+    </div>
+  );
 });
 
 /**
