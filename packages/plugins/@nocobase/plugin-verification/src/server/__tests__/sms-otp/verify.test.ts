@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { MockServer, createMockServer } from '@nocobase/test';
+import { MockServer, createMockServer, sleep } from '@nocobase/test';
 import PluginVerficationServer from '../../Plugin';
 import { VerificationManager } from '../../verification-manager';
 import { SMSProvider } from '../../otp-verification/sms/providers';
@@ -24,9 +24,23 @@ describe('verify', async () => {
   let agent: any;
 
   beforeEach(async () => {
-    app = await createMockServer({
-      plugins: ['verification'],
-    });
+    if (process.env.CACHE_REDIS_URL) {
+      app = await createMockServer({
+        cacheManager: {
+          defaultStore: 'redis',
+          stores: {
+            redis: {
+              url: process.env.CACHE_REDIS_URL,
+            },
+          },
+        },
+        plugins: ['verification'],
+      });
+    } else {
+      app = await createMockServer({
+        plugins: ['verification'],
+      });
+    }
     agent = app.agent();
     app.resourceManager.define({
       name: 'test',
@@ -256,5 +270,60 @@ describe('verify', async () => {
     });
     expect(res1.status).toBe(400);
     expect(res1.error.text).toBe('Verification code is invalid');
+  });
+
+  it('verify failed rate limit', async () => {
+    manager.registerAction('test:verify', {
+      getBoundInfoFromCtx: async (ctx) => ctx.action.params.values || {},
+    });
+    await app.db.getRepository('verifiers').create({
+      values: {
+        name: 'test',
+        title: 'Test',
+        verificationType: 'sms-otp',
+        options: {
+          provider: 'mock',
+          settings: {},
+        },
+      },
+    });
+    const res = await agent.resource('smsOTP').create({
+      values: {
+        verifier: 'test',
+        uuid: '13888888888',
+        action: 'test:verify',
+      },
+    });
+    expect(res.status).toBe(200);
+    const record = await app.db.getRepository('otpRecords').findOne({
+      filter: {
+        action: 'test:verify',
+        receiver: '13888888888',
+        verifierName: 'test',
+      },
+    });
+    const promises = [];
+    for (let i = 0; i < 6; i++) {
+      promises.push(
+        await agent.resource('test').verify({
+          values: {
+            verifier: 'test',
+            uuid: '13888888888',
+            code: '123456',
+          },
+        }),
+      );
+    }
+    const resps = await Promise.all(promises);
+    expect(resps.filter((r) => r.status === 429).length).toBe(1);
+    expect(resps.filter((r) => r.status === 400).length).toBe(5);
+    const res1 = await agent.resource('test').verify({
+      values: {
+        verifier: 'test',
+        uuid: '13888888888',
+        code: record.code,
+      },
+    });
+    expect(res1.status).toBe(429);
   });
 });

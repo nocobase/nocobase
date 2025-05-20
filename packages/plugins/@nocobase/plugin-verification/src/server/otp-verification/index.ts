@@ -39,7 +39,7 @@ export class OTPVerification extends Verification {
       });
       this.ctx.throw(500, 'Internal Server Error');
     }
-    if (attempts >= this.maxVerifyAttempts) {
+    if (attempts > this.maxVerifyAttempts) {
       this.ctx.throw(
         429,
         this.ctx.t('Too many failed attempts. Please request a new verification code.', { ns: pkg.name }),
@@ -89,7 +89,7 @@ export class OTPVerification extends Verification {
         this.ctx.throw(500, 'Internal Server Error');
       }
 
-      if (attempts >= this.maxVerifyAttempts) {
+      if (attempts > this.maxVerifyAttempts) {
         this.ctx.throw(
           429,
           this.ctx.t('Too many failed attempts. Please request a new verification code', { ns: pkg.name }),
