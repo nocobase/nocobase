@@ -5,6 +5,18 @@ echo "COMMIT_HASH: $(cat /app/commit_hash.txt)"
 
 export NOCOBASE_RUNNING_IN_DOCKER=true
 
+if [ -f /opt/libreoffice24.8.zip ] && [ ! -d /opt/libreoffice24.8 ]; then
+  echo "Unzipping /opt/libreoffice24.8.zip..."
+  unzip /opt/libreoffice24.8.zip -d /opt/
+fi
+
+if [ -f /opt/instantclient_19_25.zip ] && [ ! -d /opt/instantclient_19_25 ]; then
+  echo "Unzipping /opt/instantclient_19_25.zip..."
+  unzip /opt/instantclient_19_25.zip -d /opt/
+  echo "/opt/instantclient_19_25" > /etc/ld.so.conf.d/oracle-instantclient.conf
+  ldconfig
+fi
+
 if [ ! -d "/app/nocobase" ]; then
   mkdir nocobase
 fi
