@@ -12,7 +12,7 @@ import ProLayout, { RouteContext, RouteContextType } from '@ant-design/pro-layou
 import { HeaderViewProps } from '@ant-design/pro-layout/es/components/Header';
 import { css } from '@emotion/css';
 import { theme as antdTheme, ConfigProvider, Popover, Result, Tooltip } from 'antd';
-import React, { createContext, FC, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import React, { createContext, FC, memo, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import ReactDOM from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import { Link, Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom';
@@ -38,6 +38,7 @@ import {
   useToken,
 } from '../../../';
 import {
+  CurrentPageUidContext,
   CurrentPageUidProvider,
   CurrentTabUidProvider,
   IsSubPageClosedByPageMenuProvider,
@@ -49,22 +50,22 @@ import { AppNotFound } from '../../../common/AppNotFound';
 import { withTooltipComponent } from '../../../hoc/withTooltipComponent';
 import { menuItemInitializer } from '../../../modules/menu/menuItemInitializer';
 import { useMenuTranslation } from '../../../schema-component/antd/menu/locale';
-import { KeepAlive } from './KeepAlive';
+import { KeepAlive, useKeepAlive } from './KeepAlive';
 import { NocoBaseDesktopRoute, NocoBaseDesktopRouteType } from './convertRoutesToSchema';
 import { MenuSchemaToolbar, ResetThemeTokenAndKeepAlgorithm } from './menuItemSettings';
 import { userCenterSettings } from './userCenterSettings';
 import { createStyles } from 'antd-style';
 
-export { KeepAlive, NocoBaseDesktopRouteType };
+export { KeepAlive, NocoBaseDesktopRouteType, useKeepAlive };
 
 export const NocoBaseRouteContext = createContext<NocoBaseDesktopRoute | null>(null);
 NocoBaseRouteContext.displayName = 'NocoBaseRouteContext';
 
-export const CurrentRouteProvider: FC<{ uid: string }> = ({ children, uid }) => {
+export const CurrentRouteProvider: FC<{ uid: string }> = memo(({ children, uid }) => {
   const { allAccessRoutes } = useAllAccessDesktopRoutes();
   const routeNode = useMemo(() => findRouteBySchemaUid(uid, allAccessRoutes), [uid, allAccessRoutes]);
   return <NocoBaseRouteContext.Provider value={routeNode}>{children}</NocoBaseRouteContext.Provider>;
-};
+});
 
 export const useCurrentRoute = () => {
   return useContext(NocoBaseRouteContext) || {};
@@ -144,9 +145,11 @@ export const AdminDynamicPage = () => {
   return (
     <KeepAlive uid={currentPageUid}>
       {(uid) => (
-        <CurrentRouteProvider uid={uid}>
-          <RemoteSchemaComponent uid={uid} />
-        </CurrentRouteProvider>
+        <CurrentPageUidContext.Provider value={uid}>
+          <CurrentRouteProvider uid={uid}>
+            <RemoteSchemaComponent uid={uid} />
+          </CurrentRouteProvider>
+        </CurrentPageUidContext.Provider>
       )}
     </KeepAlive>
   );

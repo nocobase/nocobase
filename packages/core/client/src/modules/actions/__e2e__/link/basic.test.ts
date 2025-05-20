@@ -37,9 +37,9 @@ test.describe('Link', () => {
       .hover();
     await page.getByLabel('designer-schema-settings-Action.Link-actionSettings:link-users').first().hover();
     await page.getByRole('menuitem', { name: 'Edit link' }).click();
-    await page.getByLabel('block-item-users-URL').getByLabel('textbox').click();
+    await page.getByLabel('block-item-users-table-URL').getByLabel('textbox').click();
     await page
-      .getByLabel('block-item-users-URL')
+      .getByLabel('block-item-users-table-URL')
       .getByLabel('textbox')
       .fill(await nocoPage.getUrl());
     await page.getByPlaceholder('Name').fill('id');
@@ -107,7 +107,7 @@ test.describe('Link', () => {
     await page.getByLabel('action-Action.Link-Link-').hover();
     await page.getByLabel('designer-schema-settings-Action.Link-actionSettings:link-users').hover();
     await page.getByRole('menuitem', { name: 'Edit link' }).click();
-    await page.getByLabel('block-item-users-URL').getByLabel('textbox').fill(otherPageUrl);
+    await page.getByLabel('block-item-users-table-URL').getByLabel('textbox').fill(otherPageUrl);
     await page.getByRole('button', { name: 'OK', exact: true }).click();
 
     await page.getByLabel('action-Action.Link-Link-').first().click();
