@@ -60,6 +60,7 @@ describe('verify', async () => {
   });
 
   afterEach(async () => {
+    await app.cache.reset();
     await app.db.clean({ drop: true });
     await app.destroy();
   });
