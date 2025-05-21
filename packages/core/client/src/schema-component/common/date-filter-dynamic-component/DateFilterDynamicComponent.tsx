@@ -66,7 +66,7 @@ export const DateFilterDynamicComponent = (props) => {
   const compile = useCompile();
   const { t } = useTranslation();
   return (
-    <Space.Compact style={{ width: '100%' }}>
+    <Space.Compact style={{ ...props.style, width: '100%' }}>
       <Select
         options={compile(options)}
         {...props}
@@ -95,7 +95,7 @@ export const DateFilterDynamicComponent = (props) => {
         <InputNumber
           key="number"
           value={value?.number}
-          style={{ minWidth: 120 }}
+          // style={{ minWidth: 100 }}
           onChange={(val) => {
             const obj = {
               ...value,
@@ -107,7 +107,7 @@ export const DateFilterDynamicComponent = (props) => {
         <Select
           key="unit"
           value={value?.unit}
-          style={{ minWidth: 80, maxWidth: 100 }}
+          style={{ maxWidth: 100 }}
           onChange={(val) => {
             const obj = {
               ...value,
