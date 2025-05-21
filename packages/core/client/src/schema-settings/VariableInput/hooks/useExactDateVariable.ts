@@ -10,8 +10,6 @@
 import { Schema } from '@formily/json-schema';
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useOperators } from '../../../block-provider/CollectOperators';
-import { useDatePickerContext } from '../../../schema-component/antd/date-picker/DatePicker';
 import { getDateExact } from '../../../schema-component/antd/date-picker/util';
 import { datetime } from '../../../collection-manager/interfaces/properties/operators';
 import { useFlag } from '../../../flag-provider';
@@ -97,8 +95,6 @@ export const useExactDateVariable = ({ schema, targetFieldSchema }: Props = {}) 
         operators: datetime,
       },
     ].filter((v) => v.value);
-    console.log(dateOptions);
-
     return {
       label: t('Date variables'),
       value: '$nExactDate',

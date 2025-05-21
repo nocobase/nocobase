@@ -55,6 +55,26 @@ const getNow = (tz?: string): Dayjs => {
   return dayjs().tz(tz); // IANA 时区
 };
 
+export const getOffsetRangeByParams = (params: RangeParams): [string, string] => {
+  const { type, unit = 'day', number = 1, timezone } = params;
+  const now = getNow(timezone);
+  const actualUnit: any = unit === 'week' ? 'isoWeek' : unit;
+
+  let start: dayjs.Dayjs;
+  let end: dayjs.Dayjs;
+
+  if (type === 'past') {
+    start = now.startOf(actualUnit).subtract(number - 1, unit as any);
+    end = now.endOf(actualUnit);
+  } else if (type === 'future') {
+    start = now.startOf(actualUnit);
+    end = start.add(number - 1, unit as any).endOf(actualUnit);
+  } else {
+    throw new Error(`Unsupported type: ${type}`);
+  }
+  return [start.format('YYYY-MM-DD HH:mm:ss'), end.format('YYYY-MM-DD HH:mm:ss')];
+};
+
 const getStart = (offset: number, unit: DateUnit, tz?: string): Dayjs => {
   const actualUnit = unit === 'isoWeek' ? 'week' : unit;
   return getNow(tz)
@@ -67,20 +87,6 @@ const getEnd = (offset: number, unit: DateUnit, tz?: string): Dayjs => {
   return getNow(tz)
     .add(offset, actualUnit as dayjs.ManipulateType)
     .endOf(unit as UnitType);
-};
-
-const getOffsetRangeByParams = (params: RangeParams): [string, string] => {
-  const { type, unit = 'day', number = 0, timezone } = params;
-  const actualUnit = unit === 'week' ? 'isoWeek' : unit;
-  const base =
-    type === 'past'
-      ? getNow(timezone).subtract(number, unit as UnitType)
-      : getNow(timezone).add(number, unit as UnitType);
-
-  return [
-    base.startOf(actualUnit as UnitType).format('YYYY-MM-DD HH:mm:ss'),
-    base.endOf(actualUnit as UnitType).format('YYYY-MM-DD HH:mm:ss'),
-  ];
 };
 
 const strategies: Record<Exclude<RangeType, 'past' | 'future'>, (params?: RangeParams) => [Dayjs, Dayjs]> = {

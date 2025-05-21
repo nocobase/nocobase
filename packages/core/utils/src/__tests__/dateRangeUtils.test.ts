@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { getDayRangeByParams } from '../client';
+import { getDayRangeByParams, getOffsetRangeByParams } from '../client';
 import dayjs from 'dayjs';
 
 describe('getDayRangeByParams', () => {
@@ -43,9 +43,10 @@ describe('getDayRangeByParams', () => {
       number: 2,
       timezone: 'UTC',
     });
-    const now = dayjs().utc().add(2, 'month');
-    expect(start).toBe(now.startOf('month').format(format));
-    expect(end).toBe(now.endOf('month').format(format));
+    const now = dayjs().startOf('month'); // 当前月起始
+    const expectedEnd = now.add(1, 'month').endOf('month'); // 未来2个月，实际是当前月 + 下一个月的结束
+    expect(start).toBe(now.format('YYYY-MM-DD HH:mm:ss'));
+    expect(end).toBe(expectedEnd.format('YYYY-MM-DD HH:mm:ss'));
   });
 
   it('should throw error for invalid timezone', () => {
@@ -64,5 +65,61 @@ describe('getDayRangeByParams', () => {
       .subtract(1, 'quarter');
     expect(start).toBe(now.startOf('quarter').format(format));
     expect(end).toBe(now.endOf('quarter').format(format));
+  });
+});
+
+describe('getOffsetRangeByParams', () => {
+  it('应返回过去1天的起止时间', () => {
+    const [start, end] = getOffsetRangeByParams({ type: 'past', unit: 'day', number: 1 });
+    const now = dayjs();
+    expect(start).toBe(now.startOf('day').format('YYYY-MM-DD HH:mm:ss'));
+    expect(end).toBe(now.endOf('day').format('YYYY-MM-DD HH:mm:ss'));
+  });
+
+  it('应返回未来3个月的起止时间', () => {
+    const [start, end] = getOffsetRangeByParams({ type: 'future', unit: 'month', number: 3 });
+    const now = dayjs().startOf('month');
+    const expectedEnd = now.add(2, 'month').endOf('month');
+    expect(start).toBe(now.format('YYYY-MM-DD HH:mm:ss'));
+    expect(end).toBe(expectedEnd.format('YYYY-MM-DD HH:mm:ss'));
+  });
+
+  it('应正确处理 isoWeek 单位', () => {
+    const [start, end] = getOffsetRangeByParams({ type: 'past', unit: 'week', number: 2 });
+    const now = dayjs();
+    const expectedStart = now.startOf('isoWeek').subtract(1, 'week');
+    const expectedEnd = now.endOf('isoWeek');
+    expect(start).toBe(expectedStart.format('YYYY-MM-DD HH:mm:ss'));
+    expect(end).toBe(expectedEnd.format('YYYY-MM-DD HH:mm:ss'));
+  });
+
+  it('应支持自定义 IANA 时区（如 Asia/Shanghai）', () => {
+    const [start, end] = getOffsetRangeByParams({
+      type: 'past',
+      unit: 'day',
+      number: 1,
+      timezone: 'Asia/Shanghai',
+    });
+    const now = dayjs().tz('Asia/Shanghai');
+    expect(start).toBe(now.startOf('day').format('YYYY-MM-DD HH:mm:ss'));
+    expect(end).toBe(now.endOf('day').format('YYYY-MM-DD HH:mm:ss'));
+  });
+
+  it('应支持 UTC 偏移时区（如 +08:00）', () => {
+    const [start, end] = getOffsetRangeByParams({
+      type: 'future',
+      unit: 'day',
+      number: 1,
+      timezone: '+08:00',
+    });
+    const now = dayjs().utcOffset(8 * 60);
+    expect(start).toBe(now.startOf('day').format('YYYY-MM-DD HH:mm:ss'));
+    expect(end).toBe(now.endOf('day').format('YYYY-MM-DD HH:mm:ss'));
+  });
+
+  it('当 type 非法时应抛出错误', () => {
+    expect(() => {
+      getOffsetRangeByParams({ type: 'invalid' as any });
+    }).toThrow('Unsupported type: invalid');
   });
 });
