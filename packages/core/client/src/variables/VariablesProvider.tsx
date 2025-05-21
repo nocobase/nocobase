@@ -113,6 +113,10 @@ const VariablesProvider = ({ children, filterVariables }: any) => {
           };
         }
 
+        if (_.isFunction(current)) {
+          break;
+        }
+
         const key = list[index];
         const currentVariablePath = list.slice(0, index + 1).join('.');
         const { fieldPath } = getFieldPath(currentVariablePath, _variableToCollectionName);

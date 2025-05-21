@@ -1085,14 +1085,12 @@ describe('useVariables', () => {
     await waitFor(() => {
       result.current.registerVariable({
         name: '$nestedFunc',
-        ctx: {
-          level1: ({ fieldOperator, variableName }) => {
-            return {
-              fromLevel1: true,
-              fieldOperator,
-              variableName,
-            };
-          }
+        ctx: ({ fieldOperator, variableName }) => {
+          return {
+            fromLevel1: true,
+            fieldOperator,
+            variableName,
+          };
         },
       });
     });
