@@ -81,12 +81,13 @@ describe('useBuiltinVariables', () => {
     // Arrange
     const mockVariable = {
       name: 'customVar',
-      label: 'Custom Variable',
-      useOption: () => ({
-        label: 'Custom Variable',
-        value: 'customVar'
+      useVariableSettings: () => ({
+        ctx: { customProp: 'test' },
+        options: {
+          label: 'Custom Variable',
+          value: 'customVar'
+        }
       }),
-      useCtx: () => ({ customProp: 'test' }),
     };
 
     // Register a custom variable
@@ -108,30 +109,33 @@ describe('useBuiltinVariables', () => {
     const mockVariables = [
       {
         name: 'customVar1',
-        label: 'Custom Variable 1',
-        useOption: () => ({
-          label: 'Custom Variable 1',
-          value: 'customVar1'
+        useVariableSettings: () => ({
+          ctx: { source: 'var1' },
+          options: {
+            label: 'Custom Variable 1',
+            value: 'customVar1'
+          }
         }),
-        useCtx: () => ({ source: 'var1' }),
       },
       {
         name: 'customVar2',
-        label: 'Custom Variable 2',
-        useOption: () => ({
-          label: 'Custom Variable 2',
-          value: 'customVar2'
+        useVariableSettings: () => ({
+          ctx: { source: 'var2' },
+          options: {
+            label: 'Custom Variable 2',
+            value: 'customVar2'
+          }
         }),
-        useCtx: () => ({ source: 'var2' }),
       },
       {
         name: 'customVar3',
-        label: 'Custom Variable 3',
-        useOption: () => ({
-          label: 'Custom Variable 3',
-          value: 'customVar3'
+        useVariableSettings: () => ({
+          ctx: { source: 'var3' },
+          options: {
+            label: 'Custom Variable 3',
+            value: 'customVar3'
+          }
         }),
-        useCtx: () => ({ source: 'var3' }),
       }
     ];
 
@@ -156,12 +160,13 @@ describe('useBuiltinVariables', () => {
     const mockCtxFn = vi.fn().mockReturnValue({ dynamicValue: 'computed' });
     const mockVariable = {
       name: 'functionalVar',
-      label: 'Functional Variable',
-      useOption: () => ({
-        label: 'Functional Variable',
-        value: 'functionalVar'
+      useVariableSettings: () => ({
+        ctx: mockCtxFn,
+        options: {
+          label: 'Functional Variable',
+          value: 'functionalVar'
+        }
       }),
-      useCtx: () => mockCtxFn,
     };
 
     // Register a custom variable with function useCtx

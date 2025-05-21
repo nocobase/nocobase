@@ -27,7 +27,7 @@ const useBuiltInVariables = () => {
   const customVariables = app.getVariables().map((variable) => {
     return {
       name: variable.name,
-      ctx: variable.useCtx(),
+      ctx: variable.useVariableSettings().ctx,
     }
   })
 
