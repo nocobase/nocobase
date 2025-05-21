@@ -2,9 +2,10 @@ import { useMemo } from 'react';
 import { FlowModel, useApp } from '@nocobase/client';
 import { useFlowEngine } from '../provider';
 
-export function useModelById<T extends FlowModel = FlowModel>(
+export function useFlowModel<T extends FlowModel = FlowModel>(
   uid: string,
   modelClassName?: string,
+  stepsParams?: Record<string, any>,
 ): T {
   const engine = useFlowEngine();
   const app = useApp();
@@ -12,10 +13,10 @@ export function useModelById<T extends FlowModel = FlowModel>(
   const model = useMemo(() => {
     let instance = engine.getModel<T>(uid);
     if (!instance && modelClassName) {
-      instance = engine.createModel<T>(uid, modelClassName, app);
+      instance = engine.createModel<T>(uid, modelClassName, app, stepsParams);
     }
     return instance;
-  }, [engine, app, modelClassName, uid]);
+  }, [engine, app, modelClassName, uid, stepsParams]);
   
   return model;
 } 

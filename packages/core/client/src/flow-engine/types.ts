@@ -9,6 +9,7 @@ import { FlowEngine } from './flowEngine';
 export type ModelConstructor<T extends FlowModel = FlowModel> = new (
   uid: string,
   app?: Application,
+  stepParams?: Record<string, any>,
 ) => T;
 
 /**

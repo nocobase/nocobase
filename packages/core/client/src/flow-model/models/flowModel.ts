@@ -14,6 +14,33 @@ export type ReadonlyModelProps = Readonly<IModelComponentProps>;
 const flows: Map<string, FlowDefinition> = new Map();
 
 export class FlowModel {
+  public readonly uid: string;
+  public props: IModelComponentProps;
+  public hidden: boolean;
+  public stepParams: Record<string, Record<string, any>>;
+  public app: Application;
+
+  constructor(
+    uid: string,
+    app: Application,
+    stepParams?: Record<string, any>,
+  ) {
+    this.uid = uid;
+    this.props = {};
+    this.hidden = false;
+    this.stepParams = stepParams || {};
+    this.app = app;
+
+    define(this, {
+      props: observable,
+      hidden: observable,
+      stepParams: observable.deep,
+      setProps: action,
+      setStepParams: action,
+      setHidden: action,
+    });
+  }
+  
   /**
    * 注册一个流程 (Flow)。
    * @param {string | FlowDefinition} keyOrDefinition 流程的 Key 或 FlowDefinition 对象。
@@ -95,32 +122,6 @@ export class FlowModel {
     }
     
     return allFlows;
-  }
-
-  public readonly uid: string;
-  public props: IModelComponentProps;
-  public hidden: boolean;
-  public stepParams: Record<string, Record<string, any>>;
-  public app: Application;
-
-  constructor(
-    uid: string,
-    app: Application,
-  ) {
-    this.uid = uid;
-    this.props = {};
-    this.hidden = false;
-    this.stepParams = {};
-    this.app = app;
-
-    define(this, {
-      props: observable,
-      hidden: observable,
-      stepParams: observable.deep,
-      setProps: action,
-      setStepParams: action,
-      setHidden: action,
-    });
   }
 
   get flowEngine(): FlowEngine | undefined {

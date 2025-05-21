@@ -9,7 +9,7 @@ import { FlowModel } from '@nocobase/client';
 
 // 导入hooks和HOC
 import { useContext } from './hooks/useContext';
-import { useModelById } from './hooks/useModelById';
+import { useFlowModel } from './hooks/useModelById';
 import { useApplyFlow } from './hooks/useApplyFlow'; 
 import { useDispatchEvent } from './hooks/useDispatchEvent';
 import { withFlowModel } from './withFlowModel';
@@ -28,12 +28,14 @@ export class FlowEngine {
   public static useContext = useContext;
   /**
    * @static
-   * @function useModelById
+   * @function useFlowModel
    * @description 通过 hook 和 UID 获取模型实例。
    * @param {string} id 模型实例的 UID。
+   * @param {string} modelClassName 模型类名。
+   * @param {Record<string, any>} [stepsParams] 步骤参数。
    * @returns {FlowModel} 模型实例。
    */
-  public static useModelById = useModelById;
+  public static useModelById = useFlowModel;
   /**
    * @static
    * @function useApplyFlow
@@ -155,13 +157,14 @@ export class FlowEngine {
     uid: string,
     modelClassName: string,
     app: Application,
+    stepsParams?: Record<string, any>,
   ): T {
     const ModelClass = (this.getModelClass(modelClassName) || FlowModel) as ModelConstructor<T>;
     if (this.modelInstances.has(uid)) {
       console.warn(`FlowEngine: Model instance with UID '${uid}' already exists. Returning existing instance.`);
       return this.modelInstances.get(uid) as T;
     }
-    const modelInstance = new ModelClass(uid, app);
+    const modelInstance = new ModelClass(uid, app, stepsParams);
     this.modelInstances.set(uid, modelInstance);
     return modelInstance;
   }
