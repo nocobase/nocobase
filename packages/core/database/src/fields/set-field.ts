@@ -14,25 +14,20 @@ export interface SetFieldOptions extends Omit<ArrayFieldOptions, 'type'> {
 }
 
 export class SetField extends ArrayField {
-  beforeSave = (instances) => {
-    instances = Array.isArray(instances) ? instances : [instances];
-    for (const instance of instances) {
-      const oldValue = instance.get(this.options.name);
-      if (oldValue) {
-        instance.set(this.options.name, [...new Set(oldValue)]);
-      }
+  beforeSave = (model) => {
+    const oldValue = model.get(this.options.name);
+    if (oldValue) {
+      model.set(this.options.name, [...new Set(oldValue)]);
     }
   };
 
   bind() {
     super.bind();
     this.on('beforeSave', this.beforeSave);
-    this.on('beforeBulkCreate', this.beforeSave);
   }
 
   unbind() {
     super.unbind();
     this.off('beforeSave', this.beforeSave);
-    this.off('beforeBulkCreate', this.beforeSave);
   }
 }

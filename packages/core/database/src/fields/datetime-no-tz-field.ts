@@ -32,21 +32,19 @@ export class DatetimeNoTzField extends Field {
     return DataTypes.DATE;
   }
 
-  beforeSave = async (instances, options) => {
-    instances = Array.isArray(instances) ? instances : [instances];
+  beforeSave = async (instance, options) => {
     const { name, defaultToCurrentTime, onUpdateToCurrentTime } = this.options;
-    for (const instance of instances) {
-      const value = instance.get(name);
 
-      if (!value && instance.isNewRecord && defaultToCurrentTime) {
-        instance.set(name, new Date());
-        continue;
-      }
+    const value = instance.get(name);
 
-      if (onUpdateToCurrentTime) {
-        instance.set(name, new Date());
-        continue;
-      }
+    if (!value && instance.isNewRecord && defaultToCurrentTime) {
+      instance.set(name, new Date());
+      return;
+    }
+
+    if (onUpdateToCurrentTime) {
+      instance.set(name, new Date());
+      return;
     }
   };
 
@@ -97,13 +95,11 @@ export class DatetimeNoTzField extends Field {
   bind() {
     super.bind();
     this.on('beforeSave', this.beforeSave);
-    this.on('beforeBulkCreate', this.beforeSave);
   }
 
   unbind() {
     super.unbind();
     this.off('beforeSave', this.beforeSave);
-    this.off('beforeBulkCreate', this.beforeSave);
   }
 }
 

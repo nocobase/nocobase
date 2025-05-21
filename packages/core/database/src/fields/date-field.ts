@@ -61,20 +61,17 @@ export class DateField extends Field {
       return serverTimeZone;
     };
 
-    this.beforeSave = async (instances, options) => {
-      instances = Array.isArray(instances) ? instances : [instances];
-      for (const instance of instances) {
-        const value = instance.get(name);
+    this.beforeSave = async (instance, options) => {
+      const value = instance.get(name);
 
-        if (!value && instance.isNewRecord && defaultToCurrentTime) {
-          instance.set(name, new Date());
-          continue;
-        }
+      if (!value && instance.isNewRecord && defaultToCurrentTime) {
+        instance.set(name, new Date());
+        return;
+      }
 
-        if (onUpdateToCurrentTime) {
-          instance.set(name, new Date());
-          continue;
-        }
+      if (onUpdateToCurrentTime) {
+        instance.set(name, new Date());
+        return;
       }
     };
 
@@ -147,13 +144,11 @@ export class DateField extends Field {
     }
 
     this.on('beforeSave', this.beforeSave);
-    this.on('beforeBulkCreate', this.beforeSave);
   }
 
   unbind() {
     super.unbind();
     this.off('beforeSave', this.beforeSave);
-    this.off('beforeBulkCreate', this.beforeSave);
   }
 }
 
