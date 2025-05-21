@@ -17,3 +17,5 @@ export * from './utils/transformVariableValue';
 
 export * from './constants';
 export type { VariablesContextType } from './types';
+
+export { useVariableScopeInfo } from './VariableScope';
