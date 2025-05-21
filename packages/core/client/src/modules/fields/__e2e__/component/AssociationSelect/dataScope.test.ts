@@ -87,7 +87,7 @@ test.describe('AssociationSelect ', () => {
       .getByLabel('block-item-CollectionField-test-form-test.a-a')
       .getByTestId('select-object-multiple')
       .click();
-    await page.getByRole('option', { name: record.a[1].id }).click();
+    await page.getByRole('option', { name: record.a[1].id, exact: true }).click();
     await page.click('body', {
       position: {
         x: 0,

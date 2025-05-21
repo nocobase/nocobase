@@ -16,7 +16,6 @@ import {
   NavigateOptions,
   useHref,
   useLocation,
-  useMatch,
   useNavigate,
   useParams,
   useSearchParams,
@@ -40,12 +39,6 @@ IsAdminPageContext.displayName = 'IsAdminPageContext';
 export const CurrentPageUidContext = React.createContext<string>('');
 CurrentPageUidContext.displayName = 'CurrentPageUidContext';
 
-const MatchAdminContext = React.createContext<boolean>(false);
-MatchAdminContext.displayName = 'MatchAdminContext';
-
-const MatchAdminNameContext = React.createContext<boolean>(false);
-MatchAdminNameContext.displayName = 'MatchAdminNameContext';
-
 const IsInSettingsPageContext = React.createContext<boolean>(false);
 IsInSettingsPageContext.displayName = 'IsInSettingsPageContext';
 
@@ -61,7 +54,7 @@ SearchParamsContext.displayName = 'SearchParamsContext';
 const RouterBasenameContext = React.createContext<string>('');
 RouterBasenameContext.displayName = 'RouterBasenameContext';
 
-const IsSubPageClosedByPageMenuContext = React.createContext<{
+export const IsSubPageClosedByPageMenuContext = React.createContext<{
   isSubPageClosedByPageMenu: () => boolean;
   setFieldSchema: React.Dispatch<React.SetStateAction<Schema>>;
   reset: () => void;
@@ -119,16 +112,6 @@ const SearchParamsProvider: FC = ({ children }) => {
 const IsInSettingsPageProvider: FC = ({ children }) => {
   const isInSettingsPage = useLocation().pathname.includes('/settings');
   return <IsInSettingsPageContext.Provider value={isInSettingsPage}>{children}</IsInSettingsPageContext.Provider>;
-};
-
-const MatchAdminProvider: FC = ({ children }) => {
-  const isMatchAdmin = !!useMatch('/admin');
-  return <MatchAdminContext.Provider value={isMatchAdmin}>{children}</MatchAdminContext.Provider>;
-};
-
-const MatchAdminNameProvider: FC = ({ children }) => {
-  const isMatchAdminName = !!useMatch('/admin/:name');
-  return <MatchAdminNameContext.Provider value={isMatchAdminName}>{children}</MatchAdminNameContext.Provider>;
 };
 
 const IsAdminPageProvider: FC = ({ children }) => {
@@ -219,14 +202,6 @@ export const useCurrentPageUid = () => {
   return React.useContext(CurrentPageUidContext);
 };
 
-export const useMatchAdmin = () => {
-  return React.useContext(MatchAdminContext);
-};
-
-export const useMatchAdminName = () => {
-  return React.useContext(MatchAdminNameContext);
-};
-
 export const useIsInSettingsPage = () => {
   return React.useContext(IsInSettingsPageContext);
 };
@@ -266,15 +241,11 @@ export const CustomRouterContextProvider: FC = ({ children }) => {
       <LocationNoUpdateProvider>
         <IsAdminPageProvider>
           <LocationSearchProvider>
-            <MatchAdminProvider>
-              <MatchAdminNameProvider>
-                <SearchParamsProvider>
-                  <RouterBasenameProvider>
-                    <IsInSettingsPageProvider>{children}</IsInSettingsPageProvider>
-                  </RouterBasenameProvider>
-                </SearchParamsProvider>
-              </MatchAdminNameProvider>
-            </MatchAdminProvider>
+            <SearchParamsProvider>
+              <RouterBasenameProvider>
+                <IsInSettingsPageProvider>{children}</IsInSettingsPageProvider>
+              </RouterBasenameProvider>
+            </SearchParamsProvider>
           </LocationSearchProvider>
         </IsAdminPageProvider>
       </LocationNoUpdateProvider>
