@@ -71,10 +71,13 @@ export class FormulaField extends Field {
     }
   };
 
-  calculateField = async (instance) => {
+  calculateField = async (instances) => {
+    instances = Array.isArray(instances) ? instances : [instances];
     const { name } = this.options;
-    const result = this.calculate(instance.toJSON());
-    instance.set(name, result);
+    for (const instance of instances) {
+      const result = this.calculate(instance.toJSON());
+      instance.set(name, result);
+    }
   };
 
   updateFieldData = async (instance, { transaction }) => {
@@ -112,11 +115,13 @@ export class FormulaField extends Field {
     // TODO: should not depends on fields table (which is defined by other plugin)
     this.database.on('fields.afterUpdate', this.updateFieldData);
     this.on('beforeSave', this.calculateField);
+    this.on('beforeBulkCreate', this.calculateField);
   }
 
   unbind() {
     super.unbind();
     this.off('beforeSave', this.calculateField);
+    this.off('beforeBulkCreate', this.calculateField);
     // TODO: should not depends on fields table
     this.database.off('fields.afterUpdate', this.updateFieldData);
     // this.off('afterSync', this.initFieldData);
