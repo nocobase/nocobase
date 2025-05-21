@@ -86,7 +86,7 @@ export const ErrorFallback: FC<FallbackProps> & {
           </Button>,
         ]}
       >
-        <Paragraph copyable>
+        <Paragraph copyable={{ text: error.stack }}>
           <Text type="danger" style={{ whiteSpace: 'pre-line', textAlign: 'center' }}>
             {error.stack}
           </Text>
