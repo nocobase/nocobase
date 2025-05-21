@@ -15,23 +15,15 @@ const {
 // ActionButton 演示组件
 const Demo = () => {
   const uid = 'delete-button';
+  const model = useModelById(uid, 'ButtonModel');
   return (
     <div style={{ padding: 24, background: '#f5f5f5', borderRadius: 8 }}>
-      <FlowSettings uid={uid} flowKey="setDeletePropsFlow" modelClassName="ButtonModel" />
-      <FlowSettings uid={uid} flowKey="buttonActionFlow" modelClassName="ButtonModel" />
-      <DeleteButtonBlock uid={uid} />
+      <FlowSettings model={model} flowKey="setDeletePropsFlow" />
+      <FlowSettings model={model} flowKey="buttonActionFlow" />
+      <DeleteButton model={model} />
     </div>
   );
 }
-
-// DeleteButton组件块
-const DeleteButtonBlock = observer(({ uid }: { uid: string }) => {
-  const model = useModelById(uid, 'ButtonModel');
-  const flowContext = useFlowEngineContext();
-  useApplyFlow('setDeletePropsFlow', model, flowContext);
-  
-  return <DeleteButton model={model} />;
-});
 
 // 使用withFlowModel包装Button组件
 const DeleteButton = withFlowModel(Button, { defaultFlow: 'setDeletePropsFlow' });

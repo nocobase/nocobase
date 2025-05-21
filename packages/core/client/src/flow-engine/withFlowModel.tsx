@@ -8,7 +8,9 @@ import { UserContext } from './types';
 type FlowModelComponentProps<P extends React.ComponentProps<any>> = 
   {
     model: FlowModel;
-  } & P;
+  } & {
+    [key in keyof P]?: P[key];
+  };
 
 export function withFlowModel<P extends object>(
   WrappedComponent: React.ComponentType<P>,

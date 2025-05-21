@@ -1,38 +1,37 @@
 import React from 'react';
 import { Divider } from 'antd';
-import { FlowModel, Application, BlockModel, FlowContext, Plugin, ISchema, FlowEngine } from '@nocobase/client';
+import { FlowModel, Application, BlockModel, FlowContext, Plugin, ISchema, FlowEngine, createFlowModel } from '@nocobase/client';
 import MarkdownIt from 'markdown-it';
 import Handlebars from 'handlebars';
-import { observer } from '@formily/react';
 import FlowSettings from '../settings/FlowSettings';
 
-// 从 FlowEngine 解构出所需的 Hooks
 const {
     useModelById,
     useApplyFlow,
-    useContext: useFlowEngineContext // 重命名以避免与 React.useContext 冲突, 造成理解困难
+    useContext: useFlowEngineContext,
+    withFlowModel,
 } = FlowEngine;
 
 const Demo = () => {
     const uid = 'markdown-block';
+    const model = useModelById(uid, 'MarkdownModel');
     return (
         <div style={{ padding: 24, background: '#f5f5f5', borderRadius: 8 }}>
-            <FlowSettings uid={uid} flowKey="block:markdown" modelClassName="BlockModel" />
+            <FlowSettings model={model} flowKey="block:markdown" />
             <Divider />
-            <MarkdownBlock uid={uid} />
+            <MarkdownBlock model={model} />
         </div>
     );
 }
 
-// Markdown区块组件，通过 FlowEngine.useModelById 获取 model 实例，并应用 flow
-const MarkdownBlock = observer(({ uid }: { uid: string }) => {
-    const model = useModelById(uid, 'BlockModel');
-    const flowContext = useFlowEngineContext();
-    useApplyFlow('block:markdown', model, flowContext);
-    const props = model.getProps();
+// const MarkdownBlock = observer(({ uid }: { uid: string }) => {
+//     const model = useModelById(uid, 'BlockModel');
+//     const flowContext = useFlowEngineContext();
+//     useApplyFlow('block:markdown', model, flowContext);
+//     const props = model.getProps();
 
-    return <Markdown content={props.content} height={props.height} />
-});
+//     return <Markdown content={props.content} height={props.height} />
+// });
 
 const Markdown = ({ content, height }) => {
     if (content === undefined || content === null) {
@@ -41,9 +40,52 @@ const Markdown = ({ content, height }) => {
     return <div dangerouslySetInnerHTML={{ __html: content }} style={{ height }} />
 }
 
+const MarkdownBlock = withFlowModel(Markdown, { defaultFlow: 'block:markdown' });
+
+const MarkdownModel = createFlowModel({
+    extends: BlockModel,
+    flows: [
+        {
+            key: 'block:markdown',
+            steps: {
+                setTemplate: {
+                    use: 'block:markdown:template',
+                    title: '模板引擎',
+                    defaultParams: { template: 'plain' }
+                },
+                setHeight: {
+                    use: 'block:markdown:height',
+                    title: '高度',
+                    defaultParams: { height: 300 }
+                },
+                setContent: {
+                    use: 'block:markdown:content',
+                    title: '内容',
+                    defaultParams: { content: "Hello, NocoBase! {{var1}}" }
+                },
+                renderMarkdown: {
+                    handler: async (ctx: FlowContext, model: FlowModel, params: any) => {
+                        const props = model.getProps();
+                        let content = props.content;
+                        if (props.template === 'handlebars') {
+                            content = Handlebars.compile(content || '')({
+                                var1: 'variable 1',
+                                var2: 'variable 2',
+                                var3: 'variable 3',
+                            });
+                        }
+
+                        model.setProps('content', MarkdownIt().render(content || ''));
+                    }
+                }
+            }
+        }
+    ]
+});
+
 class DemoPlugin extends Plugin {
     async load() {
-        this.app.flowEngine.registerModelClass('BlockModel', BlockModel);
+        this.app.flowEngine.registerModelClass('MarkdownModel', MarkdownModel);
 
         this.app.flowEngine.registerAction({
             name: 'block:markdown:template',
@@ -101,44 +143,6 @@ class DemoPlugin extends Plugin {
             handler: ((ctx: FlowContext, model: FlowModel, params: any) => {
                 model.setProps('content', params?.content);
             }),
-        });
-
-        this.app.flowEngine.registerFlow('BlockModel', {
-            key: 'block:markdown',
-            title: 'Markdown区块流程',
-            steps: {
-                setTemplate: {
-                    use: 'block:markdown:template',
-                    title: '模板引擎',
-                    defaultParams: { template: 'plain' }
-                },
-                setHeight: {
-                    use: 'block:markdown:height',
-                    title: '高度',
-                    defaultParams: { height: 300 }
-                },
-                setContent: {
-                    use: 'block:markdown:content',
-                    title: '内容',
-                    defaultParams: { content: "Hello, NocoBase! {{var1}}" }
-                },
-                renderMarkdown: {
-                    handler: async (ctx: FlowContext, model: FlowModel, params: any) => {
-                        const props = model.getProps();
-                        let content = props.content;
-
-                        if (props.template === 'handlebars') {
-                            content = Handlebars.compile(content || '')({
-                                var1: 'variable 1',
-                                var2: 'variable 2',
-                                var3: 'variable 3',
-                            });
-                        }
-
-                        model.setProps('content', MarkdownIt().render(content || ''));
-                    }
-                }
-            },
         });
 
         this.app.router.add('root', { path: '/', Component: Demo });

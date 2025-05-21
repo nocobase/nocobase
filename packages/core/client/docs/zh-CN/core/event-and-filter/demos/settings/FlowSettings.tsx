@@ -7,25 +7,71 @@ const { Item: FormItem } = Form;
 
 const { useModelById } = FlowEngine;
 
-interface FlowSettingsProps {
+// 创建两个组件版本，一个使用props传递的model，一个使用hook获取model
+interface ModelProvidedProps {
+  model: any;
+  flowKey: string;
+}
+
+interface ModelByIdProps {
   uid: string;
   flowKey: string;
   modelClassName: string;
 }
 
+type FlowSettingsProps = ModelProvidedProps | ModelByIdProps;
+
+// 判断是否是通过ID获取模型的props
+const isModelByIdProps = (props: FlowSettingsProps): props is ModelByIdProps => {
+  return 'uid' in props && 'modelClassName' in props && Boolean(props.uid) && Boolean(props.modelClassName);
+};
+
 /**
  * FlowSettings组件 - 自动渲染流程步骤的配置界面 (Adapted for FlowEngine)
- * @param uid - 模型的唯一标识符
- * @param flowKey - 流程的key
+ * 支持两种使用方式：
+ * 1. 直接提供model: <FlowSettings model={myModel} flowKey="workflow1" />
+ * 2. 通过uid和modelClassName获取model: <FlowSettings uid="model1" modelClassName="MyModel" flowKey="workflow1" />
  */
-const FlowSettings: React.FC<FlowSettingsProps> = observer(({ uid, flowKey, modelClassName }) => {
+const FlowSettings: React.FC<FlowSettingsProps> = (props) => {
+  if (isModelByIdProps(props)) {
+    return <FlowSettingsWithModelById {...props} />;
+  } else {
+    return <FlowSettingsWithModel {...props} />;
+  }
+};
+
+
+// 使用传入的model
+const FlowSettingsWithModel: React.FC<ModelProvidedProps> = observer(({ model, flowKey }) => {
+  const flowEngine = model?.flowEngine;
+  
+  if (!model) {
+    return <Alert message="提供的模型无效" type="error" />;
+  }
+
+  return <FlowSettingsContent model={model} flowKey={flowKey} flowEngine={flowEngine} />;
+});
+
+// 通过useModelById hook获取model
+const FlowSettingsWithModelById: React.FC<ModelByIdProps> = observer(({ uid, flowKey, modelClassName }) => {
   const model = useModelById(uid, modelClassName);
-  const flowEngine = model.flowEngine;
+  const flowEngine = model?.flowEngine;
   
   if (!model) {
     return <Alert message={`未找到ID为 ${uid} 的模型`} type="error" />;
   }
 
+  return <FlowSettingsContent model={model} flowKey={flowKey} flowEngine={flowEngine} />;
+});
+
+// 提取核心渲染逻辑到一个共享组件
+interface FlowSettingsContentProps {
+  model: any;
+  flowKey: string;
+  flowEngine: any;
+}
+
+const FlowSettingsContent: React.FC<FlowSettingsContentProps> = observer(({ model, flowKey, flowEngine }) => {
   const flow = model.getFlow(flowKey);
   if (!flow || !flow.steps) {
     return <Alert message={`未找到Key为 ${flowKey} 的流程或流程没有步骤`} type="error" />;
@@ -121,7 +167,7 @@ const FlowSettings: React.FC<FlowSettingsProps> = observer(({ uid, flowKey, mode
       // 如果step使用了action，也获取action的uiSchema
       let actionUiSchema = {};
       if (actionStep.use) {
-        const action = flowEngine.getAction(actionStep.use);
+        const action = flowEngine?.getAction?.(actionStep.use);
         if (action && action.uiSchema) {
           actionUiSchema = action.uiSchema;
         }

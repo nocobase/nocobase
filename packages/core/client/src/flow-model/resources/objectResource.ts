@@ -1,20 +1,12 @@
-import { observable, action, define } from '@formily/reactive';
+import { action, define } from '@formily/reactive';
+import { BaseResource } from './baseResource';
 
-export class ObjectResource<TData = any> {
-  public data: TData | null;
+export class ObjectResource<TData = any> extends BaseResource<TData> {
   public resourceApi?: any;
 
   constructor(initialData: TData | null = null, resourceApi?: any) {
-    this.data = initialData;
+    super(initialData);
     this.resourceApi = resourceApi;
-    define(this, {
-      data: observable,
-      setData: action,
-    });
-  }
-
-  setData(data: TData | null) {
-    this.data = data;
   }
 
   async load(): Promise<TData | null> {
@@ -35,4 +27,16 @@ export class ObjectResource<TData = any> {
   async reload(): Promise<TData | null> {
     return this.load();
   }
+
+  async save(data: TData): Promise<TData | null> {
+    if (this.resourceApi) {
+      const result = await this.resourceApi.save(data);
+      if (result.success) {
+        this.setData(result.data);
+        return result.data;
+      }
+    }
+  }
+
+  
 } 

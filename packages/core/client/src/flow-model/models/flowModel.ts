@@ -299,4 +299,31 @@ export class FlowModel {
       }
     });
   }
+}
+
+interface CreateFlowModelOptions {
+  extends?: typeof FlowModel; // 父类，默认为 FlowModel
+  flows?: FlowDefinition[];   // 要预注册的流程定义数组
+}
+
+/**
+ * 创建一个新的 FlowModel 类，并预注册指定的流程。
+ * @param options 配置选项，包括要继承的父类和要预注册的流程。
+ * @returns 新创建的 FlowModel 类。
+ */
+export function createFlowModel(options: CreateFlowModelOptions = {}) {
+  const ParentClass = options.extends || FlowModel;
+  const flowsToRegister = options.flows || [];
+
+  class NewFlowModel extends ParentClass {}
+
+  if (typeof (NewFlowModel as any).registerFlow === 'function') {
+    flowsToRegister.forEach(flowDefinition => {
+      (NewFlowModel as any).registerFlow(flowDefinition.key, flowDefinition);
+    });
+  } else {
+    // 如果没有 registerFlow 方法，可能需要抛出错误或记录警告
+    console.warn('The created FlowModel class does not have a static registerFlow method.');
+  }
+  return NewFlowModel;
 } 

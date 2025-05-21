@@ -24,12 +24,11 @@ export class ArrayResource<TDataItem = any> extends ObjectResource<TDataItem[]> 
     initialFilter: Record<string, any> = {},
     resourceApi?: any
   ) {
-    super(initialData);
+    super(initialData, resourceApi);
     
     this.pagination = initialPagination;
     this.sort = initialSort;
     this.filter = initialFilter;
-    this.resourceApi = resourceApi;
     
     define(this, {
       pagination: observable.deep,
