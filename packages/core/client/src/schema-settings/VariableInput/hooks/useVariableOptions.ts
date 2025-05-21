@@ -68,7 +68,7 @@ export const useVariableOptions = ({
     return {
       visible,
       option: option as any,
-    }
+    };
   }).filter(({ visible }) => visible);
 
   const { filterVariables = () => true } = useVariables() || {};
