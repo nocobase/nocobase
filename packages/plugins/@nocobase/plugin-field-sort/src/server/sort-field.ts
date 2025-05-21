@@ -19,35 +19,32 @@ export class SortField extends Field {
     return DataTypes.BIGINT;
   }
 
-  setSortValue = async (instances, options) => {
+  setSortValue = async (instance, options) => {
     const { name, scopeKey } = this.options;
     const { model } = this.context.collection;
 
-    instances = Array.isArray(instances) ? instances : [instances];
-    for (const instance of instances) {
-      if (isNumber(instance.get(name)) && instance._previousDataValues[scopeKey] == instance[scopeKey]) {
-        continue;
-      }
-
-      const where = {};
-
-      if (scopeKey) {
-        const value = instance.get(scopeKey);
-        if (value !== undefined && value !== null) {
-          where[scopeKey] = value;
-        }
-      }
-
-      await (<typeof SortField>this.constructor).lockManager.runExclusive(
-        this.context.collection.name,
-        async () => {
-          const max = await model.max<number, any>(name, { ...options, where });
-          const newValue = (max || 0) + 1;
-          instance.set(name, newValue);
-        },
-        2000,
-      );
+    if (isNumber(instance.get(name)) && instance._previousDataValues[scopeKey] == instance[scopeKey]) {
+      return;
     }
+
+    const where = {};
+
+    if (scopeKey) {
+      const value = instance.get(scopeKey);
+      if (value !== undefined && value !== null) {
+        where[scopeKey] = value;
+      }
+    }
+
+    await (<typeof SortField>this.constructor).lockManager.runExclusive(
+      this.context.collection.name,
+      async () => {
+        const max = await model.max<number, any>(name, { ...options, where });
+        const newValue = (max || 0) + 1;
+        instance.set(name, newValue);
+      },
+      2000,
+    );
   };
 
   onScopeChange = async (instance, options) => {
@@ -212,7 +209,6 @@ export class SortField extends Field {
     this.on('afterSync', this.initRecordsSortValue);
     this.on('beforeUpdate', this.onScopeChange);
     this.on('beforeCreate', this.setSortValue);
-    this.on('beforeBulkCreate', this.setSortValue);
   }
 
   unbind() {
@@ -220,7 +216,6 @@ export class SortField extends Field {
     this.off('beforeUpdate', this.onScopeChange);
     this.off('beforeCreate', this.setSortValue);
     this.off('afterSync', this.initRecordsSortValue);
-    this.off('beforeBulkCreate', this.setSortValue);
   }
 }
 
