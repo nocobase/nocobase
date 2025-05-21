@@ -1,4 +1,4 @@
-import React, { createContext, FC, useMemo } from "react"
+import React, { createContext, FC, useCallback, useMemo } from "react"
 
 export const VariableScopeContext = createContext<{ scopeId: string; type: string; parent?: any }>({ scopeId: '', type: '' })
 
@@ -17,12 +17,12 @@ export const VariableScope: FC<{ scopeId: string; type: string }> = (props) => {
 export const useVariableScopeInfo = () => {
   let context = React.useContext(VariableScopeContext)
   return {
-    getVariableScopeInfo: () => {
+    getVariableScopeInfo: useCallback(() => {
       if (context.scopeId) return context;
       while (context.parent && !context.scopeId) {
         context = context.parent;
       }
       return context;
-    }
+    }, [context]),
   }
 }
