@@ -314,7 +314,7 @@ export class PluginFileManagerServer extends Plugin {
     const storageType = this.storageTypes.get(storage.type);
     return new storageType(storage).getFileURL(
       file,
-      Boolean(match(file.mimetype, 'image/*') && preview && storage.options.thumbnailRule),
+      Boolean(file.mimetype && match(file.mimetype, 'image/*') && preview && storage.options.thumbnailRule),
     );
   }
 }
