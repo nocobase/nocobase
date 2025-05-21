@@ -6,9 +6,9 @@ import { DeleteActionModel } from './actions/deleteActionModel';
 import { SaveActionModel } from './actions/saveActionModel';
 import { RefreshActionModel } from './actions/refreshActionModel';
 
-const supportedActions = new WeakMap<typeof BlockModel, Set<{
+const registeredActionModels = new WeakMap<typeof BlockModel, Set<{
   title: string;
-  type: typeof FlowModel;
+  type: typeof ActionModel;
 }>>();
 
 export class BlockModel extends FlowModel {
@@ -16,6 +16,7 @@ export class BlockModel extends FlowModel {
 
   static {
     this.initFlows();
+    this.initSupportedActions();
   }
 
   constructor(uid: string, app: Application) {
@@ -52,10 +53,17 @@ export class BlockModel extends FlowModel {
     type,
   }: {
     title: string;
-    type: typeof FlowModel;
+    type: typeof ActionModel;
   }) {
-    supportedActions.get(this) || supportedActions.set(this, new Set());
-    supportedActions.get(this)?.add({ title, type });
+    registeredActionModels.get(this) || registeredActionModels.set(this, new Set());
+    registeredActionModels.get(this)?.add({ title, type });
+  }
+
+  public static getSupportedActions(): {
+    title: string;
+    type: typeof ActionModel;
+  }[] {
+    return Array.from(registeredActionModels.get(this) || []);
   }
 
   protected static initFlows() {
