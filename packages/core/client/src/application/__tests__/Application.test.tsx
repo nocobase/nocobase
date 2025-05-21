@@ -509,36 +509,35 @@ describe('Application', () => {
   describe('variables', () => {
     it('should register a variable', () => {
       const app = new Application({});
-      const useOption = () => ({
-        value: 'test',
-        label: '测试变量',
-      });
-      const useCtx = () => ({ value: 'test-value' });
 
       app.registerVariable({
         name: 'test',
-        label: '测试',
-        useOption,
-        useCtx,
+        useVariableSettings: () => ({
+          options: {
+            value: 'test',
+            label: '测试变量',
+          },
+          ctx: { value: 'test-value' }
+        })
       });
 
       const variables = app.getVariables();
       expect(variables).toHaveLength(1);
       expect(variables[0]).toEqual({
         name: 'test',
-        label: '测试',
-        useOption,
-        useCtx,
+        useVariableSettings: expect.any(Function)
       });
+
+      const settings = variables[0].useVariableSettings();
+      expect(settings.options).toEqual({
+        value: 'test',
+        label: '测试变量',
+      });
+      expect(settings.ctx).toEqual({ value: 'test-value' });
     });
 
     it('should not register duplicate variables', () => {
       const app = new Application({});
-      const useOption = () => ({
-        value: 'test',
-        label: '测试变量',
-      });
-      const useCtx = () => ({ value: 'test-value' });
 
       const originalConsoleWarn = console.warn;
       const fn = vitest.fn();
@@ -546,25 +545,31 @@ describe('Application', () => {
 
       app.registerVariable({
         name: 'test',
-        label: '测试',
-        useOption,
-        useCtx,
+        useVariableSettings: () => ({
+          options: {
+            value: 'test',
+            label: '测试变量',
+          },
+          ctx: { value: 'test-value' }
+        })
       });
 
       app.registerVariable({
         name: 'test',
-        label: '测试重复',
-        useOption: () => ({
-          value: 'test-duplicate',
-          label: '重复测试变量',
-        }),
-        useCtx: () => ({ value: 'different-value' }),
+        useVariableSettings: () => ({
+          options: {
+            value: 'test-duplicate',
+            label: '重复测试变量',
+          },
+          ctx: { value: 'different-value' }
+        })
       });
 
       const variables = app.getVariables();
 
       expect(variables).toHaveLength(1);
-      expect(variables[0].label).toBe('测试');
+      const settings = variables[0].useVariableSettings();
+      expect(settings.options.label).toBe('测试变量');
       expect(fn).toHaveBeenCalledWith('Variable test already registered');
 
       console.warn = originalConsoleWarn;
@@ -575,23 +580,25 @@ describe('Application', () => {
 
       app.registerVariable({
         name: 'var1',
-        label: '变量1',
-        useOption: () => ({
-          value: 'var1',
-          label: '变量1选项',
-        }),
-        useCtx: () => ({ value: 'var1-value' }),
+        useVariableSettings: () => ({
+          options: {
+            value: 'var1',
+            label: '变量1选项',
+          },
+          ctx: { value: 'var1-value' }
+        })
       });
 
       app.registerVariable({
         name: 'var2',
-        label: '变量2',
-        useOption: () => ({
-          value: 'var2',
-          label: '变量2选项',
-        }),
-        useCtx: () => ({ value: 'var2-value' }),
-        useVisible: () => true,
+        useVariableSettings: () => ({
+          options: {
+            value: 'var2',
+            label: '变量2选项',
+          },
+          ctx: { value: 'var2-value' },
+          visible: true
+        })
       });
 
       const variables = app.getVariables();
@@ -599,31 +606,36 @@ describe('Application', () => {
       expect(variables).toHaveLength(2);
       expect(variables[0].name).toBe('var1');
       expect(variables[1].name).toBe('var2');
-      expect(variables[1].useVisible).toBeDefined();
-      expect(variables[1].useVisible()).toBe(true);
+
+      const settings1 = variables[0].useVariableSettings();
+      const settings2 = variables[1].useVariableSettings();
+
+      expect(settings1.visible).toBeUndefined();
+      expect(settings2.visible).toBe(true);
     });
 
     it('should support async useCtx function', () => {
       const app = new Application({});
 
-      const asyncUseCtx = () => ({ variableName }) => Promise.resolve({ value: `${variableName}-async-value` });
+      const asyncCtx = ({ variableName }) => Promise.resolve({ value: `${variableName}-async-value` });
 
       app.registerVariable({
         name: 'async-var',
-        label: '异步变量',
-        useOption: () => ({
-          value: 'async-var',
-          label: '异步变量选项',
-        }),
-        useCtx: asyncUseCtx,
+        useVariableSettings: () => ({
+          options: {
+            value: 'async-var',
+            label: '异步变量选项',
+          },
+          ctx: asyncCtx
+        })
       });
 
       const variables = app.getVariables();
 
       expect(variables).toHaveLength(1);
-      expect(variables[0].useCtx).toBe(asyncUseCtx);
+      const settings = variables[0].useVariableSettings();
 
-      return variables[0].useCtx()({ variableName: 'async-var' }).then(result => {
+      return settings.ctx({ variableName: 'async-var' }).then(result => {
         expect(result).toEqual({ value: 'async-var-async-value' });
       });
     });
@@ -633,34 +645,37 @@ describe('Application', () => {
 
       app.registerVariable({
         name: 'nested',
-        label: '嵌套变量',
-        useOption: () => ({
-          value: 'parent',
-          label: '父选项',
-          children: [
-            {
-              value: 'child1',
-              label: '子选项1',
-            },
-            {
-              value: 'child2',
-              label: '子选项2',
-              disabled: true,
-            }
-          ]
-        }),
-        useCtx: () => ({ value: 'nested-value' }),
+        useVariableSettings: () => ({
+          options: {
+            value: 'parent',
+            label: '父选项',
+            children: [
+              {
+                value: 'child1',
+                label: '子选项1',
+              },
+              {
+                value: 'child2',
+                label: '子选项2',
+                disabled: true,
+              }
+            ]
+          },
+          ctx: { value: 'nested-value' }
+        })
       });
 
       const variables = app.getVariables();
 
       expect(variables).toHaveLength(1);
 
-      const option = variables[0].useOption();
-      expect(option.value).toBe('parent');
-      expect(option.children).toHaveLength(2);
-      expect(option.children[0].value).toBe('child1');
-      expect(option.children[1].disabled).toBe(true);
+      const settings = variables[0].useVariableSettings();
+      const options = settings.options;
+
+      expect(options.value).toBe('parent');
+      expect(options.children).toHaveLength(2);
+      expect(options.children[0].value).toBe('child1');
+      expect(options.children[1].disabled).toBe(true);
     });
   });
 });

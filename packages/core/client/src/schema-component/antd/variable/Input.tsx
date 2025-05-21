@@ -396,7 +396,8 @@ export function Input(props: VariableInputProps) {
     };
 
     run();
-  }, [variable, options]);
+    // NOTE: watch `options.length` and it only happens once
+  }, [variable, options.length]);
 
   const disabled = props.disabled || form.disabled;
 
