@@ -321,12 +321,12 @@ export class FlowModel {
    * @param {FlowDefinition[]} flows 要预注册的流程定义数组
    * @returns 新创建的 FlowModel 子类
    */
-  public static extends(flows: FlowDefinition[] = []): typeof FlowModel {
+  public static extends(flows: FlowDefinition[] = []) {
     class NewFlowModel extends this {}
 
     if (flows.length > 0) {
       flows.forEach(flowDefinition => {
-        NewFlowModel.registerFlow(flowDefinition.key, flowDefinition);
+        NewFlowModel.registerFlow(flowDefinition);
       });
     }
     

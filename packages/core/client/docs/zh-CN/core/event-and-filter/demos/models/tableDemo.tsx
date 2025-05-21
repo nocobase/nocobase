@@ -12,6 +12,8 @@ import {
 } from '@nocobase/client';
 import { observer } from '@formily/react';
 import FlowSettings from '../settings/FlowSettings';
+import { useFlowModel } from 'packages/core/client/src/flow-engine/hooks';
+import FlowsSettings from '../settings/FlowsSettings';
 
 const {
     useFlowModel: useModelById,
@@ -43,11 +45,10 @@ const DEMO_DEFAULT_HEADER_ACTIONS = [
 
 
 const Demo = () => {
-    const uid = 'table-demo-001';
+    const model = useFlowModel('table-demo', 'TableBlockModel');
     return (
         <div style={{ padding: 24, background: '#f5f5f5', borderRadius: 8 }}>
-            <FlowSettings uid={uid} flowKey="block:tabledemo" modelClassName="TableBlockModel" />
-            <Divider />
+            <FlowsSettings model={model} />
             <TableBlock uid={uid} />
         </div>
     );

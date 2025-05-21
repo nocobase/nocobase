@@ -1,6 +1,6 @@
 export * from './flowModel';
 export * from './blockModel';
-export * from './actionModel';
+export * from './actions';
 export * from './dataBlockModel';
 export * from './tableBlockModel';
 export * from './formBlockModel';

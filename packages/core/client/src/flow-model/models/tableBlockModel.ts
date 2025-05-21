@@ -1,6 +1,6 @@
 import { DataBlockModel } from './dataBlockModel';
 import { IModelComponentProps } from './flowModel';
-import { ActionModel } from './actionModel';
+import { ActionModel } from './actions/actionModel';
 import { observable } from '@formily/reactive';
 import { ArrayResource } from '../resources/arrayResource';
 import { Application } from '../../application';
@@ -61,41 +61,6 @@ export class TableBlockModel<TData = any> extends DataBlockModel {
     return this.resource.load();
   }
 
-  getSelectedRows(): any[] {
-    return this.props.selectedRows || [];
-  }
 
-  setSelectedRows(rows: any[]): void {
-    this.setProps('selectedRows', rows);
-  }
 
-  getData(): any[] | null {
-    return this.resource.data;
-  }
-
-  getProps() {
-    return {
-      ...super.getProps(),
-      dataSource: this.resource.data || [],
-      pagination: {
-        current: this.resource.pagination.page,
-        pageSize: this.resource.pagination.pageSize,
-        total: this.resource.pagination.total,
-        onChange: (page: number, pageSize?: number) => {
-          this.resource.setPagination(page, pageSize);
-          this.resource.load();
-        },
-        onShowSizeChange: (_: number, size: number) => {
-          this.resource.setPageSize(size);
-          this.resource.load();
-        }
-      },
-      selectedRows: this.getSelectedRows(),
-      onSelectRow: (row: any) => {
-        this.setSelectedRows([row]);
-      },
-      actions: this.actions,
-      fields: this.fields,
-    };
-  }
 } 

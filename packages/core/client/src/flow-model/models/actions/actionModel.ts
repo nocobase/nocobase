@@ -1,20 +1,19 @@
-import { FlowModel, IModelComponentProps } from './flowModel';
-import { Application } from '../../application';
+import { FlowModel, IModelComponentProps } from '../flowModel';
+import { Application } from '../../../application';
 
 export class ActionModel extends FlowModel {
-  public event?: string;
 
   static {
-    this.initDefaultFlows();
+    this.initFlows();
   }
 
   constructor(uid: string, app: Application) {
     super(uid, app);
   }
 
-  private static initDefaultFlows() {
+  protected static initFlows() {
     this.registerFlow({
-      key: 'setActionProps',
+      key: 'setProps',
       title: '设置按钮文本',
       steps: {
         setText: {
@@ -59,7 +58,7 @@ export class ActionModel extends FlowModel {
             model.setProps('onClick', () => {
               model.dispatchEvent('onClick', ctx);
             });
-          },
+          }
         }
       },
     });

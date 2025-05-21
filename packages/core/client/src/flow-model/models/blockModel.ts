@@ -1,10 +1,22 @@
 import { FlowModel, IModelComponentProps } from './flowModel';
-import { ActionModel } from './actionModel';
+import { ActionModel } from './actions/actionModel';
 import { define, observable } from '@formily/reactive';
 import { Application } from '../../application';
+import { DeleteActionModel } from './actions/deleteActionModel';
+import { SaveActionModel } from './actions/saveActionModel';
+import { RefreshActionModel } from './actions/refreshActionModel';
+
+const supportedActions = new WeakMap<typeof BlockModel, Set<{
+  title: string;
+  type: typeof FlowModel;
+}>>();
 
 export class BlockModel extends FlowModel {
   public actions: Map<string, ActionModel>;
+
+  static {
+    this.initFlows();
+  }
 
   constructor(uid: string, app: Application) {
     super(uid, app);
@@ -33,5 +45,70 @@ export class BlockModel extends FlowModel {
 
   getActions(): ActionModel[] {
     return Array.from(this.actions.values());
+  }
+
+  public static registerActionModel({
+    title,
+    type,
+  }: {
+    title: string;
+    type: typeof FlowModel;
+  }) {
+    supportedActions.get(this) || supportedActions.set(this, new Set());
+    supportedActions.get(this)?.add({ title, type });
+  }
+
+  protected static initFlows() {
+    this.registerFlow({
+      key: 'setProps',
+      title: '设置属性',
+      steps: {
+        setHeight: {
+          title: '设置高度',
+          handler: (ctx, model, params) => {
+            const { height } = params || {};
+            if (height !== undefined) {
+              model.setProps('height', height);
+            }
+          },
+          defaultParams: { height: 300 }
+        },
+        setTitle: {
+          title: '设置标题',
+          handler: (ctx, model, params) => {
+            const { title } = params || {};
+            if (title !== undefined) {
+              model.setProps('title', title);
+            }
+          },
+          defaultParams: { title: '' }
+        },
+        setDescription: {
+          title: '设置描述',
+          handler: (ctx, model, params) => {
+            const { description } = params || {};
+            if (description !== undefined) {
+              model.setProps('description', description);
+            }
+          },
+          defaultParams: { description: '' }
+        },
+      },
+    });
+  }
+
+  protected static initSupportedActions() {
+    this.registerActionModel({
+      title: '删除',
+      type: DeleteActionModel,
+    });
+    this.registerActionModel({
+      title: '保存',
+      type: SaveActionModel,
+    });
+    this.registerActionModel({
+      title: '刷新',
+      type: RefreshActionModel,
+    });
   }
 } 
