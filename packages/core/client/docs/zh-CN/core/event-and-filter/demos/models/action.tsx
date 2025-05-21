@@ -1,25 +1,21 @@
 import React from 'react';
-import { Button, Divider, message, Modal } from 'antd';
-import { FlowModel, Application, Plugin, FlowEngine, ActionModel } from '@nocobase/client';
-import { observer } from '@formily/react';
-import FlowSettings from '../settings/FlowSettings';
+import { Button, message, Modal } from 'antd';
+import { FlowModel, Application, Plugin, FlowEngine } from '@nocobase/client';
+import FlowsSettings from '../settings/FlowsSettings';
 
 // 从 FlowEngine 解构出所需的 Hooks
 const {
-  useFlowModel: useModelById,
-  useApplyFlow,
-  useContext: useFlowEngineContext,
+  useFlowModel,
   withFlowModel
 } = FlowEngine;
 
 // ActionButton 演示组件
 const Demo = () => {
   const uid = 'delete-button';
-  const model = useModelById(uid, 'ButtonModel');
+  const model = useFlowModel(uid, 'ButtonModel');
   return (
     <div style={{ padding: 24, background: '#f5f5f5', borderRadius: 8 }}>
-      <FlowSettings model={model} flowKey="setDeletePropsFlow" />
-      <FlowSettings model={model} flowKey="buttonActionFlow" />
+      <FlowsSettings model={model} />
       <DeleteButton model={model} />
     </div>
   );
@@ -156,7 +152,7 @@ class DemoPlugin extends Plugin {
         },
         refresh: {
           title: '刷新页面',
-          handler: (ctx) => {
+          handler: () => {
             console.log('页面已刷新');
           }
         },

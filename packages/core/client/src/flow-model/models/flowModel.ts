@@ -10,8 +10,8 @@ export interface IModelComponentProps {
 // 定义只读版本的props类型
 export type ReadonlyModelProps = Readonly<IModelComponentProps>;
 
-// 存储所有已注册的流程
-const flows: Map<string, FlowDefinition> = new Map();
+// 使用WeakMap存储每个类的flows
+const modelFlows = new WeakMap<typeof FlowModel, Map<string, FlowDefinition>>();
 
 export class FlowModel {
   public readonly uid: string;
@@ -66,6 +66,12 @@ export class FlowModel {
       throw new Error('Invalid arguments for registerFlow');
     }
     
+    // 确保当前类有自己的flows Map
+    if (!modelFlows.has(this)) {
+      modelFlows.set(this, new Map<string, FlowDefinition>());
+    }
+    const flows = modelFlows.get(this)!;
+    
     if (flows.has(key)) {
       console.warn(`FlowModel: Flow with key '${key}' is already registered and will be overwritten.`);
     }
@@ -79,20 +85,23 @@ export class FlowModel {
    * @returns {FlowDefinition | undefined} 流程定义，如果未找到则返回 undefined。
    */
   public getFlow(key: string): FlowDefinition | undefined {
-    // 先从当前类的flows中查找
-    const flow = flows.get(key);
-    if (flow) {
-      return flow;
-    }
+    // 获取当前类的构造函数
+    const currentClass = this.constructor as typeof FlowModel;
     
-    // 如果当前类没有找到，尝试在父类中查找
-    // 在静态方法中，this指向的是当前类本身
-    const currentClass = this as any;
-    const parentClass = Object.getPrototypeOf(currentClass);
-    
-    // 检查父类是否有getFlow方法
-    if (parentClass && typeof parentClass.getFlow === 'function') {
-      return parentClass.getFlow(key);
+    // 遍历类继承链，查找流程
+    let cls: typeof FlowModel | null = currentClass;
+    while (cls) {
+      const flows = modelFlows.get(cls);
+      if (flows && flows.has(key)) {
+        return flows.get(key);
+      }
+      
+      // 获取父类
+      const proto = Object.getPrototypeOf(cls);
+      if (proto === Function.prototype || proto === Object.prototype) {
+        break;
+      }
+      cls = proto as typeof FlowModel;
     }
     
     return undefined;
@@ -104,21 +113,27 @@ export class FlowModel {
    */
   public static getFlows(): Map<string, FlowDefinition> {
     // 创建一个新的Map来存储所有流程
-    const allFlows = new Map(flows);
+    const allFlows = new Map<string, FlowDefinition>();
     
-    // 尝试从父类获取流程
-    // 在静态方法中，this指向的是当前类本身
-    const currentClass = this as any;
-    const parentClass = Object.getPrototypeOf(currentClass);
-    
-    if (parentClass && typeof parentClass.getFlows === 'function') {
-      const parentFlows = parentClass.getFlows();
-      // 合并父类的流程，但如果当前类已有同名流程则不覆盖
-      for (const [key, flow] of parentFlows.entries()) {
-        if (!allFlows.has(key)) {
-          allFlows.set(key, flow);
+    // 遍历类继承链，收集所有流程
+    let cls: typeof FlowModel | null = this;
+    while (cls) {
+      const flows = modelFlows.get(cls);
+      if (flows) {
+        // 合并流程，但如果已有同名流程则不覆盖
+        for (const [key, flow] of flows.entries()) {
+          if (!allFlows.has(key)) {
+            allFlows.set(key, flow);
+          }
         }
       }
+      
+      // 获取父类
+      const proto = Object.getPrototypeOf(cls);
+      if (proto === Function.prototype || proto === Object.prototype) {
+        break;
+      }
+      cls = proto as typeof FlowModel;
     }
     
     return allFlows;
@@ -326,5 +341,7 @@ export function createFlowModel(options: CreateFlowModelOptions = {}) {
     // 如果没有 registerFlow 方法，可能需要抛出错误或记录警告
     console.warn('The created FlowModel class does not have a static registerFlow method.');
   }
+  console.log('flows:', NewFlowModel.getFlows());
+  console.log('parent flows', FlowModel.getFlows());
   return NewFlowModel;
 } 

@@ -1,37 +1,24 @@
 import React from 'react';
-import { Divider } from 'antd';
-import { FlowModel, Application, BlockModel, FlowContext, Plugin, ISchema, FlowEngine, createFlowModel } from '@nocobase/client';
+import { FlowModel, Application, BlockModel, FlowContext, Plugin, FlowEngine, createFlowModel } from '@nocobase/client';
 import MarkdownIt from 'markdown-it';
 import Handlebars from 'handlebars';
-import FlowSettings from '../settings/FlowSettings';
+import FlowsSettings from '../settings/FlowsSettings';
 
 const {
-    useFlowModel: useModelById,
-    useApplyFlow,
-    useContext: useFlowEngineContext,
+    useFlowModel,
     withFlowModel,
 } = FlowEngine;
 
 const Demo = () => {
     const uid = 'markdown-block';
-    const model = useModelById(uid, 'MarkdownModel');
+    const model = useFlowModel(uid, 'MarkdownModel');
     return (
         <div style={{ padding: 24, background: '#f5f5f5', borderRadius: 8 }}>
-            <FlowSettings model={model} flowKey="block:markdown" />
-            <Divider />
+            <FlowsSettings model={model} expandAll />
             <MarkdownBlock model={model} />
         </div>
     );
 }
-
-// const MarkdownBlock = observer(({ uid }: { uid: string }) => {
-//     const model = useModelById(uid, 'BlockModel');
-//     const flowContext = useFlowEngineContext();
-//     useApplyFlow('block:markdown', model, flowContext);
-//     const props = model.getProps();
-
-//     return <Markdown content={props.content} height={props.height} />
-// });
 
 const Markdown = ({ content, height }) => {
     if (content === undefined || content === null) {
@@ -47,6 +34,7 @@ const MarkdownModel = createFlowModel({
     flows: [
         {
             key: 'block:markdown',
+            title: 'Markdown',
             steps: {
                 setTemplate: {
                     use: 'block:markdown:template',
@@ -64,7 +52,7 @@ const MarkdownModel = createFlowModel({
                     defaultParams: { content: "Hello, NocoBase! {{var1}}" }
                 },
                 renderMarkdown: {
-                    handler: async (ctx: FlowContext, model: FlowModel, params: any) => {
+                    handler: async (ctx: FlowContext, model: FlowModel) => {
                         const props = model.getProps();
                         let content = props.content;
                         if (props.template === 'handlebars') {
