@@ -14,6 +14,8 @@ import { useApp, useVariables } from '../../../';
 import { CollectionFieldOptions_deprecated } from '../../../collection-manager';
 import { useAPITokenVariable } from './useAPITokenVariable';
 import { useDatetimeVariable } from './useDateVariable';
+import { useExactDateVariable } from './useExactDateVariable';
+
 import { useCurrentFormVariable } from './useFormVariable';
 import { useCurrentObjectVariable } from './useIterationVariable';
 import { useParentObjectVariable } from './useParentIterationVariable';
@@ -85,6 +87,13 @@ export const useVariableOptions = ({
   });
   const { apiTokenSettings } = useAPITokenVariable({ noDisabled });
   const { datetimeSettings } = useDatetimeVariable({ operator, schema: uiSchema, noDisabled: true, targetFieldSchema });
+  const { exactDateTimeSettings, shouldDisplayExactDate } = useExactDateVariable({
+    operator,
+    schema: uiSchema,
+    noDisabled: true,
+    targetFieldSchema,
+  });
+
   const { currentFormSettings, shouldDisplayCurrentForm } = useCurrentFormVariable({
     schema: uiSchema,
     collectionField,
@@ -135,7 +144,8 @@ export const useVariableOptions = ({
       currentUserSettings,
       currentRoleSettings,
       apiTokenSettings,
-      datetimeSettings,
+      !shouldDisplayExactDate && datetimeSettings,
+      shouldDisplayExactDate && exactDateTimeSettings,
       shouldDisplayCurrentForm && currentFormSettings,
       shouldDisplayCurrentObject && currentObjectSettings,
       shouldDisplayParentObject && parentObjectSettings,
