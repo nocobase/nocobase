@@ -17,3 +17,4 @@ export * from './useSystemSettingsVariable';
 export * from './useVariableOptions';
 export * from './usePopupVariable';
 export * from './useContextAssociationFields';
+export * from './useExactDateVariable';
