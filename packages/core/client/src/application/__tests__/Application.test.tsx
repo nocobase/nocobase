@@ -513,7 +513,7 @@ describe('Application', () => {
       app.registerVariable({
         name: 'test',
         useVariableSettings: () => ({
-          options: {
+          option: {
             value: 'test',
             label: '测试变量',
           },
@@ -529,7 +529,7 @@ describe('Application', () => {
       });
 
       const settings = variables[0].useVariableSettings();
-      expect(settings.options).toEqual({
+      expect(settings.option).toEqual({
         value: 'test',
         label: '测试变量',
       });
@@ -546,7 +546,7 @@ describe('Application', () => {
       app.registerVariable({
         name: 'test',
         useVariableSettings: () => ({
-          options: {
+          option: {
             value: 'test',
             label: '测试变量',
           },
@@ -557,7 +557,7 @@ describe('Application', () => {
       app.registerVariable({
         name: 'test',
         useVariableSettings: () => ({
-          options: {
+          option: {
             value: 'test-duplicate',
             label: '重复测试变量',
           },
@@ -569,7 +569,7 @@ describe('Application', () => {
 
       expect(variables).toHaveLength(1);
       const settings = variables[0].useVariableSettings();
-      expect(settings.options.label).toBe('测试变量');
+      expect(settings.option.label).toBe('测试变量');
       expect(fn).toHaveBeenCalledWith('Variable test already registered');
 
       console.warn = originalConsoleWarn;
@@ -581,7 +581,7 @@ describe('Application', () => {
       app.registerVariable({
         name: 'var1',
         useVariableSettings: () => ({
-          options: {
+          option: {
             value: 'var1',
             label: '变量1选项',
           },
@@ -592,7 +592,7 @@ describe('Application', () => {
       app.registerVariable({
         name: 'var2',
         useVariableSettings: () => ({
-          options: {
+          option: {
             value: 'var2',
             label: '变量2选项',
           },
@@ -622,7 +622,7 @@ describe('Application', () => {
       app.registerVariable({
         name: 'async-var',
         useVariableSettings: () => ({
-          options: {
+          option: {
             value: 'async-var',
             label: '异步变量选项',
           },
@@ -646,7 +646,7 @@ describe('Application', () => {
       app.registerVariable({
         name: 'nested',
         useVariableSettings: () => ({
-          options: {
+          option: {
             value: 'parent',
             label: '父选项',
             children: [
@@ -670,7 +670,7 @@ describe('Application', () => {
       expect(variables).toHaveLength(1);
 
       const settings = variables[0].useVariableSettings();
-      const options = settings.options;
+      const options = settings.option;
 
       expect(options.value).toBe('parent');
       expect(options.children).toHaveLength(2);

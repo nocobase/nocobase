@@ -83,7 +83,7 @@ describe('useBuiltinVariables', () => {
       name: 'customVar',
       useVariableSettings: () => ({
         ctx: { customProp: 'test' },
-        options: {
+        option: {
           label: 'Custom Variable',
           value: 'customVar'
         }
@@ -111,7 +111,7 @@ describe('useBuiltinVariables', () => {
         name: 'customVar1',
         useVariableSettings: () => ({
           ctx: { source: 'var1' },
-          options: {
+          option: {
             label: 'Custom Variable 1',
             value: 'customVar1'
           }
@@ -121,7 +121,7 @@ describe('useBuiltinVariables', () => {
         name: 'customVar2',
         useVariableSettings: () => ({
           ctx: { source: 'var2' },
-          options: {
+          option: {
             label: 'Custom Variable 2',
             value: 'customVar2'
           }
@@ -131,7 +131,7 @@ describe('useBuiltinVariables', () => {
         name: 'customVar3',
         useVariableSettings: () => ({
           ctx: { source: 'var3' },
-          options: {
+          option: {
             label: 'Custom Variable 3',
             value: 'customVar3'
           }
@@ -162,7 +162,7 @@ describe('useBuiltinVariables', () => {
       name: 'functionalVar',
       useVariableSettings: () => ({
         ctx: mockCtxFn,
-        options: {
+        option: {
           label: 'Functional Variable',
           value: 'functionalVar'
         }

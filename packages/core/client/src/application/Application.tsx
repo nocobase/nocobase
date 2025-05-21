@@ -101,7 +101,7 @@ interface Variable {
     /**
      * Variable configuration options
      */
-    options: VariableOption;
+    option: VariableOption;
     /**
      * Variable value
      */
