@@ -9,7 +9,6 @@
 
 import lodash from 'lodash';
 import * as transforms from './transform';
-export * from './logger-utils';
 
 function getTransform(name: string): Function {
   return transforms[name] || transforms._;
