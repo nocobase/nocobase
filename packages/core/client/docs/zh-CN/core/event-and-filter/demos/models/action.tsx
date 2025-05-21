@@ -1,6 +1,6 @@
 import React from 'react';
-import { Button, message, Modal } from 'antd';
-import { FlowModel, Application, Plugin, FlowEngine } from '@nocobase/client';
+import { Button, ButtonProps, message, Modal } from 'antd';
+import { FlowModel, Application, Plugin, FlowEngine, ActionModel } from '@nocobase/client';
 import FlowsSettings from '../settings/FlowsSettings';
 
 // 从 FlowEngine 解构出所需的 Hooks
@@ -8,6 +8,40 @@ const {
   useFlowModel,
   withFlowModel
 } = FlowEngine;
+
+const ButtonModel = ActionModel.extends([
+  {
+    key: 'buttonActionFlow',
+    title: '按钮操作流程',
+    on: {
+      eventName: 'onClick'
+    },
+    steps: {
+      popconfirm: { 
+        use: 'showConfirm',
+        defaultParams: { 
+          title: '确认删除', 
+          message: '确定要删除此记录吗？此操作不可撤销！' 
+        }
+      },
+      delete: {
+        title: '执行删除',
+        handler: async (ctx) => {
+          // 模拟API请求
+          await new Promise(resolve => setTimeout(resolve, 500));
+          ctx.message = message;
+          ctx.message.success('删除成功');
+        }
+      },
+      refresh: {
+        title: '刷新页面',
+        handler: () => {
+          console.log('页面已刷新');
+        }
+      },
+    }
+  }
+]);
 
 // ActionButton 演示组件
 const Demo = () => {
@@ -21,8 +55,13 @@ const Demo = () => {
   );
 }
 
+const ButtonComponent = (props: ButtonProps & { text?: string }) => {
+  const { text, ...rest } = props;
+  return <Button {...rest}>{text}</Button>;
+}
+
 // 使用withFlowModel包装Button组件
-const DeleteButton = withFlowModel(Button, { defaultFlow: 'setDeletePropsFlow' });
+const DeleteButton = withFlowModel(ButtonComponent, { defaultFlow: 'setActionProps' });
 
 // 插件定义
 class DemoPlugin extends Plugin {
@@ -69,105 +108,8 @@ class DemoPlugin extends Plugin {
       },
     });
 
-    // 3. 注册设置删除属性的流程
-    this.app.flowEngine.registerFlow('ButtonModel', {
-      key: 'setDeletePropsFlow',
-      title: '设置删除按钮属性',
-      steps: {
-        setTitle: {
-          title: '设置按钮文本',
-          handler: (ctx, model, params) => {
-            model.setProps('children', params.title);
-          },
-          uiSchema: {
-            title: {
-              type: 'string',
-              title: '按钮文本',
-              'x-decorator': 'FormItem',
-              'x-component': 'Input',
-            }
-          },
-          defaultParams: { title: '删除记录' }
-        },
-        setDanger: {
-          title: '设置按钮状态',
-          handler: (ctx, model, params) => {
-            model.setProps('danger', params.danger);
-            model.setProps('type', params.type);
-          },
-          uiSchema: {
-            danger: {
-              type: 'boolean',
-              title: '是否危险',
-              'x-decorator': 'FormItem',
-              'x-component': 'Switch',
-            },
-            type: {
-              type: 'string',
-              title: '按钮类型',
-              'x-decorator': 'FormItem',
-              'x-component': 'Select',
-              enum: [
-                { label: '默认', value: 'default' },
-                { label: '主要', value: 'primary' }
-              ],
-            },
-          },
-          defaultParams: { danger: true, type: 'primary' }
-        },
-        setOnClick: {
-          title: '设置点击事件',
-          handler: (ctx, model) => {
-            model.setProps('onClick', () => {
-              model.dispatchEvent('onClick', ctx);
-            });
-          }
-        },
-      }
-    });
-
-    // 4. 注册按钮操作流程
-    this.app.flowEngine.registerFlow('ButtonModel', {
-      key: 'buttonActionFlow',
-      title: '按钮操作流程',
-      on: {
-        eventName: 'onClick'
-      },
-      steps: {
-        popconfirm: { 
-          use: 'showConfirm',
-          defaultParams: { 
-            title: '确认删除', 
-            message: '确定要删除此记录吗？此操作不可撤销！' 
-          }
-        },
-        delete: {
-          title: '执行删除',
-          handler: async (ctx) => {
-            // 模拟API请求
-            await new Promise(resolve => setTimeout(resolve, 500));
-            ctx.message = message;
-            ctx.message.success('删除成功');
-          }
-        },
-        refresh: {
-          title: '刷新页面',
-          handler: () => {
-            console.log('页面已刷新');
-          }
-        },
-      }
-    });
-
     // 注册路由
     this.app.router.add('root', { path: '/', Component: Demo });
-  }
-}
-
-// 定义ButtonModel类继承FlowModel
-class ButtonModel extends FlowModel {
-  constructor(uid: string, app: Application) {
-    super(uid, app);
   }
 }
 
