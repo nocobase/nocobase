@@ -6,7 +6,7 @@ import Handlebars from 'handlebars';
 import FlowSettings from '../settings/FlowSettings';
 
 const {
-    useModelById,
+    useFlowModel: useModelById,
     useApplyFlow,
     useContext: useFlowEngineContext,
     withFlowModel,

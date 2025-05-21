@@ -9,7 +9,7 @@ import { FlowModel } from '@nocobase/client';
 
 // 导入hooks和HOC
 import { useContext } from './hooks/useContext';
-import { useFlowModel } from './hooks/useModelById';
+import { useFlowModel } from './hooks/useFlowMode';
 import { useApplyFlow } from './hooks/useApplyFlow'; 
 import { useDispatchEvent } from './hooks/useDispatchEvent';
 import { withFlowModel } from './withFlowModel';
@@ -35,7 +35,7 @@ export class FlowEngine {
    * @param {Record<string, any>} [stepsParams] 步骤参数。
    * @returns {FlowModel} 模型实例。
    */
-  public static useModelById = useFlowModel;
+  public static useFlowModel = useFlowModel;
   /**
    * @static
    * @function useApplyFlow

@@ -5,7 +5,7 @@ import { observer } from '@formily/react';
 
 const { Item: FormItem } = Form;
 
-const { useModelById } = FlowEngine;
+const { useFlowModel: useModelById } = FlowEngine;
 
 // 创建两个组件版本，一个使用props传递的model，一个使用hook获取model
 interface ModelProvidedProps {

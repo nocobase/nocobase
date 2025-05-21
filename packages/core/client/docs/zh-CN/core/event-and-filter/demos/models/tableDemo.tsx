@@ -14,7 +14,7 @@ import { observer } from '@formily/react';
 import FlowSettings from '../settings/FlowSettings';
 
 const {
-    useModelById,
+    useFlowModel: useModelById,
     useApplyFlow,
     useContext: useFlowEngineContext
 } = FlowEngine;

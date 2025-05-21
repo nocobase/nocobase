@@ -6,7 +6,7 @@ import FlowSettings from '../settings/FlowSettings';
 
 // 从 FlowEngine 解构出所需的 Hooks
 const {
-  useModelById,
+  useFlowModel: useModelById,
   useApplyFlow,
   useContext: useFlowEngineContext,
   withFlowModel
