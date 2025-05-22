@@ -29,6 +29,7 @@ import { registerQrcodeWebComponent } from './qrcode-webcom';
 import { FlagProvider } from '../../../flag-provider';
 import { useStyles } from './style';
 import { parseMarkdown } from './util';
+import { VariableScope } from '../../../variables/VariableScope';
 
 export interface MarkdownEditorProps extends Omit<TextAreaProps, 'onSubmit'> {
   scope: any[];
@@ -211,10 +212,14 @@ export const MarkdownVoidInner: any = withDynamicSchemaProps(
 );
 
 export const MarkdownVoid = (props) => {
+  const fieldSchema = useFieldSchema();
+
   return (
-    <FlagProvider collectionField={true}>
-      <MarkdownVoidInner {...props} />
-    </FlagProvider>
+    <VariableScope scopeId={fieldSchema['x-uid']} type='markdownBlock'>
+      <FlagProvider collectionField={true}>
+        <MarkdownVoidInner {...props} />
+      </FlagProvider>
+    </VariableScope>
   );
 };
 MarkdownVoid.Designer = MarkdownVoidDesigner;
