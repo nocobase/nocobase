@@ -64,11 +64,11 @@ export const getOffsetRangeByParams = (params: RangeParams): [string, string] =>
   let end: dayjs.Dayjs;
 
   if (type === 'past') {
-    start = now.startOf(actualUnit).subtract(number - 1, unit as any);
+    start = now.startOf(actualUnit).subtract(number, unit as any);
     end = now.endOf(actualUnit);
   } else if (type === 'future') {
     start = now.startOf(actualUnit);
-    end = start.add(number - 1, unit as any).endOf(actualUnit);
+    end = start.add(number, unit as any).endOf(actualUnit);
   } else {
     throw new Error(`Unsupported type: ${type}`);
   }
