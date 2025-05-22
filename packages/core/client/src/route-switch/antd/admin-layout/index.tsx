@@ -55,6 +55,7 @@ import { KeepAlive, useKeepAlive } from './KeepAlive';
 import { NocoBaseDesktopRoute, NocoBaseDesktopRouteType } from './convertRoutesToSchema';
 import { MenuSchemaToolbar, ResetThemeTokenAndKeepAlgorithm } from './menuItemSettings';
 import { userCenterSettings } from './userCenterSettings';
+import { VariableScope } from '../../../variables/VariableScope';
 
 export { KeepAlive, NocoBaseDesktopRouteType, useKeepAlive };
 
@@ -504,9 +505,11 @@ const MenuItemTitleWithTooltip = withTooltipComponent(MenuItemTitle);
 
 const menuItemRender = (item, dom, options) => {
   return (
-    <MenuItem item={item} options={options}>
-      <MenuItemTitleWithTooltip tooltip={item._route?.tooltip}>{dom}</MenuItemTitleWithTooltip>
-    </MenuItem>
+    <VariableScope scopeId={item.schemaUid} type="menuItem">
+      <MenuItem item={item} options={options}>
+        <MenuItemTitleWithTooltip tooltip={item._route?.tooltip}>{dom}</MenuItemTitleWithTooltip>
+      </MenuItem>
+    </VariableScope>
   );
 };
 

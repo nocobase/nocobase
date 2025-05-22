@@ -12,9 +12,9 @@ import { TreeSelect } from '@formily/antd-v5';
 import { Field, onFieldChange } from '@formily/core';
 import { ISchema } from '@formily/react';
 import { uid } from '@formily/shared';
-import { App, ConfigProvider } from 'antd';
+import { App, ConfigProvider, Input } from 'antd';
 import { SiderContext } from 'antd/es/layout/Sider';
-import React, { FC, useCallback, useMemo } from 'react';
+import React, { FC, useCallback, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   css,
@@ -22,13 +22,19 @@ import {
   isVariable,
   NocoBaseDesktopRouteType,
   useAllAccessDesktopRoutes,
+  useCompatOldVariables,
   useCompile,
+  useContextAssociationFields,
   useCurrentPageUid,
   useCurrentRoute,
   useGlobalTheme,
   useNavigateNoUpdate,
   useNocoBaseRoutes,
   useURLAndHTMLSchema,
+  useVariableOptions,
+  useVariableScope,
+  Variable,
+  VariableInput,
 } from '../../..';
 import { getPageMenuSchema } from '../../../';
 import { SchemaSettings } from '../../../application/schema-settings/SchemaSettings';
@@ -41,6 +47,8 @@ import {
   SchemaSettingsSwitchItem,
 } from '../../../schema-settings/SchemaSettings';
 import { NocoBaseDesktopRoute } from './convertRoutesToSchema';
+import { useBlockCollection } from '../../../schema-settings/VariableInput/hooks/useBlockCollection';
+import { useValues } from '../../../schema-component/antd/filter/useValues';
 
 const components = { TreeSelect };
 
@@ -389,9 +397,9 @@ const EditMenuItem = () => {
         options:
           href || params
             ? {
-                href,
-                params,
-              }
+              href,
+              params,
+            }
             : undefined,
       });
     }
@@ -438,6 +446,62 @@ const HiddenMenuItem = () => {
   );
 };
 
+const EditBadge = () => {
+  const { t } = useTranslation();
+  const currentRoute = useCurrentRoute();
+  const { updateRoute } = useNocoBaseRoutes();
+
+  const schema = useMemo(() => {
+    return {
+      type: 'object',
+      title: t('Title'),
+      properties: {
+        badgeTitle: {
+          'x-decorator': 'FormItem',
+          'x-component': (props) => {
+            return <VariableInput {...props} renderSchemaComponent={Input} />
+          },
+          'x-component-props': {},
+        },
+      },
+    };
+  }, [t]);
+
+  const initialValues = useMemo(() => {
+    return {
+      badgeTitle: currentRoute.options?.badge?.title,
+    };
+  }, [currentRoute.options?.badge?.title]);
+
+  const onEditBadgeSubmit: (values: any) => void = useCallback(
+    ({ badgeTitle }) => {
+      // 更新菜单对应的路由
+      if (currentRoute.id !== undefined) {
+        updateRoute(currentRoute.id, {
+          options: {
+            ...currentRoute.options,
+            badge: {
+              ...currentRoute.options?.badge,
+              title: badgeTitle,
+            },
+          },
+        });
+      }
+    },
+    [currentRoute.id, updateRoute],
+  );
+
+  return (
+    <SchemaSettingsModalItem
+      title={t('Edit badge')}
+      eventKey="edit-badge"
+      schema={schema as ISchema}
+      initialValues={initialValues}
+      onSubmit={onEditBadgeSubmit}
+    />
+  );
+};
+
 const MoveToMenuItem = () => {
   const { t } = useTranslation();
   const effects = useCallback(
@@ -448,14 +512,14 @@ const MoveToMenuItem = () => {
           f.dataSource =
             type === NocoBaseDesktopRouteType.group
               ? [
-                  { label: t('Before'), value: 'beforeBegin' },
-                  { label: t('After'), value: 'afterEnd' },
-                  { label: t('Inner'), value: 'beforeEnd' },
-                ]
+                { label: t('Before'), value: 'beforeBegin' },
+                { label: t('After'), value: 'afterEnd' },
+                { label: t('Inner'), value: 'beforeEnd' },
+              ]
               : [
-                  { label: t('Before'), value: 'beforeBegin' },
-                  { label: t('After'), value: 'afterEnd' },
-                ];
+                { label: t('Before'), value: 'beforeBegin' },
+                { label: t('After'), value: 'afterEnd' },
+              ];
         });
       });
     },
@@ -514,13 +578,13 @@ const MoveToMenuItem = () => {
       const options =
         position === 'beforeEnd'
           ? {
-              targetScope: {
-                parentId: targetId,
-              },
-            }
+            targetScope: {
+              parentId: targetId,
+            },
+          }
           : {
-              targetId: targetId,
-            };
+            targetId: targetId,
+          };
 
       await moveRoute({
         sourceId: currentRoute.id as any,
@@ -609,6 +673,10 @@ export const menuItemSettings = new SchemaSettings({
     {
       name: 'moveTo',
       Component: MoveToMenuItem,
+    },
+    {
+      name: 'badge',
+      Component: EditBadge,
     },
     {
       name: 'divider',
