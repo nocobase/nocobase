@@ -7,6 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import path from 'node:path';
+import fs from 'node:fs/promises';
+import { randomUUID } from 'node:crypto';
+
 import { MockServer, createMockServer, sleep } from '@nocobase/test';
 import { Plugin } from '../plugin';
 
@@ -38,6 +42,7 @@ describe('memory queue adapter', () => {
 
   beforeEach(async () => {
     app = await createMockServer({
+      name: randomUUID(),
       plugins: [MockPlugin],
       skipStart: true,
     });
@@ -165,7 +170,7 @@ describe('memory queue adapter', () => {
     expect(mockPlugin.idle).toBe(true);
   });
 
-  test('graceful shutdown', async () => {
+  test('graceful shutdown, storage', async () => {
     const mockListener = vi.fn();
     await app.eventQueue.subscribe('test1', {
       idle: () => true,
@@ -175,5 +180,24 @@ describe('memory queue adapter', () => {
     await app.eventQueue.publish('test1', 'message1');
     await app.eventQueue.close();
     expect(mockListener).toBeCalledTimes(0);
+
+    await sleep(300);
+    expect(mockListener).toBeCalledTimes(0);
+    const queueFile = path.resolve(process.cwd(), 'storage', 'apps', app.name, 'event-queue.json');
+    await expect(fs.stat(queueFile)).resolves.toBeDefined();
+    const queueFileContent = await fs.readFile(queueFile, 'utf-8');
+    const queueFileJSON = JSON.parse(queueFileContent);
+    const channels = Object.keys(queueFileJSON);
+    expect(channels).toHaveLength(1);
+    expect(channels[0].endsWith('.test1')).toBe(true);
+    expect(queueFileJSON[channels[0]]).toMatchObject([
+      {
+        content: 'message1',
+      },
+    ]);
+
+    await app.eventQueue.connect();
+    await sleep(300);
+    expect(mockListener).toBeCalledTimes(1);
   });
 });

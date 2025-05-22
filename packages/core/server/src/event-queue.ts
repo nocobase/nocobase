@@ -9,6 +9,8 @@
 
 import { randomUUID } from 'crypto';
 import { EventEmitter } from 'events';
+import path from 'path';
+import fs from 'fs/promises';
 
 import Application from './application';
 
@@ -78,17 +80,25 @@ export class MemoryEventQueueAdapter implements IEventQueueAdapter {
     return null;
   }
 
+  get storagePath() {
+    return path.resolve(process.cwd(), 'storage', 'apps', this.options.appName, 'event-queue.json');
+  }
+
   listen = async (channel: string) => {
+    if (!this.connected) {
+      return;
+    }
     if (this.reading.has(channel)) {
+      console.debug(`memory queue (${channel}) is already reading, waiting last reading to end...`);
       await this.reading.get(channel);
     }
     const event = this.events.get(channel);
     if (!event) {
-      console.warn(`queue (${channel}) not found, skipping...`);
+      console.warn(`memory queue (${channel}) not found, skipping...`);
       return;
     }
     if (!event.idle()) {
-      console.debug(`queue (${channel}) is not idle, skipping...`);
+      console.debug(`memory queue (${channel}) is not idle, skipping...`);
       return;
     }
     const reading = this.read(channel);
@@ -96,28 +106,86 @@ export class MemoryEventQueueAdapter implements IEventQueueAdapter {
     await reading;
   };
 
+  constructor(private options: { appName: string }) {
+    this.emitter.setMaxListeners(0);
+  }
+
   isConnected(): boolean {
     return this.connected;
   }
 
-  connect() {
+  private async loadFromStorage() {
+    let queues = {};
+    let exists = false;
+    try {
+      await fs.stat(this.storagePath);
+      exists = true;
+    } catch (ex) {
+      console.info(`memory queue storage file not found, skip`);
+    }
+    if (exists) {
+      try {
+        const queueJson = await fs.readFile(this.storagePath);
+        queues = JSON.parse(queueJson.toString());
+        console.debug('memory queue loaded from storage', queues);
+        await fs.unlink(this.storagePath);
+      } catch (ex) {
+        console.error('failed to load queue from storage', ex);
+      }
+    }
+    this.queues = new Map(Object.entries(queues));
+  }
+
+  private async saveToStorage() {
+    const queues = Array.from(this.queues.entries()).reduce((acc, [channel, queue]) => {
+      if (queue?.length) {
+        acc[channel] = queue;
+      }
+      return acc;
+    }, {});
+
+    if (Object.keys(queues).length) {
+      await fs.mkdir(path.dirname(this.storagePath), { recursive: true });
+      await fs.writeFile(this.storagePath, JSON.stringify(queues));
+      console.debug('memory queue saved to storage', queues);
+    } else {
+      console.debug('memory queue empty, no need to save to storage');
+    }
+  }
+
+  async connect() {
     if (this.connected) {
       return;
     }
+
+    await this.loadFromStorage();
+
     this.connected = true;
 
-    // setImmediate(() => {
-    //   for (const channel of this.events.keys()) {
-    //     this.consume(channel);
-    //   }
-    // });
+    setImmediate(() => {
+      // for (const channel of this.events.keys()) {
+      //   this.consume(channel);
+      // }
+      for (const channel of this.queues.keys()) {
+        const queue = this.queues.get(channel);
+        if (!queue?.length) {
+          continue;
+        }
+        this.emitter.emit(channel, channel);
+      }
+    });
   }
 
   async close() {
     this.connected = false;
     if (this.processing) {
+      console.info('memory queue waiting for processing job...');
       await this.processing;
+      console.info('memory queue job cleaned');
     }
+
+    console.log('memory queue gracefully shutting down...');
+    await this.saveToStorage();
   }
 
   subscribe(channel: string, options: QueueEventOptions): void {
@@ -151,6 +219,7 @@ export class MemoryEventQueueAdapter implements IEventQueueAdapter {
     }
     const queue = this.queues.get(channel);
     queue.push({ id: randomUUID(), content, options });
+    console.debug(`memory queue (${channel}) published message`, content);
 
     // this.consume(channel, true);
     setImmediate(() => {
@@ -210,6 +279,7 @@ export class MemoryEventQueueAdapter implements IEventQueueAdapter {
 
     while (queue?.length) {
       const messages = queue.slice(0, event.concurrency || QUEUE_DEFAULT_CONCURRENCY);
+      console.debug(`memory queue (${channel}) read ${messages.length} messages`, messages);
       queue.splice(0, messages.length);
       const batch = messages.map(({ id, ...message }) => this.process(channel, { id, message }));
       await Promise.all(batch);
@@ -221,14 +291,16 @@ export class MemoryEventQueueAdapter implements IEventQueueAdapter {
     const event = this.events.get(channel);
     const { content, options: { timeout = QUEUE_DEFAULT_ACK_TIMEOUT, maxRetries = 0, retried = 0 } = {} } = message;
     try {
+      console.debug(`memory queue (${channel}) processing message (${id})...`, content);
       await event.process(content, {
         signal: AbortSignal.timeout(timeout),
       });
+      console.debug(`memory queue (${channel}) consumed message (${id})`);
     } catch (ex) {
       if (maxRetries > 0 && retried < maxRetries) {
         const currentRetry = retried + 1;
         console.warn(
-          `redis queue (${channel}) consum message (${id}) failed, retrying (${currentRetry} / ${maxRetries})...`,
+          `memory queue (${channel}) consum message (${id}) failed, retrying (${currentRetry} / ${maxRetries})...`,
           ex,
         );
         setImmediate(() => {
@@ -255,7 +327,7 @@ export class EventQueue {
   ) {
     this.events = new Map();
 
-    this.setAdapter(new MemoryEventQueueAdapter());
+    this.setAdapter(new MemoryEventQueueAdapter({ appName: this.app.name }));
 
     app.on('afterStart', async () => {
       await this.connect();
