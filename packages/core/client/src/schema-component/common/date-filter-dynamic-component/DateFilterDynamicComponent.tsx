@@ -107,7 +107,7 @@ export const DateFilterDynamicComponent = (props) => {
         <Select
           key="unit"
           value={value?.unit}
-          style={{ maxWidth: 100 }}
+          style={{ maxWidth: 130 }}
           onChange={(val) => {
             const obj = {
               ...value,
