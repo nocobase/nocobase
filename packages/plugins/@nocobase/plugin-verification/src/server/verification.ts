@@ -36,17 +36,17 @@ export interface IVerification {
 }
 
 export abstract class Verification implements IVerification {
-  verificator: Model;
+  verifier: Model;
   protected ctx: Context;
   protected options: Record<string, any>;
-  constructor({ ctx, verificator, options }) {
+  constructor({ ctx, verifier, options }) {
     this.ctx = ctx;
-    this.verificator = verificator;
+    this.verifier = verifier;
     this.options = options;
   }
 
   get throughRepo() {
-    return this.ctx.db.getRepository('usersVerificators');
+    return this.ctx.db.getRepository('usersVerifiers');
   }
 
   abstract verify({ resource, action, userId, boundInfo, verifyParams }): Promise<any>;
@@ -58,7 +58,7 @@ export abstract class Verification implements IVerification {
   async getBoundInfo(userId: number): Promise<any> {
     return this.throughRepo.findOne({
       filter: {
-        verificator: this.verificator.name,
+        verifier: this.verifier.name,
         userId,
       },
     });
@@ -79,4 +79,4 @@ export abstract class Verification implements IVerification {
   }
 }
 
-export type VerificationExtend<T extends Verification> = new ({ ctx, verificator, options }) => T;
+export type VerificationExtend<T extends Verification> = new ({ ctx, verifier, options }) => T;

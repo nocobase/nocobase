@@ -25,11 +25,11 @@ export const Options = () => {
               public: {
                 type: 'object',
                 properties: {
-                  verificator: {
+                  verifier: {
                     type: 'string',
-                    'x-component': 'VerificatorSelect',
+                    'x-component': 'VerifierSelect',
                     'x-component-props': {
-                      title: '{{t("Verificator")}}',
+                      title: '{{t("Verifier")}}',
                       scene: 'auth-sms',
                     },
                   },
