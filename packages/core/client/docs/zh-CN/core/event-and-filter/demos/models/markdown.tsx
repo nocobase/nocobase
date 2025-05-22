@@ -27,7 +27,7 @@ const Markdown = ({ content, height }) => {
     return <div dangerouslySetInnerHTML={{ __html: content }} style={{ height }} />
 }
 
-const MarkdownBlock = withFlowModel(Markdown, { defaultFlow: 'setProps' });
+const MarkdownBlock = withFlowModel(Markdown);
 
 const MarkdownModel = BlockModel.extends([
     {

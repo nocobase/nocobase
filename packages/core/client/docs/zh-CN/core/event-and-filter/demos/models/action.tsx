@@ -61,7 +61,7 @@ const ButtonComponent = (props: ButtonProps & { text?: string }) => {
 }
 
 // 使用withFlowModel包装Button组件
-const DeleteButton = withFlowModel(ButtonComponent, { defaultFlow: 'setProps' });
+const DeleteButton = withFlowModel(ButtonComponent);
 
 // 插件定义
 class DemoPlugin extends Plugin {

@@ -1,15 +1,11 @@
 import { observable, action, define } from '@formily/reactive';
 import { FlowEngine } from '../../flow-engine';
-import type { FlowContext, ActionStepDefinition, InlineStepDefinition, StepDefinition, FlowDefinition } from '../../flow-engine/types';
+import type { FlowContext, StepDefinition, FlowDefinition, ActionStepDefinition, InlineStepDefinition } from '../../flow-engine/types';
 import type { Application } from '../../application/Application';
 import { uid } from '@nocobase/utils/client';
-
-export interface IModelComponentProps {
-  [key: string]: any;
-}
-
-// 定义只读版本的props类型
-export type ReadonlyModelProps = Readonly<IModelComponentProps>;
+import _ from 'lodash';
+import { ExtendedFlowDefinition, IModelComponentProps, ReadonlyModelProps, FlowUserContext } from '../types';
+import { mergeFlowDefinitions } from '../utils';
 
 // 使用WeakMap存储每个类的flows
 const modelFlows = new WeakMap<typeof FlowModel, Map<string, FlowDefinition>>();
@@ -216,7 +212,7 @@ export class FlowModel {
     return this.stepParams;
   }
 
-  async applyFlow(flowKey: string, context?: Partial<Omit<FlowContext, 'engine' | '$exit' | 'app'>>): Promise<any> {
+  async applyFlow(flowKey: string, context?: FlowUserContext): Promise<any> {
     const currentFlowEngine = this.flowEngine;
     if (!currentFlowEngine || !this.app) {
       console.warn('FlowEngine or Application not available on this model for applyFlow. Check model.app and model.app.flowEngine setup.');
@@ -290,7 +286,7 @@ export class FlowModel {
     return Promise.resolve(lastResult);
   }
 
-  dispatchEvent(eventName: string, context?: Partial<Omit<FlowContext, 'engine' | '$exit' | 'app'>>): void {
+  dispatchEvent(eventName: string, context?: FlowUserContext): void {
     const currentFlowEngine = this.flowEngine;
     if (!currentFlowEngine || !this.app) {
       console.warn('FlowEngine or Application not available on this model for dispatchEvent. Check model.app and model.app.flowEngine setup.');
@@ -320,17 +316,42 @@ export class FlowModel {
 
   /**
    * 创建一个新的 FlowModel 子类，并预注册指定的流程。
-   * @param {FlowDefinition[]} flows 要预注册的流程定义数组
+   * @param {ExtendedFlowDefinition[]} flows 要预注册的流程定义数组
+   *        如果flow.patch为true，则表示这是对父类同名流程的部分覆盖
    * @returns 新创建的 FlowModel 子类
    */
-  public static extends<T extends typeof FlowModel>(this: T, flows: FlowDefinition[] = []): T {
+  public static extends<T extends typeof FlowModel>(
+    this: T, 
+    flows: ExtendedFlowDefinition[] = []
+  ): T {
     class CustomFlowModel extends (this as unknown as typeof FlowModel) {
       static name = `CustomFlowModel_${uid()}`;
     }
 
+    // 处理流程注册和覆盖
     if (flows.length > 0) {
       flows.forEach(flowDefinition => {
-        CustomFlowModel.registerFlow(flowDefinition);
+        const allFlows = this.getFlows();
+        // 如果标记为部分覆盖，则尝试获取并合并父类流程
+        if (flowDefinition.patch === true) {
+          // 获取原始流程定义，使用getFlows方法获取所有流程（包括从父类继承的）
+          const originalFlow = allFlows.get(flowDefinition.key);
+          
+          if (originalFlow) {
+            const mergedFlow = mergeFlowDefinitions(originalFlow, flowDefinition);
+            
+            // 注册合并后的流程
+            CustomFlowModel.registerFlow(mergedFlow);
+          } else {
+            console.warn(`FlowModel.extends: Cannot patch flow '${flowDefinition.key}' as it does not exist in parent class. Registering as new flow.`);
+            // 移除patch标记，作为新流程注册
+            const { patch, ...newFlowDef } = flowDefinition;
+            CustomFlowModel.registerFlow(newFlowDef);
+          }
+        } else {
+          // 完全覆盖或新增流程
+          CustomFlowModel.registerFlow(flowDefinition);
+        }
       });
     }
     
