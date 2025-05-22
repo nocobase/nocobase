@@ -23,14 +23,6 @@ import { useApp } from '../../application/hooks/useApp';
  * @returns
  */
 const useBuiltInVariables = () => {
-  const app = useApp();
-  const customVariables = app.getVariables().map((variable) => {
-    return {
-      name: variable.name,
-      ctx: variable.useVariableSettings().ctx,
-    }
-  })
-
   const { currentUserCtx } = useCurrentUserVariable();
   const { currentRoleCtx } = useCurrentRoleVariable();
   const { apiTokenCtx } = useAPITokenVariable();
@@ -117,7 +109,7 @@ const useBuiltInVariables = () => {
     exactDateTimeCtx,
   ]);
 
-  return { builtinVariables: [...builtinVariables, ...customVariables] };
+  return { builtinVariables };
 };
 
 export default useBuiltInVariables;
