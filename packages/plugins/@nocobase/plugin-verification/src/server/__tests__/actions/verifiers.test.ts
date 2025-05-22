@@ -12,7 +12,7 @@ import { VerificationManager } from '../../verification-manager';
 import PluginVerficationServer from '../../Plugin';
 import { Verification } from '../../verification';
 
-describe('actions of verificators', async () => {
+describe('actions of verifiers', async () => {
   describe('not user related', async () => {
     let app: MockServer;
     let agent: any;
@@ -33,35 +33,35 @@ describe('actions of verificators', async () => {
     });
 
     it('listTypes', async () => {
-      const res = await agent.resource('verificators').listTypes();
+      const res = await agent.resource('verifiers').listTypes();
       expect(res.status).toBe(200);
       expect(res.body.data).toEqual(manager.listTypes());
     });
 
     it('listByScene', async () => {
-      const verificator = await app.db.getRepository('verificators').create({
+      const verifier = await app.db.getRepository('verifiers').create({
         values: {
           name: 'test',
           title: 'Test',
           verificationType: 'sms-otp',
         },
       });
-      const res = await agent.resource('verificators').listByScene({
+      const res = await agent.resource('verifiers').listByScene({
         scene: 'test',
       });
       expect(res.status).toBe(200);
       expect(res.body.data).toMatchObject({
-        verificators: [],
+        verifiers: [],
         availableTypes: [],
       });
       manager.addSceneRule((scene, verificationType) => scene === 'test' && verificationType === 'sms-otp');
-      const res2 = await agent.resource('verificators').listByScene({
+      const res2 = await agent.resource('verifiers').listByScene({
         scene: 'test',
       });
       const verificationType = manager.verificationTypes.get('sms-otp');
       expect(res2.status).toBe(200);
       expect(res2.body.data).toMatchObject({
-        verificators: [{ name: verificator.name, title: verificator.title }],
+        verifiers: [{ name: verifier.name, title: verifier.title }],
         availableTypes: [{ name: 'sms-otp', title: verificationType.title }],
       });
     });
@@ -101,7 +101,7 @@ describe('actions of verificators', async () => {
           }
         },
       });
-      const verificators = await app.db.getRepository('verificators').create({
+      const verifiers = await app.db.getRepository('verifiers').create({
         values: [
           {
             name: 'test',
@@ -113,12 +113,12 @@ describe('actions of verificators', async () => {
           },
         ],
       });
-      await verificators[0].addUser(1, {
+      await verifiers[0].addUser(1, {
         through: {
           uuid: 'test-uuid',
         },
       });
-      const res = await agent.resource('verificators').listByUser();
+      const res = await agent.resource('verifiers').listByUser();
       const smsOTP = manager.verificationTypes.get('sms-otp');
       expect(res.status).toBe(200);
       expect(res.body.data).toMatchObject([
@@ -154,8 +154,8 @@ describe('actions of verificators', async () => {
           }
         },
       });
-      manager.addSceneRule((scene, verificationType) => scene === 'unbind-verificator' && verificationType === 'test');
-      const verificators = await app.db.getRepository('verificators').create({
+      manager.addSceneRule((scene, verificationType) => scene === 'unbind-verifier' && verificationType === 'test');
+      const verifiers = await app.db.getRepository('verifiers').create({
         values: [
           {
             name: 'test',
@@ -168,13 +168,13 @@ describe('actions of verificators', async () => {
           },
         ],
       });
-      await verificators[0].addUser(1, {
+      await verifiers[0].addUser(1, {
         through: {
           uuid: 'test-uuid',
         },
       });
-      const res = await agent.resource('verificators').listForVerify({
-        scene: 'unbind-verificator',
+      const res = await agent.resource('verifiers').listForVerify({
+        scene: 'unbind-verifier',
       });
       expect(res.status).toBe(200);
       expect(res.body.data).toMatchObject([
@@ -204,38 +204,38 @@ describe('actions of verificators', async () => {
           }
         },
       });
-      await app.db.getRepository('verificators').create({
+      await app.db.getRepository('verifiers').create({
         values: {
           name: 'test',
           title: 'Test',
           verificationType: 'test',
         },
       });
-      const res = await agent.resource('verificators').bind({
+      const res = await agent.resource('verifiers').bind({
         values: {
-          verificator: 'invalid',
+          verifier: 'invalid',
         },
       });
       expect(res.status).toBe(400);
-      expect(res.error.text).toBe('Invalid verificator');
-      const res1 = await agent.resource('verificators').bind({
+      expect(res.error.text).toBe('Invalid verifier');
+      const res1 = await agent.resource('verifiers').bind({
         values: {
-          verificator: 'test',
+          verifier: 'test',
         },
       });
       expect(res1.status).toBe(200);
       const record = await manager.getBoundRecord(1, 'test');
       expect(record).toBeDefined();
       expect(record.uuid).toBe('test-uuid');
-      expect(record.verificator).toBe('test');
+      expect(record.verifier).toBe('test');
       expect(record.userId).toBe(1);
-      const res2 = await agent.resource('verificators').bind({
+      const res2 = await agent.resource('verifiers').bind({
         values: {
-          verificator: 'test',
+          verifier: 'test',
         },
       });
       expect(res2.status).toBe(400);
-      expect(res2.error.text).toBe('You have already bound this verificator');
+      expect(res2.error.text).toBe('You have already bound this verifier');
     });
 
     it('unbind', async () => {
@@ -251,31 +251,31 @@ describe('actions of verificators', async () => {
           }
         },
       });
-      manager.addSceneRule((scene, verificationType) => scene === 'unbind-verificator' && verificationType === 'test');
-      await app.db.getRepository('verificators').create({
+      manager.addSceneRule((scene, verificationType) => scene === 'unbind-verifier' && verificationType === 'test');
+      await app.db.getRepository('verifiers').create({
         values: {
           name: 'test',
           title: 'Test',
           verificationType: 'test',
         },
       });
-      await agent.resource('verificators').bind({
+      await agent.resource('verifiers').bind({
         values: {
-          verificator: 'test',
+          verifier: 'test',
         },
       });
-      const res = await agent.resource('verificators').unbind({
+      const res = await agent.resource('verifiers').unbind({
         values: {
-          verificator: 'test',
-          unbindVerificator: 'invalid',
+          verifier: 'test',
+          unbindVerifier: 'invalid',
         },
       });
       expect(res.status).toBe(400);
-      expect(res.error.text).toBe('Invalid verificator');
-      const res1 = await agent.resource('verificators').unbind({
+      expect(res.error.text).toBe('Invalid verifier');
+      const res1 = await agent.resource('verifiers').unbind({
         values: {
-          unbindVerificator: 'test',
-          verificator: 'test',
+          unbindVerifier: 'test',
+          verifier: 'test',
         },
       });
       expect(res1.status).toBe(200);

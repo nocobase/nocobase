@@ -85,6 +85,11 @@ export abstract class TaskType extends EventEmitter implements ITask {
     return true;
   }
 
+  async statusChange(status: TaskStatus) {
+    this.status = status;
+    this.emit('statusChange', this.status);
+  }
+
   /**
    * Execute the task implementation
    * @returns Promise that resolves with the task result
@@ -143,10 +148,9 @@ export abstract class TaskType extends EventEmitter implements ITask {
       this.emit('statusChange', this.status);
     } catch (error) {
       if (error instanceof CancelError) {
-        this.status = {
-          type: 'cancelled',
-        };
+        this.statusChange({ type: 'cancelled' });
         this.logger?.info(`Task ${this.taskId} was cancelled during execution`);
+        return;
       } else {
         this.status = {
           type: 'failed',
@@ -155,9 +159,8 @@ export abstract class TaskType extends EventEmitter implements ITask {
         };
 
         this.logger?.error(`Task ${this.taskId} failed with error: ${error.message}`);
+        this.emit('statusChange', this.status);
       }
-
-      this.emit('statusChange', this.status);
     } finally {
       this.fulfilledAt = new Date();
       const duration = this.fulfilledAt.getTime() - this.startedAt.getTime();
