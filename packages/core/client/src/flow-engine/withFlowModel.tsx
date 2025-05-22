@@ -21,7 +21,7 @@ export function withFlowModel<P extends object>(
   WrappedComponent: React.ComponentType<P>,
   options?: { defaultFlow?: string; }
 ) {
-  const defaultFlowKey = options.defaultFlow || '';
+  const defaultFlowKey = options?.defaultFlow;
 
   // 使用条件类型确定props类型
   type PropsType = FlowModelComponentProps<P>;
