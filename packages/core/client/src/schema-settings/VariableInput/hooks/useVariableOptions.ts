@@ -64,7 +64,7 @@ export const useVariableOptions = ({
 }: Props) => {
   const app = useApp();
   const customVariables = app.getVariables().map((variable) => {
-    const { visible = true, option } = variable.useVariableSettings();
+    const { visible = true, option } = variable.useOption();
     return {
       visible,
       option: option as any,

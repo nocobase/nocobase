@@ -512,28 +512,33 @@ describe('Application', () => {
 
       app.registerVariable({
         name: 'test',
-        useVariableSettings: () => ({
+        useOption: () => ({
           option: {
             value: 'test',
             label: '测试变量',
           },
-          ctx: { value: 'test-value' }
-        })
+          visible: true
+        }),
+        useCtx: () => ({ value: 'test-value' })
       });
 
       const variables = app.getVariables();
       expect(variables).toHaveLength(1);
       expect(variables[0]).toEqual({
         name: 'test',
-        useVariableSettings: expect.any(Function)
+        useOption: expect.any(Function),
+        useCtx: expect.any(Function)
       });
 
-      const settings = variables[0].useVariableSettings();
-      expect(settings.option).toEqual({
+      const optionResult = variables[0].useOption();
+      expect(optionResult.option).toEqual({
         value: 'test',
         label: '测试变量',
       });
-      expect(settings.ctx).toEqual({ value: 'test-value' });
+      expect(optionResult.visible).toBe(true);
+
+      const ctxResult = variables[0].useCtx();
+      expect(ctxResult).toEqual({ value: 'test-value' });
     });
 
     it('should not register duplicate variables', () => {
@@ -545,31 +550,31 @@ describe('Application', () => {
 
       app.registerVariable({
         name: 'test',
-        useVariableSettings: () => ({
+        useOption: () => ({
           option: {
             value: 'test',
             label: '测试变量',
-          },
-          ctx: { value: 'test-value' }
-        })
+          }
+        }),
+        useCtx: () => ({ value: 'test-value' })
       });
 
       app.registerVariable({
         name: 'test',
-        useVariableSettings: () => ({
+        useOption: () => ({
           option: {
             value: 'test-duplicate',
             label: '重复测试变量',
-          },
-          ctx: { value: 'different-value' }
-        })
+          }
+        }),
+        useCtx: () => ({ value: 'different-value' })
       });
 
       const variables = app.getVariables();
 
       expect(variables).toHaveLength(1);
-      const settings = variables[0].useVariableSettings();
-      expect(settings.option.label).toBe('测试变量');
+      const optionResult = variables[0].useOption();
+      expect(optionResult.option.label).toBe('测试变量');
       expect(fn).toHaveBeenCalledWith('Variable test already registered');
 
       console.warn = originalConsoleWarn;
@@ -580,25 +585,25 @@ describe('Application', () => {
 
       app.registerVariable({
         name: 'var1',
-        useVariableSettings: () => ({
+        useOption: () => ({
           option: {
             value: 'var1',
             label: '变量1选项',
-          },
-          ctx: { value: 'var1-value' }
-        })
+          }
+        }),
+        useCtx: () => ({ value: 'var1-value' })
       });
 
       app.registerVariable({
         name: 'var2',
-        useVariableSettings: () => ({
+        useOption: () => ({
           option: {
             value: 'var2',
             label: '变量2选项',
           },
-          ctx: { value: 'var2-value' },
           visible: true
-        })
+        }),
+        useCtx: () => ({ value: 'var2-value' })
       });
 
       const variables = app.getVariables();
@@ -607,11 +612,11 @@ describe('Application', () => {
       expect(variables[0].name).toBe('var1');
       expect(variables[1].name).toBe('var2');
 
-      const settings1 = variables[0].useVariableSettings();
-      const settings2 = variables[1].useVariableSettings();
+      const optionResult1 = variables[0].useOption();
+      const optionResult2 = variables[1].useOption();
 
-      expect(settings1.visible).toBeUndefined();
-      expect(settings2.visible).toBe(true);
+      expect(optionResult1.visible).toBeUndefined();
+      expect(optionResult2.visible).toBe(true);
     });
 
     it('should support async useCtx function', () => {
@@ -621,21 +626,21 @@ describe('Application', () => {
 
       app.registerVariable({
         name: 'async-var',
-        useVariableSettings: () => ({
+        useOption: () => ({
           option: {
             value: 'async-var',
             label: '异步变量选项',
-          },
-          ctx: asyncCtx
-        })
+          }
+        }),
+        useCtx: () => asyncCtx
       });
 
       const variables = app.getVariables();
 
       expect(variables).toHaveLength(1);
-      const settings = variables[0].useVariableSettings();
+      const ctxFn = variables[0].useCtx();
 
-      return settings.ctx({ variableName: 'async-var' }).then(result => {
+      return ctxFn({ variableName: 'async-var' }).then(result => {
         expect(result).toEqual({ value: 'async-var-async-value' });
       });
     });
@@ -645,7 +650,7 @@ describe('Application', () => {
 
       app.registerVariable({
         name: 'nested',
-        useVariableSettings: () => ({
+        useOption: () => ({
           option: {
             value: 'parent',
             label: '父选项',
@@ -660,17 +665,17 @@ describe('Application', () => {
                 disabled: true,
               }
             ]
-          },
-          ctx: { value: 'nested-value' }
-        })
+          }
+        }),
+        useCtx: () => ({ value: 'nested-value' })
       });
 
       const variables = app.getVariables();
 
       expect(variables).toHaveLength(1);
 
-      const settings = variables[0].useVariableSettings();
-      const options = settings.option;
+      const optionResult = variables[0].useOption();
+      const options = optionResult.option;
 
       expect(options.value).toBe('parent');
       expect(options.children).toHaveLength(2);

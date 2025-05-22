@@ -97,21 +97,10 @@ interface VariableOption {
 interface Variable {
   /** Unique identifier of the variable */
   name: string;
-  useVariableSettings: () => ({
-    /**
-     * Variable configuration options
-     */
-    option: VariableOption;
-    /**
-     * Variable value
-     */
-    ctx: (any | ((param: { variableName: string }) => Promise<any>));
-    /**
-     * Whether the variable is visible
-     * @default true
-     */
-    visible?: boolean;
-  })
+  /** Variable configuration options */
+  useOption: () => ({ option: VariableOption; visible?: boolean });
+  /** Variable context */
+  useCtx: () => (any | ((param: { variableName: string }) => Promise<any>));
 }
 
 export class Application {

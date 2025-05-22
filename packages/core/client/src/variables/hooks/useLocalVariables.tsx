@@ -67,7 +67,7 @@ const useLocalVariables = (props?: Props) => {
   const customVariables = app.getVariables().map((variable) => {
     return {
       name: variable.name,
-      ctx: variable.useVariableSettings().ctx,
+      ctx: variable.useCtx(),
     }
   })
 
