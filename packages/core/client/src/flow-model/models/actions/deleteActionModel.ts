@@ -3,7 +3,7 @@ import { Modal } from 'antd';
 
 export const DeleteActionModel = ActionModel.extends([
     {
-        'key': 'deleteActionFlow',
+        'key': 'onClick',
         'title': '删除操作',
         steps: {
             showConfirm: {

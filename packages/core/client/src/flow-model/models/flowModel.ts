@@ -2,6 +2,7 @@ import { observable, action, define } from '@formily/reactive';
 import { FlowEngine } from '../../flow-engine';
 import type { FlowContext, ActionStepDefinition, InlineStepDefinition, StepDefinition, FlowDefinition } from '../../flow-engine/types';
 import type { Application } from '../../application/Application';
+import { uid } from '@nocobase/utils/client';
 
 export interface IModelComponentProps {
   [key: string]: any;
@@ -322,14 +323,16 @@ export class FlowModel {
    * @returns 新创建的 FlowModel 子类
    */
   public static extends<T extends typeof FlowModel>(this: T, flows: FlowDefinition[] = []): T {
-    class NewFlowModel extends (this as unknown as typeof FlowModel) {}
+    class CustomFlowModel extends (this as unknown as typeof FlowModel) {
+      static name = `CustomFlowModel_${uid()}`;
+    }
 
     if (flows.length > 0) {
       flows.forEach(flowDefinition => {
-        NewFlowModel.registerFlow(flowDefinition);
+        CustomFlowModel.registerFlow(flowDefinition);
       });
     }
     
-    return NewFlowModel as T;
+    return CustomFlowModel as unknown as T;
   }
 }

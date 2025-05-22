@@ -3,7 +3,7 @@ import { ActionModel } from "./actionModel";
 
 export const RefreshActionModel = ActionModel.extends([
     {
-        'key': 'refreshActionFlow',
+        'key': 'onClick',
         'title': '刷新操作',
         'steps': {
             'refresh': {

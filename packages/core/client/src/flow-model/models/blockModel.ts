@@ -59,11 +59,13 @@ export class BlockModel extends FlowModel {
     registeredActionModels.get(this)?.add({ title, type });
   }
 
-  public static getSupportedActions(): {
+  public static get supportedActions(): {
     title: string;
     type: typeof ActionModel;
   }[] {
-    return Array.from(registeredActionModels.get(this) || []);
+    // FIXME: 这里继承有问题，需要修复
+    const actions = registeredActionModels.get(BlockModel);
+    return Array.from(actions || []);
   }
 
   protected static initFlows() {
@@ -79,6 +81,12 @@ export class BlockModel extends FlowModel {
               model.setProps('height', height);
             }
           },
+          uiSchema: {
+            height: {
+              type: 'number',
+              'x-component': 'InputNumber',
+            }
+          },
           defaultParams: { height: 300 }
         },
         setTitle: {
@@ -89,10 +97,22 @@ export class BlockModel extends FlowModel {
               model.setProps('title', title);
             }
           },
+          uiSchema: {
+            title: {
+              type: 'string',
+              'x-component': 'Input',
+            }
+          },
           defaultParams: { title: '' }
         },
         setDescription: {
           title: '设置描述',
+          uiSchema: {
+            description: {
+              type: 'string',
+              'x-component': 'Input',
+            }
+          },
           handler: (ctx, model, params) => {
             const { description } = params || {};
             if (description !== undefined) {

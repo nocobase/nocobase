@@ -11,7 +11,7 @@ const {
 
 const Demo = () => {
     const uid = 'markdown-block';
-    const model = useFlowModel(uid, 'MarkdownModel');
+    const model = useFlowModel<BlockModel>(uid, 'MarkdownModel');
     return (
         <div style={{ padding: 24, background: '#f5f5f5', borderRadius: 8 }}>
             <FlowsSettings model={model} expandAll />
@@ -27,11 +27,11 @@ const Markdown = ({ content, height }) => {
     return <div dangerouslySetInnerHTML={{ __html: content }} style={{ height }} />
 }
 
-const MarkdownBlock = withFlowModel(Markdown, { defaultFlow: 'block:markdown' });
+const MarkdownBlock = withFlowModel(Markdown, { defaultFlow: 'setProps' });
 
 const MarkdownModel = BlockModel.extends([
     {
-        key: 'block:markdown',
+        key: 'setProps',
         title: 'Markdown',
         steps: {
             setTemplate: {
@@ -67,6 +67,7 @@ const MarkdownModel = BlockModel.extends([
         }
     }
 ]);
+
 class DemoPlugin extends Plugin {
     async load() {
         this.app.flowEngine.registerModelClass('MarkdownModel', MarkdownModel);

@@ -2,7 +2,7 @@ import { ActionModel } from "./actionModel";
 import { Modal } from 'antd';
 export const SaveActionModel = ActionModel.extends([
     {
-        'key': 'saveActionFlow',
+        'key': 'onClick',
         'title': '保存操作',
         'steps': {
             'save': {

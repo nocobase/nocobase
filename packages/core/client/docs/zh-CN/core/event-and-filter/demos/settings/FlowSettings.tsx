@@ -198,7 +198,8 @@ const FlowSettingsContent: React.FC<FlowSettingsContentProps> = observer(({ mode
     .filter(Boolean);
 
   if (configurableSteps.length === 0) {
-    return <Empty description="没有可配置参数的步骤" />;
+    // return <Empty description="没有可配置参数的步骤" />;
+    return null;
   }
 
   return (
