@@ -20,6 +20,7 @@ export class FlowModel {
   public hidden: boolean;
   public stepParams: Record<string, Record<string, any>>;
   public app: Application;
+  public defaultFlow: string = 'setProps';
 
   constructor(
     uid: string,

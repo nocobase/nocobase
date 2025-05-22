@@ -5,11 +5,16 @@ import { useApplyFlow } from './hooks/useApplyFlow';
 import { useContext } from './hooks/useContext';
 import { UserContext } from './types';
 
+type BaseFlowModelComponentProps<P extends React.ComponentProps<any>> = {
+  model: FlowModel;
+} & {
+  [key in keyof P]?: P[key];
+};
+
+// 根据是否有默认flow来确定defaultFlow属性是否必填
 type FlowModelComponentProps<P extends React.ComponentProps<any>> = 
-  {
-    model: FlowModel;
-  } & {
-    [key in keyof P]?: P[key];
+  BaseFlowModelComponentProps<P> & {
+    defaultFlow?: string;
   };
 
 export function withFlowModel<P extends object>(
@@ -17,35 +22,22 @@ export function withFlowModel<P extends object>(
   options: { defaultFlow?: string; }
 ) {
   const defaultFlowKey = options.defaultFlow || '';
+  const hasDefaultFlow = !!defaultFlowKey;
 
-  // 根据是否提供 defaultFlow 选择不同的增强组件
-  if (defaultFlowKey) {
-    // 带有默认 flow 的增强组件
-    const WithFlowModelAndApply = observer((props: FlowModelComponentProps<P>) => {
-      const { model, ...restPassthroughProps } = props;
-      const flowContext = useContext();
-      // 始终应用默认流程
-      useApplyFlow(defaultFlowKey, model, flowContext as UserContext);
+  // 使用条件类型确定props类型
+  type PropsType = FlowModelComponentProps<P>;
 
-      const modelProps = model.getProps();
-      const combinedProps = { ...restPassthroughProps, ...modelProps } as unknown as P;
+  const WithFlowModelAndApply = observer((props: PropsType) => {
+    const { model, defaultFlow, ...restPassthroughProps } = props;
+    const flowContext = useContext();
+    useApplyFlow(defaultFlow || defaultFlowKey || model.defaultFlow, model, flowContext as UserContext);
 
-      return <WrappedComponent {...combinedProps} />;
-    });
+    const modelProps = model.getProps();
+    const combinedProps = { ...restPassthroughProps, ...modelProps } as unknown as P;
 
-    WithFlowModelAndApply.displayName = `WithFlowModelAndApply(${WrappedComponent.displayName || WrappedComponent.name || 'Component'})`;
-    return WithFlowModelAndApply;
-  } else {
-    // 不带默认 flow 的简单增强组件
-    const WithFlowModelOnly = observer((props: FlowModelComponentProps<P>) => {
-      const { model, ...restPassthroughProps } = props;
-      const modelProps = model.getProps();
-      const combinedProps = { ...restPassthroughProps, ...modelProps } as unknown as P;
+    return <WrappedComponent {...combinedProps} />;
+  });
 
-      return <WrappedComponent {...combinedProps} />;
-    });
-
-    WithFlowModelOnly.displayName = `WithFlowModelOnly(${WrappedComponent.displayName || WrappedComponent.name || 'Component'})`;
-    return WithFlowModelOnly;
-  }
+  WithFlowModelAndApply.displayName = `WithFlowModelAndApply(${WrappedComponent.displayName || WrappedComponent.name || 'Component'})`;
+  return WithFlowModelAndApply;
 } 
