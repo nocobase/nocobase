@@ -5,31 +5,76 @@
 ```typescript
 // Action 相关类型
 export interface ActionOptions<P = any, R = any> {
-  handler: (ctx: any, model: FlowModel, params: P) => Promise<R> | R;
+  handler: (ctx: FlowContext, model: FlowModel, params: P) => Promise<R> | R;
   uiSchema?: Record<string, any>;
   defaultParams?: Partial<P>;
 }
 
-// Flow 步骤类型
-export interface FlowStep<P = any, R = any> {
-  handler?: (ctx: any, model: FlowModel, params: P) => Promise<R> | R;
-  use?: string; // 复用已注册 action 的名称
+// Action 定义 (对应实际 ActionDefinition)
+export interface ActionDefinition<P = any, R = any> {
+  name: string;
+  title?: string;
+  handler: (ctx: FlowContext, model: FlowModel, params: P) => Promise<R> | R;
   uiSchema?: Record<string, any>;
   defaultParams?: Partial<P>;
 }
 
-// Flow 定义类型
+// Flow 步骤定义 (对应实际 StepDefinition)
+// BaseStepDefinition
+interface BaseStepDefinition {
+  title?: string;
+  isAwait?: boolean; // 是否等待 handler 执行完毕，默认为 true
+}
+
+// 使用已注册 Action 的步骤
+export interface ActionStepDefinition extends BaseStepDefinition {
+  use: string; // 复用已注册 ActionDefinition 的名称
+  uiSchema?: Record<string, any>; // 可选: 覆盖 ActionDefinition 中的 uiSchema
+  defaultParams?: Record<string, any>; // 可选: 覆盖/扩展 ActionDefinition 中的 defaultParams
+  handler?: undefined; // 不能有自己的 handler
+}
+
+// 内联定义 handler 的步骤
+export interface InlineStepDefinition extends BaseStepDefinition {
+  handler: (ctx: FlowContext, model: FlowModel, params: any) => Promise<any> | any;
+  uiSchema?: Record<string, any>; // 可选: 此内联步骤的 uiSchema
+  defaultParams?: Record<string, any>; // 可选: 此内联步骤的 defaultParams
+  use?: undefined; // 不能使用已注册的 action
+}
+
+export type StepDefinition = ActionStepDefinition | InlineStepDefinition;
+
+// Flow 定义类型 (对应实际 FlowDefinition)
 export interface FlowDefinition {
-  on?: { event: string };
-  steps: Record<string, FlowStep>;
+  key: string; // 流程唯一标识
+  title?: string;
+  on?: { eventName: string }; // 更改 event 为 eventName
+  steps: Record<string, StepDefinition>; // 更新 Step 类型
 }
 
-// Step 参数类型
-export interface StepParams {
-  flowKey: string;
-  stepKey: string;
-  params: Record<string, any>;
+// 上下文类型 (对应实际 FlowContext)
+export interface FlowContext {
+  engine: FlowEngine;
+  app?: Application;
+  event?: any;
+  $exit: () => void;
+  [key: string]: any;
 }
+
+// 模型构造函数类型 (对应实际 ModelConstructor)
+export type ModelConstructor<T extends FlowModel = FlowModel> = new (
+  uid: string,
+  app?: Application,
+  stepParams?: Record<string, any>,
+) => T;
+
+// StepParams 在 FlowModel 构造时使用 (Record<string, any>)
+// 此处 StepParams 保留文档原有概念，但实际传入 FlowModel 的是 Record<string, any>
+// export interface StepParams {
+//   flowKey: string;
+//   stepKey: string;
+//   params: Record<string, any>;
+// }
 ```
 
 ---
@@ -39,26 +84,52 @@ export interface StepParams {
 ```typescript
 class FlowEngine {
   // 注册 Action
-  registerAction<P = any, R = any>(actionName: string, options: ActionOptions<P, R>): void;
+  registerAction(nameOrDefinition: string | ActionDefinition, options?: ActionOptions): void;
 
-  // 注册 Model
-  registerModel(modelName: string, ModelClass: typeof FlowModel): void;
+  // 获取 Action 定义
+  getAction(name: string): ActionDefinition | undefined;
 
-  // 获取 Model
-  getModel(modelName: string): typeof FlowModel;
+  // 注册 Model 类
+  registerModelClass(name: string, modelClass: ModelConstructor): void;
 
-  // 注册流程
-  registerFlow(flowKey: string, flow: FlowDefinition): void;
+  // 获取 Model 类 (构造函数)
+  getModelClass(name: string): ModelConstructor | undefined;
+
+  // 创建并注册 Model 实例
+  createModel<T extends FlowModel = FlowModel>(
+    uid: string,
+    modelClassName: string,
+    app: Application,
+    stepsParams?: Record<string, any> // 对应 FlowModel 构造函数中的 stepsParams
+  ): T;
+
+  // 获取 Model 实例
+  getModel<T extends FlowModel = FlowModel>(uid: string): T | undefined;
+
+  // 销毁 Model 实例
+  destroyModel(uid: string): boolean;
+
+  // 注册流程 (注册到 Model 类上)
+  registerFlow(modelClassName: string, flowDefinition: FlowDefinition): void;
 
   // React hooks & HOC
-  static useContext(): any;
-  static useModelById(id: string): FlowModel | undefined;
-  static useApplyFlow(flowKey: string, model: FlowModel, ctx?: any): void;
-  static useDispatchEvent(eventName: string, model: FlowModel, ctx?: any): void;
+  static useContext(): FlowContext;
+  static useFlowModel<T extends FlowModel = FlowModel>(
+    id: string, // 模型实例的 UID
+    modelClassName: string, // 模型类名
+    stepsParams?: Record<string, any> // 步骤参数，可选
+  ): T;
+  static useApplyFlow(flowKey: string, model: FlowModel, ctx?: Partial<FlowContext>): void;
+  static useDispatchEvent(eventName: string, model: FlowModel, ctx?: Partial<FlowContext>): void;
   static withFlowModel<P>(
     Component: React.ComponentType<P>,
-    options: { defaultFlow?: string }
-  ): React.ComponentType<P & { modelId: string }>;
+    options: {
+      modelId?: string; // 可选，用于指定固定 modelId
+      modelClass?: string; // 可选，用于指定模型类，若不提供 modelId，则会基于此创建
+      defaultFlow?: string; // 可选
+      stepsParams?: Record<string, any>; // 可选，用于模型创建
+    }
+  ): React.ComponentType<P & { modelId: string; model?: FlowModel }>;
 }
 ```
 
@@ -68,16 +139,30 @@ class FlowEngine {
 
 ```typescript
 class FlowModel {
-  constructor(options: { stepParams?: StepParams[] });
+  readonly uid: string;
+  readonly app?: Application;
+  readonly flows: Map<string, FlowDefinition>; // 存储注册到此模型(类)的流程
+  protected props: Map<string, any>;
+  protected stepParams: Map<string, Record<string, any>>; // <flowKey, <stepKey, params>>
 
+  constructor(uid: string, app?: Application, initialStepParams?: Record<string, any>);
+
+  // 获取 props
   getProps(key?: string): any;
-  setProps(key: string, value: any): void;
+  // 设置 props
+  setProps(keyOrObject: string | Record<string, any>, value?: any): void;
 
+  // 设置步骤参数 (通常在模型初始化时或特定逻辑中调用)
   setStepParams(flowKey: string, stepKey: string, params: Record<string, any>): void;
+  // 获取步骤参数
   getStepParams(flowKey: string, stepKey: string): Record<string, any> | undefined;
 
-  applyFlow(flowKey: string, ctx?: any): Promise<void>;
-  dispatchEvent(eventName: string, ctx?: any): Promise<void>;
+  // (applyFlow 和 dispatchEvent 通常通过 FlowEngine.useApplyFlow 和 FlowEngine.useDispatchEvent 触发，
+  //  model 实例作为参数传入。FlowModel 自身不直接暴露这两个方法给外部调用者执行流程)
+
+  // 静态方法 (在 Model 类上)
+  static registerFlow(flowDefinition: FlowDefinition): void;
+  static getFlow(flowKey: string): FlowDefinition | undefined;
 }
 ```
 
@@ -86,20 +171,36 @@ class FlowModel {
 ## React 集成 API
 
 ```typescript
-// 通过 hook 获取上下文
-const ctx = FlowEngine.useContext();
+// 通过 hook 获取 FlowEngine 上下文
+const flowContext = FlowEngine.useContext();
 
-// 通过 hook 获取模型实例
-const model = FlowEngine.useModelById('xxx');
+// 通过 hook 获取或创建模型实例
+const modelInstance = FlowEngine.useFlowModel('uniqueModelId', 'MyRegisteredModelClass', { initialParam: 'value' });
 
-// 触发流程
-FlowEngine.useApplyFlow('myFlow', model, ctx);
+// 触发流程 (通常在事件处理或 effect 中)
+// FlowEngine.useApplyFlow 返回一个函数，供调用
+const applyMyFlow = FlowEngine.useApplyFlow();
+// ... later
+// applyMyFlow('myFlowKey', modelInstance, { customData: 'someValue' });
 
-// 派发事件
-FlowEngine.useDispatchEvent('onClick', model, ctx);
+// 派发事件 (通常在事件处理或 effect 中)
+// FlowEngine.useDispatchEvent 返回一个函数
+const dispatchMyEvent = FlowEngine.useDispatchEvent();
+// ... later
+// dispatchMyEvent('onClick', modelInstance, { eventSpecificData: '...' });
+
 
 // 高阶组件用法
-const MyButton = FlowEngine.withFlowModel(Button, { defaultFlow: 'myFlow' });
+// 注意: FlowEngine.withFlowModel 的 options 和返回的 props 可能需要根据实际实现微调
+const MyButtonEnhanced = FlowEngine.withFlowModel(Button, {
+  modelClass: 'ButtonModel', // 指定模型类
+  defaultFlow: 'initializeButtonFlow',
+  stepsParams: { title: 'Default Title' }
+});
+
+// <MyButtonEnhanced modelId="myButtonInstance1" />
+// 或者如果不提供 modelId，HOC 内部会尝试创建和管理 model
+// <MyButtonEnhanced someOtherProp="value" />
 ```
 
 ---
