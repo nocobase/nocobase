@@ -36,7 +36,7 @@ const options = [
   { value: 'lastYear', label: '{{t("Last Year")}}' },
   { value: 'nextYear', label: '{{t("Next Year")}}' },
   { value: 'past', label: '{{t("Past")}}' },
-  { value: 'future', label: '{{t("Future")}}' },
+  { value: 'next', label: '{{t("Next")}}' },
 ];
 
 type SmartDatePickerProps = {
@@ -74,7 +74,7 @@ export const DateFilterDynamicComponent = (props) => {
         style={{
           width: '100%',
           minWidth: 100,
-          maxWidth: ['past', 'future', 'exact', undefined].includes(value?.type) ? 100 : null,
+          maxWidth: ['past', 'next', 'exact', undefined].includes(value?.type) ? 100 : null,
         }}
         value={value?.type || 'exact'}
         onChange={(val) => {
@@ -84,14 +84,14 @@ export const DateFilterDynamicComponent = (props) => {
           const obj: any = {
             type: val,
           };
-          if (['past', 'future'].includes(val)) {
+          if (['past', 'next'].includes(val)) {
             obj.number = 1;
             obj.unit = 'day';
           }
           onChange(obj);
         }}
       />
-      {['past', 'future'].includes(value?.type) && [
+      {['past', 'next'].includes(value?.type) && [
         <InputNumber
           key="number"
           value={value?.number}
@@ -117,10 +117,9 @@ export const DateFilterDynamicComponent = (props) => {
           }}
           options={[
             { value: 'day', label: t('Day') },
-            { value: 'week', label: t('Week') },
-            { value: 'month', label: t('Month') },
-            { value: 'quarter', label: t('Quarter') },
-            { value: 'year', label: t('Year') },
+            { value: 'week', label: t('Calendar week') },
+            { value: 'month', label: t('Calendar Month') },
+            { value: 'year', label: t('Calendar Year') },
           ]}
         />,
       ]}
