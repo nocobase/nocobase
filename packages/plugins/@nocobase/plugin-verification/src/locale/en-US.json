@@ -24,15 +24,16 @@
   "Unbind": "Unbind",
   "Bind": "Bind",
   "Configured": "Configured",
-  "Unbind verificator": "Unbind verificator",
+  "Unbind verifier": "Unbind verifier",
   "Not configured": "Not configured",
   "Unbound successfully": "Unbound successfully",
   "Bound successfully": "Bound successfully",
   "Verification type": "Verification type",
   "Provider": "Provider",
-  "Verificator": "Verificator",
-  "Verificators": "Verificators",
-  "The following types of verificators are available:": "The following types of verifications are available: ",
+  "Verifier": "Verifier",
+  "Verifiers": "Verifiers",
+  "The following types of verifiers are available:": "The following types of verifiers are available: ",
   "Go to": "Go to",
-  "create verificators": "create verificators"
+  "create verifiers": "create verifiers",
+  "Too many failed attempts. Please request a new verification code.": "Too many failed attempts. Please request a new verification code."
 }

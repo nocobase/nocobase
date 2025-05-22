@@ -25,7 +25,7 @@ describe('signin', () => {
   let app: MockServer;
   let db: Database;
   let authenticator: Model;
-  let verificator: Model;
+  let verifier: Model;
   let agent;
 
   beforeAll(async () => {
@@ -40,8 +40,8 @@ describe('signin', () => {
       title: 'Fake',
       provider: Provider as any,
     });
-    const verificatorRepo = db.getRepository('verificators');
-    verificator = await verificatorRepo.create({
+    const verifierRepo = db.getRepository('verifiers');
+    verifier = await verifierRepo.create({
       values: {
         name: 'sms-otp',
         title: 'SMS OTP',
@@ -59,7 +59,7 @@ describe('signin', () => {
         enabled: 1,
         options: {
           public: {
-            verificator: verificator.name,
+            verifier: verifier.name,
           },
         },
       },
@@ -73,7 +73,7 @@ describe('signin', () => {
   it('should create new user and sign in via phone number', async () => {
     let res = await agent.resource('smsOTP').publicCreate({
       values: {
-        verificator: verificator.name,
+        verifier: verifier.name,
         action: 'auth:signIn',
         uuid: '1',
       },
@@ -102,7 +102,7 @@ describe('signin', () => {
         options: {
           public: {
             autoSignup: true,
-            verificator: verificator.name,
+            verifier: verifier.name,
           },
         },
       },
@@ -134,7 +134,7 @@ describe('signin', () => {
     );
     let res = await agent.resource('smsOTP').publicCreate({
       values: {
-        verificator: verificator.name,
+        verifier: verifier.name,
         action: 'auth:signIn',
         uuid: '2',
       },
@@ -164,7 +164,7 @@ describe('signin', () => {
     });
     let res = await agent.resource('smsOTP').publicCreate({
       values: {
-        verificator: verificator.name,
+        verifier: verifier.name,
         action: 'auth:signIn',
         uuid: '3',
       },

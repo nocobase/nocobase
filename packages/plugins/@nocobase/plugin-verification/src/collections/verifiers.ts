@@ -7,9 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-// Deprecated due to incorrect naming.
 export default {
-  name: 'verificators',
+  name: 'verifiers',
   autoGenId: false,
   fields: [
     {
@@ -38,12 +37,12 @@ export default {
       type: 'belongsToMany',
       name: 'users',
       target: 'users',
-      foreignKey: 'verificator',
+      foreignKey: 'verifier',
       otherKey: 'userId',
       onDelete: 'CASCADE',
       sourceKey: 'name',
       targetKey: 'id',
-      through: 'usersVerificators',
+      through: 'usersVerifiers',
     },
   ],
 };
