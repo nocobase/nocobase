@@ -15,12 +15,12 @@ import { useTranslation } from 'react-i18next';
 
 export const VerificationCode: React.FC<{
   actionType: string;
-  verificator: string;
+  verifier: string;
   value: string;
   onChange: (value: any) => void;
   isLogged?: boolean;
 }> = withDynamicSchemaProps(
-  ({ actionType, verificator, value, onChange, isLogged }) => {
+  ({ actionType, verifier, value, onChange, isLogged }) => {
     const { t } = useTranslation();
     const api = useAPIClient();
     const form = useForm();
@@ -45,7 +45,7 @@ export const VerificationCode: React.FC<{
         } = await api.resource('smsOTP')[method]({
           values: {
             action: actionType,
-            verificator,
+            verifier,
             ...form.values,
           },
         });
