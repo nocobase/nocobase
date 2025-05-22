@@ -11,6 +11,7 @@ export { default as VariablesProvider, VariablesContext } from './VariablesProvi
 export { default as useBuiltinVariables } from './hooks/useBuiltinVariables';
 export { default as useContextVariable } from './hooks/useContextVariable';
 export { default as useLocalVariables } from './hooks/useLocalVariables';
+export { useLocalVariablesWithoutCustomVariable } from './hooks/useLocalVariablesWithoutCustomVariable';
 export { default as useVariables } from './hooks/useVariables';
 export * from './utils/isVariable';
 export * from './utils/transformVariableValue';
