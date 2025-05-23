@@ -7,16 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import dayjs, { Dayjs, UnitType } from 'dayjs';
-import utc from 'dayjs/plugin/utc';
-import timezone from 'dayjs/plugin/timezone';
-import quarterOfYear from 'dayjs/plugin/quarterOfYear';
-import isoWeek from 'dayjs/plugin/isoWeek';
-
-dayjs.extend(isoWeek);
-dayjs.extend(quarterOfYear);
-dayjs.extend(utc);
-dayjs.extend(timezone);
+import { Dayjs, UnitType } from 'dayjs';
+import { dayjs } from './dayjs';
 
 type DateUnit = 'day' | 'week' | 'isoWeek' | 'month' | 'quarter' | 'year';
 type RangeType =
