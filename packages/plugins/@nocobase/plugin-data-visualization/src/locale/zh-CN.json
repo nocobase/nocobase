@@ -98,5 +98,7 @@
   "Show background": "显示背景",
   "Show padding": "显示内边距",
   "Distinct": "去重",
-  "Auto refresh": "自动刷新"
+  "Auto refresh": "自动刷新",
+  "Divide":"除以",
+  "Multiply":"乘以"
 }
