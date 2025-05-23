@@ -294,7 +294,7 @@ const MenuSchemaToolbarWithContainer = () => {
   );
 };
 
-const menuItemStyle = { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 4 };
+const menuItemStyle = { display: 'flex', alignItems: 'center', justifyContent: 'space-between' };
 
 const GroupItem: FC<{ item: any }> = (props) => {
   const { item } = props;
@@ -310,7 +310,7 @@ const GroupItem: FC<{ item: any }> = (props) => {
         <SortableItem id={item._route.id} schema={fakeSchema} aria-label={item.name} style={menuItemStyle}>
           {props.children}
           {designable && <MenuSchemaToolbarWithContainer />}
-          {badgeCount && <Badge {...item._route.options.badge} count={badgeCount}></Badge>}
+          {badgeCount != null && <Badge {...item._route.options.badge} count={badgeCount} style={{ marginLeft: 4 }}></Badge>}
         </SortableItem>
       </NocoBaseRouteContext.Provider>
     </ParentRouteContext.Provider>
@@ -403,7 +403,7 @@ const MenuItem: FC<{ item: any; options: { isMobile: boolean; collapsed: boolean
               </Link>
             </div>
             <MenuSchemaToolbar />
-            {badgeCount && <Badge {...item._route.options?.badge} count={badgeCount}></Badge>}
+            {badgeCount != null && <Badge {...item._route.options?.badge} count={badgeCount} style={{ marginLeft: 4 }}></Badge>}
           </SortableItem>
         </NocoBaseRouteContext.Provider>
       </ParentRouteContext.Provider>
@@ -426,7 +426,7 @@ const MenuItem: FC<{ item: any; options: { isMobile: boolean; collapsed: boolean
             </Link>
           </WithTooltip>
           <MenuSchemaToolbar />
-          {badgeCount && <Badge {...item._route.options?.badge} count={badgeCount}></Badge>}
+          {badgeCount != null && <Badge {...item._route.options?.badge} count={badgeCount} style={{ marginLeft: 4 }}></Badge>}
         </SortableItem>
       </NocoBaseRouteContext.Provider>
     </ParentRouteContext.Provider>
