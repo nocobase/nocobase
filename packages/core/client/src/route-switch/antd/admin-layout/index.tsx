@@ -22,6 +22,7 @@ import {
   CurrentAppInfoProvider,
   DndContext,
   Icon,
+  isVariable,
   ParentRouteContext,
   PinnedPluginList,
   RemoteCollectionManagerProvider,
@@ -31,12 +32,14 @@ import {
   SortableItem,
   useDesignable,
   useGlobalTheme,
+  useLocalVariables,
   useMenuDragEnd,
   useParseURLAndParams,
   useRequest,
   useSchemaInitializerRender,
   useSystemSettings,
   useToken,
+  useVariables,
 } from '../../../';
 import {
   CurrentPageUidContext,
@@ -56,6 +59,7 @@ import { NocoBaseDesktopRoute, NocoBaseDesktopRouteType } from './convertRoutesT
 import { MenuSchemaToolbar, ResetThemeTokenAndKeepAlgorithm } from './menuItemSettings';
 import { userCenterSettings } from './userCenterSettings';
 import { VariableScope } from '../../../variables/VariableScope';
+import _ from 'lodash';
 
 export { KeepAlive, NocoBaseDesktopRouteType, useKeepAlive };
 
@@ -294,9 +298,28 @@ const MenuSchemaToolbarWithContainer = () => {
 
 const menuItemStyle = { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 4 };
 
+const useBadgeParsedCount = (rawCount) => {
+  const variables = useVariables();
+  const localVariables = useLocalVariables();
+  const [parsedCount, setParsedCount] = useState();
+
+  useEffect(() => {
+    if (isVariable(rawCount)) {
+      variables.parseVariable(rawCount, localVariables).then(({ value }) => {
+        setParsedCount(value);
+      })
+    } else {
+      setParsedCount(rawCount);
+    }
+  }, [variables.parseVariable, rawCount, localVariables]);
+
+  return parsedCount;
+}
+
 const GroupItem: FC<{ item: any }> = (props) => {
   const { item } = props;
   const { designable } = useDesignable();
+  const badgeCount = useBadgeParsedCount(item._route.options?.badge?.count);
 
   // fake schema used to pass routing information to SortableItem
   const fakeSchema: any = { __route__: item._route };
@@ -307,7 +330,7 @@ const GroupItem: FC<{ item: any }> = (props) => {
         <SortableItem id={item._route.id} schema={fakeSchema} aria-label={item.name} style={menuItemStyle}>
           {props.children}
           {designable && <MenuSchemaToolbarWithContainer />}
-          {item._route.options?.badge && <Badge count={item._route.options.badge.count}></Badge>}
+          {badgeCount && <Badge count={badgeCount}></Badge>}
         </SortableItem>
       </NocoBaseRouteContext.Provider>
     </ParentRouteContext.Provider>
@@ -337,6 +360,7 @@ const MenuItem: FC<{ item: any; options: { isMobile: boolean; collapsed: boolean
   const { parseURLAndParams } = useParseURLAndParams();
   const divRef = useRef(null);
   const location = useLocation();
+  const badgeCount = useBadgeParsedCount(item._route.options?.badge?.count);
 
   useEffect(() => {
     if (divRef.current) {
@@ -399,7 +423,7 @@ const MenuItem: FC<{ item: any; options: { isMobile: boolean; collapsed: boolean
               </Link>
             </div>
             <MenuSchemaToolbar />
-            {item._route.options?.badge && <Badge count={item._route.options.badge.count}></Badge>}
+            {badgeCount && <Badge count={badgeCount}></Badge>}
           </SortableItem>
         </NocoBaseRouteContext.Provider>
       </ParentRouteContext.Provider>
@@ -422,7 +446,7 @@ const MenuItem: FC<{ item: any; options: { isMobile: boolean; collapsed: boolean
             </Link>
           </WithTooltip>
           <MenuSchemaToolbar />
-          {item._route.options?.badge && <Badge count={item._route.options.badge.count}></Badge>}
+          {badgeCount && <Badge count={badgeCount}></Badge>}
         </SortableItem>
       </NocoBaseRouteContext.Provider>
     </ParentRouteContext.Provider>
@@ -510,7 +534,7 @@ const MenuItemTitleWithTooltip = withTooltipComponent(MenuItemTitle);
 
 const menuItemRender = (item, dom, options) => {
   return (
-    <VariableScope scopeId={item.schemaUid} type="menuItem">
+    <VariableScope scopeId={item._route.schemaUid} type="menuItem">
       <MenuItem item={item} options={options}>
         <MenuItemTitleWithTooltip tooltip={item._route?.tooltip}>{dom}</MenuItemTitleWithTooltip>
       </MenuItem>
@@ -520,9 +544,12 @@ const menuItemRender = (item, dom, options) => {
 
 const subMenuItemRender = (item, dom) => {
   return (
-    <GroupItem item={item}>
-      <MenuItemTitleWithTooltip tooltip={item._route?.tooltip}>{dom}</MenuItemTitleWithTooltip>
-    </GroupItem>
+    <VariableScope scopeId={item._route.schemaUid} type="groupItem">
+      <GroupItem item={item}>
+        <MenuItemTitleWithTooltip tooltip={item._route?.tooltip}>{dom}</MenuItemTitleWithTooltip>
+      </GroupItem>
+
+    </VariableScope>
   );
 };
 
