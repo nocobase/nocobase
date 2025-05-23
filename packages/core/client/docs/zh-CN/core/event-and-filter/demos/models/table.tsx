@@ -99,7 +99,7 @@ const ActionsComponent = observer(({ model }: { model: BlockModel }) => {
 const TableBlock = withFlowModel(TableComponent);
 
 // 创建继承自BlockModel的DemoTableBlockModel
-const DemoTableBlockModel = class extends BlockModel {
+class DemoTableBlockModel extends BlockModel {
     private resources: Map<string, any> = new Map();
 
     setResource(key: string, resource: any): void {
@@ -162,7 +162,7 @@ const DemoTableBlockModel = class extends BlockModel {
                     handler: async (ctx: FlowContext, model) => {
                         // 设置分页处理函数
                         const onPaginationChange = (page: number, pageSize: number) => {
-                            (model as any).dispatchEvent('table:pagination:change', { current: page, pageSize });
+                            model.dispatchEvent('table:pagination:change', { current: page, pageSize });
                         };
                         model.setProps('onPaginationChange', onPaginationChange);
                     }
@@ -206,7 +206,7 @@ const DemoTableBlockModel = class extends BlockModel {
             }
         });
 
-        this.registerFlow({
+        this.registerFlow<DemoTableBlockModel>({
             key: 'loadData',
             title: '数据加载',
             steps: {
@@ -221,7 +221,6 @@ const DemoTableBlockModel = class extends BlockModel {
                         await new Promise(resolve => setTimeout(resolve, 500));
                         
                         const props = model.getProps();
-                        const apiUrl = props.apiUrl || '/api/users';
                         const pagination = props.pagination || { current: 1, pageSize: 10 };
                         
                         try {
@@ -244,8 +243,7 @@ const DemoTableBlockModel = class extends BlockModel {
                 },
                 updateDataSource: {
                     handler: async (ctx: FlowContext, model) => {
-                        // 更新dataSource
-                        const dataResource = (model as any).getResource('data');
+                        const dataResource = model.getResource('data');
                         const tableData = dataResource?.getData() || [];
                         model.setProps('dataSource', tableData);
                     }

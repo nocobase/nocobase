@@ -40,15 +40,19 @@ export class FlowModel {
   }
   
   /**
-   * 注册一个流程 (Flow)。
-   * @param {string | FlowDefinition} keyOrDefinition 流程的 Key 或 FlowDefinition 对象。
+   * 注册一个流程 (Flow)。支持泛型，能够正确推导出模型类型。
+   * @template TModel 具体的FlowModel子类类型
+   * @param {string | FlowDefinition<TModel>} keyOrDefinition 流程的 Key 或 FlowDefinition 对象。
    *        如果为字符串，则为流程 Key，需要配合 flowDefinition 参数。
    *        如果为对象，则为包含 key 属性的完整 FlowDefinition。
-   * @param {FlowDefinition} [flowDefinition] 当第一个参数为流程 Key 时，此参数为流程的定义。
+   * @param {FlowDefinition<TModel>} [flowDefinition] 当第一个参数为流程 Key 时，此参数为流程的定义。
    * @returns {void}
    */
-  public static registerFlow(keyOrDefinition: string | FlowDefinition, flowDefinition?: FlowDefinition): void {
-    let definition: FlowDefinition;
+  public static registerFlow<TModel extends FlowModel = FlowModel>(
+    keyOrDefinition: string | FlowDefinition<TModel>, 
+    flowDefinition?: FlowDefinition<TModel>
+  ): void {
+    let definition: FlowDefinition<TModel>;
     let key: string;
     
     if (typeof keyOrDefinition === 'string' && flowDefinition) {
@@ -65,15 +69,16 @@ export class FlowModel {
     }
     
     // 确保当前类有自己的flows Map
-    if (!modelFlows.has(this)) {
-      modelFlows.set(this, new Map<string, FlowDefinition>());
+    const ModelClass = this as typeof FlowModel;
+    if (!modelFlows.has(ModelClass)) {
+      modelFlows.set(ModelClass, new Map<string, FlowDefinition>());
     }
-    const flows = modelFlows.get(this)!;
+    const flows = modelFlows.get(ModelClass)!;
     
     if (flows.has(key)) {
       console.warn(`FlowModel: Flow with key '${key}' is already registered and will be overwritten.`);
     }
-    flows.set(key, definition);
+    flows.set(key, definition as FlowDefinition);
   }
 
   /**

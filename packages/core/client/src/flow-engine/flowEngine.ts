@@ -76,21 +76,25 @@ export class FlowEngine {
   private modelInstances: Map<string, any> = new Map();
 
   /**
-   * 注册一个 Action。
+   * 注册一个 Action。支持泛型以确保正确的模型类型推导。
    * Action 是流程中的可复用操作单元。
-   * @param {string | ActionDefinition} nameOrDefinition Action 名称或 ActionDefinition 对象。
+   * @template TModel 具体的FlowModel子类类型
+   * @param {string | ActionDefinition<TModel>} nameOrDefinition Action 名称或 ActionDefinition 对象。
    *        如果为字符串，则为 Action 名称，需要配合 options 参数。
    *        如果为对象，则为完整的 ActionDefinition。
-   * @param {ActionOptions} [options] 当第一个参数为 Action 名称时，此参数为 Action 的选项。
+   * @param {ActionOptions<TModel>} [options] 当第一个参数为 Action 名称时，此参数为 Action 的选项。
    * @returns {void}
    * @example
    * // 方式一: 传入名称和选项
-   * flowEngine.registerAction('myAction', { handler: async (ctx, model, params) => { ... } });
+   * flowEngine.registerAction<MyModel>('myAction', { handler: async (ctx, model, params) => { ... } });
    * // 方式二: 传入 ActionDefinition 对象
-   * flowEngine.registerAction({ name: 'myAction', handler: async (ctx, model, params) => { ... } });
+   * flowEngine.registerAction<MyModel>({ name: 'myAction', handler: async (ctx, model, params) => { ... } });
    */
-  public registerAction(nameOrDefinition: string | ActionDefinition, options?: ActionOptions): void {
-    let definition: ActionDefinition;
+  public registerAction<TModel extends FlowModel = FlowModel>(
+    nameOrDefinition: string | ActionDefinition<TModel>, 
+    options?: ActionOptions<TModel>
+  ): void {
+    let definition: ActionDefinition<TModel>;
     
     if (typeof nameOrDefinition === 'string' && options) {
       definition = {
@@ -98,7 +102,7 @@ export class FlowEngine {
         name: nameOrDefinition,
       };
     } else if (typeof nameOrDefinition === 'object') {
-      definition = nameOrDefinition as ActionDefinition;
+      definition = nameOrDefinition as ActionDefinition<TModel>;
     } else {
       throw new Error('Invalid arguments for registerAction');
     }
@@ -106,16 +110,17 @@ export class FlowEngine {
     if (this.actions.has(definition.name)) {
       console.warn(`FlowEngine: Action with name '${definition.name}' is already registered and will be overwritten.`);
     }
-    this.actions.set(definition.name, definition);
+    this.actions.set(definition.name, definition as ActionDefinition);
   }
 
   /**
    * 获取已注册的 Action 定义。
+   * @template TModel 具体的FlowModel子类类型
    * @param {string} name Action 名称。
-   * @returns {ActionDefinition | undefined} Action 定义，如果未找到则返回 undefined。
+   * @returns {ActionDefinition<TModel> | undefined} Action 定义，如果未找到则返回 undefined。
    */
-  public getAction(name: string): ActionDefinition | undefined {
-    return this.actions.get(name);
+  public getAction<TModel extends FlowModel = FlowModel>(name: string): ActionDefinition<TModel> | undefined {
+    return this.actions.get(name) as ActionDefinition<TModel> | undefined;
   }
 
   /**
@@ -192,14 +197,17 @@ export class FlowEngine {
   }
   
   /**
-   * 注册一个流程 (Flow)。
+   * 注册一个流程 (Flow)。支持泛型以确保正确的模型类型推导。
    * 流程是一系列步骤的定义，可以由事件触发或手动应用。
-   * @param {string} modelClass 模型类名称。
-   * @param {string} flowKey 流程名称。
-   * @param {FlowDefinition} flowDefinition 流程定义。
+   * @template TModel 具体的FlowModel子类类型
+   * @param {string} modelClassName 模型类名称。
+   * @param {FlowDefinition<TModel>} flowDefinition 流程定义。
    * @returns {void}
    */
-  public registerFlow(modelClassName: string, flowDefinition: FlowDefinition): void {
+  public registerFlow<TModel extends FlowModel = FlowModel>(
+    modelClassName: string, 
+    flowDefinition: FlowDefinition<TModel>
+  ): void {
     const ModelClass = this.getModelClass(modelClassName);
     
     // 检查ModelClass是否存在
