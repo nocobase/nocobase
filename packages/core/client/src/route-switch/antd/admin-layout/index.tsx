@@ -22,7 +22,6 @@ import {
   CurrentAppInfoProvider,
   DndContext,
   Icon,
-  isVariable,
   ParentRouteContext,
   PinnedPluginList,
   RemoteCollectionManagerProvider,
@@ -32,14 +31,12 @@ import {
   SortableItem,
   useDesignable,
   useGlobalTheme,
-  useLocalVariables,
   useMenuDragEnd,
   useParseURLAndParams,
   useRequest,
   useSchemaInitializerRender,
   useSystemSettings,
   useToken,
-  useVariables,
 } from '../../../';
 import {
   CurrentPageUidContext,
@@ -60,6 +57,7 @@ import { MenuSchemaToolbar, ResetThemeTokenAndKeepAlgorithm } from './menuItemSe
 import { userCenterSettings } from './userCenterSettings';
 import { VariableScope } from '../../../variables/VariableScope';
 import _ from 'lodash';
+import { useParsedValue } from '../../../hooks/useParsedValue';
 
 export { KeepAlive, NocoBaseDesktopRouteType, useKeepAlive };
 
@@ -297,24 +295,6 @@ const MenuSchemaToolbarWithContainer = () => {
 };
 
 const menuItemStyle = { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 4 };
-
-const useParsedValue = (variableString: string) => {
-  const variables = useVariables();
-  const localVariables = useLocalVariables();
-  const [parsedValue, setParsedValue] = useState<number | string>();
-
-  useEffect(() => {
-    if (isVariable(variableString)) {
-      variables.parseVariable(variableString, localVariables).then(({ value }) => {
-        setParsedValue(value);
-      })
-    } else {
-      setParsedValue(variableString);
-    }
-  }, [variables.parseVariable, variableString, localVariables]);
-
-  return parsedValue;
-}
 
 const GroupItem: FC<{ item: any }> = (props) => {
   const { item } = props;
