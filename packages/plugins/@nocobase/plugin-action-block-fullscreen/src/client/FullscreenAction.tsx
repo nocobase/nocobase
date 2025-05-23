@@ -14,180 +14,184 @@ import { useBlockFullscreenTranslation } from './locale';
 import { DEFAULT_BLOCKSTYLECLASS, DEFAULT_TARGETSTYLECLASS } from './constants';
 import { App } from 'antd';
 
-interface StoredElement {
-  element: HTMLElement;
-  originalDisplay: string;
+// Types
+interface StyleProperties {
+  position?: string;
+  top?: string;
+  left?: string;
+  width?: string;
+  height?: string;
+  zIndex?: string;
+  background?: string;
+  overflow?: string;
+  margin?: string;
+  padding?: string;
+  marginBottom?: string;
+  boxSizing?: string;
+  maxHeight?: string;
+  display?: string;
 }
 
 interface ElementState {
-  originalStyles: Record<string, string>;
-  hiddenElements: StoredElement[];
+  originalStyles: StyleProperties;
+  hiddenElements: Array<{
+    element: HTMLElement;
+    originalDisplay: string;
+  }>;
 }
 
-// Store element states locally instead of in window
-const elementStates = new Map<string, ElementState>();
+interface FullscreenActionProps {
+  custom?: {
+    blockStyleClass?: string;
+    targetStyleClass?: string;
+    fullscreenStyle?: string;
+  };
+  onClick?: (e: React.MouseEvent) => void;
+}
+
+type StyleElement = HTMLStyleElement;
+
+// Constants
+const ELEMENT_STATES = new Map<string, ElementState>();
+const FULLSCREEN_ATTRIBUTE = 'is-fullscreen';
+const ID_PREFIX = {
+  BLOCK: 'nb-fullscreen-block-',
+  TARGET: 'nb-fullscreen-target-',
+} as const;
 
 let fullscreenStyleElement = document.createElement('style');
 
-/**
- * Add scoped styles to the document head
- * @param elementId - The ID of the element to scope styles to
- * @param cssString - The CSS as a string
- */
-function addScopedStyle(cssString) {
-  const styleElement = document.createElement('style');
+// Utility functions
+function processFullscreenStyle(style: string, targetId: string, blockId: string): string {
+  return style.replaceAll('${targetId}', `#${targetId} `).replaceAll('${blockId}', `#${blockId} `);
+}
 
+function generateElementId(prefix: string): string {
+  return `${prefix}${Date.now()}`;
+}
+
+function addScopedStyle(cssString: string): StyleElement {
+  const styleElement = document.createElement('style');
   styleElement.textContent = cssString;
   document.head.appendChild(styleElement);
-
-  // 如果需要，可以返回 style 元素，以便将来移除
   return styleElement;
 }
 
-/**
- * Remove the added style element from the document head
- * @param styleElementToRemove - The style element to remove
- */
-function removeAddedStyle(styleElementToRemove) {
-  if (styleElementToRemove && styleElementToRemove.parentNode) {
+function removeAddedStyle(styleElementToRemove: StyleElement | null): void {
+  if (styleElementToRemove?.parentNode) {
     styleElementToRemove.parentNode.removeChild(styleElementToRemove);
   }
 }
 
-/**
- * Toggle fullscreen by hiding siblings at each level up to the body
- * @param element - The element to toggle fullscreen
- * @param isFullscreen - Whether to enter or exit fullscreen
- */
-function toggleFullscreen(element: HTMLElement, isFullscreen: boolean, fullscreenStyle: string): void {
-  if (isFullscreen) {
-    // Step 1: Create state storage
-    const state: ElementState = {
-      originalStyles: {},
-      hiddenElements: [],
-    };
+const FULLSCREEN_STYLES: StyleProperties = {
+  position: 'fixed',
+  top: '0',
+  left: '0',
+  width: '100vw',
+  height: '100vh',
+  zIndex: '9999',
+  background: '#fff',
+  overflow: 'auto',
+  margin: '0',
+  padding: '0',
+  marginBottom: '0',
+  boxSizing: 'border-box',
+  maxHeight: '100vh',
+};
 
-    // Step 2: Save original styles as simple key-value pairs
-    const stylesToSave = [
-      'position',
-      'top',
-      'left',
-      'width',
-      'height',
-      'display',
-      'margin',
-      'padding',
-      'zIndex',
-      'background',
-      'overflow',
-      'boxSizing',
-    ];
+const STYLES_TO_SAVE = Object.keys(FULLSCREEN_STYLES);
 
-    stylesToSave.forEach((prop) => {
-      state.originalStyles[prop] = element.style[prop as any] || '';
-    });
+function saveElementState(element: HTMLElement): ElementState {
+  const state: ElementState = {
+    originalStyles: {},
+    hiddenElements: [],
+  };
 
-    // Step 3: Apply fullscreen styles
-    element.style.position = 'fixed';
-    element.style.top = '0';
-    element.style.left = '0';
-    element.style.width = '100vw';
-    element.style.height = '100vh';
-    element.style.zIndex = '9999';
-    element.style.background = '#fff';
-    element.style.overflow = 'auto';
-    element.style.margin = '0';
-    element.style.padding = '0';
-    element.style.marginBottom = '0';
-    element.style.boxSizing = 'border-box';
-    element.style.maxHeight = '100vh';
+  // Save original styles
+  STYLES_TO_SAVE.forEach((prop) => {
+    state.originalStyles[prop as keyof StyleProperties] = element.style[prop as any] || '';
+  });
 
-    // Step 4: Hide siblings at each level
-    let current: HTMLElement | null = element;
-
-    while (current && current !== document.body) {
-      if (current.parentElement) {
-        Array.from(current.parentElement.children).forEach((sibling) => {
-          if (sibling !== current && !current!.contains(sibling) && !sibling.contains(current!)) {
-            const siblingElement = sibling as HTMLElement;
-            const originalDisplay = window.getComputedStyle(siblingElement).display;
-
-            // Store reference and original display
-            state.hiddenElements.push({
-              element: siblingElement,
-              originalDisplay,
-            });
-
-            // Hide the element
-            siblingElement.style.display = 'none';
-          }
-        });
-      }
-      current = current.parentElement;
+  // Hide siblings and save their states
+  let current: HTMLElement | null = element;
+  while (current && current !== document.body) {
+    if (current.parentElement) {
+      Array.from(current.parentElement.children).forEach((sibling) => {
+        if (sibling !== current && !current!.contains(sibling) && !sibling.contains(current!)) {
+          const siblingElement = sibling as HTMLElement;
+          const originalDisplay = window.getComputedStyle(siblingElement).display;
+          state.hiddenElements.push({
+            element: siblingElement,
+            originalDisplay,
+          });
+          siblingElement.style.display = 'none';
+        }
+      });
     }
+    current = current.parentElement;
+  }
 
-    // Step 5: Store the state
-    elementStates.set(element.id, state);
+  return state;
+}
 
-    // Add scoped styles
-    fullscreenStyleElement = addScopedStyle(fullscreenStyle);
-  } else {
-    // Step 1: Get stored state
-    const state = elementStates.get(element.id);
+function restoreElementState(element: HTMLElement, state: ElementState): void {
+  // Clear fullscreen styles
+  Object.keys(FULLSCREEN_STYLES).forEach((prop) => {
+    element.style[prop as any] = '';
+  });
 
-    if (!state) {
-      console.warn('No saved state found for element', element.id);
-      return;
+  // Restore original styles
+  Object.entries(state.originalStyles).forEach(([prop, value]) => {
+    if (value !== undefined && value !== null) {
+      element.style[prop as any] = value;
     }
+  });
 
+  // Restore hidden elements
+  state.hiddenElements.forEach(({ element: hiddenElement, originalDisplay }) => {
     try {
-      // Step 2: Restore original styles
-      const { originalStyles, hiddenElements } = state;
+      if (hiddenElement?.nodeType === Node.ELEMENT_NODE) {
+        hiddenElement.style.display = originalDisplay;
+      }
+    } catch (e) {
+      console.warn('Failed to restore element display:', e);
+    }
+  });
+}
 
-      // Clear fullscreen styles
-      element.style.position = '';
-      element.style.top = '';
-      element.style.left = '';
-      element.style.width = '';
-      element.style.height = '';
-      element.style.zIndex = '';
-      element.style.background = '';
-      element.style.overflow = '';
-      element.style.margin = '';
-      element.style.padding = '';
-      element.style.marginBottom = '';
-      element.style.boxSizing = '';
-      element.style.maxHeight = '';
+function toggleFullscreen(element: HTMLElement, isFullscreen: boolean, fullscreenStyle: string): void {
+  try {
+    if (isFullscreen) {
+      // Save state and apply fullscreen styles
+      const state = saveElementState(element);
+      ELEMENT_STATES.set(element.id, state);
 
-      // Apply original styles
-      Object.entries(originalStyles).forEach(([prop, value]) => {
-        if (value !== undefined && value !== null) {
-          element.style[prop as any] = value;
-        }
+      // Apply fullscreen styles
+      Object.entries(FULLSCREEN_STYLES).forEach(([prop, value]) => {
+        element.style[prop as any] = value;
       });
 
-      // Step 3: Restore hidden elements
-      hiddenElements.forEach(({ element: hiddenElement, originalDisplay }) => {
-        try {
-          if (hiddenElement && hiddenElement.nodeType === Node.ELEMENT_NODE) {
-            hiddenElement.style.display = originalDisplay;
-          }
-        } catch (e) {
-          console.warn('Failed to restore element display:', e);
-        }
-      });
-    } catch (error) {
-      console.error('Error restoring from fullscreen:', error);
-    } finally {
-      // Step 4: Clean up
-      elementStates.delete(element.id);
+      // Add scoped styles
+      fullscreenStyleElement = addScopedStyle(fullscreenStyle);
+    } else {
+      // Get and restore state
+      const state = ELEMENT_STATES.get(element.id);
+      if (!state) {
+        console.warn('No saved state found for element', element.id);
+        return;
+      }
 
-      // Remove the scoped style element
+      restoreElementState(element, state);
+      ELEMENT_STATES.delete(element.id);
+
+      // Remove scoped styles
       if (fullscreenStyleElement) {
         removeAddedStyle(fullscreenStyleElement);
         fullscreenStyleElement = null;
       }
     }
+  } catch (error) {
+    console.error('Error toggling fullscreen:', error);
   }
 }
 
@@ -216,54 +220,50 @@ function findParentByClassName(element: HTMLElement, className: string): HTMLEle
   return null;
 }
 
-export const FullscreenAction = (props) => {
+export const FullscreenAction: React.FC<FullscreenActionProps> = (props) => {
   const { message } = App.useApp();
   const { t } = useBlockFullscreenTranslation();
   const [title, setTitle] = useState(t('Fullscreen'));
   const [icon, setIcon] = useState(<FullscreenOutlined />);
 
+  const handleClick = (e: React.MouseEvent) => {
+    const blockStyleClass = props?.custom?.blockStyleClass || DEFAULT_BLOCKSTYLECLASS;
+    const blockElement = findParentByClassName(e.target as HTMLElement, blockStyleClass);
+
+    if (!blockElement) {
+      message.error(t('{{blockStyleClass}} not found', { blockStyleClass }));
+      return;
+    }
+
+    const blockId = blockElement.id || generateElementId(ID_PREFIX.BLOCK);
+    blockElement.id = blockId;
+
+    const targetStyleClass = props?.custom?.targetStyleClass || DEFAULT_TARGETSTYLECLASS;
+    const targetElement = blockElement.querySelector(`.${targetStyleClass}`) as HTMLElement;
+
+    if (!targetElement) {
+      message.error(t('{{targetStyleClass}} not found', { targetStyleClass }));
+      return;
+    }
+
+    const targetId = targetElement.id || generateElementId(ID_PREFIX.TARGET);
+    targetElement.id = targetId;
+
+    const fullscreenStyle = processFullscreenStyle(props?.custom?.fullscreenStyle || '', targetId, blockId);
+
+    const currentState = targetElement.getAttribute(FULLSCREEN_ATTRIBUTE) === 'true';
+    const targetState = !currentState;
+
+    targetElement.setAttribute(FULLSCREEN_ATTRIBUTE, targetState.toString());
+    setTitle(targetState ? t('Exit Fullscreen') : t('Fullscreen'));
+    setIcon(targetState ? <FullscreenExitOutlined /> : <FullscreenOutlined />);
+
+    toggleFullscreen(targetElement, targetState, fullscreenStyle);
+  };
+
   return (
     <ActionContextProvider value={{ ...props }}>
-      <Action
-        icon={icon}
-        title={title}
-        {...props}
-        onClick={(e) => {
-          // Find the first parent with blockStyleClass
-          const blockStyleClass = props?.custom?.blockStyleClass || DEFAULT_BLOCKSTYLECLASS;
-          const blockElement = findParentByClassName(e.target as HTMLElement, blockStyleClass);
-          if (!blockElement) {
-            message.error(t('{{blockStyleClass}} not found', { blockStyleClass }));
-            return; // Exit if no matching parent found
-          }
-          const blockId = blockElement?.id || `nb-fullscreen-block-${Date.now()}`;
-          blockElement.id = blockId;
-
-          // Find the target element with targetStyleClass
-          const targetStyleClass = props?.custom?.targetStyleClass || DEFAULT_TARGETSTYLECLASS;
-          const targetElement = blockElement.querySelector(`.${targetStyleClass}`) as HTMLElement;
-          if (!targetElement) {
-            message.error(t('{{targetStyleClass}} not found', { targetStyleClass }));
-            return; // Exit if no target element found
-          }
-          const targetId = targetElement?.id || `nb-fullscreen-target-${Date.now()}`;
-          targetElement.id = targetId;
-
-          let fullscreenStyle = props?.custom?.fullscreenStyle || '';
-          fullscreenStyle = fullscreenStyle.replaceAll('${targetId}', `#${targetId} `);
-          fullscreenStyle = fullscreenStyle.replaceAll('${blockId}', `#${blockId} `);
-
-          // Check if the target element is already in fullscreen mode
-          const currentState = targetElement.getAttribute('is-fullscreen') === 'true';
-          const targetState = !currentState;
-          targetElement.setAttribute('is-fullscreen', targetState.toString());
-          setTitle(targetState ? t('Exit Fullscreen') : t('Fullscreen'));
-          setIcon(targetState ? <FullscreenExitOutlined /> : <FullscreenOutlined />);
-
-          // Toggle fullscreen state
-          toggleFullscreen(targetElement, targetState, fullscreenStyle);
-        }}
-      />
+      <Action icon={icon} title={title} {...props} onClick={handleClick} />
     </ActionContextProvider>
   );
 };

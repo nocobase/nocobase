@@ -1,49 +1,151 @@
-# Block Fullscreen Action
+# Block Fullscreen Action Plugin
 
 [![NPM version](https://img.shields.io/npm/v/@nocobase/plugin-action-block-fullscreen.svg?style=flat-square)](https://www.npmjs.com/package/@nocobase/plugin-action-block-fullscreen)
 [![License](https://img.shields.io/badge/license-AGPL-blue.svg?style=flat-square)](https://www.nocobase.com/agreement)
 
-This plugin for NocoBase provides a fullscreen toggle action that can be added to blocks in your application. The action allows users to expand any block to fullscreen mode for better viewing and interaction, and easily return to normal view with a single click.
+A NocoBase plugin that adds fullscreen toggle functionality to blocks, allowing users to expand blocks to fullscreen mode for better viewing and interaction.
 
 ## Features
 
-- 🖥️ **Fullscreen Toggle**: Expand blocks to fullscreen for better viewing and return to normal view with a single click
-- 🧩 **Compatible with Multiple Blocks**: Works with table blocks, gantt chart blocks, and other block types
-- 🔧 **Easy Configuration**: Simple to add to any block through the block configuration menu
-- 🌐 **Internationalization**: Fully supports English and Chinese languages
-- 🖱️ **Intuitive UI**: Uses standard fullscreen icons for familiarity (FullscreenOutlined and FullscreenExitOutlined)
+- 🖥️ **Smart Fullscreen Toggle**
+  - One-click fullscreen mode
+  - Preserves original layout and styles
+  - Smooth transition between normal and fullscreen views
+
+- 🎯 **Precise Element Control**
+  - Configurable target element selection
+  - Customizable block and target class names
+  - Smart sibling element handling
+
+- 🎨 **Flexible Styling**
+  - Custom fullscreen styles support
+  - Dynamic style injection
+  - Clean style restoration
+
+- 🌐 **Internationalization**
+  - Built-in English and Chinese support
+  - Easy to extend to other languages
+  - Consistent UI text across languages
+
+- 🧩 **Block Compatibility**
+  - Works with table blocks
+  - Supports gantt chart blocks
+  - Extensible to other block types
 
 ## Installation
 
 ```bash
-# Via yarn
+# Using yarn
 yarn add @nocobase/plugin-action-block-fullscreen
+
+# Using npm
+npm install @nocobase/plugin-action-block-fullscreen
 ```
 
-Or you can install it through the NocoBase Plugin Manager interface.
+## Configuration
 
-## Usage
+### Basic Usage
 
-1. Navigate to a block in your NocoBase application
-2. Enter the block's configuration mode by clicking on the settings icon
+1. Navigate to your block in NocoBase
+2. Click the settings icon to enter configuration mode
 3. Select "Configure actions"
-4. Click "Add action" and choose "Support Fullscreen" from the actions list
+4. Add "Support Fullscreen" action
 5. Save your configuration
 
-Now the block will display a fullscreen toggle button in its action bar.
+### Advanced Configuration
 
-## How It Works
+The plugin supports the following configuration options:
 
-The plugin uses a non-intrusive approach to fullscreen functionality:
+```typescript
+interface FullscreenActionConfig {
+  custom?: {
+    // Class name for the block element
+    blockStyleClass?: string;
+    // Class name for the target element to be fullscreened
+    targetStyleClass?: string;
+    // Custom CSS styles for fullscreen mode
+    fullscreenStyle?: string;
+  }
+}
+```
 
-- When activated, it applies a fixed position with full viewport dimensions to the target block
-- Sibling elements are temporarily hidden to create a clean fullscreen experience
-- The original state of the DOM is preserved for restoration when exiting fullscreen
-- No iframe or browser fullscreen API is used, making it compatible across different environments
+Default values:
+- `blockStyleClass`: 'nb-block-item'
+- `targetStyleClass`: 'ant-card'
+
+### Custom Styles
+
+You can provide custom styles for fullscreen mode using the `fullscreenStyle` option. The styles can use the following variables:
+- `${targetId}`: ID of the target element
+- `${blockId}`: ID of the block element
+
+Example:
+```css
+#${targetId} {
+  background: #f5f5f5;
+  padding: 20px;
+}
+```
+
+## Technical Details
+
+### Architecture
+
+The plugin consists of several key components:
+
+- `FullscreenAction`: Main action component
+- `FullscreenActionInitializer`: Action initializer for block configuration
+- `FullscreenDesigner`: Design-time component for action configuration
+- `FullscreenPluginProvider`: Plugin provider for global state and context
+
+### State Management
+
+- Uses React context for global state
+- Maintains element states in memory
+- Preserves original DOM structure
+- Handles style injection and cleanup
+
+### Style Handling
+
+- Dynamic style injection
+- Scoped style application
+- Clean style restoration
+- Sibling element management
+
+## Development
+
+### Project Structure
+
+```
+src/
+├── client/
+│   ├── FullscreenAction.tsx
+│   ├── FullscreenActionInitializer.tsx
+│   ├── FullscreenDesigner.tsx
+│   ├── FullscreenPluginProvider.tsx
+│   ├── constants.ts
+│   ├── context.ts
+│   ├── locale/
+│   └── schemaSettings.tsx
+├── server/
+└── index.ts
+```
+
+### Building
+
+```bash
+# Install dependencies
+yarn install
+
+# Build the plugin
+yarn build
+```
 
 ## Compatibility
 
-This plugin is compatible with NocoBase v1.0 and above.
+- NocoBase v1.0 and above
+- Modern browsers (Chrome, Firefox, Safari, Edge)
+- React 18+
 
 ## License
 
@@ -55,3 +157,4 @@ For more information, please refer to: https://www.nocobase.com/agreement
 - [NocoBase Website](https://www.nocobase.com/)
 - [Documentation](https://docs.nocobase.com/handbook/action-fullscreen)
 - [GitHub Repository](https://github.com/nocobase/nocobase/tree/main/packages/plugins/@nocobase/plugin-action-block-fullscreen)
+- [Issue Tracker](https://github.com/nocobase/nocobase/issues)
