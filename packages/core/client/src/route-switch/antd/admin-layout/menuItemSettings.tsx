@@ -12,9 +12,9 @@ import { TreeSelect } from '@formily/antd-v5';
 import { Field, onFieldChange } from '@formily/core';
 import { ISchema } from '@formily/react';
 import { uid } from '@formily/shared';
-import { App, ConfigProvider, Input } from 'antd';
+import { App, ConfigProvider } from 'antd';
 import { SiderContext } from 'antd/es/layout/Sider';
-import React, { FC, useCallback, useEffect, useMemo } from 'react';
+import React, { FC, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   css,
@@ -22,19 +22,13 @@ import {
   isVariable,
   NocoBaseDesktopRouteType,
   useAllAccessDesktopRoutes,
-  useCompatOldVariables,
   useCompile,
-  useContextAssociationFields,
   useCurrentPageUid,
   useCurrentRoute,
   useGlobalTheme,
   useNavigateNoUpdate,
   useNocoBaseRoutes,
-  useURLAndHTMLSchema,
-  useVariableOptions,
-  useVariableScope,
-  Variable,
-  VariableInput,
+  useURLAndHTMLSchema
 } from '../../..';
 import { getPageMenuSchema } from '../../../';
 import { SchemaSettings } from '../../../application/schema-settings/SchemaSettings';
@@ -47,8 +41,6 @@ import {
   SchemaSettingsSwitchItem,
 } from '../../../schema-settings/SchemaSettings';
 import { NocoBaseDesktopRoute } from './convertRoutesToSchema';
-import { useBlockCollection } from '../../../schema-settings/VariableInput/hooks/useBlockCollection';
-import { useValues } from '../../../schema-component/antd/filter/useValues';
 
 const components = { TreeSelect };
 
@@ -446,97 +438,6 @@ const HiddenMenuItem = () => {
   );
 };
 
-const EditBadge = () => {
-  const { t } = useTranslation();
-  const currentRoute = useCurrentRoute();
-  const { updateRoute } = useNocoBaseRoutes();
-
-  const schema = useMemo(() => {
-    return {
-      type: 'object',
-      title: t('Edit badge'),
-      properties: {
-        count: {
-          title: t('Badge'),
-          'x-decorator': 'FormItem',
-          'x-decorator-props': {
-            tooltip: t('You can enter numbers, text, variables, aggregation variables, expressions, etc.'),
-          },
-          'x-component': (props) => {
-            return <VariableInput {...props} renderSchemaComponent={Input} />
-          },
-        },
-        color: {
-          title: t('Color'),
-          'x-decorator': 'FormItem',
-          'x-component': 'ColorPicker',
-          'x-component-props': {},
-        },
-        size: {
-          title: t('Size'),
-          'x-decorator': 'FormItem',
-          'x-component': 'Select',
-          enum: [
-            { label: t('Default'), value: 'default' },
-            { label: t('Small'), value: 'small' },
-          ],
-          default: 'default',
-        },
-        overflowCount: {
-          title: t('Max number'),
-          'x-decorator': 'FormItem',
-          'x-decorator-props': {
-            tooltip: t('Maximum number to display when the badge is a number'),
-          },
-          'x-component': 'InputNumber',
-          default: 99,
-        },
-        showZero: {
-          title: t('Show zero'),
-          'x-decorator': 'FormItem',
-          'x-decorator-props': {
-            tooltip: t('Whether to show the badge when it is a number and the number is 0'),
-          },
-          'x-component': 'Checkbox',
-          default: false,
-        },
-      },
-    };
-  }, [t]);
-
-  const initialValues = useMemo(() => {
-    return currentRoute.options?.badge;
-  }, [currentRoute.options?.badge]);
-
-  const onEditBadgeSubmit: (values: any) => void = useCallback(
-    (badge) => {
-      // 更新菜单对应的路由
-      if (currentRoute.id !== undefined) {
-        updateRoute(currentRoute.id, {
-          options: {
-            ...currentRoute.options,
-            badge: {
-              ...currentRoute.options?.badge,
-              ...badge,
-            },
-          },
-        });
-      }
-    },
-    [currentRoute.id, updateRoute],
-  );
-
-  return (
-    <SchemaSettingsModalItem
-      title={t('Edit badge')}
-      eventKey="edit-badge"
-      schema={schema as ISchema}
-      initialValues={initialValues}
-      onSubmit={onEditBadgeSubmit}
-    />
-  );
-};
-
 const MoveToMenuItem = () => {
   const { t } = useTranslation();
   const effects = useCallback(
@@ -708,10 +609,6 @@ export const menuItemSettings = new SchemaSettings({
     {
       name: 'moveTo',
       Component: MoveToMenuItem,
-    },
-    {
-      name: 'badge',
-      Component: EditBadge,
     },
     {
       name: 'divider',
