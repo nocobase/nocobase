@@ -1,8 +1,6 @@
 import React, { useState } from 'react';
 import { Card, Empty, Alert, Collapse, Button, Select, Space, Popconfirm, Typography } from 'antd';
-import { BlockModel } from '../../../../../../src/flow-model/models/blockModel';
-import { ActionModel } from '../../../../../../src/flow-model/models/actions/actionModel';
-import { FlowEngine } from '../../../../../../src/flow-engine';
+import { BlockModel, ActionModel, FlowEngine } from '@nocobase/client';
 import { observer } from '@formily/react';
 import FlowsSettings from './FlowsSettings';
 import { PlusOutlined, DeleteOutlined } from '@ant-design/icons';
@@ -119,38 +117,11 @@ const AddAction: React.FC<{ model: BlockModel; onAdd: () => void }> = observer((
   );
 });
 
-// Action列表项组件
+// Action列表项组件 - 现在只返回配置内容，不返回Panel
 const ActionItem: React.FC<{ 
   action: ActionModel; 
-  model: BlockModel;
-  onDelete: () => void;
-}> = observer(({ action, model, onDelete }) => {  
-  // 处理删除Action
-  const handleDelete = () => {
-    model.removeAction(action.uid);
-    onDelete();
-  };
-  const props = action.getProps();
-
-  return (
-    <div style={{ marginBottom: 16 }}>
-        <Popconfirm
-          title="确定要删除此操作吗？"
-          onConfirm={handleDelete}
-          okText="确定"
-          cancelText="取消"
-        >
-          <Button 
-            type="text" 
-            danger
-            icon={<DeleteOutlined />}
-            onClick={(e) => e.stopPropagation()}
-          />
-        </Popconfirm>
-        <Text strong>{action.getFlow('onClick')?.title}</Text>
-        <FlowsSettings model={action} expandAll={true} />
-    </div>
-  );
+}> = observer(({ action }) => {  
+  return <FlowsSettings model={action} expandAll={true} />;
 });
 
 // 主内容渲染组件
@@ -165,6 +136,12 @@ const ActionsSettingsContent: React.FC<{
   // 获取当前模型的所有actions
   const actions = model.getActions();
 
+  // 处理删除Action
+  const handleDelete = (action: ActionModel) => {
+    model.removeAction(action.uid);
+    forceRefresh();
+  };
+
   return (
     <Card title="Actions 设置">
       <AddAction model={model} onAdd={forceRefresh} />
@@ -172,16 +149,37 @@ const ActionsSettingsContent: React.FC<{
       {actions.length === 0 ? (
         <Empty description="没有配置的操作" />
       ) : (
-        <div>
+        <Collapse 
+          defaultActiveKey={expandAll ? actions.map(action => action.uid) : []}
+          style={{ marginTop: 16 }}
+        >
           {actions.map(action => (
-            <ActionItem 
-              key={action.uid} 
-              action={action} 
-              model={model}
-              onDelete={forceRefresh}
-            />
+            <Panel
+              header={
+                <Text strong>{action.getFlow('onClick')?.title || '未命名操作'}</Text>
+              }
+              key={action.uid}
+              extra={
+                <Popconfirm
+                  title="确定要删除此操作吗？"
+                  onConfirm={() => handleDelete(action)}
+                  okText="确定"
+                  cancelText="取消"
+                >
+                  <Button 
+                    type="text" 
+                    danger
+                    icon={<DeleteOutlined />}
+                    size="small"
+                    onClick={(e) => e.stopPropagation()}
+                  />
+                </Popconfirm>
+              }
+            >
+              <ActionItem action={action} />
+            </Panel>
           ))}
-        </div>
+        </Collapse>
       )}
     </Card>
   );
