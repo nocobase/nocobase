@@ -9,6 +9,7 @@
 
 import { offsetFromString } from './date';
 import { dayjs } from './dayjs';
+import { getDayRangeByParams } from './dateRangeUtils';
 
 function parseUTC(value) {
   if (value instanceof Date || dayjs.isDayjs(value)) {
@@ -17,7 +18,7 @@ function parseUTC(value) {
       start: value.toISOString(),
     };
   }
-  if (value.endsWith('Z')) {
+  if (value?.endsWith?.('Z')) {
     return {
       unit: 'utc',
       start: value,
@@ -173,6 +174,9 @@ function dateRange(r: ParseDateResult) {
 export function parseDate(value: any, options = {} as { timezone?: string }) {
   if (!value) {
     return;
+  }
+  if (value.type) {
+    value = getDayRangeByParams({ ...value, ...options });
   }
 
   if (Array.isArray(value)) {
