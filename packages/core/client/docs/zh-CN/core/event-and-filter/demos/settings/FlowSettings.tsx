@@ -151,6 +151,42 @@ const FlowSettingsContent: React.FC<FlowSettingsContentProps> = observer(({ mode
             onChange={(checked) => updateModelValue(stepKey, fieldKey, checked)}
           />
         );
+      case 'array':
+        // 对于array类型，优先检查x-component
+        if (fieldSchema['x-component'] === 'Select') {
+          const options = (fieldSchema['x-component-props'] as any)?.options || [];
+          const mode = (fieldSchema['x-component-props'] as any)?.mode;
+          return (
+            <Select
+              value={fieldValue}
+              onChange={(value) => updateModelValue(stepKey, fieldKey, value)}
+              placeholder={fieldSchema.title as string || fieldKey}
+              style={{ width: '100%' }}
+              mode={mode}
+              options={options}
+            />
+          );
+        }
+        // 如果没有指定x-component，则使用JSON编辑器作为fallback
+        const arrayValue = Array.isArray(fieldValue) ? JSON.stringify(fieldValue, null, 2) : '';
+        return (
+          <Input.TextArea
+            value={arrayValue}
+            onChange={(e) => {
+              try {
+                const parsedValue = JSON.parse(e.target.value);
+                if (Array.isArray(parsedValue)) {
+                  updateModelValue(stepKey, fieldKey, parsedValue);
+                }
+              } catch (error) {
+                // 如果JSON解析失败，暂时不更新，等用户输入完整的JSON
+                console.warn('Invalid JSON format for array field:', error);
+              }
+            }}
+            placeholder={`请输入JSON格式的${fieldSchema.title || fieldKey}数组`}
+            rows={6}
+          />
+        );
       default:
         console.warn(`Unsupported field type: ${fieldSchema.type} for field ${fieldKey}`);
         return <Input disabled placeholder={`Unsupported type: ${fieldSchema.type}`} />;

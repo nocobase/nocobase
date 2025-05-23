@@ -16,4 +16,4 @@
 
 ## Table Block
 
-<!-- <code src="./demos/models/tableDemo.tsx"></code> -->
+<code src="./demos/models/table.tsx"></code>

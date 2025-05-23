@@ -3,6 +3,7 @@ import { FlowModel, Application, BlockModel, FlowContext, Plugin, FlowEngine } f
 import MarkdownIt from 'markdown-it';
 import Handlebars from 'handlebars';
 import FlowsSettings from '../settings/FlowsSettings';
+import { ActionsSettings } from '../settings/ActionsSettings';
 
 const {
     useFlowModel,
@@ -14,6 +15,7 @@ const Demo = () => {
     const model = useFlowModel<BlockModel>(uid, 'MarkdownModel');
     return (
         <div style={{ padding: 24, background: '#f5f5f5', borderRadius: 8 }}>
+            <ActionsSettings model={model} />
             <FlowsSettings model={model} expandAll />
             <MarkdownBlock model={model} />
         </div>
