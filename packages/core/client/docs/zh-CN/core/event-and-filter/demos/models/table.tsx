@@ -80,21 +80,21 @@ const TableComponent = ({
 };
 
 // Actions组件 - 渲染工具栏操作
-const ActionsComponent = ({ model }) => {
-    if (!model.actions.length) return null;
+const ActionsComponent = observer(({ model }: { model: BlockModel }) => {
+    if (!model.actions.size) return null;
     
     return (
         <div style={{ marginBottom: 16, textAlign: 'right' }}>
             <Space>
-                {model.actions.map(action => (
-                    <Button>
+                {Array.from(model.actions.values()).map(action => (
+                    <Button key={action.uid}>
                         {action.getFlow('onClick')?.title || '操作'}
                     </Button>
                 ))}
             </Space>
         </div>
     );
-};
+});
 
 const TableBlock = withFlowModel(TableComponent);
 
@@ -156,13 +156,6 @@ const DemoTableBlockModel = class extends BlockModel {
                         const dataResource = (model as any).getResource('data');
                         const tableData = dataResource?.getData() || [];
                         model.setProps('dataSource', tableData);
-                    }
-                },
-                setupActions: {
-                    handler: async (ctx: FlowContext, model) => {
-                        // 设置操作按钮
-                        const actions = (model as any).getActions();
-                        model.setProps('actions', actions);
                     }
                 },
                 setupPaginationHandler: {
