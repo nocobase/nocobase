@@ -457,25 +457,56 @@ const EditBadge = () => {
       title: t('Edit badge'),
       properties: {
         count: {
+          required: true,
           title: t('Count'),
           'x-decorator': 'FormItem',
           'x-component': (props) => {
             return <VariableInput {...props} renderSchemaComponent={Input} />
           },
+          description: t('小圆点上展示的数字'),
+        },
+        color: {
+          title: t('Color'),
+          'x-decorator': 'FormItem',
+          'x-component': 'ColorPicker',
           'x-component-props': {},
+          description: t('自定义小圆点的颜色'),
+        },
+        dot: {
+          title: t('Dot'),
+          'x-decorator': 'FormItem',
+          'x-component': 'Checkbox',
+          description: t('不展示数字，只有一个小红点'),
+          default: false,
+        },
+        showZero: {
+          title: t('Show zero'),
+          'x-decorator': 'FormItem',
+          'x-component': 'Checkbox',
+          description: t('当数字为 0 时，是否展示小圆点'),
+          default: false,
+        },
+        size: {
+          title: t('Size'),
+          'x-decorator': 'FormItem',
+          'x-component': 'Select',
+          enum: [
+            { label: t('Default'), value: 'default' },
+            { label: t('Small'), value: 'small' },
+          ],
+          description: t('设置小圆点的大小'),
+          default: 'default',
         },
       },
     };
   }, [t]);
 
   const initialValues = useMemo(() => {
-    return {
-      count: currentRoute.options?.badge?.count,
-    };
-  }, [currentRoute.options?.badge?.title]);
+    return currentRoute.options?.badge;
+  }, [currentRoute.options?.badge]);
 
   const onEditBadgeSubmit: (values: any) => void = useCallback(
-    ({ count }) => {
+    (badge) => {
       // 更新菜单对应的路由
       if (currentRoute.id !== undefined) {
         updateRoute(currentRoute.id, {
@@ -483,7 +514,7 @@ const EditBadge = () => {
             ...currentRoute.options,
             badge: {
               ...currentRoute.options?.badge,
-              count,
+              ...badge,
             },
           },
         });

@@ -330,7 +330,7 @@ const GroupItem: FC<{ item: any }> = (props) => {
         <SortableItem id={item._route.id} schema={fakeSchema} aria-label={item.name} style={menuItemStyle}>
           {props.children}
           {designable && <MenuSchemaToolbarWithContainer />}
-          {badgeCount && <Badge count={badgeCount}></Badge>}
+          {badgeCount && <Badge {...item._route.options.badge} count={badgeCount}></Badge>}
         </SortableItem>
       </NocoBaseRouteContext.Provider>
     </ParentRouteContext.Provider>
@@ -423,7 +423,7 @@ const MenuItem: FC<{ item: any; options: { isMobile: boolean; collapsed: boolean
               </Link>
             </div>
             <MenuSchemaToolbar />
-            {badgeCount && <Badge count={badgeCount}></Badge>}
+            {badgeCount && <Badge {...item._route.options?.badge} count={badgeCount}></Badge>}
           </SortableItem>
         </NocoBaseRouteContext.Provider>
       </ParentRouteContext.Provider>
@@ -446,7 +446,7 @@ const MenuItem: FC<{ item: any; options: { isMobile: boolean; collapsed: boolean
             </Link>
           </WithTooltip>
           <MenuSchemaToolbar />
-          {badgeCount && <Badge count={badgeCount}></Badge>}
+          {badgeCount && <Badge {...item._route.options?.badge} count={badgeCount}></Badge>}
         </SortableItem>
       </NocoBaseRouteContext.Provider>
     </ParentRouteContext.Provider>
