@@ -457,34 +457,20 @@ const EditBadge = () => {
       title: t('Edit badge'),
       properties: {
         count: {
-          required: true,
-          title: t('Count'),
+          title: t('Badge'),
           'x-decorator': 'FormItem',
+          'x-decorator-props': {
+            tooltip: t('You can enter numbers, text, variables, aggregation variables, expressions, etc.'),
+          },
           'x-component': (props) => {
             return <VariableInput {...props} renderSchemaComponent={Input} />
           },
-          description: t('小圆点上展示的数字'),
         },
         color: {
           title: t('Color'),
           'x-decorator': 'FormItem',
           'x-component': 'ColorPicker',
           'x-component-props': {},
-          description: t('自定义小圆点的颜色'),
-        },
-        dot: {
-          title: t('Dot'),
-          'x-decorator': 'FormItem',
-          'x-component': 'Checkbox',
-          description: t('不展示数字，只有一个小红点'),
-          default: false,
-        },
-        showZero: {
-          title: t('Show zero'),
-          'x-decorator': 'FormItem',
-          'x-component': 'Checkbox',
-          description: t('当数字为 0 时，是否展示小圆点'),
-          default: false,
         },
         size: {
           title: t('Size'),
@@ -494,8 +480,25 @@ const EditBadge = () => {
             { label: t('Default'), value: 'default' },
             { label: t('Small'), value: 'small' },
           ],
-          description: t('设置小圆点的大小'),
           default: 'default',
+        },
+        overflowCount: {
+          title: t('Max number'),
+          'x-decorator': 'FormItem',
+          'x-decorator-props': {
+            tooltip: t('Maximum number to display when the badge is a number'),
+          },
+          'x-component': 'InputNumber',
+          default: 99,
+        },
+        showZero: {
+          title: t('Show zero'),
+          'x-decorator': 'FormItem',
+          'x-decorator-props': {
+            tooltip: t('Whether to show the badge when it is a number and the number is 0'),
+          },
+          'x-component': 'Checkbox',
+          default: false,
         },
       },
     };
