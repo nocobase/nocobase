@@ -454,9 +454,10 @@ const EditBadge = () => {
   const schema = useMemo(() => {
     return {
       type: 'object',
-      title: t('Title'),
+      title: t('Edit badge'),
       properties: {
-        badgeTitle: {
+        count: {
+          title: t('Count'),
           'x-decorator': 'FormItem',
           'x-component': (props) => {
             return <VariableInput {...props} renderSchemaComponent={Input} />
@@ -469,12 +470,12 @@ const EditBadge = () => {
 
   const initialValues = useMemo(() => {
     return {
-      badgeTitle: currentRoute.options?.badge?.title,
+      count: currentRoute.options?.badge?.count,
     };
   }, [currentRoute.options?.badge?.title]);
 
   const onEditBadgeSubmit: (values: any) => void = useCallback(
-    ({ badgeTitle }) => {
+    ({ count }) => {
       // 更新菜单对应的路由
       if (currentRoute.id !== undefined) {
         updateRoute(currentRoute.id, {
@@ -482,7 +483,7 @@ const EditBadge = () => {
             ...currentRoute.options,
             badge: {
               ...currentRoute.options?.badge,
-              title: badgeTitle,
+              count,
             },
           },
         });

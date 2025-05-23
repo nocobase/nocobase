@@ -11,7 +11,7 @@ import { EllipsisOutlined, HighlightOutlined } from '@ant-design/icons';
 import ProLayout, { RouteContext, RouteContextType } from '@ant-design/pro-layout';
 import { HeaderViewProps } from '@ant-design/pro-layout/es/components/Header';
 import { css } from '@emotion/css';
-import { theme as antdTheme, ConfigProvider, Popover, Result, Tooltip } from 'antd';
+import { theme as antdTheme, Badge, ConfigProvider, Popover, Result, Tooltip } from 'antd';
 import { createStyles } from 'antd-style';
 import React, { createContext, FC, memo, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import ReactDOM from 'react-dom';
@@ -292,6 +292,8 @@ const MenuSchemaToolbarWithContainer = () => {
   );
 };
 
+const menuItemStyle = { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 4 };
+
 const GroupItem: FC<{ item: any }> = (props) => {
   const { item } = props;
   const { designable } = useDesignable();
@@ -302,9 +304,10 @@ const GroupItem: FC<{ item: any }> = (props) => {
   return (
     <ParentRouteContext.Provider value={item._parentRoute}>
       <NocoBaseRouteContext.Provider value={item._route}>
-        <SortableItem id={item._route.id} schema={fakeSchema} aria-label={item.name}>
+        <SortableItem id={item._route.id} schema={fakeSchema} aria-label={item.name} style={menuItemStyle}>
           {props.children}
           {designable && <MenuSchemaToolbarWithContainer />}
+          {item._route.options?.badge && <Badge count={item._route.options.badge.count}></Badge>}
         </SortableItem>
       </NocoBaseRouteContext.Provider>
     </ParentRouteContext.Provider>
@@ -388,7 +391,7 @@ const MenuItem: FC<{ item: any; options: { isMobile: boolean; collapsed: boolean
     return (
       <ParentRouteContext.Provider value={item._parentRoute}>
         <NocoBaseRouteContext.Provider value={item._route}>
-          <SortableItem id={item._route.id} schema={fakeSchema}>
+          <SortableItem id={item._route.id} schema={fakeSchema} style={menuItemStyle}>
             <div onClick={handleClickLink}>
               {/* 这里是为了扩大点击区域 */}
               <Link to={location.pathname} aria-label={item.name}>
@@ -396,6 +399,7 @@ const MenuItem: FC<{ item: any; options: { isMobile: boolean; collapsed: boolean
               </Link>
             </div>
             <MenuSchemaToolbar />
+            {item._route.options?.badge && <Badge count={item._route.options.badge.count}></Badge>}
           </SortableItem>
         </NocoBaseRouteContext.Provider>
       </ParentRouteContext.Provider>
@@ -408,7 +412,7 @@ const MenuItem: FC<{ item: any; options: { isMobile: boolean; collapsed: boolean
   return (
     <ParentRouteContext.Provider value={item._parentRoute}>
       <NocoBaseRouteContext.Provider value={item._route}>
-        <SortableItem id={item._route.id} schema={fakeSchema}>
+        <SortableItem id={item._route.id} schema={fakeSchema} style={menuItemStyle}>
           <WithTooltip
             title={item.name}
             hidden={item._route.type === NocoBaseDesktopRouteType.group || item._depth > 0}
@@ -418,6 +422,7 @@ const MenuItem: FC<{ item: any; options: { isMobile: boolean; collapsed: boolean
             </Link>
           </WithTooltip>
           <MenuSchemaToolbar />
+          {item._route.options?.badge && <Badge count={item._route.options.badge.count}></Badge>}
         </SortableItem>
       </NocoBaseRouteContext.Provider>
     </ParentRouteContext.Provider>
