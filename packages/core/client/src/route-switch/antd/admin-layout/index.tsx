@@ -298,28 +298,28 @@ const MenuSchemaToolbarWithContainer = () => {
 
 const menuItemStyle = { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 4 };
 
-const useBadgeParsedCount = (rawCount) => {
+const useParsedValue = (variableString: string) => {
   const variables = useVariables();
   const localVariables = useLocalVariables();
-  const [parsedCount, setParsedCount] = useState();
+  const [parsedValue, setParsedValue] = useState<number | string>();
 
   useEffect(() => {
-    if (isVariable(rawCount)) {
-      variables.parseVariable(rawCount, localVariables).then(({ value }) => {
-        setParsedCount(value);
+    if (isVariable(variableString)) {
+      variables.parseVariable(variableString, localVariables).then(({ value }) => {
+        setParsedValue(value);
       })
     } else {
-      setParsedCount(rawCount);
+      setParsedValue(variableString);
     }
-  }, [variables.parseVariable, rawCount, localVariables]);
+  }, [variables.parseVariable, variableString, localVariables]);
 
-  return parsedCount;
+  return parsedValue;
 }
 
 const GroupItem: FC<{ item: any }> = (props) => {
   const { item } = props;
   const { designable } = useDesignable();
-  const badgeCount = useBadgeParsedCount(item._route.options?.badge?.count);
+  const badgeCount = useParsedValue(item._route.options?.badge?.count);
 
   // fake schema used to pass routing information to SortableItem
   const fakeSchema: any = { __route__: item._route };
@@ -360,7 +360,7 @@ const MenuItem: FC<{ item: any; options: { isMobile: boolean; collapsed: boolean
   const { parseURLAndParams } = useParseURLAndParams();
   const divRef = useRef(null);
   const location = useLocation();
-  const badgeCount = useBadgeParsedCount(item._route.options?.badge?.count);
+  const badgeCount = useParsedValue(item._route.options?.badge?.count);
 
   useEffect(() => {
     if (divRef.current) {
