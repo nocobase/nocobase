@@ -512,7 +512,13 @@ export async function buildPluginClient(cwd: string, userConfig: any, sourcemap:
         },
         {
           test: /\.svg$/i,
+          type: 'asset',
+          resourceQuery: { not: [/react/] }, // exclude react component if *.svg?react
+        },
+        {
+          test: /\.svg$/i,
           issuer: /\.[jt]sx?$/,
+          resourceQuery: /react/, // *.svg?react
           use: ['@svgr/webpack'],
         },
         {
@@ -613,12 +619,12 @@ __webpack_require__.p = (function() {
     publicPath += '/';
   }
   return publicPath + 'static/plugins/${packageJson.name}/dist/client/';
-})();`
+})();`,
                 };
               }
             });
           });
-        }
+        },
       },
       process.env.BUILD_ANALYZE === 'true' &&
       new RsdoctorRspackPlugin({
