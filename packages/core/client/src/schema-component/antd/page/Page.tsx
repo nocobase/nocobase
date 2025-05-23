@@ -363,7 +363,7 @@ const NocoBasePageHeaderTabs: FC<{ className: string; activeKey: string }> = ({ 
                 {tabRoute.icon && <Icon style={{ marginRight: 8 }} type={tabRoute.icon} />}
                 <span>{(tabRoute.title && routeT(compile(tabRoute.title))) || t('Unnamed')}</span>
                 <PageTabDesigner />
-                <TabBadge style={{ marginLeft: 4 }} tabRoute={tabRoute} />
+                <TabBadge style={{ marginLeft: 4, color: tabRoute.options?.badge?.textColor }} tabRoute={tabRoute} />
               </SortableItem>
             </NocoBaseRouteContext.Provider>
           ),
