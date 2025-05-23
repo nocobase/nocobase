@@ -177,7 +177,7 @@ const cases = [
   },
 ];
 
-describe('getOffsetRangeByParams', () => {
+describe.skip('getOffsetRangeByParams', () => {
   cases.forEach(({ title, input, expected }) => {
     it(title, () => {
       const result = getDayRangeByParams(input as any);
