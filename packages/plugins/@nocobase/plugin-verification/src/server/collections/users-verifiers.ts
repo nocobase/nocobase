@@ -9,10 +9,13 @@
 
 import { defineCollection } from '@nocobase/database';
 
-// Deprecated due to incorrect naming.
+/**
+ * Collection for user information of extended authentication methods,
+ * such as saml, oicd, oauth, sms, etc.
+ */
 export default defineCollection({
-  migrationRules: ['skip'],
-  name: 'usersVerificators',
+  migrationRules: ['schema-only', 'overwrite', 'skip'],
+  name: 'usersVerifiers',
   createdBy: true,
   updatedBy: true,
   logging: true,
