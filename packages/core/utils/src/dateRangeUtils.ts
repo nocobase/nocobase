@@ -36,7 +36,7 @@ type RangeType =
   | 'lastYear'
   | 'nextYear'
   | 'past'
-  | 'future';
+  | 'next';
 
 interface RangeParams {
   type: RangeType;
@@ -56,7 +56,7 @@ const getNow = (tz?: string): Dayjs => {
 };
 
 export const getOffsetRangeByParams = (params: RangeParams): [string, string] => {
-  const { type, unit = 'day', number = 1, timezone } = params;
+  const { type, unit = 'day' as any, number = 1, timezone } = params;
   const now = getNow(timezone);
   const actualUnit: any = unit === 'week' ? 'isoWeek' : unit;
 
@@ -64,11 +64,13 @@ export const getOffsetRangeByParams = (params: RangeParams): [string, string] =>
   let end: dayjs.Dayjs;
 
   if (type === 'past') {
-    start = now.startOf(actualUnit).subtract(number, unit as any);
-    end = now.endOf(actualUnit);
-  } else if (type === 'future') {
-    start = now.startOf(actualUnit);
-    end = start.add(number, unit as any).endOf(actualUnit);
+    const base = now.startOf(actualUnit);
+    start = base.subtract(number, unit).startOf(actualUnit);
+    end = base.subtract(1, unit).endOf(actualUnit);
+  } else if (type === 'next') {
+    const base = now.startOf(actualUnit);
+    start = base.add(1, unit).startOf(actualUnit);
+    end = start.add(number - 1, unit).endOf(actualUnit);
   } else {
     throw new Error(`Unsupported type: ${type}`);
   }
@@ -89,7 +91,7 @@ const getEnd = (offset: number, unit: DateUnit, tz?: string): Dayjs => {
     .endOf(unit as UnitType);
 };
 
-const strategies: Record<Exclude<RangeType, 'past' | 'future'>, (params?: RangeParams) => [Dayjs, Dayjs]> = {
+const strategies: Record<Exclude<RangeType, 'past' | 'next'>, (params?: RangeParams) => [Dayjs, Dayjs]> = {
   today: (params) => [getStart(0, 'day', params?.timezone), getEnd(0, 'day', params?.timezone)],
   yesterday: (params) => [getStart(-1, 'day', params?.timezone), getEnd(-1, 'day', params?.timezone)],
   tomorrow: (params) => [getStart(1, 'day', params?.timezone), getEnd(1, 'day', params?.timezone)],
@@ -115,10 +117,10 @@ const strategies: Record<Exclude<RangeType, 'past' | 'future'>, (params?: RangeP
  * 获取某个时间范围的起止时间（字符串格式）
  */
 export const getDayRangeByParams = (params: RangeParams): [string, string] => {
-  if (params.type === 'past' || params.type === 'future') {
+  console.log(params);
+  if (params.type === 'past' || params.type === 'next') {
     return getOffsetRangeByParams(params);
   }
-
   const fn = strategies[params.type];
   if (!fn) throw new Error(`Unsupported type: ${params.type}`);
   const [start, end] = fn(params);

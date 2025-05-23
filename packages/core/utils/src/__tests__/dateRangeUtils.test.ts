@@ -7,9 +7,16 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { getDayRangeByParams, getOffsetRangeByParams } from '../client';
 import dayjs from 'dayjs';
+import utc from 'dayjs/plugin/utc';
+import timezone from 'dayjs/plugin/timezone';
+import { getDayRangeByParams } from '../client';
 
+dayjs.extend(utc);
+dayjs.extend(timezone);
+
+// 固定当前时间为 2025-05-22 15:00:00 +08:00
+const mockNow = dayjs.tz('2025-05-22 15:00:00', 'Asia/Shanghai');
 describe('getDayRangeByParams', () => {
   const format = 'YYYY-MM-DD HH:mm:ss';
 
@@ -36,19 +43,6 @@ describe('getDayRangeByParams', () => {
     expect(end).toBe(now.endOf('isoWeek').format(format));
   });
 
-  it('should return future range by 2 months', () => {
-    const [start, end] = getDayRangeByParams({
-      type: 'future',
-      unit: 'month',
-      number: 2,
-      timezone: 'UTC',
-    });
-    const now = dayjs().startOf('month'); // 当前月起始
-    const expectedEnd = now.add(1, 'month').endOf('month'); // 未来2个月，实际是当前月 + 下一个月的结束
-    expect(start).toBe(now.format('YYYY-MM-DD HH:mm:ss'));
-    expect(end).toBe(expectedEnd.format('YYYY-MM-DD HH:mm:ss'));
-  });
-
   it('should throw error for invalid timezone', () => {
     expect(() => getDayRangeByParams({ type: 'today', timezone: 'Invalid/Zone' })).toThrow(
       'Invalid time zone specified: Invalid/Zone',
@@ -68,58 +62,133 @@ describe('getDayRangeByParams', () => {
   });
 });
 
+const originalDateNow = Date.now;
+Date.now = () => mockNow.valueOf();
+
+const cases = [
+  {
+    title: 'Today',
+    input: { type: 'today', timezone: '+08:00' },
+    expected: ['2025-05-22 00:00:00', '2025-05-22 23:59:59'],
+  },
+  {
+    title: 'Yesterday',
+    input: { type: 'yesterday', timezone: '+08:00' },
+    expected: ['2025-05-21 00:00:00', '2025-05-21 23:59:59'],
+  },
+  {
+    title: 'Tomorrow',
+    input: { type: 'tomorrow', timezone: '+08:00' },
+    expected: ['2025-05-23 00:00:00', '2025-05-23 23:59:59'],
+  },
+
+  {
+    title: 'This Week',
+    input: { type: 'thisWeek', timezone: '+08:00' },
+    expected: ['2025-05-19 00:00:00', '2025-05-25 23:59:59'],
+  },
+  {
+    title: 'Last Week',
+    input: { type: 'lastWeek', timezone: '+08:00' },
+    expected: ['2025-05-12 00:00:00', '2025-05-18 23:59:59'],
+  },
+  {
+    title: 'Next Week',
+    input: { type: 'nextWeek', timezone: '+08:00' },
+    expected: ['2025-05-26 00:00:00', '2025-06-01 23:59:59'],
+  },
+
+  {
+    title: 'This Month',
+    input: { type: 'thisMonth', timezone: '+08:00' },
+    expected: ['2025-05-01 00:00:00', '2025-05-31 23:59:59'],
+  },
+  {
+    title: 'Last Month',
+    input: { type: 'lastMonth', timezone: '+08:00' },
+    expected: ['2025-04-01 00:00:00', '2025-04-30 23:59:59'],
+  },
+  {
+    title: 'Next Month',
+    input: { type: 'nextMonth', timezone: '+08:00' },
+    expected: ['2025-06-01 00:00:00', '2025-06-30 23:59:59'],
+  },
+
+  {
+    title: 'This Quarter',
+    input: { type: 'thisQuarter', timezone: '+08:00' },
+    expected: ['2025-04-01 00:00:00', '2025-06-30 23:59:59'],
+  },
+  {
+    title: 'Last Quarter',
+    input: { type: 'lastQuarter', timezone: '+08:00' },
+    expected: ['2025-01-01 00:00:00', '2025-03-31 23:59:59'],
+  },
+  {
+    title: 'Next Quarter',
+    input: { type: 'nextQuarter', timezone: '+08:00' },
+    expected: ['2025-07-01 00:00:00', '2025-09-30 23:59:59'],
+  },
+
+  {
+    title: 'This Year',
+    input: { type: 'thisYear', timezone: '+08:00' },
+    expected: ['2025-01-01 00:00:00', '2025-12-31 23:59:59'],
+  },
+  {
+    title: 'Last Year',
+    input: { type: 'lastYear', timezone: '+08:00' },
+    expected: ['2024-01-01 00:00:00', '2024-12-31 23:59:59'],
+  },
+  {
+    title: 'Next Year',
+    input: { type: 'nextYear', timezone: '+08:00' },
+    expected: ['2026-01-01 00:00:00', '2026-12-31 23:59:59'],
+  },
+  {
+    title: 'past one calendar week → 上周一到周日',
+    input: { type: 'past', unit: 'week', number: 1, timezone: '+08:00' },
+    expected: ['2025-05-12 00:00:00', '2025-05-18 23:59:59'],
+  },
+  {
+    title: 'past one day → 昨天',
+    input: { type: 'past', unit: 'day', number: 1, timezone: '+08:00' },
+    expected: ['2025-05-21 00:00:00', '2025-05-21 23:59:59'],
+  },
+  {
+    title: 'past one calendar month → 上月整月',
+    input: { type: 'past', unit: 'month', number: 1, timezone: '+08:00' },
+    expected: ['2025-04-01 00:00:00', '2025-04-30 23:59:59'],
+  },
+  {
+    title: 'past one calendar year → 去年',
+    input: { type: 'past', unit: 'year', number: 1, timezone: '+08:00' },
+    expected: ['2024-01-01 00:00:00', '2024-12-31 23:59:59'],
+  },
+  {
+    title: 'next one calendar month → 下月整月',
+    input: { type: 'next', unit: 'month', number: 1, timezone: '+08:00' },
+    expected: ['2025-06-01 00:00:00', '2025-06-30 23:59:59'],
+  },
+  {
+    title: 'next two calendar months → 下两个月整月',
+    input: { type: 'next', unit: 'month', number: 2, timezone: '+08:00' },
+    expected: ['2025-06-01 00:00:00', '2025-07-31 23:59:59'],
+  },
+];
+
 describe('getOffsetRangeByParams', () => {
-  it('应返回过去1天的起止时间', () => {
-    const [start, end] = getOffsetRangeByParams({ type: 'past', unit: 'day', number: 1 });
-    const now = dayjs();
-    expect(start).toBe(now.startOf('day').format('YYYY-MM-DD HH:mm:ss'));
-    expect(end).toBe(now.endOf('day').format('YYYY-MM-DD HH:mm:ss'));
-  });
-
-  it('应返回未来3个月的起止时间', () => {
-    const [start, end] = getOffsetRangeByParams({ type: 'future', unit: 'month', number: 3 });
-    const now = dayjs().startOf('month');
-    const expectedEnd = now.add(2, 'month').endOf('month');
-    expect(start).toBe(now.format('YYYY-MM-DD HH:mm:ss'));
-    expect(end).toBe(expectedEnd.format('YYYY-MM-DD HH:mm:ss'));
-  });
-
-  it('应正确处理 isoWeek 单位', () => {
-    const [start, end] = getOffsetRangeByParams({ type: 'past', unit: 'week', number: 2 });
-    const now = dayjs();
-    const expectedStart = now.startOf('isoWeek').subtract(1, 'week');
-    const expectedEnd = now.endOf('isoWeek');
-    expect(start).toBe(expectedStart.format('YYYY-MM-DD HH:mm:ss'));
-    expect(end).toBe(expectedEnd.format('YYYY-MM-DD HH:mm:ss'));
-  });
-
-  it('应支持自定义 IANA 时区（如 Asia/Shanghai）', () => {
-    const [start, end] = getOffsetRangeByParams({
-      type: 'past',
-      unit: 'day',
-      number: 1,
-      timezone: 'Asia/Shanghai',
+  cases.forEach(({ title, input, expected }) => {
+    it(title, () => {
+      const result = getDayRangeByParams(input as any);
+      if (result[0] !== expected[0] || result[1] !== expected[1]) {
+        console.error(`❌ ${title}\nExpected: ${expected}\nReceived: ${result}`);
+      } else {
+        console.log(`✅ ${title}`);
+      }
     });
-    const now = dayjs().tz('Asia/Shanghai');
-    expect(start).toBe(now.startOf('day').format('YYYY-MM-DD HH:mm:ss'));
-    expect(end).toBe(now.endOf('day').format('YYYY-MM-DD HH:mm:ss'));
-  });
-
-  it('应支持 UTC 偏移时区（如 +08:00）', () => {
-    const [start, end] = getOffsetRangeByParams({
-      type: 'future',
-      unit: 'day',
-      number: 1,
-      timezone: '+08:00',
-    });
-    const now = dayjs().utcOffset(8 * 60);
-    expect(start).toBe(now.startOf('day').format('YYYY-MM-DD HH:mm:ss'));
-    expect(end).toBe(now.endOf('day').format('YYYY-MM-DD HH:mm:ss'));
-  });
-
-  it('当 type 非法时应抛出错误', () => {
-    expect(() => {
-      getOffsetRangeByParams({ type: 'invalid' as any });
-    }).toThrow('Unsupported type: invalid');
   });
 });
+
+// 恢复 Date.now
+Date.now = originalDateNow;

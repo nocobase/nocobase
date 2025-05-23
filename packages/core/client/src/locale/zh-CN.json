@@ -1131,5 +1131,8 @@
   "Last Year": "去年",
   "Next Year": "明年",
   "Past": "过去",
-  "Future": "未来"
+  "Next": "未来",
+  "Calendar week":"日历周",
+  "Calendar Month":"日历月",
+  "Calendar Year":"日历年"
 }
