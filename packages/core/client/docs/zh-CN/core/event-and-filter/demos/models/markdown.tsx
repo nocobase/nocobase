@@ -31,7 +31,7 @@ const MarkdownBlock = withFlowModel(Markdown);
 
 const MarkdownModel = BlockModel.extends([
     {
-        key: 'setProps',
+        key: 'default',
         title: 'Markdown',
         steps: {
             setTemplate: {

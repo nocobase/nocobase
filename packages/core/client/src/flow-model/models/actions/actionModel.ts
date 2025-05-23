@@ -1,4 +1,4 @@
-import { FlowModel, IModelComponentProps } from '../flowModel';
+import { FlowModel } from '../flowModel';
 import { Application } from '../../../application';
 
 export class ActionModel extends FlowModel {
@@ -13,7 +13,7 @@ export class ActionModel extends FlowModel {
 
   protected static initFlows() {
     this.registerFlow({
-      key: 'setProps',
+      key: 'default',
       title: '设置按钮文本',
       steps: {
         setText: {

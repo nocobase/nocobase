@@ -1,5 +1,4 @@
 import { DataBlockModel } from './dataBlockModel';
-import { IModelComponentProps } from './flowModel';
 import { ActionModel } from './actions/actionModel';
 import { observable } from '@formily/reactive';
 import { ArrayResource } from '../resources/arrayResource';
@@ -60,7 +59,4 @@ export class TableBlockModel<TData = any> extends DataBlockModel {
     });
     return this.resource.load();
   }
-
-
-
 } 

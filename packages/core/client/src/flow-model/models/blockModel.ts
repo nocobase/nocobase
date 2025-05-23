@@ -1,10 +1,11 @@
-import { FlowModel, IModelComponentProps } from './flowModel';
+import { FlowModel } from './flowModel';
 import { ActionModel } from './actions/actionModel';
 import { define, observable } from '@formily/reactive';
 import { Application } from '../../application';
 import { DeleteActionModel } from './actions/deleteActionModel';
 import { SaveActionModel } from './actions/saveActionModel';
 import { RefreshActionModel } from './actions/refreshActionModel';
+import { ExtendedFlowDefinition } from '../types';
 
 const registeredActionModels = new WeakMap<typeof BlockModel, Set<{
   title: string;
@@ -63,14 +64,35 @@ export class BlockModel extends FlowModel {
     title: string;
     type: typeof ActionModel;
   }[] {
-    // FIXME: 这里继承有问题，需要修复
-    const actions = registeredActionModels.get(BlockModel);
-    return Array.from(actions || []);
+    // 收集当前类和所有父类的 actions（继承链向上查找）
+    const allActions = new Set<{
+      title: string;
+      type: typeof ActionModel;
+    }>();
+    
+    let currentClass = this;
+    // 向上遍历继承链，直到到达 BlockModel 的基类
+    while (currentClass && typeof currentClass === 'function') {
+      const actions = registeredActionModels.get(currentClass);
+      if (actions) {
+        actions.forEach(action => allActions.add(action));
+      }
+      
+      // 向上查找父类
+      const parentClass = Object.getPrototypeOf(currentClass);
+      // 如果父类不再是 BlockModel 的子类，则停止（避免越过 BlockModel 基类边界）
+      if (parentClass === FlowModel || parentClass === Function.prototype) {
+        break;
+      }
+      currentClass = parentClass;
+    }
+    
+    return Array.from(allActions);
   }
 
   protected static initFlows() {
     this.registerFlow({
-      key: 'setProps',
+      key: 'default',
       title: '设置属性',
       steps: {
         setHeight: {
@@ -138,5 +160,43 @@ export class BlockModel extends FlowModel {
       title: '刷新',
       type: RefreshActionModel,
     });
+  }
+
+  /**
+   * 覆盖父类的 extends 方法，支持 supportedActions 参数
+   */
+  public static extends<T extends typeof BlockModel>(
+    this: T,
+    flows: ExtendedFlowDefinition[]
+  ): T;
+  
+  public static extends<T extends typeof BlockModel>(
+    this: T,
+    flows: ExtendedFlowDefinition[],
+    supportedActions: {
+      title: string;
+      type: typeof ActionModel;
+    }[]
+  ): T;
+
+  public static extends<T extends typeof BlockModel>(
+    this: T,
+    flows: ExtendedFlowDefinition[] = [],
+    supportedActions?: {
+      title: string;
+      type: typeof ActionModel;
+    }[]
+  ): T {
+    // 先调用父类的 extends 方法处理 flows
+    const ExtendedClass = FlowModel.extends.call(this, flows) as T;
+    
+    // 注册 supportedActions
+    if (supportedActions && supportedActions.length > 0) {
+      supportedActions.forEach(action => {
+        ExtendedClass.registerActionModel(action);
+      });
+    }
+    
+    return ExtendedClass;
   }
 } 
