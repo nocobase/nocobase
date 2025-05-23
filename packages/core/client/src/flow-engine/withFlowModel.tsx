@@ -1,7 +1,7 @@
 import React from 'react';
 import { observer } from '@formily/react';
 import { FlowModel } from '@nocobase/client';
-import { useApplyFlow } from './hooks/useApplyFlow';
+import { useApplyDefaultFlows } from './hooks/useApplyFlow';
 import { useContext } from './hooks/useContext';
 import { UserContext } from './types';
 
@@ -11,32 +11,50 @@ type BaseFlowModelComponentProps<P extends React.ComponentProps<any>> = {
   [key in keyof P]?: P[key];
 };
 
-// 根据是否有默认flow来确定defaultFlow属性是否必填
-type FlowModelComponentProps<P extends React.ComponentProps<any>> = 
-  BaseFlowModelComponentProps<P> & {
-    defaultFlow?: string;
-  };
+// HOC 选项接口
+interface WithFlowModelOptions {
+  applyDefaultFlows?: boolean; // 是否执行默认流程，默认为 true
+}
 
+// 不应用默认流程的组件
+function WithFlowModelWithoutFlows<P extends object>(props: BaseFlowModelComponentProps<P>, WrappedComponent: React.ComponentType<P>) {
+  const { model, ...restPassthroughProps } = props;
+
+  const modelProps = model.getProps();
+  const combinedProps = { ...restPassthroughProps, ...modelProps } as unknown as P;
+
+  return <WrappedComponent {...combinedProps} />;
+}
+
+// 应用默认流程的组件
+function WithFlowModelWithFlows<P extends object>(props: BaseFlowModelComponentProps<P>, WrappedComponent: React.ComponentType<P>) {
+  const { model, ...restPassthroughProps } = props;
+  const flowContext = useContext();
+
+  // 应用默认流程
+  useApplyDefaultFlows(model, flowContext as UserContext);
+
+  const modelProps = model.getProps();
+  const combinedProps = { ...restPassthroughProps, ...modelProps } as unknown as P;
+
+  return <WrappedComponent {...combinedProps} />;
+}
+
+// HOC，关联 FlowModel 并可选择是否执行默认流程
 export function withFlowModel<P extends object>(
   WrappedComponent: React.ComponentType<P>,
-  options?: { defaultFlow?: string; }
+  options?: WithFlowModelOptions,
 ) {
-  const defaultFlowKey = options?.defaultFlow;
+  type PropsType = BaseFlowModelComponentProps<P>;
 
-  // 使用条件类型确定props类型
-  type PropsType = FlowModelComponentProps<P>;
+  // 默认应用默认流程
+  const shouldApplyDefaultFlows = options?.applyDefaultFlows ?? true;
 
-  const WithFlowModelAndApply = observer((props: PropsType) => {
-    const { model, defaultFlow, ...restPassthroughProps } = props;
-    const flowContext = useContext();
-    useApplyFlow(defaultFlow || defaultFlowKey || model.defaultFlow, model, flowContext as UserContext);
+  // 根据配置选择不同的内部组件实现
+  const WithFlowModel = shouldApplyDefaultFlows
+    ? observer((props: PropsType) => WithFlowModelWithFlows(props, WrappedComponent))
+    : observer((props: PropsType) => WithFlowModelWithoutFlows(props, WrappedComponent));
 
-    const modelProps = model.getProps();
-    const combinedProps = { ...restPassthroughProps, ...modelProps } as unknown as P;
-
-    return <WrappedComponent {...combinedProps} />;
-  });
-
-  WithFlowModelAndApply.displayName = `WithFlowModelAndApply(${WrappedComponent.displayName || WrappedComponent.name || 'Component'})`;
-  return WithFlowModelAndApply;
+  WithFlowModel.displayName = `WithFlowModel(${WrappedComponent.displayName || WrappedComponent.name || 'Component'})`;
+  return WithFlowModel;
 } 

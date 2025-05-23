@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, useCallback } from 'react';
 import { autorun, toJS } from '@formily/reactive';
 import { FlowModel } from '@nocobase/client';
 import { useFlowEngine } from '../provider';
@@ -85,13 +85,26 @@ function safeStringify(obj: any, visited = new Set(), depth = 0, maxDepth = 5): 
   }
 }
 
-export function useApplyFlow(
+/**
+ * 通用的流程执行 Hook
+ * @param cacheKeyPrefix 缓存键前缀
+ * @param flowKey 流程键
+ * @param model FlowModel 实例
+ * @param context 用户上下文
+ * @param executor 执行函数
+ * @param logMessage 日志消息
+ * @returns 执行结果
+ */
+function useFlowExecutor<T>(
+  cacheKeyPrefix: string,
   flowKey: string,
   model: FlowModel,
-  context?: UserContext,
-): any {
+  context: UserContext | undefined,
+  executor: (context?: UserContext) => Promise<T>,
+  logMessage: string,
+): T {
   const engine = useFlowEngine();
-  const cacheKey = useMemo(() => generateCacheKey('applyFlow', flowKey, model.uid, context), [flowKey, model.uid, context]);
+  const cacheKey = useMemo(() => generateCacheKey(cacheKeyPrefix, flowKey, model.uid, context), [cacheKeyPrefix, flowKey, model.uid, context]);
   const [, forceUpdate] = useState({});
   const isMounted = useRef(true);
 
@@ -121,10 +134,9 @@ export function useApplyFlow(
 
         const cachedEntry = flowEngineCache.get(cacheKey);
         if (cachedEntry?.status === 'resolved' || !cachedEntry) {
-          console.log(`[FlowEngine.useApplyFlow] Reactive re-apply for flow: ${flowKey}, model: ${model.uid}`);
+          console.log(logMessage);
           try {
-            const executionUserContext = context;
-            const newResult = await model.applyFlow(flowKey, executionUserContext);
+            const newResult = await executor(context);
             if (isMounted.current) {
               flowEngineCache.set(cacheKey, { status: 'resolved', data: newResult, promise: Promise.resolve(newResult) });
               forceUpdate({});
@@ -143,8 +155,9 @@ export function useApplyFlow(
       if (debounceTimer) clearTimeout(debounceTimer);
       disposeAutorun();
     };
-  }, [model, flowKey, context, cacheKey, engine]);
+  }, [model, context, cacheKey, executor, logMessage, engine]);
 
+  // 检查缓存
   const cachedEntry = flowEngineCache.get(cacheKey);
   if (cachedEntry) {
     if (cachedEntry.status === 'resolved') return cachedEntry.data;
@@ -152,8 +165,8 @@ export function useApplyFlow(
     if (cachedEntry.status === 'pending') throw cachedEntry.promise;
   }
 
-  const initialUserContext = context;
-  const promise = model.applyFlow(flowKey, initialUserContext)
+  // 执行初始请求
+  const promise = executor(context)
     .then(result => {
       if(isMounted.current) flowEngineCache.set(cacheKey, { status: 'resolved', data: result, promise });
       return result;
@@ -165,4 +178,44 @@ export function useApplyFlow(
 
   flowEngineCache.set(cacheKey, { status: 'pending', promise });
   throw promise;
+}
+
+export function useApplyFlow(
+  flowKey: string,
+  model: FlowModel,
+  context?: UserContext,
+): any {
+  return useFlowExecutor(
+    'applyFlow',
+    flowKey,
+    model,
+    context,
+    (ctx) => model.applyFlow(flowKey, ctx),
+    `[FlowEngine.useApplyFlow] Reactive re-apply for flow: ${flowKey}, model: ${model.uid}`,
+  );
+}
+
+/**
+ * Hook for applying default flows on a FlowModel
+ * @param model The FlowModel instance
+ * @param context Optional user context
+ * @returns The results of all default flows execution
+ */
+export function useApplyDefaultFlows(
+  model: FlowModel,
+  context?: UserContext,
+): any[] {
+  const executor = useCallback((ctx?: UserContext) => 
+    model.applyDefaultFlows(ctx), 
+    [model]
+  );
+  
+  return useFlowExecutor(
+    'applyDefaultFlows',
+    'all',
+    model,
+    context,
+    executor,
+    `[FlowEngine.useApplyDefaultFlows] Reactive re-apply for model: ${model.uid}`,
+  );
 } 

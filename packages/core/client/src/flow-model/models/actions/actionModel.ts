@@ -13,7 +13,8 @@ export class ActionModel extends FlowModel {
 
   protected static initFlows() {
     this.registerFlow({
-      key: 'default',
+      key: 'setProps',
+      default: true,
       title: '设置按钮文本',
       steps: {
         setText: {

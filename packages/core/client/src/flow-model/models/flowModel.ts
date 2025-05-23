@@ -16,7 +16,6 @@ export class FlowModel {
   public hidden: boolean;
   public stepParams: Record<string, Record<string, any>>;
   public app: Application;
-  public defaultFlow: string = 'default';
 
   constructor(
     uid: string,
@@ -361,5 +360,48 @@ export class FlowModel {
     }
     
     return CustomFlowModel as unknown as T;
+  }
+
+  /**
+   * 获取所有默认流程定义并按 sort 排序
+   * @returns {FlowDefinition[]} 按 sort 排序的默认流程定义数组
+   */
+  public getDefaultFlows(): FlowDefinition[] {
+    const constructor = this.constructor as typeof FlowModel;
+    const allFlows = constructor.getFlows();
+
+    // 过滤出默认流程并按 sort 排序
+    const defaultFlows = Array.from(allFlows.values())
+      .filter(flow => flow.default === true)
+      .sort((a, b) => (a.sort || 0) - (b.sort || 0));
+
+    return defaultFlows;
+  }
+
+  /**
+   * 执行所有默认流程
+   * @param {FlowUserContext} [context] 可选的用户上下文
+   * @returns {Promise<any[]>} 所有默认流程的执行结果数组
+   */
+  async applyDefaultFlows(context?: FlowUserContext): Promise<any[]> {
+    const defaultFlows = this.getDefaultFlows();
+    
+    if (defaultFlows.length === 0) {
+      console.warn(`FlowModel: No default flows found for model '${this.uid}'`);
+      return [];
+    }
+
+    const results: any[] = [];
+    for (const flow of defaultFlows) {
+      try {
+        const result = await this.applyFlow(flow.key, context);
+        results.push(result);
+      } catch (error) {
+        console.error(`FlowModel.applyDefaultFlows: Error executing default flow '${flow.key}':`, error);
+        throw error;
+      }
+    }
+    
+    return results;
   }
 }

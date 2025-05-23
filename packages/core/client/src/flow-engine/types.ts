@@ -30,6 +30,15 @@ export interface FlowDefinition<TModel extends FlowModel = FlowModel> {
   key: string; // Unique identifier for the flow
   title?: string;
   /**
+   * Whether this flow is a default flow that should be automatically executed
+   */
+  default?: boolean;
+  /**
+   * Sort order for flow execution, lower numbers execute first
+   * Defaults to 0, can be negative
+   */
+  sort?: number;
+  /**
    * Optional configuration to allow this flow to be triggered by `dispatchEvent`.
    */
   on?: {
