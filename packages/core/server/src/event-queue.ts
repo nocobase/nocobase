@@ -18,6 +18,7 @@ type Callback = (
   message: any,
   options: {
     id?: string;
+    retried?: number;
     signal?: AbortSignal;
   },
 ) => Promise<void> | void;
@@ -41,7 +42,7 @@ export interface IEventQueueAdapter {
   connect(): Promise<void> | void;
   close(): Promise<void> | void;
   subscribe(channel: string, event: QueueEventOptions): void;
-  unsubscribe(channel: string, event?: QueueEventOptions): void;
+  unsubscribe(channel: string): void;
   publish(channel: string, message: any, options: QueueMessageOptions): Promise<void> | void;
 }
 
@@ -52,12 +53,6 @@ export interface EventQueueOptions {
 export const QUEUE_DEFAULT_INTERVAL = 1_000;
 export const QUEUE_DEFAULT_CONCURRENCY = 1;
 export const QUEUE_DEFAULT_ACK_TIMEOUT = 15_000;
-
-async function sleep(time = QUEUE_DEFAULT_INTERVAL, timeout = false) {
-  return new Promise((resolve, reject) => {
-    setTimeout(timeout ? reject : resolve, time);
-  });
-}
 
 export class MemoryEventQueueAdapter implements IEventQueueAdapter {
   private connected = false;
@@ -221,54 +216,10 @@ export class MemoryEventQueueAdapter implements IEventQueueAdapter {
     queue.push({ id: randomUUID(), content, options });
     console.debug(`memory queue (${channel}) published message`, content);
 
-    // this.consume(channel, true);
     setImmediate(() => {
       this.emitter.emit(channel, channel);
     });
   }
-  // async consume(channel: string, once = false) {
-  //   while (this.connected && this.events.has(channel)) {
-  //     const event = this.events.get(channel);
-  //     const interval = event.interval || QUEUE_DEFAULT_INTERVAL;
-  //     const concurrency = event.concurrency || QUEUE_DEFAULT_CONCURRENCY;
-  //     const processor = event.process;
-
-  //     if (!event.idle()) {
-  //       if (once) {
-  //         break;
-  //       }
-  //       await sleep(interval);
-  //       continue;
-  //     }
-
-  //     const queue = this.queues.get(channel);
-  //     if (!queue?.length) {
-  //       if (once) {
-  //         break;
-  //       }
-  //       await sleep(interval);
-  //       continue;
-  //     }
-
-  //     for (let i = 0; i < concurrency || queue.length; i += 1) {
-  //       const message = queue.shift();
-  //       try {
-  //         await processor(message.content, {
-  //           signal: AbortSignal.timeout(message.options.timeout || QUEUE_DEFAULT_ACK_TIMEOUT),
-  //         });
-  //       } catch (ex) {
-  //         queue.unshift(message);
-  //         console.error(ex);
-  //       }
-  //     }
-
-  //     if (once) {
-  //       break;
-  //     }
-  //     await sleep(interval);
-  //   }
-  // }
-
   async read(channel: string) {
     const event = this.events.get(channel);
     if (!event) {
@@ -293,6 +244,8 @@ export class MemoryEventQueueAdapter implements IEventQueueAdapter {
     try {
       console.debug(`memory queue (${channel}) processing message (${id})...`, content);
       await event.process(content, {
+        id,
+        retried,
         signal: AbortSignal.timeout(timeout),
       });
       console.debug(`memory queue (${channel}) consumed message (${id})`);
@@ -364,8 +317,8 @@ export class EventQueue {
       return;
     }
     await this.adapter.close();
-    for (const [channel, event] of this.events.entries()) {
-      this.adapter.unsubscribe(this.getFullChannel(channel), event);
+    for (const channel of this.events.keys()) {
+      this.adapter.unsubscribe(this.getFullChannel(channel));
     }
   }
   subscribe(channel: string, options: QueueEventOptions) {
@@ -379,14 +332,14 @@ export class EventQueue {
       this.adapter.subscribe(this.getFullChannel(channel), options);
     }
   }
-  unsubscribe(channel: string, options: QueueEventOptions) {
+  unsubscribe(channel: string) {
     if (!this.events.has(channel)) {
       return;
     }
     this.events.delete(channel);
 
     if (this.isConnected()) {
-      this.adapter.unsubscribe(this.getFullChannel(channel), options);
+      this.adapter.unsubscribe(this.getFullChannel(channel));
     }
   }
   async publish(channel: string, message: any, options: QueueMessageOptions = {}) {
