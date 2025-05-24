@@ -317,7 +317,7 @@ const GroupItem: FC<{ item: any }> = (props) => {
   );
 };
 
-const WithTooltip: FC<{ title: string; hidden: boolean }> = (props) => {
+const WithTooltip: FC<{ title: string; hidden: boolean; badgeProps: any }> = (props) => {
   const { inHeader } = useContext(HeaderContext);
 
   return (
@@ -325,7 +325,9 @@ const WithTooltip: FC<{ title: string; hidden: boolean }> = (props) => {
       {(context) =>
         context.collapsed && !props.hidden && !inHeader ? (
           <Tooltip title={props.title} placement="right">
-            {props.children}
+            <Badge {...props.badgeProps} style={{ transform: 'none' }}>
+              {props.children}
+            </Badge>
           </Tooltip>
         ) : (
           props.children
@@ -412,6 +414,7 @@ const MenuItem: FC<{ item: any; options: { isMobile: boolean; collapsed: boolean
 
   // 如果点击的是一个 group，直接跳转到第一个子页面
   const path = item.redirect || item.path;
+  const badgeProps = { ...item._route.options?.badge, count: badgeCount };
 
   return (
     <ParentRouteContext.Provider value={item._parentRoute}>
@@ -420,13 +423,14 @@ const MenuItem: FC<{ item: any; options: { isMobile: boolean; collapsed: boolean
           <WithTooltip
             title={item.name}
             hidden={item._route.type === NocoBaseDesktopRouteType.group || item._depth > 0}
+            badgeProps={badgeProps}
           >
             <Link to={path} aria-label={item.name}>
               {props.children}
             </Link>
           </WithTooltip>
           <MenuSchemaToolbar />
-          {badgeCount != null && <Badge {...item._route.options?.badge} count={badgeCount} style={{ marginLeft: 4, color: item._route.options?.badge?.textColor }}></Badge>}
+          {badgeCount != null && <Badge {...badgeProps} style={{ marginLeft: 4, color: item._route.options?.badge?.textColor }}></Badge>}
         </SortableItem>
       </NocoBaseRouteContext.Provider>
     </ParentRouteContext.Provider>
