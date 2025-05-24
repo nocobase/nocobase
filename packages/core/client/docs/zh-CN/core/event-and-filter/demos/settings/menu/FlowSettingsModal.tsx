@@ -147,14 +147,13 @@ const FlowSettingsModalContent: React.FC<FlowSettingsModalContentProps> = observ
   // 处理确认按钮点击
   const handleOk = async () => {
     try {
-      // 重新执行flow来应用新的参数
-      if (model) {
-        await model.applyFlow(flowKey);
-      }
+      // 只保存配置，不执行流程
+      // 配置已经通过FlowSettings组件自动保存到model中了
+      message.success('配置已保存');
       onClose();
     } catch (error) {
-      console.error('应用配置时出错:', error);
-      message.error('应用配置时出错，请检查控制台');
+      console.error('保存配置时出错:', error);
+      message.error('保存配置时出错，请检查控制台');
     }
   };
 

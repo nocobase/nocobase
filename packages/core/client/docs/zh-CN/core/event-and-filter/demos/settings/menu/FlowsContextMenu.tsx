@@ -1,23 +1,63 @@
 import React, { useState, useCallback } from 'react';
-import { Dropdown } from 'antd';
+import { Dropdown, Alert } from 'antd';
 import type { MenuProps } from 'antd';
 import { SettingOutlined } from '@ant-design/icons';
 import { observer } from '@formily/react';
-import { FlowModel, ActionStepDefinition } from '@nocobase/client';
+import { FlowModel, ActionStepDefinition, useFlowModel } from '@nocobase/client';
 import FlowSettingsModal from './FlowSettingsModal';
 
-interface FlowsContextMenuProps {
-  model: FlowModel;
-  children: React.ReactNode;
-  enabled?: boolean;
-  position?: 'right' | 'left';
+// 右键菜单组件接口
+interface ModelProvidedProps {
+  model: any;
+  children?: React.ReactNode; // 子组件，如果提供则作为wrapper模式
+  enabled?: boolean; // 是否启用右键菜单，默认为true
+  position?: 'right' | 'left'; // 右键菜单位置，默认为right
 }
 
-const FlowsContextMenu: React.FC<FlowsContextMenuProps> = ({ 
+interface ModelByIdProps {
+  uid: string;
+  modelClassName: string;
+  children?: React.ReactNode; // 子组件，如果提供则作为wrapper模式
+  enabled?: boolean; // 是否启用右键菜单，默认为true
+  position?: 'right' | 'left'; // 右键菜单位置，默认为right
+}
+
+type FlowsContextMenuProps = ModelProvidedProps | ModelByIdProps;
+
+// 判断是否是通过ID获取模型的props
+const isModelByIdProps = (props: FlowsContextMenuProps): props is ModelByIdProps => {
+  return 'uid' in props && 'modelClassName' in props && Boolean(props.uid) && Boolean(props.modelClassName);
+};
+
+/**
+ * FlowsContextMenu组件 - 右键菜单组件
+ * 
+ * 功能特性：
+ * - 右键菜单
+ * - Wrapper 模式支持
+ * 
+ * 支持两种使用方式：
+ * 1. 直接提供model: <FlowsContextMenu model={myModel}>{children}</FlowsContextMenu>
+ * 2. 通过uid和modelClassName获取model: <FlowsContextMenu uid="model1" modelClassName="MyModel">{children}</FlowsContextMenu>
+ * 
+ * @param props.children 子组件，必须提供
+ * @param props.enabled 是否启用右键菜单，默认为true
+ * @param props.position 右键菜单位置，默认为right
+ */
+const FlowsContextMenu: React.FC<FlowsContextMenuProps> = (props) => {
+  if (isModelByIdProps(props)) {
+    return <FlowsContextMenuWithModelById {...props} />;
+  } else {
+    return <FlowsContextMenuWithModel {...props} />;
+  }
+};
+
+// 使用传入的model
+const FlowsContextMenuWithModel: React.FC<ModelProvidedProps> = observer(({ 
   model, 
-  children, 
-  enabled = false, 
-  position = 'right' 
+  children,
+  enabled = true,
+  position = 'right'
 }) => {
   const [selectedFlowKey, setSelectedFlowKey] = useState<string | null>(null);
   const [modalVisible, setModalVisible] = useState<boolean>(false);
@@ -32,8 +72,12 @@ const FlowsContextMenu: React.FC<FlowsContextMenuProps> = ({
     setSelectedFlowKey(null);
   }, []);
 
-  // 如果未启用或没有model，直接返回children
-  if (!enabled || !model) {
+  if (!model) {
+    return <Alert message="提供的模型无效" type="error" />;
+  }
+
+  // 如果未启用或没有children，直接返回children
+  if (!enabled || !children) {
     return <>{children}</>;
   }
 
@@ -138,6 +182,30 @@ const FlowsContextMenu: React.FC<FlowsContextMenuProps> = ({
       )}
     </>
   );
-};
+});
 
-export default observer(FlowsContextMenu); 
+// 通过useModelById hook获取model
+const FlowsContextMenuWithModelById: React.FC<ModelByIdProps> = observer(({ 
+  uid, 
+  modelClassName, 
+  children,
+  enabled = true,
+  position = 'right'
+}) => {
+  const model = useFlowModel(uid, modelClassName);
+  
+  if (!model) {
+    return <Alert message={`未找到ID为 ${uid} 的模型`} type="error" />;
+  }
+
+  return (
+    <FlowsContextMenuWithModel 
+      model={model}
+      children={children}
+      enabled={enabled}
+      position={position}
+    />
+  );
+});
+
+export default FlowsContextMenu; 

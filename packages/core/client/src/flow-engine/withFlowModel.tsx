@@ -4,7 +4,6 @@ import { FlowModel } from '@nocobase/client';
 import { useApplyDefaultFlows } from './hooks/useApplyFlow';
 import { useContext } from './hooks/useContext';
 import { UserContext } from './types';
-import FlowsContextMenu from '../../docs/zh-CN/core/event-and-filter/demos/settings/menu/FlowsContextMenu';
 
 type BaseFlowModelComponentProps<P extends React.ComponentProps<any>> = {
   model: FlowModel;
@@ -15,8 +14,10 @@ type BaseFlowModelComponentProps<P extends React.ComponentProps<any>> = {
 // HOC 选项接口
 interface WithFlowModelOptions {
   applyDefaultFlows?: boolean; // 是否执行默认流程，默认为 true
-  enableFlowsContextMenu?: boolean; // 是否启用flows右键菜单，默认为 true
-  flowsMenuPosition?: 'right' | 'left'; // 右键菜单位置，默认为 'right'
+  settings?: {
+    component?: React.ComponentType<{ model: FlowModel; children: React.ReactNode; [key: string]: any }>; // 设置组件，作为wrapper
+    props?: Record<string, any>; // 传递给设置组件的参数
+  };
 }
 
 // 不应用默认流程的组件
@@ -30,22 +31,22 @@ function WithFlowModelWithoutFlows<P extends object>(
   const modelProps = model.getProps();
   const combinedProps = { ...restPassthroughProps, ...modelProps } as unknown as P;
 
-  const wrappedElement = <WrappedComponent {...combinedProps} />;
+  let wrappedElement = <WrappedComponent {...combinedProps} />;
 
-  // 如果启用了flows右键菜单，包装在FlowsContextMenu中
-  if (options?.enableFlowsContextMenu !== false) {
-    return (
-      <FlowsContextMenu 
-        model={model} 
-        enabled={true}
-        position={options?.flowsMenuPosition}
-      >
-        {wrappedElement}
-      </FlowsContextMenu>
-    );
+  // 如果有设置组件，使用设置组件作为wrapper包装原始组件
+  if (options?.settings?.component) {
+    const SettingsComponent = options.settings.component;
+    const settingsProps = {
+      model,
+      children: wrappedElement,
+      ...options.settings.props
+    };
+    
+    return <SettingsComponent {...settingsProps} />;
+  } else {
+    // 如果没有设置组件，直接返回原始组件
+    return wrappedElement;
   }
-
-  return wrappedElement;
 }
 
 // 应用默认流程的组件
@@ -63,22 +64,22 @@ function WithFlowModelWithFlows<P extends object>(
   const modelProps = model.getProps();
   const combinedProps = { ...restPassthroughProps, ...modelProps } as unknown as P;
 
-  const wrappedElement = <WrappedComponent {...combinedProps} />;
+  let wrappedElement = <WrappedComponent {...combinedProps} />;
 
-  // 如果启用了flows右键菜单，包装在FlowsContextMenu中
-  if (options?.enableFlowsContextMenu !== false) {
-    return (
-      <FlowsContextMenu 
-        model={model} 
-        enabled={true}
-        position={options?.flowsMenuPosition}
-      >
-        {wrappedElement}
-      </FlowsContextMenu>
-    );
+  // 如果有设置组件，使用设置组件作为wrapper包装原始组件
+  if (options?.settings?.component) {
+    const SettingsComponent = options.settings.component;
+    const settingsProps = {
+      model,
+      children: wrappedElement,
+      ...options.settings.props
+    };
+    
+    return <SettingsComponent {...settingsProps} />;
+  } else {
+    // 如果没有设置组件，直接返回原始组件
+    return wrappedElement;
   }
-
-  return wrappedElement;
 }
 
 // HOC，关联 FlowModel 并可选择是否执行默认流程

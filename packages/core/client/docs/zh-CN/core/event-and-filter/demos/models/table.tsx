@@ -3,6 +3,7 @@ import { Table, Button, Space, Pagination, Spin } from 'antd';
 import { BlockModel, FlowContext, FlowModel, Application, Plugin, FlowEngine, BaseResource, useFlowModel, withFlowModel } from '@nocobase/client';
 import { ActionsSettings } from '../settings/ActionsSettings';
 import { observer } from '@formily/react';
+import FlowsContextMenu from '../settings/menu/FlowsContextMenu';
 
 const Demo = () => {
     const uid = 'table-block';
@@ -89,7 +90,15 @@ const ActionsComponent = observer(({ model }: { model: BlockModel }) => {
     );
 });
 
-const TableBlock = withFlowModel(TableComponent);
+const TableBlock = withFlowModel(TableComponent, {
+    settings: {
+        component: FlowsContextMenu,
+        props: {
+            enabled: true,
+            position: 'right'
+        }
+    }
+});
 
 // 创建继承自BlockModel的DemoTableBlockModel
 class DemoTableBlockModel extends BlockModel {

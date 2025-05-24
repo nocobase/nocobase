@@ -1,6 +1,7 @@
 import React from 'react';
 import { Button, ButtonProps, message, Modal } from 'antd';
 import { FlowModel, Application, Plugin, FlowEngine, ActionModel, useFlowModel, withFlowModel } from '@nocobase/client';
+import FlowsContextMenu from '../settings/menu/FlowsContextMenu';
 
 const ButtonModel = ActionModel.extends([
   {
@@ -52,8 +53,16 @@ const ButtonComponent = (props: ButtonProps & { text?: string }) => {
   return <Button {...rest}>{text}</Button>;
 }
 
-// 使用withFlowModel包装Button组件
-const DeleteButton = withFlowModel(ButtonComponent);
+// 使用withFlowModel包装Button组件，只启用右键菜单
+const DeleteButton = withFlowModel(ButtonComponent, {
+  settings: {
+    component: FlowsContextMenu,
+    props: {
+      enabled: true,
+      position: 'right'
+    }
+  }
+});
 
 // 插件定义
 class DemoPlugin extends Plugin {

@@ -2,6 +2,7 @@ import React from 'react';
 import { FlowModel, Application, BlockModel, FlowContext, Plugin, FlowEngine, useFlowModel, withFlowModel } from '@nocobase/client';
 import MarkdownIt from 'markdown-it';
 import Handlebars from 'handlebars';
+import FlowsSettings from '../settings/simple/FlowsSettings';
 
 const Demo = () => {
     const uid = 'markdown-block';
@@ -20,7 +21,14 @@ const Markdown = ({ content, height }) => {
     return <div dangerouslySetInnerHTML={{ __html: content }} style={{ height }} />
 }
 
-const MarkdownBlock = withFlowModel(Markdown);
+const MarkdownBlock = withFlowModel(Markdown, {
+    settings: {
+        component: FlowsSettings,
+        props: {
+            expandAll: true
+        }
+    }
+});
 
 const MarkdownModel = BlockModel.extends([
     {
