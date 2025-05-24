@@ -1,14 +1,8 @@
 import React from 'react';
 import { Table, Button, Space, Pagination, Spin } from 'antd';
-import { BlockModel, FlowContext, FlowModel, Application, Plugin, FlowEngine, BaseResource } from '@nocobase/client';
+import { BlockModel, FlowContext, FlowModel, Application, Plugin, FlowEngine, BaseResource, useFlowModel, withFlowModel } from '@nocobase/client';
 import { ActionsSettings } from '../settings/ActionsSettings';
-import FlowsSettings from '../settings/FlowsSettings';
 import { observer } from '@formily/react';
-
-const {
-    useFlowModel,
-    withFlowModel,
-} = FlowEngine;
 
 const Demo = () => {
     const uid = 'table-block';
@@ -17,7 +11,6 @@ const Demo = () => {
     return (
         <div style={{ padding: 24, background: '#f5f5f5', borderRadius: 8 }}>
             <ActionsSettings model={model} />
-            <FlowsSettings model={model} />
             <ActionsComponent model={model} />
             <TableBlock model={model} />
         </div>

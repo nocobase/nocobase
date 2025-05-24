@@ -1,4 +1,4 @@
 export * from './useContext';
-export * from './useFlowMode';
+export * from './useFlowModel';
 export * from './useApplyFlow';
 export * from './useDispatchEvent'; 

@@ -1,11 +1,9 @@
 import React from 'react';
 import { Card, Empty, Alert, Input, InputNumber, Select, Switch, Form } from 'antd';
-import { useFlowEngine, ActionStepDefinition, ISchema, FlowEngine } from '@nocobase/client';
+import { useFlowEngine, ActionStepDefinition, ISchema, FlowEngine, useFlowModel } from '@nocobase/client';
 import { observer } from '@formily/react';
 
 const { Item: FormItem } = Form;
-
-const { useFlowModel: useModelById } = FlowEngine;
 
 // 创建两个组件版本，一个使用props传递的model，一个使用hook获取model
 interface ModelProvidedProps {
@@ -54,7 +52,7 @@ const FlowSettingsWithModel: React.FC<ModelProvidedProps> = observer(({ model, f
 
 // 通过useModelById hook获取model
 const FlowSettingsWithModelById: React.FC<ModelByIdProps> = observer(({ uid, flowKey, modelClassName }) => {
-  const model = useModelById(uid, modelClassName);
+  const model = useFlowModel(uid, modelClassName);
   const flowEngine = model?.flowEngine;
   
   if (!model) {

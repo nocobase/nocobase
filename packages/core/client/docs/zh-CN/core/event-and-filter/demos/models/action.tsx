@@ -1,13 +1,6 @@
 import React from 'react';
 import { Button, ButtonProps, message, Modal } from 'antd';
-import { FlowModel, Application, Plugin, FlowEngine, ActionModel } from '@nocobase/client';
-import FlowsSettings from '../settings/FlowsSettings';
-
-// 从 FlowEngine 解构出所需的 Hooks
-const {
-  useFlowModel,
-  withFlowModel
-} = FlowEngine;
+import { FlowModel, Application, Plugin, FlowEngine, ActionModel, useFlowModel, withFlowModel } from '@nocobase/client';
 
 const ButtonModel = ActionModel.extends([
   {
@@ -49,7 +42,6 @@ const Demo = () => {
   const model = useFlowModel(uid, 'ButtonModel');
   return (
     <div style={{ padding: 24, background: '#f5f5f5', borderRadius: 8 }}>
-      <FlowsSettings model={model} />
       <DeleteButton model={model} />
     </div>
   );

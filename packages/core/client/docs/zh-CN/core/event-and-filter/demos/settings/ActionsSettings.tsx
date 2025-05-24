@@ -1,11 +1,9 @@
 import React, { useState } from 'react';
 import { Card, Empty, Alert, Collapse, Button, Select, Space, Popconfirm, Typography } from 'antd';
-import { BlockModel, ActionModel, FlowEngine } from '@nocobase/client';
+import { BlockModel, ActionModel, FlowEngine, useFlowModel } from '@nocobase/client';
 import { observer } from '@formily/react';
-import FlowsSettings from './FlowsSettings';
+import FlowsSettings from './simple/FlowsSettings';
 import { PlusOutlined, DeleteOutlined } from '@ant-design/icons';
-
-const { useFlowModel: useModelById } = FlowEngine;
 const { Panel } = Collapse;
 const { Text } = Typography;
 
@@ -53,7 +51,7 @@ const ActionsSettingsWithModel: React.FC<ModelProvidedProps> = observer(({ model
 
 // 通过useModelById hook获取model
 const ActionsSettingsWithModelById: React.FC<ModelByIdProps> = observer(({ uid, modelClassName, expandAll }) => {
-  const model = useModelById(uid, modelClassName) as BlockModel;
+  const model = useFlowModel(uid, modelClassName) as BlockModel;
   
   if (!model) {
     return <Alert message={`未找到ID为 ${uid} 的模型`} type="error" />;

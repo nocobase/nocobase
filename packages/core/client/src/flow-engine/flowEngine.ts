@@ -7,75 +7,15 @@ import {
 import { Application } from '../application';
 import { FlowModel } from '@nocobase/client';
 
-// 导入hooks和HOC
-import { useContext } from './hooks/useContext';
-import { useFlowModel } from './hooks/useFlowMode';
-import { useApplyFlow, useApplyDefaultFlows } from './hooks/useApplyFlow'; 
-import { useDispatchEvent } from './hooks/useDispatchEvent';
-import { withFlowModel } from './withFlowModel';
-
 /**
  * FlowEngine 类负责管理流程（Flows）、动作（Actions）和模型（Models）。
- * 它提供了注册、获取和执行这些核心概念的方法，并集成了 React Hooks 和 HOC 以便在 UI 中使用。
+ * 它提供了注册、获取和执行这些核心概念的方法。
+ * 
+ * 注意：React Hooks 和 HOC 现在可以直接从 @nocobase/client 导入使用：
+ * - useContext, useFlowModel, useApplyFlow, useApplyDefaultFlows, useDispatchEvent
+ * - withFlowModel
  */
 export class FlowEngine {
-  /**
-   * @static
-   * @function useContext
-   * @description 通过 hook 获取 FlowEngine 上下文。
-   * @returns {any} FlowEngine 上下文实例。
-   */
-  public static useContext = useContext;
-  /**
-   * @static
-   * @function useFlowModel
-   * @description 通过 hook 和 UID 获取模型实例。
-   * @param {string} id 模型实例的 UID。
-   * @param {string} modelClassName 模型类名。
-   * @param {Record<string, any>} [stepsParams] 步骤参数。
-   * @returns {FlowModel} 模型实例。
-   */
-  public static useFlowModel = useFlowModel;
-  /**
-   * @static
-   * @function useApplyFlow
-   * @description 通过 hook 触发一个流程的执行。
-   * @param {string} flowKey 要执行的流程的 Key。
-   * @param {FlowModel} model 当前的模型实例。
-   * @param {any} [ctx] 可选的上下文对象。
-   * @returns {void}
-   */
-  public static useApplyFlow = useApplyFlow;
-  /**
-   * @static
-   * @function useApplyDefaultFlows
-   * @description 通过 hook 触发所有默认流程的执行。
-   * @param {FlowModel} model 当前的模型实例。
-   * @param {any} [ctx] 可选的上下文对象。
-   * @returns {any[]} 所有默认流程的执行结果数组。
-   */
-  public static useApplyDefaultFlows = useApplyDefaultFlows;
-  /**
-   * @static
-   * @function useDispatchEvent
-   * @description 通过 hook 派发一个事件。
-   * @param {string} eventName 事件名称。
-   * @param {FlowModel} model 当前的模型实例。
-   * @param {any} [ctx] 可选的上下文对象。
-   * @returns {void}
-   */
-  public static useDispatchEvent = useDispatchEvent;
-  /**
-   * @static
-   * @function withFlowModel
-   * @description 一个高阶组件 (HOC)，用于将组件与 FlowModel 关联起来，并可选择是否执行默认流程。
-   * @template P 组件的 props 类型。
-   * @param {React.ComponentType<P>} Component 要包装的 React 组件。
-   * @param {object} [options] 配置选项。
-   * @param {boolean} [options.applyDefaultFlows=true] 是否执行默认流程，默认为 true。
-   * @returns {React.ComponentType<P & { model: FlowModel }>} 包装后的组件，增加了 model prop。
-   */
-  public static withFlowModel = withFlowModel;
 
   /** @private Stores registered action definitions. */
   private actions: Map<string, ActionDefinition> = new Map();
