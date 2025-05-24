@@ -390,7 +390,7 @@ const Avatar: React.FC = (props) => {
   return <AntdAvatar {...props} src={avatars(field.value)} />;
 };
 
-export const Employees = () => {
+export const Employees: React.FC = () => {
   const t = useT();
   return (
     <ExtendCollectionsProvider collections={[aiEmployees]}>
@@ -406,7 +406,7 @@ export const Employees = () => {
         }}
         schema={{
           type: 'void',
-          name: 'root',
+          name: 'ai-employees',
           properties: {
             block: {
               type: 'void',
