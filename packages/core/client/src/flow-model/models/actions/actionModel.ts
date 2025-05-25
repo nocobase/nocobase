@@ -1,14 +1,17 @@
 import { FlowModel } from '../flowModel';
 import { Application } from '../../../application';
+import { BlockModel } from '..';
 
 export class ActionModel extends FlowModel {
-
+  public blockModel: BlockModel;
+  
   static {
     this.initFlows();
   }
 
-  constructor(uid: string, app: Application) {
+  constructor(uid: string, app: Application, blockModel: BlockModel) {
     super(uid, app);
+    this.blockModel = blockModel;
   }
 
   protected static initFlows() {
@@ -63,5 +66,21 @@ export class ActionModel extends FlowModel {
         }
       },
     });
+
+    this.registerFlow<ActionModel>({
+      key: 'remove',
+      on: {
+        eventName: 'remove',
+      },
+      steps: {
+        remove: {
+          handler: async (ctx, model, params) => {
+            model.blockModel.removeAction(model.uid);
+            model.flowEngine.destroyModel(model.blockModel.uid);
+            await model.blockModel.applyDefaultFlows();
+          }
+        }
+      }
+    });
   }
-} 
+}

@@ -69,7 +69,7 @@ const DeleteButton = withFlowModel(ButtonComponent, {
   settings: {
     component: FlowsContextMenu,
     props: {
-      position: 'right'
+      showDeleteButton: false,
     }
   }
 });

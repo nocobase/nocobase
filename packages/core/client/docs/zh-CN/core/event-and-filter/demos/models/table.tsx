@@ -32,7 +32,7 @@ const TableComponent = ({
     onPaginationChange
 }) => {
     return (
-        <div style={{ marginTop: 16 }}>
+        <div style={{ marginTop: 16, height: height }}>
             <div style={{
                 display: 'flex',
                 justifyContent: 'space-between',
@@ -82,9 +82,6 @@ const ActionButton = withFlowModel((props: ButtonProps & { text?: string }) => {
 }, {
     settings: {
       component: FlowsContextMenu,
-      props: {
-        position: 'right'
-      }
     }
   })
 
@@ -181,12 +178,12 @@ class DemoTableBlockModel extends BlockModel {
                         (model as any).setResource('data', dataResource);
                     }
                 },
-                loadInitialData: {
-                    handler: async (ctx: FlowContext, model) => {
-                        // 初始化后立即加载数据
-                        await model.applyFlow('loadData');
-                    }
-                }
+                // loadInitialData: {
+                //     handler: async (ctx: FlowContext, model) => {
+                //         // 初始化后立即加载数据
+                //         await model.applyFlow('loadData');
+                //     }
+                // }
             }
         });
 

@@ -92,9 +92,9 @@ export class BlockModel extends FlowModel {
 
   protected static initFlows() {
     this.registerFlow({
-      key: 'setProps',
+      key: 'default',
       default: true,
-      title: '设置属性',
+      title: '区块通用属性',
       steps: {
         setHeight: {
           title: '设置高度',
@@ -111,38 +111,6 @@ export class BlockModel extends FlowModel {
             }
           },
           defaultParams: { height: 300 }
-        },
-        setTitle: {
-          title: '设置标题',
-          handler: (ctx, model, params) => {
-            const { title } = params || {};
-            if (title !== undefined) {
-              model.setProps('title', title);
-            }
-          },
-          uiSchema: {
-            title: {
-              type: 'string',
-              'x-component': 'Input',
-            }
-          },
-          defaultParams: { title: '' }
-        },
-        setDescription: {
-          title: '设置描述',
-          uiSchema: {
-            description: {
-              type: 'string',
-              'x-component': 'Input',
-            }
-          },
-          handler: (ctx, model, params) => {
-            const { description } = params || {};
-            if (description !== undefined) {
-              model.setProps('description', description);
-            }
-          },
-          defaultParams: { description: '' }
         },
       },
     });

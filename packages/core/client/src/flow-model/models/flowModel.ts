@@ -16,6 +16,8 @@ export class FlowModel {
   public hidden: boolean;
   public stepParams: Record<string, Record<string, any>>;
   public app: Application;
+  // TODO: 应该有一些类型，整个生命周期只执行一次，比如从后端加载配置，构造整个model树。
+  // 后续model的更新不需要再重新加载了
 
   constructor(
     uid: string,
