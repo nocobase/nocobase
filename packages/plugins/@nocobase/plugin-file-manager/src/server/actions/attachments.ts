@@ -87,14 +87,30 @@ export async function createMiddleware(ctx: Context, next: Next) {
     return next();
   }
 
+  const storageName =
+    resourceName === 'attachments'
+      ? ctx.db.getFieldByPath(attachmentField)?.options?.storage
+      : collection.options.storage;
+  // const StorageRepo = ctx.db.getRepository('storages');
+  // const storage = await StorageRepo.findOne({ filter: storageName ? { name: storageName } : { default: true } });
   const plugin = ctx.app.pm.get(Plugin) as Plugin;
-  const storageName = ctx.db.getFieldByPath(attachmentField)?.options?.storage || collection.options.storage;
-  const storages = Array.from(plugin.storagesCache.values());
-  ctx.storage = storages.find((item) => item.name === storageName) || storages.find((item) => item.default);
+  const storage = Array.from(plugin.storagesCache.values()).find((storage) =>
+    storageName ? storage.name === storageName : storage.default,
+  );
+  if (!storage) {
+    ctx.logger.error(`[file-manager] no storage found`);
+    return ctx.throw(500);
+  }
+  ctx.storage = storage;
 
   if (ctx?.request.is('multipart/*')) {
     await multipart(ctx, next);
   } else {
+    ctx.action.mergeParams({
+      values: {
+        storage: { id: storage.id },
+      },
+    });
     await next();
   }
 }

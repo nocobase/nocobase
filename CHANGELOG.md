@@ -5,6 +5,126 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v1.6.33](https://github.com/nocobase/nocobase/compare/v1.6.32...v1.6.33) - 2025-05-23
+
+### 🚀 Improvements
+
+- **[undefined]** Build the full docker image ([#6898](https://github.com/nocobase/nocobase/pull/6898)) by @chenos
+
+- **[client]** Optimize the issue of pages becoming increasingly slow with use ([#6888](https://github.com/nocobase/nocobase/pull/6888)) by @zhangzhonghe
+
+- **[Calendar]** support configurable refresh button in calendar block ([#6920](https://github.com/nocobase/nocobase/pull/6920)) by @katherinehhh
+
+- **[Workflow: Custom action event]** Fix en-US locales based on zh-CN keys by @mytharcher
+
+- **[Workflow: Approval]** Support to do all todos in workflow tasks center by @mytharcher
+
+### 🐛 Bug Fixes
+
+- **[client]**
+  - rendering error caused by invalid style format when adding association field ([#6903](https://github.com/nocobase/nocobase/pull/6903)) by @katherinehhh
+
+  - incorrect empty value check for toMany association field in linkage rule ([#6905](https://github.com/nocobase/nocobase/pull/6905)) by @katherinehhh
+
+- **[Collection field: Markdown(Vditor)]** markdown (Vditor) field not adapting to theme ([#6919](https://github.com/nocobase/nocobase/pull/6919)) by @katherinehhh
+
+- **[Collection: Tree]** Avoid incorrect updates to similar path prefixes during path updates ([#6913](https://github.com/nocobase/nocobase/pull/6913)) by @2013xile
+
+- **[File manager]**
+  - Fix preview match rule ([#6902](https://github.com/nocobase/nocobase/pull/6902)) by @mytharcher
+
+  - Fix client collection injection and upload parameter ([#6909](https://github.com/nocobase/nocobase/pull/6909)) by @mytharcher
+
+  - Fix preview URL on non-image files ([#6889](https://github.com/nocobase/nocobase/pull/6889)) by @mytharcher
+
+- **[Workflow: mailer node]** Handle undefined 'to' field and improve email recipient processing. ([#6915](https://github.com/nocobase/nocobase/pull/6915)) by @sheldon66
+
+- **[Workflow: Custom action event]**
+  - Fix button perform incorrectly after a few clicks by @mytharcher
+
+  - Fix error handler can not be matched by class by @mytharcher
+
+- **[Workflow: Approval]** Fix association appends calculation by @mytharcher
+
+## [v1.6.32](https://github.com/nocobase/nocobase/compare/v1.6.31...v1.6.32) - 2025-05-20
+
+### 🐛 Bug Fixes
+
+- **[client]**
+  - page not redirected correctly after deleting last item ([#6892](https://github.com/nocobase/nocobase/pull/6892)) by @katherinehhh
+
+  - cascade component in modal not loading association data initially ([#6886](https://github.com/nocobase/nocobase/pull/6886)) by @katherinehhh
+
+## [v1.6.31](https://github.com/nocobase/nocobase/compare/v1.6.30...v1.6.31) - 2025-05-18
+
+### 🚀 Improvements
+
+- **[Workflow]** Add all missed en-US locale keys ([#6885](https://github.com/nocobase/nocobase/pull/6885)) by @mytharcher
+
+### 🐛 Bug Fixes
+
+- **[database]** handle empty string cells during field import to prevent errors ([#6880](https://github.com/nocobase/nocobase/pull/6880)) by @aaaaaajie
+
+- **[client]**
+  - association select record table did not filter already associate record ([#6874](https://github.com/nocobase/nocobase/pull/6874)) by @katherinehhh
+
+  - association data not submitted when exposing association fields  in subForm ([#6883](https://github.com/nocobase/nocobase/pull/6883)) by @katherinehhh
+
+  - draggable sort fields not displaying available options correctly ([#6875](https://github.com/nocobase/nocobase/pull/6875)) by @katherinehhh
+
+- **[Workflow]** Fix stack limit works incorrectly for collection event ([#6876](https://github.com/nocobase/nocobase/pull/6876)) by @mytharcher
+
+- **[Block: Action panel]** Read the route basename from the scanner to adapt for the desktop environment. ([#6877](https://github.com/nocobase/nocobase/pull/6877)) by @sheldon66
+
+- **[Workflow: Manual node]** Fix render error when show unprocessed item ([#6879](https://github.com/nocobase/nocobase/pull/6879)) by @mytharcher
+
+- **[Workflow: Approval]** Fix assignees scope of delegate and add to other assignees by @mytharcher
+
+## [v1.6.30](https://github.com/nocobase/nocobase/compare/v1.6.29...v1.6.30) - 2025-05-15
+
+### 🚀 Improvements
+
+- **[client]** add more built-in size settings for read status image ([#6868](https://github.com/nocobase/nocobase/pull/6868)) by @katherinehhh
+
+### 🐛 Bug Fixes
+
+- **[File manager]**
+  - Fix types ([#6873](https://github.com/nocobase/nocobase/pull/6873)) by @mytharcher
+
+  - Fix create file record without foreign key permission ([#6863](https://github.com/nocobase/nocobase/pull/6863)) by @mytharcher
+
+- **[Action: Export records]** improve performance when deleting fields in import/export field settings ([#6861](https://github.com/nocobase/nocobase/pull/6861)) by @katherinehhh
+
+- **[Data visualization]** Chart blocks do not display when added to popups triggered from block-level actions ([#6864](https://github.com/nocobase/nocobase/pull/6864)) by @2013xile
+
+- **[Action: Export records Pro]** improve performance when deleting fields in import/export pro field settings by @katherinehhh
+
+- **[File storage: S3(Pro)]** Change to use collection field to locate storage by @mytharcher
+
+- **[Backup manager]** Fix type error in build by @mytharcher
+
+## [v1.6.29](https://github.com/nocobase/nocobase/compare/v1.6.28...v1.6.29) - 2025-05-13
+
+### 🚀 Improvements
+
+- **[Workflow]** Allow to revision more than one draft ([#6851](https://github.com/nocobase/nocobase/pull/6851)) by @mytharcher
+
+### 🐛 Bug Fixes
+
+- **[Action: Export records]** Fixed   exporting empty values in nested associations and attachment url ([#6845](https://github.com/nocobase/nocobase/pull/6845)) by @aaaaaajie
+
+- **[Workflow: Manual node]** Fix stats number count wrong on tasks ([#6783](https://github.com/nocobase/nocobase/pull/6783)) by @mytharcher
+
+- **[Workflow: test kit]** Fix failed test cases due to required preset plugin ([#6839](https://github.com/nocobase/nocobase/pull/6839)) by @mytharcher
+
+- **[Data visualization]** Fix error when filtering nested m2m fields ([#6855](https://github.com/nocobase/nocobase/pull/6855)) by @2013xile
+
+- **[Workflow: Subflow]** Fix undefined trigger caused page crash by @mytharcher
+
+- **[File storage: S3(Pro)]** access url expiration invalid by @jiannx
+
+- **[Workflow: Approval]** Fix stats number count wrong on tasks by @mytharcher
+
 ## [v1.6.28](https://github.com/nocobase/nocobase/compare/v1.6.27...v1.6.28) - 2025-05-09
 
 ### 🐛 Bug Fixes

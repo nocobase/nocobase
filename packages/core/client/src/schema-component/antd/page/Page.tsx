@@ -40,7 +40,7 @@ import {
   useCurrentRoute,
   useMobileLayout,
 } from '../../../route-switch/antd/admin-layout';
-import { KeepAliveProvider, useKeepAlive } from '../../../route-switch/antd/admin-layout/KeepAlive';
+import { KeepAlive, useKeepAlive } from '../../../route-switch/antd/admin-layout/KeepAlive';
 import { useGetAriaLabelOfSchemaInitializer } from '../../../schema-initializer/hooks/useGetAriaLabelOfSchemaInitializer';
 import { DndContext } from '../../common';
 import { SortableItem } from '../../common/sortable-item';
@@ -111,13 +111,6 @@ const InternalPage = React.memo((props: PageProps) => {
   );
 });
 
-const hiddenStyle: React.CSSProperties = {
-  // Visually hide the element while keeping it in document flow to prevent reflow/repaint
-  transform: 'scale(0)',
-  // Prevent element from receiving any pointer events (clicks, hovers etc) to avoid interfering with other elements
-  pointerEvents: 'none',
-};
-
 export const Page = React.memo((props: PageProps) => {
   const { hashId, componentCls } = useStyles();
   const { active: pageActive } = useKeepAlive();
@@ -130,7 +123,7 @@ export const Page = React.memo((props: PageProps) => {
 
   return (
     <AllDataBlocksProvider>
-      <div className={`${componentCls} ${hashId} ${antTableCell}`} style={pageActive ? null : hiddenStyle}>
+      <div className={`${componentCls} ${hashId} ${antTableCell}`}>
         {/* Avoid passing values down to improve rendering performance */}
         <CurrentTabUidContext.Provider value={''}>
           <InternalPage currentTabUid={tabUidRef.current} className={props.className} />
@@ -167,40 +160,6 @@ const className1 = css`
     }
   }
 `;
-
-const displayBlock = {
-  display: 'block',
-};
-
-const displayNone = {
-  display: 'none',
-};
-
-// Add a TabPane component to manage caching, implementing an effect similar to Vue's keep-alive
-const TabPane = React.memo(({ active: tabActive, uid }: { active: boolean; uid: string }) => {
-  const mountedRef = useRef(false);
-  const { active: pageActive } = useKeepAlive();
-  const { isMobileLayout } = useMobileLayout();
-
-  if (tabActive && !mountedRef.current) {
-    mountedRef.current = true;
-  }
-
-  if (!mountedRef.current) {
-    return null;
-  }
-
-  return (
-    <div style={tabActive ? displayBlock : displayNone}>
-      <KeepAliveProvider active={pageActive && tabActive}>
-        <RemoteSchemaComponent
-          uid={uid}
-          schemaTransform={isMobileLayout ? transformMultiColumnToSingleColumn : undefined}
-        />
-      </KeepAliveProvider>
-    </div>
-  );
-});
 
 interface PageContentProps {
   loading: boolean;
@@ -243,15 +202,16 @@ const InternalPageContent = (props: PageContentProps) => {
 
   if (!disablePageHeader && enablePageTabs) {
     return (
-      <>
-        {currentRoute.children?.map((tabRoute) => {
-          return (
-            <NocoBaseRouteContext.Provider value={tabRoute} key={tabRoute.schemaUid}>
-              <TabPane active={tabRoute.schemaUid === activeKey} uid={tabRoute.schemaUid} />
-            </NocoBaseRouteContext.Provider>
-          );
-        })}
-      </>
+      <KeepAlive uid={activeKey}>
+        {(uid) => (
+          <NocoBaseRouteContext.Provider value={currentRoute.children?.find((item) => item.schemaUid === uid)}>
+            <RemoteSchemaComponent
+              uid={uid}
+              schemaTransform={isMobileLayout ? transformMultiColumnToSingleColumn : undefined}
+            />
+          </NocoBaseRouteContext.Provider>
+        )}
+      </KeepAlive>
     );
   }
 

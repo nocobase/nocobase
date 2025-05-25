@@ -24,7 +24,7 @@ const phoneForm: ISchema = {
       'x-component': 'VerificationForm',
       'x-component-props': {
         actionType: 'auth:signIn',
-        verificator: '{{ verificator }}',
+        verifier: '{{ verifier }}',
       },
     },
     actions: {
@@ -77,7 +77,7 @@ export const SigninPage = (props: { authenticator: Authenticator }) => {
   return (
     <SchemaComponent
       schema={phoneForm}
-      scope={{ useVerifyActionProps: () => useVerifyActionProps(name), autoSignup, verificator: options?.verificator }}
+      scope={{ useVerifyActionProps: () => useVerifyActionProps(name), autoSignup, verifier: options?.verifier }}
       components={{ VerificationForm }}
     />
   );

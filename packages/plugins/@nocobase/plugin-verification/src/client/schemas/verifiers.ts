@@ -9,7 +9,7 @@
 
 import { ISchema } from '@formily/react';
 
-export const createVerificatorSchema = {
+export const createVerifierSchema = {
   type: 'void',
   properties: {
     drawer: {
@@ -71,8 +71,9 @@ export const createVerificatorSchema = {
   },
 };
 
-export const verficatorsSchema: ISchema = {
+export const verifiersSchema: ISchema = {
   type: 'void',
+  name: 'verifiers',
   properties: {
     card: {
       type: 'void',
@@ -82,7 +83,7 @@ export const verficatorsSchema: ISchema = {
       },
       'x-decorator': 'TableBlockProvider',
       'x-decorator-props': {
-        collection: 'verificators',
+        collection: 'verifiers',
         action: 'list',
       },
       properties: {

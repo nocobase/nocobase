@@ -7,12 +7,12 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { isURL } from '@nocobase/utils';
 import axios, { AxiosRequestConfig } from 'axios';
-import { StorageEngine } from 'multer';
 import Path from 'path';
+import { StorageEngine } from 'multer';
 import type { Readable } from 'stream';
 import urlJoin from 'url-join';
+import { isURL } from '@nocobase/utils';
 import { encodeURL, ensureUrlEncoded, getFileKey } from '../utils';
 export interface StorageModel {
   id?: number;
@@ -30,10 +30,10 @@ export interface StorageModel {
 export interface AttachmentModel {
   title: string;
   filename: string;
+  mimetype?: string;
   path: string;
-  url: string;
+  url?: string;
   storageId: number;
-  mimetype: string;
 }
 
 export abstract class StorageType {
@@ -74,8 +74,8 @@ export abstract class StorageType {
   getFileURL(file: AttachmentModel, preview?: boolean): string | Promise<string> {
     // 兼容历史数据
     if (file.url && isURL(file.url)) {
-      if (preview) {
-        return encodeURL(file.url) + (this.storage.options.thumbnailRule || '');
+      if (preview && this.storage.options.thumbnailRule) {
+        return encodeURL(file.url) + this.storage.options.thumbnailRule;
       }
       return encodeURL(file.url);
     }

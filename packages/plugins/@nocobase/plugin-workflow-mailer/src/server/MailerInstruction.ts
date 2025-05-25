@@ -11,7 +11,7 @@ import { promisify } from 'util';
 
 import nodemailer from 'nodemailer';
 
-import { Processor, Instruction, JOB_STATUS, FlowNodeModel } from '@nocobase/plugin-workflow';
+import { FlowNodeModel, Instruction, JOB_STATUS, Processor } from '@nocobase/plugin-workflow';
 
 export default class extends Instruction {
   async run(node: FlowNodeModel, prevJob, processor: Processor) {
@@ -39,9 +39,11 @@ export default class extends Instruction {
       ...(contentType === 'html' ? { html } : { text }),
       subject: subject?.trim(),
       to: to
-        .flat()
-        .map((item) => item?.trim())
-        .filter(Boolean),
+        ? to
+            .flat()
+            .map((item) => item?.trim())
+            .filter(Boolean)
+        : undefined,
       cc: cc
         ? cc
             .flat()

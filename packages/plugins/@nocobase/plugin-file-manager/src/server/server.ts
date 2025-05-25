@@ -9,6 +9,7 @@
 
 import fs from 'fs';
 import { basename } from 'path';
+import match from 'mime-match';
 
 import { Collection, Model, Transactionable } from '@nocobase/database';
 import { Plugin } from '@nocobase/server';
@@ -23,7 +24,6 @@ import StorageTypeLocal from './storages/local';
 import StorageTypeS3 from './storages/s3';
 import StorageTypeTxCos from './storages/tx-cos';
 import { encodeURL } from './utils';
-import _ from 'lodash';
 
 export type * from './storages';
 
@@ -283,7 +283,7 @@ export class PluginFileManagerServer extends Plugin {
 
     this.app.db.interfaceManager.registerInterfaceType('attachment', AttachmentInterface);
 
-    this.db.on('afterFind', async (instances, options) => {
+    this.db.on('afterFind', async (instances) => {
       if (!instances) {
         return;
       }
@@ -292,27 +292,7 @@ export class PluginFileManagerServer extends Plugin {
       if (name) {
         const collection = this.db.getCollection(name);
         if (collection?.name === 'attachments' || collection?.options?.template === 'file') {
-          let recordMap = null;
-          if (!options?.attributes?.includes('storageId')) {
-            // 导出时，不会查出来 storageId，这里兼容重新取一下
-            const ids = records.map((x) => x.id).filter(Boolean);
-            const fullRecords = await collection.repository.find({
-              where: { id: ids },
-              transaction: options.transaction,
-              hooks: false,
-            });
-            recordMap = _.keyBy(fullRecords, (x) => x.id);
-          }
           for (const record of records) {
-            if (recordMap) {
-              const fullRecord = recordMap[record.id];
-              if (fullRecord) {
-                record.set('storageId', fullRecord.storageId);
-                record.set('title', fullRecord.title);
-                record.set('filename', fullRecord.filename);
-                record.set('extname', fullRecord.extname);
-              }
-            }
             const url = await this.getFileURL(record);
             const previewUrl = await this.getFileURL(record, true);
             record.set('url', url);
@@ -333,7 +313,10 @@ export class PluginFileManagerServer extends Plugin {
       return encodeURL(file.url);
     }
     const storageType = this.storageTypes.get(storage.type);
-    return new storageType(storage).getFileURL(file, preview ? storage.options.thumbnailRule : '');
+    return new storageType(storage).getFileURL(
+      file,
+      Boolean(file.mimetype && match(file.mimetype, 'image/*') && preview && storage.options.thumbnailRule),
+    );
   }
   async isPublicAccessStorage(storageName) {
     const storageRepository = this.db.getRepository('storages');

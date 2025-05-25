@@ -54,7 +54,11 @@ function encodePathKeepSlash(path) {
 }
 
 export function encodeURL(url) {
-  const parsedUrl = new URL(url);
-  parsedUrl.pathname = encodePathKeepSlash(parsedUrl.pathname);
-  return parsedUrl.toString();
+  try {
+    const parsedUrl = new URL(url);
+    parsedUrl.pathname = encodePathKeepSlash(parsedUrl.pathname);
+    return parsedUrl.toString();
+  } catch (error) {
+    return url;
+  }
 }

@@ -7,9 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import XLSX from 'xlsx';
+import * as Excel from 'exceljs';
 import { BaseExporter, ExportOptions } from './base-exporter';
-import { NumberField } from '@nocobase/database';
+import fs from 'fs';
 
 type ExportColumn = {
   dataIndex: Array<string>;
@@ -36,82 +36,59 @@ export class XlsxExporter extends BaseExporter<XlsxExportOptions & { fields: Arr
    * 服务端进程被操作系统回收等问题。
    */
 
-  private workbook: XLSX.WorkBook;
-  private worksheet: XLSX.WorkSheet;
-  private startRowNumber: number;
+  private workbook: Excel.stream.xlsx.WorkbookWriter;
+  private worksheet: Excel.Worksheet;
+
+  public outputPath: string;
 
   constructor(options: XlsxExportOptions) {
     const fields = options.columns.map((col) => col.dataIndex);
     super({ ...options, fields });
+    this.outputPath = options.outputPath || this.generateOutputPath('xlsx', '.xlsx');
   }
 
   async init(ctx?): Promise<void> {
-    this.workbook = XLSX.utils.book_new();
-    this.worksheet = XLSX.utils.sheet_new();
-
-    // write headers
-    XLSX.utils.sheet_add_aoa(this.worksheet, [this.renderHeaders(this.options.columns)], {
-      origin: 'A1',
+    this.workbook = new Excel.stream.xlsx.WorkbookWriter({
+      filename: this.outputPath,
+      useStyles: true,
+      useSharedStrings: false, // 减少内存使用
     });
-
-    this.startRowNumber = 2;
+    this.worksheet = this.workbook.addWorksheet('Data', {
+      properties: { defaultRowHeight: 20 },
+    });
+    this.worksheet.columns = this.options.columns.map((x) => ({
+      key: x.dataIndex[0],
+      header: this.renderHeader(x),
+    }));
+    this.worksheet.getRow(1).font = { bold: true };
+    this.worksheet.getRow(1).commit();
   }
 
   async handleRow(row: any, ctx?): Promise<void> {
-    const rowData = [
-      this.options.columns.map((col) => {
-        return this.formatValue(row, col.dataIndex, ctx);
-      }),
-    ];
-
-    XLSX.utils.sheet_add_aoa(this.worksheet, rowData, {
-      origin: `A${this.startRowNumber}`,
+    const rowData = this.options.columns.map((col) => {
+      return this.formatValue(row, col.dataIndex, ctx);
     });
 
-    this.startRowNumber += 1;
+    this.worksheet.addRow(rowData).commit();
   }
 
-  async finalize(): Promise<XLSX.WorkBook> {
-    for (const col of this.options.columns) {
-      const fieldInstance = this.findFieldByDataIndex(col.dataIndex);
-      if (fieldInstance instanceof NumberField) {
-        // set column cell type to number
-        const colIndex = this.options.columns.indexOf(col);
-        const cellRange = XLSX.utils.decode_range(this.worksheet['!ref']);
-
-        for (let r = 1; r <= cellRange.e.r; r++) {
-          const cell = this.worksheet[XLSX.utils.encode_cell({ c: colIndex, r })];
-          // if cell and cell.v is a number, set cell.t to 'n'
-          if (cell && isNumeric(cell.v)) {
-            cell.t = 'n';
-          }
-        }
-      }
-    }
-
-    XLSX.utils.book_append_sheet(this.workbook, this.worksheet, 'Data');
+  async finalize(): Promise<any> {
+    await this.worksheet.commit();
+    await this.workbook.commit();
     return this.workbook;
   }
 
-  private renderHeaders(columns: Array<ExportColumn>) {
-    return columns.map((col) => {
-      const fieldInstance = this.findFieldByDataIndex(col.dataIndex);
-      return col.title || fieldInstance?.options.title || col.defaultTitle;
-    });
+  cleanOutputFile() {
+    fs.unlink(this.outputPath, (err) => {});
   }
 
-  static xlsxSafeWrite(wb: XLSX.WorkBook, opts: XLSX.WritingOptions, path?: string) {
-    const data = wb.Sheets.Data as object;
-    for (const key of Object.keys(data)) {
-      const v = data[key]?.v;
-      if (v?.length > XLSX_LIMIT_CHAER) {
-        data[key].v = v.slice(0, XLSX_LIMIT_CHAER);
-      }
-    }
-    return path ? XLSX.writeFileXLSX(wb, path) : XLSX.write(wb, opts);
+  getXlsxBuffer() {
+    const buffer = fs.readFileSync(this.outputPath);
+    return buffer;
   }
-}
 
-function isNumeric(n) {
-  return !isNaN(parseFloat(n)) && isFinite(n);
+  private renderHeader(col: ExportColumn) {
+    const fieldInstance = this.findFieldByDataIndex(col.dataIndex);
+    return col.title || fieldInstance?.options.title || col.defaultTitle;
+  }
 }

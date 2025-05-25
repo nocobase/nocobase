@@ -7,7 +7,7 @@
   "Actions": "操作",
   "Created at": "创建时间",
   "Type": "类型",
-  "Waiting": "等待中",
+  "Waiting": "正在排队等待...",
   "Processing": "进行中", 
   "Completed": "已完成",
   "Failed": "执行失败",
