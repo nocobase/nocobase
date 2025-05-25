@@ -15,5 +15,16 @@ export const SaveActionModel = ActionModel.extends([
                 }
             }
         }
+    },
+    {
+        'key': 'default',
+        'patch': true,
+        'steps': {
+            'setText': {
+                'defaultParams': {
+                    'text': '保存',
+                }
+            }
+        }
     }
 ]);

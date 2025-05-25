@@ -1,5 +1,6 @@
 import type { FlowDefinition } from '../flow-engine/types';
 import _ from 'lodash';
+import { DeepPartial } from './types';
 
 /**
  * 合并两个流程定义
@@ -11,20 +12,22 @@ import _ from 'lodash';
  */
 export function mergeFlowDefinitions(
   originalFlow: FlowDefinition,
-  patchFlow: FlowDefinition
+  patchFlow: DeepPartial<FlowDefinition>
 ): FlowDefinition {
   // 创建新的流程定义，合并原始流程和覆盖配置
-  const mergedFlow: FlowDefinition = {
-    ..._.cloneDeep(originalFlow),
-    title: patchFlow.title ?? originalFlow.title,
-    on: patchFlow.on ?? originalFlow.on,
-  };
+  const flow = _.cloneDeep(originalFlow);
+  const mergedFlow = {
+    ...flow,
+    title: patchFlow.title ?? flow.title,
+    ...(patchFlow.on && { on: patchFlow.on as { eventName: string } }),
+    ...flow.steps,
+  } as FlowDefinition;
   
   // 覆盖特定步骤
   if (patchFlow.steps) {
     Object.entries(patchFlow.steps).forEach(([stepKey, stepDefinition]) => {
       mergedFlow.steps[stepKey] = _.merge(
-        originalFlow.steps[stepKey], 
+        flow.steps[stepKey], 
         stepDefinition
       );
     });

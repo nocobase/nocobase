@@ -38,5 +38,16 @@ export const DeleteActionModel = ActionModel.extends([
                 }
             }
         }
+    },
+    {
+        key: 'default',
+        patch: true,
+        steps: {
+            setText: {
+                defaultParams: {
+                    text: '删除',
+                }
+            }
+        }
     }
 ]);

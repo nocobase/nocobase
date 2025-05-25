@@ -350,11 +350,11 @@ export class FlowModel {
             console.warn(`FlowModel.extends: Cannot patch flow '${flowDefinition.key}' as it does not exist in parent class. Registering as new flow.`);
             // 移除patch标记，作为新流程注册
             const { patch, ...newFlowDef } = flowDefinition;
-            CustomFlowModel.registerFlow(newFlowDef);
+            CustomFlowModel.registerFlow(newFlowDef as FlowDefinition);
           }
         } else {
           // 完全覆盖或新增流程
-          CustomFlowModel.registerFlow(flowDefinition);
+          CustomFlowModel.registerFlow(flowDefinition as FlowDefinition);
         }
       });
     }

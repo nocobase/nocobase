@@ -13,9 +13,9 @@ export class ActionModel extends FlowModel {
 
   protected static initFlows() {
     this.registerFlow({
-      key: 'setProps',
+      key: 'default',
       default: true,
-      title: '设置按钮文本',
+      title: '按钮属性',
       steps: {
         setText: {
           handler: (ctx, model, params) => model.setProps('text', params.text),
@@ -52,7 +52,7 @@ export class ActionModel extends FlowModel {
               ]
             },
           },
-          defaultParams: { type: 'primary' }
+          defaultParams: { type: 'default' }
         },
         setOnClick: {
           handler: (ctx, model, params) => {

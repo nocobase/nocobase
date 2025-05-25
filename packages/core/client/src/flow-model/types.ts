@@ -1,8 +1,19 @@
 import type { FlowDefinition, FlowContext } from '../flow-engine/types';
 import type { Application } from '../application/Application';
 
+// 深度可选类型工具 - 改进版本，支持数组和Record类型
+export type DeepPartial<T> = {
+  [P in keyof T]?: T[P] extends (infer U)[]
+    ? DeepPartial<U>[]
+    : T[P] extends Record<string, any>
+    ? DeepPartial<T[P]>
+    : T[P] extends object
+    ? DeepPartial<T[P]>
+    : T[P];
+};
+
 // 扩展FlowDefinition类型，添加partial标记用于部分覆盖
-export interface ExtendedFlowDefinition extends FlowDefinition {
+export interface ExtendedFlowDefinition extends DeepPartial<FlowDefinition> {
   /**
    * Whether this flow is a default flow that should be automatically executed
    */

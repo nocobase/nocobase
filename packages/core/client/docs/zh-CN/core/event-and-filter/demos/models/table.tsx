@@ -1,9 +1,10 @@
 import React from 'react';
-import { Table, Button, Space, Pagination, Spin } from 'antd';
+import { Table, Button, Space, Pagination, Spin, Divider, ButtonProps } from 'antd';
 import { BlockModel, FlowContext, FlowModel, Application, Plugin, BaseResource, useFlowModel, withFlowModel } from '@nocobase/client';
-import { ActionsSettings } from '../settings/ActionsSettings';
 import { observer } from '@formily/react';
 import { FlowsDropdownButton } from '../settings/independents/dropdown';
+import { AddAction } from '../settings/AddAction';
+import { FlowsContextMenu } from '../settings/wrappers/contextual';
 
 const Demo = () => {
     const uid = 'table-block';
@@ -11,8 +12,9 @@ const Demo = () => {
 
     return (
         <div style={{ padding: 24, background: '#f5f5f5', borderRadius: 8 }}>
-            <ActionsSettings model={model} />
+            <AddAction model={model} />
             <ActionsComponent model={model} />
+            <Divider />
             <FlowsDropdownButton model={model} text="表格配置" size="small" type="dashed"/>
             <TableBlock model={model} />
         </div>
@@ -74,6 +76,18 @@ const TableComponent = ({
     );
 };
 
+const ActionButton = withFlowModel((props: ButtonProps & { text?: string }) => {
+    const { text, ...rest } = props;
+    return <Button {...rest}>{text}</Button>;
+}, {
+    settings: {
+      component: FlowsContextMenu,
+      props: {
+        position: 'right'
+      }
+    }
+  })
+
 // Actions组件 - 渲染工具栏操作
 const ActionsComponent = observer(({ model }: { model: BlockModel }) => {
     if (!model.actions.size) return null;
@@ -82,9 +96,7 @@ const ActionsComponent = observer(({ model }: { model: BlockModel }) => {
         <div style={{ marginBottom: 16, textAlign: 'right' }}>
             <Space>
                 {Array.from(model.actions.values()).map(action => (
-                    <Button key={action.uid}>
-                        {action.getFlow('onClick')?.title || '操作'}
-                    </Button>
+                    <ActionButton model={action} />
                 ))}
             </Space>
         </div>
@@ -108,7 +120,7 @@ class DemoTableBlockModel extends BlockModel {
     static {
         this.registerFlow({
             key: 'setProps',
-            title: '表格设置',
+            title: '表格属性',
             default: true,
             steps: {
                 setFields: {

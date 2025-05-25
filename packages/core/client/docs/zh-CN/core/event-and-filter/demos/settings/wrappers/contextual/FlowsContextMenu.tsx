@@ -1,7 +1,7 @@
 import React, { useState, useCallback } from 'react';
-import { Dropdown, Alert } from 'antd';
+import { Dropdown, Alert, Modal } from 'antd';
 import type { MenuProps } from 'antd';
-import { SettingOutlined } from '@ant-design/icons';
+import { SettingOutlined, DeleteOutlined, ExclamationCircleOutlined } from '@ant-design/icons';
 import { observer } from '@formily/react';
 import { FlowModel, ActionStepDefinition, useFlowModel } from '@nocobase/client';
 import FlowSettingsModal from './FlowSettingsModal';
@@ -12,6 +12,7 @@ interface ModelProvidedProps {
   children?: React.ReactNode; // 子组件，如果提供则作为wrapper模式
   enabled?: boolean; // 是否启用右键菜单，默认为true
   position?: 'right' | 'left'; // 右键菜单位置，默认为right
+  showDeleteButton?: boolean; // 是否显示删除按钮，默认为true
 }
 
 interface ModelByIdProps {
@@ -20,6 +21,7 @@ interface ModelByIdProps {
   children?: React.ReactNode; // 子组件，如果提供则作为wrapper模式
   enabled?: boolean; // 是否启用右键菜单，默认为true
   position?: 'right' | 'left'; // 右键菜单位置，默认为right
+  showDeleteButton?: boolean; // 是否显示删除按钮，默认为true
 }
 
 type FlowsContextMenuProps = ModelProvidedProps | ModelByIdProps;
@@ -35,6 +37,7 @@ const isModelByIdProps = (props: FlowsContextMenuProps): props is ModelByIdProps
  * 功能特性：
  * - 右键菜单
  * - Wrapper 模式支持
+ * - 删除功能
  * 
  * 支持两种使用方式：
  * 1. 直接提供model: <FlowsContextMenu model={myModel}>{children}</FlowsContextMenu>
@@ -43,6 +46,7 @@ const isModelByIdProps = (props: FlowsContextMenuProps): props is ModelByIdProps
  * @param props.children 子组件，必须提供
  * @param props.enabled 是否启用右键菜单，默认为true
  * @param props.position 右键菜单位置，默认为right
+ * @param props.showDeleteButton 是否显示删除按钮，默认为true
  */
 const FlowsContextMenu: React.FC<FlowsContextMenuProps> = (props) => {
   if (isModelByIdProps(props)) {
@@ -57,15 +61,40 @@ const FlowsContextMenuWithModel: React.FC<ModelProvidedProps> = observer(({
   model, 
   children,
   enabled = true,
-  position = 'right'
+  position = 'right',
+  showDeleteButton = true
 }) => {
   const [selectedFlowKey, setSelectedFlowKey] = useState<string | null>(null);
   const [modalVisible, setModalVisible] = useState<boolean>(false);
 
   const handleMenuClick = useCallback(({ key }: { key: string }) => {
-    setSelectedFlowKey(key);
-    setModalVisible(true);
-  }, []);
+    if (key === 'delete') {
+      // 处理删除操作
+      Modal.confirm({
+        title: '确认删除',
+        icon: <ExclamationCircleOutlined />,
+        content: '确定要删除此项吗？此操作不可撤销。',
+        okText: '确认删除',
+        okType: 'danger',
+        cancelText: '取消',
+        onOk() {
+          try {
+            model.dispatchEvent('remove');
+          } catch (error) {
+            console.error('删除操作失败:', error);
+            Modal.error({
+              title: '删除失败',
+              content: '删除操作失败，请检查控制台获取详细信息。',
+            });
+          }
+        },
+      });
+    } else {
+      // 处理flows配置
+      setSelectedFlowKey(key);
+      setModalVisible(true);
+    }
+  }, [model]);
 
   const handleModalClose = useCallback(() => {
     setModalVisible(false);
@@ -137,24 +166,41 @@ const FlowsContextMenuWithModel: React.FC<ModelProvidedProps> = observer(({
 
   const configurableFlows = getConfigurableFlows();
 
-  // 如果没有可配置的flows，直接返回children
-  if (configurableFlows.length === 0) {
+  // 如果没有可配置的flows且不显示删除按钮，直接返回children
+  if (configurableFlows.length === 0 && !showDeleteButton) {
     return <>{children}</>;
   }
 
   // 构建右键菜单项
-  const menuItems: MenuProps['items'] = [
-    {
-      key: 'flows-header',
-      type: 'group' as const,
-      label: 'Flow配置',
-      children: configurableFlows.map((flow) => ({
+  const menuItems: MenuProps['items'] = [];
+
+  // 添加flows配置项
+  if (configurableFlows.length > 0) {
+    configurableFlows.forEach((flow) => {
+      menuItems.push({
         key: flow.key,
         icon: <SettingOutlined />,
         label: flow.title || flow.key,
-      })),
-    },
-  ];
+      });
+    });
+  }
+
+  // 添加分割线和删除按钮
+  if (showDeleteButton) {
+    // 如果有flows配置项，添加分割线
+    if (configurableFlows.length > 0) {
+      menuItems.push({
+        type: 'divider' as const,
+      });
+    }
+    
+    // 添加删除按钮
+    menuItems.push({
+      key: 'delete',
+      icon: <DeleteOutlined />,
+      label: '删除',
+    });
+  }
 
   return (
     <>
@@ -190,7 +236,8 @@ const FlowsContextMenuWithModelById: React.FC<ModelByIdProps> = observer(({
   modelClassName, 
   children,
   enabled = true,
-  position = 'right'
+  position = 'right',
+  showDeleteButton = true
 }) => {
   const model = useFlowModel(uid, modelClassName);
   
@@ -204,6 +251,7 @@ const FlowsContextMenuWithModelById: React.FC<ModelByIdProps> = observer(({
       children={children}
       enabled={enabled}
       position={position}
+      showDeleteButton={showDeleteButton}
     />
   );
 });

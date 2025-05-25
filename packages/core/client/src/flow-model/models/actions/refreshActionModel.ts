@@ -16,5 +16,16 @@ export const RefreshActionModel = ActionModel.extends([
                 }
             }
         }
+    },
+    {
+        'key': 'default',
+        'patch': true,
+        'steps': {
+            'setText': {
+                'defaultParams': {
+                    'text': '刷新',
+                }
+            }
+        }
     }
 ]);

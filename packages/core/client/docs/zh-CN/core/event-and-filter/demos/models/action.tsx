@@ -34,6 +34,17 @@ const ButtonModel = ActionModel.extends([
         }
       },
     }
+  },
+  {
+    key: 'default',
+    patch: true,
+    steps: {
+      setText: {
+        defaultParams: {
+          text: '删除',
+        }
+      }
+    }
   }
 ]);
 
@@ -58,7 +69,6 @@ const DeleteButton = withFlowModel(ButtonComponent, {
   settings: {
     component: FlowsContextMenu,
     props: {
-      enabled: true,
       position: 'right'
     }
   }
