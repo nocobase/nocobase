@@ -23,26 +23,31 @@ export class ArrayField extends Field {
     return DataTypes.JSON;
   }
 
-  sortValue = (model) => {
-    let oldValue = model.get(this.options.name);
+  sortValue = (instances) => {
+    instances = Array.isArray(instances) ? instances : [instances];
+    for (const instance of instances) {
+      let oldValue = instance.get(this.options.name);
 
-    if (oldValue) {
-      if (typeof oldValue === 'string') {
-        oldValue = JSON.parse(oldValue);
+      if (oldValue) {
+        if (typeof oldValue === 'string') {
+          oldValue = JSON.parse(oldValue);
+        }
+        const newValue = oldValue.sort();
+        instance.set(this.options.name, newValue);
       }
-      const newValue = oldValue.sort();
-      model.set(this.options.name, newValue);
     }
   };
 
   bind() {
     super.bind();
     this.on('beforeSave', this.sortValue);
+    this.on('beforeBulkCreate', this.sortValue);
   }
 
   unbind() {
     super.unbind();
     this.off('beforeSave', this.sortValue);
+    this.off('beforeBulkCreate', this.sortValue);
   }
 }
 
