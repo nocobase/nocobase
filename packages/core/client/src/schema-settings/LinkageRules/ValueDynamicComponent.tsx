@@ -13,10 +13,10 @@ import React, { useCallback, useMemo, useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useFormBlockContext } from '../../block-provider/FormBlockProvider';
 import { useRecord } from '../../record-provider';
-import { Variable } from '.././../schema-component';
 import { useCompatOldVariables } from '../VariableInput/VariableInput';
 import { useVariableOptions } from '../VariableInput/hooks/useVariableOptions';
 import { DynamicComponent } from './DynamicComponent';
+import { ExpressionInput } from '../VariableInput/ExpressionInput';
 
 const { Option } = Select;
 
@@ -64,9 +64,6 @@ export const ValueDynamicComponent = (props: ValueDynamicComponentProps) => {
     },
     [mode, setValue],
   );
-  const expressStyle = useMemo(() => {
-    return { minWidth: 150, maxWidth: 430, fontSize: 13, display: 'inline-block', verticalAlign: 'middle' };
-  }, []);
   const handleChangeOfExpress = useCallback(
     (value) => {
       const result = value.replaceAll(`${collectionName}.`, '').replaceAll('$system.', '').trim();
@@ -78,9 +75,7 @@ export const ValueDynamicComponent = (props: ValueDynamicComponentProps) => {
     },
     [collectionName, mode, setValue],
   );
-  const textAreaStyle = useMemo(() => {
-    return { minWidth: 390, borderRadius: 0 };
-  }, []);
+
   const compatScope = useMemo(() => {
     return compatOldVariables(scope, {
       value: fieldValue?.value,
@@ -120,31 +115,11 @@ export const ValueDynamicComponent = (props: ValueDynamicComponentProps) => {
 
     // 表达式
     express: (
-      <div
-        role="button"
-        aria-label="dynamic-component-linkage-rules"
-        style={expressStyle}
-        className={css`
-          .x-button {
-            height: auto !important;
-          }
-        `}
-      >
-        <Variable.TextArea
-          value={fieldValue?.value}
-          onChange={handleChangeOfExpress}
-          scope={compatScope}
-          style={textAreaStyle}
-        />
-        <div>
-          <span style={{ marginLeft: '.25em' }} className={'ant-formily-item-extra'}>
-            {t('Syntax references')}:
-          </span>
-          <a href="https://docs.nocobase.com/handbook/calculation-engines/formula" target="_blank" rel="noreferrer">
-            Formula.js
-          </a>
-        </div>
-      </div>
+      <ExpressionInput
+        value={fieldValue?.value}
+        onChange={handleChangeOfExpress}
+        scope={compatScope}
+      />
     ),
   };
 

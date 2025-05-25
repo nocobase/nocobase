@@ -9,3 +9,4 @@
 
 export * from './hooks';
 export * from './VariableInput';
+export * from './ExpressionInput';
