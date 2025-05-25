@@ -28,7 +28,7 @@ import {
   useGlobalTheme,
   useNavigateNoUpdate,
   useNocoBaseRoutes,
-  useURLAndHTMLSchema,
+  useURLAndHTMLSchema
 } from '../../..';
 import { getPageMenuSchema } from '../../../';
 import { SchemaSettings } from '../../../application/schema-settings/SchemaSettings';
@@ -389,9 +389,9 @@ const EditMenuItem = () => {
         options:
           href || params
             ? {
-                href,
-                params,
-              }
+              href,
+              params,
+            }
             : undefined,
       });
     }
@@ -448,14 +448,14 @@ const MoveToMenuItem = () => {
           f.dataSource =
             type === NocoBaseDesktopRouteType.group
               ? [
-                  { label: t('Before'), value: 'beforeBegin' },
-                  { label: t('After'), value: 'afterEnd' },
-                  { label: t('Inner'), value: 'beforeEnd' },
-                ]
+                { label: t('Before'), value: 'beforeBegin' },
+                { label: t('After'), value: 'afterEnd' },
+                { label: t('Inner'), value: 'beforeEnd' },
+              ]
               : [
-                  { label: t('Before'), value: 'beforeBegin' },
-                  { label: t('After'), value: 'afterEnd' },
-                ];
+                { label: t('Before'), value: 'beforeBegin' },
+                { label: t('After'), value: 'afterEnd' },
+              ];
         });
       });
     },
@@ -514,13 +514,13 @@ const MoveToMenuItem = () => {
       const options =
         position === 'beforeEnd'
           ? {
-              targetScope: {
-                parentId: targetId,
-              },
-            }
+            targetScope: {
+              parentId: targetId,
+            },
+          }
           : {
-              targetId: targetId,
-            };
+            targetId: targetId,
+          };
 
       await moveRoute({
         sourceId: currentRoute.id as any,
@@ -597,22 +597,27 @@ export const menuItemSettings = new SchemaSettings({
     {
       name: 'edit',
       Component: EditMenuItem,
+      sort: 100,
     },
     {
       name: 'editTooltip',
       Component: EditTooltip,
+      sort: 200,
     },
     {
       name: 'hidden',
       Component: HiddenMenuItem,
+      sort: 300,
     },
     {
       name: 'moveTo',
       Component: MoveToMenuItem,
+      sort: 400,
     },
     {
       name: 'divider',
       type: 'divider',
+      sort: 500,
     },
     {
       name: 'insertbeforeBegin',
@@ -622,6 +627,7 @@ export const menuItemSettings = new SchemaSettings({
           <InsertMenuItems eventKey={'insertbeforeBegin'} title={t('Insert before')} insertPosition={'beforeBegin'} />
         );
       },
+      sort: 600,
     },
     {
       name: 'insertafterEnd',
@@ -629,6 +635,7 @@ export const menuItemSettings = new SchemaSettings({
         const { t } = useTranslation();
         return <InsertMenuItems eventKey={'insertafterEnd'} title={t('Insert after')} insertPosition={'afterEnd'} />;
       },
+      sort: 700,
     },
     {
       name: 'insertbeforeEnd',
@@ -636,14 +643,16 @@ export const menuItemSettings = new SchemaSettings({
         const { t } = useTranslation();
         return <InsertMenuItems eventKey={'insertbeforeEnd'} title={t('Insert inner')} insertPosition={'beforeEnd'} />;
       },
+      sort: 800,
     },
     {
       name: 'divider',
       type: 'divider',
+      sort: 900,
     },
     {
       name: 'delete',
-      sort: 100,
+      sort: 1000,
       Component: RemoveRoute,
     },
   ],

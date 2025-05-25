@@ -16,6 +16,7 @@ import { useCurrentRoleVariable } from '../../schema-settings/VariableInput/hook
 import { useURLSearchParamsVariable } from '../../schema-settings/VariableInput/hooks/useURLSearchParamsVariable';
 import { VariableOption } from '../types';
 import { useGlobalVariableCtx } from '../../application/hooks/useGlobalVariable';
+import { useApp } from '../../application/hooks/useApp';
 
 /**
  * 相当于全局的变量
@@ -107,6 +108,7 @@ const useBuiltInVariables = () => {
     envVariableCtx,
     exactDateTimeCtx,
   ]);
+
   return { builtinVariables };
 };
 
