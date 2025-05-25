@@ -10,7 +10,8 @@
 import { defineCollection } from '@nocobase/database';
 import verificators from '../../collections/verificators';
 
+// Deprecated due to incorrect naming.
 export default defineCollection({
-  migrationRules: ['overwrite', 'skip'],
+  migrationRules: ['skip'],
   ...verificators,
 });

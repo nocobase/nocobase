@@ -27,15 +27,15 @@ import { useVerificationTranslation } from './locale';
 import PluginVerificationClient from '.';
 import { createForm } from '@formily/core';
 
-export const UserVerificatorsContext = createContext<{
+export const UserVerifiersContext = createContext<{
   refresh: () => void;
 }>(null);
 
-const useBindActionProps = (verificator: string) => {
+const useBindActionProps = (verifier: string) => {
   const form = useForm();
   const api = useAPIClient();
   const { t } = useVerificationTranslation();
-  const { refresh } = useContext(UserVerificatorsContext);
+  const { refresh } = useContext(UserVerifiersContext);
   const { setVisible } = useActionContext();
 
   return {
@@ -43,9 +43,9 @@ const useBindActionProps = (verificator: string) => {
     htmlType: 'submit',
     onClick: async () => {
       await form.submit();
-      await api.resource('verificators').bind({
+      await api.resource('verifiers').bind({
         values: {
-          verificator,
+          verifier,
           ...form.values,
         },
       });
@@ -60,7 +60,7 @@ const useUnbindActionProps = () => {
   const form = useForm();
   const api = useAPIClient();
   const { t } = useVerificationTranslation();
-  const { refresh } = useContext(UserVerificatorsContext);
+  const { refresh } = useContext(UserVerifiersContext);
   const { setVisible } = useActionContext();
 
   return {
@@ -68,7 +68,7 @@ const useUnbindActionProps = () => {
     htmlType: 'submit',
     onClick: async () => {
       await form.submit();
-      await api.resource('verificators').unbind({
+      await api.resource('verifiers').unbind({
         values: {
           ...form.values,
         },
@@ -89,16 +89,16 @@ const useCancelActionProps = () => {
   };
 };
 
-const useFormProps = (verificator: string, unbindVerificator: string) => {
+const useFormProps = (verifier: string, unbindVerifier: string) => {
   const form = useMemo(
     () =>
       createForm({
         initialValues: {
-          verificator,
-          unbindVerificator,
+          verifier,
+          unbindVerifier,
         },
       }),
-    [verificator, unbindVerificator],
+    [verifier, unbindVerifier],
   );
   return {
     form,
@@ -106,24 +106,24 @@ const useFormProps = (verificator: string, unbindVerificator: string) => {
 };
 
 const BindModal: React.FC<{
-  verificator: {
+  verifier: {
     name: string;
     title: string;
     verificationType: string;
   };
-}> = ({ verificator }) => {
+}> = ({ verifier }) => {
   const { t } = useVerificationTranslation();
   const plugin = usePlugin('verification') as PluginVerificationClient;
-  if (!verificator) {
+  if (!verifier) {
     return null;
   }
-  const verification = plugin.verificationManager.getVerification(verificator.verificationType);
+  const verification = plugin.verificationManager.getVerification(verifier.verificationType);
   const C = verification?.components?.BindForm;
 
   return (
     <SchemaComponent
       components={{ C }}
-      scope={{ useBindActionProps: () => useBindActionProps(verificator.name), useCancelActionProps }}
+      scope={{ useBindActionProps: () => useBindActionProps(verifier.name), useCancelActionProps }}
       schema={{
         type: 'void',
         properties: {
@@ -133,15 +133,15 @@ const BindModal: React.FC<{
             'x-component-props': {
               width: 520,
             },
-            title: t(verificator.title),
+            title: t(verifier.title),
             'x-decorator': 'FormV2',
             properties: {
               form: {
                 type: 'void',
                 'x-component': 'C',
                 'x-component-props': {
-                  verificator: verificator.name,
-                  actionType: 'verificators:bind',
+                  verifier: verifier.name,
+                  actionType: 'verifiers:bind',
                   isLogged: true,
                 },
               },
@@ -173,20 +173,20 @@ const BindModal: React.FC<{
 };
 
 const UnbindForm: React.FC<{
-  verificators: any[];
-  unbindVerificator: string;
-}> = ({ verificators, unbindVerificator }) => {
+  verifiers: any[];
+  unbindVerifier: string;
+}> = ({ verifiers, unbindVerifier }) => {
   const { t } = useVerificationTranslation();
   const plugin = usePlugin('verification') as PluginVerificationClient;
 
-  const tabs = verificators
-    .map((verificator) => {
-      const verification = plugin.verificationManager.getVerification(verificator.verificationType);
+  const tabs = verifiers
+    .map((verifier) => {
+      const verification = plugin.verificationManager.getVerification(verifier.verificationType);
       const C = verification?.components?.VerificationForm;
       if (!C) {
         return;
       }
-      const defaultTabTitle = Schema.compile(verificator.verificationTypeTitle || verificator.verificationType, { t });
+      const defaultTabTitle = Schema.compile(verifier.verificationTypeTitle || verifier.verificationType, { t });
       return {
         component: (
           <SchemaComponent
@@ -194,7 +194,7 @@ const UnbindForm: React.FC<{
             scope={{
               useCancelActionProps,
               useUnbindActionProps,
-              useFormProps: () => useFormProps(verificator.name, unbindVerificator),
+              useFormProps: () => useFormProps(verifier.name, unbindVerifier),
             }}
             schema={{
               type: 'void',
@@ -208,9 +208,9 @@ const UnbindForm: React.FC<{
                       type: 'void',
                       'x-component': 'C',
                       'x-component-props': {
-                        actionType: 'verificators:unbind',
-                        verificator: verificator.name,
-                        boundInfo: verificator.boundInfo,
+                        actionType: 'verifiers:unbind',
+                        verifier: verifier.name,
+                        boundInfo: verifier.boundInfo,
                         isLogged: true,
                       },
                     },
@@ -239,8 +239,8 @@ const UnbindForm: React.FC<{
             }}
           />
         ),
-        tabTitle: verificator.title || defaultTabTitle,
-        ...verificator,
+        tabTitle: verifier.title || defaultTabTitle,
+        ...verifier,
       };
     })
     .filter((i) => i);
@@ -258,28 +258,28 @@ const UnbindForm: React.FC<{
 };
 
 const UnbindModal: React.FC<{
-  verificator: {
+  verifier: {
     name: string;
     title: string;
     verificationType: string;
   };
-}> = ({ verificator }) => {
+}> = ({ verifier }) => {
   const { t } = useVerificationTranslation();
   const api = useAPIClient();
-  const { data: verificators, loading } = useRequest<any[]>(
+  const { data: verifiers, loading } = useRequest<any[]>(
     () =>
       api
-        .resource('verificators')
+        .resource('verifiers')
         .listForVerify({
-          scene: 'unbind-verificator',
+          scene: 'unbind-verifier',
         })
         .then((res) => res?.data?.data),
     {
-      refreshDeps: [verificator],
+      refreshDeps: [verifier],
     },
   );
 
-  if (!verificator || loading) {
+  if (!verifier || loading) {
     return null;
   }
 
@@ -295,14 +295,14 @@ const UnbindModal: React.FC<{
             'x-component-props': {
               width: 520,
             },
-            title: t('Unbind verificator'),
+            title: t('Unbind verifier'),
             properties: {
               [uid()]: {
                 type: 'void',
                 'x-component': 'UnbindForm',
                 'x-component-props': {
-                  verificators,
-                  unbindVerificator: verificator.name,
+                  verifiers,
+                  unbindVerifier: verifier.name,
                 },
               },
             },
@@ -313,29 +313,29 @@ const UnbindModal: React.FC<{
   );
 };
 
-const Verificators: React.FC = () => {
+const Verifiers: React.FC = () => {
   const { t } = useVerificationTranslation();
   const api = useAPIClient();
   const { data, refresh } = useRequest(() =>
     api
-      .resource('verificators')
+      .resource('verifiers')
       .listByUser()
       .then((res) => res?.data?.data),
   );
   const [openBindModal, setOpenBindModal] = useState(false);
   const [openUnbindModal, setOpenUnbindModal] = useState(false);
-  const [verificator, setVerificator] = useState(null);
+  const [verifier, setVerifier] = useState(null);
   const setBindInfo = (item: any) => {
     setOpenBindModal(true);
-    setVerificator(item);
+    setVerifier(item);
   };
   const setUnbindInfo = (item: any) => {
     setOpenUnbindModal(true);
-    setVerificator(item);
+    setVerifier(item);
   };
 
   return (
-    <UserVerificatorsContext.Provider value={{ refresh }}>
+    <UserVerifiersContext.Provider value={{ refresh }}>
       <List
         bordered
         dataSource={data as any}
@@ -381,12 +381,12 @@ const Verificators: React.FC = () => {
         )}
       />
       <ActionContextProvider value={{ visible: openBindModal, setVisible: setOpenBindModal }}>
-        {openBindModal ? <BindModal verificator={verificator} /> : null}
+        {openBindModal ? <BindModal verifier={verifier} /> : null}
       </ActionContextProvider>
       <ActionContextProvider value={{ visible: openUnbindModal, setVisible: setOpenUnbindModal }}>
-        {openUnbindModal ? <UnbindModal verificator={verificator} /> : null}
+        {openUnbindModal ? <UnbindModal verifier={verifier} /> : null}
       </ActionContextProvider>
-    </UserVerificatorsContext.Provider>
+    </UserVerifiersContext.Provider>
   );
 };
 
@@ -411,7 +411,7 @@ export const Verification = () => {
   const schemaComponent = useMemo(() => {
     return (
       <SchemaComponent
-        components={{ Verificators }}
+        components={{ Verifiers }}
         schema={{
           type: 'object',
           properties: {
@@ -423,7 +423,7 @@ export const Verification = () => {
               properties: {
                 form: {
                   type: 'void',
-                  'x-component': 'Verificators',
+                  'x-component': 'Verifiers',
                 },
               },
             },
