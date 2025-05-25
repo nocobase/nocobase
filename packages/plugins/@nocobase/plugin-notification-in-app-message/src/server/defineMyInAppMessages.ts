@@ -7,6 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import type { Context } from '@nocobase/actions';
 import actions from '@nocobase/actions';
 import { ChannelsCollectionDefinition as ChannelsDefinition } from '@nocobase/plugin-notification-manager';
 import { Application } from '@nocobase/server';
@@ -114,12 +115,15 @@ export default function defineMyInAppMessages({
           if (!ctx.action) {
             ctx.throw(400, 'ctx.action not found');
           }
-          ctx.action.mergeParams({
-            filter: {
-              userId,
-            },
-          });
-          return actions.update(ctx, next);
+
+          if (ctx.action) {
+            ctx.action.mergeParams({
+              filter: {
+                userId,
+              },
+            });
+            return actions.update(ctx as Context, next);
+          }
         },
       },
     },
