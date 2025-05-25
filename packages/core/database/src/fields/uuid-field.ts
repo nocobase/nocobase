@@ -16,6 +16,10 @@ export class UuidField extends Field {
     return DataTypes.UUID;
   }
 
+  getDefaultValue() {
+    return this.options.autoFill !== false ? DataTypes.UUIDV4 : null;
+  }
+
   init() {
     const { name, autoFill } = this.options;
 
