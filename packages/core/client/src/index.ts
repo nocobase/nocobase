@@ -28,6 +28,7 @@ export * from './api-client';
 export * from './appInfo';
 export * from './application';
 export * from './async-data-provider';
+export * from './block-configs';
 export * from './block-provider';
 export * from './collection-manager';
 
@@ -59,6 +60,8 @@ export * from './system-settings';
 export * from './testUtils';
 export * from './user';
 export * from './variables';
+export * from './flow-engine';
+export * from './flow-model';
 
 export { withDynamicSchemaProps } from './hoc/withDynamicSchemaProps';
 export { withSkeletonComponent } from './hoc/withSkeletonComponent';

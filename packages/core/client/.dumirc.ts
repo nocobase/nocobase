@@ -65,10 +65,6 @@ export default defineConfig({
               link: '/core/application/application',
             },
             {
-              title: 'Plugin',
-              link: '/core/application/plugin',
-            },
-            {
               title: 'PluginManager',
               link: '/core/application/plugin-manager',
             },
@@ -84,6 +80,34 @@ export default defineConfig({
               title: 'Request',
               link: '/core/request',
             },
+          ],
+        },
+        {
+          title: 'Flow engine',
+          type: 'group',
+          children: [
+            {
+              title: 'Flow engine',
+              link: '/core/flow-engine',
+            },
+          ],
+        },
+        {
+          title: 'Event and Filter',
+          type: 'group',
+          children: [
+            {
+              title: 'Model',
+              link: '/core/event-and-filter/model',
+            },
+            {
+              title: 'Tabulator',
+              link: '/core/event-and-filter/tabulator',
+            },
+            {
+              title: 'Table',
+              link: '/core/event-and-filter/table',
+            }
           ],
         },
         {
