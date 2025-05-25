@@ -264,7 +264,7 @@ describe('memory queue adapter', () => {
   });
 
   describe('concurrency control', () => {
-    test.only('concurrent message processing with custom concurrency', async () => {
+    test('concurrent message processing with custom concurrency', async () => {
       const mockPlugin = app.pm.get(MockPlugin1);
       await app.start();
       for (const i of [1, 2, 3, 4, 5]) {

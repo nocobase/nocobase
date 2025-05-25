@@ -14,20 +14,19 @@ import fs from 'fs/promises';
 
 import Application from './application';
 
-type Callback = (
-  message: any,
-  options: {
-    id?: string;
-    retried?: number;
-    signal?: AbortSignal;
-  },
-) => Promise<void> | void;
+export type QueueCallbackOptions = {
+  id?: string;
+  retried?: number;
+  signal?: AbortSignal;
+};
+
+export type QueueCallback = (message: any, options: QueueCallbackOptions) => Promise<void> | void;
 
 export type QueueEventOptions = {
   interval?: number;
   concurrency?: number;
   idle(): boolean;
-  process: Callback;
+  process: QueueCallback;
 };
 
 export type QueueMessageOptions = {
