@@ -30,6 +30,12 @@ https://www.nocobase.com/cn/tutorials
 用户故事：  
 https://www.nocobase.com/cn/blog/tags/customer-stories
 
+## 快速入门
+
+要获得快速工作的开发环境，您可以使用 Gitpod。
+
+[![Open in Gitpod](https://gitpod.io/button/open-in-gitpod.svg)](https://gitpod.io/#https://github.com/nocobase/nocobase)
+
 ## 发布日志
 我们的[博客](https://www.nocobase.com/cn/blog/timeline)会及时更新发布日志，并每周进行汇总。
 
