@@ -83,6 +83,54 @@ export class FlowModel {
   }
 
   /**
+   * 扩展已存在的流程定义。通过合并现有流程和扩展定义来创建新的流程。
+   * @template TModel 具体的FlowModel子类类型
+   * @param {string | ExtendedFlowDefinition} keyOrDefinition 流程的 Key 或 ExtendedFlowDefinition 对象。
+   *        如果为字符串，则为流程 Key，需要配合 extendDefinition 参数。
+   *        如果为对象，则为包含 key 属性的完整 ExtendedFlowDefinition。
+   * @param {Omit<ExtendedFlowDefinition, 'key'>} [extendDefinition] 当第一个参数为流程 Key 时，此参数为流程的扩展定义。
+   * @returns {void}
+   */
+  public static extendFlow<TModel extends FlowModel = FlowModel>(
+    keyOrDefinition: string | ExtendedFlowDefinition, 
+    extendDefinition?: Omit<ExtendedFlowDefinition, 'key'>
+  ): void {
+    let definition: ExtendedFlowDefinition;
+    let key: string;
+    
+    if (typeof keyOrDefinition === 'string' && extendDefinition) {
+      key = keyOrDefinition;
+      definition = {
+        ...extendDefinition,
+        key
+      };
+    } else if (typeof keyOrDefinition === 'object' && 'key' in keyOrDefinition) {
+      key = keyOrDefinition.key;
+      definition = keyOrDefinition;
+    } else {
+      throw new Error('Invalid arguments for extendFlow');
+    }
+    
+    // 获取所有流程（包括从父类继承的）
+    const allFlows = this.getFlows();
+    const originalFlow = allFlows.get(key);
+    
+    if (!originalFlow) {
+      console.warn(`FlowModel.extendFlow: Cannot extend flow '${key}' as it does not exist in parent class. Registering as new flow.`);
+      // 移除patch标记，作为新流程注册
+      const { patch, ...newFlowDef } = definition;
+      this.registerFlow(newFlowDef as FlowDefinition<TModel>);
+      return;
+    }
+    
+    // 合并流程定义
+    const mergedFlow = mergeFlowDefinitions(originalFlow, definition);
+    
+    // 注册合并后的流程
+    this.registerFlow(mergedFlow as FlowDefinition<TModel>);
+  }
+
+  /**
    * 获取已注册的流程定义。
    * 如果当前类不存在对应的flow，会继续往父类查找。
    * @param {string} key 流程 Key。
@@ -337,23 +385,9 @@ export class FlowModel {
     // 处理流程注册和覆盖
     if (flows.length > 0) {
       flows.forEach(flowDefinition => {
-        const allFlows = this.getFlows();
-        // 如果标记为部分覆盖，则尝试获取并合并父类流程
+        // 如果标记为部分覆盖，则调用extendFlow方法
         if (flowDefinition.patch === true) {
-          // 获取原始流程定义，使用getFlows方法获取所有流程（包括从父类继承的）
-          const originalFlow = allFlows.get(flowDefinition.key);
-          
-          if (originalFlow) {
-            const mergedFlow = mergeFlowDefinitions(originalFlow, flowDefinition);
-            
-            // 注册合并后的流程
-            CustomFlowModel.registerFlow(mergedFlow);
-          } else {
-            console.warn(`FlowModel.extends: Cannot patch flow '${flowDefinition.key}' as it does not exist in parent class. Registering as new flow.`);
-            // 移除patch标记，作为新流程注册
-            const { patch, ...newFlowDef } = flowDefinition;
-            CustomFlowModel.registerFlow(newFlowDef as FlowDefinition);
-          }
+          CustomFlowModel.extendFlow(flowDefinition);
         } else {
           // 完全覆盖或新增流程
           CustomFlowModel.registerFlow(flowDefinition as FlowDefinition);

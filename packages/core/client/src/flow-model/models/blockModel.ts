@@ -6,6 +6,7 @@ import { DeleteActionModel } from './actions/deleteActionModel';
 import { SaveActionModel } from './actions/saveActionModel';
 import { RefreshActionModel } from './actions/refreshActionModel';
 import { ExtendedFlowDefinition } from '../types';
+import { UpdateActionModel } from './actions/updateActionModel';
 
 const registeredActionModels = new WeakMap<typeof BlockModel, Set<{
   title: string;
@@ -121,13 +122,17 @@ export class BlockModel extends FlowModel {
       title: '删除',
       type: DeleteActionModel,
     });
-    this.registerActionModel({
-      title: '保存',
-      type: SaveActionModel,
-    });
+    // this.registerActionModel({
+    //   title: '保存',
+    //   type: SaveActionModel,
+    // });
     this.registerActionModel({
       title: '刷新',
       type: RefreshActionModel,
+    });
+    this.registerActionModel({
+      title: '更新',
+      type: UpdateActionModel,
     });
   }
 
