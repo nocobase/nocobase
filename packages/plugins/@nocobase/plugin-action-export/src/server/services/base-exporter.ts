@@ -81,27 +81,42 @@ abstract class BaseExporter<T extends ExportOptions = ExportOptions> extends Eve
     return this.finalize();
   }
 
+  private removePathAfterFileField(fieldPath: string[]): string[] {
+    let currentCollection = this.options.collection;
+
+    for (let i = 0; i < fieldPath.length; i++) {
+      const fieldInstance = currentCollection.getField(fieldPath[i]);
+
+      if (_.get(fieldInstance, 'collection.options.template') === 'file') {
+        return fieldPath.slice(0, i);
+      }
+
+      if (fieldInstance?.isRelationField() && i < fieldPath.length - 1) {
+        currentCollection = (fieldInstance as IRelationField).targetCollection();
+      }
+    }
+
+    return fieldPath;
+  }
+
   protected getAppendOptionsFromFields(ctx?) {
-    const fields = this.options.fields.map((x) => x[0]);
-    const hasPermissionFields = _.isEmpty(ctx?.permission?.can?.params)
-      ? fields
-      : _.intersection(ctx?.permission?.can?.params?.appends || [], fields);
-    return hasPermissionFields
-      .map((field) => {
-        const fieldInstance = this.options.collection.getField(field);
+    return this.options.fields
+      .filter((fieldPath) => {
+        const field = fieldPath[0];
+        const hasPermission =
+          _.isEmpty(ctx?.permission?.can?.params) || (ctx?.permission?.can?.params?.appends || []).includes(field);
+        return hasPermission;
+      })
+      .map((fieldPath) => {
+        const fieldInstance = this.options.collection.getField(fieldPath[0]);
         if (!fieldInstance) {
-          throw new Error(`Field "${field}" not found: , please check the fields configuration.`);
+          throw new Error(`Field "${fieldPath[0]}" not found: , please check the fields configuration.`);
         }
 
-        const keys = field.split('.');
-        keys.pop();
-
-        if (_.get(fieldInstance, 'collection.options.template') === 'file') {
-          return keys.join('.');
-        }
+        const cleanedPath = this.removePathAfterFileField([...fieldPath]);
 
         if (fieldInstance.isRelationField()) {
-          return field;
+          return cleanedPath.join('.');
         }
 
         return null;
