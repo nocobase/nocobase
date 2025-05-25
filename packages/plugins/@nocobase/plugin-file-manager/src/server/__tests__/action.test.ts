@@ -216,6 +216,33 @@ describe('action', () => {
         // const res2 = await agent.get(`${DEFAULT_LOCAL_BASE_URL}${body.data.path}/${encodedFilename}`);
         // expect(res2.text).toBe(rawText);
       });
+
+      it('create file record should be ok', async () => {
+        db.collection({
+          name: 'customers',
+          fields: [
+            {
+              name: 'avatar',
+              type: 'belongsTo',
+              target: 'attachments',
+            },
+          ],
+        });
+        const record = {
+          title: 'text',
+          extname: '.txt',
+          path: '',
+          // size: 13,
+          meta: {},
+          storageId: 1,
+        };
+        const { status, body } = await agent.resource('attachments').create({
+          attachmentField: 'customers.avatar',
+          values: record,
+        });
+        expect(status).toBe(200);
+        expect(body.data).toMatchObject(record);
+      });
     });
 
     describe('specific storage', () => {

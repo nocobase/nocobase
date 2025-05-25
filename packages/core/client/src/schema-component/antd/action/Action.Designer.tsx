@@ -739,9 +739,11 @@ export function SecondConFirm() {
       title={t('Secondary confirmation')}
       initialValues={{
         title:
+          t(fieldSchema?.['x-component-props']?.confirm?.title, { title: compile(fieldSchema.title) }) ||
           compile(fieldSchema?.['x-component-props']?.confirm?.title) ||
           t('Perform the {{title}}', { title: compile(fieldSchema.title) }),
         content:
+          t(fieldSchema?.['x-component-props']?.confirm?.content, { title: compile(fieldSchema.title) }) ||
           compile(fieldSchema?.['x-component-props']?.confirm?.content) ||
           t('Are you sure you want to perform the {{title}} action?', { title: compile(fieldSchema.title) }),
       }}

@@ -9,6 +9,7 @@
 
 import fs from 'fs';
 import { basename } from 'path';
+import match from 'mime-match';
 
 import { Collection, Model, Transactionable } from '@nocobase/database';
 import { Plugin } from '@nocobase/server';
@@ -312,7 +313,10 @@ export class PluginFileManagerServer extends Plugin {
       return encodeURL(file.url);
     }
     const storageType = this.storageTypes.get(storage.type);
-    return new storageType(storage).getFileURL(file, preview ? storage.options.thumbnailRule : '');
+    return new storageType(storage).getFileURL(
+      file,
+      Boolean(file.mimetype && match(file.mimetype, 'image/*') && preview && storage.options.thumbnailRule),
+    );
   }
   async isPublicAccessStorage(storageName) {
     const storageRepository = this.db.getRepository('storages');
