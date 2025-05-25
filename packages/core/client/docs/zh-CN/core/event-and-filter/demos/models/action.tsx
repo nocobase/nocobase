@@ -1,7 +1,7 @@
 import React from 'react';
 import { Button, ButtonProps, message, Modal } from 'antd';
 import { FlowModel, Application, Plugin, FlowEngine, ActionModel, useFlowModel, withFlowModel } from '@nocobase/client';
-import FlowsContextMenu from '../settings/menu/FlowsContextMenu';
+import FlowsContextMenu from '../settings/wrappers/contextual/FlowsContextMenu';
 
 const ButtonModel = ActionModel.extends([
   {

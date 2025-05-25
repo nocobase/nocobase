@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Card, Empty, Alert, Collapse, Button, Select, Space, Popconfirm, Typography } from 'antd';
 import { BlockModel, ActionModel, FlowEngine, useFlowModel } from '@nocobase/client';
 import { observer } from '@formily/react';
-import FlowsSettings from './simple/FlowsSettings';
+import FlowsSettings from './wrappers/embedded/FlowsSettings';
 import { PlusOutlined, DeleteOutlined } from '@ant-design/icons';
 const { Panel } = Collapse;
 const { Text } = Typography;

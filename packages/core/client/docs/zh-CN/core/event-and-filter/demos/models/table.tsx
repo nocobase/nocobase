@@ -1,25 +1,26 @@
 import React from 'react';
 import { Table, Button, Space, Pagination, Spin } from 'antd';
-import { BlockModel, FlowContext, FlowModel, Application, Plugin, FlowEngine, BaseResource, useFlowModel, withFlowModel } from '@nocobase/client';
+import { BlockModel, FlowContext, FlowModel, Application, Plugin, BaseResource, useFlowModel, withFlowModel } from '@nocobase/client';
 import { ActionsSettings } from '../settings/ActionsSettings';
 import { observer } from '@formily/react';
-import FlowsContextMenu from '../settings/menu/FlowsContextMenu';
+import { FlowsDropdownButton } from '../settings/independents/dropdown';
 
 const Demo = () => {
     const uid = 'table-block';
     const model = useFlowModel(uid, 'DemoTableBlockModel') as any;
-    
+
     return (
         <div style={{ padding: 24, background: '#f5f5f5', borderRadius: 8 }}>
             <ActionsSettings model={model} />
             <ActionsComponent model={model} />
+            <FlowsDropdownButton model={model} text="表格配置" size="small" type="dashed"/>
             <TableBlock model={model} />
         </div>
     );
 }
 
 // 表格组件
-const TableComponent = ({ 
+const TableComponent = ({
     loading = false,
     columns = [],
     dataSource = [],
@@ -30,11 +31,11 @@ const TableComponent = ({
 }) => {
     return (
         <div style={{ marginTop: 16 }}>
-            <div style={{ 
-                display: 'flex', 
-                justifyContent: 'space-between', 
-                alignItems: 'center', 
-                marginBottom: 16, 
+            <div style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                marginBottom: 16,
                 padding: '12px 16px',
                 background: '#fff',
                 borderRadius: 6,
@@ -42,7 +43,7 @@ const TableComponent = ({
             }}>
                 <h3 style={{ margin: 0 }}>{title}</h3>
             </div>
-            
+
             <Spin spinning={loading}>
                 <Table
                     dataSource={dataSource}
@@ -52,7 +53,7 @@ const TableComponent = ({
                     rowKey="id"
                 />
             </Spin>
-            
+
             {pagination.total > 0 && (
                 <div style={{ marginTop: 16, textAlign: 'right' }}>
                     <Pagination
@@ -61,7 +62,7 @@ const TableComponent = ({
                         total={pagination.total}
                         showSizeChanger
                         showQuickJumper
-                        showTotal={(total, range) => 
+                        showTotal={(total, range) =>
                             `显示 ${range[0]}-${range[1]} 条，共 ${total} 条数据`
                         }
                         onChange={onPaginationChange}
@@ -76,7 +77,7 @@ const TableComponent = ({
 // Actions组件 - 渲染工具栏操作
 const ActionsComponent = observer(({ model }: { model: BlockModel }) => {
     if (!model.actions.size) return null;
-    
+
     return (
         <div style={{ marginBottom: 16, textAlign: 'right' }}>
             <Space>
@@ -90,15 +91,7 @@ const ActionsComponent = observer(({ model }: { model: BlockModel }) => {
     );
 });
 
-const TableBlock = withFlowModel(TableComponent, {
-    settings: {
-        component: FlowsContextMenu,
-        props: {
-            enabled: true,
-            position: 'right'
-        }
-    }
-});
+const TableBlock = withFlowModel(TableComponent);
 
 // 创建继承自BlockModel的DemoTableBlockModel
 class DemoTableBlockModel extends BlockModel {
@@ -121,7 +114,7 @@ class DemoTableBlockModel extends BlockModel {
                 setFields: {
                     use: 'setTableFields',
                     title: '字段配置',
-                    defaultParams: { 
+                    defaultParams: {
                         fields: ['id', 'name', 'age', 'email', 'city']
                     }
                 },
@@ -137,14 +130,14 @@ class DemoTableBlockModel extends BlockModel {
                             email: '邮箱',
                             city: '城市'
                         };
-                        
+
                         const columns = fields.map(field => ({
                             title: fieldLabels[field] || field,
                             dataIndex: field,
                             key: field,
                             width: field === 'id' ? 80 : field === 'email' ? 200 : 120
                         }));
-                        
+
                         model.setProps('columns', columns);
                     }
                 },
@@ -196,13 +189,13 @@ class DemoTableBlockModel extends BlockModel {
                     handler: async (ctx: FlowContext, model, params) => {
                         const { current, pageSize } = params || {};
                         const currentPagination = model.getProps().pagination || {};
-                        
+
                         model.setProps('pagination', {
                             ...currentPagination,
                             current: current || currentPagination.current,
                             pageSize: pageSize || currentPagination.pageSize
                         });
-                        
+
                         model.applyFlow('loadData');
                     }
                 }
@@ -222,23 +215,23 @@ class DemoTableBlockModel extends BlockModel {
                     handler: async (ctx: FlowContext, model) => {
                         // 添加延迟以模拟真实API请求
                         await new Promise(resolve => setTimeout(resolve, 500));
-                        
+
                         const props = model.getProps();
                         const pagination = props.pagination || { current: 1, pageSize: 10 };
-                        
+
                         try {
                             const mockData = generateMockData(pagination.current, pagination.pageSize);
-                            
+
                             const dataResource = (model as any).getResource('data');
                             if (dataResource) {
                                 dataResource.setData(mockData.data);
                             }
-                            
+
                             model.setProps('pagination', {
                                 ...pagination,
                                 total: mockData.total
                             });
-                            
+
                         } catch (error) {
                             console.error('Failed to load data:', error);
                         }
@@ -265,7 +258,7 @@ function generateMockData(page: number, pageSize: number) {
     const total = 256;
     const startIndex = (page - 1) * pageSize;
     const data = [];
-    
+
     for (let i = 0; i < pageSize && startIndex + i < total; i++) {
         const id = startIndex + i + 1;
         data.push({
@@ -276,7 +269,7 @@ function generateMockData(page: number, pageSize: number) {
             city: ['北京', '上海', '广州', '深圳', '杭州', '南京', '成都', '武汉'][id % 8]
         });
     }
-    
+
     return { data, total };
 }
 

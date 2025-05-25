@@ -2,7 +2,7 @@ import React from 'react';
 import { FlowModel, Application, BlockModel, FlowContext, Plugin, FlowEngine, useFlowModel, withFlowModel } from '@nocobase/client';
 import MarkdownIt from 'markdown-it';
 import Handlebars from 'handlebars';
-import FlowsSettings from '../settings/simple/FlowsSettings';
+import FlowsSettings from '../settings/wrappers/embedded/FlowsSettings';
 
 const Demo = () => {
     const uid = 'markdown-block';

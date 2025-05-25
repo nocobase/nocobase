@@ -1,8 +1,8 @@
-import React from 'react';
-import { Modal, Alert, Button, message } from 'antd';
-import { FlowEngine, useFlowModel } from '@nocobase/client';
+import React, { useState, useEffect } from 'react';
+import { Modal, Alert, message } from 'antd';
+import { useFlowModel } from '@nocobase/client';
 import { observer } from '@formily/react';
-import FlowSettings from '../simple/FlowSettings';
+import FlowSettings from './FlowSettings';
 
 // 创建两个组件版本，一个使用props传递的model，一个使用hook获取model
 interface ModelProvidedProps {
@@ -140,27 +140,47 @@ const FlowSettingsModalContent: React.FC<FlowSettingsModalContentProps> = observ
   modalWidth,
   modalTitle 
 }) => {
+  const [shouldSave, setShouldSave] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  
   // 获取流程信息用于显示标题
   const flow = model.getFlow(flowKey);
   const title = modalTitle || (flow ? `${flow.title || flow.key} - 配置` : `流程配置 - ${flowKey}`);
 
   // 处理确认按钮点击
   const handleOk = async () => {
-    try {
-      // 只保存配置，不执行流程
-      // 配置已经通过FlowSettings组件自动保存到model中了
-      message.success('配置已保存');
-      onClose();
-    } catch (error) {
-      console.error('保存配置时出错:', error);
-      message.error('保存配置时出错，请检查控制台');
-    }
+    setIsSaving(true);
+    setShouldSave(true);
   };
 
   // 处理取消按钮点击
   const handleCancel = () => {
     onClose();
   };
+
+  // FlowSettings的保存回调
+  const handleFlowSettingsSave = (values: any) => {
+    message.success('配置已保存');
+    setIsSaving(false);
+    setShouldSave(false);
+    onClose();
+  };
+
+  // FlowSettings的保存错误回调
+  const handleFlowSettingsError = (error: any) => {
+    console.error('保存配置时出错:', error);
+    message.error('保存配置时出错，请检查控制台');
+    setIsSaving(false);
+    setShouldSave(false);
+  };
+
+  // 重置shouldSave状态，当弹窗关闭时
+  useEffect(() => {
+    if (!visible) {
+      setShouldSave(false);
+      setIsSaving(false);
+    }
+  }, [visible]);
 
   if (!flow) {
     return (
@@ -187,6 +207,7 @@ const FlowSettingsModalContent: React.FC<FlowSettingsModalContentProps> = observ
       width={modalWidth}
       destroyOnClose={true}
       maskClosable={false}
+      confirmLoading={isSaving}
       style={{ top: 20 }}
       bodyStyle={{ 
         maxHeight: 'calc(100vh - 200px)', 
@@ -194,8 +215,14 @@ const FlowSettingsModalContent: React.FC<FlowSettingsModalContentProps> = observ
         padding: '16px 24px'
       }}
     >
-      {/* 使用现有的FlowSettings组件 */}
-      <FlowSettings model={model} flowKey={flowKey} />
+      <FlowSettings 
+        model={model} 
+        flowKey={flowKey} 
+        onSave={handleFlowSettingsSave}
+        onError={handleFlowSettingsError}
+        shouldSave={shouldSave}
+        showActions={false}
+      />
     </Modal>
   );
 });

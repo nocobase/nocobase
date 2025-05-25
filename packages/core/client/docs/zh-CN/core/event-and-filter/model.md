@@ -8,8 +8,6 @@
 
 内核会提供 Flow 通用的配置组件，通过传入uid等必要属性后能够自动显示配置flow sep的组件
 
-**使用说明**: 右键点击下方的Markdown内容区域，可以打开配置菜单进行参数设置。
-
 <code src="./demos/models/markdown.tsx"></code>
 
 ## Action
