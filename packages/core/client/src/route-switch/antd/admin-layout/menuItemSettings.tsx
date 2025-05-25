@@ -365,7 +365,7 @@ const EditMenuItem = () => {
     };
   }, [t]);
   const currentRoute = useCurrentRoute();
-  const { urlSchema, paramsSchema } = useURLAndHTMLSchema();
+  const { urlSchema, paramsSchema, openInNewWindowSchema } = useURLAndHTMLSchema();
   const initialValues = useMemo(() => {
     return {
       title: currentRoute.title,
@@ -375,12 +375,14 @@ const EditMenuItem = () => {
   if (currentRoute.type === NocoBaseDesktopRouteType.link) {
     schema.properties['href'] = urlSchema;
     schema.properties['params'] = paramsSchema;
+    schema.properties['openInNewWindow'] = openInNewWindowSchema;
     initialValues['href'] = currentRoute.options.href;
     initialValues['params'] = currentRoute.options.params;
+    initialValues['openInNewWindow'] = currentRoute.options.openInNewWindow !== false;
   }
 
   const { updateRoute } = useNocoBaseRoutes();
-  const onEditSubmit: (values: any) => void = useCallback(({ title, icon, href, params }) => {
+  const onEditSubmit: (values: any) => void = useCallback(({ title, icon, href, params, openInNewWindow }) => {
     // 更新菜单对应的路由
     if (currentRoute.id !== undefined) {
       updateRoute(currentRoute.id, {
@@ -391,6 +393,7 @@ const EditMenuItem = () => {
             ? {
                 href,
                 params,
+                openInNewWindow,
               }
             : undefined,
       });
