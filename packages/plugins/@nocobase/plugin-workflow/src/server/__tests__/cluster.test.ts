@@ -12,13 +12,13 @@ import { getCluster } from '@nocobase/plugin-workflow-test';
 
 import Plugin, { Processor } from '..';
 import { EXECUTION_STATUS } from '../constants';
-import { MemoryEventQueueAdapter } from '@nocobase/server';
+import { MemoryEventQueueAdapter, QueueMessageOptions } from '@nocobase/server';
 
-const memoryQueues: Map<string, Map<string, any[]>> = new Map();
+const memoryQueues: Map<string, { id: string; content: any; options?: QueueMessageOptions }[]> = new Map();
 
 class MockMemoryEventQueueAdapter extends MemoryEventQueueAdapter {
-  constructor() {
-    super();
+  constructor(options) {
+    super(options);
     // NOTE: singleton for crossing all nodes
     this.queues = memoryQueues;
   }
@@ -87,7 +87,7 @@ describe('workflow > cluster', () => {
     beforeEach(async () => {
       for (const node of cluster.nodes) {
         await node.eventQueue.close();
-        node.eventQueue.setAdapter(new MockMemoryEventQueueAdapter());
+        node.eventQueue.setAdapter(new MockMemoryEventQueueAdapter({ appName: node.name }));
         await node.eventQueue.connect();
       }
     });
