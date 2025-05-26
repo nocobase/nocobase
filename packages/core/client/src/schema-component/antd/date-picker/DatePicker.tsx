@@ -64,12 +64,12 @@ export const DatePicker = (props: any) => {
 
     if (isVariable(props._maxDate)) {
       maxDateTimePromise = parseVariable(props._maxDate, localVariables).then((result) => {
-        return dayjs(last(result.value) || result.value);
+        return dayjs(Array.isArray(result.value) ? last(result.value) : result.value);
       });
     }
     if (isVariable(props._minDate)) {
       minDateTimePromise = parseVariable(props._minDate, localVariables).then((result) => {
-        return dayjs(first(result.value) || result.value);
+        return dayjs(Array.isArray(result.value) ? first(result.value) : result.value);
       });
     }
 
