@@ -4,8 +4,8 @@ import {
   ModelConstructor,
   ActionOptions
 } from './types';
-import { Application } from '../application';
 import { FlowModel } from '@nocobase/client';
+import { uid as generateUid } from '@nocobase/utils/client';
 
 /**
  * FlowEngine 类负责管理流程（Flows）、动作（Actions）和模型（Models）。
@@ -15,6 +15,12 @@ import { FlowModel } from '@nocobase/client';
  * - useContext, useFlowModel, useApplyFlow, useApplyDefaultFlows, useDispatchEvent
  * - withFlowModel
  */
+
+/**
+ * 已注册模型的类名
+ */
+export type RegisteredModelClassName = string;
+
 export class FlowEngine {
 
   /** @private Stores registered action definitions. */
@@ -102,23 +108,37 @@ export class FlowEngine {
    * 创建并注册一个 Model 实例。
    * 如果具有相同 UID 的实例已存在，则返回现有实例。
    * @template T FlowModel 的子类型，默认为 FlowModel。
-   * @param {string} uid Model 实例的唯一标识符。
-   * @param {string} modelClassName 要创建实例的 Model 类的名称 (已通过 registerModelClass 注册)。
-   * @param {Application} app Application 实例。
+   * @param {object} options 创建模型的选项
+   * @param {string} [options.uid] Model 实例的唯一标识符，如不提供会自动生成。
+   * @param {RegisteredModelClassName} options.use 要创建实例的 Model 类的名称 (已通过 registerModelClass 注册)。
+   * @param {Application} options.app Application 实例。
+   * @param {Record<string, any>} [options.stepsParams] 步骤参数。
    * @returns {T} 创建的 Model 实例。
    */
   public createModel<T extends FlowModel = FlowModel>(
-    uid: string,
-    modelClassName: string,
-    app: Application,
-    stepsParams?: Record<string, any>,
+    options: {
+      uid?: string;
+      use: RegisteredModelClassName;
+      stepsParams?: Record<string, any>;
+    }
   ): T {
-    const ModelClass = (this.getModelClass(modelClassName) || FlowModel) as ModelConstructor<T>;
+    const { uid = generateUid(), use: modelClassName, stepsParams } = options;
+    const ModelClass = this.getModelClass(modelClassName);
+    
+    if (!ModelClass) {
+      throw new Error(`Model class '${modelClassName}' not found. Please register it first.`);
+    }
+    
     if (this.modelInstances.has(uid)) {
-      console.warn(`FlowEngine: Model instance with UID '${uid}' already exists. Returning existing instance.`);
       return this.modelInstances.get(uid) as T;
     }
-    const modelInstance = new ModelClass(uid, app, stepsParams);
+    
+    const modelInstance = new (ModelClass as ModelConstructor<T>)({
+      uid,
+      stepParams: stepsParams
+    });
+    modelInstance.setFlowEngine(this);
+    
     this.modelInstances.set(uid, modelInstance);
     return modelInstance;
   }

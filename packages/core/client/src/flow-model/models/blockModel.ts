@@ -1,9 +1,7 @@
 import { FlowModel } from './flowModel';
 import { ActionModel } from './actions/actionModel';
 import { define, observable } from '@formily/reactive';
-import { Application } from '../../application';
 import { DeleteActionModel } from './actions/deleteActionModel';
-import { SaveActionModel } from './actions/saveActionModel';
 import { RefreshActionModel } from './actions/refreshActionModel';
 import { ExtendedFlowDefinition } from '../types';
 import { UpdateActionModel } from './actions/updateActionModel';
@@ -21,8 +19,14 @@ export class BlockModel extends FlowModel {
     this.initSupportedActions();
   }
 
-  constructor(uid: string, app: Application) {
-    super(uid, app);
+  constructor(options: {
+    uid: string;
+    stepParams?: Record<string, any>;
+  }) {
+    super({
+      uid: options.uid,
+      stepParams: options.stepParams
+    });
     this.actions = observable(new Map<string, ActionModel>());
     define(this, {
       actions: observable,

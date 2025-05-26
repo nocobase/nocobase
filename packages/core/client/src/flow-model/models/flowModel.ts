@@ -1,7 +1,6 @@
 import { observable, action, define } from '@formily/reactive';
 import { FlowEngine } from '../../flow-engine';
 import type { FlowContext, StepDefinition, FlowDefinition, ActionStepDefinition, InlineStepDefinition } from '../../flow-engine/types';
-import type { Application } from '../../application/Application';
 import { uid } from '@nocobase/utils/client';
 import _ from 'lodash';
 import { ExtendedFlowDefinition, IModelComponentProps, ReadonlyModelProps, FlowUserContext } from '../types';
@@ -15,20 +14,20 @@ export class FlowModel {
   public props: IModelComponentProps;
   public hidden: boolean;
   public stepParams: Record<string, Record<string, any>>;
-  public app: Application;
+  public flowEngine: FlowEngine;
   // TODO: 应该有一些类型，整个生命周期只执行一次，比如从后端加载配置，构造整个model树。
   // 后续model的更新不需要再重新加载了
 
   constructor(
-    uid: string,
-    app: Application,
-    stepParams?: Record<string, any>,
+    options: {
+      uid: string;
+      stepParams?: Record<string, any>;
+    }
   ) {
-    this.uid = uid;
+    this.uid = options.uid;
     this.props = {};
     this.hidden = false;
-    this.stepParams = stepParams || {};
-    this.app = app;
+    this.stepParams = options.stepParams || {};
 
     define(this, {
       props: observable,
@@ -38,6 +37,14 @@ export class FlowModel {
       setStepParams: action,
       setHidden: action,
     });
+  }
+
+  /**
+   * 设置FlowEngine实例
+   * @param {FlowEngine} flowEngine FlowEngine实例
+   */
+  setFlowEngine(flowEngine: FlowEngine): void {
+    this.flowEngine = flowEngine;
   }
   
   /**
@@ -191,23 +198,6 @@ export class FlowModel {
     return allFlows;
   }
 
-  get flowEngine(): FlowEngine | undefined {
-    if (this.app && this.app.flowEngine) {
-      if (this.app.flowEngine instanceof FlowEngine) {
-        return this.app.flowEngine;
-      }
-      // Duck typing with type assertion to any for property access
-      if (typeof this.app.flowEngine === 'object' && 
-          this.app.flowEngine !== null &&
-          typeof (this.app.flowEngine as any).getFlow === 'function' &&  
-          typeof (this.app.flowEngine as any).getAction === 'function') {
-        console.warn(`[BaseModel uid: ${this.uid}] flowEngine getter: this.app.flowEngine is not an instanceof FlowEngine, but seems to have core methods. Module identity issue?`);
-        return this.app.flowEngine as FlowEngine;
-      }
-    }
-    return undefined;
-  }
-
   setProps(props: IModelComponentProps): void;
   setProps(key: string, value: any): void;
   setProps(props: IModelComponentProps | string, value?: any): void {
@@ -268,9 +258,9 @@ export class FlowModel {
 
   async applyFlow(flowKey: string, context?: FlowUserContext): Promise<any> {
     const currentFlowEngine = this.flowEngine;
-    if (!currentFlowEngine || !this.app) {
-      console.warn('FlowEngine or Application not available on this model for applyFlow. Check model.app and model.app.flowEngine setup.');
-      return Promise.reject(new Error('FlowEngine or Application not available for applyFlow'));
+    if (!currentFlowEngine) {
+      console.warn('FlowEngine not available on this model for applyFlow. Check model.app and model.app.flowEngine setup.');
+      return Promise.reject(new Error('FlowEngine not available for applyFlow. Please set flowEngine on the model.'));
     }
     
     let flow = this.getFlow(flowKey);
@@ -286,7 +276,6 @@ export class FlowModel {
 
     const baseContextForSteps: Omit<FlowContext, '$exit'> = {
       engine: currentFlowEngine,
-      app: this.app,
       ...(context || {}),
     };
 
@@ -342,8 +331,8 @@ export class FlowModel {
 
   dispatchEvent(eventName: string, context?: FlowUserContext): void {
     const currentFlowEngine = this.flowEngine;
-    if (!currentFlowEngine || !this.app) {
-      console.warn('FlowEngine or Application not available on this model for dispatchEvent. Check model.app and model.app.flowEngine setup.');
+    if (!currentFlowEngine) {
+      console.warn('FlowEngine not available on this model for dispatchEvent. Please set flowEngine on the model.');
       return;
     }
     
@@ -353,7 +342,6 @@ export class FlowModel {
 
     const baseContextForFlow: Omit<FlowContext, '$exit'> = {
         engine: currentFlowEngine,
-        app: this.app,
         event: { name: eventName, modelUid: this.uid },
         ...(context || {}),
     };

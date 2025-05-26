@@ -1,5 +1,4 @@
 import { BlockModel } from './blockModel';
-import { Application } from '../../application';
 import { BaseResource } from '../resources/baseResource';
 
 export class DataBlockModel extends BlockModel {
@@ -10,10 +9,27 @@ export class DataBlockModel extends BlockModel {
     this.initFlows();
   }
 
-  constructor(uid: string, app: Application, resource?: BaseResource) {
-    super(uid, app);
-    this.resource = resource;
+  constructor(options: {
+    uid: string;
+    stepParams?: Record<string, any>;
+    resource?: BaseResource;
+  }) {
+    super({
+      uid: options.uid,
+      stepParams: options.stepParams
+    });
+    if (options.resource) {
+      this.resource = options.resource;
+    }
     this.fields = [];
+  }
+
+  /**
+   * 设置Resource实例
+   * @param {BaseResource} resource BaseResource实例
+   */
+  setResource(resource: BaseResource): void {
+    this.resource = resource;
   }
 
   setFields(fields: any[]) {

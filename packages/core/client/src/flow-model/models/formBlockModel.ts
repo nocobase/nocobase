@@ -1,14 +1,21 @@
 import { DataBlockModel } from './dataBlockModel';
 import { ObjectResource } from '../resources/objectResource';
-import { Application } from '../../application';
 
 // TODO: 未完成
 
 export class FormBlockModel<TData = Record<string, any>> extends DataBlockModel {
   declare public resource: ObjectResource<TData>;
 
-  constructor(uid: string, app: Application, resource?: ObjectResource<TData>) {
-    super(uid, app, resource);
+  constructor(options: {
+    uid: string;
+    stepParams?: Record<string, any>;
+    resource?: ObjectResource<TData>;
+  }) {
+    super({
+      uid: options.uid,
+      stepParams: options.stepParams,
+      resource: options.resource
+    });
   }
 
   // 加载表单数据

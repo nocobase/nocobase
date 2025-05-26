@@ -13,7 +13,11 @@ export function useFlowModel<T extends FlowModel = FlowModel>(
   const model = useMemo(() => {
     let instance = engine.getModel<T>(uid);
     if (!instance && modelClassName) {
-      instance = engine.createModel<T>(uid, modelClassName, app, stepsParams);
+      instance = engine.createModel<T>({
+        uid,
+        use: modelClassName,
+        stepsParams
+      });
     }
     return instance;
   }, [engine, app, modelClassName, uid, stepsParams]);

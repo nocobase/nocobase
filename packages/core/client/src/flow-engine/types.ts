@@ -1,15 +1,15 @@
 import { ISchema } from '@formily/json-schema';
 import type { FlowModel } from '@nocobase/client';
-import type { Application } from '../application/Application';
 import { FlowEngine } from './flowEngine';
 
 /**
  * Constructor for model classes.
  */
 export type ModelConstructor<T extends FlowModel = FlowModel> = new (
-  uid: string,
-  app?: Application,
-  stepParams?: Record<string, any>,
+  options: {
+    uid: string;
+    stepParams?: Record<string, any>;
+  }
 ) => T;
 
 /**
@@ -85,7 +85,6 @@ export type StepDefinition<TModel extends FlowModel = FlowModel> =
  */
 export interface FlowContext {
   engine: FlowEngine; // Instance of the FlowEngine
-  app?: Application; // Context can also have app reference
   event?: any; // Information about the triggering event, if applicable
   $exit: () => void;
   [key: string]: any; // Allow for additional custom context data
@@ -94,7 +93,7 @@ export interface FlowContext {
 /**
  * User context for hooks - omitting internal engine properties
  */
-export type UserContext = Partial<Omit<FlowContext, 'engine' | '$exit' | 'app'>>;
+export type UserContext = Partial<Omit<FlowContext, 'engine' | '$exit'>>;
 
 /**
  * Action options for registering actions with generic model type support

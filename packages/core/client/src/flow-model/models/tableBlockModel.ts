@@ -2,7 +2,6 @@ import { DataBlockModel } from './dataBlockModel';
 import { ActionModel } from './actions/actionModel';
 import { observable } from '@formily/reactive';
 import { ArrayResource } from '../resources/arrayResource';
-import { Application } from '../../application';
 
 // TODO: 未完成
 
@@ -10,8 +9,16 @@ export class TableBlockModel<TData = any> extends DataBlockModel {
   public rowActions: Map<string, ActionModel>;
   declare public resource: ArrayResource<TData>;
 
-  constructor(uid: string, app: Application, resource?: ArrayResource<TData>) {
-    super(uid, app, resource);
+  constructor(options: {
+    uid: string;
+    stepParams?: Record<string, any>;
+    resource?: ArrayResource<TData>;
+  }) {
+    super({
+      uid: options.uid,
+      stepParams: options.stepParams,
+      resource: options.resource
+    });
     this.rowActions = observable(new Map<string, ActionModel>());
   }
 

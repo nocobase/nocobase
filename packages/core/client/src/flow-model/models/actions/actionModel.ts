@@ -1,5 +1,4 @@
 import { FlowModel } from '../flowModel';
-import { Application } from '../../../application';
 import { BlockModel } from '..';
 
 export class ActionModel extends FlowModel {
@@ -9,8 +8,25 @@ export class ActionModel extends FlowModel {
     this.initFlows();
   }
 
-  constructor(uid: string, app: Application, blockModel: BlockModel) {
-    super(uid, app);
+  constructor(options: {
+    uid: string;
+    stepParams?: Record<string, any>;
+    blockModel?: BlockModel;
+  }) {
+    super({
+      uid: options.uid,
+      stepParams: options.stepParams
+    });
+    if (options.blockModel) {
+      this.blockModel = options.blockModel;
+    }
+  }
+
+  /**
+   * 设置BlockModel实例
+   * @param {BlockModel} blockModel BlockModel实例
+   */
+  setBlockModel(blockModel: BlockModel): void {
     this.blockModel = blockModel;
   }
 
