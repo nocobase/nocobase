@@ -14,13 +14,13 @@ import { FormLayout } from '@formily/antd-v5';
 import { SchemaOptionsContext, useFieldSchema } from '@formily/react';
 import { uid } from '@formily/shared';
 import { transformMultiColumnToSingleColumn } from '@nocobase/utils/client';
-import { Button, Tabs } from 'antd';
+import { Badge, Button, Tabs } from 'antd';
 import classNames from 'classnames';
 import React, { FC, memo, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 import { useTranslation } from 'react-i18next';
 import { NavigateFunction, Outlet, useOutletContext } from 'react-router-dom';
-import { FormDialog, withSearchParams } from '..';
+import { FormDialog, Variable, withSearchParams } from '..';
 import { antTableCell } from '../../../acl/style';
 import {
   CurrentTabUidContext,
@@ -54,6 +54,9 @@ import { useStyles } from './Page.style';
 import { PageDesigner, PageTabDesigner } from './PageTabDesigner';
 import { PopupRouteContextResetter } from './PopupRouteContextResetter';
 import { NAMESPACE_UI_SCHEMA } from '../../../i18n/constant';
+import { NocoBaseDesktopRoute } from '../../../route-switch/antd/admin-layout/convertRoutesToSchema';
+import { useEvaluatedExpression } from '../../../hooks/useParsedValue';
+import { VariableScope } from '../../../variables/VariableScope';
 
 interface PageProps {
   currentTabUid: string;
@@ -235,6 +238,14 @@ const PageContent = memo((props: PageContentProps) => {
   );
 });
 
+const TabBadge: FC<{ tabRoute: NocoBaseDesktopRoute; style?: React.CSSProperties }> = (props) => {
+  const badgeCount = useEvaluatedExpression(props.tabRoute.options?.badge?.count);
+
+  if (badgeCount == null) return null;
+
+  return <Badge {...props.tabRoute.options?.badge} count={badgeCount} style={props.style}>{props.children}</Badge>
+}
+
 const NocoBasePageHeaderTabs: FC<{ className: string; activeKey: string }> = ({ className, activeKey }) => {
   const fieldSchema = useFieldSchema();
   const { t } = useTranslation();
@@ -344,15 +355,19 @@ const NocoBasePageHeaderTabs: FC<{ className: string; activeKey: string }> = ({ 
         return {
           label: (
             <NocoBaseRouteContext.Provider value={tabRoute}>
-              <SortableItem
-                id={String(tabRoute.id)}
-                className={classNames('nb-action-link', 'designerCss', className)}
-                schema={fakeSchema}
-              >
-                {tabRoute.icon && <Icon style={{ marginRight: 8 }} type={tabRoute.icon} />}
-                <span>{(tabRoute.title && routeT(compile(tabRoute.title))) || t('Unnamed')}</span>
-                <PageTabDesigner />
-              </SortableItem>
+              <VariableScope scopeId={tabRoute.schemaUid} type="pageTab">
+                <SortableItem
+                  id={String(tabRoute.id)}
+                  className={classNames('nb-action-link', 'designerCss', className)}
+                  schema={fakeSchema}
+                  style={{ display: 'flex', alignItems: 'center' }}
+                >
+                  {tabRoute.icon && <Icon style={{ marginRight: 8 }} type={tabRoute.icon} />}
+                  <span>{(tabRoute.title && routeT(compile(tabRoute.title))) || t('Unnamed')}</span>
+                  <PageTabDesigner />
+                  <TabBadge style={{ marginLeft: 4, color: tabRoute.options?.badge?.textColor }} tabRoute={tabRoute} />
+                </SortableItem>
+              </VariableScope>
             </NocoBaseRouteContext.Provider>
           ),
           key: tabRoute.schemaUid,

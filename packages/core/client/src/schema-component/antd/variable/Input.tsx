@@ -22,6 +22,7 @@ import { useCompile } from '../../hooks';
 import { Json } from '../input';
 import { XButton } from './XButton';
 import { useStyles } from './style';
+import { FlagProvider } from '../../../flag-provider/FlagProvider';
 
 const JT_VALUE_RE = /^\s*{{\s*([^{}]+)\s*}}\s*$/;
 
@@ -143,19 +144,19 @@ function getTypedConstantOption(type: string, types: UseTypeConstantType, fieldN
   const children = (
     types
       ? allTypes.filter(
-          (item) =>
-            (Array.isArray(types) &&
-              types.filter((t) => (Array.isArray(t) ? t[0] === item.value : t === item.value)).length) ||
-            types === true,
-        )
+        (item) =>
+          (Array.isArray(types) &&
+            types.filter((t) => (Array.isArray(t) ? t[0] === item.value : t === item.value)).length) ||
+          types === true,
+      )
       : allTypes
   ).map((item) =>
     Object.keys(fieldNames).reduce(
       (result, key) =>
         key in item
           ? Object.assign(result, {
-              [fieldNames[key]]: item[key],
-            })
+            [fieldNames[key]]: item[key],
+          })
           : result,
       { ...item },
     ),
@@ -284,13 +285,13 @@ export function Input(props: VariableInputProps) {
     const options = [
       ...(nullable
         ? [
-            {
-              value: '',
-              label: t('Null'),
-              [names.value]: '',
-              [names.label]: t('Null'),
-            },
-          ]
+          {
+            value: '',
+            label: t('Null'),
+            [names.value]: '',
+            [names.label]: t('Null'),
+          },
+        ]
         : []),
       ...(constantOption ? [compile(cOption)] : []),
       ...(scope ? [...scope] : []),
@@ -480,25 +481,27 @@ export function Input(props: VariableInputProps) {
           </div>
         )}
         {hideVariableButton ? null : (
-          <Cascader
-            options={options}
-            value={variable ?? cValue}
-            onChange={onSwitch}
-            loadData={loadData as any}
-            changeOnSelect={changeOnSelect ?? true}
-            fieldNames={fieldNames}
-            disabled={disabled}
-          >
-            {button ?? (
-              <XButton
-                className={css(`
+          <FlagProvider isInXButton>
+            <Cascader
+              options={options}
+              value={variable ?? cValue}
+              onChange={onSwitch}
+              loadData={loadData as any}
+              changeOnSelect={changeOnSelect ?? true}
+              fieldNames={fieldNames}
+              disabled={disabled}
+            >
+              {button ?? (
+                <XButton
+                  className={css(`
               margin-left: -1px;
             `)}
-                type={variable ? 'primary' : 'default'}
-                disabled={disabled}
-              />
-            )}
-          </Cascader>
+                  type={variable ? 'primary' : 'default'}
+                  disabled={disabled}
+                />
+              )}
+            </Cascader>
+          </FlagProvider>
         )}
       </Space.Compact>
       {/* 确保所有ant input样式都已加载, 放到Compact中会导致Compact中的Input样式不对 */}
