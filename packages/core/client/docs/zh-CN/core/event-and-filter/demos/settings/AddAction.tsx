@@ -75,7 +75,12 @@ const AddActionForm: React.FC<{ model: BlockModel; }> = observer(({ model }) => 
     if (actionConfig) {
       // 创建新的Action实例
       const newActionUid = `${model.uid}_action_${Date.now()}`;
-      const newAction = new actionConfig.type(newActionUid, model.app, model);
+      const newAction = new actionConfig.type({
+        uid: newActionUid,
+        stepParams: model.stepParams,
+        blockModel: model
+      });
+      newAction.setFlowEngine(model.flowEngine);
       
       // 添加到模型中
       model.addAction(newAction);
