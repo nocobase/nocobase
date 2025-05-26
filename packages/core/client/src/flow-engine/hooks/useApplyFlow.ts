@@ -202,9 +202,17 @@ export function useApplyFlow(
  * @returns The results of all auto-apply flows execution
  */
 export function useApplyAutoFlows(
-  model: FlowModel,
+  modelOrUid: FlowModel | string,
   context?: UserContext,
 ): any[] {
+  const flowEngine = useFlowEngine();
+  const model = useMemo(() => {
+    if (typeof modelOrUid === 'string') {
+      return flowEngine.getModel(modelOrUid)
+    }
+    return modelOrUid;
+  }, [modelOrUid, flowEngine]);
+
   const executor = useCallback((ctx?: UserContext) => 
     model.applyAutoFlows(ctx), 
     [model]
