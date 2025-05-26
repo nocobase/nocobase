@@ -1,0 +1,5 @@
+{
+  "Field content formatter": "字段内容格式化器",
+  "Formatter": "格式化器",
+  "JavaScript function that returns HTML string, e.g., (value) => `<strong>${value}</strong>`": "返回 HTML 字符串的 JavaScript 函数，例如：(value) => `<strong>${value}</strong>`"
+} 

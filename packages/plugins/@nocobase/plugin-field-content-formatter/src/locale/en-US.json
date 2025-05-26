@@ -1,0 +1,5 @@
+{
+  "Field content formatter": "Field content formatter",
+  "Formatter": "Formatter",
+  "JavaScript function that returns HTML string, e.g., (value) => `<strong>${value}</strong>`": "JavaScript function that returns HTML string, e.g., (value) => `<strong>${value}</strong>`"
+} 
