@@ -138,10 +138,15 @@ export function getVariableValuesInCondition({
           if (!condition) {
             return null;
           }
-
+          // 支持嵌套的条件
+          if (condition.$and || condition.$or) {
+            return getVariableValuesInCondition({
+              linkageRules: [{ conditionType: 'advanced', condition }],
+              localVariables,
+            });
+          }
           const resolveVariable = (varName) =>
             isVariable(varName) ? getVariableValue(varName, localVariables) : varName;
-
           return {
             leftVar: resolveVariable(condition.leftVar),
             rightVar: resolveVariable(condition.rightVar),
