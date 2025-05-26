@@ -20,7 +20,7 @@ import React, { FC, memo, useCallback, useContext, useEffect, useMemo, useRef, u
 import { ErrorBoundary } from 'react-error-boundary';
 import { useTranslation } from 'react-i18next';
 import { NavigateFunction, Outlet, useOutletContext } from 'react-router-dom';
-import { FormDialog, withSearchParams } from '..';
+import { FormDialog, Variable, withSearchParams } from '..';
 import { antTableCell } from '../../../acl/style';
 import {
   CurrentTabUidContext,
@@ -56,6 +56,7 @@ import { PopupRouteContextResetter } from './PopupRouteContextResetter';
 import { NAMESPACE_UI_SCHEMA } from '../../../i18n/constant';
 import { NocoBaseDesktopRoute } from '../../../route-switch/antd/admin-layout/convertRoutesToSchema';
 import { useEvaluatedExpression } from '../../../hooks/useParsedValue';
+import { VariableScope } from '../../../variables/VariableScope';
 
 interface PageProps {
   currentTabUid: string;
@@ -354,17 +355,19 @@ const NocoBasePageHeaderTabs: FC<{ className: string; activeKey: string }> = ({ 
         return {
           label: (
             <NocoBaseRouteContext.Provider value={tabRoute}>
-              <SortableItem
-                id={String(tabRoute.id)}
-                className={classNames('nb-action-link', 'designerCss', className)}
-                schema={fakeSchema}
-                style={{ display: 'flex', alignItems: 'center' }}
-              >
-                {tabRoute.icon && <Icon style={{ marginRight: 8 }} type={tabRoute.icon} />}
-                <span>{(tabRoute.title && routeT(compile(tabRoute.title))) || t('Unnamed')}</span>
-                <PageTabDesigner />
-                <TabBadge style={{ marginLeft: 4, color: tabRoute.options?.badge?.textColor }} tabRoute={tabRoute} />
-              </SortableItem>
+              <VariableScope scopeId={tabRoute.schemaUid} type="pageTab">
+                <SortableItem
+                  id={String(tabRoute.id)}
+                  className={classNames('nb-action-link', 'designerCss', className)}
+                  schema={fakeSchema}
+                  style={{ display: 'flex', alignItems: 'center' }}
+                >
+                  {tabRoute.icon && <Icon style={{ marginRight: 8 }} type={tabRoute.icon} />}
+                  <span>{(tabRoute.title && routeT(compile(tabRoute.title))) || t('Unnamed')}</span>
+                  <PageTabDesigner />
+                  <TabBadge style={{ marginLeft: 4, color: tabRoute.options?.badge?.textColor }} tabRoute={tabRoute} />
+                </SortableItem>
+              </VariableScope>
             </NocoBaseRouteContext.Provider>
           ),
           key: tabRoute.schemaUid,
