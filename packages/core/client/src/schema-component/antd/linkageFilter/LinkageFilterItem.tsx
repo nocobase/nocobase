@@ -11,21 +11,21 @@ import { CloseCircleOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
 import { observer } from '@formily/react';
 import { Select, Space } from 'antd';
-import React, { useCallback, useContext, useMemo } from 'react';
+import React, { useCallback, useContext, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCompile } from '../../hooks';
 import { DynamicComponent } from './DynamicComponent';
 import { RemoveConditionContext } from './context';
 import { useValues } from './useValues';
-import { FilterContext } from './context';
 
 export const LinkageFilterItem = observer(
   (props: any) => {
     const { t } = useTranslation();
     const compile = useCompile();
     const remove = useContext(RemoveConditionContext);
-    const { setScopes } = useContext(FilterContext) || {};
-    const { schema, operators, operator, setOperator, rightVar, leftVar, setLeftValue, setRightValue } = useValues();
+    const [options, setOptions] = useState([]);
+    const { schema, operators, operator, setOperator, rightVar, leftVar, setLeftValue, setRightValue } =
+      useValues(options);
     const style = useMemo(() => ({ marginBottom: 8 }), []);
 
     const onOperatorsChange = useCallback(
@@ -42,7 +42,9 @@ export const LinkageFilterItem = observer(
           <DynamicComponent
             value={leftVar}
             onChange={setLeftValue}
-            setScopes={setScopes}
+            setScopes={(data) => {
+              setOptions(data);
+            }}
             testid="left-filter-field"
             nullable={false}
             constantAbel={false}
