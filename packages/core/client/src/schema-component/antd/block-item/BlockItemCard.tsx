@@ -21,7 +21,7 @@ export const BlockItemCard = React.forwardRef<HTMLDivElement, CardProps | any>((
   const { token } = useToken();
   const { title: blockTitle, description, ...others } = props;
   const style = useMemo(() => {
-    return { marginBottom: token.marginBlock, height: props.height || '100%' };
+    return { marginBottom: token.marginBlock, height: '100%' };
   }, [token.marginBlock]);
   const [titleHeight, setTitleHeight] = useState(0);
   const titleRef = useRef<HTMLDivElement | null>(null);
