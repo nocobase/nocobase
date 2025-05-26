@@ -14,7 +14,7 @@ Using a Universal Module Loader that should be browser, require, and AMD friendl
 http://ricostacruz.com/cheatsheets/umdjs.html
 */
 
-const { getDayRangeByParams } = require('@nocobase/utils/client');
+const { getDayRangeByParams } = require('@nocobase/utils/src/dateRangeUtils');
 
 export function getOperators() {
   'use strict';
