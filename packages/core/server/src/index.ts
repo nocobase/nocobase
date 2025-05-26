@@ -18,6 +18,7 @@ export * from './migration';
 export * from './plugin';
 export * from './plugin-manager';
 export * from './pub-sub-manager';
+export * from './event-queue';
 export const OFFICIAL_PLUGIN_PREFIX = '@nocobase/plugin-';
 
 export {

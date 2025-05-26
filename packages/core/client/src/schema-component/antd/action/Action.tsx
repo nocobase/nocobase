@@ -665,10 +665,10 @@ const RenderButtonInner = observer(
           <Component ref={ref} {...restProps}>
             {onlyIcon ? (
               <Tooltip title={restProps.title}>
-                <span style={{ marginRight: 3 }}>{icon && typeof icon === 'string' ? <Icon type={icon} /> : icon}</span>
+                <span>{icon && typeof icon === 'string' ? <Icon type={icon} /> : icon}</span>
               </Tooltip>
             ) : (
-              <span style={{ marginRight: 3 }}>{icon && typeof icon === 'string' ? <Icon type={icon} /> : icon}</span>
+              <span>{icon && typeof icon === 'string' ? <Icon type={icon} /> : icon}</span>
             )}
             {onlyIcon ? children[1] : children}
           </Component>

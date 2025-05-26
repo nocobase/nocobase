@@ -77,7 +77,7 @@ export const markAllMessagesAsRead = async ({ channelName }: { channelName: stri
   const apiClient = getAPIClient();
   await apiClient.request({
     resource: InAppMessagesDefinition.name,
-    action: 'update',
+    action: 'updateMyOwn',
     method: 'post',
     params: { filter: { status: 'unread', channelName: channelName }, values: { status: 'read' } },
   });

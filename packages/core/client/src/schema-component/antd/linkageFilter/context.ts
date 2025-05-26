@@ -18,8 +18,6 @@ export interface FilterContextProps {
   dynamicComponent?: ComponentType<DynamicComponentProps>;
   disabled?: boolean;
   collectionName?: string;
-  scopes?: any[];
-  setScopes?: any;
   returnScope?: any;
 }
 
