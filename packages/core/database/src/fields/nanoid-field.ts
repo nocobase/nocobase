@@ -30,22 +30,16 @@ export class NanoidField extends Field {
     };
   }
 
-  getDefaultValue() {
-    const { size, customAlphabet: customAlphabetOptions, autoFill } = this.options;
-    const nanoIdFunc = customAlphabetOptions ? customAlphabet(customAlphabetOptions) : nanoid;
-    if (autoFill !== false) {
-      return () => (autoFill !== false ? nanoIdFunc(size || DEFAULT_SIZE) : null);
-    }
-  }
-
   bind() {
     super.bind();
     this.on('beforeValidate', this.listener);
+    this.on('beforeCreate', this.listener);
   }
 
   unbind() {
     super.unbind();
     this.off('beforeValidate', this.listener);
+    this.off('beforeCreate', this.listener);
   }
 }
 
