@@ -8,15 +8,6 @@ import { FlowModel } from '@nocobase/client';
 import { uid as generateUid } from '@nocobase/utils/client';
 
 /**
- * FlowEngine 类负责管理流程（Flows）、动作（Actions）和模型（Models）。
- * 它提供了注册、获取和执行这些核心概念的方法。
- * 
- * 注意：React Hooks 和 HOC 现在可以直接从 @nocobase/client 导入使用：
- * - useContext, useFlowModel, useApplyFlow, useApplyDefaultFlows, useDispatchEvent
- * - withFlowModel
- */
-
-/**
  * 已注册模型的类名
  */
 export type RegisteredModelClassName = string;

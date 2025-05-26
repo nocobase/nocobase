@@ -196,26 +196,26 @@ export function useApplyFlow(
 }
 
 /**
- * Hook for applying default flows on a FlowModel
+ * Hook for applying auto-apply flows on a FlowModel
  * @param model The FlowModel instance
  * @param context Optional user context
- * @returns The results of all default flows execution
+ * @returns The results of all auto-apply flows execution
  */
-export function useApplyDefaultFlows(
+export function useApplyAutoFlows(
   model: FlowModel,
   context?: UserContext,
 ): any[] {
   const executor = useCallback((ctx?: UserContext) => 
-    model.applyDefaultFlows(ctx), 
+    model.applyAutoFlows(ctx), 
     [model]
   );
   
   return useFlowExecutor(
-    'applyDefaultFlows',
+    'applyAutoApplyFlows',
     'all',
     model,
     context,
     executor,
-    `[FlowEngine.useApplyDefaultFlows] Reactive re-apply for model: ${model.uid}`,
+    `[FlowEngine.useApplyAutoFlows] Reactive re-apply for model: ${model.uid}`,
   );
 } 

@@ -1,4 +1,3 @@
-import { action, define } from '@formily/reactive';
 import { BaseResource } from './baseResource';
 
 export class ObjectResource<TData = any> extends BaseResource<TData> {

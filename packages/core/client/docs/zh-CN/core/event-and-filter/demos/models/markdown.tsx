@@ -34,7 +34,7 @@ const MarkdownModel = BlockModel.extends([
     {
         key: 'default',
         title: 'Markdown',
-        default: true,
+        autoApply: true,
         steps: {
             setTemplate: {
                 use: 'block:markdown:template',

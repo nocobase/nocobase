@@ -1,5 +1,5 @@
 import { DataBlockModel } from './dataBlockModel';
-import { ObjectResource } from '../resources/objectResource';
+import { ObjectResource } from '../resources';
 
 // TODO: 未完成
 

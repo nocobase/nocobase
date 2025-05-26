@@ -1,7 +1,7 @@
 import { observable, action, define } from '@formily/reactive';
 import { FlowEngine } from '../../flow-engine';
 import type { FlowContext, StepDefinition, FlowDefinition, ActionStepDefinition, InlineStepDefinition } from '../../flow-engine/types';
-import { uid } from '@nocobase/utils/client';
+import { uid as generateUid } from '@nocobase/utils/client';
 import _ from 'lodash';
 import { ExtendedFlowDefinition, IModelComponentProps, ReadonlyModelProps, FlowUserContext } from '../types';
 import { mergeFlowDefinitions } from '../utils';
@@ -367,7 +367,7 @@ export class FlowModel {
     flows: ExtendedFlowDefinition[] = []
   ): T {
     class CustomFlowModel extends (this as unknown as typeof FlowModel) {
-      static name = `CustomFlowModel_${uid()}`;
+      static name = `CustomFlowModel_${generateUid()}`;
     }
 
     // 处理流程注册和覆盖
@@ -387,41 +387,41 @@ export class FlowModel {
   }
 
   /**
-   * 获取所有默认流程定义并按 sort 排序
-   * @returns {FlowDefinition[]} 按 sort 排序的默认流程定义数组
+   * 获取所有自动应用流程定义并按 sort 排序
+   * @returns {FlowDefinition[]} 按 sort 排序的自动应用流程定义数组
    */
-  public getDefaultFlows(): FlowDefinition[] {
+  public getAutoFlows(): FlowDefinition[] {
     const constructor = this.constructor as typeof FlowModel;
     const allFlows = constructor.getFlows();
 
-    // 过滤出默认流程并按 sort 排序
-    const defaultFlows = Array.from(allFlows.values())
-      .filter(flow => flow.default === true)
+    // 过滤出自动流程并按 sort 排序
+    const autoFlows = Array.from(allFlows.values())
+      .filter(flow => flow.autoApply === true)
       .sort((a, b) => (a.sort || 0) - (b.sort || 0));
 
-    return defaultFlows;
+    return autoFlows;
   }
 
   /**
-   * 执行所有默认流程
+   * 执行所有自动应用流程
    * @param {FlowUserContext} [context] 可选的用户上下文
-   * @returns {Promise<any[]>} 所有默认流程的执行结果数组
+   * @returns {Promise<any[]>} 所有自动应用流程的执行结果数组
    */
-  async applyDefaultFlows(context?: FlowUserContext): Promise<any[]> {
-    const defaultFlows = this.getDefaultFlows();
+  async applyAutoFlows(context?: FlowUserContext): Promise<any[]> {
+    const autoApplyFlows = this.getAutoFlows();
     
-    if (defaultFlows.length === 0) {
-      console.warn(`FlowModel: No default flows found for model '${this.uid}'`);
+    if (autoApplyFlows.length === 0) {
+      console.warn(`FlowModel: No auto-apply flows found for model '${this.uid}'`);
       return [];
     }
 
     const results: any[] = [];
-    for (const flow of defaultFlows) {
+    for (const flow of autoApplyFlows) {
       try {
         const result = await this.applyFlow(flow.key, context);
         results.push(result);
       } catch (error) {
-        console.error(`FlowModel.applyDefaultFlows: Error executing default flow '${flow.key}':`, error);
+        console.error(`FlowModel.applyAutoFlows: Error executing auto-apply flow '${flow.key}':`, error);
         throw error;
       }
     }

@@ -33,7 +33,7 @@ export class ActionModel extends FlowModel {
   protected static initFlows() {
     this.registerFlow({
       key: 'default',
-      default: true,
+      autoApply: true,
       title: '按钮属性',
       steps: {
         setText: {
@@ -93,7 +93,7 @@ export class ActionModel extends FlowModel {
           handler: async (ctx, model, params) => {
             model.blockModel.removeAction(model.uid);
             model.flowEngine.destroyModel(model.blockModel.uid);
-            await model.blockModel.applyDefaultFlows();
+            await model.blockModel.applyAutoFlows();
           }
         }
       }
