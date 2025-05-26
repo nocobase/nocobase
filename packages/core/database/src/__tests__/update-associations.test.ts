@@ -639,5 +639,87 @@ describe('update associations', () => {
       });
       expect(count).toEqual(1);
     });
+
+    test('should update belongsToMany association not throw error when relation table field is uuid', async () => {
+      const TeacherStudent = db.collection({
+        name: 'teacher_student',
+        fields: [{ type: 'uuid', name: 'uid', primaryKey: true, autoGenId: true }],
+      });
+      const Student = db.collection({
+        name: 'students',
+        fields: [
+          { type: 'string', name: 'name' },
+          {
+            type: 'belongsToMany',
+            name: 'teachers',
+            through: 'teacher_student',
+          },
+        ],
+      });
+      const Teacher = db.collection({
+        name: 'teachers',
+        fields: [
+          { type: 'string', name: 'name' },
+          {
+            type: 'belongsToMany',
+            name: 'students',
+            through: 'teacher_student',
+          },
+        ],
+      });
+      await db.sync();
+
+      const student = await Student.repository.create({
+        values: { name: 'student1' },
+      });
+      const teacher = await Teacher.repository.create({
+        values: {
+          name: 'teacher1',
+          students: [{ id: student.id }],
+        },
+      });
+      assert.ok(teacher);
+    });
+
+    test('should update belongsToMany association not throw error when relation table field is nanoid', async () => {
+      const TeacherStudent = db.collection({
+        name: 'teacher_student',
+        fields: [{ type: 'nanoid', name: 'uid', primaryKey: true, autoGenId: true }],
+      });
+      const Student = db.collection({
+        name: 'students',
+        fields: [
+          { type: 'string', name: 'name' },
+          {
+            type: 'belongsToMany',
+            name: 'teachers',
+            through: 'teacher_student',
+          },
+        ],
+      });
+      const Teacher = db.collection({
+        name: 'teachers',
+        fields: [
+          { type: 'string', name: 'name' },
+          {
+            type: 'belongsToMany',
+            name: 'students',
+            through: 'teacher_student',
+          },
+        ],
+      });
+      await db.sync();
+
+      const student = await Student.repository.create({
+        values: { name: 'student1' },
+      });
+      const teacher = await Teacher.repository.create({
+        values: {
+          name: 'teacher1',
+          students: [{ id: student.id }],
+        },
+      });
+      assert.ok(teacher);
+    });
   });
 });
