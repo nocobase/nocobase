@@ -10,6 +10,7 @@
 import { connect, mapProps, mapReadPretty, useField, useFieldSchema } from '@formily/react';
 import { DatePicker as AntdDatePicker, Space, Select } from 'antd';
 import dayjs from 'dayjs';
+import { last, first } from 'lodash';
 import React, { useState, useEffect, useRef } from 'react';
 import { getPickerFormat, getDateTimeFormat } from '@nocobase/utils/client';
 import { useTranslation } from 'react-i18next';
@@ -62,10 +63,14 @@ export const DatePicker = (props: any) => {
     let maxDateTimePromise = props._maxDate ? Promise.resolve(dayjs(props._maxDate)) : Promise.resolve(null);
 
     if (isVariable(props._maxDate)) {
-      maxDateTimePromise = parseVariable(props._maxDate, localVariables).then((result) => dayjs(result.value));
+      maxDateTimePromise = parseVariable(props._maxDate, localVariables).then((result) => {
+        return dayjs(Array.isArray(result.value) ? last(result.value) : result.value);
+      });
     }
     if (isVariable(props._minDate)) {
-      minDateTimePromise = parseVariable(props._minDate, localVariables).then((result) => dayjs(result.value));
+      minDateTimePromise = parseVariable(props._minDate, localVariables).then((result) => {
+        return dayjs(Array.isArray(result.value) ? first(result.value) : result.value);
+      });
     }
 
     const [minDateTime, maxDateTime] = await Promise.all([minDateTimePromise, maxDateTimePromise]);
