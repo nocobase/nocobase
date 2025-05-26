@@ -1,20 +1,36 @@
 import { useEffect, useState } from "react";
-import { isVariable, useLocalVariables, useVariables } from "../variables";
+import { useLocalVariables, useVariables } from "../variables";
+import { replaceVariables } from "../schema-settings";
+import { evaluators } from '@nocobase/evaluators/client';
 
-export const useParsedValue = (variableString: string) => {
+const { evaluate } = evaluators.get('formula.js');
+
+export const useEvaluatedExpression = (expression: string) => {
   const variables = useVariables();
   const localVariables = useLocalVariables();
   const [parsedValue, setParsedValue] = useState<number | string>();
 
   useEffect(() => {
-    if (isVariable(variableString)) {
-      variables.parseVariable(variableString, localVariables).then(({ value }) => {
-        setParsedValue(value);
-      })
-    } else {
-      setParsedValue(variableString);
+    const run = async () => {
+      if (!expression) {
+        return;
+      }
+
+      const { exp, scope: expScope } = await replaceVariables(expression, {
+        variables,
+        localVariables,
+      });
+
+      try {
+        const result = evaluate(exp, { now: () => new Date().toString(), ...expScope });
+        setParsedValue(result);
+      } catch (error) {
+        console.error(error);
+      }
     }
-  }, [variables.parseVariable, variableString, localVariables]);
+
+    run();
+  }, [variables.parseVariable, expression, localVariables]);
 
   return parsedValue;
 }

@@ -57,7 +57,7 @@ import { MenuSchemaToolbar, ResetThemeTokenAndKeepAlgorithm } from './menuItemSe
 import { userCenterSettings } from './userCenterSettings';
 import { VariableScope } from '../../../variables/VariableScope';
 import _ from 'lodash';
-import { useParsedValue } from '../../../hooks/useParsedValue';
+import { useEvaluatedExpression } from '../../../hooks/useParsedValue';
 
 export { KeepAlive, NocoBaseDesktopRouteType, useKeepAlive };
 
@@ -299,7 +299,7 @@ const menuItemStyle = { display: 'flex', alignItems: 'center', justifyContent: '
 const GroupItem: FC<{ item: any }> = (props) => {
   const { item } = props;
   const { designable } = useDesignable();
-  const badgeCount = useParsedValue(item._route.options?.badge?.count);
+  const badgeCount = useEvaluatedExpression(item._route.options?.badge?.count);
 
   // fake schema used to pass routing information to SortableItem
   const fakeSchema: any = { __route__: item._route };
@@ -342,7 +342,7 @@ const MenuItem: FC<{ item: any; options: { isMobile: boolean; collapsed: boolean
   const { parseURLAndParams } = useParseURLAndParams();
   const divRef = useRef(null);
   const location = useLocation();
-  const badgeCount = useParsedValue(item._route.options?.badge?.count);
+  const badgeCount = useEvaluatedExpression(item._route.options?.badge?.count);
 
   useEffect(() => {
     if (divRef.current) {

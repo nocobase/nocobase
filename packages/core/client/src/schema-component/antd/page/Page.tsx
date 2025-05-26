@@ -55,7 +55,7 @@ import { PageDesigner, PageTabDesigner } from './PageTabDesigner';
 import { PopupRouteContextResetter } from './PopupRouteContextResetter';
 import { NAMESPACE_UI_SCHEMA } from '../../../i18n/constant';
 import { NocoBaseDesktopRoute } from '../../../route-switch/antd/admin-layout/convertRoutesToSchema';
-import { useParsedValue } from '../../../hooks/useParsedValue';
+import { useEvaluatedExpression } from '../../../hooks/useParsedValue';
 
 interface PageProps {
   currentTabUid: string;
@@ -238,7 +238,7 @@ const PageContent = memo((props: PageContentProps) => {
 });
 
 const TabBadge: FC<{ tabRoute: NocoBaseDesktopRoute; style?: React.CSSProperties }> = (props) => {
-  const badgeCount = useParsedValue(props.tabRoute.options?.badge?.count);
+  const badgeCount = useEvaluatedExpression(props.tabRoute.options?.badge?.count);
 
   if (badgeCount == null) return null;
 
