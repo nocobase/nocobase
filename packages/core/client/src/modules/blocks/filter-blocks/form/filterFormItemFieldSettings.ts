@@ -122,6 +122,36 @@ export const filterFormItemFieldSettings = new SchemaSettings({
             },
           },
           {
+            name: 'allowClear',
+            type: 'switch',
+            useComponentProps() {
+              const { t } = useTranslation();
+              const { dn } = useDesignable();
+              const field = useField<Field>();
+              const fieldSchema = useFieldSchema();
+
+              return {
+                title: t('Allow clear'),
+                checked: fieldSchema['x-component-props']?.['allowClear'] ?? false,
+                onChange(checked) {
+                  fieldSchema['x-component-props'] = fieldSchema['x-component-props'] || {};
+                  fieldSchema['x-component-props']['allowClear'] = checked;
+                  field.componentProps.allowClear = checked;
+                  dn.emit('patch', {
+                    schema: {
+                      'x-uid': fieldSchema['x-uid'],
+                      'x-component-props': {
+                        ...fieldSchema['x-component-props'],
+                        allowClear: checked,
+                      },
+                    },
+                  });
+                  dn.refresh();
+                },
+              };
+            },
+          },
+          {
             name: 'editDescription',
             type: 'modal',
             useComponentProps() {
