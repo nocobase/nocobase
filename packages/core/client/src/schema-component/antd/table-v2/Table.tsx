@@ -1133,7 +1133,7 @@ export const Table: any = withDynamicSchemaProps(
       }, [tableHeight, dataSource]);
 
       const rowClassName = useCallback(
-        (record) => [zebrastripingCss, selectedRow.includes(record[rowKey]) ? highlightRow : ''].join(' '),
+        (record) => classNames(zebrastripingCss, { [highlightRow]: selectedRow.includes(record[rowKey]) }),
         [selectedRow, highlightRow, JSON.stringify(rowKey), zebrastripingCss],
       );
 
