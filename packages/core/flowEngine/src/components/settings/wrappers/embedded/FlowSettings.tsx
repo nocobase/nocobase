@@ -1,6 +1,8 @@
 import React, { useCallback, useEffect } from 'react';
 import { Card, Empty, Alert, Input, InputNumber, Select, Switch, Form } from 'antd';
-import { useFlowEngine, ActionStepDefinition, ISchema, FlowEngine, useFlowModel, FlowModel } from '@nocobase/client';
+// TODO: ISchema may need to be imported from a different package or refactored.
+import { ISchema } from '@nocobase/client';
+import { useFlowEngine, ActionStepDefinition, FlowEngine, useFlowModel, FlowModel } from '@nocobase/flow-engine';
 import { observer } from '@formily/react';
 
 const { Item: FormItem } = Form;
@@ -26,11 +28,11 @@ const isModelByIdProps = (props: FlowSettingsProps): props is ModelByIdProps => 
 
 /**
  * FlowSettings组件 - 单个流程的详细配置表单（embedded版本）
- * 
+ *
  * 特点：
  * - 实时保存到model
  * - 适用于嵌入式配置界面
- * 
+ *
  * 支持两种使用方式：
  * 1. 直接提供model: <FlowSettings model={myModel} flowKey="workflow1" />
  * 2. 通过uid和modelClassName获取model: <FlowSettings uid="model1" modelClassName="MyModel" flowKey="workflow1" />
@@ -46,7 +48,7 @@ const FlowSettings: React.FC<FlowSettingsProps> = (props) => {
 // 使用传入的model
 const FlowSettingsWithModel: React.FC<ModelProvidedProps> = observer(({ model, flowKey }) => {
   const flowEngine = model?.flowEngine;
-  
+
   if (!model) {
     return <Alert message="提供的模型无效" type="error" />;
   }
@@ -58,7 +60,7 @@ const FlowSettingsWithModel: React.FC<ModelProvidedProps> = observer(({ model, f
 const FlowSettingsWithModelById: React.FC<ModelByIdProps> = observer(({ uid, flowKey, modelClassName }) => {
   const model = useFlowModel(uid, modelClassName);
   const flowEngine = model?.flowEngine;
-  
+
   if (!model) {
     return <Alert message={`未找到ID为 ${uid} 的模型`} type="error" />;
   }
@@ -72,10 +74,7 @@ interface FlowSettingsContentProps {
   flowKey: string;
 }
 
-const FlowSettingsContent: React.FC<FlowSettingsContentProps> = observer(({ 
-  model, 
-  flowKey
-}) => {
+const FlowSettingsContent: React.FC<FlowSettingsContentProps> = observer(({ model, flowKey }) => {
   const [form] = Form.useForm();
 
   // 获取流程定义
@@ -87,10 +86,10 @@ const FlowSettingsContent: React.FC<FlowSettingsContentProps> = observer(({
   const configurableSteps = Object.entries(flow?.steps || {})
     .map(([stepKey, stepDefinition]) => {
       const actionStep = stepDefinition as ActionStepDefinition;
-      
+
       // 从step获取uiSchema（如果存在）
       const stepUiSchema = actionStep.uiSchema || {};
-      
+
       // 如果step使用了action，也获取action的uiSchema
       let actionUiSchema = {};
       if (actionStep.use) {
@@ -99,10 +98,10 @@ const FlowSettingsContent: React.FC<FlowSettingsContentProps> = observer(({
           actionUiSchema = action.uiSchema;
         }
       }
-      
+
       // 合并uiSchema，确保step的uiSchema优先级更高
       const mergedUiSchema = { ...actionUiSchema };
-      
+
       // 将stepUiSchema中的字段合并到mergedUiSchema
       Object.entries(stepUiSchema).forEach(([fieldKey, schema]) => {
         if (mergedUiSchema[fieldKey]) {
@@ -111,12 +110,12 @@ const FlowSettingsContent: React.FC<FlowSettingsContentProps> = observer(({
           mergedUiSchema[fieldKey] = schema;
         }
       });
-      
+
       // 如果没有可配置的UI Schema，返回null
       if (Object.keys(mergedUiSchema).length === 0) {
         return null;
       }
-      
+
       return { stepKey, step: actionStep, uiSchema: mergedUiSchema };
     })
     .filter(Boolean);
@@ -124,20 +123,20 @@ const FlowSettingsContent: React.FC<FlowSettingsContentProps> = observer(({
   // 获取当前流程的参数 - 从model中获取实际参数
   const getCurrentParams = useCallback(() => {
     const params = {};
-    
+
     // 从model中获取每个步骤的参数，如果为空则使用默认参数
     configurableSteps.forEach(({ stepKey, step }) => {
       const stepParams = model.getStepParams(flowKey, stepKey) || {};
       const defaultParams = step.defaultParams || {};
-      
+
       // 合并默认参数和当前参数，当前参数优先
       const mergedParams = { ...defaultParams, ...stepParams };
-      
+
       if (Object.keys(mergedParams).length > 0) {
         params[stepKey] = mergedParams;
       }
     });
-    
+
     return params;
   }, [model, flowKey, configurableSteps]);
 
@@ -148,15 +147,18 @@ const FlowSettingsContent: React.FC<FlowSettingsContentProps> = observer(({
   }, [flowKey, form, getCurrentParams]);
 
   // 处理表单值变化 - 实时保存
-  const handleValuesChange = useCallback((changedValues: any, allValues: any) => {
-    // 实时保存到model
-    Object.entries(allValues).forEach(([stepKey, stepValues]: [string, any]) => {
-      if (stepValues && typeof stepValues === 'object') {
-        // 使用setStepParams保存步骤参数
-        model.setStepParams(flowKey, stepKey, stepValues);
-      }
-    });
-  }, [model, flowKey]);
+  const handleValuesChange = useCallback(
+    (changedValues: any, allValues: any) => {
+      // 实时保存到model
+      Object.entries(allValues).forEach(([stepKey, stepValues]: [string, any]) => {
+        if (stepValues && typeof stepValues === 'object') {
+          // 使用setStepParams保存步骤参数
+          model.setStepParams(flowKey, stepKey, stepValues);
+        }
+      });
+    },
+    [model, flowKey],
+  );
 
   if (!flow) {
     return <Alert message={`未找到Key为 ${flowKey} 的流程`} type="error" />;
@@ -171,7 +173,7 @@ const FlowSettingsContent: React.FC<FlowSettingsContentProps> = observer(({
     return configurableSteps.map(({ stepKey, uiSchema }) => {
       return Object.entries(uiSchema).map(([fieldKey, schema]: [string, any]) => {
         const fieldName = `${stepKey}.${fieldKey}`;
-        
+
         // 根据schema类型渲染不同的组件
         const renderField = () => {
           switch (schema['x-component']) {
@@ -224,14 +226,10 @@ const FlowSettingsContent: React.FC<FlowSettingsContentProps> = observer(({
   };
 
   return (
-    <Form
-      form={form}
-      layout="vertical"
-      onValuesChange={handleValuesChange}
-    >
+    <Form form={form} layout="vertical" onValuesChange={handleValuesChange}>
       {renderFormFields()}
     </Form>
   );
 });
 
-export default FlowSettings;
+export { FlowSettings };

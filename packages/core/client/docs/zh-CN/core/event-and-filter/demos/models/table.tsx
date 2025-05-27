@@ -1,11 +1,18 @@
 import React from 'react';
 import { Table, Button, Space, Pagination, Spin, Divider, ButtonProps } from 'antd';
 import { Application, Plugin } from '@nocobase/client';
-import { BlockModel, BaseResource, FlowContext, FlowModel, useFlowModel, withFlowModel } from '@nocobase/flow-engine';
+import {
+  BlockModel,
+  FlowsDropdownButton,
+  FlowsContextMenu,
+  AddAction,
+  BaseResource,
+  FlowContext,
+  FlowModel,
+  useFlowModel,
+  withFlowModel,
+} from '@nocobase/flow-engine';
 import { observer } from '@formily/react';
-import { FlowsDropdownButton } from '../settings/independents/dropdown';
-import { AddAction } from '../settings/AddAction';
-import { FlowsContextMenu } from '../settings/wrappers/contextual';
 
 const Demo = () => {
   const uid = 'table-block';

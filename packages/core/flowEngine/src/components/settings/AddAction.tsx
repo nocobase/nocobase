@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Alert, Button, Select, Space } from 'antd';
-import { BlockModel, useFlowModel } from '@nocobase/client';
+import { useFlowModel, BlockModel } from '@nocobase/flow-engine';
 import { observer } from '@formily/react';
 import { PlusOutlined } from '@ant-design/icons';
 
@@ -49,7 +49,7 @@ const AddActionWithModel: React.FC<ModelProvidedProps> = observer(({ model }) =>
 // 通过useModelById hook获取model
 const AddActionWithModelById: React.FC<ModelByIdProps> = observer(({ uid, modelClassName }) => {
   const model = useFlowModel(uid, modelClassName) as BlockModel;
-  
+
   if (!model) {
     return <Alert message={`未找到ID为 ${uid} 的模型`} type="error" />;
   }
@@ -58,7 +58,7 @@ const AddActionWithModelById: React.FC<ModelByIdProps> = observer(({ uid, modelC
 });
 
 // 添加新Action的表单组件
-const AddActionForm: React.FC<{ model: BlockModel; }> = observer(({ model }) => {
+const AddActionForm: React.FC<{ model: BlockModel }> = observer(({ model }) => {
   const [selectedActionType, setSelectedActionType] = useState<string | null>(null);
   const ModelClass = model.constructor as typeof BlockModel;
   const supportedActions = ModelClass.supportedActions;
@@ -66,25 +66,23 @@ const AddActionForm: React.FC<{ model: BlockModel; }> = observer(({ model }) => 
   // 处理添加Action
   const handleAdd = () => {
     if (!selectedActionType) return;
-    
+
     // 找到选中的Action类型
-    const actionConfig = supportedActions.find(action => 
-      action.type.name === selectedActionType
-    );
-    
+    const actionConfig = supportedActions.find((action) => action.type.name === selectedActionType);
+
     if (actionConfig) {
       // 创建新的Action实例
       const newActionUid = `${model.uid}_action_${Date.now()}`;
       const newAction = new actionConfig.type({
         uid: newActionUid,
         stepParams: model.stepParams,
-        blockModel: model
+        blockModel: model,
       });
       newAction.setFlowEngine(model.flowEngine);
-      
+
       // 添加到模型中
       model.addAction(newAction);
-      
+
       // 重置选择
       setSelectedActionType(null);
     }
@@ -97,21 +95,16 @@ const AddActionForm: React.FC<{ model: BlockModel; }> = observer(({ model }) => 
         style={{ width: 200 }}
         value={selectedActionType}
         onChange={setSelectedActionType}
-        options={supportedActions.map(action => ({
+        options={supportedActions.map((action) => ({
           label: action.title,
-          value: action.type.name
+          value: action.type.name,
         }))}
       />
-      <Button 
-        type="primary" 
-        icon={<PlusOutlined />}
-        disabled={!selectedActionType}
-        onClick={handleAdd}
-      >
+      <Button type="primary" icon={<PlusOutlined />} disabled={!selectedActionType} onClick={handleAdd}>
         添加操作
       </Button>
     </Space>
   );
 });
 
-export { AddAction }; 
+export { AddAction };

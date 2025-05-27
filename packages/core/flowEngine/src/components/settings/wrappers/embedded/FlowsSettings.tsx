@@ -1,6 +1,6 @@
 import React from 'react';
 import { Alert } from 'antd';
-import { FlowEngine, FlowModel, useFlowModel } from '@nocobase/client';
+import { FlowEngine, FlowModel, useFlowModel } from '@nocobase/flow-engine';
 import { observer } from '@formily/react';
 import FlowsSettingsContent from './FlowsSettingsContent';
 
@@ -27,19 +27,19 @@ const isModelByIdProps = (props: FlowsSettingsProps): props is ModelByIdProps =>
 
 /**
  * FlowsSettings组件 - 简单的流程配置界面
- * 
+ *
  * 功能特性：
  * - 流程配置界面
  * - Wrapper 模式支持
- * 
+ *
  * 支持两种使用方式：
  * 1. 直接提供model: <FlowsSettings model={myModel} />
  * 2. 通过uid和modelClassName获取model: <FlowsSettings uid="model1" modelClassName="MyModel" />
- * 
+ *
  * 支持两种模式：
  * 1. 独立设置界面: <FlowsSettings model={myModel} />
  * 2. Wrapper模式: <FlowsSettings model={myModel}>{children}</FlowsSettings>
- * 
+ *
  * @param props.expandAll 是否展开所有Collapse，默认为false
  * @param props.children 子组件，如果提供则作为wrapper模式
  */
@@ -52,11 +52,7 @@ const FlowsSettings: React.FC<FlowsSettingsProps> = (props) => {
 };
 
 // 使用传入的model
-const FlowsSettingsWithModel: React.FC<ModelProvidedProps> = observer(({ 
-  model, 
-  expandAll = false,
-  children
-}) => {
+const FlowsSettingsWithModel: React.FC<ModelProvidedProps> = observer(({ model, expandAll = false, children }) => {
   if (!model) {
     return <Alert message="提供的模型无效" type="error" />;
   }
@@ -78,32 +74,29 @@ const FlowsSettingsWithModel: React.FC<ModelProvidedProps> = observer(({
 });
 
 // 通过useModelById hook获取model
-const FlowsSettingsWithModelById: React.FC<ModelByIdProps> = observer(({ 
-  uid, 
-  modelClassName, 
-  expandAll = false,
-  children
-}) => {
-  const model = useFlowModel(uid, modelClassName);
-  
-  if (!model) {
-    return <Alert message={`未找到ID为 ${uid} 的模型`} type="error" />;
-  }
+const FlowsSettingsWithModelById: React.FC<ModelByIdProps> = observer(
+  ({ uid, modelClassName, expandAll = false, children }) => {
+    const model = useFlowModel(uid, modelClassName);
 
-  const settingsContent = <FlowsSettingsContent model={model} expandAll={expandAll} />;
+    if (!model) {
+      return <Alert message={`未找到ID为 ${uid} 的模型`} type="error" />;
+    }
 
-  // 如果有children，作为wrapper模式
-  if (children) {
-    return (
-      <div>
-        {settingsContent}
-        {children}
-      </div>
-    );
-  }
+    const settingsContent = <FlowsSettingsContent model={model} expandAll={expandAll} />;
 
-  // 如果没有children，返回设置内容
-  return settingsContent;
-});
+    // 如果有children，作为wrapper模式
+    if (children) {
+      return (
+        <div>
+          {settingsContent}
+          {children}
+        </div>
+      );
+    }
 
-export default FlowsSettings;
+    // 如果没有children，返回设置内容
+    return settingsContent;
+  },
+);
+
+export { FlowsSettings };
