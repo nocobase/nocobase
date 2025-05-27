@@ -4424,9 +4424,9 @@
     intl-messageformat "10.5.8"
     tslib "^2.4.0"
 
-"@formily/antd-v5@1.2.3", "@formily/antd-v5@1.x", "@formily/antd-v5@^1.x":
+"@formily/antd-v5@1.x", "@formily/antd-v5@^1.x":
   version "1.2.3"
-  resolved "https://registry.npmmirror.com/@formily/antd-v5/-/antd-v5-1.2.3.tgz#4766bf13bec49cb74683234d043664072e8428c0"
+  resolved "https://registry.npmjs.org/@formily/antd-v5/-/antd-v5-1.2.3.tgz#4766bf13bec49cb74683234d043664072e8428c0"
   integrity sha512-QH9x1vNyMtXGuWAkZ8z0qu7akpp8NoOLsM3onKMPAdvSEHBbZDbc6xtdODSmOuhRtzcN0rjXf29oumyidaoeFQ==
   dependencies:
     "@ant-design/cssinjs" "^1.3.1"
@@ -4443,74 +4443,88 @@
     classnames "^2.2.6"
     react-sticky-box "^1.0.2"
 
-"@formily/core@2.3.0", "@formily/core@2.x", "@formily/core@^2.2.0", "@formily/core@^2.2.27":
-  version "2.3.0"
-  resolved "https://registry.npmmirror.com/@formily/core/-/core-2.3.0.tgz#2d9c09ec7579dc11cfd4d8f2f20fb0a56504e180"
-  integrity sha512-kYMvASeycoS7i5L4Huu4iyNYzRJ4vqJ/MMhxdhpn21DgESlPmOhiTJCTMR9UOU3PDH0aN7dmF6zla1W8wojKFg==
+"@formily/antd-v5@^1.2.4":
+  version "1.2.4"
+  resolved "https://registry.npmjs.org/@formily/antd-v5/-/antd-v5-1.2.4.tgz#ad9bc3e529f20d52374c9b42910758e639e68788"
+  integrity sha512-OaPJ9GtxQnPTPy4nKnNyWuGyIw9LVvVg0ptEOXP096/pBiFhOV/1UyIdgdp/4pM1CglLKwAf+DJw4e+CKYiTpg==
   dependencies:
-    "@formily/reactive" "2.3.0"
-    "@formily/shared" "2.3.0"
-    "@formily/validator" "2.3.0"
+    "@ant-design/cssinjs" "^1.3.1"
+    "@ant-design/icons" "^5.0.0"
+    "@dnd-kit/core" "^6.0.0"
+    "@dnd-kit/sortable" "^7.0.0"
+    "@formily/core" "^2.2.0"
+    "@formily/grid" "^2.2.0"
+    "@formily/json-schema" "^2.2.0"
+    "@formily/react" "^2.2.0"
+    "@formily/reactive" "^2.2.0"
+    "@formily/reactive-react" "^2.2.0"
+    "@formily/shared" "^2.2.0"
+    classnames "^2.2.6"
+    react-sticky-box "^1.0.2"
 
-"@formily/grid@^2.2.0", "@formily/grid@^2.2.27":
-  version "2.3.0"
-  resolved "https://registry.npmmirror.com/@formily/grid/-/grid-2.3.0.tgz#c41d671b97314cee7317d1dd6db7b3dc54712a25"
-  integrity sha512-IkWunF19yG/HDy3qoAdQA2ziBe1CndFX7wsmcxr5mMdGDGcbrBTD9aJb8ALtC+5DXQ2t+slaFrLIQN9jPTPamQ==
+"@formily/core@2.3.7", "@formily/core@2.x", "@formily/core@^2.2.0", "@formily/core@^2.3.7":
+  version "2.3.7"
+  resolved "https://registry.npmjs.org/@formily/core/-/core-2.3.7.tgz#4f86da177a7b3d46091f4da663631278e830c7e0"
+  integrity sha512-oqLE6gOoM2xjwlUrfH4cyjscO4kZJNpidtVytZeBvYp9v4OgL9EUm89laPcF4cnpWE2lZIqqzfGluOySxku8WQ==
   dependencies:
-    "@formily/reactive" "2.3.0"
+    "@formily/reactive" "2.3.7"
+    "@formily/shared" "2.3.7"
+    "@formily/validator" "2.3.7"
+
+"@formily/grid@^2.2.0", "@formily/grid@^2.3.7":
+  version "2.3.7"
+  resolved "https://registry.npmjs.org/@formily/grid/-/grid-2.3.7.tgz#afa2f49aea37d97f00a9d819f895b838cad08000"
+  integrity sha512-QTmmFkNVxcL+nQVvrqhBrUwhRCXDVy5iycTb4IJILqK4puYUKRajbsbm0oudTE0Yyo6ovpM6SD8QtdFU/cwLLw==
+  dependencies:
+    "@formily/reactive" "2.3.7"
     "@juggle/resize-observer" "^3.3.1"
 
-"@formily/json-schema@2.3.0", "@formily/json-schema@2.x", "@formily/json-schema@^2.2.0", "@formily/json-schema@^2.2.27":
-  version "2.3.0"
-  resolved "https://registry.npmmirror.com/@formily/json-schema/-/json-schema-2.3.0.tgz#95bd78533540093da526628520d21b2a470d5180"
-  integrity sha512-xtkcBbHikzjRYLwYgaM7vF3fTjHPnAYHRhu6b+cPY8OZQRN7h6SiDKyyD0tgAb3HyDs49RP3wTKhIEH/5Jqn8Q==
+"@formily/json-schema@2.3.7", "@formily/json-schema@2.x", "@formily/json-schema@^2.2.0", "@formily/json-schema@^2.3.7":
+  version "2.3.7"
+  resolved "https://registry.npmjs.org/@formily/json-schema/-/json-schema-2.3.7.tgz#313b950acbfd7112571b2bf2d71eed568ee17a4f"
+  integrity sha512-YmDmH98sJLOPO5GAq5NJw+NP3i2vCELBoz4Y4w+nhpKI5n8eQHe2GczQKntWDOnTfchXD2dXcgpb0ub6KNeATw==
   dependencies:
-    "@formily/core" "2.3.0"
-    "@formily/reactive" "2.3.0"
-    "@formily/shared" "2.3.0"
+    "@formily/core" "2.3.7"
+    "@formily/reactive" "2.3.7"
+    "@formily/shared" "2.3.7"
 
-"@formily/path@2.3.0":
-  version "2.3.0"
-  resolved "https://registry.npmmirror.com/@formily/path/-/path-2.3.0.tgz#1cb71389ad39fd30e323b7f35f96cb35f12e304f"
-  integrity sha512-LbSW50ytAH9wPlZc2VkjRjMukoYWiDAII7HfGkSnkCDQYduhWzvbqpkKOd/W8l5VFrLrl2/7yWkfp5cChv0wjA==
+"@formily/path@2.3.7", "@formily/path@^2.3.7":
+  version "2.3.7"
+  resolved "https://registry.npmjs.org/@formily/path/-/path-2.3.7.tgz#bed9bbb9c5b11a7cd7a5402bbdbec710bc853265"
+  integrity sha512-uDqXlW3TwJ8dImi5FrKze/yAbnxqpE/z1ZzJLNSlNr+T4bJRrC7Ya2veOOYeDaM9EK6eQNQCXST55REj5DKVmQ==
 
-"@formily/path@2.3.2", "@formily/path@^2.2.27":
-  version "2.3.2"
-  resolved "https://registry.npmmirror.com/@formily/path/-/path-2.3.2.tgz#9385d9ba1eabd5e3ed916f2b1953be6257bb192e"
-  integrity sha512-KK8h/CupHOs4HIgu9JucqwWvIr8Nbmof++Kby0NdNFHdTN5nAyVzStS8VEPFPGRkQaXV3AH+FVGAxgucmEy4ZA==
-
-"@formily/react@2.x", "@formily/react@^2.2.0", "@formily/react@^2.2.27":
-  version "2.3.0"
-  resolved "https://registry.npmmirror.com/@formily/react/-/react-2.3.0.tgz#381233c5b523dd8bb20385252eb466d6d24e7c79"
-  integrity sha512-bDi2YcRQXad2Qyytg39sP4jn5N0OR2772GszFfcdAiHEJLxYms6/2nw2KiYJx7Ohv4r3T4RhPttwuvkBKWJ1ow==
+"@formily/react@2.x", "@formily/react@^2.2.0", "@formily/react@^2.3.7":
+  version "2.3.7"
+  resolved "https://registry.npmjs.org/@formily/react/-/react-2.3.7.tgz#7b8869ed40150b77c55f90dcb462b300a6b7523e"
+  integrity sha512-yn3xhFgl5pdDECiyOtt/hlwhnxzpjjYkig1Oyyg4mgYDeP9UT9jd0V3/iLasOdoogUJj+j28XegFZRneITIuew==
   dependencies:
-    "@formily/core" "2.3.0"
-    "@formily/json-schema" "2.3.0"
-    "@formily/reactive" "2.3.0"
-    "@formily/reactive-react" "2.3.0"
-    "@formily/shared" "2.3.0"
-    "@formily/validator" "2.3.0"
+    "@formily/core" "2.3.7"
+    "@formily/json-schema" "2.3.7"
+    "@formily/reactive" "2.3.7"
+    "@formily/reactive-react" "2.3.7"
+    "@formily/shared" "2.3.7"
+    "@formily/validator" "2.3.7"
     hoist-non-react-statics "^3.3.2"
 
-"@formily/reactive-react@2.3.0", "@formily/reactive-react@^2.2.0", "@formily/reactive-react@^2.2.27":
-  version "2.3.0"
-  resolved "https://registry.npmmirror.com/@formily/reactive-react/-/reactive-react-2.3.0.tgz#4a70bf3d91054eca8ef15a2b39ac75c29a8bf40e"
-  integrity sha512-d4uOF60/wtGsF63IuLTy2XFmL/fK0AMpl4mEyLXMpjdv7nZzSpi78EDwJjgAAySGSGHSHtUVOKCLCj9/0s1vQA==
+"@formily/reactive-react@2.3.7", "@formily/reactive-react@^2.2.0", "@formily/reactive-react@^2.3.7":
+  version "2.3.7"
+  resolved "https://registry.npmjs.org/@formily/reactive-react/-/reactive-react-2.3.7.tgz#efa64bfcc16aca38bccfd2267bb0573fc55e41d7"
+  integrity sha512-foUP2El31RrCS+cj6QhZ9nhO5h8HhTFT4kof6Dt9qI72pzcdoxjGSiPSSstfn4eFmUbyiD8APz8d/ynB4INo5Q==
   dependencies:
-    "@formily/reactive" "2.3.0"
+    "@formily/reactive" "2.3.7"
     hoist-non-react-statics "^3.3.2"
 
-"@formily/reactive@2.3.0", "@formily/reactive@2.x", "@formily/reactive@^2.2.0", "@formily/reactive@^2.2.27":
-  version "2.3.0"
-  resolved "https://registry.npmmirror.com/@formily/reactive/-/reactive-2.3.0.tgz#95582dfcf97c42410454ef7df0c247514bd4446e"
-  integrity sha512-8QYApPL/GvATIP/9K3UeICJNuCaLq99NLlNLEuBsE7cIk2hFiFhWP7vnLtWBdorqeQZNYZ6lzSuau2Ndogu+Dw==
+"@formily/reactive@2.3.7", "@formily/reactive@2.x", "@formily/reactive@^2.2.0", "@formily/reactive@^2.3.7":
+  version "2.3.7"
+  resolved "https://registry.npmjs.org/@formily/reactive/-/reactive-2.3.7.tgz#8f6d23b1871dd7d487512a35e2eb2d773f8f457b"
+  integrity sha512-+ovdvYfig7K97Ktel8qY1xAUM4O1uxSm79yuk7xmaAhOJWDAkvDPvzGtcB95cQ3vhPN9d/2sOvRzxMlVlr/gpg==
 
-"@formily/shared@2.3.0":
-  version "2.3.0"
-  resolved "https://registry.npmmirror.com/@formily/shared/-/shared-2.3.0.tgz#4423c3dfad0d1017cab1e3c6c8fd34004e0a9664"
-  integrity sha512-sJiMLBmk4JMPI1CxzLawIc+ERTjcnWOm8u4cpmF+3XABdLNU3CxsIRT9CXiJnrS9ZR+OE12AW7cGp6A1hPm7ZA==
+"@formily/shared@2.3.7", "@formily/shared@2.x", "@formily/shared@^2.2.0", "@formily/shared@^2.3.7":
+  version "2.3.7"
+  resolved "https://registry.npmjs.org/@formily/shared/-/shared-2.3.7.tgz#85aa3f89008b12239703d4b7adc94f9db30651cf"
+  integrity sha512-Xccuay6CP1CNvieyTjAniFG08biUVA+xBZZuZboCzdxoUO1gOCzUz9A2U7cvw0Xw+Hm4uI1sgISE95lCD5R3fQ==
   dependencies:
-    "@formily/path" "2.3.0"
+    "@formily/path" "2.3.7"
     camel-case "^4.1.1"
     lower-case "^2.0.1"
     no-case "^3.0.4"
@@ -4518,25 +4532,12 @@
     pascal-case "^3.1.1"
     upper-case "^2.0.1"
 
-"@formily/shared@2.x", "@formily/shared@^2.2.0", "@formily/shared@^2.2.27":
-  version "2.3.2"
-  resolved "https://registry.npmmirror.com/@formily/shared/-/shared-2.3.2.tgz#1cea158491280a267278e0c9dc4f6cc7a69d4485"
-  integrity sha512-hb8eL28Dqe4WQzGtxC3h7OwG9VPPBXtfKUfmnRkaBMJ8zn2KmdYOP8YnAkwdO2ZMgxtkOl0hku0Ufm2PwP3ziA==
+"@formily/validator@2.3.7", "@formily/validator@^2.3.7":
+  version "2.3.7"
+  resolved "https://registry.npmjs.org/@formily/validator/-/validator-2.3.7.tgz#94083e03edbac494ac420b9546582a940f9dbbb4"
+  integrity sha512-/bIZL0YoEhi/AxwbJz1FxkcAXI4tyzaMF8j7LTJigKgjrJLGCiLEU1GtSk+9OmUSRDHblr73jM/TWMlb/L3EuA==
   dependencies:
-    "@formily/path" "2.3.2"
-    camel-case "^4.1.1"
-    lower-case "^2.0.1"
-    no-case "^3.0.4"
-    param-case "^3.0.4"
-    pascal-case "^3.1.1"
-    upper-case "^2.0.1"
-
-"@formily/validator@2.3.0", "@formily/validator@^2.2.27":
-  version "2.3.0"
-  resolved "https://registry.npmmirror.com/@formily/validator/-/validator-2.3.0.tgz#a04b94f7a18ac1a490c1e273eb0c2acd6662d6c2"
-  integrity sha512-uh6rGjEZhCv+asDhkhKHVnN00tIQcb5wVFyAqtaHlUHGh2gBCiv0e3yb9H80UGQx/EiVuklmcVgR96gAMJfmDw==
-  dependencies:
-    "@formily/shared" "2.3.0"
+    "@formily/shared" "2.3.7"
 
 "@formulajs/formulajs@4.4.9":
   version "4.4.9"
@@ -8554,6 +8555,11 @@
   integrity sha512-6c2ogktZ06tr2ENoZivgm7YnprnhYE4ZoXGMY+oA7IuAf17M8FWvujXZGmxLv8y0PTyts4x5A+erSwVUFA8XSg==
   dependencies:
     "@types/superagent" "*"
+
+"@types/tabulator-tables@^6.2.0":
+  version "6.2.6"
+  resolved "https://registry.npmjs.org/@types/tabulator-tables/-/tabulator-tables-6.2.6.tgz#580ee6d01a8cc439b4936543e749bbbc00babf99"
+  integrity sha512-A+2VrqDluI6hNw5dQl1Z7b8pjQfAE62+3Kj0cFfenWzj0T0ewMicPrpPINHL7ASqz9u9FTDn1Mz1Ige2tF4Wlw==
 
 "@types/tapable@2.2.7":
   version "2.2.7"
@@ -20112,7 +20118,7 @@ lodash.uniq@^4.5.0:
   resolved "https://registry.npmmirror.com/lodash.uniq/-/lodash.uniq-4.5.0.tgz#d0225373aeb652adc1bc82e4945339a842754773"
   integrity sha512-xfBaXQd9ryd9dlSDvnvI0lvxfLJlYAZzXomUYzLKtUeOQvOP5piqAWuGtrhWeqaXK9hhoM/iyJc5AV+XfsX3HQ==
 
-lodash@4.17.21, lodash@4.x, lodash@^4.17.12, lodash@^4.17.14, lodash@^4.17.15, lodash@^4.17.19, lodash@^4.17.20, lodash@^4.17.21, lodash@^4.17.4, lodash@^4.17.5, lodash@^4.7.0:
+lodash@4.17.21, lodash@4.x, lodash@^4.17.12, lodash@^4.17.14, lodash@^4.17.15, lodash@^4.17.19, lodash@^4.17.20, lodash@^4.17.21, lodash@^4.17.4, lodash@^4.17.5, lodash@^4.7.0, lodash@^4.x:
   version "4.17.21"
   resolved "https://registry.npmmirror.com/lodash/-/lodash-4.17.21.tgz#679591c564c3bffaae8454cf0b3df370c3d6911c"
   integrity sha512-v2kDEe57lecTulaDIuNTPy3Ry4gLGJ6Z1O3vE1krgXZNrsQ+LFTGHVxVjcXPs17LhbZVGedAJv8XZ1tvj5FvSg==
@@ -28018,6 +28024,11 @@ systemjs@^6.14.1:
   resolved "https://registry.npmmirror.com/systemjs/-/systemjs-6.14.2.tgz#e289f959f8c8b407403bd39c6abaa16f2c13f316"
   integrity sha512-1TlOwvKWdXxAY9vba+huLu99zrQURDWA8pUTYsRIYDZYQbGyK+pyEP4h4dlySsqo7ozyJBmYD20F+iUHhAltEg==
 
+tabulator-tables@^6.3.0:
+  version "6.3.1"
+  resolved "https://registry.npmjs.org/tabulator-tables/-/tabulator-tables-6.3.1.tgz#648c2893167bfb1f531c52670fad92d6353b8b40"
+  integrity sha512-qFW7kfadtcaISQIibKAIy0f3eeIXUVi8242Vly1iJfMD79kfEGzfczNuPBN/80hDxHzQJXYbmJ8VipI40hQtfA==
+
 tapable@2.2.1, tapable@^2.0.0, tapable@^2.2.0, tapable@^2.2.1:
   version "2.2.1"
   resolved "https://registry.npmmirror.com/tapable/-/tapable-2.2.1.tgz#1967a73ef4060a82f12ab96af86d52fdb76eeca0"
@@ -28969,6 +28980,11 @@ typescript@^4.4.3:
   version "4.9.5"
   resolved "https://registry.npmmirror.com/typescript/-/typescript-4.9.5.tgz#095979f9bcc0d09da324d58d03ce8f8374cbe65a"
   integrity sha512-1FXk9E2Hm+QzZQ7z+McJiHL4NW1F2EzMu9Nq9i3zAaGqibafqYwCVU6WyWAuyQRRzOlxou8xZSyXLEN8oKj24g==
+
+typescript@^5.x:
+  version "5.8.3"
+  resolved "https://registry.npmjs.org/typescript/-/typescript-5.8.3.tgz#92f8a3e5e3cf497356f4178c34cd65a7f5e8440e"
+  integrity sha512-p1diW6TqL9L07nNxvRMM7hMMw4c5XOo/1ibL4aAIGmSAt9slTE1Xgw5KWuof2uTOvCg9BY7ZRi+GaF+7sfgPeQ==
 
 ua-parser-js@^1.0.33:
   version "1.0.38"

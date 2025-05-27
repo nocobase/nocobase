@@ -48,7 +48,6 @@ const FlowSettings: React.FC<FlowSettingsProps> = (props) => {
 
 // 使用传入的model
 const FlowSettingsWithModel: React.FC<ModelProvidedProps> = observer(({ model, flowKey }) => {
-
   if (!model) {
     return <Alert message="提供的模型无效" type="error" />;
   }

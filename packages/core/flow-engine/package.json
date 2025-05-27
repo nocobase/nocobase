@@ -6,7 +6,7 @@
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "dependencies": {
-    "@formily/reactive": "^2.x",
+    "@formily/reactive": "2.x",
     "lodash": "^4.x"
   },
   "peerDependencies": {
