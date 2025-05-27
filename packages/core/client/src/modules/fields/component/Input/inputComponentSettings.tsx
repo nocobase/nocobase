@@ -106,6 +106,45 @@ export const enableLinkSettingsItem: SchemaSettingsItemType = {
   },
 };
 
+export const enableScanSettingsItem: SchemaSettingsItemType = {
+  name: 'enableScan',
+  type: 'switch',
+  useVisible() {
+    const field = useField();
+    const { fieldSchema: columnSchema } = useColumnSchema();
+    const schema = useFieldSchema();
+    const fieldSchema = columnSchema || schema;
+    return !fieldSchema?.['x-read-pretty'] && !field.readPretty;
+  },
+  useComponentProps() {
+    const { t } = useTranslation();
+    const field = useField();
+    const { fieldSchema: columnSchema } = useColumnSchema();
+    const schema = useFieldSchema();
+    const fieldSchema = columnSchema || schema;
+    const { dn } = useDesignable();
+    return {
+      title: t('Enable Scan'),
+      checked: fieldSchema?.['x-component-props']?.enableScan,
+      onChange(flag) {
+        fieldSchema['x-component-props'] = {
+          ...fieldSchema?.['x-component-props'],
+          enableScan: flag,
+        };
+        field.componentProps['enableScan'] = flag;
+        dn.emit('patch', {
+          schema: {
+            'x-uid': fieldSchema['x-uid'],
+            'x-component-props': {
+              ...fieldSchema?.['x-component-props'],
+            },
+          },
+        });
+      },
+    };
+  },
+};
+
 export const openModeSettingsItem: SchemaSettingsItemType = {
   name: 'openMode',
   Component: SchemaSettingOpenModeSchemaItems,
@@ -131,5 +170,5 @@ export const openModeSettingsItem: SchemaSettingsItemType = {
 };
 export const inputComponentSettings = new SchemaSettings({
   name: 'fieldSettings:component:Input',
-  items: [ellipsisSettingsItem, enableLinkSettingsItem, openModeSettingsItem],
+  items: [ellipsisSettingsItem, enableLinkSettingsItem, openModeSettingsItem, enableScanSettingsItem],
 });
