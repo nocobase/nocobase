@@ -146,7 +146,6 @@ export const fieldSettingsFormItem = new SchemaSettings({
                       },
                     },
                   });
-                  dn.refresh();
                 },
               };
             },
