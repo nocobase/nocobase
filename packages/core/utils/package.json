@@ -4,18 +4,6 @@
   "main": "lib/index.js",
   "types": "./lib/index.d.ts",
   "license": "AGPL-3.0",
-  "exports": {
-    ".": {
-      "require": "./lib/index.js",
-      "types": "./lib/index.d.ts"
-    },
-    "./client": {
-      "require": "./lib/client.js"
-    },
-    "./dateRangeUtils": {
-      "require": "./lib/dateRangeUtils.js"
-    }
-  },
   "dependencies": {
     "@budibase/handlebars-helpers": "0.14.0",
     "@hapi/topo": "^6.0.0",
