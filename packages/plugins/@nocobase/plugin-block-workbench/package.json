@@ -8,9 +8,9 @@
   "main": "dist/server/index.js",
   "peerDependencies": {
     "@nocobase/client": "1.x",
+    "@nocobase/plugin-mobile": "1.x",
     "@nocobase/server": "1.x",
-    "@nocobase/test": "1.x",
-    "@nocobase/plugin-mobile": "1.x"
+    "@nocobase/test": "1.x"
   },
   "devDependencies": {
     "@ant-design/icons": "^5.x",
