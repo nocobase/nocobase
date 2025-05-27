@@ -14,9 +14,6 @@
     "@nocobase/server": "1.x",
     "@nocobase/test": "1.x"
   },
-  "devDependencies": {
-    "@dnd-kit/core": "^5.0.1"
-  },
   "keywords": [
     "Data model tools"
   ],
