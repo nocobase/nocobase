@@ -126,7 +126,8 @@ const FlowSettingsContent: React.FC<FlowSettingsContentProps> = observer(
       const initialParams = getInitialParams();
       setTempValues(initialParams);
       form.setFieldsValue(initialParams);
-    }, [flowKey, form, getInitialParams]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [flowKey, form]);
 
     // 处理表单值变化（更新临时状态，不保存到model）
     const handleValuesChange = useCallback((changedValues: any, allValues: any) => {
