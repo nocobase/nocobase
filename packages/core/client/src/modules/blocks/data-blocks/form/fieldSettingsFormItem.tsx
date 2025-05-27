@@ -124,6 +124,12 @@ export const fieldSettingsFormItem = new SchemaSettings({
           {
             name: 'allowClear',
             type: 'switch',
+            useVisible() {
+              const collection = useCollection();
+              const fieldSchema = useFieldSchema();
+              const fieldComponent = collection.getField(fieldSchema['name'])?.uiSchema?.['x-component'] ?? '';
+              return fieldComponent && ['Input', 'TextArea', 'JSON', 'URL', 'Password'].indexOf(fieldComponent) > -1;
+            },
             useComponentProps() {
               const { t } = useTranslation();
               const { dn } = useDesignable();

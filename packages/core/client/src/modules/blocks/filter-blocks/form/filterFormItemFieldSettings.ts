@@ -13,6 +13,7 @@ import { ISchema, useField, useFieldSchema } from '@formily/react';
 import _ from 'lodash';
 import { useTranslation } from 'react-i18next';
 import { useApp } from '../../../../application';
+import { useCollection } from '../../../../data-source';
 import { SchemaSettings } from '../../../../application/schema-settings/SchemaSettings';
 import { useCollectionManager_deprecated, useCollection_deprecated } from '../../../../collection-manager';
 import { useFieldComponentName } from '../../../../common/useFieldComponentName';
@@ -124,6 +125,12 @@ export const filterFormItemFieldSettings = new SchemaSettings({
           {
             name: 'allowClear',
             type: 'switch',
+            useVisible() {
+              const collection = useCollection();
+              const fieldSchema = useFieldSchema();
+              const fieldComponent = collection.getField(fieldSchema['name'])?.uiSchema?.['x-component'] ?? '';
+              return fieldComponent && ['Input', 'TextArea', 'JSON', 'URL', 'Password'].indexOf(fieldComponent) > -1;
+            },
             useComponentProps() {
               const { t } = useTranslation();
               const { dn } = useDesignable();
