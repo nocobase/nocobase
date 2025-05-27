@@ -11,14 +11,21 @@ import _ from 'lodash';
 import React, { useMemo, useState } from 'react';
 import { Button, message } from 'antd';
 import { connect, mapProps, mapReadPretty, useField, useFieldSchema } from '@formily/react';
-import { Input, Plugin, SchemaComponentOptions, useColumnSchema, useDesignable } from '@nocobase/client';
+import { Input, Plugin, useColumnSchema, useDesignable } from '@nocobase/client';
 import { useTranslation } from 'react-i18next';
 import { CopyOutlined } from '@ant-design/icons';
 import { LoadingOutlined } from '@ant-design/icons';
 
+// Import locale resources
+import enUS from '../locale/en-US.json';
+import zhCN from '../locale/zh-CN.json';
+
+// Define namespace for i18n
+const NAMESPACE = 'field-content-copier';
+
 // Create a copy button component that can be used in both input and read-pretty modes
 const CopyButton = ({ value }) => {
-  const { t } = useTranslation('plugin-field-content-copier');
+  const { t } = useTranslation(NAMESPACE);
 
   const handleCopy = () => {
     if (value) {
@@ -123,23 +130,6 @@ const InputWithCopier = connect(
 
 class PluginFieldContentCopier extends Plugin {
   async load() {
-    // Load translations
-    try {
-      const resources = await import('../locale');
-      this.app.i18n.addResources('en-US', 'plugin-field-content-copier', resources.default['en-US']);
-      this.app.i18n.addResources('zh-CN', 'plugin-field-content-copier', resources.default['zh-CN']);
-      console.log('Translations loaded successfully:', Object.keys(resources.default));
-
-      // Debug: Verify translations are accessible
-      const enText = this.app.i18n.t('Copied to clipboard', { ns: 'plugin-field-content-copier' });
-      const zhText = this.app.i18n.t('Copied to clipboard', { ns: 'plugin-field-content-copier', lng: 'zh-CN' });
-      if (process.env.NODE_ENV === 'development') {
-        console.log('Translation test - EN:', enText, 'ZH:', zhText);
-      }
-    } catch (err) {
-      console.error('Failed to load translations:', err);
-    }
-
     // Get the original Input component to extend it
     const OriginalInput = this.app.components.Input;
 
@@ -162,7 +152,7 @@ class PluginFieldContentCopier extends Plugin {
     this.app.schemaSettingsManager.addItem('fieldSettings:component:Input', 'enableCopier', {
       type: 'switch',
       useComponentProps() {
-        const { t } = useTranslation('plugin-field-content-copier');
+        const { t } = useTranslation(NAMESPACE);
         const { fieldSchema: tableFieldSchema } = useColumnSchema();
         const fieldSchema = useFieldSchema();
         const formField = useField();
