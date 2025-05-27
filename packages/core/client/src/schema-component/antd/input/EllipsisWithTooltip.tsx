@@ -74,7 +74,7 @@ export const EllipsisWithTooltip = forwardRef((props: Partial<IEllipsisWithToolt
           {props.children}
         </div>
       ) : (
-        props.children
+        <div style={{ overflowWrap: 'break-word', whiteSpace: 'normal' }}>{props.children}</div>
       ),
     [handleMouseEnter, props.children, props.ellipsis, props.role],
   );

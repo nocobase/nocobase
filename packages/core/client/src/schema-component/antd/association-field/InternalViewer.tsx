@@ -248,6 +248,7 @@ interface ReadPrettyInternalViewerProps {
     label: string;
     value: string;
   };
+  ellipsis?: boolean;
 }
 
 /**
@@ -289,7 +290,7 @@ export const ReadPrettyInternalViewer: React.FC<ReadPrettyInternalViewerProps> =
   }, []);
 
   const btnElement = (
-    <EllipsisWithTooltip ellipsis={true}>
+    <EllipsisWithTooltip ellipsis={props.ellipsis}>
       <CollectionRecordProvider isNew={false} record={getSourceData(parentRecordData, fieldSchema)}>
         <ButtonList setBtnHover={setBtnHover} value={value} fieldNames={props.fieldNames} onClick={onClickItem} />
       </CollectionRecordProvider>
