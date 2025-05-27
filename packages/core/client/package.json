@@ -30,6 +30,7 @@
     "@nocobase/evaluators": "1.7.0-beta.33",
     "@nocobase/sdk": "1.7.0-beta.33",
     "@nocobase/utils": "1.7.0-beta.33",
+    "@nocobase/flow-engine": "1.7.0-beta.33",
     "ahooks": "^3.7.2",
     "antd": "5.24.2",
     "antd-style": "3.7.1",
