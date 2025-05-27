@@ -8,7 +8,6 @@
  */
 
 import { ISchema } from '@formily/json-schema';
-// TODO: 确认 FlowModel 的实际导入路径，当前假设从 './models' 导入
 import type { FlowModel } from './models';
 import type { FlowEngine } from './flowEngine';
 
@@ -81,7 +80,7 @@ export interface FlowContext {
   [key: string]: any; // Allow for additional custom context data
 }
 
-// FlowModel上下文类型 (来自 flow-model/types.ts)
+// FlowModel上下文类型
 export type FlowUserContext = Partial<Omit<FlowContext, 'engine' | '$exit' | 'app'>>;
 
 /**
@@ -138,7 +137,7 @@ export type StepDefinition<TModel extends FlowModel = FlowModel> =
   | InlineStepDefinition<TModel>;
 
 /**
- * User context for hooks - omitting internal engine properties (来自 flow-engine/types.ts)
+ * User context for hooks - omitting internal engine properties
  */
 export type UserContext = Partial<Omit<FlowContext, 'engine' | '$exit'>>;
 
