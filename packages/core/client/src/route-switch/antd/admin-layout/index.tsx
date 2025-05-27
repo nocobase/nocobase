@@ -80,7 +80,7 @@ const AllAccessDesktopRoutesContext = createContext<{
   refresh: () => void;
 }>({
   allAccessRoutes: emptyArray,
-  refresh: () => { },
+  refresh: () => {},
 });
 AllAccessDesktopRoutesContext.displayName = 'AllAccessDesktopRoutesContext';
 
@@ -310,7 +310,13 @@ const GroupItem: FC<{ item: any }> = (props) => {
         <SortableItem id={item._route.id} schema={fakeSchema} aria-label={item.name} style={menuItemStyle}>
           {props.children}
           {designable && <MenuSchemaToolbarWithContainer />}
-          {badgeCount != null && <Badge {...item._route.options.badge} count={badgeCount} style={{ marginLeft: 4, color: item._route.options?.badge?.textColor }}></Badge>}
+          {badgeCount != null && (
+            <Badge
+              {...item._route.options.badge}
+              count={badgeCount}
+              style={{ marginLeft: 4, color: item._route.options?.badge?.textColor }}
+            ></Badge>
+          )}
         </SortableItem>
       </NocoBaseRouteContext.Provider>
     </ParentRouteContext.Provider>
@@ -405,7 +411,13 @@ const MenuItem: FC<{ item: any; options: { isMobile: boolean; collapsed: boolean
               </Link>
             </div>
             <MenuSchemaToolbar />
-            {badgeCount != null && <Badge {...item._route.options?.badge} count={badgeCount} style={{ marginLeft: 4, color: item._route.options?.badge?.textColor }}></Badge>}
+            {badgeCount != null && (
+              <Badge
+                {...item._route.options?.badge}
+                count={badgeCount}
+                style={{ marginLeft: 4, color: item._route.options?.badge?.textColor }}
+              ></Badge>
+            )}
           </SortableItem>
         </NocoBaseRouteContext.Provider>
       </ParentRouteContext.Provider>
@@ -430,7 +442,9 @@ const MenuItem: FC<{ item: any; options: { isMobile: boolean; collapsed: boolean
             </Link>
           </WithTooltip>
           <MenuSchemaToolbar />
-          {badgeCount != null && <Badge {...badgeProps} style={{ marginLeft: 4, color: item._route.options?.badge?.textColor }}></Badge>}
+          {badgeCount != null && (
+            <Badge {...badgeProps} style={{ marginLeft: 4, color: item._route.options?.badge?.textColor }}></Badge>
+          )}
         </SortableItem>
       </NocoBaseRouteContext.Provider>
     </ParentRouteContext.Provider>
@@ -532,7 +546,6 @@ const subMenuItemRender = (item, dom) => {
       <GroupItem item={item}>
         <MenuItemTitleWithTooltip tooltip={item._route?.tooltip}>{dom}</MenuItemTitleWithTooltip>
       </GroupItem>
-
     </VariableScope>
   );
 };
@@ -611,7 +624,7 @@ const IsMobileLayoutContext = React.createContext<{
   setIsMobileLayout: React.Dispatch<React.SetStateAction<boolean>>;
 }>({
   isMobileLayout: false,
-  setIsMobileLayout: () => { },
+  setIsMobileLayout: () => {},
 });
 
 const MobileLayoutProvider: FC = (props) => {

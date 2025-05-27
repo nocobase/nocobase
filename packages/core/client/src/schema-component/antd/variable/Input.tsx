@@ -144,19 +144,19 @@ function getTypedConstantOption(type: string, types: UseTypeConstantType, fieldN
   const children = (
     types
       ? allTypes.filter(
-        (item) =>
-          (Array.isArray(types) &&
-            types.filter((t) => (Array.isArray(t) ? t[0] === item.value : t === item.value)).length) ||
-          types === true,
-      )
+          (item) =>
+            (Array.isArray(types) &&
+              types.filter((t) => (Array.isArray(t) ? t[0] === item.value : t === item.value)).length) ||
+            types === true,
+        )
       : allTypes
   ).map((item) =>
     Object.keys(fieldNames).reduce(
       (result, key) =>
         key in item
           ? Object.assign(result, {
-            [fieldNames[key]]: item[key],
-          })
+              [fieldNames[key]]: item[key],
+            })
           : result,
       { ...item },
     ),
@@ -285,13 +285,13 @@ export function Input(props: VariableInputProps) {
     const options = [
       ...(nullable
         ? [
-          {
-            value: '',
-            label: t('Null'),
-            [names.value]: '',
-            [names.label]: t('Null'),
-          },
-        ]
+            {
+              value: '',
+              label: t('Null'),
+              [names.value]: '',
+              [names.label]: t('Null'),
+            },
+          ]
         : []),
       ...(constantOption ? [compile(cOption)] : []),
       ...(scope ? [...scope] : []),
