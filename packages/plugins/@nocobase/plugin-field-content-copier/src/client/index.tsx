@@ -190,7 +190,7 @@ class PluginFieldContentCopier extends Plugin {
       },
     });
 
-    console.log('FieldContentCopierPlugin loaded successfully');
+    // Plugin loaded successfully
   }
 }
 
