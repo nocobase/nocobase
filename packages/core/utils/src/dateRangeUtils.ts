@@ -109,7 +109,6 @@ const strategies: Record<Exclude<RangeType, 'past' | 'next'>, (params?: RangePar
  * 获取某个时间范围的起止时间（字符串格式）
  */
 export const getDayRangeByParams = (params: RangeParams): [string, string] => {
-  console.log(params);
   if (params.type === 'past' || params.type === 'next') {
     return getOffsetRangeByParams(params);
   }
