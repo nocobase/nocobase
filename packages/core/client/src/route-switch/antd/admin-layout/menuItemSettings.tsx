@@ -160,7 +160,7 @@ export const RemoveRoute: FC = () => {
 const InsertMenuItems = (props) => {
   const { eventKey, title, insertPosition } = props;
   const { t } = useTranslation();
-  const { urlSchema, paramsSchema } = useURLAndHTMLSchema();
+  const { urlSchema, paramsSchema, openInNewWindowSchema } = useURLAndHTMLSchema();
   const currentRoute = useCurrentRoute();
   const isSubMenu = currentRoute?.type === NocoBaseDesktopRouteType.group;
   const { createRoute, moveRoute } = useNocoBaseRoutes();
@@ -306,10 +306,11 @@ const InsertMenuItems = (props) => {
               },
               href: urlSchema,
               params: paramsSchema,
+              openInNewWindow: openInNewWindowSchema,
             },
           } as ISchema
         }
-        onSubmit={async ({ title, icon, href, params }) => {
+        onSubmit={async ({ title, icon, href, params, openInNewWindow }) => {
           const schemaUid = uid();
           const parentId = insertPosition === 'beforeEnd' ? currentRoute?.id : currentRoute?.parentId;
 
@@ -324,6 +325,7 @@ const InsertMenuItems = (props) => {
             options: {
               href,
               params,
+              openInNewWindow,
             },
           });
 
