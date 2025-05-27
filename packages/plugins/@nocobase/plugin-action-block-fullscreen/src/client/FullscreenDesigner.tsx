@@ -131,7 +131,7 @@ export function CustomFullscreen() {
               'x-decorator': 'FormItem',
               'x-component': 'Input',
               title: t('Style class of the current block'),
-              default: fieldSchema?.['x-component-props']?.custom?.blockStyleClass !== false || DEFAULT_BLOCKSTYLECLASS,
+              default: fieldSchema?.['x-component-props']?.custom?.blockStyleClass ?? DEFAULT_BLOCKSTYLECLASS,
               'x-component-props': {},
             },
             targetStyleClass: {
