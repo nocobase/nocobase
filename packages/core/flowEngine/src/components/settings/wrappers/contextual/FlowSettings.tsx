@@ -9,7 +9,9 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { Form, Alert, Button, Space, Input, Select, InputNumber, Switch } from 'antd';
-import { FlowModel, ActionStepDefinition, useFlowModel } from '@nocobase/flow-engine';
+import { FlowModel } from '../../../../models';
+import { ActionStepDefinition } from '../../../../types';
+import { useFlowModel } from '../../../../hooks';
 import { observer } from '@formily/react';
 
 // 创建两个组件版本，一个使用props传递的model，一个使用hook获取model

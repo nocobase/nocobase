@@ -9,7 +9,8 @@
 
 import React from 'react';
 import { Card, Empty, Collapse } from 'antd';
-import { ActionStepDefinition, FlowModel } from '@nocobase/flow-engine';
+import { ActionStepDefinition } from '../../../../types';
+import { FlowModel } from '../../../../models';
 import { observer } from '@formily/react';
 import { FlowSettings } from './FlowSettings';
 

@@ -10,7 +10,8 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { Button, Space, Dropdown, Alert } from 'antd';
 import { SettingOutlined, DownOutlined } from '@ant-design/icons';
-import { FlowModel, useFlowModel } from '@nocobase/flow-engine';
+import { FlowModel } from '../../../../models';
+import { useFlowModel } from '../../../../hooks';
 import { observer } from '@formily/react';
 import { FlowSettingsModal } from '../../wrappers/contextual';
 

@@ -1,8 +1,9 @@
 import React, { useCallback, useEffect } from 'react';
-import { Card, Empty, Alert, Input, InputNumber, Select, Switch, Form } from 'antd';
+import { Alert, Input, InputNumber, Select, Switch, Form } from 'antd';
 // TODO: ISchema may need to be imported from a different package or refactored.
-import { ISchema } from '@nocobase/client';
-import { useFlowEngine, ActionStepDefinition, FlowEngine, useFlowModel, FlowModel } from '@nocobase/flow-engine';
+import { ActionStepDefinition } from '../../../../types';
+import { useFlowModel } from '../../../../hooks';
+import { FlowModel } from '../../../../models';
 import { observer } from '@formily/react';
 
 const { Item: FormItem } = Form;
@@ -47,7 +48,6 @@ const FlowSettings: React.FC<FlowSettingsProps> = (props) => {
 
 // 使用传入的model
 const FlowSettingsWithModel: React.FC<ModelProvidedProps> = observer(({ model, flowKey }) => {
-  const flowEngine = model?.flowEngine;
 
   if (!model) {
     return <Alert message="提供的模型无效" type="error" />;
@@ -59,7 +59,6 @@ const FlowSettingsWithModel: React.FC<ModelProvidedProps> = observer(({ model, f
 // 通过useModelById hook获取model
 const FlowSettingsWithModelById: React.FC<ModelByIdProps> = observer(({ uid, flowKey, modelClassName }) => {
   const model = useFlowModel(uid, modelClassName);
-  const flowEngine = model?.flowEngine;
 
   if (!model) {
     return <Alert message={`未找到ID为 ${uid} 的模型`} type="error" />;

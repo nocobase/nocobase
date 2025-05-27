@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Alert, Button, Select, Space } from 'antd';
-import { useFlowModel, BlockModel } from '@nocobase/flow-engine';
+import { useFlowModel } from '../../hooks';
+import { BlockModel } from '../../models';
 import { observer } from '@formily/react';
 import { PlusOutlined } from '@ant-design/icons';
 

@@ -12,7 +12,9 @@ import { Dropdown, Alert, Modal } from 'antd';
 import type { MenuProps } from 'antd';
 import { SettingOutlined, DeleteOutlined, ExclamationCircleOutlined } from '@ant-design/icons';
 import { observer } from '@formily/react';
-import { FlowModel, ActionStepDefinition, useFlowModel } from '@nocobase/flow-engine';
+import { FlowModel } from '../../../../models';
+import { ActionStepDefinition } from '../../../../types';
+import { useFlowModel } from '../../../../hooks';
 import { FlowSettingsModal } from './FlowSettingsModal';
 
 // 右键菜单组件接口

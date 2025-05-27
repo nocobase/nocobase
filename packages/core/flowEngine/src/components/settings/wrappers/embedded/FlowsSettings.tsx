@@ -1,6 +1,6 @@
 import React from 'react';
 import { Alert } from 'antd';
-import { FlowEngine, FlowModel, useFlowModel } from '@nocobase/flow-engine';
+import { useFlowModel } from '../../../../hooks';
 import { observer } from '@formily/react';
 import FlowsSettingsContent from './FlowsSettingsContent';
 

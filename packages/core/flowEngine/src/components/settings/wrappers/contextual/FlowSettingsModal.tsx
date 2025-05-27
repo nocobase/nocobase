@@ -9,7 +9,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Modal, Alert, message } from 'antd';
-import { useFlowModel } from '@nocobase/flow-engine';
+import { useFlowModel } from '../../../../hooks';
 import { observer } from '@formily/react';
 import FlowSettings from './FlowSettings';
 
