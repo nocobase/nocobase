@@ -7,12 +7,20 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import React from 'react';
 import { ISchema } from '@formily/react';
-
-import collection from '../../common/collections/workflows';
 
 import { NAMESPACE } from '../locale';
 import { executionSchema } from './executions';
+import { useCollectionRecordData } from '@nocobase/client';
+
+function ExecutedLink(props) {
+  const record = useCollectionRecordData();
+  return React.createElement('a', {
+    'aria-label': `executed-${record.title}`,
+    ...props,
+  });
+}
 
 const workflowFieldset = {
   title: {
@@ -20,8 +28,16 @@ const workflowFieldset = {
     'x-decorator': 'FormItem',
   },
   type: {
-    'x-component': 'CollectionField',
     'x-decorator': 'FormItem',
+    title: `{{t("Trigger type", { ns: "${NAMESPACE}" })}}`,
+    'x-component': 'Select',
+    'x-component-props': {
+      optionRender: '{{TriggerOptionRender}}',
+      popupMatchSelectWidth: true,
+      listHeight: 300,
+    },
+    enum: '{{useTriggersOptions()}}',
+    required: true,
   },
   sync: {
     type: 'boolean',
@@ -88,26 +104,21 @@ export const workflowSchema: ISchema = {
   properties: {
     provider: {
       type: 'void',
-      'x-decorator': 'ResourceActionProvider',
+      'x-decorator': 'TableBlockProvider',
       'x-decorator-props': {
-        collection,
-        resourceName: 'workflows',
-        request: {
-          resource: 'workflows',
-          action: 'list',
-          params: {
-            filter: {
-              current: true,
-            },
-            sort: ['-createdAt'],
-            except: ['config'],
-            appends: ['stats'],
+        collection: 'workflows',
+        action: 'list',
+        params: {
+          filter: {
+            current: true,
           },
+          sort: ['-createdAt'],
+          except: ['config'],
+          appends: ['stats'],
         },
-      },
-      'x-component': 'CollectionProvider_deprecated',
-      'x-component-props': {
-        collection,
+        rowKey: 'id',
+        showIndex: true,
+        dragSort: false,
       },
       properties: {
         actions: {
@@ -127,7 +138,7 @@ export const workflowSchema: ISchema = {
               },
               'x-action': 'filter',
               'x-component': 'Filter.Action',
-              'x-use-component-props': 'cm.useFilterActionProps',
+              'x-use-component-props': 'useFilterActionProps',
               'x-component-props': {
                 icon: 'FilterOutlined',
               },
@@ -222,20 +233,20 @@ export const workflowSchema: ISchema = {
           },
         },
         table: {
-          type: 'void',
-          'x-component': 'Table.Void',
+          type: 'array',
+          'x-component': 'TableV2',
+          'x-use-component-props': 'useTableBlockProps',
           'x-component-props': {
             rowKey: 'id',
             rowSelection: {
               type: 'checkbox',
             },
-            useDataSource: '{{ cm.useDataSourceFromRAC }}',
           },
           properties: {
             title: {
               type: 'void',
-              'x-decorator': 'Table.Column.Decorator',
-              'x-component': 'Table.Column',
+              'x-component': 'TableV2.Column',
+              title: `{{ t("Title") }}`,
               properties: {
                 title: {
                   type: 'string',
@@ -246,8 +257,8 @@ export const workflowSchema: ISchema = {
             },
             type: {
               type: 'void',
-              'x-decorator': 'Table.Column.Decorator',
-              'x-component': 'Table.Column',
+              'x-component': 'TableV2.Column',
+              title: `{{ t("Trigger type", { ns: "${NAMESPACE}" }) }}`,
               properties: {
                 type: {
                   type: 'string',
@@ -258,8 +269,8 @@ export const workflowSchema: ISchema = {
             },
             sync: {
               type: 'void',
-              'x-decorator': 'Table.Column.Decorator',
-              'x-component': 'Table.Column',
+              'x-component': 'TableV2.Column',
+              title: `{{ t("Execute mode", { ns: "${NAMESPACE}" }) }}`,
               properties: {
                 sync: {
                   type: 'boolean',
@@ -270,8 +281,8 @@ export const workflowSchema: ISchema = {
             },
             enabled: {
               type: 'void',
-              'x-decorator': 'Table.Column.Decorator',
-              'x-component': 'Table.Column',
+              'x-component': 'TableV2.Column',
+              title: `{{ t("Status", { ns: "${NAMESPACE}" }) }}`,
               properties: {
                 enabled: {
                   type: 'boolean',
@@ -283,15 +294,14 @@ export const workflowSchema: ISchema = {
             },
             'stats.executed': {
               type: 'void',
-              'x-decorator': 'Table.Column.Decorator',
-              'x-component': 'Table.Column',
+              'x-component': 'TableV2.Column',
               title: `{{ t("Executed", { ns: "${NAMESPACE}" }) }}`,
               properties: {
                 'stats.executed': {
                   type: 'number',
                   'x-decorator': 'OpenDrawer',
                   'x-decorator-props': {
-                    component: '{{ExecutedLink}}',
+                    component: ExecutedLink,
                   },
                   'x-component': 'InputNumber',
                   'x-read-pretty': true,
@@ -304,7 +314,7 @@ export const workflowSchema: ISchema = {
             actions: {
               type: 'void',
               title: '{{ t("Actions") }}',
-              'x-component': 'Table.Column',
+              'x-component': 'TableV2.Column',
               properties: {
                 actions: {
                   type: 'void',

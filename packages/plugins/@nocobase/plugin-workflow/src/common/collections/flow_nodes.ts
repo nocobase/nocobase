@@ -20,6 +20,12 @@ export default {
     {
       type: 'string',
       name: 'title',
+      interface: 'input',
+      uiSchema: {
+        type: 'string',
+        title: '{{t("Title")}}',
+        'x-component': 'Input',
+      },
     },
     // which workflow belongs to
     {

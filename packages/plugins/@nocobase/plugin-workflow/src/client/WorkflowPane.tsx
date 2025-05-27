@@ -17,7 +17,6 @@ import {
   SchemaComponentContext,
   useActionContext,
   useApp,
-  useCollectionRecordData,
   usePlugin,
   useRecord,
   useResourceActionContext,
@@ -118,14 +117,6 @@ function useRevisionAction() {
   };
 }
 
-function ExecutedLink(props) {
-  const record = useCollectionRecordData();
-  return React.createElement('a', {
-    'aria-label': `executed-${record.title}`,
-    ...props,
-  });
-}
-
 export function WorkflowPane() {
   const ctx = useContext(SchemaComponentContext);
   const { useTriggersOptions } = usePlugin(WorkflowPlugin);
@@ -151,7 +142,7 @@ export function WorkflowPane() {
             useRefreshActionProps,
             useRevisionAction,
             TriggerOptionRender,
-            ExecutedLink,
+            // ExecutedLink,
             ExecutionStatusOptions,
           }}
         />

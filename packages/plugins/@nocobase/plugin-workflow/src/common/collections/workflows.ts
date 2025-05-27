@@ -44,7 +44,6 @@ export default {
           { label: `{{t("Off", { ns: "${NAMESPACE}" })}}`, value: false },
         ],
         'x-component': 'Radio.Group',
-        'x-decorator': 'FormItem',
         default: false,
       },
     },
@@ -66,14 +65,8 @@ export default {
       uiSchema: {
         title: `{{t("Trigger type", { ns: "${NAMESPACE}" })}}`,
         type: 'string',
-        'x-decorator': 'FormItem',
         'x-component': 'Select',
         enum: '{{useTriggersOptions()}}',
-        'x-component-props': {
-          optionRender: '{{TriggerOptionRender}}',
-          popupMatchSelectWidth: true,
-          listHeight: 300,
-        },
         required: true,
       },
     },
@@ -119,7 +112,6 @@ export default {
       uiSchema: {
         title: `{{t("Mode", { ns: "${NAMESPACE}" })}}`,
         type: 'boolean',
-        'x-decorator': 'FormItem',
         'x-component': 'Radio.Group',
         enum: [
           {
@@ -159,18 +151,18 @@ export default {
       sourceKey: 'key',
       constraints: false,
       onDelete: 'CASCADE',
-      interface: 'oho',
-      uiSchema: {
-        type: 'object',
-        'x-component': 'AssociationField',
-        'x-component-props': {
-          fieldNames: {
-            label: 'executed',
-            value: 'key',
-          },
-        },
-        'x-read-pretty': true,
-      },
+      // interface: 'oho',
+      // uiSchema: {
+      //   type: 'object',
+      //   'x-component': 'AssociationField',
+      //   'x-component-props': {
+      //     fieldNames: {
+      //       label: 'executed',
+      //       value: 'key',
+      //     },
+      //   },
+      //   'x-read-pretty': true,
+      // },
     },
     {
       type: 'hasOne',
@@ -180,18 +172,18 @@ export default {
       sourceKey: 'id',
       constraints: false,
       onDelete: 'CASCADE',
-      interface: 'oho',
-      uiSchema: {
-        type: 'object',
-        'x-component': 'AssociationField',
-        'x-component-props': {
-          fieldNames: {
-            label: 'executed',
-            value: 'id',
-          },
-        },
-        'x-read-pretty': true,
-      },
+      // interface: 'oho',
+      // uiSchema: {
+      //   type: 'object',
+      //   'x-component': 'AssociationField',
+      //   'x-component-props': {
+      //     fieldNames: {
+      //       label: 'executed',
+      //       value: 'id',
+      //     },
+      //   },
+      //   'x-read-pretty': true,
+      // },
     },
   ],
   // NOTE: use unique index for avoiding deadlock in mysql when setCurrent
