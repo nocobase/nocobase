@@ -16,7 +16,7 @@ import {
   useDesignable,
   useIsFieldReadPretty,
 } from '@nocobase/client';
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { HtmlRenderer } from './HtmlRenderer';
 
@@ -27,12 +27,9 @@ import zhCN from '../locale/zh-CN.json';
 // Define namespace for i18n
 const NAMESPACE = 'field-content-formatter';
 
-// Helper function for translation
-const t = (key: string) => `{{t("${key}", { ns: "${NAMESPACE}" })}}`;
-
 // Custom preview component, which supports rich text and error prompts.
 const FormatterPreview = ({ formatter, testValue }) => {
-  const { t: translate } = useTranslation(NAMESPACE);
+  const { t } = useTranslation(NAMESPACE);
   if (formatter && testValue) {
     return (
       <InputWithFormatter
@@ -42,7 +39,7 @@ const FormatterPreview = ({ formatter, testValue }) => {
       />
     );
   } else {
-    return <div style={{ color: '#999' }}>{translate('Preview will appear here')}</div>;
+    return <div style={{ color: '#999' }}>{t('Preview will appear here')}</div>;
   }
 };
 
@@ -50,12 +47,12 @@ const SchemaSettingsInputFormat = function InputFormatConfig(props: { fieldSchem
   const { fieldSchema } = props;
   const field = useField();
   const { dn } = useDesignable();
-  const { t: translate } = useTranslation(NAMESPACE);
+  const { t } = useTranslation(NAMESPACE);
   const { formatter } = fieldSchema['x-component-props'] || {};
 
   return (
     <SchemaSettingsModalItem
-      title={translate('Field content formatter')}
+      title={t('Field content formatter')}
       schema={
         {
           type: 'object',
@@ -130,10 +127,6 @@ const InputWithFormatter = (props) => {
 
 class PluginFieldContentFormatterClient extends Plugin {
   async load() {
-    // Load locale resources
-    this.app.i18n.addResources('en-US', NAMESPACE, enUS);
-    this.app.i18n.addResources('zh-CN', NAMESPACE, zhCN);
-
     const addFormatterSetting = (componentType: string) => {
       this.schemaSettingsManager.addItem(`fieldSettings:component:${componentType}`, 'enableFormatter', {
         Component: SchemaSettingsInputFormat as any,

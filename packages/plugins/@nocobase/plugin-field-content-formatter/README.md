@@ -78,12 +78,12 @@ A formatter is a JavaScript function that receives a field value and returns a f
 ```javascript
 (value) => {
   const colors = {
-    'pending': '#orange',
-    'in-progress': '#blue', 
-    'completed': '#green',
-    'cancelled': '#red'
+    'pending': 'orange',
+    'in-progress': 'blue', 
+    'completed': 'green',
+    'cancelled': 'red'
   };
-  const color = colors[value] || '#gray';
+  const color = colors[value] || 'gray';
   return `<span style="background: ${color}; color: white; padding: 2px 8px; border-radius: 4px; font-size: 12px;">${value}</span>`;
 }
 ```
