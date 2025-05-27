@@ -147,12 +147,13 @@ export const MarkdownVoidInner: any = withDynamicSchemaProps(
     const localVariables = useLocalVariables();
     const { engine } = schema?.['x-decorator-props'] || {};
     const [loading, setLoading] = useState(false);
+    const { t, i18n } = useTranslation();
 
     useEffect(() => {
       setLoading(true);
       const cvtContentToHTML = async () => {
         setTimeout(async () => {
-          const replacedContent = await getRenderContent(engine, content, variables, localVariables, parseMarkdown);
+          const replacedContent = await getRenderContent(engine, content, variables, localVariables, parseMarkdown, t);
           setHtml(replacedContent);
         });
         setLoading(false);
@@ -213,7 +214,7 @@ export const MarkdownVoid = (props) => {
   const fieldSchema = useFieldSchema();
 
   return (
-    <VariableScope scopeId={fieldSchema['x-uid']} type='markdownBlock'>
+    <VariableScope scopeId={fieldSchema['x-uid']} type="markdownBlock">
       <FlagProvider collectionField={true}>
         <MarkdownVoidInner {...props} />
       </FlagProvider>
