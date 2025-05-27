@@ -12,7 +12,7 @@
   "Step 3: Import options": "Schritt 3: Importoptionen",
   "Download tips": "- Laden Sie die Vorlage herunter und füllen Sie die Daten gemäß dem Format aus \r\n - Es wird nur das erste Arbeitsblatt importiert \r\n - Ändern Sie nicht die Kopfzeile der Vorlage, um einen Importfehler zu vermeiden",
   "Import warnings": "Sie können bis zu {{limit}} Datenzeilen auf einmal importieren, alles darüber hinaus wird ignoriert.",
-  "Upload placeholder": "Ziehen Sie die Datei hierher oder klicken Sie zum Hochladen, die Dateigröße sollte 80 MB nicht überschreiten",
+  "Upload placeholder": "Ziehen Sie die Datei hierher oder klicken Sie zum Hochladen.",
   "Excel data importing": "Excel-Datenimport läuft, bitte schließen Sie das Fenster nicht",
   "{{successCount}} records have been successfully imported": "{{successCount}} Datensätze wurden erfolgreich importiert",
   "To download the failure data": "Um die fehlgeschlagenen Daten herunterzuladen",

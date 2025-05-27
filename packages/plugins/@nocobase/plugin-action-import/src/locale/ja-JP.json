@@ -10,7 +10,7 @@
   "Step 2: Upload Excel": "手順2: Excelファイルをアップロード",
   "Download tips": "テンプレートをダウンロードし、フォーマットに従ってデータを入力してください",
   "Import warnings": "一度に{{limit}}行までインポート可能です。超過分は無視されます。",
-  "Upload placeholder": "ここにファイルをドラッグ＆ドロップするか、クリックしてアップロードしてください。ファイルサイズは 80M 以下にしてください。",
+  "Upload placeholder": "ここにファイルをドラッグ＆ドロップするか、クリックしてアップロードしてください。",
   "Excel data importing": "データをインポート中です。ウィンドウを閉じないでください。",
   "{{successCount}} records have been successfully imported": "{{successCount}}件のデータが正常にインポートされました",
   "To download the failure data": "失敗データをダウンロード",

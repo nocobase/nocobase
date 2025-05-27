@@ -9,7 +9,7 @@
   "Step 1: Download template": "Paso 1: Descargar plantilla",
   "Step 2: Upload Excel": "Paso 2: Cargar Excel",
   "Download tips": "- Descargar la plantilla y rellenar los datos según el formato \r\n - Importar sólo la primera hoja de cálculo \r\n - No cambiar la cabecera de la plantilla para evitar fallos en la importación",
-  "Upload placeholder": "Arrastra y suelta el archivo aquí o haga clic para cargarlo, el tamaño del archivo no debe superar los 80M",
+  "Upload placeholder": "Arrastra y suelta el archivo aquí o haga clic para cargarlo.",
   "Excel data importing": "Importación de datos Excel",
   "{{successCount}} records have been successfully imported": "{{successCount}} registros han sido importados exitosamente",
   "To download the failure data": "Para descargar los datos de fallo",
