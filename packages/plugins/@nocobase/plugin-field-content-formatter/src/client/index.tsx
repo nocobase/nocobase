@@ -16,7 +16,7 @@ import {
   useDesignable,
   useIsFieldReadPretty,
 } from '@nocobase/client';
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { HtmlRenderer } from './HtmlRenderer';
 
@@ -29,6 +29,22 @@ const NAMESPACE = 'field-content-formatter';
 
 // Helper function for translation
 const t = (key: string) => `{{t("${key}", { ns: "${NAMESPACE}" })}}`;
+
+// Custom preview component, which supports rich text and error prompts.
+const FormatterPreview = ({ formatter, testValue }) => {
+  const { t: translate } = useTranslation(NAMESPACE);
+  if (formatter && testValue) {
+    return (
+      <InputWithFormatter
+        value={testValue}
+        formatter={formatter}
+        originalInput={({ _error }) => <div style={{ color: 'red' }}>{_error}</div>}
+      />
+    );
+  } else {
+    return <div style={{ color: '#999' }}>{translate('Preview will appear here')}</div>;
+  }
+};
 
 const SchemaSettingsInputFormat = function InputFormatConfig(props: { fieldSchema: Schema }) {
   const { fieldSchema } = props;
@@ -54,6 +70,26 @@ const SchemaSettingsInputFormat = function InputFormatConfig(props: { fieldSchem
                 'JavaScript function that returns HTML string, e.g., (value) => `<strong>${value}</strong>`',
               ),
             },
+            testValue: {
+              type: 'string',
+              title: t('Test Value'),
+              'x-component': 'Input',
+              'x-decorator': 'FormItem',
+            },
+            preview: {
+              type: 'void',
+              title: t('Preview'),
+              'x-decorator': 'FormItem',
+              'x-component': FormatterPreview,
+              'x-reactions': {
+                dependencies: ['formatter', 'testValue'],
+                fulfill: {
+                  schema: {
+                    'x-component-props': '{{ $form.values }}',
+                  },
+                },
+              },
+            },
           },
         } as ISchema
       }
@@ -64,7 +100,7 @@ const SchemaSettingsInputFormat = function InputFormatConfig(props: { fieldSchem
         schema['x-component-props'] = fieldSchema['x-component-props'] || {};
         fieldSchema['x-component-props'] = {
           ...(fieldSchema['x-component-props'] || {}),
-          ...data,
+          formatter: data.formatter,
         };
         schema['x-component-props'] = fieldSchema['x-component-props'];
         field.componentProps = fieldSchema['x-component-props'];
@@ -88,7 +124,7 @@ const InputWithFormatter = (props) => {
     return <span>{htmlContent}</span>;
   } catch (error) {
     console.error('Formatter error:', error);
-    return <OriginalInput {...props} />;
+    return <OriginalInput {...props} _error={error.toString()} />;
   }
 };
 

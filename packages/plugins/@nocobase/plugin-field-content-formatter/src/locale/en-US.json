@@ -1,5 +1,8 @@
 {
   "Field content formatter": "Field content formatter",
   "Formatter": "Formatter",
-  "JavaScript function that returns HTML string, e.g., (value) => `<strong>${value}</strong>`": "JavaScript function that returns HTML string, e.g., (value) => `<strong>${value}</strong>`"
+  "JavaScript function that returns HTML string, e.g., (value) => `<strong>${value}</strong>`": "JavaScript function that returns HTML string or text, e.g., (value) => `<strong>${value}</strong>`",
+  "Test Value": "Test Value",
+  "Preview": "Preview",
+  "Preview will appear here": "Preview will appear here"
 } 
