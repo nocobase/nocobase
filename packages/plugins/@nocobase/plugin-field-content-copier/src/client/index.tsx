@@ -133,7 +133,9 @@ class PluginFieldContentCopier extends Plugin {
       // Debug: Verify translations are accessible
       const enText = this.app.i18n.t('Copied to clipboard', { ns: 'plugin-field-content-copier' });
       const zhText = this.app.i18n.t('Copied to clipboard', { ns: 'plugin-field-content-copier', lng: 'zh-CN' });
-      console.log('Translation test - EN:', enText, 'ZH:', zhText);
+      if (process.env.NODE_ENV === 'development') {
+        console.log('Translation test - EN:', enText, 'ZH:', zhText);
+      }
     } catch (err) {
       console.error('Failed to load translations:', err);
     }
