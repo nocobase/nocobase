@@ -879,7 +879,7 @@ export const Table: any = withDynamicSchemaProps(
               }
             `
           : '';
-      }, [enableZebraStriping]);
+      }, [enableZebraStriping, token.controlItemBgHover]);
       const tableBlockContextBasicValue = useTableBlockContextBasicValue();
 
       useEffect(() => {
