@@ -11,7 +11,7 @@ import { EllipsisOutlined, HighlightOutlined } from '@ant-design/icons';
 import ProLayout, { RouteContext, RouteContextType } from '@ant-design/pro-layout';
 import { HeaderViewProps } from '@ant-design/pro-layout/es/components/Header';
 import { css } from '@emotion/css';
-import { theme as antdTheme, ConfigProvider, Popover, Result, Tooltip } from 'antd';
+import { theme as antdTheme, Badge, ConfigProvider, Popover, Result, Tooltip } from 'antd';
 import { createStyles } from 'antd-style';
 import React, { createContext, FC, memo, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import ReactDOM from 'react-dom';
@@ -55,6 +55,9 @@ import { KeepAlive, useKeepAlive } from './KeepAlive';
 import { NocoBaseDesktopRoute, NocoBaseDesktopRouteType } from './convertRoutesToSchema';
 import { MenuSchemaToolbar, ResetThemeTokenAndKeepAlgorithm } from './menuItemSettings';
 import { userCenterSettings } from './userCenterSettings';
+import { VariableScope } from '../../../variables/VariableScope';
+import _ from 'lodash';
+import { useEvaluatedExpression } from '../../../hooks/useParsedValue';
 
 export { KeepAlive, NocoBaseDesktopRouteType, useKeepAlive };
 
@@ -291,9 +294,12 @@ const MenuSchemaToolbarWithContainer = () => {
   );
 };
 
+const menuItemStyle = { display: 'flex', alignItems: 'center', justifyContent: 'space-between' };
+
 const GroupItem: FC<{ item: any }> = (props) => {
   const { item } = props;
   const { designable } = useDesignable();
+  const badgeCount = useEvaluatedExpression(item._route.options?.badge?.count);
 
   // fake schema used to pass routing information to SortableItem
   const fakeSchema: any = { __route__: item._route };
@@ -301,16 +307,23 @@ const GroupItem: FC<{ item: any }> = (props) => {
   return (
     <ParentRouteContext.Provider value={item._parentRoute}>
       <NocoBaseRouteContext.Provider value={item._route}>
-        <SortableItem id={item._route.id} schema={fakeSchema} aria-label={item.name}>
+        <SortableItem id={item._route.id} schema={fakeSchema} aria-label={item.name} style={menuItemStyle}>
           {props.children}
           {designable && <MenuSchemaToolbarWithContainer />}
+          {badgeCount != null && (
+            <Badge
+              {...item._route.options.badge}
+              count={badgeCount}
+              style={{ marginLeft: 4, color: item._route.options?.badge?.textColor }}
+            ></Badge>
+          )}
         </SortableItem>
       </NocoBaseRouteContext.Provider>
     </ParentRouteContext.Provider>
   );
 };
 
-const WithTooltip: FC<{ title: string; hidden: boolean }> = (props) => {
+const WithTooltip: FC<{ title: string; hidden: boolean; badgeProps: any }> = (props) => {
   const { inHeader } = useContext(HeaderContext);
 
   return (
@@ -318,7 +331,9 @@ const WithTooltip: FC<{ title: string; hidden: boolean }> = (props) => {
       {(context) =>
         context.collapsed && !props.hidden && !inHeader ? (
           <Tooltip title={props.title} placement="right">
-            {props.children}
+            <Badge {...props.badgeProps} style={{ transform: 'none' }}>
+              {props.children}
+            </Badge>
           </Tooltip>
         ) : (
           props.children
@@ -333,6 +348,7 @@ const MenuItem: FC<{ item: any; options: { isMobile: boolean; collapsed: boolean
   const { parseURLAndParams } = useParseURLAndParams();
   const divRef = useRef(null);
   const location = useLocation();
+  const badgeCount = useEvaluatedExpression(item._route.options?.badge?.count);
 
   useEffect(() => {
     if (divRef.current) {
@@ -387,7 +403,7 @@ const MenuItem: FC<{ item: any; options: { isMobile: boolean; collapsed: boolean
     return (
       <ParentRouteContext.Provider value={item._parentRoute}>
         <NocoBaseRouteContext.Provider value={item._route}>
-          <SortableItem id={item._route.id} schema={fakeSchema}>
+          <SortableItem id={item._route.id} schema={fakeSchema} style={menuItemStyle}>
             <div onClick={handleClickLink}>
               {/* 这里是为了扩大点击区域 */}
               <Link to={location.pathname} aria-label={item.name}>
@@ -395,6 +411,13 @@ const MenuItem: FC<{ item: any; options: { isMobile: boolean; collapsed: boolean
               </Link>
             </div>
             <MenuSchemaToolbar />
+            {badgeCount != null && (
+              <Badge
+                {...item._route.options?.badge}
+                count={badgeCount}
+                style={{ marginLeft: 4, color: item._route.options?.badge?.textColor }}
+              ></Badge>
+            )}
           </SortableItem>
         </NocoBaseRouteContext.Provider>
       </ParentRouteContext.Provider>
@@ -403,20 +426,25 @@ const MenuItem: FC<{ item: any; options: { isMobile: boolean; collapsed: boolean
 
   // 如果点击的是一个 group，直接跳转到第一个子页面
   const path = item.redirect || item.path;
+  const badgeProps = { ...item._route.options?.badge, count: badgeCount };
 
   return (
     <ParentRouteContext.Provider value={item._parentRoute}>
       <NocoBaseRouteContext.Provider value={item._route}>
-        <SortableItem id={item._route.id} schema={fakeSchema}>
+        <SortableItem id={item._route.id} schema={fakeSchema} style={menuItemStyle}>
           <WithTooltip
             title={item.name}
             hidden={item._route.type === NocoBaseDesktopRouteType.group || item._depth > 0}
+            badgeProps={badgeProps}
           >
             <Link to={path} aria-label={item.name}>
               {props.children}
             </Link>
           </WithTooltip>
           <MenuSchemaToolbar />
+          {badgeCount != null && (
+            <Badge {...badgeProps} style={{ marginLeft: 4, color: item._route.options?.badge?.textColor }}></Badge>
+          )}
         </SortableItem>
       </NocoBaseRouteContext.Provider>
     </ParentRouteContext.Provider>
@@ -504,17 +532,21 @@ const MenuItemTitleWithTooltip = withTooltipComponent(MenuItemTitle);
 
 const menuItemRender = (item, dom, options) => {
   return (
-    <MenuItem item={item} options={options}>
-      <MenuItemTitleWithTooltip tooltip={item._route?.tooltip}>{dom}</MenuItemTitleWithTooltip>
-    </MenuItem>
+    <VariableScope scopeId={item._route.schemaUid} type="menuItem">
+      <MenuItem item={item} options={options}>
+        <MenuItemTitleWithTooltip tooltip={item._route?.tooltip}>{dom}</MenuItemTitleWithTooltip>
+      </MenuItem>
+    </VariableScope>
   );
 };
 
 const subMenuItemRender = (item, dom) => {
   return (
-    <GroupItem item={item}>
-      <MenuItemTitleWithTooltip tooltip={item._route?.tooltip}>{dom}</MenuItemTitleWithTooltip>
-    </GroupItem>
+    <VariableScope scopeId={item._route.schemaUid} type="groupItem">
+      <GroupItem item={item}>
+        <MenuItemTitleWithTooltip tooltip={item._route?.tooltip}>{dom}</MenuItemTitleWithTooltip>
+      </GroupItem>
+    </VariableScope>
   );
 };
 

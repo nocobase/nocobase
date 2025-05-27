@@ -24,6 +24,8 @@ import { CollectionRecord } from '../collection-record';
 import { BlockRequestProvider } from './DataBlockRequestProvider';
 import { DataBlockResourceProvider } from './DataBlockResourceProvider';
 import { BlockLinkageRuleProvider } from '../../modules/blocks/BlockLinkageRuleProvider';
+import { VariableScope } from '../../variables/VariableScope';
+import { useFieldSchema } from '@formily/react';
 
 export interface AllDataBlockProps {
   collection: string | CollectionOptions;
@@ -177,32 +179,36 @@ export const DataBlockProvider: FC<Partial<AllDataBlockProps>> = withDynamicSche
   React.memo((props) => {
     const { collection, association, dataSource, children, hidden, ...resets } = props as Partial<AllDataBlockProps>;
     const { dn } = useDesignable();
+    const fieldSchema = useFieldSchema();
+
     if (hidden) {
       return null;
     }
     return (
-      <DataBlockContext.Provider
-        value={{
-          dn,
-          props: { ...resets, collection, association, dataSource } as AllDataBlockProps,
-        }}
-      >
-        <CollectionManagerProvider dataSource={dataSource}>
-          <AssociationOrCollectionProvider collection={collection} association={association}>
-            <ACLCollectionProvider>
-              <BlockLinkageRuleProvider>
-                <DataBlockResourceProvider>
-                  <BlockRequestProvider>
-                    <DataBlockCollector params={props.params}>
-                      <RerenderDataBlockProvider>{children}</RerenderDataBlockProvider>
-                    </DataBlockCollector>
-                  </BlockRequestProvider>
-                </DataBlockResourceProvider>
-              </BlockLinkageRuleProvider>
-            </ACLCollectionProvider>
-          </AssociationOrCollectionProvider>
-        </CollectionManagerProvider>
-      </DataBlockContext.Provider>
+      <VariableScope scopeId={fieldSchema['x-uid']} type="dataBlock">
+        <DataBlockContext.Provider
+          value={{
+            dn,
+            props: { ...resets, collection, association, dataSource } as AllDataBlockProps,
+          }}
+        >
+          <CollectionManagerProvider dataSource={dataSource}>
+            <AssociationOrCollectionProvider collection={collection} association={association}>
+              <ACLCollectionProvider>
+                <BlockLinkageRuleProvider>
+                  <DataBlockResourceProvider>
+                    <BlockRequestProvider>
+                      <DataBlockCollector params={props.params}>
+                        <RerenderDataBlockProvider>{children}</RerenderDataBlockProvider>
+                      </DataBlockCollector>
+                    </BlockRequestProvider>
+                  </DataBlockResourceProvider>
+                </BlockLinkageRuleProvider>
+              </ACLCollectionProvider>
+            </AssociationOrCollectionProvider>
+          </CollectionManagerProvider>
+        </DataBlockContext.Provider>
+      </VariableScope>
     );
   }),
   { displayName: 'DataBlockProvider' },

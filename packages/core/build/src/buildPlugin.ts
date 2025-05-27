@@ -108,11 +108,8 @@ const external = [
   'react-i18next',
 
   // dnd-kit 相关
-  '@dnd-kit/accessibility',
   '@dnd-kit/core',
-  '@dnd-kit/modifiers',
   '@dnd-kit/sortable',
-  '@dnd-kit/utilities',
 
   // formily 相关
   '@formily/antd-v5',

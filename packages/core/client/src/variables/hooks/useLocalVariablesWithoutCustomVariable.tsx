@@ -21,14 +21,13 @@ import { usePopupVariableContext } from '../../schema-settings/VariableInput/hoo
 import { useCurrentRecordContext } from '../../schema-settings/VariableInput/hooks/useRecordVariable';
 import { VariableOption } from '../types';
 import useContextVariable from './useContextVariable';
-import { useApp } from '../../application/hooks/useApp';
 
 interface Props {
   collectionName?: string;
   currentForm?: Form;
 }
 
-const useLocalVariables = (props?: Props) => {
+export const useLocalVariablesWithoutCustomVariable = (props?: Props) => {
   const {
     parentObjectCtx,
     shouldDisplayParentObject,
@@ -62,15 +61,6 @@ const useLocalVariables = (props?: Props) => {
   if (props?.collectionName) {
     name = props.collectionName;
   }
-
-  const app = useApp();
-  const customVariables =
-    app.getVariables?.().map((variable) => {
-      return {
-        name: variable.name,
-        ctx: variable.useCtx(),
-      };
-    }) || [];
 
   return useMemo(() => {
     return (
@@ -156,7 +146,6 @@ const useLocalVariables = (props?: Props) => {
           ctx: parentObjectCtx,
           collectionName: collectionNameOfParentObject,
         },
-        ...customVariables,
       ] as VariableOption[]
     ).filter(Boolean);
   }, [
@@ -181,8 +170,5 @@ const useLocalVariables = (props?: Props) => {
     parentObjectCtx,
     collectionNameOfParentObject,
     contextVariable,
-    ...customVariables.map((item) => item.ctx),
   ]); // 尽量保持返回的值不变，这样可以减少接口的请求次数，因为关系字段会缓存到变量的 ctx 中
 };
-
-export default useLocalVariables;

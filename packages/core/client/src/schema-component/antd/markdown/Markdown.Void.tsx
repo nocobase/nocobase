@@ -14,7 +14,6 @@ import type { TextAreaRef } from 'antd/es/input/TextArea';
 import cls from 'classnames';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useCompile } from '../../';
 import { useCollectionRecord } from '../../../data-source';
 import { useGlobalTheme } from '../../../global-theme';
 import { withDynamicSchemaProps } from '../../../hoc/withDynamicSchemaProps';
@@ -29,6 +28,7 @@ import { registerQrcodeWebComponent } from './qrcode-webcom';
 import { FlagProvider } from '../../../flag-provider';
 import { useStyles } from './style';
 import { parseMarkdown } from './util';
+import { VariableScope } from '../../../variables/VariableScope';
 
 export interface MarkdownEditorProps extends Omit<TextAreaProps, 'onSubmit'> {
   scope: any[];
@@ -147,7 +147,6 @@ export const MarkdownVoidInner: any = withDynamicSchemaProps(
     const localVariables = useLocalVariables();
     const { engine } = schema?.['x-decorator-props'] || {};
     const [loading, setLoading] = useState(false);
-    const compile = useCompile();
 
     useEffect(() => {
       setLoading(true);
@@ -211,10 +210,14 @@ export const MarkdownVoidInner: any = withDynamicSchemaProps(
 );
 
 export const MarkdownVoid = (props) => {
+  const fieldSchema = useFieldSchema();
+
   return (
-    <FlagProvider collectionField={true}>
-      <MarkdownVoidInner {...props} />
-    </FlagProvider>
+    <VariableScope scopeId={fieldSchema['x-uid']} type="markdownBlock">
+      <FlagProvider collectionField={true}>
+        <MarkdownVoidInner {...props} />
+      </FlagProvider>
+    </VariableScope>
   );
 };
 MarkdownVoid.Designer = MarkdownVoidDesigner;

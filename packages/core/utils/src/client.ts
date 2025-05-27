@@ -9,7 +9,7 @@
 
 import lodash from 'lodash';
 import { dayjs } from './dayjs';
-
+import { getDayRangeByParams, getOffsetRangeByParams } from './dateRangeUtils';
 export * from './collections-graph';
 export * from './common';
 export * from './date';
@@ -31,5 +31,4 @@ export * from './parseHTML';
 export * from './uid';
 export * from './url';
 export * from './transformMultiColumnToSingleColumn';
-export * from './dateRangeUtils';
-export { dayjs, lodash };
+export { dayjs, lodash, getDayRangeByParams, getOffsetRangeByParams };
