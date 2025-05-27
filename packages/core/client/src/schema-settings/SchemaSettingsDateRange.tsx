@@ -174,12 +174,7 @@ export const SchemaSettingsDateRange = function DateRangeConfig(props: { fieldSc
       // 这里是为了在新增表单中设置日期范围时设置的值能正常显示
       ModalContextProvider={(props) => {
         return (
-          <FlagProvider
-            isInSubForm={isInSubForm}
-            isInSubTable={isInSubTable}
-            isInFormDataTemplate={true}
-            collectionField={collectionField}
-          >
+          <FlagProvider isInSubForm={isInSubForm} isInSubTable={isInSubTable} isInFormDataTemplate={true}>
             {props.children}
           </FlagProvider>
         );
