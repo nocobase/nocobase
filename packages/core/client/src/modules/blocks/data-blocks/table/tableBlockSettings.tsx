@@ -99,6 +99,31 @@ export const tableBlockSettings = new SchemaSettings({
       },
     }),
     {
+      name: 'enableZebraStriping',
+      type: 'switch',
+      useComponentProps: () => {
+        const field = useField();
+        const fieldSchema = useFieldSchema();
+        const { t } = useTranslation();
+        const { dn } = useDesignable();
+
+        return {
+          title: t('Zebra striping'),
+          checked: field.decoratorProps.enableZebraStriping,
+          onChange: async (enableZebraStriping) => {
+            field.decoratorProps.enableZebraStriping = enableZebraStriping;
+            fieldSchema['x-decorator-props'].enableZebraStriping = enableZebraStriping;
+            dn.emit('patch', {
+              schema: {
+                ['x-uid']: fieldSchema['x-uid'],
+                'x-decorator-props': fieldSchema['x-decorator-props'],
+              },
+            });
+          },
+        };
+      },
+    },
+    {
       name: 'enableDragAndDropSorting',
       type: 'switch',
       useComponentProps: () => {
