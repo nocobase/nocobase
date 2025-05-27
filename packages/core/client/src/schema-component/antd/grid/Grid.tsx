@@ -73,18 +73,22 @@ const ColDivider = (props) => {
   }
   const prevSchema = props.cols[props.index];
   const nextSchema = props.cols[props.index + 1];
+  const draggableDisabled = props.first || props.last || !designable;
   const {
     attributes,
     listeners,
     setNodeRef: setDraggableNodeRef,
     isDragging,
   } = useDraggable({
-    disabled: props.first || props.last || !designable,
+    disabled: draggableDisabled,
     id: props.id,
     data: {
       dividerRef,
       prevSchema,
       nextSchema,
+    },
+    attributes: {
+      tabIndex: draggableDisabled ? -1 : 0,
     },
   });
 
