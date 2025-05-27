@@ -9,7 +9,6 @@
 
 import { isURL } from '@nocobase/utils';
 import fs from 'fs/promises';
-import mkdirp from 'mkdirp';
 import multer from 'multer';
 import path from 'path';
 import urlJoin from 'url-join';
@@ -46,6 +45,7 @@ export default class extends StorageType {
     return multer.diskStorage({
       destination: (req, file, cb) => {
         const destPath = path.join(getDocumentRoot(this.storage), this.storage.path || '');
+        const mkdirp = require('mkdirp');
         mkdirp(destPath, (err: Error | null) => cb(err, destPath));
       },
       filename: getFilename,
