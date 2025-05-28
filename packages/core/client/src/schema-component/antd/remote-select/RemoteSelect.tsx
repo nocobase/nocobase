@@ -172,7 +172,7 @@ const InternalRemoteSelect = withDynamicSchemaProps(
           ...service,
           headers,
           params: {
-            paginate: false,
+            pageSize: 200,
             ...service?.params,
             filter: service?.params?.filter,
           },
