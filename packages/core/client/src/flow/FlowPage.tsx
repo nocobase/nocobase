@@ -1,0 +1,36 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
+import { PageContainer } from '@ant-design/pro-layout';
+import { observer } from '@formily/reactive-react';
+import { useApplyAutoFlows, useFlowModel, withFlowModel } from '@nocobase/flow-engine';
+import { Button, Tabs } from 'antd';
+import React from 'react';
+import { useParams } from 'react-router-dom';
+import { PageFlowModel } from '.';
+
+function InternalPage(props) {
+  const params = useParams();
+  const model = useFlowModel<PageFlowModel>(params.name);
+  const { tabList } = model.getProps();
+  return (
+    <div>
+      <Tabs items={tabList} />
+      Page {model.uid}
+    </div>
+  );
+}
+
+const InternalPageFlow = withFlowModel(InternalPage);
+
+export const FlowPage = () => {
+  const params = useParams();
+  const model = useFlowModel<PageFlowModel>(params.name);
+  return <InternalPageFlow model={model} />;
+};
