@@ -337,7 +337,7 @@ export class XlsxImporter extends EventEmitter {
         'debug',
       );
 
-      if (context?.skipWorkflow !== true) {
+      if (context?.skipWorkflow !== true && insertOptions.hooks !== false) {
         await this.loggerService.measureExecutedTime(
           async () => {
             await db.emitAsync(`${this.repository.collection.name}.afterCreateWithAssociations`, instance, {
