@@ -9,13 +9,14 @@
 
 import { DataBlockModel } from './dataBlockModel';
 import { ObjectResource } from '../resources';
+import { StepParams } from '../types';
 
 // TODO: 未完成
 
 export class FormBlockModel<TData = Record<string, any>> extends DataBlockModel {
   public declare resource: ObjectResource<TData>;
 
-  constructor(options: { uid: string; stepParams?: Record<string, any>; resource?: ObjectResource<TData> }) {
+  constructor(options: { uid: string; stepParams?: StepParams; resource?: ObjectResource<TData> }) {
     super({
       uid: options.uid,
       stepParams: options.stepParams,

@@ -88,7 +88,7 @@ export type FlowUserContext = Partial<Omit<FlowContext, 'engine' | '$exit' | 'ap
  */
 export type ModelConstructor<T extends FlowModel = FlowModel> = new (options: {
   uid: string;
-  stepParams?: Record<string, any>;
+  stepParams?: StepParams;
 }) => T;
 
 /**
@@ -149,3 +149,34 @@ export interface ActionOptions<TModel extends FlowModel = FlowModel, P = any, R 
   uiSchema?: Record<string, any>;
   defaultParams?: Partial<P>;
 }
+
+/**
+ * Steps parameters structure for flow models
+ * 
+ * @example
+ * ```typescript
+ * const stepParams: StepParams = {
+ *   'flow1': {
+ *     'step1': {
+ *       'param1': 'value1',
+ *       'param2': 'value2'
+ *     },
+ *     'step2': {
+ *       'param3': 'value3'
+ *     }
+ *   },
+ *   'flow2': {
+ *     'step1': {
+ *       'param1': 'value1'
+ *     }
+ *   }
+ * }
+ * ```
+ */
+export type StepParams = {
+  [flowKey: string]: {
+    [stepKey: string]: {
+      [paramKey: string]: string;
+    };
+  };
+};

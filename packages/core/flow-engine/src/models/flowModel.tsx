@@ -9,7 +9,7 @@
 
 import { observable, action, define } from '@formily/reactive';
 import { FlowEngine } from '../flowEngine';
-import type { FlowContext, StepDefinition, FlowDefinition, ActionStepDefinition, InlineStepDefinition } from '../types';
+import type { FlowContext, StepDefinition, FlowDefinition, ActionStepDefinition, InlineStepDefinition, StepParams } from '../types';
 import { generateUid } from '../utils';
 import _ from 'lodash';
 import { ExtendedFlowDefinition, IModelComponentProps, ReadonlyModelProps, FlowUserContext } from '../types';
@@ -23,7 +23,7 @@ export class FlowModel {
   public readonly uid: string;
   public props: IModelComponentProps;
   public hidden: boolean;
-  public stepParams: Record<string, Record<string, any>>;
+  public stepParams: StepParams;
   public flowEngine: FlowEngine;
   // TODO: 应该有一些类型，整个生命周期只执行一次，比如从后端加载配置，构造整个model树。
   // 后续model的更新不需要再重新加载了
@@ -63,7 +63,7 @@ export class FlowModel {
    */
   public static registerFlow<TModel extends FlowModel = FlowModel>(
     keyOrDefinition: string | FlowDefinition<TModel>,
-    flowDefinition?: FlowDefinition<TModel>,
+    flowDefinition?: Omit<FlowDefinition<TModel>, 'key'> & { key?: string },
   ): void {
     let definition: FlowDefinition<TModel>;
     let key: string;
@@ -224,10 +224,10 @@ export class FlowModel {
   }
 
   setStepParams(flowKey: string, stepKey: string, params: any): void;
-  setStepParams(flowKey: string, stepsParams: Record<string, any>): void;
-  setStepParams(allParams: Record<string, Record<string, any>>): void;
+  setStepParams(flowKey: string, stepParams: Record<string, any>): void;
+  setStepParams(allParams: StepParams): void;
   setStepParams(
-    flowKeyOrAllParams: string | Record<string, Record<string, any>>,
+    flowKeyOrAllParams: string | StepParams,
     stepKeyOrStepsParams?: string | Record<string, any>,
     params?: any,
   ): void {
@@ -252,7 +252,7 @@ export class FlowModel {
 
   getStepParams(flowKey: string, stepKey: string): any | undefined;
   getStepParams(flowKey: string): Record<string, any> | undefined;
-  getStepParams(): Record<string, Record<string, any>>;
+  getStepParams(): StepParams;
   getStepParams(flowKey?: string, stepKey?: string): any {
     if (flowKey && stepKey) {
       return this.stepParams[flowKey]?.[stepKey];

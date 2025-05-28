@@ -12,7 +12,7 @@ import { ActionModel } from './actions/actionModel';
 import { define, observable } from '@formily/reactive';
 import { DeleteActionModel } from './actions/deleteActionModel';
 import { RefreshActionModel } from './actions/refreshActionModel';
-import { ExtendedFlowDefinition } from '../types';
+import { ExtendedFlowDefinition, StepParams } from '../types';
 import { UpdateActionModel } from './actions/updateActionModel';
 
 const registeredActionModels = new WeakMap<
@@ -31,7 +31,7 @@ export class BlockModel extends FlowModel {
     this.initSupportedActions();
   }
 
-  constructor(options: { uid: string; stepParams?: Record<string, any> }) {
+  constructor(options: { uid: string; stepParams?: StepParams }) {
     super({
       uid: options.uid,
       stepParams: options.stepParams,

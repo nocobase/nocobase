@@ -11,11 +11,12 @@ import { useMemo } from 'react';
 import { FlowModel } from '../models';
 // import { useApp } from '@nocobase/client'; // 移除 useApp
 import { useFlowEngine } from '../provider';
+import { StepParams } from '../types';
 
 export function useFlowModel<T extends FlowModel = FlowModel>(
   uid: string,
   modelClassName?: string,
-  stepsParams?: Record<string, any>,
+  stepParams?: StepParams,
 ): T {
   const engine = useFlowEngine();
   // const app = useApp(); // 移除 app
@@ -26,12 +27,12 @@ export function useFlowModel<T extends FlowModel = FlowModel>(
       instance = engine.createModel<T>({
         uid,
         use: modelClassName,
-        stepsParams,
+        stepParams,
         // app: app, // createModel 的 app 参数已被移除
       });
     }
     return instance;
-  }, [engine, /* app, */ modelClassName, uid, stepsParams]); // 移除 app 从依赖数组
+  }, [engine, /* app, */ modelClassName, uid, stepParams]); // 移除 app 从依赖数组
 
   return model;
 }

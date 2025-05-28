@@ -9,6 +9,7 @@
 
 import { FlowModel } from '../flowModel';
 import { BlockModel } from '..';
+import { StepParams } from '../../types';
 
 export class ActionModel extends FlowModel {
   public blockModel: BlockModel;
@@ -17,7 +18,7 @@ export class ActionModel extends FlowModel {
     this.initFlows();
   }
 
-  constructor(options: { uid: string; stepParams?: Record<string, any>; blockModel?: BlockModel }) {
+  constructor(options: { uid: string; stepParams?: StepParams; blockModel?: BlockModel }) {
     super({
       uid: options.uid,
       stepParams: options.stepParams,

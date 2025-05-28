@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { ActionDefinition, FlowDefinition, ModelConstructor, ActionOptions } from './types';
+import { ActionDefinition, FlowDefinition, ModelConstructor, ActionOptions, StepParams } from './types';
 import { FlowModel } from './models';
 import { generateUid } from './utils';
 
@@ -105,16 +105,16 @@ export class FlowEngine {
    * @param {object} options 创建模型的选项
    * @param {string} [options.uid] Model 实例的唯一标识符，如不提供会自动生成。
    * @param {RegisteredModelClassName} options.use 要创建实例的 Model 类的名称 (已通过 registerModelClass 注册)。
-   * @param {Record<string, any>} [options.stepsParams] 步骤参数。
+   * @param {StepParams} [options.stepParams] 步骤参数。
    * @returns {T} 创建的 Model 实例。
    */
   public createModel<T extends FlowModel = FlowModel>(options: {
     uid?: string;
     use: RegisteredModelClassName;
-    stepsParams?: Record<string, any>;
+    stepParams?: StepParams;
     // app?: Application; // Application 依赖已移除
   }): T {
-    const { uid = generateUid(), use: modelClassName, stepsParams } = options;
+    const { uid = generateUid(), use: modelClassName, stepParams } = options;
     const ModelClass = this.getModelClass(modelClassName);
 
     if (!ModelClass) {
@@ -127,7 +127,7 @@ export class FlowEngine {
 
     const modelInstance = new (ModelClass as ModelConstructor<T>)({
       uid,
-      stepParams: stepsParams,
+      stepParams: stepParams,
     });
     modelInstance.setFlowEngine(this);
 
