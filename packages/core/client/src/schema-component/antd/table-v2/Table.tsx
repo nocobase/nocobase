@@ -339,9 +339,10 @@ const useTableColumns = (
 const SortableRow = (props: BodyRowComponentProps) => {
   const { token } = useToken();
   const id = props['data-row-key']?.toString();
-  const { setNodeRef, isOver, active, over } = useSortable({
+  const { setNodeRef, active, over } = useSortable({
     id,
   });
+  const isOver = over?.id == id;
   const { rowIndex, ...others } = props;
 
   const classObj = useMemo(() => {
