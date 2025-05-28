@@ -7,14 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { ActionDefinition, FlowDefinition, ModelConstructor, ActionOptions, StepParams } from './types';
+import { ActionDefinition, FlowDefinition, ModelConstructor, ActionOptions, CreateModelOptions } from './types';
 import { FlowModel } from './models';
 import { generateUid } from './utils';
-
-/**
- * 已注册模型的类名
- */
-export type RegisteredModelClassName = string;
 
 export class FlowEngine {
   /** @private Stores registered action definitions. */
@@ -102,18 +97,10 @@ export class FlowEngine {
    * 创建并注册一个 Model 实例。
    * 如果具有相同 UID 的实例已存在，则返回现有实例。
    * @template T FlowModel 的子类型，默认为 FlowModel。
-   * @param {object} options 创建模型的选项
-   * @param {string} [options.uid] Model 实例的唯一标识符，如不提供会自动生成。
-   * @param {RegisteredModelClassName} options.use 要创建实例的 Model 类的名称 (已通过 registerModelClass 注册)。
-   * @param {StepParams} [options.stepParams] 步骤参数。
+   * @param {CreateModelOptions} options 创建模型的选项
    * @returns {T} 创建的 Model 实例。
    */
-  public createModel<T extends FlowModel = FlowModel>(options: {
-    uid?: string;
-    use: RegisteredModelClassName;
-    stepParams?: StepParams;
-    // app?: Application; // Application 依赖已移除
-  }): T {
+  public createModel<T extends FlowModel = FlowModel>(options: CreateModelOptions): T {
     const { uid = generateUid(), use: modelClassName, stepParams } = options;
     const ModelClass = this.getModelClass(modelClassName);
 

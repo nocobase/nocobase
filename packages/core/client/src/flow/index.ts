@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { FlowModel } from '@nocobase/flow-engine';
+import { CreateModelOptions, FlowModel } from '@nocobase/flow-engine';
 import { Plugin } from '../application';
 import { FlowPage } from './FlowPage';
 
@@ -29,7 +29,7 @@ TabFlowModel.registerFlow('defaultFlow', {
 
 export class PageFlowModel extends FlowModel {
   tabs: Array<TabFlowModel> = [];
-  addTab(tabOptions) {
+  addTab(tabOptions: CreateModelOptions) {
     const model = this.flowEngine.createModel(tabOptions);
     this.tabs.push(model);
     return model;
@@ -52,27 +52,23 @@ PageFlowModel.registerFlow('defaultFlow', {
       async handler(ctx, model: PageFlowModel, params) {
         model.addTab({
           use: 'TabFlowModel',
-          stepParams: [
-            {
-              flowKey: 'defaultFlow',
-              stepKey: 'step1',
-              params: {
-                title: 'Tab1',
-              },
-            },
-          ],
+          stepParams: {
+            defaultFlow: {
+              step1: {
+                title: 'Tab1'
+              }
+            }
+          }
         });
         model.addTab({
           use: 'TabFlowModel',
-          stepParams: [
-            {
-              flowKey: 'defaultFlow',
-              stepKey: 'step1',
-              params: {
-                title: 'Tab2',
-              },
-            },
-          ],
+          stepParams: {
+            defaultFlow: {
+              step1: {
+                title: 'Tab2'
+              }
+            }
+          }
         });
         const tabList = await model.mapTabs(async (tab: TabFlowModel) => {
           await tab.applyAutoFlows();

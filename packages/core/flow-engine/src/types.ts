@@ -180,3 +180,18 @@ export type StepParams = {
     };
   };
 };
+
+/**
+ * 已注册模型的类名
+ */
+export type RegisteredModelClassName = string;
+
+/**
+ * Options for creating a model instance
+ */
+export interface CreateModelOptions {
+  uid?: string;
+  use: RegisteredModelClassName;
+  stepParams?: StepParams;
+  // app?: Application; // Application 依赖已移除
+}
