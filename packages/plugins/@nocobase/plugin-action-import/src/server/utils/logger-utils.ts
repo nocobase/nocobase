@@ -24,7 +24,7 @@ export class LoggerService {
     logLevel: 'info' | 'debug' = 'info',
   ): Promise<T> {
     if (!this.logger) {
-      return handler();
+      return await handler();
     }
 
     const startTime = process.hrtime();

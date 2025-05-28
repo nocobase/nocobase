@@ -212,7 +212,7 @@ export class XlsxImporter extends EventEmitter {
 
     for (const chunkRows of chunks) {
       await this.handleChuckRows(chunkRows, options, { handingRowIndex, context: options?.context });
-      imported += chunkSize;
+      imported += chunkRows.length;
       this.emit('progress', {
         total,
         current: imported,
