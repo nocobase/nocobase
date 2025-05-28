@@ -187,6 +187,9 @@ export class XlsxImporter extends EventEmitter {
 
     for (const chunkRows of chunks) {
       for (const row of chunkRows) {
+        //记录当前行外键的多个关联条件，如联合字段确定一条记录的对应字段
+        //如：字典的code和字典的类型，确定他的唯一上级
+        const keysMap = new Map();
         const rowValues = {};
         handingRowIndex += 1;
         try {
@@ -227,9 +230,37 @@ export class XlsxImporter extends EventEmitter {
               ctx.associationField = field;
               ctx.targetCollection = (field as IRelationField).targetCollection();
               ctx.filterKey = column.dataIndex[1];
+              //给对应的条件值赋值
+              if(str!== undefined && str!== null && str!== '') {
+                keysMap.has(column.dataIndex[0])? keysMap.get(column.dataIndex[0]).push(str+'&'+column.dataIndex[1]) : keysMap.set(column.dataIndex[0],[str+'&'+column.dataIndex[1]]);
+              }
             }
+            if(rowValues[dataKey] === undefined) {//如果dataKey的值不存在或者一个值确定一条记录，则赋值
+              rowValues[dataKey] = await interfaceInstance.toValue(this.trimString(str), ctx);
+            }
+          }
 
-            rowValues[dataKey] = await interfaceInstance.toValue(this.trimString(str), ctx);
+          for (const [key, value] of keysMap) {
+            const rowKeys = {};
+            for (const element of value) {
+              const keyArr = element.split('&');
+              rowKeys[keyArr[1]] = keyArr[0];
+            }
+            if (Object.keys(rowKeys).length > 1) {
+              //联合字段确定一条记录的对应字段
+              const filter = {};
+              for (const key in rowKeys) {
+                filter[key] = rowKeys[key];
+              }
+              const field = this.options.collection.getField(key);
+              const targetModel = (field as IRelationField).targetCollection().model;
+              const targetRecord = await targetModel.findOne({
+                where: filter,
+              });
+              if (targetRecord) {
+                rowValues[key] = targetRecord.id;
+              }
+            }
           }
 
           const startTime = process.hrtime();
