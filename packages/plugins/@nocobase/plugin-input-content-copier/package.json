@@ -1,5 +1,5 @@
 {
-  "name": "@nocobase/plugin-field-content-copier",
+  "name": "@nocobase/plugin-input-content-copier",
   "version": "1.6.31",
   "main": "./dist/server/index.js",
   "displayName": "Field Content Copier",
