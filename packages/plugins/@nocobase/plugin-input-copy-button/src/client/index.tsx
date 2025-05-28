@@ -12,7 +12,7 @@ import { observer, useField, useFieldSchema } from '@formily/react';
 import { Plugin, useColumnSchema, useDesignable, useToken } from '@nocobase/client';
 import { Typography } from 'antd';
 import _ from 'lodash';
-import React, { FC } from 'react';
+import React, { FC, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 
 // Define namespace for i18n
@@ -22,15 +22,37 @@ const InputCopyButton: FC = observer(
   () => {
     const field = useField<Field>();
     const { token } = useToken();
+    const buttonRef = useRef<HTMLDivElement | null>(null);
+    const [show, setShow] = React.useState(false);
 
-    if (!field.value && field.readPretty) return null;
+    useEffect(() => {
+      if (field.value && field.readPretty && buttonRef.current) {
+        const handleMouseOver = (e: MouseEvent) => {
+          setShow(true);
+        };
+        const handleMouseOut = (e: MouseEvent) => {
+          setShow(false);
+        };
+
+        buttonRef.current.parentElement.addEventListener('mouseover', handleMouseOver);
+        buttonRef.current.parentElement.addEventListener('mouseout', handleMouseOut);
+
+        return () => {
+          buttonRef.current?.parentElement.removeEventListener('mouseover', handleMouseOver);
+          buttonRef.current?.parentElement.removeEventListener('mouseout', handleMouseOut);
+        };
+      }
+    }, [field.readPretty, field.value]);
+
+    const hidden = field.readPretty && (!field.value || !show);
 
     return (
       <Typography.Text
+        ref={buttonRef}
         copyable={{
           text: field.value,
         }}
-        style={{ marginLeft: token.marginXXS }}
+        style={{ marginLeft: token.marginXXS, opacity: hidden ? 0 : 1 }}
       />
     );
   },
