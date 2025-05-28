@@ -8,10 +8,10 @@
  */
 
 import { ScanOutlined } from '@ant-design/icons';
-import { Input as AntdInput, Space } from 'antd';
+import { Input as AntdInput } from 'antd';
 import { InputProps } from 'antd/es/input';
-import React from 'react';
-import { scanCode } from './scanCode';
+import React, { useState } from 'react';
+import { ScanCode } from './ScanCode';
 
 export type NocoBaseInputProps = InputProps & {
   trim?: boolean;
@@ -21,11 +21,7 @@ export type NocoBaseInputProps = InputProps & {
 
 function ScanInput(props: NocoBaseInputProps) {
   const { onChange, trim, enableScan, disableManualInput, suffix, ...others } = props;
-
-  const handleScanClick = async () => {
-    const scannedValue = await scanCode();
-    onChange?.({ target: { value: scannedValue } } as any);
-  };
+  const [scanVisible, setScanVisible] = useState(false);
 
   return (
     <>
@@ -36,11 +32,18 @@ function ScanInput(props: NocoBaseInputProps) {
         suffix={
           <>
             {suffix}
-            {<ScanOutlined onClick={handleScanClick} style={{ marginLeft: 8, cursor: 'pointer' }} />}
+            {<ScanOutlined onClick={() => setScanVisible(true)} style={{ marginLeft: 8, cursor: 'pointer' }} />}
           </>
         }
       />
-      <div id={'html5qr-code-full-region'} style={{ position: 'absolute' }} />
+      <ScanCode
+        visible={scanVisible}
+        onClose={() => setScanVisible(false)}
+        onSuccess={(result) => {
+          onChange?.({ target: { value: result } } as any);
+          setScanVisible(false); // 关闭扫码弹窗
+        }}
+      />
     </>
   );
 }
