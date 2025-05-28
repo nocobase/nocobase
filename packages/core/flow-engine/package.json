@@ -3,8 +3,8 @@
   "version": "1.7.0-beta.33",
   "private": false,
   "description": "A standalone flow engine for NocoBase, managing workflows, models, and actions.",
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
+  "main": "lib/index.js",
+  "types": "lib/index.d.ts",
   "dependencies": {
     "@formily/reactive": "2.x",
     "lodash": "^4.x"
