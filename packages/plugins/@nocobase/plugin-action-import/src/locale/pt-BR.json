@@ -9,7 +9,7 @@
   "Step 1: Download template": "Passo 1: Baixar modelo",
   "Step 2: Upload Excel": "Passo 2: Enviar Excel",
   "Download tips": "- Baixe o modelo e preencha os dados de acordo com o formato \r\n - Importe apenas a primeira planilha \r\n - Não altere o cabeçalho do modelo para evitar falhas de importação",
-  "Upload placeholder": "Arraste e solte o arquivo aqui ou clique para enviar, o tamanho do arquivo não deve exceder 80 MB",
+  "Upload placeholder": "Arraste e solte o arquivo aqui ou clique para enviar.",
   "Excel data importing": "Importando dados do Excel",
   "Import done, total success have {{successCount}} , total failure have {{failureCount}}": "{{successCount}} dados foram importados com sucesso",
   "To download the failure data": "Para baixar os dados que falharam",
