@@ -21,7 +21,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 
 // Define namespace constant for our plugin
-const NAMESPACE = 'plugin-toggle-form-fields';
+const NAMESPACE = 'toggle-form-fields';
 
 const ActionName = 'ToggleFields';
 
@@ -127,21 +127,6 @@ function useToggleFieldsActionProps() {
 
 export class PluginToggleFormFields extends Plugin {
   async load() {
-    // Load translations
-    try {
-      const resources = await import('../locale');
-      this.app.i18n.addResources('en-US', 'plugin-toggle-form-fields', resources.default['en-US']);
-      this.app.i18n.addResources('zh-CN', 'plugin-toggle-form-fields', resources.default['zh-CN']);
-      console.log('Toggle form fields translations loaded successfully:', Object.keys(resources.default));
-
-      // Debug: Verify translations are accessible
-      const enText = this.app.i18n.t('ToggleFields', { ns: 'plugin-toggle-form-fields' });
-      const zhText = this.app.i18n.t('ToggleFields', { ns: 'plugin-toggle-form-fields', lng: 'zh-CN' });
-      console.log('Translation test - EN:', enText, 'ZH:', zhText);
-    } catch (err) {
-      console.error('Failed to load translations for toggle-form-fields:', err);
-    }
-
     this.app.addScopes({ useToggleFieldsActionProps });
     this.app.schemaSettingsManager.add(toggleFieldsActionSettings);
     const toggleFieldsActionInitializerItem = createToggleFieldsActionInitializerItem();
