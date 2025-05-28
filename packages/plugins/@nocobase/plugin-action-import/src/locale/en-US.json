@@ -11,7 +11,7 @@
   "Step 3: Import options": "Step 3: Import options",
   "Download tips": "- Download the template and fill in the data according to the format \r\n - Import only the first worksheet \r\n - Do not change the header of the template to prevent import failure",
   "Import warnings": "You can import up to {{limit}} rows of data at a time, any excess will be ignored.",
-  "Upload placeholder": "Drag and drop the file here or click to upload, file size should not exceed 80M",
+  "Upload placeholder": "Drag and drop the file here or click to upload.",
   "Excel data importing": "Excel data importing",
   "{{successCount}} records have been successfully imported": "{{successCount}} records have been successfully imported",
   "To download the failure data": "To download the failure data",
