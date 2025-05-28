@@ -1,11 +1,11 @@
 {
-  "name": "@nocobase/plugin-input-content-copier",
+  "name": "@nocobase/plugin-input-copy-button",
   "version": "1.6.31",
   "main": "./dist/server/index.js",
-  "displayName": "Field Content Copier",
-  "displayName.zh-CN": "字段内容复制器",
-  "description": "A plugin for copying field content to clipboard",
-  "description.zh-CN": "一个用于复制字段内容到剪贴板的插件",
+  "displayName": "Input Copy Button",
+  "displayName.zh-CN": "输入框复制按钮",
+  "description": "A plugin for adding copy button to single-line text fields",
+  "description.zh-CN": "为单行文本字段添加复制按钮的插件",
   "license": "AGPL-3.0",
   "homepage": "https://www.nocobase.com",
   "devDependencies": {
@@ -21,9 +21,10 @@
     "@nocobase/test": "1.x"
   },
   "keywords": [
-    "Field",
+    "Input",
     "UI",
-    "Clipboard"
+    "Clipboard",
+    "Copy"
   ],
   "gitHead": "d0b4efe4be55f8c79a98a331d99d9f8cf99021a1"
 }

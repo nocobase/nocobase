@@ -1,10 +1,10 @@
-# NocoBase Field Content Copier Plugin
+# NocoBase Input Content Copier Plugin
 
-This plugin adds clipboard copy functionality to text fields in NocoBase. It displays a copy button (clipboard icon) next to text fields, allowing users to easily copy the content with a single click.
+This plugin adds clipboard copy functionality to input fields in NocoBase. It displays a copy button (clipboard icon) next to input fields, allowing users to easily copy the content with a single click.
 
 ## Features
 
-- Adds a copy button to text fields in tables and forms
+- Adds a copy button to input fields in tables and forms
 - Works in read-only mode (tables, details, etc.)
 - Compatible with all Input variants (Text, TextArea, URL)
 - Shows success/error notifications when copying
@@ -14,10 +14,10 @@ This plugin adds clipboard copy functionality to text fields in NocoBase. It dis
 
 ```bash
 # Using npm
-npm install @nocobase/plugin-field-content-copier
+npm install @nocobase/plugin-input-content-copier
 
 # Using yarn
-yarn add @nocobase/plugin-field-content-copier
+yarn add @nocobase/plugin-input-content-copier
 ```
 
 ## Usage

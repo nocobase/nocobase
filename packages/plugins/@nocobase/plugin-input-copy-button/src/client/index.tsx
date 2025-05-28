@@ -15,7 +15,7 @@ import React, { FC } from 'react';
 import { useTranslation } from 'react-i18next';
 
 // Define namespace for i18n
-const NAMESPACE = 'input-content-copier';
+const NAMESPACE = 'input-copy-button';
 
 const InputCopyButton: FC = observer(
   () => {
