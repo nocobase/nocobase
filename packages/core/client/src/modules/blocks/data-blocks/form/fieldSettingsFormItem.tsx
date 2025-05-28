@@ -127,8 +127,13 @@ export const fieldSettingsFormItem = new SchemaSettings({
             useVisible() {
               const collection = useCollection();
               const fieldSchema = useFieldSchema();
+              const { editable = false } = useField<Field>();
               const fieldComponent = collection.getField(fieldSchema['name'])?.uiSchema?.['x-component'] ?? '';
-              return fieldComponent && ['Input', 'TextArea', 'JSON', 'URL', 'Password'].indexOf(fieldComponent) > -1;
+              return (
+                editable &&
+                fieldComponent &&
+                ['Input', 'TextArea', 'JSON', 'URL', 'Password'].indexOf(fieldComponent) > -1
+              );
             },
             useComponentProps() {
               const { t } = useTranslation();
