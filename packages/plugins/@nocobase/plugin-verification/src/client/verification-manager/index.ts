@@ -11,14 +11,14 @@ import { Registry } from '@nocobase/utils/client';
 import { ComponentType } from 'react';
 
 export type VerificationFormProps = {
-  verificator: string;
+  verifier: string;
   actionType: string;
   boundInfo: any;
   isLogged?: boolean;
 };
 
 export type BindFormProps = {
-  verificator: string;
+  verifier: string;
   actionType: string;
   isLogged?: boolean;
 };

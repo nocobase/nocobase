@@ -35,7 +35,7 @@ export interface SceneOptions {
   actions: {
     [key: string]: ActionOptions;
   };
-  getVerificators?(ctx: Context): Promise<string[]>;
+  getVerifiers?(ctx: Context): Promise<string[]>;
 }
 
 export class VerificationManager {
@@ -98,27 +98,27 @@ export class VerificationManager {
     return verificationType.verification;
   }
 
-  async getVerificator(verificatorName: string) {
-    return await this.db.getRepository('verificators').findOne({
+  async getVerifier(verifierName: string) {
+    return await this.db.getRepository('verifiers').findOne({
       filter: {
-        name: verificatorName,
+        name: verifierName,
       },
     });
   }
 
-  async getVerificators(verificatorNames: string[]) {
-    return await this.db.getRepository('verificators').find({
+  async getVerifiers(verifierNames: string[]) {
+    return await this.db.getRepository('verifiers').find({
       filter: {
-        name: verificatorNames,
+        name: verifierNames,
       },
     });
   }
 
-  async getBoundRecord(userId: number, verificator: string) {
-    return await this.db.getRepository('usersVerificators').findOne({
+  async getBoundRecord(userId: number, verifier: string) {
+    return await this.db.getRepository('usersVerifiers').findOne({
       filter: {
         userId,
-        verificator,
+        verifier,
       },
     });
   }
@@ -143,41 +143,41 @@ export class VerificationManager {
     return { boundInfo, userId };
   }
 
-  private async validateAndGetVerificator(ctx: Context, scene: string, verificatorName: string) {
-    let verificator: Model;
-    if (!verificatorName) {
+  private async validateAndGetVerifier(ctx: Context, scene: string, verifierName: string) {
+    let verifier: Model;
+    if (!verifierName) {
       return null;
     }
     if (scene) {
       const sceneOptions = this.scenes.get(scene);
-      if (sceneOptions.getVerificators) {
-        const verificators = await sceneOptions.getVerificators(ctx);
-        if (!verificators.includes(verificatorName)) {
+      if (sceneOptions.getVerifiers) {
+        const verifiers = await sceneOptions.getVerifiers(ctx);
+        if (!verifiers.includes(verifierName)) {
           return null;
         }
-        verificator = await this.getVerificator(verificatorName);
-        if (!verificator) {
+        verifier = await this.getVerifier(verifierName);
+        if (!verifier) {
           return null;
         }
       } else {
         const verificationTypes = this.getVerificationTypesByScene(scene);
-        const verificators = await this.db.getRepository('verificators').find({
+        const verifiers = await this.db.getRepository('verifiers').find({
           filter: {
             verificationType: verificationTypes.map((item) => item.type),
           },
         });
-        verificator = verificators.find((item: { name: string }) => item.name === verificatorName);
-        if (!verificator) {
+        verifier = verifiers.find((item: { name: string }) => item.name === verifierName);
+        if (!verifier) {
           return null;
         }
       }
     } else {
-      verificator = await this.getVerificator(verificatorName);
-      if (!verificator) {
+      verifier = await this.getVerifier(verifierName);
+      if (!verifier) {
         return null;
       }
     }
-    return verificator;
+    return verifier;
   }
 
   // verify manually
@@ -188,10 +188,10 @@ export class VerificationManager {
     if (!action) {
       ctx.throw(400, 'Invalid action');
     }
-    const { verificator: verificatorName } = ctx.action.params.values || {};
-    const verificator = await this.validateAndGetVerificator(ctx, action.scene, verificatorName);
-    if (!verificator) {
-      ctx.throw(400, 'Invalid verificator');
+    const { verifier: verifierName } = ctx.action.params.values || {};
+    const verifier = await this.validateAndGetVerifier(ctx, action.scene, verifierName);
+    if (!verifier) {
+      ctx.throw(400, 'Invalid verifier');
     }
     const verifyParams = action.getVerifyParams ? await action.getVerifyParams(ctx) : ctx.action.params.values;
     if (!verifyParams) {
@@ -199,8 +199,8 @@ export class VerificationManager {
     }
     const plugin = ctx.app.pm.get('verification') as PluginVerficationServer;
     const verificationManager = plugin.verificationManager;
-    const Verification = verificationManager.getVerification(verificator.verificationType);
-    const verification = new Verification({ ctx, verificator, options: verificator.options });
+    const Verification = verificationManager.getVerification(verifier.verificationType);
+    const verification = new Verification({ ctx, verifier, options: verifier.options });
     const { boundInfo, userId } = await this.getAndValidateBoundInfo(ctx, action, verification);
     try {
       const verifyResult = await verification.verify({

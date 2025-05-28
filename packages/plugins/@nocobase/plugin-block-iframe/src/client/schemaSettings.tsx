@@ -22,11 +22,15 @@ import {
   useVariableOptions,
   SchemaSettingsLinkageRules,
   LinkageRuleCategory,
+  FlagProvider,
 } from '@nocobase/client';
 import { Select, Tooltip } from 'antd';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 
+const IframeProvider = (props) => {
+  return <FlagProvider collectionField={true}>{props.children}</FlagProvider>;
+};
 const getVariableComponentWithScope = (Com) => {
   return (props) => {
     const fieldSchema = useFieldSchema();
@@ -210,93 +214,99 @@ const commonOptions: any = {
             type: 'object',
             title: t('Edit iframe'),
             properties: {
-              mode: {
-                title: '{{t("Mode")}}',
-                'x-component': 'Radio.Group',
-                'x-decorator': 'FormItem',
-                required: true,
-                default: 'url',
-                enum: [
-                  { value: 'url', label: t('URL') },
-                  { value: 'html', label: t('HTML') },
-                ],
-              },
-              url: {
-                ...urlSchema,
-                required: true,
-              },
-              allow: {
-                title: 'Allow',
-                type: 'string',
-                'x-decorator': 'FormItem',
-                'x-component': (props) => {
-                  return (
-                    <Select
-                      {...props}
-                      allowClear
-                      options={[
-                        { value: 'autoplay', label: <AllowOptionsHelp type="autoplay" /> },
-                        { value: 'camera', label: <AllowOptionsHelp type="camera" /> },
-                        { value: 'document-domain', label: <AllowOptionsHelp type="document-domain" /> },
-                        { value: 'encrypted-media', label: <AllowOptionsHelp type="encrypted-media" /> },
-                        { value: 'fullscreen', label: <AllowOptionsHelp type="fullscreen" /> },
-                        { value: 'geolocation', label: <AllowOptionsHelp type="geolocation" /> },
-                        { value: 'microphone', label: <AllowOptionsHelp type="microphone" /> },
-                        { value: 'midi', label: <AllowOptionsHelp type="midi" /> },
-                        { value: 'payment', label: <AllowOptionsHelp type="payment" /> },
-                      ]}
-                    />
-                  );
-                },
-                description: <AllowDescription />,
-              },
-              params: paramsSchema,
-              engine: {
-                title: '{{t("Template engine")}}',
-                'x-component': 'Radio.Group',
-                'x-decorator': 'FormItem',
-                default: 'string',
-                enum: [
-                  { value: 'string', label: t('String template') },
-                  { value: 'handlebars', label: t('Handlebars') },
-                ],
-                'x-reactions': {
-                  dependencies: ['mode'],
-                  fulfill: {
-                    state: {
-                      hidden: '{{$deps[0] === "url"}}',
-                    },
+              container: {
+                type: 'void',
+                'x-component': IframeProvider,
+                properties: {
+                  mode: {
+                    title: '{{t("Mode")}}',
+                    'x-component': 'Radio.Group',
+                    'x-decorator': 'FormItem',
+                    required: true,
+                    default: 'url',
+                    enum: [
+                      { value: 'url', label: t('URL') },
+                      { value: 'html', label: t('HTML') },
+                    ],
                   },
-                },
-              },
-              html: {
-                title: t('html'),
-                type: 'string',
-                'x-decorator': 'FormItem',
-                'x-component': getVariableComponentWithScope(Variable.RawTextArea),
-                'x-component-props': {
-                  rows: 10,
-                },
-                required: true,
-                description: descriptionContent,
-                'x-reactions': [
-                  {
-                    dependencies: ['mode'],
-                    fulfill: {
-                      state: {
-                        hidden: '{{$deps[0] === "url"}}',
+                  url: {
+                    ...urlSchema,
+                    required: true,
+                  },
+                  allow: {
+                    title: 'Allow',
+                    type: 'string',
+                    'x-decorator': 'FormItem',
+                    'x-component': (props) => {
+                      return (
+                        <Select
+                          {...props}
+                          allowClear
+                          options={[
+                            { value: 'autoplay', label: <AllowOptionsHelp type="autoplay" /> },
+                            { value: 'camera', label: <AllowOptionsHelp type="camera" /> },
+                            { value: 'document-domain', label: <AllowOptionsHelp type="document-domain" /> },
+                            { value: 'encrypted-media', label: <AllowOptionsHelp type="encrypted-media" /> },
+                            { value: 'fullscreen', label: <AllowOptionsHelp type="fullscreen" /> },
+                            { value: 'geolocation', label: <AllowOptionsHelp type="geolocation" /> },
+                            { value: 'microphone', label: <AllowOptionsHelp type="microphone" /> },
+                            { value: 'midi', label: <AllowOptionsHelp type="midi" /> },
+                            { value: 'payment', label: <AllowOptionsHelp type="payment" /> },
+                          ]}
+                        />
+                      );
+                    },
+                    description: <AllowDescription />,
+                  },
+                  params: paramsSchema,
+                  engine: {
+                    title: '{{t("Template engine")}}',
+                    'x-component': 'Radio.Group',
+                    'x-decorator': 'FormItem',
+                    default: 'string',
+                    enum: [
+                      { value: 'string', label: t('String template') },
+                      { value: 'handlebars', label: t('Handlebars') },
+                    ],
+                    'x-reactions': {
+                      dependencies: ['mode'],
+                      fulfill: {
+                        state: {
+                          hidden: '{{$deps[0] === "url"}}',
+                        },
                       },
                     },
                   },
-                  (field) => {
-                    const { engine } = field.form.values;
-                    if (engine === 'handlebars') {
-                      field.description = descriptionContent;
-                    } else {
-                      field.description = null;
-                    }
+                  html: {
+                    title: t('html'),
+                    type: 'string',
+                    'x-decorator': 'FormItem',
+                    'x-component': getVariableComponentWithScope(Variable.RawTextArea),
+                    'x-component-props': {
+                      rows: 10,
+                    },
+                    required: true,
+                    description: descriptionContent,
+                    'x-reactions': [
+                      {
+                        dependencies: ['mode'],
+                        fulfill: {
+                          state: {
+                            hidden: '{{$deps[0] === "url"}}',
+                          },
+                        },
+                      },
+                      (field) => {
+                        const { engine } = field.form.values;
+                        if (engine === 'handlebars') {
+                          field.description = descriptionContent;
+                        } else {
+                          field.description = null;
+                        }
+                      },
+                    ],
                   },
-                ],
+                },
               },
             },
           } as ISchema,

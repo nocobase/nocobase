@@ -46,8 +46,8 @@ export default defineCollection({
     },
     {
       type: 'belongsTo',
-      name: 'verificator',
-      target: 'verificators',
+      name: 'verifier',
+      target: 'verifiers',
       targetKey: 'name',
     },
   ],

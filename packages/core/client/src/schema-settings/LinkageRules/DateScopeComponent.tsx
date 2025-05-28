@@ -11,6 +11,7 @@ import React, { useCallback } from 'react';
 import { useFieldSchema } from '@formily/react';
 import { SchemaComponent } from '../../schema-component';
 import { useCollectionManager_deprecated, VariableInput, useFormBlockContext, useRecord } from '../../';
+import { FlagProvider } from '../../flag-provider';
 
 export const DateScopeComponent = (props) => {
   const fieldSchema = useFieldSchema();
@@ -64,14 +65,16 @@ export const DateScopeComponent = (props) => {
   const Component = useCallback(
     (props) => {
       return (
-        <VariableInput
-          {...props}
-          form={form}
-          record={record}
-          noDisabled={true}
-          style={{ minWidth: '250px' }}
-          renderSchemaComponent={renderSchemaComponent}
-        />
+        <FlagProvider collectionField={collectionField}>
+          <VariableInput
+            {...props}
+            form={form}
+            record={record}
+            noDisabled={true}
+            style={{ minWidth: '250px' }}
+            renderSchemaComponent={renderSchemaComponent}
+          />
+        </FlagProvider>
       );
     },
     [fieldSchema, form, record, renderSchemaComponent],

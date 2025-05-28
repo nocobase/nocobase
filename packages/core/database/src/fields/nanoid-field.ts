@@ -37,12 +37,14 @@ export class NanoidField extends Field {
     super.bind();
     this.on('beforeValidate', this.listener);
     this.on('beforeBulkCreate', this.listener);
+    this.on('beforeCreate', this.listener);
   }
 
   unbind() {
     super.unbind();
     this.off('beforeValidate', this.listener);
     this.off('beforeBulkCreate', this.listener);
+    this.off('beforeCreate', this.listener);
   }
 }
 

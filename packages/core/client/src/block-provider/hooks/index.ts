@@ -492,7 +492,6 @@ const useDoFilter = () => {
   const fieldSchema = useFieldSchema();
   const { name } = useCollection();
   const { targets = [], uid } = useMemo(() => findFilterTargets(fieldSchema), [fieldSchema]);
-
   const getFilterFromCurrentForm = useCallback(() => {
     return removeNullCondition(transformToFilter(form.values, getOperators(), cm.getCollectionField.bind(cm), name));
   }, [form.values, cm, getOperators, name]);
@@ -512,7 +511,6 @@ const useDoFilter = () => {
 
             // 由当前表单转换而来的 filter
             storedFilter[uid] = getFilterFromCurrentForm();
-
             const mergedFilter = mergeFilter([
               ...Object.values(storedFilter).map((filter) => removeNullCondition(filter)),
               block.defaultFilter,
@@ -529,7 +527,6 @@ const useDoFilter = () => {
             if (block.dataLoadingMode === 'manual' && _.isEmpty(storedFilter[uid])) {
               return block.clearData();
             }
-
             return block.doFilter(
               {
                 ...param,

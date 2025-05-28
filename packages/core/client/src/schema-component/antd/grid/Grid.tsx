@@ -38,7 +38,7 @@ const breakRemoveOnRow = (s: Schema) => s['x-component'] === 'Grid.Row';
 
 const ColDivider = (props) => {
   const { token } = useToken();
-  const dragIdRef = useRef<string | null>(null);
+  const dragIdRef = useRef<any>(null);
   const { dn, designable } = useDesignable();
   const { isOver, setNodeRef } = useDroppable({
     id: props.id,

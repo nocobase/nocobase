@@ -13,6 +13,9 @@
 Using a Universal Module Loader that should be browser, require, and AMD friendly
 http://ricostacruz.com/cheatsheets/umdjs.html
 */
+
+import { getDayRangeByParams } from '@nocobase/utils/client';
+
 export function getOperators() {
   'use strict';
   /* globals console:false */
@@ -88,7 +91,7 @@ export function getOperators() {
       return jsonLogic.truthy(a);
     },
     $empty: function (a) {
-      if (Array.isArray(a)) return a.some((k) => !jsonLogic.truthy(k));
+      if (Array.isArray(a)) return a.length === 0;
       return !jsonLogic.truthy(a);
     },
     $notExists: function (a) {
@@ -133,13 +136,12 @@ export function getOperators() {
       return a.some((element) => b.includes(element));
     },
     $noneOf: function (a, b) {
-      if (!a || a?.length === 0) {
-        return true;
-      }
-      if (Array.isArray(a) && Array.isArray(b) && a.some((element) => Array.isArray(element))) {
-        return a.some((subArray) => subArray.every((element) => !b.some((bElement) => element.includes(bElement))));
-      }
-      return b.some((item) => !a.includes(item));
+      if (!a || a.length === 0) return true;
+      if (!b || b.length === 0) return true;
+
+      if (!Array.isArray(a)) a = [a];
+      if (!Array.isArray(b)) b = [b];
+      return !b.some((item) => a.includes(item));
     },
     $notMatch: function (a, b) {
       if (a.length !== b.length) {
@@ -158,6 +160,9 @@ export function getOperators() {
       if (!a || !b) {
         return false;
       }
+      if (b.type) {
+        b = getDayRangeByParams(b);
+      }
       if (Array.isArray(b)) {
         return operations.$dateBetween(a, b);
       }
@@ -174,6 +179,9 @@ export function getOperators() {
       if (!a || !b) {
         return false;
       }
+      if (b.type) {
+        b = getDayRangeByParams(b);
+      }
       if (Array.isArray(b)) {
         b = b[0];
       }
@@ -188,6 +196,9 @@ export function getOperators() {
     $dateNotBefore: function (a, b) {
       if (!a || !b) {
         return false;
+      }
+      if (b.type) {
+        b = getDayRangeByParams(b);
       }
       if (Array.isArray(b)) {
         b = b[0];
@@ -206,6 +217,9 @@ export function getOperators() {
       if (!a || !b) {
         return false;
       }
+      if (b.type) {
+        b = getDayRangeByParams(b);
+      }
       if (Array.isArray(b)) {
         b = b[1];
       }
@@ -218,6 +232,9 @@ export function getOperators() {
     $dateNotAfter: function (a, b) {
       if (!a || !b) {
         return false;
+      }
+      if (b.type) {
+        b = getDayRangeByParams(b);
       }
       if (Array.isArray(b)) {
         b = b[1];
@@ -234,6 +251,9 @@ export function getOperators() {
       if (!a || !b) {
         return false;
       }
+      if (b.type) {
+        b = getDayRangeByParams(b);
+      }
       const dateA = parseFullDate(a);
       const dateBStart = parseFullDate(b[0]);
       const dateBEnd = parseFullDate(b[1]);
@@ -246,6 +266,9 @@ export function getOperators() {
     $dateNotOn: function (a, b) {
       if (!a || !b) {
         return false;
+      }
+      if (b.type) {
+        b = getDayRangeByParams(b);
       }
       if (Array.isArray(b)) {
         return !operations.$dateBetween(a, b);
@@ -369,7 +392,8 @@ export function getOperators() {
       typeof logic === 'object' && // An object
       logic !== null && // but not null
       !Array.isArray(logic) && // and not an array
-      Object.keys(logic).length === 1 // with exactly one key
+      Object.keys(logic).length === 1 &&
+      !logic.type // with exactly one key
     );
   };
 
@@ -536,7 +560,6 @@ export function getOperators() {
       }
       return false; // None were truthy
     }
-
     // Everyone else gets immediate depth-first recursion
     values = values.map(function (val) {
       return jsonLogic.apply(val, data);
@@ -558,10 +581,8 @@ export function getOperators() {
         // Descending into operations
         operation = operation[sub_ops[i]];
       }
-
       return operation.apply(data, values);
     }
-
     throw new Error('Unrecognized operation ' + op);
   };
 

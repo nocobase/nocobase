@@ -10,8 +10,7 @@
 import { useField } from '@formily/react';
 import { merge } from '@formily/shared';
 import { cloneDeep, last, uniqBy } from 'lodash';
-import { useCallback, useContext, useEffect } from 'react';
-import { FilterContext } from './context';
+import { useCallback, useEffect } from 'react';
 
 interface UseValuesReturn {
   fields: any[];
@@ -56,9 +55,8 @@ const operators = [
   { label: '{{t("is empty")}}', value: '$empty', noValue: true },
   { label: '{{t("is not empty")}}', value: '$notEmpty', noValue: true },
 ];
-export const useValues = (): UseValuesReturn => {
+export const useValues = (scopes): UseValuesReturn => {
   const field = useField<any>();
-  const { scopes } = useContext(FilterContext) || {};
   const { op, leftVar, rightVar } = field.value || {};
   const data2value = useCallback(() => {
     field.value = field.data.leftVar

@@ -11,7 +11,7 @@ import { LoadingOutlined } from '@ant-design/icons';
 import { connect, mapProps, mapReadPretty, useFieldSchema } from '@formily/react';
 import { Divider, Tag } from 'antd';
 import dayjs from 'dayjs';
-import { uniqBy } from 'lodash';
+import { uniqBy, omit } from 'lodash';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ResourceActionOptions, useRequest } from '../../../api-client';
 import { useCollection_deprecated, useCollectionManager_deprecated } from '../../../collection-manager';
@@ -153,7 +153,7 @@ const InternalRemoteSelect = withDynamicSchemaProps(
                   });
                 }
                 return {
-                  ...option,
+                  ...omit(option, 'style'),
                   [fieldNames.label]: label || EMPTY,
                   [fieldNames.value]: option[fieldNames.value],
                 };
@@ -172,7 +172,7 @@ const InternalRemoteSelect = withDynamicSchemaProps(
           ...service,
           headers,
           params: {
-            pageSize: 200,
+            paginate: false,
             ...service?.params,
             filter: service?.params?.filter,
           },

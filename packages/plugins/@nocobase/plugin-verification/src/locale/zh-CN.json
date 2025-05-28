@@ -25,15 +25,16 @@
   "Unbind": "解绑",
   "Bind": "绑定",
   "Configured": "已配置",
-  "Unbind verificator": "解绑验证器",
+  "Unbind verifier": "解绑验证器",
   "Not configured": "未配置",
   "Unbound successfully": "解绑成功",
   "Bound successfully": "绑定成功",
   "Verification type": "验证类型",
   "Provider": "服务商",
-  "Verificator": "验证器",
-  "Verificators": "验证器",
-  "The following types of verificators are available:": "以下类型的验证器可选：",
+  "Verifier": "验证器",
+  "Verifiers": "验证器",
+  "The following types of verifiers are available:": "以下类型的验证器可选：",
   "Go to": "前往",
-  "create verificators": "创建验证器"
+  "create verifiers": "创建验证器",
+  "Too many failed attempts. Please request a new verification code.": "验证失败次数过多，请重新获取验证码。"
 }

@@ -47,6 +47,8 @@ import { RelationRepository } from './relation-repository/relation-repository';
 import { updateAssociations, updateModelByValues } from './update-associations';
 import { UpdateGuard } from './update-guard';
 import { valuesToFilter } from './utils/filter-utils';
+import _ from 'lodash';
+import { SmartCursorBuilder } from './cursor-builder';
 
 const debug = require('debug')('noco-database');
 
@@ -246,11 +248,14 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
   database: Database;
   collection: Collection;
   model: ModelStatic<Model>;
+  cursorBuilder: SmartCursorBuilder;
 
   constructor(collection: Collection) {
     this.database = collection.context.database;
     this.collection = collection;
     this.model = collection.model;
+
+    this.cursorBuilder = new SmartCursorBuilder(this.database.sequelize, this.model.tableName, this.collection);
   }
 
   public static valuesToFilter = valuesToFilter;
@@ -353,9 +358,14 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
   }
 
   async chunk(
-    options: FindOptions & { chunkSize: number; callback: (rows: Model[], options: FindOptions) => Promise<void> },
+    options: FindOptions & {
+      chunkSize: number;
+      callback: (rows: Model[], options: FindOptions) => Promise<void>;
+      beforeFind?: (options: FindOptions) => Promise<void>;
+      afterFind?: (rows: Model[], options: FindOptions & { offset: number }) => Promise<void>;
+    },
   ) {
-    const { chunkSize, callback, limit: overallLimit } = options;
+    const { chunkSize, callback, limit: overallLimit, beforeFind, afterFind } = options;
     const transaction = await this.getTransaction(options);
 
     let offset = 0;
@@ -365,20 +375,24 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
     while (true) {
       // Calculate the limit for the current chunk
       const currentLimit = overallLimit !== undefined ? Math.min(chunkSize, overallLimit - totalProcessed) : chunkSize;
-
-      const rows = await this.find({
+      const findOptions = {
         ...options,
         limit: currentLimit,
         offset,
         transaction,
-      });
-
+      };
+      if (beforeFind) {
+        await beforeFind(findOptions);
+      }
+      const rows = await this.find(findOptions);
+      if (afterFind) {
+        await afterFind(rows, { ...findOptions, offset });
+      }
       if (rows.length === 0) {
         break;
       }
 
       await callback(rows, options);
-
       offset += currentLimit;
       totalProcessed += rows.length;
 
@@ -386,6 +400,29 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
         break;
       }
     }
+  }
+
+  /**
+   * Cursor-based pagination query function.
+   * Ideal for large datasets (e.g., millions of rows)
+   * Note:
+   *  1. does not support jumping to arbitrary pages (e.g., "Page 5")
+   *  2. Requires a stable, indexed sort field (e.g. ID, createdAt)
+   *  3. If custom orderBy is used, it must match the cursor field(s) and direction, otherwise results may be incorrect or unstable.
+   * @param options
+   */
+  async chunkWithCursor(
+    options: FindOptions & {
+      chunkSize: number;
+      callback: (rows: Model[], options: FindOptions) => Promise<void>;
+      beforeFind?: (options: FindOptions) => Promise<void>;
+      afterFind?: (rows: Model[], options: FindOptions) => Promise<void>;
+    },
+  ) {
+    return await this.cursorBuilder.chunk({
+      ...options,
+      find: this.find.bind(this),
+    });
   }
 
   /**
@@ -815,7 +852,7 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
       collection: this.collection,
     });
 
-    const params = parser.toSequelizeParams();
+    const params = parser.toSequelizeParams({ parseSort: _.isBoolean(options?.parseSort) ? options.parseSort : true });
     debug('sequelize query params %o', params);
 
     if (options.where && params.where) {

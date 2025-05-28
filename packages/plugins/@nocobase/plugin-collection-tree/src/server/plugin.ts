@@ -109,7 +109,7 @@ class PluginCollectionTreeServer extends Plugin {
 
           this.db.on(`${collection.name}.beforeSave`, async (model: Model) => {
             const tk = collection.filterTargetKey as string;
-            if (model.get(parentForeignKey) === model.get(tk)) {
+            if (model.get(tk) && model.get(parentForeignKey) === model.get(tk)) {
               throw new Error('Cannot set itself as the parent node');
             }
           });
@@ -206,11 +206,13 @@ class PluginCollectionTreeServer extends Plugin {
       transaction,
     });
 
+    const basePath = pathData.get('path');
     const relatedNodes = await this.app.db.getRepository(pathCollectionName).find({
       filter: {
-        path: {
-          $startsWith: `${pathData.get('path')}`,
-        },
+        $or: [
+          { path: basePath }, // 自身节点
+          { path: { $startsWith: `${basePath}/` } }, // 确保是子节点（路径段）
+        ],
       },
       transaction,
     });

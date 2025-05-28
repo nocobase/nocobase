@@ -18,29 +18,29 @@ import { namespace } from '../../..';
 const asyncRandomInt = promisify(randomInt);
 
 async function create(ctx: Context, next: Next) {
-  const { action: actionName, verificator: verificatorName } = ctx.action.params?.values || {};
+  const { action: actionName, verifier: verifierName } = ctx.action.params?.values || {};
   const plugin = ctx.app.getPlugin('verification') as PluginVerificationServer;
   const verificationManager = plugin.verificationManager;
   const action = verificationManager.actions.get(actionName);
   if (!action) {
     return ctx.throw(400, 'Invalid action type');
   }
-  if (!verificatorName) {
-    return ctx.throw(400, 'Invalid verificator');
+  if (!verifierName) {
+    return ctx.throw(400, 'Invalid verifier');
   }
-  const verificator = await ctx.db.getRepository('verificators').findOne({
+  const verifier = await ctx.db.getRepository('verifiers').findOne({
     filter: {
-      name: verificatorName,
+      name: verifierName,
     },
   });
-  if (!verificator) {
-    return ctx.throw(400, 'Invalid verificator');
+  if (!verifier) {
+    return ctx.throw(400, 'Invalid verifier');
   }
-  const Verification = verificationManager.getVerification(verificator.verificationType);
+  const Verification = verificationManager.getVerification(verifier.verificationType);
   const verification = new Verification({
     ctx,
-    verificator,
-    options: verificator.options,
+    verifier,
+    options: verifier.options,
   }) as SMSOTPVerification;
   const provider = await verification.getProvider();
   if (!provider) {
@@ -98,7 +98,7 @@ async function create(ctx: Context, next: Next) {
       code,
       expiresAt: Date.now() + (verification.expiresIn ?? 60) * 1000,
       status: CODE_STATUS_UNUSED,
-      verificatorName,
+      verifierName,
     },
   });
 

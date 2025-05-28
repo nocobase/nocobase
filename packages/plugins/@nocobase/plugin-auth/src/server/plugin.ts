@@ -220,23 +220,16 @@ export class PluginAuthServer extends Plugin {
             filterByTk: userId,
           });
           const roles = await user?.getRoles();
-          if (!roles) {
+          if (roles && roles.length === 1) {
             return {
               userId,
+              roleName: roles[0].name,
             };
-          } else {
-            if (roles.length === 1) {
-              return {
-                userId,
-                roleName: roles[0].name,
-              };
-            } else {
-              // 多角色的情况下暂时不返回角色名
-              return {
-                userId,
-              };
-            }
           }
+          // 多角色的情况下暂时不返回角色名
+          return {
+            userId,
+          };
         },
       },
       {

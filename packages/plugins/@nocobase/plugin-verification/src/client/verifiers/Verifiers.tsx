@@ -21,8 +21,8 @@ import {
   usePlugin,
   useRequest,
 } from '@nocobase/client';
-import { verficatorsSchema, createVerificatorSchema } from '../schemas/verificators';
-import verificators from '../../collections/verificators';
+import { verifiersSchema, createVerifierSchema } from '../schemas/verifiers';
+import verifiers from '../../collections/verifiers';
 import { useVerificationTranslation } from '../locale';
 import { Button, Dropdown, App } from 'antd';
 import { PlusOutlined, DownOutlined } from '@ant-design/icons';
@@ -147,7 +147,7 @@ const AddNew = () => {
             {t('Add new')} <DownOutlined />
           </Button>
         </Dropdown>
-        <SchemaComponent scope={{ setType, useCreateFormProps }} schema={createVerificatorSchema} />
+        <SchemaComponent scope={{ setType, useCreateFormProps }} schema={createVerifierSchema} />
       </VerificationTypeContext.Provider>
     </ActionContextProvider>
   );
@@ -169,14 +169,14 @@ export const Settings = observer(
   { displayName: 'VerificationSettings' },
 );
 
-export const Verificators: React.FC = () => {
+export const Verifiers: React.FC = () => {
   const { t } = useVerificationTranslation();
   const [types, setTypes] = useState([]);
   const api = useAPIClient();
   useRequest(
     () =>
       api
-        .resource('verificators')
+        .resource('verifiers')
         .listTypes()
         .then((res) => {
           const types = res?.data?.data || [];
@@ -195,9 +195,9 @@ export const Verificators: React.FC = () => {
 
   return (
     <VerificationTypesContext.Provider value={{ types }}>
-      <ExtendCollectionsProvider collections={[verificators]}>
+      <ExtendCollectionsProvider collections={[verifiers]}>
         <SchemaComponent
-          schema={verficatorsSchema}
+          schema={verifiersSchema}
           components={{ AddNew, Settings }}
           scope={{ types, useEditFormProps, useCancelActionProps, useCreateActionProps, useEditActionProps }}
         />

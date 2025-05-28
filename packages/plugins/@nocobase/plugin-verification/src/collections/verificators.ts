@@ -7,6 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+// Deprecated due to incorrect naming.
 export default {
   name: 'verificators',
   autoGenId: false,
