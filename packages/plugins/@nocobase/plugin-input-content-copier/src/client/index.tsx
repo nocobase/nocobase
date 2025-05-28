@@ -15,14 +15,23 @@ import React, { FC } from 'react';
 import { useTranslation } from 'react-i18next';
 
 // Define namespace for i18n
-const NAMESPACE = 'field-content-copier';
+const NAMESPACE = 'input-content-copier';
 
 const InputCopyButton: FC = observer(
   () => {
     const field = useField<{ value: string }>();
     const { token } = useToken();
 
-    return <Typography.Text copyable={{ text: field.value }} style={{ marginLeft: token.marginXXS }} />;
+    if (!field.value) return null;
+
+    return (
+      <Typography.Text
+        copyable={{
+          text: field.value,
+        }}
+        style={{ marginLeft: token.marginXXS }}
+      />
+    );
   },
   {
     displayName: 'InputCopyButton',
@@ -48,7 +57,7 @@ class PluginFieldContentCopier extends Plugin {
         const schema = tableFieldSchema || fieldSchema;
 
         return {
-          title: t('Enable content copier'),
+          title: t('Show copy button'),
           checked: !!schema['x-component-props']?.addonAfter,
           onChange: async (checked) => {
             if (checked) {

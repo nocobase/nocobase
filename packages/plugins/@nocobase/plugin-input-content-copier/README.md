@@ -24,7 +24,7 @@ yarn add @nocobase/plugin-field-content-copier
 
 1. Open a table or form in design mode
 2. Click on a text field's settings (gear icon)
-3. Toggle the "Enable content copier" switch
+3. Toggle the "Show copy button" switch
 4. Save your changes
 5. Use the copy button that appears next to enabled fields
 
