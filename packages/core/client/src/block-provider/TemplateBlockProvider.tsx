@@ -7,12 +7,15 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { createContext, FC, useCallback, useContext, useMemo, useState } from 'react';
+import React, { createContext, FC, useCallback, useContext, useMemo, useRef, useState } from 'react';
 
 const TemplateBlockContext = createContext<{
   // 模板是否已经请求结束
   templateFinished?: boolean;
   onTemplateSuccess?: Function;
+  // 当前区块是否是模板区块
+  isBlockTemplate?: () => boolean;
+  setIsBlockTemplate?: (value: boolean) => void;
 }>({});
 TemplateBlockContext.displayName = 'TemplateBlockContext';
 
@@ -24,6 +27,7 @@ export const useTemplateBlockContext = () => {
 };
 
 const TemplateBlockProvider: FC<{ onTemplateLoaded?: () => void }> = ({ onTemplateLoaded, children }) => {
+  const isBlockTemplateRef = useRef(false);
   const [templateFinished, setTemplateFinished] = useState(false);
   const onTemplateSuccess = useCallback(() => {
     setTemplateFinished(true);
@@ -33,7 +37,16 @@ const TemplateBlockProvider: FC<{ onTemplateLoaded?: () => void }> = ({ onTempla
       onTemplateLoaded?.();
     });
   }, [onTemplateLoaded]);
-  const value = useMemo(() => ({ templateFinished, onTemplateSuccess }), [onTemplateSuccess, templateFinished]);
+  const isBlockTemplate = useCallback(() => {
+    return isBlockTemplateRef.current;
+  }, []);
+  const setIsBlockTemplate = useCallback((value: boolean) => {
+    isBlockTemplateRef.current = value;
+  }, []);
+  const value = useMemo(
+    () => ({ templateFinished, onTemplateSuccess, isBlockTemplate, setIsBlockTemplate }),
+    [onTemplateSuccess, templateFinished, isBlockTemplate, setIsBlockTemplate],
+  );
   return <TemplateBlockContext.Provider value={value}>{children}</TemplateBlockContext.Provider>;
 };
 

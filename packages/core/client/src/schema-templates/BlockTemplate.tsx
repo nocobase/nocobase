@@ -21,7 +21,9 @@ export const BlockTemplate = observer(
     const fieldSchema = useFieldSchema();
     const { dn } = useDesignable();
     const template = useMemo(() => getTemplateById(templateId), [templateId]);
-    const { onTemplateSuccess } = useTemplateBlockContext();
+    const { onTemplateSuccess, setIsBlockTemplate } = useTemplateBlockContext();
+
+    setIsBlockTemplate?.(true);
 
     const onSuccess = (data) => {
       fieldSchema['x-linkage-rules'] = data?.data?.['x-linkage-rules'] || [];
