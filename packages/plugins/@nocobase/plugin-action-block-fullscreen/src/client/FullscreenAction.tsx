@@ -9,9 +9,9 @@
 
 import { Action, ActionContextProvider } from '@nocobase/client';
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { FullscreenOutlined, FullscreenExitOutlined } from '@ant-design/icons';
-import { useBlockFullscreenTranslation } from './locale';
-import { DEFAULT_BLOCKSTYLECLASS, DEFAULT_TARGETSTYLECLASS } from './constants';
+import { DEFAULT_BLOCKSTYLECLASS, DEFAULT_TARGETSTYLECLASS, NAMESPACE } from './constants';
 import { App } from 'antd';
 
 // Types
@@ -222,7 +222,7 @@ function findParentByClassName(element: HTMLElement, className: string): HTMLEle
 
 export const FullscreenAction: React.FC<FullscreenActionProps> = (props) => {
   const { message } = App.useApp();
-  const { t } = useBlockFullscreenTranslation();
+  const { t } = useTranslation(NAMESPACE);
   const [title, setTitle] = useState(t('Fullscreen'));
   const [icon, setIcon] = useState(<FullscreenOutlined />);
 

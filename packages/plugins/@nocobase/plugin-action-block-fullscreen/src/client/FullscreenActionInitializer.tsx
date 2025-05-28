@@ -9,22 +9,19 @@
 
 import type { ISchema } from '@formily/react';
 import { merge } from '@formily/shared';
-import {
-  SchemaInitializerItem,
-  useCollection_deprecated,
-  useSchemaInitializer,
-  useSchemaInitializerItem,
-} from '@nocobase/client';
+import { SchemaInitializerItem, useSchemaInitializer, useSchemaInitializerItem } from '@nocobase/client';
 import React from 'react';
+import { useTranslation } from 'react-i18next';
+import { NAMESPACE } from './constants';
 
 export const FullscreenActionInitializer = () => {
   const itemConfig = useSchemaInitializerItem();
   const { insert } = useSchemaInitializer();
-  const { name } = useCollection_deprecated();
+  const { t } = useTranslation(NAMESPACE);
 
   const schema: ISchema = {
     type: 'void',
-    title: '{{ t("Fullscreen", { ns: "action-block-fullscreen" }) }}',
+    title: t('Fullscreen'),
     'x-component': 'FullscreenAction',
     'x-settings': 'actionSettings:blockFullscreen',
     'x-toolbar': 'ActionSchemaToolbar',
@@ -32,7 +29,7 @@ export const FullscreenActionInitializer = () => {
 
   return (
     <SchemaInitializerItem
-      title={itemConfig.title}
+      title={t('Support Fullscreen')}
       onClick={() => {
         const s = merge(schema || {}, itemConfig.schema || {});
         itemConfig?.schemaInitialize?.(s);

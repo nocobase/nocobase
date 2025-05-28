@@ -9,13 +9,13 @@
 
 import { SchemaComponentOptions } from '@nocobase/client';
 import React from 'react';
-import { FullscreenActionInitializer, FullscreenDesigner } from '.';
-import { FullscreenContext } from './context';
+import { FullscreenActionInitializer } from './FullscreenActionInitializer';
 import { FullscreenAction } from './FullscreenAction';
+import { FullscreenContext } from './context';
 
 export const FullscreenPluginProvider = (props: any) => {
   return (
-    <SchemaComponentOptions components={{ FullscreenActionInitializer, FullscreenDesigner, FullscreenAction }}>
+    <SchemaComponentOptions components={{ FullscreenActionInitializer, FullscreenAction }}>
       <FullscreenContext.Provider
         value={
           {

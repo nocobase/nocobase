@@ -8,15 +8,16 @@
  */
 
 import { SchemaSettings } from '@nocobase/client';
-import { CustomFullscreen } from './FullscreenDesigner';
-import { useBlockFullscreenTranslation } from './locale';
+import { FullscreenActionSchemaSettings } from './FullscreenActionSchemaSettings';
+import { useTranslation } from 'react-i18next';
+import { NAMESPACE } from './constants';
 
 export const importActionSchemaSettings = new SchemaSettings({
   name: 'actionSettings:blockFullscreen',
   items: [
     {
       name: 'custom',
-      Component: CustomFullscreen,
+      Component: FullscreenActionSchemaSettings,
     },
     {
       name: 'divider',
@@ -26,7 +27,7 @@ export const importActionSchemaSettings = new SchemaSettings({
       name: 'delete',
       type: 'remove',
       useComponentProps() {
-        const { t } = useBlockFullscreenTranslation();
+        const { t } = useTranslation(NAMESPACE);
 
         return {
           removeParentsIfNoChildren: true,

@@ -7,18 +7,6 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { i18n } from '@nocobase/client';
-import { NAMESPACE } from './locale';
-import zhCN from './locale/zh-CN';
-import enUS from './locale/en-US';
-
-i18n.addResources('zh-CN', NAMESPACE, zhCN);
-i18n.addResources('en-US', NAMESPACE, enUS);
-
-export * from './FullscreenActionInitializer';
-export * from './FullscreenDesigner';
-export * from './FullscreenPluginProvider';
-
 import { Plugin } from '@nocobase/client';
 import { FullscreenPluginProvider } from './FullscreenPluginProvider';
 import { importActionSchemaSettings } from './schemaSettings';
@@ -28,7 +16,8 @@ export class PluginActionBlockFullscreenClient extends Plugin {
     this.app.use(FullscreenPluginProvider);
 
     const initializerData = {
-      title: `{{t('Support Fullscreen', { ns: '${NAMESPACE}' })}}`,
+      type: 'item',
+      name: 'blockFullscreen',
       Component: 'FullscreenActionInitializer',
       schema: {
         'x-align': 'right',
