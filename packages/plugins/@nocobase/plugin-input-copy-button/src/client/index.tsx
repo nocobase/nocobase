@@ -7,6 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { Field } from '@formily/core';
 import { observer, useField, useFieldSchema } from '@formily/react';
 import { Plugin, useColumnSchema, useDesignable, useToken } from '@nocobase/client';
 import { Typography } from 'antd';
@@ -19,10 +20,10 @@ const NAMESPACE = 'input-copy-button';
 
 const InputCopyButton: FC = observer(
   () => {
-    const field = useField<{ value: string }>();
+    const field = useField<Field>();
     const { token } = useToken();
 
-    if (!field.value) return null;
+    if (!field.value && field.readPretty) return null;
 
     return (
       <Typography.Text
@@ -40,8 +41,10 @@ const InputCopyButton: FC = observer(
 
 class PluginFieldContentCopier extends Plugin {
   async load() {
+    const copyButton = <InputCopyButton />;
+
     this.app.addScopes({
-      InputCopyButton: <InputCopyButton />,
+      InputCopyButton: copyButton,
     });
 
     // Add the schema settings to enable/disable the copy functionality
@@ -51,7 +54,7 @@ class PluginFieldContentCopier extends Plugin {
         const { t } = useTranslation(NAMESPACE);
         const { fieldSchema: tableFieldSchema } = useColumnSchema();
         const fieldSchema = useFieldSchema();
-        const formField = useField();
+        const field = useField();
         const { dn } = useDesignable();
 
         const schema = tableFieldSchema || fieldSchema;
@@ -61,10 +64,10 @@ class PluginFieldContentCopier extends Plugin {
           checked: !!schema['x-component-props']?.addonAfter,
           onChange: async (checked) => {
             if (checked) {
-              formField.componentProps.addonAfter = '{{InputCopyButton}}';
+              field.componentProps.addonAfter = copyButton;
               _.set(schema, 'x-component-props.addonAfter', '{{InputCopyButton}}');
             } else {
-              formField.componentProps.addonAfter = undefined;
+              field.componentProps.addonAfter = null;
               _.unset(schema, 'x-component-props.addonAfter');
             }
 
