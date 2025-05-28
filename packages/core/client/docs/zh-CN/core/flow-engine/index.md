@@ -48,6 +48,8 @@ export type StepDefinition = ActionStepDefinition | InlineStepDefinition;
 export interface FlowDefinition {
   key: string; // 流程唯一标识
   title?: string;
+  autoApply?: boolean; // 是否自动应用流程
+  sort?: number; // 流程执行顺序，数字越小越先执行
   on?: { eventName: string }; // 更改 event 为 eventName
   steps: Record<string, StepDefinition>; // 更新 Step 类型
 }
@@ -55,18 +57,16 @@ export interface FlowDefinition {
 // 上下文类型 (对应实际 FlowContext)
 export interface FlowContext {
   engine: FlowEngine;
-  app?: Application;
   event?: any;
   $exit: () => void;
   [key: string]: any;
 }
 
 // 模型构造函数类型 (对应实际 ModelConstructor)
-export type ModelConstructor<T extends FlowModel = FlowModel> = new (
-  uid: string,
-  app?: Application,
-  stepParams?: Record<string, any>,
-) => T;
+export type ModelConstructor<T extends FlowModel = FlowModel> = new (options: {
+  uid: string;
+  stepParams?: Record<string, any>;
+}) => T;
 
 // StepParams 在 FlowModel 构造时使用 (Record<string, any>)
 // 此处 StepParams 保留文档原有概念，但实际传入 FlowModel 的是 Record<string, any>
@@ -84,10 +84,13 @@ export type ModelConstructor<T extends FlowModel = FlowModel> = new (
 ```typescript
 class FlowEngine {
   // 注册 Action
-  registerAction(nameOrDefinition: string | ActionDefinition, options?: ActionOptions): void;
+  registerAction<TModel extends FlowModel = FlowModel>(
+    nameOrDefinition: string | ActionDefinition<TModel>,
+    options?: ActionOptions<TModel>
+  ): void;
 
   // 获取 Action 定义
-  getAction(name: string): ActionDefinition | undefined;
+  getAction<TModel extends FlowModel = FlowModel>(name: string): ActionDefinition<TModel> | undefined;
 
   // 注册 Model 类
   registerModelClass(name: string, modelClass: ModelConstructor): void;
@@ -96,12 +99,11 @@ class FlowEngine {
   getModelClass(name: string): ModelConstructor | undefined;
 
   // 创建并注册 Model 实例
-  createModel<T extends FlowModel = FlowModel>(
-    uid: string,
-    modelClassName: string,
-    app: Application,
-    stepsParams?: Record<string, any> // 对应 FlowModel 构造函数中的 stepsParams
-  ): T;
+  createModel<T extends FlowModel = FlowModel>(options: {
+    uid?: string;
+    use: string; // 已注册的模型类名
+    stepsParams?: Record<string, any>;
+  }): T;
 
   // 获取 Model 实例
   getModel<T extends FlowModel = FlowModel>(uid: string): T | undefined;
@@ -110,26 +112,10 @@ class FlowEngine {
   destroyModel(uid: string): boolean;
 
   // 注册流程 (注册到 Model 类上)
-  registerFlow(modelClassName: string, flowDefinition: FlowDefinition): void;
-
-  // React hooks & HOC
-  static useContext(): FlowContext;
-  static useFlowModel<T extends FlowModel = FlowModel>(
-    id: string, // 模型实例的 UID
-    modelClassName: string, // 模型类名
-    stepsParams?: Record<string, any> // 步骤参数，可选
-  ): T;
-  static useApplyFlow(flowKey: string, model: FlowModel, ctx?: Partial<FlowContext>): void;
-  static useDispatchEvent(eventName: string, model: FlowModel, ctx?: Partial<FlowContext>): void;
-  static withFlowModel<P>(
-    Component: React.ComponentType<P>,
-    options: {
-      modelId?: string; // 可选，用于指定固定 modelId
-      modelClass?: string; // 可选，用于指定模型类，若不提供 modelId，则会基于此创建
-      defaultFlow?: string; // 可选
-      stepsParams?: Record<string, any>; // 可选，用于模型创建
-    }
-  ): React.ComponentType<P & { modelId: string; model?: FlowModel }>;
+  registerFlow<TModel extends FlowModel = FlowModel>(
+    modelClassName: string,
+    flowDefinition: FlowDefinition<TModel>
+  ): void;
 }
 ```
 
@@ -140,29 +126,44 @@ class FlowEngine {
 ```typescript
 class FlowModel {
   readonly uid: string;
-  readonly app?: Application;
-  readonly flows: Map<string, FlowDefinition>; // 存储注册到此模型(类)的流程
-  protected props: Map<string, any>;
-  protected stepParams: Map<string, Record<string, any>>; // <flowKey, <stepKey, params>>
+  public props: Record<string, any>;
+  public hidden: boolean;
+  public stepParams: Record<string, Record<string, any>>;
+  public flowEngine: FlowEngine;
 
-  constructor(uid: string, app?: Application, initialStepParams?: Record<string, any>);
+  constructor(options: { uid: string; stepParams?: Record<string, any> });
+
+  // 设置 FlowEngine 实例
+  setFlowEngine(flowEngine: FlowEngine): void;
 
   // 获取 props
   getProps(key?: string): any;
   // 设置 props
   setProps(keyOrObject: string | Record<string, any>, value?: any): void;
 
-  // 设置步骤参数 (通常在模型初始化时或特定逻辑中调用)
+  // 设置步骤参数
   setStepParams(flowKey: string, stepKey: string, params: Record<string, any>): void;
   // 获取步骤参数
   getStepParams(flowKey: string, stepKey: string): Record<string, any> | undefined;
 
-  // (applyFlow 和 dispatchEvent 通常通过 FlowEngine.useApplyFlow 和 FlowEngine.useDispatchEvent 触发，
-  //  model 实例作为参数传入。FlowModel 自身不直接暴露这两个方法给外部调用者执行流程)
+  // 应用流程
+  applyFlow(flowKey: string, context?: any): Promise<any>;
+
+  // 派发事件
+  dispatchEvent(eventName: string, context?: any): void;
+
+  // 应用自动流程
+  applyAutoFlows(context?: any): Promise<any[]>;
+
+  // 获取流程定义
+  getFlow(key: string): FlowDefinition | undefined;
+
+  // 可选的渲染 React 组件的方法, FlowModelComponent组件渲染时需要提供
+  render(): React.ReactNode;
 
   // 静态方法 (在 Model 类上)
   static registerFlow(flowDefinition: FlowDefinition): void;
-  static getFlow(flowKey: string): FlowDefinition | undefined;
+  static getFlows(): Map<string, FlowDefinition>;
 }
 ```
 
@@ -171,36 +172,30 @@ class FlowModel {
 ## React 集成 API
 
 ```typescript
-// 通过 hook 获取 FlowEngine 上下文
-const flowContext = FlowEngine.useContext();
+// 通过 hook 获取 FlowEngine 实例
+const flowEngine = useFlowEngine();
 
 // 通过 hook 获取或创建模型实例
-const modelInstance = FlowEngine.useFlowModel('uniqueModelId', 'MyRegisteredModelClass', { initialParam: 'value' });
+const modelInstance = useFlowModel<MyModel>(
+  'uniqueModelId',
+  'MyRegisteredModelClass',
+  { initialParam: 'value' }
+);
 
-// 触发流程 (通常在事件处理或 effect 中)
-// FlowEngine.useApplyFlow 返回一个函数，供调用
-const applyMyFlow = FlowEngine.useApplyFlow();
-// ... later
-// applyMyFlow('myFlowKey', modelInstance, { customData: 'someValue' });
+// 应用流程
+const result = useApplyFlow('myFlowKey', modelInstance, { customData: 'someValue' });
 
-// 派发事件 (通常在事件处理或 effect 中)
-// FlowEngine.useDispatchEvent 返回一个函数
-const dispatchMyEvent = FlowEngine.useDispatchEvent();
-// ... later
-// dispatchMyEvent('onClick', modelInstance, { eventSpecificData: '...' });
-
+// 派发事件
+const { dispatch } = useDispatchEvent('onClick', modelInstance, { eventSpecificData: '...' });
 
 // 高阶组件用法
-// 注意: FlowEngine.withFlowModel 的 options 和返回的 props 可能需要根据实际实现微调
-const MyButtonEnhanced = FlowEngine.withFlowModel(Button, {
-  modelClass: 'ButtonModel', // 指定模型类
-  defaultFlow: 'initializeButtonFlow',
-  stepsParams: { title: 'Default Title' }
+const MyButtonEnhanced = withFlowModel(Button, {
+  use: 'ButtonModel', // 指定模型类
+  uid: 'myButtonInstance1' // 可选，指定模型实例 ID
 });
 
-// <MyButtonEnhanced modelId="myButtonInstance1" />
-// 或者如果不提供 modelId，HOC 内部会尝试创建和管理 model
-// <MyButtonEnhanced someOtherProp="value" />
+// 使用组件
+<MyButtonEnhanced model={modelInstance} />
 ```
 
 ---
@@ -210,7 +205,13 @@ const MyButtonEnhanced = FlowEngine.withFlowModel(Button, {
 ### Markdown
 
 ```ts
-flowEngine.registerFlow('setMarkdownPropsFlow', {
+// 注册模型类
+class MarkdownModel extends FlowModel {}
+flowEngine.registerModelClass('MarkdownModel', MarkdownModel);
+
+// 注册流程
+flowEngine.registerFlow('MarkdownModel', {
+  key: 'setMarkdownPropsFlow',
   steps: {
     setTemplate: {
       title: '模板引擎',
@@ -232,7 +233,6 @@ flowEngine.registerFlow('setMarkdownPropsFlow', {
       },
     },
     setHeight: {
-      name: 'block:markdown:height',
       title: '高度设置',
       uiSchema: {
         height: {
@@ -279,24 +279,15 @@ flowEngine.registerFlow('setMarkdownPropsFlow', {
   }
 });
 
-const model = new FlowModel({
-  stepParams: [
-    {
-      flowKey: 'setMarkdownPropsFlow',
-      stepKey: 'setTemplate',
-      params: { template: 'handlebars' },
-    },
-    {
-      flowKey: 'setMarkdownPropsFlow',
-      stepKey: 'setHeight',
-      params: { height: 200 },
-    },
-    {
-      flowKey: 'setMarkdownPropsFlow',
-      stepKey: 'setContent',
-      params: { content: '这是一段演示文本，**支持 Markdown 语法**。' },
-    },
-  ],
+// 创建模型实例
+const model = flowEngine.createModel({
+  uid: 'markdown-1',
+  use: 'MarkdownModel',
+  stepsParams: {
+    'setMarkdownPropsFlow.setTemplate': { template: 'handlebars' },
+    'setMarkdownPropsFlow.setHeight': { height: 200 },
+    'setMarkdownPropsFlow.setContent': { content: '这是一段演示文本，**支持 Markdown 语法**。' },
+  },
 });
 
 const HTML = ({ content, height }) => {
@@ -308,7 +299,7 @@ const HTML = ({ content, height }) => {
   )
 }
 
-const Markdown = FlowEngine.withFlowModel(HTML, { defaultFlow: 'setMarkdownPropsFlow' });
+const Markdown = withFlowModel(HTML, { use: 'MarkdownModel' });
 
 <Markdown model={model} />;
 ```
@@ -318,15 +309,14 @@ const Markdown = FlowEngine.withFlowModel(HTML, { defaultFlow: 'setMarkdownProps
 ```typescript
 // 1. 定义并注册模型
 class ButtonModel extends FlowModel {}
-
-flowEngine.registerModel('ButtonModel', ButtonModel);
+flowEngine.registerModelClass('ButtonModel', ButtonModel);
 
 // 2. 定义并注册 Action
 flowEngine.registerAction('showConfirm', {
   async handler(ctx, model, params) {
     const confirmed = await ctx.modal.confirm(params);
     if (!confirmed) {
-      await ctx.exit();
+      ctx.$exit();
     }
   },
   uiSchema: { /* 可配置 modal.confirm 弹窗相关 UI Schema */ },
@@ -334,7 +324,8 @@ flowEngine.registerAction('showConfirm', {
 });
 
 // 3. 注册流程
-flowEngine.registerFlow('setDeletePropsFlow', {
+flowEngine.registerFlow('ButtonModel', {
+  key: 'setDeletePropsFlow',
   steps: {
     setTitle: {
       async handler(ctx, model, params) {
@@ -351,8 +342,9 @@ flowEngine.registerFlow('setDeletePropsFlow', {
   }
 });
 
-flowEngine.registerFlow('buttonActionFlow', {
-  on: { event: 'onClick' },
+flowEngine.registerFlow('ButtonModel', {
+  key: 'buttonActionFlow',
+  on: { eventName: 'onClick' },
   steps: {
     popconfirm: { use: 'showConfirm' },
     delete: {
@@ -367,24 +359,17 @@ flowEngine.registerFlow('buttonActionFlow', {
 });
 
 // 4. 使用模型
-const ButtonModel = flowEngine.getModel('ButtonModel');
-const model = new ButtonModel({
-  stepParams: [
-    {
-      flowKey: 'setDeletePropsFlow',
-      stepKey: 'setTitle',
-      params: { title: 'Delete record' },
-    },
-    {
-      flowKey: 'buttonActionFlow',
-      stepKey: 'popconfirm',
-      params: { message: '确定要删除此记录吗？' },
-    },
-  ],
+const model = flowEngine.createModel({
+  uid: 'delete-button-1',
+  use: 'ButtonModel',
+  stepsParams: {
+    'setDeletePropsFlow.setTitle': { title: 'Delete record' },
+    'buttonActionFlow.popconfirm': { message: '确定要删除此记录吗？' },
+  },
 });
 
 // 5. 在 React 组件中集成
-const DeleteButton = FlowEngine.withFlowModel(Button, { defaultFlow: 'setDeletePropsFlow' });
+const DeleteButton = withFlowModel(Button, { use: 'ButtonModel' });
 
 <DeleteButton model={model} />;
 ```
@@ -392,14 +377,19 @@ const DeleteButton = FlowEngine.withFlowModel(Button, { defaultFlow: 'setDeleteP
 ### Table
 
 ```tsx | pure
-flowEngine.registerFlow('setTablePropsFlow', {
+// 注册模型类
+class TableModel extends FlowModel {}
+flowEngine.registerModelClass('TableModel', TableModel);
+
+flowEngine.registerFlow('TableModel', {
+  key: 'setTablePropsFlow',
   steps: {
     setLinkage: {
       async handler(ctx, model, params) {
         if (await jsonMagic(params, ctx)) {
           model.hidden = true;
           model.resource.addAppend('xxx');
-          await ctx.exit();
+          ctx.$exit();
         }
       },
     },
@@ -423,7 +413,7 @@ flowEngine.registerFlow('setTablePropsFlow', {
     },
     onChange: {
       async handler(ctx, model, params) {
-        const onChange = mode.getProps('onChange');
+        const onChange = model.getProps('onChange');
         model.setProps('onChange', async () => {
           await onChange?.();
           await model.resource.next();
@@ -440,19 +430,15 @@ flowEngine.registerFlow('setTablePropsFlow', {
   },
 });
 
-class TableModel extends CollectionFlowModel {}
-
-const model = new TableModel({
-  stepParams: [
-    {
-      flowKey: 'setTablePropsFlow',
-      stepKey: 'setColumns',
-      params: { columns: [] },
-    },
-  ],
+const model = flowEngine.createModel({
+  uid: 'table-1',
+  use: 'TableModel',
+  stepsParams: {
+    'setTablePropsFlow.setColumns': { columns: [] },
+  },
 });
 
-const Table = FlowEngine.withFlowModel(AntdTable, { defaultFlow: 'setTablePropsFlow' });
+const Table = withFlowModel(AntdTable, { use: 'TableModel' });
 
 <Table model={model} />;
 ```

@@ -14,6 +14,7 @@ import { generateUid } from '../utils';
 import _ from 'lodash';
 import { ExtendedFlowDefinition, IModelComponentProps, ReadonlyModelProps, FlowUserContext } from '../types';
 import { mergeFlowDefinitions } from '../utils';
+import React from 'react';
 
 // 使用WeakMap存储每个类的flows
 const modelFlows = new WeakMap<typeof FlowModel, Map<string, FlowDefinition>>();
@@ -444,4 +445,14 @@ export class FlowModel {
 
     return results;
   }
+
+    /**
+   * Renders the React representation of this flow model.
+   * @returns {React.ReactNode} The React node to render.
+   */
+    public render(): React.ReactNode {
+      console.warn('FlowModel.render() not implemented. Override in subclass for FlowModelComponent.');
+      // 默认返回一个空的div，子类可以覆盖这个方法来实现具体的渲染逻辑
+      return <div {...this.getProps()}></div>;
+    }
 }

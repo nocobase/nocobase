@@ -11,7 +11,7 @@ import React from 'react';
 import { observer } from '@formily/react';
 import { FlowModel } from './models';
 import { useApplyAutoFlows } from './hooks/useApplyFlow';
-import { useContext } from './hooks/useContext';
+import { useFlowContext } from './hooks/useFlowContext';
 import { useFlowModel } from './hooks/useFlowModel';
 import { UserContext } from './types';
 
@@ -84,7 +84,7 @@ function WithExistingModel<P extends object>({
   WrappedComponent: React.ComponentType<P>;
   options?: WithFlowModelOptions;
 } & P) {
-  const flowContext = useContext();
+  const flowContext = useFlowContext();
 
   // 始终应用默认流程
   useApplyAutoFlows(model, flowContext as UserContext);
@@ -123,7 +123,7 @@ function WithCreatedModel<P extends object>({
   WrappedComponent: React.ComponentType<P>;
   options?: WithFlowModelOptions;
 } & P) {
-  const flowContext = useContext();
+  const flowContext = useFlowContext();
 
   // 使用 useFlowModel 创建模型
   const model = useFlowModel(uid, use);

@@ -12,7 +12,7 @@ import { useFlowEngine } from '../provider';
 // import { useApp } from '@nocobase/client'; // 移除对 @nocobase/client 的依赖
 import { FlowContext } from '../types';
 
-export function useContext(): FlowContext {
+export function useFlowContext(): FlowContext {
   const engine = useFlowEngine();
   // const app = useApp(); // 移除 app 的获取
 
