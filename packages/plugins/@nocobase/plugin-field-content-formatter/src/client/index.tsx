@@ -20,10 +20,6 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { HtmlRenderer } from './HtmlRenderer';
 
-// Import locale resources
-import enUS from '../locale/en-US.json';
-import zhCN from '../locale/zh-CN.json';
-
 // Define namespace for i18n
 const NAMESPACE = 'field-content-formatter';
 
