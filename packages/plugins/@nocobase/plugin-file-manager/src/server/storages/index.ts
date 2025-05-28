@@ -29,6 +29,7 @@ export interface StorageModel {
 export interface AttachmentModel {
   title: string;
   filename: string;
+  mimetype?: string;
   path: string;
   url?: string;
   storageId: number;
@@ -72,8 +73,8 @@ export abstract class StorageType {
   getFileURL(file: AttachmentModel, preview?: boolean): string | Promise<string> {
     // 兼容历史数据
     if (file.url && isURL(file.url)) {
-      if (preview) {
-        return encodeURL(file.url) + (this.storage.options.thumbnailRule || '');
+      if (preview && this.storage.options.thumbnailRule) {
+        return encodeURL(file.url) + this.storage.options.thumbnailRule;
       }
       return encodeURL(file.url);
     }

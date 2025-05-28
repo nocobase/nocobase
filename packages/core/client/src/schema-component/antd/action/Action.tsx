@@ -416,12 +416,12 @@ const RenderButton = ({
   const { t } = useTranslation();
   const { isPopupVisibleControlledByURL } = usePopupSettings();
   const { openPopup } = usePopupUtils();
-
+  const form = useForm();
   const openPopupRef = useRef(null);
   openPopupRef.current = openPopup;
 
   const handleButtonClick = useCallback(
-    (e: React.MouseEvent, checkPortal = true) => {
+    async (e: React.MouseEvent, checkPortal = true) => {
       if (checkPortal && isPortalInBody(e.target as Element)) {
         return;
       }
@@ -454,6 +454,7 @@ const RenderButton = ({
           }
         };
         if (confirm?.enable !== false && confirm?.content) {
+          await form?.submit?.();
           modal.confirm({
             title: t(confirm.title, { title: confirmTitle || title || field?.title }),
             content: t(confirm.content, { title: confirmTitle || title || field?.title }),

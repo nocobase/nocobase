@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-data-source-manager",
-  "version": "1.6.31",
+  "version": "1.6.34",
   "main": "dist/server/index.js",
   "displayName": "Data source manager",
   "displayName.zh-CN": "数据源管理",
@@ -13,9 +13,6 @@
     "@nocobase/plugin-acl": "1.x",
     "@nocobase/server": "1.x",
     "@nocobase/test": "1.x"
-  },
-  "devDependencies": {
-    "@dnd-kit/core": "^5.0.1"
   },
   "keywords": [
     "Data model tools"

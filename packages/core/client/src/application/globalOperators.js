@@ -88,7 +88,7 @@ export function getOperators() {
       return jsonLogic.truthy(a);
     },
     $empty: function (a) {
-      if (Array.isArray(a)) return a.some((k) => !jsonLogic.truthy(k));
+      if (Array.isArray(a)) return a.length === 0;
       return !jsonLogic.truthy(a);
     },
     $notExists: function (a) {
@@ -133,13 +133,12 @@ export function getOperators() {
       return a.some((element) => b.includes(element));
     },
     $noneOf: function (a, b) {
-      if (!a || a?.length === 0) {
-        return true;
-      }
-      if (Array.isArray(a) && Array.isArray(b) && a.some((element) => Array.isArray(element))) {
-        return a.some((subArray) => subArray.every((element) => !b.some((bElement) => element.includes(bElement))));
-      }
-      return b.some((item) => !a.includes(item));
+      if (!a || a.length === 0) return true;
+      if (!b || b.length === 0) return true;
+
+      if (!Array.isArray(a)) a = [a];
+      if (!Array.isArray(b)) b = [b];
+      return !b.some((item) => a.includes(item));
     },
     $notMatch: function (a, b) {
       if (a.length !== b.length) {

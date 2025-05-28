@@ -1068,10 +1068,11 @@ export const useDestroyActionProps = () => {
 
       const { count = 0, page = 0, pageSize = 0 } = service?.data?.meta || {};
       if (count % pageSize === 1 && page !== 1) {
-        service.run({
-          ...service?.params?.[0],
-          page: page - 1,
-        });
+        const currentPage = service.params[0]?.page;
+        const totalPage = service.data?.meta?.totalPage;
+        if (currentPage === totalPage && service.params[0] && currentPage !== 1) {
+          service.params[0].page = currentPage - 1;
+        }
       }
       if (callBack) {
         callBack?.();

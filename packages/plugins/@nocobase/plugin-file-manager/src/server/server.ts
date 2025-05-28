@@ -9,6 +9,7 @@
 
 import { basename } from 'path';
 import fs from 'fs';
+import match from 'mime-match';
 
 import { Plugin } from '@nocobase/server';
 import { isURL, Registry } from '@nocobase/utils';
@@ -311,7 +312,10 @@ export class PluginFileManagerServer extends Plugin {
       return encodeURL(file.url);
     }
     const storageType = this.storageTypes.get(storage.type);
-    return new storageType(storage).getFileURL(file, preview ? storage.options.thumbnailRule : '');
+    return new storageType(storage).getFileURL(
+      file,
+      Boolean(file.mimetype && match(file.mimetype, 'image/*') && preview && storage.options.thumbnailRule),
+    );
   }
 }
 

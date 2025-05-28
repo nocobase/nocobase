@@ -172,3 +172,13 @@ jobs:
           platforms: linux/amd64,linux/arm64
           push: true
           tags: nocobase/nocobase:${{ steps.get-info.outputs.defaultTag }},${{ steps.meta.outputs.tags }},${{ secrets.ALI_DOCKER_PUBLIC_REGISTRY }}/nocobase/nocobase:${{ steps.get-info.outputs.defaultTag }},${{ secrets.ALI_DOCKER_PUBLIC_REGISTRY }}/${{ steps.meta.outputs.tags }}
+      - name: Build and push (Full)
+        uses: docker/build-push-action@v3
+        with:
+          context: ./docker/nocobase
+          file: ./docker/nocobase/Dockerfile-cn
+          build-args: |
+            CNA_VERSION=${{ steps.get-info.outputs.defaultTag }}
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: nocobase/nocobase:${{ steps.get-info.outputs.defaultTag }}-full,${{ steps.meta.outputs.tags }}-full,${{ secrets.ALI_DOCKER_PUBLIC_REGISTRY }}/nocobase/nocobase:${{ steps.get-info.outputs.defaultTag }}-full,${{ secrets.ALI_DOCKER_PUBLIC_REGISTRY }}/${{ steps.meta.outputs.tags }}-full
