@@ -481,6 +481,7 @@ const RenderButton = ({
   const localVariables = useLocalVariables();
   const openPopupRef = useRef(null);
   const compile = useCompile();
+  const form = useForm();
   openPopupRef.current = openPopup;
   const scopes = {
     variables,
