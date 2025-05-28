@@ -166,7 +166,7 @@ export const InternalPicker = observer(
 
     return (
       <PopupSettingsProvider enableURL={false}>
-        <Space.Compact style={{ display: 'flex', lineHeight: '32px' }}>
+        <Space.Compact style={{ display: 'flex' }}>
           <div style={{ width: '100%' }}>
             <Select
               role="button"

@@ -54,11 +54,7 @@ type SmartDatePickerProps = {
 
 const SmartDatePicker: React.FC<SmartDatePickerProps> = (props) => {
   const { isRange, ...rest } = props as any;
-  return isRange ? (
-    <DatePicker.RangePicker {...rest} style={{ minWidth: 350 }} />
-  ) : (
-    <DatePicker.FilterWithPicker {...rest} />
-  );
+  return isRange ? <DatePicker.RangePicker {...rest} /> : <DatePicker.FilterWithPicker {...rest} />;
 };
 
 export const DateFilterDynamicComponent = (props) => {
