@@ -16,10 +16,6 @@ import { useTranslation } from 'react-i18next';
 import { CopyOutlined } from '@ant-design/icons';
 import { LoadingOutlined } from '@ant-design/icons';
 
-// Import locale resources
-import enUS from '../locale/en-US.json';
-import zhCN from '../locale/zh-CN.json';
-
 // Define namespace for i18n
 const NAMESPACE = 'field-content-copier';
 
