@@ -145,6 +145,44 @@ export const enableScanSettingsItem: SchemaSettingsItemType = {
   },
 };
 
+export const disableManualInputSettingsItem: SchemaSettingsItemType = {
+  name: 'disableManualInput',
+  type: 'switch',
+  useVisible() {
+    const { fieldSchema: columnSchema } = useColumnSchema();
+    const schema = useFieldSchema();
+    const fieldSchema = columnSchema || schema;
+    return fieldSchema['x-component-props']?.enableScan;
+  },
+  useComponentProps() {
+    const { t } = useTranslation();
+    const field = useField();
+    const { fieldSchema: columnSchema } = useColumnSchema();
+    const schema = useFieldSchema();
+    const fieldSchema = columnSchema || schema;
+    const { dn } = useDesignable();
+    return {
+      title: t('Disable manual input'),
+      checked: fieldSchema?.['x-component-props']?.disableManualInput,
+      onChange(flag) {
+        fieldSchema['x-component-props'] = {
+          ...fieldSchema?.['x-component-props'],
+          disableManualInput: flag,
+        };
+        field.componentProps['disableManualInput'] = flag;
+        dn.emit('patch', {
+          schema: {
+            'x-uid': fieldSchema['x-uid'],
+            'x-component-props': {
+              ...fieldSchema?.['x-component-props'],
+            },
+          },
+        });
+      },
+    };
+  },
+};
+
 export const openModeSettingsItem: SchemaSettingsItemType = {
   name: 'openMode',
   Component: SchemaSettingOpenModeSchemaItems,
