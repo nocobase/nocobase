@@ -292,7 +292,11 @@ function getSubscriber(
             });
           });
         } else if (fieldName === 'dataSource') {
-          if (_.every(lastState?.value, (v) => v.value !== field.value)) {
+          const lastValues = lastState?.value?.map((v) => v.value) || [];
+          if (
+            (!Array.isArray(field.value) && !lastValues.includes(field.value)) ||
+            (Array.isArray(field.value) && _.difference(field.value, lastValues).length > 0)
+          ) {
             field.value = field.initialValue;
           }
           field[fieldName] = lastState?.value;
