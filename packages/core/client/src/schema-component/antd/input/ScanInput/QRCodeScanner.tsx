@@ -12,7 +12,6 @@ import { Html5Qrcode } from 'html5-qrcode';
 import { LeftOutlined, FileImageOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import { useScanner } from './useScanner';
-
 export function ScanBox({ style = {} }: { style: React.CSSProperties }) {
   const commonStyle: React.CSSProperties = {
     position: 'absolute',
