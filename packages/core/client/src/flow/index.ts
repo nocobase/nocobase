@@ -7,6 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { define, observable } from '@formily/reactive';
+import { uid } from '@formily/shared';
 import { CreateModelOptions, FlowModel } from '@nocobase/flow-engine';
 import { Plugin } from '../application';
 import { FlowPage } from './FlowPage';
@@ -20,7 +22,7 @@ TabFlowModel.registerFlow('defaultFlow', {
     step1: {
       handler(ctx, model: TabFlowModel, params) {
         model.setProps('key', model.uid);
-        model.setProps('title', params.title);
+        model.setProps('label', params.title);
         console.log('TabFlowModel', params);
       },
     },
@@ -29,9 +31,21 @@ TabFlowModel.registerFlow('defaultFlow', {
 
 export class PageFlowModel extends FlowModel {
   tabs: Array<TabFlowModel> = [];
-  addTab(tabOptions: CreateModelOptions) {
-    const model = this.flowEngine.createModel(tabOptions);
+
+  constructor(options) {
+    super(options);
+    define(this, {
+      tabs: observable,
+    });
+  }
+
+  async addTab(tabOptions: Omit<CreateModelOptions, 'use'>, ctx?: any) {
+    const model = this.flowEngine.createModel({
+      use: 'TabFlowModel',
+      ...tabOptions,
+    });
     this.tabs.push(model);
+    await this.tabs2Props(ctx);
     return model;
   }
 
@@ -42,6 +56,13 @@ export class PageFlowModel extends FlowModel {
       }),
     );
   }
+  async tabs2Props(ctx) {
+    const tabList = await this.mapTabs(async (tab: TabFlowModel) => {
+      await tab.applyAutoFlows(ctx);
+      return tab.getProps();
+    });
+    this.setProps('tabList', tabList);
+  }
 }
 
 PageFlowModel.registerFlow('defaultFlow', {
@@ -50,32 +71,24 @@ PageFlowModel.registerFlow('defaultFlow', {
   steps: {
     step1: {
       async handler(ctx, model: PageFlowModel, params) {
-        model.addTab({
-          use: 'TabFlowModel',
+        await model.addTab({
           stepParams: {
             defaultFlow: {
               step1: {
-                title: 'Tab1'
-              }
-            }
-          }
+                title: `tab-${uid()}`,
+              },
+            },
+          },
         });
-        model.addTab({
-          use: 'TabFlowModel',
+        await model.addTab({
           stepParams: {
             defaultFlow: {
               step1: {
-                title: 'Tab2'
-              }
-            }
-          }
+                title: `tab-${uid()}`,
+              },
+            },
+          },
         });
-        const tabList = await model.mapTabs(async (tab: TabFlowModel) => {
-          await tab.applyAutoFlows();
-          return tab.getProps();
-        });
-        console.log('tabList', tabList);
-        model.setProps('tabList', tabList);
       },
     },
   },

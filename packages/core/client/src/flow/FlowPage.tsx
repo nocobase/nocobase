@@ -9,6 +9,7 @@
 
 import { PageContainer } from '@ant-design/pro-layout';
 import { observer } from '@formily/reactive-react';
+import { uid } from '@formily/shared';
 import { useApplyAutoFlows, useFlowModel, withFlowModel } from '@nocobase/flow-engine';
 import { Button, Tabs } from 'antd';
 import React from 'react';
@@ -21,13 +22,32 @@ function InternalPage(props) {
   const { tabList } = model.getProps();
   return (
     <div>
-      <Tabs items={tabList} />
+      <Tabs
+        items={tabList}
+        tabBarExtraContent={
+          <Button
+            onClick={async () => {
+              await model.addTab({
+                stepParams: {
+                  defaultFlow: {
+                    step1: {
+                      title: `tab-${uid()}`,
+                    },
+                  },
+                },
+              });
+            }}
+          >
+            Add tab
+          </Button>
+        }
+      />
       Page {model.uid}
     </div>
   );
 }
 
-const InternalPageFlow = withFlowModel(InternalPage);
+const InternalPageFlow = withFlowModel(observer(InternalPage));
 
 export const FlowPage = () => {
   const params = useParams();
