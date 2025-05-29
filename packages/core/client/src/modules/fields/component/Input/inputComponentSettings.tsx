@@ -208,5 +208,11 @@ export const openModeSettingsItem: SchemaSettingsItemType = {
 };
 export const inputComponentSettings = new SchemaSettings({
   name: 'fieldSettings:component:Input',
-  items: [ellipsisSettingsItem, enableLinkSettingsItem, openModeSettingsItem, enableScanSettingsItem],
+  items: [
+    ellipsisSettingsItem,
+    enableLinkSettingsItem,
+    openModeSettingsItem,
+    enableScanSettingsItem,
+    disableManualInputSettingsItem,
+  ],
 });

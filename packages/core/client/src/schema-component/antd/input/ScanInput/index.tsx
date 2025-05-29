@@ -42,8 +42,7 @@ const ScanInput: React.FC<NocoBaseInputProps> = ({ value, onChange, placeholder,
         disabled={disabled}
         readOnly={disableManualInput}
         suffix={
-          <Button
-            icon={<QrcodeOutlined />}
+          <QrcodeOutlined
             onMouseDown={(e) => e.preventDefault()} // 阻止聚焦
             onClick={() => {
               inputRef.current?.blur(); // 主动让输入框失去焦点
