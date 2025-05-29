@@ -10,6 +10,7 @@
 import { define, observable } from '@formily/reactive';
 import { uid } from '@formily/shared';
 import { CreateModelOptions, FlowModel } from '@nocobase/flow-engine';
+import { useRequest } from 'ahooks';
 import { Button, Tabs } from 'antd';
 import React from 'react';
 
@@ -36,14 +37,7 @@ TabFlowModel.registerFlow('defaultFlow', {
 });
 
 export class PageFlowModel extends FlowModel {
-  tabs: Array<TabFlowModel> = [];
-
-  constructor(options) {
-    super(options);
-    // define(this, {
-    //   tabs: observable,
-    // });
-  }
+  tabs: Array<TabFlowModel> = observable([]);
 
   async addTab(tabOptions: Omit<CreateModelOptions, 'use'>, ctx?: any) {
     const model = this.flowEngine.createModel({
@@ -51,31 +45,20 @@ export class PageFlowModel extends FlowModel {
       ...tabOptions,
     });
     this.tabs.push(model);
-    await this.tabs2Props(ctx);
+    await model.applyAutoFlows(ctx);
     return model;
   }
 
-  async mapTabs(callback) {
-    return Promise.all(
-      this.tabs.map(async (tab) => {
-        return await callback(tab);
-      }),
-    );
-  }
-  async tabs2Props(ctx) {
-    const tabList = await this.mapTabs(async (tab: TabFlowModel) => {
-      await tab.applyAutoFlows(ctx);
-      return tab.getProps();
-    });
-    this.setProps('tabList', tabList);
+  getTabList(): any[] {
+    return this.tabs.map((tab) => tab.getProps());
   }
 
   render() {
-    const { tabList } = this.getProps();
     return (
       <div>
+        {this.tabs.length}
         <Tabs
-          items={tabList}
+          items={this.getTabList()}
           tabBarExtraContent={
             <Button
               onClick={async () => {
@@ -101,7 +84,6 @@ export class PageFlowModel extends FlowModel {
 }
 
 PageFlowModel.registerFlow('defaultFlow', {
-  key: 'defaultFlow',
   autoApply: true,
   steps: {
     step1: {

@@ -16,39 +16,6 @@ import React, { useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { PageFlowModel } from './model';
 
-function InternalPage(props) {
-  const params = useParams();
-  const model = useFlowModel<PageFlowModel>(params.name);
-  const { tabList } = model.getProps();
-  return (
-    <div>
-      <Tabs
-        items={tabList}
-        tabBarExtraContent={
-          <Button
-            onClick={async () => {
-              await model.addTab({
-                stepParams: {
-                  defaultFlow: {
-                    step1: {
-                      title: `tab-${uid()}`,
-                    },
-                  },
-                },
-              });
-            }}
-          >
-            Add tab
-          </Button>
-        }
-      />
-      Page {model.uid}
-    </div>
-  );
-}
-
-const InternalPageFlow = withFlowModel(observer(InternalPage));
-
 export const FlowPage = () => {
   const params = useParams();
   const model = useFlowModel<PageFlowModel>(params.name);
