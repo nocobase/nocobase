@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-field-attachment-url",
-  "version": "1.6.34",
+  "version": "1.6.36",
   "main": "dist/server/index.js",
   "displayName": "Collection field: Attachment(URL)",
   "displayName.zh-CN": "数据表字段：附件（URL）",
@@ -12,7 +12,7 @@
     "@nocobase/test": "1.x"
   },
   "devDependencies": {
-    "@nocobase/plugin-file-manager": "1.6.34"
+    "@nocobase/plugin-file-manager": "1.6.36"
   },
   "keywords": [
     "Collection fields"
