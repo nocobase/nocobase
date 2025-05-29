@@ -27,8 +27,8 @@ export const useTemplateBlockContext = () => {
   return useContext(TemplateBlockContext);
 };
 
-const _isBlockTemplate = (schema: Schema) => {
-  if (!schema) {
+const _isBlockTemplate = (schema: Schema, depth = 1) => {
+  if (!schema || depth >= 3) {
     return false;
   }
 
@@ -39,10 +39,12 @@ const _isBlockTemplate = (schema: Schema) => {
     if (property['x-component'] === 'BlockTemplate') {
       return true;
     }
-    if (_isBlockTemplate(property)) {
+    if (_isBlockTemplate(property, depth + 1)) {
       return true;
     }
   }
+
+  return false;
 };
 
 const TemplateBlockProvider: FC<{ onTemplateLoaded?: () => void }> = ({ onTemplateLoaded, children }) => {
