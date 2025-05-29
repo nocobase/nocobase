@@ -27,9 +27,7 @@ export const Details = withDynamicSchemaProps(
     const schema = useFieldSchema();
     const { isBlockTemplate, templateFinished } = useTemplateBlockContext();
 
-    if (
-      isBlockTemplate?.() ? !loading && templateFinished && _.isEmpty(data?.data) : !loading && _.isEmpty(data?.data)
-    ) {
+    if (isBlockTemplate?.() ? !loading && templateFinished && data && _.isEmpty(data.data) : _.isEmpty(data?.data)) {
       return (
         <>
           <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} />
