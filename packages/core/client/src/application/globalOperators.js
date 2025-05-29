@@ -679,7 +679,7 @@ export function getOperators() {
 }
 
 function parseFullDate(dateStr) {
-  return new Date(dateStr);
+  return new Date(`${dateStr}T00:00:00`);
 }
 
 function parseMonth(dateStr) {
