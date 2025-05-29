@@ -12,87 +12,7 @@ import { uid } from '@formily/shared';
 import { CreateModelOptions, FlowModel } from '@nocobase/flow-engine';
 import { Plugin } from '../application';
 import { FlowPage } from './FlowPage';
-
-class TabFlowModel extends FlowModel {}
-
-TabFlowModel.registerFlow('defaultFlow', {
-  key: 'defaultFlow',
-  autoApply: true,
-  steps: {
-    step1: {
-      handler(ctx, model: TabFlowModel, params) {
-        model.setProps('key', model.uid);
-        model.setProps('label', params.title);
-        console.log('TabFlowModel', params);
-      },
-    },
-  },
-});
-
-export class PageFlowModel extends FlowModel {
-  tabs: Array<TabFlowModel> = [];
-
-  constructor(options) {
-    super(options);
-    define(this, {
-      tabs: observable,
-    });
-  }
-
-  async addTab(tabOptions: Omit<CreateModelOptions, 'use'>, ctx?: any) {
-    const model = this.flowEngine.createModel({
-      use: 'TabFlowModel',
-      ...tabOptions,
-    });
-    this.tabs.push(model);
-    await this.tabs2Props(ctx);
-    return model;
-  }
-
-  async mapTabs(callback) {
-    return Promise.all(
-      this.tabs.map(async (tab) => {
-        return await callback(tab);
-      }),
-    );
-  }
-  async tabs2Props(ctx) {
-    const tabList = await this.mapTabs(async (tab: TabFlowModel) => {
-      await tab.applyAutoFlows(ctx);
-      return tab.getProps();
-    });
-    this.setProps('tabList', tabList);
-  }
-}
-
-PageFlowModel.registerFlow('defaultFlow', {
-  key: 'defaultFlow',
-  autoApply: true,
-  steps: {
-    step1: {
-      async handler(ctx, model: PageFlowModel, params) {
-        await model.addTab({
-          stepParams: {
-            defaultFlow: {
-              step1: {
-                title: `tab-${uid()}`,
-              },
-            },
-          },
-        });
-        await model.addTab({
-          stepParams: {
-            defaultFlow: {
-              step1: {
-                title: `tab-${uid()}`,
-              },
-            },
-          },
-        });
-      },
-    },
-  },
-});
+import { PageFlowModel, TabFlowModel } from './model';
 
 export class PluginFlowEngine extends Plugin {
   async load() {
@@ -102,6 +22,10 @@ export class PluginFlowEngine extends Plugin {
       uid: 'hhv19n26r40',
       use: 'PageFlowModel',
     }) as PageFlowModel;
+    this.app.flowEngine.createModel({
+      uid: 'brsqpz5fg6b',
+      use: 'PageFlowModel',
+    });
     this.app.flowEngine.createModel({
       uid: 'brsqpz5fg6b',
       use: 'PageFlowModel',

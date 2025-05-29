@@ -10,11 +10,11 @@
 import { PageContainer } from '@ant-design/pro-layout';
 import { observer } from '@formily/reactive-react';
 import { uid } from '@formily/shared';
-import { useApplyAutoFlows, useFlowModel, withFlowModel } from '@nocobase/flow-engine';
+import { FlowModelComponent, useApplyAutoFlows, useFlowModel, withFlowModel } from '@nocobase/flow-engine';
 import { Button, Tabs } from 'antd';
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import { PageFlowModel } from '.';
+import { PageFlowModel } from './model';
 
 function InternalPage(props) {
   const params = useParams();
@@ -52,5 +52,5 @@ const InternalPageFlow = withFlowModel(observer(InternalPage));
 export const FlowPage = () => {
   const params = useParams();
   const model = useFlowModel<PageFlowModel>(params.name);
-  return <InternalPageFlow model={model} />;
+  return <FlowModelComponent model={model} />;
 };
