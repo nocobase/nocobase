@@ -4,7 +4,7 @@
   "displayName.zh-CN": "验证码",
   "description": "verification setting.",
   "description.zh-CN": "验证码配置。",
-  "version": "1.6.34",
+  "version": "1.6.35",
   "license": "AGPL-3.0",
   "main": "./dist/server/index.js",
   "homepage": "https://docs.nocobase.com/handbook/verification",
