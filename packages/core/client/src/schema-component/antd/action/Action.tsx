@@ -489,6 +489,7 @@ const RenderButton = ({
   const localVariables = useLocalVariables();
   const openPopupRef = useRef(null);
   const compile = useCompile();
+  const form = useForm();
   openPopupRef.current = openPopup;
   const scopes = {
     variables,
@@ -531,6 +532,7 @@ const RenderButton = ({
           }
         };
         if (confirm?.enable !== false && confirm?.content) {
+          await form?.submit?.();
           modal.confirm({
             title: t(resultTitle, { title: confirmTitle || title || field?.title }),
             content: t(resultContent, { title: confirmTitle || title || field?.title }),

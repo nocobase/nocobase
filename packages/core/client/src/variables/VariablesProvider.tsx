@@ -130,8 +130,9 @@ const VariablesProvider = ({ children, filterVariables }: any) => {
               item?.[collectionPrimaryKey] != null
             ) {
               if (associationField?.target) {
-                const url = `/${collectionName}/${item[associationField.sourceKey || collectionPrimaryKey]
-                  }/${key}:${getAction(associationField.type)}`;
+                const url = `/${collectionName}/${
+                  item[associationField.sourceKey || collectionPrimaryKey]
+                }/${key}:${getAction(associationField.type)}`;
                 if (hasRequested(url)) {
                   return getRequested(url);
                 }
@@ -161,8 +162,9 @@ const VariablesProvider = ({ children, filterVariables }: any) => {
           current[collectionPrimaryKey] != null &&
           associationField?.target
         ) {
-          const url = `/${collectionName}/${current[associationField.sourceKey || collectionPrimaryKey]
-            }/${key}:${getAction(associationField.type)}`;
+          const url = `/${collectionName}/${
+            current[associationField.sourceKey || collectionPrimaryKey]
+          }/${key}:${getAction(associationField.type)}`;
           let data = null;
           if (hasRequested(url)) {
             data = await getRequested(url);
@@ -191,7 +193,13 @@ const VariablesProvider = ({ children, filterVariables }: any) => {
       }
 
       const _value = compile(
-        _.isFunction(current) ? await current({ fieldOperator: options?.fieldOperator, isParsingVariable: true, variableName: variablePath }) : current,
+        _.isFunction(current)
+          ? await current({
+              fieldOperator: options?.fieldOperator,
+              isParsingVariable: true,
+              variableName: variablePath,
+            })
+          : current,
       );
       return {
         value: _value === undefined ? variableOption.defaultValue : _value,
@@ -359,7 +367,7 @@ function shouldToRequest(value, variableCtx: Record<string, any>, variablePath: 
       return;
     }
 
-    result = _.isEmpty(value);
+    result = value !== null && _.isEmpty(value);
   });
 
   return result;
