@@ -7,14 +7,20 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { observable, action, define } from '@formily/reactive';
-import { FlowEngine } from '../flowEngine';
-import type { FlowContext, StepDefinition, FlowDefinition, ActionStepDefinition, InlineStepDefinition, StepParams } from '../types';
-import { generateUid } from '../utils';
+import { action, define, observable } from '@formily/reactive';
 import _ from 'lodash';
-import { ExtendedFlowDefinition, IModelComponentProps, ReadonlyModelProps, FlowUserContext } from '../types';
-import { mergeFlowDefinitions } from '../utils';
 import React from 'react';
+import { FlowEngine } from '../flowEngine';
+import type {
+  ActionStepDefinition,
+  FlowContext,
+  FlowDefinition,
+  InlineStepDefinition,
+  StepDefinition,
+  StepParams,
+} from '../types';
+import { ExtendedFlowDefinition, FlowUserContext, IModelComponentProps, ReadonlyModelProps } from '../types';
+import { generateUid, mergeFlowDefinitions } from '../utils';
 
 // 使用WeakMap存储每个类的flows
 const modelFlows = new WeakMap<typeof FlowModel, Map<string, FlowDefinition>>();
@@ -28,9 +34,9 @@ export class FlowModel {
   // TODO: 应该有一些类型，整个生命周期只执行一次，比如从后端加载配置，构造整个model树。
   // 后续model的更新不需要再重新加载了
 
-  constructor(options: { uid: string; stepParams?: Record<string, any> }) {
-    this.uid = options.uid;
-    this.props = {};
+  constructor(options: { uid: string; props?: IModelComponentProps; stepParams?: Record<string, any> }) {
+    this.uid = options.uid || generateUid();
+    this.props = options.props || {};
     this.hidden = false;
     this.stepParams = options.stepParams || {};
 
@@ -42,6 +48,14 @@ export class FlowModel {
       setStepParams: action,
       setHidden: action,
     });
+    // 写在这里，在子类里无效
+    // this.onInit(options);
+  }
+
+  onInit(options): void {}
+
+  makeObservable(annotations: Record<string, any> = {}): void {
+    define(this, annotations);
   }
 
   /**
@@ -446,13 +460,13 @@ export class FlowModel {
     return results;
   }
 
-    /**
+  /**
    * Renders the React representation of this flow model.
    * @returns {React.ReactNode} The React node to render.
    */
-    public render(): React.ReactNode {
-      console.warn('FlowModel.render() not implemented. Override in subclass for FlowModelComponent.');
-      // 默认返回一个空的div，子类可以覆盖这个方法来实现具体的渲染逻辑
-      return <div {...this.getProps()}></div>;
-    }
+  public render(): React.ReactNode {
+    console.warn('FlowModel.render() not implemented. Override in subclass for FlowModelComponent.');
+    // 默认返回一个空的div，子类可以覆盖这个方法来实现具体的渲染逻辑
+    return <div {...this.getProps()}></div>;
+  }
 }

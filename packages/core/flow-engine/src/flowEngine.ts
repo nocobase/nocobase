@@ -7,8 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { ActionDefinition, FlowDefinition, ModelConstructor, ActionOptions, CreateModelOptions } from './types';
 import { FlowModel } from './models';
+import { ActionDefinition, ActionOptions, CreateModelOptions, FlowDefinition, ModelConstructor } from './types';
 import { generateUid } from './utils';
 
 export class FlowEngine {
@@ -84,6 +84,12 @@ export class FlowEngine {
     this.modelClasses.set(name, modelClass);
   }
 
+  public registerModels(models: Record<string, ModelConstructor>) {
+    for (const [name, modelClass] of Object.entries(models)) {
+      this.registerModelClass(name, modelClass);
+    }
+  }
+
   /**
    * 获取已注册的 Model 类 (构造函数)。
    * @param {string} name Model 类名称。
@@ -101,24 +107,23 @@ export class FlowEngine {
    * @returns {T} 创建的 Model 实例。
    */
   public createModel<T extends FlowModel = FlowModel>(options: CreateModelOptions): T {
-    const { uid = generateUid(), use: modelClassName, stepParams } = options;
+    const { uid, use: modelClassName } = options;
     const ModelClass = this.getModelClass(modelClassName);
 
     if (!ModelClass) {
       throw new Error(`Model class '${modelClassName}' not found. Please register it first.`);
     }
 
-    if (this.modelInstances.has(uid)) {
+    if (uid && this.modelInstances.has(uid)) {
       return this.modelInstances.get(uid) as T;
     }
 
-    const modelInstance = new (ModelClass as ModelConstructor<T>)({
-      uid,
-      stepParams: stepParams,
-    });
-    modelInstance.setFlowEngine(this);
+    const modelInstance = new (ModelClass as ModelConstructor<T>)(options as any);
 
-    this.modelInstances.set(uid, modelInstance);
+    modelInstance.setFlowEngine(this);
+    modelInstance.onInit(options);
+
+    this.modelInstances.set(modelInstance.uid, modelInstance);
     return modelInstance;
   }
 

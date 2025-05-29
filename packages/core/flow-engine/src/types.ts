@@ -8,8 +8,8 @@
  */
 
 import { ISchema } from '@formily/json-schema';
-import type { FlowModel } from './models';
 import type { FlowEngine } from './flowEngine';
+import type { FlowModel } from './models';
 
 export type DeepPartial<T> = {
   [P in keyof T]?: T[P] extends (infer U)[]
@@ -88,7 +88,9 @@ export type FlowUserContext = Partial<Omit<FlowContext, 'engine' | '$exit' | 'ap
  */
 export type ModelConstructor<T extends FlowModel = FlowModel> = new (options: {
   uid: string;
+  props?: IModelComponentProps;
   stepParams?: StepParams;
+  [key: string]: any; // Allow additional options
 }) => T;
 
 /**
@@ -152,7 +154,7 @@ export interface ActionOptions<TModel extends FlowModel = FlowModel, P = any, R 
 
 /**
  * Steps parameters structure for flow models
- * 
+ *
  * @example
  * ```typescript
  * const stepParams: StepParams = {
@@ -192,6 +194,8 @@ export type RegisteredModelClassName = string;
 export interface CreateModelOptions {
   uid?: string;
   use: RegisteredModelClassName;
+  props?: IModelComponentProps;
   stepParams?: StepParams;
+  [key: string]: any; // 允许额外的自定义选项
   // app?: Application; // Application 依赖已移除
 }
