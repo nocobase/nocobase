@@ -21,8 +21,6 @@
     "@nocobase/test": "1.x"
   },
   "keywords": [
-    "Input",
-    "UI",
     "Clipboard",
     "Copy"
   ],
