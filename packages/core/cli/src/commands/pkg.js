@@ -15,6 +15,7 @@ const tar = require('tar');
 const path = require('path');
 const { createStoragePluginsSymlink } = require('@nocobase/utils/plugin-symlink');
 const chalk = require('chalk');
+const { logger } = require('@nocobase/logger');
 
 class Package {
   data;
@@ -77,7 +78,7 @@ class Package {
     }
 
     if (!this.data.versions[version]) {
-      console.log(chalk.redBright(`Download failed: ${this.packageName}@${version} package does not exist`));
+      logger.error(`Download failed: ${this.packageName}@${version} package does not exist`);
     }
 
     return [version, this.data.versions[version].dist.tarball];
@@ -108,7 +109,7 @@ class Package {
 
   async download(options = {}) {
     if (await this.isDevPackage()) {
-      console.log(chalk.yellowBright(`Skipped: ${this.packageName} is dev package`));
+      logger.warn(`Skipped: ${this.packageName} is dev package`);
       return;
     }
     if (await this.isDownloaded(options.version)) {
@@ -116,7 +117,7 @@ class Package {
     }
     await this.getInfo();
     if (!this.data) {
-      console.log(chalk.redBright(`Download failed: ${this.packageName} package does not exist`));
+      logger.error(`Download failed: ${this.packageName} package does not exist`);
       return;
     }
     try {
@@ -140,9 +141,9 @@ class Package {
           .on('finish', resolve)
           .on('error', reject);
       });
-      console.log(chalk.greenBright(`Downloaded: ${this.packageName}@${version}`));
+      logger.info(`Downloaded: ${this.packageName}@${version}`);
     } catch (error) {
-      console.log(chalk.redBright(`Download failed: ${this.packageName}`));
+      logger.error(`Download failed: ${this.packageName}`);
     }
   }
 }
@@ -174,7 +175,8 @@ class PackageManager {
       });
       this.token = res1.data.token;
     } catch (error) {
-      console.error(chalk.redBright(`Login failed: ${this.baseURL}`));
+      logger.error(`Login failed: ${this.baseURL}`);
+      logger.error(error);
     }
   }
 
@@ -211,8 +213,8 @@ class PackageManager {
     const dir = path.resolve(process.env.PLUGIN_STORAGE_PATH, packageName);
     const r = await fs.exists(dir);
     if (r) {
-      console.log(chalk.yellowBright(`Removed: ${packageName}`));
       await fs.rm(dir, { force: true, recursive: true });
+      logger.info(`Removed: ${packageName}`);
     }
   }
 
@@ -260,6 +262,6 @@ module.exports = (cli) => {
       await createStoragePluginsSymlink();
     });
   pkg.command('export-all').action(async () => {
-    console.log('Todo...');
+    logger.info('Todo...');
   });
 };

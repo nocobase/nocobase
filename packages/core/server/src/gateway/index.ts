@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { createSystemLogger, getLoggerFilePath, SystemLogger } from '@nocobase/logger';
+import { createSystemLogger, getLoggerFilePath, logger, SystemLogger } from '@nocobase/logger';
 import { Registry, Toposort, ToposortOptions, uid } from '@nocobase/utils';
 import { createStoragePluginsSymlink } from '@nocobase/utils/plugin-symlink';
 import { Command } from 'commander';
@@ -17,7 +17,9 @@ import { EventEmitter } from 'events';
 import fs from 'fs';
 import http, { IncomingMessage, ServerResponse } from 'http';
 import compose from 'koa-compose';
+import process from 'node:process';
 import { promisify } from 'node:util';
+import { isMainThread, workerData } from 'node:worker_threads';
 import { isAbsolute, resolve } from 'path';
 import qs from 'qs';
 import handler from 'serve-handler';
@@ -29,8 +31,6 @@ import { applyErrorWithArgs, getErrorWithCode } from './errors';
 import { IPCSocketClient } from './ipc-socket-client';
 import { IPCSocketServer } from './ipc-socket-server';
 import { WSServer } from './ws-server';
-import { isMainThread, workerData } from 'node:worker_threads';
-import process from 'node:process';
 
 const compress = promisify(compression());
 
@@ -244,7 +244,7 @@ export class Gateway extends EventEmitter {
     try {
       handleApp = await this.getRequestHandleAppName(req as IncomingRequest);
     } catch (error) {
-      console.log(error);
+      logger.error(error);
       this.responseErrorWithCode('APP_INITIALIZING', res, { appName: handleApp });
       return;
     }
@@ -437,7 +437,7 @@ export class Gateway extends EventEmitter {
     }
 
     if (this.port === null) {
-      console.log('gateway port is not set, http server will not start');
+      logger.error('gateway port is not set, http server will not start');
       return;
     }
 
@@ -458,7 +458,7 @@ export class Gateway extends EventEmitter {
     });
 
     this.server.listen(this.port, this.host, () => {
-      console.log(`Gateway HTTP Server running at http://${this.host}:${this.port}/`);
+      logger.info(`Gateway HTTP Server running at http://${this.host}:${this.port}/`);
       if (options?.callback) {
         options.callback(this.server);
       }
