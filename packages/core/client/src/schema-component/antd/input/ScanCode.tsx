@@ -32,7 +32,7 @@ export const ScanCode: React.FC<ScanCodeProps> = ({ visible, onClose, onSuccess 
 
   const vw = window.innerWidth;
   const vh = window.innerHeight;
-  const qrboxSize = Math.floor(Math.min(vw, vh) * 0.6);
+  const qrboxSize = Math.floor(Math.min(vw, vh) * 0.8);
 
   const startScan = useCallback(async () => {
     const scanner = new Html5Qrcode(SCANNER_ID);
@@ -40,7 +40,10 @@ export const ScanCode: React.FC<ScanCodeProps> = ({ visible, onClose, onSuccess 
     try {
       await scanner.start(
         { facingMode: 'environment' },
-        { fps: 10, qrbox: { width: qrboxSize, height: qrboxSize } },
+        {
+          fps: 15,
+          qrbox: { width: qrboxSize, height: qrboxSize },
+        },
         (decodedText) => {
           onSuccess(decodedText);
           onClose();
