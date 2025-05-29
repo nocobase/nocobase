@@ -117,6 +117,7 @@ const InnerInbox = (props) => {
                 </div>
               ),
               description: data.content.slice(0, 100) + (data.content.length > 100 ? '...' : ''),
+              duration: data.duration ?? 4.5,
               onClick: () => {
                 inboxVisible.value = true;
                 selectedChannelNameObs.value = data.channelName;
