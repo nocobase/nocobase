@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { DataTypes } from 'sequelize';
+import { DataTypes, Model, SaveOptions, CreateOptions, BulkCreateOptions, InstanceUpdateOptions } from 'sequelize';
 import { BaseColumnFieldOptions, Field } from './field';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -17,13 +17,16 @@ export class UuidField extends Field {
   }
 
   init() {
-    const { name, autoFill } = this.options;
+    const { name, autoFill } = this.options as UUIDFieldOptions;
 
-    this.listener = async (instance) => {
-      const value = instance.get(name);
+    this.listener = async (instances: Model | Model[], dbOptions?: SaveOptions | CreateOptions | BulkCreateOptions | InstanceUpdateOptions) => {
+      const models = Array.isArray(instances) ? instances : [instances];
+      for (const instance of models) {
+        const value = instance.get(name);
 
-      if (!value && autoFill !== false) {
-        instance.set(name, uuidv4());
+        if (!value && autoFill !== false) {
+          instance.set(name, uuidv4());
+        }
       }
     };
   }
@@ -33,12 +36,14 @@ export class UuidField extends Field {
     // https://sequelize.org/docs/v6/other-topics/hooks/
     this.on('beforeValidate', this.listener);
     this.on('beforeCreate', this.listener);
+    this.on('beforeBulkCreate', this.listener);
   }
 
   unbind() {
     super.unbind();
     this.off('beforeValidate', this.listener);
     this.off('beforeCreate', this.listener);
+    this.off('beforeBulkCreate', this.listener);
   }
 }
 

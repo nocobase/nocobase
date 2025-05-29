@@ -8,7 +8,7 @@
  */
 
 import { BaseColumnFieldOptions, Field } from './field';
-import { DataTypes } from 'sequelize';
+import { DataTypes, Model, SaveOptions, CreateOptions } from 'sequelize';
 import moment from 'moment';
 
 class DatetimeNoTzTypeMySQL extends DataTypes.ABSTRACT {
@@ -32,24 +32,27 @@ export class DatetimeNoTzField extends Field {
     return DataTypes.DATE;
   }
 
-  beforeSave = async (instance, options) => {
-    const { name, defaultToCurrentTime, onUpdateToCurrentTime } = this.options;
+  beforeSave = async (instances: Model | Model[], options: SaveOptions | CreateOptions) => {
+    const { name, defaultToCurrentTime, onUpdateToCurrentTime } = this.options as DatetimeNoTzFieldOptions;
+    const models = Array.isArray(instances) ? instances : [instances];
 
-    const value = instance.get(name);
+    for (const instance of models) {
+      const value = instance.get(name);
 
-    if (!value && instance.isNewRecord && defaultToCurrentTime) {
-      instance.set(name, new Date());
-      return;
-    }
+      if (!value && instance.isNewRecord && defaultToCurrentTime) {
+        instance.set(name, new Date());
+        continue;
+      }
 
-    if (onUpdateToCurrentTime) {
-      instance.set(name, new Date());
-      return;
+      if (onUpdateToCurrentTime) {
+        instance.set(name, new Date());
+        continue;
+      }
     }
   };
 
   additionalSequelizeOptions(): {} {
-    const { name } = this.options;
+    const { name } = this.options as DatetimeNoTzFieldOptions;
 
     // @ts-ignore
     const timezone = this.database.options.rawTimezone || '+00:00';
@@ -69,7 +72,7 @@ export class DatetimeNoTzField extends Field {
         return val;
       },
 
-      set(val) {
+      set(val: any) {
         if (val == null) {
           return this.setDataValue(name, null);
         }
@@ -95,19 +98,23 @@ export class DatetimeNoTzField extends Field {
   bind() {
     super.bind();
     this.on('beforeSave', this.beforeSave);
+    this.on('beforeBulkCreate', this.beforeSave);
   }
 
   unbind() {
     super.unbind();
     this.off('beforeSave', this.beforeSave);
+    this.off('beforeBulkCreate', this.beforeSave);
   }
 }
 
 export interface DatetimeNoTzFieldOptions extends BaseColumnFieldOptions {
   type: 'datetimeNoTz';
+  defaultToCurrentTime?: boolean;
+  onUpdateToCurrentTime?: boolean;
 }
 
-function isIso8601(str) {
+function isIso8601(str: string): boolean {
   const iso8601StrictRegex = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/;
   return iso8601StrictRegex.test(str);
 }

@@ -7,13 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { DataTypes } from 'sequelize';
+import { DataTypes, Model, SaveOptions, CreateOptions } from 'sequelize';
 import { BaseColumnFieldOptions, Field } from './field';
 import moment from 'moment';
 
 const datetimeRegex = /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/;
 
-function isValidDatetime(str) {
+function isValidDatetime(str: string): boolean {
   return datetimeRegex.test(str);
 }
 
@@ -27,7 +27,7 @@ export class DateField extends Field {
   }
 
   getProps() {
-    return this.options?.uiSchema?.['x-component-props'] || {};
+    return (this.options as DateFieldOptions)?.uiSchema?.['x-component-props'] || {};
   }
 
   isDateOnly() {
@@ -41,9 +41,9 @@ export class DateField extends Field {
   }
 
   init() {
-    const { name, defaultToCurrentTime, onUpdateToCurrentTime, timezone } = this.options;
+    const { name, defaultToCurrentTime, onUpdateToCurrentTime, timezone } = this.options as DateFieldOptions;
 
-    this.resolveTimeZone = (context) => {
+    this.resolveTimeZone = (context?: { timezone?: string }): string => {
       // @ts-ignore
       const serverTimeZone = this.database.options.rawTimezone;
       if (timezone === 'server') {
@@ -61,30 +61,33 @@ export class DateField extends Field {
       return serverTimeZone;
     };
 
-    this.beforeSave = async (instance, options) => {
-      const value = instance.get(name);
+    this.beforeSave = async (instances: Model | Model[], options: SaveOptions | CreateOptions) => {
+      const models = Array.isArray(instances) ? instances : [instances];
+      for (const instance of models) {
+        const value = instance.get(name);
 
-      if (!value && instance.isNewRecord && defaultToCurrentTime) {
-        instance.set(name, new Date());
-        return;
-      }
+        if (!value && instance.isNewRecord && defaultToCurrentTime) {
+          instance.set(name, new Date());
+          continue;
+        }
 
-      if (onUpdateToCurrentTime) {
-        instance.set(name, new Date());
-        return;
+        if (onUpdateToCurrentTime) {
+          instance.set(name, new Date());
+          continue;
+        }
       }
     };
 
-    if (this.options.defaultValue && this.database.isMySQLCompatibleDialect()) {
-      if (typeof this.options.defaultValue === 'string' && isIso8601(this.options.defaultValue)) {
-        this.options.defaultValue = moment(this.options.defaultValue)
+    if ((this.options as DateFieldOptions).defaultValue && this.database.isMySQLCompatibleDialect()) {
+      if (typeof (this.options as DateFieldOptions).defaultValue === 'string' && isIso8601((this.options as DateFieldOptions).defaultValue as string)) {
+        (this.options as DateFieldOptions).defaultValue = moment((this.options as DateFieldOptions).defaultValue as string)
           .utcOffset(this.resolveTimeZone())
           .format('YYYY-MM-DD HH:mm:ss');
       }
     }
   }
 
-  setter(value, options) {
+  setter(value: any, options?: { context?: { timezone?: string } }) {
     if (value === null) {
       return value;
     }
@@ -135,7 +138,7 @@ export class DateField extends Field {
       model.refreshAttributes();
     }
 
-    if (this.options.interface === 'updatedAt') {
+    if ((this.options as DateFieldOptions).interface === 'updatedAt') {
       const { model } = this.context.collection;
       // @ts-ignore
       model._timestampAttributes.updatedAt = this.name;
@@ -144,19 +147,32 @@ export class DateField extends Field {
     }
 
     this.on('beforeSave', this.beforeSave);
+    this.on('beforeBulkCreate', this.beforeSave);
   }
 
   unbind() {
     super.unbind();
     this.off('beforeSave', this.beforeSave);
+    this.off('beforeBulkCreate', this.beforeSave);
   }
 }
 
 export interface DateFieldOptions extends BaseColumnFieldOptions {
   type: 'date';
+  defaultToCurrentTime?: boolean;
+  onUpdateToCurrentTime?: boolean;
+  timezone?: 'server' | 'client' | string; // string for specific timezone like '+08:00'
+  uiSchema?: {
+    'x-component-props'?: {
+      showTime?: boolean;
+      gmt?: boolean;
+      [key: string]: any;
+    };
+    [key: string]: any;
+  };
 }
 
-function isIso8601(str) {
+function isIso8601(str: string): boolean {
   const iso8601StrictRegex = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/;
   return iso8601StrictRegex.test(str);
 }

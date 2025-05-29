@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { DataTypes } from 'sequelize';
+import { DataTypes, Model, SaveOptions, CreateOptions,BulkCreateOptions, InstanceUpdateOptions } from 'sequelize';
 import { BaseColumnFieldOptions, Field } from './field';
 import { customAlphabet, nanoid } from 'nanoid';
 
@@ -18,14 +18,17 @@ export class NanoidField extends Field {
   }
 
   init() {
-    const { name, size, customAlphabet: customAlphabetOptions, autoFill } = this.options;
+    const { name, size, customAlphabet: customAlphabetOptions, autoFill } = this.options as NanoidFieldOptions;
 
-    this.listener = async (instance) => {
-      const value = instance.get(name);
+    this.listener = async (instances: Model | Model[], dbOptions?: SaveOptions | CreateOptions | BulkCreateOptions | InstanceUpdateOptions) => {
+      const models = Array.isArray(instances) ? instances : [instances];
+      for (const instance of models) {
+        const value = instance.get(name);
 
-      if (!value && autoFill !== false) {
-        const nanoIdFunc = customAlphabetOptions ? customAlphabet(customAlphabetOptions) : nanoid;
-        instance.set(name, nanoIdFunc(size || DEFAULT_SIZE));
+        if (!value && autoFill !== false) {
+          const nanoIdFunc = customAlphabetOptions ? customAlphabet(customAlphabetOptions) : nanoid;
+          instance.set(name, nanoIdFunc(size || DEFAULT_SIZE));
+        }
       }
     };
   }
@@ -34,12 +37,14 @@ export class NanoidField extends Field {
     super.bind();
     this.on('beforeValidate', this.listener);
     this.on('beforeCreate', this.listener);
+    this.on('beforeBulkCreate', this.listener);
   }
 
   unbind() {
     super.unbind();
     this.off('beforeValidate', this.listener);
     this.off('beforeCreate', this.listener);
+    this.off('beforeBulkCreate', this.listener);
   }
 }
 
