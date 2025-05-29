@@ -52,7 +52,7 @@ const InputCopyButton: FC = observer(
         copyable={{
           text: field.value,
         }}
-        style={{ marginLeft: token.marginXXS, opacity: hidden ? 0 : 1 }}
+        style={{ marginLeft: field.readPretty ? token.marginXXS : 0, opacity: hidden ? 0 : 1 }}
       />
     );
   },
