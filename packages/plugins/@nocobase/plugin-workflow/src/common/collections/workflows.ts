@@ -154,7 +154,7 @@ export default {
       // interface: 'oho',
       // uiSchema: {
       //   type: 'object',
-      //   'x-component': 'AssociationField',
+      //   'x-component': 'AssociationSelect',
       //   'x-component-props': {
       //     fieldNames: {
       //       label: 'executed',
@@ -175,7 +175,7 @@ export default {
       // interface: 'oho',
       // uiSchema: {
       //   type: 'object',
-      //   'x-component': 'AssociationField',
+      //   'x-component': 'AssociationSelect',
       //   'x-component-props': {
       //     fieldNames: {
       //       label: 'executed',
@@ -184,6 +184,33 @@ export default {
       //   },
       //   'x-read-pretty': true,
       // },
+    },
+    {
+      type: 'belongsToMany',
+      name: 'categories',
+      target: 'workflowCategories',
+      through: 'workflowCategoryRelations',
+      foreignKey: 'workflowId',
+      otherKey: 'categoryId',
+      sourceKey: 'id',
+      constraints: false,
+      interface: 'm2m',
+      uiSchema: {
+        type: 'array',
+        title: `{{t("Category", { ns: "${NAMESPACE}" })}}`,
+        'x-component': 'AssociationField',
+        'x-component-props': {
+          multiple: true,
+          // objectValue: false,
+          fieldNames: {
+            label: 'title',
+            value: 'id',
+            color: 'color',
+          },
+          mode: 'Tag',
+        },
+        'x-read-pretty': true,
+      },
     },
   ],
   // NOTE: use unique index for avoiding deadlock in mysql when setCurrent

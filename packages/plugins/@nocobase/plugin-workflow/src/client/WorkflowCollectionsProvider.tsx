@@ -13,10 +13,11 @@ import { ExtendCollectionsProvider } from '@nocobase/client';
 import executions from '../common/collections/executions';
 import flow_nodes from '../common/collections/flow_nodes';
 import workflows from '../common/collections/workflows';
+import workflowCategories from '../common/collections/workflowCategories';
 
 export function WorkflowCollectionsProvider(props) {
   return (
-    <ExtendCollectionsProvider collections={[workflows, flow_nodes, executions]}>
+    <ExtendCollectionsProvider collections={[workflows, flow_nodes, executions, workflowCategories]}>
       {props.children}
     </ExtendCollectionsProvider>
   );
