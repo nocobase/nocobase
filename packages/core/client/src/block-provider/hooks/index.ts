@@ -536,7 +536,7 @@ const useDoFilter = () => {
     setTimeout(() => {
       doFilter({ doNothingWhenFilterIsEmpty: true });
     }, 500);
-  }, [getDataBlocks().length]);
+  }, [doFilter]);
 
   return {
     /**
