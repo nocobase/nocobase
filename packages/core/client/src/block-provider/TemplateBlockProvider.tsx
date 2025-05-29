@@ -7,7 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { createContext, FC, useCallback, useContext, useMemo, useRef, useState } from 'react';
+import { Schema, useFieldSchema } from '@formily/react';
+import React, { createContext, FC, useCallback, useContext, useMemo, useState } from 'react';
 
 const TemplateBlockContext = createContext<{
   // 模板是否已经请求结束
@@ -26,8 +27,26 @@ export const useTemplateBlockContext = () => {
   return useContext(TemplateBlockContext);
 };
 
+const _isBlockTemplate = (schema: Schema) => {
+  if (!schema) {
+    return false;
+  }
+
+  const keys = Object.keys(schema.properties || {});
+
+  for (const key of keys) {
+    const property = schema.properties[key];
+    if (property['x-component'] === 'BlockTemplate') {
+      return true;
+    }
+    if (_isBlockTemplate(property)) {
+      return true;
+    }
+  }
+};
+
 const TemplateBlockProvider: FC<{ onTemplateLoaded?: () => void }> = ({ onTemplateLoaded, children }) => {
-  const isBlockTemplateRef = useRef(false);
+  const fieldSchema = useFieldSchema();
   const [templateFinished, setTemplateFinished] = useState(false);
   const onTemplateSuccess = useCallback(() => {
     setTemplateFinished(true);
@@ -38,15 +57,13 @@ const TemplateBlockProvider: FC<{ onTemplateLoaded?: () => void }> = ({ onTempla
     });
   }, [onTemplateLoaded]);
   const isBlockTemplate = useCallback(() => {
-    return isBlockTemplateRef.current;
-  }, []);
-  const setIsBlockTemplate = useCallback((value: boolean) => {
-    isBlockTemplateRef.current = value;
-  }, []);
+    return _isBlockTemplate(fieldSchema) || fieldSchema['x-component'] === 'BlockTemplate';
+  }, [fieldSchema]);
   const value = useMemo(
-    () => ({ templateFinished, onTemplateSuccess, isBlockTemplate, setIsBlockTemplate }),
-    [onTemplateSuccess, templateFinished, isBlockTemplate, setIsBlockTemplate],
+    () => ({ templateFinished, onTemplateSuccess, isBlockTemplate }),
+    [onTemplateSuccess, templateFinished, isBlockTemplate],
   );
+
   return <TemplateBlockContext.Provider value={value}>{children}</TemplateBlockContext.Provider>;
 };
 

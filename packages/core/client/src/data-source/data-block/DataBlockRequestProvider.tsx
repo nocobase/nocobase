@@ -65,7 +65,7 @@ function useRecordRequest<T>(options: Omit<AllDataBlockProps, 'type'>) {
 
   const requestFunction = (...arg) => {
     // 防止区块模板请求两次接口
-    if (isBlockTemplate() && !templateFinished) {
+    if (isBlockTemplate?.() && !templateFinished) {
       return null;
     }
 
@@ -89,7 +89,7 @@ function useRecordRequest<T>(options: Omit<AllDataBlockProps, 'type'>) {
     ...requestOptions,
     manual: dataLoadingMode === 'manual',
     ready: !!action,
-    refreshDeps: [action, JSONParams, JSONRecord, resource, association, parentRecord, sourceId],
+    refreshDeps: [action, JSONParams, JSONRecord, resource, association, parentRecord, sourceId, templateFinished],
   });
 
   return request;
