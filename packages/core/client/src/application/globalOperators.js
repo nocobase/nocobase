@@ -254,10 +254,9 @@ export function getOperators() {
       if (b.type) {
         b = getDayRangeByParams(b);
       }
-      const dateA = parseFullDate(a);
+      const dateA = parseDate(a);
       const dateBStart = parseFullDate(b[0]);
       const dateBEnd = parseFullDate(b[1]);
-
       if (!dateA || !dateBStart || !dateBEnd) {
         throw new Error('Invalid date format');
       }
