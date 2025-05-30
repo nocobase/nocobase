@@ -70,13 +70,12 @@ export function useScanner({ onScannerSizeChanged, elementId, onScanSuccess }) {
 
     const instance = new Html5Qrcode(elementId);
     setScanner(instance);
-
     startScanCamera(instance);
 
     return () => {
       stopScanner(instance);
     };
-  }, [elementId, scanner, startScanCamera, stopScanner]);
+  }, [elementId]);
 
   return { startScanCamera, startScanFile };
 }

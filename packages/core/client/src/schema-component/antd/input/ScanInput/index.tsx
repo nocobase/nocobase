@@ -14,7 +14,7 @@ import { QRCodeScanner } from './QRCodeScanner';
 import { useTranslation } from 'react-i18next';
 import { NocoBaseInputProps } from '../Input';
 
-const ScanInput: React.FC<NocoBaseInputProps> = ({ value, onChange, placeholder, disabled, disableManualInput }) => {
+const ScanInput: React.FC<NocoBaseInputProps> = ({ value, onChange, disabled, disableManualInput }) => {
   const { t } = useTranslation();
   const [scanVisible, setScanVisible] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
