@@ -7,9 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { FlowModel } from '../flowModel';
 import { BlockModel } from '..';
 import { StepParams } from '../../types';
+import { FlowModel } from '../flowModel';
 
 export class ActionModel extends FlowModel {
   public blockModel: BlockModel;
@@ -98,7 +98,7 @@ export class ActionModel extends FlowModel {
         remove: {
           handler: async (ctx, model, params) => {
             model.blockModel.removeAction(model.uid);
-            model.flowEngine.destroyModel(model.blockModel.uid);
+            await model.flowEngine.destroyModel(model.blockModel.uid);
             await model.blockModel.applyAutoFlows();
           },
         },

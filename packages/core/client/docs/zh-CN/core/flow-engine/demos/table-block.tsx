@@ -37,8 +37,8 @@ class TableColumnFlowModel extends FlowModel {
 }
 
 class TableBlockFlowModel extends FlowModel {
-  actions: Array<ActionFlowModel> = observable([]);
-  columns: Array<TableColumnFlowModel> = observable([]);
+  actions: Array<ActionFlowModel> = observable.shallow([]);
+  columns: Array<TableColumnFlowModel> = observable.shallow([]);
 
   onInit(options: any) {
     const { actions = [], columns = [] } = options;
@@ -51,8 +51,7 @@ class TableBlockFlowModel extends FlowModel {
   }
 
   addColumn(column) {
-    const model = this.createSubModel(column);
-    this.columns.push(model);
+    return this.addSubModel('columns', column);
   }
 
   getColumns() {
@@ -92,8 +91,7 @@ class TableBlockFlowModel extends FlowModel {
   }
 
   addAction(action) {
-    const model = this.createSubModel(action);
-    this.actions.push(model);
+    return this.addSubModel('actions', action);
   }
 
   renderActions() {

@@ -64,13 +64,13 @@ class PluginHelloModel extends Plugin {
     this.flowEngine.setContext({
       requireAsync: async (mod) => {
         return new Promise((resolve, reject) => {
-          this.app.requirejs.require([mod], (arg) => resolve(arg), reject);
+          this.app.requirejs.requirejs([mod], (arg) => resolve(arg), reject);
         });
       },
     });
     this.flowEngine.registerAction('require', {
       handler: (ctx, model, params) => {
-        this.app.requirejs.require.config({
+        this.app.requirejs.requirejs.config({
           paths: params.paths,
         });
       },

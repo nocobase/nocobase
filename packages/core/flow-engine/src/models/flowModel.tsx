@@ -10,6 +10,7 @@
 import { action, define, observable } from '@formily/reactive';
 import _ from 'lodash';
 import React from 'react';
+import { uid } from 'uid/secure';
 import { FlowEngine } from '../flowEngine';
 import type {
   ActionStepDefinition,
@@ -31,11 +32,12 @@ export class FlowModel {
   public hidden: boolean;
   public stepParams: StepParams;
   public flowEngine: FlowEngine;
+  public parent: FlowModel | null = null;
   // TODO: 应该有一些类型，整个生命周期只执行一次，比如从后端加载配置，构造整个model树。
   // 后续model的更新不需要再重新加载了
 
   constructor(options: { uid: string; props?: IModelComponentProps; stepParams?: Record<string, any> }) {
-    this.uid = options.uid || generateUid();
+    this.uid = options.uid || uid();
     this.props = options.props || {};
     this.hidden = false;
     this.stepParams = options.stepParams || {};
@@ -467,10 +469,44 @@ export class FlowModel {
   public render(): any {
     console.warn('FlowModel.render() not implemented. Override in subclass for FlowModelComponent.');
     // 默认返回一个空的div，子类可以覆盖这个方法来实现具体的渲染逻辑
-    return <div {...this.getProps()}></div>;
+    return <div {...this.props}></div>;
   }
 
-  createSubModel(options) {
-    return this.flowEngine.createModel({ ...options, parentId: this.uid });
+  setParent(parent: FlowModel): void {
+    if (!parent || !(parent instanceof FlowModel)) {
+      throw new Error('Parent must be an instance of FlowModel.');
+    }
+    this.parent = parent;
+  }
+
+  addSubModel(sub: string, options) {
+    const model = this.flowEngine.createModel({ ...options, parentId: this.uid });
+    Array.isArray(this[sub]) || (this[sub] = observable.shallow([]));
+    this[sub].push(model);
+    return model;
+  }
+
+  setSubModel(sub: string, options) {
+    const model = this.flowEngine.createModel({ ...options, parentId: this.uid });
+    this[sub] = model;
+    return model;
+  }
+
+  createRootModel(options) {
+    return this.flowEngine.createModel(options);
+  }
+
+  save() {
+    if (!this.flowEngine) {
+      throw new Error('FlowEngine is not set on this model. Please set flowEngine before saving.');
+    }
+    return this.flowEngine.saveModel(this);
+  }
+
+  delete() {
+    if (!this.flowEngine) {
+      throw new Error('FlowEngine is not set on this model. Please set flowEngine before deleting.');
+    }
+    return this.flowEngine.deleteModel(this.uid);
   }
 }
