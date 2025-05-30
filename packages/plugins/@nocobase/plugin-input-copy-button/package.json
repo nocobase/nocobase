@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-input-copy-button",
-  "version": "1.6.34",
+  "version": "1.6.36",
   "main": "./dist/server/index.js",
   "displayName": "Input Copy Button",
   "displayName.zh-CN": "输入框复制按钮",
