@@ -424,11 +424,19 @@ export const useCurrentPopupContext = (): PopupProps => {
   const allPopupsProps = React.useContext(AllPopupsPropsProviderContext);
   const result = allPopupsProps?.[currentLevel - 1] || ({} as PopupProps);
 
-  Object.setPrototypeOf(result.context, {
-    get blockService() {
-      return getBlockService(result.params.popupuid);
-    },
-  });
+  if (result.context) {
+    Object.setPrototypeOf(result.context, {
+      get blockService() {
+        return getBlockService(result.params.popupuid);
+      },
+    });
+  } else {
+    result.context = {
+      get blockService() {
+        return getBlockService(result.params.popupuid) as any;
+      },
+    };
+  }
 
   return result;
 };
