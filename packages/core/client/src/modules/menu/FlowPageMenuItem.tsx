@@ -8,7 +8,7 @@
  */
 
 import { FormLayout } from '@formily/antd-v5';
-import { SchemaOptionsContext } from '@formily/react';
+import { ISchema, SchemaOptionsContext } from '@formily/react';
 import { uid } from '@formily/shared';
 import React, { useCallback, useContext } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -28,7 +28,7 @@ import { useStyles } from '../../schema-component/antd/menu/MenuItemInitializers
 const useInsertFlowPageSchema = () => {
   const api = useAPIClient();
   return useCallback(
-    async (schema) => {
+    async (schema: ISchema) => {
       await api.request({
         method: 'POST',
         url: '/uiSchemas:insert',
@@ -87,7 +87,7 @@ export const FlowPageMenuItem = () => {
 
     // 创建一个路由到 desktopRoutes 表中
     await createRoute({
-      type: NocoBaseDesktopRouteType.page,
+      type: NocoBaseDesktopRouteType.flowPage,
       title: values.title,
       icon: values.icon,
       parentId: parentRoute?.id,
@@ -110,7 +110,13 @@ export const FlowPageMenuItem = () => {
   return <SchemaInitializerItem title={t('Flow page')} onClick={handleClick} className={`${componentCls} ${hashId}`} />;
 };
 
-export function getFlowPageMenuSchema({ pageSchemaUid, tabSchemaUid, tabSchemaName }) {
+export function getFlowPageMenuSchema({
+  pageSchemaUid,
+}: {
+  pageSchemaUid: string;
+  tabSchemaUid?: string;
+  tabSchemaName?: string;
+}) {
   return {
     type: 'void',
     'x-component': 'FlowPage',
