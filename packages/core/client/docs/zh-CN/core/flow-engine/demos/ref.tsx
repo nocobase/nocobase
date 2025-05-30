@@ -29,9 +29,19 @@ RefFlowModel.registerFlow('defaultFlow', {
   autoApply: true,
   steps: {
     step1: {
-      async handler(ctx, model: RefFlowModel) {
+      uiSchema: {
+        html: {
+          type: 'string',
+          title: 'HTML 内容',
+          'x-component': 'Input.TextArea',
+          'x-component-props': {
+            autoSize: true,
+          },
+        },
+      },
+      async handler(ctx, model: RefFlowModel, params) {
         waitForRefCallback(model.ref, (el) => {
-          el.innerHTML = 'Hello, NocoBase!';
+          el.innerHTML = params.html;
         });
       },
     },
@@ -46,7 +56,10 @@ class PluginHelloModel extends Plugin {
       use: 'RefFlowModel',
       stepParams: {
         defaultFlow: {
-          step1: {},
+          step1: {
+            html: `<h1>Hello, NocoBase!</h1>
+<p>This is a simple HTML content rendered by FlowModel.</p>`,
+          },
         },
       },
     });

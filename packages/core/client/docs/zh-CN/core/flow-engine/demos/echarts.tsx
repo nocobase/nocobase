@@ -41,7 +41,10 @@ RefFlowModel.registerFlow('defaultFlow', {
         option: {
           type: 'string',
           title: 'ECharts 配置',
-          'x-component': Input.TextArea,
+          'x-component': 'Input.TextArea',
+          'x-component-props': {
+            autoSize: true,
+          },
         },
       },
       async handler(ctx, model: RefFlowModel, params) {
@@ -67,12 +70,8 @@ class PluginHelloModel extends Plugin {
     });
     this.flowEngine.registerAction('require', {
       handler: (ctx, model, params) => {
-        console.log(this.app.requirejs['s']);
-        // @ts-ignore
-        const currentPaths = this.app.requirejs.require.s.contexts._.config.paths || {};
-        const mergedPaths = { ...currentPaths, ...params.paths };
         this.app.requirejs.require.config({
-          paths: mergedPaths,
+          paths: params.paths,
         });
       },
     });
@@ -82,23 +81,27 @@ class PluginHelloModel extends Plugin {
       stepParams: {
         defaultFlow: {
           step1: {
-            option: JSON.stringify({
-              title: {
-                text: 'ECharts 示例',
-              },
-              tooltip: {},
-              xAxis: {
-                data: ['衬衫', '羊毛衫', '雪纺衫', '裤子', '高跟鞋', '袜子'],
-              },
-              yAxis: {},
-              series: [
-                {
-                  name: '销量',
-                  type: 'bar',
-                  data: [5, 20, 36, 10, 10, 20],
+            option: JSON.stringify(
+              {
+                title: {
+                  text: 'ECharts 示例',
                 },
-              ],
-            }),
+                tooltip: {},
+                xAxis: {
+                  data: ['衬衫', '羊毛衫', '雪纺衫', '裤子', '高跟鞋', '袜子'],
+                },
+                yAxis: {},
+                series: [
+                  {
+                    name: '销量',
+                    type: 'bar',
+                    data: [5, 20, 36, 10, 10, 20],
+                  },
+                ],
+              },
+              null,
+              2,
+            ),
           },
         },
       },

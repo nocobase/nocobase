@@ -67,11 +67,9 @@ class PluginHelloModel extends Plugin {
     });
     this.flowEngine.registerAction('require', {
       handler: (ctx, model, params) => {
-        // @ts-ignore
-        const currentPaths = this.app.requirejs.require.s.contexts._.config.paths || {};
-        const mergedPaths = { ...currentPaths, ...params.paths };
         this.app.requirejs.require.config({
-          paths: mergedPaths,
+          // @ts-ignore
+          paths: params.paths,
         });
       },
     });

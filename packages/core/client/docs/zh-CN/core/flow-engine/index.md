@@ -32,10 +32,6 @@
 
 <code src="./demos/formily.tsx"></code>
 
-## echarts
-
-<!-- <code src="./demos/echarts.tsx"></code> -->
-
 ## ref
 
 <code src="./demos/ref.tsx"></code>
@@ -44,6 +40,7 @@
 
 <code src="./demos/echarts.tsx"></code>
 
+<!-- 
 ## tabulator
 
-<!-- <code src="./demos/tabulator.tsx"></code> -->
+<code src="./demos/tabulator.tsx"></code> -->
