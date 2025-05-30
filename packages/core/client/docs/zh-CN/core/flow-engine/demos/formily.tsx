@@ -2,7 +2,7 @@ import { FormButtonGroup, FormItem, Input, Submit } from '@formily/antd-v5';
 import { createForm, Form } from '@formily/core';
 import { createSchemaField, FormProvider, ISchema } from '@formily/react';
 import { Application, Plugin } from '@nocobase/client';
-import { FlowModel, FlowModelComponent } from '@nocobase/flow-engine';
+import { FlowModel, FlowModelComponent, FlowsSettings } from '@nocobase/flow-engine';
 import { Card } from 'antd';
 import React from 'react';
 
@@ -14,6 +14,7 @@ const schema: ISchema = {
       title: 'input box',
       'x-decorator': 'FormItem',
       'x-component': 'Input',
+      default: 'Hello, NocoBase!',
       required: true,
       'x-component-props': {
         style: {
@@ -25,6 +26,7 @@ const schema: ISchema = {
       type: 'string',
       title: 'text box',
       required: true,
+      default: 'This is a text box.',
       'x-decorator': 'FormItem',
       'x-component': 'Input.TextArea',
       'x-component-props': {
@@ -36,7 +38,7 @@ const schema: ISchema = {
   },
 };
 
-class HelloFlowModel extends FlowModel {
+class FormilyFlowModel extends FlowModel {
   SchemaField: any;
   form: Form;
 
@@ -65,23 +67,64 @@ class HelloFlowModel extends FlowModel {
   }
 }
 
-class PluginHelloModel extends Plugin {
+FormilyFlowModel.registerFlow('defaultFlow', {
+  autoApply: true,
+  steps: {
+    step1: {
+      uiSchema: {
+        schema: {
+          type: 'string',
+          title: 'Formily Schema',
+          'x-component': 'Input.TextArea',
+          'x-component-props': {
+            autoSize: true,
+          },
+        },
+      },
+      async handler(ctx, model: FormilyFlowModel, params) {
+        try {
+          model.setProps('schema', JSON.parse(params.schema));
+          model.form.clearFormGraph();
+        } catch (error) {
+          // skip
+        }
+      },
+    },
+  },
+});
+
+class PluginFormilyModel extends Plugin {
   async load() {
-    this.flowEngine.registerModels({ HelloFlowModel });
+    this.flowEngine.registerModels({ FormilyFlowModel });
     const model = this.flowEngine.createModel({
-      use: 'HelloFlowModel',
-      props: {
-        schema,
+      use: 'FormilyFlowModel',
+      // props: {
+      //   schema,
+      // },
+      stepParams: {
+        defaultFlow: {
+          step1: {
+            schema: JSON.stringify(schema, null, 2),
+          },
+        },
       },
     });
-    this.router.add('root', { path: '/', element: <FlowModelComponent model={model} /> });
+    this.router.add('root', {
+      path: '/',
+      element: (
+        <div>
+          <FlowModelComponent model={model} />
+          <br />
+          <FlowsSettings model={model} />
+        </div>
+      ),
+    });
   }
 }
 
-// 创建应用实例
 const app = new Application({
   router: { type: 'memory', initialEntries: ['/'] },
-  plugins: [PluginHelloModel],
+  plugins: [PluginFormilyModel],
 });
 
 export default app.getRootComponent();
