@@ -103,7 +103,7 @@ export const FormItem: any = withDynamicSchemaProps(
     }
 
     return (
-      <VariableScope scopeId={schema['x-uid']} type="formItem">
+      <VariableScope scopeId={schema?.['x-uid']} type="formItem">
         <CollectionFieldProvider allowNull={true}>
           <BlockItem
             className={cx(
