@@ -8,5 +8,6 @@
  */
 
 export * from './FlowsContextMenu';
+export * from './FlowsFloatContextMenu';
 export * from './FlowSettings';
 export * from './FlowSettingsModal';
