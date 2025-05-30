@@ -8,8 +8,8 @@
  */
 
 import React, { useState, useRef } from 'react';
-import { Input, Button } from 'antd';
-import { QrcodeOutlined } from '@ant-design/icons';
+import { Input, Button, Space } from 'antd';
+import { ScanOutlined } from '@ant-design/icons';
 import { QRCodeScanner } from './QRCodeScanner';
 import { useTranslation } from 'react-i18next';
 import { NocoBaseInputProps } from '../Input';
@@ -38,18 +38,15 @@ const ScanInput: React.FC<NocoBaseInputProps> = ({ value, onChange, placeholder,
         ref={inputRef as any}
         value={value}
         onChange={handleInputChange}
-        placeholder={placeholder || t('Enter or scan a code')}
         disabled={disabled}
         readOnly={disableManualInput}
-        suffix={
-          <QrcodeOutlined
-            onMouseDown={(e) => e.preventDefault()} // 阻止聚焦
+        addonAfter={
+          <ScanOutlined
+            onPointerDown={(e) => e.preventDefault()}
             onClick={() => {
-              inputRef.current?.blur(); // 主动让输入框失去焦点
+              inputRef.current?.blur();
               setScanVisible(true);
             }}
-            disabled={disabled}
-            type="text"
             title={t('Scan QR code')}
           />
         }
