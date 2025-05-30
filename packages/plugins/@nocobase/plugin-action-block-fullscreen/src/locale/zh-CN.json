@@ -1,0 +1,10 @@
+{
+  "Fullscreen": "全屏",
+  "Exit Fullscreen": "退出全屏",
+  "Support Fullscreen": "支持全屏展示该区块",
+  "Delete action": "删除操作",
+  "Custom Full-Screen Style": "自定义全屏样式",
+  "Style class of the current block": "当前区块的样式类",
+  "Style class of the target container": "目标容器的样式类",
+  "Custom CSS": "自定义 CSS"
+}
