@@ -22,14 +22,25 @@ import { ServerHookModel } from './server-hooks/model';
 export const compile = (title: string) => (title || '').replace(/{{\s*t\(["|'|`](.*)["|'|`]\)\s*}}/g, '$1');
 
 function extractFields(obj) {
-  return [
+  const fields = [
     obj.title,
     obj.description,
     obj['x-component-props']?.title,
     obj['x-component-props']?.description,
     obj['x-decorator-props']?.title,
     obj['x-decorator-props']?.description,
-  ].filter((value) => value !== undefined && value !== '');
+  ];
+
+  const content = obj['x-component-props']?.content;
+  if (typeof content === 'string') {
+    const regex = /\{\{\s*t\s+['"]([^'"]+)['"]\s*\}\}/g;
+    let match;
+    while ((match = regex.exec(content)) !== null) {
+      fields.push(match[1]); // 提取 xxx
+    }
+  }
+
+  return fields.filter((value) => value !== undefined && value !== '');
 }
 
 export class PluginUISchemaStorageServer extends Plugin {
