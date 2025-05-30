@@ -13,6 +13,7 @@ import { onFieldChange } from '@formily/core';
 import { useField, useForm, useFormEffects } from '@formily/react';
 
 import {
+  CollectionProvider,
   SchemaComponent,
   SchemaComponentContext,
   useActionContext,
@@ -127,6 +128,7 @@ export function WorkflowPane() {
       <SchemaComponent
         schema={workflowSchema}
         components={{
+          CollectionProvider,
           WorkflowLink,
           ExecutionResourceProvider,
           ExecutionLink,

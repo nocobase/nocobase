@@ -10,9 +10,11 @@
 import React from 'react';
 import { ISchema } from '@formily/react';
 
+import { css, useCollectionRecordData } from '@nocobase/client';
+
 import { NAMESPACE } from '../locale';
 import { executionSchema } from './executions';
-import { css, useCollectionRecordData } from '@nocobase/client';
+import workflowCollection from '../../common/collections/workflows';
 
 function ExecutedLink(props) {
   const record = useCollectionRecordData();
@@ -113,7 +115,7 @@ export const workflowSchema: ISchema = {
       type: 'void',
       'x-decorator': 'ResourceActionProvider',
       'x-decorator-props': {
-        collection: 'workflows',
+        collection: workflowCollection,
         resourceName: 'workflows',
         request: {
           resource: 'workflows',

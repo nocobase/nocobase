@@ -27,21 +27,13 @@ import { useTranslation } from 'react-i18next';
 import {
   useAPIClient,
   SchemaComponent,
-  SchemaComponentOptions,
   useCompile,
   useResourceActionContext,
   ActionContextProvider,
   useCancelAction,
   useActionContext,
   useRequest,
-  useBlockRequestContext,
-  useBlockContext,
-  useDataBlockRequest,
-  useTableBlockContext,
   css,
-  CollectionRecordProvider,
-  useCollectionRecordData,
-  FormProvider,
 } from '@nocobase/client';
 import { createForm } from '@formily/core';
 import { lang, NAMESPACE } from './locale';
