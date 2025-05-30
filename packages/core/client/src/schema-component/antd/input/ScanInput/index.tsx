@@ -23,7 +23,6 @@ const ScanInput: React.FC<NocoBaseInputProps> = ({ value, onChange, placeholder,
     setScanVisible(false);
     if (text) {
       onChange?.(text);
-      // 可选：聚焦输入框
       setTimeout(() => inputRef.current?.focus(), 100);
     }
   };
@@ -47,7 +46,7 @@ const ScanInput: React.FC<NocoBaseInputProps> = ({ value, onChange, placeholder,
               inputRef.current?.blur();
               setScanVisible(true);
             }}
-            title={t('Scan QR code')}
+            title={t('Scan to input')}
           />
         }
       />
