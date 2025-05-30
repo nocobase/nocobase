@@ -51,7 +51,7 @@ class TableBlockFlowModel extends FlowModel {
   }
 
   addColumn(column) {
-    const model = this.flowEngine.createModel(column);
+    const model = this.createSubModel(column);
     this.columns.push(model);
   }
 
@@ -92,7 +92,7 @@ class TableBlockFlowModel extends FlowModel {
   }
 
   addAction(action) {
-    const model = this.flowEngine.createModel(action);
+    const model = this.createSubModel(action);
     this.actions.push(model);
   }
 

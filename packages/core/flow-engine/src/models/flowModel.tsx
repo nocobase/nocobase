@@ -469,4 +469,8 @@ export class FlowModel {
     // 默认返回一个空的div，子类可以覆盖这个方法来实现具体的渲染逻辑
     return <div {...this.getProps()}></div>;
   }
+
+  createSubModel(options) {
+    return this.flowEngine.createModel({ ...options, parentId: this.uid });
+  }
 }
