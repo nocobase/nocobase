@@ -31,10 +31,6 @@ export const useStyles = genStyleHook('nb-schema-toolbar', (token) => {
         pointerEvents: 'none',
       },
 
-      '&.hidden-e2e': {
-        display: 'none',
-      },
-
       '.ant-space-item .anticon': {
         margin: 0,
       },
