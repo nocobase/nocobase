@@ -49,6 +49,7 @@ export interface ButtonListProps {
     value: string;
   };
   onClick?: (props: { recordData: any }) => void;
+  ellipsis?: boolean;
 }
 
 const RenderRecord = React.memo(
@@ -69,6 +70,7 @@ const RenderRecord = React.memo(
     value,
     setBtnHover,
     onClick,
+    ellipsis,
   }: {
     fieldNames: any;
     isTreeCollection: boolean;
@@ -86,6 +88,7 @@ const RenderRecord = React.memo(
     value: any;
     setBtnHover: any;
     onClick?: (props: { recordData: any }) => void;
+    ellipsis?: boolean;
   }) => {
     const [loading, setLoading] = useState(true);
     const [result, setResult] = useState<React.ReactNode[]>([]);
@@ -194,7 +197,7 @@ const RenderRecord = React.memo(
       return null;
     }
 
-    return <>{result}</>;
+    return <span style={ellipsis ? null : { whiteSpace: 'normal' }}>{result}</span>;
   },
 );
 
@@ -235,6 +238,7 @@ const ButtonLinkList: FC<ButtonListProps> = observer((props) => {
       value={props.value}
       setBtnHover={props.setBtnHover}
       onClick={props.onClick}
+      ellipsis={props.ellipsis ?? true}
     />
   );
 });
@@ -248,6 +252,7 @@ interface ReadPrettyInternalViewerProps {
     label: string;
     value: string;
   };
+  ellipsis?: boolean;
 }
 
 /**
@@ -289,9 +294,15 @@ export const ReadPrettyInternalViewer: React.FC<ReadPrettyInternalViewerProps> =
   }, []);
 
   const btnElement = (
-    <EllipsisWithTooltip ellipsis={true}>
+    <EllipsisWithTooltip ellipsis={props.ellipsis ?? true}>
       <CollectionRecordProvider isNew={false} record={getSourceData(parentRecordData, fieldSchema)}>
-        <ButtonList setBtnHover={setBtnHover} value={value} fieldNames={props.fieldNames} onClick={onClickItem} />
+        <ButtonList
+          setBtnHover={setBtnHover}
+          value={value}
+          fieldNames={props.fieldNames}
+          onClick={onClickItem}
+          ellipsis={props.ellipsis ?? true}
+        />
       </CollectionRecordProvider>
     </EllipsisWithTooltip>
   );
