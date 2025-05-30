@@ -427,13 +427,19 @@ export const useCurrentPopupContext = (): PopupProps => {
   if (result.context) {
     Object.setPrototypeOf(result.context, {
       get blockService() {
-        return getBlockService(result.params.popupuid);
+        if (result?.params?.popupuid) {
+          return getBlockService(result.params.popupuid)?.service;
+        }
+        return null;
       },
     });
   } else {
     result.context = {
       get blockService() {
-        return getBlockService(result.params.popupuid) as any;
+        if (result?.params?.popupuid) {
+          return getBlockService(result.params.popupuid)?.service;
+        }
+        return null;
       },
     };
   }
