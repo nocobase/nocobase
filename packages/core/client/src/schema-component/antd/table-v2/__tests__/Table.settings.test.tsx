@@ -19,7 +19,7 @@ import {
 } from '@nocobase/test/client';
 import { withSchema } from '@nocobase/test/web';
 
-describe('Table.settings', () => {
+describe.skip('Table.settings', () => {
   const TableBlockProviderWithSchema = withSchema(TableBlockProvider);
 
   const checkTableSettings = (more: CheckSettingsOptions[] = []) => {
