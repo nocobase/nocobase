@@ -97,5 +97,7 @@
   "Show background": "Show background",
   "Show padding": "Show padding",
   "Distinct": "Distinct",
-  "Auto refresh": "Auto refresh"
+  "Auto refresh": "Auto refresh",
+  "Divide":"Divide",
+  "Multiply":"Multiply"
 }

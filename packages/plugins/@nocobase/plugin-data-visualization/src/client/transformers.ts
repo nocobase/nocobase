@@ -171,6 +171,30 @@ const transformers: {
       },
       fn: (val: number, precision: number) => Number(val.toFixed(precision)),
     },
+    Divide: {
+      schema: {
+        'x-component': 'InputNumber',
+        'x-component-props': {
+          min: 1,
+        },
+      },
+      fn: (val: number, divisor: number) => {
+        if (!val || !divisor) return 0;
+        return val / divisor;
+      },
+    },
+    Multiply: {
+      schema: {
+        'x-component': 'InputNumber',
+        'x-component-props': {
+          min: 0,
+        },
+      },
+      fn: (val: number, multiplier: number) => {
+        if (!val || multiplier === undefined) return 0;
+        return val * multiplier;
+      },
+    },
     Separator: {
       schema: {
         'x-component': 'Select',
