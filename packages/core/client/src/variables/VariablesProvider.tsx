@@ -367,7 +367,7 @@ function shouldToRequest(value, variableCtx: Record<string, any>, variablePath: 
       return;
     }
 
-    result = value !== null && _.isEmpty(value);
+    result = _.isEmpty(value);
   });
 
   return result;
