@@ -9,6 +9,7 @@
 
 import React, { useEffect, useState, useRef } from 'react';
 import { Html5Qrcode } from 'html5-qrcode';
+import ReactDOM from 'react-dom';
 import { LeftOutlined, FileImageOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import { useScanner } from './useScanner';
@@ -183,19 +184,21 @@ const QRCodeScannerInner = ({ visible, onClose, onScanSuccess, containerRef }) =
 
 export const QRCodeScanner: React.FC<QRCodeScannerProps> = (props) => {
   const containerRef = useRef<HTMLDivElement>(null);
-  return (
+
+  const scannerElement = (
     <div
       style={{
         position: 'fixed',
         inset: 0,
         backgroundColor: 'black',
-        zIndex: 1001,
+        zIndex: 9999,
         overflow: 'hidden',
       }}
     >
-      {/* 扫码区域 */}
       <div ref={containerRef} id={qrcodeEleId} style={{ position: 'absolute' }} />
       <QRCodeScannerInner {...props} containerRef={containerRef} />
     </div>
   );
+
+  return ReactDOM.createPortal(scannerElement, document.body);
 };
