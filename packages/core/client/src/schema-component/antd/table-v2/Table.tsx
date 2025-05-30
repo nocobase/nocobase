@@ -875,7 +875,7 @@ export const Table: any = withDynamicSchemaProps(
       const zebrastripingCss = useMemo(() => {
         return enableZebraStriping === true
           ? css`
-              &:nth-child(2n) {
+              &:nth-child(2n) > td {
                 background-color: ${token.controlItemBgHover} !important;
               }
             `
