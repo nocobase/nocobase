@@ -40,6 +40,7 @@ import { DataSourceApplicationProvider } from '../data-source/components/DataSou
 import { DataBlockProvider } from '../data-source/data-block/DataBlockProvider';
 import { DataSourceManager, type DataSourceManagerOptions } from '../data-source/data-source/DataSourceManager';
 
+import { FlowEngine, FlowEngineProvider } from '@nocobase/flow-engine';
 import type { CollectionFieldInterfaceFactory } from '../data-source';
 import { OpenModeProvider } from '../modules/popup/OpenModeProvider';
 import { AppSchemaComponentProvider } from './AppSchemaComponentProvider';
@@ -47,8 +48,6 @@ import type { Plugin } from './Plugin';
 import { getOperators } from './globalOperators';
 import { useAclSnippets } from './hooks/useAclSnippets';
 import type { RequireJS } from './utils/requirejs';
-import { FlowEngine } from '@nocobase/flow-engine';
-import { FlowEngineProvider } from '@nocobase/flow-engine';
 
 type JsonLogic = {
   addOperation: (name: string, fn?: any) => void;

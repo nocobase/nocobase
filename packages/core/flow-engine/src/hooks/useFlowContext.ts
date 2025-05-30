@@ -21,6 +21,7 @@ export function useFlowContext(): FlowContext {
     () =>
       ({
         engine,
+        ...engine.getContext(),
         // app, // 移除 app
       }) as FlowContext,
     [engine],

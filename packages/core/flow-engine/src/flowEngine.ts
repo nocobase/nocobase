@@ -18,6 +18,15 @@ export class FlowEngine {
   private modelClasses: Map<string, ModelConstructor> = new Map();
   /** @private Stores created model instances. */
   private modelInstances: Map<string, any> = new Map();
+  context: Record<string, any> = {};
+
+  setContext(context: any) {
+    this.context = context;
+  }
+
+  getContext() {
+    return this.context;
+  }
 
   /**
    * 注册一个 Action。支持泛型以确保正确的模型类型推导。

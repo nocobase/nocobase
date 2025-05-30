@@ -464,7 +464,7 @@ export class FlowModel {
    * Renders the React representation of this flow model.
    * @returns {React.ReactNode} The React node to render.
    */
-  public render(): React.ReactNode {
+  public render(): any {
     console.warn('FlowModel.render() not implemented. Override in subclass for FlowModelComponent.');
     // 默认返回一个空的div，子类可以覆盖这个方法来实现具体的渲染逻辑
     return <div {...this.getProps()}></div>;

@@ -178,7 +178,7 @@ export interface ActionOptions<TModel extends FlowModel = FlowModel, P = any, R 
 export type StepParams = {
   [flowKey: string]: {
     [stepKey: string]: {
-      [paramKey: string]: string;
+      [paramKey: string]: any;
     };
   };
 };
