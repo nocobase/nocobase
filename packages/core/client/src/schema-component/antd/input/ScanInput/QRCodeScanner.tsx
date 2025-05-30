@@ -166,7 +166,7 @@ const QRCodeScannerInner = ({ visible, onClose, onScanSuccess, containerRef }) =
             alignItems: 'center',
           }}
         >
-          <FileImageOutlined style={{ fontSize: '1.8em', fontWeight: 'bold', zIndex: 1003 }} onClick={handleImgClick} />
+          <FileImageOutlined style={{ fontSize: '2em', fontWeight: 'bold', zIndex: 1003 }} onClick={handleImgClick} />
           {t('Album')}
           <input
             type="file"
