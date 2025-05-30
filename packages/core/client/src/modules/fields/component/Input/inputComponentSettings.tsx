@@ -10,7 +10,7 @@
 import { useField, useFieldSchema } from '@formily/react';
 import _ from 'lodash';
 import { useTranslation } from 'react-i18next';
-import { useBlockContext, useOpenModeContext } from '../../../../';
+import { useBlockContext, useCollection, useOpenModeContext } from '../../../../';
 import { SchemaSettings } from '../../../../application/schema-settings/SchemaSettings';
 import { SchemaSettingsItemType } from '../../../../application/schema-settings/types';
 import {
@@ -129,7 +129,46 @@ export const openModeSettingsItem: SchemaSettingsItemType = {
     return (fieldSchema?.['x-read-pretty'] || field.readPretty) && fieldSchema?.['x-component-props']?.enableLink;
   },
 };
+
+export const allowClearSettingsItem: SchemaSettingsItemType = {
+  name: 'allowClear',
+  type: 'switch',
+  useVisible() {
+    const collection = useCollection();
+    const fieldSchema = useFieldSchema();
+    const { editable = false } = useField();
+    const fieldComponent = collection.getField(fieldSchema['name'])?.uiSchema?.['x-component'] ?? '';
+    return editable && fieldComponent && ['Input', 'TextArea', 'JSON', 'URL', 'Password'].indexOf(fieldComponent) > -1;
+  },
+  useComponentProps() {
+    const { t } = useTranslation();
+    const { dn } = useDesignable();
+    const field = useField();
+    const fieldSchema = useFieldSchema();
+
+    return {
+      title: t('Allow clear'),
+      checked: fieldSchema['x-component-props']?.['allowClear'] ?? false,
+      onChange(checked) {
+        fieldSchema['x-component-props'] = fieldSchema['x-component-props'] || {};
+        fieldSchema['x-component-props']['allowClear'] = checked;
+        field.componentProps.allowClear = checked;
+        dn.emit('patch', {
+          schema: {
+            'x-uid': fieldSchema['x-uid'],
+            'x-component-props': {
+              ...fieldSchema['x-component-props'],
+              allowClear: checked,
+            },
+          },
+        });
+        dn.refresh();
+      },
+    };
+  },
+};
+
 export const inputComponentSettings = new SchemaSettings({
   name: 'fieldSettings:component:Input',
-  items: [ellipsisSettingsItem, enableLinkSettingsItem, openModeSettingsItem],
+  items: [ellipsisSettingsItem, enableLinkSettingsItem, openModeSettingsItem, allowClearSettingsItem],
 });

@@ -122,46 +122,6 @@ export const fieldSettingsFormItem = new SchemaSettings({
             },
           },
           {
-            name: 'allowClear',
-            type: 'switch',
-            useVisible() {
-              const collection = useCollection();
-              const fieldSchema = useFieldSchema();
-              const { editable = false } = useField<Field>();
-              const fieldComponent = collection.getField(fieldSchema['name'])?.uiSchema?.['x-component'] ?? '';
-              return (
-                editable &&
-                fieldComponent &&
-                ['Input', 'TextArea', 'JSON', 'URL', 'Password'].indexOf(fieldComponent) > -1
-              );
-            },
-            useComponentProps() {
-              const { t } = useTranslation();
-              const { dn } = useDesignable();
-              const field = useField<Field>();
-              const fieldSchema = useFieldSchema();
-
-              return {
-                title: t('Allow clear'),
-                checked: fieldSchema['x-component-props']?.['allowClear'] ?? false,
-                onChange(checked) {
-                  fieldSchema['x-component-props'] = fieldSchema['x-component-props'] || {};
-                  fieldSchema['x-component-props']['allowClear'] = checked;
-                  field.componentProps.allowClear = checked;
-                  dn.emit('patch', {
-                    schema: {
-                      'x-uid': fieldSchema['x-uid'],
-                      'x-component-props': {
-                        ...fieldSchema['x-component-props'],
-                        allowClear: checked,
-                      },
-                    },
-                  });
-                },
-              };
-            },
-          },
-          {
             name: 'editDescription',
             type: 'modal',
             useComponentProps() {
