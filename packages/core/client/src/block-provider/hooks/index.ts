@@ -512,6 +512,9 @@ const useDoFilter = () => {
               return block.clearData();
             }
 
+            // 存储当前的筛选条件，供其它筛选区块使用
+            _.set(block.service.params, '1.filters', storedFilter);
+
             return block.doFilter(
               {
                 ...param,
