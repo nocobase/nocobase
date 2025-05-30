@@ -54,6 +54,14 @@ export default {
           'x-component': 'TextAreaWithGlobalScope',
           required: true,
         },
+        timeout: {
+          title: `{{t("Timeout", { ns: "${NAMESPACE}" })}}`,
+          description: `{{t('Upload timeout for a single file in milliseconds. Default is 600000.', { ns: "${NAMESPACE}" })}}`,
+          type: 'number',
+          'x-decorator': 'FormItem',
+          'x-component': 'InputNumber',
+          default: 600_000,
+        },
         thumbnailRule: {
           title: 'Thumbnail rule',
           type: 'string',
