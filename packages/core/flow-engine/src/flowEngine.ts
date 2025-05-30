@@ -116,6 +116,7 @@ export class FlowEngine {
    * @returns {T} 创建的 Model 实例。
    */
   public createModel<T extends FlowModel = FlowModel>(options: CreateModelOptions): T {
+    options['__is_model__'] = true;
     const { uid, use: modelClassName } = options;
     const ModelClass = this.getModelClass(modelClassName);
 
