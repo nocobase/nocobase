@@ -533,7 +533,7 @@ export async function replaceVariables(
 
   const waitForParsing = value.match(REGEX_OF_VARIABLE_IN_EXPRESSION)?.map(async (item) => {
     const { value: parsedValue } = await variables.parseVariable(item, localVariables, {
-      doNotRequest: item.includes('$nForm'),
+      doNotRequest: item.includes('$nForm') || item.includes('$iteration'),
     });
 
     // 在开头加 `_` 是为了保证 id 不能以数字开头，否则在解析表达式的时候（不是解析变量）会报错
