@@ -56,19 +56,13 @@ ReadPretty.Input = (props: InputReadPrettyProps) => {
   return (
     <div
       className={cls(prefixCls, props.className)}
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        overflowWrap: 'break-word',
-        whiteSpace: 'normal',
-        ...props.style,
-      }}
+      style={{ overflowWrap: 'break-word', whiteSpace: 'normal', ...props.style }}
     >
-      {compile(props.addonBefore)}
-      {compile(props.prefix)}
+      {props.addonBefore}
+      {props.prefix}
       {props.ellipsis ? <EllipsisWithTooltip ellipsis={props.ellipsis}>{content}</EllipsisWithTooltip> : content}
-      {compile(props.suffix)}
-      {compile(props.addonAfter)}
+      {props.suffix}
+      {props.addonAfter}
     </div>
   );
 };
