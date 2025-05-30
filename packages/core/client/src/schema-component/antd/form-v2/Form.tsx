@@ -13,6 +13,7 @@ import { Field, Form as FormilyForm, createForm, onFieldInit, onFormInputChange 
 import { FieldContext, FormContext, observer, useField, useFieldSchema } from '@formily/react';
 import { uid } from '@formily/shared';
 import { ConfigProvider, theme } from 'antd';
+import _ from 'lodash';
 import React, { useEffect, useMemo } from 'react';
 import { useActionContext } from '..';
 import { useAttach, useComponent } from '../..';
@@ -137,7 +138,7 @@ const WithForm = (props: WithFormProps) => {
   const variables = useVariables();
   const localVariables = useLocalVariables({ currentForm: form });
   const { templateFinished } = useTemplateBlockContext();
-  const { loading } = useDataBlockRequest() || {};
+  const { loading, data } = useDataBlockRequest() || {};
   const app = useApp();
   const linkageRules: any[] =
     (getLinkageRules(fieldSchema) || fieldSchema.parent?.['x-linkage-rules'])?.filter((k) => !k.disabled) || [];
@@ -164,7 +165,7 @@ const WithForm = (props: WithFormProps) => {
   }, [form, props.disabled, setFormValueChanged, confirmBeforeClose]);
 
   useEffect(() => {
-    if (loading) {
+    if (loading || _.isEmpty(data?.data)) {
       return;
     }
 
