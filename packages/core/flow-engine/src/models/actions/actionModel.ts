@@ -43,6 +43,7 @@ export class ActionModel extends FlowModel {
       title: '按钮属性',
       steps: {
         setText: {
+          title: '文本',
           handler: (ctx, model, params) => model.setProps('text', params.text),
           uiSchema: {
             text: {
@@ -54,6 +55,7 @@ export class ActionModel extends FlowModel {
           defaultParams: { text: '操作' },
         },
         setDanger: {
+          title: '是否danger',
           handler: (ctx, model, params) => model.setProps('danger', params.danger),
           uiSchema: {
             danger: {
@@ -65,6 +67,7 @@ export class ActionModel extends FlowModel {
           defaultParams: { danger: false },
         },
         setType: {
+          title: '按钮类型',
           handler: (ctx, model, params) => model.setProps('type', params.type),
           uiSchema: {
             type: {
@@ -80,6 +83,7 @@ export class ActionModel extends FlowModel {
           defaultParams: { type: 'default' },
         },
         setOnClick: {
+          title: '点击事件',
           handler: (ctx, model, params) => {
             model.setProps('onClick', () => {
               model.dispatchEvent('onClick', ctx);
@@ -96,6 +100,7 @@ export class ActionModel extends FlowModel {
       },
       steps: {
         remove: {
+          title: '移除操作',
           handler: async (ctx, model, params) => {
             model.blockModel.removeAction(model.uid);
             await model.flowEngine.destroyModel(model.blockModel.uid);

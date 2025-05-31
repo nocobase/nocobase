@@ -8,6 +8,7 @@ import {
   useFlowModel,
   withFlowModel,
   FlowsContextMenu,
+  FlowsFloatContextMenu
 } from '@nocobase/flow-engine';
 
 const ButtonModel = ActionModel.extends([
@@ -19,6 +20,7 @@ const ButtonModel = ActionModel.extends([
     },
     steps: {
       popconfirm: {
+        title: '确认弹窗',
         use: 'showConfirm',
         defaultParams: {
           title: '确认删除',
@@ -74,7 +76,8 @@ const ButtonComponent = (props: ButtonProps & { text?: string }) => {
 // 使用withFlowModel包装Button组件，只启用右键菜单
 const DeleteButton = withFlowModel(ButtonComponent, {
   settings: {
-    component: FlowsContextMenu,
+    // component: FlowsContextMenu,
+    component: FlowsFloatContextMenu,
     props: {
       showDeleteButton: false,
     },

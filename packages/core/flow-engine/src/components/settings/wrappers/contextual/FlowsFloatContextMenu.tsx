@@ -8,110 +8,15 @@
  */
 
 import React, { useState, useCallback } from 'react';
-import { Alert, Modal, Space, theme } from 'antd';
+import { Alert, Modal, Space, Dropdown } from 'antd';
+import type { MenuProps } from 'antd';
 import { SettingOutlined, DeleteOutlined, ExclamationCircleOutlined, MenuOutlined } from '@ant-design/icons';
 import { observer } from '@formily/react';
 import { css } from '@emotion/css';
 import { FlowModel } from '../../../../models';
 import { ActionStepDefinition } from '../../../../types';
 import { useFlowModel } from '../../../../hooks';
-import { FlowSettingsModal } from './FlowSettingsModal';
-
-// 临时定义 SchemaSettingsDropdown 和 SchemaSettingsItem 的简化版本
-// 在实际项目中，这些应该从 @nocobase/client 导入
-const SchemaSettingsDropdown: React.FC<{ title: React.ReactNode; children: React.ReactNode }> = ({ title, children }) => {
-  const [visible, setVisible] = useState(false);
-  const { token } = theme.useToken();
-  
-  return (
-    <div
-      onMouseEnter={() => setVisible(true)}
-      onMouseLeave={() => setVisible(false)}
-      style={{ position: 'relative' }}
-    >
-      {title}
-      {visible && (
-        <div
-          style={{
-            position: 'absolute',
-            top: '100%',
-            right: 0,
-            background: token.colorBgElevated,
-            border: `1px solid ${token.colorBorderSecondary}`,
-            borderRadius: token.borderRadiusLG,
-            boxShadow: token.boxShadowSecondary,
-            zIndex: token.zIndexPopupBase,
-            minWidth: '160px',
-            padding: `${token.paddingXXS}px 0`,
-            color: token.colorText,
-            fontSize: token.fontSize,
-            lineHeight: token.lineHeight,
-          }}
-        >
-          {children}
-        </div>
-      )}
-    </div>
-  );
-};
-
-const SchemaSettingsItem: React.FC<{
-  title?: string;
-  icon?: React.ReactNode;
-  onClick?: () => void;
-  type?: 'divider';
-}> = ({ title, icon, onClick, type }) => {
-  const { token } = theme.useToken();
-  
-  if (type === 'divider') {
-    return (
-      <div 
-        style={{ 
-          height: '1px', 
-          background: token.colorBorderSecondary, 
-          margin: `${token.marginXXS}px 0`,
-          borderTop: `1px solid ${token.colorBorderSecondary}`
-        }} 
-      />
-    );
-  }
-  
-  return (
-    <div
-      onClick={onClick}
-      style={{
-        padding: `${token.paddingXXS}px ${token.paddingSM}px`,
-        cursor: 'pointer',
-        display: 'flex',
-        alignItems: 'center',
-        gap: `${token.marginXS}px`,
-        fontSize: token.fontSize,
-        lineHeight: token.lineHeight,
-        color: token.colorText,
-        transition: `background-color ${token.motionDurationSlow}`,
-        whiteSpace: 'nowrap',
-      }}
-      onMouseEnter={(e) => {
-        e.currentTarget.style.background = token.colorFillQuaternary;
-      }}
-      onMouseLeave={(e) => {
-        e.currentTarget.style.background = 'transparent';
-      }}
-    >
-      {icon && (
-        <span style={{ 
-          display: 'flex', 
-          alignItems: 'center', 
-          fontSize: token.fontSize,
-          color: token.colorTextSecondary
-        }}>
-          {icon}
-        </span>
-      )}
-      <span>{title}</span>
-    </div>
-  );
-};
+import { StepSettingsModal } from './StepSettingsModal';
 
 // 使用与 NocoBase 一致的悬浮工具栏样式
 const floatContainerStyles = css`
@@ -143,7 +48,7 @@ const floatContainerStyles = css`
 
     > .general-schema-designer-icons {
       position: absolute;
-      right: 2px;
+      right: 6px;
       top: 2px;
       line-height: 16px;
       pointer-events: all;
@@ -153,16 +58,11 @@ const floatContainerStyles = css`
         color: #fff;
         line-height: 16px;
         width: 16px;
-        padding-left: 1px;
-        align-self: stretch;
-        cursor: pointer;
+        height: 16px;
+        padding: 2px;
         display: flex;
         align-items: center;
         justify-content: center;
-
-        &:hover {
-          background-color: var(--colorSettingsHover, var(--colorSettings));
-        }
       }
     }
   }
@@ -204,6 +104,7 @@ const isModelByIdProps = (props: FlowsFloatContextMenuProps): props is ModelById
  * - 支持删除功能
  * - Wrapper 模式支持
  * - 使用与 NocoBase x-settings 一致的样式
+ * - 按flow分组显示steps
  *
  * 支持两种使用方式：
  * 1. 直接提供model: <FlowsFloatContextMenu model={myModel}>{children}</FlowsFloatContextMenu>
@@ -226,39 +127,45 @@ const FlowsFloatContextMenu: React.FC<FlowsFloatContextMenuProps> = (props) => {
 // 使用传入的model
 const FlowsFloatContextMenuWithModel: React.FC<ModelProvidedProps> = observer(
   ({ model, children, enabled = true, showDeleteButton = true, containerStyle, className }) => {
-    const [selectedFlowKey, setSelectedFlowKey] = useState<string | null>(null);
+    const [selectedStep, setSelectedStep] = useState<{ flowKey: string; stepKey: string } | null>(null);
     const [modalVisible, setModalVisible] = useState<boolean>(false);
 
-    const handleFlowClick = useCallback((flowKey: string) => {
-      setSelectedFlowKey(flowKey);
-      setModalVisible(true);
-    }, []);
-
-    const handleDeleteClick = useCallback(() => {
-      Modal.confirm({
-        title: '确认删除',
-        icon: <ExclamationCircleOutlined />,
-        content: '确定要删除此项吗？此操作不可撤销。',
-        okText: '确认删除',
-        okType: 'danger',
-        cancelText: '取消',
-        onOk() {
-          try {
-            model.dispatchEvent('remove');
-          } catch (error) {
-            console.error('删除操作失败:', error);
-            Modal.error({
-              title: '删除失败',
-              content: '删除操作失败，请检查控制台获取详细信息。',
-            });
-          }
-        },
-      });
-    }, [model]);
+    const handleMenuClick = useCallback(
+      ({ key }: { key: string }) => {
+        if (key === 'delete') {
+          // 处理删除操作
+          Modal.confirm({
+            title: '确认删除',
+            icon: <ExclamationCircleOutlined />,
+            content: '确定要删除此项吗？此操作不可撤销。',
+            okText: '确认删除',
+            okType: 'danger',
+            cancelText: '取消',
+            onOk() {
+              try {
+                model.dispatchEvent('remove');
+              } catch (error) {
+                console.error('删除操作失败:', error);
+                Modal.error({
+                  title: '删除失败',
+                  content: '删除操作失败，请检查控制台获取详细信息。',
+                });
+              }
+            },
+          });
+        } else {
+          // 处理step配置，key格式为 "flowKey:stepKey"
+          const [flowKey, stepKey] = key.split(':');
+          setSelectedStep({ flowKey, stepKey });
+          setModalVisible(true);
+        }
+      },
+      [model],
+    );
 
     const handleModalClose = useCallback(() => {
       setModalVisible(false);
-      setSelectedFlowKey(null);
+      setSelectedStep(null);
     }, []);
 
     if (!model) {
@@ -270,65 +177,112 @@ const FlowsFloatContextMenuWithModel: React.FC<ModelProvidedProps> = observer(
       return <>{children}</>;
     }
 
-    // 获取可配置的flows
-    const getConfigurableFlows = useCallback(() => {
+    // 获取可配置的flows和steps
+    const getConfigurableFlowsAndSteps = useCallback(() => {
       try {
         const ModelClass = model.constructor as typeof FlowModel;
         const flows = ModelClass.getFlows();
 
         const flowsArray = Array.from(flows.values());
 
-        return flowsArray.filter((flow) => {
-          const configurableSteps = Object.entries(flow.steps)
-            .map(([stepKey, stepDefinition]) => {
-              const actionStep = stepDefinition as ActionStepDefinition;
+        return flowsArray
+          .map((flow) => {
+            const configurableSteps = Object.entries(flow.steps)
+              .map(([stepKey, stepDefinition]) => {
+                const actionStep = stepDefinition as ActionStepDefinition;
 
-              // 从step获取uiSchema（如果存在）
-              const stepUiSchema = actionStep.uiSchema || {};
+                // 从step获取uiSchema（如果存在）
+                const stepUiSchema = actionStep.uiSchema || {};
 
-              // 如果step使用了action，也获取action的uiSchema
-              let actionUiSchema = {};
-              if (actionStep.use) {
-                const action = model.flowEngine?.getAction?.(actionStep.use);
-                if (action && action.uiSchema) {
-                  actionUiSchema = action.uiSchema;
+                // 如果step使用了action，也获取action的uiSchema
+                let actionUiSchema = {};
+                if (actionStep.use) {
+                  const action = model.flowEngine?.getAction?.(actionStep.use);
+                  if (action && action.uiSchema) {
+                    actionUiSchema = action.uiSchema;
+                  }
                 }
-              }
 
-              // 合并uiSchema，确保step的uiSchema优先级更高
-              const mergedUiSchema = { ...actionUiSchema };
+                // 合并uiSchema，确保step的uiSchema优先级更高
+                const mergedUiSchema = { ...actionUiSchema };
 
-              // 将stepUiSchema中的字段合并到mergedUiSchema
-              Object.entries(stepUiSchema).forEach(([fieldKey, schema]) => {
-                if (mergedUiSchema[fieldKey]) {
-                  mergedUiSchema[fieldKey] = { ...mergedUiSchema[fieldKey], ...schema };
-                } else {
-                  mergedUiSchema[fieldKey] = schema;
+                // 将stepUiSchema中的字段合并到mergedUiSchema
+                Object.entries(stepUiSchema).forEach(([fieldKey, schema]) => {
+                  if (mergedUiSchema[fieldKey]) {
+                    mergedUiSchema[fieldKey] = { ...mergedUiSchema[fieldKey], ...schema };
+                  } else {
+                    mergedUiSchema[fieldKey] = schema;
+                  }
+                });
+
+                // 如果没有可配置的UI Schema，返回null
+                if (Object.keys(mergedUiSchema).length === 0) {
+                  return null;
                 }
-              });
 
-              // 如果没有可配置的UI Schema，返回null
-              if (Object.keys(mergedUiSchema).length === 0) {
-                return null;
-              }
+                return { 
+                  stepKey, 
+                  step: actionStep, 
+                  uiSchema: mergedUiSchema,
+                  title: actionStep.title || stepKey
+                };
+              })
+              .filter(Boolean);
 
-              return { stepKey, step: actionStep, uiSchema: mergedUiSchema };
-            })
-            .filter(Boolean);
-
-          return configurableSteps.length > 0;
-        });
+            return configurableSteps.length > 0 ? { flow, steps: configurableSteps } : null;
+          })
+          .filter(Boolean);
       } catch (error) {
         console.warn('[FlowsFloatContextMenu] 获取可配置flows失败:', error);
         return [];
       }
     }, [model]);
 
-    const configurableFlows = getConfigurableFlows();
+    const configurableFlowsAndSteps = getConfigurableFlowsAndSteps();
 
     // 如果没有可配置的flows且不显示删除按钮，直接返回children
-    if (configurableFlows.length === 0 && !showDeleteButton) {
+    if (configurableFlowsAndSteps.length === 0 && !showDeleteButton) {
       return <>{children}</>;
+    }
+
+    // 构建菜单项 - 使用与 FlowsContextMenu 相同的逻辑
+    const menuItems: MenuProps['items'] = [];
+
+    // 添加flows和steps配置项
+    if (configurableFlowsAndSteps.length > 0) {
+      configurableFlowsAndSteps.forEach(({ flow, steps }) => {
+        // 始终按flow分组显示
+        menuItems.push({
+          key: `flow-group-${flow.key}`,
+          label: flow.title || flow.key,
+          type: 'group',
+        });
+
+        steps.forEach((stepInfo) => {
+          menuItems.push({
+            key: `${flow.key}:${stepInfo.stepKey}`,
+            icon: <SettingOutlined />,
+            label: stepInfo.title,
+          });
+        });
+      });
+    }
+
+    // 添加分割线和删除按钮
+    if (showDeleteButton) {
+      // 如果有flows配置项，添加分割线
+      if (configurableFlowsAndSteps.length > 0) {
+        menuItems.push({
+          type: 'divider' as const,
+        });
+      }
+
+      // 添加删除按钮
+      menuItems.push({
+        key: 'delete',
+        icon: <DeleteOutlined />,
+        label: '删除',
+      });
     }
 
     return (
@@ -343,48 +297,31 @@ const FlowsFloatContextMenuWithModel: React.FC<ModelProvidedProps> = observer(
           <div className="general-schema-designer">
             <div className="general-schema-designer-icons">
               <Space size={3} align="center">
-                <SchemaSettingsDropdown
-                  title={
-                    <MenuOutlined
-                      role="button"
-                      aria-label="flows-settings"
-                      style={{ cursor: 'pointer', fontSize: 12 }}
-                    />
-                  }
+                <Dropdown
+                  menu={{
+                    items: menuItems,
+                    onClick: handleMenuClick,
+                  }}
+                  trigger={['hover']}
+                  placement="bottomRight"
                 >
-                  {/* 添加flows配置项 */}
-                  {configurableFlows.map((flow) => (
-                    <SchemaSettingsItem
-                      key={flow.key}
-                      title={flow.title || flow.key}
-                      icon={<SettingOutlined />}
-                      onClick={() => handleFlowClick(flow.key)}
-                    />
-                  ))}
-                  
-                  {/* 添加分割线和删除按钮 */}
-                  {showDeleteButton && configurableFlows.length > 0 && (
-                    <SchemaSettingsItem type="divider" />
-                  )}
-                  
-                  {showDeleteButton && (
-                    <SchemaSettingsItem
-                      title="删除"
-                      icon={<DeleteOutlined />}
-                      onClick={handleDeleteClick}
-                    />
-                  )}
-                </SchemaSettingsDropdown>
+                  <MenuOutlined
+                    role="button"
+                    aria-label="flows-settings"
+                    style={{ cursor: 'pointer', fontSize: 12 }}
+                  />
+                </Dropdown>
               </Space>
             </div>
           </div>
         </div>
 
         {/* 设置弹窗 */}
-        {selectedFlowKey && (
-          <FlowSettingsModal
+        {selectedStep && (
+          <StepSettingsModal
             model={model}
-            flowKey={selectedFlowKey}
+            flowKey={selectedStep.flowKey}
+            stepKey={selectedStep.stepKey}
             visible={modalVisible}
             onClose={handleModalClose}
           />

@@ -11,6 +11,7 @@ import {
   FlowModel,
   useFlowModel,
   withFlowModel,
+  FlowsFloatContextMenu,
 } from '@nocobase/flow-engine';
 import { observer } from '@formily/react';
 
@@ -85,7 +86,8 @@ const ActionButton = withFlowModel(
   },
   {
     settings: {
-      component: FlowsContextMenu,
+      component: FlowsFloatContextMenu,
+      // component: FlowsContextMenu
     },
   },
 );
