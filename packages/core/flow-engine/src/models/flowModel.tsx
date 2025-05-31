@@ -56,10 +56,6 @@ export class FlowModel {
 
   onInit(options): void {}
 
-  makeObservable(annotations: Record<string, any> = {}): void {
-    define(this, annotations);
-  }
-
   /**
    * 设置FlowEngine实例
    * @param {FlowEngine} flowEngine FlowEngine实例
@@ -496,17 +492,17 @@ export class FlowModel {
     return this.flowEngine.createModel(options);
   }
 
-  save() {
+  async save() {
     if (!this.flowEngine) {
       throw new Error('FlowEngine is not set on this model. Please set flowEngine before saving.');
     }
     return this.flowEngine.saveModel(this);
   }
 
-  delete() {
+  async destroy() {
     if (!this.flowEngine) {
       throw new Error('FlowEngine is not set on this model. Please set flowEngine before deleting.');
     }
-    return this.flowEngine.deleteModel(this.uid);
+    return this.flowEngine.destroyModel(this.uid);
   }
 }

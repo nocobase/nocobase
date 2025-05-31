@@ -87,8 +87,40 @@ export default defineConfig({
           type: 'group',
           children: [
             {
-              title: 'FlowModel',
+              title: 'FlowEngine',
               link: '/core/flow-engine',
+            },
+            {
+              title: 'FlowModelRepository',
+              link: '/core/flow-engine/flow-model-repository',
+            },
+            {
+              title: 'FlowModel',
+              link: '/core/flow-engine/flow-model',
+            },
+            {
+              title: 'FlowModelRenderer',
+              link: '/core/flow-engine/flow-model-renderer',
+            },
+            {
+              title: 'FlowModelSettings',
+              link: '/core/flow-engine/flow-model-settings',
+            },
+            {
+              title: 'FlowDefinition',
+              link: '/core/flow-engine/flow-definition',
+            },
+            {
+              title: 'FlowContext',
+              link: '/core/flow-engine/flow-context',
+            },
+            {
+              title: 'FlowAction',
+              link: '/core/flow-engine/flow-action',
+            },
+            {
+              title: 'FlowHooks',
+              link: '/core/flow-engine/flow-hooks',
             },
           ],
         },

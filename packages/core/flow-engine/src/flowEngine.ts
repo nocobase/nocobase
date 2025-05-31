@@ -187,7 +187,7 @@ export class FlowEngine {
 
   async loadModel<T extends FlowModel = FlowModel>(uid: string): Promise<T | null> {
     if (!this.ensureModelRepository()) return;
-    const data = await this.modelRepository.get(uid);
+    const data = await this.modelRepository.load(uid);
     return data?.uid ? this.createModel<T>(data as any) : null;
   }
 
@@ -198,7 +198,7 @@ export class FlowEngine {
 
   async destroyModel(uid: string) {
     if (this.ensureModelRepository()) {
-      await this.modelRepository.delete(uid);
+      await this.modelRepository.destroy(uid);
     }
     return this.removeModel(uid);
   }
