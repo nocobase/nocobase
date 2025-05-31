@@ -19,13 +19,90 @@
 | `ctx.app`        | 当前应用实例，可用于访问应用级别的服务和资源。|
 ---
 
-## 日志记录示例
+## 四类变量的定义与访问
 
-日志记录有助于流程调试和问题追踪。推荐在关键步骤、异常处理等场景下使用。
+流程上下文变量分为四类，分别对应不同的定义方式和访问范围：
+
+### 1. 全局变量（ctx.globals）
+
+- **定义方式**：在流程引擎初始化时通过 `flowEngine.defineGlobalVars()` 声明类型。
+- **适用场景**：全局配置、当前用户、系统常量等，所有流程和步骤可访问，只读。
+- **访问方式**：`ctx.globals.xxx`
 
 ```ts
-ctx.logger.info('步骤开始', { step: 'step1', params });
-ctx.logger.error('发生错误', error);
+flowEngine.defineGlobalVars({
+  user: { type: 'object', label: '当前用户' },
+  roles: { type: 'array', label: '当前角色' },
+  systemDate: { type: 'date', label: '系统日期' },
+});
+
+// 在流程步骤中访问
+const user = ctx.globals.user;
+```
+
+### 2. 局部变量（ctx.extra）
+
+- **定义方式**：在模型层通过 `MyModel.defineExtraVars()` 声明类型，流程执行时通过 `applyFlow` 传入。
+- **适用场景**：当前数据、选中记录等与本次流程强相关的临时数据，只读。
+- **访问方式**：`ctx.extra.xxx`
+
+```ts
+MyModel.defineExtraVars({
+  currentTable: { type: 'string', label: '当前数据表' },
+  currentRecord: { type: 'object', label: '当前数据' },
+  selectedRecords: { type: 'array', label: '选中记录' },
+});
+
+// 传入流程
+const extraContext = {
+  currentTable: 'users',
+  currentRecord: { id: 1, name: '张三' },
+  selectedRecords: [{ id: 2 }, { id: 3 }],
+};
+await model.applyFlow('myFlow', extraContext);
+
+// 在流程步骤中访问
+const record = ctx.extra.currentRecord;
+```
+
+### 3. 流程共享变量（ctx.shared）
+
+- **定义方式**：在流程定义时通过 `defineFlow({ shared })` 声明类型。
+- **适用场景**：流程内多步骤共享的数据，可读可写。
+- **访问方式**：`ctx.shared.xxx`
+
+```ts
+const myFlow = defineFlow({
+  key: 'myFlow',
+  shared: {
+    flowParam: { type: 'string', label: '流程参数' },
+  },
+  steps: { ... }
+});
+
+// 在流程步骤中访问和修改
+ctx.shared.flowParam = 'newValue';
+```
+
+### 4. 步骤输出变量（ctx.stepResults）
+
+- **定义方式**：每个步骤通过 `output` 字段声明类型，handler 返回值自动存储。
+- **适用场景**：步骤间结果传递，后续步骤可访问前置步骤的输出，只读。
+- **访问方式**：`ctx.stepResults.步骤名`
+
+```ts
+step1: {
+  output: { type: 'string', label: '问候语' },
+  async handler(ctx, model, params) {
+    return 'hello';
+  }
+},
+step2: {
+  async handler(ctx, model, params) {
+    const prev = ctx.stepResults.step1;
+    return prev + ' world';
+  }
+}
 ```
 
 ---
@@ -106,6 +183,15 @@ class FlowModel {
 > - `shared` 可读可写，适合在流程内多步骤间传递和修改数据。
 > - 合理区分全局与局部上下文，避免数据污染和副作用。
 
+### 5. 日志记录示例
+
+日志记录有助于流程调试和问题追踪。推荐在关键步骤、异常处理等场景下使用。
+
+```ts
+ctx.logger.info('步骤开始', { step: 'step1', params });
+ctx.logger.error('发生错误', error);
+```
+
 ---
 
 ## 完整流程示例
@@ -117,13 +203,17 @@ class MyModel extends FlowModel {}
 
 const myFlow = defineFlow({
     key: 'myFlow',
+    shared: {
+        flowParam: { type: 'string', label: '流程参数' },
+    },
     steps: {
         step1: {
+            output: { type: 'string', label: '问候语' },
             async handler(ctx, model, params) {
                 if (params.shouldExit) {
                     ctx.exit();
                 }
-                // ...其他逻辑...
+                return 'hello';
             },
         },
         step2: {
@@ -131,7 +221,8 @@ const myFlow = defineFlow({
                 if (params.shouldSkip) {
                     ctx.skip();
                 }
-                // ...其他逻辑...
+                const prev = ctx.stepResults.step1;
+                return prev + ' world';
             },
         }
     },
