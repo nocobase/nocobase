@@ -1,10 +1,10 @@
 import { Application, Plugin } from '@nocobase/client';
-import { FlowModel, IModelRepository } from '@nocobase/flow-engine';
+import { FlowModel, IFlowModelRepository } from '@nocobase/flow-engine';
 import React from 'react';
 
-class ModelRepository implements IModelRepository<FlowModel> {
+class FlowModelRepository implements IFlowModelRepository<FlowModel> {
   constructor(private app: Application) {}
-  async get(uid: string) {
+  async load(uid: string) {
     // implement fetching a model by id
     return null;
   }
@@ -15,7 +15,7 @@ class ModelRepository implements IModelRepository<FlowModel> {
     return model;
   }
 
-  async delete(uid: string) {
+  async destroy(uid: string) {
     // implement deleting a model by id
     return true;
   }
@@ -24,7 +24,7 @@ class ModelRepository implements IModelRepository<FlowModel> {
 // 插件定义
 class PluginHelloModel extends Plugin {
   async load() {
-    this.flowEngine.setModelRepository(new ModelRepository(this.app));
+    this.flowEngine.setModelRepository(new FlowModelRepository(this.app));
     this.flowEngine.registerModels({ FlowModel });
     const model = this.flowEngine.createModel({
       use: 'FlowModel',

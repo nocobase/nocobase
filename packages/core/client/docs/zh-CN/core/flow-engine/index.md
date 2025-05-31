@@ -34,7 +34,7 @@
 
 ### Model 持久化与远程操作
 
-- **setModelRepository(modelRepository: IModelRepository): void**  
+- **setModelRepository(modelRepository: IFlowModelRepository): void**  
   注入模型仓库（通常用于远程数据源/持久化适配器）。
 
 - **async loadModel(uid: string): Promise<FlowModel \| null>**  

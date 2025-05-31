@@ -13,7 +13,7 @@ import {
   ActionOptions,
   CreateModelOptions,
   FlowDefinition,
-  IModelRepository,
+  IFlowModelRepository,
   ModelConstructor,
 } from './types';
 
@@ -25,9 +25,9 @@ export class FlowEngine {
   /** @private Stores created model instances. */
   private modelInstances: Map<string, any> = new Map();
   context: Record<string, any> = {};
-  private modelRepository: IModelRepository | null = null;
+  private modelRepository: IFlowModelRepository | null = null;
 
-  setModelRepository(modelRepository: IModelRepository) {
+  setModelRepository(modelRepository: IFlowModelRepository) {
     if (this.modelRepository) {
       console.warn('FlowEngine: Model repository is already set and will be overwritten.');
     }
