@@ -8,8 +8,14 @@
  */
 
 import { FlowModel } from './models';
-import { ActionDefinition, ActionOptions, CreateModelOptions, FlowDefinition, ModelConstructor } from './types';
-import { generateUid } from './utils';
+import {
+  ActionDefinition,
+  ActionOptions,
+  CreateModelOptions,
+  FlowDefinition,
+  IModelRepository,
+  ModelConstructor,
+} from './types';
 
 export class FlowEngine {
   /** @private Stores registered action definitions. */
@@ -19,6 +25,14 @@ export class FlowEngine {
   /** @private Stores created model instances. */
   private modelInstances: Map<string, any> = new Map();
   context: Record<string, any> = {};
+  private modelRepository: IModelRepository | null = null;
+
+  setModelRepository(modelRepository: IModelRepository) {
+    if (this.modelRepository) {
+      console.warn('FlowEngine: Model repository is already set and will be overwritten.');
+    }
+    this.modelRepository = modelRepository;
+  }
 
   setContext(context: any) {
     this.context = context;
@@ -116,7 +130,7 @@ export class FlowEngine {
    * @returns {T} 创建的 Model 实例。
    */
   public createModel<T extends FlowModel = FlowModel>(options: CreateModelOptions): T {
-    const { uid, use: modelClassName } = options;
+    const { parentId, uid, use: modelClassName } = options;
     const ModelClass = this.getModelClass(modelClassName);
 
     if (!ModelClass) {
@@ -132,7 +146,12 @@ export class FlowEngine {
     modelInstance.setFlowEngine(this);
     modelInstance.onInit(options);
 
+    if (parentId && this.modelInstances.has(parentId)) {
+      modelInstance.setParent(this.modelInstances.get(parentId));
+    }
+
     this.modelInstances.set(modelInstance.uid, modelInstance);
+
     return modelInstance;
   }
 
@@ -151,11 +170,37 @@ export class FlowEngine {
    * @param {string} uid 要销毁的 Model 实例的唯一标识符。
    * @returns {boolean} 如果成功销毁则返回 true，否则返回 false (例如，实例不存在)。
    */
-  public destroyModel(uid: string): boolean {
+  public removeModel(uid: string): boolean {
     if (this.modelInstances.has(uid)) {
       return this.modelInstances.delete(uid);
     }
     return false;
+  }
+
+  private ensureModelRepository(): boolean {
+    if (!this.modelRepository) {
+      // 不抛错，直接返回 false
+      return false;
+    }
+    return true;
+  }
+
+  async loadModel<T extends FlowModel = FlowModel>(uid: string): Promise<T | null> {
+    if (!this.ensureModelRepository()) return;
+    const data = await this.modelRepository.get(uid);
+    return data?.uid ? this.createModel<T>(data as any) : null;
+  }
+
+  async saveModel<T extends FlowModel = FlowModel>(model: T) {
+    if (!this.ensureModelRepository()) return;
+    return await this.modelRepository.save(model);
+  }
+
+  async destroyModel(uid: string) {
+    if (this.ensureModelRepository()) {
+      await this.modelRepository.delete(uid);
+    }
+    return this.removeModel(uid);
   }
 
   /**

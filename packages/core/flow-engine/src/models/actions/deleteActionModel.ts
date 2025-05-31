@@ -16,6 +16,7 @@ export const DeleteActionModel = ActionModel.extends([
     title: '删除操作',
     steps: {
       showConfirm: {
+        title: '确认弹窗',
         handler: async (ctx, model, params) => {
           if (params.showConfirm) {
             await new Promise((resolve) => {

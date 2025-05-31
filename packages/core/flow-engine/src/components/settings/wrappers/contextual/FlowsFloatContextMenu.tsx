@@ -8,69 +8,125 @@
  */
 
 import React, { useState, useCallback } from 'react';
-import { Dropdown, Alert, Modal } from 'antd';
+import { Alert, Modal, Space, Dropdown } from 'antd';
 import type { MenuProps } from 'antd';
-import { SettingOutlined, DeleteOutlined, ExclamationCircleOutlined } from '@ant-design/icons';
+import { SettingOutlined, DeleteOutlined, ExclamationCircleOutlined, MenuOutlined } from '@ant-design/icons';
 import { observer } from '@formily/react';
+import { css } from '@emotion/css';
 import { FlowModel } from '../../../../models';
 import { ActionStepDefinition } from '../../../../types';
 import { useFlowModel } from '../../../../hooks';
 import { StepSettingsModal } from './StepSettingsModal';
 
-// 右键菜单组件接口
+// 使用与 NocoBase 一致的悬浮工具栏样式
+const floatContainerStyles = css`
+  position: relative;
+  display: inline-block;
+  width: 100%;
+
+  &:hover {
+    > .general-schema-designer {
+      display: block;
+    }
+  }
+
+  > .general-schema-designer {
+    position: absolute;
+    z-index: 999;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    display: none;
+    background: var(--colorBgSettingsHover);
+    border: 0;
+    pointer-events: none;
+
+    &.nb-in-template {
+      background: var(--colorTemplateBgSettingsHover);
+    }
+
+    > .general-schema-designer-icons {
+      position: absolute;
+      right: 6px;
+      top: 2px;
+      line-height: 16px;
+      pointer-events: all;
+
+      .ant-space-item {
+        background-color: var(--colorSettings);
+        color: #fff;
+        line-height: 16px;
+        width: 16px;
+        height: 16px;
+        padding: 2px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+    }
+  }
+`;
+
+// 悬浮右键菜单组件接口
 interface ModelProvidedProps {
   model: any;
-  children?: React.ReactNode; // 子组件，如果提供则作为wrapper模式
-  enabled?: boolean; // 是否启用右键菜单，默认为true
-  position?: 'right' | 'left'; // 右键菜单位置，默认为right
-  showDeleteButton?: boolean; // 是否显示删除按钮，默认为true
+  children?: React.ReactNode;
+  enabled?: boolean;
+  showDeleteButton?: boolean;
+  containerStyle?: React.CSSProperties;
+  className?: string;
 }
 
 interface ModelByIdProps {
   uid: string;
   modelClassName: string;
-  children?: React.ReactNode; // 子组件，如果提供则作为wrapper模式
-  enabled?: boolean; // 是否启用右键菜单，默认为true
-  position?: 'right' | 'left'; // 右键菜单位置，默认为right
-  showDeleteButton?: boolean; // 是否显示删除按钮，默认为true
+  children?: React.ReactNode;
+  enabled?: boolean;
+  showDeleteButton?: boolean;
+  containerStyle?: React.CSSProperties;
+  className?: string;
 }
 
-type FlowsContextMenuProps = ModelProvidedProps | ModelByIdProps;
+type FlowsFloatContextMenuProps = ModelProvidedProps | ModelByIdProps;
 
 // 判断是否是通过ID获取模型的props
-const isModelByIdProps = (props: FlowsContextMenuProps): props is ModelByIdProps => {
+const isModelByIdProps = (props: FlowsFloatContextMenuProps): props is ModelByIdProps => {
   return 'uid' in props && 'modelClassName' in props && Boolean(props.uid) && Boolean(props.modelClassName);
 };
 
 /**
- * FlowsContextMenu组件 - 右键菜单组件
+ * FlowsFloatContextMenu组件 - 悬浮配置图标组件
  *
  * 功能特性：
- * - 右键菜单
+ * - 鼠标悬浮显示右上角配置图标
+ * - 点击图标显示配置菜单
+ * - 支持删除功能
  * - Wrapper 模式支持
- * - 删除功能
+ * - 使用与 NocoBase x-settings 一致的样式
  * - 按flow分组显示steps
  *
  * 支持两种使用方式：
- * 1. 直接提供model: <FlowsContextMenu model={myModel}>{children}</FlowsContextMenu>
- * 2. 通过uid和modelClassName获取model: <FlowsContextMenu uid="model1" modelClassName="MyModel">{children}</FlowsContextMenu>
+ * 1. 直接提供model: <FlowsFloatContextMenu model={myModel}>{children}</FlowsFloatContextMenu>
+ * 2. 通过uid和modelClassName获取model: <FlowsFloatContextMenu uid="model1" modelClassName="MyModel">{children}</FlowsFloatContextMenu>
  *
  * @param props.children 子组件，必须提供
- * @param props.enabled 是否启用右键菜单，默认为true
- * @param props.position 右键菜单位置，默认为right
+ * @param props.enabled 是否启用悬浮菜单，默认为true
  * @param props.showDeleteButton 是否显示删除按钮，默认为true
+ * @param props.containerStyle 容器自定义样式
+ * @param props.className 容器自定义类名
  */
-const FlowsContextMenu: React.FC<FlowsContextMenuProps> = (props) => {
+const FlowsFloatContextMenu: React.FC<FlowsFloatContextMenuProps> = (props) => {
   if (isModelByIdProps(props)) {
-    return <FlowsContextMenuWithModelById {...props} />;
+    return <FlowsFloatContextMenuWithModelById {...props} />;
   } else {
-    return <FlowsContextMenuWithModel {...props} />;
+    return <FlowsFloatContextMenuWithModel {...props} />;
   }
 };
 
 // 使用传入的model
-const FlowsContextMenuWithModel: React.FC<ModelProvidedProps> = observer(
-  ({ model, children, enabled = true, position = 'right', showDeleteButton = true }) => {
+const FlowsFloatContextMenuWithModel: React.FC<ModelProvidedProps> = observer(
+  ({ model, children, enabled = true, showDeleteButton = true, containerStyle, className }) => {
     const [selectedStep, setSelectedStep] = useState<{ flowKey: string; stepKey: string } | null>(null);
     const [modalVisible, setModalVisible] = useState<boolean>(false);
 
@@ -177,7 +233,7 @@ const FlowsContextMenuWithModel: React.FC<ModelProvidedProps> = observer(
           })
           .filter(Boolean);
       } catch (error) {
-        console.warn('[FlowsContextMenu] 获取可配置flows失败:', error);
+        console.warn('[FlowsFloatContextMenu] 获取可配置flows失败:', error);
         return [];
       }
     }, [model]);
@@ -189,7 +245,7 @@ const FlowsContextMenuWithModel: React.FC<ModelProvidedProps> = observer(
       return <>{children}</>;
     }
 
-    // 构建右键菜单项
+    // 构建菜单项 - 使用与 FlowsContextMenu 相同的逻辑
     const menuItems: MenuProps['items'] = [];
 
     // 添加flows和steps配置项
@@ -231,16 +287,27 @@ const FlowsContextMenuWithModel: React.FC<ModelProvidedProps> = observer(
 
     return (
       <>
-        <Dropdown
-          menu={{
-            items: menuItems,
-            onClick: handleMenuClick,
-          }}
-          trigger={['contextMenu']}
-          placement={position === 'left' ? 'bottomLeft' : 'bottomRight'}
-        >
-          <div style={{ display: 'inline-block', width: '100%' }}>{children}</div>
-        </Dropdown>
+        <div className={`${floatContainerStyles} ${className || ''}`} style={containerStyle}>
+          {children}
+
+          {/* 悬浮工具栏 - 使用与 NocoBase 一致的结构 */}
+          <div className="general-schema-designer">
+            <div className="general-schema-designer-icons">
+              <Space size={3} align="center">
+                <Dropdown
+                  menu={{
+                    items: menuItems,
+                    onClick: handleMenuClick,
+                  }}
+                  trigger={['hover']}
+                  placement="bottomRight"
+                >
+                  <MenuOutlined role="button" aria-label="flows-settings" style={{ cursor: 'pointer', fontSize: 12 }} />
+                </Dropdown>
+              </Space>
+            </div>
+          </div>
+        </div>
 
         {/* 设置弹窗 */}
         {selectedStep && (
@@ -258,8 +325,8 @@ const FlowsContextMenuWithModel: React.FC<ModelProvidedProps> = observer(
 );
 
 // 通过useModelById hook获取model
-const FlowsContextMenuWithModelById: React.FC<ModelByIdProps> = observer(
-  ({ uid, modelClassName, children, enabled = true, position = 'right', showDeleteButton = true }) => {
+const FlowsFloatContextMenuWithModelById: React.FC<ModelByIdProps> = observer(
+  ({ uid, modelClassName, children, enabled = true, showDeleteButton = true, containerStyle, className }) => {
     const model = useFlowModel(uid, modelClassName);
 
     if (!model) {
@@ -267,16 +334,17 @@ const FlowsContextMenuWithModelById: React.FC<ModelByIdProps> = observer(
     }
 
     return (
-      <FlowsContextMenuWithModel
+      <FlowsFloatContextMenuWithModel
         model={model}
         enabled={enabled}
-        position={position}
         showDeleteButton={showDeleteButton}
+        containerStyle={containerStyle}
+        className={className}
       >
         {children}
-      </FlowsContextMenuWithModel>
+      </FlowsFloatContextMenuWithModel>
     );
   },
 );
 
-export { FlowsContextMenu };
+export { FlowsFloatContextMenu };

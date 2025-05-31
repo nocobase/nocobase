@@ -19,7 +19,7 @@ class HelloFlowModel extends FlowModel {
   }
 
   addTab(tab: any) {
-    const model = this.createSubModel({
+    const model = this.addSubModel('tabs', {
       ...tab,
     });
     this.tabs.push(model);

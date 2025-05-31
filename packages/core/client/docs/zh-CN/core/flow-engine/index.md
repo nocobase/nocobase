@@ -36,11 +36,10 @@
 
 <code src="./demos/ref.tsx"></code>
 
+## grid
+
+<code src="./demos/grid.tsx"></code>
+
 ## echarts
 
 <code src="./demos/echarts.tsx"></code>
-
-<!-- 
-## tabulator
-
-<code src="./demos/tabulator.tsx"></code> -->
