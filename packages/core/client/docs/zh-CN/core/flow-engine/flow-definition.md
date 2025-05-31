@@ -10,7 +10,7 @@
 interface FlowDefinition {
   key: string; // 流程唯一标识
   on?: { event: string }; // 可选：事件触发配置
-  autoStart?: boolean; // 可选：是否自动运行
+  auto?: boolean; // 可选：是否自动运行
   steps: Record<string, StepDefinition>; // 流程步骤定义
 }
 
@@ -157,7 +157,7 @@ myModel.setStepParams('myFlow', 'step1', { name: '小明' });
 ```ts
 await myModel.applyFlow('myFlow'); // 主动执行指定流程
 myModel.dispatchEvent('user.created'); // 分发事件触发流程（如流程配置了 on.event）
-await myModel.applyAutoFlows(); // 执行所有 autoStart=true 的流程
+await myModel.applyAutoFlows(); // 执行所有 auto=true 的流程
 ```
 
 ---
@@ -170,7 +170,7 @@ await myModel.applyAutoFlows(); // 执行所有 autoStart=true 的流程
 | ----------- | -------------------------------- | ---------------------------------- |
 | `key`       | `string`                         | 流程唯一标识，必须配置                        |
 | `on`        | `{ event: string }`              | （可选）事件触发配置                         |
-| `autoStart` | `boolean`                        | （可选）是否在 `applyAutoFlows()` 中自动执行流程 |
+| `auto`      | `boolean`                        | （可选）是否在 `applyAutoFlows()` 中自动执行流程 |
 | `steps`     | `Record<string, StepDefinition>` | 步骤集合，键为步骤名，值为步骤定义                  |
 
 ### StepDefinition 配置速查表

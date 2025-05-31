@@ -24,7 +24,7 @@ export class TabFlowModel extends FlowModel {}
 
 TabFlowModel.registerFlow('defaultFlow', {
   key: 'defaultFlow',
-  autoApply: true,
+  auto: true,
   steps: {
     step1: {
       handler(ctx, model: TabFlowModel, params) {
@@ -84,7 +84,7 @@ export class PageFlowModel extends FlowModel {
 }
 
 PageFlowModel.registerFlow('defaultFlow', {
-  autoApply: true,
+  auto: true,
   steps: {
     step1: {
       async handler(ctx, model: PageFlowModel, params) {

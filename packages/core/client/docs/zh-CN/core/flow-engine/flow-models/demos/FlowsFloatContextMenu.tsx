@@ -12,7 +12,7 @@ class HelloFlowModel extends FlowModel {
 }
 
 HelloFlowModel.registerFlow('defaultFlow', {
-  autoApply: true,
+  auto: true,
   steps: {
     step1: {
       uiSchema: {

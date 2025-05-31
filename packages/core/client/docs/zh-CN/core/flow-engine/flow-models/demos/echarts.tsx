@@ -26,7 +26,7 @@ class RefFlowModel extends FlowModel {
 }
 
 RefFlowModel.registerFlow('defaultFlow', {
-  autoApply: true,
+  auto: true,
   steps: {
     step0: {
       use: 'require',

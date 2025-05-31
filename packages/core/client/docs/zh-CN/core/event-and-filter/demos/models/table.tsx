@@ -125,7 +125,7 @@ class DemoTableBlockModel extends BlockModel {
     this.registerFlow({
       key: 'setProps',
       title: '表格属性',
-      autoApply: true,
+      auto: true,
       steps: {
         setFields: {
           use: 'setTableFields',

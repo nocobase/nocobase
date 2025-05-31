@@ -39,7 +39,7 @@ export class ActionModel extends FlowModel {
   protected static initFlows() {
     this.registerFlow({
       key: 'default',
-      autoApply: true,
+      auto: true,
       title: '按钮属性',
       steps: {
         setText: {

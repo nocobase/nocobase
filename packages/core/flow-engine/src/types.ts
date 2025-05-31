@@ -30,7 +30,7 @@ export interface FlowDefinition<TModel extends FlowModel = FlowModel> {
   /**
    * Whether this flow is a default flow that should be automatically executed
    */
-  autoApply?: boolean;
+  auto?: boolean;
   /**
    * Sort order for flow execution, lower numbers execute first
    * Defaults to 0, can be negative
@@ -50,7 +50,7 @@ export interface ExtendedFlowDefinition extends DeepPartial<FlowDefinition> {
   /**
    * Whether this flow is a default flow that should be automatically executed
    */
-  autoApply?: boolean;
+  auto?: boolean;
   /**
    * Sort order for flow execution, lower numbers execute first
    * Defaults to 0, can be negative

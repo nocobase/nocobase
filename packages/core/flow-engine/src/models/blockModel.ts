@@ -101,7 +101,7 @@ export class BlockModel extends FlowModel {
   protected static initFlows() {
     this.registerFlow({
       key: 'default',
-      autoApply: true,
+      auto: true,
       title: '区块通用属性',
       steps: {
         setHeight: {

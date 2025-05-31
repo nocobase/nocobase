@@ -425,7 +425,7 @@ export class FlowModel {
 
     // 过滤出自动流程并按 sort 排序
     const autoFlows = Array.from(allFlows.values())
-      .filter((flow) => flow.autoApply === true)
+      .filter((flow) => flow.auto === true)
       .sort((a, b) => (a.sort || 0) - (b.sort || 0));
 
     return autoFlows;
