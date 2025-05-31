@@ -14,7 +14,7 @@ import { InputProps, TextAreaProps } from 'antd/es/input';
 import React, { useCallback } from 'react';
 import { JSONTextAreaProps, Json } from './Json';
 import { InputReadPrettyComposed, ReadPretty } from './ReadPretty';
-
+import { ScanInput } from './ScanInput';
 export { ReadPretty as InputReadPretty } from './ReadPretty';
 
 type ComposedInput = React.FC<NocoBaseInputProps> & {
@@ -26,10 +26,13 @@ type ComposedInput = React.FC<NocoBaseInputProps> & {
 
 export type NocoBaseInputProps = InputProps & {
   trim?: boolean;
+  disableManualInput?: boolean;
+  enableScan?: boolean;
 };
 
 function InputInner(props: NocoBaseInputProps) {
-  const { onChange, trim, ...others } = props;
+  const { onChange, trim, enableScan, ...others } = props;
+
   const handleChange = useCallback(
     (ev: React.ChangeEvent<HTMLInputElement>) => {
       if (trim) {
@@ -39,6 +42,9 @@ function InputInner(props: NocoBaseInputProps) {
     },
     [onChange, trim],
   );
+  if (enableScan) {
+    return <ScanInput {...others} onChange={handleChange} />;
+  }
   return <AntdInput {...others} onChange={handleChange} />;
 }
 
