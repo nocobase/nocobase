@@ -13,23 +13,6 @@ import { getWorkflowTodoViewActionSchema } from './WorkflowTodo';
 import { TaskStatusOptions } from '../common/constants';
 import { NAMESPACE } from '../locale';
 
-const workflowCollection = {
-  title: `{{t("Workflow", { ns: "workflow" })}}`,
-  name: 'workflows',
-  fields: [
-    {
-      type: 'string',
-      name: 'title',
-      interface: 'input',
-      uiSchema: {
-        title: '{{t("Name")}}',
-        type: 'string',
-        'x-component': 'Input',
-      },
-    },
-  ],
-};
-
 const todoCollection = {
   title: `{{t("Workflow todos", { ns: "${NAMESPACE}" })}}`,
   name: 'workflowManualTasks',
@@ -128,11 +111,7 @@ const todoCollection = {
  * @returns
  */
 export const WorkflowManualProvider: FC = (props) => {
-  return (
-    <ExtendCollectionsProvider collections={[workflowCollection, todoCollection]}>
-      {props.children}
-    </ExtendCollectionsProvider>
-  );
+  return <ExtendCollectionsProvider collections={[todoCollection]}>{props.children}</ExtendCollectionsProvider>;
 };
 
 /**

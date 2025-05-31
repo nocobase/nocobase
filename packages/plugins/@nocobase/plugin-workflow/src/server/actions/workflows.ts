@@ -18,7 +18,7 @@ export async function update(context: Context, next) {
   const repository = utils.getRepositoryFromParams(context) as WorkflowRepository;
   const { filterByTk, values } = context.action.params;
   context.action.mergeParams({
-    whitelist: ['title', 'description', 'enabled', 'triggerTitle', 'config', 'options'],
+    whitelist: ['title', 'description', 'enabled', 'triggerTitle', 'config', 'options', 'categories'],
   });
   // only enable/disable
   if (Object.keys(values).includes('config')) {
