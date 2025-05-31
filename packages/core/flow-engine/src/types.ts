@@ -199,7 +199,7 @@ export interface CreateModelOptions {
   [key: string]: any; // 允许额外的自定义选项
   // app?: Application; // Application 依赖已移除
 }
-export interface IModelRepository<T extends FlowModel = FlowModel> {
+export interface IFlowModelRepository<T extends FlowModel = FlowModel> {
   load(uid: string): Promise<Record<string, any> | null>;
   save(model: T): Promise<T>;
   destroy(uid: string): Promise<boolean>;
