@@ -65,10 +65,6 @@ export default defineConfig({
               link: '/core/application/application',
             },
             {
-              title: 'Plugin',
-              link: '/core/application/plugin',
-            },
-            {
               title: 'PluginManager',
               link: '/core/application/plugin-manager',
             },
@@ -84,6 +80,66 @@ export default defineConfig({
               title: 'Request',
               link: '/core/request',
             },
+          ],
+        },
+        {
+          title: 'FlowEngine',
+          type: 'group',
+          children: [
+            {
+              title: 'FlowEngine',
+              link: '/core/flow-engine',
+            },
+            {
+              title: 'FlowModelRepository',
+              link: '/core/flow-engine/flow-model-repository',
+            },
+            {
+              title: 'FlowModel',
+              link: '/core/flow-engine/flow-model',
+            },
+            {
+              title: 'FlowModelRenderer',
+              link: '/core/flow-engine/flow-model-renderer',
+            },
+            {
+              title: 'FlowModelSettings',
+              link: '/core/flow-engine/flow-model-settings',
+            },
+            {
+              title: 'FlowDefinition',
+              link: '/core/flow-engine/flow-definition',
+            },
+            {
+              title: 'FlowContext',
+              link: '/core/flow-engine/flow-context',
+            },
+            {
+              title: 'FlowAction',
+              link: '/core/flow-engine/flow-action',
+            },
+            {
+              title: 'FlowHooks',
+              link: '/core/flow-engine/flow-hooks',
+            },
+          ],
+        },
+        {
+          title: 'Event and Filter',
+          type: 'group',
+          children: [
+            {
+              title: 'Model',
+              link: '/core/event-and-filter/model',
+            },
+            {
+              title: 'Tabulator',
+              link: '/core/event-and-filter/tabulator',
+            },
+            {
+              title: 'Table',
+              link: '/core/event-and-filter/table',
+            }
           ],
         },
         {

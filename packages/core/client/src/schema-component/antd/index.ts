@@ -29,6 +29,7 @@ export * from './error-fallback';
 export * from './expand-action';
 export * from './expiresRadio';
 export * from './filter';
+export * from './flow-page';
 export * from './form';
 export * from './form-dialog';
 export * from './form-item';

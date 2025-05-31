@@ -23,6 +23,10 @@ export class Plugin<T = any> {
     return this.app.pluginManager;
   }
 
+  get flowEngine() {
+    return this.app.flowEngine;
+  }
+
   get pm() {
     return this.app.pm;
   }

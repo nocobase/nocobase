@@ -907,6 +907,18 @@ function convertRoutesToLayout(
       };
     }
 
+    if (item.type === NocoBaseDesktopRouteType.flowPage) {
+      return {
+        name,
+        icon: item.icon ? <Icon type={item.icon} /> : null,
+        path: `/admin/${item.schemaUid}`,
+        redirect: `/admin/${item.schemaUid}`,
+        hideInMenu: item.hideInMenu,
+        _route: item,
+        _parentRoute: parentRoute,
+      };
+    }
+
     if (item.type === NocoBaseDesktopRouteType.group) {
       const children =
         convertRoutesToLayout(item.children, { designable, parentRoute: item, depth: depth + 1, t }) || [];
@@ -966,7 +978,7 @@ export function findFirstPageRoute(routes: NocoBaseDesktopRoute[]) {
   if (!routes) return;
 
   for (const route of routes.filter((item) => !item.hideInMenu)) {
-    if (route.type === NocoBaseDesktopRouteType.page) {
+    if (route.type === NocoBaseDesktopRouteType.page || route.type === NocoBaseDesktopRouteType.flowPage) {
       return route;
     }
 
