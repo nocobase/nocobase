@@ -25,7 +25,7 @@
 
 ### 1. 全局变量（ctx.globals）
 
-- **定义方式**：在流程引擎初始化时通过 `flowEngine.defineGlobalVars()` 定义。
+- **定义方式**：在流程引擎初始化时通过 `flowEngine.defineGlobalVars()` 声明类型。
 - **适用场景**：全局配置、当前用户、系统常量等，所有流程和步骤可访问，只读。
 - **访问方式**：`ctx.globals.xxx`
 
@@ -42,7 +42,7 @@ const user = ctx.globals.user;
 
 ### 2. 局部变量（ctx.extra）
 
-- **定义方式**：在模型层通过 `MyModel.defineExtraVars()` 定义，流程执行时通过 `applyFlow` 传入。
+- **定义方式**：在模型层通过 `MyModel.defineExtraVars()` 声明类型，流程执行时通过 `applyFlow` 传入。
 - **适用场景**：当前数据、选中记录等与本次流程强相关的临时数据，只读。
 - **访问方式**：`ctx.extra.xxx`
 
@@ -67,7 +67,7 @@ const record = ctx.extra.currentRecord;
 
 ### 3. 流程共享变量（ctx.shared）
 
-- **定义方式**：在流程定义时通过 `defineFlow({ shared })` 声明。
+- **定义方式**：在流程定义时通过 `defineFlow({ shared })` 声明类型。
 - **适用场景**：流程内多步骤共享的数据，可读可写。
 - **访问方式**：`ctx.shared.xxx`
 
