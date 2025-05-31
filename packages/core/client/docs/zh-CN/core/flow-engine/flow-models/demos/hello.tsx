@@ -1,5 +1,5 @@
 import { Application, Plugin } from '@nocobase/client';
-import { FlowModel, FlowModelComponent } from '@nocobase/flow-engine';
+import { FlowModel, FlowModelRenderer } from '@nocobase/flow-engine';
 import React from 'react';
 
 class HelloFlowModel extends FlowModel {
@@ -19,7 +19,7 @@ class PluginHelloModel extends Plugin {
         name: 'NocoBase',
       },
     });
-    this.router.add('root', { path: '/', element: <FlowModelComponent model={model} /> });
+    this.router.add('root', { path: '/', element: <FlowModelRenderer model={model} /> });
   }
 }
 

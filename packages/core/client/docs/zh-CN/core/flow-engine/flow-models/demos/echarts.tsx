@@ -1,6 +1,6 @@
 import { Input } from '@formily/antd-v5';
 import { Application, Plugin } from '@nocobase/client';
-import { FlowModel, FlowModelComponent, FlowsSettings } from '@nocobase/flow-engine';
+import { FlowModel, FlowModelRenderer, FlowsSettings } from '@nocobase/flow-engine';
 import { Card } from 'antd';
 import React, { createRef } from 'react';
 
@@ -110,7 +110,7 @@ class PluginHelloModel extends Plugin {
       path: '/',
       element: (
         <div>
-          <FlowModelComponent model={model} />
+          <FlowModelRenderer model={model} />
           <br />
           <FlowsSettings model={model} />
         </div>

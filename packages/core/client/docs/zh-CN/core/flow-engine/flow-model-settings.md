@@ -6,7 +6,7 @@
 
 ## 常见用法
 
-除了和 FlowModelComponent 集成，也可以单独使用，例如：
+除了和 FlowModelRenderer 集成，也可以单独使用，例如：
 
 ### 悬浮菜单
 

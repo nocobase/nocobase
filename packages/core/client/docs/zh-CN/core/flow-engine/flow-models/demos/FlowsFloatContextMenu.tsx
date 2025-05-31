@@ -1,6 +1,6 @@
 import { Input } from '@formily/antd-v5';
 import { Application, Plugin } from '@nocobase/client';
-import { FlowModel, FlowModelComponent, FlowsFloatContextMenu, FlowsSettings } from '@nocobase/flow-engine';
+import { FlowModel, FlowModelRenderer, FlowsFloatContextMenu, FlowsSettings } from '@nocobase/flow-engine';
 import { Card } from 'antd';
 import React from 'react';
 
@@ -51,7 +51,7 @@ class PluginHelloModel extends Plugin {
       element: (
         <div>
           <FlowsFloatContextMenu model={model}>
-            <FlowModelComponent model={model} />
+            <FlowModelRenderer model={model} />
           </FlowsFloatContextMenu>
         </div>
       ),

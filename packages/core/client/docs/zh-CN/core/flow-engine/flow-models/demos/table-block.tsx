@@ -1,7 +1,7 @@
 import { observable } from '@formily/reactive';
 import { uid } from '@formily/shared';
 import { Application, Plugin } from '@nocobase/client';
-import { FlowModel, FlowModelComponent } from '@nocobase/flow-engine';
+import { FlowModel, FlowModelRenderer } from '@nocobase/flow-engine';
 import { Button, Dropdown, Space, Table, Tabs } from 'antd';
 import React from 'react';
 
@@ -98,7 +98,7 @@ class TableBlockFlowModel extends FlowModel {
     return (
       <Space>
         {this.actions.map((action) => {
-          return <FlowModelComponent key={action.uid} model={action} />;
+          return <FlowModelRenderer key={action.uid} model={action} />;
         })}
         <Dropdown
           menu={{
@@ -212,7 +212,7 @@ class PluginTableBlockModel extends Plugin {
         },
       },
     });
-    this.router.add('root', { path: '/', element: <FlowModelComponent model={model} /> });
+    this.router.add('root', { path: '/', element: <FlowModelRenderer model={model} /> });
   }
 }
 

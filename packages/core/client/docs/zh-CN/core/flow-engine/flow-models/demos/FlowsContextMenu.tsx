@@ -2,7 +2,7 @@ import { Input } from '@formily/antd-v5';
 import { Application, Plugin } from '@nocobase/client';
 import {
   FlowModel,
-  FlowModelComponent,
+  FlowModelRenderer,
   FlowsContextMenu,
   FlowsFloatContextMenu,
   FlowsSettings,
@@ -57,7 +57,7 @@ class PluginHelloModel extends Plugin {
       element: (
         <div>
           <FlowsContextMenu model={model}>
-            <FlowModelComponent model={model} />
+            <FlowModelRenderer model={model} />
           </FlowsContextMenu>
         </div>
       ),

@@ -1,7 +1,7 @@
 import { observable } from '@formily/reactive';
 import { uid } from '@formily/shared';
 import { Application, Plugin } from '@nocobase/client';
-import { FlowModel, FlowModelComponent } from '@nocobase/flow-engine';
+import { FlowModel, FlowModelRenderer } from '@nocobase/flow-engine';
 import { Button, Tabs } from 'antd';
 import React from 'react';
 
@@ -68,7 +68,7 @@ class PluginHelloModel extends Plugin {
         },
       ],
     });
-    this.router.add('root', { path: '/', element: <FlowModelComponent model={model} /> });
+    this.router.add('root', { path: '/', element: <FlowModelRenderer model={model} /> });
   }
 }
 
