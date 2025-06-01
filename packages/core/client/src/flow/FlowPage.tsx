@@ -14,10 +14,10 @@ import { FlowModelRenderer, useApplyAutoFlows, useFlowModel, withFlowModel } fro
 import { Button, Tabs } from 'antd';
 import React, { useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import { PageFlowModel } from './model';
+import { PageModel } from './model';
 
 export const FlowPage = () => {
   const params = useParams();
-  const model = useFlowModel<PageFlowModel>(params.name);
+  const model = useFlowModel<PageModel>(params.name);
   return <FlowModelRenderer model={model} />;
 };

@@ -39,7 +39,7 @@ export class PageModel extends FlowModel {
     });
 
     this.tabs.push(model);
-
+    model.applyAutoFlows();
     // 如果是第一个tab，设置为当前tab并激活
     if (this.tabs.length === 1) {
       await this.setCurrentTab(model);
@@ -51,7 +51,6 @@ export class PageModel extends FlowModel {
   async setCurrentTab(tab: TabModel) {
     console.log('PageModel.setCurrentTab: Setting current tab to:', tab.uid);
     this.currentTab = tab;
-    this.applyAutoFlows();
     // 触发 tab 的 onActive 事件
     tab.dispatchEvent('onActive');
     console.log('PageModel.setCurrentTab: Tab activated:', tab.uid);
@@ -92,13 +91,12 @@ export class PageModel extends FlowModel {
         {/* 标签页内容 */}
         <div style={{ padding: '16px 0' }}>
           <Tabs
-            activeKey={this.currentTab?.uid}
             onChange={async (activeKey) => {
               console.log('PageModel.Tabs.onChange: Switching to tab:', activeKey);
               const tab = this.tabs.find((t) => t.uid === activeKey);
               if (tab) {
                 console.log('PageModel.Tabs.onChange: Found tab:', tab.uid);
-                await this.setCurrentTab(tab);
+                this.setCurrentTab(tab);
               } else {
                 console.log('PageModel.Tabs.onChange: Tab not found for key:', activeKey);
               }
