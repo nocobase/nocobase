@@ -7,5 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-// Re-export all models from the models directory
-export { BlockModel, GridModel, TabModel, PageModel } from './models';
+export { BlockModel } from './blockModel';
+export { GridModel } from './gridModel';
+export { TabModel } from './tabModel';
+export { PageModel } from './pageModel';

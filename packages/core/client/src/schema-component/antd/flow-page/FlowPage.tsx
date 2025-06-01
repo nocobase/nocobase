@@ -7,60 +7,116 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React from 'react';
-import { Card, Typography } from 'antd';
+import React, { useEffect, useState } from 'react';
+import { Card, Typography, Spin } from 'antd';
 import { useTranslation } from 'react-i18next';
-import { createStyles } from 'antd-style';
+import { FlowModelRenderer, useFlowModel } from '@nocobase/flow-engine';
+import { uid } from '@formily/shared';
+import { PageModel } from '../../../flow/model';
+import { getPages, FlowPageConfig } from '../../../flow/data';
+import { useParams } from 'react-router-dom';
+import { useStyles as usePageStyles } from '../page/Page.style';
 
 const { Title, Paragraph } = Typography;
-
-const useStyles = createStyles(({ token }) => ({
-  flowPageContainer: {
-    padding: token.padding,
-    minHeight: '100vh',
-    backgroundColor: token.colorBgContainer,
-  },
-  flowPageCard: {
-    maxWidth: 800,
-    margin: '0 auto',
-    marginTop: token.marginLG,
-  },
-  flowPageHeader: {
-    textAlign: 'center',
-    marginBottom: token.marginLG,
-  },
-  flowPageContent: {
-    textAlign: 'center',
-    color: token.colorTextSecondary,
-  },
-}));
 
 export interface FlowPageProps {
   title?: string;
   description?: string;
+  modelUid?: string;
+  tabs?: Array<{
+    title: string;
+    content?: string;
+  }>;
 }
 
 export const FlowPage: React.FC<FlowPageProps> = (props) => {
-  const { title, description } = props;
+  const { modelUid } = props;
   const { t } = useTranslation();
-  const { styles } = useStyles();
+  const { hashId, componentCls } = usePageStyles();
+  const params = useParams();
+  const [flowPageConfig, setFlowPageConfig] = useState<FlowPageConfig | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  const actualModelUid = modelUid || params.name;
+
+  useEffect(() => {
+    const loadFlowPageConfig = async () => {
+      if (actualModelUid) {
+        setLoading(true);
+        try {
+          const configs = getPages({ uid: actualModelUid });
+          const config = configs.length > 0 ? configs[0] : null;
+          setFlowPageConfig(config);
+        } catch (error) {
+          console.error('Failed to load FlowPage config:', error);
+          setFlowPageConfig(null);
+        } finally {
+          setLoading(false);
+        }
+      } else {
+        setLoading(false);
+      }
+    };
+
+    loadFlowPageConfig();
+  }, [actualModelUid]);
+
+  const model = useFlowModel<PageModel>(actualModelUid || uid(), 'PageModel', flowPageConfig?.stepParams);
+
+  if (!actualModelUid) {
+    return (
+      <div className={`${componentCls} ${hashId}`}>
+        <div className="nb-page-wrapper">
+          <Card>
+            <div style={{ textAlign: 'center', padding: '50px' }}>
+              <Title level={4} type="danger">
+                {t('Error')}
+              </Title>
+              <Paragraph>{t('No Flow Page ID provided')}</Paragraph>
+            </div>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
+  if (loading) {
+    return (
+      <div className={`${componentCls} ${hashId}`}>
+        <div className="nb-page-wrapper">
+          <Card>
+            <div style={{ textAlign: 'center', padding: '50px' }}>
+              <Spin size="large" />
+              <Paragraph style={{ marginTop: '16px' }}>{t('Loading Flow Page...')}</Paragraph>
+            </div>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
+  if (!flowPageConfig) {
+    return (
+      <div className={`${componentCls} ${hashId}`}>
+        <div className="nb-page-wrapper">
+          <Card>
+            <div style={{ textAlign: 'center', padding: '50px' }}>
+              <Title level={4} type="warning">
+                {t('Not Found')}
+              </Title>
+              <Paragraph>{t('Flow Page configuration not found for ID: {{id}}', { id: actualModelUid })}</Paragraph>
+            </div>
+          </Card>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className={styles.flowPageContainer}>
-      <Card className={styles.flowPageCard}>
-        <div className={styles.flowPageHeader}>
-          <Title level={2}>{title || t('Flow Page')}</Title>
-        </div>
-        <div className={styles.flowPageContent}>
-          <Paragraph>
-            {description ||
-              t('This is a Flow Page component. You can customize it to display workflow-related content.')}
-          </Paragraph>
-          <Paragraph type="secondary">
-            {t('Flow pages are designed to handle workflow processes and can be extended with custom functionality.')}
-          </Paragraph>
-        </div>
-      </Card>
+    <div className={`${componentCls} ${hashId}`}>
+      <div className="nb-page-wrapper">
+        <FlowModelRenderer model={model} />
+      </div>
     </div>
   );
 };

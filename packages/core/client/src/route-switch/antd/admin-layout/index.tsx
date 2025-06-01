@@ -58,6 +58,7 @@ import { userCenterSettings } from './userCenterSettings';
 import { navigateWithinSelf } from '../../../block-provider/hooks';
 import { useNavigateNoUpdate } from '../../../application/CustomRouterContextProvider';
 import { createStyles } from 'antd-style';
+import { FlowPage } from '../../../schema-component/antd/flow-page';
 
 export { KeepAlive, NocoBaseDesktopRouteType, useKeepAlive };
 
@@ -145,12 +146,22 @@ export const AdminDynamicPage = () => {
     return <AppNotFound />;
   }
 
+  // 检查是否是 FlowPage 类型
+  const currentRoute = findRouteBySchemaUid(currentPageUid, allAccessRoutes);
+  const isFlowPage = currentRoute?.type === NocoBaseDesktopRouteType.flowPage;
+
   return (
     <KeepAlive uid={currentPageUid}>
       {(uid) => (
         <CurrentPageUidContext.Provider value={uid}>
           <CurrentRouteProvider uid={uid}>
-            <RemoteSchemaComponent uid={uid} />
+            {isFlowPage ? (
+              // 对于 FlowPage，直接渲染 FlowPage 组件，不从后端获取 schema
+              <FlowPage modelUid={uid} />
+            ) : (
+              // 对于普通页面，使用 RemoteSchemaComponent 从后端获取 schema
+              <RemoteSchemaComponent uid={uid} />
+            )}
           </CurrentRouteProvider>
         </CurrentPageUidContext.Provider>
       )}

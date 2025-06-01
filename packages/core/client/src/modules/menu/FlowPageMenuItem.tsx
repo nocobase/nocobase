@@ -8,12 +8,11 @@
  */
 
 import { FormLayout } from '@formily/antd-v5';
-import { ISchema, SchemaOptionsContext } from '@formily/react';
+import { SchemaOptionsContext } from '@formily/react';
 import { uid } from '@formily/shared';
 import React, { useCallback, useContext } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useAPIClient } from '../../api-client/hooks/useAPIClient';
-import { SchemaInitializerItem } from '../../application';
+import { SchemaInitializerItem, useApp } from '../../application';
 import { useGlobalTheme } from '../../global-theme';
 import { NocoBaseDesktopRouteType } from '../../route-switch/antd/admin-layout/convertRoutesToSchema';
 import {
@@ -24,20 +23,7 @@ import {
   useParentRoute,
 } from '../../schema-component';
 import { useStyles } from '../../schema-component/antd/menu/MenuItemInitializers';
-
-const useInsertFlowPageSchema = () => {
-  const api = useAPIClient();
-  return useCallback(
-    async (schema: ISchema) => {
-      await api.request({
-        method: 'POST',
-        url: '/uiSchemas:insert',
-        data: schema,
-      });
-    },
-    [api],
-  );
-};
+import { createPage } from '../../flow';
 
 export const FlowPageMenuItem = () => {
   const { t } = useTranslation();
@@ -46,11 +32,11 @@ export const FlowPageMenuItem = () => {
   const { componentCls, hashId } = useStyles();
   const parentRoute = useParentRoute();
   const { createRoute } = useNocoBaseRoutes();
-  const insertPageSchema = useInsertFlowPageSchema();
+  const app = useApp();
 
   const handleClick = useCallback(async () => {
     const values = await FormDialog(
-      t('Add page'),
+      t('Add Flow Page'),
       () => {
         return (
           <SchemaComponentOptions scope={options.scope} components={{ ...options.components }}>
@@ -80,46 +66,45 @@ export const FlowPageMenuItem = () => {
     ).open({
       initialValues: {},
     });
-    const menuSchemaUid = uid();
-    const pageSchemaUid = uid();
-    const tabSchemaUid = uid();
-    const tabSchemaName = uid();
 
-    // 创建一个路由到 desktopRoutes 表中
+    const flowPageConfig = createPage({
+      title: values.title,
+      route: {
+        tabs: [],
+      },
+    });
+
     await createRoute({
       type: NocoBaseDesktopRouteType.flowPage,
       title: values.title,
       icon: values.icon,
       parentId: parentRoute?.id,
-      schemaUid: pageSchemaUid,
-      menuSchemaUid,
+      schemaUid: flowPageConfig.uid,
+      menuSchemaUid: uid(),
       enableTabs: false,
-      children: [
-        {
-          type: NocoBaseDesktopRouteType.tabs,
-          schemaUid: tabSchemaUid,
-          tabSchemaName,
-          hidden: true,
-        },
-      ],
     });
+  }, [createRoute, options?.components, options?.scope, parentRoute?.id, t, theme, app]);
 
-    // 同时插入一个对应的 Schema
-    insertPageSchema(getFlowPageMenuSchema({ pageSchemaUid, tabSchemaUid, tabSchemaName }));
-  }, [createRoute, insertPageSchema, options?.components, options?.scope, parentRoute?.id, t, theme]);
   return <SchemaInitializerItem title={t('Flow page')} onClick={handleClick} className={`${componentCls} ${hashId}`} />;
 };
 
 export function getFlowPageMenuSchema({
   pageSchemaUid,
+  title,
 }: {
   pageSchemaUid: string;
   tabSchemaUid?: string;
   tabSchemaName?: string;
+  title?: string;
 }) {
   return {
     type: 'void',
     'x-component': 'FlowPage',
+    'x-component-props': {
+      title: title || 'Flow Page',
+      modelUid: pageSchemaUid,
+      tabs: [{ title: 'Tab1', content: '' }],
+    },
     'x-uid': pageSchemaUid,
   };
 }
