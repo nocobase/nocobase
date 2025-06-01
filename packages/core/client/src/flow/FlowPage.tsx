@@ -15,7 +15,7 @@ import { useParams } from 'react-router-dom';
 
 function InternalFlowPage({ uid }) {
   const model = useFlowModel(uid);
-  return <FlowModelRenderer model={model} />;
+  return <FlowModelRenderer model={model} showFlowSettings />;
 }
 
 export const FlowPage = () => {
@@ -26,6 +26,41 @@ export const FlowPage = () => {
       return flowEngine.loadOrCreateModel({
         uid: params.name,
         use: 'PageFlowModel',
+        stepParams: {},
+        tabs: [
+          {
+            use: 'PageTabFlowModel',
+            stepParams: {},
+            grid: {
+              use: 'GridFlowModel',
+              stepParams: {},
+              items: [
+                {
+                  use: 'HtmlBlockFlowModel',
+                  stepParams: {
+                    default: {
+                      step1: {
+                        html: `<h1>Hello, NocoBase!</h1>
+<p>This is a simple HTML content rendered by FlowModel.</p>`,
+                      },
+                    },
+                  },
+                },
+                {
+                  use: 'HtmlBlockFlowModel',
+                  stepParams: {
+                    default: {
+                      step1: {
+                        html: `<h1>Hello, NocoBase!</h1>
+<p>This is a simple HTML content rendered by FlowModel.</p>`,
+                      },
+                    },
+                  },
+                },
+              ],
+            },
+          },
+        ],
       });
     },
     {

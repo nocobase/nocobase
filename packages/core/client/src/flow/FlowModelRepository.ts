@@ -29,9 +29,12 @@ export class MockFlowModelRepository implements IFlowModelRepository<FlowModel> 
   // 从本地存储加载模型数据
   async load(uid: string) {
     const data = localStorage.getItem(`flow-model:${uid}`);
-    if (!data) return null;
+    if (!data) {
+      console.warn(`Model with uid ${uid} not found in localStorage.`);
+      return null;
+    }
     const json = JSON.parse(data);
-    for (const model of this.models.values()) {
+    for (const model of [...this.models.values()]) {
       if (model.parentId === uid) {
         if (model.subType === 'array') {
           json[model.subKey] = json[model.subKey] || [];
@@ -43,6 +46,7 @@ export class MockFlowModelRepository implements IFlowModelRepository<FlowModel> 
         }
       }
     }
+    console.log('Loading model:', uid, JSON.stringify(json, null, 2));
     return json;
   }
 
@@ -51,14 +55,15 @@ export class MockFlowModelRepository implements IFlowModelRepository<FlowModel> 
     const data = model.serialize();
     const currentData = _.omit(data, [...model.subModelKeys]);
     localStorage.setItem(`flow-model:${model.uid}`, JSON.stringify(currentData));
+    console.log('Saving model:', model.uid, currentData);
     for (const subModelKey of model.subModelKeys) {
       if (!model[subModelKey]) continue;
       if (Array.isArray(model[subModelKey])) {
-        model[subModelKey].forEach((subModel: FlowModel) => {
-          localStorage.setItem(`flow-model:${subModel.uid}`, JSON.stringify(subModel.serialize()));
-        });
+        for (const subModel of model[subModelKey]) {
+          await this.save(subModel);
+        }
       } else if (model[subModelKey] instanceof FlowModel) {
-        localStorage.setItem(`flow-model:${model[subModelKey].uid}`, JSON.stringify(model[subModelKey].serialize()));
+        await this.save(model[subModelKey]);
       }
     }
     return data;
