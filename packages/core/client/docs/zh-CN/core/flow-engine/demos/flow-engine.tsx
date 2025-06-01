@@ -13,7 +13,7 @@ class FlowModelRepository implements IFlowModelRepository<FlowModel> {
 
   async save(model: FlowModel) {
     // 假设 model 有 toJSON 方法
-    localStorage.setItem(`flow-model:${model.uid}`, JSON.stringify(model.toJSON()));
+    localStorage.setItem(`flow-model:${model.uid}`, JSON.stringify(model.serialize()));
     console.log('Saving model:', model);
     return model;
   }
@@ -68,7 +68,7 @@ class PluginHelloModel extends Plugin {
     });
     this.router.add('root', {
       path: '/',
-      element: <FlowModelRenderer showFlowSettings flowSettingsVariant="contextMenu" model={model} />,
+      element: <FlowModelRenderer model={model} showFlowSettings />,
     });
   }
 }

@@ -7,12 +7,12 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useState, useEffect, useCallback } from 'react';
-import { Form, Alert, Button, Space, Input, Select, InputNumber, Switch } from 'antd';
+import { observer } from '@formily/react';
+import { Alert, Button, Form, Input, InputNumber, Select, Space, Switch } from 'antd';
+import React, { useCallback, useEffect, useState } from 'react';
+import { useFlowModel } from '../../../../hooks';
 import { FlowModel } from '../../../../models';
 import { ActionStepDefinition } from '../../../../types';
-import { useFlowModel } from '../../../../hooks';
-import { observer } from '@formily/react';
 
 // 创建两个组件版本，一个使用props传递的model，一个使用hook获取model
 interface ModelProvidedProps {
@@ -148,6 +148,8 @@ const FlowSettingsContent: React.FC<FlowSettingsContentProps> = observer(
             model.setStepParams(flowKey, stepKey, stepValues);
           }
         });
+
+        await model.save(); // 确保保存到后端或持久化存储
 
         // 调用外部保存回调
         onSave?.(values);

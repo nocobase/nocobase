@@ -509,7 +509,7 @@ export class FlowModel {
   }
 
   // TODO: 不完整，需要考虑 sub-model 的情况
-  toJSON(): Record<string, any> {
+  serialize(): Record<string, any> {
     return {
       uid: this.uid,
       ...this.options,
