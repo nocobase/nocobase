@@ -121,6 +121,7 @@ export const WorkflowTodo: React.FC & {
                   'x-use-component-props': 'useFilterActionProps',
                   'x-component-props': {
                     icon: 'FilterOutlined',
+                    nonfilterable: ['workflow.type', 'workflow.mode', 'workflow.description', 'workflow.categories'],
                   },
                   default: {
                     $and: [{ title: { $includes: '' } }, { 'workflow.title': { $includes: '' } }],
