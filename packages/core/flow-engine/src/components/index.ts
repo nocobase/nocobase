@@ -7,5 +7,5 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export * from './FlowModelComponent';
+export * from './FlowModelRenderer';
 export * from './settings';

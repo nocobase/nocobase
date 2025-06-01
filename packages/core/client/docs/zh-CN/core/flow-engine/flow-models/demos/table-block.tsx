@@ -1,7 +1,7 @@
 import { observable } from '@formily/reactive';
 import { uid } from '@formily/shared';
 import { Application, Plugin } from '@nocobase/client';
-import { FlowModel, FlowModelComponent } from '@nocobase/flow-engine';
+import { FlowModel, FlowModelRenderer } from '@nocobase/flow-engine';
 import { Button, Dropdown, Space, Table, Tabs } from 'antd';
 import React from 'react';
 
@@ -37,8 +37,8 @@ class TableColumnFlowModel extends FlowModel {
 }
 
 class TableBlockFlowModel extends FlowModel {
-  actions: Array<ActionFlowModel> = observable([]);
-  columns: Array<TableColumnFlowModel> = observable([]);
+  actions: Array<ActionFlowModel> = observable.shallow([]);
+  columns: Array<TableColumnFlowModel> = observable.shallow([]);
 
   onInit(options: any) {
     const { actions = [], columns = [] } = options;
@@ -51,8 +51,7 @@ class TableBlockFlowModel extends FlowModel {
   }
 
   addColumn(column) {
-    const model = this.createSubModel(column);
-    this.columns.push(model);
+    return this.addSubModel('columns', column);
   }
 
   getColumns() {
@@ -92,15 +91,14 @@ class TableBlockFlowModel extends FlowModel {
   }
 
   addAction(action) {
-    const model = this.createSubModel(action);
-    this.actions.push(model);
+    return this.addSubModel('actions', action);
   }
 
   renderActions() {
     return (
       <Space>
         {this.actions.map((action) => {
-          return <FlowModelComponent key={action.uid} model={action} />;
+          return <FlowModelRenderer key={action.uid} model={action} />;
         })}
         <Dropdown
           menu={{
@@ -139,7 +137,7 @@ class TableBlockFlowModel extends FlowModel {
 }
 
 TableBlockFlowModel.registerFlow('defaultFlow', {
-  autoApply: true,
+  auto: true,
   steps: {
     step1: {
       uiSchema: {},
@@ -214,7 +212,7 @@ class PluginTableBlockModel extends Plugin {
         },
       },
     });
-    this.router.add('root', { path: '/', element: <FlowModelComponent model={model} /> });
+    this.router.add('root', { path: '/', element: <FlowModelRenderer model={model} /> });
   }
 }
 

@@ -1,5 +1,5 @@
 import { Application, Plugin } from '@nocobase/client';
-import { FlowModel, FlowModelComponent } from '@nocobase/flow-engine';
+import { FlowModel, FlowModelRenderer } from '@nocobase/flow-engine';
 import moment from 'moment';
 import React from 'react';
 import { Calendar, momentLocalizer } from 'react-big-calendar';
@@ -48,7 +48,7 @@ class PluginHelloModel extends Plugin {
         events,
       },
     });
-    this.router.add('root', { path: '/', element: <FlowModelComponent model={model} /> });
+    this.router.add('root', { path: '/', element: <FlowModelRenderer model={model} /> });
   }
 }
 

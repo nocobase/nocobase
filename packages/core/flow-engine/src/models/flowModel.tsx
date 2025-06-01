@@ -10,6 +10,7 @@
 import { action, define, observable } from '@formily/reactive';
 import _ from 'lodash';
 import React from 'react';
+import { uid } from 'uid/secure';
 import { FlowEngine } from '../flowEngine';
 import type {
   ActionStepDefinition,
@@ -31,11 +32,14 @@ export class FlowModel {
   public hidden: boolean;
   public stepParams: StepParams;
   public flowEngine: FlowEngine;
+  public parent: FlowModel | null = null;
   // TODO: 应该有一些类型，整个生命周期只执行一次，比如从后端加载配置，构造整个model树。
   // 后续model的更新不需要再重新加载了
 
-  constructor(options: { uid: string; props?: IModelComponentProps; stepParams?: Record<string, any> }) {
-    this.uid = options.uid || generateUid();
+  constructor(
+    protected options: { uid: string; use?: string; props?: IModelComponentProps; stepParams?: Record<string, any> },
+  ) {
+    this.uid = options.uid || uid();
     this.props = options.props || {};
     this.hidden = false;
     this.stepParams = options.stepParams || {};
@@ -53,10 +57,6 @@ export class FlowModel {
   }
 
   onInit(options): void {}
-
-  makeObservable(annotations: Record<string, any> = {}): void {
-    define(this, annotations);
-  }
 
   /**
    * 设置FlowEngine实例
@@ -427,7 +427,7 @@ export class FlowModel {
 
     // 过滤出自动流程并按 sort 排序
     const autoFlows = Array.from(allFlows.values())
-      .filter((flow) => flow.autoApply === true)
+      .filter((flow) => flow.auto === true)
       .sort((a, b) => (a.sort || 0) - (b.sort || 0));
 
     return autoFlows;
@@ -465,12 +465,66 @@ export class FlowModel {
    * @returns {React.ReactNode} The React node to render.
    */
   public render(): any {
-    console.warn('FlowModel.render() not implemented. Override in subclass for FlowModelComponent.');
+    console.warn('FlowModel.render() not implemented. Override in subclass for FlowModelRenderer.');
     // 默认返回一个空的div，子类可以覆盖这个方法来实现具体的渲染逻辑
-    return <div {...this.getProps()}></div>;
+    return <div {...this.props}></div>;
   }
 
-  createSubModel(options) {
-    return this.flowEngine.createModel({ ...options, parentId: this.uid });
+  setParent(parent: FlowModel): void {
+    if (!parent || !(parent instanceof FlowModel)) {
+      throw new Error('Parent must be an instance of FlowModel.');
+    }
+    this.parent = parent;
+  }
+
+  public subModelKeys = new Set<string>();
+
+  addSubModel(subKey: string, options) {
+    const model = this.flowEngine.createModel({ ...options, parentId: this.uid, subKey, subType: 'array' });
+    Array.isArray(this[subKey]) || (this[subKey] = observable.shallow([]));
+    this[subKey].push(model);
+    this.subModelKeys.add(subKey);
+    return model;
+  }
+
+  setSubModel(subKey: string, options) {
+    const model = this.flowEngine.createModel({ ...options, parentId: this.uid, subKey, subType: 'object' });
+    this[subKey] = model;
+    this.subModelKeys.add(subKey);
+    return model;
+  }
+
+  createRootModel(options) {
+    return this.flowEngine.createModel(options);
+  }
+
+  async save() {
+    if (!this.flowEngine) {
+      throw new Error('FlowEngine is not set on this model. Please set flowEngine before saving.');
+    }
+    return this.flowEngine.saveModel(this);
+  }
+
+  async destroy() {
+    if (!this.flowEngine) {
+      throw new Error('FlowEngine is not set on this model. Please set flowEngine before deleting.');
+    }
+    return this.flowEngine.destroyModel(this.uid);
+  }
+
+  // TODO: 不完整，需要考虑 sub-model 的情况
+  serialize(): Record<string, any> {
+    const data = {
+      uid: this.uid,
+      ...this.options,
+    };
+    for (const subModelKey of this.subModelKeys) {
+      if (Array.isArray(this[subModelKey])) {
+        data[subModelKey] = this[subModelKey].map((model: FlowModel) => model.serialize());
+      } else if (this[subModelKey] instanceof FlowModel) {
+        data[subModelKey] = this[subModelKey].serialize();
+      }
+    }
+    return data;
   }
 }

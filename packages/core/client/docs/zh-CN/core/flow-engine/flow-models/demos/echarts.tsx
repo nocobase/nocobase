@@ -1,6 +1,6 @@
 import { Input } from '@formily/antd-v5';
 import { Application, Plugin } from '@nocobase/client';
-import { FlowModel, FlowModelComponent, FlowsSettings } from '@nocobase/flow-engine';
+import { FlowModel, FlowModelRenderer, FlowsSettings } from '@nocobase/flow-engine';
 import { Card } from 'antd';
 import React, { createRef } from 'react';
 
@@ -26,13 +26,13 @@ class RefFlowModel extends FlowModel {
 }
 
 RefFlowModel.registerFlow('defaultFlow', {
-  autoApply: true,
+  auto: true,
   steps: {
     step0: {
       use: 'require',
       defaultParams: {
         paths: {
-          requireEcharts2: 'https://cdn.jsdelivr.net/npm/echarts@5.4.2/dist/echarts.min',
+          requireEcharts: 'https://cdn.jsdelivr.net/npm/echarts@5.4.2/dist/echarts.min',
         },
       },
     },
@@ -41,12 +41,15 @@ RefFlowModel.registerFlow('defaultFlow', {
         option: {
           type: 'string',
           title: 'ECharts 配置',
-          'x-component': Input.TextArea,
+          'x-component': 'Input.TextArea',
+          'x-component-props': {
+            autoSize: true,
+          },
         },
       },
       async handler(ctx, model: RefFlowModel, params) {
         waitForRefCallback(model.ref, async (el) => {
-          const echarts = await ctx.requireAsync('requireEcharts2');
+          const echarts = await ctx.requireAsync('requireEcharts');
           const chart = echarts.init(el);
           chart.setOption(JSON.parse(params.option));
         });
@@ -61,14 +64,13 @@ class PluginHelloModel extends Plugin {
     this.flowEngine.setContext({
       requireAsync: async (mod) => {
         return new Promise((resolve, reject) => {
-          this.app.requirejs.require([mod], (arg) => resolve(arg), reject);
+          this.app.requirejs.requirejs([mod], (arg) => resolve(arg), reject);
         });
       },
     });
     this.flowEngine.registerAction('require', {
       handler: (ctx, model, params) => {
-        this.app.requirejs.require.config({
-          // @ts-ignore
+        this.app.requirejs.requirejs.config({
           paths: params.paths,
         });
       },
@@ -79,23 +81,27 @@ class PluginHelloModel extends Plugin {
       stepParams: {
         defaultFlow: {
           step1: {
-            option: JSON.stringify({
-              title: {
-                text: 'ECharts 示例',
-              },
-              tooltip: {},
-              xAxis: {
-                data: ['衬衫', '羊毛衫', '雪纺衫', '裤子', '高跟鞋', '袜子'],
-              },
-              yAxis: {},
-              series: [
-                {
-                  name: '销量',
-                  type: 'bar',
-                  data: [5, 20, 36, 10, 10, 20],
+            option: JSON.stringify(
+              {
+                title: {
+                  text: 'ECharts 示例',
                 },
-              ],
-            }),
+                tooltip: {},
+                xAxis: {
+                  data: ['衬衫', '羊毛衫', '雪纺衫', '裤子', '高跟鞋', '袜子'],
+                },
+                yAxis: {},
+                series: [
+                  {
+                    name: '销量',
+                    type: 'bar',
+                    data: [5, 20, 36, 10, 10, 20],
+                  },
+                ],
+              },
+              null,
+              2,
+            ),
           },
         },
       },
@@ -104,7 +110,7 @@ class PluginHelloModel extends Plugin {
       path: '/',
       element: (
         <div>
-          <FlowModelComponent model={model} />
+          <FlowModelRenderer model={model} />
           <br />
           <FlowsSettings model={model} />
         </div>

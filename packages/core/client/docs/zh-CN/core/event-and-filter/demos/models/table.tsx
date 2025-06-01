@@ -11,6 +11,7 @@ import {
   FlowModel,
   useFlowModel,
   withFlowModel,
+  FlowsFloatContextMenu,
 } from '@nocobase/flow-engine';
 import { observer } from '@formily/react';
 
@@ -85,7 +86,8 @@ const ActionButton = withFlowModel(
   },
   {
     settings: {
-      component: FlowsContextMenu,
+      component: FlowsFloatContextMenu,
+      // component: FlowsContextMenu
     },
   },
 );
@@ -123,7 +125,7 @@ class DemoTableBlockModel extends BlockModel {
     this.registerFlow({
       key: 'setProps',
       title: '表格属性',
-      autoApply: true,
+      auto: true,
       steps: {
         setFields: {
           use: 'setTableFields',

@@ -2,7 +2,7 @@ import { FormButtonGroup, FormItem, Input, Submit } from '@formily/antd-v5';
 import { createForm, Form } from '@formily/core';
 import { createSchemaField, FormProvider, ISchema } from '@formily/react';
 import { Application, Plugin } from '@nocobase/client';
-import { FlowModel, FlowModelComponent, FlowsSettings } from '@nocobase/flow-engine';
+import { FlowModel, FlowModelRenderer, FlowsSettings } from '@nocobase/flow-engine';
 import { Card } from 'antd';
 import React from 'react';
 
@@ -68,7 +68,7 @@ class FormilyFlowModel extends FlowModel {
 }
 
 FormilyFlowModel.registerFlow('defaultFlow', {
-  autoApply: true,
+  auto: true,
   steps: {
     step1: {
       uiSchema: {
@@ -113,7 +113,7 @@ class PluginFormilyModel extends Plugin {
       path: '/',
       element: (
         <div>
-          <FlowModelComponent model={model} />
+          <FlowModelRenderer model={model} />
           <br />
           <FlowsSettings model={model} />
         </div>

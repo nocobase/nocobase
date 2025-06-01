@@ -1,6 +1,12 @@
 import { Input } from '@formily/antd-v5';
 import { Application, Plugin } from '@nocobase/client';
-import { FlowModel, FlowModelComponent, FlowsSettings } from '@nocobase/flow-engine';
+import {
+  FlowModel,
+  FlowModelRenderer,
+  FlowsContextMenu,
+  FlowsFloatContextMenu,
+  FlowsSettings,
+} from '@nocobase/flow-engine';
 import { Card } from 'antd';
 import React from 'react';
 
@@ -12,7 +18,7 @@ class HelloFlowModel extends FlowModel {
 }
 
 HelloFlowModel.registerFlow('defaultFlow', {
-  autoApply: true,
+  auto: true,
   steps: {
     step1: {
       uiSchema: {
@@ -50,9 +56,9 @@ class PluginHelloModel extends Plugin {
       path: '/',
       element: (
         <div>
-          <FlowModelComponent model={model} />
-          <br />
-          <FlowsSettings model={model} />
+          <FlowsContextMenu model={model}>
+            <FlowModelRenderer model={model} />
+          </FlowsContextMenu>
         </div>
       ),
     });

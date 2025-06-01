@@ -1,11 +1,24 @@
 import { Application, Plugin } from '@nocobase/client';
-import { FlowModel, FlowModelComponent } from '@nocobase/flow-engine';
+import { FlowModel, FlowModelRenderer } from '@nocobase/flow-engine';
+import { Input } from 'antd';
 import React from 'react';
 
 class HelloFlowModel extends FlowModel {
   render() {
     const { name } = this.props;
-    return <div>Hello {name}</div>;
+    return (
+      <div>
+        <div style={{ margin: 10 }}>
+          Hello <strong>{name}</strong>
+        </div>
+        <Input
+          defaultValue={name}
+          onChange={(e) => {
+            this.props.name = e.target.value;
+          }}
+        />
+      </div>
+    );
   }
 }
 
@@ -19,7 +32,7 @@ class PluginHelloModel extends Plugin {
         name: 'NocoBase',
       },
     });
-    this.router.add('root', { path: '/', element: <FlowModelComponent model={model} /> });
+    this.router.add('root', { path: '/', element: <FlowModelRenderer model={model} /> });
   }
 }
 

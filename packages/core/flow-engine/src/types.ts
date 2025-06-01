@@ -30,7 +30,7 @@ export interface FlowDefinition<TModel extends FlowModel = FlowModel> {
   /**
    * Whether this flow is a default flow that should be automatically executed
    */
-  autoApply?: boolean;
+  auto?: boolean;
   /**
    * Sort order for flow execution, lower numbers execute first
    * Defaults to 0, can be negative
@@ -50,7 +50,7 @@ export interface ExtendedFlowDefinition extends DeepPartial<FlowDefinition> {
   /**
    * Whether this flow is a default flow that should be automatically executed
    */
-  autoApply?: boolean;
+  auto?: boolean;
   /**
    * Sort order for flow execution, lower numbers execute first
    * Defaults to 0, can be negative
@@ -198,4 +198,9 @@ export interface CreateModelOptions {
   stepParams?: StepParams;
   [key: string]: any; // 允许额外的自定义选项
   // app?: Application; // Application 依赖已移除
+}
+export interface IFlowModelRepository<T extends FlowModel = FlowModel> {
+  load(uid: string): Promise<Record<string, any> | null>;
+  save(model: T): Promise<Record<string, any>>;
+  destroy(uid: string): Promise<boolean>;
 }

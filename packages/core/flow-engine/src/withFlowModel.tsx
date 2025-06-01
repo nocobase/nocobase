@@ -16,7 +16,7 @@ import { useFlowModel } from './hooks/useFlowModel';
 import { UserContext } from './types';
 
 // 基础组件props类型
-type BaseFlowModelComponentProps<P extends React.ComponentProps<any>> = {
+type BaseFlowModelRendererProps<P extends React.ComponentProps<any>> = {
   model?: FlowModel;
 } & {
   [key in keyof P]?: P[key];
@@ -154,7 +154,7 @@ function WithCreatedModel<P extends object>({
 
 // 内部组件实现 - 根据条件渲染不同的组件
 function WithFlowModelInternal<P extends object>(
-  props: BaseFlowModelComponentProps<P>,
+  props: BaseFlowModelRendererProps<P>,
   WrappedComponent: React.ComponentType<P>,
   options?: WithFlowModelOptions,
 ) {
@@ -221,7 +221,7 @@ export function withFlowModel<P extends object>(
   WrappedComponent: React.ComponentType<P>,
   options?: WithFlowModelOptions,
 ) {
-  const WithFlowModel = observer((props: BaseFlowModelComponentProps<P>) =>
+  const WithFlowModel = observer((props: BaseFlowModelRendererProps<P>) =>
     WithFlowModelInternal(props, WrappedComponent, options),
   );
 
