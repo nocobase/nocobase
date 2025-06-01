@@ -57,10 +57,10 @@
 ### 流程注册与执行
 
 - **static registerFlow(keyOrDefinition, flowDefinition?)**  
-  注册流程定义，支持字符串 key 或完整对象。
+  配置流程，支持字符串 key 或完整对象。
 
 - **static extendFlow(keyOrDefinition, extendDefinition?)**  
-  扩展/合并已有流程定义。
+  扩展/合并已有流程配置。
 
 - **applyFlow(flowKey: string, context?): Promise<any>**  
   执行指定流程。
@@ -72,10 +72,10 @@
   执行所有自动应用流程。
 
 - **getFlow(key: string): FlowDefinition \| undefined**  
-  获取指定 key 的流程定义。
+  获取指定 key 的流程配置。
 
 - **static getFlows(): Map<string, FlowDefinition>**  
-  获取所有已注册流程（含继承）。
+  获取所有已配置流程（含继承）。
 
 ---
 
@@ -131,7 +131,7 @@ class MyModel extends FlowModel {
   }
 }
 
-// 注册流程
+// 为 MyModel 配置流程
 MyModel.registerFlow({ key: 'default', steps: { ... } });
 
 // 创建实例

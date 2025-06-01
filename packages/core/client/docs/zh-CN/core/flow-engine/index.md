@@ -40,6 +40,9 @@
 - **async loadModel(uid: string): Promise<FlowModel \| null>**  
   从远程仓库加载模型数据，并创建本地实例。
 
+- **async loadOrCreateModel(options: CreateModelOptions): Promise\<FlowModel\>**  
+  从远程仓库加载模型，如果不存在则创建新模型实例并持久化。
+
 - **async saveModel(model: FlowModel): Promise<any>**  
   保存模型到远程仓库。
 
@@ -58,4 +61,4 @@
 
 ## 示例
 
-<code src="./demos/flow-engine.tsx"></code>
+<code src="./demos/quickstart.tsx"></code>

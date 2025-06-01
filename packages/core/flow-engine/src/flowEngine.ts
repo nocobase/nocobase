@@ -191,6 +191,18 @@ export class FlowEngine {
     return data?.uid ? this.createModel<T>(data as any) : null;
   }
 
+  async loadOrCreateModel<T extends FlowModel = FlowModel>(options): Promise<T | null> {
+    if (!this.ensureModelRepository()) return;
+    const data = await this.modelRepository.load(options.uid);
+    if (data?.uid) {
+      return this.createModel<T>(data as any);
+    } else {
+      const model = this.createModel<T>(options);
+      await model.save();
+      return model;
+    }
+  }
+
   async saveModel<T extends FlowModel = FlowModel>(model: T) {
     if (!this.ensureModelRepository()) return;
     return await this.modelRepository.save(model);
