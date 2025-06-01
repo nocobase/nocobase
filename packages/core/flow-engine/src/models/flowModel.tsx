@@ -36,7 +36,9 @@ export class FlowModel {
   // TODO: 应该有一些类型，整个生命周期只执行一次，比如从后端加载配置，构造整个model树。
   // 后续model的更新不需要再重新加载了
 
-  constructor(options: { uid: string; props?: IModelComponentProps; stepParams?: Record<string, any> }) {
+  constructor(
+    protected options: { uid: string; use?: string; props?: IModelComponentProps; stepParams?: Record<string, any> },
+  ) {
     this.uid = options.uid || uid();
     this.props = options.props || {};
     this.hidden = false;
@@ -504,5 +506,13 @@ export class FlowModel {
       throw new Error('FlowEngine is not set on this model. Please set flowEngine before deleting.');
     }
     return this.flowEngine.destroyModel(this.uid);
+  }
+
+  // TODO: 不完整，需要考虑 sub-model 的情况
+  toJSON(): Record<string, any> {
+    return {
+      uid: this.uid,
+      ...this.options,
+    };
   }
 }

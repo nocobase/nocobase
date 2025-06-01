@@ -56,28 +56,6 @@
 - **getAction(name: string): ActionDefinition \| undefined**  
   获取已注册的 Action 定义。
 
-## 主要示例
+## 示例
 
-```ts
-const flowEngine = new FlowEngine();
-
-// 注册模型类
-flowEngine.registerModels({ MyModel });
-
-// 创建模型实例
-const model = flowEngine.createModel({ use: 'MyModel', props: { ... } });
-
-// 获取本地模型
-const sameModel = flowEngine.getModel(model.uid);
-
-// 持久化操作
-flowEngine.setModelRepository(new ModelRepository());
-await flowEngine.saveModel(model);
-const loaded = await flowEngine.loadModel(model.uid);
-
-// 删除模型
-await flowEngine.destroyModel(model.uid);
-
-// 注册 Action
-flowEngine.registerAction('myAction', { handler: async (ctx, model, params) => { ... } });
-```
+<code src="./demos/flow-engine.tsx"></code>

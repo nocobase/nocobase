@@ -201,6 +201,6 @@ export interface CreateModelOptions {
 }
 export interface IFlowModelRepository<T extends FlowModel = FlowModel> {
   load(uid: string): Promise<Record<string, any> | null>;
-  save(model: T): Promise<T>;
+  save(model: T): Promise<Record<string, any>>;
   destroy(uid: string): Promise<boolean>;
 }
