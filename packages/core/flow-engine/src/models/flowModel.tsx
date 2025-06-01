@@ -477,16 +477,20 @@ export class FlowModel {
     this.parent = parent;
   }
 
-  addSubModel(sub: string, options) {
-    const model = this.flowEngine.createModel({ ...options, parentId: this.uid });
-    Array.isArray(this[sub]) || (this[sub] = observable.shallow([]));
-    this[sub].push(model);
+  public subModelKeys = new Set<string>();
+
+  addSubModel(subKey: string, options) {
+    const model = this.flowEngine.createModel({ ...options, parentId: this.uid, subKey, subType: 'array' });
+    Array.isArray(this[subKey]) || (this[subKey] = observable.shallow([]));
+    this[subKey].push(model);
+    this.subModelKeys.add(subKey);
     return model;
   }
 
-  setSubModel(sub: string, options) {
-    const model = this.flowEngine.createModel({ ...options, parentId: this.uid });
-    this[sub] = model;
+  setSubModel(subKey: string, options) {
+    const model = this.flowEngine.createModel({ ...options, parentId: this.uid, subKey, subType: 'object' });
+    this[subKey] = model;
+    this.subModelKeys.add(subKey);
     return model;
   }
 
@@ -510,9 +514,17 @@ export class FlowModel {
 
   // TODO: 不完整，需要考虑 sub-model 的情况
   serialize(): Record<string, any> {
-    return {
+    const data = {
       uid: this.uid,
       ...this.options,
     };
+    for (const subModelKey of this.subModelKeys) {
+      if (Array.isArray(this[subModelKey])) {
+        data[subModelKey] = this[subModelKey].map((model: FlowModel) => model.serialize());
+      } else if (this[subModelKey] instanceof FlowModel) {
+        data[subModelKey] = this[subModelKey].serialize();
+      }
+    }
+    return data;
   }
 }
