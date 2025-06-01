@@ -556,9 +556,17 @@ export const useFilterBlockActionProps = () => {
   actionField.data = actionField.data || {};
   const form = useForm();
 
+  // Clear the form validators. Filter forms don't need validators.
+  useEffect(() => {
+    form.query('*').forEach((field: Field) => {
+      if (field.validator) {
+        field.validator = null;
+      }
+    });
+  }, [form]);
+
   return {
     async onClick() {
-      await form.submit();
       actionField.data.loading = true;
       await doFilter();
       actionField.data.loading = false;
