@@ -7,106 +7,51 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { define, observable } from '@formily/reactive';
+import { observable } from '@formily/reactive';
 import { uid } from '@formily/shared';
-import { CreateModelOptions, FlowModel } from '@nocobase/flow-engine';
-import { useRequest } from 'ahooks';
+import { Application, Plugin } from '@nocobase/client';
+import { FlowModel, FlowModelRenderer, IFlowModelRepository } from '@nocobase/flow-engine';
 import { Button, Tabs } from 'antd';
+import _ from 'lodash';
 import React from 'react';
-
-export class GridFlowModel extends FlowModel {
-  render() {
-    return 'a';
-  }
-}
 
 export class TabFlowModel extends FlowModel {}
 
-TabFlowModel.registerFlow('defaultFlow', {
-  key: 'defaultFlow',
-  autoApply: true,
-  steps: {
-    step1: {
-      handler(ctx, model: TabFlowModel, params) {
-        model.setProps('key', model.uid);
-        model.setProps('label', params.title);
-        console.log('TabFlowModel', params);
-      },
-    },
-  },
-});
-
 export class PageFlowModel extends FlowModel {
-  tabs: Array<TabFlowModel> = observable([]);
+  tabs: Array<any>;
 
-  async addTab(tabOptions: Omit<CreateModelOptions, 'use'>, ctx?: any) {
-    const model = this.flowEngine.createModel({
-      use: 'TabFlowModel',
-      ...tabOptions,
+  onInit(options: any) {
+    const tabs = options.tabs || [];
+    this.tabs = observable.shallow([]);
+    tabs.forEach((tab: any) => {
+      this.addSubModel('tabs', tab);
     });
-    this.tabs.push(model);
-    await model.applyAutoFlows(ctx);
-    return model;
   }
 
-  getTabList(): any[] {
-    return this.tabs.map((tab) => tab.getProps());
+  addTab(tab: any) {
+    const model = this.addSubModel('tabs', tab);
+    model.save();
   }
 
   render() {
     return (
       <div>
-        {this.tabs.length}
         <Tabs
-          items={this.getTabList()}
+          items={this.tabs.map((tab) => tab.getProps())}
           tabBarExtraContent={
             <Button
-              onClick={async () => {
-                await this.addTab({
-                  stepParams: {
-                    defaultFlow: {
-                      step1: {
-                        title: `tab-${uid()}`,
-                      },
-                    },
-                  },
-                });
-              }}
+              onClick={() =>
+                this.addTab({
+                  use: 'TabFlowModel',
+                  props: { key: uid(), label: `Tab - ${uid()}` },
+                })
+              }
             >
-              Add tab
+              Add Tab
             </Button>
           }
         />
-        Page {this.uid}
       </div>
     );
   }
 }
-
-PageFlowModel.registerFlow('defaultFlow', {
-  autoApply: true,
-  steps: {
-    step1: {
-      async handler(ctx, model: PageFlowModel, params) {
-        await model.addTab({
-          stepParams: {
-            defaultFlow: {
-              step1: {
-                title: `tab-${uid()}`,
-              },
-            },
-          },
-        });
-        await model.addTab({
-          stepParams: {
-            defaultFlow: {
-              step1: {
-                title: `tab-${uid()}`,
-              },
-            },
-          },
-        });
-      },
-    },
-  },
-});
