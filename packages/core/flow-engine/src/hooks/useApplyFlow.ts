@@ -125,8 +125,9 @@ function useFlowExecutor<T, TModel extends FlowModel = FlowModel>(
     isMounted.current = true;
     return () => {
       isMounted.current = false;
+      flowEngineCache.delete(cacheKey);
     };
-  }, []);
+  }, [cacheKey]);
 
   useEffect(() => {
     let debounceTimer: NodeJS.Timeout | null = null;
