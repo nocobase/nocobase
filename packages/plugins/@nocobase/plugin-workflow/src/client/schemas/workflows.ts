@@ -152,7 +152,7 @@ export const workflowSchema: ISchema = {
                   },
                   'x-action': 'filter',
                   'x-component': 'Filter.Action',
-                  'x-use-component-props': 'useFilterActionProps',
+                  'x-use-component-props': 'cm.useFilterActionProps',
                   'x-component-props': {
                     icon: 'FilterOutlined',
                     nonfilterable: ['description', 'categories'],
