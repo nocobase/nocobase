@@ -34,6 +34,11 @@ import {
   useActionContext,
   useRequest,
   css,
+  useTableBlockContext,
+  SchemaComponentOptions,
+  useSchemaComponentContext,
+  useSchemaOptionsContext,
+  useDataBlockRequest,
 } from '@nocobase/client';
 import { createForm } from '@formily/core';
 import { lang, NAMESPACE } from './locale';
@@ -179,7 +184,8 @@ function CategoryMenu({ values, onEdit, onRemove }) {
 }
 
 export function CategoryTabs() {
-  const { run, setState, defaultRequest } = useResourceActionContext();
+  const { params } = useTableBlockContext();
+  const { run, setState } = useDataBlockRequest();
   const [activeKey, setActiveKey] = useState({ tab: 'all' });
   const [key, setKey] = useState(activeKey.tab);
   const compile = useCompile();
@@ -196,6 +202,7 @@ export function CategoryTabs() {
   });
   const [editing, setEditing] = useState(false);
   const form = useMemo(() => createForm(), []);
+  const mainSchema = useMemo(() => tableSchema.properties.main.toJSON(), [tableSchema]);
 
   const onEdit = useCallback(
     (item) => {
@@ -239,7 +246,7 @@ export function CategoryTabs() {
       .map((v) => {
         return {
           ...v,
-          schema: tableSchema.properties.main,
+          schema: mainSchema,
         };
       });
     !res.find((v) => v.id === 'all') &&
@@ -248,7 +255,7 @@ export function CategoryTabs() {
         id: 'all',
         sort: 0,
         closable: false,
-        schema: tableSchema.properties.main,
+        schema: mainSchema,
       });
     return res.map((item) => {
       return {
@@ -265,20 +272,25 @@ export function CategoryTabs() {
         closeIcon: <CategoryMenu values={item} onEdit={onEdit} onRemove={onRemove} />,
         children: (
           <Card variant="borderless" style={{ borderRadius: '0 0.5em 0.5em 0.5em' }}>
-            <RecursionField name={key} schema={item.schema} onlyRenderProperties />
+            <SchemaComponent
+              schema={{
+                name: key,
+                ...item.schema,
+              }}
+              onlyRenderProperties
+            />
           </Card>
         ),
       };
     });
-  }, [data?.data]);
+  }, [data?.data, key, onEdit, onRemove]);
 
   const onChange = useCallback(
     (key: string) => {
       setActiveKey({ tab: key });
       setKey(uid());
       if (key !== 'all') {
-        const prevFilter = defaultRequest?.params?.filter;
-        const filter = { $and: [prevFilter, { 'categories.id': key }] };
+        const filter = params.filter ? { $and: [params.filter, { 'categories.id': key }] } : { 'categories.id': key };
         run({ filter });
         setState?.({ categories: [+key], params: [{ filter }] });
       } else {
@@ -286,7 +298,7 @@ export function CategoryTabs() {
         setState?.({ categories: [], params: [] });
       }
     },
-    [defaultRequest?.params?.filter, run, setState],
+    [run, setState],
   );
 
   useEffect(() => {
@@ -405,7 +417,7 @@ export function CategoryTabs() {
 function useEditSubmit() {
   const form = useForm();
   const ctx = useActionContext();
-  const service = useResourceActionContext();
+  const { service } = useTableBlockContext();
   const { refresh } = useContext(CategoryTabsRequestContext);
 
   const api = useAPIClient();
@@ -431,7 +443,6 @@ function useFormProviderProps() {
 function useCreateSubmit() {
   const form = useForm();
   const { setVisible } = useActionContext();
-  // const service = useResourceActionContext();
   const { refresh } = useContext(CategoryTabsRequestContext);
   const api = useAPIClient();
   return {

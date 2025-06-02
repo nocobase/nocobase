@@ -113,27 +113,41 @@ export const workflowSchema: ISchema = {
   properties: {
     provider: {
       type: 'void',
-      'x-decorator': 'ResourceActionProvider',
+      'x-decorator': 'TableBlockProvider',
       'x-decorator-props': {
-        collection: workflowCollection,
-        resourceName: 'workflows',
-        request: {
-          resource: 'workflows',
-          action: 'list',
-          params: {
-            filter: {
-              current: true,
-            },
-            sort: ['-createdAt'],
-            except: ['config'],
+        collection: 'workflows',
+        action: 'list',
+        params: {
+          filter: {
+            current: true,
           },
+          sort: ['-createdAt'],
+          except: ['config'],
+          appends: ['categories', 'stats'],
         },
+        showIndex: true,
+        dragSort: false,
       },
+      // 'x-decorator': 'ResourceActionProvider',
+      // 'x-decorator-props': {
+      //   collection: workflowCollection,
+      //   resourceName: 'workflows',
+      //   request: {
+      //     resource: 'workflows',
+      //     action: 'list',
+      //     params: {
+      //       filter: {
+      //         current: true,
+      //       },
+      //       sort: ['-createdAt'],
+      //       except: ['config'],
+      //     },
+      //   },
+      // },
       'x-component': 'CategoryTabs',
       properties: {
         main: {
           type: 'void',
-          'x-component': 'CardItem',
           properties: {
             actions: {
               type: 'void',
@@ -152,7 +166,7 @@ export const workflowSchema: ISchema = {
                   },
                   'x-action': 'filter',
                   'x-component': 'Filter.Action',
-                  'x-use-component-props': 'cm.useFilterActionProps',
+                  'x-use-component-props': 'useFilterActionProps',
                   'x-component-props': {
                     icon: 'FilterOutlined',
                     nonfilterable: ['description', 'categories'],
@@ -186,9 +200,9 @@ export const workflowSchema: ISchema = {
                   type: 'void',
                   title: '{{t("Delete")}}',
                   'x-component': 'Action',
+                  'x-use-component-props': 'useBulkDestroyActionProps',
                   'x-component-props': {
                     icon: 'DeleteOutlined',
-                    useAction: '{{ cm.useBulkDestroyAction }}',
                     confirm: {
                       title: "{{t('Delete record')}}",
                       content: "{{t('Are you sure you want to delete it?')}}",
@@ -229,7 +243,7 @@ export const workflowSchema: ISchema = {
                               title: '{{ t("Cancel") }}',
                               'x-component': 'Action',
                               'x-component-props': {
-                                useAction: '{{ cm.useCancelAction }}',
+                                useAction: '{{ useCancelAction }}',
                               },
                             },
                             submit: {
@@ -237,7 +251,7 @@ export const workflowSchema: ISchema = {
                               'x-component': 'Action',
                               'x-component-props': {
                                 type: 'primary',
-                                useAction: '{{ cm.useCreateAction }}',
+                                useAction: '{{ useCreateAction }}',
                               },
                             },
                           },
@@ -250,19 +264,26 @@ export const workflowSchema: ISchema = {
             },
             table: {
               type: 'array',
-              'x-component': 'Table.Void',
+              'x-component': 'TableV2',
+              'x-use-component-props': 'useTableBlockProps',
               'x-component-props': {
                 rowKey: 'id',
                 rowSelection: {
                   type: 'checkbox',
                 },
-                useDataSource: '{{cm.useDataSourceFromRAC }}',
               },
+              // 'x-component-props': {
+              //   rowKey: 'id',
+              //   rowSelection: {
+              //     type: 'checkbox',
+              //   },
+              //   useDataSource: '{{cm.useDataSourceFromRAC }}',
+              // },
               properties: {
                 title: {
                   type: 'void',
-                  'x-decorator': 'Table.Column.Decorator',
-                  'x-component': 'Table.Column',
+                  'x-decorator': 'TableV2.Column.Decorator',
+                  'x-component': 'TableV2.Column',
                   title: `{{ t("Title") }}`,
                   properties: {
                     title: {
@@ -274,12 +295,13 @@ export const workflowSchema: ISchema = {
                 },
                 categories: {
                   type: 'void',
-                  'x-decorator': 'Table.Column.Decorator',
-                  'x-component': 'Table.Column',
+                  'x-decorator': 'TableV2.Column.Decorator',
+                  'x-component': 'TableV2.Column',
                   title: `{{ t("Category", { ns: "${NAMESPACE}" }) }}`,
                   properties: {
                     categories: {
-                      type: 'array',
+                      // QUESTION: why array not works?
+                      type: 'string',
                       'x-component': 'EnumerationField',
                       'x-component-props': {
                         multiple: true,
@@ -290,6 +312,7 @@ export const workflowSchema: ISchema = {
                         },
                       },
                       // 'x-collection-field': 'workflows.categories',
+                      // 'x-component': 'CollectionField',
                       // 'x-read-pretty': true,
                       // 'x-component-props': {
                       //   mode: 'Tag',
@@ -299,8 +322,8 @@ export const workflowSchema: ISchema = {
                 },
                 type: {
                   type: 'void',
-                  'x-decorator': 'Table.Column.Decorator',
-                  'x-component': 'Table.Column',
+                  'x-decorator': 'TableV2.Column.Decorator',
+                  'x-component': 'TableV2.Column',
                   title: `{{ t("Trigger type", { ns: "${NAMESPACE}" }) }}`,
                   properties: {
                     type: {
@@ -312,8 +335,8 @@ export const workflowSchema: ISchema = {
                 },
                 sync: {
                   type: 'void',
-                  'x-decorator': 'Table.Column.Decorator',
-                  'x-component': 'Table.Column',
+                  'x-decorator': 'TableV2.Column.Decorator',
+                  'x-component': 'TableV2.Column',
                   title: `{{ t("Execute mode", { ns: "${NAMESPACE}" }) }}`,
                   properties: {
                     sync: {
@@ -325,8 +348,8 @@ export const workflowSchema: ISchema = {
                 },
                 enabled: {
                   type: 'void',
-                  'x-decorator': 'Table.Column.Decorator',
-                  'x-component': 'Table.Column',
+                  'x-decorator': 'TableV2.Column.Decorator',
+                  'x-component': 'TableV2.Column',
                   title: `{{ t("Status", { ns: "${NAMESPACE}" }) }}`,
                   properties: {
                     enabled: {
@@ -339,8 +362,8 @@ export const workflowSchema: ISchema = {
                 },
                 'stats.executed': {
                   type: 'void',
-                  'x-decorator': 'Table.Column.Decorator',
-                  'x-component': 'Table.Column',
+                  'x-decorator': 'TableV2.Column.Decorator',
+                  'x-component': 'TableV2.Column',
                   title: `{{ t("Executed", { ns: "${NAMESPACE}" }) }}`,
                   properties: {
                     'stats.executed': {
@@ -360,8 +383,8 @@ export const workflowSchema: ISchema = {
                 actions: {
                   type: 'void',
                   title: '{{ t("Actions") }}',
-                  'x-decorator': 'Table.Column.Decorator',
-                  'x-component': 'Table.Column',
+                  'x-decorator': 'TableV2.Column.Decorator',
+                  'x-component': 'TableV2.Column',
                   properties: {
                     actions: {
                       type: 'void',
@@ -405,15 +428,15 @@ export const workflowSchema: ISchema = {
                                       title: '{{ t("Cancel") }}',
                                       'x-component': 'Action',
                                       'x-component-props': {
-                                        useAction: '{{ cm.useCancelAction }}',
+                                        useAction: '{{ useCancelAction }}',
                                       },
                                     },
                                     submit: {
                                       title: '{{ t("Submit") }}',
                                       'x-component': 'Action',
+                                      'x-use-component-props': 'useUpdateActionProps',
                                       'x-component-props': {
                                         type: 'primary',
-                                        useAction: '{{ cm.useUpdateAction }}',
                                       },
                                     },
                                   },
@@ -460,7 +483,7 @@ export const workflowSchema: ISchema = {
                                       title: '{{t("Cancel")}}',
                                       'x-component': 'Action',
                                       'x-component-props': {
-                                        useAction: '{{ cm.useCancelAction }}',
+                                        useAction: '{{ useCancelAction }}',
                                       },
                                     },
                                   },
@@ -478,8 +501,8 @@ export const workflowSchema: ISchema = {
                               title: "{{t('Delete record')}}",
                               content: "{{t('Are you sure you want to delete it?')}}",
                             },
-                            useAction: '{{ cm.useDestroyActionAndRefreshCM }}',
                           },
+                          'x-use-component-props': 'useDestroyActionProps',
                         },
                       },
                     },

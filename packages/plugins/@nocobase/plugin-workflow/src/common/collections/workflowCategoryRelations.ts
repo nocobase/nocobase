@@ -23,7 +23,7 @@ export default {
       type: 'belongsTo',
       name: 'workflowCategory',
       target: 'workflowCategories',
-      foreignKey: 'workflowCategoryId',
+      foreignKey: 'categoryId',
     },
   ],
 };

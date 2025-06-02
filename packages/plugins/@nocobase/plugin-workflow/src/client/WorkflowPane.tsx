@@ -17,7 +17,12 @@ import {
   SchemaComponent,
   SchemaComponentContext,
   useActionContext,
+  useAPIClient,
   useApp,
+  useCancelAction,
+  useCollectionRecordData,
+  useDataBlock,
+  useDataBlockRequest,
   usePlugin,
   useRecord,
   useResourceActionContext,
@@ -31,11 +36,39 @@ import OpenDrawer from './components/OpenDrawer';
 import { workflowSchema } from './schemas/workflows';
 import { ExecutionStatusSelect, ExecutionStatusColumn } from './components/ExecutionStatus';
 import WorkflowPlugin, { ExecutionStatusOptions, RadioWithTooltip } from '.';
-import { useRefreshActionProps } from './hooks/useRefreshActionProps';
 import { useTranslation } from 'react-i18next';
 import { TriggerOptionRender } from './components/TriggerOptionRender';
 import { CategoryTabs } from './WorkflowCategoryTabs';
 import { EnumerationField } from './components/EmunerationField';
+
+function useCreateAction(actionCallback?: (values: any) => void) {
+  const form = useForm();
+  const field = useField();
+  const ctx = useActionContext();
+  const { refresh } = useDataBlockRequest();
+  const api = useAPIClient();
+  return {
+    async run() {
+      try {
+        await form.submit();
+        field.data = field.data || {};
+        field.data.loading = true;
+        const res = await api.resource('workflows').create({ values: form.values });
+        ctx.setVisible(false);
+        actionCallback?.(res?.data?.data);
+        await form.reset();
+        field.data.loading = false;
+        refresh();
+      } catch (error) {
+        console.error(error);
+      } finally {
+        if (field.data) {
+          field.data.loading = false;
+        }
+      }
+    },
+  };
+}
 
 function SyncOptionSelect(props) {
   const field = useField<any>();
@@ -92,10 +125,10 @@ function useSyncAction() {
 function useRevisionAction() {
   const { message } = App.useApp();
   const { t } = useTranslation();
-  const { refresh } = useResourceActionContext();
-  const { resource, targetKey } = useResourceContext();
+  const { refresh } = useDataBlockRequest();
+  const api = useAPIClient();
+  const { id } = useCollectionRecordData();
   const { setVisible } = useActionContext();
-  const { [targetKey]: filterByTk } = useRecord();
   const form = useForm();
   const field = useField();
 
@@ -105,7 +138,7 @@ function useRevisionAction() {
         await form.submit();
         field.data = field.data || {};
         field.data.loading = true;
-        await resource.revision({ filterByTk, values: form.values });
+        await api.resource('workflows').revision({ filterByTk: id, values: form.values });
         message.success(t('Operation succeeded'));
         refresh();
         setVisible(false);
@@ -141,13 +174,13 @@ export function WorkflowPane() {
           EnumerationField,
         }}
         scope={{
+          useCancelAction,
+          useCreateAction,
           useTriggersOptions,
           useWorkflowSyncReaction,
           useSyncAction,
-          useRefreshActionProps,
           useRevisionAction,
           TriggerOptionRender,
-          // ExecutedLink,
           ExecutionStatusOptions,
         }}
       />
