@@ -26,36 +26,13 @@ export const FlowPage = () => {
       return flowEngine.loadOrCreateModel({
         uid: params.name,
         use: 'PageFlowModel',
+        stepParams: {},
         tabs: [
           {
             use: 'PageTabFlowModel',
             // stepParams: {},
             grid: {
               use: 'BlockGridFlowModel',
-              items: [
-                {
-                  use: 'HtmlBlockFlowModel',
-                  stepParams: {
-                    default: {
-                      step1: {
-                        html: `<h1>Hello, NocoBase!</h1>
-<p>This is a simple HTML content rendered by FlowModel.</p>`,
-                      },
-                    },
-                  },
-                },
-                {
-                  use: 'HtmlBlockFlowModel',
-                  stepParams: {
-                    default: {
-                      step1: {
-                        html: `<h1>Hello, NocoBase!</h1>
-<p>This is a simple HTML content rendered by FlowModel.</p>`,
-                      },
-                    },
-                  },
-                },
-              ],
             },
           },
         ],
