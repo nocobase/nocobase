@@ -34,7 +34,7 @@ PageTabFlowModel.registerFlow({
   auto: true,
   steps: {
     step1: {
-      async handler(ctx, model: PageTabFlowModel, params) {
+      async handler(ctx, params) {
         // model.setProps('label', `Tab123 - ${model.uid}`);
         // model.setProps('children', model.renderChildren());
       },
