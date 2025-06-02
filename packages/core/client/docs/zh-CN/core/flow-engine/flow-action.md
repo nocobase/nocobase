@@ -36,12 +36,12 @@ const myAction = defineAction({
 });
 ```
 
-### 2. 继承 FlowAction 类
+### 2. 实现 ActionDefinition 接口
 
 适合需要扩展属性或方法的场景：
 
 ```ts
-class MyAction extends FlowAction {
+class MyAction implements ActionDefinition {
   name = 'actionName';
   title = '操作显示名称';
   uiSchema = {};

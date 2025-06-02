@@ -101,7 +101,7 @@ MyFlowModel.registerFlow(new MyFlowDefinition());
 // 示例：扩展 FlowDefinition 和 FlowModel
 
 // 自定义流程定义，继承 FlowDefinition
-class TableColumnFlowDefinition extends FlowDefinition {
+class TableColumnFlowDefinition implements FlowDefinition {
   baseSteps = {};
   // 可以在此扩展更多自定义属性或方法
 }
