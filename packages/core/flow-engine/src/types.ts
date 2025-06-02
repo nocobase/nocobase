@@ -75,7 +75,6 @@ export type ReadonlyModelProps = Readonly<IModelComponentProps>;
  */
 export interface FlowContext<TModel extends FlowModel = FlowModel> {
   exit: () => void; // Terminate the entire flow execution
-  skip: () => void; // Skip the current step and continue with next steps
   logger: {
     info: (message: string, meta?: any) => void;
     warn: (message: string, meta?: any) => void;

@@ -295,7 +295,6 @@ export class FlowModel {
 
     let lastResult: any;
     let exited = false;
-    let skipped = false;
     const stepResults: Record<string, any> = {};
     const shared: Record<string, any> = {};
 
@@ -304,10 +303,6 @@ export class FlowModel {
       exit: () => {
         exited = true;
         console.log(`Flow '${flowKey}' on model '${this.uid}' exited via ctx.exit().`);
-      },
-      skip: () => {
-        skipped = true;
-        console.log(`Step in flow '${flowKey}' on model '${this.uid}' skipped via ctx.skip().`);
       },
       logger: {
         info: (message: string, meta?: any) => console.log(`[INFO] ${message}`, meta),
@@ -327,9 +322,6 @@ export class FlowModel {
       if (Object.prototype.hasOwnProperty.call(flow.steps, stepKey)) {
         const step: StepDefinition = flow.steps[stepKey];
         if (exited) break;
-
-        // Reset skip flag for each step
-        skipped = false;
 
         let handler: ((ctx: FlowContext<this>, params: any) => Promise<any> | any) | undefined;
         let combinedParams: Record<string, any> = {};
@@ -370,10 +362,8 @@ export class FlowModel {
             lastResult = currentStepResult;
           }
 
-          // Store step result if not skipped
-          if (!skipped) {
-            stepResults[stepKey] = lastResult;
-          }
+          // Store step result
+          stepResults[stepKey] = lastResult;
         } catch (error) {
           console.error(`BaseModel.applyFlow: Error executing step '${stepKey}' in flow '${flowKey}':`, error);
           return Promise.reject(error);
