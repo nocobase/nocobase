@@ -135,9 +135,9 @@ class DemoTableBlockModel extends BlockModel {
           },
         },
         convertToColumns: {
-          handler: async (ctx: FlowContext, model) => {
+          handler: async (ctx: FlowContext) => {
             // 将字段转换为表格列
-            const props = model.getProps();
+            const props = ctx.model.getProps();
             const fields = props['fields'] || [];
             const fieldLabels = {
               id: 'ID',
@@ -154,7 +154,7 @@ class DemoTableBlockModel extends BlockModel {
               width: field === 'id' ? 80 : field === 'email' ? 200 : 120,
             }));
 
-            model.setProps('columns', columns);
+            ctx.model.setProps('columns', columns);
           },
         },
         setTitle: {
@@ -163,34 +163,28 @@ class DemoTableBlockModel extends BlockModel {
           defaultParams: { title: '用户数据表格' },
         },
         setupDataSource: {
-          handler: async (ctx: FlowContext, model) => {
+          handler: async (ctx: FlowContext) => {
             // 设置数据源
-            const dataResource = (model as any).getResource('data');
+            const dataResource = (ctx.model as any).getResource('data');
             const tableData = dataResource?.getData() || [];
-            model.setProps('dataSource', tableData);
+            ctx.model.setProps('dataSource', tableData);
           },
         },
         setupPaginationHandler: {
-          handler: async (ctx: FlowContext, model) => {
+          handler: async (ctx: FlowContext) => {
             // 设置分页处理函数
             const onPaginationChange = (page: number, pageSize: number) => {
-              model.dispatchEvent('table:pagination:change', { current: page, pageSize });
+              ctx.model.dispatchEvent('table:pagination:change', { current: page, pageSize });
             };
-            model.setProps('onPaginationChange', onPaginationChange);
+            ctx.model.setProps('onPaginationChange', onPaginationChange);
           },
         },
         initDataResource: {
-          handler: async (ctx: FlowContext, model) => {
+          handler: async (ctx: FlowContext) => {
             const dataResource = new BaseResource([]);
-            (model as any).setResource('data', dataResource);
+            (ctx.model as any).setResource('data', dataResource);
           },
         },
-        // loadInitialData: {
-        //     handler: async (ctx: FlowContext, model) => {
-        //         // 初始化后立即加载数据
-        //         await model.applyFlow('loadData');
-        //     }
-        // }
       },
     });
 
@@ -202,17 +196,17 @@ class DemoTableBlockModel extends BlockModel {
       },
       steps: {
         updatePagination: {
-          handler: async (ctx: FlowContext, model, params) => {
+          handler: async (ctx: FlowContext, params) => {
             const { current, pageSize } = params || {};
-            const currentPagination = model.getProps().pagination || {};
+            const currentPagination = ctx.model.getProps().pagination || {};
 
-            model.setProps('pagination', {
+            ctx.model.setProps('pagination', {
               ...currentPagination,
               current: current || currentPagination.current,
               pageSize: pageSize || currentPagination.pageSize,
             });
 
-            model.applyFlow('loadData');
+            ctx.model.applyFlow('loadData');
           },
         },
       },
@@ -223,27 +217,27 @@ class DemoTableBlockModel extends BlockModel {
       title: '数据加载',
       steps: {
         setLoading: {
-          handler: async (ctx: FlowContext, model) => {
-            model.setProps('loading', true);
+          handler: async (ctx: FlowContext) => {
+            ctx.model.setProps('loading', true);
           },
         },
         fetchData: {
-          handler: async (ctx: FlowContext, model) => {
+          handler: async (ctx: FlowContext) => {
             // 添加延迟以模拟真实API请求
             await new Promise((resolve) => setTimeout(resolve, 500));
 
-            const props = model.getProps();
+            const props = ctx.model.getProps();
             const pagination = props.pagination || { current: 1, pageSize: 10 };
 
             try {
               const mockData = generateMockData(pagination.current, pagination.pageSize);
 
-              const dataResource = (model as any).getResource('data');
+              const dataResource = (ctx.model as any).getResource('data');
               if (dataResource) {
                 dataResource.setData(mockData.data);
               }
 
-              model.setProps('pagination', {
+              ctx.model.setProps('pagination', {
                 ...pagination,
                 total: mockData.total,
               });
@@ -253,15 +247,15 @@ class DemoTableBlockModel extends BlockModel {
           },
         },
         updateDataSource: {
-          handler: async (ctx: FlowContext, model) => {
-            const dataResource = model.getResource('data');
+          handler: async (ctx: FlowContext) => {
+            const dataResource = ctx.model['getResource']('data');
             const tableData = dataResource?.getData() || [];
-            model.setProps('dataSource', tableData);
+            ctx.model.setProps('dataSource', tableData);
           },
         },
         setLoadingEnd: {
-          handler: async (ctx: FlowContext, model) => {
-            model.setProps('loading', false);
+          handler: async (ctx: FlowContext) => {
+            ctx.model.setProps('loading', false);
           },
         },
       },
@@ -312,9 +306,9 @@ class DemoTablePlugin extends Plugin {
           },
         },
       },
-      handler: (ctx: FlowContext, model: FlowModel, params: any) => {
+      handler: (ctx: FlowContext, params: any) => {
         if (params?.fields) {
-          model.setProps('fields', params.fields);
+          ctx.model.setProps('fields', params.fields);
         }
       },
     });
@@ -330,9 +324,9 @@ class DemoTablePlugin extends Plugin {
           'x-component': 'Input',
         },
       },
-      handler: (ctx: FlowContext, model: FlowModel, params: any) => {
+      handler: (ctx: FlowContext, params: any) => {
         if (params?.title != null) {
-          model.setProps('title', params.title);
+          ctx.model.setProps('title', params.title);
         }
       },
     });
@@ -341,8 +335,8 @@ class DemoTablePlugin extends Plugin {
       name: 'loadTableData',
       title: '加载数据',
       uiSchema: {},
-      handler: (ctx: FlowContext, model: FlowModel, params: any) => {
-        model.applyFlow('loadData');
+      handler: (ctx: FlowContext, params: any) => {
+        ctx.model.applyFlow('loadData');
       },
     });
 

@@ -15,8 +15,8 @@ export const SaveActionModel = ActionModel.extends([
     title: '保存操作',
     steps: {
       save: {
-        handler: (ctx, model, params) => {
-          console.log('save', ctx, model, params);
+        handler: (ctx, params) => {
+          console.log('save', ctx, ctx.model, params);
           Modal.success({
             title: '保存成功',
             content: '数据保存成功。',

@@ -12,7 +12,7 @@ interface ActionDefinition {
   title?: string; // 操作显示名称（可选）
   uiSchema?: Record<string, ISchema>; // （可选）用于参数配置界面渲染
   defaultParams?: Record<string, any>; // （可选）默认参数
-  handler: (ctx: FlowContext, model: TModel, params: any) => Promise<any> | any; // 操作执行逻辑
+  handler: (ctx: FlowContext, params: any) => Promise<any> | any; // 操作执行逻辑
 }
 ```
 
@@ -30,7 +30,7 @@ const myAction = defineAction({
   title: '操作显示名称',
   uiSchema: {},
   defaultParams: {},
-  async handler(ctx, model, params) {
+  async handler(ctx, params) {
     // 操作逻辑
   },
 });
@@ -46,7 +46,7 @@ class MyAction implements ActionDefinition {
   title = '操作显示名称';
   uiSchema = {};
   defaultParams = {};
-  async handler(ctx, model, params) {
+  async handler(ctx, params) {
     // 操作逻辑
   }
 }
@@ -64,7 +64,7 @@ flowEngine.registerAction({
   title: '操作显示名称',
   uiSchema: {},
   defaultParams: {},
-  handler(ctx, model, params) {
+  handler(ctx, params) {
     // 操作逻辑
   },
 });

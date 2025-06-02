@@ -25,7 +25,7 @@ class RefFlowModel extends FlowModel {
   }
 }
 
-RefFlowModel.registerFlow('defaultFlow', {
+RefFlowModel.registerFlow<RefFlowModel>('defaultFlow', {
   auto: true,
   steps: {
     step0: {
@@ -47,9 +47,9 @@ RefFlowModel.registerFlow('defaultFlow', {
           },
         },
       },
-      async handler(ctx, model: RefFlowModel, params) {
-        waitForRefCallback(model.ref, async (el) => {
-          const echarts = await ctx.requireAsync('requireEcharts');
+      async handler(ctx, params) {
+        waitForRefCallback(ctx.model.ref, async (el) => {
+          const echarts = await ctx.globals.requireAsync('requireEcharts');
           const chart = echarts.init(el);
           chart.setOption(JSON.parse(params.option));
         });
@@ -69,7 +69,7 @@ class PluginHelloModel extends Plugin {
       },
     });
     this.flowEngine.registerAction('require', {
-      handler: (ctx, model, params) => {
+      handler: (ctx, params) => {
         this.app.requirejs.requirejs.config({
           paths: params.paths,
         });

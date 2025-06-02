@@ -67,7 +67,7 @@ class FormilyFlowModel extends FlowModel {
   }
 }
 
-FormilyFlowModel.registerFlow('defaultFlow', {
+FormilyFlowModel.registerFlow<FormilyFlowModel>('defaultFlow', {
   auto: true,
   steps: {
     step1: {
@@ -81,10 +81,10 @@ FormilyFlowModel.registerFlow('defaultFlow', {
           },
         },
       },
-      async handler(ctx, model: FormilyFlowModel, params) {
+      async handler(ctx, params) {
         try {
-          model.setProps('schema', JSON.parse(params.schema));
-          model.form.clearFormGraph();
+          ctx.model.setProps('schema', JSON.parse(params.schema));
+          ctx.model.form.clearFormGraph();
         } catch (error) {
           // skip
         }

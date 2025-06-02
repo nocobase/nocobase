@@ -15,8 +15,8 @@ export const UpdateActionModel = ActionModel.extends([
     title: '更新操作',
     steps: {
       update: {
-        handler: (ctx, model, params) => {
-          console.log('update', ctx, model, params);
+        handler: (ctx, params) => {
+          console.log('update', ctx, ctx.model, params);
         },
       },
     },

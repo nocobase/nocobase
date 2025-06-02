@@ -112,7 +112,7 @@ class DemoPlugin extends Plugin {
         title: '确认操作',
         message: '确定要执行此操作吗？',
       },
-      handler: async (ctx, model, params) => {
+      handler: async (ctx, params) => {
         return new Promise((resolve) => {
           Modal.confirm({
             title: params.title,
@@ -122,7 +122,7 @@ class DemoPlugin extends Plugin {
             },
             onCancel: () => {
               resolve(false);
-              ctx.$exit();
+              ctx.exit();
             },
           });
         });

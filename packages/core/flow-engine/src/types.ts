@@ -73,15 +73,24 @@ export type ReadonlyModelProps = Readonly<IModelComponentProps>;
 /**
  * Context object passed to handlers during flow execution.
  */
-export interface FlowContext {
-  engine: FlowEngine; // Instance of the FlowEngine
-  event?: any; // Information about the triggering event, if applicable
-  $exit: () => void;
-  [key: string]: any; // Allow for additional custom context data
+export interface FlowContext<TModel extends FlowModel = FlowModel> {
+  exit: () => void; // Terminate the entire flow execution
+  skip: () => void; // Skip the current step and continue with next steps
+  logger: {
+    info: (message: string, meta?: any) => void;
+    warn: (message: string, meta?: any) => void;
+    error: (message: string, meta?: any) => void;
+    debug: (message: string, meta?: any) => void;
+  };
+  stepResults: Record<string, any>; // Results from previous steps
+  shared: Record<string, any>; // Shared data within the flow (read/write)
+  globals: Record<string, any>; // Global context data (read-only)
+  extra: Record<string, any>; // Extra context passed to applyFlow (read-only)
+  model: TModel; // Current model instance with specific type
+  app: any; // Application instance (required)
 }
 
-// FlowModel上下文类型
-export type FlowUserContext = Partial<Omit<FlowContext, 'engine' | '$exit' | 'app'>>;
+// FlowModel上下文类型 - 已移动到下方，使用新的定义
 
 /**
  * Constructor for model classes.
@@ -99,7 +108,7 @@ export type ModelConstructor<T extends FlowModel = FlowModel> = new (options: {
 export interface ActionDefinition<TModel extends FlowModel = FlowModel> {
   name: string; // Unique identifier for the action
   title?: string;
-  handler: (ctx: FlowContext, model: TModel, params: any) => Promise<any> | any;
+  handler: (ctx: FlowContext<TModel>, params: any) => Promise<any> | any;
   uiSchema?: Record<string, ISchema>;
   defaultParams?: Record<string, any>;
 }
@@ -127,7 +136,7 @@ export interface ActionStepDefinition<TModel extends FlowModel = FlowModel> exte
  * Step that defines its handler inline with generic model type support.
  */
 export interface InlineStepDefinition<TModel extends FlowModel = FlowModel> extends BaseStepDefinition<TModel> {
-  handler: (ctx: FlowContext, model: TModel, params: any) => Promise<any> | any;
+  handler: (ctx: FlowContext<TModel>, params: any) => Promise<any> | any;
   uiSchema?: Record<string, ISchema>; // Optional: uiSchema for this inline step
   defaultParams?: Record<string, any>; // Optional: defaultParams for this inline step
   // Cannot use a registered action
@@ -139,15 +148,16 @@ export type StepDefinition<TModel extends FlowModel = FlowModel> =
   | InlineStepDefinition<TModel>;
 
 /**
- * User context for hooks - omitting internal engine properties
+ * Extra context for flow execution - represents the data that will appear in ctx.extra
+ * This is the type for data passed to applyFlow that becomes ctx.extra
  */
-export type UserContext = Partial<Omit<FlowContext, 'engine' | '$exit'>>;
+export type FlowExtraContext = Record<string, any>;
 
 /**
  * Action options for registering actions with generic model type support
  */
 export interface ActionOptions<TModel extends FlowModel = FlowModel, P = any, R = any> {
-  handler: (ctx: any, model: TModel, params: P) => Promise<R> | R;
+  handler: (ctx: FlowContext<TModel>, params: P) => Promise<R> | R;
   uiSchema?: Record<string, any>;
   defaultParams?: Partial<P>;
 }

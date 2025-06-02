@@ -49,8 +49,8 @@ MyModel.registerFlow({
         },
       },
       // 步骤处理函数，设置模型属性
-      handler(ctx, model: MyModel, params) {
-        model.setProps('name', params.name);
+      handler(ctx, params) {
+        ctx.model.setProps('name', params.name);
       },
     },
   },

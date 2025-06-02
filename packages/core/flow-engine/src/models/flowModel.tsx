@@ -20,7 +20,7 @@ import type {
   StepDefinition,
   StepParams,
 } from '../types';
-import { ExtendedFlowDefinition, FlowUserContext, IModelComponentProps, ReadonlyModelProps } from '../types';
+import { ExtendedFlowDefinition, FlowExtraContext, IModelComponentProps, ReadonlyModelProps } from '../types';
 import { generateUid, mergeFlowDefinitions } from '../utils';
 
 // 使用WeakMap存储每个类的flows
@@ -277,7 +277,7 @@ export class FlowModel {
     return this.stepParams;
   }
 
-  async applyFlow(flowKey: string, context?: FlowUserContext): Promise<any> {
+  async applyFlow(flowKey: string, extra?: FlowExtraContext): Promise<any> {
     const currentFlowEngine = this.flowEngine;
     if (!currentFlowEngine) {
       console.warn(
@@ -295,14 +295,32 @@ export class FlowModel {
 
     let lastResult: any;
     let exited = false;
-    const exitFlow = () => {
-      exited = true;
-      console.log(`Flow '${flowKey}' on model '${this.uid}' exited via ctx.$exit().`);
-    };
+    let skipped = false;
+    const stepResults: Record<string, any> = {};
+    const shared: Record<string, any> = {};
 
-    const baseContextForSteps: Omit<FlowContext, '$exit'> = {
-      engine: currentFlowEngine,
-      ...(context || {}),
+    // Create a new FlowContext instance for this flow execution
+    const flowContext: FlowContext<this> = {
+      exit: () => {
+        exited = true;
+        console.log(`Flow '${flowKey}' on model '${this.uid}' exited via ctx.exit().`);
+      },
+      skip: () => {
+        skipped = true;
+        console.log(`Step in flow '${flowKey}' on model '${this.uid}' skipped via ctx.skip().`);
+      },
+      logger: {
+        info: (message: string, meta?: any) => console.log(`[INFO] ${message}`, meta),
+        warn: (message: string, meta?: any) => console.warn(`[WARN] ${message}`, meta),
+        error: (message: string, meta?: any) => console.error(`[ERROR] ${message}`, meta),
+        debug: (message: string, meta?: any) => console.debug(`[DEBUG] ${message}`, meta),
+      },
+      stepResults,
+      shared,
+      globals: currentFlowEngine.getContext() || {},
+      extra: extra || {},
+      model: this,
+      app: {}, // app is required, provide empty object as fallback
     };
 
     for (const stepKey in flow.steps) {
@@ -310,9 +328,10 @@ export class FlowModel {
         const step: StepDefinition = flow.steps[stepKey];
         if (exited) break;
 
-        const stepContext: FlowContext = { ...baseContextForSteps, $exit: exitFlow } as FlowContext;
+        // Reset skip flag for each step
+        skipped = false;
 
-        let handler: ((ctx: FlowContext, model: FlowModel, params: any) => Promise<any> | any) | undefined;
+        let handler: ((ctx: FlowContext<this>, params: any) => Promise<any> | any) | undefined;
         let combinedParams: Record<string, any> = {};
         let actionDefinition;
 
@@ -344,11 +363,16 @@ export class FlowModel {
         }
 
         try {
-          const currentStepResult = handler!(stepContext, this, combinedParams);
+          const currentStepResult = handler!(flowContext, combinedParams);
           if (step.isAwait !== false) {
             lastResult = await currentStepResult;
           } else {
             lastResult = currentStepResult;
+          }
+
+          // Store step result if not skipped
+          if (!skipped) {
+            stepResults[stepKey] = lastResult;
           }
         } catch (error) {
           console.error(`BaseModel.applyFlow: Error executing step '${stepKey}' in flow '${flowKey}':`, error);
@@ -359,7 +383,7 @@ export class FlowModel {
     return Promise.resolve(lastResult);
   }
 
-  dispatchEvent(eventName: string, context?: FlowUserContext): void {
+  dispatchEvent(eventName: string, extra?: FlowExtraContext): void {
     const currentFlowEngine = this.flowEngine;
     if (!currentFlowEngine) {
       console.warn('FlowEngine not available on this model for dispatchEvent. Please set flowEngine on the model.');
@@ -370,16 +394,10 @@ export class FlowModel {
     const constructor = this.constructor as typeof FlowModel;
     const allFlows = constructor.getFlows();
 
-    const baseContextForFlow: Omit<FlowContext, '$exit'> = {
-      engine: currentFlowEngine,
-      event: { name: eventName, modelUid: this.uid },
-      ...(context || {}),
-    };
-
     allFlows.forEach((flow) => {
       if (flow.on && flow.on.eventName === eventName) {
         console.log(`BaseModel '${this.uid}' dispatching event '${eventName}' to flow '${flow.key}'.`);
-        this.applyFlow(flow.key, baseContextForFlow as any).catch((error) => {
+        this.applyFlow(flow.key, extra).catch((error) => {
           console.error(
             `BaseModel.dispatchEvent: Error executing event-triggered flow '${flow.key}' for event '${eventName}':`,
             error,
@@ -435,10 +453,10 @@ export class FlowModel {
 
   /**
    * 执行所有自动应用流程
-   * @param {FlowUserContext} [context] 可选的用户上下文
+   * @param {FlowExtraContext} [extra] 可选的额外上下文
    * @returns {Promise<any[]>} 所有自动应用流程的执行结果数组
    */
-  async applyAutoFlows(context?: FlowUserContext): Promise<any[]> {
+  async applyAutoFlows(extra?: FlowExtraContext): Promise<any[]> {
     const autoApplyFlows = this.getAutoFlows();
 
     if (autoApplyFlows.length === 0) {
@@ -449,7 +467,7 @@ export class FlowModel {
     const results: any[] = [];
     for (const flow of autoApplyFlows) {
       try {
-        const result = await this.applyFlow(flow.key, context);
+        const result = await this.applyFlow(flow.key, extra);
         results.push(result);
       } catch (error) {
         console.error(`FlowModel.applyAutoFlows: Error executing auto-apply flow '${flow.key}':`, error);

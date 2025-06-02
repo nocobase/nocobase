@@ -53,9 +53,9 @@ export class FlowEngine {
    * @returns {void}
    * @example
    * // 方式一: 传入名称和选项
-   * flowEngine.registerAction<MyModel>('myAction', { handler: async (ctx, model, params) => { ... } });
+   * flowEngine.registerAction<MyModel>('myAction', { handler: async (ctx, params) => { ... } });
    * // 方式二: 传入 ActionDefinition 对象
-   * flowEngine.registerAction<MyModel>({ name: 'myAction', handler: async (ctx, model, params) => { ... } });
+   * flowEngine.registerAction<MyModel>({ name: 'myAction', handler: async (ctx, params) => { ... } });
    */
   public registerAction<TModel extends FlowModel = FlowModel>(
     nameOrDefinition: string | ActionDefinition<TModel>,

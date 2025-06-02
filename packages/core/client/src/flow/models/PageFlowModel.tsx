@@ -95,9 +95,9 @@ PageFlowModel.registerFlow({
           'x-component': 'Switch',
         },
       },
-      async handler(ctx, model: PageFlowModel, params) {
-        model.setProps('enableTabs', params.enableTabs || false);
-        console.log('PageFlowModel step1 handler', model.props.enableTabs);
+      async handler(ctx, params) {
+        ctx.model.setProps('enableTabs', params.enableTabs || false);
+        console.log('PageFlowModel step1 handler', ctx.model.props.enableTabs);
       },
     },
   },

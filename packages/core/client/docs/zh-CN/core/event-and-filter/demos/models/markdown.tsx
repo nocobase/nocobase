@@ -60,8 +60,8 @@ const MarkdownModel = BlockModel.extends([
         defaultParams: { content: 'Hello, NocoBase! {{var1}}' },
       },
       renderMarkdown: {
-        handler: async (ctx: FlowContext, model: FlowModel) => {
-          const props = model.getProps();
+        handler: async (ctx: FlowContext) => {
+          const props = ctx.model.getProps();
           let content = props.content;
           if (props.template === 'handlebars') {
             content = Handlebars.compile(content || '')({
@@ -71,7 +71,7 @@ const MarkdownModel = BlockModel.extends([
             });
           }
 
-          model.setProps('content', MarkdownIt().render(content || ''));
+          ctx.model.setProps('content', MarkdownIt().render(content || ''));
         },
       },
     },
@@ -98,9 +98,9 @@ class DemoPlugin extends Plugin {
         },
       },
       defaultParams: { template: 'plain' },
-      handler: (ctx: FlowContext, model: FlowModel, params: any) => {
+      handler: (ctx: FlowContext, params: any) => {
         if (params?.template != null) {
-          model.setProps('template', params.template);
+          ctx.model.setProps('template', params.template);
         }
       },
     });
@@ -117,9 +117,9 @@ class DemoPlugin extends Plugin {
           'x-component-props': { addonAfter: 'px' },
         },
       },
-      handler: (ctx: FlowContext, model: FlowModel, params: any) => {
+      handler: (ctx: FlowContext, params: any) => {
         if (params?.height != null) {
-          model.setProps('height', params.height);
+          ctx.model.setProps('height', params.height);
         }
       },
     });
@@ -135,8 +135,8 @@ class DemoPlugin extends Plugin {
           'x-component': 'Input.TextArea',
         },
       },
-      handler: (ctx: FlowContext, model: FlowModel, params: any) => {
-        model.setProps('content', params?.content);
+      handler: (ctx: FlowContext, params: any) => {
+        ctx.model.setProps('content', params?.content);
       },
     });
 

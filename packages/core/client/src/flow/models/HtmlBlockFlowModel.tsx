@@ -52,8 +52,8 @@ HtmlBlockFlowModel.registerFlow({
           },
         },
       },
-      async handler(ctx, model: HtmlBlockFlowModel, params) {
-        model.setProps('html', params.html);
+      async handler(ctx, params) {
+        ctx.model.setProps('html', params.html);
       },
     },
   },

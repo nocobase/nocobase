@@ -11,7 +11,7 @@ import { useEffect, useMemo, useRef, useState, useCallback } from 'react';
 import { autorun, toJS } from '@formily/reactive';
 import { FlowModel } from '../models';
 import { useFlowEngine } from '../provider';
-import { UserContext } from '../types';
+import { FlowExtraContext } from '../types';
 
 // 缓存入口接口定义
 interface FlowCacheEntry {
@@ -25,10 +25,8 @@ interface FlowCacheEntry {
 const flowEngineCache = new Map<string, FlowCacheEntry>();
 
 // 生成稳定的缓存键
-function generateCacheKey(prefix: string, flowKey: string, modelUid: string, context?: UserContext): string {
-  const contextString = context ? safeStringify(context) : '';
-
-  return `${prefix}:${flowKey}:${modelUid}:${contextString}`;
+function generateCacheKey(prefix: string, flowKey: string, modelUid: string): string {
+  return `${prefix}:${flowKey}:${modelUid}`;
 }
 
 // 安全序列化对象的函数
@@ -107,18 +105,18 @@ function safeStringify(obj: any, visited = new Set(), depth = 0, maxDepth = 5): 
  * @param logMessage 日志消息
  * @returns 执行结果
  */
-function useFlowExecutor<T>(
+function useFlowExecutor<T, TModel extends FlowModel = FlowModel>(
   cacheKeyPrefix: string,
   flowKey: string,
-  model: FlowModel,
-  context: UserContext | undefined,
-  executor: (context?: UserContext) => Promise<T>,
+  model: TModel,
+  context: FlowExtraContext | undefined,
+  executor: (context?: FlowExtraContext) => Promise<T>,
   logMessage: string,
 ): T {
   const engine = useFlowEngine();
   const cacheKey = useMemo(
-    () => generateCacheKey(cacheKeyPrefix, flowKey, model.uid, context),
-    [cacheKeyPrefix, flowKey, model.uid, context],
+    () => generateCacheKey(cacheKeyPrefix, flowKey, model.uid),
+    [cacheKeyPrefix, flowKey, model.uid],
   );
   const [, forceUpdate] = useState({});
   const isMounted = useRef(true);
@@ -199,7 +197,11 @@ function useFlowExecutor<T>(
   throw promise;
 }
 
-export function useApplyFlow(flowKey: string, model: FlowModel, context?: UserContext): any {
+export function useApplyFlow<TModel extends FlowModel = FlowModel>(
+  flowKey: string,
+  model: TModel,
+  context?: FlowExtraContext,
+): any {
   return useFlowExecutor(
     'applyFlow',
     flowKey,
@@ -216,7 +218,7 @@ export function useApplyFlow(flowKey: string, model: FlowModel, context?: UserCo
  * @param context Optional user context
  * @returns The results of all auto-apply flows execution
  */
-export function useApplyAutoFlows(modelOrUid: FlowModel | string, context?: UserContext): any[] {
+export function useApplyAutoFlows(modelOrUid: FlowModel | string, context?: FlowExtraContext): any[] {
   const flowEngine = useFlowEngine();
   const model = useMemo(() => {
     if (typeof modelOrUid === 'string') {
@@ -225,7 +227,7 @@ export function useApplyAutoFlows(modelOrUid: FlowModel | string, context?: User
     return modelOrUid;
   }, [modelOrUid, flowEngine]);
 
-  const executor = useCallback((ctx?: UserContext) => model.applyAutoFlows(ctx), [model]);
+  const executor = useCallback((ctx?: FlowExtraContext) => model.applyAutoFlows(ctx), [model]);
 
   return useFlowExecutor(
     'applyAutoApplyFlows',

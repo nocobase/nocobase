@@ -106,10 +106,10 @@ export class BlockModel extends FlowModel {
       steps: {
         setHeight: {
           title: '设置高度',
-          handler: (ctx, model, params) => {
+          handler: (ctx, params) => {
             const { height } = params || {};
             if (height !== undefined) {
-              model.setProps('height', height);
+              ctx.model.setProps('height', height);
             }
           },
           uiSchema: {

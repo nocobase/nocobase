@@ -9,7 +9,7 @@
 
 import { observer } from '@formily/reactive-react';
 import React from 'react';
-import { useApplyAutoFlows, useFlowContext } from '../hooks';
+import { useApplyAutoFlows, useFlowExtraContext } from '../hooks';
 import { FlowModel } from '../models';
 import { FlowsContextMenu } from './settings/wrappers/contextual/FlowsContextMenu';
 import { FlowsFloatContextMenu } from './settings/wrappers/contextual/FlowsFloatContextMenu';
@@ -38,8 +38,8 @@ interface FlowModelRendererProps {
  */
 export const FlowModelRenderer: React.FC<FlowModelRendererProps> = observer(
   ({ model, uid, showFlowSettings = false, flowSettingsVariant = 'dropdown' }) => {
-    const flowContext = useFlowContext();
-    useApplyAutoFlows(model, flowContext);
+    const extraContext = useFlowExtraContext();
+    useApplyAutoFlows(model, extraContext);
 
     if (!model || typeof model.render !== 'function') {
       // 可以选择渲染 null 或者一个错误/提示信息

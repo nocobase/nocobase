@@ -136,18 +136,18 @@ class TableBlockFlowModel extends FlowModel {
   }
 }
 
-TableBlockFlowModel.registerFlow('defaultFlow', {
+TableBlockFlowModel.registerFlow<TableBlockFlowModel>('defaultFlow', {
   auto: true,
   steps: {
     step1: {
       uiSchema: {},
-      async handler(ctx, model: TableBlockFlowModel) {
-        model.setProps('dataSource', await queryDataSource());
+      async handler(ctx) {
+        ctx.model.setProps('dataSource', await queryDataSource());
       },
     },
     step2: {
       uiSchema: {},
-      handler(ctx, model: TableBlockFlowModel, params) {
+      handler(ctx, params) {
         const columns = {
           name: {
             title: '姓名',
@@ -169,7 +169,7 @@ TableBlockFlowModel.registerFlow('defaultFlow', {
           if (!columns[key]) {
             throw new Error(`Column ${key} is not defined.`);
           }
-          model.addColumn({
+          ctx.model.addColumn({
             use: 'TableColumnFlowModel',
             props: columns['address'],
           });

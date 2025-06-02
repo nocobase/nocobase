@@ -57,8 +57,8 @@ export class DataBlockModel extends BlockModel {
       },
       steps: {
         save: {
-          handler: (ctx, model, params) => {
-            console.log('saveData', ctx, model, params);
+          handler: (ctx, params) => {
+            console.log('saveData', ctx, ctx.model, params);
           },
         },
       },
@@ -71,8 +71,8 @@ export class DataBlockModel extends BlockModel {
       },
       steps: {
         add: {
-          handler: (ctx, model, params) => {
-            console.log('addData', ctx, model, params);
+          handler: (ctx, params) => {
+            console.log('addData', ctx, ctx.model, params);
           },
         },
       },
@@ -85,8 +85,8 @@ export class DataBlockModel extends BlockModel {
       },
       steps: {
         delete: {
-          handler: (ctx, model, params) => {
-            console.log('deleteData', ctx, model, params);
+          handler: (ctx, params) => {
+            console.log('deleteData', ctx, ctx.model, params);
           },
           uiSchema: {
             showConfirm: {

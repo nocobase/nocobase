@@ -25,7 +25,7 @@ class RefFlowModel extends FlowModel {
   }
 }
 
-RefFlowModel.registerFlow('defaultFlow', {
+RefFlowModel.registerFlow<RefFlowModel>('defaultFlow', {
   auto: true,
   steps: {
     step1: {
@@ -39,8 +39,8 @@ RefFlowModel.registerFlow('defaultFlow', {
           },
         },
       },
-      async handler(ctx, model: RefFlowModel, params) {
-        waitForRefCallback(model.ref, (el) => {
+      async handler(ctx, params) {
+        waitForRefCallback(ctx.model.ref, (el) => {
           el.innerHTML = params.html;
         });
       },

@@ -109,7 +109,7 @@ FormFlowModel.define({
   },
 });
 
-FormFlowModel.registerFlow('defaultFlow', {
+FormFlowModel.registerFlow<FormFlowModel>('defaultFlow', {
   auto: true,
   steps: {
     step1: {
@@ -123,10 +123,10 @@ FormFlowModel.registerFlow('defaultFlow', {
           },
         },
       },
-      async handler(ctx, model: FormFlowModel, params) {
+      async handler(ctx, params) {
         try {
-          model.setProps('schema', JSON.parse(params.schema));
-          model.form.clearFormGraph();
+          ctx.model.setProps('schema', JSON.parse(params.schema));
+          ctx.model.form.clearFormGraph();
         } catch (error) {
           // skip
         }

@@ -9,9 +9,9 @@
 
 import { useCallback } from 'react';
 import { FlowModel } from '../models';
-import { UserContext } from '../types';
+import { FlowExtraContext } from '../types';
 
-export function useDispatchEvent(eventName: string, model: FlowModel, context?: UserContext) {
+export function useDispatchEvent(eventName: string, model: FlowModel, context?: FlowExtraContext) {
   const dispatch = useCallback(() => {
     model.dispatchEvent(eventName, context);
   }, [model, eventName, context]);

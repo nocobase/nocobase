@@ -93,12 +93,12 @@ ctx.shared.flowParam = 'newValue';
 ```ts
 step1: {
   output: { type: 'string', label: '问候语' },
-  async handler(ctx, model, params) {
+  async handler(ctx, params) {
     return 'hello';
   }
 },
 step2: {
-  async handler(ctx, model, params) {
+  async handler(ctx, params) {
     const prev = ctx.stepResults.step1;
     return prev + ' world';
   }
@@ -114,7 +114,7 @@ step2: {
 当遇到不可恢复的错误或业务条件不满足时，可调用 `ctx.exit()` 立即终止流程。
 
 ```ts
-async handler(ctx, model, params) {
+async handler(ctx, params) {
     if (params.shouldExit) {
         ctx.exit();
     }
@@ -127,7 +127,7 @@ async handler(ctx, model, params) {
 如果当前步骤无需处理，但希望流程继续执行后续步骤，可调用 `ctx.skip()`。
 
 ```ts
-async handler(ctx, model, params) {
+async handler(ctx, params) {
     if (params.shouldSkip) {
         ctx.skip();
     }
@@ -141,12 +141,12 @@ async handler(ctx, model, params) {
 
 ```ts
 // step1 返回一个结果
-async handler(ctx, model, params) {
+async handler(ctx, params) {
     return 'hello';
 }
 
 // step2 访问 step1 的返回值
-async handler(ctx, model, params) {
+async handler(ctx, params) {
     const prev = ctx.stepResults.step1;
     // 基于前置步骤结果处理
     return prev + ' world';
@@ -209,7 +209,7 @@ const myFlow = defineFlow({
     steps: {
         step1: {
             output: { type: 'string', label: '问候语' },
-            async handler(ctx, model, params) {
+            async handler(ctx, params) {
                 if (params.shouldExit) {
                     ctx.exit();
                 }
@@ -217,7 +217,7 @@ const myFlow = defineFlow({
             },
         },
         step2: {
-            async handler(ctx, model, params) {
+            async handler(ctx, params) {
                 if (params.shouldSkip) {
                     ctx.skip();
                 }

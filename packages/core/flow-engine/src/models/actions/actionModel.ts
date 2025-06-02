@@ -44,7 +44,7 @@ export class ActionModel extends FlowModel {
       steps: {
         setText: {
           title: '文本',
-          handler: (ctx, model, params) => model.setProps('text', params.text),
+          handler: (ctx, params) => ctx.model.setProps('text', params.text),
           uiSchema: {
             text: {
               type: 'string',
@@ -56,7 +56,7 @@ export class ActionModel extends FlowModel {
         },
         setDanger: {
           title: '是否danger',
-          handler: (ctx, model, params) => model.setProps('danger', params.danger),
+          handler: (ctx, params) => ctx.model.setProps('danger', params.danger),
           uiSchema: {
             danger: {
               type: 'boolean',
@@ -68,7 +68,7 @@ export class ActionModel extends FlowModel {
         },
         setType: {
           title: '按钮类型',
-          handler: (ctx, model, params) => model.setProps('type', params.type),
+          handler: (ctx, params) => ctx.model.setProps('type', params.type),
           uiSchema: {
             type: {
               type: 'string',
@@ -84,9 +84,9 @@ export class ActionModel extends FlowModel {
         },
         setOnClick: {
           title: '点击事件',
-          handler: (ctx, model, params) => {
-            model.setProps('onClick', () => {
-              model.dispatchEvent('onClick', ctx);
+          handler: (ctx, params) => {
+            ctx.model.setProps('onClick', () => {
+              ctx.model.dispatchEvent('onClick', ctx);
             });
           },
         },
@@ -101,10 +101,10 @@ export class ActionModel extends FlowModel {
       steps: {
         remove: {
           title: '移除操作',
-          handler: async (ctx, model, params) => {
-            model.blockModel.removeAction(model.uid);
-            await model.flowEngine.destroyModel(model.blockModel.uid);
-            await model.blockModel.applyAutoFlows();
+          handler: async (ctx, params) => {
+            ctx.model.blockModel.removeAction(ctx.model.uid);
+            await ctx.model.flowEngine.destroyModel(ctx.model.blockModel.uid);
+            await ctx.model.blockModel.applyAutoFlows();
           },
         },
       },

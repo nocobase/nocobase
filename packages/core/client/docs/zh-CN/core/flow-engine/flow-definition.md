@@ -18,7 +18,7 @@ interface StepDefinition {
   use?: string; // 可选：引用已注册的全局 Action
   defaultParams?: any; // 默认参数
   uiSchema?: any; // 可选：用于 FlowSettings 配置界面
-  handler?: (ctx: any, model: FlowModel, params: any) => Promise<any>; // 可选：步骤处理函数
+  handler?: (ctx: any, params: any) => Promise<any>; // 可选：步骤处理函数
 }
 ```
 
@@ -42,7 +42,7 @@ const myFlow = defineFlow<MyFlowSteps>({
   steps: {
     step1: {
       defaultParams: {},
-      async handler(ctx, model, params) {
+      async handler(ctx, params) {
         // 步骤 1 的处理逻辑
         // 例如：console.log(params.name);
       }
@@ -50,7 +50,7 @@ const myFlow = defineFlow<MyFlowSteps>({
     step2: {
       uiSchema: {}, // 可用于 UI 配置
       defaultParams: {},
-      async handler(ctx, model, params) {
+      async handler(ctx, params) {
         // 步骤 2 的处理逻辑
         // 例如：console.log(params.age);
       }
@@ -78,14 +78,14 @@ class MyFlowDefinition implements FlowDefinition {
     },
     step2: {
       defaultParams: {},
-      async handler(ctx, model, params) {
+      async handler(ctx, params) {
         // 步骤 2 的处理逻辑
       }
     },
     step3: {
       uiSchema: {},
       defaultParams: {},
-      async handler(ctx, model, params) {
+      async handler(ctx, params) {
         // 步骤 3 的处理逻辑
       }
     },
@@ -180,6 +180,6 @@ await myModel.applyAutoFlows(); // 执行所有 auto=true 的流程
 | `use`           | `string`                               | （可选）引用已注册的全局 Action                   |
 | `defaultParams` | `any`                                  | 步骤的默认参数                               |
 | `uiSchema`      | `any`                                  | （可选）用于 FlowSettings UI 渲染             |
-| `handler`       | `(ctx, model, params) => Promise<any>` | （可选）步骤执行逻辑，若未定义则使用 `use` 指定的全局 Action |
+| `handler`       | `(ctx, params) => Promise<any>` | （可选）步骤执行逻辑，若未定义则使用 `use` 指定的全局 Action |
 
 ---

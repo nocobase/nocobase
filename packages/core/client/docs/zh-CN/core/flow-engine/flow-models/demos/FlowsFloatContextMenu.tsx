@@ -25,9 +25,9 @@ HelloFlowModel.registerFlow('defaultFlow', {
       defaultParams: {
         name: 'NocoBase',
       },
-      handler(ctx, model: HelloFlowModel, params) {
+      handler(ctx, params) {
         console.log('HelloFlowModel step1 handler', params);
-        model.setProps('name', params.name);
+        ctx.model.setProps('name', params.name);
       },
     },
   },

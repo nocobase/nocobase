@@ -17,7 +17,7 @@ export const DeleteActionModel = ActionModel.extends([
     steps: {
       showConfirm: {
         title: '确认弹窗',
-        handler: async (ctx, model, params) => {
+        handler: async (ctx, params) => {
           if (params.showConfirm) {
             await new Promise((resolve) => {
               Modal.confirm({
@@ -25,7 +25,7 @@ export const DeleteActionModel = ActionModel.extends([
                 content: params.content,
                 onOk: () => resolve(true),
                 onCancel: () => {
-                  ctx.$exit();
+                  ctx.exit();
                   resolve(false);
                 },
               });
@@ -39,8 +39,8 @@ export const DeleteActionModel = ActionModel.extends([
         },
       },
       deleteData: {
-        handler: (ctx, model, params) => {
-          console.log('delete', ctx, model, params);
+        handler: (ctx, params) => {
+          console.log('delete', ctx, ctx.model, params);
           Modal.success({
             title: '删除成功',
             content: '数据删除成功。',
