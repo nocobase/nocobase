@@ -58,7 +58,6 @@ import { userCenterSettings } from './userCenterSettings';
 import { navigateWithinSelf } from '../../../block-provider/hooks';
 import { useNavigateNoUpdate } from '../../../application/CustomRouterContextProvider';
 import { createStyles } from 'antd-style';
-import { FlowPage } from '../../../schema-component/antd/flow-page';
 
 export { KeepAlive, NocoBaseDesktopRouteType, useKeepAlive };
 
@@ -146,22 +145,12 @@ export const AdminDynamicPage = () => {
     return <AppNotFound />;
   }
 
-  // 检查是否是 FlowPage 类型
-  const currentRoute = findRouteBySchemaUid(currentPageUid, allAccessRoutes);
-  const isFlowPage = currentRoute?.type === NocoBaseDesktopRouteType.flowPage;
-
   return (
     <KeepAlive uid={currentPageUid}>
       {(uid) => (
         <CurrentPageUidContext.Provider value={uid}>
           <CurrentRouteProvider uid={uid}>
-            {isFlowPage ? (
-              // 对于 FlowPage，直接渲染 FlowPage 组件，不从后端获取 schema
-              <FlowPage modelUid={uid} />
-            ) : (
-              // 对于普通页面，使用 RemoteSchemaComponent 从后端获取 schema
-              <RemoteSchemaComponent uid={uid} />
-            )}
+            <RemoteSchemaComponent uid={uid} />
           </CurrentRouteProvider>
         </CurrentPageUidContext.Provider>
       )}
@@ -918,18 +907,6 @@ function convertRoutesToLayout(
       };
     }
 
-    if (item.type === NocoBaseDesktopRouteType.flowPage) {
-      return {
-        name,
-        icon: item.icon ? <Icon type={item.icon} /> : null,
-        path: `/admin/${item.schemaUid}`,
-        redirect: `/admin/${item.schemaUid}`,
-        hideInMenu: item.hideInMenu,
-        _route: item,
-        _parentRoute: parentRoute,
-      };
-    }
-
     if (item.type === NocoBaseDesktopRouteType.group) {
       const children =
         convertRoutesToLayout(item.children, { designable, parentRoute: item, depth: depth + 1, t }) || [];
@@ -989,7 +966,7 @@ export function findFirstPageRoute(routes: NocoBaseDesktopRoute[]) {
   if (!routes) return;
 
   for (const route of routes.filter((item) => !item.hideInMenu)) {
-    if (route.type === NocoBaseDesktopRouteType.page || route.type === NocoBaseDesktopRouteType.flowPage) {
+    if (route.type === NocoBaseDesktopRouteType.page) {
       return route;
     }
 

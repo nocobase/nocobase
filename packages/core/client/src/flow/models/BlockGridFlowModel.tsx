@@ -8,7 +8,6 @@
  */
 
 import { observable } from '@formily/reactive';
-import { uid } from '@formily/shared';
 import { FlowModel, FlowModelRenderer } from '@nocobase/flow-engine';
 import { Button, Card, Dropdown } from 'antd';
 import React from 'react';
