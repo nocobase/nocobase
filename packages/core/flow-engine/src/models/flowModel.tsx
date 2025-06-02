@@ -299,16 +299,22 @@ export class FlowModel {
     const shared: Record<string, any> = {};
 
     // Create a new FlowContext instance for this flow execution
+    const createLogger = (level: string) => (message: string, meta?: any) => {
+      const logMessage = `[${level.toUpperCase()}] [Flow: ${flowKey}] [Model: ${this.uid}] ${message}`;
+      const logMeta = { flowKey, modelUid: this.uid, ...meta };
+      console[level.toLowerCase()](logMessage, logMeta);
+    };
+
     const flowContext: FlowContext<this> = {
       exit: () => {
         exited = true;
         console.log(`Flow '${flowKey}' on model '${this.uid}' exited via ctx.exit().`);
       },
       logger: {
-        info: (message: string, meta?: any) => console.log(`[INFO] ${message}`, meta),
-        warn: (message: string, meta?: any) => console.warn(`[WARN] ${message}`, meta),
-        error: (message: string, meta?: any) => console.error(`[ERROR] ${message}`, meta),
-        debug: (message: string, meta?: any) => console.debug(`[DEBUG] ${message}`, meta),
+        info: createLogger('INFO'),
+        warn: createLogger('WARN'),
+        error: createLogger('ERROR'),
+        debug: createLogger('DEBUG'),
       },
       stepResults,
       shared,
