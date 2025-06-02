@@ -143,7 +143,7 @@ const FlowsFloatContextMenuWithModel: React.FC<ModelProvidedProps> = observer(
             cancelText: '取消',
             onOk() {
               try {
-                model.dispatchEvent('remove');
+                model.destroy();
               } catch (error) {
                 console.error('删除操作失败:', error);
                 Modal.error({

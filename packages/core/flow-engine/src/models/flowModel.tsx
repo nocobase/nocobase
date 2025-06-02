@@ -524,7 +524,14 @@ export class FlowModel {
     if (!this.flowEngine) {
       throw new Error('FlowEngine is not set on this model. Please set flowEngine before deleting.');
     }
-    return this.flowEngine.destroyModel(this.uid);
+    this.flowEngine.destroyModel(this.uid);
+    if (this.parent) {
+      this.parent.subModelKeys.forEach((subKey) => {
+        if (this.parent[subKey].includes(this)) {
+          this.parent[subKey].splice(this.parent[subKey].indexOf(this), 1);
+        }
+      });
+    }
   }
 
   // TODO: 不完整，需要考虑 sub-model 的情况
