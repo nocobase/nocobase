@@ -26,11 +26,9 @@ export const FlowPage = () => {
       return flowEngine.loadOrCreateModel({
         uid: params.name,
         use: 'PageFlowModel',
-        stepParams: {},
         tabs: [
           {
             use: 'PageTabFlowModel',
-            // stepParams: {},
             grid: {
               use: 'BlockGridFlowModel',
             },

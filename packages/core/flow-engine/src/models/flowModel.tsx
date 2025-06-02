@@ -517,6 +517,8 @@ export class FlowModel {
     const data = {
       uid: this.uid,
       ...this.options,
+      props: this.props,
+      stepParams: this.stepParams,
     };
     for (const subModelKey of this.subModelKeys) {
       if (Array.isArray(this[subModelKey])) {
