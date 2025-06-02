@@ -18,6 +18,7 @@ import {
   useResourceActionContext,
   useResourceContext,
   useDataSourceManager,
+  useAPIClient,
 } from '@nocobase/client';
 import _ from 'lodash';
 import React, { useState } from 'react';
@@ -34,6 +35,27 @@ export const EditDatabaseConnectionAction = () => {
   const [visible, setVisible] = useState(false);
   const { t } = useTranslation();
   const dm = useDataSourceManager();
+  const api = useAPIClient();
+
+  const addDatasourceCollections = async (filterByTk, toBeAddedCollections) => {
+    const url = `dataSources/${filterByTk}/collections:add`;
+    if (toBeAddedCollections.length) {
+      const collections = [];
+      for (const { name, selected } of toBeAddedCollections) {
+        if (selected) {
+          collections.push(name);
+        }
+      }
+      console.log('addDatasourceCollections', filterByTk, collections);
+      await api.request({
+        url,
+        method: 'post',
+        data: {
+          collections,
+        },
+      });
+    }
+  };
 
   const useUpdateAction = () => {
     const field = useField();
@@ -48,6 +70,10 @@ export const EditDatabaseConnectionAction = () => {
         field.data = field.data || {};
         field.data.loading = true;
         try {
+          console.log(filterByTk, form.values, form.values.collections, 222);
+          const toBeAddedCollections = form.values.collections || [];
+          await addDatasourceCollections(filterByTk, toBeAddedCollections);
+          delete form.values.collections;
           await resource.update({ filterByTk, values: form.values });
           ctx.setVisible(false);
           dm.getDataSource(filterByTk).setOptions(form.values);

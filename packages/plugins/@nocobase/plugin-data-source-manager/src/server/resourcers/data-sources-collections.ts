@@ -9,6 +9,7 @@
 
 import lodash from 'lodash';
 import { filterMatch } from '@nocobase/database';
+import _ from 'lodash';
 
 export default {
   name: 'dataSources.collections',
@@ -123,6 +124,66 @@ export default {
 
       ctx.body = dataSourceCollectionRecord.toJSON();
 
+      await next();
+    },
+    async all(ctx, next) {
+      const params = ctx.action.params;
+      const { associatedIndex: dataSourceKey } = params;
+      const dataSource = ctx.app.dataSourceManager.dataSources.get(dataSourceKey);
+      if (!dataSource) {
+        throw new Error(`dataSource ${dataSourceKey} not found`);
+      }
+      const allCollections = await dataSource.getCollectionsFromCache();
+      const selectedCollections = await ctx.db.getRepository('dataSourcesCollections').find({
+        filter: { dataSourceKey },
+      });
+      const selectedMap = _.keyBy(selectedCollections, (x) => x.name);
+      const result = allCollections.map((collection) => {
+        return {
+          ...collection,
+          selected: !!selectedMap[collection.name],
+        };
+      });
+      ctx.body = result;
+      await next();
+    },
+    async add(ctx, next) {
+      const params = ctx.action.params;
+      const { associatedIndex: dataSourceKey, values } = params;
+      const collections = values.collections || [];
+      const transaction = await ctx.db.sequelize.transaction();
+      const repo = ctx.db.getRepository('dataSourcesCollections');
+
+      const alreadyInserted = await repo.find({
+        filter: {
+          dataSourceKey,
+        },
+        transaction,
+      });
+      const alreadyInsertedNames = _.keyBy(alreadyInserted, (x) => x.name);
+      const incomingCollections = _.keyBy(collections);
+      const toBeInserted = collections.filter((collection) => !alreadyInsertedNames[collection]);
+      const toBeDeleted = Object.keys(alreadyInsertedNames).filter((name) => !incomingCollections[name]);
+
+      if (toBeInserted.length > 0) {
+        const insertCollections = toBeInserted.map((collection) => {
+          return { name: collection, dataSourceKey };
+        });
+        await repo.model.bulkCreate(insertCollections, { transaction });
+      }
+
+      if (toBeDeleted.length > 0) {
+        await repo.model.destroy({
+          where: {
+            dataSourceKey,
+            name: toBeDeleted,
+          },
+          transaction,
+        });
+      }
+
+      await transaction.commit();
+      ctx.body = true;
       await next();
     },
   },
