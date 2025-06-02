@@ -125,6 +125,101 @@ export default defineConfig({
           ],
         },
         {
+          title: 'Flow Models',
+          type: 'group',
+          children: [
+            {
+              title: 'Overview',
+              link: '/core/flow-models',
+            },
+            {
+              title: 'LayoutFlowModel',
+              link: '/core/flow-models/layout-flow-model',
+            },
+            {
+              title: 'LayoutRouteFlowModel',
+              link: '/core/flow-models/layout-route-flow-model',
+            },
+            {
+              title: 'PageFlowModel',
+              link: '/core/flow-models/page-flow-model',
+            },
+            {
+              title: 'PageTabFlowModel',
+              link: '/core/flow-models/page-tab-flow-model',
+            },
+            {
+              title: 'GridFlowModel',
+              link: '/core/flow-models/grid-flow-model',
+            },
+            {
+              title: 'BlockGridFlowModel',
+              link: '/core/flow-models/block-grid-flow-model',
+            },
+            {
+              title: 'BlockFlowModel',
+              link: '/core/flow-models/block-flow-model',
+            },
+            {
+              title: 'FormFlowModel',
+              link: '/core/flow-models/form-flow-model',
+            },
+            {
+              title: 'TableFlowModel',
+              link: '/core/flow-models/table-flow-model',
+            },
+            {
+              title: 'DetailsFlowModel',
+              link: '/core/flow-models/details-flow-model',
+            },
+            {
+              title: 'ListFlowModel',
+              link: '/core/flow-models/list-flow-model',
+            },
+            {
+              title: 'CalendarFlowModel',
+              link: '/core/flow-models/calendar-flow-model',
+            },
+            
+            {
+              title: 'KanbanFlowModel',
+              link: '/core/flow-models/kanban-flow-model',
+            },
+            {
+              title: 'MapFlowModel',
+              link: '/core/flow-models/map-flow-model',
+            },
+            {
+              title: 'GanttFlowModel',
+              link: '/core/flow-models/gantt-flow-model',
+            },
+            {
+              title: 'ChartFlowModel',
+              link: '/core/flow-models/chart-flow-model',
+            },
+            {
+              title: 'MarkdownFlowModel',
+              link: '/core/flow-models/markdown-flow-model',
+            },
+            {
+              title: 'HtmlFlowModel',
+              link: '/core/flow-models/html-flow-model',
+            },
+            {
+              title: 'iframeFlowModel',
+              link: '/core/flow-models/iframe-flow-model',
+            },
+            {
+              title: 'TimelineFlowModel',
+              link: '/core/flow-models/timeline-flow-model',
+            },
+            {
+              title: 'CollapseFlowModel',
+              link: '/core/flow-models/collapse-flow-model',
+            },
+          ],
+        },
+        {
           title: 'Event and Filter',
           type: 'group',
           children: [

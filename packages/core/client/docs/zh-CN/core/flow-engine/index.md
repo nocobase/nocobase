@@ -11,12 +11,11 @@
 - **registerModels(models: Record<string, ModelConstructor>): void**  
   批量注册模型类。
 
-- **registerModelClass(name: string, modelClass: ModelConstructor): void**  
-  注册一个模型类（构造函数）。
-
 - **getModelClass(name: string): ModelConstructor | undefined**  
   获取已注册的模型类。
 
+- **getModelClasses(): Map<string, ModelConstructor>**  
+  获取所有已注册的模型类（构造函数）。返回一个 Map，key 为模型名称，value 为对应的模型类。常用于遍历、动态生成模型列表或批量操作等场景。
 ---
 
 ### Model 实例管理

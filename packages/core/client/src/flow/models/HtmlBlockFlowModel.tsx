@@ -11,11 +11,23 @@ import { Card } from 'antd';
 import React, { createRef } from 'react';
 import { BlockFlowModel } from './BlockFlowModel';
 
+function waitForRefCallback<T extends HTMLElement>(ref: React.RefObject<T>, cb: (el: T) => void, timeout = 3000) {
+  const start = Date.now();
+  function check() {
+    if (ref.current) return cb(ref.current);
+    if (Date.now() - start > timeout) return;
+    setTimeout(check, 30);
+  }
+  check();
+}
+
 export class HtmlBlockFlowModel extends BlockFlowModel {
+  ref = createRef<HTMLDivElement>();
   render() {
     return (
       <Card>
-        <div dangerouslySetInnerHTML={{ __html: this.props.html }} />
+        <div ref={this.ref} />
+        {/* <div dangerouslySetInnerHTML={{ __html: this.props.html }} /> */}
       </Card>
     );
   }
@@ -37,7 +49,7 @@ HtmlBlockFlowModel.define({
   },
 });
 
-HtmlBlockFlowModel.registerFlow({
+HtmlBlockFlowModel.registerFlow<HtmlBlockFlowModel>({
   key: 'default',
   auto: true,
   steps: {
@@ -53,7 +65,10 @@ HtmlBlockFlowModel.registerFlow({
         },
       },
       async handler(ctx, params) {
-        ctx.model.setProps('html', params.html);
+        waitForRefCallback(ctx.model.ref, (el) => {
+          el.innerHTML = params.html;
+        });
+        // ctx.model.setProps('html', params.html);
       },
     },
   },
