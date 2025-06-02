@@ -38,7 +38,7 @@ const FlowModelRendererWithAutoFlows: React.FC<{
   model: FlowModel;
   showFlowSettings: boolean;
   flowSettingsVariant: string;
-  extraContext?: any;
+  extraContext?: Record<string, any>;
 }> = observer(({ model, showFlowSettings, flowSettingsVariant, extraContext }) => {
   const defaultExtraContext = useFlowExtraContext();
   useApplyAutoFlows(model, extraContext || defaultExtraContext);
