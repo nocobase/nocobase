@@ -8,11 +8,12 @@
  */
 
 import { observer } from '@formily/reactive-react';
-import React from 'react';
+import React, { Suspense } from 'react';
 import { useApplyAutoFlows, useFlowExtraContext } from '../hooks';
 import { FlowModel } from '../models';
 import { FlowsContextMenu } from './settings/wrappers/contextual/FlowsContextMenu';
 import { FlowsFloatContextMenu } from './settings/wrappers/contextual/FlowsFloatContextMenu';
+import { Spin } from 'antd';
 
 interface FlowModelRendererProps {
   model?: FlowModel;
@@ -142,20 +143,24 @@ export const FlowModelRenderer: React.FC<FlowModelRendererProps> = observer(
     // 根据 skipApplyAutoFlows 选择不同的内部组件
     if (skipApplyAutoFlows) {
       return (
-        <FlowModelRendererWithoutAutoFlows
-          model={model}
-          showFlowSettings={showFlowSettings}
-          flowSettingsVariant={flowSettingsVariant}
-        />
+        <Suspense fallback={<Spin />}>
+          <FlowModelRendererWithoutAutoFlows
+            model={model}
+            showFlowSettings={showFlowSettings}
+            flowSettingsVariant={flowSettingsVariant}
+          />
+        </Suspense>
       );
     } else {
       return (
-        <FlowModelRendererWithAutoFlows
-          model={model}
-          showFlowSettings={showFlowSettings}
-          flowSettingsVariant={flowSettingsVariant}
-          extraContext={extraContext}
-        />
+        <Suspense fallback={<Spin />}>
+          <FlowModelRendererWithAutoFlows
+            model={model}
+            showFlowSettings={showFlowSettings}
+            flowSettingsVariant={flowSettingsVariant}
+            extraContext={extraContext}
+          />
+        </Suspense>
       );
     }
   },
