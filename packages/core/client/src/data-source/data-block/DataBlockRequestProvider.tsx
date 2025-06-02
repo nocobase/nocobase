@@ -79,6 +79,7 @@ function useRecordRequest<T>(options: Omit<AllDataBlockProps, 'type'>) {
     manual: dataLoadingMode === 'manual',
     ready: !!action,
     refreshDeps: [action, JSONParams, JSONRecord, resource, association, parentRecord, sourceId],
+    defaultParams: [params],
   });
 
   return request;
