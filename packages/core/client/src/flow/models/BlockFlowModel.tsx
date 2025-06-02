@@ -7,5 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-// Re-export all models from the models directory
-export { BlockModel, GridModel, TabModel, PageModel } from './models';
+import { FlowModel } from '@nocobase/flow-engine';
+
+export class BlockFlowModel extends FlowModel {
+  static getInitParams() {}
+}

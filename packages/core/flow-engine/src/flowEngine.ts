@@ -113,6 +113,19 @@ export class FlowEngine {
     }
   }
 
+  getModelClasses(filterCallback?: any): Array<ModelConstructor> {
+    if (!filterCallback) {
+      return [...this.modelClasses.values()];
+    }
+    return [...this.modelClasses]
+      .filter(([modelName, modelClass]) => {
+        return filterCallback(modelClass, modelName);
+      })
+      .map(([_, modelClass]) => {
+        return modelClass;
+      });
+  }
+
   /**
    * 获取已注册的 Model 类 (构造函数)。
    * @param {string} name Model 类名称。

@@ -7,7 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export { BlockModel } from './blockModel';
-export { GridModel } from './gridModel';
-export { TabModel } from './tabModel';
-export { PageModel } from './pageModel';
+export * from './BlockFlowModel';
+export * from './BlockGridFlowModel';
+export * from './FormFlowModel';
+export * from './PageFlowModel';
+export * from './PageTabFlowModel';
+//

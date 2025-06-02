@@ -7,19 +7,24 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { CreateModelOptions, FlowModel } from '@nocobase/flow-engine';
+import _ from 'lodash';
 import { Plugin } from '../application/Plugin';
+import { MockFlowModelRepository } from './FlowModelRepository';
 import { FlowPage } from './FlowPage';
-import { PageModel, TabModel, GridModel, BlockModel } from './model';
-
-export * from './data';
+import { BlockFlowModel, BlockGridFlowModel, FormFlowModel, PageFlowModel, PageTabFlowModel } from './models';
+import { HtmlBlockFlowModel } from './models/HtmlBlockFlowModel';
 
 export class PluginFlowEngine extends Plugin {
   async load() {
-    this.app.flowEngine.registerModelClass('PageModel', PageModel);
-    this.app.flowEngine.registerModelClass('TabModel', TabModel);
-    this.app.flowEngine.registerModelClass('GridModel', GridModel);
-    this.app.flowEngine.registerModelClass('BlockModel', BlockModel); // TODO: 替换成Markdown和云组件等实际组件
     this.app.addComponents({ FlowPage });
+    this.app.flowEngine.setModelRepository(new MockFlowModelRepository());
+    this.flowEngine.registerModels({
+      FormFlowModel,
+      BlockFlowModel,
+      PageFlowModel,
+      PageTabFlowModel,
+      BlockGridFlowModel,
+      HtmlBlockFlowModel,
+    });
   }
 }

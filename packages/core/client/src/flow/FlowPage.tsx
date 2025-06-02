@@ -7,17 +7,66 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { PageContainer } from '@ant-design/pro-layout';
-import { observer } from '@formily/reactive-react';
-import { uid } from '@formily/shared';
-import { FlowModelRenderer, useApplyAutoFlows, useFlowModel, withFlowModel } from '@nocobase/flow-engine';
-import { Button, Tabs } from 'antd';
-import React, { useEffect } from 'react';
+import { FlowModelRenderer, useFlowEngine, useFlowModel } from '@nocobase/flow-engine';
+import { useRequest } from 'ahooks';
+import { Spin } from 'antd';
+import React from 'react';
 import { useParams } from 'react-router-dom';
-import { PageModel } from './model';
+
+function InternalFlowPage({ uid }) {
+  const model = useFlowModel(uid);
+  return <FlowModelRenderer model={model} showFlowSettings />;
+}
 
 export const FlowPage = () => {
+  const flowEngine = useFlowEngine();
   const params = useParams();
-  const model = useFlowModel<PageModel>(params.name);
-  return <FlowModelRenderer model={model} />;
+  const { loading } = useRequest(
+    () => {
+      return flowEngine.loadOrCreateModel({
+        uid: params.name,
+        use: 'PageFlowModel',
+        tabs: [
+          {
+            use: 'PageTabFlowModel',
+            // stepParams: {},
+            grid: {
+              use: 'BlockGridFlowModel',
+              items: [
+                {
+                  use: 'HtmlBlockFlowModel',
+                  stepParams: {
+                    default: {
+                      step1: {
+                        html: `<h1>Hello, NocoBase!</h1>
+<p>This is a simple HTML content rendered by FlowModel.</p>`,
+                      },
+                    },
+                  },
+                },
+                {
+                  use: 'HtmlBlockFlowModel',
+                  stepParams: {
+                    default: {
+                      step1: {
+                        html: `<h1>Hello, NocoBase!</h1>
+<p>This is a simple HTML content rendered by FlowModel.</p>`,
+                      },
+                    },
+                  },
+                },
+              ],
+            },
+          },
+        ],
+      });
+    },
+    {
+      refreshDeps: [params.name],
+    },
+  );
+  if (loading) {
+    return <Spin />;
+  }
+  return <InternalFlowPage uid={params.name} />;
 };
