@@ -305,6 +305,7 @@ export class FlowModel {
       console[level.toLowerCase()](logMessage, logMeta);
     };
 
+    const globalContexts = currentFlowEngine.getContext() || {};
     const flowContext: FlowContext<this> = {
       exit: () => {
         exited = true;
@@ -318,10 +319,10 @@ export class FlowModel {
       },
       stepResults,
       shared,
-      globals: currentFlowEngine.getContext() || {},
+      globals: globalContexts,
       extra: extra || {},
       model: this,
-      app: {}, // app is required, provide empty object as fallback
+      app: globalContexts.app || {},
     };
 
     for (const stepKey in flow.steps) {

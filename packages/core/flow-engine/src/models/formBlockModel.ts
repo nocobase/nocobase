@@ -36,18 +36,18 @@ export class FormBlockModel<TData = Record<string, any>> extends DataBlockModel 
     return this.resource.reload();
   }
 
-  // 保存表单数据
-  async save(): Promise<boolean> {
-    try {
-      // TODO: 调用 api 保存数据
+  // // 保存表单数据
+  // async save(): Promise<boolean> {
+  //   try {
+  //     // TODO: 调用 api 保存数据
 
-      console.log('FormBlockModel save 被调用，数据：', this.resource.data);
-      return true;
-    } catch (error) {
-      console.error('保存表单数据失败：', error);
-      return false;
-    }
-  }
+  //     console.log('FormBlockModel save 被调用，数据：', this.resource.data);
+  //     return true;
+  //   } catch (error) {
+  //     console.error('保存表单数据失败：', error);
+  //     return false;
+  //   }
+  // }
 
   // 重置表单数据
   reset(): void {
