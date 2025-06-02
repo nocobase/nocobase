@@ -9,7 +9,6 @@
 
 import { FlowModel, FlowModelRenderer } from '@nocobase/flow-engine';
 import React from 'react';
-import { GridFlowModel } from './GridFlowModel';
 
 export class PageTabFlowModel extends FlowModel {
   grid;

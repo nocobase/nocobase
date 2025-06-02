@@ -7,9 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { FlowModel } from '@nocobase/flow-engine';
 import { Card } from 'antd';
 import React, { createRef } from 'react';
+import { BlockFlowModel } from './BlockFlowModel';
 
 function waitForRefCallback<T extends HTMLElement>(ref: React.RefObject<T>, cb: (el: T) => void, timeout = 3000) {
   const start = Date.now();
@@ -21,8 +21,23 @@ function waitForRefCallback<T extends HTMLElement>(ref: React.RefObject<T>, cb: 
   check();
 }
 
-export class HtmlBlockFlowModel extends FlowModel {
+export class HtmlBlockFlowModel extends BlockFlowModel {
   ref = createRef<HTMLDivElement>();
+
+  static getInitParams() {
+    return {
+      use: 'HtmlBlockFlowModel',
+      stepParams: {
+        default: {
+          step1: {
+            html: `<h1>Hello, NocoBase!</h1>
+<p>This is a simple HTML content rendered by FlowModel.</p>`,
+          },
+        },
+      },
+    };
+  }
+
   render() {
     return (
       <Card>

@@ -48,6 +48,7 @@ export class PageFlowModel extends FlowModel {
     return (
       <Tabs
         items={this.getItems()}
+        destroyInactiveTabPane
         tabBarExtraContent={
           <Button
             onClick={() =>
@@ -55,7 +56,7 @@ export class PageFlowModel extends FlowModel {
                 use: 'PageTabFlowModel',
                 props: { key: uid(), label: `Tab - ${uid()}` },
                 grid: {
-                  use: 'GridFlowModel',
+                  use: 'BlockGridFlowModel',
                 },
               })
             }

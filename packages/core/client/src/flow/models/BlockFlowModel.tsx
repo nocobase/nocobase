@@ -7,9 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export * from './BlockFlowModel';
-export * from './BlockGridFlowModel';
-export * from './FormFlowModel';
-export * from './PageFlowModel';
-export * from './PageTabFlowModel';
-//
+import { FlowModel } from '@nocobase/flow-engine';
+
+export class BlockFlowModel extends FlowModel {
+  static getInitParams() {}
+}

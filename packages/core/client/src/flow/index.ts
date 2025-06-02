@@ -11,13 +11,20 @@ import _ from 'lodash';
 import { Plugin } from '../application/Plugin';
 import { MockFlowModelRepository } from './FlowModelRepository';
 import { FlowPage } from './FlowPage';
-import { GridFlowModel, PageFlowModel, PageTabFlowModel } from './models';
+import { BlockFlowModel, BlockGridFlowModel, FormFlowModel, PageFlowModel, PageTabFlowModel } from './models';
 import { HtmlBlockFlowModel } from './models/HtmlBlockFlowModel';
 
 export class PluginFlowEngine extends Plugin {
   async load() {
     this.app.addComponents({ FlowPage });
     this.app.flowEngine.setModelRepository(new MockFlowModelRepository());
-    this.flowEngine.registerModels({ PageFlowModel, PageTabFlowModel, GridFlowModel, HtmlBlockFlowModel });
+    this.flowEngine.registerModels({
+      FormFlowModel,
+      BlockFlowModel,
+      PageFlowModel,
+      PageTabFlowModel,
+      BlockGridFlowModel,
+      HtmlBlockFlowModel,
+    });
   }
 }
