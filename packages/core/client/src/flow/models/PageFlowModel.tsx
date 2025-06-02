@@ -48,7 +48,7 @@ export class PageFlowModel extends FlowModel {
     return (
       <Tabs
         items={this.getItems()}
-        destroyInactiveTabPane
+        // destroyInactiveTabPane
         tabBarExtraContent={
           <Button
             onClick={() =>
