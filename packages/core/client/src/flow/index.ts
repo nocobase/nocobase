@@ -26,3 +26,6 @@ export class PluginFlowEngine extends Plugin {
     this.flowEngine.registerModels(filteredModels);
   }
 }
+
+// Export all models for external use
+export * from './models';

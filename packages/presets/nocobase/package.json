@@ -101,6 +101,7 @@
     "@nocobase/plugin-auth",
     "@nocobase/plugin-async-task-manager",
     "@nocobase/plugin-ai",
+    "@nocobase/plugin-block-cloud",
     "@nocobase/plugin-block-iframe",
     "@nocobase/plugin-block-workbench",
     "@nocobase/plugin-calendar",
