@@ -11,41 +11,31 @@ import { Card } from 'antd';
 import React, { createRef } from 'react';
 import { BlockFlowModel } from './BlockFlowModel';
 
-function waitForRefCallback<T extends HTMLElement>(ref: React.RefObject<T>, cb: (el: T) => void, timeout = 3000) {
-  const start = Date.now();
-  function check() {
-    if (ref.current) return cb(ref.current);
-    if (Date.now() - start > timeout) return;
-    setTimeout(check, 30);
-  }
-  check();
-}
-
 export class HtmlBlockFlowModel extends BlockFlowModel {
-  ref = createRef<HTMLDivElement>();
-
-  static getInitParams() {
-    return {
-      use: 'HtmlBlockFlowModel',
-      stepParams: {
-        default: {
-          step1: {
-            html: `<h1>Hello, NocoBase!</h1>
-<p>This is a simple HTML content rendered by FlowModel.</p>`,
-          },
-        },
-      },
-    };
-  }
-
   render() {
     return (
       <Card>
-        <div ref={this.ref} />
+        <div dangerouslySetInnerHTML={{ __html: this.props.html }} />
       </Card>
     );
   }
 }
+
+HtmlBlockFlowModel.define({
+  title: 'HTML',
+  group: 'Content',
+  defaultOptions: {
+    use: 'HtmlBlockFlowModel',
+    stepParams: {
+      default: {
+        step1: {
+          html: `<h1>Hello, NocoBase!</h1>
+<p>This is a simple HTML content rendered by FlowModel.</p>`,
+        },
+      },
+    },
+  },
+});
 
 HtmlBlockFlowModel.registerFlow({
   key: 'default',
@@ -63,9 +53,7 @@ HtmlBlockFlowModel.registerFlow({
         },
       },
       async handler(ctx, model: HtmlBlockFlowModel, params) {
-        waitForRefCallback(model.ref, (el) => {
-          el.innerHTML = params.html;
-        });
+        model.setProps('html', params.html);
       },
     },
   },

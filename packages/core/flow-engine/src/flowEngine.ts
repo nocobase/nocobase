@@ -113,17 +113,8 @@ export class FlowEngine {
     }
   }
 
-  getModelClasses(filterCallback?: any): Array<ModelConstructor> {
-    if (!filterCallback) {
-      return [...this.modelClasses.values()];
-    }
-    return [...this.modelClasses]
-      .filter(([modelName, modelClass]) => {
-        return filterCallback(modelClass, modelName);
-      })
-      .map(([_, modelClass]) => {
-        return modelClass;
-      });
+  getModelClasses() {
+    return this.modelClasses;
   }
 
   /**

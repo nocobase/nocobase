@@ -7,24 +7,22 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { FlowModel } from '@nocobase/flow-engine';
 import _ from 'lodash';
 import { Plugin } from '../application/Plugin';
 import { MockFlowModelRepository } from './FlowModelRepository';
 import { FlowPage } from './FlowPage';
-import { BlockFlowModel, BlockGridFlowModel, FormFlowModel, PageFlowModel, PageTabFlowModel } from './models';
-import { HtmlBlockFlowModel } from './models/HtmlBlockFlowModel';
+import * as models from './models';
 
 export class PluginFlowEngine extends Plugin {
   async load() {
     this.app.addComponents({ FlowPage });
     this.app.flowEngine.setModelRepository(new MockFlowModelRepository());
-    this.flowEngine.registerModels({
-      FormFlowModel,
-      BlockFlowModel,
-      PageFlowModel,
-      PageTabFlowModel,
-      BlockGridFlowModel,
-      HtmlBlockFlowModel,
-    });
+    const filteredModels = Object.fromEntries(
+      Object.entries(models).filter(
+        ([, ModelClass]) => typeof ModelClass === 'function' && ModelClass.prototype instanceof FlowModel,
+      ),
+    );
+    this.flowEngine.registerModels(filteredModels);
   }
 }

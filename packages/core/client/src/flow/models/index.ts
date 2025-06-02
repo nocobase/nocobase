@@ -10,6 +10,7 @@
 export * from './BlockFlowModel';
 export * from './BlockGridFlowModel';
 export * from './FormFlowModel';
+export * from './HtmlBlockFlowModel';
 export * from './PageFlowModel';
 export * from './PageTabFlowModel';
 //

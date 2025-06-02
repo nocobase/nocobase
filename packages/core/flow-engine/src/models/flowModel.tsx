@@ -51,9 +51,9 @@ export class FlowModel {
       setHidden: action,
     });
     // 保证onInit在所有属性都定义完成后调用
-    queueMicrotask(() => {
-      this.onInit(options);
-    });
+    // queueMicrotask(() => {
+    //   this.onInit(options);
+    // });
   }
 
   onInit(options): void {}

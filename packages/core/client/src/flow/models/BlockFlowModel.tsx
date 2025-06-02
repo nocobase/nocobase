@@ -9,6 +9,16 @@
 
 import { FlowModel } from '@nocobase/flow-engine';
 
+type BlockFlowModelMeta = {
+  title: string;
+  group?: string;
+  defaultOptions?: Record<string, any>;
+  icon?: string;
+};
+
 export class BlockFlowModel extends FlowModel {
-  static getInitParams() {}
+  static meta: BlockFlowModelMeta;
+  static define(meta: BlockFlowModelMeta) {
+    this.meta = meta;
+  }
 }

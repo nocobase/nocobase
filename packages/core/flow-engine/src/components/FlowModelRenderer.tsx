@@ -11,8 +11,8 @@ import { observer } from '@formily/reactive-react';
 import React from 'react';
 import { useApplyAutoFlows, useFlowContext } from '../hooks';
 import { FlowModel } from '../models';
-import { FlowsFloatContextMenu } from './settings/wrappers/contextual/FlowsFloatContextMenu';
 import { FlowsContextMenu } from './settings/wrappers/contextual/FlowsContextMenu';
+import { FlowsFloatContextMenu } from './settings/wrappers/contextual/FlowsFloatContextMenu';
 
 interface FlowModelRendererProps {
   model?: FlowModel;
@@ -36,61 +36,48 @@ interface FlowModelRendererProps {
  * @param {string} props.flowSettingsVariant - The interaction style for flow settings.
  * @returns {React.ReactNode | null} The rendered output of the model, or null if the model or its render method is invalid.
  */
-export const FlowModelRenderer: React.FC<FlowModelRendererProps> = observer(({ 
-  model, 
-  uid, 
-  showFlowSettings = false, 
-  flowSettingsVariant = 'dropdown' 
-}) => {
-  const flowContext = useFlowContext();
-  useApplyAutoFlows(model, flowContext);
-  
-  if (!model || typeof model.render !== 'function') {
-    // 可以选择渲染 null 或者一个错误/提示信息
-    console.warn('FlowModelRenderer: Invalid model or render method not found.', model);
-    return null;
-  }
-  
-  // 渲染模型内容
-  const modelContent = model.render();
-  
-  // 如果不显示流程设置，直接返回模型内容
-  if (!showFlowSettings) {
-    return modelContent;
-  }
-  
-  // 根据 flowSettingsVariant 包装相应的设置组件
-  switch (flowSettingsVariant) {
-    case 'dropdown':
-      return (
-        <FlowsFloatContextMenu model={model}>
-          {modelContent}
-        </FlowsFloatContextMenu>
-      );
-      
-    case 'contextMenu':
-      return (
-        <FlowsContextMenu model={model}>
-          {modelContent}
-        </FlowsContextMenu>
-      );
-      
-    case 'modal':
-      // TODO: 实现 modal 模式的流程设置
-      console.warn('FlowModelRenderer: modal variant is not implemented yet');
+export const FlowModelRenderer: React.FC<FlowModelRendererProps> = observer(
+  ({ model, uid, showFlowSettings = false, flowSettingsVariant = 'dropdown' }) => {
+    const flowContext = useFlowContext();
+    useApplyAutoFlows(model, flowContext);
+
+    if (!model || typeof model.render !== 'function') {
+      // 可以选择渲染 null 或者一个错误/提示信息
+      console.warn('FlowModelRenderer: Invalid model or render method not found.', model);
+      return null;
+    }
+
+    // 渲染模型内容
+    const modelContent = model.render();
+
+    // 如果不显示流程设置，直接返回模型内容
+    if (!showFlowSettings) {
       return modelContent;
-      
-    case 'drawer':
-      // TODO: 实现 drawer 模式的流程设置
-      console.warn('FlowModelRenderer: drawer variant is not implemented yet');
-      return modelContent;
-      
-    default:
-      console.warn(`FlowModelRenderer: Unknown flowSettingsVariant '${flowSettingsVariant}', falling back to dropdown`);
-      return (
-        <FlowsFloatContextMenu model={model}>
-          {modelContent}
-        </FlowsFloatContextMenu>
-      );
-  }
-});
+    }
+
+    // 根据 flowSettingsVariant 包装相应的设置组件
+    switch (flowSettingsVariant) {
+      case 'dropdown':
+        return <FlowsFloatContextMenu model={model}>{modelContent}</FlowsFloatContextMenu>;
+
+      case 'contextMenu':
+        return <FlowsContextMenu model={model}>{modelContent}</FlowsContextMenu>;
+
+      case 'modal':
+        // TODO: 实现 modal 模式的流程设置
+        console.warn('FlowModelRenderer: modal variant is not implemented yet');
+        return modelContent;
+
+      case 'drawer':
+        // TODO: 实现 drawer 模式的流程设置
+        console.warn('FlowModelRenderer: drawer variant is not implemented yet');
+        return modelContent;
+
+      default:
+        console.warn(
+          `FlowModelRenderer: Unknown flowSettingsVariant '${flowSettingsVariant}', falling back to dropdown`,
+        );
+        return <FlowsFloatContextMenu model={model}>{modelContent}</FlowsFloatContextMenu>;
+    }
+  },
+);

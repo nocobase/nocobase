@@ -10,6 +10,7 @@
 import { observable } from '@formily/reactive';
 import { FlowModel, FlowModelRenderer } from '@nocobase/flow-engine';
 import { Button, Card, Dropdown } from 'antd';
+import _ from 'lodash';
 import React from 'react';
 import { BlockFlowModel } from './BlockFlowModel';
 
@@ -17,20 +18,23 @@ function Grid({ items }) {
   return (
     <div>
       {items.map((item) => {
-        return <FlowModelRenderer model={item} key={item.uid} showFlowSettings />;
+        return (
+          <div key={item.uid} style={{ marginBottom: 16 }}>
+            <FlowModelRenderer model={item} key={item.uid} showFlowSettings />
+          </div>
+        );
       })}
     </div>
   );
 }
 
 function AddBlockButton({ model }) {
-  console.log('model.getBlockModels()', model.getBlockModels());
   return (
     <Dropdown
       menu={{
         onClick: (info) => {
           const BlockModel = model.flowEngine.getModelClass(info.key);
-          model.addItem(BlockModel.getInitParams());
+          model.addItem(_.cloneDeep(BlockModel.meta.defaultOptions));
         },
         items: model.getBlockModels(),
       }}
@@ -57,14 +61,15 @@ export class BlockGridFlowModel extends FlowModel {
   }
 
   getBlockModels() {
-    return this.flowEngine
-      .getModelClasses((ModelClass) => {
-        return ModelClass.prototype instanceof BlockFlowModel;
+    return [...this.flowEngine.getModelClasses()]
+      .filter(([, Model]) => {
+        return Model.prototype instanceof BlockFlowModel;
       })
-      .map((ModelClass) => {
+      .map(([key, Model]) => {
+        const meta = (Model as typeof BlockFlowModel).meta;
         return {
-          key: ModelClass.name,
-          label: ModelClass.name,
+          key,
+          label: meta.title,
         };
       });
   }

@@ -50,9 +50,6 @@ const schema: ISchema = {
 
 const initParams = {
   use: 'FormFlowModel',
-  // props: {
-  //   schema,
-  // },
   stepParams: {
     defaultFlow: {
       step1: {
@@ -96,6 +93,21 @@ export class FormFlowModel extends BlockFlowModel {
     );
   }
 }
+
+FormFlowModel.define({
+  title: 'Form',
+  group: 'Content',
+  defaultOptions: {
+    use: 'FormFlowModel',
+    stepParams: {
+      defaultFlow: {
+        step1: {
+          schema: JSON.stringify(schema, null, 2),
+        },
+      },
+    },
+  },
+});
 
 FormFlowModel.registerFlow('defaultFlow', {
   auto: true,
