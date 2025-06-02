@@ -17,18 +17,17 @@ import { useFlowEngine } from '../provider';
  * @returns Extra context object that can be passed to applyFlow
  */
 export function useFlowExtraContext(): Record<string, any> {
-  const engine = useFlowEngine();
   // const app = useApp(); // 移除 app 的获取
 
   // 创建并返回额外上下文对象
   const extraContext = useMemo(
     () => ({
-      // 可以在这里添加从 React 上下文中获取的数据
-      globals: engine.getContext() || {},
-      timestamp: new Date().toISOString(),
-      // app: app, // 如果需要的话可以添加 app 实例
+      // // 可以在这里添加从 React 上下文中获取的数据
+      // globals: engine.getContext() || {},
+      // timestamp: new Date().toISOString(),
+      // // app: app, // 如果需要的话可以添加 app 实例
     }),
-    [engine],
+    [],
   );
 
   return extraContext;
