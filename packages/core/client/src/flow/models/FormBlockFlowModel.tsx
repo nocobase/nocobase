@@ -10,8 +10,6 @@
 import { FormButtonGroup, FormItem, Input, Submit } from '@formily/antd-v5';
 import { createForm, Form } from '@formily/core';
 import { createSchemaField, FormProvider, ISchema } from '@formily/react';
-import { Application, Plugin } from '@nocobase/client';
-import { FlowModel, FlowModelRenderer, FlowsSettings } from '@nocobase/flow-engine';
 import { Card } from 'antd';
 import React from 'react';
 import { BlockFlowModel } from './BlockFlowModel';
@@ -49,7 +47,7 @@ const schema: ISchema = {
 };
 
 const initParams = {
-  use: 'FormFlowModel',
+  use: 'FormBlockFlowModel',
   stepParams: {
     defaultFlow: {
       step1: {
@@ -59,7 +57,7 @@ const initParams = {
   },
 };
 
-export class FormFlowModel extends BlockFlowModel {
+export class FormBlockFlowModel extends BlockFlowModel {
   SchemaField: any;
   form: Form;
 
@@ -94,11 +92,11 @@ export class FormFlowModel extends BlockFlowModel {
   }
 }
 
-FormFlowModel.define({
+FormBlockFlowModel.define({
   title: 'Form',
   group: 'Content',
   defaultOptions: {
-    use: 'FormFlowModel',
+    use: 'FormBlockFlowModel',
     stepParams: {
       defaultFlow: {
         step1: {
@@ -109,7 +107,7 @@ FormFlowModel.define({
   },
 });
 
-FormFlowModel.registerFlow<FormFlowModel>('defaultFlow', {
+FormBlockFlowModel.registerFlow<FormBlockFlowModel>('defaultFlow', {
   auto: true,
   steps: {
     step1: {

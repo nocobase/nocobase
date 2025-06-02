@@ -19,12 +19,16 @@ function InternalFlowPage({ uid }) {
 }
 
 export const FlowPage = () => {
-  const flowEngine = useFlowEngine();
   const params = useParams();
+  return <FlowPageComponent uid={params.name} />;
+};
+
+export const FlowPageComponent = ({ uid }) => {
+  const flowEngine = useFlowEngine();
   const { loading } = useRequest(
     () => {
       return flowEngine.loadOrCreateModel({
-        uid: params.name,
+        uid: uid,
         use: 'PageFlowModel',
         tabs: [
           {
@@ -37,11 +41,11 @@ export const FlowPage = () => {
       });
     },
     {
-      refreshDeps: [params.name],
+      refreshDeps: [uid],
     },
   );
   if (loading) {
     return <Spin />;
   }
-  return <InternalFlowPage uid={params.name} />;
+  return <InternalFlowPage uid={uid} />;
 };

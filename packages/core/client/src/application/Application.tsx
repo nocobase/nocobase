@@ -251,6 +251,7 @@ export class Application {
     this.use(AntdAppProvider);
     this.use(DataSourceApplicationProvider, { dataSourceManager: this.dataSourceManager });
     this.use(OpenModeProvider);
+    this.flowEngine.context['app'] = this;
     this.use(FlowEngineProvider, { engine: this.flowEngine });
   }
 

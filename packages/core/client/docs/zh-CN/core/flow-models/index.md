@@ -47,3 +47,7 @@
 ## FlowsContextMenu
 
 <code src="./demos/FlowsContextMenu.tsx"></code>
+
+## 事件触发
+
+<code src="./demos/dispatch-event.tsx"></code>

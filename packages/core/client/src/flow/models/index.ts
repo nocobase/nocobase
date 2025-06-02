@@ -9,8 +9,10 @@
 
 export * from './BlockFlowModel';
 export * from './BlockGridFlowModel';
-export * from './FormFlowModel';
+export * from './CalendarBlockFlowModel';
+export * from './FormBlockFlowModel';
 export * from './HtmlBlockFlowModel';
 export * from './PageFlowModel';
 export * from './PageTabFlowModel';
+export * from './TableBlockFlowModel';
 //

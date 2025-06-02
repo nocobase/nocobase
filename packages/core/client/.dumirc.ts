@@ -133,88 +133,88 @@ export default defineConfig({
               link: '/core/flow-models',
             },
             {
-              title: 'LayoutFlowModel',
+              title: 'LayoutModel',
               link: '/core/flow-models/layout-flow-model',
             },
             {
-              title: 'LayoutRouteFlowModel',
+              title: 'LayoutRouteModel',
               link: '/core/flow-models/layout-route-flow-model',
             },
             {
-              title: 'PageFlowModel',
+              title: 'PageModel',
               link: '/core/flow-models/page-flow-model',
             },
             {
-              title: 'PageTabFlowModel',
+              title: 'PageTabModel',
               link: '/core/flow-models/page-tab-flow-model',
             },
             {
-              title: 'GridFlowModel',
+              title: 'GridModel',
               link: '/core/flow-models/grid-flow-model',
             },
             {
-              title: 'BlockGridFlowModel',
+              title: 'BlockGridModel',
               link: '/core/flow-models/block-grid-flow-model',
             },
             {
-              title: 'BlockFlowModel',
+              title: 'BlockModel',
               link: '/core/flow-models/block-flow-model',
             },
             {
-              title: 'FormFlowModel',
+              title: 'FormModel',
               link: '/core/flow-models/form-flow-model',
             },
             {
-              title: 'TableFlowModel',
+              title: 'TableModel',
               link: '/core/flow-models/table-flow-model',
             },
             {
-              title: 'DetailsFlowModel',
+              title: 'DetailsModel',
               link: '/core/flow-models/details-flow-model',
             },
             {
-              title: 'ListFlowModel',
+              title: 'ListModel',
               link: '/core/flow-models/list-flow-model',
             },
             {
-              title: 'CalendarFlowModel',
+              title: 'CalendarModel',
               link: '/core/flow-models/calendar-flow-model',
             },
             
             {
-              title: 'KanbanFlowModel',
+              title: 'KanbanModel',
               link: '/core/flow-models/kanban-flow-model',
             },
             {
-              title: 'MapFlowModel',
+              title: 'MapModel',
               link: '/core/flow-models/map-flow-model',
             },
             {
-              title: 'GanttFlowModel',
+              title: 'GanttModel',
               link: '/core/flow-models/gantt-flow-model',
             },
             {
-              title: 'ChartFlowModel',
+              title: 'ChartModel',
               link: '/core/flow-models/chart-flow-model',
             },
             {
-              title: 'MarkdownFlowModel',
+              title: 'MarkdownModel',
               link: '/core/flow-models/markdown-flow-model',
             },
             {
-              title: 'HtmlFlowModel',
+              title: 'HtmlModel',
               link: '/core/flow-models/html-flow-model',
             },
             {
-              title: 'iframeFlowModel',
+              title: 'iframeModel',
               link: '/core/flow-models/iframe-flow-model',
             },
             {
-              title: 'TimelineFlowModel',
+              title: 'TimelineModel',
               link: '/core/flow-models/timeline-flow-model',
             },
             {
-              title: 'CollapseFlowModel',
+              title: 'CollapseModel',
               link: '/core/flow-models/collapse-flow-model',
             },
           ],
