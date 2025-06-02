@@ -33,8 +33,6 @@ export class FlowModel {
   public stepParams: StepParams;
   public flowEngine: FlowEngine;
   public parent: FlowModel | null = null;
-  // TODO: 应该有一些类型，整个生命周期只执行一次，比如从后端加载配置，构造整个model树。
-  // 后续model的更新不需要再重新加载了
 
   constructor(
     protected options: { uid: string; use?: string; props?: IModelComponentProps; stepParams?: Record<string, any> },
@@ -52,8 +50,10 @@ export class FlowModel {
       setStepParams: action,
       setHidden: action,
     });
-    // 写在这里，在子类里无效
-    // this.onInit(options);
+    // 保证onInit在所有属性都定义完成后调用
+    queueMicrotask(() => {
+      this.onInit(options);
+    });
   }
 
   onInit(options): void {}
