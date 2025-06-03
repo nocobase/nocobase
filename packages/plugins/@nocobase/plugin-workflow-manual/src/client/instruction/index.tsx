@@ -10,7 +10,13 @@
 import React from 'react';
 import { SolutionOutlined } from '@ant-design/icons';
 
-import { SchemaInitializerItemType, useCollectionManager_deprecated, useCompile, usePlugin } from '@nocobase/client';
+import {
+  joinCollectionName,
+  SchemaInitializerItemType,
+  useCollectionManager_deprecated,
+  useCompile,
+  useDataSourceManager,
+} from '@nocobase/client';
 
 import {
   defaultFieldNames,
@@ -76,7 +82,8 @@ function useVariables({ key, title, config }, { types, fieldNames = defaultField
 }
 
 function useInitializers(node): SchemaInitializerItemType | null {
-  const { getCollection } = useCollectionManager_deprecated();
+  const dsm = useDataSourceManager();
+  // const { getCollection } = useCollectionManager_deprecated();
   const formKeys = Object.keys(node.config.forms ?? {});
   if (!formKeys.length || node.config.mode) {
     return null;
@@ -85,7 +92,11 @@ function useInitializers(node): SchemaInitializerItemType | null {
   const forms = formKeys
     .map((formKey) => {
       const form = node.config.forms[formKey];
-      const { fields = [] } = getCollection(form.collection);
+      const { collectionManager } = dsm.getDataSource(form.dataSource);
+      const { fields = [] } =
+        typeof form.collection === 'string'
+          ? collectionManager.getCollection(form.collection)
+          : form.collection || { fields: [] };
 
       return fields.length
         ? ({
@@ -93,7 +104,7 @@ function useInitializers(node): SchemaInitializerItemType | null {
             type: 'item',
             title: form.title ?? formKey,
             Component: CollectionBlockInitializer,
-            collection: form.collection,
+            collection: joinCollectionName(form.dataSource, form.collection),
             dataPath: `$jobsMapByNodeKey.${node.key}.${formKey}`,
           } as SchemaInitializerItemType)
         : null;
