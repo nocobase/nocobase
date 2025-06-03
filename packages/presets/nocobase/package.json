@@ -21,6 +21,7 @@
     "@nocobase/plugin-auth": "1.7.0-beta.34",
     "@nocobase/plugin-auth-sms": "1.7.0-beta.34",
     "@nocobase/plugin-backup-restore": "1.7.0-beta.34",
+    "@nocobase/plugin-block-cloud": "1.7.0-beta.34",
     "@nocobase/plugin-block-iframe": "1.7.0-beta.34",
     "@nocobase/plugin-block-template": "1.7.0-beta.34",
     "@nocobase/plugin-block-workbench": "1.7.0-beta.34",
