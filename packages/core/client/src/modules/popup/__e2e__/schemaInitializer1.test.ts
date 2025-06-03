@@ -93,13 +93,13 @@ test.describe('where to open a popup and what can be added to it', () => {
     await addBlock(['Form (Edit)']);
     await addBlock(['Markdown']);
 
-    await expect(page.getByText('GeneralConfigure actionsConfigure fields')).toBeVisible();
-    await expect(page.getByText('GeneralConfigure fieldsConfigure actions')).toBeVisible();
-    await expect(page.getByLabel('block-item-Markdown.Void-general-markdown')).toBeVisible();
+    await expect(page.getByLabel('block-item-CardItem-general-details')).toBeVisible();
+    await expect(page.getByLabel('block-item-CardItem-general-form')).toBeVisible();
+    await expect(page.getByLabel('block-item-Markdown.Void-')).toBeVisible();
 
     // 删除已创建的 blocks，腾出页面空间
     // delete details block
-    await page.getByText('GeneralConfigure actionsConfigure fields').hover();
+    await page.getByLabel('block-item-CardItem-general-details').hover();
     await page.getByLabel('designer-schema-settings-CardItem-blockSettings:details-general').hover();
     await page.getByRole('menuitem', { name: 'Delete' }).click();
     await page.getByRole('button', { name: 'OK', exact: true }).click();

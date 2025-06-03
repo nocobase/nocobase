@@ -327,14 +327,22 @@ const InternalSchemaToolbar: FC<SchemaToolbarProps> = React.memo((props) => {
 
     function show() {
       if (toolbarElement) {
-        toolbarElement.classList.remove(hiddenClassName);
+        if (process.env.__E2E__) {
+          toolbarElement.style.display = 'block';
+        } else {
+          toolbarElement.classList.remove(hiddenClassName);
+        }
         props.onVisibleChange?.(true);
       }
     }
 
     function hide() {
       if (toolbarElement) {
-        toolbarElement.classList.add(hiddenClassName);
+        if (process.env.__E2E__) {
+          toolbarElement.style.display = 'none';
+        } else {
+          toolbarElement.classList.add(hiddenClassName);
+        }
         props.onVisibleChange?.(false);
       }
     }
