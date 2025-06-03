@@ -21,7 +21,7 @@ import { StepSettingsModal } from './StepSettingsModal';
 // 使用与 NocoBase 一致的悬浮工具栏样式
 const floatContainerStyles = css`
   position: relative;
-  display: inline-block;
+  display: inline;
 
   &:hover {
     > .general-schema-designer {
@@ -33,8 +33,6 @@ const floatContainerStyles = css`
     position: absolute;
     z-index: 999;
     top: 0;
-    bottom: 0;
-    left: 0;
     right: 0;
     display: none;
     background: var(--colorBgSettingsHover);
@@ -48,7 +46,6 @@ const floatContainerStyles = css`
     > .general-schema-designer-icons {
       position: absolute;
       right: 2px;
-      top: 2px;
       line-height: 16px;
       pointer-events: all;
 
