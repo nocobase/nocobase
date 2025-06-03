@@ -15,6 +15,9 @@ interface FlowModelRendererProps {
   /** 流程设置的交互风格 */
   flowSettingsVariant?: 'dropdown' | 'contextMenu' | 'modal' | 'drawer'; // 默认 'dropdown'
 
+  /** 是否在设置中隐藏移除按钮 */
+  hideRemoveInSettings?: boolean; // 默认 false
+
   /** 是否跳过自动应用流程，默认 false */
   skipApplyAutoFlows?: boolean; // 默认 false
 
@@ -33,6 +36,7 @@ interface FlowModelRendererProps {
   - `contextMenu`: 右键上下文菜单
   - `modal`: 模态框形式（待实现）
   - `drawer`: 抽屉形式（待实现）
+- **hideRemoveInSettings**: 是否在设置中隐藏移除按钮，当设为 `true` 时，流程设置菜单中不会显示删除/移除选项
 - **skipApplyAutoFlows**: 是否跳过自动应用流程。当设为 `true` 时，组件不会调用 `useApplyAutoFlows` hook
 - **extraContext**: 额外的上下文数据，当 `skipApplyAutoFlows` 为 `false` 时传递给 `useApplyAutoFlows` hook
 
@@ -47,6 +51,13 @@ interface FlowModelRendererProps {
   model={model} 
   showFlowSettings 
   flowSettingsVariant={'dropdown'}
+/>
+
+// 显示设置但隐藏移除按钮
+<FlowModelRenderer 
+  model={model} 
+  showFlowSettings={true}
+  hideRemoveInSettings={true}
 />
 
 // 跳过自动应用流程
@@ -67,6 +78,7 @@ interface FlowModelRendererProps {
   uid="unique-flow-id"
   showFlowSettings={true}
   flowSettingsVariant="contextMenu"
+  hideRemoveInSettings={false}
   skipApplyAutoFlows={false}
   extraContext={{ 
     userId: 123,
@@ -95,7 +107,18 @@ interface FlowModelRendererProps {
 />
 ```
 
-### 3. 自定义流程控制
+### 3. 带设置但禁用删除功能
+当需要流程设置但不允许用户删除时：
+
+```tsx | pure
+<FlowModelRenderer 
+  model={flowModel} 
+  showFlowSettings={true}
+  hideRemoveInSettings={true}
+/>
+```
+
+### 4. 自定义流程控制
 当需要手动控制流程应用时，可以跳过自动流程：
 
 ```tsx | pure
@@ -105,7 +128,7 @@ interface FlowModelRendererProps {
 />
 ```
 
-### 4. 传递自定义上下文
+### 5. 传递自定义上下文
 当需要向流程传递特定上下文数据时：
 
 ```tsx | pure

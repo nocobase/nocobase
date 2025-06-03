@@ -79,7 +79,7 @@ const DeleteButton = withFlowModel(ButtonComponent, {
     // component: FlowsContextMenu,
     component: FlowsFloatContextMenu,
     props: {
-      showDeleteButton: false,
+      hideRemoveInSettings: true,
     },
   },
 });
