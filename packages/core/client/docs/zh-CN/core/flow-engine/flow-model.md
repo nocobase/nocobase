@@ -59,9 +59,6 @@
 - **static registerFlow(keyOrDefinition, flowDefinition?)**  
   配置流程，支持字符串 key 或完整对象。
 
-- **static extendFlow(keyOrDefinition, extendDefinition?)**  
-  扩展/合并已有流程配置。
-
 - **applyFlow(flowKey: string, context?): Promise<any>**  
   执行指定流程。
 
@@ -109,13 +106,6 @@
 
 - **render(): React.ReactNode | Function**  
   渲染模型的 React 组件，默认返回空 div，建议子类重写。
-
----
-
-## 继承与扩展
-
-- **static extends(flows: ExtendedFlowDefinition[]): typeof FlowModel**  
-  快速创建带预注册流程的新模型子类。
 
 ---
 
