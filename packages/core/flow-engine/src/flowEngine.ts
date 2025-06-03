@@ -17,6 +17,13 @@ import {
   ModelConstructor,
 } from './types';
 
+interface ApplyFlowCacheEntry {
+  status: 'pending' | 'resolved' | 'rejected';
+  promise: Promise<any>;
+  data?: any;
+  error?: any;
+}
+
 export class FlowEngine {
   /** @private Stores registered action definitions. */
   private actions: Map<string, ActionDefinition> = new Map();
@@ -26,7 +33,8 @@ export class FlowEngine {
   private modelInstances: Map<string, any> = new Map();
   context: Record<string, any> = {};
   private modelRepository: IFlowModelRepository | null = null;
-
+  private _applyFlowCache = new Map<string, ApplyFlowCacheEntry>();
+  
   setModelRepository(modelRepository: IFlowModelRepository) {
     if (this.modelRepository) {
       console.warn('FlowEngine: Model repository is already set and will be overwritten.');
@@ -42,6 +50,10 @@ export class FlowEngine {
     return this.context;
   }
 
+  get applyFlowCache() {
+    return this._applyFlowCache;
+  }
+  
   /**
    * 注册一个 Action。支持泛型以确保正确的模型类型推导。
    * Action 是流程中的可复用操作单元。

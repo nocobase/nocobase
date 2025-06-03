@@ -13,17 +13,6 @@ import { FlowModel } from '../models';
 import { useFlowEngine } from '../provider';
 import { FlowExtraContext } from '../types';
 
-// 缓存入口接口定义
-interface FlowCacheEntry {
-  status: 'pending' | 'resolved' | 'rejected';
-  promise: Promise<any>;
-  data?: any;
-  error?: any;
-}
-
-// 缓存存储Map
-const flowEngineCache = new Map<string, FlowCacheEntry>();
-
 // 生成稳定的缓存键
 function generateCacheKey(prefix: string, flowKey: string, modelUid: string): string {
   return `${prefix}:${flowKey}:${modelUid}`;
@@ -120,6 +109,7 @@ function useFlowExecutor<T, TModel extends FlowModel = FlowModel>(
   );
   const [, forceUpdate] = useState({});
   const isMounted = useRef(true);
+  const flowEngineCache = engine.applyFlowCache;
 
   useEffect(() => {
     isMounted.current = true;
