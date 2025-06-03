@@ -110,9 +110,9 @@ export const uiSchemaTemplatesSchema: ISchema = {
           properties: {
             column1: {
               type: 'void',
+              title: '{{ t("Title") }}',
               'x-decorator': 'TableV2.Column.Decorator',
               'x-component': 'TableV2.Column',
-              'title': 'Title',
               properties: {
                 name: {
                   type: 'string',
