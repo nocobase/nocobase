@@ -10,7 +10,6 @@
 import { TableOutlined } from '@ant-design/icons';
 import React from 'react';
 import { useSchemaInitializer, useSchemaInitializerItem } from '../../../../application/schema-initializer/context';
-import { useCollectionManager_deprecated } from '../../../../collection-manager/hooks/useCollectionManager_deprecated';
 import { Collection, CollectionFieldOptions } from '../../../../data-source/collection/Collection';
 import { DataBlockInitializer } from '../../../../schema-initializer/items/DataBlockInitializer';
 import { createTableBlockUISchema } from './createTableBlockUISchema';
