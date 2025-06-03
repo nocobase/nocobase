@@ -1,27 +1,36 @@
-# Quickstart
 
-以 React 为例，我们通常会这样去渲染一个按钮组件。
+# 快速开始：用 FlowModel 构建可编排的按钮组件
 
-```tsx
+在 React 中，我们通常这样渲染一个按钮组件：
+
+```tsx | pure
 import { Button } from 'antd';
 
 export default function App() {
-    return <Button type="primary">Primary Button</Button>
+  return <Button type="primary">Primary Button</Button>;
 }
 ```
 
-但是这个按钮是一个静态的，无任何作用。开发可以有无数种办法实现相关的逻辑，但是如果要提供无代码或自动化编排能力，这个按钮需要很大工程改造。
-而在 NocoBase 的 FlowEngine 里，无代码的改造，非常的简单。
+上述代码虽然简单，但属于**静态组件**，无法满足无代码平台对可配置性和编排能力的需求。
 
-第一步：基于 FlowModel 实现组件的渲染
+在 NocoBase 的 FlowEngine 中，我们可以通过 **FlowModel + FlowDefinition** 快速构建支持配置和事件驱动的组件，实现更强大的无代码能力。
+
+---
+
+## 第一步：使用 FlowModel 渲染组件
 
 <code src="./demos/quickstart-1-basic.tsx"></code>
 
-三点小细节说明
+### 🧠 关键概念
 
-1. 把组件放到 FlowModel 的 render 里渲染
+- `FlowModel` 是 FlowEngine 中的核心组件模型，封装组件逻辑、渲染和配置能力。
+- 每个 UI 组件都可以通过 `FlowModel` 进行实例化并统一管理。
 
-```ts
+### 📌 实现步骤
+
+#### 1. 创建自定义模型类
+
+```tsx | pure
 class MyModel extends FlowModel {
   render() {
     return <Button {...this.props} />;
@@ -29,35 +38,43 @@ class MyModel extends FlowModel {
 }
 ```
 
-2. 每个按钮都是一个 model 实例
+#### 2. 创建 model 实例
 
 ```ts
 const model = this.flowEngine.createModel({
-    uid: 'my-model',
-    use: 'MyModel',
-    props: {
-        type: 'primary',
-        children: 'Primary Button',
-    },
+  uid: 'my-model',
+  use: 'MyModel',
+  props: {
+    type: 'primary',
+    children: 'Primary Button',
+  },
 });
 ```
 
-3. 使用 `<FlowModelRenderer />` 渲染 model。
+#### 3. 使用 `<FlowModelRenderer />` 渲染
 
-```ts
+```tsx | pure
 <FlowModelRenderer model={model} />
 ```
 
-第二步：为 MyModel 添加一个属性流的配置，实现按钮 props 的可编辑能力
+---
+
+## 第二步：添加 PropsFlow，使按钮属性可配置
 
 <code src="./demos/quickstart-2-register-propsflow.tsx"></code>
 
-在这一步重点的几个改造
+### 💡 为什么要用 PropsFlow？
 
-1. 为 MyModel 添加了一个 Flow，用于配置按钮属性
+使用 Flow 而非静态 props，可以实现属性的：
+- 动态配置
+- 可视化编辑
+- 状态回放与持久化
 
-```ts
+### 🛠 关键改造点
 
+#### 1. 定义按钮属性的 Flow
+
+```tsx | pure
 const myPropsFlow = defineFlow({
   key: 'myPropsFlow',
   auto: true,
@@ -100,9 +117,7 @@ const myPropsFlow = defineFlow({
       defaultParams: {
         type: 'primary',
       },
-      // 步骤处理函数，设置模型属性
       handler(ctx, params) {
-        console.log('Setting props:', params);
         ctx.model.setProps('children', params.title);
         ctx.model.setProps('type', params.type);
         const icon = params.icon ? React.createElement(icons[params.icon]) : undefined;
@@ -115,56 +130,49 @@ const myPropsFlow = defineFlow({
 MyModel.registerFlow(myPropsFlow);
 ```
 
-2. model 实例，去掉 props 改为 stepParams 参数
+#### 2. 使用 `stepParams` 替代静态 `props`
 
 ```diff
 const model = this.flowEngine.createModel({
-    uid: 'my-model',
-    use: 'MyModel',
--   props: {
--       type: 'primary',
--       children: 'Primary Button',
--   },
-+   stepParams: {
-+       myPropsFlow: {
-+           setProps: {
-+               title: 'Primary Button',
-+               type: 'primary',
-+           },
-+       },
+  uid: 'my-model',
+  use: 'MyModel',
+- props: {
+-   type: 'primary',
+-   children: 'Primary Button',
+- },
++ stepParams: {
++   myPropsFlow: {
++     setProps: {
++       title: 'Primary Button',
++       type: 'primary',
++     },
 +   },
++ },
 });
 ```
 
-**为什么不用 props？**
-因为有些 props 并不是可序列化的数据，比如 icon，在 step 可以转换为 React 组件。
+> ✅ 使用 `stepParams` 是 FlowEngine 推荐方式，可避免不可序列化数据（如 React 组件）的问题。
 
-```ts
-handler(ctx, params) {
-  const icon = params.icon ? React.createElement(icons[params.icon]) : undefined;
-  ctx.model.setProps('icon', icon);
-},
-```
-
-3. 启用 Flow 配置
+#### 3. 启用属性配置界面
 
 ```diff
 - <FlowModelRenderer model={model} />
 + <FlowModelRenderer model={model} showFlowSettings />
 ```
 
-第三步：为按钮支持事件流的配置
+---
+
+## 第三步：支持按钮事件流（EventFlow）
 
 <code src="./demos/quickstart-3-register-eventflow.tsx"></code>
 
-几个重点改动
+### 🎯 场景：点击按钮后弹出确认框
 
-1. 支持事件流触发
+#### 1. 在模型中派发事件
 
-```ts
+```tsx | pure
 class MyModel extends FlowModel {
   render() {
-    console.log('Rendering MyModel with props:', this.props);
     return (
       <Button
         {...this.props}
@@ -177,7 +185,7 @@ class MyModel extends FlowModel {
 }
 ```
 
-2. 新增事件流的配置
+#### 2. 定义事件流
 
 ```ts
 const myEventFlow = defineFlow({
@@ -215,43 +223,46 @@ const myEventFlow = defineFlow({
 });
 ```
 
+---
 
-## 总结
-
-以下是 ReactComponent 和 ButtonModel 的对比
+## 模型对比图：ReactComponent vs FlowModel
 
 <img style="width: 500px;" src="https://static-docs.nocobase.com/20250603130549.png">
 
-ReactComponent
+### ReactComponent
 
 ```mermaid
 graph TD
   Button[ButtonComponent]
-  
   Button --> Props[Props]
   Button --> Events[Events]
-  
   Props --> title[title]
   Props --> type[type]
   Props --> icon[icon]
-  
   Events --> onClick[onClick]
 ```
 
-ButtonModel
+### FlowModel
 
 ```mermaid
 graph TD
   Button[ButtonModel]
-
   Button --> Props[PropsFlow]
   Button --> Events[EventFlow]
-
   Props --> title[title]
   Props --> type[type]
   Props --> icon[icon]
-
   Events --> onClick[onClick]
 ```
 
-不同点在于 ButtonModel 为 Props 和 Events 提供了可配置可编排的能力，这个能力叫 Flow。
+---
+
+## 总结
+
+通过以上三步，我们完成了一个支持配置与事件编排的按钮组件，具备以下优势：
+
+- 🚀 可视化配置属性（如标题、类型、图标）
+- 🔄 事件响应可被流程接管（如点击弹窗）
+- 🔧 支持后续拓展（如条件逻辑、变量绑定等）
+
+这种模式也适用于表单、列表、图表等任何 UI 组件，在 NocoBase 的 FlowEngine 中，**一切皆可编排**。
