@@ -214,3 +214,44 @@ const myEventFlow = defineFlow({
   },
 });
 ```
+
+
+## 总结
+
+以下是 ReactComponent 和 ButtonModel 的对比
+
+<img style="width: 500px;" src="https://static-docs.nocobase.com/20250603130549.png">
+
+ReactComponent
+
+```mermaid
+graph TD
+  Button[ButtonComponent]
+  
+  Button --> Props[Props]
+  Button --> Events[Events]
+  
+  Props --> title[title]
+  Props --> type[type]
+  Props --> icon[icon]
+  
+  Events --> onClick[onClick]
+```
+
+ButtonModel
+
+```mermaid
+graph TD
+  Button[ButtonModel]
+
+  Button --> Props[PropsFlow]
+  Button --> Events[EventFlow]
+
+  Props --> title[title]
+  Props --> type[type]
+  Props --> icon[icon]
+
+  Events --> onClick[onClick]
+```
+
+不同点在于 ButtonModel 提供了 Props 和 Events 的配置能力。
