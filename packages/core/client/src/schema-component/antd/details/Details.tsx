@@ -23,7 +23,7 @@ export type DetailsProps = FormProps;
 
 export const Details = withDynamicSchemaProps(
   withSkeletonComponent((props: DetailsProps) => {
-    const { data, loading } = useDataBlockRequest();
+    const { data, loading } = useDataBlockRequest() || {};
     const schema = useFieldSchema();
     const { isBlockTemplate, templateFinished } = useTemplateBlockContext();
 
