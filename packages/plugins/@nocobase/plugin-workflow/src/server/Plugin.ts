@@ -385,6 +385,7 @@ export default class PluginWorkflowServer extends Plugin {
         'flow_nodes:destroy',
         'flow_nodes:test',
         'jobs:get',
+        'workflowCategories:*',
       ],
     });
 

@@ -34,6 +34,7 @@ import ScheduleTrigger from './triggers/schedule';
 import { getWorkflowDetailPath, getWorkflowExecutionsPath } from './utils';
 import { VariableOption } from './variable';
 import { TasksProvider, TaskTypeOptions, WorkflowTasks } from './WorkflowTasks';
+import { WorkflowCollectionsProvider } from './WorkflowCollectionsProvider';
 
 const workflowConfigSettings = {
   Component: BindWorkflowConfig,
@@ -109,6 +110,8 @@ export default class PluginWorkflowClient extends Plugin {
   }
 
   async load() {
+    this.app.addProvider(WorkflowCollectionsProvider);
+
     this.router.add('admin.workflow.workflows.id', {
       path: getWorkflowDetailPath(':id'),
       Component: WorkflowPage,

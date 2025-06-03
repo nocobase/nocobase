@@ -192,7 +192,7 @@ export const Action: ComposedAction = withDynamicSchemaProps(
     }, [onClick, fieldSchema, getAllDataBlocks]);
 
     return (
-      <VariableScope scopeId={fieldSchema['x-uid']} type="action">
+      <VariableScope scopeId={fieldSchema?.['x-uid']} type="action">
         <InternalAction
           containerRefKey={containerRefKey}
           fieldSchema={fieldSchema}
