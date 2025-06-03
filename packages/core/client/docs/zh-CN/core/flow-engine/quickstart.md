@@ -11,7 +11,7 @@ export default function App() {
 ```
 
 但是这个按钮是一个静态的，无任何作用。开发可以有无数种办法实现相关的逻辑，但是如果要提供无代码或自动化编排能力，这个按钮需要很大工程改造。
-而在，NocoBase 的 FlowEngine 里，无代码的改造，非常的简单。
+而在 NocoBase 的 FlowEngine 里，无代码的改造，非常的简单。
 
 第一步：基于 FlowModel 实现组件的渲染
 
@@ -157,4 +157,60 @@ handler(ctx, params) {
 
 <code src="./demos/quickstart-3-register-eventflow.tsx"></code>
 
+几个重点改动
 
+1. 支持事件流触发
+
+```ts
+class MyModel extends FlowModel {
+  render() {
+    console.log('Rendering MyModel with props:', this.props);
+    return (
+      <Button
+        {...this.props}
+        onClick={(event) => {
+          this.dispatchEvent('onClick', { event });
+        }}
+      />
+    );
+  }
+}
+```
+
+2. 新增事件流的配置
+
+```ts
+const myEventFlow = defineFlow({
+  key: 'myEventFlow',
+  on: {
+    eventName: 'onClick',
+  },
+  title: '按钮事件',
+  steps: {
+    confirm: {
+      title: '确认操作配置',
+      uiSchema: {
+        title: {
+          type: 'string',
+          title: '弹窗提示标题',
+          'x-component': 'Input',
+        },
+        content: {
+          type: 'string',
+          title: '弹窗提示内容',
+          'x-component': 'Input.TextArea',
+        },
+      },
+      defaultParams: {
+        title: '确认操作',
+        content: '你点击了按钮，是否确认？',
+      },
+      handler(ctx, params) {
+        Modal.confirm({
+          ...params,
+        });
+      },
+    },
+  },
+});
+```

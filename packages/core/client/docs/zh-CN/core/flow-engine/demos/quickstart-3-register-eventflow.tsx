@@ -77,10 +77,10 @@ const myEventFlow = defineFlow({
   on: {
     eventName: 'onClick',
   },
-  title: '按钮点击事件',
+  title: '按钮事件',
   steps: {
     confirm: {
-      title: '确认按钮设置',
+      title: '确认操作配置',
       uiSchema: {
         title: {
           type: 'string',
