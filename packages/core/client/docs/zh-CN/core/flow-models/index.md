@@ -1,4 +1,4 @@
-# FlowModel
+# Flow Models
 
 ## Basic
 

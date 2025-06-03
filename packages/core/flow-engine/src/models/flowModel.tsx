@@ -552,3 +552,7 @@ export class FlowModel {
     return data;
   }
 }
+
+export function defineFlow<TModel extends FlowModel = FlowModel>(definition: FlowDefinition): FlowDefinition<TModel> {
+  return definition as FlowDefinition<TModel>;
+}

@@ -220,6 +220,16 @@ export default defineConfig({
           ],
         },
         {
+          title: 'Flow Actions',
+          type: 'group',
+          children: [
+            {
+              title: 'Overview',
+              link: '/core/flow-actions',
+            },
+          ],
+        },
+        {
           title: 'Event and Filter',
           type: 'group',
           children: [
