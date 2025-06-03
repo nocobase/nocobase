@@ -21,6 +21,7 @@ import { getCardItemSchema } from '../../../block-provider';
 import { useTemplateBlockContext } from '../../../block-provider/TemplateBlockProvider';
 import { useDataBlockProps } from '../../../data-source';
 import { useDataBlockRequest } from '../../../data-source/data-block/DataBlockRequestProvider';
+import { useFlag } from '../../../flag-provider/hooks/useFlag';
 import { NocoBaseRecursionField } from '../../../formily/NocoBaseRecursionField';
 import { withDynamicSchemaProps } from '../../../hoc/withDynamicSchemaProps';
 import { bindLinkageRulesToFiled } from '../../../schema-settings/LinkageRules/bindLinkageRulesToFiled';
@@ -50,6 +51,21 @@ const FormComponent: React.FC<FormProps> = (props) => {
     labelWidth = 120,
     labelWrap = true,
   } = cardItemSchema?.['x-component-props'] || {};
+  const { isInFilterFormBlock } = useFlag();
+
+  useEffect(() => {
+    if (!isInFilterFormBlock) {
+      return;
+    }
+
+    // Clear the form validators. Filter forms don't need validators.
+    form.query('*').forEach((field: Field) => {
+      if (field.validator) {
+        field.validator = null;
+      }
+    });
+  }, [form, isInFilterFormBlock]);
+
   return (
     <FieldContext.Provider value={undefined}>
       <FormContext.Provider value={form}>
