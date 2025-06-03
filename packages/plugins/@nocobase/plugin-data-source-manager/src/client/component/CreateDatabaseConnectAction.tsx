@@ -9,12 +9,20 @@
 
 import { DownOutlined, PlusOutlined } from '@ant-design/icons';
 import { uid } from '@formily/shared';
-import { ActionContext, SchemaComponent, useAPIClient, useCompile, usePlugin } from '@nocobase/client';
+import {
+  ActionContext,
+  SchemaComponent,
+  useAPIClient,
+  useCompile,
+  usePlugin,
+  useResourceContext,
+  useActionContext,
+} from '@nocobase/client';
 import { Button, Dropdown, Empty } from 'antd';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import PluginDatabaseConnectionsClient from '../';
-import { useTestConnectionAction } from '../hooks';
+import { useLoadCollections, useTestConnectionAction } from '../hooks';
 import { NAMESPACE } from '../locale';
 
 export const CreateDatabaseConnectAction = () => {
@@ -25,6 +33,8 @@ export const CreateDatabaseConnectAction = () => {
   const { t } = useTranslation();
   const [dialect, setDialect] = useState(null);
   const api = useAPIClient();
+  const loadCollections = useLoadCollections();
+
   const useDialectDataSource = (field) => {
     const options = [...plugin.types.keys()].map((key) => {
       const type = plugin.types.get(key);
@@ -64,7 +74,7 @@ export const CreateDatabaseConnectAction = () => {
                     properties: {
                       body: {
                         type: 'void',
-                        'x-component': type.DataSourceSettingsForm,
+                        'x-component': type.DataSourceSettingsForm.bind(null, { loadCollections, from: 'create' }),
                       },
                       footer: {
                         type: 'void',
@@ -90,7 +100,7 @@ export const CreateDatabaseConnectAction = () => {
                             'x-component': 'Action',
                             'x-component-props': {
                               type: 'primary',
-                              useAction: '{{ cm.useCreateAction }}',
+                              useAction: '{{ cm.useCreateDBAction }}',
                               actionCallback: '{{ dataSourceCreateCallback }}',
                             },
                           },
@@ -147,7 +157,12 @@ export const CreateDatabaseConnectAction = () => {
           </Button>
         </Dropdown>
         <SchemaComponent
-          scope={{ createOnly: false, useTestConnectionAction, dialect, useDialectDataSource }}
+          scope={{
+            createOnly: false,
+            useTestConnectionAction,
+            dialect,
+            useDialectDataSource,
+          }}
           schema={schema}
         />
       </ActionContext.Provider>

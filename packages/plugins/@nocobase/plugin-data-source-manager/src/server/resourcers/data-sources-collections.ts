@@ -10,6 +10,7 @@
 import lodash from 'lodash';
 import { filterMatch } from '@nocobase/database';
 import _ from 'lodash';
+import { DataSourceManager } from '@nocobase/data-source-manager';
 
 export default {
   name: 'dataSources.collections',
@@ -128,19 +129,33 @@ export default {
     },
     async all(ctx, next) {
       const params = ctx.action.params;
-      const { associatedIndex: dataSourceKey } = params;
-      const dataSource = ctx.app.dataSourceManager.dataSources.get(dataSourceKey);
-      if (!dataSource) {
-        throw new Error(`dataSource ${dataSourceKey} not found`);
+      const { associatedIndex: dataSourceKey, isFirst, dbOptions } = params;
+      const dataSourceManager = ctx.app.dataSourceManager as DataSourceManager;
+
+      let allCollections = null;
+      if (isFirst) {
+        const klass = dataSourceManager.factory.getClass(dbOptions.type);
+        // @ts-ignore
+        const dataSource = new klass(dbOptions);
+        const introspector = dataSource.collectionManager.dataSource.createDatabaseIntrospector(
+          dataSource.collectionManager.db,
+        );
+        allCollections = await introspector.getCollections();
+      } else {
+        const dataSource = dataSourceManager.dataSources.get(dataSourceKey);
+
+        if (!dataSource) {
+          throw new Error(`dataSource ${dataSourceKey} not found`);
+        }
+        allCollections = await dataSource['getCollectionsFromCache']();
       }
-      const allCollections = await dataSource.getCollectionsFromCache();
       const selectedCollections = await ctx.db.getRepository('dataSourcesCollections').find({
         filter: { dataSourceKey },
       });
       const selectedMap = _.keyBy(selectedCollections, (x) => x.name);
       const result = allCollections.map((collection) => {
         return {
-          ...collection,
+          ..._.omit(collection, 'fields'),
           selected: !!selectedMap[collection.name],
         };
       });
@@ -182,7 +197,11 @@ export default {
         });
       }
 
-      await transaction.commit();
+      if (toBeInserted.length || toBeDeleted.length) {
+        await transaction.commit();
+        const dataSource = ctx.app.dataSourceManager.dataSources.get(dataSourceKey);
+        await dataSource.load();
+      }
       ctx.body = true;
       await next();
     },

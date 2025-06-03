@@ -10,6 +10,7 @@
 import { uid } from '@formily/shared';
 import {
   SchemaComponent,
+  useAPIClient,
   useDataSourceManager,
   usePlugin,
   useRecord,
@@ -25,10 +26,14 @@ import { ThirdDataSource } from '../ThridDataSource';
 import { CreateDatabaseConnectAction } from './CreateDatabaseConnectAction';
 import { EditDatabaseConnectionAction } from './EditDatabaseConnectionAction';
 import { ViewDatabaseConnectionAction } from './ViewDatabaseConnectionAction';
+import { addDatasourceCollections } from '../hooks';
 
 export const DatabaseConnectionManagerPane = () => {
   const { t } = useTranslation();
   const plugin = usePlugin(PluginDatabaseConnectionsClient);
+  const dm = useDataSourceManager();
+  const api = useAPIClient(); // 移到组件顶层
+
   const types = [...plugin.types.keys()]
     .map((key) => {
       const type = plugin.types.get(key);
@@ -38,7 +43,6 @@ export const DatabaseConnectionManagerPane = () => {
       };
     })
     .concat([{ value: 'main', label: t('Main') }]);
-  const dm = useDataSourceManager();
 
   const reloadKeys = React.useRef<string[]>([]);
 
@@ -59,10 +63,14 @@ export const DatabaseConnectionManagerPane = () => {
     [dm],
   );
 
-  const dataSourceCreateCallback = useCallback((data: any) => {
-    dm.addDataSource(ThirdDataSource, data);
-    reloadKeys.current = [...reloadKeys.current, data.key];
-  }, []);
+  const dataSourceCreateCallback = useCallback(
+    async (data: any, collections) => {
+      await addDatasourceCollections(api, data.key, collections);
+      dm.addDataSource(ThirdDataSource, data);
+      reloadKeys.current = [...reloadKeys.current, data.key];
+    },
+    [api, dm],
+  );
 
   const useRefreshActionProps = () => {
     const service = useResourceActionContext();

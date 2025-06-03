@@ -20,6 +20,7 @@ export class UidField extends Field {
     const { name, prefix = '', pattern } = this.options;
     const re = new RegExp(pattern || '^[A-Za-z0-9_][A-Za-z0-9_-]*$');
     this.listener = async (instances) => {
+      instances = Array.isArray(instances) ? instances : [instances];
       for (const instance of instances) {
         const value = instance.get(name);
         if (!value) {

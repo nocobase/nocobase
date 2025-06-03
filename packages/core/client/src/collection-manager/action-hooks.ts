@@ -398,7 +398,7 @@ export const useFilterAction = () => {
   };
 };
 
-export const useCreateAction = (actionCallback?: (values: any) => void) => {
+export const useCreateDBAction = (actionCallback?: (values: any, collections: any[]) => void) => {
   const form = useForm();
   const field = useField();
   const ctx = useActionContext();
@@ -410,9 +410,11 @@ export const useCreateAction = (actionCallback?: (values: any) => void) => {
         await form.submit();
         field.data = field.data || {};
         field.data.loading = true;
+        const collections = form.values.collections || [];
+        delete form.values.collections;
         const res = await resource.create({ values: form.values });
         ctx.setVisible(false);
-        actionCallback?.(res?.data?.data);
+        await actionCallback?.(res?.data?.data, collections);
         await form.reset();
         field.data.loading = false;
         refresh();
@@ -537,7 +539,7 @@ export const useValuesFromRA = (options) => {
 };
 
 export const useCreateActionAndRefreshCM = () => {
-  const { run } = useCreateAction();
+  const { run } = useCreateDBAction();
   const { refreshCM } = useCollectionManager_deprecated();
   return {
     async run() {
