@@ -7,8 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useState, useCallback } from 'react';
-import { Alert, Modal, Space, Dropdown } from 'antd';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
+import { Alert, Modal, Space, Dropdown, Button } from 'antd';
 import type { MenuProps } from 'antd';
 import { SettingOutlined, DeleteOutlined, ExclamationCircleOutlined, MenuOutlined } from '@ant-design/icons';
 import { observer } from '@formily/react';
@@ -18,25 +18,57 @@ import { ActionStepDefinition } from '../../../../types';
 import { useFlowModel } from '../../../../hooks';
 import { StepSettingsModal } from './StepSettingsModal';
 
+// 检测DOM中直接子元素是否包含button元素的辅助函数
+const detectButtonInDOM = (container: HTMLElement): boolean => {
+  if (!container) return false;
+  
+  // 只检测直接子元素中的button
+  const directChildren = container.children;
+  for (let i = 0; i < directChildren.length; i++) {
+    const child = directChildren[i];
+    // 检查是否是button元素或具有button特征的元素
+    if (
+      child.tagName === 'BUTTON' || 
+      child.getAttribute('role') === 'button' ||
+      child.classList.contains('ant-btn')
+    ) {
+      return true;
+    }
+  }
+  
+  return false;
+};
+
 // 使用与 NocoBase 一致的悬浮工具栏样式
 const floatContainerStyles = css`
   position: relative;
   display: inline;
+  
+  /* 当检测到button时使用inline-block */
+  &.has-button-child {
+    display: inline-block;
+  }
+  
+  /* 正常的hover行为 */
+  &:hover > .general-schema-designer {
+    display: block;
+  }
 
-  &:hover {
-    > .general-schema-designer {
-      display: block;
-    }
+  /* 当有.hide-parent-menu类时隐藏菜单 */
+  &.hide-parent-menu > .general-schema-designer {
+    display: none !important;
   }
 
   > .general-schema-designer {
     position: absolute;
     z-index: 999;
     top: 0;
+    bottom: 0;
+    left: 0;
     right: 0;
     display: none;
     background: var(--colorBgSettingsHover);
-    border: 0;
+    border: 2px solid var(--colorBorderSettingsHover);
     pointer-events: none;
 
     &.nb-in-template {
@@ -46,6 +78,7 @@ const floatContainerStyles = css`
     > .general-schema-designer-icons {
       position: absolute;
       right: 2px;
+      top: 2px;
       line-height: 16px;
       pointer-events: all;
 
@@ -125,6 +158,52 @@ const FlowsFloatContextMenuWithModel: React.FC<ModelProvidedProps> = observer(
   ({ model, children, enabled = true, showDeleteButton = true, containerStyle, className }) => {
     const [selectedStep, setSelectedStep] = useState<{ flowKey: string; stepKey: string } | null>(null);
     const [modalVisible, setModalVisible] = useState<boolean>(false);
+    const [hideMenu, setHideMenu] = useState<boolean>(false);
+    const [hasButton, setHasButton] = useState<boolean>(false);
+    const containerRef = useRef<HTMLDivElement>(null);
+
+    // 检测DOM中是否包含button元素
+    useEffect(() => {
+      if (containerRef.current) {
+        const hasButtonElement = detectButtonInDOM(containerRef.current);
+        setHasButton(hasButtonElement);
+      }
+    }, [children]); // 当children变化时重新检测
+
+    // 使用MutationObserver监听DOM变化
+    useEffect(() => {
+      if (!containerRef.current) return;
+
+      const observer = new MutationObserver(() => {
+        if (containerRef.current) {
+          const hasButtonElement = detectButtonInDOM(containerRef.current);
+          setHasButton(hasButtonElement);
+        }
+      });
+
+      observer.observe(containerRef.current, {
+        childList: true,
+        subtree: true,
+        attributes: true,
+        attributeFilter: ['class', 'role']
+      });
+
+      return () => {
+        observer.disconnect();
+      };
+    }, []);
+
+    const handleChildHover = useCallback((e: React.MouseEvent) => {
+      const target = e.target as HTMLElement;
+      const childWithMenu = target.closest('[data-has-float-menu]');
+      
+      // 如果悬浮的是子元素（且不是当前容器），则隐藏当前菜单
+      if (childWithMenu && childWithMenu !== containerRef.current) {
+        setHideMenu(true);
+      } else {
+        setHideMenu(false);
+      }
+    }, []);
 
     const handleMenuClick = useCallback(
       ({ key }: { key: string }) => {
@@ -283,7 +362,13 @@ const FlowsFloatContextMenuWithModel: React.FC<ModelProvidedProps> = observer(
 
     return (
       <>
-        <div className={`${floatContainerStyles} ${className || ''}`} style={containerStyle}>
+        <div 
+          ref={containerRef}
+          className={`${floatContainerStyles} ${hideMenu ? 'hide-parent-menu' : ''} ${hasButton ? 'has-button-child' : ''} ${className || ''}`} 
+          style={containerStyle}
+          data-has-float-menu="true"
+          onMouseMove={handleChildHover}
+        >
           {children}
 
           {/* 悬浮工具栏 - 使用与 NocoBase 一致的结构 */}
