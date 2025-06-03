@@ -93,6 +93,15 @@ const commonOptions = {
       useVisible: () => useActionAvailable('create'),
     },
     {
+      type: 'item',
+      title: "{{t('Refresh')}}",
+      name: 'refresh',
+      Component: 'RefreshActionInitializer',
+      schema: {
+        'x-align': 'right',
+      },
+    },
+    {
       name: 'customRequest',
       title: '{{t("Custom request")}}',
       Component: 'CustomRequestInitializer',

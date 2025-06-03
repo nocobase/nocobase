@@ -141,6 +141,9 @@ const originalActionDrawer = Action.Drawer;
  */
 export const useToAdaptActionDrawerToMobile = () => {
   Action.Drawer = ActionDrawerUsedInMobile;
+  Action.Drawer.FootBar = (props) => {
+    return <div style={{ display: 'flex', justifyContent: 'end', gap: 8 }}>{props.children}</div>;
+  };
 
   useEffect(() => {
     return () => {

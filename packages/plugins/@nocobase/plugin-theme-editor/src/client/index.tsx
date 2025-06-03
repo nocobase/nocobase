@@ -7,17 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import {
-  Plugin,
-  createStyles,
-  defaultTheme,
-  useCurrentUserSettingsMenu,
-  useGlobalTheme,
-  useACLContext,
-} from '@nocobase/client';
+import { Plugin, createStyles, defaultTheme, useGlobalTheme, useOpenModeContext } from '@nocobase/client';
 import { ConfigProvider } from 'antd';
 import _ from 'lodash';
-import React, { useEffect, useMemo } from 'react';
+import React, { useMemo } from 'react';
 // import InitializeTheme from './components/InitializeTheme';
 // import { ThemeEditorProvider } from './components/ThemeEditorProvider';
 // import ThemeList from './components/ThemeList';
@@ -30,8 +23,8 @@ const ThemeList = lazy(() => import('./components/ThemeList'));
 const { ThemeListProvider } = lazy(() => import('./components/ThemeListProvider'), 'ThemeListProvider');
 const CustomTheme = lazy(() => import('./components/theme-editor'));
 
-import { NAMESPACE } from './locale';
 import { ThemeSettings } from './components/ThemeSettings';
+import { NAMESPACE } from './locale';
 
 const useStyles = createStyles(({ css, token }) => {
   return {
@@ -105,6 +98,11 @@ export class PluginThemeEditorClient extends Plugin {
       name: 'theme',
       sort: 310,
       Component: ThemeSettings,
+      useVisible() {
+        // 移动端暂不支持切换主题
+        const { isMobile } = useOpenModeContext() || {};
+        return !isMobile;
+      },
     });
   }
 }
