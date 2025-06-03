@@ -254,4 +254,4 @@ graph TD
   Events --> onClick[onClick]
 ```
 
-不同点在于 ButtonModel 提供了 Props 和 Events 的配置能力。
+不同点在于 ButtonModel 为 Props 和 Events 提供了可配置可编排的能力，这个能力叫 Flow。
