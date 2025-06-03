@@ -22,7 +22,6 @@ import { StepSettingsModal } from './StepSettingsModal';
 const floatContainerStyles = css`
   position: relative;
   display: inline-block;
-  width: 100%;
 
   &:hover {
     > .general-schema-designer {
@@ -48,7 +47,7 @@ const floatContainerStyles = css`
 
     > .general-schema-designer-icons {
       position: absolute;
-      right: 6px;
+      right: 2px;
       top: 2px;
       line-height: 16px;
       pointer-events: all;
