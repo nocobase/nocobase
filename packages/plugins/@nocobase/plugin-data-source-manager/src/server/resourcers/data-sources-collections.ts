@@ -166,6 +166,11 @@ export default {
       const params = ctx.action.params;
       const { associatedIndex: dataSourceKey, values } = params;
       const collections = values.collections || [];
+      const dataSource = ctx.app.dataSourceManager.dataSources.get(dataSourceKey);
+      if (dataSource.options.addAllCollections !== false) {
+        await next();
+        return;
+      }
       const transaction = await ctx.db.sequelize.transaction();
       const repo = ctx.db.getRepository('dataSourcesCollections');
 
@@ -197,11 +202,8 @@ export default {
         });
       }
 
-      if (toBeInserted.length || toBeDeleted.length) {
-        await transaction.commit();
-        const dataSource = ctx.app.dataSourceManager.dataSources.get(dataSourceKey);
-        await dataSource.load();
-      }
+      await transaction.commit();
+      await dataSource.load();
       ctx.body = true;
       await next();
     },

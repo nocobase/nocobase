@@ -410,7 +410,10 @@ export const useCreateDBAction = (actionCallback?: (values: any, collections: an
         await form.submit();
         field.data = field.data || {};
         field.data.loading = true;
-        const collections = form.values.collections || [];
+        let collections = [];
+        if (!form.values.addAllCollections) {
+          collections = form.values.collections;
+        }
         delete form.values.collections;
         const res = await resource.create({ values: form.values });
         ctx.setVisible(false);
