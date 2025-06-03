@@ -227,7 +227,9 @@ const myEventFlow = defineFlow({
 
 ## 模型对比图：ReactComponent vs FlowModel
 
-<img style="width: 500px;" src="https://static-docs.nocobase.com/20250603130549.png">
+Flow 并不会改变组件的实现方式。它只是为 ReactComponent 增加了对 PropsFlow 和 EventFlow 的支持，从而让组件的属性和事件都可以通过可视化方式配置和编排。
+
+<img style="width: 500px;" src="https://static-docs.nocobase.com/20250603132845.png">
 
 ### ReactComponent
 
