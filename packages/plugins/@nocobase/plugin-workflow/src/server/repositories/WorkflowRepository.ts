@@ -18,7 +18,7 @@ export default class WorkflowRepository extends Repository {
       const origin = await this.findOne({
         filterByTk,
         filter,
-        appends: ['nodes', 'stats', 'versionStats'],
+        appends: ['nodes', 'stats', 'versionStats', 'categories.id'],
         context,
         transaction,
       });
@@ -40,6 +40,7 @@ export default class WorkflowRepository extends Repository {
           title: `${origin.title} copy`,
           description: origin.description,
           options: origin.options,
+          categories: origin.categories.map((item) => item.id),
           ...revisionData,
           sync: origin.sync,
           type: origin.type,

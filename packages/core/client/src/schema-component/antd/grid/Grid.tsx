@@ -73,18 +73,22 @@ const ColDivider = (props) => {
   }
   const prevSchema = props.cols[props.index];
   const nextSchema = props.cols[props.index + 1];
+  const draggableDisabled = props.first || props.last || !designable;
   const {
     attributes,
     listeners,
     setNodeRef: setDraggableNodeRef,
     isDragging,
   } = useDraggable({
-    disabled: props.first || props.last || !designable,
+    disabled: draggableDisabled,
     id: props.id,
     data: {
       dividerRef,
       prevSchema,
       nextSchema,
+    },
+    attributes: {
+      tabIndex: draggableDisabled ? -1 : 0,
     },
   });
 
@@ -92,7 +96,11 @@ const ColDivider = (props) => {
 
   useDndMonitor({
     onDragStart(event) {
-      if (!designable || !isDragging) {
+      const dividerRef = event.active?.data?.current?.dividerRef;
+      if (!dividerRef) {
+        return;
+      }
+      if (!designable) {
         return;
       }
       dragIdRef.current = event.active.id;

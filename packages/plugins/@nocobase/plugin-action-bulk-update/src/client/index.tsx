@@ -16,7 +16,6 @@ export class PluginActionBulkUpdateClient extends Plugin {
   async load() {
     this.app.addComponents({ CustomizeActionInitializer });
     this.app.addScopes({ useCustomizeBulkUpdateActionProps });
-    this.app.addScopes({ useCustomizeBulkUpdateActionProps });
     this.app.schemaSettingsManager.add(deprecatedBulkUpdateActionSettings);
     this.app.schemaSettingsManager.add(bulkUpdateActionSettings);
 

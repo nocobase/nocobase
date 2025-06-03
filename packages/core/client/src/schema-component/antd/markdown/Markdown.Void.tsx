@@ -214,7 +214,7 @@ export const MarkdownVoid = (props) => {
   const fieldSchema = useFieldSchema();
 
   return (
-    <VariableScope scopeId={fieldSchema['x-uid']} type="markdownBlock">
+    <VariableScope scopeId={fieldSchema?.['x-uid']} type="markdownBlock">
       <FlagProvider collectionField={true}>
         <MarkdownVoidInner {...props} />
       </FlagProvider>

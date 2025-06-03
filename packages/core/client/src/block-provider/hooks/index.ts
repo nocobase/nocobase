@@ -550,8 +550,8 @@ const useDoFilter = () => {
     // 另外，如果不加 100 毫秒的延迟，会导致数据区块列表更新后，不触发筛选操作的问题。
     setTimeout(() => {
       doFilter({ doNothingWhenFilterIsEmpty: true });
-    }, 100);
-  }, [getDataBlocks().length]);
+    }, 500);
+  }, [doFilter]);
 
   return {
     /**

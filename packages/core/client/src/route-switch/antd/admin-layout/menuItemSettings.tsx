@@ -28,7 +28,7 @@ import {
   useGlobalTheme,
   useNavigateNoUpdate,
   useNocoBaseRoutes,
-  useURLAndHTMLSchema
+  useURLAndHTMLSchema,
 } from '../../..';
 import { getPageMenuSchema } from '../../../';
 import { SchemaSettings } from '../../../application/schema-settings/SchemaSettings';
@@ -160,7 +160,7 @@ export const RemoveRoute: FC = () => {
 const InsertMenuItems = (props) => {
   const { eventKey, title, insertPosition } = props;
   const { t } = useTranslation();
-  const { urlSchema, paramsSchema } = useURLAndHTMLSchema();
+  const { urlSchema, paramsSchema, openInNewWindowSchema } = useURLAndHTMLSchema();
   const currentRoute = useCurrentRoute();
   const isSubMenu = currentRoute?.type === NocoBaseDesktopRouteType.group;
   const { createRoute, moveRoute } = useNocoBaseRoutes();
@@ -306,10 +306,11 @@ const InsertMenuItems = (props) => {
               },
               href: urlSchema,
               params: paramsSchema,
+              openInNewWindow: openInNewWindowSchema,
             },
           } as ISchema
         }
-        onSubmit={async ({ title, icon, href, params }) => {
+        onSubmit={async ({ title, icon, href, params, openInNewWindow }) => {
           const schemaUid = uid();
           const parentId = insertPosition === 'beforeEnd' ? currentRoute?.id : currentRoute?.parentId;
 
@@ -324,6 +325,7 @@ const InsertMenuItems = (props) => {
             options: {
               href,
               params,
+              openInNewWindow,
             },
           });
 
@@ -365,7 +367,7 @@ const EditMenuItem = () => {
     };
   }, [t]);
   const currentRoute = useCurrentRoute();
-  const { urlSchema, paramsSchema } = useURLAndHTMLSchema();
+  const { urlSchema, paramsSchema, openInNewWindowSchema } = useURLAndHTMLSchema();
   const initialValues = useMemo(() => {
     return {
       title: currentRoute.title,
@@ -375,12 +377,14 @@ const EditMenuItem = () => {
   if (currentRoute.type === NocoBaseDesktopRouteType.link) {
     schema.properties['href'] = urlSchema;
     schema.properties['params'] = paramsSchema;
+    schema.properties['openInNewWindow'] = openInNewWindowSchema;
     initialValues['href'] = currentRoute.options.href;
     initialValues['params'] = currentRoute.options.params;
+    initialValues['openInNewWindow'] = currentRoute.options.openInNewWindow !== false;
   }
 
   const { updateRoute } = useNocoBaseRoutes();
-  const onEditSubmit: (values: any) => void = useCallback(({ title, icon, href, params }) => {
+  const onEditSubmit: (values: any) => void = useCallback(({ title, icon, href, params, openInNewWindow }) => {
     // 更新菜单对应的路由
     if (currentRoute.id !== undefined) {
       updateRoute(currentRoute.id, {
@@ -389,9 +393,10 @@ const EditMenuItem = () => {
         options:
           href || params
             ? {
-              href,
-              params,
-            }
+                href,
+                params,
+                openInNewWindow,
+              }
             : undefined,
       });
     }
@@ -448,14 +453,14 @@ const MoveToMenuItem = () => {
           f.dataSource =
             type === NocoBaseDesktopRouteType.group
               ? [
-                { label: t('Before'), value: 'beforeBegin' },
-                { label: t('After'), value: 'afterEnd' },
-                { label: t('Inner'), value: 'beforeEnd' },
-              ]
+                  { label: t('Before'), value: 'beforeBegin' },
+                  { label: t('After'), value: 'afterEnd' },
+                  { label: t('Inner'), value: 'beforeEnd' },
+                ]
               : [
-                { label: t('Before'), value: 'beforeBegin' },
-                { label: t('After'), value: 'afterEnd' },
-              ];
+                  { label: t('Before'), value: 'beforeBegin' },
+                  { label: t('After'), value: 'afterEnd' },
+                ];
         });
       });
     },
@@ -514,13 +519,13 @@ const MoveToMenuItem = () => {
       const options =
         position === 'beforeEnd'
           ? {
-            targetScope: {
-              parentId: targetId,
-            },
-          }
+              targetScope: {
+                parentId: targetId,
+              },
+            }
           : {
-            targetId: targetId,
-          };
+              targetId: targetId,
+            };
 
       await moveRoute({
         sourceId: currentRoute.id as any,
