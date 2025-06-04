@@ -7,6 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { connect, mapProps } from '@formily/react';
+import { Switch } from 'antd';
 import { FlowModel } from './models';
 import {
   ActionDefinition,
@@ -16,6 +18,15 @@ import {
   IFlowModelRepository,
   ModelConstructor,
 } from './types';
+
+// 创建 NocoBase 兼容的 Switch 组件
+const NocoBaseSwitch = connect(
+  Switch,
+  mapProps({
+    value: 'checked',
+    onInput: 'onChange',
+  }),
+);
 
 interface ApplyFlowCacheEntry {
   status: 'pending' | 'resolved' | 'rejected';
@@ -31,10 +42,24 @@ export class FlowEngine {
   private modelClasses: Map<string, ModelConstructor> = new Map();
   /** @private Stores created model instances. */
   private modelInstances: Map<string, any> = new Map();
+  /** @public Stores registered components for SchemaComponent. */
+  public components: Record<string, any> = {};
+  /** @public Stores registered scopes for SchemaComponent. */
+  public scopes: Record<string, any> = {};
   context: Record<string, any> = {};
   private modelRepository: IFlowModelRepository | null = null;
   private _applyFlowCache = new Map<string, ApplyFlowCacheEntry>();
 
+<<<<<<< HEAD
+=======
+  constructor() {
+    // 注册默认组件
+    this.addComponents({
+      Switch: NocoBaseSwitch,
+    });
+  }
+
+>>>>>>> event-filter
   setModelRepository(modelRepository: IFlowModelRepository) {
     if (this.modelRepository) {
       console.warn('FlowEngine: Model repository is already set and will be overwritten.');
@@ -54,6 +79,43 @@ export class FlowEngine {
     return this._applyFlowCache;
   }
 
+<<<<<<< HEAD
+=======
+  /**
+   * 添加组件到 FlowEngine 的组件注册表中。
+   * 这些组件可以在 SchemaComponent 中使用。
+   * @param {Record<string, any>} components 要添加的组件对象
+   * @returns {void}
+   * @example
+   * flowEngine.addComponents({ MyComponent, AnotherComponent });
+   */
+  public addComponents(components: Record<string, any>): void {
+    Object.keys(components).forEach((name) => {
+      if (this.components[name]) {
+        console.warn(`FlowEngine: Component with name '${name}' is already registered and will be overwritten.`);
+      }
+      this.components[name] = components[name];
+    });
+  }
+
+  /**
+   * 添加作用域到 FlowEngine 的作用域注册表中。
+   * 这些作用域可以在 SchemaComponent 中使用。
+   * @param {Record<string, any>} scopes 要添加的作用域对象
+   * @returns {void}
+   * @example
+   * flowEngine.addScopes({ useMyHook, myVariable, myFunction });
+   */
+  public addScopes(scopes: Record<string, any>): void {
+    Object.keys(scopes).forEach((name) => {
+      if (this.scopes[name]) {
+        console.warn(`FlowEngine: Scope with name '${name}' is already registered and will be overwritten.`);
+      }
+      this.scopes[name] = scopes[name];
+    });
+  }
+
+>>>>>>> event-filter
   /**
    * 注册一个 Action。支持泛型以确保正确的模型类型推导。
    * Action 是流程中的可复用操作单元。

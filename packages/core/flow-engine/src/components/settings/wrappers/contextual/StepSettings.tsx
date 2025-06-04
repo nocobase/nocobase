@@ -8,11 +8,14 @@
  */
 
 import { observer } from '@formily/react';
-import { Alert, Button, Form, Input, InputNumber, Select, Space, Switch } from 'antd';
-import React, { useCallback, useEffect, useState } from 'react';
+import { Alert } from 'antd';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { SchemaComponent, FormProvider, useApp } from '@nocobase/client';
+import { createForm } from '@formily/core';
 import { useFlowModel } from '../../../../hooks';
 import { FlowModel } from '../../../../models';
 import { ActionStepDefinition } from '../../../../types';
+import { useFlowEngine } from '../../../../provider';
 
 // 创建两个组件版本，一个使用props传递的model，一个使用hook获取model
 interface ModelProvidedProps {
@@ -59,9 +62,9 @@ interface StepSettingsContentProps {
 
 const StepSettingsContent: React.FC<StepSettingsContentProps> = observer(
   ({ model, flowKey, stepKey, onSave, onCancel, onError, shouldSave, showActions }) => {
-    const [form] = Form.useForm();
     const [lastShouldSave, setLastShouldSave] = useState(false);
-    const [tempValues, setTempValues] = useState<any>({});
+    const flowEngine = useFlowEngine();
+    const app = useApp();
 
     // 获取流程定义
     const ModelClass = model.constructor as typeof FlowModel;
@@ -70,7 +73,7 @@ const StepSettingsContent: React.FC<StepSettingsContentProps> = observer(
     const stepDefinition = flow?.steps?.[stepKey];
 
     // 获取可配置的步骤信息
-    const configurableStep = (() => {
+    const configurableStep = useMemo(() => {
       if (!stepDefinition) return null;
 
       const actionStep = stepDefinition as ActionStepDefinition;
@@ -105,47 +108,104 @@ const StepSettingsContent: React.FC<StepSettingsContentProps> = observer(
       }
 
       return { stepKey, step: actionStep, uiSchema: mergedUiSchema };
-    })();
+    }, [stepDefinition, model.flowEngine]);
 
-    // 获取初始参数（从model中获取，但不直接绑定）
-    const getInitialParams = useCallback(() => {
-      if (!configurableStep) return {};
-
+    // 创建表单实例
+    const form = useMemo(() => {
       const stepParams = model.getStepParams(flowKey, stepKey) || {};
-      const defaultParams = configurableStep.step.defaultParams || {};
+      const defaultParams = configurableStep?.step.defaultParams || {};
+      const initialValues = { ...defaultParams, ...stepParams };
 
-      // 合并默认参数和当前参数，当前参数优先
-      const mergedParams = { ...defaultParams, ...stepParams };
-
-      return mergedParams;
+      return createForm({
+        initialValues,
+        validateFirst: true,
+      });
     }, [model, flowKey, stepKey, configurableStep]);
 
-    // 初始化表单值（只在组件挂载时执行一次）
-    useEffect(() => {
-      const initialParams = getInitialParams();
-      setTempValues(initialParams);
-      form.setFieldsValue(initialParams);
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [flowKey, stepKey, form]);
+    // 构建 NocoBase Schema
+    const formSchema = useMemo(() => {
+      if (!configurableStep) return null;
 
-    // 处理表单值变化（更新临时状态，不保存到model）
-    const handleValuesChange = useCallback((changedValues: any, allValues: any) => {
-      setTempValues(allValues);
+      const properties: any = {};
+
+      // 将 uiSchema 转换为 NocoBase schema 格式
+      Object.entries(configurableStep.uiSchema).forEach(([fieldKey, schema]: [string, any]) => {
+        properties[fieldKey] = {
+          type: schema.type || 'string',
+          title: schema.title || fieldKey,
+          'x-decorator': 'FormItem',
+          'x-decorator-props': {
+            layout: 'vertical',
+            ...schema['x-decorator-props'],
+          },
+          'x-component': schema['x-component'] || 'Input',
+          'x-component-props': schema['x-component-props'] || {},
+          required: schema.required || false,
+          enum: schema.enum,
+          default: schema.default,
+        };
+      });
+
+      // 如果显示操作按钮，添加按钮组
+      if (showActions) {
+        properties.actions = {
+          type: 'void',
+          'x-component': 'Space',
+          properties: {
+            save: {
+              type: 'void',
+              'x-component': 'Button',
+              'x-component-props': {
+                type: 'primary',
+                children: '保存',
+                onClick: '{{handleSave}}',
+              },
+            },
+            cancel: {
+              type: 'void',
+              'x-component': 'Button',
+              'x-component-props': {
+                children: '取消',
+                onClick: '{{handleCancel}}',
+              },
+            },
+          },
+        };
+      }
+
+      return {
+        type: 'void',
+        'x-component': 'FormV2',
+        'x-component-props': {
+          layout: 'vertical',
+          onValuesChange: '{{handleValuesChange}}',
+        },
+        properties,
+      };
+    }, [configurableStep, showActions]);
+
+    // 处理表单值变化
+    const handleValuesChange = useCallback((_changedValues: any, _allValues: any) => {
+      // 这里可以添加实时验证或其他逻辑
     }, []);
 
-    // 处理保存（用于确认按钮触发）
+    // 处理保存
     const handleSave = useCallback(async () => {
       try {
-        const values = await form.validateFields();
+        // 验证表单
+        await form.submit();
+
+        // 获取表单当前值
+        const currentValues = form.values;
 
         // 保存到model
-        model.setStepParams(flowKey, stepKey, values);
+        model.setStepParams(flowKey, stepKey, currentValues);
         await model.save();
 
         // 调用外部保存回调
-        onSave?.(values);
+        onSave?.(currentValues);
       } catch (error) {
-        console.error('表单验证失败:', error);
+        console.error('保存失败:', error);
         onError?.(error);
       }
     }, [form, model, flowKey, stepKey, onSave, onError]);
@@ -153,11 +213,9 @@ const StepSettingsContent: React.FC<StepSettingsContentProps> = observer(
     // 处理取消
     const handleCancel = useCallback(() => {
       // 重置表单到初始值
-      const initialParams = getInitialParams();
-      setTempValues(initialParams);
-      form.setFieldsValue(initialParams);
+      form.reset();
       onCancel?.();
-    }, [form, getInitialParams, onCancel]);
+    }, [form, onCancel]);
 
     // 监听shouldSave变化，自动触发保存
     useEffect(() => {
@@ -175,79 +233,29 @@ const StepSettingsContent: React.FC<StepSettingsContentProps> = observer(
       return <Alert message={`未找到Key为 ${stepKey} 的步骤`} type="error" />;
     }
 
-    if (!configurableStep) {
+    if (!configurableStep || !formSchema) {
       return <Alert message="此步骤没有可配置的参数" type="info" />;
     }
 
-    // 渲染表单字段
-    const renderFormFields = () => {
-      return Object.entries(configurableStep.uiSchema).map(([fieldKey, schema]: [string, any]) => {
-        // 根据schema类型渲染不同的组件
-        const renderField = () => {
-          switch (schema['x-component']) {
-            case 'Select':
-              return (
-                <Select
-                  placeholder={schema['x-component-props']?.placeholder || `请选择${schema.title}`}
-                  options={schema.enum || []}
-                  {...(schema['x-component-props'] || {})}
-                />
-              );
-            case 'InputNumber':
-              return (
-                <InputNumber
-                  placeholder={schema['x-component-props']?.placeholder || `请输入${schema.title}`}
-                  {...(schema['x-component-props'] || {})}
-                />
-              );
-            case 'Switch':
-              return <Switch {...(schema['x-component-props'] || {})} />;
-            case 'Input.TextArea':
-              return (
-                <Input.TextArea
-                  placeholder={schema['x-component-props']?.placeholder || `请输入${schema.title}`}
-                  {...(schema['x-component-props'] || {})}
-                />
-              );
-            default:
-              return (
-                <Input
-                  placeholder={schema['x-component-props']?.placeholder || `请输入${schema.title}`}
-                  {...(schema['x-component-props'] || {})}
-                />
-              );
-          }
-        };
-
-        return (
-          <Form.Item
-            key={fieldKey}
-            name={fieldKey}
-            label={schema.title || fieldKey}
-            rules={schema.required ? [{ required: true, message: `请输入${schema.title || fieldKey}` }] : []}
-          >
-            {renderField()}
-          </Form.Item>
-        );
-      });
-    };
-
+    // 使用 SchemaComponent 渲染表单
     return (
       <div>
-        <Form form={form} layout="vertical" onValuesChange={handleValuesChange}>
-          {renderFormFields()}
-
-          {showActions && (
-            <Form.Item>
-              <Space>
-                <Button type="primary" onClick={handleSave}>
-                  保存
-                </Button>
-                <Button onClick={handleCancel}>取消</Button>
-              </Space>
-            </Form.Item>
-          )}
-        </Form>
+        <FormProvider form={form}>
+          <SchemaComponent
+            schema={formSchema}
+            components={{
+              ...app.components,
+              ...flowEngine.components,
+            }}
+            scope={{
+              ...app.scopes,
+              ...flowEngine.scopes,
+              handleValuesChange,
+              handleSave,
+              handleCancel,
+            }}
+          />
+        </FormProvider>
       </div>
     );
   },

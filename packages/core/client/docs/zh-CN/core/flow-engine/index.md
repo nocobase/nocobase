@@ -55,8 +55,24 @@
 - **registerAction(nameOrDefinition, options?): void**  
   注册一个 Action，可传入名称和选项，或完整的 ActionDefinition 对象。
 
-- **getAction(name: string): ActionDefinition \| undefined**  
+- **getAction(name: string): ActionDefinition \| undefined**
   获取已注册的 Action 定义。
+
+---
+
+### formily 组件作用域管理
+
+- **addComponents(components: Record<string, any>): void**
+  注册 formily 组件到 FlowEngine 中，这些组件可以在后续 model 与 formily 结合使用。
+
+- **components: Record<string, any>**
+  获取所有已注册的组件。
+
+- **addScopes(scopes: Record<string, any>): void**
+  注册formily scopes到 FlowEngine 的中，这些 scopes 可以在后续 model 与 formily 结合使用。
+
+- **scopes: Record<string, any>**
+  获取所有已注册的scopes。
 
 ## 示例
 
