@@ -1,0 +1,22 @@
+{
+    "Verification": "Verificatie",
+    "Verification providers": "Verificatieproviders",
+    "Provider type": "Provider type",
+    "Aliyun SMS": "Aliyun SMS",
+    "Access Key ID": "Access Key ID",
+    "Access Key Secret": "Access Key Secret",
+    "Endpoint": "Endpoint",
+    "Sign": "Handtekening",
+    "Template code": "Sjablooncode",
+    "Secret Id": "Secret Id",
+    "Secret Key": "Secret Key",
+    "Region": "Regio",
+    "Sign name": "Handtekening naam",
+    "Sms sdk app id": "Sms sdk app id",
+    "Template Id": "Sjabloon Id",
+    "Verification send failed, please try later or contact to administrator": "Verificatie verzenden mislukt, probeer het later opnieuw of neem contact op met de beheerder",
+    "Not a valid cellphone number, please re-enter": "Geen geldig telefoonnummer, probeer opnieuw in te voeren",
+    "Please don't retry in {{time}} seconds": "Probeer niet opnieuw binnen {{time}} seconden",
+    "You are trying so frequently, please slow down": "Je probeert te vaak, probeer langzamer",
+    "Verification code is invalid": "Verificatiecode is ongeldig"
+}

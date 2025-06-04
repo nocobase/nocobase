@@ -1,7 +1,7 @@
 {
   "Vditor": "Markdown(Vditor)",
   "File collection": "File collection",
-  "Used to store files uploaded in the Markdown editor": "Used to store files uploaded in the Markdown editor",
+  "Used to store files uploaded in the Markdown editor (default: attachments)": "Used to store files uploaded in the Markdown editor (default: attachments)",
   "Toolbar": "Editor toolbar configuration",
   "Emoji": "Emoji",
   "Headings": "Headings",
@@ -29,5 +29,10 @@
   "Both": "Editor & Preview",
   "Preview": "Preview",
   "Fullscreen": "Toggle Fullscreen",
-  "Outline": "Outline"
+  "Outline": "Outline",
+  "uploading": "Uploading...",
+  "upload failed": "upload failed",
+  "vditor.uploadError.message": "Unable to upload files to the current storage. You are trying to upload files to the Markdown editor, but the current storage configuration does not support this operation. To enable upload functionality, please complete the following settings: 1. Go to \"File Manager\". 2. Select the storage currently in use ({{storageTitle}}). 3. Set \"Base URL\" and enable the \"Public access\" option.",
+  "Storage configuration not found. Please configure a storage provider first.": "Storage configuration not found. Please configure a storage provider first.",
+  "Response data is empty": "Response data is empty"
 }

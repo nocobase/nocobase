@@ -31,6 +31,7 @@ import {
   useCompile,
 } from '@nocobase/client';
 import { Input, Modal, Spin } from 'antd';
+import { useTranslation } from 'react-i18next';
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { isDesktop } from 'react-device-detect';
 import { useParams } from 'react-router';
@@ -39,6 +40,8 @@ import { UnEnabledFormPlaceholder, UnFoundFormPlaceholder } from './UnEnabledFor
 import { Button as MobileButton, Dialog as MobileDialog } from 'antd-mobile';
 import { MobileDateTimePicker } from './components/MobileDatePicker';
 import { MobilePicker } from './components/MobilePicker';
+import { usePublicFormTranslation } from '../locale';
+
 class PublicDataSource extends DataSource {
   async getDataSource() {
     return {};
@@ -69,18 +72,21 @@ function PublicPublicFormProvider(props) {
 
 function PublicAPIClientProvider({ children }) {
   const app = useApp();
-  const apiClient = useMemo(() => {
-    const apiClient = new APIClient(app.getOptions().apiClient as any);
-    apiClient.app = app;
-    apiClient.axios.interceptors.request.use((config) => {
+
+  useEffect(() => {
+    const interceptor = app.apiClient.axios.interceptors.request.use((config) => {
       if (config.headers) {
         config.headers['X-Form-Token'] = localStorage.getItem('NOCOBASE_FORM_TOKEN') || '';
       }
       return config;
     });
-    return apiClient;
-  }, [app]);
-  return <APIClientProvider apiClient={apiClient}>{children}</APIClientProvider>;
+
+    return () => {
+      app.apiClient.axios.interceptors.request.eject(interceptor);
+    };
+  }, [app.apiClient.axios.interceptors.request]);
+
+  return <APIClientProvider apiClient={app.apiClient}>{children}</APIClientProvider>;
 }
 
 function useTitle(data) {

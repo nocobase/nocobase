@@ -35,7 +35,11 @@ test.describe('where filter block can be added', () => {
 
     // 3. 与 Table、Details、List、GridCard 等区块建立连接
     const connectByForm = async (name: string) => {
+      await page
+        .getByLabel('designer-schema-settings-CardItem-blockSettings:filterForm-users')
+        .waitFor({ state: 'hidden' });
       await page.getByLabel('block-item-CardItem-users-filter-form').hover();
+      await page.getByRole('menuitem', { name: 'Connect data blocks right' }).waitFor({ state: 'detached' });
       await page.getByLabel('designer-schema-settings-CardItem-blockSettings:filterForm-users').hover();
       await page.getByRole('menuitem', { name: 'Connect data blocks right' }).hover();
       await page.getByRole('menuitem', { name }).click();
@@ -43,6 +47,7 @@ test.describe('where filter block can be added', () => {
     const connectByCollapse = async (name: string) => {
       await page.mouse.move(-500, 0);
       await page.getByLabel('block-item-CardItem-users-filter-collapse').hover();
+      await page.getByRole('menuitem', { name: 'Connect data blocks right' }).waitFor({ state: 'detached' });
       await page.getByLabel('designer-schema-settings-CardItem-blockSettings:filterCollapse-users').hover();
       await page.getByRole('menuitem', { name: 'Connect data blocks right' }).hover();
       await page.getByRole('menuitem', { name }).click();
@@ -150,7 +155,9 @@ test.describe('where filter block can be added', () => {
     }
 
     // 2. 测试用表单筛选其它区块
+    await page.getByRole('menuitem', { name: 'Form right' }).waitFor({ state: 'detached' });
     await page.getByLabel('schema-initializer-Grid-popup').hover();
+    await page.getByRole('menuitem', { name: 'Users' }).waitFor({ state: 'detached' });
     await page.getByRole('menuitem', { name: 'Form right' }).hover();
     await page.getByRole('menuitem', { name: 'Users' }).click();
     await page.getByLabel('schema-initializer-Grid-filterForm:configureFields-users').hover();

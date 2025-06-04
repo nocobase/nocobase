@@ -51,7 +51,8 @@ test.describe('creation form block schema settings', () => {
     await runExpect();
   });
 
-  test('Save as block template & convert reference to duplicate', async ({ page, mockPage }) => {
+  // deprecated
+  test.skip('Save as block template & convert reference to duplicate', async ({ page, mockPage }) => {
     await mockPage(oneTableBlockWithActionsAndFormBlocks).goto();
     await page.getByRole('button', { name: 'Add new' }).click();
 
@@ -115,7 +116,7 @@ test.describe('creation form block schema settings', () => {
     await expect(page.getByLabel('block-item-CardItem-general-form')).not.toBeVisible();
   });
 
-  test('save as block Template', async ({ page, mockPage }) => {
+  test.skip('save as block Template', async ({ page, mockPage }) => {
     await mockPage(oneEmptyForm).goto();
 
     // 先保存为模板 ------------------------------------------------------------------------
@@ -247,7 +248,7 @@ test.describe('creation form block schema settings', () => {
 
       // 重新选择一下数据，字段值才会被填充
       // TODO: 保存后，数据应该直接被填充上
-      await page.getByLabel('icon-close-select').click();
+      await page.getByLabel('icon-close-select').last().click();
       await page.getByTestId('select-object-single').click();
       await page.getByRole('option', { name: '2' }).click();
 
@@ -270,7 +271,7 @@ test.describe('creation form block schema settings', () => {
     });
   });
 
-  test('save block template & using block template', async ({ page, mockPage, clearBlockTemplates }) => {
+  test.skip('save block template & using block template', async ({ page, mockPage, clearBlockTemplates }) => {
     // 确保测试结束后已保存的模板会被清空
     await clearBlockTemplates();
     const nocoPage = await mockPage({

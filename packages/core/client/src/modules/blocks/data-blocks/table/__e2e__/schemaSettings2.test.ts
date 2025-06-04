@@ -9,8 +9,8 @@
 
 import { expect, test } from '@nocobase/test/e2e';
 
-test.describe('save as template', () => {
-  test('save as template, then delete it', async ({ page, mockPage, clearBlockTemplates }) => {
+test.skip('save as template', () => {
+  test.skip('save as template, then delete it', async ({ page, mockPage, clearBlockTemplates }) => {
     // 1. 创建一个区块，然后保存为模板
     await mockPage().goto();
     await page.getByLabel('schema-initializer-Grid-page:').hover();

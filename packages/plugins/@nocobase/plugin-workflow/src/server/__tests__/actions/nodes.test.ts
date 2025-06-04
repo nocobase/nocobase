@@ -54,9 +54,9 @@ describe('workflow > actions > workflows', () => {
       const workflow = await WorkflowModel.create({
         enabled: true,
         type: 'asyncTrigger',
-        executed: 1,
-        allExecuted: 1,
       });
+      await workflow.stats.update({ executed: 1 });
+      await workflow.versionStats.update({ executed: 1 });
 
       const { status } = await agent.resource('workflows.nodes', workflow.id).create({
         values: {

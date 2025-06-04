@@ -25,6 +25,9 @@ import {
   useFormBlockContext,
   usePopupSettings,
   useApp,
+  SchemaSettingsLinkageRules,
+  LinkageRuleCategory,
+  useCollection_deprecated,
 } from '@nocobase/client';
 import React, { useMemo } from 'react';
 import { useTranslation } from '../../locale';
@@ -64,6 +67,19 @@ export const calendarBlockSettings = new SchemaSettings({
     {
       name: 'setTheBlockHeight',
       Component: SchemaSettingsBlockHeightItem,
+    },
+    {
+      name: 'blockLinkageRules',
+      Component: SchemaSettingsLinkageRules,
+      useComponentProps() {
+        const { name } = useCollection_deprecated();
+        const { t } = useTranslation();
+        return {
+          collectionName: name,
+          title: t('Block Linkage rules'),
+          category: LinkageRuleCategory.block,
+        };
+      },
     },
     {
       name: 'titleField',

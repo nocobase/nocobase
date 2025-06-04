@@ -139,7 +139,13 @@ export const GeneralSchemaDesigner: FC<GeneralSchemaDesignerProps> = (props: any
 
   return (
     <SchemaToolbarProvider {...contextValue}>
-      <div className={classNames('general-schema-designer', overrideAntdCSS)}>
+      <div
+        className={classNames(
+          'general-schema-designer',
+          overrideAntdCSS,
+          fieldSchema['x-template-uid'] ? 'nb-in-template' : '',
+        )}
+      >
         {title && (
           <div className={classNames('general-schema-designer-title', titleCss)}>
             <Space size={2}>
@@ -246,6 +252,7 @@ const InternalSchemaToolbar: FC<SchemaToolbarProps> = React.memo((props) => {
   const dataSourceContext = useDataSource();
   const dataSource = dataSources?.length > 1 && dataSourceContext;
   const refreshFieldSchema = useRefreshFieldSchema();
+  const templateTitleLabel = useRef(t('Reference template'));
 
   const refresh = useCallback(() => {
     refreshFieldSchema({ refreshParentSchema: true });
@@ -254,8 +261,14 @@ const InternalSchemaToolbar: FC<SchemaToolbarProps> = React.memo((props) => {
   const titleArr = useMemo(() => {
     if (!title) return undefined;
     if (typeof title === 'string') return [compile(title)];
-    if (Array.isArray(title)) return compile(title);
-  }, [title]);
+    if (Array.isArray(title)) {
+      if (title.length === 1 && fieldSchema['x-template-title']) {
+        templateTitleLabel.current = t('Inherited template');
+        return compile([title[0], fieldSchema['x-template-title']]);
+      }
+      return compile(title);
+    }
+  }, [title, fieldSchema]);
 
   const { render: schemaSettingsRender, exists: schemaSettingsExists } = useSchemaSettingsRender(
     settings || fieldSchema?.['x-settings'],
@@ -327,14 +340,22 @@ const InternalSchemaToolbar: FC<SchemaToolbarProps> = React.memo((props) => {
 
     function show() {
       if (toolbarElement) {
-        toolbarElement.classList.remove(hiddenClassName);
+        if (process.env.__E2E__) {
+          toolbarElement.style.display = 'block';
+        } else {
+          toolbarElement.classList.remove(hiddenClassName);
+        }
         props.onVisibleChange?.(true);
       }
     }
 
     function hide() {
       if (toolbarElement) {
-        toolbarElement.classList.add(hiddenClassName);
+        if (process.env.__E2E__) {
+          toolbarElement.style.display = 'none';
+        } else {
+          toolbarElement.classList.add(hiddenClassName);
+        }
         props.onVisibleChange?.(false);
       }
     }
@@ -370,7 +391,7 @@ const InternalSchemaToolbar: FC<SchemaToolbarProps> = React.memo((props) => {
             </span>
             {titleArr[1] && (
               <span className={'toolbar-title-tag'}>
-                {`${t('Reference template')}: ${`${titleArr[1]}` || t('Untitled')}`}
+                {`${templateTitleLabel.current}: ${`${titleArr[1]}` || t('Untitled')}`}
               </span>
             )}
           </Space>

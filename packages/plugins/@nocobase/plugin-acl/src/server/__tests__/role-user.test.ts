@@ -11,6 +11,8 @@ import Database, { BelongsToManyRepository } from '@nocobase/database';
 import UsersPlugin from '@nocobase/plugin-users';
 import { createMockServer, MockServer } from '@nocobase/test';
 import jwt from 'jsonwebtoken';
+import { SystemRoleMode } from '../enum';
+import { UNION_ROLE_KEY } from '../constants';
 
 describe('role', () => {
   let api: MockServer;
@@ -20,7 +22,7 @@ describe('role', () => {
 
   beforeEach(async () => {
     api = await createMockServer({
-      plugins: ['field-sort', 'users', 'acl', 'auth', 'data-source-manager'],
+      plugins: ['field-sort', 'users', 'acl', 'auth', 'data-source-manager', 'system-settings', 'ui-schema-storage'],
     });
     db = api.db;
     usersPlugin = api.getPlugin('users');
@@ -162,5 +164,78 @@ describe('role', () => {
     const defaultRole = userRoles.find((userRole) => userRole.get('rolesUsers').default);
 
     expect(defaultRole['name']).toEqual('test2');
+  });
+
+  it('should set users default role is __union__', async () => {
+    const role = await db.getRepository('roles').create({
+      values: {
+        name: 'test',
+        title: 'test user',
+        allowConfigure: true,
+      },
+    });
+    const user = await db.getRepository('users').create({
+      values: {
+        token: '123',
+        roles: [role.name],
+      },
+    });
+
+    const repo = db.getRepository('systemSettings');
+    await repo.update({
+      filter: { id: 1 },
+      values: {
+        roleMode: SystemRoleMode.allowUseUnion,
+      },
+    });
+    const userToken = jwt.sign({ userId: user.get('id') }, 'test-key');
+    const response = await api
+      .agent()
+      .post('/users:setDefaultRole')
+      .send({
+        roleName: UNION_ROLE_KEY,
+      })
+      .set({
+        Authorization: `Bearer ${userToken}`,
+        'X-Authenticator': 'basic',
+      });
+
+    expect(response.statusCode).toEqual(200);
+    let userRole = await db.getRepository('rolesUsers').findOne({ where: { userId: user.get('id'), default: true } });
+    expect(userRole.roleName).toEqual(UNION_ROLE_KEY);
+
+    // switch
+    const response1 = await api
+      .agent()
+      .post('/users:setDefaultRole')
+      .send({
+        roleName: role.name,
+      })
+      .set({
+        Authorization: `Bearer ${userToken}`,
+        'X-Authenticator': 'basic',
+      });
+
+    expect(response1.statusCode).toEqual(200);
+    userRole = await db.getRepository('rolesUsers').findOne({ where: { userId: user.get('id'), default: true } });
+    expect(userRole.roleName).toEqual(role.name);
+
+    const response2 = await api
+      .agent()
+      .post('/users:setDefaultRole')
+      .send({
+        roleName: UNION_ROLE_KEY,
+      })
+      .set({
+        Authorization: `Bearer ${userToken}`,
+        'X-Authenticator': 'basic',
+      });
+
+    expect(response2.statusCode).toEqual(200);
+    userRole = await db.getRepository('rolesUsers').findOne({ where: { userId: user.get('id'), default: true } });
+    expect(userRole.roleName).toEqual(UNION_ROLE_KEY);
+    const agent = await api.agent().login(user);
+    const response3 = await agent.resource('roles').check();
+    expect(response3.statusCode).toEqual(200);
   });
 });

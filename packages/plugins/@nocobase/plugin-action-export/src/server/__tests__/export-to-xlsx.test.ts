@@ -13,10 +13,13 @@ import { uid } from '@nocobase/utils';
 import fs from 'fs';
 import moment from 'moment';
 import path from 'path';
-import XLSX from 'xlsx';
 import { XlsxExporter } from '../services/xlsx-exporter';
+import { Workbook } from 'exceljs';
 
-XLSX.set_fs(fs);
+function getXlsxData(worksheet) {
+  const data = worksheet.getSheetValues()[2];
+  return data.slice(1);
+}
 
 describe('export to xlsx with preset', () => {
   let app: MockServer;
@@ -98,7 +101,7 @@ describe('export to xlsx with preset', () => {
           unixTimestamp: '2024-05-10T01:42:35.000Z',
         },
       });
-
+      const xlsxFilePath = path.resolve(__dirname, `t_${uid()}.xlsx`);
       const exporter = new XlsxExporter({
         collectionManager: app.mainDataSource.collectionManager,
         collection: Post,
@@ -122,27 +125,23 @@ describe('export to xlsx with preset', () => {
             defaultTitle: 'unixTimestamp',
           },
         ],
+        outputPath: xlsxFilePath,
       });
 
-      const wb = await exporter.run();
-
-      const xlsxFilePath = path.resolve(__dirname, `t_${uid()}.xlsx`);
+      await exporter.run();
 
       try {
-        XLSX.writeFile(wb, xlsxFilePath);
+        const workbook = new Workbook();
+        await workbook.xlsx.readFile(xlsxFilePath);
+        const worksheet = workbook.getWorksheet(1);
+        const firstUser = getXlsxData(worksheet);
 
-        // read xlsx file
-        const workbook = XLSX.readFile(xlsxFilePath);
-        const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-        const sheetData = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
-
-        const firstUser = sheetData[1];
         expect(firstUser[1]).toEqual('2024-05-10');
         expect(firstUser[2]).toEqual('2024-05-10');
         expect(firstUser[3]).toEqual('2024-01-01');
         expect(firstUser[4]).toEqual('2024-05-10 01:42:35');
       } finally {
-        fs.unlinkSync(xlsxFilePath);
+        exporter.cleanOutputFile();
       }
     });
   });
@@ -173,6 +172,7 @@ describe('export to xlsx with preset', () => {
       },
     });
 
+    const xlsxFilePath = path.resolve(__dirname, `t_${uid()}.xlsx`);
     const exporter = new XlsxExporter({
       collectionManager: app.mainDataSource.collectionManager,
       collection: Post,
@@ -184,27 +184,20 @@ describe('export to xlsx with preset', () => {
           defaultTitle: 'test_field',
         },
       ],
+      outputPath: xlsxFilePath,
     });
 
-    const wb = await exporter.run();
-
-    const xlsxFilePath = path.resolve(__dirname, `t_${uid()}.xlsx`);
+    await exporter.run();
 
     try {
-      XLSX.writeFile(wb, xlsxFilePath);
+      const workbook = new Workbook();
+      await workbook.xlsx.readFile(xlsxFilePath);
+      const worksheet = workbook.getWorksheet(1);
+      const data = getXlsxData(worksheet);
 
-      // read xlsx file
-      const workbook = XLSX.readFile(xlsxFilePath);
-      const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-      const sheetData = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
-
-      const header = sheetData[0];
-      expect(header).toEqual(['Title', 'test_field']);
-
-      const data = sheetData[1];
       expect(data[1]).toBe('True');
     } finally {
-      fs.unlinkSync(xlsxFilePath);
+      exporter.cleanOutputFile();
     }
   });
 
@@ -238,6 +231,7 @@ describe('export to xlsx with preset', () => {
       ],
     });
 
+    const xlsxFilePath = path.resolve(__dirname, `t_${uid()}.xlsx`);
     const exporter = new XlsxExporter({
       collectionManager: app.mainDataSource.collectionManager,
       collection: Post,
@@ -257,36 +251,27 @@ describe('export to xlsx with preset', () => {
           defaultTitle: 'decimal',
         },
       ],
+      outputPath: xlsxFilePath,
     });
 
-    const wb = await exporter.run();
-    const xlsxFilePath = path.resolve(__dirname, `t_${uid()}.xlsx`);
+    await exporter.run();
 
     try {
-      XLSX.writeFile(wb, xlsxFilePath);
+      const workbook = new Workbook();
+      await workbook.xlsx.readFile(xlsxFilePath);
+      const worksheet = workbook.getWorksheet(1);
+      const sheetData = worksheet
+        .getSheetValues()
+        .slice(2)
+        .map((row: any[]) => row?.slice(1));
 
-      // read xlsx file
-      const workbook = XLSX.readFile(xlsxFilePath);
-      const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-
-      // cell type should be number
-      const cellA2 = firstSheet['A2'];
-      expect(cellA2.t).toBe('s');
-      expect(cellA2.v).toBe('p1');
-
-      const cellB2 = firstSheet['B2'];
-      expect(cellB2.t).toBe('n');
-      expect(cellB2.v).toBe(123);
-
-      const cellC2 = firstSheet['C2'];
-      expect(cellC2.t).toBe('n');
-      expect(cellC2.v).toBe(123.456);
-
-      const cellD2 = firstSheet['D2'];
-      expect(cellD2.t).toBe('n');
-      expect(cellD2.v).toBe(234.567);
+      // cell type should be number and values as expected
+      expect(sheetData[0][0]).toBe('p1');
+      expect(sheetData[0][1]).toBe(123);
+      expect(sheetData[0][2]).toBeCloseTo(123.456);
+      expect(sheetData[0][3]).toBeCloseTo(234.567);
     } finally {
-      fs.unlinkSync(xlsxFilePath);
+      exporter.cleanOutputFile();
     }
   });
 
@@ -319,6 +304,7 @@ describe('export to xlsx with preset', () => {
       },
     });
 
+    const xlsxFilePath = path.resolve(__dirname, `t_${uid()}.xlsx`);
     const exporter = new XlsxExporter({
       collectionManager: app.mainDataSource.collectionManager,
       collection: Post,
@@ -330,27 +316,25 @@ describe('export to xlsx with preset', () => {
           defaultTitle: 'circle',
         },
       ],
+      outputPath: xlsxFilePath,
     });
 
-    const wb = await exporter.run();
-
-    const xlsxFilePath = path.resolve(__dirname, `t_${uid()}.xlsx`);
+    await exporter.run();
 
     try {
-      XLSX.writeFile(wb, xlsxFilePath);
-
-      // read xlsx file
-      const workbook = XLSX.readFile(xlsxFilePath);
-      const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-      const sheetData = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
-
+      const workbook = new Workbook();
+      await workbook.xlsx.readFile(xlsxFilePath);
+      const worksheet = workbook.getWorksheet(1);
+      const sheetData = worksheet
+        .getSheetValues()
+        .slice(1)
+        .map((row: any[]) => row?.slice(1));
       const header = sheetData[0];
       expect(header).toEqual(['Title', 'circle']);
-
       const firstUser = sheetData[1];
       expect(firstUser[1]).toEqual('116.397428,39.90923,3241');
     } finally {
-      fs.unlinkSync(xlsxFilePath);
+      exporter.cleanOutputFile();
     }
   });
 
@@ -404,6 +388,7 @@ describe('export to xlsx with preset', () => {
       },
     });
 
+    const xlsxFilePath = path.resolve(__dirname, `t_${uid()}.xlsx`);
     const exporter = new XlsxExporter({
       collectionManager: app.mainDataSource.collectionManager,
       collection: Post,
@@ -415,29 +400,25 @@ describe('export to xlsx with preset', () => {
           defaultTitle: 'attachment',
         },
       ],
+      outputPath: xlsxFilePath,
     });
 
-    const wb = await exporter.run();
+    await exporter.run();
 
-    const xlsxFilePath = path.resolve(__dirname, `t_${uid()}.xlsx`);
-    try {
-      XLSX.writeFile(wb, xlsxFilePath);
-
-      // read xlsx file
-      const workbook = XLSX.readFile(xlsxFilePath);
-      const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-      const sheetData = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
-
-      const header = sheetData[0];
-      expect(header).toEqual(['Title', 'attachment']);
-
-      const firstUser = sheetData[1];
-      expect(firstUser[1]).toEqual(
-        'https://nocobase.oss-cn-beijing.aliyuncs.com/test1.png,/storage/uploads/682e5ad037dd02a0fe4800a3e91c283b.png',
-      );
-    } finally {
-      fs.unlinkSync(xlsxFilePath);
-    }
+    const workbook = new Workbook();
+    await workbook.xlsx.readFile(xlsxFilePath);
+    const worksheet = workbook.getWorksheet(1);
+    const sheetData = worksheet
+      .getSheetValues()
+      .slice(1)
+      .map((row: any[]) => row?.slice(1));
+    const header = sheetData[0];
+    expect(header).toEqual(['Title', 'attachment']);
+    const firstUser = sheetData[1];
+    expect(firstUser[1]).toEqual(
+      'https://nocobase.oss-cn-beijing.aliyuncs.com/test1.png,/storage/uploads/682e5ad037dd02a0fe4800a3e91c283b.png',
+    );
+    exporter.cleanOutputFile();
   });
 
   it('should export with china region field', async () => {
@@ -465,6 +446,7 @@ describe('export to xlsx with preset', () => {
       },
     });
 
+    const xlsxFilePath = path.resolve(__dirname, `t_${uid()}.xlsx`);
     const exporter = new XlsxExporter({
       collectionManager: app.mainDataSource.collectionManager,
       collection: Post,
@@ -476,27 +458,23 @@ describe('export to xlsx with preset', () => {
           defaultTitle: 'region',
         },
       ],
+      outputPath: xlsxFilePath,
     });
 
-    const wb = await exporter.run();
+    await exporter.run();
 
-    const xlsxFilePath = path.resolve(__dirname, `t_${uid()}.xlsx`);
-    try {
-      XLSX.writeFile(wb, xlsxFilePath);
-
-      // read xlsx file
-      const workbook = XLSX.readFile(xlsxFilePath);
-      const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-      const sheetData = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
-
-      const header = sheetData[0];
-      expect(header).toEqual(['Title', 'region']);
-
-      const firstUser = sheetData[1];
-      expect(firstUser).toEqual(['post0', '山西省/长治市/潞城区']);
-    } finally {
-      fs.unlinkSync(xlsxFilePath);
-    }
+    const workbook = new Workbook();
+    await workbook.xlsx.readFile(xlsxFilePath);
+    const worksheet = workbook.getWorksheet(1);
+    const sheetData = worksheet
+      .getSheetValues()
+      .slice(1)
+      .map((row: any[]) => row?.slice(1));
+    const header = sheetData[0];
+    expect(header).toEqual(['Title', 'region']);
+    const firstUser = sheetData[1];
+    expect(firstUser).toEqual(['post0', '山西省/长治市/潞城区']);
+    exporter.cleanOutputFile();
   });
 });
 
@@ -584,6 +562,7 @@ describe('export to xlsx', () => {
       },
     });
 
+    const xlsxFilePath = path.resolve(__dirname, `t_${uid()}.xlsx`);
     const exporter = new XlsxExporter({
       collectionManager: app.mainDataSource.collectionManager,
       collection: Post,
@@ -595,19 +574,19 @@ describe('export to xlsx', () => {
           defaultTitle: '',
         },
       ],
+      outputPath: xlsxFilePath,
     });
 
-    const wb = await exporter.run({});
+    await exporter.run({});
 
-    const xlsxFilePath = path.resolve(__dirname, `t_${uid()}.xlsx`);
     try {
-      XLSX.writeFile(wb, xlsxFilePath);
-
-      // read xlsx file
-      const workbook = XLSX.readFile(xlsxFilePath);
-      const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-      const sheetData = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
-
+      const workbook = new Workbook();
+      await workbook.xlsx.readFile(xlsxFilePath);
+      const worksheet = workbook.getWorksheet(1);
+      const sheetData = worksheet
+        .getSheetValues()
+        .slice(1)
+        .map((row: any[]) => row?.slice(1));
       const firstUser = sheetData[1];
       expect(firstUser).toEqual([
         'some_title',
@@ -618,7 +597,7 @@ describe('export to xlsx', () => {
         }),
       ]);
     } finally {
-      fs.unlinkSync(xlsxFilePath);
+      exporter.cleanOutputFile();
     }
   });
 
@@ -653,6 +632,7 @@ describe('export to xlsx', () => {
       },
     });
 
+    const xlsxFilePath = path.resolve(__dirname, `t_${uid()}.xlsx`);
     const exporter = new XlsxExporter({
       collectionManager: app.mainDataSource.collectionManager,
       collection: Post,
@@ -664,24 +644,21 @@ describe('export to xlsx', () => {
           defaultTitle: '',
         },
       ],
+      outputPath: xlsxFilePath,
     });
 
-    const wb = await exporter.run();
+    await exporter.run();
 
-    const xlsxFilePath = path.resolve(__dirname, `t_${uid()}.xlsx`);
-    try {
-      XLSX.writeFile(wb, xlsxFilePath);
-
-      // read xlsx file
-      const workbook = XLSX.readFile(xlsxFilePath);
-      const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-      const sheetData = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
-
-      const firstUser = sheetData[1];
-      expect(firstUser).toEqual(['some_title', '2024-05-10 01:42:35']);
-    } finally {
-      fs.unlinkSync(xlsxFilePath);
-    }
+    const workbook = new Workbook();
+    await workbook.xlsx.readFile(xlsxFilePath);
+    const worksheet = workbook.getWorksheet(1);
+    const sheetData = worksheet
+      .getSheetValues()
+      .slice(1)
+      .map((row: any[]) => row?.slice(1));
+    const firstUser = sheetData[1];
+    expect(firstUser).toEqual(['some_title', '2024-05-10 01:42:35']);
+    exporter.cleanOutputFile();
   });
 
   it('should export with multi select', async () => {
@@ -727,6 +704,7 @@ describe('export to xlsx', () => {
       },
     });
 
+    const xlsxFilePath = path.resolve(__dirname, `t_${uid()}.xlsx`);
     const exporter = new XlsxExporter({
       collectionManager: app.mainDataSource.collectionManager,
       collection: User,
@@ -738,24 +716,21 @@ describe('export to xlsx', () => {
           defaultTitle: '',
         },
       ],
+      outputPath: xlsxFilePath,
     });
 
-    const wb = await exporter.run();
+    await exporter.run();
 
-    const xlsxFilePath = path.resolve(__dirname, `t_${uid()}.xlsx`);
-    try {
-      XLSX.writeFile(wb, xlsxFilePath);
-
-      // read xlsx file
-      const workbook = XLSX.readFile(xlsxFilePath);
-      const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-      const sheetData = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
-
-      const firstUser = sheetData[1];
-      expect(firstUser).toEqual(['u1', 'Label123,Label223']);
-    } finally {
-      fs.unlinkSync(xlsxFilePath);
-    }
+    const workbook = new Workbook();
+    await workbook.xlsx.readFile(xlsxFilePath);
+    const worksheet = workbook.getWorksheet(1);
+    const sheetData = worksheet
+      .getSheetValues()
+      .slice(1)
+      .map((row: any[]) => row?.slice(1));
+    const firstUser = sheetData[1];
+    expect(firstUser).toEqual(['u1', 'Label123,Label223']);
+    exporter.cleanOutputFile();
   });
 
   it('should export with different ui schema', async () => {
@@ -793,6 +768,7 @@ describe('export to xlsx', () => {
 
     await User.model.bulkCreate(values);
 
+    const xlsxFilePath = path.resolve(__dirname, `t_${uid()}.xlsx`);
     const exporter = new XlsxExporter({
       collectionManager: app.mainDataSource.collectionManager,
       collection: User,
@@ -804,37 +780,26 @@ describe('export to xlsx', () => {
           defaultTitle: '',
         },
       ],
+      outputPath: xlsxFilePath,
     });
 
-    const wb = await exporter.run();
+    await exporter.run();
 
-    const xlsxFilePath = path.resolve(__dirname, `t_${uid()}.xlsx`);
     try {
-      await new Promise((resolve, reject) => {
-        XLSX.writeFileAsync(
-          xlsxFilePath,
-          wb,
-          {
-            type: 'array',
-          },
-          () => {
-            resolve(123);
-          },
-        );
-      });
-
-      // read xlsx file
-      const workbook = XLSX.readFile(xlsxFilePath);
-      const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-      const sheetData = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
-
+      const workbook = new Workbook();
+      await workbook.xlsx.readFile(xlsxFilePath);
+      const worksheet = workbook.getWorksheet(1);
+      const sheetData = worksheet
+        .getSheetValues()
+        .slice(1)
+        .map((row: any[]) => row?.slice(1));
       const header = sheetData[0];
       expect(header).toEqual(['姓名', 'Interface 测试']);
 
       const firstUser = sheetData[1];
       expect(firstUser).toEqual(['user0', 'testValue.0']);
     } finally {
-      fs.unlinkSync(xlsxFilePath);
+      exporter.cleanOutputFile();
     }
   });
 
@@ -857,6 +822,7 @@ describe('export to xlsx', () => {
 
     await User.model.bulkCreate(values);
 
+    const xlsxFilePath = path.resolve(__dirname, `t_${uid()}.xlsx`);
     const exporter = new XlsxExporter({
       collectionManager: app.mainDataSource.collectionManager,
       collection: User,
@@ -872,34 +838,23 @@ describe('export to xlsx', () => {
           },
         },
       },
+      outputPath: xlsxFilePath,
     });
 
-    const wb = await exporter.run();
+    await exporter.run();
 
-    const xlsxFilePath = path.resolve(__dirname, `t_${uid()}.xlsx`);
     try {
-      await new Promise((resolve, reject) => {
-        XLSX.writeFileAsync(
-          xlsxFilePath,
-          wb,
-          {
-            type: 'array',
-          },
-          () => {
-            resolve(123);
-          },
-        );
-      });
-
-      // read xlsx file
-      const workbook = XLSX.readFile(xlsxFilePath);
-      const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-      const sheetData = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
-
+      const workbook = new Workbook();
+      await workbook.xlsx.readFile(xlsxFilePath);
+      const worksheet = workbook.getWorksheet(1);
+      const sheetData = worksheet
+        .getSheetValues()
+        .slice(1)
+        .map((row: any[]) => row?.slice(1));
       const header = sheetData[0];
       expect(header).toEqual(['123', '345']);
     } finally {
-      fs.unlinkSync(xlsxFilePath);
+      exporter.cleanOutputFile();
     }
   });
 
@@ -922,6 +877,7 @@ describe('export to xlsx', () => {
 
     await User.model.bulkCreate(values);
 
+    const xlsxFilePath = path.resolve(__dirname, `t_${uid()}.xlsx`);
     const exporter = new XlsxExporter({
       collectionManager: app.mainDataSource.collectionManager,
       collection: User,
@@ -937,34 +893,23 @@ describe('export to xlsx', () => {
           },
         },
       },
+      outputPath: xlsxFilePath,
     });
 
-    const wb = await exporter.run();
+    await exporter.run();
 
-    const xlsxFilePath = path.resolve(__dirname, `t_${uid()}.xlsx`);
     try {
-      await new Promise((resolve, reject) => {
-        XLSX.writeFileAsync(
-          xlsxFilePath,
-          wb,
-          {
-            type: 'array',
-          },
-          () => {
-            resolve(123);
-          },
-        );
-      });
-
-      // read xlsx file
-      const workbook = XLSX.readFile(xlsxFilePath);
-      const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-      const sheetData = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
-
+      const workbook = new Workbook();
+      await workbook.xlsx.readFile(xlsxFilePath);
+      const worksheet = workbook.getWorksheet(1);
+      const sheetData = worksheet
+        .getSheetValues()
+        .slice(1)
+        .map((row: any[]) => row?.slice(1));
       const header = sheetData[0];
       expect(header).toEqual(['姓名', '年龄']);
     } finally {
-      fs.unlinkSync(xlsxFilePath);
+      exporter.cleanOutputFile();
     }
   });
 
@@ -988,6 +933,7 @@ describe('export to xlsx', () => {
 
     await User.model.bulkCreate(values);
 
+    const xlsxFilePath = path.resolve(__dirname, `t_${uid()}.xlsx`);
     const exporter = new XlsxExporter({
       collectionManager: app.mainDataSource.collectionManager,
       collection: User,
@@ -1003,29 +949,19 @@ describe('export to xlsx', () => {
           },
         },
       },
+      outputPath: xlsxFilePath,
     });
 
-    const wb = await exporter.run();
+    await exporter.run();
 
-    const xlsxFilePath = path.resolve(__dirname, `t_${uid()}.xlsx`);
     try {
-      await new Promise((resolve, reject) => {
-        XLSX.writeFileAsync(
-          xlsxFilePath,
-          wb,
-          {
-            type: 'array',
-          },
-          () => {
-            resolve(123);
-          },
-        );
-      });
-
-      // read xlsx file
-      const workbook = XLSX.readFile(xlsxFilePath);
-      const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-      const sheetData = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
+      const workbook = new Workbook();
+      await workbook.xlsx.readFile(xlsxFilePath);
+      const worksheet = workbook.getWorksheet(1);
+      const sheetData = worksheet
+        .getSheetValues()
+        .slice(1)
+        .map((row: any[]) => row?.slice(1));
       expect(sheetData.length).toBe(11); // 10 users + 1 header
 
       const header = sheetData[0];
@@ -1034,7 +970,7 @@ describe('export to xlsx', () => {
       const firstUser = sheetData[1];
       expect(firstUser).toEqual(['user10', 10]);
     } finally {
-      fs.unlinkSync(xlsxFilePath);
+      exporter.cleanOutputFile();
     }
   });
 
@@ -1117,6 +1053,7 @@ describe('export to xlsx', () => {
       values,
     });
 
+    const xlsxFilePath = path.resolve(__dirname, `t_${uid()}.xlsx`);
     const exporter = new XlsxExporter({
       collectionManager: app.mainDataSource.collectionManager,
       collection: User,
@@ -1128,29 +1065,19 @@ describe('export to xlsx', () => {
         { dataIndex: ['groups', 'name'], defaultTitle: 'Group Names' },
         { dataIndex: ['createdAt'], defaultTitle: 'Created at' },
       ],
+      outputPath: xlsxFilePath,
     });
 
-    const wb = await exporter.run();
+    await exporter.run();
 
-    const xlsxFilePath = path.resolve(__dirname, `t_${uid()}.xlsx`);
     try {
-      await new Promise((resolve, reject) => {
-        XLSX.writeFileAsync(
-          xlsxFilePath,
-          wb,
-          {
-            type: 'array',
-          },
-          () => {
-            resolve(123);
-          },
-        );
-      });
-
-      // read xlsx file
-      const workbook = XLSX.readFile(xlsxFilePath);
-      const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-      const sheetData = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
+      const workbook = new Workbook();
+      await workbook.xlsx.readFile(xlsxFilePath);
+      const worksheet = workbook.getWorksheet(1);
+      const sheetData = worksheet
+        .getSheetValues()
+        .slice(1)
+        .map((row: any[]) => row?.slice(1));
       expect(sheetData.length).toBe(23); // 22 users * 3 posts + 1 header
 
       const header = sheetData[0];
@@ -1165,7 +1092,7 @@ describe('export to xlsx', () => {
         moment().format('YYYY-MM-DD'),
       ]);
     } finally {
-      fs.unlinkSync(xlsxFilePath);
+      exporter.cleanOutputFile();
     }
   });
 
@@ -1189,6 +1116,7 @@ describe('export to xlsx', () => {
 
     await User.model.bulkCreate(values);
 
+    const xlsxFilePath = path.resolve(__dirname, `t_${uid()}.xlsx`);
     const exporter = new XlsxExporter({
       collectionManager: app.mainDataSource.collectionManager,
       collection: User,
@@ -1197,29 +1125,19 @@ describe('export to xlsx', () => {
         { dataIndex: ['name'], defaultTitle: 'Name' },
         { dataIndex: ['age'], defaultTitle: 'Age' },
       ],
+      outputPath: xlsxFilePath,
     });
 
-    const wb = await exporter.run();
+    await exporter.run();
 
-    const xlsxFilePath = path.resolve(__dirname, `t_${uid()}.xlsx`);
     try {
-      await new Promise((resolve, reject) => {
-        XLSX.writeFileAsync(
-          xlsxFilePath,
-          wb,
-          {
-            type: 'array',
-          },
-          () => {
-            resolve(123);
-          },
-        );
-      });
-
-      // read xlsx file
-      const workbook = XLSX.readFile(xlsxFilePath);
-      const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-      const sheetData = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
+      const workbook = new Workbook();
+      await workbook.xlsx.readFile(xlsxFilePath);
+      const worksheet = workbook.getWorksheet(1);
+      const sheetData = worksheet
+        .getSheetValues()
+        .slice(1)
+        .map((row: any[]) => row?.slice(1));
       expect(sheetData.length).toBe(23); // 22 users + 1 header
 
       const header = sheetData[0];
@@ -1228,7 +1146,7 @@ describe('export to xlsx', () => {
       const firstUser = sheetData[1];
       expect(firstUser).toEqual(['user0', 0]);
     } finally {
-      fs.unlinkSync(xlsxFilePath);
+      exporter.cleanOutputFile();
     }
   });
 
@@ -1332,6 +1250,7 @@ describe('export to xlsx', () => {
       values,
     });
 
+    const xlsxFilePath = path.resolve(__dirname, `t_${uid()}.xlsx`);
     const exporter = new XlsxExporter({
       collectionManager: app.mainDataSource.collectionManager,
       collection: User,
@@ -1343,37 +1262,26 @@ describe('export to xlsx', () => {
           defaultTitle: 'Test Field',
         },
       ],
+      outputPath: xlsxFilePath,
     });
 
-    const wb = await exporter.run();
+    await exporter.run();
 
-    const xlsxFilePath = path.resolve(__dirname, `t_${uid()}.xlsx`);
     try {
-      await new Promise((resolve, reject) => {
-        XLSX.writeFileAsync(
-          xlsxFilePath,
-          wb,
-          {
-            type: 'array',
-          },
-          () => {
-            resolve(123);
-          },
-        );
-      });
-
-      // read xlsx file
-      const workbook = XLSX.readFile(xlsxFilePath);
-      const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-      const sheetData = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
-
+      const workbook = new Workbook();
+      await workbook.xlsx.readFile(xlsxFilePath);
+      const worksheet = workbook.getWorksheet(1);
+      const sheetData = worksheet
+        .getSheetValues()
+        .slice(1)
+        .map((row: any[]) => row?.slice(1));
       const header = sheetData[0];
       expect(header).toEqual(['Name', 'Associations interface 测试']);
 
       const firstUser = sheetData[1];
       expect(firstUser).toEqual(['user0', 'testValue.1,testValue.2,testValue.3']);
     } finally {
-      fs.unlinkSync(xlsxFilePath);
+      exporter.cleanOutputFile();
     }
   });
 
@@ -1399,6 +1307,7 @@ describe('export to xlsx', () => {
 
     await User.model.bulkCreate(values);
 
+    const xlsxFilePath = path.resolve(__dirname, `t_${uid()}.xlsx`);
     const exporter = new XlsxExporter({
       collectionManager: app.mainDataSource.collectionManager,
       collection: User,
@@ -1407,16 +1316,25 @@ describe('export to xlsx', () => {
         { dataIndex: ['name'], defaultTitle: 'Name' },
         { dataIndex: ['age'], defaultTitle: 'Age' },
       ],
+      outputPath: xlsxFilePath,
     });
 
-    const wb = await exporter.run();
-    const firstSheet = wb.Sheets[wb.SheetNames[0]];
-    const sheetData = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
-
-    expect(sheetData.length).toBe(31); // 30 users + 1 header
-    expect(sheetData[0]).toEqual(['Name', 'Age']); // header
-    expect(sheetData[1]).toEqual(['user0', 0]); // first user
-    expect(sheetData[30]).toEqual(['user29', 29]); // last user
+    await exporter.run();
+    try {
+      const workbook = new Workbook();
+      await workbook.xlsx.readFile(xlsxFilePath);
+      const worksheet = workbook.getWorksheet(1);
+      const sheetData = worksheet
+        .getSheetValues()
+        .slice(1)
+        .map((row: any[]) => row?.slice(1));
+      expect(sheetData.length).toBe(31); // 30 users + 1 header
+      expect(sheetData[0]).toEqual(['Name', 'Age']); // header
+      expect(sheetData[1]).toEqual(['user0', 0]); // first user
+      expect(sheetData[30]).toEqual(['user29', 29]); // last user
+    } finally {
+      exporter.cleanOutputFile();
+    }
   });
 
   it('should use default EXPORT_LIMIT (2000) when env not set', async () => {
@@ -1439,6 +1357,7 @@ describe('export to xlsx', () => {
 
     await User.model.bulkCreate(values);
 
+    const xlsxFilePath = path.resolve(__dirname, `t_${uid()}.xlsx`);
     const exporter = new XlsxExporter({
       collectionManager: app.mainDataSource.collectionManager,
       collection: User,
@@ -1447,16 +1366,25 @@ describe('export to xlsx', () => {
         { dataIndex: ['name'], defaultTitle: 'Name' },
         { dataIndex: ['age'], defaultTitle: 'Age' },
       ],
+      outputPath: xlsxFilePath,
     });
 
-    const wb = await exporter.run();
-    const firstSheet = wb.Sheets[wb.SheetNames[0]];
-    const sheetData = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
-
-    expect(sheetData.length).toBe(2001); // 2000 users + 1 header
-    expect(sheetData[0]).toEqual(['Name', 'Age']); // header
-    expect(sheetData[1]).toEqual(['user0', 0]); // first user
-    expect(sheetData[2000]).toEqual(['user1999', 99]); // last user
+    await exporter.run();
+    try {
+      const workbook = new Workbook();
+      await workbook.xlsx.readFile(xlsxFilePath);
+      const worksheet = workbook.getWorksheet(1);
+      const sheetData = worksheet
+        .getSheetValues()
+        .slice(1)
+        .map((row: any[]) => row?.slice(1));
+      expect(sheetData.length).toBe(2001); // 2000 users + 1 header
+      expect(sheetData[0]).toEqual(['Name', 'Age']); // header
+      expect(sheetData[1]).toEqual(['user0', 0]); // first user
+      expect(sheetData[2000]).toEqual(['user1999', 99]); // last user
+    } finally {
+      exporter.cleanOutputFile();
+    }
   });
 
   it('should respect the limit option when exporting data', async () => {
@@ -1479,6 +1407,7 @@ describe('export to xlsx', () => {
 
     await User.model.bulkCreate(values);
 
+    const xlsxFilePath = path.resolve(__dirname, `t_${uid()}.xlsx`);
     const exporter = new XlsxExporter({
       collectionManager: app.mainDataSource.collectionManager,
       collection: User,
@@ -1488,16 +1417,25 @@ describe('export to xlsx', () => {
         { dataIndex: ['name'], defaultTitle: 'Name' },
         { dataIndex: ['age'], defaultTitle: 'Age' },
       ],
+      outputPath: xlsxFilePath,
     });
 
-    const wb = await exporter.run();
-    const firstSheet = wb.Sheets[wb.SheetNames[0]];
-    const sheetData = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
-
-    expect(sheetData.length).toBe(11); // 10 users + 1 header
-    expect(sheetData[0]).toEqual(['Name', 'Age']); // header
-    expect(sheetData[1]).toEqual(['user0', 0]); // first user
-    expect(sheetData[10]).toEqual(['user9', 9]); // last user
+    await exporter.run();
+    try {
+      const workbook = new Workbook();
+      await workbook.xlsx.readFile(xlsxFilePath);
+      const worksheet = workbook.getWorksheet(1);
+      const sheetData = worksheet
+        .getSheetValues()
+        .slice(1)
+        .map((row: any[]) => row?.slice(1));
+      expect(sheetData.length).toBe(11); // 10 users + 1 header
+      expect(sheetData[0]).toEqual(['Name', 'Age']); // header
+      expect(sheetData[1]).toEqual(['user0', 0]); // first user
+      expect(sheetData[10]).toEqual(['user9', 9]); // last user
+    } finally {
+      exporter.cleanOutputFile();
+    }
   });
 
   it('should import rich text field successfully when long text', async () => {
@@ -1517,7 +1455,7 @@ describe('export to xlsx', () => {
     const longText = data.longText;
     await Test.repository.create({
       values: {
-        richText: longText /* .slice(0, 10000) */,
+        richText: longText,
       },
     });
     const exporter = new XlsxExporter({
@@ -1527,9 +1465,9 @@ describe('export to xlsx', () => {
       limit: 10,
       columns: [{ dataIndex: ['richText'], defaultTitle: 'richText' }],
     });
-
-    const wb = await exporter.run();
-    const buffer = XlsxExporter.xlsxSafeWrite(wb, { type: 'buffer', bookType: 'xlsx' });
+    await exporter.run();
+    const buffer = exporter.getXlsxBuffer();
+    exporter.cleanOutputFile();
     expect(buffer).exist;
   });
 });

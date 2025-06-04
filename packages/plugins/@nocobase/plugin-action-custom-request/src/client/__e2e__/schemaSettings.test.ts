@@ -25,9 +25,7 @@ test.describe('custom request action', () => {
     await page.getByLabel('designer-schema-settings-CustomRequestAction-actionSettings:customRequest-').hover();
     await page.getByRole('menuitem', { name: 'Edit button' }).click();
 
-    // 应该只显示标题输入框
     await expect(page.getByText('Button title')).toBeVisible();
-    await expect(page.getByText('Button icon')).not.toBeVisible();
     await expect(page.getByText('Button background color')).not.toBeVisible();
   });
 

@@ -105,7 +105,7 @@ export class OptionsParser {
     };
   }
 
-  toSequelizeParams() {
+  toSequelizeParams(options: { parseSort?: boolean } = { parseSort: true }) {
     const queryParams = this.filterParser.toSequelizeParams();
 
     if (this.options?.filterByTk) {
@@ -122,8 +122,8 @@ export class OptionsParser {
 
       queryParams.include.push(...lodash.castArray(this.options.include));
     }
-
-    return this.parseSort(this.parseFields(queryParams));
+    const fields = this.parseFields(queryParams);
+    return options.parseSort ? this.parseSort(fields) : fields;
   }
 
   /**

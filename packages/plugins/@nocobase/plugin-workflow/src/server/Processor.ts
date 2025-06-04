@@ -56,15 +56,9 @@ export default class Processor {
    */
   nodesMap = new Map<number, FlowNodeModel>();
 
-  /**
-   * @experimental
-   */
-  jobsMap = new Map<number, JobModel>();
-
-  /**
-   * @experimental
-   */
-  jobsMapByNodeKey: { [key: string]: any } = {};
+  private jobsMapByNodeKey: { [key: string]: JobModel } = {};
+  private jobResultsMapByNodeKey: { [key: string]: any } = {};
+  private jobsToSave: Map<string, JobModel> = new Map();
 
   /**
    * @experimental
@@ -100,10 +94,9 @@ export default class Processor {
 
   private makeJobs(jobs: Array<JobModel>) {
     jobs.forEach((job) => {
-      this.jobsMap.set(job.id, job);
-
       const node = this.nodesMap.get(job.nodeId);
-      this.jobsMapByNodeKey[node.key] = job.result;
+      this.jobsMapByNodeKey[node.key] = job;
+      this.jobResultsMapByNodeKey[node.key] = job.result;
     });
   }
 
@@ -195,11 +188,11 @@ export default class Processor {
     }
 
     if (!(job instanceof Model)) {
-      job.upstreamId = prevJob instanceof Model ? prevJob.get('id') : null;
+      // job.upstreamId = prevJob instanceof Model ? prevJob.get('id') : null;
       job.nodeId = node.id;
       job.nodeKey = node.key;
     }
-    const savedJob = await this.saveJob(job);
+    const savedJob = this.saveJob(job);
 
     this.logger.info(
       `execution (${this.execution.id}) run instruction [${node.type}] for node (${node.id}) finished as status: ${savedJob.status}`,
@@ -261,6 +254,30 @@ export default class Processor {
   }
 
   public async exit(s?: number) {
+    if (this.jobsToSave.size) {
+      const newJobs = [];
+      for (const job of this.jobsToSave.values()) {
+        if (job.isNewRecord) {
+          newJobs.push(job);
+        } else {
+          await job.save({ transaction: this.mainTransaction });
+        }
+      }
+      if (newJobs.length) {
+        const JobsModel = this.options.plugin.db.getModel('jobs');
+        await JobsModel.bulkCreate(
+          newJobs.map((job) => job.toJSON()),
+          {
+            transaction: this.mainTransaction,
+            returning: false,
+          },
+        );
+        for (const job of newJobs) {
+          job.isNewRecord = false;
+        }
+      }
+      this.jobsToSave.clear();
+    }
     if (typeof s === 'number') {
       const status = (<typeof Processor>this.constructor).StatusMap[s] ?? Math.sign(s);
       await this.execution.update({ status }, { transaction: this.mainTransaction });
@@ -272,33 +289,30 @@ export default class Processor {
     return null;
   }
 
-  // TODO(optimize)
   /**
    * @experimental
    */
-  async saveJob(payload: JobModel | Record<string, any>): Promise<JobModel> {
+  saveJob(payload: JobModel | Record<string, any>): JobModel {
     const { database } = <typeof ExecutionModel>this.execution.constructor;
-    const { mainTransaction: transaction } = this;
     const { model } = database.getCollection('jobs');
     let job;
     if (payload instanceof model) {
-      job = await payload.save({ transaction });
-    } else if (payload.id) {
-      job = await model.findByPk(payload.id, { transaction });
-      await job.update(payload, { transaction });
+      job = payload;
+      job.set('updatedAt', new Date());
     } else {
-      job = await model.create(
-        {
-          ...payload,
-          executionId: this.execution.id,
-        },
-        { transaction },
-      );
+      job = model.build({
+        ...payload,
+        id: this.options.plugin.snowflake.getUniqueID().toString(),
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        executionId: this.execution.id,
+      });
     }
-    this.jobsMap.set(job.id, job);
+    this.jobsToSave.set(job.id, job);
 
     this.lastSavedJob = job;
-    this.jobsMapByNodeKey[job.nodeKey] = job.result;
+    this.jobsMapByNodeKey[job.nodeKey] = job;
+    this.jobResultsMapByNodeKey[job.nodeKey] = job.result;
 
     return job;
   }
@@ -360,32 +374,20 @@ export default class Processor {
    * @experimental
    */
   findBranchParentJob(job: JobModel, node: FlowNodeModel): JobModel | null {
-    for (let j: JobModel | undefined = job; j; j = this.jobsMap.get(j.upstreamId)) {
-      if (j.nodeId === node.id) {
-        return j;
-      }
-    }
-    return null;
+    return this.jobsMapByNodeKey[node.key];
   }
 
   /**
    * @experimental
    */
   findBranchLastJob(node: FlowNodeModel, job: JobModel): JobModel | null {
-    const allJobs = Array.from(this.jobsMap.values());
+    const allJobs = Object.values(this.jobsMapByNodeKey);
     const branchJobs = [];
     for (let n = this.findBranchEndNode(node); n && n !== node.upstream; n = n.upstream) {
       branchJobs.push(...allJobs.filter((item) => item.nodeId === n.id));
     }
-    branchJobs.sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
-    for (let i = branchJobs.length - 1; i >= 0; i -= 1) {
-      for (let j = branchJobs[i]; j && j.id !== job.id; j = this.jobsMap.get(j.upstreamId)) {
-        if (j.upstreamId === job.id) {
-          return branchJobs[i];
-        }
-      }
-    }
-    return null;
+    branchJobs.sort((a, b) => a.updatedAt.getTime() - b.updatedAt.getTime());
+    return branchJobs[branchJobs.length - 1] || null;
   }
 
   /**
@@ -406,13 +408,13 @@ export default class Processor {
     for (let n = includeSelfScope ? node : this.findBranchParentNode(node); n; n = this.findBranchParentNode(n)) {
       const instruction = this.options.plugin.instructions.get(n.type);
       if (typeof instruction?.getScope === 'function') {
-        $scopes[n.id] = $scopes[n.key] = instruction.getScope(n, this.jobsMapByNodeKey[n.key], this);
+        $scopes[n.id] = $scopes[n.key] = instruction.getScope(n, this.jobResultsMapByNodeKey[n.key], this);
       }
     }
 
     return {
       $context: this.execution.context,
-      $jobsMapByNodeKey: this.jobsMapByNodeKey,
+      $jobsMapByNodeKey: this.jobResultsMapByNodeKey,
       $system: systemFns,
       $scopes,
       $env: this.options.plugin.app.environment.getVariables(),

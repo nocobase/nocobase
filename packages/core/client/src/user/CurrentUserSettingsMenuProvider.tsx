@@ -8,7 +8,7 @@
  */
 
 import { error } from '@nocobase/utils/client';
-import { ItemType } from 'antd/es/menu/hooks/useItems';
+import { ItemType } from 'antd/es/menu/interface';
 import React, { createContext, useCallback, useContext, useMemo, useRef } from 'react';
 
 type menuItemsKey =

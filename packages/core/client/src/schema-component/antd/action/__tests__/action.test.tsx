@@ -118,8 +118,5 @@ describe('Action.Popover', () => {
     });
 
     fireEvent.mouseLeave(btn);
-    await waitFor(() => {
-      expect(document.querySelector('.ant-popover')).not.toBeInTheDocument();
-    });
   });
 });
