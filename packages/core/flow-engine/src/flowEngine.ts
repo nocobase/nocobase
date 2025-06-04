@@ -50,8 +50,6 @@ export class FlowEngine {
   private modelRepository: IFlowModelRepository | null = null;
   private _applyFlowCache = new Map<string, ApplyFlowCacheEntry>();
 
-<<<<<<< HEAD
-=======
   constructor() {
     // 注册默认组件
     this.addComponents({
@@ -59,7 +57,6 @@ export class FlowEngine {
     });
   }
 
->>>>>>> event-filter
   setModelRepository(modelRepository: IFlowModelRepository) {
     if (this.modelRepository) {
       console.warn('FlowEngine: Model repository is already set and will be overwritten.');
@@ -79,8 +76,6 @@ export class FlowEngine {
     return this._applyFlowCache;
   }
 
-<<<<<<< HEAD
-=======
   /**
    * 添加组件到 FlowEngine 的组件注册表中。
    * 这些组件可以在 SchemaComponent 中使用。
@@ -115,7 +110,6 @@ export class FlowEngine {
     });
   }
 
->>>>>>> event-filter
   /**
    * 注册一个 Action。支持泛型以确保正确的模型类型推导。
    * Action 是流程中的可复用操作单元。
