@@ -10,7 +10,7 @@
 import { observer } from '@formily/react';
 import { Alert } from 'antd';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { SchemaComponent, FormProvider, useApp } from '@nocobase/client';
+import { SchemaComponent, FormProvider } from '@nocobase/client';
 import { createForm } from '@formily/core';
 import { useFlowModel } from '../../../../hooks';
 import { FlowModel } from '../../../../models';
@@ -64,7 +64,6 @@ const StepSettingsContent: React.FC<StepSettingsContentProps> = observer(
   ({ model, flowKey, stepKey, onSave, onCancel, onError, shouldSave, showActions }) => {
     const [lastShouldSave, setLastShouldSave] = useState(false);
     const flowEngine = useFlowEngine();
-    const app = useApp();
 
     // 获取流程定义
     const ModelClass = model.constructor as typeof FlowModel;
@@ -244,12 +243,10 @@ const StepSettingsContent: React.FC<StepSettingsContentProps> = observer(
           <SchemaComponent
             schema={formSchema}
             components={{
-              ...app.components,
-              ...flowEngine.components,
+              ...flowEngine.flowSettings.components,
             }}
             scope={{
-              ...app.scopes,
-              ...flowEngine.scopes,
+              ...flowEngine.flowSettings.scopes,
               handleValuesChange,
               handleSave,
               handleCancel,

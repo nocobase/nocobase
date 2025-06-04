@@ -10,6 +10,7 @@
 import { connect, mapProps } from '@formily/react';
 import { Switch } from 'antd';
 import { FlowModel } from './models';
+import { FlowSettings } from './flowSettings';
 import {
   ActionDefinition,
   ActionOptions,
@@ -42,19 +43,13 @@ export class FlowEngine {
   private modelClasses: Map<string, ModelConstructor> = new Map();
   /** @private Stores created model instances. */
   private modelInstances: Map<string, any> = new Map();
-  /** @public Stores registered components for SchemaComponent. */
-  public components: Record<string, any> = {};
-  /** @public Stores registered scopes for SchemaComponent. */
-  public scopes: Record<string, any> = {};
+  /** @public Stores flow settings including components and scopes for formily settings. */
+  public flowSettings: FlowSettings = new FlowSettings();
   context: Record<string, any> = {};
   private modelRepository: IFlowModelRepository | null = null;
   private _applyFlowCache = new Map<string, ApplyFlowCacheEntry>();
 
   constructor() {
-    // 注册默认组件
-    this.addComponents({
-      Switch: NocoBaseSwitch,
-    });
   }
 
   setModelRepository(modelRepository: IFlowModelRepository) {
@@ -74,40 +69,6 @@ export class FlowEngine {
 
   get applyFlowCache() {
     return this._applyFlowCache;
-  }
-
-  /**
-   * 添加组件到 FlowEngine 的组件注册表中。
-   * 这些组件可以在 SchemaComponent 中使用。
-   * @param {Record<string, any>} components 要添加的组件对象
-   * @returns {void}
-   * @example
-   * flowEngine.addComponents({ MyComponent, AnotherComponent });
-   */
-  public addComponents(components: Record<string, any>): void {
-    Object.keys(components).forEach((name) => {
-      if (this.components[name]) {
-        console.warn(`FlowEngine: Component with name '${name}' is already registered and will be overwritten.`);
-      }
-      this.components[name] = components[name];
-    });
-  }
-
-  /**
-   * 添加作用域到 FlowEngine 的作用域注册表中。
-   * 这些作用域可以在 SchemaComponent 中使用。
-   * @param {Record<string, any>} scopes 要添加的作用域对象
-   * @returns {void}
-   * @example
-   * flowEngine.addScopes({ useMyHook, myVariable, myFunction });
-   */
-  public addScopes(scopes: Record<string, any>): void {
-    Object.keys(scopes).forEach((name) => {
-      if (this.scopes[name]) {
-        console.warn(`FlowEngine: Scope with name '${name}' is already registered and will be overwritten.`);
-      }
-      this.scopes[name] = scopes[name];
-    });
   }
 
   /**

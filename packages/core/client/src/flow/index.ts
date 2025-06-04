@@ -26,7 +26,7 @@ export class PluginFlowEngine extends Plugin {
       ),
     );
     this.flowEngine.registerModels(filteredModels);
-    this.flowEngine.addComponents({
+    this.flowEngine.flowSettings.registerComponents({
       Switch: connect(
         AntdSwitch,
         mapProps({

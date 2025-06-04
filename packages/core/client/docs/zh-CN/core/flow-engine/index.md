@@ -60,19 +60,15 @@
 
 ---
 
-### formily 组件作用域管理
+### FlowSettings 管理
 
-- **addComponents(components: Record<string, any>): void**
-  注册 formily 组件到 FlowEngine 中，这些组件可以在后续 model 与 formily 结合使用。
+- **flowSettings.registerComponents(components): void**
+  添加组件到 flowSettings 的组件注册表中, 这些组件可以在 flow step 的 uiSchema 中使用。
 
-- **components: Record<string, any>**
-  获取所有已注册的组件。
+- **flowSettings.registerScopes(scopes): void**
+  添加作用域到 flowSettings 的作用域注册表中, 这些作用域可以在 flow step 的 uiSchema 中使用。
 
-- **addScopes(scopes: Record<string, any>): void**
-  注册formily scopes到 FlowEngine 的中，这些 scopes 可以在后续 model 与 formily 结合使用。
-
-- **scopes: Record<string, any>**
-  获取所有已注册的scopes。
+---
 
 ## 示例
 
