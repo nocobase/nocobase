@@ -197,10 +197,12 @@ const StepSettingsModalContent: React.FC<StepSettingsModalContentProps> = observ
         maskClosable={false}
         confirmLoading={isSaving}
         style={{ top: 20 }}
-        bodyStyle={{
-          maxHeight: 'calc(100vh - 200px)',
-          overflowY: 'auto',
-          padding: '16px 24px',
+        styles={{
+          body: {
+            maxHeight: 'calc(100vh - 200px)',
+            overflowY: 'auto',
+            padding: '16px 24px',
+          },
         }}
       >
         <StepSettings

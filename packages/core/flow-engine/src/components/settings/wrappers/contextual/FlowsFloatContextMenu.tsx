@@ -21,21 +21,17 @@ import { StepSettingsModal } from './StepSettingsModal';
 // 检测DOM中直接子元素是否包含button元素的辅助函数
 const detectButtonInDOM = (container: HTMLElement): boolean => {
   if (!container) return false;
-  
+
   // 只检测直接子元素中的button
   const directChildren = container.children;
   for (let i = 0; i < directChildren.length; i++) {
     const child = directChildren[i];
     // 检查是否是button元素或具有button特征的元素
-    if (
-      child.tagName === 'BUTTON' || 
-      child.getAttribute('role') === 'button' ||
-      child.classList.contains('ant-btn')
-    ) {
+    if (child.tagName === 'BUTTON' || child.getAttribute('role') === 'button' || child.classList.contains('ant-btn')) {
       return true;
     }
   }
-  
+
   return false;
 };
 
@@ -43,12 +39,12 @@ const detectButtonInDOM = (container: HTMLElement): boolean => {
 const floatContainerStyles = css`
   position: relative;
   display: inline;
-  
+
   /* 当检测到button时使用inline-block */
   &.has-button-child {
     display: inline-block;
   }
-  
+
   /* 正常的hover行为 */
   &:hover > .general-schema-designer {
     display: block;
@@ -185,7 +181,7 @@ const FlowsFloatContextMenuWithModel: React.FC<ModelProvidedProps> = observer(
         childList: true,
         subtree: true,
         attributes: true,
-        attributeFilter: ['class', 'role']
+        attributeFilter: ['class', 'role'],
       });
 
       return () => {
@@ -196,7 +192,7 @@ const FlowsFloatContextMenuWithModel: React.FC<ModelProvidedProps> = observer(
     const handleChildHover = useCallback((e: React.MouseEvent) => {
       const target = e.target as HTMLElement;
       const childWithMenu = target.closest('[data-has-float-menu]');
-      
+
       // 如果悬浮的是子元素（且不是当前容器），则隐藏当前菜单
       if (childWithMenu && childWithMenu !== containerRef.current) {
         setHideMenu(true);
@@ -214,11 +210,11 @@ const FlowsFloatContextMenuWithModel: React.FC<ModelProvidedProps> = observer(
             icon: <ExclamationCircleOutlined />,
             content: '确定要删除此项吗？此操作不可撤销。',
             okText: '确认删除',
-            okType: 'danger',
+            okType: 'primary',
             cancelText: '取消',
-            onOk() {
+            async onOk() {
               try {
-                model.destroy();
+                await model.destroy();
               } catch (error) {
                 console.error('删除操作失败:', error);
                 Modal.error({
@@ -362,9 +358,11 @@ const FlowsFloatContextMenuWithModel: React.FC<ModelProvidedProps> = observer(
 
     return (
       <>
-        <div 
+        <div
           ref={containerRef}
-          className={`${floatContainerStyles} ${hideMenu ? 'hide-parent-menu' : ''} ${hasButton ? 'has-button-child' : ''} ${className || ''}`} 
+          className={`${floatContainerStyles} ${hideMenu ? 'hide-parent-menu' : ''} ${
+            hasButton ? 'has-button-child' : ''
+          } ${className || ''}`}
           style={containerStyle}
           data-has-float-menu="true"
           onMouseMove={handleChildHover}

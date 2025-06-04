@@ -496,6 +496,12 @@ export class FlowModel {
 
   addSubModel(subKey: string, options) {
     const model = this.flowEngine.createModel({ ...options, parentId: this.uid, subKey, subType: 'array' });
+
+    // 确保正确设置 parent 关系
+    if (!model.parent) {
+      model.setParent(this);
+    }
+
     Array.isArray(this[subKey]) || (this[subKey] = observable.shallow([]));
     this[subKey].push(model);
     this.subModelKeys.add(subKey);
