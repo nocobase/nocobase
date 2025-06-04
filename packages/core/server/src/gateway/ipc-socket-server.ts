@@ -7,6 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { logger } from '@nocobase/logger';
 import { randomUUID } from 'crypto';
 import fs from 'fs';
 import net from 'net';
@@ -75,7 +76,7 @@ export class IPCSocketServer {
     });
 
     socketServer.listen(xpipe.eq(socketPath), () => {
-      console.log(`Gateway IPC Server running at ${socketPath}`);
+      logger.info(`Gateway IPC Server running at ${socketPath}`);
     });
 
     return new IPCSocketServer(socketServer);
