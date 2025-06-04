@@ -70,12 +70,20 @@ const useToggleFieldsActionProps = () => {
   const fieldSchema = useFieldSchema();
   const form = useForm();
   const { t } = useTranslation(NAMESPACE);
-  const [icon, setIcon] = useState(<UpOutlined />);
-  const [title, setTitle] = useState(t('CollapseFields'));
+  const collapseComponent = (
+    <>
+      {t('CollapseFields')} <UpOutlined />
+    </>
+  );
+  const expandComponent = (
+    <>
+      {t('ExpandFields')} <DownOutlined />
+    </>
+  );
+  const [actionComponent, setActionComponent] = useState(collapseComponent);
   return {
-    icon,
     type: 'link',
-    title,
+    title: actionComponent,
     onClick() {
       let count = -1;
       let targetVisible = false;
@@ -89,8 +97,7 @@ const useToggleFieldsActionProps = () => {
           }
           if (count === topFieldsToShow) {
             targetVisible = field.display === 'hidden';
-            setIcon(!targetVisible ? <DownOutlined /> : <UpOutlined />);
-            setTitle(!targetVisible ? t('ExpandFields') : t('CollapseFields'));
+            setActionComponent(!targetVisible ? expandComponent : collapseComponent);
           }
           field.setDisplay(targetVisible ? 'visible' : 'hidden');
         }
