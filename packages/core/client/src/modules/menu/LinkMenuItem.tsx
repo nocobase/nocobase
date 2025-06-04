@@ -39,7 +39,7 @@ export const LinkMenuItem = () => {
   const options = useContext(SchemaOptionsContext);
   const { theme } = useGlobalTheme();
   const { componentCls, hashId } = useStyles();
-  const { urlSchema, paramsSchema } = useURLAndHTMLSchema();
+  const { urlSchema, paramsSchema, openInNewWindowSchema } = useURLAndHTMLSchema();
   const parentRoute = useParentRoute();
   const { createRoute } = useNocoBaseRoutes();
   const dm = useDataSourceManager();
@@ -72,6 +72,7 @@ export const LinkMenuItem = () => {
                           },
                           href: urlSchema,
                           params: paramsSchema,
+                          openInNewWindow: openInNewWindowSchema,
                         },
                       }}
                     />
@@ -84,9 +85,9 @@ export const LinkMenuItem = () => {
       },
       theme,
     ).open({
-      initialValues: {},
+      initialValues: { openInNewWindow: true },
     });
-    const { title, href, params, icon } = values;
+    const { title, href, params, icon, openInNewWindow } = values;
 
     // 创建一个路由到 desktopRoutes 表中
     await createRoute({
@@ -97,6 +98,7 @@ export const LinkMenuItem = () => {
       options: {
         href,
         params,
+        openInNewWindow,
       },
     });
   }, [options.components, options.scope, t, theme]);

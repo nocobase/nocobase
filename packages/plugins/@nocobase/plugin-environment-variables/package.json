@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-environment-variables",
-  "version": "1.7.0-alpha.14",
+  "version": "1.8.0-alpha.2",
   "main": "dist/server/index.js",
   "peerDependencies": {
     "@nocobase/client": "1.x",

@@ -32,5 +32,5 @@ export interface ITokenControlService {
   setConfig(config: TokenPolicyConfig): Promise<any>;
   renew(jti: string): Promise<{ jti: string; issuedTime: EpochTimeStamp }>;
   add({ userId }: { userId: number }): Promise<TokenInfo>;
-  removeSessionExpiredTokens(userId: number): Promise<void>;
+  removeSessionExpiredTokens(userId: number): Promise<any>;
 }

@@ -184,6 +184,9 @@ export const getShouldChange = ({
   const collectionsInheritChain = collectionField ? getAllCollectionsInheritChain(collectionField.target) : [];
 
   return async (value: any, optionPath: any[]) => {
+    // 导致了一些 BUG，暂时先弃用
+    return true;
+
     if (_.isString(value) && value.includes('$nRole')) {
       return true;
     }

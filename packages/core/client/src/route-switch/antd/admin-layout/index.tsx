@@ -37,6 +37,7 @@ import {
   useSchemaInitializerRender,
   useSystemSettings,
   useToken,
+  useRouterBasename,
 } from '../../../';
 import {
   CurrentPageUidContext,
@@ -55,6 +56,8 @@ import { KeepAlive, useKeepAlive } from './KeepAlive';
 import { NocoBaseDesktopRoute, NocoBaseDesktopRouteType } from './convertRoutesToSchema';
 import { MenuSchemaToolbar, ResetThemeTokenAndKeepAlgorithm } from './menuItemSettings';
 import { userCenterSettings } from './userCenterSettings';
+import { navigateWithinSelf } from '../../../block-provider/hooks';
+import { useNavigateNoUpdate } from '../../../application/CustomRouterContextProvider';
 import { VariableScope } from '../../../variables/VariableScope';
 import _ from 'lodash';
 import { useEvaluatedExpression } from '../../../hooks/useParsedValue';
@@ -349,6 +352,8 @@ const MenuItem: FC<{ item: any; options: { isMobile: boolean; collapsed: boolean
   const divRef = useRef(null);
   const location = useLocation();
   const badgeCount = useEvaluatedExpression(item._route.options?.badge?.count);
+  const navigate = useNavigateNoUpdate();
+  const basenameOfCurrentRouter = useRouterBasename();
 
   useEffect(() => {
     if (divRef.current) {
@@ -364,13 +369,19 @@ const MenuItem: FC<{ item: any; options: { isMobile: boolean; collapsed: boolean
     async (event: React.MouseEvent) => {
       const href = item._route.options?.href;
       const params = item._route.options?.params;
+      const openInNewWindow = item._route.options?.openInNewWindow;
 
       event.preventDefault();
       event.stopPropagation();
 
       try {
         const url = await parseURLAndParams(href, params || []);
-        window.open(url, '_blank');
+
+        if (openInNewWindow !== false) {
+          window.open(url, '_blank');
+        } else {
+          navigateWithinSelf(href, navigate, window.location.origin + basenameOfCurrentRouter);
+        }
       } catch (err) {
         console.error(err);
         window.open(href, '_blank');

@@ -63,16 +63,17 @@ export const useVariableOptions = ({
   record,
 }: Props) => {
   const app = useApp();
-  const customVariables = app
-    .getVariables()
-    .map((variable) => {
-      const { visible = true, option } = variable.useOption();
-      return {
-        visible,
-        option: option as any,
-      };
-    })
-    .filter(({ visible }) => visible);
+  const customVariables =
+    app
+      ?.getVariables?.()
+      .map((variable) => {
+        const { visible = true, option } = variable.useOption();
+        return {
+          visible,
+          option: option as any,
+        };
+      })
+      .filter(({ visible }) => visible) || [];
 
   const { filterVariables = () => true } = useVariables() || {};
   const blockParentCollectionName = record?.__parent?.__collectionName;

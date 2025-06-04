@@ -108,6 +108,38 @@ export const uiSchemaTemplatesSchema: ISchema = {
             },
           },
           properties: {
+            column1: {
+              type: 'void',
+              title: '{{ t("Title") }}',
+              'x-decorator': 'TableV2.Column.Decorator',
+              'x-component': 'TableV2.Column',
+              properties: {
+                name: {
+                  type: 'string',
+                  'x-collection-field': 'uiSchemaTemplates.name',
+                  'x-component': 'CollectionField',
+                  'x-read-pretty': true,
+                  'x-component-props': {
+                    ellipsis: true,
+                  },
+                },
+              },
+            },
+            column2: {
+              type: 'void',
+              title: '{{t("Collection display name")}}',
+              'x-component': 'TableV2.Column',
+              properties: {
+                'collection.title': {
+                  type: 'string',
+                  'x-component': CollectionTitle,
+                  'x-read-pretty': true,
+                  'x-component-props': {
+                    ellipsis: true,
+                  },
+                },
+              },
+            },
             actions: {
               type: 'void',
               title: '{{ t("Actions") }}',
@@ -121,14 +153,6 @@ export const uiSchemaTemplatesSchema: ISchema = {
                     split: '|',
                   },
                   properties: {
-                    // view: {
-                    //   title: '{{ t("View") }}',
-                    //   'x-action': 'view',
-                    //   'x-component': 'RecordLink',
-                    //   'x-component-props': {
-                    //     to: '/admin/plugins/block-templates/${record.key}',
-                    //   },
-                    // },
                     edit: {
                       type: 'void',
                       title: '{{ t("Edit") }}',
@@ -136,7 +160,6 @@ export const uiSchemaTemplatesSchema: ISchema = {
                       'x-component': 'Action.Link',
                       'x-component-props': {
                         openMode: 'drawer',
-                        icon: 'EditOutlined',
                         refreshDataBlockRequest: false,
                       },
                       properties: {
@@ -208,44 +231,12 @@ export const uiSchemaTemplatesSchema: ISchema = {
                       'x-component': 'Action.Link',
                       'x-use-component-props': useDestroyTemplateProps,
                       'x-component-props': {
-                        icon: 'DeleteOutlined',
                         confirm: {
                           title: "{{t('Delete record')}}",
                           content: "{{t('Are you sure you want to delete it?')}}",
                         },
                       },
                     },
-                  },
-                },
-              },
-            },
-            column1: {
-              type: 'void',
-              'x-decorator': 'TableV2.Column.Decorator',
-              'x-component': 'TableV2.Column',
-              properties: {
-                name: {
-                  type: 'string',
-                  'x-collection-field': 'uiSchemaTemplates.name',
-                  'x-component': 'CollectionField',
-                  'x-read-pretty': true,
-                  'x-component-props': {
-                    ellipsis: true,
-                  },
-                },
-              },
-            },
-            column2: {
-              type: 'void',
-              title: '{{t("Collection display name")}}',
-              'x-component': 'TableV2.Column',
-              properties: {
-                'collection.title': {
-                  type: 'string',
-                  'x-component': CollectionTitle,
-                  'x-read-pretty': true,
-                  'x-component-props': {
-                    ellipsis: true,
                   },
                 },
               },

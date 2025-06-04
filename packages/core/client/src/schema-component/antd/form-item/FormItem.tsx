@@ -75,7 +75,7 @@ export const FormItem: any = withDynamicSchemaProps(
     useEffect(() => {
       addActiveFieldName?.(schema.name as string);
     }, [addActiveFieldName, schema.name]);
-    field.title = t(field.title, { ns: NAMESPACE_UI_SCHEMA });
+    field.title = field.title && t(field.title, { ns: NAMESPACE_UI_SCHEMA });
     const showTitle = schema['x-decorator-props']?.showTitle ?? true;
     const extra = useMemo(() => {
       if (field.description && field.description !== '') {
@@ -103,7 +103,7 @@ export const FormItem: any = withDynamicSchemaProps(
     }
 
     return (
-      <VariableScope scopeId={schema['x-uid']} type="formItem">
+      <VariableScope scopeId={schema?.['x-uid']} type="formItem">
         <CollectionFieldProvider allowNull={true}>
           <BlockItem
             className={cx(
