@@ -89,6 +89,9 @@ export const EditDatabaseConnectionAction = () => {
                     'x-decorator-props': {
                       initialValue: record,
                     },
+                    'x-component-props': {
+                      width: 650,
+                    },
                     title: compile("{{t('Edit')}}") + ' - ' + compile(record.displayName),
                     properties: {
                       body: {

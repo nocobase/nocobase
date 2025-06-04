@@ -63,6 +63,9 @@ export const CreateDatabaseConnectAction = () => {
                   [uid()]: {
                     type: 'void',
                     'x-component': 'Action.Drawer',
+                    'x-component-props': {
+                      width: 650,
+                    },
                     'x-decorator': 'Form',
                     'x-decorator-props': {
                       initialValue: {
