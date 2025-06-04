@@ -81,3 +81,5 @@ NocoBase 支持三种安装方式：
 通过云厂商一键部署 NocoBase，并享受多种部署选项的灵活性：
 
 - [阿里云](https://computenest.console.aliyun.com/service/instance/create/default?type=user&ServiceName=NocoBase%20%E7%A4%BE%E5%8C%BA%E7%89%88)
+
+- [Rainbond Cloud](https://hub.grapps.cn/marketplace/apps/1707)
