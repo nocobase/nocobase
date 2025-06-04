@@ -13,6 +13,8 @@ import { Plugin } from '../application/Plugin';
 import { MockFlowModelRepository } from './FlowModelRepository';
 import { FlowPage } from './FlowPage';
 import * as models from './models';
+import { connect, mapProps } from '@formily/react';
+import { Switch as AntdSwitch } from 'antd';
 
 export class PluginFlowEngine extends Plugin {
   async load() {
@@ -24,6 +26,15 @@ export class PluginFlowEngine extends Plugin {
       ),
     );
     this.flowEngine.registerModels(filteredModels);
+    this.flowEngine.addComponents({
+      Switch: connect(
+        AntdSwitch,
+        mapProps({
+          value: 'checked',
+          onInput: 'onChange',
+        }),
+      ),
+    });
   }
 }
 
