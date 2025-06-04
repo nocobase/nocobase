@@ -185,7 +185,7 @@ export const DataBlockProvider: FC<Partial<AllDataBlockProps>> = withDynamicSche
       return null;
     }
     return (
-      <VariableScope scopeId={fieldSchema['x-uid']} type="dataBlock">
+      <VariableScope scopeId={fieldSchema?.['x-uid']} type="dataBlock">
         <DataBlockContext.Provider
           value={{
             dn,

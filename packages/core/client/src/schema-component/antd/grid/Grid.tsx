@@ -20,6 +20,7 @@ import { FilterBlockProvider } from '../../../filter-provider/FilterProvider';
 import {
   NocoBaseRecursionField,
   RefreshComponentProvider,
+  useRefreshComponent,
   useRefreshFieldSchema,
 } from '../../../formily/NocoBaseRecursionField';
 import { DndContext, DndContextProps } from '../../common/dnd-context';
@@ -73,18 +74,22 @@ const ColDivider = (props) => {
   }
   const prevSchema = props.cols[props.index];
   const nextSchema = props.cols[props.index + 1];
+  const draggableDisabled = props.first || props.last || !designable;
   const {
     attributes,
     listeners,
     setNodeRef: setDraggableNodeRef,
     isDragging,
   } = useDraggable({
-    disabled: props.first || props.last || !designable,
+    disabled: draggableDisabled,
     id: props.id,
     data: {
       dividerRef,
       prevSchema,
       nextSchema,
+    },
+    attributes: {
+      tabIndex: draggableDisabled ? -1 : 0,
     },
   });
 
@@ -92,7 +97,11 @@ const ColDivider = (props) => {
 
   useDndMonitor({
     onDragStart(event) {
-      if (!designable || !isDragging) {
+      const dividerRef = event.active?.data?.current?.dividerRef;
+      if (!dividerRef) {
+        return;
+      }
+      if (!designable) {
         return;
       }
       dragIdRef.current = event.active.id;
@@ -378,9 +387,11 @@ export const Grid: any = observer(
     }, [fieldSchema, render, InitializerComponent, showDivider]);
 
     const refreshFieldSchema = useRefreshFieldSchema();
+    const refreshComponent = useRefreshComponent();
     const refresh = useCallback(() => {
       refreshFieldSchema?.();
-    }, [refreshFieldSchema]);
+      refreshComponent?.();
+    }, [refreshComponent, refreshFieldSchema]);
 
     return (
       <RefreshComponentProvider refresh={refresh}>

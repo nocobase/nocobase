@@ -228,6 +228,12 @@ test.describe('PageHeader', () => {
         await page.getByLabel('action-Action-Submit').click();
         await expect(navigationBarPositionElement).toContainText('Test________');
 
+        // 隐藏下拉列表
+        await navigationBarPositionElement
+          .getByLabel('schema-initializer-MobileNavigationActionBar-mobile:navigation-bar:actions')
+          .hover();
+        await page.mouse.move(200, 0);
+
         // 编辑
         await navigationBarPositionElement.getByRole('button', { name: 'Test________' }).hover();
         await navigationBarPositionElement

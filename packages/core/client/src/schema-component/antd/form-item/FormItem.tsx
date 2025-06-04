@@ -103,18 +103,18 @@ export const FormItem: any = withDynamicSchemaProps(
     }
 
     return (
-      <VariableScope scopeId={schema['x-uid']} type="formItem">
+      <VariableScope scopeId={schema?.['x-uid']} type="formItem">
         <CollectionFieldProvider allowNull={true}>
           <BlockItem
             className={cx(
               'nb-form-item',
               css`
-              .ant-formily-item-layout-horizontal .ant-formily-item-control {
-                max-width: ${showTitle === false || schema['x-component'] !== 'CollectionField'
-                  ? '100% !important'
-                  : null};
-              }
-            `,
+                .ant-formily-item-layout-horizontal .ant-formily-item-control {
+                  max-width: ${showTitle === false || schema['x-component'] !== 'CollectionField'
+                    ? '100% !important'
+                    : null};
+                }
+              `,
             )}
           >
             <ACLCollectionFieldProvider>

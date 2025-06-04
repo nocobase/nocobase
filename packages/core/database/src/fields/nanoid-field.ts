@@ -20,12 +20,15 @@ export class NanoidField extends Field {
   init() {
     const { name, size, customAlphabet: customAlphabetOptions, autoFill } = this.options;
 
-    this.listener = async (instance) => {
-      const value = instance.get(name);
+    this.listener = async (instances) => {
+      instances = Array.isArray(instances) ? instances : [instances];
+      for (const instance of instances) {
+        const value = instance.get(name);
 
-      if (!value && autoFill !== false) {
-        const nanoIdFunc = customAlphabetOptions ? customAlphabet(customAlphabetOptions) : nanoid;
-        instance.set(name, nanoIdFunc(size || DEFAULT_SIZE));
+        if (!value && autoFill !== false) {
+          const nanoIdFunc = customAlphabetOptions ? customAlphabet(customAlphabetOptions) : nanoid;
+          instance.set(name, nanoIdFunc(size || DEFAULT_SIZE));
+        }
       }
     };
   }
@@ -33,12 +36,14 @@ export class NanoidField extends Field {
   bind() {
     super.bind();
     this.on('beforeValidate', this.listener);
+    this.on('beforeBulkCreate', this.listener);
     this.on('beforeCreate', this.listener);
   }
 
   unbind() {
     super.unbind();
     this.off('beforeValidate', this.listener);
+    this.off('beforeBulkCreate', this.listener);
     this.off('beforeCreate', this.listener);
   }
 }

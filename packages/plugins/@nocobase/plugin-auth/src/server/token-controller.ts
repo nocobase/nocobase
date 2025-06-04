@@ -20,7 +20,7 @@ import { Cache } from '@nocobase/cache';
 import { randomUUID } from 'crypto';
 import ms from 'ms';
 import Application from '@nocobase/server';
-import Database, { Repository } from '@nocobase/database';
+import Database, { Repository, Op } from '@nocobase/database';
 import {
   issuedTokensCollectionName,
   tokenPolicyCollectionName,
@@ -72,13 +72,13 @@ export class TokenController implements TokenControlService {
 
   async removeSessionExpiredTokens(userId: number) {
     const config = await this.getConfig();
-    const issuedTokenRepo = this.app.db.getRepository(issuedTokensCollectionName);
+    const model = this.app.db.getModel(issuedTokensCollectionName);
     const currTS = Date.now();
-    return issuedTokenRepo.destroy({
-      filter: {
-        userId: userId,
+    return model.destroy({
+      where: {
+        userId,
         signInTime: {
-          $lt: currTS - config.sessionExpirationTime,
+          [Op.lt]: currTS - config.sessionExpirationTime,
         },
       },
     });

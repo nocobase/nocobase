@@ -11,7 +11,7 @@
   "Step 3: Import options": "Passo 3: Opzioni di importazione",
   "Download tips": "- Scarica il modello e compila i dati secondo il formato \r\n - Importa solo il primo foglio di lavoro \r\n - Non cambiare l'intestazione del modello per evitare errori di importazione",
   "Import warnings": "Puoi importare fino a {{limit}} righe di dati alla volta, qualsiasi eccedenza verrà ignorata.",
-  "Upload placeholder": "Trascina qui il file o clicca per caricare, la dimensione del file non deve superare 80M",
+  "Upload placeholder": "Trascina qui il file o clicca per caricare.",
   "Excel data importing": "Importazione dati Excel in corso",
   "{{successCount}} records have been successfully imported": "{{successCount}} record sono stati importati con successo",
   "To download the failure data": "Scarica i dati non riusciti",
