@@ -2,7 +2,7 @@ FROM node:20-bookworm as builder
 ARG VERDACCIO_URL=http://host.docker.internal:10104/
 ARG COMMIT_HASH
 ARG APPEND_PRESET_LOCAL_PLUGINS
-ARG BEFORE_PACK_NOCOBASE="ls -l"
+ARG BEFORE_PACK_NOCOBASE="true"
 ARG PLUGINS_DIRS
 
 ENV PLUGINS_DIRS=${PLUGINS_DIRS}
@@ -59,14 +59,19 @@ FROM node:20-bookworm-slim
 RUN apt-get update && apt-get install -y --no-install-recommends wget gnupg \
   && rm -rf /var/lib/apt/lists/*
 
+<<<<<<< Updated upstream
 RUN sh -c 'echo "deb http://mirrors.aliyun.com/postgresql/repos/apt bookworm-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
 RUN wget --quiet -O - http://mirrors.aliyun.com/postgresql/repos/apt/ACCC4CF8.asc | apt-key add -
+=======
+RUN mkdir -p /etc/apt/keyrings/ \
+  && wget -O /etc/apt/keyrings/pgdg.asc http://mirrors.ustc.edu.cn/postgresql/repos/apt/ACCC4CF8.asc \
+  && echo "deb [signed-by=/etc/apt/keyrings/pgdg.asc] http://mirrors.ustc.edu.cn/postgresql/repos/apt bookworm-pgdg main" > /etc/apt/sources.list.d/pgdg.list
+>>>>>>> Stashed changes
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
   nginx \
   libaio1 \
   postgresql-client-16 \
-  postgresql-client-17 \
   libfreetype6 \
   fontconfig \
   libgssapi-krb5-2 \
