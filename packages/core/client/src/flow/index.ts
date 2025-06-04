@@ -24,7 +24,7 @@ export class PluginFlowEngine extends Plugin {
       ),
     );
     this.flowEngine.registerModels(filteredModels);
-    await this.flowEngine.flowSettings.loadAntdComponents();
+    await this.flowEngine.flowSettings.load();
   }
 }
 
