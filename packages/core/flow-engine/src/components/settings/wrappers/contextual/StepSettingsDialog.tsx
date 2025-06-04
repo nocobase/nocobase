@@ -7,13 +7,14 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React from 'react';
+import { FormDialog } from '@formily/antd-v5';
+import { createSchemaField, ISchema, observer } from '@formily/react';
 import { message } from 'antd';
+import React from 'react';
 import { useFlowModel } from '../../../../hooks';
-import { observer } from '@formily/react';
-import { FormDialog, SchemaComponent } from '@nocobase/client';
 import { ActionStepDefinition } from '../../../../types';
-import { ISchema } from '@formily/react';
+
+const SchemaField = createSchemaField();
 
 // 创建两个组件版本，一个使用props传递的model，一个使用hook获取model
 interface ModelProvidedProps {
@@ -117,7 +118,7 @@ const openStepSettingsDialogWithModelById = async ({
       const div = document.createElement('div');
       document.body.appendChild(div);
       render(<TempComponent />, div);
-      
+
       // 清理
       setTimeout(() => {
         unmountComponentAtNode(div);
@@ -193,12 +194,17 @@ const openStepSettingsDialogContent = async ({
 
   // 构建表单Schema
   const formSchema: ISchema = {
-    type: 'void',
-    'x-component': 'FormV2',
-    'x-component-props': {
-      layout: 'vertical',
+    type: 'object',
+    properties: {
+      layout: {
+        type: 'void',
+        'x-component': 'FormLayout',
+        'x-component-props': {
+          layout: 'vertical', // 垂直布局
+        },
+        properties: mergedUiSchema,
+      },
     },
-    properties: mergedUiSchema,
   };
 
   // 创建FormDialog
@@ -214,9 +220,9 @@ const openStepSettingsDialogContent = async ({
     },
     (form) => {
       const flowEngine = model.flowEngine || {};
-      
+
       return (
-        <SchemaComponent
+        <SchemaField
           schema={formSchema}
           components={{
             ...flowEngine.flowSettings?.components,
@@ -226,7 +232,7 @@ const openStepSettingsDialogContent = async ({
           }}
         />
       );
-    }
+    },
   );
 
   // 设置保存回调
@@ -253,6 +259,4 @@ const openStepSettingsDialogContent = async ({
   });
 };
 
-export { 
-  openStepSettingsDialog
-};
+export { openStepSettingsDialog };

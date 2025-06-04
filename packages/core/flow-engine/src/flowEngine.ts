@@ -9,8 +9,8 @@
 
 import { connect, mapProps } from '@formily/react';
 import { Switch } from 'antd';
-import { FlowModel } from './models';
 import { FlowSettings } from './flowSettings';
+import { FlowModel } from './models';
 import {
   ActionDefinition,
   ActionOptions,
@@ -49,8 +49,7 @@ export class FlowEngine {
   private modelRepository: IFlowModelRepository | null = null;
   private _applyFlowCache = new Map<string, ApplyFlowCacheEntry>();
 
-  constructor() {
-  }
+  constructor() {}
 
   setModelRepository(modelRepository: IFlowModelRepository) {
     if (this.modelRepository) {

@@ -13,13 +13,12 @@ export class FlowSettings {
   private antdComponentsLoaded = false;
 
   /**
-   * 懒加载 Antd 组件到 FlowSettings 的组件注册表中。
-   * 只有在调用此函数时才会实际导入 formily antd 组件
+   * 加载 FlowSettings 所需的资源。
    * @returns {Promise<void>}
    * @example
-   * await flowSettings.loadAntdComponents();
+   * await flowSettings.load();
    */
-  public async loadAntdComponents(): Promise<void> {
+  public async load(): Promise<void> {
     if (this.antdComponentsLoaded) {
       console.log('FlowSettings: Antd components already loaded, skipping...');
       return;
@@ -39,6 +38,8 @@ export class FlowSettings {
         DatePicker,
         Editable,
         Form,
+        FormDialog,
+        FormDrawer,
         FormButtonGroup,
         FormCollapse,
         FormGrid,
@@ -53,6 +54,7 @@ export class FlowSettings {
         Radio,
         Reset,
         Select,
+        SelectTable,
         Space,
         Submit,
         Switch,
@@ -64,6 +66,8 @@ export class FlowSettings {
 
       // 注册基础组件
       this.components.Form = Form;
+      this.components.FormDialog = FormDialog;
+      this.components.FormDrawer = FormDrawer;
       this.components.FormItem = FormItem;
       this.components.FormLayout = FormLayout;
       this.components.FormGrid = FormGrid;
@@ -71,25 +75,28 @@ export class FlowSettings {
       this.components.FormTab = FormTab;
       this.components.FormCollapse = FormCollapse;
       this.components.FormButtonGroup = FormButtonGroup;
-      
+
       // 注册输入组件
       this.components.Input = Input;
       this.components.NumberPicker = NumberPicker;
       this.components.Password = Password;
+
+      // 注册选择组件
       this.components.Select = Select;
+      this.components.SelectTable = SelectTable;
       this.components.Cascader = Cascader;
       this.components.TreeSelect = TreeSelect;
       this.components.Transfer = Transfer;
-      
+
       // 注册日期时间组件
       this.components.DatePicker = DatePicker;
       this.components.TimePicker = TimePicker;
-      
+
       // 注册选择组件
       this.components.Checkbox = Checkbox;
       this.components.Radio = Radio;
       this.components.Switch = Switch;
-      
+
       // 注册数组组件
       this.components.ArrayBase = ArrayBase;
       this.components.ArrayCards = ArrayCards;
@@ -97,13 +104,13 @@ export class FlowSettings {
       this.components.ArrayItems = ArrayItems;
       this.components.ArrayTable = ArrayTable;
       this.components.ArrayTabs = ArrayTabs;
-      
+
       // 注册其他组件
       this.components.Upload = Upload;
       this.components.Space = Space;
       this.components.Editable = Editable;
       this.components.PreviewText = PreviewText;
-      
+
       // 注册按钮组件
       this.components.Submit = Submit;
       this.components.Reset = Reset;
@@ -149,4 +156,4 @@ export class FlowSettings {
       this.scopes[name] = scopes[name];
     });
   }
-} 
+}

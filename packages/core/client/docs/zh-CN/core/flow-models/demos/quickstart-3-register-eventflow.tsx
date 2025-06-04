@@ -1,14 +1,22 @@
 import * as icons from '@ant-design/icons';
+import { FormItem, Input, Select } from '@formily/antd-v5';
 import { Application, Plugin } from '@nocobase/client';
 import { defineFlow, FlowModel, FlowModelRenderer } from '@nocobase/flow-engine';
-import { Button } from 'antd';
+import { Button, Modal } from 'antd';
 import React from 'react';
 
 // 自定义模型类，继承自 FlowModel
 class MyModel extends FlowModel {
   render() {
     console.log('Rendering MyModel with props:', this.props);
-    return <Button {...this.props} />;
+    return (
+      <Button
+        {...this.props}
+        onClick={(event) => {
+          this.dispatchEvent('onClick', { event });
+        }}
+      />
+    );
   }
 }
 
@@ -24,11 +32,13 @@ const myPropsFlow = defineFlow({
           type: 'string',
           title: '按钮标题',
           'x-component': 'Input',
+          'x-decorator': 'FormItem',
         },
         type: {
           type: 'string',
           title: '类型',
           'x-component': 'Select',
+          'x-decorator': 'FormItem',
           enum: [
             { label: '主要', value: 'primary' },
             { label: '次要', value: 'default' },
@@ -42,6 +52,7 @@ const myPropsFlow = defineFlow({
           type: 'string',
           title: '图标',
           'x-component': 'Select',
+          'x-decorator': 'FormItem',
           enum: [
             { label: '搜索', value: 'SearchOutlined' },
             { label: '添加', value: 'PlusOutlined' },
@@ -65,11 +76,50 @@ const myPropsFlow = defineFlow({
   },
 });
 
+const myEventFlow = defineFlow({
+  key: 'myEventFlow',
+  on: {
+    eventName: 'onClick',
+  },
+  title: '按钮事件',
+  steps: {
+    confirm: {
+      title: '确认操作配置',
+      uiSchema: {
+        title: {
+          type: 'string',
+          title: '弹窗提示标题',
+          'x-decorator': 'FormItem',
+          'x-component': 'Input',
+        },
+        content: {
+          type: 'string',
+          title: '弹窗提示内容',
+          'x-decorator': 'FormItem',
+          'x-component': 'Input.TextArea',
+        },
+      },
+      defaultParams: {
+        title: '确认操作',
+        content: '你点击了按钮，是否确认？',
+      },
+      handler(ctx, params) {
+        Modal.confirm({
+          ...params,
+        });
+      },
+    },
+  },
+});
+
 MyModel.registerFlow(myPropsFlow);
+MyModel.registerFlow(myEventFlow);
 
 // 插件类，负责注册模型、仓库，并加载或创建模型实例
 class PluginHelloModel extends Plugin {
   async load() {
+    // 加载 flow settings 所需资源
+    await this.flowEngine.flowSettings.load();
     // 注册自定义模型
     this.flowEngine.registerModels({ MyModel });
     const model = this.flowEngine.createModel({
