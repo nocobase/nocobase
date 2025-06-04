@@ -118,6 +118,9 @@ export const transformToFilter = (
       ) {
         return true;
       }
+      if (value?.type) {
+        return true;
+      }
 
       const collectionField = getCollectionJoinField(`${collectionName}.${path}`);
       if (collectionField?.target) {

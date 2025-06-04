@@ -15,6 +15,17 @@ import Application from '@nocobase/server';
 import axios from 'axios';
 import CustomRequestPlugin from '../plugin';
 
+function toJSON(value) {
+  if (typeof value === 'string') {
+    try {
+      return JSON.parse(value);
+    } catch (error) {
+      return value;
+    }
+  }
+  return value;
+}
+
 const getHeaders = (headers: Record<string, any>) => {
   return Object.keys(headers).reduce((hds, key) => {
     if (key.toLocaleLowerCase().startsWith('x-')) {
@@ -73,6 +84,7 @@ export async function send(this: CustomRequestPlugin, ctx: Context, next: Next) 
       data: {},
     },
     $nForm,
+    $nSelectedRecord,
   } = values;
 
   // root role has all permissions
@@ -84,7 +96,7 @@ export async function send(this: CustomRequestPlugin, ctx: Context, next: Next) 
       },
     });
     if (hasRoles.length) {
-      if (!hasRoles.find((item) => item.roleName === ctx.state.currentRole)) {
+      if (!hasRoles.some((item) => ctx.state.currentRoles.includes(item.roleName))) {
         return ctx.throw(403, 'custom request no permission');
       }
     }
@@ -154,6 +166,7 @@ export async function send(this: CustomRequestPlugin, ctx: Context, next: Next) 
     $nToken: ctx.getBearerToken(),
     $nForm,
     $env: ctx.app.environment.getVariables(),
+    $nSelectedRecord,
   };
 
   const axiosRequestConfig = {
@@ -166,7 +179,7 @@ export async function send(this: CustomRequestPlugin, ctx: Context, next: Next) 
       ...omitNullAndUndefined(getParsedValue(arrayToObject(headers), variables)),
     },
     params: getParsedValue(arrayToObject(params), variables),
-    data: getParsedValue(data, variables),
+    data: getParsedValue(toJSON(data), variables),
   };
 
   const requestUrl = axios.getUri(axiosRequestConfig);

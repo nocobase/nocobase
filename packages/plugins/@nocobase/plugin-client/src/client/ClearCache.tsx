@@ -10,17 +10,29 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAPIClient, SchemaSettingsItem } from '@nocobase/client';
+import { App } from 'antd';
 
 export const ClearCache = () => {
   const { t } = useTranslation();
   const api = useAPIClient();
+  const { modal } = App.useApp();
   return (
     <SchemaSettingsItem
       eventKey="cache"
       title="cache"
       onClick={async () => {
-        await api.resource('app').clearCache();
-        window.location.reload();
+        modal.confirm({
+          title: t('Clear cache'),
+          content: t('Are you sure you want to clear cache ?'),
+          okText: t('Clear'),
+          okButtonProps: {
+            danger: true,
+          },
+          onOk: async () => {
+            await api.resource('app').clearCache();
+            window.location.reload();
+          },
+        });
       }}
     >
       {t('Clear cache')}

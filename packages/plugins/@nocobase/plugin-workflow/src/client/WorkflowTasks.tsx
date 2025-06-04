@@ -11,14 +11,17 @@ import { PageHeader } from '@ant-design/pro-layout';
 import { Badge, Button, Layout, Menu, Tabs, Tooltip } from 'antd';
 import classnames from 'classnames';
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
-import { Link, Outlet, useNavigate, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 
 import {
+  ActionContextProvider,
+  CollectionRecordProvider,
   css,
   PinnedPluginListProvider,
   SchemaComponent,
   SchemaComponentContext,
   SchemaComponentOptions,
+  useAPIClient,
   useApp,
   useCompile,
   useDocumentTitle,
@@ -36,21 +39,7 @@ const layoutClass = css`
   overflow: hidden;
 `;
 
-const sideClass = css`
-  overflow: auto;
-  position: sticky;
-  top: 0;
-  bottom: 0;
-  height: 100%;
-
-  .ant-layout-sider-children {
-    width: 200px;
-    height: 100%;
-  }
-`;
-
 const contentClass = css`
-  padding: 24px;
   min-height: 280px;
   overflow: auto;
 `;
@@ -60,8 +49,9 @@ export interface TaskTypeOptions {
   collection: string;
   action?: string;
   useActionParams: Function;
-  component: React.ComponentType;
-  extraActions?: React.ComponentType;
+  Actions?: React.ComponentType;
+  Item: React.ComponentType;
+  Detail: React.ComponentType;
   // children?: TaskTypeOptions[];
   alwaysShow?: boolean;
 }
@@ -83,7 +73,7 @@ function MenuLink({ type }: any) {
 
   return (
     <Link
-      to={`/admin/workflow/tasks/${type}`}
+      to={`/admin/workflow/tasks/${type}/${TASK_STATUS.PENDING}`}
       className={css`
         display: flex;
         align-items: center;
@@ -103,7 +93,7 @@ function MenuLink({ type }: any) {
   );
 }
 
-const TASK_STATUS = {
+export const TASK_STATUS = {
   ALL: 'all',
   PENDING: 'pending',
   COMPLETED: 'completed',
@@ -113,7 +103,7 @@ function StatusTabs() {
   const navigate = useNavigate();
   const { taskType, status = TASK_STATUS.PENDING } = useParams();
   const type = useCurrentTaskType();
-  const { extraActions: ExtraActions } = type;
+  const { Actions } = type;
   return (
     <Tabs
       activeKey={status}
@@ -140,9 +130,9 @@ function StatusTabs() {
         },
       ]}
       tabBarExtraContent={
-        ExtraActions
+        Actions
           ? {
-              right: <ExtraActions />,
+              right: <Actions />,
             }
           : {}
       }
@@ -179,18 +169,49 @@ function useCurrentTaskType() {
   );
 }
 
+function PopupContext(props: any) {
+  const { taskType, status = TASK_STATUS.PENDING, popupId } = useParams();
+  const { record } = usePopupRecordContext();
+  const navigate = useNavigate();
+  if (!popupId) {
+    return null;
+  }
+  return (
+    <ActionContextProvider
+      visible={Boolean(popupId)}
+      setVisible={(visible) => {
+        if (!visible) {
+          if (window.history.state.idx) {
+            navigate(-1);
+          } else {
+            navigate(`/admin/workflow/tasks/${taskType}/${status}`);
+          }
+        }
+      }}
+      openMode="modal"
+    >
+      <CollectionRecordProvider record={record}>{props.children}</CollectionRecordProvider>
+    </ActionContextProvider>
+  );
+}
+
+const PopupRecordContext = createContext<any>({ record: null, setRecord: (record) => {} });
+export function usePopupRecordContext() {
+  return useContext(PopupRecordContext);
+}
+
 export function WorkflowTasks() {
   const compile = useCompile();
   const { setTitle } = useDocumentTitle();
   const navigate = useNavigate();
-  const { taskType, status = TASK_STATUS.PENDING } = useParams();
-  const {
-    token: { colorBgContainer },
-  } = useToken();
+  const apiClient = useAPIClient();
+  const { taskType, status = TASK_STATUS.PENDING, popupId } = useParams();
+  const { token } = useToken();
+  const [currentRecord, setCurrentRecord] = useState<any>(null);
 
   const items = useTaskTypeItems();
 
-  const { title, collection, action = 'list', useActionParams, component: Component } = useCurrentTaskType();
+  const { title, collection, action = 'list', useActionParams, Item, Detail } = useCurrentTaskType();
 
   const params = useActionParams(status);
 
@@ -204,11 +225,29 @@ export function WorkflowTasks() {
     }
   }, [items, navigate, status, taskType]);
 
+  useEffect(() => {
+    if (popupId && !currentRecord) {
+      apiClient
+        .resource(collection)
+        .get({
+          filterByTk: popupId,
+        })
+        .then((res) => {
+          if (res.data?.data) {
+            setCurrentRecord(res.data.data);
+          }
+        })
+        .catch((err) => {
+          console.error(err);
+        });
+    }
+  }, [popupId, collection, currentRecord, apiClient]);
+
   const typeKey = taskType ?? items[0].key;
 
   return (
     <Layout className={layoutClass}>
-      <Layout.Sider className={sideClass} theme="light">
+      <Layout.Sider theme="light" breakpoint="md" collapsedWidth="0" zeroWidthTriggerStyle={{ top: 24 }}>
         <Menu mode="inline" selectedKeys={[typeKey]} items={items} style={{ height: '100%' }} />
       </Layout.Sider>
       <Layout
@@ -229,81 +268,95 @@ export function WorkflowTasks() {
           }
         `}
       >
-        <SchemaComponentContext.Provider value={{ designable: false }}>
-          <SchemaComponent
-            components={{
-              Layout,
-              PageHeader,
-              StatusTabs,
-            }}
-            schema={{
-              name: `${taskType}-${status}`,
-              type: 'void',
-              'x-decorator': 'List.Decorator',
-              'x-decorator-props': {
-                collection,
-                action,
-                params: {
-                  pageSize: 20,
-                  sort: ['-createdAt'],
-                  ...params,
-                },
-              },
-              properties: {
-                header: {
-                  type: 'void',
-                  'x-component': 'PageHeader',
-                  'x-component-props': {
-                    className: classnames('pageHeaderCss'),
-                    style: {
-                      background: colorBgContainer,
-                      padding: '12px 24px 0 24px',
-                    },
-                    title,
-                  },
-                  properties: {
-                    tabs: {
-                      type: 'void',
-                      'x-component': 'StatusTabs',
-                    },
+        <PopupRecordContext.Provider
+          value={{
+            record: currentRecord,
+            setRecord: setCurrentRecord,
+          }}
+        >
+          <SchemaComponentContext.Provider value={{ designable: false }}>
+            <SchemaComponent
+              components={{
+                Layout,
+                PageHeader,
+                StatusTabs,
+              }}
+              schema={{
+                name: `${taskType}-${status}`,
+                type: 'void',
+                'x-decorator': 'List.Decorator',
+                'x-decorator-props': {
+                  collection,
+                  action,
+                  params: {
+                    pageSize: 20,
+                    sort: ['-createdAt'],
+                    ...params,
                   },
                 },
-                content: {
-                  type: 'void',
-                  'x-component': 'Layout.Content',
-                  'x-component-props': {
-                    className: contentClass,
-                  },
-                  properties: {
-                    list: {
-                      type: 'array',
-                      'x-component': 'List',
-                      'x-component-props': {
-                        className: css`
-                          > .itemCss:not(:last-child) {
-                            border-bottom: none;
-                          }
-                        `,
-                        locale: {
-                          emptyText: `{{ t("No data yet", { ns: "${NAMESPACE}" }) }}`,
-                        },
+                properties: {
+                  header: {
+                    type: 'void',
+                    'x-component': 'PageHeader',
+                    'x-component-props': {
+                      className: classnames('pageHeaderCss'),
+                      style: {
+                        background: token.colorBgContainer,
+                        padding: '12px 24px 0 24px',
                       },
-                      properties: {
-                        item: {
-                          type: 'object',
-                          'x-decorator': 'List.Item',
-                          'x-component': Component,
-                          'x-read-pretty': true,
-                        },
+                      title,
+                    },
+                    properties: {
+                      tabs: {
+                        type: 'void',
+                        'x-component': 'StatusTabs',
                       },
                     },
                   },
+                  content: {
+                    type: 'void',
+                    'x-component': 'Layout.Content',
+                    'x-component-props': {
+                      className: contentClass,
+                      style: {
+                        padding: `${token.paddingPageVertical}px ${token.paddingPageHorizontal}px`,
+                      },
+                    },
+                    properties: {
+                      list: {
+                        type: 'array',
+                        'x-component': 'List',
+                        'x-component-props': {
+                          className: css`
+                            > .itemCss:not(:last-child) {
+                              border-bottom: none;
+                            }
+                          `,
+                          locale: {
+                            emptyText: `{{ t("No data yet", { ns: "${NAMESPACE}" }) }}`,
+                          },
+                        },
+                        properties: {
+                          item: {
+                            type: 'object',
+                            'x-decorator': 'List.Item',
+                            'x-component': Item,
+                            'x-read-pretty': true,
+                          },
+                        },
+                      },
+                    },
+                  },
+                  popup: {
+                    type: 'void',
+                    'x-decorator': PopupContext,
+                    'x-component': Detail,
+                  },
                 },
-              },
-            }}
-          />
-          <Outlet />
-        </SchemaComponentContext.Provider>
+              }}
+            />
+          </SchemaComponentContext.Provider>
+        </PopupRecordContext.Provider>
       </Layout>
     </Layout>
   );
@@ -379,7 +432,7 @@ function TasksCountsProvider(props: any) {
   return <TasksCountsContext.Provider value={{ reload, total, counts }}>{props.children}</TasksCountsContext.Provider>;
 }
 
-export const TasksProvider = (props: any) => {
+export function TasksProvider(props: any) {
   const isLoggedIn = useIsLoggedIn();
 
   const content = (
@@ -399,4 +452,4 @@ export const TasksProvider = (props: any) => {
   );
 
   return isLoggedIn ? <TasksCountsProvider>{content}</TasksCountsProvider> : content;
-};
+}

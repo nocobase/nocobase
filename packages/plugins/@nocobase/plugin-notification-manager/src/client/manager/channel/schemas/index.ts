@@ -185,7 +185,6 @@ export const channelsSchema: ISchema = {
               'x-component': 'Action.Link',
               'x-component-props': {
                 openMode: 'drawer',
-                icon: 'EditOutlined',
               },
               'x-use-component-props': 'useRecordEditActionProps',
               'x-decorator': 'Space',

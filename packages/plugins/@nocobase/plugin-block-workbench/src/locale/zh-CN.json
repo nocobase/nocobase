@@ -13,5 +13,6 @@
   "Add popup": "添加弹窗",
   "Add custom request": "添加自定义请求",
   "At least 1, up to 6": "最多6个，最少一个",
-  "Items per row":"每行显示个数"
+  "Items per row": "每行显示个数",
+  "Ellipsis action title": "省略超出长度的操作标题"
 }

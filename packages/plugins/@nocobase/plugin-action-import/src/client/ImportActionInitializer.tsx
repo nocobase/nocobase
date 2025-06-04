@@ -17,7 +17,6 @@ import {
   useSchemaInitializerItem,
 } from '@nocobase/client';
 import React from 'react';
-import { NAMESPACE } from './constants';
 import { useImportTranslation } from './locale';
 import { useFields } from './useFields';
 import { Alert } from 'antd';

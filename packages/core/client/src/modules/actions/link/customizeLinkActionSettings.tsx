@@ -11,17 +11,18 @@ import { useField, useFieldSchema } from '@formily/react';
 import _ from 'lodash';
 import React, { FC } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useCollectionRecord, useDesignable } from '../../../';
+import { useDesignable } from '../../../';
 import { useSchemaToolbar } from '../../../application';
 import { SchemaSettings } from '../../../application/schema-settings/SchemaSettings';
-import { useCollection_deprecated } from '../../../collection-manager';
 import { ButtonEditor, RemoveButton } from '../../../schema-component/antd/action/Action.Designer';
+import { useCollectionManager_deprecated } from '../../../collection-manager';
 import {
   SchemaSettingsLinkageRules,
   SchemaSettingsModalItem,
   SchemaSettingAccessControl,
 } from '../../../schema-settings';
 import { useURLAndHTMLSchema } from './useURLAndHTMLSchema';
+import { useDataBlockProps } from '../../../data-source';
 
 export const SchemaSettingsActionLinkItem: FC = () => {
   const field = useField();
@@ -94,16 +95,13 @@ export const customizeLinkActionSettings = new SchemaSettings({
     {
       name: 'linkageRules',
       Component: SchemaSettingsLinkageRules,
-      useVisible() {
-        const record = useCollectionRecord();
-        return !_.isEmpty(record?.data);
-      },
       useComponentProps() {
-        const { name } = useCollection_deprecated();
         const { linkageRulesProps } = useSchemaToolbar();
+        const { association } = useDataBlockProps() || {};
+        const { getCollectionField } = useCollectionManager_deprecated();
+        const associationField = getCollectionField(association);
         return {
           ...linkageRulesProps,
-          collectionName: name,
         };
       },
     },

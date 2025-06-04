@@ -9,14 +9,19 @@
 
 import { ArrayItems } from '@formily/antd-v5';
 import { ISchema, useField, useFieldSchema } from '@formily/react';
-import { ButtonEditor, SchemaSettings, type, useDesignable, useSchemaToolbar } from '@nocobase/client';
+import {
+  ButtonEditor,
+  SchemaSettings,
+  useDesignable,
+  useSchemaToolbar,
+  SchemaSettingsLinkageRules,
+} from '@nocobase/client';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useShared } from './useShared';
 import { Button, Space } from 'antd';
 import { Action } from '@nocobase/client';
 import React from 'react';
-import { useDownloadXlsxTemplateAction } from './useImportAction';
 
 export const importActionSchemaSettings = new SchemaSettings({
   name: 'actionSettings:import',
@@ -27,6 +32,16 @@ export const importActionSchemaSettings = new SchemaSettings({
       useComponentProps() {
         const { buttonEditorProps } = useSchemaToolbar();
         return buttonEditorProps;
+      },
+    },
+    {
+      name: 'linkageRules',
+      Component: SchemaSettingsLinkageRules,
+      useComponentProps() {
+        const { linkageRulesProps } = useSchemaToolbar();
+        return {
+          ...linkageRulesProps,
+        };
       },
     },
     {
@@ -72,6 +87,7 @@ export const importActionSchemaSettings = new SchemaSettings({
         };
       },
     },
+
     {
       name: 'divider',
       type: 'divider',

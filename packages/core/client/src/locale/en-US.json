@@ -164,6 +164,7 @@
   "Chart type": "Chart type",
   "Chart config": "Chart config",
   "Templates": "Templates",
+  "Template": "Template",
   "Select template": "Select template",
   "Action logs": "Action logs",
   "Create template": "Create template",
@@ -504,7 +505,7 @@
   "Save as block template": "Save as block template",
   "Block templates": "Block templates",
   "Block template": "Block template",
-  "Convert reference to duplicate": "Convert reference to duplicate",
+  "Convert template to duplicate": "Convert template to duplicate",
   "Template name": "Template name",
   "Block type": "Block type",
   "No blocks to connect": "No blocks to connect",
@@ -589,6 +590,7 @@
   "Blank block": "Blank block",
   "Duplicate template": "Duplicate template",
   "Reference template": "Reference template",
+  "Inherited template": "Inherited template",
   "Create calendar block": "Create calendar block",
   "Create kanban block": "Create kanban block",
   "Grouping field": "Grouping field",
@@ -887,5 +889,11 @@
   "After hiding, this tab will no longer appear in the tab bar. To show it again, you need to go to the route management page to set it.": "After hiding, this tab will no longer appear in the tab bar. To show it again, you need to go to the route management page to set it.",
   "No pages yet, please configure first": "No pages yet, please configure first",
   "Click the \"UI Editor\" icon in the upper right corner to enter the UI Editor mode": "Click the \"UI Editor\" icon in the upper right corner to enter the UI Editor mode",
-  "Specifies a Permissions Policy for the <iframe>. The policy defines what features are available to the <iframe> (for example, access to the microphone, camera, battery, web-share, etc.) based on the origin of the request.": "Specifies a Permissions Policy for the <iframe>. The policy defines what features are available to the <iframe> (for example, access to the microphone, camera, battery, web-share, etc.) based on the origin of the request."
+  "Specifies a Permissions Policy for the <iframe>. The policy defines what features are available to the <iframe> (for example, access to the microphone, camera, battery, web-share, etc.) based on the origin of the request.": "Specifies a Permissions Policy for the <iframe>. The policy defines what features are available to the <iframe> (for example, access to the microphone, camera, battery, web-share, etc.) based on the origin of the request.",
+  "Deprecated": "Deprecated",
+  "Full permissions": "Full permissions",
+  "Refresh data blocks": "Refresh data blocks",
+  "Select data blocks to refresh": "Select data blocks to refresh",
+  "After successful submission, the selected data blocks will be automatically refreshed.": "After successful submission, the selected data blocks will be automatically refreshed."
+
 }

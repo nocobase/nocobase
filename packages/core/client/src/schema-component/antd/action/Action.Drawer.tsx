@@ -10,6 +10,7 @@
 import { observer, RecursionField, useField, useFieldSchema } from '@formily/react';
 import { Drawer } from 'antd';
 import classNames from 'classnames';
+import { useTranslation } from 'react-i18next';
 import React, { FC, startTransition, useCallback, useEffect, useMemo, useState } from 'react';
 import { ErrorBoundary, FallbackProps } from 'react-error-boundary';
 import { NocoBaseRecursionField } from '../../../formily/NocoBaseRecursionField';
@@ -22,6 +23,7 @@ import { useActionContext } from './hooks';
 import { useSetAriaLabelForDrawer } from './hooks/useSetAriaLabelForDrawer';
 import { ActionDrawerProps, ComposedActionDrawer, OpenSize } from './types';
 import { getZIndex, useZIndexContext, zIndexContext } from './zIndexContext';
+import { NAMESPACE_UI_SCHEMA } from '../../../i18n/constant';
 
 const MemoizeRecursionField = React.memo(RecursionField);
 MemoizeRecursionField.displayName = 'MemoizeRecursionField';
@@ -81,6 +83,7 @@ export const InternalActionDrawer: React.FC<ActionDrawerProps> = observer(
     const { visible, setVisible, openSize = 'middle', drawerProps } = useActionContext();
     const schema = useFieldSchema();
     const field = useField();
+    const { t } = useTranslation();
     const { componentCls, hashId } = useStyles();
     const tabContext = useTabsContext();
     const parentZIndex = useZIndexContext();
@@ -118,7 +121,6 @@ export const InternalActionDrawer: React.FC<ActionDrawerProps> = observer(
       },
       [footerNodeName],
     );
-
     return (
       <ActionContextNoRerender>
         <zIndexContext.Provider value={zIndex}>
@@ -126,7 +128,7 @@ export const InternalActionDrawer: React.FC<ActionDrawerProps> = observer(
             <Drawer
               zIndex={zIndex}
               width={openSizeWidthMap.get(openSize)}
-              title={field.title}
+              title={typeof field.title === 'string' ? t(field.title, { ns: NAMESPACE_UI_SCHEMA }) : field.title}
               {...others}
               {...drawerProps}
               rootStyle={rootStyle}

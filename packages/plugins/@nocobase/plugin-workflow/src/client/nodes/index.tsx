@@ -39,7 +39,7 @@ import { useFlowContext } from '../FlowContext';
 import { DrawerDescription } from '../components/DrawerDescription';
 import { StatusButton } from '../components/StatusButton';
 import { JobStatusOptionsMap } from '../constants';
-import { useGetAriaLabelOfAddButton } from '../hooks/useGetAriaLabelOfAddButton';
+import { useGetAriaLabelOfAddButton, useWorkflowExecuted } from '../hooks';
 import { lang } from '../locale';
 import useStyles from '../style';
 import { UseVariableOptions, VariableOption, WorkflowVariableInput } from '../variable';
@@ -105,10 +105,10 @@ function useUpdateAction() {
   const ctx = useActionContext();
   const { refresh } = useResourceActionContext();
   const data = useNodeContext();
-  const { workflow } = useFlowContext();
+  const executed = useWorkflowExecuted();
   return {
     async run() {
-      if (workflow.executed) {
+      if (executed) {
         message.error(lang('Node in executed workflow cannot be modified'));
         return;
       }
@@ -197,6 +197,7 @@ export function RemoveButton() {
   const { workflow, nodes, refresh } = useFlowContext() ?? {};
   const current = useNodeContext();
   const { modal } = App.useApp();
+  const executed = useWorkflowExecuted();
 
   const resource = api.resource('flow_nodes');
 
@@ -247,7 +248,7 @@ export function RemoveButton() {
     return null;
   }
 
-  return workflow.executed ? null : (
+  return executed ? null : (
     <Button
       type="text"
       shape="circle"
@@ -515,8 +516,8 @@ export function NodeDefaultView(props) {
   const { workflow, refresh } = useFlowContext() ?? {};
   const { styles } = useStyles();
   const workflowPlugin = usePlugin(WorkflowPlugin);
+  const executed = useWorkflowExecuted();
   const instruction = workflowPlugin.instructions.get(data.type);
-  const detailText = workflow.executed ? '{{t("View")}}' : '{{t("Configure")}}';
 
   const [editingTitle, setEditingTitle] = useState<string>(data.title);
   const [editingConfig, setEditingConfig] = useState(false);
@@ -526,7 +527,7 @@ export function NodeDefaultView(props) {
     const values = cloneDeep(data.config);
     return createForm({
       initialValues: values,
-      disabled: workflow.executed,
+      disabled: executed,
     });
   }, [data, workflow]);
 
@@ -620,7 +621,7 @@ export function NodeDefaultView(props) {
           </div>
         </div>
         <Input.TextArea
-          disabled={workflow.executed}
+          disabled={executed}
           value={editingTitle}
           onChange={(ev) => setEditingTitle(ev.target.value)}
           onBlur={(ev) => onChangeTitle(ev.target.value)}
@@ -723,7 +724,7 @@ export function NodeDefaultView(props) {
                         },
                         properties: instruction.fieldset,
                       },
-                      footer: workflow.executed
+                      footer: executed
                         ? null
                         : {
                             type: 'void',

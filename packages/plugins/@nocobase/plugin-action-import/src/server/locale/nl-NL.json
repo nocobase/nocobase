@@ -1,0 +1,10 @@
+{
+    "Yes": "Ja",
+    "No": "Nee",
+    "can not find value": "Kan waarde niet vinden",
+    "password is empty": "Wachtwoord is leeg",
+    "Incorrect time format": "Onjuist tijdformaat",
+    "Incorrect date format": "Onjuist datumformaat",
+    "Incorrect email format": "Onjuist e-mailformaat",
+    "Illegal percentage format": "Ongeldig percentageformaat"
+}

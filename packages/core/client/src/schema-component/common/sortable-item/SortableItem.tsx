@@ -120,7 +120,6 @@ export const SortableItem: React.FC<SortableItemProps> = React.memo((props) => {
   if (designable) {
     return <InternalSortableItem {...props} />;
   }
-
   return React.createElement(
     component || 'div',
     _.omit(others, ['children', 'schema', 'overStyle', 'openMode', 'id', 'eid', 'removeParentsIfNoChildren']),

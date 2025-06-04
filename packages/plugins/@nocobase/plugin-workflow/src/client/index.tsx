@@ -34,6 +34,7 @@ import ScheduleTrigger from './triggers/schedule';
 import { getWorkflowDetailPath, getWorkflowExecutionsPath } from './utils';
 import { VariableOption } from './variable';
 import { TasksProvider, TaskTypeOptions, WorkflowTasks } from './WorkflowTasks';
+import { WorkflowCollectionsProvider } from './WorkflowCollectionsProvider';
 
 const workflowConfigSettings = {
   Component: BindWorkflowConfig,
@@ -109,6 +110,8 @@ export default class PluginWorkflowClient extends Plugin {
   }
 
   async load() {
+    this.app.addProvider(WorkflowCollectionsProvider);
+
     this.router.add('admin.workflow.workflows.id', {
       path: getWorkflowDetailPath(':id'),
       Component: WorkflowPage,
@@ -120,13 +123,8 @@ export default class PluginWorkflowClient extends Plugin {
     });
 
     this.router.add('admin.workflow.tasks', {
-      path: '/admin/workflow/tasks/:taskType/:status?',
+      path: '/admin/workflow/tasks/:taskType/:status/:popupId?',
       Component: WorkflowTasks,
-    });
-
-    this.router.add('admin.workflow.tasks.popup', {
-      path: '/admin/workflow/tasks/:taskType/:status/popups/*',
-      Component: PagePopups,
     });
 
     this.app.pluginSettingsManager.add(NAMESPACE, {
@@ -193,3 +191,4 @@ export { default as useStyles } from './style';
 export { Trigger, useTrigger } from './triggers';
 export * from './utils';
 export * from './variable';
+export { TASK_STATUS, usePopupRecordContext } from './WorkflowTasks';
