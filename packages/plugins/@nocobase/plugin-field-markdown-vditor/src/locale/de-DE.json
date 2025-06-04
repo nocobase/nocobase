@@ -1,7 +1,7 @@
 {
   "Vditor": "Markdown(Vditor)",
   "File collection": "Dateisammlung",
-  "Used to store files uploaded in the Markdown editor": "Wird verwendet, um Dateien zu speichern, die im Markdown-Editor hochgeladen wurden",
+  "Used to store files uploaded in the Markdown editor (default: attachments)": "Dateisammlung, die in den Markdown-Editor hochgeladen wurde (Standard: attachments)",
   "Toolbar": "Editor-Symbolleistenkonfiguration",
   "Emoji": "Emoji",
   "Headings": "Überschriften",
@@ -29,5 +29,10 @@
   "Both": "Editor & Vorschau",
   "Preview": "Vorschau",
   "Fullscreen": "Vollbild umschalten",
-  "Outline": "Gliederung"
+  "Outline": "Gliederung",
+  "uploading": "Hochladen...",
+  "upload failed": "Hochladen fehlgeschlagen",
+  "vditor.uploadError.message": "Dateien können nicht in den aktuellen Speicher hochgeladen werden. Sie versuchen, Dateien in den Markdown-Editor hochzuladen, aber die aktuelle Speicher-Konfiguration unterstützt diese Operation nicht. Um die Upload-Funktionalität zu aktivieren, schließen Sie bitte die folgenden Einstellungen ab: 1. Gehen Sie zu \"Dateimanager\". 2. Wählen Sie den aktuell verwendeten Speicher ({{storageTitle}}) aus. 3. Legen Sie die \"Basis-URL\" fest und aktivieren Sie die Option \"Öffentlicher Zugriff\".",
+  "Storage configuration not found. Please configure a storage provider first.": "Speicherkonfiguration nicht gefunden. Bitte konfigurieren Sie zuerst einen Speicheranbieter.",
+  "Response data is empty": "Antwortdaten sind leer"
 }

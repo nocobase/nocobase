@@ -24,7 +24,7 @@ describe('workflow > actions > executions', () => {
 
   beforeEach(async () => {
     app = await getApp({
-      plugins: ['users', 'acl', 'auth', 'data-source-manager'],
+      plugins: ['users', 'acl', 'auth', 'data-source-manager', 'system-settings'],
       acl: true,
     });
     agent = await app.agent().loginUsingId(1);

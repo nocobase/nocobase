@@ -60,7 +60,7 @@ DatePickerMobile.FilterWithPicker = (props) => {
 };
 DatePickerMobile.RangePicker = MobileRangePicker;
 
-const mobileComponents = {
+export const mobileComponents = {
   Button: MobileButton,
   Select: (props) => {
     const { designable } = useDesignable();

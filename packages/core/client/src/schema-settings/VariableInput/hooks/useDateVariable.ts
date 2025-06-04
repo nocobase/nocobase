@@ -13,7 +13,7 @@ import { useTranslation } from 'react-i18next';
 import { useOperators } from '../../../block-provider/CollectOperators';
 import { useDatePickerContext } from '../../../schema-component/antd/date-picker/DatePicker';
 import { getDateRanges } from '../../../schema-component/antd/date-picker/util';
-
+import { datetime } from '../../../collection-manager/interfaces/properties/operators';
 interface Props {
   operator?: {
     value: string;
@@ -45,132 +45,155 @@ export const useDateVariable = ({ operator, schema, noDisabled }: Props) => {
       value: 'now',
       label: t('Current time'),
       disabled: noDisabled ? false : schema?.['x-component'] !== 'DatePicker' || operatorValue === '$dateBetween',
+      operators: datetime,
+      schema: {},
     },
     {
       key: 'yesterday',
       value: 'yesterday',
       label: t('Yesterday'),
       disabled,
+      operators: datetime,
     },
     {
       key: 'today',
       value: 'today',
       label: t('Today'),
       disabled,
+      operators: datetime,
     },
     {
       key: 'tomorrow',
       value: 'tomorrow',
       label: t('Tomorrow'),
       disabled,
+      operators: datetime,
     },
     {
       key: 'lastIsoWeek',
       value: 'lastIsoWeek',
       label: t('Last week'),
       disabled,
+      operators: datetime,
     },
     {
       key: 'thisIsoWeek',
       value: 'thisIsoWeek',
       label: t('This week'),
       disabled,
+      operators: datetime,
     },
     {
       key: 'nextIsoWeek',
       value: 'nextIsoWeek',
       label: t('Next week'),
       disabled,
+      operators: datetime,
     },
     {
       key: 'lastMonth',
       value: 'lastMonth',
       label: t('Last month'),
       disabled,
+      operators: datetime,
     },
     {
       key: 'thisMonth',
       value: 'thisMonth',
       label: t('This month'),
       disabled,
+      operators: datetime,
     },
     {
       key: 'nextMonth',
       value: 'nextMonth',
       label: t('Next month'),
       disabled,
+      operators: datetime,
     },
     {
       key: 'lastQuarter',
       value: 'lastQuarter',
       label: t('Last quarter'),
       disabled,
+      operators: datetime,
     },
     {
       key: 'thisQuarter',
       value: 'thisQuarter',
       label: t('This quarter'),
       disabled,
+      operators: datetime,
     },
     {
       key: 'nextQuarter',
       value: 'nextQuarter',
       label: t('Next quarter'),
       disabled,
+      operators: datetime,
     },
     {
       key: 'lastYear',
       value: 'lastYear',
       label: t('Last year'),
       disabled,
+      operators: datetime,
     },
     {
       key: 'thisYear',
       value: 'thisYear',
       label: t('This year'),
       disabled,
+      operators: datetime,
     },
     {
       key: 'nextYear',
       value: 'nextYear',
       label: t('Next year'),
       disabled,
+      operators: datetime,
     },
     {
       key: 'last7Days',
       value: 'last7Days',
       label: t('Last 7 days'),
       disabled,
+      operators: datetime,
     },
     {
       key: 'next7Days',
       value: 'next7Days',
       label: t('Next 7 days'),
       disabled,
+      operators: datetime,
     },
     {
       key: 'last30Days',
       value: 'last30Days',
       label: t('Last 30 days'),
       disabled,
+      operators: datetime,
     },
     {
       key: 'next30Days',
       value: 'next30Days',
       label: t('Next 30 days'),
       disabled,
+      operators: datetime,
     },
     {
       key: 'last90Days',
       value: 'last90Days',
       label: t('Last 90 days'),
       disabled,
+      operators: datetime,
     },
     {
       key: 'next90Days',
       value: 'next90Days',
       label: t('Next 90 days'),
       disabled,
+      operators: datetime,
     },
   ];
 
@@ -203,7 +226,7 @@ export const useDatetimeVariableContext = () => {
 };
 
 /**
- * 变量：`日期变量`
+ * 变量：`日期变量`，主要用于筛选、联动规则条件场景
  * @param param0
  * @returns
  */
@@ -222,132 +245,154 @@ export const useDatetimeVariable = ({ operator, schema, noDisabled, targetFieldS
         value: 'now',
         label: t('Current time'),
         disabled: noDisabled ? false : schema?.['x-component'] !== 'DatePicker' || operatorValue === '$dateBetween',
+        operators: datetime,
       },
       {
         key: 'yesterday',
         value: 'yesterday',
         label: t('Yesterday'),
         disabled,
+        operators: datetime,
       },
       {
         key: 'today',
         value: 'today',
         label: t('Today'),
         disabled,
+        operators: datetime,
       },
       {
         key: 'tomorrow',
         value: 'tomorrow',
         label: t('Tomorrow'),
         disabled,
+        operators: datetime,
       },
       {
         key: 'lastIsoWeek',
         value: 'lastIsoWeek',
         label: t('Last week'),
         disabled,
+        operators: datetime,
       },
       {
         key: 'thisIsoWeek',
         value: 'thisIsoWeek',
         label: t('This week'),
         disabled,
+        operators: datetime,
       },
       {
         key: 'nextIsoWeek',
         value: 'nextIsoWeek',
         label: t('Next week'),
         disabled,
+        operators: datetime,
       },
       {
         key: 'lastMonth',
         value: 'lastMonth',
         label: t('Last month'),
         disabled,
+        operators: datetime,
       },
       {
         key: 'thisMonth',
         value: 'thisMonth',
         label: t('This month'),
         disabled,
+        operators: datetime,
       },
       {
         key: 'nextMonth',
         value: 'nextMonth',
         label: t('Next month'),
         disabled,
+        operators: datetime,
       },
       {
         key: 'lastQuarter',
         value: 'lastQuarter',
         label: t('Last quarter'),
         disabled,
+        operators: datetime,
       },
       {
         key: 'thisQuarter',
         value: 'thisQuarter',
         label: t('This quarter'),
         disabled,
+        operators: datetime,
       },
       {
         key: 'nextQuarter',
         value: 'nextQuarter',
         label: t('Next quarter'),
         disabled,
+        operators: datetime,
       },
       {
         key: 'lastYear',
         value: 'lastYear',
         label: t('Last year'),
         disabled,
+        operators: datetime,
       },
       {
         key: 'thisYear',
         value: 'thisYear',
         label: t('This year'),
         disabled,
+        operators: datetime,
       },
       {
         key: 'nextYear',
         value: 'nextYear',
         label: t('Next year'),
         disabled,
+        operators: datetime,
       },
       {
         key: 'last7Days',
         value: 'last7Days',
         label: t('Last 7 days'),
         disabled,
+        operators: datetime,
       },
       {
         key: 'next7Days',
         value: 'next7Days',
         label: t('Next 7 days'),
         disabled,
+        operators: datetime,
       },
       {
         key: 'last30Days',
         value: 'last30Days',
         label: t('Last 30 days'),
         disabled,
+        operators: datetime,
       },
       {
         key: 'next30Days',
         value: 'next30Days',
         label: t('Next 30 days'),
         disabled,
+        operators: datetime,
       },
       {
         key: 'last90Days',
         value: 'last90Days',
         label: t('Last 90 days'),
         disabled,
+        operators: datetime,
       },
       {
         key: 'next90Days',
         value: 'next90Days',
         label: t('Next 90 days'),
         disabled,
+        operators: datetime,
       },
     ];
 

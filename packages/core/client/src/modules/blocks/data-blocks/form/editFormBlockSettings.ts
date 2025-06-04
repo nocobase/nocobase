@@ -8,6 +8,7 @@
  */
 
 import { useFieldSchema } from '@formily/react';
+import { useTranslation } from 'react-i18next';
 import { SchemaSettings } from '../../../../application/schema-settings/SchemaSettings';
 import { useFormBlockContext } from '../../../../block-provider/FormBlockProvider';
 import { useCollection_deprecated } from '../../../../collection-manager';
@@ -21,6 +22,7 @@ import { SchemaSettingsBlockHeightItem } from '../../../../schema-settings/Schem
 import { SchemaSettingsBlockTitleItem } from '../../../../schema-settings/SchemaSettingsBlockTitleItem';
 import { useBlockTemplateContext } from '../../../../schema-templates/BlockTemplateProvider';
 import { SchemaSettingsLayoutItem } from '../../../../schema-settings/SchemaSettingsLayoutItem';
+import { LinkageRuleCategory } from '../../../../schema-settings/LinkageRules/type';
 
 export const editFormBlockSettings = new SchemaSettings({
   name: 'blockSettings:editForm',
@@ -34,12 +36,27 @@ export const editFormBlockSettings = new SchemaSettings({
       Component: SchemaSettingsBlockHeightItem,
     },
     {
-      name: 'linkageRules',
+      name: 'fieldLinkageRules',
       Component: SchemaSettingsLinkageRules,
       useComponentProps() {
         const { name } = useCollection_deprecated();
+        const { t } = useTranslation();
         return {
           collectionName: name,
+          title: t('Field Linkage rules'),
+        };
+      },
+    },
+    {
+      name: 'blockLinkageRules',
+      Component: SchemaSettingsLinkageRules,
+      useComponentProps() {
+        const { name } = useCollection_deprecated();
+        const { t } = useTranslation();
+        return {
+          collectionName: name,
+          title: t('Block Linkage rules'),
+          category: LinkageRuleCategory.block,
         };
       },
     },

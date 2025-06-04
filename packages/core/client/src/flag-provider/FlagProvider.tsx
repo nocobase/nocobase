@@ -35,6 +35,8 @@ export interface FlagProviderProps {
    * @default true
    */
   isVariableParsedInOtherContext?: boolean;
+  collectionField?: any; //目标赋值的数据表字段
+  children?: any;
 }
 
 export const FlagContext = React.createContext<Omit<FlagProviderProps, 'children'>>(null);

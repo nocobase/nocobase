@@ -29,6 +29,8 @@ export const CreateRecordAction = observer(
     const targetCollection = getCollection(collectionField?.target);
     const [currentCollection, setCurrentCollection] = useState(targetCollection?.name);
     const [currentDataSource, setCurrentDataSource] = useState(targetCollection?.dataSource);
+    const [formValueChanged, setFormValueChanged] = useState(false);
+
     const addbuttonClick = (collectionData) => {
       insertAddNewer(schema.AddNewer);
       setVisibleAddNewer(true);
@@ -38,7 +40,15 @@ export const CreateRecordAction = observer(
     return (
       <CollectionProvider_deprecated name={collectionField?.target}>
         <CreateAction {...props} onClick={(arg) => addbuttonClick(arg)} />
-        <ActionContextProvider value={{ ...ctx, visible: visibleAddNewer, setVisible: setVisibleAddNewer }}>
+        <ActionContextProvider
+          value={{
+            ...ctx,
+            visible: visibleAddNewer,
+            setVisible: setVisibleAddNewer,
+            formValueChanged,
+            setFormValueChanged,
+          }}
+        >
           <CollectionProvider_deprecated name={currentCollection} dataSource={currentDataSource}>
             <TabsContextProvider>
               <NocoBaseRecursionField

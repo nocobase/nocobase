@@ -95,6 +95,7 @@ export async function getCluster({ plugins = [], collectionsPath, ...options }: 
   return createMockCluster({
     ...options,
     plugins: [
+      'field-sort',
       [
         'workflow',
         {

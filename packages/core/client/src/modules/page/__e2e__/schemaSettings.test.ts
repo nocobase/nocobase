@@ -63,9 +63,11 @@ test.describe('page schema settings', () => {
     await page.getByLabel('block-item-Input-Tab name').getByRole('textbox').fill('new tab');
     // 选择一个图标
     await page.getByRole('button', { name: 'Select icon' }).click();
+    await expect(page.getByLabel('account-book').locator('svg')).toHaveCount(1);
     await page.getByLabel('account-book').locator('svg').click();
     await page.getByRole('button', { name: 'OK', exact: true }).click();
     await expect(page.getByText('new tab')).toBeVisible();
+    await expect(page.getByLabel('account-book').locator('svg')).toHaveCount(1);
     await expect(page.getByLabel('account-book').locator('svg')).toBeVisible();
   });
 });
@@ -92,10 +94,12 @@ test.describe('tabs schema settings', () => {
     await page.getByLabel('block-item-Input-Tab name').getByRole('textbox').click();
     await page.getByLabel('block-item-Input-Tab name').getByRole('textbox').fill('new name of page tab');
     await page.getByRole('button', { name: 'Select icon' }).click();
+    await expect(page.getByLabel('account-book').locator('svg')).toHaveCount(1);
     await page.getByLabel('account-book').locator('svg').click();
     await page.getByRole('button', { name: 'OK', exact: true }).click();
 
     await expect(page.getByText('new name of page tab')).toBeVisible();
+    await expect(page.getByLabel('account-book').locator('svg')).toHaveCount(1);
     await expect(page.getByLabel('account-book').locator('svg')).toBeVisible();
   });
 

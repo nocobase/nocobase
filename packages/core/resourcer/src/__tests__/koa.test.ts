@@ -215,7 +215,7 @@ describe('koa middleware', () => {
         sort: '-id',
       });
       expect(response.body).toMatchObject({
-        sort: ['-id'],
+        sort: '-id',
         filter: {
           $and: [
             { col1: 'val1', col2: 'val2' },

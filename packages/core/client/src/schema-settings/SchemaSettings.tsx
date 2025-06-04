@@ -85,7 +85,7 @@ import { AssociationOrCollectionProvider, useDataBlockProps } from '../data-sour
 import { useDataSourceManager } from '../data-source/data-source/DataSourceManagerProvider';
 import { useDataSourceKey } from '../data-source/data-source/DataSourceProvider';
 import { useFilterBlock } from '../filter-provider/FilterProvider';
-import { FlagProvider } from '../flag-provider';
+import { FlagProvider, useFlag } from '../flag-provider';
 import { useGlobalTheme } from '../global-theme';
 import { useCollectMenuItem, useCollectMenuItems, useMenuItem } from '../hooks/useMenuItem';
 import {
@@ -97,6 +97,7 @@ import { useRecord } from '../record-provider';
 import { ActionContextProvider } from '../schema-component/antd/action/context';
 import { SubFormProvider, useSubFormValue } from '../schema-component/antd/association-field/hooks';
 import { FormDialog } from '../schema-component/antd/form-dialog';
+import { AllDataBlocksContext } from '../schema-component/antd/page/AllDataBlocksProvider';
 import { SchemaComponentContext } from '../schema-component/context';
 import { FormProvider } from '../schema-component/core/FormProvider';
 import { RemoteSchemaComponent } from '../schema-component/core/RemoteSchemaComponent';
@@ -341,13 +342,13 @@ export const SchemaSettingsFormItemTemplate = function FormItemTemplate(props) {
   }
   return (
     <SchemaSettingsItem
-      title="Save as block template"
+      title={t('Save as reference template')}
       onClick={async () => {
         setVisible(false);
         const collection = collectionName && cm?.getCollection(collectionName);
         const gridSchema = findGridSchema(fieldSchema);
         const values = await FormDialog(
-          t('Save as template'),
+          t('Save as reference template'),
           () => {
             const componentTitle = {
               FormItem: t('Form'),
@@ -413,7 +414,7 @@ export const SchemaSettingsFormItemTemplate = function FormItemTemplate(props) {
         dn.refresh();
       }}
     >
-      {t('Save as block template')}
+      {t('Save as reference template')}
     </SchemaSettingsItem>
   );
 };
@@ -595,6 +596,7 @@ export const SchemaSettingsCascaderItem: FC<SchemaSettingsCascaderItemProps> = (
           options={options}
           style={{ textAlign: 'right', minWidth: 100 }}
           {...props}
+          multiple={props.multiple}
         />
       </div>
     </SchemaSettingsItem>
@@ -816,6 +818,7 @@ export interface SchemaSettingsModalItemProps {
   noRecord?: boolean;
   /** 自定义 Modal 上下文 */
   ModalContextProvider?: React.FC;
+  dialogRootClassName?: string;
 }
 export const SchemaSettingsModalItem: FC<SchemaSettingsModalItemProps> = (props) => {
   const {
@@ -830,6 +833,7 @@ export const SchemaSettingsModalItem: FC<SchemaSettingsModalItemProps> = (props)
     width = 'fit-content',
     noRecord = false,
     ModalContextProvider = (props) => <>{props.children}</>,
+    dialogRootClassName,
     ...others
   } = props;
   const options = useContext(SchemaOptionsContext);
@@ -850,6 +854,7 @@ export const SchemaSettingsModalItem: FC<SchemaSettingsModalItemProps> = (props)
   const { getOperators } = useOperators();
   const locationSearch = useLocationSearch();
   const variableOptions = useVariables();
+  const allDataBlocks = useContext(AllDataBlocksContext);
 
   // 解决变量`当前对象`值在弹窗中丢失的问题
   const { formValue: subFormValue, collection: subFormCollection, parent } = useSubFormValue();
@@ -870,79 +875,87 @@ export const SchemaSettingsModalItem: FC<SchemaSettingsModalItemProps> = (props)
         const values = asyncGetInitialValues ? await asyncGetInitialValues() : initialValues;
         const schema = _.isFunction(props.schema) ? props.schema() : props.schema;
         FormDialog(
-          { title: schema.title || title, width },
+          { title: schema.title || title, width, rootClassName: dialogRootClassName },
           () => {
             return (
-              <ModalContextProvider>
-                <CollectOperators defaultOperators={getOperators()}>
-                  <VariablesContext.Provider value={variableOptions}>
-                    <BlockContext.Provider value={blockOptions}>
-                      <VariablePopupRecordProvider
-                        recordData={popupRecordVariable?.value}
-                        collection={popupRecordVariable?.collection}
-                        parent={{
-                          recordData: parentPopupRecordVariable?.value,
-                          collection: parentPopupRecordVariable?.collection,
-                        }}
-                      >
-                        <CollectionRecordProvider record={noRecord ? null : record}>
-                          <CurrentRecordContextProvider {...currentRecordCtx}>
-                            <FormBlockContext.Provider value={formCtx}>
-                              <SubFormProvider value={{ value: subFormValue, collection: subFormCollection, parent }}>
-                                <FormActiveFieldsProvider
-                                  name="form"
-                                  getActiveFieldsName={upLevelActiveFields?.getActiveFieldsName}
-                                >
-                                  <LocationSearchContext.Provider value={locationSearch}>
-                                    <BlockRequestContext_deprecated.Provider value={ctx}>
-                                      <DataSourceApplicationProvider dataSourceManager={dm} dataSource={dataSourceKey}>
-                                        <AssociationOrCollectionProvider
-                                          allowNull
-                                          collection={collection?.name}
-                                          association={association}
+              <AllDataBlocksContext.Provider value={allDataBlocks}>
+                <ModalContextProvider>
+                  <CollectOperators defaultOperators={getOperators()}>
+                    <VariablesContext.Provider value={variableOptions}>
+                      <BlockContext.Provider value={blockOptions}>
+                        <VariablePopupRecordProvider
+                          recordData={popupRecordVariable?.value}
+                          collection={popupRecordVariable?.collection}
+                          parent={{
+                            recordData: parentPopupRecordVariable?.value,
+                            collection: parentPopupRecordVariable?.collection,
+                          }}
+                        >
+                          <CollectionRecordProvider record={noRecord ? null : record}>
+                            <CurrentRecordContextProvider {...currentRecordCtx}>
+                              <FormBlockContext.Provider value={formCtx}>
+                                <SubFormProvider value={{ value: subFormValue, collection: subFormCollection, parent }}>
+                                  <FormActiveFieldsProvider
+                                    name="form"
+                                    getActiveFieldsName={upLevelActiveFields?.getActiveFieldsName}
+                                  >
+                                    <LocationSearchContext.Provider value={locationSearch}>
+                                      <BlockRequestContext_deprecated.Provider value={ctx}>
+                                        <DataSourceApplicationProvider
+                                          dataSourceManager={dm}
+                                          dataSource={dataSourceKey}
                                         >
-                                          <SchemaComponentOptions scope={options.scope} components={options.components}>
-                                            <FormLayout
-                                              layout={'vertical'}
-                                              className={css`
-                                                // screen > 576px
-                                                @media (min-width: 576px) {
-                                                  min-width: 520px;
-                                                }
-
-                                                // screen <= 576px
-                                                @media (max-width: 576px) {
-                                                  min-width: 320px;
-                                                }
-                                              `}
+                                          <AssociationOrCollectionProvider
+                                            allowNull
+                                            collection={collection?.name}
+                                            association={association}
+                                          >
+                                            <SchemaComponentOptions
+                                              scope={options.scope}
+                                              components={options.components}
                                             >
-                                              <ApplicationContext.Provider value={app}>
-                                                <APIClientProvider apiClient={apiClient}>
-                                                  <ConfigProvider locale={locale}>
-                                                    <SchemaComponent
-                                                      components={components}
-                                                      scope={scope}
-                                                      schema={schema}
-                                                    />
-                                                  </ConfigProvider>
-                                                </APIClientProvider>
-                                              </ApplicationContext.Provider>
-                                            </FormLayout>
-                                          </SchemaComponentOptions>
-                                        </AssociationOrCollectionProvider>
-                                      </DataSourceApplicationProvider>
-                                    </BlockRequestContext_deprecated.Provider>
-                                  </LocationSearchContext.Provider>
-                                </FormActiveFieldsProvider>
-                              </SubFormProvider>
-                            </FormBlockContext.Provider>
-                          </CurrentRecordContextProvider>
-                        </CollectionRecordProvider>
-                      </VariablePopupRecordProvider>
-                    </BlockContext.Provider>
-                  </VariablesContext.Provider>
-                </CollectOperators>
-              </ModalContextProvider>
+                                              <FormLayout
+                                                layout={'vertical'}
+                                                className={css`
+                                                  // screen > 576px
+                                                  @media (min-width: 576px) {
+                                                    min-width: 520px;
+                                                  }
+
+                                                  // screen <= 576px
+                                                  @media (max-width: 576px) {
+                                                    min-width: 320px;
+                                                  }
+                                                `}
+                                              >
+                                                <ApplicationContext.Provider value={app}>
+                                                  <APIClientProvider apiClient={apiClient}>
+                                                    <ConfigProvider locale={locale}>
+                                                      <SchemaComponent
+                                                        components={components}
+                                                        scope={scope}
+                                                        schema={schema}
+                                                      />
+                                                    </ConfigProvider>
+                                                  </APIClientProvider>
+                                                </ApplicationContext.Provider>
+                                              </FormLayout>
+                                            </SchemaComponentOptions>
+                                          </AssociationOrCollectionProvider>
+                                        </DataSourceApplicationProvider>
+                                      </BlockRequestContext_deprecated.Provider>
+                                    </LocationSearchContext.Provider>
+                                  </FormActiveFieldsProvider>
+                                </SubFormProvider>
+                              </FormBlockContext.Provider>
+                            </CurrentRecordContextProvider>
+                          </CollectionRecordProvider>
+                        </VariablePopupRecordProvider>
+                      </BlockContext.Provider>
+                    </VariablesContext.Provider>
+                  </CollectOperators>
+                </ModalContextProvider>
+              </AllDataBlocksContext.Provider>
             );
           },
           theme,
@@ -1090,7 +1103,7 @@ export const SchemaSettingsDefaultSortingRules = function DefaultSortingRules(pr
 };
 
 export const SchemaSettingsLinkageRules = function LinkageRules(props) {
-  const { collectionName, readPretty, Component, afterSubmit } = props;
+  const { collectionName, readPretty, Component, afterSubmit, title: settingTitle, returnScope } = props;
   const fieldSchema = useFieldSchema();
   const { form } = useFormBlockContext();
   const { dn } = useDesignable();
@@ -1116,7 +1129,8 @@ export const SchemaSettingsLinkageRules = function LinkageRules(props) {
   const getRules = useCallback(() => {
     return gridSchema?.[dataKey] || fieldSchema?.[dataKey] || [];
   }, [gridSchema, fieldSchema, dataKey]);
-  const title = titleMap[category];
+  const title = settingTitle || titleMap[category] || t('Linkage rules');
+  const flagVales = useFlag();
   const schema = useMemo<ISchema>(
     () => ({
       type: 'object',
@@ -1137,6 +1151,7 @@ export const SchemaSettingsLinkageRules = function LinkageRules(props) {
               localVariables,
               record,
               formBlockType,
+              returnScope,
             };
           },
         },
@@ -1149,26 +1164,39 @@ export const SchemaSettingsLinkageRules = function LinkageRules(props) {
     (v) => {
       const rules = [];
       for (const rule of v.fieldReaction.rules) {
-        rules.push(_.pickBy(rule, _.identity));
+        rules.push(_.omit(_.pickBy(rule, _.identity), ['conditionBasic', 'conditionAdvanced']));
       }
       const templateId = gridSchema['x-component'] === 'BlockTemplate' && gridSchema['x-component-props']?.templateId;
-      const uid = (templateId && getTemplateById(templateId).uid) || gridSchema['x-uid'];
+      const uid =
+        category !== LinkageRuleCategory.block
+          ? (templateId && getTemplateById(templateId).uid) || gridSchema['x-uid']
+          : fieldSchema['x-uid'];
       const schema = {
         ['x-uid']: uid,
       };
       gridSchema[dataKey] = rules;
       schema[dataKey] = rules;
+      fieldSchema[dataKey] = rules;
       dn.emit('patch', {
         schema,
       });
       dn.refresh();
       afterSubmit?.();
     },
-    [dn, getTemplateById, gridSchema, dataKey, afterSubmit],
+    [dn, getTemplateById, gridSchema, dataKey, afterSubmit, category],
   );
 
   return (
-    <SchemaSettingsModalItem title={title} components={components} width={770} schema={schema} onSubmit={onSubmit} />
+    <SchemaSettingsModalItem
+      title={title}
+      components={components}
+      width={960}
+      schema={schema}
+      onSubmit={onSubmit}
+      ModalContextProvider={(props) => {
+        return <FlagProvider {...flagVales}>{props.children}</FlagProvider>;
+      }}
+    />
   );
 };
 

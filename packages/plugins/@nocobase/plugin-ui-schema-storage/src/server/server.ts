@@ -9,6 +9,8 @@
 
 import { MagicAttributeModel } from '@nocobase/database';
 import { Plugin } from '@nocobase/server';
+import PluginLocalizationServer from '@nocobase/plugin-localization';
+import { tval } from '@nocobase/utils';
 import { uid } from '@nocobase/utils';
 import path, { resolve } from 'path';
 import { uiSchemaActions } from './actions/ui-schema-action';
@@ -16,6 +18,19 @@ import { UiSchemaModel } from './model';
 import UiSchemaRepository from './repository';
 import { ServerHooks } from './server-hooks';
 import { ServerHookModel } from './server-hooks/model';
+
+export const compile = (title: string) => (title || '').replace(/{{\s*t\(["|'|`](.*)["|'|`]\)\s*}}/g, '$1');
+
+function extractFields(obj) {
+  return [
+    obj.title,
+    obj.description,
+    obj['x-component-props']?.title,
+    obj['x-component-props']?.description,
+    obj['x-decorator-props']?.title,
+    obj['x-decorator-props']?.description,
+  ].filter((value) => value !== undefined && value !== '');
+}
 
 export class PluginUISchemaStorageServer extends Plugin {
   serverHooks: ServerHooks;
@@ -28,7 +43,7 @@ export class PluginUISchemaStorageServer extends Plugin {
 
   async beforeLoad() {
     const db = this.app.db;
-
+    const pm = this.app.pm;
     this.serverHooks = new ServerHooks(db);
 
     this.app.db.registerModels({ MagicAttributeModel, UiSchemaModel, ServerHookModel });
@@ -49,6 +64,19 @@ export class PluginUISchemaStorageServer extends Plugin {
       if (!model.get('name')) {
         model.set('name', uid());
       }
+    });
+
+    db.on('uiSchemas.afterSave', async function setUid(model, options) {
+      const localizationPlugin = pm.get('localization') as PluginLocalizationServer;
+      const texts = [];
+      const changedFields = extractFields(model.toJSON());
+      if (!changedFields.length) {
+        return;
+      }
+      changedFields.forEach((field) => {
+        field && texts.push({ text: compile(field), module: `resources.ui-schema-storage` });
+      });
+      await localizationPlugin?.addNewTexts?.(texts, options);
     });
 
     db.on('uiSchemas.afterCreate', async function insertSchema(model, options) {
@@ -125,6 +153,34 @@ export class PluginUISchemaStorageServer extends Plugin {
     ]);
 
     await this.importCollections(resolve(__dirname, 'collections'));
+    // this.registerLocalizationSource();
+  }
+
+  registerLocalizationSource() {
+    const localizationPlugin = this.app.pm.get('localization') as PluginLocalizationServer;
+    if (!localizationPlugin) {
+      return;
+    }
+    localizationPlugin.sourceManager.registerSource('ui-schema-storage', {
+      title: tval('UiSchema'),
+      sync: async (ctx) => {
+        const uiSchemas = await ctx.db.getRepository('uiSchemas').find({
+          raw: true,
+        });
+        const resources = {};
+        uiSchemas.forEach((route: { schema?: any }) => {
+          const changedFields = extractFields(route.schema);
+          if (changedFields.length) {
+            changedFields.forEach((field) => {
+              resources[field] = '';
+            });
+          }
+        });
+        return {
+          'ui-schema-storage': resources,
+        };
+      },
+    });
   }
 }
 

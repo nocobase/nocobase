@@ -48,6 +48,7 @@ import WorkflowPlugin, {
   useFlowContext,
   useNodeContext,
   useTrigger,
+  useWorkflowExecuted,
   useWorkflowVariableOptions,
 } from '@nocobase/plugin-workflow/client';
 import { Registry, lodash } from '@nocobase/utils/client';
@@ -428,7 +429,7 @@ export function SchemaConfig({ value, onChange }) {
   const node = useNodeContext();
   const nodes = useAvailableUpstreams(node);
   const form = useForm();
-  const { workflow } = useFlowContext();
+  const executed = useWorkflowExecuted();
   const refreshRef = useRef(() => {});
 
   const nodeComponents = {};
@@ -509,7 +510,7 @@ export function SchemaConfig({ value, onChange }) {
     <SchemaComponentContext.Provider
       value={{
         ...ctx,
-        designable: !workflow.executed,
+        designable: !executed,
         refresh,
       }}
     >
@@ -556,7 +557,7 @@ function validateForms(forms: Record<string, any> = {}) {
 }
 
 export function SchemaConfigButton(props) {
-  const { workflow } = useFlowContext();
+  const executed = useWorkflowExecuted();
   const [visible, setVisible] = useState(false);
   const { values } = useForm();
   const { t } = usePluginTranslation();
@@ -580,7 +581,7 @@ export function SchemaConfigButton(props) {
   return (
     <>
       <Button type="primary" onClick={() => setVisible(true)} disabled={false}>
-        {t(workflow.executed ? 'View user interface' : 'Configure user interface')}
+        {t(executed ? 'View user interface' : 'Configure user interface')}
       </Button>
       <ActionContextProvider value={{ visible, setVisible: onSetVisible, formValueChanged: false }}>
         {props.children}

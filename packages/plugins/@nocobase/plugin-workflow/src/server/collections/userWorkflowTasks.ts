@@ -7,37 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export default {
-  dumpRules: {
-    group: 'log',
-  },
-  migrationRules: ['schema-only'],
-  name: 'userWorkflowTasks',
-  shared: true,
-  fields: [
-    {
-      name: 'userId',
-      type: 'bigInt',
-    },
-    {
-      name: 'user',
-      type: 'belongsTo',
-      foreignKey: 'userId',
-    },
-    {
-      name: 'type',
-      type: 'string',
-    },
-    {
-      type: 'json',
-      name: 'stats',
-      defaultValue: {},
-    },
-  ],
-  indexes: [
-    {
-      unique: true,
-      fields: ['userId', 'type'],
-    },
-  ],
-};
+import { CollectionOptions } from '@nocobase/database';
+
+import options from '../../common/collections/userWorkflowTasks';
+
+export default options as CollectionOptions;

@@ -1,7 +1,7 @@
 {
   "Vditor": "Markdown(Vditor)",
   "File collection": "파일 데이터 테이블",
-  "Used to store files uploaded in the Markdown editor": "Markdown 편집기에 업로드된 파일을 저장하는 데 사용됩니다",
+  "Used to store files uploaded in the Markdown editor (default: attachments)": "Markdown 편집기에 업로드된 파일을 저장하는 데 사용됩니다 (default: attachments)",
   "Toolbar": "편집기 도구 모음 구성",
   "Emoji": "이모지",
   "Headings": "제목크기",
@@ -29,5 +29,10 @@
   "Both": "에디터 & 미리보기",
   "Preview": "미리보기",
   "Fullscreen": "전체화면",
-  "Outline": "개요"
+  "Outline": "개요",
+  "uploading": "Uploading...",
+  "upload failed": "upload failed",
+  "vditor.uploadError.message": "현재 스토리지에 파일을 업로드할 수 없습니다. Markdown 편집기에 파일을 업로드하려고 하지만 현재 스토리지 구성에서는 이 작업을 지원하지 않습니다. 업로드 기능을 활성화하려면 다음 설정을 완료하십시오: 1. \"파일 관리\"로 이동합니다. 2. 현재 사용 중인 스토리지({{storageTitle}})를 선택합니다. 3. \"기본 URL\"을 설정하고 \"공개 액세스\" 옵션을 활성화합니다.",
+  "Storage configuration not found. Please configure a storage provider first.": "저장소 구성을 찾을 수 없습니다. 먼저 저장소 공급자를 구성하십시오.",
+  "Response data is empty": "응답 데이터가 비어 있습니다"
 }

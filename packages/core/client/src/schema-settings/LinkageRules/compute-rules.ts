@@ -18,7 +18,14 @@ const getActionValue = (operator, value) => {
     } else return null;
   };
   switch (true) {
-    case [ActionType.Color, ActionType.BackgroundColor, ActionType.TextAlign].includes(operator):
+    case [
+      ActionType.Color,
+      ActionType.BackgroundColor,
+      ActionType.TextAlign,
+      ActionType.FontSize,
+      ActionType.FontWeight,
+      ActionType.FontStyle,
+    ].includes(operator):
       return getValueByMode(value);
     default:
       return null;
@@ -31,7 +38,12 @@ const getSatisfiedActions = async ({ rules, variables, localVariables }, jsonLog
       rules
         .filter((k) => !k.disabled)
         .map(async (rule) => {
-          if (await conditionAnalyses({ ruleGroup: rule.condition, variables, localVariables }, jsonLogic)) {
+          if (
+            await conditionAnalyses(
+              { ruleGroup: rule.condition, variables, localVariables, conditionType: rule.conditionType },
+              jsonLogic,
+            )
+          ) {
             return rule;
           } else return null;
         }),

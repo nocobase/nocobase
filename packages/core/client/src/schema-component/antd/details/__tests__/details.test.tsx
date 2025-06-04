@@ -15,6 +15,6 @@ describe('Details', () => {
   it('should render correctly', () => {
     render(<App1 />);
 
-    expect(screen.getByText('No data')).toBeInTheDocument();
+    expect(screen.getAllByText('No data')).toHaveLength(2);
   });
 });

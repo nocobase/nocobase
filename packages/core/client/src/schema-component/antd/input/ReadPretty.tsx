@@ -48,10 +48,13 @@ ReadPretty.Input = (props: InputReadPrettyProps) => {
   // eslint-disable-next-line react-hooks/rules-of-hooks
   const compile = useCompile();
   // eslint-disable-next-line react-hooks/rules-of-hooks
-  const content = useMemo(
-    () => (props.value && typeof props.value === 'object' ? JSON.stringify(props.value) : compile(props.value)),
-    [props.value],
-  );
+  const content = useMemo(() => {
+    if (Array.isArray(props.value)) {
+      return props.value.join(',');
+    }
+
+    return props.value && typeof props.value === 'object' ? JSON.stringify(props.value) : compile(props.value);
+  }, [props.value]);
 
   return (
     <div
