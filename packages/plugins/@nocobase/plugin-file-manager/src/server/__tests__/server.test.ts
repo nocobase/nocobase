@@ -8,6 +8,7 @@
  */
 
 import path from 'path';
+import { Readable } from 'stream';
 
 import { getApp } from '.';
 import PluginFileManagerServer from '../server';
@@ -255,6 +256,42 @@ describe('file manager > server', () => {
         expect(file.mimetype).toBeNull();
         const url = await plugin.getFileURL(file, true);
         expect(url).toBe(`${process.env.APP_PUBLIC_PATH?.replace(/\/$/g, '') || ''}${file.url}`);
+      });
+    });
+
+    describe('getFileStream', () => {
+      it('should get file stream for local storage', async () => {
+        const { body } = await agent.resource('attachments').create({
+          [FILE_FIELD_NAME]: path.resolve(__dirname, './files/text.txt'),
+        });
+
+        const result = await plugin.getFileStream(body.data);
+        expect(result).toHaveProperty('stream');
+        expect(result.stream).toBeInstanceOf(Readable);
+        expect(result).toHaveProperty('contentType');
+        expect(result.contentType).toBe('text/plain');
+      });
+
+      it('should throw error when file not found', async () => {
+        const { body } = await agent.resource('attachments').create({
+          [FILE_FIELD_NAME]: path.resolve(__dirname, './files/text.txt'),
+        });
+
+        // Modify the file path to a non-existent one
+        body.data.path = 'non-existent-path';
+
+        await expect(plugin.getFileStream(body.data)).rejects.toThrow();
+      });
+
+      it('should throw error when storage not found', async () => {
+        const { body } = await agent.resource('attachments').create({
+          [FILE_FIELD_NAME]: path.resolve(__dirname, './files/text.txt'),
+        });
+
+        // Remove storageId to simulate storage not found
+        delete body.data.storageId;
+
+        await expect(plugin.getFileStream(body.data)).rejects.toThrow('File storageId not found');
       });
     });
   });

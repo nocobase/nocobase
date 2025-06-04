@@ -11,10 +11,10 @@ import { useFlowContext } from '../FlowContext';
 
 export function useWorkflowExecuted() {
   const { workflow } = useFlowContext();
-  return Boolean(workflow?.executed);
+  return Boolean(workflow?.versionStats?.executed);
 }
 
 export function useWorkflowAnyExecuted() {
   const { workflow } = useFlowContext();
-  return Boolean(workflow?.allExecuted);
+  return Boolean(workflow?.stats?.executed);
 }

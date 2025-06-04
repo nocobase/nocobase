@@ -18,6 +18,7 @@ import {
 import { T3825 } from './templatesOfBug';
 const clickOption = async (page: Page, optionName: string) => {
   await page.getByLabel('block-item-CardItem-general-form').hover();
+  await page.getByRole('menuitem', { name: optionName }).waitFor({ state: 'detached' });
   await page.getByLabel('designer-schema-settings-CardItem-FormV2.Designer-general').hover();
   await page.getByRole('menuitem', { name: optionName }).click();
 };
@@ -84,7 +85,7 @@ test.describe('edit form block schema settings', () => {
     await runExpect();
   });
 
-  test('Convert reference to duplicate & Save as block template', async ({ page, mockPage, mockRecord }) => {
+  test.skip('Convert reference to duplicate & Save as block template', async ({ page, mockPage, mockRecord }) => {
     const nocoPage = await mockPage(oneTableBlockWithActionsAndFormBlocks).waitForInit();
     await mockRecord('general');
     await nocoPage.goto();

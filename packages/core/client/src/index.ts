@@ -79,6 +79,7 @@ export { VariablePopupRecordProvider } from './modules/variable/variablesProvide
 
 export { showFileName } from './modules/fields/component/FileManager/fileManagerComponentFieldSettings';
 export { useCurrentPopupRecord } from './modules/variable/variablesProvider/VariablePopupRecordProvider';
+export { fileSizeSetting } from './modules/fields/component/FileManager/fileManagerComponentFieldSettings';
 
 export { languageCodes } from './locale';
 

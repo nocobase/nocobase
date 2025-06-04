@@ -29,6 +29,7 @@ import { useCollectionState } from '../../../schema-settings/DataTemplates/hooks
 import { SchemaSettingsModalItem } from '../../../schema-settings/SchemaSettings';
 import { useParentPopupRecord } from '../../variable/variablesProvider/VariablePopupRecordProvider';
 import { useDataBlockProps } from '../../../data-source';
+import { SchemaSettingsLinkageRules } from '../../../schema-settings';
 
 const Tree = connect(
   AntdTree,
@@ -147,6 +148,16 @@ export const createSubmitActionSettings = new SchemaSettings({
       useComponentProps() {
         const { buttonEditorProps } = useSchemaToolbar();
         return buttonEditorProps;
+      },
+    },
+    {
+      name: 'linkageRules',
+      Component: SchemaSettingsLinkageRules,
+      useComponentProps() {
+        const { linkageRulesProps } = useSchemaToolbar();
+        return {
+          ...linkageRulesProps,
+        };
       },
     },
     {

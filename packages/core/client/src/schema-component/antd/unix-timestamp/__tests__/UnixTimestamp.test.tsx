@@ -20,21 +20,20 @@ describe('UnixTimestamp', () => {
     expect(container).toMatchInlineSnapshot(`
       <div>
         <div
-          class="css-dev-only-do-not-override-11aiz3o ant-app"
+          class="css-dev-only-do-not-override-1rquknz ant-app"
           style="height: 100%;"
         >
           <div
-            class="ant-picker css-dev-only-do-not-override-11aiz3o"
+            class="ant-picker ant-picker-outlined css-dev-only-do-not-override-1rquknz"
           >
             <div
               class="ant-picker-input"
             >
               <input
+                aria-invalid="false"
                 autocomplete="off"
                 placeholder="Select date"
-                readonly=""
                 size="12"
-                title=""
                 value=""
               />
               <span
@@ -77,7 +76,7 @@ describe('UnixTimestamp', () => {
     expect(container).toMatchInlineSnapshot(`
       <div>
         <div
-          class="css-dev-only-do-not-override-11aiz3o ant-app"
+          class="css-dev-only-do-not-override-1rquknz ant-app"
           style="height: 100%;"
         >
           <div

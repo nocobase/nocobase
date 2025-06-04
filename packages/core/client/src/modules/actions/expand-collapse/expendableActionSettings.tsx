@@ -14,7 +14,7 @@ import { useDesignable } from '../../..';
 import { useSchemaToolbar } from '../../../application';
 import { SchemaSettings } from '../../../application/schema-settings/SchemaSettings';
 import { RemoveButton } from '../../../schema-component/antd/action/Action.Designer';
-import { SchemaSettingsModalItem } from '../../../schema-settings';
+import { SchemaSettingsModalItem, SchemaSettingsLinkageRules } from '../../../schema-settings';
 
 function ButtonEditor() {
   const field = useField();
@@ -108,6 +108,17 @@ export const expendableActionSettings = new SchemaSettings({
       useComponentProps() {
         const { buttonEditorProps } = useSchemaToolbar();
         return buttonEditorProps;
+      },
+    },
+    {
+      name: 'linkageRules',
+      Component: SchemaSettingsLinkageRules,
+      useComponentProps() {
+        const { linkageRulesProps } = useSchemaToolbar();
+
+        return {
+          ...linkageRulesProps,
+        };
       },
     },
     {

@@ -26,7 +26,8 @@ import { VariableInput, getShouldChange } from '../../../schema-settings/Variabl
 import { Option } from '../../../schema-settings/VariableInput/type';
 import { formatVariableScop } from '../../../schema-settings/VariableInput/utils/formatVariableScop';
 import { useLocalVariables, useVariables } from '../../../variables';
-
+import { useBlockContext } from '../../../block-provider';
+import { FlagProvider } from '../../../flag-provider';
 interface AssignedFieldProps {
   value: any;
   onChange: (value: any) => void;
@@ -93,7 +94,7 @@ export enum AssignedFieldValueType {
   DynamicValue = 'dynamicValue',
 }
 
-export const AssignedField = (props: AssignedFieldProps) => {
+export const AssignedFieldInner = (props: AssignedFieldProps) => {
   const { value, onChange } = props;
   const { getCollectionFields, getAllCollectionsInheritChain } = useCollectionManager_deprecated();
   const collection = useCollection_deprecated();
@@ -135,16 +136,24 @@ export const AssignedField = (props: AssignedFieldProps) => {
     [JSON.stringify(_.omit(props, 'value'))],
   );
   return (
-    <VariableInput
-      form={form}
-      record={record}
-      value={value}
-      onChange={onChange}
-      renderSchemaComponent={renderSchemaComponent}
-      collectionField={collectionField}
-      shouldChange={shouldChange}
-      returnScope={returnScope}
-      targetFieldSchema={fieldSchema}
-    />
+    <FlagProvider collectionField={collectionField}>
+      <VariableInput
+        form={form}
+        record={record}
+        value={value}
+        onChange={onChange}
+        renderSchemaComponent={renderSchemaComponent}
+        collectionField={collectionField}
+        shouldChange={shouldChange}
+        returnScope={returnScope}
+        targetFieldSchema={fieldSchema}
+      />
+    </FlagProvider>
   );
+};
+
+export const AssignedField = (props) => {
+  const { form } = useFormBlockContext();
+  const { name } = useBlockContext() || {};
+  return <AssignedFieldInner {...props} />;
 };

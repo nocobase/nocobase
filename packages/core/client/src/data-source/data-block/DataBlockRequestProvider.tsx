@@ -12,6 +12,7 @@ import React, { FC, createContext, useContext, useDeferredValue, useMemo, useRef
 
 import _ from 'lodash';
 import { UseRequestResult, useAPIClient, useRequest } from '../../api-client';
+import { useTemplateBlockContext } from '../../block-provider/TemplateBlockProvider';
 import { useDataLoadingMode } from '../../modules/blocks/data-blocks/details-multi/setDataLoadingModeSettingsItem';
 import { useSourceKey } from '../../modules/blocks/useSourceKey';
 import { useKeepAlive } from '../../route-switch/antd/admin-layout/KeepAlive';
@@ -42,6 +43,7 @@ function useRecordRequest<T>(options: Omit<AllDataBlockProps, 'type'>) {
   const headers = useDataSourceHeaders(dataBlockProps.dataSource);
   const sourceKey = useSourceKey(association);
   const [JSONParams, JSONRecord] = useMemo(() => [JSON.stringify(params), JSON.stringify(record)], [params, record]);
+  const { isBlockTemplate, templateFinished } = useTemplateBlockContext();
 
   const defaultService = (customParams) => {
     if (record) return Promise.resolve({ data: record });
@@ -57,13 +59,22 @@ function useRecordRequest<T>(options: Omit<AllDataBlockProps, 'type'>) {
     }
 
     const paramsValue = params.filterByTk === undefined ? _.omit(params, 'filterByTk') : params;
+    const mergedParams = { ...paramsValue, ...customParams };
+    return resource[action]?.(mergedParams).then((res) => res.data);
+  };
 
-    return resource[action]?.({ ...paramsValue, ...customParams }).then((res) => res.data);
+  const requestFunction = (...arg) => {
+    // 防止区块模板请求两次接口
+    if (isBlockTemplate?.() && !templateFinished) {
+      return null;
+    }
+
+    return (requestService || defaultService)(...arg);
   };
 
   const service = async (...arg) => {
     const [currentRecordData, parentRecordData] = await Promise.all([
-      (requestService || defaultService)(...arg),
+      requestFunction(...arg),
       requestParentRecordData({ sourceId, association, parentRecord, api, headers, sourceKey }),
     ]);
 
@@ -78,7 +89,7 @@ function useRecordRequest<T>(options: Omit<AllDataBlockProps, 'type'>) {
     ...requestOptions,
     manual: dataLoadingMode === 'manual',
     ready: !!action,
-    refreshDeps: [action, JSONParams, JSONRecord, resource, association, parentRecord, sourceId],
+    refreshDeps: [action, JSONParams, JSONRecord, resource, association, parentRecord, sourceId, templateFinished],
   });
 
   return request;

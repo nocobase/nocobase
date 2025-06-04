@@ -9,7 +9,7 @@
   "Step 1: Download template": "단계 1: 템플릿 다운로드",
   "Step 2: Upload Excel": "단계 2: Excel 업로드",
   "Download tips": "- 템플릿을 다운로드하고 형식에 맞게 데이터를 작성합니다.\r\n - 첫 번째 시트만 가져옵니다.\r\n - 템플릿 헤더를 수정하지 마세요. 가져오기 실패를 방지합니다.",
-  "Upload placeholder": "파일을 여기에 드래그하거나 클릭하여 업로드하십시오. 파일 크기는 80M을 초과할 수 없습니다.",
+  "Upload placeholder": "파일을 여기에 드래그하거나 클릭하여 업로드하십시오.",
   "Excel data importing": "Excel 데이터 가져오기 중입니다. 창을 닫지 마십시오.",
   "{{successCount}} records have been successfully imported": "{{successCount}} 개의 데이터를 성공적으로 가져왔습니다.",
   "To download the failure data": "실패한 데이터를 다운로드하려면",

@@ -11,6 +11,11 @@ import { Plugin } from '@nocobase/server';
 import fs from 'fs-extra';
 import path from 'path';
 
+// @ts-ignore
+import pkg from '../../package.json';
+
+const namespace = pkg.name;
+
 export class PluginFieldMarkdownVditorServer extends Plugin {
   async afterAdd() {}
 
@@ -18,6 +23,63 @@ export class PluginFieldMarkdownVditorServer extends Plugin {
 
   async load() {
     await this.copyVditorDist();
+    this.setResource();
+    this.app.acl.allow('vditor', 'check', 'loggedIn');
+  }
+
+  setResource() {
+    this.app.resourceManager.define({
+      name: 'vditor',
+      actions: {
+        check: async (context, next) => {
+          const { fileCollectionName } = context.action.params;
+          let storage;
+
+          const fileCollection = this.db.getCollection(fileCollectionName || 'attachments');
+          const storageName = fileCollection?.options?.storage;
+          if (storageName) {
+            storage = await this.db.getRepository('storages').findOne({
+              where: {
+                name: storageName,
+              },
+            });
+          } else {
+            storage = await this.db.getRepository('storages').findOne({
+              where: {
+                default: true,
+              },
+            });
+          }
+
+          if (!storage) {
+            context.throw(
+              400,
+              context.t('Storage configuration not found. Please configure a storage provider first.', {
+                ns: namespace,
+              }),
+            );
+          }
+
+          const isSupportToUploadFiles =
+            storage.type !== 's3-compatible' || (storage.options?.baseUrl && storage.options?.public);
+
+          const storageInfo = {
+            id: storage.id,
+            title: storage.title,
+            name: storage.name,
+            type: storage.type,
+            rules: storage.rules,
+          };
+
+          context.body = {
+            isSupportToUploadFiles: !!isSupportToUploadFiles,
+            storage: storageInfo,
+          };
+
+          await next();
+        },
+      },
+    });
   }
 
   async copyVditorDist() {

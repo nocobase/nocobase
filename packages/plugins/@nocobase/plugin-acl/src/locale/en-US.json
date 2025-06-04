@@ -3,5 +3,16 @@
   "The user role does not exist. Please try signing in again": "The user role does not exist. Please try signing in again",
   "New role": "New role",
   "Permissions": "Permissions",
-  "Desktop menu": "Desktop menu"
+  "Desktop menu": "Desktop menu",
+  "Independent roles": "Independent roles",
+  "Allow roles union": "Allow roles union",
+  "Roles union only": "Roles union only",
+  "Role mode": "Role mode",
+  "Saved successfully": "Saved successfully",
+  "Please select role mode": "Please select role mode",
+  "Full permissions": "Full permissions",
+  "Role mode doc": "https://docs.nocobase.com/handbook/acl/manual",
+  "Do not use role union. Users need to switch between their roles individually.": "Do not use role union. Users need to switch between their roles individually.",
+  "Allow users to use role union, which means they can use permissions from all their roles simultaneously, or switch between individual roles.": "Allow users to use role union, which means they can use permissions from all their roles simultaneously, or switch between individual roles.",
+  "Force users to use only role union. They cannot switch between individual roles.": "Force users to use only role union. They cannot switch between individual roles."
 }

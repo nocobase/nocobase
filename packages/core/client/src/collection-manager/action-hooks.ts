@@ -157,6 +157,8 @@ export const useCollectionFilterOptions = (collection: any, dataSource?: string)
       const option = {
         name: field.name,
         title: field?.uiSchema?.title || field.name,
+        label: field?.uiSchema?.title || field.name,
+        value: field.name,
         schema: field?.uiSchema,
         operators:
           operators?.filter?.((operator) => {

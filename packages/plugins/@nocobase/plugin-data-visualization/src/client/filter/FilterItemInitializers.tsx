@@ -240,7 +240,8 @@ export const ChartFilterCustomItemInitializer: React.FC<{
         title: title,
         name: `custom.${name}`,
         required: false,
-        'x-designer': 'ChartFilterItemDesigner',
+        'x-toolbar': 'ChartFilterItemToolbar',
+        'x-settings': 'chart:filterForm:item',
         'x-decorator': 'ChartFilterFormItem',
         'x-component-props': {
           ...(defaultSchema['x-component-props'] || {}),
