@@ -215,7 +215,7 @@ export function AdminPublicFormPage() {
       >
         <VariablesProvider
           filterVariables={(v) => {
-            return !['$user', '$nRole', '$nToken', '$nURLSearchParams'].includes(v.key);
+            return !['$user', '$nRole', '$nToken'].includes(v.key);
           }}
         >
           <RemoteSchemaComponent
