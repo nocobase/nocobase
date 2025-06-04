@@ -62,14 +62,19 @@
 
 ### FlowSettings 管理
 
-- **flowSettings.registerComponents(components): void**
+- **flowSettings.registerComponents(components): void**  
   添加组件到 flowSettings 的组件注册表中, 这些组件可以在 flow step 的 uiSchema 中使用。
 
-- **flowSettings.registerScopes(scopes): void**
+- **flowSettings.registerScopes(scopes): void**  
   添加作用域到 flowSettings 的作用域注册表中, 这些作用域可以在 flow step 的 uiSchema 中使用。
 
-- **flowSettings.load(): Promise<void>**  
+- **flowSettings.load(): Promise\<void\>**  
   加载 FlowSettings 相关资源，未启用 FlowSettings 时可不调用。
+
+- **flowSettings.openStepSettingsDialog(props: StepSettingsDialogProps)**  
+  显示单个步骤的配置界面
+
+---
 
 ## 示例
 

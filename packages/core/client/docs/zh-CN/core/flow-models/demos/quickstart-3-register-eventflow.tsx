@@ -118,8 +118,6 @@ MyModel.registerFlow(myEventFlow);
 // 插件类，负责注册模型、仓库，并加载或创建模型实例
 class PluginHelloModel extends Plugin {
   async load() {
-    // 加载 flow settings 所需资源
-    await this.flowEngine.flowSettings.load();
     // 注册自定义模型
     this.flowEngine.registerModels({ MyModel });
     const model = this.flowEngine.createModel({

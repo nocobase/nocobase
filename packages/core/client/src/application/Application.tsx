@@ -343,6 +343,7 @@ export class Application {
       this.loading = true;
       await this.loadWebSocket();
       await this.pm.load();
+      await this.flowEngine.flowSettings.load();
     } catch (error) {
       this.hasLoadError = true;
 
