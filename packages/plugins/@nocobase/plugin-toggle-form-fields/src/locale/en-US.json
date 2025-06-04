@@ -1,7 +1,7 @@
 {
-  "ToggleFields": "Toggle Form Fields",
-  "TopShowFields": "Top fields to show",
-  "Settings": "Settings",
-  "CollapseFields": "Collapse Fields",
-  "ExpandFields": "Expand Fields"
+  "ToggleFields": "Expand/Collapse Fields",
+  "TopShowFields": "The number of fields displayed after collapsing",
+  "ToggleFieldsSettings": "Set the number of fields",
+  "CollapseFields": "Collapse",
+  "ExpandFields": "Expand"
 }

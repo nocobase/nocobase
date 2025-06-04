@@ -17,7 +17,7 @@ import {
   SchemaSettings,
   useSchemaInitializer,
 } from '@nocobase/client';
-import React from 'react';
+import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 // Define namespace constant for our plugin
@@ -25,30 +25,35 @@ const NAMESPACE = 'toggle-form-fields';
 
 const ActionName = 'ToggleFields';
 
+// Utility function to normalize topFieldsToShow value
+const normalizeTopFieldsToShow = (value: unknown): number => {
+  const num = Number(value);
+  return Number.isNaN(num) ? 1 : Math.max(1, num);
+};
+
 const toggleFieldsActionSettings = new SchemaSettings({
   name: `actionSettings:${ActionName}`,
   items: [
     createModalSettingsItem({
-      name: 'settings',
-      title: `{{t('Settings', { ns: '${NAMESPACE}' })}}`,
+      name: 'toggleFieldsSettings',
+      title: `{{t('ToggleFieldsSettings', { ns: '${NAMESPACE}' })}}`,
       parentSchemaKey: 'x-component-props',
       schema({ topFieldsToShow }) {
-        try {
-          topFieldsToShow = parseInt(topFieldsToShow);
-        } catch (e) {
-          this.app.log.error(e);
-        }
-        topFieldsToShow = Number.isNaN(topFieldsToShow) ? '1' : topFieldsToShow;
+        topFieldsToShow = normalizeTopFieldsToShow(topFieldsToShow ?? 1);
         return {
           type: 'object',
-          title: `{{t('Settings', { ns: '${NAMESPACE}' })}}`,
+          title: `{{t('ToggleFieldsSettings', { ns: '${NAMESPACE}' })}}`,
           properties: {
             topFieldsToShow: {
               title: `{{t('TopShowFields', { ns: '${NAMESPACE}' })}}`,
-              type: 'string',
-              default: topFieldsToShow ?? '1',
+              type: 'number',
+              default: topFieldsToShow,
               'x-decorator': 'FormItem',
-              'x-component': 'Input',
+              'x-component': 'InputNumber',
+              'x-component-props': {
+                min: 1,
+                step: 1,
+              },
             },
           },
         };
@@ -61,51 +66,20 @@ const toggleFieldsActionSettings = new SchemaSettings({
   ],
 });
 
-const createToggleFieldsActionInitializerItem = (): SchemaInitializerItemType => ({
-  type: 'item',
-  name: ActionName,
-  useComponentProps() {
-    const { insert } = useSchemaInitializer();
-    const { t } = useTranslation(NAMESPACE);
-    return {
-      title: t(ActionName),
-      onClick: () => {
-        insert(createToggleFieldsActionSchema());
-      },
-    };
-  },
-});
-
-const createToggleFieldsActionSchema = (): ISchema => {
-  return {
-    type: 'void',
-    'x-toolbar': 'ActionSchemaToolbar',
-    'x-component': 'Action',
-    'x-settings': toggleFieldsActionSettings.name,
-    'x-use-component-props': 'useToggleFieldsActionProps',
-  };
-};
-
-function useToggleFieldsActionProps() {
+const useToggleFieldsActionProps = () => {
   const fieldSchema = useFieldSchema();
   const form = useForm();
   const { t } = useTranslation(NAMESPACE);
-  const [icon, setIcon] = React.useState(<UpOutlined />);
-  const [title, setTitle] = React.useState(t('CollapseFields'));
+  const [icon, setIcon] = useState(<UpOutlined />);
+  const [title, setTitle] = useState(t('CollapseFields'));
   return {
-    icon: icon,
+    icon,
     type: 'link',
-    title: title,
+    title,
     onClick() {
       let count = -1;
       let targetVisible = false;
-      let topFieldsToShow = 0;
-      try {
-        topFieldsToShow = parseInt(fieldSchema['x-component-props']?.topFieldsToShow ?? '1');
-      } catch (e) {
-        this.app.log.error(e);
-      }
-      topFieldsToShow = Number.isNaN(topFieldsToShow) ? 1 : topFieldsToShow;
+      const topFieldsToShow = normalizeTopFieldsToShow(fieldSchema['x-component-props']?.topFieldsToShow ?? 1);
       form.query('*').forEach((field) => {
         if (field.componentType === 'CollectionField') {
           count++;
@@ -123,22 +97,37 @@ function useToggleFieldsActionProps() {
       });
     },
   };
-}
+};
+
+const createToggleFieldsActionSchema = (): ISchema => ({
+  type: 'void',
+  'x-toolbar': 'ActionSchemaToolbar',
+  'x-component': 'Action',
+  'x-settings': toggleFieldsActionSettings.name,
+  'x-use-component-props': 'useToggleFieldsActionProps',
+});
+
+const createToggleFieldsActionInitializerItem = (): SchemaInitializerItemType => ({
+  type: 'item',
+  name: ActionName,
+  useComponentProps() {
+    const { insert } = useSchemaInitializer();
+    const { t } = useTranslation(NAMESPACE);
+    return {
+      title: t(ActionName),
+      onClick: () => insert(createToggleFieldsActionSchema()),
+    };
+  },
+});
 
 export class PluginToggleFormFields extends Plugin {
   async load() {
     this.app.addScopes({ useToggleFieldsActionProps });
     this.app.schemaSettingsManager.add(toggleFieldsActionSettings);
-    const toggleFieldsActionInitializerItem = createToggleFieldsActionInitializerItem();
-    this.app.schemaInitializerManager.addItem(
-      'createForm:configureActions',
-      'toggle_fields',
-      toggleFieldsActionInitializerItem,
-    );
     this.app.schemaInitializerManager.addItem(
       'filterForm:configureActions',
-      'toggle_fields',
-      toggleFieldsActionInitializerItem,
+      'toggleFields',
+      createToggleFieldsActionInitializerItem(),
     );
   }
 }

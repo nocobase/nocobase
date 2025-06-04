@@ -1,7 +1,7 @@
 {
-  "ToggleFields": "显示/隐藏表单字段",
-  "TopShowFields": "显示的字段数量",
-  "Settings": "设置",
-  "CollapseFields": "折叠字段",
-  "ExpandFields": "展开字段"
+  "ToggleFields": "展开/收起字段",
+  "TopShowFields": "收起后显示的字段数量",
+  "ToggleFieldsSettings": "设置字段数量",
+  "CollapseFields": "收起",
+  "ExpandFields": "展开"
 }
