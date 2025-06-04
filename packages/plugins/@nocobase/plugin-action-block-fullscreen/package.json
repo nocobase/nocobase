@@ -4,7 +4,7 @@
   "displayName.zh-CN": "操作：区块全屏展示",
   "description": "This action enables fullscreen mode for the block.",
   "description.zh-CN": "此操作可为区块启用全屏模式。",
-  "version": "1.6.32",
+  "version": "1.7.1",
   "license": "AGPL-3.0",
   "main": "./dist/server/index.js",
   "homepage": "https://docs.nocobase.com/handbook/action-fullscreen",
