@@ -13,22 +13,23 @@ import { T4334 } from '../templatesOfBug';
 // fix https://nocobase.height.app/T-2187
 test('action linkage by row data', async ({ page, mockPage }) => {
   await mockPage(T4334).goto();
-  const adminEditAction = page.getByLabel('action-Action.Link-Edit-update-roles-table-admin');
+  const adminEditAction = page
+    .getByLabel('action-Action.Link-Edit-update-roles-table-admin')
+    .locator('.nb-action-title');
   const adminEditActionStyle = await adminEditAction.evaluate((element) => {
-    const computedStyle = window.getComputedStyle(element.querySelector('.nb-action-title'));
+    const computedStyle = window.getComputedStyle(element);
     return {
       opacity: computedStyle.opacity,
     };
   });
-  const rootEditAction = page.getByLabel('action-Action.Link-Edit-update-roles-table-root');
+  const rootEditAction = page.getByLabel('action-Action.Link-Edit-update-roles-table-root').locator('.nb-action-title');
   const rootEditActionStyle = await rootEditAction.evaluate((element) => {
-    const computedStyle = window.getComputedStyle(element.querySelector('.nb-action-title'));
+    const computedStyle = window.getComputedStyle(element);
     return {
       opacity: computedStyle.opacity,
       // 添加其他你需要的样式属性
     };
   });
-
   expect(adminEditActionStyle.opacity).not.toBe('0.1');
   expect(rootEditActionStyle.opacity).not.toBe('1');
 });

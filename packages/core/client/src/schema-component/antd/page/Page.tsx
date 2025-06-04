@@ -13,6 +13,7 @@ import { css } from '@emotion/css';
 import { FormLayout } from '@formily/antd-v5';
 import { SchemaOptionsContext, useFieldSchema } from '@formily/react';
 import { uid } from '@formily/shared';
+import { transformMultiColumnToSingleColumn } from '@nocobase/utils/client';
 import { Button, Tabs } from 'antd';
 import classNames from 'classnames';
 import React, { FC, memo, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
@@ -37,6 +38,7 @@ import {
   NocoBaseDesktopRouteType,
   NocoBaseRouteContext,
   useCurrentRoute,
+  useMobileLayout,
 } from '../../../route-switch/antd/admin-layout';
 import { KeepAlive, useKeepAlive } from '../../../route-switch/antd/admin-layout/KeepAlive';
 import { useGetAriaLabelOfSchemaInitializer } from '../../../schema-initializer/hooks/useGetAriaLabelOfSchemaInitializer';
@@ -47,9 +49,11 @@ import { useCompile, useDesignable } from '../../hooks';
 import { useToken } from '../__builtins__';
 import { ErrorFallback } from '../error-fallback';
 import { useMenuDragEnd, useNocoBaseRoutes } from '../menu/Menu';
+import { AllDataBlocksProvider } from './AllDataBlocksProvider';
 import { useStyles } from './Page.style';
 import { PageDesigner, PageTabDesigner } from './PageTabDesigner';
 import { PopupRouteContextResetter } from './PopupRouteContextResetter';
+import { NAMESPACE_UI_SCHEMA } from '../../../i18n/constant';
 
 interface PageProps {
   currentTabUid: string;
@@ -118,12 +122,14 @@ export const Page = React.memo((props: PageProps) => {
   }
 
   return (
-    <div className={`${componentCls} ${hashId} ${antTableCell}`}>
-      {/* Avoid passing values down to improve rendering performance */}
-      <CurrentTabUidContext.Provider value={''}>
-        <InternalPage currentTabUid={tabUidRef.current} className={props.className} />
-      </CurrentTabUidContext.Provider>
-    </div>
+    <AllDataBlocksProvider>
+      <div className={`${componentCls} ${hashId} ${antTableCell}`}>
+        {/* Avoid passing values down to improve rendering performance */}
+        <CurrentTabUidContext.Provider value={''}>
+          <InternalPage currentTabUid={tabUidRef.current} className={props.className} />
+        </CurrentTabUidContext.Provider>
+      </div>
+    </AllDataBlocksProvider>
   );
 });
 
@@ -167,6 +173,7 @@ const InternalPageContent = (props: PageContentProps) => {
   const currentRoute = useCurrentRoute();
   const navigate = useNavigateNoUpdate();
   const location = useLocationNoUpdate();
+  const { isMobileLayout } = useMobileLayout();
 
   const children = currentRoute?.children || [];
   const noTabs = children.every((tabRoute) => tabRoute.schemaUid !== activeKey && tabRoute.tabSchemaName !== activeKey);
@@ -198,7 +205,10 @@ const InternalPageContent = (props: PageContentProps) => {
       <KeepAlive uid={activeKey}>
         {(uid) => (
           <NocoBaseRouteContext.Provider value={currentRoute.children?.find((item) => item.schemaUid === uid)}>
-            <RemoteSchemaComponent uid={uid} />
+            <RemoteSchemaComponent
+              uid={uid}
+              schemaTransform={isMobileLayout ? transformMultiColumnToSingleColumn : undefined}
+            />
           </NocoBaseRouteContext.Provider>
         )}
       </KeepAlive>
@@ -208,7 +218,10 @@ const InternalPageContent = (props: PageContentProps) => {
   return (
     <div className={className1}>
       <NocoBaseRouteContext.Provider value={currentRoute?.children?.[0]}>
-        <RemoteSchemaComponent uid={currentRoute?.children?.[0].schemaUid} />
+        <RemoteSchemaComponent
+          uid={currentRoute?.children?.[0].schemaUid}
+          schemaTransform={isMobileLayout ? transformMultiColumnToSingleColumn : undefined}
+        />
       </NocoBaseRouteContext.Provider>
     </div>
   );
@@ -385,7 +398,8 @@ const NocoBasePageHeader = React.memo(({ activeKey, className }: { activeKey: st
   const { token } = useToken();
 
   useEffect(() => {
-    const title = t(fieldSchema.title) || t(currentRoute?.title);
+    const title =
+      t(fieldSchema.title, { ns: NAMESPACE_UI_SCHEMA }) || t(currentRoute?.title, { ns: NAMESPACE_UI_SCHEMA });
     if (title) {
       setDocumentTitle(title);
       setPageTitle(title);

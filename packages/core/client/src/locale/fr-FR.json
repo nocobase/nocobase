@@ -159,6 +159,7 @@
   "Chart type": "Type de graphique",
   "Chart config": "Configuration du graphique",
   "Templates": "Modèles",
+  "Template": "Modèle",
   "Select template": "Sélectionner un modèle",
   "Action logs": "Logs d'action",
   "Create template": "Créer un modèle",
@@ -484,7 +485,8 @@
   "Turn pages": "Tourner les pages",
   "Others": "Autres",
   "Other records": "Autres enregistrements",
-  "Save as template": "Enregistrer en tant que modèle",
+  "Save as reference template": "Enregistrer en tant que modèle de référence",
+  "Save as inherited template": "Enregistrer en tant que modèle hérité",
   "Save as block template": "Enregistrer en tant que modèle de bloc",
   "Block templates": "Modèles de bloc",
   "Block template": "Modèle de bloc",
@@ -572,6 +574,7 @@
   "Blank block": "Bloc vierge",
   "Duplicate template": "Dupliquer le modèle",
   "Reference template": "Référencer le modèle",
+  "Inherited template": "Modèle hérité",
   "Create calendar block": "Créer un bloc de calendrier",
   "Create kanban block": "Créer un bloc kanban",
   "Grouping field": "Champ de regroupement",
@@ -823,5 +826,10 @@
   "Are you sure you want to hide this tab?": "Êtes-vous sûr de vouloir masquer cet onglet ?",
   "After hiding, this tab will no longer appear in the tab bar. To show it again, you need to go to the route management page to set it.": "Après avoir masqué, cette tab ne sera plus affichée dans la barre de tab. Pour la montrer à nouveau, vous devez vous rendre sur la page de gestion des routes pour la configurer.",
   "No pages yet, please configure first": "Pas encore de pages, veuillez configurer d'abord",
-  "Click the \"UI Editor\" icon in the upper right corner to enter the UI Editor mode": "Cliquez sur l'icône \"Éditeur d'interface utilisateur\" dans le coin supérieur droit pour entrer en mode Éditeur d'interface utilisateur"
+  "Click the \"UI Editor\" icon in the upper right corner to enter the UI Editor mode": "Cliquez sur l'icône \"Éditeur d'interface utilisateur\" dans le coin supérieur droit pour entrer en mode Éditeur d'interface utilisateur",
+  "Deprecated": "Déprécié",
+  "Full permissions": "Tous les droits",
+  "Refresh data blocks": "Actualiser les blocs de données",
+  "Select data blocks to refresh": "Actualiser les blocs de données",
+  "After successful submission, the selected data blocks will be automatically refreshed.": "Après une soumission réussie, les blocs de données sélectionnés seront automatiquement actualisés."
 }

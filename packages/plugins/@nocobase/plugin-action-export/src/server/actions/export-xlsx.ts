@@ -11,13 +11,13 @@ import { Context, Next } from '@nocobase/actions';
 import { Repository } from '@nocobase/database';
 
 import { XlsxExporter } from '../services/xlsx-exporter';
-import XLSX from 'xlsx';
 import { Mutex } from 'async-mutex';
 import { DataSource } from '@nocobase/data-source-manager';
+import { Logger } from '@nocobase/logger';
 
 const mutex = new Mutex();
 
-async function exportXlsxAction(ctx: Context, next: Next) {
+async function exportXlsxAction(ctx: Context, next: Next, logger: Logger) {
   const { title, filter, sort, fields, except } = ctx.action.params;
   let columns = ctx.action.params.values?.columns || ctx.action.params?.columns;
 
@@ -35,6 +35,7 @@ async function exportXlsxAction(ctx: Context, next: Next) {
     collection,
     repository,
     columns,
+    logger,
     findOptions: {
       filter,
       fields,
@@ -43,9 +44,15 @@ async function exportXlsxAction(ctx: Context, next: Next) {
     },
   });
 
-  const wb = await xlsxExporter.run(ctx);
-
-  ctx.body = XlsxExporter.xlsxSafeWrite(wb, { type: 'buffer', bookType: 'xlsx' });
+  try {
+    await xlsxExporter.run(ctx);
+    const buffer = xlsxExporter.getXlsxBuffer();
+    xlsxExporter.cleanOutputFile();
+    ctx.body = buffer;
+  } catch (error) {
+    logger.error('Error writing XLSX file:', error);
+    throw error;
+  }
 
   ctx.set({
     'Content-Type': 'application/octet-stream',
@@ -67,9 +74,8 @@ export async function exportXlsx(ctx: Context, next: Next) {
   }
 
   const release = await mutex.acquire();
-
   try {
-    await exportXlsxAction(ctx, next);
+    await exportXlsxAction(ctx, next, this.logger);
   } finally {
     release();
   }

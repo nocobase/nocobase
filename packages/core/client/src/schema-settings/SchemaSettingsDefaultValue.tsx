@@ -237,7 +237,6 @@ export const SchemaSettingsDefaultValue = function DefaultValueConfigure(props: 
     },
     [currentSchema, dn, field, fieldSchema],
   );
-
   return (
     <SchemaSettingsModalItem
       title={t('Set default value')}
@@ -245,9 +244,14 @@ export const SchemaSettingsDefaultValue = function DefaultValueConfigure(props: 
       width={800}
       schema={schema}
       onSubmit={handleSubmit}
-      ModalContextProvider={(props) => {
+      ModalContextProvider={(props: any) => {
         return (
-          <FlagProvider isInSubForm={isInSubForm} isInSubTable={isInSubTable} isInSetDefaultValueDialog>
+          <FlagProvider
+            isInSubForm={isInSubForm}
+            isInSubTable={isInSubTable}
+            isInSetDefaultValueDialog
+            collectionField={collectionField}
+          >
             {props.children}
           </FlagProvider>
         );

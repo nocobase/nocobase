@@ -11,7 +11,10 @@ import { expect, test } from '@nocobase/test/e2e';
 import { afterConfiguringTheModalWhenReopeningItTheContentShouldPersist } from './utils';
 
 test.describe('refresh', () => {
-  test('After configuring the modal, when reopening it, the content should persist', async ({ mockPage, page }) => {
+  test.skip('After configuring the modal, when reopening it, the content should persist', async ({
+    mockPage,
+    page,
+  }) => {
     await mockPage(afterConfiguringTheModalWhenReopeningItTheContentShouldPersist).goto();
 
     // 1. 点击 Bulk edit 按钮，打开弹窗

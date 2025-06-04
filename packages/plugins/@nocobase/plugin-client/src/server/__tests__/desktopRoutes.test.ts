@@ -18,7 +18,7 @@ describe('desktopRoutes:listAccessible', () => {
     app = await createMockServer({
       registerActions: true,
       acl: true,
-      plugins: ['nocobase'],
+      plugins: ['nocobase', 'collection-tree'],
     });
     db = app.db;
 
@@ -153,7 +153,7 @@ describe('desktopRoutes:listAccessible', () => {
     });
     const rootAgent = await app.agent().login(rootUser);
     await rootAgent.resource('roles.desktopRoutes', 'member').remove({
-      values: [1, 2, 3, 4, 5, 6, 8, 9], // 只保留 page4 的访问权限
+      values: [1, 2, 3, 4, 5, 6],
     });
 
     // 验证返回结果包含子路由

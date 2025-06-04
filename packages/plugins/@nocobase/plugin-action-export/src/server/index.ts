@@ -9,8 +9,10 @@
 
 import { Plugin } from '@nocobase/server';
 import { exportXlsx } from './actions';
+import { LoggerOptions, Logger } from '@nocobase/logger';
 
 export class PluginActionExportServer extends Plugin {
+  logger: Logger;
   beforeLoad() {
     this.app.on('afterInstall', async () => {
       if (!this.app.db.getRepository('roles')) {
@@ -41,14 +43,24 @@ export class PluginActionExportServer extends Plugin {
   }
 
   async load() {
+    this.logger = this.getLogger();
     this.app.dataSourceManager.afterAddDataSource((dataSource) => {
-      dataSource.resourceManager.registerActionHandler('export', exportXlsx);
+      dataSource.resourceManager.registerActionHandler('export', exportXlsx.bind(this));
       dataSource.acl.setAvailableAction('export', {
         displayName: '{{t("Export")}}',
         allowConfigureFields: true,
         aliases: ['export', 'exportAttachments'],
       });
     });
+  }
+
+  getLogger(): Logger {
+    const logger = this.createLogger({
+      dirname: 'action-export',
+      filename: '%DATE%.log',
+    } as LoggerOptions);
+
+    return logger;
   }
 }
 

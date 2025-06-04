@@ -10,7 +10,7 @@
 export * from './PluginManagerLink';
 import { PageHeader } from '@ant-design/pro-layout';
 import { useDebounce } from 'ahooks';
-import { Button, Col, Divider, Input, List, Modal, Row, Space, Spin, Table, Tabs } from 'antd';
+import { Button, Col, Divider, Input, List, Modal, Row, Space, Spin, Table, TableProps, Tabs } from 'antd';
 import _ from 'lodash';
 import React, { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -128,25 +128,27 @@ function BulkEnableButton({ plugins = [] }) {
           }}
           size={'small'}
           pagination={false}
-          columns={[
-            {
-              title: t('Plugin'),
-              dataIndex: 'displayName',
-              ellipsis: true,
-            },
-            {
-              title: t('Description'),
-              dataIndex: 'description',
-              ellipsis: true,
-              width: 300,
-            },
-            {
-              title: t('Package name'),
-              dataIndex: 'packageName',
-              width: 300,
-              ellipsis: true,
-            },
-          ]}
+          columns={
+            [
+              {
+                title: t('Plugin'),
+                dataIndex: 'displayName',
+                ellipsis: true,
+              },
+              {
+                title: t('Description'),
+                dataIndex: 'description',
+                ellipsis: true,
+                width: 300,
+              },
+              {
+                title: t('Package name'),
+                dataIndex: 'packageName',
+                width: 300,
+                ellipsis: true,
+              },
+            ] as TableProps<any>['columns']
+          }
           dataSource={items}
         />
       </Modal>

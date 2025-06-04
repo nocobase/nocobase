@@ -102,6 +102,7 @@
   "Chart type": "Grafik türü",
   "Chart config": "Grafik yapılandırması",
   "Templates": "Şablonlar",
+  "Template": "Şablon",
   "Select template": "Şablon seç",
   "Action logs": "Eylem günlükleri",
   "Create template": "Şablon oluştur",
@@ -335,7 +336,8 @@
   "Turn pages": "Sayfaları çevir",
   "Others": "Diğerleri",
   "Other records": "Diğer kayıtlar",
-  "Save as template": "Şablon olarak kaydet",
+  "Save as reference template": "Referans şablonu olarak kaydet",
+  "Save as inherited template": "Kalıtım şablonu olarak kaydet",
   "Save as block template": "Blok şablonu olarak kaydet",
   "Block templates": "Blok şablonları",
   "Block template": "Blok şablonu",
@@ -410,6 +412,7 @@
   "Blank block": "Boş blok",
   "Duplicate template": "Şablonun kopyasını oluştur",
   "Reference template": "Referans şablon",
+  "Inherited template": "Kalıtım şablonu",
   "Create calendar block": "Takvim bloğu oluştur",
   "Create kanban block": "Kanban bloğu oluştur",
   "Grouping field": "Alan gruplandırma",
@@ -606,6 +609,11 @@
   "If selected, the route will be displayed in the menu.": "Seçildiğinde, yol menüde görüntülenecektir.",
   "Are you sure you want to hide this tab?": "Bu sekmeyi gizlemek istediğinizden emin misiniz?",
   "After hiding, this tab will no longer appear in the tab bar. To show it again, you need to go to the route management page to set it.": "Gizlendikten sonra, bu sekme artık sekme çubuğunda görünmeyecek. Onu tekrar göstermek için, rotayı yönetim sayfasına gidip ayarlamanız gerekiyor.",
+  "Deprecated": "Kullanımdan kaldırıldı",
+  "Full permissions": "Tüm izinler",
   "No pages yet, please configure first": "Henüz sayfa yok, lütfen önce yapılandırın",
-  "Click the \"UI Editor\" icon in the upper right corner to enter the UI Editor mode": "Kullanıcı arayüzü düzenleyici moduna girmek için sağ üst köşedeki \"Kullanıcı Arayüzü Düzenleyici\" simgesine tıklayın"
+  "Click the \"UI Editor\" icon in the upper right corner to enter the UI Editor mode": "Kullanıcı arayüzü düzenleyici moduna girmek için sağ üst köşedeki \"Kullanıcı Arayüzü Düzenleyici\" simgesine tıklayın",
+  "Refresh data blocks": "Yenile veri blokları",
+  "Select data blocks to refresh": "Veri bloklarını yenilemek için seçin",
+  "After successful submission, the selected data blocks will be automatically refreshed.": "Başarılı bir şekilde gönderildikten sonra, seçilen veri blokları otomatik olarak yenilenecektir."
 }

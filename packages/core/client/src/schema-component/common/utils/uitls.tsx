@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { dayjs, getPickerFormat, Handlebars } from '@nocobase/utils/client';
+import { dayjs, getPickerFormat, Handlebars, getFormatFromDateStr } from '@nocobase/utils/client';
 import _, { every, findIndex, some } from 'lodash';
 import { replaceVariableValue } from '../../../block-provider/hooks';
 import { VariableOption, VariablesContextType } from '../../../variables/types';
@@ -57,6 +57,7 @@ export const getTargetField = (obj) => {
     }
   });
   const result = keys.slice(0, index);
+
   return result;
 };
 
@@ -76,72 +77,44 @@ function getAllKeys(obj) {
   return keys;
 }
 
+const parseVariableValue = async (targetVariable, variables, localVariables) => {
+  const parsingResult = isVariable(targetVariable)
+    ? [variables.parseVariable(targetVariable, localVariables).then(({ value }) => value)]
+    : [targetVariable];
+
+  try {
+    const [value] = await Promise.all(parsingResult);
+    return value;
+  } catch (error) {
+    console.error('Error in parseVariableValue:', error);
+    throw error;
+  }
+};
+
 export const conditionAnalyses = async (
   {
     ruleGroup,
     variables,
     localVariables,
     variableNameOfLeftCondition,
+    conditionType,
   }: {
     ruleGroup;
     variables: VariablesContextType;
     localVariables: VariableOption[];
-    /**
-     * used to parse the variable name of the left condition value
-     * @default '$nForm'
-     */
     variableNameOfLeftCondition?: string;
+    conditionType?: 'advanced' | 'basic';
   },
   jsonLogic: any,
 ) => {
   const type = Object.keys(ruleGroup)[0] || '$and';
   const conditions = ruleGroup[type];
-  let results = conditions.map(async (condition) => {
-    if ('$and' in condition || '$or' in condition) {
-      return await conditionAnalyses({ ruleGroup: condition, variables, localVariables }, jsonLogic);
-    }
 
-    const logicCalculation = getInnermostKeyAndValue(condition);
-    const operator = logicCalculation?.key;
-
-    if (!operator) {
-      return true;
-    }
-
-    const targetVariableName = targetFieldToVariableString(getTargetField(condition), variableNameOfLeftCondition);
-    const targetValue = variables
-      .parseVariable(targetVariableName, localVariables, {
-        doNotRequest: true,
-      })
-      .then(({ value }) => value);
-
-    const parsingResult = isVariable(logicCalculation?.value)
-      ? [variables.parseVariable(logicCalculation?.value, localVariables).then(({ value }) => value), targetValue]
-      : [logicCalculation?.value, targetValue];
-
-    try {
-      const [value, targetValue] = await Promise.all(parsingResult);
-      const targetCollectionField = await variables.getCollectionField(targetVariableName, localVariables);
-      let currentInputValue = transformVariableValue(targetValue, { targetCollectionField });
-      const comparisonValue = transformVariableValue(value, { targetCollectionField });
-      if (
-        targetCollectionField?.type &&
-        ['datetime', 'date', 'datetimeNoTz', 'dateOnly', 'unixTimestamp'].includes(targetCollectionField.type) &&
-        currentInputValue
-      ) {
-        const picker = inferPickerType(comparisonValue);
-        const format = getPickerFormat(picker);
-        currentInputValue = dayjs(currentInputValue).format(format);
-      }
-
-      return jsonLogic.apply({
-        [operator]: [currentInputValue, comparisonValue],
-      });
-    } catch (error) {
-      throw error;
-    }
-  });
-  results = await Promise.all(results);
+  const results = await Promise.all(
+    conditions.map((condition) =>
+      processCondition(condition, variables, localVariables, variableNameOfLeftCondition, conditionType, jsonLogic),
+    ),
+  );
 
   if (type === '$and') {
     return every(results, (v) => v);
@@ -150,6 +123,67 @@ export const conditionAnalyses = async (
       return some(results, (v) => v);
     }
     return true;
+  }
+};
+
+const processCondition = async (
+  condition,
+  variables,
+  localVariables,
+  variableNameOfLeftCondition,
+  conditionType,
+  jsonLogic,
+) => {
+  if ('$and' in condition || '$or' in condition) {
+    return await conditionAnalyses({ ruleGroup: condition, variables, localVariables, conditionType }, jsonLogic);
+  }
+  return conditionType === 'advanced'
+    ? processAdvancedCondition(condition, variables, localVariables, jsonLogic)
+    : processBasicCondition(condition, variables, localVariables, variableNameOfLeftCondition, jsonLogic);
+};
+
+const processAdvancedCondition = async (condition, variables, localVariables, jsonLogic) => {
+  const operator = condition.op;
+  const rightValue = await parseVariableValue(condition.rightVar, variables, localVariables);
+  const leftValue = await parseVariableValue(condition.leftVar, variables, localVariables);
+  if (operator) {
+    return jsonLogic.apply({ [operator]: [leftValue, rightValue] });
+  }
+  return true;
+};
+
+const processBasicCondition = async (condition, variables, localVariables, variableNameOfLeftCondition, jsonLogic) => {
+  const logicCalculation = getInnermostKeyAndValue(condition);
+  const operator = logicCalculation?.key;
+  if (!operator) return true;
+
+  const targetVariableName = targetFieldToVariableString(getTargetField(condition), variableNameOfLeftCondition);
+  const targetValue = variables
+    .parseVariable(targetVariableName, localVariables, { doNotRequest: true })
+    .then(({ value }) => value);
+
+  const parsingResult = isVariable(logicCalculation?.value)
+    ? [variables.parseVariable(logicCalculation?.value, localVariables).then(({ value }) => value), targetValue]
+    : [logicCalculation?.value, targetValue];
+
+  try {
+    const [value, resolvedTargetValue] = await Promise.all(parsingResult);
+    const targetCollectionField = await variables.getCollectionField(targetVariableName, localVariables);
+    let currentInputValue = transformVariableValue(resolvedTargetValue, { targetCollectionField });
+    const comparisonValue = transformVariableValue(value, { targetCollectionField });
+
+    if (
+      targetCollectionField?.type &&
+      ['datetime', 'date', 'datetimeNoTz', 'dateOnly', 'unixTimestamp'].includes(targetCollectionField.type) &&
+      currentInputValue
+    ) {
+      const picker = inferPickerType(comparisonValue);
+      const format = getPickerFormat(picker);
+      currentInputValue = dayjs(currentInputValue).format(format);
+    }
+    return jsonLogic.apply({ [operator]: [currentInputValue, comparisonValue] });
+  } catch (error) {
+    throw error;
   }
 };
 
@@ -185,7 +219,9 @@ export async function getRenderContent(templateEngine, content, variables, local
       const html = renderedContent({ ...variables?.ctxRef?.current, ...data, $nDate: variableDate });
       return await defaultParse(html);
     } catch (error) {
-      console.log(error);
+      if (!/VariablesProvider: .* is not found/.test(error.message)) {
+        console.log(error);
+      }
       return content;
     }
   } else {
@@ -193,7 +229,9 @@ export async function getRenderContent(templateEngine, content, variables, local
       const html = await replaceVariableValue(content, variables, localVariables);
       return await defaultParse(html);
     } catch (error) {
-      console.log(error);
+      if (!/VariablesProvider: .* is not found/.test(error.message)) {
+        console.log(error);
+      }
       return content;
     }
   }

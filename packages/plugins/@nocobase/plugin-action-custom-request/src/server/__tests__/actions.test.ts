@@ -30,6 +30,7 @@ describe('actions', () => {
         'action-custom-request',
         'data-source-manager',
         'ui-schema-storage',
+        'system-settings',
       ],
     });
     db = app.db;

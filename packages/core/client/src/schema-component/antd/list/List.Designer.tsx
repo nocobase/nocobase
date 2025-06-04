@@ -27,13 +27,16 @@ import { SchemaSettingsDataScope } from '../../../schema-settings/SchemaSettings
 import { SchemaSettingsTemplate } from '../../../schema-settings/SchemaSettingsTemplate';
 import { useSchemaTemplate } from '../../../schema-templates';
 import { useBlockTemplateContext } from '../../../schema-templates/BlockTemplateProvider';
-import { useDesignable } from '../../hooks';
+import { useCompile, useDesignable } from '../../hooks';
 import { removeNullCondition } from '../filter';
+import { useApp } from '../../../application';
 
 /**
  * @deprecated - 已使用 SchemaSettings 替代
  */
 export const ListDesigner = () => {
+  const app = useApp();
+  const compile = useCompile();
   const { name, title } = useCollection_deprecated();
   const template = useSchemaTemplate();
   const { t } = useTranslation();
@@ -57,8 +60,15 @@ export const ListDesigner = () => {
         };
   });
   const { componentNamePrefix } = useBlockTemplateContext();
+  const RevertSetting =
+    app.schemaSettingsManager.getAll()['blockSettings:list']?.get('template-revertSettingItem')?.['Component'] || null;
+  let designerTitle = title;
+  if (fieldSchema['x-template-uid']) {
+    designerTitle = `${compile(title)} [${t('Template')}: ${compile(fieldSchema['x-template-title'])}]`;
+  }
+
   return (
-    <GeneralSchemaDesigner template={template} title={title || name}>
+    <GeneralSchemaDesigner template={template} title={designerTitle || name}>
       <SchemaSettingsBlockTitleItem />
       <SchemaSettingsDataScope
         collectionName={name}
@@ -188,18 +198,26 @@ export const ListDesigner = () => {
           });
         }}
       />
-      <SchemaSettingsTemplate
-        componentName={`${componentNamePrefix}List`}
-        collectionName={name}
-        resourceName={defaultResource}
-      />
-      <SchemaSettingsDivider />
-      <SchemaSettingsRemove
-        removeParentsIfNoChildren
-        breakRemoveOn={{
-          'x-component': 'Grid',
-        }}
-      />
+      {!fieldSchema['x-template-uid'] ? (
+        <>
+          {!RevertSetting && (
+            <SchemaSettingsTemplate
+              componentName={`${componentNamePrefix}List`}
+              collectionName={name}
+              resourceName={defaultResource}
+            />
+          )}
+          <SchemaSettingsDivider />
+          <SchemaSettingsRemove
+            removeParentsIfNoChildren
+            breakRemoveOn={{
+              'x-component': 'Grid',
+            }}
+          />
+        </>
+      ) : (
+        <RevertSetting />
+      )}
     </GeneralSchemaDesigner>
   );
 };
