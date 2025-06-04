@@ -7,13 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useCallback } from 'react';
 import { Button, Space, Dropdown, Alert } from 'antd';
 import { SettingOutlined, DownOutlined } from '@ant-design/icons';
 import { FlowModel } from '../../../../models';
 import { useFlowModel } from '../../../../hooks';
 import { observer } from '@formily/react';
-import { StepSettingsModal } from '../../wrappers/contextual';
+import { openStepSettingsDialog } from '../../wrappers/contextual';
 
 // 支持两种使用方式的接口定义
 interface ModelProvidedProps {
@@ -82,9 +82,6 @@ const FlowsDropdownButtonWithModel: React.FC<ModelProvidedProps> = observer(
     style,
     className,
   }) => {
-    const [selectedStep, setSelectedStep] = useState<{ flowKey: string; stepKey: string } | null>(null);
-    const [modalVisible, setModalVisible] = useState<boolean>(false);
-
     const handleClick = () => {
       onClick?.();
     };
@@ -92,14 +89,18 @@ const FlowsDropdownButtonWithModel: React.FC<ModelProvidedProps> = observer(
     const handleMenuClick = useCallback(({ key }: { key: string }) => {
       // key格式为 "flowKey:stepKey"
       const [flowKey, stepKey] = key.split(':');
-      setSelectedStep({ flowKey, stepKey });
-      setModalVisible(true);
-    }, []);
-
-    const handleModalClose = useCallback(() => {
-      setModalVisible(false);
-      setSelectedStep(null);
-    }, []);
+      
+      try {
+        openStepSettingsDialog({
+          model,
+          flowKey,
+          stepKey,
+        });
+      } catch (error) {
+        // 用户取消或出错
+        console.log('配置弹窗已取消或出错:', error);
+      }
+    }, [model]);
 
     if (!model) {
       return <Alert message="提供的模型无效" type="error" />;
@@ -228,17 +229,6 @@ const FlowsDropdownButtonWithModel: React.FC<ModelProvidedProps> = observer(
         >
           {button}
         </Dropdown>
-
-        {/* 设置弹窗 */}
-        {selectedStep && (
-          <StepSettingsModal
-            model={model}
-            flowKey={selectedStep.flowKey}
-            stepKey={selectedStep.stepKey}
-            visible={modalVisible}
-            onClose={handleModalClose}
-          />
-        )}
       </>
     );
   },

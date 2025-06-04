@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useState, useCallback } from 'react';
+import React, { useCallback } from 'react';
 import { Dropdown, Alert, Modal } from 'antd';
 import type { MenuProps } from 'antd';
 import { SettingOutlined, DeleteOutlined, ExclamationCircleOutlined } from '@ant-design/icons';
@@ -15,7 +15,7 @@ import { observer } from '@formily/react';
 import { FlowModel } from '../../../../models';
 import { ActionStepDefinition } from '../../../../types';
 import { useFlowModel } from '../../../../hooks';
-import { StepSettingsModal } from './StepSettingsModal';
+import { openStepSettingsDialog } from './StepSettingsDialog';
 
 // 右键菜单组件接口
 interface ModelProvidedProps {
@@ -71,9 +71,6 @@ const FlowsContextMenu: React.FC<FlowsContextMenuProps> = (props) => {
 // 使用传入的model
 const FlowsContextMenuWithModel: React.FC<ModelProvidedProps> = observer(
   ({ model, children, enabled = true, position = 'right', showDeleteButton = true }) => {
-    const [selectedStep, setSelectedStep] = useState<{ flowKey: string; stepKey: string } | null>(null);
-    const [modalVisible, setModalVisible] = useState<boolean>(false);
-
     const handleMenuClick = useCallback(
       ({ key }: { key: string }) => {
         if (key === 'delete') {
@@ -100,17 +97,20 @@ const FlowsContextMenuWithModel: React.FC<ModelProvidedProps> = observer(
         } else {
           // 处理step配置，key格式为 "flowKey:stepKey"
           const [flowKey, stepKey] = key.split(':');
-          setSelectedStep({ flowKey, stepKey });
-          setModalVisible(true);
+          try {
+            openStepSettingsDialog({
+              model,
+              flowKey,
+              stepKey,
+            });
+          } catch (error) {
+            // 用户取消或出错，静默处理
+            console.log('配置弹窗已取消或出错:', error);
+          }
         }
       },
       [model],
     );
-
-    const handleModalClose = useCallback(() => {
-      setModalVisible(false);
-      setSelectedStep(null);
-    }, []);
 
     if (!model) {
       return <Alert message="提供的模型无效" type="error" />;
@@ -241,17 +241,6 @@ const FlowsContextMenuWithModel: React.FC<ModelProvidedProps> = observer(
         >
           <div style={{ display: 'inline-block', width: '100%' }}>{children}</div>
         </Dropdown>
-
-        {/* 设置弹窗 */}
-        {selectedStep && (
-          <StepSettingsModal
-            model={model}
-            flowKey={selectedStep.flowKey}
-            stepKey={selectedStep.stepKey}
-            visible={modalVisible}
-            onClose={handleModalClose}
-          />
-        )}
       </>
     );
   },

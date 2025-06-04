@@ -16,7 +16,7 @@ import { css } from '@emotion/css';
 import { FlowModel } from '../../../../models';
 import { ActionStepDefinition } from '../../../../types';
 import { useFlowModel } from '../../../../hooks';
-import { StepSettingsModal } from './StepSettingsModal';
+import { openStepSettingsDialog } from './StepSettingsDialog';
 
 // 检测DOM中直接子元素是否包含button元素的辅助函数
 const detectButtonInDOM = (container: HTMLElement): boolean => {
@@ -152,8 +152,6 @@ const FlowsFloatContextMenu: React.FC<FlowsFloatContextMenuProps> = (props) => {
 // 使用传入的model
 const FlowsFloatContextMenuWithModel: React.FC<ModelProvidedProps> = observer(
   ({ model, children, enabled = true, showDeleteButton = true, containerStyle, className }) => {
-    const [selectedStep, setSelectedStep] = useState<{ flowKey: string; stepKey: string } | null>(null);
-    const [modalVisible, setModalVisible] = useState<boolean>(false);
     const [hideMenu, setHideMenu] = useState<boolean>(false);
     const [hasButton, setHasButton] = useState<boolean>(false);
     const containerRef = useRef<HTMLDivElement>(null);
@@ -227,17 +225,20 @@ const FlowsFloatContextMenuWithModel: React.FC<ModelProvidedProps> = observer(
         } else {
           // 处理step配置，key格式为 "flowKey:stepKey"
           const [flowKey, stepKey] = key.split(':');
-          setSelectedStep({ flowKey, stepKey });
-          setModalVisible(true);
+          try {
+            openStepSettingsDialog({
+              model,
+              flowKey,
+              stepKey,
+            });
+          } catch (error) {
+            // 用户取消或出错，静默处理
+            console.log('配置弹窗已取消或出错:', error);
+          }
         }
       },
       [model],
     );
-
-    const handleModalClose = useCallback(() => {
-      setModalVisible(false);
-      setSelectedStep(null);
-    }, []);
 
     if (!model) {
       return <Alert message="提供的模型无效" type="error" />;
@@ -387,17 +388,6 @@ const FlowsFloatContextMenuWithModel: React.FC<ModelProvidedProps> = observer(
             </div>
           </div>
         </div>
-
-        {/* 设置弹窗 */}
-        {selectedStep && (
-          <StepSettingsModal
-            model={model}
-            flowKey={selectedStep.flowKey}
-            stepKey={selectedStep.stepKey}
-            visible={modalVisible}
-            onClose={handleModalClose}
-          />
-        )}
       </>
     );
   },
