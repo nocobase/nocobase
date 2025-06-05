@@ -393,10 +393,10 @@ const EditMenuItem = () => {
         options:
           href || params
             ? {
-                href,
-                params,
-                openInNewWindow,
-              }
+              href,
+              params,
+              openInNewWindow,
+            }
             : undefined,
       });
     }
@@ -453,14 +453,14 @@ const MoveToMenuItem = () => {
           f.dataSource =
             type === NocoBaseDesktopRouteType.group
               ? [
-                  { label: t('Before'), value: 'beforeBegin' },
-                  { label: t('After'), value: 'afterEnd' },
-                  { label: t('Inner'), value: 'beforeEnd' },
-                ]
+                { label: t('Before'), value: 'beforeBegin' },
+                { label: t('After'), value: 'afterEnd' },
+                { label: t('Inner'), value: 'beforeEnd' },
+              ]
               : [
-                  { label: t('Before'), value: 'beforeBegin' },
-                  { label: t('After'), value: 'afterEnd' },
-                ];
+                { label: t('Before'), value: 'beforeBegin' },
+                { label: t('After'), value: 'afterEnd' },
+              ];
         });
       });
     },
@@ -468,7 +468,11 @@ const MoveToMenuItem = () => {
   );
   const compile = useCompile();
   const { allAccessRoutes } = useAllAccessDesktopRoutes();
-  const items = useMemo(() => toItems(allAccessRoutes, { t, compile }), []);
+  const items = useMemo(() => {
+    const result = toItems(allAccessRoutes, { t, compile });
+    // The last two empty options are placeholders to prevent the last option from being hidden (a bug in TreeSelect)
+    return [...result, { label: '', value: '', disabled: true }, { label: '', value: '', disabled: true }];
+  }, []);
   const modalSchema = useMemo(() => {
     return {
       type: 'object',
@@ -519,13 +523,13 @@ const MoveToMenuItem = () => {
       const options =
         position === 'beforeEnd'
           ? {
-              targetScope: {
-                parentId: targetId,
-              },
-            }
+            targetScope: {
+              parentId: targetId,
+            },
+          }
           : {
-              targetId: targetId,
-            };
+            targetId: targetId,
+          };
 
       await moveRoute({
         sourceId: currentRoute.id as any,
