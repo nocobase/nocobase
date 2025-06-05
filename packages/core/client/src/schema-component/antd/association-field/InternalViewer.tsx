@@ -288,7 +288,7 @@ export const ReadPrettyInternalViewer: React.FC<ReadPrettyInternalViewerProps> =
   // value 做了转换，但 props.value 和原来 useField().value 的值不一致
   const field = useField();
   const [visible, setVisible] = useState(false);
-  const { options: collectionField } = useAssociationFieldContext();
+  const { options: collectionField, currentMode } = useAssociationFieldContext();
   const associationName = useAssociationName();
   const { visibleWithURL, setVisibleWithURL } = usePopupUtils();
   const [btnHover, setBtnHover] = useState(!!visibleWithURL);
@@ -380,7 +380,7 @@ export const ReadPrettyInternalViewer: React.FC<ReadPrettyInternalViewerProps> =
     <PopupVisibleProvider visible={false}>
       <ActionContextProvider value={actionContextValue}>
         {btnElement}
-        {btnHover && renderWithoutTableFieldResourceProvider()}
+        {btnHover && currentMode !== 'Select' && renderWithoutTableFieldResourceProvider()}
       </ActionContextProvider>
     </PopupVisibleProvider>
   );
