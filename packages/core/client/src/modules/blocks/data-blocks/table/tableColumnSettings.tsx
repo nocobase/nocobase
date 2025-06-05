@@ -15,7 +15,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useApp, useSchemaToolbar } from '../../../../application';
 import { SchemaSettings } from '../../../../application/schema-settings/SchemaSettings';
-import { useCollectionManager_deprecated } from '../../../../collection-manager';
+import { useCollectionManager_deprecated, useCollection_deprecated } from '../../../../collection-manager';
 import { useFieldComponentName } from '../../../../common/useFieldComponentName';
 import { useCollection } from '../../../../data-source';
 import { fieldComponentSettingsItem } from '../../../../data-source/commonsSettingsItem';
@@ -26,6 +26,9 @@ import { useColumnSchema } from '../../../../schema-component/antd/table-v2/Tabl
 import { SchemaSettingsLinkageRules } from '../../../../schema-settings';
 import { SchemaSettingsDefaultValue } from '../../../../schema-settings/SchemaSettingsDefaultValue';
 import { isPatternDisabled } from '../../../../schema-settings/isPatternDisabled';
+import { ArrayCollapse, FormLayout } from '@formily/antd-v5';
+import _ from 'lodash';
+
 export const tableColumnSettings = new SchemaSettings({
   name: 'fieldSettings:TableColumn',
   items: [
@@ -294,6 +297,162 @@ export const tableColumnSettings = new SchemaSettings({
                   schema,
                 });
                 dn.refresh();
+              },
+            };
+          },
+        },
+        {
+          name: 'validationRules',
+          type: 'modal',
+          useVisible() {
+            const { fieldSchema } = useColumnSchema();
+            const field: any = useField();
+
+            const { getInterface } = useCollectionManager_deprecated();
+            const { getField } = useCollection_deprecated();
+
+            if (!fieldSchema) {
+              return false;
+            }
+
+            const isSubTableColumn = ['QuickEdit', 'FormItem'].includes(fieldSchema['x-decorator']);
+            const collectionField = getField(fieldSchema['name']);
+            const interfaceConfig = getInterface(collectionField?.interface);
+
+            const validateSchema = interfaceConfig?.['validateSchema']?.(fieldSchema);
+
+            return isSubTableColumn && !field?.readPretty && !!validateSchema;
+          },
+          useComponentProps() {
+            const { t } = useTranslation();
+            const field: any = useField();
+            const { fieldSchema } = useColumnSchema();
+            const { dn, refresh } = useDesignable();
+            const { getInterface } = useCollectionManager_deprecated();
+            const { getField } = useCollection_deprecated();
+            const collectionField = getField(fieldSchema?.['name']);
+            const interfaceConfig = getInterface(collectionField?.interface);
+            const validateSchema = interfaceConfig?.['validateSchema']?.(fieldSchema);
+
+            return {
+              title: t('Set validation rules'),
+              components: { ArrayCollapse, FormLayout },
+              schema: {
+                type: 'object',
+                title: t('Set validation rules'),
+                properties: {
+                  rules: {
+                    type: 'array',
+                    default: fieldSchema?.['x-validator'],
+                    'x-component': 'ArrayCollapse',
+                    'x-decorator': 'FormItem',
+                    'x-component-props': {
+                      accordion: true,
+                    },
+                    maxItems: 3,
+                    items: {
+                      type: 'object',
+                      'x-component': 'ArrayCollapse.CollapsePanel',
+                      'x-component-props': {
+                        header: '{{ t("Validation rule") }}',
+                      },
+                      properties: {
+                        index: {
+                          type: 'void',
+                          'x-component': 'ArrayCollapse.Index',
+                        },
+                        layout: {
+                          type: 'void',
+                          'x-component': 'FormLayout',
+                          'x-component-props': {
+                            labelStyle: {
+                              marginTop: '6px',
+                            },
+                            labelCol: 8,
+                            wrapperCol: 16,
+                          },
+                          properties: {
+                            ...validateSchema,
+                            message: {
+                              type: 'string',
+                              title: '{{ t("Error message") }}',
+                              'x-decorator': 'FormItem',
+                              'x-component': 'Input.TextArea',
+                              'x-component-props': {
+                                autoSize: {
+                                  minRows: 2,
+                                  maxRows: 2,
+                                },
+                              },
+                            },
+                          },
+                        },
+                        remove: {
+                          type: 'void',
+                          'x-component': 'ArrayCollapse.Remove',
+                        },
+                        moveUp: {
+                          type: 'void',
+                          'x-component': 'ArrayCollapse.MoveUp',
+                        },
+                        moveDown: {
+                          type: 'void',
+                          'x-component': 'ArrayCollapse.MoveDown',
+                        },
+                      },
+                    },
+                    properties: {
+                      add: {
+                        type: 'void',
+                        title: '{{ t("Add validation rule") }}',
+                        'x-component': 'ArrayCollapse.Addition',
+                        'x-reactions': {
+                          dependencies: ['rules'],
+                          fulfill: {
+                            state: {
+                              disabled: '{{$deps[0].length >= 3}}',
+                            },
+                          },
+                        },
+                      },
+                    },
+                  },
+                },
+              } as ISchema,
+              onSubmit(v) {
+                const rules = [];
+
+                for (const rule of v.rules) {
+                  rules.push(_.pickBy(rule, _.identity));
+                }
+                const schema = {
+                  ['x-uid']: fieldSchema?.['x-uid'],
+                };
+
+                if (['percent'].includes(collectionField?.interface)) {
+                  for (const rule of rules) {
+                    if (!!rule.maxValue || !!rule.minValue) {
+                      rule['percentMode'] = true;
+                    }
+
+                    if (rule.percentFormat) {
+                      rule['percentFormats'] = true;
+                    }
+                  }
+                }
+
+                const concatValidator = _.concat([], collectionField?.uiSchema?.['x-validator'] || [], rules);
+                fieldSchema['x-validator'] = rules;
+                schema['x-validator'] = rules;
+                const path = field.path?.splice(field.path?.length - 1, 1);
+                field.form.query(`${path.concat(`*.` + fieldSchema.name)}`).forEach((f) => {
+                  f.validator = concatValidator;
+                });
+
+                dn.emit('patch', {
+                  schema,
+                });
+                refresh();
               },
             };
           },
