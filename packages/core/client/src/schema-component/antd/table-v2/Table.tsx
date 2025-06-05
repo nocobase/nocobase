@@ -33,7 +33,7 @@ import React, {
   useState,
 } from 'react';
 import { useTranslation } from 'react-i18next';
-import { DndContext, isBulkEditAction, useDesignable, usePopupSettings, useTableSize } from '../..';
+import { DndContext, isBulkEditAction, isWriteEmailAction, useDesignable, usePopupSettings, useTableSize } from '../..';
 import {
   BlockRequestLoadingContext,
   RecordIndexProvider,
@@ -186,7 +186,10 @@ const useTableColumns = (
 
   const filterProperties = useCallback(
     (schema) =>
-      isBulkEditAction(schema) || !isPopupVisibleControlledByURL() || schema['x-component'] !== 'Action.Container',
+      isBulkEditAction(schema) ||
+      isWriteEmailAction(schema) ||
+      !isPopupVisibleControlledByURL() ||
+      schema['x-component'] !== 'Action.Container',
     [isPopupVisibleControlledByURL],
   );
 
