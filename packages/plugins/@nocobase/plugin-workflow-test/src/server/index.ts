@@ -13,6 +13,7 @@ import { ApplicationOptions, Plugin } from '@nocobase/server';
 import {
   MockClusterOptions,
   MockServer,
+  MockServerOptions,
   createMockCluster,
   createMockDatabase,
   createMockServer,
@@ -26,13 +27,14 @@ import instructions from './instructions';
 import triggers from './triggers';
 export { sleep } from '@nocobase/test';
 
-interface WorkflowMockServerOptions extends ApplicationOptions {
-  collectionsPath?: string;
-}
+type WorkflowMockServerOptions = ApplicationOptions &
+  MockServerOptions & {
+    collectionsPath?: string;
+  };
 
-interface WorkflowMockClusterOptions extends MockClusterOptions {
+type WorkflowMockClusterOptions = MockClusterOptions & {
   collectionsPath?: string;
-}
+};
 
 class TestCollectionPlugin extends Plugin {
   async load() {
@@ -95,6 +97,7 @@ export async function getCluster({ plugins = [], collectionsPath, ...options }: 
   return createMockCluster({
     ...options,
     plugins: [
+      'field-sort',
       [
         'workflow',
         {

@@ -29,7 +29,8 @@ test.describe('filter block schema settings', () => {
       supportedOptions: [
         'Edit block title',
         // 'Save as block template',
-        'Linkage rules',
+        'Field linkage rules',
+        'Block linkage rules',
         'Connect data blocks',
         'Delete',
       ],

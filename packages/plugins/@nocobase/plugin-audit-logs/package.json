@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-audit-logs",
-  "version": "1.7.0-beta.34",
+  "version": "1.8.0-beta.4",
   "displayName": "Audit logs (deprecated)",
   "displayName.zh-CN": "审计日志（废弃）",
   "description": "This plugin is deprecated. There will be a new audit log plugin in the future.",
