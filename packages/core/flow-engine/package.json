@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/flow-engine",
-  "version": "1.7.0-beta.34",
+  "version": "1.8.0-beta.4",
   "private": false,
   "description": "A standalone flow engine for NocoBase, managing workflows, models, and actions.",
   "main": "lib/index.js",
