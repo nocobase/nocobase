@@ -238,24 +238,6 @@ export default defineConfig({
           ],
         },
         {
-          title: 'Event and Filter',
-          type: 'group',
-          children: [
-            {
-              title: 'Model',
-              link: '/core/event-and-filter/model',
-            },
-            {
-              title: 'Tabulator',
-              link: '/core/event-and-filter/tabulator',
-            },
-            {
-              title: 'Table',
-              link: '/core/event-and-filter/table',
-            }
-          ],
-        },
-        {
           title: 'UI Schema',
           type: 'group',
           children: [

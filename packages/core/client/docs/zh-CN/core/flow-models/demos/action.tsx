@@ -1,15 +1,7 @@
 import React from 'react';
 import { Button, ButtonProps, message, Modal } from 'antd';
 import { Application, Plugin } from '@nocobase/client';
-import {
-  FlowModel,
-  FlowEngine,
-  ActionModel,
-  useFlowModel,
-  withFlowModel,
-  FlowsContextMenu,
-  FlowsFloatContextMenu,
-} from '@nocobase/flow-engine';
+import { ActionModel, useFlowModel, withFlowModel, FlowsFloatContextMenu } from '@nocobase/flow-engine';
 
 const ButtonModel = ActionModel.extends([
   {
@@ -76,7 +68,6 @@ const ButtonComponent = (props: ButtonProps & { text?: string }) => {
 // 使用withFlowModel包装Button组件，只启用右键菜单
 const DeleteButton = withFlowModel(ButtonComponent, {
   settings: {
-    // component: FlowsContextMenu,
     component: FlowsFloatContextMenu,
     props: {
       hideRemoveInSettings: true,
