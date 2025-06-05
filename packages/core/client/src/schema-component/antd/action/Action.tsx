@@ -454,7 +454,7 @@ export function isBulkEditAction(fieldSchema) {
 
 // TODO: Plugin-related code should not exist in the core. It would be better to implement it by modifying the schema, but it would cause incompatibility.
 export function isWriteEmailAction(fieldSchema) {
-  return fieldSchema['x-action'] === 'customize:writeEmail';
+  return fieldSchema['x-action'] === 'customize:writeEmail' || fieldSchema.parent?.['x-action'] === 'customize:writeEmail';
 }
 
 const RenderButton = ({
