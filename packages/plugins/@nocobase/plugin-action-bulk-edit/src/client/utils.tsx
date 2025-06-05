@@ -88,9 +88,8 @@ export const useCustomizeBulkEditActionProps = () => {
   const actionField = useField();
   const tableBlockContext = useTableBlockContext();
   const { modal } = App.useApp();
-  const { rowKey } = tableBlockContext;
   const selectedRecordKeys =
-    tableBlockContext.field?.data?.selectedRowKeys ?? expressionScope?.selectedRecordKeys ?? {};
+    tableBlockContext.field?.data?.selectedRowKeys ?? expressionScope?.selectedRecordKeys ?? [];
   const { setVisible, fieldSchema: actionSchema, setSubmitted } = actionContext;
   const fieldSchema = useFieldSchema();
   return {
@@ -108,9 +107,14 @@ export const useCustomizeBulkEditActionProps = () => {
       actionField.data = field.data || {};
       actionField.data.loading = true;
       try {
-        const updateData: { filter?: any; values: any; forceUpdate: boolean; triggerWorkflows?: string } = {
+        const updateData: {
+          filter?: any;
+          filterByTk?: any[];
+          values: any;
+          forceUpdate: boolean;
+          triggerWorkflows?: string;
+        } = {
           values: form.values,
-          filter,
           forceUpdate: false,
           triggerWorkflows: triggerWorkflows?.length
             ? triggerWorkflows.map((row) => [row.workflowKey, row.context].filter(Boolean).join('!')).join(',')
@@ -121,9 +125,11 @@ export const useCustomizeBulkEditActionProps = () => {
             message.error(t('Please select the records to be updated'));
             return;
           }
-          updateData.filter = { $and: [{ [rowKey || 'id']: { $in: selectedRecordKeys } }] };
+          updateData.filterByTk = selectedRecordKeys;
+        } else {
+          updateData.filter = filter;
         }
-        if (!updateData.filter) {
+        if (!updateData.filter && !updateData.filterByTk) {
           updateData.forceUpdate = true;
         }
         await resource.update(updateData);
