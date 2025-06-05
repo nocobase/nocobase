@@ -7,7 +7,6 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { FormDialog } from '@formily/antd-v5';
 import { createSchemaField, ISchema, observer } from '@formily/react';
 import { message } from 'antd';
 import React from 'react';
@@ -114,17 +113,22 @@ const openStepSettingsDialogWithModelById = async ({
     });
 
     // 临时渲染组件以获取model
-    import('react-dom').then(({ render, unmountComponentAtNode }) => {
-      const div = document.createElement('div');
-      document.body.appendChild(div);
-      render(<TempComponent />, div);
+    import('react-dom/client')
+      .then(({ createRoot }) => {
+        const div = document.createElement('div');
+        document.body.appendChild(div);
+        const root = createRoot(div);
+        root.render(<TempComponent />);
 
-      // 清理
-      setTimeout(() => {
-        unmountComponentAtNode(div);
-        document.body.removeChild(div);
-      }, 100);
-    });
+        // 清理
+        setTimeout(() => {
+          root.unmount();
+          document.body.removeChild(div);
+        }, 100);
+      })
+      .catch((error) => {
+        reject(new Error(`Error import: ${error.message}`));
+      });
   });
 };
 
@@ -206,6 +210,14 @@ const openStepSettingsDialogContent = async ({
       },
     },
   };
+
+  // 动态导入FormDialog
+  let FormDialog;
+  try {
+    ({ FormDialog } = await import('@formily/antd-v5'));
+  } catch (error) {
+    throw new Error(`导入 FormDialog 失败: ${error.message}`);
+  }
 
   // 创建FormDialog
   const formDialog = FormDialog(
