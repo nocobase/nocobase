@@ -452,6 +452,11 @@ export function isBulkEditAction(fieldSchema) {
   return fieldSchema['x-action'] === 'customize:bulkEdit';
 }
 
+// TODO: Plugin-related code should not exist in the core. It would be better to implement it by modifying the schema, but it would cause incompatibility.
+export function isWriteEmailAction(fieldSchema) {
+  return fieldSchema['x-action'] === 'customize:writeEmail';
+}
+
 const RenderButton = ({
   designable,
   field,
