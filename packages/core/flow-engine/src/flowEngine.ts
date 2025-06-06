@@ -6,9 +6,6 @@
  * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
-
-import { connect, mapProps } from '@formily/react';
-import { Switch } from 'antd';
 import { FlowSettings } from './flowSettings';
 import { FlowModel } from './models';
 import {
@@ -19,15 +16,6 @@ import {
   IFlowModelRepository,
   ModelConstructor,
 } from './types';
-
-// 创建 NocoBase 兼容的 Switch 组件
-const NocoBaseSwitch = connect(
-  Switch,
-  mapProps({
-    value: 'checked',
-    onInput: 'onChange',
-  }),
-);
 
 interface ApplyFlowCacheEntry {
   status: 'pending' | 'resolved' | 'rejected';
@@ -118,26 +106,27 @@ export class FlowEngine {
     return this.actions.get(name) as ActionDefinition<TModel> | undefined;
   }
 
-  /**
-   * 注册一个 Model 类。
-   * Model 类用于创建和管理流程中的数据状态。
-   * @param {string} name Model 类名称。
-   * @param {ModelConstructor} modelClass Model 构造函数。
-   * @returns {void}
-   * @example
-   * class MyModel extends FlowModel {}
-   * flowEngine.registerModelClass('MyModel', MyModel);
-   */
-  public registerModelClass(name: string, modelClass: ModelConstructor): void {
+  private registerModel(name: string, modelClass: ModelConstructor): void {
     if (this.modelClasses.has(name)) {
       console.warn(`FlowEngine: Model class with name '${name}' is already registered and will be overwritten.`);
     }
     this.modelClasses.set(name, modelClass);
   }
 
+  /**
+   * 注册 Model 类。
+   * @param {Record<string, ModelConstructor>} models 要注册的 Model 类映射表，键为 Model 名称，值为 Model 构造函数。
+   * @returns {void}
+   * @example
+   * flowEngine.registerModels({
+   *   'UserModel': UserModel,
+   *   'OrderModel': OrderModel,
+   *   'ProductModel': ProductModel
+   * });
+   */
   public registerModels(models: Record<string, ModelConstructor>) {
     for (const [name, modelClass] of Object.entries(models)) {
-      this.registerModelClass(name, modelClass);
+      this.registerModel(name, modelClass);
     }
   }
 
@@ -162,7 +151,7 @@ export class FlowEngine {
    * @returns {T} 创建的 Model 实例。
    */
   public createModel<T extends FlowModel = FlowModel>(options: CreateModelOptions): T {
-    const { parentId, uid, use: modelClassName } = options;
+    const { parentId, uid, use: modelClassName, subModels } = options;
     const ModelClass = this.getModelClass(modelClassName);
 
     if (!ModelClass) {
@@ -180,6 +169,12 @@ export class FlowEngine {
 
     if (parentId && this.modelInstances.has(parentId)) {
       modelInstance.setParent(this.modelInstances.get(parentId));
+    }
+
+    if (subModels) {
+      Object.entries(subModels).forEach(([key, value]) => {
+        modelInstance.addSubModel(key, value);
+      });
     }
 
     this.modelInstances.set(modelInstance.uid, modelInstance);

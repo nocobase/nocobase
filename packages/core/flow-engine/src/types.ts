@@ -205,8 +205,8 @@ export interface CreateModelOptions {
   use: RegisteredModelClassName;
   props?: IModelComponentProps;
   stepParams?: StepParams;
+  subModels?: Record<string, CreateModelOptions | FlowModel>;
   [key: string]: any; // 允许额外的自定义选项
-  // app?: Application; // Application 依赖已移除
 }
 export interface IFlowModelRepository<T extends FlowModel = FlowModel> {
   load(uid: string): Promise<Record<string, any> | null>;

@@ -17,6 +17,7 @@ import type {
   FlowContext,
   FlowDefinition,
   InlineStepDefinition,
+  CreateModelOptions,
   StepDefinition,
   StepParams,
 } from '../types';
@@ -495,12 +496,16 @@ export class FlowModel {
 
   public subModelKeys = new Set<string>();
 
-  addSubModel(subKey: string, options) {
-    const model = this.flowEngine.createModel({ ...options, parentId: this.uid, subKey, subType: 'array' });
-
-    // 确保正确设置 parent 关系
-    if (!model.parent) {
+  addSubModel(subKey: string, options: CreateModelOptions | FlowModel) {
+    let model: FlowModel;
+    if (options instanceof FlowModel) {
+      if (options.parent && options.parent !== this) {
+        throw new Error('Sub model already has a parent.');
+      }
+      model = options;
       model.setParent(this);
+    } else {
+      model = this.flowEngine.createModel({ ...options, parentId: this.uid, subKey, subType: 'array' });
     }
 
     Array.isArray(this[subKey]) || (this[subKey] = observable.shallow([]));
