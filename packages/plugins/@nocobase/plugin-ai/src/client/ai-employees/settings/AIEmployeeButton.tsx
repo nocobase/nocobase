@@ -12,6 +12,7 @@ import { SchemaComponent, SchemaSettings, SchemaSettingsItem, useSchemaSettings,
 import { useT } from '../../locale';
 import { avatars } from '../avatars';
 import { Card, Avatar, Tooltip, Modal, Tag, Typography } from 'antd';
+import { ArrayTabs } from '@formily/antd-v5';
 const { Meta } = Card;
 import { createForm } from '@formily/core';
 import { uid } from '@formily/shared';
@@ -35,7 +36,7 @@ const SettingsForm: React.FC<{
 
   return (
     <SchemaComponent
-      components={{ AIVariableRawTextArea }}
+      components={{ AIVariableRawTextArea, ArrayTabs }}
       schema={{
         type: 'void',
         properties: {
@@ -81,99 +82,114 @@ const SettingsForm: React.FC<{
                 type: 'string',
                 title: t('Task description'),
                 'x-decorator': 'FormItem',
+                'x-decorator-props': {
+                  tooltip: t('Displays the AI employee’s assigned tasks on the profile when hovering over the button.'),
+                },
                 'x-component': 'Input.TextArea',
-                description: t(
-                  'Displays the AI employee’s assigned tasks on the profile when hovering over the button.',
-                ),
+                'x-component-props': {
+                  autoSize: {
+                    minRows: 2,
+                  },
+                },
                 default: dn.getSchemaAttribute('x-component-props.taskDesc'),
               },
-              messageDivider: {
-                type: 'void',
-                'x-component': 'Divider',
+              tasks: {
+                type: 'array',
+                title: t('Task'),
+                'x-component': 'ArrayTabs',
                 'x-component-props': {
-                  children: t('Task instruction'),
+                  size: 'small',
                 },
-              },
-              message: {
-                type: 'object',
-                properties: {
-                  // messageType: {
-                  //   type: 'string',
-                  //   title: t('Message type'),
-                  //   'x-decorator': 'FormItem',
-                  //   'x-component': 'Select',
-                  //   enum: [
-                  //     {
-                  //       label: t('Text'),
-                  //       value: 'text',
-                  //     },
-                  //     // {
-                  //     //   label: t('Image'),
-                  //     //   value: 'image',
-                  //     // },
-                  //   ],
-                  //   default: 'text',
-                  //   'x-component-props': {
-                  //     placeholder: t('Message type'),
-                  //   },
-                  // },
-                  content: {
-                    title: t('Message content'),
-                    type: 'string',
-                    'x-decorator': 'FormItem',
-                    'x-component': 'AIVariableRawTextArea',
-                    'x-component-props': {
-                      currentSchema,
+                default: dn.getSchemaAttribute('x-component-props.tasks'),
+                items: {
+                  type: 'object',
+                  properties: {
+                    title: {
+                      type: 'string',
+                      title: t('Title'),
+                      'x-decorator': 'FormItem',
+                      'x-component': 'Input',
+                      'x-decorator-props': {
+                        tooltip: t('Label for task selection buttons when multiple tasks exist'),
+                      },
                     },
-                  },
-                  attachments: {
-                    title: t('Files'),
-                    type: 'array',
-                    description: t('Please select file objects.'),
-                    'x-decorator': 'FormItem',
-                    'x-component': 'ArrayItems',
-                    items: {
-                      type: 'void',
-                      'x-component': 'Space',
+                    message: {
+                      type: 'object',
                       properties: {
-                        sort: {
-                          type: 'void',
-                          'x-decorator': 'FormItem',
-                          'x-component': 'ArrayItems.SortHandle',
-                        },
-                        input: {
+                        system: {
+                          title: t('Background'),
                           type: 'string',
                           'x-decorator': 'FormItem',
-                          'x-component': 'Variable.Input',
+                          'x-decorator-props': {
+                            tooltip: t(
+                              'Additional system prompt appended to the AI employee’s definition, used to refine instructions',
+                            ),
+                          },
+                          'x-component': 'AIVariableRawTextArea',
                           'x-component-props': {
-                            scope,
-                            changeOnSelect: true,
+                            currentSchema,
                           },
                         },
-                        remove: {
-                          type: 'void',
+                        user: {
+                          title: t('Default user message'),
+                          type: 'string',
                           'x-decorator': 'FormItem',
-                          'x-component': 'ArrayItems.Remove',
+                          'x-component': 'AIVariableRawTextArea',
+                          'x-component-props': {
+                            currentSchema,
+                          },
+                        },
+                        attachments: {
+                          title: t('Files'),
+                          type: 'array',
+                          'x-decorator': 'FormItem',
+                          'x-decorator-props': {
+                            tooltip: t('Please select file objects.'),
+                          },
+                          'x-component': 'ArrayItems',
+                          items: {
+                            type: 'void',
+                            'x-component': 'Space',
+                            properties: {
+                              sort: {
+                                type: 'void',
+                                'x-decorator': 'FormItem',
+                                'x-component': 'ArrayItems.SortHandle',
+                              },
+                              input: {
+                                type: 'string',
+                                'x-decorator': 'FormItem',
+                                'x-component': 'Variable.Input',
+                                'x-component-props': {
+                                  scope,
+                                  changeOnSelect: true,
+                                },
+                              },
+                              remove: {
+                                type: 'void',
+                                'x-decorator': 'FormItem',
+                                'x-component': 'ArrayItems.Remove',
+                              },
+                            },
+                          },
+                          properties: {
+                            add: {
+                              type: 'void',
+                              title: t('Add file'),
+                              'x-component': 'ArrayItems.Addition',
+                            },
+                          },
                         },
                       },
                     },
-                    properties: {
-                      add: {
-                        type: 'void',
-                        title: t('Add file'),
-                        'x-component': 'ArrayItems.Addition',
-                      },
+                    autoSend: {
+                      type: 'boolean',
+                      'x-content': t('Send default user message automatically'),
+                      'x-decorator': 'FormItem',
+                      'x-component': 'Checkbox',
                     },
                   },
                 },
-                default: dn.getSchemaAttribute('x-component-props.message'),
-              },
-              autoSend: {
-                type: 'boolean',
-                'x-content': t('Send default message automatically'),
-                'x-decorator': 'FormItem',
-                'x-component': 'Checkbox',
-                default: dn.getSchemaAttribute('x-component-props.autoSend') || false,
               },
             },
           },
@@ -216,14 +232,13 @@ export const aiEmployeeButtonSettings = new SchemaSettings({
                 setOpen(false);
               }}
               onOk={() => {
-                const { taskDesc, message, autoSend } = form.values;
+                const { taskDesc, tasks } = form.values;
                 dn.deepMerge({
                   'x-uid': dn.getSchemaAttribute('x-uid'),
                   'x-component-props': {
                     username,
-                    message,
+                    tasks,
                     taskDesc,
-                    autoSend,
                   },
                 });
                 setOpen(false);

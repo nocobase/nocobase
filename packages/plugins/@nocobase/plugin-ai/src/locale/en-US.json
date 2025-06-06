@@ -59,7 +59,7 @@
   "Message content": "Message content",
   "Insert current block UI Schema": "Insert current block UI Schema",
   "Select block UI schemas": "Select block UI schemas",
-  "Send default message automatically": "Send default message automatically",
+  "Send default user message automatically": "Send default user message automatically",
   "Select field values": "Select field values",
   "Please choose an AI employee": "Please choose an AI employee",
   "Rename": "Rename",
@@ -76,5 +76,10 @@
   "Files": "Files",
   "Add file": "Add file",
   "Please select file objects.": "Please select file objects.",
-  "Current language": "Current language"
+  "Current language": "Current language",
+  "Default user message": "Default user message",
+  "Background": "Background",
+  "Task": "Task",
+  "Label for task selection buttons when multiple tasks exist": "Label for task selection buttons when multiple tasks exist",
+  "Additional system prompt appended to the AI employee’s definition, used to refine instructions": "Additional system prompt appended to the AI employee’s definition, used to refine instructions"
 }

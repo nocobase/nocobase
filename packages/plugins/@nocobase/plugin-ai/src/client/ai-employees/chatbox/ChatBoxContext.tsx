@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Conversation, Message, SendOptions, AIEmployee, ShortcutOptions } from '../types';
+import { Conversation, Message, SendOptions, AIEmployee, TriggerTaskOptions } from '../types';
 import { Avatar, GetProp, GetRef, Button, Alert, Popover } from 'antd';
 import type { Sender } from '@ant-design/x';
 import React, { useContext, useEffect, useState, useRef, useMemo, useCallback, createRef } from 'react';
@@ -21,9 +21,10 @@ import { useT } from '../../locale';
 import { createForm, Form } from '@formily/core';
 import { ProfileCard } from '../ProfileCard';
 import { createContext, useContextSelector } from 'use-context-selector';
-import { AIMessage, ErrorMessage, UserMessage } from './MessageRenderer';
+import { AIMessage, ErrorMessage, TaskMessage, UserMessage } from './MessageRenderer';
 import { useChatMessages } from './ChatMessagesProvider';
 import { useChatConversations } from './ChatConversationsProvider';
+import { useParseTask } from './useParseTask';
 
 type ChatBoxContextValues = {
   chatBoxRef: React.MutableRefObject<HTMLElement>;
@@ -42,7 +43,7 @@ type ChatBoxContextValues = {
   senderPlaceholder: string;
   setSenderPlaceholder: React.Dispatch<React.SetStateAction<string>>;
   startNewConversation: () => void;
-  triggerShortcut: (options: ShortcutOptions) => void;
+  triggerTask: (options: TriggerTaskOptions) => void;
   switchAIEmployee: (aiEmployee: AIEmployee) => void;
   send(opts: SendOptions): void;
 };
@@ -68,22 +69,11 @@ const defaultRoles: GetProp<typeof Bubble.List, 'roles'> = {
     variant: 'borderless',
     messageRender: (msg: any) => <ErrorMessage msg={msg} />,
   },
-  action: {
+  task: {
     placement: 'start',
     avatar: { icon: '', style: { visibility: 'hidden' } },
-    typing: { step: 5, interval: 20 },
-    style: {
-      maxWidth: 400,
-      marginInlineEnd: 48,
-    },
     variant: 'borderless',
-    messageRender: (msg: any) => {
-      return (
-        <Button onClick={msg.onClick} icon={msg.icon}>
-          {msg.content}
-        </Button>
-      );
-    },
+    messageRender: (msg: any) => <TaskMessage msg={msg} />,
   },
 };
 
@@ -122,6 +112,7 @@ export const useSetChatBoxContext = () => {
   const senderRef = useRef<GetRef<typeof Sender>>(null);
   const [roles, setRoles] = useState<GetProp<typeof Bubble.List, 'roles'>>(defaultRoles);
   const chatBoxRef = useRef<HTMLElement>(null);
+  const { parseTask } = useParseTask();
 
   const send = (options: SendOptions) => {
     const sendOptions = {
@@ -186,9 +177,9 @@ export const useSetChatBoxContext = () => {
     [currentConversation],
   );
 
-  const triggerShortcut = useCallback(
-    (options: ShortcutOptions) => {
-      const { aiEmployee, message, attachments, autoSend } = options;
+  const triggerTask = useCallback(
+    async (options: TriggerTaskOptions) => {
+      const { aiEmployee, tasks } = options;
       updateRole(aiEmployee);
       if (!open) {
         setOpen(true);
@@ -198,15 +189,8 @@ export const useSetChatBoxContext = () => {
         setMessages([]);
       }
       setCurrentEmployee(aiEmployee);
-      if (message && message.type === 'text') {
-        setSenderValue(message.content);
-      } else {
-        setSenderValue('');
-      }
-      if (attachments) {
-        setAttachments(attachments);
-      }
-      setMessages([
+      senderRef.current?.focus();
+      const msgs: Message[] = [
         {
           key: uid(),
           role: aiEmployee.username,
@@ -215,15 +199,40 @@ export const useSetChatBoxContext = () => {
             content: aiEmployee.greeting || t('Default greeting message', { nickname: aiEmployee.nickname }),
           },
         },
-      ]);
-      senderRef.current?.focus();
-      if (autoSend) {
-        send({
-          aiEmployee,
-          messages: [message],
-          attachments,
-        });
+      ];
+      if (!tasks?.length) {
+        setMessages(msgs);
+        return;
       }
+      if (tasks.length === 1) {
+        setMessages(msgs);
+        const task = tasks[0];
+        const { userMessage, attachments } = await parseTask(task);
+        if (userMessage && userMessage.type === 'text') {
+          setSenderValue(userMessage.content);
+        } else {
+          setSenderValue('');
+        }
+        if (attachments) {
+          setAttachments(attachments);
+        }
+        if (task.autoSend) {
+          send({
+            aiEmployee,
+            messages: [userMessage],
+            attachments,
+          });
+        }
+        return;
+      }
+      msgs.push({
+        key: uid(),
+        role: 'task',
+        content: {
+          content: tasks,
+        },
+      });
+      setMessages(msgs);
     },
     [open, currentConversation],
   );
@@ -272,7 +281,7 @@ export const useSetChatBoxContext = () => {
     senderPlaceholder,
     setSenderPlaceholder,
     startNewConversation,
-    triggerShortcut,
+    triggerTask,
     switchAIEmployee,
     send,
   };

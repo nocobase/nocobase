@@ -22,64 +22,26 @@ import { useChatBoxContext } from '../chatbox/ChatBoxContext';
 import { AIEmployee } from '../types';
 import { ProfileCard } from '../ProfileCard';
 import { useAIEmployeesContext } from '../AIEmployeesProvider';
-
-async function replaceVariables(template, variables, localVariables = {}) {
-  const regex = /\{\{\s*(.*?)\s*\}\}/g;
-  let result = template;
-
-  const matches = [...template.matchAll(regex)];
-
-  if (matches.length === 0) {
-    return template;
-  }
-
-  for (const match of matches) {
-    const fullMatch = match[0];
-
-    if (fullMatch.includes('$UISchema')) {
-      continue;
-    }
-
-    try {
-      let value = await variables?.parseVariable(fullMatch, localVariables).then(({ value }) => value);
-
-      if (typeof value !== 'string') {
-        try {
-          value = JSON.stringify(value);
-        } catch (error) {
-          console.error(error);
-        }
-      }
-
-      if (value) {
-        if (value === 'null' || value === 'undefined') {
-          value = '';
-        }
-        result = result.replace(fullMatch, value);
-      }
-    } catch (error) {
-      console.error(error);
-    }
-  }
-
-  return result;
-}
+import { useParseTask } from '../chatbox/useParseTask';
+import { useChatMessages } from '../chatbox/ChatMessagesProvider';
+import { uid } from '@formily/shared';
 
 export const AIEmployeeButton: React.FC<{
   username: string;
   taskDesc?: string;
-  autoSend?: boolean;
-  message: {
-    type: string;
-    content?: string;
-    attachments?: any[];
-  };
-}> = withDynamicSchemaProps(({ username, taskDesc, message, autoSend }) => {
-  const triggerShortcut = useChatBoxContext('triggerShortcut');
+  tasks: {
+    title: string;
+    message: {
+      user?: string;
+      system?: string;
+      attachments?: any[];
+    };
+    autoSend?: boolean;
+  }[];
+}> = withDynamicSchemaProps(({ username, taskDesc, tasks }) => {
+  const triggerTask = useChatBoxContext('triggerTask');
   const fieldSchema = useFieldSchema();
   const { render } = useSchemaToolbarRender(fieldSchema);
-  const variables = useVariables();
-  const localVariables = useLocalVariables();
   const {
     aiEmployeesMap,
     service: { loading },
@@ -96,42 +58,7 @@ export const AIEmployeeButton: React.FC<{
         position: 'relative',
         display: 'flex',
       }}
-      onClick={async () => {
-        let msg: any;
-        if (message?.content) {
-          const content = await replaceVariables(message.content, variables, localVariables);
-          msg = {
-            type: message.type || 'text',
-            content,
-          };
-        }
-        const attachments = [];
-        if (message?.attachments?.length) {
-          for (const attachment of message.attachments) {
-            const obj = await variables?.parseVariable(attachment, localVariables).then(({ value }) => value);
-            if (!obj) {
-              continue;
-            }
-            if (Array.isArray(obj)) {
-              for (const item of obj) {
-                if (item.filename) {
-                  attachments.push(item);
-                }
-              }
-            } else {
-              if (obj.filename) {
-                attachments.push(obj);
-              }
-            }
-          }
-        }
-        triggerShortcut({
-          aiEmployee,
-          message: msg,
-          attachments,
-          autoSend,
-        });
-      }}
+      onClick={async () => triggerTask({ aiEmployee, tasks })}
     >
       <Spin spinning={loading}>
         <Popover content={<ProfileCard taskDesc={taskDesc} aiEmployee={aiEmployee} />}>

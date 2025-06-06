@@ -53,7 +53,7 @@ export type Message = Omit<BubbleProps, 'content'> & {
   key?: string | number;
   role?: string;
   content: {
-    type: MessageType;
+    type?: MessageType;
     content: any;
     attachments?: Attachment[];
   };
@@ -80,11 +80,20 @@ export type ResendOptions = {
   aiEmployee: AIEmployee;
 };
 
-export type ShortcutOptions = {
-  aiEmployee: AIEmployee;
-  message: { type: MessageType; content: string };
-  attachments?: Attachment[];
-  autoSend: boolean;
+export type Task = {
+  title?: string;
+  taskDesc?: string;
+  message: {
+    user?: string;
+    system?: string;
+    attachments?: Attachment[];
+  };
+  autoSend?: boolean;
+};
+
+export type TriggerTaskOptions = {
+  aiEmployee?: AIEmployee;
+  tasks: Task[];
 };
 
 export type Tool = {

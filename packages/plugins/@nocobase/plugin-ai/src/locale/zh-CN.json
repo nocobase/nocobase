@@ -58,7 +58,7 @@
   "Message content": "消息内容",
   "Insert current block UI schema": "插入当前区块 UI Schema",
   "Select block UI schemas": "选择区块 UI Schema",
-  "Send default message automatically": "自动发送默认消息",
+  "Send default user message automatically": "自动发送默认用户消息",
   "Select field values": "选择字段值",
   "Please choose an AI employee": "请选择 AI 员工",
   "Rename": "重命名",
@@ -76,5 +76,10 @@
   "Files": "文件",
   "Add file": "添加文件",
   "Please select file objects.": "请选择文件对象。",
-  "Current language": "当前语言"
+  "Current language": "当前语言",
+  "Default user message": "默认用户消息",
+  "Task": "任务",
+  "Background": "背景",
+  "Label for task selection buttons when multiple tasks exist": "多个任务可选时，用于让用户选择任务的按钮标题",
+  "Additional system prompt appended to the AI employee’s definition, used to refine instructions": "可以在 AI 员工定义的基础上追加的 system prompt，用于补充指令"
 }

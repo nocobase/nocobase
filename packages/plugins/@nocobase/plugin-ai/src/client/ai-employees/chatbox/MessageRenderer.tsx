@@ -8,7 +8,7 @@
  */
 
 import React, { memo, useEffect, useMemo } from 'react';
-import { Button, Space, App, Alert } from 'antd';
+import { Button, Space, App, Alert, Flex } from 'antd';
 import { CopyOutlined, ReloadOutlined } from '@ant-design/icons';
 import { Attachments, Bubble } from '@ant-design/x';
 import { useT } from '../../locale';
@@ -21,6 +21,7 @@ import { ToolCard } from './ToolCard';
 import PluginAIClient from '../..';
 import { useRenderUISchemaTag } from './useRenderUISchemaTag';
 import { cx, css } from '@emotion/css';
+import { Task } from '../types';
 
 const MessageWrapper = React.forwardRef<
   HTMLDivElement,
@@ -206,5 +207,41 @@ export const ErrorMessage: React.FC<{
       type="warning"
       showIcon
     />
+  );
+});
+
+export const TaskMessage: React.FC<{
+  msg: {
+    content: Task[];
+  };
+}> = memo(({ msg }) => {
+  const t = useT();
+  const tasks = msg.content;
+  const triggerTask = useChatBoxContext('triggerTask');
+  const currentEmployee = useChatBoxContext('currentEmployee');
+
+  return (
+    <Flex align="flex-start" gap="small" vertical>
+      {tasks.map((task, index) => (
+        <Button
+          key={index}
+          style={{
+            whiteSpace: 'normal',
+            textAlign: 'left',
+            height: 'auto',
+          }}
+          type="primary"
+          ghost
+          onClick={() =>
+            triggerTask({
+              aiEmployee: currentEmployee,
+              tasks: [task],
+            })
+          }
+        >
+          {task.title || `${t('Task')} ${index + 1}`}
+        </Button>
+      ))}
+    </Flex>
   );
 });
