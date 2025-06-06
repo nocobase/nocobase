@@ -97,9 +97,6 @@ export class TableColumnFlowModel extends FlowModel {
 }
 
 export class TableBlockFlowModel extends BlockFlowModel {
-  actions: Array<ActionFlowModel> = observable.shallow([]);
-  columns: Array<TableColumnFlowModel> = observable.shallow([]);
-
   onInit(options: any) {
     const { actions = [], columns = [] } = options;
     console.log('TableBlockFlowModel onInit', options);
@@ -117,8 +114,8 @@ export class TableBlockFlowModel extends BlockFlowModel {
   }
 
   getColumns() {
-    return this.columns
-      .map((column) => {
+    return (this.subModels.columns as TableColumnFlowModel[]) //TODO: improve type
+      ?.map((column) => {
         return {
           ...column.getProps(),
           render: column.render(),
@@ -135,8 +132,8 @@ export class TableBlockFlowModel extends BlockFlowModel {
                   use: 'TableColumnFlowModel',
                   props: {
                     title: `新列 ${uid()}`,
-                    dataIndex: `newColumn${this.columns.length + 1}`,
-                    key: `newColumn${this.columns.length + 1}`,
+                    dataIndex: `newColumn${(this.subModels.columns as TableColumnFlowModel[]).length + 1}`,
+                    key: `newColumn${(this.subModels.columns as TableColumnFlowModel[]).length + 1}`,
                   },
                 });
               },
@@ -160,7 +157,7 @@ export class TableBlockFlowModel extends BlockFlowModel {
   renderActions() {
     return (
       <Space>
-        {this.actions.map((action) => {
+        {(this.subModels.actions as ActionFlowModel[])?.map((action) => {
           return <FlowModelRenderer key={action.uid} model={action} />;
         })}
         <Dropdown

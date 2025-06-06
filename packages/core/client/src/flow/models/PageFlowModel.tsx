@@ -15,11 +15,8 @@ import _ from 'lodash';
 import React from 'react';
 
 export class PageFlowModel extends FlowModel {
-  tabs: Array<any>;
-
   onInit(options: any) {
     const tabs = options.tabs || [];
-    this.tabs = observable.shallow([]);
     tabs.forEach((tab: any) => {
       this.addSubModel('tabs', tab);
     });
@@ -31,7 +28,7 @@ export class PageFlowModel extends FlowModel {
   }
 
   getItems() {
-    return this.tabs.map((tab) => {
+    return (this.subModels.tabs as any[]).map((tab) => {
       return {
         key: tab.uid,
         label: tab.props.label || 'Unnamed',
@@ -41,7 +38,7 @@ export class PageFlowModel extends FlowModel {
   }
 
   renderFirstTab() {
-    return <FlowModelRenderer model={this.tabs[0]} />;
+    return <FlowModelRenderer model={(this.subModels.tabs as any[])[0]} />;
   }
 
   renderTabs() {

@@ -224,3 +224,5 @@ export interface StepSettingsDialogProps {
   dialogWidth?: number | string;
   dialogTitle?: string;
 }
+
+export type SubModelValue<TModel extends FlowModel = FlowModel> = TModel | TModel[];

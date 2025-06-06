@@ -20,6 +20,7 @@ import type {
   CreateModelOptions,
   StepDefinition,
   StepParams,
+  SubModelValue,
 } from '../types';
 import { ExtendedFlowDefinition, FlowExtraContext, IModelComponentProps, ReadonlyModelProps } from '../types';
 import { generateUid, mergeFlowDefinitions } from '../utils';
@@ -31,26 +32,25 @@ const modelFlows = new WeakMap<typeof FlowModel, Map<string, FlowDefinition>>();
 export class FlowModel {
   public readonly uid: string;
   public props: IModelComponentProps;
-  public hidden: boolean;
   public stepParams: StepParams;
   public flowEngine: FlowEngine;
   public parent: FlowModel | null = null;
+  public subModels: Record<string, SubModelValue>;
 
   constructor(
     protected options: { uid: string; use?: string; props?: IModelComponentProps; stepParams?: Record<string, any> },
   ) {
     this.uid = options.uid || uid();
     this.props = options.props || {};
-    this.hidden = false;
     this.stepParams = options.stepParams || {};
+    this.subModels = {};
 
     define(this, {
       props: observable,
-      hidden: observable,
-      stepParams: observable.deep,
+      subModels: observable,
+      stepParams: observable,
       setProps: action,
       setStepParams: action,
-      setHidden: action,
     });
     // 保证onInit在所有属性都定义完成后调用
     // queueMicrotask(() => {
@@ -233,10 +233,6 @@ export class FlowModel {
 
   getProps(): ReadonlyModelProps {
     return this.props as ReadonlyModelProps;
-  }
-
-  setHidden(hidden: boolean): void {
-    this.hidden = hidden;
   }
 
   setStepParams(flowKey: string, stepKey: string, params: any): void;
@@ -494,8 +490,6 @@ export class FlowModel {
     this.parent = parent;
   }
 
-  public subModelKeys = new Set<string>();
-
   addSubModel(subKey: string, options: CreateModelOptions | FlowModel) {
     let model: FlowModel;
     if (options instanceof FlowModel) {
@@ -508,16 +502,14 @@ export class FlowModel {
       model = this.flowEngine.createModel({ ...options, parentId: this.uid, subKey, subType: 'array' });
     }
 
-    Array.isArray(this[subKey]) || (this[subKey] = observable.shallow([]));
-    this[subKey].push(model);
-    this.subModelKeys.add(subKey);
+    Array.isArray(this.subModels[subKey]) || (this.subModels[subKey] = []);
+    this.subModels[subKey].push(model);
     return model;
   }
 
   setSubModel(subKey: string, options) {
     const model = this.flowEngine.createModel({ ...options, parentId: this.uid, subKey, subType: 'object' });
-    this[subKey] = model;
-    this.subModelKeys.add(subKey);
+    this.subModels[subKey] = model;
     return model;
   }
 
@@ -538,11 +530,13 @@ export class FlowModel {
     }
     this.flowEngine.destroyModel(this.uid);
     if (this.parent) {
-      this.parent.subModelKeys.forEach((subKey) => {
-        if (this.parent[subKey].includes(this)) {
-          this.parent[subKey].splice(this.parent[subKey].indexOf(this), 1);
+      for (const subKey in this.parent.subModels) {
+        if (Array.isArray(this.parent.subModels[subKey])) {
+          this.parent.subModels[subKey].splice(this.parent.subModels[subKey].indexOf(this), 1);
+        } else if (this.parent.subModels[subKey] instanceof FlowModel) {
+          delete this.parent.subModels[subKey]
         }
-      });
+      }
     }
   }
 
@@ -569,11 +563,11 @@ export class FlowModel {
       props: this.props,
       stepParams: this.stepParams,
     };
-    for (const subModelKey of this.subModelKeys) {
-      if (Array.isArray(this[subModelKey])) {
-        data[subModelKey] = this[subModelKey].map((model: FlowModel) => model.serialize());
-      } else if (this[subModelKey] instanceof FlowModel) {
-        data[subModelKey] = this[subModelKey].serialize();
+    for (const subModelKey in this.subModels) {
+      if (Array.isArray(this.subModels[subModelKey])) {
+        data[subModelKey] = this.subModels[subModelKey].map((model: FlowModel) => model.serialize());
+      } else if (this.subModels[subModelKey] instanceof FlowModel) {
+        data[subModelKey] = this.subModels[subModelKey].serialize();
       }
     }
     return data;

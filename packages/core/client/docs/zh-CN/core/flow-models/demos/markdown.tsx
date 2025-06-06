@@ -72,7 +72,7 @@ const MarkdownModel = BlockModel.extends([
 
 class DemoPlugin extends Plugin {
   async load() {
-    this.app.flowEngine.registerModelClass('MarkdownModel', MarkdownModel);
+    this.app.flowEngine.registerModels({ MarkdownModel });
 
     this.app.flowEngine.registerAction({
       name: 'block:markdown:template',

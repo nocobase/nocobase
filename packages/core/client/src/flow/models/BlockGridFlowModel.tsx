@@ -45,11 +45,8 @@ function AddBlockButton({ model }) {
 }
 
 export class BlockGridFlowModel extends FlowModel {
-  items: Array<any>;
-
   onInit(options: any) {
     const items = options.items || [];
-    this.items = observable.shallow([]);
     items.forEach((item: any) => {
       this.addSubModel('items', item);
     });
@@ -79,7 +76,7 @@ export class BlockGridFlowModel extends FlowModel {
       <div style={{ padding: 16 }}>
         <h1>Grid Flow Model - {this.uid}</h1>
         <p>This is a placeholder for the Grid Flow Model content.</p>
-        <Grid items={this.items.slice()} />
+        <Grid items={(this.subModels.items as any[] || []).slice()} />
         <br />
         <AddBlockButton model={this} />
       </div>

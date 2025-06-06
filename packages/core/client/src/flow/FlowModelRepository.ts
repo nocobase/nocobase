@@ -53,17 +53,17 @@ export class MockFlowModelRepository implements IFlowModelRepository<FlowModel> 
   // 将模型数据保存到本地存储
   async save(model: FlowModel) {
     const data = model.serialize();
-    const currentData = _.omit(data, [...model.subModelKeys]);
+    const currentData = _.omit(data, [...Object.keys(model.subModels)]);
     localStorage.setItem(`flow-model:${model.uid}`, JSON.stringify(currentData));
     console.log('Saving model:', model.uid, currentData);
-    for (const subModelKey of model.subModelKeys) {
-      if (!model[subModelKey]) continue;
-      if (Array.isArray(model[subModelKey])) {
-        for (const subModel of model[subModelKey]) {
+    for (const subModelKey of Object.keys(model.subModels)) {
+      if (!model.subModels[subModelKey]) continue;
+      if (Array.isArray(model.subModels[subModelKey])) {
+        for (const subModel of model.subModels[subModelKey]) {
           await this.save(subModel);
         }
-      } else if (model[subModelKey] instanceof FlowModel) {
-        await this.save(model[subModelKey]);
+      } else if (model.subModels[subModelKey] instanceof FlowModel) {
+        await this.save(model.subModels[subModelKey]);
       }
     }
     return data;
