@@ -31,7 +31,6 @@ const modelFlows = new WeakMap<typeof FlowModel, Map<string, FlowDefinition>>();
 export class FlowModel {
   public readonly uid: string;
   public props: IModelComponentProps;
-  public hidden: boolean;
   public stepParams: StepParams;
   public flowEngine: FlowEngine;
   public parent: FlowModel | null = null;
@@ -41,16 +40,13 @@ export class FlowModel {
   ) {
     this.uid = options.uid || uid();
     this.props = options.props || {};
-    this.hidden = false;
     this.stepParams = options.stepParams || {};
 
     define(this, {
       props: observable,
-      hidden: observable,
       stepParams: observable.deep,
       setProps: action,
       setStepParams: action,
-      setHidden: action,
     });
     // 保证onInit在所有属性都定义完成后调用
     // queueMicrotask(() => {
@@ -233,10 +229,6 @@ export class FlowModel {
 
   getProps(): ReadonlyModelProps {
     return this.props as ReadonlyModelProps;
-  }
-
-  setHidden(hidden: boolean): void {
-    this.hidden = hidden;
   }
 
   setStepParams(flowKey: string, stepKey: string, params: any): void;
