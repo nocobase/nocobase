@@ -1,6 +1,6 @@
 # FlowModel
 
-`FlowModel` 是 NocoBase 流程引擎的基础模型类，支持流程注册、流程执行、属性管理、子模型管理、持久化等功能。所有业务模型均可继承自 FlowModel。
+`FlowModel` 是 NocoBase 流引擎的基础模型类，支持流注册、流执行、属性管理、子模型管理、持久化等功能。所有业务模型均可继承自 FlowModel。
 
 ---
 
@@ -13,10 +13,10 @@
   组件属性，支持响应式。
 
 - **stepParams: StepParams**  
-  流程步骤参数。
+  流步骤参数。
 
 - **flowEngine: FlowEngine**  
-  关联的流程引擎实例。
+  关联的流引擎实例。
 
 - **parent: FlowModel \| null**  
   父模型实例。
@@ -50,32 +50,32 @@
   获取只读属性。
 
 - **setStepParams(...)**  
-  支持多种重载，设置流程步骤参数。
+  支持多种重载，设置流步骤参数。
 
 - **getStepParams(...)**  
-  支持多种重载，获取流程步骤参数。
+  支持多种重载，获取流步骤参数。
 
 ---
 
-### 流程注册与执行
+### 流注册与执行
 
 - **static registerFlow(keyOrDefinition, flowDefinition?)**  
-  配置流程，支持字符串 key 或完整对象。
+  配置流，支持字符串 key 或完整对象。
 
 - **applyFlow(flowKey: string, context?): Promise<any>**  
-  执行指定流程。
+  执行指定流。
 
 - **dispatchEvent(eventName: string, context?): void**  
-  触发事件，自动匹配并执行相关流程。
+  触发事件，自动匹配并执行相关流。
 
 - **applyAutoFlows(context?): Promise<any[]>**  
-  执行所有自动应用流程。
+  执行所有自动应用流。
 
 - **getFlow(key: string): FlowDefinition \| undefined**  
-  获取指定 key 的流程配置。
+  获取指定 key 的流配置。
 
 - **static getFlows(): Map<string, FlowDefinition>**  
-  获取所有已配置流程（含继承）。
+  获取所有已配置流（含继承）。
 
 ---
 
@@ -143,7 +143,7 @@ class MyModel extends FlowModel {
   }
 }
 
-// 为 MyModel 配置流程
+// 为 MyModel 配置流
 MyModel.registerFlow({ key: 'default', steps: { ... } });
 
 // 创建实例
@@ -155,8 +155,12 @@ model.addSubModel('tabs', { use: 'TabFlowModel', props: { label: 'Tab1' } });
 // 持久化
 await model.save();
 
-// 执行流程
+// 执行流
 await model.applyFlow('default');
 await model.applyAutoFlows();
 await model.dispatchEvent('event');
+```
+
+```ts
+
 ```

@@ -34,7 +34,7 @@ class MyModel extends FlowModel {
   }
 }
 
-// 为 MyModel 配置流程
+// 为 MyModel 配置流
 MyModel.registerFlow({
   key: 'defaultFlow',
   title: 'Default Flow',
