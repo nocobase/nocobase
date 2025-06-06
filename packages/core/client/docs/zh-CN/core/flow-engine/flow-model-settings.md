@@ -1,6 +1,6 @@
 # FlowModelSettings
 
-`FlowModelSettings` 是用于管理和配置 FlowModel 上所有流程（Flow）的专用组件。它为用户提供了多种交互入口，方便在不同场景下快捷地查看、编辑和管理模型的流程设置。
+`FlowModelSettings` 是用于管理和配置 FlowModel 上所有流（Flow）的专用组件。它为用户提供了多种交互入口，方便在不同场景下快捷地查看、编辑和管理模型的流设置。
 
 ---
 

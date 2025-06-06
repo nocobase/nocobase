@@ -1,6 +1,6 @@
 # FlowEngine
 
-`FlowEngine` 是 NocoBase 前端流程引擎的核心调度与管理类，专为前端流程自动化与业务逻辑编排设计。它负责流程模型（Model）与操作（Action）的注册、生命周期管理、持久化、远程同步等，为前端场景下的流程运行和扩展提供统一的环境与机制。
+`FlowEngine` 是 NocoBase 前端流引擎的核心调度与管理类，专为前端流自动化与业务逻辑编排设计。它负责流模型（Model）与操作（Action）的注册、生命周期管理、持久化、远程同步等，为前端场景下的流运行和扩展提供统一的环境与机制。
 
 ---
 
@@ -54,7 +54,7 @@
 ### Action 注册与获取
 
 - **registerAction\<TModel extends FlowModel = FlowModel\>(nameOrDefinition, options?): void**  
-  注册一个 Action，可传入名称和选项，或完整的 ActionDefinition 对象。支持泛型以确保正确的模型类型推导。Action 是流程中的可复用操作单元。
+  注册一个 Action，可传入名称和选项，或完整的 ActionDefinition 对象。支持泛型以确保正确的模型类型推导。Action 是流中的可复用操作单元。
 
 - **getAction\<TModel extends FlowModel = FlowModel\>(name: string): ActionDefinition\<TModel\> | undefined**  
   获取已注册的 Action 定义。支持泛型以确保正确的模型类型推导。

@@ -1,6 +1,7 @@
 import { define, observable } from '@formily/reactive';
 import { Application, Plugin } from '@nocobase/client';
 import { FlowModel, FlowModelRenderer } from '@nocobase/flow-engine';
+import { Input } from 'antd';
 import React from 'react';
 
 class Collection {
@@ -83,6 +84,13 @@ class PluginTableBlockModel extends Plugin {
       path: '/',
       element: (
         <div>
+          <Input
+            defaultValue={collections.users.title}
+            onChange={(e) => {
+              collections.users.title = e.target.value;
+            }}
+          />
+          <br />
           <FlowModelRenderer model={model} showFlowSettings />
         </div>
       ),

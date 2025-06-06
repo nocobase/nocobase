@@ -1,6 +1,6 @@
 # FlowAction
 
-`FlowAction` 是 NocoBase 流程引擎中用于定义和注册流程步骤可复用操作（Action）的核心对象。每个操作（Action）封装一段可执行的业务逻辑，可以在多个流程步骤中复用，支持参数配置、UI 配置和类型推断。
+`FlowAction` 是 NocoBase 流引擎中用于定义和注册流步骤可复用操作（Action）的核心对象。每个操作（Action）封装一段可执行的业务逻辑，可以在多个流步骤中复用，支持参数配置、UI 配置和类型推断。
 
 ---
 
@@ -56,7 +56,7 @@ class MyAction implements ActionDefinition {
 
 ## 注册操作
 
-注册后可在流程步骤中通过 `use` 字段复用：
+注册后可在流步骤中通过 `use` 字段复用：
 
 ```ts
 flowEngine.registerAction({
@@ -75,9 +75,9 @@ flowEngine.registerAction(new MyAction());     // 注册类实例
 
 ---
 
-## 在流程中复用操作
+## 在流中复用操作
 
-在流程步骤定义中通过 `use` 字段引用已注册的操作：
+在流步骤定义中通过 `use` 字段引用已注册的操作：
 
 ```ts
 steps: {
@@ -92,6 +92,6 @@ steps: {
 
 ## 总结
 
-- **FlowAction** 让流程步骤逻辑高度复用，便于维护和扩展。
+- **FlowAction** 让流步骤逻辑高度复用，便于维护和扩展。
 - 支持多种定义方式，适应不同复杂度的业务场景。
 - 可通过 `uiSchema` 和 `defaultParams` 配置参数界面和默认值，提升易用性。

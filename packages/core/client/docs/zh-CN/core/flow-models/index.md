@@ -55,3 +55,11 @@
 ## 数据源
 
 <code src="./demos/data-source.tsx"></code>
+
+## Array Resource
+
+<code src="./demos/array-resource.tsx"></code>
+
+## Object Resource
+
+<code src="./demos/object-resource.tsx"></code>
