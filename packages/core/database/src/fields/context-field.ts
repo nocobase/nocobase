@@ -19,6 +19,7 @@ export class ContextField extends Field {
   }
 
   listener = async (instances: Model[], options) => {
+    instances = Array.isArray(instances) ? instances : [instances];
     const { name, dataIndex } = this.options;
     const { context } = options;
     for (const instance of instances) {
