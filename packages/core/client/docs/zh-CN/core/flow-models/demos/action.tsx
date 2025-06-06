@@ -79,7 +79,7 @@ const DeleteButton = withFlowModel(ButtonComponent, {
 class DemoPlugin extends Plugin {
   async load() {
     // 1. 注册ButtonModel模型
-    this.app.flowEngine.registerModelClass('ButtonModel', ButtonModel);
+    this.app.flowEngine.registerModels({ ButtonModel });
 
     // 2. 注册确认弹窗Action
     this.app.flowEngine.registerAction({

@@ -114,8 +114,8 @@ export class TableBlockFlowModel extends BlockFlowModel {
   }
 
   getColumns() {
-    return (this.subModels.columns as TableColumnFlowModel[])? //TODO: improve type
-      .map((column) => {
+    return (this.subModels.columns as TableColumnFlowModel[]) //TODO: improve type
+      ?.map((column) => {
         return {
           ...column.getProps(),
           render: column.render(),
