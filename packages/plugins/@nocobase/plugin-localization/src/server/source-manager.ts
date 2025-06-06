@@ -66,7 +66,11 @@ export class SourceManager {
             return;
           }
           changedFields.forEach((field) => {
-            texts.push({ text: instance.get(field), module: `resources.${source.namespace}` });
+            const text = instance.get(field);
+            if (!text) {
+              return;
+            }
+            texts.push({ text, module: `resources.${source.namespace}` });
           });
           await handler(texts, options);
         });
