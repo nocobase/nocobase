@@ -76,6 +76,13 @@
 
 ---
 
+### 步骤设置
+
+- **openStepSettingsDialog(flowKey: string, stepKey: string)**  
+  打开步骤设置对话框。
+
+---
+
 ### 子模型管理
 
 - **addSubModel(sub: string, options): FlowModel**  

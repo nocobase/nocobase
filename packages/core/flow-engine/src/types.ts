@@ -213,3 +213,14 @@ export interface IFlowModelRepository<T extends FlowModel = FlowModel> {
   save(model: T): Promise<Record<string, any>>;
   destroy(uid: string): Promise<boolean>;
 }
+
+/**
+ * 步骤设置对话框的属性接口
+ */
+export interface StepSettingsDialogProps {
+  model: any;
+  flowKey: string;
+  stepKey: string;
+  dialogWidth?: number | string;
+  dialogTitle?: string;
+}

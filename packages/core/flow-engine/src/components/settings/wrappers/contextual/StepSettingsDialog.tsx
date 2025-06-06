@@ -7,145 +7,34 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { createSchemaField, ISchema, observer } from '@formily/react';
+import { createSchemaField, ISchema } from '@formily/react';
 import { message } from 'antd';
 import React from 'react';
-import { useFlowModel } from '../../../../hooks';
-import { ActionStepDefinition } from '../../../../types';
+import { ActionStepDefinition, StepSettingsDialogProps } from '../../../../types';
 
 const SchemaField = createSchemaField();
 
-// 创建两个组件版本，一个使用props传递的model，一个使用hook获取model
-interface ModelProvidedProps {
-  model: any;
-  flowKey: string;
-  stepKey: string;
-  dialogWidth?: number | string; // 对话框宽度
-  dialogTitle?: string; // 自定义对话框标题
-}
-
-interface ModelByIdProps {
-  uid: string;
-  flowKey: string;
-  stepKey: string;
-  modelClassName: string;
-  dialogWidth?: number | string; // 对话框宽度
-  dialogTitle?: string; // 自定义对话框标题
-}
-
-type StepSettingsDialogProps = ModelProvidedProps | ModelByIdProps;
-
-// 判断是否是通过ID获取模型的props
-const isModelByIdProps = (props: StepSettingsDialogProps): props is ModelByIdProps => {
-  return 'uid' in props && 'modelClassName' in props && Boolean(props.uid) && Boolean(props.modelClassName);
-};
-
 /**
  * StepSettingsDialog组件 - 使用 FormDialog 显示单个步骤的配置界面
- * 支持两种使用方式：
- * 1. 直接提供model: openStepSettingsDialog({ model: myModel, flowKey: "workflow1", stepKey: "step1" })
- * 2. 通过uid和modelClassName获取model: openStepSettingsDialog({ uid: "model1", modelClassName: "MyModel", flowKey: "workflow1", stepKey: "step1" })
+ * @param props.model 模型实例
+ * @param props.flowKey 流程Key
+ * @param props.stepKey 步骤Key
  * @param props.dialogWidth 对话框宽度，默认为600
  * @param props.dialogTitle 自定义对话框标题，默认使用step的title
  * @returns Promise<any> 返回表单提交的值
  */
-const openStepSettingsDialog = async (props: StepSettingsDialogProps): Promise<any> => {
-  if (isModelByIdProps(props)) {
-    return openStepSettingsDialogWithModelById(props);
-  } else {
-    return openStepSettingsDialogWithModel(props);
-  }
-};
-
-// 使用传入的model
-const openStepSettingsDialogWithModel = async ({
+const openStepSettingsDialog = async ({
   model,
   flowKey,
   stepKey,
   dialogWidth = 600,
   dialogTitle,
-}: ModelProvidedProps): Promise<any> => {
+}: StepSettingsDialogProps): Promise<any> => {
   if (!model) {
     message.error('提供的模型无效');
     throw new Error('提供的模型无效');
   }
 
-  return openStepSettingsDialogContent({
-    model,
-    flowKey,
-    stepKey,
-    dialogWidth,
-    dialogTitle,
-  });
-};
-
-// 通过useModelById hook获取model (这个需要在React组件中调用)
-const openStepSettingsDialogWithModelById = async ({
-  uid,
-  flowKey,
-  stepKey,
-  modelClassName,
-  dialogWidth = 600,
-  dialogTitle,
-}: ModelByIdProps): Promise<any> => {
-  // 这里需要一个临时的React组件来使用hook
-  return new Promise((resolve, reject) => {
-    const TempComponent = observer(() => {
-      const model = useFlowModel(uid, modelClassName);
-
-      React.useEffect(() => {
-        if (model) {
-          openStepSettingsDialogContent({
-            model,
-            flowKey,
-            stepKey,
-            dialogWidth,
-            dialogTitle,
-          })
-            .then(resolve)
-            .catch(reject);
-        } else {
-          reject(new Error(`未找到ID为 ${uid} 的模型`));
-        }
-      }, [model]);
-
-      return null;
-    });
-
-    // 临时渲染组件以获取model
-    import('react-dom/client')
-      .then(({ createRoot }) => {
-        const div = document.createElement('div');
-        document.body.appendChild(div);
-        const root = createRoot(div);
-        root.render(<TempComponent />);
-
-        // 清理
-        setTimeout(() => {
-          root.unmount();
-          document.body.removeChild(div);
-        }, 100);
-      })
-      .catch((error) => {
-        reject(new Error(`Error import: ${error.message}`));
-      });
-  });
-};
-
-// 核心的FormDialog逻辑
-const openStepSettingsDialogContent = async ({
-  model,
-  flowKey,
-  stepKey,
-  dialogWidth,
-  dialogTitle,
-}: {
-  model: any;
-  flowKey: string;
-  stepKey: string;
-  dialogWidth: number | string;
-  dialogTitle?: string;
-}): Promise<any> => {
   // 获取流程和步骤信息
   const flow = model.getFlow(flowKey);
   const step = flow?.steps?.[stepKey];

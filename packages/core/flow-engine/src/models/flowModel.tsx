@@ -22,6 +22,7 @@ import type {
 } from '../types';
 import { ExtendedFlowDefinition, FlowExtraContext, IModelComponentProps, ReadonlyModelProps } from '../types';
 import { generateUid, mergeFlowDefinitions } from '../utils';
+import { openStepSettingsDialog as openStepSettingsDialogFn } from '../components/settings/wrappers/contextual/StepSettingsDialog';
 
 // 使用WeakMap存储每个类的flows
 const modelFlows = new WeakMap<typeof FlowModel, Map<string, FlowDefinition>>();
@@ -538,6 +539,21 @@ export class FlowModel {
         }
       });
     }
+  }
+
+  /**
+   * 打开步骤设置对话框
+   * 用于配置流程中特定步骤的参数和设置
+   * @param {string} flowKey 流程的唯一标识符
+   * @param {string} stepKey 步骤的唯一标识符
+   * @returns {void}
+   */
+  openStepSettingsDialog(flowKey: string, stepKey: string) {
+    openStepSettingsDialogFn({
+      model: this,
+      flowKey,
+      stepKey,
+    });
   }
 
   // TODO: 不完整，需要考虑 sub-model 的情况

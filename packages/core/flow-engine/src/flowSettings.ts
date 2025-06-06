@@ -7,6 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { openStepSettingsDialog } from './components/settings/wrappers/contextual/StepSettingsDialog';
+import { StepSettingsDialogProps } from './types';
+
 export class FlowSettings {
   public components: Record<string, any> = {};
   public scopes: Record<string, any> = {};
@@ -155,5 +158,22 @@ export class FlowSettings {
       }
       this.scopes[name] = scopes[name];
     });
+  }
+
+  /**
+   * 显示单个步骤的配置界面
+   * @param {StepSettingsDialogProps} props 步骤设置对话框的属性
+   * @returns {Promise<any>} 返回表单提交的值
+   * @example
+   * const result = await flowSettings.openStepSettingsDialog({
+   *   model: myModel,
+   *   flowKey: 'myFlow',
+   *   stepKey: 'myStep',
+   *   dialogWidth: 800,
+   *   dialogTitle: '自定义标题'
+   * });
+   */
+  public async openStepSettingsDialog(props: StepSettingsDialogProps): Promise<any> {
+    return await openStepSettingsDialog(props);
   }
 }
