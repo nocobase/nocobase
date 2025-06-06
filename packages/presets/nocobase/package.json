@@ -79,7 +79,7 @@
     "@nocobase/plugin-workflow-request": "1.8.0-alpha.3",
     "@nocobase/plugin-workflow-response-message": "1.8.0-alpha.3",
     "@nocobase/plugin-workflow-sql": "1.8.0-alpha.3",
-    "@nocobase/plugin-toggle-form-fields": "1.7.1",
+    "@nocobase/plugin-toggle-form-fields": "1.8.0-alpha.3",
     "@nocobase/server": "1.8.0-alpha.3",
     "cronstrue": "^2.11.0",
     "fs-extra": "^11.1.1"
