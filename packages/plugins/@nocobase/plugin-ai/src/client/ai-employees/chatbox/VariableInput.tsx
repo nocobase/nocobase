@@ -170,8 +170,8 @@ function getCurrentRange(element: HTMLElement): RangeIndexes {
   const nodes = Array.from(element.childNodes);
   if (!nodes.length) return [-1, 0, -1, 0];
 
-  const startElementIndex = range.startContainer === element ? -1 : nodes.indexOf(range.startContainer as Node);
-  const endElementIndex = range.endContainer === element ? -1 : nodes.indexOf(range.endContainer as Node);
+  const startElementIndex = range.startContainer === element ? -1 : nodes.indexOf(range.startContainer as ChildNode);
+  const endElementIndex = range.endContainer === element ? -1 : nodes.indexOf(range.endContainer as ChildNode);
 
   return [
     ...getSingleEndRange(nodes, startElementIndex, range.startOffset),
