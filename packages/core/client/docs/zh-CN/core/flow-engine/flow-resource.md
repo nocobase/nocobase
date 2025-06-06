@@ -8,12 +8,12 @@
 
 ### 属性
 
-- `meta.data`: 资源数据。
+- `meta.data`: 资源数据，存储当前资源的所有字段信息。
 
 ### 方法
 
-- `getData()`: 获取当前数据。
-- `setData(data)`: 设置当前数据。
+- `getData()`: 获取当前数据，返回 `meta.data`。
+- `setData(data)`: 设置当前数据，参数为对象。
 
 ### 示例
 
@@ -53,17 +53,17 @@ console.log(resource.getData()); // { name: 'test' }
 
 ### 属性
 
-- `api`: APIClient 实例。
-- `meta.url`: 资源的 API 地址。
+- `api`: APIClient 实例，用于发起请求。
+- `meta.url`: 资源的 API 地址，字符串类型。
 - `meta.data`: 资源数据。
 
 ### 方法
 
 - `get url` / `set url(value)`: 获取/设置 API 地址。
 - `getURL()` / `setURL(value)`: 获取/设置 API 地址。
-- `setAPIClient(api)`: 设置 API 客户端。
-- `getRequestOptions()`: 获取请求参数。
-- `async refresh()`: 刷新数据。
+- `setAPIClient(api)`: 设置 API 客户端实例。
+- `getRequestOptions()`: 获取请求参数对象，通常包含 url、params 等。
+- `async refresh()`: 刷新数据，重新从 API 获取并更新 `meta.data`。
 
 ### 示例
 
@@ -113,7 +113,7 @@ const resource = new APIResource();
 resource.setAPIClient(api);
 resource.url = '/api/resource';
 await resource.refresh();
-console.log(resource.data);
+console.log(resource.data); // 输出刷新后的数据
 ```
 
 ---
@@ -129,22 +129,22 @@ console.log(resource.data);
 
 ### 属性
 
-- `meta.filter`: 过滤条件（对象）。
-- `meta.filterByTk`: 主键过滤（如 id）。
-- `meta.appends`: 附加字段（数组）。
+- `meta.filter`: 过滤条件（对象），如 `{ status: 'active' }`。
+- `meta.filterByTk`: 主键过滤（如 id），通常为数字或字符串。
+- `meta.appends`: 附加字段（数组），如 `['profile']`。
 - `meta.data`: 当前对象数据。
-- `meta.meta`: 额外元信息。
-- `meta.errors`: 错误信息。
-- `meta.dataSourceKey`: 数据源标识。
+- `meta.meta`: 额外元信息，如接口返回的分页、统计等信息。
+- `meta.errors`: 错误信息，数组类型。
+- `meta.dataSourceKey`: 数据源标识，用于区分不同数据源。
 - `meta.resourceName`: 资源名称（如 users、users.profile）。
-- `meta.sourceId`: 源对象 ID。
-- `meta.actionName`: 操作名，默认为 get。
+- `meta.sourceId`: 源对象 ID，用于关联资源。
+- `meta.actionName`: 操作名，默认为 get，可为 update、delete 等。
 
 ### 方法
 
-- `getRequestOptions()`: 根据当前 meta 生成请求参数，自动拼接关联路径。
-- `async save(data, options)`: 保存当前对象（默认实现为刷新，可扩展为提交变更）。
-- `async destroy()`: 删除当前对象（默认实现为刷新，可扩展为实际删除）。
+- `getRequestOptions()`: 根据当前 meta 生成请求参数，自动拼接关联路径和参数。
+- `async save(data, options)`: 保存当前对象，参数可选，默认实现为刷新，可扩展为提交变更。
+- `async destroy()`: 删除当前对象，默认实现为刷新，可扩展为实际删除。
 
 ### 示例
 
@@ -228,8 +228,10 @@ await resource.save(data, options);
 
 ### 属性
 
-- `meta.filter`: 过滤条件（对象）。
-- `meta.filterByTk`: 主键过滤（如 id）。
+- `meta.filter`: 过滤条件（对象），如 `{ status: 'active' }`。
+- `meta.filterByTk`: 主键过滤（如 id），可用于批量操作。
+- `meta.page`: 当前页码，默认为 1。
+- `meta.pageSize`: 每页条数，默认为 20。
 - `meta.appends`: 附加字段（数组）。
 - `meta.data`: 当前数据数组。
 - `meta.meta`: 额外元信息（如分页信息）。
@@ -242,11 +244,11 @@ await resource.save(data, options);
 ### 方法
 
 - `getRequestOptions()`: 生成请求参数（需根据业务实现）。
-- `next()`: 加载下一页数据（需实现）。
-- `previous()`: 加载上一页数据（需实现）。
-- `create()`: 创建新对象（需实现）。
-- `update()`: 更新对象（需实现）。
-- `destroy()`: 删除对象（需实现）。
+- `next()`: 加载下一页数据（需实现，通常会自增 page 并刷新）。
+- `previous()`: 加载上一页数据（需实现，通常会自减 page 并刷新）。
+- `create(data)`: 创建新对象（需实现，参数为对象）。
+- `update(filterByTk, data)`: 更新对象（需实现，参数为主键和数据）。
+- `destroy(filterByTk)`: 删除对象（需实现，参数为主键）。
 
 ### 示例
 
@@ -270,9 +272,10 @@ class MultiRecordResource extends APIResource {
 
   next() {}
   previous() {}
-  create() {}
-  update() {}
-  destroy() {}
+  goto(page) {}
+  create(data) {}
+  update(filterByTk, data) {}
+  destroy(filterByTk) {}
 }
 
 const resource = new MultiRecordResource();
