@@ -23,14 +23,6 @@ export type AIEmployee = {
   userConfig?: {
     prompt?: string;
   };
-  chatSettings?: {
-    senderPlaceholder?: string;
-    infoForm?: {
-      name: string;
-      title: string;
-      type: string;
-    }[];
-  };
 };
 
 export type Conversation = {
@@ -67,6 +59,7 @@ export type Action = {
 export type SendOptions = {
   sessionId?: string;
   aiEmployee?: AIEmployee;
+  systemMessage?: string;
   messages: {
     type: MessageType;
     content: string;

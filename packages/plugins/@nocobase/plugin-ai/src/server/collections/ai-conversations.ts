@@ -49,5 +49,9 @@ export default defineCollection({
       foreignKey: 'sessionId',
       onDelete: 'CASCADE',
     },
+    {
+      name: 'options',
+      type: 'jsonb',
+    },
   ],
 });

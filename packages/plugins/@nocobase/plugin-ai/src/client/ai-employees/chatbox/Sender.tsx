@@ -21,7 +21,7 @@ import { AttachmentsHeader } from './AttachmentsHeader';
 export const Sender: React.FC = () => {
   const t = useT();
   const { currentConversation } = useChatConversations();
-  const { responseLoading, cancelRequest, attachments } = useChatMessages();
+  const { responseLoading, cancelRequest, attachments, systemMessage } = useChatMessages();
   const senderValue = useChatBoxContext('senderValue');
   const setSenderValue = useChatBoxContext('setSenderValue');
   const senderPlaceholder = useChatBoxContext('senderPlaceholder');
@@ -54,6 +54,7 @@ export const Sender: React.FC = () => {
         send({
           sessionId: currentConversation,
           aiEmployee: currentEmployee,
+          systemMessage,
           messages: [
             {
               type: 'text',

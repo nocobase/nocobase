@@ -38,6 +38,8 @@ interface ChatMessagesContextValue {
   setAttachments: React.Dispatch<React.SetStateAction<any[]>>;
   addAttachments: (attachments: Attachment | Attachment[]) => void;
   removeAttachment: (index: number) => void;
+  systemMessage: string;
+  setSystemMessage: React.Dispatch<React.SetStateAction<string>>;
 }
 
 export const ChatMessagesContext = createContext<ChatMessagesContextValue | null>(null);
@@ -51,6 +53,7 @@ export const ChatMessagesProvider: React.FC<{ children: React.ReactNode }> = ({ 
   const plugin = usePlugin('ai') as PluginAIClient;
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [messages, setMessages] = useState<Message[]>([]);
+  const [systemMessage, setSystemMessage] = useState<string>('');
   const [responseLoading, setResponseLoading] = useState(false);
   const { currentConversation } = useChatConversations();
   const abortControllerRef = useRef<AbortController | null>(null);
@@ -216,6 +219,7 @@ export const ChatMessagesProvider: React.FC<{ children: React.ReactNode }> = ({ 
   const sendMessages = async ({
     sessionId,
     aiEmployee,
+    systemMessage,
     messages: sendMsgs,
     attachments,
     onConversationCreate,
@@ -248,7 +252,7 @@ export const ChatMessagesProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
     if (!sessionId) {
       const createRes = await api.resource('aiConversations').create({
-        values: { aiEmployee },
+        values: { aiEmployee, systemMessage },
       });
       const conversation = createRes?.data?.data;
       if (!conversation) return;
@@ -422,6 +426,8 @@ export const ChatMessagesProvider: React.FC<{ children: React.ReactNode }> = ({ 
         setAttachments,
         addAttachments,
         removeAttachment,
+        systemMessage,
+        setSystemMessage,
       }}
     >
       {children}

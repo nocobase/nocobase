@@ -46,6 +46,7 @@ type ChatBoxContextValues = {
   triggerTask: (options: TriggerTaskOptions) => void;
   switchAIEmployee: (aiEmployee: AIEmployee) => void;
   send(opts: SendOptions): void;
+  clear: () => void;
 };
 
 export const ChatBoxContext = createContext<ChatBoxContextValues>({} as any);
@@ -105,7 +106,7 @@ export const useSetChatBoxContext = () => {
   const [expanded, setExpanded] = useState(false);
   const [showConversations, setShowConversations] = useState(false);
   const [currentEmployee, setCurrentEmployee] = useState<AIEmployee>(null);
-  const { setMessages, sendMessages, setAttachments } = useChatMessages();
+  const { setMessages, sendMessages, setAttachments, setSystemMessage } = useChatMessages();
   const { currentConversation, setCurrentConversation, conversationsService } = useChatConversations();
   const [senderValue, setSenderValue] = useState<string>('');
   const [senderPlaceholder, setSenderPlaceholder] = useState<string>('');
@@ -113,6 +114,12 @@ export const useSetChatBoxContext = () => {
   const [roles, setRoles] = useState<GetProp<typeof Bubble.List, 'roles'>>(defaultRoles);
   const chatBoxRef = useRef<HTMLElement>(null);
   const { parseTask } = useParseTask();
+
+  const clear = () => {
+    setSenderValue('');
+    setSystemMessage('');
+    setAttachments([]);
+  };
 
   const send = (options: SendOptions) => {
     const sendOptions = {
@@ -122,8 +129,7 @@ export const useSetChatBoxContext = () => {
         conversationsService.run();
       },
     };
-    setSenderValue('');
-    setAttachments([]);
+    clear();
     sendMessages(sendOptions);
   };
 
@@ -146,8 +152,7 @@ export const useSetChatBoxContext = () => {
       },
     };
     setCurrentConversation(undefined);
-    setSenderValue('');
-    setAttachments([]);
+    clear();
     setMessages([greetingMsg]);
     senderRef.current?.focus();
   }, [currentEmployee]);
@@ -156,8 +161,7 @@ export const useSetChatBoxContext = () => {
     (aiEmployee: AIEmployee) => {
       setCurrentEmployee(aiEmployee);
       setCurrentConversation(undefined);
-      setAttachments([]);
-      setSenderValue('');
+      clear();
       if (aiEmployee) {
         const greetingMsg = {
           key: uid(),
@@ -167,7 +171,6 @@ export const useSetChatBoxContext = () => {
             content: aiEmployee.greeting || t('Default greeting message', { nickname: aiEmployee.nickname }),
           },
         };
-        setSenderPlaceholder(aiEmployee.chatSettings?.senderPlaceholder);
         senderRef.current?.focus();
         setMessages([greetingMsg]);
       } else {
@@ -207,7 +210,7 @@ export const useSetChatBoxContext = () => {
       if (tasks.length === 1) {
         setMessages(msgs);
         const task = tasks[0];
-        const { userMessage, attachments } = await parseTask(task);
+        const { userMessage, systemMessage, attachments } = await parseTask(task);
         if (userMessage && userMessage.type === 'text') {
           setSenderValue(userMessage.content);
         } else {
@@ -216,9 +219,13 @@ export const useSetChatBoxContext = () => {
         if (attachments) {
           setAttachments(attachments);
         }
+        if (systemMessage) {
+          setSystemMessage(systemMessage);
+        }
         if (task.autoSend) {
           send({
             aiEmployee,
+            systemMessage,
             messages: [userMessage],
             attachments,
           });
@@ -284,6 +291,7 @@ export const useSetChatBoxContext = () => {
     triggerTask,
     switchAIEmployee,
     send,
+    clear,
   };
 };
 

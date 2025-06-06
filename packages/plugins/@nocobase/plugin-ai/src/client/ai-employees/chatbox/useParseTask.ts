@@ -71,6 +71,10 @@ export const useParseTask = () => {
         content,
       };
     }
+    let systemMessage: string;
+    if (message?.system) {
+      systemMessage = await replaceVariables(message.system, variables, localVariables);
+    }
     const attachments = [];
     if (message?.attachments?.length) {
       for (const attachment of message.attachments) {
@@ -91,7 +95,7 @@ export const useParseTask = () => {
         }
       }
     }
-    return { userMessage, attachments };
+    return { userMessage, systemMessage, attachments };
   };
 
   return { parseTask };

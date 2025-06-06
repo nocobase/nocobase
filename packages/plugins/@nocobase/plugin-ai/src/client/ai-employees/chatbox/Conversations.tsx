@@ -132,12 +132,11 @@ export const Conversations: React.FC = memo(() => {
     keyword,
     setKeyword,
   } = useChatConversations();
-  const { messagesService, setMessages, setAttachments } = useChatMessages();
+  const { messagesService, setMessages } = useChatMessages();
   const startNewConversation = useChatBoxContext('startNewConversation');
   const currentEmployee = useChatBoxContext('currentEmployee');
   const setCurrentEmployee = useChatBoxContext('setCurrentEmployee');
-  const setSenderValue = useChatBoxContext('setSenderValue');
-  const setSenderPlaceholder = useChatBoxContext('setSenderPlaceholder');
+  const clear = useChatBoxContext('clear');
   const expanded = useChatBoxContext('expanded');
   const setShowConversations = useChatBoxContext('setShowConversations');
   const { loading: conversationsLoading } = conversationsService;
@@ -185,10 +184,8 @@ export const Conversations: React.FC = memo(() => {
     setCurrentConversation(sessionId);
     const conversation = conversations.find((item) => item.sessionId === sessionId);
     setCurrentEmployee(aiEmployeesMap[conversation?.aiEmployee?.username]);
-    setSenderValue('');
-    setSenderPlaceholder(conversation?.aiEmployee?.chatSettings?.senderPlaceholder);
     setMessages([]);
-    setAttachments([]);
+    clear();
     messagesService.run(sessionId);
     if (!expanded) {
       setShowConversations(false);

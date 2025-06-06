@@ -58,7 +58,7 @@ export default {
 
     async create(ctx: Context, next: Next) {
       const userId = ctx.auth?.user.id;
-      const { aiEmployee } = ctx.action.params.values || {};
+      const { aiEmployee, systemMessage } = ctx.action.params.values || {};
       const employee = await getAIEmployee(ctx, aiEmployee.username);
       if (!employee) {
         ctx.throw(400, 'AI employee not found');
@@ -69,6 +69,9 @@ export default {
         values: {
           userId,
           aiEmployee,
+          options: {
+            systemMessage,
+          },
         },
       });
       await next();
@@ -228,7 +231,7 @@ export default {
           return next();
         }
 
-        const aiEmployee = new AIEmployee(ctx, employee, sessionId);
+        const aiEmployee = new AIEmployee(ctx, employee, sessionId, conversation.options?.systemMessage);
         await aiEmployee.processMessages(messages);
       } catch (err) {
         ctx.log.error(err);
@@ -285,7 +288,7 @@ export default {
           return next();
         }
 
-        const aiEmployee = new AIEmployee(ctx, employee, sessionId);
+        const aiEmployee = new AIEmployee(ctx, employee, sessionId, conversation.options?.systemMessage);
         await aiEmployee.resendMessages(messageId);
       } catch (err) {
         ctx.log.error(err);
@@ -382,7 +385,7 @@ export default {
           return next();
         }
 
-        const aiEmployee = new AIEmployee(ctx, employee, sessionId);
+        const aiEmployee = new AIEmployee(ctx, employee, sessionId, conversation.options?.systemMessage);
         await aiEmployee.callTool(tools[0]);
       } catch (err) {
         ctx.log.error(err);
