@@ -115,6 +115,10 @@ export default defineConfig({
               link: '/core/flow-engine/flow-definition',
             },
             {
+              title: 'FlowResource',
+              link: '/core/flow-engine/flow-resource',
+            },
+            {
               title: 'FlowContext',
               link: '/core/flow-engine/flow-context',
             },
