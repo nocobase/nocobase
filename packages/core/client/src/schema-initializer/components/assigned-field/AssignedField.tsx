@@ -10,7 +10,7 @@
 import { Field } from '@formily/core';
 import { useField, useFieldSchema } from '@formily/react';
 import { merge } from '@formily/shared';
-import _ from 'lodash';
+import _, { cloneDeep } from 'lodash';
 import React, { useCallback, useEffect, useMemo } from 'react';
 import { useFormBlockContext } from '../../../block-provider/FormBlockProvider';
 import {
@@ -124,7 +124,7 @@ export const AssignedFieldInner = (props: AssignedFieldProps) => {
         currentForm.children = formatVariableScop(currentFormFields);
       }
 
-      return scope;
+      return cloneDeep(scope);
     },
     [currentFormFields, name],
   );
