@@ -123,13 +123,12 @@ function useFlowExecutor<T, TModel extends FlowModel = FlowModel>(
     let debounceTimer: NodeJS.Timeout | null = null;
     let isInitialAutorunForEffect = true;
 
-    const disposeAutorun = autorun(async () => {
+    const disposeAutorun = autorun(() => {
       // 只监听 stepParams 的变化，移除对 props 的监听以避免循环触发
       JSON.stringify(toJS(model.stepParams));
 
       if (isInitialAutorunForEffect) {
         isInitialAutorunForEffect = false;
-        return;
       }
 
       if (debounceTimer) clearTimeout(debounceTimer);
