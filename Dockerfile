@@ -59,8 +59,8 @@ FROM node:20-bookworm-slim
 RUN apt-get update && apt-get install -y --no-install-recommends wget gnupg \
   && rm -rf /var/lib/apt/lists/*
 
-RUN sh -c 'echo "deb http://mirrors.aliyun.com/postgresql/repos/apt bookworm-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
-RUN wget --quiet -O - http://mirrors.aliyun.com/postgresql/repos/apt/ACCC4CF8.asc | apt-key add -
+RUN sh -c 'echo "deb https://apt.postgresql.org/pub/repos/apt bookworm-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
+RUN wget --quiet -O - https://apt.postgresql.org/pub/repos/apt/ACCC4CF8.asc | apt-key add -
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
   nginx \
