@@ -21,7 +21,7 @@ import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 // Define namespace constant for our plugin
-const NAMESPACE = 'toggle-form-fields';
+const NAMESPACE = 'action-expand-collapse';
 
 const ActionName = 'ToggleFields';
 
