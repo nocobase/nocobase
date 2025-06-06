@@ -21,6 +21,9 @@
 - **parent: FlowModel \| null**  
   父模型实例。
 
+- **subModels: Map\<string, FlowModel \| Array\<FlowModel\>\>**  
+  子模块。
+
 ---
 
 ## 主要方法
@@ -28,7 +31,7 @@
 ### 生命周期与初始化
 
 - **constructor(options)**  
-  创建模型实例，初始化 uid、props、stepParams、子模型等。
+  创建模型实例，初始化 uid、props、stepParams、subModels 等。
 
 - **onInit(options): void**  
   可被子类重写的初始化钩子。
@@ -85,11 +88,23 @@
 
 ### 子模型管理
 
-- **addSubModel(sub: string, options): FlowModel**  
+- **setSubModel(subKey: string, options): FlowModel**  
+  创建并设置一个子模型到对象字段（如 detail、config）。
+
+- **addSubModel(subKey: string, options): FlowModel**  
   创建并添加一个子模型到数组字段（如 tabs、columns）。
 
-- **setSubModel(sub: string, options): FlowModel**  
-  创建并设置一个子模型到对象字段（如 detail、config）。
+- **getSubModel(subKey: string): FlowModel | undefined**  
+  用于获取单个对象类型的子模型（如 grid、detail、config）。
+
+- **getSubModels(subKey: string): Array\<FlowModel\>**  
+  用于获取数组类型的子模型（如 tabs、columns）。
+
+- **removeSubModel(subKey: string): boolean**  
+  移除为 subKey 的子模型。
+
+- **removeSubModels(subKey: string): boolean**  
+  移除为 subKey 的子模型。
 
 - **setParent(parent: FlowModel): void**  
   设置父模型。
