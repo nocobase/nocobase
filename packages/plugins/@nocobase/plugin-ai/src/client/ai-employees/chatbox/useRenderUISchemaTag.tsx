@@ -16,6 +16,7 @@ import { useTranslation } from 'react-i18next';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { BuildOutlined } from '@ant-design/icons';
 import { message } from 'antd';
+import { useT } from '../../locale';
 
 export const useStyles = genStyleHook('nb-ai-uischema-tag', (token) => {
   const { componentCls, lineWidth, colorFillQuaternary } = token;
@@ -56,7 +57,8 @@ export const useStyles = genStyleHook('nb-ai-uischema-tag', (token) => {
 export const useRenderUISchemaTag = (value: string) => {
   const styles = useStyles();
   const { ctx } = useAISelectionContext();
-  const { t } = useTranslation('lm-collections');
+  const t = useT();
+  const { t: collectionT } = useTranslation('lm-collections');
   const icon = renderToStaticMarkup(<BuildOutlined />);
 
   const handleClick: React.MouseEventHandler<HTMLDivElement> = (e) => {
@@ -83,7 +85,7 @@ export const useRenderUISchemaTag = (value: string) => {
       const key = i.trim();
       let title = '';
       if (ctx[key]?.collection) {
-        title = Schema.compile(ctx[key].collection.title, { t });
+        title = Schema.compile(ctx[key].collection.title, { t: collectionT });
         title = `${title} `;
       }
       return `<span class="ant-tag ant-tag-blue" contentEditable="false" data-variable="${key}">${icon} ${title}#${key}</span>`;

@@ -9,13 +9,13 @@
 
 import React, { memo, useEffect, useMemo } from 'react';
 import { Button, Space, App, Alert, Flex } from 'antd';
-import { CopyOutlined, ReloadOutlined } from '@ant-design/icons';
+import { CopyOutlined, ReloadOutlined, EditOutlined, ArrowUpOutlined, ArrowDownOutlined } from '@ant-design/icons';
 import { Attachments, Bubble } from '@ant-design/x';
 import { useT } from '../../locale';
 import { useChatMessages } from './ChatMessagesProvider';
 import { useChatBoxContext } from './ChatBoxContext';
 import { useChatConversations } from './ChatConversationsProvider';
-import { usePlugin } from '@nocobase/client';
+import { usePlugin, useToken } from '@nocobase/client';
 import { Markdown } from './Markdown';
 import { ToolCard } from './ToolCard';
 import PluginAIClient from '../..';
@@ -27,16 +27,17 @@ const MessageWrapper = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement> & {
     children: React.ReactNode;
+    footer?: React.ReactNode;
   }
->((props, ref) => {
-  if (ref) {
-    return (
-      <div ref={ref} {...props}>
-        {props.children}
-      </div>
-    );
-  }
-  return <div {...props}>{props.children}</div>;
+>(({ children, footer, ...props }, ref) => {
+  const [showFooter, setShowFooter] = React.useState(false);
+
+  return (
+    <div ref={ref} {...props} onMouseEnter={() => setShowFooter(true)} onMouseLeave={() => setShowFooter(false)}>
+      {children}
+      {footer && <div style={{ marginTop: '4px', opacity: showFooter ? 1 : 0 }}>{footer}</div>}
+    </div>
+  );
 });
 
 const AITextMessageRenderer: React.FC<{
@@ -67,15 +68,6 @@ const AITextMessageRenderer: React.FC<{
 const AIMessageRenderer: React.FC<{
   msg: any;
 }> = ({ msg }) => {
-  const t = useT();
-  const { message } = App.useApp();
-  const copy = () => {
-    navigator.clipboard.writeText(msg.content);
-    message.success(t('Copied to clipboard'));
-  };
-  const { currentConversation } = useChatConversations();
-  const { resendMessages } = useChatMessages();
-  const currentEmployee = useChatBoxContext('currentEmployee');
   switch (msg.type) {
     case 'greeting':
       return <Bubble content={msg.content} />;
@@ -90,29 +82,6 @@ const AIMessageRenderer: React.FC<{
           }}
           variant="borderless"
           content={<AITextMessageRenderer msg={msg} />}
-          footer={
-            <Space>
-              <Button
-                color="default"
-                variant="text"
-                size="small"
-                icon={
-                  <ReloadOutlined
-                    onClick={() =>
-                      resendMessages({
-                        sessionId: currentConversation,
-                        messageId: msg.messageId,
-                        aiEmployee: currentEmployee,
-                      })
-                    }
-                  />
-                }
-              />
-              {typeof msg.content === 'string' && msg.content && (
-                <Button color="default" variant="text" size="small" icon={<CopyOutlined onClick={copy} />} />
-              )}
-            </Space>
-          }
         />
       );
   }
@@ -121,8 +90,77 @@ const AIMessageRenderer: React.FC<{
 export const AIMessage: React.FC<{
   msg: any;
 }> = memo(({ msg }) => {
+  const t = useT();
+  const { token } = useToken();
+  const { message } = App.useApp();
+  const copy = () => {
+    navigator.clipboard.writeText(msg.content);
+    message.success(t('Copied'));
+  };
+  const { currentConversation } = useChatConversations();
+  const { resendMessages } = useChatMessages();
+  const currentEmployee = useChatBoxContext('currentEmployee');
+  const usageMetadata = msg.metadata?.usage_metadata;
   return (
-    <MessageWrapper ref={msg.ref}>
+    <MessageWrapper
+      ref={msg.ref}
+      footer={
+        msg.type !== 'greeting' && (
+          <Space>
+            <Button
+              color="default"
+              variant="text"
+              size="small"
+              icon={
+                <ReloadOutlined
+                  onClick={() =>
+                    resendMessages({
+                      sessionId: currentConversation,
+                      messageId: msg.messageId,
+                      aiEmployee: currentEmployee,
+                    })
+                  }
+                />
+              }
+            />
+            {typeof msg.content === 'string' && msg.content && (
+              <Button color="default" variant="text" size="small" icon={<CopyOutlined onClick={copy} />} />
+            )}
+            {/* {usageMetadata && usageMetadata.input_tokens && usageMetadata.output_tokens && ( */}
+            {/*   <span */}
+            {/*     style={{ */}
+            {/*       fontSize: token.fontSizeSM, */}
+            {/*       color: token.colorTextDescription, */}
+            {/*     }} */}
+            {/*   > */}
+            {/*     <span */}
+            {/*       style={{ */}
+            {/*         marginLeft: '8px', */}
+            {/*       }} */}
+            {/*     > */}
+            {/*       Tokens: <ArrowUpOutlined /> */}
+            {/*       {new Intl.NumberFormat('en-US', { */}
+            {/*         notation: 'compact', */}
+            {/*         maximumFractionDigits: 1, */}
+            {/*       }).format(usageMetadata.input_tokens)} */}
+            {/*     </span> */}
+            {/*     <span */}
+            {/*       style={{ */}
+            {/*         marginLeft: '4px', */}
+            {/*       }} */}
+            {/*     > */}
+            {/*       <ArrowDownOutlined /> */}
+            {/*       {new Intl.NumberFormat('en-US', { */}
+            {/*         notation: 'compact', */}
+            {/*         maximumFractionDigits: 1, */}
+            {/*       }).format(usageMetadata.output_tokens)} */}
+            {/*     </span> */}
+            {/*   </span> */}
+            {/* )} */}
+          </Space>
+        )
+      }
+    >
       <AIMessageRenderer msg={msg} />
     </MessageWrapper>
   );
@@ -131,6 +169,14 @@ export const AIMessage: React.FC<{
 export const UserMessage: React.FC<{
   msg: any;
 }> = memo(({ msg }) => {
+  const t = useT();
+  const { message } = App.useApp();
+  const setSenderValue = useChatBoxContext('setSenderValue');
+  const senderRef = useChatBoxContext('senderRef');
+  const copy = () => {
+    navigator.clipboard.writeText(msg.content);
+    message.success(t('Copied'));
+  };
   const {
     html,
     styles: { hashId, wrapSSR, componentCls },
@@ -158,6 +204,26 @@ export const UserMessage: React.FC<{
           align-items: flex-end;
         `,
       )}
+      footer={
+        <Space>
+          <Button
+            color="default"
+            variant="text"
+            size="small"
+            icon={
+              <EditOutlined
+                onClick={() => {
+                  setSenderValue(msg.content);
+                  senderRef.current?.focus();
+                }}
+              />
+            }
+          />
+          {typeof msg.content === 'string' && msg.content && (
+            <Button color="default" variant="text" size="small" icon={<CopyOutlined onClick={copy} />} />
+          )}
+        </Space>
+      }
     >
       {items?.length ? (
         <Attachments

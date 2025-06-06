@@ -81,5 +81,6 @@
   "Background": "Background",
   "Task": "Task",
   "Label for task selection buttons when multiple tasks exist": "Label for task selection buttons when multiple tasks exist",
-  "Additional system prompt appended to the AI employee’s definition, used to refine instructions": "Additional system prompt appended to the AI employee’s definition, used to refine instructions"
+  "Additional system prompt appended to the AI employee’s definition, used to refine instructions": "Additional system prompt appended to the AI employee’s definition, used to refine instructions",
+  "Copied": "Copied"
 }
