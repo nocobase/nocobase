@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-toggle-form-fields",
-  "version": "1.6.31",
+  "version": "1.7.1",
   "main": "dist/server/index.js",
   "displayName": "Toggle Form Fields",
   "displayName.zh-CN": "表单字段切换",
