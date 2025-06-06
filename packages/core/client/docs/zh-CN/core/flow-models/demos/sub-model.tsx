@@ -26,16 +26,18 @@ class FlowModelRepository implements IFlowModelRepository<FlowModel> {
   async load(uid: string) {
     const data = localStorage.getItem(`flow-model:${uid}`);
     if (!data) return null;
-    const json = JSON.parse(data);
+    const json: FlowModel = JSON.parse(data);
     for (const model of this.models.values()) {
       if (model.parentId === uid) {
         if (model.subType === 'array') {
-          json[model.subKey] = json[model.subKey] || [];
+          json.subModels[model.subKey] = json.subModels[model.subKey] || [];
           const subModel = await this.load(model.uid);
-          json[model.subKey].push(subModel);
+          if (subModel) {
+            (json.subModels[model.subKey] as FlowModel[]).push(subModel);
+          }
         } else if (model.subType === 'object') {
           const subModel = await this.load(model.uid);
-          json[model.subKey] = subModel;
+          json.subModels[model.subKey] = subModel;
         }
       }
     }
@@ -45,16 +47,16 @@ class FlowModelRepository implements IFlowModelRepository<FlowModel> {
   // 将模型数据保存到本地存储
   async save(model: FlowModel) {
     const data = model.serialize();
-    const currentData = _.omit(data, [...model.subModelKeys]);
+    const currentData = _.omit(data, [...Object.keys(model.subModels)]);
     localStorage.setItem(`flow-model:${model.uid}`, JSON.stringify(currentData));
-    for (const subModelKey of model.subModelKeys) {
-      if (!model[subModelKey]) continue;
-      if (Array.isArray(model[subModelKey])) {
-        model[subModelKey].forEach((subModel: FlowModel) => {
+    for (const subModelKey of Object.keys(model.subModels)) {
+      if (!model.subModels[subModelKey]) continue;
+      if (Array.isArray(model.subModels[subModelKey])) {
+        model.subModels[subModelKey].forEach((subModel: FlowModel) => {
           localStorage.setItem(`flow-model:${subModel.uid}`, JSON.stringify(subModel.serialize()));
         });
-      } else if (model[subModelKey] instanceof FlowModel) {
-        localStorage.setItem(`flow-model:${model[subModelKey].uid}`, JSON.stringify(model[subModelKey].serialize()));
+      } else if (model.subModels[subModelKey] instanceof FlowModel) {
+        localStorage.setItem(`flow-model:${model.subModels[subModelKey].uid}`, JSON.stringify(model.subModels[subModelKey].serialize()));
       }
     }
     return data;
@@ -70,26 +72,31 @@ class FlowModelRepository implements IFlowModelRepository<FlowModel> {
 class TabFlowModel extends FlowModel {}
 
 class HelloFlowModel extends FlowModel {
-  tabs: Array<any>;
-
   onInit(options: any) {
     const tabs = options.tabs || [];
-    this.tabs = observable.shallow([]);
+    // 使用新的 subModels API 初始化 tabs
     tabs.forEach((tab: any) => {
       this.addSubModel('tabs', tab);
     });
   }
 
   addTab(tab: any) {
+    // 使用新的 addSubModel API 添加子模型
     const model = this.addSubModel('tabs', tab);
     model.save();
+    return model;
   }
 
   render() {
+    const tabs = this.subModels.tabs as FlowModel[]; // TODO: improve type
     return (
       <div>
         <Tabs
-          items={this.tabs.map((tab) => tab.getProps())}
+          items={tabs?.map((tab) => ({
+            key: tab.getProps().key,
+            label: tab.getProps().label,
+            children: tab.render()
+          }))}
           tabBarExtraContent={
             <Button
               onClick={() =>
@@ -119,16 +126,18 @@ class PluginHelloModel extends Plugin {
       props: {
         name: 'NocoBase',
       },
-      tabs: [
-        {
-          use: 'TabFlowModel',
-          props: { key: uid(), label: 'Tab 1' },
-        },
-        {
-          use: 'TabFlowModel',
-          props: { key: uid(), label: 'Tab 2' },
-        },
-      ],
+      subModels: {
+        tabs: [
+          {
+            use: 'TabFlowModel',
+            props: { key: uid(), label: 'Tab 1' },
+          },
+          {
+            use: 'TabFlowModel',
+            props: { key: uid(), label: 'Tab 2' },
+          },
+        ],
+      }
     });
     this.router.add('root', { path: '/', element: <FlowModelRenderer model={model} /> });
   }

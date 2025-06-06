@@ -94,18 +94,6 @@
 - **addSubModel(subKey: string, options): FlowModel**  
   创建并添加一个子模型到数组字段（如 tabs、columns）。
 
-- **getSubModel(subKey: string): FlowModel | undefined**  
-  用于获取单个对象类型的子模型（如 grid、detail、config）。
-
-- **getSubModels(subKey: string): Array\<FlowModel\>**  
-  用于获取数组类型的子模型（如 tabs、columns）。
-
-- **removeSubModel(subKey: string): boolean**  
-  移除为 subKey 的子模型。
-
-- **removeSubModels(subKey: string): boolean**  
-  移除为 subKey 的子模型。
-
 - **setParent(parent: FlowModel): void**  
   设置父模型。
 
