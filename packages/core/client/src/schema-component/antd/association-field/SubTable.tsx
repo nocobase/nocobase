@@ -186,6 +186,7 @@ export const SubTable: any = observer(
     //分页
     const [currentPage, setCurrentPage] = useState(1);
     const [pageSize, setPageSize] = useState(field.componentProps?.pageSize || 10); // 每页条数
+    const { setFormValueChanged } = useActionContext();
     useEffect(() => {
       setPageSize(field.componentProps?.pageSize);
     }, [field.componentProps?.pageSize]);
@@ -201,6 +202,7 @@ export const SubTable: any = observer(
           setPageSize(pageSize);
           field.componentProps.pageSize = pageSize;
           field.onInput(field.value);
+          setFormValueChanged(false);
         },
         showSizeChanger: true,
         pageSizeOptions: ['10', '20', '50', '100'],
