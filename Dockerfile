@@ -59,8 +59,11 @@ FROM node:20-bookworm-slim
 RUN apt-get update && apt-get install -y --no-install-recommends wget gnupg \
   && rm -rf /var/lib/apt/lists/*
 
-RUN sh -c 'echo "deb https://apt.postgresql.org/pub/repos/apt bookworm-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
-RUN wget --quiet -O - https://apt.postgresql.org/pub/repos/apt/ACCC4CF8.asc | apt-key add -
+# Add the PostgreSQL APT repository
+RUN echo "deb [signed-by=/usr/share/keyrings/postgresql.gpg] https://apt.postgresql.org/pub/repos/apt bookworm-pgdg main" > /etc/apt/sources.list.d/pgdg.list
+
+# Import the GPG key to /usr/share/keyrings
+RUN wget --quiet -O /usr/share/keyrings/postgresql.gpg https://apt.postgresql.org/pub/repos/apt/ACCC4CF8.asc
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
   nginx \
