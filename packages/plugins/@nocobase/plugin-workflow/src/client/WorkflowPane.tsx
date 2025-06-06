@@ -36,6 +36,7 @@ import { useTranslation } from 'react-i18next';
 import { TriggerOptionRender } from './components/TriggerOptionRender';
 import { CategoryTabs } from './WorkflowCategoryTabs';
 import { EnumerationField } from './components/EmunerationField';
+import { useWorkflowFilterActionProps } from './hooks/useWorkflowFilterActionProps';
 
 function SyncOptionSelect(props) {
   const field = useField<any>();
@@ -144,6 +145,7 @@ export function WorkflowPane() {
           useTriggersOptions,
           useWorkflowSyncReaction,
           useSyncAction,
+          useWorkflowFilterActionProps,
           useRefreshActionProps,
           useRevisionAction,
           TriggerOptionRender,

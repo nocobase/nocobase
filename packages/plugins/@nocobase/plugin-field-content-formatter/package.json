@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-field-content-formatter",
-  "version": "1.7.1",
+  "version": "1.7.3",
   "main": "./dist/server/index.js",
   "displayName": "Field Content Formatter",
   "displayName.zh-CN": "字段内容格式化器",

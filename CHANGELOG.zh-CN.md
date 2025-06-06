@@ -5,6 +5,41 @@
 格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/),
 并且本项目遵循 [语义化版本](https://semver.org/spec/v2.0.0.html)。
 
+## [v1.7.3](https://github.com/nocobase/nocobase/compare/v1.7.2...v1.7.3) - 2025-06-06
+
+### 🚀 优化
+
+- **[工作流]** 支持使用更多字段筛选工作流 ([#6995](https://github.com/nocobase/nocobase/pull/6995)) by @mytharcher
+
+### 🐛 修复
+
+- **[client]**
+  - 修复弹窗详情区块子表格翻页触发未保存提示的问题 ([#7004](https://github.com/nocobase/nocobase/pull/7004)) by @katherinehhh
+
+  - 修复字段赋值组件赋值变量时未显示字段标题 ([#7001](https://github.com/nocobase/nocobase/pull/7001)) by @katherinehhh
+
+  - 修复字段样式联动规则设置不生效的问题 ([#7003](https://github.com/nocobase/nocobase/pull/7003)) by @katherinehhh
+
+## [v1.7.2](https://github.com/nocobase/nocobase/compare/v1.7.1...v1.7.2) - 2025-06-05
+
+### 🚀 优化
+
+- **[操作：批量编辑]** 在选择模式下使用 `filterByTk` 代替 `filter` 作为筛选参数 ([#6994](https://github.com/nocobase/nocobase/pull/6994)) by @mytharcher
+
+- **[操作：导入记录 Pro]** 优化导入xlsx文件在处理超大数据量（高行列数）时的内存耗尽，系统卡死或崩溃 by @aaaaaajie
+
+### 🐛 修复
+
+- **[client]**
+  - 修复字段赋值组件中字段标题未显示的问题 ([#6987](https://github.com/nocobase/nocobase/pull/6987)) by @katherinehhh
+
+  - 移动菜单的列表中，选不到最后一个菜单 ([#6997](https://github.com/nocobase/nocobase/pull/6997)) by @zhangzhonghe
+
+- **[工作流]**
+  - 修复筛选组件在切换分组选项卡时不更新的问题 ([#6989](https://github.com/nocobase/nocobase/pull/6989)) by @mytharcher
+
+  - 修复工作流统计数据未自动生成的问题 ([#6993](https://github.com/nocobase/nocobase/pull/6993)) by @mytharcher
+
 ## [v1.7.1](https://github.com/nocobase/nocobase/compare/v1.7.0...v1.7.1) - 2025-06-04
 
 ### 🎉 新特性
