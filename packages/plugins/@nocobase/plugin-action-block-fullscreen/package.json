@@ -1,0 +1,43 @@
+{
+  "name": "@nocobase/plugin-action-block-fullscreen",
+  "displayName": "Action: Block fullscreen",
+  "displayName.zh-CN": "操作：区块全屏展示",
+  "description": "This action enables fullscreen mode for the block.",
+  "description.zh-CN": "此操作可为区块启用全屏模式。",
+  "version": "1.7.3",
+  "license": "AGPL-3.0",
+  "main": "./dist/server/index.js",
+  "homepage": "https://docs.nocobase.com/handbook/action-fullscreen",
+  "homepage.zh-CN": "https://docs-cn.nocobase.com/handbook/action-fullscreen",
+  "devDependencies": {
+    "@ant-design/icons": "5.x",
+    "@formily/antd-v5": "1.x",
+    "@formily/core": "2.x",
+    "@formily/react": "2.x",
+    "@formily/shared": "2.x",
+    "@koa/multer": "^3.1.0",
+    "@types/node-xlsx": "^0.15.1",
+    "antd": "5.x",
+    "async-mutex": "^0.5.0",
+    "exceljs": "^4.4.0",
+    "file-saver": "^2.0.5",
+    "mathjs": "^10.6.0",
+    "node-xlsx": "^0.16.1",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-i18next": "^11.15.1",
+    "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.2/xlsx-0.20.2.tgz"
+  },
+  "peerDependencies": {
+    "@nocobase/actions": "1.x",
+    "@nocobase/client": "1.x",
+    "@nocobase/database": "1.x",
+    "@nocobase/server": "1.x",
+    "@nocobase/test": "1.x",
+    "@nocobase/utils": "1.x"
+  },
+  "gitHead": "d0b4efe4be55f8c79a98a331d99d9f8cf99021a1",
+  "keywords": [
+    "Actions"
+  ]
+}

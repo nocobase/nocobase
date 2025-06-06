@@ -6,6 +6,7 @@
   "dependencies": {
     "@formily/json-schema": "2.x",
     "@nocobase/plugin-acl": "1.7.3",
+    "@nocobase/plugin-action-block-fullscreen": "1.7.3",
     "@nocobase/plugin-action-bulk-edit": "1.7.3",
     "@nocobase/plugin-action-bulk-update": "1.7.3",
     "@nocobase/plugin-action-custom-request": "1.7.3",
@@ -91,6 +92,7 @@
   ],
   "builtIn": [
     "@nocobase/plugin-acl",
+    "@nocobase/plugin-action-block-fullscreen",
     "@nocobase/plugin-action-bulk-edit",
     "@nocobase/plugin-action-bulk-update",
     "@nocobase/plugin-action-custom-request",

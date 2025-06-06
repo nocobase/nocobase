@@ -393,10 +393,10 @@ const EditMenuItem = () => {
         options:
           href || params
             ? {
-              href,
-              params,
-              openInNewWindow,
-            }
+                href,
+                params,
+                openInNewWindow,
+              }
             : undefined,
       });
     }
@@ -453,14 +453,14 @@ const MoveToMenuItem = () => {
           f.dataSource =
             type === NocoBaseDesktopRouteType.group
               ? [
-                { label: t('Before'), value: 'beforeBegin' },
-                { label: t('After'), value: 'afterEnd' },
-                { label: t('Inner'), value: 'beforeEnd' },
-              ]
+                  { label: t('Before'), value: 'beforeBegin' },
+                  { label: t('After'), value: 'afterEnd' },
+                  { label: t('Inner'), value: 'beforeEnd' },
+                ]
               : [
-                { label: t('Before'), value: 'beforeBegin' },
-                { label: t('After'), value: 'afterEnd' },
-              ];
+                  { label: t('Before'), value: 'beforeBegin' },
+                  { label: t('After'), value: 'afterEnd' },
+                ];
         });
       });
     },
@@ -523,13 +523,13 @@ const MoveToMenuItem = () => {
       const options =
         position === 'beforeEnd'
           ? {
-            targetScope: {
-              parentId: targetId,
-            },
-          }
+              targetScope: {
+                parentId: targetId,
+              },
+            }
           : {
-            targetId: targetId,
-          };
+              targetId: targetId,
+            };
 
       await moveRoute({
         sourceId: currentRoute.id as any,
