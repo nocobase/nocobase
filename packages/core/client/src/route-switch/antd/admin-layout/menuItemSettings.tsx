@@ -33,6 +33,7 @@ import {
 import { getPageMenuSchema } from '../../../';
 import { SchemaSettings } from '../../../application/schema-settings/SchemaSettings';
 import { useInsertPageSchema } from '../../../modules/menu/PageMenuItem';
+import { getFlowPageMenuSchema } from '../../../modules/menu/FlowPageMenuItem';
 import { SchemaToolbar } from '../../../schema-settings/GeneralSchemaDesigner';
 import {
   SchemaSettingsItem,
@@ -283,6 +284,70 @@ const InsertMenuItems = (props) => {
 
           // 3. 插入一个对应的 Schema
           insertPageSchema(getPageMenuSchema({ pageSchemaUid, tabSchemaUid, tabSchemaName }));
+        }}
+      />
+      <SchemaSettingsModalItem
+        eventKey={`${insertPosition}flowPage`}
+        title={t('Flow Page')}
+        schema={
+          {
+            type: 'object',
+            title: t('Add flow page'),
+            properties: {
+              title: {
+                'x-decorator': 'FormItem',
+                'x-component': 'Input',
+                title: t('Menu item title'),
+                required: true,
+                'x-component-props': {},
+              },
+              icon: {
+                title: t('Icon'),
+                'x-component': 'IconPicker',
+                'x-decorator': 'FormItem',
+              },
+            },
+          } as ISchema
+        }
+        onSubmit={async ({ title, icon }) => {
+          const menuSchemaUid = uid();
+          const pageSchemaUid = uid();
+          const tabSchemaUid = uid();
+          const tabSchemaName = uid();
+          const parentId = insertPosition === 'beforeEnd' ? currentRoute?.id : currentRoute?.parentId;
+
+          // 1. 先创建一个路由
+          const { data } = await createRoute({
+            type: NocoBaseDesktopRouteType.flowPage,
+            title,
+            icon,
+            // 'beforeEnd' 表示的是 Insert inner，此时需要把路由插入到当前路由的内部
+            parentId: parentId || undefined,
+            schemaUid: pageSchemaUid,
+            menuSchemaUid,
+            enableTabs: false,
+            children: [
+              {
+                type: NocoBaseDesktopRouteType.tabs,
+                schemaUid: tabSchemaUid,
+                tabSchemaName,
+                hidden: true,
+              },
+            ],
+          });
+
+          if (insertPositionToMethod[insertPosition]) {
+            // 2. 然后再把路由移动到对应的位置
+            await moveRoute({
+              sourceId: data?.data?.id,
+              targetId: currentRoute?.id,
+              sortField: 'sort',
+              method: insertPositionToMethod[insertPosition],
+            });
+          }
+
+          // 3. 插入一个对应的 Schema
+          insertPageSchema(getFlowPageMenuSchema({ pageSchemaUid, tabSchemaUid, tabSchemaName }));
         }}
       />
       <SchemaSettingsModalItem
