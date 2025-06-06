@@ -137,7 +137,9 @@ export class BaseTaskManager extends EventEmitter implements AsyncTasksManager {
       )}, tags: ${JSON.stringify(options.tags)}, title: ${task.title}`,
     );
     this.emit('taskCreated', { task });
-
+    if (options.useQueue) {
+      this.enqueueTask(task);
+    }
     task.on('progress', (progress) => {
       this.logger.debug(`Task ${task.taskId} progress: ${progress}`);
       this.emit('taskProgress', { task, progress });
@@ -152,20 +154,7 @@ export class BaseTaskManager extends EventEmitter implements AsyncTasksManager {
       }
       this.emit('taskStatusChange', { task, status });
     });
-
-    if (options.immediateExecute !== false) {
-      this.enqueueTask(task);
-    }
     return task;
-  }
-
-  runTask(taskId: TaskId): void {
-    const task = this.tasks.get(taskId);
-    if (task) {
-      this.enqueueTask(task);
-    } else {
-      this.logger.warn(`Attempted to enqueue non-existent task ${taskId}`);
-    }
   }
 
   getTask(taskId: TaskId): ITask | undefined {
