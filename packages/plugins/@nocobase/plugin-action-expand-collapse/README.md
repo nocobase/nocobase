@@ -36,7 +36,7 @@ The plugin adds an action button to the form that when clicked:
 AGPL-3.0
 
 ```
-plugin-toggle-form-fields/
+plugin-action-expand-collapse/
 ├── src/
 │   ├── client/         # 客户端代码
 │   │   ├── index.tsx   # 客户端入口和主要逻辑

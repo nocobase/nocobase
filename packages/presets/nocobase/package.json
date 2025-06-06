@@ -79,7 +79,7 @@
     "@nocobase/plugin-workflow-request": "1.8.0-alpha.3",
     "@nocobase/plugin-workflow-response-message": "1.8.0-alpha.3",
     "@nocobase/plugin-workflow-sql": "1.8.0-alpha.3",
-    "@nocobase/plugin-toggle-form-fields": "1.8.0-alpha.3",
+    "@nocobase/plugin-action-expand-collapse": "1.8.0-alpha.3",
     "@nocobase/server": "1.8.0-alpha.3",
     "cronstrue": "^2.11.0",
     "fs-extra": "^11.1.1"
@@ -139,7 +139,7 @@
     "@nocobase/plugin-workflow-notification",
     "@nocobase/plugin-theme-editor",
     "@nocobase/plugin-block-template",
-    "@nocobase/plugin-toggle-form-fields"
+    "@nocobase/plugin-action-expand-collapse"
   ],
   "repository": {
     "type": "git",
