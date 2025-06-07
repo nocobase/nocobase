@@ -63,3 +63,11 @@
 ## Object Resource
 
 <code src="./demos/object-resource.tsx"></code>
+
+## Single Record Resource
+
+<code src="./demos/single-record-resource.tsx"></code>
+
+## Multi Record Resource
+
+<code src="./demos/multi-record-resource.tsx"></code>

@@ -10,16 +10,16 @@
 import { DataBlockModel } from './dataBlockModel';
 import { ActionModel } from './actions/actionModel';
 import { observable } from '@formily/reactive';
-import { ArrayResource } from '../resources/arrayResource';
+import { MultiRecordResource } from '../resources/multiRecordResource';
 import { StepParams } from '../types';
 
 // TODO: 未完成
 
 export class TableBlockModel<TData = any> extends DataBlockModel {
   public rowActions: Map<string, ActionModel>;
-  public declare resource: ArrayResource<TData>;
+  public declare resource: MultiRecordResource<TData>;
 
-  constructor(options: { uid: string; stepParams?: StepParams; resource?: ArrayResource<TData> }) {
+  constructor(options: { uid: string; stepParams?: StepParams; resource?: MultiRecordResource<TData> }) {
     super({
       uid: options.uid,
       stepParams: options.stepParams,
@@ -50,26 +50,26 @@ export class TableBlockModel<TData = any> extends DataBlockModel {
   }
 
   async reload(): Promise<any[] | null> {
-    return this.resource.reload();
+    await this.resource.refresh();
+    return this.resource.getData();
   }
 
   async reset(): Promise<any[] | null> {
-    this.resource.pagination.page = 1;
-    this.resource.filter = {};
-    this.resource.sort = [];
-    return this.resource.load();
+    this.resource.meta.page = 1;
+    this.resource.meta.filter = {};
+    await this.resource.refresh();
+    return this.resource.getData();
   }
 
   async applyFilter(filter: Record<string, any>): Promise<any[] | null> {
-    this.resource.setFilter(filter);
-    return this.resource.load();
+    this.resource.meta.filter = filter;
+    await this.resource.refresh();
+    return this.resource.getData();
   }
 
   async applySort(field: string, direction: 'asc' | 'desc'): Promise<any[] | null> {
-    this.resource.setSort({
-      field,
-      direction,
-    });
-    return this.resource.load();
+    // TODO: 需要在MultiRecordResource中添加排序支持
+    await this.resource.refresh();
+    return this.resource.getData();
   }
 }

@@ -226,3 +226,25 @@ export interface StepSettingsDialogProps {
 }
 
 export type SubModelValue<TModel extends FlowModel = FlowModel> = TModel | TModel[];
+
+export interface SingleRecordResourceMeta {
+  resourceName?: string;
+  filterByTk?: string | number;
+  filter?: Record<string, any>;
+  appends?: string[];
+  dataSourceKey?: string;
+  sourceId?: string | number;
+  actionName?: string;
+}
+
+export interface MultiRecordResourceMeta {
+  resourceName?: string;
+  page?: number;
+  pageSize?: number;
+  filter?: Record<string, any>;
+  filterByTk?: string | number | string[] | number[];
+  appends?: string[];
+  dataSourceKey?: string;
+  sourceId?: string | number;
+  actionName?: string;
+}

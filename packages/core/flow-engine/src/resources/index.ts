@@ -7,6 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export * from './baseResource';
-export * from './objectResource';
-export * from './arrayResource';
+export * from './flowResource';
+export * from './apiResource';
+export * from './simpleAPIResource';
+export * from './singleRecordResource';
+export * from './multiRecordResource';
