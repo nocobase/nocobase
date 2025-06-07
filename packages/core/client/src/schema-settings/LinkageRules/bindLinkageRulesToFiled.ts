@@ -83,17 +83,14 @@ export function bindLinkageRulesToFiled(
     // 3. value 表达式中的变量值；
     () => {
       // 获取条件中的字段值
-      const fieldValuesInCondition = getFieldValuesInCondition({ linkageRules, formValues });
+      getFieldValuesInCondition({ linkageRules, formValues });
       // 获取条件中的变量值
-      const variableValuesInCondition = getVariableValuesInCondition({ linkageRules, localVariables });
+      getVariableValuesInCondition({ linkageRules, localVariables });
 
       // 获取 value 表达式中的变量值
-      const variableValuesInExpression = getVariableValuesInExpression({ action, localVariables });
+      getVariableValuesInExpression({ action, localVariables });
 
-      const result = [fieldValuesInCondition, variableValuesInCondition, variableValuesInExpression]
-        .map((item) => JSON.stringify(item))
-        .join(',');
-      return result;
+      return uid();
     },
     getSubscriber({ action, field, rule, variables, localVariables, variableNameOfLeftCondition }, jsonLogic),
     { fireImmediately: true, equals: _.isEqual },
@@ -532,9 +529,7 @@ export async function replaceVariables(
   }
 
   const waitForParsing = value.match(REGEX_OF_VARIABLE_IN_EXPRESSION)?.map(async (item) => {
-    const { value: parsedValue } = await variables.parseVariable(item, localVariables, {
-      doNotRequest: item.includes('$nForm') || item.includes('$iteration'),
-    });
+    const { value: parsedValue } = await variables.parseVariable(item, localVariables);
 
     // 在开头加 `_` 是为了保证 id 不能以数字开头，否则在解析表达式的时候（不是解析变量）会报错
     const id = `_${uid()}`;
