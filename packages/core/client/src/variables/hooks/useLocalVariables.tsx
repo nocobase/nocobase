@@ -64,12 +64,13 @@ const useLocalVariables = (props?: Props) => {
   }
 
   const app = useApp();
-  const customVariables = app.getVariables?.().map((variable) => {
-    return {
-      name: variable.name,
-      ctx: variable.useCtx(),
-    }
-  }) || [];
+  const customVariables =
+    app.getVariables?.().map((variable) => {
+      return {
+        name: variable.name,
+        ctx: variable.useCtx(),
+      };
+    }) || [];
 
   return useMemo(() => {
     return (
@@ -180,7 +181,7 @@ const useLocalVariables = (props?: Props) => {
     parentObjectCtx,
     collectionNameOfParentObject,
     contextVariable,
-    ...customVariables.map(item => item.ctx),
+    ...customVariables.map((item) => item.ctx),
   ]); // 尽量保持返回的值不变，这样可以减少接口的请求次数，因为关系字段会缓存到变量的 ctx 中
 };
 
