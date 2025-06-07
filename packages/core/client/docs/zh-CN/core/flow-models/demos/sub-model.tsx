@@ -6,7 +6,7 @@ import { Button, Tabs } from 'antd';
 import _ from 'lodash';
 import React from 'react';
 
-class FlowModelRepository implements IFlowModelRepository<FlowModel> {
+class FlowModelRepository implements IFlowModelRepository<FlowModel<{parent: never, subModels: { tabs: TabFlowModel[] } }>> {
   get models() {
     const models = new Map();
     for (let i = 0; i < localStorage.length; i++) {
@@ -72,9 +72,9 @@ class FlowModelRepository implements IFlowModelRepository<FlowModel> {
 
 class TabFlowModel extends FlowModel {}
 
-class HelloFlowModel extends FlowModel {
+class HelloFlowModel extends FlowModel<{parent: never, subModels: { tabs: TabFlowModel[] } }> {
   onInit(options: CreateModelOptions) {
-    const tabs = (options.subModels.tabs || []) as FlowModel[];
+    const tabs = (options.subModels.tabs || []) as any[];
     // 使用新的 subModels API 初始化 tabs
     tabs.forEach((tab: any) => {
       this.addSubModel('tabs', tab);
@@ -89,11 +89,10 @@ class HelloFlowModel extends FlowModel {
   }
 
   render() {
-    const tabs = this.subModels.tabs as FlowModel[]; // TODO: improve type
     return (
       <div>
         <Tabs
-          items={tabs?.map((tab) => ({
+          items={this.subModels.tabs?.map((tab) => ({
             key: tab.getProps().key,
             label: tab.getProps().label,
             children: tab.render()

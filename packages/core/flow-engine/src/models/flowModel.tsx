@@ -29,16 +29,21 @@ import { openStepSettingsDialog as openStepSettingsDialogFn } from '../component
 // 使用WeakMap存储每个类的flows
 const modelFlows = new WeakMap<typeof FlowModel, Map<string, FlowDefinition>>();
 
-export class FlowModel {
+type DefaultRelatedModels = {
+  parent?: any,
+  subModels?: Record<string, FlowModel | FlowModel[]>
+};
+
+export class FlowModel<RelatedModels extends {parent?: any, subModels?: any} = DefaultRelatedModels> {
   public readonly uid: string;
   public props: IModelComponentProps;
   public stepParams: StepParams;
   public flowEngine: FlowEngine;
-  public parent: FlowModel | null = null;
-  public subModels: Record<string, SubModelValue>;
+  public parent: RelatedModels['parent'];
+  public subModels: RelatedModels['subModels'];
 
   constructor(
-    protected options: { uid: string; use?: string; props?: IModelComponentProps; stepParams?: Record<string, any> },
+    protected options: { uid: string; use?: string; props?: IModelComponentProps; stepParams?: Record<string, any>, subModels?: RelatedModels['subModels'] },
   ) {
     this.uid = options.uid || uid();
     this.props = options.props || {};
@@ -565,9 +570,9 @@ export class FlowModel {
     };
     for (const subModelKey in this.subModels) {
       if (Array.isArray(this.subModels[subModelKey])) {
-        data[subModelKey] = this.subModels[subModelKey].map((model: FlowModel) => model.serialize());
-      } else if (this.subModels[subModelKey] instanceof FlowModel) {
-        data[subModelKey] = this.subModels[subModelKey].serialize();
+        data.subModels[subModelKey] = this.subModels[subModelKey].map((model: FlowModel) => model.serialize());
+      } else if ((this.subModels[subModelKey] as any) instanceof FlowModel) {
+        data.subModels[subModelKey] = this.subModels[subModelKey].serialize();
       }
     }
     return data;
