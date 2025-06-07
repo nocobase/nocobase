@@ -10,6 +10,7 @@
 import { UpOutlined, DownOutlined } from '@ant-design/icons';
 import { useFieldSchema, useForm } from '@formily/react';
 import {
+  ActionInitializer,
   createModalSettingsItem,
   ISchema,
   Plugin,
@@ -108,22 +109,24 @@ const useToggleFieldsActionProps = () => {
 
 const createToggleFieldsActionSchema = (): ISchema => ({
   type: 'void',
+  'x-action': 'expandCollapse',
   'x-toolbar': 'ActionSchemaToolbar',
   'x-component': 'Action',
   'x-settings': toggleFieldsActionSettings.name,
   'x-use-component-props': 'useToggleFieldsActionProps',
 });
 
+export const ExpandCollapseActionInitializer = (props) => {
+  const schema = createToggleFieldsActionSchema();
+  return <ActionInitializer {...props} schema={schema} />;
+};
+
 const createToggleFieldsActionInitializerItem = (): SchemaInitializerItemType => ({
-  type: 'item',
   name: ActionName,
-  useComponentProps() {
-    const { insert } = useSchemaInitializer();
-    const { t } = useTranslation(NAMESPACE);
-    return {
-      title: t(ActionName),
-      onClick: () => insert(createToggleFieldsActionSchema()),
-    };
+  title: `{{t("${ActionName}", { ns: "action-expand-collapse" })}}`,
+  Component: ExpandCollapseActionInitializer,
+  schema: {
+    'x-action-settings': {},
   },
 });
 
