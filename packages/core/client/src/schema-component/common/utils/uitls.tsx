@@ -7,13 +7,14 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { dayjs, getPickerFormat, Handlebars, getFormatFromDateStr } from '@nocobase/utils/client';
+import { dayjs, getPickerFormat, Handlebars } from '@nocobase/utils/client';
 import _, { every, findIndex, some } from 'lodash';
 import { replaceVariableValue } from '../../../block-provider/hooks';
 import { VariableOption, VariablesContextType } from '../../../variables/types';
 import { isVariable } from '../../../variables/utils/isVariable';
 import { transformVariableValue } from '../../../variables/utils/transformVariableValue';
 import { inferPickerType } from '../../antd/date-picker/util';
+import { NAMESPACE_UI_SCHEMA } from '../../../i18n/constant';
 
 type VariablesCtx = {
   /** 当前登录的用户 */
@@ -205,8 +206,12 @@ const getVariablesData = (localVariables) => {
   return data;
 };
 
-export async function getRenderContent(templateEngine, content, variables, localVariables, defaultParse) {
+export async function getRenderContent(templateEngine, content, variables, localVariables, defaultParse, t?) {
   if (content && templateEngine === 'handlebars') {
+    // 注册 Handlebars helper
+    Handlebars.registerHelper('t', function (key) {
+      return t(key, { ns: NAMESPACE_UI_SCHEMA });
+    });
     try {
       const renderedContent = Handlebars.compile(content);
       // 处理渲染后的内容
