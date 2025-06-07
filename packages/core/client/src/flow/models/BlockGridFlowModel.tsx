@@ -7,7 +7,6 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { observable } from '@formily/reactive';
 import { FlowModel, FlowModelRenderer } from '@nocobase/flow-engine';
 import { Button, Card, Dropdown } from 'antd';
 import _ from 'lodash';
@@ -44,7 +43,13 @@ function AddBlockButton({ model }) {
   );
 }
 
-export class BlockGridFlowModel extends FlowModel {
+type BlockGridFlowModelRelatedModels = {
+  subModels: {
+    items: BlockFlowModel[];
+  }
+}
+
+export class BlockGridFlowModel extends FlowModel<BlockGridFlowModelRelatedModels> {
   onInit(options: any) {
     const items = options.items || [];
     items.forEach((item: any) => {
@@ -76,7 +81,7 @@ export class BlockGridFlowModel extends FlowModel {
       <div style={{ padding: 16 }}>
         <h1>Grid Flow Model - {this.uid}</h1>
         <p>This is a placeholder for the Grid Flow Model content.</p>
-        <Grid items={(this.subModels.items as any[] || []).slice()} />
+        <Grid items={this.subModels.items?.slice()} />
         <br />
         <AddBlockButton model={this} />
       </div>

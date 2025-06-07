@@ -7,14 +7,19 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { observable } from '@formily/reactive';
 import { uid } from '@formily/shared';
 import { FlowModel, FlowModelRenderer } from '@nocobase/flow-engine';
 import { Button, Tabs } from 'antd';
 import _ from 'lodash';
 import React from 'react';
 
-export class PageFlowModel extends FlowModel {
+type PageFlowModelRelatedModels = {
+  subModels: {
+    tabs: FlowModel[];
+  }
+}
+
+export class PageFlowModel extends FlowModel<PageFlowModelRelatedModels> {
   onInit(options: any) {
     const tabs = options.tabs || [];
     tabs.forEach((tab: any) => {
@@ -28,7 +33,7 @@ export class PageFlowModel extends FlowModel {
   }
 
   getItems() {
-    return (this.subModels.tabs as any[]).map((tab) => {
+    return this.subModels.tabs.map((tab) => {
       return {
         key: tab.uid,
         label: tab.props.label || 'Unnamed',
@@ -38,7 +43,7 @@ export class PageFlowModel extends FlowModel {
   }
 
   renderFirstTab() {
-    return <FlowModelRenderer model={(this.subModels.tabs as any[])[0]} />;
+    return <FlowModelRenderer model={this.subModels.tabs[0]} />;
   }
 
   renderTabs() {

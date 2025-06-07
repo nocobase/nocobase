@@ -21,6 +21,7 @@ import type {
   StepDefinition,
   StepParams,
   SubModelValue,
+  DefaultRelatedModels,
 } from '../types';
 import { ExtendedFlowDefinition, FlowExtraContext, IModelComponentProps, ReadonlyModelProps } from '../types';
 import { generateUid, mergeFlowDefinitions } from '../utils';
@@ -28,11 +29,6 @@ import { openStepSettingsDialog as openStepSettingsDialogFn } from '../component
 
 // 使用WeakMap存储每个类的flows
 const modelFlows = new WeakMap<typeof FlowModel, Map<string, FlowDefinition>>();
-
-type DefaultRelatedModels = {
-  parent?: any,
-  subModels?: Record<string, FlowModel | FlowModel[]>
-};
 
 export class FlowModel<RelatedModels extends {parent?: any, subModels?: any} = DefaultRelatedModels> {
   public readonly uid: string;

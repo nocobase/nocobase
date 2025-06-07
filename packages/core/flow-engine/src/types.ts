@@ -248,3 +248,8 @@ export interface MultiRecordResourceMeta {
   sourceId?: string | number;
   actionName?: string;
 }
+
+export interface DefaultRelatedModels {
+  parent?: any,
+  subModels?: Record<string, FlowModel | FlowModel[]>
+}
