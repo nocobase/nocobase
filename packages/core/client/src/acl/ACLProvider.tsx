@@ -74,7 +74,6 @@ export const ACLRolesCheckProvider = (props) => {
       url: 'roles:check',
     },
     {
-      manual: !api.auth.token,
       onSuccess(data) {
         if (!data?.data?.snippets.includes('ui.*')) {
           setDesignable(false);
