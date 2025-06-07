@@ -43,13 +43,13 @@ function AddBlockButton({ model }) {
   );
 }
 
-type BlockGridFlowModelRelatedModels = {
+type BlockGridFlowModelStructure = {
   subModels: {
     items: BlockFlowModel[];
   }
 }
 
-export class BlockGridFlowModel extends FlowModel<BlockGridFlowModelRelatedModels> {
+export class BlockGridFlowModel extends FlowModel<BlockGridFlowModelStructure> {
   onInit(options: any) {
     const items = options.items || [];
     items.forEach((item: any) => {

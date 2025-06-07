@@ -36,14 +36,14 @@ class TableColumnFlowModel extends FlowModel {
   }
 }
 
-type TableBlockFlowModelRelatedModels = {
+type TableBlockFlowModelStructure = {
   subModels: {
-    columns: TableColumnFlowModel[];
-    actions: ActionFlowModel[];
+    columns: TableColumnFlowModel[],
+    actions: ActionFlowModel[],
   }
 }
 
-class TableBlockFlowModel extends FlowModel<TableBlockFlowModelRelatedModels> {
+class TableBlockFlowModel extends FlowModel<TableBlockFlowModelStructure> {
   onInit(options: any) {
     const { actions = [], columns = [] } = options;
     actions.forEach((action) => {

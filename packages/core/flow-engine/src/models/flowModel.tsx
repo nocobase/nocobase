@@ -21,7 +21,7 @@ import type {
   StepDefinition,
   StepParams,
   SubModelValue,
-  DefaultRelatedModels,
+  DefaultStructure,
 } from '../types';
 import { ExtendedFlowDefinition, FlowExtraContext, IModelComponentProps, ReadonlyModelProps } from '../types';
 import { generateUid, mergeFlowDefinitions } from '../utils';
@@ -30,16 +30,16 @@ import { openStepSettingsDialog as openStepSettingsDialogFn } from '../component
 // 使用WeakMap存储每个类的flows
 const modelFlows = new WeakMap<typeof FlowModel, Map<string, FlowDefinition>>();
 
-export class FlowModel<RelatedModels extends {parent?: any, subModels?: any} = DefaultRelatedModels> {
+export class FlowModel<Structure extends {parent?: any, subModels?: any} = DefaultStructure> {
   public readonly uid: string;
-  public props: IModelComponentProps;
-  public stepParams: StepParams;
+  public props: IModelComponentProps = {};
+  public stepParams: StepParams = {};
   public flowEngine: FlowEngine;
-  public parent: RelatedModels['parent'];
-  public subModels: RelatedModels['subModels'];
+  public parent: Structure['parent'];
+  public subModels: Structure['subModels'];
 
   constructor(
-    protected options: { uid: string; use?: string; props?: IModelComponentProps; stepParams?: Record<string, any>, subModels?: RelatedModels['subModels'] },
+    protected options: { uid: string; use?: string; props?: IModelComponentProps; stepParams?: Record<string, any>, subModels?: Structure['subModels'] },
   ) {
     this.uid = options.uid || uid();
     this.props = options.props || {};

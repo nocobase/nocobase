@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { DefaultRelatedModels, FlowModel } from '@nocobase/flow-engine';
+import { DefaultStructure, FlowModel } from '@nocobase/flow-engine';
 
 type BlockFlowModelMeta = {
   title: string;
@@ -16,7 +16,7 @@ type BlockFlowModelMeta = {
   icon?: string;
 };
 
-export class BlockFlowModel<T = DefaultRelatedModels> extends FlowModel<T> {
+export class BlockFlowModel<T = DefaultStructure> extends FlowModel<T> {
   static meta: BlockFlowModelMeta;
   static define(meta: BlockFlowModelMeta) {
     this.meta = meta;

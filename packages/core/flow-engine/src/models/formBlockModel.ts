@@ -20,8 +20,10 @@ export class FormBlockModel<TData = Record<string, any>> extends DataBlockModel 
     super({
       uid: options.uid,
       stepParams: options.stepParams,
-      resource: options.resource,
     });
+    if (options.resource) {
+      this.resource = options.resource;
+    }
   }
 
   // 加载表单数据
@@ -108,7 +110,7 @@ export class FormBlockModel<TData = Record<string, any>> extends DataBlockModel 
       },
       onSubmit: async (values: TData) => {
         this.resource.setData(values);
-        await this.resource.save();
+        await this.resource.save(values);
         return true;
       },
       fields: this.fields,

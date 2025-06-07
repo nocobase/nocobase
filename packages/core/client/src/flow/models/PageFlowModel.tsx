@@ -13,13 +13,13 @@ import { Button, Tabs } from 'antd';
 import _ from 'lodash';
 import React from 'react';
 
-type PageFlowModelRelatedModels = {
+type PageFlowModelStructure = {
   subModels: {
     tabs: FlowModel[];
   }
 }
 
-export class PageFlowModel extends FlowModel<PageFlowModelRelatedModels> {
+export class PageFlowModel extends FlowModel<PageFlowModelStructure> {
   onInit(options: any) {
     const tabs = options.tabs || [];
     tabs.forEach((tab: any) => {

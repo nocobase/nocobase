@@ -57,13 +57,14 @@ export class MockFlowModelRepository implements IFlowModelRepository<FlowModel> 
     localStorage.setItem(`flow-model:${model.uid}`, JSON.stringify(currentData));
     console.log('Saving model:', model.uid, currentData);
     for (const subModelKey of Object.keys(model.subModels)) {
-      if (!model.subModels[subModelKey]) continue;
-      if (Array.isArray(model.subModels[subModelKey])) {
-        for (const subModel of model.subModels[subModelKey]) {
+      const subModelValue = model.subModels[subModelKey];
+      if (!subModelValue) continue;
+      if (Array.isArray(subModelValue)) {
+        for (const subModel of subModelValue) {
           await this.save(subModel);
         }
-      } else if (model.subModels[subModelKey] instanceof FlowModel) {
-        await this.save(model.subModels[subModelKey]);
+      } else if (subModelValue instanceof FlowModel) {
+        await this.save(subModelValue);
       }
     }
     return data;
