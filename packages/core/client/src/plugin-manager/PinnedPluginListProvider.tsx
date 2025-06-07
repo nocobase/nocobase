@@ -88,7 +88,7 @@ const dividerTheme = {
   },
 };
 
-export const PinnedPluginList = React.memo(() => {
+export const PinnedPluginList = React.memo((props: { onClick?: () => void }) => {
   const { allowAll, snippets } = useACLRoleContext();
   const getSnippetsAllow = (aclKey) => {
     return allowAll || aclKey === '*' || snippets?.includes(aclKey);
@@ -98,13 +98,15 @@ export const PinnedPluginList = React.memo(() => {
 
   return (
     <div className={pinnedPluginListClassName}>
-      {Object.keys(ctx.items)
-        .sort((a, b) => ctx.items[a].order - ctx.items[b].order)
-        .filter((key) => getSnippetsAllow(ctx.items[key].snippet))
-        .map((key) => {
-          const Action = get(components, ctx.items[key].component);
-          return Action ? <Action key={key} /> : null;
-        })}
+      <div onClick={props.onClick}>
+        {Object.keys(ctx.items)
+          .sort((a, b) => ctx.items[a].order - ctx.items[b].order)
+          .filter((key) => getSnippetsAllow(ctx.items[key].snippet))
+          .map((key) => {
+            const Action = get(components, ctx.items[key].component);
+            return Action ? <Action key={key} /> : null;
+          })}
+      </div>
       <ConfigProvider theme={dividerTheme}>
         <Divider type="vertical" />
       </ConfigProvider>

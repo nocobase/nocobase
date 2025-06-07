@@ -891,5 +891,6 @@
   "Click the \"UI Editor\" icon in the upper right corner to enter the UI Editor mode": "Klicken Sie auf das \"UI-Editor\"-Symbol in der oberen rechten Ecke, um den UI-Editor-Modus zu betreten",
   "Refresh data blocks": "Aktualisieren Sie die Datenblöcke",
   "Select data blocks to refresh": "Wählen Sie die Datenblöcke aus, die aktualisiert werden sollen.",
-  "After successful submission, the selected data blocks will be automatically refreshed.": "Nach erfolgreicher Übermittlung werden die ausgewählten Datenblöcke automatisch aktualisiert."
+  "After successful submission, the selected data blocks will be automatically refreshed.": "Nach erfolgreicher Übermittlung werden die ausgewählten Datenblöcke automatisch aktualisiert.",
+  "Reset link expiration": "Linkablauf zurücksetzen"
 }

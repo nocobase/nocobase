@@ -606,22 +606,27 @@ export const menuItemSettings = new SchemaSettings({
     {
       name: 'edit',
       Component: EditMenuItem,
+      sort: 100,
     },
     {
       name: 'editTooltip',
       Component: EditTooltip,
+      sort: 200,
     },
     {
       name: 'hidden',
       Component: HiddenMenuItem,
+      sort: 300,
     },
     {
       name: 'moveTo',
       Component: MoveToMenuItem,
+      sort: 400,
     },
     {
       name: 'divider',
       type: 'divider',
+      sort: 500,
     },
     {
       name: 'insertbeforeBegin',
@@ -631,6 +636,7 @@ export const menuItemSettings = new SchemaSettings({
           <InsertMenuItems eventKey={'insertbeforeBegin'} title={t('Insert before')} insertPosition={'beforeBegin'} />
         );
       },
+      sort: 600,
     },
     {
       name: 'insertafterEnd',
@@ -638,6 +644,7 @@ export const menuItemSettings = new SchemaSettings({
         const { t } = useTranslation();
         return <InsertMenuItems eventKey={'insertafterEnd'} title={t('Insert after')} insertPosition={'afterEnd'} />;
       },
+      sort: 700,
     },
     {
       name: 'insertbeforeEnd',
@@ -645,14 +652,16 @@ export const menuItemSettings = new SchemaSettings({
         const { t } = useTranslation();
         return <InsertMenuItems eventKey={'insertbeforeEnd'} title={t('Insert inner')} insertPosition={'beforeEnd'} />;
       },
+      sort: 800,
     },
     {
       name: 'divider',
       type: 'divider',
+      sort: 900,
     },
     {
       name: 'delete',
-      sort: 100,
+      sort: 1000,
       Component: RemoveRoute,
     },
   ],

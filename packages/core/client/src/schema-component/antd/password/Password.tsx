@@ -15,11 +15,12 @@ import { PasswordStrength } from './PasswordStrength';
 
 export interface PasswordProps extends AntdPasswordProps {
   checkStrength?: boolean;
+  showForgotPassword?: boolean;
 }
 
 export const Password = connect(
   (props: PasswordProps) => {
-    const { value, className, checkStrength, ...others } = props;
+    const { value, className, checkStrength, showForgotPassword, ...others } = props;
     const blockStyle: React.CSSProperties = {
       position: 'absolute',
       zIndex: 1,

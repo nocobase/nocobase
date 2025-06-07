@@ -157,7 +157,7 @@ const useParseDefaultValue = () => {
         return console.error(`useParseDefaultValue: can not find variable ${variableName}`);
       }
 
-      _run();
+      _run({ forceUpdate: true });
 
       // 实现联动的效果，当依赖的变量变化时（如 `$nForm` 变量），重新解析默认值
       const dispose = reaction(

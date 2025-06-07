@@ -1083,9 +1083,13 @@
   "If selected, the route will be displayed in the menu.": "Se selezionato, il percorso verrà visualizzato nel menu.",
   "Are you sure you want to hide this tab?": "Sei sicuro di voler nascondere questa scheda?",
   "After hiding, this tab will no longer appear in the tab bar. To show it again, you need to go to the route management page to set it.": "Dopo averla nascosta, questa scheda non apparirà più nella barra delle schede. Per mostrarla di nuovo, devi andare alla pagina di gestione dei percorsi per configurarlo.",
+  "Refresh data blocks": "Aggiorna blocchi di dati",
+  "Select data blocks to refresh": "Aggiorna blocchi di dati",
+  "After successful submission, the selected data blocks will be automatically refreshed.": "Dopo una soumission réussie, les blocs de données sélectionnés seront automatiquement actualisés.",
   "No pages yet, please configure first": "Nessuna pagina ancora, si prega di configurare prima",
   "Click the \"UI Editor\" icon in the upper right corner to enter the UI Editor mode": "Cliquez sur l'icône \"Éditeur d'interface utilisateur\" dans le coin supérieur droit pour entrer en mode Éditeur d'interface utilisateur",
   "Refresh data blocks": "Aggiorna blocchi di dati",
   "Select data blocks to refresh": "Aggiorna blocchi di dati",
-  "After successful submission, the selected data blocks will be automatically refreshed.": "Dopo una soumission réussie, les blocs de données sélectionnés seront automatiquement actualisés."
+  "After successful submission, the selected data blocks will be automatically refreshed.": "Dopo una soumission réussie, les blocs de données sélectionnés seront automatiquement actualisés.",
+  "Reset link expiration": "Reimposta scadenza link"
 }

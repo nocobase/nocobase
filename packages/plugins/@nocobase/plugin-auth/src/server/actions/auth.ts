@@ -13,18 +13,19 @@ import { PasswordField } from '@nocobase/database';
 import { namespace } from '../../preset';
 
 export default {
-  // lostPassword: async (ctx: Context, next: Next) => {
-  //   ctx.body = await ctx.auth.lostPassword();
-  //   await next();
-  // },
-  // resetPassword: async (ctx: Context, next: Next) => {
-  //   ctx.body = await ctx.auth.resetPassword();
-  //   await next();
-  // },
-  // getUserByResetToken: async (ctx: Context, next: Next) => {
-  //   ctx.body = await ctx.auth.getUserByResetToken();
-  //   await next();
-  // },
+  lostPassword: async (ctx: Context, next: Next) => {
+    ctx.body = await ctx.auth.lostPassword();
+    await next();
+  },
+  resetPassword: async (ctx: Context, next: Next) => {
+    ctx.body = await ctx.auth.resetPassword();
+    await next();
+  },
+  checkResetToken: async (ctx: Context, next: Next) => {
+    const { resetToken } = ctx.action.params.values;
+    ctx.body = await ctx.auth.checkResetToken(resetToken);
+    await next();
+  },
   changePassword: async (ctx: Context, next: Next) => {
     const systemSettings = ctx.db.getRepository('systemSettings');
     const settings = await systemSettings.findOne();

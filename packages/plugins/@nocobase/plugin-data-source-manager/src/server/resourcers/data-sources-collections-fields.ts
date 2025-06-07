@@ -20,7 +20,6 @@ export default {
       const collection = dataSource.collectionManager.getCollection(collectionName);
 
       const fields = collection.getFields();
-
       ctx.body = lodash.sortBy(
         fields.map((field) => field.options),
         'name',
@@ -56,7 +55,9 @@ export default {
           dataSourceKey,
         },
       });
-
+      if (values.possibleTypes) {
+        delete values.possibleTypes;
+      }
       if (!fieldRecord) {
         fieldRecord = await mainDb.getRepository('dataSourcesFields').create({
           values: {
@@ -108,6 +109,10 @@ export default {
         throw new Error(
           `Field name ${name} already exists in collection ${collectionName} of data source ${dataSourceKey}`,
         );
+      }
+
+      if (values.possibleTypes) {
+        delete values.possibleTypes;
       }
 
       const fieldRecord = await mainDb.getRepository('dataSourcesFields').create({

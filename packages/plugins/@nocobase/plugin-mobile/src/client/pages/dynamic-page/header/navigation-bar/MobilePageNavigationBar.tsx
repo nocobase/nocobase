@@ -12,13 +12,13 @@ import { cx, NocoBaseRecursionField, SchemaToolbarProvider } from '@nocobase/cli
 import { NavBar } from 'antd-mobile';
 import React, { FC } from 'react';
 
+import { useRouteTranslation } from '../../../../locale';
 import { useMobileTitle } from '../../../../mobile-providers';
 import { useMobilePage } from '../../context';
 import { useStyles } from './styles';
-import { useRouteTranslation } from '../../../../locale';
 
 export const MobilePageNavigationBar: FC = () => {
-  const { title } = useMobileTitle();
+  const { title } = useMobileTitle() || {};
   const { displayNavigationBar = true, displayPageTitle = true } = useMobilePage();
   const fieldSchema = useFieldSchema();
   const { componentCls, hashId } = useStyles();

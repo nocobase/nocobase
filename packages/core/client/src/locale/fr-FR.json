@@ -831,5 +831,6 @@
   "Full permissions": "Tous les droits",
   "Refresh data blocks": "Actualiser les blocs de données",
   "Select data blocks to refresh": "Actualiser les blocs de données",
-  "After successful submission, the selected data blocks will be automatically refreshed.": "Après une soumission réussie, les blocs de données sélectionnés seront automatiquement actualisés."
+  "After successful submission, the selected data blocks will be automatically refreshed.": "Après une soumission réussie, les blocs de données sélectionnés seront automatiquement actualisés.",
+  "Reset link expiration": "Réinitialiser l'expiration du lien"
 }

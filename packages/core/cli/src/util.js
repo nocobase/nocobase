@@ -18,6 +18,7 @@ const dotenv = require('dotenv');
 const fs = require('fs-extra');
 const os = require('os');
 const moment = require('moment-timezone');
+const { keyDecrypt } = require('@nocobase/license-kit');
 
 exports.isPackageValid = (pkg) => {
   try {
@@ -165,10 +166,11 @@ exports.promptForTs = () => {
 };
 
 exports.downloadPro = async () => {
-  const { NOCOBASE_PKG_USERNAME, NOCOBASE_PKG_PASSWORD } = process.env;
-  if (!(NOCOBASE_PKG_USERNAME && NOCOBASE_PKG_PASSWORD)) {
-    return;
-  }
+  // 此处不再判定，由pkgg命令处理
+  // const { NOCOBASE_PKG_USERNAME, NOCOBASE_PKG_PASSWORD } = process.env;
+  // if (!(NOCOBASE_PKG_USERNAME && NOCOBASE_PKG_PASSWORD)) {
+  //   return;
+  // }
   await exports.run('yarn', ['nocobase', 'pkg', 'download-pro']);
 };
 
@@ -485,5 +487,23 @@ exports.generatePlugins = function () {
     generatePlugins();
   } catch (error) {
     return;
+  }
+};
+
+exports.getAccessKeyPair = function () {
+  const keyFile = resolve(process.cwd(), 'storage/.license/license-key');
+  if (!fs.existsSync(keyFile)) {
+    console.log(chalk.yellow('license-key file not found', keyFile));
+    return {};
+  }
+  try {
+    const str = fs.readFileSync(keyFile, 'utf-8');
+    const keyDataStr = keyDecrypt(str);
+    const keyData = JSON.parse(keyDataStr);
+    const { accessKeyId, accessKeySecret } = keyData;
+    return { accessKeyId, accessKeySecret };
+  } catch (error) {
+    console.log(chalk.yellow('Key parse failed, please check your key'));
+    return {};
   }
 };

@@ -37,6 +37,10 @@ export interface FlagProviderProps {
   isVariableParsedInOtherContext?: boolean;
   collectionField?: any; //目标赋值的数据表字段
   children?: any;
+  /**
+   * 是否存在于变量选择器中
+   */
+  isInXButton?: boolean;
 }
 
 export const FlagContext = React.createContext<Omit<FlagProviderProps, 'children'>>(null);

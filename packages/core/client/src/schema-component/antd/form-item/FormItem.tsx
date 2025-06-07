@@ -29,6 +29,7 @@ import { useLinkageRulesForSubTableOrSubForm } from './hooks/useLinkageRulesForS
 import useParseDefaultValue from './hooks/useParseDefaultValue';
 import { useTranslation } from 'react-i18next';
 import { NAMESPACE_UI_SCHEMA } from '../../../i18n/constant';
+import { VariableScope } from '../../../variables/VariableScope';
 
 Item.displayName = 'FormilyFormItem';
 
@@ -102,32 +103,34 @@ export const FormItem: any = withDynamicSchemaProps(
     }
 
     return (
-      <CollectionFieldProvider allowNull={true}>
-        <BlockItem
-          className={cx(
-            'nb-form-item',
-            css`
+      <VariableScope scopeId={schema?.['x-uid']} type="formItem">
+        <CollectionFieldProvider allowNull={true}>
+          <BlockItem
+            className={cx(
+              'nb-form-item',
+              css`
               .ant-formily-item-layout-horizontal .ant-formily-item-control {
                 max-width: ${showTitle === false || schema['x-component'] !== 'CollectionField'
                   ? '100% !important'
                   : null};
               }
             `,
-          )}
-        >
-          <ACLCollectionFieldProvider>
-            <Item
-              className={className}
-              {...props}
-              extra={extra}
-              wrapperStyle={{
-                ...(wrapperStyle.backgroundColor ? { paddingLeft: '5px', paddingRight: '5px' } : {}),
-                ...wrapperStyle,
-              }}
-            />
-          </ACLCollectionFieldProvider>
-        </BlockItem>
-      </CollectionFieldProvider>
+            )}
+          >
+            <ACLCollectionFieldProvider>
+              <Item
+                className={className}
+                {...props}
+                extra={extra}
+                wrapperStyle={{
+                  ...(wrapperStyle.backgroundColor ? { paddingLeft: '5px', paddingRight: '5px' } : {}),
+                  ...wrapperStyle,
+                }}
+              />
+            </ACLCollectionFieldProvider>
+          </BlockItem>
+        </CollectionFieldProvider>
+      </VariableScope>
     );
   }),
   { displayName: 'FormItem' },

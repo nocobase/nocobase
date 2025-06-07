@@ -121,6 +121,9 @@ export const CollectionFields = () => {
   };
 
   const handleFieldChange = async (value, filterByTk, flag = true) => {
+    if (value.possibleTypes) {
+      delete value.possibleTypes;
+    }
     await api.request({
       url: `dataSourcesCollections/${dataSourceKey}.${name}/fields:update?filterByTk=${filterByTk}`,
       method: 'post',
