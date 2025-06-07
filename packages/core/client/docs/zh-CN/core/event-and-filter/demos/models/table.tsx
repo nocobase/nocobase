@@ -6,7 +6,7 @@ import {
   FlowsDropdownButton,
   FlowsContextMenu,
   AddAction,
-  BaseResource,
+  FlowResource,
   FlowContext,
   FlowModel,
   useFlowModel,
@@ -181,7 +181,7 @@ class DemoTableBlockModel extends BlockModel {
         },
         initDataResource: {
           handler: async (ctx: FlowContext) => {
-            const dataResource = new BaseResource([]);
+            const dataResource = new FlowResource();
             (ctx.model as any).setResource('data', dataResource);
           },
         },
@@ -284,7 +284,7 @@ function generateMockData(page: number, pageSize: number) {
 
 class DemoTablePlugin extends Plugin {
   async load() {
-    this.app.flowEngine.registerModelClass('DemoTableBlockModel', DemoTableBlockModel);
+    this.app.flowEngine.registerModels({ DemoTableBlockModel });
 
     this.app.flowEngine.registerAction({
       name: 'setTableFields',

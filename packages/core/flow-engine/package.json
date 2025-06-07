@@ -9,7 +9,8 @@
     "@formily/reactive": "2.x",
     "@formily/antd-v5": "1.x",
     "lodash": "^4.x",
-    "uid": "^2.0.2"
+    "uid": "^2.0.2",
+    "@nocobase/sdk": "1.8.0-beta.4"
   },
   "peerDependencies": {
     "react": ">=18"

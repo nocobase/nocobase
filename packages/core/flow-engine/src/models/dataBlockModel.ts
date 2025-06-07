@@ -8,17 +8,17 @@
  */
 
 import { BlockModel } from './blockModel';
-import { BaseResource } from '../resources/baseResource';
+import { FlowResource } from '../resources/flowResource';
 
 export class DataBlockModel extends BlockModel {
-  public resource: BaseResource;
+  public resource: FlowResource;
   public fields: any[];
 
   static {
     this.initFlows();
   }
 
-  constructor(options: { uid: string; stepParams?: Record<string, any>; resource?: BaseResource }) {
+  constructor(options: { uid: string; stepParams?: Record<string, any>; resource?: FlowResource }) {
     super({
       uid: options.uid,
       stepParams: options.stepParams,
@@ -31,9 +31,9 @@ export class DataBlockModel extends BlockModel {
 
   /**
    * 设置Resource实例
-   * @param {BaseResource} resource BaseResource实例
+   * @param {FlowResource} resource FlowResource实例
    */
-  setResource(resource: BaseResource): void {
+  setResource(resource: FlowResource): void {
     this.resource = resource;
   }
 

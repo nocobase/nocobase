@@ -8,15 +8,15 @@
  */
 
 import { DataBlockModel } from './dataBlockModel';
-import { ObjectResource } from '../resources';
+import { SingleRecordResource } from '../resources';
 import { StepParams } from '../types';
 
 // TODO: 未完成
 
 export class FormBlockModel<TData = Record<string, any>> extends DataBlockModel {
-  public declare resource: ObjectResource<TData>;
+  public declare resource: SingleRecordResource<TData>;
 
-  constructor(options: { uid: string; stepParams?: StepParams; resource?: ObjectResource<TData> }) {
+  constructor(options: { uid: string; stepParams?: StepParams; resource?: SingleRecordResource<TData> }) {
     super({
       uid: options.uid,
       stepParams: options.stepParams,
@@ -26,14 +26,16 @@ export class FormBlockModel<TData = Record<string, any>> extends DataBlockModel 
 
   // 加载表单数据
   async load(params?: Record<string, any>): Promise<TData | null> {
-    // TODO: 将 params 传递给 resource 的 load 方法
+    // TODO: 将 params 传递给 resource 的 refresh 方法
     console.log('FormBlockModel load 被调用，参数：', params);
-    return this.resource.load();
+    await this.resource.refresh();
+    return this.resource.getData();
   }
 
   // 重载表单数据
   async reload(): Promise<TData | null> {
-    return this.resource.reload();
+    await this.resource.refresh();
+    return this.resource.getData();
   }
 
   // // 保存表单数据
@@ -54,42 +56,45 @@ export class FormBlockModel<TData = Record<string, any>> extends DataBlockModel 
     // TODO: 根据情况决定如何重置
     // 可能是清空数据
     // 或者重新加载初始数据
-    this.resource.setData(null);
-    // this.resource.reload();
+    this.resource.setData({} as TData);
+    // this.resource.refresh();
   }
 
   // 设置表单数据（部分或全部）
   setFormData(data: Partial<TData>) {
-    if (this.resource.data === null) {
+    const currentData = this.resource.getData();
+    if (!currentData || Object.keys(currentData).length === 0) {
       this.resource.setData(data as TData);
     } else {
       // TODO: 合并现有数据和新数据
       this.resource.setData({
-        ...this.resource.data,
+        ...currentData,
         ...data,
       } as TData);
     }
   }
 
   // 获取表单数据
-  getFormData(): TData | null {
-    return this.resource.data;
+  getFormData(): TData {
+    return this.resource.getData();
   }
 
   // 获取表单值
   getFieldValue(fieldName: string): any {
-    if (!this.resource.data) return undefined;
-    return (this.resource.data as any)[fieldName];
+    const data = this.resource.getData();
+    if (!data) return undefined;
+    return (data as any)[fieldName];
   }
 
   // 设置表单值
   setFieldValue(fieldName: string, value: any): void {
-    if (!this.resource.data) {
+    const currentData = this.resource.getData();
+    if (!currentData || Object.keys(currentData).length === 0) {
       const data: Record<string, any> = {};
       data[fieldName] = value;
       this.resource.setData(data as TData);
     } else {
-      const updatedData = { ...(this.resource.data as any) };
+      const updatedData = { ...(currentData as any) };
       updatedData[fieldName] = value;
       this.resource.setData(updatedData as TData);
     }
@@ -97,16 +102,15 @@ export class FormBlockModel<TData = Record<string, any>> extends DataBlockModel 
 
   getProps() {
     return {
-      ...super.getProps(),
-      initialValues: this.resource.data || {},
+      initialValues: this.resource.getData() || {},
       onValuesChange: (changedValues: any) => {
         this.setFormData(changedValues as Partial<TData>);
       },
       onSubmit: async (values: TData) => {
         this.resource.setData(values);
-        return this.save();
+        await this.resource.save();
+        return true;
       },
-      actions: this.actions,
       fields: this.fields,
     };
   }
