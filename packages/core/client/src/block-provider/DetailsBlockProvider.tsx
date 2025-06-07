@@ -10,7 +10,6 @@
 import { createForm } from '@formily/core';
 import { useField, useFieldSchema } from '@formily/react';
 import { useUpdate } from 'ahooks';
-import { Spin } from 'antd';
 import React, { createContext, useContext, useEffect, useMemo, useRef } from 'react';
 import { useCollection, useCollectionRecordData } from '../data-source';
 import { useCollectionParentRecord } from '../data-source/collection-record/CollectionRecordProvider';
@@ -54,9 +53,6 @@ const InternalDetailsBlockProvider = (props) => {
     };
   }, [action, field, form, resource, service]);
 
-  if (service.loading && !field.loaded) {
-    return <Spin />;
-  }
   field.loaded = true;
 
   return (
