@@ -918,9 +918,13 @@
   "After hiding, this tab will no longer appear in the tab bar. To show it again, you need to go to the route management page to set it.": "隱藏後，這個標籤將不再出現在標籤欄中。要再次顯示它，你需要到路由管理頁面進行設置。",
   "Deprecated": "已棄用",
   "Full permissions": "完全權限",
+  "Refresh data blocks": "刷新數據區塊",
+  "Select data blocks to refresh": "選擇要刷新的數據區塊",
+  "After successful submission, the selected data blocks will be automatically refreshed.": "提交成功後，選中的數據區塊將自動刷新。",
   "No pages yet, please configure first": "尚未配置頁面，請先配置",
   "Click the \"UI Editor\" icon in the upper right corner to enter the UI Editor mode": "點擊右上角的 \"介面設定\" 圖示進入介面設定模式",
   "Refresh data blocks": "刷新數據區塊",
   "Select data blocks to refresh": "選擇要刷新的數據區塊",
-  "After successful submission, the selected data blocks will be automatically refreshed.": "提交成功後，選中的數據區塊將自動刷新。"
+  "After successful submission, the selected data blocks will be automatically refreshed.": "提交成功後，選中的數據區塊將自動刷新。",
+  "Reset link expiration": "重置連結過的期時間"
 }

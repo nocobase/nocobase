@@ -7,6 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { sleep } from '@nocobase/test';
 import { lodash } from '@nocobase/utils';
 
 export default {
@@ -105,6 +106,25 @@ export default {
     },
     resume(node, job, processor) {
       return job;
+    },
+  },
+
+  timeConsume: {
+    async run({ config }, input, processor) {
+      const { duration = 1000 } = config;
+      await sleep(duration);
+      return {
+        status: 1,
+      };
+    },
+  },
+
+  recordAppName: {
+    run(node, input, processor) {
+      return {
+        status: 1,
+        result: processor.options.plugin.app.name,
+      };
     },
   },
 

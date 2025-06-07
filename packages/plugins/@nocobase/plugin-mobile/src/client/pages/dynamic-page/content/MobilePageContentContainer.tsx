@@ -12,7 +12,7 @@ import _ from 'lodash';
 import React, { FC, useEffect } from 'react';
 import { PageBackgroundColor } from '../../../constants';
 
-export const MobilePageContentContainer: FC<{ hideTabBar?: boolean }> = ({ children, hideTabBar }) => {
+export const MobilePageContentContainer: FC<{ hideTabBar?: boolean; displayPageHeader?: boolean }> = ({ children, hideTabBar, displayPageHeader = true }) => {
   const [mobileTabBarHeight, setMobileTabBarHeight] = React.useState(0);
   const [mobilePageHeader, setMobilePageHeader] = React.useState(0);
   const { token } = useToken();
@@ -29,7 +29,7 @@ export const MobilePageContentContainer: FC<{ hideTabBar?: boolean }> = ({ child
   });
   return (
     <>
-      {mobilePageHeader ? <div style={{ height: mobilePageHeader }}></div> : null}
+      {(mobilePageHeader && displayPageHeader) ? <div style={{ height: mobilePageHeader }}></div> : null}
       <div
         className="mobile-page-content"
         data-testid="mobile-page-content"

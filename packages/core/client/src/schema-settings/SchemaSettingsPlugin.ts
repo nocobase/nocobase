@@ -82,6 +82,7 @@ import { subTablePopoverComponentFieldSettings } from '../modules/fields/compone
 import { tagComponentFieldSettings } from '../modules/fields/component/Tag/tagComponentFieldSettings';
 import { timePickerComponentFieldSettings } from '../modules/fields/component/TimePicker/timePickerComponentFieldSettings';
 import { unixTimestampComponentFieldSettings } from '../modules/fields/component/UnixTimestamp/unixTimestampComponentFieldSettings';
+import { menuItemSettings } from '../route-switch/antd/admin-layout/menuItemSettings';
 export class SchemaSettingsPlugin extends Plugin {
   async load() {
     // block settings
@@ -154,5 +155,8 @@ export class SchemaSettingsPlugin extends Plugin {
     this.schemaSettingsManager.add(previewComponentFieldSettings);
     this.schemaSettingsManager.add(dividerSettings);
     this.schemaSettingsManager.add(timePickerComponentFieldSettings);
+
+    // menu settings
+    this.schemaSettingsManager.add(menuItemSettings);
   }
 }

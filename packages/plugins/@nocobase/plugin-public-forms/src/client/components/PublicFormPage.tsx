@@ -33,7 +33,7 @@ import {
 import { Input, Modal, Spin } from 'antd';
 import { useTranslation } from 'react-i18next';
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
-import { isDesktop } from 'react-device-detect';
+import { isDesktop, isMobile } from 'react-device-detect';
 import { useParams } from 'react-router';
 import { usePublicSubmitActionProps } from '../hooks';
 import { UnEnabledFormPlaceholder, UnFoundFormPlaceholder } from './UnEnabledFormPlaceholder';
@@ -132,9 +132,6 @@ const PublicFormMessageProvider = ({ children }) => {
     </PublicFormMessageContext.Provider>
   );
 };
-function isMobile() {
-  return window.matchMedia('(max-width: 768px)').matches;
-}
 
 const AssociationFieldMobile = (props) => {
   return <AssociationField {...props} popupMatchSelectWidth={true} />;
@@ -168,7 +165,6 @@ const mobileComponents = {
 function InternalPublicForm() {
   const params = useParams();
   const apiClient = useAPIClient();
-  const isMobileMedia = isMobile();
   const { error, data, loading, run } = useRequest<any>(
     {
       url: `publicForms:getMeta/${params.name}`,
@@ -246,7 +242,7 @@ function InternalPublicForm() {
   if (!data?.data) {
     return <UnEnabledFormPlaceholder />;
   }
-  const components = isMobileMedia ? mobileComponents : {};
+  const components = isMobile ? mobileComponents : {};
   return (
     <ACLCustomContext.Provider value={{ allowAll: true }}>
       <PublicAPIClientProvider>
