@@ -2,6 +2,37 @@
 
 `FlowModel` 是 NocoBase 流引擎的基础模型类，支持流注册、流执行、属性管理、子模型管理、持久化等功能。所有业务模型均可继承自 FlowModel。
 
+## 泛型支持
+
+FlowModel 支持泛型，可以通过类型参数定义模型的结构，提供更好的类型安全和智能提示。
+
+### 基本泛型用法
+
+```ts
+interface MyModelStructure {
+  parent?: ParentModel;
+  subModels?: {
+    tabs?: TabModel[];
+    items?: ItemModel[];
+  };
+}
+
+class MyModel extends FlowModel<MyModelStructure> {
+  // 现在 this.parent 和 this.subModels 都有正确的类型推导
+}
+```
+
+### 默认结构类型
+
+如果不指定泛型参数，FlowModel 使用默认的 `DefaultStructure`：
+
+```ts
+interface DefaultStructure {
+  parent?: FlowModel | null;
+  subModels?: Record<string, FlowModel | FlowModel[]>;
+}
+```
+
 ---
 
 ## 主要属性
@@ -18,11 +49,12 @@
 - **flowEngine: FlowEngine**  
   关联的流引擎实例。
 
-- **parent: FlowModel \| null**  
-  父模型实例。
+- **parent: Structure['parent']**  
+  父模型实例，类型由泛型 Structure 决定。默认为 `FlowModel | null`。
 
-- **subModels: Map\<string, FlowModel \| Array\<FlowModel\>\>**  
-  子模块。
+- **subModels: Structure['subModels']**  
+  子模型集合，类型由泛型 Structure 决定。默认为 `Record<string, FlowModel | FlowModel[]>`。
+  支持对象字段（如 detail、config）和数组字段（如 tabs、columns）。
 
 ---
 
@@ -59,16 +91,19 @@
 
 ### 流注册与执行
 
-- **static registerFlow(keyOrDefinition, flowDefinition?)**  
-  配置流，支持字符串 key 或完整对象。
+- **static registerFlow\<TModel\>(keyOrDefinition, flowDefinition?)**  
+  配置流，支持字符串 key 或完整对象。支持泛型以确保类型安全。
 
-- **applyFlow(flowKey: string, context?): Promise<any>**  
+- **static extendFlow\<TModel\>(keyOrDefinition, extendDefinition?)**  
+  扩展已存在的流程定义，通过合并现有流程和扩展定义来创建新的流程。
+
+- **applyFlow(flowKey: string, extra?: FlowExtraContext): Promise<any>**  
   执行指定流。
 
-- **dispatchEvent(eventName: string, context?): void**  
+- **dispatchEvent(eventName: string, extra?: FlowExtraContext): void**  
   触发事件，自动匹配并执行相关流。
 
-- **applyAutoFlows(context?): Promise<any[]>**  
+- **applyAutoFlows(extra?: FlowExtraContext): Promise<any[]>**  
   执行所有自动应用流。
 
 - **getFlow(key: string): FlowDefinition \| undefined**  
@@ -76,6 +111,9 @@
 
 - **static getFlows(): Map<string, FlowDefinition>**  
   获取所有已配置流（含继承）。
+
+- **getAutoFlows(): FlowDefinition[]**  
+  获取所有自动应用流程定义并按 sort 排序。
 
 ---
 
@@ -147,8 +185,4 @@ await model.save();
 await model.applyFlow('default');
 await model.applyAutoFlows();
 await model.dispatchEvent('event');
-```
-
-```ts
-
 ```

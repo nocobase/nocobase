@@ -529,13 +529,24 @@ export class FlowModel<Structure extends {parent?: any, subModels?: any} = Defau
     if (!this.flowEngine) {
       throw new Error('FlowEngine is not set on this model. Please set flowEngine before deleting.');
     }
+
+    // 从 FlowEngine 中销毁模型
     this.flowEngine.destroyModel(this.uid);
-    if (this.parent) {
+
+    // 从父模型中移除当前模型的引用
+    if (this.parent?.subModels) {
       for (const subKey in this.parent.subModels) {
-        if (Array.isArray(this.parent.subModels[subKey])) {
-          this.parent.subModels[subKey].splice(this.parent.subModels[subKey].indexOf(this), 1);
-        } else if (this.parent.subModels[subKey] instanceof FlowModel) {
-          delete this.parent.subModels[subKey]
+        const subModelValue = this.parent.subModels[subKey];
+        
+        if (Array.isArray(subModelValue)) {
+          const index = subModelValue.indexOf(this);
+          if (index !== -1) {
+            subModelValue.splice(index, 1);
+            break;
+          }
+        } else if (subModelValue === this) {
+          delete this.parent.subModels[subKey];
+          break;
         }
       }
     }
