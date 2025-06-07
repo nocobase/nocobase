@@ -19,12 +19,7 @@ export default {
       const dataSource = ctx.app.dataSourceManager.dataSources.get(dataSourceKey);
       const collection = dataSource.collectionManager.getCollection(collectionName);
 
-      const fields = collection.getFields().map((value) => {
-        if (value.options.possibleTypes) {
-          delete value.options.possibleTypes;
-        }
-        return value;
-      });
+      const fields = collection.getFields();
       ctx.body = lodash.sortBy(
         fields.map((field) => field.options),
         'name',
