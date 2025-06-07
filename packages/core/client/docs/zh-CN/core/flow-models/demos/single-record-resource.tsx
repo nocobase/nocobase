@@ -1,57 +1,92 @@
+import { faker } from '@faker-js/faker';
 import { Application, Plugin } from '@nocobase/client';
 import { FlowModel, FlowModelRenderer, SingleRecordResource } from '@nocobase/flow-engine';
 import { Button, Space } from 'antd';
+import MockAdapter from 'axios-mock-adapter';
 import React from 'react';
 
-// 模拟 APIClient
-class MockAPIClient {
-  private mockData = {
+import { observable } from '@formily/reactive';
+import { APIClient } from '@nocobase/sdk';
+
+const api = new APIClient({
+  baseURL: 'https://localhost:8000/api',
+});
+
+const mock = new MockAdapter(api.axios);
+
+const records = [
+  {
     id: 1,
-    name: 'John Doe',
-    email: 'john@example.com',
-    updatedAt: new Date().toISOString(),
-  };
+    name: faker.person.fullName(),
+    email: faker.internet.email(),
+  },
+];
 
-  async request(options: any) {
-    console.log('Mock API Request:', options);
+mock.onGet('users:get').reply((config) => {
+  return [
+    200,
+    {
+      data: records[0] || null,
+    },
+  ];
+});
 
-    // 模拟网络延迟
-    await new Promise((resolve) => setTimeout(resolve, 200));
-
-    const { url, data } = options;
-
-    if (url?.includes(':get')) {
-      return { data: this.mockData };
-    }
-
-    if (url?.includes(':update')) {
-      this.mockData = {
-        ...this.mockData,
-        ...data,
-        updatedAt: new Date().toISOString(),
-      };
-      return { data: this.mockData };
-    }
-
-    if (url?.includes(':destroy')) {
-      const deleted = { ...this.mockData };
-      this.mockData = null;
-      return { data: deleted };
-    }
-
-    return { data: this.mockData };
+mock.onPost('users:update').reply((config) => {
+  if (records.length === 0) {
+    return [
+      404,
+      {
+        errors: [
+          {
+            code: 'NotFound',
+            message: 'Record not found',
+          },
+        ],
+      },
+    ];
   }
-}
+  records[0] = {
+    ...records[0],
+    ...JSON.parse(config.data),
+  };
+  return [
+    200,
+    {
+      data: records[0],
+    },
+  ];
+});
+
+mock.onGet('users:destroy').reply((config) => {
+  records.splice(0, 1); // 删除第一个记录
+  return [
+    200,
+    {
+      data: 1,
+    },
+  ];
+});
+
+// class DataBlockFlowModel extends FlowModel {
+//   resource;
+//   constructor(options) {
+//     super(options);
+//     this.resource = new SingleRecordResource();
+//     this.resource.setAPIClient(this.flowEngine.apiClient);
+//   }
+// }
 
 class SingleRecordFlowModel extends FlowModel {
-  resource: SingleRecordResource = new SingleRecordResource(new MockAPIClient() as any, {
-    resourceName: 'users',
-    filterByTk: 1,
+  meta = observable.shallow({
+    resource: null,
   });
 
-  async onInit() {
-    // 初始化时加载数据
-    await this.resource.refresh();
+  get resource(): SingleRecordResource {
+    return this.meta.resource;
+  }
+
+  set resource(value) {
+    this.meta.resource = value;
   }
 
   render() {
@@ -63,13 +98,24 @@ class SingleRecordFlowModel extends FlowModel {
         </div>
         <pre>{JSON.stringify(this.resource.getData(), null, 2)}</pre>
         <Space>
+          <Button
+            onClick={() => {
+              records[0] = {
+                id: 1,
+                name: faker.person.fullName(),
+                email: faker.internet.email(),
+              };
+              this.resource.refresh();
+            }}
+          >
+            Reset
+          </Button>
           <Button onClick={() => this.resource.refresh()}>Refresh</Button>
           <Button
             onClick={() =>
               this.resource.save({
-                ...this.resource.getData(),
-                name: `Updated ${Date.now()}`,
-                email: `updated${Date.now()}@example.com`,
+                name: faker.person.fullName(),
+                email: faker.internet.email(),
               })
             }
           >
@@ -83,6 +129,22 @@ class SingleRecordFlowModel extends FlowModel {
     );
   }
 }
+
+SingleRecordFlowModel.registerFlow<SingleRecordFlowModel>({
+  auto: true,
+  key: 'default',
+  steps: {
+    step1: {
+      async handler(ctx, params) {
+        ctx.model.resource = new SingleRecordResource(api as any, {
+          resourceName: 'users',
+          filterByTk: 1,
+        });
+        await ctx.model.resource.refresh();
+      },
+    },
+  },
+});
 
 class PluginSingleRecordDemo extends Plugin {
   async load() {

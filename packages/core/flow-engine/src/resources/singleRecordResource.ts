@@ -8,9 +8,9 @@
  */
 
 import { observable } from '@formily/reactive';
-import { APIResource } from './apiResource';
 import { APIClient } from '@nocobase/sdk';
 import { SingleRecordResourceMeta } from '../types';
+import { APIResource } from './apiResource';
 
 export class SingleRecordResource<TData = any> extends APIResource<TData> {
   meta = observable.shallow({
@@ -33,6 +33,15 @@ export class SingleRecordResource<TData = any> extends APIResource<TData> {
     }
   }
 
+  async refresh() {
+    if (!this.api) {
+      throw new Error('API client not set');
+    }
+    const { data } = await this.api.request(this.getRequestOptions());
+    this.setData(data?.data);
+    this.meta.meta = data?.meta || {};
+  }
+
   getRequestOptions(action?: string): any {
     const options: any = {
       url: this.buildURL(action),
@@ -49,6 +58,10 @@ export class SingleRecordResource<TData = any> extends APIResource<TData> {
 
     if (this.meta.appends.length > 0) {
       options.params.appends = this.meta.appends;
+    }
+
+    if (this.meta.dataSourceKey) {
+      options.headers['X-Data-Source'] = this.meta.dataSourceKey;
     }
 
     return options;
@@ -72,8 +85,8 @@ export class SingleRecordResource<TData = any> extends APIResource<TData> {
   async save(data: TData): Promise<void> {
     const requestOptions = this.getRequestOptions('update');
     try {
-      await this.api.request({ ...requestOptions, data });
-      this.setData(data);
+      await this.api.request({ ...requestOptions, data, method: 'post' });
+      await this.refresh();
     } catch (e) {
       console.error(e);
       this.meta.error = e;
@@ -84,10 +97,12 @@ export class SingleRecordResource<TData = any> extends APIResource<TData> {
     const options = this.getRequestOptions('destroy');
     try {
       await this.api.request(options);
-      this.setData(null);
+      await this.refresh();
     } catch (e) {
       console.error(e);
       this.meta.error = e;
     }
   }
+
+  async runAction(action, options) {}
 }

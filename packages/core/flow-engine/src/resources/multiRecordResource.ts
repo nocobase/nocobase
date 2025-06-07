@@ -8,9 +8,9 @@
  */
 
 import { observable } from '@formily/reactive';
-import { APIResource } from './apiResource';
 import { APIClient } from '@nocobase/sdk';
 import { MultiRecordResourceMeta } from '../types';
+import { APIResource } from './apiResource';
 
 export class MultiRecordResource<TDataItem = any> extends APIResource<TDataItem[]> {
   meta = observable.shallow({
@@ -82,16 +82,9 @@ export class MultiRecordResource<TDataItem = any> extends APIResource<TDataItem[
     if (!this.api) {
       throw new Error('API client not set');
     }
-    const response = await this.api.request(this.getRequestOptions());
-
-    if (Array.isArray(response.data)) {
-      this.setData(response.data);
-    } else if (response.data && Array.isArray(response.data.items)) {
-      this.setData(response.data.items);
-      if (response.data.meta) {
-        this.meta.meta = response.data.meta;
-      }
-    }
+    const { data } = await this.api.request(this.getRequestOptions());
+    this.setData(data?.data);
+    this.meta.meta = data?.meta || {};
   }
 
   async next(): Promise<void> {

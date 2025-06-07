@@ -13,6 +13,7 @@ import { APIResource } from './apiResource';
 export class SimpleAPIResource<TData = any> extends APIResource<TData> {
   meta = observable.shallow({
     url: null as string | null,
+    params: {},
     data: {} as TData,
   });
 
@@ -37,4 +38,4 @@ export class SimpleAPIResource<TData = any> extends APIResource<TData> {
       url: this.url,
     };
   }
-} 
+}
