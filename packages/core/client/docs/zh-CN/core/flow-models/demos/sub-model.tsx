@@ -1,7 +1,7 @@
 import { observable } from '@formily/reactive';
 import { uid } from '@formily/shared';
 import { Application, Plugin } from '@nocobase/client';
-import { FlowModel, FlowModelRenderer, IFlowModelRepository } from '@nocobase/flow-engine';
+import { CreateModelOptions, FlowModel, FlowModelRenderer, IFlowModelRepository } from '@nocobase/flow-engine';
 import { Button, Tabs } from 'antd';
 import _ from 'lodash';
 import React from 'react';
@@ -29,6 +29,7 @@ class FlowModelRepository implements IFlowModelRepository<FlowModel> {
     const json: FlowModel = JSON.parse(data);
     for (const model of this.models.values()) {
       if (model.parentId === uid) {
+        json.subModels = json.subModels || {};
         if (model.subType === 'array') {
           json.subModels[model.subKey] = json.subModels[model.subKey] || [];
           const subModel = await this.load(model.uid);
@@ -72,8 +73,8 @@ class FlowModelRepository implements IFlowModelRepository<FlowModel> {
 class TabFlowModel extends FlowModel {}
 
 class HelloFlowModel extends FlowModel {
-  onInit(options: any) {
-    const tabs = options.tabs || [];
+  onInit(options: CreateModelOptions) {
+    const tabs = (options.subModels.tabs || []) as FlowModel[];
     // 使用新的 subModels API 初始化 tabs
     tabs.forEach((tab: any) => {
       this.addSubModel('tabs', tab);
@@ -99,12 +100,14 @@ class HelloFlowModel extends FlowModel {
           }))}
           tabBarExtraContent={
             <Button
-              onClick={() =>
+              onClick={() => {
+                const tabId = uid();
                 this.addTab({
                   use: 'TabFlowModel',
-                  props: { key: uid(), label: `Tab - ${uid()}` },
+                  uid: tabId,
+                  props: { key: tabId, label: `Tab - ${tabId}` },
                 })
-              }
+              }}
             >
               Add Tab
             </Button>
@@ -130,11 +133,13 @@ class PluginHelloModel extends Plugin {
         tabs: [
           {
             use: 'TabFlowModel',
-            props: { key: uid(), label: 'Tab 1' },
+            uid: 'tab-1',
+            props: { key: 'tab-1', label: 'Tab 1' },
           },
           {
             use: 'TabFlowModel',
-            props: { key: uid(), label: 'Tab 2' },
+            uid: 'tab-2',
+            props: { key: 'tab-2', label: 'Tab 2' },
           },
         ],
       }

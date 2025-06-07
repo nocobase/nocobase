@@ -173,7 +173,13 @@ export class FlowEngine {
 
     if (subModels) {
       Object.entries(subModels).forEach(([key, value]) => {
-        modelInstance.addSubModel(key, value);
+        if (Array.isArray(value)) {
+          value.forEach((item) => {
+            modelInstance.addSubModel(key, item);
+          });
+        } else {
+          modelInstance.setSubModel(key, value);
+        }
       });
     }
 
