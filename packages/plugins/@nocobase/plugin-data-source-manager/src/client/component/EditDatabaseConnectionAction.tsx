@@ -18,6 +18,7 @@ import {
   useResourceActionContext,
   useResourceContext,
   useDataSourceManager,
+  useAPIClient,
 } from '@nocobase/client';
 import _ from 'lodash';
 import React, { useState } from 'react';
@@ -25,6 +26,7 @@ import { useTranslation } from 'react-i18next';
 import { useForm, useField } from '@formily/react';
 import PluginDatabaseConnectionsClient from '../';
 import { NAMESPACE } from '../locale';
+import { addDatasourceCollections, useLoadCollections } from '../hooks';
 
 export const EditDatabaseConnectionAction = () => {
   const record = useRecord();
@@ -34,6 +36,8 @@ export const EditDatabaseConnectionAction = () => {
   const [visible, setVisible] = useState(false);
   const { t } = useTranslation();
   const dm = useDataSourceManager();
+  const loadCollections = useLoadCollections();
+  const api = useAPIClient();
 
   const useUpdateAction = () => {
     const field = useField();
@@ -48,6 +52,11 @@ export const EditDatabaseConnectionAction = () => {
         field.data = field.data || {};
         field.data.loading = true;
         try {
+          const toBeAddedCollections = form.values.collections || [];
+          if (!form.values.addAllCollections) {
+            await addDatasourceCollections(api, filterByTk, toBeAddedCollections);
+          }
+          delete form.values.collections;
           await resource.update({ filterByTk, values: form.values });
           ctx.setVisible(false);
           dm.getDataSource(filterByTk).setOptions(form.values);
@@ -80,11 +89,14 @@ export const EditDatabaseConnectionAction = () => {
                     'x-decorator-props': {
                       initialValue: record,
                     },
+                    'x-component-props': {
+                      width: 650,
+                    },
                     title: compile("{{t('Edit')}}") + ' - ' + compile(record.displayName),
                     properties: {
                       body: {
                         type: 'void',
-                        'x-component': type.DataSourceSettingsForm,
+                        'x-component': type.DataSourceSettingsForm.bind(null, { loadCollections, from: 'edit' }),
                       },
                       footer: {
                         type: 'void',
@@ -124,7 +136,7 @@ export const EditDatabaseConnectionAction = () => {
             {t('Edit')}
           </a>
         )}
-        <SchemaComponent scope={{ createOnly: true, useUpdateAction }} schema={schema} />
+        <SchemaComponent scope={{ createOnly: true, useUpdateAction, loadCollections }} schema={schema} />
       </ActionContext.Provider>
     </div>
   );
