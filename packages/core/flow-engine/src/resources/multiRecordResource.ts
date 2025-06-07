@@ -9,6 +9,8 @@
 
 import { observable } from '@formily/reactive';
 import { APIResource } from './apiResource';
+import { APIClient } from '@nocobase/sdk';
+import { MultiRecordResourceMeta } from '../types';
 
 export class MultiRecordResource<TDataItem = any> extends APIResource<TDataItem[]> {
   meta = observable.shallow({
@@ -25,6 +27,13 @@ export class MultiRecordResource<TDataItem = any> extends APIResource<TDataItem[
     sourceId: null as string | number | null,
     actionName: 'list' as string,
   });
+
+  constructor(api?: APIClient, meta?: MultiRecordResourceMeta) {
+    super(api);
+    if (meta) {
+      Object.assign(this.meta, meta);
+    }
+  }
 
   getRequestOptions(action?: string, params?: Record<string, any>): any {
     const options: any = {
@@ -74,7 +83,7 @@ export class MultiRecordResource<TDataItem = any> extends APIResource<TDataItem[
       throw new Error('API client not set');
     }
     const response = await this.api.request(this.getRequestOptions());
-    
+
     if (Array.isArray(response.data)) {
       this.setData(response.data);
     } else if (response.data && Array.isArray(response.data.items)) {
@@ -110,7 +119,7 @@ export class MultiRecordResource<TDataItem = any> extends APIResource<TDataItem[
     }
 
     try {
-      await this.api.request({...this.getRequestOptions('create'), data});
+      await this.api.request({ ...this.getRequestOptions('create'), data });
       await this.refresh();
     } catch (e) {
       this.meta.error = e;
@@ -121,7 +130,7 @@ export class MultiRecordResource<TDataItem = any> extends APIResource<TDataItem[
     if (!this.api) {
       throw new Error('API client not set');
     }
-    
+
     const options = {
       ...this.getRequestOptions('update', { filterByTk }),
       data,

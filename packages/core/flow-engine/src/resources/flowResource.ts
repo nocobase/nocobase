@@ -10,23 +10,23 @@
 import { observable } from '@formily/reactive';
 
 export class FlowResource<TData = any> {
-  config = observable.shallow({
+  meta = observable.shallow({
     data: {} as TData,
   });
 
   get data(): TData {
-    return this.config.data;
+    return this.meta.data;
   }
 
   set data(value: TData) {
-    this.config.data = value;
+    this.meta.data = value;
   }
 
   getData(): TData {
-    return this.config.data;
+    return this.meta.data;
   }
 
   setData(data: TData): void {
-    this.config.data = data;
+    this.meta.data = data;
   }
 }

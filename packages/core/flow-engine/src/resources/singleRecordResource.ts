@@ -9,6 +9,8 @@
 
 import { observable } from '@formily/reactive';
 import { APIResource } from './apiResource';
+import { APIClient } from '@nocobase/sdk';
+import { SingleRecordResourceMeta } from '../types';
 
 export class SingleRecordResource<TData = any> extends APIResource<TData> {
   meta = observable.shallow({
@@ -23,6 +25,13 @@ export class SingleRecordResource<TData = any> extends APIResource<TData> {
     sourceId: null as string | number | null,
     actionName: 'get' as string,
   });
+
+  constructor(api?: APIClient, meta?: SingleRecordResourceMeta) {
+    super(api);
+    if (meta) {
+      Object.assign(this.meta, meta);
+    }
+  }
 
   getRequestOptions(action?: string): any {
     const options: any = {
@@ -63,7 +72,7 @@ export class SingleRecordResource<TData = any> extends APIResource<TData> {
   async save(data: TData): Promise<void> {
     const requestOptions = this.getRequestOptions('update');
     try {
-      await this.api.request({...requestOptions, data});
+      await this.api.request({ ...requestOptions, data });
       this.setData(data);
     } catch (e) {
       console.error(e);

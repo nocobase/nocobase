@@ -13,6 +13,13 @@ import { APIClient } from '@nocobase/sdk';
 export abstract class APIResource<TData = any> extends FlowResource<TData> {
   api: APIClient;
 
+  constructor(api?: APIClient) {
+    super();
+    if (api) {
+      this.api = api;
+    }
+  }
+
   setAPIClient(api: APIClient): void {
     this.api = api;
   }
