@@ -965,3 +965,47 @@ describe('belongs to many', () => {
     await transaction.commit();
   });
 });
+
+describe('belongs to many', () => {
+  let db: Database;
+  let A;
+  let B;
+
+  beforeEach(async () => {
+    db = await createMockDatabase();
+    await db.clean({ drop: true });
+    A = db.collection({
+      name: 'a',
+      fields: [
+        { type: 'string', name: 'code', unique: true },
+        {
+          type: 'belongsToMany',
+          target: 'b',
+          targetKey: 'code',
+          sourceKey: 'code',
+          foreignKey: 'a_code',
+          otherKey: 'b_code',
+        },
+      ],
+    });
+
+    B = db.collection({
+      name: 'b',
+      fields: [{ type: 'string', name: 'code', unique: true }],
+    });
+
+    await db.sync({ force: true });
+  });
+
+  afterEach(async () => {
+    await db.close();
+  });
+
+  it('should get database instance in repository', async () => {
+    const a = await A.create({
+      values: {
+        b: {},
+      },
+    });
+  });
+});
