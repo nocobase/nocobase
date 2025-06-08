@@ -108,13 +108,12 @@ function useFlowExecutor<T, TModel extends FlowModel = FlowModel>(
     [cacheKeyPrefix, flowKey, model.uid],
   );
   const [, forceUpdate] = useState({});
-  const isMounted = useRef(true);
+  const isMounted = useRef(false);
   const flowEngineCache = engine.applyFlowCache;
 
   useEffect(() => {
     isMounted.current = true;
     return () => {
-      isMounted.current = false;
       flowEngineCache.delete(cacheKey);
     };
   }, [cacheKey]);
@@ -129,6 +128,9 @@ function useFlowExecutor<T, TModel extends FlowModel = FlowModel>(
 
       if (isInitialAutorunForEffect) {
         isInitialAutorunForEffect = false;
+        if (flowEngineCache.get(cacheKey)) {
+          return;
+        }
       }
 
       if (debounceTimer) clearTimeout(debounceTimer);
@@ -149,10 +151,8 @@ function useFlowExecutor<T, TModel extends FlowModel = FlowModel>(
               forceUpdate({});
             }
           } catch (newError) {
-            if (isMounted.current) {
-              flowEngineCache.set(cacheKey, { status: 'rejected', error: newError, promise: Promise.reject(newError) });
-              forceUpdate({});
-            }
+            flowEngineCache.set(cacheKey, { status: 'rejected', error: newError, promise: Promise.reject(newError) });
+            forceUpdate({});
           }
         }
       }, 300);
@@ -175,11 +175,11 @@ function useFlowExecutor<T, TModel extends FlowModel = FlowModel>(
   // 执行初始请求
   const promise = executor(context)
     .then((result) => {
-      if (isMounted.current) flowEngineCache.set(cacheKey, { status: 'resolved', data: result, promise });
+      flowEngineCache.set(cacheKey, { status: 'resolved', data: result, promise });
       return result;
     })
     .catch((err) => {
-      if (isMounted.current) flowEngineCache.set(cacheKey, { status: 'rejected', error: err, promise });
+      flowEngineCache.set(cacheKey, { status: 'rejected', error: err, promise });
       throw err;
     });
 
