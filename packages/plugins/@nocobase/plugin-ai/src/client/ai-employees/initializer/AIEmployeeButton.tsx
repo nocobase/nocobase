@@ -63,11 +63,12 @@ export const AIEmployeeButton: React.FC<{
         display: 'flex',
       }}
       onClick={async () => {
+        const local = [...localVariables, { name: '$nSelectedRecord', ctx: selectedRecord }];
         setTaskVariables({
           variables,
-          localVariables: [...localVariables, { name: '$nSelectedRecord', ctx: selectedRecord }],
+          localVariables: local,
         });
-        triggerTask({ aiEmployee, tasks, variables, localVariables });
+        triggerTask({ aiEmployee, tasks, variables, localVariables: local });
       }}
     >
       <Spin spinning={loading}>

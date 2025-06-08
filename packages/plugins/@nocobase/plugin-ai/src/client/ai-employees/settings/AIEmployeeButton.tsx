@@ -8,7 +8,15 @@
  */
 
 import React, { memo, useMemo, useState } from 'react';
-import { SchemaComponent, SchemaSettings, SchemaSettingsItem, useSchemaSettings, useToken } from '@nocobase/client';
+import {
+  SchemaComponent,
+  SchemaSettings,
+  SchemaSettingsItem,
+  SchemaSettingsLinkageRules,
+  useSchemaSettings,
+  useSchemaToolbar,
+  useToken,
+} from '@nocobase/client';
 import { useT } from '../../locale';
 import { avatars } from '../avatars';
 import { Card, Avatar, Tooltip, Modal, Tag, Typography } from 'antd';
@@ -251,6 +259,17 @@ export const aiEmployeeButtonSettings = new SchemaSettings({
         );
       },
     },
+    // {
+    //   name: 'linkageRules',
+    //   Component: SchemaSettingsLinkageRules,
+    //   useComponentProps() {
+    //     const { linkageRulesProps } = useSchemaToolbar();
+    //     return {
+    //       ...linkageRulesProps,
+    //       type: 'button',
+    //     };
+    //   },
+    // },
     {
       name: 'divider',
       type: 'divider',
