@@ -129,7 +129,7 @@ test('Collection event add data trigger, determine trigger node integer field va
   // 3、预期结果：工作流成功触发,判断节点true
   const getWorkflow = await apiGetWorkflow(workflowId);
   const getWorkflowObj = JSON.parse(JSON.stringify(getWorkflow));
-  const getWorkflowExecuted = getWorkflowObj.executed;
+  const getWorkflowExecuted = getWorkflowObj.versionStats.executed;
   expect(getWorkflowExecuted).toBe(1);
   const getWorkflowNodeExecutions = await apiGetWorkflowNodeExecutions(workflowId);
   const getWorkflowNodeExecutionsObj = JSON.parse(JSON.stringify(getWorkflowNodeExecutions));
@@ -251,7 +251,7 @@ test('Collection event Add Data Trigger, determines that the trigger node intege
   // 3、预期结果：工作流成功触发,判断节点false
   const getWorkflow = await apiGetWorkflow(workflowId);
   const getWorkflowObj = JSON.parse(JSON.stringify(getWorkflow));
-  const getWorkflowExecuted = getWorkflowObj.executed;
+  const getWorkflowExecuted = getWorkflowObj.versionStats.executed;
   expect(getWorkflowExecuted).toBe(1);
   const getWorkflowNodeExecutions = await apiGetWorkflowNodeExecutions(workflowId);
   const getWorkflowNodeExecutionsObj = JSON.parse(JSON.stringify(getWorkflowNodeExecutions));
@@ -373,7 +373,7 @@ test('Collection event Add Data Trigger, determines that the trigger node intege
   // 3、预期结果：工作流成功触发,判断节点false
   const getWorkflow = await apiGetWorkflow(workflowId);
   const getWorkflowObj = JSON.parse(JSON.stringify(getWorkflow));
-  const getWorkflowExecuted = getWorkflowObj.executed;
+  const getWorkflowExecuted = getWorkflowObj.versionStats.executed;
   expect(getWorkflowExecuted).toBe(1);
   const getWorkflowNodeExecutions = await apiGetWorkflowNodeExecutions(workflowId);
   const getWorkflowNodeExecutionsObj = JSON.parse(JSON.stringify(getWorkflowNodeExecutions));
@@ -498,7 +498,7 @@ test('Collection event add data trigger, determines that the trigger node intege
   // 3、预期结果：工作流成功触发,判断节点true
   const getWorkflow = await apiGetWorkflow(workflowId);
   const getWorkflowObj = JSON.parse(JSON.stringify(getWorkflow));
-  const getWorkflowExecuted = getWorkflowObj.executed;
+  const getWorkflowExecuted = getWorkflowObj.versionStats.executed;
   expect(getWorkflowExecuted).toBe(1);
   const getWorkflowNodeExecutions = await apiGetWorkflowNodeExecutions(workflowId);
   const getWorkflowNodeExecutionsObj = JSON.parse(JSON.stringify(getWorkflowNodeExecutions));

@@ -22,6 +22,7 @@ import { Collection, CollectionFieldOptions } from '../../data-source/collection
 import { useCompile } from '../../schema-component';
 import { useSchemaTemplateManager } from '../../schema-templates';
 import { useCollectionDataSourceItems } from '../utils';
+import { useTemplateBlockNotifier } from '../hooks/useTemplateBlockNotifier';
 
 const MENU_ITEM_HEIGHT = 32;
 const STEP = 15;
@@ -334,8 +335,16 @@ export const DataBlockInitializer: FC<DataBlockInitializerProps> = (props) => {
   const { insert, setVisible } = useSchemaInitializer();
   const compile = useCompile();
   const { getTemplateSchemaByMode } = useSchemaTemplateManager();
+  const templateBlockAddedNotifier = useTemplateBlockNotifier();
+
   const onClick = useCallback(
     async (options) => {
+      templateBlockAddedNotifier({
+        collection: options.item.name,
+        dataSource: options.item.dataSource,
+        componentType: componentType,
+        menuName: name,
+      });
       const { item, fromOthersInPopup } = options;
 
       if (propsOnClick) {
@@ -345,6 +354,8 @@ export const DataBlockInitializer: FC<DataBlockInitializerProps> = (props) => {
       if (item.template) {
         const s = await getTemplateSchemaByMode(item);
         templateWrap ? insert(templateWrap(s, { item, fromOthersInPopup })) : insert(s);
+      } else if (item.schemaInsertor) {
+        await item.schemaInsertor(insert, { item, name, fromOthersInPopup });
       } else {
         if (onCreateBlockSchema) {
           onCreateBlockSchema({ item, fromOthersInPopup });
@@ -353,7 +364,17 @@ export const DataBlockInitializer: FC<DataBlockInitializerProps> = (props) => {
 
       setVisible(false);
     },
-    [getTemplateSchemaByMode, insert, setVisible, onCreateBlockSchema, propsOnClick, templateWrap],
+    [
+      getTemplateSchemaByMode,
+      insert,
+      setVisible,
+      onCreateBlockSchema,
+      propsOnClick,
+      templateWrap,
+      templateBlockAddedNotifier,
+      name,
+      componentType,
+    ],
   );
   const items =
     itemsFromProps ||

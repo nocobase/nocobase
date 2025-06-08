@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-file-manager",
-  "version": "1.6.36",
+  "version": "1.7.5",
   "displayName": "File manager",
   "displayName.zh-CN": "文件管理器",
   "description": "Provides files storage services with files collection template and attachment field.",
@@ -19,6 +19,7 @@
     "@types/koa-multer": "^1.0.4",
     "@types/multer": "^1.4.5",
     "antd": "5.x",
+    "axios": "^1.7.0",
     "cos-nodejs-sdk-v5": "^2.11.14",
     "koa-static": "^5.0.0",
     "mime-match": "^1.0.2",

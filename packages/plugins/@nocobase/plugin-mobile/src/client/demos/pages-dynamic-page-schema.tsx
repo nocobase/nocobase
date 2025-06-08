@@ -1,4 +1,4 @@
-import { BlockItem, Grid, Plugin, SchemaComponent } from '@nocobase/client';
+import { BlockItem, DndContext, Grid, Plugin, SchemaComponent } from '@nocobase/client';
 import { mockApp } from '@nocobase/client/demo-utils';
 import PluginMobileClient, { MobileProviders, getMobilePageSchema } from '@nocobase/plugin-mobile/client';
 import React from 'react';
@@ -8,7 +8,9 @@ import { schemaViewer } from './fixtures/schemaViewer';
 const Demo = () => {
   return (
     <MobileProviders>
-      <SchemaComponent schema={schemaViewer(getMobilePageSchema('page1', 'tab1').schema)} />
+      <DndContext>
+        <SchemaComponent schema={schemaViewer(getMobilePageSchema('page1', 'tab1').schema)} />
+      </DndContext>
     </MobileProviders>
   );
 };

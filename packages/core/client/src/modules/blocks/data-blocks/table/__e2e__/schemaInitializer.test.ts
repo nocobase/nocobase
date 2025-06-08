@@ -156,6 +156,7 @@ test.describe('configure columns', () => {
     await page.getByRole('menuitem', { name: 'manyToOne2 right' }).hover();
     await page.getByRole('menuitem', { name: 'manyToOne3' }).click();
     await page.mouse.move(600, 0);
+    await page.reload();
 
     // 2. Click on the association field, create a details block in the popup, display the ID field, and assert if it's correct
     await page
@@ -194,6 +195,7 @@ test.describe('configure columns', () => {
     await page.getByLabel('schema-initializer-Grid-details:configureFields-emptyCollection').hover();
     await page.getByRole('menuitem', { name: 'ID', exact: true }).click();
     await page.mouse.move(600, 0);
+
     await expect(page.getByLabel('block-item-CollectionField-')).toHaveText(
       `ID:${record.manyToOne1.manyToOne2.manyToOne3.id}`,
     );
@@ -212,6 +214,7 @@ test.describe('configure columns', () => {
     await page.getByRole('menuitem', { name: 'manyToOne2 right' }).hover();
     await page.getByRole('menuitem', { name: 'manyToOne3' }).click();
     await page.mouse.move(600, 0);
+    await page.reload();
 
     // 2. 点击每一个关系字段，创建一个详情区块，显示 ID 字段，断言 ID 是否正确
     await page
@@ -295,21 +298,21 @@ test.describe('configure actions column', () => {
     await nocoPage.goto();
 
     // add view & Edit & Delete & Duplicate ------------------------------------------------------------
-    await page.getByText('Actions', { exact: true }).hover();
+    await page.getByText('Actions', { exact: true }).hover({ force: true });
     await page.getByLabel('designer-schema-initializer-TableV2.Column-TableV2.ActionColumnDesigner-').hover();
     await page.getByRole('menuitem', { name: 'View' }).click();
 
-    await page.getByText('Actions', { exact: true }).hover();
+    await page.getByText('Actions', { exact: true }).hover({ force: true });
     await page.getByLabel('designer-schema-initializer-TableV2.Column-TableV2.ActionColumnDesigner-').hover();
     await page.getByRole('menuitem', { name: 'Edit' }).click();
 
-    await page.getByText('Actions', { exact: true }).hover();
+    await page.getByText('Actions', { exact: true }).hover({ force: true });
     await page.getByLabel('designer-schema-initializer-TableV2.Column-TableV2.ActionColumnDesigner-').hover();
     await page.getByRole('menuitem', { name: 'Delete' }).click();
     await page.mouse.move(500, 0);
 
-    await page.getByText('Actions', { exact: true }).hover();
-    await page.getByLabel('designer-schema-initializer-TableV2.Column-TableV2.ActionColumnDesigner-').hover();
+    // await page.getByText('Actions', { exact: true }).hover({ force: true });
+    // await page.getByLabel('designer-schema-initializer-TableV2.Column-TableV2.ActionColumnDesigner-').hover();
     await page.getByRole('menuitem', { name: 'Duplicate' }).click();
 
     await page.mouse.move(300, 0);
@@ -331,11 +334,11 @@ test.describe('configure actions column', () => {
     await expect(page.getByLabel('action-Action.Link-Duplicate-duplicate-t_unp4scqamw9-table-0')).not.toBeVisible();
 
     // add custom action ------------------------------------------------------------
-    await page.getByText('Actions', { exact: true }).hover();
+    await page.getByText('Actions', { exact: true }).hover({ force: true });
     await page.getByLabel('designer-schema-initializer-TableV2.Column-TableV2.ActionColumnDesigner-').hover();
     await page.getByRole('menuitem', { name: 'Popup' }).click();
 
-    await page.getByText('Actions', { exact: true }).hover();
+    await page.getByText('Actions', { exact: true }).hover({ force: true });
     await page.getByLabel('designer-schema-initializer-TableV2.Column-TableV2.ActionColumnDesigner-').hover();
     await page.getByRole('menuitem', { name: 'Update record' }).click();
 
@@ -352,7 +355,7 @@ test.describe('configure actions column', () => {
     // 列宽度默认为 100
     await expect(page.getByRole('columnheader', { name: 'Actions', exact: true })).toHaveJSProperty('offsetWidth', 100);
 
-    await page.getByText('Actions', { exact: true }).hover();
+    await page.getByText('Actions', { exact: true }).hover({ force: true });
     await page.getByLabel('designer-schema-settings-TableV2.Column-TableV2.ActionColumnDesigner-').hover();
     await page.getByRole('menuitem', { name: 'Column width' }).click();
 

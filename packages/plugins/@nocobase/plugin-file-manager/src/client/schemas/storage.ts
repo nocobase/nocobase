@@ -53,7 +53,7 @@ const collection = {
       name: 'baseUrl',
       interface: 'input',
       uiSchema: {
-        title: `{{t("Access base URL", { ns: "${NAMESPACE}" })}}`,
+        title: `{{t("Base URL", { ns: "${NAMESPACE}" })}}`,
         type: 'string',
         'x-component': 'TextAreaWithGlobalScope',
         required: true,

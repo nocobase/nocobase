@@ -159,6 +159,7 @@
   "Chart type": "Тип діаграми",
   "Chart config": "Налаштування діаграми",
   "Templates": "Шаблони",
+  "Template": "Шаблон",
   "Select template": "Вибрати шаблон",
   "Action logs": "Журнал дій",
   "Create template": "Створити шаблон",
@@ -486,7 +487,8 @@
   "Turn pages": "Переключати сторінки",
   "Others": "Інші",
   "Other records": "Інші записи",
-  "Save as template": "Зберегти як шаблон",
+  "Save as reference template": "Зберегти як шаблон посилання",
+  "Save as inherited template": "Зберегти як шаблон нащадка",
   "Save as block template": "Зберегти як шаблон блока",
   "Block templates": "Шаблони блоків",
   "Block template": "Шаблон блока",
@@ -576,6 +578,7 @@
   "Blank block": "Порожній блок",
   "Duplicate template": "Дублювати шаблон",
   "Reference template": "Посилання на шаблон",
+  "Inherited template": "Нащадковий шаблон",
   "Create calendar block": "Створити блок календаря",
   "Create kanban block": "Створити блок канбану",
   "Grouping field": "Поле для групування",
@@ -822,6 +825,11 @@
   "If selected, the route will be displayed in the menu.": "Якщо вибрано, маршрут буде відображений в меню.",
   "Are you sure you want to hide this tab?": "Ви впевнені, що хочете приховати цю вкладку?",
   "After hiding, this tab will no longer appear in the tab bar. To show it again, you need to go to the route management page to set it.": "Після приховування цієї вкладки вона більше не з'явиться в панелі вкладок. Щоб знову показати її, вам потрібно перейти на сторінку керування маршрутами, щоб налаштувати її.",
+  "Deprecated": "Застаріло",
+  "Full permissions": "Повні права",
   "No pages yet, please configure first": "Ще немає сторінок, будь ласка, спочатку налаштуйте",
-  "Click the \"UI Editor\" icon in the upper right corner to enter the UI Editor mode": "Натисніть на значок \"Редактор користувацького інтерфейсу\" в правому верхньому куті, щоб увійти в режим редактора користувацького інтерфейсу."
+  "Click the \"UI Editor\" icon in the upper right corner to enter the UI Editor mode": "Натисніть на значок \"Редактор користувацького інтерфейсу\" в правому верхньому куті, щоб увійти в режим редактора користувацького інтерфейсу.",
+  "Refresh data blocks": "Оновити дані блоків",
+  "Select data blocks to refresh": "Виберіть блоки даних для оновлення",
+  "After successful submission, the selected data blocks will be automatically refreshed.": "Після успішної подачі вибрані блоки даних будуть автоматично оновлені."
 }

@@ -148,6 +148,7 @@
   "Chart type": "Tipo del gráfico",
   "Chart config": "Configuración del gráfico",
   "Templates": "Plantillas",
+  "Template": "Plantilla",
   "Select template": "Seleccione plantilla",
   "Action logs": "Acción logs",
   "Create template": "Crear plantilla",
@@ -469,7 +470,8 @@
   "Turn pages": "Pasar páginas",
   "Others": "Otros",
   "Other records": "Otros registros",
-  "Save as template": "Guardar como plantilla",
+  "Save as reference template": "Guardar como plantilla de referencia",
+  "Save as inherited template": "Guardar como plantilla heredada",
   "Save as block template": "Guardar como plantilla de bloque",
   "Block templates": "Bloquear plantillas",
   "Block template": "Plantilla de bloque",
@@ -559,6 +561,7 @@
   "Blank block": "Bloque en blanco",
   "Duplicate template": "Duplicar plantilla",
   "Reference template": "Plantilla de referencia",
+  "Inherited template": "Plantilla heredada",
   "Create calendar block": "Crear bloque de calendario",
   "Create kanban block": "Crear bloque kanban",
   "Grouping field": "Campo de agrupación",
@@ -803,5 +806,10 @@
   "Are you sure you want to hide this tab?": "¿Estás seguro de que quieres ocultar esta pestaña?",
   "After hiding, this tab will no longer appear in the tab bar. To show it again, you need to go to the route management page to set it.": "Después de ocultar, esta pestaña ya no aparecerá en la barra de pestañas. Para mostrarla de nuevo, deberás ir a la página de gestión de rutas para configurarla.",
   "No pages yet, please configure first": "Aún no hay páginas, por favor configura primero",
-  "Click the \"UI Editor\" icon in the upper right corner to enter the UI Editor mode": "Haga clic en el icono \"Editor de UI\" en la esquina superior derecha para entrar en el modo de Editor de UI."
+  "Click the \"UI Editor\" icon in the upper right corner to enter the UI Editor mode": "Haga clic en el icono \"Editor de UI\" en la esquina superior derecha para entrar en el modo de Editor de UI.",
+  "Deprecated": "Obsoleto",
+  "Full permissions": "Todos los derechos",
+  "Refresh data blocks": "Actualizar bloques de datos",
+  "Select data blocks to refresh": "Actualizar bloques de datos",
+  "After successful submission, the selected data blocks will be automatically refreshed.": "Después de enviar correctamente, los bloques de datos seleccionados se actualizarán automáticamente."
 }

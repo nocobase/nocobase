@@ -1,8 +1,18 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { EventEmitter } from 'events';
 import { AsyncTasksManager, CreateTaskOptions, TaskId, TaskStatus } from './interfaces/async-task-manager';
 import { Logger } from '@nocobase/logger';
 import { ITask, TaskConstructor } from './interfaces/task';
 import { Application } from '@nocobase/server';
+import PQueue from 'p-queue';
 
 export class BaseTaskManager extends EventEmitter implements AsyncTasksManager {
   private taskTypes: Map<string, TaskConstructor> = new Map();
@@ -15,6 +25,10 @@ export class BaseTaskManager extends EventEmitter implements AsyncTasksManager {
   private logger: Logger;
 
   private app: Application;
+
+  public queue: any;
+
+  private queueOptions: {};
 
   setLogger(logger: Logger): void {
     this.logger = logger;
@@ -33,6 +47,48 @@ export class BaseTaskManager extends EventEmitter implements AsyncTasksManager {
 
   constructor() {
     super();
+    this.queueOptions = {
+      concurrency: process.env.ASYNC_TASK_MAX_CONCURRENCY ? parseInt(process.env.ASYNC_TASK_MAX_CONCURRENCY) : 3,
+      autoStart: true,
+    };
+    this.queue = new PQueue(this.queueOptions);
+
+    // 添加队列事件监听
+    this.queue.on('idle', () => {
+      this.logger.debug('Task queue is idle');
+      this.emit('queueIdle');
+    });
+
+    this.queue.on('add', () => {
+      this.logger.debug(`Task added to queue. Size: ${this.queue.size}, Pending: ${this.queue.pending}`);
+      this.emit('queueAdd', { size: this.queue.size, pending: this.queue.pending });
+    });
+  }
+
+  private enqueueTask(task: ITask): void {
+    const taskHandler = async () => {
+      if (task.status.type === 'pending') {
+        try {
+          this.logger.debug(`Starting execution of task ${task.taskId} from queue`);
+          await task.run();
+        } catch (error) {
+          this.logger.error(`Error executing task ${task.taskId} from queue: ${error.message}`);
+        }
+      }
+    };
+    this.queue.add(taskHandler);
+  }
+
+  pauseQueue(): void {
+    this.logger.info('Pausing task queue');
+    this.queue.pause();
+    this.emit('queuePaused');
+  }
+
+  resumeQueue(): void {
+    this.logger.info('Resuming task queue');
+    this.queue.start();
+    this.emit('queueResumed');
   }
 
   async cancelTask(taskId: TaskId): Promise<boolean> {
@@ -42,8 +98,11 @@ export class BaseTaskManager extends EventEmitter implements AsyncTasksManager {
       this.logger.warn(`Attempted to cancel non-existent task ${taskId}`);
       return false;
     }
-
     this.logger.info(`Cancelling task ${taskId}, type: ${task.constructor.name}, tags: ${JSON.stringify(task.tags)}`);
+    if (task.status.type === 'pending') {
+      await task.statusChange({ type: 'cancelled' });
+      return true;
+    }
     return task.cancel();
   }
 
@@ -78,7 +137,9 @@ export class BaseTaskManager extends EventEmitter implements AsyncTasksManager {
       )}, tags: ${JSON.stringify(options.tags)}, title: ${task.title}`,
     );
     this.emit('taskCreated', { task });
-
+    if (options.useQueue) {
+      this.enqueueTask(task);
+    }
     task.on('progress', (progress) => {
       this.logger.debug(`Task ${task.taskId} progress: ${progress}`);
       this.emit('taskProgress', { task, progress });
@@ -93,7 +154,6 @@ export class BaseTaskManager extends EventEmitter implements AsyncTasksManager {
       }
       this.emit('taskStatusChange', { task, status });
     });
-
     return task;
   }
 

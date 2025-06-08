@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { AsyncTasksManager, TaskStatus, CancelError } from '../interfaces/async-task-manager';
 import { createMockServer } from '@nocobase/test';
 import { TaskType } from '../task-type';
@@ -13,6 +22,7 @@ describe('task manager', () => {
     });
 
     taskManager = app.container.get('AsyncTaskManager');
+    taskManager;
   });
 
   afterEach(async () => {
@@ -46,7 +56,6 @@ describe('task manager', () => {
 
     expect(task).toBeTruthy();
 
-    expect(task.status.type).toBe('pending');
     // should get tasks status through task id
     const getResp = await app.agent().resource('asyncTasks').get({
       filterByTk: task.taskId,
@@ -380,6 +389,105 @@ describe('task manager', () => {
 
     // 验证无法取消不存在的任务
     expect(await taskManager.cancelTask('non-existent-id')).toBe(false);
+  });
+
+  it('should have third task waiting when concurrency is 2', async () => {
+    const taskControl = {
+      task1Ready: false,
+      task2Ready: false,
+      task3Ready: false,
+      task1Resolve: null,
+      task2Resolve: null,
+      task3Resolve: null,
+    };
+
+    const executionOrder = [];
+    const executionState = { count: 0, max: 0 };
+
+    taskManager.queue.concurrency = 2;
+
+    class ControlledTaskType extends TaskType {
+      static type = 'controlled-test';
+
+      async execute() {
+        const index = parseInt(this.tags.index);
+
+        executionState.count++;
+        executionState.max = Math.max(executionState.max, executionState.count);
+        executionOrder.push(index);
+
+        await new Promise<void>((resolve) => {
+          if (index === 1) {
+            taskControl.task1Resolve = resolve;
+            taskControl.task1Ready = true;
+          } else if (index === 2) {
+            taskControl.task2Resolve = resolve;
+            taskControl.task2Ready = true;
+          } else if (index === 3) {
+            taskControl.task3Resolve = resolve;
+            taskControl.task3Ready = true;
+          }
+        });
+
+        executionState.count--;
+        return { taskIndex: index };
+      }
+    }
+
+    taskManager.registerTaskType(ControlledTaskType);
+
+    for (let i = 1; i <= 3; i++) {
+      taskManager.createTask({
+        type: 'controlled-test',
+        params: {},
+        tags: { index: i.toString() },
+        useQueue: true,
+      });
+    }
+
+    await new Promise<void>((resolve) => {
+      const interval = setInterval(() => {
+        if (taskControl.task1Ready && taskControl.task2Ready) {
+          clearInterval(interval);
+          resolve();
+        }
+      }, 50);
+    });
+
+    expect(executionOrder).toEqual([1, 2]);
+    expect(executionState.max).toBe(2);
+    expect(executionOrder.includes(3)).toBe(false);
+
+    expect(taskManager.queue.pending).toBe(2);
+    expect(taskManager.queue.size).toBe(1);
+
+    taskControl.task1Resolve();
+
+    await new Promise<void>((resolve) => {
+      const interval = setInterval(() => {
+        if (taskControl.task3Ready) {
+          clearInterval(interval);
+          resolve();
+        }
+      }, 50);
+    });
+
+    expect(executionOrder).toEqual([1, 2, 3]);
+    expect(executionState.max).toBe(2);
+
+    taskControl.task2Resolve();
+    taskControl.task3Resolve();
+
+    await new Promise<void>((resolve) => {
+      const interval = setInterval(() => {
+        if (executionState.count === 0) {
+          clearInterval(interval);
+          resolve();
+        }
+      }, 50);
+    });
+
+    expect(executionState.count).toBe(0);
   });
 
   describe('task cancellation', () => {

@@ -14,7 +14,7 @@ import { SchemaSettings } from '../../../../application/schema-settings/SchemaSe
 import { SchemaSettingsItemType } from '../../../../application/schema-settings/types';
 import { useDetailsBlockContext } from '../../../../block-provider/DetailsBlockProvider';
 import { useFormBlockContext } from '../../../../block-provider/FormBlockProvider';
-import { useCollection_deprecated, useSortFields } from '../../../../collection-manager';
+import { useSortFields } from '../../../../collection-manager';
 import { removeNullCondition, useDesignable } from '../../../../schema-component';
 import { SchemaSettingsLinkageRules } from '../../../../schema-settings';
 import { SchemaSettingsBlockHeightItem } from '../../../../schema-settings/SchemaSettingsBlockHeightItem';
@@ -24,6 +24,8 @@ import { SchemaSettingsTemplate } from '../../../../schema-settings/SchemaSettin
 import { useBlockTemplateContext } from '../../../../schema-templates/BlockTemplateProvider';
 import { setDataLoadingModeSettingsItem } from './setDataLoadingModeSettingsItem';
 import { SchemaSettingsLayoutItem } from '../../../../schema-settings/SchemaSettingsLayoutItem';
+import { LinkageRuleCategory } from '../../../../schema-settings/LinkageRules/type';
+import { useCollection } from '../../../../data-source';
 
 const commonItems: SchemaSettingsItemType[] = [
   {
@@ -35,13 +37,28 @@ const commonItems: SchemaSettingsItemType[] = [
     Component: SchemaSettingsBlockHeightItem,
   },
   {
-    name: 'linkageRules',
+    name: 'fieldLinkageRules',
     Component: SchemaSettingsLinkageRules,
     useComponentProps() {
-      const { name } = useCollection_deprecated();
+      const { name } = useCollection();
+      const { t } = useTranslation();
       return {
         collectionName: name,
         readPretty: true,
+        title: t('Field Linkage rules'),
+      };
+    },
+  },
+  {
+    name: 'blockLinkageRules',
+    Component: SchemaSettingsLinkageRules,
+    useComponentProps() {
+      const { name } = useCollection();
+      const { t } = useTranslation();
+      return {
+        collectionName: name,
+        title: t('Block Linkage rules'),
+        category: LinkageRuleCategory.block,
       };
     },
   },
@@ -49,7 +66,7 @@ const commonItems: SchemaSettingsItemType[] = [
     name: 'dataScope',
     Component: SchemaSettingsDataScope,
     useComponentProps() {
-      const { name } = useCollection_deprecated();
+      const { name } = useCollection();
       const fieldSchema = useFieldSchema();
       const { form } = useFormBlockContext();
       const field = useField();
@@ -83,7 +100,7 @@ const commonItems: SchemaSettingsItemType[] = [
     name: 'sortingRules',
     type: 'modal',
     useComponentProps() {
-      const { name } = useCollection_deprecated();
+      const { name } = useCollection();
       const { t } = useTranslation();
       const fieldSchema = useFieldSchema();
       const field = useField();
@@ -201,7 +218,7 @@ const commonItems: SchemaSettingsItemType[] = [
     name: 'template',
     Component: SchemaSettingsTemplate,
     useComponentProps() {
-      const { name } = useCollection_deprecated();
+      const { name } = useCollection();
       const fieldSchema = useFieldSchema();
       const { componentNamePrefix } = useBlockTemplateContext();
       const defaultResource =

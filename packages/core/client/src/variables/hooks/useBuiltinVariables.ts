@@ -10,11 +10,12 @@
 import { dayjs } from '@nocobase/utils/client';
 import { useMemo } from 'react';
 import { DEFAULT_DATA_SOURCE_KEY } from '../../data-source/data-source/DataSourceManager';
-import { useCurrentUserVariable, useDatetimeVariable } from '../../schema-settings';
+import { useCurrentUserVariable, useDatetimeVariable, useExactDateVariable } from '../../schema-settings';
 import { useAPITokenVariable } from '../../schema-settings/VariableInput/hooks/useAPITokenVariable';
 import { useCurrentRoleVariable } from '../../schema-settings/VariableInput/hooks/useRoleVariable';
 import { useURLSearchParamsVariable } from '../../schema-settings/VariableInput/hooks/useURLSearchParamsVariable';
 import { VariableOption } from '../types';
+import { useGlobalVariableCtx } from '../../application/hooks/useGlobalVariable';
 
 /**
  * 相当于全局的变量
@@ -25,9 +26,12 @@ const useBuiltInVariables = () => {
   const { currentRoleCtx } = useCurrentRoleVariable();
   const { apiTokenCtx } = useAPITokenVariable();
   const { datetimeCtx } = useDatetimeVariable();
+  const { exactDateTimeCtx } = useExactDateVariable();
   const { urlSearchParamsCtx, name: urlSearchParamsName, defaultValue } = useURLSearchParamsVariable();
+  const envVariableCtx = useGlobalVariableCtx('$env');
   const builtinVariables: VariableOption[] = useMemo(() => {
     return [
+      envVariableCtx,
       {
         name: '$user',
         ctx: currentUserCtx as any,
@@ -65,6 +69,10 @@ const useBuiltInVariables = () => {
         name: '$date',
         ctx: datetimeCtx,
       },
+      {
+        name: '$nExactDate',
+        ctx: exactDateTimeCtx,
+      },
       /**
        * @deprecated
        * 兼容旧版本的 `$system` 变量，新版本已弃用
@@ -88,9 +96,17 @@ const useBuiltInVariables = () => {
         ctx: urlSearchParamsCtx,
         defaultValue,
       },
-    ];
-  }, [currentRoleCtx, currentUserCtx, datetimeCtx, defaultValue, urlSearchParamsCtx, urlSearchParamsName]);
-
+    ].filter(Boolean);
+  }, [
+    currentRoleCtx,
+    currentUserCtx,
+    datetimeCtx,
+    defaultValue,
+    urlSearchParamsCtx,
+    urlSearchParamsName,
+    envVariableCtx,
+    exactDateTimeCtx,
+  ]);
   return { builtinVariables };
 };
 

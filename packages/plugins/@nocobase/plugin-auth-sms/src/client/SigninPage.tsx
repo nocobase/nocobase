@@ -7,44 +7,35 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { SchemaComponent } from '@nocobase/client';
-import { ISchema } from '@formily/react';
+import { SchemaComponent, useAPIClient, useCurrentUserContext, usePlugin } from '@nocobase/client';
+import { ISchema, useForm } from '@formily/react';
 import React from 'react';
-import VerificationCode from './VerificationCode';
-import { Authenticator, useSignIn } from '@nocobase/plugin-auth/client';
+import { Authenticator, useRedirect } from '@nocobase/plugin-auth/client';
+import PluginVerificationClient, { SMS_OTP_VERIFICATION_TYPE } from '@nocobase/plugin-verification/client';
+import { useAuthTranslation } from './locale';
 
 const phoneForm: ISchema = {
   type: 'object',
   name: 'phoneForm',
-  'x-component': 'Form',
+  'x-component': 'FormV2',
   properties: {
-    phone: {
-      type: 'string',
-      required: true,
-      'x-component': 'Input',
-      'x-validator': 'phone',
-      'x-decorator': 'FormItem',
-      'x-component-props': { placeholder: '{{t("Phone")}}', style: {} },
-    },
-    code: {
-      type: 'string',
-      required: true,
-      'x-component': 'VerificationCode',
+    form: {
+      type: 'void',
+      'x-component': 'VerificationForm',
       'x-component-props': {
         actionType: 'auth:signIn',
-        targetFieldName: 'phone',
+        verifier: '{{ verifier }}',
       },
-      'x-decorator': 'FormItem',
     },
     actions: {
-      title: '{{t("Sign in")}}',
       type: 'void',
+      title: '{{t("Sign in")}}',
       'x-component': 'Action',
+      'x-use-component-props': 'useVerifyActionProps',
       'x-component-props': {
         htmlType: 'submit',
         block: true,
         type: 'primary',
-        useAction: '{{ useSMSSignIn }}',
         style: { width: '100%' },
       },
     },
@@ -58,12 +49,36 @@ const phoneForm: ISchema = {
   },
 };
 
+const useVerifyActionProps = (authenticator: string) => {
+  const form = useForm();
+  const api = useAPIClient();
+  const redirect = useRedirect();
+  const { refreshAsync } = useCurrentUserContext();
+  const { t } = useAuthTranslation();
+  return {
+    title: t('Sign in'),
+    async onClick() {
+      await form.submit();
+      await api.auth.signIn(form.values, authenticator);
+      await refreshAsync();
+      redirect();
+    },
+  };
+};
+
 export const SigninPage = (props: { authenticator: Authenticator }) => {
   const authenticator = props.authenticator;
   const { name, options } = authenticator;
   const autoSignup = !!options?.autoSignup;
-  const useSMSSignIn = () => {
-    return useSignIn(name);
-  };
-  return <SchemaComponent schema={phoneForm} scope={{ useSMSSignIn, autoSignup }} components={{ VerificationCode }} />;
+  const verficationPlugin = usePlugin('verification') as PluginVerificationClient;
+  const smsVerification = verficationPlugin.verificationManager.getVerification(SMS_OTP_VERIFICATION_TYPE);
+  const VerificationForm = smsVerification?.components.VerificationForm;
+
+  return (
+    <SchemaComponent
+      schema={phoneForm}
+      scope={{ useVerifyActionProps: () => useVerifyActionProps(name), autoSignup, verifier: options?.verifier }}
+      components={{ VerificationForm }}
+    />
+  );
 };

@@ -29,25 +29,47 @@ export async function setDefaultRole(ctx: Context, next: Next) {
   const repository = db.getRepository('rolesUsers');
 
   await db.sequelize.transaction(async (transaction) => {
-    await repository.update({
+    const currentUserDefaultRole = await repository.findOne({
       filter: {
         userId: currentUser.id,
-      },
-      values: {
-        default: false,
-      },
-      transaction,
-    });
-    await repository.update({
-      filter: {
-        userId: currentUser.id,
-        roleName,
-      },
-      values: {
         default: true,
       },
       transaction,
     });
+
+    if (currentUserDefaultRole?.roleName === roleName) {
+      return;
+    }
+
+    if (currentUserDefaultRole) {
+      await repository.model.update(
+        { default: false },
+        { where: { userId: currentUser.id, roleName: currentUserDefaultRole.roleName }, transaction },
+      );
+    }
+
+    const targetUserRole = await repository.findOne({
+      filter: {
+        userId: currentUser.id,
+        roleName,
+      },
+      transaction,
+    });
+    let model;
+    if (targetUserRole) {
+      await repository.model.update({ default: true }, { where: { userId: currentUser.id, roleName }, transaction });
+      model = targetUserRole.set('default', true);
+    } else {
+      model = await repository.create({
+        values: {
+          userId: currentUser.id,
+          roleName,
+          default: true,
+        },
+        transaction,
+      });
+    }
+    db.emitAsync('rolesUsers.afterSave', model);
   });
 
   ctx.body = 'ok';

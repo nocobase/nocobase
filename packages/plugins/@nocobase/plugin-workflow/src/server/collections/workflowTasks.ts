@@ -9,39 +9,6 @@
 
 import { CollectionOptions } from '@nocobase/database';
 
-/**
- * @deprecated
- */
-export default function () {
-  return {
-    dumpRules: 'required',
-    migrationRules: ['overwrite', 'schema-only'],
-    name: 'workflowTasks',
-    shared: true,
-    repository: 'WorkflowTasksRepository',
-    fields: [
-      {
-        name: 'user',
-        type: 'belongsTo',
-      },
-      {
-        name: 'workflow',
-        type: 'belongsTo',
-      },
-      {
-        type: 'string',
-        name: 'type',
-      },
-      {
-        type: 'string',
-        name: 'key',
-      },
-    ],
-    indexes: [
-      {
-        unique: true,
-        fields: ['type', 'key'],
-      },
-    ],
-  } as CollectionOptions;
-}
+import options from '../../common/collections/workflowTasks';
+
+export default options as CollectionOptions;

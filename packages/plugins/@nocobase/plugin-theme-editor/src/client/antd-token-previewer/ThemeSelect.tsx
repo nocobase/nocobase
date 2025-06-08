@@ -8,7 +8,7 @@
  */
 
 import { CloseOutlined, PlusOutlined } from '@ant-design/icons';
-import { Button, Dropdown, Menu } from 'antd';
+import { Button, Dropdown, Menu, MenuProps } from 'antd';
 import classNames from 'classnames';
 import type { FC, ReactNode } from 'react';
 import React, { useMemo } from 'react';
@@ -208,7 +208,7 @@ const ThemeSelect: FC<ThemeSelectProps> = (props) => {
         <Dropdown
           placement="bottomRight"
           trigger={['click']}
-          overlay={<Menu items={dropdownItems} />}
+          overlay={<Menu items={dropdownItems as MenuProps['items']} />}
           overlayClassName={classNames('previewer-theme-select-dropdown', hashId)}
         >
           <Button type="primary" shape="circle" className="previewer-theme-select-add-btn" icon={<PlusOutlined />} />

@@ -8,10 +8,18 @@
  */
 
 import { useFieldSchema } from '@formily/react';
-import { Action, Icon, useCompile, useComponent, withDynamicSchemaProps, ACLActionProvider } from '@nocobase/client';
+import {
+  Action,
+  Icon,
+  useComponent,
+  withDynamicSchemaProps,
+  ACLActionProvider,
+  NAMESPACE_UI_SCHEMA,
+} from '@nocobase/client';
 import { Avatar } from 'antd';
 import { createStyles } from 'antd-style';
 import React, { useContext } from 'react';
+import { useTranslation } from 'react-i18next';
 import { WorkbenchBlockContext } from './WorkbenchBlock';
 import { WorkbenchLayout } from './workbenchBlockSettings';
 
@@ -26,37 +34,47 @@ const useStyles = createStyles(({ token, css }) => ({
     padding-top: 8px;
   `,
   avatar: css`
-    width: 4em;
+    width: 5em;
   `,
   title: css`
     margin-top: ${token.marginSM}px;
     width: 100%;
-    white-space: nowrap;
-    text-overflow: ellipsis;
-    overflow: hidden;
   `,
 }));
 
-function Button() {
+function Button({ onlyIcon }) {
   const fieldSchema = useFieldSchema();
-  const icon = fieldSchema['x-component-props']?.['icon'];
-  const backgroundColor = fieldSchema['x-component-props']?.['iconColor'];
-  const { layout } = useContext(WorkbenchBlockContext);
+  const { icon, iconColor: backgroundColor } = fieldSchema['x-component-props'] || {};
+  const { layout, ellipsis = true } = useContext(WorkbenchBlockContext);
   const { styles, cx } = useStyles();
-  const compile = useCompile();
-  const title = compile(fieldSchema.title);
-  return layout === WorkbenchLayout.Grid ? (
-    <div title={title} className={cx(styles.avatar)}>
-      <Avatar style={{ backgroundColor }} size={48} icon={<Icon type={icon} />} />
-      <div className={cx(styles.title)}>{title}</div>
-    </div>
-  ) : (
-    <span>{title}</span>
-  );
+  const { t } = useTranslation();
+  const title = t(fieldSchema.title, { ns: NAMESPACE_UI_SCHEMA });
+
+  const shouldShowTitle = !onlyIcon;
+
+  if (layout === WorkbenchLayout.Grid) {
+    return (
+      <div title={title} className={cx(styles.avatar)}>
+        <Avatar style={{ backgroundColor }} size={48} icon={<Icon type={icon} />} />
+        <div
+          className={cx(styles.title)}
+          style={{
+            whiteSpace: ellipsis ? 'nowrap' : 'normal',
+            textOverflow: ellipsis ? 'ellipsis' : 'clip',
+            overflow: ellipsis ? 'hidden' : 'visible',
+          }}
+        >
+          {shouldShowTitle && title}
+        </div>
+      </div>
+    );
+  }
+
+  return <span>{shouldShowTitle && title}</span>;
 }
 
 export const WorkbenchAction = withDynamicSchemaProps((props) => {
-  const { className, ...others } = props;
+  const { className, targetComponent, iconColor, ...others } = props;
   const { styles, cx } = useStyles() as any;
   const fieldSchema = useFieldSchema();
   const Component = useComponent(props?.targetComponent) || Action;
@@ -65,10 +83,12 @@ export const WorkbenchAction = withDynamicSchemaProps((props) => {
       <Component
         className={cx(className, styles.action, 'nb-action-panel')}
         {...others}
+        onlyIcon={false}
         type="text"
         icon={null}
-        title={<Button />}
+        title={<Button onlyIcon={others?.onlyIcon} />}
         confirmTitle={fieldSchema.title}
+        style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}
       />
     </ACLActionProvider>
   );

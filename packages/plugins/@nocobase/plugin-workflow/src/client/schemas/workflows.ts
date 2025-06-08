@@ -9,111 +9,20 @@
 
 import React from 'react';
 import { ISchema } from '@formily/react';
-import { useRecord } from '@nocobase/client';
-import { NAMESPACE } from '../locale';
-// import { triggers } from '../triggers';
-import { executionSchema } from './executions';
-import { TriggerOptionRender } from '../components/TriggerOptionRender';
 
-const collection = {
-  name: 'workflows',
-  fields: [
-    {
-      type: 'string',
-      name: 'title',
-      interface: 'input',
-      uiSchema: {
-        title: '{{t("Name")}}',
-        type: 'string',
-        'x-component': 'Input',
-        required: true,
-      } as ISchema,
-    },
-    {
-      type: 'string',
-      name: 'type',
-      interface: 'select',
-      uiSchema: {
-        title: `{{t("Trigger type", { ns: "${NAMESPACE}" })}}`,
-        type: 'string',
-        'x-decorator': 'FormItem',
-        'x-component': 'Select',
-        enum: '{{useTriggersOptions()}}',
-        'x-component-props': {
-          optionRender: TriggerOptionRender,
-          popupMatchSelectWidth: true,
-          listHeight: 300,
-        },
-        required: true,
-      } as ISchema,
-    },
-    {
-      type: 'boolean',
-      name: 'sync',
-      interface: 'radioGroup',
-      uiSchema: {
-        title: `{{t("Mode", { ns: "${NAMESPACE}" })}}`,
-        type: 'boolean',
-        'x-decorator': 'FormItem',
-        'x-component': 'Radio.Group',
-        enum: [
-          {
-            label: `{{ t("Asynchronously", { ns: "${NAMESPACE}" }) }}`,
-            value: false,
-            color: 'cyan',
-          },
-          {
-            label: `{{ t("Synchronously", { ns: "${NAMESPACE}" }) }}`,
-            value: true,
-            color: 'orange',
-          },
-        ],
-        required: true,
-      } as ISchema,
-    },
-    {
-      type: 'string',
-      name: 'description',
-      interface: 'textarea',
-      uiSchema: {
-        title: '{{t("Description")}}',
-        type: 'string',
-        'x-component': 'Input.TextArea',
-      } as ISchema,
-    },
-    {
-      type: 'boolean',
-      name: 'enabled',
-      interface: 'radioGroup',
-      uiSchema: {
-        title: `{{t("Status", { ns: "${NAMESPACE}" })}}`,
-        type: 'string',
-        enum: [
-          { label: `{{t("On", { ns: "${NAMESPACE}" })}}`, value: true, color: '#52c41a' },
-          { label: `{{t("Off", { ns: "${NAMESPACE}" })}}`, value: false },
-        ],
-        'x-component': 'Radio.Group',
-        'x-decorator': 'FormItem',
-        default: false,
-      } as ISchema,
-    },
-    {
-      type: 'number',
-      name: 'allExecuted',
-      interface: 'integer',
-      uiSchema: {
-        title: `{{t("Executed", { ns: "${NAMESPACE}" })}}`,
-        type: 'number',
-        'x-component': 'InputNumber',
-        'x-decorator': 'FormItem',
-      } as ISchema,
-    },
-    {
-      type: 'object',
-      name: 'options',
-    },
-  ],
-};
+import { css, useCollectionRecordData } from '@nocobase/client';
+
+import { NAMESPACE } from '../locale';
+import { executionSchema } from './executions';
+import workflowCollection from '../../common/collections/workflows';
+
+function ExecutedLink(props) {
+  const record = useCollectionRecordData();
+  return React.createElement('a', {
+    'aria-label': `executed-${record.title}`,
+    ...props,
+  });
+}
 
 const workflowFieldset = {
   title: {
@@ -121,8 +30,16 @@ const workflowFieldset = {
     'x-decorator': 'FormItem',
   },
   type: {
-    'x-component': 'CollectionField',
     'x-decorator': 'FormItem',
+    title: `{{t("Trigger type", { ns: "${NAMESPACE}" })}}`,
+    'x-component': 'Select',
+    'x-component-props': {
+      optionRender: '{{TriggerOptionRender}}',
+      popupMatchSelectWidth: true,
+      listHeight: 300,
+    },
+    enum: '{{useTriggersOptions()}}',
+    required: true,
   },
   sync: {
     type: 'boolean',
@@ -153,6 +70,13 @@ const workflowFieldset = {
     'x-component': 'CollectionField',
     'x-decorator': 'FormItem',
   },
+  categories: {
+    type: 'array',
+    title: `{{ t("Category", { ns: "${NAMESPACE}" }) }}`,
+    'x-decorator': 'FormItem',
+    'x-component': 'CollectionField',
+    'x-collection-field': 'workflows.categories',
+  },
   options: {
     type: 'object',
     'x-component': 'fieldset',
@@ -176,6 +100,7 @@ const workflowFieldset = {
         'x-component-props': {
           min: 1,
           precision: 0,
+          className: 'auto-width',
         },
       },
     },
@@ -190,7 +115,7 @@ export const workflowSchema: ISchema = {
       type: 'void',
       'x-decorator': 'ResourceActionProvider',
       'x-decorator-props': {
-        collection,
+        collection: workflowCollection,
         resourceName: 'workflows',
         request: {
           resource: 'workflows',
@@ -204,327 +129,358 @@ export const workflowSchema: ISchema = {
           },
         },
       },
-      'x-component': 'CollectionProvider_deprecated',
-      'x-component-props': {
-        collection,
-      },
+      'x-component': 'CategoryTabs',
       properties: {
-        actions: {
+        main: {
           type: 'void',
-          'x-component': 'ActionBar',
-          'x-component-props': {
-            style: {
-              marginBottom: 16,
-            },
-          },
+          'x-component': 'CardItem',
           properties: {
-            filter: {
-              type: 'void',
-              title: '{{ t("Filter") }}',
-              default: {
-                $and: [{ title: { $includes: '' } }],
-              },
-              'x-action': 'filter',
-              'x-component': 'Filter.Action',
-              'x-use-component-props': 'cm.useFilterActionProps',
-              'x-component-props': {
-                icon: 'FilterOutlined',
-              },
-              'x-align': 'left',
-            },
-            refresher: {
-              type: 'void',
-              title: '{{ t("Refresh") }}',
-              'x-component': 'Action',
-              'x-use-component-props': 'useRefreshActionProps',
-              'x-component-props': {
-                icon: 'ReloadOutlined',
-              },
-            },
-            sync: {
-              type: 'void',
-              title: `{{t("Sync", { ns: "${NAMESPACE}" })}}`,
-              'x-decorator': 'Tooltip',
-              'x-decorator-props': {
-                title: `{{ t("Sync enabled status of all workflows from database", { ns: "${NAMESPACE}" }) }}`,
-              },
-              'x-component': 'Action',
-              'x-component-props': {
-                icon: 'SyncOutlined',
-                useAction: '{{ useSyncAction }}',
-              },
-              'x-reactions': ['{{useWorkflowSyncReaction}}'],
-            },
-            delete: {
-              type: 'void',
-              title: '{{t("Delete")}}',
-              'x-component': 'Action',
-              'x-component-props': {
-                icon: 'DeleteOutlined',
-                useAction: '{{ cm.useBulkDestroyAction }}',
-                confirm: {
-                  title: "{{t('Delete record')}}",
-                  content: "{{t('Are you sure you want to delete it?')}}",
-                },
-              },
-            },
-            create: {
-              type: 'void',
-              title: '{{t("Add new")}}',
-              'x-component': 'Action',
-              'x-component-props': {
-                type: 'primary',
-                icon: 'PlusOutlined',
-              },
-              properties: {
-                drawer: {
-                  type: 'void',
-                  'x-component': 'Action.Drawer',
-                  'x-decorator': 'Form',
-                  'x-decorator-props': {
-                    initialValue: {
-                      current: true,
-                    },
-                  },
-                  title: '{{t("Add new")}}',
-                  properties: {
-                    title: workflowFieldset.title,
-                    type: workflowFieldset.type,
-                    sync: workflowFieldset.sync,
-                    description: workflowFieldset.description,
-                    options: workflowFieldset.options,
-                    footer: {
-                      type: 'void',
-                      'x-component': 'Action.Drawer.Footer',
-                      properties: {
-                        cancel: {
-                          title: '{{ t("Cancel") }}',
-                          'x-component': 'Action',
-                          'x-component-props': {
-                            useAction: '{{ cm.useCancelAction }}',
-                          },
-                        },
-                        submit: {
-                          title: '{{ t("Submit") }}',
-                          'x-component': 'Action',
-                          'x-component-props': {
-                            type: 'primary',
-                            useAction: '{{ cm.useCreateAction }}',
-                          },
-                        },
-                      },
-                    },
-                  },
-                },
-              },
-            },
-          },
-        },
-        table: {
-          type: 'void',
-          'x-component': 'Table.Void',
-          'x-component-props': {
-            rowKey: 'id',
-            rowSelection: {
-              type: 'checkbox',
-            },
-            useDataSource: '{{ cm.useDataSourceFromRAC }}',
-          },
-          properties: {
-            title: {
-              type: 'void',
-              'x-decorator': 'Table.Column.Decorator',
-              'x-component': 'Table.Column',
-              properties: {
-                title: {
-                  type: 'string',
-                  'x-component': 'CollectionField',
-                  'x-read-pretty': true,
-                },
-              },
-            },
-            type: {
-              type: 'void',
-              'x-decorator': 'Table.Column.Decorator',
-              'x-component': 'Table.Column',
-              properties: {
-                type: {
-                  type: 'string',
-                  'x-component': 'CollectionField',
-                  'x-read-pretty': true,
-                },
-              },
-            },
-            sync: {
-              type: 'void',
-              'x-decorator': 'Table.Column.Decorator',
-              'x-component': 'Table.Column',
-              properties: {
-                sync: {
-                  type: 'boolean',
-                  'x-component': 'CollectionField',
-                  'x-read-pretty': true,
-                },
-              },
-            },
-            enabled: {
-              type: 'void',
-              'x-decorator': 'Table.Column.Decorator',
-              'x-component': 'Table.Column',
-              properties: {
-                enabled: {
-                  type: 'boolean',
-                  'x-component': 'CollectionField',
-                  'x-read-pretty': true,
-                  default: false,
-                },
-              },
-            },
-            allExecuted: {
-              type: 'void',
-              'x-decorator': 'Table.Column.Decorator',
-              'x-component': 'Table.Column',
-              properties: {
-                allExecuted: {
-                  type: 'number',
-                  'x-decorator': 'OpenDrawer',
-                  'x-decorator-props': {
-                    component: function Com(props) {
-                      const record = useRecord();
-                      return React.createElement('a', {
-                        'aria-label': `executed-${record.title}`,
-                        ...props,
-                      });
-                    },
-                  },
-                  'x-component': 'CollectionField',
-                  'x-read-pretty': true,
-                  properties: {
-                    drawer: executionSchema,
-                  },
-                },
-              },
-            },
             actions: {
               type: 'void',
-              title: '{{ t("Actions") }}',
-              'x-component': 'Table.Column',
+              'x-component': 'ActionBar',
+              'x-component-props': {
+                style: {
+                  marginBottom: 16,
+                },
+              },
               properties: {
-                actions: {
+                filter: {
                   type: 'void',
-                  'x-component': 'Space',
+                  title: '{{ t("Filter") }}',
+                  default: {
+                    $and: [{ title: { $includes: '' } }],
+                  },
+                  'x-action': 'filter',
+                  'x-component': 'Filter.Action',
+                  'x-use-component-props': 'useWorkflowFilterActionProps',
                   'x-component-props': {
-                    split: '|',
+                    icon: 'FilterOutlined',
+                    nonfilterable: ['description', 'categories'],
+                  },
+                  'x-align': 'left',
+                },
+                refresher: {
+                  type: 'void',
+                  title: '{{ t("Refresh") }}',
+                  'x-component': 'Action',
+                  'x-use-component-props': 'useRefreshActionProps',
+                  'x-component-props': {
+                    icon: 'ReloadOutlined',
+                  },
+                },
+                sync: {
+                  type: 'void',
+                  title: `{{t("Sync", { ns: "${NAMESPACE}" })}}`,
+                  'x-decorator': 'Tooltip',
+                  'x-decorator-props': {
+                    title: `{{ t("Sync enabled status of all workflows from database", { ns: "${NAMESPACE}" }) }}`,
+                  },
+                  'x-component': 'Action',
+                  'x-component-props': {
+                    icon: 'SyncOutlined',
+                    useAction: '{{ useSyncAction }}',
+                  },
+                  'x-reactions': ['{{useWorkflowSyncReaction}}'],
+                },
+                delete: {
+                  type: 'void',
+                  title: '{{t("Delete")}}',
+                  'x-component': 'Action',
+                  'x-component-props': {
+                    icon: 'DeleteOutlined',
+                    useAction: '{{ cm.useBulkDestroyAction }}',
+                    confirm: {
+                      title: "{{t('Delete record')}}",
+                      content: "{{t('Are you sure you want to delete it?')}}",
+                    },
+                  },
+                },
+                create: {
+                  type: 'void',
+                  title: '{{t("Add new")}}',
+                  'x-component': 'Action',
+                  'x-component-props': {
+                    type: 'primary',
+                    icon: 'PlusOutlined',
                   },
                   properties: {
-                    configure: {
+                    drawer: {
                       type: 'void',
-                      'x-component': 'WorkflowLink',
+                      'x-component': 'Action.Drawer',
+                      'x-decorator': 'Form',
+                      'x-decorator-props': {
+                        initialValue: {
+                          current: true,
+                        },
+                      },
+                      title: '{{t("Add new")}}',
+                      properties: {
+                        title: workflowFieldset.title,
+                        type: workflowFieldset.type,
+                        sync: workflowFieldset.sync,
+                        categories: workflowFieldset.categories,
+                        description: workflowFieldset.description,
+                        options: workflowFieldset.options,
+                        footer: {
+                          type: 'void',
+                          'x-component': 'Action.Drawer.Footer',
+                          properties: {
+                            cancel: {
+                              title: '{{ t("Cancel") }}',
+                              'x-component': 'Action',
+                              'x-component-props': {
+                                useAction: '{{ cm.useCancelAction }}',
+                              },
+                            },
+                            submit: {
+                              title: '{{ t("Submit") }}',
+                              'x-component': 'Action',
+                              'x-component-props': {
+                                type: 'primary',
+                                useAction: '{{ cm.useCreateAction }}',
+                              },
+                            },
+                          },
+                        },
+                      },
                     },
-                    update: {
-                      type: 'void',
-                      title: '{{ t("Edit") }}',
-                      'x-component': 'Action.Link',
+                  },
+                },
+              },
+            },
+            table: {
+              type: 'array',
+              'x-component': 'Table.Void',
+              'x-component-props': {
+                rowKey: 'id',
+                rowSelection: {
+                  type: 'checkbox',
+                },
+                useDataSource: '{{cm.useDataSourceFromRAC }}',
+              },
+              properties: {
+                title: {
+                  type: 'void',
+                  'x-decorator': 'Table.Column.Decorator',
+                  'x-component': 'Table.Column',
+                  title: `{{ t("Title") }}`,
+                  properties: {
+                    title: {
+                      type: 'string',
+                      'x-component': 'CollectionField',
+                      'x-read-pretty': true,
+                    },
+                  },
+                },
+                categories: {
+                  type: 'void',
+                  'x-decorator': 'Table.Column.Decorator',
+                  'x-component': 'Table.Column',
+                  title: `{{ t("Category", { ns: "${NAMESPACE}" }) }}`,
+                  properties: {
+                    categories: {
+                      type: 'array',
+                      'x-component': 'EnumerationField',
                       'x-component-props': {
-                        type: 'primary',
+                        multiple: true,
+                        fieldNames: {
+                          label: 'title',
+                          value: 'id',
+                          color: 'color',
+                        },
+                      },
+                      // 'x-collection-field': 'workflows.categories',
+                      // 'x-read-pretty': true,
+                      // 'x-component-props': {
+                      //   mode: 'Tag',
+                      // },
+                    },
+                  },
+                },
+                type: {
+                  type: 'void',
+                  'x-decorator': 'Table.Column.Decorator',
+                  'x-component': 'Table.Column',
+                  title: `{{ t("Trigger type", { ns: "${NAMESPACE}" }) }}`,
+                  properties: {
+                    type: {
+                      type: 'string',
+                      'x-component': 'CollectionField',
+                      'x-read-pretty': true,
+                    },
+                  },
+                },
+                sync: {
+                  type: 'void',
+                  'x-decorator': 'Table.Column.Decorator',
+                  'x-component': 'Table.Column',
+                  title: `{{ t("Execute mode", { ns: "${NAMESPACE}" }) }}`,
+                  properties: {
+                    sync: {
+                      type: 'boolean',
+                      'x-component': 'CollectionField',
+                      'x-read-pretty': true,
+                    },
+                  },
+                },
+                enabled: {
+                  type: 'void',
+                  'x-decorator': 'Table.Column.Decorator',
+                  'x-component': 'Table.Column',
+                  title: `{{ t("Status", { ns: "${NAMESPACE}" }) }}`,
+                  properties: {
+                    enabled: {
+                      type: 'boolean',
+                      'x-component': 'CollectionField',
+                      'x-read-pretty': true,
+                      default: false,
+                    },
+                  },
+                },
+                'stats.executed': {
+                  type: 'void',
+                  'x-decorator': 'Table.Column.Decorator',
+                  'x-component': 'Table.Column',
+                  title: `{{ t("Executed", { ns: "${NAMESPACE}" }) }}`,
+                  properties: {
+                    'stats.executed': {
+                      type: 'number',
+                      'x-decorator': 'OpenDrawer',
+                      'x-decorator-props': {
+                        component: ExecutedLink,
+                      },
+                      'x-component': 'InputNumber',
+                      'x-read-pretty': true,
+                      properties: {
+                        drawer: executionSchema,
+                      },
+                    },
+                  },
+                },
+                actions: {
+                  type: 'void',
+                  title: '{{ t("Actions") }}',
+                  'x-decorator': 'Table.Column.Decorator',
+                  'x-component': 'Table.Column',
+                  properties: {
+                    actions: {
+                      type: 'void',
+                      'x-component': 'Space',
+                      'x-component-props': {
+                        split: '|',
                       },
                       properties: {
-                        drawer: {
+                        configure: {
                           type: 'void',
-                          'x-component': 'Action.Drawer',
-                          'x-decorator': 'Form',
-                          'x-decorator-props': {
-                            useValues: '{{ cm.useValuesFromRecord }}',
-                          },
+                          'x-component': 'WorkflowLink',
+                        },
+                        update: {
+                          type: 'void',
                           title: '{{ t("Edit") }}',
+                          'x-component': 'Action.Link',
+                          'x-component-props': {
+                            type: 'primary',
+                          },
                           properties: {
-                            title: workflowFieldset.title,
-                            enabled: workflowFieldset.enabled,
-                            sync: workflowFieldset.sync,
-                            description: workflowFieldset.description,
-                            options: workflowFieldset.options,
-                            footer: {
+                            drawer: {
                               type: 'void',
-                              'x-component': 'Action.Drawer.Footer',
+                              'x-component': 'Action.Drawer',
+                              'x-decorator': 'Form',
+                              'x-decorator-props': {
+                                useValues: '{{ cm.useValuesFromRecord }}',
+                              },
+                              title: '{{ t("Edit") }}',
                               properties: {
-                                cancel: {
-                                  title: '{{ t("Cancel") }}',
-                                  'x-component': 'Action',
-                                  'x-component-props': {
-                                    useAction: '{{ cm.useCancelAction }}',
-                                  },
-                                },
-                                submit: {
-                                  title: '{{ t("Submit") }}',
-                                  'x-component': 'Action',
-                                  'x-component-props': {
-                                    type: 'primary',
-                                    useAction: '{{ cm.useUpdateAction }}',
+                                title: workflowFieldset.title,
+                                enabled: workflowFieldset.enabled,
+                                sync: workflowFieldset.sync,
+                                categories: workflowFieldset.categories,
+                                description: workflowFieldset.description,
+                                options: workflowFieldset.options,
+                                footer: {
+                                  type: 'void',
+                                  'x-component': 'Action.Drawer.Footer',
+                                  properties: {
+                                    cancel: {
+                                      title: '{{ t("Cancel") }}',
+                                      'x-component': 'Action',
+                                      'x-component-props': {
+                                        useAction: '{{ cm.useCancelAction }}',
+                                      },
+                                    },
+                                    submit: {
+                                      title: '{{ t("Submit") }}',
+                                      'x-component': 'Action',
+                                      'x-component-props': {
+                                        type: 'primary',
+                                        useAction: '{{ cm.useUpdateAction }}',
+                                      },
+                                    },
                                   },
                                 },
                               },
                             },
                           },
                         },
-                      },
-                    },
-                    revision: {
-                      type: 'void',
-                      title: `{{t("Duplicate", { ns: "${NAMESPACE}" })}}`,
-                      'x-component': 'Action.Link',
-                      'x-component-props': {
-                        openSize: 'small',
-                      },
-                      properties: {
-                        modal: {
+                        revision: {
                           type: 'void',
-                          title: `{{t("Duplicate to new workflow", { ns: "${NAMESPACE}" })}}`,
-                          'x-decorator': 'FormV2',
-                          'x-component': 'Action.Modal',
+                          title: `{{t("Duplicate", { ns: "${NAMESPACE}" })}}`,
+                          'x-component': 'Action.Link',
+                          'x-component-props': {
+                            openSize: 'small',
+                          },
                           properties: {
-                            title: {
-                              type: 'string',
-                              title: '{{t("Title")}}',
-                              'x-decorator': 'FormItem',
-                              'x-component': 'Input',
-                            },
-                            footer: {
+                            modal: {
                               type: 'void',
-                              'x-component': 'Action.Modal.Footer',
+                              title: `{{t("Duplicate to new workflow", { ns: "${NAMESPACE}" })}}`,
+                              'x-decorator': 'FormV2',
+                              'x-component': 'Action.Modal',
                               properties: {
-                                submit: {
-                                  type: 'void',
-                                  title: '{{t("Submit")}}',
-                                  'x-component': 'Action',
-                                  'x-component-props': {
-                                    type: 'primary',
-                                    useAction: '{{ useRevisionAction }}',
-                                  },
+                                title: {
+                                  type: 'string',
+                                  title: '{{t("Title")}}',
+                                  'x-decorator': 'FormItem',
+                                  'x-component': 'Input',
                                 },
-                                cancel: {
+                                footer: {
                                   type: 'void',
-                                  title: '{{t("Cancel")}}',
-                                  'x-component': 'Action',
-                                  'x-component-props': {
-                                    useAction: '{{ cm.useCancelAction }}',
+                                  'x-component': 'Action.Modal.Footer',
+                                  properties: {
+                                    submit: {
+                                      type: 'void',
+                                      title: '{{t("Submit")}}',
+                                      'x-component': 'Action',
+                                      'x-component-props': {
+                                        type: 'primary',
+                                        useAction: '{{ useRevisionAction }}',
+                                      },
+                                    },
+                                    cancel: {
+                                      type: 'void',
+                                      title: '{{t("Cancel")}}',
+                                      'x-component': 'Action',
+                                      'x-component-props': {
+                                        useAction: '{{ cm.useCancelAction }}',
+                                      },
+                                    },
                                   },
                                 },
                               },
                             },
                           },
                         },
-                      },
-                    },
-                    delete: {
-                      type: 'void',
-                      title: '{{ t("Delete") }}',
-                      'x-component': 'Action.Link',
-                      'x-component-props': {
-                        confirm: {
-                          title: "{{t('Delete record')}}",
-                          content: "{{t('Are you sure you want to delete it?')}}",
+                        delete: {
+                          type: 'void',
+                          title: '{{ t("Delete") }}',
+                          'x-component': 'Action.Link',
+                          'x-component-props': {
+                            confirm: {
+                              title: "{{t('Delete record')}}",
+                              content: "{{t('Are you sure you want to delete it?')}}",
+                            },
+                            useAction: '{{ cm.useDestroyActionAndRefreshCM }}',
+                          },
                         },
-                        useAction: '{{ cm.useDestroyActionAndRefreshCM }}',
                       },
                     },
                   },

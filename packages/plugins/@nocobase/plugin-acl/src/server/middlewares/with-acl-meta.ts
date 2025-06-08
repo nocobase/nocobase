@@ -95,6 +95,7 @@ function createWithACLMetaMiddleware() {
         },
         state: {
           currentRole: ctx.state.currentRole,
+          currentRoles: ctx.state.currentRoles,
           currentUser: (() => {
             if (!ctx.state.currentUser) {
               return null;
