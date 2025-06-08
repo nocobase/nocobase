@@ -20,12 +20,6 @@ type PageFlowModelStructure = {
 }
 
 export class PageFlowModel extends FlowModel<PageFlowModelStructure> {
-  onInit(options: any) {
-    const tabs = options.tabs || [];
-    tabs.forEach((tab: any) => {
-      this.addSubModel('tabs', tab);
-    });
-  }
 
   addTab(tab: any) {
     const model = this.addSubModel('tabs', tab);
@@ -33,7 +27,7 @@ export class PageFlowModel extends FlowModel<PageFlowModelStructure> {
   }
 
   getItems() {
-    return this.subModels.tabs.map((tab) => {
+    return this.subModels.tabs?.map((tab) => {
       return {
         key: tab.uid,
         label: tab.props.label || 'Unnamed',
@@ -43,7 +37,7 @@ export class PageFlowModel extends FlowModel<PageFlowModelStructure> {
   }
 
   renderFirstTab() {
-    return <FlowModelRenderer model={this.subModels.tabs[0]} />;
+    return <FlowModelRenderer model={this.subModels.tabs?.[0]} />;
   }
 
   renderTabs() {

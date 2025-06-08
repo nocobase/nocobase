@@ -20,8 +20,9 @@ import type {
   CreateModelOptions,
   StepDefinition,
   StepParams,
-  SubModelValue,
   DefaultStructure,
+  FlowModelOptions,
+  CreateSubModelOptions,
 } from '../types';
 import { ExtendedFlowDefinition, FlowExtraContext, IModelComponentProps, ReadonlyModelProps } from '../types';
 import { generateUid, mergeFlowDefinitions } from '../utils';
@@ -39,12 +40,19 @@ export class FlowModel<Structure extends {parent?: any, subModels?: any} = Defau
   public subModels: Structure['subModels'];
 
   constructor(
-    protected options: { uid: string; use?: string; props?: IModelComponentProps; stepParams?: Record<string, any>, subModels?: Structure['subModels'] },
+    protected options: FlowModelOptions<Structure>,
   ) {
+
+    if (options?.flowEngine?.getModel(options.uid)) {
+      // 此时 new FlowModel 并不创建新实例，而是返回已存在的实例，避免重复创建同一个model实例
+      return options.flowEngine.getModel(options.uid);
+    }
+
     this.uid = options.uid || uid();
     this.props = options.props || {};
     this.stepParams = options.stepParams || {};
     this.subModels = {};
+    this.flowEngine = options.flowEngine;
 
     define(this, {
       props: observable,
@@ -57,9 +65,22 @@ export class FlowModel<Structure extends {parent?: any, subModels?: any} = Defau
     // queueMicrotask(() => {
     //   this.onInit(options);
     // });
+    this.createSubModels(options.subModels);
   }
 
   onInit(options): void {}
+
+  private createSubModels(subModels: Record<string, CreateSubModelOptions | CreateSubModelOptions[]>) {
+    Object.entries(subModels || {}).forEach(([key, value]) => {
+      if (Array.isArray(value)) {
+        value.forEach((item) => {
+          this.addSubModel(key, item);
+        });
+      } else {
+        this.setSubModel(key, value);
+      }
+    });
+  }
 
   /**
    * 设置FlowEngine实例
@@ -576,6 +597,7 @@ export class FlowModel<Structure extends {parent?: any, subModels?: any} = Defau
       stepParams: this.stepParams,
     };
     for (const subModelKey in this.subModels) {
+      data.subModels = data.subModels || {};
       if (Array.isArray(this.subModels[subModelKey])) {
         data.subModels[subModelKey] = this.subModels[subModelKey].map((model: FlowModel) => model.serialize());
       } else if ((this.subModels[subModelKey] as any) instanceof FlowModel) {

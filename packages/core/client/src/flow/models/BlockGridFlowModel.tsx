@@ -50,12 +50,6 @@ type BlockGridFlowModelStructure = {
 }
 
 export class BlockGridFlowModel extends FlowModel<BlockGridFlowModelStructure> {
-  onInit(options: any) {
-    const items = options.items || [];
-    items.forEach((item: any) => {
-      this.addSubModel('items', item);
-    });
-  }
 
   addItem(item) {
     const model = this.addSubModel('items', item);
@@ -81,7 +75,7 @@ export class BlockGridFlowModel extends FlowModel<BlockGridFlowModelStructure> {
       <div style={{ padding: 16 }}>
         <h1>Grid Flow Model - {this.uid}</h1>
         <p>This is a placeholder for the Grid Flow Model content.</p>
-        <Grid items={this.subModels.items?.slice()} />
+        <Grid items={this.subModels.items?.slice() || []} />
         <br />
         <AddBlockButton model={this} />
       </div>

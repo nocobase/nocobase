@@ -152,7 +152,7 @@ export class FlowEngine {
    */
   public createModel<T extends FlowModel = FlowModel>(options: CreateModelOptions): T {
     const { parentId, uid, use: modelClassName, subModels } = options;
-    const ModelClass = this.getModelClass(modelClassName);
+    const ModelClass = typeof modelClassName === 'string' ? this.getModelClass(modelClassName) : modelClassName;
 
     if (!ModelClass) {
       throw new Error(`Model class '${modelClassName}' not found. Please register it first.`);
@@ -161,26 +161,12 @@ export class FlowEngine {
     if (uid && this.modelInstances.has(uid)) {
       return this.modelInstances.get(uid) as T;
     }
+    const modelInstance = new (ModelClass as ModelConstructor<T>)({ ...options, flowEngine: this } as any);
 
-    const modelInstance = new (ModelClass as ModelConstructor<T>)(options as any);
-
-    modelInstance.setFlowEngine(this);
     modelInstance.onInit(options);
 
     if (parentId && this.modelInstances.has(parentId)) {
       modelInstance.setParent(this.modelInstances.get(parentId));
-    }
-
-    if (subModels) {
-      Object.entries(subModels).forEach(([key, value]) => {
-        if (Array.isArray(value)) {
-          value.forEach((item) => {
-            modelInstance.addSubModel(key, item);
-          });
-        } else {
-          modelInstance.setSubModel(key, value);
-        }
-      });
     }
 
     this.modelInstances.set(modelInstance.uid, modelInstance);

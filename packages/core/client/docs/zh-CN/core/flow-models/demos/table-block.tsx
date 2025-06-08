@@ -44,15 +44,6 @@ type TableBlockFlowModelStructure = {
 }
 
 class TableBlockFlowModel extends FlowModel<TableBlockFlowModelStructure> {
-  onInit(options: any) {
-    const { actions = [], columns = [] } = options;
-    actions.forEach((action) => {
-      this.addAction(action);
-    });
-    columns.forEach((column) => {
-      this.addColumn(column);
-    });
-  }
 
   addColumn(column) {
     return this.addSubModel('columns', column);
@@ -189,25 +180,27 @@ class PluginTableBlockModel extends Plugin {
     this.flowEngine.registerModels({ TableBlockFlowModel, TableColumnFlowModel, ActionFlowModel });
     const model = this.flowEngine.createModel({
       use: 'TableBlockFlowModel',
-      columns: [
-        {
-          use: 'TableColumnFlowModel',
-          props: {
-            title: '姓名',
-            dataIndex: 'name',
-            key: 'name',
+      subModels: {
+        columns: [
+          {
+            use: 'TableColumnFlowModel',
+            props: {
+              title: '姓名',
+              dataIndex: 'name',
+              key: 'name',
+            },
           },
-        },
-      ],
-      actions: [
-        {
-          use: 'ActionFlowModel',
-          props: {
-            type: 'primary',
-            children: '查询数据',
+        ],
+        actions: [
+          {
+            use: 'ActionFlowModel',
+            props: {
+              type: 'primary',
+              children: '查询数据',
+            },
           },
-        },
-      ],
+        ],
+      },
       stepParams: {
         defaultFlow: {
           step2: {

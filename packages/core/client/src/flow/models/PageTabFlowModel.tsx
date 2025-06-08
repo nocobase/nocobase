@@ -9,21 +9,19 @@
 
 import { FlowModel, FlowModelRenderer } from '@nocobase/flow-engine';
 import React from 'react';
+import { BlockGridFlowModel } from './BlockGridFlowModel';
 
-export class PageTabFlowModel extends FlowModel {
-  grid;
-
-  onInit(options: any): void {
-    if (options.grid) {
-      this.grid = this.setSubModel('grid', options.grid);
-    }
+export class PageTabFlowModel extends FlowModel<{
+  subModels: {
+    grid: BlockGridFlowModel;
   }
+}> {
 
   render() {
     console.log('TabFlowModel render', this.uid);
     return (
       <div>
-        <FlowModelRenderer model={this.grid} />
+        <FlowModelRenderer model={this.subModels.grid} />
       </div>
     );
   }

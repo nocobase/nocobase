@@ -36,13 +36,14 @@ export class MockFlowModelRepository implements IFlowModelRepository<FlowModel> 
     const json = JSON.parse(data);
     for (const model of [...this.models.values()]) {
       if (model.parentId === uid) {
+        json.subModels = json.subModels || {};
         if (model.subType === 'array') {
-          json[model.subKey] = json[model.subKey] || [];
+          json.subModels[model.subKey] = json.subModels[model.subKey] || [];
           const subModel = await this.load(model.uid);
-          json[model.subKey].push(subModel);
+          json.subModels[model.subKey].push(subModel);
         } else if (model.subType === 'object') {
           const subModel = await this.load(model.uid);
-          json[model.subKey] = subModel;
+          json.subModels[model.subKey] = subModel;
         }
       }
     }
@@ -53,10 +54,10 @@ export class MockFlowModelRepository implements IFlowModelRepository<FlowModel> 
   // 将模型数据保存到本地存储
   async save(model: FlowModel) {
     const data = model.serialize();
-    const currentData = _.omit(data, [...Object.keys(model.subModels)]);
+    const currentData = _.omit(data, ['subModels', 'flowEngine']);
     localStorage.setItem(`flow-model:${model.uid}`, JSON.stringify(currentData));
     console.log('Saving model:', model.uid, currentData);
-    for (const subModelKey of Object.keys(model.subModels)) {
+    for (const subModelKey of Object.keys(model.subModels || {})) {
       const subModelValue = model.subModels[subModelKey];
       if (!subModelValue) continue;
       if (Array.isArray(subModelValue)) {

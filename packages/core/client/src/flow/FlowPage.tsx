@@ -30,14 +30,18 @@ export const FlowPageComponent = ({ uid }) => {
       return flowEngine.loadOrCreateModel({
         uid: uid,
         use: 'PageFlowModel',
-        tabs: [
-          {
-            use: 'PageTabFlowModel',
-            grid: {
-              use: 'BlockGridFlowModel',
+        subModels: {
+          tabs: [
+            {
+              use: 'PageTabFlowModel',
+              subModels: {
+                grid: {
+                  use: 'BlockGridFlowModel',
+                },
+              },
             },
-          },
-        ],
+          ],
+        },
       });
     },
     {

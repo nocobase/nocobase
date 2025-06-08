@@ -102,17 +102,6 @@ export class TableBlockFlowModel extends BlockFlowModel<{
     actions: ActionFlowModel[];
   }
 }> {
-  onInit(options: any) {
-    const { actions = [], columns = [] } = options;
-    console.log('TableBlockFlowModel onInit', options);
-    actions.forEach((action) => {
-      this.addSubModel('actions', action);
-    });
-    columns.forEach((column) => {
-      this.addSubModel('columns', column);
-    });
-  }
-
   addColumn(column) {
     const model = this.addSubModel('columns', column);
     model.save();
@@ -237,16 +226,18 @@ TableBlockFlowModel.define({
   group: 'Content',
   defaultOptions: {
     use: 'TableBlockFlowModel',
-    columns: [],
-    actions: [
-      {
-        use: 'ActionFlowModel',
-        props: {
-          type: 'primary',
-          children: '查询数据',
+    subModels: {
+      columns: [],
+      actions: [
+        {
+          use: 'ActionFlowModel',
+          props: {
+            type: 'primary',
+            children: '查询数据',
+          },
         },
-      },
-    ],
+      ],
+    },
     stepParams: {
       defaultFlow: {
         step2: {

@@ -89,7 +89,7 @@ export interface FlowContext<TModel extends FlowModel = FlowModel> {
   app: any; // Application instance (required)
 }
 
-// FlowModel上下文类型 - 已移动到下方，使用新的定义
+export type CreateSubModelOptions = CreateModelOptions | FlowModel;
 
 /**
  * Constructor for model classes.
@@ -98,6 +98,7 @@ export type ModelConstructor<T extends FlowModel = FlowModel> = new (options: {
   uid: string;
   props?: IModelComponentProps;
   stepParams?: StepParams;
+  subModels?: Record<string, CreateSubModelOptions | CreateSubModelOptions[]>;
   [key: string]: any; // Allow additional options
 }) => T;
 
@@ -202,10 +203,10 @@ export type RegisteredModelClassName = string;
  */
 export interface CreateModelOptions {
   uid?: string;
-  use: RegisteredModelClassName;
+  use: RegisteredModelClassName | ModelConstructor;
   props?: IModelComponentProps;
   stepParams?: StepParams;
-  subModels?: Record<string, CreateModelOptions | FlowModel>;
+  subModels?: Record<string, CreateSubModelOptions | CreateSubModelOptions[]>;
   [key: string]: any; // 允许额外的自定义选项
 }
 export interface IFlowModelRepository<T extends FlowModel = FlowModel> {
@@ -252,4 +253,15 @@ export interface MultiRecordResourceMeta {
 export interface DefaultStructure {
   parent?: any,
   subModels?: Record<string, FlowModel | FlowModel[]>
+}
+
+/**
+ * Options for FlowModel constructor
+ */
+export interface FlowModelOptions<Structure extends {parent?: any, subModels?: any} = DefaultStructure> {
+  uid: string;
+  props?: IModelComponentProps;
+  stepParams?: Record<string, any>;
+  subModels?: Structure['subModels'];
+  flowEngine: FlowEngine;
 }

@@ -73,13 +73,6 @@ class FlowModelRepository implements IFlowModelRepository<FlowModel<{parent: nev
 class TabFlowModel extends FlowModel {}
 
 class HelloFlowModel extends FlowModel<{parent: never, subModels: { tabs: TabFlowModel[] } }> {
-  onInit(options: CreateModelOptions) {
-    const tabs = (options.subModels.tabs || []) as any[];
-    // 使用新的 subModels API 初始化 tabs
-    tabs.forEach((tab: any) => {
-      this.addSubModel('tabs', tab);
-    });
-  }
 
   addTab(tab: any) {
     // 使用新的 addSubModel API 添加子模型
