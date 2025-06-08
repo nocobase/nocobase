@@ -53,9 +53,6 @@ export const CurrentUserProvider = (props) => {
           skipAuth: true,
         })
         .then((res) => res?.data),
-    {
-      manual: !api.auth.token,
-    },
   );
 
   const { render } = useAppSpin();
