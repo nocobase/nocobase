@@ -214,7 +214,10 @@ export async function getRenderContent(templateEngine, content, variables, local
   if (content && templateEngine === 'handlebars') {
     // 注册 Handlebars helper
     Handlebars.registerHelper('t', function (key) {
-      return t(key, { ns: NAMESPACE_UI_SCHEMA });
+      if (typeof key === 'string') {
+        return t(key, { ns: NAMESPACE_UI_SCHEMA });
+      }
+      return;
     });
     try {
       const safeContent = safeCompile(content);
@@ -227,12 +230,13 @@ export async function getRenderContent(templateEngine, content, variables, local
         variableDate[v] = $nDate[v]();
       });
       const html = renderedContent({ ...variables?.ctxRef?.current, ...data, $nDate: variableDate });
+      console.log(html);
       return await defaultParse(html);
     } catch (error) {
       if (!/VariablesProvider: .* is not found/.test(error.message)) {
         console.log(error);
       }
-
+      console.log(content);
       return content;
     }
   } else {
