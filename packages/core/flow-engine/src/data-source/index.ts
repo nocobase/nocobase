@@ -40,6 +40,14 @@ export class DataSourceManager {
     this.dataSources.delete(name);
   }
 
+  clearDataSources() {
+    this.dataSources.clear();
+  }
+
+  getDataSources(): DataSource[] {
+    return Array.from(this.dataSources.values());
+  }
+
   getDataSource(name: string): DataSource | undefined {
     return this.dataSources.get(name);
   }
@@ -64,6 +72,30 @@ export class DataSource {
     return this.options.name;
   }
 
+  getCollections(): Collection[] {
+    return this.collectionManager.getCollections();
+  }
+
+  getCollection(name: string): Collection | undefined {
+    return this.collectionManager.getCollection(name);
+  }
+
+  addCollection(collection: Collection | CollectionOptions) {
+    return this.collectionManager.addCollection(collection);
+  }
+
+  updateCollection(newOptions: CollectionOptions) {
+    return this.collectionManager.updateCollection(newOptions);
+  }
+
+  removeCollection(name: string) {
+    return this.collectionManager.removeCollection(name);
+  }
+
+  clearCollections() {
+    this.collectionManager.clearCollections();
+  }
+
   setOptions(newOptions: any = {}) {
     Object.keys(this.options).forEach((key) => delete this.options[key]);
     Object.assign(this.options, newOptions);
@@ -74,6 +106,13 @@ export class DataSource {
   }
 }
 
+export interface CollectionOptions {
+  name: string;
+  title?: string;
+  inherits?: string[];
+  [key: string]: any;
+}
+
 export class CollectionManager {
   collections: Map<string, Collection>;
 
@@ -81,18 +120,40 @@ export class CollectionManager {
     this.collections = observable.shallow<Map<string, Collection>>(new Map());
   }
 
-  addCollection(collection: Collection) {
-    collection.setCollectionManager(this);
-    collection.initInherits();
-    this.collections.set(collection.name, collection);
+  addCollection(collection: Collection | CollectionOptions) {
+    let col: Collection;
+    if (collection instanceof Collection) {
+      col = collection;
+    } else {
+      col = new Collection(collection);
+    }
+    col.setCollectionManager(this);
+    col.initInherits();
+    this.collections.set(col.name, col);
   }
 
   removeCollection(name: string) {
     this.collections.delete(name);
   }
 
+  updateCollection(newOptions: CollectionOptions) {
+    const collection = this.getCollection(newOptions.name);
+    if (!collection) {
+      throw new Error(`Collection ${newOptions.name} not found`);
+    }
+    collection.setOptions(newOptions);
+  }
+
   getCollection(name: string): Collection | undefined {
     return this.collections.get(name);
+  }
+
+  getCollections(): Collection[] {
+    return Array.from(this.collections.values());
+  }
+
+  clearCollections() {
+    this.collections.clear();
   }
 }
 
@@ -107,10 +168,15 @@ export class Collection {
     this.options = observable({ ...options });
     this.fields = observable.shallow<Map<string, Field>>(new Map());
     this.inherits = observable.shallow<Map<string, Collection>>(new Map());
+    this.setFields(options.fields || []);
   }
 
   get name() {
     return this.options.name;
+  }
+
+  get title() {
+    return this.options.title || this.name;
   }
 
   initInherits() {
@@ -151,12 +217,31 @@ export class Collection {
     return Array.from(fieldMap.values());
   }
 
-  addField(field: Field) {
-    this.fields.set(field.name, field);
+  setFields(fields: Field[] | Record<string, any>[]) {
+    this.fields.clear();
+    for (const field of fields) {
+      this.addField(field);
+    }
+  }
+
+  addField(field: Field | Record<string, any>) {
+    if (field.name && this.fields.has(field.name)) {
+      throw new Error(`Field with name ${field.name} already exists in collection ${this.name}`);
+    }
+    if (field instanceof Field) {
+      this.fields.set(field.name, field);
+    } else {
+      const newField = new Field(field);
+      this.fields.set(newField.name, newField);
+    }
   }
 
   removeField(fieldName: string) {
-    this.fields.delete(fieldName);
+    return this.fields.delete(fieldName);
+  }
+
+  clearFields() {
+    return this.fields.clear();
   }
 
   refresh() {

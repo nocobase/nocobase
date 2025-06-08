@@ -1,70 +1,95 @@
 import { uid } from '@formily/shared';
 import { Application, Plugin } from '@nocobase/client';
 import { DataSource, DataSourceManager, FlowModel, FlowModelRenderer } from '@nocobase/flow-engine';
-import { Button } from 'antd';
+import { Button, Card, Space } from 'antd';
 import React from 'react';
 
 const dsm = new DataSourceManager();
-dsm.addDataSource({
+const ds = new DataSource({
   name: 'main',
   displayName: 'Main',
+  description: 'This is the main data source',
 });
+dsm.addDataSource(ds);
 class ConfigureFieldsFlowModel extends FlowModel {
+  getDataSources() {
+    return [...dsm.dataSources.values()];
+  }
   render() {
     return (
       <div>
-        {dsm.dataSources.size}
-        {dsm.getDataSource('main')?.options?.displayName}
-        <Button
-          onClick={() => {
-            const ds2 = new DataSource({
-              name: `ds-${uid()}`,
-              displayName: `ds-${uid()}`,
-            });
-            dsm.addDataSource(ds2);
-          }}
-        >
-          Add new
-        </Button>
-        <Button
-          onClick={() => {
-            dsm.dataSources.clear();
-          }}
-        >
-          Clear
-        </Button>
+        {this.getDataSources().map((ds) => (
+          <Card key={ds.name} title={ds.options.displayName} style={{ marginBottom: 24 }}>
+            {ds.getCollections().map((collection) => (
+              <Card key={collection.name} title={collection.title} style={{ marginBottom: 24 }}>
+                {collection.getFields().map((field) => (
+                  <div key={field.name}>{field.name}</div>
+                ))}
+                <Space>
+                  <Button
+                    onClick={() => {
+                      collection.addField({
+                        name: `field-${uid()}`,
+                      });
+                    }}
+                  >
+                    Add Field
+                  </Button>
+                  <Button
+                    onClick={() => {
+                      collection.clearFields();
+                    }}
+                  >
+                    Clear Fields
+                  </Button>
+                </Space>
+              </Card>
+            ))}
+            <Space>
+              <Button
+                onClick={() => {
+                  ds.addCollection({
+                    name: `collection-${uid()}`,
+                    title: `Collection ${uid()}`,
+                  });
+                }}
+              >
+                Add Collection
+              </Button>
+              <Button
+                onClick={() => {
+                  ds.clearCollections();
+                }}
+              >
+                Clear Collection
+              </Button>
+            </Space>
+          </Card>
+        ))}
+        <Space>
+          <Button
+            onClick={() => {
+              dsm.addDataSource({
+                name: `ds-${uid()}`,
+                displayName: `ds-${uid()}`,
+              });
+            }}
+          >
+            Add Data Source
+          </Button>
+          <Button
+            onClick={() => {
+              dsm.clearDataSources();
+            }}
+          >
+            Clear Data Sources
+          </Button>
+        </Space>
       </div>
     );
   }
 }
 
-ConfigureFieldsFlowModel.registerFlow({
-  key: 'myFlow',
-  auto: true,
-  steps: {
-    step1: {
-      // uiSchema: {
-      //   collectionName: {
-      //     'x-component': 'Select',
-      //     enum: Object.keys(collections).map((key) => ({
-      //       label: collections[key].title,
-      //       value: key,
-      //     })),
-      //     'x-decorator': 'FormItem',
-      //   },
-      // },
-      async handler(ctx, params) {
-        console.log('step1 handler', ctx, params);
-        dsm.addDataSource({
-          name: `ds-${uid()}`,
-          displayName: `ds-${uid()}`,
-        });
-      },
-    },
-  },
-});
-
-// 插件定义
 class PluginTableBlockModel extends Plugin {
   async load() {
     this.flowEngine.registerModels({ ConfigureFieldsFlowModel });
@@ -73,7 +98,7 @@ class PluginTableBlockModel extends Plugin {
     });
     this.router.add('root', {
       path: '/',
-      element: <FlowModelRenderer model={model} showFlowSettings />,
+      element: <FlowModelRenderer model={model} />,
     });
   }
 }

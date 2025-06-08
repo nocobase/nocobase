@@ -56,6 +56,10 @@
 
 <code src="./demos/data-source.tsx"></code>
 
+## collection inherits
+
+<code src="./demos/collection-inherits.tsx"></code>
+
 ## Array Resource
 
 <code src="./demos/array-resource.tsx"></code>
@@ -71,3 +75,4 @@
 ## Multi Record Resource
 
 <code src="./demos/multi-record-resource.tsx"></code>
+
