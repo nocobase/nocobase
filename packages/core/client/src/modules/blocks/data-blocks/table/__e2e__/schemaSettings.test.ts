@@ -732,7 +732,7 @@ test.describe('actions schema settings', () => {
       // 使用变量 `Current popup record` 和 `Parent popup record` 设置默认值
       await expect(
         page
-          .getByText("UsersUse 'Current popup")
+          .getByText("Users Use 'Current popup")
           .getByLabel('block-item-CollectionField-users-form-users.nickname-Nickname')
           .getByRole('textbox'),
       ).toHaveValue('admin');

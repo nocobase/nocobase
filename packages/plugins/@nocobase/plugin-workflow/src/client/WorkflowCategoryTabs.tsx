@@ -270,7 +270,7 @@ export function CategoryTabs() {
         ),
       };
     });
-  }, [data?.data]);
+  }, [data?.data, key]);
 
   const onChange = useCallback(
     (key: string) => {
@@ -293,7 +293,7 @@ export function CategoryTabs() {
     if (activeKey.tab !== 'all') {
       onChange(activeKey.tab);
     }
-  }, []);
+  }, [activeKey.tab, onChange]);
 
   if (!data) return null;
   return (
