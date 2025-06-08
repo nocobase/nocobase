@@ -16,7 +16,6 @@ import {
   Plugin,
   SchemaInitializerItemType,
   SchemaSettings,
-  useSchemaInitializer,
 } from '@nocobase/client';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
