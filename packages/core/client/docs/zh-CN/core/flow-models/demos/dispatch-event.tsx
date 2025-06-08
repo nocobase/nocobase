@@ -17,7 +17,7 @@ class HelloFlowModel extends FlowModel {
   }
 }
 
-HelloFlowModel.registerFlow<HelloFlowModel>({
+HelloFlowModel.registerFlow({
   key: 'default',
   on: {
     eventName: 'event1',

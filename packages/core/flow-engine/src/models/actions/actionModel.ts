@@ -18,16 +18,6 @@ export class ActionModel extends FlowModel {
     this.initFlows();
   }
 
-  constructor(options: { uid: string; stepParams?: StepParams; blockModel?: BlockModel }) {
-    super({
-      uid: options.uid,
-      stepParams: options.stepParams,
-    });
-    if (options.blockModel) {
-      this.blockModel = options.blockModel;
-    }
-  }
-
   /**
    * 设置BlockModel实例
    * @param {BlockModel} blockModel BlockModel实例
@@ -93,7 +83,7 @@ export class ActionModel extends FlowModel {
       },
     });
 
-    this.registerFlow<ActionModel>({
+    this.registerFlow({
       key: 'remove',
       on: {
         eventName: 'remove',

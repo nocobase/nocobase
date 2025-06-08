@@ -212,7 +212,7 @@ class DemoTableBlockModel extends BlockModel {
       },
     });
 
-    this.registerFlow<DemoTableBlockModel>({
+    this.registerFlow({
       key: 'loadData',
       title: '数据加载',
       steps: {

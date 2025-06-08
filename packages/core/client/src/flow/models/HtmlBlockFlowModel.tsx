@@ -49,7 +49,7 @@ HtmlBlockFlowModel.define({
   },
 });
 
-HtmlBlockFlowModel.registerFlow<HtmlBlockFlowModel>({
+HtmlBlockFlowModel.registerFlow({
   key: 'default',
   auto: true,
   steps: {

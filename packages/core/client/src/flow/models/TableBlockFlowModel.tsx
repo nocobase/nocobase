@@ -195,7 +195,7 @@ export class TableBlockFlowModel extends BlockFlowModel<{
   }
 }
 
-TableBlockFlowModel.registerFlow<TableBlockFlowModel>('defaultFlow', {
+TableBlockFlowModel.registerFlow('defaultFlow', {
   auto: true,
   steps: {
     step1: {

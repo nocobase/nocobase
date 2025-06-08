@@ -43,7 +43,7 @@ const collections = {
   }),
 };
 
-ConfigureFieldsFlowModel.registerFlow<ConfigureFieldsFlowModel>({
+ConfigureFieldsFlowModel.registerFlow({
   key: 'myFlow',
   auto: true,
   steps: {

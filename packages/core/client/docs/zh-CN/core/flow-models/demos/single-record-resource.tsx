@@ -130,7 +130,7 @@ class SingleRecordFlowModel extends FlowModel {
   }
 }
 
-SingleRecordFlowModel.registerFlow<SingleRecordFlowModel>({
+SingleRecordFlowModel.registerFlow({
   auto: true,
   key: 'default',
   steps: {

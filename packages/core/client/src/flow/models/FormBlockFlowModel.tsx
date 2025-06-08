@@ -107,7 +107,7 @@ FormBlockFlowModel.define({
   },
 });
 
-FormBlockFlowModel.registerFlow<FormBlockFlowModel>('defaultFlow', {
+FormBlockFlowModel.registerFlow('defaultFlow', {
   auto: true,
   steps: {
     step1: {

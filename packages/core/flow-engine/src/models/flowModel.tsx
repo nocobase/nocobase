@@ -99,11 +99,12 @@ export class FlowModel<Structure extends {parent?: any, subModels?: any} = Defau
    * @param {FlowDefinition<TModel>} [flowDefinition] 当第一个参数为流程 Key 时，此参数为流程的定义。
    * @returns {void}
    */
-  public static registerFlow<TModel extends FlowModel = FlowModel>(
-    keyOrDefinition: string | FlowDefinition<TModel>,
-    flowDefinition?: Omit<FlowDefinition<TModel>, 'key'> & { key?: string },
+  public static registerFlow<TModel extends new (...args: any[]) => FlowModel<any>>(
+    this: TModel,
+    keyOrDefinition: string | FlowDefinition<InstanceType<TModel>>,
+    flowDefinition?: Omit<FlowDefinition<InstanceType<TModel>>, 'key'> & { key?: string },
   ): void {
-    let definition: FlowDefinition<TModel>;
+    let definition: FlowDefinition<InstanceType<TModel>>;
     let key: string;
 
     if (typeof keyOrDefinition === 'string' && flowDefinition) {
@@ -120,11 +121,11 @@ export class FlowModel<Structure extends {parent?: any, subModels?: any} = Defau
     }
 
     // 确保当前类有自己的flows Map
-    const ModelClass = this as typeof FlowModel;
-    if (!modelFlows.has(ModelClass)) {
-      modelFlows.set(ModelClass, new Map<string, FlowDefinition>());
+    const ModelClass = this;
+    if (!modelFlows.has(ModelClass as any)) {
+      modelFlows.set(ModelClass as any, new Map<string, FlowDefinition>());
     }
-    const flows = modelFlows.get(ModelClass)!;
+    const flows = modelFlows.get(ModelClass as any)!;
 
     if (flows.has(key)) {
       console.warn(`FlowModel: Flow with key '${key}' is already registered and will be overwritten.`);

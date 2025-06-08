@@ -67,7 +67,7 @@ class FormilyFlowModel extends FlowModel {
   }
 }
 
-FormilyFlowModel.registerFlow<FormilyFlowModel>('defaultFlow', {
+FormilyFlowModel.registerFlow('defaultFlow', {
   auto: true,
   steps: {
     step1: {
