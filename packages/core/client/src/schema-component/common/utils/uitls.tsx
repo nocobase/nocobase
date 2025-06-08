@@ -205,6 +205,10 @@ const getVariablesData = (localVariables) => {
   });
   return data;
 };
+function safeCompile(content: string) {
+  // 将非法 {{}} 替换为原文 '{{}}'
+  return content.replace(/{{\s*}}/g, '{{"{{}}"}}');
+}
 
 export async function getRenderContent(templateEngine, content, variables, localVariables, defaultParse, t?) {
   if (content && templateEngine === 'handlebars') {
@@ -213,7 +217,8 @@ export async function getRenderContent(templateEngine, content, variables, local
       return t(key, { ns: NAMESPACE_UI_SCHEMA });
     });
     try {
-      const renderedContent = Handlebars.compile(content);
+      const safeContent = safeCompile(content);
+      const renderedContent = Handlebars.compile(safeContent);
       // 处理渲染后的内容
       const data = getVariablesData(localVariables);
       const { $nDate } = variables?.ctxRef?.current || {};
@@ -227,6 +232,7 @@ export async function getRenderContent(templateEngine, content, variables, local
       if (!/VariablesProvider: .* is not found/.test(error.message)) {
         console.log(error);
       }
+
       return content;
     }
   } else {
