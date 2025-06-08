@@ -11,27 +11,27 @@ import { action, define, observable } from '@formily/reactive';
 import _ from 'lodash';
 import React from 'react';
 import { uid } from 'uid/secure';
+import { openStepSettingsDialog as openStepSettingsDialogFn } from '../components/settings/wrappers/contextual/StepSettingsDialog';
 import { FlowEngine } from '../flowEngine';
 import type {
   ActionStepDefinition,
+  CreateModelOptions,
+  CreateSubModelOptions,
+  DefaultStructure,
   FlowContext,
   FlowDefinition,
+  FlowModelOptions,
   InlineStepDefinition,
-  CreateModelOptions,
   StepDefinition,
   StepParams,
-  DefaultStructure,
-  FlowModelOptions,
-  CreateSubModelOptions,
 } from '../types';
 import { ExtendedFlowDefinition, FlowExtraContext, IModelComponentProps, ReadonlyModelProps } from '../types';
 import { generateUid, mergeFlowDefinitions } from '../utils';
-import { openStepSettingsDialog as openStepSettingsDialogFn } from '../components/settings/wrappers/contextual/StepSettingsDialog';
 
 // 使用WeakMap存储每个类的flows
 const modelFlows = new WeakMap<typeof FlowModel, Map<string, FlowDefinition>>();
 
-export class FlowModel<Structure extends {parent?: any, subModels?: any} = DefaultStructure> {
+export class FlowModel<Structure extends { parent?: any; subModels?: any } = DefaultStructure> {
   public readonly uid: string;
   public props: IModelComponentProps = {};
   public stepParams: StepParams = {};
@@ -39,10 +39,7 @@ export class FlowModel<Structure extends {parent?: any, subModels?: any} = Defau
   public parent: Structure['parent'];
   public subModels: Structure['subModels'];
 
-  constructor(
-    protected options: FlowModelOptions<Structure>,
-  ) {
-
+  constructor(protected options: FlowModelOptions<Structure>) {
     if (options?.flowEngine?.getModel(options.uid)) {
       // 此时 new FlowModel 并不创建新实例，而是返回已存在的实例，避免重复创建同一个model实例
       return options.flowEngine.getModel(options.uid);
@@ -538,23 +535,21 @@ export class FlowModel<Structure extends {parent?: any, subModels?: any} = Defau
 
   mapSubModels<K extends keyof Structure['subModels'], R>(
     subKey: K,
-    callback: Structure['subModels'][K] extends (infer U)[]
-      ? (model: U) => R
-      : (model: Structure['subModels'][K]) => R
+    callback: Structure['subModels'][K] extends (infer U)[] ? (model: U) => R : (model: Structure['subModels'][K]) => R,
   ): R[] {
     const model = this.subModels[subKey];
-    const results: R[] = [];
-    
-    if (Array.isArray(model)) {
-      model.forEach((item) => {
-        const result = (callback as (model: any) => R)(item);
-        results.push(result);
-      });
-    } else {
-      const result = (callback as (model: any) => R)(model);
-      results.push(result);
+
+    if (!model) {
+      return null;
     }
-    
+
+    const results: R[] = [];
+
+    _.castArray(model).forEach((item) => {
+      const result = (callback as (model: any) => R)(item);
+      results.push(result);
+    });
+
     return results;
   }
 
@@ -581,7 +576,7 @@ export class FlowModel<Structure extends {parent?: any, subModels?: any} = Defau
     if (this.parent?.subModels) {
       for (const subKey in this.parent.subModels) {
         const subModelValue = this.parent.subModels[subKey];
-        
+
         if (Array.isArray(subModelValue)) {
           const index = subModelValue.indexOf(this);
           if (index !== -1) {

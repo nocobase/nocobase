@@ -57,6 +57,13 @@ export class DataSourceManager {
     if (!ds) return undefined;
     return ds.collectionManager.getCollection(collectionName);
   }
+
+  getCollectionField(fieldPathWithDataSource: string) {
+    const [dataSourceName, ...otherKeys] = fieldPathWithDataSource.split('.');
+    const ds = this.getDataSource(dataSourceName);
+    if (!ds) return undefined;
+    return ds.getCollectionField(otherKeys.join('.'));
+  }
 }
 
 export class DataSource {
@@ -65,7 +72,7 @@ export class DataSource {
 
   constructor(options: Record<string, any> = {}) {
     this.options = observable({ ...options });
-    this.collectionManager = new CollectionManager();
+    this.collectionManager = new CollectionManager(this);
   }
 
   get name() {
@@ -101,6 +108,20 @@ export class DataSource {
     Object.assign(this.options, newOptions);
   }
 
+  getCollectionField(fieldPath: string) {
+    const [collectionName, ...otherKeys] = fieldPath.split('.');
+    const fieldName = otherKeys.join('.');
+    const collection = this.getCollection(collectionName);
+    if (!collection) {
+      throw new Error(`Collection ${collectionName} not found in data source ${this.name}`);
+    }
+    const field = collection.getField(fieldName);
+    if (!field) {
+      throw new Error(`Field ${fieldName} not found in collection ${collectionName}`);
+    }
+    return field;
+  }
+
   refresh() {
     // 刷新数据源
   }
@@ -116,7 +137,7 @@ export interface CollectionOptions {
 export class CollectionManager {
   collections: Map<string, Collection>;
 
-  constructor() {
+  constructor(protected dataSource: DataSource) {
     this.collections = observable.shallow<Map<string, Collection>>(new Map());
   }
 
@@ -127,7 +148,7 @@ export class CollectionManager {
     } else {
       col = new Collection(collection);
     }
-    col.setCollectionManager(this);
+    col.setDataSource(this.dataSource);
     col.initInherits();
     this.collections.set(col.name, col);
   }
@@ -162,13 +183,17 @@ export class Collection {
   fields: Map<string, Field>;
   options: Record<string, any>;
   inherits: Map<string, Collection>;
-  collectionManager: CollectionManager;
+  dataSource: DataSource;
 
   constructor(options: Record<string, any> = {}) {
     this.options = observable({ ...options });
     this.fields = observable.shallow<Map<string, Field>>(new Map());
     this.inherits = observable.shallow<Map<string, Collection>>(new Map());
     this.setFields(options.fields || []);
+  }
+
+  get collectionManager() {
+    return this.dataSource.collectionManager;
   }
 
   get name() {
@@ -190,8 +215,8 @@ export class Collection {
     }
   }
 
-  setCollectionManager(collectionManager: CollectionManager) {
-    this.collectionManager = collectionManager;
+  setDataSource(dataSource: DataSource) {
+    this.dataSource = dataSource;
   }
 
   setOptions(newOptions: any = {}) {
@@ -217,11 +242,19 @@ export class Collection {
     return Array.from(fieldMap.values());
   }
 
+  mapFields(callback: (field: Field) => any): any[] {
+    return this.getFields().map(callback);
+  }
+
   setFields(fields: Field[] | Record<string, any>[]) {
     this.fields.clear();
     for (const field of fields) {
       this.addField(field);
     }
+  }
+
+  getField(fieldName: string): Field | undefined {
+    return this.fields.get(fieldName);
   }
 
   addField(field: Field | Record<string, any>) {
@@ -267,5 +300,13 @@ export class Field {
 
   get type() {
     return this.options.type;
+  }
+
+  get title() {
+    return this.options.title;
+  }
+
+  set title(value: string) {
+    this.options.title = value;
   }
 }

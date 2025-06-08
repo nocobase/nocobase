@@ -60,6 +60,10 @@
 
 <code src="./demos/collection-inherits.tsx"></code>
 
+## configure fields
+
+<code src="./demos/configure-fields.tsx"></code>
+
 ## Array Resource
 
 <code src="./demos/array-resource.tsx"></code>
