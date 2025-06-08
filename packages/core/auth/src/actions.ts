@@ -13,6 +13,12 @@ import { Handlers } from '@nocobase/resourcer';
 export const actions = {
   signIn: async (ctx, next) => {
     ctx.body = await ctx.auth.signIn();
+    const tokenInfo = await ctx.auth.jwt.decode(ctx.body.token);
+    const expiresMs = tokenInfo.exp * 1000;
+    ctx.cookies.set('token', ctx.body.token, {
+      maxAge: expiresMs - Date.now(),
+      expires: new Date(expiresMs),
+    });
     await next();
   },
   signOut: async (ctx, next) => {

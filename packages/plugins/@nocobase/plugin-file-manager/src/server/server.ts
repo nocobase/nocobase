@@ -10,6 +10,7 @@
 import fs from 'fs';
 import { basename } from 'path';
 import match from 'mime-match';
+import urlJoin from 'url-join';
 
 import { Collection, Model, Transactionable } from '@nocobase/database';
 import { Plugin } from '@nocobase/server';
@@ -254,6 +255,7 @@ export class PluginFileManagerServer extends Plugin {
 
     this.app.acl.allow('attachments', ['upload', 'create'], 'loggedIn');
     this.app.acl.allow('storages', 'getBasicInfo', 'loggedIn');
+    this.app.acl.allow('*', ['viewFile'], 'public');
 
     this.app.acl.appendStrategyResource('attachments');
 
@@ -283,7 +285,7 @@ export class PluginFileManagerServer extends Plugin {
 
     this.app.db.interfaceManager.registerInterfaceType('attachment', AttachmentInterface);
 
-    this.db.on('afterFind', async (instances) => {
+    this.db.on('afterFind', async (instances, { queryContext: { fieldPath } = { fieldPath: null } }) => {
       if (!instances) {
         return;
       }
@@ -293,8 +295,8 @@ export class PluginFileManagerServer extends Plugin {
         const collection = this.db.getCollection(name);
         if (collection?.name === 'attachments' || collection?.options?.template === 'file') {
           for (const record of records) {
-            const url = await this.getFileURL(record);
-            const previewUrl = await this.getFileURL(record, true);
+            const url = await this.getFilePermanentURL(record, { fieldPath });
+            const previewUrl = await this.getFilePermanentURL(record, { fieldPath, preview: true });
             record.set('url', url);
             record.set('preview', previewUrl);
             record.dataValues.preview = previewUrl; // 强制添加preview，在附件字段时，通过set设置无效
@@ -302,6 +304,24 @@ export class PluginFileManagerServer extends Plugin {
         }
       }
     });
+  }
+
+  async getFilePermanentURL(file: AttachmentModel, { fieldPath, preview = false }) {
+    // e.g. /api/<collectionName>:getFileURL/<uuid>?thumbnailRule=<rule>&fieldPath=<fieldPath>
+    const collection = (file.constructor as unknown as AttachmentModel).collection.name;
+    const params = new URLSearchParams();
+    if (fieldPath) {
+      params.set('fieldPath', fieldPath);
+    }
+    if (preview) {
+      params.set('preview', '1');
+    }
+    return urlJoin(
+      process.env.API_BASE_PATH,
+      `${collection}:viewFile`,
+      file.get('uuid'),
+      params.size ? `?${params.toString()}` : '',
+    );
   }
 
   async getFileURL(file: AttachmentModel, preview = false) {
