@@ -41,7 +41,7 @@ class FieldModel extends FlowModel {
     return (
       <div>
         <Input
-          defaultValue={this.field.title}
+          value={this.field.title}
           onChange={(e) => {
             const field = dsm.getCollectionField(this.stepParams.default.step1.fieldPath);
             if (!field) {
