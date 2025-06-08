@@ -73,7 +73,7 @@ export class ViewCollectionTemplate extends CollectionTemplate {
         when: '{{isPG}}',
         fulfill: {
           state: {
-            value: "{{$deps[0].split('@')?.[0]}}",
+            value: "{{$deps[0] && $deps[0].split('@')?.[0]}}",
           },
         },
         otherwise: {
@@ -91,12 +91,12 @@ export class ViewCollectionTemplate extends CollectionTemplate {
         when: '{{isPG}}',
         fulfill: {
           state: {
-            value: "{{$deps[0].split('@')?.[1]}}",
+            value: "{{$deps[0] && $deps[0].split('@')?.[1]}}",
           },
         },
         otherwise: {
           state: {
-            value: '{{$deps[0]}}',
+            value: '{{$deps[0] || null}}',
           },
         },
       },

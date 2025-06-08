@@ -20,18 +20,7 @@ RUN cd /app \
 
 FROM node:20-bookworm-slim
 
-RUN tee /etc/apt/sources.list > /dev/null <<EOF
-deb http://mirrors.aliyun.com/debian/ bookworm main contrib non-free
-deb-src http://mirrors.aliyun.com/debian/ bookworm main contrib non-free
-deb http://mirrors.aliyun.com/debian-security/ bookworm-security main contrib non-free
-deb-src http://mirrors.aliyun.com/debian-security/ bookworm-security main contrib non-free
-deb http://mirrors.aliyun.com/debian/ bookworm-updates main contrib non-free
-deb-src http://mirrors.aliyun.com/debian/ bookworm-updates main contrib non-free
-deb http://mirrors.aliyun.com/debian/ bookworm-backports main contrib non-free
-deb-src http://mirrors.aliyun.com/debian/ bookworm-backports main contrib non-free
-EOF
-
-RUN rm -rf /etc/apt/sources.list.d/debian.sources && apt-get update && apt-get install -y --no-install-recommends wget gnupg ca-certificates \
+RUN apt-get update && apt-get install -y --no-install-recommends wget gnupg ca-certificates \
   && rm -rf /var/lib/apt/lists/*
 
 RUN echo "deb [signed-by=/usr/share/keyrings/pgdg.asc] http://apt.postgresql.org/pub/repos/apt bookworm-pgdg main" > /etc/apt/sources.list.d/pgdg.list
