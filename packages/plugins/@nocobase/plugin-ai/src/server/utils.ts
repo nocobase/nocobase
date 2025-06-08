@@ -11,7 +11,7 @@ import { Model } from '@nocobase/database';
 import path from 'path';
 import fs from 'fs';
 import axios from 'axios';
-import { parse, parseFilter } from '@nocobase/utils';
+import { getDateVars, parse, parseFilter } from '@nocobase/utils';
 import { Context } from '@nocobase/actions';
 
 export function stripToolCallTags(content: string): string | null {
@@ -80,9 +80,22 @@ export async function parseVariables(ctx: Context, value: string) {
     userFieldsSet.add(key);
   }
   const $user = await getUser(ctx, [...userFieldsSet.values()]);
+  const dateVariables = getDateVars();
+  const $nDate = {};
+  for (const [key, value] of Object.entries(dateVariables)) {
+    if (typeof value === 'function') {
+      $nDate[key] = value({
+        timezone: ctx.get('x-timezone'),
+        now: new Date().toISOString(),
+      });
+    } else {
+      $nDate[key] = value;
+    }
+  }
   return parse(value)({
     $user,
     $nRole: ctx.state.currentRole === '__union__' ? ctx.state.currentRoles : ctx.state.currentRole,
     $nLang: ctx.getCurrentLocale(),
+    $nDate,
   });
 }

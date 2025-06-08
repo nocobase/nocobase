@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { SchemaComponent, useCurrentRoleVariable, useCurrentUserVariable } from '@nocobase/client';
+import { SchemaComponent, useCurrentRoleVariable, useCurrentUserVariable, useDatetimeVariable } from '@nocobase/client';
 import React from 'react';
 import { AvatarSelect } from './AvatarSelect';
 import { useT } from '../../locale';
@@ -21,6 +21,7 @@ const useVariableOptions = () => {
   const { currentRoleSettings } = useCurrentRoleVariable({
     noDisabled: true,
   });
+  const { datetimeSettings } = useDatetimeVariable({ noDisabled: true });
   return [
     currentUserSettings,
     currentRoleSettings,
@@ -29,6 +30,7 @@ const useVariableOptions = () => {
       value: '$nLang',
       label: t('Current language'),
     },
+    datetimeSettings,
   ];
 };
 
