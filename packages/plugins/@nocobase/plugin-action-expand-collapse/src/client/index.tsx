@@ -9,6 +9,7 @@
 
 import { UpOutlined, DownOutlined } from '@ant-design/icons';
 import { useFieldSchema, useForm } from '@formily/react';
+import { isVoidField } from '@formily/core';
 import {
   ActionInitializer,
   createModalSettingsItem,
@@ -89,7 +90,7 @@ const useToggleFieldsActionProps = () => {
       let targetVisible = false;
       const topFieldsToShow = normalizeTopFieldsToShow(fieldSchema['x-component-props']?.topFieldsToShow ?? 1);
       form.query('*').forEach((field) => {
-        if (field.componentType === 'CollectionField') {
+        if (!isVoidField(field)) {
           count++;
           if (count < topFieldsToShow) {
             field.setDisplay('visible');
