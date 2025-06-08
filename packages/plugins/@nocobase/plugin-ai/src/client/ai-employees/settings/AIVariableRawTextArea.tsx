@@ -38,7 +38,6 @@ export const UISchemaSelector: React.FC<{
 
   const handleInsert = () => {
     const uid = currentSchema?.['x-uid'];
-    console.log('uid', currentSchema);
     if (!uid) {
       return;
     }
@@ -110,10 +109,10 @@ export function RawTextArea(props: any): JSX.Element {
 }
 
 export const AIVariableRawTextArea: React.FC = connect((props) => {
-  const { currentSchema, ...rest } = props;
+  const { currentSchema, messageType, ...rest } = props;
   const inputRef = useRef<any>(null);
   const { onInsert: onInsertValue } = useOnInsert();
-  const scope = useAIEmployeeButtonVariableOptions();
+  const scope = useAIEmployeeButtonVariableOptions(messageType);
 
   const onInsert = useCallback(
     (selected) => {

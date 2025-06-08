@@ -128,6 +128,7 @@ const SettingsForm: React.FC<{
                           'x-component': 'AIVariableRawTextArea',
                           'x-component-props': {
                             currentSchema,
+                            messageType: 'system',
                           },
                         },
                         user: {

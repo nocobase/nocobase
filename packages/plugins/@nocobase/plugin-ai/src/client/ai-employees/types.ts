@@ -87,6 +87,8 @@ export type Task = {
 export type TriggerTaskOptions = {
   aiEmployee?: AIEmployee;
   tasks: Task[];
+  variables?: Record<string, any>;
+  localVariables?: Record<string, any>;
 };
 
 export type Tool = {

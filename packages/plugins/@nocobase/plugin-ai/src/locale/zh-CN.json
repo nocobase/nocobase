@@ -82,5 +82,11 @@
   "Background": "背景",
   "Label for task selection buttons when multiple tasks exist": "多个任务可选时，用于让用户选择任务的按钮标题",
   "Additional system prompt appended to the AI employee’s definition, used to refine instructions": "可以在 AI 员工定义的基础上追加的 system prompt，用于补充指令",
-  "Copied": "已复制"
+  "Copied": "已复制",
+  "AI employee event": "AI employee 事件",
+  "Triggered by AI employees through tool calling.": "由 AI 员工通过工具调用触发。",
+  "Parameter name": "参数名",
+  "Parameter type": "参数类型",
+  "Parameter description": "参数描述",
+  "The parameters required by the tool": "工具所需的参数"
 }

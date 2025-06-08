@@ -283,6 +283,7 @@ export const TaskMessage: React.FC<{
 }> = memo(({ msg }) => {
   const t = useT();
   const tasks = msg.content;
+  const taskVariables = useChatBoxContext('taskVariables');
   const triggerTask = useChatBoxContext('triggerTask');
   const currentEmployee = useChatBoxContext('currentEmployee');
 
@@ -302,6 +303,7 @@ export const TaskMessage: React.FC<{
             triggerTask({
               aiEmployee: currentEmployee,
               tasks: [task],
+              ...taskVariables,
             })
           }
         >

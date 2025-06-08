@@ -51,52 +51,49 @@ async function replaceVariables(template, variables, localVariables = {}) {
   return result;
 }
 
-export const useParseTask = () => {
-  const variables = useVariables();
-  const localVariables = useLocalVariables();
-
-  const parseTask = async (task: {
+export const parseTask = async (
+  task: {
     message: {
       user?: string;
       system?: string;
       attachments?: any[];
     };
-  }) => {
-    let userMessage: any;
-    const { message } = task;
-    if (message?.user) {
-      const content = await replaceVariables(message.user, variables, localVariables);
-      userMessage = {
-        type: 'text',
-        content,
-      };
-    }
-    let systemMessage: string;
-    if (message?.system) {
-      systemMessage = await replaceVariables(message.system, variables, localVariables);
-    }
-    const attachments = [];
-    if (message?.attachments?.length) {
-      for (const attachment of message.attachments) {
-        const obj = await variables?.parseVariable(attachment, localVariables).then(({ value }) => value);
-        if (!obj) {
-          continue;
+  },
+  variables: Record<string, any>,
+  localVariables?: Record<string, any>,
+) => {
+  let userMessage: any;
+  const { message } = task;
+  if (message?.user) {
+    const content = await replaceVariables(message.user, variables, localVariables);
+    userMessage = {
+      type: 'text',
+      content,
+    };
+  }
+  let systemMessage: string;
+  if (message?.system) {
+    systemMessage = await replaceVariables(message.system, variables, localVariables);
+  }
+  const attachments = [];
+  if (message?.attachments?.length) {
+    for (const attachment of message.attachments) {
+      const obj = await variables?.parseVariable(attachment, localVariables).then(({ value }) => value);
+      if (!obj) {
+        continue;
+      }
+      if (Array.isArray(obj)) {
+        for (const item of obj) {
+          if (item.filename) {
+            attachments.push(item);
+          }
         }
-        if (Array.isArray(obj)) {
-          for (const item of obj) {
-            if (item.filename) {
-              attachments.push(item);
-            }
-          }
-        } else {
-          if (obj.filename) {
-            attachments.push(obj);
-          }
+      } else {
+        if (obj.filename) {
+          attachments.push(obj);
         }
       }
     }
-    return { userMessage, systemMessage, attachments };
-  };
-
-  return { parseTask };
+  }
+  return { userMessage, systemMessage, attachments };
 };

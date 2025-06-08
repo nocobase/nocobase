@@ -82,5 +82,11 @@
   "Task": "Task",
   "Label for task selection buttons when multiple tasks exist": "Label for task selection buttons when multiple tasks exist",
   "Additional system prompt appended to the AI employee’s definition, used to refine instructions": "Additional system prompt appended to the AI employee’s definition, used to refine instructions",
-  "Copied": "Copied"
+  "Copied": "Copied",
+  "AI employee event": "AI employee event",
+  "Triggered by AI employees through tool calling.": "Triggered by AI employees through tool calling.",
+  "Parameter name": "Parameter name",
+  "Parameter type": "Parameter type",
+  "Parameter description": "Parameter description",
+  "The parameters required by the tool": "Parameters required by the tool"
 }

@@ -33,7 +33,7 @@ const useIsShowTableSelectRecord = () => {
   return !isEmpty(popupTableBlockContext) || !isEmpty(tableBlockContextBasicValue);
 };
 
-export const useAIEmployeeButtonVariableOptions = () => {
+export const useAIEmployeeButtonVariableOptions = (messageType?: 'system' | 'user') => {
   const schema = useFieldSchema();
   const record = useCollectionRecord();
   const form = useForm();
@@ -44,19 +44,24 @@ export const useAIEmployeeButtonVariableOptions = () => {
     record,
     uiSchema: schema,
   });
-  const contextVariable = useContextAssociationFields({ maxDepth: 2, contextCollectionName: collection.name });
+  const contextVariable = useContextAssociationFields({
+    maxDepth: 2,
+    contextCollectionName: collection.getOption('name'),
+  });
   const showTableSelectRecord = useIsShowTableSelectRecord();
 
-  return useMemo(
+  const result = useMemo(
     () =>
       [
         ...options,
-        showTableSelectRecord && {
-          key: '$nSelectedRecord',
-          value: '$nSelectedRecord',
-          ...contextVariable,
-        },
+        messageType !== 'system' &&
+          showTableSelectRecord && {
+            ...contextVariable,
+            key: '$nSelectedRecord',
+            value: '$nSelectedRecord',
+          },
       ].filter(Boolean),
-    [options, contextVariable, showTableSelectRecord],
+    [options, contextVariable, messageType, showTableSelectRecord],
   );
+  return result;
 };

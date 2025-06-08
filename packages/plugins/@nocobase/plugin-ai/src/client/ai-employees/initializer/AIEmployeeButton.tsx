@@ -12,6 +12,8 @@ import { Avatar, Popover, Button, Spin } from 'antd';
 import { avatars } from '../avatars';
 import {
   SortableItem,
+  useBlockRequestContext,
+  useContextVariable,
   useLocalVariables,
   useSchemaToolbarRender,
   useVariables,
@@ -19,12 +21,8 @@ import {
 } from '@nocobase/client';
 import { useFieldSchema } from '@formily/react';
 import { useChatBoxContext } from '../chatbox/ChatBoxContext';
-import { AIEmployee } from '../types';
 import { ProfileCard } from '../ProfileCard';
 import { useAIEmployeesContext } from '../AIEmployeesProvider';
-import { useParseTask } from '../chatbox/useParseTask';
-import { useChatMessages } from '../chatbox/ChatMessagesProvider';
-import { uid } from '@formily/shared';
 
 export const AIEmployeeButton: React.FC<{
   username: string;
@@ -39,7 +37,13 @@ export const AIEmployeeButton: React.FC<{
     autoSend?: boolean;
   }[];
 }> = withDynamicSchemaProps(({ username, taskDesc, tasks }) => {
+  const { field } = useBlockRequestContext();
+  const { ctx } = useContextVariable();
+  const selectedRecord = field?.data?.selectedRowData ? field?.data?.selectedRowData : ctx;
+  const variables = useVariables();
+  const localVariables = useLocalVariables();
   const triggerTask = useChatBoxContext('triggerTask');
+  const setTaskVariables = useChatBoxContext('setTaskVariables');
   const fieldSchema = useFieldSchema();
   const { render } = useSchemaToolbarRender(fieldSchema);
   const {
@@ -58,7 +62,13 @@ export const AIEmployeeButton: React.FC<{
         position: 'relative',
         display: 'flex',
       }}
-      onClick={async () => triggerTask({ aiEmployee, tasks })}
+      onClick={async () => {
+        setTaskVariables({
+          variables,
+          localVariables: [...localVariables, { name: '$nSelectedRecord', ctx: selectedRecord }],
+        });
+        triggerTask({ aiEmployee, tasks, variables, localVariables });
+      }}
     >
       <Spin spinning={loading}>
         <Popover content={<ProfileCard taskDesc={taskDesc} aiEmployee={aiEmployee} />}>

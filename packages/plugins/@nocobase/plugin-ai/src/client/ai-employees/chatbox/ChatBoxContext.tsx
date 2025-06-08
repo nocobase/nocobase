@@ -12,19 +12,16 @@ import { Avatar, GetProp, GetRef, Button, Alert, Popover } from 'antd';
 import type { Sender } from '@ant-design/x';
 import React, { useContext, useEffect, useState, useRef, useMemo, useCallback, createRef } from 'react';
 import { Bubble } from '@ant-design/x';
-import { useAPIClient } from '@nocobase/client';
 import { AIEmployeesContext } from '../AIEmployeesProvider';
-import { ReloadOutlined } from '@ant-design/icons';
 import { avatars } from '../avatars';
 import { uid } from '@formily/shared';
 import { useT } from '../../locale';
-import { createForm, Form } from '@formily/core';
 import { ProfileCard } from '../ProfileCard';
 import { createContext, useContextSelector } from 'use-context-selector';
 import { AIMessage, ErrorMessage, TaskMessage, UserMessage } from './MessageRenderer';
 import { useChatMessages } from './ChatMessagesProvider';
 import { useChatConversations } from './ChatConversationsProvider';
-import { useParseTask } from './useParseTask';
+import { parseTask } from './utils';
 
 type ChatBoxContextValues = {
   chatBoxRef: React.MutableRefObject<HTMLElement>;
@@ -42,6 +39,16 @@ type ChatBoxContextValues = {
   senderRef: React.MutableRefObject<GetRef<typeof Sender>>;
   senderPlaceholder: string;
   setSenderPlaceholder: React.Dispatch<React.SetStateAction<string>>;
+  taskVariables: {
+    variables?: Record<string, any>;
+    localVariables?: Record<string, any>;
+  };
+  setTaskVariables: React.Dispatch<
+    React.SetStateAction<{
+      variables?: Record<string, any>;
+      localVariables?: Record<string, any>;
+    }>
+  >;
   startNewConversation: () => void;
   triggerTask: (options: TriggerTaskOptions) => void;
   switchAIEmployee: (aiEmployee: AIEmployee) => void;
@@ -57,7 +64,7 @@ const defaultRoles: GetProp<typeof Bubble.List, 'roles'> = {
     styles: {
       content: {
         maxWidth: '80%',
-        margin: '0 8px 8px 0',
+        margin: '0 8px 0 0',
       },
     },
     variant: 'borderless',
@@ -90,7 +97,7 @@ const aiEmployeeRole = (aiEmployee: AIEmployee) => ({
   styles: {
     content: {
       width: '95%',
-      marginBottom: '8px',
+      margin: '8px 0',
       marginInlineEnd: 16,
     },
   },
@@ -112,8 +119,11 @@ export const useSetChatBoxContext = () => {
   const [senderPlaceholder, setSenderPlaceholder] = useState<string>('');
   const senderRef = useRef<GetRef<typeof Sender>>(null);
   const [roles, setRoles] = useState<GetProp<typeof Bubble.List, 'roles'>>(defaultRoles);
+  const [taskVariables, setTaskVariables] = useState<{
+    variables?: Record<string, any>;
+    localVariables?: Record<string, any>;
+  }>({});
   const chatBoxRef = useRef<HTMLElement>(null);
-  const { parseTask } = useParseTask();
 
   const clear = () => {
     setSenderValue('');
@@ -182,7 +192,7 @@ export const useSetChatBoxContext = () => {
 
   const triggerTask = useCallback(
     async (options: TriggerTaskOptions) => {
-      const { aiEmployee, tasks } = options;
+      const { aiEmployee, tasks, variables, localVariables } = options;
       updateRole(aiEmployee);
       if (!open) {
         setOpen(true);
@@ -210,7 +220,7 @@ export const useSetChatBoxContext = () => {
       if (tasks.length === 1) {
         setMessages(msgs);
         const task = tasks[0];
-        const { userMessage, systemMessage, attachments } = await parseTask(task);
+        const { userMessage, systemMessage, attachments } = await parseTask(task, variables, localVariables);
         if (userMessage && userMessage.type === 'text') {
           setSenderValue(userMessage.content);
         } else {
@@ -287,6 +297,8 @@ export const useSetChatBoxContext = () => {
     setSenderValue,
     senderPlaceholder,
     setSenderPlaceholder,
+    taskVariables,
+    setTaskVariables,
     startNewConversation,
     triggerTask,
     switchAIEmployee,
