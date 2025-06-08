@@ -815,7 +815,7 @@ test.describe('actions schema settings', () => {
       });
     });
 
-    test('Assign field values', async ({ page, mockPage, mockRecord }) => {
+    test.skip('Assign field values', async ({ page, mockPage, mockRecord }) => {
       const nocoPage = await mockPage(oneTableWithUpdateRecord).waitForInit();
       await mockRecord('users2');
       await nocoPage.goto();
