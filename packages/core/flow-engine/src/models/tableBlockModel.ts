@@ -55,14 +55,14 @@ export class TableBlockModel<TData = any> extends DataBlockModel {
   }
 
   async reset(): Promise<any[] | null> {
-    this.resource.meta.page = 1;
-    this.resource.meta.filter = {};
+    this.resource.setPage(1);
+    this.resource.setFilter({});
     await this.resource.refresh();
     return this.resource.getData();
   }
 
   async applyFilter(filter: Record<string, any>): Promise<any[] | null> {
-    this.resource.meta.filter = filter;
+    this.resource.setFilter(filter);
     await this.resource.refresh();
     return this.resource.getData();
   }

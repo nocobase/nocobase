@@ -1,87 +1,162 @@
+import { faker } from '@faker-js/faker';
 import { Application, Plugin } from '@nocobase/client';
 import { FlowModel, FlowModelRenderer, MultiRecordResource } from '@nocobase/flow-engine';
 import { Button, Space } from 'antd';
+import MockAdapter from 'axios-mock-adapter';
 import React from 'react';
 
-// 模拟 APIClient
-class MockAPIClient {
-  private mockData = [
-    { id: 1, title: 'First Post', content: 'Content 1' },
-    { id: 2, title: 'Second Post', content: 'Content 2' },
-    { id: 3, title: 'Third Post', content: 'Content 3' },
+import { APIClient } from '@nocobase/sdk';
+
+const api = new APIClient({
+  baseURL: 'https://localhost:8000/api',
+});
+
+const mock = new MockAdapter(api.axios);
+
+const records = [
+  {
+    id: 1,
+    title: faker.lorem.sentence(),
+    content: faker.lorem.paragraph(),
+  },
+  {
+    id: 2,
+    title: faker.lorem.sentence(),
+    content: faker.lorem.paragraph(),
+  },
+  {
+    id: 3,
+    title: faker.lorem.sentence(),
+    content: faker.lorem.paragraph(),
+  },
+  {
+    id: 4,
+    title: faker.lorem.sentence(),
+    content: faker.lorem.paragraph(),
+  },
+  {
+    id: 5,
+    title: faker.lorem.sentence(),
+    content: faker.lorem.paragraph(),
+  },
+];
+
+mock.onGet('posts:list').reply((config) => {
+  const page = parseInt(config.params?.page) || 1;
+  const pageSize = parseInt(config.params?.pageSize) || 3;
+  const start = (page - 1) * pageSize;
+  const items = records.slice(start, start + pageSize);
+
+  return [
+    200,
+    {
+      data: items,
+      meta: { page, pageSize, total: records.length },
+    },
   ];
+});
 
-  async request(options: any) {
-    console.log('Mock API Request:', options);
+mock.onPost('posts:create').reply((config) => {
+  const newItem = {
+    ...JSON.parse(config.data),
+    id: Math.max(...records.map(r => r.id)) + 1,
+  };
+  records.push(newItem);
+  return [
+    200,
+    {
+      data: newItem,
+    },
+  ];
+});
 
-    // 模拟网络延迟
-    await new Promise((resolve) => setTimeout(resolve, 300));
-
-    const { url, params, data } = options;
-
-    if (url?.includes(':list')) {
-      const page = params?.page || 1;
-      const pageSize = params?.pageSize || 20;
-      const start = (page - 1) * pageSize;
-      const items = this.mockData.slice(start, start + pageSize);
-
-      return {
-        data: {
-          items,
-          meta: { page, pageSize, total: this.mockData.length },
-        },
-      };
-    }
-
-    if (url?.includes(':create')) {
-      const newItem = { ...data, id: Math.floor(Math.random() * 10000) };
-      this.mockData.push(newItem);
-      return { data: newItem };
-    }
-
-    if (url?.includes(':update')) {
-      const filterByTk = params?.filterByTk;
-      const index = this.mockData.findIndex((item) => item.id === filterByTk);
-      if (index !== -1) {
-        this.mockData[index] = { ...this.mockData[index], ...data };
-        return { data: this.mockData[index] };
-      }
-    }
-
-    if (url?.includes(':destroy')) {
-      const filterByTk = params?.filterByTk;
-      const index = this.mockData.findIndex((item) => item.id === filterByTk);
-      if (index !== -1) {
-        const deleted = this.mockData.splice(index, 1)[0];
-        return { data: deleted };
-      }
-    }
-
-    return { data: this.mockData };
+mock.onPost('posts:update').reply((config) => {
+  const filterByTk = config.params?.filterByTk;
+  const index = records.findIndex((item) => item.id === filterByTk);
+  if (index === -1) {
+    return [
+      404,
+      {
+        errors: [
+          {
+            code: 'NotFound',
+            message: 'Record not found',
+          },
+        ],
+      },
+    ];
   }
-}
+  records[index] = {
+    ...records[index],
+    ...JSON.parse(config.data),
+  };
+  return [
+    200,
+    {
+      data: records[index],
+    },
+  ];
+});
+
+mock.onGet('posts:destroy').reply((config) => {
+  const filterByTk = config.params?.filterByTk;
+  const index = records.findIndex((item) => item.id === filterByTk);
+  if (index === -1) {
+    return [
+      404,
+      {
+        errors: [
+          {
+            code: 'NotFound',
+            message: 'Record not found',
+          },
+        ],
+      },
+    ];
+  }
+  const deleted = records.splice(index, 1)[0];
+  return [
+    200,
+    {
+      data: deleted,
+    },
+  ];
+});
 
 class MultiRecordFlowModel extends FlowModel {
-  resource: MultiRecordResource = new MultiRecordResource(new MockAPIClient() as any, {
-    resourceName: 'posts',
-    page: 1,
-    pageSize: 3,
-  });
-
-  async onInit() {
-    // 初始化时加载数据
-    await this.resource.refresh();
-  }
+  resource = new MultiRecordResource();
 
   render() {
+    const data = this.resource.getData() || [];
+    // 从 state 中获取 meta 信息，这是在 refresh 时设置的
+    const responseMeta = this.resource.getDataMeta() || {};
+    
     return (
       <div>
         <div style={{ marginBottom: 16 }}>
-          <strong>Page:</strong> {this.resource.meta.page} |<strong> PageSize:</strong> {this.resource.meta.pageSize} |
-          <strong> Total:</strong> {this.resource.meta.meta?.total || 0}
+          <strong>Resource:</strong> {this.resource.getResourceName()} |
+          <strong> Page:</strong> {this.resource.getPage()} |
+          <strong> PageSize:</strong> {this.resource.getPageSize()} |
+          <strong> Total:</strong> {responseMeta.total || 0}
         </div>
-        <pre>{JSON.stringify(this.resource.getData(), null, 2)}</pre>
+        <pre>{JSON.stringify(data, null, 2)}</pre>
         <Space wrap>
+          <Button
+            onClick={() => {
+              // 重置数据
+              records.splice(0, records.length);
+              for (let i = 1; i <= 5; i++) {
+                records.push({
+                  id: i,
+                  title: faker.lorem.sentence(),
+                  content: faker.lorem.paragraph(),
+                });
+              }
+              this.resource.refresh();
+            }}
+          >
+            Reset
+          </Button>
           <Button onClick={() => this.resource.refresh()}>Refresh</Button>
           <Button onClick={() => this.resource.next()}>Next Page</Button>
           <Button onClick={() => this.resource.previous()}>Previous Page</Button>
@@ -89,8 +164,8 @@ class MultiRecordFlowModel extends FlowModel {
           <Button
             onClick={() =>
               this.resource.create({
-                title: `New Post ${Date.now()}`,
-                content: 'New content created',
+                title: faker.lorem.sentence(),
+                content: faker.lorem.paragraph(),
               })
             }
           >
@@ -98,10 +173,11 @@ class MultiRecordFlowModel extends FlowModel {
           </Button>
           <Button
             onClick={() => {
-              const firstItem = this.resource.getData()[0];
+              const firstItem = data[0];
               if (firstItem) {
                 this.resource.update(firstItem.id, {
-                  title: `Updated ${Date.now()}`,
+                  title: faker.lorem.sentence(),
+                  content: faker.lorem.paragraph(),
                 });
               }
             }}
@@ -110,7 +186,7 @@ class MultiRecordFlowModel extends FlowModel {
           </Button>
           <Button
             onClick={() => {
-              const firstItem = this.resource.getData()[0];
+              const firstItem = data[0];
               if (firstItem) {
                 this.resource.destroy(firstItem.id);
               }
@@ -123,6 +199,22 @@ class MultiRecordFlowModel extends FlowModel {
     );
   }
 }
+
+MultiRecordFlowModel.registerFlow({
+  auto: true,
+  key: 'setResourceOptions',
+  steps: {
+    step1: {
+      async handler(ctx, params) {
+        ctx.model.resource.setAPIClient(api);
+        ctx.model.resource.setResourceName('posts');
+        ctx.model.resource.setPage(1);
+        ctx.model.resource.setPageSize(3);
+        await ctx.model.resource.refresh();
+      },
+    },
+  },
+});
 
 class PluginMultiRecordDemo extends Plugin {
   async load() {

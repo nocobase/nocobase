@@ -9,23 +9,44 @@
 
 import { FlowResource } from './flowResource';
 import { APIClient } from '@nocobase/sdk';
+import { observable } from '@formily/reactive';
 
-export abstract class APIResource<TData = any> extends FlowResource<TData> {
+export class APIResource<TData = any> extends FlowResource<TData> {
+  // 请求配置
+  protected request = observable.shallow({
+    url: null as string | null,
+    params: {} as Record<string, any>,
+    headers: {} as Record<string, any>,
+  });
   api: APIClient;
-
-  constructor(api?: APIClient) {
-    super();
-    if (api) {
-      this.api = api;
-    }
-  }
 
   setAPIClient(api: APIClient): void {
     this.api = api;
   }
 
-  // 抽象方法，子类必须实现
-  abstract getRequestOptions(action?: string): any;
+  get url(): string | null {
+    return this.request.url;
+  }
+
+  set url(value: string | null) {
+    this.request.url = value;
+  }
+
+  getURL(): string | null {
+    return this.request.url;
+  }
+
+  setURL(value: string | null): void {
+    this.request.url = value;
+  }
+
+  getRequestOptions(): any {
+    return {
+      url: this.url,
+      params: this.request.params,
+      headers: this.request.headers,
+    };
+  }
 
   async refresh(): Promise<void> {
     if (!this.api) {

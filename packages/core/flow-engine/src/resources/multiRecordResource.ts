@@ -8,146 +8,119 @@
  */
 
 import { observable } from '@formily/reactive';
-import { APIClient } from '@nocobase/sdk';
-import { MultiRecordResourceMeta } from '../types';
-import { APIResource } from './apiResource';
+import { BaseRecordResource } from './baseRecordResource';
 
-export class MultiRecordResource<TDataItem = any> extends APIResource<TDataItem[]> {
-  meta = observable.shallow({
-    filter: {} as Record<string, any>,
-    filterByTk: null as string | number | string[] | number[] | null,
-    page: 1,
-    pageSize: 20,
-    appends: [] as string[],
+export class MultiRecordResource<TDataItem = any> extends BaseRecordResource<TDataItem[]> {
+  // 数据状态 - 包含数据和动态信息
+  protected state = observable.shallow({
     data: [] as TDataItem[],
-    meta: {} as Record<string, any>,
-    error: {} as Record<string, any>,
-    dataSourceKey: null as string | null,
-    resourceName: null as string | null,
-    sourceId: null as string | number | null,
-    actionName: 'list' as string,
+    dataMeta: {} as Record<string, any>,
   });
 
-  constructor(api?: APIClient, meta?: MultiRecordResourceMeta) {
-    super(api);
-    if (meta) {
-      Object.assign(this.meta, meta);
-    }
-  }
+    // 请求配置 - 与 APIClient 接口保持一致
+  protected request = observable.shallow({
+    url: null as string | null,
+    method: 'get' as string,
+    params: {
+      filter: {} as Record<string, any>,
+      filterByTk: null as string | number | string[] | number[] | null,
+      appends: [] as string[],
+      fields: [] as string[],
+      sort: null as string | null,
+      except: null as string | null,
+      whitelist: null as string | null,
+      blacklist: null as string | null,
+      page: 1 as number,
+      pageSize: 20 as number,
+    } as Record<string, any>,
+    headers: {} as Record<string, any>,
+  });
 
-  getRequestOptions(action?: string, params?: Record<string, any>): any {
-    const options: any = {
-      url: this.buildURL(action),
-      params: {},
-    };
-
-    if (this.meta.filterByTk !== null) {
-      options.params.filterByTk = this.meta.filterByTk;
-    }
-
-    if (Object.keys(this.meta.filter).length > 0) {
-      options.params.filter = this.meta.filter;
-    }
-
-    if (this.meta.appends.length > 0) {
-      options.params.appends = this.meta.appends;
-    }
-
-    options.params.page = this.meta.page;
-    options.params.pageSize = this.meta.pageSize;
-    options.params = {
-      ...options.params,
-      ...params,
-    };
-
-    return options;
-  }
-
-  private buildURL(action: string): string {
-    let url = '';
-    if (this.meta.resourceName) {
-      if (this.meta.sourceId && this.meta.resourceName.includes('.')) {
-        // 处理关联资源，如 users.tags
-        const [parentResource, childResource] = this.meta.resourceName.split('.');
-        url = `${parentResource}/${this.meta.sourceId}/${childResource}:${action || this.meta.actionName}`;
-      } else {
-        url = `${this.meta.resourceName}:${action || this.meta.actionName}`;
-      }
-    }
-
-    return url;
-  }
-
-  async refresh(): Promise<void> {
-    if (!this.api) {
-      throw new Error('API client not set');
-    }
-    const { data } = await this.api.request(this.getRequestOptions());
-    this.setData(data?.data);
-    this.meta.meta = data?.meta || {};
+  constructor() {
+    super();
+    this.meta.actionName = 'list';
   }
 
   async next(): Promise<void> {
-    this.meta.page += 1;
+    this.request.params.page += 1;
     await this.refresh();
   }
 
   async previous(): Promise<void> {
-    if (this.meta.page > 1) {
-      this.meta.page -= 1;
+    if (this.request.params.page > 1) {
+      this.request.params.page -= 1;
       await this.refresh();
     }
   }
 
   async goto(page: number): Promise<void> {
     if (page > 0) {
-      this.meta.page = page;
+      this.request.params.page = page;
       await this.refresh();
     }
   }
 
   async create(data: TDataItem): Promise<void> {
-    if (!this.api) {
-      throw new Error('API client not set');
-    }
-
-    try {
-      await this.api.request({ ...this.getRequestOptions('create'), data });
-      await this.refresh();
-    } catch (e) {
-      this.meta.error = e;
-    }
+    await this.runAction('create', {
+      data,
+      method: 'post',
+    });
+    await this.refresh();
   }
 
   async update(filterByTk: string | number, data: Partial<TDataItem>): Promise<void> {
-    if (!this.api) {
-      throw new Error('API client not set');
-    }
-
     const options = {
-      ...this.getRequestOptions('update', { filterByTk }),
-      data,
+      params: {
+        filterByTk,
+      },
+      headers: this.request.headers,
     };
-    try {
-      await this.api.request(options);
-      await this.refresh();
-      this.meta.error = null;
-    } catch (e) {
-      this.meta.error = e;
-    }
+    await this.runAction('update', {
+      ...options,
+      data,
+      method: 'post',
+    });
+    await this.refresh();
   }
 
-  async destroy(filterByTk: string | number): Promise<void> {
-    if (!this.api) {
-      throw new Error('API client not set');
-    }
-    const options = this.getRequestOptions('destroy', { filterByTk });
-    try {
-      await this.api.request(options);
-      await this.refresh();
-      this.meta.error = null;
-    } catch (e) {
-      this.meta.error = e;
-    }
+  async destroy(filterByTk: string | number | string[] | number[]): Promise<void> {
+    const options = {
+      params: {
+        filterByTk,
+      },
+      headers: this.request.headers,
+      method: 'delete',
+    };
+    await this.runAction('destroy', {
+      ...options,
+    });
+    await this.refresh();
+  }
+
+  setDataMeta(dataMeta: Record<string, any>) {
+    this.state.dataMeta = dataMeta;
+  }
+
+  getDataMeta(): Record<string, any> {
+    return this.state.dataMeta;
+  }
+
+  setPage(page: number): void {
+    this.request.params.page = page;
+  }
+  getPage(): number {
+    return this.request.params.page;
+  }
+  setPageSize(pageSize: number): void {
+    this.request.params.pageSize = pageSize;
+  }
+  getPageSize(): number {
+    return this.request.params.pageSize;
+  }
+
+  async refresh(): Promise<void> {
+    const { data, meta } = await this.runAction<{ data: any[], meta?: any }>(this.meta.actionName, this.getRequestOptions());
+    this.setData(data);
+    this.setDataMeta(meta);
   }
 }

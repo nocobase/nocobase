@@ -9,6 +9,5 @@
 
 export * from './flowResource';
 export * from './apiResource';
-export * from './simpleAPIResource';
 export * from './singleRecordResource';
 export * from './multiRecordResource';

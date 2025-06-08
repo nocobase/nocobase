@@ -7,102 +7,54 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { observable } from '@formily/reactive';
-import { APIClient } from '@nocobase/sdk';
-import { SingleRecordResourceMeta } from '../types';
-import { APIResource } from './apiResource';
+import { BaseRecordResource } from './baseRecordResource';
 
-export class SingleRecordResource<TData = any> extends APIResource<TData> {
-  meta = observable.shallow({
-    filter: {} as Record<string, any>,
-    filterByTk: null as string | number | null,
-    appends: [] as string[],
-    data: {} as TData,
-    meta: {} as Record<string, any>,
-    error: null as Record<string, any> | null,
-    dataSourceKey: null as string | null,
-    resourceName: null as string | null,
-    sourceId: null as string | number | null,
-    actionName: 'get' as string,
-  });
-
-  constructor(api?: APIClient, meta?: SingleRecordResourceMeta) {
-    super(api);
-    if (meta) {
-      Object.assign(this.meta, meta);
-    }
+export class SingleRecordResource<TData = any> extends BaseRecordResource<TData> {
+  constructor() {
+    super();
+    // 设置单记录资源的默认 actionName
+    this.meta.actionName = 'get';
+    this.request.method = 'get';
   }
 
-  async refresh() {
-    if (!this.api) {
-      throw new Error('API client not set');
-    }
-    const { data } = await this.api.request(this.getRequestOptions());
-    this.setData(data?.data);
-    this.meta.meta = data?.meta || {};
-  }
-
-  getRequestOptions(action?: string): any {
-    const options: any = {
-      url: this.buildURL(action),
-      params: {},
-    };
-
-    if (this.meta.filterByTk !== null) {
-      options.params.filterByTk = this.meta.filterByTk;
-    }
-
-    if (Object.keys(this.meta.filter).length > 0) {
-      options.params.filter = this.meta.filter;
-    }
-
-    if (this.meta.appends.length > 0) {
-      options.params.appends = this.meta.appends;
-    }
-
-    if (this.meta.dataSourceKey) {
-      options.headers['X-Data-Source'] = this.meta.dataSourceKey;
-    }
-
-    return options;
-  }
-
-  private buildURL(action?: string): string {
-    let url = '';
-    if (this.meta.resourceName) {
-      if (this.meta.sourceId && this.meta.resourceName.includes('.')) {
-        // 处理关联资源，如 users.profile
-        const [parentResource, childResource] = this.meta.resourceName.split('.');
-        url = `${parentResource}/${this.meta.sourceId}/${childResource}:${action || this.meta.actionName}`;
-      } else {
-        url = `${this.meta.resourceName}:${action || this.meta.actionName}`;
-      }
-    }
-
-    return url;
+  setFilterByTk(filterByTk: string | number): void {
+    this.request.params = { ...this.request.params, filterByTk };
   }
 
   async save(data: TData): Promise<void> {
-    const requestOptions = this.getRequestOptions('update');
-    try {
-      await this.api.request({ ...requestOptions, data, method: 'post' });
-      await this.refresh();
-    } catch (e) {
-      console.error(e);
-      this.meta.error = e;
+    const options: any = {
+      headers: this.request.headers,
+      params: {},
+    };
+    let actionName = 'create';
+    if (this.request.params.filterByTk) {
+      options.params.filterByTk = this.request.params.filterByTk;
+      actionName = 'update';
     }
+    await this.runAction(actionName, {
+      ...options,
+      data,
+      method: 'post',
+    });
+    await this.refresh();
   }
 
   async destroy(): Promise<void> {
-    const options = this.getRequestOptions('destroy');
-    try {
-      await this.api.request(options);
-      await this.refresh();
-    } catch (e) {
-      console.error(e);
-      this.meta.error = e;
-    }
+    const options: any = {
+      headers: this.request.headers,
+      params: {},
+      method: 'delete',
+    };
+    options.params.filterByTk = this.request.params.filterByTk;
+    await this.runAction('destroy', {
+      ...options,
+    });
+    this.setData(null);
   }
 
-  async runAction(action, options) {}
+  async refresh(): Promise<void> {
+    const options: any = this.getRequestOptions();
+    const { data } = await this.runAction<{ data: TData }>(this.meta.actionName, options);
+    this.setData(data);
+  }
 }

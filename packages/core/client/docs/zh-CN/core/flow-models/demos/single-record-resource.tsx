@@ -1,11 +1,10 @@
 import { faker } from '@faker-js/faker';
 import { Application, Plugin } from '@nocobase/client';
 import { FlowModel, FlowModelRenderer, SingleRecordResource } from '@nocobase/flow-engine';
-import { Button, Space } from 'antd';
+import { Button, message, Space } from 'antd';
 import MockAdapter from 'axios-mock-adapter';
 import React from 'react';
 
-import { observable } from '@formily/reactive';
 import { APIClient } from '@nocobase/sdk';
 
 const api = new APIClient({
@@ -77,24 +76,14 @@ mock.onGet('users:destroy').reply((config) => {
 // }
 
 class SingleRecordFlowModel extends FlowModel {
-  meta = observable.shallow({
-    resource: null,
-  });
-
-  get resource(): SingleRecordResource {
-    return this.meta.resource;
-  }
-
-  set resource(value) {
-    this.meta.resource = value;
-  }
+  resource = new SingleRecordResource();
 
   render() {
     return (
       <div>
         <div style={{ marginBottom: 16 }}>
-          <strong>Resource:</strong> {this.resource.meta.resourceName} |<strong> FilterByTk:</strong>{' '}
-          {this.resource.meta.filterByTk}
+          <strong>Resource:</strong> {this.resource.getResourceName()} |<strong> FilterByTk:</strong>{' '}
+          {this.resource.getFilterByTk()}
         </div>
         <pre>{JSON.stringify(this.resource.getData(), null, 2)}</pre>
         <Space>
@@ -112,12 +101,16 @@ class SingleRecordFlowModel extends FlowModel {
           </Button>
           <Button onClick={() => this.resource.refresh()}>Refresh</Button>
           <Button
-            onClick={() =>
-              this.resource.save({
-                name: faker.person.fullName(),
-                email: faker.internet.email(),
-              })
-            }
+            onClick={async () =>{
+              try {
+                await this.resource.save({
+                  name: faker.person.fullName(),
+                  email: faker.internet.email(),
+                })
+              } catch (error) {
+                message.error(error.message);
+              }
+            }}
           >
             Save
           </Button>
@@ -132,14 +125,13 @@ class SingleRecordFlowModel extends FlowModel {
 
 SingleRecordFlowModel.registerFlow({
   auto: true,
-  key: 'default',
+  key: 'setResourceOptions',
   steps: {
     step1: {
       async handler(ctx, params) {
-        ctx.model.resource = new SingleRecordResource(api as any, {
-          resourceName: 'users',
-          filterByTk: 1,
-        });
+        ctx.model.resource.setAPIClient(api);
+        ctx.model.resource.setResourceName('users');
+        ctx.model.resource.setFilterByTk(1);
         await ctx.model.resource.refresh();
       },
     },
