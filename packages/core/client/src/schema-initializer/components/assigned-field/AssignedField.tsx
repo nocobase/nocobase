@@ -10,7 +10,7 @@
 import { Field } from '@formily/core';
 import { useField, useFieldSchema } from '@formily/react';
 import { merge } from '@formily/shared';
-import _ from 'lodash';
+import _, { cloneDeep } from 'lodash';
 import React, { useCallback, useEffect, useMemo } from 'react';
 import { useFormBlockContext } from '../../../block-provider/FormBlockProvider';
 import {
@@ -100,6 +100,7 @@ export const AssignedFieldInner = (props: AssignedFieldProps) => {
   const collection = useCollection_deprecated();
   const { form } = useFormBlockContext();
   const fieldSchema = useFieldSchema();
+  const field: any = useField<Field>();
   const record = useRecord();
   const variables = useVariables();
   const localVariables = useLocalVariables();
@@ -107,6 +108,7 @@ export const AssignedFieldInner = (props: AssignedFieldProps) => {
 
   const { name, getField } = collection;
   const collectionField = getField(fieldSchema.name);
+  const { uiSchema } = useCollectionField_deprecated();
 
   const shouldChange = useMemo(
     () => getShouldChange({ collectionField, variables, localVariables, getAllCollectionsInheritChain }),
@@ -124,7 +126,7 @@ export const AssignedFieldInner = (props: AssignedFieldProps) => {
         currentForm.children = formatVariableScop(currentFormFields);
       }
 
-      return scope;
+      return cloneDeep(scope);
     },
     [currentFormFields, name],
   );
@@ -135,6 +137,13 @@ export const AssignedFieldInner = (props: AssignedFieldProps) => {
     },
     [JSON.stringify(_.omit(props, 'value'))],
   );
+
+  useEffect(() => {
+    if (!uiSchema) {
+      return;
+    }
+    field.title = typeof field.title === 'undefined' ? uiSchema?.title || field.name : field.title;
+  }, [JSON.stringify(uiSchema)]);
   return (
     <FlagProvider collectionField={collectionField}>
       <VariableInput

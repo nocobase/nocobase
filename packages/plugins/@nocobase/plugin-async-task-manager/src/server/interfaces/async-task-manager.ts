@@ -24,7 +24,7 @@ export interface CreateTaskOptions {
     dataSource: string;
   };
   context?: any;
-  immediateExecute: boolean;
+  useQueue?: boolean;
 }
 
 export type TaskId = string;
@@ -70,7 +70,6 @@ export interface AsyncTasksManager extends EventEmitter {
   cancelTask(taskId: TaskId): Promise<boolean>;
   getTaskStatus(taskId: TaskId): Promise<TaskStatus>;
   getTask(taskId: TaskId): ITask | undefined;
-  runTask(taskId: TaskId): void;
 }
 
 export class CancelError extends Error {
