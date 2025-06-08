@@ -468,7 +468,11 @@ const MoveToMenuItem = () => {
   );
   const compile = useCompile();
   const { allAccessRoutes } = useAllAccessDesktopRoutes();
-  const items = useMemo(() => toItems(allAccessRoutes, { t, compile }), []);
+  const items = useMemo(() => {
+    const result = toItems(allAccessRoutes, { t, compile });
+    // The last two empty options are placeholders to prevent the last option from being hidden (a bug in TreeSelect)
+    return [...result, { label: '', value: '', disabled: true }, { label: '', value: '', disabled: true }];
+  }, []);
   const modalSchema = useMemo(() => {
     return {
       type: 'object',
