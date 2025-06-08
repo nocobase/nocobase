@@ -129,6 +129,7 @@ export const useSetChatBoxContext = () => {
     setSenderValue('');
     setSystemMessage('');
     setAttachments([]);
+    setTaskVariables({});
   };
 
   const send = (options: SendOptions) => {

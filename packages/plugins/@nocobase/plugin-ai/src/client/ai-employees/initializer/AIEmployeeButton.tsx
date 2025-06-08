@@ -39,7 +39,6 @@ export const AIEmployeeButton: React.FC<{
 }> = withDynamicSchemaProps(({ username, taskDesc, tasks }) => {
   const { field } = useBlockRequestContext();
   const { ctx } = useContextVariable();
-  const selectedRecord = field?.data?.selectedRowData ? field?.data?.selectedRowData : ctx;
   const variables = useVariables();
   const localVariables = useLocalVariables();
   const triggerTask = useChatBoxContext('triggerTask');
@@ -63,6 +62,7 @@ export const AIEmployeeButton: React.FC<{
         display: 'flex',
       }}
       onClick={async () => {
+        const selectedRecord = field?.data?.selectedRowData ? field?.data?.selectedRowData : ctx;
         const local = [...localVariables, { name: '$nSelectedRecord', ctx: selectedRecord }];
         setTaskVariables({
           variables,
