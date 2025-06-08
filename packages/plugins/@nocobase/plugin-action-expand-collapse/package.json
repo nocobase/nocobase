@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-action-expand-collapse",
-  "version": "1.8.0-alpha.3",
+  "version": "1.8.0-alpha.4",
   "main": "dist/server/index.js",
   "displayName": "Action: Expand/Collapse",
   "displayName.zh-CN": "操作：展开/收起",
