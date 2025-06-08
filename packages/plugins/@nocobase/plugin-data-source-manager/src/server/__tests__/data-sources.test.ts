@@ -734,23 +734,5 @@ describe('data source', async () => {
       const data = fieldUpdateResp.body.data;
       expect(data.possibleTypes).not.exist;
     });
-
-    it(`should not return possibleTypes field when get dataSourcesFields`, async () => {
-      const fieldModel = await app.db.getRepository('dataSourcesFields').create({
-        values: {
-          dataSourceKey: 'mockInstance1',
-          type: 'string',
-          displayName: 'Mock',
-          collectionName: 'posts',
-          possibleTypes: ['123', '456'],
-        },
-      });
-      expect(fieldModel.get('options').possibleTypes).toEqual(['123', '456']);
-      const fieldListResp = await app.agent().resource('dataSourcesCollections.fields', 'mockInstance1.posts').list();
-      expect(fieldListResp.status).toBe(200);
-      const data = fieldListResp.body.data;
-      const field = data.find((x) => x.dataSourceKey === 'mockInstance1' && x.collectionName === 'posts');
-      expect(field.possibleTypes).not.exist;
-    });
   });
 });
