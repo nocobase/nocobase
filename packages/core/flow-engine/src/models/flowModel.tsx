@@ -536,6 +536,28 @@ export class FlowModel<Structure extends {parent?: any, subModels?: any} = Defau
     return model;
   }
 
+  mapSubModels<K extends keyof Structure['subModels'], R>(
+    subKey: K,
+    callback: Structure['subModels'][K] extends (infer U)[]
+      ? (model: U) => R
+      : (model: Structure['subModels'][K]) => R
+  ): R[] {
+    const model = this.subModels[subKey];
+    const results: R[] = [];
+    
+    if (Array.isArray(model)) {
+      model.forEach((item) => {
+        const result = (callback as (model: any) => R)(item);
+        results.push(result);
+      });
+    } else {
+      const result = (callback as (model: any) => R)(model);
+      results.push(result);
+    }
+    
+    return results;
+  }
+
   createRootModel(options) {
     return this.flowEngine.createModel(options);
   }

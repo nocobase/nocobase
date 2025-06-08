@@ -132,6 +132,9 @@ interface DefaultStructure {
 - **addSubModel(subKey: string, options): FlowModel**  
   创建并添加一个子模型到数组字段（如 tabs、columns）。
 
+- **mapSubModels<K, R>(subKey: K, callback: (model) => R): R[]**  
+  遍历指定 key 的子模型，对每个子模型执行 callback 函数，并返回结果数组。支持完整的类型推导，callback 参数会自动推导为正确的模型类型。
+
 - **setParent(parent: FlowModel): void**  
   设置父模型。
 
