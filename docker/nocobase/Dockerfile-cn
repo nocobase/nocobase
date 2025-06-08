@@ -31,9 +31,6 @@ deb http://mirrors.aliyun.com/debian/ bookworm-backports main contrib non-free
 deb-src http://mirrors.aliyun.com/debian/ bookworm-backports main contrib non-free
 EOF
 
-RUN rm -rf /etc/apt/sources.list.d/debian.sources && apt-get update && apt-get install -y --no-install-recommends wget gnupg \
-  && rm -rf /var/lib/apt/lists/*
-
 RUN apt-get update && apt-get install -y --no-install-recommends wget gnupg \
   && rm -rf /var/lib/apt/lists/*
 
