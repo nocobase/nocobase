@@ -1,65 +1,64 @@
-import { define, observable } from '@formily/reactive';
+import { uid } from '@formily/shared';
 import { Application, Plugin } from '@nocobase/client';
-import { FlowModel, FlowModelRenderer } from '@nocobase/flow-engine';
-import { Input } from 'antd';
+import { DataSource, DataSourceManager, FlowModel, FlowModelRenderer } from '@nocobase/flow-engine';
+import { Button } from 'antd';
 import React from 'react';
 
-class Collection {
-  title: string;
-  constructor(options: { title: string }) {
-    this.title = options.title;
-    define(this, {
-      title: observable.ref,
-    });
-  }
-}
-
+const dsm = new DataSourceManager();
+dsm.addDataSource({
+  name: 'main',
+  displayName: 'Main',
+});
 class ConfigureFieldsFlowModel extends FlowModel {
-  meta = observable.shallow({
-    collection: null,
-  });
-
-  onInit(options: any) {}
-
-  set collection(value: Collection) {
-    this.meta.collection = value;
-  }
-
-  get collection() {
-    return this.meta.collection;
-  }
-
   render() {
-    return <div>{this.collection.title}</div>;
+    return (
+      <div>
+        {dsm.dataSources.size}
+        {dsm.getDataSource('main')?.options?.displayName}
+        <Button
+          onClick={() => {
+            const ds2 = new DataSource({
+              name: `ds-${uid()}`,
+              displayName: `ds-${uid()}`,
+            });
+            dsm.addDataSource(ds2);
+          }}
+        >
+          Add new
+        </Button>
+        <Button
+          onClick={() => {
+            dsm.dataSources.clear();
+          }}
+        >
+          Clear
+        </Button>
+      </div>
+    );
   }
 }
-
-const collections = {
-  users: new Collection({
-    title: 'Users',
-  }),
-  roles: new Collection({
-    title: 'Roles',
-  }),
-};
 
 ConfigureFieldsFlowModel.registerFlow({
   key: 'myFlow',
   auto: true,
   steps: {
     step1: {
-      uiSchema: {
-        collectionName: {
-          'x-component': 'Select',
-          enum: Object.keys(collections).map((key) => ({
-            label: collections[key].title,
-            value: key,
-          })),
-          'x-decorator': 'FormItem',
-        },
-      },
+      // uiSchema: {
+      //   collectionName: {
+      //     'x-component': 'Select',
+      //     enum: Object.keys(collections).map((key) => ({
+      //       label: collections[key].title,
+      //       value: key,
+      //     })),
+      //     'x-decorator': 'FormItem',
+      //   },
+      // },
       async handler(ctx, params) {
-        ctx.model.collection = collections[params.collectionName];
+        console.log('step1 handler', ctx, params);
+        dsm.addDataSource({
+          name: `ds-${uid()}`,
+          displayName: `ds-${uid()}`,
+        });
       },
     },
   },
@@ -71,29 +70,10 @@ class PluginTableBlockModel extends Plugin {
     this.flowEngine.registerModels({ ConfigureFieldsFlowModel });
     const model = this.flowEngine.createModel({
       use: 'ConfigureFieldsFlowModel',
-      stepParams: {
-        myFlow: {
-          step1: {
-            collectionName: 'roles',
-            dataSourceKey: 'main',
-          },
-        },
-      },
     });
     this.router.add('root', {
       path: '/',
-      element: (
-        <div>
-          <Input
-            defaultValue={collections.users.title}
-            onChange={(e) => {
-              collections.users.title = e.target.value;
-            }}
-          />
-          <br />
-          <FlowModelRenderer model={model} showFlowSettings />
-        </div>
-      ),
+      element: <FlowModelRenderer model={model} showFlowSettings />,
     });
   }
 }
