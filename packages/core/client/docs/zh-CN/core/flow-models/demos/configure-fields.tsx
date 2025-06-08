@@ -1,4 +1,4 @@
-import { Application, Plugin, useDataSourceKey } from '@nocobase/client';
+import { Application, Plugin } from '@nocobase/client';
 import { Collection, DataSource, DataSourceManager, Field, FlowModel, FlowModelRenderer } from '@nocobase/flow-engine';
 import { Button, Dropdown, Input } from 'antd';
 import React from 'react';
@@ -11,6 +11,23 @@ const ds = new DataSource({
 });
 
 dsm.addDataSource(ds);
+
+ds.addCollection({
+  name: 'roles',
+  title: 'Roles',
+  fields: [
+    {
+      name: 'name',
+      type: 'string',
+      title: 'Name',
+    },
+    {
+      name: 'uid',
+      type: 'string',
+      title: 'UID',
+    },
+  ],
+});
 
 ds.addCollection({
   name: 'users',
@@ -28,12 +45,6 @@ ds.addCollection({
     },
   ],
 });
-
-type S = {
-  subModels: {
-    fields: FlowModel[];
-  };
-};
 
 class FieldModel extends FlowModel {
   field: Field;
@@ -62,11 +73,20 @@ FieldModel.registerFlow({
   steps: {
     step1: {
       handler(ctx, params) {
+        if (ctx.model.field) {
+          return;
+        }
         ctx.model.field = dsm.getCollectionField(params.fieldPath);
       },
     },
   },
 });
+
+type S = {
+  subModels: {
+    fields: FieldModel[];
+  };
+};
 
 class ConfigureFieldsFlowModel extends FlowModel<S> {
   collection: Collection;
@@ -115,7 +135,24 @@ ConfigureFieldsFlowModel.registerFlow({
   auto: true,
   steps: {
     step1: {
+      uiSchema: {
+        dataSourceKey: {
+          type: 'string',
+          title: 'DataSource Name',
+          'x-component': 'Input',
+          'x-decorator': 'FormItem',
+        },
+        collectionName: {
+          type: 'string',
+          title: 'Collection Name',
+          'x-component': 'Input',
+          'x-decorator': 'FormItem',
+        },
+      },
       handler(ctx, params) {
+        if (ctx.model.collection) {
+          return;
+        }
         ctx.model.collection = dsm.getCollection(params.dataSourceKey, params.collectionName);
       },
     },
@@ -138,7 +175,7 @@ class PluginTableBlockModel extends Plugin {
     });
     this.router.add('root', {
       path: '/',
-      element: <FlowModelRenderer model={model} />,
+      element: <FlowModelRenderer model={model} showFlowSettings />,
     });
   }
 }
