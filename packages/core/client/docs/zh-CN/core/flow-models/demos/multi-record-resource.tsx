@@ -129,7 +129,7 @@ class MultiRecordFlowModel extends FlowModel {
   render() {
     const data = this.resource.getData() || [];
     // 从 state 中获取 meta 信息，这是在 refresh 时设置的
-    const responseMeta = this.resource.getDataMeta() || {};
+    const responseMeta = this.resource.getMeta() || {};
     
     return (
       <div>

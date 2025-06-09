@@ -12,6 +12,7 @@ import _ from 'lodash';
 import React from 'react';
 import { uid } from 'uid/secure';
 import { openStepSettingsDialog as openStepSettingsDialogFn } from '../components/settings/wrappers/contextual/StepSettingsDialog';
+import { openRequiredParamsStepFormDialog as openRequiredParamsStepFormDialogFn } from '../components/settings/wrappers/contextual/StepRequiredSettingsDialog';
 import { FlowEngine } from '../flowEngine';
 import type {
   ActionStepDefinition,
@@ -498,7 +499,7 @@ export class FlowModel<Structure extends { parent?: any; subModels?: any } = Def
    * @returns {React.ReactNode} The React node to render.
    */
   public render(): any {
-    console.warn('FlowModel.render() not implemented. Override in subclass for FlowModelRenderer.');
+    // console.warn('FlowModel.render() not implemented. Override in subclass for FlowModelRenderer.');
     // 默认返回一个空的div，子类可以覆盖这个方法来实现具体的渲染逻辑
     return <div {...this.props}></div>;
   }
@@ -599,10 +600,25 @@ export class FlowModel<Structure extends { parent?: any; subModels?: any } = Def
    * @returns {void}
    */
   openStepSettingsDialog(flowKey: string, stepKey: string) {
-    openStepSettingsDialogFn({
+    return openStepSettingsDialogFn({
       model: this,
       flowKey,
       stepKey,
+    });
+  }
+
+  /**
+   * 配置必填步骤参数
+   * 用于在一个分步表单中配置所有需要参数的步骤
+   * @param {number | string} [dialogWidth=800] 对话框宽度，默认为800
+   * @param {string} [dialogTitle='步骤参数配置'] 对话框标题，默认为'步骤参数配置'
+   * @returns {Promise<any>} 返回表单提交的值
+   */
+  async configureRequiredSteps(dialogWidth?: number | string, dialogTitle?: string) {
+    return openRequiredParamsStepFormDialogFn({
+      model: this,
+      dialogWidth,
+      dialogTitle,
     });
   }
 

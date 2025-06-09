@@ -10,3 +10,4 @@
 export * from './FlowsContextMenu';
 export * from './FlowsFloatContextMenu';
 export * from './StepSettingsDialog';
+export * from './StepRequiredSettingsDialog';

@@ -263,6 +263,11 @@ const FlowsFloatContextMenuWithModel: React.FC<ModelProvidedProps> = observer(
               .map(([stepKey, stepDefinition]) => {
                 const actionStep = stepDefinition as ActionStepDefinition;
 
+                // 如果步骤设置了 hideInSettings: true，则跳过此步骤
+                if (actionStep.hideInSettings) {
+                  return null;
+                }
+
                 // 从step获取uiSchema（如果存在）
                 const stepUiSchema = actionStep.uiSchema || {};
 

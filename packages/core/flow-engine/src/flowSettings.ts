@@ -67,6 +67,9 @@ export class FlowSettings {
         Upload,
       } = await import('@formily/antd-v5');
 
+      // 单独导入 Button 组件
+      const { Button } = await import('antd');
+
       // 注册基础组件
       this.components.Form = Form;
       this.components.FormDialog = FormDialog;
@@ -115,6 +118,7 @@ export class FlowSettings {
       this.components.PreviewText = PreviewText;
 
       // 注册按钮组件
+      this.components.Button = Button;
       this.components.Submit = Submit;
       this.components.Reset = Reset;
 

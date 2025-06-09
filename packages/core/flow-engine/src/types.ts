@@ -128,6 +128,8 @@ export interface ActionStepDefinition<TModel extends FlowModel = FlowModel> exte
   use: string; // Name of the registered ActionDefinition
   uiSchema?: Record<string, ISchema>; // Optional: overrides uiSchema from ActionDefinition
   defaultParams?: Record<string, any>; // Optional: overrides/extends defaultParams from ActionDefinition
+  paramsRequired?: boolean; // Optional: whether the step params are required, will open the config dialog before adding the model
+  hideInSettings?: boolean; // Optional: whether to hide the step in the settings menu
   // Cannot have its own handler
   handler?: undefined;
 }
@@ -139,6 +141,8 @@ export interface InlineStepDefinition<TModel extends FlowModel = FlowModel> exte
   handler: (ctx: FlowContext<TModel>, params: any) => Promise<any> | any;
   uiSchema?: Record<string, ISchema>; // Optional: uiSchema for this inline step
   defaultParams?: Record<string, any>; // Optional: defaultParams for this inline step
+  paramsRequired?: boolean; // Optional: whether the step params are required, will open the config dialog before adding the model
+  hideInSettings?: boolean; // Optional: whether to hide the step in the settings menu
   // Cannot use a registered action
   use?: undefined;
 }
@@ -222,6 +226,15 @@ export interface StepSettingsDialogProps {
   model: any;
   flowKey: string;
   stepKey: string;
+  dialogWidth?: number | string;
+  dialogTitle?: string;
+}
+
+/**
+ * 分步表单对话框的属性接口
+ */
+export interface RequiredConfigStepFormDialogProps {
+  model: any;
   dialogWidth?: number | string;
   dialogTitle?: string;
 }

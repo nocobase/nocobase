@@ -80,3 +80,7 @@
 
 <code src="./demos/multi-record-resource.tsx"></code>
 
+## 必填参数配置对话框
+
+<code src="./demos/open-required-step-params-dialog.tsx"></code>
+
