@@ -2,9 +2,9 @@ import { EditOutlined } from '@ant-design/icons';
 import { Field, FlowModel, FlowModelRenderer } from '@nocobase/flow-engine';
 import { Space } from 'antd';
 import React from 'react';
+import { FormModel } from '../form/form-model';
 import { ActionModel } from './action-model';
 import { dsm } from './data-source-manager';
-import { FormModel } from './form-model';
 
 export class TableColumnModel extends FlowModel {
   field: Field;
@@ -21,8 +21,28 @@ export class TableColumnModel extends FlowModel {
           onClick={() => {
             const model = this.createRootModel({
               use: 'FormModel',
+              subModels: {
+                fields: [
+                  {
+                    use: 'FormItemModel',
+                    stepParams: {
+                      default: {
+                        step1: {},
+                      },
+                    },
+                  },
+                  {
+                    use: 'FormItemModel',
+                    stepParams: {
+                      default: {
+                        step1: {},
+                      },
+                    },
+                  },
+                ],
+              },
             }) as FormModel;
-            model.openEditDialog();
+            model.openEditDialog(record);
           }}
         />
       </span>

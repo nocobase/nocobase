@@ -1,7 +1,7 @@
 import { FormButtonGroup, FormDialog, FormItem, Input, Submit } from '@formily/antd-v5';
 import { createForm, Form } from '@formily/core';
 import { createSchemaField, FormProvider } from '@formily/react';
-import { FlowModel } from '@nocobase/flow-engine';
+import { FlowEngineProvider, FlowModel, FlowModelRenderer } from '@nocobase/flow-engine';
 import { Card } from 'antd';
 import React from 'react';
 
@@ -40,13 +40,14 @@ const schema = {
 };
 
 export class FormModel extends FlowModel {
-  SchemaField: any;
   form: Form;
   render() {
     return (
       <div>
         <FormProvider form={this.form}>
-          <this.SchemaField schema={this.props.schema} />
+          {this.mapSubModels('fields', (field) => (
+            <FlowModelRenderer model={field} />
+          ))}
           <FormButtonGroup>
             <Submit onSubmit={console.log}>Submit</Submit>
           </FormButtonGroup>
@@ -59,10 +60,15 @@ export class FormModel extends FlowModel {
     );
   }
 
-  async openEditDialog() {
+  async openEditDialog(record) {
     await this.applyAutoFlows();
     const dialog = FormDialog('Pop-up form', () => {
-      return this.render();
+      return (
+        <div>
+          {record.id}
+          <FlowEngineProvider engine={this.flowEngine}>{this.render()}</FlowEngineProvider>
+        </div>
+      );
     });
     await dialog.open({});
   }
@@ -73,15 +79,8 @@ FormModel.registerFlow({
   auto: true,
   steps: {
     step1: {
-      handler(ctx, params) {
-        ctx.model.SchemaField = createSchemaField({
-          components: {
-            Input,
-            FormItem,
-          },
-        });
+      async handler(ctx, params) {
         ctx.model.form = createForm();
-        ctx.model.setProps('schema', schema);
       },
     },
   },

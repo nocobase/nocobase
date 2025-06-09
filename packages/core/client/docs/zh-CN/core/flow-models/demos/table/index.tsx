@@ -2,15 +2,22 @@ import { Plugin } from '@nocobase/client';
 import { FlowModelRenderer } from '@nocobase/flow-engine';
 import React from 'react';
 import { createApp } from '../createApp';
-import subModel from '../sub-model';
+import { FormItemModel } from '../form/form-item-model';
+import { FormModel } from '../form/form-model';
 import { ActionModel } from './action-model';
-import { FormModel } from './form-model';
 import { TableColumnActionsModel, TableColumnModel } from './table-column-model';
 import { TableModel } from './table-model';
 
 class PluginDemo extends Plugin {
   async load() {
-    this.flowEngine.registerModels({ FormModel, ActionModel, TableModel, TableColumnModel, TableColumnActionsModel });
+    this.flowEngine.registerModels({
+      FormModel,
+      FormItemModel,
+      ActionModel,
+      TableModel,
+      TableColumnModel,
+      TableColumnActionsModel,
+    });
     const model = this.flowEngine.createModel({
       use: 'TableModel',
       stepParams: {

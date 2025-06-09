@@ -262,9 +262,11 @@ export class Collection {
       throw new Error(`Field with name ${field.name} already exists in collection ${this.name}`);
     }
     if (field instanceof Field) {
+      field.setCollection(this);
       this.fields.set(field.name, field);
     } else {
       const newField = new Field(field);
+      newField.setCollection(this);
       this.fields.set(newField.name, newField);
     }
   }
@@ -284,6 +286,7 @@ export class Collection {
 
 export class Field {
   options: Record<string, any>;
+  collection: Collection;
 
   constructor(options: Record<string, any>) {
     this.options = observable({ ...options });
@@ -292,6 +295,10 @@ export class Field {
   setOptions(newOptions: any = {}) {
     Object.keys(this.options).forEach((key) => delete this.options[key]);
     Object.assign(this.options, newOptions);
+  }
+
+  setCollection(collection: Collection) {
+    this.collection = collection;
   }
 
   get name() {
@@ -308,5 +315,16 @@ export class Field {
 
   set title(value: string) {
     this.options.title = value;
+  }
+
+  getFields(): Field[] {
+    if (!this.options.target) {
+      return [];
+    }
+    const targetCollection = this.collection.collectionManager.getCollection(this.options.target);
+    if (!targetCollection) {
+      throw new Error(`Target collection ${this.options.target} not found for field ${this.name}`);
+    }
+    return targetCollection.getFields();
   }
 }
