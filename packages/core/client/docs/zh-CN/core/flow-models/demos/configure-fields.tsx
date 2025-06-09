@@ -110,22 +110,16 @@ class ConfigureFieldsFlowModel extends FlowModel<S> {
           menu={{
             items: this.getFieldMenuItems(),
             onClick: (info) => {
-              // const model = this.addSubModel('fields', {
-              //   use: 'FieldModel',
-              //   stepParams: {
-              //     default: {
-              //       step1: {
-              //         fieldPath: info.key,
-              //       },
-              //     },
-              //   },
-              // });
-              // const r = await model.openStepSettingsDialog();
-              // if (r) {
-              //   model.save();
-              // } else {
-              //   model.flowEngine.removeModel(model.uid);
-              // }
+              const model = this.addSubModel('fields', {
+                use: 'FieldModel',
+                stepParams: {
+                  default: {
+                    step1: {
+                      fieldPath: info.key,
+                    },
+                  },
+                },
+              });
             },
           }}
         >
