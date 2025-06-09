@@ -1,0 +1,15 @@
+{
+  "name": "@nocobase/plugin-license",
+  "version": "1.8.0-alpha.4",
+  "main": "dist/server/index.js",
+  "displayName": "License settings",
+  "displayName.zh-CN": "授权设置",
+  "description": "Instance ID and license key settings",
+  "description.zh-CN": "实例 ID 和授权密钥设置",
+  "dependencies": {},
+  "peerDependencies": {
+    "@nocobase/client": "1.x",
+    "@nocobase/server": "1.x",
+    "@nocobase/test": "1.x"
+  }
+}
