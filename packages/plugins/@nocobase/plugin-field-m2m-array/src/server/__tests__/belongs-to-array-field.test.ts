@@ -192,8 +192,8 @@ describe('belongs to array field', () => {
     });
   });
 
-  describe('', async () => {
-    it.only('should list allowedActions when include many-to-many', async () => {
+  describe('many-to-many acl test', async () => {
+    it('should list allowedActions when include many-to-many', async () => {
       const field = await fieldRepo.create({
         values: {
           interface: 'mbm',
