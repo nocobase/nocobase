@@ -108,57 +108,94 @@ export const useToAdaptFilterActionToMobile = () => {
   }, []);
 };
 
+// 动画延迟时间常量
+const POPUP_ANIMATION_DELAY = 300;
+
 /**
  * 之所以不直接在 mobile-container 中设置 transform，是因为会影响到子页面区块的拖拽功能。
- * @param visible
+ * @param visible 控制弹窗是否可见
+ * @param animationDelay 动画延迟时间，默认300ms
  * @returns
  */
-export const usePopupContainer = (visible: boolean) => {
+export const usePopupContainer = (visible: boolean, animationDelay = POPUP_ANIMATION_DELAY) => {
   const [mobileContainer] = useState<HTMLElement>(() => document.querySelector('.mobile-container') || document.body);
   const [visiblePopup, setVisiblePopup] = useState(false);
   const popupContainerRef = React.useRef<HTMLDivElement>(null);
+  const timeoutRef = React.useRef<NodeJS.Timeout | null>(null);
   const parentZIndex = useZIndexContext();
 
   const newZIndex = parentZIndex + MIN_Z_INDEX_INCREMENT;
+
+  // 提取清理DOM元素的逻辑
+  const cleanupPopupContainer = React.useCallback(() => {
+    if (popupContainerRef.current && mobileContainer.contains(popupContainerRef.current)) {
+      try {
+        mobileContainer.removeChild(popupContainerRef.current);
+      } catch (error) {
+        console.warn('Failed to remove popup container:', error);
+      }
+      popupContainerRef.current = null;
+    }
+  }, [mobileContainer]);
+
+  // 延迟清理函数
+  const scheduleCleanup = React.useCallback(() => {
+    // 清除之前的定时器
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+    }
+
+    timeoutRef.current = setTimeout(cleanupPopupContainer, animationDelay);
+  }, [cleanupPopupContainer, animationDelay]);
+
+  // 创建弹窗容器的样式对象
+  const createPopupContainerStyles = React.useCallback(
+    (zIndex: number) => ({
+      transform: 'translateZ(0)',
+      position: 'absolute' as const,
+      top: '0',
+      left: '0',
+      right: '0',
+      bottom: '0',
+      overflow: 'hidden' as const,
+      zIndex: zIndex.toString(),
+    }),
+    [],
+  );
 
   useEffect(() => {
     if (!visible) {
       setVisiblePopup(false);
       if (popupContainerRef.current) {
-        // Popup 动画都结束的时候再移除
-        setTimeout(() => {
-          mobileContainer.contains(popupContainerRef.current) && mobileContainer.removeChild(popupContainerRef.current);
-          popupContainerRef.current = null;
-        }, 300);
+        scheduleCleanup();
       }
       return;
     }
 
     const popupContainer = document.createElement('div');
-    popupContainer.style.transform = 'translateZ(0)';
-    popupContainer.style.position = 'absolute';
-    popupContainer.style.top = '0';
-    popupContainer.style.left = '0';
-    popupContainer.style.right = '0';
-    popupContainer.style.bottom = '0';
-    popupContainer.style.overflow = 'hidden';
-    popupContainer.style.zIndex = newZIndex.toString();
 
-    mobileContainer.appendChild(popupContainer);
-    popupContainerRef.current = popupContainer;
+    // 设置可访问性属性
+    popupContainer.setAttribute('role', 'dialog');
+    popupContainer.setAttribute('aria-modal', 'true');
+    popupContainer.setAttribute('aria-label', 'Filter popup container');
 
-    setVisiblePopup(true);
+    // 批量设置样式
+    const styles = createPopupContainerStyles(newZIndex);
+    Object.assign(popupContainer.style, styles);
+
+    try {
+      mobileContainer.appendChild(popupContainer);
+      popupContainerRef.current = popupContainer;
+      setVisiblePopup(true);
+    } catch (error) {
+      console.error('Failed to create popup container:', error);
+      return;
+    }
 
     return () => {
-      if (popupContainerRef.current) {
-        // Popup 动画都结束的时候再移除
-        setTimeout(() => {
-          mobileContainer.contains(popupContainerRef.current) && mobileContainer.removeChild(popupContainerRef.current);
-          popupContainerRef.current = null;
-        }, 300);
-      }
+      scheduleCleanup();
     };
-  }, [mobileContainer, newZIndex, visible]);
+  }, [newZIndex, visible, scheduleCleanup, createPopupContainerStyles, mobileContainer, cleanupPopupContainer]);
 
   return {
     visiblePopup,
