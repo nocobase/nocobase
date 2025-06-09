@@ -218,17 +218,18 @@ export function useApplyAutoFlows(modelOrUid: FlowModel | string, context?: Flow
     return modelOrUid;
   }, [modelOrUid, flowEngine]);
 
-  const runId = useMemo(() => {
-    if (independentAutoFlowExecution) {
-      return `autoFlow:${uid()}`;
-    }
-    return 'autoFlow';
-  }, [independentAutoFlowExecution]);
+  // const runId = useMemo(() => {
+  //   if (independentAutoFlowExecution) {
+  //     return `autoFlow:${uid()}`;
+  //   }
+  //   return 'autoFlow';
+  // }, [independentAutoFlowExecution]);
   
   const executor = useCallback((ctx?: FlowExtraContext) => model.applyAutoFlows(ctx), [model]);
 
   return useFlowExecutor(
-    runId,
+    // runId,
+    'autoFlow',
     'all',
     model,
     context,
