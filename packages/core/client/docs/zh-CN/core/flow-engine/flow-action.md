@@ -12,6 +12,8 @@ interface ActionDefinition {
   title?: string; // 操作显示名称（可选）
   uiSchema?: Record<string, ISchema>; // （可选）用于参数配置界面渲染
   defaultParams?: Record<string, any>; // （可选）默认参数
+  paramsRequired?: boolean; // （可选）是否需要参数配置，为true时添加模型前会打开配置对话框
+  hideInSettings?: boolean; // （可选）是否在设置菜单中隐藏该步骤
   handler: (ctx: FlowContext, params: any) => Promise<any> | any; // 操作执行逻辑
 }
 ```
@@ -30,6 +32,8 @@ const myAction = defineAction({
   title: '操作显示名称',
   uiSchema: {},
   defaultParams: {},
+  paramsRequired: true, // 添加模型前强制打开配置对话框
+  hideInSettings: false, // 在设置菜单中显示
   async handler(ctx, params) {
     // 操作逻辑
   },
@@ -46,6 +50,8 @@ class MyAction implements ActionDefinition {
   title = '操作显示名称';
   uiSchema = {};
   defaultParams = {};
+  paramsRequired = true; // 添加模型前强制打开配置对话框
+  hideInSettings = false; // 在设置菜单中显示
   async handler(ctx, params) {
     // 操作逻辑
   }
@@ -64,6 +70,8 @@ flowEngine.registerAction({
   title: '操作显示名称',
   uiSchema: {},
   defaultParams: {},
+  paramsRequired: true, // 添加模型前强制打开配置对话框
+  hideInSettings: false, // 在设置菜单中显示
   handler(ctx, params) {
     // 操作逻辑
   },
@@ -84,9 +92,27 @@ steps: {
   step1: {
     use: 'actionName', // 复用已注册的操作
     defaultParams: {},
+    paramsRequired: true, // 可以在步骤级别覆盖操作的paramsRequired设置
+    hideInSettings: false, // 可以在步骤级别覆盖操作的hideInSettings设置
   },
 }
 ```
+
+---
+
+## 配置选项说明
+
+### paramsRequired
+
+- **类型**: `boolean`
+- **默认值**: `false`
+- **说明**: 当设置为 `true` 时，在添加该步骤模型前会强制打开参数配置对话框，确保用户配置必要的参数。适用于需要用户必须配置参数才能正常工作的操作。
+
+### hideInSettings
+
+- **类型**: `boolean`
+- **默认值**: `false`
+- **说明**: 当设置为 `true` 时，该步骤将在设置菜单中隐藏，用户无法通过 Settings 界面直接添加该步骤。适用于初始化配置场景。
 
 ---
 

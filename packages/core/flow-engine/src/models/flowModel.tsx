@@ -16,6 +16,7 @@ import { openRequiredParamsStepFormDialog as openRequiredParamsStepFormDialogFn 
 import { FlowEngine } from '../flowEngine';
 import type {
   ActionStepDefinition,
+  ArrayElementType,
   CreateModelOptions,
   CreateSubModelOptions,
   DefaultStructure,
@@ -536,7 +537,7 @@ export class FlowModel<Structure extends { parent?: any; subModels?: any } = Def
 
   mapSubModels<K extends keyof Structure['subModels'], R>(
     subKey: K,
-    callback: Structure['subModels'][K] extends (infer U)[] ? (model: U) => R : (model: Structure['subModels'][K]) => R,
+    callback: (model: ArrayElementType<Structure['subModels'][K]>) => R,
   ): R[] {
     const model = this.subModels[subKey];
 

@@ -122,6 +122,12 @@ interface DefaultStructure {
 - **openStepSettingsDialog(flowKey: string, stepKey: string)**  
   打开步骤设置对话框。
 
+- **async configureRequiredSteps(dialogWidth?: number | string, dialogTitle?: string): Promise<any>**  
+  配置必填步骤参数。用于在一个分步表单中配置所有需要参数的步骤。
+  - `dialogWidth`: 对话框宽度，默认为 800
+  - `dialogTitle`: 对话框标题，默认为 '步骤参数配置'
+  - 返回表单提交的值
+
 ---
 
 ### 子模型管理
@@ -133,7 +139,10 @@ interface DefaultStructure {
   创建并添加一个子模型到数组字段（如 tabs、columns）。
 
 - **mapSubModels<K, R>(subKey: K, callback: (model) => R): R[]**  
-  遍历指定 key 的子模型，对每个子模型执行 callback 函数，并返回结果数组。支持完整的类型推导，callback 参数会自动推导为正确的模型类型。
+  遍历指定 key 的子模型，对每个子模型执行 callback 函数，并返回结果数组。
+  - 支持完整的类型推导，callback 参数会自动推导为正确的模型类型
+  - 如果子模型不存在，返回 null
+  - 自动处理单个模型和模型数组的情况
 
 - **setParent(parent: FlowModel): void**  
   设置父模型。

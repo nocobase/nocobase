@@ -11,6 +11,20 @@ import { ISchema } from '@formily/json-schema';
 import type { FlowEngine } from './flowEngine';
 import type { FlowModel } from './models';
 
+/**
+ * 工具类型：如果 T 是数组类型，则提取数组元素类型；否则返回 T 本身
+ * @template T 要检查的类型
+ * @example
+ * ```typescript
+ * type Test1 = ArrayElementType<string[]>; // string
+ * type Test2 = ArrayElementType<number[]>; // number
+ * type Test3 = ArrayElementType<string>;   // string
+ * type Test4 = ArrayElementType<{ id: number }[]>; // { id: number }
+ * type Test5 = ArrayElementType<{ id: number }>;   // { id: number }
+ * ```
+ */
+export type ArrayElementType<T> = T extends (infer U)[] ? U : T;
+
 export type DeepPartial<T> = {
   [P in keyof T]?: T[P] extends (infer U)[]
     ? DeepPartial<U>[]
