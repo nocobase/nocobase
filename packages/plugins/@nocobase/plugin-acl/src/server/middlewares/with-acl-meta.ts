@@ -8,7 +8,7 @@
  */
 
 import lodash from 'lodash';
-import { snakeCase } from '@nocobase/database';
+import { Model, snakeCase } from '@nocobase/database';
 import { NoPermissionError } from '@nocobase/acl';
 
 function createWithACLMetaMiddleware() {
@@ -165,6 +165,11 @@ function createWithACLMetaMiddleware() {
         ...params,
         context: actionCtx,
       });
+      const queryParamsWithAppends = queryParams?.appends || [];
+      const ctxActionParamsWithAppends = ctx.action?.params?.appends || [];
+      const appends = queryParamsWithAppends.filter((x) => ctxActionParamsWithAppends.includes(x));
+      queryParams.include = appends;
+      queryParams.appends = appends;
 
       const actionSql = ctx.db.sequelize.queryInterface.queryGenerator.selectQuery(
         Model.getTableName(),
@@ -254,7 +259,10 @@ function createWithACLMetaMiddleware() {
         });
       }
     }
-
+    const includes = conditions
+      .map((c) => c.include)
+      .flat()
+      .map((x) => processIncludes(collection.model, x || []));
     const results = await collection.model.findAll({
       where: {
         [primaryKeyField]: ids,
@@ -265,7 +273,7 @@ function createWithACLMetaMiddleware() {
           return [ctx.db.sequelize.literal(`CASE WHEN ${condition.whereCase} THEN 1 ELSE 0 END`), condition.action];
         }),
       ],
-      include: conditions.map((condition) => condition.include).flat(),
+      include: includes,
       raw: true,
     });
 
@@ -295,6 +303,19 @@ function createWithACLMetaMiddleware() {
       ctx.body.allowedActions = allowedActions;
     }
   };
+}
+
+function processIncludes(model: typeof Model, include: string) {
+  const association = model.associations[include];
+  if (association?.['generateInclude']) {
+    const newInclude = {
+      association: include,
+      attributes: [], // out put empty fields by default
+      ...association['generateInclude'](),
+    };
+    return newInclude;
+  }
+  return include;
 }
 
 export { createWithACLMetaMiddleware };
