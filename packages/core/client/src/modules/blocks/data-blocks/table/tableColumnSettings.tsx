@@ -27,7 +27,8 @@ import { SchemaSettingsLinkageRules } from '../../../../schema-settings';
 import { SchemaSettingsDefaultValue } from '../../../../schema-settings/SchemaSettingsDefaultValue';
 import { isPatternDisabled } from '../../../../schema-settings/isPatternDisabled';
 import { ArrayCollapse, FormLayout } from '@formily/antd-v5';
-import _ from 'lodash';
+import pickBy from 'lodash/pickBy';
+import concat from 'lodash/concat';
 
 export const tableColumnSettings = new SchemaSettings({
   name: 'fieldSettings:TableColumn',
@@ -333,6 +334,7 @@ export const tableColumnSettings = new SchemaSettings({
             const collectionField = getField(fieldSchema?.['name']);
             const interfaceConfig = getInterface(collectionField?.interface);
             const validateSchema = interfaceConfig?.['validateSchema']?.(fieldSchema);
+            const MAX_VALIDATION_RULES = 3;
 
             return {
               title: t('Set validation rules'),
@@ -349,7 +351,7 @@ export const tableColumnSettings = new SchemaSettings({
                     'x-component-props': {
                       accordion: true,
                     },
-                    maxItems: 3,
+                    maxItems: MAX_VALIDATION_RULES,
                     items: {
                       type: 'object',
                       'x-component': 'ArrayCollapse.CollapsePanel',
@@ -423,7 +425,7 @@ export const tableColumnSettings = new SchemaSettings({
                 const rules = [];
                 const customPredicate = (value) => value !== null && value !== undefined && !Number.isNaN(value);
                 for (const rule of v.rules) {
-                  rules.push(_.pickBy(rule, customPredicate));
+                  rules.push(pickBy(rule, customPredicate));
                 }
                 const schema = {
                   ['x-uid']: fieldSchema?.['x-uid'],
@@ -441,11 +443,11 @@ export const tableColumnSettings = new SchemaSettings({
                   }
                 }
 
-                const concatValidator = _.concat([], collectionField?.uiSchema?.['x-validator'] || [], rules);
+                const concatValidator = concat([], collectionField?.uiSchema?.['x-validator'] || [], rules);
                 fieldSchema['x-validator'] = rules;
                 schema['x-validator'] = rules;
-                const path = field.path?.splice(field.path?.length - 1, 1);
-                field.form.query(`${path.concat(`*.` + fieldSchema.name)}`).forEach((f) => {
+                const path = field.path?.slice(0, -1);
+                field.form.query(`${path?.concat(`*.` + fieldSchema.name)}`).forEach((f) => {
                   f.validator = concatValidator;
                 });
 
