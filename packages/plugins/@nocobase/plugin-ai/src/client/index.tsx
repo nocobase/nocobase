@@ -123,7 +123,6 @@ export class PluginAIClient extends Plugin {
     this.aiManager.registerTool('formFiller', {
       invoke: (ctx, params) => {
         const { form: uid, data } = params;
-        console.log(uid, data, ctx[uid]);
         if (!uid || !data) {
           return;
         }
@@ -139,7 +138,7 @@ export class PluginAIClient extends Plugin {
     workflow.registerTrigger('ai-employee', AIEmployeeTrigger);
     workflow.registerInstructionGroup('ai', { label: tval('AI', { ns: namespace }) });
     workflow.registerInstruction('llm', LLMInstruction);
-    workflow.registerInstruction('ai-employee', AIEmployeeInstruction);
+    // workflow.registerInstruction('ai-employee', AIEmployeeInstruction);
   }
 }
 
