@@ -12,6 +12,7 @@ import { autorun, toJS } from '@formily/reactive';
 import { FlowModel } from '../models';
 import { useFlowEngine } from '../provider';
 import { FlowExtraContext } from '../types';
+import { uid } from 'uid/secure';
 
 // 生成稳定的缓存键
 function generateCacheKey(prefix: string, flowKey: string, modelUid: string): string {
@@ -208,7 +209,7 @@ export function useApplyFlow<TModel extends FlowModel = FlowModel>(
  * @param context Optional user context
  * @returns The results of all auto-apply flows execution
  */
-export function useApplyAutoFlows(modelOrUid: FlowModel | string, context?: FlowExtraContext): any[] {
+export function useApplyAutoFlows(modelOrUid: FlowModel | string, context?: FlowExtraContext, independentAutoFlowExecution?: boolean): any[] {
   const flowEngine = useFlowEngine();
   const model = useMemo(() => {
     if (typeof modelOrUid === 'string') {
@@ -217,10 +218,17 @@ export function useApplyAutoFlows(modelOrUid: FlowModel | string, context?: Flow
     return modelOrUid;
   }, [modelOrUid, flowEngine]);
 
+  const runId = useMemo(() => {
+    if (independentAutoFlowExecution) {
+      return `autoFlow:${uid()}`;
+    }
+    return 'autoFlow';
+  }, [independentAutoFlowExecution]);
+  
   const executor = useCallback((ctx?: FlowExtraContext) => model.applyAutoFlows(ctx), [model]);
 
   return useFlowExecutor(
-    'applyAutoApplyFlows',
+    runId,
     'all',
     model,
     context,

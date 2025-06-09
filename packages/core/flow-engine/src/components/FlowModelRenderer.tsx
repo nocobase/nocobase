@@ -52,6 +52,9 @@ interface FlowModelRendererProps {
 
   /** 当 skipApplyAutoFlows !== false 时，传递给 useApplyAutoFlows 的额外上下文 */
   extraContext?: Record<string, any>
+
+  /** 是否为每个组件独立执行 auto flow，默认 false */
+  independentAutoFlowExecution?: boolean; // 默认 false
 }
 
 /**
@@ -63,9 +66,10 @@ const FlowModelRendererWithAutoFlows: React.FC<{
   flowSettingsVariant: string;
   hideRemoveInSettings: boolean;
   extraContext?: Record<string, any>;
-}> = observer(({ model, showFlowSettings, flowSettingsVariant, hideRemoveInSettings, extraContext }) => {
+  independentAutoFlowExecution?: boolean;
+}> = observer(({ model, showFlowSettings, flowSettingsVariant, hideRemoveInSettings, extraContext, independentAutoFlowExecution }) => {
   const defaultExtraContext = useFlowExtraContext();
-  useApplyAutoFlows(model, extraContext || defaultExtraContext);
+  useApplyAutoFlows(model, extraContext || defaultExtraContext, !independentAutoFlowExecution);
 
   return (
     <FlowModelRendererCore
@@ -151,17 +155,18 @@ const FlowModelRendererCore: React.FC<{
  * @param {boolean} props.hideRemoveInSettings - Whether to hide remove button in settings.
  * @param {boolean} props.skipApplyAutoFlows - Whether to skip applying auto flows.
  * @param {any} props.extraContext - Extra context to pass to useApplyAutoFlows when skipApplyAutoFlows is false.
+ * @param {boolean} props.independentAutoFlowExecution - Whether each component has independent auto flow execution.
  * @returns {React.ReactNode | null} The rendered output of the model, or null if the model or its render method is invalid.
  */
 export const FlowModelRenderer: React.FC<FlowModelRendererProps> = observer(
   ({ 
     model, 
-    uid, 
     showFlowSettings = false,
     flowSettingsVariant = 'dropdown',
     hideRemoveInSettings = false,
     skipApplyAutoFlows = false,
-    extraContext
+    extraContext,
+    independentAutoFlowExecution = false,
   }) => {
     if (!model || typeof model.render !== 'function') {
       // 可以选择渲染 null 或者一个错误/提示信息
@@ -190,6 +195,7 @@ export const FlowModelRenderer: React.FC<FlowModelRendererProps> = observer(
             flowSettingsVariant={flowSettingsVariant}
             hideRemoveInSettings={hideRemoveInSettings}
             extraContext={extraContext}
+            independentAutoFlowExecution={independentAutoFlowExecution}
           />
         </Suspense>
       );

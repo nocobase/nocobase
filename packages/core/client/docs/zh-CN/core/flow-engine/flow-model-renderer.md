@@ -23,6 +23,9 @@ interface FlowModelRendererProps {
 
   /** 当 skipApplyAutoFlows !== false 时，传递给 useApplyAutoFlows 的额外上下文 */
   extraContext?: Record<string, any>
+
+  /** 是否为每个组件独立执行 auto flow，默认 false */
+  independentAutoFlowExecution?: boolean; // 默认 false
 }
 ```
 
