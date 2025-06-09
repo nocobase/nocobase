@@ -1,6 +1,6 @@
 import { Application, Plugin } from '@nocobase/client';
 import { Collection, DataSource, DataSourceManager, Field, FlowModel, FlowModelRenderer } from '@nocobase/flow-engine';
-import { Button, Dropdown, Input } from 'antd';
+import { Button, Dropdown, Input, Table } from 'antd';
 import React from 'react';
 
 const dsm = new DataSourceManager();
@@ -13,26 +13,14 @@ const ds = new DataSource({
 dsm.addDataSource(ds);
 
 ds.addCollection({
-  name: 'roles',
-  title: 'Roles',
-  fields: [
-    {
-      name: 'name',
-      type: 'string',
-      title: 'Name',
-    },
-    {
-      name: 'uid',
-      type: 'string',
-      title: 'UID',
-    },
-  ],
-});
-
-ds.addCollection({
   name: 'users',
   title: 'Users',
   fields: [
+    {
+      name: 'id',
+      type: 'bigInt',
+      title: 'ID',
+    },
     {
       name: 'username',
       type: 'string',
@@ -91,46 +79,10 @@ type S = {
 class ConfigureFieldsFlowModel extends FlowModel<S> {
   collection: Collection;
 
-  getFieldMenuItems() {
-    return this.collection.mapFields((field) => {
-      return {
-        key: `${this.collection.dataSource.name}.${this.collection.name}.${field.name}`,
-        label: field.title,
-      };
-    });
-  }
-
   render() {
     return (
       <div>
-        {this.mapSubModels('fields', (field) => (
-          <FlowModelRenderer key={field.uid} model={field} />
-        ))}
-        <Dropdown
-          menu={{
-            items: this.getFieldMenuItems(),
-            onClick: (info) => {
-              // const model = this.addSubModel('fields', {
-              //   use: 'FieldModel',
-              //   stepParams: {
-              //     default: {
-              //       step1: {
-              //         fieldPath: info.key,
-              //       },
-              //     },
-              //   },
-              // });
-              // const r = await model.openStepSettingsDialog();
-              // if (r) {
-              //   model.save();
-              // } else {
-              //   model.flowEngine.removeModel(model.uid);
-              // }
-            },
-          }}
-        >
-          <Button>Configure fields</Button>
-        </Dropdown>
+        <Table />
       </div>
     );
   }

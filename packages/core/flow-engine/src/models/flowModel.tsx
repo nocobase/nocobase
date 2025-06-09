@@ -11,8 +11,8 @@ import { action, define, observable } from '@formily/reactive';
 import _ from 'lodash';
 import React from 'react';
 import { uid } from 'uid/secure';
-import { openStepSettingsDialog as openStepSettingsDialogFn } from '../components/settings/wrappers/contextual/StepSettingsDialog';
 import { openRequiredParamsStepFormDialog as openRequiredParamsStepFormDialogFn } from '../components/settings/wrappers/contextual/StepRequiredSettingsDialog';
+import { openStepSettingsDialog as openStepSettingsDialogFn } from '../components/settings/wrappers/contextual/StepSettingsDialog';
 import { FlowEngine } from '../flowEngine';
 import type {
   ActionStepDefinition,
@@ -542,7 +542,7 @@ export class FlowModel<Structure extends { parent?: any; subModels?: any } = Def
     const model = this.subModels[subKey];
 
     if (!model) {
-      return null;
+      return [];
     }
 
     const results: R[] = [];

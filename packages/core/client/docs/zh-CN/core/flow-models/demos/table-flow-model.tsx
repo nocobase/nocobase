@@ -38,13 +38,12 @@ class TableColumnFlowModel extends FlowModel {
 
 type TableBlockFlowModelStructure = {
   subModels: {
-    columns: TableColumnFlowModel[],
-    actions: ActionFlowModel[],
-  }
-}
+    columns: TableColumnFlowModel[];
+    actions: ActionFlowModel[];
+  };
+};
 
 class TableBlockFlowModel extends FlowModel<TableBlockFlowModelStructure> {
-
   addColumn(column) {
     return this.addSubModel('columns', column);
   }

@@ -2,4 +2,4 @@
 
 ## 演示
 
-<code src="./demos/table-flow-model.tsx"></code>
+<code src="./demos/table/index.tsx"></code>
