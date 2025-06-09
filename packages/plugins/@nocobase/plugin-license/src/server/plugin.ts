@@ -9,6 +9,7 @@
 
 import { Plugin } from '@nocobase/server';
 import { getInstanceId, saveLicenseKey } from './utils';
+import { keyDecrypt } from '@nocobase/license-kit';
 
 export class PluginLicenseUtilitiesServer extends Plugin {
   async afterAdd() {}
@@ -25,7 +26,11 @@ export class PluginLicenseUtilitiesServer extends Plugin {
         },
         'license-key': async (ctx, next) => {
           const { licenseKey } = ctx.request.body;
-          console.log(licenseKey);
+          try {
+            keyDecrypt(licenseKey);
+          } catch (e) {
+            return ctx.throw(500, 'Invalid license key');
+          }
           await saveLicenseKey(licenseKey);
           await next();
         },

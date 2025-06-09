@@ -54,15 +54,19 @@ const useSubmitProps = () => {
 
   const saveLicenseKey = async (licenseKey: string) => {
     setLoading(true);
-    await api.request({
-      url: '/license-utilities:license-key',
-      method: 'POST',
-      data: {
-        licenseKey,
-      },
-    });
-    setLoading(false);
-    message.success(t('License key saved successfully, please restart the server'));
+    try {
+      await api.request({
+        url: '/license-utilities:license-key',
+        method: 'POST',
+        data: {
+          licenseKey,
+        },
+      });
+      setLoading(false);
+      message.success(t('License key saved successfully, please restart the server'));
+    } catch (e) {
+      setLoading(false);
+    }
   };
 
   return {
