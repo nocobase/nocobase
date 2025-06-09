@@ -93,7 +93,7 @@ export class MultiRecordResource<TDataItem = any> extends BaseRecordResource<TDa
     await this.refresh();
   }
 
-  getMeta(metaKey?: string): Record<string, any> {
+  getMeta(metaKey?: string) {
     return metaKey ? this._meta.value[metaKey] : this._meta.value;
   }
   setMeta(meta: Record<string, any>): void {
