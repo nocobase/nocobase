@@ -165,11 +165,13 @@ function createWithACLMetaMiddleware() {
         ...params,
         context: actionCtx,
       });
-      const queryParamsWithAppends = queryParams?.appends || [];
-      const ctxActionParamsWithAppends = ctx.action?.params?.appends || [];
-      const appends = queryParamsWithAppends.filter((x) => ctxActionParamsWithAppends.includes(x));
-      queryParams.include = appends;
-      queryParams.appends = appends;
+      if (ctx.action?.params?.appends || queryParams?.appends) {
+        const queryParamsWithAppends = queryParams?.appends || [];
+        const ctxActionParamsWithAppends = ctx.action?.params?.appends || [];
+        const appends = queryParamsWithAppends.filter((x) => ctxActionParamsWithAppends.includes(x));
+        queryParams.include = appends;
+        queryParams.appends = appends;
+      }
 
       const actionSql = ctx.db.sequelize.queryInterface.queryGenerator.selectQuery(
         Model.getTableName(),
