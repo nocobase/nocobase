@@ -7,11 +7,22 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+/* eslint-disable react-hooks/rules-of-hooks */
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { Filter, useZIndexContext, withDynamicSchemaProps } from '@nocobase/client';
 import { ConfigProvider } from 'antd';
 import { Popup } from 'antd-mobile';
 import { CloseOutline } from 'antd-mobile-icons';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { isDesktop } from 'react-device-detect';
 import { useTranslation } from 'react-i18next';
 import { useMobileActionDrawerStyle } from './ActionDrawer.style';
 import { MIN_Z_INDEX_INCREMENT } from './zIndex';
@@ -120,6 +131,15 @@ const POPUP_ANIMATION_DELAY = 300;
  */
 export const usePopupContainer = (visible: boolean, animationDelay = POPUP_ANIMATION_DELAY) => {
   const [mobileContainer] = useState<HTMLElement>(() => document.querySelector('.mobile-container') || document.body);
+
+  // 仅需在桌面端创建弹窗容器
+  if (!isDesktop) {
+    return {
+      visiblePopup: visible,
+      popupContainerRef: { current: mobileContainer as HTMLDivElement },
+    };
+  }
+
   const [visiblePopup, setVisiblePopup] = useState(false);
   const popupContainerRef = React.useRef<HTMLDivElement>(null);
   const timeoutRef = React.useRef<NodeJS.Timeout | null>(null);
