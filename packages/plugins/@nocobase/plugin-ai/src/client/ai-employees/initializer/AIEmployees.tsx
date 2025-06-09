@@ -8,9 +8,9 @@
  */
 
 import React from 'react';
-import { SchemaInitializerItem, useSchemaInitializer } from '@nocobase/client';
+import { SchemaInitializerItem, useSchemaInitializer, useToken } from '@nocobase/client';
 import { useAIEmployeesContext } from '../AIEmployeesProvider';
-import { Spin, Avatar } from 'antd';
+import { Spin, Avatar, Flex } from 'antd';
 import { avatars } from '../avatars';
 import { tval } from '@nocobase/utils/client';
 
@@ -23,6 +23,7 @@ const getAIEmployeesInitializer = () => ({
       aiEmployees,
       service: { loading },
     } = useAIEmployeesContext();
+    const { token } = useToken();
 
     return loading
       ? [
@@ -33,6 +34,10 @@ const getAIEmployeesInitializer = () => ({
         ]
       : aiEmployees.map((aiEmployee) => ({
           name: aiEmployee.username,
+          style: {
+            height: 'fit-content',
+            lineHeight: token.lineHeight,
+          },
           Component: () => {
             const { insert } = useSchemaInitializer();
             const handleClick = () => {
@@ -47,18 +52,27 @@ const getAIEmployeesInitializer = () => ({
               });
             };
             return (
-              <SchemaInitializerItem
-                onClick={handleClick}
-                title={aiEmployee.nickname}
-                icon={
+              <SchemaInitializerItem onClick={handleClick}>
+                <Flex align="center">
                   <Avatar
                     style={{
-                      marginBottom: '5px',
+                      marginRight: '8px',
                     }}
                     src={avatars(aiEmployee.avatar)}
                   />
-                }
-              />
+                  <Flex vertical={true}>
+                    <div>{aiEmployee.nickname}</div>
+                    <div
+                      style={{
+                        fontSize: token.fontSizeSM,
+                        color: token.colorTextSecondary,
+                      }}
+                    >
+                      {aiEmployee.position}
+                    </div>
+                  </Flex>
+                </Flex>
+              </SchemaInitializerItem>
             );
           },
         }));

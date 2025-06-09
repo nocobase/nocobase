@@ -8,19 +8,21 @@
  */
 
 import React, { useMemo } from 'react';
-import { FloatButton, Avatar, Dropdown, Popover } from 'antd';
+import { FloatButton, Avatar, Dropdown, Popover, Flex } from 'antd';
 import icon from '../icon.svg';
 import { css } from '@emotion/css';
 import { useChatBoxContext } from './ChatBoxContext';
 import { useAIEmployeesContext } from '../AIEmployeesProvider';
 import { avatars } from '../avatars';
 import { ProfileCard } from '../ProfileCard';
+import { useToken } from '@nocobase/client';
 
 export const ChatButton: React.FC = () => {
   const { aiEmployees } = useAIEmployeesContext();
   const open = useChatBoxContext('open');
   const setOpen = useChatBoxContext('setOpen');
   const switchAIEmployee = useChatBoxContext('switchAIEmployee');
+  const { token } = useToken();
 
   const items = useMemo(() => {
     return aiEmployees?.map((employee) => ({
@@ -45,8 +47,17 @@ export const ChatButton: React.FC = () => {
                 marginRight: '8px',
               }}
             />
-
-            {employee.nickname}
+            <Flex vertical={true}>
+              <div>{employee.nickname}</div>
+              <div
+                style={{
+                  fontSize: token.fontSizeSM,
+                  color: token.colorTextSecondary,
+                }}
+              >
+                {employee.position}
+              </div>
+            </Flex>
           </div>
         </Popover>
       ),
