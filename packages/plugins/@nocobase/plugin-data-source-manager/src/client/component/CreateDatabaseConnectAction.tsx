@@ -24,6 +24,7 @@ import { useTranslation } from 'react-i18next';
 import PluginDatabaseConnectionsClient from '../';
 import { useLoadCollections, useTestConnectionAction } from '../hooks';
 import { NAMESPACE } from '../locale';
+import { CollectionsTableField } from './CollectionsTableField';
 
 export const CreateDatabaseConnectAction = () => {
   const [schema, setSchema] = useState({});
@@ -77,7 +78,11 @@ export const CreateDatabaseConnectAction = () => {
                     properties: {
                       body: {
                         type: 'void',
-                        'x-component': type.DataSourceSettingsForm.bind(null, { loadCollections, from: 'create' }),
+                        'x-component': type.DataSourceSettingsForm.bind(null, {
+                          CollectionsTableField,
+                          loadCollections,
+                          from: 'create',
+                        }),
                       },
                       footer: {
                         type: 'void',

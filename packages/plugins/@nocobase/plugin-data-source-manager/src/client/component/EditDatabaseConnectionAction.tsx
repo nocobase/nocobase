@@ -27,6 +27,7 @@ import { useForm, useField } from '@formily/react';
 import PluginDatabaseConnectionsClient from '../';
 import { NAMESPACE } from '../locale';
 import { addDatasourceCollections, useLoadCollections } from '../hooks';
+import { CollectionsTableField } from './CollectionsTableField';
 
 export const EditDatabaseConnectionAction = () => {
   const record = useRecord();
@@ -96,7 +97,11 @@ export const EditDatabaseConnectionAction = () => {
                     properties: {
                       body: {
                         type: 'void',
-                        'x-component': type.DataSourceSettingsForm.bind(null, { loadCollections, from: 'edit' }),
+                        'x-component': type.DataSourceSettingsForm.bind(null, {
+                          CollectionsTableField,
+                          loadCollections,
+                          from: 'edit',
+                        }),
                       },
                       footer: {
                         type: 'void',
