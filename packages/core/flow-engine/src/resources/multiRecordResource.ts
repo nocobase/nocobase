@@ -11,11 +11,8 @@ import { observable } from '@formily/reactive';
 import { BaseRecordResource } from './baseRecordResource';
 
 export class MultiRecordResource<TDataItem = any> extends BaseRecordResource<TDataItem[]> {
-  // 数据状态 - 包含数据和动态信息
-  protected state = observable.shallow({
-    data: [] as TDataItem[],
-    dataMeta: {} as Record<string, any>,
-  });
+  protected _data = observable.ref<TDataItem[]>([]);
+  protected _meta = observable.ref<Record<string, any>>({});
 
     // 请求配置 - 与 APIClient 接口保持一致
   protected request = observable.shallow({
@@ -38,7 +35,6 @@ export class MultiRecordResource<TDataItem = any> extends BaseRecordResource<TDa
 
   constructor() {
     super();
-    this.meta.actionName = 'list';
   }
 
   async next(): Promise<void> {
@@ -97,30 +93,31 @@ export class MultiRecordResource<TDataItem = any> extends BaseRecordResource<TDa
     await this.refresh();
   }
 
-  setDataMeta(dataMeta: Record<string, any>) {
-    this.state.dataMeta = dataMeta;
+  getMeta(metaKey?: string): Record<string, any> {
+    return metaKey ? this._meta.value[metaKey] : this._meta.value;
+  }
+  setMeta(meta: Record<string, any>): void {
+    this._meta.value = { ...this._meta.value, ...meta };
   }
 
-  getDataMeta(): Record<string, any> {
-    return this.state.dataMeta;
-  }
-
-  setPage(page: number): void {
+  async setPage(page: number): Promise<void> {
     this.request.params.page = page;
+    await this.refresh();
   }
   getPage(): number {
     return this.request.params.page;
   }
-  setPageSize(pageSize: number): void {
+  async setPageSize(pageSize: number): Promise<void> {
     this.request.params.pageSize = pageSize;
+    await this.refresh();
   }
   getPageSize(): number {
     return this.request.params.pageSize;
   }
 
   async refresh(): Promise<void> {
-    const { data, meta } = await this.runAction<{ data: any[], meta?: any }>(this.meta.actionName, this.getRequestOptions());
-    this.setData(data);
-    this.setDataMeta(meta);
+    const { data } = await this.runAction<TDataItem[], any>('list', this.getRequestOptions());
+    this.setData(data.data);
+    this.setMeta(data.meta || {});
   }
 }

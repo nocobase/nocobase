@@ -11,12 +11,8 @@ import { observable } from '@formily/reactive';
 import { APIResource } from './apiResource';
 
 export abstract class BaseRecordResource<TData = any> extends APIResource<TData> {
-  // 资源元信息 - 静态配置信息
-  protected meta = observable.shallow({
-    resourceName: null as string | null,
-    sourceId: null as string | number | null,
-    actionName: 'get' as string,
-  });
+  protected resourceName: string | null = null;
+  protected sourceId: string | number | null = null;
 
   // 请求配置 - 与 APIClient 接口保持一致
   protected request = observable.shallow({
@@ -48,48 +44,45 @@ export abstract class BaseRecordResource<TData = any> extends APIResource<TData>
 
   protected buildURL(action?: string): string {
     let url = '';
-    if (this.meta.resourceName) {
-      if (this.meta.sourceId && this.meta.resourceName.includes('.')) {
+    if (this.resourceName) {
+      if (this.sourceId && this.resourceName.includes('.')) {
         // 处理关联资源，如 users.tags 或 users.profile
-        const [parentResource, childResource] = this.meta.resourceName.split('.');
-        url = `${parentResource}/${this.meta.sourceId}/${childResource}:${action || this.meta.actionName}`;
+        const [parentResource, childResource] = this.resourceName.split('.');
+        url = `${parentResource}/${this.sourceId}/${childResource}:${action || 'get'}`;
       } else {
-        url = `${this.meta.resourceName}:${action || this.meta.actionName}`;
+        url = `${this.resourceName}:${action || 'get'}`;
       }
     }
 
     return url;
   }
 
-  async runAction<T = any>(action: string, options: any) {
+  async runAction<TData = any, TMeta = any>(action: string, options: any) {
     return await this.api.request({
       url: this.buildURL(action),
       ...options,
-    }) as T;
+    }) as {
+      data: {
+        data: TData;
+        meta?: TMeta;
+      };
+    };
   }
 
   setResourceName(resourceName: string): void {
-    this.meta.resourceName = resourceName;
+    this.resourceName = resourceName;
   }
   
   getResourceName(): string {
-    return this.meta.resourceName;
-  }
-
-  setActionName(actionName: string): void {
-    this.meta.actionName = actionName;
-  }
-
-  getActionName(): string {
-    return this.meta.actionName;
+    return this.resourceName;
   }
 
   setSourceId(sourceId: string | number): void {
-    this.meta.sourceId = sourceId;
+    this.sourceId = sourceId;
   }
 
   getSourceId(): string | number {
-    return this.meta.sourceId;
+    return this.sourceId;
   }
 
   setDataSourceKey(dataSourceKey: string): void {

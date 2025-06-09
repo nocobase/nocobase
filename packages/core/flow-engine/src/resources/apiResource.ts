@@ -53,6 +53,6 @@ export class APIResource<TData = any> extends FlowResource<TData> {
       throw new Error('API client not set');
     }
     const { data } = await this.api.request(this.getRequestOptions());
-    this.setData(data);
+    this.setData(data?.data);
   }
 }

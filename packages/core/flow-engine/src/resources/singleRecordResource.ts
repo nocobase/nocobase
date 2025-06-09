@@ -7,15 +7,11 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { observable } from '@formily/reactive';
 import { BaseRecordResource } from './baseRecordResource';
 
 export class SingleRecordResource<TData = any> extends BaseRecordResource<TData> {
-  constructor() {
-    super();
-    // 设置单记录资源的默认 actionName
-    this.meta.actionName = 'get';
-    this.request.method = 'get';
-  }
+  protected _data = observable.ref<TData>(null);
 
   setFilterByTk(filterByTk: string | number): void {
     this.request.params = { ...this.request.params, filterByTk };
@@ -54,7 +50,7 @@ export class SingleRecordResource<TData = any> extends BaseRecordResource<TData>
 
   async refresh(): Promise<void> {
     const options: any = this.getRequestOptions();
-    const { data } = await this.runAction<{ data: TData }>(this.meta.actionName, options);
-    this.setData(data);
+    const { data } = await this.runAction<TData, any>('get', options);
+    this.setData(data.data);
   }
 }

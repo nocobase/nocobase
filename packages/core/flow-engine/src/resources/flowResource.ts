@@ -10,27 +10,21 @@
 import { observable } from '@formily/reactive';
 
 export class FlowResource<TData = any> {
-  // 资源元信息
-  protected meta = observable.shallow({});
-
-  // 数据状态 - 包含数据和动态信息
-  protected state = observable.shallow({
-    data: {} as TData,
-  });
+  protected _data = observable.ref<TData>(null);
 
   get data(): TData {
-    return this.state.data;
+    return this._data.value;
   }
 
   set data(value: TData) {
-    this.state.data = value;
+    this._data.value = value;
   }
 
   getData(): TData {
-    return this.state.data;
+    return this.data;
   }
 
   setData(data: TData): void {
-    this.state.data = data;
+    this.data = data;
   }
 }
