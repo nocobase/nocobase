@@ -370,6 +370,35 @@ export const calendarBlockSettings = new SchemaSettings({
       },
     },
     {
+      name: 'weekStart',
+      Component: SchemaSettingsSelectItem,
+      useComponentProps() {
+        const { t } = useTranslation();
+        const fieldSchema = useFieldSchema();
+        const field = useField();
+        const { dn } = useDesignable();
+        return {
+          title: t('Week start day'),
+          value: field['decoratorProps']['weekStart'] || '1',
+          options: [
+            { value: '1', label: t('Monday') },
+            { value: '0', label: t('Sunday') },
+          ],
+          onChange: (v) => {
+            field.decoratorProps.weekStart = v;
+            fieldSchema['x-decorator-props']['weekStart'] = v;
+            dn.emit('patch', {
+              schema: {
+                ['x-uid']: fieldSchema['x-uid'],
+                'x-decorator-props': field.decoratorProps,
+              },
+            });
+            dn.refresh();
+          },
+        };
+      },
+    },
+    {
       name: 'divider',
       type: 'divider',
     },
