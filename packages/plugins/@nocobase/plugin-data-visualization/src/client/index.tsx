@@ -71,6 +71,7 @@ class PluginDataVisualiztionClient extends Plugin {
     select: { valueFormatter },
     multipleSelect: { valueFormatter },
     radioGroup: { valueFormatter },
+    checkboxGroup: { valueFormatter },
   };
 
   registerFieldInterfaceConfig(key: string, config: fieldInterfaceConfig) {
