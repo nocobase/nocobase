@@ -10,17 +10,18 @@
 import { Plugin } from '@nocobase/server';
 import { getInstanceId, saveLicenseKey } from './utils';
 import { keyDecrypt } from '@nocobase/license-kit';
+import pkg from './../../package.json';
 
-export class PluginLicenseUtilitiesServer extends Plugin {
+export class PluginLicenseServer extends Plugin {
   async afterAdd() {}
 
   async beforeLoad() {}
 
   async load() {
     this.app.resourceManager.define({
-      name: 'license-utilities',
+      name: 'license',
       actions: {
-        instanceid: async (ctx, next) => {
+        'instance-id': async (ctx, next) => {
           ctx.body = await getInstanceId();
           await next();
         },
@@ -29,14 +30,14 @@ export class PluginLicenseUtilitiesServer extends Plugin {
           try {
             keyDecrypt(licenseKey);
           } catch (e) {
-            return ctx.throw(500, 'Invalid license key');
+            return ctx.throw(500, ctx.t('Invalid license key', { ns: pkg.name }));
           }
           await saveLicenseKey(licenseKey);
           await next();
         },
       },
     });
-    this.app.acl.allow('license-utilities', '*', 'loggedIn');
+    this.app.acl.allow('license', '*', 'loggedIn');
   }
 
   async install() {}
@@ -48,4 +49,4 @@ export class PluginLicenseUtilitiesServer extends Plugin {
   async remove() {}
 }
 
-export default PluginLicenseUtilitiesServer;
+export default PluginLicenseServer;

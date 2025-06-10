@@ -24,7 +24,7 @@ function InstanceId() {
     setLoading(true);
     return api
       .request({
-        url: '/license-utilities:instanceid',
+        url: '/license:instance-id',
         method: 'GET',
       })
       .then((res) => res?.data?.data)
@@ -56,7 +56,7 @@ const useSubmitProps = () => {
     setLoading(true);
     try {
       await api.request({
-        url: '/license-utilities:license-key',
+        url: '/license:license-key',
         method: 'POST',
         data: {
           licenseKey,

@@ -11,7 +11,7 @@ import { Plugin } from '@nocobase/client';
 import LicenseSetting from './LicenseSetting';
 import { tStr } from './locale';
 
-export class PluginLicenseUtilitiesClient extends Plugin {
+export class PluginLicenseClient extends Plugin {
   async afterAdd() {
     // await this.app.pm.add()
   }
@@ -34,4 +34,4 @@ export class PluginLicenseUtilitiesClient extends Plugin {
   }
 }
 
-export default PluginLicenseUtilitiesClient;
+export default PluginLicenseClient;
