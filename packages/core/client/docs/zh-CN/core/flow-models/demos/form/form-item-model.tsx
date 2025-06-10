@@ -2,7 +2,6 @@ import { FormItem, Input } from '@formily/antd-v5';
 import { Field as FormilyField } from '@formily/react';
 import { Field, FlowModel } from '@nocobase/flow-engine';
 import React from 'react';
-import { dsm } from '../table/data-source-manager';
 
 export class FormItemModel extends FlowModel {
   field: Field;
@@ -35,7 +34,7 @@ FormItemModel.registerFlow({
   steps: {
     step1: {
       handler(ctx, params) {
-        const field = dsm.getCollectionField(params.fieldPath);
+        const field = ctx.globals.dsm.getCollectionField(params.fieldPath);
         ctx.model.field = field;
       },
     },

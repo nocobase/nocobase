@@ -2,7 +2,6 @@ import { Collection, FlowModel, MultiRecordResource } from '@nocobase/flow-engin
 import { Button, Dropdown, Table } from 'antd';
 import React from 'react';
 import { api } from './api';
-import { dsm } from './data-source-manager';
 import { TableColumnModel } from './table-column-model';
 
 type S = {
@@ -81,7 +80,7 @@ TableModel.registerFlow({
         if (ctx.model.collection) {
           return;
         }
-        ctx.model.collection = dsm.getCollection(params.dataSourceKey, params.collectionName);
+        ctx.model.collection = ctx.globals.dsm.getCollection(params.dataSourceKey, params.collectionName);
         const resource = new MultiRecordResource();
         resource.setDataSourceKey(params.dataSourceKey);
         resource.setResourceName(params.collectionName);

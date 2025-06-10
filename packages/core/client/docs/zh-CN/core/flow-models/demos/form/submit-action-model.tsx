@@ -1,5 +1,4 @@
 import { Submit } from '@formily/antd-v5';
-import { Modal } from 'antd';
 import React from 'react';
 import { ActionModel } from './action-model';
 

@@ -5,7 +5,6 @@ import { Space } from 'antd';
 import React from 'react';
 import { FormModel } from '../form/form-model';
 import { ActionModel } from './action-model';
-import { dsm } from './data-source-manager';
 
 export class TableColumnModel extends FlowModel {
   field: Field;
@@ -95,7 +94,7 @@ TableColumnModel.registerFlow({
         if (ctx.model.field) {
           return;
         }
-        const field = dsm.getCollectionField(params.fieldPath);
+        const field = ctx.globals.dsm.getCollectionField(params.fieldPath);
         ctx.model.fieldPath = params.fieldPath;
         ctx.model.setProps('title', field.title);
         ctx.model.setProps('dataIndex', field.name);

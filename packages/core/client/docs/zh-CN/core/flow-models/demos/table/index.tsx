@@ -6,11 +6,13 @@ import { FormItemModel } from '../form/form-item-model';
 import { FormModel } from '../form/form-model';
 import { SubmitActionModel } from '../form/submit-action-model';
 import { ActionModel } from './action-model';
+import { dsm } from './data-source-manager';
 import { TableColumnActionsModel, TableColumnModel } from './table-column-model';
 import { TableModel } from './table-model';
 
 class PluginDemo extends Plugin {
   async load() {
+    this.flowEngine.context.dsm = dsm;
     this.flowEngine.registerModels({
       FormModel,
       FormItemModel,
