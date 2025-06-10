@@ -279,6 +279,9 @@ const ToManyNester = observer(
                               deleteCount: 1,
                             });
                             field.value.splice(index, 1);
+                            if (Array.isArray(field.initialValue)) {
+                              field.initialValue.splice(index, 1);
+                            }
                             return field.onInput(field.value);
                           });
                         }}
