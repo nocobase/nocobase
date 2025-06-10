@@ -17,6 +17,7 @@ import {
   IFlowModelRepository,
   ModelConstructor,
 } from './types';
+import { isInheritedFrom } from './utils';
 
 interface ApplyFlowCacheEntry {
   status: 'pending' | 'resolved' | 'rejected';
@@ -265,40 +266,22 @@ export class FlowEngine {
     (ModelClass as any).registerFlow(flowDefinition);
   }
 
-  public getBlockModelClasses() {
-    return this.blockModelClasses.value as Map<string, typeof FlowModel>;
-  }
-
-  public getActionModelClasses() {
-    return this.actionModelClasses.value;
-  }
-
-  public getFieldsModelClasses() {
-    return this.fieldsModelClasses.value;
-  }
-
-  // blocks modelClass
-  private blockModelClasses = observable.computed<Map<string, ModelConstructor>>(() => {
-    return this.filterModelClasses('block');
-  });
-
-  // actionModelClasses
-  private actionModelClasses = observable.computed<Map<string, ModelConstructor>>(() => {
-    return this.filterModelClasses('action');
-  });
-
-  // fieldsModelClasses
-  private fieldsModelClasses = observable.computed<Map<string, ModelConstructor>>(() => {
-    return this.filterModelClasses('field');
-  });
-
-  private filterModelClasses(type: 'block' | 'action' | 'field') {
-    const blockClasses = new Map<string, ModelConstructor>();
+  /**
+   * 根据父类过滤模型类（支持多层继承）
+   * @param {string | ModelConstructor} parentClass 父类名称或构造函数
+   * @returns {Map<string, ModelConstructor>} 继承自指定父类的模型类映射
+   */
+  public filterModelClassByParent(parentClass: string | ModelConstructor) {
+    const parentModelClass = typeof parentClass === 'string' ? this.getModelClass(parentClass) : parentClass;
+    if (!parentModelClass) {
+      return new Map();
+    }
+    const modelClasses = new Map<string, ModelConstructor>();
     for (const [className, ModelClass] of this.modelClasses) {
-      if ((ModelClass as any).meta?.type === type) {
-        blockClasses.set(className, ModelClass);
+      if (isInheritedFrom(ModelClass, parentModelClass)) {
+        modelClasses.set(className, ModelClass);
       }
     }
-    return blockClasses;
+    return modelClasses;
   }
 }

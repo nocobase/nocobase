@@ -7,13 +7,6 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { DefaultStructure, FlowModel, FlowModelMeta } from '@nocobase/flow-engine';
+import { DefaultStructure, FlowModel } from '@nocobase/flow-engine';
 
-export class BlockFlowModel<T = DefaultStructure> extends FlowModel<T> {
-  static define(meta: FlowModelMeta) {
-    super.define({
-      ...meta,
-      type: 'block',
-    });
-  }
-}
+export class BlockFlowModel<T = DefaultStructure> extends FlowModel<T> {}

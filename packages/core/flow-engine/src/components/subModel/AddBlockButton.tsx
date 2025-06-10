@@ -18,7 +18,7 @@ export interface AddBlockButtonProps extends Omit<AddSubModelButtonProps, 'subMo
   /**
    * 父模型类名，用于确定支持的块类型
    */
-  ParentModelClass?: string;
+  ParentModelClass?: string | typeof FlowModel;
   
   /**
    * 自定义块类型列表，如果不提供则使用默认的块类型
@@ -37,28 +37,6 @@ export interface AddBlockButtonProps extends Omit<AddSubModelButtonProps, 'subMo
   subModelKey?: string;
 }
 
-// 默认的块类型配置
-const DEFAULT_BLOCK_TYPES = [
-  {
-    key: 'html',
-    label: 'HTML Block',
-    icon: <CodeOutlined />,
-    modelClass: 'HtmlBlockFlowModel',
-  },
-  {
-    key: 'markdown',
-    label: 'Markdown Block',
-    icon: <FileMarkdownOutlined />,
-    modelClass: 'MarkdownBlockFlowModel',
-  },
-  {
-    key: 'cloud',
-    label: 'Cloud Component Block',
-    icon: <CloudOutlined />,
-    modelClass: 'CloudBlockFlowModel',
-  },
-];
-
 /**
  * 专门用于添加块模型的按钮组件
  * 
@@ -66,35 +44,37 @@ const DEFAULT_BLOCK_TYPES = [
  * ```tsx
  * <AddBlockButton 
  *   model={parentModel}
- *   ParentModelClass="PageFlowModel"
+ *   ParentModelClass={'FlowModel'}
  * />
  * ```
  */
 export const AddBlockButton: React.FC<AddBlockButtonProps> = observer(({
   model,
-  ParentModelClass,
+  ParentModelClass='BlockFlowModel',
   subModelKey = 'blocks',
   children = 'Add block',
   ...props
 }) => {
-  const blockClasses = model.flowEngine.getBlockModelClasses();
   const blockTypes = useMemo<{
     key: string;
     label: string;
     icon?: React.ReactNode;
     item: typeof FlowModel;
   }[]>(() => {
+    const blockClasses = model.flowEngine.filterModelClassByParent(ParentModelClass);
     const registeredBlocks = [];
     for (const [className, ModelClass] of blockClasses) {
-      registeredBlocks.push({
-        key: className,
-        label: ModelClass.meta?.title,
-        icon: ModelClass.meta?.icon,
-        item: ModelClass,
-      });
+      if (ModelClass.meta) {
+        registeredBlocks.push({
+          key: className,
+          label: ModelClass.meta?.title,
+          icon: ModelClass.meta?.icon,
+          item: ModelClass,
+        });
+      }
     }
     return registeredBlocks;
-  }, [blockClasses]);
+  }, [model, ParentModelClass]);
   
   const buildSubModelParams = React.useCallback((info: {
     key: string;

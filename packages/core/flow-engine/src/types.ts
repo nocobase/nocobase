@@ -277,5 +277,4 @@ export interface FlowModelMeta {
   group?: string;
   defaultOptions?: Record<string, any>;
   icon?: string;
-  type?: string;
 }

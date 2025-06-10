@@ -12,7 +12,7 @@ export function generateUid(): string {
 }
 import type { FlowDefinition } from './types';
 import _ from 'lodash';
-import { DeepPartial } from './types';
+import { DeepPartial, ModelConstructor } from './types';
 
 /**
  * 合并两个流程定义
@@ -43,4 +43,33 @@ export function mergeFlowDefinitions(
   }
 
   return mergedFlow;
+}
+
+/**
+ * 检查一个类是否继承自指定的父类（支持多层继承）
+ * @param {ModelConstructor} childClass 要检查的子类
+ * @param {ModelConstructor} parentClass 父类
+ * @returns {boolean} 如果子类继承自父类则返回 true
+ */
+export function isInheritedFrom(childClass: ModelConstructor, parentClass: ModelConstructor): boolean {
+  // 如果是同一个类，返回 false（不包括自身）
+  if (childClass === parentClass) {
+    return false;
+  }
+  
+  // 检查直接继承
+  if (childClass.prototype instanceof parentClass) {
+    return true;
+  }
+  
+  // 递归检查原型链
+  let currentProto = Object.getPrototypeOf(childClass.prototype);
+  while (currentProto && currentProto !== Object.prototype) {
+    if (currentProto.constructor === parentClass) {
+      return true;
+    }
+    currentProto = Object.getPrototypeOf(currentProto);
+  }
+  
+  return false;
 }
