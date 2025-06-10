@@ -112,6 +112,7 @@ export type ModelConstructor<T extends FlowModel = FlowModel> = new (options: {
   uid: string;
   props?: IModelComponentProps;
   stepParams?: StepParams;
+  meta?: FlowModelMeta;
   subModels?: Record<string, CreateSubModelOptions | CreateSubModelOptions[]>;
   [key: string]: any; // Allow additional options
 }) => T;
@@ -269,4 +270,12 @@ export interface FlowModelOptions<Structure extends {parent?: any, subModels?: a
   stepParams?: Record<string, any>;
   subModels?: Structure['subModels'];
   flowEngine: FlowEngine;
+}
+
+export interface FlowModelMeta {
+  title: string;
+  group?: string;
+  defaultOptions?: Record<string, any>;
+  icon?: string;
+  type?: string;
 }

@@ -116,8 +116,6 @@ const openStepSettingsDialog = async ({
       okText: '确认',
       cancelText: '取消',
       destroyOnClose: true,
-      maskClosable: false,
-      style: { top: 20 },
     },
     (form) => {
       const flowEngine = model.flowEngine || {};

@@ -26,6 +26,7 @@ import type {
   InlineStepDefinition,
   StepDefinition,
   StepParams,
+  FlowModelMeta,
 } from '../types';
 import { ExtendedFlowDefinition, FlowExtraContext, IModelComponentProps, ReadonlyModelProps } from '../types';
 import { generateUid, mergeFlowDefinitions } from '../utils';
@@ -40,6 +41,7 @@ export class FlowModel<Structure extends { parent?: any; subModels?: any } = Def
   public flowEngine: FlowEngine;
   public parent: Structure['parent'];
   public subModels: Structure['subModels'];
+  public static meta: FlowModelMeta;
 
   constructor(protected options: FlowModelOptions<Structure>) {
     if (options?.flowEngine?.getModel(options.uid)) {
@@ -87,6 +89,10 @@ export class FlowModel<Structure extends { parent?: any; subModels?: any } = Def
    */
   setFlowEngine(flowEngine: FlowEngine): void {
     this.flowEngine = flowEngine;
+  }
+
+  static define(meta: FlowModelMeta) {
+    this.meta = meta;
   }
 
   /**

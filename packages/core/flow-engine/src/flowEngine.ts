@@ -6,6 +6,7 @@
  * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
+import { observable } from '@formily/reactive';
 import { FlowSettings } from './flowSettings';
 import { FlowModel } from './models';
 import {
@@ -28,7 +29,7 @@ export class FlowEngine {
   /** @private Stores registered action definitions. */
   private actions: Map<string, ActionDefinition> = new Map();
   /** @private Stores registered model constructors. */
-  private modelClasses: Map<string, ModelConstructor> = new Map();
+  private modelClasses: Map<string, ModelConstructor> = observable.shallow(new Map());
   /** @private Stores created model instances. */
   private modelInstances: Map<string, any> = new Map();
   /** @public Stores flow settings including components and scopes for formily settings. */
@@ -36,8 +37,6 @@ export class FlowEngine {
   context: Record<string, any> = {};
   private modelRepository: IFlowModelRepository | null = null;
   private _applyFlowCache = new Map<string, ApplyFlowCacheEntry>();
-
-  constructor() {}
 
   setModelRepository(modelRepository: IFlowModelRepository) {
     if (this.modelRepository) {
@@ -264,5 +263,42 @@ export class FlowEngine {
     }
 
     (ModelClass as any).registerFlow(flowDefinition);
+  }
+
+  public getBlockModelClasses() {
+    return this.blockModelClasses.value as Map<string, typeof FlowModel>;
+  }
+
+  public getActionModelClasses() {
+    return this.actionModelClasses.value;
+  }
+
+  public getFieldsModelClasses() {
+    return this.fieldsModelClasses.value;
+  }
+
+  // blocks modelClass
+  private blockModelClasses = observable.computed<Map<string, ModelConstructor>>(() => {
+    return this.filterModelClasses('block');
+  });
+
+  // actionModelClasses
+  private actionModelClasses = observable.computed<Map<string, ModelConstructor>>(() => {
+    return this.filterModelClasses('action');
+  });
+
+  // fieldsModelClasses
+  private fieldsModelClasses = observable.computed<Map<string, ModelConstructor>>(() => {
+    return this.filterModelClasses('field');
+  });
+
+  private filterModelClasses(type: 'block' | 'action' | 'field') {
+    const blockClasses = new Map<string, ModelConstructor>();
+    for (const [className, ModelClass] of this.modelClasses) {
+      if ((ModelClass as any).meta?.type === type) {
+        blockClasses.set(className, ModelClass);
+      }
+    }
+    return blockClasses;
   }
 }

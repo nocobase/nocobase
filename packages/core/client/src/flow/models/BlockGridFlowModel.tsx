@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { FlowModel, FlowModelRenderer } from '@nocobase/flow-engine';
+import { AddBlockButton, FlowModel, FlowModelRenderer } from '@nocobase/flow-engine';
 import { Button, Card, Dropdown } from 'antd';
 import _ from 'lodash';
 import React from 'react';
@@ -27,21 +27,21 @@ function Grid({ items }) {
   );
 }
 
-function AddBlockButton({ model }) {
-  return (
-    <Dropdown
-      menu={{
-        onClick: (info) => {
-          const BlockModel = model.flowEngine.getModelClass(info.key);
-          model.addItem(_.cloneDeep(BlockModel.meta.defaultOptions));
-        },
-        items: model.getBlockModels(),
-      }}
-    >
-      <Button>Add block</Button>
-    </Dropdown>
-  );
-}
+// function AddBlockButton({ model }) {
+//   return (
+//     <Dropdown
+//       menu={{
+//         onClick: (info) => {
+//           const BlockModel = model.flowEngine.getModelClass(info.key);
+//           model.addItem(_.cloneDeep(BlockModel.meta.defaultOptions));
+//         },
+//         items: model.getBlockModels(),
+//       }}
+//     >
+//       <Button>Add block</Button>
+//     </Dropdown>
+//   );
+// }
 
 type BlockGridFlowModelStructure = {
   subModels: {
@@ -51,24 +51,24 @@ type BlockGridFlowModelStructure = {
 
 export class BlockGridFlowModel extends FlowModel<BlockGridFlowModelStructure> {
 
-  addItem(item) {
-    const model = this.addSubModel('items', item);
-    model.save();
-  }
+  // addItem(item) {
+  //   const model = this.addSubModel('items', item);
+  //   model.save();
+  // }
 
-  getBlockModels() {
-    return [...this.flowEngine.getModelClasses()]
-      .filter(([, Model]) => {
-        return Model.prototype instanceof BlockFlowModel;
-      })
-      .map(([key, Model]) => {
-        const meta = (Model as typeof BlockFlowModel).meta;
-        return {
-          key,
-          label: meta.title,
-        };
-      });
-  }
+  // getBlockModels() {
+  //   return [...this.flowEngine.getModelClasses()]
+  //     .filter(([, Model]) => {
+  //       return Model.prototype instanceof BlockFlowModel;
+  //     })
+  //     .map(([key, Model]) => {
+  //       const meta = (Model as typeof BlockFlowModel).meta;
+  //       return {
+  //         key,
+  //         label: meta.title,
+  //       };
+  //     });
+  // }
 
   render() {
     return (
@@ -77,7 +77,8 @@ export class BlockGridFlowModel extends FlowModel<BlockGridFlowModelStructure> {
         <p>This is a placeholder for the Grid Flow Model content.</p>
         <Grid items={this.subModels.items?.slice() || []} />
         <br />
-        <AddBlockButton model={this} />
+        {/* <AddBlockButton model={this} /> */}
+        <AddBlockButton model={this} subModelKey="items" />
       </div>
     );
   }

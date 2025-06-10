@@ -158,7 +158,14 @@ const openRequiredParamsStepFormDialog = async ({
         });
 
         // 构建完整的表单Schema
-        const formSchema: ISchema = {
+        // 当只有一个步骤时，不使用FormStep组件，直接渲染表单内容
+        const formSchema: ISchema = requiredSteps.length === 1 ? {
+            type: 'object',
+            properties: {
+                // 直接渲染单个步骤的内容，不显示步骤指示器
+                ...Object.values(stepPanes)[0].properties,
+            },
+        } : {
             type: 'object',
             properties: {
                 step: {
@@ -175,8 +182,8 @@ const openRequiredParamsStepFormDialog = async ({
         // 动态导入所需组件
         try {
             const { FormDialog, FormStep } = await import('@formily/antd-v5');
-            // 创建分步表单实例
-            const formStep = FormStep.createFormStep(0);
+            // 创建分步表单实例（只有多个步骤时才需要）
+            const formStep = requiredSteps.length > 1 ? FormStep.createFormStep(0) : null;
 
             // 创建FormDialog
             const formDialog = FormDialog(
@@ -191,7 +198,7 @@ const openRequiredParamsStepFormDialog = async ({
 
                     const handleSubmit = async () => {
                         try {
-                            // await form.submit();
+                            await form.submit();
                             const currentValues = form.values;
 
                             // 保存每个步骤的参数
@@ -208,7 +215,7 @@ const openRequiredParamsStepFormDialog = async ({
                             formDialog.close();
                         } catch (error) {
                             console.error('提交表单时出错:', error);
-                            reject(error);
+                            // reject(error);
                             // 这里不需要reject，因为forConfirm会处理
                         }
                     };
@@ -233,7 +240,9 @@ const openRequiredParamsStepFormDialog = async ({
                                     handleNext: () => {
                                         // 验证当前步骤的表单
                                         form.validate().then(() => {
-                                            formStep.next();
+                                            if (formStep) {
+                                                formStep.next();
+                                            }
                                         }).catch((errors) => {
                                             console.log('表单验证失败:', errors);
                                             // 可以在这里添加更详细的错误处理
@@ -254,42 +263,58 @@ const openRequiredParamsStepFormDialog = async ({
                                             borderTop: '1px solid #f0f0f0',
                                         }}
                                     >
-                                        <Button
-                                            disabled={!formStep.allowBack}
-                                            onClick={() => {
-                                                formStep.back();
-                                            }}
-                                        >
-                                            上一步
-                                        </Button>
-                                        <Button
-                                            disabled={!formStep.allowNext}
-                                            type="primary"
-                                            onClick={() => {
-                                                // 验证当前步骤的表单
-                                                form.validate().then(() => {
-                                                    formStep.next();
-                                                }).catch((errors) => {
-                                                    console.log('表单验证失败:', errors);
-                                                    // 可以在这里添加更详细的错误处理
-                                                });
-                                            }}
-                                            style={{
-                                                display: formStep.current < requiredSteps.length - 1 ? 'inline-block' : 'none',
-                                            }}
-                                        >
-                                            下一步
-                                        </Button>
-                                        <Button
-                                            disabled={formStep.allowNext}
-                                            type="primary"
-                                            onClick={handleSubmit}
-                                            style={{
-                                                display: formStep.current >= requiredSteps.length - 1 ? 'inline-block' : 'none',
-                                            }}
-                                        >
-                                            完成配置
-                                        </Button>
+                                        {/* 只有一个步骤时，只显示完成按钮 */}
+                                        {requiredSteps.length === 1 ? (
+                                            <Button
+                                                type="primary"
+                                                onClick={handleSubmit}
+                                            >
+                                                完成配置
+                                            </Button>
+                                        ) : (
+                                            <>
+                                                <Button
+                                                    disabled={!formStep?.allowBack}
+                                                    onClick={() => {
+                                                        if (formStep) {
+                                                            formStep.back();
+                                                        }
+                                                    }}
+                                                >
+                                                    上一步
+                                                </Button>
+                                                <Button
+                                                    disabled={!formStep?.allowNext}
+                                                    type="primary"
+                                                    onClick={() => {
+                                                        // 验证当前步骤的表单
+                                                        form.validate().then(() => {
+                                                            if (formStep) {
+                                                                formStep.next();
+                                                            }
+                                                        }).catch((errors) => {
+                                                            console.log('表单验证失败:', errors);
+                                                            // 可以在这里添加更详细的错误处理
+                                                        });
+                                                    }}
+                                                    style={{
+                                                        display: (formStep?.current ?? 0) < requiredSteps.length - 1 ? 'inline-block' : 'none',
+                                                    }}
+                                                >
+                                                    下一步
+                                                </Button>
+                                                <Button
+                                                    disabled={formStep?.allowNext}
+                                                    type="primary"
+                                                    onClick={handleSubmit}
+                                                    style={{
+                                                        display: (formStep?.current ?? 0) >= requiredSteps.length - 1 ? 'inline-block' : 'none',
+                                                    }}
+                                                >
+                                                    完成配置
+                                                </Button>
+                                            </>
+                                        )}
                                     </div>
                                 )}
                             </FormConsumer>

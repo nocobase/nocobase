@@ -7,18 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { DefaultStructure, FlowModel } from '@nocobase/flow-engine';
-
-type BlockFlowModelMeta = {
-  title: string;
-  group?: string;
-  defaultOptions?: Record<string, any>;
-  icon?: string;
-};
+import { DefaultStructure, FlowModel, FlowModelMeta } from '@nocobase/flow-engine';
 
 export class BlockFlowModel<T = DefaultStructure> extends FlowModel<T> {
-  static meta: BlockFlowModelMeta;
-  static define(meta: BlockFlowModelMeta) {
-    this.meta = meta;
+  static define(meta: FlowModelMeta) {
+    super.define({
+      ...meta,
+      type: 'block',
+    });
   }
 }
