@@ -18,9 +18,9 @@ const SchemaField = createSchemaField();
  * 分步表单对话框的属性接口
  */
 export interface StepFormDialogProps {
-    model: any;
-    dialogWidth?: number | string;
-    dialogTitle?: string;
+  model: any;
+  dialogWidth?: number | string;
+  dialogTitle?: string;
 }
 
 /**
@@ -31,306 +31,315 @@ export interface StepFormDialogProps {
  * @returns Promise<any> 返回表单提交的值
  */
 const openRequiredParamsStepFormDialog = async ({
-    model,
-    dialogWidth = 800,
-    dialogTitle = '步骤参数配置',
+  model,
+  dialogWidth = 800,
+  dialogTitle = '步骤参数配置',
 }: StepFormDialogProps): Promise<any> => {
-    if (!model) {
-        message.error('提供的模型无效');
-        throw new Error('提供的模型无效');
-    }
+  if (!model) {
+    message.error('提供的模型无效');
+    throw new Error('提供的模型无效');
+  }
 
-    // 创建一个Promise, 并最终返回，当此弹窗关闭时此promise resolve或者reject 
-    return new Promise(async (resolve, reject) => {
+  // 创建一个Promise, 并最终返回，当此弹窗关闭时此promise resolve或者reject
+  return new Promise((resolve, reject) => {
+    (async () => {
+      try {
         // 获取所有流程
         const constructor = model.constructor as typeof model.constructor;
         const allFlows = constructor.getFlows();
 
         // 收集所有需要配置参数的步骤
         const requiredSteps: Array<{
-            flowKey: string;
-            stepKey: string;
-            step: ActionStepDefinition;
-            uiSchema: Record<string, any>;
-            title: string;
-            flowTitle: string;
+          flowKey: string;
+          stepKey: string;
+          step: ActionStepDefinition;
+          uiSchema: Record<string, any>;
+          title: string;
+          flowTitle: string;
         }> = [];
 
         for (const [flowKey, flow] of allFlows) {
-            for (const stepKey in flow.steps) {
-                const step = flow.steps[stepKey] as ActionStepDefinition;
+          for (const stepKey in flow.steps) {
+            const step = flow.steps[stepKey] as ActionStepDefinition;
 
-                // 只处理 paramsRequired 为 true 的步骤
-                if (step.paramsRequired) {
-                    // 获取步骤的 uiSchema
-                    const stepUiSchema = step.uiSchema || {};
+            // 只处理 paramsRequired 为 true 的步骤
+            if (step.paramsRequired) {
+              // 获取步骤的 uiSchema
+              const stepUiSchema = step.uiSchema || {};
 
-                    // 如果step使用了action，也获取action的uiSchema
-                    let actionUiSchema = {};
-                    if (step.use) {
-                        const action = model.flowEngine?.getAction?.(step.use);
-                        if (action && action.uiSchema) {
-                            actionUiSchema = action.uiSchema;
-                        }
-                    }
-
-                    // 合并uiSchema，确保step的uiSchema优先级更高
-                    const mergedUiSchema = { ...actionUiSchema };
-                    Object.entries(stepUiSchema).forEach(([fieldKey, schema]) => {
-                        if (mergedUiSchema[fieldKey]) {
-                            mergedUiSchema[fieldKey] = { ...mergedUiSchema[fieldKey], ...schema };
-                        } else {
-                            mergedUiSchema[fieldKey] = schema;
-                        }
-                    });
-
-                    // 如果有可配置的UI Schema，添加到列表中
-                    if (Object.keys(mergedUiSchema).length > 0) {
-                        requiredSteps.push({
-                            flowKey,
-                            stepKey,
-                            step,
-                            uiSchema: mergedUiSchema,
-                            title: step.title || stepKey,
-                            flowTitle: flow.title || flowKey,
-                        });
-                    }
+              // 如果step使用了action，也获取action的uiSchema
+              let actionUiSchema = {};
+              if (step.use) {
+                const action = model.flowEngine?.getAction?.(step.use);
+                if (action && action.uiSchema) {
+                  actionUiSchema = action.uiSchema;
                 }
+              }
+
+              // 合并uiSchema，确保step的uiSchema优先级更高
+              const mergedUiSchema = { ...actionUiSchema };
+              Object.entries(stepUiSchema).forEach(([fieldKey, schema]) => {
+                if (mergedUiSchema[fieldKey]) {
+                  mergedUiSchema[fieldKey] = { ...mergedUiSchema[fieldKey], ...schema };
+                } else {
+                  mergedUiSchema[fieldKey] = schema;
+                }
+              });
+
+              // 如果有可配置的UI Schema，添加到列表中
+              if (Object.keys(mergedUiSchema).length > 0) {
+                requiredSteps.push({
+                  flowKey,
+                  stepKey,
+                  step,
+                  uiSchema: mergedUiSchema,
+                  title: step.title || stepKey,
+                  flowTitle: flow.title || flowKey,
+                });
+              }
             }
+          }
         }
 
         // 如果没有需要配置的步骤，显示提示
         if (requiredSteps.length === 0) {
-            message.info('没有需要配置参数的步骤');
-            resolve({});
-            return;
+          resolve({});
+          return;
         }
 
         // 获取所有步骤的初始值
         const initialValues: Record<string, any> = {};
         requiredSteps.forEach(({ flowKey, stepKey, step }) => {
-            const stepParams = model.getStepParams(flowKey, stepKey) || {};
-            const defaultParams = step.defaultParams || {};
-            const mergedParams = { ...defaultParams, ...stepParams };
+          const stepParams = model.getStepParams(flowKey, stepKey) || {};
+          const defaultParams = step.defaultParams || {};
+          const mergedParams = { ...defaultParams, ...stepParams };
 
-            if (Object.keys(mergedParams).length > 0) {
-                if (!initialValues[flowKey]) {
-                    initialValues[flowKey] = {};
-                }
-                initialValues[flowKey][stepKey] = mergedParams;
+          if (Object.keys(mergedParams).length > 0) {
+            if (!initialValues[flowKey]) {
+              initialValues[flowKey] = {};
             }
+            initialValues[flowKey][stepKey] = mergedParams;
+          }
         });
 
         // 构建分步表单的 Schema
         const stepPanes: Record<string, any> = {};
 
         requiredSteps.forEach(({ flowKey, stepKey, uiSchema, title, flowTitle }, index) => {
-            const stepId = `${flowKey}_${stepKey}`;
+          const stepId = `${flowKey}_${stepKey}`;
 
-            stepPanes[stepId] = {
+          stepPanes[stepId] = {
+            type: 'void',
+            'x-component': 'FormStep.StepPane',
+            'x-component-props': {
+              title: `${title}`,
+              description: `Flow: ${flowTitle}`,
+            },
+            properties: {
+              layout: {
                 type: 'void',
-                'x-component': 'FormStep.StepPane',
+                'x-component': 'FormLayout',
                 'x-component-props': {
-                    title: `${title}`,
-                    description: `流: ${flowTitle}`,
+                  layout: 'vertical',
                 },
                 properties: {
-                    layout: {
-                        type: 'void',
-                        'x-component': 'FormLayout',
-                        'x-component-props': {
-                            layout: 'vertical',
-                        },
-                        properties: {
-                            [flowKey]: {
-                                type: 'object',
-                                properties: {
-                                    [stepKey]: {
-                                        type: 'object',
-                                        properties: uiSchema,
-                                    },
-                                },
-                            },
-                        },
+                  [flowKey]: {
+                    type: 'object',
+                    properties: {
+                      [stepKey]: {
+                        type: 'object',
+                        properties: uiSchema,
+                      },
                     },
+                  },
                 },
-            };
+              },
+            },
+          };
         });
 
         // 构建完整的表单Schema
         // 当只有一个步骤时，不使用FormStep组件，直接渲染表单内容
-        const formSchema: ISchema = requiredSteps.length === 1 ? {
-            type: 'object',
-            properties: {
-                // 直接渲染单个步骤的内容，不显示步骤指示器
-                ...Object.values(stepPanes)[0].properties,
-            },
-        } : {
-            type: 'object',
-            properties: {
-                step: {
+        const formSchema: ISchema =
+          requiredSteps.length === 1
+            ? {
+                type: 'object',
+                properties: {
+                  // 直接渲染单个步骤的内容，不显示步骤指示器
+                  ...Object.values(stepPanes)[0].properties,
+                },
+              }
+            : {
+                type: 'object',
+                properties: {
+                  step: {
                     type: 'void',
                     'x-component': 'FormStep',
                     'x-component-props': {
-                        formStep: '{{formStep}}',
+                      formStep: '{{formStep}}',
                     },
                     properties: stepPanes,
+                  },
                 },
-            },
-        };
+              };
 
         // 动态导入所需组件
-        try {
-            const { FormDialog, FormStep } = await import('@formily/antd-v5');
-            // 创建分步表单实例（只有多个步骤时才需要）
-            const formStep = requiredSteps.length > 1 ? FormStep.createFormStep(0) : null;
+        const { FormDialog, FormStep } = await import('@formily/antd-v5');
+        // 创建分步表单实例（只有多个步骤时才需要）
+        const formStep = requiredSteps.length > 1 ? FormStep.createFormStep(0) : null;
 
-            // 创建FormDialog
-            const formDialog = FormDialog(
-                {
-                    title: dialogTitle,
-                    width: dialogWidth,
-                    footer: null, // 移除默认的底部按钮，使用自定义的导航按钮
-                    destroyOnClose: true,
-                },
-                (form) => {
-                    const flowEngine = model.flowEngine || {};
+        // 创建FormDialog
+        const formDialog = FormDialog(
+          {
+            title: dialogTitle,
+            width: dialogWidth,
+            footer: null, // 移除默认的底部按钮，使用自定义的导航按钮
+            destroyOnClose: true,
+          },
+          (form) => {
+            const flowEngine = model.flowEngine || {};
 
-                    const handleSubmit = async () => {
-                        try {
-                            await form.submit();
-                            const currentValues = form.values;
+            const handleSubmit = async () => {
+              try {
+                await form.submit();
+                const currentValues = form.values;
 
-                            // 保存每个步骤的参数
-                            requiredSteps.forEach(({ flowKey, stepKey }) => {
-                                const stepValues = currentValues[flowKey]?.[stepKey];
-                                if (stepValues) {
-                                    model.setStepParams(flowKey, stepKey, stepValues);
-                                }
-                            });
+                // 保存每个步骤的参数
+                requiredSteps.forEach(({ flowKey, stepKey }) => {
+                  const stepValues = currentValues[flowKey]?.[stepKey];
+                  if (stepValues) {
+                    model.setStepParams(flowKey, stepKey, stepValues);
+                  }
+                });
 
-                            await model.save();
-                            // message.success('所有步骤参数配置已保存');
-                            resolve(currentValues);
-                            formDialog.close();
-                        } catch (error) {
-                            console.error('提交表单时出错:', error);
-                            // reject(error);
-                            // 这里不需要reject，因为forConfirm会处理
-                        }
-                    };
+                await model.save();
+                // message.success('所有步骤参数配置已保存');
+                resolve(currentValues);
+                formDialog.close();
+              } catch (error) {
+                console.error('提交表单时出错:', error);
+                // reject(error);
+                // 这里不需要reject，因为forConfirm会处理
+              }
+            };
 
-                    const handleClose = () => {
-                        formDialog.close();
-                        resolve({});
-                    };
+            const handleClose = () => {
+              formDialog.close();
+              resolve({});
+            };
 
-                    return (
+            return (
+              <>
+                <SchemaField
+                  schema={formSchema}
+                  components={{
+                    FormStep,
+                    ...flowEngine.flowSettings?.components,
+                  }}
+                  scope={{
+                    formStep,
+                    totalSteps: requiredSteps.length,
+                    closeDialog: handleClose,
+                    handleNext: () => {
+                      // 验证当前步骤的表单
+                      form
+                        .validate()
+                        .then(() => {
+                          if (formStep) {
+                            formStep.next();
+                          }
+                        })
+                        .catch((errors) => {
+                          console.log('表单验证失败:', errors);
+                          // 可以在这里添加更详细的错误处理
+                        });
+                    },
+                    ...flowEngine.flowSettings?.scopes,
+                  }}
+                />
+                <FormConsumer>
+                  {() => (
+                    <div
+                      style={{
+                        display: 'flex',
+                        justifyContent: 'flex-end',
+                        gap: 8,
+                        marginTop: 24,
+                        paddingTop: 16,
+                        borderTop: '1px solid #f0f0f0',
+                      }}
+                    >
+                      {/* 只有一个步骤时，只显示完成按钮 */}
+                      {requiredSteps.length === 1 ? (
+                        <Button type="primary" onClick={handleSubmit}>
+                          完成配置
+                        </Button>
+                      ) : (
                         <>
-                            <SchemaField
-                                schema={formSchema}
-                                components={{
-                                    FormStep,
-                                    ...flowEngine.flowSettings?.components,
-                                }}
-                                scope={{
-                                    formStep,
-                                    totalSteps: requiredSteps.length,
-                                    closeDialog: handleClose,
-                                    handleNext: () => {
-                                        // 验证当前步骤的表单
-                                        form.validate().then(() => {
-                                            if (formStep) {
-                                                formStep.next();
-                                            }
-                                        }).catch((errors) => {
-                                            console.log('表单验证失败:', errors);
-                                            // 可以在这里添加更详细的错误处理
-                                        });
-                                    },
-                                    ...flowEngine.flowSettings?.scopes,
-                                }}
-                            />
-                            <FormConsumer>
-                                {() => (
-                                    <div
-                                        style={{
-                                            display: 'flex',
-                                            justifyContent: 'flex-end',
-                                            gap: 8,
-                                            marginTop: 24,
-                                            paddingTop: 16,
-                                            borderTop: '1px solid #f0f0f0',
-                                        }}
-                                    >
-                                        {/* 只有一个步骤时，只显示完成按钮 */}
-                                        {requiredSteps.length === 1 ? (
-                                            <Button
-                                                type="primary"
-                                                onClick={handleSubmit}
-                                            >
-                                                完成配置
-                                            </Button>
-                                        ) : (
-                                            <>
-                                                <Button
-                                                    disabled={!formStep?.allowBack}
-                                                    onClick={() => {
-                                                        if (formStep) {
-                                                            formStep.back();
-                                                        }
-                                                    }}
-                                                >
-                                                    上一步
-                                                </Button>
-                                                <Button
-                                                    disabled={!formStep?.allowNext}
-                                                    type="primary"
-                                                    onClick={() => {
-                                                        // 验证当前步骤的表单
-                                                        form.validate().then(() => {
-                                                            if (formStep) {
-                                                                formStep.next();
-                                                            }
-                                                        }).catch((errors) => {
-                                                            console.log('表单验证失败:', errors);
-                                                            // 可以在这里添加更详细的错误处理
-                                                        });
-                                                    }}
-                                                    style={{
-                                                        display: (formStep?.current ?? 0) < requiredSteps.length - 1 ? 'inline-block' : 'none',
-                                                    }}
-                                                >
-                                                    下一步
-                                                </Button>
-                                                <Button
-                                                    disabled={formStep?.allowNext}
-                                                    type="primary"
-                                                    onClick={handleSubmit}
-                                                    style={{
-                                                        display: (formStep?.current ?? 0) >= requiredSteps.length - 1 ? 'inline-block' : 'none',
-                                                    }}
-                                                >
-                                                    完成配置
-                                                </Button>
-                                            </>
-                                        )}
-                                    </div>
-                                )}
-                            </FormConsumer>
+                          <Button
+                            disabled={!formStep?.allowBack}
+                            onClick={() => {
+                              if (formStep) {
+                                formStep.back();
+                              }
+                            }}
+                          >
+                            上一步
+                          </Button>
+                          <Button
+                            disabled={!formStep?.allowNext}
+                            type="primary"
+                            onClick={() => {
+                              // 验证当前步骤的表单
+                              form
+                                .validate()
+                                .then(() => {
+                                  if (formStep) {
+                                    formStep.next();
+                                  }
+                                })
+                                .catch((errors) => {
+                                  console.log('表单验证失败:', errors);
+                                  // 可以在这里添加更详细的错误处理
+                                });
+                            }}
+                            style={{
+                              display: (formStep?.current ?? 0) < requiredSteps.length - 1 ? 'inline-block' : 'none',
+                            }}
+                          >
+                            下一步
+                          </Button>
+                          <Button
+                            disabled={formStep?.allowNext}
+                            type="primary"
+                            onClick={handleSubmit}
+                            style={{
+                              display: (formStep?.current ?? 0) >= requiredSteps.length - 1 ? 'inline-block' : 'none',
+                            }}
+                          >
+                            完成配置
+                          </Button>
                         </>
-                    );
-                },
+                      )}
+                    </div>
+                  )}
+                </FormConsumer>
+              </>
             );
+          },
+        );
 
-            // 打开对话框
-            formDialog.open({
-                initialValues,
-            });
-        } catch (error) {
-            reject(new Error(`导入 FormDialog 或 FormStep 失败: ${error.message}`));
-        }
-    });
+        // 打开对话框
+        formDialog.open({
+          initialValues,
+        });
+      } catch (error) {
+        reject(new Error(`导入 FormDialog 或 FormStep 失败: ${error.message}`));
+      }
+    })();
+  }).catch((e) => {
+    console.error(e);
+  });
 };
 
 export { openRequiredParamsStepFormDialog };
