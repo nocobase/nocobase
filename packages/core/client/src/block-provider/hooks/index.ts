@@ -572,11 +572,9 @@ export const useFilterBlockActionProps = () => {
   const { doFilter } = useDoFilter();
   const actionField = useField();
   actionField.data = actionField.data || {};
-  const form = useForm();
 
   return {
     async onClick() {
-      await form.submit();
       actionField.data.loading = true;
       await doFilter();
       actionField.data.loading = false;
