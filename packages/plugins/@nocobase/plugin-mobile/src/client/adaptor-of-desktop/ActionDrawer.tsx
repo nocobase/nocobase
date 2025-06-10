@@ -78,7 +78,7 @@ export const MobilePopup: FC<MobilePopupProps> = (props) => {
           bodyClassName="nb-mobile-action-drawer-body"
           bodyStyle={zIndexStyle}
           maskStyle={zIndexStyle}
-          closeOnSwipe
+          destroyOnClose
         >
           <div className="nb-mobile-action-drawer-header">
             {/* used to make the title center */}
