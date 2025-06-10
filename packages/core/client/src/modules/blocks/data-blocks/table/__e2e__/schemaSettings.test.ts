@@ -751,6 +751,7 @@ test.describe('actions schema settings', () => {
       await page
         .getByRole('button', { name: 'designer-schema-settings-Action.Link-actionSettings:popup-general' })
         .hover();
+      await page.waitForTimeout(300);
     };
 
     test('supported options', async ({ page, mockPage, mockRecord }) => {
