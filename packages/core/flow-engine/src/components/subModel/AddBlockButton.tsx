@@ -18,33 +18,34 @@ interface AddBlockButtonProps extends Omit<AddSubModelButtonProps, 'subModelType
 
 /**
  * 专门用于添加块模型的按钮组件
- * 
+ *
  * @example
  * ```tsx
- * <AddBlockButton 
+ * <AddBlockButton
  *   model={parentModel}
  *   ParentModelClass={'FlowModel'}
  * />
  * ```
  */
-export const AddBlockButton: React.FC<AddBlockButtonProps> = observer(({
-  ParentModelClass='BlockFlowModel',
-  subModelKey = 'blocks',
-  children = 'Add block',
-  subModelType = 'array',
-  ...props
-}) => {
-
-  return (
-    <AddSubModelButton
-      {...props}
-      subModelKey={subModelKey}
-      ParentModelClass={ParentModelClass}
-      subModelType={subModelType}
-    >
-      {children}
-    </AddSubModelButton>
-  );
-});
+export const AddBlockButton: React.FC<AddBlockButtonProps> = observer(
+  ({
+    ParentModelClass = 'BlockFlowModel',
+    subModelKey = 'blocks',
+    children = 'Add block',
+    subModelType = 'array',
+    ...props
+  }) => {
+    return (
+      <AddSubModelButton
+        {...props}
+        subModelKey={subModelKey}
+        ParentModelClass={ParentModelClass}
+        subModelType={subModelType}
+      >
+        {children}
+      </AddSubModelButton>
+    );
+  },
+);
 
 AddBlockButton.displayName = 'AddBlockButton';

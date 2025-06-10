@@ -46,11 +46,10 @@ function Grid({ items }) {
 type BlockGridFlowModelStructure = {
   subModels: {
     items: BlockFlowModel[];
-  }
-}
+  };
+};
 
 export class BlockGridFlowModel extends FlowModel<BlockGridFlowModelStructure> {
-
   // addItem(item) {
   //   const model = this.addSubModel('items', item);
   //   model.save();
@@ -73,12 +72,8 @@ export class BlockGridFlowModel extends FlowModel<BlockGridFlowModelStructure> {
   render() {
     return (
       <div style={{ padding: 16 }}>
-        <h1>Grid Flow Model - {this.uid}</h1>
-        <p>This is a placeholder for the Grid Flow Model content.</p>
         <Grid items={this.subModels.items?.slice() || []} />
-        <br />
-        {/* <AddBlockButton model={this} /> */}
-        <AddBlockButton model={this} subModelKey='items'/>
+        <AddBlockButton model={this} subModelKey="items" />
       </div>
     );
   }

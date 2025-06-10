@@ -14,9 +14,8 @@ import { BlockGridFlowModel } from './BlockGridFlowModel';
 export class PageTabFlowModel extends FlowModel<{
   subModels: {
     grid: BlockGridFlowModel;
-  }
+  };
 }> {
-
   render() {
     console.log('TabFlowModel render', this.uid);
     return (

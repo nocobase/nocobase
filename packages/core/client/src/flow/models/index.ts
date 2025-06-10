@@ -7,12 +7,16 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+export * from './action-model';
 export * from './BlockFlowModel';
 export * from './BlockGridFlowModel';
 export * from './CalendarBlockFlowModel';
-export * from './FormBlockFlowModel';
+export * from './form-item-model';
+export * from './form-model';
 export * from './HtmlBlockFlowModel';
 export * from './PageFlowModel';
 export * from './PageTabFlowModel';
-export * from './TableBlockFlowModel';
+export * from './submit-action-model';
+export * from './table-column-model';
+export * from './table-model';
 //

@@ -7,6 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { Schema } from '@formily/json-schema';
 import { observable } from '@formily/reactive';
 
 export interface DataSourceOptions extends Record<string, any> {
@@ -310,7 +311,9 @@ export class Field {
   }
 
   get title() {
-    return this.options.title;
+    return Schema.compile(this.options?.title || this.options?.uiSchema?.title || this.options.name, {
+      t: (text) => text,
+    });
   }
 
   set title(value: string) {

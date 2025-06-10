@@ -16,11 +16,10 @@ import React from 'react';
 type PageFlowModelStructure = {
   subModels: {
     tabs: FlowModel[];
-  }
-}
+  };
+};
 
 export class PageFlowModel extends FlowModel<PageFlowModelStructure> {
-
   addTab(tab: any) {
     const model = this.addSubModel('tabs', tab);
     model.save();
