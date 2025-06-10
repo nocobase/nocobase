@@ -6,9 +6,9 @@
  * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
-import { CheckCircleOutlined } from '@ant-design/icons';
+import { CheckCircleOutlined, EllipsisOutlined } from '@ant-design/icons';
 import { PageHeader } from '@ant-design/pro-layout';
-import { Badge, Button, Layout, Menu, Tabs, Tooltip } from 'antd';
+import { Badge, Button, Flex, Layout, Menu, Popover, Segmented, Tabs, theme, Tooltip } from 'antd';
 import classnames from 'classnames';
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
@@ -26,6 +26,7 @@ import {
   useCompile,
   useDocumentTitle,
   useIsLoggedIn,
+  useMobileLayout,
   usePlugin,
   useRequest,
   useToken,
@@ -37,11 +38,6 @@ import { lang, NAMESPACE } from './locale';
 const layoutClass = css`
   height: 100%;
   overflow: hidden;
-`;
-
-const contentClass = css`
-  min-height: 280px;
-  overflow: auto;
 `;
 
 export interface TaskTypeOptions {
@@ -76,6 +72,7 @@ function MenuLink({ type }: any) {
       to={`/admin/workflow/tasks/${type}/${TASK_STATUS.PENDING}`}
       className={css`
         display: flex;
+        gap: 0.5em;
         align-items: center;
         justify-content: space-between;
         width: 100%;
@@ -103,13 +100,42 @@ function StatusTabs() {
   const navigate = useNavigate();
   const { taskType, status = TASK_STATUS.PENDING } = useParams();
   const type = useCurrentTaskType();
+  const { isMobileLayout } = useMobileLayout();
+  const onSwitchTab = useCallback(
+    (key) => {
+      navigate(`/admin/workflow/tasks/${taskType}/${key}`);
+    },
+    [navigate, taskType],
+  );
   const { Actions } = type;
-  return (
+  return isMobileLayout ? (
+    <Flex justify="space-between">
+      <Segmented
+        defaultValue={status}
+        options={[
+          {
+            value: TASK_STATUS.PENDING,
+            label: lang('Pending'),
+          },
+          {
+            value: TASK_STATUS.COMPLETED,
+            label: lang('Completed'),
+          },
+          {
+            value: TASK_STATUS.ALL,
+            label: lang('All'),
+          },
+        ]}
+        onChange={onSwitchTab}
+      />
+      <Popover placement="bottomRight" content={<Actions />}>
+        <Button icon={<EllipsisOutlined />} type="text" />
+      </Popover>
+    </Flex>
+  ) : (
     <Tabs
       activeKey={status}
-      onChange={(activeKey) => {
-        navigate(`/admin/workflow/tasks/${taskType}/${activeKey}`);
-      }}
+      onChange={onSwitchTab}
       className={css`
         &.ant-tabs-top > .ant-tabs-nav {
           margin-bottom: 0;
@@ -245,11 +271,68 @@ export function WorkflowTasks() {
 
   const typeKey = taskType ?? items[0].key;
 
+  const { isMobileLayout } = useMobileLayout();
+
+  const contentClass = css`
+    height: 100%;
+    overflow: hidden;
+    padding: 0;
+
+    .nb-list {
+      height: 100%;
+      overflow: hidden;
+
+      .nb-list-container {
+        height: 100%;
+        overflow: hidden;
+
+        .ant-formily-layout {
+          height: 100%;
+          overflow: hidden;
+
+          .ant-list {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            overflow: hidden;
+
+            .ant-spin-nested-loading {
+              flex-grow: 1;
+              overflow: hidden;
+
+              .ant-spin-container {
+                height: 100%;
+                overflow: auto;
+                padding: ${isMobileLayout ? '0.5em' : '1em'};
+              }
+            }
+
+            .itemCss:not(:last-child) {
+              border-bottom: none;
+            }
+          }
+
+          .ant-list-pagination {
+            margin-top: 0;
+            padding: ${isMobileLayout ? '0.5em' : '1em'};
+            border-top: 1px solid ${token.colorBorderSecondary};
+          }
+        }
+      }
+    }
+  `;
+
   return (
     <Layout className={layoutClass}>
-      <Layout.Sider theme="light" breakpoint="md" collapsedWidth="0" zeroWidthTriggerStyle={{ top: 24 }}>
-        <Menu mode="inline" selectedKeys={[typeKey]} items={items} style={{ height: '100%' }} />
-      </Layout.Sider>
+      {isMobileLayout ? (
+        <Layout.Header style={{ background: token.colorBgContainer, padding: 0, height: '3em', lineHeight: '3em' }}>
+          <Menu mode="horizontal" selectedKeys={[typeKey]} items={items} />
+        </Layout.Header>
+      ) : (
+        <Layout.Sider theme="light" breakpoint="md" collapsedWidth="0" zeroWidthTriggerStyle={{ top: 24 }}>
+          <Menu mode="inline" selectedKeys={[typeKey]} items={items} style={{ height: '100%' }} />
+        </Layout.Sider>
+      )}
       <Layout
         className={css`
           > div {
@@ -301,10 +384,12 @@ export function WorkflowTasks() {
                     'x-component-props': {
                       className: classnames('pageHeaderCss'),
                       style: {
+                        position: 'sticky',
                         background: token.colorBgContainer,
-                        padding: '12px 24px 0 24px',
+                        padding: isMobileLayout ? '0 8px 8px 8px' : '12px 24px 0 24px',
+                        borderBottom: isMobileLayout ? `1px solid ${token.colorBorderSecondary}` : null,
                       },
-                      title,
+                      title: isMobileLayout ? null : title,
                     },
                     properties: {
                       tabs: {
@@ -318,20 +403,12 @@ export function WorkflowTasks() {
                     'x-component': 'Layout.Content',
                     'x-component-props': {
                       className: contentClass,
-                      style: {
-                        padding: `${token.paddingPageVertical}px ${token.paddingPageHorizontal}px`,
-                      },
                     },
                     properties: {
                       list: {
                         type: 'array',
                         'x-component': 'List',
                         'x-component-props': {
-                          className: css`
-                            > .itemCss:not(:last-child) {
-                              border-bottom: none;
-                            }
-                          `,
                           locale: {
                             emptyText: `{{ t("No data yet", { ns: "${NAMESPACE}" }) }}`,
                           },
