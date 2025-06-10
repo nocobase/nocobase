@@ -78,7 +78,7 @@ export class BlockGridFlowModel extends FlowModel<BlockGridFlowModelStructure> {
         <Grid items={this.subModels.items?.slice() || []} />
         <br />
         {/* <AddBlockButton model={this} /> */}
-        <AddBlockButton model={this} subModelKey="items" />
+        <AddBlockButton model={this} subModelKey='items'/>
       </div>
     );
   }

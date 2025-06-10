@@ -10,12 +10,18 @@
 import { observer } from '@formily/reactive-react';
 import { Button, ButtonProps, Dropdown, MenuProps } from 'antd';
 import { DownOutlined } from '@ant-design/icons';
-import React from 'react';
+import React, { useMemo } from 'react';
 import { FlowModel } from '../../models';
 import { CreateModelOptions } from '../../types';
 import { generateUid } from '../../utils';
+import _ from 'lodash';
 
 export interface AddSubModelButtonProps extends Omit<ButtonProps, 'onClick'> {
+  /**
+   * 父模型类名，用于确定支持的块类型
+   */
+  ParentModelClass?: string | typeof FlowModel;
+
   /**
    * 父模型实例
    */
@@ -30,28 +36,7 @@ export interface AddSubModelButtonProps extends Omit<ButtonProps, 'onClick'> {
    * 子模型在父模型中的键名
    */
   subModelKey: string;
-  
-  /**
-   * 可选的子模型选项列表，用于显示选择菜单
-   */
-  items?: Array<{
-    key: string;
-    label: string;
-    icon?: React.ReactNode;
-    [key: string]: any;
-  }>;
-  
-  /**
-   * 构建子模型参数的函数
-   * @param info 包含用户选择信息的对象
-   * @returns CreateModelOptions 创建子模型的选项
-   */
-  buildSubModelParams: (info: {
-    key: string;
-    item?: any;
-    model: FlowModel;
-  }) => CreateModelOptions;
-  
+
   /**
    * 点击后的回调函数
    */
@@ -72,59 +57,62 @@ export interface AddSubModelButtonProps extends Omit<ButtonProps, 'onClick'> {
  * - 支持自定义图标和标签
  * - 自动处理子模型的创建、保存和回调
  * 
- * @example
- * ```tsx
- * // 单个选项或无选项 - 显示普通按钮
- * <AddSubModelButton 
- *   model={parentModel}
- *   subModelType="array"
- *   subModelKey="fields"
- *   items={[{ key: 'text', label: 'Text Field' }]}
- *   buildSubModelParams={(info) => ({ use: 'FieldModel' })}
- * />
- * 
- * // 多个选项 - 显示下拉菜单按钮
- * <AddSubModelButton 
- *   model={parentModel}
- *   subModelType="array"
- *   subModelKey="fields"
- *   items={[
- *     { key: 'text', label: 'Text Field', icon: <TextIcon /> },
- *     { key: 'number', label: 'Number Field', icon: <NumberIcon /> }
- *   ]}
- *   buildSubModelParams={(info) => ({
- *     use: 'FieldModel',
- *     stepParams: {
- *       default: {
- *         step1: {
- *           fieldType: info.key,
- *         },
- *       },
- *     },
- *   })}
- * />
- * ```
  */
 export const AddSubModelButton: React.FC<AddSubModelButtonProps> = observer(({
   model,
+  ParentModelClass,
   subModelType,
   subModelKey,
-  items = [],
-  buildSubModelParams,
   onAfterAdd,
   children = 'Add',
   ...buttonProps
 }) => {
+  const blockTypes = useMemo<{
+    key: string;
+    label: string;
+    icon?: React.ReactNode;
+    item: typeof FlowModel;
+  }[]>(() => {
+    const blockClasses = model.flowEngine.filterModelClassByParent(ParentModelClass);
+    const registeredBlocks = [];
+    for (const [className, ModelClass] of blockClasses) {
+      if (ModelClass.meta) {
+        registeredBlocks.push({
+          key: className,
+          label: ModelClass.meta?.title,
+          icon: ModelClass.meta?.icon,
+          item: ModelClass,
+        });
+      }
+    }
+    return registeredBlocks;
+  }, [model, ParentModelClass]);
+  
+  const buildSubModelParams = React.useCallback((info: {
+    key: string;
+  }) => {
+    const blockType = blockTypes.find(type => type.key === info.key);
+    
+    if (!blockType) {
+      throw new Error(`Unknown block type: ${info.key}`);
+    }
+
+    if (blockType.item.meta?.defaultOptions) {
+      return { ..._.cloneDeep(blockType.item.meta?.defaultOptions), use: blockType.key };
+    } else {
+      return {
+        use: blockType.key,
+      }
+    }
+  }, [blockTypes]);
+
+
   const handleAddSubModel = async (selectedItem?: any) => {
     try {
-      const item = selectedItem || items[0];
+      const item = selectedItem || blockTypes[0];
       const key = item?.key || generateUid();
       
-      const subModelOptions = buildSubModelParams({
-        key,
-        item,
-        model,
-      });
+      const subModelOptions = buildSubModelParams({ key });
       
       let subModel: FlowModel = model.flowEngine.createModel({...subModelOptions, subKey: subModelKey, subType: 'array'});
       
@@ -150,15 +138,15 @@ export const AddSubModelButton: React.FC<AddSubModelButtonProps> = observer(({
 
   const handleClick = async () => {
     // 如果没有提供 items 或只有一个选项，直接添加
-    if (items.length <= 1) {
+    if (blockTypes.length <= 1) {
       await handleAddSubModel();
     }
     // 如果有多个选项，点击事件由 Dropdown 处理
   };
 
   // 如果有多个选项，显示下拉菜单
-  if (items.length > 1) {
-    const menuItems: MenuProps['items'] = items.map((item) => ({
+  if (blockTypes.length > 1) {
+    const menuItems: MenuProps['items'] = blockTypes.map((item) => ({
       key: item.key,
       label: (
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
