@@ -98,7 +98,7 @@ export class PluginAuthServer extends Plugin {
             return {
               ...item,
               uiSchema: {
-                ...field.options?.uiSchema,
+                ...field?.options?.uiSchema,
                 required: item.required,
               },
             };
