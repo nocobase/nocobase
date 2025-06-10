@@ -4,6 +4,7 @@ import React from 'react';
 import { createApp } from '../createApp';
 import { FormItemModel } from '../form/form-item-model';
 import { FormModel } from '../form/form-model';
+import { SubmitActionModel } from '../form/submit-action-model';
 import { ActionModel } from './action-model';
 import { TableColumnActionsModel, TableColumnModel } from './table-column-model';
 import { TableModel } from './table-model';
@@ -13,6 +14,7 @@ class PluginDemo extends Plugin {
     this.flowEngine.registerModels({
       FormModel,
       FormItemModel,
+      SubmitActionModel,
       ActionModel,
       TableModel,
       TableColumnModel,

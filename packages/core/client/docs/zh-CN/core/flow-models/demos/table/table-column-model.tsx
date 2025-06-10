@@ -1,4 +1,5 @@
 import { EditOutlined } from '@ant-design/icons';
+import { css } from '@emotion/css';
 import { Field, FlowModel, FlowModelRenderer } from '@nocobase/flow-engine';
 import { Space } from 'antd';
 import React from 'react';
@@ -16,12 +17,31 @@ export class TableColumnModel extends FlowModel {
 
   render() {
     return (value, record, index) => (
-      <span>
+      <span
+        className={css`
+          .anticon {
+            display: none;
+          }
+          &:hover {
+            .anticon {
+              display: inline-flex;
+            }
+          }
+        `}
+      >
         {value}
         <EditOutlined
-          onClick={() => {
+          onClick={async () => {
             const model = this.createRootModel({
               use: 'FormModel',
+              stepParams: {
+                default: {
+                  step1: {
+                    dataSourceKey: 'main',
+                    collectionName: 'users',
+                  },
+                },
+              },
               subModels: {
                 fields: [
                   {
@@ -37,7 +57,9 @@ export class TableColumnModel extends FlowModel {
                 ],
               },
             }) as FormModel;
-            model.openDialog(record);
+            await model.openDialog({ filterByTk: record.id });
+            await this.parent.resource.refresh();
+            this.flowEngine.removeModel(model.uid);
           }}
         />
       </span>

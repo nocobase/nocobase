@@ -8,7 +8,7 @@ export class ActionModel extends FlowModel {
   }
 
   render() {
-    return <a {...this.props}>{this.props.title || 'Untitle'}</a>;
+    return <a {...this.props}>{this.props.title || 'Action'}</a>;
   }
 }
 
@@ -39,7 +39,7 @@ ActionModel.registerFlow({
     step1: {
       handler(ctx, params) {
         Modal.confirm({
-          title: `${ctx.extra.record?.id}`,
+          title: `${ctx.extra?.record?.id}`,
           content: 'Are you sure you want to perform this action?',
           onOk: async () => {},
         });

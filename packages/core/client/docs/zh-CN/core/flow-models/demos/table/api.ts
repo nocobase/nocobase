@@ -44,7 +44,19 @@ mock.onPost('users:create').reply((config) => {
   ];
 });
 
+mock.onGet('users:get').reply((config) => {
+  const filterByTk = config.params?.filterByTk;
+  const record = records.find((item) => item.id === filterByTk);
+  return [
+    200,
+    {
+      data: record,
+    },
+  ];
+});
+
 mock.onPost('users:update').reply((config) => {
+  console.log('users:update', config);
   const filterByTk = config.params?.filterByTk;
   const index = records.findIndex((item) => item.id === filterByTk);
   if (index === -1) {

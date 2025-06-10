@@ -22,11 +22,11 @@ import type {
   DefaultStructure,
   FlowContext,
   FlowDefinition,
+  FlowModelMeta,
   FlowModelOptions,
   InlineStepDefinition,
   StepDefinition,
   StepParams,
-  FlowModelMeta,
 } from '../types';
 import { ExtendedFlowDefinition, FlowExtraContext, IModelComponentProps, ReadonlyModelProps } from '../types';
 import { generateUid, mergeFlowDefinitions } from '../utils';
@@ -528,6 +528,7 @@ export class FlowModel<Structure extends { parent?: any; subModels?: any } = Def
       model.setParent(this);
     } else {
       model = this.flowEngine.createModel({ ...options, parentId: this.uid, subKey, subType: 'array' });
+      model.setParent(this);
     }
 
     Array.isArray(this.subModels[subKey]) || (this.subModels[subKey] = []);

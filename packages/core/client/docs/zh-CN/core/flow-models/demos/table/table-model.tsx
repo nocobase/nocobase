@@ -1,6 +1,5 @@
 import { Collection, FlowModel, MultiRecordResource } from '@nocobase/flow-engine';
 import { Button, Dropdown, Table } from 'antd';
-import collection from 'packages/core/server/src/plugin-manager/options/collection';
 import React from 'react';
 import { api } from './api';
 import { dsm } from './data-source-manager';

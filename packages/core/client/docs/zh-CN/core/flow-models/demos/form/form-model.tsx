@@ -1,46 +1,23 @@
 import { FormButtonGroup, FormDialog, FormItem, Input, Submit } from '@formily/antd-v5';
 import { createForm, Form } from '@formily/core';
-import { createSchemaField, FormProvider } from '@formily/react';
-import { FlowEngineProvider, FlowModel, FlowModelRenderer } from '@nocobase/flow-engine';
+import { FormProvider } from '@formily/react';
+import {
+  Collection,
+  FlowEngineProvider,
+  FlowModel,
+  FlowModelRenderer,
+  SingleRecordResource,
+} from '@nocobase/flow-engine';
 import { Card } from 'antd';
 import React from 'react';
-
-const schema = {
-  type: 'object',
-  properties: {
-    aaa: {
-      type: 'string',
-      title: 'input box 1',
-      required: true,
-      'x-decorator': 'FormItem',
-      'x-component': 'Input',
-    },
-    bbb: {
-      type: 'string',
-      title: 'input box 2',
-      required: true,
-      'x-decorator': 'FormItem',
-      'x-component': 'Input',
-    },
-    ccc: {
-      type: 'string',
-      title: 'input box 3',
-      required: true,
-      'x-decorator': 'FormItem',
-      'x-component': 'Input',
-    },
-    ddd: {
-      type: 'string',
-      title: 'input box 4',
-      required: true,
-      'x-decorator': 'FormItem',
-      'x-component': 'Input',
-    },
-  },
-};
+import { api } from '../table/api';
+import { dsm } from '../table/data-source-manager';
 
 export class FormModel extends FlowModel {
   form: Form;
+  resource: SingleRecordResource;
+  collection: Collection;
+
   render() {
     return (
       <div>
@@ -49,7 +26,9 @@ export class FormModel extends FlowModel {
             <FlowModelRenderer model={field} />
           ))}
           <FormButtonGroup>
-            <Submit onSubmit={console.log}>Submit</Submit>
+            {this.mapSubModels('actions', (action) => (
+              <FlowModelRenderer model={action} />
+            ))}
           </FormButtonGroup>
           <br />
           <Card>
@@ -60,25 +39,36 @@ export class FormModel extends FlowModel {
     );
   }
 
-  async openDialog(initialValues) {
-    console.log('openEditDialog', initialValues);
-    const dialog = FormDialog('Pop-up form', (form) => {
-      return (
-        <div>
-          <FlowEngineProvider engine={this.flowEngine}>
-            {this.mapSubModels('fields', (field) => (
-              <FlowModelRenderer model={field} />
-            ))}
-            <br />
-            <Card>
-              <pre>{JSON.stringify(form.values, null, 2)}</pre>
-            </Card>
-          </FlowEngineProvider>
-        </div>
+  async openDialog({ filterByTk }) {
+    return new Promise((resolve) => {
+      const dialog = FormDialog(
+        {
+          footer: null,
+          title: 'Form Dialog',
+        },
+        (form) => {
+          return (
+            <div>
+              <FlowEngineProvider engine={this.flowEngine}>
+                <FlowModelRenderer model={this} extraContext={{ form, filterByTk }} />
+                <FormButtonGroup>
+                  <Submit
+                    onClick={async () => {
+                      await this.resource.save(this.form.values);
+                      dialog.close();
+                      resolve(this.form.values); // 在 close 之后 resolve
+                    }}
+                  >
+                    Submit
+                  </Submit>
+                </FormButtonGroup>
+              </FlowEngineProvider>
+            </div>
+          );
+        },
       );
-    });
-    await dialog.open({
-      initialValues,
+      dialog.open();
+      // 可选：如果需要在取消时也 resolve，可以监听 dialog 的 onCancel
     });
   }
 }
@@ -89,7 +79,21 @@ FormModel.registerFlow({
   steps: {
     step1: {
       async handler(ctx, params) {
-        ctx.model.form = createForm();
+        ctx.model.form = ctx.extra.form || createForm();
+        if (ctx.model.collection) {
+          return;
+        }
+        ctx.model.collection = dsm.getCollection(params.dataSourceKey, params.collectionName);
+        const resource = new SingleRecordResource();
+        resource.setDataSourceKey(params.dataSourceKey);
+        resource.setResourceName(params.collectionName);
+        resource.setAPIClient(api);
+        ctx.model.resource = resource;
+        if (ctx.extra.filterByTk) {
+          resource.setFilterByTk(ctx.extra.filterByTk);
+          await resource.refresh();
+          ctx.model.form.setInitialValues(resource.getData());
+        }
       },
     },
   },
