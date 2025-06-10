@@ -627,7 +627,7 @@ export class FlowModel<Structure extends { parent?: any; subModels?: any } = Def
   serialize(): Record<string, any> {
     const data = {
       uid: this.uid,
-      ...this.options,
+      ..._.omit(this.options, ['flowEngine']),
       props: this.props,
       stepParams: this.stepParams,
     };
