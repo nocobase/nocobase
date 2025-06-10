@@ -574,6 +574,14 @@ export class FlowModel<Structure extends { parent?: any; subModels?: any } = Def
     return this.flowEngine.createModel(options);
   }
 
+  async applySubModelsAutoFlows<K extends keyof Structure['subModels'], R>(subKey: K, extra?: Record<string, any>) {
+    await Promise.all(
+      this.mapSubModels(subKey, async (column) => {
+        await column.applyAutoFlows(extra);
+      }),
+    );
+  }
+
   async save() {
     if (!this.flowEngine) {
       throw new Error('FlowEngine is not set on this model. Please set flowEngine before saving.');
