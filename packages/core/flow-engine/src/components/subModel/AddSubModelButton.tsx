@@ -126,19 +126,19 @@ export const AddSubModelButton: React.FC<AddSubModelButtonProps> = observer(({
         model,
       });
       
-      let subModel: FlowModel = model.flowEngine.createModel(subModelOptions);
+      let subModel: FlowModel = model.flowEngine.createModel({...subModelOptions, subKey: subModelKey, subType: 'array'});
       
       try {
         await subModel.configureRequiredSteps();
         if (onAfterAdd) {
           onAfterAdd(subModel);
         }
-        await subModel.save();
         if (subModelType === 'array') {
           subModel = model.addSubModel(subModelKey, subModel);
         } else {
           subModel = model.setSubModel(subModelKey, subModel);
         }
+        await subModel.save();
       } catch (error) {
         console.error('Failed to add sub model:', error);
         await subModel.destroy();
