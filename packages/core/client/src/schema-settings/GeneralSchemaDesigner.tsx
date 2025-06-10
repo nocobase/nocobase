@@ -310,6 +310,8 @@ const InternalSchemaToolbar: FC<SchemaToolbarProps> = React.memo((props) => {
   }, [schemaSettingsExists, schemaSettingsRender, settings]);
   const toolbarRef = useRef<HTMLDivElement>(null);
 
+  const hiddenClassName = process.env.__E2E__ ? 'hidden-e2e' : 'hidden';
+
   useEffect(() => {
     const toolbarElement = toolbarRef.current;
     let parentElement = toolbarElement?.parentElement;
@@ -325,22 +327,14 @@ const InternalSchemaToolbar: FC<SchemaToolbarProps> = React.memo((props) => {
 
     function show() {
       if (toolbarElement) {
-        if (process.env.__E2E__) {
-          toolbarElement.style.display = 'block';
-        } else {
-          toolbarElement.classList.remove('hidden');
-        }
+        toolbarElement.classList.remove(hiddenClassName);
         props.onVisibleChange?.(true);
       }
     }
 
     function hide() {
       if (toolbarElement) {
-        if (process.env.__E2E__) {
-          toolbarElement.style.display = 'none';
-        } else {
-          toolbarElement.classList.add('hidden');
-        }
+        toolbarElement.classList.add(hiddenClassName);
         props.onVisibleChange?.(false);
       }
     }
