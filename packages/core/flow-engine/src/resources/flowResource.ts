@@ -11,6 +11,7 @@ import { observable } from '@formily/reactive';
 
 export class FlowResource<TData = any> {
   protected _data = observable.ref<TData>(null);
+  protected _meta = observable.ref<Record<string, any>>({});
 
   get data(): TData {
     return this._data.value;
@@ -24,7 +25,17 @@ export class FlowResource<TData = any> {
     return this.data;
   }
 
-  setData(data: TData): void {
+  setData(data: TData) {
     this.data = data;
+    return this;
+  }
+
+  getMeta(metaKey?: string) {
+    return metaKey ? this._meta.value[metaKey] : this._meta.value;
+  }
+
+  setMeta(meta: Record<string, any>) {
+    this._meta.value = { ...this._meta.value, ...meta };
+    return this;
   }
 }

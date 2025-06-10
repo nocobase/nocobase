@@ -13,8 +13,9 @@ import { BaseRecordResource } from './baseRecordResource';
 export class SingleRecordResource<TData = any> extends BaseRecordResource<TData> {
   protected _data = observable.ref<TData>(null);
 
-  setFilterByTk(filterByTk: string | number): void {
+  setFilterByTk(filterByTk: string | number) {
     this.request.params = { ...this.request.params, filterByTk };
+    return this;
   }
 
   async save(data: TData): Promise<void> {
@@ -48,10 +49,10 @@ export class SingleRecordResource<TData = any> extends BaseRecordResource<TData>
 
   async refresh(): Promise<void> {
     const options: any = this.getRefreshRequestOptions();
-    const { data } = await this.runAction<TData, any>('get', {
+    const { data, meta } = await this.runAction<TData, any>('get', {
       ...options,
       method: 'get',
     });
-    this.setData(data.data);
+    this.setData(data).setMeta(meta);
   }
 }

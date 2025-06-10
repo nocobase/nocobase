@@ -7,7 +7,6 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { observable } from '@formily/reactive';
 import { APIResource } from './apiResource';
 
 export abstract class BaseRecordResource<TData = any> extends APIResource<TData> {
@@ -46,22 +45,24 @@ export abstract class BaseRecordResource<TData = any> extends APIResource<TData>
   }
 
   async runAction<TData = any, TMeta = any>(action: string, options: any) {
-    return await this.api.request({
+    const { data } = await this.api.request({
       url: this.buildURL(action),
       method: 'post',
       ...options,
-    }) as {
-      data: {
-        data: TData;
-        meta?: TMeta;
-      };
+    });
+    if (!data?.data) {
+      return data;
+    }
+    return { data: data.data, meta: data.meta } as {
+      data: TData;
+      meta?: TMeta;
     };
   }
 
   setResourceName(resourceName: string): void {
     this.resourceName = resourceName;
   }
-  
+
   getResourceName(): string {
     return this.resourceName;
   }
@@ -89,7 +90,7 @@ export abstract class BaseRecordResource<TData = any> extends APIResource<TData>
   getFilter(): Record<string, any> {
     return this.request.params.filter;
   }
-  
+
   setAppends(appends: string[]): void {
     this.request.params = { ...this.request.params, appends };
   }
@@ -132,7 +133,7 @@ export abstract class BaseRecordResource<TData = any> extends APIResource<TData>
   getSort(): string[] {
     return this.request.params.sort;
   }
-  
+
   setExcept(except: string | string[]): void {
     if (typeof except === 'string') {
       except = except.split(',');

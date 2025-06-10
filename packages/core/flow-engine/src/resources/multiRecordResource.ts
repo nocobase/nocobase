@@ -14,7 +14,7 @@ export class MultiRecordResource<TDataItem = any> extends BaseRecordResource<TDa
   protected _data = observable.ref<TDataItem[]>([]);
   protected _meta = observable.ref<Record<string, any>>({});
 
-    // 请求配置 - 与 APIClient 接口保持一致
+  // 请求配置 - 与 APIClient 接口保持一致
   protected request = {
     url: null as string | null,
     params: {
@@ -85,39 +85,35 @@ export class MultiRecordResource<TDataItem = any> extends BaseRecordResource<TDa
     await this.refresh();
   }
 
-  getMeta(metaKey?: string) {
-    return metaKey ? this._meta.value[metaKey] : this._meta.value;
-  }
-  setMeta(meta: Record<string, any>): void {
-    this._meta.value = { ...this._meta.value, ...meta };
+  setPage(page: number) {
+    this.request.params.page = page;
+    return this;
   }
 
-  async setPage(page: number): Promise<void> {
-    this.request.params.page = page;
-  }
   getPage(): number {
     return this.request.params.page;
   }
-  
-  async setPageSize(pageSize: number): Promise<void> {
+
+  setPageSize(pageSize: number) {
     this.request.params.pageSize = pageSize;
+    return this;
   }
+
   getPageSize(): number {
     return this.request.params.pageSize;
   }
 
   async refresh(): Promise<void> {
-    const { data } = await this.runAction<TDataItem[], any>('list', {
+    const { data, meta } = await this.runAction<TDataItem[], any>('list', {
       ...this.getRefreshRequestOptions(),
       method: 'get',
     });
-    this.setData(data.data);
-    this.setMeta(data.meta || {});
-    if (data.meta?.page) {
-      this.setPage(data.meta.page);
+    this.setData(data).setMeta(meta);
+    if (meta?.page) {
+      this.setPage(meta.page);
     }
-    if (data.meta?.pageSize) {
-      this.setPageSize(data.meta.pageSize);
+    if (meta?.pageSize) {
+      this.setPageSize(meta.pageSize);
     }
   }
 }
