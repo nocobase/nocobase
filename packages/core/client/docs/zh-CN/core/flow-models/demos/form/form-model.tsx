@@ -60,17 +60,26 @@ export class FormModel extends FlowModel {
     );
   }
 
-  async openEditDialog(record) {
-    await this.applyAutoFlows();
-    const dialog = FormDialog('Pop-up form', () => {
+  async openDialog(initialValues) {
+    console.log('openEditDialog', initialValues);
+    const dialog = FormDialog('Pop-up form', (form) => {
       return (
         <div>
-          {record.id}
-          <FlowEngineProvider engine={this.flowEngine}>{this.render()}</FlowEngineProvider>
+          <FlowEngineProvider engine={this.flowEngine}>
+            {this.mapSubModels('fields', (field) => (
+              <FlowModelRenderer model={field} />
+            ))}
+            <br />
+            <Card>
+              <pre>{JSON.stringify(form.values, null, 2)}</pre>
+            </Card>
+          </FlowEngineProvider>
         </div>
       );
     });
-    await dialog.open({});
+    await dialog.open({
+      initialValues,
+    });
   }
 }
 

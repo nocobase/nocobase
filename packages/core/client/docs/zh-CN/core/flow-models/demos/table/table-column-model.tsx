@@ -8,6 +8,7 @@ import { dsm } from './data-source-manager';
 
 export class TableColumnModel extends FlowModel {
   field: Field;
+  fieldPath: string;
 
   getColumnProps() {
     return { ...this.props, render: this.render() };
@@ -27,22 +28,16 @@ export class TableColumnModel extends FlowModel {
                     use: 'FormItemModel',
                     stepParams: {
                       default: {
-                        step1: {},
-                      },
-                    },
-                  },
-                  {
-                    use: 'FormItemModel',
-                    stepParams: {
-                      default: {
-                        step1: {},
+                        step1: {
+                          fieldPath: this.fieldPath,
+                        },
                       },
                     },
                   },
                 ],
               },
             }) as FormModel;
-            model.openEditDialog(record);
+            model.openDialog(record);
           }}
         />
       </span>
@@ -79,7 +74,7 @@ TableColumnModel.registerFlow({
           return;
         }
         const field = dsm.getCollectionField(params.fieldPath);
-
+        ctx.model.fieldPath = params.fieldPath;
         ctx.model.setProps('title', field.title);
         ctx.model.setProps('dataIndex', field.name);
 

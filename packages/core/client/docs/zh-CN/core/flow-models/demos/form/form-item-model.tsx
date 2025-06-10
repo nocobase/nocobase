@@ -1,9 +1,8 @@
-import { FormButtonGroup, FormDialog, FormItem, Input, Submit } from '@formily/antd-v5';
-import { createForm, Form } from '@formily/core';
-import { createSchemaField, Field as FormilyField, FormProvider } from '@formily/react';
+import { FormItem, Input } from '@formily/antd-v5';
+import { Field as FormilyField } from '@formily/react';
 import { Field, FlowModel } from '@nocobase/flow-engine';
-import { Card } from 'antd';
 import React from 'react';
+import { dsm } from '../table/data-source-manager';
 
 export class FormItemModel extends FlowModel {
   field: Field;
@@ -12,8 +11,8 @@ export class FormItemModel extends FlowModel {
     return (
       <div>
         <FormilyField
-          name="input"
-          title="input box"
+          name={this.field.name}
+          title={this.field.title}
           required
           decorator={[FormItem]}
           component={[
@@ -35,7 +34,10 @@ FormItemModel.registerFlow({
   auto: true,
   steps: {
     step1: {
-      handler(ctx, params) {},
+      handler(ctx, params) {
+        const field = dsm.getCollectionField(params.fieldPath);
+        ctx.model.field = field;
+      },
     },
   },
 });
