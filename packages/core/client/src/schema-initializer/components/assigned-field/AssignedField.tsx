@@ -10,7 +10,7 @@
 import { Field } from '@formily/core';
 import { useField, useFieldSchema } from '@formily/react';
 import { merge } from '@formily/shared';
-import _ from 'lodash';
+import _, { cloneDeep } from 'lodash';
 import React, { useCallback, useEffect, useMemo } from 'react';
 import { useFormBlockContext } from '../../../block-provider/FormBlockProvider';
 import {
@@ -26,7 +26,8 @@ import { VariableInput, getShouldChange } from '../../../schema-settings/Variabl
 import { Option } from '../../../schema-settings/VariableInput/type';
 import { formatVariableScop } from '../../../schema-settings/VariableInput/utils/formatVariableScop';
 import { useLocalVariables, useVariables } from '../../../variables';
-
+import { useBlockContext } from '../../../block-provider';
+import { FlagProvider } from '../../../flag-provider';
 interface AssignedFieldProps {
   value: any;
   onChange: (value: any) => void;
@@ -93,12 +94,13 @@ export enum AssignedFieldValueType {
   DynamicValue = 'dynamicValue',
 }
 
-export const AssignedField = (props: AssignedFieldProps) => {
+export const AssignedFieldInner = (props: AssignedFieldProps) => {
   const { value, onChange } = props;
   const { getCollectionFields, getAllCollectionsInheritChain } = useCollectionManager_deprecated();
   const collection = useCollection_deprecated();
   const { form } = useFormBlockContext();
   const fieldSchema = useFieldSchema();
+  const field: any = useField<Field>();
   const record = useRecord();
   const variables = useVariables();
   const localVariables = useLocalVariables();
@@ -106,6 +108,7 @@ export const AssignedField = (props: AssignedFieldProps) => {
 
   const { name, getField } = collection;
   const collectionField = getField(fieldSchema.name);
+  const { uiSchema } = useCollectionField_deprecated();
 
   const shouldChange = useMemo(
     () => getShouldChange({ collectionField, variables, localVariables, getAllCollectionsInheritChain }),
@@ -123,7 +126,7 @@ export const AssignedField = (props: AssignedFieldProps) => {
         currentForm.children = formatVariableScop(currentFormFields);
       }
 
-      return scope;
+      return cloneDeep(scope);
     },
     [currentFormFields, name],
   );
@@ -134,17 +137,32 @@ export const AssignedField = (props: AssignedFieldProps) => {
     },
     [JSON.stringify(_.omit(props, 'value'))],
   );
+
+  useEffect(() => {
+    if (!uiSchema) {
+      return;
+    }
+    field.title = typeof field.title === 'undefined' ? uiSchema?.title || field.name : field.title;
+  }, [JSON.stringify(uiSchema)]);
   return (
-    <VariableInput
-      form={form}
-      record={record}
-      value={value}
-      onChange={onChange}
-      renderSchemaComponent={renderSchemaComponent}
-      collectionField={collectionField}
-      shouldChange={shouldChange}
-      returnScope={returnScope}
-      targetFieldSchema={fieldSchema}
-    />
+    <FlagProvider collectionField={collectionField}>
+      <VariableInput
+        form={form}
+        record={record}
+        value={value}
+        onChange={onChange}
+        renderSchemaComponent={renderSchemaComponent}
+        collectionField={collectionField}
+        shouldChange={shouldChange}
+        returnScope={returnScope}
+        targetFieldSchema={fieldSchema}
+      />
+    </FlagProvider>
   );
+};
+
+export const AssignedField = (props) => {
+  const { form } = useFormBlockContext();
+  const { name } = useBlockContext() || {};
+  return <AssignedFieldInner {...props} />;
 };

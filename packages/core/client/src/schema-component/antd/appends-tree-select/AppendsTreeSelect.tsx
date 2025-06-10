@@ -7,12 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { CloseCircleFilled } from '@ant-design/icons';
+import { CloseCircleFilled, DownOutlined } from '@ant-design/icons';
 import { Tag, TreeSelect } from 'antd';
-import type { DefaultOptionType, TreeSelectProps } from 'rc-tree-select/es/TreeSelect';
+import type { TreeSelectProps } from 'rc-tree-select/es/TreeSelect';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { CollectionFieldOptions_deprecated, parseCollectionName, useApp, useCompile } from '../../..';
+import { DefaultOptionType } from 'antd/es/select';
 
 export type AppendsTreeSelectProps = {
   value: string[] | string;
@@ -261,6 +262,7 @@ export const AppendsTreeSelect: React.FC<TreeSelectProps & AppendsTreeSelectProp
       treeData={treeData}
       loadData={loadData}
       {...restProps}
+      suffixIcon={<DownOutlined />}
     />
   );
 };

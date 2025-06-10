@@ -10,7 +10,7 @@
 import { Plugin } from '@nocobase/client';
 import { EnvironmentVariablesAndSecretsProvider } from './EnvironmentVariablesAndSecretsProvider';
 import EnvironmentPage from './components/EnvironmentPage';
-import { useGetEnvironmentVariables } from './utils';
+import { useGetEnvironmentVariables, useGetEnvironmentVariablesCtx } from './utils';
 
 export class PluginEnvironmentVariablesClient extends Plugin {
   async load() {
@@ -19,7 +19,7 @@ export class PluginEnvironmentVariablesClient extends Plugin {
       icon: 'TableOutlined',
       Component: EnvironmentPage,
     });
-    this.app.addGlobalVar('$env', useGetEnvironmentVariables);
+    this.app.addGlobalVar('$env', useGetEnvironmentVariables, useGetEnvironmentVariablesCtx);
     this.app.use(EnvironmentVariablesAndSecretsProvider);
   }
 }

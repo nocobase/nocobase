@@ -29,12 +29,13 @@ export class PMPlugin extends Plugin {
   }
 
   addSettings() {
-    this.app.pluginSettingsManager.add('ui-schema-storage', {
-      title: '{{t("Block templates")}}',
-      icon: 'LayoutOutlined',
-      Component: BlockTemplatesPane,
-      aclSnippet: 'pm.ui-schema-storage.block-templates',
-    });
+    // hide old block template settings page
+    // this.app.pluginSettingsManager.add('ui-schema-storage', {
+    //   title: '{{t("Block templates")}}',
+    //   icon: 'LayoutOutlined',
+    //   Component: BlockTemplatesPane,
+    //   aclSnippet: 'pm.ui-schema-storage.block-templates',
+    // });
     this.app.pluginSettingsManager.add('system-settings', {
       icon: 'SettingOutlined',
       title: '{{t("System settings")}}',

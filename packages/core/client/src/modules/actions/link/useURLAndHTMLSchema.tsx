@@ -15,8 +15,8 @@ import { useFormBlockContext } from '../../../block-provider/FormBlockProvider';
 import { useRecord } from '../../../record-provider';
 import { Variable } from '../../../schema-component/antd/variable/Variable';
 import { useVariableOptions } from '../../../schema-settings/VariableInput/hooks/useVariableOptions';
-
-export const getVariableComponentWithScope = (Com) => {
+import { useGlobalVariable } from '../../../application/hooks/useGlobalVariable';
+export const getVariableComponentWithScope = (Com, data = []) => {
   return (props) => {
     const fieldSchema = useFieldSchema();
     const { form } = useFormBlockContext();
@@ -28,13 +28,26 @@ export const getVariableComponentWithScope = (Com) => {
       uiSchema: fieldSchema,
       noDisabled: true,
     });
-    return <Com {...props} scope={scope} />;
+    return <Com {...props} scope={data.concat(scope).filter(Boolean)} />;
   };
+};
+
+const useEvnVariable = () => {
+  const environmentVariables = useGlobalVariable('$env');
+  if (environmentVariables) {
+    const { children } = environmentVariables;
+    return {
+      ...environmentVariables,
+      children: children.filter((v) => v.type === 'default'),
+    };
+  }
+  return null;
 };
 
 export const useURLAndHTMLSchema = () => {
   const { t } = useTranslation();
-  const Com = useMemo(() => getVariableComponentWithScope(Variable.TextArea), []);
+  const environmentVariables = useEvnVariable();
+  const Com = useMemo(() => getVariableComponentWithScope(Variable.TextArea, [environmentVariables] || []), []);
 
   const urlSchema = useMemo(() => {
     return {

@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { Logger } from '@nocobase/logger';
 import { ITask, TaskConstructor } from './task';
 import { Application } from '@nocobase/server';
@@ -15,6 +24,7 @@ export interface CreateTaskOptions {
     dataSource: string;
   };
   context?: any;
+  useQueue?: boolean;
 }
 
 export type TaskId = string;
@@ -51,6 +61,7 @@ export interface CancelledStatus {
 }
 
 export interface AsyncTasksManager extends EventEmitter {
+  queue: any;
   setLogger(logger: Logger): void;
   setApp(app: Application): void;
   registerTaskType(taskType: TaskConstructor): void;

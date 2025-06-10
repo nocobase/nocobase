@@ -25,7 +25,7 @@ export class PluginLocalizationServer extends Plugin {
 
   addNewTexts = async (texts: { text: string; module: string }[], options?: any) => {
     texts = await this.resources.filterExists(texts, options?.transaction);
-    this.db
+    await this.db
       .getModel('localizationTexts')
       .bulkCreate(
         texts.map(({ text, module }) => ({

@@ -11,6 +11,10 @@
   "Status": "状态",
   "On": "启用",
   "Off": "停用",
+  "Category": "分类",
+  "Add category": "添加分类",
+  "Edit category": "编辑分类",
+  "Delete category": "删除分类",
   "Version": "版本",
   "Copy to new version": "复制到新版本",
   "Duplicate": "复制",
@@ -34,6 +38,10 @@
   "Auto delete history when execution is on end status": "执行结束后自动删除对应状态的历史记录",
   "Maximum number of cycling triggers": "最大循环触发次数",
   "The triggers of same workflow by some node (create, update and sub-flow etc.) more than this number will be ignored. Large number may cause performance issues. Please use with caution.": "由某个节点（创建、更新和子流程等）触发同一个工作流超过这个次数时将被忽略。设置过高的次数可能会导致性能问题，请谨慎使用。",
+
+  "Continue when disabled or upgraded": "工作流被禁用或升级到新版本继续处理在途流程",
+  "If checked, all nodes in-progress could continue to be processed in execution of disabled workflow. Otherwise, all nodes in-progress will be aborted automatically.": "如果选中，在途的节点在禁用或升级到新版本的工作流中将继续处理。否则将自动取消执行。",
+
   "Trigger": "触发器",
   "Unknown trigger": "未知触发器",
   "Workflow with unknown type will cause error. Please delete it or check plugin which provide this type.": "未知类型的工作流会导致错误，请删除或检查提供该类型的插件。",
@@ -235,5 +243,6 @@
   "Inside of branch": "分支内",
 
   "Workflow todos": "流程待办",
-  "New version enabled": "已启用新版本"
+  "New version enabled": "已启用新版本",
+  "Workflow is not exists": "工作流不存在"
 }

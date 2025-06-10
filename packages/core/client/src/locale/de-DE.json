@@ -500,7 +500,8 @@
   "Turn pages": "Seiten umblättern",
   "Others": "Andere",
   "Other records": "Andere Datensätze",
-  "Save as template": "Als Vorlage speichern",
+  "Save as reference template": "Als Referenzvorlage speichern",
+  "Save as inherited template": "Als vererbte Vorlage speichern",
   "Save as block template": "Als Blockvorlage speichern",
   "Block templates": "Blockvorlagen",
   "Block template": "Blockvorlage",
@@ -589,6 +590,7 @@
   "Blank block": "Leerer Block",
   "Duplicate template": "Vorlage duplizieren",
   "Reference template": "Referenzvorlage",
+  "Inherited template": "Vererbte Vorlage",
   "Create calendar block": "Kalenderblock erstellen",
   "Create kanban block": "Kanban-Block erstellen",
   "Grouping field": "Gruppierungsfeld",
@@ -886,5 +888,8 @@
   "Are you sure you want to hide this tab?": "Sind Sie sicher, dass Sie diesen Tab ausblenden möchten?",
   "After hiding, this tab will no longer appear in the tab bar. To show it again, you need to go to the route management page to set it.": "Nach dem Ausblenden wird dieser Tab nicht mehr in der Tableiste angezeigt. Um ihn wieder anzuzeigen, müssen Sie zur Routenverwaltungsseite gehen, um ihn einzustellen.",
   "No pages yet, please configure first": "Noch keine Seiten, bitte zuerst konfigurieren",
-  "Click the \"UI Editor\" icon in the upper right corner to enter the UI Editor mode": "Klicken Sie auf das \"UI-Editor\"-Symbol in der oberen rechten Ecke, um den UI-Editor-Modus zu betreten"
+  "Click the \"UI Editor\" icon in the upper right corner to enter the UI Editor mode": "Klicken Sie auf das \"UI-Editor\"-Symbol in der oberen rechten Ecke, um den UI-Editor-Modus zu betreten",
+  "Refresh data blocks": "Aktualisieren Sie die Datenblöcke",
+  "Select data blocks to refresh": "Wählen Sie die Datenblöcke aus, die aktualisiert werden sollen.",
+  "After successful submission, the selected data blocks will be automatically refreshed.": "Nach erfolgreicher Übermittlung werden die ausgewählten Datenblöcke automatisch aktualisiert."
 }

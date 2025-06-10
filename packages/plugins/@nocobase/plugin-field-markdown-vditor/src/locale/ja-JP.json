@@ -1,7 +1,7 @@
 {
   "Vditor": "Markdown(Vditor)",
   "File collection": "ファイルコレクション",
-  "Used to store files uploaded in the Markdown editor": "Markdownエディタでアップロードされたファイルを保存するために使用",
+  "Used to store files uploaded in the Markdown editor (default: attachments)": "Markdownエディタでアップロードされたファイルを保存するために使用 (デフォルト: attachments)",
   "Toolbar": "ツールバー",
   "Emoji": "絵文字",
   "Headings": "見出し",
@@ -29,5 +29,10 @@
   "Both": "編集とプレビュー",
   "Preview": "プレビュー",
   "Fullscreen": "全画面表示の切り替え",
-  "Outline": "アウトライン"
+  "Outline": "アウトライン",
+  "uploading": "Uploading...",
+  "upload failed": "upload failed",
+  "vditor.uploadError.message": "現在のストレージにファイルをアップロードできません。Markdownエディタにファイルをアップロードしようとしていますが、現在のストレージ設定ではこの操作はサポートされていません。アップロード機能を有効にするには、次の設定を完了してください：1.「ファイルマネージャー」に移動します。2.現在使用しているストレージ（{{storageTitle}}）を選択します。3.「ベースURL」を設定し、「パブリックアクセス」オプションを有効にします。",
+  "Storage configuration not found. Please configure a storage provider first.": "ストレージ構成が見つかりません。最初にストレージプロバイダーを構成してください。",
+  "Response data is empty": "応答データが空です"
 }

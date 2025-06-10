@@ -10,7 +10,13 @@
 import { Field } from '@formily/core';
 import { useField, useFieldSchema, useForm } from '@formily/react';
 import { useTranslation } from 'react-i18next';
-import { useColumnSchema, useIsFieldReadPretty, SchemaSettings, useDesignable } from '@nocobase/client';
+import {
+  useColumnSchema,
+  useIsFieldReadPretty,
+  SchemaSettings,
+  useDesignable,
+  fileSizeSetting,
+} from '@nocobase/client';
 
 const fieldComponent: any = {
   name: 'fieldComponent',
@@ -130,41 +136,11 @@ export const attachmentUrlComponentFieldSettings = new SchemaSettings({
     },
     fieldComponent,
     {
-      name: 'size',
-      type: 'select',
+      ...fileSizeSetting,
       useVisible() {
         const readPretty = useIsFieldReadPretty();
         const { fieldSchema: tableColumnSchema } = useColumnSchema();
         return readPretty && !tableColumnSchema;
-      },
-      useComponentProps() {
-        const { t } = useTranslation();
-        const field = useField<Field>();
-        const fieldSchema = useFieldSchema();
-        const { dn } = useDesignable();
-        return {
-          title: t('Size'),
-          options: [
-            { label: t('Large'), value: 'large' },
-            { label: t('Default'), value: 'default' },
-            { label: t('Small'), value: 'small' },
-          ],
-          value: field?.componentProps?.size || 'default',
-          onChange(size) {
-            const schema = {
-              ['x-uid']: fieldSchema['x-uid'],
-            };
-            fieldSchema['x-component-props'] = fieldSchema['x-component-props'] || {};
-            fieldSchema['x-component-props']['size'] = size;
-            schema['x-component-props'] = fieldSchema['x-component-props'];
-            field.componentProps = field.componentProps || {};
-            field.componentProps.size = size;
-            dn.emit('patch', {
-              schema,
-            });
-            dn.refresh();
-          },
-        };
       },
     },
   ],

@@ -7,11 +7,11 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { default as _, default as lodash } from 'lodash';
+import minimatch from 'minimatch';
 import { ACL, DefineOptions } from './acl';
 import { ACLAvailableStrategy, AvailableStrategyOptions } from './acl-available-strategy';
 import { ACLResource } from './acl-resource';
-import lodash from 'lodash';
-import minimatch from 'minimatch';
 
 export interface RoleActionParams {
   fields?: string[];
@@ -185,12 +185,12 @@ export class ACLRole {
       }
     }
 
-    return {
+    return _.cloneDeep({
       role: this.name,
       strategy: this.strategy,
       actions,
       snippets: Array.from(this.snippets),
-    };
+    });
   }
 
   protected getResourceActionFromPath(path: string) {

@@ -50,6 +50,7 @@ const FormComponent: React.FC<FormProps> = (props) => {
     labelAlign = 'left',
     labelWidth = 120,
     labelWrap = true,
+    colon = true,
   } = cardItemSchema?.['x-component-props'] || {};
   const { isInFilterFormBlock } = useFlag();
 
@@ -75,6 +76,7 @@ const FormComponent: React.FC<FormProps> = (props) => {
           labelAlign={labelAlign}
           labelWidth={layout === 'horizontal' ? labelWidth : null}
           labelWrap={labelWrap}
+          colon={colon}
         >
           <div
             className={css`
@@ -235,6 +237,7 @@ const WithoutForm = (props) => {
   const form = useMemo(
     () =>
       createForm({
+        validateFirst: true,
         disabled: props.disabled,
         effects() {
           onFormInputChange((form) => {

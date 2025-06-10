@@ -494,7 +494,8 @@
   "Turn pages": "Volta pagine",
   "Others": "Altri",
   "Other records": "Altri record",
-  "Save as template": "Salva come modello",
+  "Save as reference template": "Salva come modello di riferimento",
+  "Save as inherited template": "Salva come modello ereditato",
   "Save as block template": "Salva come modello blocco",
   "Block templates": "Modelli blocco",
   "Block template": "Modello blocco",
@@ -580,6 +581,7 @@
   "Blank block": "Blocco vuoto",
   "Duplicate template": "Modello duplicato",
   "Reference template": "Modello di riferimento",
+  "Inherited template": "Modello ereditato",
   "Create calendar block": "Crea blocco calendario",
   "Create kanban block": "Crea blocco kanban",
   "Grouping field": "Campo di raggruppamento",
@@ -1082,5 +1084,8 @@
   "Are you sure you want to hide this tab?": "Sei sicuro di voler nascondere questa scheda?",
   "After hiding, this tab will no longer appear in the tab bar. To show it again, you need to go to the route management page to set it.": "Dopo averla nascosta, questa scheda non apparirà più nella barra delle schede. Per mostrarla di nuovo, devi andare alla pagina di gestione dei percorsi per configurarlo.",
   "No pages yet, please configure first": "Nessuna pagina ancora, si prega di configurare prima",
-  "Click the \"UI Editor\" icon in the upper right corner to enter the UI Editor mode": "Cliquez sur l'icône \"Éditeur d'interface utilisateur\" dans le coin supérieur droit pour entrer en mode Éditeur d'interface utilisateur"
+  "Click the \"UI Editor\" icon in the upper right corner to enter the UI Editor mode": "Cliquez sur l'icône \"Éditeur d'interface utilisateur\" dans le coin supérieur droit pour entrer en mode Éditeur d'interface utilisateur",
+  "Refresh data blocks": "Aggiorna blocchi di dati",
+  "Select data blocks to refresh": "Aggiorna blocchi di dati",
+  "After successful submission, the selected data blocks will be automatically refreshed.": "Dopo una soumission réussie, les blocs de données sélectionnés seront automatiquement actualisés."
 }

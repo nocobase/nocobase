@@ -11,7 +11,7 @@ import { Form } from '@formily/core';
 // @ts-ignore
 import { Schema } from '@formily/json-schema';
 import _ from 'lodash';
-import React, { useCallback } from 'react';
+import React, { useCallback, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { CollectionFieldOptions_deprecated } from '../../collection-manager';
 import { Variable, useVariableScope } from '../../schema-component';
@@ -72,6 +72,10 @@ type Props = {
    */
   noDisabled?: boolean;
   hideVariableButton?: boolean;
+  setScopes?: any; //更新scopes
+  nullable?: boolean;
+  constantAbel?: boolean;
+  changeOnSelect?: boolean;
 };
 
 /**
@@ -98,6 +102,10 @@ export const VariableInput = (props: Props) => {
     targetFieldSchema,
     noDisabled,
     hideVariableButton,
+    setScopes,
+    nullable = true,
+    constantAbel = true,
+    changeOnSelect = true,
   } = props;
   const { name: blockCollectionName } = useBlockCollection();
   const scope = useVariableScope();
@@ -127,31 +135,37 @@ export const VariableInput = (props: Props) => {
   const handleChange = useCallback(
     (value: any, optionPath: any[]) => {
       if (!shouldChange) {
-        return onChange(value);
+        return onChange(value, optionPath);
       }
 
       // `shouldChange` 这个函数的运算量比较大，会导致展开变量列表时有明显的卡顿感，在这里加个延迟能有效解决这个问题
       setTimeout(async () => {
         if (await shouldChange(value, optionPath)) {
-          onChange(value);
+          onChange(value, optionPath);
         }
       });
     },
     [onChange, shouldChange],
   );
+  const scopes = returnScope(
+    compatOldVariables(_.isEmpty(scope) ? variableOptions : scope, {
+      value,
+    }),
+  );
+  useEffect(() => {
+    setScopes?.(scopes);
+  }, [value, scope]);
   return (
     <Variable.Input
       className={className}
       value={value}
       onChange={handleChange}
-      scope={returnScope(
-        compatOldVariables(_.isEmpty(scope) ? variableOptions : scope, {
-          value,
-        }),
-      )}
+      scope={scopes}
       style={style}
-      changeOnSelect
+      changeOnSelect={changeOnSelect}
       hideVariableButton={hideVariableButton}
+      nullable={nullable}
+      constantAbel={constantAbel}
     >
       <RenderSchemaComponent value={value} onChange={onChange} />
     </Variable.Input>
@@ -170,6 +184,9 @@ export const getShouldChange = ({
   const collectionsInheritChain = collectionField ? getAllCollectionsInheritChain(collectionField.target) : [];
 
   return async (value: any, optionPath: any[]) => {
+    // 导致了一些 BUG，暂时先弃用
+    return true;
+
     if (_.isString(value) && value.includes('$nRole')) {
       return true;
     }

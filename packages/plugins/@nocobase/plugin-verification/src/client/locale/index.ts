@@ -15,9 +15,9 @@ export const NAMESPACE = 'verification';
 // i18n.addResources('zh-CN', NAMESPACE, zhCN);
 
 export function lang(key: string) {
-  return i18n.t(key, { ns: NAMESPACE });
+  return i18n.t(key, { ns: [NAMESPACE, 'client'] });
 }
 
 export function useVerificationTranslation() {
-  return useTranslation(NAMESPACE);
+  return useTranslation([NAMESPACE, 'client'], { nsMode: 'fallback' });
 }

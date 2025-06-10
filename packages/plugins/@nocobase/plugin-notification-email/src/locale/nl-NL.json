@@ -1,0 +1,22 @@
+{
+    "Email": "E-mailadres",
+    "From": "Van",
+    "To": "Naar",
+    "CC": "CC",
+    "BCC": "BCC",
+    "Add email address": "Voeg een e-mailadres toe",
+    "Subject": "Onderwerp",
+    "Content": "Inhoud",
+    "Host": "Host",
+    "Port": "Poort",
+    "Secure": "Veilig",
+    "Account": "Account",
+    "Password": "Wachtwoord",
+    "Configure": "Configureren",
+    "The email address that will be used as the sender": "Het e-mailadres dat gebruikt wordt als verzender",
+    "SMTP mail": "SMTP e-mail",
+    "SMTP server host": "SMTP server host",
+    "Content type": "Inhoudstype",
+    "Plain text": "Platte text",
+    "Transport": "Transport"
+}
