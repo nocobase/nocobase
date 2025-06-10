@@ -87,11 +87,7 @@ TableModel.registerFlow({
         resource.setAPIClient(api);
         ctx.model.resource = resource;
         await resource.refresh();
-        await Promise.all(
-          ctx.model.mapSubModels('columns', async (column) => {
-            await column.applyAutoFlows();
-          }),
-        );
+        await ctx.model.applySubModelsAutoFlows('columns');
       },
     },
   },

@@ -107,7 +107,9 @@ export const FlowPageMenuItem = () => {
     // 同时插入一个对应的 Schema
     insertPageSchema(getFlowPageMenuSchema({ pageSchemaUid, tabSchemaUid, tabSchemaName }));
   }, [createRoute, insertPageSchema, options?.components, options?.scope, parentRoute?.id, t, theme]);
-  return <SchemaInitializerItem title={t('Flow page')} onClick={handleClick} className={`${componentCls} ${hashId}`} />;
+  return (
+    <SchemaInitializerItem title={t('Modern page')} onClick={handleClick} className={`${componentCls} ${hashId}`} />
+  );
 };
 
 export function getFlowPageMenuSchema({ pageSchemaUid, tabSchemaUid, tabSchemaName }) {
