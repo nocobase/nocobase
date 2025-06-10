@@ -93,6 +93,8 @@ export const FilterCollectionFieldInternalField: React.FC = (props: Props) => {
     setRequired(field, fieldSchema, uiSchema);
     // @ts-ignore
     field.dataSource = uiSchema.enum;
+    field.data = field.data || {};
+    field.data.dataSource = uiSchema?.enum;
     const originalProps =
       compile({
         ...(operator?.schema?.['x-component-props'] || {}),
