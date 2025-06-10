@@ -321,7 +321,8 @@ export class XlsxImporter extends EventEmitter {
           transaction,
           hooks: insertOptions.hooks == undefined ? true : insertOptions.hooks,
           returning: true,
-        }),
+          context,
+        } as any),
       'Row {{rowIndex}}: bulkCreate completed in {time}ms',
     );
 
@@ -336,8 +337,22 @@ export class XlsxImporter extends EventEmitter {
         `Row ${i + 1}: updateAssociations completed in {time}ms`,
         'debug',
       );
-
-      if (context?.skipWorkflow !== true && insertOptions.hooks !== false) {
+      if (insertOptions.hooks !== false) {
+        await this.loggerService.measureExecutedTime(
+          async () => {
+            await db.emit(`${this.repository.collection.name}.afterCreate`, instance, {
+              transaction,
+            });
+            await db.emitAsync(`${this.repository.collection.name}.afterSave`, instance, {
+              transaction,
+            });
+            instance.clearChangedWithAssociations();
+          },
+          `Row ${i + 1}: afterSave event emitted in {time}ms`,
+          'debug',
+        );
+      }
+      if (context?.skipWorkflow !== true) {
         await this.loggerService.measureExecutedTime(
           async () => {
             await db.emitAsync(`${this.repository.collection.name}.afterCreateWithAssociations`, instance, {

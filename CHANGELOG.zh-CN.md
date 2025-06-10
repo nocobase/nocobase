@@ -5,6 +5,86 @@
 格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/),
 并且本项目遵循 [语义化版本](https://semver.org/spec/v2.0.0.html)。
 
+## [v1.7.6](https://github.com/nocobase/nocobase/compare/v1.7.5...v1.7.6) - 2025-06-09
+
+### 🚀 优化
+
+- **[client]** 禁止将一个分组菜单移动到自己内部 ([#7005](https://github.com/nocobase/nocobase/pull/7005)) by @zhangzhonghe
+
+### 🐛 修复
+
+- **[client]**
+  - 修复了区块读取外部数据源视图数据时报错的问题。 ([#7017](https://github.com/nocobase/nocobase/pull/7017)) by @aaaaaajie
+
+  - 修复筛选区块参数错误的问题 ([#6966](https://github.com/nocobase/nocobase/pull/6966)) by @zhangzhonghe
+
+  - 在联动规则中使用“当前对象”变量无效 ([#7008](https://github.com/nocobase/nocobase/pull/7008)) by @zhangzhonghe
+
+  - 用联动规则无法清除子表格的必填标志 ([#7022](https://github.com/nocobase/nocobase/pull/7022)) by @zhangzhonghe
+
+- **[undefined]** 修复将 possibleTypes 从数据库固定值改为动态配置，解决应用升级后兼容性问题 by @aaaaaajie
+
+- **[移动端]** 优化移动端弹窗卡顿的问题 ([#7029](https://github.com/nocobase/nocobase/pull/7029)) by @zhangzhonghe
+
+- **[数据源管理]** 修复将 possibleTypes 从数据库固定值改为动态配置，解决应用升级后兼容性问题 ([#7019](https://github.com/nocobase/nocobase/pull/7019)) by @aaaaaajie
+
+- **[操作：导入记录]** 修复导入XLSX树表格数据时批量编辑报错 ([#7013](https://github.com/nocobase/nocobase/pull/7013)) by @aaaaaajie
+
+- **[工作流]** 修复工作流不存在时的页面报错 ([#7023](https://github.com/nocobase/nocobase/pull/7023)) by @mytharcher
+
+- **[工作流：JavaScript 节点]** 修复相对路径引入包失败的问题 by @mytharcher
+
+- **[工作流：审批]**
+  - 修复工作流删除之后报错的问题 by @mytharcher
+
+  - 审批详情中重新加载文件数据以避免链接失效 by @mytharcher
+
+  - 修复触发器提供的变量 by @mytharcher
+
+## [v1.7.5](https://github.com/nocobase/nocobase/compare/v1.7.4...v1.7.5) - 2025-06-07
+
+### 🐛 修复
+
+- **[client]** 对每个字段使用独立的变量范围 ([#7012](https://github.com/nocobase/nocobase/pull/7012)) by @mytharcher
+
+- **[database]** 修复导入xlsx功能缺失的创建人和最后更新人字段 ([#7011](https://github.com/nocobase/nocobase/pull/7011)) by @aaaaaajie
+
+- **[工作流]** 修复数据表事件在新增或更新模式时，新增的数据不包含改变的字段导致不触发的问题 ([#7015](https://github.com/nocobase/nocobase/pull/7015)) by @mytharcher
+
+- **[操作：导出记录 Pro]** 修复在带条件导出附件时报错。 by @aaaaaajie
+
+## [v1.7.4](https://github.com/nocobase/nocobase/compare/v1.7.3...v1.7.4) - 2025-06-06
+
+### 🐛 修复
+
+- **[client]**
+  - 关系字段阅读模式下 hover 时出现子表格和子表单 ([#7002](https://github.com/nocobase/nocobase/pull/7002)) by @zhangzhonghe
+
+  - 修复弹窗按钮中的 Markdown 区块联动规则不生效的问题 ([#7007](https://github.com/nocobase/nocobase/pull/7007)) by @katherinehhh
+
+- **[本地化]** 修复词条为空导致的报错 ([#7010](https://github.com/nocobase/nocobase/pull/7010)) by @2013xile
+
+- **[异步任务管理器]** 修复异步导入多次执行缺陷 ([#7006](https://github.com/nocobase/nocobase/pull/7006)) by @aaaaaajie
+
+- **[操作：导出记录 Pro]** 修复异步导入多次执行缺陷 by @aaaaaajie
+
+- **[工作流：审批]** 修复转签后其他人通过的审批无法继续的问题 by @mytharcher
+
+## [v1.7.3](https://github.com/nocobase/nocobase/compare/v1.7.2...v1.7.3) - 2025-06-06
+
+### 🚀 优化
+
+- **[工作流]** 支持使用更多字段筛选工作流 ([#6995](https://github.com/nocobase/nocobase/pull/6995)) by @mytharcher
+
+### 🐛 修复
+
+- **[client]**
+  - 修复弹窗详情区块子表格翻页触发未保存提示的问题 ([#7004](https://github.com/nocobase/nocobase/pull/7004)) by @katherinehhh
+
+  - 修复字段赋值组件赋值变量时未显示字段标题 ([#7001](https://github.com/nocobase/nocobase/pull/7001)) by @katherinehhh
+
+  - 修复字段样式联动规则设置不生效的问题 ([#7003](https://github.com/nocobase/nocobase/pull/7003)) by @katherinehhh
+
 ## [v1.7.2](https://github.com/nocobase/nocobase/compare/v1.7.1...v1.7.2) - 2025-06-05
 
 ### 🚀 优化

@@ -27,7 +27,7 @@ test.describe('defaultValue', () => {
 
     // 2. Set a date variable default value for the custom field, after saving, the date input box should display the default value
     await page.getByLabel('block-item-DatePicker.').hover();
-    await page.getByLabel('designer-schema-settings-DatePicker.RangePicker-ChartFilterItemDesigner').hover();
+    await page.getByLabel('designer-schema-settings-DatePicker.RangePicker-chart:filterForm:item').hover();
     await page.getByRole('menuitem', { name: 'Set default value' }).click();
     await page.getByLabel('variable-button').click();
     await page.getByRole('menuitemcheckbox', { name: 'Date variables right' }).click();

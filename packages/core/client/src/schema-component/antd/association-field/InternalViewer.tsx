@@ -34,6 +34,14 @@ import { transformNestedData } from './InternalCascadeSelect';
 import schema from './schema';
 import { getLabelFormatValue, useLabelUiSchemaV2 } from './util';
 
+const hasAddedViewer = (schemaProperties: Record<string, any>) => {
+  if (!schemaProperties) {
+    return false;
+  }
+
+  return Object.values(schemaProperties).some((schema) => schema['x-component'] === 'AssociationField.Viewer');
+};
+
 interface IEllipsisWithTooltipRef {
   setPopoverVisible: (boolean) => void;
 }
@@ -141,7 +149,7 @@ const RenderRecord = React.memo(
                     setBtnHover(true);
                     e.stopPropagation();
                     e.preventDefault();
-                    if (designable && !fieldSchema.properties) {
+                    if (designable && !hasAddedViewer(fieldSchema.properties)) {
                       insertViewer(schema.Viewer);
                       needWaitForFieldSchemaUpdatedRef.current = true;
                     }
@@ -346,7 +354,7 @@ export const ReadPrettyInternalViewer: React.FC<ReadPrettyInternalViewerProps> =
               onlyRenderProperties
               basePath={field.address}
               filterProperties={(v) => {
-                return v['x-component'] !== 'Action';
+                return v['x-component'] === 'AssociationField.Viewer';
               }}
             />
           </WithoutTableFieldResource.Provider>
@@ -368,7 +376,14 @@ export const ReadPrettyInternalViewer: React.FC<ReadPrettyInternalViewerProps> =
           {/* The recordData here is only provided when the popup is opened, not the current row record */}
           <VariablePopupRecordProvider>
             <WithoutTableFieldResource.Provider value={true}>
-              <NocoBaseRecursionField schema={fieldSchema} onlyRenderProperties basePath={field.address} />
+              <NocoBaseRecursionField
+                schema={fieldSchema}
+                onlyRenderProperties
+                basePath={field.address}
+                filterProperties={(v) => {
+                  return v['x-component'] === 'AssociationField.Viewer';
+                }}
+              />
             </WithoutTableFieldResource.Provider>
           </VariablePopupRecordProvider>
         </CollectionRecordProvider>

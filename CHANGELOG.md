@@ -5,6 +5,86 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v1.7.6](https://github.com/nocobase/nocobase/compare/v1.7.5...v1.7.6) - 2025-06-09
+
+### 🚀 Improvements
+
+- **[client]** Prohibit moving a group menu into itself ([#7005](https://github.com/nocobase/nocobase/pull/7005)) by @zhangzhonghe
+
+### 🐛 Bug Fixes
+
+- **[client]**
+  - Resolved an issue where block failed to read view data from external data sources. ([#7017](https://github.com/nocobase/nocobase/pull/7017)) by @aaaaaajie
+
+  - Fix the filter block parameter error issue ([#6966](https://github.com/nocobase/nocobase/pull/6966)) by @zhangzhonghe
+
+  - Current object variable is invalid in linkage rules ([#7008](https://github.com/nocobase/nocobase/pull/7008)) by @zhangzhonghe
+
+  - Unable to clear the required field indicator of sub-table using linkage rules ([#7022](https://github.com/nocobase/nocobase/pull/7022)) by @zhangzhonghe
+
+- **[undefined]** Remove database dependency for possibleTypes, enforce API-driven configuration by @aaaaaajie
+
+- **[Mobile]** Optimize mobile popup lag issues ([#7029](https://github.com/nocobase/nocobase/pull/7029)) by @zhangzhonghe
+
+- **[Data source manager]** Remove database dependency for possibleTypes, enforce API-driven configuration ([#7019](https://github.com/nocobase/nocobase/pull/7019)) by @aaaaaajie
+
+- **[Action: Import records]** Fixed errors occurring during batch editing when importing XLSX tree table data ([#7013](https://github.com/nocobase/nocobase/pull/7013)) by @aaaaaajie
+
+- **[Workflow]** Fix UI error when workflow not exists ([#7023](https://github.com/nocobase/nocobase/pull/7023)) by @mytharcher
+
+- **[Workflow: JavaScript]** Fix require for relative path by @mytharcher
+
+- **[Workflow: Approval]**
+  - Fix error thrown when workflow deleted by @mytharcher
+
+  - Reload file association from snapshot to avoid URL expires by @mytharcher
+
+  - Fix trigger variables by @mytharcher
+
+## [v1.7.5](https://github.com/nocobase/nocobase/compare/v1.7.4...v1.7.5) - 2025-06-07
+
+### 🐛 Bug Fixes
+
+- **[client]** Use independent variable scope for each field ([#7012](https://github.com/nocobase/nocobase/pull/7012)) by @mytharcher
+
+- **[database]** fix: add missing creator and updater fields in import xlsx ([#7011](https://github.com/nocobase/nocobase/pull/7011)) by @aaaaaajie
+
+- **[Workflow]** Fix collection event on create or update mode not triggering when create without changed field ([#7015](https://github.com/nocobase/nocobase/pull/7015)) by @mytharcher
+
+- **[Action: Export records Pro]** Fix the error that occurs when exporting attachments with conditions. by @aaaaaajie
+
+## [v1.7.4](https://github.com/nocobase/nocobase/compare/v1.7.3...v1.7.4) - 2025-06-06
+
+### 🐛 Bug Fixes
+
+- **[client]**
+  - Association fields shows sub-table and sub-form on hover in read-pretty mode ([#7002](https://github.com/nocobase/nocobase/pull/7002)) by @zhangzhonghe
+
+  - markdown block linkage rules not working when triggered by popup action ([#7007](https://github.com/nocobase/nocobase/pull/7007)) by @katherinehhh
+
+- **[Localization]** Resolve error caused by empty texts ([#7010](https://github.com/nocobase/nocobase/pull/7010)) by @2013xile
+
+- **[Async task manager]** Fixed multiple execution issue during async import ([#7006](https://github.com/nocobase/nocobase/pull/7006)) by @aaaaaajie
+
+- **[Action: Export records Pro]** Fixed multiple execution issue during async import by @aaaaaajie
+
+- **[Workflow: Approval]** Fix delegated approval can not continue when approved by others by @mytharcher
+
+## [v1.7.3](https://github.com/nocobase/nocobase/compare/v1.7.2...v1.7.3) - 2025-06-06
+
+### 🚀 Improvements
+
+- **[Workflow]** Support to filter more fields of workflow ([#6995](https://github.com/nocobase/nocobase/pull/6995)) by @mytharcher
+
+### 🐛 Bug Fixes
+
+- **[client]**
+  - switching page in subtable of detail block within modal triggers unsaved changes warning ([#7004](https://github.com/nocobase/nocobase/pull/7004)) by @katherinehhh
+
+  - missing field title when setting a variable in the assignment component ([#7001](https://github.com/nocobase/nocobase/pull/7001)) by @katherinehhh
+
+  - field style linkage rules not working ([#7003](https://github.com/nocobase/nocobase/pull/7003)) by @katherinehhh
+
 ## [v1.7.2](https://github.com/nocobase/nocobase/compare/v1.7.1...v1.7.2) - 2025-06-05
 
 ### 🚀 Improvements
