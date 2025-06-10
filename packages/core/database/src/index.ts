@@ -50,6 +50,7 @@ export * from './relation-repository/hasone-repository';
 export * from './relation-repository/multiple-relation-repository';
 export * from './relation-repository/single-relation-repository';
 export * from './repository';
+export * from './relation-repository/relation-repository';
 export { default as sqlParser, SQLParserTypes } from './sql-parser';
 export * from './update-associations';
 export { snakeCase } from './utils';
