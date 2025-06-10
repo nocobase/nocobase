@@ -9,5 +9,5 @@
 
 export * from './AddSubModelButton';
 export * from './AddBlockButton';
-// export * from './AddActionButton';
+export * from './AddActionButton';
 // export * from './AddFieldButton';

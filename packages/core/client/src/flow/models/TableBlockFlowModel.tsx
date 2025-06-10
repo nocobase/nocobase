@@ -9,7 +9,7 @@
 
 import { observable } from '@formily/reactive';
 import { uid } from '@formily/shared';
-import { FlowEngineProvider, FlowModel, FlowModelRenderer } from '@nocobase/flow-engine';
+import { FlowEngineProvider, FlowModel, FlowModelRenderer, AddActionButton } from '@nocobase/flow-engine';
 import { Button, Card, Dropdown, Modal, Space, Table } from 'antd';
 import React from 'react';
 import { FlowPage, FlowPageComponent } from '../FlowPage';
@@ -55,11 +55,76 @@ export class ActionFlowModel extends FlowModel {
         onClick={() => {
           this.dispatchEvent('onClick');
         }}
-        {...this.props}
+        {...this.getProps()}
       />
     );
   }
 }
+
+ActionFlowModel.registerFlow({
+  key: 'setProps',
+  auto: true,
+  steps: {
+    step1: {
+      uiSchema: {
+        text: {
+          title: '按钮文本',
+          'x-component': 'Input',
+          'x-decorator': 'FormItem',
+          type: 'string',
+        },
+        type: {
+          title: '按钮类型',
+          type: 'string',
+          'x-component': 'Select',
+          'x-decorator': 'FormItem',
+          'x-component-props': {
+            options: [{ label: 'Primary', value: 'primary' }, { label: 'Default', value: 'default' }],
+          },
+        },
+      },
+      async handler(ctx, params) {
+        ctx.model.setProps('children', params?.text);
+        ctx.model.setProps('type', params?.type);
+      },
+    },
+  },
+});
+
+export class CreateActionFlowModel extends ActionFlowModel {};
+export class EditActionFlowModel extends ActionFlowModel {};
+
+CreateActionFlowModel.define({
+  title: 'Create',
+  group: 'Action',
+  defaultOptions: {
+    use: 'CreateActionFlowModel',
+    stepParams: {
+      setProps: {
+        step1: {
+          type: 'default',
+          text: 'Create',
+        },
+      },
+    }
+  },
+});
+
+EditActionFlowModel.define({
+  title: 'Edit',
+  group: 'Action',
+  defaultOptions: {
+    use: 'EditActionFlowModel',
+    stepParams: {
+      setProps: {
+        step1: {
+          type: 'default',
+          text: 'Edit',
+        },
+      },
+    }
+  },
+});
 
 ActionFlowModel.registerFlow({
   key: 'clickFlow',
@@ -152,28 +217,8 @@ export class TableBlockFlowModel extends BlockFlowModel<{
     return (
       <Space>
         {this.subModels.actions?.map((action) => {
-          return <FlowModelRenderer key={action.uid} model={action} />;
+          return <FlowModelRenderer key={action.uid} model={action} showFlowSettings/>;
         })}
-        <Dropdown
-          menu={{
-            onClick: (info) => {
-              this.addAction({
-                use: 'ActionFlowModel',
-                props: {
-                  // type: 'primary',
-                  children: `新动作 ${uid()}`,
-                  // onClick: async () => {},
-                },
-              });
-            },
-            items: [
-              { key: 'add-new', label: 'Add new' },
-              { key: 'edit', label: 'Edit' },
-            ],
-          }}
-        >
-          <Button>Add action</Button>
-        </Dropdown>
       </Space>
     );
   }
@@ -182,7 +227,9 @@ export class TableBlockFlowModel extends BlockFlowModel<{
     return (
       <Card>
         {this.renderActions()}
-        <br />
+        <Space style={{ marginLeft: 14 }}>
+          <AddActionButton model={this} ParentModelClass={'ActionFlowModel'}/>
+        </Space>
         <br />
         <Table
           {...this.props}
@@ -227,16 +274,7 @@ TableBlockFlowModel.define({
   defaultOptions: {
     use: 'TableBlockFlowModel',
     subModels: {
-      columns: [],
-      actions: [
-        {
-          use: 'ActionFlowModel',
-          props: {
-            type: 'primary',
-            children: '查询数据',
-          },
-        },
-      ],
+      columns: []
     },
     stepParams: {
       defaultFlow: {

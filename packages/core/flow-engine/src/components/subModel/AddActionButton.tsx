@@ -11,26 +11,26 @@ import { observer } from '@formily/reactive-react';
 import React from 'react';
 import { AddSubModelButton, AddSubModelButtonProps } from './AddSubModelButton';
 
-interface AddBlockButtonProps extends Omit<AddSubModelButtonProps, 'subModelType' | 'subModelKey'> {
+interface AddActionButtonProps extends Omit<AddSubModelButtonProps, 'subModelType' | 'subModelKey'> {
   subModelKey?: string;
   subModelType?: 'object' | 'array';
 }
 
 /**
- * 专门用于添加块模型的按钮组件
+ * 专门用于添加动作模型的按钮组件
  * 
  * @example
  * ```tsx
- * <AddBlockButton 
+ * <AddActionButton 
  *   model={parentModel}
- *   ParentModelClass={'FlowModel'}
+ *   ParentModelClass={'ActionFlowModel'}
  * />
  * ```
  */
-export const AddBlockButton: React.FC<AddBlockButtonProps> = observer(({
-  ParentModelClass='BlockFlowModel',
-  subModelKey = 'blocks',
-  children = 'Add block',
+export const AddActionButton: React.FC<AddActionButtonProps> = observer(({
+  ParentModelClass='ActionFlowModel',
+  subModelKey = 'actions',
+  children = 'Add action',
   subModelType = 'array',
   ...props
 }) => {
@@ -47,4 +47,4 @@ export const AddBlockButton: React.FC<AddBlockButtonProps> = observer(({
   );
 });
 
-AddBlockButton.displayName = 'AddBlockButton';
+AddActionButton.displayName = 'AddActionButton';
