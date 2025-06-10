@@ -395,7 +395,7 @@ const ToManyNester = observer(
               icon={<PlusOutlined />}
               onClick={() => {
                 const result = field.value;
-                result.push({});
+                result.push(markRecordAsNew({}));
                 field.value = result;
               }}
             ></Button>
