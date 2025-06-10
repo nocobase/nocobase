@@ -98,7 +98,7 @@ mock.onPost('posts:update').reply((config) => {
   ];
 });
 
-mock.onGet('posts:destroy').reply((config) => {
+mock.onPost('posts:destroy').reply((config) => {
   const filterByTk = config.params?.filterByTk;
   const index = records.findIndex((item) => item.id === filterByTk);
   if (index === -1) {

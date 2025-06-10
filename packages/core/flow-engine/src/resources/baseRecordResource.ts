@@ -15,32 +15,20 @@ export abstract class BaseRecordResource<TData = any> extends APIResource<TData>
   protected sourceId: string | number | null = null;
 
   // 请求配置 - 与 APIClient 接口保持一致
-  protected request = observable.shallow({
+  protected request = {
     url: null as string | null,
-    method: 'get' as string,
     params: {
       filter: {} as Record<string, any>,
       filterByTk: null as string | number | string[] | number[] | null,
-      appends: [] as string[],
-      fields: [] as string[],
-      sort: null as string | null,
-      except: null as string | null,
-      whitelist: null as string | null,
-      blacklist: null as string | null,
+      appends: null as string[] | null,
+      fields: null as string[] | null,
+      sort: null as string[] | null,
+      except: null as string[] | null,
+      whitelist: null as string[] | null,
+      blacklist: null as string[] | null,
     } as Record<string, any>,
     headers: {} as Record<string, any>,
-  });
-
-  getRequestOptions(filterByTk?: string | number | string[] | number[]) {
-    const options = {
-      params: { ...this.request.params },
-      headers: { ...this.request.headers },
-    };
-    if (filterByTk) {
-      options.params.filterByTk = filterByTk;
-    }
-    return options;
-  }
+  };
 
   protected buildURL(action?: string): string {
     let url = '';
@@ -60,6 +48,7 @@ export abstract class BaseRecordResource<TData = any> extends APIResource<TData>
   async runAction<TData = any, TMeta = any>(action: string, options: any) {
     return await this.api.request({
       url: this.buildURL(action),
+      method: 'post',
       ...options,
     }) as {
       data: {
@@ -109,6 +98,13 @@ export abstract class BaseRecordResource<TData = any> extends APIResource<TData>
     return this.request.params.appends;
   }
 
+  addAppends(append: string) {
+    this.request.params.appends.push(append);
+  }
+  removeAppends(append: string) {
+    this.request.params.appends = this.request.params.appends.filter((item: string) => item !== append);
+  }
+
   setFilterByTk(filterByTk: string | number | string[] | number[]): void {
     this.request.params.filterByTk = filterByTk;
   }
@@ -117,37 +113,50 @@ export abstract class BaseRecordResource<TData = any> extends APIResource<TData>
     return this.request.params.filterByTk;
   }
 
-  setFields(fields: string[]): void {
+  setFields(fields: string[] | string): void {
+    if (typeof fields === 'string') {
+      fields = fields.split(',');
+    }
     this.request.params.fields = fields;
   }
   getFields(): string[] {
     return this.request.params.fields;
   }
-  setSort(sort: string): void {
+
+  setSort(sort: string | string[]): void {
+    if (typeof sort === 'string') {
+      sort = sort.split(',');
+    }
     this.request.params.sort = sort;
   }
-  getSort(): string {
+  getSort(): string[] {
     return this.request.params.sort;
   }
   
-  setExcept(except: string): void {
+  setExcept(except: string | string[]): void {
+    if (typeof except === 'string') {
+      except = except.split(',');
+    }
     this.request.params.except = except;
   }
-  getExcept(): string {
+  getExcept(): string[] {
     return this.request.params.except;
   }
 
-  setWhitelist(whitelist: string): void {
+  setWhitelist(whitelist: string | string[]): void {
+    if (typeof whitelist === 'string') {
+      whitelist = whitelist.split(',');
+    }
     this.request.params.whitelist = whitelist;
   }
-  getWhitelist(): string {
+  getWhitelist(): string[] {
     return this.request.params.whitelist;
   }
 
-  setBlacklist(blacklist: string): void {
+  setBlacklist(blacklist: string | string[]): void {
     this.request.params.blacklist = blacklist;
   }
-  getBlacklist(): string {
+  getBlacklist(): string[] {
     return this.request.params.blacklist;
   }
 

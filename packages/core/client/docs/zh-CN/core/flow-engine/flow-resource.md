@@ -8,13 +8,12 @@
 
 ### 属性
 
-- `state.data`: 资源数据，存储当前资源的所有字段信息。
-- `meta`: 资源元信息，使用 observable.shallow 包装。
+- `_data`: 使用 `observable.ref` 包装的资源数据，存储当前资源的所有字段信息。
 
 ### 方法
 
 - `get data()` / `set data(value)`: 获取/设置当前数据的 getter/setter。
-- `getData()`: 获取当前数据，返回 `state.data`。
+- `getData()`: 获取当前数据，返回 `_data.value`。
 - `setData(data)`: 设置当前数据，参数为对象。
 
 ### 示例
@@ -23,28 +22,22 @@
 import { observable } from '@formily/reactive';
 
 export class FlowResource<TData = any> {
-  // 资源元信息
-  protected meta = observable.shallow({});
-
-  // 数据状态 - 包含数据和动态信息
-  protected state = observable.shallow({
-    data: {} as TData,
-  });
+  protected _data = observable.ref<TData>(null);
 
   get data(): TData {
-    return this.state.data;
+    return this._data.value;
   }
 
   set data(value: TData) {
-    this.state.data = value;
+    this._data.value = value;
   }
 
   getData(): TData {
-    return this.state.data;
+    return this.data;
   }
 
   setData(data: TData): void {
-    this.state.data = data;
+    this.data = data;
   }
 }
 
@@ -71,7 +64,7 @@ console.log(resource.getData()); // { name: 'test' }
 - `get url()` / `set url(value)`: 获取/设置 API 地址。
 - `getURL()` / `setURL(value)`: 获取/设置 API 地址。
 - `setAPIClient(api)`: 设置 API 客户端实例。
-- `getRequestOptions()`: 获取请求参数对象，包含 url、params、headers。
+- `getRefreshRequestOptions(filterByTk?)`: 获取刷新请求的选项，可选择性传入 filterByTk。
 - `async refresh()`: 刷新数据，重新从 API 获取并更新数据。
 
 ### 示例
@@ -79,15 +72,14 @@ console.log(resource.getData()); // { name: 'test' }
 ```ts
 import { FlowResource } from './flowResource';
 import { APIClient } from '@nocobase/sdk';
-import { observable } from '@formily/reactive';
 
 export class APIResource<TData = any> extends FlowResource<TData> {
   // 请求配置
-  protected request = observable.shallow({
+  protected request = {
     url: null as string | null,
     params: {} as Record<string, any>,
     headers: {} as Record<string, any>,
-  });
+  };
   api: APIClient;
 
   setAPIClient(api: APIClient): void {
@@ -110,20 +102,27 @@ export class APIResource<TData = any> extends FlowResource<TData> {
     this.request.url = value;
   }
 
-  getRequestOptions(): any {
-    return {
-      url: this.url,
-      params: this.request.params,
-      headers: this.request.headers,
-    };
-  }
-
-  async refresh(): Promise<void> {
+  async refresh() {
     if (!this.api) {
       throw new Error('API client not set');
     }
-    const { data } = await this.api.request(this.getRequestOptions());
-    this.setData(data);
+    const { data } = await this.api.request({
+      url: this.url,
+      method: 'get',
+      ...this.getRefreshRequestOptions(),
+    });
+    this.setData(data?.data);
+  }
+
+  protected getRefreshRequestOptions(filterByTk?: string | number | string[] | number[]) {
+    const options = {
+      params: { ...this.request.params },
+      headers: { ...this.request.headers },
+    };
+    if (filterByTk) {
+      options.params.filterByTk = filterByTk;
+    }
+    return options;
   }
 }
 
@@ -143,30 +142,29 @@ console.log(resource.data); // 输出刷新后的数据
 
 ### 属性
 
-- `meta.resourceName`: 资源名称（如 users、users.profile）。
-- `meta.sourceId`: 源对象 ID，用于关联资源。
-- `meta.actionName`: 操作名，默认为 'get'。
+- `resourceName`: 资源名称（如 users、users.profile）。
+- `sourceId`: 源对象 ID，用于关联资源。
 - `request.params`: 请求参数，包含以下字段：
   - `filter`: 过滤条件对象
   - `filterByTk`: 主键过滤
   - `appends`: 附加字段数组
   - `fields`: 字段数组
-  - `sort`: 排序字符串
-  - `except`: 排除字段
-  - `whitelist`: 白名单字段
-  - `blacklist`: 黑名单字段
+  - `sort`: 排序数组
+  - `except`: 排除字段数组
+  - `whitelist`: 白名单字段数组
+  - `blacklist`: 黑名单字段数组
 
 ### 方法
 
-- `getRequestOptions(filterByTk?)`: 获取请求选项，可选择性传入 filterByTk。
 - `buildURL(action?)`: 构建请求 URL，支持关联资源。
-- `runAction<T>(action, options)`: 执行指定操作。
+- `runAction<TData, TMeta>(action, options)`: 执行指定操作。
 - `setResourceName(resourceName)` / `getResourceName()`: 设置/获取资源名称。
-- `setActionName(actionName)` / `getActionName()`: 设置/获取操作名。
 - `setSourceId(sourceId)` / `getSourceId()`: 设置/获取源对象 ID。
 - `setDataSourceKey(dataSourceKey)` / `getDataSourceKey()`: 设置/获取数据源标识。
 - `setFilter(filter)` / `getFilter()`: 设置/获取过滤条件。
 - `setAppends(appends)` / `getAppends()`: 设置/获取附加字段。
+- `addAppends(append)`: 添加附加字段。
+- `removeAppends(append)`: 移除附加字段。
 - `setFilterByTk(filterByTk)` / `getFilterByTk()`: 设置/获取主键过滤。
 - `setFields(fields)` / `getFields()`: 设置/获取字段。
 - `setSort(sort)` / `getSort()`: 设置/获取排序。
@@ -181,14 +179,12 @@ console.log(resource.data); // 输出刷新后的数据
 // 处理普通资源
 const resource = new BaseRecordResource();
 resource.setResourceName('users');
-resource.setActionName('list');
-// 构建的 URL: users:list
+// 构建的 URL: users:get
 
 // 处理关联资源
 resource.setResourceName('users.tags');
 resource.setSourceId(1);
-resource.setActionName('list');
-// 构建的 URL: users/1/tags:list
+// 构建的 URL: users/1/tags:get
 ```
 
 ---
@@ -204,11 +200,11 @@ resource.setActionName('list');
 
 ### 属性
 
-继承 `BaseRecordResource` 的所有属性，默认 `actionName` 为 'get'。
+继承 `BaseRecordResource` 的所有属性，使用 `observable.ref` 包装数据。
 
 ### 方法
 
-- `setFilterByTk(filterByTk)`: 设置主键过滤条件。
+- `setFilterByTk(filterByTk)`: 设置主键过滤条件（仅接受单个值）。
 - `async save(data)`: 保存当前对象，根据是否有 filterByTk 决定是创建还是更新。
 - `async destroy()`: 删除当前对象。
 - `async refresh()`: 刷新数据，重新获取单条记录。
@@ -216,35 +212,52 @@ resource.setActionName('list');
 ### 示例
 
 ```ts
+import { observable } from '@formily/reactive';
 import { BaseRecordResource } from './baseRecordResource';
 
 export class SingleRecordResource<TData = any> extends BaseRecordResource<TData> {
-  constructor() {
-    super();
-    // 设置单记录资源的默认 actionName
-    this.meta.actionName = 'get';
-  }
+  protected _data = observable.ref<TData>(null);
 
   setFilterByTk(filterByTk: string | number): void {
     this.request.params = { ...this.request.params, filterByTk };
   }
 
   async save(data: TData): Promise<void> {
-    await this.runAction(this.request.params.filterByTk ? 'update' : 'create', {
-      ...this.getRequestOptions(),
+    const options: any = {
+      headers: this.request.headers,
+      params: {},
+    };
+    let actionName = 'create';
+    if (this.request.params.filterByTk) {
+      options.params.filterByTk = this.request.params.filterByTk;
+      actionName = 'update';
+    }
+    await this.runAction(actionName, {
+      ...options,
       data,
     });
     await this.refresh();
   }
 
   async destroy(): Promise<void> {
-    await this.runAction('destroy', this.getRequestOptions());
+    const options: any = {
+      headers: this.request.headers,
+      params: {},
+    };
+    options.params.filterByTk = this.request.params.filterByTk;
+    await this.runAction('destroy', {
+      ...options,
+    });
     this.setData(null);
   }
 
   async refresh(): Promise<void> {
-    const { data } = await this.runAction<{ data: TData }>(this.meta.actionName, this.getRequestOptions());
-    this.setData(data);
+    const options: any = this.getRefreshRequestOptions();
+    const { data } = await this.runAction<TData, any>('get', {
+      ...options,
+      method: 'get',
+    });
+    this.setData(data.data);
   }
 }
 
@@ -275,13 +288,13 @@ await profileResource.refresh(); // 获取用户 1 的 profile
 ### 属性
 
 继承 `BaseRecordResource` 的所有属性，并额外包含：
-- `state.data`: 数据数组，默认为空数组。
-- `state.dataMeta`: 数据元信息，包含分页等信息。
+- `_data`: 使用 `observable.ref` 包装的数据数组，默认为空数组。
+- `_meta`: 使用 `observable.ref` 包装的数据元信息，包含分页等信息。
 - `request.params`: 额外包含分页参数：
   - `page`: 当前页码，默认为 1
   - `pageSize`: 每页条数，默认为 20
-
-默认 `actionName` 为 'list'。
+  - `appends`: 附加字段数组，默认为空数组
+  - `fields`: 字段数组，默认为空数组
 
 ### 方法
 
@@ -291,7 +304,7 @@ await profileResource.refresh(); // 获取用户 1 的 profile
 - `async create(data)`: 创建新对象。
 - `async update(filterByTk, data)`: 更新指定对象。
 - `async destroy(filterByTk)`: 删除指定对象。
-- `setDataMeta(dataMeta)` / `getDataMeta()`: 设置/获取数据元信息。
+- `getMeta(metaKey?)` / `setMeta(meta)`: 获取/设置数据元信息。
 - `setPage(page)` / `getPage()`: 设置/获取当前页码。
 - `setPageSize(pageSize)` / `getPageSize()`: 设置/获取每页条数。
 - `async refresh()`: 刷新数据，重新获取列表数据。
@@ -303,34 +316,26 @@ import { observable } from '@formily/reactive';
 import { BaseRecordResource } from './baseRecordResource';
 
 export class MultiRecordResource<TDataItem = any> extends BaseRecordResource<TDataItem[]> {
-  // 数据状态 - 包含数据和动态信息
-  protected state = observable.shallow({
-    data: [] as TDataItem[],
-    dataMeta: {} as Record<string, any>,
-  });
+  protected _data = observable.ref<TDataItem[]>([]);
+  protected _meta = observable.ref<Record<string, any>>({});
 
   // 请求配置 - 与 APIClient 接口保持一致
-  protected request = observable.shallow({
+  protected request = {
     url: null as string | null,
     params: {
       filter: {} as Record<string, any>,
       filterByTk: null as string | number | string[] | number[] | null,
       appends: [] as string[],
       fields: [] as string[],
-      sort: null as string | null,
-      except: null as string | null,
-      whitelist: null as string | null,
-      blacklist: null as string | null,
+      sort: null as string[] | null,
+      except: null as string[] | null,
+      whitelist: null as string[] | null,
+      blacklist: null as string[] | null,
       page: 1 as number,
       pageSize: 20 as number,
     } as Record<string, any>,
     headers: {} as Record<string, any>,
-  });
-
-  constructor() {
-    super();
-    this.meta.actionName = 'list';
-  }
+  };
 
   async next(): Promise<void> {
     this.request.params.page += 1;
@@ -353,55 +358,72 @@ export class MultiRecordResource<TDataItem = any> extends BaseRecordResource<TDa
 
   async create(data: TDataItem): Promise<void> {
     await this.runAction('create', {
-      ...this.getRequestOptions(),
       data,
     });
     await this.refresh();
   }
 
   async update(filterByTk: string | number, data: Partial<TDataItem>): Promise<void> {
+    const options = {
+      params: {
+        filterByTk,
+      },
+      headers: this.request.headers,
+    };
     await this.runAction('update', {
-      ...this.getRequestOptions(filterByTk),
+      ...options,
       data,
     });
     await this.refresh();
   }
 
   async destroy(filterByTk: string | number | string[] | number[]): Promise<void> {
+    const options = {
+      params: {
+        filterByTk,
+      },
+      headers: this.request.headers,
+    };
     await this.runAction('destroy', {
-      ...this.getRequestOptions(filterByTk),
+      ...options,
     });
     await this.refresh();
   }
 
-  setDataMeta(dataMeta: Record<string, any>) {
-    this.state.dataMeta = dataMeta;
+  getMeta(metaKey?: string) {
+    return metaKey ? this._meta.value[metaKey] : this._meta.value;
+  }
+  setMeta(meta: Record<string, any>): void {
+    this._meta.value = { ...this._meta.value, ...meta };
   }
 
-  getDataMeta(): Record<string, any> {
-    return this.state.dataMeta;
-  }
-
-  setPage(page: number): void {
+  async setPage(page: number): Promise<void> {
     this.request.params.page = page;
   }
-  
   getPage(): number {
     return this.request.params.page;
   }
   
-  setPageSize(pageSize: number): void {
+  async setPageSize(pageSize: number): Promise<void> {
     this.request.params.pageSize = pageSize;
   }
-  
   getPageSize(): number {
     return this.request.params.pageSize;
   }
 
   async refresh(): Promise<void> {
-    const { data, meta } = await this.runAction<{ data: any[], meta?: any }>(this.meta.actionName, this.getRequestOptions());
-    this.setData(data);
-    this.setDataMeta(meta);
+    const { data } = await this.runAction<TDataItem[], any>('list', {
+      ...this.getRefreshRequestOptions(),
+      method: 'get',
+    });
+    this.setData(data.data);
+    this.setMeta(data.meta || {});
+    if (data.meta?.page) {
+      this.setPage(data.meta.page);
+    }
+    if (data.meta?.pageSize) {
+      this.setPageSize(data.meta.pageSize);
+    }
   }
 }
 

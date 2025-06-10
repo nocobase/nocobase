@@ -13,11 +13,11 @@ import { observable } from '@formily/reactive';
 
 export class APIResource<TData = any> extends FlowResource<TData> {
   // 请求配置
-  protected request = observable.shallow({
+  protected request = {
     url: null as string | null,
     params: {} as Record<string, any>,
     headers: {} as Record<string, any>,
-  });
+  };
   api: APIClient;
 
   setAPIClient(api: APIClient): void {
@@ -40,19 +40,26 @@ export class APIResource<TData = any> extends FlowResource<TData> {
     this.request.url = value;
   }
 
-  getRequestOptions(): any {
-    return {
-      url: this.url,
-      params: this.request.params,
-      headers: this.request.headers,
-    };
-  }
-
-  async refresh(): Promise<void> {
+  async refresh() {
     if (!this.api) {
       throw new Error('API client not set');
     }
-    const { data } = await this.api.request(this.getRequestOptions());
+    const { data } = await this.api.request({
+      url: this.url,
+      method: 'get',
+      ...this.getRefreshRequestOptions(),
+    });
     this.setData(data?.data);
+  }
+
+  protected getRefreshRequestOptions(filterByTk?: string | number | string[] | number[]) {
+    const options = {
+      params: { ...this.request.params },
+      headers: { ...this.request.headers },
+    };
+    if (filterByTk) {
+      options.params.filterByTk = filterByTk;
+    }
+    return options;
   }
 }

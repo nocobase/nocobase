@@ -30,7 +30,6 @@ export class SingleRecordResource<TData = any> extends BaseRecordResource<TData>
     await this.runAction(actionName, {
       ...options,
       data,
-      method: 'post',
     });
     await this.refresh();
   }
@@ -39,7 +38,6 @@ export class SingleRecordResource<TData = any> extends BaseRecordResource<TData>
     const options: any = {
       headers: this.request.headers,
       params: {},
-      method: 'delete',
     };
     options.params.filterByTk = this.request.params.filterByTk;
     await this.runAction('destroy', {
@@ -49,8 +47,11 @@ export class SingleRecordResource<TData = any> extends BaseRecordResource<TData>
   }
 
   async refresh(): Promise<void> {
-    const options: any = this.getRequestOptions();
-    const { data } = await this.runAction<TData, any>('get', options);
+    const options: any = this.getRefreshRequestOptions();
+    const { data } = await this.runAction<TData, any>('get', {
+      ...options,
+      method: 'get',
+    });
     this.setData(data.data);
   }
 }

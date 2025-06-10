@@ -15,27 +15,22 @@ export class MultiRecordResource<TDataItem = any> extends BaseRecordResource<TDa
   protected _meta = observable.ref<Record<string, any>>({});
 
     // 请求配置 - 与 APIClient 接口保持一致
-  protected request = observable.shallow({
+  protected request = {
     url: null as string | null,
-    method: 'get' as string,
     params: {
       filter: {} as Record<string, any>,
       filterByTk: null as string | number | string[] | number[] | null,
       appends: [] as string[],
       fields: [] as string[],
-      sort: null as string | null,
-      except: null as string | null,
-      whitelist: null as string | null,
-      blacklist: null as string | null,
+      sort: null as string[] | null,
+      except: null as string[] | null,
+      whitelist: null as string[] | null,
+      blacklist: null as string[] | null,
       page: 1 as number,
       pageSize: 20 as number,
     } as Record<string, any>,
     headers: {} as Record<string, any>,
-  });
-
-  constructor() {
-    super();
-  }
+  };
 
   async next(): Promise<void> {
     this.request.params.page += 1;
@@ -59,7 +54,6 @@ export class MultiRecordResource<TDataItem = any> extends BaseRecordResource<TDa
   async create(data: TDataItem): Promise<void> {
     await this.runAction('create', {
       data,
-      method: 'post',
     });
     await this.refresh();
   }
@@ -74,7 +68,6 @@ export class MultiRecordResource<TDataItem = any> extends BaseRecordResource<TDa
     await this.runAction('update', {
       ...options,
       data,
-      method: 'post',
     });
     await this.refresh();
   }
@@ -85,7 +78,6 @@ export class MultiRecordResource<TDataItem = any> extends BaseRecordResource<TDa
         filterByTk,
       },
       headers: this.request.headers,
-      method: 'delete',
     };
     await this.runAction('destroy', {
       ...options,
@@ -102,22 +94,30 @@ export class MultiRecordResource<TDataItem = any> extends BaseRecordResource<TDa
 
   async setPage(page: number): Promise<void> {
     this.request.params.page = page;
-    await this.refresh();
   }
   getPage(): number {
     return this.request.params.page;
   }
+  
   async setPageSize(pageSize: number): Promise<void> {
     this.request.params.pageSize = pageSize;
-    await this.refresh();
   }
   getPageSize(): number {
     return this.request.params.pageSize;
   }
 
   async refresh(): Promise<void> {
-    const { data } = await this.runAction<TDataItem[], any>('list', this.getRequestOptions());
+    const { data } = await this.runAction<TDataItem[], any>('list', {
+      ...this.getRefreshRequestOptions(),
+      method: 'get',
+    });
     this.setData(data.data);
     this.setMeta(data.meta || {});
+    if (data.meta?.page) {
+      this.setPage(data.meta.page);
+    }
+    if (data.meta?.pageSize) {
+      this.setPageSize(data.meta.pageSize);
+    }
   }
 }

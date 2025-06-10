@@ -56,7 +56,7 @@ mock.onPost('users:update').reply((config) => {
   ];
 });
 
-mock.onGet('users:destroy').reply((config) => {
+mock.onPost('users:destroy').reply((config) => {
   records.splice(0, 1); // 删除第一个记录
   return [
     200,
