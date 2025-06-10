@@ -86,11 +86,10 @@ export const AddBlockButton: React.FC<AddBlockButtonProps> = observer(({
     }
 
     if (blockType.item.meta?.defaultOptions) {
-      return { ..._.cloneDeep(blockType.item.meta?.defaultOptions), use: blockType.key, parentId: model.uid };
+      return { ..._.cloneDeep(blockType.item.meta?.defaultOptions), use: blockType.key };
     } else {
       return {
         use: blockType.key,
-        parentId: model.uid,
       }
     }
   }, [blockTypes]);

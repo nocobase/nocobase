@@ -516,6 +516,7 @@ export class FlowModel<Structure extends { parent?: any; subModels?: any } = Def
       throw new Error('Parent must be an instance of FlowModel.');
     }
     this.parent = parent;
+    this.options.parentId = parent.uid;
   }
 
   addSubModel(subKey: string, options: CreateModelOptions | FlowModel) {
@@ -525,19 +526,26 @@ export class FlowModel<Structure extends { parent?: any; subModels?: any } = Def
         throw new Error('Sub model already has a parent.');
       }
       model = options;
-      model.setParent(this);
     } else {
-      model = this.flowEngine.createModel({ ...options, parentId: this.uid, subKey, subType: 'array' });
-      model.setParent(this);
+      model = this.flowEngine.createModel({ ...options, subKey, subType: 'array' });
     }
-
+    model.setParent(this);
     Array.isArray(this.subModels[subKey]) || (this.subModels[subKey] = []);
     this.subModels[subKey].push(model);
     return model;
   }
 
-  setSubModel(subKey: string, options) {
-    const model = this.flowEngine.createModel({ ...options, parentId: this.uid, subKey, subType: 'object' });
+  setSubModel(subKey: string, options: CreateModelOptions | FlowModel) {
+    let model: FlowModel;
+    if (options instanceof FlowModel) {
+      if (options.parent && options.parent !== this) {
+        throw new Error('Sub model already has a parent.');
+      }
+      model = options;
+    } else {
+      model = this.flowEngine.createModel({ ...options, parentId: this.uid, subKey, subType: 'object' });
+    }
+    model.setParent(this);
     this.subModels[subKey] = model;
     return model;
   }

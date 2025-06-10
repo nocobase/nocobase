@@ -226,6 +226,9 @@ export interface CreateModelOptions {
   props?: IModelComponentProps;
   stepParams?: StepParams;
   subModels?: Record<string, CreateSubModelOptions | CreateSubModelOptions[]>;
+  parentId?: string;
+  subKey?: string;
+  subType?: 'object' | 'array';
   [key: string]: any; // 允许额外的自定义选项
 }
 export interface IFlowModelRepository<T extends FlowModel = FlowModel> {
@@ -270,6 +273,9 @@ export interface FlowModelOptions<Structure extends {parent?: any, subModels?: a
   stepParams?: Record<string, any>;
   subModels?: Structure['subModels'];
   flowEngine: FlowEngine;
+  parentId?: string;
+  subKey?: string;
+  subType?: 'object' | 'array';
 }
 
 export interface FlowModelMeta {
