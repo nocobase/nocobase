@@ -13,6 +13,7 @@ import { Field, Form as FormilyForm, createForm, onFieldInit, onFormInputChange 
 import { FieldContext, FormContext, observer, useField, useFieldSchema } from '@formily/react';
 import { uid } from '@formily/shared';
 import { ConfigProvider, theme } from 'antd';
+import _ from 'lodash';
 import React, { useEffect, useMemo } from 'react';
 import { useActionContext } from '..';
 import { useAttach, useComponent } from '../..';
@@ -155,13 +156,14 @@ const WithForm = (props: WithFormProps) => {
   const variables = useVariables();
   const localVariables = useLocalVariables({ currentForm: form });
   const { templateFinished } = useTemplateBlockContext();
-  const { loading } = useDataBlockRequest() || {};
+  const { loading, data } = useDataBlockRequest() || {};
   const app = useApp();
   const linkageRules: any[] =
     (getLinkageRules(fieldSchema) || fieldSchema.parent?.['x-linkage-rules'])?.filter((k) => !k.disabled) || [];
 
   // 关闭弹窗之前，如果有未保存的数据，是否要二次确认
-  const { confirmBeforeClose = true } = useDataBlockProps() || ({} as any);
+  const { confirmBeforeClose = true, action } = useDataBlockProps() || ({} as any);
+  const isCreateForm = action === undefined;
 
   useEffect(() => {
     const id = uid();
@@ -182,7 +184,7 @@ const WithForm = (props: WithFormProps) => {
   }, [form, props.disabled, setFormValueChanged, confirmBeforeClose]);
 
   useEffect(() => {
-    if (loading) {
+    if (loading || (!isCreateForm && _.isEmpty(data?.data))) {
       return;
     }
 
@@ -224,7 +226,7 @@ const WithForm = (props: WithFormProps) => {
         dispose();
       });
     };
-  }, [linkageRules, templateFinished, loading]);
+  }, [linkageRules, templateFinished, loading, data?.data, isCreateForm]);
 
   return fieldSchema['x-decorator'] === 'FormV2' ? <FormDecorator {...props} /> : <FormComponent {...props} />;
 };
