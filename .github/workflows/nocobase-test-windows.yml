@@ -46,7 +46,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: '18'
+          node-version: '20'
 
       - run: yarn config set network-timeout 600000 -g
 
@@ -63,7 +63,9 @@ jobs:
             ${{ runner.os }}-yarn-
 
       - name: Install project dependencies
-        run: yarn --prefer-offline
+        run: |
+          yarn --prefer-offline
+          yarn add sqlite3 --no-save -W
 
       - name: Test with Sqlite
         run: yarn test --server --single-thread=false

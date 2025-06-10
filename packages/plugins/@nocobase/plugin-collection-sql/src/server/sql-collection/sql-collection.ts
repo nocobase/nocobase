@@ -42,7 +42,7 @@ export class SQLCollection extends Collection {
   }
 
   unavailableActions(): Array<string> {
-    return ['create', 'update', 'destroy'];
+    return ['create', 'update', 'destroy', 'importXlsx', 'destroyMany', 'updateMany'];
   }
 
   public collectionSchema() {

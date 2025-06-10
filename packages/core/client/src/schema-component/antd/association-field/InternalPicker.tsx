@@ -8,11 +8,13 @@
  */
 
 import { observer, useField, useFieldSchema } from '@formily/react';
+import { transformMultiColumnToSingleColumn } from '@nocobase/utils/client';
 import { Select, Space } from 'antd';
 import { differenceBy, unionBy } from 'lodash';
 import React, { useContext, useMemo, useState } from 'react';
 import {
   FormProvider,
+  PopupSettingsProvider,
   RecordPickerContext,
   RecordPickerProvider,
   SchemaComponentOptions,
@@ -24,6 +26,7 @@ import {
   NocoBaseRecursionField,
   RecordProvider,
   useCollectionRecordData,
+  useMobileLayout,
 } from '../../..';
 import { useFormBlockContext } from '../../../block-provider/FormBlockProvider';
 import {
@@ -106,7 +109,8 @@ export const InternalPicker = observer(
     const pickerProps = {
       size: 'small',
       fieldNames,
-      multiple: multiple !== false && ['o2m', 'm2m', 'mbm'].includes(collectionField?.interface),
+      multiple:
+        multiple === true ? true : multiple !== false && ['o2m', 'm2m', 'mbm'].includes(collectionField?.interface),
       association: {
         target: collectionField?.target,
       },
@@ -117,6 +121,7 @@ export const InternalPicker = observer(
       collectionField,
       currentFormCollection: collectionName,
     };
+    const { isMobileLayout } = useMobileLayout();
 
     const getValue = () => {
       if (multiple == null) return null;
@@ -143,13 +148,25 @@ export const InternalPicker = observer(
           setVisible(false);
         },
         style: {
-          display: multiple !== false && ['o2m', 'm2m', 'mbm'].includes(collectionField?.interface) ? 'block' : 'none',
+          display: multiple === false ? 'none' : 'block',
         },
       };
     };
+    const scope = useMemo(
+      () => ({
+        usePickActionProps,
+        useTableSelectorProps,
+      }),
+      [],
+    );
+    const newSchema = useMemo(
+      () => (isMobileLayout ? transformMultiColumnToSingleColumn(fieldSchema) : fieldSchema),
+      [isMobileLayout, fieldSchema],
+    );
+
     return (
-      <>
-        <Space.Compact style={{ display: 'flex', lineHeight: '32px' }}>
+      <PopupSettingsProvider enableURL={false}>
+        <Space.Compact style={{ display: 'flex' }}>
           <div style={{ width: '100%' }}>
             <Select
               role="button"
@@ -213,16 +230,11 @@ export const InternalPicker = observer(
             <CollectionProvider_deprecated name={collectionField?.target}>
               <FormProvider>
                 <TableSelectorParamsProvider params={{ filter: getFilter() }}>
-                  <SchemaComponentOptions
-                    scope={{
-                      usePickActionProps,
-                      useTableSelectorProps,
-                    }}
-                  >
+                  <SchemaComponentOptions scope={scope}>
                     <NocoBaseRecursionField
                       onlyRenderProperties
                       basePath={field.address}
-                      schema={fieldSchema}
+                      schema={newSchema}
                       filterProperties={(s) => {
                         return s['x-component'] === 'AssociationField.Selector';
                       }}
@@ -233,7 +245,7 @@ export const InternalPicker = observer(
             </CollectionProvider_deprecated>
           </RecordPickerProvider>
         </ActionContextProvider>
-      </>
+      </PopupSettingsProvider>
     );
   },
   { displayName: 'InternalPicker' },

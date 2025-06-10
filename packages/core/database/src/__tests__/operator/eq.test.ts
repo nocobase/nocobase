@@ -7,15 +7,14 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import Database from '../../database';
-import { mockDatabase } from '../index';
+import { createMockDatabase, Database } from '@nocobase/database';
 
 describe('eq operator', () => {
   let db: Database;
   let Test;
 
   beforeEach(async () => {
-    db = mockDatabase({});
+    db = await createMockDatabase({});
     await db.clean({ drop: true });
 
     Test = db.collection({

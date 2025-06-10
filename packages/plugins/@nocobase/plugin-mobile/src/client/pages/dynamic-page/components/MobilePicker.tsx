@@ -16,6 +16,7 @@ import { useTranslation } from 'react-i18next';
 const MobilePicker = connect(
   (props) => {
     const { value, onChange, disabled, options = [], mode } = props;
+    console.log(props);
     const { t } = useTranslation();
     const [visible, setVisible] = useState(false);
     const [selected, setSelected] = useState(value || []);
@@ -42,7 +43,7 @@ const MobilePicker = connect(
             disabled={disabled}
             value={value}
             dropdownStyle={{ display: 'none' }}
-            multiple={mode === 'multiple'}
+            multiple={['multiple', 'tags'].includes(mode)}
             onClear={() => {
               setVisible(false);
               onChange(null);
@@ -77,10 +78,10 @@ const MobilePicker = connect(
             }}
           >
             <CheckList
-              multiple={mode === 'multiple'}
+              multiple={['multiple', 'tags'].includes(mode)}
               value={Array.isArray(selected) ? selected : [selected] || []}
               onChange={(val) => {
-                if (mode === 'multiple') {
+                if (['multiple', 'tags'].includes(mode)) {
                   setSelected(val);
                 } else {
                   setSelected(val[0]);
@@ -96,7 +97,7 @@ const MobilePicker = connect(
               ))}
             </CheckList>
           </div>
-          {mode === 'multiple' && (
+          {['multiple', 'tags'].includes(mode) && (
             <Button block color="primary" onClick={handleConfirm} style={{ marginTop: '16px' }}>
               {t('Confirm')}
             </Button>
@@ -107,5 +108,7 @@ const MobilePicker = connect(
   },
   mapProps({ dataSource: 'options' }),
 );
+
+MobilePicker.displayName = 'MobilePicker';
 
 export { MobilePicker };

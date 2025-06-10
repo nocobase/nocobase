@@ -153,7 +153,7 @@ export const createFormSchema: ISchema = {
               'x-component': 'Action',
               'x-component-props': {
                 type: 'primary',
-                useAction: '{{ cm.useCreateAction }}',
+                useAction: '{{ useCreateAction }}',
               },
             },
           },
@@ -349,6 +349,7 @@ export const authenticatorsSchema: ISchema = {
                         name: {
                           'x-component': 'CollectionField',
                           'x-decorator': 'FormItem',
+                          'x-disabled': true,
                         },
                         authType: {
                           'x-component': 'CollectionField',
@@ -389,7 +390,7 @@ export const authenticatorsSchema: ISchema = {
                               'x-component': 'Action',
                               'x-component-props': {
                                 type: 'primary',
-                                useAction: '{{ cm.useUpdateAction }}',
+                                useAction: '{{ useUpdateAction }}',
                               },
                             },
                           },

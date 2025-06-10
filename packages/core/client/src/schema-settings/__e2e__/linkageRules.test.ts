@@ -10,6 +10,8 @@
 import { expect, test } from '@nocobase/test/e2e';
 import {
   formFieldDependsOnSubtableFieldsWithLinkageRules,
+  whenARequiredFieldIsSetToHideRetainValueItShouldBeAbleToSubmitTheFormNormally,
+  whenClearingARelationshipFieldInASubtableTheCorrespondingCurrentObjectVariableShouldAlsoBeCleared,
   whenClearingARelationshipFieldTheValueOfTheAssociatedFieldShouldBeCleared,
   whenSetToHideRetainedValueItShouldNotImpactTheFieldSDefaultValueVariables,
 } from './template';
@@ -83,6 +85,28 @@ test.describe('linkage rules', () => {
     ).toBeVisible();
   });
 
+  test('When a required field is set to "Hide (retain value)", it should be able to submit the form normally', async ({
+    mockPage,
+    page,
+  }) => {
+    await mockPage(whenARequiredFieldIsSetToHideRetainValueItShouldBeAbleToSubmitTheFormNormally).goto();
+
+    // 1. 输入昵称
+    await page
+      .getByLabel('block-item-CollectionField-users-form-users.nickname-Nickname')
+      .getByRole('textbox')
+      .fill('123456');
+
+    // 2. 点击提交
+    await page.getByLabel('action-Action-Submit-submit-').click();
+
+    // 3. 应该能正常提交，不应该被拦截
+    await page.reload();
+    await expect(
+      page.getByLabel('block-item-CardItem-users-table').getByRole('cell', { name: '123456' }),
+    ).toBeVisible();
+  });
+
   test('When clearing a relationship field, the value of the associated field should be cleared', async ({
     page,
     mockPage,
@@ -100,6 +124,30 @@ test.describe('linkage rules', () => {
         .getByRole('button', { name: 'block-item-CollectionField-users-form-users.nickname-Nickname' })
         .getByRole('textbox'),
     ).toBeEmpty();
+  });
+
+  test('When clearing a relationship field in a subtable, the corresponding "current object" variable should also be cleared', async ({
+    page,
+    mockPage,
+    mockRecord,
+  }) => {
+    await mockPage(
+      whenClearingARelationshipFieldInASubtableTheCorrespondingCurrentObjectVariableShouldAlsoBeCleared,
+    ).goto();
+    const record = await mockRecord('test', 2);
+
+    // 1. 打开弹窗
+    await page.getByLabel('action-Action.Link-Edit-').click();
+
+    // 2. 应该显示通过联动规则计算出来的值
+    const value = record.user[0].roles.map((item) => item.name).join(',');
+    await expect(page.getByRole('row', { name: 'table-index-1 block-item-' }).getByRole('textbox')).toHaveValue(value);
+
+    // 3. 将子表格中第一行的 roles 字段清空，第一行的 Nickname 字段也应该被清空
+    await page.getByRole('row', { name: 'table-index-1 block-item-' }).locator('.ant-select-selector').hover();
+    await page.getByRole('row', { name: 'table-index-1 block-item-' }).getByLabel('icon-close-select').click();
+
+    await expect(page.getByRole('row', { name: 'table-index-1 block-item-' }).getByRole('textbox')).toHaveValue('');
   });
 });
 

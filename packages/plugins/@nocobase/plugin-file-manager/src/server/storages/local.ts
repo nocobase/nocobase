@@ -7,13 +7,18 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { isURL } from '@nocobase/utils';
+import fsSync from 'fs';
 import fs from 'fs/promises';
-import mkdirp from 'mkdirp';
 import multer from 'multer';
 import path from 'path';
+import type { Readable } from 'stream';
+import urlJoin from 'url-join';
 import { AttachmentModel, StorageType } from '.';
 import { FILE_SIZE_LIMIT_DEFAULT, STORAGE_TYPE_LOCAL } from '../../constants';
 import { getFilename } from '../utils';
+
+const DEFAULT_BASE_URL = '/storage/uploads';
 
 function getDocumentRoot(storage): string {
   const { documentRoot = process.env.LOCAL_STORAGE_DEST || 'storage/uploads' } = storage.options || {};
@@ -27,7 +32,7 @@ export default class extends StorageType {
       title: 'Local storage',
       type: STORAGE_TYPE_LOCAL,
       name: `local`,
-      baseUrl: '/storage/uploads',
+      baseUrl: DEFAULT_BASE_URL,
       options: {
         documentRoot: 'storage/uploads',
       },
@@ -42,6 +47,7 @@ export default class extends StorageType {
     return multer.diskStorage({
       destination: (req, file, cb) => {
         const destPath = path.join(getDocumentRoot(this.storage), this.storage.path || '');
+        const mkdirp = require('mkdirp');
         mkdirp(destPath, (err: Error | null) => cb(err, destPath));
       },
       filename: getFilename,
@@ -72,7 +78,23 @@ export default class extends StorageType {
 
     return [count, undeleted];
   }
-  getFileURL(file: AttachmentModel) {
-    return process.env.APP_PUBLIC_PATH ? `${process.env.APP_PUBLIC_PATH.replace(/\/$/g, '')}${file.url}` : file.url;
+  async getFileURL(file: AttachmentModel, preview = false) {
+    const url = await super.getFileURL(file, preview);
+    if (isURL(url)) {
+      return url;
+    }
+    return urlJoin(process.env.APP_PUBLIC_PATH, url);
+  }
+
+  async getFileStream(file: AttachmentModel): Promise<{ stream: Readable; contentType?: string }> {
+    // compatible with windows path
+    const filePath = path.join(process.cwd(), 'storage', 'uploads', file.path || '', file.filename);
+    if (await fs.stat(filePath)) {
+      return {
+        stream: fsSync.createReadStream(filePath),
+        contentType: file.mimetype,
+      };
+    }
+    throw new Error(`File not found: ${filePath}`);
   }
 }

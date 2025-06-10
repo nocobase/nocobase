@@ -67,6 +67,108 @@ describe('getSupportFieldsByAssociation', () => {
 });
 
 describe('getSupportFieldsByForeignKey', () => {
+  it('should return foreign key fields matching both name and target collection', () => {
+    const filterBlockCollection = {
+      fields: [
+        { id: 1, name: 'field1', type: 'hasMany', foreignKey: 'fk1', target: 'collection1' },
+        { id: 2, name: 'field2', type: 'hasMany', foreignKey: 'fk2', target: 'collection2' },
+        { id: 3, name: 'field3', type: 'hasMany', foreignKey: 'fk3', target: 'collection3' },
+      ],
+    };
+
+    const block = {
+      foreignKeyFields: [
+        { id: 1, name: 'fk1', collectionName: 'collection1' },
+        { id: 2, name: 'fk2', collectionName: 'collection2' },
+        { id: 3, name: 'fk3', collectionName: 'collection3' },
+      ],
+    };
+
+    const result = getSupportFieldsByForeignKey(filterBlockCollection as any, block as any);
+
+    expect(result).toEqual([
+      { id: 1, name: 'fk1', collectionName: 'collection1' },
+      { id: 2, name: 'fk2', collectionName: 'collection2' },
+      { id: 3, name: 'fk3', collectionName: 'collection3' },
+    ]);
+  });
+
+  it("should not return foreign key fields when target collection doesn't match", () => {
+    const filterBlockCollection = {
+      fields: [
+        { id: 1, name: 'field1', type: 'hasMany', foreignKey: 'fk1', target: 'collection1' },
+        { id: 2, name: 'field2', type: 'hasMany', foreignKey: 'fk2', target: 'collectionX' }, // target不匹配
+        { id: 3, name: 'field3', type: 'hasMany', foreignKey: 'fk3', target: 'collection3' },
+      ],
+    };
+
+    const block = {
+      foreignKeyFields: [
+        { id: 1, name: 'fk1', collectionName: 'collection1' },
+        { id: 2, name: 'fk2', collectionName: 'collection2' }, // 与field2的target不匹配
+        { id: 3, name: 'fk3', collectionName: 'collection3' },
+      ],
+    };
+
+    const result = getSupportFieldsByForeignKey(filterBlockCollection as any, block as any);
+
+    expect(result).toEqual([
+      { id: 1, name: 'fk1', collectionName: 'collection1' },
+      { id: 3, name: 'fk3', collectionName: 'collection3' },
+    ]);
+  });
+
+  it('should filter out belongsTo type fields', () => {
+    const filterBlockCollection = {
+      fields: [
+        { id: 1, name: 'field1', type: 'hasMany', foreignKey: 'fk1', target: 'collection1' },
+        { id: 2, name: 'field2', type: 'belongsTo', foreignKey: 'fk2', target: 'collection2' }, // belongsTo类型
+        { id: 3, name: 'field3', type: 'hasMany', foreignKey: 'fk3', target: 'collection3' },
+      ],
+    };
+
+    const block = {
+      foreignKeyFields: [
+        { id: 1, name: 'fk1', collectionName: 'collection1' },
+        { id: 2, name: 'fk2', collectionName: 'collection2' },
+        { id: 3, name: 'fk3', collectionName: 'collection3' },
+      ],
+    };
+
+    const result = getSupportFieldsByForeignKey(filterBlockCollection as any, block as any);
+
+    expect(result).toEqual([
+      { id: 1, name: 'fk1', collectionName: 'collection1' },
+      { id: 3, name: 'fk3', collectionName: 'collection3' },
+    ]);
+  });
+
+  it('should handle when both name and target collection match', () => {
+    const filterBlockCollection = {
+      fields: [
+        { id: 1, name: 'field1', type: 'hasMany', foreignKey: 'fk1', target: 'collection1' },
+        { id: 2, name: 'field2', type: 'hasOne', foreignKey: 'fk2', target: 'collection2' },
+        { id: 3, name: 'field3', type: 'hasMany', foreignKey: 'fk3', target: 'wrongCollection' }, // 目标表不匹配
+      ],
+    };
+
+    const block = {
+      foreignKeyFields: [
+        { id: 1, name: 'fk1', collectionName: 'collection1' },
+        { id: 2, name: 'fk2', collectionName: 'collection2' },
+        { id: 3, name: 'fk3', collectionName: 'collection3' }, // 与field3的target不匹配
+      ],
+    };
+
+    const result = getSupportFieldsByForeignKey(filterBlockCollection as any, block as any);
+
+    expect(result).toEqual([
+      { id: 1, name: 'fk1', collectionName: 'collection1' },
+      { id: 2, name: 'fk2', collectionName: 'collection2' },
+    ]);
+  });
+
+  // 保留原有的通用测试用例
   it("should return all foreign key fields matching the filter block collection's foreign key properties", () => {
     const filterBlockCollection = {
       fields: [

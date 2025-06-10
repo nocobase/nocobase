@@ -8,7 +8,7 @@
  */
 const _ = require('lodash');
 const { Command } = require('commander');
-const { generatePlugins, run, postCheck, nodeCheck, promptForTs, isPortReachable } = require('../util');
+const { generatePlugins, run, postCheck, nodeCheck, promptForTs, isPortReachable, checkDBDialect } = require('../util');
 const { getPortPromise } = require('portfinder');
 const chokidar = require('chokidar');
 const { uid } = require('@formily/shared');
@@ -36,6 +36,7 @@ module.exports = (cli) => {
     .option('-i, --inspect [port]')
     .allowUnknownOption()
     .action(async (opts) => {
+      checkDBDialect();
       let subprocess;
       const runDevClient = () => {
         console.log('starting client', 1 * clientPort);

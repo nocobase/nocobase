@@ -12,6 +12,7 @@ import path from 'path';
 
 export const globExcludeFiles = [
   '!src/**/__tests__',
+  '!src/**/__benchmarks__',
   '!src/**/__test__',
   '!src/**/__e2e__',
   '!src/**/demos',

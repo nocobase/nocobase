@@ -36,6 +36,7 @@ import { useAPIClient, useRequest } from '../../api-client';
 import { useNavigateNoUpdate } from '../../application/CustomRouterContextProvider';
 import { useFormBlockContext } from '../../block-provider/FormBlockProvider';
 import { CollectionOptions, useCollectionManager_deprecated, useCollection_deprecated } from '../../collection-manager';
+import { getVariableValue } from '../../common/getVariableValue';
 import { DataBlock, useFilterBlock } from '../../filter-provider/FilterProvider';
 import { mergeFilter, transformToFilter } from '../../filter-provider/utils';
 import { useTreeParentRecord } from '../../modules/blocks/data-blocks/table/TreeRecordProvider';
@@ -97,6 +98,38 @@ const filterValue = (value) => {
   return obj;
 };
 
+function getFilteredFormValues(form) {
+  const values = _.cloneDeep(form.values);
+  const allFields = [];
+  form.query('*').forEach((field) => {
+    if (field) {
+      allFields.push(field);
+    }
+  });
+  const readonlyPaths = _.uniq(
+    allFields
+      .filter((field) => {
+        const segments = field.path?.segments || [];
+        const path = segments.length <= 1 ? segments.join('.') : segments.slice(0, -1).join('.');
+        return field?.componentProps?.readOnlySubmit && !get(values, path)[field?.componentProps.filterTargetKey];
+      })
+      .map((field) => {
+        const segments = field.path?.segments || [];
+        if (segments.length <= 1) {
+          return segments.join('.');
+        }
+        return segments.slice(0, -1).join('.');
+      }),
+  );
+  readonlyPaths.forEach((path, index) => {
+    if ((index !== 0 || path.includes('.')) && !values[path]) {
+      // 清空值，但跳过第一层
+      _.unset(values, path);
+    }
+  });
+  return values;
+}
+
 export function getFormValues({
   filterByTk,
   field,
@@ -124,7 +157,7 @@ export function getFormValues({
     }
   }
 
-  return form.values;
+  return getFilteredFormValues(form);
 }
 
 export function useCollectValuesToSubmit() {
@@ -167,7 +200,7 @@ export function useCollectValuesToSubmit() {
         if (parsedValue !== null && parsedValue !== undefined) {
           assignedValues[key] = transformVariableValue(parsedValue, { targetCollectionField: collectionField });
         }
-      } else if (value != null && value !== '') {
+      } else if (value !== '') {
         assignedValues[key] = value;
       }
     });
@@ -219,11 +252,20 @@ export const useCreateActionProps = () => {
   const collectValues = useCollectValuesToSubmit();
   const action = record.isNew ? actionField.componentProps.saveMode || 'create' : 'update';
   const filterKeys = actionField.componentProps.filterKeys?.checked || [];
+  const localVariables = useLocalVariables();
+  const variables = useVariables();
 
   return {
     async onClick() {
       const { onSuccess, skipValidator, triggerWorkflows } = actionSchema?.['x-action-settings'] ?? {};
-      const { manualClose, redirecting, redirectTo, successMessage, actionAfterSuccess } = onSuccess || {};
+      const {
+        manualClose,
+        redirecting,
+        redirectTo: rawRedirectTo,
+        successMessage,
+        actionAfterSuccess,
+      } = onSuccess || {};
+
       if (!skipValidator) {
         await form.submit();
       }
@@ -241,6 +283,14 @@ export const useCreateActionProps = () => {
             : undefined,
           updateAssociationValues,
         });
+        let redirectTo = rawRedirectTo;
+        if (rawRedirectTo) {
+          redirectTo = await getVariableValue(rawRedirectTo, {
+            variables,
+            localVariables: [...localVariables, { name: '$record', ctx: new Proxy(data?.data?.data, {}) }],
+          });
+        }
+
         if (actionAfterSuccess === 'previous' || (!actionAfterSuccess && redirecting !== true)) {
           setVisible?.(false);
         }
@@ -338,7 +388,7 @@ export const useAssociationCreateActionProps = () => {
           if (parsedValue) {
             assignedValues[key] = transformVariableValue(parsedValue, { targetCollectionField: collectionField });
           }
-        } else if (value != null && value !== '') {
+        } else if (value !== '') {
           assignedValues[key] = value;
         }
       });
@@ -442,7 +492,6 @@ const useDoFilter = () => {
   const fieldSchema = useFieldSchema();
   const { name } = useCollection();
   const { targets = [], uid } = useMemo(() => findFilterTargets(fieldSchema), [fieldSchema]);
-
   const getFilterFromCurrentForm = useCallback(() => {
     return removeNullCondition(transformToFilter(form.values, getOperators(), cm.getCollectionField.bind(cm), name));
   }, [form.values, cm, getOperators, name]);
@@ -462,11 +511,14 @@ const useDoFilter = () => {
 
             // 由当前表单转换而来的 filter
             storedFilter[uid] = getFilterFromCurrentForm();
-
             const mergedFilter = mergeFilter([
               ...Object.values(storedFilter).map((filter) => removeNullCondition(filter)),
               block.defaultFilter,
             ]);
+
+            if (_.isEmpty(storedFilter[uid])) {
+              block.clearSelection?.();
+            }
 
             if (doNothingWhenFilterIsEmpty && _.isEmpty(storedFilter[uid])) {
               return;
@@ -476,6 +528,8 @@ const useDoFilter = () => {
               return block.clearData();
             }
 
+            // 存储当前的筛选条件，供其它筛选区块使用
+            _.set(block.service.params, '1.filters', storedFilter);
             return block.doFilter(
               {
                 ...param,
@@ -499,8 +553,8 @@ const useDoFilter = () => {
     // 另外，如果不加 100 毫秒的延迟，会导致数据区块列表更新后，不触发筛选操作的问题。
     setTimeout(() => {
       doFilter({ doNothingWhenFilterIsEmpty: true });
-    }, 100);
-  }, [getDataBlocks().length]);
+    }, 500);
+  }, [doFilter]);
 
   return {
     /**
@@ -584,7 +638,13 @@ export const useCustomizeUpdateActionProps = () => {
         skipValidator,
         triggerWorkflows,
       } = actionSchema?.['x-action-settings'] ?? {};
-      const { manualClose, redirecting, redirectTo, successMessage, actionAfterSuccess } = onSuccess || {};
+      const {
+        manualClose,
+        redirecting,
+        redirectTo: rawRedirectTo,
+        successMessage,
+        actionAfterSuccess,
+      } = onSuccess || {};
       const assignedValues = {};
       const waitList = Object.keys(originalAssignedValues).map(async (key) => {
         const value = originalAssignedValues[key];
@@ -601,7 +661,7 @@ export const useCustomizeUpdateActionProps = () => {
           if (parsedValue) {
             assignedValues[key] = transformVariableValue(parsedValue, { targetCollectionField: collectionField });
           }
-        } else if (value != null && value !== '') {
+        } else if (value !== '') {
           assignedValues[key] = value;
         }
       });
@@ -610,7 +670,7 @@ export const useCustomizeUpdateActionProps = () => {
       if (skipValidator === false) {
         await form.submit();
       }
-      await resource.update({
+      const result = await resource.update({
         filterByTk,
         values: { ...assignedValues },
         // TODO(refactor): should change to inject by plugin
@@ -618,6 +678,16 @@ export const useCustomizeUpdateActionProps = () => {
           ? triggerWorkflows.map((row) => [row.workflowKey, row.context].filter(Boolean).join('!')).join(',')
           : undefined,
       });
+
+      let redirectTo = rawRedirectTo;
+      if (rawRedirectTo) {
+        // eslint-disable-next-line react-hooks/rules-of-hooks
+        redirectTo = await getVariableValue(rawRedirectTo, {
+          variables,
+          localVariables: [...localVariables, { name: '$record', ctx: new Proxy(result?.data?.data, {}) }],
+        });
+      }
+
       if (actionAfterSuccess === 'previous' || (!actionAfterSuccess && redirecting !== true)) {
         setVisible?.(false);
       }
@@ -704,7 +774,7 @@ export const useCustomizeBulkUpdateActionProps = () => {
           if (parsedValue) {
             assignedValues[key] = transformVariableValue(parsedValue, { targetCollectionField: collectionField });
           }
-        } else if (value != null && value !== '') {
+        } else if (value !== '') {
           assignedValues[key] = value;
         }
       });
@@ -909,7 +979,13 @@ export const useUpdateActionProps = () => {
         skipValidator,
         triggerWorkflows,
       } = actionSchema?.['x-action-settings'] ?? {};
-      const { manualClose, redirecting, redirectTo, successMessage, actionAfterSuccess } = onSuccess || {};
+      const {
+        manualClose,
+        redirecting,
+        redirectTo: rawRedirectTo,
+        successMessage,
+        actionAfterSuccess,
+      } = onSuccess || {};
       const assignedValues = {};
       const waitList = Object.keys(originalAssignedValues).map(async (key) => {
         const value = originalAssignedValues[key];
@@ -926,7 +1002,7 @@ export const useUpdateActionProps = () => {
           if (parsedValue) {
             assignedValues[key] = transformVariableValue(parsedValue, { targetCollectionField: collectionField });
           }
-        } else if (value != null && value !== '') {
+        } else if (value !== '') {
           assignedValues[key] = value;
         }
       });
@@ -948,7 +1024,7 @@ export const useUpdateActionProps = () => {
       actionField.data = field.data || {};
       actionField.data.loading = true;
       try {
-        await resource.update({
+        const result = await resource.update({
           filterByTk,
           values: {
             ...values,
@@ -967,6 +1043,15 @@ export const useUpdateActionProps = () => {
         if (callBack) {
           callBack?.();
         }
+        let redirectTo = rawRedirectTo;
+        if (rawRedirectTo) {
+          // eslint-disable-next-line react-hooks/rules-of-hooks
+          redirectTo = await getVariableValue(rawRedirectTo, {
+            variables,
+            localVariables: [...localVariables, { name: '$record', ctx: new Proxy(result?.data?.data, {}) }],
+          });
+        }
+
         if (actionAfterSuccess === 'previous' || (!actionAfterSuccess && redirecting !== true)) {
           setVisible?.(false);
         }
@@ -1030,10 +1115,11 @@ export const useDestroyActionProps = () => {
 
       const { count = 0, page = 0, pageSize = 0 } = service?.data?.meta || {};
       if (count % pageSize === 1 && page !== 1) {
-        service.run({
-          ...service?.params?.[0],
-          page: page - 1,
-        });
+        const currentPage = service.params[0]?.page;
+        const totalPage = service.data?.meta?.totalPage;
+        if (currentPage === totalPage && service.params[0] && currentPage !== 1) {
+          service.params[0].page = currentPage - 1;
+        }
       }
       if (callBack) {
         callBack?.();
@@ -1153,6 +1239,7 @@ export const useDetailsPaginationProps = () => {
       current: ctx.service?.data?.meta?.page || 1,
       pageSize: 1,
       showSizeChanger: false,
+      align: 'center',
       async onChange(page) {
         const params = ctx.service?.params?.[0];
         ctx.service.run({ ...params, page });
@@ -1178,6 +1265,7 @@ export const useDetailsPaginationProps = () => {
     total: count,
     pageSize: 1,
     showSizeChanger: false,
+    align: 'center',
     async onChange(page) {
       const params = ctx.service?.params?.[0];
       ctx.service.run({ ...params, page });
@@ -1349,6 +1437,7 @@ export const useAssociationFilterBlockProps = () => {
             [filterKey]: value,
           };
         } else {
+          block.clearSelection?.();
           if (block.dataLoadingMode === 'manual') {
             return block.clearData();
           }
@@ -1420,6 +1509,7 @@ export const useAssociationFilterBlockProps = () => {
     run,
     valueKey,
     labelKey,
+    dataScopeFilter: filter,
   };
 };
 async function doReset({
@@ -1441,6 +1531,8 @@ async function doReset({
       getDataBlocks().map(async (block) => {
         const target = targets.find((target) => target.uid === block.uid);
         if (!target) return;
+
+        block.clearSelection?.();
 
         if (block.dataLoadingMode === 'manual') {
           return block.clearData();
@@ -1516,7 +1608,7 @@ export const getAppends = ({
           const fieldNames = getTargetField(item);
 
           // 只应该收集关系字段，只有大于 1 的时候才是关系字段
-          if (fieldNames.length > 1) {
+          if (fieldNames.length > 1 && !item.op) {
             appends.add(fieldNames.join('.'));
           }
         });

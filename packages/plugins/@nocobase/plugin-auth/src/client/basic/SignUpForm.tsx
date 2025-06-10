@@ -8,7 +8,7 @@
  */
 
 import { SchemaComponent } from '@nocobase/client';
-import { ISchema } from '@formily/react';
+import { ISchema, Schema } from '@formily/react';
 import React, { useMemo } from 'react';
 import { uid } from '@formily/shared';
 import { useAuthTranslation } from '../locale';
@@ -122,6 +122,7 @@ const getSignupPageSchema = (fieldSchemas: any): ISchema => ({
 
 export const SignUpForm = ({ authenticatorName: name }: { authenticatorName: string }) => {
   const { t } = useAuthTranslation();
+  const { t: fieldT } = useTranslation('lm-collections');
   const useBasicSignUp = () => {
     return useSignUp({ authenticator: name });
   };
@@ -132,8 +133,12 @@ export const SignUpForm = ({ authenticatorName: name }: { authenticatorName: str
     return signupForm
       .filter((field: { show: boolean }) => field.show)
       .reduce((prev: any, item: { field: string; required: boolean; uiSchema: any }) => {
-        prev[item.field] = {
+        const uiSchema = {
           ...item.uiSchema,
+          title: item.uiSchema.title ? fieldT(Schema.compile(item.uiSchema.title, { t })) : '',
+        };
+        prev[item.field] = {
+          ...uiSchema,
           required: item.required,
           'x-decorator': 'FormItem',
         };

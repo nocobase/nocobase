@@ -9,9 +9,9 @@
   "Step 1: Download template": "Passo 1: Scarica modello",
   "Step 2: Upload Excel": "Passo 2: Carica file Excel",
   "Step 3: Import options": "Passo 3: Opzioni di importazione",
-  "Download tips": "- Scarica il modello e compila i dati secondo il formato \\r\\n - Importa solo il primo foglio di lavoro \\r\\n - Non cambiare l'intestazione del modello per evitare errori di importazione",
+  "Download tips": "- Scarica il modello e compila i dati secondo il formato \r\n - Importa solo il primo foglio di lavoro \r\n - Non cambiare l'intestazione del modello per evitare errori di importazione",
   "Import warnings": "Puoi importare fino a {{limit}} righe di dati alla volta, qualsiasi eccedenza verrà ignorata.",
-  "Upload placeholder": "Trascina qui il file o clicca per caricare, la dimensione del file non deve superare 80M",
+  "Upload placeholder": "Trascina qui il file o clicca per caricare.",
   "Excel data importing": "Importazione dati Excel in corso",
   "{{successCount}} records have been successfully imported": "{{successCount}} record sono stati importati con successo",
   "To download the failure data": "Scarica i dati non riusciti",
@@ -38,5 +38,14 @@
   "Header mismatch at column {{column}}: expected \"{{expected}}\", but got \"{{actual}}\"": "Incongruenza intestazione alla colonna {{column}}: previsto \"{{expected}}\", ma ottenuto \"{{actual}}\"",
   "No data to import": "Nessun dato da importare",
   "Failed to import row {{row}}, {{message}}, row data: {{data}}": "Errore nell'importazione della riga {{row}}, {{message}}, dati della riga: {{data}}",
-  "import-error": "Errore nell'importazione della riga {{rowIndex}}, dati della riga: {{rowData}}, causa: {{causeMessage}}"
+  "import-error": "Errore nell'importazione della riga {{rowIndex}}, dati della riga: {{rowData}}, causa: {{causeMessage}}",
+  "Import": "Importa",
+  "Import completed": "Importazione completata: {{success}} record importati con successo, {{updated}} record aggiornati, {{skipped}} record saltati, totale {{total}} record",
+  "Successfully imported": "Importazione riuscita",
+  "Updated records": "Record aggiornati",
+  "Skipped records": "Record saltati",
+  "Total records": "Record totali",
+  "View result": "Visualizza risultato",
+  "ImportResult": "Importati {{success}}, aggiornati {{updated}}, saltati {{skipped}}, totale {{total}}",
+  "Task result": "Risultato attività"
 }

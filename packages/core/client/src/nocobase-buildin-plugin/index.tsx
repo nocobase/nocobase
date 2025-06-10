@@ -14,12 +14,13 @@ import { getSubAppName } from '@nocobase/sdk';
 import { tval } from '@nocobase/utils/client';
 import { Button, Modal, Result, Spin } from 'antd';
 import React, { FC } from 'react';
-import { Navigate, useNavigate } from 'react-router-dom';
+import { Navigate } from 'react-router-dom';
 import { ACLPlugin } from '../acl';
 import { Application } from '../application';
 import { Plugin } from '../application/Plugin';
 import { BlockSchemaComponentPlugin } from '../block-provider';
 import { CollectionPlugin } from '../collection-manager';
+import { AppNotFound } from '../common/AppNotFound';
 import { RemoteDocumentTitlePlugin } from '../document-title';
 import { PinnedListPlugin } from '../plugin-manager';
 import { PMPlugin } from '../pm';
@@ -74,9 +75,9 @@ const useErrorProps = (app: Application, error: any) => {
   }
 };
 
-const AppError: FC<{ error: Error; app: Application }> = observer(
+const AppError: FC<{ error: Error & { title?: string }; app: Application }> = observer(
   ({ app, error }) => {
-    const props = useErrorProps(app, error);
+    const props = getProps(app);
     return (
       <div>
         <Result
@@ -87,8 +88,9 @@ const AppError: FC<{ error: Error; app: Application }> = observer(
             transform: translate(0, -50%);
           `}
           status="error"
-          title={app.i18n.t('App error')}
+          title={error?.title || app.i18n.t('App error', { ns: 'client' })}
           subTitle={app.i18n.t(error?.message)}
+          {...props}
           extra={[
             <Button type="primary" key="try" onClick={() => window.location.reload()}>
               {app.i18n.t('Try again')}
@@ -120,6 +122,14 @@ const getProps = (app: Application) => {
     return {
       status: 'warning',
       title: 'App not found',
+      subTitle: app.error?.message,
+    };
+  }
+
+  if (app.error.code === 'APP_WARNING') {
+    return {
+      status: 'warning',
+      title: 'App warning',
       subTitle: app.error?.message,
     };
   }
@@ -250,22 +260,6 @@ const AppMaintainingDialog: FC<{ app: Application; error: Error }> = observer(
   },
   { displayName: 'AppMaintainingDialog' },
 );
-
-export const AppNotFound = () => {
-  const navigate = useNavigate();
-  return (
-    <Result
-      status="404"
-      title="404"
-      subTitle="Sorry, the page you visited does not exist."
-      extra={
-        <Button onClick={() => navigate('/', { replace: true })} type="primary">
-          Back Home
-        </Button>
-      }
-    />
-  );
-};
 
 export class NocoBaseBuildInPlugin extends Plugin {
   async afterAdd() {

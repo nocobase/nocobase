@@ -1,0 +1,18 @@
+{
+  "Workbench": "Arbeitsbereich",
+  "Action panel": "Aktionspanel",
+  "Scan QR code": "QR-Code scannen",
+  "Album": "Album",
+  "No camera device detected": "Keine Kamera erkannt",
+  "You have not granted permission to use the camera": "Sie haben keine Berechtigung zur Nutzung der Kamera erteilt",
+  "Unknown error": "Unbekannter Fehler",
+  "The image size is too large. Please compress it to below 1MB before uploading": "Die Bildgröße ist zu groß. Bitte komprimieren Sie es auf unter 1MB vor dem Hochladen.",
+  "QR code recognition failed, please scan again": "QR-Code-Erkennung fehlgeschlagen, bitte erneut scannen.",
+  "Layout": "Layout",
+  "Grid": "Raster",
+  "List": "Liste",
+  "Add popup": "Popup hinzufügen",
+  "Add custom request": "Benutzerdefinierte Anfrage hinzufügen",
+  "At least 1, up to 6": "Mindestens 1, maximal 6",
+  "Items per row": "Elemente pro Zeile"
+}

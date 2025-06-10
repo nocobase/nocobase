@@ -1,9 +1,17 @@
 {
-  "Form event": "Evento modulo",
-  "Event triggers when submitted a workflow bound form action.": "L'evento si attiva quando viene inviata un'azione di un modulo associato a un workflow.",
-  "Form data model": "Modello dati modulo",
-  "Use a collection to match form data.": "Utilizza una raccolta per abbinare i dati del modulo.",
+  "Post-action event": "Evento post-azione",
+  "Triggered after the completion of a request initiated through an action button or API, such as after adding or updating data. Suitable for data processing, sending notifications, etc., after actions are completed.":
+    "Attivato dopo il completamento con esito positivo di una richiesta avviata tramite un pulsante di azione o un'API, ad esempio dopo l'aggiunta o l'aggiornamento di dati. Adatto per l'elaborazione dei dati, l'invio di notifiche, ecc. dopo il completamento delle azioni.",  
+  "Collection": "Raccolta",
+  "The collection to which the triggered data belongs.": "La raccolta a cui appartengono i dati attivati.",
+  "Trigger mode": "Modalità di attivazione",
+  "Local mode, triggered after the completion of actions bound to this workflow": "Modalità locale, attivata dopo il completamento delle azioni associate a questo workflow",
+  "Global mode, triggered after the completion of the following actions": "Modalità globale, attivata dopo il completamento delle seguenti azioni",
+  "Select actions": "Seleziona azioni",
+  "Create record action": "Azione di creazione record",
+  "Update record action": "Azione di aggiornamento record",
   "Associations to use": "Associazioni da utilizzare",
-  "User submitted form": "Modulo inviato dall'utente",
-  "Role of user submitted form": "Ruolo del modulo inviato dall'utente"
+  "Trigger data": "Dati attivazione",
+  "User acted": "Utente che ha agito",
+  "Role of user acted": "Ruolo dell'utente che ha agito"
 }

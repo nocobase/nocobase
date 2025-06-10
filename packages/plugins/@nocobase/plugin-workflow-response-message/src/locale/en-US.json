@@ -1,0 +1,8 @@
+{
+  "Response message": "Response message",
+  "Add response message, will be send to client when process of request ends.": "Add response message, will be send to client when process of request ends.",
+  "Message content": "Message content",
+  "Supports variables in template.": "Supports variables in template.",
+  "If the workflow ends normally, the response message will return a success status by default.": "If the workflow ends normally, the response message will return a success status by default.",
+  "If you want to return a failure status, please add an \"End Process\" node downstream to terminate the workflow.": "If you want to return a failure status, please add an \"End Process\" node downstream to terminate the workflow."
+}

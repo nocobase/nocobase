@@ -7,13 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import Database, { mockDatabase } from '../../index';
+import Database, { createMockDatabase } from '@nocobase/database';
 
 describe('multi filter target key', () => {
   let db: Database;
 
   beforeEach(async () => {
-    db = mockDatabase();
+    db = await createMockDatabase();
     await db.clean({ drop: true });
   });
 

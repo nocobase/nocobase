@@ -18,7 +18,7 @@
   "Storage name": "存储空间标识",
   "Storage type": "存储类型",
   "Default storage": "默认存储空间",
-  "Access base URL": "访问 URL 基础",
+  "Base URL": "基础 URL",
   "Base URL for file access, could be your CDN base URL. For example: \"https://cdn.nocobase.com\".": "文件访问的基础 URL，可以是你的 CDN 基础 URL。例如：\"https://cdn.nocobase.com\"。",
   "Destination": "上传目标文件夹",
   "Use the built-in static file server": "使用内置静态文件服务",
@@ -36,5 +36,7 @@
   "Keep file in storage when destroy record": "删除记录时保留文件",
   "See more": "更多请查阅",
 
-  "Aliyun OSS region part of the bucket. For example: \"oss-cn-beijing\".": "阿里云 OSS 存储桶所在区域。例如：\"oss-cn-beijing\"。"
+  "Aliyun OSS region part of the bucket. For example: \"oss-cn-beijing\".": "阿里云 OSS 存储桶所在区域。例如：\"oss-cn-beijing\"。",
+  "Timeout": "超时时间",
+  "Upload timeout for a single file in milliseconds. Default is 600000.": "上传单个文件的超时时间，单位为毫秒。默认为 600000。"
 }

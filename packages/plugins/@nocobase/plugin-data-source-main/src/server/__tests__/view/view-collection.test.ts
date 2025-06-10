@@ -11,10 +11,11 @@ import Database, { Repository, ViewCollection, ViewFieldInference } from '@nocob
 import Application from '@nocobase/server';
 import { uid } from '@nocobase/utils';
 import { createApp } from '../index';
+import { MockServer } from '@nocobase/test';
 
 describe('view collection', function () {
   let db: Database;
-  let app: Application;
+  let app: MockServer;
 
   let collectionRepository: Repository;
 
@@ -25,6 +26,7 @@ describe('view collection', function () {
       database: {
         tablePrefix: '',
       },
+      plugins: ['users'],
     });
 
     db = app.db;
@@ -48,7 +50,7 @@ describe('view collection', function () {
 
     await collectionRepository.create({
       values: {
-        name: 'users',
+        name: 'users_1',
         fields: [
           { name: 'name', type: 'string' },
           { type: 'belongsTo', name: 'group', foreignKey: 'group_id' },
@@ -57,7 +59,7 @@ describe('view collection', function () {
       context: {},
     });
 
-    const User = db.getCollection('users');
+    const User = db.getCollection('users_1');
 
     const assoc = User.model.associations.group;
     const foreignKey = assoc.foreignKey;
@@ -67,7 +69,7 @@ describe('view collection', function () {
     await db.sequelize.query(`DROP VIEW IF EXISTS ${viewName}`);
 
     const createSQL = `CREATE VIEW ${viewName} AS SELECT id, ${foreignField}, name FROM ${db
-      .getCollection('users')
+      .getCollection('users_1')
       .quotedTableName()}`;
 
     await db.sequelize.query(createSQL);
@@ -107,7 +109,7 @@ describe('view collection', function () {
 
     await collectionRepository.create({
       values: {
-        name: 'users',
+        name: 'users_1',
         fields: [
           { name: 'name', type: 'string' },
           { type: 'belongsTo', name: 'group', foreignKey: 'group_id' },
@@ -116,7 +118,7 @@ describe('view collection', function () {
       context: {},
     });
 
-    const User = db.getCollection('users');
+    const User = db.getCollection('users_1');
 
     const assoc = User.model.associations.group;
     const foreignKey = assoc.foreignKey;
@@ -126,7 +128,7 @@ describe('view collection', function () {
     await db.sequelize.query(`DROP VIEW IF EXISTS ${viewName}`);
 
     const createSQL = `CREATE VIEW ${viewName} AS SELECT id, ${foreignField}, name FROM ${db
-      .getCollection('users')
+      .getCollection('users_1')
       .quotedTableName()}`;
 
     await db.sequelize.query(createSQL);
@@ -161,7 +163,7 @@ describe('view collection', function () {
   it('should load view collection belongs to field', async () => {
     await collectionRepository.create({
       values: {
-        name: 'users',
+        name: 'users_1',
         fields: [
           {
             type: 'string',
@@ -190,14 +192,14 @@ describe('view collection', function () {
             type: 'belongsTo',
             name: 'user',
             foreignKey: 'userId',
-            target: 'users',
+            target: 'users_1',
           },
         ],
       },
       context: {},
     });
 
-    await db.getRepository('users').create({
+    await db.getRepository('users_1').create({
       values: [
         {
           name: 'u1',
@@ -216,7 +218,7 @@ describe('view collection', function () {
     await db.sequelize.query(`DROP VIEW IF EXISTS ${viewName}`);
 
     const viewSQL = `
-       CREATE VIEW ${viewName} as SELECT users.* FROM ${Post.quotedTableName()} as users
+       CREATE VIEW ${viewName} as SELECT users_1.* FROM ${Post.quotedTableName()} as users_1
     `;
 
     await db.sequelize.query(viewSQL);
@@ -256,7 +258,7 @@ describe('view collection', function () {
   it('should use view collection as through collection', async () => {
     const User = await collectionRepository.create({
       values: {
-        name: 'users',
+        name: 'users_1',
         fields: [{ name: 'name', type: 'string' }],
       },
       context: {},
@@ -270,9 +272,9 @@ describe('view collection', function () {
       context: {},
     });
 
-    const UserCollection = db.getCollection('users');
+    const UserCollection = db.getCollection('users_1');
 
-    await db.getRepository('users').create({
+    await db.getRepository('users_1').create({
       values: [{ name: 'u1' }, { name: 'u2' }],
     });
 
@@ -324,7 +326,7 @@ describe('view collection', function () {
 
     await fieldsRepository.create({
       values: {
-        collectionName: 'users',
+        collectionName: 'users_1',
         name: 'roles',
         type: 'belongsToMany',
         target: 'my_roles',
@@ -335,14 +337,14 @@ describe('view collection', function () {
       context: {},
     });
 
-    const users = await db.getRepository('users').find({
+    const users_1 = await db.getRepository('users_1').find({
       appends: ['roles'],
       filter: {
         name: 'u1',
       },
     });
 
-    const roles = users[0].get('roles');
+    const roles = users_1[0].get('roles');
     expect(roles).toHaveLength(2);
 
     await collectionRepository.destroy({
@@ -355,7 +357,7 @@ describe('view collection', function () {
     expect(
       await fieldsRepository.count({
         filter: {
-          collectionName: 'users',
+          collectionName: 'users_1',
           name: 'roles',
         },
       }),
@@ -366,7 +368,6 @@ describe('view collection', function () {
     if (!db.inDialect('postgres')) {
       return;
     }
-
     const viewName = 'test_view';
     const dbSchema = db.options.schema || 'public';
     const randomSchema = `s_${uid(6)}`;
@@ -540,5 +541,73 @@ describe('view collection', function () {
     });
 
     expect(db.getCollection('view_collection')).toBeUndefined();
+  });
+
+  it('should create view collection successfully when underscored env and DB_DIALECT=mysql', async () => {
+    if (!db.options.underscored) {
+      return;
+    }
+    const tableName = db.inDialect('postgres') ? `${process.env.DB_SCHEMA}.users` : 'users';
+    const dropViewSQL = `DROP VIEW IF EXISTS test_view`;
+    await db.sequelize.query(dropViewSQL);
+    const viewSQL = `CREATE VIEW test_view AS select * from ${tableName}`;
+    await db.sequelize.query(viewSQL);
+
+    const response = await app
+      .agent()
+      .resource('collections')
+      .create({
+        values: {
+          name: 'fff1',
+          template: 'view',
+          view: true,
+          fields: [
+            {
+              name: 'id',
+              rawType: 'BIGINT',
+              field: 'id',
+              type: 'bigInt',
+              source: 'users.id',
+              uiSchema: { title: 'id' },
+            },
+            {
+              name: 'createdBy',
+              type: 'belongsTo',
+              source: 'users.createdBy',
+              uiSchema: { title: 'createdBy' },
+            },
+            {
+              name: 'created_by_id',
+              rawType: 'BIGINT',
+              field: 'created_by_id',
+              type: 'bigInt',
+              possibleTypes: ['bigInt', 'unixTimestamp', 'sort'],
+              uiSchema: { title: 'created_by_id' },
+            },
+            {
+              name: 'updatedBy',
+              type: 'belongsTo',
+              source: 'users.updatedBy',
+              uiSchema: { title: 'updatedBy' },
+            },
+            {
+              name: 'updated_by_id',
+              rawType: 'BIGINT',
+              field: 'updated_by_id',
+              type: 'bigInt',
+              possibleTypes: ['bigInt', 'unixTimestamp', 'sort'],
+              uiSchema: { title: 'updated_by_id' },
+            },
+          ],
+          schema: null,
+          writableView: false,
+          sources: ['users'],
+          title: 'view_collection_display_name',
+          databaseView: 'test_view',
+          viewName: 'test_view',
+        },
+      });
+
+    expect(response.status).toBe(200);
   });
 });

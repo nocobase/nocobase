@@ -61,7 +61,12 @@ export class MailNotificationChannel extends BaseNotificationChannel {
         return { status: 'success', message };
       } else {
         const payload = {
-          to: to.map((item) => item?.trim()).filter(Boolean),
+          to: to
+            ? to
+                .flat()
+                .map((item) => item?.trim())
+                .filter(Boolean)
+            : undefined,
           cc: cc
             ? cc
                 .flat()

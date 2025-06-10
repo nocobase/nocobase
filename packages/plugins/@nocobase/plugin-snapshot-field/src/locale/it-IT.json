@@ -1,11 +1,13 @@
 {
   "Detail": "Dettaglio",
-  "Snapshot": "Snapshot",
-  "View record": "Visualizza record",
+  "Snapshot": "Snapshot",  
   "Add block": "Aggiungi blocco",
-  "Allow linking to multiple records": "Consenti collegamento a più record",
-  "When adding a new record, create a snapshot for its relational record and save in the current record. The snapshot is not updated when the record is subsequently updated.": "Quando si aggiunge un nuovo record, crea uno snapshot del suo record relazionale e salvalo nel record corrente. Lo snapshot non viene aggiornato quando il record viene successivamente aggiornato.",
+  "When adding a new record, create a snapshot for its relational record and save in the new record. The snapshot will not be updated when the relational record is updated.": "Quando si aggiunge un nuovo record, crea uno snapshot del suo record relazionale e salvalo nel nuovo record. Quando il record relazionale viene aggiornato lo snapshot non verrà aggiornato .",
+  "View record": "Visualizza record",
+  "Allow linking to multiple records": "Consenti collegamento a più record",  
   "The association field to snapshot": "Campo di associazione per lo snapshot",
   "Snapshot the snapshot's association fields": "Snapshot campi di associazione dello snapshot",
-  "Please select": "Seleziona"
+  "Please select": "Seleziona",
+  "When a record is created, association data is backed up in a snapshot": "Quando viene creato un record, viene eseguito il backup dei dati relazionali in uno snapshot",
+  "Snapshot data": "Dati snapshot"
 }

@@ -17,7 +17,7 @@ import {
   useRequest,
   useVariables,
 } from '@nocobase/client';
-import { Card, Spin } from 'antd';
+import { Card, Spin, theme } from 'antd';
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import RIframe from 'react-iframe';
@@ -37,6 +37,7 @@ export const Iframe: any = observer(
     const { url, htmlId, mode = 'url', height, html, params, engine, ...others } = props;
     const field = useField();
     const { t } = useTranslation();
+    const { token } = theme.useToken();
     const targetHeight = useBlockHeight() || height;
     const variables = useVariables();
     const localVariables = useLocalVariables();
@@ -90,7 +91,9 @@ export const Iframe: any = observer(
     }, [htmlContent, mode, url, variables, localVariables, params]);
     if ((mode === 'url' && !url) || (mode === 'html' && !htmlId)) {
       return (
-        <Card style={{ marginBottom: 24, height: isNumeric(targetHeight) ? `${targetHeight}px` : targetHeight }}>
+        <Card
+          style={{ marginBottom: token.padding, height: isNumeric(targetHeight) ? `${targetHeight}px` : targetHeight }}
+        >
           {t('Please fill in the iframe URL')}
         </Card>
       );
@@ -101,7 +104,7 @@ export const Iframe: any = observer(
         <div
           style={{
             height: isNumeric(targetHeight) ? `${targetHeight}px` : targetHeight || '60vh',
-            marginBottom: '24px',
+            marginBottom: token.padding,
             border: 0,
           }}
         >

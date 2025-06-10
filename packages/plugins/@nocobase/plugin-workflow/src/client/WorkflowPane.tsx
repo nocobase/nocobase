@@ -8,11 +8,12 @@
  */
 
 import React, { useContext, useEffect } from 'react';
-import { App, Card, Tooltip } from 'antd';
+import { App, Tooltip } from 'antd';
 import { onFieldChange } from '@formily/core';
 import { useField, useForm, useFormEffects } from '@formily/react';
 
 import {
+  CollectionProvider,
   SchemaComponent,
   SchemaComponentContext,
   useActionContext,
@@ -29,9 +30,13 @@ import { WorkflowLink } from './WorkflowLink';
 import OpenDrawer from './components/OpenDrawer';
 import { workflowSchema } from './schemas/workflows';
 import { ExecutionStatusSelect, ExecutionStatusColumn } from './components/ExecutionStatus';
-import WorkflowPlugin, { RadioWithTooltip } from '.';
+import WorkflowPlugin, { ExecutionStatusOptions, RadioWithTooltip } from '.';
 import { useRefreshActionProps } from './hooks/useRefreshActionProps';
 import { useTranslation } from 'react-i18next';
+import { TriggerOptionRender } from './components/TriggerOptionRender';
+import { CategoryTabs } from './WorkflowCategoryTabs';
+import { EnumerationField } from './components/EmunerationField';
+import { useWorkflowFilterActionProps } from './hooks/useWorkflowFilterActionProps';
 
 function SyncOptionSelect(props) {
   const field = useField<any>();
@@ -61,11 +66,10 @@ function SyncOptionSelect(props) {
       if (trigger.sync != null) {
         field.setValue(trigger.sync);
       } else {
-        field.setInitialValue(false);
+        field.setInitialValue(props.value ?? false);
       }
     }
-  }, [record.id, field, workflowPlugin.triggers]);
-
+  }, [record.id, field, workflowPlugin.triggers, record.type, props.value]);
   return <RadioWithTooltip {...props} />;
 }
 
@@ -121,29 +125,34 @@ export function WorkflowPane() {
   const ctx = useContext(SchemaComponentContext);
   const { useTriggersOptions } = usePlugin(WorkflowPlugin);
   return (
-    <Card bordered={false}>
-      <SchemaComponentContext.Provider value={{ ...ctx, designable: false }}>
-        <SchemaComponent
-          schema={workflowSchema}
-          components={{
-            WorkflowLink,
-            ExecutionResourceProvider,
-            ExecutionLink,
-            OpenDrawer,
-            ExecutionStatusSelect,
-            SyncOptionSelect,
-            ExecutionStatusColumn,
-            Tooltip,
-          }}
-          scope={{
-            useTriggersOptions,
-            useWorkflowSyncReaction,
-            useSyncAction,
-            useRefreshActionProps,
-            useRevisionAction,
-          }}
-        />
-      </SchemaComponentContext.Provider>
-    </Card>
+    <SchemaComponentContext.Provider value={{ ...ctx, designable: false }}>
+      <SchemaComponent
+        schema={workflowSchema}
+        components={{
+          CollectionProvider,
+          WorkflowLink,
+          ExecutionResourceProvider,
+          ExecutionLink,
+          OpenDrawer,
+          ExecutionStatusSelect,
+          SyncOptionSelect,
+          ExecutionStatusColumn,
+          Tooltip,
+          CategoryTabs,
+          EnumerationField,
+        }}
+        scope={{
+          useTriggersOptions,
+          useWorkflowSyncReaction,
+          useSyncAction,
+          useWorkflowFilterActionProps,
+          useRefreshActionProps,
+          useRevisionAction,
+          TriggerOptionRender,
+          // ExecutedLink,
+          ExecutionStatusOptions,
+        }}
+      />
+    </SchemaComponentContext.Provider>
   );
 }

@@ -7,9 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React from 'react';
 import { MailOutlined } from '@ant-design/icons';
 import { ArrayItems } from '@formily/antd-v5';
+import React from 'react';
 
 import { SchemaComponentContext, css } from '@nocobase/client';
 import {
@@ -112,6 +112,7 @@ export default class extends Instruction {
                     secure: {
                       type: 'boolean',
                       title: `{{t("Secure", { ns: "${NAMESPACE}" })}}`,
+                      description: `{{t("In most cases, if using port 465, set it to true; otherwise, set it to false.", { ns: "${NAMESPACE}" })}}`,
                       'x-decorator': 'FormItem',
                       'x-component': 'WorkflowVariableInput',
                       'x-component-props': {

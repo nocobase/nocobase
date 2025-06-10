@@ -118,6 +118,7 @@ describe('tree path test', () => {
   });
 
   afterEach(async () => {
+    await db.clean({ drop: true });
     await app.destroy();
   });
 
@@ -607,9 +608,55 @@ describe('tree path test', () => {
         },
       },
     });
-    console.log(paths2);
     expect(paths2.length).toBe(2);
     expect(paths2[0].get('path')).toBe('/2');
     expect(paths2[1].get('path')).toBe('/3');
+  });
+
+  it('should not update nodes with similar path prefix', async () => {
+    const data = await treeCollection.repository.create({
+      values: {
+        name: 'a1',
+        children: [{ name: 'b1' }],
+      },
+    });
+    const b1 = data.get('children')[0];
+
+    // 人为插入一个相似路径（非子节点）
+    const fakeNode = await treeCollection.repository.create({
+      values: {
+        name: 'b1-fake',
+        parentId: null,
+      },
+    });
+    await db.getRepository(name).update({
+      values: {
+        path: '/1/21', // 看起来像是 b1 子节点，但不是
+      },
+      filter: {
+        [nodePkColumnName]: fakeNode.get(treeCollection.filterTargetKey),
+      },
+    });
+
+    // 移除 b1
+    const b1Key = b1.get(treeCollection.filterTargetKey);
+    // @ts-ignore
+    await db.getRepository(`${treeCollection.name}.children`, data.get(treeCollection.filterTargetKey)).remove([b1Key]);
+
+    // 验证 b1 被正确更新为独立根路径
+    const b1Path = await db.getRepository(name).findOne({
+      filter: {
+        [nodePkColumnName]: b1Key,
+      },
+    });
+    expect(b1Path.get('path')).toBe(`/${b1Key}`);
+
+    // 验证 fakeNode 的路径未被误更新
+    const fakePath = await db.getRepository(name).findOne({
+      filter: {
+        [nodePkColumnName]: fakeNode.get(treeCollection.filterTargetKey),
+      },
+    });
+    expect(fakePath.get('path')).toBe('/1/21');
   });
 });

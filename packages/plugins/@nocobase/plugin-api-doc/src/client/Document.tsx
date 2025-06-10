@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { css, useAPIClient, useApp, useRequest } from '@nocobase/client';
+import { css, useAPIClient, useApp, useCurrentAppInfo, useRequest } from '@nocobase/client';
 import { getSubAppName } from '@nocobase/sdk';
 import { Select, Space, Spin, Typography } from 'antd';
 import React, { useEffect, useRef, useState } from 'react';
@@ -20,15 +20,16 @@ const getUrl = () => localStorage.getItem(DESTINATION_URL_KEY);
 
 const Documentation = () => {
   const apiClient = useAPIClient();
+  const appInfo = useCurrentAppInfo();
+  console.log('appInfo', appInfo);
   const { t } = useTranslation();
   const swaggerUIRef = useRef();
   const { data: urls } = useRequest<{ data: { name: string; url: string }[] }>({ url: 'swagger:getUrls' });
-  const app = useApp();
   const requestInterceptor = (req) => {
     if (!req.headers['Authorization']) {
-      const appName = getSubAppName(app.getPublicPath());
-      if (appName) {
-        req.headers['X-App'] = appName;
+      Object.assign(req.headers, apiClient.getHeaders());
+      if (appInfo?.data?.name) {
+        req.headers['X-App'] = appInfo.data.name;
       }
       req.headers['Authorization'] = `Bearer ${apiClient.auth.getToken()}`;
     }
@@ -67,6 +68,8 @@ const Documentation = () => {
       direction="vertical"
       style={{
         width: '100%',
+        height: '100%',
+        overflowY: 'auto',
       }}
     >
       <div

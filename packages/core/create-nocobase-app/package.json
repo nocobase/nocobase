@@ -1,6 +1,6 @@
 {
   "name": "create-nocobase-app",
-  "version": "1.6.1",
+  "version": "1.7.6",
   "main": "src/index.js",
   "license": "AGPL-3.0",
   "dependencies": {
@@ -8,7 +8,8 @@
     "axios": "^1.7.0",
     "chalk": "^4.1.1",
     "commander": "^9.2.0",
-    "tar": "6.1.11"
+    "fs-extra": "^11.3.0",
+    "tar": "^7.4.3"
   },
   "bin": {
     "create-nocobase-app": "./bin/index.js"

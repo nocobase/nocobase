@@ -17,18 +17,78 @@ describe('api', () => {
   let app: MockServer;
   let db: Database;
 
-  beforeAll(async () => {
+  beforeEach(async () => {
     app = await createMockServer({
-      plugins: ['users', 'auth', 'data-visualization', 'data-source-manager', 'acl', 'error-handler', 'field-sort'],
+      plugins: ['data-visualization'],
     });
     db = app.db;
+    db.collection({
+      name: 'roles',
+      createdBy: false,
+      updatedBy: false,
+      fields: [
+        {
+          name: 'name',
+          type: 'string',
+        },
+      ],
+    });
+    db.collection({
+      name: 'users',
+      createdBy: false,
+      updatedBy: false,
+      fields: [
+        {
+          name: 'name',
+          type: 'string',
+        },
+        {
+          name: 'createdBy',
+          type: 'belongsTo',
+          target: 'users',
+          foreignKey: 'createdById',
+          targetKey: 'id',
+        },
+        {
+          name: 'roles',
+          type: 'belongsToMany',
+          target: 'roles',
+          through: 'rolesUsers',
+        },
+        {
+          name: 'departments',
+          type: 'belongsToMany',
+          target: 'departments',
+          through: 'departmentsUsers',
+        },
+      ],
+    });
+    db.collection({
+      name: 'departments',
+      createdBy: false,
+      updatedBy: false,
+      fields: [
+        {
+          name: 'name',
+          type: 'string',
+        },
+        {
+          name: 'owners',
+          type: 'belongsToMany',
+          target: 'users',
+          through: 'departmentsUsers',
+        },
+      ],
+    });
+    await db.sync();
   });
 
-  afterAll(async () => {
+  afterEach(async () => {
+    await db.clean({ drop: true });
     await app.destroy();
   });
 
-  test('query with nested m2m filter', async () => {
+  test('query with nested m2m filter 1', async () => {
     const ctx = {
       app,
       db,
@@ -50,6 +110,43 @@ describe('api', () => {
                     roles: {
                       name: {
                         $includes: 'member',
+                      },
+                    },
+                  },
+                },
+              ],
+            },
+          },
+        },
+      },
+    } as any;
+    const queryParser = createQueryParser(db);
+    await compose([parseFieldAndAssociations, queryParser.parse(), queryData])(ctx, async () => {});
+    expect(ctx.action.params.values.data).toBeDefined();
+  });
+
+  test('query with nested m2m filter 2', async () => {
+    const ctx = {
+      app,
+      db,
+      action: {
+        params: {
+          values: {
+            collection: 'users',
+            measures: [
+              {
+                field: ['id'],
+                aggregation: 'count',
+                alias: 'id',
+              },
+            ],
+            filter: {
+              $and: [
+                {
+                  departments: {
+                    owners: {
+                      id: {
+                        $eq: 1,
                       },
                     },
                   },

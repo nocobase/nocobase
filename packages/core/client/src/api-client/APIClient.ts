@@ -139,7 +139,19 @@ export class APIClient extends APIClientSDK {
     if (typeof error?.response?.data === 'string') {
       const tempElement = document.createElement('div');
       tempElement.innerHTML = error?.response?.data;
-      return [{ message: tempElement.textContent || tempElement.innerText }];
+      let message = tempElement.textContent || tempElement.innerText;
+      if (message.includes('Error occurred while trying')) {
+        message = 'The application may be starting up. Please try again later.';
+        return [{ code: 'APP_WARNING', message }];
+      }
+      if (message.includes('502 Bad Gateway')) {
+        message = 'The application may be starting up. Please try again later.';
+        return [{ code: 'APP_WARNING', message }];
+      }
+      return [{ message }];
+    }
+    if (error?.response?.data?.error) {
+      return [error?.response?.data?.error];
     }
     return (
       error?.response?.data?.errors ||

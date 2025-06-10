@@ -2,19 +2,14 @@ English | [中文](./README.zh-CN.md) | [日本語](./README.ja-JP.md)
 
 https://github.com/user-attachments/assets/a50c100a-4561-4e06-b2d2-d48098659ec0
 
-## We'd love your support!
-
+<p align="center">
 <a href="https://trendshift.io/repositories/4112" target="_blank"><img src="https://trendshift.io/api/badge/repositories/4112" alt="nocobase%2Fnocobase | Trendshift" style="width: 250px; height: 55px;" width="250" height="55"/></a>
-
 <a href="https://www.producthunt.com/posts/nocobase?embed=true&utm_source=badge-top-post-topic-badge&utm_medium=badge&utm_souce=badge-nocobase" target="_blank"><img src="https://api.producthunt.com/widgets/embed-image/v1/top-post-topic-badge.svg?post_id=456520&theme=light&period=weekly&topic_id=267" alt="NocoBase - Scalability&#0045;first&#0044;&#0032;open&#0045;source&#0032;no&#0045;code&#0032;platform | Product Hunt" style="width: 250px; height: 54px;" width="250" height="54" /></a>
-
-## Release Notes
-
-Our [blog](https://www.nocobase.com/en/blog/timeline) is regularly updated with release notes and provides a weekly summary.
+</p>
 
 ## What is NocoBase
 
-NocoBase is a scalability-first, open-source no-code development platform.   
+NocoBase is an extensibility-first, open-source no-code development platform.   
 Instead of investing years of time and millions of dollars in research and development, deploy NocoBase in a few minutes and you'll have a private, controllable, and extremely scalable no-code development platform!
 
 Homepage:  
@@ -28,6 +23,22 @@ https://docs.nocobase.com/
 
 Forum:  
 https://forum.nocobase.com/
+
+Tutorials:  
+https://www.nocobase.com/en/tutorials
+
+Use Cases:  
+https://www.nocobase.com/en/blog/tags/customer-stories
+
+## Quickstart
+
+To get a quick working development environment you could use Gitpod.
+
+[![Open in Gitpod](https://gitpod.io/button/open-in-gitpod.svg)](https://gitpod.io/#https://github.com/nocobase/nocobase)
+
+## Release Notes
+
+Our [blog](https://www.nocobase.com/en/blog/timeline) is regularly updated with release notes and provides a weekly summary.
 
 ## Distinctive features
 

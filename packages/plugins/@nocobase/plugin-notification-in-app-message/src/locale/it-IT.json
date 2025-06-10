@@ -6,7 +6,7 @@
   "No more": "Non c'è altro",
   "Loading failed,": "Caricamento fallito,",
   "please reload": "ricarica",
-  "Detail": "Dettaglio",
+  "Detail": "Dettagli",
   "Content": "Contenuto",
   "Datetime": "Data e ora",
   "Status": "Stato",
@@ -14,15 +14,16 @@
   "Read": "Letto",
   "Unread": "Non letto",
   "In-app message": "Messaggio in-app",
-  "Receivers": "Destinatari",
-  "Channel name": "Nome canale",
+  "Receivers": "Destinatari",  
   "Message group name": "Nome gruppo messaggi",
   "Message title": "Titolo messaggio",
   "Message content": "Contenuto messaggio",
+  "detail URL": "dettagli URL",
   "Details page for desktop": "Pagina dettagli per desktop",
   "Support two types of links: internal links and external links. If using an internal link, the link starts with\"/\", for example, \"/admin\". If using an external link, the link starts with \"http\", for example, \"https://example.com\".": "Supporta due tipi di link: link interni e link esterni. Se si utilizza un link interno, il link inizia con \"/\", ad esempio, \"/admin\". Se si utilizza un link esterno, il link inizia con \"http\", ad esempio, \"https://example.com\".",
   "Mark as read": "Segna come letto",
   "Support two types of links: internal links and external links. If using an internal link, the link starts with\"/\", for example, \"/m\". If using an external link, the link starts with \"http\", for example, \"https://example.com\".": "Supporta due tipi di link: link interni e link esterni. Se si utilizza un link interno, il link inizia con \"/\", ad esempio, \"/m\". Se si utilizza un link esterno, il link inizia con \"http\", ad esempio, \"https://example.com\".",
   "Details page for mobile": "Pagina dettagli per mobile",
-  "The message page has already been created.": "La pagina dei messaggi è già stata creata."
+  "The message page has already been created.": "La pagina dei messaggi è già stata creata.",
+  "When select receivers from node result, only support ID of user (or IDs array of users). Others will not match any user.": "Quando selezioni i destinatari dal risultato del nodo, supporta solo l'ID dell'utente (o l'array di ID degli utenti). Gli altri non corrisponderanno a nessun utente."
 }

@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { mockDatabase } from '@nocobase/test';
+import { createMockDatabase, mockDatabase } from '@nocobase/test';
 import Koa from 'koa';
 import bodyParser from 'koa-bodyparser';
 import supertest from 'supertest';
@@ -24,7 +24,7 @@ describe('example', () => {
       await next();
     });
     app.use(dsm.middleware());
-    const database = mockDatabase({
+    const database = await createMockDatabase({
       tablePrefix: 'ds1_',
     });
     await database.clean({ drop: true });

@@ -7,11 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import type { Context } from '@nocobase/actions';
+import actions from '@nocobase/actions';
+import { ChannelsCollectionDefinition as ChannelsDefinition } from '@nocobase/plugin-notification-manager';
 import { Application } from '@nocobase/server';
 import { Op, Sequelize } from 'sequelize';
 import { PassThrough } from 'stream';
 import { InAppMessagesDefinition as MessagesDefinition } from '../types';
-import { ChannelsCollectionDefinition as ChannelsDefinition } from '@nocobase/plugin-notification-manager';
 export default function defineMyInAppMessages({
   app,
   addClient,
@@ -100,6 +102,28 @@ export default function defineMyInAppMessages({
             sort: '-receiveTimestamp',
           });
           ctx.body = { messages: messageList };
+        },
+      },
+    },
+  });
+  app.resourceManager.define({
+    name: MessagesDefinition.name,
+    actions: {
+      updateMyOwn: {
+        handler: async (ctx, next) => {
+          const userId = ctx.state.currentUser.id;
+          if (!ctx.action) {
+            ctx.throw(400, 'ctx.action not found');
+          }
+
+          if (ctx.action) {
+            ctx.action.mergeParams({
+              filter: {
+                userId,
+              },
+            });
+            return actions.update(ctx as Context, next);
+          }
         },
       },
     },

@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Database, mockDatabase } from '@nocobase/database';
+import { createMockDatabase, Database } from '@nocobase/database';
 import * as process from 'process';
 
 describe('empty table', () => {
@@ -20,7 +20,7 @@ describe('empty table', () => {
   };
 
   beforeEach(async () => {
-    db = mockDatabase({});
+    db = await createMockDatabase({});
 
     await db.clean({ drop: true });
   });

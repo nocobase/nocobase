@@ -126,6 +126,7 @@ describe('destroy action with acl', () => {
     app.resourcer.use(
       (ctx, next) => {
         ctx.state.currentRole = 'user';
+        ctx.state.currentRoles = ['user'];
         ctx.state.currentUser = {
           id: 1,
         };
@@ -162,6 +163,7 @@ describe('destroy action with acl', () => {
     app.resourcer.use(
       (ctx, next) => {
         ctx.state.currentRole = 'user';
+        ctx.state.currentRoles = ['user'];
         ctx.state.currentUser = {
           id: 1,
         };
@@ -218,6 +220,7 @@ describe('destroy action with acl', () => {
     app.resourcer.use(
       (ctx, next) => {
         ctx.state.currentRole = 'user';
+        ctx.state.currentRoles = ['user'];
         ctx.state.currentUser = {
           id: 1,
         };

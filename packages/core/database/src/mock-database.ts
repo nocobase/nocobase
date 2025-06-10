@@ -8,11 +8,11 @@
  */
 
 /* istanbul ignore file -- @preserve */
+import { Database, IDatabaseOptions } from '@nocobase/database';
 import { merge } from '@nocobase/utils';
 import { customAlphabet } from 'nanoid';
 import fetch from 'node-fetch';
 import path from 'path';
-import { Database, IDatabaseOptions } from './database';
 
 export class MockDatabase extends Database {
   constructor(options: IDatabaseOptions) {
@@ -58,8 +58,21 @@ function customLogger(queryString, queryObject) {
   }
 }
 
+export async function createMockDatabase(options: IDatabaseOptions = {}) {
+  try {
+    // @ts-ignore
+    const { runPluginStaticImports } = await import('@nocobase/server');
+    await runPluginStaticImports();
+  } catch (error) {
+    // error
+  }
+  return mockDatabase(options);
+}
+
 export function mockDatabase(options: IDatabaseOptions = {}): MockDatabase {
   const dbOptions = merge(getConfigByEnv(), options) as any;
+  // eslint-disable-next-line prefer-const
+  let db: any;
 
   if (process.env['DB_TEST_PREFIX']) {
     let configKey = 'database';
@@ -100,7 +113,7 @@ export function mockDatabase(options: IDatabaseOptions = {}): MockDatabase {
     }
   }
 
-  const db = new MockDatabase(dbOptions);
+  db = new MockDatabase(dbOptions);
 
-  return db;
+  return db as MockDatabase;
 }

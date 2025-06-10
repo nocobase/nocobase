@@ -392,7 +392,6 @@ export class Collection<
     }
 
     const fieldName = options.field || snakeCase(name);
-
     const field = this.findField((f) => {
       if (f.name === name) {
         return false;
@@ -406,10 +405,20 @@ export class Collection<
     if (!field) {
       return;
     }
-
-    if (options.type !== field.type) {
-      throw new Error(`fields with same column must be of the same type ${JSON.stringify(options)}`);
+    if (options.type === field.type) {
+      return;
     }
+    const isContextTypeMatch = (data, dataType: string): boolean => {
+      return [data.dataType?.key, data.type?.toUpperCase()].includes(dataType?.toUpperCase());
+    };
+    if (options.type === 'context' && isContextTypeMatch(field, options.dataType)) {
+      return;
+    }
+    if (field.type === 'context' && isContextTypeMatch(options, field.dataType.key)) {
+      return;
+    }
+
+    throw new Error(`fields with same column must be of the same type ${JSON.stringify(options)}`);
   }
 
   /**

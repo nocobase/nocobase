@@ -11,7 +11,7 @@ import { LoadingOutlined } from '@ant-design/icons';
 import { connect, mapProps, mapReadPretty, useFieldSchema } from '@formily/react';
 import { Divider, Tag } from 'antd';
 import dayjs from 'dayjs';
-import { uniqBy } from 'lodash';
+import { uniqBy, omit } from 'lodash';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ResourceActionOptions, useRequest } from '../../../api-client';
 import { useCollection_deprecated, useCollectionManager_deprecated } from '../../../collection-manager';
@@ -48,6 +48,7 @@ export type RemoteSelectProps<P = any> = SelectProps<P, any> & {
   CustomDropdownRender?: (v: any) => any;
   optionFilter?: (option: any) => boolean;
   toOptionsItem?: (data) => any;
+  onSuccess?: (data) => any;
 };
 
 const InternalRemoteSelect = withDynamicSchemaProps(
@@ -68,6 +69,7 @@ const InternalRemoteSelect = withDynamicSchemaProps(
         dataSource: propsDataSource,
         toOptionsItem = (value) => value,
         popupMatchSelectWidth = false,
+        onSuccess,
         ...others
       } = props;
       const dataSource = useDataSourceKey();
@@ -151,7 +153,7 @@ const InternalRemoteSelect = withDynamicSchemaProps(
                   });
                 }
                 return {
-                  ...option,
+                  ...omit(option, 'style'),
                   [fieldNames.label]: label || EMPTY,
                   [fieldNames.value]: option[fieldNames.value],
                 };
@@ -178,6 +180,7 @@ const InternalRemoteSelect = withDynamicSchemaProps(
         {
           manual,
           debounceWait: wait,
+          onSuccess,
           ...(service.defaultParams ? { defaultParams: [service.defaultParams] } : {}),
         },
       );

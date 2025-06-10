@@ -1,0 +1,6 @@
+{
+  "unique violation": "{{field}} existiert bereits",
+  "notNull violation": "{{field}} darf nicht null sein",
+  "Validation error": "{{field}} Validierungsfehler",
+  "notNull Violation": "{{field}} darf nicht null sein"
+}

@@ -13,6 +13,7 @@ import { createTable } from './utils';
 const deleteButton = async (page: Page, name: string) => {
   await page.getByRole('button', { name }).hover();
   await page.getByRole('button', { name }).getByLabel('designer-schema-settings-').hover();
+  await page.waitForTimeout(300);
   await page.getByRole('menuitem', { name: 'Delete' }).click();
   await page.getByRole('button', { name: 'OK', exact: true }).click();
 };
@@ -90,7 +91,7 @@ test.describe('configure actions column', () => {
     // 列宽度默认为 100
     await expectActionsColumnWidth(100);
 
-    await page.getByText('Actions', { exact: true }).hover();
+    await page.getByText('Actions', { exact: true }).hover({ force: true });
     await page.getByLabel('designer-schema-settings-TableV2.Column-fieldSettings:TableColumn-users').hover();
     await page.getByRole('menuitem', { name: 'Column width' }).click();
 

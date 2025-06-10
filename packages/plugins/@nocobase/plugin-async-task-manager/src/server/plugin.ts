@@ -1,9 +1,18 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { Plugin } from '@nocobase/server';
-import { BaseTaskManager } from './base-task-manager';
-import { AsyncTasksManager } from './interfaces/async-task-manager';
-import { CommandTaskType } from './command-task-type';
-import asyncTasksResource from './resourcers/async-tasks';
 import { throttle } from 'lodash';
+import { BaseTaskManager } from './base-task-manager';
+import { CommandTaskType } from './command-task-type';
+import { AsyncTasksManager } from './interfaces/async-task-manager';
+import asyncTasksResource from './resourcers/async-tasks';
 
 export class PluginAsyncExportServer extends Plugin {
   private progressThrottles: Map<string, Function> = new Map();
@@ -20,7 +29,7 @@ export class PluginAsyncExportServer extends Plugin {
     });
 
     this.app.container.get<AsyncTasksManager>('AsyncTaskManager').registerTaskType(CommandTaskType);
-    this.app.acl.allow('asyncTasks', ['get', 'fetchFile'], 'loggedIn');
+    this.app.acl.allow('asyncTasks', ['list', 'get', 'fetchFile', 'cancel'], 'loggedIn');
   }
 
   getThrottledProgressEmitter(taskId: string, userId: string) {

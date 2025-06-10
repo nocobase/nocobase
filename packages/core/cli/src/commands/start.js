@@ -8,7 +8,7 @@
  */
 const _ = require('lodash');
 const { Command } = require('commander');
-const { run, postCheck, downloadPro, promptForTs } = require('../util');
+const { run, postCheck, downloadPro, promptForTs, checkDBDialect } = require('../util');
 const { existsSync, rmSync } = require('fs');
 const { resolve, isAbsolute } = require('path');
 const chalk = require('chalk');
@@ -48,8 +48,10 @@ module.exports = (cli) => {
     .option('-i, --instances [instances]')
     .option('--db-sync')
     .option('--quickstart')
+    .option('--launch-mode [launchMode]')
     .allowUnknownOption()
     .action(async (opts) => {
+      checkDBDialect();
       if (opts.quickstart) {
         await downloadPro();
       }
@@ -118,17 +120,27 @@ module.exports = (cli) => {
         ]);
         process.exit();
       } else {
-        run(
-          'pm2-runtime',
-          [
-            'start',
-            ...instancesArgs,
-            `${APP_PACKAGE_ROOT}/lib/index.js`,
-            NODE_ARGS ? `--node-args="${NODE_ARGS}"` : undefined,
-            '--',
-            ...process.argv.slice(2),
-          ].filter(Boolean),
-        );
+        const launchMode = opts.launchMode || process.env.APP_LAUNCH_MODE || 'pm2';
+        if (launchMode === 'pm2') {
+          run(
+            'pm2-runtime',
+            [
+              'start',
+              ...instancesArgs,
+              `${APP_PACKAGE_ROOT}/lib/index.js`,
+              NODE_ARGS ? `--node-args="${NODE_ARGS}"` : undefined,
+              '--',
+              ...process.argv.slice(2),
+            ].filter(Boolean),
+          );
+        } else {
+          run(
+            'node',
+            [`${APP_PACKAGE_ROOT}/lib/index.js`, ...(NODE_ARGS || '').split(' '), ...process.argv.slice(2)].filter(
+              Boolean,
+            ),
+          );
+        }
       }
     });
 };

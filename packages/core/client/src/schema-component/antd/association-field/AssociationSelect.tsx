@@ -14,22 +14,28 @@ import { uid } from '@formily/shared';
 import { Space, message } from 'antd';
 import { isEqual } from 'lodash';
 import { isFunction } from 'mathjs';
-import React, { useEffect, useState, useContext } from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   ClearCollectionFieldContext,
   NocoBaseRecursionField,
   RecordProvider,
-  useAPIClient,
-  useCollectionRecordData,
   SchemaComponentContext,
+  useAPIClient,
+  useCollectionManager_deprecated,
+  useCollectionRecordData,
 } from '../../../';
-import { Action } from '../action';
+import { VariablePopupRecordProvider } from '../../../modules/variable/variablesProvider/VariablePopupRecordProvider';
 import { isVariable } from '../../../variables/utils/isVariable';
 import { getInnermostKeyAndValue } from '../../common/utils/uitls';
+import { Action } from '../action';
 import { RemoteSelect, RemoteSelectProps } from '../remote-select';
 import useServiceOptions, { useAssociationFieldContext } from './hooks';
-import { VariablePopupRecordProvider } from '../../../modules/variable/variablesProvider/VariablePopupRecordProvider';
+
+const removeIfKeyEmpty = (obj, filterTargetKey) => {
+  if (!obj || typeof obj !== 'object' || !filterTargetKey || Array.isArray(obj)) return obj;
+  return !obj[filterTargetKey] ? undefined : obj;
+};
 
 export const AssociationFieldAddNewer = (props) => {
   const schemaComponentCtxValue = useContext(SchemaComponentContext);
@@ -69,6 +75,11 @@ export const filterAnalyses = (filters): any[] => {
   return results;
 };
 
+function getFieldPath(str) {
+  const lastIndex = str.lastIndexOf('.');
+  return lastIndex === -1 ? str : str.slice(0, lastIndex);
+}
+
 const InternalAssociationSelect = observer(
   (props: AssociationSelectProps) => {
     const { objectValue = true, addMode: propsAddMode, ...rest } = props;
@@ -88,23 +99,34 @@ const InternalAssociationSelect = observer(
     const resource = api.resource(collectionField.target);
     const recordData = useCollectionRecordData();
     const schemaComponentCtxValue = useContext(SchemaComponentContext);
+    const { getCollection } = useCollectionManager_deprecated();
+    const associationCollection = getCollection(collectionField.target);
+    const { filterTargetKey } = associationCollection;
 
     useEffect(() => {
       const initValue = isVariable(field.value) ? undefined : field.value;
       const value = Array.isArray(initValue) ? initValue.filter(Boolean) : initValue;
-      setInnerValue(value);
-    }, [field.value]);
+      const result = removeIfKeyEmpty(value, filterTargetKey);
+      setInnerValue(result);
+      if (!isEqual(field.value, result)) {
+        field.value = result;
+      }
+    }, [field.value, filterTargetKey]);
+
     useEffect(() => {
       const id = uid();
       form.addEffects(id, () => {
         //支持深层次子表单
         onFieldInputValueChange('*', (fieldPath: any) => {
           const linkageFields = filterAnalyses(field.componentProps?.service?.params?.filter) || [];
+          const linageFieldEntire = getFieldPath(fieldPath.address.entire);
+          const targetFieldEntire = getFieldPath(field.address.entire);
           if (
             linkageFields.includes(fieldPath?.props?.name) &&
             field.value &&
             isEqual(fieldPath?.indexes, field?.indexes) &&
-            fieldPath?.props?.name !== field.props.name
+            fieldPath?.props?.name !== field.props.name &&
+            (!field?.indexes?.length || isEqual(linageFieldEntire, targetFieldEntire))
           ) {
             field.setValue(null);
             setInnerValue(null);
@@ -151,7 +173,6 @@ const InternalAssociationSelect = observer(
         </div>
       );
     };
-    console.log(fieldSchema);
     return (
       <div key={fieldSchema.name}>
         <Space.Compact style={{ display: 'flex' }}>
@@ -160,10 +181,10 @@ const InternalAssociationSelect = observer(
             {...rest}
             size={'middle'}
             objectValue={objectValue}
-            value={value || innerValue}
+            value={removeIfKeyEmpty(value || innerValue, filterTargetKey)}
             service={service}
             onChange={(value) => {
-              const val = value?.length !== 0 ? value : null;
+              const val = Array.isArray(value) && value.length === 0 ? null : value;
               props.onChange?.(val);
             }}
             CustomDropdownRender={addMode === 'quickAdd' && QuickAddContent}

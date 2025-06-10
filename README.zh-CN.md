@@ -2,13 +2,10 @@
  
 https://github.com/nocobase/nocobase/assets/1267426/29623e45-9a48-4598-bb9e-9dd173ade553
 
-## 感谢支持
+<p align="center">
 <a href="https://trendshift.io/repositories/4112" target="_blank"><img src="https://trendshift.io/api/badge/repositories/4112" alt="nocobase%2Fnocobase | Trendshift" style="width: 250px; height: 55px;" width="250" height="55"/></a>
-
 <a href="https://www.producthunt.com/posts/nocobase?embed=true&utm_source=badge-top-post-topic-badge&utm_medium=badge&utm_souce=badge-nocobase" target="_blank"><img src="https://api.producthunt.com/widgets/embed-image/v1/top-post-topic-badge.svg?post_id=456520&theme=light&period=weekly&topic_id=267" alt="NocoBase - Scalability&#0045;first&#0044;&#0032;open&#0045;source&#0032;no&#0045;code&#0032;platform | Product Hunt" style="width: 250px; height: 54px;" width="250" height="54" /></a>
-
-## 发布日志
-我们的[博客](https://www.nocobase.com/cn/blog/timeline)会及时更新发布日志，并每周进行汇总。
+</p>
 
 ## NocoBase 是什么
 
@@ -26,6 +23,21 @@ https://docs-cn.nocobase.com/
 
 社区：  
 https://forum.nocobase.com/
+
+教程：  
+https://www.nocobase.com/cn/tutorials
+
+用户故事：  
+https://www.nocobase.com/cn/blog/tags/customer-stories
+
+## 快速入门
+
+要获得快速工作的开发环境，您可以使用 Gitpod。
+
+[![Open in Gitpod](https://gitpod.io/button/open-in-gitpod.svg)](https://gitpod.io/#https://github.com/nocobase/nocobase)
+
+## 发布日志
+我们的[博客](https://www.nocobase.com/cn/blog/timeline)会及时更新发布日志，并每周进行汇总。
 
 ## 与众不同之处
 

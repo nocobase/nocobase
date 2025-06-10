@@ -2,14 +2,10 @@
 
 https://github.com/user-attachments/assets/cf08bfe5-e6e6-453c-8b96-350a6a8bed17
 
-## ご協力ありがとうございます！
+<p align="center">
 <a href="https://trendshift.io/repositories/4112" target="_blank"><img src="https://trendshift.io/api/badge/repositories/4112" alt="nocobase%2Fnocobase | Trendshift" style="width: 250px; height: 55px;" width="250" height="55"/></a>
-
 <a href="https://www.producthunt.com/posts/nocobase?embed=true&utm_source=badge-top-post-topic-badge&utm_medium=badge&utm_souce=badge-nocobase" target="_blank"><img src="https://api.producthunt.com/widgets/embed-image/v1/top-post-topic-badge.svg?post_id=456520&theme=light&period=weekly&topic_id=267" alt="NocoBase - Scalability&#0045;first&#0044;&#0032;open&#0045;source&#0032;no&#0045;code&#0032;platform | Product Hunt" style="width: 250px; height: 54px;" width="250" height="54" /></a>
-
-## リリースノート
-
-リリースノートは[ブログ](https://www.nocobase.com/ja/blog/timeline)で随時更新され、週ごとにまとめて公開しています。
+</p>
 
 ## NocoBaseはなに？
 
@@ -27,6 +23,22 @@ https://docs-cn.nocobase.com/
 
 コミュニティ：  
 https://forum.nocobase.com/
+
+チュートリアル：  
+https://www.nocobase.com/ja/tutorials
+
+顧客のストーリー：  
+https://www.nocobase.com/ja/blog/tags/customer-stories
+
+## クイックスタート
+
+Gitpodを使用すると、すぐに使える開発環境を構築できます。
+
+[![Open in Gitpod](https://gitpod.io/button/open-in-gitpod.svg)](https://gitpod.io/#https://github.com/nocobase/nocobase)
+
+## リリースノート
+
+リリースノートは[ブログ](https://www.nocobase.com/ja/blog/timeline)で随時更新され、週ごとにまとめて公開しています。
 
 ## 他の製品との違い
 

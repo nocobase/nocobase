@@ -1,0 +1,9 @@
+{
+  "SQL action": "SQL-Aktion",
+  "Execute a SQL statement in database.": "Führt eine SQL-Anweisung in der Datenbank aus.",
+  "Execute a SQL statement in database": "Führt eine SQL-Anweisung in der Datenbank aus",
+  "Select a data source to execute SQL.": "Wählen Sie eine Datenquelle zur Ausführung von SQL aus",
+  "SQL query result could be used through <1>JSON query node</1> (Commercial plugin).": "SQL-Abfrageergebnisse können über <1>JSON-Abfrageknoten</1> verwendet werden (kommerzielles Plugin).",
+  "Include meta information of this query in result": "Metainformationen dieser Abfrage im Ergebnis einschließen",
+  "Usage of SQL query result is not supported yet.": "Die Verwendung von SQL-Abfrageergebnissen wird noch nicht unterstützt."
+}

@@ -18,11 +18,16 @@
   "Channel name": "Channel name",
   "Message group name": "Message group name",
   "Message title": "Message title",
+  "Content type": "Content type",
+  "Plain text": "Plain text",
   "Message content": "Message content",
   "Details page for desktop": "Details page for desktop",
   "Support two types of links: internal links and external links. If using an internal link, the link starts with\"/\", for example, \"/admin\". If using an external link, the link starts with \"http\", for example, \"https://example.com\".": "Support two types of links: internal links and external links. If using an internal link, the link starts with \"/\", for example, \"/admin\". If using an external link, the link starts with \"http\", for example, \"https://example.com\".",
   "Mark as read": "Mark as read",
+  "Mark as unread": "Mark as unread",
+  "Mark all as read": "Mark all as read",
   "Support two types of links: internal links and external links. If using an internal link, the link starts with\"/\", for example, \"/m\". If using an external link, the link starts with \"http\", for example, \"https://example.com\".": "Support two types of links: internal links and external links. If using an internal link, the link starts with \"/\", for example, \"/m\". If using an external link, the link starts with \"http\", for example, \"https://example.com\".",
   "Details page for mobile": "Details page for mobile",
-  "The message page has already been created.": "The message page has already been created."
+  "The message page has already been created.": "The message page has already been created.",
+  "When select receivers from node result, only support ID of user (or IDs array of users). Others will not match any user.": "When select receivers from node result, only support ID of user (or IDs array of users). Others will not match any user."
 }

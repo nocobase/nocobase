@@ -7,10 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { observable, autorun, reaction } from '@formily/reactive';
+import { autorun, observable, reaction } from '@formily/reactive';
+import { merge } from '@nocobase/utils/client';
 import { Channel } from '../../types';
 import { getAPIClient } from '../utils';
-import { merge } from '@nocobase/utils/client';
 import { userIdObs } from './user';
 
 export type ChannelStatus = 'all' | 'read' | 'unread';
@@ -60,9 +60,19 @@ export const fetchChannels = async (params: any) => {
       channelMapObs.value[channel.name] = channel;
     });
   }
+  await countChannels();
+  isFetchingChannelsObs.value = false;
+};
+
+export const countChannels = async () => {
+  const apiClient = getAPIClient();
+  const res = await apiClient.request({
+    url: 'myInAppChannels:list',
+    method: 'get',
+    params: { filter: { status: channelStatusFilterObs.value } },
+  });
   const count = res.data?.meta?.count;
   if (count >= 0) channelCountObs.value = count;
-  isFetchingChannelsObs.value = false;
 };
 
 autorun(() => {

@@ -7,17 +7,17 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Collection } from '../collection';
-import { Database } from '../database';
-import { mockDatabase } from './index';
+import { Collection, Database, createMockDatabase } from '@nocobase/database';
 import { IdentifierError } from '../errors/identifier-error';
+import { isPg } from '@nocobase/test';
 
-const pgOnly = () => (process.env.DB_DIALECT == 'postgres' ? it : it.skip);
+const pgOnly = () => (isPg() ? it : it.skip);
+
 describe('collection', () => {
   let db: Database;
 
   beforeEach(async () => {
-    db = mockDatabase();
+    db = await createMockDatabase();
 
     await db.clean({ drop: true });
   });
@@ -265,7 +265,7 @@ describe('collection sync', () => {
   let db: Database;
 
   beforeEach(async () => {
-    db = mockDatabase();
+    db = await createMockDatabase();
     await db.clean({ drop: true });
   });
 
@@ -446,5 +446,24 @@ describe('collection sync', () => {
     }
 
     expect(error).toBeInstanceOf(IdentifierError);
+  });
+
+  test('paranoid', async () => {
+    const postCollection = db.collection({
+      name: 'posts',
+      fields: [{ type: 'string', name: 'title' }],
+      paranoid: true,
+    });
+
+    await db.sync();
+
+    const p1 = await postCollection.repository.create({ values: { title: 't1' } });
+    await p1.destroy();
+
+    const p2 = await postCollection.repository.findOne({ filterByTk: p1.id });
+    expect(p2).toBeNull();
+
+    const p3 = await postCollection.repository.findOne({ filterByTk: p1.id, paranoid: false });
+    expect(p3).not.toBeNull();
   });
 });

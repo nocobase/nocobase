@@ -38,6 +38,7 @@ describe('createFilterFormBlockSchema', () => {
                   "layout": "one-column",
                   "style": {
                     "float": "right",
+                    "overflow": "hidden",
                   },
                 },
                 "x-initializer": "filterForm:configureActions",
@@ -86,6 +87,7 @@ describe('createFilterFormBlockSchema', () => {
                   "layout": "one-column",
                   "style": {
                     "float": "right",
+                    "overflow": "hidden",
                   },
                 },
                 "x-initializer": "filterForm:configureActions",

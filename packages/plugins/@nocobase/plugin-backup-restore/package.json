@@ -4,7 +4,7 @@
   "displayName.zh-CN": "应用的备份与还原（废弃）",
   "description": "Backup and restore applications for scenarios such as application replication, migration, and upgrades.",
   "description.zh-CN": "备份和还原应用，可用于应用的复制、迁移、升级等场景。",
-  "version": "1.6.1",
+  "version": "1.7.6",
   "license": "AGPL-3.0",
   "main": "./dist/server/index.js",
   "homepage": "https://docs.nocobase.com/handbook/backup-restore",
@@ -27,8 +27,8 @@
     "mkdirp": "^1.0.4",
     "object-path": "^0.11.8",
     "react": "^18.2.0",
-    "semver": "^7.5.4",
-    "tar": "^6.1.13"
+    "semver": "^7.7.1",
+    "tar": "^7.4.3"
   },
   "peerDependencies": {
     "@nocobase/actions": "1.x",

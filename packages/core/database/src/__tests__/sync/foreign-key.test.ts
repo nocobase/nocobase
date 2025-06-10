@@ -7,14 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { primaryKey } from '@nocobase/client';
-import { Database, mockDatabase } from '@nocobase/database';
+import { Database, createMockDatabase } from '@nocobase/database';
 
 describe('foreign key', () => {
   let db: Database;
 
   beforeEach(async () => {
-    db = mockDatabase({});
+    db = await createMockDatabase({});
 
     await db.clean({ drop: true });
   });

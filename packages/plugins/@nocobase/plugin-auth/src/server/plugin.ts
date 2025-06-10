@@ -11,6 +11,7 @@ import { Cache } from '@nocobase/cache';
 import { Model } from '@nocobase/database';
 import { InstallOptions, Plugin } from '@nocobase/server';
 import { tval } from '@nocobase/utils';
+import { tokenPolicyCollectionName, tokenPolicyRecordKey } from '../constants';
 import { namespace, presetAuthType, presetAuthenticator } from '../preset';
 import authActions from './actions/auth';
 import authenticatorsActions from './actions/authenticators';
@@ -19,7 +20,6 @@ import { AuthModel } from './model/authenticator';
 import { Storer } from './storer';
 import { TokenBlacklistService } from './token-blacklist';
 import { TokenController } from './token-controller';
-import { tokenPolicyCollectionName, tokenPolicyRecordKey } from '../constants';
 
 export class PluginAuthServer extends Plugin {
   cache: Cache;
@@ -139,7 +139,7 @@ export class PluginAuthServer extends Plugin {
     });
 
     this.app.on('ws:message:auth:token', async ({ clientId, payload }) => {
-      if (!payload || !payload.token || !payload.authenticator) {
+      if (!payload || !payload.token) {
         this.app.emit(`ws:removeTag`, {
           clientId,
           tagKey: 'userId',
@@ -147,7 +147,7 @@ export class PluginAuthServer extends Plugin {
         return;
       }
 
-      const auth = await this.app.authManager.get(payload.authenticator, {
+      const auth = await this.app.authManager.get(payload.authenticator || 'basic', {
         getBearerToken: () => payload.token,
         app: this.app,
         db: this.app.db,
@@ -220,23 +220,16 @@ export class PluginAuthServer extends Plugin {
             filterByTk: userId,
           });
           const roles = await user?.getRoles();
-          if (!roles) {
+          if (roles && roles.length === 1) {
             return {
               userId,
+              roleName: roles[0].name,
             };
-          } else {
-            if (roles.length === 1) {
-              return {
-                userId,
-                roleName: roles[0].name,
-              };
-            } else {
-              // 多角色的情况下暂时不返回角色名
-              return {
-                userId,
-              };
-            }
           }
+          // 多角色的情况下暂时不返回角色名
+          return {
+            userId,
+          };
         },
       },
       {

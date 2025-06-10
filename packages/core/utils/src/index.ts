@@ -8,11 +8,13 @@
  */
 
 import lodash from 'lodash';
-import { dayjs } from './dayjs';
+export { lodash };
+export { dayjs } from './dayjs';
 
 export * from './assign';
 export * from './collections-graph';
 export * from './common';
+export * from './crypto';
 export * from './date';
 export * from './dayjs';
 export * from './forEach';
@@ -37,5 +39,5 @@ export * from './url';
 export * from './i18n';
 export * from './wrap-middleware';
 export * from './object-to-cli-args';
-export { dayjs, lodash };
+export * from './dateRangeUtils';
 export { Schema } from '@formily/json-schema';

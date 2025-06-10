@@ -86,11 +86,6 @@ const useParseDefaultValue = () => {
         field &&
         ((isVariable(fieldSchema.default) && field.value == null) || field.value === fieldSchema.default || forceUpdate)
       ) {
-        // 一个变量字符串如果显示出来会比较奇怪
-        if (isVariable(field.value)) {
-          await field.reset({ forceClear: true });
-        }
-
         field.loading = true;
         const collectionField = !fieldSchema.name.toString().includes('.') && collection?.getField(fieldSchema.name);
 

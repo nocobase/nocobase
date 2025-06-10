@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import Database, { BelongsToRepository, Collection, mockDatabase } from '@nocobase/database';
+import { BelongsToRepository, Collection, createMockDatabase, Database } from '@nocobase/database';
 
 describe('appends', () => {
   let db: Database;
@@ -23,7 +23,7 @@ describe('appends', () => {
   });
 
   beforeEach(async () => {
-    db = mockDatabase();
+    db = await createMockDatabase();
     await db.clean({ drop: true });
 
     User = db.collection({

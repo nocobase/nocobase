@@ -18,7 +18,6 @@ import { getDataSourceHeaders } from '../data-source/utils';
 import { useCompile } from '../schema-component';
 import useBuiltInVariables from './hooks/useBuiltinVariables';
 import { VariableOption, VariablesContextType } from './types';
-import { cacheLazyLoadedValues, getCachedLazyLoadedValues } from './utils/cacheLazyLoadedValues';
 import { filterEmptyValues } from './utils/filterEmptyValues';
 import { getAction } from './utils/getAction';
 import { getPath } from './utils/getPath';
@@ -144,14 +143,13 @@ const VariablesProvider = ({ children, filterVariables }: any) => {
                   .then((data) => {
                     clearRequested(url);
                     const value = data.data.data;
-                    cacheLazyLoadedValues(item, currentVariablePath, value);
                     return value;
                   });
                 stashRequested(url, result);
                 return result;
               }
             }
-            return getCachedLazyLoadedValues(item, currentVariablePath) || item?.[key];
+            return item?.[key];
           });
           current = removeThroughCollectionFields(_.flatten(await Promise.all(result)), associationField);
         } else if (
@@ -180,17 +178,9 @@ const VariablesProvider = ({ children, filterVariables }: any) => {
           }
 
           const value = data.data.data;
-          if (!getCachedLazyLoadedValues(current, currentVariablePath)) {
-            // Cache the API response data to avoid repeated requests
-            cacheLazyLoadedValues(current, currentVariablePath, value);
-          }
-
           current = removeThroughCollectionFields(value, associationField);
         } else {
-          current = removeThroughCollectionFields(
-            getCachedLazyLoadedValues(current, currentVariablePath) || getValuesByPath(current, key),
-            associationField,
-          );
+          current = removeThroughCollectionFields(getValuesByPath(current, key), associationField);
         }
 
         if (associationField?.target) {
@@ -357,15 +347,17 @@ VariablesProvider.displayName = 'VariablesProvider';
 export default VariablesProvider;
 
 function shouldToRequest(value, variableCtx: Record<string, any>, variablePath: string) {
-  let result = false;
-
-  if (getCachedLazyLoadedValues(variableCtx, variablePath)) {
+  if (
+    variablePath.split('.').length === 2 &&
+    (variablePath.startsWith('$nForm.') || variablePath.startsWith('$iteration.'))
+  ) {
     return false;
   }
 
+  let result = false;
+
   // value may be a reactive object, using untracked to avoid unexpected autorun
   untracked(() => {
-    // fix https://nocobase.height.app/T-2502
     // Compatible with `xxx to many` and `xxx to one` subform fields and subtable fields
     if (JSON.stringify(value) === '[{}]' || JSON.stringify(value) === '{}') {
       result = true;

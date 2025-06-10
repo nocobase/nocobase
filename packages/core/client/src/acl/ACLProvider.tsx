@@ -74,6 +74,7 @@ export const ACLRolesCheckProvider = (props) => {
       url: 'roles:check',
     },
     {
+      manual: !api.auth.token,
       onSuccess(data) {
         if (!data?.data?.snippets.includes('ui.*')) {
           setDesignable(false);
@@ -100,6 +101,11 @@ export const useRoleRecheck = () => {
     }
     ctx.refresh();
   };
+};
+
+export const useCurrentRoleMode = () => {
+  const ctx = useContext(ACLContext);
+  return ctx?.data?.data?.roleMode;
 };
 
 export const useACLContext = () => {
@@ -208,9 +214,9 @@ export function useACLRoleContext() {
     },
     [allowedActions, getActionAlias],
   );
-
   return {
     ...data,
+    snippets: data?.snippets || [],
     parseAction: useCallback(
       (actionPath: string, options: any = {}) => {
         const [resourceName, actionName] = actionPath?.split(':') || [];
@@ -308,15 +314,17 @@ export const ACLActionProvider = (props) => {
   const schema = useFieldSchema();
   const currentUid = schema['x-uid'];
   let actionPath = schema['x-acl-action'];
-  const editablePath = ['create', 'update', 'destroy', 'importXlsx'];
+  // 只兼容这些数据表资源按钮
+  const resourceActionPath = ['create', 'update', 'destroy', 'importXlsx', 'export'];
+  // 视图表无编辑权限时不支持的操作
+  const writableViewCollectionAction = ['create', 'update', 'destroy', 'importXlsx', 'bulkDestroy', 'bulkUpdate'];
 
-  if (!actionPath && resource && schema['x-action'] && editablePath.includes(schema['x-action'])) {
+  if (!actionPath && resource && schema['x-action'] && resourceActionPath.includes(schema['x-action'])) {
     actionPath = `${resource}:${schema['x-action']}`;
   }
   if (actionPath && !actionPath?.includes(':')) {
     actionPath = `${resource}:${actionPath}`;
   }
-
   const params = useMemo(
     () => actionPath && parseAction(actionPath, { schema, recordPkValue }),
     [parseAction, actionPath, schema, recordPkValue],
@@ -333,16 +341,18 @@ export const ACLActionProvider = (props) => {
   if (!params) {
     return <ACLActionParamsContext.Provider value={params}>{props.children}</ACLActionParamsContext.Provider>;
   }
-  //视图表无编辑权限时不显示
-  if (editablePath.includes(actionPath) || editablePath.includes(actionPath?.split(':')[1])) {
+  //视图表无编辑权限时不支持 writableViewCollectionAction 的按钮
+  if (
+    writableViewCollectionAction.includes(actionPath) ||
+    writableViewCollectionAction.includes(actionPath?.split(':')[1])
+  ) {
     if ((collection && collection.template !== 'view') || collection?.writableView) {
       return <ACLActionParamsContext.Provider value={params}>{props.children}</ACLActionParamsContext.Provider>;
     }
-    return null;
+    return <ACLActionParamsContext.Provider value={false}>{props.children}</ACLActionParamsContext.Provider>;
   }
   return <ACLActionParamsContext.Provider value={params}>{props.children}</ACLActionParamsContext.Provider>;
 };
-
 export const useACLFieldWhitelist = () => {
   const params = useContext(ACLActionParamsContext);
   const whitelist = useMemo(() => {

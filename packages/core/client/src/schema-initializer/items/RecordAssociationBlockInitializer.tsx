@@ -39,7 +39,6 @@ export const RecordAssociationBlockInitializer = () => {
         } else {
           insert(
             createTableBlockUISchema({
-              rowKey: collection.filterTargetKey,
               dataSource: collection.dataSource,
               association: association,
             }),
@@ -62,7 +61,6 @@ export function useCreateAssociationTableBlock() {
 
       insert(
         createTableBlockUISchema({
-          rowKey: collection.filterTargetKey,
           dataSource: collection.dataSource,
           association: `${field.collectionName}.${field.name}`,
         }),

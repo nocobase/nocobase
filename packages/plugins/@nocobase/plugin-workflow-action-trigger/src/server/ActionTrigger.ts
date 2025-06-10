@@ -98,7 +98,7 @@ export default class extends Trigger {
     const { currentUser, currentRole } = context.state;
     const { model: UserModel } = this.workflow.db.getCollection('users');
     const userInfo = {
-      user: UserModel.build(currentUser).desensitize(),
+      user: UserModel.build(currentUser).desensitize().toJSON(),
       roleName: currentRole,
     };
 
@@ -174,7 +174,7 @@ export default class extends Trigger {
               });
             }
           }
-          event.push({ data: toJSON(payload), ...userInfo });
+          (workflow.sync ? syncGroup : asyncGroup).push([workflow, { data: toJSON(payload), ...userInfo }]);
         }
       } else {
         const { filterTargetKey, repository } = (<Application>context.app).dataSourceManager.dataSources
@@ -188,9 +188,8 @@ export default class extends Trigger {
             appends,
           });
         }
-        event.push({ data, ...userInfo });
+        (workflow.sync ? syncGroup : asyncGroup).push([workflow, { data, ...userInfo }]);
       }
-      (workflow.sync ? syncGroup : asyncGroup).push(event);
     }
 
     for (const event of syncGroup) {

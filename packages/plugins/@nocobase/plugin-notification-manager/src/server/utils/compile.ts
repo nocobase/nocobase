@@ -8,6 +8,7 @@
  */
 
 import { Handlebars } from '@nocobase/utils';
+import { isPlainObject } from '@nocobase/utils';
 
 function deepCompile(template: unknown, data: Record<string, any>): unknown {
   if (typeof template === 'string') {
@@ -15,7 +16,7 @@ function deepCompile(template: unknown, data: Record<string, any>): unknown {
     return c(data);
   } else if (Array.isArray(template)) {
     return template.map((item) => deepCompile(item, data));
-  } else if (typeof template === 'object') {
+  } else if (isPlainObject(template)) {
     const result = Object.keys(template).reduce((object, key) => {
       const value = deepCompile(template[key], data);
       return Object.assign(object, { [key]: value });

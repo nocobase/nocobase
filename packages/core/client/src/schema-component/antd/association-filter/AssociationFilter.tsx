@@ -107,7 +107,7 @@ AssociationFilter.BlockDesigner = AssociationFilterBlockDesigner;
 AssociationFilter.useAssociationField = () => {
   const fieldSchema = useFieldSchema();
   const collection = useCollection();
-  return React.useMemo(() => collection.getField(fieldSchema.name as any), [fieldSchema.name]);
+  return React.useMemo(() => collection?.getField(fieldSchema?.name as any), [fieldSchema?.name]);
 };
 
 export class AssociationFilterPlugin extends Plugin {

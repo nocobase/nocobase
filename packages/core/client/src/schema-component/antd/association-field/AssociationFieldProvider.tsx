@@ -14,6 +14,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useAPIClient, useRequest } from '../../../api-client';
 import { useCollectionManager } from '../../../data-source/collection';
 import { markRecordAsNew } from '../../../data-source/collection-record/isNewRecord';
+import { getDataSourceHeaders } from '../../../data-source/utils';
 import { useKeepAlive } from '../../../route-switch/antd/admin-layout/KeepAlive';
 import { useSchemaComponentContext } from '../../hooks';
 import { AssociationFieldContext } from './context';
@@ -67,9 +68,11 @@ export const AssociationFieldProvider = observer(
         if (_.isUndefined(ids) || _.isNil(ids) || _.isNaN(ids)) {
           return Promise.reject(null);
         }
+
         return api.request({
           resource: collectionField.target,
           action: Array.isArray(ids) ? 'list' : 'get',
+          headers: getDataSourceHeaders(cm?.dataSource?.key),
           params: {
             filter: {
               [targetKey]: ids,

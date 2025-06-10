@@ -10,8 +10,9 @@
 import { CloseCircleOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
 import { observer } from '@formily/react';
+import { sortTree } from '@nocobase/utils/client';
 import { Cascader, Select, Space } from 'antd';
-import React, { useCallback, useContext, useMemo } from 'react';
+import React, { useCallback, useContext, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCompile } from '../..';
 import { DynamicComponent } from './DynamicComponent';
@@ -25,7 +26,7 @@ export const FilterItem = observer(
     const remove = useContext(RemoveConditionContext);
     const {
       schema,
-      fields,
+      fields: _fields,
       operators,
       dataIndex,
       operator,
@@ -35,6 +36,22 @@ export const FilterItem = observer(
       setValue,
       collectionField,
     } = useValues();
+    const fields = useMemo(
+      () =>
+        sortTree(
+          _fields,
+          (node) => {
+            if (node.children?.length) {
+              return 0;
+            }
+            return 1;
+          },
+          'children',
+          false,
+        ),
+      [_fields],
+    );
+    const [options, setOptions] = useState(() => compile(fields));
     const style = useMemo(() => ({ marginBottom: 8 }), []);
     const fieldNames = useMemo(
       () => ({
@@ -59,6 +76,19 @@ export const FilterItem = observer(
     );
 
     const removeStyle = useMemo(() => ({ color: '#bfbfbf' }), []);
+
+    const onSearch = async (value) => {
+      if (value) {
+        const filteredOptions = compile(fields).filter((option) => {
+          return option[fieldNames.label].toLowerCase().includes(value.toLowerCase());
+        });
+        setOptions(filteredOptions);
+      } else {
+        setOptions(compile(fields));
+      }
+    };
+    const filter = (inputValue: string, path: any) =>
+      path.some((option) => (option[fieldNames.label] as string).toLowerCase().indexOf(inputValue.toLowerCase()) > -1);
     return (
       // 添加 nc-filter-item 类名是为了帮助编写测试时更容易选中该元素
       <div style={style} className="nc-filter-item">
@@ -70,12 +100,22 @@ export const FilterItem = observer(
             className={css`
               width: 160px;
             `}
+            popupClassName={css`
+              .ant-cascader-menu {
+                height: fit-content;
+                max-height: 50vh;
+              }
+            `}
+            allowClear
             fieldNames={fieldNames}
-            changeOnSelect={false}
             value={dataIndex}
-            options={compile(fields)}
+            options={options}
             onChange={onChange}
             placeholder={t('Select field')}
+            onSearch={onSearch}
+            showSearch={{ filter }}
+            changeOnSelect={false}
+            onClear={() => setOptions(compile(fields))}
           />
           <Select
             // @ts-ignore

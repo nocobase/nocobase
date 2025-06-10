@@ -10,22 +10,31 @@
 import path from 'path';
 
 import { ApplicationOptions, Plugin } from '@nocobase/server';
-import { MockClusterOptions, MockServer, createMockCluster, createMockServer, mockDatabase } from '@nocobase/test';
+import {
+  MockClusterOptions,
+  MockServer,
+  MockServerOptions,
+  createMockCluster,
+  createMockDatabase,
+  createMockServer,
+  mockDatabase,
+} from '@nocobase/test';
 
-import functions from './functions';
-import triggers from './triggers';
-import instructions from './instructions';
 import { SequelizeCollectionManager, SequelizeDataSource } from '@nocobase/data-source-manager';
 import { uid } from '@nocobase/utils';
+import functions from './functions';
+import instructions from './instructions';
+import triggers from './triggers';
 export { sleep } from '@nocobase/test';
 
-interface WorkflowMockServerOptions extends ApplicationOptions {
-  collectionsPath?: string;
-}
+type WorkflowMockServerOptions = ApplicationOptions &
+  MockServerOptions & {
+    collectionsPath?: string;
+  };
 
-interface WorkflowMockClusterOptions extends MockClusterOptions {
+type WorkflowMockClusterOptions = MockClusterOptions & {
   collectionsPath?: string;
-}
+};
 
 class TestCollectionPlugin extends Plugin {
   async load() {
@@ -44,6 +53,7 @@ export async function getApp({
     ...options,
     plugins: [
       'field-sort',
+      'system-settings',
       [
         'workflow',
         {
@@ -62,7 +72,7 @@ export async function getApp({
     new SequelizeDataSource({
       name: 'another',
       collectionManager: {
-        database: mockDatabase({
+        database: await createMockDatabase({
           tablePrefix: `t${uid(5)}`,
         }),
       },
@@ -87,6 +97,7 @@ export async function getCluster({ plugins = [], collectionsPath, ...options }: 
   return createMockCluster({
     ...options,
     plugins: [
+      'field-sort',
       [
         'workflow',
         {

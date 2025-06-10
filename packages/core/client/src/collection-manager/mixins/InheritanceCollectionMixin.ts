@@ -7,9 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { filter, unionBy, uniq } from 'lodash';
 import type { CollectionFieldOptions, GetCollectionFieldPredicate } from '../../data-source';
 import { Collection } from '../../data-source/collection/Collection';
-import _, { filter, unionBy, uniq } from 'lodash';
 
 export class InheritanceCollectionMixin extends Collection {
   protected parentCollectionsName: string[];
@@ -22,6 +22,7 @@ export class InheritanceCollectionMixin extends Collection {
   protected parentCollectionFields: Record<string, CollectionFieldOptions[]> = {};
   protected allCollectionsInheritChain: string[];
   protected inheritCollectionsChain: string[];
+  protected inheritChain: string[];
   protected foreignKeyFields: CollectionFieldOptions[];
 
   getParentCollectionsName() {
@@ -231,6 +232,43 @@ export class InheritanceCollectionMixin extends Collection {
     this.inheritCollectionsChain = getInheritChain(this.name);
 
     return this.inheritCollectionsChain;
+  }
+
+  /**
+   * 获取所有祖先数据表和后代数据表，不包括兄弟表。用于下面这些地方：
+   * - 筛选区块链接数据区块时使用
+   */
+  getInheritChain() {
+    if (this.inheritChain) {
+      return this.inheritChain.slice();
+    }
+
+    const ancestorChain = this.getInheritCollectionsChain();
+    const descendantNames = this.getChildrenCollectionsName();
+
+    // 构建最终的链，首先包含祖先链（包括自身）
+    const inheritChain = [...ancestorChain];
+
+    // 再添加直接后代及其后代，但不包括兄弟表
+    const addDescendants = (names: string[]) => {
+      for (const name of names) {
+        if (!inheritChain.includes(name)) {
+          inheritChain.push(name);
+          const childCollection = this.collectionManager.getCollection<InheritanceCollectionMixin>(name);
+          if (childCollection) {
+            // 递归添加每个后代的后代
+            const childrenNames = childCollection.getChildrenCollectionsName();
+            addDescendants(childrenNames);
+          }
+        }
+      }
+    };
+
+    // 从当前集合的直接后代开始添加
+    addDescendants(descendantNames);
+
+    this.inheritChain = inheritChain;
+    return this.inheritChain;
   }
 
   getAllFields(predicate?: GetCollectionFieldPredicate) {

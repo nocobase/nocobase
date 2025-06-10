@@ -11,8 +11,10 @@ import { DeleteOutlined, DownloadOutlined, InboxOutlined, LoadingOutlined, PlusO
 import { Field } from '@formily/core';
 import { connect, mapProps, mapReadPretty, useField } from '@formily/react';
 import { Alert, Upload as AntdUpload, Button, Modal, Progress, Space, Tooltip } from 'antd';
+import { createGlobalStyle } from 'antd-style';
 import useUploadStyle from 'antd/es/upload/style';
 import cls from 'classnames';
+import { css } from '@emotion/css';
 import { saveAs } from 'file-saver';
 import filesize from 'filesize';
 import React, { useCallback, useEffect, useState } from 'react';
@@ -36,6 +38,12 @@ import {
 import { useStyles } from './style';
 import type { ComposedUpload, DraggerProps, DraggerV2Props, UploadProps } from './type';
 
+const LightBoxGlobalStyle = createGlobalStyle`
+  .ReactModal__Overlay.ReactModal__Overlay--after-open {
+    z-index: 3000 !important; // 避免预览图片时被遮挡
+  }
+`;
+
 attachmentFileTypes.add({
   match(file) {
     return matchMimetype(file, 'image/*');
@@ -45,7 +53,7 @@ attachmentFileTypes.add({
       return file.preview;
     }
     if (file.url) {
-      return `${file.url}${file.thumbnailRule || ''}`;
+      return file.url;
     }
     if (file.originFileObj) {
       return URL.createObjectURL(file.originFileObj);
@@ -62,53 +70,57 @@ attachmentFileTypes.add({
       [index, list],
     );
     return (
-      <LightBox
-        // discourageDownloads={true}
-        mainSrc={list[index]?.url}
-        nextSrc={list[(index + 1) % list.length]?.url}
-        prevSrc={list[(index + list.length - 1) % list.length]?.url}
-        onCloseRequest={() => onSwitchIndex(null)}
-        onMovePrevRequest={() => onSwitchIndex((index + list.length - 1) % list.length)}
-        onMoveNextRequest={() => onSwitchIndex((index + 1) % list.length)}
-        imageTitle={list[index]?.title}
-        toolbarButtons={[
-          <button
-            key={'preview-img'}
-            style={{ fontSize: 22, background: 'none', lineHeight: 1 }}
-            type="button"
-            aria-label="Download"
-            title="Download"
-            className="ril-zoom-in ril__toolbarItemChild ril__builtinButton"
-            onClick={onDownload}
-          >
-            <DownloadOutlined />
-          </button>,
-        ]}
-      />
+      <>
+        <LightBoxGlobalStyle />
+        <LightBox
+          // discourageDownloads={true}
+          mainSrc={list[index]?.url}
+          nextSrc={list[(index + 1) % list.length]?.url}
+          prevSrc={list[(index + list.length - 1) % list.length]?.url}
+          onCloseRequest={() => onSwitchIndex(null)}
+          onMovePrevRequest={() => onSwitchIndex((index + list.length - 1) % list.length)}
+          onMoveNextRequest={() => onSwitchIndex((index + 1) % list.length)}
+          imageTitle={list[index]?.title}
+          toolbarButtons={[
+            <button
+              key={'preview-img'}
+              style={{ fontSize: 22, background: 'none', lineHeight: 1 }}
+              type="button"
+              aria-label="Download"
+              title="Download"
+              className="ril-zoom-in ril__toolbarItemChild ril__builtinButton"
+              onClick={onDownload}
+            >
+              <DownloadOutlined />
+            </button>,
+          ]}
+        />
+      </>
     );
   },
 });
 
-const iframePreviewSupportedTypes = ['application/pdf', 'audio/*', 'image/*', 'video/*'];
+const iframePreviewSupportedTypes = ['application/pdf', 'audio/*', 'image/*', 'video/*', 'text/plain'];
 
 function IframePreviewer({ index, list, onSwitchIndex }) {
   const { t } = useTranslation();
   const file = list[index];
+  const url = file.url;
   const onOpen = useCallback(
     (e) => {
       e.preventDefault();
       e.stopPropagation();
-      window.open(file.url);
+      window.open(url);
     },
-    [file],
+    [url],
   );
   const onDownload = useCallback(
     (e) => {
       e.preventDefault();
       e.stopPropagation();
-      saveAs(file.url, `${file.title}${file.extname}`);
+      saveAs(url, `${file.title}${file.extname}`);
     },
-    [file],
+    [file.extname, file.title, url],
   );
   const onClose = useCallback(() => {
     onSwitchIndex(null);
@@ -148,7 +160,7 @@ function IframePreviewer({ index, list, onSwitchIndex }) {
       >
         {iframePreviewSupportedTypes.some((type) => matchMimetype(file, type)) ? (
           <iframe
-            src={file.url}
+            src={url}
             style={{
               width: '100%',
               maxHeight: '90vh',
@@ -192,6 +204,12 @@ function ReadPretty({ value, onChange, disabled, multiple, size, ...others }: Up
         `nb-upload`,
         size ? `nb-upload-${size}` : null,
         hashId,
+        css`
+          .ant-upload-list-picture-card-container {
+            width: ${size}px !important;
+            height: ${size}px !important;
+          }
+        `,
       )}
     >
       <div className={cls(`${prefixCls}-list`, `${prefixCls}-list-picture-card`)}>
@@ -222,7 +240,7 @@ function useSizeHint(size: number) {
   const s = size ?? FILE_SIZE_LIMIT_DEFAULT;
   const { t, i18n } = useTranslation();
   const sizeString = filesize(s, { base: 2, standard: 'jedec', locale: i18n.language });
-  return s !== 0 ? t('File size should not exceed {{size}}.', { size: sizeString }) : '';
+  return s !== 0 ? t('File size should not exceed {{size}}.', { size: 10000000 }) : '';
 }
 
 function DefaultThumbnailPreviewer({ file }) {
@@ -382,15 +400,16 @@ export function Uploader({ rules, ...props }: UploadProps) {
 
   useEffect(() => {
     if (pendingList.length) {
+      const errorFiles = pendingList.filter((item) => item.status === 'error');
       field.setFeedback({
         type: 'error',
         code: 'ValidateError',
-        messages: [t('Incomplete uploading files need to be resolved')],
+        messages: [errorFiles.length ? t('Some files are not uploaded correctly, please check.') : ' '],
       });
     } else {
       field.setFeedback({});
     }
-  }, [field, pendingList]);
+  }, [field, pendingList, t]);
 
   const onUploadChange = useCallback(
     (info) => {

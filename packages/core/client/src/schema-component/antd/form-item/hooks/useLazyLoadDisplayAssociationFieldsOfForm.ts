@@ -29,7 +29,7 @@ import { isDisplayField } from '../utils';
  */
 const useLazyLoadDisplayAssociationFieldsOfForm = () => {
   const { name } = useCollection_deprecated();
-  const { getCollectionJoinField } = useCollectionManager_deprecated();
+  const { getCollectionJoinField, getCollection } = useCollectionManager_deprecated();
   const form = useForm();
   const fieldSchema = useFieldSchema();
   const variables = useVariables();
@@ -90,7 +90,7 @@ const useLazyLoadDisplayAssociationFieldsOfForm = () => {
     }
 
     const { appends } = getAssociationAppends();
-
+    const collection = getCollection(collectionFieldRef.current?.collectionName);
     variables
       .parseVariable(variableString, formVariable, { appends })
       .then(({ value }) => {
@@ -101,6 +101,11 @@ const useLazyLoadDisplayAssociationFieldsOfForm = () => {
             field.value = null;
           } else {
             field.value = result;
+            field.componentProps = {
+              ...field.componentProps,
+              readOnlySubmit: true,
+              filterTargetKey: collection?.filterTargetKey || 'id',
+            }; // 让它不参与提交
           }
         });
       })

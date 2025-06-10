@@ -1,9 +1,16 @@
 {
-  "Form event": "Form event",
-  "Event triggers when submitted a workflow bound form action.": "Event triggers when submitted a workflow bound form action.",
-  "Form data model": "Form data model",
-  "Use a collection to match form data.": "Use a collection to match form data.",
+  "Post-action event": "Post-action event",
+  "Triggered after the completion of a request initiated through an action button or API, such as after adding or updating data. Suitable for data processing, sending notifications, etc., after actions are completed.": "Triggered after the completion of a request initiated through an action button or API, such as after adding or updating data. Suitable for data processing, sending notifications, etc., after actions are completed.",
+  "Collection": "Collection",
+  "The collection to which the triggered data belongs.": "The collection to which the triggered data belongs.",
+  "Trigger mode": "Trigger mode",
+  "Local mode, triggered after the completion of actions bound to this workflow": "Local mode, triggered after the completion of actions bound to this workflow",
+  "Global mode, triggered after the completion of the following actions": "Global mode, triggered after the completion of the following actions",
+  "Select actions": "Select actions",
+  "Create record action": "Create record action",
+  "Update record action": "Update record action",
   "Associations to use": "Associations to use",
-  "User submitted form": "User submitted form",
-  "Role of user submitted form": "Role of user submitted form"
+  "Trigger data": "Trigger data",
+  "User acted": "User acted",
+  "Role of user acted": "Role of user acted"
 }

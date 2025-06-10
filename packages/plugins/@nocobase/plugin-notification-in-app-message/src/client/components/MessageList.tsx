@@ -7,40 +7,59 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useState, useCallback } from 'react';
-import { observer } from '@formily/reactive-react';
 import { Schema } from '@formily/react';
-import { Card, Descriptions, Button, Spin, Tag, ConfigProvider, Typography, Tooltip, theme } from 'antd';
+import { observer } from '@formily/reactive-react';
 import { dayjs } from '@nocobase/utils/client';
+import { Button, Card, ConfigProvider, Descriptions, Spin, Tag, Tooltip, Typography, theme } from 'antd';
+import React, { useCallback, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLocalTranslation } from '../../locale';
 
+import { useApp } from '@nocobase/client';
 import {
-  selectedChannelNameObs,
   channelMapObs,
+  channelStatusFilterObs,
   fetchMessages,
+  inboxVisible,
   isFecthingMessageObs,
+  markAllMessagesAsRead,
+  selectedChannelNameObs,
   selectedMessageListObs,
   showMsgLoadingMoreObs,
   updateMessage,
-  inboxVisible,
 } from '../observables';
-import { useApp } from '@nocobase/client';
+
+function removeStringIfStartsWith(text: string, prefix: string): string {
+  if (text.startsWith(prefix)) {
+    return text.slice(prefix.length);
+  }
+  return text;
+}
 
 const MessageList = observer(() => {
   const app = useApp();
+  const basename = app.router.basename.replace(/\/+$/, '');
   const { t } = useLocalTranslation();
   const navigate = useNavigate();
   const { token } = theme.useToken();
   const [hoveredMessageId, setHoveredMessageId] = useState<string | null>(null);
   const selectedChannelName = selectedChannelNameObs.value;
+  const selectedChannel = selectedChannelName ? channelMapObs.value[selectedChannelName] : null;
   const isFetchingMessages = isFecthingMessageObs.value;
   const messages = selectedMessageListObs.value;
   const msgStatusDict = {
     read: t('Read'),
     unread: t('Unread'),
   };
+
+  const onMarkAllReadClick = useCallback(() => {
+    if (selectedChannelName) {
+      markAllMessagesAsRead({ channelName: selectedChannelName });
+    }
+  }, [selectedChannelName]);
+
   if (!selectedChannelName) return null;
+
   const onItemClicked = (message) => {
     updateMessage({
       filterByTk: message.id,
@@ -51,7 +70,7 @@ const MessageList = observer(() => {
     if (message.options?.url) {
       inboxVisible.value = false;
       const url = message.options.url;
-      if (url.startsWith('/')) navigate(url);
+      if (url.startsWith('/')) navigate(removeStringIfStartsWith(url, basename));
       else {
         window.location.href = url;
       }
@@ -80,9 +99,19 @@ const MessageList = observer(() => {
         components: { Badge: { dotSize: 8 } },
       }}
     >
-      <Typography.Title level={4} style={{ marginBottom: token.marginLG }}>
-        {title}
-      </Typography.Title>
+      <div
+        style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: token.marginLG }}
+      >
+        <Typography.Title level={4} style={{ margin: 0 }}>
+          {title}
+        </Typography.Title>
+        <Button
+          disabled={selectedChannel?.unreadMsgCnt === 0 || channelStatusFilterObs.value === 'read'}
+          onClick={onMarkAllReadClick}
+        >
+          {t('Mark all as read')}
+        </Button>
+      </div>
 
       {messages.length === 0 && isFecthingMessageObs.value ? (
         <Spin style={{ width: '100%', marginTop: token.marginXXL }} />
@@ -142,7 +171,7 @@ const MessageList = observer(() => {
                 <Descriptions.Item label={t('Datetime')}>{dayjs(message.receiveTimestamp).fromNow()}</Descriptions.Item>
                 <Descriptions.Item label={t('Status')}>
                   <div style={{ height: token.controlHeight }}>
-                    {hoveredMessageId === message.id && message.status === 'unread' ? (
+                    {hoveredMessageId === message.id ? (
                       <Button
                         type="link"
                         size="small"
@@ -151,12 +180,12 @@ const MessageList = observer(() => {
                           updateMessage({
                             filterByTk: message.id,
                             values: {
-                              status: 'read',
+                              status: message.status === 'read' ? 'unread' : 'read',
                             },
                           });
                         }}
                       >
-                        {t('Mark as read')}
+                        {t(message.status === 'unread' ? 'Mark as read' : 'Mark as unread')}
                       </Button>
                     ) : (
                       <Tag color={message.status === 'unread' ? 'red' : 'green'}>{msgStatusDict[message.status]}</Tag>

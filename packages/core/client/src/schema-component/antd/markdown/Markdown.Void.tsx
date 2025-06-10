@@ -16,6 +16,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCompile } from '../../';
 import { useCollectionRecord } from '../../../data-source';
+import { FlagProvider, useFlag } from '../../../flag-provider';
 import { useGlobalTheme } from '../../../global-theme';
 import { withDynamicSchemaProps } from '../../../hoc/withDynamicSchemaProps';
 import { useVariableOptions } from '../../../schema-settings/VariableInput/hooks/useVariableOptions';
@@ -28,6 +29,7 @@ import { MarkdownVoidDesigner } from './Markdown.Void.Designer';
 import { registerQrcodeWebComponent } from './qrcode-webcom';
 import { useStyles } from './style';
 import { parseMarkdown } from './util';
+
 export interface MarkdownEditorProps extends Omit<TextAreaProps, 'onSubmit'> {
   scope: any[];
   defaultValue?: string;
@@ -130,7 +132,7 @@ const useMarkdownHeight = () => {
   return height - 2 * token.paddingLG;
 };
 
-export const MarkdownVoid: any = withDynamicSchemaProps(
+export const MarkdownVoidInner: any = withDynamicSchemaProps(
   observer((props: any) => {
     const { isDarkTheme } = useGlobalTheme();
     const { componentCls, hashId } = useStyles({ isDarkTheme });
@@ -208,4 +210,12 @@ export const MarkdownVoid: any = withDynamicSchemaProps(
   { displayName: 'MarkdownVoid' },
 );
 
+export const MarkdownVoid = (props) => {
+  const flags = useFlag();
+  return (
+    <FlagProvider {...flags} collectionField={true}>
+      <MarkdownVoidInner {...props} />
+    </FlagProvider>
+  );
+};
 MarkdownVoid.Designer = MarkdownVoidDesigner;

@@ -179,9 +179,15 @@ export abstract class MultipleRelationRepository extends RelationRepository {
     return false;
   }
 
-  protected async destroyByFilter(filter: Filter, transaction?: Transaction) {
+  protected async destroyByFilter(
+    options: {
+      filter?: Filter;
+      filterByTk?: TargetKey | TargetKey[];
+    },
+    transaction?: Transaction,
+  ) {
     const instances = await this.find({
-      filter: filter,
+      ...options,
       transaction,
     });
 

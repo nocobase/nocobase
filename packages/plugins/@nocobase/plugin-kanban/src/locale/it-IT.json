@@ -4,5 +4,6 @@
   "Create sort field": "Crea campo di ordinamento",
   "Convert the following integer fields to sorting fields": "Converti i seguenti campi interi in campi di ordinamento",
   "Sorting field": "Campo di ordinamento",
-  "Grouped sorting based on": "Ordinamento raggruppato basato su"
+  "Grouped sorting based on": "Ordinamento raggruppato basato su",
+  "Enable drag and drop sorting": "Abilita l'ordinamento con drag and drop"
 }

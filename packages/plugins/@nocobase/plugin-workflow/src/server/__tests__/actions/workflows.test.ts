@@ -10,6 +10,7 @@
 import { MockServer } from '@nocobase/test';
 import Database from '@nocobase/database';
 import { getApp, sleep } from '@nocobase/plugin-workflow-test';
+import Plugin from '../../Plugin';
 
 describe('workflow > actions > workflows', () => {
   let app: MockServer;
@@ -18,14 +19,20 @@ describe('workflow > actions > workflows', () => {
   let PostModel;
   let PostRepo;
   let WorkflowModel;
+  let WorkflowRepo;
   let ExecutionModel;
+  let WorkflowStatsRepo;
+  let WorkflowVersionStatsRepo;
 
   beforeEach(async () => {
     app = await getApp();
     agent = app.agent();
     db = app.db;
     WorkflowModel = db.getCollection('workflows').model;
+    WorkflowRepo = db.getCollection('workflows').repository;
     ExecutionModel = db.getCollection('executions').model;
+    WorkflowStatsRepo = db.getCollection('workflowStats').repository;
+    WorkflowVersionStatsRepo = db.getCollection('workflowVersionStats').repository;
     PostModel = db.getCollection('posts').model;
     PostRepo = db.getCollection('posts').repository;
   });
@@ -118,6 +125,58 @@ describe('workflow > actions > workflows', () => {
       const c2 = await workflow.countExecutions();
       expect(c2).toBe(1);
     });
+
+    it('update options should be ok', async () => {
+      const workflow = await WorkflowModel.create({
+        enabled: true,
+        type: 'collection',
+        config: {
+          mode: 3,
+          collection: 'posts',
+        },
+      });
+      await workflow.createNode({
+        type: 'create',
+        config: {
+          collection: 'posts',
+          values: {
+            title: 't-{{$context.data.id}}',
+          },
+        },
+      });
+
+      const p1 = await PostRepo.create({ values: { title: 't1' } });
+
+      await sleep(500);
+
+      const c1 = await workflow.countExecutions();
+      expect(c1).toBe(1);
+
+      const { status, body } = await agent.resource('workflows').update({
+        filterByTk: workflow.id,
+        values: {
+          options: {
+            stackLimit: 3,
+          },
+        },
+      });
+      expect(status).toBe(200);
+      expect(body.data[0].options.stackLimit).toBe(3);
+
+      const plugin = app.pm.get(Plugin) as Plugin;
+      const w1 = plugin.enabledCache.get(workflow.id);
+      expect(w1.options.stackLimit).toBe(3);
+
+      const p2 = await PostRepo.create({ values: { title: 't2' } });
+
+      await sleep(500);
+
+      const c2 = await workflow.countExecutions();
+      expect(c2).toBe(4);
+
+      const p2s = await PostRepo.find();
+      expect(p2s.length).toBe(6);
+    });
   });
 
   describe('destroy', () => {
@@ -185,6 +244,12 @@ describe('workflow > actions > workflows', () => {
 
       const j2c = await JobModel.count();
       expect(j2c).toBe(1);
+
+      // NOTE: stats records should be deleted
+      const statsCount = await WorkflowStatsRepo.count();
+      expect(statsCount).toBe(0);
+      const versionStatsCount = await WorkflowVersionStatsRepo.count();
+      expect(versionStatsCount).toBe(0);
     });
   });
 
@@ -196,6 +261,9 @@ describe('workflow > actions > workflows', () => {
         config: {
           mode: 1,
           collection: 'posts',
+        },
+        options: {
+          stackLimit: 2,
         },
       });
 
@@ -211,13 +279,24 @@ describe('workflow > actions > workflows', () => {
       });
 
       expect(status).toBe(200);
-      const { data: w2 } = body;
+      const w2 = await WorkflowModel.findOne({
+        where: {
+          id: body.data.id,
+        },
+        include: ['stats', 'versionStats'],
+      });
       expect(w2.config).toMatchObject(w1.config);
       expect(w2.key).toBe(w1.key);
       expect(w2.current).toBeFalsy();
       expect(w2.enabled).toBe(false);
-      expect(w2.executed).toBe(0);
-      expect(w2.allExecuted).toBe(1);
+      expect(w2.versionStats.executed).toBe(0);
+      expect(w2.stats.executed).toBe(1);
+
+      const s1c = await WorkflowStatsRepo.count();
+      expect(s1c).toBe(1);
+      const sv1c = await WorkflowVersionStatsRepo.count();
+      expect(sv1c).toBe(2);
+      expect(w2.options.stackLimit).toBe(2);
 
       await WorkflowModel.update(
         {
@@ -237,15 +316,17 @@ describe('workflow > actions > workflows', () => {
 
       const [w1next, w2next] = await WorkflowModel.findAll({
         order: [['id', 'ASC']],
+        include: ['stats', 'versionStats'],
       });
 
       expect(w1next.enabled).toBe(false);
       expect(w1next.current).toBe(null);
-      expect(w1next.allExecuted).toBe(2);
+      expect(w1next.stats.executed).toBe(2);
       expect(w2next.enabled).toBe(true);
       expect(w2next.current).toBe(true);
-      expect(w2next.executed).toBe(1);
-      expect(w2next.allExecuted).toBe(2);
+      expect(w2next.versionStats.executed).toBe(1);
+      expect(w2next.stats.executed).toBe(2);
+      expect(w2next.options.stackLimit).toBe(2);
 
       const [e1] = await w1next.getExecutions();
       const [e2] = await w2next.getExecutions();
@@ -330,12 +411,18 @@ describe('workflow > actions > workflows', () => {
       });
 
       expect(status).toBe(200);
-      const { data: w2 } = body;
+      const w2 = await WorkflowModel.findOne({
+        where: {
+          id: body.data.id,
+        },
+        include: ['stats', 'versionStats'],
+      });
       expect(w2.config).toMatchObject(w1.config);
       expect(w2.key).not.toBe(w1.key);
       expect(w2.current).toBeTruthy();
       expect(w2.enabled).toBe(false);
-      expect(w2.allExecuted).toBe(0);
+      expect(w2.stats.executed).toBe(0);
+      expect(w2.versionStats.executed).toBe(0);
 
       // stop w1
       await WorkflowModel.update(
@@ -368,15 +455,16 @@ describe('workflow > actions > workflows', () => {
 
       const [w1next, w2next] = await WorkflowModel.findAll({
         order: [['id', 'ASC']],
+        include: ['stats', 'versionStats'],
       });
 
       expect(w1next.enabled).toBe(false);
       expect(w1next.current).toBe(true);
-      expect(w1next.executed).toBe(1);
-      expect(w1next.allExecuted).toBe(1);
+      expect(w1next.versionStats.executed).toBe(1);
+      expect(w1next.stats.executed).toBe(1);
       expect(w2next.enabled).toBe(true);
-      expect(w2next.executed).toBe(1);
-      expect(w2next.allExecuted).toBe(1);
+      expect(w2next.versionStats.executed).toBe(1);
+      expect(w2next.stats.executed).toBe(1);
 
       const [e1] = await w1next.getExecutions();
       const [e2] = await w2next.getExecutions();
@@ -402,12 +490,17 @@ describe('workflow > actions > workflows', () => {
       });
 
       expect(status).toBe(200);
-      const { data: w2 } = body;
+      const w2 = await WorkflowModel.findOne({
+        where: {
+          id: body.data.id,
+        },
+        include: ['stats', 'versionStats'],
+      });
       expect(w2.config).toMatchObject(w1.config);
       expect(w2.key).not.toBe(w1.key);
       expect(w2.current).toBeTruthy();
       expect(w2.enabled).toBe(false);
-      expect(w2.allExecuted).toBe(0);
+      expect(w2.stats.executed).toBe(0);
       expect(w2.sync).toBe(true);
 
       // stop w1
@@ -439,20 +532,103 @@ describe('workflow > actions > workflows', () => {
 
       const [w1next, w2next] = await WorkflowModel.findAll({
         order: [['id', 'ASC']],
+        include: ['stats', 'versionStats'],
       });
 
       expect(w1next.enabled).toBe(false);
       expect(w1next.current).toBe(true);
-      expect(w1next.executed).toBe(1);
-      expect(w1next.allExecuted).toBe(1);
+      expect(w1next.versionStats.executed).toBe(1);
+      expect(w1next.stats.executed).toBe(1);
       expect(w2next.enabled).toBe(true);
-      expect(w2next.executed).toBe(1);
-      expect(w2next.allExecuted).toBe(1);
+      expect(w2next.versionStats.executed).toBe(1);
+      expect(w2next.stats.executed).toBe(1);
 
       const [e1] = await w1next.getExecutions();
       const [e2] = await w2next.getExecutions();
       expect(e1.key).not.toBe(e2.key);
       expect(e2.workflowId).toBe(w2.id);
+    });
+
+    it('revision with categories', async () => {
+      const CategoryRepo = db.getRepository('workflowCategories');
+      const categories = await CategoryRepo.create({
+        values: [{ title: 'c1' }, { title: 'c2' }, { title: 'c3' }],
+      });
+      const w1 = await WorkflowRepo.create({
+        values: {
+          enabled: true,
+          type: 'collection',
+          config: {
+            mode: 1,
+            collection: 'posts',
+          },
+          options: {
+            stackLimit: 2,
+          },
+          categories: categories.map((item) => item.id),
+        },
+      });
+      await w1.reload({
+        include: ['categories'],
+      });
+      expect(w1.categories.length).toBe(categories.length);
+
+      const { body, status } = await agent.resource(`workflows`).revision({
+        filterByTk: w1.id,
+        filter: {
+          key: w1.key,
+        },
+      });
+
+      expect(status).toBe(200);
+
+      const w2 = await WorkflowModel.findOne({
+        where: {
+          id: body.data.id,
+        },
+        include: ['stats', 'versionStats', 'categories'],
+      });
+      expect(w2.categories.length).toBe(categories.length);
+    });
+
+    it('duplicate with categories', async () => {
+      const CategoryRepo = db.getRepository('workflowCategories');
+      const categories = await CategoryRepo.create({
+        values: [{ title: 'c1' }, { title: 'c2' }, { title: 'c3' }],
+      });
+      const w1 = await WorkflowRepo.create({
+        values: {
+          enabled: true,
+          type: 'collection',
+          config: {
+            mode: 1,
+            collection: 'posts',
+          },
+          options: {
+            stackLimit: 2,
+          },
+          categories: categories.map((item) => item.id),
+        },
+      });
+      await w1.reload({
+        include: ['categories'],
+      });
+      expect(w1.categories.length).toBe(categories.length);
+
+      const { body, status } = await agent.resource(`workflows`).revision({
+        filterByTk: w1.id,
+      });
+
+      expect(status).toBe(200);
+
+      const w2 = await WorkflowModel.findOne({
+        where: {
+          id: body.data.id,
+        },
+        include: ['stats', 'versionStats', 'categories'],
+      });
+      expect(w2.categories.length).toBe(categories.length);
+      expect(w2.key).not.toBe(w1.key);
     });
   });
 });

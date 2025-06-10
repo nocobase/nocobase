@@ -8,7 +8,7 @@
  */
 
 const { Command } = require('commander');
-const { run, isDev, isProd, promptForTs, downloadPro } = require('../util');
+const { run, isDev, isProd, promptForTs, downloadPro, checkDBDialect } = require('../util');
 
 /**
  *
@@ -21,6 +21,7 @@ module.exports = (cli) => {
     .option('-h, --help')
     .option('--ts-node-dev')
     .action(async (options) => {
+      checkDBDialect();
       const cmd = process.argv.slice(2)?.[0];
       if (cmd === 'install') {
         await downloadPro();

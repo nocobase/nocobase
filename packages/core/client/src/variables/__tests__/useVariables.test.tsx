@@ -129,7 +129,7 @@ mockRequest.onGet('/users/0/belongsToField:get').reply(() => {
     },
   ];
 });
-mockRequest.onGet('/users/0/hasManyField:list?pageSize=9999').reply(() => {
+mockRequest.onGet('/users/0/hasManyField:list?paginate=false').reply(() => {
   return [
     200,
     {
@@ -142,7 +142,7 @@ mockRequest.onGet('/users/0/hasManyField:list?pageSize=9999').reply(() => {
     },
   ];
 });
-mockRequest.onGet('/users/0/belongsToManyField:list?pageSize=9999').reply(() => {
+mockRequest.onGet('/users/0/belongsToManyField:list?paginate=false').reply(() => {
   return [
     200,
     {
@@ -156,7 +156,7 @@ mockRequest.onGet('/users/0/belongsToManyField:list?pageSize=9999').reply(() => 
     },
   ];
 });
-mockRequest.onGet('/test/0/hasManyField:list?pageSize=9999').reply(() => {
+mockRequest.onGet('/test/0/hasManyField:list?paginate=false').reply(() => {
   return [
     200,
     {
@@ -262,6 +262,19 @@ describe('useVariables', () => {
             "today": [Function],
             "tomorrow": [Function],
             "yesterday": [Function],
+          },
+          "$nExactDate": {
+            "nowLocal": [Function],
+            "nowUtc": [Function],
+            "todayDate": [Function],
+            "todayLocal": [Function],
+            "todayUtc": [Function],
+            "tomorrowDate": [Function],
+            "tomorrowLocal": [Function],
+            "tomorrowUtc": [Function],
+            "yesterdayDate": [Function],
+            "yesterdayLocal": [Function],
+            "yesterdayUtc": [Function],
           },
           "$nRole": "root",
           "$nToken": "token",
@@ -569,6 +582,19 @@ describe('useVariables', () => {
             "tomorrow": [Function],
             "yesterday": [Function],
           },
+          "$nExactDate": {
+            "nowLocal": [Function],
+            "nowUtc": [Function],
+            "todayDate": [Function],
+            "todayLocal": [Function],
+            "todayUtc": [Function],
+            "tomorrowDate": [Function],
+            "tomorrowLocal": [Function],
+            "tomorrowUtc": [Function],
+            "yesterdayDate": [Function],
+            "yesterdayLocal": [Function],
+            "yesterdayUtc": [Function],
+          },
           "$nRole": "root",
           "$nToken": "token",
           "$nURLSearchParams": {},
@@ -654,6 +680,19 @@ describe('useVariables', () => {
             "today": [Function],
             "tomorrow": [Function],
             "yesterday": [Function],
+          },
+          "$nExactDate": {
+            "nowLocal": [Function],
+            "nowUtc": [Function],
+            "todayDate": [Function],
+            "todayLocal": [Function],
+            "todayUtc": [Function],
+            "tomorrowDate": [Function],
+            "tomorrowLocal": [Function],
+            "tomorrowUtc": [Function],
+            "yesterdayDate": [Function],
+            "yesterdayLocal": [Function],
+            "yesterdayUtc": [Function],
           },
           "$nRole": "root",
           "$nToken": "token",

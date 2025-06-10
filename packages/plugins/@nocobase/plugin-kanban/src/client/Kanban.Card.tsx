@@ -135,20 +135,22 @@ export const KanbanCard: any = () => {
 
   return (
     <>
-      <Card onClick={handleCardClick} bordered={false} hoverable style={cardStyle} className={cardCss}>
-        <DndContext onDragStart={onDragStart} onDragEnd={onDragEnd}>
-          <FormLayout
-            layout={layout}
-            labelAlign={labelAlign}
-            labelWidth={layout === 'horizontal' ? labelWidth : null}
-            labelWrap={labelWrap}
-          >
-            <FormProvider form={form}>
-              <MemorizedRecursionField schema={fieldSchema} onlyRenderProperties />
-            </FormProvider>
-          </FormLayout>
-        </DndContext>
-      </Card>
+      <PopupContextProvider>
+        <Card onClick={handleCardClick} bordered={false} hoverable style={cardStyle} className={cardCss}>
+          <DndContext onDragStart={onDragStart} onDragEnd={onDragEnd}>
+            <FormLayout
+              layout={layout}
+              labelAlign={labelAlign}
+              labelWidth={layout === 'horizontal' ? labelWidth : null}
+              labelWrap={labelWrap}
+            >
+              <FormProvider form={form}>
+                <MemorizedRecursionField schema={fieldSchema} onlyRenderProperties />
+              </FormProvider>
+            </FormLayout>
+          </DndContext>
+        </Card>
+      </PopupContextProvider>
       <PopupContextProvider visible={visible} setVisible={setVisible}>
         <VariablePopupRecordProvider recordData={recordData} collection={collection}>
           <MemorizedRecursionField schema={wrappedPopupSchema} />
@@ -163,8 +165,12 @@ function getPopupSchemaFromParent(fieldSchema: Schema) {
     return fieldSchema.parent.properties.cardViewer.properties.drawer;
   }
 
-  const cardSchema = findSchemaByUid(fieldSchema['x-uid'], fieldSchema.root);
-  return cardSchema.parent.properties.cardViewer.properties.drawer;
+  try {
+    const cardSchema = findSchemaByUid(fieldSchema['x-uid'], fieldSchema.root);
+    return cardSchema.parent.properties.cardViewer.properties.drawer;
+  } catch (e) {
+    console.warn(e);
+  }
 }
 
 function findSchemaByUid(uid: string, rootSchema: Schema, resultRef: { value: Schema } = { value: null }) {

@@ -7,14 +7,14 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Database, mockDatabase } from '../../index';
+import { Database, createMockDatabase } from '@nocobase/database';
 import { waitSecond } from '@nocobase/test';
 
 describe('unique index', () => {
   let db: Database;
 
   beforeEach(async () => {
-    db = mockDatabase({});
+    db = await createMockDatabase({});
 
     await db.clean({ drop: true });
   });

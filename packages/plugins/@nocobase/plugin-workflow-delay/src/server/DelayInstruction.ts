@@ -74,7 +74,7 @@ export default class extends Instruction {
   schedule(job) {
     const now = new Date();
     const createdAt = Date.parse(job.createdAt);
-    const delay = createdAt + job.node.config.duration - now.getTime();
+    const delay = createdAt + job.result - now.getTime();
     if (delay > 0) {
       const trigger = this.trigger.bind(this, job);
       this.timers.set(job.id, setTimeout(trigger, delay));
@@ -96,9 +96,10 @@ export default class extends Instruction {
   }
 
   async run(node, prevJob, processor: Processor) {
+    const duration = processor.getParsedValue(node.config.duration || 1, node.id) * (node.config.unit || 1_000);
     const job = await processor.saveJob({
       status: JOB_STATUS.PENDING,
-      result: null,
+      result: duration,
       nodeId: node.id,
       nodeKey: node.key,
       upstreamId: prevJob?.id ?? null,
@@ -108,7 +109,7 @@ export default class extends Instruction {
     // add to schedule
     this.schedule(job);
 
-    return processor.exit();
+    return null;
   }
 
   async resume(node, prevJob, processor: Processor) {

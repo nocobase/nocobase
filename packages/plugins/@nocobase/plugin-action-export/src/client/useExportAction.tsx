@@ -37,7 +37,7 @@ export const useExportAction = () => {
   const { name, title } = useCollection_deprecated();
   const { t } = useExportTranslation();
   const { modal } = App.useApp();
-  const filters = service.params?.[1]?.filters || {};
+  const filters = service.params[0]?.filter || {};
   const field = useField();
   const exportLimit = useMemo(() => {
     if (appInfo?.data?.exportLimit) {
@@ -81,7 +81,7 @@ export const useExportAction = () => {
         {
           title: compile(title),
           appends: service.params[0]?.appends?.join(),
-          filter: mergeFilter([...Object.values(filters), defaultFilter]),
+          filter: mergeFilter([filters, defaultFilter]),
           sort: params?.sort,
           values: {
             columns: compile(exportSettings),

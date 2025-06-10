@@ -9,7 +9,8 @@
 
 import { css, cx } from '@emotion/css';
 import { useForm } from '@formily/react';
-import { Space, theme } from 'antd';
+import { Input as AntInput, Space, theme } from 'antd';
+import type { CascaderProps, DefaultOptionType } from 'antd/lib/cascader';
 import useInputStyle from 'antd/es/input/style';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { renderToString } from 'react-dom/server';
@@ -110,7 +111,7 @@ function renderHTML(exp: string, keyLabelMap, delimiters: [string, string] = ['{
   });
 }
 
-function createOptionsValueLabelMap(options: any[], fieldNames = { value: 'value', label: 'label' }) {
+function createOptionsValueLabelMap(options: any[], fieldNames: CascaderProps['fieldNames'] = defaultFieldNames) {
   const map = new Map<string, string[]>();
   for (const option of options) {
     map.set(option[fieldNames.value], [option[fieldNames.label]]);
@@ -220,10 +221,24 @@ function useVariablesFromValue(value: string, delimiters: [string, string] = ['{
   }, [value, delimitersString]);
 }
 
-export function TextArea(props) {
+export type TextAreaProps = {
+  value?: string;
+  scope?: Partial<DefaultOptionType>[] | (() => Partial<DefaultOptionType>[]);
+  onChange?(value: string): void;
+  disabled?: boolean;
+  changeOnSelect?: CascaderProps['changeOnSelect'];
+  style?: React.CSSProperties;
+  fieldNames?: CascaderProps['fieldNames'];
+  trim?: boolean;
+  delimiters?: [string, string];
+  addonBefore?: React.ReactNode;
+};
+
+export function TextArea(props: TextAreaProps) {
   const { wrapSSR, hashId, componentCls } = useStyles();
-  const { scope, onChange, changeOnSelect, style, fieldNames, delimiters = ['{{', '}}'], addonBefore } = props;
-  const value = typeof props.value === 'string' ? props.value : props.value == null ? '' : props.value.toString();
+  const { scope, changeOnSelect, style, fieldNames, delimiters = ['{{', '}}'], addonBefore, trim = true } = props;
+  const value =
+    typeof props.value === 'string' ? props.value : props.value == null ? '' : (props.value as any).toString();
   const variables = useVariablesFromValue(value, delimiters);
   const inputRef = useRef<HTMLDivElement>(null);
   const [options, setOptions] = useState([]);
@@ -240,6 +255,14 @@ export function TextArea(props) {
   useInputStyle('ant-input');
   const { token } = theme.useToken();
   const delimitersString = delimiters.join(' ');
+
+  const onChange = useCallback(
+    (target: HTMLDivElement) => {
+      const v = getValue(target, delimiters);
+      props.onChange?.(trim ? v.trim() : v);
+    },
+    [delimitersString, props.onChange, trim],
+  );
 
   useEffect(() => {
     preloadOptions(scope, variables)
@@ -324,9 +347,9 @@ export function TextArea(props) {
 
       setChanged(true);
       setRange(getCurrentRange(current));
-      onChange(getValue(current, delimiters));
+      onChange(current);
     },
-    [keyLabelMap, onChange, range, delimitersString],
+    [keyLabelMap, onChange, range],
   );
 
   const onInput = useCallback(
@@ -336,9 +359,9 @@ export function TextArea(props) {
       }
       setChanged(true);
       setRange(getCurrentRange(currentTarget));
-      onChange(getValue(currentTarget, delimiters));
+      onChange(currentTarget);
     },
-    [ime, onChange, delimitersString],
+    [ime, onChange],
   );
 
   const onBlur = useCallback(function ({ currentTarget }) {
@@ -360,9 +383,9 @@ export function TextArea(props) {
       setIME(false);
       setChanged(true);
       setRange(getCurrentRange(currentTarget));
-      onChange(getValue(currentTarget, delimiters));
+      onChange(currentTarget);
     },
-    [onChange, delimitersString],
+    [onChange],
   );
 
   const onPaste = useCallback(
@@ -393,101 +416,105 @@ export function TextArea(props) {
       setChanged(true);
       pasteHTML(ev.currentTarget, sanitizedHTML);
       setRange(getCurrentRange(ev.currentTarget));
-      onChange(getValue(ev.currentTarget, delimiters));
+      onChange(ev.currentTarget);
     },
-    [onChange, delimitersString],
+    [onChange],
   );
   const disabled = props.disabled || form.disabled;
   return wrapSSR(
-    <Space.Compact
-      className={cx(
-        componentCls,
-        hashId,
-        css`
-          display: flex;
-          .ant-input {
-            flex-grow: 1;
-            min-width: 200px;
-            word-break: break-all;
-            border-top-left-radius: ${addonBefore ? '0px' : '6px'};
-            border-bottom-left-radius: ${addonBefore ? '0px' : '6px'};
-          }
-          .ant-input-disabled {
-            .ant-tag {
-              color: #bfbfbf;
-              border-color: #d9d9d9;
-            }
-          }
-
-          > .x-button {
-            height: min-content;
-          }
-        `,
-      )}
-    >
-      {addonBefore && (
-        <div
-          className={css`
-            background: rgba(0, 0, 0, 0.02);
-            border: 1px solid rgb(217, 217, 217);
-            padding: 0px 11px;
-            border-radius: 6px 0px 0px 6px;
-            border-right: 0px;
-          `}
-        >
-          {addonBefore}
-        </div>
-      )}
-      <div
-        role="button"
-        aria-label="textbox"
-        onInput={onInput}
-        onBlur={onBlur}
-        onKeyDown={onKeyDown}
-        onPaste={onPaste}
-        onCompositionStart={onCompositionStart}
-        onCompositionEnd={onCompositionEnd}
-        // should use data-placeholder here, but not sure if it is safe to make the change, so add ignore here
-        // @ts-ignore
-        placeholder={props.placeholder}
-        style={style}
+    <>
+      <Space.Compact
         className={cx(
+          componentCls,
           hashId,
-          'ant-input',
-          { 'ant-input-disabled': disabled },
-          // NOTE: `pre-wrap` here for avoid the `&nbsp;` (\x160) issue when paste content, we need normal space (\x32).
           css`
-            min-height: ${token.controlHeight}px;
-            overflow: auto;
-            white-space: pre-wrap;
-
-            &[placeholder]:empty::before {
-              content: attr(placeholder);
-              color: #ccc;
+            display: flex;
+            .ant-input {
+              flex-grow: 1;
+              min-width: 200px;
+              word-break: break-all;
+              border-top-left-radius: ${addonBefore ? '0px' : '6px'};
+              border-bottom-left-radius: ${addonBefore ? '0px' : '6px'};
+            }
+            .ant-input-disabled {
+              .ant-tag {
+                color: #bfbfbf;
+                border-color: #d9d9d9;
+              }
             }
 
-            .ant-tag {
-              display: inline;
-              line-height: 19px;
-              margin: 0 0.5em;
-              padding: 2px 7px;
-              border-radius: 10px;
+            > .x-button {
+              height: min-content;
             }
           `,
         )}
-        ref={inputRef}
-        contentEditable={!disabled}
-        dangerouslySetInnerHTML={{ __html: html }}
-      />
-      <VariableSelect
-        options={options}
-        setOptions={setOptions}
-        onInsert={onInsert}
-        changeOnSelect={changeOnSelect}
-        fieldNames={fieldNames || defaultFieldNames}
-        disabled={disabled}
-      />
-    </Space.Compact>,
+      >
+        {addonBefore && (
+          <div
+            className={css`
+              background: rgba(0, 0, 0, 0.02);
+              border: 1px solid rgb(217, 217, 217);
+              padding: 0px 11px;
+              border-radius: 6px 0px 0px 6px;
+              border-right: 0px;
+            `}
+          >
+            {addonBefore}
+          </div>
+        )}
+        <div
+          role="button"
+          aria-label="textbox"
+          onInput={onInput}
+          onBlur={onBlur}
+          onKeyDown={onKeyDown}
+          onPaste={onPaste}
+          onCompositionStart={onCompositionStart}
+          onCompositionEnd={onCompositionEnd}
+          // should use data-placeholder here, but not sure if it is safe to make the change, so add ignore here
+          // @ts-ignore
+          placeholder={props.placeholder}
+          style={style}
+          className={cx(
+            hashId,
+            'ant-input ant-input-outlined',
+            { 'ant-input-disabled': disabled },
+            // NOTE: `pre-wrap` here for avoid the `&nbsp;` (\x160) issue when paste content, we need normal space (\x32).
+            css`
+              min-height: ${token.controlHeight}px;
+              overflow: auto;
+              white-space: pre-wrap;
+
+              &[placeholder]:empty::before {
+                content: attr(placeholder);
+                color: #ccc;
+              }
+
+              .ant-tag {
+                display: inline;
+                line-height: 19px;
+                margin: 0 0.5em;
+                padding: 2px 7px;
+                border-radius: 10px;
+              }
+            `,
+          )}
+          ref={inputRef}
+          contentEditable={!disabled}
+          dangerouslySetInnerHTML={{ __html: html }}
+        />
+        <VariableSelect
+          options={options}
+          setOptions={setOptions}
+          onInsert={onInsert}
+          changeOnSelect={changeOnSelect}
+          fieldNames={fieldNames || defaultFieldNames}
+          disabled={disabled}
+        />
+      </Space.Compact>
+      {/* 确保所有ant input样式都已加载, 放到Compact中会导致Compact中的Input样式不对 */}
+      <AntInput style={{ display: 'none' }} />
+    </>,
   );
 }
 

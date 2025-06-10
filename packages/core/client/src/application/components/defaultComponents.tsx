@@ -11,10 +11,11 @@ import React, { FC } from 'react';
 import { MainComponent } from './MainComponent';
 
 const Loading: FC = () => <div>Loading...</div>;
-const AppError: FC<{ error: Error }> = ({ error }) => {
+const AppError: FC<{ error: Error & { title?: string } }> = ({ error }) => {
+  const title = error?.title || 'App Error';
   return (
     <div>
-      <div>App Error</div>
+      <div>{title}</div>
       {error?.message}
       {process.env.__TEST__ && error?.stack}
     </div>

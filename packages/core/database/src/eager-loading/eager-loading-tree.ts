@@ -82,6 +82,31 @@ const queryParentSQL = (options: {
       SELECT ${q(targetKeyField)} AS ${q(targetKey)}, ${q(foreignKeyField)} AS ${q(foreignKey)} FROM cte`;
 };
 
+const processIncludes = (includes: any[], model: any, parentAs = '') => {
+  includes.forEach((include: { association: string; include?: any[] }, index: number) => {
+    // Process current level
+    const association = model.associations[include.association];
+    if (association?.generateInclude) {
+      includes[index] = {
+        ...include,
+        ...association.generateInclude(parentAs),
+      };
+    }
+
+    // Recursively process nested includes if they exist
+    if (include.include && Array.isArray(include.include) && include.include.length > 0) {
+      // Get the associated model for the next level
+      const nextModel = association?.target;
+      if (!nextModel) {
+        return;
+      }
+      processIncludes(include.include, nextModel, parentAs ? `${parentAs}->${association.as}` : association.as);
+    }
+  });
+
+  return includes;
+};
+
 export class EagerLoadingTree {
   public root: EagerLoadingNode;
   db: Database;
@@ -252,16 +277,6 @@ export class EagerLoadingTree {
             throw new Error(`Model ${node.model.name} does not have primary key`);
           }
 
-          includeForFilter.forEach((include: { association: string }, index: number) => {
-            const association = node.model.associations[include.association];
-            if (association?.associationType == 'BelongsToArray') {
-              includeForFilter[index] = {
-                ...include,
-                ...association.generateInclude(),
-              };
-            }
-          });
-
           // find all ids
           const ids = (
             await node.model.findAll({
@@ -270,7 +285,7 @@ export class EagerLoadingTree {
               attributes: [primaryKeyField],
               group: `${node.model.name}.${primaryKeyField}`,
               transaction,
-              include: includeForFilter,
+              include: processIncludes(includeForFilter, node.model),
             } as any)
           ).map((row) => {
             return { row, pk: row[primaryKeyField] };

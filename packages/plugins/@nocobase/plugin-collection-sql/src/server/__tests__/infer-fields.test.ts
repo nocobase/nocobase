@@ -7,14 +7,14 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Database, mockDatabase } from '@nocobase/database';
+import { createMockDatabase, Database } from '@nocobase/database';
 import { SQLModel } from '../sql-collection';
 
 describe('infer fields', () => {
   let db: Database;
 
   beforeAll(async () => {
-    db = mockDatabase({ tablePrefix: '' });
+    db = await createMockDatabase({ tablePrefix: '' });
     await db.clean({ drop: true });
 
     db.collection({

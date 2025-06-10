@@ -1,0 +1,6 @@
+{
+  "Notification": "Benachrichtigung",
+  "Send notification. You can use the variables in the upstream nodes as content and ohter config.": "Benachrichtigung senden. Sie können die Variablen in den vorgelagerten Knoten als Inhalt und andere Konfiguration verwenden.",
+  "Send email. You can use the variables in the upstream nodes as receivers, subject and content of the email.": "E-Mail senden durch Aufruf des SMTP-Dienstes. Sie können die Variablen in den vorgelagerten Knoten als Empfänger, Betreff und Inhalt der E-Mail verwenden.",
+  "Ignore failed sending and continue workflow": "Fehlgeschlagenen Versand ignorieren und Workflow fortsetzen"
+}

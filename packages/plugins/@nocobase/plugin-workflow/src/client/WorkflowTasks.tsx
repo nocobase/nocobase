@@ -6,23 +6,26 @@
  * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
-import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
-import { Link, Outlet, useNavigate, useParams } from 'react-router-dom';
-import { Button, Layout, Menu, Badge, Tooltip, Tabs } from 'antd';
-import { PageHeader } from '@ant-design/pro-layout';
 import { CheckCircleOutlined } from '@ant-design/icons';
+import { PageHeader } from '@ant-design/pro-layout';
+import { Badge, Button, Layout, Menu, Tabs, Tooltip } from 'antd';
 import classnames from 'classnames';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 
 import {
+  ActionContextProvider,
+  CollectionRecordProvider,
   css,
   PinnedPluginListProvider,
   SchemaComponent,
   SchemaComponentContext,
   SchemaComponentOptions,
+  useAPIClient,
   useApp,
   useCompile,
   useDocumentTitle,
-  useIsAdminPage,
+  useIsLoggedIn,
   usePlugin,
   useRequest,
   useToken,
@@ -36,21 +39,7 @@ const layoutClass = css`
   overflow: hidden;
 `;
 
-const sideClass = css`
-  overflow: auto;
-  position: sticky;
-  top: 0;
-  bottom: 0;
-  height: 100%;
-
-  .ant-layout-sider-children {
-    width: 200px;
-    height: 100%;
-  }
-`;
-
 const contentClass = css`
-  padding: 24px;
   min-height: 280px;
   overflow: auto;
 `;
@@ -58,13 +47,22 @@ const contentClass = css`
 export interface TaskTypeOptions {
   title: string;
   collection: string;
+  action?: string;
   useActionParams: Function;
-  component: React.ComponentType;
-  extraActions?: React.ComponentType;
+  Actions?: React.ComponentType;
+  Item: React.ComponentType;
+  Detail: React.ComponentType;
   // children?: TaskTypeOptions[];
+  alwaysShow?: boolean;
 }
 
-const TasksCountsContext = createContext<{ counts: Record<string, number>; total: number }>({ counts: {}, total: 0 });
+type Stats = Record<string, { pending: number; all: number }>;
+
+const TasksCountsContext = createContext<{ reload: () => void; counts: Stats; total: number }>({
+  reload() {},
+  counts: {},
+  total: 0,
+});
 
 function MenuLink({ type }: any) {
   const workflowPlugin = usePlugin(PluginWorkflowClient);
@@ -75,7 +73,7 @@ function MenuLink({ type }: any) {
 
   return (
     <Link
-      to={`/admin/workflow/tasks/${type}`}
+      to={`/admin/workflow/tasks/${type}/${TASK_STATUS.PENDING}`}
       className={css`
         display: flex;
         align-items: center;
@@ -90,12 +88,12 @@ function MenuLink({ type }: any) {
       `}
     >
       <span>{typeTitle}</span>
-      <Badge count={counts[type] || 0} size="small" />
+      <Badge count={counts[type]?.pending || 0} size="small" />
     </Link>
   );
 }
 
-const TASK_STATUS = {
+export const TASK_STATUS = {
   ALL: 'all',
   PENDING: 'pending',
   COMPLETED: 'completed',
@@ -105,7 +103,7 @@ function StatusTabs() {
   const navigate = useNavigate();
   const { taskType, status = TASK_STATUS.PENDING } = useParams();
   const type = useCurrentTaskType();
-  const { extraActions: ExtraActions } = type;
+  const { Actions } = type;
   return (
     <Tabs
       activeKey={status}
@@ -132,9 +130,9 @@ function StatusTabs() {
         },
       ]}
       tabBarExtraContent={
-        ExtraActions
+        Actions
           ? {
-              right: <ExtraActions />,
+              right: <Actions />,
             }
           : {}
       }
@@ -144,16 +142,20 @@ function StatusTabs() {
 
 function useTaskTypeItems() {
   const workflowPlugin = usePlugin(PluginWorkflowClient);
+  const { counts } = useContext(TasksCountsContext);
+  const types = workflowPlugin.taskTypes.getKeys();
 
   return useMemo(
     () =>
-      Array.from(workflowPlugin.taskTypes.getKeys()).map((key: string) => {
-        return {
-          key,
-          label: <MenuLink type={key} />,
-        };
-      }),
-    [workflowPlugin.taskTypes],
+      Array.from(types)
+        .filter((key: string) => workflowPlugin.taskTypes.get(key)?.alwaysShow || Boolean(counts[key]?.all))
+        .map((key: string) => {
+          return {
+            key,
+            label: <MenuLink type={key} />,
+          };
+        }),
+    [counts, types, workflowPlugin.taskTypes],
   );
 }
 
@@ -167,23 +169,54 @@ function useCurrentTaskType() {
   );
 }
 
+function PopupContext(props: any) {
+  const { taskType, status = TASK_STATUS.PENDING, popupId } = useParams();
+  const { record } = usePopupRecordContext();
+  const navigate = useNavigate();
+  if (!popupId) {
+    return null;
+  }
+  return (
+    <ActionContextProvider
+      visible={Boolean(popupId)}
+      setVisible={(visible) => {
+        if (!visible) {
+          if (window.history.state.idx) {
+            navigate(-1);
+          } else {
+            navigate(`/admin/workflow/tasks/${taskType}/${status}`);
+          }
+        }
+      }}
+      openMode="modal"
+    >
+      <CollectionRecordProvider record={record}>{props.children}</CollectionRecordProvider>
+    </ActionContextProvider>
+  );
+}
+
+const PopupRecordContext = createContext<any>({ record: null, setRecord: (record) => {} });
+export function usePopupRecordContext() {
+  return useContext(PopupRecordContext);
+}
+
 export function WorkflowTasks() {
   const compile = useCompile();
   const { setTitle } = useDocumentTitle();
   const navigate = useNavigate();
-  const { taskType, status = TASK_STATUS.PENDING } = useParams();
-  const {
-    token: { colorBgContainer },
-  } = useToken();
+  const apiClient = useAPIClient();
+  const { taskType, status = TASK_STATUS.PENDING, popupId } = useParams();
+  const { token } = useToken();
+  const [currentRecord, setCurrentRecord] = useState<any>(null);
 
   const items = useTaskTypeItems();
 
-  const { title, collection, useActionParams, component: Component } = useCurrentTaskType();
+  const { title, collection, action = 'list', useActionParams, Item, Detail } = useCurrentTaskType();
 
   const params = useActionParams(status);
 
   useEffect(() => {
-    setTitle?.(`${lang('Workflow todo')}${title ? `: ${compile(title)}` : ''}`);
+    setTitle?.(`${lang('Workflow todos')}${title ? `: ${compile(title)}` : ''}`);
   }, [taskType, status, setTitle, title, compile]);
 
   useEffect(() => {
@@ -192,11 +225,29 @@ export function WorkflowTasks() {
     }
   }, [items, navigate, status, taskType]);
 
+  useEffect(() => {
+    if (popupId && !currentRecord) {
+      apiClient
+        .resource(collection)
+        .get({
+          filterByTk: popupId,
+        })
+        .then((res) => {
+          if (res.data?.data) {
+            setCurrentRecord(res.data.data);
+          }
+        })
+        .catch((err) => {
+          console.error(err);
+        });
+    }
+  }, [popupId, collection, currentRecord, apiClient]);
+
   const typeKey = taskType ?? items[0].key;
 
   return (
     <Layout className={layoutClass}>
-      <Layout.Sider className={sideClass} theme="light">
+      <Layout.Sider theme="light" breakpoint="md" collapsedWidth="0" zeroWidthTriggerStyle={{ top: 24 }}>
         <Menu mode="inline" selectedKeys={[typeKey]} items={items} style={{ height: '100%' }} />
       </Layout.Sider>
       <Layout
@@ -217,95 +268,107 @@ export function WorkflowTasks() {
           }
         `}
       >
-        <SchemaComponentContext.Provider value={{ designable: false }}>
-          <SchemaComponent
-            components={{
-              Layout,
-              PageHeader,
-              StatusTabs,
-            }}
-            schema={{
-              name: `${taskType}-${status}`,
-              type: 'void',
-              'x-decorator': 'List.Decorator',
-              'x-decorator-props': {
-                collection,
-                action: 'list',
-                params: {
-                  pageSize: 20,
-                  sort: ['-createdAt'],
-                  ...params,
-                },
-              },
-              properties: {
-                header: {
-                  type: 'void',
-                  'x-component': 'PageHeader',
-                  'x-component-props': {
-                    className: classnames('pageHeaderCss'),
-                    style: {
-                      background: colorBgContainer,
-                      padding: '12px 24px 0 24px',
-                    },
-                    title,
-                  },
-                  properties: {
-                    tabs: {
-                      type: 'void',
-                      'x-component': 'StatusTabs',
-                    },
+        <PopupRecordContext.Provider
+          value={{
+            record: currentRecord,
+            setRecord: setCurrentRecord,
+          }}
+        >
+          <SchemaComponentContext.Provider value={{ designable: false }}>
+            <SchemaComponent
+              components={{
+                Layout,
+                PageHeader,
+                StatusTabs,
+              }}
+              schema={{
+                name: `${taskType}-${status}`,
+                type: 'void',
+                'x-decorator': 'List.Decorator',
+                'x-decorator-props': {
+                  collection,
+                  action,
+                  params: {
+                    pageSize: 20,
+                    sort: ['-createdAt'],
+                    ...params,
                   },
                 },
-                content: {
-                  type: 'void',
-                  'x-component': 'Layout.Content',
-                  'x-component-props': {
-                    className: contentClass,
-                  },
-                  properties: {
-                    list: {
-                      type: 'array',
-                      'x-component': 'List',
-                      'x-component-props': {
-                        className: css`
-                          > .itemCss:not(:last-child) {
-                            border-bottom: none;
-                          }
-                        `,
-                        locale: {
-                          emptyText: `{{ t("No data yet", { ns: "${NAMESPACE}" }) }}`,
-                        },
+                properties: {
+                  header: {
+                    type: 'void',
+                    'x-component': 'PageHeader',
+                    'x-component-props': {
+                      className: classnames('pageHeaderCss'),
+                      style: {
+                        background: token.colorBgContainer,
+                        padding: '12px 24px 0 24px',
                       },
-                      properties: {
-                        item: {
-                          type: 'object',
-                          'x-decorator': 'List.Item',
-                          'x-component': Component,
-                          'x-read-pretty': true,
-                        },
+                      title,
+                    },
+                    properties: {
+                      tabs: {
+                        type: 'void',
+                        'x-component': 'StatusTabs',
                       },
                     },
                   },
+                  content: {
+                    type: 'void',
+                    'x-component': 'Layout.Content',
+                    'x-component-props': {
+                      className: contentClass,
+                      style: {
+                        padding: `${token.paddingPageVertical}px ${token.paddingPageHorizontal}px`,
+                      },
+                    },
+                    properties: {
+                      list: {
+                        type: 'array',
+                        'x-component': 'List',
+                        'x-component-props': {
+                          className: css`
+                            > .itemCss:not(:last-child) {
+                              border-bottom: none;
+                            }
+                          `,
+                          locale: {
+                            emptyText: `{{ t("No data yet", { ns: "${NAMESPACE}" }) }}`,
+                          },
+                        },
+                        properties: {
+                          item: {
+                            type: 'object',
+                            'x-decorator': 'List.Item',
+                            'x-component': Item,
+                            'x-read-pretty': true,
+                          },
+                        },
+                      },
+                    },
+                  },
+                  popup: {
+                    type: 'void',
+                    'x-decorator': PopupContext,
+                    'x-component': Detail,
+                  },
                 },
-              },
-            }}
-          />
-          <Outlet />
-        </SchemaComponentContext.Provider>
+              }}
+            />
+          </SchemaComponentContext.Provider>
+        </PopupRecordContext.Provider>
       </Layout>
     </Layout>
   );
 }
 
 function WorkflowTasksLink() {
-  const workflowPlugin = usePlugin(PluginWorkflowClient);
-  const { total } = useContext(TasksCountsContext);
-
-  const types = Array.from(workflowPlugin.taskTypes.getKeys());
-  return types.length ? (
+  const { reload, total } = useContext(TasksCountsContext);
+  const items = useTaskTypeItems();
+  return items.length ? (
     <Tooltip title={lang('Workflow todos')}>
       <Button>
-        <Link to={`/admin/workflow/tasks/${types[0]}`}>
+        <Link to={`/admin/workflow/tasks/${items[0].key}/${TASK_STATUS.PENDING}`} onClick={reload}>
           <Badge count={total} size="small">
             <CheckCircleOutlined />
           </Badge>
@@ -315,49 +378,46 @@ function WorkflowTasksLink() {
   ) : null;
 }
 
-function transform(detail) {
-  return detail.reduce((result, stats) => {
-    result[stats.type] = stats.count;
+function transform(records) {
+  return records.reduce((result, record) => {
+    result[record.type] = record.stats;
     return result;
   }, {});
 }
 
 function TasksCountsProvider(props: any) {
   const app = useApp();
-  const [counts, setCounts] = useState<Record<string, number>>({});
-  const onTaskUpdate = useCallback(({ detail = [] }: CustomEvent) => {
-    setCounts((prev) => {
-      return {
-        ...prev,
-        ...transform(detail),
-      };
-    });
+  const [counts, setCounts] = useState<Stats>({});
+  const onTaskUpdate = useCallback(({ detail }: CustomEvent) => {
+    setCounts((prev) => ({
+      ...prev,
+      ...transform([detail]),
+    }));
   }, []);
 
   const { runAsync } = useRequest(
     {
-      resource: 'workflowTasks',
-      action: 'countMine',
+      resource: 'userWorkflowTasks',
+      action: 'listMine',
     },
     {
       manual: true,
     },
   );
 
-  useEffect(() => {
+  const reload = useCallback(() => {
     runAsync()
       .then((res) => {
-        setCounts((prev) => {
-          return {
-            ...prev,
-            ...transform(res['data']),
-          };
-        });
+        setCounts(transform(res['data']));
       })
       .catch((err) => {
         console.error(err);
       });
   }, [runAsync]);
+
+  useEffect(() => {
+    reload();
+  }, [reload]);
 
   useEffect(() => {
     app.eventBus.addEventListener('ws:message:workflow:tasks:updated', onTaskUpdate);
@@ -367,13 +427,13 @@ function TasksCountsProvider(props: any) {
     };
   }, [app.eventBus, onTaskUpdate]);
 
-  const total = Object.values(counts).reduce((a, b) => a + b, 0) || 0;
+  const total = Object.values(counts).reduce((result, item) => result + (item.pending || 0), 0) || 0;
 
-  return <TasksCountsContext.Provider value={{ total, counts }}>{props.children}</TasksCountsContext.Provider>;
+  return <TasksCountsContext.Provider value={{ reload, total, counts }}>{props.children}</TasksCountsContext.Provider>;
 }
 
-export const TasksProvider = (props: any) => {
-  const isAdminPage = useIsAdminPage();
+export function TasksProvider(props: any) {
+  const isLoggedIn = useIsLoggedIn();
 
   const content = (
     <PinnedPluginListProvider
@@ -391,5 +451,5 @@ export const TasksProvider = (props: any) => {
     </PinnedPluginListProvider>
   );
 
-  return isAdminPage ? <TasksCountsProvider>{content}</TasksCountsProvider> : content;
-};
+  return isLoggedIn ? <TasksCountsProvider>{content}</TasksCountsProvider> : content;
+}

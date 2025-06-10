@@ -15,6 +15,9 @@ export class PluginFieldSequenceClient extends Plugin {
   async load() {
     this.app.use(SequenceFieldProvider);
     this.app.dataSourceManager.addFieldInterfaces([SequenceFieldInterface]);
+    const calendarPlugin: any = this.app.pm.get('calendar');
+    // 注册标题字段
+    calendarPlugin.registerTitleFieldInterface('sequence');
   }
 }
 

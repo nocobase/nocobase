@@ -7,11 +7,11 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useEffect } from 'react';
 import { observer } from '@formily/reactive-react';
-import { useNavigate, useLocation } from 'react-router-dom';
 import { MobileTabBarItem } from '@nocobase/plugin-mobile/client';
-import { unreadMsgsCountObs, startMsgSSEStreamWithRetry, updateUnreadMsgsCount } from '../../observables';
+import React, { useEffect } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { startMsgSSEStreamWithRetry, unreadMsgsCountObs, updateUnreadMsgsCount } from '../../observables';
 
 const InnerMobileTabBarMessageItem = (props) => {
   const navigate = useNavigate();
@@ -19,9 +19,32 @@ const InnerMobileTabBarMessageItem = (props) => {
   const onClick = () => {
     navigate('/page/in-app-message');
   };
+
   useEffect(() => {
-    startMsgSSEStreamWithRetry();
+    const disposes: Array<() => void> = [];
+    disposes.push(startMsgSSEStreamWithRetry());
+    const disposeAll = () => {
+      while (disposes.length > 0) {
+        const dispose = disposes.pop();
+        dispose && dispose();
+      }
+    };
+
+    const onVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        disposes.push(startMsgSSEStreamWithRetry());
+      } else {
+        disposeAll();
+      }
+    };
+
+    document.addEventListener('visibilitychange', onVisibilityChange);
+    return () => {
+      disposeAll();
+      document.removeEventListener('visibilitychange', onVisibilityChange);
+    };
   }, []);
+
   const selected = props.url && location.pathname.startsWith(props.url);
 
   return (

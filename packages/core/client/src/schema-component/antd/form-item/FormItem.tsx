@@ -27,6 +27,8 @@ import { useEnsureOperatorsValid } from './SchemaSettingOptions';
 import useLazyLoadDisplayAssociationFieldsOfForm from './hooks/useLazyLoadDisplayAssociationFieldsOfForm';
 import { useLinkageRulesForSubTableOrSubForm } from './hooks/useLinkageRulesForSubTableOrSubForm';
 import useParseDefaultValue from './hooks/useParseDefaultValue';
+import { useTranslation } from 'react-i18next';
+import { NAMESPACE_UI_SCHEMA } from '../../../i18n/constant';
 
 Item.displayName = 'FormilyFormItem';
 
@@ -37,6 +39,15 @@ const formItemWrapCss = css`
   .ant-description-textarea img {
     max-width: 100%;
   }
+  &.ant-formily-item-layout-vertical .ant-formily-item-label {
+    display: inline;
+    .ant-formily-item-label-tooltip-icon {
+      display: inline;
+    }
+    .ant-formily-item-label-content {
+      display: inline;
+    }
+  }
 `;
 
 const formItemLabelCss = css`
@@ -44,7 +55,7 @@ const formItemLabelCss = css`
     padding: 0px !important;
   }
   > .ant-formily-item-label {
-    display: none;
+    display: none !important;
   }
 `;
 
@@ -55,7 +66,7 @@ export const FormItem: any = withDynamicSchemaProps(
     const schema = useFieldSchema();
     const { addActiveFieldName } = useFormActiveFields() || {};
     const { wrapperStyle }: { wrapperStyle: any } = useDataFormItemProps();
-
+    const { t } = useTranslation();
     useParseDefaultValue();
     useLazyLoadDisplayAssociationFieldsOfForm();
     useLinkageRulesForSubTableOrSubForm();
@@ -63,14 +74,16 @@ export const FormItem: any = withDynamicSchemaProps(
     useEffect(() => {
       addActiveFieldName?.(schema.name as string);
     }, [addActiveFieldName, schema.name]);
-
+    field.title = field.title && t(field.title, { ns: NAMESPACE_UI_SCHEMA });
     const showTitle = schema['x-decorator-props']?.showTitle ?? true;
     const extra = useMemo(() => {
       if (field.description && field.description !== '') {
         return typeof field.description === 'string' ? (
           <div
             dangerouslySetInnerHTML={{
-              __html: HTMLEncode(field.description).split('\n').join('<br/>'),
+              __html: HTMLEncode(t(field.description, { ns: NAMESPACE_UI_SCHEMA }))
+                .split('\n')
+                .join('<br/>'),
             }}
           />
         ) : (
@@ -83,7 +96,6 @@ export const FormItem: any = withDynamicSchemaProps(
         [formItemLabelCss]: showTitle === false,
       });
     }, [showTitle]);
-
     // 联动规则中的“隐藏保留值”的效果
     if (field.data?.hidden) {
       return null;

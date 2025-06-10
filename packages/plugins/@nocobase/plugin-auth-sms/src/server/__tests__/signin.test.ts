@@ -24,8 +24,8 @@ class Provider {
 describe('signin', () => {
   let app: MockServer;
   let db: Database;
-  let verificationModel: ModelStatic<Model>;
   let authenticator: Model;
+  let verifier: Model;
   let agent;
 
   beforeAll(async () => {
@@ -35,24 +35,33 @@ describe('signin', () => {
     db = app.db;
     agent = app.agent();
 
-    const verificationPlugin: VerificationPlugin = app.getPlugin('verification');
-    verificationPlugin.providers.register('fake', Provider as any);
-    const VerificationProviderRepo = db.getRepository('verifications_providers');
-    await VerificationProviderRepo.create({
+    const verificationPlugin: VerificationPlugin = app.pm.get('verification');
+    verificationPlugin.smsOTPProviderManager.registerProvider('fake', {
+      title: 'Fake',
+      provider: Provider as any,
+    });
+    const verifierRepo = db.getRepository('verifiers');
+    verifier = await verifierRepo.create({
       values: {
-        id: 'fake1',
-        type: 'fake',
-        default: true,
+        name: 'sms-otp',
+        title: 'SMS OTP',
+        verificationType: 'sms-otp',
+        options: {
+          provider: 'fake',
+        },
       },
     });
-    verificationModel = db.getCollection('verifications').model;
-
     const authenticatorRepo = db.getRepository('authenticators');
     authenticator = await authenticatorRepo.create({
       values: {
         name: 'sms-auth',
         authType: authType,
         enabled: 1,
+        options: {
+          public: {
+            verifier: verifier.name,
+          },
+        },
       },
     });
   });
@@ -62,22 +71,23 @@ describe('signin', () => {
   });
 
   it('should create new user and sign in via phone number', async () => {
-    let res = await agent.resource('verifications').create({
+    let res = await agent.resource('smsOTP').publicCreate({
       values: {
-        type: 'auth:signIn',
-        phone: '1',
+        verifier: verifier.name,
+        action: 'auth:signIn',
+        uuid: '1',
       },
     });
-    const verification = await verificationModel.findByPk(res.body.data.id);
+    expect(res.status).toBe(200);
+    const otpRecord = await db.getRepository('otpRecords').findOne({ filterByTk: res.body.data.id });
     res = await agent.set({ 'X-Authenticator': 'sms-auth' }).post('/auth:signIn').send({
-      phone: '1',
-      code: verification.content,
+      uuid: '1',
+      code: otpRecord.code,
     });
     expect(res.statusCode).toBe(401);
-
-    await db.getCollection('verifications').repository.update({
+    await db.getRepository('otpRecords').update({
       filter: {
-        id: verification.id,
+        id: otpRecord.id,
       },
       values: {
         status: 0,
@@ -92,13 +102,14 @@ describe('signin', () => {
         options: {
           public: {
             autoSignup: true,
+            verifier: verifier.name,
           },
         },
       },
     });
     res = await agent.set({ 'X-Authenticator': 'sms-auth' }).post('/auth:signIn').send({
-      phone: '1',
-      code: verification.content,
+      uuid: '1',
+      code: otpRecord.code,
     });
     expect(res.statusCode).toBe(200);
     const data = res.body.data;
@@ -121,16 +132,18 @@ describe('signin', () => {
         },
       },
     );
-    let res = await agent.resource('verifications').create({
+    let res = await agent.resource('smsOTP').publicCreate({
       values: {
-        type: 'auth:signIn',
-        phone: '2',
+        verifier: verifier.name,
+        action: 'auth:signIn',
+        uuid: '2',
       },
     });
-    const verification = await verificationModel.findByPk(res.body.data.id);
+    expect(res.status).toBe(200);
+    const otpRecord = await db.getRepository('otpRecords').findOne({ filterByTk: res.body.data.id });
     res = await agent.post('/auth:signIn').set({ 'X-Authenticator': 'sms-auth' }).send({
-      phone: '2',
-      code: verification.content,
+      uuid: '2',
+      code: otpRecord.code,
     });
     expect(res.statusCode).toEqual(200);
     const data = res.body.data;
@@ -149,16 +162,18 @@ describe('signin', () => {
         phone: phone,
       },
     });
-    let res = await agent.resource('verifications').create({
+    let res = await agent.resource('smsOTP').publicCreate({
       values: {
-        type: 'auth:signIn',
-        phone: '3',
+        verifier: verifier.name,
+        action: 'auth:signIn',
+        uuid: '3',
       },
     });
-    const verification = await verificationModel.findByPk(res.body.data.id);
+    expect(res.status).toBe(200);
+    const otpRecord = await db.getRepository('otpRecords').findOne({ filterByTk: res.body.data.id });
     res = await agent.post('/auth:signIn').set({ 'X-Authenticator': 'sms-auth' }).send({
-      phone: '3',
-      code: verification.content,
+      uuid: '3',
+      code: otpRecord.code,
     });
     expect(res.statusCode).toEqual(200);
     const data = res.body.data;

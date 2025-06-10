@@ -260,6 +260,40 @@ describe('workflow > action-trigger', () => {
       expect(e2.context.data).toHaveProperty('title', 't2');
       expect(e2.context.data).toHaveProperty('createdBy');
     });
+
+    it('bulk update', async () => {
+      const workflow = await WorkflowModel.create({
+        enabled: true,
+        type: 'action',
+        config: {
+          collection: 'posts',
+        },
+      });
+
+      const p1 = await PostRepo.create({
+        values: { title: 't1' },
+      });
+      const p2 = await PostRepo.create({
+        values: { title: 't2' },
+      });
+
+      const res1 = await userAgents[0].resource('posts').update({
+        filter: {
+          id: [p1.id, p2.id],
+        },
+        values: { title: 't3' },
+        triggerWorkflows: `${workflow.key}`,
+      });
+
+      await sleep(500);
+
+      const e1s = await workflow.getExecutions();
+      expect(e1s.length).toBe(2);
+      expect(e1s[0].status).toBe(EXECUTION_STATUS.RESOLVED);
+      expect(e1s[0].context.data).toHaveProperty('title', 't3');
+      expect(e1s[1].status).toBe(EXECUTION_STATUS.RESOLVED);
+      expect(e1s[1].context.data).toHaveProperty('title', 't3');
+    });
   });
 
   describe.skip('destroy', () => {

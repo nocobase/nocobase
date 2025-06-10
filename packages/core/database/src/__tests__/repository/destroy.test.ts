@@ -7,9 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { mockDatabase } from '../index';
-import { Collection } from '../../collection';
-import { Database } from '@nocobase/database';
+import { Collection, createMockDatabase, Database } from '@nocobase/database';
 
 describe('destroy with targetKey', function () {
   let db: Database;
@@ -21,7 +19,7 @@ describe('destroy with targetKey', function () {
   });
 
   beforeEach(async () => {
-    db = mockDatabase();
+    db = await createMockDatabase();
     await db.clean({ drop: true });
     User = db.collection({
       name: 'users',
@@ -95,7 +93,7 @@ describe('destroy', () => {
   });
 
   beforeEach(async () => {
-    db = mockDatabase();
+    db = await createMockDatabase();
     await db.clean({
       drop: true,
     });

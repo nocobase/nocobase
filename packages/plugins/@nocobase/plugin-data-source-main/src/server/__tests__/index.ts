@@ -13,7 +13,7 @@ export async function createApp(options: any = {}) {
   const app = await createMockServer({
     acl: false,
     ...options,
-    plugins: ['error-handler', 'field-sort', 'data-source-main', 'ui-schema-storage'],
+    plugins: (options.plugins || []).concat(['error-handler', 'field-sort', 'data-source-main', 'ui-schema-storage']),
   });
   return app;
 }

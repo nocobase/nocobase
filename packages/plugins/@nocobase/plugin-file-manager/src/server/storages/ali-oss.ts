@@ -30,7 +30,7 @@ export default class extends StorageType {
   make() {
     const createAliOssStorage = require('multer-aliyun-oss');
     return new createAliOssStorage({
-      config: this.storage.options,
+      config: { timeout: 600_000, ...this.storage.options },
       filename: cloudFilenameGetter(this.storage),
     });
   }

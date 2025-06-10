@@ -26,5 +26,10 @@
   "Update record form": "Update record form",
   "Filter settings": "Filter settings",
   "Workflow todos": "Workflow todos",
-  "Task": "Task"
+  "Task node": "Task node",
+  "Unprocessed": "Unprocessed",
+  "Please check one of your update record form, and add at least one filter condition in form settings.": "Please check one of your update record form, and add at least one filter condition in form settings.",
+  "My manual tasks": "My manual tasks",
+  "Task title": "Task title",
+  "Title of each task item. Default to node title.": "Title of each task item. Default to node title."
 }

@@ -1,6 +1,7 @@
 {
   "Export warning": "Puoi esportare fino a {{limit}} colonne di dati alla volta, qualsiasi eccedenza sarà ignorata.",
   "Start export": "Avvia esportazione",
+  "another export action is running, please try again later.": "È in esecuzione un'altra attività di esportazione. Riprova più tardi.",
   "True": "Vero",
   "False": "Falso"
 }

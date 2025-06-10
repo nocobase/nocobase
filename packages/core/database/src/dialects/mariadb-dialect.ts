@@ -7,10 +7,16 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { DatabaseOptions } from '../database';
 import { BaseDialect } from './base-dialect';
 
 export class MariadbDialect extends BaseDialect {
   static dialectName = 'mariadb';
+
+  getSequelizeOptions(options: DatabaseOptions) {
+    options.dialectOptions = { ...(options.dialectOptions || {}), supportBigNumbers: true, bigNumberStrings: true };
+    return options;
+  }
 
   getVersionGuard() {
     return {

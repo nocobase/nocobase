@@ -25,6 +25,8 @@ import { ListDesigner } from './List.Designer';
 import { ListItem } from './List.Item';
 import useStyles from './List.style';
 import { useListActionBarProps, useListBlockHeight } from './hooks';
+import { useMobileLayout } from '../../../route-switch/antd/admin-layout';
+import { transformMultiColumnToSingleColumn } from '@nocobase/utils/client';
 
 const InternalList = withSkeletonComponent(
   (props) => {
@@ -121,6 +123,8 @@ const InternalList = withSkeletonComponent(
       };
     };
     const paginationProps = usePagination();
+    const { isMobileLayout } = useMobileLayout();
+
     return wrapSSR(
       <SchemaComponentOptions
         scope={{
@@ -154,7 +158,7 @@ const InternalList = withSkeletonComponent(
             >
               <AntdList
                 {...props}
-                pagination={!meta || !field.value?.length ? false : paginationProps}
+                pagination={!meta || !field.value?.length || count <= field.value?.length ? false : paginationProps}
                 loading={service?.loading}
               >
                 {field.value?.length
@@ -165,7 +169,9 @@ const InternalList = withSkeletonComponent(
                           key={index}
                           name={index}
                           onlyRenderProperties
-                          schema={getSchema(index)}
+                          schema={
+                            isMobileLayout ? transformMultiColumnToSingleColumn(getSchema(index)) : getSchema(index)
+                          }
                         ></NocoBaseRecursionField>
                       );
                     })

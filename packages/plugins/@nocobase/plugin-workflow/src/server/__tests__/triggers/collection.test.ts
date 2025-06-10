@@ -241,6 +241,37 @@ describe('workflow > triggers > collection', () => {
       expect(e2s[1].status).toBe(EXECUTION_STATUS.RESOLVED);
     });
 
+    it('mode in "update or create" could trigger when create with no field changes', async () => {
+      const workflow = await WorkflowModel.create({
+        enabled: true,
+        type: 'collection',
+        config: {
+          mode: 3,
+          collection: 'posts',
+          changed: ['title'],
+        },
+      });
+
+      const p1 = await PostRepo.create({ values: {} });
+
+      await sleep(500);
+
+      const posts = await PostRepo.find();
+      expect(posts.length).toBe(1);
+
+      const e1s = await workflow.getExecutions();
+      expect(e1s.length).toBe(1);
+      expect(e1s[0].status).toBe(EXECUTION_STATUS.RESOLVED);
+
+      await PostRepo.update({ filterByTk: p1.id, values: { title: 't2' } });
+
+      await sleep(500);
+
+      const e2s = await workflow.getExecutions({ order: [['createdAt', 'ASC']] });
+      expect(e2s.length).toBe(2);
+      expect(e2s[1].status).toBe(EXECUTION_STATUS.RESOLVED);
+    });
+
     it('destroy', async () => {
       const workflow = await WorkflowModel.create({
         enabled: true,
@@ -358,6 +389,50 @@ describe('workflow > triggers > collection', () => {
 
       const executions = await workflow.getExecutions();
       expect(executions.length).toBe(1);
+    });
+
+    it('datetime field not changed', async () => {
+      const workflow = await WorkflowModel.create({
+        enabled: true,
+        sync: true,
+        type: 'collection',
+        config: {
+          mode: 2,
+          collection: 'posts',
+          changed: ['createdAt'],
+        },
+      });
+
+      const post = await PostRepo.create({ values: { title: 't1' } });
+      await PostRepo.update({ filterByTk: post.id, values: { ...post.get(), title: 't2' } });
+
+      const executions = await workflow.getExecutions();
+      expect(executions.length).toBe(0);
+    });
+
+    it('datetimeNoTz field not changed', async () => {
+      db.getCollection('posts').addField('dateOnly', {
+        type: 'datetimeNoTz',
+      });
+
+      await db.sync();
+
+      const workflow = await WorkflowModel.create({
+        enabled: true,
+        sync: true,
+        type: 'collection',
+        config: {
+          mode: 2,
+          collection: 'posts',
+          changed: ['dateOnly'],
+        },
+      });
+
+      const post = await PostRepo.create({ values: { title: 't1', dateOnly: '2020-01-01 00:00:00' } });
+      await PostRepo.update({ filterByTk: post.id, values: { ...post.get(), title: 't2' } });
+
+      const executions = await workflow.getExecutions();
+      expect(executions.length).toBe(0);
     });
   });
 

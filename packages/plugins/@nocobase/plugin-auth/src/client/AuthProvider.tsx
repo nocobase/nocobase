@@ -13,15 +13,13 @@ import React, { useEffect } from 'react';
 export const AuthProvider: React.FC = (props) => {
   const searchString = useLocationSearch();
   const app = useApp();
+  const params = new URLSearchParams(searchString);
+  const authenticator = params.get('authenticator');
+  const token = params.get('token');
+  if (token) {
+    app.apiClient.auth.setToken(token);
+    app.apiClient.auth.setAuthenticator(authenticator);
+  }
 
-  useEffect(() => {
-    const params = new URLSearchParams(searchString);
-    const authenticator = params.get('authenticator');
-    const token = params.get('token');
-    if (token) {
-      app.apiClient.auth.setToken(token);
-      app.apiClient.auth.setAuthenticator(authenticator);
-    }
-  });
   return <>{props.children}</>;
 };

@@ -7,16 +7,14 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { Database, FilterParser, createMockDatabase } from '@nocobase/database';
 import { Op } from 'sequelize';
-import { Database } from '../database';
-import FilterParser from '../filter-parser';
-import { mockDatabase } from './index';
 
 describe('filter by related', () => {
   let db: Database;
 
   beforeEach(async () => {
-    db = mockDatabase();
+    db = await createMockDatabase();
     await db.clean({ drop: true });
     db.collection({
       name: 'users',

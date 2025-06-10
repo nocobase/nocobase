@@ -23,7 +23,7 @@ const aggregators = {
 
 export default class extends Instruction {
   async run(node: FlowNodeModel, input, processor: Processor) {
-    const { aggregator, associated, collection, association = {}, params = {} } = node.config;
+    const { aggregator, associated, collection, association = {}, params = {}, precision = 2 } = node.config;
     const options = processor.getParsedValue(params, node.id);
     const [dataSourceName, collectionName] = parseCollectionName(collection);
     const { collectionManager } = this.workflow.app.dataSourceManager.dataSources.get(dataSourceName);
@@ -49,7 +49,10 @@ export default class extends Instruction {
     });
 
     return {
-      result: round(options.dataType === DataTypes.DOUBLE ? Number(result) : result, 14),
+      result: round(
+        (options.dataType === DataTypes.DOUBLE ? Number(result) : result) || 0,
+        Math.max(0, Math.min(precision, 14)),
+      ),
       status: JOB_STATUS.RESOLVED,
     };
   }

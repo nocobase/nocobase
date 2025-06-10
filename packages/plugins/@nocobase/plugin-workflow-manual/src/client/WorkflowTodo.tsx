@@ -8,6 +8,7 @@
  */
 
 import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import { useField, useFieldSchema, useForm } from '@formily/react';
 import { FormLayout } from '@formily/antd-v5';
 import { Button, Card, ConfigProvider, Descriptions, Space, Spin, Tag } from 'antd';
@@ -33,9 +34,12 @@ import {
   useActionContext,
   useCurrentUserContext,
   useFormBlockContext,
-  useTableBlockContext,
+  useListBlockContext,
   List,
   OpenModeProvider,
+  ActionContextProvider,
+  useRequest,
+  CollectionRecordProvider,
 } from '@nocobase/client';
 import WorkflowPlugin, {
   DetailsBlockProvider,
@@ -44,14 +48,14 @@ import WorkflowPlugin, {
   useAvailableUpstreams,
   useFlowContext,
   EXECUTION_STATUS,
-  JOB_STATUS,
   WorkflowTitle,
+  usePopupRecordContext,
 } from '@nocobase/plugin-workflow/client';
 
 import { NAMESPACE, useLang } from '../locale';
 import { FormBlockProvider } from './instruction/FormBlockProvider';
 import { ManualFormType, manualFormTypes } from './instruction/SchemaConfig';
-import { TaskStatusOptionsMap } from '../common/constants';
+import { TaskStatusOptionsMap, TASK_STATUS } from '../common/constants';
 
 function TaskStatusColumn(props) {
   const recordData = useCollectionRecordData();
@@ -117,6 +121,7 @@ export const WorkflowTodo: React.FC & {
                   'x-use-component-props': 'useFilterActionProps',
                   'x-component-props': {
                     icon: 'FilterOutlined',
+                    nonfilterable: ['workflow.type', 'workflow.mode', 'workflow.description', 'workflow.categories'],
                   },
                   default: {
                     $and: [{ title: { $includes: '' } }, { 'workflow.title': { $includes: '' } }],
@@ -268,7 +273,7 @@ function ManualActionStatusProvider({ value, children }) {
   useEffect(() => {
     if (execution.status || userJob.status) {
       button.disabled = true;
-      button.visible = userJob.status === value && userJob.result._ === buttonSchema.name;
+      button.visible = userJob.status === value && userJob.result?._ === buttonSchema.name;
     }
   }, [execution, userJob, value, button, buttonSchema.name]);
 
@@ -291,11 +296,12 @@ function useSubmit() {
   const { values, submit } = useForm();
   const field = useField();
   const buttonSchema = useFieldSchema();
-  const { service } = useTableBlockContext();
+  const { service } = useListBlockContext();
   const { userJob, execution } = useFlowContext();
   const { name: actionKey } = buttonSchema;
   const { name: formKey } = buttonSchema.parent.parent;
   const { assignedValues = {} } = buttonSchema?.['x-action-settings'] ?? {};
+
   return {
     async run() {
       if (execution.status || userJob.status) {
@@ -611,67 +617,47 @@ function ContentDetailWithTitle(props) {
 
 function TaskItem() {
   const token = useAntdToken();
-  const [visible, setVisible] = useState(false);
   const record = useCollectionRecordData();
-  const { t } = useTranslation();
-  // const { defaultOpenMode } = useOpenModeContext();
-  // const { openPopup } = usePopupUtils();
-  // const { isPopupVisibleControlledByURL } = usePopupSettings();
-  const onOpen = useCallback((e: React.MouseEvent) => {
-    const targetElement = e.target as Element; // 将事件目标转换为Element类型
-    const currentTargetElement = e.currentTarget as Element;
-    if (currentTargetElement.contains(targetElement)) {
-      setVisible(true);
-      // if (!isPopupVisibleControlledByURL()) {
-      // } else {
-      //   openPopup({
-      //     // popupUidUsedInURL: 'job',
-      //     customActionSchema: {
-      //       type: 'void',
-      //       'x-uid': 'job-view',
-      //       'x-action-context': {
-      //         dataSource: 'main',
-      //         collection: 'workflowManualTasks',
-      //         doNotUpdateContext: true,
-      //       },
-      //       properties: {},
-      //     },
-      //   });
-      // }
-    }
-    e.stopPropagation();
-  }, []);
+  const navigate = useNavigate();
+  const { setRecord } = usePopupRecordContext();
+  const onOpen = useCallback(
+    (e: React.MouseEvent) => {
+      const targetElement = e.target as Element; // 将事件目标转换为Element类型
+      const currentTargetElement = e.currentTarget as Element;
+      if (currentTargetElement.contains(targetElement)) {
+        setRecord(record);
+        navigate(`./${record.id}`);
+      }
+      e.stopPropagation();
+    },
+    [navigate, record.id],
+  );
 
   return (
-    <>
-      <Card
-        onClick={onOpen}
-        hoverable
-        size="small"
-        title={record.title}
-        extra={<WorkflowTitle {...record.workflow} />}
-        className={css`
-          .ant-card-extra {
-            color: ${token.colorTextDescription};
-          }
-        `}
-      >
-        <ContentDetail />
-      </Card>
-      <PopupContextProvider visible={visible} setVisible={setVisible} openMode="modal">
-        <Drawer />
-      </PopupContextProvider>
-    </>
+    <Card
+      onClick={onOpen}
+      hoverable
+      size="small"
+      title={record.title}
+      extra={<WorkflowTitle {...record.workflow} />}
+      className={css`
+        .ant-card-extra {
+          color: ${token.colorTextDescription};
+        }
+      `}
+    >
+      <ContentDetail />
+    </Card>
   );
 }
 
 const StatusFilterMap = {
   pending: {
-    status: JOB_STATUS.PENDING,
+    status: TASK_STATUS.PENDING,
     'execution.status': EXECUTION_STATUS.STARTED,
   },
   completed: {
-    status: JOB_STATUS.RESOLVED,
+    status: [TASK_STATUS.RESOLVED, TASK_STATUS.REJECTED],
   },
 };
 
@@ -679,10 +665,7 @@ function useTodoActionParams(status) {
   const { data: user } = useCurrentUserContext();
   const filter = StatusFilterMap[status] ?? {};
   return {
-    filter: {
-      ...filter,
-      userId: user?.data?.id,
-    },
+    filter,
     appends: [
       'job.id',
       'job.status',
@@ -734,7 +717,9 @@ function TodoExtraActions() {
 export const manualTodo = {
   title: `{{t("My manual tasks", { ns: "${NAMESPACE}" })}}`,
   collection: 'workflowManualTasks',
+  action: 'listMine',
   useActionParams: useTodoActionParams,
-  component: TaskItem,
-  extraActions: TodoExtraActions,
+  Actions: TodoExtraActions,
+  Item: TaskItem,
+  Detail: Drawer,
 };

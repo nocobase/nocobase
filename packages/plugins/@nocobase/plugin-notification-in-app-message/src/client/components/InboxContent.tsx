@@ -7,33 +7,32 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React from 'react';
-import { observer } from '@formily/reactive-react';
-import { Schema } from '@formily/react';
-import { Layout, List, Badge, Button, Flex, Tabs, ConfigProvider, theme } from 'antd';
 import { css } from '@emotion/css';
+import { Schema } from '@formily/react';
+import { observer } from '@formily/reactive-react';
+import { useApp } from '@nocobase/client';
 import { dayjs } from '@nocobase/utils/client';
+import { Badge, Button, ConfigProvider, Flex, Layout, List, Tabs, theme } from 'antd';
+import React from 'react';
 import { useLocalTranslation } from '../../locale';
 import {
-  fetchChannels,
-  selectedChannelNameObs,
   channelListObs,
-  isFetchingChannelsObs,
-  showChannelLoadingMoreObs,
-  selectedMessageListObs,
-  channelStatusFilterObs,
   ChannelStatus,
+  channelStatusFilterObs,
+  fetchChannels,
+  isFetchingChannelsObs,
+  selectedChannelNameObs,
+  selectedMessageListObs,
+  showChannelLoadingMoreObs,
 } from '../observables';
-import MessageList from './MessageList';
 import FilterTab from './FilterTab';
-import { useApp } from '@nocobase/client';
+import MessageList from './MessageList';
 
 const InnerInboxContent = () => {
   const app = useApp();
   const { token } = theme.useToken();
   const { t } = useLocalTranslation();
   const channels = channelListObs.value;
-  const messages = selectedMessageListObs.value;
   const selectedChannelName = selectedChannelNameObs.value;
 
   const onLoadChannelsMore = () => {

@@ -49,9 +49,13 @@ export const getSupportFieldsByAssociation = (inheritCollectionsChain: string[],
 
 export const getSupportFieldsByForeignKey = (filterBlockCollection: Collection, block: DataBlock) => {
   return block.foreignKeyFields?.filter((foreignKeyField) => {
-    return filterBlockCollection.fields.some(
-      (field) => field.type !== 'belongsTo' && field.foreignKey === foreignKeyField.name,
-    );
+    return filterBlockCollection.fields.some((field) => {
+      return (
+        field.type !== 'belongsTo' &&
+        field.foreignKey === foreignKeyField.name && // 1. 外键字段的 name 要一致
+        field.target === foreignKeyField.collectionName // 2. 关系字段的目标表要和外键的数据表一致
+      );
+    });
   });
 };
 
@@ -112,6 +116,9 @@ export const transformToFilter = (
           '$notIn',
         ].includes(operators[path])
       ) {
+        return true;
+      }
+      if (value?.type) {
         return true;
       }
 
@@ -193,19 +200,21 @@ export const useFilterAPI = () => {
 
   const doFilter = useCallback(
     (
-      value: any | ((target: FilterTarget['targets'][0], block: DataBlock) => any),
+      value: any | ((target: FilterTarget['targets'][0], block: DataBlock, sourceKey?: string) => any),
       field: string | ((target: FilterTarget['targets'][0], block: DataBlock) => string) = 'id',
       operator: string | ((target: FilterTarget['targets'][0]) => string) = '$eq',
     ) => {
+      const currentBlock = dataBlocks.find((block) => block.uid === fieldSchema.parent['x-uid']);
       dataBlocks.forEach((block) => {
+        let key = field as string;
         const target = targets.find((target) => target.uid === block.uid);
         if (!target) return;
 
         if (_.isFunction(value)) {
-          value = value(target, block);
+          value = value(target, block, getSourceKey(currentBlock, target.field));
         }
         if (_.isFunction(field)) {
-          field = field(target, block);
+          key = field(target, block);
         }
         if (_.isFunction(operator)) {
           operator = operator(target);
@@ -215,18 +224,22 @@ export const useFilterAPI = () => {
         // 保留原有的 filter
         const storedFilter = block.service.params?.[1]?.filters || {};
 
-        if (value !== undefined) {
+        if (value != null) {
           storedFilter[uid] = {
             $and: [
               {
-                [field]: {
+                [key]: {
                   [operator]: value,
                 },
               },
             ],
           };
         } else {
+          block.clearSelection?.();
           delete storedFilter[uid];
+          if (block.dataLoadingMode === 'manual') {
+            return block.clearData();
+          }
         }
 
         const mergedFilter = mergeFilter([
@@ -244,7 +257,7 @@ export const useFilterAPI = () => {
         );
       });
     },
-    [dataBlocks, targets, uid],
+    [dataBlocks, targets, uid, fieldSchema],
   );
 
   return {
@@ -264,3 +277,8 @@ export const isInFilterFormBlock = (fieldSchema: Schema) => {
   }
   return false;
 };
+
+function getSourceKey(currentBlock: DataBlock, field: string) {
+  const associationField = currentBlock?.associatedFields?.find((item) => item.foreignKey === field);
+  return associationField?.sourceKey || field?.split?.('.')?.[1];
+}

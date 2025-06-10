@@ -47,5 +47,8 @@
   "Create map block": "创建地图区块",
   "Start point": "起点",
   "End point": "终点",
-  "Concatenation order field": "连接顺序字段"
+  "Concatenation order field": "连接顺序字段",
+  "securityJsCode or serviceHost is required": "securityJsCode 或 serviceHost 是必填",
+  "Access key is required": "访问密钥是必填",
+  "Api key is required": "Api key 是必填"
 }

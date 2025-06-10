@@ -47,6 +47,11 @@ const components = { TreeSelect };
 const toItems = (routes: NocoBaseDesktopRoute[], { t, compile }) => {
   const items = [];
   for (const route of routes) {
+    // filter out the tabs
+    if (route.type === NocoBaseDesktopRouteType.tabs) {
+      continue;
+    }
+
     const item = {
       label: isVariable(route.title) ? compile(route.title) : t(route.title),
       value: `${route.id}||${route.type}`,
@@ -155,7 +160,7 @@ export const RemoveRoute: FC = () => {
 const InsertMenuItems = (props) => {
   const { eventKey, title, insertPosition } = props;
   const { t } = useTranslation();
-  const { urlSchema, paramsSchema } = useURLAndHTMLSchema();
+  const { urlSchema, paramsSchema, openInNewWindowSchema } = useURLAndHTMLSchema();
   const currentRoute = useCurrentRoute();
   const isSubMenu = currentRoute?.type === NocoBaseDesktopRouteType.group;
   const { createRoute, moveRoute } = useNocoBaseRoutes();
@@ -301,10 +306,11 @@ const InsertMenuItems = (props) => {
               },
               href: urlSchema,
               params: paramsSchema,
+              openInNewWindow: openInNewWindowSchema,
             },
           } as ISchema
         }
-        onSubmit={async ({ title, icon, href, params }) => {
+        onSubmit={async ({ title, icon, href, params, openInNewWindow }) => {
           const schemaUid = uid();
           const parentId = insertPosition === 'beforeEnd' ? currentRoute?.id : currentRoute?.parentId;
 
@@ -319,6 +325,7 @@ const InsertMenuItems = (props) => {
             options: {
               href,
               params,
+              openInNewWindow,
             },
           });
 
@@ -360,7 +367,7 @@ const EditMenuItem = () => {
     };
   }, [t]);
   const currentRoute = useCurrentRoute();
-  const { urlSchema, paramsSchema } = useURLAndHTMLSchema();
+  const { urlSchema, paramsSchema, openInNewWindowSchema } = useURLAndHTMLSchema();
   const initialValues = useMemo(() => {
     return {
       title: currentRoute.title,
@@ -370,12 +377,14 @@ const EditMenuItem = () => {
   if (currentRoute.type === NocoBaseDesktopRouteType.link) {
     schema.properties['href'] = urlSchema;
     schema.properties['params'] = paramsSchema;
+    schema.properties['openInNewWindow'] = openInNewWindowSchema;
     initialValues['href'] = currentRoute.options.href;
     initialValues['params'] = currentRoute.options.params;
+    initialValues['openInNewWindow'] = currentRoute.options.openInNewWindow !== false;
   }
 
   const { updateRoute } = useNocoBaseRoutes();
-  const onEditSubmit: (values: any) => void = useCallback(({ title, icon, href, params }) => {
+  const onEditSubmit: (values: any) => void = useCallback(({ title, icon, href, params, openInNewWindow }) => {
     // 更新菜单对应的路由
     if (currentRoute.id !== undefined) {
       updateRoute(currentRoute.id, {
@@ -386,6 +395,7 @@ const EditMenuItem = () => {
             ? {
                 href,
                 params,
+                openInNewWindow,
               }
             : undefined,
       });
@@ -435,17 +445,18 @@ const HiddenMenuItem = () => {
 
 const MoveToMenuItem = () => {
   const { t } = useTranslation();
+  const currentRoute = useCurrentRoute();
   const effects = useCallback(
     (form) => {
       onFieldChange('target', (field: Field) => {
-        const [, type] = field?.value?.split?.('||') || [];
+        const [id, type] = field?.value?.split?.('||') || [];
         field.query('position').take((f: Field) => {
           f.dataSource =
             type === NocoBaseDesktopRouteType.group
               ? [
                   { label: t('Before'), value: 'beforeBegin' },
                   { label: t('After'), value: 'afterEnd' },
-                  { label: t('Inner'), value: 'beforeEnd' },
+                  { label: t('Inner'), value: 'beforeEnd', disabled: currentRoute?.id == id },
                 ]
               : [
                   { label: t('Before'), value: 'beforeBegin' },
@@ -458,7 +469,11 @@ const MoveToMenuItem = () => {
   );
   const compile = useCompile();
   const { allAccessRoutes } = useAllAccessDesktopRoutes();
-  const items = useMemo(() => toItems(allAccessRoutes, { t, compile }), []);
+  const items = useMemo(() => {
+    const result = toItems(allAccessRoutes, { t, compile });
+    // The last two empty options are placeholders to prevent the last option from being hidden (a bug in TreeSelect)
+    return [...result, { label: '', value: '', disabled: true }, { label: '', value: '', disabled: true }];
+  }, []);
   const modalSchema = useMemo(() => {
     return {
       type: 'object',
@@ -488,7 +503,6 @@ const MoveToMenuItem = () => {
   }, [items, t]);
 
   const { moveRoute } = useNocoBaseRoutes();
-  const currentRoute = useCurrentRoute();
   const onMoveToSubmit: (values: any) => void = useCallback(
     async ({ target, position }) => {
       const [targetId] = target?.split?.('||') || [];

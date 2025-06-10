@@ -39,7 +39,7 @@ const breakRemoveOnRow = (s: Schema) => s['x-component'] === 'Grid.Row';
 
 const ColDivider = (props) => {
   const { token } = useToken();
-  const dragIdRef = useRef<string | null>(null);
+  const dragIdRef = useRef<any>(null);
   const { dn, designable } = useDesignable();
   const { isOver, setNodeRef } = useDroppable({
     id: props.id,
@@ -74,18 +74,22 @@ const ColDivider = (props) => {
   }
   const prevSchema = props.cols[props.index];
   const nextSchema = props.cols[props.index + 1];
+  const draggableDisabled = props.first || props.last || !designable;
   const {
     attributes,
     listeners,
     setNodeRef: setDraggableNodeRef,
     isDragging,
   } = useDraggable({
-    disabled: props.first || props.last || !designable,
+    disabled: draggableDisabled,
     id: props.id,
     data: {
       dividerRef,
       prevSchema,
       nextSchema,
+    },
+    attributes: {
+      tabIndex: draggableDisabled ? -1 : 0,
     },
   });
 
@@ -93,7 +97,11 @@ const ColDivider = (props) => {
 
   useDndMonitor({
     onDragStart(event) {
-      if (!designable || !isDragging) {
+      const dividerRef = event.active?.data?.current?.dividerRef;
+      if (!dividerRef) {
+        return;
+      }
+      if (!designable) {
         return;
       }
       dragIdRef.current = event.active.id;

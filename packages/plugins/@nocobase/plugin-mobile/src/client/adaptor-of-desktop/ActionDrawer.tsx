@@ -13,6 +13,7 @@ import {
   NocoBaseRecursionField,
   SchemaComponent,
   useActionContext,
+  useGlobalTheme,
   useZIndexContext,
   zIndexContext,
 } from '@nocobase/client';
@@ -31,6 +32,7 @@ export const ActionDrawerUsedInMobile: any = observer((props: { footerNodeName?:
   const { popupContainerRef, visiblePopup } = usePopupContainer(visible);
   const { componentCls, hashId } = useMobileActionDrawerStyle();
   const parentZIndex = useZIndexContext();
+  const { theme: globalTheme } = useGlobalTheme();
 
   // this schema need to add padding in the content area of the popup
   const isSpecialSchema = isChangePasswordSchema(fieldSchema) || isEditProfileSchema(fieldSchema);
@@ -55,7 +57,6 @@ export const ActionDrawerUsedInMobile: any = observer((props: { footerNodeName?:
   });
 
   const title = field.title || '';
-  const marginBlock = 18;
 
   const closePopup = useCallback(() => {
     setVisible(false);
@@ -63,14 +64,14 @@ export const ActionDrawerUsedInMobile: any = observer((props: { footerNodeName?:
 
   const theme = useMemo(() => {
     return {
+      ...globalTheme,
       token: {
-        marginBlock,
-        borderRadiusBlock: 0,
-        boxShadowTertiary: 'none',
+        ...globalTheme.token,
+        marginBlock: 12,
         zIndexPopupBase: newZIndex,
       },
     };
-  }, [newZIndex]);
+  }, [globalTheme, newZIndex]);
 
   return (
     <zIndexContext.Provider value={newZIndex}>
@@ -84,7 +85,7 @@ export const ActionDrawerUsedInMobile: any = observer((props: { footerNodeName?:
           bodyClassName="nb-mobile-action-drawer-body"
           bodyStyle={zIndexStyle}
           maskStyle={zIndexStyle}
-          closeOnSwipe
+          destroyOnClose
         >
           <div className="nb-mobile-action-drawer-header">
             {/* used to make the title center */}
@@ -141,6 +142,9 @@ const originalActionDrawer = Action.Drawer;
  */
 export const useToAdaptActionDrawerToMobile = () => {
   Action.Drawer = ActionDrawerUsedInMobile;
+  Action.Drawer.FootBar = (props) => {
+    return <div style={{ display: 'flex', justifyContent: 'end', gap: 8 }}>{props.children}</div>;
+  };
 
   useEffect(() => {
     return () => {

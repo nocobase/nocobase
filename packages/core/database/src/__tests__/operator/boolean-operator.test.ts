@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import Database, { Collection, mockDatabase } from '@nocobase/database';
+import Database, { Collection, createMockDatabase } from '@nocobase/database';
 
 describe('boolean operator', () => {
   let db: Database;
@@ -19,7 +19,7 @@ describe('boolean operator', () => {
   });
 
   beforeEach(async () => {
-    db = mockDatabase({});
+    db = await createMockDatabase({});
 
     await db.clean({ drop: true });
 

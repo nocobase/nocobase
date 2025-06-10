@@ -1,11 +1,11 @@
 {
   "name": "@nocobase/utils",
-  "version": "1.6.1",
+  "version": "1.7.6",
   "main": "lib/index.js",
   "types": "./lib/index.d.ts",
   "license": "AGPL-3.0",
   "dependencies": {
-    "@budibase/handlebars-helpers": "^0.14.0",
+    "@budibase/handlebars-helpers": "0.14.0",
     "@hapi/topo": "^6.0.0",
     "@rc-component/mini-decimal": "^1.1.0",
     "dayjs": "^1.11.9",
@@ -13,7 +13,7 @@
     "flat-to-nested": "^1.1.1",
     "graphlib": "^2.1.8",
     "handlebars": "^4.7.8",
-    "multer": "^1.4.5-lts.1",
+    "multer": "^1.4.5-lts.2",
     "object-path": "^0.11.8"
   },
   "gitHead": "d0b4efe4be55f8c79a98a331d99d9f8cf99021a1"

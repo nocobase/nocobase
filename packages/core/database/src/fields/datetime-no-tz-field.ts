@@ -29,26 +29,26 @@ export class DatetimeNoTzField extends Field {
       return DatetimeNoTzTypeMySQL;
     }
 
-    return DataTypes.STRING;
+    return DataTypes.DATE;
   }
 
-  init() {
+  beforeSave = async (instances, options) => {
+    instances = Array.isArray(instances) ? instances : [instances];
     const { name, defaultToCurrentTime, onUpdateToCurrentTime } = this.options;
-
-    this.beforeSave = async (instance, options) => {
+    for (const instance of instances) {
       const value = instance.get(name);
 
       if (!value && instance.isNewRecord && defaultToCurrentTime) {
         instance.set(name, new Date());
-        return;
+        continue;
       }
 
       if (onUpdateToCurrentTime) {
         instance.set(name, new Date());
-        return;
+        continue;
       }
-    };
-  }
+    }
+  };
 
   additionalSequelizeOptions(): {} {
     const { name } = this.options;
@@ -57,17 +57,14 @@ export class DatetimeNoTzField extends Field {
     const timezone = this.database.options.rawTimezone || '+00:00';
 
     const isPg = this.database.inDialect('postgres');
+    const isMySQLCompatibleDialect = this.database.isMySQLCompatibleDialect();
 
     return {
       get() {
         const val = this.getDataValue(name);
 
         if (val instanceof Date) {
-          if (isPg) {
-            return moment(val).format('YYYY-MM-DD HH:mm:ss');
-          }
-          // format to YYYY-MM-DD HH:mm:ss
-          const momentVal = moment(val).utcOffset(timezone);
+          const momentVal = moment(val);
           return momentVal.format('YYYY-MM-DD HH:mm:ss');
         }
 
@@ -75,18 +72,24 @@ export class DatetimeNoTzField extends Field {
       },
 
       set(val) {
-        if (typeof val === 'string' && isIso8601(val)) {
-          const momentVal = moment(val).utcOffset(timezone);
-          val = momentVal.format('YYYY-MM-DD HH:mm:ss');
+        if (val == null) {
+          return this.setDataValue(name, null);
         }
 
-        if (val && val instanceof Date) {
-          // format to YYYY-MM-DD HH:mm:ss
-          const momentVal = moment(val).utcOffset(timezone);
-          val = momentVal.format('YYYY-MM-DD HH:mm:ss');
+        const dateOffset = new Date().getTimezoneOffset();
+        const momentVal = moment(val);
+        if ((typeof val === 'string' && isIso8601(val)) || val instanceof Date) {
+          momentVal.utcOffset(timezone);
+          momentVal.utcOffset(-dateOffset, true);
         }
 
-        return this.setDataValue(name, val);
+        if (isMySQLCompatibleDialect) {
+          momentVal.millisecond(0);
+        }
+
+        const date = momentVal.toDate();
+
+        return this.setDataValue(name, date);
       },
     };
   }
@@ -94,11 +97,13 @@ export class DatetimeNoTzField extends Field {
   bind() {
     super.bind();
     this.on('beforeSave', this.beforeSave);
+    this.on('beforeBulkCreate', this.beforeSave);
   }
 
   unbind() {
     super.unbind();
     this.off('beforeSave', this.beforeSave);
+    this.off('beforeBulkCreate', this.beforeSave);
   }
 }
 

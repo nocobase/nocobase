@@ -7,11 +7,12 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import winston, { format } from 'winston';
-import { createLogger, levels, Logger, LoggerOptions } from './logger';
-import Transport from 'winston-transport';
 import { SPLAT } from 'triple-beam';
+import winston, { format } from 'winston';
+import Transport from 'winston-transport';
+import { getLoggerFilePath } from './config';
 import { getFormat } from './format';
+import { createLogger, levels, Logger, LoggerOptions } from './logger';
 
 export interface SystemLoggerOptions extends LoggerOptions {
   seperateError?: boolean; // print error seperately, default true
@@ -138,3 +139,12 @@ export const createSystemLogger = (options: SystemLoggerOptions): SystemLogger =
     },
   });
 };
+
+export const logger = createSystemLogger({
+  dirname: getLoggerFilePath('main'),
+  filename: 'system',
+  defaultMeta: {
+    app: 'main',
+    module: 'cli',
+  },
+});

@@ -602,12 +602,6 @@ const InternalNocoBaseTable = React.memo(
                   height: 100%;
                   display: flex;
                   flex-direction: column;
-                  .ant-table-expanded-row-fixed {
-                    min-height: ${tableHeight}px;
-                  }
-                  .ant-table-body {
-                    min-height: ${tableHeight}px;
-                  }
                   .ant-table-cell {
                     padding: 16px 8px;
                   }
@@ -679,6 +673,7 @@ export const Table: any = withDynamicSchemaProps(
       onExpand,
       loading,
       onClickRow,
+      enableIndexÏColumn,
       ...others
     } = { ...others1, ...others2 } as any;
     const field = useArrayField(others);
@@ -831,65 +826,67 @@ export const Table: any = withDynamicSchemaProps(
 
     const restProps = useMemo(
       () => ({
-        rowSelection: memoizedRowSelection
-          ? {
-              type: 'checkbox',
-              selectedRowKeys: selectedRowKeys,
-              onChange(selectedRowKeys: any[], selectedRows: any[]) {
-                field.data = field.data || {};
-                field.data.selectedRowKeys = selectedRowKeys;
-                field.data.selectedRowData = selectedRows;
-                setSelectedRowKeys(selectedRowKeys);
-                onRowSelectionChange?.(selectedRowKeys, selectedRows);
-              },
-              getCheckboxProps(record) {
-                return {
-                  'aria-label': `checkbox`,
-                };
-              },
-              renderCell: (checked, record, index, originNode) => {
-                if (!dragSort && !showIndex) {
-                  return originNode;
-                }
-                const current = paginationProps?.current;
+        rowSelection: enableIndexÏColumn
+          ? memoizedRowSelection
+            ? {
+                type: 'checkbox',
+                selectedRowKeys: selectedRowKeys,
+                onChange(selectedRowKeys: any[], selectedRows: any[]) {
+                  field.data = field.data || {};
+                  field.data.selectedRowKeys = selectedRowKeys;
+                  field.data.selectedRowData = selectedRows;
+                  setSelectedRowKeys(selectedRowKeys);
+                  onRowSelectionChange?.(selectedRowKeys, selectedRows);
+                },
+                getCheckboxProps(record) {
+                  return {
+                    'aria-label': `checkbox`,
+                  };
+                },
+                renderCell: (checked, record, index, originNode) => {
+                  if (!dragSort && !showIndex) {
+                    return originNode;
+                  }
+                  const current = paginationProps?.current;
 
-                const pageSize = paginationProps?.pageSize || 20;
-                if (current) {
-                  index = index + (current - 1) * pageSize + 1;
-                } else {
-                  index = index + 1;
-                }
-                if (record.__index) {
-                  index = extractIndex(record.__index);
-                }
-                return (
-                  <div
-                    role="button"
-                    aria-label={`table-index-${index}`}
-                    className={classNames(checked ? 'checked' : null, rowSelectCheckboxWrapperClass, {
-                      [rowSelectCheckboxWrapperClassHover]: isRowSelect,
-                    })}
-                  >
-                    <div className={classNames(checked ? 'checked' : null, rowSelectCheckboxContentClass)}>
-                      {dragSort && <SortHandle id={getRowKey(record)} />}
-                      {showIndex && <TableIndex index={index} />}
-                    </div>
-                    {isRowSelect && (
-                      <div
-                        className={classNames(
-                          'nb-origin-node',
-                          checked ? 'checked' : null,
-                          rowSelectCheckboxCheckedClassHover,
-                        )}
-                      >
-                        {originNode}
+                  const pageSize = paginationProps?.pageSize || 20;
+                  if (current) {
+                    index = index + (current - 1) * pageSize + 1;
+                  } else {
+                    index = index + 1;
+                  }
+                  if (record.__index) {
+                    index = extractIndex(record.__index);
+                  }
+                  return (
+                    <div
+                      role="button"
+                      aria-label={`table-index-${index}`}
+                      className={classNames(checked ? 'checked' : null, rowSelectCheckboxWrapperClass, {
+                        [rowSelectCheckboxWrapperClassHover]: isRowSelect,
+                      })}
+                    >
+                      <div className={classNames(checked ? 'checked' : null, rowSelectCheckboxContentClass)}>
+                        {dragSort && <SortHandle id={getRowKey(record)} />}
+                        {showIndex && <TableIndex index={index} />}
                       </div>
-                    )}
-                  </div>
-                );
-              },
-              ...memoizedRowSelection,
-            }
+                      {isRowSelect && (
+                        <div
+                          className={classNames(
+                            'nb-origin-node',
+                            checked ? 'checked' : null,
+                            rowSelectCheckboxCheckedClassHover,
+                          )}
+                        >
+                          {originNode}
+                        </div>
+                      )}
+                    </div>
+                  );
+                },
+                ...memoizedRowSelection,
+              }
+            : undefined
           : undefined,
       }),
       [
@@ -903,6 +900,7 @@ export const Table: any = withDynamicSchemaProps(
         isRowSelect,
         memoizedRowSelection,
         paginationProps,
+        enableIndexÏColumn,
       ],
     );
 

@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Trans, useTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'react-router-dom';
 import { Alert, App, Breadcrumb, Button, Dropdown, Result, Spin, Switch, Tag, Tooltip } from 'antd';
@@ -28,11 +28,9 @@ import {
   useResourceContext,
   useCompile,
   css,
-  usePlugin,
 } from '@nocobase/client';
 import { dayjs } from '@nocobase/utils/client';
 
-import PluginWorkflowClient from '.';
 import { CanvasContent } from './CanvasContent';
 import { ExecutionStatusColumn } from './components/ExecutionStatus';
 import { ExecutionLink } from './ExecutionLink';
@@ -44,8 +42,9 @@ import { linkNodes, getWorkflowDetailPath } from './utils';
 import { Fieldset } from './components/Fieldset';
 import { useRefreshActionProps } from './hooks/useRefreshActionProps';
 import { useTrigger } from './triggers';
-import { ExecutionStatusOptionsMap } from './constants';
+import { ExecutionStatusOptions, ExecutionStatusOptionsMap } from './constants';
 import { HideVariableContext } from './variable';
+import { useWorkflowAnyExecuted, useWorkflowExecuted } from './hooks';
 
 function ExecutionResourceProvider({ request, filter = {}, ...others }) {
   const { workflow } = useFlowContext();
@@ -96,6 +95,7 @@ function useExecuteConfirmAction() {
   const ctx = useActionContext();
   const navigate = useNavigateNoUpdate();
   const { message: messageApi } = App.useApp();
+  const executed = useWorkflowExecuted();
   return {
     async run() {
       const { autoRevision, ...values } = form.values;
@@ -107,7 +107,7 @@ function useExecuteConfirmAction() {
       } = await resource.execute({
         filterByTk: workflow.id,
         values,
-        ...(!workflow.executed && autoRevision ? { autoRevision: 1 } : {}),
+        ...(!executed && autoRevision ? { autoRevision: 1 } : {}),
       });
       form.reset();
       ctx.setFormValueChanged(false);
@@ -142,6 +142,7 @@ function ActionDisabledProvider({ children }) {
 
 function ExecuteActionButton() {
   const { workflow } = useFlowContext();
+  const executed = useWorkflowExecuted();
   const trigger = useTrigger();
 
   return (
@@ -202,7 +203,7 @@ function ExecuteActionButton() {
                     title: `{{t('Trigger variables', { ns: "${NAMESPACE}" })}}`,
                     properties: trigger.triggerFieldset,
                   },
-                  ...(workflow.executed
+                  ...(executed
                     ? {}
                     : {
                         autoRevision: {
@@ -255,6 +256,8 @@ function WorkflowMenu() {
   const app = useApp();
   const { resource } = useResourceContext();
   const { message } = App.useApp();
+  const executed = useWorkflowExecuted();
+  const allExecuted = useWorkflowAnyExecuted();
 
   const onRevision = useCallback(async () => {
     const {
@@ -272,8 +275,10 @@ function WorkflowMenu() {
 
   const onDelete = useCallback(async () => {
     const content = workflow.current
-      ? lang('Delete a main version will cause all other revisions to be deleted too.')
-      : '';
+      ? lang(
+          'This is a main version, delete it will cause the whole workflow to be deleted (including all other revisions).',
+        )
+      : lang('Current version will be deleted (without affecting other versions).');
     modal.confirm({
       title: t('Are you sure you want to delete it?'),
       content,
@@ -309,10 +314,6 @@ function WorkflowMenu() {
     [onDelete, onRevision],
   );
 
-  const revisionable =
-    workflow.executed &&
-    !revisions.find((item) => !item.executed && new Date(item.createdAt) > new Date(workflow.createdAt));
-
   return (
     <>
       <Dropdown
@@ -331,14 +332,13 @@ function WorkflowMenu() {
               'aria-label': 'history',
               key: 'history',
               label: lang('Execution history'),
-              disabled: !workflow.allExecuted,
+              disabled: !allExecuted,
             },
             {
               role: 'button',
               'aria-label': 'revision',
               key: 'revision',
               label: lang('Copy to new version'),
-              disabled: !revisionable,
             },
             {
               type: 'divider',
@@ -360,6 +360,7 @@ function WorkflowMenu() {
           }}
           scope={{
             useRefreshActionProps,
+            ExecutionStatusOptions,
           }}
         />
       </ActionContextProvider>
@@ -374,7 +375,6 @@ export function WorkflowCanvas() {
   const { resource } = useResourceContext();
   const { setTitle } = useDocumentTitle();
   const { styles } = useStyles();
-  const workflowPlugin = usePlugin(PluginWorkflowClient);
 
   const { nodes = [], revisions = [], ...workflow } = data?.data ?? {};
   linkNodes(nodes);
@@ -463,8 +463,8 @@ export function WorkflowCanvas() {
                   key: `${item.id}`,
                   icon: item.current ? <RightOutlined /> : null,
                   className: cx({
-                    executed: item.executed,
-                    unexecuted: !item.executed,
+                    executed: item.versionStats.executed,
+                    unexecuted: !item.versionStats.executed,
                     enabled: item.enabled,
                   }),
                   label: (

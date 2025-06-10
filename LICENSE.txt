@@ -1,4 +1,4 @@
-Updated Date: February 20, 2025
+Updated Date: April 1, 2025
 
 NocoBase License Agreement
 
@@ -88,7 +88,7 @@ Except for Third-Party Open Source Software, the Company owns all copyrights, tr
 
 6.6 Can sell plugins developed for Software in the Marketplace.
 
-6.7 The User with an Enterprise Edition License can sell Upper Layer Application to their clients.
+6.7 The User with a Professional or Enterprise Edition License can sell Upper Layer Application to their clients.
 
 6.8 Not restricted by the AGPL-3.0 agreement.
 
@@ -106,9 +106,9 @@ Except for Third-Party Open Source Software, the Company owns all copyrights, tr
 
 7.4 It is not allowed to provide any form of no-code, zero-code, low-code platform SaaS products to the public using the original or modified Software.
 
-7.5 It is not allowed for the User withot an Enterprise Edition license to sell Upper Layer Application to clients without a Commercial license.
+7.5 It is not allowed for the User withot a Professional or Enterprise Edition license to sell Upper Layer Application to clients without a Commercial license.
 
-7.6 It is not allowed for the User with an Enterprise Edition license to sell Upper Layer Application to clients without a Commercial license with access to further development and configuration.
+7.6 It is not allowed for the User with a Professional or Enterprise Edition license to sell Upper Layer Application to clients without a Commercial license with access to further development and configuration.
 
 7.7 It is not allowed to publicly sell plugins developed for Software outside of the Marketplace.
 

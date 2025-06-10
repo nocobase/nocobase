@@ -47,7 +47,7 @@ import { TaskGantt } from './task-gantt';
 import { TaskGanttContentProps } from './task-gantt-content';
 
 const getColumnWidth = (dataSetLength: any, clientWidth: any) => {
-  const columnWidth = clientWidth / dataSetLength > 50 ? Math.floor(clientWidth / dataSetLength) + 20 : 50;
+  const columnWidth = clientWidth / dataSetLength > 50 ? Math.floor(clientWidth / dataSetLength) + 20 : 60;
   return columnWidth;
 };
 

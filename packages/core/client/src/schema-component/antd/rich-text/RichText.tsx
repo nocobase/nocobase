@@ -35,17 +35,17 @@ export const RichText = connect(
       'link',
       'image',
     ];
-    const { value, defaultValue, onChange, disabled } = props;
+    const { value, defaultValue, onChange, disabled, modules: propsModules, formats: propsFormats } = props;
     const resultValue = isVariable(value || defaultValue) ? undefined : value || '';
     return wrapSSR(
       <ReactQuill
         className={`${componentCls} ${hashId}`}
-        modules={modules}
-        formats={formats}
+        modules={propsModules || modules}
+        formats={propsFormats || formats}
         value={resultValue}
         onChange={(value) => {
           if (value === '<p><br></p>') {
-            onChange(undefined);
+            onChange('');
           } else {
             onChange(value);
           }

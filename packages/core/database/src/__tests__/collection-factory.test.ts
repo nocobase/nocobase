@@ -7,16 +7,14 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { Collection, Database, createMockDatabase } from '@nocobase/database';
 import { vi } from 'vitest';
-import Database from '../database';
-import { mockDatabase } from './index';
-import { Collection } from '../collection';
 
 describe('collection factory', function () {
   let db: Database;
 
   beforeEach(async () => {
-    db = mockDatabase();
+    db = await createMockDatabase();
 
     await db.clean({ drop: true });
   });

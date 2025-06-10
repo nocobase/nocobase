@@ -7,12 +7,12 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { MockDatabase, mockDatabase } from '../../mock-database';
+import { createMockDatabase, MockDatabase } from '@nocobase/database';
 
 describe('relation repository', () => {
   let db: MockDatabase;
-  beforeEach(() => {
-    db = mockDatabase();
+  beforeEach(async () => {
+    db = await createMockDatabase();
   });
 
   afterEach(async () => {

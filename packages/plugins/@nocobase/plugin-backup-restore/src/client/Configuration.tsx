@@ -10,7 +10,22 @@
 import { InboxOutlined, PlusOutlined, ReloadOutlined, UploadOutlined } from '@ant-design/icons';
 import { FormItem } from '@formily/antd-v5';
 import { Checkbox, DatePicker, useAPIClient, useCompile } from '@nocobase/client';
-import { Alert, App, Button, Card, Divider, Modal, Space, Spin, Table, Tabs, Upload, UploadProps, message } from 'antd';
+import {
+  Alert,
+  App,
+  Button,
+  Card,
+  Divider,
+  Modal,
+  Space,
+  Spin,
+  Table,
+  Tabs,
+  Upload,
+  UploadProps,
+  message,
+  TableProps,
+} from 'antd';
 import { saveAs } from 'file-saver';
 import React, { useEffect, useMemo, useState } from 'react';
 import { useDuplicatorTranslation } from './locale';
@@ -88,19 +103,19 @@ const LearnMore: any = (props: { collectionsData?: any; isBackup?: boolean }) =>
   const handleCancel = () => {
     setIsModalOpen(false);
   };
-  const columns = [
+  const columns: TableProps['columns'] = [
     {
       title: t('Collection'),
       dataIndex: 'collection',
       key: 'collection',
       render: (_, data) => {
         const title = compile(data.title);
-        const name = data.name
-        return name === title ? title : (
+        const name = data.name;
+        return name === title ? (
+          title
+        ) : (
           <div>
-            {data.name}
-            {' '}
-            <span style={{ color: 'rgba(0, 0, 0, 0.3)', fontSize: '0.9em' }}>({compile(data.title)})</span>
+            {data.name} <span style={{ color: 'rgba(0, 0, 0, 0.3)', fontSize: '0.9em' }}>({compile(data.title)})</span>
           </div>
         );
       },
@@ -403,73 +418,75 @@ export const BackupAndRestoreList = () => {
         <Table
           dataSource={dataSource}
           loading={loading}
-          columns={[
-            {
-              title: t('Backup file'),
-              dataIndex: 'name',
-              width: 400,
-              onCell: (data) => {
-                return data.inProgress
-                  ? {
-                      colSpan: 4,
-                    }
-                  : {};
+          columns={
+            [
+              {
+                title: t('Backup file'),
+                dataIndex: 'name',
+                width: 400,
+                onCell: (data) => {
+                  return data.inProgress
+                    ? {
+                        colSpan: 4,
+                      }
+                    : {};
+                },
+                render: (name, data) =>
+                  data.inProgress ? (
+                    <div style={{ color: 'rgba(0, 0, 0, 0.88)' }}>
+                      {name}({t('Backing up')}...)
+                    </div>
+                  ) : (
+                    <div>{name}</div>
+                  ),
               },
-              render: (name, data) =>
-                data.inProgress ? (
-                  <div style={{ color: 'rgba(0, 0, 0, 0.88)' }}>
-                    {name}({t('Backing up')}...)
-                  </div>
-                ) : (
-                  <div>{name}</div>
+              {
+                title: t('File size'),
+                dataIndex: 'fileSize',
+                onCell: (data) => {
+                  return data.inProgress
+                    ? {
+                        colSpan: 0,
+                      }
+                    : {};
+                },
+              },
+              {
+                title: t('Created at', { ns: 'client' }),
+                dataIndex: 'createdAt',
+                onCell: (data) => {
+                  return data.inProgress
+                    ? {
+                        colSpan: 0,
+                      }
+                    : {};
+                },
+                render: (value) => {
+                  return <DatePicker.ReadPretty value={value} showTime />;
+                },
+              },
+              {
+                title: t('Actions', { ns: 'client' }),
+                dataIndex: 'actions',
+                onCell: (data) => {
+                  return data.inProgress
+                    ? {
+                        colSpan: 0,
+                      }
+                    : {};
+                },
+                render: (_, record) => (
+                  <Space split={<Divider type="vertical" />}>
+                    <Restore ButtonComponent={'a'} title={t('Restore')} fileData={record} />
+                    <a type="link" onClick={() => handleDownload(record)}>
+                      {t('Download')}
+                    </a>
+                    <a onClick={() => handleDestory(record)}>{t('Delete')}</a>
+                  </Space>
                 ),
-            },
-            {
-              title: t('File size'),
-              dataIndex: 'fileSize',
-              onCell: (data) => {
-                return data.inProgress
-                  ? {
-                      colSpan: 0,
-                    }
-                  : {};
               },
-            },
-            {
-              title: t('Created at', { ns: 'client' }),
-              dataIndex: 'createdAt',
-              onCell: (data) => {
-                return data.inProgress
-                  ? {
-                      colSpan: 0,
-                    }
-                  : {};
-              },
-              render: (value) => {
-                return <DatePicker.ReadPretty value={value} showTime />;
-              },
-            },
-            {
-              title: t('Actions', { ns: 'client' }),
-              dataIndex: 'actions',
-              onCell: (data) => {
-                return data.inProgress
-                  ? {
-                      colSpan: 0,
-                    }
-                  : {};
-              },
-              render: (_, record) => (
-                <Space split={<Divider type="vertical" />}>
-                  <Restore ButtonComponent={'a'} title={t('Restore')} fileData={record} />
-                  <a type="link" onClick={() => handleDownload(record)}>
-                    {t('Download')}
-                  </a>
-                  <a onClick={() => handleDestory(record)}>{t('Delete')}</a>
-                </Space>
-              ),
-            },
-          ]}
+            ] as TableProps['columns']
+          }
         />
       </Card>
     </div>

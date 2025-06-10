@@ -1,7 +1,13 @@
-import { Collection } from '@nocobase/database';
-import Database from '../../database';
-import { BelongsToRepository } from '../../relation-repository/belongs-to-repository';
-import { mockDatabase } from '../index';
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
+import { BelongsToRepository, Collection, createMockDatabase, Database } from '@nocobase/database';
 
 describe('belongs to repository', () => {
   let db: Database;
@@ -9,7 +15,7 @@ describe('belongs to repository', () => {
   let Post: Collection;
 
   beforeEach(async () => {
-    db = mockDatabase();
+    db = await createMockDatabase();
     await db.clean({ drop: true });
 
     User = db.collection({

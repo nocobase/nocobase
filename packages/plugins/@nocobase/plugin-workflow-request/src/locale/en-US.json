@@ -9,12 +9,16 @@
   "Add parameter": "Add parameter",
   "Body": "Body",
   "Use variable": "Use variable",
+  "Add key-value pairs": "Add key-value pairs",
   "Format": "Format",
   "Insert": "Insert",
-  "Timeout config": "Timeout config",
-  "ms": "ms",
+  "Timeout": "Timeout",
+  "Milliseconds": "Milliseconds",
   "Input request data": "Input request data",
   "Only support standard JSON data": "Only support standard JSON data",
-  "\"Content-Type\" only support \"application/json\", and no need to specify": "\"Content-Type\" only support \"application/json\", and no need to specify",
-  "Ignore failed request and continue workflow": "Ignore failed request and continue workflow"
+  "\"Content-Type\" will be ignored from headers.": "\"Content-Type\" will be ignored from headers.",
+  "Ignore failed request and continue workflow": "Ignore failed request and continue workflow",
+  "Status code": "Status code",
+  "Data": "Data",
+  "Response headers": "Response headers"
 }

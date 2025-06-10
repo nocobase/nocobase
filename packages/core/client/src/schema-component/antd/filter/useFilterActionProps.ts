@@ -92,7 +92,7 @@ export const useGetFilterFieldOptions = () => {
 
   const getOptions = (fields, depth, usedInVariable?: boolean) => {
     const options = [];
-    fields.forEach((field) => {
+    fields?.forEach((field) => {
       const option = field2option(field, depth, usedInVariable);
       if (option) {
         options.push(option);
@@ -140,7 +140,9 @@ const field2option = (field, depth, nonfilterable, dataSourceManager, collection
     option['children'] = children;
   }
   if (nested) {
-    const targetFields = collectionManager?.getCollectionFields(field.target);
+    const targetFields = dataSourceManager
+      .getDataSource(field.dataSourceKey)
+      .collectionManager.getCollectionFields(field.target);
     const options = getOptions(targetFields, depth + 1, nonfilterable, dataSourceManager, collectionManager).filter(
       Boolean,
     );
