@@ -2274,4 +2274,52 @@ describe('xlsx importer', () => {
     const count = await TimeCollection.repository.count();
     expect(count).toBe(1);
   });
+
+  it.only('should throw error when import textarea field, value is date', async () => {
+    const TextareaCollection = app.db.collection({
+      name: 'textarea_tests',
+      fields: [
+        {
+          interface: 'textarea',
+          type: 'text',
+          name: 'long_text',
+        },
+      ],
+    });
+
+    await app.db.sync();
+    const templateCreator = new TemplateCreator({
+      collection: TextareaCollection,
+      explain: 'test',
+      columns: [
+        {
+          dataIndex: ['long_text'],
+          defaultTitle: '多行文本',
+        },
+      ],
+    });
+
+    const template = (await templateCreator.run({ returnXLSXWorkbook: true })) as XLSX.WorkBook;
+
+    const worksheet = template.Sheets[template.SheetNames[0]];
+
+    XLSX.utils.sheet_add_aoa(worksheet, [[new Date()]], {
+      origin: 'A3',
+    });
+
+    const importer = new XlsxImporter({
+      collectionManager: app.mainDataSource.collectionManager,
+      collection: TextareaCollection,
+      explain: 'test',
+      columns: [
+        {
+          dataIndex: ['long_text'],
+          defaultTitle: '多行文本',
+        },
+      ],
+      workbook: template,
+    });
+
+    expect(importer.run()).rejects.toThrow();
+  });
 });
