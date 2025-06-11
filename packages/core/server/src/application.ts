@@ -25,7 +25,7 @@ import {
 import { ResourceOptions, Resourcer } from '@nocobase/resourcer';
 import { Telemetry, TelemetryOptions } from '@nocobase/telemetry';
 
-import { LockManager, LockManagerOptions } from '@nocobase/lock-manager';
+import { createLockManager, LockManager, LockManagerOptions } from '@nocobase/lock-manager';
 import {
   applyMixins,
   AsyncEmitter,
@@ -71,6 +71,7 @@ import { Plugin } from './plugin';
 import { InstallOptions, PluginManager } from './plugin-manager';
 import { createPubSubManager, PubSubManager, PubSubManagerOptions } from './pub-sub-manager';
 import { SyncMessageManager } from './sync-message-manager';
+import QueueManager, { createQueueManager } from './queue-manager';
 
 import packageJson from '../package.json';
 import { availableActions } from './acl/available-action';
@@ -101,6 +102,7 @@ export interface AppLoggerOptions {
 
 export interface AppTelemetryOptions extends TelemetryOptions {
   enabled?: boolean;
+  endpoint?: string; // 上报地址 arms
 }
 
 export interface ApplicationOptions {
@@ -138,6 +140,10 @@ export interface ApplicationOptions {
   perfHooks?: boolean;
   telemetry?: AppTelemetryOptions;
   skipSupervisor?: boolean;
+  // 多服务新增
+  isTaskWorker?: boolean;
+  // 子进程标识
+  isChildProcess?: boolean;
 }
 
 export interface DefaultState extends KoaDefaultState {
@@ -250,6 +256,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
   public container = new ServiceContainer();
   public lockManager: LockManager;
+  public queueManager: QueueManager;
 
   constructor(public options: ApplicationOptions) {
     super();
@@ -270,6 +277,11 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
   private _sqlLogger: Logger;
 
+  // 多服务新增
+  get isTaskWorker() {
+    return this.options.isTaskWorker;
+  }
+
   get sqlLogger() {
     return this._sqlLogger;
   }
@@ -280,6 +292,10 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     return this._logger;
   }
 
+  get log() {
+    return this._logger;
+  }
+
   protected _started: Date | null = null;
 
   /**
@@ -287,10 +303,6 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
    */
   get started() {
     return this._started;
-  }
-
-  get log() {
-    return this._logger;
   }
 
   protected _loaded: boolean;
@@ -621,6 +633,14 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
         await this.cacheManager.close();
       }
 
+      if (this.pubSubManager) {
+        await this.pubSubManager.close();
+      }
+
+      if (this.queueManager) {
+        await this.queueManager.close();
+      }
+
       if (this.telemetry.started) {
         await this.telemetry.shutdown();
       }
@@ -737,6 +757,18 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     const files = glob.sync(patten, {
       ignore: ['**/*.d.ts'],
     });
+
+    // 根据文件名对文件进行排序，确保文件的执行顺序，下个版本移除
+    files.sort((file1, file2) => {
+      const filename1 = basename(file1);
+      const filename2 = basename(file2);
+      const reg = /^[0-9]{14}-/;
+      const timestamp1 = reg.test(filename1) ? filename1.substring(0, 14) : '0';
+      const timestamp2 = reg.test(filename2) ? filename2.substring(0, 14) : '0';
+
+      return parseInt(timestamp1) - parseInt(timestamp2);
+    });
+
     const appVersion = await this.version.get();
     for (const file of files) {
       let filename = basename(file);
@@ -791,6 +823,9 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     if (this.activatedCommand) {
       return;
     }
+
+    this.logger.debug(`runAsCLI: ${argv.join(' ')}`, { argv, options });
+
     if (options?.reqId) {
       this.context.reqId = options.reqId;
       this._logger = this._logger.child({ reqId: this.context.reqId }) as any;
@@ -899,6 +934,8 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     } else {
       await this.reload(options);
     }
+    // 多副本添加事件通知
+    await this.emitAsync('tryReloadOrRestart', this, options);
   }
 
   async restart(options: StartOptions = {}) {
@@ -1034,57 +1071,65 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   }
 
   async upgrade(options: any = {}) {
-    this.log.info('upgrading...');
-    await this.reInit();
-    const migrator1 = await this.loadCoreMigrations();
-    await migrator1.beforeLoad.up();
-    await this.db.sync();
-    await migrator1.afterSync.up();
-    await this.pm.initPresetPlugins();
-    const migrator2 = await this.pm.loadPresetMigrations();
-    await migrator2.beforeLoad.up();
-    // load preset plugins
-    await this.pm.load();
-    await this.db.sync();
-    await migrator2.afterSync.up();
-    // upgrade preset plugins
-    await this.pm.upgrade();
-    await this.pm.initOtherPlugins();
-    const migrator3 = await this.pm.loadOtherMigrations();
-    await migrator3.beforeLoad.up();
-    // load other plugins
-    // TODO：改成约定式
-    await this.load({ sync: true });
-    // await this.db.sync();
-    await migrator3.afterSync.up();
-    // upgrade plugins
-    await this.pm.upgrade();
-    await migrator1.afterLoad.up();
-    await migrator2.afterLoad.up();
-    await migrator3.afterLoad.up();
-    await this.pm.repository.updateVersions();
-    await this.version.update();
-    // await this.emitAsync('beforeUpgrade', this, options);
-    // const force = false;
-    // await measureExecutionTime(async () => {
-    //   await this.db.migrator.up();
-    // }, 'Migrator');
-    // await measureExecutionTime(async () => {
-    //   await this.db.sync({
-    //     force,
-    //     alter: {
-    //       drop: force,
-    //     },
-    //   });
-    // }, 'Sync');
-    await this.emitAsync('afterUpgrade', this, options);
-    await this.restart();
-    // this.log.debug(chalk.green(`✨  NocoBase has been upgraded to v${this.getVersion()}`));
-    // if (this._started) {
-    //   await measureExecutionTime(async () => {
-    //     await this.restart();
-    //   }, 'Restart');
-    // }
+    const lockTTL = 3 * 60 * 1000; // 3分钟
+
+    await this.lockManager.runExclusive(
+      'upgrade',
+      async () => {
+        this.log.info('upgrading...');
+        await this.reInit();
+        const migrator1 = await this.loadCoreMigrations();
+        await migrator1.beforeLoad.up();
+        await this.db.sync();
+        await migrator1.afterSync.up();
+        await this.pm.initPresetPlugins();
+        const migrator2 = await this.pm.loadPresetMigrations();
+        await migrator2.beforeLoad.up();
+        // load preset plugins
+        await this.pm.load();
+        await this.db.sync();
+        await migrator2.afterSync.up();
+        // upgrade preset plugins
+        await this.pm.upgrade();
+        await this.pm.initOtherPlugins();
+        const migrator3 = await this.pm.loadOtherMigrations();
+        await migrator3.beforeLoad.up();
+        // load other plugins
+        // TODO：改成约定式
+        await this.load({ sync: true });
+        // await this.db.sync();
+        await migrator3.afterSync.up();
+        // upgrade plugins
+        await this.pm.upgrade();
+        await migrator1.afterLoad.up();
+        await migrator2.afterLoad.up();
+        await migrator3.afterLoad.up();
+        await this.pm.repository.updateVersions();
+        await this.version.update();
+        // await this.emitAsync('beforeUpgrade', this, options);
+        // const force = false;
+        // await measureExecutionTime(async () => {
+        //   await this.db.migrator.up();
+        // }, 'Migrator');
+        // await measureExecutionTime(async () => {
+        //   await this.db.sync({
+        //     force,
+        //     alter: {
+        //       drop: force,
+        //     },
+        //   });
+        // }, 'Sync');
+        await this.emitAsync('afterUpgrade', this, options);
+        await this.restart();
+        // this.log.debug(chalk.green(`✨  NocoBase has been upgraded to v${this.getVersion()}`));
+        // if (this._started) {
+        //   await measureExecutionTime(async () => {
+        //     await this.restart();
+        //   }, 'Restart');
+        // }
+      },
+      lockTTL,
+    );
   }
 
   toJSON() {
@@ -1165,16 +1210,16 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
       reqId: this.context.reqId,
       app: this.name,
       module: 'application',
+      isChildProcess: this.options?.isChildProcess,
+      isTaskWorker: this.options?.isTaskWorker,
       // Due to the use of custom log levels,
       // we have to use any type here until Winston updates the type definitions.
     }) as any;
-
     this.requestLogger = createLogger({
       dirname: getLoggerFilePath(this.name),
       filename: 'request',
       ...(options?.request || {}),
     });
-
     this._sqlLogger = this.createLogger({
       filename: 'sql',
       level: 'debug',
@@ -1184,7 +1229,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   protected closeLogger() {
     this.log?.close();
     this.requestLogger?.close();
-    this._sqlLogger?.close();
+    this.sqlLogger?.close();
   }
 
   protected init() {
@@ -1210,10 +1255,11 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     this._i18n = createI18n(options);
     this.pubSubManager = createPubSubManager(this, options.pubSubManager);
     this.syncMessageManager = new SyncMessageManager(this, options.syncMessageManager);
-    this.lockManager = new LockManager({
+    this.lockManager = createLockManager(this, {
       defaultAdapter: process.env.LOCK_ADAPTER_DEFAULT,
       ...options.lockManager,
     });
+    this.queueManager = createQueueManager(this);
     this.context.db = this.db;
 
     /**

@@ -18,6 +18,9 @@ export * from './migration';
 export * from './plugin';
 export * from './plugin-manager';
 export * from './pub-sub-manager';
+export * from './gateway';
+export * from './app-supervisor';
+export * from './sync-message-manager';
 export const OFFICIAL_PLUGIN_PREFIX = '@nocobase/plugin-';
 
 export {
@@ -25,7 +28,10 @@ export {
   findAllPlugins,
   findBuiltInPlugins,
   findLocalPlugins,
+  findLocalEnabledPlugins,
   packageNameTrim,
 } from './plugin-manager/findPackageNames';
 
 export { runPluginStaticImports } from './run-plugin-static-imports';
+export * from './queue-manager';
+export * from './locale';

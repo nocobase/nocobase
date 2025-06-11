@@ -29,6 +29,9 @@
     "react-js-cron": "^3.1.0",
     "react-router-dom": "^6.11.2",
     "sequelize": "^6.26.0",
+    "amqplib": "^0.10.4",
+    "node-schedule": "^2.1.1",
+    "@types/node-schedule": "^2.1.7",
     "tinybench": "4.x"
   },
   "peerDependencies": {

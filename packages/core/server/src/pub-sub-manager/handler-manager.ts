@@ -55,6 +55,7 @@ export class HandlerManager {
     }
     const handler = this.uniqueMessageHandlers.get(messageHash);
     try {
+      // console.log(`\r\n 处理消息: ${channel}, messageHash: ${messageHash}`, message); // Add this line
       await handler(message);
       setTimeout(() => {
         this.uniqueMessageHandlers.delete(messageHash);
@@ -72,7 +73,9 @@ export class HandlerManager {
       if (!this.verifyMessage(json)) {
         return;
       }
-      await this.handleMessage({ channel, message: json.message, debounce, callback });
+      // console.log(`\r\n 收到消息: ${channel}, 执行`, json); // Add this line
+      // 支持发布消息时传递 debounce
+      await this.handleMessage({ channel, message: json.message, debounce: json?.debounce || debounce, callback });
     };
   }
 
@@ -82,7 +85,9 @@ export class HandlerManager {
     }
     const headlerMap = this.handlers.get(channel);
     const headler = this.wrapper(channel, callback, options);
-    headlerMap.set(callback, headler);
+    const key = this.getCallbackName(callback);
+    headlerMap.set(key, headler);
+    // console.log(`设置处理函数 wrapper: ${channel}, key: ${key} 当前频道headlerMap`, headlerMap); // Add this line
     return headler;
   }
 
@@ -91,7 +96,8 @@ export class HandlerManager {
     if (!headlerMap) {
       return;
     }
-    return headlerMap.get(callback);
+    const key = this.getCallbackName(callback);
+    return headlerMap.get(key);
   }
 
   delete(channel: string, callback) {
@@ -102,8 +108,9 @@ export class HandlerManager {
     if (!headlerMap) {
       return;
     }
-    const headler = headlerMap.get(callback);
-    headlerMap.delete(callback);
+    const key = this.getCallbackName(callback);
+    const headler = headlerMap.get(key);
+    headlerMap.delete(key);
     return headler;
   }
 
@@ -118,5 +125,19 @@ export class HandlerManager {
         await callback(channel, headler);
       }
     }
+  }
+  getCallbackName(callback) {
+    return callback?.displayName || callback?.toString() || callback;
+  }
+  deleteUniqueMessageHandler = (messageHash) => {
+    messageHash && this.uniqueMessageHandlers.delete(messageHash);
+  };
+  countFunctions() {
+    return _.sumBy(Array.from(this.handlers.values()), (innerMap) => {
+      if (innerMap instanceof Map) {
+        return _.filter(Array.from(innerMap.values()), _.isFunction).length;
+      }
+      return 0;
+    });
   }
 }

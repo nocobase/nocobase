@@ -9,11 +9,18 @@
 
 export interface PubSubManagerOptions {
   channelPrefix?: string;
+  publisherId?: string;
 }
 
 export interface PubSubManagerPublishOptions {
   skipSelf?: boolean;
   onlySelf?: boolean;
+  // 目标应用
+  targetApp?: string;
+  // 发布消息时支持可设置防抖
+  debounce?: number;
+  // task worker
+  taskWorkerCanPublish?: boolean;
 }
 
 export interface PubSubManagerSubscribeOptions {

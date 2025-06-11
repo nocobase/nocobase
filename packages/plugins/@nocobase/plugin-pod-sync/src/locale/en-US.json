@@ -1,0 +1,20 @@
+{
+  "system management": "system management",
+  "Workflow consume mode": "Workflow consume mode",
+  "only task consume": "Only task service consume",
+  "only app consume": "Only app service consume",
+  "app & task consume": "App service & Task service consume",
+  "app & task all not consume": "App service & Task service all not consume",
+  "change confirm": "Change confirm, please operate carefully.",
+  "Disable metadata operation": "Disable metadata operation",
+  "Are you sure you want to save the settings?": "Are you sure you want to save the settings?",
+  "Save successfully!": "Save successfully!",
+  "enable": "Enable",
+  "disable": "Disable",
+  "Setting Tips": "The configuration will affect all app, please operate carefully.",
+  "The platform is currently being upgraded, and this operation is temporarily disabled. If you have any issues, please contact GT at zohar.chen.": "The platform is currently being upgraded, and this operation is temporarily disabled. If you have any issues, please contact GT at zohar.chen.",
+  "Workflow task delay": "Workflow task delay",
+  "Only effective for asynchronous workflow tasks": "Only effective for asynchronous workflow tasks",
+  "Use queue for create workflow": "使用队列创建工作流",
+  "Whether to control the creation of asynchronous workflows through the queue": "Whether to control the creation of asynchronous workflows through the queue"
+}

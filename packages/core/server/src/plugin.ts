@@ -18,6 +18,7 @@ import { resolve } from 'path';
 import { Application } from './application';
 import { getExposeChangelogUrl, getExposeReadmeUrl, InstallOptions } from './plugin-manager';
 import { checkAndGetCompatible, getPluginBasePath } from './plugin-manager/utils';
+import { PubSubManagerPublishOptions } from './pub-sub-manager';
 
 export interface PluginInterface {
   beforeLoad?: () => void;
@@ -134,11 +135,10 @@ export abstract class Plugin<O = any> implements PluginInterface {
   async afterRemove() {}
 
   async handleSyncMessage(message: any) {}
-  async sendSyncMessage(message: any, options?: Transactionable) {
+  async sendSyncMessage(message: any, options?: PubSubManagerPublishOptions & Transactionable) {
     if (!this.name) {
       throw new Error(`plugin name invalid`);
     }
-
     await this.app.syncMessageManager.publish(this.name, message, options);
   }
 

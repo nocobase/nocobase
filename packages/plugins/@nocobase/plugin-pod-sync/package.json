@@ -1,0 +1,15 @@
+{
+  "name": "@nocobase/plugin-pod-sync",
+  "displayName": "APP state sync",
+  "displayName.zh-CN": "应用同步",
+  "description": "Support app state sync and multi-service deployment",
+  "description.zh-CN": "支持应用状态同步和多服务部署",
+  "version": "1.0.0",
+  "main": "dist/server/index.js",
+  "dependencies": {},
+  "peerDependencies": {
+    "@nocobase/client": "1.x",
+    "@nocobase/server": "1.x",
+    "@nocobase/test": "1.x"
+  }
+}

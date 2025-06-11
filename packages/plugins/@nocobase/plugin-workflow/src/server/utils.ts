@@ -24,3 +24,9 @@ export function toJSON(data: any): any {
   });
   return result;
 }
+
+export function sleep(ms: number) {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
+}

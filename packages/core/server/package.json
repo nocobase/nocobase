@@ -50,12 +50,14 @@
     "semver": "^7.7.1",
     "serve-handler": "^6.1.6",
     "ws": "^8.13.0",
-    "xpipe": "^1.0.5"
+    "xpipe": "^1.0.5",
+    "@onify/fake-amqplib": "3.2.0"
   },
   "devDependencies": {
     "@types/semver": "^7.3.9",
     "@types/serve-handler": "^6.1.1",
-    "@types/ws": "^8.5.5"
+    "@types/ws": "^8.5.5",
+    "@types/amqplib": "^0.10.5"
   },
   "gitHead": "d0b4efe4be55f8c79a98a331d99d9f8cf99021a1"
 }

@@ -1,0 +1,21 @@
+{
+  "system management": "系统管理",
+  "Workflow consume mode": "工作流消费模式",
+  "only task consume": "仅task服务消费",
+  "only app consume": "仅app服务消费",
+  "app & task consume": "app & task服务都消费",
+  "app & task all not consume": "app & task服务都不消费",
+  "change confirm": "确认变更, 请谨慎操作",
+  "Disable metadata operation": "禁用元数据操作",
+  "Are you sure you want to save the settings?": "确定要保存设置吗？",
+  "Save successfully!": "保存成功！",
+  "enable": "启用",
+  "disable": "禁用",
+  "Setting Tips": "以下配置项会作用到所有应用，请谨慎操作。",
+  "The platform is currently being upgraded, and this operation is temporarily disabled. If you have any issues, please contact GT at zohar.chen.": "平台正在升级中，此操作暂时不可用，如有问题请联系GT zohar.chen。",
+  "Workflow task delay": "工作流任务延迟",
+  "Only effective for asynchronous workflow tasks": "仅对异步工作流任务生效",
+  "Use queue for create workflow": "使用队列创建工作流",
+  "Whether to control the creation of asynchronous workflows through the queue": "是否通过队列控制创建异步工作流",
+  "Stop async task": "暂停异步任务消费"
+}

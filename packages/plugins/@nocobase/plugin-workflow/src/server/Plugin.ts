@@ -37,6 +37,9 @@ import UpdateInstruction from './instructions/UpdateInstruction';
 
 import type { ExecutionModel, JobModel, WorkflowModel } from './types';
 import WorkflowRepository from './repositories/WorkflowRepository';
+import { sleep } from './utils';
+import workflowTaskQueue from './queue';
+import WorkflowTasksRepository from './repositories/WorkflowTasksRepository';
 
 type ID = number | string;
 
@@ -113,7 +116,7 @@ export default class PluginWorkflowServer extends Plugin {
   };
 
   async handleSyncMessage(message) {
-    if (message.type === 'statusChange') {
+    if (message.type === 'statusChange' && this.ready) {
       if (message.enabled) {
         let workflow = this.enabledCache.get(message.workflowId);
         if (workflow) {
@@ -290,6 +293,12 @@ export default class PluginWorkflowServer extends Plugin {
     this.app.on('afterStart', async () => {
       this.ready = true;
 
+      await this.initWorkflowTaskQueue();
+
+      this.app.logger.info(
+        `app afterStart workflow plugin is ready: ${this.ready}, workflowTaskQueue is ready: ${this.workflowTaskQueue.isReady}`,
+      );
+
       const collection = db.getCollection('workflows');
       const workflows = await collection.repository.find({
         filter: { enabled: true },
@@ -298,6 +307,11 @@ export default class PluginWorkflowServer extends Plugin {
       workflows.forEach((workflow: WorkflowModel) => {
         this.toggle(workflow, true, { silent: true });
       });
+
+      if (this.app.isTaskWorker) {
+        this.app.logger.warn(`it's task worker service, not need to start dispatching`);
+        return;
+      }
 
       this.checker = setInterval(() => {
         this.getLogger('dispatcher').info(`(cycling) check for queueing executions`);
@@ -320,6 +334,7 @@ export default class PluginWorkflowServer extends Plugin {
       }
 
       this.ready = false;
+
       if (this.events.length) {
         await this.prepare();
       }
@@ -362,6 +377,24 @@ export default class PluginWorkflowServer extends Plugin {
 
       this.enabledCache.delete(workflow.id);
     }
+
+    // try {
+    //   const keys = [...get(trigger, 'events', new Map()).keys()];
+    //   const dbEventKeys = keys.map((key) => key.replace(`#${workflow.id}`, ''));
+    //   const events = pickBy(get(this.db, '_events'), (value, key) => {
+    //     return dbEventKeys.includes(key);
+    //   });
+
+    //   console.log(`\r\n ============禁区=============\r\n`);
+    //   console.log(`toggle end => workflow: ${workflow.title}(${workflow.id}) next: ${next}, silent: ${silent}`);
+    //   console.log(`当前插件内状态 ready: ${this.ready} workflowTaskQueue: ${this.workflowTaskQueue.isReady} `);
+    //   console.log(`最终 trigger.envets ===> ${keys}`);
+    //   console.log(`最终 db events ===>`, events);
+    //   console.log(`\r\n ============禁区=============\r\n`);
+    // } catch (error) {
+    //   console.error(error);
+    // }
+
     if (!silent) {
       this.sendSyncMessage(
         {
@@ -409,10 +442,35 @@ export default class PluginWorkflowServer extends Plugin {
     }
 
     const { transaction, ...rest } = options;
-    this.events.push([workflow, context, rest]);
-    this.eventsCount = this.events.length;
+    const isMessageSizeExceedingLimit = this.workflowTaskQueue.isMessageSizeExceedingLimit(
+      JSON.stringify({
+        workflowId: workflow.id,
+        context,
+        rest,
+      }),
+    );
 
-    logger.info(`new event triggered, now events: ${this.events.length}`);
+    // 任务队列服务准备好了
+    // 不是E2E测试环境
+    // 消息没有超过限制 30 KB
+    // 开启了使用任务队列创建工作流
+    if (
+      this.workflowTaskQueue.isReady &&
+      !process.env.__E2E__ &&
+      !process.env.__TEST__ &&
+      !isMessageSizeExceedingLimit &&
+      this.workflowTaskQueue.useQueueForCreateWorkflow
+    ) {
+      logger.info(`new event triggered, add create task to queue`, { context });
+      // 任务队列服务
+      this.workflowTaskQueue.addCreateTask2Queue(workflow, context, rest);
+    } else {
+      this.events.push([workflow, context, rest]);
+      this.eventsCount = this.events.length;
+      logger.info(`new event triggered, now events: ${this.events.length}`);
+    }
+
+    logger.info(`current trigger event type: ${workflow.type}, title: ${workflow.title}`, { context });
     logger.debug(`event data:`, { context });
 
     if (this.events.length > 1) {
@@ -520,50 +578,62 @@ export default class PluginWorkflowServer extends Plugin {
       return Promise.reject(new Error('event is not valid'));
     }
 
-    let execution;
-    try {
-      execution = await workflow.createExecution(
-        {
-          context,
-          key: workflow.key,
-          eventKey: options.eventKey ?? randomUUID(),
-          stack: options.stack,
-          status: deferred ? EXECUTION_STATUS.STARTED : EXECUTION_STATUS.QUEUEING,
-        },
-        { transaction },
-      );
-    } catch (err) {
-      if (!sameTransaction) {
-        await transaction.rollback();
+    const runCreateExecution = async () => {
+      let execution;
+      try {
+        execution = await workflow.createExecution(
+          {
+            context,
+            key: workflow.key,
+            eventKey: options.eventKey ?? randomUUID(),
+            stack: options.stack,
+            status: deferred ? EXECUTION_STATUS.STARTED : EXECUTION_STATUS.QUEUEING,
+          },
+          { transaction },
+        );
+      } catch (err) {
+        if (!sameTransaction) {
+          await transaction.rollback();
+        }
+        throw err;
       }
-      throw err;
+      this.app.logger.info(`runCreateExecution: workflow: ${workflow.id}, create execution: ${execution?.id}`);
+      return execution;
+    };
+
+    let execution;
+    if (options.eventKey) {
+      execution = await this.app.lockManager.runExclusive(options.eventKey, runCreateExecution, 1000 * 30);
+    } else {
+      execution = await runCreateExecution();
     }
 
-    this.getLogger(workflow.id).info(`execution of workflow ${workflow.id} created as ${execution.id}`);
+    if (execution) {
+      this.getLogger(workflow.id).info(`execution of workflow ${workflow.id} created as ${execution.id}`);
 
-    await workflow.increment(['executed', 'allExecuted'], { transaction });
-    // NOTE: https://sequelize.org/api/v6/class/src/model.js~model#instance-method-increment
-    if (this.db.options.dialect !== 'postgres') {
-      await workflow.reload({ transaction });
-    }
+      await workflow.increment(['executed', 'allExecuted'], { transaction });
+      // NOTE: https://sequelize.org/api/v6/class/src/model.js~model#instance-method-increment
+      if (this.db.options.dialect !== 'postgres') {
+        await workflow.reload({ transaction });
+      }
 
-    await (<typeof WorkflowModel>workflow.constructor).update(
-      {
-        allExecuted: workflow.allExecuted,
-      },
-      {
-        where: {
-          key: workflow.key,
+      await (<typeof WorkflowModel>workflow.constructor).update(
+        {
+          allExecuted: workflow.allExecuted,
         },
-        transaction,
-      },
-    );
+        {
+          where: {
+            key: workflow.key,
+          },
+          transaction,
+        },
+      );
+      execution.workflow = workflow;
+    }
 
     if (!sameTransaction) {
       await transaction.commit();
     }
-
-    execution.workflow = workflow;
 
     return execution;
   }
@@ -585,6 +655,7 @@ export default class PluginWorkflowServer extends Plugin {
 
     try {
       const execution = await this.createExecution(...event);
+      await this.runTaskDelay(); // 歇一歇
       // NOTE: cache first execution for most cases
       if (execution?.status === EXECUTION_STATUS.QUEUEING && !this.executing && !this.pending.length) {
         this.pending.push([execution]);
@@ -611,6 +682,13 @@ export default class PluginWorkflowServer extends Plugin {
       return;
     }
 
+    const isOnlyConsume = !this.workflowTaskQueue.isProducer && this.workflowTaskQueue.isConsumer;
+    // 纯消费者 在自身没有产生新的任务情况下 任务服务不需要调度
+    if (isOnlyConsume && !this.pending.length) {
+      this.getLogger('dispatcher').warn(`it's consumer service, current pending is empty, no need to dispatch`);
+      return;
+    }
+
     if (this.executing) {
       this.getLogger('dispatcher').warn(`workflow executing is not finished, new dispatching will be ignored`);
       return;
@@ -626,7 +704,30 @@ export default class PluginWorkflowServer extends Plugin {
       if (this.pending.length) {
         next = this.pending.shift() as Pending;
         this.getLogger(next[0].workflowId).info(`pending execution (${next[0].id}) ready to process`);
+
+        // 重新执行的任务 不能再次加入任务队列 依赖job的状态
+        if (next[1]) {
+          this.getLogger(next[0].workflowId).info(`execution (${next[0].id}) shift pending with job ${next[1].id}`);
+          try {
+            await this.processWithLock(...next);
+          } catch (e) {
+            this.getLogger(next[0].workflowId).error(e.stack || e.message);
+          } finally {
+            this.executing = null;
+          }
+          await this.runTaskDelay(); // 歇一歇
+          if (this.pending.length) {
+            this.getLogger('dispatcher').info(`last process finished, will do another dispatch`);
+            this.dispatch();
+          }
+          return;
+        }
       } else {
+        const inTaskQueueExecutionList = await this.workflowTaskQueue.getInTaskQueueExecutionList();
+        this.app.logger.debug(`no pending execution, try to fetch from db`, {
+          inTaskQueueExecutionList,
+        });
+
         try {
           await this.db.sequelize.transaction(
             {
@@ -634,14 +735,19 @@ export default class PluginWorkflowServer extends Plugin {
                 this.db.options.dialect === 'sqlite' ? [][0] : Transaction.ISOLATION_LEVELS.REPEATABLE_READ,
             },
             async (transaction) => {
+              // 非任务服务从数据库中获取任务
               const execution = (await this.db.getRepository('executions').findOne({
                 filter: {
                   status: EXECUTION_STATUS.QUEUEING,
                   'workflow.enabled': true,
+                  id: {
+                    [Op.notIn]: inTaskQueueExecutionList,
+                  },
                 },
                 sort: 'id',
                 transaction,
               })) as ExecutionModel;
+
               if (execution) {
                 this.getLogger(execution.workflowId).info(`execution (${execution.id}) fetched from db`);
                 await execution.update(
@@ -662,15 +768,38 @@ export default class PluginWorkflowServer extends Plugin {
         }
       }
       if (next) {
-        await this.process(...next);
+        const logger = this.getLogger(next[0].workflowId);
+        logger.info(
+          `workflowTaskQueue isReady: ${this.workflowTaskQueue.isReady}, isProducer: ${this.workflowTaskQueue.isProducer}, isConsumer: ${this.workflowTaskQueue.isConsumer}`,
+        );
+        // 如果任务队列已经准备好丢给任务队列
+        if (this.workflowTaskQueue.isReady && !process.env.__E2E__ && !process.env.__TEST__) {
+          await this.workflowTaskQueue.addConsumeTask2Queue(...next);
+        } else {
+          logger.info(`process execution (${next[0].id}) ${next[1] ? `job (${next[1].id})` : ''}...`);
+          await this.processWithLock(...next);
+        }
       }
       this.executing = null;
-
+      await this.runTaskDelay(); // 歇一歇
       if (next || this.pending.length) {
         this.getLogger('dispatcher').info(`last process finished, will do another dispatch`);
         this.dispatch();
       }
     })();
+  }
+
+  private async processWithLock(execution: ExecutionModel, job?: JobModel, options: Transactionable = {}) {
+    const lockKey = `processWithLock:${execution.id}-${execution.eventKey}${job ? `:job:${job.id}` : ''}`;
+    const ttl = 1000 * 60 * 30;
+    this.app.logger.debug(`execution(${execution?.id}) ${job ? `and job(${job.id})` : ''} process with lock`);
+    return await this.app.lockManager.runExclusive(
+      lockKey,
+      async () => {
+        return await this.process(execution, job, options);
+      },
+      ttl,
+    );
   }
 
   public createProcessor(execution: ExecutionModel, options = {}): Processor {
@@ -736,6 +865,26 @@ export default class PluginWorkflowServer extends Plugin {
       return db.sequelize.transaction();
     }
   }
+  async runTaskDelay() {
+    // 单元测试时不需要等待，直接继续执行，避免用例失败
+    if (process.env.__TEST__) {
+      return;
+    }
+    const time = this.workflowTaskQueue?.workflowTaskDelay || 200;
+    await sleep(time);
+  }
+  // 初始化任务队列
+  workflowTaskQueue: workflowTaskQueue;
+  initWorkflowTaskQueue = async () => {
+    if (!this.workflowTaskQueue) {
+      this.app.logger.debug(`initworkflowTaskQueue`);
+      this.workflowTaskQueue = new workflowTaskQueue(this.app);
+      await this.workflowTaskQueue.init({
+        createExecution: this.createExecution.bind(this),
+        consumeExecution: this.processWithLock.bind(this),
+      });
+    }
+  };
 
   /**
    * @experimental

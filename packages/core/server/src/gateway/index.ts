@@ -188,7 +188,9 @@ export class Gateway extends EventEmitter {
   }
 
   responseErrorWithCode(code, res, options) {
+    const log = this.getLogger(options.appName, res);
     const error = applyErrorWithArgs(getErrorWithCode(code), options);
+    log.error(error.message, { method: 'responseErrorWithCode', error });
     this.responseError(res, error);
   }
 
@@ -237,6 +239,9 @@ export class Gateway extends EventEmitter {
       return handler(req, res, {
         public: `${process.env.APP_PACKAGE_ROOT}/dist/client`,
         rewrites: [{ source: '/**', destination: '/index.html' }],
+        // not to drop extension for mitm.html
+        // ref: https://github.com/vercel/serve-handler?tab=readme-ov-file#cleanurls-booleanarray
+        cleanUrls: false,
       });
     }
 
@@ -248,6 +253,7 @@ export class Gateway extends EventEmitter {
       this.responseErrorWithCode('APP_INITIALIZING', res, { appName: handleApp });
       return;
     }
+    const log = this.getLogger(handleApp, res);
     const hasApp = AppSupervisor.getInstance().hasApp(handleApp);
 
     if (!hasApp) {
@@ -256,7 +262,10 @@ export class Gateway extends EventEmitter {
 
     let appStatus = AppSupervisor.getInstance().getAppStatus(handleApp, 'initializing');
 
+    appStatus = await this.ensureAppRunning(handleApp);
+
     if (appStatus === 'not_found') {
+      log.warn(`app not found`, { method: 'requestHandler' });
       this.responseErrorWithCode('APP_NOT_FOUND', res, { appName: handleApp });
       return;
     }
@@ -266,15 +275,16 @@ export class Gateway extends EventEmitter {
       return;
     }
 
-    if (appStatus === 'initialized') {
-      const appInstance = await AppSupervisor.getInstance().getApp(handleApp);
-      appInstance.runCommand('start', '--quickstart');
-      appStatus = AppSupervisor.getInstance().getAppStatus(handleApp);
-    }
+    // if (appStatus === 'initialized') {
+    //   const appInstance = await AppSupervisor.getInstance().getApp(handleApp);
+    //   appInstance.runCommand('start', '--quickstart');
+    //   appStatus = AppSupervisor.getInstance().getAppStatus(handleApp);
+    // }
 
     const app = await AppSupervisor.getInstance().getApp(handleApp);
 
     if (appStatus !== 'running') {
+      log.warn(`app is not running`, { method: 'requestHandler', status: appStatus, appName: handleApp });
       this.responseErrorWithCode(`${appStatus}`, res, { app, appName: handleApp });
       return;
     }
@@ -291,7 +301,35 @@ export class Gateway extends EventEmitter {
 
     app.callback()(req, res);
   }
+  async ensureAppRunning(appName: string, timeout = 60 * 1000, startTime: number = Date.now()) {
+    let appStatus = AppSupervisor.getInstance().getAppStatus(appName);
 
+    // console.log(`\r\n ${appName} ensureAppRunning appStatus`, appStatus);
+
+    if (['running', 'not_found', 'error'].includes(appStatus)) {
+      return appStatus;
+    }
+
+    if (appStatus === 'initialized') {
+      const appInstance = await AppSupervisor.getInstance().getApp(appName);
+      if (process.argv?.includes('--quickstart')) {
+        appInstance.runCommand('start', '--quickstart');
+      } else {
+        appInstance.runCommand('start');
+      }
+      appStatus = AppSupervisor.getInstance().getAppStatus(appName);
+    }
+
+    if (Date.now() - startTime > timeout) {
+      this.loggers.get(appName).warn(`Failed to ensure app ${appName} is running within ${timeout}ms`, {
+        appStatus,
+      });
+      return appStatus;
+    }
+
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    return await this.ensureAppRunning(appName, timeout, startTime);
+  }
   getAppSelectorMiddlewares() {
     return this.selectorMiddlewares;
   }

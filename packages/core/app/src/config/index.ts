@@ -13,6 +13,7 @@ import logger from './logger';
 import plugins from './plugins';
 import resourcer from './resourcer';
 import { telemetry } from './telemetry';
+import syncMessageManager from './syncMessageManager';
 
 export async function getConfig() {
   return {
@@ -23,5 +24,7 @@ export async function getConfig() {
     logger,
     telemetry,
     perfHooks: process.env.ENABLE_PERF_HOOKS ? true : false,
+    isTaskWorker: process.env.IS_TASK_WORKER === 'true',
+    // syncMessageManager,
   };
 }

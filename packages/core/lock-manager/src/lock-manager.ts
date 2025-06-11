@@ -9,7 +9,7 @@
 
 import { Registry } from '@nocobase/utils';
 import { Mutex, MutexInterface, E_CANCELED } from 'async-mutex';
-
+import { RedisLockAdapter } from './RedisLockAdapter';
 export type Releaser = () => void | Promise<void>;
 
 export interface ILock {
@@ -112,6 +112,24 @@ export interface LockManagerOptions {
   defaultAdapter?: string;
 }
 
+export const createLockManager = (app: any, options: LockManagerOptions = {}) => {
+  if (app.lockManager) {
+    return app.lockManager;
+  }
+
+  app.on('afterStop', async function () {
+    await this.lockManager.close();
+  });
+
+  const lockManager = new LockManager(options);
+  // 注册 RedisLockAdapter
+  lockManager.registerAdapter('redis', {
+    Adapter: RedisLockAdapter,
+    options: { url: process.env.CACHE_REDIS_URL, prefix: app.name },
+  });
+  return lockManager;
+};
+
 export class LockManager {
   private registry = new Registry<LockAdapterConfig>();
   private adapters = new Map<string, ILockAdapter>();
@@ -152,17 +170,17 @@ export class LockManager {
 
   public async acquire(key: string, ttl = 500): Promise<Releaser> {
     const client = await this.getAdapter();
-    return client.acquire(key, ttl);
+    return await client.acquire(key, ttl);
   }
 
   public async runExclusive<T>(key: string, fn: () => Promise<T>, ttl = 500): Promise<T> {
     const client = await this.getAdapter();
-    return client.runExclusive(key, fn, ttl);
+    return await client.runExclusive(key, fn, ttl);
   }
 
   public async tryAcquire(key: string) {
     const client = await this.getAdapter();
-    return client.tryAcquire(key);
+    return await client.tryAcquire(key);
   }
 }
 
