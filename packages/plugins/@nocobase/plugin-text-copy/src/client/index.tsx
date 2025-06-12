@@ -35,12 +35,12 @@ const TextCopyButton: FC = observer(
           setShow(false);
         };
 
-        currentRef.parentElement.addEventListener('mouseover', handleMouseOver);
-        currentRef.parentElement.addEventListener('mouseout', handleMouseOut);
+        currentRef?.parentElement?.addEventListener('mouseover', handleMouseOver);
+        currentRef?.parentElement?.addEventListener('mouseout', handleMouseOut);
 
         return () => {
-          currentRef.parentElement.removeEventListener('mouseover', handleMouseOver);
-          currentRef.parentElement.removeEventListener('mouseout', handleMouseOut);
+          currentRef?.parentElement?.removeEventListener('mouseover', handleMouseOver);
+          currentRef?.parentElement?.removeEventListener('mouseout', handleMouseOut);
         };
       }
     }, [field.readPretty, field.value]);
