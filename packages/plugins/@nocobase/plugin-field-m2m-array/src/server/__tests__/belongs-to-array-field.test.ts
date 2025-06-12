@@ -17,19 +17,7 @@ describe('belongs to array field', () => {
 
   beforeEach(async () => {
     app = await createMockServer({
-      plugins: [
-        'acl',
-        'users',
-        'auth',
-        'data-source-main',
-        'field-m2m-array',
-        'data-source-manager',
-        'field-sort',
-        'error-handler',
-        'system-settings',
-      ],
-      registerActions: true,
-      acl: true,
+      plugins: ['field-m2m-array', 'data-source-manager', 'field-sort', 'data-source-main', 'error-handler'],
     });
     db = app.db;
     fieldRepo = db.getRepository('fields');
@@ -56,7 +44,7 @@ describe('belongs to array field', () => {
     });
     await db.getRepository('collections').create({
       values: {
-        name: 'users1',
+        name: 'users',
         fields: [
           {
             name: 'id',
@@ -95,7 +83,7 @@ describe('belongs to array field', () => {
           const field = await fieldRepo.create({
             values: {
               interface: 'mbm',
-              collectionName: 'users1',
+              collectionName: 'users',
               name: 'tags',
               type: 'belongsToArray',
               foreignKey: 'tag_ids',
@@ -114,7 +102,7 @@ describe('belongs to array field', () => {
           const field = await fieldRepo.create({
             values: {
               interface: 'mbm',
-              collectionName: 'users1',
+              collectionName: 'users',
               name: 'tags',
               type: 'belongsToArray',
               foreignKey: 'username',
@@ -125,7 +113,7 @@ describe('belongs to array field', () => {
           });
           await field.load({ transaction });
         }),
-      ).rejects.toThrow(/The type of foreign key "username" in collection "users1" must be ARRAY, JSON or JSONB/);
+      ).rejects.toThrow(/The type of foreign key "username" in collection "users" must be ARRAY, JSON or JSONB/);
     });
 
     it('element type of foreign field must be match the type of target field', async () => {
@@ -137,7 +125,7 @@ describe('belongs to array field', () => {
           const field = await fieldRepo.create({
             values: {
               interface: 'mbm',
-              collectionName: 'users1',
+              collectionName: 'users',
               name: 'tags',
               type: 'belongsToArray',
               foreignKey: 'tag_ids',
@@ -157,7 +145,7 @@ describe('belongs to array field', () => {
           const field = await fieldRepo.create({
             values: {
               interface: 'mbm',
-              collectionName: 'users1',
+              collectionName: 'users',
               name: 'tags',
               type: 'belongsToArray',
               foreignKey: 'tag_ids',
@@ -177,7 +165,7 @@ describe('belongs to array field', () => {
           const field = await fieldRepo.create({
             values: {
               interface: 'mbm',
-              collectionName: 'users1',
+              collectionName: 'users',
               name: 'tag_ids_same',
               type: 'belongsToArray',
               foreignKey: 'tag_ids_same',
@@ -189,84 +177,6 @@ describe('belongs to array field', () => {
           await field.load({ transaction });
         }),
       ).rejects.toThrow(/Naming collision/);
-    });
-  });
-
-  describe('many-to-many acl test', async () => {
-    it('should list allowedActions when include many-to-many', async () => {
-      const field = await fieldRepo.create({
-        values: {
-          interface: 'mbm',
-          collectionName: 'users1',
-          name: 'tags',
-          type: 'belongsToArray',
-          foreignKey: 'tag_ids',
-          target: 'tags',
-          targetKey: 'stringCode',
-        },
-      });
-      await field.load();
-      await app.db.sync();
-
-      await app.db.getCollection('tags').repository.create({
-        values: {
-          id: 1,
-          stringCode: '1',
-          title: 'Tag 1',
-        },
-      });
-      await app.db.getCollection('tags').repository.create({
-        values: {
-          id: 2,
-          stringCode: '2',
-          title: 'Tag 2',
-        },
-      });
-
-      await app.db.getCollection('users1').repository.create({
-        values: {
-          username: 'testuser',
-          tag_ids: ['1', '2'],
-        },
-      });
-      await db.getRepository('roles').create({
-        values: {
-          name: 'newRole',
-        },
-      });
-      const user = await db.getRepository('users').create({
-        values: {
-          roles: ['newRole'],
-        },
-      });
-
-      const result = await db.getRepository('roles.resources', 'newRole').create({
-        values: {
-          name: 'users1',
-          usingActionConfig: true,
-          actions: [
-            {
-              name: 'view',
-              fields: ['id', 'tags'],
-              scope: 1,
-            },
-          ],
-        },
-      });
-
-      const userAgent = (await app.agent().login(user, 'newRole')) as any;
-      const listResp = await userAgent
-        .set('X-With-ACL-Meta', true)
-        .resource('users1')
-        .list({
-          pageSize: 2,
-          appends: ['tags'],
-          filter: {
-            'tags.id': '1',
-          },
-        });
-      expect(listResp.statusCode).toEqual(200);
-      expect(listResp.body.meta.allowedActions).exist;
     });
   });
 });

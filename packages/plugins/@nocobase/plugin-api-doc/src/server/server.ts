@@ -35,7 +35,8 @@ export class PluginAPIDocServer extends Plugin {
             ctx.body = await this.swagger.getSwagger();
             return;
           }
-          const [type, index] = ns.split('/');
+          const [type, ...rest] = ns.split('/');
+          const index = rest.join('/');
           if (type === 'core') {
             ctx.body = await this.swagger.getCoreSwagger();
           } else if (type === 'plugins') {
