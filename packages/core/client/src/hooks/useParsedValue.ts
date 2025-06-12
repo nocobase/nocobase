@@ -12,7 +12,8 @@ export const useEvaluatedExpression = (expression: string) => {
 
   useEffect(() => {
     const run = async () => {
-      if (!expression) {
+      if (expression == null || expression === '') {
+        setParsedValue(undefined);
         return;
       }
 
