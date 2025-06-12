@@ -8,10 +8,11 @@
  */
 
 import { observer } from '@formily/reactive-react';
-import React from 'react';
+import React, { useMemo } from 'react';
 import { AddSubModelButton, AddSubModelButtonProps } from './AddSubModelButton';
+import { FlowModel } from '../../models/flowModel';
 
-interface AddActionButtonProps extends Omit<AddSubModelButtonProps, 'subModelType' | 'subModelKey'> {
+interface AddActionButtonProps extends Omit<AddSubModelButtonProps, 'subModelType' | 'subModelKey' | 'items'> {
   subModelKey?: string;
   subModelType?: 'object' | 'array';
 }
@@ -34,13 +35,40 @@ export const AddActionButton: React.FC<AddActionButtonProps> = observer(({
   subModelType = 'array',
   ...props
 }) => {
-
+  const items = useMemo<{
+    key: string;
+    label: string;
+    icon?: React.ReactNode;
+    item: typeof FlowModel;
+    unique?: boolean;
+    use: string;
+  }[]>(() => {
+    const blockClasses = props.model.flowEngine.filterModelClassByParent(ParentModelClass);
+    const registeredBlocks = [];
+    for (const [className, ModelClass] of blockClasses) {
+      if (ModelClass.meta) {
+        const item = {
+          key: className,
+          label: ModelClass.meta?.title,
+          icon: ModelClass.meta?.icon,
+          item: ModelClass,
+          use: className,
+          // unique: ModelClass.meta?.uniqueSub,
+          // added: null,
+        };
+        registeredBlocks.push(item);
+      }
+    }
+    return registeredBlocks;
+  }, [props.model, ParentModelClass]);
+  
   return (
     <AddSubModelButton
       {...props}
       subModelKey={subModelKey}
       ParentModelClass={ParentModelClass}
       subModelType={subModelType}
+      items={items}
     >
       {children}
     </AddSubModelButton>

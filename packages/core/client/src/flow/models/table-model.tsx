@@ -12,6 +12,8 @@ import { Button, Card, Dropdown, Table } from 'antd';
 import React from 'react';
 import { BlockFlowModel } from './BlockFlowModel';
 import { TableColumnModel } from './table-column-model';
+import { AddFieldButton } from '@nocobase/flow-engine';
+import { FieldFlowModel } from './FieldFlowModel';
 
 type S = {
   subModels: {
@@ -28,32 +30,7 @@ export class TableModel extends BlockFlowModel<S> {
       key: 'addColumn',
       fixed: 'right',
       title: (
-        <Dropdown
-          menu={{
-            onClick: (info) => {
-              const model = this.addSubModel('columns', {
-                use: 'TableColumnModel',
-                stepParams: {
-                  default: {
-                    step1: {
-                      fieldPath: info.key,
-                    },
-                  },
-                },
-              });
-              model.applyAutoFlows();
-              model.save();
-            },
-            items: this.collection.mapFields((field) => {
-              return {
-                key: `${this.collection.dataSource.name}.${this.collection.name}.${field.name}`,
-                label: field.title,
-              };
-            }),
-          }}
-        >
-          <Button>Add column</Button>
-        </Dropdown>
+        <AddFieldButton subModelKey="columns" model={this} collection={this.collection} ParentModelClass={FieldFlowModel}/>
       ),
     } as any);
   }

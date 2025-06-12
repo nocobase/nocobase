@@ -8,25 +8,41 @@
  */
 
 import { observer } from '@formily/reactive-react';
-import { Button, ButtonProps, Dropdown, MenuProps } from 'antd';
+import { Button, ButtonProps, Dropdown, MenuProps, Switch } from 'antd';
 import { DownOutlined } from '@ant-design/icons';
 import React, { useMemo } from 'react';
 import { FlowModel } from '../../models';
-import { CreateModelOptions } from '../../types';
+import { CreateModelOptions, ModelConstructor } from '../../types';
 import { generateUid } from '../../utils';
 import _ from 'lodash';
+
+export interface AddSubModelItem {
+  key: string;
+  label: string;
+  icon?: React.ReactNode;
+  item: typeof FlowModel;
+  use: string;
+  props?: Record<string, any>;
+  // unique?: boolean;
+  // added?: FlowModel;
+}
 
 export interface AddSubModelButtonProps extends Omit<ButtonProps, 'onClick'> {
   /**
    * 父模型类名，用于确定支持的块类型
    */
-  ParentModelClass?: string | typeof FlowModel;
+  ParentModelClass?: string | ModelConstructor;
 
   /**
    * 父模型实例
    */
   model: FlowModel;
-  
+
+  /**
+   * 子模型类型列表
+   */
+  items: AddSubModelItem[];
+
   /**
    * 子模型类型：'object' 表示单个子模型，'array' 表示子模型数组
    */
@@ -40,7 +56,7 @@ export interface AddSubModelButtonProps extends Omit<ButtonProps, 'onClick'> {
   /**
    * 点击后的回调函数
    */
-  onAfterAdd?: (subModel: FlowModel) => void;
+  onAfterAdd?: (subModel: FlowModel, item: AddSubModelItem) => void;
   
   /**
    * 按钮文本，默认为 "Add"
@@ -60,6 +76,7 @@ export interface AddSubModelButtonProps extends Omit<ButtonProps, 'onClick'> {
  */
 export const AddSubModelButton: React.FC<AddSubModelButtonProps> = observer(({
   model,
+  items,
   ParentModelClass,
   subModelType,
   subModelKey,
@@ -67,49 +84,30 @@ export const AddSubModelButton: React.FC<AddSubModelButtonProps> = observer(({
   children = 'Add',
   ...buttonProps
 }) => {
-  const blockTypes = useMemo<{
-    key: string;
-    label: string;
-    icon?: React.ReactNode;
-    item: typeof FlowModel;
-  }[]>(() => {
-    const blockClasses = model.flowEngine.filterModelClassByParent(ParentModelClass);
-    const registeredBlocks = [];
-    for (const [className, ModelClass] of blockClasses) {
-      if (ModelClass.meta) {
-        registeredBlocks.push({
-          key: className,
-          label: ModelClass.meta?.title,
-          icon: ModelClass.meta?.icon,
-          item: ModelClass,
-        });
-      }
-    }
-    return registeredBlocks;
-  }, [model, ParentModelClass]);
-  
+  const [_update, forceUpdate] = React.useState(0);
   const buildSubModelParams = React.useCallback((info: {
     key: string;
   }) => {
-    const blockType = blockTypes.find(type => type.key === info.key);
+    const blockType = items.find(type => type.key === info.key);
     
     if (!blockType) {
       throw new Error(`Unknown block type: ${info.key}`);
     }
 
     if (blockType.item.meta?.defaultOptions) {
-      return { ..._.cloneDeep(blockType.item.meta?.defaultOptions), use: blockType.key };
+      return { ..._.cloneDeep(blockType.item.meta?.defaultOptions), use: blockType.use, props: blockType.props };
     } else {
       return {
-        use: blockType.key,
+        use: blockType.use,
+        props: blockType.props,
       }
     }
-  }, [blockTypes]);
+  }, [items]);
 
 
   const handleAddSubModel = async (selectedItem?: any) => {
     try {
-      const item = selectedItem || blockTypes[0];
+      const item = selectedItem || items[0];
       const key = item?.key || generateUid();
       
       const subModelOptions = buildSubModelParams({ key });
@@ -119,7 +117,7 @@ export const AddSubModelButton: React.FC<AddSubModelButtonProps> = observer(({
       try {
         await subModel.configureRequiredSteps();
         if (onAfterAdd) {
-          onAfterAdd(subModel);
+          onAfterAdd(subModel, item);
         }
         if (subModelType === 'array') {
           subModel = model.addSubModel(subModelKey, subModel);
@@ -127,6 +125,12 @@ export const AddSubModelButton: React.FC<AddSubModelButtonProps> = observer(({
           subModel = model.setSubModel(subModelKey, subModel);
         }
         await subModel.save();
+        
+        // 如果是 unique 项目，标记为已添加
+        // if (item?.unique) {
+        //   item.added = subModel;
+        // }
+        forceUpdate(prev => prev + 1);
       } catch (error) {
         console.error('Failed to add sub model:', error);
         await subModel.destroy();
@@ -138,23 +142,49 @@ export const AddSubModelButton: React.FC<AddSubModelButtonProps> = observer(({
 
   const handleClick = async () => {
     // 如果没有提供 items 或只有一个选项，直接添加
-    if (blockTypes.length <= 1) {
+    if (items.length <= 1) {
       await handleAddSubModel();
     }
     // 如果有多个选项，点击事件由 Dropdown 处理
   };
 
   // 如果有多个选项，显示下拉菜单
-  if (blockTypes.length > 1) {
-    const menuItems: MenuProps['items'] = blockTypes.map((item) => ({
+  if (items.length > 1) {
+    const menuItems: MenuProps['items'] = items.map((item) => ({
       key: item.key,
       label: (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          {item.icon}
-          <span>{item.label}</span>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, width: '100%' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            {item.icon}
+            <span>{item.label}</span>
+          </div>
+          {/* {item.unique && (
+            <Switch
+              size="small"
+              checked={!!item.added}
+              onChange={(checked) => {
+                if (checked) {
+                  handleAddSubModel(item);
+                } else {
+                  item.added?.destroy();
+                  item.added = null;
+                  forceUpdate(prev => prev + 1);
+                }
+              }}
+              onClick={(checked, e) => {
+                e.stopPropagation();
+              }}
+            />
+          )} */}
         </div>
       ),
-      onClick: () => handleAddSubModel(item),
+      disabled: false, // 不禁用整个菜单项，让开关可以操作
+      onClick: () => {
+        // if (!item.unique) {
+        //   handleAddSubModel(item);
+        // }
+        handleAddSubModel(item);
+      },
     }));
 
     return (
@@ -168,13 +198,11 @@ export const AddSubModelButton: React.FC<AddSubModelButtonProps> = observer(({
           onClick={handleClick}
         >
           {children}
-          <DownOutlined style={{ marginLeft: 4, fontSize: 12 }} />
         </Button>
       </Dropdown>
     );
   }
 
-  // 单个选项或无选项时，显示普通按钮
   return (
     <Button
       {...buttonProps}

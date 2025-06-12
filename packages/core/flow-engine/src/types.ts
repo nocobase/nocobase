@@ -283,4 +283,29 @@ export interface FlowModelMeta {
   group?: string;
   defaultOptions?: Record<string, any>;
   icon?: string;
+  // uniqueSub?: boolean;
+  /**
+   * 排序权重，数字越小排序越靠前，用于控制显示顺序和默认选择
+   * 排序最靠前的将作为默认选择
+   * @default 0
+   */
+  sort?: number;
+}
+
+/**
+ * 字段 FlowModel 的专用元数据接口
+ * 继承自 FlowModelMeta，添加了字段接口相关的属性
+ */
+export interface FieldFlowModelMeta extends FlowModelMeta {
+  /**
+   * 支持的字段接口组列表，基于 CollectionFieldInterface 的 group 属性
+   * 如：['basic', 'choices', 'relation'] 等
+   * 如果不指定，则支持所有接口（向后兼容）
+   */
+  supportedInterfaceGroups?: string[];
+  /**
+   * 支持的具体接口列表（可选，用于更精确的控制）
+   * 如：['input', 'textarea', 'select'] 等
+   */
+  supportedInterfaces?: string[];
 }

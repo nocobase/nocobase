@@ -8,10 +8,11 @@
  */
 
 import { observer } from '@formily/reactive-react';
-import React from 'react';
-import { AddSubModelButton, AddSubModelButtonProps } from './AddSubModelButton';
+import React, { useMemo } from 'react';
+import { AddSubModelButton, AddSubModelButtonProps, AddSubModelItem } from './AddSubModelButton';
+import { FlowModel } from '../../models/flowModel';
 
-interface AddBlockButtonProps extends Omit<AddSubModelButtonProps, 'subModelType' | 'subModelKey'> {
+interface AddBlockButtonProps extends Omit<AddSubModelButtonProps, 'subModelType' | 'subModelKey' | 'items'> {
   subModelKey?: string;
   subModelType?: 'object' | 'array';
 }
@@ -27,25 +28,50 @@ interface AddBlockButtonProps extends Omit<AddSubModelButtonProps, 'subModelType
  * />
  * ```
  */
-export const AddBlockButton: React.FC<AddBlockButtonProps> = observer(
-  ({
-    ParentModelClass = 'BlockFlowModel',
-    subModelKey = 'blocks',
-    children = 'Add block',
-    subModelType = 'array',
-    ...props
-  }) => {
-    return (
-      <AddSubModelButton
-        {...props}
-        subModelKey={subModelKey}
-        ParentModelClass={ParentModelClass}
-        subModelType={subModelType}
-      >
-        {children}
-      </AddSubModelButton>
-    );
-  },
-);
+export const AddBlockButton: React.FC<AddBlockButtonProps> = observer(({
+  ParentModelClass='BlockFlowModel',
+  subModelKey = 'blocks',
+  children = 'Add block',
+  subModelType = 'array',
+  ...props
+}) => {
+  const items = useMemo<{
+    key: string;
+    label: string;
+    icon?: React.ReactNode;
+    item: typeof FlowModel;
+    use: string;
+    unique?: boolean;
+  }[]>(() => {
+    const blockClasses = props.model.flowEngine.filterModelClassByParent(ParentModelClass);
+    const registeredBlocks = [];
+    for (const [className, ModelClass] of blockClasses) {
+      if (ModelClass.meta) {
+        registeredBlocks.push({
+          key: className,
+          label: ModelClass.meta?.title,
+          icon: ModelClass.meta?.icon,
+          item: ModelClass,
+          use: className,
+          // unique: ModelClass.meta?.uniqueSub,
+          // added: null,
+        });
+      }
+    }
+    return registeredBlocks;
+  }, [props.model, ParentModelClass]);
+  
+  return (
+    <AddSubModelButton
+      {...props}
+      subModelKey={subModelKey}
+      ParentModelClass={ParentModelClass}
+      subModelType={subModelType}
+      items={items}
+    >
+      {children}
+    </AddSubModelButton>
+  );
+});
 
 AddBlockButton.displayName = 'AddBlockButton';

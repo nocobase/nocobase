@@ -14,10 +14,11 @@ import { Space } from 'antd';
 import React from 'react';
 import { ActionModel } from './action-model';
 import { FormModel } from './form-model';
+import { FieldFlowModel } from './FieldFlowModel';
 
-export class TableColumnModel extends FlowModel {
-  field: Field;
-  fieldPath: string;
+export class TableColumnModel extends FieldFlowModel {
+  // field: Field;
+  // fieldPath: string;
 
   getColumnProps() {
     return { ...this.props, render: this.render() };
@@ -45,8 +46,8 @@ export class TableColumnModel extends FlowModel {
               stepParams: {
                 default: {
                   step1: {
-                    dataSourceKey: 'main',
-                    collectionName: 'users',
+                    dataSourceKey: this.field.collection.dataSource.name,
+                    collectionName: this.field.collection.name,
                   },
                 },
               },
@@ -74,6 +75,15 @@ export class TableColumnModel extends FlowModel {
     );
   }
 }
+
+TableColumnModel.define({
+  title: 'Table Column',
+  icon: 'TableColumn',
+  defaultOptions: {
+    use: 'TableColumnModel',
+  },
+  sort: 0,
+});
 
 export class TableColumnActionsModel extends TableColumnModel {
   getColumnProps() {
