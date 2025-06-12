@@ -29,7 +29,7 @@ interface AddActionButtonProps extends Omit<AddSubModelButtonProps, 'subModelTyp
  * ```
  */
 export const AddActionButton: React.FC<AddActionButtonProps> = observer(({
-  ParentModelClass='ActionFlowModel',
+  ParentModelClass = 'ActionFlowModel',
   subModelKey = 'actions',
   children = 'Add action',
   subModelType = 'array',
@@ -61,7 +61,7 @@ export const AddActionButton: React.FC<AddActionButtonProps> = observer(({
     }
     return registeredBlocks;
   }, [props.model, ParentModelClass]);
-  
+
   return (
     <AddSubModelButton
       {...props}

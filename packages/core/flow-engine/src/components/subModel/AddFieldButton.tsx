@@ -9,15 +9,21 @@
 
 import { observer } from '@formily/reactive-react';
 import React, { useMemo } from 'react';
-import { AddSubModelButton, AddSubModelButtonProps, AddSubModelItem } from './AddSubModelButton';
-import { Collection } from '../../data-source';
+import { AddSubModelButton, AddSubModelButtonProps, AddSubModelMenuItem } from './AddSubModelButton';
+import { Collection, Field } from '../../data-source';
 import { FlowModel } from '../../models';
+import { CreateModelOptions } from '../../types';
 
 
-interface AddFieldButtonProps extends Omit<AddSubModelButtonProps, 'subModelType' | 'subModelKey' | 'items'> {
+export interface AddFieldButtonProps extends Omit<AddSubModelButtonProps, 'subModelType' | 'subModelKey' | 'items' | 'buildSubModelParams'> {
   subModelKey?: string;
   subModelType?: 'object' | 'array';
   collection: Collection;
+  buildSubModelParams?: (item: AddFieldMenuItem) => CreateModelOptions | FlowModel;
+}
+
+export interface AddFieldMenuItem extends AddSubModelMenuItem {
+  field: Field;
 }
 
 /**
@@ -32,14 +38,14 @@ interface AddFieldButtonProps extends Omit<AddSubModelButtonProps, 'subModelType
  * ```
  */
 export const AddFieldButton: React.FC<AddFieldButtonProps> = observer(({
-  ParentModelClass = 'TableColumnModel',
+  ParentModelClass = 'FieldFlowModel',
   subModelKey = 'fields',
   children = 'Add field',
   subModelType = 'array',
   ...props
 }) => {
   const fields = props.collection.getFields();
-  const items = useMemo<AddSubModelItem[]>(() => {
+  const items = useMemo<AddFieldMenuItem[]>(() => {
     const fieldClasses = Array.from(props.model.flowEngine.filterModelClassByParent(ParentModelClass).values()).filter(c => !!c.meta)
     ?.sort((a, b) => (a.meta?.sort || 0) - (b.meta?.sort || 0));
     const allFields = [];
@@ -59,10 +65,6 @@ export const AddFieldButton: React.FC<AddFieldButtonProps> = observer(({
             item: fieldClass,
             use: fieldClass.name,
             field,
-            props: {
-              dataIndex: field.name,
-              title: field.title
-            },
           });
         } else if (defaultFieldClasses) {
           allFields.push({
@@ -71,26 +73,12 @@ export const AddFieldButton: React.FC<AddFieldButtonProps> = observer(({
             item: defaultFieldClasses[0],
             use: defaultFieldClasses[0]?.name,
             field,
-            props: {
-              dataIndex: field.name,
-              title: field.title
-            },
           });
         }
       }
     }
     return allFields;
   }, [props.model, ParentModelClass, fields]);
-
-  const afterAdd = (subModel: FlowModel, item) => {
-    const field = item.field;
-    subModel['field'] = field;
-    subModel['fieldPath'] = `${field.collection.dataSource.name}.${field.collection.name}.${field.name}`;
-    subModel.setStepParams('default', 'step1', {
-      fieldPath: subModel['fieldPath'],
-    });
-    subModel.applyAutoFlows();
-  };
 
   return (
     <AddSubModelButton
@@ -99,7 +87,6 @@ export const AddFieldButton: React.FC<AddFieldButtonProps> = observer(({
       ParentModelClass={ParentModelClass}
       subModelType={subModelType}
       items={items}
-      onAfterAdd={afterAdd}
     >
       {children}
     </AddSubModelButton>

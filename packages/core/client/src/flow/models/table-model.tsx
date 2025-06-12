@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Collection, FlowModel, MultiRecordResource } from '@nocobase/flow-engine';
+import { AddActionButton, AddFieldButtonProps, AddFieldMenuItem, AddSubModelMenuItem, Collection, FlowModel, MultiRecordResource } from '@nocobase/flow-engine';
 import { Button, Card, Dropdown, Table } from 'antd';
 import React from 'react';
 import { BlockFlowModel } from './BlockFlowModel';
@@ -26,11 +26,30 @@ export class TableModel extends BlockFlowModel<S> {
   resource: MultiRecordResource;
 
   getColumns() {
+    const buildColumnSubModelParams: AddFieldButtonProps['buildSubModelParams'] = (item) => {
+      return {
+        use: 'TableColumnModel',
+        props: {
+          dataIndex: item.field.name,
+          title: item.field.title,
+        },
+      }
+    }
     return this.mapSubModels('columns', (column) => column.getColumnProps()).concat({
       key: 'addColumn',
       fixed: 'right',
       title: (
-        <AddFieldButton subModelKey="columns" model={this} collection={this.collection} ParentModelClass={FieldFlowModel}/>
+        <AddFieldButton onModelAdded={
+          (column: TableColumnModel, item: AddFieldMenuItem) => {
+            const field = item.field;
+            column.field = field;
+            column.fieldPath = `${field.collection.dataSource.name}.${field.collection.name}.${field.name}`;
+            column.setStepParams('default', 'step1', {
+              fieldPath: column.fieldPath,
+            });
+            column.applyAutoFlows();
+          }
+        } buildSubModelParams={buildColumnSubModelParams} subModelKey="columns" model={this} collection={this.collection} ParentModelClass={FieldFlowModel}/>
       ),
     } as any);
   }
@@ -38,6 +57,7 @@ export class TableModel extends BlockFlowModel<S> {
   render() {
     return (
       <Card>
+        <AddActionButton subModelKey="actions" model={this} ParentModelClass={FlowModel} />
         <Table
           rowKey="id"
           dataSource={this.resource.getData()}

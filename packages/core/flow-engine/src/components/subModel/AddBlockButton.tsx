@@ -9,7 +9,7 @@
 
 import { observer } from '@formily/reactive-react';
 import React, { useMemo } from 'react';
-import { AddSubModelButton, AddSubModelButtonProps, AddSubModelItem } from './AddSubModelButton';
+import { AddSubModelButton, AddSubModelButtonProps, AddSubModelMenuItem } from './AddSubModelButton';
 import { FlowModel } from '../../models/flowModel';
 
 interface AddBlockButtonProps extends Omit<AddSubModelButtonProps, 'subModelType' | 'subModelKey' | 'items'> {
