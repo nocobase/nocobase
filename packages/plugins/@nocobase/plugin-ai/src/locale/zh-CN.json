@@ -89,5 +89,6 @@
   "Parameter type": "参数类型",
   "Parameter description": "参数描述",
   "The parameters required by the tool": "工具所需的参数",
-  "Default greeting message": "你好, 我是 {{ nickname }}"
+  "Default greeting message": "你好, 我是 {{ nickname }}",
+  "New from template": "从模板新建"
 }

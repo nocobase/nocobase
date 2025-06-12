@@ -7,4 +7,4 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export default {};
+export { default as formAssistant } from './form-assistant';

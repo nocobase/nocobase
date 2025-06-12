@@ -88,5 +88,6 @@
   "Parameter name": "Parameter name",
   "Parameter type": "Parameter type",
   "Parameter description": "Parameter description",
-  "The parameters required by the tool": "Parameters required by the tool"
+  "The parameters required by the tool": "Parameters required by the tool",
+  "New from template": "New from template"
 }

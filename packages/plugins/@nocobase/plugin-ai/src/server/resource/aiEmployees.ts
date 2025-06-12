@@ -8,6 +8,7 @@
  */
 
 import { Context, Next } from '@nocobase/actions';
+import * as templates from '../ai-employees/templates';
 
 export const listByUser = async (ctx: Context, next: Next) => {
   const user = ctx.auth.user;
@@ -92,5 +93,11 @@ export const updateUserPrompt = async (ctx: Context, next: Next) => {
       sort: null,
     },
   });
+  await next();
+};
+
+export const getTemplates = async (ctx: Context, next: Next) => {
+  const locale = ctx.getCurrentLocale() || 'en-US';
+  ctx.body = Object.values(templates).map((template) => template[locale]);
   await next();
 };

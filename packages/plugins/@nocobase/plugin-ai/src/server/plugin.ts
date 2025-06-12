@@ -88,8 +88,9 @@ export class PluginAIServer extends Plugin {
 
     Object.entries(aiEmployeeActions).forEach(([name, action]) => {
       this.app.resourceManager.registerActionHandler(`aiEmployees:${name}`, action);
-      this.app.acl.allow('aiEmployees', name, 'loggedIn');
     });
+    this.app.acl.allow('aiEmployees', 'listByUser', 'loggedIn');
+    this.app.acl.allow('aiEmployees', 'updateUserPrompt', 'loggedIn');
 
     const workflowSnippet = this.app.acl.snippetManager.snippets.get('pm.workflow.workflows');
     if (workflowSnippet) {
