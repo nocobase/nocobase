@@ -202,7 +202,7 @@ export const SubTable: any = observer(
           setPageSize(pageSize);
           field.componentProps.pageSize = pageSize;
           field.onInput(field.value);
-          setFormValueChanged(false);
+          setFormValueChanged?.(false);
         },
         showSizeChanger: true,
         pageSizeOptions: ['10', '20', '50', '100'],
