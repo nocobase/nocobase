@@ -647,7 +647,28 @@ const RenderButtonInner = observer(
         debouncedClick.cancel();
       };
     }, []);
-
+    const WrapperComponent = useMemo(
+      () =>
+        React.forwardRef(
+          ({ component: Component = tarComponent || Button, icon, onlyIcon, children, ...restProps }: any, ref) => {
+            return (
+              <Component ref={ref} {...restProps}>
+                {onlyIcon ? (
+                  <Tooltip title={restProps.title}>
+                    <span style={{ padding: 3 }}>{icon && typeof icon === 'string' ? <Icon type={icon} /> : icon}</span>
+                  </Tooltip>
+                ) : (
+                  <span style={{ paddingRight: 3 }}>
+                    {icon && typeof icon === 'string' ? <Icon type={icon} /> : icon}
+                  </span>
+                )}
+                {onlyIcon ? children[1] : children}
+              </Component>
+            );
+          },
+        ),
+      [onlyIcon],
+    );
     if (!designable && (field?.data?.hidden || !aclCtx)) {
       return null;
     }
@@ -656,22 +677,7 @@ const RenderButtonInner = observer(
     const actionTitle = typeof rawTitle === 'string' ? t(rawTitle, { ns: NAMESPACE_UI_SCHEMA }) : rawTitle;
     const { opacity, ...restButtonStyle } = buttonStyle;
     const linkStyle = isLink && opacity ? { opacity } : undefined;
-    const WrapperComponent = React.forwardRef(
-      ({ component: Component = tarComponent || Button, icon, onlyIcon, children, ...restProps }: any, ref) => {
-        return (
-          <Component ref={ref} {...restProps}>
-            {onlyIcon ? (
-              <Tooltip title={restProps.title}>
-                <span style={{ padding: 3 }}>{icon && typeof icon === 'string' ? <Icon type={icon} /> : icon}</span>
-              </Tooltip>
-            ) : (
-              <span style={{ paddingRight: 3 }}>{icon && typeof icon === 'string' ? <Icon type={icon} /> : icon}</span>
-            )}
-            {onlyIcon ? children[1] : children}
-          </Component>
-        );
-      },
-    );
+
     return (
       <SortableItem
         role="button"
