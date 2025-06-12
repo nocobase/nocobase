@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/client",
-  "version": "1.8.0-beta.4",
+  "version": "1.8.0-beta.5",
   "license": "AGPL-3.0",
   "main": "lib/index.js",
   "module": "es/index.mjs",
@@ -26,10 +26,9 @@
     "@formily/reactive-react": "^2.2.27",
     "@formily/shared": "^2.2.27",
     "@formily/validator": "^2.2.27",
-    "@nocobase/evaluators": "1.8.0-beta.4",
-    "@nocobase/sdk": "1.8.0-beta.4",
-    "@nocobase/utils": "1.8.0-beta.4",
-    "@nocobase/flow-engine": "1.8.0-beta.4",
+    "@nocobase/evaluators": "1.8.0-beta.5",
+    "@nocobase/sdk": "1.8.0-beta.5",
+    "@nocobase/utils": "1.8.0-beta.5",
     "ahooks": "^3.7.2",
     "antd": "5.24.2",
     "antd-style": "3.7.1",
@@ -66,8 +65,7 @@
     "react-router-dom": "^6.11.2",
     "react-to-print": "^2.14.7",
     "sanitize-html": "2.13.0",
-    "use-deep-compare-effect": "^1.8.1",
-    "tabulator-tables": "^6.3.0"
+    "use-deep-compare-effect": "^1.8.1"
   },
   "peerDependencies": {
     "react": ">=18.0.0",
@@ -79,7 +77,6 @@
     "@types/markdown-it": "14.1.1",
     "@types/markdown-it-highlightjs": "3.3.1",
     "@types/react-big-calendar": "^1.6.4",
-    "@types/tabulator-tables": "^6.2.0",
     "axios-mock-adapter": "^1.20.0",
     "dumi": "2.2.14",
     "dumi-theme-nocobase": "^0.2.28"

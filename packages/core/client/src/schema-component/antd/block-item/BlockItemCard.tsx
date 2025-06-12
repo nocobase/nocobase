@@ -10,10 +10,11 @@
 import { Card, CardProps } from 'antd';
 import React, { useMemo, useRef, useEffect, createContext, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useFieldSchema } from '@formily/react';
 import { useToken } from '../../../style';
 import { MarkdownReadPretty } from '../markdown';
 import { NAMESPACE_UI_SCHEMA } from '../../../i18n/constant';
-import { useCollection } from '../../../data-source';
+import { BlockLinkageRuleProvider } from '../../../modules/blocks/BlockLinkageRuleProvider';
 
 export const BlockItemCardContext = createContext({});
 
@@ -26,8 +27,8 @@ export const BlockItemCard = React.forwardRef<HTMLDivElement, CardProps | any>((
   const [titleHeight, setTitleHeight] = useState(0);
   const titleRef = useRef<HTMLDivElement | null>(null);
   const { t } = useTranslation();
-  const collection = useCollection();
-  console.log();
+  const fieldSchema = useFieldSchema();
+  const isBlockLinkage = fieldSchema['x-block-linkage-rules'];
   useEffect(() => {
     const timer = setTimeout(() => {
       if (titleRef.current) {
@@ -59,13 +60,14 @@ export const BlockItemCard = React.forwardRef<HTMLDivElement, CardProps | any>((
       )}
     </div>
   );
-  return (
+  const content = (
     <BlockItemCardContext.Provider value={{ titleHeight: titleHeight }}>
       <Card ref={ref} bordered={false} style={style} {...others} title={title}>
         {children}
       </Card>
     </BlockItemCardContext.Provider>
   );
+  return !isBlockLinkage ? content : <BlockLinkageRuleProvider>{content}</BlockLinkageRuleProvider>;
 });
 
 BlockItemCard.displayName = 'BlockItemCard';
