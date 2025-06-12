@@ -83,7 +83,7 @@ class PluginTextCopy extends Plugin {
         const schema = tableFieldSchema || fieldSchema;
 
         return {
-          title: t('Show copy button'),
+          title: t('Display copy button'),
           checked: !!schema['x-component-props']?.addonAfter,
           onChange: async (checked) => {
             if (checked) {
