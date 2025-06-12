@@ -662,15 +662,6 @@ const RenderButtonInner = observer(
         debouncedClick.cancel();
       };
     }, []);
-
-    if (!designable && (field?.data?.hidden || !aclCtx)) {
-      return null;
-    }
-
-    const rawTitle = title ?? field?.title;
-    const actionTitle = typeof rawTitle === 'string' ? t(rawTitle, { ns: NAMESPACE_UI_SCHEMA }) : rawTitle;
-    const { opacity, ...restButtonStyle } = buttonStyle;
-    const linkStyle = isLink && opacity ? { opacity } : undefined;
     const WrapperComponent = useMemo(
       () =>
         React.forwardRef(
@@ -693,6 +684,15 @@ const RenderButtonInner = observer(
         ),
       [onlyIcon],
     );
+    if (!designable && (field?.data?.hidden || !aclCtx)) {
+      return null;
+    }
+
+    const rawTitle = title ?? field?.title;
+    const actionTitle = typeof rawTitle === 'string' ? t(rawTitle, { ns: NAMESPACE_UI_SCHEMA }) : rawTitle;
+    const { opacity, ...restButtonStyle } = buttonStyle;
+    const linkStyle = isLink && opacity ? { opacity } : undefined;
+    const Component = onlyIcon || tarComponent ? WrapperComponent : tarComponent || Button;
     return (
       <SortableItem
         role="button"
@@ -705,7 +705,7 @@ const RenderButtonInner = observer(
         disabled={disabled}
         style={isLink ? restButtonStyle : buttonStyle}
         onClick={process.env.__E2E__ ? handleButtonClick : debouncedClick} // E2E 中的点击操作都是很快的，如果加上 debounce 会导致 E2E 测试失败
-        component={onlyIcon || tarComponent ? WrapperComponent : tarComponent || Button}
+        component={Component}
         className={classnames(componentCls, hashId, className, 'nb-action')}
         type={type === 'danger' ? undefined : type}
         title={actionTitle}

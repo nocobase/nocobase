@@ -166,8 +166,8 @@ jobs:
 
           IFS=',' read -ra TAG_ARRAY <<< "$META_TAGS"
           for TAG in "${TAG_ARRAY[@]}"; do
-            TAGS+=("nocobase/nocobase:$TAG")
-            TAGS+=("$ALI_REG/nocobase/nocobase:$TAG")
+            TAGS+=("$TAG")
+            TAGS+=("$ALI_REG/$TAG")
           done
 
           ALL_TAGS=$(IFS=, ; echo "${TAGS[*]}")
@@ -186,8 +186,8 @@ jobs:
 
           IFS=',' read -ra TAG_ARRAY <<< "$META_TAGS"
           for TAG in "${TAG_ARRAY[@]}"; do
-            TAGS+=("nocobase/nocobase:$TAG-full")
-            TAGS+=("$ALI_REG/nocobase/nocobase:$TAG-full")
+            TAGS+=("$TAG-full")
+            TAGS+=("$ALI_REG/$TAG-full")
           done
 
           ALL_TAGS=$(IFS=, ; echo "${TAGS[*]}")
