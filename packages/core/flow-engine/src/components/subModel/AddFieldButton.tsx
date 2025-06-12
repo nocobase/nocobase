@@ -46,8 +46,13 @@ export const AddFieldButton: React.FC<AddFieldButtonProps> = observer(({
 }) => {
   const fields = props.collection.getFields();
   const items = useMemo<AddFieldMenuItem[]>(() => {
-    const fieldClasses = Array.from(props.model.flowEngine.filterModelClassByParent(ParentModelClass).values()).filter(c => !!c.meta)
+    const fieldClasses = Array.from(props.model.flowEngine.filterModelClassByParent(ParentModelClass).values())
     ?.sort((a, b) => (a.meta?.sort || 0) - (b.meta?.sort || 0));
+
+    if (fieldClasses.length === 0) {
+      return [];
+    }
+
     const allFields = [];
 
     const defaultFieldClasses = fieldClasses.filter(

@@ -11,6 +11,8 @@ import { FormButtonGroup, FormDialog, FormItem, Input, Submit } from '@formily/a
 import { createForm, Form } from '@formily/core';
 import { FormProvider } from '@formily/react';
 import {
+  AddActionButton,
+  AddFieldButton,
   Collection,
   FlowEngineProvider,
   FlowModel,
@@ -20,6 +22,8 @@ import {
 import { Card } from 'antd';
 import React from 'react';
 import { BlockFlowModel } from './BlockFlowModel';
+import { FieldFlowModel } from './FieldFlowModel';
+import { FormItemModel } from './form-item-model';
 
 export class FormModel extends BlockFlowModel {
   form: Form;
@@ -40,6 +44,7 @@ export class FormModel extends BlockFlowModel {
           </FormButtonGroup>
           <br />
           <Card>
+            <AddFieldButton subModelKey="fields" model={this} collection={this.collection} ParentModelClass={FormItemModel}/>
             <pre>{JSON.stringify(this.form.values, null, 2)}</pre>
           </Card>
         </FormProvider>
