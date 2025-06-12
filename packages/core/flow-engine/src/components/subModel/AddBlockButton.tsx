@@ -46,17 +46,15 @@ export const AddBlockButton: React.FC<AddBlockButtonProps> = observer(({
     const blockClasses = props.model.flowEngine.filterModelClassByParent(ParentModelClass);
     const registeredBlocks = [];
     for (const [className, ModelClass] of blockClasses) {
-      if (ModelClass.meta) {
-        registeredBlocks.push({
-          key: className,
-          label: ModelClass.meta?.title,
-          icon: ModelClass.meta?.icon,
-          item: ModelClass,
-          use: className,
-          // unique: ModelClass.meta?.uniqueSub,
-          // added: null,
-        });
-      }
+      registeredBlocks.push({
+        key: className,
+        label: ModelClass.meta?.title || className,
+        icon: ModelClass.meta?.icon,
+        item: ModelClass,
+        use: className,
+        // unique: ModelClass.meta?.uniqueSub,
+        // added: null,
+      });
     }
     return registeredBlocks;
   }, [props.model, ParentModelClass]);

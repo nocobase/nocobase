@@ -46,18 +46,16 @@ export const AddActionButton: React.FC<AddActionButtonProps> = observer(({
     const blockClasses = props.model.flowEngine.filterModelClassByParent(ParentModelClass);
     const registeredBlocks = [];
     for (const [className, ModelClass] of blockClasses) {
-      if (ModelClass.meta) {
-        const item = {
-          key: className,
-          label: ModelClass.meta?.title,
-          icon: ModelClass.meta?.icon,
-          item: ModelClass,
-          use: className,
-          // unique: ModelClass.meta?.uniqueSub,
-          // added: null,
-        };
-        registeredBlocks.push(item);
-      }
+      const item = {
+        key: className,
+        label: ModelClass.meta?.title || className,
+        icon: ModelClass.meta?.icon,
+        item: ModelClass,
+        use: className,
+        // unique: ModelClass.meta?.uniqueSub,
+        // added: null,
+      };
+      registeredBlocks.push(item);
     }
     return registeredBlocks;
   }, [props.model, ParentModelClass]);
