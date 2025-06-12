@@ -9,10 +9,10 @@
 
 import { Plugin } from '@nocobase/server';
 
-export class PluginFieldContentCopierServer extends Plugin {
+export class PluginTextCopyServer extends Plugin {
   async load() {
     // Server-side initialization if needed
   }
 }
 
-export default PluginFieldContentCopierServer;
+export default PluginTextCopyServer;

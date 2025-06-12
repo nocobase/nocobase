@@ -16,9 +16,9 @@ import React, { FC, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 
 // Define namespace for i18n
-const NAMESPACE = 'input-copy-button';
+const NAMESPACE = 'text-copy';
 
-const InputCopyButton: FC = observer(
+const TextCopyButton: FC = observer(
   () => {
     const field = useField<Field>();
     const { token } = useToken();
@@ -27,6 +27,7 @@ const InputCopyButton: FC = observer(
 
     useEffect(() => {
       if (field.value && field.readPretty && buttonRef.current) {
+        const currentRef = buttonRef.current;
         const handleMouseOver = (e: MouseEvent) => {
           setShow(true);
         };
@@ -34,12 +35,12 @@ const InputCopyButton: FC = observer(
           setShow(false);
         };
 
-        buttonRef.current.parentElement.addEventListener('mouseover', handleMouseOver);
-        buttonRef.current.parentElement.addEventListener('mouseout', handleMouseOut);
+        currentRef.parentElement.addEventListener('mouseover', handleMouseOver);
+        currentRef.parentElement.addEventListener('mouseout', handleMouseOut);
 
         return () => {
-          buttonRef.current?.parentElement.removeEventListener('mouseover', handleMouseOver);
-          buttonRef.current?.parentElement.removeEventListener('mouseout', handleMouseOut);
+          currentRef.parentElement.removeEventListener('mouseover', handleMouseOver);
+          currentRef.parentElement.removeEventListener('mouseout', handleMouseOut);
         };
       }
     }, [field.readPretty, field.value]);
@@ -57,16 +58,16 @@ const InputCopyButton: FC = observer(
     );
   },
   {
-    displayName: 'InputCopyButton',
+    displayName: 'TextCopyButton',
   },
 );
 
-class PluginFieldContentCopier extends Plugin {
+class PluginTextCopy extends Plugin {
   async load() {
-    const copyButton = <InputCopyButton />;
+    const copyButton = <TextCopyButton />;
 
     this.app.addScopes({
-      InputCopyButton: copyButton,
+      TextCopyButton: copyButton,
     });
 
     // Add the schema settings to enable/disable the copy functionality
@@ -87,7 +88,7 @@ class PluginFieldContentCopier extends Plugin {
           onChange: async (checked) => {
             if (checked) {
               field.componentProps.addonAfter = copyButton;
-              _.set(schema, 'x-component-props.addonAfter', '{{InputCopyButton}}');
+              _.set(schema, 'x-component-props.addonAfter', '{{TextCopyButton}}');
             } else {
               field.componentProps.addonAfter = null;
               _.unset(schema, 'x-component-props.addonAfter');
@@ -108,4 +109,4 @@ class PluginFieldContentCopier extends Plugin {
   }
 }
 
-export default PluginFieldContentCopier;
+export default PluginTextCopy;

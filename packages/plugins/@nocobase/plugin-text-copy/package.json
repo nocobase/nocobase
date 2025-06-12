@@ -1,11 +1,11 @@
 {
-  "name": "@nocobase/plugin-input-copy-button",
+  "name": "@nocobase/plugin-text-copy",
   "version": "1.7.10",
   "main": "./dist/server/index.js",
-  "displayName": "Input Copy Button",
-  "displayName.zh-CN": "输入框复制按钮",
-  "description": "A plugin for adding copy button to single-line text fields",
-  "description.zh-CN": "为单行文本字段添加复制按钮的插件",
+  "displayName": "Text copy",
+  "displayName.zh-CN": "文本复制",
+  "description": "Add copy button to text fields",
+  "description.zh-CN": "为文本字段添加复制按钮",
   "license": "AGPL-3.0",
   "homepage": "https://www.nocobase.com",
   "devDependencies": {
