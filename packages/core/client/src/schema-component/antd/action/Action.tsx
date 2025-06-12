@@ -454,7 +454,9 @@ export function isBulkEditAction(fieldSchema) {
 
 // TODO: Plugin-related code should not exist in the core. It would be better to implement it by modifying the schema, but it would cause incompatibility.
 export function isWriteEmailAction(fieldSchema) {
-  return fieldSchema['x-action'] === 'customize:writeEmail' || fieldSchema.parent?.['x-action'] === 'customize:writeEmail';
+  return (
+    fieldSchema['x-action'] === 'customize:writeEmail' || fieldSchema.parent?.['x-action'] === 'customize:writeEmail'
+  );
 }
 
 const RenderButton = ({
@@ -660,7 +662,28 @@ const RenderButtonInner = observer(
         debouncedClick.cancel();
       };
     }, []);
-
+    const WrapperComponent = useMemo(
+      () =>
+        React.forwardRef(
+          ({ component: Component = tarComponent || Button, icon, onlyIcon, children, ...restProps }: any, ref) => {
+            return (
+              <Component ref={ref} {...restProps}>
+                {onlyIcon ? (
+                  <Tooltip title={restProps.title}>
+                    <span style={{ padding: 3 }}>{icon && typeof icon === 'string' ? <Icon type={icon} /> : icon}</span>
+                  </Tooltip>
+                ) : (
+                  <span style={{ paddingRight: 3 }}>
+                    {icon && typeof icon === 'string' ? <Icon type={icon} /> : icon}
+                  </span>
+                )}
+                {onlyIcon ? children[1] : children}
+              </Component>
+            );
+          },
+        ),
+      [onlyIcon],
+    );
     if (!designable && (field?.data?.hidden || !aclCtx)) {
       return null;
     }
@@ -669,22 +692,7 @@ const RenderButtonInner = observer(
     const actionTitle = typeof rawTitle === 'string' ? t(rawTitle, { ns: NAMESPACE_UI_SCHEMA }) : rawTitle;
     const { opacity, ...restButtonStyle } = buttonStyle;
     const linkStyle = isLink && opacity ? { opacity } : undefined;
-    const WrapperComponent = React.forwardRef(
-      ({ component: Component = tarComponent || Button, icon, onlyIcon, children, ...restProps }: any, ref) => {
-        return (
-          <Component ref={ref} {...restProps}>
-            {onlyIcon ? (
-              <Tooltip title={restProps.title}>
-                <span>{icon && typeof icon === 'string' ? <Icon type={icon} /> : icon}</span>
-              </Tooltip>
-            ) : (
-              <span>{icon && typeof icon === 'string' ? <Icon type={icon} /> : icon}</span>
-            )}
-            {onlyIcon ? children[1] : children}
-          </Component>
-        );
-      },
-    );
+    const Component = onlyIcon || tarComponent ? WrapperComponent : tarComponent || Button;
     return (
       <SortableItem
         role="button"
@@ -697,7 +705,7 @@ const RenderButtonInner = observer(
         disabled={disabled}
         style={isLink ? restButtonStyle : buttonStyle}
         onClick={process.env.__E2E__ ? handleButtonClick : debouncedClick} // E2E 中的点击操作都是很快的，如果加上 debounce 会导致 E2E 测试失败
-        component={onlyIcon || tarComponent ? WrapperComponent : tarComponent || Button}
+        component={Component}
         className={classnames(componentCls, hashId, className, 'nb-action')}
         type={type === 'danger' ? undefined : type}
         title={actionTitle}

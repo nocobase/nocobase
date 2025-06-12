@@ -46,6 +46,10 @@ import { addNew } from './schema';
 import useStyle from './style';
 import type { ToolbarProps } from './types';
 import { formatDate } from './utils';
+import updateLocale from 'dayjs/plugin/updateLocale';
+
+dayjs.extend(updateLocale);
+
 interface Event {
   id: string;
   colorFieldValue: string;
@@ -55,24 +59,6 @@ interface Event {
 }
 
 const Weeks = ['month', 'week', 'day'] as View[];
-
-const getColorString = (
-  colorFieldValue: string,
-  enumList: {
-    color: string;
-    label: string;
-    value: string;
-    rawLabel: string;
-  }[],
-) => {
-  for (const item of enumList) {
-    if (item.value === colorFieldValue) {
-      return item.color;
-    }
-  }
-
-  return '';
-};
 
 export const DeleteEventContext = React.createContext({
   close: () => {},
@@ -282,19 +268,15 @@ export const Calendar: any = withDynamicSchemaProps(
       );
 
       const localizer = useMemo(() => {
+        dayjs.updateLocale('en', {
+          weekStart: props.weekStart ?? '1',
+        });
         return reactBigCalendar.dayjsLocalizer(dayjs);
       }, [reactBigCalendar]);
 
       // 新版 UISchema（1.0 之后）中已经废弃了 useProps，这里之所以继续保留是为了兼容旧版的 UISchema
-      const {
-        dataSource,
-        fieldNames,
-        showLunar,
-        defaultView,
-        getFontColor,
-        getBackgroundColor,
-        enableQuickCreateEvent,
-      } = useProps(props);
+      const { dataSource, fieldNames, showLunar, getFontColor, getBackgroundColor, enableQuickCreateEvent } =
+        useProps(props);
       const height = useCalenderHeight();
       const [date, setDate] = useState<Date>(new Date());
       const [view, setView] = useState<View>(props.defaultView || 'month');

@@ -229,7 +229,7 @@ export abstract class RelationRepository {
     return this.sourceInstance;
   }
 
-  protected accessors() {
+  public accessors() {
     return (<BelongsTo | HasOne | HasMany | BelongsToMany>this.association).accessors;
   }
 
