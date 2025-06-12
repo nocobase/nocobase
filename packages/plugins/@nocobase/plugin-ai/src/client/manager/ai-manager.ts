@@ -14,7 +14,14 @@ export type LLMProviderOptions = {
   components: {
     ProviderSettingsForm?: ComponentType;
     ModelSettingsForm?: ComponentType;
+    MessageRenderer?: ComponentType<{
+      msg: any;
+    }>;
   };
+};
+
+export type ToolOptions = {
+  invoke: (ctx: any, params: any) => void | Promise<void>;
 };
 
 export class AIManager {
@@ -26,8 +33,13 @@ export class AIManager {
       Component: ComponentType;
     }
   >();
+  tools = new Registry<ToolOptions>();
 
   registerLLMProvider(name: string, options: LLMProviderOptions) {
     this.llmProviders.register(name, options);
+  }
+
+  registerTool(name: string, options: ToolOptions) {
+    this.tools.register(name, options);
   }
 }

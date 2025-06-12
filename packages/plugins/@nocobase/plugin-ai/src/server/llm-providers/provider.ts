@@ -10,16 +10,21 @@
 import { BaseChatModel } from '@langchain/core/language_models/chat_models';
 import axios from 'axios';
 import { parseMessages } from './handlers/parse-messages';
+import { Model } from '@nocobase/database';
+import { encodeFile, parseResponseMessage, stripToolCallTags } from '../utils';
+import { Context } from '@nocobase/actions';
+import { PluginFileManagerServer } from '@nocobase/plugin-file-manager';
 import { Application } from '@nocobase/server';
 
 export abstract class LLMProvider {
+  app: Application;
   serviceOptions: Record<string, any>;
   modelOptions: Record<string, any>;
   messages: any[];
   chatModel: any;
   chatHandlers = new Map<string, () => Promise<void> | void>();
 
-  abstract createModel(): BaseChatModel;
+  abstract createModel(): BaseChatModel | any;
 
   get baseURL() {
     return null;
@@ -27,19 +32,24 @@ export abstract class LLMProvider {
 
   constructor(opts: {
     app: Application;
-    serviceOptions: any;
+    serviceOptions?: any;
     chatOptions?: {
       messages?: any[];
+      tools?: any[];
       [key: string]: any;
     };
   }) {
     const { app, serviceOptions, chatOptions } = opts;
+    this.app = app;
     this.serviceOptions = app.environment.renderJsonTemplate(serviceOptions);
     if (chatOptions) {
-      const { messages, ...modelOptions } = chatOptions;
+      const { messages, tools, ...modelOptions } = chatOptions;
       this.modelOptions = modelOptions;
       this.messages = messages;
       this.chatModel = this.createModel();
+      if (tools?.length) {
+        this.chatModel = this.chatModel.bindTools(tools);
+      }
       this.registerChatHandler('parse-messages', parseMessages);
     }
   }
@@ -53,6 +63,13 @@ export abstract class LLMProvider {
       await handler();
     }
     return this.chatModel.invoke(this.messages);
+  }
+
+  async stream(options?: any) {
+    for (const handler of this.chatHandlers.values()) {
+      await handler();
+    }
+    return this.chatModel.stream(this.messages, options);
   }
 
   async listModels(): Promise<{
@@ -84,6 +101,34 @@ export abstract class LLMProvider {
       return { models: res?.data.data };
     } catch (e) {
       return { code: 500, errMsg: e.message };
+    }
+  }
+
+  parseResponseMessage(message: Model) {
+    return parseResponseMessage(message);
+  }
+
+  parseResponseChunk(chunk: any) {
+    return stripToolCallTags(chunk);
+  }
+
+  async parseAttachment(attachment: any): Promise<any> {
+    const fileManager = this.app.pm.get('file-manager') as PluginFileManagerServer;
+    const url = await fileManager.getFileURL(attachment);
+    const data = await encodeFile(decodeURIComponent(url));
+    if (attachment.mimetype.startsWith('image/')) {
+      return {
+        type: 'image_url',
+        image_url: {
+          url: `data:image/${attachment.mimetype.split('/')[1]};base64,${data}`,
+        },
+      };
+    } else {
+      return {
+        type: 'input_file',
+        filename: attachment.filename,
+        file_data: data,
+      };
     }
   }
 }

@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
-import { useLocalVariables, useVariables } from "../variables";
-import { replaceVariables } from "../schema-settings";
+import { useEffect, useState } from 'react';
+import { useLocalVariables, useVariables } from '../variables';
+import { replaceVariables } from '../schema-settings';
 import { evaluators } from '@nocobase/evaluators/client';
 
 const { evaluate } = evaluators.get('formula.js');
@@ -27,10 +27,10 @@ export const useEvaluatedExpression = (expression: string) => {
       } catch (error) {
         console.error(error);
       }
-    }
+    };
 
     run();
   }, [variables.parseVariable, expression, localVariables]);
 
   return parsedValue;
-}
+};

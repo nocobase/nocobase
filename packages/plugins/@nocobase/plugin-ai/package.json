@@ -1,9 +1,9 @@
 {
   "name": "@nocobase/plugin-ai",
-  "displayName": "AI integration",
-  "displayName.zh-CN": "AI 集成",
-  "description": "Support integration with AI services, providing AI-related workflow nodes to enhance business processing capabilities.",
-  "description.zh-CN": "支持接入 AI 服务，提供 AI 相关的工作流节点，增强业务处理能力。",
+  "displayName": "AI employees",
+  "displayName.zh-CN": "AI 员工",
+  "description": "Support configuring AI employees for different roles. Empowered by LLMs and workflows to assist with daily business tasks.",
+  "description.zh-CN": "支持配置不同岗位的 AI 员工，结合大语言模型 (LLM) 和工作流，辅助用户完成日常业务工作。",
   "version": "1.8.0-alpha.5",
   "main": "dist/server/index.js",
   "peerDependencies": {
@@ -13,8 +13,20 @@
     "@nocobase/test": "1.x"
   },
   "devDependencies": {
-    "@langchain/core": "^0.3.39",
+    "@ant-design/x": "^1.1.0",
+    "@langchain/core": "^0.3.55",
     "@langchain/deepseek": "^0.0.1",
-    "@langchain/openai": "^0.4.3"
+    "@langchain/openai": "^0.4.3",
+    "nodejs-snowflake": "^2.0.1",
+    "use-context-selector": "^2.0.0",
+    "react-markdown": "^10.1.0",
+    "react-syntax-highlighter": "^15.6.1",
+    "@langchain/google-genai": "^0.2.5",
+    "@langchain/anthropic": "^0.3.20",
+    "echarts": "^5.5.0",
+    "echarts-for-react": "3.0.2",
+    "rehype-raw": "^7.0.0",
+    "rehype-sanitize": "^6.0.0",
+    "remark-gfm": "^4.0.1"
   }
 }
