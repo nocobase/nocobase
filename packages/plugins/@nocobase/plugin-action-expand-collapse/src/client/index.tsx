@@ -11,7 +11,7 @@ import { UpOutlined, DownOutlined } from '@ant-design/icons';
 import { useFieldSchema, useForm } from '@formily/react';
 import { isVoidField } from '@formily/core';
 import {
-  ActionInitializer,
+  ActionInitializerItem,
   createModalSettingsItem,
   ISchema,
   Plugin,
@@ -71,6 +71,7 @@ const useToggleFieldsActionProps = () => {
   const fieldSchema = useFieldSchema();
   const form = useForm();
   const { t } = useTranslation(NAMESPACE);
+  const [targetVisible, setTargetVisible] = useState(false);
   const collapseComponent = (
     <>
       {t('CollapseFields')} <UpOutlined />
@@ -87,22 +88,22 @@ const useToggleFieldsActionProps = () => {
     title: actionComponent,
     onClick() {
       let count = -1;
-      let targetVisible = false;
       const topFieldsToShow = normalizeTopFieldsToShow(fieldSchema['x-component-props']?.topFieldsToShow ?? 1);
       form.query('*').forEach((field) => {
         if (!isVoidField(field)) {
           count++;
+          const state = field.getState();
           if (count < topFieldsToShow) {
-            field.setDisplay('visible');
+            //only show not hide fields
+            //none is hide by linkageRules
+            if (state.display !== 'none') field.setDisplay('visible');
             return;
           }
-          if (count === topFieldsToShow) {
-            targetVisible = field.display === 'hidden';
-            setActionComponent(!targetVisible ? expandComponent : collapseComponent);
-          }
-          field.setDisplay(targetVisible ? 'visible' : 'hidden');
+          if (state.display !== 'none') field.setDisplay(targetVisible ? 'visible' : 'hidden');
         }
       });
+      setActionComponent(!targetVisible ? expandComponent : collapseComponent);
+      setTargetVisible(!targetVisible);
     },
   };
 };
@@ -118,7 +119,7 @@ const createToggleFieldsActionSchema = (): ISchema => ({
 
 export const ExpandCollapseActionInitializer = (props) => {
   const schema = createToggleFieldsActionSchema();
-  return <ActionInitializer {...props} schema={schema} />;
+  return <ActionInitializerItem {...props} schema={schema} />;
 };
 
 const createToggleFieldsActionInitializerItem = (): SchemaInitializerItemType => ({
