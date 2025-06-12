@@ -40,6 +40,7 @@ import { DataSourceApplicationProvider } from '../data-source/components/DataSou
 import { DataBlockProvider } from '../data-source/data-block/DataBlockProvider';
 import { DataSourceManager, type DataSourceManagerOptions } from '../data-source/data-source/DataSourceManager';
 
+import { FlowEngine, FlowEngineProvider } from '@nocobase/flow-engine';
 import type { CollectionFieldInterfaceFactory } from '../data-source';
 import { OpenModeProvider } from '../modules/popup/OpenModeProvider';
 import { AppSchemaComponentProvider } from './AppSchemaComponentProvider';
@@ -131,6 +132,7 @@ export class Application {
   public globalVars: Record<string, any> = {};
   public globalVarCtxs: Record<string, any> = {};
   public jsonLogic: JsonLogic;
+  public flowEngine: FlowEngine;
   loading = true;
   maintained = false;
   maintaining = false;
@@ -191,6 +193,7 @@ export class Application {
     this.pluginManager = new PluginManager(options.plugins, options.loadRemotePlugins, this);
     this.schemaInitializerManager = new SchemaInitializerManager(options.schemaInitializers, this);
     this.dataSourceManager = new DataSourceManager(options.dataSourceManager, this);
+    this.flowEngine = new FlowEngine();
     this.addDefaultProviders();
     this.addReactRouterComponents();
     this.addProviders(options.providers || []);
@@ -270,6 +273,8 @@ export class Application {
     this.use(AntdAppProvider);
     this.use(DataSourceApplicationProvider, { dataSourceManager: this.dataSourceManager });
     this.use(OpenModeProvider);
+    this.flowEngine.context['app'] = this;
+    this.use(FlowEngineProvider, { engine: this.flowEngine });
   }
 
   private addReactRouterComponents() {
@@ -360,6 +365,7 @@ export class Application {
       this.loading = true;
       await this.loadWebSocket();
       await this.pm.load();
+      await this.flowEngine.flowSettings.load();
     } catch (error) {
       this.hasLoadError = true;
 
@@ -548,6 +554,7 @@ export class Application {
   getGlobalVarCtx(key) {
     return get(this.globalVarCtxs, key);
   }
+
   addUserCenterSettingsItem(item: SchemaSettingsItemType & { aclSnippet?: string }) {
     const useVisibleProp = item.useVisible || (() => true);
     const useVisible = () => {

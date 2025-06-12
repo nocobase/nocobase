@@ -22,6 +22,7 @@ import { BlockSchemaComponentPlugin } from '../block-provider';
 import { CollectionPlugin } from '../collection-manager';
 import { AppNotFound } from '../common/AppNotFound';
 import { RemoteDocumentTitlePlugin } from '../document-title';
+import { PluginFlowEngine } from '../flow';
 import { PinnedListPlugin } from '../plugin-manager';
 import { PMPlugin } from '../pm';
 import { AdminLayoutPlugin, RouteSchemaComponent } from '../route-switch';
@@ -328,6 +329,7 @@ export class NocoBaseBuildInPlugin extends Plugin {
     });
   }
   async addPlugins() {
+    await this.app.pm.add(PluginFlowEngine);
     await this.app.pm.add(AssociationFilterPlugin);
     await this.app.pm.add(LocalePlugin, { name: 'builtin-locale' });
     await this.app.pm.add(AdminLayoutPlugin, { name: 'admin-layout' });

@@ -65,10 +65,6 @@ export default defineConfig({
               link: '/core/application/application',
             },
             {
-              title: 'Plugin',
-              link: '/core/application/plugin',
-            },
-            {
               title: 'PluginManager',
               link: '/core/application/plugin-manager',
             },
@@ -83,6 +79,165 @@ export default defineConfig({
             {
               title: 'Request',
               link: '/core/request',
+            },
+          ],
+        },
+        {
+          title: 'FlowEngine',
+          type: 'group',
+          children: [
+            {
+              title: 'Overview',
+              link: '/core/flow-engine',
+            },
+            {
+              title: 'FlowEngine',
+              link: '/core/flow-engine/flow-engine',
+            },
+            {
+              title: 'FlowModelRepository',
+              link: '/core/flow-engine/flow-model-repository',
+            },
+            {
+              title: 'FlowModel',
+              link: '/core/flow-engine/flow-model',
+            },
+            {
+              title: 'FlowModelRenderer',
+              link: '/core/flow-engine/flow-model-renderer',
+            },
+            {
+              title: 'FlowModelSettings',
+              link: '/core/flow-engine/flow-model-settings',
+            },
+            {
+              title: 'FlowDefinition',
+              link: '/core/flow-engine/flow-definition',
+            },
+            {
+              title: 'FlowResource',
+              link: '/core/flow-engine/flow-resource',
+            },
+            {
+              title: 'FlowContext',
+              link: '/core/flow-engine/flow-context',
+            },
+            {
+              title: 'FlowAction',
+              link: '/core/flow-engine/flow-action',
+            },
+            {
+              title: 'FlowHooks',
+              link: '/core/flow-engine/flow-hooks',
+            },
+          ],
+        },
+        {
+          title: 'Flow Models',
+          type: 'group',
+          children: [
+            {
+              title: 'Quickstart',
+              link: '/core/flow-models/quickstart',
+            },
+            {
+              title: 'Overview',
+              link: '/core/flow-models',
+            },
+            {
+              title: 'LayoutModel',
+              link: '/core/flow-models/layout-flow-model',
+            },
+            {
+              title: 'LayoutRouteModel',
+              link: '/core/flow-models/layout-route-flow-model',
+            },
+            {
+              title: 'PageModel',
+              link: '/core/flow-models/page-flow-model',
+            },
+            {
+              title: 'PageTabModel',
+              link: '/core/flow-models/page-tab-flow-model',
+            },
+            {
+              title: 'GridModel',
+              link: '/core/flow-models/grid-flow-model',
+            },
+            {
+              title: 'BlockGridModel',
+              link: '/core/flow-models/block-grid-flow-model',
+            },
+            {
+              title: 'BlockModel',
+              link: '/core/flow-models/block-flow-model',
+            },
+            {
+              title: 'FormModel',
+              link: '/core/flow-models/form-flow-model',
+            },
+            {
+              title: 'TableModel',
+              link: '/core/flow-models/table-flow-model',
+            },
+            {
+              title: 'DetailsModel',
+              link: '/core/flow-models/details-flow-model',
+            },
+            {
+              title: 'ListModel',
+              link: '/core/flow-models/list-flow-model',
+            },
+            {
+              title: 'CalendarModel',
+              link: '/core/flow-models/calendar-flow-model',
+            },
+            
+            {
+              title: 'KanbanModel',
+              link: '/core/flow-models/kanban-flow-model',
+            },
+            {
+              title: 'MapModel',
+              link: '/core/flow-models/map-flow-model',
+            },
+            {
+              title: 'GanttModel',
+              link: '/core/flow-models/gantt-flow-model',
+            },
+            {
+              title: 'ChartModel',
+              link: '/core/flow-models/chart-flow-model',
+            },
+            {
+              title: 'MarkdownModel',
+              link: '/core/flow-models/markdown-flow-model',
+            },
+            {
+              title: 'HtmlModel',
+              link: '/core/flow-models/html-flow-model',
+            },
+            {
+              title: 'iframeModel',
+              link: '/core/flow-models/iframe-flow-model',
+            },
+            {
+              title: 'TimelineModel',
+              link: '/core/flow-models/timeline-flow-model',
+            },
+            {
+              title: 'CollapseModel',
+              link: '/core/flow-models/collapse-flow-model',
+            },
+          ],
+        },
+        {
+          title: 'Flow Actions',
+          type: 'group',
+          children: [
+            {
+              title: 'Overview',
+              link: '/core/flow-actions',
             },
           ],
         },
