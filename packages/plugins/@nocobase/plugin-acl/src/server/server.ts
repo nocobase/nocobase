@@ -620,7 +620,6 @@ export class PluginACLServer extends Plugin {
           await withACLMeta(ctx, next);
         } catch (error) {
           ctx.logger.error(error);
-          throw error;
         }
       },
       { after: 'dataSource', group: 'with-acl-meta' },
