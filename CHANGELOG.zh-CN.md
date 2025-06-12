@@ -9,7 +9,7 @@
 
 ### 🐛 修复
 
-- **[client]** 修复区块报错的问题 ([#7048](https://github.com/nocobase/nocobase/pull/7048)) by @- **[client]** Fix block error issues ([#7048](https://github.com/nocobase/nocobase/pull/7048)) by @gchust
+- **[client]** 修复区块报错的问题 ([#7048](https://github.com/nocobase/nocobase/pull/7048)) by @gchust
 
 ## [v1.7.8](https://github.com/nocobase/nocobase/compare/v1.7.6...v1.7.8) - 2025-06-10
 
