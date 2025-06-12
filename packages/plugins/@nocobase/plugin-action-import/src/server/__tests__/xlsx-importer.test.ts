@@ -2275,7 +2275,7 @@ describe('xlsx importer', () => {
     expect(count).toBe(1);
   });
 
-  it.only('should throw error when import textarea field, value is date', async () => {
+  it('should throw error when import textarea field, value is date', async () => {
     const TextareaCollection = app.db.collection({
       name: 'textarea_tests',
       fields: [
