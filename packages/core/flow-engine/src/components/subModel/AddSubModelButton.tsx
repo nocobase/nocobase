@@ -64,8 +64,8 @@ export interface AddSubModelButtonProps extends Omit<ButtonProps, 'onClick'> {
 }
 
 const defaultSubmodelParams = (item: AddSubModelMenuItem) => {
-  if (item.item.meta?.defaultOptions) {
-    return { ..._.cloneDeep(item.item.meta?.defaultOptions), use: item.use };
+  if (item.item?.meta?.defaultOptions) {
+    return { ..._.cloneDeep(item.item.meta.defaultOptions), use: item.use };
   } else {
     return {
       use: item.use,
