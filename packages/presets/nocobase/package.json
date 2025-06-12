@@ -45,7 +45,7 @@
     "@nocobase/plugin-file-manager": "1.7.10",
     "@nocobase/plugin-gantt": "1.7.10",
     "@nocobase/plugin-graph-collection-manager": "1.7.10",
-    "@nocobase/plugin-input-copy-button": "1.7.1",
+    "@nocobase/plugin-input-copy-button": "1.7.10",
     "@nocobase/plugin-kanban": "1.7.10",
     "@nocobase/plugin-locale-tester": "1.7.10",
     "@nocobase/plugin-localization": "1.7.10",
