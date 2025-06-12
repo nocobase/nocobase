@@ -318,6 +318,7 @@ const GroupItem: FC<{ item: any }> = (props) => {
               {...item._route.options.badge}
               count={badgeCount}
               style={{ marginLeft: 4, color: item._route.options?.badge?.textColor }}
+              dot={false}
             ></Badge>
           )}
         </SortableItem>
@@ -334,7 +335,7 @@ const WithTooltip: FC<{ title: string; hidden: boolean; badgeProps: any }> = (pr
       {(context) =>
         context.collapsed && !props.hidden && !inHeader ? (
           <Tooltip title={props.title} placement="right">
-            <Badge {...props.badgeProps} style={{ transform: 'none' }}>
+            <Badge {...props.badgeProps} style={{ transform: 'none' }} dot={false}>
               {props.children}
             </Badge>
           </Tooltip>
@@ -427,6 +428,7 @@ const MenuItem: FC<{ item: any; options: { isMobile: boolean; collapsed: boolean
                 {...item._route.options?.badge}
                 count={badgeCount}
                 style={{ marginLeft: 4, color: item._route.options?.badge?.textColor }}
+                dot={false}
               ></Badge>
             )}
           </SortableItem>
@@ -454,7 +456,7 @@ const MenuItem: FC<{ item: any; options: { isMobile: boolean; collapsed: boolean
           </WithTooltip>
           <MenuSchemaToolbar />
           {badgeCount != null && (
-            <Badge {...badgeProps} style={{ marginLeft: 4, color: item._route.options?.badge?.textColor }}></Badge>
+            <Badge {...badgeProps} style={{ marginLeft: 4, color: item._route.options?.badge?.textColor }} dot={false}></Badge>
           )}
         </SortableItem>
       </NocoBaseRouteContext.Provider>
