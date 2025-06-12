@@ -20,6 +20,7 @@ export interface AddFieldButtonProps extends Omit<AddSubModelButtonProps, 'subMo
   subModelType?: 'object' | 'array';
   collection: Collection;
   buildSubModelParams?: (item: AddFieldMenuItem) => CreateModelOptions | FlowModel;
+  onModelAdded?: (subModel: FlowModel, item: AddFieldMenuItem) => void;
 }
 
 export interface AddFieldMenuItem extends AddSubModelMenuItem {

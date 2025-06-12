@@ -13,6 +13,7 @@ import { FormProvider } from '@formily/react';
 import {
   AddActionButton,
   AddFieldButton,
+  AddFieldButtonProps,
   Collection,
   FlowEngineProvider,
   FlowModel,
@@ -31,6 +32,18 @@ export class FormModel extends BlockFlowModel {
   collection: Collection;
 
   render() {
+    const buildColumnSubModelParams: AddFieldButtonProps['buildSubModelParams'] = (item) => {
+      return {
+        use: item.use,
+        stepParams: {
+          default: {
+            step1: {
+              fieldPath: `${item.field.collection.dataSource.name}.${item.field.collection.name}.${item.field.name}`,
+            }
+          }
+        }
+      }
+    }
     return (
       <div>
         <FormProvider form={this.form}>
@@ -44,7 +57,9 @@ export class FormModel extends BlockFlowModel {
           </FormButtonGroup>
           <br />
           <Card>
-            <AddFieldButton subModelKey="fields" model={this} collection={this.collection} ParentModelClass={FormItemModel}/>
+            <AddFieldButton buildSubModelParams={buildColumnSubModelParams} onModelAdded={(fieldModel: FormItemModel, item) => {
+              fieldModel.field = item.field;
+            }} subModelKey="fields" model={this} collection={this.collection} ParentModelClass={FormItemModel}/>
             <pre>{JSON.stringify(this.form.values, null, 2)}</pre>
           </Card>
         </FormProvider>

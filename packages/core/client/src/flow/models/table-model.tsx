@@ -28,7 +28,7 @@ export class TableModel extends BlockFlowModel<S> {
   getColumns() {
     const buildColumnSubModelParams: AddFieldButtonProps['buildSubModelParams'] = (item) => {
       return {
-        use: 'TableColumnModel',
+        use: item.use,
         props: {
           dataIndex: item.field.name,
           title: item.field.title,
