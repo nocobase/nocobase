@@ -7,23 +7,20 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { FormButtonGroup, FormDialog, FormItem, Input, Submit } from '@formily/antd-v5';
+import { FormButtonGroup, FormDialog, Submit } from '@formily/antd-v5';
 import { createForm, Form } from '@formily/core';
 import { FormProvider } from '@formily/react';
 import {
-  AddActionButton,
   AddFieldButton,
   AddFieldButtonProps,
   Collection,
   FlowEngineProvider,
-  FlowModel,
   FlowModelRenderer,
   SingleRecordResource,
 } from '@nocobase/flow-engine';
 import { Card } from 'antd';
 import React from 'react';
 import { BlockFlowModel } from './BlockFlowModel';
-import { FieldFlowModel } from './FieldFlowModel';
 import { FormItemModel } from './form-item-model';
 
 export class FormModel extends BlockFlowModel {
@@ -57,7 +54,7 @@ export class FormModel extends BlockFlowModel {
           </FormButtonGroup>
           <br />
           <Card>
-            <AddFieldButton buildSubModelParams={buildColumnSubModelParams} onModelAdded={(fieldModel: FormItemModel, item) => {
+            <AddFieldButton buildSubModelParams={buildColumnSubModelParams} onModelAdded={async (fieldModel: FormItemModel, item) => {
               fieldModel.field = item.field;
             }} subModelKey="fields" model={this} collection={this.collection} ParentModelClass={FormItemModel}/>
             <pre>{JSON.stringify(this.form.values, null, 2)}</pre>

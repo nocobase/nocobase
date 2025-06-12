@@ -28,28 +28,30 @@ export class TableModel extends BlockFlowModel<S> {
   getColumns() {
     const buildColumnSubModelParams: AddFieldButtonProps['buildSubModelParams'] = (item) => {
       return {
-        use: item.use,
+        use: 'TableColumnModel',
         props: {
           dataIndex: item.field.name,
           title: item.field.title,
         },
       }
+    };
+    const onModelAdded = async (column: TableColumnModel, item: AddFieldMenuItem) => {
+      const field = item.field;
+      column.field = field;
+      column.fieldPath = `${field.collection.dataSource.name}.${field.collection.name}.${field.name}`;
+      column.setStepParams('default', 'step1', {
+        fieldPath: column.fieldPath,
+      });
+      await column.applyAutoFlows();
     }
-    return this.mapSubModels('columns', (column) => column.getColumnProps()).concat({
+    return this.mapSubModels('columns', (column) => {
+      const ps = column.getColumnProps();
+      return ps;
+    }).concat({
       key: 'addColumn',
       fixed: 'right',
       title: (
-        <AddFieldButton onModelAdded={
-          (column: TableColumnModel, item: AddFieldMenuItem) => {
-            const field = item.field;
-            column.field = field;
-            column.fieldPath = `${field.collection.dataSource.name}.${field.collection.name}.${field.name}`;
-            column.setStepParams('default', 'step1', {
-              fieldPath: column.fieldPath,
-            });
-            column.applyAutoFlows();
-          }
-        } buildSubModelParams={buildColumnSubModelParams} subModelKey="columns" model={this} collection={this.collection} ParentModelClass={FieldFlowModel}/>
+        <AddFieldButton onModelAdded={onModelAdded} buildSubModelParams={buildColumnSubModelParams} subModelKey="columns" model={this} collection={this.collection} ParentModelClass={FieldFlowModel}/>
       ),
     } as any);
   }

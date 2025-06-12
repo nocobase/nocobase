@@ -53,7 +53,7 @@ export interface AddSubModelButtonProps extends Omit<ButtonProps, 'onClick'> {
   /**
    * 点击后的回调函数
    */
-  onModelAdded?: (subModel: FlowModel, item: AddSubModelMenuItem) => void;
+  onModelAdded?: (subModel: FlowModel, item: AddSubModelMenuItem) => Promise<void>;
   
   /**
    * 按钮文本，默认为 "Add"
