@@ -11,6 +11,7 @@ import { observer } from '@formily/reactive-react';
 import React, { useMemo } from 'react';
 import { AddSubModelButton, AddSubModelButtonProps, AddSubModelItem } from './AddSubModelButton';
 import { Collection } from '../../data-source';
+import { FlowModel } from '../../models';
 
 
 interface AddFieldButtonProps extends Omit<AddSubModelButtonProps, 'subModelType' | 'subModelKey' | 'items'> {
@@ -81,10 +82,14 @@ export const AddFieldButton: React.FC<AddFieldButtonProps> = observer(({
     return allFields;
   }, [props.model, ParentModelClass, fields]);
 
-  const afterAdd = (subModel, item) => {
+  const afterAdd = (subModel: FlowModel, item) => {
     const field = item.field;
-    subModel.field = field;
-    subModel.fieldPath = `${field.collection.dataSource.name}.${field.collection.name}.${field.name}`;
+    subModel['field'] = field;
+    subModel['fieldPath'] = `${field.collection.dataSource.name}.${field.collection.name}.${field.name}`;
+    subModel.setStepParams('default', 'step1', {
+      fieldPath: subModel['fieldPath'],
+    });
+    subModel.applyAutoFlows();
   };
 
   return (
