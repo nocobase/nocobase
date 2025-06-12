@@ -7,37 +7,63 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { FlowResource } from './flowResource';
 import { APIClient } from '@nocobase/sdk';
-import { observable } from '@formily/reactive';
+import { FlowResource } from './flowResource';
 
 export class APIResource<TData = any> extends FlowResource<TData> {
   // 请求配置
-  protected request = {
+  protected request: any = {
     url: null as string | null,
+    method: 'get' as string,
     params: {} as Record<string, any>,
     headers: {} as Record<string, any>,
   };
-  api: APIClient;
 
-  setAPIClient(api: APIClient): void {
+  protected api: APIClient;
+
+  setAPIClient(api: APIClient) {
     this.api = api;
+    return this;
   }
 
-  get url(): string | null {
+  getURL(): string {
     return this.request.url;
   }
 
-  set url(value: string | null) {
+  setURL(value: string) {
     this.request.url = value;
+    return this;
   }
 
-  getURL(): string | null {
-    return this.request.url;
+  setRequestMethod(method: string) {
+    this.request.method = method;
+    return this;
   }
 
-  setURL(value: string | null): void {
-    this.request.url = value;
+  addRequestHeader(key: string, value: string) {
+    if (!this.request.headers) {
+      this.request.headers = {};
+    }
+    this.request.headers[key] = value;
+    return this;
+  }
+
+  addRequestParameter(key: string, value: any) {
+    if (!this.request.params) {
+      this.request.params = {};
+    }
+    this.request.params[key] = value;
+    return this;
+  }
+
+  setRequestBody(data: any) {
+    this.request.data = data;
+    return this;
+  }
+
+  setRequestOptions(key: string, value: any) {
+    this.request[key] = value;
+    return this;
   }
 
   async refresh() {
@@ -45,7 +71,7 @@ export class APIResource<TData = any> extends FlowResource<TData> {
       throw new Error('API client not set');
     }
     const { data } = await this.api.request({
-      url: this.url,
+      url: this.getURL(),
       method: 'get',
       ...this.getRefreshRequestOptions(),
     });

@@ -13,20 +13,12 @@ export class FlowResource<TData = any> {
   protected _data = observable.ref<TData>(null);
   protected _meta = observable.ref<Record<string, any>>({});
 
-  get data(): TData {
+  getData(): TData {
     return this._data.value;
   }
 
-  set data(value: TData) {
+  setData(value: TData) {
     this._data.value = value;
-  }
-
-  getData(): TData {
-    return this.data;
-  }
-
-  setData(data: TData) {
-    this.data = data;
     return this;
   }
 

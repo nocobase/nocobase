@@ -11,10 +11,8 @@ import { observable } from '@formily/reactive';
 import { BaseRecordResource } from './baseRecordResource';
 
 export class SingleRecordResource<TData = any> extends BaseRecordResource<TData> {
-  protected _data = observable.ref<TData>(null);
-
   setFilterByTk(filterByTk: string | number) {
-    this.request.params = { ...this.request.params, filterByTk };
+    this.addRequestParameter('filterByTk', filterByTk);
     return this;
   }
 

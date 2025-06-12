@@ -16,6 +16,7 @@ export abstract class BaseRecordResource<TData = any> extends APIResource<TData>
   // 请求配置 - 与 APIClient 接口保持一致
   protected request = {
     url: null as string | null,
+    method: 'get' as string,
     params: {
       filter: {} as Record<string, any>,
       filterByTk: null as string | number | string[] | number[] | null,
@@ -28,6 +29,13 @@ export abstract class BaseRecordResource<TData = any> extends APIResource<TData>
     } as Record<string, any>,
     headers: {} as Record<string, any>,
   };
+
+  protected splitValue(value: string | string[]): string[] {
+    if (typeof value === 'string') {
+      return value.split(',').map((item) => item.trim());
+    }
+    return Array.isArray(value) ? value : [];
+  }
 
   protected buildURL(action?: string): string {
     let url = '';
@@ -59,106 +67,116 @@ export abstract class BaseRecordResource<TData = any> extends APIResource<TData>
     };
   }
 
-  setResourceName(resourceName: string): void {
+  setResourceName(resourceName: string) {
     this.resourceName = resourceName;
+    return this;
   }
 
   getResourceName(): string {
     return this.resourceName;
   }
 
-  setSourceId(sourceId: string | number): void {
+  setSourceId(sourceId: string | number) {
     this.sourceId = sourceId;
+    return this;
   }
 
   getSourceId(): string | number {
     return this.sourceId;
   }
 
-  setDataSourceKey(dataSourceKey: string): void {
-    this.request.headers = { ...this.request.headers, 'X-Data-Source': dataSourceKey };
+  setDataSourceKey(dataSourceKey: string) {
+    return this.addRequestHeader('X-Data-Source', dataSourceKey);
   }
 
   getDataSourceKey(): string {
     return this.request.headers['X-Data-Source'];
   }
 
-  setFilter(filter: Record<string, any>): void {
-    this.request.params = { ...this.request.params, ...filter };
+  setFilter(filter: Record<string, any>) {
+    return this.addRequestParameter('filter', filter);
   }
 
   getFilter(): Record<string, any> {
     return this.request.params.filter;
   }
 
-  setAppends(appends: string[]): void {
-    this.request.params = { ...this.request.params, appends };
+  setAppends(appends: string[]) {
+    return this.addRequestParameter('appends', appends);
   }
 
   getAppends(): string[] {
-    return this.request.params.appends;
+    return this.request.params.appends || [];
   }
 
-  addAppends(append: string) {
-    this.request.params.appends.push(append);
-  }
-  removeAppends(append: string) {
-    this.request.params.appends = this.request.params.appends.filter((item: string) => item !== append);
+  addAppends(appends: string | string[]) {
+    const currentAppends = this.getAppends();
+    const newAppends = this.splitValue(appends);
+    newAppends.forEach((append) => {
+      if (!currentAppends.includes(append)) {
+        currentAppends.push(append);
+      }
+    });
+    this.request.params.appends = currentAppends;
+    return this;
   }
 
-  setFilterByTk(filterByTk: string | number | string[] | number[]): void {
-    this.request.params.filterByTk = filterByTk;
+  removeAppends(appends: string | string[]) {
+    if (!this.request.params.appends) {
+      return this;
+    }
+    const currentAppends = this.getAppends();
+    const removeAppends = this.splitValue(appends);
+    this.request.params.appends = currentAppends.filter((append: string) => !removeAppends.includes(append));
+    return this;
+  }
+
+  setFilterByTk(filterByTk: string | number | string[] | number[]) {
+    return this.addRequestParameter('filterByTk', filterByTk);
   }
 
   getFilterByTk(): string | number | string[] | number[] {
     return this.request.params.filterByTk;
   }
 
-  setFields(fields: string[] | string): void {
-    if (typeof fields === 'string') {
-      fields = fields.split(',');
-    }
-    this.request.params.fields = fields;
+  setFields(fields: string[] | string) {
+    return this.addRequestParameter('fields', this.splitValue(fields));
   }
+
   getFields(): string[] {
-    return this.request.params.fields;
+    return this.request.params.fields || [];
   }
 
-  setSort(sort: string | string[]): void {
-    if (typeof sort === 'string') {
-      sort = sort.split(',');
-    }
-    this.request.params.sort = sort;
+  setSort(sort: string | string[]) {
+    return this.addRequestParameter('fields', this.splitValue(sort));
   }
+
   getSort(): string[] {
-    return this.request.params.sort;
+    return this.request.params.sort || [];
   }
 
-  setExcept(except: string | string[]): void {
-    if (typeof except === 'string') {
-      except = except.split(',');
-    }
-    this.request.params.except = except;
+  setExcept(except: string | string[]) {
+    return this.addRequestParameter('except', this.splitValue(except));
   }
+
   getExcept(): string[] {
-    return this.request.params.except;
+    return this.request.params.except || [];
   }
 
-  setWhitelist(whitelist: string | string[]): void {
-    if (typeof whitelist === 'string') {
-      whitelist = whitelist.split(',');
-    }
-    this.request.params.whitelist = whitelist;
+  setWhitelist(whitelist: string | string[]) {
+    return this.addRequestParameter('whitelist', this.splitValue(whitelist));
   }
+
   getWhitelist(): string[] {
-    return this.request.params.whitelist;
+    return this.request.params.whitelist || [];
   }
 
-  setBlacklist(blacklist: string | string[]): void {
-    this.request.params.blacklist = blacklist;
+  setBlacklist(blacklist: string | string[]) {
+    return this.addRequestParameter('blacklist', this.splitValue(blacklist));
   }
+
   getBlacklist(): string[] {
-    return this.request.params.blacklist;
+    return this.request.params.blacklist || [];
   }
 
   abstract refresh(): Promise<void>;

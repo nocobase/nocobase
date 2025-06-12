@@ -12,11 +12,11 @@ import { BaseRecordResource } from './baseRecordResource';
 
 export class MultiRecordResource<TDataItem = any> extends BaseRecordResource<TDataItem[]> {
   protected _data = observable.ref<TDataItem[]>([]);
-  protected _meta = observable.ref<Record<string, any>>({});
 
   // 请求配置 - 与 APIClient 接口保持一致
   protected request = {
     url: null as string | null,
+    method: 'get' as string,
     params: {
       filter: {} as Record<string, any>,
       filterByTk: null as string | number | string[] | number[] | null,
