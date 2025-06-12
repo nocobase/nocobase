@@ -128,9 +128,7 @@ function StatusTabs() {
         ]}
         onChange={onSwitchTab}
       />
-      <Popover placement="bottomRight" content={<Actions />}>
-        <Button icon={<EllipsisOutlined />} type="text" />
-      </Popover>
+      <Actions onlyIcon={isMobileLayout} />
     </Flex>
   ) : (
     <Tabs
