@@ -31,6 +31,9 @@ import type {
 import { ExtendedFlowDefinition, FlowExtraContext, IModelComponentProps, ReadonlyModelProps } from '../types';
 import { generateUid, mergeFlowDefinitions } from '../utils';
 
+// 使用WeakMap存储每个类的meta
+const modelMetas = new WeakMap<typeof FlowModel, FlowModelMeta>();
+
 // 使用WeakMap存储每个类的flows
 const modelFlows = new WeakMap<typeof FlowModel, Map<string, FlowDefinition>>();
 
@@ -41,7 +44,7 @@ export class FlowModel<Structure extends { parent?: any; subModels?: any } = Def
   public flowEngine: FlowEngine;
   public parent: Structure['parent'];
   public subModels: Structure['subModels'];
-  public static meta: FlowModelMeta;
+  // public static meta: FlowModelMeta;
 
   constructor(protected options: FlowModelOptions<Structure>) {
     if (options?.flowEngine?.getModel(options.uid)) {
@@ -71,6 +74,10 @@ export class FlowModel<Structure extends { parent?: any; subModels?: any } = Def
 
   onInit(options): void {}
 
+  static get meta() {
+    return modelMetas.get(this);
+  }
+
   private createSubModels(subModels: Record<string, CreateSubModelOptions | CreateSubModelOptions[]>) {
     Object.entries(subModels || {}).forEach(([key, value]) => {
       if (Array.isArray(value)) {
@@ -92,7 +99,7 @@ export class FlowModel<Structure extends { parent?: any; subModels?: any } = Def
   }
 
   static define(meta: FlowModelMeta) {
-    this.meta = meta;
+    modelMetas.set(this, meta);
   }
 
   /**
