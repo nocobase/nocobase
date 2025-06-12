@@ -7,15 +7,16 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import _ from 'lodash';
 import { APIResource } from './apiResource';
 
 export abstract class BaseRecordResource<TData = any> extends APIResource<TData> {
-  protected resourceName: string | null = null;
+  protected resourceName: string;
   protected sourceId: string | number | null = null;
 
   // 请求配置 - 与 APIClient 接口保持一致
   protected request = {
-    url: null as string | null,
+    // url: null as string | null,
     method: 'get' as string,
     params: {
       filter: {} as Record<string, any>,
@@ -54,8 +55,13 @@ export abstract class BaseRecordResource<TData = any> extends APIResource<TData>
 
   async runAction<TData = any, TMeta = any>(action: string, options: any) {
     const { data } = await this.api.request({
-      url: this.buildURL(action),
       method: 'post',
+      headers: {
+        ...this.request.headers,
+        ...options.headers,
+      },
+      ..._.omit(this.request, ['method', 'params', 'data']),
+      url: this.buildURL(action),
       ...options,
     });
     if (!data?.data) {

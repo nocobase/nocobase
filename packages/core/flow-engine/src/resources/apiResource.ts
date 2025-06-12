@@ -13,10 +13,13 @@ import { FlowResource } from './flowResource';
 export class APIResource<TData = any> extends FlowResource<TData> {
   // 请求配置
   protected request: any = {
-    url: null as string | null,
-    method: 'get' as string,
-    params: {} as Record<string, any>,
+    // url: null as string | null,
     headers: {} as Record<string, any>,
+
+    // 仅用于 Refresh
+    params: {} as Record<string, any>,
+    method: 'get' as string,
+    data: null as any,
   };
 
   protected api: APIClient;
@@ -72,20 +75,15 @@ export class APIResource<TData = any> extends FlowResource<TData> {
     }
     const { data } = await this.api.request({
       url: this.getURL(),
-      method: 'get',
       ...this.getRefreshRequestOptions(),
     });
     this.setData(data?.data);
   }
 
-  protected getRefreshRequestOptions(filterByTk?: string | number | string[] | number[]) {
+  protected getRefreshRequestOptions() {
     const options = {
-      params: { ...this.request.params },
-      headers: { ...this.request.headers },
+      ...this.request,
     };
-    if (filterByTk) {
-      options.params.filterByTk = filterByTk;
-    }
     return options;
   }
 }
