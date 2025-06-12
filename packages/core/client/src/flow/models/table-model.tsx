@@ -57,7 +57,6 @@ export class TableModel extends BlockFlowModel<S> {
   render() {
     return (
       <Card>
-        <AddActionButton subModelKey="actions" model={this} ParentModelClass={FlowModel} />
         <Table
           rowKey="id"
           dataSource={this.resource.getData()}
