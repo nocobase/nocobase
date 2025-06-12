@@ -347,6 +347,13 @@ VariablesProvider.displayName = 'VariablesProvider';
 export default VariablesProvider;
 
 function shouldToRequest(value, variableCtx: Record<string, any>, variablePath: string) {
+  if (
+    variablePath.split('.').length === 2 &&
+    (variablePath.startsWith('$nForm.') || variablePath.startsWith('$iteration.'))
+  ) {
+    return false;
+  }
+
   let result = false;
 
   // value may be a reactive object, using untracked to avoid unexpected autorun

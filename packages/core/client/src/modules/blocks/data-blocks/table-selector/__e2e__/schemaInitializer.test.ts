@@ -13,6 +13,7 @@ import { createTable } from './utils';
 const deleteButton = async (page: Page, name: string) => {
   await page.getByRole('button', { name }).hover();
   await page.getByRole('button', { name }).getByLabel('designer-schema-settings-').hover();
+  await page.waitForTimeout(300);
   await page.getByRole('menuitem', { name: 'Delete' }).click();
   await page.getByRole('button', { name: 'OK', exact: true }).click();
 };

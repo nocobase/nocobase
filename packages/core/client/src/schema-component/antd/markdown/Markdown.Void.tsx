@@ -16,6 +16,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCompile } from '../../';
 import { useCollectionRecord } from '../../../data-source';
+import { FlagProvider, useFlag } from '../../../flag-provider';
 import { useGlobalTheme } from '../../../global-theme';
 import { withDynamicSchemaProps } from '../../../hoc/withDynamicSchemaProps';
 import { useVariableOptions } from '../../../schema-settings/VariableInput/hooks/useVariableOptions';
@@ -26,7 +27,6 @@ import { useDesignable } from '../../hooks/useDesignable';
 import { VariableSelect } from '../variable/VariableSelect';
 import { MarkdownVoidDesigner } from './Markdown.Void.Designer';
 import { registerQrcodeWebComponent } from './qrcode-webcom';
-import { FlagProvider } from '../../../flag-provider';
 import { useStyles } from './style';
 import { parseMarkdown } from './util';
 
@@ -211,8 +211,9 @@ export const MarkdownVoidInner: any = withDynamicSchemaProps(
 );
 
 export const MarkdownVoid = (props) => {
+  const flags = useFlag();
   return (
-    <FlagProvider collectionField={true}>
+    <FlagProvider {...flags} collectionField={true}>
       <MarkdownVoidInner {...props} />
     </FlagProvider>
   );

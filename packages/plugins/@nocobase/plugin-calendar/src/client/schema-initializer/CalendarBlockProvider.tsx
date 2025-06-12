@@ -10,14 +10,14 @@
 import { ArrayField } from '@formily/core';
 import { useField, useFieldSchema } from '@formily/react';
 import { BlockProvider, useBlockRequestContext, withDynamicSchemaProps, useApp, useCollection } from '@nocobase/client';
-import React, { createContext, useContext, useEffect, useState, useMemo, useRef } from 'react';
+import React, { createContext, useContext, useEffect } from 'react';
 import { useCalendarBlockParams } from '../hooks/useCalendarBlockParams';
 
 export const CalendarBlockContext = createContext<any>({});
 CalendarBlockContext.displayName = 'CalendarBlockContext';
 
 const InternalCalendarBlockProvider = (props) => {
-  const { fieldNames, showLunar, defaultView, enableQuickCreateEvent } = props;
+  const { fieldNames, showLunar, defaultView, enableQuickCreateEvent, weekStart } = props;
   const field = useField();
   const { resource, service } = useBlockRequestContext();
 
@@ -32,6 +32,7 @@ const InternalCalendarBlockProvider = (props) => {
         defaultView,
         enableQuickCreateEvent: enableQuickCreateEvent ?? true,
         fixedBlock: field?.decoratorProps?.fixedBlock,
+        weekStart,
       }}
     >
       {props.children}
@@ -109,5 +110,6 @@ export const useCalendarBlockProps = () => {
     fixedBlock: ctx.fixedBlock,
     getFontColor,
     getBackgroundColor,
+    weekStart: ctx.weekStart,
   };
 };
