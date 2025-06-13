@@ -62,7 +62,7 @@ export default class extends Instruction {
     }
 
     // NOTE: save job for condition calculation
-    const job = await processor.saveJob({
+    const job = processor.saveJob({
       status: JOB_STATUS.PENDING,
       result: { looped },
       nodeId: node.id,
@@ -74,12 +74,17 @@ export default class extends Instruction {
       const { checkpoint, calculation, expression, continueOnFalse } = node.config.condition ?? {};
       if ((calculation || expression) && !checkpoint) {
         const condition = calculateCondition(node, processor);
-        if (!condition && !continueOnFalse) {
-          job.set({
-            status: JOB_STATUS.RESOLVED,
-            result: { looped, broken: true },
-          });
-          return job;
+        if (!condition) {
+          if (continueOnFalse) {
+            job.set('result', { looped: 1 });
+            processor.saveJob(job);
+          } else {
+            job.set({
+              status: JOB_STATUS.RESOLVED,
+              result: { looped, broken: true },
+            });
+            return job;
+          }
         }
       }
     }
@@ -114,7 +119,7 @@ export default class extends Instruction {
       (branchJob.status < JOB_STATUS.PENDING && loop.config.exit === EXIT.CONTINUE)
     ) {
       job.set({ result: { looped: nextIndex } });
-      await processor.saveJob(job);
+      processor.saveJob(job);
 
       const length = getTargetLength(target);
       if (nextIndex < length) {
@@ -132,7 +137,7 @@ export default class extends Instruction {
           }
         }
         await processor.run(branch, job);
-        return processor.exit();
+        return null;
       } else {
         job.set({
           status: JOB_STATUS.RESOLVED,
