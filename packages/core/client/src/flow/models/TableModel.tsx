@@ -9,6 +9,7 @@
 
 import {
   AddActionButton,
+  AddFieldButton,
   AddFieldButtonProps,
   AddFieldMenuItem,
   AddSubModelMenuItem,
@@ -19,9 +20,8 @@ import {
 import { Button, Card, Dropdown, Table } from 'antd';
 import React from 'react';
 import { BlockFlowModel } from './BlockFlowModel';
-import { TableColumnModel } from './table-column-model';
-import { AddFieldButton } from '@nocobase/flow-engine';
 import { FieldFlowModel } from './FieldFlowModel';
+import { TableColumnModel } from './TableColumnModel';
 
 type S = {
   subModels: {

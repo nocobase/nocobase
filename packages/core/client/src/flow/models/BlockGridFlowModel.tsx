@@ -50,25 +50,6 @@ type BlockGridFlowModelStructure = {
 };
 
 export class BlockGridFlowModel extends FlowModel<BlockGridFlowModelStructure> {
-  // addItem(item) {
-  //   const model = this.addSubModel('items', item);
-  //   model.save();
-  // }
-
-  // getBlockModels() {
-  //   return [...this.flowEngine.getModelClasses()]
-  //     .filter(([, Model]) => {
-  //       return Model.prototype instanceof BlockFlowModel;
-  //     })
-  //     .map(([key, Model]) => {
-  //       const meta = (Model as typeof BlockFlowModel).meta;
-  //       return {
-  //         key,
-  //         label: meta.title,
-  //       };
-  //     });
-  // }
-
   render() {
     return (
       <div style={{ padding: 16 }}>

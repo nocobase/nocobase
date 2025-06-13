@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { FormButtonGroup, FormDialog, Submit } from '@formily/antd-v5';
+import { FormButtonGroup, FormDialog, FormLayout, Submit } from '@formily/antd-v5';
 import { createForm, Form } from '@formily/core';
 import { FormProvider } from '@formily/react';
 import {
@@ -21,7 +21,7 @@ import {
 import { Card } from 'antd';
 import React from 'react';
 import { BlockFlowModel } from './BlockFlowModel';
-import { FormItemModel } from './form-item-model';
+import { FormItemModel } from './FormItemModel';
 
 export class FormModel extends BlockFlowModel {
   form: Form;
@@ -31,7 +31,7 @@ export class FormModel extends BlockFlowModel {
   render() {
     const buildColumnSubModelParams: AddFieldButtonProps['buildSubModelParams'] = (item) => {
       return {
-        use: item.use,
+        use: 'FormItemModel',
         stepParams: {
           default: {
             step1: {
@@ -42,66 +42,31 @@ export class FormModel extends BlockFlowModel {
       };
     };
     return (
-      <div>
+      <Card>
         <FormProvider form={this.form}>
-          {this.mapSubModels('fields', (field) => (
-            <FlowModelRenderer model={field} />
-          ))}
+          <FormLayout layout={'vertical'}>
+            {this.mapSubModels('fields', (field) => (
+              <FlowModelRenderer model={field} showFlowSettings />
+            ))}
+          </FormLayout>
+          <AddFieldButton
+            buildSubModelParams={buildColumnSubModelParams}
+            onModelAdded={async (fieldModel: FormItemModel, item) => {
+              fieldModel.field = item.field;
+            }}
+            subModelKey="fields"
+            model={this}
+            collection={this.collection}
+            ParentModelClass={FormItemModel}
+          />
           <FormButtonGroup>
             {this.mapSubModels('actions', (action) => (
               <FlowModelRenderer model={action} />
             ))}
           </FormButtonGroup>
-          <br />
-          <Card>
-            <AddFieldButton
-              buildSubModelParams={buildColumnSubModelParams}
-              onModelAdded={async (fieldModel: FormItemModel, item) => {
-                fieldModel.field = item.field;
-              }}
-              subModelKey="fields"
-              model={this}
-              collection={this.collection}
-              ParentModelClass={FormItemModel}
-            />
-            <pre>{JSON.stringify(this.form.values, null, 2)}</pre>
-          </Card>
         </FormProvider>
-      </div>
+      </Card>
     );
-  }
-
-  async openDialog({ filterByTk }) {
-    return new Promise((resolve) => {
-      const dialog = FormDialog(
-        {
-          footer: null,
-          title: 'Form Dialog',
-        },
-        (form) => {
-          return (
-            <div>
-              <FlowEngineProvider engine={this.flowEngine}>
-                <FlowModelRenderer model={this} extraContext={{ form, filterByTk }} />
-                <FormButtonGroup>
-                  <Submit
-                    onClick={async () => {
-                      await this.resource.save(this.form.values);
-                      dialog.close();
-                      resolve(this.form.values); // 在 close 之后 resolve
-                    }}
-                  >
-                    Submit
-                  </Submit>
-                </FormButtonGroup>
-              </FlowEngineProvider>
-            </div>
-          );
-        },
-      );
-      dialog.open();
-      // 可选：如果需要在取消时也 resolve，可以监听 dialog 的 onCancel
-    });
   }
 }
 

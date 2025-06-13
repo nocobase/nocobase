@@ -181,14 +181,14 @@ export class CollectionManager {
 
 // Collection 负责管理自己的 Field
 export class Collection {
-  fields: Map<string, Field>;
+  fields: Map<string, CollectionField>;
   options: Record<string, any>;
   inherits: Map<string, Collection>;
   dataSource: DataSource;
 
   constructor(options: Record<string, any> = {}) {
     this.options = observable({ ...options });
-    this.fields = observable.shallow<Map<string, Field>>(new Map());
+    this.fields = observable.shallow<Map<string, CollectionField>>(new Map());
     this.inherits = observable.shallow<Map<string, Collection>>(new Map());
     this.setFields(options.fields || []);
   }
@@ -226,9 +226,9 @@ export class Collection {
     this.initInherits();
   }
 
-  getFields(): Field[] {
+  getFields(): CollectionField[] {
     // 合并自身 fields 和所有 inherits 的 fields，后者优先被覆盖
-    const fieldMap = new Map<string, Field>();
+    const fieldMap = new Map<string, CollectionField>();
     for (const inherit of this.inherits.values()) {
       if (inherit && typeof inherit.getFields === 'function') {
         for (const field of inherit.getFields()) {
@@ -243,30 +243,34 @@ export class Collection {
     return Array.from(fieldMap.values());
   }
 
-  mapFields(callback: (field: Field) => any): any[] {
+  mapFields(callback: (field: CollectionField) => any): any[] {
     return this.getFields().map(callback);
   }
 
-  setFields(fields: Field[] | Record<string, any>[]) {
+  setFields(fields: CollectionField[] | Record<string, any>[]) {
     this.fields.clear();
     for (const field of fields) {
       this.addField(field);
     }
   }
 
-  getField(fieldName: string): Field | undefined {
+  getField(fieldName: string): CollectionField | undefined {
     return this.fields.get(fieldName);
   }
 
-  addField(field: Field | Record<string, any>) {
+  getFullFieldPath(name: string): string {
+    return this.dataSource.name + '.' + this.name + '.' + name;
+  }
+
+  addField(field: CollectionField | Record<string, any>) {
     if (field.name && this.fields.has(field.name)) {
       throw new Error(`Field with name ${field.name} already exists in collection ${this.name}`);
     }
-    if (field instanceof Field) {
+    if (field instanceof CollectionField) {
       field.setCollection(this);
       this.fields.set(field.name, field);
     } else {
-      const newField = new Field(field);
+      const newField = new CollectionField(field);
       newField.setCollection(this);
       this.fields.set(newField.name, newField);
     }
@@ -285,7 +289,7 @@ export class Collection {
   }
 }
 
-export class Field {
+export class CollectionField {
   options: Record<string, any>;
   collection: Collection;
 
@@ -300,6 +304,10 @@ export class Field {
 
   setCollection(collection: Collection) {
     this.collection = collection;
+  }
+
+  get fullpath() {
+    return this.collection.dataSource.name + '.' + this.collection.name + '.' + this.name;
   }
 
   get name() {
@@ -320,7 +328,7 @@ export class Field {
     this.options.title = value;
   }
 
-  getFields(): Field[] {
+  getFields(): CollectionField[] {
     if (!this.options.target) {
       return [];
     }

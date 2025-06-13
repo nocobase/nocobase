@@ -9,7 +9,7 @@
 
 import { Submit } from '@formily/antd-v5';
 import React from 'react';
-import { ActionModel } from './action-model';
+import { ActionModel } from './ActionModel';
 
 export class SubmitActionModel extends ActionModel {
   render() {
