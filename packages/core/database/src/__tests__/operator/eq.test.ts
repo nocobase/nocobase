@@ -70,4 +70,32 @@ describe('eq operator', () => {
 
     expect(results).toEqual(0);
   });
+
+  it('should eq string field with number value', async () => {
+    await db.getRepository('tests').create({
+      values: [{ name: '123' }, { name: '234' }, { name: '345' }],
+    });
+
+    const results = await db.getRepository('tests').count({
+      filter: {
+        'name.$eq': 123,
+      },
+    });
+
+    expect(results).toEqual(1);
+  });
+
+  it('should eq string field with number value (array)', async () => {
+    await db.getRepository('tests').create({
+      values: [{ name: '123' }, { name: '234' }, { name: '345' }],
+    });
+
+    const results = await db.getRepository('tests').count({
+      filter: {
+        'name.$eq': [123],
+      },
+    });
+
+    expect(results).toEqual(1);
+  });
 });
