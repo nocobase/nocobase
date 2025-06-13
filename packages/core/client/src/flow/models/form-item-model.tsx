@@ -27,8 +27,9 @@ export class FormItemModel extends FlowModel {
             Input,
             {
               style: {
-                width: 240,
+                width: '100%',
               },
+              ...this.props,
             },
           ]}
         />
@@ -44,6 +45,8 @@ FormItemModel.registerFlow({
     step1: {
       handler(ctx, params) {
         const field = ctx.globals.dataSourceManager.getCollectionField(params.fieldPath);
+        const { uiSchema } = field.options;
+        ctx.model.setProps({ ...uiSchema?.['x-component-props'] });
         ctx.model.field = field;
       },
     },

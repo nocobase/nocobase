@@ -8,3 +8,6 @@
  */
 
 export * from './SelectFieldModel';
+export * from './InputNumberFieldModel';
+export * from './PercentFieldModel';
+export * from './PasswordFieldModel';

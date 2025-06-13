@@ -7,28 +7,40 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { FormItem, Select } from '@formily/antd-v5';
+import { FormItem } from '@formily/antd-v5';
 import { Field as FormilyField } from '@formily/react';
 import { FormItemModel } from '../../form-item-model';
 import React from 'react';
+import { isNum } from '@formily/shared';
+import { InputNumber } from 'antd';
+import * as math from 'mathjs';
 
-export class SelectFieldModel extends FormItemModel {
+const isNumberLike = (index: any): index is number => isNum(index) || /^-?\d+(\.\d+)?$/.test(index);
+
+const toValue = (value: any, callback: (v: number) => number) => {
+  if (isNumberLike(value)) {
+    return math.round(callback(value), 9);
+  }
+  return null;
+};
+
+export class PercentFieldModel extends FormItemModel {
   render() {
     return (
       <div>
         <FormilyField
           name={this.field.name}
           title={this.field.title}
-          required
+          required={this.props.required}
           decorator={[FormItem]}
           component={[
-            Select,
+            InputNumber,
             {
               style: {
                 width: '100%',
               },
               ...this.props,
-              options: this.props.dataSource,
+              addonAfter: '%',
             },
           ]}
         />
@@ -37,8 +49,8 @@ export class SelectFieldModel extends FormItemModel {
   }
 }
 
-SelectFieldModel.registerFlow({
-  key: 'default1',
+PercentFieldModel.registerFlow({
+  key: 'default',
   auto: true,
   steps: {
     step1: {
@@ -47,7 +59,6 @@ SelectFieldModel.registerFlow({
         const { uiSchema } = field.options;
         ctx.model.field = field;
         ctx.model.setProps({ ...uiSchema?.['x-component-props'] });
-        ctx.model.setProps('dataSource', uiSchema?.enum || []);
       },
     },
   },

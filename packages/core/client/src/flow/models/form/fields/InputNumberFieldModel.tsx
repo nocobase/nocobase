@@ -7,12 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { FormItem, Select } from '@formily/antd-v5';
+import { FormItem } from '@formily/antd-v5';
 import { Field as FormilyField } from '@formily/react';
 import { FormItemModel } from '../../form-item-model';
 import React from 'react';
+import { InputNumber } from 'antd';
 
-export class SelectFieldModel extends FormItemModel {
+export class InputNumberFieldModel extends FormItemModel {
   render() {
     return (
       <div>
@@ -22,13 +23,12 @@ export class SelectFieldModel extends FormItemModel {
           required
           decorator={[FormItem]}
           component={[
-            Select,
+            InputNumber,
             {
               style: {
                 width: '100%',
               },
               ...this.props,
-              options: this.props.dataSource,
             },
           ]}
         />
@@ -37,8 +37,8 @@ export class SelectFieldModel extends FormItemModel {
   }
 }
 
-SelectFieldModel.registerFlow({
-  key: 'default1',
+InputNumberFieldModel.registerFlow({
+  key: 'default',
   auto: true,
   steps: {
     step1: {
@@ -47,7 +47,6 @@ SelectFieldModel.registerFlow({
         const { uiSchema } = field.options;
         ctx.model.field = field;
         ctx.model.setProps({ ...uiSchema?.['x-component-props'] });
-        ctx.model.setProps('dataSource', uiSchema?.enum || []);
       },
     },
   },
