@@ -19,4 +19,4 @@ export * from './PageTabFlowModel';
 export * from './submit-action-model';
 export * from './table-column-model';
 export * from './table-model';
-//
+export * from './form/fields';
