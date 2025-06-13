@@ -8,12 +8,18 @@
  */
 
 import { FormItem, Input } from '@formily/antd-v5';
+import { Form } from '@formily/core';
 import { Field as FormilyField } from '@formily/react';
 import { CollectionField, FlowModel } from '@nocobase/flow-engine';
 import React from 'react';
 
 export class FormItemModel extends FlowModel {
   field: CollectionField;
+
+  clearGraph() {
+    const form = this.parent.form as Form;
+    form.clearFormGraph(this.field.name);
+  }
 
   render() {
     return (
@@ -54,6 +60,21 @@ FormItemModel.registerFlow({
       },
       handler(ctx, params) {
         ctx.model.setProps('title', params.title);
+        ctx.model.clearGraph();
+      },
+    },
+    initialValue: {
+      title: 'Default value',
+      uiSchema: {
+        defaultValue: {
+          'x-component': 'Input',
+          'x-decorator': 'FormItem',
+          'x-component-props': {},
+        },
+      },
+      handler(ctx, params) {
+        const form = ctx.model.parent.form as Form;
+        form.setInitialValuesIn(ctx.model.field.name, params.defaultValue);
       },
     },
   },
@@ -80,6 +101,7 @@ CommonFormItemFlowModel.registerFlow({
       },
       handler(ctx, params) {
         ctx.model.setProps('required', params.required);
+        ctx.model.clearGraph();
       },
     },
   },
