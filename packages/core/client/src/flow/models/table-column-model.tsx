@@ -7,9 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { EditOutlined } from '@ant-design/icons';
+import { EditOutlined, DatabaseOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
-import { Field, FlowModel, FlowModelRenderer } from '@nocobase/flow-engine';
+import { Field, FlowModel, FlowModelRenderer, FlowsContextMenu, FlowsDropdownButton, FlowsFloatContextMenu } from '@nocobase/flow-engine';
 import { Space } from 'antd';
 import React from 'react';
 import { ActionModel } from './action-model';
@@ -21,7 +21,16 @@ export class TableColumnModel extends FieldFlowModel {
   // fieldPath: string;
 
   getColumnProps() {
-    return { ...this.props, render: this.render() };
+    const { title, ...restProps } = this.props;
+    return {
+      ...restProps,
+      title: (
+          <FlowsFloatContextMenu model={this} containerStyle={{ padding: '8px 16px', margin: '-8px -16px' }}>
+            {title}
+          </FlowsFloatContextMenu>
+      ),
+      render: this.render(),
+    };
   }
 
   render() {
@@ -123,3 +132,12 @@ TableColumnModel.registerFlow({
     },
   },
 });
+
+// TableColumnModel.define({
+//   title: 'Action Column',
+//   icon: 'TableColumn',
+//   defaultOptions: {
+//     use: 'TableColumnActionsModel',
+//   },
+//   sort: 100,
+// });
