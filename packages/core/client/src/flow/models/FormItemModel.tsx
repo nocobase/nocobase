@@ -8,30 +8,51 @@
  */
 
 import { FormItem, Input } from '@formily/antd-v5';
-import { Form } from '@formily/core';
-import { Field as FormilyField } from '@formily/react';
+import { Field, Form } from '@formily/core';
+import { FieldContext } from '@formily/react';
 import { CollectionField, FlowModel } from '@nocobase/flow-engine';
 import React from 'react';
+import { ReactiveField } from '../Formily/ReactiveField';
 
 export class FormItemModel extends FlowModel {
-  field: CollectionField;
+  collectionField: CollectionField;
+  field: Field;
 
-  clearGraph() {
-    const form = this.parent.form as Form;
-    form.clearFormGraph(this.field.name);
+  get form() {
+    return this.parent.form as Form;
+  }
+
+  setTitle(title: string) {
+    this.field.title = title || this.collectionField.title;
+  }
+
+  setRequired(required: boolean) {
+    this.field.required = required;
+  }
+
+  setInitialValue(initialValue: any) {
+    this.field.initialValue = initialValue;
+  }
+
+  createField() {
+    return this.form.createField({
+      name: this.collectionField.name,
+      ...this.props,
+      decorator: [
+        FormItem,
+        {
+          title: this.props.title,
+        },
+      ],
+      component: [Input, {}],
+    });
   }
 
   render() {
     return (
-      <div>
-        <FormilyField
-          name={this.field.name}
-          title={this.props.title || this.field.title}
-          required={this.props.required}
-          decorator={[FormItem]}
-          component={[Input, {}]}
-        />
-      </div>
+      <FieldContext.Provider value={this.field}>
+        <ReactiveField field={this.field}>{this.props.children}</ReactiveField>
+      </FieldContext.Provider>
     );
   }
 }
@@ -43,8 +64,9 @@ FormItemModel.registerFlow({
   steps: {
     step1: {
       handler(ctx, params) {
-        const field = ctx.globals.dataSourceManager.getCollectionField(params.fieldPath);
-        ctx.model.field = field;
+        const collectionField = ctx.globals.dataSourceManager.getCollectionField(params.fieldPath);
+        ctx.model.collectionField = collectionField;
+        ctx.model.field = ctx.model.createField();
       },
     },
     editTitle: {
@@ -59,8 +81,7 @@ FormItemModel.registerFlow({
         },
       },
       handler(ctx, params) {
-        ctx.model.setProps('title', params.title);
-        ctx.model.clearGraph();
+        ctx.model.setTitle(params.title);
       },
     },
     initialValue: {
@@ -73,8 +94,7 @@ FormItemModel.registerFlow({
         },
       },
       handler(ctx, params) {
-        const form = ctx.model.parent.form as Form;
-        form.setInitialValuesIn(ctx.model.field.name, params.defaultValue);
+        ctx.model.setInitialValue(params.defaultValue);
       },
     },
   },
@@ -82,7 +102,7 @@ FormItemModel.registerFlow({
 
 export class CommonFormItemFlowModel extends FormItemModel {}
 
-CommonFormItemFlowModel.registerFlow({
+FormItemModel.registerFlow({
   key: 'key2',
   auto: true,
   title: 'Group2',
@@ -100,8 +120,7 @@ CommonFormItemFlowModel.registerFlow({
         },
       },
       handler(ctx, params) {
-        ctx.model.setProps('required', params.required);
-        ctx.model.clearGraph();
+        ctx.model.setRequired(params.required || false);
       },
     },
   },

@@ -201,3 +201,127 @@ await model.applyFlow('default');
 await model.applyAutoFlows();
 await model.dispatchEvent('event');
 ```
+
+---
+
+## 子模型添加按钮组件
+
+为方便在界面中动态添加子模型，框架提供了 4 个 React 按钮组件：
+
+1. `AddSubModelButton`（通用）
+2. `AddBlockButton`（添加区块模型）
+3. `AddFieldButton`（添加字段模型）
+4. `AddActionButton`（添加 Action 模型）
+
+### 通用添加子模型
+
+`AddSubModelButton` 是最基础的按钮组件，用于向任意父模型添加任意类型的子模型。其余三个按钮组件都基于它做了场景化封装。
+
+#### 主要 Props
+
+| Prop | 类型 | 说明 |
+|------|------|------|
+| `model` | `FlowModel` **(必填)** | 当前父模型实例 |
+| `items` | `AddSubModelMenuItem[]` **(必填)** | 可供选择的子模型类型列表 |
+| `subModelType` | `'object' \| 'array'` | 指定子模型是对象字段还是数组字段，默认为 `'array'` |
+| `subModelKey` | `string` | 子模型在父模型中的字段名 |
+| `ParentModelClass` | `string \| ModelConstructor` | 父模型类名（用于过滤支持的子模型类型） |
+| `onModelAdded` | `(subModel, item) => Promise<void>` | 添加成功后的回调，可返回 Promise 以执行异步逻辑 |
+| `children` | `ReactNode` | 按钮文案，默认 `"Add"` |
+| `buildSubModelParams` | `(item) => CreateModelOptions \| FlowModel` | 自定义子模型创建参数 |
+
+#### 菜单项定义 `AddSubModelMenuItem`
+
+```ts
+interface AddSubModelMenuItem {
+  key: string;       // 唯一键
+  label: string;     // 菜单展示文案
+  icon?: ReactNode;  // 可选图标
+  item: typeof FlowModel; // 对应的模型类
+  use: string;       // createModel 时的 use 值
+}
+```
+
+#### 组件行为
+
+以 **鼠标悬停** 方式展示下拉菜单，用户点击菜单项后执行相应的子模型添加逻辑。
+
+#### 使用示例
+
+```ts
+<AddSubModelButton
+  model={parentModel}
+  subModelKey="tabs"
+  subModelType="array"
+  items={[
+    {
+      key: 'TabFlowModel',
+      label: '选项卡',
+      item: TabFlowModel,
+      use: 'TabFlowModel',
+    },
+  ]}
+/>
+```
+
+### 添加区块子模型
+
+`AddBlockButton` 专门用于向父模型添加**区块子模型**。相比 `AddSubModelButton`，它会自动根据 `ParentModelClass` 检索所有合法的区块模型类并构造菜单，不需要手动传入 `items`。
+
+#### 额外 Props
+
+| Prop | 类型 | 默认值 | 说明 |
+|------|------|--------|------|
+| `ParentModelClass` | `string` | `'BlockFlowModel'` | 区块模型的父类名 |
+
+#### 使用示例
+
+```ts
+<AddBlockButton
+  model={gridModel}
+  // 其余参数均可使用默认值
+/>
+```
+
+### 添加字段子模型
+
+`AddFieldButton` 用于为 **字段** 相关的父模型（如表格列、表单项）快速添加对应的字段子模型。会自动根据 `collection` 中的所有 CollectionField 自动匹配合适的模型类并构造菜单，不需要手动传入 `items`。
+
+#### 额外 Props
+
+| Prop | 类型 | 默认值 | 说明 |
+|------|------|--------|------|
+| `collection` | `Collection` **(必填)** | 字段所属的数据表集合 |
+| `ParentModelClass` | `string` | `'FieldFlowModel'` | 字段模型的父类名 |
+| `buildSubModelParams` | `(item) => CreateModelOptions \| FlowModel` | 自定义创建逻辑 |
+
+#### 使用示例
+
+```ts
+<AddFieldButton
+  model={tableColumnModel}
+  collection={postCollection}
+  ParentModelClass={CollectionFieldFlowModel}
+  buildSubModelParams={buildColumnSubModelParams}
+  onModelAdded={onModelAdded}
+/>
+```
+
+### 添加 Action 子模型
+
+`AddActionButton` 用于向父模型添加**Action 子模型**。会自动根据 `ParentModelClass` 检索所有合法的 Action 模型类并构造菜单，不需要手动传入 `items`。
+
+#### 额外 Props
+
+| Prop | 类型 | 默认值 | 说明 |
+|------|------|--------|------|
+| `ParentModelClass` | `string` | `'ActionFlowModel'` | 动作模型的父类名 |
+
+#### 使用示例
+
+```ts
+<AddActionButton
+  model={blockModel}
+  ParentModelClass={ActionFlowModel}
+/>
+```
