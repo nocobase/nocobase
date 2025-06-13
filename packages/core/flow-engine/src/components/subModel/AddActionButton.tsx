@@ -11,8 +11,13 @@ import { observer } from '@formily/reactive-react';
 import React, { useMemo } from 'react';
 import { AddSubModelButton, AddSubModelButtonProps } from './AddSubModelButton';
 import { FlowModel } from '../../models/flowModel';
+import { ModelConstructor } from '../../types';
 
 interface AddActionButtonProps extends Omit<AddSubModelButtonProps, 'subModelType' | 'subModelKey' | 'items'> {
+  /**
+  * 父模型类名，用于确定支持的 Actions 类型
+  */
+  ParentModelClass?: string | ModelConstructor;
   subModelKey?: string;
   subModelType?: 'object' | 'array';
 }
@@ -64,7 +69,6 @@ export const AddActionButton: React.FC<AddActionButtonProps> = observer(({
     <AddSubModelButton
       {...props}
       subModelKey={subModelKey}
-      ParentModelClass={ParentModelClass}
       subModelType={subModelType}
       items={items}
     >

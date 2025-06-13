@@ -26,11 +26,6 @@ export interface AddSubModelMenuItem {
 
 export interface AddSubModelButtonProps extends Omit<ButtonProps, 'onClick'> {
   /**
-   * 父模型类名，用于确定支持的块类型
-   */
-  ParentModelClass?: string | ModelConstructor;
-
-  /**
    * 父模型实例
    */
   model: FlowModel;
@@ -86,7 +81,6 @@ const defaultSubmodelParams = (item: AddSubModelMenuItem) => {
 export const AddSubModelButton: React.FC<AddSubModelButtonProps> = observer(({
   model,
   items,
-  ParentModelClass,
   subModelType,
   subModelKey,
   onModelAdded,

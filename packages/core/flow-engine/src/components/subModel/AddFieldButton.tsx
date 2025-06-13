@@ -10,12 +10,16 @@
 import { observer } from '@formily/reactive-react';
 import React, { useMemo } from 'react';
 import { AddSubModelButton, AddSubModelButtonProps, AddSubModelMenuItem } from './AddSubModelButton';
-import { Collection, Field } from '../../data-source';
+import { Collection, CollectionField } from '../../data-source';
 import { FlowModel } from '../../models';
-import { CreateModelOptions } from '../../types';
+import { CreateModelOptions, ModelConstructor } from '../../types';
 
 
 export interface AddFieldButtonProps extends Omit<AddSubModelButtonProps, 'subModelType' | 'subModelKey' | 'items' | 'buildSubModelParams'> {
+  /**
+   * 父模型类名，用于确定支持的字段类型
+   */
+  ParentModelClass?: string | ModelConstructor;
   subModelKey?: string;
   subModelType?: 'object' | 'array';
   collection: Collection;
@@ -24,7 +28,7 @@ export interface AddFieldButtonProps extends Omit<AddSubModelButtonProps, 'subMo
 }
 
 export interface AddFieldMenuItem extends AddSubModelMenuItem {
-  field: Field;
+  field: CollectionField;
 }
 
 /**
@@ -90,7 +94,6 @@ export const AddFieldButton: React.FC<AddFieldButtonProps> = observer(({
     <AddSubModelButton
       {...props}
       subModelKey={subModelKey}
-      ParentModelClass={ParentModelClass}
       subModelType={subModelType}
       items={items}
     >
