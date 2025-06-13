@@ -19,37 +19,39 @@ interface AddActionButtonProps extends Omit<AddSubModelButtonProps, 'subModelTyp
 
 /**
  * 专门用于添加动作模型的按钮组件
- * 
+ *
  * @example
  * ```tsx
- * <AddActionButton 
+ * <AddActionButton
  *   model={parentModel}
  *   ParentModelClass={'ActionFlowModel'}
  * />
  * ```
  */
-export const AddActionButton: React.FC<AddActionButtonProps> = observer(({
-  ParentModelClass='ActionFlowModel',
-  subModelKey = 'actions',
-  children = 'Add action',
-  subModelType = 'array',
-  ...props
-}) => {
-  const items = useMemo<{
-    key: string;
-    label: string;
-    icon?: React.ReactNode;
-    item: typeof FlowModel;
-    unique?: boolean;
-    use: string;
-  }[]>(() => {
-    const blockClasses = props.model.flowEngine.filterModelClassByParent(ParentModelClass);
-    const registeredBlocks = [];
-    for (const [className, ModelClass] of blockClasses) {
-      if (ModelClass.meta) {
+export const AddActionButton: React.FC<AddActionButtonProps> = observer(
+  ({
+    ParentModelClass = 'ActionFlowModel',
+    subModelKey = 'actions',
+    children = 'Add action',
+    subModelType = 'array',
+    ...props
+  }) => {
+    const items = useMemo<
+      {
+        key: string;
+        label: string;
+        icon?: React.ReactNode;
+        item: typeof FlowModel;
+        unique?: boolean;
+        use: string;
+      }[]
+    >(() => {
+      const blockClasses = props.model.flowEngine.filterModelClassByParent(ParentModelClass);
+      const registeredBlocks = [];
+      for (const [className, ModelClass] of blockClasses) {
         const item = {
           key: className,
-          label: ModelClass.meta?.title,
+          label: ModelClass.meta?.title || className,
           icon: ModelClass.meta?.icon,
           item: ModelClass,
           use: className,
@@ -58,21 +60,21 @@ export const AddActionButton: React.FC<AddActionButtonProps> = observer(({
         };
         registeredBlocks.push(item);
       }
-    }
-    return registeredBlocks;
-  }, [props.model, ParentModelClass]);
-  
-  return (
-    <AddSubModelButton
-      {...props}
-      subModelKey={subModelKey}
-      ParentModelClass={ParentModelClass}
-      subModelType={subModelType}
-      items={items}
-    >
-      {children}
-    </AddSubModelButton>
-  );
-});
+      return registeredBlocks;
+    }, [props.model, ParentModelClass]);
+
+    return (
+      <AddSubModelButton
+        {...props}
+        subModelKey={subModelKey}
+        ParentModelClass={ParentModelClass}
+        subModelType={subModelType}
+        items={items}
+      >
+        {children}
+      </AddSubModelButton>
+    );
+  },
+);
 
 AddActionButton.displayName = 'AddActionButton';

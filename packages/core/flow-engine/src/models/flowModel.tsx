@@ -39,6 +39,7 @@ const modelFlows = new WeakMap<typeof FlowModel, Map<string, FlowDefinition>>();
 
 export class FlowModel<Structure extends { parent?: any; subModels?: any } = DefaultStructure> {
   public readonly uid: string;
+  public sortIndex: number;
   public props: IModelComponentProps = {};
   public stepParams: StepParams = {};
   public flowEngine: FlowEngine;
@@ -57,6 +58,7 @@ export class FlowModel<Structure extends { parent?: any; subModels?: any } = Def
     this.stepParams = options.stepParams || {};
     this.subModels = {};
     this.flowEngine = options.flowEngine;
+    this.sortIndex = options.sortIndex || 0;
 
     define(this, {
       props: observable,
@@ -81,9 +83,11 @@ export class FlowModel<Structure extends { parent?: any; subModels?: any } = Def
   private createSubModels(subModels: Record<string, CreateSubModelOptions | CreateSubModelOptions[]>) {
     Object.entries(subModels || {}).forEach(([key, value]) => {
       if (Array.isArray(value)) {
-        value.forEach((item) => {
-          this.addSubModel(key, item);
-        });
+        value
+          .sort((a, b) => (a.sortIndex || 0) - (b.sortIndex || 0))
+          .forEach((item) => {
+            this.addSubModel(key, item);
+          });
       } else {
         this.setSubModel(key, value);
       }
@@ -538,6 +542,8 @@ export class FlowModel<Structure extends { parent?: any; subModels?: any } = Def
     }
     model.setParent(this);
     Array.isArray(this.subModels[subKey]) || (this.subModels[subKey] = []);
+    const maxSortIndex = Math.max(...this.subModels[subKey].map((item) => item.sortIndex || 0), 0);
+    model.sortIndex = maxSortIndex + 1;
     this.subModels[subKey].push(model);
     return model;
   }
@@ -660,11 +666,15 @@ export class FlowModel<Structure extends { parent?: any; subModels?: any } = Def
       ..._.omit(this.options, ['flowEngine']),
       props: this.props,
       stepParams: this.stepParams,
+      sortIndex: this.sortIndex,
     };
     for (const subModelKey in this.subModels) {
       data.subModels = data.subModels || {};
       if (Array.isArray(this.subModels[subModelKey])) {
-        data.subModels[subModelKey] = this.subModels[subModelKey].map((model: FlowModel) => model.serialize());
+        data.subModels[subModelKey] = this.subModels[subModelKey].map((model: FlowModel, index) => ({
+          ...model.serialize(),
+          sortIndex: index,
+        }));
       } else if ((this.subModels[subModelKey] as any) instanceof FlowModel) {
         data.subModels[subModelKey] = this.subModels[subModelKey].serialize();
       }

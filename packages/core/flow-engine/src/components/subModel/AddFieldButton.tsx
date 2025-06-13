@@ -9,96 +9,99 @@
 
 import { observer } from '@formily/reactive-react';
 import React, { useMemo } from 'react';
-import { AddSubModelButton, AddSubModelButtonProps, AddSubModelItem } from './AddSubModelButton';
-import { Collection } from '../../data-source';
+import { AddSubModelButton, AddSubModelButtonProps, AddSubModelMenuItem } from './AddSubModelButton';
+import { Collection, Field } from '../../data-source';
+import { FlowModel } from '../../models';
+import { CreateModelOptions } from '../../types';
 
-
-interface AddFieldButtonProps extends Omit<AddSubModelButtonProps, 'subModelType' | 'subModelKey' | 'items'> {
+export interface AddFieldButtonProps
+  extends Omit<AddSubModelButtonProps, 'subModelType' | 'subModelKey' | 'items' | 'buildSubModelParams'> {
   subModelKey?: string;
   subModelType?: 'object' | 'array';
   collection: Collection;
+  buildSubModelParams?: (item: AddFieldMenuItem) => CreateModelOptions | FlowModel;
+  onModelAdded?: (subModel: FlowModel, item: AddFieldMenuItem) => Promise<void>;
+}
+
+export interface AddFieldMenuItem extends AddSubModelMenuItem {
+  field: Field;
 }
 
 /**
  * 专门用于添加字段模型的按钮组件
- * 
+ *
  * @example
  * ```tsx
- * <AddFieldButton 
+ * <AddFieldButton
  *   model={parentModel}
  *   ParentModelClass={'TableColumnModel'}
  * />
  * ```
  */
-export const AddFieldButton: React.FC<AddFieldButtonProps> = observer(({
-  ParentModelClass = 'TableColumnModel',
-  subModelKey = 'fields',
-  children = 'Add field',
-  subModelType = 'array',
-  ...props
-}) => {
-  const fields = props.collection.getFields();
-  const items = useMemo<AddSubModelItem[]>(() => {
-    const fieldClasses = Array.from(props.model.flowEngine.filterModelClassByParent(ParentModelClass).values()).filter(c => !!c.meta)
-    ?.sort((a, b) => (a.meta?.sort || 0) - (b.meta?.sort || 0));
-    const allFields = [];
+export const AddFieldButton: React.FC<AddFieldButtonProps> = observer(
+  ({
+    ParentModelClass = 'FieldFlowModel',
+    subModelKey = 'fields',
+    children = 'Add field',
+    subModelType = 'array',
+    ...props
+  }) => {
+    const fields = props.collection.getFields();
+    const items = useMemo<AddFieldMenuItem[]>(() => {
+      const fieldClasses = Array.from(props.model.flowEngine.filterModelClassByParent(ParentModelClass).values())?.sort(
+        (a, b) => (a.meta?.sort || 0) - (b.meta?.sort || 0),
+      );
 
-    const defaultFieldClasses = fieldClasses.filter(
-      fieldClass => !fieldClass.meta?.supportedInterfaces && !fieldClass.meta?.supportedInterfaceGroups
-    );
+      if (fieldClasses.length === 0) {
+        return [];
+      }
 
-    for (const field of fields) {
-      const fieldInterfaceName = field.options?.interface;
-      if (fieldInterfaceName) {
-        const fieldClass = fieldClasses.find(fieldClass => fieldClass.meta?.supportedInterfaces?.includes(fieldInterfaceName));
-        if (fieldClass) {
-          allFields.push({
-            key: field.name,
-            label: field.title,
-            item: fieldClass,
-            use: fieldClass.name,
-            field,
-            props: {
-              dataIndex: field.name,
-              title: field.title
-            },
-          });
-        } else if (defaultFieldClasses) {
-          allFields.push({
-            key: field.name,
-            label: field.title,
-            item: defaultFieldClasses[0],
-            use: defaultFieldClasses[0]?.name,
-            field,
-            props: {
-              dataIndex: field.name,
-              title: field.title
-            },
-          });
+      const allFields = [];
+
+      const defaultFieldClasses = fieldClasses.filter(
+        (fieldClass) => !fieldClass.meta?.supportedInterfaces && !fieldClass.meta?.supportedInterfaceGroups,
+      );
+
+      for (const field of fields) {
+        const fieldInterfaceName = field.options?.interface;
+        if (fieldInterfaceName) {
+          const fieldClass = fieldClasses.find(
+            (fieldClass) => fieldClass.meta?.supportedInterfaces?.includes(fieldInterfaceName),
+          );
+          if (fieldClass) {
+            allFields.push({
+              key: field.name,
+              label: field.title,
+              item: fieldClass,
+              use: fieldClass.name,
+              field,
+            });
+          } else if (defaultFieldClasses) {
+            allFields.push({
+              key: field.name,
+              label: field.title,
+              item: defaultFieldClasses[0],
+              use: defaultFieldClasses[0]?.name,
+              field,
+            });
+          }
         }
       }
-    }
-    return allFields;
-  }, [props.model, ParentModelClass, fields]);
+      return allFields;
+    }, [props.model, ParentModelClass, fields]);
 
-  const afterAdd = (subModel, item) => {
-    const field = item.field;
-    subModel.field = field;
-    subModel.fieldPath = `${field.collection.dataSource.name}.${field.collection.name}.${field.name}`;
-  };
-
-  return (
-    <AddSubModelButton
-      {...props}
-      subModelKey={subModelKey}
-      ParentModelClass={ParentModelClass}
-      subModelType={subModelType}
-      items={items}
-      onAfterAdd={afterAdd}
-    >
-      {children}
-    </AddSubModelButton>
-  );
-});
+    return (
+      <AddSubModelButton
+        {...props}
+        subModelKey={subModelKey}
+        ParentModelClass={ParentModelClass}
+        subModelType={subModelType}
+        items={items}
+      >
+        {children}
+      </AddSubModelButton>
+    );
+  },
+);
 
 AddFieldButton.displayName = 'AddFieldButton';

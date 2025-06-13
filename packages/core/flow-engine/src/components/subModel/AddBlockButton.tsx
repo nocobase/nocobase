@@ -9,7 +9,7 @@
 
 import { observer } from '@formily/reactive-react';
 import React, { useMemo } from 'react';
-import { AddSubModelButton, AddSubModelButtonProps, AddSubModelItem } from './AddSubModelButton';
+import { AddSubModelButton, AddSubModelButtonProps, AddSubModelMenuItem } from './AddSubModelButton';
 import { FlowModel } from '../../models/flowModel';
 
 interface AddBlockButtonProps extends Omit<AddSubModelButtonProps, 'subModelType' | 'subModelKey' | 'items'> {
@@ -28,28 +28,30 @@ interface AddBlockButtonProps extends Omit<AddSubModelButtonProps, 'subModelType
  * />
  * ```
  */
-export const AddBlockButton: React.FC<AddBlockButtonProps> = observer(({
-  ParentModelClass='BlockFlowModel',
-  subModelKey = 'blocks',
-  children = 'Add block',
-  subModelType = 'array',
-  ...props
-}) => {
-  const items = useMemo<{
-    key: string;
-    label: string;
-    icon?: React.ReactNode;
-    item: typeof FlowModel;
-    use: string;
-    unique?: boolean;
-  }[]>(() => {
-    const blockClasses = props.model.flowEngine.filterModelClassByParent(ParentModelClass);
-    const registeredBlocks = [];
-    for (const [className, ModelClass] of blockClasses) {
-      if (ModelClass.meta) {
+export const AddBlockButton: React.FC<AddBlockButtonProps> = observer(
+  ({
+    ParentModelClass = 'BlockFlowModel',
+    subModelKey = 'blocks',
+    children = 'Add block',
+    subModelType = 'array',
+    ...props
+  }) => {
+    const items = useMemo<
+      {
+        key: string;
+        label: string;
+        icon?: React.ReactNode;
+        item: typeof FlowModel;
+        use: string;
+        unique?: boolean;
+      }[]
+    >(() => {
+      const blockClasses = props.model.flowEngine.filterModelClassByParent(ParentModelClass);
+      const registeredBlocks = [];
+      for (const [className, ModelClass] of blockClasses) {
         registeredBlocks.push({
           key: className,
-          label: ModelClass.meta?.title,
+          label: ModelClass.meta?.title || className,
           icon: ModelClass.meta?.icon,
           item: ModelClass,
           use: className,
@@ -57,21 +59,21 @@ export const AddBlockButton: React.FC<AddBlockButtonProps> = observer(({
           // added: null,
         });
       }
-    }
-    return registeredBlocks;
-  }, [props.model, ParentModelClass]);
-  
-  return (
-    <AddSubModelButton
-      {...props}
-      subModelKey={subModelKey}
-      ParentModelClass={ParentModelClass}
-      subModelType={subModelType}
-      items={items}
-    >
-      {children}
-    </AddSubModelButton>
-  );
-});
+      return registeredBlocks;
+    }, [props.model, ParentModelClass]);
+
+    return (
+      <AddSubModelButton
+        {...props}
+        subModelKey={subModelKey}
+        ParentModelClass={ParentModelClass}
+        subModelType={subModelType}
+        items={items}
+      >
+        {children}
+      </AddSubModelButton>
+    );
+  },
+);
 
 AddBlockButton.displayName = 'AddBlockButton';
