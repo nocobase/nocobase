@@ -185,14 +185,34 @@ export class FlowEngine {
   }
 
   /**
-   * 销毁并移除一个 Model 实例。
+   * 移除一个本地模型实例。
    * @param {string} uid 要销毁的 Model 实例的唯一标识符。
    * @returns {boolean} 如果成功销毁则返回 true，否则返回 false (例如，实例不存在)。
    */
   public removeModel(uid: string): boolean {
-    if (this.modelInstances.has(uid)) {
-      return this.modelInstances.delete(uid);
+    if (!this.modelInstances.has(uid)) {
+      console.warn(`FlowEngine: Model with UID '${uid}' does not exist.`);
+      return false;
     }
+    const modelInstance = this.modelInstances.get(uid);
+    // 从父模型中移除当前模型的引用
+    if (modelInstance.parent?.subModels) {
+      for (const subKey in modelInstance.parent.subModels) {
+        const subModelValue = modelInstance.parent.subModels[subKey];
+
+        if (Array.isArray(subModelValue)) {
+          const index = subModelValue.indexOf(modelInstance);
+          if (index !== -1) {
+            subModelValue.splice(index, 1);
+            break;
+          }
+        } else if (subModelValue === modelInstance) {
+          delete modelInstance.parent.subModels[subKey];
+          break;
+        }
+      }
+    }
+    this.modelInstances.delete(uid);
     return false;
   }
 

@@ -83,9 +83,11 @@ export class FlowModel<Structure extends { parent?: any; subModels?: any } = Def
   private createSubModels(subModels: Record<string, CreateSubModelOptions | CreateSubModelOptions[]>) {
     Object.entries(subModels || {}).forEach(([key, value]) => {
       if (Array.isArray(value)) {
-        value.sort((a, b) => (a.sortIndex || 0) - (b.sortIndex || 0)).forEach((item) => {
-          this.addSubModel(key, item);
-        });
+        value
+          .sort((a, b) => (a.sortIndex || 0) - (b.sortIndex || 0))
+          .forEach((item) => {
+            this.addSubModel(key, item);
+          });
       } else {
         this.setSubModel(key, value);
       }
@@ -593,6 +595,13 @@ export class FlowModel<Structure extends { parent?: any; subModels?: any } = Def
     );
   }
 
+  remove() {
+    if (!this.flowEngine) {
+      throw new Error('FlowEngine is not set on this model. Please set flowEngine before saving.');
+    }
+    return this.flowEngine.removeModel(this.uid);
+  }
+
   async save() {
     if (!this.flowEngine) {
       throw new Error('FlowEngine is not set on this model. Please set flowEngine before saving.');
@@ -604,27 +613,8 @@ export class FlowModel<Structure extends { parent?: any; subModels?: any } = Def
     if (!this.flowEngine) {
       throw new Error('FlowEngine is not set on this model. Please set flowEngine before deleting.');
     }
-
     // 从 FlowEngine 中销毁模型
-    this.flowEngine.destroyModel(this.uid);
-
-    // 从父模型中移除当前模型的引用
-    if (this.parent?.subModels) {
-      for (const subKey in this.parent.subModels) {
-        const subModelValue = this.parent.subModels[subKey];
-
-        if (Array.isArray(subModelValue)) {
-          const index = subModelValue.indexOf(this);
-          if (index !== -1) {
-            subModelValue.splice(index, 1);
-            break;
-          }
-        } else if (subModelValue === this) {
-          delete this.parent.subModels[subKey];
-          break;
-        }
-      }
-    }
+    return this.flowEngine.destroyModel(this.uid);
   }
 
   /**
@@ -669,7 +659,10 @@ export class FlowModel<Structure extends { parent?: any; subModels?: any } = Def
     for (const subModelKey in this.subModels) {
       data.subModels = data.subModels || {};
       if (Array.isArray(this.subModels[subModelKey])) {
-        data.subModels[subModelKey] = this.subModels[subModelKey].map((model: FlowModel, index) => ({...model.serialize(), sortIndex: index}));
+        data.subModels[subModelKey] = this.subModels[subModelKey].map((model: FlowModel, index) => ({
+          ...model.serialize(),
+          sortIndex: index,
+        }));
       } else if ((this.subModels[subModelKey] as any) instanceof FlowModel) {
         data.subModels[subModelKey] = this.subModels[subModelKey].serialize();
       }

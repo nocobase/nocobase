@@ -103,6 +103,10 @@ export default defineConfig({
               link: '/core/flow-engine/flow-model',
             },
             {
+              title: 'FlowSubModel',
+              link: '/core/flow-engine/flow-sub-model',
+            },
+            {
               title: 'FlowModelRenderer',
               link: '/core/flow-engine/flow-model-renderer',
             },
