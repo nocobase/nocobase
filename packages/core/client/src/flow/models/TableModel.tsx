@@ -7,13 +7,21 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { AddActionButton, AddFieldButtonProps, AddFieldMenuItem, AddSubModelMenuItem, Collection, FlowModel, MultiRecordResource } from '@nocobase/flow-engine';
+import {
+  AddActionButton,
+  AddFieldButton,
+  AddFieldButtonProps,
+  AddFieldMenuItem,
+  AddSubModelMenuItem,
+  Collection,
+  FlowModel,
+  MultiRecordResource,
+} from '@nocobase/flow-engine';
 import { Button, Card, Dropdown, Table } from 'antd';
 import React from 'react';
 import { BlockFlowModel } from './BlockFlowModel';
-import { TableColumnModel } from './table-column-model';
-import { AddFieldButton } from '@nocobase/flow-engine';
 import { FieldFlowModel } from './FieldFlowModel';
+import { TableColumnModel } from './TableColumnModel';
 
 type S = {
   subModels: {
@@ -33,7 +41,7 @@ export class TableModel extends BlockFlowModel<S> {
           dataIndex: item.field.name,
           title: item.field.title,
         },
-      }
+      };
     };
     const onModelAdded = async (column: TableColumnModel, item: AddFieldMenuItem) => {
       const field = item.field;
@@ -43,7 +51,7 @@ export class TableModel extends BlockFlowModel<S> {
         fieldPath: column.fieldPath,
       });
       await column.applyAutoFlows();
-    }
+    };
     return this.mapSubModels('columns', (column) => {
       const ps = column.getColumnProps();
       return ps;
@@ -51,7 +59,14 @@ export class TableModel extends BlockFlowModel<S> {
       key: 'addColumn',
       fixed: 'right',
       title: (
-        <AddFieldButton onModelAdded={onModelAdded} buildSubModelParams={buildColumnSubModelParams} subModelKey="columns" model={this} collection={this.collection} ParentModelClass={FieldFlowModel}/>
+        <AddFieldButton
+          onModelAdded={onModelAdded}
+          buildSubModelParams={buildColumnSubModelParams}
+          subModelKey="columns"
+          model={this}
+          collection={this.collection}
+          ParentModelClass={FieldFlowModel}
+        />
       ),
     } as any);
   }
