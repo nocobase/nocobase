@@ -2,37 +2,6 @@
 
 `FlowModel` 是 NocoBase 流引擎的基础模型类，支持流注册、流执行、属性管理、子模型管理、持久化等功能。所有业务模型均可继承自 FlowModel。
 
-## 泛型支持
-
-FlowModel 支持泛型，可以通过类型参数定义模型的结构，提供更好的类型安全和智能提示。
-
-### 基本泛型用法
-
-```ts
-interface MyModelStructure {
-  parent?: ParentModel;
-  subModels?: {
-    tabs?: TabModel[];
-    items?: ItemModel[];
-  };
-}
-
-class MyModel extends FlowModel<MyModelStructure> {
-  // 现在 this.parent 和 this.subModels 都有正确的类型推导
-}
-```
-
-### 默认结构类型
-
-如果不指定泛型参数，FlowModel 使用默认的 `DefaultStructure`：
-
-```ts
-interface DefaultStructure {
-  parent?: FlowModel | null;
-  subModels?: Record<string, FlowModel | FlowModel[]>;
-}
-```
-
 ---
 
 ## 主要属性
@@ -97,22 +66,22 @@ interface DefaultStructure {
 - **static registerFlow\<TModel\>(keyOrDefinition, flowDefinition?)**  
   配置流，支持字符串 key 或完整对象。支持泛型以确保类型安全。
 
-- **static extendFlow\<TModel\>(keyOrDefinition, extendDefinition?)**  
-  扩展已存在的流程定义，通过合并现有流程和扩展定义来创建新的流程。
-
-- **applyFlow(flowKey: string, extra?: FlowExtraContext): Promise<any>**  
+- **applyFlow(flowKey: string, extra?: FlowExtraContext): Promise\<any\>**  
   执行指定流。
 
 - **dispatchEvent(eventName: string, extra?: FlowExtraContext): void**  
   触发事件，自动匹配并执行相关流。
 
-- **applyAutoFlows(extra?: FlowExtraContext): Promise<any[]>**  
-  执行所有自动应用流。
+- **applyAutoFlows(extra?: FlowExtraContext): Promise\<any[]\>**  
+  执行所有自动流。
+
+- **applySubModelsAutoFlows(subKey: string, extra?: Record\<string, any\>): Promise\<void\>**  
+  执行指定子模型的自动流。
 
 - **getFlow(key: string): FlowDefinition \| undefined**  
   获取指定 key 的流配置。
 
-- **static getFlows(): Map<string, FlowDefinition>**  
+- **static getFlows(): Map\<string, FlowDefinition\>**  
   获取所有已配置流（含继承）。
 
 - **getAutoFlows(): FlowDefinition[]**  
@@ -125,7 +94,7 @@ interface DefaultStructure {
 - **openStepSettingsDialog(flowKey: string, stepKey: string)**  
   打开步骤设置对话框。
 
-- **async configureRequiredSteps(dialogWidth?: number | string, dialogTitle?: string): Promise<any>**  
+- **async configureRequiredSteps(dialogWidth?: number | string, dialogTitle?: string): Promise\<any\>**  
   配置必填步骤参数。用于在一个分步表单中配置所有需要参数的步骤。
   - `dialogWidth`: 对话框宽度，默认为 800
   - `dialogTitle`: 对话框标题，默认为 '步骤参数配置'
@@ -141,7 +110,7 @@ interface DefaultStructure {
 - **addSubModel(subKey: string, options): FlowModel**  
   创建并添加一个子模型到数组字段（如 tabs、columns）。
 
-- **mapSubModels<K, R>(subKey: K, callback: (model) => R): R[]**  
+- **mapSubModels\<K, R\>(subKey: K, callback: (model) => R): R[]**  
   遍历指定 key 的子模型，对每个子模型执行 callback 函数，并返回结果数组。
   - 支持完整的类型推导，callback 参数会自动推导为正确的模型类型
   - 如果子模型不存在，返回 null
@@ -157,11 +126,17 @@ interface DefaultStructure {
 
 ### 持久化与销毁
 
-- **async save(): Promise<any>**  
+- **serialize(): Record\<string, any\>**  
+  序列化当前模型及其所有子模型，返回可持久化的数据结构。
+
+- **async save(): Promise\<any\>**  
   保存模型到远程。
 
-- **async destroy(): Promise<any>**  
+- **async destroy(): Promise\<any\>**  
   删除模型。
+
+- **remove(): void**  
+  从本地移除当前模型实例（仅移除，不销毁数据）。
 
 ---
 
@@ -200,6 +175,37 @@ await model.save();
 await model.applyFlow('default');
 await model.applyAutoFlows();
 await model.dispatchEvent('event');
+```
+
+### 泛型支持
+
+FlowModel 支持泛型，可以通过类型参数定义模型的结构，提供更好的类型安全和智能提示。
+
+#### 基本泛型用法
+
+```ts
+interface MyModelStructure {
+  parent?: ParentModel;
+  subModels?: {
+    tabs?: TabModel[];
+    items?: ItemModel[];
+  };
+}
+
+class MyModel extends FlowModel<MyModelStructure> {
+  // 现在 this.parent 和 this.subModels 都有正确的类型推导
+}
+```
+
+#### 默认结构类型
+
+如果不指定泛型参数，FlowModel 使用默认的 `DefaultStructure`：
+
+```ts
+interface DefaultStructure {
+  parent?: FlowModel | null;
+  subModels?: Record<string, FlowModel | FlowModel[]>;
+}
 ```
 
 ---

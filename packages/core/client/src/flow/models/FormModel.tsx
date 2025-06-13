@@ -23,7 +23,7 @@ import { Card } from 'antd';
 import React from 'react';
 import { ActionModel } from './ActionModel';
 import { BlockFlowModel } from './BlockFlowModel';
-import { FormItemModel } from './FormItemModel';
+import { FormFieldModel } from './FormFieldModel';
 
 export class FormModel extends BlockFlowModel {
   form: Form;
@@ -33,7 +33,7 @@ export class FormModel extends BlockFlowModel {
   render() {
     const buildColumnSubModelParams: AddFieldButtonProps['buildSubModelParams'] = (item) => {
       return {
-        use: 'FormItemModel',
+        use: 'FormFieldModel',
         stepParams: {
           default: {
             step1: {
@@ -53,13 +53,13 @@ export class FormModel extends BlockFlowModel {
           </FormLayout>
           <AddFieldButton
             buildSubModelParams={buildColumnSubModelParams}
-            onModelAdded={async (fieldModel: FormItemModel, item) => {
+            onModelAdded={async (fieldModel: FormFieldModel, item) => {
               fieldModel.collectionField = item.field;
             }}
             subModelKey="fields"
             model={this}
             collection={this.collection}
-            ParentModelClass={FormItemModel}
+            ParentModelClass={FormFieldModel}
           />
           <FormButtonGroup>
             {this.mapSubModels('actions', (action) => (

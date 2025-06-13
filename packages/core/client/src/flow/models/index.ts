@@ -11,7 +11,7 @@ export * from './ActionModel';
 export * from './BlockFlowModel';
 export * from './BlockGridFlowModel';
 export * from './CalendarBlockFlowModel';
-export * from './FormItemModel';
+export * from './FormFieldModel';
 export * from './FormModel';
 export * from './HtmlBlockFlowModel';
 export * from './PageFlowModel';
