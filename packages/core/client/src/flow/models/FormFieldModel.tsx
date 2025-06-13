@@ -14,7 +14,7 @@ import { CollectionField, FlowModel } from '@nocobase/flow-engine';
 import React from 'react';
 import { ReactiveField } from '../Formily/ReactiveField';
 
-export class FormItemModel extends FlowModel {
+export class FormFieldModel extends FlowModel {
   collectionField: CollectionField;
   field: Field;
 
@@ -57,7 +57,7 @@ export class FormItemModel extends FlowModel {
   }
 }
 
-FormItemModel.registerFlow({
+FormFieldModel.registerFlow({
   key: 'default',
   auto: true,
   title: 'Basic',
@@ -100,9 +100,9 @@ FormItemModel.registerFlow({
   },
 });
 
-export class CommonFormItemFlowModel extends FormItemModel {}
+export class CommonFormItemFlowModel extends FormFieldModel {}
 
-FormItemModel.registerFlow({
+FormFieldModel.registerFlow({
   key: 'key2',
   auto: true,
   title: 'Group2',
