@@ -229,6 +229,7 @@ export interface CreateModelOptions {
   parentId?: string;
   subKey?: string;
   subType?: 'object' | 'array';
+  sortIndex?: number; // 排序索引
   [key: string]: any; // 允许额外的自定义选项
 }
 export interface IFlowModelRepository<T extends FlowModel = FlowModel> {
@@ -260,14 +261,14 @@ export interface RequiredConfigStepFormDialogProps {
 export type SubModelValue<TModel extends FlowModel = FlowModel> = TModel | TModel[];
 
 export interface DefaultStructure {
-  parent?: any,
-  subModels?: Record<string, FlowModel | FlowModel[]>
+  parent?: any;
+  subModels?: Record<string, FlowModel | FlowModel[]>;
 }
 
 /**
  * Options for FlowModel constructor
  */
-export interface FlowModelOptions<Structure extends {parent?: any, subModels?: any} = DefaultStructure> {
+export interface FlowModelOptions<Structure extends { parent?: any; subModels?: any } = DefaultStructure> {
   uid: string;
   props?: IModelComponentProps;
   stepParams?: Record<string, any>;
@@ -276,6 +277,7 @@ export interface FlowModelOptions<Structure extends {parent?: any, subModels?: a
   parentId?: string;
   subKey?: string;
   subType?: 'object' | 'array';
+  sortIndex?: number;
 }
 
 export interface FlowModelMeta {

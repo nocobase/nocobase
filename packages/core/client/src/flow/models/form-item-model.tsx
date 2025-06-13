@@ -49,3 +49,5 @@ FormItemModel.registerFlow({
     },
   },
 });
+
+export class CommonFormItemFlowModel extends FormItemModel {}

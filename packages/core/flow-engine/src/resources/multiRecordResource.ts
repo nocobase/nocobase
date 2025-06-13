@@ -15,7 +15,7 @@ export class MultiRecordResource<TDataItem = any> extends BaseRecordResource<TDa
 
   // 请求配置 - 与 APIClient 接口保持一致
   protected request = {
-    url: null as string | null,
+    // url: null as string | null,
     method: 'get' as string,
     params: {
       filter: {} as Record<string, any>,
@@ -31,6 +31,22 @@ export class MultiRecordResource<TDataItem = any> extends BaseRecordResource<TDa
     } as Record<string, any>,
     headers: {} as Record<string, any>,
   };
+
+  setPage(page: number) {
+    return this.addRequestParameter('page', page);
+  }
+
+  getPage(): number {
+    return this.request.params.page;
+  }
+
+  setPageSize(pageSize: number) {
+    return this.addRequestParameter('pageSize', pageSize);
+  }
+
+  getPageSize(): number {
+    return this.request.params.pageSize;
+  }
 
   async next(): Promise<void> {
     this.request.params.page += 1;
@@ -85,28 +101,10 @@ export class MultiRecordResource<TDataItem = any> extends BaseRecordResource<TDa
     await this.refresh();
   }
 
-  setPage(page: number) {
-    this.request.params.page = page;
-    return this;
-  }
-
-  getPage(): number {
-    return this.request.params.page;
-  }
-
-  setPageSize(pageSize: number) {
-    this.request.params.pageSize = pageSize;
-    return this;
-  }
-
-  getPageSize(): number {
-    return this.request.params.pageSize;
-  }
-
   async refresh(): Promise<void> {
     const { data, meta } = await this.runAction<TDataItem[], any>('list', {
-      ...this.getRefreshRequestOptions(),
       method: 'get',
+      ...this.getRefreshRequestOptions(),
     });
     this.setData(data).setMeta(meta);
     if (meta?.page) {

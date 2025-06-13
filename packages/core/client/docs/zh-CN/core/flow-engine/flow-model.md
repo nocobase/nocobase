@@ -40,6 +40,9 @@ interface DefaultStructure {
 - **uid: string**  
   模型唯一标识符。
 
+- **sortIndex: number**  
+  排序索引。
+
 - **props: IModelComponentProps**  
   组件属性，支持响应式。
 
