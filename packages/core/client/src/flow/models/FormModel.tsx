@@ -11,6 +11,7 @@ import { FormButtonGroup, FormDialog, FormLayout, Submit } from '@formily/antd-v
 import { createForm, Form } from '@formily/core';
 import { FormProvider } from '@formily/react';
 import {
+  AddActionButton,
   AddFieldButton,
   AddFieldButtonProps,
   Collection,
@@ -20,6 +21,7 @@ import {
 } from '@nocobase/flow-engine';
 import { Card } from 'antd';
 import React from 'react';
+import { ActionModel } from './ActionModel';
 import { BlockFlowModel } from './BlockFlowModel';
 import { FormItemModel } from './FormItemModel';
 
@@ -52,7 +54,7 @@ export class FormModel extends BlockFlowModel {
           <AddFieldButton
             buildSubModelParams={buildColumnSubModelParams}
             onModelAdded={async (fieldModel: FormItemModel, item) => {
-              fieldModel.field = item.field;
+              fieldModel.collectionField = item.field;
             }}
             subModelKey="fields"
             model={this}
@@ -63,6 +65,7 @@ export class FormModel extends BlockFlowModel {
             {this.mapSubModels('actions', (action) => (
               <FlowModelRenderer model={action} />
             ))}
+            <AddActionButton model={this} ParentModelClass={ActionModel} />
           </FormButtonGroup>
         </FormProvider>
       </Card>
