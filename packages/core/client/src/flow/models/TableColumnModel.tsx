@@ -24,7 +24,10 @@ export class TableColumnModel extends FieldFlowModel {
     return {
       ...this.props,
       title: (
-        <FlowsFloatContextMenu model={this} containerStyle={{ padding: '4px 8px', margin: '-4px -8px' }}>
+        <FlowsFloatContextMenu
+          model={this}
+          containerStyle={{ display: 'block', padding: '11px 8px', margin: '-11px -8px' }}
+        >
           {this.props.title}
         </FlowsFloatContextMenu>
       ),
