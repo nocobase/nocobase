@@ -41,10 +41,10 @@ export default defineConfig({
         title: 'API',
         link: '/core/application/application',
       },
-      {
-        title: 'Components',
-        link: '/components/action',
-      },
+      // {
+      //   title: 'Components',
+      //   link: '/components/action',
+      // },
       {
         title: 'Home site',
         link: lang === 'zh-CN' ? 'https://docs-cn.nocobase.com' : 'https://docs.nocobase.com',
@@ -56,32 +56,32 @@ export default defineConfig({
     ],
     sidebarEnhance: {
       '/core': [
-        {
-          title: 'Application',
-          type: 'group',
-          children: [
-            {
-              title: 'Application',
-              link: '/core/application/application',
-            },
-            {
-              title: 'PluginManager',
-              link: '/core/application/plugin-manager',
-            },
-            {
-              title: 'RouterManager',
-              link: '/core/application/router-manager',
-            },
-            {
-              title: 'PluginSettingsManager',
-              link: '/core/application/plugin-settings-manager',
-            },
-            {
-              title: 'Request',
-              link: '/core/request',
-            },
-          ],
-        },
+        // {
+        //   title: 'Application',
+        //   type: 'group',
+        //   children: [
+        //     {
+        //       title: 'Application',
+        //       link: '/core/application/application',
+        //     },
+        //     {
+        //       title: 'PluginManager',
+        //       link: '/core/application/plugin-manager',
+        //     },
+        //     {
+        //       title: 'RouterManager',
+        //       link: '/core/application/router-manager',
+        //     },
+        //     {
+        //       title: 'PluginSettingsManager',
+        //       link: '/core/application/plugin-settings-manager',
+        //     },
+        //     {
+        //       title: 'Request',
+        //       link: '/core/request',
+        //     },
+        //   ],
+        // },
         {
           title: 'FlowEngine',
           type: 'group',
@@ -101,6 +101,10 @@ export default defineConfig({
             {
               title: 'FlowModel',
               link: '/core/flow-engine/flow-model',
+            },
+            {
+              title: 'FlowSubModel',
+              link: '/core/flow-engine/flow-sub-model',
             },
             {
               title: 'FlowModelRenderer',
@@ -241,331 +245,197 @@ export default defineConfig({
             },
           ],
         },
-        {
-          title: 'UI Schema',
-          type: 'group',
-          children: [
-            {
-              title: 'SchemaComponent',
-              link: '/core/ui-schema/schema-component',
-            },
-            {
-              title: 'Designable',
-              link: '/core/ui-schema/designable',
-            },
-            {
-              title: 'SchemaInitializer',
-              link: '/core/ui-schema/schema-initializer',
-            },
-            {
-              title: 'SchemaInitializerManager',
-              link: '/core/ui-schema/schema-initializer-manager',
-            },
-            {
-              title: 'SchemaSettings',
-              link: '/core/ui-schema/schema-settings',
-            },
-            {
-              title: 'SchemaSettingsManager',
-              link: '/core/ui-schema/schema-settings-manager',
-            },
-            {
-              title: 'SchemaToolbar',
-              link: '/core/ui-schema/schema-toolbar',
-            },
-          ],
-        },
-        {
-          title: 'Data Source',
-          type: 'group',
-          children: [
-            {
-              title: 'DataSourceManager',
-              link: '/core/data-source/data-source-manager',
-            },
-            {
-              title: 'DataSourceManagerProvider',
-              link: '/core/data-source/data-source-manager-provider',
-            },
-            {
-              title: 'DataSource',
-              link: '/core/data-source/data-source',
-            },
-            {
-              title: 'DataSourceProvider',
-              link: '/core/data-source/data-source-provider',
-            },
-            {
-              title: 'CollectionManager',
-              link: '/core/data-source/collection-manager',
-            },
-            {
-              title: 'CollectionManagerProvider',
-              link: '/core/data-source/collection-manager-provider',
-            },
-            {
-              title: 'CollectionTemplateManager',
-              link: '/core/data-source/collection-template-manager',
-            },
-            {
-              title: 'CollectionTemplate',
-              link: '/core/data-source/collection-template',
-            },
-            {
-              title: 'Collection',
-              link: '/core/data-source/collection',
-            },
-            {
-              title: 'CollectionProvider',
-              link: '/core/data-source/collection-provider',
-            },
-            {
-              title: 'CollectionMixins',
-              link: '/core/data-source/collection-mixins',
-            },
-            {
-              title: 'CollectionField',
-              link: '/core/data-source/collection-field',
-            },
-            {
-              title: 'CollectionFieldInterfaceManager',
-              link: '/core/data-source/collection-field-interface-manager',
-            },
-            {
-              title: 'CollectionFieldInterface',
-              link: '/core/data-source/collection-field-interface',
-            },
-            {
-              title: 'AssociationProvider',
-              link: '/core/data-source/association-provider',
-            },
-            {
-              title: 'ExtendCollectionsProvider',
-              link: '/core/data-source/extend-collections-provider',
-            },
-            {
-              title: 'Collection Fields To Initializer Items',
-              link: '/core/data-source/collection-fields-to-initializer-items',
-            },
-          ]
-        },
-        {
-          title: 'DataBlock',
-          type: 'group',
-          children: [
-            {
-              title: 'CollectionRecord',
-              link: '/core/data-block/collection-record',
-            },
-            {
-              title: 'CollectionRecordProvider',
-              link: '/core/data-block/collection-record-provider',
-            },
-            {
-              title: 'DataBlockProvider',
-              link: '/core/data-block/data-block-provider',
-            },
-            {
-              title: 'DataBlockResourceProvider',
-              link: '/core/data-block/data-block-resource-provider',
-            },
-            {
-              title: 'DataBlockRequestProvider',
-              link: '/core/data-block/data-block-request-provider',
-            },
-          ]
-        }
       ],
-      '/components': [
-        {
-          title: 'Action',
-          type: 'group',
-          children: [
-            {
-              "title": "Action",
-              "link": "/components/action"
-            },
-            {
-              "title": "Filter",
-              "link": "/components/filter"
-            },
-            {
-              "title": "LinkageFilter",
-              "link": "/components/linkage-filter"
-            },
-          ]
-        },
-        {
-          title: 'Field',
-          type: 'group',
-          children: [
-            {
-              "title": "Checkbox",
-              "link": "/components/checkbox"
-            },
-            {
-              "title": "Cascader",
-              "link": "/components/cascader"
-            },
-            {
-              "title": "ColorPicker",
-              "link": "/components/color-picker"
-            },
-            {
-              "title": "ColorSelect",
-              "link": "/components/color-select"
-            },
-            {
-              "title": "DatePicker",
-              "link": "/components/date-picker"
-            },
-            {
-              "title": "TimePicker",
-              "link": "/components/time-picker"
-            },
-            {
-              "title": "IconPicker",
-              "link": "/components/icon-picker"
-            },
-            {
-              "title": "InputNumber",
-              "link": "/components/input-number"
-            },
-            {
-              "title": "Input",
-              "link": "/components/input"
-            },
-            {
-              "title": "AutoComplete",
-              "link": "/components/auto-complete"
-            },
-            {
-              "title": "NanoIDInput",
-              "link": "/components/nanoid-input"
-            },
-            {
-              "title": "Password",
-              "link": "/components/password"
-            },
-            {
-              "title": "Percent",
-              "link": "/components/percent"
-            },
-            {
-              "title": "Radio",
-              "link": "/components/radio"
-            },
-            {
-              "title": "Select",
-              "link": "/components/select"
-            },
-            {
-              "title": "RemoteSelect",
-              "link": "/components/remote-select"
-            },
-            {
-              "title": "TreeSelect",
-              "link": "/components/tree-select"
-            },
-            {
-              "title": "Upload",
-              "link": "/components/upload"
-            },
-            {
-              "title": "CollectionSelect",
-              "link": "/components/collection-select"
-            },
-            {
-              "title": "Cron",
-              "link": "/components/cron"
-            },
-            {
-              "title": "Markdown",
-              "link": "/components/markdown"
-            },
-            {
-              "title": "Variable",
-              "link": "/components/variable"
-            },
-            {
-              "title": "QuickEdit",
-              "link": "/components/quick-edit"
-            },
-            {
-              "title": "RichText",
-              "link": "/components/rich-text"
-            }
-          ]
-        },
-        {
-          title: 'Block',
-          type: 'group',
-          children: [
-            {
-              "title": "BlockItem",
-              "link": "/components/block-item"
-            },
-            {
-              "title": "CardItem",
-              "link": "/components/card-item"
-            },
-            {
-              "title": "FormItem",
-              "link": "/components/form-item"
-            },
-            {
-              "title": "FormV2",
-              "link": "/components/form-v2"
-            },
-            {
-              "title": "TableV2",
-              "link": "/components/table-v2"
-            },
-            {
-              "title": "Details",
-              "link": "/components/details"
-            },
-            {
-              "title": "GridCard",
-              "link": "/components/grid-card"
-            },
-            {
-              "title": "Grid",
-              "link": "/components/grid"
-            },
-            {
-              "title": "List",
-              "link": "/components/list"
-            },
-          ]
-        },
-        {
-          title: 'Others',
-          type: 'group',
-          children: [
-            {
-              "title": "Tabs",
-              "link": "/components/tabs"
-            },
-            {
-              "title": "ErrorFallback",
-              "link": "/components/error-fallback"
-            },
-            {
-              "title": "G2Plot",
-              "link": "/components/g2plot"
-            },
-            {
-              "title": "Menu",
-              "link": "/components/menu"
-            },
-            {
-              "title": "Pagination",
-              "link": "/components/pagination"
-            },
-          ]
-        },
-      ]
+      // '/components': [
+      //   {
+      //     title: 'Action',
+      //     type: 'group',
+      //     children: [
+      //       {
+      //         "title": "Action",
+      //         "link": "/components/action"
+      //       },
+      //       {
+      //         "title": "Filter",
+      //         "link": "/components/filter"
+      //       },
+      //       {
+      //         "title": "LinkageFilter",
+      //         "link": "/components/linkage-filter"
+      //       },
+      //     ]
+      //   },
+      //   {
+      //     title: 'Field',
+      //     type: 'group',
+      //     children: [
+      //       {
+      //         "title": "Checkbox",
+      //         "link": "/components/checkbox"
+      //       },
+      //       {
+      //         "title": "Cascader",
+      //         "link": "/components/cascader"
+      //       },
+      //       {
+      //         "title": "ColorPicker",
+      //         "link": "/components/color-picker"
+      //       },
+      //       {
+      //         "title": "ColorSelect",
+      //         "link": "/components/color-select"
+      //       },
+      //       {
+      //         "title": "DatePicker",
+      //         "link": "/components/date-picker"
+      //       },
+      //       {
+      //         "title": "TimePicker",
+      //         "link": "/components/time-picker"
+      //       },
+      //       {
+      //         "title": "IconPicker",
+      //         "link": "/components/icon-picker"
+      //       },
+      //       {
+      //         "title": "InputNumber",
+      //         "link": "/components/input-number"
+      //       },
+      //       {
+      //         "title": "Input",
+      //         "link": "/components/input"
+      //       },
+      //       {
+      //         "title": "AutoComplete",
+      //         "link": "/components/auto-complete"
+      //       },
+      //       {
+      //         "title": "NanoIDInput",
+      //         "link": "/components/nanoid-input"
+      //       },
+      //       {
+      //         "title": "Password",
+      //         "link": "/components/password"
+      //       },
+      //       {
+      //         "title": "Percent",
+      //         "link": "/components/percent"
+      //       },
+      //       {
+      //         "title": "Radio",
+      //         "link": "/components/radio"
+      //       },
+      //       {
+      //         "title": "Select",
+      //         "link": "/components/select"
+      //       },
+      //       {
+      //         "title": "RemoteSelect",
+      //         "link": "/components/remote-select"
+      //       },
+      //       {
+      //         "title": "TreeSelect",
+      //         "link": "/components/tree-select"
+      //       },
+      //       {
+      //         "title": "Upload",
+      //         "link": "/components/upload"
+      //       },
+      //       {
+      //         "title": "CollectionSelect",
+      //         "link": "/components/collection-select"
+      //       },
+      //       {
+      //         "title": "Cron",
+      //         "link": "/components/cron"
+      //       },
+      //       {
+      //         "title": "Markdown",
+      //         "link": "/components/markdown"
+      //       },
+      //       {
+      //         "title": "Variable",
+      //         "link": "/components/variable"
+      //       },
+      //       {
+      //         "title": "QuickEdit",
+      //         "link": "/components/quick-edit"
+      //       },
+      //       {
+      //         "title": "RichText",
+      //         "link": "/components/rich-text"
+      //       }
+      //     ]
+      //   },
+      //   {
+      //     title: 'Block',
+      //     type: 'group',
+      //     children: [
+      //       {
+      //         "title": "BlockItem",
+      //         "link": "/components/block-item"
+      //       },
+      //       {
+      //         "title": "CardItem",
+      //         "link": "/components/card-item"
+      //       },
+      //       {
+      //         "title": "FormItem",
+      //         "link": "/components/form-item"
+      //       },
+      //       {
+      //         "title": "FormV2",
+      //         "link": "/components/form-v2"
+      //       },
+      //       {
+      //         "title": "TableV2",
+      //         "link": "/components/table-v2"
+      //       },
+      //       {
+      //         "title": "Details",
+      //         "link": "/components/details"
+      //       },
+      //       {
+      //         "title": "GridCard",
+      //         "link": "/components/grid-card"
+      //       },
+      //       {
+      //         "title": "Grid",
+      //         "link": "/components/grid"
+      //       },
+      //       {
+      //         "title": "List",
+      //         "link": "/components/list"
+      //       },
+      //     ]
+      //   },
+      //   {
+      //     title: 'Others',
+      //     type: 'group',
+      //     children: [
+      //       {
+      //         "title": "Tabs",
+      //         "link": "/components/tabs"
+      //       },
+      //       {
+      //         "title": "ErrorFallback",
+      //         "link": "/components/error-fallback"
+      //       },
+      //       {
+      //         "title": "G2Plot",
+      //         "link": "/components/g2plot"
+      //       },
+      //       {
+      //         "title": "Menu",
+      //         "link": "/components/menu"
+      //       },
+      //       {
+      //         "title": "Pagination",
+      //         "link": "/components/pagination"
+      //       },
+      //     ]
+      //   },
+      // ]
       // '/ui-schema': [
       //   {
       //     title: 'Overview',

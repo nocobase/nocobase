@@ -9,69 +9,78 @@
 
 import { EditOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
-import { Field, FlowModel, FlowModelRenderer } from '@nocobase/flow-engine';
-import { Space } from 'antd';
+import { CollectionField, FlowModelRenderer, FlowsFloatContextMenu } from '@nocobase/flow-engine';
+import { Space, TableColumnProps, Tooltip } from 'antd';
 import React from 'react';
-import { ActionModel } from './action-model';
-import { FormModel } from './form-model';
+import { ActionModel } from './ActionModel';
 import { FieldFlowModel } from './FieldFlowModel';
+import { QuickEditForm } from './QuickEditForm';
 
 export class TableColumnModel extends FieldFlowModel {
   // field: Field;
   // fieldPath: string;
 
-  getColumnProps() {
-    return { ...this.props, render: this.render() };
+  getColumnProps(): TableColumnProps {
+    return {
+      ...this.props,
+      title: (
+        <FlowsFloatContextMenu
+          model={this}
+          containerStyle={{ display: 'block', padding: '11px 8px', margin: '-11px -8px' }}
+        >
+          {this.props.title}
+        </FlowsFloatContextMenu>
+      ),
+      ellipsis: true,
+      onCell: (record) => ({
+        className: css`
+          .edit-icon {
+            position: absolute;
+            display: none;
+            color: #1890ff;
+            margin-left: 8px;
+            cursor: pointer;
+            top: 50%;
+            right: 8px;
+            transform: translateY(-50%);
+          }
+          &:hover {
+            background: rgba(24, 144, 255, 0.1) !important;
+          }
+          &:hover .edit-icon {
+            display: inline-flex;
+          }
+        `,
+      }),
+      render: this.render(),
+    };
+  }
+
+  renderQuickEditButton(record) {
+    return (
+      <Tooltip title="快速编辑">
+        <EditOutlined
+          className="edit-icon"
+          onClick={async (e) => {
+            e.stopPropagation();
+            await QuickEditForm.open({
+              flowEngine: this.flowEngine,
+              collectionField: this.field as CollectionField,
+              filterByTk: record.id,
+            });
+            await this.parent.resource.refresh();
+          }}
+        />
+      </Tooltip>
+    );
   }
 
   render() {
     return (value, record, index) => (
-      <span
-        className={css`
-          .anticon {
-            display: none;
-          }
-          &:hover {
-            .anticon {
-              display: inline-flex;
-            }
-          }
-        `}
-      >
+      <>
         {value}
-        <EditOutlined
-          onClick={async () => {
-            const model = this.createRootModel({
-              use: 'FormModel',
-              stepParams: {
-                default: {
-                  step1: {
-                    dataSourceKey: this.field.collection.dataSource.name,
-                    collectionName: this.field.collection.name,
-                  },
-                },
-              },
-              subModels: {
-                fields: [
-                  {
-                    use: 'FormItemModel',
-                    stepParams: {
-                      default: {
-                        step1: {
-                          fieldPath: this.fieldPath,
-                        },
-                      },
-                    },
-                  },
-                ],
-              },
-            }) as FormModel;
-            await model.openDialog({ filterByTk: record.id });
-            await this.parent.resource.refresh();
-            this.flowEngine.removeModel(model.uid);
-          }}
-        />
-      </span>
+        {this.renderQuickEditButton(record)}
+      </>
     );
   }
 }
@@ -117,7 +126,6 @@ TableColumnModel.registerFlow({
         ctx.model.fieldPath = params.fieldPath;
         ctx.model.setProps('title', field.title);
         ctx.model.setProps('dataIndex', field.name);
-
         ctx.model.field = field;
       },
     },

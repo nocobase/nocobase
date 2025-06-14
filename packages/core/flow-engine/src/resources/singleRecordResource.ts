@@ -7,7 +7,6 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { observable } from '@formily/reactive';
 import { BaseRecordResource } from './baseRecordResource';
 
 export class SingleRecordResource<TData = any> extends BaseRecordResource<TData> {

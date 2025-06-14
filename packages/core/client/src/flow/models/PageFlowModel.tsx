@@ -50,8 +50,10 @@ export class PageFlowModel extends FlowModel<PageFlowModelStructure> {
               this.addTab({
                 use: 'PageTabFlowModel',
                 props: { key: uid(), label: `Tab - ${uid()}` },
-                grid: {
-                  use: 'BlockGridFlowModel',
+                subModels: {
+                  grid: {
+                    use: 'BlockGridFlowModel',
+                  },
                 },
               })
             }

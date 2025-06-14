@@ -2,37 +2,6 @@
 
 `FlowModel` 是 NocoBase 流引擎的基础模型类，支持流注册、流执行、属性管理、子模型管理、持久化等功能。所有业务模型均可继承自 FlowModel。
 
-## 泛型支持
-
-FlowModel 支持泛型，可以通过类型参数定义模型的结构，提供更好的类型安全和智能提示。
-
-### 基本泛型用法
-
-```ts
-interface MyModelStructure {
-  parent?: ParentModel;
-  subModels?: {
-    tabs?: TabModel[];
-    items?: ItemModel[];
-  };
-}
-
-class MyModel extends FlowModel<MyModelStructure> {
-  // 现在 this.parent 和 this.subModels 都有正确的类型推导
-}
-```
-
-### 默认结构类型
-
-如果不指定泛型参数，FlowModel 使用默认的 `DefaultStructure`：
-
-```ts
-interface DefaultStructure {
-  parent?: FlowModel | null;
-  subModels?: Record<string, FlowModel | FlowModel[]>;
-}
-```
-
 ---
 
 ## 主要属性
@@ -97,22 +66,22 @@ interface DefaultStructure {
 - **static registerFlow\<TModel\>(keyOrDefinition, flowDefinition?)**  
   配置流，支持字符串 key 或完整对象。支持泛型以确保类型安全。
 
-- **static extendFlow\<TModel\>(keyOrDefinition, extendDefinition?)**  
-  扩展已存在的流程定义，通过合并现有流程和扩展定义来创建新的流程。
-
-- **applyFlow(flowKey: string, extra?: FlowExtraContext): Promise<any>**  
+- **applyFlow(flowKey: string, extra?: FlowExtraContext): Promise\<any\>**  
   执行指定流。
 
 - **dispatchEvent(eventName: string, extra?: FlowExtraContext): void**  
   触发事件，自动匹配并执行相关流。
 
-- **applyAutoFlows(extra?: FlowExtraContext): Promise<any[]>**  
-  执行所有自动应用流。
+- **applyAutoFlows(extra?: FlowExtraContext): Promise\<any[]\>**  
+  执行所有自动流。
+
+- **applySubModelsAutoFlows(subKey: string, extra?: Record\<string, any\>): Promise\<void\>**  
+  执行指定子模型的自动流。
 
 - **getFlow(key: string): FlowDefinition \| undefined**  
   获取指定 key 的流配置。
 
-- **static getFlows(): Map<string, FlowDefinition>**  
+- **static getFlows(): Map\<string, FlowDefinition\>**  
   获取所有已配置流（含继承）。
 
 - **getAutoFlows(): FlowDefinition[]**  
@@ -125,7 +94,7 @@ interface DefaultStructure {
 - **openStepSettingsDialog(flowKey: string, stepKey: string)**  
   打开步骤设置对话框。
 
-- **async configureRequiredSteps(dialogWidth?: number | string, dialogTitle?: string): Promise<any>**  
+- **async configureRequiredSteps(dialogWidth?: number | string, dialogTitle?: string): Promise\<any\>**  
   配置必填步骤参数。用于在一个分步表单中配置所有需要参数的步骤。
   - `dialogWidth`: 对话框宽度，默认为 800
   - `dialogTitle`: 对话框标题，默认为 '步骤参数配置'
@@ -141,7 +110,7 @@ interface DefaultStructure {
 - **addSubModel(subKey: string, options): FlowModel**  
   创建并添加一个子模型到数组字段（如 tabs、columns）。
 
-- **mapSubModels<K, R>(subKey: K, callback: (model) => R): R[]**  
+- **mapSubModels\<K, R\>(subKey: K, callback: (model) => R): R[]**  
   遍历指定 key 的子模型，对每个子模型执行 callback 函数，并返回结果数组。
   - 支持完整的类型推导，callback 参数会自动推导为正确的模型类型
   - 如果子模型不存在，返回 null
@@ -157,11 +126,17 @@ interface DefaultStructure {
 
 ### 持久化与销毁
 
-- **async save(): Promise<any>**  
+- **serialize(): Record\<string, any\>**  
+  序列化当前模型及其所有子模型，返回可持久化的数据结构。
+
+- **async save(): Promise\<any\>**  
   保存模型到远程。
 
-- **async destroy(): Promise<any>**  
+- **async destroy(): Promise\<any\>**  
   删除模型。
+
+- **remove(): void**  
+  从本地移除当前模型实例（仅移除，不销毁数据）。
 
 ---
 
@@ -200,4 +175,159 @@ await model.save();
 await model.applyFlow('default');
 await model.applyAutoFlows();
 await model.dispatchEvent('event');
+```
+
+### 泛型支持
+
+FlowModel 支持泛型，可以通过类型参数定义模型的结构，提供更好的类型安全和智能提示。
+
+#### 基本泛型用法
+
+```ts
+interface MyModelStructure {
+  parent?: ParentModel;
+  subModels?: {
+    tabs?: TabModel[];
+    items?: ItemModel[];
+  };
+}
+
+class MyModel extends FlowModel<MyModelStructure> {
+  // 现在 this.parent 和 this.subModels 都有正确的类型推导
+}
+```
+
+#### 默认结构类型
+
+如果不指定泛型参数，FlowModel 使用默认的 `DefaultStructure`：
+
+```ts
+interface DefaultStructure {
+  parent?: FlowModel | null;
+  subModels?: Record<string, FlowModel | FlowModel[]>;
+}
+```
+
+---
+
+## 子模型添加按钮组件
+
+为方便在界面中动态添加子模型，框架提供了 4 个 React 按钮组件：
+
+1. `AddSubModelButton`（通用）
+2. `AddBlockButton`（添加区块模型）
+3. `AddFieldButton`（添加字段模型）
+4. `AddActionButton`（添加 Action 模型）
+
+### 通用添加子模型
+
+`AddSubModelButton` 是最基础的按钮组件，用于向任意父模型添加任意类型的子模型。其余三个按钮组件都基于它做了场景化封装。
+
+#### 主要 Props
+
+| Prop | 类型 | 说明 |
+|------|------|------|
+| `model` | `FlowModel` **(必填)** | 当前父模型实例 |
+| `items` | `AddSubModelMenuItem[]` **(必填)** | 可供选择的子模型类型列表 |
+| `subModelType` | `'object' \| 'array'` | 指定子模型是对象字段还是数组字段，默认为 `'array'` |
+| `subModelKey` | `string` | 子模型在父模型中的字段名 |
+| `ParentModelClass` | `string \| ModelConstructor` | 父模型类名（用于过滤支持的子模型类型） |
+| `onModelAdded` | `(subModel, item) => Promise<void>` | 添加成功后的回调，可返回 Promise 以执行异步逻辑 |
+| `children` | `ReactNode` | 按钮文案，默认 `"Add"` |
+| `buildSubModelParams` | `(item) => CreateModelOptions \| FlowModel` | 自定义子模型创建参数 |
+
+#### 菜单项定义 `AddSubModelMenuItem`
+
+```ts
+interface AddSubModelMenuItem {
+  key: string;       // 唯一键
+  label: string;     // 菜单展示文案
+  icon?: ReactNode;  // 可选图标
+  item: typeof FlowModel; // 对应的模型类
+  use: string;       // createModel 时的 use 值
+}
+```
+
+#### 组件行为
+
+以 **鼠标悬停** 方式展示下拉菜单，用户点击菜单项后执行相应的子模型添加逻辑。
+
+#### 使用示例
+
+```ts
+<AddSubModelButton
+  model={parentModel}
+  subModelKey="tabs"
+  subModelType="array"
+  items={[
+    {
+      key: 'TabFlowModel',
+      label: '选项卡',
+      item: TabFlowModel,
+      use: 'TabFlowModel',
+    },
+  ]}
+/>
+```
+
+### 添加区块子模型
+
+`AddBlockButton` 专门用于向父模型添加**区块子模型**。相比 `AddSubModelButton`，它会自动根据 `ParentModelClass` 检索所有合法的区块模型类并构造菜单，不需要手动传入 `items`。
+
+#### 额外 Props
+
+| Prop | 类型 | 默认值 | 说明 |
+|------|------|--------|------|
+| `ParentModelClass` | `string` | `'BlockFlowModel'` | 区块模型的父类名 |
+
+#### 使用示例
+
+```ts
+<AddBlockButton
+  model={gridModel}
+  // 其余参数均可使用默认值
+/>
+```
+
+### 添加字段子模型
+
+`AddFieldButton` 用于为 **字段** 相关的父模型（如表格列、表单项）快速添加对应的字段子模型。会自动根据 `collection` 中的所有 CollectionField 自动匹配合适的模型类并构造菜单，不需要手动传入 `items`。
+
+#### 额外 Props
+
+| Prop | 类型 | 默认值 | 说明 |
+|------|------|--------|------|
+| `collection` | `Collection` **(必填)** | 字段所属的数据表集合 |
+| `ParentModelClass` | `string` | `'FieldFlowModel'` | 字段模型的父类名 |
+| `buildSubModelParams` | `(item) => CreateModelOptions \| FlowModel` | 自定义创建逻辑 |
+
+#### 使用示例
+
+```ts
+<AddFieldButton
+  model={tableColumnModel}
+  collection={postCollection}
+  ParentModelClass={CollectionFieldFlowModel}
+  buildSubModelParams={buildColumnSubModelParams}
+  onModelAdded={onModelAdded}
+/>
+```
+
+### 添加 Action 子模型
+
+`AddActionButton` 用于向父模型添加**Action 子模型**。会自动根据 `ParentModelClass` 检索所有合法的 Action 模型类并构造菜单，不需要手动传入 `items`。
+
+#### 额外 Props
+
+| Prop | 类型 | 默认值 | 说明 |
+|------|------|--------|------|
+| `ParentModelClass` | `string` | `'ActionFlowModel'` | 动作模型的父类名 |
+
+#### 使用示例
+
+```ts
+<AddActionButton
+  model={blockModel}
+  ParentModelClass={ActionFlowModel}
+/>
 ```

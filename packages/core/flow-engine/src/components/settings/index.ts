@@ -7,7 +7,5 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-// packages/core/flowEngine/src/settings/index.ts
-export * from './AddAction';
 export * from './independents';
 export * from './wrappers';

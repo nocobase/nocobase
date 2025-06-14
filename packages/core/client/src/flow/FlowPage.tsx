@@ -15,7 +15,7 @@ import { useParams } from 'react-router-dom';
 
 function InternalFlowPage({ uid }) {
   const model = useFlowModel(uid);
-  return <FlowModelRenderer model={model} showFlowSettings hideRemoveInSettings/>;
+  return <FlowModelRenderer model={model} showFlowSettings hideRemoveInSettings />;
 }
 
 export const FlowPage = () => {
