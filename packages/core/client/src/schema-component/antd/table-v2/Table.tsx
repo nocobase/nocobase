@@ -854,7 +854,7 @@ export const Table: any = withDynamicSchemaProps(
       const collection = useCollection();
       const isTableSelector = schema?.parent?.['x-decorator'] === 'TableSelectorProvider';
       const ctx = isTableSelector ? useTableSelectorContext() : useTableBlockContext();
-      const { expandFlag, allIncludesChildren, enableIndexÏColumn } = ctx;
+      const { expandFlag, allIncludesChildren, enableIndexColumn } = ctx;
       const onRowDragEnd = useMemoizedFn(others.onRowDragEnd || (() => {}));
       const paginationProps = usePaginationProps(pagination1, pagination2, props);
       const columns = useTableColumns(others, paginationProps);
@@ -1020,7 +1020,7 @@ export const Table: any = withDynamicSchemaProps(
       const restProps = useMemo(
         () => ({
           rowSelection:
-            enableIndexÏColumn !== false
+            enableIndexColumn !== false
               ? memoizedRowSelection
                 ? {
                     type: 'checkbox',
@@ -1102,7 +1102,7 @@ export const Table: any = withDynamicSchemaProps(
           memoizedRowSelection,
           paginationProps,
           tableBlockContextBasicValue,
-          enableIndexÏColumn,
+          enableIndexColumn,
         ],
       );
 

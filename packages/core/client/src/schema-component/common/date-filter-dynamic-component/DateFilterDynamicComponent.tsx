@@ -144,7 +144,7 @@ export const DateFilterDynamicComponent = (props) => {
         <Select
           key="unit"
           value={value?.unit}
-          style={{ maxWidth: 140, minWidth: 130 }}
+          style={{ maxWidth: 140 }}
           onChange={(val) => {
             const obj = {
               ...value,
@@ -158,6 +158,7 @@ export const DateFilterDynamicComponent = (props) => {
             { value: 'month', label: t('Calendar Month') },
             { value: 'year', label: t('Calendar Year') },
           ]}
+          popupMatchSelectWidth
         />,
       ]}
       {(value?.type === 'exact' || !value?.type) && <SmartDatePicker {...props} />}
