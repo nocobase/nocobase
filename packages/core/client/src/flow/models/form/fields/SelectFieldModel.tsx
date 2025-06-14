@@ -9,45 +9,41 @@
 
 import { FormItem, Select } from '@formily/antd-v5';
 import { Field as FormilyField } from '@formily/react';
-import { FormItemModel } from '../../form-item-model';
+import { FormFieldModel } from '../../FormFieldModel';
 import React from 'react';
 
-export class SelectFieldModel extends FormItemModel {
-  render() {
-    return (
-      <div>
-        <FormilyField
-          name={this.field.name}
-          title={this.field.title}
-          required
-          decorator={[FormItem]}
-          component={[
-            Select,
-            {
-              style: {
-                width: '100%',
-              },
-              ...this.props,
-              options: this.props.dataSource,
-            },
-          ]}
-        />
-      </div>
-    );
+export class SelectFieldModel extends FormFieldModel {
+  setDataSource(dataSource?: any[]) {
+    this.props.dataSource = dataSource;
+  }
+
+  createField() {
+    return this.form.createField({
+      name: this.collectionField.name,
+      ...this.props,
+      decorator: [
+        FormItem,
+        {
+          title: this.props.title,
+        },
+      ],
+      component: [
+        Select,
+        {
+          options: this.props.dataSource || this.collectionField?.options?.uiSchema?.enum || [],
+        },
+      ],
+    }) as any;
   }
 }
 
 SelectFieldModel.registerFlow({
-  key: 'default1',
-  auto: true,
+  key: 'select',
+  title: 'DataSource',
   steps: {
-    step1: {
+    dataSource: {
       handler(ctx, params) {
-        const field = ctx.globals.dataSourceManager.getCollectionField(params.fieldPath);
-        const { uiSchema } = field.options;
-        ctx.model.field = field;
-        ctx.model.setProps({ ...uiSchema?.['x-component-props'] });
-        ctx.model.setProps('dataSource', uiSchema?.enum || []);
+        ctx.model.setDataSource(params.dataSource);
       },
     },
   },

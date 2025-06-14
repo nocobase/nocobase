@@ -8,9 +8,9 @@
  */
 
 import { FormItem } from '@formily/antd-v5';
-import { Field as FormilyField } from '@formily/react';
-import { FormItemModel } from '../../form-item-model';
-import React from 'react';
+import { connect, mapProps } from '@formily/react';
+import { FormFieldModel } from '../../FormFieldModel';
+import { useMemo } from 'react';
 import { isNum } from '@formily/shared';
 import { InputNumber } from 'antd';
 import * as math from 'mathjs';
@@ -23,43 +23,40 @@ const toValue = (value: any, callback: (v: number) => number) => {
   }
   return null;
 };
-
-export class PercentFieldModel extends FormItemModel {
-  render() {
-    return (
-      <div>
-        <FormilyField
-          name={this.field.name}
-          title={this.field.title}
-          required={this.props.required}
-          decorator={[FormItem]}
-          component={[
-            InputNumber,
-            {
-              style: {
-                width: '100%',
-              },
-              ...this.props,
-              addonAfter: '%',
-            },
-          ]}
-        />
-      </div>
-    );
+const PercentInput = connect(
+  InputNumber,
+  mapProps((props, field: any) => {
+    const v = useMemo(() => toValue(props.value, (v) => v * 100), [props.value]);
+    return {
+      ...props,
+      value: v,
+      onChange: (v) => {
+        field.setValue(toValue(v, (v) => v / 100));
+      },
+    };
+  }),
+);
+export class PercentFieldModel extends FormFieldModel {
+  createField() {
+    return this.form.createField({
+      name: this.collectionField.name,
+      ...this.props,
+      decorator: [
+        FormItem,
+        {
+          title: this.props.title,
+        },
+      ],
+      component: [
+        PercentInput,
+        {
+          style: {
+            width: '100%',
+          },
+          ...this.props,
+          addonAfter: '%',
+        },
+      ],
+    }) as any;
   }
 }
-
-PercentFieldModel.registerFlow({
-  key: 'default',
-  auto: true,
-  steps: {
-    step1: {
-      handler(ctx, params) {
-        const field = ctx.globals.dataSourceManager.getCollectionField(params.fieldPath);
-        const { uiSchema } = field.options;
-        ctx.model.field = field;
-        ctx.model.setProps({ ...uiSchema?.['x-component-props'] });
-      },
-    },
-  },
-});

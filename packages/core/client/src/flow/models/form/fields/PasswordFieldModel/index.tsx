@@ -8,11 +8,11 @@
  */
 
 import { FormItem } from '@formily/antd-v5';
-import { Field as FormilyField } from '@formily/react';
-import { FormItemModel } from '../../../form-item-model';
+import { FormFieldModel } from '../../../FormFieldModel';
 import { isNum } from '@formily/shared';
 import { Input } from 'antd';
 import * as math from 'mathjs';
+import { connect, mapProps } from '@formily/react';
 import { isFn } from '@formily/shared';
 import React, { Fragment } from 'react';
 import { getStrength } from './utils';
@@ -24,7 +24,7 @@ interface IPasswordStrengthProps {
   children?: ReactRenderPropsChildren<number>;
 }
 
-export const PasswordStrength: React.FC<IPasswordStrengthProps> = (props) => {
+const PasswordStrength: React.FC<IPasswordStrengthProps> = (props) => {
   if (isFn(props.children)) {
     return props.children(getStrength(String(props.value || '')));
   } else {
@@ -80,41 +80,18 @@ const Password = (props) => {
   );
 };
 
-export class PasswordFieldModel extends FormItemModel {
-  render() {
-    return (
-      <div>
-        <FormilyField
-          name={this.field.name}
-          title={this.field.title}
-          required={this.props.required}
-          decorator={[FormItem]}
-          component={[
-            Password,
-            {
-              style: {
-                width: '100%',
-              },
-              ...this.props,
-            },
-          ]}
-        />
-      </div>
-    );
+export class PasswordFieldModel extends FormFieldModel {
+  createField() {
+    return this.form.createField({
+      name: this.collectionField.name,
+      ...this.props,
+      decorator: [
+        FormItem,
+        {
+          title: this.props.title,
+        },
+      ],
+      component: [Password, {}],
+    }) as any;
   }
 }
-
-PasswordFieldModel.registerFlow({
-  key: 'default',
-  auto: true,
-  steps: {
-    step1: {
-      handler(ctx, params) {
-        const field = ctx.globals.dataSourceManager.getCollectionField(params.fieldPath);
-        const { uiSchema } = field.options;
-        ctx.model.field = field;
-        ctx.model.setProps({ ...uiSchema?.['x-component-props'] });
-      },
-    },
-  },
-});
