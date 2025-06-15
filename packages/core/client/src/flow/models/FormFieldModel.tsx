@@ -66,6 +66,8 @@ FormFieldModel.registerFlow({
       handler(ctx, params) {
         const collectionField = ctx.globals.dataSourceManager.getCollectionField(params.fieldPath);
         ctx.model.collectionField = collectionField;
+        const { uiSchema } = collectionField.options;
+        ctx.model.setProps({ ...uiSchema?.['x-component-props'] });
         ctx.model.field = ctx.model.createField();
       },
     },

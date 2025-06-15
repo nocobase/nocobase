@@ -8,9 +8,7 @@
  */
 
 import { FormItem } from '@formily/antd-v5';
-import { Field as FormilyField } from '@formily/react';
 import { FormFieldModel } from '../../FormFieldModel';
-import React from 'react';
 import { InputNumber } from 'antd';
 
 export class InputNumberFieldModel extends FormFieldModel {

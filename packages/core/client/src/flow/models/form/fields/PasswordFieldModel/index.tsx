@@ -9,10 +9,7 @@
 
 import { FormItem } from '@formily/antd-v5';
 import { FormFieldModel } from '../../../FormFieldModel';
-import { isNum } from '@formily/shared';
 import { Input } from 'antd';
-import * as math from 'mathjs';
-import { connect, mapProps } from '@formily/react';
 import { isFn } from '@formily/shared';
 import React, { Fragment } from 'react';
 import { getStrength } from './utils';

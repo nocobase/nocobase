@@ -8,9 +8,7 @@
  */
 
 import { FormItem, Select } from '@formily/antd-v5';
-import { Field as FormilyField } from '@formily/react';
 import { FormFieldModel } from '../../FormFieldModel';
-import React from 'react';
 
 export class SelectFieldModel extends FormFieldModel {
   setDataSource(dataSource?: any[]) {
@@ -30,6 +28,7 @@ export class SelectFieldModel extends FormFieldModel {
       component: [
         Select,
         {
+          ...this.props,
           options: this.props.dataSource || this.collectionField?.options?.uiSchema?.enum || [],
         },
       ],
