@@ -68,3 +68,33 @@ export const useTestConnectionAction = () => {
     },
   };
 };
+
+export const useLoadCollections = () => {
+  const api = useAPIClient();
+  return async (key) => {
+    const { data } = await api.request({
+      url: `dataSources/${key}/collections:all`,
+      method: 'get',
+    });
+    return data;
+  };
+};
+
+export const addDatasourceCollections = async (api, filterByTk, toBeAddedCollections) => {
+  const url = `dataSources/${filterByTk}/collections:add`;
+  if (toBeAddedCollections.length) {
+    const collections = [];
+    for (const { name, selected } of toBeAddedCollections) {
+      if (selected) {
+        collections.push(name);
+      }
+    }
+    await api.request({
+      url,
+      method: 'post',
+      data: {
+        collections,
+      },
+    });
+  }
+};
