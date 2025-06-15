@@ -593,6 +593,31 @@ export class PluginDataSourceManagerServer extends Plugin {
       },
     );
 
+    this.app.db.on('dataSourcesRolesResourcesScopes.afterSaveWithAssociations', async (model, options) => {
+      const { transaction } = options;
+      const dataSourcesRolesResourcesActions: DataSourcesRolesResourcesActionModel[] = await this.app.db
+        .getRepository('dataSourcesRolesResourcesActions')
+        .find({
+          filter: { scopeId: model.get('id') },
+          transaction,
+        });
+      const rolesRolesResourceIds = dataSourcesRolesResourcesActions.map((x) => x.get('rolesResourceId'));
+      const dataSourcesRolesResources: DataSourcesRolesResourcesModel[] = await this.app.db
+        .getRepository('dataSourcesRolesResources')
+        .find({
+          filter: {
+            id: rolesRolesResourceIds,
+          },
+          transaction,
+        });
+      for (const instance of dataSourcesRolesResources) {
+        await this.app.db.emitAsync(`dataSourcesRolesResources.afterSaveWithAssociations`, instance, {
+          ...options,
+          transaction,
+        });
+      }
+    });
+
     this.app.db.on(
       'dataSourcesRolesResourcesActions.afterUpdateWithAssociations',
       async (model: DataSourcesRolesResourcesActionModel, options) => {

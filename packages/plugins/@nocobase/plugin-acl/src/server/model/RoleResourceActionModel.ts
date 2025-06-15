@@ -8,11 +8,11 @@
  */
 
 import { ACL, ACLRole } from '@nocobase/acl';
-import { Model } from '@nocobase/database';
+import { Model, transaction } from '@nocobase/database';
 
 export class RoleResourceActionModel extends Model {
-  async writeToACL(options: { acl: ACL; role: ACLRole; resourceName: string }) {
-    const { resourceName, role } = options;
+  async writeToACL(options: { acl: ACL; role: ACLRole; resourceName: string; transaction?: any }) {
+    const { resourceName, role, transaction } = options;
 
     const actionName = this.get('name') as string;
 
@@ -23,8 +23,7 @@ export class RoleResourceActionModel extends Model {
       fields,
     };
 
-    // @ts-ignore
-    const scope = await this.getScope();
+    const scope = await this.getScope({ transaction });
 
     if (scope) {
       actionParams['own'] = scope.get('key') === 'own';
