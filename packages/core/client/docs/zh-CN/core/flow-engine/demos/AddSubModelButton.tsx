@@ -1,14 +1,15 @@
 import { Collection } from '@nocobase/client';
 import { FlowModel } from '@nocobase/flow-engine';
-import { Button, Dropdown, MenuProps } from 'antd';
+import { Button, MenuProps } from 'antd';
 import React from 'react';
+import LazyDropdown, { Item, ItemsType } from './LazyDropdown';
 
 interface SubModelItem {
   key: string;
   label: string;
   disabled?: boolean;
   icon?: React.ReactNode;
-  children?: SubModelItem[]; // ✅ 改为数组，支持多级菜单
+  children?: SubModelItem[] | (() => SubModelItem[] | Promise<SubModelItem[]>);
   createModelOptions?:
     | { use: string; stepParams?: Record<string, any> }
     | ((parentModel: FlowModel) => { use: string; stepParams?: Record<string, any> });
@@ -20,19 +21,8 @@ interface AddSubModelButtonProps {
   subModelType?: 'object' | 'array';
   subModelBaseClass?: typeof FlowModel;
   onModelAdded?: (addedModel: FlowModel) => Promise<void>;
-  items: SubModelItem[];
+  items: SubModelItem[] | (() => SubModelItem[] | Promise<SubModelItem[]>);
   children?: React.ReactNode; // ✅ 支持自定义按钮文本
-}
-
-// 递归构造 antd 的菜单项结构
-function toAntdMenuItems(items: SubModelItem[]): MenuProps['items'] {
-  return items.map(({ key, label, icon, disabled, children }) => ({
-    key,
-    icon,
-    label,
-    disabled,
-    children: children ? toAntdMenuItems(children) : undefined,
-  }));
 }
 
 export function AddSubModelButton({
@@ -43,16 +33,8 @@ export function AddSubModelButton({
   onModelAdded,
   children,
 }: AddSubModelButtonProps) {
-  const menuItems = toAntdMenuItems(items);
-
-  const onClick: MenuProps['onClick'] = async ({ key }) => {
-    const flattenItems = (items: SubModelItem[]): SubModelItem[] =>
-      items.flatMap((item) => (item.children ? [item, ...flattenItems(item.children)] : [item]));
-
-    const allItems = flattenItems(items);
-    const item = allItems.find((i) => i.key === key);
-    if (!item) return;
-
+  const onClick = async (info) => {
+    const item = info.originalItem;
     const createOpts =
       typeof item.createModelOptions === 'function' ? item.createModelOptions(model) : item.createModelOptions;
 
@@ -81,9 +63,9 @@ export function AddSubModelButton({
   };
 
   return (
-    <Dropdown menu={{ items: menuItems, onClick }}>
+    <LazyDropdown menu={{ items, onClick }}>
       <Button>{children ?? '添加子模型'}</Button>
-    </Dropdown>
+    </LazyDropdown>
   );
 }
 

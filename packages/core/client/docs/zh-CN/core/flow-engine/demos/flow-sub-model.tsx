@@ -47,76 +47,82 @@ class MyModel extends FlowModel {
         <AddSubModelButton
           model={this}
           subModelKey={'items'}
-          items={[
-            {
-              key: 'subModel1',
-              label: '子模型 1',
-              disabled: true,
-              icon: <span>🔧</span>,
-              createModelOptions: {
-                use: 'SubModel1',
-                stepParams: {
-                  myflow: {
-                    step1: {
-                      title: '子模型 1',
-                    },
-                  },
-                },
-              },
-            },
-            {
-              key: 'subModel2',
-              label: '子模型 2',
-              icon: <span>🛠️</span>,
-              createModelOptions: {
-                use: 'SubModel1',
-                stepParams: {
-                  myflow: {
-                    step1: {
-                      title: '子模型 2',
-                    },
-                  },
-                },
-              },
-            },
-            {
-              key: 'b-group',
-              label: '模型 B 组',
-              icon: <span>🛠️</span>,
-              children: [
-                {
-                  key: 'b1',
-                  label: '模型 B1',
-                  icon: <span>🛠️</span>,
-                  createModelOptions: {
-                    use: 'SubModel1',
-                    stepParams: {
-                      myflow: {
-                        step1: {
-                          title: '子模型 B1',
-                        },
+          items={async () => {
+            await new Promise((resolve) => setTimeout(resolve, 1500));
+            return [
+              {
+                key: 'subModel1',
+                label: '子模型 1',
+                disabled: true,
+                icon: <span>🔧</span>,
+                createModelOptions: {
+                  use: 'SubModel1',
+                  stepParams: {
+                    myflow: {
+                      step1: {
+                        title: '子模型 1',
                       },
                     },
                   },
                 },
-                {
-                  key: 'b2',
-                  label: '模型 B2',
-                  icon: <span>🛠️</span>,
-                  createModelOptions: {
-                    use: 'SubModel1',
-                    stepParams: {
-                      myflow: {
-                        step1: {
-                          title: '子模型 B2',
-                        },
+              },
+              {
+                key: 'subModel2',
+                label: '子模型 2',
+                icon: <span>🛠️</span>,
+                createModelOptions: {
+                  use: 'SubModel1',
+                  stepParams: {
+                    myflow: {
+                      step1: {
+                        title: '子模型 2',
                       },
                     },
                   },
                 },
-              ],
-            },
-          ]}
+              },
+              {
+                key: 'b-group',
+                label: '模型 B 组',
+                icon: <span>🛠️</span>,
+                children: async () => {
+                  await new Promise((resolve) => setTimeout(resolve, 1500));
+                  return [
+                    {
+                      key: 'b1',
+                      label: '模型 B1',
+                      icon: <span>🛠️</span>,
+                      createModelOptions: {
+                        use: 'SubModel1',
+                        stepParams: {
+                          myflow: {
+                            step1: {
+                              title: '子模型 B1',
+                            },
+                          },
+                        },
+                      },
+                    },
+                    {
+                      key: 'b2',
+                      label: '模型 B2',
+                      icon: <span>🛠️</span>,
+                      createModelOptions: {
+                        use: 'SubModel1',
+                        stepParams: {
+                          myflow: {
+                            step1: {
+                              title: '子模型 B2',
+                            },
+                          },
+                        },
+                      },
+                    },
+                  ];
+                },
+              },
+            ];
+          }}
         >
           添加子模型
         </AddSubModelButton>
