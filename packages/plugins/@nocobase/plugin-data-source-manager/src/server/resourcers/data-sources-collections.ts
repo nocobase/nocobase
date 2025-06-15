@@ -9,6 +9,8 @@
 
 import lodash from 'lodash';
 import { filterMatch } from '@nocobase/database';
+import _ from 'lodash';
+import { DataSourceManager } from '@nocobase/data-source-manager';
 
 export default {
   name: 'dataSources.collections',
@@ -123,6 +125,86 @@ export default {
 
       ctx.body = dataSourceCollectionRecord.toJSON();
 
+      await next();
+    },
+    async all(ctx, next) {
+      const params = ctx.action.params;
+      const { associatedIndex: dataSourceKey, isFirst, dbOptions } = params;
+      const dataSourceManager = ctx.app.dataSourceManager as DataSourceManager;
+
+      let allCollections = null;
+      if (isFirst) {
+        const klass = dataSourceManager.factory.getClass(dbOptions.type);
+        // @ts-ignore
+        const dataSource = new klass(dbOptions);
+        const introspector = dataSource.collectionManager.dataSource.createDatabaseIntrospector(
+          dataSource.collectionManager.db,
+        );
+        allCollections = await introspector.getCollections();
+      } else {
+        const dataSource = dataSourceManager.dataSources.get(dataSourceKey);
+
+        if (!dataSource) {
+          throw new Error(`dataSource ${dataSourceKey} not found`);
+        }
+        allCollections = await dataSource['getCollectionsFromCache']();
+      }
+      const selectedCollections = await ctx.db.getRepository('dataSourcesCollections').find({
+        filter: { dataSourceKey },
+      });
+      const selectedMap = _.keyBy(selectedCollections, (x) => x.name);
+      const result = allCollections.map((collection) => {
+        return {
+          ..._.omit(collection, 'fields'),
+          selected: !!selectedMap[collection.name],
+        };
+      });
+      ctx.body = result;
+      await next();
+    },
+    async add(ctx, next) {
+      const params = ctx.action.params;
+      const { associatedIndex: dataSourceKey, values } = params;
+      const collections = values.collections || [];
+      const dataSource = ctx.app.dataSourceManager.dataSources.get(dataSourceKey);
+      if (dataSource.options.addAllCollections !== false) {
+        await next();
+        return;
+      }
+      const transaction = await ctx.db.sequelize.transaction();
+      const repo = ctx.db.getRepository('dataSourcesCollections');
+
+      const alreadyInserted = await repo.find({
+        filter: {
+          dataSourceKey,
+        },
+        transaction,
+      });
+      const alreadyInsertedNames = _.keyBy(alreadyInserted, (x) => x.name);
+      const incomingCollections = _.keyBy(collections);
+      const toBeInserted = collections.filter((collection) => !alreadyInsertedNames[collection]);
+      const toBeDeleted = Object.keys(alreadyInsertedNames).filter((name) => !incomingCollections[name]);
+
+      if (toBeInserted.length > 0) {
+        const insertCollections = toBeInserted.map((collection) => {
+          return { name: collection, dataSourceKey };
+        });
+        await repo.model.bulkCreate(insertCollections, { transaction });
+      }
+
+      if (toBeDeleted.length > 0) {
+        await repo.model.destroy({
+          where: {
+            dataSourceKey,
+            name: toBeDeleted,
+          },
+          transaction,
+        });
+      }
+
+      await transaction.commit();
+      await dataSource.load();
+      ctx.body = true;
       await next();
     },
   },
