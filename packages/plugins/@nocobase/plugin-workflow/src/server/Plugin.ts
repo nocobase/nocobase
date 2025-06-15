@@ -73,6 +73,21 @@ export default class PluginWorkflowServer extends Plugin {
   private meter = null;
   private checker: NodeJS.Timeout = null;
 
+  private onQueueExecution = async (event) => {
+    const ExecutionRepo = this.db.getRepository('executions');
+    const execution = await ExecutionRepo.findOne({
+      filterByTk: event.executionId,
+    });
+    if (!execution || execution.status !== EXECUTION_STATUS.QUEUEING) {
+      return;
+    }
+    this.getLogger(execution.workflowId).info(
+      `execution (${execution.id}) received from queue, adding to pending list`,
+    );
+    this.pending.push([execution]);
+    this.dispatch();
+  };
+
   private onBeforeSave = async (instance: WorkflowModel, { transaction, cycling }) => {
     if (cycling) {
       return;
@@ -196,6 +211,7 @@ export default class PluginWorkflowServer extends Plugin {
   };
 
   private onBeforeStop = async () => {
+    this.app.logger.info(`stopping workflow plugin before app (${this.app.name}) shutdown...`);
     for (const workflow of this.enabledCache.values()) {
       this.toggle(workflow, false, { silent: true });
     }
@@ -327,6 +343,11 @@ export default class PluginWorkflowServer extends Plugin {
     });
     this.snowflake = new Snowflake({
       custom_epoch: pluginRecord?.createdAt.getTime(),
+    });
+
+    this.app.eventQueue.subscribe(`${this.name}.pendingExecution`, {
+      idle: () => !this.executing && !this.pending.length && !this.events.length,
+      process: this.onQueueExecution,
     });
   }
 
@@ -640,8 +661,14 @@ export default class PluginWorkflowServer extends Plugin {
     try {
       const execution = await this.createExecution(...event);
       // NOTE: cache first execution for most cases
-      if (execution?.status === EXECUTION_STATUS.QUEUEING && !this.executing && !this.pending.length) {
-        this.pending.push([execution]);
+      if (execution?.status === EXECUTION_STATUS.QUEUEING) {
+        if (!this.executing && !this.pending.length) {
+          logger.info(`local pending list is empty, adding execution (${execution.id}) to pending list`);
+          this.pending.push([execution]);
+        } else {
+          logger.info(`local pending list is not empty, sending execution (${execution.id}) to queue`);
+          this.app.eventQueue.publish(`${this.name}.pendingExecution`, { executionId: execution.id });
+        }
       }
     } catch (error) {
       logger.error(`failed to create execution:`, { error });
