@@ -72,7 +72,7 @@ export class APIClient extends APIClientSDK {
     api.notification = this.notification;
     const handlers = [];
     for (const handler of this.axios.interceptors.response['handlers']) {
-      if (handler.rejected['_name'] === 'handleNotificationError') {
+      if (handler?.rejected?.['_name'] === 'handleNotificationError') {
         handlers.push({
           ...handler,
           rejected: api.handleNotificationError.bind(api),

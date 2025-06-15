@@ -41,11 +41,11 @@ const enabledIndexColumn: SchemaSettingsItemType = {
     const { dn } = useDesignable();
     return {
       title: t('Enable index column'),
-      checked: field.componentProps.enableIndexÏColumn !== false,
-      onChange: async (enableIndexÏColumn) => {
+      checked: field.componentProps.enableIndexColumn !== false,
+      onChange: async (enableIndexColumn) => {
         field.componentProps = field.componentProps || {};
-        field.componentProps.enableIndexÏColumn = enableIndexÏColumn;
-        fieldSchema['x-component-props'].enableIndexÏColumn = enableIndexÏColumn;
+        field.componentProps.enableIndexColumn = enableIndexColumn;
+        fieldSchema['x-component-props'].enableIndexColumn = enableIndexColumn;
         dn.emit('patch', {
           schema: {
             ['x-uid']: fieldSchema['x-uid'],
