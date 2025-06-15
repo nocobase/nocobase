@@ -147,6 +147,10 @@ const InternalActionBar: FC = (props: any) => {
 
 export const ActionBar = withDynamicSchemaProps(
   (props: any) => {
+    if (props.hidden) {
+      return null;
+    }
+
     return <InternalActionBar {...props} />;
   },
   { displayName: 'ActionBar' },

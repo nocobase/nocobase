@@ -19,9 +19,10 @@ import { useDetailsProps } from '../modules/blocks/data-blocks/details-single/ho
 import { FormItemSchemaToolbar } from '../modules/blocks/data-blocks/form/FormItemSchemaToolbar';
 import { useCreateFormBlockDecoratorProps } from '../modules/blocks/data-blocks/form/hooks/useCreateFormBlockDecoratorProps';
 import { useCreateFormBlockProps } from '../modules/blocks/data-blocks/form/hooks/useCreateFormBlockProps';
+import { useDataFormItemProps } from '../modules/blocks/data-blocks/form/hooks/useDataFormItemProps';
 import { useEditFormBlockDecoratorProps } from '../modules/blocks/data-blocks/form/hooks/useEditFormBlockDecoratorProps';
 import { useEditFormBlockProps } from '../modules/blocks/data-blocks/form/hooks/useEditFormBlockProps';
-import { useDataFormItemProps } from '../modules/blocks/data-blocks/form/hooks/useDataFormItemProps';
+import { useGridCardActionBarProps } from '../modules/blocks/data-blocks/grid-card/hooks/useGridCardActionBarProps';
 import {
   useGridCardBlockDecoratorProps,
   useGridCardBlockItemProps,
@@ -97,6 +98,7 @@ export const BlockSchemaComponentProvider: React.FC = (props) => {
         useGridCardBlockProps,
         useFormItemProps,
         useDataFormItemProps,
+        useGridCardActionBarProps,
       }}
     >
       {props.children}
@@ -161,6 +163,7 @@ export class BlockSchemaComponentPlugin extends Plugin {
       useGridCardBlockItemProps,
       useFormItemProps,
       useDataFormItemProps,
+      useGridCardActionBarProps,
     });
   }
 }

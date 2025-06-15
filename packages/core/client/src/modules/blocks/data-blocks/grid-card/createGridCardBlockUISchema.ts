@@ -49,11 +49,7 @@ export const createGridCardBlockUISchema = (options: {
         type: 'void',
         'x-initializer': 'gridCard:configureActions',
         'x-component': 'ActionBar',
-        'x-component-props': {
-          style: {
-            marginBottom: 'var(--nb-spacing)',
-          },
-        },
+        'x-use-component-props': 'useGridCardActionBarProps',
       },
       list: {
         type: 'array',
