@@ -583,6 +583,21 @@ export class FlowModel<Structure extends { parent?: any; subModels?: any } = Def
     return results;
   }
 
+  findSubModel<K extends keyof Structure['subModels'], R>(
+    subKey: K,
+    callback: (model: ArrayElementType<Structure['subModels'][K]>) => R,
+  ): R | null {
+    const model = this.subModels[subKey];
+
+    if (!model) {
+      return null;
+    }
+
+    return _.castArray(model).find((item) => {
+      return (callback as (model: any) => R)(item);
+    });
+  }
+
   createRootModel(options) {
     return this.flowEngine.createModel(options);
   }
