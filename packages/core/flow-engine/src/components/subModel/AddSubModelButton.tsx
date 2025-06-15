@@ -9,10 +9,10 @@
 
 import { observer } from '@formily/reactive-react';
 import { Button, ButtonProps, Dropdown, MenuProps } from 'antd';
+import _ from 'lodash';
 import React from 'react';
 import { FlowModel } from '../../models';
 import { CreateModelOptions, ModelConstructor } from '../../types';
-import _ from 'lodash';
 
 export interface AddSubModelMenuItem {
   key: string;

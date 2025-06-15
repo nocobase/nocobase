@@ -1,6 +1,6 @@
 # FlowSubModel
 
-在 NocoBase 流引擎中，**子模型（SubModel）**是构建复杂模型树结构的核心能力。通过子模型机制，可以灵活地实现模型的嵌套、分组、组合等多层级结构，满足各种业务场景下的需求。
+在 NocoBase 流引擎中，**子模型（SubModel）** 是构建复杂模型树结构的核心能力。通过子模型机制，可以灵活地实现模型的嵌套、分组、组合等多层级结构，满足各种业务场景下的需求。
 
 ---
 
@@ -43,7 +43,9 @@ FlowModel 提供了丰富的 API 用于子模型的创建、添加、遍历和�
 
 ---
 
-## 典型用法示例
+## 用法示例
+
+<code src="./demos/flow-sub-model.tsx"></code>
 
 ```ts
 // 创建根模型
@@ -67,7 +69,7 @@ model.mapSubModels('tabs', (tab) => {
 ## 子模型的父子关系
 
 - 每个子模型都自动维护对父模型的引用（`parent`）。
-- 父模型通过 `subModels` 字段管理所有子模型。
+- 父模型通过 `subModels` 管理所有子模型。
 - 通过 `setParent` 方法可手动设置父模型，但一般无需手动操作。
 
 ---
@@ -92,11 +94,9 @@ const columns = model.mapSubModels('columns', (column) => column.getProps());
 
 ---
 
-## 子模型操作相关组件
+## 子模型组件
 
-NocoBase 提供了多种 React 组件，方便在界面上动态添加、删除子模型，提升开发体验：
-
-### 1. AddSubModelButton（通用添加按钮）
+NocoBase 提供了 AddSubModelButton、AddBlockModelButton AddFieldModelButton 组件，方便在界面上动态添加、删除子模型，提升开发体验：
 
 - 用于向任意父模型添加任意类型的子模型。
 - 支持自定义菜单项、回调、按钮内容等。
@@ -107,126 +107,88 @@ NocoBase 提供了多种 React 组件，方便在界面上动态添加、删除�
 | Prop | 类型 | 说明 |
 |------|------|------|
 | `model` | `FlowModel` **(必填)** | 当前父模型实例 |
-| `items` | `AddSubModelMenuItem[]` **(必填)** | 可供选择的子模型类型列表 |
-| `subModelType` | `'object' \| 'array'` | 指定子模型是对象字段还是数组字段，默认为 `'array'` |
-| `subModelKey` | `string` | 子模型在父模型中的字段名 |
-| `ParentModelClass` | `string \| ModelConstructor` | 父模型类名（用于过滤支持的子模型类型） |
-| `onModelAdded` | `(subModel, item) => Promise<void>` | 添加成功后的回调，可返回 Promise 以执行异步逻辑 |
-| `children` | `ReactNode` | 按钮文案，默认 `"Add"` |
-| `buildSubModelParams` | `(item) => CreateModelOptions \| FlowModel` | 自定义子模型创建参数 |
 
-**菜单项定义：**
 
-```ts
-interface AddSubModelMenuItem {
-  key: string;       // 唯一键
-  label: string;     // 菜单展示文案
-  icon?: ReactNode;  // 可选图标
-  item: typeof FlowModel; // 对应的模型类
-  use: string;       // createModel 时的 use 值
-}
-```
-
-**使用示例：**
+AddSubModelButton 示例
 
 ```tsx | pure
-const currentModel = new MyModel();
-
 <AddSubModelButton
   model={currentModel}
-  subModelKey="tabs"
-  subModelType="array"
+  subModelKey={'items'}
   items={[
     {
-      key: 'key1',
-      icon: <Icon />,
-      label: '子模型1',
-      options: {
-        use: 'TabModel',
-        stepParams: {},
+      key: 'subModel1',
+      label: '子模型 1',
+      disabled: true,
+      icon: <span>🔧</span>,
+      createModelOptions: {
+        use: 'SubModel1',
+        stepParams: {
+          myflow: {
+            step1: {
+              title: '子模型 1',
+            },
+          },
+        },
       },
     },
+    {
+      key: 'subModel2',
+      label: '子模型 2',
+      icon: <span>🛠️</span>,
+      createModelOptions: {
+        use: 'SubModel1',
+        stepParams: {
+          myflow: {
+            step1: {
+              title: '子模型 2',
+            },
+          },
+        },
+      },
+    },
+    {
+      key: 'b-group',
+      label: '模型 B 组',
+      icon: <span>🛠️</span>,
+      children: [
+        {
+          key: 'b1',
+          label: '模型 B1',
+          icon: <span>🛠️</span>,
+          createModelOptions: {
+            use: 'SubModel1',
+            stepParams: {
+              myflow: {
+                step1: {
+                  title: '子模型 B1',
+                },
+              },
+            },
+          },
+        },
+        {
+          key: 'b2',
+          label: '模型 B2',
+          icon: <span>🛠️</span>,
+          createModelOptions: {
+            use: 'SubModel1',
+            stepParams: {
+              myflow: {
+                step1: {
+                  title: '子模型 B2',
+                },
+              },
+            },
+          },
+        },
+      ],
+    },
   ]}
-/>
-
-// 等价于
-currentModel.addSubModel('tabs', {
-  use: 'TabModel',
-  stepParams: {},
-});
+>
+  添加子模型
+</AddSubModelButton>
 ```
-
----
-
-### 2. AddBlockButton（添加区块子模型）
-
-- 专用于向父模型添加**区块子模型**。
-- 自动根据 `ParentModelClass` 检索所有合法的区块模型类并构造菜单，无需手动传入 `items`。
-
-**额外 Props：**
-
-| Prop | 类型 | 默认值 | 说明 |
-|------|------|--------|------|
-| `ParentModelClass` | `string` | `'BlockFlowModel'` | 区块模型的父类名 |
-
-**使用示例：**
-
-```tsx | pure
-<AddBlockButton
-  model={gridModel}
-  // 其余参数均可使用默认值
-/>
-```
-
----
-
-### 3. AddFieldButton（添加字段子模型）
-
-- 用于为**字段相关父模型**（如表格列、表单项）快速添加字段子模型。
-- 自动根据 `collection` 匹配合适的模型类，无需手动传入 `items`。
-
-**额外 Props：**
-
-| Prop | 类型 | 默认值 | 说明 |
-|------|------|--------|------|
-| `collection` | `Collection` **(必填)** | 字段所属的数据表集合 |
-| `ParentModelClass` | `string` | `'FieldFlowModel'` | 字段模型的父类名 |
-| `buildSubModelParams` | `(item) => CreateModelOptions \| FlowModel` | 自定义创建逻辑 |
-
-**使用示例：**
-
-```tsx | pure
-<AddFieldButton
-  model={tableColumnModel}
-  collection={postCollection}
-  ParentModelClass={CollectionFieldFlowModel}
-  buildSubModelParams={buildColumnSubModelParams}
-  onModelAdded={onModelAdded}
-/>
-```
-
----
-
-### 4. AddActionButton（添加 Action 子模型）
-
-- 用于向父模型添加**Action 子模型**。
-- 自动根据 `ParentModelClass` 检索所有合法的 Action 模型类并构造菜单，无需手动传入 `items`。
-
-**额外 Props：**
-
-| Prop | 类型 | 默认值 | 说明 |
-|------|------|--------|------|
-| `ParentModelClass` | `string` | `'ActionFlowModel'` | 动作模型的父类名 |
-
-**使用示例：**
-
-```tsx | pure
-<AddActionButton
-  model={blockModel}
-  ParentModelClass={ActionFlowModel}
-/>
-```
-
 ---
 
 ## 注意事项
