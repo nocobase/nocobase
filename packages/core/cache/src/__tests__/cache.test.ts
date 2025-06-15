@@ -117,4 +117,14 @@ describe('cache', () => {
     expect(val2).toBe(obj);
     expect(await cache.get('key')).toMatchObject(obj);
   });
+
+  it('redis cache wrap null throw error', async () => {
+    if (!process.env.CACHE_REDIS_URL) {
+      return;
+    }
+    const cacheManager = new CacheManager();
+    const c = await cacheManager.createCache({ name: 'test', store: 'redis' });
+    expect(async () => c.wrap('test', async () => null)).rejects.toThrowError('"null" is not a cacheable value');
+    // await c.wrap('test', async () => null);
+  });
 });

@@ -9,7 +9,7 @@
 
 import Database from '@nocobase/database';
 import UsersPlugin from '@nocobase/plugin-users';
-import { MockServer } from '@nocobase/test';
+import { createMockServer, MockServer } from '@nocobase/test';
 import { vi } from 'vitest';
 import { setCurrentRole } from '../middlewares/setCurrentRole';
 import { prepareApp } from './prepare';
@@ -248,5 +248,58 @@ describe('role', () => {
     expect(roles).toBeDefined();
     testRole = roles.find((role) => role.name === 'member');
     expect(testRole).toBeUndefined();
+  });
+});
+
+describe('cache role', async () => {
+  it('should do not throw error when user no default role', async () => {
+    let app;
+    if (process.env.CACHE_REDIS_URL) {
+      app = await createMockServer({
+        cacheManager: {
+          defaultStore: 'redis',
+          stores: {
+            redis: {
+              url: process.env.CACHE_REDIS_URL,
+            },
+          },
+        },
+        registerActions: true,
+        acl: true,
+        plugins: [
+          'acl',
+          'error-handler',
+          'field-sort',
+          'users',
+          'ui-schema-storage',
+          'data-source-main',
+          'auth',
+          'data-source-manager',
+          'collection-tree',
+          'system-settings',
+        ],
+      });
+    } else {
+      app = await prepareApp();
+    }
+    const ctx: any = {
+      db: app.db,
+      cache: app.cache,
+      state: {
+        currentRole: '',
+      },
+      t: (key) => key,
+    };
+    const user = await app.db.getRepository('users').create({
+      values: { name: 'zhangsan', roles: ['member'] },
+    });
+    ctx.state.currentUser = user;
+    ctx.get = function (name) {
+      if (name === 'X-Role') {
+        return '';
+      }
+    };
+    await setCurrentRole(ctx, () => {});
+    expect(ctx.state.currentRole).toBe('member');
   });
 });

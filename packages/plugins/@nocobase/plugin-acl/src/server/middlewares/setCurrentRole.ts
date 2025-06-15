@@ -12,6 +12,7 @@ import { Cache } from '@nocobase/cache';
 import { Model, Repository } from '@nocobase/database';
 import { UNION_ROLE_KEY } from '../constants';
 import { SystemRoleMode } from '../enum';
+import _ from 'lodash';
 
 export async function setCurrentRole(ctx: Context, next) {
   let currentRole = ctx.get('X-Role');
@@ -81,8 +82,12 @@ export async function setCurrentRole(ctx: Context, next) {
   }
   // 2. If the X-Role is not set, or the X-Role does not belong to the user, use the default role
   if (!role) {
-    const defaultRoleModel = await cache.wrap(`roles:${ctx.state.currentUser.id}:defaultRole`, () =>
-      ctx.db.getRepository('rolesUsers').findOne({ where: { userId: ctx.state.currentUser.id, default: true } }),
+    const defaultRoleModel = await cache.wrapWithCondition(
+      `roles:${ctx.state.currentUser.id}:defaultRole`,
+      () => ctx.db.getRepository('rolesUsers').findOne({ where: { userId: ctx.state.currentUser.id, default: true } }),
+      {
+        isCacheable: (x) => !_.isEmpty(x),
+      },
     );
     role = defaultRoleModel?.roleName || userRoles[0]?.name;
   }
