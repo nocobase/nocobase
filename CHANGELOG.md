@@ -5,6 +5,28 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v1.7.11](https://github.com/nocobase/nocobase/compare/v1.7.10...v1.7.11) - 2025-06-15
+
+### 🎉 New Features
+
+- **[Text copy]** Support one-click copying of text field content ([#6954](https://github.com/nocobase/nocobase/pull/6954)) by @zhangzhonghe
+
+### 🐛 Bug Fixes
+
+- **[client]**
+  - association field selector does not clear selected data after submission ([#7067](https://github.com/nocobase/nocobase/pull/7067)) by @katherinehhh
+
+  - Fix upload size hint ([#7057](https://github.com/nocobase/nocobase/pull/7057)) by @mytharcher
+
+- **[server]** Cannot read properties of undefined (reading 'setMaaintainingMessage') ([#7064](https://github.com/nocobase/nocobase/pull/7064)) by @chenos
+
+- **[Workflow: Loop node]** Fix loop branch runs when condition not satisfied ([#7063](https://github.com/nocobase/nocobase/pull/7063)) by @mytharcher
+
+- **[Workflow: Approval]**
+  - Fix todo stats not updated when execution canceled by @mytharcher
+
+  - Fix trigger variable when filter by type by @mytharcher
+
 ## [v1.7.10](https://github.com/nocobase/nocobase/compare/v1.7.9...v1.7.10) - 2025-06-12
 
 ### 🐛 Bug Fixes
