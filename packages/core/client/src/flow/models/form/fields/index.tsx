@@ -16,3 +16,4 @@ export * from './RadioGroupFieldModel';
 export * from './TextareaFieldModel';
 export * from './ColorFieldModel';
 export * from './IconFieldModel';
+export * from './RichTextFieldModel';
