@@ -30,6 +30,7 @@ import type {
 } from '../types';
 import { ExtendedFlowDefinition, FlowExtraContext, IModelComponentProps, ReadonlyModelProps } from '../types';
 import { generateUid, mergeFlowDefinitions } from '../utils';
+import { ForkFlowModel } from './forkFlowModel';
 
 // 使用WeakMap存储每个类的meta
 const modelMetas = new WeakMap<typeof FlowModel, FlowModelMeta>();
@@ -45,6 +46,11 @@ export class FlowModel<Structure extends { parent?: any; subModels?: any } = Def
   public flowEngine: FlowEngine;
   public parent: Structure['parent'];
   public subModels: Structure['subModels'];
+  /**
+   * 所有 fork 实例的引用集合。
+   * 使用 Set 便于在销毁时主动遍历并调用 dispose，避免悬挂引用。
+   */
+  public forks: Set<ForkFlowModel<any>> = new Set();
   // public static meta: FlowModelMeta;
 
   constructor(protected options: FlowModelOptions<Structure>) {
@@ -610,9 +616,26 @@ export class FlowModel<Structure extends { parent?: any; subModels?: any } = Def
     );
   }
 
+  /**
+   * 创建一个 fork 实例，实现"一份数据（master）多视图（fork）"的能力。
+   * @param {IModelComponentProps} [localProps={}] fork 专属的局部 props，优先级高于 master.props
+   * @returns {ForkFlowModel<this>} 创建的 fork 实例
+   */
+  createFork(localProps: IModelComponentProps = {}): ForkFlowModel<this> {
+    const forkId = this.forks.size; // 当前集合大小作为索引
+    const fork = new ForkFlowModel<this>(this as any, localProps, forkId);
+    this.forks.add(fork as any);
+    return fork as ForkFlowModel<this>;
+  }
+
   remove() {
     if (!this.flowEngine) {
       throw new Error('FlowEngine is not set on this model. Please set flowEngine before saving.');
+    }
+    // 主动使所有 fork 失效
+    if (this.forks?.size) {
+      this.forks.forEach((fork) => fork.dispose());
+      this.forks.clear();
     }
     return this.flowEngine.removeModel(this.uid);
   }
@@ -625,6 +648,12 @@ export class FlowModel<Structure extends { parent?: any; subModels?: any } = Def
   }
 
   async destroy() {
+    // 销毁前先处理所有 fork
+    if (this.forks?.size) {
+      this.forks.forEach((fork) => fork.dispose());
+      this.forks.clear();
+    }
+
     if (!this.flowEngine) {
       throw new Error('FlowEngine is not set on this model. Please set flowEngine before deleting.');
     }

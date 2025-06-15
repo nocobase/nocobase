@@ -105,8 +105,8 @@ function useFlowExecutor<T, TModel extends FlowModel = FlowModel>(
 ): T {
   const engine = useFlowEngine();
   const cacheKey = useMemo(
-    () => generateCacheKey(cacheKeyPrefix, flowKey, model.uid),
-    [cacheKeyPrefix, flowKey, model.uid],
+    () => generateCacheKey(model['forkId'] ?? cacheKeyPrefix, flowKey, model.uid),
+    [cacheKeyPrefix, flowKey, model.uid, model['forkId']],
   );
   const [, forceUpdate] = useState({});
   const isMounted = useRef(false);
