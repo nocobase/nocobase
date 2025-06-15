@@ -122,7 +122,13 @@ describe('cache', () => {
     if (!process.env.CACHE_REDIS_URL) {
       return;
     }
-    const cacheManager = new CacheManager();
+    const cacheManager = new CacheManager({
+      stores: {
+        redis: {
+          url: process.env.CACHE_REDIS_URL,
+        },
+      },
+    });
     const c = await cacheManager.createCache({ name: 'test', store: 'redis' });
     expect(async () => c.wrap('test', async () => null)).rejects.toThrowError('"null" is not a cacheable value');
   });
