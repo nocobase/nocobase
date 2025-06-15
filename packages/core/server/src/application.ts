@@ -1190,6 +1190,8 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   protected init() {
     const options = this.options;
 
+    this.keys = [process.env.APP_KEY];
+
     this.initLogger(options.logger);
 
     this.reInitEvents();
