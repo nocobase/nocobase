@@ -11,15 +11,18 @@ import { UpOutlined, DownOutlined } from '@ant-design/icons';
 import { useFieldSchema, useForm } from '@formily/react';
 import { isVoidField } from '@formily/core';
 import {
-  ActionInitializerItem,
+  Action,
   createModalSettingsItem,
-  ISchema,
+  InitializerWithSwitch,
   Plugin,
   SchemaInitializerItemType,
   SchemaSettings,
+  useDesignable,
+  useSchemaInitializerItem,
 } from '@nocobase/client';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Button } from 'antd';
 
 // Define namespace constant for our plugin
 const NAMESPACE = 'action-expand-collapse';
@@ -67,7 +70,7 @@ const toggleFieldsActionSettings = new SchemaSettings({
   ],
 });
 
-const useToggleFieldsActionProps = () => {
+const useToggleFieldsAction = () => {
   const fieldSchema = useFieldSchema();
   const form = useForm();
   const { t } = useTranslation(NAMESPACE);
@@ -83,10 +86,11 @@ const useToggleFieldsActionProps = () => {
     </>
   );
   const [actionComponent, setActionComponent] = useState(collapseComponent);
+
   return {
-    type: 'link',
-    title: actionComponent,
-    onClick() {
+    isExpanded: !targetVisible,
+    actionComponent,
+    actionOnClick: () => {
       let count = -1;
       const topFieldsToShow = normalizeTopFieldsToShow(fieldSchema['x-component-props']?.topFieldsToShow ?? 1);
       form.query('*').forEach((field) => {
@@ -108,18 +112,40 @@ const useToggleFieldsActionProps = () => {
   };
 };
 
-const createToggleFieldsActionSchema = (): ISchema => ({
-  type: 'void',
-  'x-action': 'expandCollapse',
-  'x-toolbar': 'ActionSchemaToolbar',
-  'x-component': 'Action',
-  'x-settings': toggleFieldsActionSettings.name,
-  'x-use-component-props': 'useToggleFieldsActionProps',
-});
+const ActionComponent = (props) => {
+  const { isExpanded, actionComponent, actionOnClick } = useToggleFieldsAction();
+  const { designable } = useDesignable?.() || {};
+  const { t } = useTranslation(NAMESPACE);
+  if (designable) {
+    // In the designer mode, use standard Actions while retaining the editing capability.
+    return <Action {...props} type={'link'} title={actionComponent} onClick={actionOnClick}></Action>;
+  } else {
+    // In non-designer mode, use buttons. Avoid the situation where the title of the Action becomes [object Object] after using custom components for the Action's title.
+    return (
+      <Button type={'link'} onClick={actionOnClick} title={isExpanded ? t('CollapseFields') : t('ExpandFields')}>
+        {actionComponent}
+      </Button>
+    );
+  }
+};
 
 export const ExpandCollapseActionInitializer = (props) => {
-  const schema = createToggleFieldsActionSchema();
-  return <ActionInitializerItem {...props} schema={schema} />;
+  const itemConfig = useSchemaInitializerItem();
+  return (
+    <InitializerWithSwitch
+      {...itemConfig}
+      {...props}
+      item={itemConfig}
+      schema={{
+        type: 'void',
+        'x-action': 'expandCollapse',
+        'x-toolbar': 'ActionSchemaToolbar',
+        'x-component': 'ActionComponent',
+        'x-settings': toggleFieldsActionSettings.name,
+      }}
+      type={'x-action'}
+    />
+  );
 };
 
 const createToggleFieldsActionInitializerItem = (): SchemaInitializerItemType => ({
@@ -133,7 +159,7 @@ const createToggleFieldsActionInitializerItem = (): SchemaInitializerItemType =>
 
 export class PluginToggleFormFields extends Plugin {
   async load() {
-    this.app.addScopes({ useToggleFieldsActionProps });
+    this.app.addComponents({ ActionComponent });
     this.app.schemaSettingsManager.add(toggleFieldsActionSettings);
     this.app.schemaInitializerManager.addItem(
       'filterForm:configureActions',
