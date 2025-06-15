@@ -11,7 +11,7 @@ import { observer, useField, useFieldSchema } from '@formily/react';
 import { transformMultiColumnToSingleColumn } from '@nocobase/utils/client';
 import { Select, Space } from 'antd';
 import { differenceBy, unionBy } from 'lodash';
-import React, { useContext, useMemo, useState } from 'react';
+import React, { useContext, useEffect, useMemo, useState } from 'react';
 import {
   FormProvider,
   PopupSettingsProvider,
@@ -135,6 +135,11 @@ export const InternalPicker = observer(
       const filter = list.length ? { $and: [{ [`${targetKey}.$ne`]: list }] } : {};
       return filter;
     };
+    useEffect(() => {
+      if (!value) {
+        setSelectedRows([]);
+      }
+    }, [value]);
     const usePickActionProps = () => {
       const { setVisible } = useActionContext();
       const { multiple, selectedRows, onChange, options, collectionField } = useContext(RecordPickerContext);

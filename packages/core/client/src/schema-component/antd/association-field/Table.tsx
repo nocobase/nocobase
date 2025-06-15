@@ -673,7 +673,7 @@ export const Table: any = withDynamicSchemaProps(
       onExpand,
       loading,
       onClickRow,
-      enableIndexÏColumn,
+      enableIndexColumn,
       ...others
     } = { ...others1, ...others2 } as any;
     const field = useArrayField(others);
@@ -826,7 +826,7 @@ export const Table: any = withDynamicSchemaProps(
 
     const restProps = useMemo(
       () => ({
-        rowSelection: enableIndexÏColumn
+        rowSelection: enableIndexColumn
           ? memoizedRowSelection
             ? {
                 type: 'checkbox',
@@ -900,7 +900,7 @@ export const Table: any = withDynamicSchemaProps(
         isRowSelect,
         memoizedRowSelection,
         paginationProps,
-        enableIndexÏColumn,
+        enableIndexColumn,
       ],
     );
 

@@ -155,5 +155,5 @@ test('plugin settings permissions', async ({ page, mockPage, mockRole, updateRol
   await expect(page.getByRole('link', { name: 'Users & Permissions' })).toBeVisible();
   await expect(page.getByRole('link', { name: 'Authentication' })).toBeVisible();
   await page.getByRole('link', { name: 'Users & Permissions' }).click();
-  await expect(page.getByRole('menuitem', { name: 'Data sources' })).toBeVisible();
+  await expect(page.getByRole('menuitem', { name: 'Data sources' }).first()).toBeVisible();
 });
