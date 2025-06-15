@@ -240,7 +240,7 @@ function useSizeHint(size: number) {
   const s = size ?? FILE_SIZE_LIMIT_DEFAULT;
   const { t, i18n } = useTranslation();
   const sizeString = filesize(s, { base: 2, standard: 'jedec', locale: i18n.language });
-  return s !== 0 ? t('File size should not exceed {{size}}.', { size: 10000000 }) : '';
+  return s !== 0 ? t('File size should not exceed {{size}}.', { size: sizeString }) : '';
 }
 
 function DefaultThumbnailPreviewer({ file }) {

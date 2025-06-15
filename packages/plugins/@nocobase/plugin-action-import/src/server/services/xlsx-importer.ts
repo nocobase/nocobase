@@ -14,11 +14,13 @@ import {
   Collection as DBCollection,
   Database,
   Model,
+  MultipleRelationRepository,
+  RelationRepository,
   Repository,
   UpdateGuard,
   updateAssociations,
 } from '@nocobase/database';
-import { Transaction } from 'sequelize';
+import { MultiAssociationAccessors, Transaction } from 'sequelize';
 import EventEmitter from 'events';
 import { ImportValidationError, ImportError } from '../errors';
 import { Context } from '@nocobase/actions';
@@ -222,6 +224,10 @@ export class XlsxImporter extends EventEmitter {
     return imported;
   }
 
+  protected getModel(): typeof Model {
+    return (this.repository instanceof RelationRepository ? this.repository.targetModel : this.repository.model) as any;
+  }
+
   async handleRowValuesWithColumns(row: any, rowValues: any, options: RunOptions) {
     for (let index = 0; index < this.options.columns.length; index++) {
       const column = this.options.columns[index];
@@ -257,13 +263,17 @@ export class XlsxImporter extends EventEmitter {
 
       rowValues[dataKey] = await interfaceInstance.toValue(this.trimString(str), ctx);
     }
-    const guard = UpdateGuard.fromOptions(this.repository.model, {
+    const model = this.getModel();
+    const guard = UpdateGuard.fromOptions(model, {
       ...options,
       action: 'create',
       underscored: this.repository.collection.options.underscored,
     });
 
-    rowValues = (this.repository.model as typeof Model).callSetters(guard.sanitize(rowValues || {}), options);
+    rowValues =
+      this.repository instanceof RelationRepository
+        ? model.callSetters(guard.sanitize(rowValues || {}), options)
+        : guard.sanitize(rowValues);
   }
 
   async handleChuckRows(
@@ -314,17 +324,20 @@ export class XlsxImporter extends EventEmitter {
 
   async performInsert(insertOptions: { values: any[]; transaction: Transaction; context: any; hooks?: boolean }) {
     const { values, transaction, context } = insertOptions;
-
     const instances = await this.loggerService.measureExecutedTime(
       async () =>
-        this.repository.model.bulkCreate(values, {
+        this.getModel().bulkCreate(values, {
           transaction,
           hooks: insertOptions.hooks == undefined ? true : insertOptions.hooks,
           returning: true,
-        }),
+          context,
+        } as any),
       'Row {{rowIndex}}: bulkCreate completed in {time}ms',
     );
 
+    if (this.repository instanceof RelationRepository) {
+      await this.associateRecords(instances, _.omit(insertOptions, 'values'));
+    }
     // @ts-ignore
     const db = this.options.collectionManager.db as Database;
     for (let i = 0; i < instances.length; i++) {
@@ -336,8 +349,22 @@ export class XlsxImporter extends EventEmitter {
         `Row ${i + 1}: updateAssociations completed in {time}ms`,
         'debug',
       );
-
-      if (context?.skipWorkflow !== true && insertOptions.hooks !== false) {
+      if (insertOptions.hooks !== false) {
+        await this.loggerService.measureExecutedTime(
+          async () => {
+            await db.emit(`${this.repository.collection.name}.afterCreate`, instance, {
+              transaction,
+            });
+            await db.emitAsync(`${this.repository.collection.name}.afterSave`, instance, {
+              transaction,
+            });
+            instance.clearChangedWithAssociations();
+          },
+          `Row ${i + 1}: afterSave event emitted in {time}ms`,
+          'debug',
+        );
+      }
+      if (context?.skipWorkflow !== true) {
         await this.loggerService.measureExecutedTime(
           async () => {
             await db.emitAsync(`${this.repository.collection.name}.afterCreateWithAssociations`, instance, {
@@ -354,6 +381,36 @@ export class XlsxImporter extends EventEmitter {
       }
     }
     return instances;
+  }
+
+  async associateRecords(targets: Model[], options: any = {}) {
+    if (!(this.repository instanceof RelationRepository)) {
+      return;
+    }
+    const accessors = this.repository.accessors();
+    const sourceModel = await this.repository.getSourceModel();
+
+    if (!accessors || !sourceModel) {
+      throw new Error('Missing accessors or source model.');
+    }
+
+    if ((accessors as MultiAssociationAccessors).addMultiple) {
+      // For hasMany, belongsToMany
+      await sourceModel[(accessors as MultiAssociationAccessors).addMultiple](targets, options);
+    } else if ((accessors as MultiAssociationAccessors).add) {
+      // Also works for hasMany / belongsToMany
+      await Promise.all(
+        targets.map((target) => sourceModel[(accessors as MultiAssociationAccessors).add](target, options)),
+      );
+    } else if (accessors.set) {
+      // set accessor（hasOne, belongsTo）
+      if (targets.length > 1) {
+        throw new Error('Cannot associate multiple records to a single-valued relation.');
+      }
+      await sourceModel[accessors.set](targets[0], options);
+    } else {
+      throw new Error(`Unsupported association or no usable accessor on ${this.repository['association']}`);
+    }
   }
 
   renderErrorMessage(error) {

@@ -445,17 +445,18 @@ const HiddenMenuItem = () => {
 
 const MoveToMenuItem = () => {
   const { t } = useTranslation();
+  const currentRoute = useCurrentRoute();
   const effects = useCallback(
     (form) => {
       onFieldChange('target', (field: Field) => {
-        const [, type] = field?.value?.split?.('||') || [];
+        const [id, type] = field?.value?.split?.('||') || [];
         field.query('position').take((f: Field) => {
           f.dataSource =
             type === NocoBaseDesktopRouteType.group
               ? [
                   { label: t('Before'), value: 'beforeBegin' },
                   { label: t('After'), value: 'afterEnd' },
-                  { label: t('Inner'), value: 'beforeEnd' },
+                  { label: t('Inner'), value: 'beforeEnd', disabled: currentRoute?.id == id },
                 ]
               : [
                   { label: t('Before'), value: 'beforeBegin' },
@@ -502,7 +503,6 @@ const MoveToMenuItem = () => {
   }, [items, t]);
 
   const { moveRoute } = useNocoBaseRoutes();
-  const currentRoute = useCurrentRoute();
   const onMoveToSubmit: (values: any) => void = useCallback(
     async ({ target, position }) => {
       const [targetId] = target?.split?.('||') || [];

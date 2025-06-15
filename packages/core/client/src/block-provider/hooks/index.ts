@@ -36,6 +36,7 @@ import { useAPIClient, useRequest } from '../../api-client';
 import { useNavigateNoUpdate } from '../../application/CustomRouterContextProvider';
 import { useFormBlockContext } from '../../block-provider/FormBlockProvider';
 import { CollectionOptions, useCollectionManager_deprecated, useCollection_deprecated } from '../../collection-manager';
+import { getVariableValue } from '../../common/getVariableValue';
 import { DataBlock, useFilterBlock } from '../../filter-provider/FilterProvider';
 import { mergeFilter, transformToFilter } from '../../filter-provider/utils';
 import { useTreeParentRecord } from '../../modules/blocks/data-blocks/table/TreeRecordProvider';
@@ -52,7 +53,6 @@ import { useBlockRequestContext, useFilterByTk, useParamsFromRecord } from '../B
 import { useOperators } from '../CollectOperators';
 import { useDetailsBlockContext } from '../DetailsBlockProvider';
 import { TableFieldResource } from '../TableFieldProvider';
-import { getVariableValue } from '../../common/getVariableValue';
 
 export * from './useBlockHeightProps';
 export * from './useDataBlockParentRecord';
@@ -527,6 +527,9 @@ const useDoFilter = () => {
             if (block.dataLoadingMode === 'manual' && _.isEmpty(storedFilter[uid])) {
               return block.clearData();
             }
+
+            // 存储当前的筛选条件，供其它筛选区块使用
+            _.set(block.service.params, '1.filters', storedFilter);
             return block.doFilter(
               {
                 ...param,
@@ -569,11 +572,9 @@ export const useFilterBlockActionProps = () => {
   const { doFilter } = useDoFilter();
   const actionField = useField();
   actionField.data = actionField.data || {};
-  const form = useForm();
 
   return {
     async onClick() {
-      await form.submit();
       actionField.data.loading = true;
       await doFilter();
       actionField.data.loading = false;

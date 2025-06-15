@@ -204,7 +204,7 @@ const EditOperator = () => {
             content: Schema.compile(operator.label, { t }),
           });
         } else if (operator.schema?.['x-component']) {
-          setOperatorComponent(operator, operator.schema['x-component']);
+          setOperatorComponent(operator, operator.schema['x-component'], operator.schema['x-component-props']);
         } else {
           setOperatorComponent(operator, defaultComponent);
         }
