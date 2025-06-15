@@ -11,3 +11,8 @@ export * from './SelectFieldModel';
 export * from './InputNumberFieldModel';
 export * from './PercentFieldModel';
 export * from './PasswordFieldModel';
+export * from './CheckboxFieldModel';
+export * from './RadioGroupFieldModel';
+export * from './TextareaFieldModel';
+export * from './ColorFieldModel';
+export * from './IconFieldModel';
