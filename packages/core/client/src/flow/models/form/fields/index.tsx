@@ -20,3 +20,4 @@ export * from './RichTextFieldModel';
 export * from './DateTimeFieldModel';
 export * from './TimeFieldModel';
 export * from './NanoIDFieldModel';
+export * from './JsonFieldModel';
