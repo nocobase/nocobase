@@ -7,7 +7,6 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { FormItem } from '@formily/antd-v5';
 import React from 'react';
 import { FormFieldModel } from '../../../FormFieldModel';
 import { lazy } from '../../../../../lazy-helper';

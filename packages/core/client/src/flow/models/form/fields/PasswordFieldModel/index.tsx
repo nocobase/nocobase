@@ -7,7 +7,6 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { FormItem } from '@formily/antd-v5';
 import { FormFieldModel } from '../../../FormFieldModel';
 import { Input } from 'antd';
 import { isFn } from '@formily/shared';

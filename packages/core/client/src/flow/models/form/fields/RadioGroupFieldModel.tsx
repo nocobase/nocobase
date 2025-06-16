@@ -7,13 +7,12 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { FormItem } from '@formily/antd-v5';
 import { FormFieldModel } from '../../FormFieldModel';
 import { Radio } from 'antd';
 
 export class RadioGroupFieldModel extends FormFieldModel {
   setDataSource(dataSource?: any[]) {
-    this.props.dataSource = dataSource;
+    this.field.dataSource = dataSource;
   }
 
   get component() {

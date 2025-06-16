@@ -7,12 +7,12 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { FormItem, Select } from '@formily/antd-v5';
+import { Select } from '@formily/antd-v5';
 import { FormFieldModel } from '../../FormFieldModel';
 
 export class SelectFieldModel extends FormFieldModel {
   setDataSource(dataSource?: any[]) {
-    this.props.dataSource = dataSource;
+    this.field.dataSource = dataSource;
   }
 
   get component() {

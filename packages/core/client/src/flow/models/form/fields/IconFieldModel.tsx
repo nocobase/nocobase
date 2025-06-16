@@ -7,13 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { FormItem } from '@formily/antd-v5';
 import { ColorPicker } from 'antd';
 import { FormFieldModel } from '../../FormFieldModel';
-import { CloseOutlined, LoadingOutlined } from '@ant-design/icons';
+import { CloseOutlined } from '@ant-design/icons';
 import { useFormLayout } from '@formily/antd-v5';
-import { connect, mapProps, mapReadPretty } from '@formily/react';
-import { isValid } from '@formily/shared';
 import { Button, Empty, Input, Space, theme, Radio, Flex, Popover } from 'antd';
 import { debounce, groupBy } from 'lodash';
 import React, { useState } from 'react';

@@ -7,7 +7,6 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { FormItem } from '@formily/antd-v5';
 import { connect, mapProps } from '@formily/react';
 import { FormFieldModel } from '../../FormFieldModel';
 import { useMemo } from 'react';

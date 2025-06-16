@@ -7,7 +7,6 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { FormItem } from '@formily/antd-v5';
 import { ColorPicker } from 'antd';
 import { FormFieldModel } from '../../FormFieldModel';
 
