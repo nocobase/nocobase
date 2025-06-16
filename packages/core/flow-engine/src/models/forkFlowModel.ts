@@ -1,4 +1,4 @@
-import { IModelComponentProps } from '../types';
+import type { IModelComponentProps } from '../types';
 import { FlowModel } from './flowModel';
 
 /**
@@ -123,4 +123,7 @@ export class ForkFlowModel<TMaster extends FlowModel = FlowModel> {
   getProps(): IModelComponentProps {
     return { ...this.master.getProps(), ...this.localProps };
   }
-} 
+}
+
+// 类型断言：让 ForkFlowModel 可以被当作 FlowModel 使用
+export interface ForkFlowModel<TMaster extends FlowModel = FlowModel> extends FlowModel {} 

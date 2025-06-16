@@ -67,8 +67,8 @@ class PluginForkDemo extends Plugin {
       element: (
         <Space>
           <FlowModelRenderer model={ master } showFlowSettings />
-          <FlowModelRenderer model={fork1 as any} />
-          <FlowModelRenderer model={fork2 as any} />
+          <FlowModelRenderer model={ fork1 } />
+          <FlowModelRenderer model={ fork2 } />
         </Space>
       ),
     });
