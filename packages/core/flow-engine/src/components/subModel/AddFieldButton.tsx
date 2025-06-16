@@ -59,16 +59,14 @@ export const AddFieldButton: React.FC<AddFieldButtonProps> = observer(({
     }
 
     const allFields = [];
+    const defaultFieldClasses = fieldClasses.find(fieldClass => fieldClass.supportedFieldInterfaces === '*');
 
     for (const field of fields) {
       const fieldInterfaceName = field.options?.interface;
       if (fieldInterfaceName) {
         const fieldClass = fieldClasses.find(fieldClass => {
-          if (fieldClass.supportedFieldInterfaces === '*') {
-            return true;
-          }
           return fieldClass.supportedFieldInterfaces?.includes(fieldInterfaceName);
-        });
+        }) || defaultFieldClasses;
         if (fieldClass) {
           allFields.push({
             key: field.name,
