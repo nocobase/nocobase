@@ -7,14 +7,14 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Schema, useField, useFieldSchema } from '@formily/react';
+import { useField, useFieldSchema } from '@formily/react';
 import {
   ISchema,
   Plugin,
   SchemaSettingsModalItem,
-  useColumnSchema,
+  SchemaSettingsSwitchItem,
+  useCollectionRecord,
   useDesignable,
-  useIsFieldReadPretty,
 } from '@nocobase/client';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
@@ -27,11 +27,22 @@ const NAMESPACE = 'field-content-formatter';
 const FormatterPreview = ({ formatter, testValue }) => {
   const { t } = useTranslation(NAMESPACE);
   if (formatter && testValue) {
+    let jsonValue = null;
+    try {
+      jsonValue = JSON.parse(testValue);
+    } catch (e) {
+      // eslint-disable-next-line no-empty
+    }
+    if (!jsonValue) {
+      return <div style={{ color: 'red' }}>{t('Invalid JSON string')}</div>;
+    }
+    const { objectValue, fieldValue } = jsonValue;
     return (
-      <InputWithFormatter
-        value={testValue}
+      <HTMLFormatter
+        objectValue={objectValue}
+        fieldValue={fieldValue}
         formatter={formatter}
-        originalInput={({ _error }) => <div style={{ color: 'red' }}>{_error}</div>}
+        backupComponent={({ _error }) => <div style={{ color: 'red' }}>{_error}</div>}
       />
     );
   } else {
@@ -39,16 +50,48 @@ const FormatterPreview = ({ formatter, testValue }) => {
   }
 };
 
-const SchemaSettingsInputFormat = function InputFormatConfig(props: { fieldSchema: Schema }) {
-  const { fieldSchema } = props;
+const SchemaSettingsEnableFormatter = () => {
+  const { t } = useTranslation(NAMESPACE);
+  const columnSchema = useFieldSchema();
+  const [fieldSchema] = Object.values(columnSchema.properties);
+  const componentProps = fieldSchema['x-component-props'] ?? {};
   const field = useField();
   const { dn } = useDesignable();
-  const { t } = useTranslation(NAMESPACE);
-  const { formatter } = fieldSchema['x-component-props'] || {};
+  return (
+    <SchemaSettingsSwitchItem
+      title={t('Enable custom formatter')}
+      checked={componentProps.enableCustomFormatter}
+      onChange={(v) => {
+        if (!v) {
+          delete componentProps.formatter;
+          delete componentProps.component;
+        }
+        field.componentProps.enableCustomFormatter = v;
+        componentProps.enableCustomFormatter = v;
+        dn.emit('patch', {
+          schema: {
+            ['x-uid']: fieldSchema['x-uid'],
+            'x-component-props': componentProps,
+          },
+        });
+        dn.refresh();
+      }}
+    />
+  );
+};
 
+const SchemaSettingsCustomFormatter = () => {
+  const { t } = useTranslation(NAMESPACE);
+  const columnSchema = useFieldSchema();
+  const [fieldSchema] = Object.values(columnSchema.properties);
+  const componentProps = fieldSchema['x-component-props'] ?? {};
+  const field = useField();
+  const { dn } = useDesignable();
+  const { formatter, enableCustomFormatter } = componentProps;
+  const isFieldReadPretty = fieldSchema['x-read-pretty'] ?? false;
   return (
     <SchemaSettingsModalItem
-      title={t('Field content formatter')}
+      title={t('Custom formatter')}
       schema={
         {
           type: 'object',
@@ -60,7 +103,7 @@ const SchemaSettingsInputFormat = function InputFormatConfig(props: { fieldSchem
               'x-decorator': 'FormItem',
               default: formatter,
               description: t(
-                'JavaScript function that returns HTML string, e.g., (value) => `<strong>${value}</strong>`',
+                'JavaScript function that returns HTML string, e.g., (objectValue, fieldValue) => `<strong>${fieldValue}</strong>`',
               ),
             },
             testValue: {
@@ -68,6 +111,7 @@ const SchemaSettingsInputFormat = function InputFormatConfig(props: { fieldSchem
               title: t('Test Value'),
               'x-component': 'Input',
               'x-decorator': 'FormItem',
+              description: t('JSON string, e.g., {"objectValue": {"name": "John"}, "fieldValue": "John"}'),
             },
             preview: {
               type: 'void',
@@ -86,19 +130,16 @@ const SchemaSettingsInputFormat = function InputFormatConfig(props: { fieldSchem
           },
         } as ISchema
       }
+      hidden={!(enableCustomFormatter && isFieldReadPretty)}
       onSubmit={(data) => {
-        const schema = {
-          ['x-uid']: fieldSchema['x-uid'],
-        };
-        schema['x-component-props'] = fieldSchema['x-component-props'] || {};
-        fieldSchema['x-component-props'] = {
-          ...(fieldSchema['x-component-props'] || {}),
-          formatter: data.formatter,
-        };
-        schema['x-component-props'] = fieldSchema['x-component-props'];
-        field.componentProps = fieldSchema['x-component-props'];
+        componentProps.component = 'CustomFieldFormatterComponent';
+        componentProps.formatter = data.formatter;
+        field.componentProps = componentProps;
         dn.emit('patch', {
-          schema,
+          schema: {
+            ['x-uid']: fieldSchema['x-uid'],
+            'x-component-props': componentProps,
+          },
         });
         dn.refresh();
       }}
@@ -106,54 +147,45 @@ const SchemaSettingsInputFormat = function InputFormatConfig(props: { fieldSchem
   );
 };
 
-const InputWithFormatter = (props) => {
-  const { value, formatter, originalInput: OriginalInput } = props;
+const CustomFieldFormatterComponent = () => {
+  const record = useCollectionRecord();
+  const fieldSchema = useFieldSchema();
+  const field = useField();
+  return (
+    <HTMLFormatter
+      objectValue={record?.data}
+      fieldValue={field?.['value']}
+      formatter={(fieldSchema['x-component-props'] ?? {}).formatter}
+      backupComponent={({ _error }) => <div style={{ color: 'red' }}>{_error}</div>}
+    />
+  );
+};
+CustomFieldFormatterComponent.displayName = 'CustomFieldFormatterComponent';
 
+const HTMLFormatter = (props) => {
+  const { objectValue, fieldValue, formatter, backupComponent: BackupComponent } = props;
   try {
-    const htmlContent = eval(formatter)(value);
+    const htmlContent = eval(formatter)(objectValue, fieldValue);
     if (typeof htmlContent === 'string' && htmlContent.includes('<')) {
       return <HtmlRenderer content={htmlContent} />;
     }
     return <span>{htmlContent}</span>;
   } catch (error) {
     console.error('Formatter error:', error);
-    return <OriginalInput {...props} _error={error.toString()} />;
+    return <BackupComponent {...props} _error={error.toString()} />;
   }
 };
 
 class PluginFieldContentFormatterClient extends Plugin {
   async load() {
-    const addFormatterSetting = (componentType: string) => {
-      this.schemaSettingsManager.addItem(`fieldSettings:component:${componentType}`, 'enableFormatter', {
-        Component: SchemaSettingsInputFormat as any,
-        useComponentProps() {
-          const schema = useFieldSchema();
-          const { fieldSchema: tableColumnSchema } = useColumnSchema();
-          const fieldSchema = tableColumnSchema || schema;
-          return {
-            fieldSchema,
-          };
-        },
-        useVisible() {
-          const isFieldReadPretty = useIsFieldReadPretty();
-          return isFieldReadPretty;
-        },
-      });
-    };
-
-    addFormatterSetting('Input');
-    addFormatterSetting('InputNumber');
-
-    const FormattedInput = (OriginalInput) => (props) => {
-      if (props.formatter) {
-        return <InputWithFormatter {...props} originalInput={OriginalInput} />;
-      }
-      return <OriginalInput {...props} />;
-    };
-
     this.app.addComponents({
-      Input: Object.assign(FormattedInput(this.app.components.Input), this.app.components.Input),
-      InputNumber: Object.assign(FormattedInput(this.app.components.InputNumber), this.app.components.InputNumber),
+      CustomFieldFormatterComponent: CustomFieldFormatterComponent,
+    });
+    this.schemaSettingsManager.addItem('fieldSettings:TableColumn', 'enableFormatter', {
+      Component: SchemaSettingsEnableFormatter,
+    });
+    this.schemaSettingsManager.addItem('fieldSettings:TableColumn', 'customFormatter', {
+      Component: SchemaSettingsCustomFormatter,
     });
   }
 }

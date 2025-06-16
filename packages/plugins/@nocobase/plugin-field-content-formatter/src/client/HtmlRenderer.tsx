@@ -24,9 +24,6 @@ export const HtmlRenderer: React.FC<HtmlRendererProps> = ({ content, className, 
     <div
       className={className}
       style={{
-        minHeight: '1em',
-        wordBreak: 'break-word',
-        whiteSpace: 'pre-wrap',
         ...style,
       }}
       dangerouslySetInnerHTML={{ __html: sanitizedContent }}
