@@ -29,7 +29,7 @@ export class JsonFieldModel extends FormFieldModel {
           maxRows: 10,
           minRows: 3,
         },
-        ...this.props,
+        ...this.field.componentProps,
         className: cx(jsonCss, className),
         onChange: (ev) => {
           this.field.setValue(ev.target.value);

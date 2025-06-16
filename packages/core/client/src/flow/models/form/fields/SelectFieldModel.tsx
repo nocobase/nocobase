@@ -16,24 +16,12 @@ export class SelectFieldModel extends FormFieldModel {
   }
 
   get component() {
-    return [
-      Select,
-      {
-        ...this.props,
-        options: this.props.dataSource || this.collectionField?.options?.uiSchema?.enum || [],
-      },
-    ];
+    return [Select, {}];
   }
 }
 
 SelectFieldModel.registerFlow({
   key: 'select',
   title: 'DataSource',
-  steps: {
-    dataSource: {
-      handler(ctx, params) {
-        ctx.model.setDataSource(params.dataSource);
-      },
-    },
-  },
+  steps: {},
 });

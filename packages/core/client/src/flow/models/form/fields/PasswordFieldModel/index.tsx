@@ -7,82 +7,49 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { Password } from '@formily/antd-v5';
 import { FormFieldModel } from '../../../FormFieldModel';
-import { Input } from 'antd';
-import { isFn } from '@formily/shared';
-import React, { Fragment } from 'react';
-import { getStrength } from './utils';
-
-type ReactRenderPropsChildren<T = any> = React.ReactNode | ((props: T) => React.ReactElement);
-
-interface IPasswordStrengthProps {
-  value?: any;
-  children?: ReactRenderPropsChildren<number>;
-}
-
-const PasswordStrength: React.FC<IPasswordStrengthProps> = (props) => {
-  if (isFn(props.children)) {
-    return props.children(getStrength(String(props.value || '')));
-  } else {
-    return <Fragment>{props.children}</Fragment>;
-  }
-};
-
-const Password = (props) => {
-  const blockStyle: React.CSSProperties = {
-    position: 'absolute',
-    zIndex: 1,
-    height: 8,
-    top: 0,
-    background: '#fff',
-    width: 1,
-    transform: 'translate(-50%, 0)',
-  };
-  return (
-    <span className={props.className}>
-      <Input.Password {...props} />
-      {props.checkStrength && (
-        <PasswordStrength value={props.value}>
-          {(score) => {
-            return (
-              <div
-                style={{
-                  background: '#e0e0e0',
-                  marginBottom: 3,
-                  position: 'relative',
-                }}
-              >
-                <div style={{ ...blockStyle, left: '20%' }} />
-                <div style={{ ...blockStyle, left: '40%' }} />
-                <div style={{ ...blockStyle, left: '60%' }} />
-                <div style={{ ...blockStyle, left: '80%' }} />
-                <div
-                  style={{
-                    position: 'relative',
-                    backgroundImage: '-webkit-linear-gradient(left, #ff5500, #ff9300)',
-                    transition: 'all 0.35s ease-in-out',
-                    height: 8,
-                    width: '100%',
-                    marginTop: 5,
-                    clipPath: `polygon(0 0,${score}% 0,${score}% 100%,0 100%)`,
-                  }}
-                />
-              </div>
-            );
-          }}
-        </PasswordStrength>
-      )}
-    </span>
-  );
-};
 
 export class PasswordFieldModel extends FormFieldModel {
+  static supportedFieldInterfaces = ['password'];
   get component() {
-    return [
-      Password,
-      {
-        ...this.props,
-      },
-    ];
+    return [Password, {}];
   }
 }
+
+PasswordFieldModel.registerFlow({
+  key: 'key3',
+  auto: true,
+  sort: 1000,
+  title: 'Group3',
+  steps: {
+    placeholder: {
+      title: 'Placeholder',
+      uiSchema: {
+        checkStrength: {
+          'x-component': 'Input',
+          'x-decorator': 'FormItem',
+        },
+      },
+      handler(ctx, params) {
+        ctx.model.setComponentProps({ placeholder: params.placeholder });
+      },
+    },
+    checkStrength: {
+      title: 'Check strength',
+      uiSchema: {
+        checkStrength: {
+          'x-component': 'Switch',
+          'x-decorator': 'FormItem',
+          'x-component-props': {
+            checkedChildren: 'Yes',
+            unCheckedChildren: 'No',
+          },
+        },
+      },
+      handler(ctx, params) {
+        ctx.model.setComponentProps({ checkStrength: params.checkStrength || false });
+      },
+    },
+  },
+});

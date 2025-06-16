@@ -25,16 +25,11 @@ export class FormFieldModel extends FlowModel {
   }
 
   get decorator() {
-    return [
-      FormItem,
-      {
-        title: this.props.title,
-      },
-    ];
+    return [FormItem, {}];
   }
 
   get component(): FieldComponentTuple {
-    return [Input, { ...this.props }];
+    return [Input, {}];
   }
 
   setTitle(title: string) {
@@ -47,6 +42,26 @@ export class FormFieldModel extends FlowModel {
 
   setInitialValue(initialValue: any) {
     this.field.initialValue = initialValue;
+  }
+
+  setComponentProps(componentProps) {
+    this.field.setComponentProps(componentProps);
+  }
+
+  getComponentProps() {
+    return this.field.componentProps;
+  }
+
+  setDecoratorProps(decoratorProps) {
+    this.field.setDecoratorProps(decoratorProps);
+  }
+
+  getDecoratorProps() {
+    return this.field.decoratorProps;
+  }
+
+  setDataSource(dataSource: any[]) {
+    this.field.dataSource = dataSource;
   }
 
   createField() {
@@ -74,11 +89,13 @@ FormFieldModel.registerFlow({
   steps: {
     step1: {
       handler(ctx, params) {
-        const collectionField = ctx.globals.dataSourceManager.getCollectionField(params.fieldPath);
+        const collectionField = ctx.globals.dataSourceManager.getCollectionField(params.fieldPath) as CollectionField;
         ctx.model.collectionField = collectionField;
-        const { uiSchema } = collectionField.options;
-        ctx.model.setProps({ ...uiSchema?.['x-component-props'] });
         ctx.model.field = ctx.model.createField();
+        ctx.model.setComponentProps(collectionField.getComponentProps());
+        if (collectionField.enum.length) {
+          ctx.model.setDataSource(collectionField.enum);
+        }
       },
     },
     editTitle: {

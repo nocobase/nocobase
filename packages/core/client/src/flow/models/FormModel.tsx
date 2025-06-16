@@ -32,8 +32,9 @@ export class FormModel extends BlockFlowModel {
 
   render() {
     const buildColumnSubModelParams: AddFieldButtonProps['buildSubModelParams'] = (item) => {
+      console.log('buildColumnSubModelParams', item);
       return {
-        use: 'FormFieldModel',
+        use: item.use,
         stepParams: {
           default: {
             step1: {
