@@ -192,6 +192,7 @@ const className1WithFixedWidth = css`
 const className1WithAutoWidth = css`
   ${className1}
   width: auto;
+  min-width: 168px;
 `;
 const className2 = css`
   object-fit: contain;
