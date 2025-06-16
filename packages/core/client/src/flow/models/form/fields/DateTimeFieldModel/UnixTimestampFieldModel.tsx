@@ -6,21 +6,15 @@
  * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
+import { DatePicker } from 'antd';
 import { FormFieldModel } from '../../../FormFieldModel';
-import { StringDatePicker } from './StringDatePicker';
 
-export class DateOnlyFieldModel extends FormFieldModel {
+export class UnixTimestampFieldModel extends FormFieldModel {
   get component() {
     return [
-      StringDatePicker,
+      DatePicker,
       {
         ...this.props,
-        showTime: false,
-        utc: false,
-        onChange: (val: string | undefined) => {
-          console.log(val);
-          this.field.setValue(val);
-        },
       },
     ];
   }

@@ -18,3 +18,5 @@ export * from './ColorFieldModel';
 export * from './IconFieldModel';
 export * from './RichTextFieldModel';
 export * from './DateTimeFieldModel';
+export * from './TimeFieldModel';
+export * from './NanoIDFieldModel';

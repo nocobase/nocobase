@@ -10,3 +10,4 @@
 export * from './DateTimeWithoutTzFieldModel';
 export * from './DateTimeWithTzFieldModel';
 export * from './DateOnlyFieldModel';
+export * from './UnixTimestampFieldModel';
