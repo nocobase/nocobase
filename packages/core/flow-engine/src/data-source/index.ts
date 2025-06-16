@@ -328,6 +328,10 @@ export class CollectionField {
     this.options.title = value;
   }
 
+  get enum() {
+    return this.options.uiSchema?.enum || [];
+  }
+
   getFields(): CollectionField[] {
     if (!this.options.target) {
       return [];
