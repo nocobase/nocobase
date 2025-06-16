@@ -107,16 +107,6 @@ FormFieldModel.registerFlow({
         ctx.model.setInitialValue(params.defaultValue);
       },
     },
-  },
-});
-
-export class CommonFormItemFlowModel extends FormFieldModel {}
-
-FormFieldModel.registerFlow({
-  key: 'key2',
-  auto: true,
-  title: 'Group2',
-  steps: {
     required: {
       title: 'Required',
       uiSchema: {
@@ -135,3 +125,14 @@ FormFieldModel.registerFlow({
     },
   },
 });
+
+export class CommonFormItemFlowModel extends FormFieldModel {}
+
+// FormFieldModel.registerFlow({
+//   key: 'key2',
+//   auto: true,
+//   title: 'Group2',
+//   steps: {
+
+//   },
+// });
