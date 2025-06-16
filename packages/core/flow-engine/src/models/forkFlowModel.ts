@@ -194,4 +194,4 @@ export class ForkFlowModel<TMaster extends FlowModel = FlowModel> {
 }
 
 // 类型断言：让 ForkFlowModel 可以被当作 FlowModel 使用
-export type ForkFlowModel<TMaster extends FlowModel = FlowModel> = FlowModel;
+export interface ForkFlowModel<TMaster extends FlowModel = FlowModel> extends FlowModel {} 
