@@ -651,10 +651,8 @@ export class FlowModel<Structure extends { parent?: any; subModels?: any } = Def
     return fork as ForkFlowModel<this>;
   }
 
-  remove() {
-    if (!this.flowEngine) {
-      throw new Error('FlowEngine is not set on this model. Please set flowEngine before saving.');
-    }
+  clearForks() {
+    console.log(`FlowModel ${this.uid} clearing all forks.`);
     // 主动使所有 fork 失效
     if (this.forks?.size) {
       this.forks.forEach((fork) => fork.dispose());
@@ -662,6 +660,12 @@ export class FlowModel<Structure extends { parent?: any; subModels?: any } = Def
     }
     // 清理 fork 缓存
     this.forkCache.clear();
+  }
+
+  remove() {
+    if (!this.flowEngine) {
+      throw new Error('FlowEngine is not set on this model. Please set flowEngine before saving.');
+    }
     return this.flowEngine.removeModel(this.uid);
   }
 
@@ -673,14 +677,6 @@ export class FlowModel<Structure extends { parent?: any; subModels?: any } = Def
   }
 
   async destroy() {
-    // 销毁前先处理所有 fork
-    if (this.forks?.size) {
-      this.forks.forEach((fork) => fork.dispose());
-      this.forks.clear();
-    }
-    // 清理 fork 缓存
-    this.forkCache.clear();
-
     if (!this.flowEngine) {
       throw new Error('FlowEngine is not set on this model. Please set flowEngine before deleting.');
     }
