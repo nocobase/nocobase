@@ -25,7 +25,7 @@ export class ForkFlowModel<TMaster extends FlowModel = FlowModel> {
   /** fork 在 master.forks 中的索引 */
   public readonly forkId: number;
 
-  constructor(master: TMaster, initialProps: IModelComponentProps = {}, forkId = 0) {
+  constructor(master: TMaster, initialProps: IModelComponentProps = {}, forkId: number = 0) {
     this.master = master;
     this.uid = master.uid;
     this.localProps = { ...initialProps };
@@ -126,4 +126,4 @@ export class ForkFlowModel<TMaster extends FlowModel = FlowModel> {
 }
 
 // 类型断言：让 ForkFlowModel 可以被当作 FlowModel 使用
-export type ForkFlowModel<TMaster extends FlowModel = FlowModel> = FlowModel;
+export interface ForkFlowModel<TMaster extends FlowModel = FlowModel> extends FlowModel {} 
