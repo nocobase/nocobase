@@ -14,12 +14,27 @@ import { CollectionField, FlowModel } from '@nocobase/flow-engine';
 import React from 'react';
 import { ReactiveField } from '../Formily/ReactiveField';
 
+type FieldComponentTuple = [component: React.ElementType, props: Record<string, any>] | any[];
+
 export class FormFieldModel extends FlowModel {
   collectionField: CollectionField;
   field: Field;
 
   get form() {
     return this.parent.form as Form;
+  }
+
+  get decorator() {
+    return [
+      FormItem,
+      {
+        title: this.props.title,
+      },
+    ];
+  }
+
+  get component(): FieldComponentTuple {
+    return [Input, { ...this.props }];
   }
 
   setTitle(title: string) {
@@ -38,13 +53,8 @@ export class FormFieldModel extends FlowModel {
     return this.form.createField({
       name: this.collectionField.name,
       ...this.props,
-      decorator: [
-        FormItem,
-        {
-          title: this.props.title,
-        },
-      ],
-      component: [Input, {}],
+      decorator: this.decorator,
+      component: this.component,
     });
   }
 
@@ -66,6 +76,8 @@ FormFieldModel.registerFlow({
       handler(ctx, params) {
         const collectionField = ctx.globals.dataSourceManager.getCollectionField(params.fieldPath);
         ctx.model.collectionField = collectionField;
+        const { uiSchema } = collectionField.options;
+        ctx.model.setProps({ ...uiSchema?.['x-component-props'] });
         ctx.model.field = ctx.model.createField();
       },
     },
@@ -97,16 +109,6 @@ FormFieldModel.registerFlow({
         ctx.model.setInitialValue(params.defaultValue);
       },
     },
-  },
-});
-
-export class CommonFormItemFlowModel extends FormFieldModel {}
-
-FormFieldModel.registerFlow({
-  key: 'key2',
-  auto: true,
-  title: 'Group2',
-  steps: {
     required: {
       title: 'Required',
       uiSchema: {
@@ -125,3 +127,14 @@ FormFieldModel.registerFlow({
     },
   },
 });
+
+export class CommonFormItemFlowModel extends FormFieldModel {}
+
+// FormFieldModel.registerFlow({
+//   key: 'key2',
+//   auto: true,
+//   title: 'Group2',
+//   steps: {
+
+//   },
+// });
