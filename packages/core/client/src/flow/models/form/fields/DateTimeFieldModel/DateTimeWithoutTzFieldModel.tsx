@@ -7,29 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { FormFieldModel } from '../../../FormFieldModel';
-import { StringDatePicker } from './StringDatePicker';
+import { DateTimeFieldModel } from './DateTimeFieldModel';
 
-function getDefaultFormat(showTime?: boolean, customFormat?: string): string {
-  return customFormat ?? (showTime ? 'YYYY-MM-DD HH:mm:ss' : 'YYYY-MM-DD');
-}
-
-export class DateTimeWithoutTzFieldModel extends FormFieldModel {
-  get component() {
-    const { showTime = false, picker = 'date', format: customFormat, ...restProps } = this.props;
-
-    const format = getDefaultFormat(showTime, customFormat);
-    return [
-      StringDatePicker,
-      {
-        ...restProps,
-        showTime,
-        picker,
-        format,
-        onChange: (val: string | undefined) => {
-          this.field.setValue(val);
-        },
-      },
-    ];
-  }
+export class DateTimeWithoutTzFieldModel extends DateTimeFieldModel {
+  static supportedFieldInterfaces = ['datetimeNoTz'];
 }

@@ -6,16 +6,8 @@
  * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
-import { DatePicker } from 'antd';
-import { FormFieldModel } from '../../../FormFieldModel';
+import { DateTimeFieldModel } from './DateTimeFieldModel';
 
-export class UnixTimestampFieldModel extends FormFieldModel {
-  get component() {
-    return [
-      DatePicker,
-      {
-        ...this.props,
-      },
-    ];
-  }
+export class UnixTimestampFieldModel extends DateTimeFieldModel {
+  static supportedFieldInterfaces = ['unixTimestamp'];
 }

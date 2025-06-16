@@ -11,16 +11,18 @@ import { Input } from '@formily/antd-v5';
 import { FormFieldModel } from '../../FormFieldModel';
 
 export class TextareaFieldModel extends FormFieldModel {
-  get component() {
-    return [
-      Input.TextArea,
-      {
-        autoSize: {
-          maxRows: 10,
-          minRows: 3,
-        },
-        ...this.props,
+  static supportedFieldInterfaces = ['textarea'];
+
+  setComponentProps(componentProps) {
+    super.setComponentProps({
+      ...componentProps,
+      autoSize: {
+        maxRows: 10,
+        minRows: 3,
       },
-    ];
+    });
+  }
+  get component() {
+    return [Input.TextArea, {}];
   }
 }

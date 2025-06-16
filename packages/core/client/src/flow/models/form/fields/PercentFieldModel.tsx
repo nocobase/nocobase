@@ -29,20 +29,18 @@ const PercentInput = connect(
     return {
       ...props,
       value: v,
+      addonAfter: '%',
       onChange: (v) => {
         field.setValue(toValue(v, (v) => v / 100));
       },
+      style: { width: '100%' },
     };
   }),
 );
 export class PercentFieldModel extends FormFieldModel {
+  static supportedFieldInterfaces = ['percent'];
+
   get component() {
-    return [
-      PercentInput,
-      {
-        ...this.props,
-        addonAfter: '%',
-      },
-    ];
+    return [PercentInput, {}];
   }
 }

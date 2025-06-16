@@ -8,32 +8,16 @@
  */
 
 import { FormFieldModel } from '../../FormFieldModel';
-import { Radio } from 'antd';
+import { Radio } from '@formily/antd-v5';
 
 export class RadioGroupFieldModel extends FormFieldModel {
+  static supportedFieldInterfaces = ['radioGroup'];
+
   setDataSource(dataSource?: any[]) {
     this.field.dataSource = dataSource;
   }
 
   get component() {
-    return [
-      Radio.Group,
-      {
-        ...this.props,
-        options: this.props.dataSource || this.collectionField?.options?.uiSchema?.enum || [],
-      },
-    ];
+    return [Radio.Group, {}];
   }
 }
-
-RadioGroupFieldModel.registerFlow({
-  key: 'dataSource',
-  title: 'DataSource',
-  steps: {
-    dataSource: {
-      handler(ctx, params) {
-        ctx.model.setDataSource(params.dataSource);
-      },
-    },
-  },
-});

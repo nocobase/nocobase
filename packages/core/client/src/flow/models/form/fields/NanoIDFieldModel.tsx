@@ -10,23 +10,17 @@
 import { Input } from '@formily/antd-v5';
 import { FormFieldModel } from '../../FormFieldModel';
 import { customAlphabet as Alphabet } from 'nanoid';
-import React, { useEffect } from 'react';
-import { useTranslation } from 'react-i18next';
 
 export class NanoIDFieldModel extends FormFieldModel {
+  static supportedFieldInterfaces = ['nanoID'];
+
   get component() {
-    return [
-      Input,
-      {
-        ...this.props,
-      },
-    ];
+    return [Input, {}];
   }
 }
 
 NanoIDFieldModel.registerFlow({
   key: 'initialValue',
-  title: 'DataSource',
   auto: true,
   sort: 5,
   steps: {

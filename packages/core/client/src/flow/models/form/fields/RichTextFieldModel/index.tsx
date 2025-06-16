@@ -8,6 +8,7 @@
  */
 
 import React from 'react';
+import { connect, mapProps } from '@formily/react';
 import { FormFieldModel } from '../../../FormFieldModel';
 import { lazy } from '../../../../../lazy-helper';
 import { useRichTextStyles } from './style';
@@ -51,13 +52,18 @@ const RichText = (props) => {
   );
 };
 
+const RichTextField = connect(
+  RichText,
+  mapProps((props: any, field: any) => {
+    return {
+      ...props,
+    };
+  }),
+);
 export class RichTextFieldModel extends FormFieldModel {
+  static supportedFieldInterfaces = ['richText'];
+
   get component() {
-    return [
-      RichText,
-      {
-        ...this.props,
-      },
-    ];
+    return [RichTextField, {}];
   }
 }

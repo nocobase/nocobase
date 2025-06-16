@@ -11,17 +11,9 @@ import { Select } from '@formily/antd-v5';
 import { FormFieldModel } from '../../FormFieldModel';
 
 export class SelectFieldModel extends FormFieldModel {
-  setDataSource(dataSource?: any[]) {
-    this.field.dataSource = dataSource;
-  }
+  static supportedFieldInterfaces = ['select', 'multipleSelect'];
 
   get component() {
     return [Select, {}];
   }
 }
-
-SelectFieldModel.registerFlow({
-  key: 'select',
-  title: 'DataSource',
-  steps: {},
-});

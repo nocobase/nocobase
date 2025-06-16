@@ -14,6 +14,7 @@ import { Button, Empty, Input, Space, theme, Radio, Flex, Popover } from 'antd';
 import { debounce, groupBy } from 'lodash';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { connect, mapProps } from '@formily/react';
 import { Icon, hasIcon, icons } from '../../../../icon';
 
 const { Search } = Input;
@@ -158,13 +159,19 @@ function IconField(props: IconPickerProps) {
   );
 }
 
+const IconPicker = connect(
+  IconField,
+  mapProps((props, field: any) => {
+    return {
+      ...props,
+    };
+  }),
+);
+
 export class IconFieldModel extends FormFieldModel {
+  static supportedFieldInterfaces = ['icon'];
+
   get component() {
-    return [
-      IconField,
-      {
-        ...this.props,
-      },
-    ];
+    return [IconPicker, {}];
   }
 }

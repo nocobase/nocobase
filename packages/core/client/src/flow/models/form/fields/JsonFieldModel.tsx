@@ -18,8 +18,10 @@ const jsonCss = css`
 `;
 
 export class JsonFieldModel extends FormFieldModel {
+  static supportedFieldInterfaces = ['json'];
+
   get component() {
-    const { json5, className } = this.props;
+    const { json5, className } = this.field?.componentProps || {};
     const _JSON = json5 ? JSON5 : JSON;
 
     return [
@@ -29,7 +31,7 @@ export class JsonFieldModel extends FormFieldModel {
           maxRows: 10,
           minRows: 3,
         },
-        ...this.field.componentProps,
+        ...this.field?.componentProps,
         className: cx(jsonCss, className),
         onChange: (ev) => {
           this.field.setValue(ev.target.value);

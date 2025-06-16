@@ -11,12 +11,8 @@ import { FormFieldModel } from '../../FormFieldModel';
 import { Checkbox } from 'antd';
 
 export class CheckboxFieldModel extends FormFieldModel {
+  static supportedFieldInterfaces = ['checkbox'];
   get component() {
-    return [
-      Checkbox,
-      {
-        ...this.props,
-      },
-    ];
+    return [Checkbox, {}];
   }
 }

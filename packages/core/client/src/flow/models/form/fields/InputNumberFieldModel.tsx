@@ -8,15 +8,48 @@
  */
 
 import { FormFieldModel } from '../../FormFieldModel';
-import { InputNumber } from 'antd';
+import { connect, mapReadPretty } from '@formily/react';
+import { InputNumber as AntdInputNumber, InputNumberProps as AntdInputNumberProps } from 'antd';
+import React from 'react';
+import BigNumber from 'bignumber.js';
+import { omit } from 'lodash';
 
+type ComposedInputNumber = React.ForwardRefExoticComponent<
+  Pick<Partial<any>, string | number | symbol> & React.RefAttributes<unknown>
+> & {};
+function toSafeNumber(value) {
+  if (!value) {
+    return value;
+  }
+  if (value > Number.MAX_SAFE_INTEGER || value < Number.MIN_SAFE_INTEGER) {
+    return new BigNumber(value).toString();
+  } else {
+    return Number(value);
+  }
+}
+
+export const InputNumber: ComposedInputNumber = connect((props: AntdInputNumberProps) => {
+  const { onChange, ...others } = props;
+  const handleChange = (v) => {
+    if (Number.isNaN(v)) {
+      onChange(null);
+    } else {
+      onChange(toSafeNumber(v));
+    }
+  };
+  let inputNumberProps = {
+    onChange: handleChange,
+    ...others,
+  };
+  if (others['formatStyle']) {
+    inputNumberProps = omit(inputNumberProps, ['addonAfter', 'addonBefore']);
+  }
+  return <AntdInputNumber {...inputNumberProps} />;
+});
 export class InputNumberFieldModel extends FormFieldModel {
+  static supportedFieldInterfaces = ['number', 'integer'];
+
   get component() {
-    return [
-      InputNumber,
-      {
-        ...this.props,
-      },
-    ];
+    return [InputNumber, {}];
   }
 }

@@ -11,12 +11,9 @@ import { TimePicker } from '@formily/antd-v5';
 import { FormFieldModel } from '../../FormFieldModel';
 
 export class TimeFieldModel extends FormFieldModel {
+  static supportedFieldInterfaces = ['time'];
+
   get component() {
-    return [
-      TimePicker,
-      {
-        ...this.props,
-      },
-    ];
+    return [TimePicker, {}];
   }
 }
