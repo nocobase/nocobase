@@ -7,41 +7,42 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { FlowContext } from '@nocobase/flow-engine';
-import { Drawer } from 'antd';
+import { CreateModelOptions, FlowContext, FlowModel, FlowModelRenderer } from '@nocobase/flow-engine';
 import React from 'react';
-import { createRoot } from 'react-dom/client';
+import { observable } from '@formily/reactive';
+import { observer } from '@formily/react';
 
-const openDrawer = (params: { ctx: FlowContext }) => {
-  const container = document.createElement('div');
-  document.body.appendChild(container);
+// 视图栈
+const viewStack: { ctx: FlowContext; model: FlowModel }[] = observable.shallow([]);
 
-  const root = createRoot(container);
+export const ViewContainer: React.FC = observer(
+  () => {
+    return (
+      <>
+        {viewStack.map(({ ctx, model }, index) => {
+          return <FlowModelRenderer key={index} model={model} />;
+        })}
+      </>
+    );
+  },
+  {
+    displayName: 'ViewContainer',
+  },
+);
 
-  const unmount = () => {
-    setTimeout(() => {
-      root.unmount();
-      document.body.removeChild(container);
-    }, 300);
-  };
-
-  root.render(<Drawer open={true} onClose={unmount}></Drawer>);
+export const openView = (params: { ctx: FlowContext; model: FlowModel | CreateModelOptions }) => {
+  viewStack.push({
+    ctx: params.ctx,
+    model: params.model instanceof FlowModel ? params.model : params.ctx.model.flowEngine.createModel(params.model),
+  });
 };
 
-const openModal = () => {};
-
-const openSubPage = () => {};
-
-export const openView = (params: { type: 'drawer' | 'modal' | 'subPage'; ctx: FlowContext }) => {
-  const { type, ...others } = params;
-  switch (type) {
-    case 'drawer':
-      return openDrawer(others);
-    case 'modal':
-      return openModal();
-    case 'subPage':
-      return openSubPage();
-    default:
-      throw new Error(`Unsupported view type: ${type}`);
+export const closeView = () => {
+  if (viewStack.length > 0) {
+    viewStack.pop();
   }
+};
+
+export const closeAllViews = () => {
+  viewStack.length = 0;
 };
