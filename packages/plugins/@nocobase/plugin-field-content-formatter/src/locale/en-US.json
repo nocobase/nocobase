@@ -1,5 +1,6 @@
 {
-  "Field content formatter": "Field content formatter",
+  "Enable custom formatter": "Enable custom formatter",
+  "Custom formatter": "Custom formatter",
   "Formatter": "Formatter",
   "JavaScript function that returns HTML string, e.g., (value) => `<strong>${value}</strong>`": "JavaScript function that returns HTML string or text, e.g., (value) => `<strong>${value}</strong>`",
   "Test Value": "Test Value",
