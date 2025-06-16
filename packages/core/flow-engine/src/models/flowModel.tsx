@@ -51,6 +51,11 @@ export class FlowModel<Structure extends { parent?: any; subModels?: any } = Def
    * 使用 Set 便于在销毁时主动遍历并调用 dispose，避免悬挂引用。
    */
   public forks: Set<ForkFlowModel<any>> = new Set();
+
+  /**
+   * 基于 key 的 fork 实例缓存，用于复用 fork 实例
+   */
+  private forkCache: Map<string, ForkFlowModel<any>> = new Map();
   // public static meta: FlowModelMeta;
 
   constructor(protected options: FlowModelOptions<Structure>) {
@@ -619,12 +624,30 @@ export class FlowModel<Structure extends { parent?: any; subModels?: any } = Def
   /**
    * 创建一个 fork 实例，实现"一份数据（master）多视图（fork）"的能力。
    * @param {IModelComponentProps} [localProps={}] fork 专属的局部 props，优先级高于 master.props
+   * @param {string} [key] 可选的 key，用于复用 fork 实例。如果提供了 key，会尝试复用已存在的 fork
    * @returns {ForkFlowModel<this>} 创建的 fork 实例
    */
-  createFork(localProps: IModelComponentProps = {}): ForkFlowModel<this> {
+  createFork(localProps: IModelComponentProps, key?: string): ForkFlowModel<this> {
+    // 如果提供了 key，尝试从缓存中获取
+    if (key) {
+      const cachedFork = this.forkCache.get(key);
+      if (cachedFork && !(cachedFork as any).disposed) {
+        // 更新 localProps
+        cachedFork.setProps(localProps || {});
+        return cachedFork as ForkFlowModel<this>;
+      }
+    }
+
+    // 创建新的 fork 实例
     const forkId = this.forks.size; // 当前集合大小作为索引
     const fork = new ForkFlowModel<this>(this as any, localProps, forkId);
     this.forks.add(fork as any);
+
+    // 如果提供了 key，将 fork 缓存起来
+    if (key) {
+      this.forkCache.set(key, fork as any);
+    }
+
     return fork as ForkFlowModel<this>;
   }
 
@@ -637,6 +660,8 @@ export class FlowModel<Structure extends { parent?: any; subModels?: any } = Def
       this.forks.forEach((fork) => fork.dispose());
       this.forks.clear();
     }
+    // 清理 fork 缓存
+    this.forkCache.clear();
     return this.flowEngine.removeModel(this.uid);
   }
 
@@ -653,6 +678,8 @@ export class FlowModel<Structure extends { parent?: any; subModels?: any } = Def
       this.forks.forEach((fork) => fork.dispose());
       this.forks.clear();
     }
+    // 清理 fork 缓存
+    this.forkCache.clear();
 
     if (!this.flowEngine) {
       throw new Error('FlowEngine is not set on this model. Please set flowEngine before deleting.');

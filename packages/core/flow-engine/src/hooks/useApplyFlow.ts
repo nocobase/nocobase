@@ -124,7 +124,7 @@ function useFlowExecutor<T, TModel extends FlowModel = FlowModel>(
     let isInitialAutorunForEffect = true;
 
     const disposeAutorun = autorun(() => {
-      // 只监听 stepParams 的变化，移除对 props 的监听以避免循环触发
+      // 监听 stepParams 的变化来触发 auto flows 重新执行
       JSON.stringify(toJS(model.stepParams));
 
       if (isInitialAutorunForEffect) {
@@ -209,7 +209,11 @@ export function useApplyFlow<TModel extends FlowModel = FlowModel>(
  * @param context Optional user context
  * @returns The results of all auto-apply flows execution
  */
-export function useApplyAutoFlows(modelOrUid: FlowModel | string, context?: FlowExtraContext, independentAutoFlowExecution?: boolean): any[] {
+export function useApplyAutoFlows(
+  modelOrUid: FlowModel | string,
+  context?: FlowExtraContext,
+  independentAutoFlowExecution?: boolean,
+): any[] {
   const flowEngine = useFlowEngine();
   const model = useMemo(() => {
     if (typeof modelOrUid === 'string') {
@@ -224,7 +228,7 @@ export function useApplyAutoFlows(modelOrUid: FlowModel | string, context?: Flow
   //   }
   //   return 'autoFlow';
   // }, [independentAutoFlowExecution]);
-  
+
   const executor = useCallback((ctx?: FlowExtraContext) => model.applyAutoFlows(ctx), [model]);
 
   return useFlowExecutor(

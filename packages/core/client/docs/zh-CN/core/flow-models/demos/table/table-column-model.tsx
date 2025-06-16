@@ -75,7 +75,12 @@ export class TableColumnActionsModel extends TableColumnModel {
     return (value, record, index) => (
       <Space>
         {this.mapSubModels('actions', (action: ActionModel) => (
-          <FlowModelRenderer key={action.uid} model={action.createFork()} showFlowSettings extraContext={{ record }} />
+          <FlowModelRenderer
+            key={action.uid}
+            model={action.createFork({}, `${record.id || index}`)}
+            showFlowSettings
+            extraContext={{ record }}
+          />
         ))}
       </Space>
     );

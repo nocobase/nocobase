@@ -1,3 +1,13 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
+import { action, define, observable } from '@formily/reactive';
 import type { IModelComponentProps } from '../types';
 import { FlowModel } from './flowModel';
 
@@ -28,11 +38,16 @@ export class ForkFlowModel<TMaster extends FlowModel = FlowModel> {
   /** fork 在 master.forks 中的索引 */
   public readonly forkId: number;
 
-  constructor(master: TMaster, initialProps: IModelComponentProps = {}, forkId: number = 0) {
+  constructor(master: TMaster, initialProps: IModelComponentProps = {}, forkId = 0) {
     this.master = master;
     this.uid = master.uid;
     this.localProps = { ...initialProps };
     this.forkId = forkId;
+
+    define(this, {
+      localProps: observable,
+      setProps: action,
+    });
 
     // 返回代理对象，实现自动透传
     return new Proxy(this, {
@@ -60,14 +75,14 @@ export class ForkFlowModel<TMaster extends FlowModel = FlowModel> {
         // 使用闭包捕获正确的 constructor，避免异步方法中的竞态条件
         if (typeof value === 'function') {
           const masterConstructor = target.master.constructor;
-          return function(this: any, ...args: any[]) {
+          return function (this: any, ...args: any[]) {
             // 创建一个临时的 this 对象，包含正确的 constructor
             const contextThis = Object.create(this);
             Object.defineProperty(contextThis, 'constructor', {
               value: masterConstructor,
               configurable: true,
               enumerable: false,
-              writable: false
+              writable: false,
             });
 
             return value.apply(contextThis, args);
@@ -156,6 +171,16 @@ export class ForkFlowModel<TMaster extends FlowModel = FlowModel> {
     if (this.master && (this.master as any).forks) {
       (this.master as any).forks.delete(this as any);
     }
+    // 从 master 的 forkCache 中移除自己
+    if (this.master && (this.master as any).forkCache) {
+      const forkCache = (this.master as any).forkCache;
+      for (const [key, fork] of forkCache.entries()) {
+        if (fork === this) {
+          forkCache.delete(key);
+          break;
+        }
+      }
+    }
     // @ts-ignore
     this.master = null;
   }
@@ -169,4 +194,4 @@ export class ForkFlowModel<TMaster extends FlowModel = FlowModel> {
 }
 
 // 类型断言：让 ForkFlowModel 可以被当作 FlowModel 使用
-export interface ForkFlowModel<TMaster extends FlowModel = FlowModel> extends FlowModel {} 
+export type ForkFlowModel<TMaster extends FlowModel = FlowModel> = FlowModel;
