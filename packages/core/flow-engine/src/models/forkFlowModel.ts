@@ -5,6 +5,9 @@ import { FlowModel } from './flowModel';
  * ForkFlowModel 作为 FlowModel 的轻量代理实例：
  *  - 共享 master（原始 FlowModel）上的所有业务数据与方法
  *  - 仅在 props 层面拥有本地覆盖(localProps)，其余字段全部透传到 master
+ *  - 透传的函数中 this 指向 fork 实例，而非 master，确保正确的上下文
+ *  - 使用 Object.create 创建临时上下文，确保 this.constructor 指向正确的类（避免异步竞态条件）
+ *  - setter 方法中的 this 也指向 fork 实例，保持一致的上下文行为
  *  - 不会被注册到 FlowEngine.modelInstances 中，保持 uid → master 唯一性假设
  */
 export class ForkFlowModel<TMaster extends FlowModel = FlowModel> {
@@ -37,21 +40,38 @@ export class ForkFlowModel<TMaster extends FlowModel = FlowModel> {
         // disposed check
         if (prop === 'disposed') return target.disposed;
 
+        // 特殊处理 constructor，应该返回 master 的 constructor
+        if (prop === 'constructor') {
+          return target.master.constructor;
+        }
+        if (prop === 'props') {
+          // 对 props 做合并返回
+          return { ...target.master.getProps(), ...target.localProps };
+        }
         // fork 自身属性 / 方法优先
         if (prop in target) {
-          if (prop === 'props') {
-            // 对 props 做合并返回
-            return { ...target.master.getProps(), ...target.localProps };
-          }
           return Reflect.get(target, prop, receiver);
         }
 
         // 默认取 master 上的值
         const value = (target.master as any)[prop];
 
-        // 如果是函数，需要绑定 master，保持 this 指向
+        // 如果是函数，需要绑定到 fork 实例，让 this 指向 fork
+        // 使用闭包捕获正确的 constructor，避免异步方法中的竞态条件
         if (typeof value === 'function') {
-          return value.bind(target.master);
+          const masterConstructor = target.master.constructor;
+          return function(this: any, ...args: any[]) {
+            // 创建一个临时的 this 对象，包含正确的 constructor
+            const contextThis = Object.create(this);
+            Object.defineProperty(contextThis, 'constructor', {
+              value: masterConstructor,
+              configurable: true,
+              enumerable: false,
+              writable: false
+            });
+
+            return value.apply(contextThis, args);
+          }.bind(receiver);
         }
         return value;
       },
@@ -62,16 +82,39 @@ export class ForkFlowModel<TMaster extends FlowModel = FlowModel> {
 
         // 如果 fork 自带字段，则写到自身（例如 localProps）
         if (prop in target) {
-          // @ts-ignore
-          target[prop] = value;
-          return true;
+          return Reflect.set(target, prop, value, receiver);
         }
 
-        // 其余写入 master，实现共享
-        (target.master as any)[prop] = value;
-        return true;
+        // 其余写入 master，但需要确保 setter 中的 this 指向 fork
+        // 检查 master 上是否有对应的 setter
+        const descriptor = this.getPropertyDescriptor(target.master, prop);
+        if (descriptor && descriptor.set) {
+          // 如果有 setter，直接用 receiver（fork 实例）作为 this 调用
+          // 这样 setter 中的 this 就指向 fork，可以正确调用 fork 的方法
+          descriptor.set.call(receiver, value);
+          return true;
+        } else {
+          // 没有 setter，直接赋值到 master
+          (target.master as any)[prop] = value;
+          return true;
+        }
       },
     });
+  }
+
+  /**
+   * 获取对象及其原型链上的属性描述符
+   */
+  private getPropertyDescriptor(obj: any, prop: PropertyKey): PropertyDescriptor | undefined {
+    let current = obj;
+    while (current) {
+      const descriptor = Object.getOwnPropertyDescriptor(current, prop);
+      if (descriptor) {
+        return descriptor;
+      }
+      current = Object.getPrototypeOf(current);
+    }
+    return undefined;
   }
 
   /**
