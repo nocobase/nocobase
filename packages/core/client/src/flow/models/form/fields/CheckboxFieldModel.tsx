@@ -12,22 +12,12 @@ import { FormFieldModel } from '../../FormFieldModel';
 import { Checkbox } from 'antd';
 
 export class CheckboxFieldModel extends FormFieldModel {
-  createField() {
-    return this.form.createField({
-      name: this.collectionField.name,
-      ...this.props,
-      decorator: [
-        FormItem,
-        {
-          title: this.props.title,
-        },
-      ],
-      component: [
-        Checkbox,
-        {
-          ...this.props,
-        },
-      ],
-    }) as any;
+  get component() {
+    return [
+      Checkbox,
+      {
+        ...this.props,
+      },
+    ];
   }
 }

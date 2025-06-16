@@ -12,48 +12,37 @@ import { ColorPicker } from 'antd';
 import { FormFieldModel } from '../../FormFieldModel';
 
 export class ColorFieldModel extends FormFieldModel {
-  createField() {
-    return this.form.createField({
-      name: this.collectionField.name,
-      ...this.props,
-      decorator: [
-        FormItem,
-        {
-          title: this.props.title,
-        },
-      ],
-      component: [
-        ColorPicker,
-
-        {
-          ...this.props,
-          trigger: 'hover',
-          destroyTooltipOnHide: true,
-          presets: [
-            {
-              label: 'Recommended',
-              colors: [
-                '#8BBB11',
-                '#52C41A',
-                '#13A8A8',
-                '#1677FF',
-                '#F5222D',
-                '#FADB14',
-                '#FA8C164D',
-                '#FADB144D',
-                '#52C41A4D',
-                '#1677FF4D',
-                '#2F54EB4D',
-                '#722ED14D',
-                '#EB2F964D',
-              ],
-            },
-          ],
-          onChange: (color) => {
-            this.field.setValue(color.toHexString());
+  get component() {
+    return [
+      ColorPicker,
+      {
+        ...this.props,
+        trigger: 'hover',
+        destroyTooltipOnHide: true,
+        presets: [
+          {
+            label: 'Recommended',
+            colors: [
+              '#8BBB11',
+              '#52C41A',
+              '#13A8A8',
+              '#1677FF',
+              '#F5222D',
+              '#FADB14',
+              '#FA8C164D',
+              '#FADB144D',
+              '#52C41A4D',
+              '#1677FF4D',
+              '#2F54EB4D',
+              '#722ED14D',
+              '#EB2F964D',
+            ],
           },
+        ],
+        onChange: (color) => {
+          this.field.setValue(color.toHexString());
         },
-      ],
-    }) as any;
+      },
+    ];
   }
 }

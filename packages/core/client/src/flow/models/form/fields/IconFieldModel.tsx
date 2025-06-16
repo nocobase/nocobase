@@ -163,22 +163,12 @@ function IconField(props: IconPickerProps) {
 }
 
 export class IconFieldModel extends FormFieldModel {
-  createField() {
-    return this.form.createField({
-      name: this.collectionField.name,
-      ...this.props,
-      decorator: [
-        FormItem,
-        {
-          title: this.props.title,
-        },
-      ],
-      component: [
-        IconField,
-        {
-          ...this.props,
-        },
-      ],
-    }) as any;
+  get component() {
+    return [
+      IconField,
+      {
+        ...this.props,
+      },
+    ];
   }
 }

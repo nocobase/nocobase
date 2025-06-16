@@ -53,22 +53,12 @@ const RichText = (props) => {
 };
 
 export class RichTextFieldModel extends FormFieldModel {
-  createField() {
-    return this.form.createField({
-      name: this.collectionField.name,
-      ...this.props,
-      decorator: [
-        FormItem,
-        {
-          title: this.props.title,
-        },
-      ],
-      component: [
-        RichText,
-        {
-          ...this.props,
-        },
-      ],
-    }) as any;
+  get component() {
+    return [
+      RichText,
+      {
+        ...this.props,
+      },
+    ];
   }
 }

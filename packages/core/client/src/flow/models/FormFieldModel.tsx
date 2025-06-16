@@ -22,6 +22,19 @@ export class FormFieldModel extends FlowModel {
     return this.parent.form as Form;
   }
 
+  get decorator() {
+    return [
+      FormItem,
+      {
+        title: this.props.title,
+      },
+    ];
+  }
+
+  get component() {
+    return [Input, { ...this.props }];
+  }
+
   setTitle(title: string) {
     this.field.title = title || this.collectionField.title;
   }
@@ -38,13 +51,8 @@ export class FormFieldModel extends FlowModel {
     return this.form.createField({
       name: this.collectionField.name,
       ...this.props,
-      decorator: [
-        FormItem,
-        {
-          title: this.props.title,
-        },
-      ],
-      component: [Input, {}],
+      decorator: this.decorator,
+      component: this.component,
     });
   }
 
@@ -99,6 +107,16 @@ FormFieldModel.registerFlow({
         ctx.model.setInitialValue(params.defaultValue);
       },
     },
+  },
+});
+
+export class CommonFormItemFlowModel extends FormFieldModel {}
+
+FormFieldModel.registerFlow({
+  key: 'key2',
+  auto: true,
+  title: 'Group2',
+  steps: {
     required: {
       title: 'Required',
       uiSchema: {
@@ -117,14 +135,3 @@ FormFieldModel.registerFlow({
     },
   },
 });
-
-export class CommonFormItemFlowModel extends FormFieldModel {}
-
-// FormFieldModel.registerFlow({
-//   key: 'key2',
-//   auto: true,
-//   title: 'Group2',
-//   steps: {
-
-//   },
-// });

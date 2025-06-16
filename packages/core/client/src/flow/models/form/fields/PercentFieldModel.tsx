@@ -37,26 +37,13 @@ const PercentInput = connect(
   }),
 );
 export class PercentFieldModel extends FormFieldModel {
-  createField() {
-    return this.form.createField({
-      name: this.collectionField.name,
-      ...this.props,
-      decorator: [
-        FormItem,
-        {
-          title: this.props.title,
-        },
-      ],
-      component: [
-        PercentInput,
-        {
-          style: {
-            width: '100%',
-          },
-          ...this.props,
-          addonAfter: '%',
-        },
-      ],
-    }) as any;
+  get component() {
+    return [
+      PercentInput,
+      {
+        ...this.props,
+        addonAfter: '%',
+      },
+    ];
   }
 }

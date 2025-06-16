@@ -15,24 +15,15 @@ export class RadioGroupFieldModel extends FormFieldModel {
   setDataSource(dataSource?: any[]) {
     this.props.dataSource = dataSource;
   }
-  createField() {
-    return this.form.createField({
-      name: this.collectionField.name,
-      ...this.props,
-      decorator: [
-        FormItem,
-        {
-          title: this.props.title,
-        },
-      ],
-      component: [
-        Radio.Group,
-        {
-          ...this.props,
-          options: this.props.dataSource || this.collectionField?.options?.uiSchema?.enum || [],
-        },
-      ],
-    }) as any;
+
+  get component() {
+    return [
+      Radio.Group,
+      {
+        ...this.props,
+        options: this.props.dataSource || this.collectionField?.options?.uiSchema?.enum || [],
+      },
+    ];
   }
 }
 

@@ -12,22 +12,12 @@ import { FormFieldModel } from '../../FormFieldModel';
 import { InputNumber } from 'antd';
 
 export class InputNumberFieldModel extends FormFieldModel {
-  createField() {
-    return this.form.createField({
-      name: this.collectionField.name,
-      ...this.props,
-      decorator: [
-        FormItem,
-        {
-          title: this.props.title,
-        },
-      ],
-      component: [
-        InputNumber,
-        {
-          ...this.props,
-        },
-      ],
-    }) as any;
+  get component() {
+    return [
+      InputNumber,
+      {
+        ...this.props,
+      },
+    ];
   }
 }

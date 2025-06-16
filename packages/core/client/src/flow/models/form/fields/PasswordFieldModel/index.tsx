@@ -78,17 +78,12 @@ const Password = (props) => {
 };
 
 export class PasswordFieldModel extends FormFieldModel {
-  createField() {
-    return this.form.createField({
-      name: this.collectionField.name,
-      ...this.props,
-      decorator: [
-        FormItem,
-        {
-          title: this.props.title,
-        },
-      ],
-      component: [Password, {}],
-    }) as any;
+  get component() {
+    return [
+      Password,
+      {
+        ...this.props,
+      },
+    ];
   }
 }
