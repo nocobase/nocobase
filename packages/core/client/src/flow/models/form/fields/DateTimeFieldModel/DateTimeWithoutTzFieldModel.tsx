@@ -6,10 +6,8 @@
  * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
-import { DatePicker } from 'antd';
-import dayjs, { Dayjs } from 'dayjs';
+
 import { FormFieldModel } from '../../../FormFieldModel';
-import React from 'react';
 import { StringDatePicker } from './StringDatePicker';
 
 function getDefaultFormat(showTime?: boolean, customFormat?: string): string {
