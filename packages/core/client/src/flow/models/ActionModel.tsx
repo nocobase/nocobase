@@ -7,11 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { FlowModel } from '@nocobase/flow-engine';
-import { Button } from 'antd';
+import { FlowContext, FlowModel, FlowModelRenderer } from '@nocobase/flow-engine';
+import { Button, Drawer, Modal } from 'antd';
 import React from 'react';
 
 import type { ButtonProps } from 'antd';
+
+const ANIMATION_DURATION = 300; // 动画持续时间
 
 interface ActionModelProps extends ButtonProps {
   Component?: React.ComponentType<ButtonProps>;
@@ -19,20 +21,90 @@ interface ActionModelProps extends ButtonProps {
    * 打开方式
    * @default 'popup'
    */
-  openMode?: 'drawer' | 'modal' | 'page';
+  openMode?: 'drawer' | 'modal' | 'subPage';
   /**
    * 弹窗尺寸
    * @default 'md'
    */
   popupSize?: 'small' | 'medium' | 'large';
+  /**
+   * 是否显示视图（弹窗或子页面）
+   */
+  showView?: boolean;
 }
 
-export class ActionModel extends FlowModel {
+const SubPage = (props: any) => {
+  return <>子页面内容</>;
+};
+
+export class ActionModel extends FlowModel<{ subModels: { view?: FlowModel } }> {
   declare props: ActionModelProps;
+  private hideView = true;
+
+  public openView(ctx: FlowContext) {
+    this.setProps('showView', true);
+    this.hideView = false;
+  }
+
+  private dispatchCloseViewEvent(event: React.MouseEvent) {
+    this.dispatchEvent('onCloseView', { event });
+    this.setProps('showView', false);
+
+    setTimeout(() => {
+      this.hideView = true;
+    }, ANIMATION_DURATION);
+  }
+
+  private renderView() {
+    const { openMode, popupSize, showView } = this.props;
+
+    if (this.hideView) {
+      return null;
+    }
+
+    if (!this.subModels.view) {
+      const model = this.setSubModel('view', {
+        use: 'ActionViewModel',
+        props: {
+          openMode,
+          popupSize,
+        },
+      });
+      model.save();
+    }
+
+    switch (openMode) {
+      case 'drawer':
+        return (
+          <Drawer onClose={this.dispatchCloseViewEvent} open={showView}>
+            <FlowModelRenderer key={this.subModels.view.uid} model={this.subModels.view} />
+          </Drawer>
+        );
+      case 'modal':
+        return (
+          <Modal onClose={this.dispatchCloseViewEvent} open={showView}>
+            <FlowModelRenderer key={this.subModels.view.uid} model={this.subModels.view} />
+          </Modal>
+        );
+      case 'subPage':
+        return (
+          <SubPage onClose={this.dispatchCloseViewEvent} open={showView}>
+            <FlowModelRenderer key={this.subModels.view.uid} model={this.subModels.view} />
+          </SubPage>
+        );
+      default:
+        return null;
+    }
+  }
 
   render() {
     const { Component = Button, ...props } = this.getProps() as ActionModelProps;
-    return <Component {...props} onClick={(event) => this.dispatchEvent('click', { event })} />;
+    return (
+      <>
+        <Component {...props} onClick={(event) => this.dispatchEvent('onClick', { event })} />
+        {this.renderView()}
+      </>
+    );
   }
 }
 
