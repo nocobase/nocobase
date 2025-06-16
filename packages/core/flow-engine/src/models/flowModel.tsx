@@ -627,7 +627,7 @@ export class FlowModel<Structure extends { parent?: any; subModels?: any } = Def
    * @param {string} [key] 可选的 key，用于复用 fork 实例。如果提供了 key，会尝试复用已存在的 fork
    * @returns {ForkFlowModel<this>} 创建的 fork 实例
    */
-  createFork(localProps: IModelComponentProps, key?: string): ForkFlowModel<this> {
+  createFork(localProps?: IModelComponentProps, key?: string): ForkFlowModel<this> {
     // 如果提供了 key，尝试从缓存中获取
     if (key) {
       const cachedFork = this.forkCache.get(key);
