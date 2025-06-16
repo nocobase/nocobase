@@ -24,7 +24,6 @@ import React from 'react';
 import { ActionModel } from './ActionModel';
 import { BlockFlowModel } from './BlockFlowModel';
 import { FormFieldModel } from './FormFieldModel';
-import { SelectFieldModel } from './form/fields/SelectFieldModel';
 
 export class FormModel extends BlockFlowModel {
   form: Form;
@@ -34,7 +33,7 @@ export class FormModel extends BlockFlowModel {
   render() {
     const buildColumnSubModelParams: AddFieldButtonProps['buildSubModelParams'] = (item) => {
       return {
-        use: 'SelectFieldModel',
+        use: 'FormFieldModel',
         stepParams: {
           default: {
             step1: {
@@ -64,7 +63,7 @@ export class FormModel extends BlockFlowModel {
           />
           <FormButtonGroup>
             {this.mapSubModels('actions', (action) => (
-              <FlowModelRenderer model={action} />
+              <FlowModelRenderer model={action} showFlowSettings />
             ))}
             <AddActionButton model={this} ParentModelClass={ActionModel} />
           </FormButtonGroup>
