@@ -105,8 +105,8 @@ function useFlowExecutor<T, TModel extends FlowModel = FlowModel>(
 ): T {
   const engine = useFlowEngine();
   const cacheKey = useMemo(
-    () => generateCacheKey(cacheKeyPrefix, flowKey, model.uid),
-    [cacheKeyPrefix, flowKey, model.uid],
+    () => generateCacheKey(model['forkId'] ?? cacheKeyPrefix, flowKey, model.uid),
+    [cacheKeyPrefix, flowKey, model.uid, model['forkId']],
   );
   const [, forceUpdate] = useState({});
   const isMounted = useRef(false);
@@ -209,7 +209,11 @@ export function useApplyFlow<TModel extends FlowModel = FlowModel>(
  * @param context Optional user context
  * @returns The results of all auto-apply flows execution
  */
-export function useApplyAutoFlows(modelOrUid: FlowModel | string, context?: FlowExtraContext, independentAutoFlowExecution?: boolean): any[] {
+export function useApplyAutoFlows(
+  modelOrUid: FlowModel | string,
+  context?: FlowExtraContext,
+  independentAutoFlowExecution?: boolean,
+): any[] {
   const flowEngine = useFlowEngine();
   const model = useMemo(() => {
     if (typeof modelOrUid === 'string') {
@@ -224,7 +228,7 @@ export function useApplyAutoFlows(modelOrUid: FlowModel | string, context?: Flow
   //   }
   //   return 'autoFlow';
   // }, [independentAutoFlowExecution]);
-  
+
   const executor = useCallback((ctx?: FlowExtraContext) => model.applyAutoFlows(ctx), [model]);
 
   return useFlowExecutor(

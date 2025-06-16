@@ -63,7 +63,7 @@ export class FormModel extends BlockFlowModel {
           />
           <FormButtonGroup>
             {this.mapSubModels('actions', (action) => (
-              <FlowModelRenderer model={action} />
+              <FlowModelRenderer model={action} showFlowSettings />
             ))}
             <AddActionButton model={this} ParentModelClass={ActionModel} />
           </FormButtonGroup>
