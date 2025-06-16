@@ -1,0 +1,22 @@
+{
+  "name": "@nocobase/plugin-field-content-formatter",
+  "version": "1.7.11",
+  "main": "./dist/server/index.js",
+  "displayName": "Field Content Formatter",
+  "displayName.zh-CN": "字段内容格式化器",
+  "description": "A plugin for formatting field content",
+  "description.zh-CN": "一个用于格式化字段内容的插件",
+  "devDependencies": {
+    "@ant-design/icons": "5.x",
+    "@formily/react": "2.x",
+    "antd": "5.x",
+    "react": "^18.2.0",
+    "react-i18next": "^11.15.1"
+  },
+  "peerDependencies": {
+    "@nocobase/client": "1.x",
+    "@nocobase/server": "1.x",
+    "@nocobase/test": "1.x"
+  },
+  "gitHead": "d0b4efe4be55f8c79a98a331d99d9f8cf99021a1"
+}
