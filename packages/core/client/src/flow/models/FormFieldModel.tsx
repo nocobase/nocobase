@@ -14,6 +14,8 @@ import { CollectionField, FlowModel } from '@nocobase/flow-engine';
 import React from 'react';
 import { ReactiveField } from '../Formily/ReactiveField';
 
+type FieldComponentTuple = [component: React.ElementType, props: Record<string, any>] | any[];
+
 export class FormFieldModel extends FlowModel {
   collectionField: CollectionField;
   field: Field;
@@ -31,7 +33,7 @@ export class FormFieldModel extends FlowModel {
     ];
   }
 
-  get component() {
+  get component(): FieldComponentTuple {
     return [Input, { ...this.props }];
   }
 
