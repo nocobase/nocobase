@@ -109,6 +109,14 @@ FormFieldModel.registerFlow({
         ctx.model.setInitialValue(params.defaultValue);
       },
     },
+  },
+});
+
+FormFieldModel.registerFlow({
+  key: 'key2',
+  auto: true,
+  title: 'Group2',
+  steps: {
     required: {
       title: 'Required',
       uiSchema: {
@@ -128,7 +136,9 @@ FormFieldModel.registerFlow({
   },
 });
 
-export class CommonFormItemFlowModel extends FormFieldModel {}
+export class CommonFormItemFlowModel extends FormFieldModel {
+  public static readonly supportedFieldInterfaces = '*';
+}
 
 // FormFieldModel.registerFlow({
 //   key: 'key2',

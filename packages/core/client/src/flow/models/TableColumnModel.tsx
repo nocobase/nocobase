@@ -17,8 +17,7 @@ import { FieldFlowModel } from './FieldFlowModel';
 import { QuickEditForm } from './QuickEditForm';
 
 export class TableColumnModel extends FieldFlowModel {
-  // field: Field;
-  // fieldPath: string;
+  static readonly supportedFieldInterfaces = '*';
 
   getColumnProps(): TableColumnProps {
     return {
@@ -94,17 +93,30 @@ TableColumnModel.define({
   sort: 0,
 });
 
-export class TableColumnActionsModel extends TableColumnModel {
+export class TableActionsColumnModel extends TableColumnModel {
   getColumnProps() {
-    return { title: 'Actions', ...this.props, render: this.render() };
+    return {
+      // title: 'Actions',
+      ...this.props,
+      title: (
+        <FlowsFloatContextMenu
+          model={this}
+          containerStyle={{ display: 'block', padding: '11px 8px', margin: '-11px -8px' }}
+        >
+          {this.props.title || 'Actions'}
+        </FlowsFloatContextMenu>
+      ),
+      render: this.render(),
+    };
   }
 
   render() {
     return (value, record, index) => (
       <Space>
-        {this.mapSubModels('actions', (action: ActionModel) => (
-          <FlowModelRenderer key={action.uid} model={action} extraContext={{ record }} />
-        ))}
+        {this.mapSubModels('actions', (action: ActionModel) => {
+          const fork = action.createFork();
+          return <FlowModelRenderer key={fork.uid} model={fork} extraContext={{ record }} />;
+        })}
       </Space>
     );
   }

@@ -18,6 +18,8 @@ import {
   MultiRecordResource,
 } from '@nocobase/flow-engine';
 import { Button, Card, Dropdown, Table } from 'antd';
+import subModel from 'packages/core/client/docs/zh-CN/core/flow-models/demos/sub-model';
+import actions from 'packages/plugins/@nocobase/plugin-workflow/src/server/actions';
 import React from 'react';
 import { BlockFlowModel } from './BlockFlowModel';
 import { FieldFlowModel } from './FieldFlowModel';
@@ -144,5 +146,19 @@ TableModel.define({
   group: 'Content',
   defaultOptions: {
     use: 'TableModel',
+    subModels: {
+      columns: [
+        {
+          use: 'TableActionsColumnModel',
+          subModels: {
+            actions: [
+              {
+                use: 'ActionModel',
+              },
+            ],
+          },
+        },
+      ],
+    },
   },
 });
