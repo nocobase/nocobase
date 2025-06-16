@@ -17,8 +17,7 @@ import { FieldFlowModel } from './FieldFlowModel';
 import { QuickEditForm } from './QuickEditForm';
 
 export class TableColumnModel extends FieldFlowModel {
-  // field: Field;
-  // fieldPath: string;
+  static readonly supportedFieldInterfaces = '*';
 
   getColumnProps(): TableColumnProps {
     return {
