@@ -182,10 +182,10 @@ export const TableBlockDesigner = () => {
       <SchemaSettingsSwitchItem
         title={t('Enable index column')}
         checked={field.decoratorProps?.enableSelectColumn !== false}
-        onChange={async (enableIndexÏColumn) => {
+        onChange={async (enableIndexColumn) => {
           field.decoratorProps = field.decoratorProps || {};
-          field.decoratorProps.enableIndexÏColumn = enableIndexÏColumn;
-          fieldSchema['x-decorator-props'].enableIndexÏColumn = enableIndexÏColumn;
+          field.decoratorProps.enableIndexColumn = enableIndexColumn;
+          fieldSchema['x-decorator-props'].enableIndexColumn = enableIndexColumn;
           dn.emit('patch', {
             schema: {
               ['x-uid']: fieldSchema['x-uid'],

@@ -110,6 +110,7 @@ const quickEditField = [
   'circle',
   'point',
   'lineString',
+  'vditor',
 ];
 
 export function useTableColumnInitializerFields() {
