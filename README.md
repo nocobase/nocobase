@@ -77,3 +77,8 @@ NocoBase supports three installation methods:
 - <a target="_blank" href="https://docs.nocobase.com/welcome/getting-started/installation/git-clone">Installing from Git source code</a>
 
   If you want to experience the latest unreleased version, or want to participate in the contribution, you need to make changes and debug on the source code, it is recommended to choose this installation method, which requires a high level of development skills, and if the code has been updated, you can git pull the latest code.
+
+## Offline Setup
+
+See [docs/offline-setup.md](docs/offline-setup.md) for instructions on preparing dependencies when working without internet access.
+
