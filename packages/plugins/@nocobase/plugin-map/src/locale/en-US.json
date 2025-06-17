@@ -10,6 +10,7 @@
   "securityJsCode or serviceHost": "securityJsCode or serviceHost",
   "AMap": "AMap",
   "Google Maps": "Google Maps",
+  "Yandex Maps": "Yandex Maps",
   "Clear": "Clear",
   "Click to select the starting point and double-click to end the drawing": "Click to select the starting point and double-click to end the drawing",
   "Clear the canvas": "Clear the canvas",
@@ -44,7 +45,7 @@
   "Map field": "Map field",
   "Marker field": "Marker field",
   "Load google maps failed, Please check the Api key and refresh the page": "Load google maps failed, Please check the Api key and refresh the page",
-  "Create map block": "Create map block",
+  "Load yandex maps failed, Please check the Api key and refresh the page": "Load yandex maps failed, Please check the Api key and refresh the page",
   "Start point": "Start point",
   "End point": "End point",
   "Concatenation order field": "Concatenation order field"

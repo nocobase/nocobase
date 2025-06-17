@@ -4,6 +4,7 @@
  * Authors: NocoBase Team.
  *
  * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+import { YandexMapComponent } from './Yandex';
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
@@ -15,6 +16,7 @@ import { GoogleMapsComponent } from './GoogleMaps';
 const MapComponents = {
   amap: AMapComponent,
   google: GoogleMapsComponent,
+  yandex: YandexMapComponent,
 };
 
 export const MapComponent = React.forwardRef<any, any>((props, ref) => {

@@ -114,6 +114,17 @@ const GoogleMapConfiguration = () => {
 const components = {
   amap: AMapConfiguration,
   google: GoogleMapConfiguration,
+  yandex: YandexMapConfiguration,
+};
+const YandexMapConfiguration = () => {
+  const { t } = useMapTranslation();
+  return (
+    <BaseConfiguration type="yandex">
+      <Form.Item rules={[{ required: true, message: t('Api key is required') }]} name="accessKey" label={t('Api key')}>
+        <TextAreaWithGlobalScope />
+      </Form.Item>
+    </BaseConfiguration>
+  );
 };
 
 const routeList = MapTypes.map((item) => {
