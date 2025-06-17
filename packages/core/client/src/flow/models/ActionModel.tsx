@@ -7,17 +7,26 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { FlowModel } from '@nocobase/flow-engine';
-import { Modal } from 'antd';
+import { FormDrawer } from '@formily/antd-v5';
+import { uid } from '@formily/shared';
+import { FlowEngineProvider, FlowModel } from '@nocobase/flow-engine';
+import { Button, ConfigProvider, Modal } from 'antd';
 import React from 'react';
+import { FlowPageComponent } from '../FlowPage';
 
 export class ActionModel extends FlowModel {
   set onClick(fn) {
     this.setProps('onClick', fn);
   }
 
+  title = 'Action';
+
   render() {
-    return <a {...this.props}>{this.props.title || 'Untitle'}</a>;
+    return (
+      <Button type="link" {...this.props}>
+        {this.props.children || this.title}
+      </Button>
+    );
   }
 }
 
@@ -26,8 +35,19 @@ ActionModel.registerFlow({
   auto: true,
   steps: {
     step1: {
+      uiSchema: {
+        title: {
+          type: 'string',
+          title: '标题',
+          'x-decorator': 'FormItem',
+          'x-component': 'Input',
+          'x-component-props': {
+            placeholder: '请输入标题',
+          },
+        },
+      },
       handler(ctx, params) {
-        ctx.model.setProps('title', params.title);
+        ctx.model.setProps('children', params.title);
         ctx.model.onClick = (e) => {
           ctx.model.dispatchEvent('click', {
             event: e,
@@ -52,6 +72,32 @@ ActionModel.registerFlow({
           content: 'Are you sure you want to perform this action?',
           onOk: async () => {},
         });
+      },
+    },
+  },
+});
+
+export class ViewActionModel extends ActionModel {
+  title = 'View';
+}
+
+ViewActionModel.registerFlow({
+  key: 'event1',
+  on: {
+    eventName: 'click',
+  },
+  steps: {
+    step1: {
+      handler(ctx, params) {
+        FormDrawer('Flow Engine Modal', () => {
+          return (
+            <ConfigProvider>
+              <FlowEngineProvider engine={ctx.globals.flowEngine}>
+                <FlowPageComponent uid={`${ctx.model.uid}-drawer`} />
+              </FlowEngineProvider>
+            </ConfigProvider>
+          );
+        }).open();
       },
     },
   },

@@ -100,7 +100,9 @@ FormFieldModel.registerFlow({
   },
 });
 
-export class CommonFormItemFlowModel extends FormFieldModel {}
+export class CommonFormItemFlowModel extends FormFieldModel {
+  public static readonly supportedFieldInterfaces = '*';
+}
 
 FormFieldModel.registerFlow({
   key: 'key2',
