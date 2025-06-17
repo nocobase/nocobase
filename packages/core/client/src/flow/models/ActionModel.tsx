@@ -8,31 +8,15 @@
  */
 
 import { FlowModel } from '@nocobase/flow-engine';
-import { Button } from 'antd';
+import { Button, ButtonProps } from 'antd';
 import React from 'react';
 
-import type { ButtonProps } from 'antd';
-
-interface ActionModelProps extends ButtonProps {
-  Component?: React.ComponentType<ButtonProps>;
-  /**
-   * 打开方式
-   * @default 'popup'
-   */
-  openMode?: 'drawer' | 'modal' | 'subPage';
-  /**
-   * 弹窗尺寸
-   * @default 'md'
-   */
-  popupSize?: 'small' | 'medium' | 'large';
-}
-
 export class ActionModel extends FlowModel<{ subModels: { view?: FlowModel } }> {
-  declare props: ActionModelProps;
+  declare props: ButtonProps;
 
   render() {
-    const { Component = Button, ...props } = this.getProps() as ActionModelProps;
-    return <Component {...props} onClick={(event) => this.dispatchEvent('onClick', { event })} />;
+    const props = this.getProps();
+    return <Button {...props} onClick={(event) => this.dispatchEvent('onClick', { event })} />;
   }
 }
 
@@ -89,53 +73,11 @@ ActionModel.registerFlow({
     //     ctx.model.setProps(params);
     //   },
     // },
-    openMode: {
-      title: '打开方式',
-      uiSchema: {},
-      handler(ctx, params) {
-        ctx.model.setProps(params);
-      },
-    },
-    popupSize: {
-      title: '弹窗尺寸',
-      uiSchema: {},
-      handler(ctx, params) {
-        ctx.model.setProps(params);
-      },
-    },
   },
 });
 
 ActionModel.registerFlow({
   key: 'defaultClickHandler',
-  on: {
-    eventName: 'onClick',
-  },
-  title: '点击事件',
-  steps: {
-    openMode: {
-      title: '打开方式',
-      uiSchema: {},
-      handler(ctx, params) {
-        ctx.model.setProps(params);
-      },
-    },
-    popupSize: {
-      title: '弹窗尺寸',
-      uiSchema: {},
-      handler(ctx, params) {
-        ctx.model.setProps(params);
-      },
-    },
-  },
-});
-
-export class ViewActionModel extends ActionModel {
-  title = 'View';
-}
-
-ViewActionModel.registerFlow({
-  key: 'event1',
   on: {
     eventName: 'onClick',
   },
