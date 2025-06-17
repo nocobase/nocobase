@@ -421,3 +421,61 @@ describe('issues', () => {
     ).resolves.toBeTruthy();
   });
 });
+
+describe('issues with users', () => {
+  let app: MockServer;
+  let db: MockDatabase;
+  let agent;
+
+  beforeEach(async () => {
+    app = await createMockServer({
+      plugins: ['field-m2m-array', 'data-source-manager', 'data-source-main', 'error-handler', 'field-sort', 'users'],
+    });
+    db = app.db;
+    agent = app.agent();
+  });
+
+  afterEach(async () => {
+    await db.clean({ drop: true });
+    await app.destroy();
+  });
+
+  test('update m2m array field when the updatedBy field is present', async () => {
+    await db.getRepository('collections').create({
+      values: {
+        name: 'test',
+        fields: [
+          {
+            name: 'id',
+            type: 'bigInt',
+            autoIncrement: true,
+            primaryKey: true,
+            allowNull: false,
+          },
+          {
+            name: 'users',
+            type: 'belongsToArray',
+            foreignKey: 'user_ids',
+            target: 'users',
+            targetKey: 'username',
+          },
+        ],
+      },
+    });
+    // @ts-ignore
+    await db.getRepository('collections').load();
+    await db.sync();
+    const record = await db.getRepository('test').create({
+      values: [{ users: ['nocobase'] }],
+    });
+    const values = await agent.resource('test').get({
+      filterByTk: record[0].id,
+      appends: ['users'],
+    });
+    const res = await agent.resource('test').update({
+      filterByTk: record[0].id,
+      values: values.body.data,
+    });
+    expect(res.status).toBe(200);
+  });
+});
