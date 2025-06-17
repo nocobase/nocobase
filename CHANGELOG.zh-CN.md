@@ -5,6 +5,43 @@
 格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/),
 并且本项目遵循 [语义化版本](https://semver.org/spec/v2.0.0.html)。
 
+## [v1.7.13](https://github.com/nocobase/nocobase/compare/v1.7.12...v1.7.13) - 2025-06-17
+
+### 🚀 优化
+
+- **[client]** Logo 容器宽度根据内容类型自适应（图片固定 168px，文本自动宽度） ([#7075](https://github.com/nocobase/nocobase/pull/7075)) by @Cyx649312038
+
+- **[工作流：审批]** 为转签、加签的人员选择列表增加额外字段显示的配置项 by @mytharcher
+
+### 🐛 修复
+
+- **[client]**
+  - 修复子表格字段切换页面后必填提示不消失的问题 ([#7080](https://github.com/nocobase/nocobase/pull/7080)) by @katherinehhh
+
+  - 修复金额字段组件从掩码改为数字后小数点丢失的问题 ([#7077](https://github.com/nocobase/nocobase/pull/7077)) by @katherinehhh
+
+  - 修复子表格中 Markdown（Vditor）字段组件渲染不正确的问题 ([#7074](https://github.com/nocobase/nocobase/pull/7074)) by @katherinehhh
+
+- **[数据表字段：自动编码]** 修复基于字符串的大整数序列计算 ([#7079](https://github.com/nocobase/nocobase/pull/7079)) by @mytharcher
+
+- **[备份管理器]** windows 平台下，还原 MySQL 应用时提示无法识别的命令错误 by @gchust
+
+## [v1.7.12](https://github.com/nocobase/nocobase/compare/v1.7.11...v1.7.12) - 2025-06-16
+
+### 🚀 优化
+
+- **[client]** checkbox 字段联动条件判断支持 "为空”和“不为空” ([#7073](https://github.com/nocobase/nocobase/pull/7073)) by @katherinehhh
+
+### 🐛 修复
+
+- **[client]** 创建反向关系字段后，编辑关系字段设置项“在目标数据表里创建反向关系字段”未勾选 ([#6914](https://github.com/nocobase/nocobase/pull/6914)) by @aaaaaajie
+
+- **[数据源管理]** 修改权限的数据范围后，相关角色同步生效 ([#7065](https://github.com/nocobase/nocobase/pull/7065)) by @aaaaaajie
+
+- **[权限控制]** 修复了在没有默认角色时无法进入应用的问题 ([#7059](https://github.com/nocobase/nocobase/pull/7059)) by @aaaaaajie
+
+- **[工作流：自定义操作事件]** 修复操作成功后配置中的重定向链接变量未解析的问题 by @mytharcher
+
 ## [v1.7.11](https://github.com/nocobase/nocobase/compare/v1.7.10...v1.7.11) - 2025-06-15
 
 ### 🎉 新特性

@@ -5,6 +5,43 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v1.7.13](https://github.com/nocobase/nocobase/compare/v1.7.12...v1.7.13) - 2025-06-17
+
+### 🚀 Improvements
+
+- **[client]** Logo container width adapts to content type (fixed 168px for images, auto width for text) ([#7075](https://github.com/nocobase/nocobase/pull/7075)) by @Cyx649312038
+
+- **[Workflow: Approval]** Add extra field option for re-assignees list by @mytharcher
+
+### 🐛 Bug Fixes
+
+- **[client]**
+  - required validation message in subtable persists when switching page ([#7080](https://github.com/nocobase/nocobase/pull/7080)) by @katherinehhh
+
+  - decimal point lost after switching amount component from mask to inputNumer ([#7077](https://github.com/nocobase/nocobase/pull/7077)) by @katherinehhh
+
+  - incorrect Markdown (Vditor) rendering in subtable ([#7074](https://github.com/nocobase/nocobase/pull/7074)) by @katherinehhh
+
+- **[Collection field: Sequence]** Fix string based bigint sequence calculation ([#7079](https://github.com/nocobase/nocobase/pull/7079)) by @mytharcher
+
+- **[Backup manager]** unknow command error when restoring MySQL backups on windows platform by @gchust
+
+## [v1.7.12](https://github.com/nocobase/nocobase/compare/v1.7.11...v1.7.12) - 2025-06-16
+
+### 🚀 Improvements
+
+- **[client]** add "empty" and "not empty" options to checkbox field linkage rules ([#7073](https://github.com/nocobase/nocobase/pull/7073)) by @katherinehhh
+
+### 🐛 Bug Fixes
+
+- **[client]** After creating the reverse relation field, the option "Create reverse relation field in the target data table" in the association field settings was not checked. ([#6914](https://github.com/nocobase/nocobase/pull/6914)) by @aaaaaajie
+
+- **[Data source manager]** Scope changes now take effect immediately for all related roles. ([#7065](https://github.com/nocobase/nocobase/pull/7065)) by @aaaaaajie
+
+- **[Access control]** Fixed an issue where the app blocked entry when no default role existed ([#7059](https://github.com/nocobase/nocobase/pull/7059)) by @aaaaaajie
+
+- **[Workflow: Custom action event]** Fix variable of redirect url not parsed by @mytharcher
+
 ## [v1.7.11](https://github.com/nocobase/nocobase/compare/v1.7.10...v1.7.11) - 2025-06-15
 
 ### 🎉 New Features
