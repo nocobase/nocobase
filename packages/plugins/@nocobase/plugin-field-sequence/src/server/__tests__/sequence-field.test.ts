@@ -328,7 +328,7 @@ describe('sequence field', () => {
       expect(item2.get('name')).toBe('11');
     });
 
-    describe('bigint', () => {
+    describe.skipIf(process.env['DB_DIALECT'] === 'sqlite')('bigint', () => {
       it('digits more than 16', async () => {
         db.collection({
           name: 'tests',
