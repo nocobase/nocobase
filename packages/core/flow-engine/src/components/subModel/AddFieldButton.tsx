@@ -8,7 +8,7 @@
  */
 
 import React, { useMemo } from 'react';
-import { AddSubModelButton } from './AddSubModelButton';
+import { AddSubModelButton, SubModelItem } from './AddSubModelButton';
 import { Collection } from '../../data-source';
 import { FlowModel } from '../../models';
 import { ModelConstructor } from '../../types';
@@ -31,11 +31,15 @@ export interface AddFieldButtonProps {
    */
   buildCreateModelOptions?: (field: any, fieldClass: any) => { use: string; stepParams?: Record<string, any> };
   /**
-   * 点击后的回调函数
+   * 追加的固定 items，会添加到字段 items 之后
+   */
+  appendItems?: SubModelItem[];
+  /**
+   * 添加后的回调函数
    */
   onModelAdded?: (subModel: FlowModel) => Promise<void>;
   /**
-   * 按钮文本
+   * 显示的UI组件
    */
   children?: React.ReactNode;
 }
@@ -59,6 +63,7 @@ export const AddFieldButton: React.FC<AddFieldButtonProps> = ({
   subModelType = 'array',
   collection,
   buildCreateModelOptions,
+  appendItems = [],
   onModelAdded,
 }) => {
   const fields = collection.getFields();
@@ -97,8 +102,19 @@ export const AddFieldButton: React.FC<AddFieldButtonProps> = ({
         }
       }
     }
-    return allFields;
-  }, [model, subModelBaseClass, fields, buildCreateModelOptions]);
+
+    // 追加额外的 items，如果有 appendItems 则先添加分割线
+    const finalItems = [...allFields];
+    if (appendItems.length > 0) {
+      finalItems.push({
+        key: 'divider',
+        type: 'divider' as const,
+      });
+      finalItems.push(...appendItems);
+    }
+
+    return finalItems;
+  }, [model, subModelBaseClass, fields, buildCreateModelOptions, appendItems]);
 
   return (
     <AddSubModelButton
