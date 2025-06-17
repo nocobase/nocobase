@@ -7,74 +7,81 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { observer } from '@formily/reactive-react';
 import React, { useMemo } from 'react';
-import { AddSubModelButton, AddSubModelButtonProps } from './AddSubModelButton';
+import { AddSubModelButton } from './AddSubModelButton';
 import { FlowModel } from '../../models/flowModel';
 import { ModelConstructor } from '../../types';
+import { Button } from 'antd';
 
-interface AddActionButtonProps extends Omit<AddSubModelButtonProps, 'subModelType' | 'subModelKey' | 'items'> {
+interface AddActionButtonProps {
   /**
-  * 父模型类名，用于确定支持的 Actions 类型
-  */
-  ParentModelClass?: string | ModelConstructor;
+   * 父模型实例
+   */
+  model: FlowModel;
+  /**
+   * 子模型基类，用于确定支持的 Actions 类型
+   */
+  subModelBaseClass?: string | ModelConstructor;
   subModelKey?: string;
   subModelType?: 'object' | 'array';
+  /**
+   * 点击后的回调函数
+   */
+  onModelAdded?: (subModel: FlowModel) => Promise<void>;
+  /**
+   * 按钮文本
+   */
+  children?: React.ReactNode;
 }
 
 /**
  * 专门用于添加动作模型的按钮组件
- * 
+ *
  * @example
  * ```tsx
- * <AddActionButton 
+ * <AddActionButton
  *   model={parentModel}
- *   ParentModelClass={'ActionFlowModel'}
+ *   subModelBaseClass={'ActionFlowModel'}
  * />
  * ```
  */
-export const AddActionButton: React.FC<AddActionButtonProps> = observer(({
-  ParentModelClass = 'ActionFlowModel',
+export const AddActionButton: React.FC<AddActionButtonProps> = ({
+  model,
+  subModelBaseClass = 'ActionFlowModel',
   subModelKey = 'actions',
-  children = 'Add action',
+  children = <Button>Configure actions</Button>,
   subModelType = 'array',
-  ...props
+  onModelAdded,
 }) => {
-  const items = useMemo<{
-    key: string;
-    label: string;
-    icon?: React.ReactNode;
-    item: typeof FlowModel;
-    unique?: boolean;
-    use: string;
-  }[]>(() => {
-    const blockClasses = props.model.flowEngine.filterModelClassByParent(ParentModelClass);
+  const items = useMemo(() => {
+    const blockClasses = model.flowEngine.filterModelClassByParent(subModelBaseClass);
     const registeredBlocks = [];
     for (const [className, ModelClass] of blockClasses) {
       const item = {
         key: className,
         label: ModelClass.meta?.title || className,
         icon: ModelClass.meta?.icon,
-        item: ModelClass,
-        use: className,
-        // unique: ModelClass.meta?.uniqueSub,
-        // added: null,
+        createModelOptions: {
+          ...ModelClass.meta?.defaultOptions,
+          use: className,
+        },
       };
       registeredBlocks.push(item);
     }
     return registeredBlocks;
-  }, [props.model, ParentModelClass]);
+  }, [model, subModelBaseClass]);
 
   return (
     <AddSubModelButton
-      {...props}
+      model={model}
       subModelKey={subModelKey}
       subModelType={subModelType}
       items={items}
+      onModelAdded={onModelAdded}
     >
       {children}
     </AddSubModelButton>
   );
-});
+};
 
 AddActionButton.displayName = 'AddActionButton';

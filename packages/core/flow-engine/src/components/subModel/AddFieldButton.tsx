@@ -7,90 +7,110 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { observer } from '@formily/reactive-react';
 import React, { useMemo } from 'react';
-import { AddSubModelButton, AddSubModelButtonProps, AddSubModelMenuItem } from './AddSubModelButton';
-import { Collection, CollectionField } from '../../data-source';
+import { AddSubModelButton } from './AddSubModelButton';
+import { Collection } from '../../data-source';
 import { FlowModel } from '../../models';
-import { CreateModelOptions, ModelConstructor } from '../../types';
+import { ModelConstructor } from '../../types';
+import { Button } from 'antd';
 
-
-export interface AddFieldButtonProps extends Omit<AddSubModelButtonProps, 'subModelType' | 'subModelKey' | 'items' | 'buildSubModelParams'> {
+export interface AddFieldButtonProps {
   /**
-   * 父模型类名，用于确定支持的字段类型
+   * 父模型实例
    */
-  ParentModelClass?: string | ModelConstructor;
+  model: FlowModel;
+  /**
+   * 子模型基类，用于确定支持的字段类型
+   */
+  subModelBaseClass?: string | ModelConstructor;
   subModelKey?: string;
   subModelType?: 'object' | 'array';
   collection: Collection;
-  buildSubModelParams?: (item: AddFieldMenuItem) => CreateModelOptions | FlowModel;
-  onModelAdded?: (subModel: FlowModel, item: AddFieldMenuItem) => Promise<void>;
-}
-
-export interface AddFieldMenuItem extends AddSubModelMenuItem {
-  field: CollectionField;
+  /**
+   * 自定义 createModelOptions 构建函数
+   */
+  buildCreateModelOptions?: (field: any, fieldClass: any) => { use: string; stepParams?: Record<string, any> };
+  /**
+   * 点击后的回调函数
+   */
+  onModelAdded?: (subModel: FlowModel) => Promise<void>;
+  /**
+   * 按钮文本
+   */
+  children?: React.ReactNode;
 }
 
 /**
  * 专门用于添加字段模型的按钮组件
- * 
+ *
  * @example
  * ```tsx
- * <AddFieldButton 
+ * <AddFieldButton
  *   model={parentModel}
- *   ParentModelClass={'TableColumnModel'}
+ *   subModelBaseClass={'TableColumnModel'}
  * />
  * ```
  */
-export const AddFieldButton: React.FC<AddFieldButtonProps> = observer(({
-  ParentModelClass = 'FieldFlowModel',
+export const AddFieldButton: React.FC<AddFieldButtonProps> = ({
+  model,
+  subModelBaseClass = 'FieldFlowModel',
   subModelKey = 'fields',
-  children = 'Add field',
+  children = <Button>Configure fields</Button>,
   subModelType = 'array',
-  ...props
+  collection,
+  buildCreateModelOptions,
+  onModelAdded,
 }) => {
-  const fields = props.collection.getFields();
-  const items = useMemo<AddFieldMenuItem[]>(() => {
-    const fieldClasses = Array.from(props.model.flowEngine.filterModelClassByParent(ParentModelClass).values())
-    ?.sort((a, b) => (a.meta?.sort || 0) - (b.meta?.sort || 0));
+  const fields = collection.getFields();
+  const items = useMemo(() => {
+    const fieldClasses = Array.from(model.flowEngine.filterModelClassByParent(subModelBaseClass).values())?.sort(
+      (a, b) => (a.meta?.sort || 0) - (b.meta?.sort || 0),
+    );
 
     if (fieldClasses.length === 0) {
       return [];
     }
 
     const allFields = [];
-    const defaultFieldClasses = fieldClasses.find(fieldClass => fieldClass.supportedFieldInterfaces === '*');
+    const defaultFieldClasses = fieldClasses.find((fieldClass) => fieldClass.supportedFieldInterfaces === '*');
 
     for (const field of fields) {
       const fieldInterfaceName = field.options?.interface;
       if (fieldInterfaceName) {
-        const fieldClass = fieldClasses.find(fieldClass => {
-          return fieldClass.supportedFieldInterfaces?.includes(fieldInterfaceName);
-        }) || defaultFieldClasses;
+        const fieldClass =
+          fieldClasses.find((fieldClass) => {
+            return fieldClass.supportedFieldInterfaces?.includes(fieldInterfaceName);
+          }) || defaultFieldClasses;
         if (fieldClass) {
-          allFields.push({
+          const fieldItem = {
             key: field.name,
             label: field.title,
-            item: fieldClass,
-            use: fieldClass.name,
-            field,
-          });
+            icon: fieldClass.meta?.icon,
+            createModelOptions: buildCreateModelOptions
+              ? buildCreateModelOptions(field, fieldClass)
+              : {
+                  ...fieldClass.meta?.defaultOptions,
+                  use: fieldClass.name,
+                },
+          };
+          allFields.push(fieldItem);
         }
       }
     }
     return allFields;
-  }, [props.model, ParentModelClass, fields]);
+  }, [model, subModelBaseClass, fields, buildCreateModelOptions]);
 
   return (
     <AddSubModelButton
-      {...props}
+      model={model}
       subModelKey={subModelKey}
       subModelType={subModelType}
       items={items}
+      onModelAdded={onModelAdded}
     >
       {children}
     </AddSubModelButton>
   );
-});
+};
 
 AddFieldButton.displayName = 'AddFieldButton';

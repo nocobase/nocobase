@@ -35,15 +35,6 @@ const LazyDropdown: React.FC<Omit<DropdownProps, 'menu'> & { menu: LazyDropdownM
 
   const getKeyPath = (path: string[], key: string) => [...path, key].join('/');
 
-  // 通用的异步/同步 children 解析
-  const resolveChildren = async (children: Item[] | (() => Item[] | Promise<Item[]>)) => {
-    if (typeof children === 'function') {
-      const res = children();
-      return res instanceof Promise ? await res : res;
-    }
-    return children;
-  };
-
   const handleLoadChildren = async (keyPath: string, loader: () => Item[] | Promise<Item[]>) => {
     if (loadedChildren[keyPath] || loadingKeys.has(keyPath)) return;
 
