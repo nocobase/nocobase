@@ -1,0 +1,21 @@
+{
+  "API keys": "Ключи API",
+  "API key created successfully": "Ключ API успешно создан",
+  "Make sure to copy your personal access key now as you will not be able to see this again.": "Обязательно скопируйте свой личный ключ доступа сейчас, так как вы больше не сможете его увидеть.",
+  "Key name": "Имя ключа",
+  "Expiration": "Срок действия",
+  "Delete API key": "Удалить ключ API",
+  "Role": "Роль",
+  "Keys manager": "Управление ключами",
+  "Created at": "Создан",
+  "Add API key": "Добавить ключ API",
+  "Never": "Никогда",
+  "Custom": "Пользовательский",
+  "Never expires": "Никогда не ист Pokemon",
+  "1 Day": "1 день",
+  "7 Days": "7 дней",
+  "30 Days": "30 дней",
+  "90 Days": "90 дней",
+  "Role not found": "Роль не найдена",
+  "Allow only your own roles to be selected": "Разрешить выбор только своих ролей"
+}

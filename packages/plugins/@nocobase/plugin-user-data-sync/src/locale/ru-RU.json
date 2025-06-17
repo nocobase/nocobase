@@ -1,0 +1,21 @@
+{
+  "Synchronize": "Синхронизировать",
+  "Source name": "Имя источника",
+  "Source display name": "Отображаемое имя источника",
+  "Type": "Тип",
+  "Sync": "Синхронизация",
+  "Tasks": "Задачи",
+  "Batch": "Пакет",
+  "Status": "Статус",
+  "Message": "Сообщение",
+  "Init": "Инициализация",
+  "Processing": "Обработка",
+  "Success": "Успех",
+  "Failed": "Неудача",
+  "Authenticator": "Аутентификатор",
+  "Retry": "Повторить",
+  "No user data source plugin installed": "Плагин источника данных пользователя не установлен",
+  "View documentation": "Просмотреть документацию",
+  "The synchronization has started. You can click on 'Tasks' to view the synchronization status.": "Синхронизация началась. Вы можете нажать на 'Задачи', чтобы просмотреть статус синхронизации.",
+  "The sync source API call failed. Please check the logs to troubleshoot the issue.": "Вызов API источника синхронизации не удался. Пожалуйста, проверьте логи для устранения неполадок."
+}

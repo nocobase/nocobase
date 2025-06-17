@@ -1,0 +1,8 @@
+{
+  "The email is incorrect, please re-enter": "Неверный email, пожалуйста, введите заново",
+  "Please fill in your email address": "Пожалуйста, заполните ваш email адрес",
+  "The password is incorrect, please re-enter": "Неверный пароль, пожалуйста, введите заново",
+  "Not a valid cellphone number, please re-enter": "Неверный номер мобильного телефона, пожалуйста, введите заново",
+  "The phone number has been registered, please login directly": "Номер телефона уже зарегистрирован, пожалуйста, войдите напрямую",
+  "The phone number is not registered, please register first": "Номер телефона не зарегистрирован, пожалуйста, зарегистрируйтесь сначала"
+}

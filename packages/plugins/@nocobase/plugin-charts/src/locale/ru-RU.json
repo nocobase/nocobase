@@ -1,1 +1,22 @@
-{}
+{
+  "Edit": "Редактировать",
+  "Delete": "Удалить",
+  "Cancel": "Отмена",
+  "Submit": "Отправить",
+  "Actions": "Действия",
+  "Title": "Заголовок",
+  "Enable": "Включить",
+  "SAML manager": "Управление SAML",
+  "SAML Providers": "Провайдеры SAML",
+  "Redirect url": "URL перенаправления",
+  "SP entity id": "ID сущности SP",
+  "Add provider": "Добавить",
+  "Edit provider": "Редактировать провайдера",
+  "Client id": "ID клиента",
+  "Entity id or issuer": "ID сущности или издатель",
+  "Login Url": "URL входа",
+  "Public cert": "Публичный сертификат",
+  "Delete provider": "Удалить провайдера",
+  "Are you sure you want to delete it?": "Вы уверены, что хотите удалить это?",
+  "Sign in button name, which will be displayed on the sign in page": "Название кнопки входа, которое будет отображаться на странице входа"
+}

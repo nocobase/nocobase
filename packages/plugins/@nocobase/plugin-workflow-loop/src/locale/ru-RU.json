@@ -1,0 +1,22 @@
+{
+  "Loop": "Цикл",
+  "Loop target": "Цель цикла",
+  "Loop index (starts from 0)": "Индекс цикла (начинается с 0)",
+  "Loop sequence (starts from 1)": "Последовательность цикла (начинается с 1)",
+  "Loop length": "Длина цикла",
+  "By using a loop node, you can perform the same operation on multiple sets of data. The source of these sets can be either multiple records from a query node or multiple associated records of a single record. Loop node can also be used for iterating a certain number of times or for looping through each character in a string. However, excessive looping may cause performance issues, so use with caution.": "Используя узел цикла, вы можете выполнять одну и ту же операцию над несколькими наборами данных. Источником этих наборов могут быть либо несколько записей из узла запроса, либо несколько связанных записей одной записи. Узел цикла также можно использовать для итерации определенного количества раз или для цикла по каждому символу в строке. Однако чрезмерное зацикливание может вызвать проблемы с производительностью, поэтому используйте с осторожностью.",
+  "A single number will be treated as a loop count, a single string will be treated as an array of characters, and other non-array values will be converted to arrays. The loop node ends when the loop count is reached, or when the array loop is completed. You can also add condition nodes to the loop to terminate it.": "Единичное число будет рассматриваться как количество циклов, единичная строка будет рассматриваться как массив символов, а другие не массивы будут преобразованы в массивы. Узел цикла завершается, когда достигнуто количество циклов или когда завершен цикл по массиву. Вы также можете добавить условные узлы в цикл, чтобы завершить его.",
+  "Enable loop condition": "Включить условие цикла",
+  "Loop condition on each item": "Условие цикла для каждого элемента",
+  "When to check": "Когда проверять",
+  "Before each starts": "Перед каждым началом",
+  "After each ends": "После каждого завершения",
+  "When condition is not met on item": "Когда условие не выполнено для элемента",
+  "Exit loop": "Выйти из цикла",
+  "Continue on next item": "Продолжить со следующим элементом",
+  "Condition": "Условие",
+  "When node inside loop failed": "Когда узел внутри цикла не удался",
+  "Continue loop on next item": "Продолжить цикл со следующим элементом",
+  "Exit loop and continue workflow": "Выйти из цикла и продолжить рабочий процесс",
+  "Exit workflow": "Выйти из рабочего процесса"
+}

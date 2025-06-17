@@ -1,0 +1,11 @@
+{
+  "Detail": "Подробности",
+  "Snapshot": "Снимок",
+  "View record": "Просмотреть запись",
+  "Add block": "Добавить блок",
+  "Allow linking to multiple records": "Разрешить связывание с несколькими записями",
+  "When adding a new record, create a snapshot for its relational record and save in the current record. The snapshot is not updated when the record is subsequently updated.": "При добавлении новой записи создайте снимок для связанной записи и сохраните его в текущей записи. Снимок не обновляется при последующем обновлении записи.",
+  "The association field to snapshot": "Поле связи для снимка",
+  "Snapshot the snapshot's association fields": "Сделать снимок полей связи снимка",
+  "Please select": "Пожалуйста, выберите"
+}

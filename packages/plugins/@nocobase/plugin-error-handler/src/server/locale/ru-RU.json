@@ -1,0 +1,6 @@
+{
+  "unique violation": "{{field}} должен быть уникальным",
+  "notNull violation": "нарушение notNull",
+  "Validation error": "Ошибка валидации {{field}}",
+  "notNull Violation": "{{field}} не может быть null"
+}

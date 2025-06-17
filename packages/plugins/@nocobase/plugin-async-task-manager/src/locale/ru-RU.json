@@ -1,0 +1,6 @@
+{
+  "Export {collection} attachments": "Экспорт вложений {collection}",
+  "Export {collection} data": "Экспорт данных {collection}",
+  "Import {collection} data": "Импорт данных {collection}",
+  "Waiting": "Ожидание в очереди..."
+}

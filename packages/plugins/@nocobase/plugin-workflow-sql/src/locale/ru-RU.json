@@ -1,0 +1,7 @@
+{
+  "SQL action": "SQL-действие",
+  "Execute a SQL statement in database.": "Выполнить SQL-запрос в базе данных.",
+  "Select a data source to execute SQL.": "Выберите источник данных для выполнения SQL.",
+  "SQL query result could be used through <1>JSON query node</1> (Commercial plugin).": "Результат SQL-запроса можно использовать через <1>узел запроса JSON</1> (Коммерческий плагин).",
+  "Include meta information of this query in result": "Включить метаинформацию этого запроса в результат"
+}
