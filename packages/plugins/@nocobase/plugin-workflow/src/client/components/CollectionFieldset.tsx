@@ -8,7 +8,7 @@
  */
 
 import { CloseCircleOutlined, PlusOutlined } from '@ant-design/icons';
-import { observer, useField, useForm } from '@formily/react';
+import { observer, useField, useForm, ObjectField } from '@formily/react';
 import {
   CollectionField,
   CollectionProvider_deprecated,
@@ -106,15 +106,11 @@ const CollectionFieldSet = observer(
             {fields
               .filter((field) => value && field.name in value)
               .map((field) => {
-                // constant for associations to use Input, others to use CollectionField
-                // dynamic values only support belongsTo/hasOne association, other association type should disable
                 const ConstantCompoent = ['belongsTo', 'hasOne', 'hasMany', 'belongsToMany'].includes(field.type)
                   ? AssociationInput
                   : CollectionField;
-                // TODO: try to use <ObjectField> to replace this map
-                return (
+                const FieldItem = ({ value: fieldValue, onChange: onFieldChange }) => (
                   <Form.Item
-                    key={field.name}
                     label={compile(field.uiSchema?.title ?? field.name)}
                     labelAlign="left"
                     className={css`
@@ -125,11 +121,9 @@ const CollectionFieldSet = observer(
                   >
                     <Variable.Input
                       scope={scope}
-                      value={value[field.name]}
+                      value={fieldValue}
                       changeOnSelect
-                      onChange={(next) => {
-                        onChange({ ...value, [field.name]: next });
-                      }}
+                      onChange={onFieldChange}
                     >
                       <SchemaComponent
                         schema={{
@@ -158,6 +152,7 @@ const CollectionFieldSet = observer(
                     ) : null}
                   </Form.Item>
                 );
+                return <ObjectField key={field.name} name={field.name} component={[FieldItem]} />;
               })}
             {unassignedFields.length ? (
               <Dropdown menu={menu}>
