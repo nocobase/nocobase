@@ -7,6 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { YandexBlock } from './Yandex';
 import { PopupContextProvider, withSkeletonComponent } from '@nocobase/client';
 import React, { useMemo } from 'react';
 import { useMapTranslation } from '../locale';
@@ -16,6 +17,7 @@ import { GoogleMapsBlock } from './GoogleMaps';
 const MapBlocks = {
   amap: AMapBlock,
   google: GoogleMapsBlock,
+  yandex: YandexBlock,
 };
 
 export const MapBlockComponent: React.FC<any> = withSkeletonComponent(

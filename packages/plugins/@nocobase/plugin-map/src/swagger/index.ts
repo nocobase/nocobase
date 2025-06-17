@@ -25,7 +25,7 @@ export default {
             schema: {
               type: 'string',
               default: 'amap',
-              enum: ['amap', 'google'],
+              enum: ['amap', 'google', 'yandex'],
             },
           },
         ],
@@ -78,7 +78,7 @@ export default {
           type: {
             type: 'string',
             default: 'amap',
-            enum: ['amap', 'google'],
+            enum: ['amap', 'google', 'yandex'],
           },
         },
       },
