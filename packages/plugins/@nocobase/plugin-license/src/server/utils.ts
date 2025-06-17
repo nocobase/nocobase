@@ -14,9 +14,10 @@ import { exec } from 'child_process';
 export async function getInstanceId() {
   const dir = path.resolve(process.cwd(), 'storage/.license');
   const filePath = path.resolve(dir, 'instance-id');
-  if (!fs.existsSync(filePath)) {
-    await createInstanceId();
-  }
+  await createInstanceId(true);
+  // if (!fs.existsSync(filePath)) {
+  //   await createInstanceId(true);
+  // }
   const id = fs.readFileSync(filePath, 'utf-8');
   return id;
 }

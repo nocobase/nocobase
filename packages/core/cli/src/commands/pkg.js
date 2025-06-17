@@ -15,7 +15,7 @@ const tar = require('tar');
 const path = require('path');
 const { createStoragePluginsSymlink } = require('@nocobase/utils/plugin-symlink');
 const chalk = require('chalk');
-const { getAccessKeyPair } = require('../util');
+const { getAccessKeyPair, showLicenseInfo, LicenseKeyError } = require('../util');
 
 class Package {
   data;
@@ -175,6 +175,9 @@ class PackageManager {
       });
       this.token = res1.data.token;
     } catch (error) {
+      if (error?.response?.data?.error === 'license not valid') {
+        showLicenseInfo(LicenseKeyError.notValid);
+      }
       console.error(chalk.redBright(`Login failed: ${this.baseURL}`));
     }
   }
@@ -249,7 +252,7 @@ module.exports = (cli) => {
         NOCOBASE_PKG_USERNAME,
         NOCOBASE_PKG_PASSWORD,
       } = process.env;
-      const { accessKeyId, accessKeySecret } = getAccessKeyPair();
+      const { accessKeyId, accessKeySecret } = await getAccessKeyPair();
       if (!(NOCOBASE_PKG_USERNAME && NOCOBASE_PKG_PASSWORD) && !(accessKeyId && accessKeySecret)) {
         return;
       }
