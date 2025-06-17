@@ -1,4 +1,5 @@
 *
+!tarball-list.txt
 !./db/.gitignore
 !./logs/.gitignore
 !./uploads/.gitignore
