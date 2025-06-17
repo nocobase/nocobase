@@ -83,6 +83,10 @@ export default defineConfig({
         //   ],
         // },
         {
+          title: 'Quickstart',
+          link: '/core/flow-models/quickstart',
+        },
+        {
           title: 'FlowEngine',
           type: 'group',
           children: [
@@ -140,10 +144,6 @@ export default defineConfig({
           title: 'Flow Models',
           type: 'group',
           children: [
-            {
-              title: 'Quickstart',
-              link: '/core/flow-models/quickstart',
-            },
             {
               title: 'Overview',
               link: '/core/flow-models',
