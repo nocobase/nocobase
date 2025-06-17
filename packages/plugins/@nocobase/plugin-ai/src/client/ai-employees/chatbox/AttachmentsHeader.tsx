@@ -11,10 +11,59 @@ import React, { useMemo } from 'react';
 import { Attachments } from '@ant-design/x';
 import { useChatMessages } from './ChatMessagesProvider';
 import { useUploadFiles } from './useUploadFiles';
+import { Upload, Tag, Image } from 'antd';
+
+const ImageAttachment: React.FC<{
+  file: any;
+}> = ({ file }) => {
+  const [visible, setVisible] = React.useState(false);
+  const { removeAttachment } = useChatMessages();
+
+  return (
+    <Tag
+      closable
+      onClose={() => removeAttachment(Number(file.uid))}
+      style={{
+        padding: '2px 4px',
+        cursor: 'pointer',
+      }}
+      onClick={() => {
+        setVisible(true);
+      }}
+    >
+      <div
+        style={{
+          display: 'inline-flex',
+          gap: '4px',
+        }}
+      >
+        <Image
+          src={file.thumbUrl}
+          width={20}
+          preview={{
+            mask: null,
+            visible,
+            src: file.thumbUrl,
+            onVisibleChange: (v) => {
+              setVisible(v);
+            },
+          }}
+        />
+        {file.name}
+      </div>
+    </Tag>
+  );
+};
+
+const Attachment: React.FC<{
+  file: any;
+}> = ({ file }) => {
+  return <ImageAttachment file={file} />;
+};
 
 export const AttachmentsHeader: React.FC = () => {
   const uploadProps = useUploadFiles();
-  const { attachments, removeAttachment } = useChatMessages();
+  const { attachments } = useChatMessages();
   const items = useMemo(() => {
     return attachments?.map((item, index) => ({
       uid: index.toString(),
@@ -27,17 +76,16 @@ export const AttachmentsHeader: React.FC = () => {
     }));
   }, [attachments]);
   return (
-    <Attachments
-      style={
-        !items?.length
-          ? {
-              height: 0,
-            }
-          : {}
-      }
-      items={items}
-      onRemove={({ uid }) => removeAttachment(Number(uid))}
-      {...uploadProps}
-    />
+    <div
+      style={{
+        display: 'flex',
+        flexWrap: 'wrap',
+        justifyContent: 'flex-start',
+        gap: '4px 0px',
+        marginTop: '4px',
+      }}
+    >
+      {items?.map((item, index) => <Attachment file={item} key={index} />)}
+    </div>
   );
 };

@@ -47,7 +47,7 @@ export const Upload: React.FC = () => {
       }}
       placeholder={{
         icon: <UploadOutlined />,
-        title: 'Drag & Drop files here',
+        title: t('Drag & Drop files here'),
       }}
       items={items}
       {...uploadProps}

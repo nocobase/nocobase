@@ -10,9 +10,9 @@
 import React from 'react';
 import { SchemaInitializerItem, useSchemaInitializer, useToken } from '@nocobase/client';
 import { useAIEmployeesContext } from '../AIEmployeesProvider';
-import { Spin, Avatar, Flex } from 'antd';
-import { avatars } from '../avatars';
+import { Spin } from 'antd';
 import { tval } from '@nocobase/utils/client';
+import { AIEmployeeListItem } from '../AIEmployeeListItem';
 
 const getAIEmployeesInitializer = () => ({
   name: 'aiEmployees',
@@ -53,25 +53,7 @@ const getAIEmployeesInitializer = () => ({
             };
             return (
               <SchemaInitializerItem onClick={handleClick}>
-                <Flex align="center">
-                  <Avatar
-                    style={{
-                      marginRight: '8px',
-                    }}
-                    src={avatars(aiEmployee.avatar)}
-                  />
-                  <Flex vertical={true}>
-                    <div>{aiEmployee.nickname}</div>
-                    <div
-                      style={{
-                        fontSize: token.fontSizeSM,
-                        color: token.colorTextSecondary,
-                      }}
-                    >
-                      {aiEmployee.position}
-                    </div>
-                  </Flex>
-                </Flex>
+                <AIEmployeeListItem aiEmployee={aiEmployee} />
               </SchemaInitializerItem>
             );
           },

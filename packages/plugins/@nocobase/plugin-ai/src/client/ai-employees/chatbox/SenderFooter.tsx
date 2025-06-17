@@ -9,10 +9,9 @@
 
 import React from 'react';
 import { Divider, Flex } from 'antd';
-import { FieldSelector } from './FieldSelector';
 import { useChatMessages } from './ChatMessagesProvider';
-import { UISchemaSelector } from './UISchemaSelector';
 import { Upload } from './Upload';
+import { AddContextButton } from './AddContextButton';
 
 export const SenderFooter: React.FC<{
   components: any;
@@ -23,9 +22,7 @@ export const SenderFooter: React.FC<{
   return (
     <Flex justify="space-between" align="center">
       <Flex gap="small" align="center">
-        <FieldSelector />
-        <Divider type="vertical" />
-        <UISchemaSelector />
+        <AddContextButton />
         <Divider type="vertical" />
         <Upload />
       </Flex>

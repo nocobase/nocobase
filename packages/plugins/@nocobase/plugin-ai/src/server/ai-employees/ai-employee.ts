@@ -14,7 +14,7 @@ import { Database } from '@nocobase/database';
 import { concat } from '@langchain/core/utils/stream';
 import PluginAIServer from '../plugin';
 import { parseVariables } from '../utils';
-import { getDataSourcesMetadata, getSystemMessage } from './prompts';
+import { getSystemPrompt } from './prompts';
 
 export class AIEmployee {
   private employee: Model;
@@ -337,7 +337,7 @@ export class AIEmployee {
       }
     }
 
-    return getDataSourcesMetadata(message);
+    return message;
   }
 
   async getHistoryMessages(messageId?: string) {
@@ -355,16 +355,29 @@ export class AIEmployee {
       systemMessage = `${systemMessage}\n${dataSourceMessage}`;
     }
 
+    let background = '';
     if (this.systemMessage) {
-      const parsedSystemMessage = await parseVariables(this.ctx, this.systemMessage);
-      systemMessage = `${systemMessage}\n${parsedSystemMessage}`;
+      background = await parseVariables(this.ctx, this.systemMessage);
     }
     const historyMessages = [
       {
         role: 'system',
-        content: getSystemMessage(systemMessage),
+        content: getSystemPrompt({
+          aiEmployee: {
+            nickname: this.employee.nickname,
+            about: this.employee.about,
+          },
+          task: {
+            background,
+          },
+          personal: userConfig?.prompt,
+          dataSources: dataSourceMessage,
+          environment: {
+            database: this.db.sequelize.getDialect(),
+            locale: this.ctx.getCurrentLocale() || 'en-US',
+          },
+        }),
       },
-      ...(userConfig?.prompt ? [{ role: 'user', content: userConfig.prompt }] : []),
       ...history,
     ];
 

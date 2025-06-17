@@ -40,6 +40,9 @@ html body {
   overflow: hidden;
   transform: translateX(-450px);
 }
+.ant-dropdown-placement-topLeft {
+  transform: translateX(450px) !important;
+}
 .ant-dropdown-placement-bottomLeft {
   transform: translateX(450px) !important;
 }

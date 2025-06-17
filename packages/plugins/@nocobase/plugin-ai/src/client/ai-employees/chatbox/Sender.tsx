@@ -15,7 +15,7 @@ import { useT } from '../../locale';
 import { SenderFooter } from './SenderFooter';
 import { useChatConversations } from './ChatConversationsProvider';
 import { useChatMessages } from './ChatMessagesProvider';
-import { AIEmployeeHeader } from './AIEmployeeHeader';
+import { SenderHeader } from './SenderHeader';
 import { AttachmentsHeader } from './AttachmentsHeader';
 
 export const Sender: React.FC = () => {
@@ -65,12 +65,11 @@ export const Sender: React.FC = () => {
         })
       }
       onCancel={cancelRequest}
-      prefix={<SenderPrefix />}
-      header={!currentEmployee ? <AIEmployeeHeader /> : <AttachmentsHeader />}
+      header={<SenderHeader />}
       loading={responseLoading}
       footer={({ components }) => <SenderFooter components={components} />}
       disabled={!currentEmployee}
-      placeholder={!currentEmployee ? t('Please choose an AI employee') : senderPlaceholder}
+      // placeholder={!currentEmployee ? t('Please choose an AI employee') : senderPlaceholder}
       actions={false}
     />
   );
