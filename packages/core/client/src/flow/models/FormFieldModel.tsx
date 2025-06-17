@@ -10,7 +10,7 @@
 import { FormItem, Input } from '@formily/antd-v5';
 import { Field, Form } from '@formily/core';
 import { FieldContext } from '@formily/react';
-import type { FieldValidator } from '@formily/core';
+import type { FieldValidator, FieldPatternTypes } from '@formily/core';
 import { CollectionField, FlowModel } from '@nocobase/flow-engine';
 import React from 'react';
 import { ReactiveField } from '../Formily/ReactiveField';
@@ -53,14 +53,6 @@ export class FormFieldModel extends FlowModel {
     return this.field.componentProps;
   }
 
-  setDecoratorProps(decoratorProps) {
-    this.field.setDecoratorProps(decoratorProps);
-  }
-
-  getDecoratorProps() {
-    return this.field.decoratorProps;
-  }
-
   setDataSource(dataSource: any[]) {
     this.field.dataSource = dataSource;
   }
@@ -68,7 +60,29 @@ export class FormFieldModel extends FlowModel {
   setValidator(validator: FieldValidator) {
     this.field.validator = validator;
   }
+  setDecoratorProps(decoratorProps) {
+    this.field.setDecoratorProps(decoratorProps);
+  }
 
+  getDecoratorProps() {
+    return this.field.decoratorProps;
+  }
+  setDisplayLabel(displayLabel: boolean) {
+    this.field.setDecoratorProps({
+      labelStyle: { display: displayLabel ? 'flex' : 'none' },
+    });
+  }
+  setDescription(description: string) {
+    this.field.description = description;
+  }
+  setPattern(pattern: FieldPatternTypes) {
+    this.field.pattern = pattern;
+  }
+  setTooltip(tooltip: string) {
+    this.field.setDecoratorProps({
+      tooltip: tooltip,
+    });
+  }
   createField() {
     return this.form.createField({
       name: this.collectionField.name,
@@ -79,7 +93,6 @@ export class FormFieldModel extends FlowModel {
   }
 
   render() {
-    console.log(this.field);
     return (
       <FieldContext.Provider value={this.field}>
         <ReactiveField field={this.field}>{this.props.children}</ReactiveField>
@@ -124,7 +137,7 @@ FormFieldModel.registerFlow({
       },
     },
     initialValue: {
-      title: 'Default value',
+      title: 'Set default value',
       uiSchema: {
         defaultValue: {
           'x-component': 'Input',
@@ -136,14 +149,6 @@ FormFieldModel.registerFlow({
         ctx.model.setInitialValue(params.defaultValue);
       },
     },
-  },
-});
-
-FormFieldModel.registerFlow({
-  key: 'key2',
-  auto: true,
-  title: 'Group2',
-  steps: {
     required: {
       title: 'Required',
       uiSchema: {
@@ -160,18 +165,79 @@ FormFieldModel.registerFlow({
         ctx.model.setRequired(params.required || false);
       },
     },
+    displayLabel: {
+      title: 'Display label',
+      uiSchema: {
+        displayLabel: {
+          'x-component': 'Switch',
+          'x-decorator': 'FormItem',
+          'x-component-props': {
+            checkedChildren: 'Yes',
+            unCheckedChildren: 'No',
+          },
+        },
+      },
+      handler(ctx, params) {
+        ctx.model.setDisplayLabel(params.displayLabel === undefined ? true : params.displayLabel);
+      },
+    },
+    editDescription: {
+      title: 'Edit description',
+      uiSchema: {
+        description: {
+          'x-component': 'Input.TextArea',
+          'x-decorator': 'FormItem',
+        },
+      },
+      handler(ctx, params) {
+        ctx.model.setDescription(params.description);
+      },
+    },
+    editTooltip: {
+      title: 'Edit tooltip',
+      uiSchema: {
+        tooltip: {
+          'x-component': 'Input.TextArea',
+          'x-decorator': 'FormItem',
+        },
+      },
+      handler(ctx, params) {
+        ctx.model.setTooltip(params.tooltip);
+      },
+    },
+    pattern: {
+      title: 'Pattern',
+      uiSchema: {
+        pattern: {
+          'x-component': 'Select',
+          'x-decorator': 'FormItem',
+          enum: [
+            {
+              value: 'editable',
+              label: 'Editable',
+            },
+            {
+              value: 'disabled',
+              label: 'Disabled',
+            },
+            {
+              value: 'readOnly',
+              label: 'ReadOnly',
+            },
+            {
+              value: 'readPretty',
+              label: 'ReadPretty',
+            },
+          ],
+        },
+      },
+      handler(ctx, params) {
+        ctx.model.setPattern(params.pattern);
+      },
+    },
   },
 });
 
 export class CommonFormItemFlowModel extends FormFieldModel {
   public static readonly supportedFieldInterfaces = '*';
 }
-
-// FormFieldModel.registerFlow({
-//   key: 'key2',
-//   auto: true,
-//   title: 'Group2',
-//   steps: {
-
-//   },
-// });
