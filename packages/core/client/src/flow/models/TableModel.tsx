@@ -7,6 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { css } from '@emotion/css';
 import { AddFieldModel, Collection, MultiRecordResource } from '@nocobase/flow-engine';
 import { Card, Table } from 'antd';
 import React from 'react';
@@ -83,6 +84,11 @@ export class TableModel extends BlockFlowModel<S> {
     return (
       <Card>
         <Table
+          className={css`
+            td {
+              height: 39px;
+            }
+          `}
           rowKey="id"
           dataSource={this.resource.getData()}
           columns={this.getColumns()}

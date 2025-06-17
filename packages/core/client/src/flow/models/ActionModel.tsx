@@ -8,7 +8,7 @@
  */
 
 import { FlowModel } from '@nocobase/flow-engine';
-import { Modal } from 'antd';
+import { Button, Modal } from 'antd';
 import React from 'react';
 
 export class ActionModel extends FlowModel {
@@ -17,7 +17,11 @@ export class ActionModel extends FlowModel {
   }
 
   render() {
-    return <a {...this.props}>{this.props.title || 'Untitle'}</a>;
+    return (
+      <Button type="link" {...this.props}>
+        {this.props.title || 'Untitle'}
+      </Button>
+    );
   }
 }
 

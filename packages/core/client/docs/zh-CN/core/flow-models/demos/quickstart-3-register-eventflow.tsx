@@ -1,5 +1,5 @@
 import * as icons from '@ant-design/icons';
-import { FormItem, Input, Select } from '@formily/antd-v5';
+import { FormItem, Input, NumberPicker, Select } from '@formily/antd-v5';
 import { Application, Plugin } from '@nocobase/client';
 import { defineFlow, FlowModel, FlowModelRenderer } from '@nocobase/flow-engine';
 import { Button, Modal } from 'antd';
@@ -83,6 +83,20 @@ const myEventFlow = defineFlow({
   },
   title: '按钮事件',
   steps: {
+    modalWidth: {
+      title: '弹窗宽度配置',
+      uiSchema: {
+        width: {
+          type: 'string',
+          title: '弹窗宽度',
+          'x-decorator': 'FormItem',
+          'x-component': 'NumberPicker',
+        },
+      },
+      handler(ctx, params) {
+        return params.width || 520;
+      },
+    },
     confirm: {
       title: '确认操作配置',
       uiSchema: {
@@ -105,6 +119,7 @@ const myEventFlow = defineFlow({
       },
       handler(ctx, params) {
         Modal.confirm({
+          width: ctx.stepResults.modalWidth,
           ...params,
         });
       },
