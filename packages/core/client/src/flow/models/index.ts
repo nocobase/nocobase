@@ -21,3 +21,4 @@ export * from './SubmitActionModel';
 export * from './TableColumnModel';
 export * from './TableModel';
 export * from './form/fields';
+export * from './table/fields';
