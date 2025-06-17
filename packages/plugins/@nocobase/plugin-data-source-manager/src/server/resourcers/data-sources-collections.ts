@@ -166,8 +166,8 @@ export default {
       const params = ctx.action.params;
       const { associatedIndex: dataSourceKey, values } = params;
       const collections = values.collections || [];
-      const dataSource = ctx.app.dataSourceManager.dataSources.get(dataSourceKey);
-      if (dataSource.options.addAllCollections !== false) {
+      const dbOptions = values.dbOptions || {};
+      if (dbOptions.addAllCollections !== false) {
         await next();
         return;
       }
@@ -203,7 +203,10 @@ export default {
       }
 
       await transaction.commit();
-      await dataSource.load();
+      const dataSource = ctx.app.dataSourceManager.dataSources.get(dataSourceKey);
+      if (dataSource) {
+        await dataSource.load();
+      }
       ctx.body = true;
       await next();
     },

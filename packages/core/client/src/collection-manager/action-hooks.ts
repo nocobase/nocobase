@@ -398,7 +398,7 @@ export const useFilterAction = () => {
   };
 };
 
-export const useCreateDBAction = (actionCallback?: (values: any, collections: any[]) => void) => {
+export const useCreateAction = (actionCallback?: (values: any, collections: any[]) => void) => {
   const form = useForm();
   const field = useField();
   const ctx = useActionContext();
@@ -542,7 +542,7 @@ export const useValuesFromRA = (options) => {
 };
 
 export const useCreateActionAndRefreshCM = () => {
-  const { run } = useCreateDBAction();
+  const { run } = useCreateAction();
   const { refreshCM } = useCollectionManager_deprecated();
   return {
     async run() {

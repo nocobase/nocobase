@@ -66,7 +66,7 @@ export const DatabaseConnectionManagerPane = () => {
   const dataSourceCreateCallback = useCallback(
     async (data: any, collections) => {
       if (!data.options.addAllCollections) {
-        await addDatasourceCollections(api, data.key, collections);
+        await addDatasourceCollections(api, data.key, { collections, dbOptions: data.options });
       }
       dm.addDataSource(ThirdDataSource, data);
       reloadKeys.current = [...reloadKeys.current, data.key];

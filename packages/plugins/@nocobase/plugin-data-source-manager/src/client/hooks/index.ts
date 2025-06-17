@@ -80,8 +80,9 @@ export const useLoadCollections = () => {
   };
 };
 
-export const addDatasourceCollections = async (api, filterByTk, toBeAddedCollections) => {
+export const addDatasourceCollections = async (api, filterByTk, options: { collections, dbOptions }) => {
   const url = `dataSources/${filterByTk}/collections:add`;
+  const { collections: toBeAddedCollections, dbOptions } = options;
   if (toBeAddedCollections.length) {
     const collections = [];
     for (const { name, selected } of toBeAddedCollections) {
@@ -93,6 +94,7 @@ export const addDatasourceCollections = async (api, filterByTk, toBeAddedCollect
       url,
       method: 'post',
       data: {
+        dbOptions,
         collections,
       },
     });

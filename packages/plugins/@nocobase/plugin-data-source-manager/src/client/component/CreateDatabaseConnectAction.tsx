@@ -108,7 +108,7 @@ export const CreateDatabaseConnectAction = () => {
                             'x-component': 'Action',
                             'x-component-props': {
                               type: 'primary',
-                              useAction: '{{ cm.useCreateDBAction }}',
+                              useAction: '{{ cm.useCreateAction }}',
                               actionCallback: '{{ dataSourceCreateCallback }}',
                             },
                           },
