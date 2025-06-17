@@ -13,6 +13,7 @@ import type Processor from '../Processor';
 import { JOB_STATUS } from '../constants';
 import type { FlowNodeModel, JobModel } from '../types';
 import { logicCalculate } from '../logicCalculate';
+import { buildJob } from '../utils';
 
 export const BRANCH_INDEX = {
   DEFAULT: null,
@@ -45,14 +46,10 @@ export class ConditionInstruction extends Instruction {
       };
     }
 
-    const job = {
+    const job = buildJob(node, prevJob, {
       status: JOB_STATUS.RESOLVED,
       result,
-      // TODO(optimize): try unify the building of job
-      nodeId: node.id,
-      nodeKey: node.key,
-      upstreamId: (prevJob && prevJob.id) || null,
-    };
+    });
 
     const branchNode = processor.nodes.find(
       (item) => item.upstreamId === node.id && item.branchIndex != null && Boolean(item.branchIndex) === result,
