@@ -8,6 +8,7 @@
  */
 
 import { Model } from '@nocobase/database';
+import type { FlowNodeModel, JobModel } from './types';
 
 export function toJSON(data: any): any {
   if (Array.isArray(data)) {
@@ -23,4 +24,17 @@ export function toJSON(data: any): any {
     }
   });
   return result;
+}
+
+export function buildJob(
+  node: FlowNodeModel,
+  prevJob?: JobModel | null,
+  payload: Record<string, any> = {},
+): Record<string, any> {
+  return {
+    nodeId: node.id,
+    nodeKey: node.key,
+    upstreamId: prevJob?.id ?? null,
+    ...payload,
+  };
 }
