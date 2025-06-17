@@ -515,6 +515,7 @@ const InternalBodyCellComponent = (props) => {
 const displayNone = { display: 'none' };
 const BodyCellComponent = ({ columnHidden, ...props }) => {
   const { designable } = useDesignable();
+  const collection = useCollection();
 
   if (columnHidden) {
     return (
@@ -524,7 +525,11 @@ const BodyCellComponent = ({ columnHidden, ...props }) => {
     );
   }
 
-  return <InternalBodyCellComponent {...props} />;
+  return (
+    <SubFormProvider value={{ value: props?.record, collection, fieldSchema: props.schema }}>
+      <InternalBodyCellComponent {...props} />{' '}
+    </SubFormProvider>
+  );
 };
 
 interface TableProps {
