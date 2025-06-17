@@ -8,7 +8,7 @@
  */
 
 import React, { useMemo } from 'react';
-import { AddSubModelButton, SubModelItemsType } from './AddSubModelButton';
+import { AddSubModelButton, SubModelItemsType, mergeSubModelItems } from './AddSubModelButton';
 import { Collection } from '../../data-source';
 import { FlowModel } from '../../models';
 import { ModelConstructor } from '../../types';
@@ -69,7 +69,7 @@ export const AddFieldButton: React.FC<AddFieldButtonProps> = ({
   const fields = collection.getFields();
 
   // 构建字段 items 的函数
-  const buildFieldItems = useMemo(() => {
+  const buildFieldItems = useMemo<SubModelItemsType>(() => {
     return () => {
       const fieldClasses = Array.from(model.flowEngine.filterModelClassByParent(subModelBaseClass).values())?.sort(
         (a, b) => (a.meta?.sort || 0) - (b.meta?.sort || 0),
@@ -84,60 +84,39 @@ export const AddFieldButton: React.FC<AddFieldButtonProps> = ({
 
       for (const field of fields) {
         const fieldInterfaceName = field.options?.interface;
-        if (fieldInterfaceName) {
-          const fieldClass =
-            fieldClasses.find((fieldClass) => {
-              return fieldClass.supportedFieldInterfaces?.includes(fieldInterfaceName);
-            }) || defaultFieldClasses;
-          if (fieldClass) {
-            const fieldItem = {
-              key: field.name,
-              label: field.title,
-              icon: fieldClass.meta?.icon,
-              createModelOptions: buildCreateModelOptions
-                ? buildCreateModelOptions(field, fieldClass)
-                : {
-                    ...fieldClass.meta?.defaultOptions,
-                    use: fieldClass.name,
-                  },
-            };
-            allFields.push(fieldItem);
-          }
+        const fieldClass =
+          fieldClasses.find((fieldClass) => {
+            return fieldClass.supportedFieldInterfaces?.includes(fieldInterfaceName);
+          }) || defaultFieldClasses;
+        if (fieldClass) {
+          const fieldItem = {
+            key: field.name,
+            label: field.title,
+            icon: fieldClass.meta?.icon,
+            createModelOptions: buildCreateModelOptions
+              ? buildCreateModelOptions(field, fieldClass)
+              : {
+                  ...fieldClass.meta?.defaultOptions,
+                  use: fieldClass.name,
+                },
+          };
+          allFields.push(fieldItem);
         }
       }
 
-      return allFields;
+      return [
+        {
+          key: 'addField',
+          label: 'Collection fields',
+          type: 'group',
+          children: allFields,
+        },
+      ];
     };
   }, [model, subModelBaseClass, fields, buildCreateModelOptions]);
 
   const items = useMemo(() => {
-    if (!appendItems) {
-      return buildFieldItems;
-    }
-
-    return async (ctx: any) => {
-      const fieldItems = buildFieldItems();
-
-      // 处理 appendItems
-      let extraItems = [];
-      if (typeof appendItems === 'function') {
-        extraItems = await appendItems(ctx);
-      } else {
-        extraItems = appendItems;
-      }
-
-      // 合并 items
-      const finalItems = [...fieldItems];
-      if (extraItems.length > 0) {
-        finalItems.push({
-          key: 'divider',
-          type: 'divider' as const,
-        });
-        finalItems.push(...extraItems);
-      }
-
-      return finalItems;
-    };
+    return mergeSubModelItems([buildFieldItems, appendItems], { addDividers: true });
   }, [buildFieldItems, appendItems]);
 
   return (

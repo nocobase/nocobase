@@ -8,7 +8,7 @@
  */
 
 import { css } from '@emotion/css';
-import { AddFieldModel, Collection, MultiRecordResource } from '@nocobase/flow-engine';
+import { AddFieldButton, Collection, MultiRecordResource } from '@nocobase/flow-engine';
 import { Card, Table } from 'antd';
 import React from 'react';
 import { BlockFlowModel } from './BlockFlowModel';
@@ -31,49 +31,32 @@ export class TableModel extends BlockFlowModel<S> {
       key: 'addColumn',
       fixed: 'right',
       title: (
-        <AddFieldModel
+        <AddFieldButton
           collection={this.collection}
           model={this}
           subModelKey={'columns'}
+          subModelBaseClass="TableColumnModel"
+          buildCreateModelOptions={(field) => ({
+            use: 'TableColumnModel',
+            stepParams: {
+              default: {
+                step1: {
+                  fieldPath: field.fullpath,
+                },
+              },
+            },
+          })}
+          appendItems={[
+            {
+              key: 'actions',
+              label: 'Actions column',
+              createModelOptions: {
+                use: 'TableActionsColumnModel',
+              },
+            },
+          ]}
           onModelAdded={async (model: TableColumnModel) => {
             await model.applyAutoFlows();
-          }}
-          items={async () => {
-            return [
-              {
-                key: 'addField',
-                label: 'Collection fields',
-                type: 'group',
-                children: async () => {
-                  return this.collection.getFields().map((field) => {
-                    return {
-                      key: field.name,
-                      label: field.title,
-                      createModelOptions: {
-                        use: 'TableColumnModel',
-                        stepParams: {
-                          default: {
-                            step1: {
-                              fieldPath: field.fullpath,
-                            },
-                          },
-                        },
-                      },
-                    };
-                  });
-                },
-              },
-              {
-                type: 'divider',
-              },
-              {
-                key: 'actions',
-                label: 'Actions column',
-                createModelOptions: {
-                  use: 'TableActionsColumnModel',
-                },
-              },
-            ];
           }}
         />
       ),

@@ -20,21 +20,96 @@ export interface AddSubModelContext {
   subModelBaseClass?: ModelConstructor;
 }
 
+export type SubModelItemsType =
+  | SubModelItem[]
+  | ((ctx: AddSubModelContext) => SubModelItem[] | Promise<SubModelItem[]>);
+
+/**
+ * 合并多个 SubModelItemsType 的选项
+ */
+export interface MergeSubModelItemsOptions {
+  /**
+   * 是否在不同来源之间添加分割线
+   */
+  addDividers?: boolean;
+}
+
+/**
+ * 合并多个不同来源的 SubModelItemsType 成一个
+ *
+ * 支持静态数组和异步函数的混合合并，统一返回异步函数处理所有情况
+ *
+ * @param sources - 要合并的 SubModelItemsType 数组，支持 undefined 和 null（会被过滤）
+ * @param options - 合并选项
+ * @returns 合并后的 SubModelItemsType（如果有多个来源则返回异步函数）
+ *
+ * @example
+ * ```typescript
+ * const mergedItems = mergeSubModelItems([
+ *   fieldItems,           // 字段 items（静态数组）
+ *   customItems,          // 自定义 items（静态数组）
+ *   async (ctx) => [...], // 动态 items（异步函数）
+ *   condition ? extraItems : null, // 条件性 items
+ * ], { addDividers: true });
+ * ```
+ */
+export function mergeSubModelItems(
+  sources: (SubModelItemsType | undefined | null)[],
+  options: MergeSubModelItemsOptions = {},
+): SubModelItemsType {
+  const { addDividers = false } = options;
+
+  // 过滤掉空值
+  const validSources = sources.filter((source): source is SubModelItemsType => source !== undefined && source !== null);
+
+  if (validSources.length === 0) {
+    return [];
+  }
+
+  if (validSources.length === 1) {
+    return validSources[0];
+  }
+
+  // 统一返回异步函数处理所有情况
+  return async (ctx: AddSubModelContext) => {
+    const result: SubModelItem[] = [];
+
+    for (let i = 0; i < validSources.length; i++) {
+      const source = validSources[i];
+      let items: SubModelItem[] = [];
+
+      if (Array.isArray(source)) {
+        items = source;
+      } else {
+        items = await source(ctx);
+      }
+
+      // 添加分割线（除了第一个来源）
+      if (i > 0 && addDividers && items.length > 0) {
+        result.push({
+          key: `divider-${i}`,
+          type: 'divider',
+        } as SubModelItem);
+      }
+
+      result.push(...items);
+    }
+
+    return result;
+  };
+}
+
 export interface SubModelItem {
   key?: string;
   label?: string;
   type?: 'group' | 'divider'; // 支持 group 类型
   disabled?: boolean;
   icon?: React.ReactNode;
-  children?: SubModelItem[] | ((ctx: AddSubModelContext) => SubModelItem[] | Promise<SubModelItem[]>);
+  children?: SubModelItemsType;
   createModelOptions?:
     | { use: string; stepParams?: Record<string, any> }
     | ((item: SubModelItem) => { use: string; stepParams?: Record<string, any> });
 }
-
-export type SubModelItemsType =
-  | SubModelItem[]
-  | ((ctx: AddSubModelContext) => SubModelItem[] | Promise<SubModelItem[]>);
 
 interface AddSubModelButtonProps {
   /**
