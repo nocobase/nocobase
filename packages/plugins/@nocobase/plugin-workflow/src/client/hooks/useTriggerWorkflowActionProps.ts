@@ -40,7 +40,10 @@ export function useTriggerWorkflowsActionProps() {
 
   return {
     async onClick() {
-      const { onSuccess, skipValidator, triggerWorkflows } = actionSchema?.['x-action-settings'] ?? {};
+      const { onSuccess, skipValidator } = actionSchema?.['x-action-settings'] ?? {};
+      const triggerWorkflows =
+        actionField.componentProps.triggerWorkflows ??
+        actionSchema?.['x-action-settings']?.triggerWorkflows;
       if (!skipValidator) {
         await form.submit();
       }
@@ -53,7 +56,9 @@ export function useTriggerWorkflowsActionProps() {
           filterKeys: filterKeys,
           // TODO(refactor): should change to inject by plugin
           triggerWorkflows: triggerWorkflows?.length
-            ? triggerWorkflows.map((row) => [row.workflowKey, row.context].filter(Boolean).join('!')).join(',')
+            ? triggerWorkflows
+                .map((row) => [row.workflowKey, row.context].filter(Boolean).join('!'))
+                .join(',')
             : undefined,
         });
         actionField.data.loading = false;
@@ -100,7 +105,10 @@ export function useRecordTriggerWorkflowsActionProps() {
   const { setVisible, setSubmitted } = useActionContext();
   const { modal } = App.useApp();
   const navigate = useNavigate();
-  const { onSuccess, triggerWorkflows } = actionSchema?.['x-action-settings'] ?? {};
+  const { onSuccess } = actionSchema?.['x-action-settings'] ?? {};
+  const triggerWorkflows =
+    actionField.componentProps.triggerWorkflows ??
+    actionSchema?.['x-action-settings']?.triggerWorkflows;
 
   return {
     async onClick(e?, callBack?) {
@@ -112,7 +120,9 @@ export function useRecordTriggerWorkflowsActionProps() {
           values: record,
           // TODO(refactor): should change to inject by plugin
           triggerWorkflows: triggerWorkflows?.length
-            ? triggerWorkflows.map((row) => [row.workflowKey, row.context].filter(Boolean).join('!')).join(',')
+            ? triggerWorkflows
+                .map((row) => [row.workflowKey, row.context].filter(Boolean).join('!'))
+                .join(',')
             : undefined,
         });
         // __parent?.service?.refresh?.();
