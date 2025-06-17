@@ -12,12 +12,12 @@ import { oneMapUsedToTestSettings } from './templates';
 
 test.beforeEach(async ({ page }) => {
   await page.goto('/admin/settings/map');
-  await page.waitForLoadState('load');
-  await page.waitForTimeout(1000);
-  if (await page.getByRole('button', { name: 'Edit' }).first().isVisible()) {
-    await page.getByRole('button', { name: 'Edit' }).first().click();
+  await page.waitForLoadState('networkidle');
+  const editBtn = page.getByRole('button', { name: 'Edit' }).first();
+  if (await editBtn.isVisible()) {
+    await editBtn.click();
   }
-  await page.waitForTimeout(1000);
+  await expect(page.getByLabel('Access key')).toBeVisible();
   await page.getByLabel('Access key').fill('9717a70e44273882bcf5489f72b4e261');
   await page.getByLabel('securityJsCode or serviceHost').fill('6876ed2d3a6168b75c4fba852e16c99c');
   await page.getByRole('button', { name: 'Save' }).first().click();
@@ -26,8 +26,7 @@ test.beforeEach(async ({ page }) => {
 
 test.afterEach(async ({ page }) => {
   await page.goto('/admin/settings/map');
-  await page.waitForLoadState('load');
-  await page.waitForTimeout(1000);
+  await page.waitForLoadState('networkidle');
   await page.getByRole('button', { name: 'Edit' }).first().click();
   await page.getByLabel('Access key').clear();
   await page.getByLabel('securityJsCode or serviceHost').clear();
@@ -36,8 +35,7 @@ test.afterEach(async ({ page }) => {
 });
 
 test.describe('schema settings', () => {
-  // TODO: 不稳定，待优化
-  test.skip('what settings can be used in map block', async ({ page, mockPage }) => {
+  test('what settings can be used in map block', async ({ page, mockPage }) => {
     await mockPage(oneMapUsedToTestSettings).goto();
 
     await expectSettingsMenu({
