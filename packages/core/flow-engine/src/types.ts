@@ -311,3 +311,5 @@ export interface FieldFlowModelMeta extends FlowModelMeta {
    */
   supportedInterfaces?: string[];
 }
+
+export type { ForkFlowModel } from './models';

@@ -195,6 +195,7 @@ export class FlowEngine {
       return false;
     }
     const modelInstance = this.modelInstances.get(uid);
+    modelInstance.clearForks();
     // 从父模型中移除当前模型的引用
     if (modelInstance.parent?.subModels) {
       for (const subKey in modelInstance.parent.subModels) {

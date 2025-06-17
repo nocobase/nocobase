@@ -8,3 +8,4 @@
  */
 
 export * from './flowModel';
+export * from './forkFlowModel';

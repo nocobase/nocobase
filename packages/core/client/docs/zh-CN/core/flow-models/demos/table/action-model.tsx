@@ -17,6 +17,17 @@ ActionModel.registerFlow({
   auto: true,
   steps: {
     step1: {
+      uiSchema: {
+        title: {
+          type: 'string',
+          title: '标题',
+          'x-decorator': 'FormItem',
+          'x-component': 'Input',
+          'x-component-props': {
+            placeholder: '请输入标题',
+          },
+        },
+      },
       handler(ctx, params) {
         ctx.model.setProps('title', params.title);
         ctx.model.onClick = (e) => {

@@ -7,9 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { EditOutlined } from '@ant-design/icons';
+import { EditOutlined, SettingOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
-import { CollectionField, FlowModelRenderer, FlowsFloatContextMenu } from '@nocobase/flow-engine';
+import { observer } from '@formily/reactive-react';
+import { AddActionModel, CollectionField, FlowModelRenderer, FlowsFloatContextMenu } from '@nocobase/flow-engine';
 import { Space, TableColumnProps, Tooltip } from 'antd';
 import React from 'react';
 import { ActionModel } from './ActionModel';
@@ -17,8 +18,7 @@ import { FieldFlowModel } from './FieldFlowModel';
 import { QuickEditForm } from './QuickEditForm';
 
 export class TableColumnModel extends FieldFlowModel {
-  // field: Field;
-  // fieldPath: string;
+  static readonly supportedFieldInterfaces = '*';
 
   getColumnProps(): TableColumnProps {
     return {
@@ -94,19 +94,60 @@ TableColumnModel.define({
   sort: 0,
 });
 
-export class TableColumnActionsModel extends TableColumnModel {
+const Columns = observer<any>(({ record, model }) => {
+  return (
+    <Space>
+      {model.mapSubModels('actions', (action: ActionModel) => {
+        const fork = action.createFork({}, `${record.id}`);
+        return <FlowModelRenderer showFlowSettings key={fork.uid} model={fork} extraContext={{ record }} />;
+      })}
+    </Space>
+  );
+});
+
+export class TableActionsColumnModel extends TableColumnModel {
   getColumnProps() {
-    return { title: 'Actions', ...this.props, render: this.render() };
+    return {
+      // title: 'Actions',
+      ...this.props,
+      title: (
+        <FlowsFloatContextMenu
+          model={this}
+          containerStyle={{ display: 'block', padding: '11px 8px', margin: '-11px -8px' }}
+        >
+          <Space>
+            {this.props.title || 'Actions'}
+            <AddActionModel
+              model={this}
+              subModelKey={'actions'}
+              items={() => [
+                {
+                  key: 'action1',
+                  label: 'Action 1',
+                  createModelOptions: {
+                    use: 'ActionModel',
+                  },
+                },
+                {
+                  key: 'action2',
+                  label: 'View',
+                  createModelOptions: {
+                    use: 'ViewActionModel',
+                  },
+                },
+              ]}
+            >
+              <SettingOutlined />
+            </AddActionModel>
+          </Space>
+        </FlowsFloatContextMenu>
+      ),
+      render: this.render(),
+    };
   }
 
   render() {
-    return (value, record, index) => (
-      <Space>
-        {this.mapSubModels('actions', (action: ActionModel) => (
-          <FlowModelRenderer key={action.uid} model={action} extraContext={{ record }} />
-        ))}
-      </Space>
-    );
+    return (value, record, index) => <Columns record={record} model={this} />;
   }
 }
 
@@ -123,10 +164,10 @@ TableColumnModel.registerFlow({
           return;
         }
         const field = ctx.globals.dataSourceManager.getCollectionField(params.fieldPath);
+        ctx.model.field = field;
         ctx.model.fieldPath = params.fieldPath;
         ctx.model.setProps('title', field.title);
         ctx.model.setProps('dataIndex', field.name);
-        ctx.model.field = field;
       },
     },
   },

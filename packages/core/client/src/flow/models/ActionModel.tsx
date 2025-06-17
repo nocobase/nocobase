@@ -13,8 +13,6 @@ import React from 'react';
 
 import type { ButtonProps } from 'antd';
 
-const ANIMATION_DURATION = 300; // 动画持续时间
-
 interface ActionModelProps extends ButtonProps {
   Component?: React.ComponentType<ButtonProps>;
   /**
@@ -110,6 +108,34 @@ ActionModel.registerFlow({
 
 ActionModel.registerFlow({
   key: 'defaultClickHandler',
+  on: {
+    eventName: 'onClick',
+  },
+  title: '点击事件',
+  steps: {
+    openMode: {
+      title: '打开方式',
+      uiSchema: {},
+      handler(ctx, params) {
+        ctx.model.setProps(params);
+      },
+    },
+    popupSize: {
+      title: '弹窗尺寸',
+      uiSchema: {},
+      handler(ctx, params) {
+        ctx.model.setProps(params);
+      },
+    },
+  },
+});
+
+export class ViewActionModel extends ActionModel {
+  title = 'View';
+}
+
+ViewActionModel.registerFlow({
+  key: 'event1',
   on: {
     eventName: 'onClick',
   },

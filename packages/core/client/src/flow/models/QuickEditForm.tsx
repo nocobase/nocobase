@@ -100,7 +100,7 @@ QuickEditForm.registerFlow({
         }
         if (ctx.extra.fieldPath) {
           ctx.model.addSubModel('fields', {
-            use: 'FormItemModel',
+            use: 'FormFieldModel',
             stepParams: {
               default: {
                 step1: {

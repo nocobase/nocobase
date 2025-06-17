@@ -30,6 +30,7 @@ import type {
 } from '../types';
 import { ExtendedFlowDefinition, FlowExtraContext, IModelComponentProps, ReadonlyModelProps } from '../types';
 import { generateUid, mergeFlowDefinitions } from '../utils';
+import { ForkFlowModel } from './forkFlowModel';
 
 // 使用WeakMap存储每个类的meta
 const modelMetas = new WeakMap<typeof FlowModel, FlowModelMeta>();
@@ -45,6 +46,16 @@ export class FlowModel<Structure extends { parent?: any; subModels?: any } = Def
   public flowEngine: FlowEngine;
   public parent: Structure['parent'];
   public subModels: Structure['subModels'];
+  /**
+   * 所有 fork 实例的引用集合。
+   * 使用 Set 便于在销毁时主动遍历并调用 dispose，避免悬挂引用。
+   */
+  public forks: Set<ForkFlowModel<any>> = new Set();
+
+  /**
+   * 基于 key 的 fork 实例缓存，用于复用 fork 实例
+   */
+  private forkCache: Map<string, ForkFlowModel<any>> = new Map();
   // public static meta: FlowModelMeta;
 
   constructor(protected options: FlowModelOptions<Structure>) {
@@ -583,6 +594,21 @@ export class FlowModel<Structure extends { parent?: any; subModels?: any } = Def
     return results;
   }
 
+  findSubModel<K extends keyof Structure['subModels'], R>(
+    subKey: K,
+    callback: (model: ArrayElementType<Structure['subModels'][K]>) => R,
+  ): R | null {
+    const model = this.subModels[subKey];
+
+    if (!model) {
+      return null;
+    }
+
+    return _.castArray(model).find((item) => {
+      return (callback as (model: any) => R)(item);
+    });
+  }
+
   createRootModel(options) {
     return this.flowEngine.createModel(options);
   }
@@ -593,6 +619,47 @@ export class FlowModel<Structure extends { parent?: any; subModels?: any } = Def
         await column.applyAutoFlows(extra);
       }),
     );
+  }
+
+  /**
+   * 创建一个 fork 实例，实现"一份数据（master）多视图（fork）"的能力。
+   * @param {IModelComponentProps} [localProps={}] fork 专属的局部 props，优先级高于 master.props
+   * @param {string} [key] 可选的 key，用于复用 fork 实例。如果提供了 key，会尝试复用已存在的 fork
+   * @returns {ForkFlowModel<this>} 创建的 fork 实例
+   */
+  createFork(localProps?: IModelComponentProps, key?: string): ForkFlowModel<this> {
+    // 如果提供了 key，尝试从缓存中获取
+    if (key) {
+      const cachedFork = this.forkCache.get(key);
+      if (cachedFork && !(cachedFork as any).disposed) {
+        // 更新 localProps
+        cachedFork.setProps(localProps || {});
+        return cachedFork as ForkFlowModel<this>;
+      }
+    }
+
+    // 创建新的 fork 实例
+    const forkId = this.forks.size; // 当前集合大小作为索引
+    const fork = new ForkFlowModel<this>(this as any, localProps, forkId);
+    this.forks.add(fork as any);
+
+    // 如果提供了 key，将 fork 缓存起来
+    if (key) {
+      this.forkCache.set(key, fork as any);
+    }
+
+    return fork as ForkFlowModel<this>;
+  }
+
+  clearForks() {
+    console.log(`FlowModel ${this.uid} clearing all forks.`);
+    // 主动使所有 fork 失效
+    if (this.forks?.size) {
+      this.forks.forEach((fork) => fork.dispose());
+      this.forks.clear();
+    }
+    // 清理 fork 缓存
+    this.forkCache.clear();
   }
 
   remove() {

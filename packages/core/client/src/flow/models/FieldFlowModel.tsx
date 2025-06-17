@@ -9,7 +9,10 @@
 
 import { CollectionField, FlowModel } from '@nocobase/flow-engine';
 
+type SupportedFieldInterfaces = string[] | '*' | null;
+
 export class FieldFlowModel extends FlowModel {
   field: CollectionField;
   fieldPath: string;
+  public static readonly supportedFieldInterfaces: SupportedFieldInterfaces = null;
 }
