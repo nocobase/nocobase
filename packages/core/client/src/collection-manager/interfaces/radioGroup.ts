@@ -24,7 +24,7 @@ export class RadioGroupFieldInterface extends CollectionFieldInterface {
       'x-component': 'Radio.Group',
     },
   };
-  availableTypes = ['string', 'integer', 'boolean', 'integer', 'bit'];
+  availableTypes = ['string', 'integer', 'boolean', 'integer'];
   hasDefaultValue = true;
   properties = {
     ...defaultProps,
