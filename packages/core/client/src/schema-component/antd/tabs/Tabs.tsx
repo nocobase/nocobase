@@ -9,9 +9,9 @@
 
 import { css } from '@emotion/css';
 import { observer, RecursionField, Schema, useField, useFieldSchema } from '@formily/react';
-import { Tabs as AntdTabs, TabPaneProps, TabsProps } from 'antd';
+import { Tabs as AntdTabs, Badge, TabPaneProps, TabsProps } from 'antd';
 import classNames from 'classnames';
-import React, { useMemo } from 'react';
+import React, { FC, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSchemaInitializerRender } from '../../../application';
 import { withDynamicSchemaProps } from '../../../hoc/withDynamicSchemaProps';
@@ -24,12 +24,21 @@ import { TabsDesigner } from './Tabs.Designer';
 import { useMobileLayout } from '../../../route-switch/antd/admin-layout';
 import { transformMultiColumnToSingleColumn } from '@nocobase/utils/client';
 import { NAMESPACE_UI_SCHEMA } from '../../../i18n/constant';
+import { useEvaluatedExpression } from '../../../hooks/useParsedValue';
 
 const MemoizeRecursionField = React.memo(RecursionField);
 MemoizeRecursionField.displayName = 'MemoizeRecursionField';
 
 const MemoizeTabs = React.memo(AntdTabs);
 MemoizeTabs.displayName = 'MemoizeTabs';
+
+const TabBadge: FC<{ badge: Record<string, any>; style?: React.CSSProperties }> = (props) => {
+  const badgeCount = useEvaluatedExpression(props.badge?.count);
+
+  if (badgeCount == null) return null;
+
+  return <Badge {...props.badge} count={badgeCount} style={{ ...props.style, color: props.badge?.textColor }} dot={false}>{props.children}</Badge>
+}
 
 export const Tabs: any = React.memo((props: TabsProps) => {
   const fieldSchema = useFieldSchema();
@@ -42,7 +51,7 @@ export const Tabs: any = React.memo((props: TabsProps) => {
     const result = fieldSchema.mapProperties((schema, key: string) => {
       return {
         key,
-        label: <MemoizeRecursionField name={key} schema={schema} onlyRenderSelf />,
+        label: <div style={{ display: 'flex', alignItems: 'center' }}><MemoizeRecursionField name={key} schema={schema} onlyRenderSelf /><TabBadge style={{ marginLeft: 4 }} badge={schema['x-component-props']?.badge} /></div>,
         children: (
           <PaneRoot key={key} {...(PaneRoot !== React.Fragment ? { active: key === contextProps.activeKey } : {})}>
             <SchemaComponent
