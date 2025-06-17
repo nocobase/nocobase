@@ -159,7 +159,7 @@ export class InheritanceCollectionMixin extends Collection {
       const targetField = filterFields.find((k) => {
         return k.name === v.name;
       });
-      return targetField.collectionName !== this.name;
+      return targetField?.collectionName !== this.name;
     });
     return this.parentCollectionFields[parentCollectionName];
   }
