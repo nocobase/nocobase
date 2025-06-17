@@ -7,22 +7,11 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import {
-  AddActionButton,
-  AddFieldButton,
-  AddFieldButtonProps,
-  AddFieldMenuItem,
-  AddSubModelMenuItem,
-  Collection,
-  FlowModel,
-  MultiRecordResource,
-} from '@nocobase/flow-engine';
-import { Button, Card, Dropdown, Table } from 'antd';
-import subModel from 'packages/core/client/docs/zh-CN/core/flow-models/demos/sub-model';
-import actions from 'packages/plugins/@nocobase/plugin-workflow/src/server/actions';
+import { css } from '@emotion/css';
+import { AddFieldModel, Collection, MultiRecordResource } from '@nocobase/flow-engine';
+import { Card, Table } from 'antd';
 import React from 'react';
 import { BlockFlowModel } from './BlockFlowModel';
-import { FieldFlowModel } from './FieldFlowModel';
 import { TableColumnModel } from './TableColumnModel';
 
 type S = {
@@ -36,38 +25,56 @@ export class TableModel extends BlockFlowModel<S> {
   resource: MultiRecordResource;
 
   getColumns() {
-    const buildColumnSubModelParams: AddFieldButtonProps['buildSubModelParams'] = (item) => {
-      return {
-        use: 'TableColumnModel',
-        props: {
-          dataIndex: item.field.name,
-          title: item.field.title,
-        },
-      };
-    };
-    const onModelAdded = async (column: TableColumnModel, item: AddFieldMenuItem) => {
-      const field = item.field;
-      column.field = field;
-      column.fieldPath = `${field.collection.dataSource.name}.${field.collection.name}.${field.name}`;
-      column.setStepParams('default', 'step1', {
-        fieldPath: column.fieldPath,
-      });
-      await column.applyAutoFlows();
-    };
     return this.mapSubModels('columns', (column) => {
-      const ps = column.getColumnProps();
-      return ps;
+      return column.getColumnProps();
     }).concat({
       key: 'addColumn',
       fixed: 'right',
       title: (
-        <AddFieldButton
-          onModelAdded={onModelAdded}
-          buildSubModelParams={buildColumnSubModelParams}
-          subModelKey="columns"
-          model={this}
+        <AddFieldModel
           collection={this.collection}
-          ParentModelClass={FieldFlowModel}
+          model={this}
+          subModelKey={'columns'}
+          onModelAdded={async (model: TableColumnModel) => {
+            await model.applyAutoFlows();
+          }}
+          items={async () => {
+            return [
+              {
+                key: 'addField',
+                label: 'Collection fields',
+                type: 'group',
+                children: async () => {
+                  return this.collection.getFields().map((field) => {
+                    return {
+                      key: field.name,
+                      label: field.title,
+                      createModelOptions: {
+                        use: 'TableColumnModel',
+                        stepParams: {
+                          default: {
+                            step1: {
+                              fieldPath: field.fullpath,
+                            },
+                          },
+                        },
+                      },
+                    };
+                  });
+                },
+              },
+              {
+                type: 'divider',
+              },
+              {
+                key: 'actions',
+                label: 'Actions column',
+                createModelOptions: {
+                  use: 'TableActionsColumnModel',
+                },
+              },
+            ];
+          }}
         />
       ),
     } as any);
@@ -77,6 +84,11 @@ export class TableModel extends BlockFlowModel<S> {
     return (
       <Card>
         <Table
+          className={css`
+            td {
+              height: 39px;
+            }
+          `}
           rowKey="id"
           dataSource={this.resource.getData()}
           columns={this.getColumns()}

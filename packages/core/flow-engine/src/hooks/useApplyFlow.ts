@@ -124,7 +124,7 @@ function useFlowExecutor<T, TModel extends FlowModel = FlowModel>(
     let isInitialAutorunForEffect = true;
 
     const disposeAutorun = autorun(() => {
-      // 只监听 stepParams 的变化，移除对 props 的监听以避免循环触发
+      // 监听 stepParams 的变化来触发 auto flows 重新执行
       JSON.stringify(toJS(model.stepParams));
 
       if (isInitialAutorunForEffect) {
