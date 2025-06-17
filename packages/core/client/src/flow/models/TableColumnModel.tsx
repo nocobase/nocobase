@@ -128,6 +128,13 @@ export class TableActionsColumnModel extends TableColumnModel {
                     use: 'ActionModel',
                   },
                 },
+                {
+                  key: 'action2',
+                  label: 'View',
+                  createModelOptions: {
+                    use: 'ViewActionModel',
+                  },
+                },
               ]}
             >
               <SettingOutlined />
