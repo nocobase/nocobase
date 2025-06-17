@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-theme-editor",
-  "version": "1.8.0-beta.8",
+  "version": "1.8.0-beta.9",
   "main": "dist/server/index.js",
   "homepage": "https://docs.nocobase.com/handbook/theme-editor",
   "homepage.zh-CN": "https://docs-cn.nocobase.com/handbook/theme-editor",

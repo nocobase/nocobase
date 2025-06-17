@@ -4,13 +4,13 @@
   "displayName.zh-CN": "工作流",
   "description": "A powerful BPM tool that provides foundational support for business automation, with the capability to extend unlimited triggers and nodes.",
   "description.zh-CN": "一个强大的 BPM 工具，为业务自动化提供基础支持，并且可任意扩展更多的触发器和节点。",
-  "version": "1.8.0-beta.8",
+  "version": "1.8.0-beta.9",
   "license": "AGPL-3.0",
   "main": "./dist/server/index.js",
   "homepage": "https://docs.nocobase.com/handbook/workflow",
   "homepage.zh-CN": "https://docs-cn.nocobase.com/handbook/workflow",
   "dependencies": {
-    "@nocobase/plugin-workflow-test": "1.8.0-beta.8"
+    "@nocobase/plugin-workflow-test": "1.8.0-beta.9"
   },
   "devDependencies": {
     "@ant-design/icons": "5.x",
