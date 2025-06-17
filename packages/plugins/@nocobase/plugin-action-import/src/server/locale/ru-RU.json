@@ -1,0 +1,10 @@
+{
+  "Yes": "Да",
+  "No": "Нет",
+  "can not find value": "не удается найти значение",
+  "password is empty": "пароль пуст",
+  "Incorrect time format": "Неверный формат времени",
+  "Incorrect date format": "Неверный формат даты",
+  "Incorrect email format": "Неверный формат email",
+  "Illegal percentage format": "Недопустимый формат процента"
+}

@@ -1,0 +1,10 @@
+{
+  "Delay": "Задержка",
+  "Delay a period of time and then continue or exit the process. Can be used to set wait or timeout times in parallel branches.": "Задержка на период времени, а затем продолжение или выход из процесса. Может использоваться для установки времени ожидания или таймаута в параллельных ветвях.",
+  "Duration": "Длительность",
+  "Unit": "Единица",
+  "End status": "Статус завершения",
+  "Select status": "Выбрать статус",
+  "Succeed and continue": "Успешно и продолжить",
+  "Fail and exit": "Неудача и выход"
+}

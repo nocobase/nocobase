@@ -1,0 +1,4 @@
+{
+  "field-name-exists": "Имя поля \"{{name}}\" уже существует в коллекции \"{{collectionName}}\"",
+  "field-is-depended-on-by-other": "Невозможно удалить поле \"{{fieldName}}\" в \"{{fieldCollectionName}}\", оно используется полем \"{{dependedFieldName}}\" в \"{{dependedFieldCollectionName}}\" как \"{{dependedFieldAs}}\""
+}

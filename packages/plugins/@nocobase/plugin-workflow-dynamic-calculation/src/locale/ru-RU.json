@@ -1,0 +1,12 @@
+{
+  "Expression": "Выражение",
+  "Dynamic expression calculation": "Вычисление динамического выражения",
+  "Calculate an expression based on a calculation engine and obtain a value as the result. Variables in the upstream nodes can be used in the expression. The expression is dynamic one from an expression collections.": "Вычислить выражение на основе движка вычислений и получить значение в качестве результата. В выражении можно использовать переменные из вышележащих узлов. Выражение является динамическим из коллекции выражений.",
+  "Select dynamic expression": "Выбрать динамическое выражение",
+  "Select the dynamic expression queried from the upstream node. You need to query it from an expression collection.": "Выберите динамическое выражение, запрошенное из вышележащего узла. Вам нужно запросить его из коллекции выражений.",
+  "Variable datasource": "Источник данных переменной",
+  "Dynamic expression": "Динамическое выражение",
+  "Used to store expressions for use in workflows so that different expressions can be called for different data.": "Используется для хранения выражений для использования в рабочих процессах, чтобы для разных данных можно было вызывать разные выражения.",
+  "Unconfigured": "Не настроено",
+  "Calculation result": "Результат вычисления"
+}

@@ -1,0 +1,22 @@
+{
+  "Theme": "Тема",
+  "Local": "Локальный",
+  "Dark theme": "Темная тема",
+  "Optional": "Необязательный",
+  "Non-optional": "Обязательный",
+  "Current": "Текущий",
+  "Default": "По умолчанию",
+  "Theme Editor": "Редактор тем",
+  "Save": "Сохранить",
+  "Close": "Закрыть",
+  "Edit": "Редактировать",
+  "Export": "Экспорт",
+  "edit Theme Config": "редактировать конфигурацию темы",
+  "The theme of the JSON format is incorrect": "Тема в JSON формате неверна",
+  "Edited successfully": "Успешно отредактировано",
+  "Saved successfully": "Успешно сохранено",
+  "Initializing Editor...": "Инициализация редактора...",
+  "Save theme": "Сохранить тему",
+  "Please set a name for this theme": "Пожалуйста, установите имя для этой темы",
+  "Please input the theme name": "Пожалуйста, введите имя темы"
+}

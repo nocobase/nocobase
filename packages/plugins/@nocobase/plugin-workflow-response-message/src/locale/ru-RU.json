@@ -1,0 +1,8 @@
+{
+  "Response message": "Сообщение ответа",
+  "Add response message, will be send to client when process of request ends.": "Добавить сообщение ответа, которое будет отправлено клиенту по завершении процесса запроса.",
+  "Message content": "Содержание сообщения",
+  "Supports variables in template.": "Поддерживает переменные в шаблоне.",
+  "If the workflow ends normally, the response message will return a success status by default.": "Если рабочий процесс завершается нормально, сообщение ответа по умолчанию вернет статус успеха.",
+  "If you want to return a failure status, please add an \"End Process\" node downstream to terminate the workflow.": "Если вы хотите вернуть статус неудачи, пожалуйста, добавьте узел \"Завершить процесс\" ниже по потоку, чтобы завершить рабочий процесс."
+}

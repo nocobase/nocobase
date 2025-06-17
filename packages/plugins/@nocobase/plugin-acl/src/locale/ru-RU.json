@@ -1,0 +1,18 @@
+{
+  "The current user has no roles. Please try another account.": "У текущего пользователя нет ролей. Пожалуйста, попробуйте другой аккаунт.",
+  "The user role does not exist. Please try signing in again": "Роль пользователя не существует. Пожалуйста, попробуйте войти снова",
+  "New role": "Новая роль",
+  "Permissions": "Разрешения",
+  "Desktop menu": "Меню рабочего стола",
+  "Independent roles": "Независимые роли",
+  "Allow roles union": "Разрешить объединение ролей",
+  "Roles union only": "Только объединение ролей",
+  "Role mode": "Режим роли",
+  "Saved successfully": "Успешно сохранено",
+  "Please select role mode": "Пожалуйста, выберите режим роли",
+  "Full permissions": "Полные разрешения",
+  "Role mode doc": "https://docs.nocobase.com/handbook/acl/manual",
+  "Do not use role union. Users need to switch between their roles individually.": "Не использовать объединение ролей. Пользователи должны переключаться между своими ролями по отдельности.",
+  "Allow users to use role union, which means they can use permissions from all their roles simultaneously, or switch between individual roles.": "Разрешить пользователям использовать объединение ролей, что означает, что они могут использовать разрешения от всех своих ролей одновременно или переключаться между отдельными ролями.",
+  "Force users to use only role union. They cannot switch between individual roles.": "Заставить пользователей использовать только объединение ролей. Они не могут переключаться между отдельными ролями."
+}

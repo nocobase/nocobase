@@ -1,0 +1,16 @@
+{
+  "Post-action event": "Событие после действия",
+  "Triggered after the completion of a request initiated through an action button or API, such as after adding or updating data. Suitable for data processing, sending notifications, etc., after actions are completed.": "Срабатывает после завершения запроса, инициированного через кнопку действия или API, например, после добавления или обновления данных. Подходит для обработки данных, отправки уведомлений и т.д. после завершения действий.",
+  "Collection": "Коллекция",
+  "The collection to which the triggered data belongs.": "Коллекция, к которой принадлежат данные триггера.",
+  "Trigger mode": "Режим триггера",
+  "Local mode, triggered after the completion of actions bound to this workflow": "Локальный режим, срабатывает после завершения действий, привязанных к этому рабочему процессу",
+  "Global mode, triggered after the completion of the following actions": "Глобальный режим, срабатывает после завершения следующих действий",
+  "Select actions": "Выбрать действия",
+  "Create record action": "Действие создания записи",
+  "Update record action": "Действие обновления записи",
+  "Associations to use": "Используемые связи",
+  "Trigger data": "Данные триггера",
+  "User acted": "Действующий пользователь",
+  "Role of user acted": "Роль действующего пользователя"
+}

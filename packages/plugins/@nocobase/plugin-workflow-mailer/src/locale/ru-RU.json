@@ -1,0 +1,20 @@
+{
+  "Mailer": "Почтовый клиент",
+  "Send email. You can use the variables in the upstream nodes as receivers, subject and content of the email.": "Отправить email. Вы можете использовать переменные из вышележащих узлов в качестве получателей, темы и содержимого email.",
+  "SMTP host": "Хост SMTP",
+  "Port": "Порт",
+  "Secure": "Безопасное соединение",
+  "User": "Пользователь",
+  "Password": "Пароль",
+  "From": "От",
+  "To": "Кому",
+  "CC": "Копия",
+  "BCC": "Скрытая копия",
+  "Add email address": "Добавить email адрес",
+  "Subject": "Тема",
+  "Content": "Содержание",
+  "Content type": "Тип содержимого",
+  "Plain text": "Простой текст",
+  "Ignore failed sending and continue workflow": "Игнорировать неудачную отправку и продолжить рабочий процесс",
+  "In most cases, if using port 465, set it to true; otherwise, set it to false.": "В большинстве случаев, если используется порт 465, установите true; в противном случае установите false."
+}

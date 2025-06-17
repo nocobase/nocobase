@@ -1,0 +1,18 @@
+{
+  "Enable form": "Включить форму",
+  "Public forms": "Публичные формы",
+  "Add New": "Добавить новую",
+  "Type": "Тип",
+  "Open form": "Открыть форму",
+  "Set password": "Установить пароль",
+  "Copy link": "Скопировать ссылку",
+  "QR code": "QR-код",
+  "The form is not enabled and cannot be accessed": "Форма не включена и не может быть доступна",
+  "Link copied successfully": "Ссылка успешно скопирована",
+  "After successful submission": "После успешной отправки",
+  "Enable password": "Включить пароль",
+  "Prompt after successful submission": "Подсказка после успешной отправки",
+  "Form": "Форма",
+  "# Submitted successfully!\nThis is a demo text, **supports Markdown syntax**.": "# Успешно отправлено!\nЭто демонстрационный текст, **поддерживает синтаксис Markdown**.",
+  "The form is not found": "Форма не найдена"
+}
