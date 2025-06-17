@@ -15,6 +15,7 @@ import cls from 'classnames';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCollectionRecord } from '../../../data-source';
+import { FlagProvider, useFlag } from '../../../flag-provider';
 import { useGlobalTheme } from '../../../global-theme';
 import { withDynamicSchemaProps } from '../../../hoc/withDynamicSchemaProps';
 import { useVariableOptions } from '../../../schema-settings/VariableInput/hooks/useVariableOptions';
@@ -25,7 +26,6 @@ import { useDesignable } from '../../hooks/useDesignable';
 import { VariableSelect } from '../variable/VariableSelect';
 import { MarkdownVoidDesigner } from './Markdown.Void.Designer';
 import { registerQrcodeWebComponent } from './qrcode-webcom';
-import { FlagProvider } from '../../../flag-provider';
 import { useStyles } from './style';
 import { parseMarkdown } from './util';
 import { VariableScope } from '../../../variables/VariableScope';
@@ -147,12 +147,13 @@ export const MarkdownVoidInner: any = withDynamicSchemaProps(
     const localVariables = useLocalVariables();
     const { engine } = schema?.['x-decorator-props'] || {};
     const [loading, setLoading] = useState(false);
+    const { t, i18n } = useTranslation();
 
     useEffect(() => {
       setLoading(true);
       const cvtContentToHTML = async () => {
         setTimeout(async () => {
-          const replacedContent = await getRenderContent(engine, content, variables, localVariables, parseMarkdown);
+          const replacedContent = await getRenderContent(engine, content, variables, localVariables, parseMarkdown, t);
           setHtml(replacedContent);
         });
         setLoading(false);
@@ -210,11 +211,12 @@ export const MarkdownVoidInner: any = withDynamicSchemaProps(
 );
 
 export const MarkdownVoid = (props) => {
+  const flags = useFlag();
   const fieldSchema = useFieldSchema();
 
   return (
-    <VariableScope scopeId={fieldSchema?.['x-uid']} type='markdownBlock'>
-      <FlagProvider collectionField={true}>
+    <VariableScope scopeId={fieldSchema?.['x-uid']} type="markdownBlock">
+      <FlagProvider {...flags} collectionField={true}>
         <MarkdownVoidInner {...props} />
       </FlagProvider>
     </VariableScope>

@@ -33,7 +33,7 @@ import React, {
   useState,
 } from 'react';
 import { useTranslation } from 'react-i18next';
-import { DndContext, isBulkEditAction, useDesignable, usePopupSettings, useTableSize } from '../..';
+import { DndContext, isBulkEditAction, isWriteEmailAction, useDesignable, usePopupSettings, useTableSize } from '../..';
 import {
   BlockRequestLoadingContext,
   RecordIndexProvider,
@@ -186,7 +186,10 @@ const useTableColumns = (
 
   const filterProperties = useCallback(
     (schema) =>
-      isBulkEditAction(schema) || !isPopupVisibleControlledByURL() || schema['x-component'] !== 'Action.Container',
+      isBulkEditAction(schema) ||
+      isWriteEmailAction(schema) ||
+      !isPopupVisibleControlledByURL() ||
+      schema['x-component'] !== 'Action.Container',
     [isPopupVisibleControlledByURL],
   );
 
@@ -854,7 +857,7 @@ export const Table: any = withDynamicSchemaProps(
       const collection = useCollection();
       const isTableSelector = schema?.parent?.['x-decorator'] === 'TableSelectorProvider';
       const ctx = isTableSelector ? useTableSelectorContext() : useTableBlockContext();
-      const { expandFlag, allIncludesChildren, enableIndexÏColumn } = ctx;
+      const { expandFlag, allIncludesChildren, enableIndexColumn } = ctx;
       const onRowDragEnd = useMemoizedFn(others.onRowDragEnd || (() => {}));
       const paginationProps = usePaginationProps(pagination1, pagination2, props);
       const columns = useTableColumns(others, paginationProps);
@@ -1020,7 +1023,7 @@ export const Table: any = withDynamicSchemaProps(
       const restProps = useMemo(
         () => ({
           rowSelection:
-            enableIndexÏColumn !== false
+            enableIndexColumn !== false
               ? memoizedRowSelection
                 ? {
                     type: 'checkbox',
@@ -1102,7 +1105,7 @@ export const Table: any = withDynamicSchemaProps(
           memoizedRowSelection,
           paginationProps,
           tableBlockContextBasicValue,
-          enableIndexÏColumn,
+          enableIndexColumn,
         ],
       );
 

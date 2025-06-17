@@ -52,7 +52,6 @@ describe('task manager', () => {
     const task = await taskManager.createTask({
       type: 'test',
       params: {},
-      immediateExecute: false,
     });
 
     expect(task).toBeTruthy();
@@ -104,7 +103,6 @@ describe('task manager', () => {
         category: 'import',
         source: 'excel',
       },
-      immediateExecute: false,
     });
 
     const task2 = await taskManager.createTask({
@@ -114,7 +112,6 @@ describe('task manager', () => {
         category: 'import',
         source: 'csv',
       },
-      immediateExecute: false,
     });
 
     const task3 = await taskManager.createTask({
@@ -124,7 +121,6 @@ describe('task manager', () => {
         category: 'export',
         source: 'excel',
       },
-      immediateExecute: false,
     });
 
     const importTasks = await taskManager.getTasksByTag('category', 'import');
@@ -163,7 +159,6 @@ describe('task manager', () => {
     const task = await taskManager.createTask({
       type: 'test',
       params: {},
-      immediateExecute: false,
     });
 
     // 测试任务创建事件
@@ -227,7 +222,6 @@ describe('task manager', () => {
     const task = taskManager.createTask({
       type: 'failing',
       params: {},
-      immediateExecute: false,
     });
 
     // 使用 try/catch 来处理预期的错误
@@ -290,7 +284,6 @@ describe('task manager', () => {
     const task = await taskManager.createTask({
       type: 'test',
       params: {},
-      immediateExecute: false,
     });
 
     // 监听进度更新
@@ -362,7 +355,6 @@ describe('task manager', () => {
     const task = await taskManager.createTask({
       type: 'long-running',
       params: {},
-      immediateExecute: false,
     });
 
     task.on('statusChange', (status) => {
@@ -449,7 +441,7 @@ describe('task manager', () => {
         type: 'controlled-test',
         params: {},
         tags: { index: i.toString() },
-        immediateExecute: true,
+        useQueue: true,
       });
     }
 
@@ -516,7 +508,6 @@ describe('task manager', () => {
       const task = await taskManager.createTask({
         type: 'cancellable',
         params: {},
-        immediateExecute: false,
       });
 
       // 启动任务
@@ -558,7 +549,6 @@ describe('task manager', () => {
       const task = await taskManager.createTask({
         type: 'multi-cancel',
         params: {},
-        immediateExecute: false,
       });
 
       // 启动任务

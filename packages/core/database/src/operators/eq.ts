@@ -14,6 +14,11 @@ export default {
     if (ctx?.fieldPath) {
       const field = ctx.db.getFieldByPath(ctx.fieldPath);
       if (field?.type === 'string' && typeof val !== 'string') {
+        if (Array.isArray(val)) {
+          return {
+            [Op.in]: val.map((v) => String(v)),
+          };
+        }
         return {
           [Op.eq]: String(val),
         };

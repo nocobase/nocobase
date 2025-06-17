@@ -52,7 +52,7 @@ export default class CollectionTrigger extends Trigger {
   events = new Map();
 
   // async function, should return promise
-  private static async handler(this: CollectionTrigger, workflowId: number, data: Model, options) {
+  private static async handler(this: CollectionTrigger, workflowId: number, eventType: string, data: Model, options) {
     const workflow = this.workflow.enabledCache.get(workflowId);
     const { skipWorkflow = false, stack } = options.context ?? {};
     if (skipWorkflow) {
@@ -60,7 +60,7 @@ export default class CollectionTrigger extends Trigger {
     }
     const [dataSourceName] = parseCollectionName(workflow.config.collection);
     const transaction = this.workflow.useDataSourceTransaction(dataSourceName, options.transaction);
-    const ctx = await this.prepare(workflow, data, { ...options, transaction });
+    const ctx = await this.prepare(workflow, data, { ...options, transaction, eventType });
     if (!ctx) {
       return;
     }
@@ -86,7 +86,7 @@ export default class CollectionTrigger extends Trigger {
     const [dataSourceName, collectionName] = parseCollectionName(workflow.config.collection);
     const { collectionManager } = this.workflow.app.dataSourceManager.dataSources.get(dataSourceName);
     const collection: Collection = (collectionManager as SequelizeCollectionManager).getCollection(collectionName);
-    const { transaction, context } = options;
+    const { transaction, context, eventType } = options;
     const { repository, filterTargetKey } = collection;
 
     let target = data;
@@ -105,6 +105,7 @@ export default class CollectionTrigger extends Trigger {
     }
     // NOTE: if no configured fields changed, do not trigger
     if (
+      eventType === MODE_BITMAP_EVENTS.get(MODE_BITMAP.UPDATE) &&
       target instanceof Model &&
       changed &&
       changed.length &&
@@ -170,7 +171,7 @@ export default class CollectionTrigger extends Trigger {
       const name = getHookId(workflow, `${collection}.${type}`);
       if (mode & key) {
         if (!this.events.has(name)) {
-          const listener = (<typeof CollectionTrigger>this.constructor).handler.bind(this, workflow.id);
+          const listener = (<typeof CollectionTrigger>this.constructor).handler.bind(this, workflow.id, type);
           this.events.set(name, listener);
           db.on(event, listener);
         }

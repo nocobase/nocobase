@@ -172,21 +172,25 @@ export default class PluginWorkflowServer extends Plugin {
 
     const collection = this.db.getCollection('workflows');
     const workflows = await collection.repository.find({
-      filter: { enabled: true },
-      appends: ['stats', 'versionStats'],
+      appends: ['versionStats'],
     });
 
     for (const workflow of workflows) {
       // NOTE: workflow stats may not be created in migration (for compatibility)
-      if (!workflow.stats) {
-        workflow.stats = await workflow.createStats({ executed: 0 });
+      if (workflow.current) {
+        workflow.stats = await workflow.getStats();
+        if (!workflow.stats) {
+          workflow.stats = await workflow.createStats({ executed: 0 });
+        }
       }
       // NOTE: workflow stats may not be created in migration (for compatibility)
       if (!workflow.versionStats) {
         workflow.versionStats = await workflow.createVersionStats({ executed: 0 });
       }
 
-      this.toggle(workflow, true, { silent: true });
+      if (workflow.enabled) {
+        this.toggle(workflow, true, { silent: true });
+      }
     }
 
     this.checker = setInterval(() => {

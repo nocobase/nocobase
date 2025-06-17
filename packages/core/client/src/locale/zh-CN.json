@@ -1135,5 +1135,7 @@
   "Next": "未来",
   "Calendar week":"日历周",
   "Calendar Month":"日历月",
-  "Calendar Year":"日历年"
+  "Calendar Year":"日历年",
+  "Scan to input":"扫码录入",
+  "Disable manual input":"禁止手动输入"
 }

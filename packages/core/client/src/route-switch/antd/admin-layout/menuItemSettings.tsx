@@ -445,17 +445,18 @@ const HiddenMenuItem = () => {
 
 const MoveToMenuItem = () => {
   const { t } = useTranslation();
+  const currentRoute = useCurrentRoute();
   const effects = useCallback(
     (form) => {
       onFieldChange('target', (field: Field) => {
-        const [, type] = field?.value?.split?.('||') || [];
+        const [id, type] = field?.value?.split?.('||') || [];
         field.query('position').take((f: Field) => {
           f.dataSource =
             type === NocoBaseDesktopRouteType.group
               ? [
                   { label: t('Before'), value: 'beforeBegin' },
                   { label: t('After'), value: 'afterEnd' },
-                  { label: t('Inner'), value: 'beforeEnd' },
+                  { label: t('Inner'), value: 'beforeEnd', disabled: currentRoute?.id == id },
                 ]
               : [
                   { label: t('Before'), value: 'beforeBegin' },
@@ -468,7 +469,11 @@ const MoveToMenuItem = () => {
   );
   const compile = useCompile();
   const { allAccessRoutes } = useAllAccessDesktopRoutes();
-  const items = useMemo(() => toItems(allAccessRoutes, { t, compile }), []);
+  const items = useMemo(() => {
+    const result = toItems(allAccessRoutes, { t, compile });
+    // The last two empty options are placeholders to prevent the last option from being hidden (a bug in TreeSelect)
+    return [...result, { label: '', value: '', disabled: true }, { label: '', value: '', disabled: true }];
+  }, []);
   const modalSchema = useMemo(() => {
     return {
       type: 'object',
@@ -498,7 +503,6 @@ const MoveToMenuItem = () => {
   }, [items, t]);
 
   const { moveRoute } = useNocoBaseRoutes();
-  const currentRoute = useCurrentRoute();
   const onMoveToSubmit: (values: any) => void = useCallback(
     async ({ target, position }) => {
       const [targetId] = target?.split?.('||') || [];

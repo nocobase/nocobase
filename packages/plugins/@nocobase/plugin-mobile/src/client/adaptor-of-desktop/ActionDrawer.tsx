@@ -35,13 +35,7 @@ export interface MobilePopupProps {
 }
 
 export const MobilePopup: FC<MobilePopupProps> = (props) => {
-  const {
-    title,
-    visible,
-    onClose: closePopup,
-    children,
-    minHeight,
-  } = props;
+  const { title, visible, onClose: closePopup, children, minHeight } = props;
   const { t } = useTranslation();
   const { popupContainerRef } = usePopupContainer(visible);
   const { componentCls, hashId } = useMobileActionDrawerStyle();
@@ -84,7 +78,7 @@ export const MobilePopup: FC<MobilePopupProps> = (props) => {
           bodyClassName="nb-mobile-action-drawer-body"
           bodyStyle={zIndexStyle}
           maskStyle={zIndexStyle}
-          closeOnSwipe
+          destroyOnClose
         >
           <div className="nb-mobile-action-drawer-header">
             {/* used to make the title center */}
@@ -97,7 +91,7 @@ export const MobilePopup: FC<MobilePopupProps> = (props) => {
               onClick={closePopup}
               role="button"
               tabIndex={0}
-              aria-label={t("Close")}
+              aria-label={t('Close')}
             >
               <CloseOutline />
             </span>
@@ -106,8 +100,8 @@ export const MobilePopup: FC<MobilePopupProps> = (props) => {
         </Popup>
       </ConfigProvider>
     </zIndexContext.Provider>
-  )
-}
+  );
+};
 
 export const ActionDrawerUsedInMobile: any = observer((props: { footerNodeName?: string }) => {
   const fieldSchema = useFieldSchema();
@@ -168,11 +162,7 @@ export const ActionDrawerUsedInMobile: any = observer((props: { footerNodeName?:
   ) : null;
 
   return (
-    <MobilePopup
-      title={title}
-      visible={visiblePopup}
-      onClose={closePopup}
-    >
+    <MobilePopup title={title} visible={visiblePopup} onClose={closePopup}>
       {popupContent}
       {footerContent}
     </MobilePopup>

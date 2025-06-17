@@ -678,6 +678,17 @@ export function getOperators() {
 }
 
 function parseFullDate(dateStr) {
+  if (dateStr.includes('T') && dateStr.endsWith('Z')) {
+    // ISO 格式，包含时区（如 '2025-06-05T16:00:00.000Z'）
+    return new Date(dateStr);
+  }
+
+  if (dateStr.includes(' ')) {
+    // 有日期+时间（如 '2025-06-06 23:59:59'）
+    return new Date(dateStr.replace(' ', 'T'));
+  }
+
+  // 只有日期（如 '2025-06-06'）
   return new Date(`${dateStr}T00:00:00`);
 }
 
