@@ -30,6 +30,7 @@ export class BelongsToArrayAssociation {
   targetKey: string;
   identifierField: string;
   as: string;
+  options: any;
 
   constructor(options: {
     db: Database;
@@ -40,6 +41,7 @@ export class BelongsToArrayAssociation {
     targetKey: string;
   }) {
     const { db, source, as, foreignKey, target, targetKey } = options;
+    this.options = options;
     this.associationType = 'BelongsToArray';
     this.db = db;
     this.source = source;
