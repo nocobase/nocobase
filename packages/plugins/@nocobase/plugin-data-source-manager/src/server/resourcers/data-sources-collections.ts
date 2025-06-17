@@ -147,7 +147,8 @@ export default {
         if (!dataSource) {
           throw new Error(`dataSource ${dataSourceKey} not found`);
         }
-        allCollections = await dataSource['getCollectionsFromCache']();
+        const dialect = dataSource['collectionManager']?.['db'].options.dialect
+        allCollections = dialect === 'oracle' ? await dataSource?.['introspector'].getCollections() : await dataSource['getCollectionsFromCache']();
       }
       const selectedCollections = await ctx.db.getRepository('dataSourcesCollections').find({
         filter: { dataSourceKey },

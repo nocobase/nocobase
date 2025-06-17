@@ -39,30 +39,31 @@ const CollectionsTable = observer((tableProps: any) => {
     const { dataSourceKey: key, formValues, onChange, from } = tableProps;
     const options = formValues?.options || {};
     const requiredText = t('is required');
+    if (formValues.type !== 'oracle') {
+      if (!key) {
+        message.error(t('Data source name', { ns: NAMESPACE }) + requiredText);
+        return;
+      }
 
-    if (!key) {
-      message.error(t('Data source name', { ns: NAMESPACE }) + requiredText);
-      return;
-    }
+      if (!options.host) {
+        message.error(t('Host', { ns: NAMESPACE }) + requiredText);
+        return;
+      }
 
-    if (!options.host) {
-      message.error(t('Host', { ns: NAMESPACE }) + requiredText);
-      return;
-    }
+      if (!options.port) {
+        message.error(t('Port', { ns: NAMESPACE }) + requiredText);
+        return;
+      }
 
-    if (!options.port) {
-      message.error(t('Port', { ns: NAMESPACE }) + requiredText);
-      return;
-    }
+      if (!options.database) {
+        message.error(t('Database', { ns: NAMESPACE }) + requiredText);
+        return;
+      }
 
-    if (!options.database) {
-      message.error(t('Database', { ns: NAMESPACE }) + requiredText);
-      return;
-    }
-
-    if (!options.username) {
-      message.error(t('Username', { ns: NAMESPACE }) + requiredText);
-      return;
+      if (!options.username) {
+        message.error(t('Username', { ns: NAMESPACE }) + requiredText);
+        return;
+      }
     }
 
     setLoading(true);
