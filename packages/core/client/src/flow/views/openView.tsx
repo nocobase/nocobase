@@ -11,6 +11,7 @@ import { CreateModelOptions, FlowContext, FlowModel, FlowModelRenderer } from '@
 import React from 'react';
 import { observable } from '@formily/reactive';
 import { observer } from '@formily/react';
+import { ViewComponent } from './ViewComponent';
 
 // 视图栈
 const viewStack: {
@@ -20,12 +21,20 @@ const viewStack: {
   options?: any;
 }[] = observable.shallow([]);
 
+/**
+ * 视图容器组件
+ * 用于渲染当前打开的视图
+ */
 export const ViewContainer: React.FC = observer(
   () => {
     return (
       <>
-        {viewStack.map(({ ctx, model }, index) => {
-          return <FlowModelRenderer key={index} model={model} />;
+        {viewStack.map(({ type, ctx, model, options }, index) => {
+          return (
+            <ViewComponent key={index} type={type} ctx={ctx} options={options}>
+              <FlowModelRenderer model={model} />
+            </ViewComponent>
+          );
         })}
       </>
     );
@@ -35,6 +44,13 @@ export const ViewContainer: React.FC = observer(
   },
 );
 
+/**
+ * 打开视图
+ * @param params.type 打开方式，drawer、modal 或 subPage
+ * @param params.ctx 上下文对象
+ * @param params.model 流模型或创建模型选项
+ * @param params.options 视图组件的属性
+ */
 export const openView = (params: {
   type: 'drawer' | 'modal' | 'subPage';
   ctx: FlowContext;
@@ -49,12 +65,18 @@ export const openView = (params: {
   });
 };
 
+/**
+ * 关闭当前视图
+ */
 export const closeView = () => {
   if (viewStack.length > 0) {
     viewStack.pop();
   }
 };
 
+/**
+ * 关闭所有视图
+ */
 export const closeAllViews = () => {
   viewStack.length = 0;
 };
