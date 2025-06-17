@@ -13,7 +13,12 @@ import { observable } from '@formily/reactive';
 import { observer } from '@formily/react';
 
 // 视图栈
-const viewStack: { ctx: FlowContext; model: FlowModel }[] = observable.shallow([]);
+const viewStack: {
+  type: 'drawer' | 'modal' | 'subPage';
+  ctx: FlowContext;
+  model: FlowModel;
+  options?: any;
+}[] = observable.shallow([]);
 
 export const ViewContainer: React.FC = observer(
   () => {
@@ -30,10 +35,17 @@ export const ViewContainer: React.FC = observer(
   },
 );
 
-export const openView = (params: { ctx: FlowContext; model: FlowModel | CreateModelOptions }) => {
+export const openView = (params: {
+  type: 'drawer' | 'modal' | 'subPage';
+  ctx: FlowContext;
+  model: FlowModel | CreateModelOptions;
+  options?: any;
+}) => {
   viewStack.push({
+    type: params.type,
     ctx: params.ctx,
     model: params.model instanceof FlowModel ? params.model : params.ctx.model.flowEngine.createModel(params.model),
+    options: params.options,
   });
 };
 
