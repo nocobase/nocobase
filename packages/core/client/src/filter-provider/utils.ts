@@ -120,6 +120,11 @@ export const transformToFilter = (
       }
 
       const collectionField = getCollectionJoinField(`${collectionName}.${path}`);
+
+      if (collectionField?.type === 'date') {
+        return true;
+      }
+
       if (collectionField?.target) {
         if (Array.isArray(value)) {
           return true;
