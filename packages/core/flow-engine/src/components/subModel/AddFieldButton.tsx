@@ -8,7 +8,7 @@
  */
 
 import React, { useMemo } from 'react';
-import { AddSubModelButton, SubModelItem } from './AddSubModelButton';
+import { AddSubModelButton, SubModelItemsType } from './AddSubModelButton';
 import { Collection } from '../../data-source';
 import { FlowModel } from '../../models';
 import { ModelConstructor } from '../../types';
@@ -33,7 +33,7 @@ export interface AddFieldButtonProps {
   /**
    * 追加的固定 items，会添加到字段 items 之后
    */
-  appendItems?: SubModelItem[];
+  appendItems?: SubModelItemsType;
   /**
    * 添加后的回调函数
    */
@@ -63,58 +63,82 @@ export const AddFieldButton: React.FC<AddFieldButtonProps> = ({
   subModelType = 'array',
   collection,
   buildCreateModelOptions,
-  appendItems = [],
+  appendItems,
   onModelAdded,
 }) => {
   const fields = collection.getFields();
-  const items = useMemo(() => {
-    const fieldClasses = Array.from(model.flowEngine.filterModelClassByParent(subModelBaseClass).values())?.sort(
-      (a, b) => (a.meta?.sort || 0) - (b.meta?.sort || 0),
-    );
 
-    if (fieldClasses.length === 0) {
-      return [];
-    }
+  // 构建字段 items 的函数
+  const buildFieldItems = useMemo(() => {
+    return () => {
+      const fieldClasses = Array.from(model.flowEngine.filterModelClassByParent(subModelBaseClass).values())?.sort(
+        (a, b) => (a.meta?.sort || 0) - (b.meta?.sort || 0),
+      );
 
-    const allFields = [];
-    const defaultFieldClasses = fieldClasses.find((fieldClass) => fieldClass.supportedFieldInterfaces === '*');
+      if (fieldClasses.length === 0) {
+        return [];
+      }
 
-    for (const field of fields) {
-      const fieldInterfaceName = field.options?.interface;
-      if (fieldInterfaceName) {
-        const fieldClass =
-          fieldClasses.find((fieldClass) => {
-            return fieldClass.supportedFieldInterfaces?.includes(fieldInterfaceName);
-          }) || defaultFieldClasses;
-        if (fieldClass) {
-          const fieldItem = {
-            key: field.name,
-            label: field.title,
-            icon: fieldClass.meta?.icon,
-            createModelOptions: buildCreateModelOptions
-              ? buildCreateModelOptions(field, fieldClass)
-              : {
-                  ...fieldClass.meta?.defaultOptions,
-                  use: fieldClass.name,
-                },
-          };
-          allFields.push(fieldItem);
+      const allFields = [];
+      const defaultFieldClasses = fieldClasses.find((fieldClass) => fieldClass.supportedFieldInterfaces === '*');
+
+      for (const field of fields) {
+        const fieldInterfaceName = field.options?.interface;
+        if (fieldInterfaceName) {
+          const fieldClass =
+            fieldClasses.find((fieldClass) => {
+              return fieldClass.supportedFieldInterfaces?.includes(fieldInterfaceName);
+            }) || defaultFieldClasses;
+          if (fieldClass) {
+            const fieldItem = {
+              key: field.name,
+              label: field.title,
+              icon: fieldClass.meta?.icon,
+              createModelOptions: buildCreateModelOptions
+                ? buildCreateModelOptions(field, fieldClass)
+                : {
+                    ...fieldClass.meta?.defaultOptions,
+                    use: fieldClass.name,
+                  },
+            };
+            allFields.push(fieldItem);
+          }
         }
       }
+
+      return allFields;
+    };
+  }, [model, subModelBaseClass, fields, buildCreateModelOptions]);
+
+  const items = useMemo(() => {
+    if (!appendItems) {
+      return buildFieldItems;
     }
 
-    // 追加额外的 items，如果有 appendItems 则先添加分割线
-    const finalItems = [...allFields];
-    if (appendItems.length > 0) {
-      finalItems.push({
-        key: 'divider',
-        type: 'divider' as const,
-      });
-      finalItems.push(...appendItems);
-    }
+    return async (ctx: any) => {
+      const fieldItems = buildFieldItems();
 
-    return finalItems;
-  }, [model, subModelBaseClass, fields, buildCreateModelOptions, appendItems]);
+      // 处理 appendItems
+      let extraItems = [];
+      if (typeof appendItems === 'function') {
+        extraItems = await appendItems(ctx);
+      } else {
+        extraItems = appendItems;
+      }
+
+      // 合并 items
+      const finalItems = [...fieldItems];
+      if (extraItems.length > 0) {
+        finalItems.push({
+          key: 'divider',
+          type: 'divider' as const,
+        });
+        finalItems.push(...extraItems);
+      }
+
+      return finalItems;
+    };
+  }, [buildFieldItems, appendItems]);
 
   return (
     <AddSubModelButton
