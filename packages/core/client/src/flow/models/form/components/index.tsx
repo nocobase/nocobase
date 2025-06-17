@@ -7,13 +7,4 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { FormFieldModel } from '../../FormFieldModel';
-import { Radio } from '@formily/antd-v5';
-
-export class RadioGroupFieldModel extends FormFieldModel {
-  static supportedFieldInterfaces = ['radioGroup'];
-
-  get component() {
-    return [Radio.Group, {}];
-  }
-}
+export * from './EllipsisWithTooltip';

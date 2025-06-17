@@ -21,3 +21,5 @@ export * from './DateTimeFieldModel';
 export * from './TimeFieldModel';
 export * from './NanoIDFieldModel';
 export * from './JsonFieldModel';
+export * from './CheckboxGroupField';
+export * from './MarkdownFieldModel';

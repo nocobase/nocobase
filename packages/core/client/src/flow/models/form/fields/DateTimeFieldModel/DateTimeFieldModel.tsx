@@ -10,8 +10,6 @@ import { DatePicker } from '@formily/antd-v5';
 import { FormFieldModel } from '../../../FormFieldModel';
 
 export class DateTimeFieldModel extends FormFieldModel {
-  static supportedFieldInterfaces = ['createdAt'];
-
   setComponentProps(componentProps) {
     let { dateFormat, timeFormat } = componentProps || {};
     if (!componentProps.format && (dateFormat || timeFormat)) {

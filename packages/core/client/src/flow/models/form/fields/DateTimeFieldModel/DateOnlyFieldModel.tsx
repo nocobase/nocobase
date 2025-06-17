@@ -12,7 +12,6 @@ export class DateOnlyFieldModel extends DateTimeFieldModel {
   static supportedFieldInterfaces = ['date'];
 
   setComponentProps(componentProps) {
-    console.log(222, componentProps);
     super.setComponentProps({
       ...componentProps,
       showTime: false,

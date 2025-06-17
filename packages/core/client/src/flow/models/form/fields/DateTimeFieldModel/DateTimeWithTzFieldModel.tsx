@@ -9,5 +9,5 @@
 import { DateTimeFieldModel } from './DateTimeFieldModel';
 
 export class DateTimeWithTzFieldModel extends DateTimeFieldModel {
-  static supportedFieldInterfaces = ['createdAt'];
+  static supportedFieldInterfaces = ['createdAt', 'datetime', 'updatedAt'];
 }

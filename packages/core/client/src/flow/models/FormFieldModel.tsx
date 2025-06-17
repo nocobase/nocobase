@@ -10,6 +10,7 @@
 import { FormItem, Input } from '@formily/antd-v5';
 import { Field, Form } from '@formily/core';
 import { FieldContext } from '@formily/react';
+import type { FieldValidator } from '@formily/core';
 import { CollectionField, FlowModel } from '@nocobase/flow-engine';
 import React from 'react';
 import { ReactiveField } from '../Formily/ReactiveField';
@@ -64,6 +65,10 @@ export class FormFieldModel extends FlowModel {
     this.field.dataSource = dataSource;
   }
 
+  setValidator(validator: FieldValidator) {
+    this.field.validator = validator;
+  }
+
   createField() {
     return this.form.createField({
       name: this.collectionField.name,
@@ -74,6 +79,7 @@ export class FormFieldModel extends FlowModel {
   }
 
   render() {
+    console.log(this.field);
     return (
       <FieldContext.Provider value={this.field}>
         <ReactiveField field={this.field}>{this.props.children}</ReactiveField>
@@ -95,6 +101,10 @@ FormFieldModel.registerFlow({
         ctx.model.setComponentProps(collectionField.getComponentProps());
         if (collectionField.enum.length) {
           ctx.model.setDataSource(collectionField.enum);
+        }
+        const validator = collectionField.options.uiSchema?.['x-validator'];
+        if (validator) {
+          ctx.model.setValidator(validator);
         }
       },
     },

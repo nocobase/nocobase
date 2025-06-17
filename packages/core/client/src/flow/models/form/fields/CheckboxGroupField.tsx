@@ -8,12 +8,12 @@
  */
 
 import { FormFieldModel } from '../../FormFieldModel';
-import { Radio } from '@formily/antd-v5';
+import { Checkbox } from '@formily/antd-v5';
 
-export class RadioGroupFieldModel extends FormFieldModel {
-  static supportedFieldInterfaces = ['radioGroup'];
+export class CheckboxGroupField extends FormFieldModel {
+  static supportedFieldInterfaces = ['checkboxGroup'];
 
   get component() {
-    return [Radio.Group, {}];
+    return [Checkbox.Group, {}];
   }
 }

@@ -47,7 +47,7 @@ export const InputNumber: ComposedInputNumber = connect((props: AntdInputNumberP
   return <AntdInputNumber {...inputNumberProps} />;
 });
 export class InputNumberFieldModel extends FormFieldModel {
-  static supportedFieldInterfaces = ['number', 'integer'];
+  static supportedFieldInterfaces = ['number', 'integer', 'id'];
 
   get component() {
     return [InputNumber, {}];
