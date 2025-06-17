@@ -8,7 +8,7 @@
  */
 
 import { pick } from 'lodash';
-import { isValidFilter } from '@nocobase/utils';
+import { isValidFilter, parse } from '@nocobase/utils';
 import { Collection, Model, Transactionable } from '@nocobase/database';
 import { ICollection, parseCollectionName, SequelizeCollectionManager } from '@nocobase/data-source-manager';
 
@@ -17,6 +17,7 @@ import { toJSON } from '../utils';
 import type { WorkflowModel } from '../types';
 import type { EventOptions } from '../Plugin';
 import { Context } from '@nocobase/actions';
+import { logicCalculate } from '../logicCalculate';
 
 export interface CollectionChangeTriggerConfig {
   collection: string;
@@ -46,6 +47,62 @@ function getFieldRawName(collection: ICollection, name: string) {
     return field.options.foreignKey;
   }
   return name;
+}
+
+function toCalculation(filter: any): any {
+  const opMap = {
+    $eq: 'equal',
+    $ne: 'notEqual',
+    $gt: 'gt',
+    $gte: 'gte',
+    $lt: 'lt',
+    $lte: 'lte',
+    $includes: 'includes',
+    $notIncludes: 'notIncludes',
+    $startsWith: 'startsWith',
+    $notStartsWith: 'notStartsWith',
+    $endWith: 'endsWith',
+    $notEndWith: 'notEndsWith',
+  } as Record<string, string>;
+
+  const convert = (cond: any): any => {
+    if (!cond) return;
+    if (cond.$and || cond.$or) {
+      const key = cond.$and ? '$and' : '$or';
+      return {
+        group: {
+          type: key === '$and' ? 'and' : 'or',
+          calculations: (cond[key] || []).map(convert).filter(Boolean),
+        },
+      };
+    }
+
+    const calculations: any[] = [];
+    for (const [field, expr] of Object.entries(cond)) {
+      if (expr && typeof expr === 'object' && !Array.isArray(expr)) {
+        for (const [op, val] of Object.entries(expr)) {
+          const calculator = opMap[op];
+          if (!calculator) continue;
+          calculations.push({
+            calculator,
+            operands: [`{{$context.data.${field}}}`, val],
+          });
+        }
+      } else {
+        calculations.push({
+          calculator: 'equal',
+          operands: [`{{$context.data.${field}}}`, expr],
+        });
+      }
+    }
+    if (calculations.length === 1) return calculations[0];
+    if (calculations.length) {
+      return { group: { type: 'and', calculations } };
+    }
+    return;
+  };
+
+  return convert(filter);
 }
 
 export default class CollectionTrigger extends Trigger {
@@ -121,16 +178,9 @@ export default class CollectionTrigger extends Trigger {
 
     // NOTE: if no configured condition, or not match, do not trigger
     if (isValidFilter(condition) && !(mode & MODE_BITMAP.DESTROY)) {
-      // TODO: change to map filter format to calculation format
-      // const calculation = toCalculation(condition);
-      const count = await repository.count({
-        filterByTk,
-        filter: condition,
-        context,
-        transaction,
-      });
-
-      if (!count) {
+      const calculation = toCalculation(condition);
+      const parsed = parse(calculation)({ $context: { data: toJSON(target) } });
+      if (!logicCalculate(parsed)) {
         return null;
       }
     }
