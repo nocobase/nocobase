@@ -11,6 +11,9 @@ import axios, { AxiosRequestConfig } from 'axios';
 import { trim } from 'lodash';
 
 import { Processor, Instruction, JOB_STATUS, FlowNodeModel } from '@nocobase/plugin-workflow';
+import PluginFileManagerServer, { AttachmentModel } from '@nocobase/plugin-file-manager';
+import { Application } from '@nocobase/server';
+import { Readable } from 'stream';
 
 export interface Header {
   name: string;
@@ -24,18 +27,19 @@ export type RequestInstructionConfig = Pick<AxiosRequestConfig, 'url' | 'method'
   onlyData?: boolean;
 };
 
-const ContentTypeTransformers = {
-  'text/plain'(data) {
-    return data.toString();
-  },
-  'application/x-www-form-urlencoded'(data: { name: string; value: string }[]) {
-    return new URLSearchParams(
-      data.filter(({ name, value }) => name && typeof value !== 'undefined').map(({ name, value }) => [name, value]),
-    ).toString();
-  },
-};
+interface MultipartTextRecord {
+  valueType: 'text';
+  name: string;
+  text: string;
+}
 
-async function request(config) {
+interface MultipartFileRecord {
+  valueType: 'file';
+  name: string;
+  file: AttachmentModel;
+}
+
+async function request(config: any, app: Application) {
   // default headers
   const { url, method = 'POST', contentType = 'application/json', data, timeout = 5000 } = config;
   const headers = (config.headers ?? []).reduce((result, header) => {
@@ -51,7 +55,48 @@ async function request(config) {
   );
 
   // TODO(feat): only support JSON type for now, should support others in future
-  headers['Content-Type'] = contentType;
+  if (contentType !== 'multipart/form-data') {
+    headers['Content-Type'] = contentType;
+  }
+
+  const ContentTypeTransformers = {
+    'text/plain'(data) {
+      return data.toString();
+    },
+    'application/x-www-form-urlencoded'(data: { name: string; value: string }[]) {
+      return new URLSearchParams(
+        data.filter(({ name, value }) => name && typeof value !== 'undefined').map(({ name, value }) => [name, value]),
+      ).toString();
+    },
+    async 'multipart/form-data'(data: (MultipartTextRecord | MultipartFileRecord)[]) {
+      const form = new FormData();
+
+      for (const record of data) {
+        if (record.valueType === 'text') {
+          form.append(record.name, record.text);
+          continue;
+        }
+
+        if (record.valueType === 'file') {
+          const plugin = app.pm.get(PluginFileManagerServer) as PluginFileManagerServer;
+          const { stream, contentType } = await plugin.getFileStream(record.file);
+
+          const chunks = [];
+          for await (const chunk of stream) {
+            chunks.push(chunk);
+          }
+
+          form.append(record.name, new Blob(chunks, { type: contentType }), record.file.filename);
+          continue;
+        }
+
+        console.error('Invalid value type');
+      }
+
+      return form;
+    },
+  };
+
   const transformer = ContentTypeTransformers[contentType];
 
   return axios.request({
@@ -62,7 +107,7 @@ async function request(config) {
     timeout,
     ...(method.toLowerCase() !== 'get' && data != null
       ? {
-          data: transformer ? transformer(data) : data,
+          data: transformer ? await transformer(data) : data,
         }
       : {}),
   });
@@ -110,7 +155,7 @@ export default class extends Instruction {
 
     if (sync) {
       try {
-        const response = await request(config);
+        const response = await request(config, this.workflow.app);
         return {
           status: JOB_STATUS.RESOLVED,
           result: responseSuccess(response, config.onlyData),
@@ -131,7 +176,7 @@ export default class extends Instruction {
     });
 
     // eslint-disable-next-line promise/catch-or-return
-    request(config)
+    request(config, this.workflow.app)
       .then((response) => {
         processor.logger.info(`request (#${node.id}) response success, status: ${response.status}`);
 
@@ -181,7 +226,7 @@ export default class extends Instruction {
 
   async test(config: RequestInstructionConfig) {
     try {
-      const response = await request(config);
+      const response = await request(config, this.workflow.app);
       return {
         status: JOB_STATUS.RESOLVED,
         result: responseSuccess(response, config.onlyData),
