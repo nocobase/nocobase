@@ -108,7 +108,9 @@ export const AddFieldButton: React.FC<AddFieldButtonProps> = ({
         {
           key: 'addField',
           label: 'Collection fields',
-          type: 'group',
+          type: 'group' as const,
+          searchable: true,
+          searchPlaceholder: 'Search fields',
           children: allFields,
         },
       ];

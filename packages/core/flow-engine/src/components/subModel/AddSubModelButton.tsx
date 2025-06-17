@@ -102,13 +102,21 @@ export function mergeSubModelItems(
 export interface SubModelItem {
   key?: string;
   label?: string;
-  type?: 'group' | 'divider'; // 支持 group 类型
+  type?: 'group' | 'divider';
   disabled?: boolean;
   icon?: React.ReactNode;
   children?: SubModelItemsType;
   createModelOptions?:
     | { use: string; stepParams?: Record<string, any> }
     | ((item: SubModelItem) => { use: string; stepParams?: Record<string, any> });
+  /**
+   * 是否在 group 内启用搜索功能（仅对 group 类型有效）
+   */
+  searchable?: boolean;
+  /**
+   * 搜索占位符文本（仅对启用搜索的 group 有效）
+   */
+  searchPlaceholder?: string;
 }
 
 interface AddSubModelButtonProps {

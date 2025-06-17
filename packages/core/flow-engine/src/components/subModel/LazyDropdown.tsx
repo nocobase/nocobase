@@ -7,15 +7,17 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Dropdown, DropdownProps, Menu, Spin } from 'antd';
+import { Dropdown, DropdownProps, Input, Menu, Spin, Empty } from 'antd';
 import React, { useEffect, useState } from 'react';
 
 // 菜单项类型定义
 export type Item = {
   key?: string;
-  type?: 'group' | 'divider'; // 支持 group 类型
+  type?: 'group' | 'divider';
   label?: React.ReactNode;
   children?: Item[] | (() => Item[] | Promise<Item[]>);
+  searchable?: boolean; // group 是否支持搜索
+  searchPlaceholder?: string; // 搜索占位符
   [key: string]: any; // 允许其他属性
 };
 
@@ -32,6 +34,7 @@ const LazyDropdown: React.FC<Omit<DropdownProps, 'menu'> & { menu: LazyDropdownM
   const [openKeys, setOpenKeys] = useState<Set<string>>(new Set());
   const [rootItems, setRootItems] = useState<Item[]>([]);
   const [rootLoading, setRootLoading] = useState(false);
+  const [searchValues, setSearchValues] = useState<Record<string, string>>({});
 
   const getKeyPath = (path: string[], key: string) => [...path, key].join('/');
 
@@ -138,11 +141,81 @@ const LazyDropdown: React.FC<Omit<DropdownProps, 'menu'> & { menu: LazyDropdownM
       }
 
       if (isGroup) {
+        let groupChildren = children ? resolveItems(children, [...path, item.key]) : [];
+
+        // 如果 group 启用了搜索功能，在 children 前面添加搜索框
+        if (item.searchable && children) {
+          const searchKey = keyPath;
+          const currentSearchValue = searchValues[searchKey] || '';
+
+          // 过滤原始 children
+          const filteredChildren = currentSearchValue
+            ? children.filter(
+                (child) => child.label?.toString().toLowerCase().includes(currentSearchValue.toLowerCase()),
+              )
+            : children;
+
+          // 重新解析过滤后的 children
+          const resolvedFilteredChildren = resolveItems(filteredChildren, [...path, item.key]);
+
+          // 创建搜索框项
+          const searchItem = {
+            key: `${item.key}-search`,
+            label: (
+              <div>
+                <Input
+                  variant="borderless"
+                  allowClear
+                  placeholder={item.searchPlaceholder || 'search'}
+                  value={currentSearchValue}
+                  onChange={(e) => {
+                    e.stopPropagation();
+                    setSearchValues((prev) => ({
+                      ...prev,
+                      [searchKey]: e.target.value,
+                    }));
+                  }}
+                  onClick={(e) => e.stopPropagation()}
+                  size="small"
+                  style={{
+                    width: '100%',
+                    paddingLeft: 0,
+                    paddingRight: 0,
+                  }}
+                />
+              </div>
+            ),
+            disabled: true, // 搜索项不可点击
+          };
+
+          // 创建分割线项
+          const dividerItem = {
+            key: `${item.key}-search-divider`,
+            type: 'divider' as const,
+          };
+
+          // 如果搜索后没有结果，显示 Empty
+          if (currentSearchValue && resolvedFilteredChildren.length === 0) {
+            const emptyItem = {
+              key: `${item.key}-empty`,
+              label: (
+                <div style={{ padding: '16px', textAlign: 'center' as const }}>
+                  <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="No Data" style={{ margin: 0 }} />
+                </div>
+              ),
+              disabled: true,
+            };
+            groupChildren = [searchItem, dividerItem, emptyItem];
+          } else {
+            groupChildren = [searchItem, dividerItem, ...resolvedFilteredChildren];
+          }
+        }
+
         return {
           type: 'group',
           key: item.key,
           label: item.label,
-          children: children ? resolveItems(children, [...path, item.key]) : [],
+          children: groupChildren,
         };
       }
 
