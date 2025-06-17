@@ -121,7 +121,11 @@ export const transformToFilter = (
 
       const collectionField = getCollectionJoinField(`${collectionName}.${path}`);
 
-      if (collectionField?.type === 'date') {
+      if (
+        ['datetime', 'datetimeNoTz', 'date', 'unixTimestamp', 'createdAt', 'updatedAt'].includes(
+          collectionField?.interface,
+        )
+      ) {
         return true;
       }
 
