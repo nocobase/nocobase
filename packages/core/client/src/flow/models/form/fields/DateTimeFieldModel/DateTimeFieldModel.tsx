@@ -173,7 +173,6 @@ DateTimeFieldModel.registerFlow({
       },
       handler(ctx, params) {
         ctx.model.flowEngine.flowSettings.registerScopes({ getPickerFormat });
-        console.log({ ...params });
         ctx.model.setComponentProps({ ...params });
       },
     },

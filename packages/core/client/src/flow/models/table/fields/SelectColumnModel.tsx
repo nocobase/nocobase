@@ -13,14 +13,15 @@ import { TableColumnModel } from '../../TableColumnModel';
 import { getCurrentOptions } from '../utils/utils';
 
 export class SelectTableColumnModel extends TableColumnModel {
-  declare options;
-  declare fieldNames: { label: string; value: string; color?: string; icon?: any };
+  public static readonly supportedFieldInterfaces = ['select'];
+  dataSource;
+  fieldNames: { label: string; value: string; color?: string; icon?: any };
 
-  setOptions(options) {
-    this.options = options;
+  setDataSource(dataSource) {
+    this.dataSource = dataSource;
   }
-  getOptions() {
-    return this.options;
+  getDataSource() {
+    return this.dataSource;
   }
   setFieldNames(fieldNames) {
     this.fieldNames = fieldNames;
@@ -30,7 +31,7 @@ export class SelectTableColumnModel extends TableColumnModel {
   }
   render() {
     return (value, record, index) => {
-      const currentOptions = getCurrentOptions(value, this.options, this.fieldNames);
+      const currentOptions = getCurrentOptions(value, this.dataSource, this.fieldNames);
 
       const content = currentOptions.map((option, index) => (
         <Tag key={index} color={option[this.fieldNames.color]} icon={option.icon}>
@@ -54,7 +55,7 @@ SelectTableColumnModel.registerFlow({
   steps: {
     step1: {
       handler(ctx, params) {
-        ctx.model.setOptions(ctx.model.field.enum);
+        ctx.model.setDataSource(ctx.model.field.enum);
         ctx.model.setFieldNames({
           label: 'label',
           value: 'value',
