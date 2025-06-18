@@ -24,7 +24,7 @@ type S = {
 export class TableModel extends BlockFlowModel<S> {
   collection: Collection;
   resource: MultiRecordResource;
-  selectedRows = observable.shallow([]);
+  selectedRows = observable.ref([]);
 
   getColumns() {
     return this.mapSubModels('columns', (column) => {
@@ -78,9 +78,9 @@ export class TableModel extends BlockFlowModel<S> {
           rowSelection={{
             type: 'checkbox',
             onChange: (_, selectedRows) => {
-              this.selectedRows.push(...selectedRows);
+              this.selectedRows.value = selectedRows;
             },
-            selectedRowKeys: this.selectedRows.map((row) => row.id),
+            selectedRowKeys: this.selectedRows.value.map((row) => row.id),
           }}
           dataSource={this.resource.getData()}
           columns={this.getColumns()}
