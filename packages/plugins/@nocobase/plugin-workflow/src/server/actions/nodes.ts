@@ -130,7 +130,7 @@ export async function destroy(context: Context, next) {
     fields: [...fields, 'workflowId'],
     appends: ['upstream', 'downstream', 'workflow.versionStats.executed'],
   });
-  if (instance.workflow.versionStats.executed) {
+  if (instance.workflow.versionStats.executed > 0) {
     context.throw(400, 'Nodes in executed workflow could not be deleted');
   }
 
@@ -204,7 +204,7 @@ export async function update(context: Context, next) {
       appends: ['workflow.versionStats.executed'],
       transaction,
     });
-    if (workflow.versionStats.executed) {
+    if (workflow.versionStats.executed > 0) {
       context.throw(400, 'Nodes in executed workflow could not be reconfigured');
     }
 

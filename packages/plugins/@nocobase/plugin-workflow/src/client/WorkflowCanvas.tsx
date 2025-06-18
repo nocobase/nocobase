@@ -463,8 +463,8 @@ export function WorkflowCanvas() {
                   key: `${item.id}`,
                   icon: item.current ? <RightOutlined /> : null,
                   className: cx({
-                    executed: item.versionStats.executed,
-                    unexecuted: !item.versionStats.executed,
+                    executed: item.versionStats.executed > 0,
+                    unexecuted: item.versionStats.executed == 0,
                     enabled: item.enabled,
                   }),
                   label: (

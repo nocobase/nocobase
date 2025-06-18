@@ -527,7 +527,7 @@ export function NodeDefaultView(props) {
     const values = cloneDeep(data.config);
     return createForm({
       initialValues: values,
-      disabled: executed,
+      disabled: Boolean(executed),
     });
   }, [data, workflow]);
 
@@ -621,7 +621,7 @@ export function NodeDefaultView(props) {
           </div>
         </div>
         <Input.TextArea
-          disabled={executed}
+          disabled={Boolean(executed)}
           value={editingTitle}
           onChange={(ev) => setEditingTitle(ev.target.value)}
           onBlur={(ev) => onChangeTitle(ev.target.value)}
