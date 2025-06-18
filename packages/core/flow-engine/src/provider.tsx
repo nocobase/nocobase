@@ -7,8 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { createContext, useContext } from 'react';
+import { App } from 'antd';
+import React, { createContext, useContext, useEffect } from 'react';
 import { FlowEngine } from './flowEngine';
+import useDrawer from './useDrawer';
 
 interface FlowEngineProviderProps {
   engine: FlowEngine;
@@ -19,7 +21,30 @@ const FlowEngineContext = createContext<FlowEngine | null>(null);
 
 export const FlowEngineProvider: React.FC<FlowEngineProviderProps> = (props) => {
   const { engine, children } = props;
+  if (!engine) {
+    throw new Error('FlowEngineProvider must be supplied with an engine.');
+  }
   return <FlowEngineContext.Provider value={engine}>{children}</FlowEngineContext.Provider>;
+};
+
+export const FlowEngineGlobalsContextProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { modal, message, notification } = App.useApp();
+  const [drawer, contextHolder] = useDrawer();
+  const engine = useFlowEngine();
+
+  useEffect(() => {
+    engine.context['drawer'] = drawer;
+    engine.context['modal'] = modal;
+    engine.context['message'] = message;
+    engine.context['notification'] = notification;
+  }, [engine, drawer, modal, message, notification]);
+
+  return (
+    <>
+      {children}
+      {contextHolder as any}
+    </>
+  );
 };
 
 export const useFlowEngine = (): FlowEngine => {

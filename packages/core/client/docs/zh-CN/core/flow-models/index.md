@@ -20,6 +20,10 @@
 
 <code src="./demos/register-flow.tsx"></code>
 
+## 动态默认配置参数
+
+<code src="./demos/dynamic-default-params.tsx"></code>
+
 ## table block
 
 <code src="./demos/table-block.tsx"></code>

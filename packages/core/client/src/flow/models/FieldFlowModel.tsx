@@ -9,7 +9,8 @@
 
 import { CollectionField, FlowModel } from '@nocobase/flow-engine';
 
-type SupportedFieldInterfaces = string[] | '*' | null;
+// null 表示不支持任何字段接口，* 表示支持所有字段接口
+export type SupportedFieldInterfaces = string[] | '*' | null;
 
 export class FieldFlowModel extends FlowModel {
   field: CollectionField;

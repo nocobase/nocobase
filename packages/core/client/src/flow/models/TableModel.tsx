@@ -7,21 +7,20 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { SettingOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
 import {
   AddActionModel,
-  AddFieldModel,
+  AddFieldButton,
   Collection,
   FlowModelRenderer,
   MultiRecordResource,
 } from '@nocobase/flow-engine';
-import { Card, Table } from 'antd';
+import { Button, Card, Space, Table } from 'antd';
 import React from 'react';
+import { ActionModel } from './ActionModel';
 import { BlockFlowModel } from './BlockFlowModel';
 import { TableColumnModel } from './TableColumnModel';
-import { ActionModel } from './ActionModel';
-import { SettingOutlined } from '@ant-design/icons';
-import { observable } from '@formily/reactive';
 
 type S = {
   subModels: {
@@ -33,7 +32,6 @@ type S = {
 export class TableModel extends BlockFlowModel<S> {
   collection: Collection;
   resource: MultiRecordResource;
-  selectedRows = observable.shallow([]);
 
   getColumns() {
     return this.mapSubModels('columns', (column) => {
@@ -42,85 +40,67 @@ export class TableModel extends BlockFlowModel<S> {
       key: 'addColumn',
       fixed: 'right',
       title: (
-        <AddFieldModel
+        <AddFieldButton
           collection={this.collection}
           model={this}
           subModelKey={'columns'}
+          subModelBaseClass="TableColumnModel"
+          buildCreateModelOptions={(field, fieldClass) => ({
+            use: fieldClass.name,
+            stepParams: {
+              default: {
+                step1: {
+                  fieldPath: field.fullpath,
+                },
+              },
+            },
+          })}
+          appendItems={[
+            {
+              key: 'actions',
+              label: 'Actions column',
+              createModelOptions: {
+                use: 'TableActionsColumnModel',
+              },
+            },
+          ]}
           onModelAdded={async (model: TableColumnModel) => {
             await model.applyAutoFlows();
-          }}
-          items={async () => {
-            return [
-              {
-                key: 'addField',
-                label: 'Collection fields',
-                type: 'group',
-                children: async () => {
-                  return this.collection.getFields().map((field) => {
-                    return {
-                      key: field.name,
-                      label: field.title,
-                      createModelOptions: {
-                        use: 'TableColumnModel',
-                        stepParams: {
-                          default: {
-                            step1: {
-                              fieldPath: field.fullpath,
-                            },
-                          },
-                        },
-                      },
-                    };
-                  });
-                },
-              },
-              {
-                type: 'divider',
-              },
-              {
-                key: 'actions',
-                label: 'Actions column',
-                createModelOptions: {
-                  use: 'TableActionsColumnModel',
-                },
-              },
-            ];
           }}
         />
       ),
     } as any);
   }
 
-  renderActions() {
-    return this.mapSubModels('actions', (action) => {
-      return <FlowModelRenderer key={action.uid} model={action} showFlowSettings />;
-    });
-  }
-
-  setSelectedRows(rows) {
-    this.selectedRows.length = 0;
-    this.selectedRows.push(...rows);
-  }
-
   render() {
     return (
       <Card>
-        {this.renderActions()}
-        <AddActionModel
-          model={this}
-          subModelKey={'actions'}
-          items={() => [
-            {
-              key: 'action1',
-              label: 'Action 1',
-              createModelOptions: {
-                use: 'BulkDeleteActionModel',
+        <Space style={{ marginBottom: 16 }}>
+          {this.mapSubModels('actions', (action) => (
+            <FlowModelRenderer
+              model={action}
+              showFlowSettings
+              extraContext={{ currentModel: this, currentResource: this.resource }}
+            />
+          ))}
+          <AddActionModel
+            model={this}
+            subModelKey={'actions'}
+            items={() => [
+              {
+                key: 'delete',
+                label: 'Delete',
+                createModelOptions: {
+                  use: 'BulkDeleteActionModel',
+                },
               },
-            },
-          ]}
-        >
-          <SettingOutlined />
-        </AddActionModel>
+            ]}
+          >
+            <Button type="primary" icon={<SettingOutlined />}>
+              Configure actions
+            </Button>
+          </AddActionModel>
+        </Space>
         <Table
           className={css`
             td {
@@ -128,6 +108,13 @@ export class TableModel extends BlockFlowModel<S> {
             }
           `}
           rowKey="id"
+          rowSelection={{
+            type: 'checkbox',
+            onChange: (_, selectedRows) => {
+              this.resource.setSelectedRows(selectedRows);
+            },
+            selectedRowKeys: this.resource.getSelectedRows().map((row) => row.id),
+          }}
           dataSource={this.resource.getData()}
           columns={this.getColumns()}
           pagination={{
@@ -139,11 +126,6 @@ export class TableModel extends BlockFlowModel<S> {
             this.resource.setPage(pagination.current);
             this.resource.setPageSize(pagination.pageSize);
             this.resource.refresh();
-          }}
-          rowSelection={{
-            onChange: (selectedRowKeys, selectedRows) => {
-              this.setSelectedRows(selectedRows);
-            },
           }}
         />
       </Card>

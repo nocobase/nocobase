@@ -7,14 +7,16 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import type { ButtonType } from 'antd/es/button';
 import React from 'react';
 import { ActionModel } from './ActionModel';
 
-export class BulkDeleteActionModel extends ActionModel {
-  title = 'Delete';
+export class LinkActionModel extends ActionModel {
+  title = 'Link';
+  type: ButtonType = 'link';
 }
 
-BulkDeleteActionModel.registerFlow({
+LinkActionModel.registerFlow({
   key: 'event1',
   on: {
     eventName: 'click',
@@ -23,8 +25,8 @@ BulkDeleteActionModel.registerFlow({
     step1: {
       handler(ctx, params) {
         ctx.globals.modal.confirm({
-          title: `Selected Rows`,
-          content: <pre>{JSON.stringify(ctx.extra.currentResource?.getSelectedRows(), null, 2)}</pre>,
+          title: `${ctx.extra.currentRecord?.id}`,
+          content: 'Are you sure you want to perform this action?',
         });
       },
     },

@@ -1,8 +1,7 @@
 import { Application, Plugin } from '@nocobase/client';
-import { FlowModel, FlowModelRenderer } from '@nocobase/flow-engine';
-import { Card } from 'antd';
+import { FlowModel, FlowModelRenderer, AddSubModelButton } from '@nocobase/flow-engine';
+import { Button, Card } from 'antd';
 import React from 'react';
-import { AddSubModelButton } from './AddSubModelButton';
 
 class SubModel1 extends FlowModel {
   render() {
@@ -124,7 +123,7 @@ class MyModel extends FlowModel {
             ];
           }}
         >
-          添加子模型
+          <Button>添加子模型</Button>
         </AddSubModelButton>
       </div>
     );

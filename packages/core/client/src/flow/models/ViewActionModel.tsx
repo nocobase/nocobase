@@ -7,14 +7,17 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import type { ButtonType } from 'antd/es/button';
 import React from 'react';
+import { FlowPageComponent } from '../FlowPage';
 import { ActionModel } from './ActionModel';
 
-export class BulkDeleteActionModel extends ActionModel {
-  title = 'Delete';
+export class ViewActionModel extends ActionModel {
+  title = 'View';
+  type: ButtonType = 'link';
 }
 
-BulkDeleteActionModel.registerFlow({
+ViewActionModel.registerFlow({
   key: 'event1',
   on: {
     eventName: 'click',
@@ -22,9 +25,14 @@ BulkDeleteActionModel.registerFlow({
   steps: {
     step1: {
       handler(ctx, params) {
-        ctx.globals.modal.confirm({
-          title: `Selected Rows`,
-          content: <pre>{JSON.stringify(ctx.extra.currentResource?.getSelectedRows(), null, 2)}</pre>,
+        ctx.globals.drawer.open({
+          title: '命令式 Drawer',
+          width: 800,
+          content: (
+            <div>
+              <FlowPageComponent uid={`${ctx.model.uid}-drawer`} />
+            </div>
+          ),
         });
       },
     },

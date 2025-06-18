@@ -14,6 +14,7 @@ import { uid } from 'uid/secure';
 import { openRequiredParamsStepFormDialog as openRequiredParamsStepFormDialogFn } from '../components/settings/wrappers/contextual/StepRequiredSettingsDialog';
 import { openStepSettingsDialog as openStepSettingsDialogFn } from '../components/settings/wrappers/contextual/StepSettingsDialog';
 import { FlowEngine } from '../flowEngine';
+import { resolveDefaultParams } from '../utils';
 import type {
   ActionStepDefinition,
   ArrayElementType,
@@ -392,11 +393,14 @@ export class FlowModel<Structure extends { parent?: any; subModels?: any } = Def
             continue;
           }
           handler = actionDefinition.handler;
-          combinedParams = { ...actionDefinition.defaultParams, ...actionStep.defaultParams };
+          const actionDefaultParams = await resolveDefaultParams(actionDefinition.defaultParams, flowContext);
+          const stepDefaultParams = await resolveDefaultParams(actionStep.defaultParams, flowContext);
+          combinedParams = { ...actionDefaultParams, ...stepDefaultParams };
         } else if ((step as InlineStepDefinition).handler) {
           const inlineStep = step as InlineStepDefinition;
           handler = inlineStep.handler;
-          combinedParams = { ...inlineStep.defaultParams };
+          const inlineDefaultParams = await resolveDefaultParams(inlineStep.defaultParams, flowContext);
+          combinedParams = { ...inlineDefaultParams };
         } else {
           console.error(
             `BaseModel.applyFlow: Step '${stepKey}' in flow '${flowKey}' has neither 'use' nor 'handler'. Skipping.`,

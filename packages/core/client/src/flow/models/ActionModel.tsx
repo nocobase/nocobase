@@ -8,97 +8,57 @@
  */
 
 import { FlowModel } from '@nocobase/flow-engine';
-import { Button, ButtonProps } from 'antd';
+import { Button } from 'antd';
+import type { ButtonType } from 'antd/es/button';
 import React from 'react';
 
-export class ActionModel extends FlowModel<{ subModels: { view?: FlowModel } }> {
-  declare props: ButtonProps & { title?: string };
+export class ActionModel extends FlowModel {
+  set onClick(fn) {
+    this.setProps('onClick', fn);
+  }
+
+  title = 'Action';
+
+  type: ButtonType = 'default';
 
   render() {
-    const props = this.getProps();
     return (
-      <Button {...props} onClick={(event) => this.dispatchEvent('onClick', { event })}>
-        {props.title}
+      <Button type={this.type} {...this.props}>
+        {this.props.children || this.title}
       </Button>
     );
   }
 }
 
 ActionModel.registerFlow({
-  key: 'defaultProps',
+  key: 'default',
   auto: true,
-  title: '基础配置',
   steps: {
-    editButton: {
-      title: '编辑按钮',
+    step1: {
       uiSchema: {
         title: {
           type: 'string',
           title: '标题',
           'x-decorator': 'FormItem',
           'x-component': 'Input',
-        },
-        icon: {
-          type: 'string',
-          title: '图标',
-          'x-decorator': 'FormItem',
-          'x-component': 'Select',
-          enum: [
-            { label: '搜索', value: 'SearchOutlined' },
-            { label: '添加', value: 'PlusOutlined' },
-            { label: '删除', value: 'DeleteOutlined' },
-            { label: '编辑', value: 'EditOutlined' },
-            { label: '设置', value: 'SettingOutlined' },
-          ],
-        },
-        type: {
-          type: 'string',
-          title: '颜色',
-          'x-decorator': 'FormItem',
-          'x-component': 'Select',
-          enum: [
-            { label: '主要', value: 'primary' },
-            { label: '次要', value: 'default' },
-            { label: '危险', value: 'danger' },
-            { label: '虚线', value: 'dashed' },
-            { label: '链接', value: 'link' },
-            { label: '文本', value: 'text' },
-          ],
+          'x-component-props': {
+            placeholder: '请输入标题',
+          },
         },
       },
-      handler(ctx, params) {
-        ctx.model.setProps(params);
+      defaultParams(ctx) {
+        return {
+          title: ctx.model.title,
+        };
       },
-    },
-    // linkageRules: {
-    //   title: '联动规则',
-    //   uiSchema: {},
-    //   handler(ctx, params) {
-    //     ctx.model.setProps(params);
-    //   },
-    // },
-  },
-});
-
-ActionModel.registerFlow({
-  key: 'defaultClickHandler',
-  on: {
-    eventName: 'onClick',
-  },
-  title: '点击事件',
-  steps: {
-    openMode: {
-      title: '打开方式',
-      uiSchema: {},
       handler(ctx, params) {
-        ctx.model.setProps(params);
-      },
-    },
-    popupSize: {
-      title: '弹窗尺寸',
-      uiSchema: {},
-      handler(ctx, params) {
-        ctx.model.setProps(params);
+        ctx.model.setProps('children', params.title);
+        ctx.model.onClick = (e) => {
+          ctx.model.dispatchEvent('click', {
+            ...ctx.extra,
+            event: e,
+          });
+        };
       },
     },
   },
