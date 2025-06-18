@@ -14,7 +14,7 @@ import { uid } from 'uid/secure';
 import { openRequiredParamsStepFormDialog as openRequiredParamsStepFormDialogFn } from '../components/settings/wrappers/contextual/StepRequiredSettingsDialog';
 import { openStepSettingsDialog as openStepSettingsDialogFn } from '../components/settings/wrappers/contextual/StepSettingsDialog';
 import { FlowEngine } from '../flowEngine';
-import { resolveDefaultParams } from '../utils';
+import { FlowExitException, resolveDefaultParams } from '../utils';
 import type {
   ActionStepDefinition,
   ArrayElementType,
@@ -355,7 +355,6 @@ export class FlowModel<Structure extends { parent?: any; subModels?: any } = Def
     }
 
     let lastResult: any;
-    let exited = false;
     const stepResults: Record<string, any> = {};
 
     // Create a new FlowContext instance for this flow execution
@@ -368,8 +367,7 @@ export class FlowModel<Structure extends { parent?: any; subModels?: any } = Def
     const globalContexts = currentFlowEngine.getContext() || {};
     const flowContext: FlowContext<this> = {
       exit: () => {
-        exited = true;
-        console.log(`Flow '${flowKey}' on model '${this.uid}' exited via ctx.exit().`);
+        throw new FlowExitException(flowKey, this.uid);
       },
       logger: {
         info: createLogger('INFO'),
@@ -388,8 +386,6 @@ export class FlowModel<Structure extends { parent?: any; subModels?: any } = Def
     for (const stepKey in flow.steps) {
       if (Object.prototype.hasOwnProperty.call(flow.steps, stepKey)) {
         const step: StepDefinition = flow.steps[stepKey];
-        if (exited) break;
-
         let handler: ((ctx: FlowContext<this>, params: any) => Promise<any> | any) | undefined;
         let combinedParams: Record<string, any> = {};
         let actionDefinition;
@@ -435,12 +431,18 @@ export class FlowModel<Structure extends { parent?: any; subModels?: any } = Def
           // Store step result
           stepResults[stepKey] = lastResult;
         } catch (error) {
+          // 检查是否是通过 ctx.exit() 正常退出
+          if (error instanceof FlowExitException) {
+            console.log(`[FlowEngine] ${error.message}`);
+            return Promise.resolve(stepResults);
+          }
+
           console.error(`BaseModel.applyFlow: Error executing step '${stepKey}' in flow '${flowKey}':`, error);
           return Promise.reject(error);
         }
       }
     }
-    return Promise.resolve(lastResult);
+    return Promise.resolve(stepResults);
   }
 
   dispatchEvent(eventName: string, extra?: FlowExtraContext): void {
