@@ -23,11 +23,7 @@ export class ActionModel extends FlowModel {
   render() {
     const props = { ...this.defaultProps, ...this.props };
 
-    return (
-      <Button {...props} onClick={() => this.dispatchEvent('click')}>
-        {props.children || props.title}
-      </Button>
-    );
+    return <Button {...props}>{props.children || props.title}</Button>;
   }
 }
 
@@ -54,6 +50,12 @@ ActionModel.registerFlow({
       },
       handler(ctx, params) {
         ctx.model.setProps('children', params.title);
+        ctx.model.setProps('onClick', (event) => {
+          ctx.model.dispatchEvent('click', {
+            ...ctx.extra,
+            event,
+          });
+        });
       },
     },
   },
