@@ -126,10 +126,13 @@ DateTimeFieldModel.registerFlow({
           'x-component': 'Checkbox',
           'x-content': '{{t("Show time")}}',
           'x-reactions': [
-            (field) => {
-              const { timeFormat, picker } = field.form.values || {};
-              field.display = timeFormat ? 'visible' : 'none';
-              field.hidden = picker !== 'date';
+            {
+              dependencies: ['picker'],
+              fulfill: {
+                state: {
+                  hidden: `{{ $form.values.picker !== 'date' || collectionField.type!== 'date' }}`,
+                },
+              },
             },
           ],
         },
@@ -155,6 +158,12 @@ DateTimeFieldModel.registerFlow({
             formats: ['hh:mm:ss a', 'HH:mm:ss'],
             timeFormat: true,
           },
+          'x-reactions': [
+            (field) => {
+              const { showTime } = field.form.values || {};
+              field.hidden = !showTime;
+            },
+          ],
           enum: [
             {
               label: DateFormatCom({ format: 'hh:mm:ss a' }),
@@ -171,9 +180,22 @@ DateTimeFieldModel.registerFlow({
           ],
         },
       },
+
       handler(ctx, params) {
-        ctx.model.flowEngine.flowSettings.registerScopes({ getPickerFormat });
+        ctx.model.flowEngine.flowSettings.registerScopes({
+          getPickerFormat,
+          collectionField: ctx.model.collectionField,
+        });
         ctx.model.setComponentProps({ ...params });
+      },
+      defaultParams: (ctx) => {
+        const { showTime, dateFormat, timeFormat, picker } = ctx.model.field.componentProps;
+        return {
+          picker: picker || 'date',
+          dateFormat: dateFormat || 'YYYY-MM-DD',
+          timeFormat: timeFormat,
+          showTime,
+        };
       },
     },
   },

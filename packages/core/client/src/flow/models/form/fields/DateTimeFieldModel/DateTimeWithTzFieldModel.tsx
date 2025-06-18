@@ -16,7 +16,7 @@ export class DateTimeWithTzFieldModel extends DateTimeFieldModel {
     super.setComponentProps({
       ...componentProps,
       onChange: (value) => {
-        const iso = value ? dayjs(value).toISOString() : undefined;
+        const iso = value ? dayjs(value, this.field.componentProps.format).toISOString() : undefined;
         this.field.setValue(iso);
       },
     });
