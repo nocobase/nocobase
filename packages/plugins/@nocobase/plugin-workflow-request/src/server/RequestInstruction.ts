@@ -27,19 +27,19 @@ export type RequestInstructionConfig = Pick<AxiosRequestConfig, 'url' | 'method'
   onlyData?: boolean;
 };
 
-interface MultipartTextRecord {
+interface MultipartTextField {
   valueType: 'text';
   name: string;
   text: string;
 }
 
-interface MultipartFileRecord {
+interface MultipartFileField {
   valueType: 'file';
   name: string;
   file: AttachmentModel;
 }
 
-async function request(config: any, app: Application) {
+async function request(config: RequestInstructionConfig, app: Application) {
   // default headers
   const { url, method = 'POST', contentType = 'application/json', data, timeout = 5000 } = config;
   const headers = (config.headers ?? []).reduce((result, header) => {
@@ -68,7 +68,7 @@ async function request(config: any, app: Application) {
         data.filter(({ name, value }) => name && typeof value !== 'undefined').map(({ name, value }) => [name, value]),
       ).toString();
     },
-    async 'multipart/form-data'(data: (MultipartTextRecord | MultipartFileRecord)[]) {
+    async 'multipart/form-data'(data: (MultipartTextField | MultipartFileField)[]) {
       const form = new FormData();
 
       for (const record of data) {
