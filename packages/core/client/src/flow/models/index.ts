@@ -8,6 +8,7 @@
  */
 
 export * from './ActionModel';
+export * from './BulkDeleteActionModel';
 export * from './BlockFlowModel';
 export * from './BlockGridFlowModel';
 export * from './CalendarBlockFlowModel';
