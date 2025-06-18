@@ -107,20 +107,22 @@ FormModel.registerFlow({
       },
       async handler(ctx, params) {
         ctx.model.form = ctx.extra.form || createForm();
-        if (ctx.model.collection) {
-          return;
+        if (!ctx.model.collection) {
+          ctx.model.collection = ctx.globals.dataSourceManager.getCollection(
+            params.dataSourceKey,
+            params.collectionName,
+          );
+          const resource = new SingleRecordResource();
+          resource.setDataSourceKey(params.dataSourceKey);
+          resource.setResourceName(params.collectionName);
+          resource.setAPIClient(ctx.globals.api);
+          ctx.model.resource = resource;
         }
-        ctx.model.collection = ctx.globals.dataSourceManager.getCollection(params.dataSourceKey, params.collectionName);
-        const resource = new SingleRecordResource();
-        resource.setDataSourceKey(params.dataSourceKey);
-        resource.setResourceName(params.collectionName);
-        resource.setAPIClient(ctx.globals.api);
-        ctx.model.resource = resource;
         console.log('FormModel flow context', ctx.shared, ctx.model.getSharedContext());
         if (ctx.shared.currentRecord) {
-          resource.setFilterByTk(ctx.shared.currentRecord.id);
-          await resource.refresh();
-          ctx.model.form.setInitialValues(resource.getData());
+          ctx.model.resource.setFilterByTk(ctx.shared.currentRecord.id);
+          await ctx.model.resource.refresh();
+          ctx.model.form.setInitialValues(ctx.model.resource.getData());
         }
       },
     },
