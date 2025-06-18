@@ -23,3 +23,4 @@ export * from './NanoIDFieldModel';
 export * from './JsonFieldModel';
 export * from './CheckboxGroupField';
 export * from './MarkdownFieldModel';
+export * from './AssociationSelectFieldModel';
