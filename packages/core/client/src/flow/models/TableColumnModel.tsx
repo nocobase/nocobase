@@ -99,7 +99,9 @@ const Columns = observer<any>(({ record, model }) => {
     <Space>
       {model.mapSubModels('actions', (action: ActionModel) => {
         const fork = action.createFork({}, `${record.id}`);
-        return <FlowModelRenderer showFlowSettings key={fork.uid} model={fork} extraContext={{ record }} />;
+        return (
+          <FlowModelRenderer showFlowSettings key={fork.uid} model={fork} extraContext={{ currentRecord: record }} />
+        );
       })}
     </Space>
   );

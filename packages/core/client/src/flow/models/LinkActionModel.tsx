@@ -25,7 +25,7 @@ LinkActionModel.registerFlow({
     step1: {
       handler(ctx, params) {
         ctx.globals.modal.confirm({
-          title: `${ctx.extra.record?.id}`,
+          title: `${ctx.extra.currentRecord?.id}`,
           content: 'Are you sure you want to perform this action?',
         });
       },

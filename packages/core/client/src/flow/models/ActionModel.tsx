@@ -46,13 +46,17 @@ ActionModel.registerFlow({
           },
         },
       },
+      defaultParams(ctx) {
+        return {
+          title: ctx.model.title,
+        };
+      },
       handler(ctx, params) {
         ctx.model.setProps('children', params.title);
         ctx.model.onClick = (e) => {
           ctx.model.dispatchEvent('click', {
-            event: e,
-            record: ctx.extra.record,
             ...ctx.extra,
+            event: e,
           });
         };
       },
