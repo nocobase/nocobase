@@ -11,6 +11,7 @@
     "directory": "packages/logger"
   },
   "dependencies": {
+    "@testing-library/react": "16.3.0",
     "chalk": "^4",
     "lodash": "^4.17.21",
     "triple-beam": "^1.4.1",

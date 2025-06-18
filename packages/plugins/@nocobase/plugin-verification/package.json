@@ -11,8 +11,8 @@
   "homepage.zh-CN": "https://docs-cn.nocobase.com/handbook/verification",
   "devDependencies": {
     "@alicloud/dysmsapi20170525": "2.0.17",
-    "@alicloud/openapi-client": "0.4.12",
-    "@alicloud/tea-util": "1.4.4",
+    "@alicloud/openapi-client": "0.4.14",
+    "@alicloud/tea-util": "1.4.10",
     "@formily/antd-v5": "1.x",
     "@formily/core": "2.x",
     "@formily/react": "2.x",

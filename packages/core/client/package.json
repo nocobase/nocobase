@@ -11,7 +11,7 @@
     "@ant-design/icons": "^5.6.1",
     "@ant-design/pro-layout": "^7.22.1",
     "@antv/g2plot": "^2.4.18",
-    "@budibase/handlebars-helpers": "0.14.0",
+    "@budibase/handlebars-helpers": "0.14.2",
     "@ctrl/tinycolor": "^3.6.0",
     "@dnd-kit/core": "^6.0.0",
     "@dnd-kit/sortable": "^7.0.0",
@@ -59,12 +59,12 @@
     "react-i18next": "^11.15.1",
     "react-iframe": "~1.8.5",
     "react-image-lightbox": "^5.1.4",
-    "react-intersection-observer": "9.14.0",
+    "react-intersection-observer": "9.16.0",
     "react-js-cron": "^3.1.0",
     "react-quill": "^2.0.0",
     "react-router-dom": "^6.11.2",
     "react-to-print": "^2.14.7",
-    "sanitize-html": "2.13.0",
+    "sanitize-html": "2.17.0",
     "use-deep-compare-effect": "^1.8.1"
   },
   "peerDependencies": {
@@ -74,11 +74,11 @@
   },
   "devDependencies": {
     "@testing-library/react": "^14.0.0",
-    "@types/markdown-it": "14.1.1",
+    "@types/markdown-it": "14.1.2",
     "@types/markdown-it-highlightjs": "3.3.1",
     "@types/react-big-calendar": "^1.6.4",
     "axios-mock-adapter": "^1.20.0",
-    "dumi": "2.2.14",
+    "dumi": "2.4.21",
     "dumi-theme-nocobase": "^0.2.28"
   }
 }

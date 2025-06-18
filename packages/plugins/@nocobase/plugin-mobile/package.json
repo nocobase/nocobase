@@ -29,7 +29,7 @@
     "antd": "5.x",
     "antd-mobile": "^5.38",
     "lodash": "4.x",
-    "re-resizable": "6.6.0",
+    "re-resizable": "6.11.2",
     "react-device-detect": "2.2.3",
     "react-i18next": "11.x"
   }
