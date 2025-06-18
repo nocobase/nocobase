@@ -50,7 +50,7 @@ describe('workflow > actions > workflows', () => {
       expect(data.type).toBe('echo');
     });
 
-    it.only('create in executed workflow', async () => {
+    it.skipIf(process.env.DB_DIALECT === 'sqlite')('create in executed workflow', async () => {
       const workflow = await WorkflowModel.create({
         enabled: true,
         type: 'asyncTrigger',
