@@ -13,6 +13,26 @@ import React from 'react';
 import { ActionStepDefinition } from '../../../../types';
 import { resolveDefaultParams } from '../../../../utils';
 
+/**
+ * 检查步骤是否已经有了所需的配置值
+ * @param uiSchema 步骤的 UI Schema
+ * @param currentParams 当前步骤的参数
+ * @returns 是否已经有了所需的配置值
+ */
+function hasRequiredParams(uiSchema: Record<string, any>, currentParams: Record<string, any>): boolean {
+  // 检查 uiSchema 中所有 required 为 true 的字段
+  for (const [fieldKey, fieldSchema] of Object.entries(uiSchema)) {
+    if (fieldSchema.required === true) {
+      // 如果字段是必需的，但当前参数中没有值或值为空
+      const value = currentParams[fieldKey];
+      if (value === undefined || value === null || value === '') {
+        return false;
+      }
+    }
+  }
+  return true;
+}
+
 const SchemaField = createSchemaField();
 
 /**
@@ -87,16 +107,25 @@ const openRequiredParamsStepFormDialog = async ({
                 }
               });
 
-              // 如果有可配置的UI Schema，添加到列表中
+              // 如果有可配置的UI Schema，检查是否已经有了所需的配置值
               if (Object.keys(mergedUiSchema).length > 0) {
-                requiredSteps.push({
-                  flowKey,
-                  stepKey,
-                  step,
-                  uiSchema: mergedUiSchema,
-                  title: step.title || stepKey,
-                  flowTitle: flow.title || flowKey,
-                });
+                // 获取当前步骤的参数
+                const currentStepParams = model.getStepParams(flowKey, stepKey) || {};
+
+                // 检查是否已经有了所需的配置值
+                const hasAllRequiredParams = hasRequiredParams(mergedUiSchema, currentStepParams);
+
+                // 只有当缺少必需参数时才添加到列表中
+                if (!hasAllRequiredParams) {
+                  requiredSteps.push({
+                    flowKey,
+                    stepKey,
+                    step,
+                    uiSchema: mergedUiSchema,
+                    title: step.title || stepKey,
+                    flowTitle: flow.title || flowKey,
+                  });
+                }
               }
             }
           }
@@ -121,10 +150,16 @@ const openRequiredParamsStepFormDialog = async ({
 
         for (const { flowKey, stepKey, step } of requiredSteps) {
           const stepParams = model.getStepParams(flowKey, stepKey) || {};
-
+          // 如果step使用了action，也获取action的defaultParams
+          let actionDefaultParams = {};
+          if (step.use) {
+            const action = model.flowEngine?.getAction?.(step.use);
+            actionDefaultParams = action.defaultParams || {};
+          }
           // 解析 defaultParams
+          const resolvedActionDefaultParams = await resolveDefaultParams(actionDefaultParams, paramsContext);
           const resolvedDefaultParams = await resolveDefaultParams(step.defaultParams, paramsContext);
-          const mergedParams = { ...resolvedDefaultParams, ...stepParams };
+          const mergedParams = { ...resolvedActionDefaultParams, ...resolvedDefaultParams, ...stepParams };
 
           if (Object.keys(mergedParams).length > 0) {
             if (!initialValues[flowKey]) {
@@ -137,7 +172,7 @@ const openRequiredParamsStepFormDialog = async ({
         // 构建分步表单的 Schema
         const stepPanes: Record<string, any> = {};
 
-        requiredSteps.forEach(({ flowKey, stepKey, uiSchema, title, flowTitle }, index) => {
+        requiredSteps.forEach(({ flowKey, stepKey, uiSchema, title, flowTitle }) => {
           const stepId = `${flowKey}_${stepKey}`;
 
           stepPanes[stepId] = {
@@ -261,7 +296,7 @@ const openRequiredParamsStepFormDialog = async ({
                             formStep.next();
                           }
                         })
-                        .catch((errors) => {
+                        .catch((errors: any) => {
                           console.log('表单验证失败:', errors);
                           // 可以在这里添加更详细的错误处理
                         });
@@ -310,7 +345,7 @@ const openRequiredParamsStepFormDialog = async ({
                                     formStep.next();
                                   }
                                 })
-                                .catch((errors) => {
+                                .catch((errors: any) => {
                                   console.log('表单验证失败:', errors);
                                   // 可以在这里添加更详细的错误处理
                                 });

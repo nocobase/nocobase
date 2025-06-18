@@ -55,6 +55,7 @@ const openStepSettingsDialog = async ({
   // 获取可配置的步骤信息
   const stepDefinition = step as ActionStepDefinition;
   const stepUiSchema = stepDefinition.uiSchema || {};
+  let actionDefaultParams = {};
 
   // 如果step使用了action，也获取action的uiSchema
   let actionUiSchema = {};
@@ -63,6 +64,7 @@ const openStepSettingsDialog = async ({
     if (action && action.uiSchema) {
       actionUiSchema = action.uiSchema;
     }
+    actionDefaultParams = action.defaultParams || {};
   }
 
   // 合并uiSchema，确保step的uiSchema优先级更高
@@ -93,7 +95,8 @@ const openStepSettingsDialog = async ({
 
   // 解析 defaultParams
   const resolvedDefaultParams = await resolveDefaultParams(stepDefinition.defaultParams, paramsContext);
-  const initialValues = { ...resolvedDefaultParams, ...stepParams };
+  const resolveActionDefaultParams = await resolveDefaultParams(actionDefaultParams, paramsContext);
+  const initialValues = { ...resolveActionDefaultParams, ...resolvedDefaultParams, ...stepParams };
 
   // 构建表单Schema
   const formSchema: ISchema = {

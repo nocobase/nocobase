@@ -7,19 +7,16 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import type { ButtonProps } from 'antd/es/button';
+import type { ButtonType } from 'antd/es/button';
 import React from 'react';
 import { FlowPageComponent } from '../FlowPage';
 import { ActionModel } from './ActionModel';
 
-export class ViewActionModel extends ActionModel {
-  defaultProps: ButtonProps = {
-    type: 'link',
-    title: 'View',
-  };
+export class AddNewActionModel extends ActionModel {
+  title = 'Add new';
 }
 
-ViewActionModel.registerFlow({
+AddNewActionModel.registerFlow({
   key: 'event1',
   on: {
     eventName: 'click',

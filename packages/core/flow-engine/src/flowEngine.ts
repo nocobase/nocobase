@@ -227,13 +227,13 @@ export class FlowEngine {
 
   async loadModel<T extends FlowModel = FlowModel>(uid: string): Promise<T | null> {
     if (!this.ensureModelRepository()) return;
-    const data = await this.modelRepository.load(uid);
+    const data = await this.modelRepository.findOne({ uid });
     return data?.uid ? this.createModel<T>(data as any) : null;
   }
 
   async loadOrCreateModel<T extends FlowModel = FlowModel>(options): Promise<T | null> {
     if (!this.ensureModelRepository()) return;
-    const data = await this.modelRepository.load(options.uid);
+    const data = await this.modelRepository.findOne(options);
     if (data?.uid) {
       return this.createModel<T>(data as any);
     } else {

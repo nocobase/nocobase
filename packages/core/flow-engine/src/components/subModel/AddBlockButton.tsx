@@ -8,10 +8,11 @@
  */
 
 import React, { useMemo } from 'react';
-import { AddSubModelButton } from './AddSubModelButton';
+import { AddSubModelButton, SubModelItemsType, mergeSubModelItems } from './AddSubModelButton';
 import { FlowModel } from '../../models/flowModel';
 import { ModelConstructor } from '../../types';
 import { Button } from 'antd';
+import { createBlockItems } from './blockItems';
 
 interface AddBlockButtonProps {
   /**
@@ -32,16 +33,43 @@ interface AddBlockButtonProps {
    * 按钮文本
    */
   children?: React.ReactNode;
+  /**
+   * 自定义 items（如果提供，将覆盖默认的数据源选择行为）
+   */
+  items?: SubModelItemsType;
+  /**
+   * 过滤区块类型的函数
+   */
+  filterBlocks?: (blockClass: ModelConstructor, className: string) => boolean;
+  /**
+   * 追加额外的菜单项到默认菜单中
+   */
+  appendItems?: SubModelItemsType;
 }
 
 /**
  * 专门用于添加块模型的按钮组件
  *
+ * 提供类似 page:addBlock 的区块类型 -> 数据源 -> 数据表的层级结构
+ *
  * @example
  * ```tsx
+ * // 基本用法
  * <AddBlockButton
  *   model={parentModel}
- *   subModelBaseClass={'FlowModel'}
+ *   subModelBaseClass={'BlockFlowModel'}
+ * />
+ *
+ * // 追加自定义菜单项
+ * <AddBlockButton
+ *   model={parentModel}
+ *   appendItems={[
+ *     {
+ *       key: 'customBlock',
+ *       label: 'Custom Block',
+ *       createModelOptions: { use: 'CustomBlock' }
+ *     }
+ *   ]}
  * />
  * ```
  */
@@ -51,31 +79,33 @@ export const AddBlockButton: React.FC<AddBlockButtonProps> = ({
   subModelKey = 'blocks',
   children = <Button>Add block</Button>,
   subModelType = 'array',
+  items,
+  filterBlocks,
+  appendItems,
   onModelAdded,
 }) => {
-  const items = useMemo(() => {
-    const blockClasses = model.flowEngine.filterModelClassByParent(subModelBaseClass);
-    const registeredBlocks = [];
-    for (const [className, ModelClass] of blockClasses) {
-      registeredBlocks.push({
-        key: className,
-        label: ModelClass.meta?.title || className,
-        icon: ModelClass.meta?.icon,
-        createModelOptions: {
-          ...ModelClass.meta?.defaultOptions,
-          use: className,
-        },
-      });
+  // 确定最终使用的 items
+  const finalItems = useMemo(() => {
+    if (items) {
+      // 如果明确提供了 items，直接使用
+      return items;
     }
-    return registeredBlocks;
-  }, [model, subModelBaseClass]);
+
+    // 创建区块菜单项，并合并追加的 items
+    const blockItems = createBlockItems(model, {
+      subModelBaseClass,
+      filterBlocks,
+    });
+
+    return mergeSubModelItems([blockItems, appendItems]);
+  }, [items, model, subModelBaseClass, filterBlocks, appendItems]);
 
   return (
     <AddSubModelButton
       model={model}
       subModelKey={subModelKey}
       subModelType={subModelType}
-      items={items}
+      items={finalItems}
       onModelAdded={onModelAdded}
     >
       {children}

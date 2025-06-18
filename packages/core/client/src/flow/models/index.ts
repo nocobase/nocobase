@@ -8,9 +8,10 @@
  */
 
 export * from './ActionModel';
-export * from './BulkDeleteActionModel';
+export * from './AddNewActionModel';
 export * from './BlockFlowModel';
 export * from './BlockGridFlowModel';
+export * from './BulkDeleteActionModel';
 export * from './CalendarBlockFlowModel';
 export * from './DeleteActionModel';
 export * from './FormFieldModel';

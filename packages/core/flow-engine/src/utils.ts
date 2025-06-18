@@ -102,3 +102,19 @@ export async function resolveDefaultParams<TModel extends FlowModel = FlowModel>
 
   return defaultParams;
 }
+
+/**
+ * 流程正常退出异常类
+ * 用于标识通过 ctx.exit() 正常退出的情况
+ */
+export class FlowExitException extends Error {
+  public readonly flowKey: string;
+  public readonly modelUid: string;
+
+  constructor(flowKey: string, modelUid: string, message?: string) {
+    super(message || `Flow '${flowKey}' on model '${modelUid}' exited via ctx.exit().`);
+    this.name = 'FlowExitException';
+    this.flowKey = flowKey;
+    this.modelUid = modelUid;
+  }
+}

@@ -5,21 +5,30 @@
  *
  * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
  * For more information, please refer to: https://www.nocobase.com/agreement.
- * 
+ */
+
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ *
  * @example
  * // 基本使用
  * <FlowModelRenderer model={myModel} />
- * 
+ *
  * // 显示设置但隐藏删除按钮
- * <FlowModelRenderer 
- *   model={myModel} 
+ * <FlowModelRenderer
+ *   model={myModel}
  *   showFlowSettings={true}
  *   hideRemoveInSettings={true}
  * />
- * 
+ *
  * // 使用右键菜单模式并隐藏删除按钮
- * <FlowModelRenderer 
- *   model={myModel} 
+ * <FlowModelRenderer
+ *   model={myModel}
  *   showFlowSettings={true}
  *   flowSettingsVariant="contextMenu"
  *   hideRemoveInSettings={true}
@@ -27,7 +36,7 @@
  */
 
 import { observer } from '@formily/reactive-react';
-import React, { Suspense } from 'react';
+import React, { Suspense, useEffect } from 'react';
 import { useApplyAutoFlows, useFlowExtraContext } from '../hooks';
 import { FlowModel } from '../models';
 import { FlowsContextMenu } from './settings/wrappers/contextual/FlowsContextMenu';
@@ -51,7 +60,10 @@ interface FlowModelRendererProps {
   skipApplyAutoFlows?: boolean; // 默认 false
 
   /** 当 skipApplyAutoFlows !== false 时，传递给 useApplyAutoFlows 的额外上下文 */
-  extraContext?: Record<string, any>
+  extraContext?: Record<string, any>;
+
+  /** Model 共享运行上下文，会沿着 model 树向下传递 */
+  sharedContext?: Record<string, any>;
 
   /** 是否为每个组件独立执行 auto flow，默认 false */
   independentAutoFlowExecution?: boolean; // 默认 false
@@ -66,20 +78,31 @@ const FlowModelRendererWithAutoFlows: React.FC<{
   flowSettingsVariant: string;
   hideRemoveInSettings: boolean;
   extraContext?: Record<string, any>;
+  sharedContext?: Record<string, any>;
   independentAutoFlowExecution?: boolean;
-}> = observer(({ model, showFlowSettings, flowSettingsVariant, hideRemoveInSettings, extraContext, independentAutoFlowExecution }) => {
-  const defaultExtraContext = useFlowExtraContext();
-  useApplyAutoFlows(model, extraContext || defaultExtraContext, !independentAutoFlowExecution);
+}> = observer(
+  ({
+    model,
+    showFlowSettings,
+    flowSettingsVariant,
+    hideRemoveInSettings,
+    extraContext,
+    sharedContext,
+    independentAutoFlowExecution,
+  }) => {
+    const defaultExtraContext = useFlowExtraContext();
+    useApplyAutoFlows(model, extraContext || defaultExtraContext, !independentAutoFlowExecution);
 
-  return (
-    <FlowModelRendererCore
-      model={model}
-      showFlowSettings={showFlowSettings}
-      flowSettingsVariant={flowSettingsVariant}
-      hideRemoveInSettings={hideRemoveInSettings}
-    />
-  );
-});
+    return (
+      <FlowModelRendererCore
+        model={model}
+        showFlowSettings={showFlowSettings}
+        flowSettingsVariant={flowSettingsVariant}
+        hideRemoveInSettings={hideRemoveInSettings}
+      />
+    );
+  },
+);
 
 /**
  * 内部组件：不带 useApplyAutoFlows 的渲染器
@@ -89,7 +112,8 @@ const FlowModelRendererWithoutAutoFlows: React.FC<{
   showFlowSettings: boolean;
   flowSettingsVariant: string;
   hideRemoveInSettings: boolean;
-}> = observer(({ model, showFlowSettings, flowSettingsVariant, hideRemoveInSettings }) => {
+  sharedContext?: Record<string, any>;
+}> = observer(({ model, showFlowSettings, flowSettingsVariant, hideRemoveInSettings, sharedContext }) => {
   return (
     <FlowModelRendererCore
       model={model}
@@ -120,10 +144,18 @@ const FlowModelRendererCore: React.FC<{
   // 根据 flowSettingsVariant 包装相应的设置组件
   switch (flowSettingsVariant) {
     case 'dropdown':
-      return <FlowsFloatContextMenu model={model} showDeleteButton={!hideRemoveInSettings}>{modelContent}</FlowsFloatContextMenu>;
+      return (
+        <FlowsFloatContextMenu model={model} showDeleteButton={!hideRemoveInSettings}>
+          {modelContent}
+        </FlowsFloatContextMenu>
+      );
 
     case 'contextMenu':
-      return <FlowsContextMenu model={model} showDeleteButton={!hideRemoveInSettings}>{modelContent}</FlowsContextMenu>;
+      return (
+        <FlowsContextMenu model={model} showDeleteButton={!hideRemoveInSettings}>
+          {modelContent}
+        </FlowsContextMenu>
+      );
 
     case 'modal':
       // TODO: 实现 modal 模式的流程设置
@@ -136,10 +168,12 @@ const FlowModelRendererCore: React.FC<{
       return modelContent;
 
     default:
-      console.warn(
-        `FlowModelRenderer: Unknown flowSettingsVariant '${flowSettingsVariant}', falling back to dropdown`,
+      console.warn(`FlowModelRenderer: Unknown flowSettingsVariant '${flowSettingsVariant}', falling back to dropdown`);
+      return (
+        <FlowsFloatContextMenu model={model} showDeleteButton={!hideRemoveInSettings}>
+          {modelContent}
+        </FlowsFloatContextMenu>
       );
-      return <FlowsFloatContextMenu model={model} showDeleteButton={!hideRemoveInSettings}>{modelContent}</FlowsFloatContextMenu>;
   }
 });
 
@@ -155,17 +189,19 @@ const FlowModelRendererCore: React.FC<{
  * @param {boolean} props.hideRemoveInSettings - Whether to hide remove button in settings.
  * @param {boolean} props.skipApplyAutoFlows - Whether to skip applying auto flows.
  * @param {any} props.extraContext - Extra context to pass to useApplyAutoFlows when skipApplyAutoFlows is false.
+ * @param {any} props.sharedContext - Shared context to pass to the model.
  * @param {boolean} props.independentAutoFlowExecution - Whether each component has independent auto flow execution.
  * @returns {React.ReactNode | null} The rendered output of the model, or null if the model or its render method is invalid.
  */
 export const FlowModelRenderer: React.FC<FlowModelRendererProps> = observer(
-  ({ 
-    model, 
+  ({
+    model,
     showFlowSettings = false,
     flowSettingsVariant = 'dropdown',
     hideRemoveInSettings = false,
     skipApplyAutoFlows = false,
     extraContext,
+    sharedContext,
     independentAutoFlowExecution = false,
   }) => {
     if (!model || typeof model.render !== 'function') {
@@ -173,6 +209,10 @@ export const FlowModelRenderer: React.FC<FlowModelRendererProps> = observer(
       console.warn('FlowModelRenderer: Invalid model or render method not found.', model);
       return null;
     }
+
+    useEffect(() => {
+      model.setSharedContext(sharedContext);
+    }, [model, sharedContext]);
 
     // 根据 skipApplyAutoFlows 选择不同的内部组件
     if (skipApplyAutoFlows) {
@@ -183,6 +223,7 @@ export const FlowModelRenderer: React.FC<FlowModelRendererProps> = observer(
             showFlowSettings={showFlowSettings}
             flowSettingsVariant={flowSettingsVariant}
             hideRemoveInSettings={hideRemoveInSettings}
+            sharedContext={sharedContext}
           />
         </Suspense>
       );
@@ -195,6 +236,7 @@ export const FlowModelRenderer: React.FC<FlowModelRendererProps> = observer(
             flowSettingsVariant={flowSettingsVariant}
             hideRemoveInSettings={hideRemoveInSettings}
             extraContext={extraContext}
+            sharedContext={sharedContext}
             independentAutoFlowExecution={independentAutoFlowExecution}
           />
         </Suspense>

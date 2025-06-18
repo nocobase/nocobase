@@ -26,6 +26,26 @@ export class MockFlowModelRepository implements IFlowModelRepository<FlowModel> 
     return models;
   }
 
+  async findOne(query) {
+    const { uid, parentId } = query;
+    if (uid) {
+      return this.load(uid);
+    } else if (parentId) {
+      return this.loadByParentId(parentId);
+    }
+    return null;
+  }
+
+  async loadByParentId(parentId: string) {
+    for (const model of this.models.values()) {
+      if (model.parentId == parentId) {
+        console.log('Loading model by parentId:', parentId, model);
+        return this.load(model.uid);
+      }
+    }
+    return null;
+  }
+
   // 从本地存储加载模型数据
   async load(uid: string) {
     const data = localStorage.getItem(`flow-model:${uid}`);
@@ -43,7 +63,9 @@ export class MockFlowModelRepository implements IFlowModelRepository<FlowModel> 
           json.subModels[model.subKey].push(subModel);
         } else if (model.subType === 'object') {
           const subModel = await this.load(model.uid);
-          json.subModels[model.subKey] = subModel;
+          if (subModel) {
+            json.subModels[model.subKey] = subModel;
+          }
         }
       }
     }
