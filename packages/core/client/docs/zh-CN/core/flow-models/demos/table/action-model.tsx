@@ -1,5 +1,5 @@
 import { FlowModel } from '@nocobase/flow-engine';
-import { Modal } from 'antd';
+import { Button, Modal } from 'antd';
 import React from 'react';
 
 export class ActionModel extends FlowModel {
@@ -8,7 +8,23 @@ export class ActionModel extends FlowModel {
   }
 
   render() {
-    return <a {...this.props}>{this.props.title || 'Untitle'}</a>;
+    return <Button {...this.props}>{this.props.title || 'Untitle'}</Button>;
+  }
+}
+
+export class LinkActionModel extends FlowModel {
+  render() {
+    return (
+      <Button type="link" {...this.props}>
+        {this.props.title || 'View'}
+      </Button>
+    );
+  }
+}
+
+export class DeleteActionModel extends ActionModel {
+  render() {
+    return <Button {...this.props}>{this.props.title || 'Delete'}</Button>;
   }
 }
 
@@ -34,6 +50,7 @@ ActionModel.registerFlow({
           ctx.model.dispatchEvent('click', {
             event: e,
             record: ctx.extra.record,
+            ...ctx.extra,
           });
         };
       },
@@ -41,7 +58,7 @@ ActionModel.registerFlow({
   },
 });
 
-ActionModel.registerFlow({
+LinkActionModel.registerFlow({
   key: 'event1',
   on: {
     eventName: 'click',
@@ -49,10 +66,28 @@ ActionModel.registerFlow({
   steps: {
     step1: {
       handler(ctx, params) {
-        Modal.confirm({
+        ctx.globals.modal.confirm({
           title: `${ctx.extra.record?.id}`,
           content: 'Are you sure you want to perform this action?',
           onOk: async () => {},
+        });
+      },
+    },
+  },
+});
+
+DeleteActionModel.registerFlow({
+  key: 'event1',
+  on: {
+    eventName: 'click',
+  },
+  steps: {
+    step1: {
+      handler(ctx, params) {
+        ctx.globals.modal.confirm({
+          title: `Selected Rows`,
+          content: <pre>{JSON.stringify(ctx.extra.currentResource?.getSelectedRows(), null, 2)}</pre>,
+          // onOk: async () => {},
         });
       },
     },
