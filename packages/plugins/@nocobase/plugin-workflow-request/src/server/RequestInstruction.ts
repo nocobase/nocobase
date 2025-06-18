@@ -78,6 +78,10 @@ async function request(config: RequestInstructionConfig, app: Application) {
         }
 
         if (record.valueType === 'file') {
+          if (record.file == null) {
+            continue;
+          }
+
           const plugin = app.pm.get(PluginFileManagerServer) as PluginFileManagerServer;
           const files: AttachmentModel[] = Array.isArray(record.file) ? record.file : [record.file];
 
