@@ -37,7 +37,6 @@ export class SelectTableColumnModel extends TableColumnModel {
           {option[this.fieldNames.label]}
         </Tag>
       ));
-      console.log(value, this.field, this.options);
       return (
         <>
           {content}
@@ -55,7 +54,6 @@ SelectTableColumnModel.registerFlow({
   steps: {
     step1: {
       handler(ctx, params) {
-        console.log(ctx.model.field.enum);
         ctx.model.setOptions(ctx.model.field.enum);
         ctx.model.setFieldNames({
           label: 'label',
