@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useCallback, useState, useMemo } from 'react';
+import React, { useCallback, useState, useMemo, useEffect, useRef } from 'react';
 import { Button, Table, Checkbox, Input, message, Tooltip } from 'antd';
 import { ReloadOutlined, QuestionCircleOutlined } from '@ant-design/icons';
 import { observer } from '@formily/react';
@@ -17,6 +17,14 @@ const CollectionsTable = observer((tableProps: any) => {
   const api = useAPIClient();
   const [loading, setLoading] = useState(false);
   const [searchText, setSearchText] = useState('');
+  const [pagination, setPagination] = useState({
+    current: 1,
+    pageSize: 20,
+    total: 0,
+    totalPage: 0
+  });
+  const searchTimeoutRef = useRef<NodeJS.Timeout>();
+
   const { NAMESPACE, t } = tableProps;
   const defaultAddAllCollections =
     tableProps.formValues?.options?.addAllCollections === undefined
@@ -35,89 +43,127 @@ const CollectionsTable = observer((tableProps: any) => {
     [tableProps.formSetValues],
   );
 
-  const handleLoadCollections = useCallback(async () => {
-    const { dataSourceKey: key, formValues, onChange, from } = tableProps;
-    const options = formValues?.options || {};
-    const requiredText = t('is required');
-    if (formValues.type !== 'oracle') {
-      if (!key) {
-        message.error(t('Data source name', { ns: NAMESPACE }) + requiredText);
-        return;
+  const handleLoadCollections = useCallback(
+    async (page = 1, pageSize = 20, keywords?: string) => {
+      const { dataSourceKey: key, formValues, onChange, from } = tableProps;
+      const options = formValues?.options || {};
+      const requiredText = t('is required');
+      if (formValues.type !== 'oracle') {
+        if (!key) {
+          message.error(t('Data source name', { ns: NAMESPACE }) + requiredText);
+          return;
+        }
+
+        if (!options.host) {
+          message.error(t('Host', { ns: NAMESPACE }) + requiredText);
+          return;
+        }
+
+        if (!options.port) {
+          message.error(t('Port', { ns: NAMESPACE }) + requiredText);
+          return;
+        }
+
+        if (!options.database) {
+          message.error(t('Database', { ns: NAMESPACE }) + requiredText);
+          return;
+        }
+
+        if (!options.username) {
+          message.error(t('Username', { ns: NAMESPACE }) + requiredText);
+          return;
+        }
       }
 
-      if (!options.host) {
-        message.error(t('Host', { ns: NAMESPACE }) + requiredText);
-        return;
-      }
-
-      if (!options.port) {
-        message.error(t('Port', { ns: NAMESPACE }) + requiredText);
-        return;
-      }
-
-      if (!options.database) {
-        message.error(t('Database', { ns: NAMESPACE }) + requiredText);
-        return;
-      }
-
-      if (!options.username) {
-        message.error(t('Username', { ns: NAMESPACE }) + requiredText);
-        return;
-      }
-    }
-
-    setLoading(true);
-    try {
-      const response = await api.request({
-        url: `dataSources/${key}/collections:all`,
-        method: 'get',
-        params: {
+      setLoading(true);
+      try {
+        const params: any = {
           isFirst: from === 'create',
           dbOptions: { ...options, type: formValues.type || 'mysql' },
-        },
-      });
-      const { data } = response?.data || [];
+          page,
+          pageSize,
+        };
 
-      if (onChange) {
-        onChange(data);
+        if (keywords) {
+          params.filter = { keywords };
+        }
+
+        const response = await api.request({
+          url: `dataSources/${key}/collections:all`,
+          method: 'get',
+          params,
+        });
+        const { data, meta } = response?.data || {};
+        const collectionsData = data || [];
+        const { count: total, page: current = 0, totalPage } = meta;
+
+        setPagination({
+          current,
+          pageSize,
+          total,
+          totalPage
+        });
+
+        if (onChange) {
+          onChange(collectionsData);
+        }
+
+        if (tableProps.field && tableProps.field.form) {
+          tableProps.field.form.setValuesIn('collections', collectionsData);
+        }
+      } catch (error) {
+        console.error('Error loading collections:', error);
+        message.error(t('Failed to load collections', { ns: NAMESPACE }));
+      } finally {
+        setLoading(false);
+      }
+    },
+    [tableProps.dataSourceKey, tableProps.formValues, tableProps.options, tableProps.from, api, t, NAMESPACE],
+  );
+
+  // 防抖搜索
+  const debouncedSearch = useCallback(
+    (keywords: string) => {
+      if (addAllCollections) {
+        return;
+      }
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
       }
 
-      if (tableProps.field && tableProps.field.form) {
-        tableProps.field.form.setValuesIn('collections', data);
-      }
-    } catch (error) {
-      console.error('Error loading collections:', error);
-      message.error(t('Failed to load collections', { ns: NAMESPACE }));
-    } finally {
-      setLoading(false);
-    }
-  }, [tableProps.dataSourceKey, tableProps.formValues, tableProps.options, tableProps.from, api, t, NAMESPACE]);
+      searchTimeoutRef.current = setTimeout(() => {
+        handleLoadCollections(1, pagination.pageSize, keywords || undefined);
+      }, 500);
+    },
+    [handleLoadCollections, pagination.pageSize],
+  );
 
-  const filteredCollections = useMemo(() => {
-    if (!searchText) return collections;
-    return collections.filter((item) => item.name?.toLowerCase().includes(searchText.toLowerCase()));
-  }, [collections, searchText]);
+  // 清理定时器
+  useEffect(() => {
+    return () => {
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const { isAllSelected, isIndeterminate } = useMemo(() => {
-    const selectableFiltered = filteredCollections.filter((item) => !item.required);
-    const selectedFiltered = filteredCollections.filter((item) => item.selected || item.required).length;
-    const allSelected = selectableFiltered.length > 0 && selectedFiltered === filteredCollections.length;
-    const indeterminate = selectedFiltered > 0 && selectedFiltered < filteredCollections.length;
+    const selectableCollections = collections.filter((item) => !item.required);
+    const selectedCount = collections.filter((item) => item.selected || item.required).length;
+    const allSelected = selectableCollections.length > 0 && selectedCount === collections.length;
+    const indeterminate = selectedCount > 0 && selectedCount < collections.length;
 
     return {
-      selectableFilteredCollections: selectableFiltered,
-      selectedFilteredCount: selectedFiltered,
       isAllSelected: allSelected,
       isIndeterminate: indeterminate,
     };
-  }, [filteredCollections]);
+  }, [collections]);
 
   const handleSelectAll = useCallback(
     (checked: boolean) => {
       const updateCollections = () => {
-        const filteredNames = new Set(filteredCollections.filter((item) => !item.required).map((item) => item.name));
         const updatedCollections = collections.map((item) => {
-          if (filteredNames.has(item.name)) {
+          if (!item.required) {
             return { ...item, selected: checked };
           }
           return item;
@@ -131,28 +177,38 @@ const CollectionsTable = observer((tableProps: any) => {
         setTimeout(updateCollections, 0);
       }
     },
-    [collections, filteredCollections, tableProps.onChange],
+    [collections, tableProps.onChange],
   );
 
   const handleSelectChange = useCallback(
     (index: number, checked: boolean) => {
-      const targetItem = filteredCollections[index];
-      const realIndex = collections.findIndex((item) => item.name === targetItem.name);
-
       const updatedCollections = [...collections];
-      updatedCollections[realIndex] = { ...updatedCollections[realIndex], selected: checked };
+      updatedCollections[index] = { ...updatedCollections[index], selected: checked };
       tableProps.onChange?.(updatedCollections);
     },
-    [collections, filteredCollections, tableProps.onChange],
+    [collections, tableProps.onChange],
   );
 
-  const handleSearch = useCallback((value: string) => {
-    setSearchText(value);
-  }, []);
+  const handleSearch = useCallback(
+    (value: string) => {
+      setSearchText(value);
+      debouncedSearch(value);
+    },
+    [debouncedSearch],
+  );
 
   const handleClearSearch = useCallback(() => {
     setSearchText('');
-  }, []);
+    handleLoadCollections(1, pagination.pageSize);
+  }, [handleLoadCollections, pagination.pageSize]);
+
+  const handleTableChange = useCallback(
+    (paginationConfig: any) => {
+      const { current, pageSize } = paginationConfig;
+      handleLoadCollections(current, pageSize, searchText || undefined);
+    },
+    [handleLoadCollections, searchText],
+  );
 
   const columns = useMemo(() => {
     const baseColumns: any = [
@@ -220,24 +276,39 @@ const CollectionsTable = observer((tableProps: any) => {
           placeholder={t('Search collection name', { ns: NAMESPACE })}
           allowClear
           style={{ width: 250 }}
+          value={searchText}
           onSearch={handleSearch}
           onChange={(e) => handleSearch(e.target.value)}
           onClear={handleClearSearch}
         />
-        <Button icon={<ReloadOutlined />} onClick={handleLoadCollections} loading={loading}>
+        <Button
+          icon={<ReloadOutlined />}
+          onClick={() => handleLoadCollections(pagination.current, pagination.pageSize, searchText || undefined)}
+          loading={loading}
+        >
           {t('Load Collections', { ns: NAMESPACE })}
         </Button>
       </div>
       <Table
         columns={columns}
-        dataSource={filteredCollections}
+        dataSource={collections}
         loading={loading}
-        pagination={false}
+        pagination={{
+          current: pagination.current,
+          pageSize: pagination.pageSize,
+          total: pagination.total,
+          showSizeChanger: true,
+          showQuickJumper: false,
+          showTotal: (total, range) => `${range[0]}-${range[1]} of ${total}`,
+          pageSizeOptions: ['20', '50', '100'],
+          size: 'small',
+          simple: false,
+        }}
         scroll={{ x: addAllCollections ? 300 : 550, y: 400 }}
-        virtual
         bordered
         rowKey="name"
         size="small"
+        onChange={handleTableChange}
       />
     </div>
   );

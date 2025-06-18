@@ -129,38 +129,41 @@ export default {
     },
     async all(ctx, next) {
       const params = ctx.action.params;
-      const { associatedIndex: dataSourceKey, isFirst, dbOptions } = params;
+      const { associatedIndex: dataSourceKey, isFirst, dbOptions, filter } = params;
+      const page = params.page ? Number(params.page) : 1;
+      const pageSize = params.pageSize ? Number(params.pageSize) : 20;
       const dataSourceManager = ctx.app.dataSourceManager as DataSourceManager;
-
-      let allCollections = null;
+      let introspector: { getCollections: (options: { pageIndex?: number, pageSize?: number, keywords?: string }) => Promise<{ tableList: string[], tableCount: number }> } = null;
       if (isFirst) {
         const klass = dataSourceManager.factory.getClass(dbOptions.type);
         // @ts-ignore
         const dataSource = new klass(dbOptions);
-        const introspector = dataSource.collectionManager.dataSource.createDatabaseIntrospector(
+        introspector = dataSource.collectionManager.dataSource.createDatabaseIntrospector(
           dataSource.collectionManager.db,
         );
-        allCollections = await introspector.getCollections();
       } else {
         const dataSource = dataSourceManager.dataSources.get(dataSourceKey);
-
         if (!dataSource) {
           throw new Error(`dataSource ${dataSourceKey} not found`);
         }
-        const dialect = dataSource['collectionManager']?.['db'].options.dialect
-        allCollections = dialect === 'oracle' ? await dataSource?.['introspector'].getCollections() : await dataSource['getCollectionsFromCache']();
+        introspector = dataSource['introspector'];
       }
+      const { tableList: allCollections, tableCount } = await introspector.getCollections({ pageIndex: page, pageSize, keywords: filter?.keywords });
       const selectedCollections = await ctx.db.getRepository('dataSourcesCollections').find({
         filter: { dataSourceKey },
       });
       const selectedMap = _.keyBy(selectedCollections, (x) => x.name);
       const result = allCollections.map((collection) => {
         return {
-          ..._.omit(collection, 'fields'),
-          selected: !!selectedMap[collection.name],
+          name: collection,
+          selected: !!selectedMap[collection],
         };
       });
-      ctx.body = result;
+      ctx.withoutDataWrapping = true;
+      ctx.body = {
+        data: result,
+        meta: { count: tableCount, page, pageSize, totalPage: Math.ceil(tableCount / pageSize) },
+      }
       await next();
     },
     async add(ctx, next) {
@@ -206,7 +209,7 @@ export default {
       await transaction.commit();
       const dataSource = ctx.app.dataSourceManager.dataSources.get(dataSourceKey);
       if (dataSource) {
-        await dataSource.load();
+        await dataSource.load({ refresh: true });
       }
       ctx.body = true;
       await next();
