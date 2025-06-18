@@ -65,15 +65,8 @@ export class FlowModel<Structure extends { parent?: any; subModels?: any } = Def
   }
 
   public getSharedContext() {
-    const parentProto = Object.getPrototypeOf(Object.getPrototypeOf(this));
-    let parentContext = {};
-
-    if (parentProto && typeof parentProto.getSharedContext === 'function') {
-      parentContext = parentProto.getSharedContext();
-    }
-
     return {
-      ...parentContext,
+      ...this.parent?.getSharedContext(),
       ...this._sharedContext, // 当前实例的 context 优先级最高
     };
   }
