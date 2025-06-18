@@ -125,7 +125,7 @@ export class TableActionsColumnModel extends TableColumnModel {
                   key: 'action1',
                   label: 'Action 1',
                   createModelOptions: {
-                    use: 'ActionModel',
+                    use: 'LinkActionModel',
                   },
                 },
                 {

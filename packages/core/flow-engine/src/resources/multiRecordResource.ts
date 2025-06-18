@@ -32,6 +32,15 @@ export class MultiRecordResource<TDataItem = any> extends BaseRecordResource<TDa
     headers: {} as Record<string, any>,
   };
 
+  setSelectedRows(selectedRows: TDataItem[]) {
+    this.setMeta({ selectedRows });
+    return this;
+  }
+
+  getSelectedRows(): TDataItem[] {
+    return this.getMeta('selectedRows') || [];
+  }
+
   setPage(page: number) {
     return this.addRequestParameter('page', page);
   }

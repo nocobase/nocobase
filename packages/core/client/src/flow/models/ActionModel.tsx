@@ -9,6 +9,7 @@
 
 import { FlowModel } from '@nocobase/flow-engine';
 import { Button, Modal } from 'antd';
+import type { ButtonType } from 'antd/es/button';
 import React from 'react';
 import { FlowPageComponent } from '../FlowPage';
 
@@ -19,13 +20,20 @@ export class ActionModel extends FlowModel {
 
   title = 'Action';
 
+  type: ButtonType = 'default';
+
   render() {
     return (
-      <Button type="link" {...this.props}>
+      <Button type={this.type} {...this.props}>
         {this.props.children || this.title}
       </Button>
     );
   }
+}
+
+export class LinkActionModel extends ActionModel {
+  title = 'Action';
+  type: ButtonType = 'link';
 }
 
 ActionModel.registerFlow({
@@ -50,6 +58,7 @@ ActionModel.registerFlow({
           ctx.model.dispatchEvent('click', {
             event: e,
             record: ctx.extra.record,
+            ...ctx.extra,
           });
         };
       },
@@ -65,6 +74,7 @@ ActionModel.registerFlow({
   steps: {
     step1: {
       handler(ctx, params) {
+        console.log('ActionModel click event triggered', ctx.extra.currentResource?.getSelectedRows());
         Modal.confirm({
           title: `${ctx.extra.record?.id}`,
           content: 'Are you sure you want to perform this action?',
@@ -75,7 +85,7 @@ ActionModel.registerFlow({
   },
 });
 
-export class ViewActionModel extends ActionModel {
+export class ViewActionModel extends LinkActionModel {
   title = 'View';
 }
 

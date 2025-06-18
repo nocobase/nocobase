@@ -7,24 +7,31 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { SettingOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
-import { observable } from '@formily/reactive';
-import { AddFieldButton, Collection, MultiRecordResource } from '@nocobase/flow-engine';
-import { Card, Table } from 'antd';
+import {
+  AddActionModel,
+  AddFieldButton,
+  Collection,
+  FlowModelRenderer,
+  MultiRecordResource,
+} from '@nocobase/flow-engine';
+import { Button, Card, Space, Table } from 'antd';
 import React from 'react';
+import { ActionModel } from './ActionModel';
 import { BlockFlowModel } from './BlockFlowModel';
 import { TableColumnModel } from './TableColumnModel';
 
 type S = {
   subModels: {
     columns: TableColumnModel[];
+    actions: ActionModel[];
   };
 };
 
 export class TableModel extends BlockFlowModel<S> {
   collection: Collection;
   resource: MultiRecordResource;
-  selectedRows = observable.ref([]);
 
   getColumns() {
     return this.mapSubModels('columns', (column) => {
@@ -68,6 +75,39 @@ export class TableModel extends BlockFlowModel<S> {
   render() {
     return (
       <Card>
+        <Space style={{ marginBottom: 16 }}>
+          {this.mapSubModels('actions', (action) => (
+            <FlowModelRenderer
+              model={action}
+              showFlowSettings
+              extraContext={{ currentModel: this, currentResource: this.resource }}
+            />
+          ))}
+          <AddActionModel
+            model={this}
+            subModelKey={'actions'}
+            items={() => [
+              {
+                key: 'action1',
+                label: 'Action 1',
+                createModelOptions: {
+                  use: 'ActionModel',
+                },
+              },
+              {
+                key: 'action2',
+                label: 'View',
+                createModelOptions: {
+                  use: 'ViewActionModel',
+                },
+              },
+            ]}
+          >
+            <Button type="primary" icon={<SettingOutlined />}>
+              Configure actions
+            </Button>
+          </AddActionModel>
+        </Space>
         <Table
           className={css`
             td {
@@ -78,9 +118,9 @@ export class TableModel extends BlockFlowModel<S> {
           rowSelection={{
             type: 'checkbox',
             onChange: (_, selectedRows) => {
-              this.selectedRows.value = selectedRows;
+              this.resource.setSelectedRows(selectedRows);
             },
-            selectedRowKeys: this.selectedRows.value.map((row) => row.id),
+            selectedRowKeys: this.resource.getSelectedRows().map((row) => row.id),
           }}
           dataSource={this.resource.getData()}
           columns={this.getColumns()}
