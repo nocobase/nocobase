@@ -13,7 +13,7 @@ import { TableColumnModel } from '../../TableColumnModel';
 import { getCurrentOptions } from '../utils/utils';
 
 export class SelectTableColumnModel extends TableColumnModel {
-  public static readonly supportedFieldInterfaces = ['select'];
+  public static readonly supportedFieldInterfaces = ['select', 'multipleSelect'];
   dataSource;
   fieldNames: { label: string; value: string; color?: string; icon?: any };
 
@@ -32,12 +32,13 @@ export class SelectTableColumnModel extends TableColumnModel {
   render() {
     return (value, record, index) => {
       const currentOptions = getCurrentOptions(value, this.dataSource, this.fieldNames);
-
-      const content = currentOptions.map((option, index) => (
-        <Tag key={index} color={option[this.fieldNames.color]} icon={option.icon}>
-          {option[this.fieldNames.label]}
-        </Tag>
-      ));
+      const content =
+        value &&
+        currentOptions.map((option, index) => (
+          <Tag key={index} color={option[this.fieldNames.color]} icon={option.icon}>
+            {option[this.fieldNames.label]}
+          </Tag>
+        ));
       return (
         <>
           {content}

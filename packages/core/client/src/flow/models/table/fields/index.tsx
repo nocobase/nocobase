@@ -9,3 +9,4 @@
 
 export * from './SelectColumnModel';
 export * from './NumberColumnModel';
+export * from './PercentColumnModel';
