@@ -8,7 +8,7 @@
  */
 
 import React, { useMemo } from 'react';
-import { AddSubModelButton } from './AddSubModelButton';
+import { AddSubModelButton, SubModelItemsType } from './AddSubModelButton';
 import { FlowModel } from '../../models/flowModel';
 import { ModelConstructor } from '../../types';
 import { Button } from 'antd';
@@ -32,6 +32,10 @@ interface AddBlockButtonProps {
    * 按钮文本
    */
   children?: React.ReactNode;
+  /**
+   * 自定义 items
+   */
+  items?: SubModelItemsType;
 }
 
 /**
@@ -51,9 +55,10 @@ export const AddBlockButton: React.FC<AddBlockButtonProps> = ({
   subModelKey = 'blocks',
   children = <Button>Add block</Button>,
   subModelType = 'array',
+  items,
   onModelAdded,
 }) => {
-  const items = useMemo(() => {
+  const defaultItems = useMemo(() => {
     const blockClasses = model.flowEngine.filterModelClassByParent(subModelBaseClass);
     const registeredBlocks = [];
     for (const [className, ModelClass] of blockClasses) {
@@ -75,7 +80,7 @@ export const AddBlockButton: React.FC<AddBlockButtonProps> = ({
       model={model}
       subModelKey={subModelKey}
       subModelType={subModelType}
-      items={items}
+      items={items || defaultItems}
       onModelAdded={onModelAdded}
     >
       {children}
