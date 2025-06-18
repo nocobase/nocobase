@@ -25,6 +25,7 @@ DeleteActionModel.registerFlow({
     step1: {
       async handler(ctx, params) {
         if (!ctx.extra.currentResource || !ctx.extra.currentRecord) {
+          ctx.globals.message.error('No resource or record selected for deletion.');
           return;
         }
         await ctx.extra.currentResource.destroy(ctx.extra.currentRecord);
