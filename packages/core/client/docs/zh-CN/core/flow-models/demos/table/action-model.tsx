@@ -12,7 +12,7 @@ export class ActionModel extends FlowModel {
   }
 }
 
-export class LinkActionModel extends FlowModel {
+export class LinkActionModel extends ActionModel {
   render() {
     return (
       <Button type="link" {...this.props}>
