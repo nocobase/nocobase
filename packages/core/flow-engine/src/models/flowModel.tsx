@@ -57,7 +57,26 @@ export class FlowModel<Structure extends { parent?: any; subModels?: any } = Def
    * 基于 key 的 fork 实例缓存，用于复用 fork 实例
    */
   private forkCache: Map<string, ForkFlowModel<any>> = new Map();
-  // public static meta: FlowModelMeta;
+  // model 树的共享运行上下文
+  private _sharedContext: Record<string, any> = {};
+
+  public setSharedContext(ctx: Record<string, any>) {
+    this._sharedContext = ctx;
+  }
+
+  public getSharedContext() {
+    const parentProto = Object.getPrototypeOf(Object.getPrototypeOf(this));
+    let parentContext = {};
+
+    if (parentProto && typeof parentProto.getSharedContext === 'function') {
+      parentContext = parentProto.getSharedContext();
+    }
+
+    return {
+      ...parentContext,
+      ...this._sharedContext, // 当前实例的 context 优先级最高
+    };
+  }
 
   constructor(protected options: FlowModelOptions<Structure>) {
     if (options?.flowEngine?.getModel(options.uid)) {
@@ -345,7 +364,6 @@ export class FlowModel<Structure extends { parent?: any; subModels?: any } = Def
     let lastResult: any;
     let exited = false;
     const stepResults: Record<string, any> = {};
-    const shared: Record<string, any> = {};
 
     // Create a new FlowContext instance for this flow execution
     const createLogger = (level: string) => (message: string, meta?: any) => {
@@ -367,7 +385,7 @@ export class FlowModel<Structure extends { parent?: any; subModels?: any } = Def
         debug: createLogger('DEBUG'),
       },
       stepResults,
-      shared,
+      shared: this.getSharedContext(),
       globals: globalContexts,
       extra: extra || {},
       model: this,
