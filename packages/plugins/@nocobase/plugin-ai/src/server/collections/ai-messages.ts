@@ -36,6 +36,10 @@ export default defineCollection({
       type: 'jsonb',
     },
     {
+      name: 'workContext',
+      type: 'jsonb',
+    },
+    {
       name: 'metadata',
       type: 'jsonb',
     },

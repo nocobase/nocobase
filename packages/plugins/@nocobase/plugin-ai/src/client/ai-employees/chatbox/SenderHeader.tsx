@@ -19,6 +19,7 @@ import { avatars } from '../avatars';
 import { ProfileCard } from '../ProfileCard';
 import { AddContextButton } from './AddContextButton';
 import { AttachmentsHeader } from './AttachmentsHeader';
+import { ContextItemsHeader } from './ContextItemsHeader';
 
 export const SenderHeader: React.FC = () => {
   const {
@@ -107,6 +108,7 @@ export const SenderHeader: React.FC = () => {
           </Tag>
         )}
       </div>
+      {currentEmployee ? <ContextItemsHeader /> : null}
       {currentEmployee ? <AttachmentsHeader /> : null}
     </div>
   );

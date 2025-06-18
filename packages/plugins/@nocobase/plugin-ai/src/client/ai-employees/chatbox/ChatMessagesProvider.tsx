@@ -8,7 +8,7 @@
  */
 
 import { createContext, useCallback, useContext, useEffect, useRef } from 'react';
-import { AIEmployee, Attachment, Message, ResendOptions, SendOptions } from '../types';
+import { AIEmployee, Attachment, ContextItem, Message, ResendOptions, SendOptions } from '../types';
 import React, { useState } from 'react';
 import { uid } from '@formily/shared';
 import { useT } from '../../locale';
@@ -37,7 +37,11 @@ interface ChatMessagesContextValue {
   attachments: Attachment[];
   setAttachments: React.Dispatch<React.SetStateAction<any[]>>;
   addAttachments: (attachments: Attachment | Attachment[]) => void;
-  removeAttachment: (index: number) => void;
+  removeAttachment: (filename: string) => void;
+  contextItems: ContextItem[];
+  setContextItems: React.Dispatch<React.SetStateAction<ContextItem[]>>;
+  addContextItems: (items: ContextItem | ContextItem[]) => void;
+  removeContextItem: (type: string, uid: string) => void;
   systemMessage: string;
   setSystemMessage: React.Dispatch<React.SetStateAction<string>>;
 }
@@ -51,6 +55,7 @@ export const ChatMessagesProvider: React.FC<{ children: React.ReactNode }> = ({ 
   const api = useAPIClient();
   const { ctx } = useAISelectionContext();
   const plugin = usePlugin('ai') as PluginAIClient;
+  const [contextItems, setContextItems] = useState<ContextItem[]>([]);
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [messages, setMessages] = useState<Message[]>([]);
   const [systemMessage, setSystemMessage] = useState<string>('');
@@ -123,11 +128,37 @@ export const ChatMessagesProvider: React.FC<{ children: React.ReactNode }> = ({ 
     });
   };
 
-  const removeAttachment = (index: number) => {
+  const removeAttachment = (filename: string) => {
     setAttachments((prev) => {
       const newAttachments = [...prev];
+      const index = newAttachments.findIndex((item) => item.filename === filename);
       newAttachments.splice(index, 1);
       return newAttachments;
+    });
+  };
+
+  const addContextItems = (items: ContextItem | ContextItem[]) => {
+    setContextItems((prev) => {
+      const next = Array.isArray(items) ? items : [items];
+      const map = new Map<string, ContextItem>();
+      for (const item of prev) {
+        map.set(`${item.type}:${item.uid}`, item);
+      }
+      for (const item of next) {
+        map.set(`${item.type}:${item.uid}`, item);
+      }
+      return Array.from(map.values());
+    });
+  };
+
+  const removeContextItem = (type: string, uid: string) => {
+    setContextItems((prev) => {
+      const newItems = [...prev];
+      const index = newItems.findIndex((item) => item.type === type && item.uid === uid);
+      if (index !== -1) {
+        newItems.splice(index, 1);
+      }
+      return newItems;
     });
   };
 
@@ -222,6 +253,7 @@ export const ChatMessagesProvider: React.FC<{ children: React.ReactNode }> = ({ 
     systemMessage,
     messages: sendMsgs,
     attachments,
+    workContext,
     onConversationCreate,
   }: SendOptions & {
     onConversationCreate?: (sessionId: string) => void;
@@ -238,6 +270,7 @@ export const ChatMessagesProvider: React.FC<{ children: React.ReactNode }> = ({ 
       role: 'user',
       content: msg,
       attachments: index === 0 ? attachments : undefined,
+      workContext: index === 0 ? workContext : undefined,
     }));
     addMessages(
       sendMsgs.map((msg, index) => ({
@@ -246,6 +279,7 @@ export const ChatMessagesProvider: React.FC<{ children: React.ReactNode }> = ({ 
         content: {
           ...msg,
           attachments: index === 0 ? attachments : undefined,
+          workContext: index === 0 ? workContext : undefined,
         },
       })),
     );
@@ -426,6 +460,10 @@ export const ChatMessagesProvider: React.FC<{ children: React.ReactNode }> = ({ 
         setAttachments,
         addAttachments,
         removeAttachment,
+        contextItems,
+        setContextItems,
+        addContextItems,
+        removeContextItem,
         systemMessage,
         setSystemMessage,
       }}

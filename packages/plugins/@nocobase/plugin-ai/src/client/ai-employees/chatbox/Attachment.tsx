@@ -7,31 +7,55 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React from 'react';
-import { Tag } from 'antd';
-import { BuildOutlined } from '@ant-design/icons';
-import { AttachmentProps } from '../types';
+import React, { useState } from 'react';
+import { Tag, Image } from 'antd';
+import { Attachment as AttachmentType } from '../types';
+import { useChatMessages } from './ChatMessagesProvider';
+import { getFileIconByExt } from './utils';
 
-export const Attachment: React.FC<
-  AttachmentProps & {
-    closeable?: boolean;
-    onClose?: () => void;
-  }
-> = ({ type, title, content, closeable, onClose }) => {
-  let prefix: React.ReactNode;
-  switch (type) {
-    case 'uiSchema':
-      prefix = (
-        <>
-          <BuildOutlined /> {title} {'>'}{' '}
-        </>
-      );
-      break;
-  }
+export const Attachment: React.FC<{
+  file: AttachmentType;
+  closable?: boolean;
+}> = ({ file, closable }) => {
+  const [visible, setVisible] = useState(false);
+  const { removeAttachment } = useChatMessages();
+
   return (
-    <Tag closeIcon={closeable} onClose={onClose}>
-      {prefix}
-      {content}
+    <Tag
+      closable={closable}
+      onClose={() => removeAttachment(file.name)}
+      style={{
+        padding: '2px 4px',
+        cursor: 'pointer',
+      }}
+      onClick={() => {
+        setVisible(true);
+      }}
+    >
+      <div
+        style={{
+          display: 'inline-flex',
+          gap: '4px',
+        }}
+      >
+        {file.mimetype?.startsWith('image') && file.thumbUrl ? (
+          <Image
+            src={file.thumbUrl}
+            width={20}
+            preview={{
+              mask: null,
+              visible,
+              src: file.thumbUrl,
+              onVisibleChange: (v) => {
+                setVisible(v);
+              },
+            }}
+          />
+        ) : (
+          <Image width={20} src={getFileIconByExt(file.extname)} preview={false} />
+        )}
+        {file.name}
+      </div>
     </Tag>
   );
 };

@@ -8,65 +8,18 @@
  */
 
 import React, { useMemo } from 'react';
-import { Attachments } from '@ant-design/x';
 import { useChatMessages } from './ChatMessagesProvider';
 import { useUploadFiles } from './useUploadFiles';
-import { Upload, Tag, Image } from 'antd';
-
-const ImageAttachment: React.FC<{
-  file: any;
-}> = ({ file }) => {
-  const [visible, setVisible] = React.useState(false);
-  const { removeAttachment } = useChatMessages();
-
-  return (
-    <Tag
-      closable
-      onClose={() => removeAttachment(Number(file.uid))}
-      style={{
-        padding: '2px 4px',
-        cursor: 'pointer',
-      }}
-      onClick={() => {
-        setVisible(true);
-      }}
-    >
-      <div
-        style={{
-          display: 'inline-flex',
-          gap: '4px',
-        }}
-      >
-        <Image
-          src={file.thumbUrl}
-          width={20}
-          preview={{
-            mask: null,
-            visible,
-            src: file.thumbUrl,
-            onVisibleChange: (v) => {
-              setVisible(v);
-            },
-          }}
-        />
-        {file.name}
-      </div>
-    </Tag>
-  );
-};
-
-const Attachment: React.FC<{
-  file: any;
-}> = ({ file }) => {
-  return <ImageAttachment file={file} />;
-};
+import { Upload } from 'antd';
+import { css } from '@emotion/css';
+import { Attachment } from './Attachment';
 
 export const AttachmentsHeader: React.FC = () => {
   const uploadProps = useUploadFiles();
   const { attachments } = useChatMessages();
   const items = useMemo(() => {
-    return attachments?.map((item, index) => ({
-      uid: index.toString(),
+    return attachments?.map((item) => ({
+      uid: item.filename,
       name: item.filename,
       status: 'done' as const,
       url: item.url,
@@ -75,17 +28,24 @@ export const AttachmentsHeader: React.FC = () => {
       ...item,
     }));
   }, [attachments]);
+  if (!items?.length) {
+    return null;
+  }
   return (
-    <div
-      style={{
-        display: 'flex',
-        flexWrap: 'wrap',
-        justifyContent: 'flex-start',
-        gap: '4px 0px',
-        marginTop: '4px',
-      }}
-    >
-      {items?.map((item, index) => <Attachment file={item} key={index} />)}
-    </div>
+    <Upload
+      {...uploadProps}
+      listType="picture"
+      fileList={items}
+      itemRender={(_, file) => <Attachment file={file} closable={true} />}
+      className={css`
+        .ant-upload-list {
+          display: flex;
+          justify-content: flex-start;
+          flex-wrap: wrap;
+          gap: 2px 0;
+          margin-top: 4px;
+        }
+      `}
+    ></Upload>
   );
 };

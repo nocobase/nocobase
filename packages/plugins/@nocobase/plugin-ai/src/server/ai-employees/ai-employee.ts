@@ -220,9 +220,14 @@ export class AIEmployee {
 
     for (const msg of messages) {
       const attachments = msg.attachments;
+      const workContext = msg.workContext;
       let content = msg.content.content;
       if (typeof content === 'string') {
-        content = await this.parseUISchema(content);
+        content = `<user_query>${content}</user_query>`;
+        if (workContext?.length) {
+          content = `<work_context>${JSON.stringify(workContext)}</work_context>
+${content}`;
+        }
       }
       if (!content && !attachments && !msg.toolCalls?.length) {
         continue;

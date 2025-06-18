@@ -105,6 +105,7 @@ export function withAISelectable<T = any>(
       }
       selector?.onSelect?.({
         uid: fieldSchema['x-uid'],
+        fieldSchema,
         value: field?.value,
       });
       stopSelect();

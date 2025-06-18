@@ -24,13 +24,14 @@ export function stripToolCallTags(content: string): string | null {
 }
 
 export function parseResponseMessage(row: Model) {
-  const { content: rawContent, messageId, metadata, role, toolCalls, attachments } = row;
+  const { content: rawContent, messageId, metadata, role, toolCalls, attachments, workContext } = row;
   const content = {
     ...rawContent,
     content: stripToolCallTags(rawContent.content),
     messageId,
     metadata,
     attachments,
+    workContext,
   };
   if (toolCalls) {
     content.tool_calls = toolCalls;

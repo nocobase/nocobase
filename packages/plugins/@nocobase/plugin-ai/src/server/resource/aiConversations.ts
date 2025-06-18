@@ -223,6 +223,7 @@ export default {
               role: message.role,
               content: message.content,
               attachments: message.attachments,
+              workContext: message.workContext,
             })),
           });
         } catch (err) {

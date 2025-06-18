@@ -9,6 +9,7 @@
 
 import { Registry } from '@nocobase/utils/client';
 import { ComponentType } from 'react';
+import { WorkContextOptions } from '../ai-employees/types';
 
 export type LLMProviderOptions = {
   components: {
@@ -34,6 +35,7 @@ export class AIManager {
     }
   >();
   tools = new Registry<ToolOptions>();
+  workContext = new Registry<WorkContextOptions>();
 
   registerLLMProvider(name: string, options: LLMProviderOptions) {
     this.llmProviders.register(name, options);
@@ -41,5 +43,24 @@ export class AIManager {
 
   registerTool(name: string, options: ToolOptions) {
     this.tools.register(name, options);
+  }
+
+  registerWorkContext(name: string, options: WorkContextOptions) {
+    const [rootKey, childKey] = name.split('.');
+    if (childKey) {
+      const root = this.workContext.get(rootKey);
+      if (!root?.children) {
+        return;
+      }
+      root.children[childKey] = {
+        name: childKey,
+        ...options,
+      };
+      return;
+    }
+    this.workContext.register(name, {
+      name,
+      ...options,
+    });
   }
 }

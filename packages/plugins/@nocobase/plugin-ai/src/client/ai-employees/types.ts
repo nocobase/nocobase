@@ -8,6 +8,7 @@
  */
 
 import type { BubbleProps } from '@ant-design/x';
+import { ComponentType } from 'react';
 
 export type Selector = {
   onSelect?: (ctx: any) => void;
@@ -32,12 +33,11 @@ export type Conversation = {
   aiEmployee: AIEmployee;
 };
 
-export type AttachmentType = 'image' | 'uiSchema';
-export type AttachmentProps = {
-  type: AttachmentType;
+export type ContextItem = {
+  type: string;
+  uid: string;
   title: string;
   content: string;
-  description?: string;
 };
 
 export type MessageType = 'text' | 'greeting';
@@ -65,6 +65,7 @@ export type SendOptions = {
     content: string;
   }[];
   attachments?: Attachment[];
+  workContext: ContextItem[];
 };
 
 export type ResendOptions = {
@@ -100,3 +101,21 @@ export type Tool = {
 };
 
 export type Attachment = any;
+
+export type WorkContextOptions = {
+  name?: string;
+  menu: {
+    icon?: React.ReactNode;
+    label?: React.ReactNode;
+    Component?: ComponentType<{
+      addContextItem: (item: Omit<ContextItem, 'type'>) => void;
+    }>;
+  };
+  tag?: {
+    Component: ComponentType<{
+      item: ContextItem;
+    }>;
+  };
+  actions?: {};
+  children?: Record<string, Omit<WorkContextOptions, 'children'>>;
+};
