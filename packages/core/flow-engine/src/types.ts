@@ -248,7 +248,7 @@ export interface CreateModelOptions {
   [key: string]: any; // 允许额外的自定义选项
 }
 export interface IFlowModelRepository<T extends FlowModel = FlowModel> {
-  load(uid: string): Promise<Record<string, any> | null>;
+  findOne(query: Record<string, any>): Promise<Record<string, any> | null>;
   save(model: T): Promise<Record<string, any>>;
   destroy(uid: string): Promise<boolean>;
 }

@@ -30,7 +30,7 @@ AddNewActionModel.registerFlow({
         function DrawerContent() {
           return (
             <div>
-              <FlowPageComponent uid={`${ctx.model.uid}-drawer`} sharedContext={{ ...ctx.extra, currentDrawer }} />
+              <FlowPageComponent parentId={ctx.model.uid} sharedContext={{ ...ctx.extra, currentDrawer }} />
             </div>
           );
         }

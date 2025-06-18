@@ -14,7 +14,6 @@ import { uid } from 'uid/secure';
 import { openRequiredParamsStepFormDialog as openRequiredParamsStepFormDialogFn } from '../components/settings/wrappers/contextual/StepRequiredSettingsDialog';
 import { openStepSettingsDialog as openStepSettingsDialogFn } from '../components/settings/wrappers/contextual/StepSettingsDialog';
 import { FlowEngine } from '../flowEngine';
-import { FlowExitException, resolveDefaultParams } from '../utils';
 import type {
   ActionStepDefinition,
   ArrayElementType,
@@ -30,7 +29,7 @@ import type {
   StepParams,
 } from '../types';
 import { ExtendedFlowDefinition, FlowExtraContext, IModelComponentProps, ReadonlyModelProps } from '../types';
-import { generateUid, mergeFlowDefinitions } from '../utils';
+import { FlowExitException, generateUid, mergeFlowDefinitions, resolveDefaultParams } from '../utils';
 import { ForkFlowModel } from './forkFlowModel';
 
 // 使用WeakMap存储每个类的meta
@@ -68,7 +67,11 @@ export class FlowModel<Structure extends { parent?: any; subModels?: any } = Def
       return options.flowEngine.getModel(options.uid);
     }
 
-    this.uid = options.uid || uid();
+    if (!options.uid) {
+      options.uid = uid();
+    }
+
+    this.uid = options.uid;
     this.props = options.props || {};
     this.stepParams = options.stepParams || {};
     this.subModels = {};

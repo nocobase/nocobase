@@ -6,7 +6,7 @@ import React from 'react';
 // 实现一个本地存储的模型仓库，负责模型的持久化
 class FlowModelRepository implements IFlowModelRepository<FlowModel> {
   // 从本地存储加载模型数据
-  async load(uid: string) {
+  async findOne({ uid }) {
     const data = localStorage.getItem(`flow-model:${uid}`);
     if (!data) return null;
     return JSON.parse(data);
