@@ -8,21 +8,32 @@
  */
 
 import { css } from '@emotion/css';
-import { AddFieldModel, Collection, MultiRecordResource } from '@nocobase/flow-engine';
+import {
+  AddActionModel,
+  AddFieldModel,
+  Collection,
+  FlowModelRenderer,
+  MultiRecordResource,
+} from '@nocobase/flow-engine';
 import { Card, Table } from 'antd';
 import React from 'react';
 import { BlockFlowModel } from './BlockFlowModel';
 import { TableColumnModel } from './TableColumnModel';
+import { ActionModel } from './ActionModel';
+import { SettingOutlined } from '@ant-design/icons';
+import { observable } from '@formily/reactive';
 
 type S = {
   subModels: {
     columns: TableColumnModel[];
+    actions: ActionModel[];
   };
 };
 
 export class TableModel extends BlockFlowModel<S> {
   collection: Collection;
   resource: MultiRecordResource;
+  selectedRows = observable.shallow([]);
 
   getColumns() {
     return this.mapSubModels('columns', (column) => {
@@ -80,9 +91,36 @@ export class TableModel extends BlockFlowModel<S> {
     } as any);
   }
 
+  renderActions() {
+    return this.mapSubModels('actions', (action) => {
+      return <FlowModelRenderer key={action.uid} model={action} showFlowSettings />;
+    });
+  }
+
+  setSelectedRows(rows) {
+    this.selectedRows.length = 0;
+    this.selectedRows.push(...rows);
+  }
+
   render() {
     return (
       <Card>
+        {this.renderActions()}
+        <AddActionModel
+          model={this}
+          subModelKey={'actions'}
+          items={() => [
+            {
+              key: 'action1',
+              label: 'Action 1',
+              createModelOptions: {
+                use: 'BulkDeleteActionModel',
+              },
+            },
+          ]}
+        >
+          <SettingOutlined />
+        </AddActionModel>
         <Table
           className={css`
             td {
@@ -101,6 +139,11 @@ export class TableModel extends BlockFlowModel<S> {
             this.resource.setPage(pagination.current);
             this.resource.setPageSize(pagination.pageSize);
             this.resource.refresh();
+          }}
+          rowSelection={{
+            onChange: (selectedRowKeys, selectedRows) => {
+              this.setSelectedRows(selectedRows);
+            },
           }}
         />
       </Card>
