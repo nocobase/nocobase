@@ -88,17 +88,10 @@ export class TableModel extends BlockFlowModel<S> {
             subModelKey={'actions'}
             items={() => [
               {
-                key: 'action1',
-                label: 'Action 1',
+                key: 'delete',
+                label: 'Delete',
                 createModelOptions: {
-                  use: 'ActionModel',
-                },
-              },
-              {
-                key: 'action2',
-                label: 'View',
-                createModelOptions: {
-                  use: 'ViewActionModel',
+                  use: 'DeleteActionModel',
                 },
               },
             ]}
