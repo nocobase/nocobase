@@ -43,7 +43,7 @@ export function UsersAddition() {
       icon={<PlusOutlined />}
       type="dashed"
       block
-      disabled={Boolean(executed)}
+      disabled={executed > 0}
       className="ant-formily-array-base-addition"
     >
       {t('Add user')}
