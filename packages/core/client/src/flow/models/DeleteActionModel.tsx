@@ -18,12 +18,12 @@ export class DeleteActionModel extends ActionModel {
 }
 
 DeleteActionModel.registerFlow({
-  key: 'event1',
+  key: 'deleteRecord',
   on: {
     eventName: 'click',
   },
   steps: {
-    step1: {
+    delete: {
       async handler(ctx, params) {
         if (!ctx.extra.currentResource || !ctx.extra.currentRecord) {
           ctx.globals.message.error('No resource or record selected for deletion.');
@@ -31,6 +31,7 @@ DeleteActionModel.registerFlow({
         }
         await ctx.extra.currentResource.destroy(ctx.extra.currentRecord);
         ctx.globals.message.success('Record deleted successfully.');
+        await ctx.extra.currentResource.refresh();
       },
     },
   },
