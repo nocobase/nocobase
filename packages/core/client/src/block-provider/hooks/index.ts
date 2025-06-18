@@ -197,9 +197,7 @@ export function useCollectValuesToSubmit() {
 
       if (isVariable(value)) {
         const { value: parsedValue } = (await variables?.parseVariable(value, localVariables)) || {};
-        if (parsedValue !== null && parsedValue !== undefined) {
-          assignedValues[key] = transformVariableValue(parsedValue, { targetCollectionField: collectionField });
-        }
+        assignedValues[key] = transformVariableValue(parsedValue, { targetCollectionField: collectionField });
       } else if (value !== '') {
         assignedValues[key] = value;
       }
@@ -385,9 +383,7 @@ export const useAssociationCreateActionProps = () => {
 
         if (isVariable(value)) {
           const { value: parsedValue } = (await variables?.parseVariable(value, localVariables)) || {};
-          if (parsedValue) {
-            assignedValues[key] = transformVariableValue(parsedValue, { targetCollectionField: collectionField });
-          }
+          assignedValues[key] = transformVariableValue(parsedValue, { targetCollectionField: collectionField });
         } else if (value !== '') {
           assignedValues[key] = value;
         }
@@ -658,9 +654,7 @@ export const useCustomizeUpdateActionProps = () => {
 
         if (isVariable(value)) {
           const { value: parsedValue } = (await variables?.parseVariable(value, localVariables)) || {};
-          if (parsedValue) {
-            assignedValues[key] = transformVariableValue(parsedValue, { targetCollectionField: collectionField });
-          }
+          assignedValues[key] = transformVariableValue(parsedValue, { targetCollectionField: collectionField });
         } else if (value !== '') {
           assignedValues[key] = value;
         }
@@ -771,9 +765,7 @@ export const useCustomizeBulkUpdateActionProps = () => {
 
         if (isVariable(value)) {
           const { value: parsedValue } = (await variables?.parseVariable(value, localVariables)) || {};
-          if (parsedValue) {
-            assignedValues[key] = transformVariableValue(parsedValue, { targetCollectionField: collectionField });
-          }
+          assignedValues[key] = transformVariableValue(parsedValue, { targetCollectionField: collectionField });
         } else if (value !== '') {
           assignedValues[key] = value;
         }
@@ -999,9 +991,7 @@ export const useUpdateActionProps = () => {
 
         if (isVariable(value)) {
           const { value: parsedValue } = (await variables?.parseVariable(value, localVariables)) || {};
-          if (parsedValue) {
-            assignedValues[key] = transformVariableValue(parsedValue, { targetCollectionField: collectionField });
-          }
+          assignedValues[key] = transformVariableValue(parsedValue, { targetCollectionField: collectionField });
         } else if (value !== '') {
           assignedValues[key] = value;
         }
