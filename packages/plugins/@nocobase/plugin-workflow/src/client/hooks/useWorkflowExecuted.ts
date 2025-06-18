@@ -9,12 +9,12 @@
 
 import { useFlowContext } from '../FlowContext';
 
-export function useWorkflowExecuted() {
+export function useWorkflowExecuted(): bigint {
   const { workflow } = useFlowContext();
-  return BigInt(workflow?.versionStats?.executed);
+  return BigInt(workflow?.versionStats?.executed || 0);
 }
 
-export function useWorkflowAnyExecuted() {
+export function useWorkflowAnyExecuted(): bigint {
   const { workflow } = useFlowContext();
-  return BigInt(workflow?.stats?.executed);
+  return BigInt(workflow?.stats?.executed || 0);
 }
