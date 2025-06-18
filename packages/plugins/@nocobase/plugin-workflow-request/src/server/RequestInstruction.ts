@@ -36,7 +36,7 @@ interface MultipartTextField {
 interface MultipartFileField {
   valueType: 'file';
   name: string;
-  file: AttachmentModel;
+  file: AttachmentModel | AttachmentModel[];
 }
 
 async function request(config: RequestInstructionConfig, app: Application) {
@@ -79,14 +79,19 @@ async function request(config: RequestInstructionConfig, app: Application) {
 
         if (record.valueType === 'file') {
           const plugin = app.pm.get(PluginFileManagerServer) as PluginFileManagerServer;
-          const { stream, contentType } = await plugin.getFileStream(record.file);
+          const files: AttachmentModel[] = Array.isArray(record.file) ? record.file : [record.file];
 
-          const chunks = [];
-          for await (const chunk of stream) {
-            chunks.push(chunk);
+          for (const file of files) {
+            const { stream, contentType } = await plugin.getFileStream(file);
+
+            const chunks = [];
+            for await (const chunk of stream) {
+              chunks.push(chunk);
+            }
+
+            form.append(record.name, new Blob(chunks, { type: contentType }), file.filename);
           }
 
-          form.append(record.name, new Blob(chunks, { type: contentType }), record.file.filename);
           continue;
         }
 
