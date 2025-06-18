@@ -29,7 +29,6 @@ export class TableColumnModel extends FieldFlowModel {
         {this.props.title}
       </FlowsFloatContextMenu>
     );
-
     return {
       ...this.props,
       title: this.props.tooltip ? (
@@ -64,6 +63,7 @@ export class TableColumnModel extends FieldFlowModel {
         `,
       }),
       render: this.render(),
+      width: this.props.width || 200,
     };
   }
 
@@ -123,7 +123,6 @@ export class TableActionsColumnModel extends TableColumnModel {
 
   getColumnProps() {
     return {
-      // title: 'Actions',
       ...this.props,
       title: (
         <FlowsFloatContextMenu
@@ -225,6 +224,32 @@ TableColumnModel.registerFlow({
       },
       handler(ctx, params) {
         ctx.model.setProps('width', params.width);
+      },
+    },
+    fixed: {
+      title: 'Fixed',
+      uiSchema: {
+        fixed: {
+          'x-component': 'Select',
+          'x-decorator': 'FormItem',
+          enum: [
+            {
+              value: 'none',
+              label: 'Not fixed',
+            },
+            {
+              value: 'left',
+              label: 'Left fixed',
+            },
+            {
+              value: 'right',
+              label: 'Right fixed',
+            },
+          ],
+        },
+      },
+      handler(ctx, params) {
+        ctx.model.setProps('fixed', params.fixed);
       },
     },
   },

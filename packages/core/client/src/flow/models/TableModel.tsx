@@ -29,16 +29,37 @@ type S = {
   };
 };
 
+function adjustColumnOrder(columns) {
+  const leftFixedColumns = [];
+  const normalColumns = [];
+  const rightFixedColumns = [];
+
+  columns.forEach((column) => {
+    if (column.fixed === 'left') {
+      leftFixedColumns.push(column);
+    } else if (column.fixed === 'right') {
+      rightFixedColumns.push(column);
+    } else {
+      normalColumns.push(column);
+    }
+  });
+
+  return [...leftFixedColumns, ...normalColumns, ...rightFixedColumns];
+}
+
 export class TableModel extends BlockFlowModel<S> {
   collection: Collection;
   resource: MultiRecordResource;
 
   getColumns() {
-    return this.mapSubModels('columns', (column) => {
+    const columns = this.mapSubModels('columns', (column) => {
       return column.getColumnProps();
-    }).concat({
+    });
+
+    const addColumn = {
       key: 'addColumn',
       fixed: 'right',
+      width: 180,
       title: (
         <AddFieldButton
           collection={this.collection}
@@ -69,7 +90,11 @@ export class TableModel extends BlockFlowModel<S> {
           }}
         />
       ),
-    } as any);
+    };
+
+    // 加入后再排序
+    const allColumns = [...columns, addColumn];
+    return adjustColumnOrder(allColumns);
   }
 
   render() {
@@ -126,6 +151,9 @@ export class TableModel extends BlockFlowModel<S> {
             this.resource.setPage(pagination.current);
             this.resource.setPageSize(pagination.pageSize);
             this.resource.refresh();
+          }}
+          scroll={{
+            x: 'max-content',
           }}
         />
       </Card>
