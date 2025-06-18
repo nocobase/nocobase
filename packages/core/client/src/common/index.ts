@@ -11,3 +11,4 @@ export * from './AppNotFound';
 export * from './SelectWithTitle';
 export * from './useFieldComponentName';
 export * from './getVariableValue';
+export * from '../utils/sanitize';

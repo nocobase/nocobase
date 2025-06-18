@@ -9,6 +9,7 @@
 
 import { css, cx } from '@emotion/css';
 import { parseHTML } from '@nocobase/utils/client';
+import { sanitizeHTMLString } from '../common';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCurrentAppInfo } from '../appInfo/CurrentAppInfoProvider';
@@ -36,16 +37,16 @@ export const PoweredBy = () => {
   `;
   const appVersion = `<span class="nb-app-version">v${data?.data?.version}</span>`;
 
+  const html = parseHTML(
+    customBrandPlugin?.options?.options?.brand ||
+      `Powered by <a href="${urls[i18n.language] || urls['en-US']}" target="_blank">NocoBase</a>`,
+    { appVersion },
+  );
+
   return (
     <div
       className={cx(style, 'nb-brand')}
-      dangerouslySetInnerHTML={{
-        __html: parseHTML(
-          customBrandPlugin?.options?.options?.brand ||
-            `Powered by <a href="${urls[i18n.language] || urls['en-US']}" target="_blank">NocoBase</a>`,
-          { appVersion },
-        ),
-      }}
+      dangerouslySetInnerHTML={{ __html: sanitizeHTMLString(html) }}
     ></div>
   );
 };

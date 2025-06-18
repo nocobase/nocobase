@@ -11,6 +11,7 @@ import { QuestionCircleOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
 import { observer } from '@formily/reactive-react';
 import { parseHTML } from '@nocobase/utils/client';
+import { sanitizeHTMLString } from '../common';
 import { Dropdown, Menu, Popover } from 'antd';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -125,7 +126,9 @@ export const Help = observer(
 
     if (customBrandPlugin?.options?.options?.about) {
       const appVersion = `<span class="nb-app-version">v${data?.data?.version}</span>`;
-      const content = parseHTML(customBrandPlugin.options.options.about, { appVersion });
+      const content = sanitizeHTMLString(
+        parseHTML(customBrandPlugin.options.options.about, { appVersion }),
+      );
 
       return (
         <div className={helpClassName}>

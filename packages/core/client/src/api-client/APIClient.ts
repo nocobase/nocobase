@@ -12,6 +12,7 @@ import { Result } from 'ahooks/es/useRequest/src/types';
 import { notification } from 'antd';
 import React from 'react';
 import { Application } from '../application';
+import { parseHTMLToText } from '../common';
 
 function notify(type, messages, instance) {
   if (!messages?.length) {
@@ -137,9 +138,7 @@ export class APIClient extends APIClientSDK {
 
   toErrMessages(error) {
     if (typeof error?.response?.data === 'string') {
-      const tempElement = document.createElement('div');
-      tempElement.innerHTML = error?.response?.data;
-      let message = tempElement.textContent || tempElement.innerText;
+      let message = parseHTMLToText(error?.response?.data);
       if (message.includes('Error occurred while trying')) {
         message = 'The application may be starting up. Please try again later.';
         return [{ code: 'APP_WARNING', message }];

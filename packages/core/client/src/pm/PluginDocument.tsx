@@ -15,6 +15,7 @@ import { useStyles as useMarkdownStyles } from '../schema-component/antd/markdow
 import { useParseMarkdown } from '../schema-component/antd/markdown/util';
 import { useStyles } from './style';
 import { useGlobalTheme } from '../global-theme';
+import { sanitizeHTMLString } from '../common';
 
 const PLUGIN_STATICS_PATH = '/static/plugins/';
 
@@ -48,7 +49,7 @@ export const PluginDocument: React.FC<PluginDocumentProps> = memo((props) => {
         if (src.startsWith('http') || src.startsWith('//:')) return match;
         return `src="${PLUGIN_STATICS_PATH}${packageName}/${src}"`;
       });
-      return res;
+      return sanitizeHTMLString(res);
     }
     return '';
   }, [html, packageName]);
