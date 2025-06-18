@@ -13,17 +13,17 @@ import { Spin } from 'antd';
 import React from 'react';
 import { useParams } from 'react-router-dom';
 
-function InternalFlowPage({ uid }) {
+function InternalFlowPage({ uid, sharedContext }) {
   const model = useFlowModel(uid);
-  return <FlowModelRenderer model={model} showFlowSettings hideRemoveInSettings />;
+  return <FlowModelRenderer model={model} sharedContext={sharedContext} showFlowSettings hideRemoveInSettings />;
 }
 
 export const FlowPage = () => {
   const params = useParams();
-  return <FlowPageComponent uid={params.name} />;
+  return <FlowPageComponent uid={params.name} sharedContext={{}} />;
 };
 
-export const FlowPageComponent = ({ uid }) => {
+export const FlowPageComponent = ({ uid, sharedContext }) => {
   const flowEngine = useFlowEngine();
   const { loading } = useRequest(
     () => {
@@ -51,5 +51,5 @@ export const FlowPageComponent = ({ uid }) => {
   if (loading) {
     return <Spin />;
   }
-  return <InternalFlowPage uid={uid} />;
+  return <InternalFlowPage uid={uid} sharedContext={sharedContext} />;
 };

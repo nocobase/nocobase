@@ -116,8 +116,9 @@ FormModel.registerFlow({
         resource.setResourceName(params.collectionName);
         resource.setAPIClient(ctx.globals.api);
         ctx.model.resource = resource;
-        if (ctx.extra.filterByTk) {
-          resource.setFilterByTk(ctx.extra.filterByTk);
+        console.log('FormModel flow context', ctx.extra);
+        if (ctx.extra.currentRecord) {
+          resource.setFilterByTk(ctx.extra.currentRecord.id);
           await resource.refresh();
           ctx.model.form.setInitialValues(resource.getData());
         }

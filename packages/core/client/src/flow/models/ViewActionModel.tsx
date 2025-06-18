@@ -7,6 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { uid } from '@formily/shared';
 import type { ButtonType } from 'antd/es/button';
 import React from 'react';
 import { FlowPageComponent } from '../FlowPage';
@@ -30,7 +31,7 @@ ViewActionModel.registerFlow({
           width: 800,
           content: (
             <div>
-              <FlowPageComponent uid={`${ctx.model.uid}-drawer`} />
+              <FlowPageComponent uid={`${ctx.model.uid}-drawer`} sharedContext={ctx.extra} />
             </div>
           ),
         });

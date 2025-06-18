@@ -7,3 +7,7 @@
 ## 弹窗
 
 <code src="./demos/popup.tsx"></code>
+
+## Confirm
+
+<code src="./demos/confirm.tsx"></code>

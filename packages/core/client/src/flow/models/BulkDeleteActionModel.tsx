@@ -7,6 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { MultiRecordResource } from '@nocobase/flow-engine';
 import React from 'react';
 import { ActionModel } from './ActionModel';
 
@@ -21,11 +22,18 @@ BulkDeleteActionModel.registerFlow({
   },
   steps: {
     step1: {
-      handler(ctx, params) {
-        ctx.globals.modal.confirm({
-          title: `Selected Rows`,
-          content: <pre>{JSON.stringify(ctx.extra.currentResource?.getSelectedRows(), null, 2)}</pre>,
-        });
+      async handler(ctx, params) {
+        if (!ctx.extra.currentResource) {
+          ctx.globals.message.error('No resource selected for deletion.');
+          return;
+        }
+        const resource = ctx.extra.currentResource as MultiRecordResource;
+        if (resource.getSelectedRows().length === 0) {
+          ctx.globals.message.warning('No records selected for deletion.');
+          return;
+        }
+        await resource.destroySelectedRows();
+        ctx.globals.message.success('Selected records deleted successfully.');
       },
     },
   },

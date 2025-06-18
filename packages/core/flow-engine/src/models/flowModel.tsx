@@ -14,7 +14,7 @@ import { uid } from 'uid/secure';
 import { openRequiredParamsStepFormDialog as openRequiredParamsStepFormDialogFn } from '../components/settings/wrappers/contextual/StepRequiredSettingsDialog';
 import { openStepSettingsDialog as openStepSettingsDialogFn } from '../components/settings/wrappers/contextual/StepSettingsDialog';
 import { FlowEngine } from '../flowEngine';
-import { resolveDefaultParams } from '../utils';
+import { FlowExitException, resolveDefaultParams } from '../utils';
 import type {
   ActionStepDefinition,
   ArrayElementType,
@@ -57,7 +57,19 @@ export class FlowModel<Structure extends { parent?: any; subModels?: any } = Def
    * 基于 key 的 fork 实例缓存，用于复用 fork 实例
    */
   private forkCache: Map<string, ForkFlowModel<any>> = new Map();
-  // public static meta: FlowModelMeta;
+  // model 树的共享运行上下文
+  private _sharedContext: Record<string, any> = {};
+
+  public setSharedContext(ctx: Record<string, any>) {
+    this._sharedContext = ctx;
+  }
+
+  public getSharedContext() {
+    return {
+      ...this.parent?.getSharedContext(),
+      ...this._sharedContext, // 当前实例的 context 优先级最高
+    };
+  }
 
   constructor(protected options: FlowModelOptions<Structure>) {
     if (options?.flowEngine?.getModel(options.uid)) {
@@ -343,9 +355,7 @@ export class FlowModel<Structure extends { parent?: any; subModels?: any } = Def
     }
 
     let lastResult: any;
-    let exited = false;
     const stepResults: Record<string, any> = {};
-    const shared: Record<string, any> = {};
 
     // Create a new FlowContext instance for this flow execution
     const createLogger = (level: string) => (message: string, meta?: any) => {
@@ -357,8 +367,7 @@ export class FlowModel<Structure extends { parent?: any; subModels?: any } = Def
     const globalContexts = currentFlowEngine.getContext() || {};
     const flowContext: FlowContext<this> = {
       exit: () => {
-        exited = true;
-        console.log(`Flow '${flowKey}' on model '${this.uid}' exited via ctx.exit().`);
+        throw new FlowExitException(flowKey, this.uid);
       },
       logger: {
         info: createLogger('INFO'),
@@ -367,7 +376,7 @@ export class FlowModel<Structure extends { parent?: any; subModels?: any } = Def
         debug: createLogger('DEBUG'),
       },
       stepResults,
-      shared,
+      shared: this.getSharedContext(),
       globals: globalContexts,
       extra: extra || {},
       model: this,
@@ -377,8 +386,6 @@ export class FlowModel<Structure extends { parent?: any; subModels?: any } = Def
     for (const stepKey in flow.steps) {
       if (Object.prototype.hasOwnProperty.call(flow.steps, stepKey)) {
         const step: StepDefinition = flow.steps[stepKey];
-        if (exited) break;
-
         let handler: ((ctx: FlowContext<this>, params: any) => Promise<any> | any) | undefined;
         let combinedParams: Record<string, any> = {};
         let actionDefinition;
@@ -424,12 +431,18 @@ export class FlowModel<Structure extends { parent?: any; subModels?: any } = Def
           // Store step result
           stepResults[stepKey] = lastResult;
         } catch (error) {
+          // 检查是否是通过 ctx.exit() 正常退出
+          if (error instanceof FlowExitException) {
+            console.log(`[FlowEngine] ${error.message}`);
+            return Promise.resolve(stepResults);
+          }
+
           console.error(`BaseModel.applyFlow: Error executing step '${stepKey}' in flow '${flowKey}':`, error);
           return Promise.reject(error);
         }
       }
     }
-    return Promise.resolve(lastResult);
+    return Promise.resolve(stepResults);
   }
 
   dispatchEvent(eventName: string, extra?: FlowExtraContext): void {

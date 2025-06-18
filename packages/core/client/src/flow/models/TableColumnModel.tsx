@@ -111,7 +111,12 @@ const Columns = observer<any>(({ record, model }) => {
       {model.mapSubModels('actions', (action: ActionModel) => {
         const fork = action.createFork({}, `${record.id}`);
         return (
-          <FlowModelRenderer showFlowSettings key={fork.uid} model={fork} extraContext={{ currentRecord: record }} />
+          <FlowModelRenderer
+            showFlowSettings
+            key={fork.uid}
+            model={fork}
+            extraContext={{ currentResource: model.parent.resource, currentRecord: record }}
+          />
         );
       })}
     </Space>
@@ -135,6 +140,13 @@ export class TableActionsColumnModel extends TableColumnModel {
               model={this}
               subModelKey={'actions'}
               items={() => [
+                {
+                  key: 'view',
+                  label: 'View',
+                  createModelOptions: {
+                    use: 'ViewActionModel',
+                  },
+                },
                 {
                   key: 'link',
                   label: 'Link',
