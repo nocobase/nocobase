@@ -8,7 +8,7 @@
  */
 
 import Database, { createMockDatabase } from '@nocobase/database';
-import { EagerLoadingTree } from '../../eager-loading/eager-loading-tree';
+import { EagerLoadingTree, queryParentSQL } from '../../eager-loading/eager-loading-tree';
 
 const skipSqlite = process.env.DB_DIALECT == 'sqlite' ? it.skip : it;
 
@@ -619,5 +619,63 @@ describe('Eager loading tree', () => {
     expect(u1.get('posts')[0].get('tags')).toHaveLength(2);
     expect(u1.get('posts')[0].get('tags')[0].get('tagCategory')).toBeDefined();
     expect(u1.get('posts')[0].get('tags')[0].get('tagCategory').get('name')).toBe('c1');
+  });
+
+  it('should generate parent query with replacements', async () => {
+    const Category = db.collection({
+      name: 'categories',
+      fields: [
+        { type: 'string', name: 'name' },
+        { type: 'belongsTo', name: 'parent' },
+      ],
+    });
+
+    await db.sync();
+
+    const result = queryParentSQL({
+      db,
+      collection: Category,
+      foreignKey: 'parentId',
+      targetKey: 'id',
+      nodeIds: [1, 2, 3],
+    });
+
+    expect(result.sql).toContain('IN (?,?,?)');
+    expect(result.replacements).toEqual([1, 2, 3]);
+  });
+
+  it('should bind nodeIds when loading parent recursively', async () => {
+    const Tree = db.collection({
+      name: 'trees',
+      fields: [
+        { type: 'string', name: 'name' },
+        { type: 'belongsTo', name: 'parent' },
+      ],
+    });
+
+    await db.sync();
+
+    const root = await Tree.repository.create({ values: { name: 'root' } });
+    const child = await Tree.repository.create({ values: { name: 'child', parent: root } });
+
+    const findOptions = Tree.repository.buildQueryOptions({
+      filterByTk: child.get('id'),
+      appends: ['parent(recursively=true)'],
+    });
+
+    const spy = vi.spyOn(db.sequelize, 'query');
+
+    const tree = EagerLoadingTree.buildFromSequelizeOptions({
+      model: Tree.model,
+      rootAttributes: findOptions.attributes,
+      includeOption: findOptions.include,
+      db,
+      rootQueryOptions: findOptions,
+    });
+
+    await tree.load();
+
+    const call = spy.mock.calls.find((c) => String(c[0]).includes('WITH RECURSIVE'));
+    expect(call?.[1]?.replacements).toEqual([root.get('id')]);
   });
 });

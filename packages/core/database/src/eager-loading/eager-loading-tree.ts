@@ -55,13 +55,13 @@ const EagerLoadingNodeProto = {
   },
 };
 
-const queryParentSQL = (options: {
+export const queryParentSQL = (options: {
   db: Database;
   nodeIds: any[];
   collection: Collection;
   foreignKey: string;
   targetKey: string;
-}) => {
+}): { sql: string; replacements: any[] } => {
   const { collection, db, nodeIds } = options;
   const tableName = collection.quotedTableName();
   const { foreignKey, targetKey } = options;
@@ -70,16 +70,18 @@ const queryParentSQL = (options: {
 
   const queryInterface = db.sequelize.getQueryInterface();
   const q = queryInterface.quoteIdentifier.bind(queryInterface);
-  return `WITH RECURSIVE cte AS (
+  const placeholders = nodeIds.map(() => '?').join(',');
+  const sql = `WITH RECURSIVE cte AS (
       SELECT ${q(targetKeyField)}, ${q(foreignKeyField)}
       FROM ${tableName}
-      WHERE ${q(targetKeyField)} IN (${nodeIds.join(',')})
+      WHERE ${q(targetKeyField)} IN (${placeholders})
       UNION ALL
       SELECT t.${q(targetKeyField)}, t.${q(foreignKeyField)}
       FROM ${tableName} AS t
       INNER JOIN cte ON t.${q(targetKeyField)} = cte.${q(foreignKeyField)}
       )
       SELECT ${q(targetKeyField)} AS ${q(targetKey)}, ${q(foreignKeyField)} AS ${q(foreignKey)} FROM cte`;
+  return { sql, replacements: nodeIds };
 };
 
 const processIncludes = (includes: any[], model: any, parentAs = '') => {
@@ -398,7 +400,7 @@ export class EagerLoadingTree {
           // load parent instances recursively
           if (node.includeOption.recursively && instances.length > 0) {
             const targetKey = association.targetKey;
-            const sql = queryParentSQL({
+            const { sql, replacements } = queryParentSQL({
               db: this.db,
               collection,
               foreignKey,
@@ -407,6 +409,7 @@ export class EagerLoadingTree {
             });
 
             const results = await this.db.sequelize.query(sql, {
+              replacements,
               type: 'SELECT',
               transaction,
             });
