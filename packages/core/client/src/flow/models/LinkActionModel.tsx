@@ -7,13 +7,14 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import type { ButtonType } from 'antd/es/button';
-import React from 'react';
+import type { ButtonProps } from 'antd/es/button';
 import { ActionModel } from './ActionModel';
 
 export class LinkActionModel extends ActionModel {
-  title = 'Link';
-  type: ButtonType = 'link';
+  defaultProps: ButtonProps = {
+    type: 'link',
+    title: 'Link',
+  };
 }
 
 LinkActionModel.registerFlow({

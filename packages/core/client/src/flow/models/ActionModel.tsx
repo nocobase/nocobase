@@ -9,18 +9,23 @@
 
 import { FlowModel } from '@nocobase/flow-engine';
 import { Button } from 'antd';
-import type { ButtonType } from 'antd/es/button';
+import type { ButtonProps } from 'antd/es/button';
 import React from 'react';
 
 export class ActionModel extends FlowModel {
-  title = 'Action';
+  declare props: ButtonProps;
 
-  type: ButtonType = 'default';
+  defaultProps: ButtonProps = {
+    type: 'default',
+    title: 'Action',
+  };
 
   render() {
+    const props = { ...this.defaultProps, ...this.props };
+
     return (
-      <Button type={this.type} {...this.props} onClick={() => this.dispatchEvent('click')}>
-        {this.props.children || this.title}
+      <Button {...props} onClick={() => this.dispatchEvent('click')}>
+        {props.children || props.title}
       </Button>
     );
   }
@@ -44,7 +49,7 @@ ActionModel.registerFlow({
       },
       defaultParams(ctx) {
         return {
-          title: ctx.model.title,
+          title: ctx.model.defaultProps.title,
         };
       },
       handler(ctx, params) {
