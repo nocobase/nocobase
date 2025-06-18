@@ -25,7 +25,7 @@ DeleteActionModel.registerFlow({
   },
   steps: {
     secondaryConfirmation: {
-      title: 'Secondary confirmation',
+      title: '二次确认',
       uiSchema: {
         enable: {
           type: 'boolean',
@@ -78,6 +78,28 @@ DeleteActionModel.registerFlow({
         await ctx.extra.currentResource.destroy(ctx.extra.currentRecord);
         ctx.globals.message.success('Record deleted successfully.');
         await ctx.extra.currentResource.refresh();
+      },
+    },
+    refresh: {
+      title: '执行后刷新数据',
+      uiSchema: {
+        enable: {
+          type: 'boolean',
+          title: 'Enable refresh',
+          'x-decorator': 'FormItem',
+          'x-component': 'Checkbox',
+        },
+      },
+      defaultParams(ctx) {
+        return {
+          enable: true,
+        };
+      },
+      async handler(ctx, params) {
+        if (params.enable) {
+          await ctx.extra.currentResource.refresh();
+          ctx.globals.message.success('Data refreshed successfully.');
+        }
       },
     },
   },
