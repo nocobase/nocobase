@@ -7,14 +7,16 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import type { ButtonType } from 'antd/es/button';
+import type { ButtonProps } from 'antd/es/button';
 import React from 'react';
 import { FlowPageComponent } from '../FlowPage';
 import { ActionModel } from './ActionModel';
 
 export class ViewActionModel extends ActionModel {
-  title = 'View';
-  type: ButtonType = 'link';
+  defaultProps: ButtonProps = {
+    type: 'link',
+    title: 'View',
+  };
 }
 
 ViewActionModel.registerFlow({
