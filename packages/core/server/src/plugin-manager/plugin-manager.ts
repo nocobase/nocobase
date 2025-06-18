@@ -16,6 +16,7 @@ import fs from 'fs-extra';
 import _ from 'lodash';
 import net from 'net';
 import { basename, join, resolve, sep } from 'path';
+import { logger } from '@nocobase/logger';
 import Application from '../application';
 import { createAppProxy, tsxRerunning } from '../helper';
 import { Plugin } from '../plugin';
@@ -166,16 +167,16 @@ export class PluginManager {
       const packageName = this.getPackageName(name);
       return packageName;
     } catch (error) {
-      console.log(`\`${name}\` plugin not found locally`);
+      logger.info(`\`${name}\` plugin not found locally`);
       const prefixes = this.getPluginPkgPrefix();
       for (const prefix of prefixes) {
         try {
           const packageName = `${prefix}${name}`;
-          console.log(`Try to find ${packageName}`);
+          logger.info(`Try to find ${packageName}`);
           await execa('npm', ['v', packageName, 'versions']);
-          console.log(`${packageName} downloading`);
+          logger.info(`${packageName} downloading`);
           await execa('yarn', ['add', packageName, '-W']);
-          console.log(`${packageName} downloaded`);
+          logger.info(`${packageName} downloaded`);
           return packageName;
         } catch (error) {
           continue;
@@ -748,7 +749,7 @@ export class PluginManager {
           const dir = resolve(process.env.NODE_MODULES_PATH, plugin.packageName);
           try {
             const realDir = await fs.realpath(dir);
-            console.log('realDir', realDir);
+            this.app.log.debug('realDir %s', realDir);
             this.app.log.debug(`rm -rf ${realDir}`);
             return fs.rm(realDir, { force: true, recursive: true });
           } catch (error) {

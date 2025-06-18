@@ -8,6 +8,7 @@
  */
 
 import Topo from '@hapi/topo';
+import { logger } from '@nocobase/logger';
 import { Repository } from '@nocobase/database';
 import { default as _, default as lodash } from 'lodash';
 import { PluginManager } from './plugin-manager';
@@ -105,12 +106,12 @@ export class PluginManagerRepository extends Repository {
     name = lodash.cloneDeep(name);
 
     const pluginNames = lodash.castArray(name);
-    console.log(`disable ${name}, ${pluginNames}`);
+    logger.debug(`disable ${name}, ${pluginNames}`);
     const filter = {
       name,
     };
 
-    console.log(JSON.stringify(filter, null, 2));
+    logger.trace(JSON.stringify(filter, null, 2));
     await this.update({
       filter,
       values: {
