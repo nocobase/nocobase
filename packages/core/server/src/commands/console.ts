@@ -22,7 +22,7 @@ export default (app: Application) => {
       const repl = (REPL.start('nocobase > ').context.app = app);
       repl.on('exit', async function (err) {
         if (err) {
-          console.log(err);
+          app.log.error(err);
           process.exit(1);
         }
         await app.stop();

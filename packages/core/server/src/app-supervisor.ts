@@ -12,6 +12,7 @@ import { Mutex } from 'async-mutex';
 import { EventEmitter } from 'events';
 import Application, { ApplicationOptions, MaintainingCommandStatus } from './application';
 import { getErrorLevel } from './errors/handler';
+import { logger } from '@nocobase/logger';
 
 type BootOptions = {
   appName: string;
@@ -221,7 +222,7 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
 
   async removeApp(appName: string) {
     if (!this.apps[appName]) {
-      console.log(`app ${appName} not exists`);
+      logger.warn(`app ${appName} not exists`);
       return;
     }
 
