@@ -88,6 +88,13 @@ export class TableModel extends BlockFlowModel<S> {
             subModelKey={'actions'}
             items={() => [
               {
+                key: 'addnew',
+                label: 'Add new',
+                createModelOptions: {
+                  use: 'AddNewActionModel',
+                },
+              },
+              {
                 key: 'delete',
                 label: 'Delete',
                 createModelOptions: {
@@ -96,9 +103,7 @@ export class TableModel extends BlockFlowModel<S> {
               },
             ]}
           >
-            <Button type="primary" icon={<SettingOutlined />}>
-              Configure actions
-            </Button>
+            <Button icon={<SettingOutlined />}>Configure actions</Button>
           </AddActionModel>
         </Space>
         <Table

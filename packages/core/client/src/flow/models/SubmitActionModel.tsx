@@ -25,11 +25,16 @@ SubmitActionModel.registerFlow({
   steps: {
     step1: {
       async handler(ctx, params) {
-        await ctx.model.parent.form.submit();
-        const values = ctx.model.parent.form.values;
-        await ctx.model.parent.resource.save(values);
-        if (ctx.model.parent.dialog) {
-          ctx.model.parent.dialog.close();
+        if (ctx.extra.currentModel) {
+          await ctx.extra.currentModel.form.submit();
+          const values = ctx.extra.currentModel.form.values;
+          await ctx.extra.currentModel.resource.save(values);
+        }
+        if (ctx.shared.currentDrawer) {
+          ctx.shared.currentDrawer.destroy();
+        }
+        if (ctx.shared.currentResource) {
+          ctx.shared.currentResource.refresh();
         }
       },
     },

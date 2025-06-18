@@ -12,12 +12,11 @@ import React from 'react';
 import { FlowPageComponent } from '../FlowPage';
 import { ActionModel } from './ActionModel';
 
-export class ViewActionModel extends ActionModel {
-  title = 'View';
-  type: ButtonType = 'link';
+export class AddNewActionModel extends ActionModel {
+  title = 'Add new';
 }
 
-ViewActionModel.registerFlow({
+AddNewActionModel.registerFlow({
   key: 'event1',
   on: {
     eventName: 'click',

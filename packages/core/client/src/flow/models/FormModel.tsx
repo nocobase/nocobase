@@ -65,7 +65,7 @@ export class FormModel extends BlockFlowModel {
           />
           <FormButtonGroup>
             {this.mapSubModels('actions', (action) => (
-              <FlowModelRenderer model={action} showFlowSettings />
+              <FlowModelRenderer model={action} showFlowSettings extraContext={{ currentModel: this }} />
             ))}
             <AddActionButton model={this} subModelBaseClass="ActionModel" />
           </FormButtonGroup>
