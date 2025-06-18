@@ -12,11 +12,15 @@ import { Button, ButtonProps } from 'antd';
 import React from 'react';
 
 export class ActionModel extends FlowModel<{ subModels: { view?: FlowModel } }> {
-  declare props: ButtonProps;
+  declare props: ButtonProps & { title?: string };
 
   render() {
     const props = this.getProps();
-    return <Button {...props} onClick={(event) => this.dispatchEvent('onClick', { event })} />;
+    return (
+      <Button {...props} onClick={(event) => this.dispatchEvent('onClick', { event })}>
+        {props.title}
+      </Button>
+    );
   }
 }
 
