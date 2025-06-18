@@ -8,7 +8,8 @@
  */
 
 import { css } from '@emotion/css';
-import { AddFieldModel, Collection, MultiRecordResource } from '@nocobase/flow-engine';
+import { observable } from '@formily/reactive';
+import { AddFieldButton, Collection, MultiRecordResource } from '@nocobase/flow-engine';
 import { Card, Table } from 'antd';
 import React from 'react';
 import { BlockFlowModel } from './BlockFlowModel';
@@ -23,6 +24,7 @@ type S = {
 export class TableModel extends BlockFlowModel<S> {
   collection: Collection;
   resource: MultiRecordResource;
+  selectedRows = observable.shallow([]);
 
   getColumns() {
     return this.mapSubModels('columns', (column) => {
@@ -31,49 +33,32 @@ export class TableModel extends BlockFlowModel<S> {
       key: 'addColumn',
       fixed: 'right',
       title: (
-        <AddFieldModel
+        <AddFieldButton
           collection={this.collection}
           model={this}
           subModelKey={'columns'}
+          subModelBaseClass="TableColumnModel"
+          buildCreateModelOptions={(field) => ({
+            use: 'TableColumnModel',
+            stepParams: {
+              default: {
+                step1: {
+                  fieldPath: field.fullpath,
+                },
+              },
+            },
+          })}
+          appendItems={[
+            {
+              key: 'actions',
+              label: 'Actions column',
+              createModelOptions: {
+                use: 'TableActionsColumnModel',
+              },
+            },
+          ]}
           onModelAdded={async (model: TableColumnModel) => {
             await model.applyAutoFlows();
-          }}
-          items={async () => {
-            return [
-              {
-                key: 'addField',
-                label: 'Collection fields',
-                type: 'group',
-                children: async () => {
-                  return this.collection.getFields().map((field) => {
-                    return {
-                      key: field.name,
-                      label: field.title,
-                      createModelOptions: {
-                        use: 'TableColumnModel',
-                        stepParams: {
-                          default: {
-                            step1: {
-                              fieldPath: field.fullpath,
-                            },
-                          },
-                        },
-                      },
-                    };
-                  });
-                },
-              },
-              {
-                type: 'divider',
-              },
-              {
-                key: 'actions',
-                label: 'Actions column',
-                createModelOptions: {
-                  use: 'TableActionsColumnModel',
-                },
-              },
-            ];
           }}
         />
       ),
@@ -90,6 +75,13 @@ export class TableModel extends BlockFlowModel<S> {
             }
           `}
           rowKey="id"
+          rowSelection={{
+            type: 'checkbox',
+            onChange: (_, selectedRows) => {
+              this.selectedRows.push(...selectedRows);
+            },
+            selectedRowKeys: this.selectedRows.map((row) => row.id),
+          }}
           dataSource={this.resource.getData()}
           columns={this.getColumns()}
           pagination={{

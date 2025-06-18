@@ -7,21 +7,18 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { FormButtonGroup, FormDialog, FormLayout, Submit } from '@formily/antd-v5';
+import { FormButtonGroup, FormLayout } from '@formily/antd-v5';
 import { createForm, Form } from '@formily/core';
 import { FormProvider } from '@formily/react';
 import {
   AddActionButton,
   AddFieldButton,
-  AddFieldButtonProps,
   Collection,
-  FlowEngineProvider,
   FlowModelRenderer,
   SingleRecordResource,
 } from '@nocobase/flow-engine';
 import { Card } from 'antd';
 import React from 'react';
-import { ActionModel } from './ActionModel';
 import { BlockFlowModel } from './BlockFlowModel';
 import { FormFieldModel } from './FormFieldModel';
 
@@ -31,19 +28,6 @@ export class FormModel extends BlockFlowModel {
   collection: Collection;
 
   render() {
-    const buildColumnSubModelParams: AddFieldButtonProps['buildSubModelParams'] = (item) => {
-      console.log('buildColumnSubModelParams', item);
-      return {
-        use: item.use,
-        stepParams: {
-          default: {
-            step1: {
-              fieldPath: `${item.field.collection.dataSource.name}.${item.field.collection.name}.${item.field.name}`,
-            },
-          },
-        },
-      };
-    };
     return (
       <Card>
         <FormProvider form={this.form}>
@@ -53,20 +37,37 @@ export class FormModel extends BlockFlowModel {
             ))}
           </FormLayout>
           <AddFieldButton
-            buildSubModelParams={buildColumnSubModelParams}
-            onModelAdded={async (fieldModel: FormFieldModel, item) => {
-              fieldModel.collectionField = item.field;
+            buildCreateModelOptions={(field, fieldClass) => ({
+              use: 'FormFieldModel',
+              stepParams: {
+                default: {
+                  step1: {
+                    fieldPath: `${field.collection.dataSource.name}.${field.collection.name}.${field.name}`,
+                  },
+                },
+              },
+            })}
+            onModelAdded={async (fieldModel: FormFieldModel) => {
+              const fieldInfo = fieldModel.stepParams?.field;
+              if (fieldInfo && typeof fieldInfo.name === 'string') {
+                // 如果需要设置 collectionField，可以从 collection 中获取
+                const fields = this.collection.getFields();
+                const field = fields.find((f) => f.name === fieldInfo.name);
+                if (field) {
+                  fieldModel.collectionField = field;
+                }
+              }
             }}
             subModelKey="fields"
             model={this}
             collection={this.collection}
-            ParentModelClass={FormFieldModel}
+            subModelBaseClass="FormFieldModel"
           />
           <FormButtonGroup>
             {this.mapSubModels('actions', (action) => (
               <FlowModelRenderer model={action} showFlowSettings />
             ))}
-            <AddActionButton model={this} ParentModelClass={ActionModel} />
+            <AddActionButton model={this} subModelBaseClass="ActionModel" />
           </FormButtonGroup>
         </FormProvider>
       </Card>
