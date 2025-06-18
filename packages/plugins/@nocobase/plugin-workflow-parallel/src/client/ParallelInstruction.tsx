@@ -80,7 +80,7 @@ function NodeComponent({ data }) {
                       shape="circle"
                       icon={<PlusOutlined />}
                       onClick={() => setBranchCount(branchCount - 1)}
-                      disabled={executed}
+                      disabled={executed > 0}
                       size="small"
                     />
                   </div>
@@ -92,7 +92,7 @@ function NodeComponent({ data }) {
         <Tooltip
           title={langAddBranch}
           className={css`
-            visibility: ${executed ? 'hidden' : 'visible'};
+            visibility: ${executed > 0 ? 'hidden' : 'visible'};
           `}
         >
           <Button
@@ -112,7 +112,7 @@ function NodeComponent({ data }) {
             `}
             size="small"
             onClick={() => setBranchCount(branchCount + 1)}
-            disabled={executed}
+            disabled={executed > 0}
           />
         </Tooltip>
       </div>
