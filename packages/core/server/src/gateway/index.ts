@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { createSystemLogger, getLoggerFilePath, SystemLogger } from '@nocobase/logger';
+import { createSystemLogger, getLoggerFilePath, SystemLogger, logger } from '@nocobase/logger';
 import { Registry, Toposort, ToposortOptions, uid } from '@nocobase/utils';
 import { createStoragePluginsSymlink } from '@nocobase/utils/plugin-symlink';
 import { Command } from 'commander';
@@ -244,7 +244,7 @@ export class Gateway extends EventEmitter {
     try {
       handleApp = await this.getRequestHandleAppName(req as IncomingRequest);
     } catch (error) {
-      console.log(error);
+      this.getLogger(handleApp, res).error(error);
       this.responseErrorWithCode('APP_INITIALIZING', res, { appName: handleApp });
       return;
     }
@@ -437,7 +437,7 @@ export class Gateway extends EventEmitter {
     }
 
     if (this.port === null) {
-      console.log('gateway port is not set, http server will not start');
+      logger.warn('gateway port is not set, http server will not start');
       return;
     }
 
@@ -458,7 +458,7 @@ export class Gateway extends EventEmitter {
     });
 
     this.server.listen(this.port, this.host, () => {
-      console.log(`Gateway HTTP Server running at http://${this.host}:${this.port}/`);
+      logger.info(`Gateway HTTP Server running at http://${this.host}:${this.port}/`);
       if (options?.callback) {
         options.callback(this.server);
       }

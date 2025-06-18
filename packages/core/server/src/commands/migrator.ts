@@ -16,7 +16,7 @@ export default (app: Application) => {
     .command('migrator')
     .preload()
     .action(async (opts) => {
-      console.log('migrating...');
+      app.log.info('migrating...');
       await app.emitAsync('cli.beforeMigrator', opts);
       await app.db.migrator.runAsCLI(process.argv.slice(3));
       await app.stop();

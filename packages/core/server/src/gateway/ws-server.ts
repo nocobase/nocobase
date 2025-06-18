@@ -14,7 +14,7 @@ import { IncomingMessage } from 'http';
 import { AppSupervisor } from '../app-supervisor';
 import { applyErrorWithArgs, getErrorWithCode } from './errors';
 import lodash from 'lodash';
-import { Logger } from '@nocobase/logger';
+import { Logger, logger } from '@nocobase/logger';
 import EventEmitter from 'events';
 import { parse } from 'url';
 
@@ -48,7 +48,7 @@ export class WSServer extends EventEmitter {
     this.wss.on('connection', (ws: WebSocketWithId, request: IncomingMessage) => {
       const client = this.addNewConnection(ws, request);
 
-      console.log(`new client connected ${ws.id}`);
+      logger.info(`new client connected ${ws.id}`);
 
       ws.on('error', () => {
         this.removeConnection(ws.id);
@@ -226,7 +226,7 @@ export class WSServer extends EventEmitter {
       return;
     }
     client.tags.add(`${tagKey}#${tagValue}`);
-    console.log(`client tags: ${Array.from(client.tags)}`);
+    logger.debug(`client tags: ${Array.from(client.tags)}`);
   }
 
   removeClientTag(clientId: string, tagKey: string) {
@@ -248,7 +248,7 @@ export class WSServer extends EventEmitter {
     const handleAppName = await Gateway.getInstance().getRequestHandleAppName(req);
 
     client.app = handleAppName;
-    console.log(`client tags: app#${handleAppName}`);
+    logger.debug(`client tags: app#${handleAppName}`);
     client.tags.add(`app#${handleAppName}`);
 
     const hasApp = AppSupervisor.getInstance().hasApp(handleAppName);
@@ -259,7 +259,7 @@ export class WSServer extends EventEmitter {
   }
 
   removeConnection(id: string) {
-    console.log(`client disconnected ${id}`);
+    logger.info(`client disconnected ${id}`);
     this.webSocketClients.delete(id);
   }
 

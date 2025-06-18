@@ -17,7 +17,7 @@ export default (app: Application) => {
     .auth()
     .option('-y, --yes')
     .action(async (opts) => {
-      console.log('Clearing database');
+      app.log.info('Clearing database');
       await app.db.clean({
         drop: opts.yes,
       });

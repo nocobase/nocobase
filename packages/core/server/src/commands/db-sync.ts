@@ -18,7 +18,7 @@ export default (app: Application) => {
     .preload()
     .action(async (...cliArgs) => {
       const [opts] = cliArgs;
-      console.log('db sync...');
+      app.log.info('db sync...');
 
       const Collection = app.db.getCollection('collections');
       if (Collection) {
