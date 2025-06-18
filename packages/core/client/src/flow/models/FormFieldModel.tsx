@@ -135,6 +135,11 @@ FormFieldModel.registerFlow({
       handler(ctx, params) {
         ctx.model.setTitle(params.title);
       },
+      defaultParams: (ctx) => {
+        return {
+          title: ctx.model.collectionField?.title,
+        };
+      },
     },
     initialValue: {
       title: 'Set default value',
@@ -176,6 +181,9 @@ FormFieldModel.registerFlow({
             unCheckedChildren: 'No',
           },
         },
+      },
+      defaultParams: {
+        displayLabel: true,
       },
       handler(ctx, params) {
         ctx.model.setDisplayLabel(params.displayLabel === undefined ? true : params.displayLabel);
@@ -231,6 +239,9 @@ FormFieldModel.registerFlow({
           ],
         },
       },
+      defaultParams: (ctx) => ({
+        pattern: ctx.model.field?.pattern || 'editable',
+      }),
       handler(ctx, params) {
         ctx.model.setPattern(params.pattern);
       },

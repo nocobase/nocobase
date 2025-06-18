@@ -214,6 +214,11 @@ TableColumnModel.registerFlow({
           },
         },
       },
+      defaultParams: (ctx) => {
+        return {
+          title: ctx.model.field?.title,
+        };
+      },
       handler(ctx, params) {
         ctx.model.setProps('title', params.title || ctx.model.field?.title);
       },
@@ -241,6 +246,9 @@ TableColumnModel.registerFlow({
           'x-decorator': 'FormItem',
         },
       },
+      defaultParams: {
+        width: '200',
+      },
       handler(ctx, params) {
         ctx.model.setProps('width', params.width);
       },
@@ -266,6 +274,9 @@ TableColumnModel.registerFlow({
             },
           ],
         },
+      },
+      defaultParams: {
+        fixed: 'none',
       },
       handler(ctx, params) {
         ctx.model.setProps('fixed', params.fixed);
