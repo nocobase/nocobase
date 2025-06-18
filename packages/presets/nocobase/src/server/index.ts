@@ -20,7 +20,6 @@ export class PresetNocoBase extends Plugin {
   }
 
   async getLocalPlugins() {
-    return [];
     return (await findLocalPlugins()).map((name) => name.split('>='));
   }
 
