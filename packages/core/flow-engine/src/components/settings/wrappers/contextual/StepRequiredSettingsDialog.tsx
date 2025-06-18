@@ -11,6 +11,7 @@ import { createSchemaField, ISchema, FormConsumer } from '@formily/react';
 import { message, Button } from 'antd';
 import React from 'react';
 import { ActionStepDefinition } from '../../../../types';
+import { resolveDefaultParams } from '../../../../utils';
 
 const SchemaField = createSchemaField();
 
@@ -109,10 +110,21 @@ const openRequiredParamsStepFormDialog = async ({
 
         // 获取所有步骤的初始值
         const initialValues: Record<string, any> = {};
-        requiredSteps.forEach(({ flowKey, stepKey, step }) => {
+
+        // 创建参数解析上下文用于解析函数形式的 defaultParams
+        // 在 settings 中，我们只有基本的上下文信息
+        const paramsContext = {
+          model,
+          globals: model.flowEngine?.context || {},
+          app: model.flowEngine,
+        };
+
+        for (const { flowKey, stepKey, step } of requiredSteps) {
           const stepParams = model.getStepParams(flowKey, stepKey) || {};
-          const defaultParams = step.defaultParams || {};
-          const mergedParams = { ...defaultParams, ...stepParams };
+
+          // 解析 defaultParams
+          const resolvedDefaultParams = await resolveDefaultParams(step.defaultParams, paramsContext);
+          const mergedParams = { ...resolvedDefaultParams, ...stepParams };
 
           if (Object.keys(mergedParams).length > 0) {
             if (!initialValues[flowKey]) {
@@ -120,7 +132,7 @@ const openRequiredParamsStepFormDialog = async ({
             }
             initialValues[flowKey][stepKey] = mergedParams;
           }
-        });
+        }
 
         // 构建分步表单的 Schema
         const stepPanes: Record<string, any> = {};

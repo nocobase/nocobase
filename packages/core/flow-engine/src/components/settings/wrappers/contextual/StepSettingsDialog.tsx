@@ -11,6 +11,7 @@ import { createSchemaField, ISchema } from '@formily/react';
 import { message } from 'antd';
 import React from 'react';
 import { ActionStepDefinition, StepSettingsDialogProps } from '../../../../types';
+import { resolveDefaultParams } from '../../../../utils';
 
 const SchemaField = createSchemaField();
 
@@ -82,8 +83,17 @@ const openStepSettingsDialog = async ({
 
   // 获取初始值
   const stepParams = model.getStepParams(flowKey, stepKey) || {};
-  const defaultParams = stepDefinition.defaultParams || {};
-  const initialValues = { ...defaultParams, ...stepParams };
+
+  // 创建参数解析上下文
+  const paramsContext = {
+    model,
+    globals: model.flowEngine?.context || {},
+    app: model.flowEngine,
+  };
+
+  // 解析 defaultParams
+  const resolvedDefaultParams = await resolveDefaultParams(stepDefinition.defaultParams, paramsContext);
+  const initialValues = { ...resolvedDefaultParams, ...stepParams };
 
   // 构建表单Schema
   const formSchema: ISchema = {

@@ -125,7 +125,9 @@ export interface ActionDefinition<TModel extends FlowModel = FlowModel> {
   title?: string;
   handler: (ctx: FlowContext<TModel>, params: any) => Promise<any> | any;
   uiSchema?: Record<string, ISchema>;
-  defaultParams?: Record<string, any>;
+  defaultParams?:
+    | Record<string, any>
+    | ((ctx: ParamsContext<TModel>) => Record<string, any> | Promise<Record<string, any>>);
 }
 
 /**
@@ -142,7 +144,9 @@ interface BaseStepDefinition<TModel extends FlowModel = FlowModel> {
 export interface ActionStepDefinition<TModel extends FlowModel = FlowModel> extends BaseStepDefinition<TModel> {
   use: string; // Name of the registered ActionDefinition
   uiSchema?: Record<string, ISchema>; // Optional: overrides uiSchema from ActionDefinition
-  defaultParams?: Record<string, any>; // Optional: overrides/extends defaultParams from ActionDefinition
+  defaultParams?:
+    | Record<string, any>
+    | ((ctx: ParamsContext<TModel>) => Record<string, any> | Promise<Record<string, any>>); // Optional: overrides/extends defaultParams from ActionDefinition
   paramsRequired?: boolean; // Optional: whether the step params are required, will open the config dialog before adding the model
   hideInSettings?: boolean; // Optional: whether to hide the step in the settings menu
   // Cannot have its own handler
@@ -155,7 +159,9 @@ export interface ActionStepDefinition<TModel extends FlowModel = FlowModel> exte
 export interface InlineStepDefinition<TModel extends FlowModel = FlowModel> extends BaseStepDefinition<TModel> {
   handler: (ctx: FlowContext<TModel>, params: any) => Promise<any> | any;
   uiSchema?: Record<string, ISchema>; // Optional: uiSchema for this inline step
-  defaultParams?: Record<string, any>; // Optional: defaultParams for this inline step
+  defaultParams?:
+    | Record<string, any>
+    | ((ctx: ParamsContext<TModel>) => Record<string, any> | Promise<Record<string, any>>); // Optional: defaultParams for this inline step
   paramsRequired?: boolean; // Optional: whether the step params are required, will open the config dialog before adding the model
   hideInSettings?: boolean; // Optional: whether to hide the step in the settings menu
   // Cannot use a registered action
@@ -173,12 +179,21 @@ export type StepDefinition<TModel extends FlowModel = FlowModel> =
 export type FlowExtraContext = Record<string, any>;
 
 /**
+ * 参数解析上下文类型，用于 settings 等场景
+ */
+export interface ParamsContext<TModel extends FlowModel = FlowModel> {
+  model: TModel;
+  globals: Record<string, any>;
+  app: any;
+}
+
+/**
  * Action options for registering actions with generic model type support
  */
 export interface ActionOptions<TModel extends FlowModel = FlowModel, P = any, R = any> {
   handler: (ctx: FlowContext<TModel>, params: P) => Promise<R> | R;
   uiSchema?: Record<string, any>;
-  defaultParams?: Partial<P>;
+  defaultParams?: Partial<P> | ((ctx: ParamsContext<TModel>) => Partial<P> | Promise<Partial<P>>);
 }
 
 /**
@@ -261,14 +276,14 @@ export interface RequiredConfigStepFormDialogProps {
 export type SubModelValue<TModel extends FlowModel = FlowModel> = TModel | TModel[];
 
 export interface DefaultStructure {
-  parent?: any,
-  subModels?: Record<string, FlowModel | FlowModel[]>
+  parent?: any;
+  subModels?: Record<string, FlowModel | FlowModel[]>;
 }
 
 /**
  * Options for FlowModel constructor
  */
-export interface FlowModelOptions<Structure extends {parent?: any, subModels?: any} = DefaultStructure> {
+export interface FlowModelOptions<Structure extends { parent?: any; subModels?: any } = DefaultStructure> {
   uid: string;
   props?: IModelComponentProps;
   stepParams?: Record<string, any>;
