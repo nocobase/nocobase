@@ -25,4 +25,4 @@ export * from './SubmitActionModel';
 export * from './TableColumnModel';
 export * from './TableModel';
 export * from './ViewActionModel';
-//
+export * from './PopupActionModel';

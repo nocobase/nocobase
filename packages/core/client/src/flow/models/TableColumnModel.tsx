@@ -151,6 +151,13 @@ export class TableActionsColumnModel extends TableColumnModel {
                     use: 'DeleteActionModel',
                   },
                 },
+                {
+                  key: 'popup',
+                  label: 'Popup',
+                  createModelOptions: {
+                    use: 'PopupActionModel',
+                  },
+                },
               ]}
             >
               <SettingOutlined />
