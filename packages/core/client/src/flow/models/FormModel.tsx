@@ -38,7 +38,7 @@ export class FormModel extends BlockFlowModel {
           </FormLayout>
           <AddFieldButton
             buildCreateModelOptions={(field, fieldClass) => ({
-              use: 'FormFieldModel',
+              use: fieldClass.name,
               stepParams: {
                 default: {
                   step1: {
