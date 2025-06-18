@@ -13,17 +13,13 @@ import type { ButtonType } from 'antd/es/button';
 import React from 'react';
 
 export class ActionModel extends FlowModel {
-  set onClick(fn) {
-    this.setProps('onClick', fn);
-  }
-
   title = 'Action';
 
   type: ButtonType = 'default';
 
   render() {
     return (
-      <Button type={this.type} {...this.props}>
+      <Button type={this.type} {...this.props} onClick={() => this.dispatchEvent('click')}>
         {this.props.children || this.title}
       </Button>
     );
@@ -53,12 +49,6 @@ ActionModel.registerFlow({
       },
       handler(ctx, params) {
         ctx.model.setProps('children', params.title);
-        ctx.model.onClick = (e) => {
-          ctx.model.dispatchEvent('click', {
-            ...ctx.extra,
-            event: e,
-          });
-        };
       },
     },
   },
