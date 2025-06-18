@@ -49,6 +49,13 @@ DeleteActionModel.registerFlow({
           'x-component': 'Input.TextArea',
         },
       },
+      defaultParams(ctx) {
+        return {
+          enable: true,
+          title: 'Delete record',
+          content: 'Are you sure you want to delete it?',
+        };
+      },
       async handler(ctx, params) {
         if (params.enable) {
           const confirmed = await ctx.globals.modal.confirm({
