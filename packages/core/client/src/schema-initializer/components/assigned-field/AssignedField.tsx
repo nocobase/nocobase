@@ -10,8 +10,9 @@
 import { Field } from '@formily/core';
 import { useField, useFieldSchema } from '@formily/react';
 import { merge } from '@formily/shared';
-import _ from 'lodash';
-import React, { useCallback, useEffect, useMemo } from 'react';
+import _, { cloneDeepWith } from 'lodash';
+import React, { isValidElement, useCallback, useEffect, useMemo } from 'react';
+import { useBlockContext } from '../../../block-provider';
 import { useFormBlockContext } from '../../../block-provider/FormBlockProvider';
 import {
   useCollectionField_deprecated,
@@ -20,14 +21,13 @@ import {
   useCollection_deprecated,
 } from '../../../collection-manager';
 import { CollectionFieldProvider } from '../../../data-source';
+import { FlagProvider } from '../../../flag-provider';
 import { useRecord } from '../../../record-provider';
 import { useCompile, useComponent } from '../../../schema-component';
 import { VariableInput, getShouldChange } from '../../../schema-settings/VariableInput/VariableInput';
 import { Option } from '../../../schema-settings/VariableInput/type';
 import { formatVariableScop } from '../../../schema-settings/VariableInput/utils/formatVariableScop';
 import { useLocalVariables, useVariables } from '../../../variables';
-import { useBlockContext } from '../../../block-provider';
-import { FlagProvider } from '../../../flag-provider';
 interface AssignedFieldProps {
   value: any;
   onChange: (value: any) => void;
@@ -126,7 +126,14 @@ export const AssignedFieldInner = (props: AssignedFieldProps) => {
         currentForm.children = formatVariableScop(currentFormFields);
       }
 
-      return scope;
+      return cloneDeepWith(scope, (value) => {
+        // 不对 `ReactElement` 进行深拷贝，因为会报错
+        if (isValidElement(value)) {
+          return value;
+        }
+        // 对于其他类型的对象，继续正常的深拷贝
+        return undefined;
+      });
     },
     [currentFormFields, name],
   );
