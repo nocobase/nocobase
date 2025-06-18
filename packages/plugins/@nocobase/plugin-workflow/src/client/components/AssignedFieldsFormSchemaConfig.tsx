@@ -73,7 +73,7 @@ export function AssignedFieldsFormSchemaConfig(props) {
     () =>
       createForm({
         initialValues: params.values,
-        disabled: executed,
+        disabled: Boolean(executed),
         effects() {
           onFormValuesChange((f) => {
             setValuesIn('params.values', toJS(f.values));
@@ -115,7 +115,7 @@ export function AssignedFieldsFormSchemaConfig(props) {
       });
       setValuesIn('params.values', nextValues);
     },
-    [collectionName, props.onChange],
+    [collectionName, form.values, props, setValuesIn],
   );
 
   return (
