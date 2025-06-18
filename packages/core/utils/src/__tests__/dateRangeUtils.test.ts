@@ -10,6 +10,7 @@
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
 import timezone from 'dayjs/plugin/timezone';
+import { vi } from 'vitest';
 import { getDayRangeByParams } from '../client';
 
 dayjs.extend(utc);
@@ -62,8 +63,14 @@ describe('getDayRangeByParams', () => {
   });
 });
 
-const originalDateNow = Date.now;
-Date.now = () => mockNow.valueOf();
+beforeAll(() => {
+  vi.useFakeTimers();
+  vi.setSystemTime(mockNow.toDate());
+});
+
+afterAll(() => {
+  vi.useRealTimers();
+});
 
 const cases = [
   {
@@ -190,5 +197,3 @@ describe('getOffsetRangeByParams', () => {
   });
 });
 
-// 恢复 Date.now
-Date.now = originalDateNow;
