@@ -56,12 +56,13 @@ ReadPretty.Input = (props: InputReadPrettyProps) => {
     return props.value && typeof props.value === 'object' ? JSON.stringify(props.value) : compile(props.value);
   }, [props.value]);
 
+  const flexStyle = props.ellipsis ? { display: 'flex', alignItems: 'center' } : {};
+
   return (
     <div
       className={cls(prefixCls, props.className)}
       style={{
-        display: 'flex',
-        alignItems: 'center',
+        ...flexStyle,
         overflowWrap: 'break-word',
         whiteSpace: 'normal',
         ...props.style,
