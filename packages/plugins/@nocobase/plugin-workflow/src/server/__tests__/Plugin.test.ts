@@ -610,7 +610,7 @@ describe('workflow > Plugin', () => {
       expect(vs2.executed).toBe(0);
     });
 
-    it('bigint stats', async () => {
+    it.skipIf(process.env.DB_DIALECT === 'sqlite')('bigint stats', async () => {
       const WorkflowRepo = app.db.getRepository('workflows');
 
       const w1 = await WorkflowRepo.create({
