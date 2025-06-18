@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { EditOutlined, SettingOutlined } from '@ant-design/icons';
+import { EditOutlined, SettingOutlined, QuestionCircleOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
 import { observer } from '@formily/reactive-react';
 import { AddActionModel, CollectionField, FlowModelRenderer, FlowsFloatContextMenu } from '@nocobase/flow-engine';
@@ -21,15 +21,26 @@ export class TableColumnModel extends FieldFlowModel {
   static readonly supportedFieldInterfaces: SupportedFieldInterfaces = '*';
 
   getColumnProps(): TableColumnProps {
+    const titleContent = (
+      <FlowsFloatContextMenu
+        model={this}
+        containerStyle={{ display: 'block', padding: '11px 8px', margin: '-11px -8px' }}
+      >
+        {this.props.title}
+      </FlowsFloatContextMenu>
+    );
+
     return {
       ...this.props,
-      title: (
-        <FlowsFloatContextMenu
-          model={this}
-          containerStyle={{ display: 'block', padding: '11px 8px', margin: '-11px -8px' }}
-        >
-          {this.props.title}
-        </FlowsFloatContextMenu>
+      title: this.props.tooltip ? (
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+          {titleContent}
+          <Tooltip title={this.props.tooltip}>
+            <QuestionCircleOutlined style={{ cursor: 'pointer' }} />
+          </Tooltip>
+        </span>
+      ) : (
+        titleContent
       ),
       ellipsis: true,
       onCell: (record) => ({
@@ -158,6 +169,7 @@ export class TableActionsColumnModel extends TableColumnModel {
 TableColumnModel.registerFlow({
   key: 'default',
   auto: true,
+  title: 'Basic',
   steps: {
     step1: {
       handler(ctx, params) {
@@ -170,8 +182,49 @@ TableColumnModel.registerFlow({
         const field = ctx.globals.dataSourceManager.getCollectionField(params.fieldPath);
         ctx.model.field = field;
         ctx.model.fieldPath = params.fieldPath;
-        ctx.model.setProps('title', field.title);
         ctx.model.setProps('dataIndex', field.name);
+      },
+    },
+    editColumTitle: {
+      title: 'Custom column title',
+      uiSchema: {
+        title: {
+          'x-component': 'Input',
+          'x-decorator': 'FormItem',
+          'x-component-props': {
+            placeholder: 'Custom column title',
+          },
+        },
+      },
+      handler(ctx, params) {
+        ctx.model.setProps('title', params.title || ctx.model.field?.title);
+      },
+    },
+    editTooltip: {
+      title: 'Edit tooltip',
+      uiSchema: {
+        tooltip: {
+          'x-component': 'Input.TextArea',
+          'x-decorator': 'FormItem',
+          'x-component-props': {
+            placeholder: 'Edit tooltip',
+          },
+        },
+      },
+      handler(ctx, params) {
+        ctx.model.setProps('tooltip', params.tooltip);
+      },
+    },
+    editColumnWidth: {
+      title: 'Column width',
+      uiSchema: {
+        width: {
+          'x-component': 'NumberPicker',
+          'x-decorator': 'FormItem',
+        },
+      },
+      handler(ctx, params) {
+        ctx.model.setProps('width', params.width);
       },
     },
   },

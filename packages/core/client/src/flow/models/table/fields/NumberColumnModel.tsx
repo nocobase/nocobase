@@ -14,9 +14,7 @@ import { InputNumberReadPretty } from '../components/InputNumberReadPretty';
 export class NumberColumnModel extends TableColumnModel {
   public static readonly supportedFieldInterfaces = ['number'];
   render() {
-    console.log(this.props);
     return (value, record, index) => {
-      console.log(value);
       return (
         <>
           <InputNumberReadPretty value={value} />

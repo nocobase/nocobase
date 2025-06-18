@@ -172,7 +172,6 @@ interface InputNumberReadPrettyProps {
 
 export const InputNumberReadPretty = connect(
   (props: InputNumberReadPrettyProps) => {
-    console.log(props);
     const { step, formatStyle, value, addonBefore, addonAfter, unitConversion, unitConversionType, separator } = props;
 
     const result = useMemo(() => {
