@@ -158,6 +158,13 @@ export class TableActionsColumnModel extends TableColumnModel {
                     use: 'PopupActionModel',
                   },
                 },
+                {
+                  key: 'edit',
+                  label: 'Edit',
+                  createModelOptions: {
+                    use: 'EditActionModel',
+                  },
+                },
               ]}
             >
               <SettingOutlined />
