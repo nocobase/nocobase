@@ -19,6 +19,7 @@ import {
   WorkflowVariableJSON,
   WorkflowVariableRawTextArea,
   WorkflowVariableTextArea,
+  WorkflowVariableInput,
   defaultFieldNames,
 } from '@nocobase/plugin-workflow/client';
 
@@ -150,9 +151,8 @@ const BodySchema = {
                 file: {
                   type: 'string',
                   'x-decorator': 'FormItem',
-                  'x-component': 'WorkflowVariableTextArea',
+                  'x-component': 'WorkflowVariableInput',
                   'x-component-props': {
-                    useTypedConstant: true,
                     variableOptions: {
                       types: [{ type: 'reference', options: { collection: '*', entity: true } }],
                     },
@@ -458,6 +458,7 @@ export default class extends Instruction {
     WorkflowVariableJSON,
     WorkflowVariableTextArea,
     WorkflowVariableRawTextArea,
+    WorkflowVariableInput,
   };
   useVariables({ key, title, config }, { types }) {
     // eslint-disable-next-line react-hooks/rules-of-hooks
