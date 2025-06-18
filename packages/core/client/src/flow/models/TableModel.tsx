@@ -8,6 +8,7 @@
  */
 
 import { css } from '@emotion/css';
+import { observable } from '@formily/reactive';
 import { AddFieldButton, Collection, MultiRecordResource } from '@nocobase/flow-engine';
 import { Card, Table } from 'antd';
 import React from 'react';
@@ -23,6 +24,7 @@ type S = {
 export class TableModel extends BlockFlowModel<S> {
   collection: Collection;
   resource: MultiRecordResource;
+  selectedRows = observable.shallow([]);
 
   getColumns() {
     return this.mapSubModels('columns', (column) => {
@@ -73,6 +75,13 @@ export class TableModel extends BlockFlowModel<S> {
             }
           `}
           rowKey="id"
+          rowSelection={{
+            type: 'checkbox',
+            onChange: (_, selectedRows) => {
+              this.selectedRows.push(...selectedRows);
+            },
+            selectedRowKeys: this.selectedRows.map((row) => row.id),
+          }}
           dataSource={this.resource.getData()}
           columns={this.getColumns()}
           pagination={{
