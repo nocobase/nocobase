@@ -64,6 +64,13 @@ export class TableColumnModel extends FieldFlowModel {
       }),
       render: this.render(),
       width: this.props.width || 200,
+      onHeaderCell: () => ({
+        className: css`
+          .ant-table-cell-content {
+            display: inline !important;
+          }
+        `,
+      }),
     };
   }
 
@@ -197,13 +204,13 @@ TableColumnModel.registerFlow({
       },
     },
     editColumTitle: {
-      title: 'Custom column title',
+      title: 'Column title',
       uiSchema: {
         title: {
           'x-component': 'Input',
           'x-decorator': 'FormItem',
           'x-component-props': {
-            placeholder: 'Custom column title',
+            placeholder: 'Column title',
           },
         },
       },
