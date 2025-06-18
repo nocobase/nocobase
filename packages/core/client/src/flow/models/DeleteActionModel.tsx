@@ -23,12 +23,11 @@ DeleteActionModel.registerFlow({
   },
   steps: {
     step1: {
-      handler(ctx, params) {
-        ctx.globals.modal.confirm({
-          title: `Current record`,
-          content: <pre>{JSON.stringify(ctx.extra.currentRecord, null, 2)}</pre>,
-          // onOk: async () => {},
-        });
+      async handler(ctx, params) {
+        if (!ctx.extra.currentResource || !ctx.extra.currentRecord) {
+          return;
+        }
+        await ctx.extra.currentResource.destroy(ctx.extra.currentRecord);
       },
     },
   },

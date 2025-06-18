@@ -8,6 +8,7 @@
  */
 
 import { observable } from '@formily/reactive';
+import _ from 'lodash';
 import { BaseRecordResource } from './baseRecordResource';
 
 export class MultiRecordResource<TDataItem = any> extends BaseRecordResource<TDataItem[]> {
@@ -97,10 +98,20 @@ export class MultiRecordResource<TDataItem = any> extends BaseRecordResource<TDa
     await this.refresh();
   }
 
-  async destroy(filterByTk: string | number | string[] | number[]): Promise<void> {
+  async destroySelectedRows(): Promise<void> {
+    const selectedRows = this.getSelectedRows();
+    if (selectedRows.length === 0) {
+      throw new Error('No rows selected for deletion.');
+    }
+    await this.destroy(selectedRows);
+  }
+
+  async destroy(filterByTk: string | number | string[] | number[] | TDataItem | TDataItem[]): Promise<void> {
     const options = {
       params: {
-        filterByTk,
+        filterByTk: _.castArray(filterByTk).map((item) => {
+          return typeof item === 'object' ? item['id'] : item; // TODO: ID 字段还需要根据实际情况更改
+        }),
       },
       headers: this.request.headers,
     };
