@@ -45,8 +45,8 @@ export class TableModel extends BlockFlowModel<S> {
           model={this}
           subModelKey={'columns'}
           subModelBaseClass="TableColumnModel"
-          buildCreateModelOptions={(field) => ({
-            use: 'TableColumnModel',
+          buildCreateModelOptions={(field, fieldClass) => ({
+            use: fieldClass.name,
             stepParams: {
               default: {
                 step1: {
