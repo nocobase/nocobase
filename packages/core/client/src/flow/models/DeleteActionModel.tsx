@@ -29,6 +29,7 @@ DeleteActionModel.registerFlow({
           return;
         }
         await ctx.extra.currentResource.destroy(ctx.extra.currentRecord);
+        ctx.globals.message.success('Record deleted successfully.');
       },
     },
   },

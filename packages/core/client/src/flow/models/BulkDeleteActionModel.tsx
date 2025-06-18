@@ -33,6 +33,7 @@ BulkDeleteActionModel.registerFlow({
           return;
         }
         await resource.destroySelectedRows();
+        ctx.globals.message.success('Selected records deleted successfully.');
       },
     },
   },
