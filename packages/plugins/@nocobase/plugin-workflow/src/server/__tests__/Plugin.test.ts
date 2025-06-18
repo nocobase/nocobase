@@ -609,5 +609,26 @@ describe('workflow > Plugin', () => {
       expect(s2.executed).toBe(0);
       expect(vs2.executed).toBe(0);
     });
+
+    it('bigint stats', async () => {
+      const WorkflowRepo = app.db.getRepository('workflows');
+
+      const w1 = await WorkflowRepo.create({
+        values: {
+          enabled: true,
+          type: 'syncTrigger',
+          key: 'abc',
+          current: true,
+        },
+        hooks: false,
+      });
+      await w1.createStats({ executed: '10000000000000001' });
+      await w1.createVersionStats({ executed: '10000000000000001' });
+
+      const s1 = await w1.getStats();
+      const vs1 = await w1.getVersionStats();
+      expect(s1.executed).toBe('10000000000000001');
+      expect(vs1.executed).toBe('10000000000000001');
+    });
   });
 });
