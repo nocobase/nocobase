@@ -179,9 +179,18 @@ exports.updateJsonFile = async (target, fn) => {
 };
 
 exports.getVersion = async () => {
-  const { stdout } = await execa('npm', ['v', '@nocobase/app-server', 'versions']);
-  const versions = new Function(`return (${stdout})`)();
-  return versions[versions.length - 1];
+  const { stdout } = await execa('npm', [
+    'view',
+    '@nocobase/app-server',
+    'versions',
+    '--json',
+  ]);
+  try {
+    const versions = JSON.parse(stdout);
+    return versions[versions.length - 1];
+  } catch (error) {
+    return '';
+  }
 };
 
 exports.generateAppDir = function generateAppDir() {
