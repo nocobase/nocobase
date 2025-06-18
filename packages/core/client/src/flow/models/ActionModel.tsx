@@ -29,9 +29,11 @@ export class ActionModel extends FlowModel {
 
 ActionModel.registerFlow({
   key: 'default',
+  title: '通用配置',
   auto: true,
   steps: {
-    step1: {
+    buttonProps: {
+      title: '编辑按钮',
       uiSchema: {
         title: {
           type: 'string',
