@@ -93,26 +93,6 @@ const BodySchema = {
       },
     },
   },
-  'application/xml': {
-    type: 'void',
-    properties: {
-      data: {
-        type: 'string',
-        'x-decorator': 'FormItem',
-        'x-component': 'WorkflowVariableRawTextArea',
-        'x-component-props': {
-          placeholder: '<?xml version="1.0" encoding="UTF-8"?>',
-          autoSize: {
-            minRows: 10,
-          },
-          className: css`
-            font-size: 80%;
-            font-family: Consolas, Monaco, 'Andale Mono', 'Ubuntu Mono', monospace;
-          `,
-        },
-      },
-    },
-  },
   'multipart/form-data': {
     type: 'void',
     properties: {
@@ -207,6 +187,26 @@ const BodySchema = {
       },
     },
   },
+  'application/xml': {
+    type: 'void',
+    properties: {
+      data: {
+        type: 'string',
+        'x-decorator': 'FormItem',
+        'x-component': 'WorkflowVariableRawTextArea',
+        'x-component-props': {
+          placeholder: '<?xml version="1.0" encoding="UTF-8"?>',
+          autoSize: {
+            minRows: 10,
+          },
+          className: css`
+            font-size: 80%;
+            font-family: Consolas, Monaco, 'Andale Mono', 'Ubuntu Mono', monospace;
+          `,
+        },
+      },
+    },
+  },
   'text/plain': {
     type: 'void',
     properties: {
@@ -294,8 +294,8 @@ export default class extends Instruction {
       enum: [
         { label: 'application/json', value: 'application/json' },
         { label: 'application/x-www-form-urlencoded', value: 'application/x-www-form-urlencoded' },
-        { label: 'application/xml', value: 'application/xml' },
         { label: 'multipart/form-data', value: 'multipart/form-data' },
+        { label: 'application/xml', value: 'application/xml' },
         { label: 'text/plain', value: 'text/plain' },
       ],
       default: 'application/json',
