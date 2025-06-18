@@ -131,6 +131,13 @@ export class TableActionsColumnModel extends TableColumnModel {
               subModelKey={'actions'}
               items={() => [
                 {
+                  key: 'view',
+                  label: 'View',
+                  createModelOptions: {
+                    use: 'ViewActionModel',
+                  },
+                },
+                {
                   key: 'link',
                   label: 'Link',
                   createModelOptions: {
