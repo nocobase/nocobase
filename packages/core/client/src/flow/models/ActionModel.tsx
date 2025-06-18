@@ -7,10 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { FormDrawer } from '@formily/antd-v5';
-import { uid } from '@formily/shared';
-import { FlowEngineProvider, FlowModel } from '@nocobase/flow-engine';
-import { Button, ConfigProvider, Modal } from 'antd';
+import { FlowModel } from '@nocobase/flow-engine';
+import { Button, Modal } from 'antd';
 import React from 'react';
 import { FlowPageComponent } from '../FlowPage';
 
@@ -89,15 +87,15 @@ ViewActionModel.registerFlow({
   steps: {
     step1: {
       handler(ctx, params) {
-        FormDrawer('Flow Engine Modal', () => {
-          return (
-            <ConfigProvider>
-              <FlowEngineProvider engine={ctx.globals.flowEngine}>
-                <FlowPageComponent uid={`${ctx.model.uid}-drawer`} />
-              </FlowEngineProvider>
-            </ConfigProvider>
-          );
-        }).open();
+        ctx.globals.drawer.open({
+          title: '命令式 Drawer',
+          width: 800,
+          content: (
+            <div>
+              <FlowPageComponent uid={`${ctx.model.uid}-drawer`} />
+            </div>
+          ),
+        });
       },
     },
   },

@@ -40,7 +40,7 @@ import { DataSourceApplicationProvider } from '../data-source/components/DataSou
 import { DataBlockProvider } from '../data-source/data-block/DataBlockProvider';
 import { DataSourceManager, type DataSourceManagerOptions } from '../data-source/data-source/DataSourceManager';
 
-import { FlowEngine, FlowEngineProvider } from '@nocobase/flow-engine';
+import { FlowEngine, FlowEngineGlobalsContextProvider, FlowEngineProvider } from '@nocobase/flow-engine';
 import type { CollectionFieldInterfaceFactory } from '../data-source';
 import { OpenModeProvider } from '../modules/popup/OpenModeProvider';
 import { AppSchemaComponentProvider } from './AppSchemaComponentProvider';
@@ -253,6 +253,7 @@ export class Application {
     this.use(OpenModeProvider);
     this.flowEngine.context['app'] = this;
     this.use(FlowEngineProvider, { engine: this.flowEngine });
+    this.use(FlowEngineGlobalsContextProvider);
   }
 
   private addReactRouterComponents() {
