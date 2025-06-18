@@ -31,7 +31,7 @@ ViewActionModel.registerFlow({
           width: 800,
           content: (
             <div>
-              <FlowPageComponent uid={`${ctx.model.uid}-drawer`} extraContext={ctx.extra} />
+              <FlowPageComponent uid={`${ctx.model.uid}-drawer`} sharedContext={ctx.extra} />
             </div>
           ),
         });
