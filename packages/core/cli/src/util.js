@@ -114,7 +114,7 @@ exports.postCheck = async (opts) => {
   const port = opts.port || process.env.APP_PORT;
   const result = await exports.isPortReachable(port);
   if (result) {
-    console.error(chalk.red(`post already in use ${port}`));
+    console.error(chalk.red(`Port ${port} already in use`));
     process.exit(1);
   }
 };
