@@ -8,17 +8,21 @@
  */
 
 export * from './ActionModel';
+export * from './BulkDeleteActionModel';
 export * from './BlockFlowModel';
 export * from './BlockGridFlowModel';
 export * from './CalendarBlockFlowModel';
+export * from './DeleteActionModel';
 export * from './FormFieldModel';
 export * from './FormModel';
 export * from './HtmlBlockFlowModel';
+export * from './LinkActionModel';
 export * from './PageFlowModel';
 export * from './PageTabFlowModel';
 export * from './QuickEditForm';
 export * from './SubmitActionModel';
 export * from './TableColumnModel';
 export * from './TableModel';
+export * from './ViewActionModel';
 export * from './form/fields';
 export * from './table/fields';
