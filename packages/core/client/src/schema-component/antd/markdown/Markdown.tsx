@@ -16,6 +16,7 @@ import { ReadPretty as InputReadPretty } from '../input';
 import { MarkdownVoid } from './Markdown.Void';
 import { useStyles } from './style';
 import { convertToText, useParseMarkdown } from './util';
+import { sanitizeHTMLString } from '../../../common';
 
 export const Markdown: any = connect(
   AntdInput.TextArea,
@@ -45,7 +46,7 @@ export const MarkdownReadPretty = (props) => {
   const value = (
     <div
       className={`${hashId} ${className} nb-markdown nb-markdown-default nb-markdown-table`}
-      dangerouslySetInnerHTML={{ __html: html }}
+      dangerouslySetInnerHTML={{ __html: sanitizeHTMLString(html) }}
     />
   );
 
