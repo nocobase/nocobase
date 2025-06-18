@@ -121,10 +121,16 @@ const openRequiredParamsStepFormDialog = async ({
 
         for (const { flowKey, stepKey, step } of requiredSteps) {
           const stepParams = model.getStepParams(flowKey, stepKey) || {};
-
+          // 如果step使用了action，也获取action的defaultParams
+          let actionDefaultParams = {};
+          if (step.use) {
+            const action = model.flowEngine?.getAction?.(step.use);
+            actionDefaultParams = action.defaultParams || {};
+          }
           // 解析 defaultParams
+          const resolvedActionDefaultParams = await resolveDefaultParams(actionDefaultParams, paramsContext);
           const resolvedDefaultParams = await resolveDefaultParams(step.defaultParams, paramsContext);
-          const mergedParams = { ...resolvedDefaultParams, ...stepParams };
+          const mergedParams = { ...resolvedActionDefaultParams, ...resolvedDefaultParams, ...stepParams };
 
           if (Object.keys(mergedParams).length > 0) {
             if (!initialValues[flowKey]) {
