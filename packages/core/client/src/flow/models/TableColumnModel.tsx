@@ -14,11 +14,11 @@ import { AddActionModel, CollectionField, FlowModelRenderer, FlowsFloatContextMe
 import { Space, TableColumnProps, Tooltip } from 'antd';
 import React from 'react';
 import { ActionModel } from './ActionModel';
-import { FieldFlowModel } from './FieldFlowModel';
+import { FieldFlowModel, SupportedFieldInterfaces } from './FieldFlowModel';
 import { QuickEditForm } from './QuickEditForm';
 
 export class TableColumnModel extends FieldFlowModel {
-  static readonly supportedFieldInterfaces = '*';
+  static readonly supportedFieldInterfaces: SupportedFieldInterfaces = '*';
 
   getColumnProps(): TableColumnProps {
     return {
@@ -106,6 +106,8 @@ const Columns = observer<any>(({ record, model }) => {
 });
 
 export class TableActionsColumnModel extends TableColumnModel {
+  static readonly supportedFieldInterfaces: SupportedFieldInterfaces = null;
+
   getColumnProps() {
     return {
       // title: 'Actions',
@@ -125,7 +127,7 @@ export class TableActionsColumnModel extends TableColumnModel {
                   key: 'action1',
                   label: 'Action 1',
                   createModelOptions: {
-                    use: 'ActionModel',
+                    use: 'LinkActionModel',
                   },
                 },
                 {
