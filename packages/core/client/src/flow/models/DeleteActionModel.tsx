@@ -49,13 +49,16 @@ DeleteActionModel.registerFlow({
           'x-component': 'Input.TextArea',
         },
       },
-      handler(ctx, params) {
+      async handler(ctx, params) {
         if (params.enable) {
-          ctx.globals.modal.confirm({
+          const confirmed = await ctx.globals.modal.confirm({
             title: params.title,
             content: params.content,
-            onOk: async () => {},
           });
+
+          if (!confirmed) {
+            ctx.exit();
+          }
         }
       },
     },
