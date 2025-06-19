@@ -12,14 +12,14 @@ import { RecordActionModel } from '../base/ActionModel';
 import { Variable } from '../../../schema-component/antd/variable/Variable';
 import { css } from '@emotion/css';
 
-export class LinkActionModel extends RecordActionModel {
+export class LinkRecordActionModel extends RecordActionModel {
   defaultProps: ButtonProps = {
     type: 'link',
     children: 'Link',
   };
 }
 
-LinkActionModel.registerFlow({
+LinkRecordActionModel.registerFlow({
   key: 'handleClick',
   title: '点击事件',
   on: {
