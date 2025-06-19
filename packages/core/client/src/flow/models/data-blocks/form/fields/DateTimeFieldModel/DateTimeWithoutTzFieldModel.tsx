@@ -7,9 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { FormFieldModel } from '../../data-blocks/form/fields/FormFieldModel';
+import { DateTimeFieldModel } from './DateTimeFieldModel';
 
-// null 表示不支持任何字段接口，* 表示支持所有字段接口
-export type SupportedFieldInterfaces = string[] | '*' | null;
-
-export class FilterFormFieldModel extends FormFieldModel {}
+export class DateTimeWithoutTzFieldModel extends DateTimeFieldModel {
+  static supportedFieldInterfaces = ['datetimeNoTz'];
+}

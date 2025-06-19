@@ -54,6 +54,19 @@ export class TableColumnModel extends FieldModel {
     };
   }
 
+  setComponentProps(props) {
+    this.setProps('componentProps', { ...(this.props.componentProps || {}), ...props });
+  }
+  getComponentProps() {
+    return this.props.componentProps;
+  }
+  setDataSource(dataSource) {
+    this.setProps('componentProps', { ...(this.props.componentProps || {}), dataSource });
+  }
+  getDataSource() {
+    return this.props.componentProps.dataSource || [];
+  }
+
   renderQuickEditButton(record) {
     return (
       <Tooltip title="快速编辑">

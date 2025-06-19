@@ -328,8 +328,12 @@ export class CollectionField {
     this.options.title = value;
   }
 
-  get enum() {
+  get enum(): any[] {
     return this.options.uiSchema?.enum || [];
+  }
+
+  getComponentProps() {
+    return this.options.uiSchema?.['x-component-props'] || {};
   }
 
   getFields(): CollectionField[] {
