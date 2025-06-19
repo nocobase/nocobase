@@ -10,6 +10,7 @@
 import type { ButtonProps } from 'antd';
 import { RecordActionModel } from '../base/ActionModel';
 import { Variable } from '../../../schema-component/antd/variable/Variable';
+import { css } from '@emotion/css';
 
 export class LinkActionModel extends RecordActionModel {
   defaultProps: ButtonProps = {
