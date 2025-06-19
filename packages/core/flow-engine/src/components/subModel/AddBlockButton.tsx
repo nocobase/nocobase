@@ -34,13 +34,13 @@ interface AddBlockButtonProps {
    */
   children?: React.ReactNode;
   /**
-   * 自定义 items（如果提供，将覆盖默认的数据源选择行为）
+   * 自定义 items（如果提供，将覆盖默认的区块菜单）
    */
   items?: SubModelItemsType;
   /**
-   * 过滤区块类型的函数
+   * 过滤Model菜单的函数
    */
-  filterBlocks?: (blockClass: ModelConstructor, className: string) => boolean;
+  filter?: (blockClass: ModelConstructor, className: string) => boolean;
   /**
    * 追加额外的菜单项到默认菜单中
    */
@@ -80,7 +80,7 @@ export const AddBlockButton: React.FC<AddBlockButtonProps> = ({
   children = <Button>Add block</Button>,
   subModelType = 'array',
   items,
-  filterBlocks,
+  filter: filterBlocks,
   appendItems,
   onModelAdded,
 }) => {
