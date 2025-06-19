@@ -10,7 +10,7 @@ import dayjs from 'dayjs';
 import { DateTimeFieldModel } from './DateTimeFieldModel';
 
 export class DateTimeWithTzFieldModel extends DateTimeFieldModel {
-  static supportedFieldInterfaces = ['createdAt', 'datetime', 'updatedAt'];
+  static supportedFieldInterfaces = ['createdAt', 'datetime', 'updatedAt', 'unixTimestamp'];
 
   setComponentProps(componentProps) {
     super.setComponentProps({

@@ -12,7 +12,7 @@ import { connect, mapProps, mapReadPretty } from '@formily/react';
 import { Spin } from 'antd';
 import React, { useMemo } from 'react';
 import { useGlobalTheme } from '../../../../../../global-theme';
-import { EllipsisWithTooltip } from '../../components';
+import { EllipsisWithTooltip } from '../../../../../components';
 import { FormFieldModel } from '../FormFieldModel';
 import { useMarkdownStyles } from './style';
 import { convertToText, useParseMarkdown } from './util';

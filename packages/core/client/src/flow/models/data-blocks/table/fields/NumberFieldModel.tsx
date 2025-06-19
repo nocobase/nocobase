@@ -7,15 +7,15 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React from 'react';
 import { useForm } from '@formily/react';
 import { Select } from 'antd';
+import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { TableColumnModel } from '../../TableColumnModel';
+import { TableColumnModel } from '../TableColumnModel';
 import { InputNumberReadPretty } from '../components/InputNumberReadPretty';
 
-export class NumberColumnModel extends TableColumnModel {
-  public static readonly supportedFieldInterfaces = ['number'];
+export class NumberReadPrettyFieldModel extends TableColumnModel {
+  public static readonly supportedFieldInterfaces = ['number', 'integer'];
   render() {
     return (value, record, index) => {
       return (
@@ -45,7 +45,7 @@ const UnitConversion = () => {
   );
 };
 
-NumberColumnModel.registerFlow({
+NumberReadPrettyFieldModel.registerFlow({
   key: 'format',
   sort: 100,
   title: 'Specific properties',

@@ -12,7 +12,7 @@ import dayjs from 'dayjs';
 import { connect, mapProps } from '@formily/react';
 import { useBoolean } from 'ahooks';
 import { Input, Radio, Space, theme } from 'antd';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 
 const date = dayjs();
 
@@ -51,6 +51,7 @@ const DateTimeFormatPreview = ({ content }) => {
 };
 
 const InternalExpiresRadio = (props) => {
+  console.log(props);
   const { onChange, defaultValue, formats, picker } = props;
   const [isCustom, { setFalse, setTrue }] = useBoolean(props.value && !formats.includes(props.value));
   const [targetValue, setTargetValue] = useState(
@@ -124,9 +125,16 @@ const InternalExpiresRadio = (props) => {
 
 const ExpiresRadio = connect(
   InternalExpiresRadio,
-  mapProps({
-    dataSource: 'options',
-  }),
+  mapProps(
+    {
+      dataSource: 'options',
+    },
+    (props) => {
+      return {
+        ...props,
+      };
+    },
+  ),
 );
 
 export { ExpiresRadio, DateFormatCom };

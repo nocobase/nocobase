@@ -9,7 +9,7 @@
 import { css } from '@emotion/css';
 import { DatePicker } from '@formily/antd-v5';
 import { getPickerFormat } from '@nocobase/utils/client';
-import { DateFormatCom, ExpiresRadio } from '../../components';
+import { DateFormatCom, ExpiresRadio } from '../../../../../components';
 import { FormFieldModel } from '../FormFieldModel';
 
 export class DateTimeFieldModel extends FormFieldModel {
