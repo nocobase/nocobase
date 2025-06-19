@@ -18,6 +18,7 @@ export default {
   createdBy: true,
   updatedBy: true,
   template: 'file',
+  filterTargetKey: 'id',
   fields: [
     {
       comment: '用户文件名（不含扩展名）',

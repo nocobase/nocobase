@@ -35,6 +35,7 @@ describe('workflow > instructions > loop', () => {
 
     workflow = await WorkflowModel.create({
       enabled: true,
+      sync: true,
       type: 'collection',
       config: {
         mode: 1,
@@ -59,8 +60,6 @@ describe('workflow > instructions > loop', () => {
       await n1.setDownstream(n2);
 
       const post = await PostRepo.create({ values: { title: 't1' } });
-
-      await sleep(500);
 
       const [execution] = await workflow.getExecutions();
       expect(execution.status).toBe(EXECUTION_STATUS.RESOLVED);
@@ -92,8 +91,6 @@ describe('workflow > instructions > loop', () => {
       await n1.setDownstream(n3);
 
       const post = await PostRepo.create({ values: { title: 't1' } });
-
-      await sleep(500);
 
       const [execution] = await workflow.getExecutions();
       expect(execution.status).toBe(EXECUTION_STATUS.ERROR);
@@ -127,8 +124,6 @@ describe('workflow > instructions > loop', () => {
 
         const post = await PostRepo.create({ values: { title: 't1' } });
 
-        await sleep(500);
-
         const [execution] = await workflow.getExecutions();
         expect(execution.status).toBe(EXECUTION_STATUS.RESOLVED);
         const jobs = await execution.getJobs({ order: [['id', 'ASC']] });
@@ -159,8 +154,6 @@ describe('workflow > instructions > loop', () => {
         await n1.setDownstream(n3);
 
         const post = await PostRepo.create({ values: { title: 't1' } });
-
-        await sleep(500);
 
         const [execution] = await workflow.getExecutions();
         expect(execution.status).toBe(EXECUTION_STATUS.RESOLVED);
@@ -193,8 +186,6 @@ describe('workflow > instructions > loop', () => {
 
         const post = await PostRepo.create({ values: { title: 't1' } });
 
-        await sleep(500);
-
         const [execution] = await workflow.getExecutions();
         expect(execution.status).toBe(EXECUTION_STATUS.RESOLVED);
         const jobs = await execution.getJobs({ order: [['id', 'ASC']] });
@@ -226,8 +217,6 @@ describe('workflow > instructions > loop', () => {
 
         const post = await PostRepo.create({ values: { title: 't1' } });
 
-        await sleep(500);
-
         const [execution] = await workflow.getExecutions();
         expect(execution.status).toBe(EXECUTION_STATUS.RESOLVED);
         const jobs = await execution.getJobs({ order: [['id', 'ASC']] });
@@ -258,8 +247,6 @@ describe('workflow > instructions > loop', () => {
         await n1.setDownstream(n3);
 
         const post = await PostRepo.create({ values: { title: 't1' } });
-
-        await sleep(500);
 
         const [execution] = await workflow.getExecutions();
         expect(execution.status).toBe(EXECUTION_STATUS.RESOLVED);
@@ -293,8 +280,6 @@ describe('workflow > instructions > loop', () => {
 
         const post = await PostRepo.create({ values: { title: 't1' } });
 
-        await sleep(500);
-
         const [execution] = await workflow.getExecutions();
         expect(execution.status).toBe(EXECUTION_STATUS.RESOLVED);
         const jobs = await execution.getJobs({ order: [['id', 'ASC']] });
@@ -326,8 +311,6 @@ describe('workflow > instructions > loop', () => {
         await n1.setDownstream(n3);
 
         const post = await PostRepo.create({ values: { title: 't1' } });
-
-        await sleep(500);
 
         const [execution] = await workflow.getExecutions();
         expect(execution.status).toBe(EXECUTION_STATUS.RESOLVED);
@@ -369,8 +352,6 @@ describe('workflow > instructions > loop', () => {
         await n2.setDownstream(n3);
 
         const post = await PostRepo.create({ values: { title: 't1' } });
-
-        await sleep(500);
 
         const [execution] = await workflow.getExecutions();
         expect(execution.status).toBe(EXECUTION_STATUS.RESOLVED);
@@ -415,8 +396,6 @@ describe('workflow > instructions > loop', () => {
 
         const post = await PostRepo.create({ values: { title: 't1' } });
 
-        await sleep(500);
-
         const [execution] = await workflow.getExecutions();
         expect(execution.status).toBe(EXECUTION_STATUS.RESOLVED);
         const jobs = await execution.getJobs({ order: [['id', 'ASC']] });
@@ -450,8 +429,6 @@ describe('workflow > instructions > loop', () => {
         });
 
         const post = await PostRepo.create({ values: { title: 't1' } });
-
-        await sleep(500);
 
         const [execution] = await workflow.getExecutions();
         expect(execution.status).toBe(EXECUTION_STATUS.RESOLVED);
@@ -496,8 +473,6 @@ describe('workflow > instructions > loop', () => {
         });
 
         const post = await PostRepo.create({ values: { title: 't1' } });
-
-        await sleep(500);
 
         const [execution] = await workflow.getExecutions();
         expect(execution.status).toBe(EXECUTION_STATUS.RESOLVED);
@@ -544,8 +519,6 @@ describe('workflow > instructions > loop', () => {
 
         const post = await PostRepo.create({ values: { title: 't1' } });
 
-        await sleep(500);
-
         const [execution] = await workflow.getExecutions();
         expect(execution.status).toBe(EXECUTION_STATUS.RESOLVED);
         const jobs = await execution.getJobs({ order: [['id', 'ASC']] });
@@ -585,8 +558,6 @@ describe('workflow > instructions > loop', () => {
         });
 
         const post = await PostRepo.create({ values: { title: 't1' } });
-
-        await sleep(500);
 
         const [execution] = await workflow.getExecutions();
         expect(execution.status).toBe(EXECUTION_STATUS.RESOLVED);
@@ -629,8 +600,6 @@ describe('workflow > instructions > loop', () => {
 
         const post = await PostRepo.create({ values: { title: 't1' } });
 
-        await sleep(500);
-
         const [execution] = await workflow.getExecutions();
         expect(execution.status).toBe(EXECUTION_STATUS.RESOLVED);
         const jobs = await execution.getJobs({ order: [['id', 'ASC']] });
@@ -638,6 +607,84 @@ describe('workflow > instructions > loop', () => {
         expect(jobs.length).toBe(2);
         expect(jobs[0].status).toBe(JOB_STATUS.RESOLVED);
         expect(jobs[0].result).toEqual({ looped: 1, broken: true });
+      });
+
+      it('continueOnFalse as true', async () => {
+        const n1 = await workflow.createNode({
+          type: 'loop',
+          config: {
+            target: 2,
+            condition: {
+              continueOnFalse: true,
+              calculation: {
+                group: {
+                  type: 'and',
+                  calculations: [
+                    {
+                      calculator: 'equal',
+                      operands: [1, 0],
+                    },
+                  ],
+                },
+              },
+            },
+          },
+        });
+        const n2 = await workflow.createNode({
+          type: 'echo',
+          upstreamId: n1.id,
+          branchIndex: 0,
+        });
+
+        const post = await PostRepo.create({ values: { title: 't1' } });
+
+        const [execution] = await workflow.getExecutions();
+        expect(execution.status).toBe(EXECUTION_STATUS.RESOLVED);
+        const jobs = await execution.getJobs({ order: [['id', 'ASC']] });
+
+        expect(jobs.length).toBe(2);
+        expect(jobs[0].status).toBe(JOB_STATUS.RESOLVED);
+        expect(jobs[0].result).toEqual({ looped: 2 });
+      });
+
+      it('continueOnFalse as true, second false', async () => {
+        const n1 = await workflow.createNode({
+          type: 'loop',
+        });
+        await n1.update({
+          config: {
+            target: 2,
+            condition: {
+              continueOnFalse: true,
+              calculation: {
+                group: {
+                  type: 'and',
+                  calculations: [
+                    {
+                      calculator: 'equal',
+                      operands: [1, '{{$scopes.' + n1.key + '.item}}'],
+                    },
+                  ],
+                },
+              },
+            },
+          },
+        });
+        const n2 = await workflow.createNode({
+          type: 'echo',
+          upstreamId: n1.id,
+          branchIndex: 0,
+        });
+
+        const post = await PostRepo.create({ values: { title: 't1' } });
+
+        const [execution] = await workflow.getExecutions();
+        expect(execution.status).toBe(EXECUTION_STATUS.RESOLVED);
+        const jobs = await execution.getJobs({ order: [['id', 'ASC']] });
+
+        expect(jobs.length).toBe(2);
+        expect(jobs[0].status).toBe(JOB_STATUS.RESOLVED);
+        expect(jobs[0].result).toEqual({ looped: 2 });
       });
     });
 
@@ -664,8 +711,6 @@ describe('workflow > instructions > loop', () => {
         await n1.setDownstream(n3);
 
         const post = await PostRepo.create({ values: { title: 't1' } });
-
-        await sleep(500);
 
         const [execution] = await workflow.getExecutions();
         expect(execution.status).toBe(EXECUTION_STATUS.ERROR);
@@ -700,8 +745,6 @@ describe('workflow > instructions > loop', () => {
 
         const post = await PostRepo.create({ values: { title: 't1' } });
 
-        await sleep(500);
-
         const [execution] = await workflow.getExecutions();
         expect(execution.status).toBe(EXECUTION_STATUS.ERROR);
         const jobs = await execution.getJobs({ order: [['id', 'ASC']] });
@@ -734,8 +777,6 @@ describe('workflow > instructions > loop', () => {
         await n1.setDownstream(n3);
 
         const post = await PostRepo.create({ values: { title: 't1' } });
-
-        await sleep(500);
 
         const [execution] = await workflow.getExecutions();
         expect(execution.status).toBe(EXECUTION_STATUS.RESOLVED);
@@ -770,8 +811,6 @@ describe('workflow > instructions > loop', () => {
 
         const post = await PostRepo.create({ values: { title: 't1' } });
 
-        await sleep(500);
-
         const [execution] = await workflow.getExecutions();
         expect(execution.status).toBe(EXECUTION_STATUS.RESOLVED);
         const jobs = await execution.getJobs({ order: [['id', 'ASC']] });
@@ -782,6 +821,9 @@ describe('workflow > instructions > loop', () => {
       });
 
       it('exit as continue with async node inside', async () => {
+        await workflow.update({
+          sync: false,
+        });
         const n1 = await workflow.createNode({
           type: 'loop',
           config: {
@@ -862,8 +904,6 @@ describe('workflow > instructions > loop', () => {
           comments: [{ content: 'c1' }, { content: 'c2' }],
         },
       });
-
-      await sleep(500);
 
       const [execution] = await workflow.getExecutions();
       expect(execution.status).toBe(EXECUTION_STATUS.RESOLVED);
@@ -967,8 +1007,6 @@ describe('workflow > instructions > loop', () => {
 
       const post = await PostRepo.create({ values: { title: 't1' } });
 
-      await sleep(500);
-
       const [e1] = await workflow.getExecutions();
       expect(e1.status).toEqual(EXECUTION_STATUS.RESOLVED);
       const jobs = await e1.getJobs({ order: [['id', 'ASC']] });
@@ -1004,8 +1042,6 @@ describe('workflow > instructions > loop', () => {
       await n1.setDownstream(n4);
 
       const post = await PostRepo.create({ values: { title: 't1' } });
-
-      await sleep(500);
 
       const [e1] = await workflow.getExecutions();
       expect(e1.status).toEqual(EXECUTION_STATUS.RESOLVED);

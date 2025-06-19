@@ -180,7 +180,6 @@ const layoutContentClass = css`
 `;
 
 const className1 = css`
-  width: 168px;
   height: var(--nb-header-height);
   margin-right: 4px;
   display: inline-flex;
@@ -188,6 +187,15 @@ const className1 = css`
   color: #fff;
   padding: 0;
   align-items: center;
+`;
+const className1WithFixedWidth = css`
+  ${className1}
+  width: 168px;
+`;
+const className1WithAutoWidth = css`
+  ${className1}
+  width: auto;
+  min-width: 168px;
 `;
 const className2 = css`
   object-fit: contain;
@@ -266,7 +274,8 @@ const NocoBaseLogo = () => {
   const { token } = useToken();
   const fontSizeStyle = useMemo(() => ({ fontSize: token.fontSizeHeading3 }), [token.fontSizeHeading3]);
 
-  const logo = result?.data?.data?.logo?.url ? (
+  const hasLogo = result?.data?.data?.logo?.url;
+  const logo = hasLogo ? (
     <img className={className2} src={result?.data?.data?.logo?.url} />
   ) : (
     <span style={fontSizeStyle} className={className3}>
@@ -274,7 +283,9 @@ const NocoBaseLogo = () => {
     </span>
   );
 
-  return <div className={className1}>{result?.loading ? null : logo}</div>;
+  return (
+    <div className={hasLogo ? className1WithFixedWidth : className1WithAutoWidth}>{result?.loading ? null : logo}</div>
+  );
 };
 
 /**
@@ -318,6 +329,7 @@ const GroupItem: FC<{ item: any }> = (props) => {
               {...item._route.options.badge}
               count={badgeCount}
               style={{ marginLeft: 4, color: item._route.options?.badge?.textColor }}
+              dot={false}
             ></Badge>
           )}
         </SortableItem>
@@ -334,7 +346,7 @@ const WithTooltip: FC<{ title: string; hidden: boolean; badgeProps: any }> = (pr
       {(context) =>
         context.collapsed && !props.hidden && !inHeader ? (
           <Tooltip title={props.title} placement="right">
-            <Badge {...props.badgeProps} style={{ transform: 'none' }}>
+            <Badge {...props.badgeProps} style={{ transform: 'none' }} dot={false}>
               {props.children}
             </Badge>
           </Tooltip>
@@ -427,6 +439,7 @@ const MenuItem: FC<{ item: any; options: { isMobile: boolean; collapsed: boolean
                 {...item._route.options?.badge}
                 count={badgeCount}
                 style={{ marginLeft: 4, color: item._route.options?.badge?.textColor }}
+                dot={false}
               ></Badge>
             )}
           </SortableItem>
@@ -454,7 +467,7 @@ const MenuItem: FC<{ item: any; options: { isMobile: boolean; collapsed: boolean
           </WithTooltip>
           <MenuSchemaToolbar />
           {badgeCount != null && (
-            <Badge {...badgeProps} style={{ marginLeft: 4, color: item._route.options?.badge?.textColor }}></Badge>
+            <Badge {...badgeProps} style={{ marginLeft: 4, color: item._route.options?.badge?.textColor }} dot={false}></Badge>
           )}
         </SortableItem>
       </NocoBaseRouteContext.Provider>

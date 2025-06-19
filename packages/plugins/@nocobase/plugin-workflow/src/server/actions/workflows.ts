@@ -26,7 +26,7 @@ export async function update(context: Context, next) {
       filterByTk,
       appends: ['versionStats'],
     });
-    if (workflow.versionStats.executed) {
+    if (workflow.versionStats.executed > 0) {
       return context.throw(400, 'config of executed workflow can not be updated');
     }
   }
@@ -141,7 +141,7 @@ export async function execute(context: Context, next) {
     filter: { key: workflow.key },
   });
   let newVersion;
-  if (!executed && autoRevision) {
+  if (executed == 0 && autoRevision) {
     newVersion = await repository.revision({
       filterByTk: workflow.id,
       filter: { key: workflow.key },
