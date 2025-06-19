@@ -171,20 +171,20 @@ AssociationSelectReadPrettyFieldModel.registerFlow({
         },
       },
       defaultParams: (ctx) => {
-        const { target } = ctx.model.field.options;
-        const collectionManager = ctx.model.field.collection.collectionManager;
+        const { target } = ctx.model.collectionField.options;
+        const collectionManager = ctx.model.collectionField.collection.collectionManager;
         const targetCollection = collectionManager.getCollection(target);
         return {
           label: ctx.model.getComponentProps().fieldNames?.label || targetCollection.options.titleField,
         };
       },
       handler(ctx, params) {
-        const { target } = ctx.model.field.options;
-        const collectionManager = ctx.model.field.collection.collectionManager;
+        const { target } = ctx.model.collectionField.options;
+        const collectionManager = ctx.model.collectionField.collection.collectionManager;
         const targetCollection = collectionManager.getCollection(target);
         ctx.model.flowEngine.flowSettings.registerScopes({
           loadTitleFieldOptions,
-          collectionField: ctx.model.field,
+          collectionField: ctx.model.collectionField,
           dataSourceManager: ctx.app.dataSourceManager,
         });
         const filterKey = getUniqueKeyFromCollection(targetCollection.options as any);

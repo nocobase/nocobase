@@ -137,7 +137,7 @@ NumberReadPrettyFieldModel.registerFlow({
       defaultParams: (ctx) => {
         const { formatStyle, unitConversion, unitConversionType, separator, step, addonBefore, addonAfter } =
           ctx.model.getProps().componentProps;
-        const { step: prescition } = ctx.model.field?.getComponentProps() || {};
+        const { step: prescition } = ctx.model.collectionField?.getComponentProps() || {};
         return {
           formatStyle: formatStyle || 'normal',
           unitConversion,
@@ -150,7 +150,7 @@ NumberReadPrettyFieldModel.registerFlow({
       },
       handler(ctx, params) {
         const { formatStyle, unitConversion, unitConversionType, separator, step, addonBefore, addonAfter } = params;
-        const { step: prescition } = ctx.model.field?.getComponentProps() || {};
+        const { step: prescition } = ctx.model.collectionField?.getComponentProps() || {};
         ctx.model.setComponentProps({
           formatStyle: formatStyle || 'normal',
           unitConversion,
