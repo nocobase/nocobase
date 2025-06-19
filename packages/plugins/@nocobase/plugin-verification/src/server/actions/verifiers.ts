@@ -10,6 +10,7 @@
 import { Context, Next } from '@nocobase/actions';
 import PluginVerificationServer from '../Plugin';
 import pkg from '../../../package.json';
+import _ from 'lodash';
 
 export default {
   listTypes: async (ctx: Context, next: Next) => {
@@ -61,7 +62,7 @@ export default {
         const verification = new Verification({ ctx, verifier, options: verifier.options });
         const boundInfo = await verification.getPublicBoundInfo(ctx.auth.user.id);
         result.push({
-          ...verifier.dataValues,
+          ..._.omit(verifier.dataValues, 'options'),
           title: verifier.title || verificationType.title,
           description: verifier.description || verificationType.description,
           boundInfo,

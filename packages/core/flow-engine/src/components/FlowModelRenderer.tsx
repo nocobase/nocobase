@@ -92,9 +92,6 @@ const FlowModelRendererWithAutoFlows: React.FC<{
   }) => {
     const defaultExtraContext = useFlowExtraContext();
     useApplyAutoFlows(model, extraContext || defaultExtraContext, !independentAutoFlowExecution);
-    useEffect(() => {
-      model.setSharedContext(sharedContext);
-    }, [sharedContext]);
 
     return (
       <FlowModelRendererCore
@@ -117,10 +114,6 @@ const FlowModelRendererWithoutAutoFlows: React.FC<{
   hideRemoveInSettings: boolean;
   sharedContext?: Record<string, any>;
 }> = observer(({ model, showFlowSettings, flowSettingsVariant, hideRemoveInSettings, sharedContext }) => {
-  useEffect(() => {
-    model.setSharedContext(sharedContext);
-  }, [sharedContext]);
-
   return (
     <FlowModelRendererCore
       model={model}
@@ -216,6 +209,10 @@ export const FlowModelRenderer: React.FC<FlowModelRendererProps> = observer(
       console.warn('FlowModelRenderer: Invalid model or render method not found.', model);
       return null;
     }
+
+    useEffect(() => {
+      model.setSharedContext(sharedContext);
+    }, [model, sharedContext]);
 
     // 根据 skipApplyAutoFlows 选择不同的内部组件
     if (skipApplyAutoFlows) {

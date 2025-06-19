@@ -10,6 +10,7 @@
 import { SettingOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
 import {
+  AddActionButton,
   AddActionModel,
   AddFieldButton,
   Collection,
@@ -108,10 +109,20 @@ export class TableModel extends BlockFlowModel<S> {
               extraContext={{ currentModel: this, currentResource: this.resource }}
             />
           ))}
-          <AddActionModel
+          <AddActionButton model={this} subModelBaseClass="ActionModel">
+            <Button icon={<SettingOutlined />}>Configure actions</Button>
+          </AddActionButton>
+          {/* <AddActionModel
             model={this}
             subModelKey={'actions'}
             items={() => [
+              {
+                key: 'addnew',
+                label: 'Add new',
+                createModelOptions: {
+                  use: 'AddNewActionModel',
+                },
+              },
               {
                 key: 'delete',
                 label: 'Delete',
@@ -121,10 +132,8 @@ export class TableModel extends BlockFlowModel<S> {
               },
             ]}
           >
-            <Button type="primary" icon={<SettingOutlined />}>
-              Configure actions
-            </Button>
-          </AddActionModel>
+            <Button icon={<SettingOutlined />}>Configure actions</Button>
+          </AddActionModel> */}
         </Space>
         <Table
           className={css`

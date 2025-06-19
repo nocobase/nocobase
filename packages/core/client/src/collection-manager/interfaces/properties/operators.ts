@@ -242,6 +242,8 @@ export const boolean = [
       },
     },
   },
+  { label: "{{ t('is empty') }}", value: '$empty', noValue: true },
+  { label: "{{ t('is not empty') }}", value: '$notEmpty', noValue: true },
 ];
 
 export const tableoid = [

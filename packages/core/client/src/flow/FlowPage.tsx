@@ -10,7 +10,7 @@
 import { FlowModelRenderer, useFlowEngine, useFlowModel } from '@nocobase/flow-engine';
 import { useRequest } from 'ahooks';
 import { Spin } from 'antd';
-import React from 'react';
+import React, { useMemo } from 'react';
 import { useParams } from 'react-router-dom';
 
 function InternalFlowPage({ uid, sharedContext }) {
@@ -20,15 +20,16 @@ function InternalFlowPage({ uid, sharedContext }) {
 
 export const FlowPage = () => {
   const params = useParams();
-  return <FlowPageComponent uid={params.name} sharedContext={{}} />;
+  return <FlowPageComponent uid={params.name} />;
 };
 
-export const FlowPageComponent = ({ uid, sharedContext }) => {
+export const FlowPageComponent = (props) => {
+  const { uid, parentId, sharedContext } = props;
   const flowEngine = useFlowEngine();
-  const { loading } = useRequest(
-    () => {
-      return flowEngine.loadOrCreateModel({
-        uid: uid,
+  const { loading, data } = useRequest(
+    async () => {
+      const options = {
+        uid,
         use: 'PageFlowModel',
         subModels: {
           tabs: [
@@ -42,14 +43,22 @@ export const FlowPageComponent = ({ uid, sharedContext }) => {
             },
           ],
         },
-      });
+      };
+      if (!uid && parentId) {
+        options['async'] = true;
+        options['parentId'] = parentId;
+        options['subKey'] = 'page';
+        options['subType'] = 'object';
+      }
+      const data = await flowEngine.loadOrCreateModel(options);
+      return data;
     },
     {
-      refreshDeps: [uid],
+      refreshDeps: [uid || parentId],
     },
   );
-  if (loading) {
+  if (loading || !data?.uid) {
     return <Spin />;
   }
-  return <InternalFlowPage uid={uid} sharedContext={sharedContext} />;
+  return <InternalFlowPage uid={data.uid} sharedContext={sharedContext} />;
 };

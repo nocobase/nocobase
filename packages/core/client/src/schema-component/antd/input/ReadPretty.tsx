@@ -56,16 +56,23 @@ ReadPretty.Input = (props: InputReadPrettyProps) => {
     return props.value && typeof props.value === 'object' ? JSON.stringify(props.value) : compile(props.value);
   }, [props.value]);
 
+  const flexStyle = props.ellipsis ? { display: 'flex', alignItems: 'center' } : {};
+
   return (
     <div
       className={cls(prefixCls, props.className)}
-      style={{ overflowWrap: 'break-word', whiteSpace: 'normal', ...props.style }}
+      style={{
+        ...flexStyle,
+        overflowWrap: 'break-word',
+        whiteSpace: 'normal',
+        ...props.style,
+      }}
     >
-      {props.addonBefore}
-      {props.prefix}
+      {compile(props.addonBefore)}
+      {compile(props.prefix)}
       {props.ellipsis ? <EllipsisWithTooltip ellipsis={props.ellipsis}>{content}</EllipsisWithTooltip> : content}
-      {props.suffix}
-      {props.addonAfter}
+      {compile(props.suffix)}
+      {compile(props.addonAfter)}
     </div>
   );
 };

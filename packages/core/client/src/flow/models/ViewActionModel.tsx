@@ -7,7 +7,6 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { uid } from '@formily/shared';
 import type { ButtonType } from 'antd/es/button';
 import React from 'react';
 import { FlowPageComponent } from '../FlowPage';
@@ -26,14 +25,21 @@ ViewActionModel.registerFlow({
   steps: {
     step1: {
       handler(ctx, params) {
-        ctx.globals.drawer.open({
+        // eslint-disable-next-line prefer-const
+        let currentDrawer: any;
+
+        function DrawerContent() {
+          return (
+            <div>
+              <FlowPageComponent parentId={ctx.model.uid} sharedContext={{ ...ctx.extra, currentDrawer }} />
+            </div>
+          );
+        }
+
+        currentDrawer = ctx.globals.drawer.open({
           title: '命令式 Drawer',
           width: 800,
-          content: (
-            <div>
-              <FlowPageComponent uid={`${ctx.model.uid}-drawer`} sharedContext={ctx.extra} />
-            </div>
-          ),
+          content: <DrawerContent />,
         });
       },
     },

@@ -14,7 +14,6 @@ import { uid } from 'uid/secure';
 import { openRequiredParamsStepFormDialog as openRequiredParamsStepFormDialogFn } from '../components/settings/wrappers/contextual/StepRequiredSettingsDialog';
 import { openStepSettingsDialog as openStepSettingsDialogFn } from '../components/settings/wrappers/contextual/StepSettingsDialog';
 import { FlowEngine } from '../flowEngine';
-import { FlowExitException, resolveDefaultParams } from '../utils';
 import type {
   ActionStepDefinition,
   ArrayElementType,
@@ -30,7 +29,7 @@ import type {
   StepParams,
 } from '../types';
 import { ExtendedFlowDefinition, FlowExtraContext, IModelComponentProps, ReadonlyModelProps } from '../types';
-import { generateUid, mergeFlowDefinitions } from '../utils';
+import { FlowExitException, generateUid, mergeFlowDefinitions, resolveDefaultParams } from '../utils';
 import { ForkFlowModel } from './forkFlowModel';
 
 // 使用WeakMap存储每个类的meta
@@ -47,6 +46,8 @@ export class FlowModel<Structure extends { parent?: any; subModels?: any } = Def
   public flowEngine: FlowEngine;
   public parent: Structure['parent'];
   public subModels: Structure['subModels'];
+  private _options: FlowModelOptions<Structure>;
+
   /**
    * 所有 fork 实例的引用集合。
    * 使用 Set 便于在销毁时主动遍历并调用 dispose，避免悬挂引用。
@@ -60,29 +61,23 @@ export class FlowModel<Structure extends { parent?: any; subModels?: any } = Def
   // model 树的共享运行上下文
   private _sharedContext: Record<string, any> = {};
 
-  public setSharedContext(ctx: Record<string, any>) {
-    this._sharedContext = ctx;
-  }
-
-  public getSharedContext() {
-    return {
-      ...this.parent?.getSharedContext(),
-      ...this._sharedContext, // 当前实例的 context 优先级最高
-    };
-  }
-
-  constructor(protected options: FlowModelOptions<Structure>) {
+  constructor(options: FlowModelOptions<Structure>) {
     if (options?.flowEngine?.getModel(options.uid)) {
       // 此时 new FlowModel 并不创建新实例，而是返回已存在的实例，避免重复创建同一个model实例
       return options.flowEngine.getModel(options.uid);
     }
 
-    this.uid = options.uid || uid();
+    if (!options.uid) {
+      options.uid = uid();
+    }
+
+    this.uid = options.uid;
     this.props = options.props || {};
     this.stepParams = options.stepParams || {};
     this.subModels = {};
     this.flowEngine = options.flowEngine;
     this.sortIndex = options.sortIndex || 0;
+    this._options = options;
 
     define(this, {
       props: observable,
@@ -555,7 +550,7 @@ export class FlowModel<Structure extends { parent?: any; subModels?: any } = Def
       throw new Error('Parent must be an instance of FlowModel.');
     }
     this.parent = parent;
-    this.options.parentId = parent.uid;
+    this._options.parentId = parent.uid;
   }
 
   addSubModel(subKey: string, options: CreateModelOptions | FlowModel) {
@@ -731,11 +726,22 @@ export class FlowModel<Structure extends { parent?: any; subModels?: any } = Def
     });
   }
 
+  public setSharedContext(ctx: Record<string, any>) {
+    this._sharedContext = ctx;
+  }
+
+  public getSharedContext() {
+    return {
+      ...this.parent?.getSharedContext(),
+      ...this._sharedContext, // 当前实例的 context 优先级最高
+    };
+  }
+
   // TODO: 不完整，需要考虑 sub-model 的情况
   serialize(): Record<string, any> {
     const data = {
       uid: this.uid,
-      ..._.omit(this.options, ['flowEngine']),
+      ..._.omit(this._options, ['flowEngine']),
       props: this.props,
       stepParams: this.stepParams,
       sortIndex: this.sortIndex,

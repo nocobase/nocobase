@@ -42,6 +42,10 @@ export interface AddFieldButtonProps {
    * 显示的UI组件
    */
   children?: React.ReactNode;
+  /**
+   * 自定义 items（如果提供，将覆盖默认的字段菜单）
+   */
+  items?: SubModelItemsType;
 }
 
 /**
@@ -63,6 +67,7 @@ export const AddFieldButton: React.FC<AddFieldButtonProps> = ({
   subModelType = 'array',
   collection,
   buildCreateModelOptions,
+  items,
   appendItems,
   onModelAdded,
 }) => {
@@ -117,7 +122,7 @@ export const AddFieldButton: React.FC<AddFieldButtonProps> = ({
     };
   }, [model, subModelBaseClass, fields, buildCreateModelOptions]);
 
-  const items = useMemo(() => {
+  const fieldItems = useMemo(() => {
     return mergeSubModelItems([buildFieldItems, appendItems], { addDividers: true });
   }, [buildFieldItems, appendItems]);
 
@@ -126,7 +131,7 @@ export const AddFieldButton: React.FC<AddFieldButtonProps> = ({
       model={model}
       subModelKey={subModelKey}
       subModelType={subModelType}
-      items={items}
+      items={items ?? fieldItems}
       onModelAdded={onModelAdded}
     >
       {children}

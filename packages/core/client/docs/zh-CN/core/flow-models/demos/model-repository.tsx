@@ -4,7 +4,7 @@ import React from 'react';
 
 class FlowModelRepository implements IFlowModelRepository<FlowModel> {
   constructor(private app: Application) {}
-  async load(uid: string) {
+  async findOne({ uid, parentId }) {
     // implement fetching a model by id
     return null;
   }

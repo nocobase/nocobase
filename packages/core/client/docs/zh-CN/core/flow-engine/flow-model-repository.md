@@ -4,7 +4,7 @@
 
 ## 主要方法
 
-- **load(uid: string): Promise<FlowModel \| null>**  
+- **findOne(query: Query): Promise<FlowModel \| null>**  
   根据唯一标识符 uid 从远程加载模型数据。
 
 - **save(model: FlowModel): Promise<any>**  
@@ -19,7 +19,8 @@
 class FlowModelRepository implements IFlowModelRepository<FlowModel> {
   constructor(private app: Application) {}
 
-  async load(uid: string) {
+  async findOne(query) {
+    const { uid, parentId } = query;
     // 实现：根据 uid 获取模型
     return null;
   }

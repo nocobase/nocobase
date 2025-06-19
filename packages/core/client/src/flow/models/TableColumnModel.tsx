@@ -115,11 +115,11 @@ TableColumnModel.define({
   sort: 0,
 });
 
-const Columns = observer<any>(({ record, model }) => {
+const Columns = observer<any>(({ record, model, index }) => {
   return (
     <Space>
       {model.mapSubModels('actions', (action: ActionModel) => {
-        const fork = action.createFork({}, `${record.id}`);
+        const fork = action.createFork({}, `${index}`);
         return (
           <FlowModelRenderer
             showFlowSettings
@@ -183,7 +183,7 @@ export class TableActionsColumnModel extends TableColumnModel {
   }
 
   render() {
-    return (value, record, index) => <Columns record={record} model={this} />;
+    return (value, record, index) => <Columns record={record} model={this} index={index} />;
   }
 }
 

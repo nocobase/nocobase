@@ -1,0 +1,189 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
+import { FlowModel } from '../../models/flowModel';
+import { ModelConstructor } from '../../types';
+import { SubModelItem, SubModelItemsType } from './AddSubModelButton';
+import { DataSource, DataSourceManager, Collection } from '../../data-source';
+
+export interface BlockItemsOptions {
+  /**
+   * 子模型基类，用于确定支持的区块类型
+   */
+  subModelBaseClass?: string | ModelConstructor;
+  /**
+   * 过滤区块类型的函数
+   */
+  filterBlocks?: (blockClass: ModelConstructor, className: string) => boolean;
+  /**
+   * 自定义区块选项
+   */
+  customBlocks?: SubModelItem[];
+}
+
+/**
+ * 获取数据源和数据表信息
+ * 从 flowEngine 的全局上下文获取数据源管理器信息
+ */
+async function getDataSourcesWithCollections(model: FlowModel) {
+  try {
+    // 从 flowEngine 的全局上下文获取数据源管理器
+    const globalContext = model.flowEngine.getContext();
+    const dataSourceManager: DataSourceManager = globalContext?.dataSourceManager;
+
+    if (!dataSourceManager) {
+      // 如果没有数据源管理器，返回空数组
+      return [];
+    }
+
+    // 获取所有数据源
+    const allDataSources: DataSource[] = dataSourceManager.getDataSources();
+
+    // 转换为我们需要的格式
+    return allDataSources.map((dataSource: DataSource) => {
+      const key = dataSource.name;
+      const displayName = dataSource.options.displayName || dataSource.name;
+
+      // 从 collectionManager 获取 collections
+      const collections: Collection[] = dataSource.getCollections();
+
+      return {
+        key,
+        displayName,
+        collections: collections.map((collection: Collection) => ({
+          name: collection.name,
+          title: collection.title,
+          dataSource: key,
+        })),
+      };
+    });
+  } catch (error) {
+    console.warn('Failed to get data sources:', error);
+    // 返回空数组，不提供假数据
+    return [];
+  }
+}
+
+/**
+ * 创建区块菜单项的工具函数
+ *
+ * 生成包含数据区块和其他区块的完整菜单结构：
+ * - 数据区块：区块类型 → 数据源 → 数据表的层级结构
+ * - 其他区块：平铺的区块列表
+ *
+ * @param model FlowModel 实例
+ * @param options 配置选项
+ * @returns SubModelItemsType 格式的菜单项
+ */
+export function createBlockItems(model: FlowModel, options: BlockItemsOptions = {}): SubModelItemsType {
+  const { subModelBaseClass = 'BlockFlowModel', filterBlocks, customBlocks = [] } = options;
+
+  // 获取所有注册的区块类
+  const blockClasses = model.flowEngine.filterModelClassByParent(subModelBaseClass);
+
+  // 分类区块：数据区块 vs 其他区块
+  const dataBlocks: Array<{ className: string; ModelClass: ModelConstructor }> = [];
+  const otherBlocks: Array<{ className: string; ModelClass: ModelConstructor }> = [];
+
+  for (const [className, ModelClass] of blockClasses) {
+    // 应用过滤器
+    if (filterBlocks && !filterBlocks(ModelClass, className)) {
+      continue;
+    }
+
+    // 判断是否为数据区块
+    const meta = (ModelClass as any).meta;
+    const isDataBlock =
+      meta?.category === 'data' ||
+      meta?.requiresDataSource === true ||
+      className.toLowerCase().includes('table') ||
+      className.toLowerCase().includes('form') ||
+      className.toLowerCase().includes('details') ||
+      className.toLowerCase().includes('list') ||
+      className.toLowerCase().includes('grid');
+
+    if (isDataBlock) {
+      dataBlocks.push({ className, ModelClass });
+    } else {
+      otherBlocks.push({ className, ModelClass });
+    }
+  }
+
+  const result: SubModelItem[] = [];
+
+  // 数据区块分组
+  if (dataBlocks.length > 0) {
+    result.push({
+      key: 'dataBlocks',
+      label: 'Data blocks',
+      type: 'group',
+      children: async () => {
+        const dataSources = await getDataSourcesWithCollections(model);
+
+        // 按区块类型组织菜单：区块 → 数据源 → 数据表
+        return dataBlocks.map(({ className, ModelClass }) => {
+          const meta = (ModelClass as any).meta;
+          return {
+            key: className,
+            label: meta?.title || className,
+            icon: meta?.icon,
+            children: dataSources.map((dataSource) => ({
+              key: `${className}.${dataSource.key}`,
+              label: dataSource.displayName,
+              children: dataSource.collections.map((collection) => ({
+                key: `${className}.${dataSource.key}.${collection.name}`,
+                label: collection.title || collection.name,
+                createModelOptions: {
+                  ...meta?.defaultOptions,
+                  use: className,
+                  stepParams: {
+                    default: {
+                      step1: {
+                        dataSourceKey: dataSource.key,
+                        collectionName: collection.name,
+                      },
+                    },
+                  },
+                },
+              })),
+            })),
+          };
+        });
+      },
+    });
+  }
+
+  // 其他区块分组
+  if (otherBlocks.length > 0 || customBlocks.length > 0) {
+    const otherBlockItems = [
+      ...otherBlocks.map(({ className, ModelClass }) => {
+        const meta = (ModelClass as any).meta;
+        return {
+          key: className,
+          label: meta?.title || className,
+          icon: meta?.icon,
+          createModelOptions: {
+            ...meta?.defaultOptions,
+            use: className,
+          },
+        };
+      }),
+      ...customBlocks,
+    ];
+
+    result.push({
+      key: 'otherBlocks',
+      label: 'Other blocks',
+      type: 'group',
+      children: otherBlockItems,
+    });
+  }
+
+  return result;
+}
