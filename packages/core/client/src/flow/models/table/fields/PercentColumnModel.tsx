@@ -8,16 +8,27 @@
  */
 
 import React from 'react';
+import { isNum } from '@formily/shared';
+import * as math from 'mathjs';
 import { TableColumnModel } from '../../TableColumnModel';
 import { InputNumberReadPretty } from '../components/InputNumberReadPretty';
 
+const isNumberLike = (index: any): index is number => isNum(index) || /^-?\d+(\.\d+)?$/.test(index);
+
+const toValue = (value: any, callback: (v: number) => number) => {
+  if (isNumberLike(value)) {
+    return math.round(callback(value), 9);
+  }
+  return null;
+};
 export class PercentColumnModel extends TableColumnModel {
   public static readonly supportedFieldInterfaces = ['percent'];
   render() {
     return (value, record, index) => {
+      const val = toValue(value, (v) => v * 100);
       return (
         <>
-          <InputNumberReadPretty value={value} />
+          <InputNumberReadPretty value={val} addonAfter="%" />
           {this.renderQuickEditButton(record)}
         </>
       );

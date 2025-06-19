@@ -14,7 +14,6 @@ import { FormFieldModel } from '../../../FormFieldModel';
 
 function toValue(record: any | any[], fieldNames, multiple = false) {
   if (!record) return multiple ? [] : undefined;
-
   const { label: labelKey, value: valueKey } = fieldNames;
 
   const convert = (item: any) => {
@@ -50,29 +49,22 @@ function LazySelect(props) {
 }
 
 export const AssociationSelect = connect(
-  (props: any) => {
-    return <LazySelect {...props} />;
-  },
-  mapProps(
-    {
-      dataSource: 'options',
-    },
-    (props, field) => {
-      return {
-        ...props,
-      };
-    },
-  ),
-  mapReadPretty((props) => {
-    return props.value;
-  }),
+  (props: any) => <LazySelect {...props} />,
+  mapProps({ dataSource: 'options' }),
+  mapReadPretty((props) => props.value),
 );
 
 export class AssociationSelectFieldModel extends FormFieldModel {
   static supportedFieldInterfaces = ['m2m', 'm2o', 'o2o', 'o2m', 'oho', 'obo', 'updatedBy', 'createdBy'];
   dataSource;
   fieldNames: { label: string; value: string; color?: string; icon?: any };
-
+  optionsLoadState?: {
+    page: number;
+    pageSize: number;
+    loading: boolean;
+    hasMore: boolean;
+    searchText?: string;
+  };
   set onPopupScroll(fn) {
     this.field.setComponentProps({ onPopupScroll: fn });
   }
@@ -93,25 +85,58 @@ export class AssociationSelectFieldModel extends FormFieldModel {
   }
 }
 
+export const DEFAULT_ASSOCIATION_PAGE_SIZE = 40;
+
+async function fetchAssociationItems({ ctx, page = 1, searchText = '' }) {
+  const { target } = ctx.model.collectionField.options;
+  const fieldNames = ctx.model.field.componentProps.fieldNames;
+  const labelField = fieldNames?.label;
+
+  const apiClient = ctx.app.apiClient;
+  const collectionManager = ctx.model.collectionField.collection.collectionManager;
+  const targetCollection = collectionManager.getCollection(target);
+  const targetLabelField = targetCollection.getField(labelField);
+  const targetInterface = ctx.app.dataSourceManager.collectionFieldInterfaceManager.getFieldInterface(
+    targetLabelField.options.interface,
+  );
+  const operator = targetInterface?.filterable?.operators?.[0]?.value || '$includes';
+
+  const filter = searchText
+    ? {
+        [labelField]: {
+          [operator]: searchText,
+        },
+      }
+    : undefined;
+
+  const response = await apiClient.request({
+    url: `/${target}:list`,
+    params: {
+      page,
+      pageSize: DEFAULT_ASSOCIATION_PAGE_SIZE,
+      filter,
+    },
+  });
+
+  return response.data?.data || [];
+}
+
+//初始化
 AssociationSelectFieldModel.registerFlow({
   key: 'init',
   auto: true,
   sort: 100,
   steps: {
     step1: {
-      handler(ctx, params) {
-        let initialized = false;
+      handler(ctx) {
         ctx.model.onDropdownVisibleChange = (open) => {
-          if (open && !initialized) {
-            initialized = true;
-
-            ctx.model.dispatchEvent('dropdownOpen', {
-              apiClient: ctx.app.apiClient,
-              field: ctx.model.field,
-              form: ctx.model.form,
-            });
-          }
+          ctx.model.dispatchEvent('dropdownOpen', {
+            apiClient: ctx.app.apiClient,
+            field: ctx.model.field,
+            form: ctx.model.form,
+          });
         };
+
         ctx.model.onPopupScroll = (e) => {
           ctx.model.dispatchEvent('popupScroll', {
             event: e,
@@ -119,6 +144,7 @@ AssociationSelectFieldModel.registerFlow({
             field: ctx.model.field,
           });
         };
+
         ctx.model.onSearch = (searchText) => {
           ctx.model.dispatchEvent('search', {
             searchText,
@@ -130,6 +156,87 @@ AssociationSelectFieldModel.registerFlow({
     },
   },
 });
+// 下拉打开加载第一页数据
+AssociationSelectFieldModel.registerFlow({
+  key: 'dropdownOpen',
+  on: { eventName: 'dropdownOpen' },
+  steps: {
+    step1: {
+      async handler(ctx) {
+        ctx.model.optionsLoadState = {
+          page: 1,
+          pageSize: DEFAULT_ASSOCIATION_PAGE_SIZE,
+          hasMore: true,
+          loading: false,
+        };
+
+        const data = await fetchAssociationItems({ ctx, page: 1 });
+        ctx.model.setDataSource(data);
+      },
+    },
+  },
+});
+
+// 滚动分页追加
+AssociationSelectFieldModel.registerFlow({
+  key: 'popupScroll',
+  on: { eventName: 'popupScroll' },
+  steps: {
+    step1: {
+      async handler(ctx) {
+        const event = ctx.extra?.event;
+        if (!event?.target) return;
+
+        const { scrollTop, scrollHeight, clientHeight } = event.target;
+        // 只在接近底部时才触发加载
+        if (scrollTop + clientHeight < scrollHeight - 20) {
+          return;
+        }
+        const state = (ctx.model.optionsLoadState ||= {
+          page: 1,
+          pageSize: DEFAULT_ASSOCIATION_PAGE_SIZE,
+          hasMore: true,
+          loading: false,
+        });
+        if (state.loading || !state.hasMore) return;
+        state.loading = true;
+        try {
+          const nextPage = state.page + 1;
+          const data = await fetchAssociationItems({ ctx, page: nextPage, searchText: state.searchText || '' });
+          ctx.model.setDataSource([...ctx.model.getDataSource(), ...data]);
+          state.hasMore = data.length === state.pageSize;
+          if (state.hasMore) state.page = nextPage;
+        } finally {
+          state.loading = false;
+        }
+      },
+    },
+  },
+});
+
+//搜索数据
+AssociationSelectFieldModel.registerFlow({
+  key: 'search',
+  on: { eventName: 'search' },
+  steps: {
+    step1: {
+      async handler(ctx) {
+        const searchText = ctx.extra.searchText?.trim();
+        ctx.model.optionsLoadState = {
+          page: 1,
+          pageSize: DEFAULT_ASSOCIATION_PAGE_SIZE,
+          hasMore: true,
+          loading: false,
+          searchText,
+        };
+
+        const data = await fetchAssociationItems({ ctx, page: 1, searchText });
+        ctx.model.setDataSource(data);
+      },
+    },
+  },
+});
+
 const loadTitleFieldOptions = (collectionField, dataSourceManager) => {
   return async (field) => {
     const form = field.form;
@@ -141,7 +248,9 @@ const loadTitleFieldOptions = (collectionField, dataSourceManager) => {
 
     const targetCollection = collectionManager.getCollection(target);
     const targetFields = targetCollection?.getFields?.() ?? [];
+
     field.loading = true;
+
     const options = targetFields
       .filter((field) => isTitleField(dataSourceManager, field.options))
       .map((field) => ({
@@ -154,6 +263,7 @@ const loadTitleFieldOptions = (collectionField, dataSourceManager) => {
   };
 };
 
+// 标题字段设置
 AssociationSelectFieldModel.registerFlow({
   key: 'fieldNames',
   auto: true,
@@ -165,151 +275,25 @@ AssociationSelectFieldModel.registerFlow({
         label: {
           'x-component': 'Select',
           'x-decorator': 'FormItem',
-          'x-reactions': ['{{loadTitleFieldOptions(collectionField,dataSourceManager)}}'],
+          'x-reactions': ['{{loadTitleFieldOptions(collectionField, dataSourceManager)}}'],
         },
       },
-      defaultParams: (ctx) => {
-        const fieldNames = {
-          ...ctx.model.collectionField.options?.uiSchema?.['x-component-props']?.['fieldNames'],
-          ...ctx.model.field.componentProps.fieldNames,
-        };
-        return {
-          label: fieldNames.label,
-        };
-      },
+      defaultParams: (ctx) => ({
+        label: ctx.model.field.componentProps.fieldNames?.label,
+      }),
       handler(ctx, params) {
         ctx.model.flowEngine.flowSettings.registerScopes({
           loadTitleFieldOptions,
           collectionField: ctx.model.collectionField,
           dataSourceManager: ctx.app.dataSourceManager,
         });
+
         const newFieldNames = {
-          ...ctx.model.collectionField.options?.uiSchema?.['x-component-props']?.['fieldNames'],
           ...ctx.model.field.componentProps.fieldNames,
           label: params.label,
         };
+
         ctx.model.field.setComponentProps({ fieldNames: newFieldNames });
-      },
-    },
-  },
-});
-AssociationSelectFieldModel.registerFlow({
-  key: 'event1',
-  on: {
-    eventName: 'dropdownOpen',
-  },
-  steps: {
-    step1: {
-      async handler(ctx, params) {
-        const { target } = ctx.model.collectionField.options;
-        const apiClient = ctx.app.apiClient;
-        const response = await apiClient.request({
-          url: `/${target}:list`,
-          params: {
-            pageSize: 20,
-          },
-        });
-        const { data } = response.data;
-        ctx.model.setDataSource(data);
-      },
-    },
-  },
-});
-
-const paginationState = {
-  page: 1,
-  pageSize: 20,
-  loading: false,
-  hasMore: true,
-};
-
-AssociationSelectFieldModel.registerFlow({
-  key: 'event2',
-  on: {
-    eventName: 'popupScroll',
-  },
-  steps: {
-    step1: {
-      async handler(ctx, params) {
-        if (paginationState.loading || !paginationState.hasMore) {
-          return;
-        }
-        paginationState.loading = true;
-
-        try {
-          const { target } = ctx.model.collectionField.options;
-          const apiClient = ctx.app.apiClient;
-
-          const response = await apiClient.request({
-            url: `/${target}:list`,
-            params: {
-              page: paginationState.page,
-              pageSize: paginationState.pageSize,
-            },
-          });
-
-          const { data } = response.data;
-
-          const currentDataSource = ctx.model.getDataSource() || [];
-          ctx.model.setDataSource([...currentDataSource, ...data]);
-
-          if (data.length < paginationState.pageSize) {
-            paginationState.hasMore = false;
-          } else {
-            paginationState.page++;
-          }
-        } catch (error) {
-          console.error('滚动分页请求失败:', error);
-        } finally {
-          paginationState.loading = false;
-        }
-      },
-    },
-  },
-});
-
-AssociationSelectFieldModel.registerFlow({
-  key: 'event3',
-  on: {
-    eventName: 'search',
-  },
-  steps: {
-    step1: {
-      async handler(ctx, params) {
-        try {
-          const collectionField = ctx.model.collectionField;
-          const collectionManager = collectionField.collection.collectionManager;
-          const targetCollection = collectionManager.getCollection(collectionField.options.target);
-
-          const labelFieldName = ctx.model.field.componentProps.fieldNames.label;
-          const targetLabelField = targetCollection.getField(labelFieldName);
-
-          const targetInterface = ctx.app.dataSourceManager.collectionFieldInterfaceManager.getFieldInterface(
-            targetLabelField.options.interface,
-          );
-          const operator = targetInterface?.filterable?.operators?.[0]?.value || '$includes';
-
-          const searchText = ctx.extra.searchText?.trim();
-
-          const apiClient = ctx.app.apiClient;
-          const response = await apiClient.request({
-            url: `/${collectionField.options.target}:list`,
-            params: {
-              filter: {
-                [labelFieldName]: {
-                  [operator]: searchText,
-                },
-              },
-            },
-          });
-
-          const { data } = response.data;
-          ctx.model.setDataSource(data);
-        } catch (error) {
-          console.error('AssociationSelectField search flow error:', error);
-          // 出错时也可以选择清空数据源或者显示错误提示
-          ctx.model.setDataSource([]);
-        }
       },
     },
   },
