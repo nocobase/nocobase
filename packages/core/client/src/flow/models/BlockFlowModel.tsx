@@ -7,6 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { DefaultStructure, FlowModel } from '@nocobase/flow-engine';
+import { Collection, DefaultStructure, FlowModel, FlowResource } from '@nocobase/flow-engine';
 
-export class BlockFlowModel<T = DefaultStructure> extends FlowModel<T> {}
+export class BlockFlowModel<T = DefaultStructure> extends FlowModel<T> {
+  resource: FlowResource;
+  collection: Collection;
+}

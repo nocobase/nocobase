@@ -102,7 +102,7 @@ export abstract class BaseRecordResource<TData = any> extends APIResource<TData>
   }
 
   setFilter(filter: Record<string, any>) {
-    return this.addRequestParameter('filter', filter);
+    return this.addRequestParameter('filter', JSON.stringify(filter));
   }
 
   getFilter(): Record<string, any> {

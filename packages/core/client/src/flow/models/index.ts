@@ -15,6 +15,8 @@ export * from './BulkDeleteActionModel';
 export * from './CalendarBlockFlowModel';
 export * from './DeleteActionModel';
 export * from './FilterActionModel';
+export * from './FilterFormActionModel';
+export * from './FilterFormModel';
 export * from './FormFieldModel';
 export * from './FormModel';
 export * from './HtmlBlockFlowModel';

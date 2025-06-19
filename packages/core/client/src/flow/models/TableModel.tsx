@@ -31,8 +31,7 @@ type S = {
 };
 
 export class TableModel extends BlockFlowModel<S> {
-  collection: Collection;
-  resource: MultiRecordResource;
+  declare resource: MultiRecordResource;
 
   getColumns() {
     return this.mapSubModels('columns', (column) => {
