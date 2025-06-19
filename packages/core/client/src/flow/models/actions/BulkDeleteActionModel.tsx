@@ -10,6 +10,8 @@
 import { MultiRecordResource } from '@nocobase/flow-engine';
 import { ButtonProps } from 'antd';
 import { GlobalActionModel } from '../base/ActionModel';
+import { secondaryConfirmationAction } from '../../actions/secondaryConfirmationAction';
+import { refreshOnCompleteAction } from '../../actions/refreshOnCompleteAction';
 
 export class BulkDeleteActionModel extends GlobalActionModel {
   defaultProps: ButtonProps = {
@@ -18,12 +20,14 @@ export class BulkDeleteActionModel extends GlobalActionModel {
 }
 
 BulkDeleteActionModel.registerFlow({
-  key: 'event1',
+  key: 'handleClick',
+  title: '点击事件',
   on: {
     eventName: 'click',
   },
   steps: {
-    step1: {
+    secondaryConfirmationAction,
+    delete: {
       async handler(ctx, params) {
         if (!ctx.shared?.currentBlockModel?.resource) {
           ctx.globals.message.error('No resource selected for deletion.');
@@ -38,5 +42,6 @@ BulkDeleteActionModel.registerFlow({
         ctx.globals.message.success('Selected records deleted successfully.');
       },
     },
+    refreshOnCompleteAction,
   },
 });
