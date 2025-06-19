@@ -23,6 +23,7 @@ export * from './data-blocks/table/TableColumnModel';
 export * from './data-blocks/table/TableModel';
 export * from './filter-blocks/form/FilterFormActionModel';
 export * from './filter-blocks/form/FilterFormFieldModel';
+export * from './LinkPopupActionModel';
 export * from './filter-blocks/form/FilterFormModel';
 export * from './filter-blocks/form/FilterFormResetActionModel';
 export * from './filter-blocks/form/FilterFormSubmitActionModel';

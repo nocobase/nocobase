@@ -8,16 +8,17 @@
  */
 
 import type { ButtonProps } from 'antd/es/button';
-import { openModeAction } from '../../actions/openModeAction';
-import { RecordActionModel } from '../base/ActionModel';
+import { ActionModel } from './ActionModel';
+import { openModeAction } from '../actions/openModeAction';
 
-export class PopupActionModel extends RecordActionModel {
+export class LinkPopupActionModel extends ActionModel {
   defaultProps: ButtonProps = {
+    type: 'link',
     title: 'Popup',
   };
 }
 
-PopupActionModel.registerFlow({
+LinkPopupActionModel.registerFlow({
   key: 'handleClick',
   title: '点击事件',
   on: {
