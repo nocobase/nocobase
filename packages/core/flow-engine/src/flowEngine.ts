@@ -184,6 +184,10 @@ export class FlowEngine {
     return this.modelInstances.get(uid) as T | undefined;
   }
 
+  forEachModel<T extends FlowModel = FlowModel>(callback: (model: T) => void): void {
+    this.modelInstances.forEach(callback);
+  }
+
   /**
    * 移除一个本地模型实例。
    * @param {string} uid 要销毁的 Model 实例的唯一标识符。

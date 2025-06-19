@@ -58,7 +58,10 @@ export class FlowModel<Structure extends { parent?: any; subModels?: any } = Def
    * 基于 key 的 fork 实例缓存，用于复用 fork 实例
    */
   private forkCache: Map<string, ForkFlowModel<any>> = new Map();
-  // model 树的共享运行上下文
+
+  /**
+   * model 树的共享运行上下文
+   */
   private _sharedContext: Record<string, any> = {};
 
   constructor(options: FlowModelOptions<Structure>) {
@@ -94,6 +97,10 @@ export class FlowModel<Structure extends { parent?: any; subModels?: any } = Def
   }
 
   onInit(options): void {}
+
+  get async() {
+    return this._options.async || false;
+  }
 
   static get meta() {
     return modelMetas.get(this);
@@ -625,9 +632,14 @@ export class FlowModel<Structure extends { parent?: any; subModels?: any } = Def
     return this.flowEngine.createModel(options);
   }
 
-  async applySubModelsAutoFlows<K extends keyof Structure['subModels'], R>(subKey: K, extra?: Record<string, any>) {
+  async applySubModelsAutoFlows<K extends keyof Structure['subModels'], R>(
+    subKey: K,
+    extra?: Record<string, any>,
+    shared?: Record<string, any>,
+  ) {
     await Promise.all(
       this.mapSubModels(subKey, async (column) => {
+        column.setSharedContext(shared);
         await column.applyAutoFlows(extra);
       }),
     );
@@ -726,11 +738,21 @@ export class FlowModel<Structure extends { parent?: any; subModels?: any } = Def
     });
   }
 
+  get ctx() {
+    return {
+      globals: this.flowEngine.getContext(),
+      shared: this.getSharedContext(),
+    };
+  }
+
   public setSharedContext(ctx: Record<string, any>) {
     this._sharedContext = ctx;
   }
 
   public getSharedContext() {
+    if (this.async || !this.parent) {
+      return this._sharedContext;
+    }
     return {
       ...this.parent?.getSharedContext(),
       ...this._sharedContext, // 当前实例的 context 优先级最高

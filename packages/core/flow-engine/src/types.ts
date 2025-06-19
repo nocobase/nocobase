@@ -285,6 +285,7 @@ export interface DefaultStructure {
  */
 export interface FlowModelOptions<Structure extends { parent?: any; subModels?: any } = DefaultStructure> {
   uid: string;
+  async?: boolean; // 是否异步加载模型
   props?: IModelComponentProps;
   stepParams?: Record<string, any>;
   subModels?: Structure['subModels'];

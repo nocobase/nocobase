@@ -111,6 +111,7 @@ console.log(apiResource.getData());
 - `setSourceId(sourceId) / getSourceId()`: 设置/获取源对象 ID。
 - `setDataSourceKey(dataSourceKey) / getDataSourceKey()`: 设置/获取数据源标识（通过 header）。
 - `setFilter(filter) / getFilter()`: 设置/获取过滤条件。
+- `addFilterGroup(key, filter) / removeFilterGroup(key)`: 设置/移除条件组。
 - `setAppends(appends) / getAppends()`: 设置/获取附加字段。
 - `addAppends(appends) / removeAppends(appends)`: 添加/移除附加字段。
 - `setFilterByTk(filterByTk) / getFilterByTk()`: 设置/获取主键过滤条件。
