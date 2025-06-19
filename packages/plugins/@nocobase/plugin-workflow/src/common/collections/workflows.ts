@@ -150,7 +150,6 @@ export default {
       foreignKey: 'key',
       sourceKey: 'key',
       constraints: false,
-      onDelete: 'CASCADE',
       // interface: 'oho',
       // uiSchema: {
       //   type: 'object',
