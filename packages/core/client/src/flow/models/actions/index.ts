@@ -15,6 +15,7 @@ export * from './DuplicateActionModel';
 export * from './EditActionModel';
 export * from './FilterActionModel';
 export * from './LinkRecordActionModel';
+export * from './LinkGlobalActionModel';
 export * from './PopupRecordActionModel';
 export * from './RefreshActionModel';
 export * from './UpdateRecordActionModel';
