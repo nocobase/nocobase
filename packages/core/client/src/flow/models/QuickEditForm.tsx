@@ -18,14 +18,12 @@ import {
   FlowModelRenderer,
   SingleRecordResource,
 } from '@nocobase/flow-engine';
-import dataSource from 'packages/core/client/docs/zh-CN/core/flow-models/demos/data-source';
 import React from 'react';
 import { BlockFlowModel } from './BlockFlowModel';
 
 export class QuickEditForm extends BlockFlowModel {
   form: Form;
-  resource: SingleRecordResource;
-  collection: Collection;
+  declare resource: SingleRecordResource;
 
   static async open(options: { flowEngine: FlowEngine; collectionField: CollectionField; filterByTk: string }) {
     const model = options.flowEngine.createModel({
