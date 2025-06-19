@@ -7,54 +7,28 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { MultiRecordResource } from '@nocobase/flow-engine';
-import type { ButtonProps } from 'antd';
+import type { ButtonProps } from 'antd/es/button';
 import { RecordActionModel } from '../base/ActionModel';
+import { secondaryConfirmationAction } from '../../actions/secondaryConfirmationAction';
+import { MultiRecordResource } from '@nocobase/flow-engine';
+import { refreshOnCompleteAction } from '../../actions/refreshOnCompleteAction';
 
 export class DeleteActionModel extends RecordActionModel {
   defaultProps: ButtonProps = {
-    children: 'Delete',
     type: 'link',
+    title: 'Delete',
   };
 }
 
 DeleteActionModel.registerFlow({
-  key: 'event1',
+  key: 'handleClick',
+  title: '点击事件',
   on: {
     eventName: 'click',
   },
   steps: {
-    confirm: {
-      uiSchema: {
-        title: {
-          type: 'string',
-          title: 'Confirm title',
-          'x-decorator': 'FormItem',
-          'x-component': 'Input',
-        },
-        content: {
-          type: 'string',
-          title: 'Confirm content',
-          'x-decorator': 'FormItem',
-          'x-component': 'Input.TextArea',
-        },
-      },
-      defaultParams: {
-        title: 'Confirm Deletion',
-        content: 'Are you sure you want to delete this record?',
-      },
-      async handler(ctx, params) {
-        const confirmed = await ctx.globals.modal.confirm({
-          title: params.title,
-          content: params.content,
-        });
-        if (!confirmed) {
-          ctx.globals.message.info('Deletion cancelled.');
-          return ctx.exit();
-        }
-      },
-    },
-    step1: {
+    secondaryConfirmation: secondaryConfirmationAction,
+    delete: {
       async handler(ctx, params) {
         if (!ctx.shared?.currentBlockModel?.resource) {
           ctx.globals.message.error('No resource selected for deletion.');
@@ -69,5 +43,6 @@ DeleteActionModel.registerFlow({
         ctx.globals.message.success('Record deleted successfully.');
       },
     },
+    refresh: refreshOnCompleteAction,
   },
 });
