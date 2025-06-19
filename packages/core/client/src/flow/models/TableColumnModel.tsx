@@ -73,6 +73,9 @@ export class TableColumnModel extends FieldFlowModel {
       }),
     };
   }
+  setComponentProps(props) {
+    this.setProps('componentProps', { ...(this.props.componentProps || {}), ...props });
+  }
 
   renderQuickEditButton(record) {
     return (
