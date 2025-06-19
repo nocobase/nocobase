@@ -11,7 +11,6 @@ import { SettingOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
 import {
   AddActionButton,
-  AddActionModel,
   AddFieldButton,
   Collection,
   FlowModelRenderer,

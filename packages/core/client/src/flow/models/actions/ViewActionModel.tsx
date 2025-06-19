@@ -7,50 +7,24 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { ButtonProps } from 'antd';
-import React from 'react';
-import { FlowPage } from '../../FlowPage';
-import { RecordActionModel } from '../base/ActionModel';
+import type { ButtonProps } from 'antd/es/button';
+import { ActionModel } from './ActionModel';
+import { openModeAction } from '../actions/openModeAction';
 
-export class ViewActionModel extends RecordActionModel {
+export class ViewActionModel extends ActionModel {
   defaultProps: ButtonProps = {
-    children: 'View',
     type: 'link',
+    title: 'View',
   };
 }
 
 ViewActionModel.registerFlow({
-  key: 'event1',
+  key: 'handleClick',
+  title: '点击事件',
   on: {
     eventName: 'click',
   },
   steps: {
-    step1: {
-      handler(ctx, params) {
-        // eslint-disable-next-line prefer-const
-        let currentDrawer: any;
-
-        function DrawerContent() {
-          return (
-            <div>
-              <FlowPage
-                parentId={ctx.model.uid}
-                sharedContext={{
-                  currentDrawer,
-                  parentRecord: ctx.extra.currentRecord,
-                  parentBlockModel: ctx.shared.currentBlockModel,
-                }}
-              />
-            </div>
-          );
-        }
-
-        currentDrawer = ctx.globals.drawer.open({
-          // title: '命令式 Drawer',
-          width: 800,
-          content: <DrawerContent />,
-        });
-      },
-    },
+    open: openModeAction,
   },
 });
