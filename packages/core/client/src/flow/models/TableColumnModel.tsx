@@ -179,6 +179,13 @@ export class TableActionsColumnModel extends TableColumnModel {
                     use: 'CustomRequestActionModel',
                   },
                 },
+                {
+                  key: 'edit',
+                  label: 'Update record',
+                  createModelOptions: {
+                    use: 'UpdateRecordActionModel',
+                  },
+                },
               ]}
             >
               <SettingOutlined />

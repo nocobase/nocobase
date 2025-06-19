@@ -29,3 +29,4 @@ export * from './PopupActionModel';
 export * from './EditActionModel';
 export * from './DuplicateActionModel';
 export * from './CustomRequestActionModel';
+export * from './UpdateRecordActionModel';
