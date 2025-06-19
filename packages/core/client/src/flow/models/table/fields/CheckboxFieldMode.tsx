@@ -24,7 +24,7 @@ const ReadPretty: FC<CheckboxReadPrettyProps> = (props) => {
   return props.showUnchecked ? <CloseOutlined style={{ color: '#ff4d4f' }} /> : <Checkbox disabled />;
 };
 
-export class CheckboxFieldMode extends TableColumnModel {
+export class CheckboxColumnFieldModel extends TableColumnModel {
   public static readonly supportedFieldInterfaces = ['checkbox'];
 
   render() {

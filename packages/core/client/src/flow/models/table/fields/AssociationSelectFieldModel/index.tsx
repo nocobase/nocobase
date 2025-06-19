@@ -107,7 +107,7 @@ const AssociationSelectReadPretty = (props) => {
   return <span style={ellipsis ? null : { whiteSpace: 'normal' }}>{items}</span>;
 };
 
-export class AssociationSelectReadPrettyFieldModel extends TableColumnModel {
+export class AssociationSelectColumnFieldModel extends TableColumnModel {
   public static readonly supportedFieldInterfaces = [
     'm2m',
     'm2o',
@@ -156,7 +156,7 @@ export class AssociationSelectReadPrettyFieldModel extends TableColumnModel {
 // });
 
 //标题字段设置 todo 复用
-AssociationSelectReadPrettyFieldModel.registerFlow({
+AssociationSelectColumnFieldModel.registerFlow({
   key: 'fieldNames',
   auto: true,
   sort: 200,

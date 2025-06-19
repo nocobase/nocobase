@@ -21,7 +21,7 @@ const toValue = (value: any, callback: (v: number) => number) => {
   }
   return null;
 };
-export class PercentReadPrettyFieldModel extends TableColumnModel {
+export class PercentColumnFieldModel extends TableColumnModel {
   public static readonly supportedFieldInterfaces = ['percent'];
   render() {
     return (value, record, index) => {

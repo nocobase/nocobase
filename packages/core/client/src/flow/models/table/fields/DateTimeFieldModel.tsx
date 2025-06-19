@@ -29,7 +29,7 @@ const ReadPretty = (props: any) => {
   };
   return <div className={cls(prefixCls, props.className)}>{getLabels()}</div>;
 };
-export class DateTimeReadPrettyFieldModel extends TableColumnModel {
+export class DateTimeColumnFieldModel extends TableColumnModel {
   public static readonly supportedFieldInterfaces = [
     'date',
     'datetimeNoTz',
@@ -50,7 +50,7 @@ export class DateTimeReadPrettyFieldModel extends TableColumnModel {
   }
 }
 
-DateTimeReadPrettyFieldModel.registerFlow({
+DateTimeColumnFieldModel.registerFlow({
   key: 'key3',
   auto: true,
   sort: 1000,

@@ -18,8 +18,8 @@ const fieldNames = {
   color: 'color',
   icon: 'icon',
 };
-export class SelectReadPrettyFieldModel extends TableColumnModel {
-  public static readonly supportedFieldInterfaces = ['select', 'multipleSelect'];
+export class SelectColumnFieldModel extends TableColumnModel {
+  public static readonly supportedFieldInterfaces = ['select', 'multipleSelect', 'radioGroup', 'checkboxGroup'];
 
   render() {
     return (value, record, index) => {

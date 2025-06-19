@@ -14,7 +14,7 @@ import { useTranslation } from 'react-i18next';
 import { TableColumnModel } from '../../TableColumnModel';
 import { InputNumberReadPretty } from '../components/InputNumberReadPretty';
 
-export class NumberReadPrettyFieldModel extends TableColumnModel {
+export class NumberColumnFieldModel extends TableColumnModel {
   public static readonly supportedFieldInterfaces = ['number', 'integer'];
   render() {
     return (value, record, index) => {
@@ -45,7 +45,7 @@ const UnitConversion = () => {
   );
 };
 
-NumberReadPrettyFieldModel.registerFlow({
+NumberColumnFieldModel.registerFlow({
   key: 'format',
   sort: 100,
   title: 'Specific properties',
@@ -136,7 +136,7 @@ NumberReadPrettyFieldModel.registerFlow({
       },
       defaultParams: (ctx) => {
         const { formatStyle, unitConversion, unitConversionType, separator, step, addonBefore, addonAfter } =
-          ctx.model.getProps().componentProps;
+          ctx.model.getComponentProps();
         const { step: prescition } = ctx.model.field?.getComponentProps() || {};
         return {
           formatStyle: formatStyle || 'normal',
