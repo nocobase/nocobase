@@ -191,13 +191,6 @@ TableModel.define({
       columns: [
         {
           use: 'TableActionsColumnModel',
-          subModels: {
-            actions: [
-              {
-                use: 'ActionModel',
-              },
-            ],
-          },
         },
       ],
     },
