@@ -13,7 +13,7 @@ import { FieldContext } from '@formily/react';
 import type { FieldValidator, FieldPatternTypes } from '@formily/core';
 import { CollectionField, FlowModel } from '@nocobase/flow-engine';
 import React from 'react';
-import { ReactiveField } from '../Formily/ReactiveField';
+import { ReactiveField } from '../../../formily/ReactiveField';
 
 type FieldComponentTuple = [component: React.ElementType, props: Record<string, any>] | any[];
 

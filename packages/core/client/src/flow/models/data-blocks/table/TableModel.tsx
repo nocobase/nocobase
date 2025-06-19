@@ -19,8 +19,8 @@ import {
 } from '@nocobase/flow-engine';
 import { Button, Card, Space, Table } from 'antd';
 import React from 'react';
-import { ActionModel } from './ActionModel';
-import { BlockFlowModel } from './BlockFlowModel';
+import { ActionModel } from '../../base/ActionModel';
+import { DataBlockModel } from '../../base/BlockModel';
 import { TableColumnModel } from './TableColumnModel';
 
 type S = {
@@ -30,37 +30,15 @@ type S = {
   };
 };
 
-function adjustColumnOrder(columns) {
-  const leftFixedColumns = [];
-  const normalColumns = [];
-  const rightFixedColumns = [];
-
-  columns.forEach((column) => {
-    if (column.fixed === 'left') {
-      leftFixedColumns.push(column);
-    } else if (column.fixed === 'right') {
-      rightFixedColumns.push(column);
-    } else {
-      normalColumns.push(column);
-    }
-  });
-
-  return [...leftFixedColumns, ...normalColumns, ...rightFixedColumns];
-}
-
-export class TableModel extends BlockFlowModel<S> {
-  collection: Collection;
-  resource: MultiRecordResource;
+export class TableModel extends DataBlockModel<S> {
+  declare resource: MultiRecordResource;
 
   getColumns() {
-    const columns = this.mapSubModels('columns', (column) => {
+    return this.mapSubModels('columns', (column) => {
       return column.getColumnProps();
-    });
-
-    const addColumn = {
+    }).concat({
       key: 'addColumn',
       fixed: 'right',
-      width: 180,
       title: (
         <AddFieldButton
           collection={this.collection}
@@ -91,11 +69,7 @@ export class TableModel extends BlockFlowModel<S> {
           }}
         />
       ),
-    };
-
-    // 加入后再排序
-    const allColumns = [...columns, addColumn];
-    return adjustColumnOrder(allColumns);
+    } as any);
   }
 
   render() {
@@ -103,11 +77,7 @@ export class TableModel extends BlockFlowModel<S> {
       <Card>
         <Space style={{ marginBottom: 16 }}>
           {this.mapSubModels('actions', (action) => (
-            <FlowModelRenderer
-              model={action}
-              showFlowSettings
-              extraContext={{ currentModel: this, currentResource: this.resource }}
-            />
+            <FlowModelRenderer model={action} showFlowSettings sharedContext={{ currentBlockModel: this }} />
           ))}
           <AddActionButton model={this} subModelBaseClass="ActionModel">
             <Button icon={<SettingOutlined />}>Configure actions</Button>
@@ -161,9 +131,6 @@ export class TableModel extends BlockFlowModel<S> {
             this.resource.setPageSize(pagination.pageSize);
             this.resource.refresh();
           }}
-          scroll={{
-            x: 'max-content',
-          }}
         />
       </Card>
     );
@@ -209,7 +176,7 @@ TableModel.registerFlow({
         resource.setAPIClient(ctx.globals.api);
         ctx.model.resource = resource;
         await resource.refresh();
-        await ctx.model.applySubModelsAutoFlows('columns');
+        await ctx.model.applySubModelsAutoFlows('columns', null, { currentBlockModel: ctx.model });
       },
     },
   },
@@ -224,13 +191,6 @@ TableModel.define({
       columns: [
         {
           use: 'TableActionsColumnModel',
-          subModels: {
-            actions: [
-              {
-                use: 'ActionModel',
-              },
-            ],
-          },
         },
       ],
     },

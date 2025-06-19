@@ -9,11 +9,11 @@
 
 import { FlowModel, FlowModelRenderer } from '@nocobase/flow-engine';
 import React from 'react';
-import { BlockGridFlowModel } from './BlockGridFlowModel';
+import { BlockGridModel } from './GridModel';
 
-export class PageTabFlowModel extends FlowModel<{
+export class PageTabModel extends FlowModel<{
   subModels: {
-    grid: BlockGridFlowModel;
+    grid: BlockGridModel;
   };
 }> {
   render() {
@@ -26,7 +26,7 @@ export class PageTabFlowModel extends FlowModel<{
   }
 }
 
-PageTabFlowModel.registerFlow({
+PageTabModel.registerFlow({
   key: 'default',
   auto: true,
   steps: {

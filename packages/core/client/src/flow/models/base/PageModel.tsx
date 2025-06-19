@@ -13,13 +13,13 @@ import { Button, Tabs } from 'antd';
 import _ from 'lodash';
 import React from 'react';
 
-type PageFlowModelStructure = {
+type PageModelStructure = {
   subModels: {
     tabs: FlowModel[];
   };
 };
 
-export class PageFlowModel extends FlowModel<PageFlowModelStructure> {
+export class PageModel extends FlowModel<PageModelStructure> {
   addTab(tab: any) {
     const model = this.addSubModel('tabs', tab);
     model.save();
@@ -48,11 +48,11 @@ export class PageFlowModel extends FlowModel<PageFlowModelStructure> {
           <Button
             onClick={() =>
               this.addTab({
-                use: 'PageTabFlowModel',
+                use: 'PageTabModel',
                 props: { key: uid(), label: `Tab - ${uid()}` },
                 subModels: {
                   grid: {
-                    use: 'BlockGridFlowModel',
+                    use: 'BlockGridModel',
                   },
                 },
               })
@@ -70,7 +70,7 @@ export class PageFlowModel extends FlowModel<PageFlowModelStructure> {
   }
 }
 
-PageFlowModel.registerFlow({
+PageModel.registerFlow({
   key: 'default',
   auto: true,
   steps: {
@@ -94,7 +94,7 @@ PageFlowModel.registerFlow({
       },
       async handler(ctx, params) {
         ctx.model.setProps('enableTabs', params.enableTabs || false);
-        console.log('PageFlowModel step1 handler', ctx.model.props.enableTabs);
+        console.log('PageModel step1 handler', ctx.model.props.enableTabs);
       },
     },
   },

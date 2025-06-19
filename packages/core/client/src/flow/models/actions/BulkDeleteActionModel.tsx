@@ -8,11 +8,13 @@
  */
 
 import { MultiRecordResource } from '@nocobase/flow-engine';
-import React from 'react';
-import { ActionModel } from './ActionModel';
+import { ButtonProps } from 'antd';
+import { ActionModel } from '../base/ActionModel';
 
 export class BulkDeleteActionModel extends ActionModel {
-  title = 'Delete';
+  defaultProps: ButtonProps = {
+    children: 'Delete',
+  };
 }
 
 BulkDeleteActionModel.registerFlow({
@@ -23,11 +25,11 @@ BulkDeleteActionModel.registerFlow({
   steps: {
     step1: {
       async handler(ctx, params) {
-        if (!ctx.extra.currentResource) {
+        if (!ctx.shared?.currentBlockModel?.resource) {
           ctx.globals.message.error('No resource selected for deletion.');
           return;
         }
-        const resource = ctx.extra.currentResource as MultiRecordResource;
+        const resource = ctx.shared.currentBlockModel.resource as MultiRecordResource;
         if (resource.getSelectedRows().length === 0) {
           ctx.globals.message.warning('No records selected for deletion.');
           return;
