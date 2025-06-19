@@ -9,7 +9,7 @@
 
 import React, { useState } from 'react';
 import { SchemaComponent, useAPIClient, useFormBlockContext } from '@nocobase/client';
-import { Card, Typography, Spin, message } from 'antd';
+import { Card, Typography, Spin, message, Input, Button } from 'antd';
 import { useAsyncEffect } from 'ahooks';
 import { useT } from './locale';
 
@@ -79,6 +79,40 @@ const useSubmitProps = () => {
   };
 };
 
+const TextArea = (props) => {
+  const [isExists, setIsExists] = useState(false);
+  const api = useAPIClient();
+  const ctx = useFormBlockContext();
+  useAsyncEffect(async () => {
+    const res = await api.request({
+      url: '/license:is-exists',
+      method: 'GET',
+    });
+    if (res?.data?.data) {
+      ctx.form?.setFieldState('footer', (state) => {
+        state.visible = false;
+      });
+    }
+    setIsExists(res?.data?.data);
+  }, []);
+
+  if (isExists) {
+    return (
+      <Button
+        onClick={() => {
+          setIsExists(false);
+          ctx.form?.setFieldState('footer', (state) => {
+            state.visible = true;
+          });
+        }}
+      >
+        更改 key
+      </Button>
+    );
+  }
+  return <Input.TextArea rows={4} {...props} />;
+};
+
 export default function LicenseSetting() {
   const t = useT();
 
@@ -106,7 +140,7 @@ export default function LicenseSetting() {
             type: 'string',
             title: t('License key'),
             required: true,
-            'x-component': 'Input.TextArea',
+            'x-component': 'TextArea',
             'x-decorator': 'FormItem',
             'x-component-props': {
               placeholder: t('Enter license key'),
@@ -134,7 +168,7 @@ export default function LicenseSetting() {
     <Card bordered={false}>
       <SchemaComponent
         scope={{ useSubmitProps }}
-        components={{ InstanceId }}
+        components={{ InstanceId, TextArea }}
         schema={{
           type: 'void',
           properties: {

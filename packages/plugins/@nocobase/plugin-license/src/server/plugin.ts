@@ -8,7 +8,7 @@
  */
 
 import { Plugin } from '@nocobase/server';
-import { getInstanceId, saveLicenseKey } from './utils';
+import { getInstanceId, saveLicenseKey, isLicenseKeyExists } from './utils';
 import { keyDecrypt } from '@nocobase/license-kit';
 import pkg from './../../package.json';
 
@@ -33,6 +33,10 @@ export class PluginLicenseServer extends Plugin {
             return ctx.throw(500, ctx.t('Invalid license key', { ns: pkg.name }));
           }
           await saveLicenseKey(licenseKey);
+          await next();
+        },
+        'is-exists': async (ctx, next) => {
+          ctx.body = await isLicenseKeyExists();
           await next();
         },
       },
