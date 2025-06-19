@@ -15,7 +15,7 @@ import { TableColumnModel } from '../../TableColumnModel';
 import { InputNumberReadPretty } from '../components/InputNumberReadPretty';
 
 export class NumberReadPrettyFieldModel extends TableColumnModel {
-  public static readonly supportedFieldInterfaces = ['number'];
+  public static readonly supportedFieldInterfaces = ['number', 'integer'];
   render() {
     return (value, record, index) => {
       return (

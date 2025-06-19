@@ -119,7 +119,6 @@ export class AssociationSelectReadPrettyFieldModel extends TableColumnModel {
     'createdBy',
   ];
   render() {
-    console.log(this);
     return (value, record, index) => {
       return (
         <>
@@ -137,6 +136,24 @@ export class AssociationSelectReadPrettyFieldModel extends TableColumnModel {
     };
   }
 }
+
+// //附加关系数据
+// AssociationSelectReadPrettyFieldModel.registerFlow({
+//   key: 'appendsAssociationFields',
+//   auto: true,
+//   sort: 100,
+//   steps: {
+//     step1: {
+//       handler(ctx) {
+//         const resource = ctx.model.parent.resource;
+//         const { name } = ctx.model.field.options;
+//         resource.addAppends(name);
+//         console.log(ctx.model.parent.resource, name);
+//         resource.refresh();
+//       },
+//     },
+//   },
+// });
 
 //标题字段设置 todo 复用
 AssociationSelectReadPrettyFieldModel.registerFlow({

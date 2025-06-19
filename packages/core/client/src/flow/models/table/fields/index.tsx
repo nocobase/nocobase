@@ -11,3 +11,5 @@ export * from './SelectFieldModel';
 export * from './NumberFieldModel';
 export * from './PercentFieldModel';
 export * from './AssociationSelectFieldModel';
+export * from './CheckboxFieldMode';
+export * from './RadioGroupFieldModel';

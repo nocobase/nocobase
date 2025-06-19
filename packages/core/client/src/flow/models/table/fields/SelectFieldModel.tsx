@@ -12,31 +12,24 @@ import { Tag } from 'antd';
 import { TableColumnModel } from '../../TableColumnModel';
 import { getCurrentOptions } from '../utils/utils';
 
+const fieldNames = {
+  label: 'label',
+  value: 'value',
+  color: 'color',
+  icon: 'icon',
+};
 export class SelectReadPrettyFieldModel extends TableColumnModel {
   public static readonly supportedFieldInterfaces = ['select', 'multipleSelect'];
-  dataSource;
-  fieldNames: { label: string; value: string; color?: string; icon?: any };
 
-  setDataSource(dataSource) {
-    this.dataSource = dataSource;
-  }
-  getDataSource() {
-    return this.dataSource;
-  }
-  setFieldNames(fieldNames) {
-    this.fieldNames = fieldNames;
-  }
-  getFieldNames() {
-    return this.fieldNames;
-  }
   render() {
     return (value, record, index) => {
-      const currentOptions = getCurrentOptions(value, this.dataSource, this.fieldNames);
+      const { dataSource } = this.getComponentProps();
+      const currentOptions = getCurrentOptions(value, dataSource, fieldNames);
       const content =
         value &&
         currentOptions.map((option, index) => (
-          <Tag key={index} color={option[this.fieldNames.color]} icon={option.icon}>
-            {option[this.fieldNames.label]}
+          <Tag key={index} color={option[fieldNames.color]} icon={option.icon}>
+            {option[fieldNames.label]}
           </Tag>
         ));
       return (
@@ -48,22 +41,3 @@ export class SelectReadPrettyFieldModel extends TableColumnModel {
     };
   }
 }
-
-SelectReadPrettyFieldModel.registerFlow({
-  key: 'options',
-  auto: true,
-  sort: 100,
-  steps: {
-    step1: {
-      handler(ctx, params) {
-        ctx.model.setDataSource(ctx.model.field.enum);
-        ctx.model.setFieldNames({
-          label: 'label',
-          value: 'value',
-          color: 'color',
-          icon: 'icon',
-        });
-      },
-    },
-  },
-});
