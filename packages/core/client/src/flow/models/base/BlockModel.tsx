@@ -9,7 +9,11 @@
 
 import { Collection, DefaultStructure, FlowModel, FlowResource } from '@nocobase/flow-engine';
 
-export class BlockFlowModel<T = DefaultStructure> extends FlowModel<T> {
+export class BlockModel<T = DefaultStructure> extends FlowModel<T> {}
+
+export class DataBlockModel<T = DefaultStructure> extends BlockModel<T> {
   resource: FlowResource;
   collection: Collection;
 }
+
+export class FilterBlockModel<T = DefaultStructure> extends BlockModel<T> {}

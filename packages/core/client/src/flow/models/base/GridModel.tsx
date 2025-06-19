@@ -11,7 +11,7 @@ import { AddBlockButton, FlowModel, FlowModelRenderer } from '@nocobase/flow-eng
 import { Button, Card, Dropdown } from 'antd';
 import _ from 'lodash';
 import React from 'react';
-import { BlockFlowModel } from './BlockFlowModel';
+import { BlockModel } from './BlockModel';
 
 function Grid({ items }) {
   return (
@@ -27,35 +27,24 @@ function Grid({ items }) {
   );
 }
 
-// function AddBlockButton({ model }) {
-//   return (
-//     <Dropdown
-//       menu={{
-//         onClick: (info) => {
-//           const BlockModel = model.flowEngine.getModelClass(info.key);
-//           model.addItem(_.cloneDeep(BlockModel.meta.defaultOptions));
-//         },
-//         items: model.getBlockModels(),
-//       }}
-//     >
-//       <Button>Add block</Button>
-//     </Dropdown>
-//   );
-// }
-
-type BlockGridFlowModelStructure = {
+type GridModelStructure = {
   subModels: {
-    items: BlockFlowModel[];
+    items: BlockModel[];
   };
 };
 
-export class BlockGridFlowModel extends FlowModel<BlockGridFlowModelStructure> {
+export class GridModel extends FlowModel<GridModelStructure> {
+  subModelBaseClass = 'BlockModel';
   render() {
     return (
       <div style={{ padding: 16 }}>
         <Grid items={this.subModels.items?.slice() || []} />
-        <AddBlockButton model={this} subModelKey="items" />
+        <AddBlockButton model={this} subModelKey="items" subModelBaseClass={this.subModelBaseClass} />
       </div>
     );
   }
+}
+
+export class BlockGridModel extends GridModel {
+  subModelBaseClass = 'BlockModel';
 }

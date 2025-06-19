@@ -19,8 +19,8 @@ import {
 } from '@nocobase/flow-engine';
 import { Button, Card, Space, Table } from 'antd';
 import React from 'react';
-import { ActionModel } from './ActionModel';
-import { BlockFlowModel } from './BlockFlowModel';
+import { ActionModel } from '../../base/ActionModel';
+import { DataBlockModel } from '../../base/BlockModel';
 import { TableColumnModel } from './TableColumnModel';
 
 type S = {
@@ -30,7 +30,7 @@ type S = {
   };
 };
 
-export class TableModel extends BlockFlowModel<S> {
+export class TableModel extends DataBlockModel<S> {
   declare resource: MultiRecordResource;
 
   getColumns() {

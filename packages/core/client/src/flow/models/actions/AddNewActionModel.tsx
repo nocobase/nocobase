@@ -7,22 +7,42 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import type { ButtonType } from 'antd/es/button';
+import { ButtonProps } from 'antd';
 import React from 'react';
-import { FlowPageComponent } from '../FlowPage';
-import { ActionModel } from './ActionModel';
+import { FlowPage } from '../../FlowPage';
+import { ActionModel } from '../base/ActionModel';
 
 export class AddNewActionModel extends ActionModel {
-  title = 'Add new';
+  defaultProps: ButtonProps = {
+    type: 'primary',
+    children: 'Add new',
+  };
 }
 
 AddNewActionModel.registerFlow({
+  sort: 200,
+  title: '事件',
   key: 'event1',
   on: {
     eventName: 'click',
   },
   steps: {
     step1: {
+      title: '弹窗配置',
+      uiSchema: {
+        width: {
+          type: 'number',
+          title: '宽度',
+          'x-decorator': 'FormItem',
+          'x-component': 'NumberPicker',
+          'x-component-props': {
+            placeholder: '请输入宽度',
+          },
+        },
+      },
+      defaultParams: {
+        width: 800,
+      },
       handler(ctx, params) {
         // eslint-disable-next-line prefer-const
         let currentDrawer: any;
@@ -30,7 +50,7 @@ AddNewActionModel.registerFlow({
         function DrawerContent() {
           return (
             <div>
-              <FlowPageComponent
+              <FlowPage
                 parentId={ctx.model.uid}
                 sharedContext={{ parentBlockModel: ctx.shared.currentBlockModel, currentDrawer }}
               />
@@ -39,8 +59,9 @@ AddNewActionModel.registerFlow({
         }
 
         currentDrawer = ctx.globals.drawer.open({
-          title: '命令式 Drawer',
-          width: 800,
+          // title: '命令式 Drawer',
+          header: null,
+          width: params.width,
           content: <DrawerContent />,
         });
       },

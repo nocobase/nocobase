@@ -7,17 +7,20 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Submit } from '@formily/antd-v5';
-import React from 'react';
-import { ActionModel } from './ActionModel';
+import { ButtonProps } from 'antd';
+import { ActionModel } from '../../base/ActionModel';
 
-export class SubmitActionModel extends ActionModel {
-  render() {
-    return <Submit {...this.props}>{this.props.title || 'Submit'}</Submit>;
-  }
+export class FormActionModel extends ActionModel {}
+
+export class FormSubmitActionModel extends FormActionModel {
+  defaultProps: ButtonProps = {
+    children: 'Submit',
+    type: 'primary',
+    htmlType: 'submit',
+  };
 }
 
-SubmitActionModel.registerFlow({
+FormSubmitActionModel.registerFlow({
   key: 'event1',
   on: {
     eventName: 'click',

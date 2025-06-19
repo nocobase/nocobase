@@ -7,22 +7,19 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Application, Plugin } from '@nocobase/client';
-import { Collection, FlowModel, MultiRecordResource } from '@nocobase/flow-engine';
+import { Collection, MultiRecordResource } from '@nocobase/flow-engine';
 import { Card, Modal } from 'antd';
 import moment from 'moment';
-import dataSource from 'packages/core/client/docs/zh-CN/core/flow-models/demos/data-source';
-import { createdAt } from 'packages/plugins/@nocobase/plugin-mock-collections/src/server/field-interfaces';
 import React from 'react';
 import { Calendar, momentLocalizer } from 'react-big-calendar';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
-import { BlockFlowModel } from './BlockFlowModel';
+import { DataBlockModel } from '../../base/BlockModel';
 
 const localizer = momentLocalizer(moment);
 
-export class CalendarBlockFlowModel extends BlockFlowModel {
-  collection: Collection;
-  resource: MultiRecordResource;
+export class CalendarBlockModel extends DataBlockModel {
+  declare resource: MultiRecordResource;
+
   render() {
     const data = this.resource.getData();
     return (
@@ -49,7 +46,15 @@ export class CalendarBlockFlowModel extends BlockFlowModel {
   }
 }
 
-CalendarBlockFlowModel.registerFlow({
+CalendarBlockModel.define({
+  title: 'Calendar',
+  group: 'Content',
+  defaultOptions: {
+    use: 'CalendarBlockModel',
+  },
+});
+
+CalendarBlockModel.registerFlow({
   key: 'key2',
   on: {
     eventName: 'onSelectEvent',
@@ -73,7 +78,7 @@ CalendarBlockFlowModel.registerFlow({
   },
 });
 
-CalendarBlockFlowModel.registerFlow({
+CalendarBlockModel.registerFlow({
   key: 'key3',
   on: {
     eventName: 'onDoubleClickEvent',
@@ -97,7 +102,7 @@ CalendarBlockFlowModel.registerFlow({
   },
 });
 
-CalendarBlockFlowModel.registerFlow({
+CalendarBlockModel.registerFlow({
   key: 'default',
   auto: true,
   steps: {
@@ -170,19 +175,11 @@ CalendarBlockFlowModel.registerFlow({
         },
       },
       handler: async (ctx, params) => {
-        console.log('CalendarBlockFlowModel step2 params:', params);
+        console.log('CalendarBlockModel step2 params:', params);
         ctx.model.setProps('titleAccessor', params.titleAccessor);
         ctx.model.setProps('startAccessor', params.startAccessor);
         ctx.model.setProps('endAccessor', params.endAccessor);
       },
     },
-  },
-});
-
-CalendarBlockFlowModel.define({
-  title: 'Calendar',
-  group: 'Content',
-  defaultOptions: {
-    use: 'CalendarBlockFlowModel',
   },
 });

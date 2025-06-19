@@ -18,26 +18,26 @@ function InternalFlowPage({ uid, sharedContext }) {
   return <FlowModelRenderer model={model} sharedContext={sharedContext} showFlowSettings hideRemoveInSettings />;
 }
 
-export const FlowPage = () => {
+export const FlowRoute = () => {
   const params = useParams();
-  return <FlowPageComponent uid={params.name} />;
+  return <FlowPage uid={params.name} />;
 };
 
-export const FlowPageComponent = (props) => {
+export const FlowPage = (props) => {
   const { uid, parentId, sharedContext } = props;
   const flowEngine = useFlowEngine();
   const { loading, data } = useRequest(
     async () => {
       const options = {
         uid,
-        use: 'PageFlowModel',
+        use: 'PageModel',
         subModels: {
           tabs: [
             {
-              use: 'PageTabFlowModel',
+              use: 'PageTabModel',
               subModels: {
                 grid: {
-                  use: 'BlockGridFlowModel',
+                  use: 'BlockGridModel',
                 },
               },
             },

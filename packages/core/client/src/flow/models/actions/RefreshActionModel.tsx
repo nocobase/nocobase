@@ -7,10 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { ActionModel } from './ActionModel';
+import { ButtonProps } from 'antd';
+import { ActionModel } from '../base/ActionModel';
 
 export class RefreshActionModel extends ActionModel {
-  title = 'Refresh';
+  defaultProps: ButtonProps = {
+    children: 'Refresh',
+  };
 }
 
 RefreshActionModel.registerFlow({

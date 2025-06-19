@@ -12,12 +12,12 @@ import _ from 'lodash';
 import { Plugin } from '../application/Plugin';
 import { FlowEngineRunner } from './FlowEngineRunner';
 import { MockFlowModelRepository } from './FlowModelRepository';
-import { FlowPage } from './FlowPage';
+import { FlowRoute } from './FlowPage';
 import * as models from './models';
 
 export class PluginFlowEngine extends Plugin {
   async load() {
-    this.app.addComponents({ FlowPage });
+    this.app.addComponents({ FlowRoute });
     this.app.flowEngine.setModelRepository(new MockFlowModelRepository());
     const filteredModels = Object.fromEntries(
       Object.entries(models).filter(

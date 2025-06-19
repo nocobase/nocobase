@@ -10,22 +10,15 @@
 import { FormButtonGroup, FormLayout } from '@formily/antd-v5';
 import { createForm, Form } from '@formily/core';
 import { FormProvider } from '@formily/react';
-import {
-  AddActionButton,
-  AddFieldButton,
-  Collection,
-  FlowModelRenderer,
-  SingleRecordResource,
-} from '@nocobase/flow-engine';
+import { AddActionButton, AddFieldButton, Collection, FlowModelRenderer } from '@nocobase/flow-engine';
 import { Card } from 'antd';
 import React from 'react';
-import { BlockFlowModel } from './BlockFlowModel';
-import { FormFieldModel } from './FormFieldModel';
+import { FilterBlockModel } from '../../base/BlockModel';
+import { FilterFormFieldModel } from './FilterFormFieldModel';
 
-export class FormModel extends BlockFlowModel {
+export class FilterFormModel extends FilterBlockModel {
   form: Form;
-  declare resource: SingleRecordResource;
-  // collection: Collection;
+  collection: Collection;
 
   render() {
     return (
@@ -47,7 +40,7 @@ export class FormModel extends BlockFlowModel {
                 },
               },
             })}
-            onModelAdded={async (fieldModel: FormFieldModel) => {
+            onModelAdded={async (fieldModel: FilterFormFieldModel) => {
               const fieldInfo = fieldModel.stepParams?.field;
               if (fieldInfo && typeof fieldInfo.name === 'string') {
                 // 如果需要设置 collectionField，可以从 collection 中获取
@@ -61,13 +54,13 @@ export class FormModel extends BlockFlowModel {
             subModelKey="fields"
             model={this}
             collection={this.collection}
-            subModelBaseClass="FormFieldModel"
+            subModelBaseClass="FilterFormFieldModel"
           />
           <FormButtonGroup>
             {this.mapSubModels('actions', (action) => (
               <FlowModelRenderer model={action} showFlowSettings sharedContext={{ currentBlockModel: this }} />
             ))}
-            <AddActionButton model={this} subModelBaseClass="ActionModel" />
+            <AddActionButton model={this} subModelBaseClass="FilterFormActionModel" />
           </FormButtonGroup>
         </FormProvider>
       </Card>
@@ -75,7 +68,7 @@ export class FormModel extends BlockFlowModel {
   }
 }
 
-FormModel.registerFlow({
+FilterFormModel.registerFlow({
   key: 'default',
   auto: true,
   steps: {
@@ -112,26 +105,8 @@ FormModel.registerFlow({
             params.dataSourceKey,
             params.collectionName,
           );
-          const resource = new SingleRecordResource();
-          resource.setDataSourceKey(params.dataSourceKey);
-          resource.setResourceName(params.collectionName);
-          resource.setAPIClient(ctx.globals.api);
-          ctx.model.resource = resource;
-        }
-        if (ctx.shared.parentRecord) {
-          ctx.model.resource.setFilterByTk(ctx.shared.parentRecord.id);
-          await ctx.model.resource.refresh();
-          ctx.model.form.setInitialValues(ctx.model.resource.getData());
         }
       },
     },
-  },
-});
-
-FormModel.define({
-  title: 'Form',
-  group: 'Content',
-  defaultOptions: {
-    use: 'FormModel',
   },
 });

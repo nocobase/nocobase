@@ -8,11 +8,13 @@
  */
 
 import { MultiRecordResource } from '@nocobase/flow-engine';
-import React from 'react';
-import { ActionModel } from './ActionModel';
+import { ButtonProps } from 'antd';
+import { ActionModel } from '../base/ActionModel';
 
 export class BulkDeleteActionModel extends ActionModel {
-  title = 'Delete';
+  defaultProps: ButtonProps = {
+    children: 'Delete',
+  };
 }
 
 BulkDeleteActionModel.registerFlow({

@@ -8,13 +8,16 @@
  */
 
 import { MultiRecordResource } from '@nocobase/flow-engine';
-import { Button, Input, Popover } from 'antd';
+import { Button, ButtonProps, Input, Popover } from 'antd';
 import _ from 'lodash';
 import React from 'react';
-import { ActionModel } from './ActionModel';
+import { ActionModel } from '../base/ActionModel';
 
 export class FilterActionModel extends ActionModel {
-  title = 'Filter';
+  defaultProps: ButtonProps = {
+    type: 'default',
+    children: 'Filter',
+  };
 
   render() {
     return (
@@ -43,29 +46,8 @@ export class FilterActionModel extends ActionModel {
         trigger="click"
         placement="bottom"
       >
-        <Button type={this.type} {...this.props}>
-          {this.props.children || this.title}
-        </Button>
+        <Button {...this.defaultProps} {...this.props} />
       </Popover>
     );
   }
 }
-
-FilterActionModel.registerFlow({
-  key: 'event1',
-  on: {
-    eventName: 'click',
-  },
-  steps: {
-    step1: {
-      async handler(ctx, params) {
-        if (!ctx.shared?.currentBlockModel?.resource) {
-          ctx.globals.message.error('No resource selected for refresh.');
-          return;
-        }
-        const currentBlockModel = ctx.shared.currentBlockModel;
-        await currentBlockModel.resource.refresh();
-      },
-    },
-  },
-});

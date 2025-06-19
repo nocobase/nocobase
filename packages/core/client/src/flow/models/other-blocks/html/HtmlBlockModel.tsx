@@ -9,7 +9,7 @@
 
 import { Card } from 'antd';
 import React, { createRef } from 'react';
-import { BlockFlowModel } from './BlockFlowModel';
+import { BlockModel } from '../../base/BlockModel';
 
 function waitForRefCallback<T extends HTMLElement>(ref: React.RefObject<T>, cb: (el: T) => void, timeout = 3000) {
   const start = Date.now();
@@ -21,7 +21,7 @@ function waitForRefCallback<T extends HTMLElement>(ref: React.RefObject<T>, cb: 
   check();
 }
 
-export class HtmlBlockFlowModel extends BlockFlowModel {
+export class HtmlBlockModel extends BlockModel {
   ref = createRef<HTMLDivElement>();
   render() {
     return (
@@ -33,11 +33,11 @@ export class HtmlBlockFlowModel extends BlockFlowModel {
   }
 }
 
-HtmlBlockFlowModel.define({
+HtmlBlockModel.define({
   title: 'HTML',
   group: 'Content',
   defaultOptions: {
-    use: 'HtmlBlockFlowModel',
+    use: 'HtmlBlockModel',
     stepParams: {
       default: {
         step1: {
@@ -49,7 +49,7 @@ HtmlBlockFlowModel.define({
   },
 });
 
-HtmlBlockFlowModel.registerFlow({
+HtmlBlockModel.registerFlow({
   key: 'default',
   auto: true,
   steps: {

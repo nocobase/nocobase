@@ -8,13 +8,14 @@
  */
 
 import { MultiRecordResource } from '@nocobase/flow-engine';
-import type { ButtonType } from 'antd/es/button';
-import React from 'react';
-import { ActionModel } from './ActionModel';
+import type { ButtonProps } from 'antd';
+import { ActionModel } from '../base/ActionModel';
 
 export class DeleteActionModel extends ActionModel {
-  title = 'Delete';
-  type: ButtonType = 'link';
+  defaultProps: ButtonProps = {
+    children: 'Delete',
+    type: 'link',
+  };
 }
 
 DeleteActionModel.registerFlow({

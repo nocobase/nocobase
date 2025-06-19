@@ -7,14 +7,16 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import type { ButtonType } from 'antd/es/button';
+import { ButtonProps } from 'antd';
 import React from 'react';
-import { FlowPageComponent } from '../FlowPage';
-import { ActionModel } from './ActionModel';
+import { FlowPage } from '../../FlowPage';
+import { ActionModel } from '../base/ActionModel';
 
 export class ViewActionModel extends ActionModel {
-  title = 'View';
-  type: ButtonType = 'link';
+  defaultProps: ButtonProps = {
+    children: 'View',
+    type: 'link',
+  };
 }
 
 ViewActionModel.registerFlow({
@@ -31,7 +33,7 @@ ViewActionModel.registerFlow({
         function DrawerContent() {
           return (
             <div>
-              <FlowPageComponent
+              <FlowPage
                 parentId={ctx.model.uid}
                 sharedContext={{
                   currentDrawer,
@@ -44,7 +46,7 @@ ViewActionModel.registerFlow({
         }
 
         currentDrawer = ctx.globals.drawer.open({
-          title: '命令式 Drawer',
+          // title: '命令式 Drawer',
           width: 800,
           content: <DrawerContent />,
         });

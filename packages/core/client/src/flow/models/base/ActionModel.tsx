@@ -9,23 +9,23 @@
 
 import { FlowModel } from '@nocobase/flow-engine';
 import { Button } from 'antd';
-import type { ButtonType } from 'antd/es/button';
+import type { ButtonProps } from 'antd/es/button';
 import React from 'react';
 
 export class ActionModel extends FlowModel {
-  set onClick(fn) {
-    this.setProps('onClick', fn);
-  }
-
-  title = 'Action';
-
-  type: ButtonType = 'default';
-
+  defaultProps: ButtonProps = {
+    type: 'default',
+    children: 'Action',
+  };
   render() {
     return (
-      <Button type={this.type} {...this.props}>
-        {this.props.children || this.title}
-      </Button>
+      <Button
+        {...this.defaultProps}
+        {...this.props}
+        onClick={(event) => {
+          this.dispatchEvent('click', { event });
+        }}
+      />
     );
   }
 }
@@ -33,10 +33,13 @@ export class ActionModel extends FlowModel {
 ActionModel.registerFlow({
   key: 'default',
   auto: true,
+  title: '基础',
+  sort: 100,
   steps: {
     step1: {
+      title: '编辑按钮',
       uiSchema: {
-        title: {
+        children: {
           type: 'string',
           title: '标题',
           'x-decorator': 'FormItem',
@@ -48,17 +51,12 @@ ActionModel.registerFlow({
       },
       defaultParams(ctx) {
         return {
-          title: ctx.model.title,
+          type: 'default',
+          ...ctx.model.defaultProps,
         };
       },
       handler(ctx, params) {
-        ctx.model.setProps('children', params.title);
-        ctx.model.onClick = (e) => {
-          ctx.model.dispatchEvent('click', {
-            ...ctx.extra,
-            event: e,
-          });
-        };
+        ctx.model.setProps('children', params.children);
       },
     },
   },
