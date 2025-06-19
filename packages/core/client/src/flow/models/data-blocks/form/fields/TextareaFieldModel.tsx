@@ -8,7 +8,7 @@
  */
 
 import { Input } from '@formily/antd-v5';
-import { FormFieldModel } from '../../FormFieldModel';
+import { FormFieldModel } from './FormFieldModel';
 
 export class TextareaFieldModel extends FormFieldModel {
   static supportedFieldInterfaces = ['textarea'];

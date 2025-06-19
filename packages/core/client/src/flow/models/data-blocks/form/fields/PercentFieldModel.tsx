@@ -8,11 +8,11 @@
  */
 
 import { connect, mapProps } from '@formily/react';
-import { FormFieldModel } from '../../FormFieldModel';
-import { useMemo } from 'react';
 import { isNum } from '@formily/shared';
 import { InputNumber } from 'antd';
 import * as math from 'mathjs';
+import { useMemo } from 'react';
+import { FormFieldModel } from './FormFieldModel';
 
 const isNumberLike = (index: any): index is number => isNum(index) || /^-?\d+(\.\d+)?$/.test(index);
 

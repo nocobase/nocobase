@@ -7,9 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { ColorPicker as AntdColorPicker } from 'antd';
 import { connect, mapProps } from '@formily/react';
-import { FormFieldModel } from '../../FormFieldModel';
+import { ColorPicker as AntdColorPicker } from 'antd';
+import { FormFieldModel } from './FormFieldModel';
 
 const ColorPicker = connect(
   AntdColorPicker,

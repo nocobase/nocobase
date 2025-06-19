@@ -6,11 +6,12 @@
  * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
-import { DatePicker } from '@formily/antd-v5';
 import { css } from '@emotion/css';
+import { DatePicker } from '@formily/antd-v5';
 import { getPickerFormat } from '@nocobase/utils/client';
-import { FormFieldModel } from '../../../FormFieldModel';
-import { ExpiresRadio, DateFormatCom } from '../../components';
+import { DateFormatCom, ExpiresRadio } from '../../components';
+import { FormFieldModel } from '../FormFieldModel';
+
 export class DateTimeFieldModel extends FormFieldModel {
   setComponentProps(componentProps) {
     let { dateFormat, timeFormat } = componentProps || {};
@@ -32,6 +33,7 @@ export class DateTimeFieldModel extends FormFieldModel {
     return [DatePicker, {}];
   }
 }
+
 DateTimeFieldModel.registerFlow({
   key: 'key3',
   auto: true,

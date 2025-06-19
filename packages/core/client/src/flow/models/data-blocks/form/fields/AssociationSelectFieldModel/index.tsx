@@ -6,11 +6,11 @@
  * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
-import React, { useMemo } from 'react';
+import { connect, mapProps, mapReadPretty } from '@formily/react';
 import { isValid, toArr } from '@formily/shared';
 import { Select } from 'antd';
-import { connect, mapReadPretty, mapProps } from '@formily/react';
-import { FormFieldModel } from '../../../FormFieldModel';
+import React, { useMemo } from 'react';
+import { FormFieldModel } from '../FormFieldModel';
 
 function toValue(record: any | any[], fieldNames, multiple = false) {
   if (!record) return multiple ? [] : undefined;

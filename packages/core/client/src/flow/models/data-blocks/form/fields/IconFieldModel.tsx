@@ -7,15 +7,15 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { FormFieldModel } from '../../FormFieldModel';
 import { CloseOutlined } from '@ant-design/icons';
 import { useFormLayout } from '@formily/antd-v5';
-import { Button, Empty, Input, Space, theme, Radio, Flex, Popover } from 'antd';
+import { connect, mapProps } from '@formily/react';
+import { Button, Empty, Flex, Input, Popover, Radio, Space, theme } from 'antd';
 import { debounce, groupBy } from 'lodash';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { connect, mapProps } from '@formily/react';
-import { Icon, hasIcon, icons } from '../../../../icon';
+import { Icon, hasIcon, icons } from '../../../../../icon';
+import { FormFieldModel } from './FormFieldModel';
 
 const { Search } = Input;
 interface IconPickerProps {

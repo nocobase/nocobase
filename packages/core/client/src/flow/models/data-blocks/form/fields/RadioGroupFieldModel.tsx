@@ -7,12 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { FormFieldModel } from '../../FormFieldModel';
-import { Checkbox } from 'antd';
+import { Radio } from '@formily/antd-v5';
+import { FormFieldModel } from './FormFieldModel';
 
-export class CheckboxFieldModel extends FormFieldModel {
-  static supportedFieldInterfaces = ['checkbox'];
+export class RadioGroupFieldModel extends FormFieldModel {
+  static supportedFieldInterfaces = ['radioGroup'];
+
   get component() {
-    return [Checkbox, {}];
+    return [Radio.Group, {}];
   }
 }

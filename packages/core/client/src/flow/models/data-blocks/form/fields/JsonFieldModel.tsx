@@ -10,7 +10,7 @@
 import { css, cx } from '@emotion/css';
 import { Input } from 'antd';
 import JSON5 from 'json5';
-import { FormFieldModel } from '../../FormFieldModel';
+import { FormFieldModel } from './FormFieldModel';
 
 const jsonCss = css`
   font-size: 80%;

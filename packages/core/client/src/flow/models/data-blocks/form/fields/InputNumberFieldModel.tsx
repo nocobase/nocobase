@@ -7,12 +7,12 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { FormFieldModel } from '../../FormFieldModel';
 import { connect, mapReadPretty } from '@formily/react';
 import { InputNumber as AntdInputNumber, InputNumberProps as AntdInputNumberProps } from 'antd';
-import React from 'react';
 import BigNumber from 'bignumber.js';
 import { omit } from 'lodash';
+import React from 'react';
+import { FormFieldModel } from './FormFieldModel';
 
 type ComposedInputNumber = React.ForwardRefExoticComponent<
   Pick<Partial<any>, string | number | symbol> & React.RefAttributes<unknown>

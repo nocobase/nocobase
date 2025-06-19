@@ -7,10 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React from 'react';
 import { connect, mapProps } from '@formily/react';
-import { FormFieldModel } from '../../../FormFieldModel';
-import { lazy } from '../../../../../lazy-helper';
+import React from 'react';
+import { lazy } from '../../../../../../lazy-helper';
+import { FormFieldModel } from '../FormFieldModel';
 import { useRichTextStyles } from './style';
 
 const ReactQuill = lazy(() => import('react-quill'));

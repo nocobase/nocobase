@@ -8,14 +8,14 @@
  */
 
 import { Input } from '@formily/antd-v5';
-import React, { useMemo } from 'react';
 import { connect, mapProps, mapReadPretty } from '@formily/react';
-import { FormFieldModel } from '../../../FormFieldModel';
-import { useMarkdownStyles } from './style';
-import { useParseMarkdown, convertToText } from './util';
-import { useGlobalTheme } from '../../../../../global-theme';
 import { Spin } from 'antd';
+import React, { useMemo } from 'react';
+import { useGlobalTheme } from '../../../../../../global-theme';
 import { EllipsisWithTooltip } from '../../components';
+import { FormFieldModel } from '../FormFieldModel';
+import { useMarkdownStyles } from './style';
+import { convertToText, useParseMarkdown } from './util';
 
 const MarkdownReadPretty = (props) => {
   const { ellipsis } = props;

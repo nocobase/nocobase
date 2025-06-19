@@ -14,7 +14,7 @@ import { AddActionButton, AddFieldButton, FlowModelRenderer, SingleRecordResourc
 import { Card } from 'antd';
 import React from 'react';
 import { DataBlockModel } from '../../base/BlockModel';
-import { FormFieldModel } from './FormFieldModel';
+import { FormFieldModel } from './fields/FormFieldModel';
 
 export class FormModel extends DataBlockModel {
   form: Form;

@@ -8,8 +8,8 @@
  */
 
 import { Input } from '@formily/antd-v5';
-import { FormFieldModel } from '../../FormFieldModel';
 import { customAlphabet as Alphabet } from 'nanoid';
+import { FormFieldModel } from './FormFieldModel';
 
 export class NanoIDFieldModel extends FormFieldModel {
   static supportedFieldInterfaces = ['nanoID'];

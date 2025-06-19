@@ -8,7 +8,7 @@
  */
 
 import { Password } from '@formily/antd-v5';
-import { FormFieldModel } from '../../FormFieldModel';
+import { FormFieldModel } from './FormFieldModel';
 
 export class PasswordFieldModel extends FormFieldModel {
   static supportedFieldInterfaces = ['password'];

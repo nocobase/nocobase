@@ -8,12 +8,12 @@
  */
 
 import { FormItem, Input } from '@formily/antd-v5';
+import type { FieldPatternTypes, FieldValidator } from '@formily/core';
 import { Field, Form } from '@formily/core';
 import { FieldContext } from '@formily/react';
-import type { FieldValidator, FieldPatternTypes } from '@formily/core';
 import { CollectionField, FlowModel } from '@nocobase/flow-engine';
 import React from 'react';
-import { ReactiveField } from '../../../formily/ReactiveField';
+import { ReactiveField } from '../../../../formily/ReactiveField';
 
 type FieldComponentTuple = [component: React.ElementType, props: Record<string, any>] | any[];
 
@@ -248,7 +248,3 @@ FormFieldModel.registerFlow({
     },
   },
 });
-
-export class CommonFormItemFlowModel extends FormFieldModel {
-  public static readonly supportedFieldInterfaces = '*';
-}

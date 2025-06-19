@@ -7,13 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { FormFieldModel } from '../../FormFieldModel';
-import { Radio } from '@formily/antd-v5';
+import { TimePicker } from '@formily/antd-v5';
+import { FormFieldModel } from './FormFieldModel';
 
-export class RadioGroupFieldModel extends FormFieldModel {
-  static supportedFieldInterfaces = ['radioGroup'];
+export class TimeFieldModel extends FormFieldModel {
+  static supportedFieldInterfaces = ['time'];
 
   get component() {
-    return [Radio.Group, {}];
+    return [TimePicker, {}];
   }
 }
