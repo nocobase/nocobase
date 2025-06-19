@@ -11,44 +11,56 @@ import { FlowModel } from '@nocobase/flow-engine';
 import { Button } from 'antd';
 import type { ButtonProps } from 'antd/es/button';
 import React from 'react';
+import IconPicker from '../../../schema-component/antd/icon-picker/IconPicker';
+import Icon from '@ant-design/icons';
 
 export class ActionModel extends FlowModel {
+  declare props: ButtonProps;
+
   defaultProps: ButtonProps = {
     type: 'default',
-    children: 'Action',
+    title: 'Action',
   };
+
   render() {
-    return <Button {...this.defaultProps} {...this.props} />;
+    const props = { ...this.defaultProps, ...this.props };
+    const icon = <Icon type={props.icon as any} />;
+
+    return (
+      <Button {...props} icon={icon}>
+        {props.children || props.title}
+      </Button>
+    );
   }
 }
 
 ActionModel.registerFlow({
   key: 'default',
+  title: '通用配置',
   auto: true,
-  title: '基础',
-  sort: 100,
   steps: {
-    step1: {
+    buttonProps: {
       title: '编辑按钮',
       uiSchema: {
-        children: {
-          type: 'string',
-          title: '标题',
+        title: {
           'x-decorator': 'FormItem',
           'x-component': 'Input',
-          'x-component-props': {
-            placeholder: '请输入标题',
-          },
+          title: 'Button title',
+        },
+        icon: {
+          'x-decorator': 'FormItem',
+          'x-component': IconPicker,
+          title: 'Button icon',
         },
       },
       defaultParams(ctx) {
         return {
-          type: 'default',
-          ...ctx.model.defaultProps,
+          title: ctx.model.defaultProps.title,
+          icon: ctx.model.defaultProps.icon,
         };
       },
       handler(ctx, params) {
-        ctx.model.setProps('children', params.children);
+        ctx.model.setProps(params);
         ctx.model.setProps('onClick', (event) => {
           ctx.model.dispatchEvent('click', {
             ...ctx.extra,
