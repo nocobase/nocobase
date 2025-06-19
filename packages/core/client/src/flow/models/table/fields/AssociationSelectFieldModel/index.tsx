@@ -68,7 +68,7 @@ const getLabelFormatValue = (labelUiSchema, value: any, isTag = false): any => {
 const getLabelUiSchema = (collectionManager, target, label) => {
   const targetCollection = collectionManager.getCollection(target);
   const targetLabelField = targetCollection.getField(label);
-  return targetLabelField?.uiSchema;
+  return targetLabelField.options.uiSchema;
 };
 
 const AssociationSelectReadPretty = (props) => {
