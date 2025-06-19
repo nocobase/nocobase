@@ -34,7 +34,7 @@ SubmitActionModel.registerFlow({
         await currentBlockModel.form.submit();
         const values = currentBlockModel.form.values;
         await currentBlockModel.resource.save(values);
-        console.log('Form submitted successfully:', ctx.shared.parentBlockModel);
+        await currentBlockModel.form.reset();
         // currentResource.refresh();
         ctx.shared.parentBlockModel?.resource?.refresh();
         if (ctx.shared.currentDrawer) {

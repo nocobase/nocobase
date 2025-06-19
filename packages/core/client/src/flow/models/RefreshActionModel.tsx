@@ -7,27 +7,26 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import type { ButtonType } from 'antd/es/button';
-import React from 'react';
 import { ActionModel } from './ActionModel';
 
-export class LinkActionModel extends ActionModel {
-  title = 'Link';
-  type: ButtonType = 'link';
+export class RefreshActionModel extends ActionModel {
+  title = 'Refresh';
 }
 
-LinkActionModel.registerFlow({
+RefreshActionModel.registerFlow({
   key: 'event1',
   on: {
     eventName: 'click',
   },
   steps: {
     step1: {
-      handler(ctx, params) {
-        ctx.globals.modal.confirm({
-          title: `${ctx.extra.currentRecord?.id}`,
-          content: 'Are you sure you want to perform this action?',
-        });
+      async handler(ctx, params) {
+        if (!ctx.shared?.currentBlockModel?.resource) {
+          ctx.globals.message.error('No resource selected for refresh.');
+          return;
+        }
+        const currentBlockModel = ctx.shared.currentBlockModel;
+        await currentBlockModel.resource.refresh();
       },
     },
   },

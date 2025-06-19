@@ -738,6 +738,13 @@ export class FlowModel<Structure extends { parent?: any; subModels?: any } = Def
     });
   }
 
+  get ctx() {
+    return {
+      globals: this.flowEngine.getContext(),
+      shared: this.getSharedContext(),
+    };
+  }
+
   public setSharedContext(ctx: Record<string, any>) {
     this._sharedContext = ctx;
   }

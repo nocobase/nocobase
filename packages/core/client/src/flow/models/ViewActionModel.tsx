@@ -35,7 +35,7 @@ ViewActionModel.registerFlow({
                 parentId={ctx.model.uid}
                 sharedContext={{
                   currentDrawer,
-                  parentRecord: ctx.shared.currentRecord,
+                  parentRecord: ctx.extra.currentRecord,
                   parentBlockModel: ctx.shared.currentBlockModel,
                 }}
               />

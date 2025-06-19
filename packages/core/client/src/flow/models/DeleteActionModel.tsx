@@ -59,12 +59,12 @@ DeleteActionModel.registerFlow({
           ctx.globals.message.error('No resource selected for deletion.');
           return;
         }
-        if (!ctx.shared.currentRecord) {
+        if (!ctx.extra.currentRecord) {
           ctx.globals.message.error('No resource or record selected for deletion.');
           return;
         }
         const resource = ctx.shared.currentBlockModel.resource as MultiRecordResource;
-        await resource.destroy(ctx.shared.currentRecord);
+        await resource.destroy(ctx.extra.currentRecord);
         ctx.globals.message.success('Record deleted successfully.');
       },
     },

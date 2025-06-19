@@ -134,6 +134,13 @@ export class ForkFlowModel<TMaster extends FlowModel = FlowModel> {
     };
   }
 
+  get ctx() {
+    return {
+      globals: this.flowEngine.getContext(),
+      shared: this.getSharedContext(),
+    };
+  }
+
   /**
    * 获取对象及其原型链上的属性描述符
    */

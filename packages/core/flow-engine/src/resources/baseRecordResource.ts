@@ -31,6 +31,8 @@ export abstract class BaseRecordResource<TData = any> extends APIResource<TData>
     headers: {} as Record<string, any>,
   };
 
+  protected filterGroups = new Map<string, any>();
+
   protected splitValue(value: string | string[]): string[] {
     if (typeof value === 'string') {
       return value.split(',').map((item) => item.trim());
@@ -104,7 +106,23 @@ export abstract class BaseRecordResource<TData = any> extends APIResource<TData>
   }
 
   getFilter(): Record<string, any> {
-    return this.request.params.filter;
+    return {
+      $and: [...this.filterGroups.values()].filter(Boolean),
+    };
+  }
+
+  resetFilter() {
+    this.setFilter(this.getFilter());
+  }
+
+  addFilterGroup(key: string, filter) {
+    this.filterGroups.set(key, filter);
+    this.resetFilter();
+  }
+
+  removeFilterGroup(key: string) {
+    this.filterGroups.delete(key);
+    this.resetFilter();
   }
 
   setAppends(appends: string[]) {
