@@ -154,7 +154,18 @@ const BodySchema = {
                   'x-component': 'WorkflowVariableInput',
                   'x-component-props': {
                     variableOptions: {
-                      types: [{ type: 'reference', options: { collection: '*', entity: true } }],
+                      types: [
+                        function isFileRecordMatch(field, { collectionManager }) {
+                          if (!field.target) {
+                            return false;
+                          }
+
+                          return (
+                            field.target === 'attachments' ||
+                            collectionManager.getCollection(field.target)?.template === 'file'
+                          );
+                        },
+                      ],
                     },
                   },
                   'x-reactions': [
