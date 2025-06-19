@@ -27,3 +27,4 @@ export * from './TableModel';
 export * from './ViewActionModel';
 export * from './PopupActionModel';
 export * from './EditActionModel';
+export * from './DuplicateActionModel';

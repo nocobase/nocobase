@@ -165,6 +165,13 @@ export class TableActionsColumnModel extends TableColumnModel {
                     use: 'EditActionModel',
                   },
                 },
+                {
+                  key: 'edit',
+                  label: 'Duplicate',
+                  createModelOptions: {
+                    use: 'DuplicateActionModel',
+                  },
+                },
               ]}
             >
               <SettingOutlined />
