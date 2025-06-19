@@ -12,7 +12,7 @@ import { Field, Form } from '@formily/core';
 import { FieldContext } from '@formily/react';
 import { CollectionField, FlowModel } from '@nocobase/flow-engine';
 import React from 'react';
-import { ReactiveField } from '../../../formily/ReactiveField';
+import { ReactiveField } from '../../../Formily/ReactiveField';
 
 export class FormFieldModel extends FlowModel {
   collectionField: CollectionField;
