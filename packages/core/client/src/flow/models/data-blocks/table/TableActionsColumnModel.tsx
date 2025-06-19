@@ -9,7 +9,7 @@
 
 import { SettingOutlined } from '@ant-design/icons';
 import { observer } from '@formily/reactive-react';
-import { AddActionModel, FlowModelRenderer, FlowsFloatContextMenu } from '@nocobase/flow-engine';
+import { AddActionButton, FlowModelRenderer, FlowsFloatContextMenu } from '@nocobase/flow-engine';
 import { Space } from 'antd';
 import React from 'react';
 import { ActionModel } from '../../base/ActionModel';
@@ -43,35 +43,9 @@ export class TableActionsColumnModel extends TableColumnModel {
         >
           <Space>
             {this.props.title || 'Actions'}
-            <AddActionModel
-              model={this}
-              subModelKey={'actions'}
-              items={() => [
-                {
-                  key: 'view',
-                  label: 'View',
-                  createModelOptions: {
-                    use: 'ViewActionModel',
-                  },
-                },
-                {
-                  key: 'link',
-                  label: 'Link',
-                  createModelOptions: {
-                    use: 'LinkActionModel',
-                  },
-                },
-                {
-                  key: 'delete',
-                  label: 'Delete',
-                  createModelOptions: {
-                    use: 'DeleteActionModel',
-                  },
-                },
-              ]}
-            >
+            <AddActionButton model={this} subModelBaseClass="RecordActionModel" subModelKey="actions">
               <SettingOutlined />
-            </AddActionModel>
+            </AddActionButton>
           </Space>
         </FlowsFloatContextMenu>
       ),

@@ -13,9 +13,9 @@ import { BlocksSelector } from '../../../schema-component/antd/action/Action.Des
 import { useAfterSuccessOptions } from '../../../schema-component/antd/action/hooks/useGetAfterSuccessVariablesOptions';
 import { refreshOnCompleteAction } from '../../actions/refreshOnCompleteAction';
 import { secondaryConfirmationAction } from '../../actions/secondaryConfirmationAction';
-import { ActionModel } from '../base/ActionModel';
+import { GlobalActionModel } from '../base/ActionModel';
 
-export class CustomRequestActionModel extends ActionModel {
+export class CustomRequestActionModel extends GlobalActionModel {
   defaultProps: ButtonProps = {
     type: 'link',
     title: 'Custom request',

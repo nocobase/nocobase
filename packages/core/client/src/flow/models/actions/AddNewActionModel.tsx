@@ -10,9 +10,9 @@
 import { ButtonProps } from 'antd';
 import React from 'react';
 import { FlowPage } from '../../FlowPage';
-import { ActionModel } from '../base/ActionModel';
+import { GlobalActionModel } from '../base/ActionModel';
 
-export class AddNewActionModel extends ActionModel {
+export class AddNewActionModel extends GlobalActionModel {
   defaultProps: ButtonProps = {
     type: 'primary',
     children: 'Add new',

@@ -10,9 +10,9 @@
 import { ButtonProps } from 'antd';
 import React from 'react';
 import { FlowPage } from '../../FlowPage';
-import { ActionModel } from '../base/ActionModel';
+import { RecordActionModel } from '../base/ActionModel';
 
-export class ViewActionModel extends ActionModel {
+export class ViewActionModel extends RecordActionModel {
   defaultProps: ButtonProps = {
     children: 'View',
     type: 'link',

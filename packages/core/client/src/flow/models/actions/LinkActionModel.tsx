@@ -8,9 +8,9 @@
  */
 
 import type { ButtonProps } from 'antd';
-import { ActionModel } from '../base/ActionModel';
+import { RecordActionModel } from '../base/ActionModel';
 
-export class LinkActionModel extends ActionModel {
+export class LinkActionModel extends RecordActionModel {
   defaultProps: ButtonProps = {
     type: 'link',
     children: 'Link',

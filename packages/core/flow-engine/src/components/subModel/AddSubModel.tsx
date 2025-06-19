@@ -28,7 +28,7 @@ interface AddSubModelButtonProps {
   model: FlowModel;
   subModelKey: string;
   subModelType?: 'object' | 'array';
-  subModelBaseClass?: typeof FlowModel;
+  subModelBaseClass?: string | typeof FlowModel;
   onModelAdded?: (addedModel: FlowModel) => Promise<void>;
   items: SubModelItem[] | (() => SubModelItem[] | Promise<SubModelItem[]>);
   children?: React.ReactNode; // ✅ 支持自定义按钮文本

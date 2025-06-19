@@ -11,9 +11,9 @@ import type { ButtonProps } from 'antd';
 import { afterSuccessAction } from '../../actions/afterSuccessAction';
 import { refreshOnCompleteAction } from '../../actions/refreshOnCompleteAction';
 import { secondaryConfirmationAction } from '../../actions/secondaryConfirmationAction';
-import { ActionModel } from '../base/ActionModel';
+import { RecordActionModel } from '../base/ActionModel';
 
-export class UpdateRecordActionModel extends ActionModel {
+export class UpdateRecordActionModel extends RecordActionModel {
   defaultProps: ButtonProps = {
     type: 'link',
     title: 'Update record',

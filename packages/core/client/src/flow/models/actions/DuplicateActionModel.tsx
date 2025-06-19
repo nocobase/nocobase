@@ -9,9 +9,9 @@
 
 import type { ButtonProps } from 'antd/es/button';
 import { openModeAction } from '../../actions/openModeAction';
-import { ActionModel } from '../base/ActionModel';
+import { RecordActionModel } from '../base/ActionModel';
 
-export class DuplicateActionModel extends ActionModel {
+export class DuplicateActionModel extends RecordActionModel {
   defaultProps: ButtonProps = {
     type: 'link',
     title: 'Duplicate',

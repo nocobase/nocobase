@@ -7,13 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export * from './actions/AddNewActionModel';
-export * from './actions/BulkDeleteActionModel';
-export * from './actions/DeleteActionModel';
-export * from './actions/FilterActionModel';
-export * from './actions/LinkActionModel';
-export * from './actions/RefreshActionModel';
-export * from './actions/ViewActionModel';
+export * from './actions';
 export * from './base/ActionModel';
 export * from './base/BlockModel';
 export * from './base/GridModel';

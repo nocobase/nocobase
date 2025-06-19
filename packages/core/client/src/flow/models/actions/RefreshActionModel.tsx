@@ -8,9 +8,9 @@
  */
 
 import { ButtonProps } from 'antd';
-import { ActionModel } from '../base/ActionModel';
+import { GlobalActionModel } from '../base/ActionModel';
 
-export class RefreshActionModel extends ActionModel {
+export class RefreshActionModel extends GlobalActionModel {
   defaultProps: ButtonProps = {
     children: 'Refresh',
   };

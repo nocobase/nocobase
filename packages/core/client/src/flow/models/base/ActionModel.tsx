@@ -61,3 +61,12 @@ ActionModel.registerFlow({
     },
   },
 });
+
+export class GlobalActionModel extends ActionModel {}
+
+export class RecordActionModel extends ActionModel {
+  defaultProps: ButtonProps = {
+    type: 'link',
+    children: 'Action',
+  };
+}

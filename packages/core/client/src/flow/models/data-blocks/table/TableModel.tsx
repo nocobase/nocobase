@@ -79,7 +79,7 @@ export class TableModel extends DataBlockModel<S> {
           {this.mapSubModels('actions', (action) => (
             <FlowModelRenderer model={action} showFlowSettings sharedContext={{ currentBlockModel: this }} />
           ))}
-          <AddActionButton model={this} subModelBaseClass="ActionModel">
+          <AddActionButton model={this} subModelBaseClass="GlobalActionModel" subModelKey="actions">
             <Button icon={<SettingOutlined />}>Configure actions</Button>
           </AddActionButton>
           {/* <AddActionModel
