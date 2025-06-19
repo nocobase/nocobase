@@ -58,7 +58,10 @@ export class FlowModel<Structure extends { parent?: any; subModels?: any } = Def
    * 基于 key 的 fork 实例缓存，用于复用 fork 实例
    */
   private forkCache: Map<string, ForkFlowModel<any>> = new Map();
-  // model 树的共享运行上下文
+
+  /**
+   * model 树的共享运行上下文
+   */
   private _sharedContext: Record<string, any> = {};
 
   constructor(options: FlowModelOptions<Structure>) {

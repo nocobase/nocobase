@@ -39,7 +39,7 @@ export class ForkFlowModel<TMaster extends FlowModel = FlowModel> {
   public readonly forkId: number;
 
   /** 用于共享上下文的对象，存储跨 fork 的共享数据 */
-  private _sharedContext: Record<string, any> = {};
+  // private _sharedContext: Record<string, any> = {};
 
   constructor(master: TMaster, initialProps: IModelComponentProps = {}, forkId = 0) {
     this.master = master;
@@ -121,16 +121,16 @@ export class ForkFlowModel<TMaster extends FlowModel = FlowModel> {
   }
 
   public setSharedContext(ctx: Record<string, any>) {
-    this._sharedContext = ctx;
+    this['_sharedContext'] = ctx;
   }
 
   public getSharedContext() {
     if (this.async || !this.parent) {
-      return this._sharedContext;
+      return this['_sharedContext'] || {};
     }
     return {
       ...this.parent?.getSharedContext(),
-      ...this._sharedContext, // 当前实例的 context 优先级最高
+      ...this['_sharedContext'], // 当前实例的 context 优先级最高
     };
   }
 
