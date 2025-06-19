@@ -1,6 +1,6 @@
 import * as icons from '@ant-design/icons';
 import { Plugin } from '@nocobase/client';
-import { defineFlow, FlowModel, FlowModelRenderer } from '@nocobase/flow-engine';
+import { defineAction, defineFlow, FlowModel, FlowModelRenderer } from '@nocobase/flow-engine';
 import { Button } from 'antd';
 import React from 'react';
 import { createApp } from './createApp';
@@ -40,40 +40,42 @@ const myEventFlow = defineFlow({
 
 MyModel.registerFlow(myEventFlow);
 
+const myConfirm = defineAction({
+  name: 'confirm',
+  uiSchema: {
+    title: {
+      type: 'string',
+      title: 'Confirm title',
+      'x-decorator': 'FormItem',
+      'x-component': 'Input',
+    },
+    content: {
+      type: 'string',
+      title: 'Confirm content',
+      'x-decorator': 'FormItem',
+      'x-component': 'Input.TextArea',
+    },
+  },
+  defaultParams: {
+    title: 'Confirm Deletion',
+    content: 'Are you sure you want to delete this record?',
+  },
+  async handler(ctx, params) {
+    const confirmed = await ctx.globals.modal.confirm({
+      title: params.title,
+      content: params.content,
+    });
+    if (!confirmed) {
+      ctx.globals.message.info('Action cancelled.');
+      return ctx.exit();
+    }
+  },
+});
+
 class PluginDemo extends Plugin {
   async load() {
     this.flowEngine.registerModels({ MyModel });
-    this.flowEngine.registerAction({
-      name: 'confirm',
-      uiSchema: {
-        title: {
-          type: 'string',
-          title: 'Confirm title',
-          'x-decorator': 'FormItem',
-          'x-component': 'Input',
-        },
-        content: {
-          type: 'string',
-          title: 'Confirm content',
-          'x-decorator': 'FormItem',
-          'x-component': 'Input.TextArea',
-        },
-      },
-      defaultParams: {
-        title: 'Confirm Deletion',
-        content: 'Are you sure you want to delete this record?',
-      },
-      async handler(ctx, params) {
-        const confirmed = await ctx.globals.modal.confirm({
-          title: params.title,
-          content: params.content,
-        });
-        if (!confirmed) {
-          ctx.globals.message.info('Action cancelled.');
-          return ctx.exit();
-        }
-      },
-    });
+    this.flowEngine.registerAction(myConfirm);
     const model = this.flowEngine.createModel({
       use: 'MyModel',
     });
