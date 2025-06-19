@@ -19,6 +19,7 @@ import { useParentPopupVariableContext } from '../../schema-settings/VariableInp
 import { useCurrentParentRecordContext } from '../../schema-settings/VariableInput/hooks/useParentRecordVariable';
 import { usePopupVariableContext } from '../../schema-settings/VariableInput/hooks/usePopupVariable';
 import { useCurrentRecordContext } from '../../schema-settings/VariableInput/hooks/useRecordVariable';
+import { useURLSearchParamsVariable } from '../../schema-settings/VariableInput/hooks/useURLSearchParamsVariable';
 import { VariableOption } from '../types';
 import useContextVariable from './useContextVariable';
 import { useApp } from '../../application/hooks/useApp';
@@ -53,6 +54,7 @@ const useLocalVariables = (props?: Props) => {
     dataSource: parentPopupDataSource,
     defaultValue: defaultValueOfParentPopupRecord,
   } = useParentPopupVariableContext();
+  const { urlSearchParamsCtx, shouldDisplay: shouldDisplayURLSearchParams } = useURLSearchParamsVariable();
   const { datetimeCtx } = useDatetimeVariableContext();
   const { currentFormCtx } = useCurrentFormContext({ form: props?.currentForm });
   const { name: currentCollectionName } = useCollection_deprecated();
@@ -156,6 +158,10 @@ const useLocalVariables = (props?: Props) => {
           ctx: parentObjectCtx,
           collectionName: collectionNameOfParentObject,
         },
+        shouldDisplayURLSearchParams && {
+          name: '$nURLSearchParams',
+          ctx: urlSearchParamsCtx,
+        },
         ...customVariables,
       ] as VariableOption[]
     ).filter(Boolean);
@@ -181,6 +187,7 @@ const useLocalVariables = (props?: Props) => {
     parentObjectCtx,
     collectionNameOfParentObject,
     contextVariable,
+    urlSearchParamsCtx,
     ...customVariables.map((item) => item.ctx),
   ]); // 尽量保持返回的值不变，这样可以减少接口的请求次数，因为关系字段会缓存到变量的 ctx 中
 };

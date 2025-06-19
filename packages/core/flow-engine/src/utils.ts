@@ -8,8 +8,8 @@
  */
 
 import _ from 'lodash';
-import { DeepPartial, ModelConstructor, FlowDefinition, ParamsContext, FlowContext } from './types';
 import type { FlowModel } from './models';
+import { ActionDefinition, DeepPartial, FlowContext, FlowDefinition, ModelConstructor, ParamsContext } from './types';
 
 export function generateUid(): string {
   return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
@@ -117,4 +117,8 @@ export class FlowExitException extends Error {
     this.flowKey = flowKey;
     this.modelUid = modelUid;
   }
+}
+
+export function defineAction(options: ActionDefinition) {
+  return options;
 }

@@ -244,7 +244,7 @@ const TabBadge: FC<{ tabRoute: NocoBaseDesktopRoute; style?: React.CSSProperties
   if (badgeCount == null) return null;
 
   return (
-    <Badge {...props.tabRoute.options?.badge} count={badgeCount} style={props.style}>
+    <Badge {...props.tabRoute.options?.badge} count={badgeCount} style={props.style} dot={false}>
       {props.children}
     </Badge>
   );
