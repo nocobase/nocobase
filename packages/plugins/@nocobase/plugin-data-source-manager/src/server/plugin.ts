@@ -203,6 +203,7 @@ export class PluginDataSourceManagerServer extends Plugin {
       if (model.changed('options') && !model.isMainRecord()) {
         model.loadIntoApplication({
           app: this.app,
+          refresh: true
         });
 
         this.sendSyncMessage(
