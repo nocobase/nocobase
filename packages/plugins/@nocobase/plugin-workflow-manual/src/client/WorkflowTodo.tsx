@@ -679,7 +679,7 @@ function useTodoActionParams(status) {
   };
 }
 
-function TodoExtraActions() {
+function TodoExtraActions(props) {
   return (
     <SchemaComponent
       schema={{
@@ -694,6 +694,7 @@ function TodoExtraActions() {
             'x-use-component-props': 'useRefreshActionProps',
             'x-component-props': {
               icon: 'ReloadOutlined',
+              ...props,
             },
           },
           filter: {
@@ -703,6 +704,7 @@ function TodoExtraActions() {
             'x-use-component-props': 'useFilterActionProps',
             'x-component-props': {
               icon: 'FilterOutlined',
+              ...props,
             },
             default: {
               $and: [{ title: { $includes: '' } }, { 'workflow.title': { $includes: '' } }],

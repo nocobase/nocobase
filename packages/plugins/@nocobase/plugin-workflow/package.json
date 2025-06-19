@@ -40,6 +40,7 @@
     "@nocobase/logger": "1.x",
     "@nocobase/plugin-data-source-main": "1.x",
     "@nocobase/plugin-error-handler": "1.x",
+    "@nocobase/plugin-mobile": "1.x",
     "@nocobase/plugin-users": "1.x",
     "@nocobase/resourcer": "1.x",
     "@nocobase/server": "1.x",
