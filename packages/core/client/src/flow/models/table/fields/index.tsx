@@ -13,3 +13,4 @@ export * from './PercentFieldModel';
 export * from './AssociationSelectFieldModel';
 export * from './CheckboxFieldMode';
 export * from './RadioGroupFieldModel';
+export * from './DateTimeFieldModel';

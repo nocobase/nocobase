@@ -15,7 +15,7 @@ import { useMarkdownStyles } from './style';
 import { useParseMarkdown, convertToText } from './util';
 import { useGlobalTheme } from '../../../../../global-theme';
 import { Spin } from 'antd';
-import { EllipsisWithTooltip } from '../../components';
+import { EllipsisWithTooltip } from '../../../../components';
 
 const MarkdownReadPretty = (props) => {
   const { ellipsis } = props;

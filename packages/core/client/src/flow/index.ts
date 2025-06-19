@@ -14,6 +14,7 @@ import { FlowEngineRunner } from './FlowEngineRunner';
 import { MockFlowModelRepository } from './FlowModelRepository';
 import { FlowPage } from './FlowPage';
 import * as models from './models';
+import { DateTimeFormat } from './flowSetting/DateTimeFormat';
 
 export class PluginFlowEngine extends Plugin {
   async load() {
@@ -49,6 +50,9 @@ export class PluginFlowEngine extends Plugin {
       // Optionally, you can throw an error or handle it as needed
     }
     this.app.addProvider(FlowEngineRunner, {});
+
+    // 注册通用 flow
+    this.flowEngine.registerAction(DateTimeFormat);
   }
 }
 
