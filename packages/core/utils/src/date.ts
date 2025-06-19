@@ -86,6 +86,7 @@ const toMoment = (val: any, options?: Str2momentOptions) => {
   const { gmt, picker, utc = true } = options;
   if (dayjs(val).isValid()) {
     if (!utc) {
+      console.log(888);
       return dayjs(val);
     }
 

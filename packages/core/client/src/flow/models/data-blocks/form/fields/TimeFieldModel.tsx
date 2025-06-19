@@ -7,9 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { FormFieldModel } from '../../data-blocks/form/fields/FormFieldModel';
+import { TimePicker } from '@formily/antd-v5';
+import { FormFieldModel } from './FormFieldModel';
 
-// null 表示不支持任何字段接口，* 表示支持所有字段接口
-export type SupportedFieldInterfaces = string[] | '*' | null;
+export class TimeFieldModel extends FormFieldModel {
+  static supportedFieldInterfaces = ['time'];
 
-export class FilterFormFieldModel extends FormFieldModel {}
+  get component() {
+    return [TimePicker, {}];
+  }
+}

@@ -7,9 +7,12 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { FormFieldModel } from '../../data-blocks/form/fields/FormFieldModel';
+import { Checkbox } from '@formily/antd-v5';
+import { FormFieldModel } from './FormFieldModel';
 
-// null 表示不支持任何字段接口，* 表示支持所有字段接口
-export type SupportedFieldInterfaces = string[] | '*' | null;
-
-export class FilterFormFieldModel extends FormFieldModel {}
+export class CheckboxFieldModel extends FormFieldModel {
+  static supportedFieldInterfaces = ['checkbox'];
+  get component() {
+    return [Checkbox, {}];
+  }
+}
