@@ -14,7 +14,8 @@ import { openModeAction } from '../../actions/openModeAction';
 export class AddNewActionModel extends GlobalActionModel {
   defaultProps: ButtonProps = {
     type: 'primary',
-    children: 'Add new',
+    title: 'Add new',
+    icon: 'PlusOutlined',
   };
 }
 

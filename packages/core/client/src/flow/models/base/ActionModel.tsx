@@ -12,7 +12,7 @@ import { Button } from 'antd';
 import type { ButtonProps } from 'antd/es/button';
 import React from 'react';
 import IconPicker from '../../../schema-component/antd/icon-picker/IconPicker';
-import Icon from '@ant-design/icons';
+import { Icon } from '../../../icon/Icon';
 
 export class ActionModel extends FlowModel {
   declare props: ButtonProps;

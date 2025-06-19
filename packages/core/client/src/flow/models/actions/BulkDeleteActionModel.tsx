@@ -15,7 +15,8 @@ import { refreshOnCompleteAction } from '../../actions/refreshOnCompleteAction';
 
 export class BulkDeleteActionModel extends GlobalActionModel {
   defaultProps: ButtonProps = {
-    children: 'Delete',
+    title: 'Delete',
+    icon: 'DeleteOutlined',
   };
 }
 
