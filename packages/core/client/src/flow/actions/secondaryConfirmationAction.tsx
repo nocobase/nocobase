@@ -4,7 +4,6 @@ export const secondaryConfirmationAction = {
     enable: {
       type: 'boolean',
       title: 'Enable secondary confirmation',
-      default: true,
       'x-decorator': 'FormItem',
       'x-component': 'Checkbox',
     },

@@ -28,3 +28,4 @@ export * from './ViewActionModel';
 export * from './PopupActionModel';
 export * from './EditActionModel';
 export * from './DuplicateActionModel';
+export * from './CustomRequestActionModel';

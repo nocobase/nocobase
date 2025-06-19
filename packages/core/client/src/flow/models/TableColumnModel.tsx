@@ -172,6 +172,13 @@ export class TableActionsColumnModel extends TableColumnModel {
                     use: 'DuplicateActionModel',
                   },
                 },
+                {
+                  key: 'edit',
+                  label: 'Custom Request',
+                  createModelOptions: {
+                    use: 'CustomRequestActionModel',
+                  },
+                },
               ]}
             >
               <SettingOutlined />
