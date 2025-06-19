@@ -57,11 +57,20 @@ export async function destroy(context: Context, next) {
 
     revisions.forEach((item) => ids.add(item.id));
 
-    context.body = await repository.destroy({
+    const deleted = await repository.destroy({
       filterByTk: Array.from(ids),
       individualHooks: true,
       transaction,
     });
+    const StatsRepo = context.db.getRepository('workflowStats');
+    await StatsRepo.destroy({
+      filter: {
+        key: Array.from(keysSet),
+      },
+      transaction,
+    });
+
+    context.body = deleted;
   });
 
   next();
