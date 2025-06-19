@@ -15,10 +15,10 @@ import { useAfterSuccessOptions } from '../../schema-component/antd/action/hooks
 import { useGlobalVariable } from '../../application/hooks/useGlobalVariable';
 import { BlocksSelector } from '../../schema-component/antd/action/Action.Designer';
 
-export class CustomRequestActionModel extends ActionModel {
+export class UpdateRecordActionModel extends ActionModel {
   defaultProps: ButtonProps = {
     type: 'link',
-    title: 'Custom request',
+    title: 'Update record',
   };
 }
 
@@ -35,7 +35,7 @@ const useVariableProps = () => {
   };
 };
 
-CustomRequestActionModel.registerFlow({
+UpdateRecordActionModel.registerFlow({
   key: 'handleClick',
   title: '点击事件',
   on: {
