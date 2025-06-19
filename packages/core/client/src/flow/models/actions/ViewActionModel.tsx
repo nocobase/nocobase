@@ -8,10 +8,10 @@
  */
 
 import type { ButtonProps } from 'antd/es/button';
-import { ActionModel } from './ActionModel';
-import { openModeAction } from '../actions/openModeAction';
+import { RecordActionModel } from '../base/ActionModel';
+import { openModeAction } from '../../actions/openModeAction';
 
-export class ViewActionModel extends ActionModel {
+export class ViewActionModel extends RecordActionModel {
   defaultProps: ButtonProps = {
     type: 'link',
     title: 'View',
