@@ -31,7 +31,14 @@ ViewActionModel.registerFlow({
         function DrawerContent() {
           return (
             <div>
-              <FlowPageComponent parentId={ctx.model.uid} sharedContext={{ ...ctx.extra, currentDrawer }} />
+              <FlowPageComponent
+                parentId={ctx.model.uid}
+                sharedContext={{
+                  currentDrawer,
+                  parentRecord: ctx.shared.currentRecord,
+                  parentBlockModel: ctx.shared.currentBlockModel,
+                }}
+              />
             </div>
           );
         }

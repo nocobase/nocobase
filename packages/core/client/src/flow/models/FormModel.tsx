@@ -33,7 +33,7 @@ export class FormModel extends BlockFlowModel {
         <FormProvider form={this.form}>
           <FormLayout layout={'vertical'}>
             {this.mapSubModels('fields', (field) => (
-              <FlowModelRenderer model={field} showFlowSettings />
+              <FlowModelRenderer model={field} showFlowSettings sharedContext={{ currentBlockModel: this }} />
             ))}
           </FormLayout>
           <AddFieldButton
@@ -65,7 +65,7 @@ export class FormModel extends BlockFlowModel {
           />
           <FormButtonGroup>
             {this.mapSubModels('actions', (action) => (
-              <FlowModelRenderer model={action} showFlowSettings extraContext={{ currentModel: this }} />
+              <FlowModelRenderer model={action} showFlowSettings sharedContext={{ currentBlockModel: this }} />
             ))}
             <AddActionButton model={this} subModelBaseClass="ActionModel" />
           </FormButtonGroup>
@@ -118,9 +118,8 @@ FormModel.registerFlow({
           resource.setAPIClient(ctx.globals.api);
           ctx.model.resource = resource;
         }
-        console.log('FormModel flow context', ctx.shared, ctx.model.getSharedContext());
-        if (ctx.shared.currentRecord) {
-          ctx.model.resource.setFilterByTk(ctx.shared.currentRecord.id);
+        if (ctx.shared.parentRecord) {
+          ctx.model.resource.setFilterByTk(ctx.shared.parentRecord.id);
           await ctx.model.resource.refresh();
           ctx.model.form.setInitialValues(ctx.model.resource.getData());
         }

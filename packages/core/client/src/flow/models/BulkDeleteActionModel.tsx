@@ -23,11 +23,11 @@ BulkDeleteActionModel.registerFlow({
   steps: {
     step1: {
       async handler(ctx, params) {
-        if (!ctx.extra.currentResource) {
+        if (!ctx.shared?.currentBlockModel?.resource) {
           ctx.globals.message.error('No resource selected for deletion.');
           return;
         }
-        const resource = ctx.extra.currentResource as MultiRecordResource;
+        const resource = ctx.shared.currentBlockModel.resource as MultiRecordResource;
         if (resource.getSelectedRows().length === 0) {
           ctx.globals.message.warning('No records selected for deletion.');
           return;

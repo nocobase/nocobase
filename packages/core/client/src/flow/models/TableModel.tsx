@@ -77,11 +77,7 @@ export class TableModel extends BlockFlowModel<S> {
       <Card>
         <Space style={{ marginBottom: 16 }}>
           {this.mapSubModels('actions', (action) => (
-            <FlowModelRenderer
-              model={action}
-              showFlowSettings
-              extraContext={{ currentModel: this, currentResource: this.resource }}
-            />
+            <FlowModelRenderer model={action} showFlowSettings sharedContext={{ currentBlockModel: this }} />
           ))}
           <AddActionModel
             model={this}
@@ -177,7 +173,7 @@ TableModel.registerFlow({
         resource.setAPIClient(ctx.globals.api);
         ctx.model.resource = resource;
         await resource.refresh();
-        await ctx.model.applySubModelsAutoFlows('columns');
+        await ctx.model.applySubModelsAutoFlows('columns', null, { currentBlockModel: ctx.model });
       },
     },
   },

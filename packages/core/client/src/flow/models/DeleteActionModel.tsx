@@ -7,6 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { MultiRecordResource } from '@nocobase/flow-engine';
 import type { ButtonType } from 'antd/es/button';
 import React from 'react';
 import { ActionModel } from './ActionModel';
@@ -54,11 +55,16 @@ DeleteActionModel.registerFlow({
     },
     step1: {
       async handler(ctx, params) {
-        if (!ctx.extra.currentResource || !ctx.extra.currentRecord) {
+        if (!ctx.shared?.currentBlockModel?.resource) {
+          ctx.globals.message.error('No resource selected for deletion.');
+          return;
+        }
+        if (!ctx.shared.currentRecord) {
           ctx.globals.message.error('No resource or record selected for deletion.');
           return;
         }
-        await ctx.extra.currentResource.destroy(ctx.extra.currentRecord);
+        const resource = ctx.shared.currentBlockModel.resource as MultiRecordResource;
+        await resource.destroy(ctx.shared.currentRecord);
         ctx.globals.message.success('Record deleted successfully.');
       },
     },

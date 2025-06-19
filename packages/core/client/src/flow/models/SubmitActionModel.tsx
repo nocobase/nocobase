@@ -25,16 +25,20 @@ SubmitActionModel.registerFlow({
   steps: {
     step1: {
       async handler(ctx, params) {
-        if (ctx.extra.currentModel) {
-          await ctx.extra.currentModel.form.submit();
-          const values = ctx.extra.currentModel.form.values;
-          await ctx.extra.currentModel.resource.save(values);
+        if (!ctx.shared?.currentBlockModel?.resource) {
+          ctx.globals.message.error('No resource selected for submission.');
+          return;
         }
+        const currentBlockModel = ctx.shared.currentBlockModel;
+        const currentResource = ctx.shared.currentBlockModel.resource;
+        await currentBlockModel.form.submit();
+        const values = currentBlockModel.form.values;
+        await currentBlockModel.resource.save(values);
+        console.log('Form submitted successfully:', ctx.shared.parentBlockModel);
+        // currentResource.refresh();
+        ctx.shared.parentBlockModel?.resource?.refresh();
         if (ctx.shared.currentDrawer) {
           ctx.shared.currentDrawer.destroy();
-        }
-        if (ctx.shared.currentResource) {
-          ctx.shared.currentResource.refresh();
         }
       },
     },
