@@ -18,15 +18,7 @@ export class ActionModel extends FlowModel {
     children: 'Action',
   };
   render() {
-    return (
-      <Button
-        {...this.defaultProps}
-        {...this.props}
-        onClick={(event) => {
-          this.dispatchEvent('click', { event });
-        }}
-      />
-    );
+    return <Button {...this.defaultProps} {...this.props} />;
   }
 }
 
@@ -57,6 +49,12 @@ ActionModel.registerFlow({
       },
       handler(ctx, params) {
         ctx.model.setProps('children', params.children);
+        ctx.model.setProps('onClick', (event) => {
+          ctx.model.dispatchEvent('click', {
+            ...ctx.extra,
+            event,
+          });
+        });
       },
     },
   },
