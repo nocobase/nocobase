@@ -19,4 +19,4 @@ export const refreshOnCompleteAction = {
       ctx.globals.message.success('Data refreshed successfully.');
     }
   },
-}
+};

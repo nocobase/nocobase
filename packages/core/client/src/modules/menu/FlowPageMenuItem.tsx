@@ -115,7 +115,7 @@ export const FlowPageMenuItem = () => {
 export function getFlowPageMenuSchema({ pageSchemaUid, tabSchemaUid, tabSchemaName }) {
   return {
     type: 'void',
-    'x-component': 'FlowPage',
+    'x-component': 'FlowRoute',
     'x-uid': pageSchemaUid,
   };
 }

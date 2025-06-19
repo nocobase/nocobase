@@ -8,7 +8,7 @@
  */
 
 import React, { useMemo } from 'react';
-import { AddSubModelButton } from './AddSubModelButton';
+import { AddSubModelButton, SubModelItemsType } from './AddSubModelButton';
 import { FlowModel } from '../../models/flowModel';
 import { ModelConstructor } from '../../types';
 import { Button } from 'antd';
@@ -32,6 +32,14 @@ interface AddActionButtonProps {
    * 按钮文本
    */
   children?: React.ReactNode;
+  /**
+   * 过滤Model菜单的函数
+   */
+  filter?: (blockClass: ModelConstructor, className: string) => boolean;
+  /**
+   * 自定义 items（如果提供，将覆盖默认的action菜单）
+   */
+  items?: SubModelItemsType;
 }
 
 /**
@@ -51,12 +59,17 @@ export const AddActionButton: React.FC<AddActionButtonProps> = ({
   subModelKey = 'actions',
   children = <Button>Configure actions</Button>,
   subModelType = 'array',
+  items,
+  filter,
   onModelAdded,
 }) => {
-  const items = useMemo(() => {
-    const blockClasses = model.flowEngine.filterModelClassByParent(subModelBaseClass);
+  const allActionsItems = useMemo(() => {
+    const actionClasses = model.flowEngine.filterModelClassByParent(subModelBaseClass);
     const registeredBlocks = [];
-    for (const [className, ModelClass] of blockClasses) {
+    for (const [className, ModelClass] of actionClasses) {
+      if (filter && !filter(ModelClass, className)) {
+        continue;
+      }
       const item = {
         key: className,
         label: ModelClass.meta?.title || className,
@@ -76,7 +89,7 @@ export const AddActionButton: React.FC<AddActionButtonProps> = ({
       model={model}
       subModelKey={subModelKey}
       subModelType={subModelType}
-      items={items}
+      items={items ?? allActionsItems}
       onModelAdded={onModelAdded}
     >
       {children}

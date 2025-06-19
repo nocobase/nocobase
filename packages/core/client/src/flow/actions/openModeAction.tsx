@@ -1,5 +1,5 @@
 import React from 'react';
-import { FlowPageComponent } from '../FlowPage';
+import { FlowPage } from '../FlowPage';
 
 export const openModeAction = {
   title: '打开方式',
@@ -39,7 +39,7 @@ export const openModeAction = {
     function DrawerContent() {
       return (
         <div>
-          <FlowPageComponent
+          <FlowPage
             parentId={ctx.model.uid}
             sharedContext={{
               ...ctx.extra,
