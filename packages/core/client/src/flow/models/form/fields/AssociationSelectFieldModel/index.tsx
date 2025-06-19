@@ -6,10 +6,10 @@
  * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
-import React, { useMemo } from 'react';
-import { isValid, toArr } from '@formily/shared';
+import React from 'react';
 import { Select } from 'antd';
 import { connect, mapReadPretty, mapProps } from '@formily/react';
+import { isTitleField } from '../../../../../data-source';
 import { FormFieldModel } from '../../../FormFieldModel';
 
 function toValue(record: any | any[], fieldNames, multiple = false) {
@@ -88,9 +88,6 @@ export class AssociationSelectFieldModel extends FormFieldModel {
   getDataSource() {
     return this.field.dataSource;
   }
-  setFieldNames(fieldNames) {
-    this.fieldNames = fieldNames;
-  }
   get component() {
     return [AssociationSelect, {}];
   }
@@ -133,7 +130,69 @@ AssociationSelectFieldModel.registerFlow({
     },
   },
 });
+const loadTitleFieldOptions = (collectionField, dataSourceManager) => {
+  return async (field) => {
+    const form = field.form;
+    const compile = form?.designable?.compile || ((v) => v);
 
+    const collectionManager = collectionField?.collection?.collectionManager;
+    const target = collectionField?.options?.target;
+    if (!collectionManager || !target) return;
+
+    const targetCollection = collectionManager.getCollection(target);
+    const targetFields = targetCollection?.getFields?.() ?? [];
+    field.loading = true;
+    const options = targetFields
+      .filter((field) => isTitleField(dataSourceManager, field.options))
+      .map((field) => ({
+        value: field.name,
+        label: compile(field.uiSchema?.title) || field.name,
+      }));
+
+    field.dataSource = options;
+    field.loading = false;
+  };
+};
+
+AssociationSelectFieldModel.registerFlow({
+  key: 'fieldNames',
+  auto: true,
+  sort: 200,
+  steps: {
+    fieldNames: {
+      title: 'Title field',
+      uiSchema: {
+        label: {
+          'x-component': 'Select',
+          'x-decorator': 'FormItem',
+          'x-reactions': ['{{loadTitleFieldOptions(collectionField,dataSourceManager)}}'],
+        },
+      },
+      defaultParams: (ctx) => {
+        const fieldNames = {
+          ...ctx.model.collectionField.options?.uiSchema?.['x-component-props']?.['fieldNames'],
+          ...ctx.model.field.componentProps.fieldNames,
+        };
+        return {
+          label: fieldNames.label,
+        };
+      },
+      handler(ctx, params) {
+        ctx.model.flowEngine.flowSettings.registerScopes({
+          loadTitleFieldOptions,
+          collectionField: ctx.model.collectionField,
+          dataSourceManager: ctx.app.dataSourceManager,
+        });
+        const newFieldNames = {
+          ...ctx.model.collectionField.options?.uiSchema?.['x-component-props']?.['fieldNames'],
+          ...ctx.model.field.componentProps.fieldNames,
+          label: params.label,
+        };
+        ctx.model.field.setComponentProps({ fieldNames: newFieldNames });
+      },
+    },
+  },
+});
 AssociationSelectFieldModel.registerFlow({
   key: 'event1',
   on: {
