@@ -9,8 +9,9 @@
 import React from 'react';
 import { Select } from 'antd';
 import { connect, mapReadPretty, mapProps } from '@formily/react';
-import { isTitleField } from '../../../../../data-source';
 import { FormFieldModel } from '../../../FormFieldModel';
+import { loadTitleFieldOptions } from '../../../common/utils';
+import { getUniqueKeyFromCollection } from '../../../../../collection-manager/interfaces/utils';
 
 function toValue(record: any | any[], fieldNames, multiple = false) {
   if (!record) return multiple ? [] : undefined;
@@ -90,8 +91,7 @@ export const DEFAULT_ASSOCIATION_PAGE_SIZE = 40;
 async function fetchAssociationItems({ ctx, page = 1, searchText = '' }) {
   const { target } = ctx.model.collectionField.options;
   const fieldNames = ctx.model.field.componentProps.fieldNames;
-  const labelField = fieldNames?.label;
-
+  const labelField = fieldNames?.label || 'id';
   const apiClient = ctx.app.apiClient;
   const collectionManager = ctx.model.collectionField.collection.collectionManager;
   const targetCollection = collectionManager.getCollection(target);
@@ -108,7 +108,6 @@ async function fetchAssociationItems({ ctx, page = 1, searchText = '' }) {
         },
       }
     : undefined;
-
   const response = await apiClient.request({
     url: `/${target}:list`,
     params: {
@@ -237,32 +236,6 @@ AssociationSelectFieldModel.registerFlow({
   },
 });
 
-const loadTitleFieldOptions = (collectionField, dataSourceManager) => {
-  return async (field) => {
-    const form = field.form;
-    const compile = form?.designable?.compile || ((v) => v);
-
-    const collectionManager = collectionField?.collection?.collectionManager;
-    const target = collectionField?.options?.target;
-    if (!collectionManager || !target) return;
-
-    const targetCollection = collectionManager.getCollection(target);
-    const targetFields = targetCollection?.getFields?.() ?? [];
-
-    field.loading = true;
-
-    const options = targetFields
-      .filter((field) => isTitleField(dataSourceManager, field.options))
-      .map((field) => ({
-        value: field.name,
-        label: compile(field.uiSchema?.title) || field.name,
-      }));
-
-    field.dataSource = options;
-    field.loading = false;
-  };
-};
-
 // 标题字段设置
 AssociationSelectFieldModel.registerFlow({
   key: 'fieldNames',
@@ -278,21 +251,28 @@ AssociationSelectFieldModel.registerFlow({
           'x-reactions': ['{{loadTitleFieldOptions(collectionField, dataSourceManager)}}'],
         },
       },
-      defaultParams: (ctx) => ({
-        label: ctx.model.field.componentProps.fieldNames?.label,
-      }),
+      defaultParams: (ctx) => {
+        const { target } = ctx.model.collectionField.options;
+        const collectionManager = ctx.model.collectionField.collection.collectionManager;
+        const targetCollection = collectionManager.getCollection(target);
+        return {
+          label: ctx.model.field.componentProps.fieldNames?.label || targetCollection.options.titleField,
+        };
+      },
       handler(ctx, params) {
         ctx.model.flowEngine.flowSettings.registerScopes({
           loadTitleFieldOptions,
           collectionField: ctx.model.collectionField,
           dataSourceManager: ctx.app.dataSourceManager,
         });
-
+        const { target } = ctx.model.collectionField.options;
+        const collectionManager = ctx.model.collectionField.collection.collectionManager;
+        const targetCollection = collectionManager.getCollection(target);
         const newFieldNames = {
           ...ctx.model.field.componentProps.fieldNames,
-          label: params.label,
+          value: getUniqueKeyFromCollection(targetCollection.options as any),
+          label: params.label || targetCollection.options.titleField,
         };
-
         ctx.model.field.setComponentProps({ fieldNames: newFieldNames });
       },
     },

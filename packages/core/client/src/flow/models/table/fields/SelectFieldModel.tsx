@@ -12,7 +12,7 @@ import { Tag } from 'antd';
 import { TableColumnModel } from '../../TableColumnModel';
 import { getCurrentOptions } from '../utils/utils';
 
-export class SelectTableColumnModel extends TableColumnModel {
+export class SelectReadPrettyFieldModel extends TableColumnModel {
   public static readonly supportedFieldInterfaces = ['select', 'multipleSelect'];
   dataSource;
   fieldNames: { label: string; value: string; color?: string; icon?: any };
@@ -49,7 +49,7 @@ export class SelectTableColumnModel extends TableColumnModel {
   }
 }
 
-SelectTableColumnModel.registerFlow({
+SelectReadPrettyFieldModel.registerFlow({
   key: 'options',
   auto: true,
   sort: 100,

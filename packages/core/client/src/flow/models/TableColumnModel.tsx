@@ -76,6 +76,9 @@ export class TableColumnModel extends FieldFlowModel {
   setComponentProps(props) {
     this.setProps('componentProps', { ...(this.props.componentProps || {}), ...props });
   }
+  getComponentProps() {
+    return this.props.componentProps;
+  }
 
   renderQuickEditButton(record) {
     return (
@@ -204,6 +207,7 @@ TableColumnModel.registerFlow({
         ctx.model.field = field;
         ctx.model.fieldPath = params.fieldPath;
         ctx.model.setProps('dataIndex', field.name);
+        ctx.model.setComponentProps(field.getComponentProps());
       },
     },
     editColumTitle: {
