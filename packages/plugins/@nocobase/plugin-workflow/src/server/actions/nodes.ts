@@ -20,8 +20,7 @@ export async function create(context: Context, next) {
   context.body = await db.sequelize.transaction(async (transaction) => {
     const workflow = (await repository.getSourceModel(transaction)) as WorkflowModel;
     workflow.versionStats = await workflow.getVersionStats({ transaction });
-    const { executed } = workflow.versionStats;
-    if (executed) {
+    if (workflow.versionStats.executed > 0) {
       context.throw(400, 'Node could not be created in executed workflow');
     }
 
