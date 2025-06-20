@@ -277,11 +277,11 @@ export const calendarBlockSettings = new SchemaSettings({
         const { name } = useCollection();
         const app = useApp();
         const plugin = app.pm.get('calendar') as any;
-        const { dateTimeFields } = plugin;
+        const { dateTimeFieldInterfaces } = plugin;
         return {
           title: t('Start date field'),
           value: fieldNames.start,
-          options: getCollectionFieldsOptions(name, null, dateTimeFields, {
+          options: getCollectionFieldsOptions(name, null, dateTimeFieldInterfaces, {
             association: ['o2o', 'obo', 'oho', 'm2o'],
           }),
           onChange: (start) => {
@@ -315,11 +315,11 @@ export const calendarBlockSettings = new SchemaSettings({
         const fieldNames = fieldSchema?.['x-decorator-props']?.['fieldNames'] || {};
         const app = useApp();
         const plugin = app.pm.get('calendar') as any;
-        const { dateTimeFields } = plugin;
+        const { dateTimeFieldInterfaces } = plugin;
         return {
           title: t('End date field'),
           value: fieldNames.end,
-          options: getCollectionFieldsOptions(name, null, dateTimeFields, {
+          options: getCollectionFieldsOptions(name, null, dateTimeFieldInterfaces, {
             association: ['o2o', 'obo', 'oho', 'm2o'],
           }),
           onChange: (end) => {
