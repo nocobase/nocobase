@@ -10,11 +10,12 @@
 import { DataSource, DataSourceManager, FlowModel } from '@nocobase/flow-engine';
 import _ from 'lodash';
 import { Plugin } from '../application/Plugin';
+import * as actions from './actions';
 import { FlowEngineRunner } from './FlowEngineRunner';
 import { MockFlowModelRepository } from './FlowModelRepository';
 import { FlowRoute } from './FlowPage';
-import * as models from './models';
 import { DateTimeFormat } from './flowSetting/DateTimeFormat';
+import * as models from './models';
 
 export class PluginFlowEngine extends Plugin {
   async load() {
@@ -25,8 +26,9 @@ export class PluginFlowEngine extends Plugin {
         ([, ModelClass]) => typeof ModelClass === 'function' && ModelClass.prototype instanceof FlowModel,
       ),
     );
-    console.log('Registering flow models:', Object.keys(filteredModels));
+    // console.log('Registering flow models:', Object.keys(filteredModels));
     this.flowEngine.registerModels(filteredModels);
+    this.flowEngine.registerActions(actions);
     const dataSourceManager = new DataSourceManager();
     this.flowEngine.context['flowEngine'] = this.flowEngine;
     this.flowEngine.context['app'] = this.app;

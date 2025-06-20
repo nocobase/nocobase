@@ -184,6 +184,8 @@ export type FlowExtraContext = Record<string, any>;
 export interface ParamsContext<TModel extends FlowModel = FlowModel> {
   model: TModel;
   globals: Record<string, any>;
+  shared: Record<string, any>;
+  extra: Record<string, any>; // Extra context passed to applyFlow
   app: any;
 }
 

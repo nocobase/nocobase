@@ -7,11 +7,11 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import type { ButtonProps } from 'antd/es/button';
-import { RecordActionModel } from '../base/ActionModel';
-import { secondaryConfirmationAction } from '../../actions/secondaryConfirmationAction';
 import { MultiRecordResource } from '@nocobase/flow-engine';
+import type { ButtonProps } from 'antd/es/button';
 import { refreshOnCompleteAction } from '../../actions/refreshOnCompleteAction';
+import { secondaryConfirmationAction } from '../../actions/secondaryConfirmationAction';
+import { RecordActionModel } from '../base/ActionModel';
 
 export class DeleteActionModel extends RecordActionModel {
   defaultProps: ButtonProps = {
@@ -27,7 +27,9 @@ DeleteActionModel.registerFlow({
     eventName: 'click',
   },
   steps: {
-    secondaryConfirmation: secondaryConfirmationAction,
+    confirm: {
+      use: 'confirm',
+    },
     delete: {
       async handler(ctx, params) {
         if (!ctx.shared?.currentBlockModel?.resource) {
@@ -43,6 +45,5 @@ DeleteActionModel.registerFlow({
         ctx.globals.message.success('Record deleted successfully.');
       },
     },
-    refresh: refreshOnCompleteAction,
   },
 });

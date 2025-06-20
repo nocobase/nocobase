@@ -58,6 +58,12 @@ export class FlowEngine {
     return this._applyFlowCache;
   }
 
+  registerActions(actions: Record<string, ActionDefinition>): void {
+    for (const [, definition] of Object.entries(actions)) {
+      this.registerAction(definition);
+    }
+  }
+
   /**
    * 注册一个 Action。支持泛型以确保正确的模型类型推导。
    * Action 是流程中的可复用操作单元。
