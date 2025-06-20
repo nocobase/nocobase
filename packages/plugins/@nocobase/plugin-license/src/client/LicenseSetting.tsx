@@ -83,6 +83,7 @@ const TextArea = (props) => {
   const [isExists, setIsExists] = useState(false);
   const api = useAPIClient();
   const ctx = useFormBlockContext();
+  const t = useT();
   useAsyncEffect(async () => {
     const res = await api.request({
       url: '/license:is-exists',
@@ -106,7 +107,7 @@ const TextArea = (props) => {
           });
         }}
       >
-        更改 key
+        {t('Change key')}
       </Button>
     );
   }
