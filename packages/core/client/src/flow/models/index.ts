@@ -21,6 +21,7 @@ export * from './data-blocks/form/QuickEditForm';
 export * from './data-blocks/table/fields';
 export * from './data-blocks/table/TableActionsColumnModel';
 export * from './data-blocks/table/TableColumnModel';
+export * from './data-blocks/table/TableFieldModel';
 export * from './data-blocks/table/TableModel';
 export * from './filter-blocks/form/FilterFormActionModel';
 export * from './filter-blocks/form/FilterFormFieldModel';

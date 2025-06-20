@@ -58,6 +58,11 @@ export class MultiRecordResource<TDataItem = any> extends BaseRecordResource<TDa
     return this.request.params.pageSize;
   }
 
+  getCell(rowIndex: number, columnKey: string): TDataItem | undefined {
+    const data = this.getData();
+    return data?.[rowIndex]?.[columnKey];
+  }
+
   async next(): Promise<void> {
     this.request.params.page += 1;
     await this.refresh();

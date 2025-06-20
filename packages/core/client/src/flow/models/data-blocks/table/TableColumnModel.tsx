@@ -9,11 +9,32 @@
 
 import { EditOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
-import { CollectionField, FlowsFloatContextMenu } from '@nocobase/flow-engine';
+import { observer } from '@formily/react';
+import { observable } from '@formily/reactive';
+import { CollectionField, FlowModelRenderer, FlowsFloatContextMenu } from '@nocobase/flow-engine';
 import { TableColumnProps, Tooltip } from 'antd';
 import React from 'react';
 import { FieldModel, SupportedFieldInterfaces } from '../../base/FieldModel';
 import { QuickEditForm } from '../form/QuickEditForm';
+import { TableFieldModel } from './TableFieldModel';
+
+const TableField = observer<any>(({ record, value, model, index }) => {
+  return (
+    <>
+      {model.mapSubModels('field', (action: TableFieldModel) => {
+        const fork = action.createFork({}, `${index}`);
+        return (
+          <FlowModelRenderer
+            key={fork.uid}
+            model={fork}
+            sharedContext={{ index, value, record }}
+            extraContext={{ index, value, record }}
+          />
+        );
+      })}
+    </>
+  );
+});
 
 export class TableColumnModel extends FieldModel {
   static readonly supportedFieldInterfaces: SupportedFieldInterfaces = '*';
@@ -89,7 +110,7 @@ export class TableColumnModel extends FieldModel {
   render() {
     return (value, record, index) => (
       <>
-        {value}
+        <TableField record={record} model={this} value={value} index={index} />
         {this.renderQuickEditButton(record)}
       </>
     );
