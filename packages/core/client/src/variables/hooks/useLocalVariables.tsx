@@ -53,7 +53,7 @@ const useLocalVariables = (props?: Props) => {
     dataSource: parentPopupDataSource,
     defaultValue: defaultValueOfParentPopupRecord,
   } = useParentPopupVariableContext();
-  const { urlSearchParamsCtx, shouldDisplay: shouldDisplayURLSearchParams } = useURLSearchParamsVariable();
+  const { urlSearchParamsCtx, shouldDisplay: shouldDisplayURLSearchParams, defaultValue: defaultValueOfURLSearchParams } = useURLSearchParamsVariable();
   const { datetimeCtx } = useDatetimeVariableContext();
   const { currentFormCtx } = useCurrentFormContext({ form: props?.currentForm });
   const { name: currentCollectionName } = useCollection_deprecated();
@@ -151,6 +151,7 @@ const useLocalVariables = (props?: Props) => {
         shouldDisplayURLSearchParams && {
           name: '$nURLSearchParams',
           ctx: urlSearchParamsCtx,
+          defaultValue: defaultValueOfURLSearchParams,
         },
       ] as VariableOption[]
     ).filter(Boolean);
