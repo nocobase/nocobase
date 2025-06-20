@@ -117,6 +117,10 @@ export class TableColumnModel extends FieldModel {
   render() {
     return (value, record, index) => (
       <>
+        <div>
+          {this.componentProps.prefix}
+          {this.componentProps.suffix}
+        </div>
         <Demo value={value} model={this} />
         {this.renderQuickEditButton(record)}
       </>
@@ -179,7 +183,8 @@ TableColumnModel.registerFlow({
         },
       },
       handler(ctx, params) {
-        ctx.model.setComponentProps(params);
+        ctx.model.componentProps.prefix = params.prefix || '';
+        ctx.model.componentProps.suffix = params.suffix || '';
       },
     },
   },
