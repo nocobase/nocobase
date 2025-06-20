@@ -39,6 +39,60 @@ interface MultipartFileField {
   file: AttachmentModel | AttachmentModel[];
 }
 
+function getContentTypeTransformer(mimeType: string, app: Application) {
+  switch (mimeType) {
+    case 'text/plain':
+      return function (data) {
+        return data.toString();
+      };
+    case 'application/x-www-form-urlencoded':
+      return function (data: { name: string; value: string }[]) {
+        return new URLSearchParams(
+          data
+            .filter(({ name, value }) => name && typeof value !== 'undefined')
+            .map(({ name, value }) => [name, value]),
+        ).toString();
+      };
+    case 'multipart/form-data':
+      return async function (data: (MultipartTextField | MultipartFileField)[]) {
+        const form = new FormData();
+
+        for (const record of data) {
+          if (record.valueType === 'text') {
+            form.append(record.name, record.text);
+            continue;
+          }
+
+          if (record.valueType === 'file') {
+            if (record.file == null) {
+              continue;
+            }
+
+            const plugin = app.pm.get(PluginFileManagerServer) as PluginFileManagerServer;
+            const files: AttachmentModel[] = Array.isArray(record.file) ? record.file : [record.file];
+
+            for (const file of files) {
+              const { stream, contentType } = await plugin.getFileStream(file);
+
+              const chunks = [];
+              for await (const chunk of stream) {
+                chunks.push(chunk);
+              }
+
+              form.append(record.name, new Blob(chunks, { type: contentType }), file.filename);
+            }
+
+            continue;
+          }
+
+          throw new Error(`Invalid value type: ${JSON.stringify(record)}`);
+        }
+
+        return form;
+      };
+  }
+}
+
 async function request(config: RequestInstructionConfig, app: Application) {
   // default headers
   const { url, method = 'POST', contentType = 'application/json', data, timeout = 5000 } = config;
@@ -59,55 +113,7 @@ async function request(config: RequestInstructionConfig, app: Application) {
     headers['Content-Type'] = contentType;
   }
 
-  const ContentTypeTransformers = {
-    'text/plain'(data) {
-      return data.toString();
-    },
-    'application/x-www-form-urlencoded'(data: { name: string; value: string }[]) {
-      return new URLSearchParams(
-        data.filter(({ name, value }) => name && typeof value !== 'undefined').map(({ name, value }) => [name, value]),
-      ).toString();
-    },
-    async 'multipart/form-data'(data: (MultipartTextField | MultipartFileField)[]) {
-      const form = new FormData();
-
-      for (const record of data) {
-        if (record.valueType === 'text') {
-          form.append(record.name, record.text);
-          continue;
-        }
-
-        if (record.valueType === 'file') {
-          if (record.file == null) {
-            continue;
-          }
-
-          const plugin = app.pm.get(PluginFileManagerServer) as PluginFileManagerServer;
-          const files: AttachmentModel[] = Array.isArray(record.file) ? record.file : [record.file];
-
-          for (const file of files) {
-            const { stream, contentType } = await plugin.getFileStream(file);
-
-            const chunks = [];
-            for await (const chunk of stream) {
-              chunks.push(chunk);
-            }
-
-            form.append(record.name, new Blob(chunks, { type: contentType }), file.filename);
-          }
-
-          continue;
-        }
-
-        throw new Error(`Invalid value type: ${JSON.stringify(record)}`);
-      }
-
-      return form;
-    },
-  };
-
-  const transformer = ContentTypeTransformers[contentType];
-
+  const transformer = getContentTypeTransformer(contentType, app);
   return axios.request({
     url: trim(url),
     method,
