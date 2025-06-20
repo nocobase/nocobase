@@ -11,12 +11,13 @@ import { EditOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
 import { observer } from '@formily/react';
 import { observable } from '@formily/reactive';
+import { uid } from '@formily/shared';
 import { CollectionField, FlowModelRenderer, FlowsFloatContextMenu } from '@nocobase/flow-engine';
 import { TableColumnProps, Tooltip } from 'antd';
 import React from 'react';
 import { FieldModel, SupportedFieldInterfaces } from '../../base/FieldModel';
 import { QuickEditForm } from '../form/QuickEditForm';
-import { TableFieldModel } from './TableFieldModel';
+import { TableFieldModel } from './fields/TableFieldModel';
 
 const TableField = observer<any>(({ record, value, model, index }) => {
   return (
@@ -39,8 +40,6 @@ const TableField = observer<any>(({ record, value, model, index }) => {
 });
 
 export class TableColumnModel extends FieldModel {
-  static readonly supportedFieldInterfaces: SupportedFieldInterfaces = '*';
-
   getColumnProps(): TableColumnProps {
     return {
       ...this.props,
@@ -75,19 +74,6 @@ export class TableColumnModel extends FieldModel {
       }),
       render: this.render(),
     };
-  }
-
-  setComponentProps(props) {
-    this.setProps('componentProps', { ...(this.props.componentProps || {}), ...props });
-  }
-  getComponentProps() {
-    return this.props.componentProps;
-  }
-  setDataSource(dataSource) {
-    this.setProps('componentProps', { ...(this.props.componentProps || {}), dataSource });
-  }
-  getDataSource() {
-    return this.props.componentProps.dataSource || [];
   }
 
   renderQuickEditButton(record) {

@@ -7,7 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export * from './TableDateTimeFieldModel';
-export * from './TableFieldModel';
-export * from './TableInputFieldModel';
-//
+import { TableFieldModel } from './TableFieldModel';
+
+export class TableInputFieldModel extends TableFieldModel {
+  static readonly supportedFieldInterfaces = '*';
+}

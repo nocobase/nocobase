@@ -43,7 +43,7 @@ export class TableModel extends DataBlockModel<S> {
           collection={this.collection}
           model={this}
           subModelKey={'columns'}
-          subModelBaseClass="TableColumnModel"
+          subModelBaseClass="TableFieldModel"
           buildCreateModelOptions={(field, fieldClass) => ({
             use: 'TableColumnModel',
             stepParams: {
@@ -55,7 +55,7 @@ export class TableModel extends DataBlockModel<S> {
             },
             subModels: {
               field: {
-                use: 'TableFieldModel',
+                use: fieldClass.name,
                 stepParams: {
                   default: {
                     step1: {

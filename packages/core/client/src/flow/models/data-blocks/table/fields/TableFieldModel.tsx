@@ -7,35 +7,19 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { observable } from '@formily/reactive';
-import { CollectionField } from '@nocobase/flow-engine';
-import { Popover } from 'antd';
 import React from 'react';
-import { FieldModel } from '../../base/FieldModel';
-
-class Field {
-  resource;
-  index: number;
-  path: string;
-
-  constructor(resource, index, path) {
-    this.resource = resource;
-    this.index = index;
-    this.path = path;
-  }
-
-  get value() {
-    return this.resource.getCell(this.index, this.path);
-  }
-}
+import { FieldModel } from '../../../base/FieldModel';
 
 export class TableFieldModel extends FieldModel {
-  field: Field;
+  getValue() {
+    return this.ctx.shared.value;
+  }
+
   public render() {
     return (
       <div>
         {this.props.prefix}
-        {this.field.value}
+        {this.getValue()}
         {this.props.suffix}
       </div>
     );
@@ -47,17 +31,18 @@ TableFieldModel.registerFlow({
   auto: true,
   steps: {
     step1: {
-      handler(ctx, params) {
-        const collectionField = ctx.globals.dataSourceManager.getCollectionField(params.fieldPath) as CollectionField;
-        ctx.model.collectionField = collectionField;
-        ctx.model.fieldPath = params.fieldPath;
-        ctx.model.field = new Field(
-          ctx.shared.currentBlockModel.resource,
-          ctx.extra.index,
-          params.fieldPath.split('.').pop(),
-        );
+      handler(ctx) {
+        ctx.model.collectionField = ctx.model.parent.collectionField;
+        ctx.model.fieldPath = ctx.model.parent.fieldPath;
       },
     },
+  },
+});
+
+TableFieldModel.registerFlow({
+  key: 'default2',
+  auto: true,
+  steps: {
     step2: {
       title: 'Edit Title',
       uiSchema: {
