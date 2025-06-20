@@ -53,12 +53,12 @@ export const EditDatabaseConnectionAction = () => {
         field.data = field.data || {};
         field.data.loading = true;
         try {
+          await resource.update({ filterByTk, values: _.omit(form.values, 'collections') });
           const toBeAddedCollections = form.values.collections || [];
           if (!form.values.addAllCollections) {
-            await addDatasourceCollections(api, filterByTk, { collections: toBeAddedCollections, dbOptions: _.omit(form.values.options, 'collections') });
+            await addDatasourceCollections(api, filterByTk, { collections: toBeAddedCollections, dbOptions: form.values.options });
           }
           delete form.values.collections;
-          await resource.update({ filterByTk, values: form.values });
           ctx.setVisible(false);
           dm.getDataSource(filterByTk).setOptions(form.values);
           dm.getDataSource(filterByTk).reload();

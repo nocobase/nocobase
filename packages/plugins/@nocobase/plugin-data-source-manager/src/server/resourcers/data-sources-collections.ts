@@ -11,6 +11,7 @@ import lodash from 'lodash';
 import { filterMatch } from '@nocobase/database';
 import _ from 'lodash';
 import { DataSourceManager } from '@nocobase/data-source-manager';
+import { ALLOW_MAX_COLLECTIONS_COUNT } from '../constants';
 
 export default {
   name: 'dataSources.collections',
@@ -129,11 +130,9 @@ export default {
     },
     async all(ctx, next) {
       const params = ctx.action.params;
-      const { associatedIndex: dataSourceKey, isFirst, dbOptions, filter } = params;
-      const page = params.page ? Number(params.page) : 1;
-      const pageSize = params.pageSize ? Number(params.pageSize) : 20;
+      const { associatedIndex: dataSourceKey, isFirst, dbOptions } = params;
       const dataSourceManager = ctx.app.dataSourceManager as DataSourceManager;
-      let introspector: { getCollections: (options: { pageIndex?: number, pageSize?: number, keywords?: string }) => Promise<{ tableList: string[], tableCount: number }> } = null;
+      let introspector: { getCollections: () => Promise<string[]> } = null;
       if (isFirst) {
         const klass = dataSourceManager.factory.getClass(dbOptions.type);
         // @ts-ignore
@@ -148,7 +147,7 @@ export default {
         }
         introspector = dataSource['introspector'];
       }
-      const { tableList: allCollections, tableCount } = await introspector.getCollections({ pageIndex: page, pageSize, keywords: filter?.keywords });
+      const allCollections = await introspector.getCollections();
       const selectedCollections = await ctx.db.getRepository('dataSourcesCollections').find({
         filter: { dataSourceKey },
       });
@@ -159,11 +158,7 @@ export default {
           selected: !!selectedMap[collection],
         };
       });
-      ctx.withoutDataWrapping = true;
-      ctx.body = {
-        data: result,
-        meta: { count: tableCount, page, pageSize, totalPage: Math.ceil(tableCount / pageSize) },
-      }
+      ctx.body = result;
       await next();
     },
     async add(ctx, next) {
@@ -174,6 +169,9 @@ export default {
       if (dbOptions.addAllCollections !== false) {
         await next();
         return;
+      }
+      if (collections.length > ALLOW_MAX_COLLECTIONS_COUNT) {
+        throw new Error(`The number of collections exceeds the limit of ${ALLOW_MAX_COLLECTIONS_COUNT}. Please remove some collections before adding new ones.`);
       }
       const transaction = await ctx.db.sequelize.transaction();
       const repo = ctx.db.getRepository('dataSourcesCollections');
@@ -188,7 +186,6 @@ export default {
       const incomingCollections = _.keyBy(collections);
       const toBeInserted = collections.filter((collection) => !alreadyInsertedNames[collection]);
       const toBeDeleted = Object.keys(alreadyInsertedNames).filter((name) => !incomingCollections[name]);
-
       if (toBeInserted.length > 0) {
         const insertCollections = toBeInserted.map((collection) => {
           return { name: collection, dataSourceKey };

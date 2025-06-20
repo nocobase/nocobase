@@ -9,7 +9,7 @@
 
 import React, { useCallback, useState, useMemo, useEffect, useRef } from 'react';
 import { Button, Table, Checkbox, Input, message, Tooltip } from 'antd';
-import { ReloadOutlined, QuestionCircleOutlined } from '@ant-design/icons';
+import { ReloadOutlined, QuestionCircleOutlined, ClearOutlined } from '@ant-design/icons';
 import { observer } from '@formily/react';
 import { useAPIClient } from '@nocobase/client';
 
@@ -17,13 +17,12 @@ const CollectionsTable = observer((tableProps: any) => {
   const api = useAPIClient();
   const [loading, setLoading] = useState(false);
   const [searchText, setSearchText] = useState('');
-  const [pagination, setPagination] = useState({
-    current: 1,
-    pageSize: 20,
-    total: 0,
-    totalPage: 0
-  });
+  const [allCollections, setAllCollections] = useState([]);
+  const [selectedMap, setSelectedMap] = useState(new Map());
+  const [selectAllForCurrentView, setSelectAllForCurrentView] = useState(false);
   const searchTimeoutRef = useRef<NodeJS.Timeout>();
+
+  const MAX_SELECTION_LIMIT = 5000;
 
   const { NAMESPACE, t } = tableProps;
   const defaultAddAllCollections =
@@ -31,7 +30,51 @@ const CollectionsTable = observer((tableProps: any) => {
       ? true
       : tableProps.formValues?.options?.addAllCollections;
   const [addAllCollections, setaddAllCollections] = useState(defaultAddAllCollections);
-  const collections = tableProps.value || [];
+
+  const filteredCollections = useMemo(() => {
+    if (!searchText.trim()) {
+      return allCollections;
+    }
+    return allCollections.filter((item: any) =>
+      item.name?.toLowerCase().includes(searchText.toLowerCase())
+    );
+  }, [allCollections, searchText]);
+
+  const displayCollections = useMemo(() => {
+    const baseData = tableProps.value && tableProps.value.length > 0 ? tableProps.value : allCollections;
+
+    if (!searchText.trim()) {
+      return baseData;
+    }
+
+    return baseData.filter((item: any) =>
+      item.name?.toLowerCase().includes(searchText.toLowerCase())
+    );
+  }, [tableProps.value, allCollections, searchText]);
+
+  const allData = useMemo(() => {
+    return tableProps.value && tableProps.value.length > 0 ? tableProps.value : allCollections;
+  }, [tableProps.value, allCollections]);
+
+  const enrichedDisplayCollections = useMemo(() => {
+    return displayCollections.map(item => ({
+      ...item,
+      selected: selectedMap.get(item.name) || item.required || selectAllForCurrentView
+    }));
+  }, [displayCollections, selectedMap, selectAllForCurrentView]);
+
+  useEffect(() => {
+    if (allData.length > 0) {
+      const newSelectedMap = new Map();
+      allData.forEach(item => {
+        if (item.selected) {
+          newSelectedMap.set(item.name, true);
+        }
+      });
+      setSelectedMap(newSelectedMap);
+      setSelectAllForCurrentView(false);
+    }
+  }, [allData.length]);
 
   const handleAddAllCollectionsChange = useCallback(
     (checked: boolean) => {
@@ -44,7 +87,7 @@ const CollectionsTable = observer((tableProps: any) => {
   );
 
   const handleLoadCollections = useCallback(
-    async (page = 1, pageSize = 20, keywords?: string) => {
+    async () => {
       const { dataSourceKey: key, formValues, onChange, from } = tableProps;
       const options = formValues?.options || {};
       const requiredText = t('is required');
@@ -80,29 +123,17 @@ const CollectionsTable = observer((tableProps: any) => {
         const params: any = {
           isFirst: from === 'create',
           dbOptions: { ...options, type: formValues.type || 'mysql' },
-          page,
-          pageSize,
         };
-
-        if (keywords) {
-          params.filter = { keywords };
-        }
 
         const response = await api.request({
           url: `dataSources/${key}/collections:all`,
           method: 'get',
           params,
         });
-        const { data, meta } = response?.data || {};
+        const { data } = response?.data || {};
         const collectionsData = data || [];
-        const { count: total, page: current = 0, totalPage } = meta;
 
-        setPagination({
-          current,
-          pageSize,
-          total,
-          totalPage
-        });
+        setAllCollections(collectionsData);
 
         if (onChange) {
           onChange(collectionsData);
@@ -121,24 +152,19 @@ const CollectionsTable = observer((tableProps: any) => {
     [tableProps.dataSourceKey, tableProps.formValues, tableProps.options, tableProps.from, api, t, NAMESPACE],
   );
 
-  // 防抖搜索
   const debouncedSearch = useCallback(
     (keywords: string) => {
-      if (addAllCollections) {
-        return;
-      }
       if (searchTimeoutRef.current) {
         clearTimeout(searchTimeoutRef.current);
       }
 
       searchTimeoutRef.current = setTimeout(() => {
-        handleLoadCollections(1, pagination.pageSize, keywords || undefined);
-      }, 500);
+        setSearchText(keywords);
+      }, 300);
     },
-    [handleLoadCollections, pagination.pageSize],
+    [],
   );
 
-  // 清理定时器
   useEffect(() => {
     return () => {
       if (searchTimeoutRef.current) {
@@ -147,51 +173,149 @@ const CollectionsTable = observer((tableProps: any) => {
     };
   }, []);
 
-  const { isAllSelected, isIndeterminate } = useMemo(() => {
-    const selectableCollections = collections.filter((item) => !item.required);
-    const selectedCount = collections.filter((item) => item.selected || item.required).length;
-    const allSelected = selectableCollections.length > 0 && selectedCount === collections.length;
-    const indeterminate = selectedCount > 0 && selectedCount < collections.length;
+  const { isAllSelected, isIndeterminate, selectedCount, isAtLimit } = useMemo(() => {
+    const totalSelectedCount = allData.filter(item => 
+      selectedMap.get(item.name) || item.required
+    ).length;
+
+    const atLimit = totalSelectedCount >= MAX_SELECTION_LIMIT;
+
+    const selectableCollections = enrichedDisplayCollections.filter((item) => !item.required);
+    const visibleSelectedCount = enrichedDisplayCollections.filter((item) => item.selected || item.required).length;
+    const allSelected = selectableCollections.length > 0 && visibleSelectedCount === enrichedDisplayCollections.length;
+    const indeterminate = visibleSelectedCount > 0 && visibleSelectedCount < enrichedDisplayCollections.length;
 
     return {
       isAllSelected: allSelected,
       isIndeterminate: indeterminate,
+      selectedCount: totalSelectedCount,
+      isAtLimit: atLimit,
     };
-  }, [collections]);
+  }, [enrichedDisplayCollections, allData, selectedMap]);
 
   const handleSelectAll = useCallback(
     (checked: boolean) => {
+      if (checked) {
+        const currentSelectedCount = allData.filter(item => 
+          selectedMap.get(item.name) || item.required
+        ).length;
+        
+        const selectableInCurrentView = displayCollections.filter(item => 
+          !item.required && !selectedMap.get(item.name)
+        ).length;
+        
+        if (currentSelectedCount >= MAX_SELECTION_LIMIT) {
+          return;
+        }
+
+        const remainingLimit = MAX_SELECTION_LIMIT - currentSelectedCount;
+        
+        if (selectableInCurrentView > remainingLimit) {
+          message.warning(
+            t('Maximum selection limit exceeded. To ensure system performance, you can select up to {{limit}} collections.', { 
+              ns: NAMESPACE, 
+              limit: MAX_SELECTION_LIMIT 
+            })
+          );
+        }
+      }
+
+      setSelectAllForCurrentView(checked);
+      
       const updateCollections = () => {
-        const updatedCollections = collections.map((item) => {
+        const newSelectedMap = new Map(selectedMap);
+        let selectedInThisOperation = 0;
+        const currentSelectedCount = allData.filter(item => 
+          selectedMap.get(item.name) || item.required
+        ).length;
+        const remainingLimit = MAX_SELECTION_LIMIT - currentSelectedCount;
+        
+        displayCollections.forEach(item => {
           if (!item.required) {
-            return { ...item, selected: checked };
+            if (checked) {
+              if (selectedInThisOperation < remainingLimit && !selectedMap.get(item.name)) {
+                newSelectedMap.set(item.name, true);
+                selectedInThisOperation++;
+              }
+            } else {
+              newSelectedMap.delete(item.name);
+            }
           }
-          return item;
         });
-        tableProps.onChange?.(updatedCollections);
+        
+        setSelectedMap(newSelectedMap);
+        
+        const updatedAllData = allData.map(item => ({
+          ...item,
+          selected: newSelectedMap.get(item.name) || item.required || false
+        }));
+        
+        tableProps.onChange?.(updatedAllData);
+        
+        setSelectAllForCurrentView(false);
       };
 
-      if (window.requestIdleCallback) {
-        window.requestIdleCallback(updateCollections);
+      if (typeof MessageChannel !== 'undefined') {
+        const channel = new MessageChannel();
+        channel.port2.onmessage = () => updateCollections();
+        channel.port1.postMessage(null);
       } else {
         setTimeout(updateCollections, 0);
       }
     },
-    [collections, tableProps.onChange],
+    [displayCollections, allData, selectedMap, tableProps.onChange, t, NAMESPACE],
   );
 
   const handleSelectChange = useCallback(
     (index: number, checked: boolean) => {
-      const updatedCollections = [...collections];
-      updatedCollections[index] = { ...updatedCollections[index], selected: checked };
-      tableProps.onChange?.(updatedCollections);
+      const currentItem = enrichedDisplayCollections[index];
+      if (!currentItem || currentItem.selected === checked) return;
+
+      if (checked) {
+        const currentSelectedCount = allData.filter(item => 
+          selectedMap.get(item.name) || item.required
+        ).length;
+        
+        if (currentSelectedCount >= MAX_SELECTION_LIMIT) {
+          return;
+        }
+
+        if (currentSelectedCount + 1 === MAX_SELECTION_LIMIT) {
+          message.warning(
+            t('Maximum selection limit reached. To ensure system performance, you can select up to {{limit}} collections at once.', { 
+              ns: NAMESPACE, 
+              limit: MAX_SELECTION_LIMIT 
+            })
+          );
+        }
+      }
+
+      const newSelectedMap = new Map(selectedMap);
+      if (checked) {
+        newSelectedMap.set(currentItem.name, true);
+      } else {
+        newSelectedMap.delete(currentItem.name);
+        setSelectAllForCurrentView(false);
+      }
+      
+      setSelectedMap(newSelectedMap);
+
+      const updateCollections = () => {
+        const updatedAllData = allData.map(item => ({
+          ...item,
+          selected: newSelectedMap.get(item.name) || item.required || false
+        }));
+        
+        tableProps.onChange?.(updatedAllData);
+      };
+
+      setTimeout(updateCollections, 0);
     },
-    [collections, tableProps.onChange],
+    [enrichedDisplayCollections, allData, selectedMap, tableProps.onChange, t, NAMESPACE],
   );
 
   const handleSearch = useCallback(
     (value: string) => {
-      setSearchText(value);
       debouncedSearch(value);
     },
     [debouncedSearch],
@@ -199,57 +323,113 @@ const CollectionsTable = observer((tableProps: any) => {
 
   const handleClearSearch = useCallback(() => {
     setSearchText('');
-    handleLoadCollections(1, pagination.pageSize);
-  }, [handleLoadCollections, pagination.pageSize]);
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+  }, []);
 
-  const handleTableChange = useCallback(
-    (paginationConfig: any) => {
-      const { current, pageSize } = paginationConfig;
-      handleLoadCollections(current, pageSize, searchText || undefined);
-    },
-    [handleLoadCollections, searchText],
-  );
+  const handleReset = useCallback(() => {
+    setSelectedMap(new Map());
+    setSelectAllForCurrentView(false);
+    
+    const updatedAllData = allData.map(item => ({
+      ...item,
+      selected: item.required || false
+    }));
+    
+    tableProps.onChange?.(updatedAllData);
+  }, [allData, tableProps.onChange]);
 
   const columns = useMemo(() => {
+    const CheckboxCell = React.memo(({ selected, required, index, onChange, name, disabled }: any) => (
+      <Checkbox
+        checked={required || selected}
+        disabled={required || disabled}
+        onChange={(e) => onChange(index, e.target.checked)}
+      />
+    ));
+
+    const NameCell = React.memo(({ text }: any) => (
+      <span style={{ paddingLeft: '40px' }}>{text}</span>
+    ));
+
     const baseColumns: any = [
       {
         title: <div style={{ textAlign: 'center' }}>{t('Display name', { ns: NAMESPACE })}</div>,
         dataIndex: 'name',
         key: 'name',
         align: 'left' as const,
-        render: (text: string) => <span style={{ paddingLeft: '40px' }}>{text}</span>,
+        width: '50%',
+        render: (text: string) => <NameCell text={text} />,
       },
     ];
 
     if (!addAllCollections) {
+      const isNearLimit = selectedCount >= MAX_SELECTION_LIMIT * 0.9;
+      const titleStyle = isNearLimit ? { color: '#ff7a00' } : {};
+      
+      const currentSelectedCount = allData.filter(item => 
+        selectedMap.get(item.name) || item.required
+      ).length;
+      const unselectedInCurrentView = enrichedDisplayCollections.filter(item => 
+        !item.selected && !item.required
+      ).length;
+      const canSelectAll = currentSelectedCount + unselectedInCurrentView <= MAX_SELECTION_LIMIT;
+      
       baseColumns.push({
         title: (
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
             <Checkbox
               checked={isAllSelected}
               indeterminate={isIndeterminate}
+              disabled={isAtLimit && !isAllSelected && !canSelectAll}
               onChange={(e) => handleSelectAll(e.target.checked)}
-              style={{ marginRight: 4 }}
             />
-            {t('Add', { ns: NAMESPACE })}
+            <span style={titleStyle}>
+              {t('Add', { ns: NAMESPACE })} ({selectedCount}/{allData.length})
+            </span>
+            {selectedCount > 0 && (
+              <Tooltip title={t('Reset selection', { ns: NAMESPACE })}>
+                <Button
+                  type="text"
+                  size="small"
+                  icon={<ClearOutlined />}
+                  onClick={handleReset}
+                  style={{ 
+                    padding: '0 4px', 
+                    height: '16px',
+                    minWidth: '16px',
+                    fontSize: '12px',
+                    color: '#666'
+                  }}
+                />
+              </Tooltip>
+            )}
           </div>
         ),
         dataIndex: 'selected',
         key: 'selected',
         align: 'center' as const,
-        width: 150,
-        render: (selected: boolean, record: any, index: number) => (
-          <Checkbox
-            checked={record.required || selected}
-            disabled={record.required}
-            onChange={(e) => handleSelectChange(index, e.target.checked)}
-          />
-        ),
+        width: '30%',
+        render: (selected: boolean, record: any, index: number) => {
+          const shouldDisable = isAtLimit && !selected && !record.required;
+          
+          return (
+            <CheckboxCell
+              selected={selected}
+              required={record.required}
+              index={index}
+              name={record.name}
+              disabled={shouldDisable}
+              onChange={handleSelectChange}
+            />
+          );
+        },
       });
     }
 
     return baseColumns;
-  }, [t, isAllSelected, isIndeterminate, handleSelectAll, handleSelectChange, addAllCollections, NAMESPACE]);
+  }, [t, isAllSelected, isIndeterminate, handleSelectAll, handleSelectChange, addAllCollections, NAMESPACE, selectedCount, allData.length, isAtLimit, selectedMap, enrichedDisplayCollections, handleReset]);
 
   return (
     <div>
@@ -265,25 +445,18 @@ const CollectionsTable = observer((tableProps: any) => {
           <Checkbox checked={addAllCollections} onChange={(e) => handleAddAllCollectionsChange(e.target.checked)}>
             {t('Add all collections', { ns: NAMESPACE })}
           </Checkbox>
-          <Tooltip
-            title={t('When there are too many data tables, it may cause system loading lag.', { ns: NAMESPACE })}
-            placement="right"
-          >
-            <QuestionCircleOutlined style={{ color: '#8c8c8c' }} />
-          </Tooltip>
         </div>
         <Input.Search
           placeholder={t('Search collection name', { ns: NAMESPACE })}
           allowClear
           style={{ width: 250 }}
-          value={searchText}
           onSearch={handleSearch}
           onChange={(e) => handleSearch(e.target.value)}
           onClear={handleClearSearch}
         />
         <Button
           icon={<ReloadOutlined />}
-          onClick={() => handleLoadCollections(pagination.current, pagination.pageSize, searchText || undefined)}
+          onClick={() => handleLoadCollections()}
           loading={loading}
         >
           {t('Load Collections', { ns: NAMESPACE })}
@@ -291,24 +464,17 @@ const CollectionsTable = observer((tableProps: any) => {
       </div>
       <Table
         columns={columns}
-        dataSource={collections}
+        dataSource={enrichedDisplayCollections}
         loading={loading}
-        pagination={{
-          current: pagination.current,
-          pageSize: pagination.pageSize,
-          total: pagination.total,
-          showSizeChanger: true,
-          showQuickJumper: false,
-          showTotal: (total, range) => `${range[0]}-${range[1]} of ${total}`,
-          pageSizeOptions: ['20', '50', '100'],
-          size: 'small',
-          simple: false,
+        pagination={false}
+        scroll={{
+          x: addAllCollections ? 300 : 550,
+          y: 400
         }}
-        scroll={{ x: addAllCollections ? 300 : 550, y: 400 }}
+        virtual
         bordered
         rowKey="name"
         size="small"
-        onChange={handleTableChange}
       />
     </div>
   );
