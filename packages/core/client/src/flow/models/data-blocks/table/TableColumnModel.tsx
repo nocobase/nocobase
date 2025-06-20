@@ -75,12 +75,19 @@ export class TableColumnModel extends FieldModel {
     };
   }
 
+  componentProps = observable.deep({
+    prefix: '',
+    suffix: '',
+  });
+
   setComponentProps(props) {
-    this.setProps('componentProps', { ...(this.props.componentProps || {}), ...props });
+    Object.assign(this.componentProps, props);
   }
+
   getComponentProps() {
-    return this.props.componentProps;
+    return this.componentProps;
   }
+
   setDataSource(dataSource) {
     this.setProps('componentProps', { ...(this.props.componentProps || {}), dataSource });
   }
@@ -110,12 +117,20 @@ export class TableColumnModel extends FieldModel {
   render() {
     return (value, record, index) => (
       <>
-        <TableField record={record} model={this} value={value} index={index} />
+        <Demo value={value} model={this} />
         {this.renderQuickEditButton(record)}
       </>
     );
   }
 }
+
+const Demo = observer<any>(({ model, value }) => {
+  return (
+    <div>
+      {model.componentProps.prefix} | {value} | {model.componentProps.suffix}
+    </div>
+  );
+});
 
 TableColumnModel.define({
   title: 'Table Column',
@@ -143,6 +158,28 @@ TableColumnModel.registerFlow({
         ctx.model.fieldPath = params.fieldPath;
         ctx.model.setProps('title', field.title);
         ctx.model.setProps('dataIndex', field.name);
+      },
+    },
+    step2: {
+      title: 'Edit Title',
+      uiSchema: {
+        prefix: {
+          'x-component': 'Input',
+          'x-decorator': 'FormItem',
+          'x-component-props': {
+            placeholder: 'Prefix',
+          },
+        },
+        suffix: {
+          'x-component': 'Input',
+          'x-decorator': 'FormItem',
+          'x-component-props': {
+            placeholder: 'Suffix',
+          },
+        },
+      },
+      handler(ctx, params) {
+        ctx.model.setComponentProps(params);
       },
     },
   },

@@ -53,18 +53,18 @@ export class TableModel extends DataBlockModel<S> {
                 },
               },
             },
-            subModels: {
-              field: {
-                use: 'TableFieldModel',
-                stepParams: {
-                  default: {
-                    step1: {
-                      fieldPath: field.fullpath,
-                    },
-                  },
-                },
-              },
-            },
+            // subModels: {
+            //   field: {
+            //     use: 'TableFieldModel',
+            //     stepParams: {
+            //       default: {
+            //         step1: {
+            //           fieldPath: field.fullpath,
+            //         },
+            //       },
+            //     },
+            //   },
+            // },
           })}
           appendItems={[
             {
