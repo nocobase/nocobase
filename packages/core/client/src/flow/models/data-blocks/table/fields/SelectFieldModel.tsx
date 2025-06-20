@@ -9,7 +9,7 @@
 
 import { Tag } from 'antd';
 import React from 'react';
-import { TableColumnModel } from '../TableColumnModel';
+import { TableFieldModel } from '../TableFieldModel';
 import { getCurrentOptions } from '../utils/utils';
 
 const fieldNames = {
@@ -18,26 +18,20 @@ const fieldNames = {
   color: 'color',
   icon: 'icon',
 };
-export class SelectColumnFieldModel extends TableColumnModel {
+export class SelectColumnFieldModel extends TableFieldModel {
   public static readonly supportedFieldInterfaces = ['select', 'multipleSelect', 'radioGroup', 'checkboxGroup'];
 
-  render() {
-    return (value, record, index) => {
-      const { dataSource } = this.getComponentProps();
-      const currentOptions = getCurrentOptions(value, dataSource, fieldNames);
-      const content =
-        value &&
-        currentOptions.map((option, index) => (
-          <Tag key={index} color={option[fieldNames.color]} icon={option.icon}>
-            {option[fieldNames.label]}
-          </Tag>
-        ));
-      return (
-        <>
-          {content}
-          {this.renderQuickEditButton(record)}
-        </>
-      );
-    };
+  public render() {
+    const { dataSource } = this.field.componentProps;
+    const value = this.field.value;
+    const currentOptions = getCurrentOptions(value, dataSource, fieldNames);
+    const content =
+      value &&
+      currentOptions.map((option, index) => (
+        <Tag key={index} color={option[fieldNames.color]} icon={option.icon}>
+          {option[fieldNames.label]}
+        </Tag>
+      ));
+    return content as any;
   }
 }

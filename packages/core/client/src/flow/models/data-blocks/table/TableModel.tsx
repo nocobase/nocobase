@@ -55,7 +55,7 @@ export class TableModel extends DataBlockModel<S> {
             },
             subModels: {
               field: {
-                use: 'TableFieldModel',
+                use: 'SelectColumnFieldModel',
                 stepParams: {
                   default: {
                     step1: {

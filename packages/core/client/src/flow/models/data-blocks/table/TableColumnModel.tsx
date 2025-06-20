@@ -7,10 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { EditOutlined } from '@ant-design/icons';
+import { EditOutlined, QuestionCircleOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
 import { observer } from '@formily/react';
-import { observable } from '@formily/reactive';
 import { CollectionField, FlowModelRenderer, FlowsFloatContextMenu } from '@nocobase/flow-engine';
 import { TableColumnProps, Tooltip } from 'antd';
 import React from 'react';
@@ -40,15 +39,25 @@ export class TableColumnModel extends FieldModel {
   static readonly supportedFieldInterfaces: SupportedFieldInterfaces = '*';
 
   getColumnProps(): TableColumnProps {
+    const titleContent = (
+      <FlowsFloatContextMenu
+        model={this}
+        containerStyle={{ display: 'block', padding: '11px 8px', margin: '-11px -8px' }}
+      >
+        {this.props.title}
+      </FlowsFloatContextMenu>
+    );
     return {
       ...this.props,
-      title: (
-        <FlowsFloatContextMenu
-          model={this}
-          containerStyle={{ display: 'block', padding: '11px 8px', margin: '-11px -8px' }}
-        >
-          {this.props.title}
-        </FlowsFloatContextMenu>
+      title: this.props.tooltip ? (
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+          {titleContent}
+          <Tooltip title={this.props.tooltip}>
+            <QuestionCircleOutlined style={{ cursor: 'pointer' }} />
+          </Tooltip>
+        </span>
+      ) : (
+        titleContent
       ),
       ellipsis: true,
       onCell: (record) => ({
@@ -73,19 +82,6 @@ export class TableColumnModel extends FieldModel {
       }),
       render: this.render(),
     };
-  }
-
-  setComponentProps(props) {
-    this.setProps('componentProps', { ...(this.props.componentProps || {}), ...props });
-  }
-  getComponentProps() {
-    return this.props.componentProps;
-  }
-  setDataSource(dataSource) {
-    this.setProps('componentProps', { ...(this.props.componentProps || {}), dataSource });
-  }
-  getDataSource() {
-    return this.props.componentProps.dataSource || [];
   }
 
   renderQuickEditButton(record) {
@@ -143,6 +139,56 @@ TableColumnModel.registerFlow({
         ctx.model.fieldPath = params.fieldPath;
         ctx.model.setProps('title', field.title);
         ctx.model.setProps('dataIndex', field.name);
+      },
+    },
+    editColumTitle: {
+      title: 'Column title',
+      uiSchema: {
+        title: {
+          'x-component': 'Input',
+          'x-decorator': 'FormItem',
+          'x-component-props': {
+            placeholder: 'Column title',
+          },
+        },
+      },
+      defaultParams: (ctx) => {
+        return {
+          title: ctx.model.collectionField?.title,
+        };
+      },
+      handler(ctx, params) {
+        ctx.model.setProps('title', params.title || ctx.model.collectionField?.title);
+      },
+    },
+    editTooltip: {
+      title: 'Edit tooltip',
+      uiSchema: {
+        tooltip: {
+          'x-component': 'Input.TextArea',
+          'x-decorator': 'FormItem',
+          'x-component-props': {
+            placeholder: 'Edit tooltip',
+          },
+        },
+      },
+      handler(ctx, params) {
+        ctx.model.setProps('tooltip', params.tooltip);
+      },
+    },
+    editColumnWidth: {
+      title: 'Column width',
+      uiSchema: {
+        width: {
+          'x-component': 'NumberPicker',
+          'x-decorator': 'FormItem',
+        },
+      },
+      defaultParams: {
+        width: '200',
+      },
+      handler(ctx, params) {
+        ctx.model.setProps('width', params.width);
       },
     },
   },

@@ -12,20 +12,34 @@ import { CollectionField } from '@nocobase/flow-engine';
 import { Popover } from 'antd';
 import React from 'react';
 import { FieldModel } from '../../base/FieldModel';
-
+interface ComponentProps {
+  [key: string]: any;
+}
 class Field {
   resource;
   index: number;
   path: string;
+  componentProps: ComponentProps;
 
   constructor(resource, index, path) {
     this.resource = resource;
     this.index = index;
     this.path = path;
+    this.componentProps = {};
   }
 
   get value() {
     return this.resource.getCell(this.index, this.path);
+  }
+  setComponentProps(componentProps: ComponentProps): void {
+    this.componentProps = {
+      ...this.componentProps,
+      ...componentProps,
+    };
+  }
+
+  getComponentProps(): ComponentProps {
+    return this.componentProps;
   }
 }
 
@@ -50,6 +64,10 @@ TableFieldModel.registerFlow({
           ctx.extra.index,
           params.fieldPath.split('.').pop(),
         );
+        if (collectionField.enum.length) {
+          ctx.model.field.setComponentProps({ dataSource: collectionField.enum });
+        }
+        ctx.model.field.setComponentProps(collectionField.getComponentProps());
       },
     },
   },
