@@ -43,7 +43,7 @@ export class TableModel extends DataBlockModel<S> {
           collection={this.collection}
           model={this}
           subModelKey={'columns'}
-          subModelBaseClass="TableColumnModel"
+          subModelBaseClass="TableFieldModel"
           buildCreateModelOptions={(field, fieldClass) => ({
             use: 'TableColumnModel',
             stepParams: {
@@ -55,7 +55,7 @@ export class TableModel extends DataBlockModel<S> {
             },
             subModels: {
               field: {
-                use: 'TableFieldModel',
+                use: fieldClass.name,
                 stepParams: {
                   default: {
                     step1: {
@@ -189,6 +189,7 @@ TableModel.registerFlow({
         resource.setDataSourceKey(params.dataSourceKey);
         resource.setResourceName(params.collectionName);
         resource.setAPIClient(ctx.globals.api);
+        resource.setAppends(['roles']);
         ctx.model.resource = resource;
         await ctx.model.applySubModelsAutoFlows('columns', null, { currentBlockModel: ctx.model });
         await resource.refresh();
