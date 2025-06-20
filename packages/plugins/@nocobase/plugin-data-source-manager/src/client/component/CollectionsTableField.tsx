@@ -35,9 +35,7 @@ const CollectionsTable = observer((tableProps: any) => {
     if (!searchText.trim()) {
       return allCollections;
     }
-    return allCollections.filter((item: any) =>
-      item.name?.toLowerCase().includes(searchText.toLowerCase())
-    );
+    return allCollections.filter((item: any) => item.name?.toLowerCase().includes(searchText.toLowerCase()));
   }, [allCollections, searchText]);
 
   const displayCollections = useMemo(() => {
@@ -47,9 +45,7 @@ const CollectionsTable = observer((tableProps: any) => {
       return baseData;
     }
 
-    return baseData.filter((item: any) =>
-      item.name?.toLowerCase().includes(searchText.toLowerCase())
-    );
+    return baseData.filter((item: any) => item.name?.toLowerCase().includes(searchText.toLowerCase()));
   }, [tableProps.value, allCollections, searchText]);
 
   const allData = useMemo(() => {
@@ -57,16 +53,16 @@ const CollectionsTable = observer((tableProps: any) => {
   }, [tableProps.value, allCollections]);
 
   const enrichedDisplayCollections = useMemo(() => {
-    return displayCollections.map(item => ({
+    return displayCollections.map((item) => ({
       ...item,
-      selected: selectedMap.get(item.name) || item.required || selectAllForCurrentView
+      selected: selectedMap.get(item.name) || item.required || selectAllForCurrentView,
     }));
   }, [displayCollections, selectedMap, selectAllForCurrentView]);
 
   useEffect(() => {
     if (allData.length > 0) {
       const newSelectedMap = new Map();
-      allData.forEach(item => {
+      allData.forEach((item) => {
         if (item.selected) {
           newSelectedMap.set(item.name, true);
         }
@@ -80,90 +76,84 @@ const CollectionsTable = observer((tableProps: any) => {
     (checked: boolean) => {
       setaddAllCollections(checked);
       if (tableProps.formSetValues) {
-        tableProps.formSetValues('options.addAllCollections', checked);
+        tableProps.formSetValues('options?.addAllCollections', checked);
       }
     },
     [tableProps.formSetValues],
   );
 
-  const handleLoadCollections = useCallback(
-    async () => {
-      const { dataSourceKey: key, formValues, onChange, from } = tableProps;
-      const options = formValues?.options || {};
-      const requiredText = t('is required');
-      if (formValues.type !== 'oracle') {
-        if (!key) {
-          message.error(t('Data source name', { ns: NAMESPACE }) + requiredText);
-          return;
-        }
-
-        if (!options.host) {
-          message.error(t('Host', { ns: NAMESPACE }) + requiredText);
-          return;
-        }
-
-        if (!options.port) {
-          message.error(t('Port', { ns: NAMESPACE }) + requiredText);
-          return;
-        }
-
-        if (!options.database) {
-          message.error(t('Database', { ns: NAMESPACE }) + requiredText);
-          return;
-        }
-
-        if (!options.username) {
-          message.error(t('Username', { ns: NAMESPACE }) + requiredText);
-          return;
-        }
+  const handleLoadCollections = useCallback(async () => {
+    const { dataSourceKey: key, formValues, onChange, from } = tableProps;
+    const options = formValues?.options || {};
+    const requiredText = t('is required');
+    if (formValues.type !== 'oracle') {
+      if (!key) {
+        message.error(t('Data source name', { ns: NAMESPACE }) + requiredText);
+        return;
       }
 
-      setLoading(true);
-      try {
-        const params: any = {
-          isFirst: from === 'create',
-          dbOptions: { ...options, type: formValues.type || 'mysql' },
-        };
-
-        const response = await api.request({
-          url: `dataSources/${key}/collections:all`,
-          method: 'get',
-          params,
-        });
-        const { data } = response?.data || {};
-        const collectionsData = data || [];
-
-        setAllCollections(collectionsData);
-
-        if (onChange) {
-          onChange(collectionsData);
-        }
-
-        if (tableProps.field && tableProps.field.form) {
-          tableProps.field.form.setValuesIn('collections', collectionsData);
-        }
-      } catch (error) {
-        console.error('Error loading collections:', error);
-        message.error(t('Failed to load collections', { ns: NAMESPACE }));
-      } finally {
-        setLoading(false);
-      }
-    },
-    [tableProps.dataSourceKey, tableProps.formValues, tableProps.options, tableProps.from, api, t, NAMESPACE],
-  );
-
-  const debouncedSearch = useCallback(
-    (keywords: string) => {
-      if (searchTimeoutRef.current) {
-        clearTimeout(searchTimeoutRef.current);
+      if (!options.host) {
+        message.error(t('Host', { ns: NAMESPACE }) + requiredText);
+        return;
       }
 
-      searchTimeoutRef.current = setTimeout(() => {
-        setSearchText(keywords);
-      }, 300);
-    },
-    [],
-  );
+      if (!options.port) {
+        message.error(t('Port', { ns: NAMESPACE }) + requiredText);
+        return;
+      }
+
+      if (!options.database) {
+        message.error(t('Database', { ns: NAMESPACE }) + requiredText);
+        return;
+      }
+
+      if (!options.username) {
+        message.error(t('Username', { ns: NAMESPACE }) + requiredText);
+        return;
+      }
+    }
+
+    setLoading(true);
+    try {
+      const params: any = {
+        isFirst: from === 'create',
+        dbOptions: { ...options, type: formValues.type || 'mysql' },
+      };
+
+      const response = await api.request({
+        url: `dataSources/${key}/collections:all`,
+        method: 'get',
+        params,
+      });
+      const { data } = response?.data || {};
+      const collectionsData = data || [];
+
+      setAllCollections(collectionsData);
+
+      if (onChange) {
+        onChange(collectionsData);
+      }
+
+      if (tableProps.field && tableProps.field.form) {
+        tableProps.field.form.setValuesIn('collections', collectionsData);
+      }
+    } catch (error) {
+      console.error('Error loading collections:', error);
+      message.error(t('Failed to load collections', { ns: NAMESPACE }));
+    } finally {
+      setLoading(false);
+    }
+  }, [tableProps.dataSourceKey, tableProps.formValues, tableProps.options, tableProps.from, api, t, NAMESPACE]);
+
+  const debouncedSearch = useCallback((keywords: string) => {
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+
+    searchTimeoutRef.current = setTimeout(() => {
+      setSearchText(keywords);
+    }, 300);
+  }, []);
 
   useEffect(() => {
     return () => {
@@ -174,9 +164,7 @@ const CollectionsTable = observer((tableProps: any) => {
   }, []);
 
   const { isAllSelected, isIndeterminate, selectedCount, isAtLimit } = useMemo(() => {
-    const totalSelectedCount = allData.filter(item => 
-      selectedMap.get(item.name) || item.required
-    ).length;
+    const totalSelectedCount = allData.filter((item) => selectedMap.get(item.name) || item.required).length;
 
     const atLimit = totalSelectedCount >= MAX_SELECTION_LIMIT;
 
@@ -196,41 +184,40 @@ const CollectionsTable = observer((tableProps: any) => {
   const handleSelectAll = useCallback(
     (checked: boolean) => {
       if (checked) {
-        const currentSelectedCount = allData.filter(item => 
-          selectedMap.get(item.name) || item.required
+        const currentSelectedCount = allData.filter((item) => selectedMap.get(item.name) || item.required).length;
+
+        const selectableInCurrentView = displayCollections.filter(
+          (item) => !item.required && !selectedMap.get(item.name),
         ).length;
-        
-        const selectableInCurrentView = displayCollections.filter(item => 
-          !item.required && !selectedMap.get(item.name)
-        ).length;
-        
+
         if (currentSelectedCount >= MAX_SELECTION_LIMIT) {
           return;
         }
 
         const remainingLimit = MAX_SELECTION_LIMIT - currentSelectedCount;
-        
+
         if (selectableInCurrentView > remainingLimit) {
           message.warning(
-            t('Maximum selection limit exceeded. To ensure system performance, you can select up to {{limit}} collections.', { 
-              ns: NAMESPACE, 
-              limit: MAX_SELECTION_LIMIT 
-            })
+            t(
+              'Maximum selection limit exceeded. To ensure system performance, you can select up to {{limit}} collections.',
+              {
+                ns: NAMESPACE,
+                limit: MAX_SELECTION_LIMIT,
+              },
+            ),
           );
         }
       }
 
       setSelectAllForCurrentView(checked);
-      
+
       const updateCollections = () => {
         const newSelectedMap = new Map(selectedMap);
         let selectedInThisOperation = 0;
-        const currentSelectedCount = allData.filter(item => 
-          selectedMap.get(item.name) || item.required
-        ).length;
+        const currentSelectedCount = allData.filter((item) => selectedMap.get(item.name) || item.required).length;
         const remainingLimit = MAX_SELECTION_LIMIT - currentSelectedCount;
-        
-        displayCollections.forEach(item => {
+
+        displayCollections.forEach((item) => {
           if (!item.required) {
             if (checked) {
               if (selectedInThisOperation < remainingLimit && !selectedMap.get(item.name)) {
@@ -242,16 +229,16 @@ const CollectionsTable = observer((tableProps: any) => {
             }
           }
         });
-        
+
         setSelectedMap(newSelectedMap);
-        
-        const updatedAllData = allData.map(item => ({
+
+        const updatedAllData = allData.map((item) => ({
           ...item,
-          selected: newSelectedMap.get(item.name) || item.required || false
+          selected: newSelectedMap.get(item.name) || item.required || false,
         }));
-        
+
         tableProps.onChange?.(updatedAllData);
-        
+
         setSelectAllForCurrentView(false);
       };
 
@@ -272,20 +259,21 @@ const CollectionsTable = observer((tableProps: any) => {
       if (!currentItem || currentItem.selected === checked) return;
 
       if (checked) {
-        const currentSelectedCount = allData.filter(item => 
-          selectedMap.get(item.name) || item.required
-        ).length;
-        
+        const currentSelectedCount = allData.filter((item) => selectedMap.get(item.name) || item.required).length;
+
         if (currentSelectedCount >= MAX_SELECTION_LIMIT) {
           return;
         }
 
         if (currentSelectedCount + 1 === MAX_SELECTION_LIMIT) {
           message.warning(
-            t('Maximum selection limit reached. To ensure system performance, you can select up to {{limit}} collections at once.', { 
-              ns: NAMESPACE, 
-              limit: MAX_SELECTION_LIMIT 
-            })
+            t(
+              'Maximum selection limit reached. To ensure system performance, you can select up to {{limit}} collections at once.',
+              {
+                ns: NAMESPACE,
+                limit: MAX_SELECTION_LIMIT,
+              },
+            ),
           );
         }
       }
@@ -297,15 +285,15 @@ const CollectionsTable = observer((tableProps: any) => {
         newSelectedMap.delete(currentItem.name);
         setSelectAllForCurrentView(false);
       }
-      
+
       setSelectedMap(newSelectedMap);
 
       const updateCollections = () => {
-        const updatedAllData = allData.map(item => ({
+        const updatedAllData = allData.map((item) => ({
           ...item,
-          selected: newSelectedMap.get(item.name) || item.required || false
+          selected: newSelectedMap.get(item.name) || item.required || false,
         }));
-        
+
         tableProps.onChange?.(updatedAllData);
       };
 
@@ -331,12 +319,12 @@ const CollectionsTable = observer((tableProps: any) => {
   const handleReset = useCallback(() => {
     setSelectedMap(new Map());
     setSelectAllForCurrentView(false);
-    
-    const updatedAllData = allData.map(item => ({
+
+    const updatedAllData = allData.map((item) => ({
       ...item,
-      selected: item.required || false
+      selected: item.required || false,
     }));
-    
+
     tableProps.onChange?.(updatedAllData);
   }, [allData, tableProps.onChange]);
 
@@ -349,9 +337,7 @@ const CollectionsTable = observer((tableProps: any) => {
       />
     ));
 
-    const NameCell = React.memo(({ text }: any) => (
-      <span style={{ paddingLeft: '40px' }}>{text}</span>
-    ));
+    const NameCell = React.memo(({ text }: any) => <span style={{ paddingLeft: '40px' }}>{text}</span>);
 
     const baseColumns: any = [
       {
@@ -367,15 +353,13 @@ const CollectionsTable = observer((tableProps: any) => {
     if (!addAllCollections) {
       const isNearLimit = selectedCount >= MAX_SELECTION_LIMIT * 0.9;
       const titleStyle = isNearLimit ? { color: '#ff7a00' } : {};
-      
-      const currentSelectedCount = allData.filter(item => 
-        selectedMap.get(item.name) || item.required
-      ).length;
-      const unselectedInCurrentView = enrichedDisplayCollections.filter(item => 
-        !item.selected && !item.required
+
+      const currentSelectedCount = allData.filter((item) => selectedMap.get(item.name) || item.required).length;
+      const unselectedInCurrentView = enrichedDisplayCollections.filter(
+        (item) => !item.selected && !item.required,
       ).length;
       const canSelectAll = currentSelectedCount + unselectedInCurrentView <= MAX_SELECTION_LIMIT;
-      
+
       baseColumns.push({
         title: (
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
@@ -395,12 +379,12 @@ const CollectionsTable = observer((tableProps: any) => {
                   size="small"
                   icon={<ClearOutlined />}
                   onClick={handleReset}
-                  style={{ 
-                    padding: '0 4px', 
+                  style={{
+                    padding: '0 4px',
                     height: '16px',
                     minWidth: '16px',
                     fontSize: '12px',
-                    color: '#666'
+                    color: '#666',
                   }}
                 />
               </Tooltip>
@@ -413,7 +397,7 @@ const CollectionsTable = observer((tableProps: any) => {
         width: '30%',
         render: (selected: boolean, record: any, index: number) => {
           const shouldDisable = isAtLimit && !selected && !record.required;
-          
+
           return (
             <CheckboxCell
               selected={selected}
@@ -429,7 +413,21 @@ const CollectionsTable = observer((tableProps: any) => {
     }
 
     return baseColumns;
-  }, [t, isAllSelected, isIndeterminate, handleSelectAll, handleSelectChange, addAllCollections, NAMESPACE, selectedCount, allData.length, isAtLimit, selectedMap, enrichedDisplayCollections, handleReset]);
+  }, [
+    t,
+    isAllSelected,
+    isIndeterminate,
+    handleSelectAll,
+    handleSelectChange,
+    addAllCollections,
+    NAMESPACE,
+    selectedCount,
+    allData.length,
+    isAtLimit,
+    selectedMap,
+    enrichedDisplayCollections,
+    handleReset,
+  ]);
 
   return (
     <div>
@@ -454,11 +452,7 @@ const CollectionsTable = observer((tableProps: any) => {
           onChange={(e) => handleSearch(e.target.value)}
           onClear={handleClearSearch}
         />
-        <Button
-          icon={<ReloadOutlined />}
-          onClick={() => handleLoadCollections()}
-          loading={loading}
-        >
+        <Button icon={<ReloadOutlined />} onClick={() => handleLoadCollections()} loading={loading}>
           {t('Load Collections', { ns: NAMESPACE })}
         </Button>
       </div>
@@ -469,7 +463,7 @@ const CollectionsTable = observer((tableProps: any) => {
         pagination={false}
         scroll={{
           x: addAllCollections ? 300 : 550,
-          y: 400
+          y: 400,
         }}
         virtual
         bordered

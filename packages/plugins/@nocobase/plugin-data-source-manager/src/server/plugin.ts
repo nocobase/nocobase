@@ -204,7 +204,7 @@ export class PluginDataSourceManagerServer extends Plugin {
       if (model.changed('options') && !model.isMainRecord()) {
         model.loadIntoApplication({
           app: this.app,
-          refresh: true
+          refresh: true,
         });
 
         this.sendSyncMessage(
@@ -366,7 +366,7 @@ export class PluginDataSourceManagerServer extends Plugin {
       const { actionName, resourceName, params } = ctx.action;
       if (resourceName === 'dataSources' && (actionName === 'add' || actionName === 'update')) {
         const { values, filterByTk: dataSourceKey } = params;
-        if (values.options.addAllCollections) {
+        if (values.options?.addAllCollections) {
           let introspector: { getCollections: () => Promise<string[]> } = null;
           const dataSourceManager = ctx.app['dataSourceManager'] as DataSourceManager;
 
@@ -386,7 +386,9 @@ export class PluginDataSourceManagerServer extends Plugin {
           }
           const allCollections = await introspector.getCollections();
           if (allCollections.length > ALLOW_MAX_COLLECTIONS_COUNT) {
-            throw new Error(`The number of collections exceeds the limit of ${ALLOW_MAX_COLLECTIONS_COUNT}. Please remove some collections before adding new ones.`);
+            throw new Error(
+              `The number of collections exceeds the limit of ${ALLOW_MAX_COLLECTIONS_COUNT}. Please remove some collections before adding new ones.`,
+            );
           }
         }
       }
