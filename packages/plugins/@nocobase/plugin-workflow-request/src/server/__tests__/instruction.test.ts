@@ -24,6 +24,7 @@ import RequestInstruction, { RequestInstructionConfig } from '../RequestInstruct
 import PluginFileManagerServer from '@nocobase/plugin-file-manager';
 import path from 'path';
 import fs from 'fs/promises';
+import { Buffer } from 'buffer';
 
 const HOST = 'localhost';
 
@@ -510,93 +511,89 @@ describe('workflow > instructions > request', () => {
       expect(job.result.data.data).toEqual({ a: ['t1', '&=1'] });
     });
 
-    describe('contentType', () => {
-      it('contentType as "multipart/form-data" with 1 file', async () => {
-        const Plugin = app.pm.get(PluginFileManagerServer) as PluginFileManagerServer;
+    it('contentType as "multipart/form-data" with 1 file', async () => {
+      const Plugin = app.pm.get(PluginFileManagerServer) as PluginFileManagerServer;
 
-        const path1 = path.resolve(__dirname, './files/text1.txt');
-        const model1 = await Plugin.createFileRecord({
-          collectionName: 'attachments',
-          filePath: path1,
-        });
-
-        await workflow.createNode({
-          type: 'request',
-          config: {
-            url: api.URL_FORM_DATA,
-            method: 'POST',
-            data: [
-              { valueType: 'text', name: 'a', text: '{{$context.data.title}}' },
-              { valueType: 'file', name: 'file', file: model1.dataValues },
-            ],
-            contentType: 'multipart/form-data',
-          },
-        });
-        await PostRepo.create({ values: { title: 't1' } });
-        await sleep(500);
-
-        const [execution] = await workflow.getExecutions();
-        expect(execution.status).toBe(EXECUTION_STATUS.RESOLVED);
-        const [job] = await execution.getJobs();
-        expect(job.status).toBe(JOB_STATUS.RESOLVED);
-        expect(job.result.data.data).toEqual({ a: 't1' });
-
-        expect(job.result.data.files?.length).toEqual(1);
-
-        const expectedBuf = await fs.readFile(path1);
-        const gotBuf = Buffer.from(job.result.data.files[0].buffer.data);
-        expect(Buffer.compare(expectedBuf, gotBuf)).toEqual(0);
+      const path1 = path.resolve(__dirname, './files/text1.txt');
+      const model1 = await Plugin.createFileRecord({
+        collectionName: 'attachments',
+        filePath: path1,
       });
+
+      await workflow.createNode({
+        type: 'request',
+        config: {
+          url: api.URL_FORM_DATA,
+          method: 'POST',
+          data: [
+            { valueType: 'text', name: 'a', text: '{{$context.data.title}}' },
+            { valueType: 'file', name: 'file', file: model1.dataValues },
+          ],
+          contentType: 'multipart/form-data',
+        },
+      });
+      await PostRepo.create({ values: { title: 't1' } });
+      await sleep(500);
+
+      const [execution] = await workflow.getExecutions();
+      expect(execution.status).toBe(EXECUTION_STATUS.RESOLVED);
+      const [job] = await execution.getJobs();
+      expect(job.status).toBe(JOB_STATUS.RESOLVED);
+      expect(job.result.data.data).toEqual({ a: 't1' });
+
+      expect(job.result.data.files?.length).toEqual(1);
+
+      const got = Buffer.from(job.result.data.files[0].buffer.data);
+      const expected = await fs.readFile(path1);
+      expect(got).toEqual(expected);
     });
 
-    describe('contentType', () => {
-      it('contentType as "multipart/form-data" with multiple files', async () => {
-        const Plugin = app.pm.get(PluginFileManagerServer) as PluginFileManagerServer;
+    it('contentType as "multipart/form-data" with multiple files', async () => {
+      const Plugin = app.pm.get(PluginFileManagerServer) as PluginFileManagerServer;
 
-        const path1 = path.resolve(__dirname, './files/text1.txt');
-        const model1 = await Plugin.createFileRecord({
-          collectionName: 'attachments',
-          filePath: path1,
-        });
-
-        const path2 = path.resolve(__dirname, './files/text2.txt');
-        const model2 = await Plugin.createFileRecord({
-          collectionName: 'attachments',
-          filePath: path2,
-        });
-
-        await workflow.createNode({
-          type: 'request',
-          config: {
-            url: api.URL_FORM_DATA,
-            method: 'POST',
-            data: [
-              { valueType: 'text', name: 'a', text: '{{$context.data.title}}' },
-              { valueType: 'file', name: 'file', file: model1.dataValues },
-              { valueType: 'file', name: 'file', file: model2.dataValues },
-            ],
-            contentType: 'multipart/form-data',
-          },
-        });
-        await PostRepo.create({ values: { title: 't1' } });
-        await sleep(500);
-
-        const [execution] = await workflow.getExecutions();
-        expect(execution.status).toBe(EXECUTION_STATUS.RESOLVED);
-        const [job] = await execution.getJobs();
-        expect(job.status).toBe(JOB_STATUS.RESOLVED);
-        expect(job.result.data.data).toEqual({ a: 't1' });
-
-        expect(job.result.data.files?.length).toEqual(2);
-
-        const expectedBuf1 = await fs.readFile(path1);
-        const gotBuf1 = Buffer.from(job.result.data.files[0].buffer.data);
-        expect(Buffer.compare(expectedBuf1, gotBuf1)).toEqual(0);
-
-        const expectedBuf2 = await fs.readFile(path2);
-        const gotBuf2 = Buffer.from(job.result.data.files[1].buffer.data);
-        expect(Buffer.compare(expectedBuf2, gotBuf2)).toEqual(0);
+      const path1 = path.resolve(__dirname, './files/text1.txt');
+      const model1 = await Plugin.createFileRecord({
+        collectionName: 'attachments',
+        filePath: path1,
       });
+
+      const path2 = path.resolve(__dirname, './files/text2.txt');
+      const model2 = await Plugin.createFileRecord({
+        collectionName: 'attachments',
+        filePath: path2,
+      });
+
+      await workflow.createNode({
+        type: 'request',
+        config: {
+          url: api.URL_FORM_DATA,
+          method: 'POST',
+          data: [
+            { valueType: 'text', name: 'a', text: '{{$context.data.title}}' },
+            { valueType: 'file', name: 'file', file: model1.dataValues },
+            { valueType: 'file', name: 'file', file: model2.dataValues },
+          ],
+          contentType: 'multipart/form-data',
+        },
+      });
+      await PostRepo.create({ values: { title: 't1' } });
+      await sleep(500);
+
+      const [execution] = await workflow.getExecutions();
+      expect(execution.status).toBe(EXECUTION_STATUS.RESOLVED);
+      const [job] = await execution.getJobs();
+      expect(job.status).toBe(JOB_STATUS.RESOLVED);
+      expect(job.result.data.data).toEqual({ a: 't1' });
+
+      expect(job.result.data.files?.length).toEqual(2);
+
+      const got1 = Buffer.from(job.result.data.files[0].buffer.data);
+      const expected1 = await fs.readFile(path1);
+      expect(got1).toEqual(expected1);
+
+      const got2 = Buffer.from(job.result.data.files[1].buffer.data);
+      const expected2 = await fs.readFile(path2);
+      expect(got2).toEqual(expected2);
     });
   });
 
