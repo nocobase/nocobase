@@ -38,7 +38,7 @@ export type DeepPartial<T> = {
 /**
  * Defines a flow with generic model type support.
  */
-export interface FlowDefinition<TModel extends FlowModel = FlowModel> {
+export interface FlowDefinition<TFlowContext extends FlowContext = FlowContext> {
   key: string; // Unique identifier for the flow
   title?: string;
   /**
@@ -56,7 +56,7 @@ export interface FlowDefinition<TModel extends FlowModel = FlowModel> {
   on?: {
     eventName: string;
   };
-  steps: Record<string, StepDefinition<TModel>>;
+  steps: Record<string, StepDefinition<TFlowContext>>;
 }
 
 // 扩展FlowDefinition类型，添加partial标记用于部分覆盖
@@ -87,7 +87,12 @@ export type ReadonlyModelProps = Readonly<IModelComponentProps>;
 /**
  * Context object passed to handlers during flow execution.
  */
-export interface FlowContext<TModel extends FlowModel = FlowModel> {
+export interface FlowContext<
+  TModel extends FlowModel<FlowContext> = FlowModel<any>,
+  TExtra extends FlowExtraContext = FlowExtraContext,
+  TShared extends Record<string, any> = Record<string, any>,
+  TGlobals extends Record<string, any> = Record<string, any>,
+> {
   exit: () => void; // Terminate the entire flow execution
   logger: {
     info: (message: string, meta?: any) => void;
@@ -96,19 +101,19 @@ export interface FlowContext<TModel extends FlowModel = FlowModel> {
     debug: (message: string, meta?: any) => void;
   };
   stepResults: Record<string, any>; // Results from previous steps
-  shared: Record<string, any>; // Shared data within the flow (read/write)
-  globals: Record<string, any>; // Global context data (read-only)
-  extra: Record<string, any>; // Extra context passed to applyFlow (read-only)
+  shared: TShared; // Shared data within the flow (read/write)
+  globals: TGlobals; // Global context data (read-only)
+  extra: TExtra; // Extra context passed to applyFlow (read-only)
   model: TModel; // Current model instance with specific type
   app: any; // Application instance (required)
 }
 
-export type CreateSubModelOptions = CreateModelOptions | FlowModel;
+export type CreateSubModelOptions = CreateModelOptions | FlowModel<FlowContext>;
 
 /**
  * Constructor for model classes.
  */
-export type ModelConstructor<T extends FlowModel = FlowModel> = new (options: {
+export type ModelConstructor<T extends FlowModel<FlowContext> = FlowModel<FlowContext>> = new (options: {
   uid: string;
   props?: IModelComponentProps;
   stepParams?: StepParams;
@@ -120,20 +125,18 @@ export type ModelConstructor<T extends FlowModel = FlowModel> = new (options: {
 /**
  * Defines a reusable action with generic model type support.
  */
-export interface ActionDefinition<TModel extends FlowModel = FlowModel> {
+export interface ActionDefinition<TFlowContext extends FlowContext = FlowContext> {
   name: string; // Unique identifier for the action
   title?: string;
-  handler: (ctx: FlowContext<TModel>, params: any) => Promise<any> | any;
+  handler: (ctx: TFlowContext, params: any) => Promise<any> | any;
   uiSchema?: Record<string, ISchema>;
-  defaultParams?:
-    | Record<string, any>
-    | ((ctx: ParamsContext<TModel>) => Record<string, any> | Promise<Record<string, any>>);
+  defaultParams?: Record<string, any> | ((ctx: TFlowContext) => Record<string, any> | Promise<Record<string, any>>);
 }
 
 /**
  * Base interface for a step definition with generic model type support.
  */
-interface BaseStepDefinition<TModel extends FlowModel = FlowModel> {
+interface BaseStepDefinition<TFlowContext extends FlowContext = FlowContext> {
   title?: string;
   isAwait?: boolean; // Whether to await the handler, defaults to true
 }
@@ -141,12 +144,11 @@ interface BaseStepDefinition<TModel extends FlowModel = FlowModel> {
 /**
  * Step that uses a registered Action with generic model type support.
  */
-export interface ActionStepDefinition<TModel extends FlowModel = FlowModel> extends BaseStepDefinition<TModel> {
+export interface ActionStepDefinition<TFlowContext extends FlowContext = FlowContext>
+  extends BaseStepDefinition<TFlowContext> {
   use: string; // Name of the registered ActionDefinition
   uiSchema?: Record<string, ISchema>; // Optional: overrides uiSchema from ActionDefinition
-  defaultParams?:
-    | Record<string, any>
-    | ((ctx: ParamsContext<TModel>) => Record<string, any> | Promise<Record<string, any>>); // Optional: overrides/extends defaultParams from ActionDefinition
+  defaultParams?: Record<string, any> | ((ctx: TFlowContext) => Record<string, any> | Promise<Record<string, any>>); // Optional: overrides/extends defaultParams from ActionDefinition
   paramsRequired?: boolean; // Optional: whether the step params are required, will open the config dialog before adding the model
   hideInSettings?: boolean; // Optional: whether to hide the step in the settings menu
   // Cannot have its own handler
@@ -156,21 +158,20 @@ export interface ActionStepDefinition<TModel extends FlowModel = FlowModel> exte
 /**
  * Step that defines its handler inline with generic model type support.
  */
-export interface InlineStepDefinition<TModel extends FlowModel = FlowModel> extends BaseStepDefinition<TModel> {
-  handler: (ctx: FlowContext<TModel>, params: any) => Promise<any> | any;
+export interface InlineStepDefinition<TFlowContext extends FlowContext = FlowContext>
+  extends BaseStepDefinition<TFlowContext> {
+  handler: (ctx: TFlowContext, params: any) => Promise<any> | any;
   uiSchema?: Record<string, ISchema>; // Optional: uiSchema for this inline step
-  defaultParams?:
-    | Record<string, any>
-    | ((ctx: ParamsContext<TModel>) => Record<string, any> | Promise<Record<string, any>>); // Optional: defaultParams for this inline step
+  defaultParams?: Record<string, any> | ((ctx: TFlowContext) => Record<string, any> | Promise<Record<string, any>>); // Optional: defaultParams for this inline step
   paramsRequired?: boolean; // Optional: whether the step params are required, will open the config dialog before adding the model
   hideInSettings?: boolean; // Optional: whether to hide the step in the settings menu
   // Cannot use a registered action
   use?: undefined;
 }
 
-export type StepDefinition<TModel extends FlowModel = FlowModel> =
-  | ActionStepDefinition<TModel>
-  | InlineStepDefinition<TModel>;
+export type StepDefinition<TFlowContext extends FlowContext = FlowContext> =
+  | ActionStepDefinition<TFlowContext>
+  | InlineStepDefinition<TFlowContext>;
 
 /**
  * Extra context for flow execution - represents the data that will appear in ctx.extra
@@ -181,7 +182,7 @@ export type FlowExtraContext = Record<string, any>;
 /**
  * 参数解析上下文类型，用于 settings 等场景
  */
-export interface ParamsContext<TModel extends FlowModel = FlowModel> {
+export interface ParamsContext<TModel extends FlowModel<FlowContext> = FlowModel<FlowContext>> {
   model: TModel;
   globals: Record<string, any>;
   app: any;
@@ -190,7 +191,7 @@ export interface ParamsContext<TModel extends FlowModel = FlowModel> {
 /**
  * Action options for registering actions with generic model type support
  */
-export interface ActionOptions<TModel extends FlowModel = FlowModel, P = any, R = any> {
+export interface ActionOptions<TModel extends FlowModel<FlowContext> = FlowModel<FlowContext>, P = any, R = any> {
   handler: (ctx: FlowContext<TModel>, params: P) => Promise<R> | R;
   uiSchema?: Record<string, any>;
   defaultParams?: Partial<P> | ((ctx: ParamsContext<TModel>) => Partial<P> | Promise<Partial<P>>);
@@ -247,7 +248,7 @@ export interface CreateModelOptions {
   sortIndex?: number; // 排序索引
   [key: string]: any; // 允许额外的自定义选项
 }
-export interface IFlowModelRepository<T extends FlowModel = FlowModel> {
+export interface IFlowModelRepository<T extends FlowModel<FlowContext> = FlowModel<FlowContext>> {
   findOne(query: Record<string, any>): Promise<Record<string, any> | null>;
   save(model: T): Promise<Record<string, any>>;
   destroy(uid: string): Promise<boolean>;
@@ -273,11 +274,11 @@ export interface RequiredConfigStepFormDialogProps {
   dialogTitle?: string;
 }
 
-export type SubModelValue<TModel extends FlowModel = FlowModel> = TModel | TModel[];
+export type SubModelValue<TModel extends FlowModel<FlowContext> = FlowModel<FlowContext>> = TModel | TModel[];
 
 export interface DefaultStructure {
   parent?: any;
-  subModels?: Record<string, FlowModel | FlowModel[]>;
+  subModels?: Record<string, FlowModel<FlowContext> | FlowModel<FlowContext>[]>;
 }
 
 /**

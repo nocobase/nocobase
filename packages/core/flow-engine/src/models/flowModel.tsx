@@ -38,7 +38,10 @@ const modelMetas = new WeakMap<typeof FlowModel, FlowModelMeta>();
 // 使用WeakMap存储每个类的flows
 const modelFlows = new WeakMap<typeof FlowModel, Map<string, FlowDefinition>>();
 
-export class FlowModel<Structure extends { parent?: any; subModels?: any } = DefaultStructure> {
+export class FlowModel<
+  TFlowContext extends FlowContext = FlowContext,
+  Structure extends { parent?: any; subModels?: any } = DefaultStructure,
+> {
   public readonly uid: string;
   public sortIndex: number;
   public props: IModelComponentProps = {};
@@ -141,12 +144,15 @@ export class FlowModel<Structure extends { parent?: any; subModels?: any } = Def
    * @param {FlowDefinition<TModel>} [flowDefinition] 当第一个参数为流程 Key 时，此参数为流程的定义。
    * @returns {void}
    */
-  public static registerFlow<TModel extends new (...args: any[]) => FlowModel<any>>(
-    this: TModel,
-    keyOrDefinition: string | FlowDefinition<InstanceType<TModel>>,
-    flowDefinition?: Omit<FlowDefinition<InstanceType<TModel>>, 'key'> & { key?: string },
+  public static registerFlow<
+    TFlowContext extends FlowContext = FlowContext,
+    TStructure extends { parent?: any; subModels?: any } = DefaultStructure,
+  >(
+    this: FlowModel<TFlowContext, TStructure>,
+    keyOrDefinition: string | FlowDefinition<TFlowContext>,
+    flowDefinition?: Omit<FlowDefinition<TFlowContext>, 'key'> & { key?: string },
   ): void {
-    let definition: FlowDefinition<InstanceType<TModel>>;
+    let definition: FlowDefinition<TFlowContext>;
     let key: string;
 
     if (typeof keyOrDefinition === 'string' && flowDefinition) {
@@ -184,7 +190,11 @@ export class FlowModel<Structure extends { parent?: any; subModels?: any } = Def
    * @param {Omit<ExtendedFlowDefinition, 'key'>} [extendDefinition] 当第一个参数为流程 Key 时，此参数为流程的扩展定义。
    * @returns {void}
    */
-  public static extendFlow<TModel extends FlowModel = FlowModel>(
+  public static extendFlow<
+    TFlowContext extends FlowContext = FlowContext,
+    TStructure extends { parent?: any; subModels?: any } = DefaultStructure,
+  >(
+    this: FlowModel<TFlowContext, TStructure>,
     keyOrDefinition: string | ExtendedFlowDefinition,
     extendDefinition?: Omit<ExtendedFlowDefinition, 'key'>,
   ): void {
@@ -214,7 +224,7 @@ export class FlowModel<Structure extends { parent?: any; subModels?: any } = Def
       );
       // 移除patch标记，作为新流程注册
       const { patch, ...newFlowDef } = definition;
-      this.registerFlow(newFlowDef as FlowDefinition<TModel>);
+      this.registerFlow(newFlowDef as FlowDefinition<TFlowContext>);
       return;
     }
 
@@ -222,7 +232,7 @@ export class FlowModel<Structure extends { parent?: any; subModels?: any } = Def
     const mergedFlow = mergeFlowDefinitions(originalFlow, definition);
 
     // 注册合并后的流程
-    this.registerFlow(mergedFlow as FlowDefinition<TModel>);
+    this.registerFlow(mergedFlow as FlowDefinition<TFlowContext>);
   }
 
   /**
@@ -367,7 +377,7 @@ export class FlowModel<Structure extends { parent?: any; subModels?: any } = Def
     };
 
     const globalContexts = currentFlowEngine.getContext() || {};
-    const flowContext: FlowContext<this> = {
+    const flowContext: TFlowContext = {
       exit: () => {
         throw new FlowExitException(flowKey, this.uid);
       },
@@ -383,12 +393,12 @@ export class FlowModel<Structure extends { parent?: any; subModels?: any } = Def
       extra: extra || {},
       model: this,
       app: globalContexts.app || {},
-    };
+    } as any;
 
     for (const stepKey in flow.steps) {
       if (Object.prototype.hasOwnProperty.call(flow.steps, stepKey)) {
         const step: StepDefinition = flow.steps[stepKey];
-        let handler: ((ctx: FlowContext<this>, params: any) => Promise<any> | any) | undefined;
+        let handler: ((ctx: TFlowContext, params: any) => Promise<any> | any) | undefined;
         let combinedParams: Record<string, any> = {};
         let actionDefinition;
 
@@ -478,7 +488,7 @@ export class FlowModel<Structure extends { parent?: any; subModels?: any } = Def
    * @returns 新创建的 FlowModel 子类
    */
   public static extends<T extends typeof FlowModel>(this: T, flows: ExtendedFlowDefinition[] = []): T {
-    class CustomFlowModel extends (this as unknown as typeof FlowModel) {
+    class CustomFlowModel extends (this as unknown as typeof FlowModel<FlowContext>) {
       // @ts-ignore
       static name = `CustomFlowModel_${generateUid()}`;
     }
@@ -552,7 +562,7 @@ export class FlowModel<Structure extends { parent?: any; subModels?: any } = Def
     return <div {...this.props}></div>;
   }
 
-  setParent(parent: FlowModel): void {
+  setParent(parent: FlowModel<FlowContext>): void {
     if (!parent || !(parent instanceof FlowModel)) {
       throw new Error('Parent must be an instance of FlowModel.');
     }
@@ -560,8 +570,8 @@ export class FlowModel<Structure extends { parent?: any; subModels?: any } = Def
     this._options.parentId = parent.uid;
   }
 
-  addSubModel(subKey: string, options: CreateModelOptions | FlowModel) {
-    let model: FlowModel;
+  addSubModel(subKey: string, options: CreateModelOptions | FlowModel<FlowContext>) {
+    let model: FlowModel<FlowContext>;
     if (options instanceof FlowModel) {
       if (options.parent && options.parent !== this) {
         throw new Error('Sub model already has a parent.');
@@ -578,8 +588,8 @@ export class FlowModel<Structure extends { parent?: any; subModels?: any } = Def
     return model;
   }
 
-  setSubModel(subKey: string, options: CreateModelOptions | FlowModel) {
-    let model: FlowModel;
+  setSubModel(subKey: string, options: CreateModelOptions | FlowModel<FlowContext>) {
+    let model: FlowModel<FlowContext>;
     if (options instanceof FlowModel) {
       if (options.parent && options.parent !== this) {
         throw new Error('Sub model already has a parent.');
@@ -771,7 +781,7 @@ export class FlowModel<Structure extends { parent?: any; subModels?: any } = Def
     for (const subModelKey in this.subModels) {
       data.subModels = data.subModels || {};
       if (Array.isArray(this.subModels[subModelKey])) {
-        data.subModels[subModelKey] = this.subModels[subModelKey].map((model: FlowModel, index) => ({
+        data.subModels[subModelKey] = this.subModels[subModelKey].map((model: FlowModel<FlowContext>, index) => ({
           ...model.serialize(),
           sortIndex: index,
         }));
@@ -783,6 +793,8 @@ export class FlowModel<Structure extends { parent?: any; subModels?: any } = Def
   }
 }
 
-export function defineFlow<TModel extends FlowModel = FlowModel>(definition: FlowDefinition): FlowDefinition<TModel> {
+export function defineFlow<TModel extends FlowModel<FlowContext> = FlowModel<FlowContext>>(
+  definition: FlowDefinition,
+): FlowDefinition<TModel> {
   return definition as FlowDefinition<TModel>;
 }

@@ -119,6 +119,6 @@ export class FlowExitException extends Error {
   }
 }
 
-export function defineAction(options: ActionDefinition) {
+export function defineAction<TFlowContext extends FlowContext>(options: ActionDefinition<TFlowContext>) {
   return options;
 }

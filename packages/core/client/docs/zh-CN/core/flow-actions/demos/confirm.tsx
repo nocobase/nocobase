@@ -1,4 +1,3 @@
-import * as icons from '@ant-design/icons';
 import { Plugin } from '@nocobase/client';
 import { defineAction, defineFlow, FlowModel, FlowModelRenderer } from '@nocobase/flow-engine';
 import { Button } from 'antd';
