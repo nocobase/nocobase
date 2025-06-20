@@ -1,0 +1,1 @@
+export const ALLOW_MAX_COLLECTIONS_COUNT = 5000;
