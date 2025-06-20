@@ -7,24 +7,23 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import type { ButtonProps } from 'antd/es/button';
-import { RecordActionModel } from '../base/ActionModel';
-import { openModeAction } from '../../actions/openModeAction';
+import type { ButtonProps } from 'antd';
+import { GlobalActionModel } from '../base/ActionModel';
+import { openLinkAction } from '../../actions/openLinkAction';
 
-export class ViewActionModel extends RecordActionModel {
+export class LinkGlobalActionModel extends GlobalActionModel {
   defaultProps: ButtonProps = {
-    type: 'link',
-    title: 'View',
+    title: 'Link',
   };
 }
 
-ViewActionModel.registerFlow({
+LinkGlobalActionModel.registerFlow({
   key: 'handleClick',
   title: '点击事件',
   on: {
     eventName: 'click',
   },
   steps: {
-    open: openModeAction,
+    navigate: openLinkAction,
   },
 });

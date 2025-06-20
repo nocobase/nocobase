@@ -8,63 +8,25 @@
  */
 
 import { ButtonProps } from 'antd';
-import React from 'react';
-import { FlowPage } from '../../FlowPage';
 import { GlobalActionModel } from '../base/ActionModel';
+import { openModeAction } from '../../actions/openModeAction';
 
 export class AddNewActionModel extends GlobalActionModel {
   defaultProps: ButtonProps = {
     type: 'primary',
-    children: 'Add new',
+    title: 'Add new',
+    icon: 'PlusOutlined',
   };
 }
 
 AddNewActionModel.registerFlow({
   sort: 200,
-  title: '事件',
-  key: 'event1',
+  title: '点击事件',
+  key: 'handleClick',
   on: {
     eventName: 'click',
   },
   steps: {
-    step1: {
-      title: '弹窗配置',
-      uiSchema: {
-        width: {
-          type: 'number',
-          title: '宽度',
-          'x-decorator': 'FormItem',
-          'x-component': 'NumberPicker',
-          'x-component-props': {
-            placeholder: '请输入宽度',
-          },
-        },
-      },
-      defaultParams: {
-        width: 800,
-      },
-      handler(ctx, params) {
-        // eslint-disable-next-line prefer-const
-        let currentDrawer: any;
-
-        function DrawerContent() {
-          return (
-            <div>
-              <FlowPage
-                parentId={ctx.model.uid}
-                sharedContext={{ parentBlockModel: ctx.shared.currentBlockModel, currentDrawer }}
-              />
-            </div>
-          );
-        }
-
-        currentDrawer = ctx.globals.drawer.open({
-          // title: '命令式 Drawer',
-          header: null,
-          width: params.width,
-          content: <DrawerContent />,
-        });
-      },
-    },
+    open: openModeAction,
   },
 });

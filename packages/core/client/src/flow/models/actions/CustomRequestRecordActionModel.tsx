@@ -13,9 +13,9 @@ import { BlocksSelector } from '../../../schema-component/antd/action/Action.Des
 import { useAfterSuccessOptions } from '../../../schema-component/antd/action/hooks/useGetAfterSuccessVariablesOptions';
 import { refreshOnCompleteAction } from '../../actions/refreshOnCompleteAction';
 import { secondaryConfirmationAction } from '../../actions/secondaryConfirmationAction';
-import { GlobalActionModel } from '../base/ActionModel';
+import { RecordActionModel } from '../base/ActionModel';
 
-export class CustomRequestActionModel extends GlobalActionModel {
+export class CustomRequestRecordActionModel extends RecordActionModel {
   defaultProps: ButtonProps = {
     type: 'link',
     title: 'Custom request',
@@ -35,7 +35,7 @@ const useVariableProps = () => {
   };
 };
 
-CustomRequestActionModel.registerFlow({
+CustomRequestRecordActionModel.registerFlow({
   key: 'handleClick',
   title: '点击事件',
   on: {

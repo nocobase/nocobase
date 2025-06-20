@@ -9,22 +9,22 @@
 
 import type { ButtonProps } from 'antd';
 import { RecordActionModel } from '../base/ActionModel';
+import { openLinkAction } from '../../actions/openLinkAction';
 
-export class LinkActionModel extends RecordActionModel {
+export class LinkRecordActionModel extends RecordActionModel {
   defaultProps: ButtonProps = {
     type: 'link',
     children: 'Link',
   };
 }
 
-LinkActionModel.registerFlow({
-  key: 'event1',
+LinkRecordActionModel.registerFlow({
+  key: 'handleClick',
+  title: '点击事件',
   on: {
     eventName: 'click',
   },
   steps: {
-    step1: {
-      handler(ctx, params) {},
-    },
+    navigate: openLinkAction,
   },
 });
