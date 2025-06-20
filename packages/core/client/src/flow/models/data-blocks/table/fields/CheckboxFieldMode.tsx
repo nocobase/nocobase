@@ -10,7 +10,7 @@
 import { CheckOutlined, CloseOutlined } from '@ant-design/icons';
 import { Checkbox } from 'antd';
 import React, { FC } from 'react';
-import { TableColumnModel } from '../TableColumnModel';
+import { TableFieldModel } from '../TableFieldModel';
 
 interface CheckboxReadPrettyProps {
   showUnchecked?: boolean;
@@ -24,17 +24,10 @@ const ReadPretty: FC<CheckboxReadPrettyProps> = (props) => {
   return props.showUnchecked ? <CloseOutlined style={{ color: '#ff4d4f' }} /> : <Checkbox disabled />;
 };
 
-export class CheckboxColumnFieldModel extends TableColumnModel {
+export class CheckboxColumnFieldModel extends TableFieldModel {
   public static readonly supportedFieldInterfaces = ['checkbox'];
 
-  render() {
-    return (value, record, index) => {
-      return (
-        <>
-          {<ReadPretty value={value} {...this.getComponentProps()} />}
-          {this.renderQuickEditButton(record)}
-        </>
-      );
-    };
+  public render() {
+    return <ReadPretty value={this.field.value} {...this.getComponentProps()} />;
   }
 }

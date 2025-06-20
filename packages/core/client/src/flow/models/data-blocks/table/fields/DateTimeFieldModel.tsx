@@ -13,7 +13,7 @@ import { getDefaultFormat, str2moment } from '@nocobase/utils/client';
 import cls from 'classnames';
 import dayjs from 'dayjs';
 import React from 'react';
-import { TableColumnModel } from '../TableColumnModel';
+import { TableFieldModel } from '../TableFieldModel';
 
 const ReadPretty = (props: any) => {
   const { value, picker = 'date' } = props;
@@ -29,7 +29,7 @@ const ReadPretty = (props: any) => {
   };
   return <div className={cls(prefixCls, props.className)}>{getLabels()}</div>;
 };
-export class DateTimeColumnFieldModel extends TableColumnModel {
+export class DateTimeColumnFieldModel extends TableFieldModel {
   public static readonly supportedFieldInterfaces = [
     'date',
     'datetimeNoTz',
@@ -38,15 +38,8 @@ export class DateTimeColumnFieldModel extends TableColumnModel {
     'updatedAt',
     'unixTimestamp',
   ];
-  render() {
-    return (value, record, index) => {
-      return (
-        <>
-          <ReadPretty value={value} {...this.getComponentProps()} />
-          {this.renderQuickEditButton(record)}
-        </>
-      );
-    };
+  public render() {
+    return <ReadPretty value={this.field.value} {...this.getComponentProps()} />;
   }
 }
 

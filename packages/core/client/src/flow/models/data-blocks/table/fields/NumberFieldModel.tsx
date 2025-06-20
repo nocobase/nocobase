@@ -11,20 +11,13 @@ import { useForm } from '@formily/react';
 import { Select } from 'antd';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { TableColumnModel } from '../TableColumnModel';
+import { TableFieldModel } from '../TableFieldModel';
 import { InputNumberReadPretty } from '../components/InputNumberReadPretty';
 
-export class NumberColumnFieldModel extends TableColumnModel {
+export class NumberColumnFieldModel extends TableFieldModel {
   public static readonly supportedFieldInterfaces = ['number', 'integer'];
-  render() {
-    return (value, record, index) => {
-      return (
-        <>
-          <InputNumberReadPretty value={value} {...this.props.componentProps} />
-          {this.renderQuickEditButton(record)}
-        </>
-      );
-    };
+  public render() {
+    return <InputNumberReadPretty value={this.field.value} />;
   }
 }
 const UnitConversion = () => {
@@ -46,7 +39,7 @@ const UnitConversion = () => {
 };
 
 NumberColumnFieldModel.registerFlow({
-  key: 'format',
+  key: 'numberFormat',
   sort: 100,
   title: 'Specific properties',
   auto: true,
@@ -136,7 +129,7 @@ NumberColumnFieldModel.registerFlow({
       },
       defaultParams: (ctx) => {
         const { formatStyle, unitConversion, unitConversionType, separator, step, addonBefore, addonAfter } =
-          ctx.model.getProps().componentProps;
+          ctx.model.getComponentProps();
         const { step: prescition } = ctx.model.collectionField?.getComponentProps() || {};
         return {
           formatStyle: formatStyle || 'normal',

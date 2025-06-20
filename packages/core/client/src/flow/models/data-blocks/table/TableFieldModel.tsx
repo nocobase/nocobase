@@ -19,18 +19,21 @@ class Field {
   resource;
   index: number;
   path: string;
-  componentProps: ComponentProps;
 
   constructor(resource, index, path) {
     this.resource = resource;
     this.index = index;
     this.path = path;
-    this.componentProps = {};
   }
 
   get value() {
     return this.resource.getCell(this.index, this.path);
   }
+}
+
+export class TableFieldModel extends FieldModel {
+  field: Field;
+  componentProps: ComponentProps;
   setComponentProps(componentProps: ComponentProps): void {
     this.componentProps = {
       ...this.componentProps,
@@ -41,10 +44,6 @@ class Field {
   getComponentProps(): ComponentProps {
     return this.componentProps;
   }
-}
-
-export class TableFieldModel extends FieldModel {
-  field: Field;
   public render() {
     return <div>{this.field.value}</div>;
   }
@@ -65,9 +64,9 @@ TableFieldModel.registerFlow({
           params.fieldPath.split('.').pop(),
         );
         if (collectionField.enum.length) {
-          ctx.model.field.setComponentProps({ dataSource: collectionField.enum });
+          ctx.model.setComponentProps({ dataSource: collectionField.enum });
         }
-        ctx.model.field.setComponentProps(collectionField.getComponentProps());
+        ctx.model.setComponentProps(collectionField.getComponentProps());
       },
     },
   },

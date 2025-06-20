@@ -10,8 +10,8 @@
 import { isNum } from '@formily/shared';
 import * as math from 'mathjs';
 import React from 'react';
-import { TableColumnModel } from '../TableColumnModel';
 import { InputNumberReadPretty } from '../components/InputNumberReadPretty';
+import { TableFieldModel } from '../TableFieldModel';
 
 const isNumberLike = (index: any): index is number => isNum(index) || /^-?\d+(\.\d+)?$/.test(index);
 
@@ -21,17 +21,10 @@ const toValue = (value: any, callback: (v: number) => number) => {
   }
   return null;
 };
-export class PercentColumnFieldModel extends TableColumnModel {
+export class PercentColumnFieldModel extends TableFieldModel {
   public static readonly supportedFieldInterfaces = ['percent'];
-  render() {
-    return (value, record, index) => {
-      const val = toValue(value, (v) => v * 100);
-      return (
-        <>
-          <InputNumberReadPretty value={val} addonAfter="%" />
-          {this.renderQuickEditButton(record)}
-        </>
-      );
-    };
+  public render() {
+    const val = toValue(this.field.value, (v) => v * 100);
+    return <InputNumberReadPretty value={val} addonAfter="%" />;
   }
 }

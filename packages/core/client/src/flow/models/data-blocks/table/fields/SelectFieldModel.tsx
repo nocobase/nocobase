@@ -22,7 +22,7 @@ export class SelectColumnFieldModel extends TableFieldModel {
   public static readonly supportedFieldInterfaces = ['select', 'multipleSelect', 'radioGroup', 'checkboxGroup'];
 
   public render() {
-    const { dataSource } = this.field.componentProps;
+    const { dataSource } = this.componentProps;
     const value = this.field.value;
     const currentOptions = getCurrentOptions(value, dataSource, fieldNames);
     const content =

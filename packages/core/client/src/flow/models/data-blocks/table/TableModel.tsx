@@ -55,7 +55,7 @@ export class TableModel extends DataBlockModel<S> {
             },
             subModels: {
               field: {
-                use: 'SelectColumnFieldModel',
+                use: 'TableFieldModel',
                 stepParams: {
                   default: {
                     step1: {
@@ -142,6 +142,9 @@ export class TableModel extends DataBlockModel<S> {
             this.resource.setPage(pagination.current);
             this.resource.setPageSize(pagination.pageSize);
             this.resource.refresh();
+          }}
+          scroll={{
+            x: 'max-content',
           }}
         />
       </Card>
