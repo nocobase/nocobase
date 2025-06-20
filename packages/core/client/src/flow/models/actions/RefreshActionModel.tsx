@@ -9,7 +9,6 @@
 
 import { ButtonProps } from 'antd';
 import { GlobalActionModel } from '../base/ActionModel';
-import { secondaryConfirmationAction } from '../../actions/secondaryConfirmationAction';
 
 export class RefreshActionModel extends GlobalActionModel {
   defaultProps: ButtonProps = {
@@ -25,15 +24,14 @@ RefreshActionModel.registerFlow({
     eventName: 'click',
   },
   steps: {
-    secondaryConfirmationAction,
     refresh: {
       async handler(ctx, params) {
-        if (!ctx.shared?.currentBlockModel?.resource) {
+        const currentResource = ctx.shared?.currentBlockModel?.resource;
+        if (!currentResource) {
           ctx.globals.message.error('No resource selected for refresh.');
           return;
         }
-        const currentBlockModel = ctx.shared.currentBlockModel;
-        await currentBlockModel.resource.refresh();
+        await currentResource.refresh();
       },
     },
   },

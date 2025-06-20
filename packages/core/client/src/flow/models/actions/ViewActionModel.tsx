@@ -8,7 +8,6 @@
  */
 
 import type { ButtonProps } from 'antd/es/button';
-import { openModeAction } from '../../actions/openModeAction';
 import { RecordActionModel } from '../base/ActionModel';
 
 export class ViewActionModel extends RecordActionModel {

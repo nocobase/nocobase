@@ -7,12 +7,12 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Collection, DefaultStructure, FlowModel, FlowResource } from '@nocobase/flow-engine';
+import { APIResource, Collection, DefaultStructure, FlowModel } from '@nocobase/flow-engine';
 
 export class BlockModel<T = DefaultStructure> extends FlowModel<T> {}
 
 export class DataBlockModel<T = DefaultStructure> extends BlockModel<T> {
-  resource: FlowResource;
+  resource: APIResource;
   collection: Collection;
 }
 

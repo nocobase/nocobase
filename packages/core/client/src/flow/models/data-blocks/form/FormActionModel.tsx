@@ -9,6 +9,8 @@
 
 import { ButtonProps } from 'antd';
 import { ActionModel } from '../../base/ActionModel';
+import { DataBlockModel } from '../../base/BlockModel';
+import { FormModel } from './FormModel';
 
 export class FormActionModel extends ActionModel {}
 
@@ -32,14 +34,15 @@ FormSubmitActionModel.registerFlow({
           ctx.globals.message.error('No resource selected for submission.');
           return;
         }
-        const currentBlockModel = ctx.shared.currentBlockModel;
-        const currentResource = ctx.shared.currentBlockModel.resource;
+        const currentBlockModel = ctx.shared.currentBlockModel as FormModel;
         await currentBlockModel.form.submit();
         const values = currentBlockModel.form.values;
         await currentBlockModel.resource.save(values);
         await currentBlockModel.form.reset();
-        // currentResource.refresh();
-        ctx.shared.parentBlockModel?.resource?.refresh();
+        const parentBlockModel = ctx.shared.parentBlockModel as DataBlockModel;
+        if (parentBlockModel) {
+          parentBlockModel.resource.refresh();
+        }
         if (ctx.shared.currentDrawer) {
           ctx.shared.currentDrawer.destroy();
         }
