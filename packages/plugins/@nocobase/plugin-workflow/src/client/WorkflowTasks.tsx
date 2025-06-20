@@ -204,11 +204,9 @@ export function WorkflowTasks() {
   const compile = useCompile();
   const { setTitle } = useDocumentTitle();
   const navigate = useNavigate();
-  const apiClient = useAPIClient();
   const { taskType, status = TASK_STATUS.PENDING, popupId } = useParams();
   const { token } = useToken();
   const [currentRecord, setCurrentRecord] = useState<any>(null);
-
   const items = useTaskTypeItems();
 
   const { title, collection, action = 'list', useActionParams, Item, Detail } = useCurrentTaskType();
@@ -227,21 +225,9 @@ export function WorkflowTasks() {
 
   useEffect(() => {
     if (popupId && !currentRecord) {
-      apiClient
-        .resource(collection)
-        .get({
-          filterByTk: popupId,
-        })
-        .then((res) => {
-          if (res.data?.data) {
-            setCurrentRecord(res.data.data);
-          }
-        })
-        .catch((err) => {
-          console.error(err);
-        });
+      setCurrentRecord({ id: popupId });
     }
-  }, [popupId, collection, currentRecord, apiClient]);
+  }, [popupId, currentRecord]);
 
   const typeKey = taskType ?? items[0].key;
 
