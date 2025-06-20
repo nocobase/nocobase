@@ -9,6 +9,7 @@
 
 export * from './AddNewActionModel';
 export * from './BulkDeleteActionModel';
+export * from './BulkEditActionModel';
 export * from './CustomRequestRecordActionModel';
 export * from './CustomRequestGlobalActionModel';
 export * from './DeleteActionModel';
