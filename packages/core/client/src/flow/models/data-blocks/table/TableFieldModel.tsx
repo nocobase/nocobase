@@ -32,7 +32,13 @@ class Field {
 export class TableFieldModel extends FieldModel {
   field: Field;
   public render() {
-    return <div>{this.field.value}</div>;
+    return (
+      <div>
+        {this.props.prefix}
+        {this.field.value}
+        {this.props.suffix}
+      </div>
+    );
   }
 }
 
@@ -50,6 +56,32 @@ TableFieldModel.registerFlow({
           ctx.extra.index,
           params.fieldPath.split('.').pop(),
         );
+      },
+    },
+    step2: {
+      title: 'Edit Title',
+      uiSchema: {
+        prefix: {
+          'x-component': 'Input',
+          'x-decorator': 'FormItem',
+          'x-component-props': {
+            placeholder: 'Prefix',
+          },
+        },
+        suffix: {
+          'x-component': 'Input',
+          'x-decorator': 'FormItem',
+          'x-component-props': {
+            placeholder: 'Suffix',
+          },
+        },
+      },
+      handler(ctx, params) {
+        // if (!ctx.model.field) {
+        //   return;
+        // }
+        // ctx.model.setProps('prefix', params.prefix);
+        // ctx.model.setProps('suffix', params.suffix);
       },
     },
   },

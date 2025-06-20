@@ -21,12 +21,13 @@ import { TableFieldModel } from './TableFieldModel';
 const TableField = observer<any>(({ record, value, model, index }) => {
   return (
     <>
-      {model.mapSubModels('field', (action: TableFieldModel) => {
-        const fork = action.createFork({}, `${index}`);
+      {model.mapSubModels('field', (field: TableFieldModel) => {
+        const fork = field.createFork({}, `${index}`);
         return (
           <FlowModelRenderer
-            key={fork.uid}
-            model={fork}
+            key={field.uid}
+            model={field}
+            showFlowSettings
             sharedContext={{ index, value, record }}
             extraContext={{ index, value, record }}
           />
@@ -38,6 +39,10 @@ const TableField = observer<any>(({ record, value, model, index }) => {
 
 export class TableColumnModel extends FieldModel {
   static readonly supportedFieldInterfaces: SupportedFieldInterfaces = '*';
+
+  get field() {
+    return this.subModels.field as TableFieldModel;
+  }
 
   getColumnProps(): TableColumnProps {
     return {
@@ -130,8 +135,36 @@ TableColumnModel.registerFlow({
   key: 'default',
   auto: true,
   steps: {
-    step1: {
+    step2: {
+      title: 'Edit Title',
+      uiSchema: {
+        prefix: {
+          'x-component': 'Input',
+          'x-decorator': 'FormItem',
+          'x-component-props': {
+            placeholder: 'Prefix',
+          },
+        },
+        suffix: {
+          'x-component': 'Input',
+          'x-decorator': 'FormItem',
+          'x-component-props': {
+            placeholder: 'Suffix',
+          },
+        },
+      },
       handler(ctx, params) {
+        console.log('ctx.model.field', ctx.model.subModels);
+        if (!ctx.model.field) {
+          return;
+        }
+        ctx.model.setProps('prefix', params.prefix);
+        ctx.model.field.setProps('prefix', params.prefix);
+        ctx.model.field.setProps('suffix', params.suffix);
+      },
+    },
+    step1: {
+      async handler(ctx, params) {
         if (!params.fieldPath) {
           return;
         }
@@ -143,6 +176,7 @@ TableColumnModel.registerFlow({
         ctx.model.fieldPath = params.fieldPath;
         ctx.model.setProps('title', field.title);
         ctx.model.setProps('dataIndex', field.name);
+        // await ctx.model.applySubModelsAutoFlows('field');
       },
     },
   },
