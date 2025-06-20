@@ -27,6 +27,8 @@ const TableField = observer<any>(({ record, value, model, index }) => {
           <FlowModelRenderer
             key={fork.uid}
             model={fork}
+            showFlowSettings
+            hideRemoveInSettings
             sharedContext={{ index, value, record }}
             extraContext={{ index, value, record }}
           />
