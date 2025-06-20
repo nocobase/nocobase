@@ -99,7 +99,7 @@ async function request(config: RequestInstructionConfig, app: Application) {
           continue;
         }
 
-        console.error('Invalid value type');
+        throw new Error(`Invalid value type: ${JSON.stringify(record)}`);
       }
 
       return form;
