@@ -45,13 +45,17 @@ export class TableAssociationSelectFieldModel extends TableFieldModel {
     if (Array.isArray(value)) {
       return (
         <>
-          {value.map((v, idx) => (
-            <FlowModelRenderer
-              key={idx}
-              model={model}
-              sharedContext={{ ...this.ctx.shared, value: v?.[fieldNames.label] }}
-            />
-          ))}
+          {value.map((v, idx) => {
+            const mol = model.createFork({}, { index: idx });
+            console.log(v?.[fieldNames.label]);
+            return (
+              <FlowModelRenderer
+                key={idx}
+                model={mol}
+                sharedContext={{ ...this.ctx.shared, value: v?.[fieldNames.label] }}
+              />
+            );
+          })}
         </>
       );
     }
