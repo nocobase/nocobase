@@ -92,7 +92,7 @@ export function AddButton(props: AddButtonProps) {
           items: groups,
           onClick,
         }}
-        disabled={executed}
+        disabled={Boolean(executed)}
         overlayClassName={css`
           .ant-dropdown-menu-root {
             max-height: 30em;

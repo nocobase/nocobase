@@ -184,7 +184,7 @@ export const TriggerConfig = () => {
     const values = cloneDeep(workflow.config);
     return createForm({
       initialValues: values,
-      disabled: executed,
+      disabled: Boolean(executed),
     });
   }, [workflow]);
 
@@ -285,7 +285,7 @@ export const TriggerConfig = () => {
           onChange={(ev) => setEditingTitle(ev.target.value)}
           onBlur={(ev) => onChangeTitle(ev.target.value)}
           autoSize
-          disabled={executed}
+          disabled={Boolean(executed)}
         />
       </div>
       <ActionContextProvider
