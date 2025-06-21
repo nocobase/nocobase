@@ -77,6 +77,7 @@ function responseSuccess(response, onlyData = false) {
         headers: response.headers,
         config: response.config,
         data: response.data,
+        dataValue: response.data.data,
       };
 }
 

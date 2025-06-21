@@ -371,6 +371,8 @@ export default class extends Instruction {
     const dataLabel = useLang('Data');
     // eslint-disable-next-line react-hooks/rules-of-hooks
     const headersLabel = useLang('Response headers');
+
+    const dataValue = useLang('Response Body dataValue');
     return {
       [defaultFieldNames.value]: key,
       [defaultFieldNames.label]: title,
@@ -389,6 +391,10 @@ export default class extends Instruction {
               [defaultFieldNames.value]: 'headers',
               [defaultFieldNames.label]: headersLabel,
             },
+          {
+            [defaultFieldNames.value]: 'dataValue',
+            [defaultFieldNames.label]: dataValue,
+          },
           ],
     };
   }
