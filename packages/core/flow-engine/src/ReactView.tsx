@@ -1,0 +1,55 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
+import { ConfigProvider } from 'antd';
+import React from 'react';
+import { Root, createRoot } from 'react-dom/client';
+import { FlowEngine } from './flowEngine';
+import { FlowEngineProvider } from './provider';
+
+function Provider({ config, engine, children }) {
+  return (
+    <FlowEngineProvider engine={engine}>
+      <ConfigProvider {...config}>{children}</ConfigProvider>
+    </FlowEngineProvider>
+  );
+}
+
+export class ReactView {
+  constructor(private flowEngine: FlowEngine) {}
+
+  render(children: React.ReactNode | ((root: Root) => React.ReactNode), options: any = {}) {
+    const container = document.createElement('span');
+    const { onRendered } = options;
+    let root: Root;
+
+    const renderContent = (root: Root) => {
+      const content = typeof children === 'function' ? (children as (root: Root) => React.ReactNode)(root) : children;
+      return (
+        <Provider engine={this.flowEngine} config={this.flowEngine.context['antdConfig']}>
+          {content}
+        </Provider>
+      );
+    };
+
+    if (onRendered) {
+      onRendered(() => {
+        root = createRoot(container);
+        root.render(renderContent(root));
+      });
+    } else {
+      root = createRoot(container);
+      root.render(renderContent(root));
+    }
+
+    (container as any)._reactRoot = root;
+
+    return container;
+  }
+}

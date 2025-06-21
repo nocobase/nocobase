@@ -301,6 +301,7 @@ export interface FlowModelOptions<Structure extends { parent?: any; subModels?: 
 export interface FlowModelMeta {
   title: string;
   group?: string;
+  requiresDataSource?: boolean; // 是否需要数据源
   defaultOptions?: Record<string, any>;
   icon?: string;
   // uniqueSub?: boolean;

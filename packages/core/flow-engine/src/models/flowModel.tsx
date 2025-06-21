@@ -102,6 +102,10 @@ export class FlowModel<Structure extends { parent?: any; subModels?: any } = Def
     return this._options.async || false;
   }
 
+  get reactView() {
+    return this.flowEngine.reactView;
+  }
+
   static get meta() {
     return modelMetas.get(this);
   }

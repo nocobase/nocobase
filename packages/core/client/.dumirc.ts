@@ -10,6 +10,7 @@ console.log('process.env.DOC_LANG', lang);
 
 export default defineConfig({
   hash: true,
+  mfsu:false,
   alias: {
     ...umiConfig.alias,
   },

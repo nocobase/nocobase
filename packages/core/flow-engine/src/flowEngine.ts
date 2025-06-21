@@ -9,6 +9,7 @@
 import { observable } from '@formily/reactive';
 import { FlowSettings } from './flowSettings';
 import { FlowModel } from './models';
+import { ReactView } from './ReactView';
 import {
   ActionDefinition,
   ActionOptions,
@@ -38,6 +39,13 @@ export class FlowEngine {
   context: Record<string, any> = {};
   private modelRepository: IFlowModelRepository | null = null;
   private _applyFlowCache = new Map<string, ApplyFlowCacheEntry>();
+
+  reactView: ReactView;
+
+  constructor() {
+    this.reactView = new ReactView(this);
+  }
+  // 注册默认的 FlowModel
 
   setModelRepository(modelRepository: IFlowModelRepository) {
     if (this.modelRepository) {
