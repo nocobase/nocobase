@@ -83,8 +83,8 @@ NocoBase 支持三种安装方式：
 - [阿里云](https://computenest.console.aliyun.com/service/instance/create/default?type=user&ServiceName=NocoBase%20%E7%A4%BE%E5%8C%BA%E7%89%88)
 
 ## 我自己添加的 整理本地安装部署
-参考https://docs-cn.nocobase.com/welcome/getting-started/installation/git-clone
-> yarn install --frozen-lockfile
+参考 https://docs-cn.nocobase.com/welcome/getting-started/installation/git-clone  
+> yarn install --frozen-lockfile  
 
 安装 NocoBase
 > yarn nocobase install --lang=zh-CN
