@@ -146,6 +146,19 @@ export class FileCollectionTemplate extends CollectionTemplate {
         deletable: false,
         defaultValue: {},
       },
+      {
+        type: 'uuid',
+        name: 'uuid',
+        unique: true,
+        deletable: false,
+        interface: 'uuid',
+        uiSchema: {
+          type: 'string',
+          title: `{{t("UUID", { ns: "${NAMESPACE}" })}}`,
+          'x-component': 'Input',
+          'x-read-pretty': true,
+        },
+      },
     ],
   };
   presetFieldsDisabled = true;
