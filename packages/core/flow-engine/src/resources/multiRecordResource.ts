@@ -138,5 +138,6 @@ export class MultiRecordResource<TDataItem = any> extends BaseRecordResource<TDa
     if (meta?.pageSize) {
       this.setPageSize(meta.pageSize);
     }
+    this.emit('refresh');
   }
 }

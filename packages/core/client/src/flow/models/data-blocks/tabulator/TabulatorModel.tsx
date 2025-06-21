@@ -30,7 +30,7 @@ import { ActionModel } from '../../base/ActionModel';
 import { DataBlockModel } from '../../base/BlockModel';
 import { TableFieldModel } from '../table/fields';
 import { AntdInputEditor } from './AntdInputEditor';
-import TabulatorTable from './TabulatorTable';
+import './tabulator.css';
 
 type S = {
   subModels: {
@@ -103,7 +103,13 @@ const Columns = observer<any>(({ record, model, index }) => {
       {model.mapSubModels('actions', (action: ActionModel) => {
         const fork = action.createFork({}, `${index}`);
         return (
-          <FlowModelRenderer showFlowSettings key={fork.uid} model={fork} extraContext={{ currentRecord: record }} />
+          <FlowModelRenderer
+            fallback={<Skeleton.Button size="small" />}
+            showFlowSettings
+            key={fork.uid}
+            model={fork}
+            extraContext={{ currentRecord: record }}
+          />
         );
       })}
     </Space>
@@ -143,6 +149,8 @@ export class TabulatorTableActionsColumnModel extends TabulatorColumnModel {
 
 export class TabulatorModel extends DataBlockModel<S> {
   declare resource: MultiRecordResource;
+  tabulator: Tabulator;
+  tabulatorRef: React.RefObject<HTMLDivElement> = React.createRef();
 
   getColumns() {
     return this.mapSubModels('columns', (column) => {
@@ -206,35 +214,7 @@ export class TabulatorModel extends DataBlockModel<S> {
             <Button icon={<SettingOutlined />}>Configure actions</Button>
           </AddActionButton>
         </Space>
-        <TabulatorTable
-          {...{
-            height: '75vh',
-            renderHorizontal: 'virtual',
-            // selectableRows: true,
-            data: this.resource.getData(),
-            movableColumns: true,
-            movableRows: true,
-            rowFormatter: (row) => {
-              row.getElement().style.height = '40px';
-            },
-            columns: [
-              {
-                title: '',
-                titleFormatter: 'rowSelection', // 复选框全选按钮
-                formatter: 'rowSelection', // 复选框单选按钮
-                hozAlign: 'center',
-                headerHozAlign: 'center',
-                headerSort: false,
-                width: 50,
-                frozen: true,
-                titleFormatterParams: { rowRange: 'active' }, // 只全选当前页数据
-              },
-              ...this.getColumns(),
-            ],
-            layout: 'fitColumns',
-            autoResize: true,
-          }}
-        />
+        <div ref={this.tabulatorRef} />
         <Pagination
           style={{ marginTop: 16 }}
           align="end"
@@ -243,10 +223,10 @@ export class TabulatorModel extends DataBlockModel<S> {
             pageSize: this.resource.getMeta('pageSize'),
             total: this.resource.getMeta('count'),
           }}
-          onChange={(page, pageSize) => {
+          onChange={async (page, pageSize) => {
             this.resource.setPage(page);
             this.resource.setPageSize(pageSize);
-            this.resource.refresh();
+            await this.resource.refresh();
           }}
         />
       </Card>
@@ -295,6 +275,46 @@ TabulatorModel.registerFlow({
         ctx.model.resource = resource;
         await ctx.model.applySubModelsAutoFlows('columns', null, { currentBlockModel: ctx.model });
         await resource.refresh();
+        resource.on('refresh', () => {
+          if (ctx.model.tabulator) {
+            ctx.model.tabulator.setData(resource.getData()); // 深拷贝数据，避免 Tabulator 内部引用问题
+          }
+        });
+      },
+    },
+    step2: {
+      handler(ctx, params) {
+        ctx.reactView.onRefReady(ctx.model.tabulatorRef, (el) => {
+          ctx.model.tabulator = new Tabulator(el, {
+            layout: 'fitColumns', // fit columns to width of table (optional)
+            height: '75vh',
+            renderHorizontal: 'virtual',
+            movableColumns: true,
+            movableRows: true,
+            rowFormatter: (row) => {
+              row.getElement().style.height = '40px';
+            },
+            data: ctx.model.resource.getData(),
+            columns: [
+              {
+                title: '',
+                titleFormatter: 'rowSelection', // 复选框全选按钮
+                formatter: 'rowSelection', // 复选框单选按钮
+                hozAlign: 'center',
+                headerHozAlign: 'center',
+                headerSort: false,
+                width: 50,
+                frozen: true,
+                titleFormatterParams: { rowRange: 'active' }, // 只全选当前页数据
+              },
+              ...ctx.model.getColumns(),
+            ],
+            autoResize: true,
+          });
+          ctx.model.tabulator.on('rowSelectionChanged', (data, rows) => {
+            ctx.model.resource.setSelectedRows(data);
+          });
+        });
       },
     },
   },

@@ -494,7 +494,7 @@
       outline: none;
       z-index: 20;
       overflow: inherit;
-      padding: 0; }
+      padding: 6px 0; }
       .tabulator-row .tabulator-cell.tabulator-editing input, .tabulator-row .tabulator-cell.tabulator-editing select {
         /* border: 1px;
         background: transparent;

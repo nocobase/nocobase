@@ -381,6 +381,7 @@ export class FlowModel<Structure extends { parent?: any; subModels?: any } = Def
         error: createLogger('ERROR'),
         debug: createLogger('DEBUG'),
       },
+      reactView: this.reactView,
       stepResults,
       shared: this.getSharedContext(),
       globals: globalContexts,

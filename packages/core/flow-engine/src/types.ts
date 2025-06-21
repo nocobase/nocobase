@@ -10,6 +10,7 @@
 import { ISchema } from '@formily/json-schema';
 import type { FlowEngine } from './flowEngine';
 import type { FlowModel } from './models';
+import { ReactView } from './ReactView';
 
 /**
  * 工具类型：如果 T 是数组类型，则提取数组元素类型；否则返回 T 本身
@@ -95,6 +96,7 @@ export interface FlowContext<TModel extends FlowModel = FlowModel> {
     error: (message: string, meta?: any) => void;
     debug: (message: string, meta?: any) => void;
   };
+  reactView: ReactView;
   stepResults: Record<string, any>; // Results from previous steps
   shared: Record<string, any>; // Shared data within the flow (read/write)
   globals: Record<string, any>; // Global context data (read-only)

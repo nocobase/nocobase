@@ -32,14 +32,15 @@ export const AntdInputEditor: React.FC<Props> = (props) => {
   };
 
   return (
-    <Input
+    <Input.TextArea
       ref={inputRef}
       onKeyDown={handleKeyDown}
       defaultValue={value}
-      // autoSize={{ minRows: 3 }}
+      autoSize={{ minRows: 3 }}
       onBlur={(e) => onSuccess(e.target.value)}
     />
     // <Select
+    //   style={{ width: '100%' }}
     //   options={[
     //     { label: 'Option 1', value: 'option1' },
     //     { label: 'Option 2', value: 'option2' },
