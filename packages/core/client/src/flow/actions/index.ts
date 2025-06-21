@@ -7,9 +7,6 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export * from './apiResource';
-export * from './baseRecordResource';
-export * from './flowResource';
-export * from './multiRecordResource';
-export * from './singleRecordResource';
+export * from './confirm';
+export * from './popup';
 //

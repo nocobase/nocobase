@@ -9,7 +9,6 @@
 
 import type { ButtonProps } from 'antd/es/button';
 import { RecordActionModel } from '../base/ActionModel';
-import { openModeAction } from '../../actions/openModeAction';
 
 export class ViewActionModel extends RecordActionModel {
   defaultProps: ButtonProps = {
@@ -25,6 +24,16 @@ ViewActionModel.registerFlow({
     eventName: 'click',
   },
   steps: {
-    open: openModeAction,
+    popup: {
+      use: 'popup',
+      defaultParams(ctx) {
+        return {
+          sharedContext: {
+            parentRecord: ctx.extra.currentRecord,
+            parentBlockModel: ctx.shared?.currentBlockModel,
+          },
+        };
+      },
+    },
   },
 });

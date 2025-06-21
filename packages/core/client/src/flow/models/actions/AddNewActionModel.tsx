@@ -9,7 +9,6 @@
 
 import { ButtonProps } from 'antd';
 import { GlobalActionModel } from '../base/ActionModel';
-import { openModeAction } from '../../actions/openModeAction';
 
 export class AddNewActionModel extends GlobalActionModel {
   defaultProps: ButtonProps = {
@@ -27,6 +26,15 @@ AddNewActionModel.registerFlow({
     eventName: 'click',
   },
   steps: {
-    open: openModeAction,
+    popup: {
+      use: 'popup',
+      defaultParams(ctx) {
+        return {
+          sharedContext: {
+            parentBlockModel: ctx.shared?.currentBlockModel,
+          },
+        };
+      },
+    },
   },
 });

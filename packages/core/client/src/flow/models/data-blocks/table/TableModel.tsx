@@ -131,6 +131,7 @@ export class TableModel extends DataBlockModel<S> {
             },
             selectedRowKeys: this.resource.getSelectedRows().map((row) => row.id),
           }}
+          scroll={{ x: 'max-content' }}
           dataSource={this.resource.getData()}
           columns={this.getColumns()}
           pagination={{

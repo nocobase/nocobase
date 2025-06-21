@@ -9,9 +9,9 @@
 
 import { MultiRecordResource } from '@nocobase/flow-engine';
 import { ButtonProps } from 'antd';
-import { GlobalActionModel } from '../base/ActionModel';
-import { secondaryConfirmationAction } from '../../actions/secondaryConfirmationAction';
 import { refreshOnCompleteAction } from '../../actions/refreshOnCompleteAction';
+import { secondaryConfirmationAction } from '../../actions/secondaryConfirmationAction';
+import { GlobalActionModel } from '../base/ActionModel';
 
 export class BulkDeleteActionModel extends GlobalActionModel {
   defaultProps: ButtonProps = {
@@ -27,7 +27,9 @@ BulkDeleteActionModel.registerFlow({
     eventName: 'click',
   },
   steps: {
-    secondaryConfirmationAction,
+    confirm: {
+      use: 'confirm',
+    },
     delete: {
       async handler(ctx, params) {
         if (!ctx.shared?.currentBlockModel?.resource) {
@@ -43,6 +45,5 @@ BulkDeleteActionModel.registerFlow({
         ctx.globals.message.success('Selected records deleted successfully.');
       },
     },
-    refreshOnCompleteAction,
   },
 });

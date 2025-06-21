@@ -29,7 +29,9 @@ export class SingleRecordResource<TData = any> extends BaseRecordResource<TData>
       ...options,
       data,
     });
-    await this.refresh();
+    if (this.request.params.filterByTk) {
+      await this.refresh();
+    }
   }
 
   async destroy(): Promise<void> {
