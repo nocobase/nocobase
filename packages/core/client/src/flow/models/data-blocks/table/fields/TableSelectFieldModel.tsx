@@ -50,7 +50,6 @@ TableSelectFieldModel.registerFlow({
   steps: {
     step1: {
       handler(ctx) {
-        console.log(ctx);
         const collectionField = ctx.model.collectionField;
         ctx.model.setProps({ dataSource: collectionField.enum });
       },
