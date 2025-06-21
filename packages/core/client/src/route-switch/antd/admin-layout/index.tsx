@@ -467,7 +467,11 @@ const MenuItem: FC<{ item: any; options: { isMobile: boolean; collapsed: boolean
           </WithTooltip>
           <MenuSchemaToolbar />
           {badgeCount != null && (
-            <Badge {...badgeProps} style={{ marginLeft: 4, color: item._route.options?.badge?.textColor }} dot={false}></Badge>
+            <Badge
+              {...badgeProps}
+              style={{ marginLeft: 4, color: item._route.options?.badge?.textColor }}
+              dot={false}
+            ></Badge>
           )}
         </SortableItem>
       </NocoBaseRouteContext.Provider>

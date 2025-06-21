@@ -14,12 +14,14 @@ import { tval } from '@nocobase/utils/client';
 import { ArrayCollapse, FormLayout } from '@formily/antd-v5';
 import { useField, observer } from '@formily/react';
 import { Field } from '@formily/core';
+import { WorkflowVariableRawTextArea } from '@nocobase/plugin-workflow/client';
 
 const UserMessage: React.FC = observer(() => {
   const t = useT();
 
   return (
     <SchemaComponent
+      components={{ WorkflowVariableRawTextArea }}
       schema={{
         type: 'void',
         properties: {
@@ -121,6 +123,7 @@ const Content: React.FC = observer(() => {
   }
   return (
     <SchemaComponent
+      components={{ WorkflowVariableRawTextArea }}
       schema={{
         type: 'void',
         properties: {

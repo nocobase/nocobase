@@ -28,6 +28,7 @@ export * from './api-client';
 export * from './appInfo';
 export * from './application';
 export * from './async-data-provider';
+export * from './block-configs';
 export * from './block-provider';
 export * from './collection-manager';
 
@@ -37,6 +38,7 @@ export * from './data-source';
 export * from './document-title';
 export * from './filter-provider';
 export * from './flag-provider';
+export * from './flow';
 export * from './global-theme';
 export * from './hooks';
 export * from './i18n';

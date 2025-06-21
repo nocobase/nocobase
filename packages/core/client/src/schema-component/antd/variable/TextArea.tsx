@@ -404,9 +404,9 @@ export function TextArea(props: TextAreaProps) {
           span(tagName, attribs) {
             return attribs['data-variable']
               ? {
-                tagName: tagName,
-                attribs,
-              }
+                  tagName: tagName,
+                  attribs,
+                }
               : {};
           },
         },
@@ -514,7 +514,7 @@ export function TextArea(props: TextAreaProps) {
       </Space.Compact>
       {/* 确保所有ant input样式都已加载, 放到Compact中会导致Compact中的Input样式不对 */}
       <AntInput style={{ display: 'none' }} />
-    </>
+    </>,
   );
 }
 

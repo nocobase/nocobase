@@ -10,6 +10,7 @@
 export enum NocoBaseDesktopRouteType {
   group = 'group',
   page = 'page',
+  flowRoute = 'flowRoute',
   link = 'link',
   tabs = 'tabs',
 }
