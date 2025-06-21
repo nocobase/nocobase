@@ -84,8 +84,8 @@ export const actionDesignerCss = css`
 `;
 
 export const DuplicateAction = observer(
-  (props: any) => {
-    const { children, onlyIcon, icon, title, ...others } = props;
+  ({ onlyIcon, ...props }: any) => {
+    const { children, icon, title, ...others } = props;
     const { message } = App.useApp();
     const field = useField();
     const fieldSchema = useFieldSchema();

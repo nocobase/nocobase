@@ -33,6 +33,7 @@ import {
   useRequest,
   useToken,
   SchemaInitializerItemType,
+  APIClient,
 } from '@nocobase/client';
 
 import {
@@ -62,6 +63,7 @@ export interface TaskTypeOptions {
   Actions?: React.ComponentType;
   Item: React.ComponentType;
   Detail: React.ComponentType;
+  getPopupRecord?: (apiClient: APIClient, { params }: { params: any }) => Promise<any>;
   // children?: TaskTypeOptions[];
   alwaysShow?: boolean;
 }
@@ -236,7 +238,7 @@ function PopupContext(props: any) {
     return null;
   }
   return (
-    <ActionContextProvider visible={Boolean(popupId)} setVisible={setVisible} openMode="modal">
+    <ActionContextProvider visible={Boolean(popupId)} setVisible={setVisible} openMode="modal" openSize="large">
       <CollectionRecordProvider record={record}>{props.children}</CollectionRecordProvider>
     </ActionContextProvider>
   );
@@ -256,7 +258,7 @@ function TaskPageContent() {
 
   const { token } = useToken();
   const items = useTaskTypeItems();
-  const { title, collection, action = 'list', useActionParams, Item, Detail } = useCurrentTaskType();
+  const { title, collection, action = 'list', useActionParams, Item, Detail, getPopupRecord } = useCurrentTaskType();
   const params = useActionParams(status);
 
   // useEffect(() => {
@@ -276,11 +278,15 @@ function TaskPageContent() {
 
   useEffect(() => {
     if (popupId && !currentRecord) {
-      apiClient
-        .resource(collection)
-        .get({
+      let load;
+      if (getPopupRecord) {
+        load = getPopupRecord(apiClient, { params: { filterByTk: popupId } });
+      } else {
+        load = apiClient.resource(collection).get({
           filterByTk: popupId,
-        })
+        });
+      }
+      load
         .then((res) => {
           if (res.data?.data) {
             setCurrentRecord(res.data.data);
@@ -290,25 +296,7 @@ function TaskPageContent() {
           console.error(err);
         });
     }
-  }, [popupId, collection, currentRecord, apiClient]);
-
-  useEffect(() => {
-    if (popupId && !currentRecord) {
-      apiClient
-        .resource(collection)
-        .get({
-          filterByTk: popupId,
-        })
-        .then((res) => {
-          if (res.data?.data) {
-            setCurrentRecord(res.data.data);
-          }
-        })
-        .catch((err) => {
-          console.error(err);
-        });
-    }
-  }, [popupId, collection, currentRecord, apiClient]);
+  }, [popupId, collection, currentRecord, apiClient, getPopupRecord]);
 
   useEffect(() => {
     if (!taskType) {
