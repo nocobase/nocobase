@@ -144,6 +144,9 @@ export class TableModel extends DataBlockModel<S> {
             this.resource.setPageSize(pagination.pageSize);
             this.resource.refresh();
           }}
+          scroll={{
+            x: 'max-content',
+          }}
         />
       </Card>
     );
@@ -187,6 +190,7 @@ TableModel.registerFlow({
         resource.setDataSourceKey(params.dataSourceKey);
         resource.setResourceName(params.collectionName);
         resource.setAPIClient(ctx.globals.api);
+        resource.setAppends(['roles']);
         ctx.model.resource = resource;
         await ctx.model.applySubModelsAutoFlows('columns', null, { currentBlockModel: ctx.model });
         await resource.refresh();

@@ -32,8 +32,13 @@ TableFieldModel.registerFlow({
   steps: {
     step1: {
       handler(ctx) {
-        ctx.model.collectionField = ctx.model.parent.collectionField;
-        ctx.model.fieldPath = ctx.model.parent.fieldPath;
+        if (!ctx.model.parent?.collectionField) {
+          return;
+        }
+        const collectionField = ctx.model.parent?.collectionField || ctx.model.collectionField;
+        ctx.model.fieldPath = ctx.model.parent?.fieldPath || ctx.model.fieldPath;
+        ctx.model.collectionField = collectionField;
+        ctx.model.setProps(collectionField.getComponentProps());
       },
     },
   },

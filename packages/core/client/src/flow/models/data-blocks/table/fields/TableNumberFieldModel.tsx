@@ -7,26 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import React from 'react';
 import { useForm } from '@formily/react';
 import { Select } from 'antd';
-import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { TableColumnModel } from '../TableColumnModel';
-import { InputNumberReadPretty } from '../components/InputNumberReadPretty';
+import { TableFieldModel } from './TableFieldModel';
+import { InputNumberReadPretty } from '../../../../components/InputNumberReadPretty';
 
-export class NumberColumnFieldModel extends TableColumnModel {
-  public static readonly supportedFieldInterfaces = ['number', 'integer'];
-  render() {
-    return (value, record, index) => {
-      return (
-        <>
-          <InputNumberReadPretty value={value} {...this.props.componentProps} />
-          {this.renderQuickEditButton(record)}
-        </>
-      );
-    };
-  }
-}
 const UnitConversion = () => {
   const form = useForm();
   const { unitConversionType } = form.values;
@@ -45,8 +32,21 @@ const UnitConversion = () => {
   );
 };
 
-NumberColumnFieldModel.registerFlow({
-  key: 'format',
+export class TableNumberFieldModel extends TableFieldModel {
+  public static readonly supportedFieldInterfaces = ['number', 'integer'];
+
+  public render() {
+    const value = this.getValue();
+    return (
+      <div>
+        <InputNumberReadPretty value={value} {...this.props} />
+      </div>
+    );
+  }
+}
+
+TableNumberFieldModel.registerFlow({
+  key: 'numberFormat',
   sort: 100,
   title: 'Specific properties',
   auto: true,
@@ -136,7 +136,7 @@ NumberColumnFieldModel.registerFlow({
       },
       defaultParams: (ctx) => {
         const { formatStyle, unitConversion, unitConversionType, separator, step, addonBefore, addonAfter } =
-          ctx.model.getProps().componentProps;
+          ctx.model.props;
         const { step: prescition } = ctx.model.collectionField?.getComponentProps() || {};
         return {
           formatStyle: formatStyle || 'normal',
@@ -151,7 +151,7 @@ NumberColumnFieldModel.registerFlow({
       handler(ctx, params) {
         const { formatStyle, unitConversion, unitConversionType, separator, step, addonBefore, addonAfter } = params;
         const { step: prescition } = ctx.model.collectionField?.getComponentProps() || {};
-        ctx.model.setComponentProps({
+        ctx.model.setProps({
           formatStyle: formatStyle || 'normal',
           unitConversion,
           unitConversionType,

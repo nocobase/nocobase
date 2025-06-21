@@ -10,4 +10,8 @@
 export * from './TableDateTimeFieldModel';
 export * from './TableFieldModel';
 export * from './TableInputFieldModel';
-//
+export * from './TableSelectFieldModel';
+export * from './TableCheckboxFieldModel';
+export * from './TablePercentFieldModel';
+export * from './TableNumberFieldModel';
+export * from './TableAssociationSelectFieldModel';

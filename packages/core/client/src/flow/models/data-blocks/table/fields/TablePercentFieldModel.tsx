@@ -7,31 +7,33 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { isNum } from '@formily/shared';
-import * as math from 'mathjs';
 import React from 'react';
-import { TableColumnModel } from '../TableColumnModel';
-import { InputNumberReadPretty } from '../components/InputNumberReadPretty';
+import * as math from 'mathjs';
+import { isNum } from '@formily/shared';
+import { TableFieldModel } from './TableFieldModel';
 
 const isNumberLike = (index: any): index is number => isNum(index) || /^-?\d+(\.\d+)?$/.test(index);
 
 const toValue = (value: any, callback: (v: number) => number) => {
   if (isNumberLike(value)) {
-    return math.round(callback(value), 9);
+    return `${math.round(callback(value), 9)}%`;
   }
   return null;
 };
-export class PercentColumnFieldModel extends TableColumnModel {
+export class TablePercentFieldModel extends TableFieldModel {
   public static readonly supportedFieldInterfaces = ['percent'];
-  render() {
-    return (value, record, index) => {
-      const val = toValue(value, (v) => v * 100);
-      return (
-        <>
-          <InputNumberReadPretty value={val} addonAfter="%" />
-          {this.renderQuickEditButton(record)}
-        </>
-      );
-    };
+
+  public render() {
+    const value = this.getValue();
+    const { prefix = '', suffix = '' } = this.props;
+
+    const content = toValue(value, (v) => v * 100);
+    return (
+      <div>
+        {prefix}
+        {content}
+        {suffix}
+      </div>
+    );
   }
 }

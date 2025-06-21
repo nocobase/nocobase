@@ -7,58 +7,27 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { isPlainObject } from '@nocobase/utils/client';
-import { castArray } from 'lodash';
-
-export interface FieldNames {
+interface FieldNames {
+  value: string;
   label?: string;
-  value?: string;
-  color?: string;
-  options?: string;
 }
-
-export const defaultFieldNames: FieldNames = {
-  label: 'label',
-  value: 'value',
-  color: 'color',
-  options: 'children',
-};
 
 interface Option {
-  label: string;
-  value: string;
-  icon?: any;
+  value: any;
+  label: any;
 }
 
-function flatData(data: any[], fieldNames: FieldNames): any[] {
-  const newArr: any[] = [];
-  if (!Array.isArray(data)) return newArr;
-  for (let i = 0; i < data.length; i++) {
-    const children = data[i][fieldNames.options];
-    if (Array.isArray(children)) {
-      newArr.push(...flatData(children, fieldNames));
-    }
-    newArr.push({ ...data[i] });
-  }
-  return newArr;
+function getCurrentOptions(value: any | any[], options: any[] = [], fieldNames: FieldNames): Option[] {
+  const values = Array.isArray(value) ? value : [value];
+  return values.map((val) => {
+    const found = options.find((opt) => opt[fieldNames.value] == val);
+    return (
+      found ?? {
+        value: val,
+        label: val?.toString?.() ?? val,
+      }
+    );
+  });
 }
 
-function findOptions(options: any[], fieldNames: FieldNames, arrValues: any[]): Option[] {
-  if (!options) return [];
-  const current: Option[] = [];
-  for (const value of arrValues) {
-    const option = options.find((v) => v[fieldNames.value] == value) || {
-      value,
-      label: value ? value.toString() : value,
-    };
-    current.push(option);
-  }
-  return current;
-}
-
-export function getCurrentOptions(values: any | any[], dataSource: any[], fieldNames: FieldNames): Option[] {
-  const result = flatData(dataSource, fieldNames);
-  const arrValues = castArray(values).map((val) => (isPlainObject(val) ? val[fieldNames.value] : val)) as any[];
-
-  return findOptions(result, fieldNames, arrValues);
-}
+export { getCurrentOptions };
