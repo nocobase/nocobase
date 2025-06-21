@@ -20,5 +20,6 @@
   "Ignore failed request and continue workflow": "忽略失败的请求并继续工作流",
   "Status code": "状态码",
   "Data": "数据",
-  "Response headers": "响应头"
+  "Response headers": "响应头",
+  "Response Body dataValue": "响应体data节点数据"
 }
