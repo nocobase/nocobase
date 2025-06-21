@@ -8,7 +8,76 @@
  */
 
 import { Dropdown, DropdownProps, Input, Menu, Spin, Empty } from 'antd';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo, useRef } from 'react';
+
+const useAutoPlacement = (visible: boolean) => {
+  const heightRef = useRef(0);
+  const [placement, setPlacement] = useState<'bottom' | 'top'>('bottom');
+  const [placementReady, setPlacementReady] = useState(false);
+
+  // 动态高度计算
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      const { clientY } = e;
+      const h = Math.max(clientY, window.innerHeight - clientY);
+      heightRef.current = h;
+    };
+
+    window.addEventListener('mousemove', handler);
+
+    return () => {
+      window.removeEventListener('mousemove', handler);
+    };
+  }, []);
+
+  // 智能位置计算
+  useEffect(() => {
+    if (!visible) {
+      setPlacementReady(false);
+      return;
+    }
+
+    const updatePlacement = (e: MouseEvent) => {
+      const { clientY } = e;
+      const availableSpaceBelow = window.innerHeight - clientY;
+      const availableSpaceAbove = clientY;
+
+      // 如果下方空间不足，且上方空间更大，则向上显示
+      if (availableSpaceBelow < 300 && availableSpaceAbove > availableSpaceBelow) {
+        setPlacement('top');
+      } else {
+        setPlacement('bottom');
+      }
+
+      setPlacementReady(true);
+
+      // 只计算一次
+      window.removeEventListener('mousemove', updatePlacement);
+    };
+
+    window.addEventListener('mousemove', updatePlacement);
+
+    // 兜底：如果没有鼠标移动事件，使用默认位置
+    const fallbackTimer = setTimeout(() => {
+      window.removeEventListener('mousemove', updatePlacement);
+      setPlacement('bottom');
+      setPlacementReady(true);
+    }, 50);
+
+    return () => {
+      window.removeEventListener('mousemove', updatePlacement);
+      clearTimeout(fallbackTimer);
+    };
+  }, [visible]);
+
+  const maxHeight = useMemo(() => heightRef.current - 40, [visible]);
+
+  return {
+    maxHeight,
+    placement,
+    placementReady,
+  };
+};
 
 // 菜单项类型定义
 export type Item = {
@@ -35,6 +104,8 @@ const LazyDropdown: React.FC<Omit<DropdownProps, 'menu'> & { menu: LazyDropdownM
   const [rootItems, setRootItems] = useState<Item[]>([]);
   const [rootLoading, setRootLoading] = useState(false);
   const [searchValues, setSearchValues] = useState<Record<string, string>>({});
+
+  const { maxHeight: dropdownMaxHeight, placement, placementReady } = useAutoPlacement(menuVisible);
 
   const getKeyPath = (path: string[], key: string) => [...path, key].join('/');
 
@@ -251,6 +322,8 @@ const LazyDropdown: React.FC<Omit<DropdownProps, 'menu'> & { menu: LazyDropdownM
   return (
     <Dropdown
       {...props}
+      placement={placement}
+      open={menuVisible && placementReady}
       dropdownRender={() =>
         rootLoading && rootItems.length === 0 ? (
           <Menu
@@ -261,9 +334,22 @@ const LazyDropdown: React.FC<Omit<DropdownProps, 'menu'> & { menu: LazyDropdownM
                 disabled: true,
               },
             ]}
+            style={{
+              maxHeight: dropdownMaxHeight,
+              overflowY: 'auto',
+            }}
           />
         ) : (
-          <Menu {...menu} onClick={() => {}} items={resolveItems(rootItems)} />
+          <Menu
+            {...menu}
+            onClick={() => {}}
+            items={resolveItems(rootItems)}
+            style={{
+              maxHeight: dropdownMaxHeight,
+              overflowY: 'auto',
+              ...menu?.style,
+            }}
+          />
         )
       }
       onOpenChange={(visible) => setMenuVisible(visible)}
