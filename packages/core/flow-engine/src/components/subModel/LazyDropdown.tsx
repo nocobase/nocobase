@@ -104,8 +104,19 @@ const LazyDropdown: React.FC<Omit<DropdownProps, 'menu'> & { menu: LazyDropdownM
   const [rootItems, setRootItems] = useState<Item[]>([]);
   const [rootLoading, setRootLoading] = useState(false);
   const [searchValues, setSearchValues] = useState<Record<string, string>>({});
+  const [isSearching, setIsSearching] = useState(false);
+  const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const { maxHeight: dropdownMaxHeight, placement, placementReady } = useAutoPlacement(menuVisible);
+
+  // 清理定时器，避免内存泄露
+  useEffect(() => {
+    return () => {
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const getKeyPath = (path: string[], key: string) => [...path, key].join('/');
 
@@ -241,10 +252,17 @@ const LazyDropdown: React.FC<Omit<DropdownProps, 'menu'> & { menu: LazyDropdownM
                   value={currentSearchValue}
                   onChange={(e) => {
                     e.stopPropagation();
+                    setIsSearching(true);
                     setSearchValues((prev) => ({
                       ...prev,
                       [searchKey]: e.target.value,
                     }));
+                    // 清理之前的定时器
+                    if (searchTimeoutRef.current) {
+                      clearTimeout(searchTimeoutRef.current);
+                    }
+                    // 搜索完成后重置搜索状态
+                    searchTimeoutRef.current = setTimeout(() => setIsSearching(false), 300);
                   }}
                   onClick={(e) => e.stopPropagation()}
                   size="small"
@@ -352,7 +370,13 @@ const LazyDropdown: React.FC<Omit<DropdownProps, 'menu'> & { menu: LazyDropdownM
           />
         )
       }
-      onOpenChange={(visible) => setMenuVisible(visible)}
+      onOpenChange={(visible) => {
+        // 如果正在搜索且菜单要关闭，阻止关闭
+        if (!visible && isSearching) {
+          return;
+        }
+        setMenuVisible(visible);
+      }}
     >
       {props.children}
     </Dropdown>
