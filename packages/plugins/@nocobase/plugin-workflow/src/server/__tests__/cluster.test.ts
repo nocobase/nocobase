@@ -14,13 +14,27 @@ import Plugin, { Processor } from '..';
 import { EXECUTION_STATUS } from '../constants';
 import { MemoryEventQueueAdapter, QueueMessageOptions } from '@nocobase/server';
 
-const memoryQueues: Map<string, { id: string; content: any; options?: QueueMessageOptions }[]> = new Map();
-
 class MockMemoryEventQueueAdapter extends MemoryEventQueueAdapter {
-  constructor(options) {
-    super(options);
-    // NOTE: singleton for crossing all nodes
-    this.queues = memoryQueues;
+  setQueues(queues) {
+    this.queues = queues;
+  }
+
+  getQueues() {
+    return this.queues;
+  }
+
+  async connect() {
+    if (this.isConnected()) {
+      return;
+    }
+
+    this.setConnected(true);
+
+    setImmediate(() => {
+      for (const channel of this.events.keys()) {
+        this.consume(channel);
+      }
+    });
   }
 }
 
@@ -84,10 +98,15 @@ describe('workflow > cluster', () => {
   });
 
   describe('event queue', () => {
+    let sharedQueues: Map<string, { id: string; content: any; options?: QueueMessageOptions }[]>;
+
     beforeEach(async () => {
+      sharedQueues = new Map();
       for (const node of cluster.nodes) {
         await node.eventQueue.close();
-        node.eventQueue.setAdapter(new MockMemoryEventQueueAdapter({ appName: node.name }));
+        const adapter = new MockMemoryEventQueueAdapter({ appName: node.name });
+        adapter.setQueues(sharedQueues);
+        node.eventQueue.setAdapter(adapter);
         await node.eventQueue.connect();
       }
     });
@@ -113,7 +132,7 @@ describe('workflow > cluster', () => {
       });
 
       const n2 = await w1.createNode({
-        type: 'recordAppName',
+        type: 'recordAppId',
         upstreamId: n1.id,
       });
       await n1.setDownstream(n2);
@@ -122,30 +141,46 @@ describe('workflow > cluster', () => {
       p1.trigger(w1, { a: 2 });
       p1.trigger(w1, { a: 3 });
       p1.trigger(w1, { a: 4 });
+      p2.trigger(w1, { a: 5 });
+      p2.trigger(w1, { a: 6 });
+      p2.trigger(w1, { a: 7 });
+      p2.trigger(w1, { a: 8 });
 
       await sleep(200);
 
+      const q1 = sharedQueues.get(`${app1.name}.workflow.pendingExecution`);
+      // NOTE: app3 read one
+      expect(q1.length).toBe(5);
+
       const e1s = await w1.getExecutions({ order: [['id', 'ASC']] });
-      expect(e1s.length).toBe(4);
+      expect(e1s.length).toBe(8);
       expect(e1s[0].status).toBe(EXECUTION_STATUS.STARTED);
-      expect(e1s[1].status).toBe(EXECUTION_STATUS.QUEUEING);
-      expect(e1s[2].status).toBe(EXECUTION_STATUS.QUEUEING);
+      expect(e1s[1].status).toBe(EXECUTION_STATUS.STARTED);
+      expect(e1s[2].status).toBe(EXECUTION_STATUS.STARTED);
       expect(e1s[3].status).toBe(EXECUTION_STATUS.QUEUEING);
 
       await sleep(1500);
 
       const e2s = await w1.getExecutions({ order: [['id', 'ASC']], include: ['jobs'] });
-      expect(e2s.length).toBe(4);
+      expect(e2s.length).toBe(8);
       expect(e2s[0].status).toBe(EXECUTION_STATUS.RESOLVED);
       expect(e2s[1].status).toBe(EXECUTION_STATUS.RESOLVED);
       expect(e2s[2].status).toBe(EXECUTION_STATUS.RESOLVED);
       expect(e2s[3].status).toBe(EXECUTION_STATUS.RESOLVED);
+      expect(e2s[4].status).toBe(EXECUTION_STATUS.RESOLVED);
+      expect(e2s[5].status).toBe(EXECUTION_STATUS.RESOLVED);
+      expect(e2s[6].status).toBe(EXECUTION_STATUS.RESOLVED);
+      expect(e2s[7].status).toBe(EXECUTION_STATUS.RESOLVED);
 
       const appNameJobs = e2s.map((item) => item.jobs.find((job) => job.nodeId === n2.id));
-      expect(appNameJobs[0].result).toBe(app1.name);
-      expect(appNameJobs[1].result).toBe(app1.name);
-      expect(appNameJobs[2].result).toBe(app2.name);
-      expect(appNameJobs[3].result).toBe(app3.name);
+      expect(appNameJobs[0].result).toBe(app1.instanceId);
+      expect(appNameJobs[1].result).toBe(app2.instanceId);
+      expect(appNameJobs[2].result).toBe(app3.instanceId);
+      expect(appNameJobs[3].result).toBe(app1.instanceId);
+      expect(appNameJobs[4].result).toBe(app2.instanceId);
+      expect(appNameJobs[5].result).toBe(app3.instanceId);
+      expect(appNameJobs[6].result).toBe(app1.instanceId);
+      expect(appNameJobs[7].result).toBe(app2.instanceId);
     });
   });
 });
