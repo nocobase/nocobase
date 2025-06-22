@@ -37,7 +37,7 @@ export const AntdInputEditor: React.FC<Props> = (props) => {
       onKeyDown={handleKeyDown}
       defaultValue={value}
       autoSize={{ minRows: 3 }}
-      onBlur={(e) => onSuccess(e.target.value)}
+      // onBlur={(e) => onSuccess(e.target.value)}
     />
     // <Select
     //   style={{ width: '100%' }}

@@ -22,7 +22,7 @@ import {
   useFlowEngine,
 } from '@nocobase/flow-engine';
 import { Button, Card, ConfigProvider, Pagination, Skeleton, Space, theme } from 'antd';
-import { head } from 'lodash';
+import _, { delay, head } from 'lodash';
 import React from 'react';
 import ReactDOM, { createRoot } from 'react-dom/client';
 import { ColumnDefinition, TabulatorFull as Tabulator } from 'tabulator-tables';
@@ -195,6 +195,7 @@ export class TabulatorModel extends DataBlockModel<S> {
             onModelAdded={async (model: TabulatorColumnModel) => {
               model.setSharedContext({ currentBlockModel: this });
               await model.applyAutoFlows();
+              this.initTabulator();
             }}
           />,
         );
@@ -202,10 +203,50 @@ export class TabulatorModel extends DataBlockModel<S> {
     } as ColumnDefinition);
   }
 
+  async initTabulator() {
+    if (this.tabulator) {
+      this.tabulator.destroy();
+    }
+    if (!this.tabulatorRef.current) {
+      throw new Error('Tabulator ref is not ready');
+    }
+    await new Promise((resolve) => {
+      setTimeout(resolve, 100);
+    });
+    this.tabulator = new Tabulator(this.tabulatorRef.current, {
+      layout: 'fitColumns', // fit columns to width of table (optional)
+      // height: '75vh',
+      renderHorizontal: 'virtual',
+      movableColumns: true,
+      movableRows: true,
+      rowFormatter: (row) => {
+        row.getElement().style.height = '40px';
+      },
+      data: this.resource.getData(),
+      columns: [
+        {
+          title: '',
+          titleFormatter: 'rowSelection', // 复选框全选按钮
+          formatter: 'rowSelection', // 复选框单选按钮
+          hozAlign: 'center',
+          headerHozAlign: 'center',
+          headerSort: false,
+          width: 50,
+          frozen: true,
+          titleFormatterParams: { rowRange: 'active' }, // 只全选当前页数据
+        },
+        ...this.getColumns(),
+      ],
+      autoResize: true,
+    });
+    this.tabulator.on('rowSelectionChanged', (data, rows) => {
+      this.resource.setSelectedRows(data);
+    });
+  }
+
   render() {
     return (
       <Card>
-        {this.subModels.columns?.length}
         <Space style={{ marginBottom: 16 }}>
           {this.mapSubModels('actions', (action) => (
             <FlowModelRenderer model={action} showFlowSettings sharedContext={{ currentBlockModel: this }} />
@@ -218,11 +259,10 @@ export class TabulatorModel extends DataBlockModel<S> {
         <Pagination
           style={{ marginTop: 16 }}
           align="end"
-          {...{
-            current: this.resource.getMeta('page'),
-            pageSize: this.resource.getMeta('pageSize'),
-            total: this.resource.getMeta('count'),
-          }}
+          defaultCurrent={this.resource.getMeta('page')}
+          defaultPageSize={this.resource.getMeta('pageSize')}
+          total={this.resource.getMeta('count')}
+          showSizeChanger
           onChange={async (page, pageSize) => {
             this.resource.setPage(page);
             this.resource.setPageSize(pageSize);
@@ -271,13 +311,14 @@ TabulatorModel.registerFlow({
         resource.setDataSourceKey(params.dataSourceKey);
         resource.setResourceName(params.collectionName);
         resource.setAPIClient(ctx.globals.api);
-        resource.setPageSize(200);
+        resource.setPageSize(20);
         ctx.model.resource = resource;
         await ctx.model.applySubModelsAutoFlows('columns', null, { currentBlockModel: ctx.model });
         await resource.refresh();
-        resource.on('refresh', () => {
+        resource.on('refresh', async () => {
           if (ctx.model.tabulator) {
-            ctx.model.tabulator.setData(resource.getData()); // 深拷贝数据，避免 Tabulator 内部引用问题
+            ctx.model.initTabulator();
+            // await ctx.model.tabulator.setData(resource.getData()); // 深拷贝数据，避免 Tabulator 内部引用问题
           }
         });
       },
@@ -285,35 +326,7 @@ TabulatorModel.registerFlow({
     step2: {
       handler(ctx, params) {
         ctx.reactView.onRefReady(ctx.model.tabulatorRef, (el) => {
-          ctx.model.tabulator = new Tabulator(el, {
-            layout: 'fitColumns', // fit columns to width of table (optional)
-            height: '75vh',
-            renderHorizontal: 'virtual',
-            movableColumns: true,
-            movableRows: true,
-            rowFormatter: (row) => {
-              row.getElement().style.height = '40px';
-            },
-            data: ctx.model.resource.getData(),
-            columns: [
-              {
-                title: '',
-                titleFormatter: 'rowSelection', // 复选框全选按钮
-                formatter: 'rowSelection', // 复选框单选按钮
-                hozAlign: 'center',
-                headerHozAlign: 'center',
-                headerSort: false,
-                width: 50,
-                frozen: true,
-                titleFormatterParams: { rowRange: 'active' }, // 只全选当前页数据
-              },
-              ...ctx.model.getColumns(),
-            ],
-            autoResize: true,
-          });
-          ctx.model.tabulator.on('rowSelectionChanged', (data, rows) => {
-            ctx.model.resource.setSelectedRows(data);
-          });
+          ctx.model.initTabulator();
         });
       },
     },
