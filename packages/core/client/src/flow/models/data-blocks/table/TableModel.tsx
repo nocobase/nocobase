@@ -9,13 +9,7 @@
 
 import { SettingOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
-import {
-  AddActionButton,
-  AddFieldButton,
-  Collection,
-  FlowModelRenderer,
-  MultiRecordResource,
-} from '@nocobase/flow-engine';
+import { AddActionButton, AddFieldButton, FlowModelRenderer, MultiRecordResource } from '@nocobase/flow-engine';
 import { Button, Card, Space, Table } from 'antd';
 import React from 'react';
 import { ActionModel } from '../../base/ActionModel';
@@ -91,9 +85,7 @@ export class TableModel extends DataBlockModel<S> {
           {this.mapSubModels('actions', (action) => (
             <FlowModelRenderer model={action} showFlowSettings sharedContext={{ currentBlockModel: this }} />
           ))}
-          <AddActionButton model={this} subModelBaseClass="GlobalActionModel" subModelKey="actions">
-            <Button icon={<SettingOutlined />}>Configure actions</Button>
-          </AddActionButton>
+          <AddActionButton model={this} subModelBaseClass="GlobalActionModel" subModelKey="actions" />
           {/* <AddActionModel
             model={this}
             subModelKey={'actions'}
