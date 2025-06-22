@@ -43,7 +43,7 @@ export class PageModel extends FlowModel<PageModelStructure> {
   renderTabs() {
     return (
       <Tabs
-        tabBarStyle={{ backgroundColor: '#fff', paddingInline: 16 }}
+        tabBarStyle={{ backgroundColor: '#fff', paddingInline: 16, marginBottom: 0 }}
         items={this.getItems()}
         // destroyInactiveTabPane
         tabBarExtraContent={
