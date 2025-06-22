@@ -27,7 +27,7 @@ export class TableAssociationSelectFieldModel extends TableFieldModel {
   public render() {
     const { fieldNames } = this.props;
     const value = this.getValue();
-    if (!this.collectionField) {
+    if (!this.collectionField || !value) {
       return;
     }
     const { target } = this.collectionField?.options || {};
@@ -50,8 +50,8 @@ export class TableAssociationSelectFieldModel extends TableFieldModel {
         <>
           {value.map((v, idx) => {
             const mol = model.createFork({}, { index: idx });
-            console.log(`${this.ctx.shared.index + idx}`, v?.[fieldNames.label]);
             mol.setSharedContext({ index: idx, value: v?.[fieldNames.label], record: this.ctx.shared.record });
+            mol.collectionField = targetLabelField;
             return (
               <React.Fragment key={idx}>
                 {idx > 0 && <span>,</span>}
