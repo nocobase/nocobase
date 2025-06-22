@@ -57,7 +57,7 @@ export class FormModel extends DataBlockModel {
             collection={this.collection}
             subModelBaseClass="FormFieldModel"
           />
-          <FormButtonGroup>
+          <FormButtonGroup style={{ marginTop: 16 }}>
             {this.mapSubModels('actions', (action) => (
               <FlowModelRenderer model={action} showFlowSettings sharedContext={{ currentBlockModel: this }} />
             ))}
