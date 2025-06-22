@@ -8,7 +8,7 @@
  */
 
 import { uid } from '@formily/shared';
-import { FlowModel, FlowModelRenderer } from '@nocobase/flow-engine';
+import { FlowModel, FlowModelRenderer, getCommonAddButton } from '@nocobase/flow-engine';
 import { Button, Tabs } from 'antd';
 import _ from 'lodash';
 import React from 'react';
@@ -46,23 +46,19 @@ export class PageModel extends FlowModel<PageModelStructure> {
         tabBarStyle={{ backgroundColor: '#fff', paddingInline: 16, marginBottom: 0 }}
         items={this.getItems()}
         // destroyInactiveTabPane
-        tabBarExtraContent={
-          <Button
-            onClick={() =>
-              this.addTab({
-                use: 'PageTabModel',
-                props: { key: uid(), label: `Tab - ${uid()}` },
-                subModels: {
-                  grid: {
-                    use: 'BlockGridModel',
-                  },
+        tabBarExtraContent={getCommonAddButton({
+          children: 'Add Tab',
+          onClick: () =>
+            this.addTab({
+              use: 'PageTabModel',
+              props: { key: uid(), label: `Tab - ${uid()}` },
+              subModels: {
+                grid: {
+                  use: 'BlockGridModel',
                 },
-              })
-            }
-          >
-            Add Tab
-          </Button>
-        }
+              },
+            }),
+        })}
       />
     );
   }

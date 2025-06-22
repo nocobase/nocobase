@@ -27,13 +27,20 @@ export const CommonAddButton: FC<{ icon?: React.ReactNode }> = ({ icon = <PlusOu
   );
 };
 
-// TODO: 等解决 CommonAddButton 的问题之后，改用 CommonAddButton
+/**
+ * TODO: 等解决 CommonAddButton 的问题之后，改用 CommonAddButton
+ * @deprecated
+ * @param param0
+ * @returns
+ */
 export const getCommonAddButton = ({
   icon = <PlusOutlined />,
   children,
+  onClick,
 }: {
   icon?: React.ReactNode;
   children?: React.ReactNode;
+  onClick?: () => void;
 }) => {
   return (
     <Button
@@ -43,6 +50,7 @@ export const getCommonAddButton = ({
         borderColor: 'var(--colorSettings)',
         color: 'var(--colorSettings)',
       }}
+      onClick={onClick}
     >
       {children}
     </Button>
