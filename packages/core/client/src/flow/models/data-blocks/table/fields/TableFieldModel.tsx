@@ -32,10 +32,7 @@ TableFieldModel.registerFlow({
   steps: {
     step1: {
       handler(ctx) {
-        if (!ctx.model.parent?.collectionField) {
-          return;
-        }
-        const collectionField = ctx.model.parent?.collectionField || ctx.model.collectionField;
+        const collectionField = ctx.model.parent?.collectionField;
         ctx.model.fieldPath = ctx.model.parent?.fieldPath || ctx.model.fieldPath;
         ctx.model.collectionField = collectionField;
         ctx.model.setProps(collectionField.getComponentProps());
