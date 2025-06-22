@@ -8,7 +8,7 @@
  */
 
 import { MultiRecordResource } from '@nocobase/flow-engine';
-import { Button, ButtonProps, Input, Popover } from 'antd';
+import { ButtonProps, Input, Popover } from 'antd';
 import _ from 'lodash';
 import React from 'react';
 import { GlobalActionModel } from '../base/ActionModel';
@@ -17,6 +17,7 @@ export class FilterActionModel extends GlobalActionModel {
   defaultProps: ButtonProps = {
     type: 'default',
     children: 'Filter',
+    icon: 'FilterOutlined',
   };
 
   render() {
@@ -46,7 +47,7 @@ export class FilterActionModel extends GlobalActionModel {
         trigger="click"
         placement="bottom"
       >
-        <Button {...this.defaultProps} {...this.props} />
+        {super.render()}
       </Popover>
     );
   }
