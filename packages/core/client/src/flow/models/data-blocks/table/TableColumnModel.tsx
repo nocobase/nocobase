@@ -10,39 +10,19 @@
 import { EditOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
 import { observer } from '@formily/react';
-import { observable } from '@formily/reactive';
-import { uid } from '@formily/shared';
-import { CollectionField, FlowModelRenderer, FlowsFloatContextMenu } from '@nocobase/flow-engine';
-import { TableColumnProps, Tooltip } from 'antd';
+import { CollectionField, FlowEngineProvider, FlowModelRenderer, FlowsFloatContextMenu } from '@nocobase/flow-engine';
+import { Skeleton, Space, TableColumnProps, Tooltip } from 'antd';
 import React from 'react';
-import { FieldModel, SupportedFieldInterfaces } from '../../base/FieldModel';
+import { FieldModel } from '../../base/FieldModel';
 import { QuickEditForm } from '../form/QuickEditForm';
 import { TableFieldModel } from './fields/TableFieldModel';
-
-const TableField = observer<any>(({ record, value, model, index }) => {
-  return (
-    <>
-      {model.mapSubModels('field', (action: TableFieldModel) => {
-        const fork = action.createFork({}, `${index}`);
-        return (
-          <FlowModelRenderer
-            key={fork.uid}
-            model={fork}
-            showFlowSettings
-            hideRemoveInSettings
-            sharedContext={{ index, value, record }}
-            extraContext={{ index, value, record }}
-          />
-        );
-      })}
-    </>
-  );
-});
 
 export class TableColumnModel extends FieldModel {
   getColumnProps(): TableColumnProps {
     return {
       ...this.props,
+      width: 100,
+      ellipsis: true,
       title: (
         <FlowsFloatContextMenu
           model={this}
@@ -51,7 +31,6 @@ export class TableColumnModel extends FieldModel {
           {this.props.title}
         </FlowsFloatContextMenu>
       ),
-      ellipsis: true,
       onCell: (record) => ({
         className: css`
           .edit-icon {
@@ -78,29 +57,55 @@ export class TableColumnModel extends FieldModel {
 
   renderQuickEditButton(record) {
     return (
-      <Tooltip title="快速编辑">
-        <EditOutlined
-          className="edit-icon"
-          onClick={async (e) => {
-            e.stopPropagation();
-            await QuickEditForm.open({
-              flowEngine: this.flowEngine,
-              collectionField: this.collectionField as CollectionField,
-              filterByTk: record.id,
-            });
-            await this.parent.resource.refresh();
-          }}
-        />
-      </Tooltip>
+      // <Tooltip title="快速编辑">
+      <EditOutlined
+        className="edit-icon"
+        onClick={async (e) => {
+          e.stopPropagation();
+          await QuickEditForm.open({
+            flowEngine: this.flowEngine,
+            collectionField: this.collectionField as CollectionField,
+            filterByTk: record.id,
+          });
+          await this.parent.resource.refresh();
+        }}
+      />
+      // </Tooltip>
     );
   }
 
   render() {
+    const { width = '100px', ellipsis } = this.props;
     return (value, record, index) => (
-      <>
-        <TableField record={record} model={this} value={value} index={index} />
+      <div
+        className={css`
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+          width: ${width};
+        `}
+      >
+        {this.mapSubModels('field', (action: TableFieldModel) => {
+          const fork = action.createFork({}, `index`);
+          fork.setSharedContext({ index, value, record });
+          return <FlowEngineProvider engine={this.flowEngine}>{fork.render()}</FlowEngineProvider>;
+        })}
+        {/* {this.mapSubModels('field', (action: TableFieldModel) => {
+          const fork = action.createFork({}, `${index}`);
+          return (
+            <FlowModelRenderer
+              key={fork.uid}
+              fallback={<Skeleton.Button size="small" />}
+              model={fork}
+              showFlowSettings
+              hideRemoveInSettings
+              sharedContext={{ index, value, record }}
+              extraContext={{ index, value, record }}
+            />
+          );
+        })} */}
         {this.renderQuickEditButton(record)}
-      </>
+      </div>
     );
   }
 }

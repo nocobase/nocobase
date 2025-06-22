@@ -11,7 +11,8 @@ import React, { useMemo } from 'react';
 import { AddSubModelButton, SubModelItemsType } from './AddSubModelButton';
 import { FlowModel } from '../../models/flowModel';
 import { ModelConstructor } from '../../types';
-import { Button } from 'antd';
+import { getCommonAddButton } from '../common/CommonAddButton';
+import { SettingOutlined } from '@ant-design/icons';
 
 interface AddActionButtonProps {
   /**
@@ -57,7 +58,10 @@ export const AddActionButton: React.FC<AddActionButtonProps> = ({
   model,
   subModelBaseClass = 'ActionFlowModel',
   subModelKey = 'actions',
-  children = <Button>Configure actions</Button>,
+  children = getCommonAddButton({
+    icon: <SettingOutlined />,
+    children: 'Configure actions',
+  }),
   subModelType = 'array',
   items,
   filter,

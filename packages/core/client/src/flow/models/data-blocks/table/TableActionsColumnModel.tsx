@@ -36,6 +36,7 @@ export class TableActionsColumnModel extends TableColumnModel {
     return {
       // title: 'Actions',
       ...this.props,
+      width: 100,
       title: (
         <FlowsFloatContextMenu
           model={this}

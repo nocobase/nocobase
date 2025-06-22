@@ -17,11 +17,11 @@ export class TableFieldModel extends FieldModel {
 
   public render() {
     return (
-      <div>
+      <span>
         {this.props.prefix}
         {this.getValue()}
         {this.props.suffix}
-      </div>
+      </span>
     );
   }
 }

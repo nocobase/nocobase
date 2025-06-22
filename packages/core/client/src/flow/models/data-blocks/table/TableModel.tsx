@@ -9,14 +9,8 @@
 
 import { SettingOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
-import {
-  AddActionButton,
-  AddFieldButton,
-  Collection,
-  FlowModelRenderer,
-  MultiRecordResource,
-} from '@nocobase/flow-engine';
-import { Button, Card, Space, Table } from 'antd';
+import { AddActionButton, AddFieldButton, FlowModelRenderer, MultiRecordResource } from '@nocobase/flow-engine';
+import { Button, Card, Space, Spin, Table } from 'antd';
 import React from 'react';
 import { ActionModel } from '../../base/ActionModel';
 import { DataBlockModel } from '../../base/BlockModel';
@@ -35,66 +29,63 @@ export class TableModel extends DataBlockModel<S> {
   getColumns() {
     return this.mapSubModels('columns', (column) => {
       return column.getColumnProps();
-    }).concat({
-      key: 'addColumn',
-      fixed: 'right',
-      title: (
-        <AddFieldButton
-          collection={this.collection}
-          model={this}
-          subModelKey={'columns'}
-          subModelBaseClass="TableFieldModel"
-          buildCreateModelOptions={(field, fieldClass) => ({
-            use: 'TableColumnModel',
-            stepParams: {
-              default: {
-                step1: {
-                  fieldPath: field.fullpath,
-                },
-              },
-            },
-            subModels: {
-              field: {
-                use: fieldClass.name,
-                stepParams: {
-                  default: {
-                    step1: {
-                      fieldPath: field.fullpath,
-                    },
+    })
+      .concat({
+        key: 'empty',
+      })
+      .concat({
+        key: 'addColumn',
+        fixed: 'right',
+        width: 200,
+        title: (
+          <AddFieldButton
+            collection={this.collection}
+            model={this}
+            subModelKey={'columns'}
+            subModelBaseClass="TableFieldModel"
+            buildCreateModelOptions={(field, fieldClass) => ({
+              use: 'TableColumnModel',
+              stepParams: {
+                default: {
+                  step1: {
+                    fieldPath: field.fullpath,
                   },
                 },
               },
-            },
-          })}
-          appendItems={[
-            {
-              key: 'actions',
-              label: 'Actions column',
-              createModelOptions: {
-                use: 'TableActionsColumnModel',
+              subModels: {
+                field: {
+                  use: fieldClass.name,
+                },
               },
-            },
-          ]}
-          onModelAdded={async (model: TableColumnModel) => {
-            model.setSharedContext({ currentBlockModel: this });
-            await model.applyAutoFlows();
-          }}
-        />
-      ),
-    } as any);
+            })}
+            appendItems={[
+              {
+                key: 'actions',
+                label: 'Actions column',
+                createModelOptions: {
+                  use: 'TableActionsColumnModel',
+                },
+              },
+            ]}
+            onModelAdded={async (model: TableColumnModel) => {
+              model.setSharedContext({ currentBlockModel: this });
+              await model.applyAutoFlows();
+            }}
+          />
+        ),
+      } as any);
   }
 
   render() {
     return (
       <Card>
-        <Space style={{ marginBottom: 16 }}>
-          {this.mapSubModels('actions', (action) => (
-            <FlowModelRenderer model={action} showFlowSettings sharedContext={{ currentBlockModel: this }} />
-          ))}
-          <AddActionButton model={this} subModelBaseClass="GlobalActionModel" subModelKey="actions">
-            <Button icon={<SettingOutlined />}>Configure actions</Button>
-          </AddActionButton>
-          {/* <AddActionModel
+        <Spin spinning={this.resource.loading}>
+          <Space style={{ marginBottom: 16 }}>
+            {this.mapSubModels('actions', (action) => (
+              <FlowModelRenderer model={action} showFlowSettings sharedContext={{ currentBlockModel: this }} />
+            ))}
+            <AddActionButton model={this} subModelBaseClass="GlobalActionModel" subModelKey="actions" />
+            {/* <AddActionModel
             model={this}
             subModelKey={'actions'}
             items={() => [
@@ -116,35 +107,34 @@ export class TableModel extends DataBlockModel<S> {
           >
             <Button icon={<SettingOutlined />}>Configure actions</Button>
           </AddActionModel> */}
-        </Space>
-        <Table
-          className={css`
-            td {
-              height: 39px;
-            }
-          `}
-          rowKey="id"
-          rowSelection={{
-            type: 'checkbox',
-            onChange: (_, selectedRows) => {
-              this.resource.setSelectedRows(selectedRows);
-            },
-            selectedRowKeys: this.resource.getSelectedRows().map((row) => row.id),
-          }}
-          scroll={{ x: 'max-content' }}
-          dataSource={this.resource.getData()}
-          columns={this.getColumns()}
-          pagination={{
-            current: this.resource.getMeta('page'),
-            pageSize: this.resource.getMeta('pageSize'),
-            total: this.resource.getMeta('count'),
-          }}
-          onChange={(pagination) => {
-            this.resource.setPage(pagination.current);
-            this.resource.setPageSize(pagination.pageSize);
-            this.resource.refresh();
-          }}
-        />
+          </Space>
+          <Table
+            // loading={this.resource.loading}
+            tableLayout="fixed"
+            rowKey="id"
+            rowSelection={{
+              type: 'checkbox',
+              onChange: (_, selectedRows) => {
+                this.resource.setSelectedRows(selectedRows);
+              },
+              selectedRowKeys: this.resource.getSelectedRows().map((row) => row.id),
+            }}
+            scroll={{ x: 'max-content' }}
+            dataSource={this.resource.getData()}
+            columns={this.getColumns()}
+            pagination={{
+              defaultCurrent: this.resource.getMeta('page'),
+              defaultPageSize: this.resource.getMeta('pageSize'),
+              total: this.resource.getMeta('count'),
+            }}
+            onChange={(pagination) => {
+              this.resource.setPage(pagination.current);
+              this.resource.setPageSize(pagination.pageSize);
+              this.resource.loading = true;
+              this.resource.refresh();
+            }}
+          />
+        </Spin>
       </Card>
     );
   }
@@ -187,6 +177,7 @@ TableModel.registerFlow({
         resource.setDataSourceKey(params.dataSourceKey);
         resource.setResourceName(params.collectionName);
         resource.setAPIClient(ctx.globals.api);
+        resource.setPageSize(20);
         ctx.model.resource = resource;
         await ctx.model.applySubModelsAutoFlows('columns', null, { currentBlockModel: ctx.model });
         await resource.refresh();

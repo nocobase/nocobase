@@ -36,16 +36,18 @@
  */
 
 import { observer } from '@formily/reactive-react';
+import { Spin } from 'antd';
 import React, { Suspense, useEffect } from 'react';
 import { useApplyAutoFlows, useFlowExtraContext } from '../hooks';
 import { FlowModel } from '../models';
 import { FlowsContextMenu } from './settings/wrappers/contextual/FlowsContextMenu';
 import { FlowsFloatContextMenu } from './settings/wrappers/contextual/FlowsFloatContextMenu';
-import { Spin } from 'antd';
 
 interface FlowModelRendererProps {
   model?: FlowModel;
   uid?: string;
+
+  fallback?: React.ReactNode; // 渲染失败时的回退内容
 
   /** 是否显示流程设置入口（如按钮、菜单等） */
   showFlowSettings?: boolean; // 默认 false
@@ -196,6 +198,7 @@ const FlowModelRendererCore: React.FC<{
 export const FlowModelRenderer: React.FC<FlowModelRendererProps> = observer(
   ({
     model,
+    fallback = <Spin />,
     showFlowSettings = false,
     flowSettingsVariant = 'dropdown',
     hideRemoveInSettings = false,
@@ -229,7 +232,7 @@ export const FlowModelRenderer: React.FC<FlowModelRendererProps> = observer(
       );
     } else {
       return (
-        <Suspense fallback={<Spin />}>
+        <Suspense fallback={fallback}>
           <FlowModelRendererWithAutoFlows
             model={model}
             showFlowSettings={showFlowSettings}

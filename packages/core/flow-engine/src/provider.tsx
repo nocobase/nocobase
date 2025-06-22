@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { App } from 'antd';
+import { App, ConfigProvider } from 'antd';
 import React, { createContext, useContext, useEffect } from 'react';
 import { FlowEngine } from './flowEngine';
 import useDrawer from './useDrawer';
@@ -31,13 +31,15 @@ export const FlowEngineGlobalsContextProvider: React.FC<{ children: React.ReactN
   const { modal, message, notification } = App.useApp();
   const [drawer, contextHolder] = useDrawer();
   const engine = useFlowEngine();
+  const config = useContext(ConfigProvider.ConfigContext);
 
   useEffect(() => {
+    engine.context['antdConfig'] = config;
     engine.context['drawer'] = drawer;
     engine.context['modal'] = modal;
     engine.context['message'] = message;
     engine.context['notification'] = notification;
-  }, [engine, drawer, modal, message, notification]);
+  }, [engine, drawer, modal, message, notification, config]);
 
   return (
     <>

@@ -10,12 +10,13 @@
 import { Dropdown, DropdownProps, Input, Menu, Spin, Empty } from 'antd';
 import React, { useEffect, useState, useMemo, useRef } from 'react';
 
-const useAutoPlacement = (visible: boolean) => {
+/**
+ * 通过鼠标的位置计算出最佳的 dropdown 的高度，以尽量避免出现滚动条
+ * @param deps 类似于 useEffect 的第二个参数，如果不传则默认为 []
+ */
+const useNiceDropdownMaxHeight = (deps: any[] = []) => {
   const heightRef = useRef(0);
-  const [placement, setPlacement] = useState<'bottom' | 'top'>('bottom');
-  const [placementReady, setPlacementReady] = useState(false);
 
-  // 动态高度计算
   useEffect(() => {
     const handler = (e: MouseEvent) => {
       const { clientY } = e;
@@ -30,53 +31,7 @@ const useAutoPlacement = (visible: boolean) => {
     };
   }, []);
 
-  // 智能位置计算
-  useEffect(() => {
-    if (!visible) {
-      setPlacementReady(false);
-      return;
-    }
-
-    const updatePlacement = (e: MouseEvent) => {
-      const { clientY } = e;
-      const availableSpaceBelow = window.innerHeight - clientY;
-      const availableSpaceAbove = clientY;
-
-      // 如果下方空间不足，且上方空间更大，则向上显示
-      if (availableSpaceBelow < 300 && availableSpaceAbove > availableSpaceBelow) {
-        setPlacement('top');
-      } else {
-        setPlacement('bottom');
-      }
-
-      setPlacementReady(true);
-
-      // 只计算一次
-      window.removeEventListener('mousemove', updatePlacement);
-    };
-
-    window.addEventListener('mousemove', updatePlacement);
-
-    // 兜底：如果没有鼠标移动事件，使用默认位置
-    const fallbackTimer = setTimeout(() => {
-      window.removeEventListener('mousemove', updatePlacement);
-      setPlacement('bottom');
-      setPlacementReady(true);
-    }, 50);
-
-    return () => {
-      window.removeEventListener('mousemove', updatePlacement);
-      clearTimeout(fallbackTimer);
-    };
-  }, [visible]);
-
-  const maxHeight = useMemo(() => heightRef.current - 40, [visible]);
-
-  return {
-    maxHeight,
-    placement,
-    placementReady,
-  };
+  return useMemo(() => heightRef.current - 40, deps);
 };
 
 // 菜单项类型定义
@@ -104,10 +59,9 @@ const LazyDropdown: React.FC<Omit<DropdownProps, 'menu'> & { menu: LazyDropdownM
   const [rootItems, setRootItems] = useState<Item[]>([]);
   const [rootLoading, setRootLoading] = useState(false);
   const [searchValues, setSearchValues] = useState<Record<string, string>>({});
+  const dropdownMaxHeight = useNiceDropdownMaxHeight([menuVisible]);
   const [isSearching, setIsSearching] = useState(false);
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-
-  const { maxHeight: dropdownMaxHeight, placement, placementReady } = useAutoPlacement(menuVisible);
 
   // 清理定时器，避免内存泄露
   useEffect(() => {
@@ -340,8 +294,7 @@ const LazyDropdown: React.FC<Omit<DropdownProps, 'menu'> & { menu: LazyDropdownM
   return (
     <Dropdown
       {...props}
-      placement={placement}
-      open={menuVisible && placementReady}
+      open={menuVisible}
       dropdownRender={() =>
         rootLoading && rootItems.length === 0 ? (
           <Menu

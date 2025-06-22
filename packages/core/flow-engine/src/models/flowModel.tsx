@@ -102,6 +102,10 @@ export class FlowModel<Structure extends { parent?: any; subModels?: any } = Def
     return this._options.async || false;
   }
 
+  get reactView() {
+    return this.flowEngine.reactView;
+  }
+
   static get meta() {
     return modelMetas.get(this);
   }
@@ -377,6 +381,7 @@ export class FlowModel<Structure extends { parent?: any; subModels?: any } = Def
         error: createLogger('ERROR'),
         debug: createLogger('DEBUG'),
       },
+      reactView: this.reactView,
       stepResults,
       shared: this.getSharedContext(),
       globals: globalContexts,
