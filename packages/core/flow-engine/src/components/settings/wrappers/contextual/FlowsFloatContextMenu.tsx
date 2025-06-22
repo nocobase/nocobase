@@ -363,37 +363,35 @@ const FlowsFloatContextMenuWithModel: React.FC<ModelProvidedProps> = observer(
     }
 
     return (
-      <>
-        <div
-          ref={containerRef}
-          className={`${floatContainerStyles} ${hideMenu ? 'hide-parent-menu' : ''} ${
-            hasButton ? 'has-button-child' : ''
-          } ${className || ''}`}
-          style={containerStyle}
-          data-has-float-menu="true"
-          onMouseMove={handleChildHover}
-        >
-          {children}
+      <div
+        ref={containerRef}
+        className={`${floatContainerStyles} ${hideMenu ? 'hide-parent-menu' : ''} ${
+          hasButton ? 'has-button-child' : ''
+        } ${className || ''}`}
+        style={containerStyle}
+        data-has-float-menu="true"
+        onMouseMove={handleChildHover}
+      >
+        {children}
 
-          {/* 悬浮工具栏 - 使用与 NocoBase 一致的结构 */}
-          <div className="general-schema-designer">
-            <div className="general-schema-designer-icons">
-              <Space size={3} align="center">
-                <Dropdown
-                  menu={{
-                    items: menuItems,
-                    onClick: handleMenuClick,
-                  }}
-                  trigger={['hover']}
-                  placement="bottomRight"
-                >
-                  <MenuOutlined role="button" aria-label="flows-settings" style={{ cursor: 'pointer', fontSize: 12 }} />
-                </Dropdown>
-              </Space>
-            </div>
+        {/* 悬浮工具栏 - 使用与 NocoBase 一致的结构 */}
+        <div className="general-schema-designer">
+          <div className="general-schema-designer-icons">
+            <Space size={3} align="center">
+              <Dropdown
+                menu={{
+                  items: menuItems,
+                  onClick: handleMenuClick,
+                }}
+                trigger={['hover']}
+                placement="bottomRight"
+              >
+                <MenuOutlined role="button" aria-label="flows-settings" style={{ cursor: 'pointer', fontSize: 12 }} />
+              </Dropdown>
+            </Space>
           </div>
         </div>
-      </>
+      </div>
     );
   },
 );
