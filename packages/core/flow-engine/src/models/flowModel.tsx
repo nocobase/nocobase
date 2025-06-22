@@ -329,6 +329,7 @@ export class FlowModel<Structure extends { parent?: any; subModels?: any } = Def
         }
       }
     }
+    this.applyAutoFlows(); // 参数变化时自动重新执行 autoFlows
   }
 
   getStepParams(flowKey: string, stepKey: string): any | undefined;
@@ -523,9 +524,10 @@ export class FlowModel<Structure extends { parent?: any; subModels?: any } = Def
   /**
    * 执行所有自动应用流程
    * @param {FlowExtraContext} [extra] 可选的额外上下文
+   * @param {boolean} [useCache=true] 是否使用缓存机制，默认为 true
    * @returns {Promise<any[]>} 所有自动应用流程的执行结果数组
    */
-  async applyAutoFlows(extra?: FlowExtraContext): Promise<any[]> {
+  async applyAutoFlows(extra?: FlowExtraContext, useCache = true): Promise<any[]> {
     const autoApplyFlows = this.getAutoFlows();
 
     if (autoApplyFlows.length === 0) {
@@ -533,18 +535,65 @@ export class FlowModel<Structure extends { parent?: any; subModels?: any } = Def
       return [];
     }
 
-    const results: any[] = [];
-    for (const flow of autoApplyFlows) {
-      try {
-        const result = await this.applyFlow(flow.key, extra);
-        results.push(result);
-      } catch (error) {
-        console.error(`FlowModel.applyAutoFlows: Error executing auto-apply flow '${flow.key}':`, error);
-        throw error;
+    // 生成缓存键，包含 stepParams 的序列化版本以确保参数变化时重新执行
+    const cacheKey = useCache
+      ? FlowEngine.generateApplyFlowCacheKey(this['forkId'] ?? 'autoFlow', 'all', this.uid, this.stepParams)
+      : null;
+
+    // 检查缓存
+    if (cacheKey && this.flowEngine) {
+      const cachedEntry = this.flowEngine.applyFlowCache.get(cacheKey);
+      if (cachedEntry) {
+        if (cachedEntry.status === 'resolved') {
+          console.log(`[FlowEngine.applyAutoFlows] Using cached result for model: ${this.uid}`);
+          return cachedEntry.data;
+        }
+        if (cachedEntry.status === 'rejected') throw cachedEntry.error;
+        if (cachedEntry.status === 'pending') return await cachedEntry.promise;
       }
     }
 
-    return results;
+    // 执行 autoFlows
+    const executeAutoFlows = async (): Promise<any[]> => {
+      const results: any[] = [];
+      for (const flow of autoApplyFlows) {
+        try {
+          const result = await this.applyFlow(flow.key, extra);
+          results.push(result);
+        } catch (error) {
+          console.error(`FlowModel.applyAutoFlows: Error executing auto-apply flow '${flow.key}':`, error);
+          throw error;
+        }
+      }
+      return results;
+    };
+
+    // 如果不使用缓存，直接执行
+    if (!cacheKey || !this.flowEngine) {
+      return await executeAutoFlows();
+    }
+
+    // 使用缓存机制
+    const promise = executeAutoFlows()
+      .then((result) => {
+        this.flowEngine.applyFlowCache.set(cacheKey, {
+          status: 'resolved',
+          data: result,
+          promise: Promise.resolve(result),
+        });
+        return result;
+      })
+      .catch((err) => {
+        this.flowEngine.applyFlowCache.set(cacheKey, {
+          status: 'rejected',
+          error: err,
+          promise: Promise.reject(err),
+        });
+        throw err;
+      });
+
+    this.flowEngine.applyFlowCache.set(cacheKey, { status: 'pending', promise });
+    return await promise;
   }
 
   /**
