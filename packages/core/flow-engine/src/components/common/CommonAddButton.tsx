@@ -11,7 +11,30 @@ import React, { FC } from 'react';
 import { Button } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
 
+// TODO: 不知道什么原因，直接用该组件作为 Dropdown 的 children 会导致不显示下拉列表
 export const CommonAddButton: FC<{ icon?: React.ReactNode }> = ({ icon = <PlusOutlined />, children }) => {
+  return (
+    <Button
+      type="dashed"
+      icon={icon}
+      style={{
+        borderColor: 'var(--colorSettings)',
+        color: 'var(--colorSettings)',
+      }}
+    >
+      {children}
+    </Button>
+  );
+};
+
+// TODO: 等解决 CommonAddButton 的问题之后，改用 CommonAddButton
+export const getCommonAddButton = ({
+  icon = <PlusOutlined />,
+  children,
+}: {
+  icon?: React.ReactNode;
+  children?: React.ReactNode;
+}) => {
   return (
     <Button
       type="dashed"

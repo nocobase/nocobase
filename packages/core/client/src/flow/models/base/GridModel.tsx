@@ -8,7 +8,6 @@
  */
 
 import { AddBlockButton, FlowModel, FlowModelRenderer } from '@nocobase/flow-engine';
-import { Button, Card, Dropdown } from 'antd';
 import _ from 'lodash';
 import React from 'react';
 import { BlockModel } from './BlockModel';

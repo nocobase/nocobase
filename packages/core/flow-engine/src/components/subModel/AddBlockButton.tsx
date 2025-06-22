@@ -7,14 +7,12 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Button } from 'antd';
 import React, { useMemo } from 'react';
 import { FlowModel } from '../../models/flowModel';
 import { ModelConstructor } from '../../types';
 import { AddSubModelButton, SubModelItemsType, mergeSubModelItems } from './AddSubModelButton';
 import { createBlockItems } from './blockItems';
-import { PlusOutlined } from '@ant-design/icons';
-import { CommonAddButton } from '../common/CommonAddButton';
+import { getCommonAddButton } from '../common/CommonAddButton';
 
 interface AddBlockButtonProps {
   /**
@@ -79,7 +77,9 @@ export const AddBlockButton: React.FC<AddBlockButtonProps> = ({
   model,
   subModelBaseClass = 'BlockModel',
   subModelKey = 'blocks',
-  children = <CommonAddButton>Add block</CommonAddButton>,
+  children = getCommonAddButton({
+    children: 'Add block',
+  }),
   subModelType = 'array',
   items,
   filter: filterBlocks,
