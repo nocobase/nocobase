@@ -158,6 +158,22 @@ export class FlowEngine {
   }
 
   /**
+   * 根据条件查找已注册的 Model 类。
+   * @param predicate 回调函数，参数为 (name, ModelClass)，返回 true 时即为命中。
+   * @returns [name, ModelConstructor] | undefined
+   */
+  public findModelClass(
+    predicate: (name: string, ModelClass: ModelConstructor) => boolean,
+  ): [string, ModelConstructor] | undefined {
+    for (const [name, ModelClass] of this.modelClasses) {
+      if (predicate(name, ModelClass)) {
+        return [name, ModelClass];
+      }
+    }
+    return undefined;
+  }
+
+  /**
    * 创建并注册一个 Model 实例。
    * 如果具有相同 UID 的实例已存在，则返回现有实例。
    * @template T FlowModel 的子类型，默认为 FlowModel。

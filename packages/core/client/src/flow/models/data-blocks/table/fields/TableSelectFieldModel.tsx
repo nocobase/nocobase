@@ -7,28 +7,29 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import dayjs from 'dayjs';
+import { Tag } from 'antd';
 import React from 'react';
 import { TableFieldModel } from './TableFieldModel';
 
-export class TableDateTimeFieldModel extends TableFieldModel {
-  public static readonly supportedFieldInterfaces = [
-    'date',
-    'datetimeNoTz',
-    'createdAt',
-    'datetime',
-    'updatedAt',
-    'unixTimestamp',
-  ];
+export class TableSelectFieldModel extends TableFieldModel {
+  static readonly supportedFieldInterfaces = ['select'];
+
+  getValue() {
+    return this.ctx.shared.value;
+  }
+
+  getLabel() {
+    return this.parent.collectionField?.enum?.find((item) => item.value === this.getValue())?.label || this.getValue();
+  }
 
   public render() {
-    const value = this.getValue();
+    const label = this.getLabel();
     return (
-      <div>
+      <span>
         {this.props.prefix}
-        {value && dayjs(this.getValue()).format('YYYY-MM-DD')}
+        {label && <Tag>{label}</Tag>}
         {this.props.suffix}
-      </div>
+      </span>
     );
   }
 }

@@ -10,4 +10,5 @@
 export * from './TableDateTimeFieldModel';
 export * from './TableFieldModel';
 export * from './TableInputFieldModel';
+export * from './TableSelectFieldModel';
 //

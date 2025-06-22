@@ -10,7 +10,7 @@
 import { SettingOutlined } from '@ant-design/icons';
 import { observer } from '@formily/reactive-react';
 import { AddActionButton, FlowModelRenderer, FlowsFloatContextMenu } from '@nocobase/flow-engine';
-import { Space } from 'antd';
+import { Skeleton, Space } from 'antd';
 import React from 'react';
 import { ActionModel } from '../../base/ActionModel';
 import { SupportedFieldInterfaces } from '../../base/FieldModel';
@@ -18,7 +18,7 @@ import { TableColumnModel } from './TableColumnModel';
 
 const Columns = observer<any>(({ record, model, index }) => {
   return (
-    <Space size="middle">
+    <Space size={'middle'}>
       {model.mapSubModels('actions', (action: ActionModel) => {
         const fork = action.createFork({}, `${index}`);
         return (
@@ -26,6 +26,7 @@ const Columns = observer<any>(({ record, model, index }) => {
             showFlowSettings={{ showBorder: false }}
             key={fork.uid}
             model={fork}
+            fallback={<Skeleton.Button size="small" />}
             extraContext={{ currentRecord: record }}
           />
         );

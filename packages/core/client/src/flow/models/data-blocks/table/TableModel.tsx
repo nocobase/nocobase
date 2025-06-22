@@ -7,11 +7,16 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { EditOutlined } from '@ant-design/icons';
+import { css } from '@emotion/css';
+import { observer } from '@formily/reactive-react';
 import { AddActionButton, AddFieldButton, FlowModelRenderer, MultiRecordResource } from '@nocobase/flow-engine';
 import { Card, Space, Spin, Table } from 'antd';
-import React from 'react';
+import _ from 'lodash';
+import React, { useRef } from 'react';
 import { ActionModel } from '../../base/ActionModel';
 import { DataBlockModel } from '../../base/BlockModel';
+import { QuickEditForm } from '../form/QuickEditForm';
 import { TableColumnModel } from './TableColumnModel';
 
 type S = {
@@ -74,6 +79,86 @@ export class TableModel extends DataBlockModel<S> {
       } as any);
   }
 
+  EditableRow = (props) => {
+    return <tr {...props} />;
+  };
+
+  EditableCell = observer<any>((props) => {
+    const { title, editable, width, record, dataIndex, children, ...restProps } = props;
+    const ref = useRef(null);
+    if (editable) {
+      return (
+        <td
+          ref={ref}
+          {...restProps}
+          className={css`
+            .edit-icon {
+              position: absolute;
+              display: none;
+              color: #1890ff;
+              margin-left: 8px;
+              cursor: pointer;
+              top: 50%;
+              right: 8px;
+              transform: translateY(-50%);
+            }
+            &:hover {
+              background: rgba(24, 144, 255, 0.1) !important;
+            }
+            &:hover .edit-icon {
+              display: inline-flex;
+            }
+          `}
+        >
+          <EditOutlined
+            className="edit-icon"
+            onClick={async (e) => {
+              await QuickEditForm.open({
+                target: ref.current,
+                flowEngine: this.flowEngine,
+                collectionField: this.collection.getField(dataIndex),
+                filterByTk: record.id,
+              });
+              await this.resource.refresh();
+            }}
+          />
+          <div
+            ref={ref}
+            className={css`
+              overflow: hidden;
+              text-overflow: ellipsis;
+              white-space: nowrap;
+              width: calc(${width}px - 16px);
+            `}
+          >
+            {children}
+          </div>
+        </td>
+      );
+    }
+    return (
+      <td {...restProps}>
+        <div
+          className={css`
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            width: calc(${width}px - 16px);
+          `}
+        >
+          {children}
+        </div>
+      </td>
+    );
+  });
+
+  components = {
+    body: {
+      // row: this.EditableRow,
+      cell: this.EditableCell,
+    },
+  };
+
   render() {
     return (
       <Card>
@@ -87,33 +172,11 @@ export class TableModel extends DataBlockModel<S> {
               />
             ))}
             <AddActionButton model={this} subModelBaseClass="GlobalActionModel" subModelKey="actions" />
-            {/* <AddActionModel
-            model={this}
-            subModelKey={'actions'}
-            items={() => [
-              {
-                key: 'addnew',
-                label: 'Add new',
-                createModelOptions: {
-                  use: 'AddNewActionModel',
-                },
-              },
-              {
-                key: 'delete',
-                label: 'Delete',
-                createModelOptions: {
-                  use: 'BulkDeleteActionModel',
-                },
-              },
-            ]}
-          >
-            <Button icon={<SettingOutlined />}>Configure actions</Button>
-          </AddActionModel> */}
           </Space>
           <Table
-            // loading={this.resource.loading}
+            components={this.components}
             tableLayout="fixed"
-            rowKey="id"
+            rowKey={this.collection.filterTargetKey}
             rowSelection={{
               type: 'checkbox',
               onChange: (_, selectedRows) => {
@@ -121,7 +184,7 @@ export class TableModel extends DataBlockModel<S> {
               },
               selectedRowKeys: this.resource.getSelectedRows().map((row) => row.id),
             }}
-            scroll={{ x: 'max-content' }}
+            scroll={{ x: 'max-content', y: 'calc(100vh - 300px)' }}
             dataSource={this.resource.getData()}
             columns={this.getColumns()}
             pagination={{
@@ -179,7 +242,7 @@ TableModel.registerFlow({
         resource.setDataSourceKey(params.dataSourceKey);
         resource.setResourceName(params.collectionName);
         resource.setAPIClient(ctx.globals.api);
-        resource.setPageSize(20);
+        resource.setPageSize(200);
         ctx.model.resource = resource;
         await ctx.model.applySubModelsAutoFlows('columns', null, { currentBlockModel: ctx.model });
         await resource.refresh();

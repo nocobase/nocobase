@@ -675,7 +675,7 @@ export class FlowModel<Structure extends { parent?: any; subModels?: any } = Def
 
   mapSubModels<K extends keyof Structure['subModels'], R>(
     subKey: K,
-    callback: (model: ArrayElementType<Structure['subModels'][K]>) => R,
+    callback: (model: ArrayElementType<Structure['subModels'][K]>, index: number) => R,
   ): R[] {
     const model = this.subModels[subKey];
 
@@ -685,8 +685,8 @@ export class FlowModel<Structure extends { parent?: any; subModels?: any } = Def
 
     const results: R[] = [];
 
-    _.castArray(model).forEach((item) => {
-      const result = (callback as (model: any) => R)(item);
+    _.castArray(model).forEach((item, index) => {
+      const result = (callback as (model: any, index: number) => R)(item, index);
       results.push(result);
     });
 

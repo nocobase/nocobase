@@ -11,8 +11,8 @@ import { FlowModel } from '@nocobase/flow-engine';
 import { Button } from 'antd';
 import type { ButtonProps } from 'antd/es/button';
 import React from 'react';
-import IconPicker from '../../../schema-component/antd/icon-picker/IconPicker';
 import { Icon } from '../../../icon/Icon';
+import IconPicker from '../../../schema-component/antd/icon-picker/IconPicker';
 
 export class ActionModel extends FlowModel {
   declare props: ButtonProps;
@@ -80,4 +80,15 @@ export class RecordActionModel extends ActionModel {
     type: 'link',
     children: 'Action',
   };
+
+  render() {
+    const props = { ...this.defaultProps, ...this.props };
+    const icon = <Icon type={props.icon as any} />;
+
+    return (
+      <Button style={{ padding: 0, height: 'auto', gap: 0 }} {...props} icon={icon}>
+        {props.children || props.title}
+      </Button>
+    );
+  }
 }
