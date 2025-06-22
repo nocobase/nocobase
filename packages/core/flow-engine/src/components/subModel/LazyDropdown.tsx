@@ -7,8 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Dropdown, DropdownProps, Input, Menu, Spin, Empty } from 'antd';
-import React, { useEffect, useState, useMemo, useRef } from 'react';
+import { Dropdown, DropdownProps, Input, Menu, Spin, Empty, InputProps } from 'antd';
+import React, { useEffect, useState, useMemo, useRef, FC } from 'react';
 
 /**
  * 通过鼠标的位置计算出最佳的 dropdown 的高度，以尽量避免出现滚动条
@@ -32,6 +32,26 @@ const useNiceDropdownMaxHeight = (deps: any[] = []) => {
   }, []);
 
   return useMemo(() => heightRef.current - 40, deps);
+};
+
+/**
+ * 使搜索输入框再显示下拉菜单时自动聚焦，提高用户体验。
+ *
+ * 注意：Input 组件的 autofocus 属性只会在第一次显示下拉菜单时有效，所以这里没有使用它。
+ * @param props
+ * @returns
+ */
+const SearchInputWithAutoFocus: FC<InputProps & { visible: boolean }> = (props) => {
+  const inputRef = useRef<any>(null);
+
+  useEffect(() => {
+    if (inputRef.current && props.visible) {
+      console.log('Focus input:', inputRef.current.input);
+      inputRef.current.input.focus();
+    }
+  }, [props.visible]);
+
+  return <Input ref={inputRef} {...props} />;
 };
 
 // 菜单项类型定义
@@ -199,7 +219,8 @@ const LazyDropdown: React.FC<Omit<DropdownProps, 'menu'> & { menu: LazyDropdownM
             key: `${item.key}-search`,
             label: (
               <div>
-                <Input
+                <SearchInputWithAutoFocus
+                  visible={menuVisible}
                   variant="borderless"
                   allowClear
                   placeholder={item.searchPlaceholder || 'search'}
@@ -295,6 +316,7 @@ const LazyDropdown: React.FC<Omit<DropdownProps, 'menu'> & { menu: LazyDropdownM
     <Dropdown
       {...props}
       open={menuVisible}
+      destroyPopupOnHide // 去掉的话会导致搜索框自动聚焦功能失效
       dropdownRender={() =>
         rootLoading && rootItems.length === 0 ? (
           <Menu
