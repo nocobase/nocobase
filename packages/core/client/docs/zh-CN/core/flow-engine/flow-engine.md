@@ -82,6 +82,45 @@
 - **flowSettings.openStepSettingsDialog(props: StepSettingsDialogProps)**  
   显示单个步骤的配置界面。
 
+- **flowSettings.openRequiredParamsStepFormDialog(props: StepFormDialogProps)**  
+  显示多个需要配置参数的步骤的分步表单界面。
+
+#### 步骤上下文 (Step Context)
+
+FlowSettings 为配置组件提供了上下文功能，使组件能够访问当前步骤的相关信息：
+
+- **useStepSettingContext(): StepSettingContextType**  
+  React Hook，用于在配置组件中获取当前步骤的上下文信息，包括：
+  - `model`: 当前的 FlowModel 实例
+  - `globals`: 全局上下文数据
+  - `app`: FlowEngine 应用实例
+  - `step`: 当前步骤定义
+  - `flow`: 当前流程定义
+  - `flowKey`: 流程标识
+  - `stepKey`: 步骤标识
+
+**使用示例：**
+```typescript
+import { useStepSettingContext } from '@nocobase/flow-engine';
+
+const MyCustomSettingField = () => {
+  const { model, step, flow, flowKey, stepKey } = useStepSettingContext();
+  
+  // 基于当前步骤信息进行自定义逻辑
+  const handleAction = () => {
+    console.log('当前步骤:', step.title);
+    console.log('所属流程:', flow.title);
+  };
+  
+  return <Input />;
+};
+```
+
+**注意：**
+- 在单步骤配置对话框中，上下文提供完整的步骤信息
+- 在多步骤表单中，上下文会随着步骤切换动态更新
+- 上下文同时也会添加到 SchemaField 的 scope 中，可在 uiSchema 中直接使用
+
 ---
 
 ## 示例
