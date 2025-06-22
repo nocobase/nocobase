@@ -1,0 +1,10 @@
+node_modules
+*.log
+.DS_Store
+src
+tsconfig.json
+build.config.ts
+__tests__
+*.test.ts
+*.test.tsx
+examples

@@ -1,0 +1,21 @@
+{
+  "name": "@nocobase/plugin-light-components",
+  "displayName": "Light Components",
+  "displayName.zh-CN": "轻量组件",
+  "description": "Lightweight component plugin for creating and managing cloud components",
+  "description.zh-CN": "用于创建和管理云组件的轻量组件插件",
+  "version": "1.8.0-alpha.5",
+  "main": "./dist/server/index.js",
+  "license": "AGPL-3.0",
+  "scripts": {
+    "build": "nocobase build"
+  },
+  "peerDependencies": {
+    "@nocobase/client": "1.x",
+    "@nocobase/database": "1.x",
+    "@nocobase/flow-engine": "1.x",
+    "@nocobase/server": "1.x",
+    "@nocobase/test": "1.x",
+    "@nocobase/utils": "1.x"
+  }
+}

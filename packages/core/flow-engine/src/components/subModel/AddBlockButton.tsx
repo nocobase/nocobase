@@ -13,6 +13,7 @@ import { ModelConstructor } from '../../types';
 import { AddSubModelButton, SubModelItemsType, mergeSubModelItems } from './AddSubModelButton';
 import { createBlockItems } from './blockItems';
 import { getCommonAddButton } from '../common/CommonAddButton';
+import { createLightComponentItems } from './lightItems';
 
 interface AddBlockButtonProps {
   /**
@@ -83,7 +84,7 @@ export const AddBlockButton: React.FC<AddBlockButtonProps> = ({
   subModelType = 'array',
   items,
   filter: filterBlocks,
-  appendItems,
+  appendItems = createLightComponentItems,
   onModelAdded,
 }) => {
   // 确定最终使用的 items

@@ -20,8 +20,8 @@ interface SubModelItem {
   icon?: React.ReactNode;
   children?: SubModelItem[] | (() => SubModelItem[] | Promise<SubModelItem[]>);
   createModelOptions?:
-    | { use: string; stepParams?: Record<string, any> }
-    | ((parentModel: FlowModel) => { use: string; stepParams?: Record<string, any> });
+    | { use: string; stepParams?: Record<string, any>; props?: Record<string, any> }
+    | ((parentModel: FlowModel) => { use: string; stepParams?: Record<string, any>; props?: Record<string, any> });
 }
 
 interface AddSubModelButtonProps {
