@@ -8,7 +8,7 @@
  */
 
 import React from 'react';
-import { FlowModelRenderer } from '@nocobase/flow-engine';
+import { FlowModelRenderer, FlowEngineProvider } from '@nocobase/flow-engine';
 import { TableFieldModel } from './TableFieldModel';
 import { loadTitleFieldOptions } from '../../../common/utils';
 import { getUniqueKeyFromCollection } from '../../../../../collection-manager/interfaces/utils';
@@ -28,9 +28,9 @@ export class TableAssociationSelectFieldModel extends TableFieldModel {
     const { fieldNames } = this.props;
     const value = this.getValue();
     if (!this.collectionField) {
-      return null;
+      return;
     }
-    const { target } = this.collectionField.options;
+    const { target } = this.collectionField?.options || {};
     const collectionManager = this.collectionField.collection.collectionManager;
     const targetCollection = collectionManager.getCollection(target);
     const targetLabelField = targetCollection.getField(fieldNames.label);
@@ -50,10 +50,12 @@ export class TableAssociationSelectFieldModel extends TableFieldModel {
         <>
           {value.map((v, idx) => {
             const mol = model.createFork({}, { index: idx });
+            console.log(`${this.ctx.shared.index + idx}`, v?.[fieldNames.label]);
+            mol.setSharedContext({ index: idx, value: v?.[fieldNames.label], record: this.ctx.shared.record });
             return (
               <React.Fragment key={idx}>
                 {idx > 0 && <span>,</span>}
-                <FlowModelRenderer model={mol} sharedContext={{ ...this.ctx.shared, value: v?.[fieldNames.label] }} />
+                <FlowEngineProvider engine={this.flowEngine}>{mol.render()}</FlowEngineProvider>
               </React.Fragment>
             );
           })}

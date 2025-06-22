@@ -10,7 +10,7 @@
 import { EditOutlined, QuestionCircleOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
 import { CollectionField, FlowEngineProvider, FlowsFloatContextMenu } from '@nocobase/flow-engine';
-import { TableColumnProps } from 'antd';
+import { TableColumnProps, Tooltip } from 'antd';
 import React from 'react';
 import { FieldModel } from '../../base/FieldModel';
 import { QuickEditForm } from '../form/QuickEditForm';
