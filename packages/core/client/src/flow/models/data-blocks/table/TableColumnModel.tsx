@@ -7,17 +7,15 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { EditOutlined, QuestionCircleOutlined } from '@ant-design/icons';
-import { css } from '@emotion/css';
-import { CollectionField, FlowEngineProvider, FlowsFloatContextMenu } from '@nocobase/flow-engine';
+import { QuestionCircleOutlined } from '@ant-design/icons';
+import { FlowEngineProvider, FlowsFloatContextMenu } from '@nocobase/flow-engine';
 import { TableColumnProps, Tooltip } from 'antd';
 import React from 'react';
 import { FieldModel } from '../../base/FieldModel';
-import { QuickEditForm } from '../form/QuickEditForm';
 import { TableFieldModel } from './fields/TableFieldModel';
 
 export class TableColumnModel extends FieldModel {
-  getColumnProps(): TableColumnProps {
+  getColumnProps(): TableColumnProps & { editable?: boolean } {
     const titleContent = (
       <FlowsFloatContextMenu
         model={this}
@@ -28,8 +26,9 @@ export class TableColumnModel extends FieldModel {
       </FlowsFloatContextMenu>
     );
     return {
-      ...this.props,
       width: 100,
+      editable: true,
+      ...this.props,
       ellipsis: true,
       title: this.props.tooltip ? (
         <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
@@ -42,80 +41,26 @@ export class TableColumnModel extends FieldModel {
         titleContent
       ),
       onCell: (record) => ({
-        className: css`
-          .edit-icon {
-            position: absolute;
-            display: none;
-            color: #1890ff;
-            margin-left: 8px;
-            cursor: pointer;
-            top: 50%;
-            right: 8px;
-            transform: translateY(-50%);
-          }
-          &:hover {
-            background: rgba(24, 144, 255, 0.1) !important;
-          }
-          &:hover .edit-icon {
-            display: inline-flex;
-          }
-        `,
+        record,
+        width: this.props.width,
+        editable: this.props.editable || true,
+        dataIndex: this.props.dataIndex,
+        title: this.props.title,
+        // handleSave,
       }),
       render: this.render(),
     };
   }
 
-  renderQuickEditButton(record) {
-    return (
-      // <Tooltip title="快速编辑">
-      <EditOutlined
-        className="edit-icon"
-        onClick={async (e) => {
-          e.stopPropagation();
-          await QuickEditForm.open({
-            flowEngine: this.flowEngine,
-            collectionField: this.collectionField as CollectionField,
-            filterByTk: record.id,
-          });
-          await this.parent.resource.refresh();
-        }}
-      />
-      // </Tooltip>
-    );
-  }
-
   render() {
-    const { width = '100px', ellipsis } = this.props;
     return (value, record, index) => (
-      <div
-        className={css`
-          overflow: hidden;
-          text-overflow: ellipsis;
-          white-space: nowrap;
-          width: ${width};
-        `}
-      >
+      <>
         {this.mapSubModels('field', (action: TableFieldModel) => {
           const fork = action.createFork({}, `index`);
           fork.setSharedContext({ index, value, record });
           return <FlowEngineProvider engine={this.flowEngine}>{fork.render()}</FlowEngineProvider>;
         })}
-        {/* {this.mapSubModels('field', (action: TableFieldModel) => {
-          const fork = action.createFork({}, `${index}`);
-          return (
-            <FlowModelRenderer
-              key={fork.uid}
-              fallback={<Skeleton.Button size="small" />}
-              model={fork}
-              showFlowSettings
-              hideRemoveInSettings
-              sharedContext={{ index, value, record }}
-              extraContext={{ index, value, record }}
-            />
-          );
-        })} */}
-        {this.renderQuickEditButton(record)}
-      </div>
+      </>
     );
   }
 }
@@ -134,7 +79,7 @@ TableColumnModel.registerFlow({
   auto: true,
   steps: {
     step1: {
-      handler(ctx, params) {
+      async handler(ctx, params) {
         if (!params.fieldPath) {
           return;
         }
@@ -146,6 +91,7 @@ TableColumnModel.registerFlow({
         ctx.model.fieldPath = params.fieldPath;
         ctx.model.setProps('title', field.title);
         ctx.model.setProps('dataIndex', field.name);
+        await ctx.model.applySubModelsAutoFlows('field');
       },
     },
     editColumTitle: {

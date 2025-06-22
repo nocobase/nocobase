@@ -11,6 +11,7 @@ import { App, ConfigProvider } from 'antd';
 import React, { createContext, useContext, useEffect } from 'react';
 import { FlowEngine } from './flowEngine';
 import useDrawer from './useDrawer';
+import usePopover from './usePopover';
 
 interface FlowEngineProviderProps {
   engine: FlowEngine;
@@ -30,6 +31,7 @@ export const FlowEngineProvider: React.FC<FlowEngineProviderProps> = (props) => 
 export const FlowEngineGlobalsContextProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { modal, message, notification } = App.useApp();
   const [drawer, contextHolder] = useDrawer();
+  const [popover, popoverContextHolder] = usePopover();
   const engine = useFlowEngine();
   const config = useContext(ConfigProvider.ConfigContext);
 
@@ -39,12 +41,14 @@ export const FlowEngineGlobalsContextProvider: React.FC<{ children: React.ReactN
     engine.context['modal'] = modal;
     engine.context['message'] = message;
     engine.context['notification'] = notification;
-  }, [engine, drawer, modal, message, notification, config]);
+    engine.context['popover'] = popover;
+  }, [engine, drawer, modal, message, notification, config, popover]);
 
   return (
     <>
       {children}
       {contextHolder as any}
+      {popoverContextHolder as any}
     </>
   );
 };

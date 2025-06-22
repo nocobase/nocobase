@@ -197,6 +197,10 @@ export class Collection {
     return this.dataSource.collectionManager;
   }
 
+  get filterTargetKey() {
+    return this.options.filterTargetKey;
+  }
+
   get name() {
     return this.options.name;
   }
@@ -330,6 +334,10 @@ export class CollectionField {
 
   get enum(): any[] {
     return this.options.uiSchema?.enum || [];
+  }
+
+  get interface() {
+    return this.options.interface || 'input';
   }
 
   getComponentProps() {
