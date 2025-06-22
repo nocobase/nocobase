@@ -8,10 +8,11 @@
  */
 
 import { uid } from '@formily/shared';
-import { FlowModel, FlowModelRenderer } from '@nocobase/flow-engine';
+import { FlowModel, FlowModelRenderer, getCommonAddButton } from '@nocobase/flow-engine';
 import { Button, Tabs } from 'antd';
 import _ from 'lodash';
 import React from 'react';
+import { PageHeader } from '@ant-design/pro-layout';
 
 type PageModelStructure = {
   subModels: {
@@ -42,39 +43,43 @@ export class PageModel extends FlowModel<PageModelStructure> {
   renderTabs() {
     return (
       <Tabs
+        tabBarStyle={{ backgroundColor: '#fff', paddingInline: 16, marginBottom: 0 }}
         items={this.getItems()}
         // destroyInactiveTabPane
-        tabBarExtraContent={
-          <Button
-            onClick={() =>
-              this.addTab({
-                use: 'PageTabModel',
-                props: { key: uid(), label: `Tab - ${uid()}` },
-                subModels: {
-                  grid: {
-                    use: 'BlockGridModel',
-                  },
+        tabBarExtraContent={getCommonAddButton({
+          children: 'Add Tab',
+          onClick: () =>
+            this.addTab({
+              use: 'PageTabModel',
+              props: { key: uid(), label: `Tab - ${uid()}` },
+              subModels: {
+                grid: {
+                  use: 'BlockGridModel',
                 },
-              })
-            }
-          >
-            Add Tab
-          </Button>
-        }
+              },
+            }),
+        })}
       />
     );
   }
 
   render() {
-    return this.props.enableTabs ? this.renderTabs() : this.renderFirstTab();
+    return (
+      <>
+        {this.props.title && <PageHeader title={this.props.title} style={{ backgroundColor: '#fff' }} />}
+        {this.props.enableTabs ? this.renderTabs() : this.renderFirstTab()}
+      </>
+    );
   }
 }
 
 PageModel.registerFlow({
   key: 'default',
+  title: '基础配置',
   auto: true,
   steps: {
-    step1: {
+    settings: {
+      title: '配置页面',
       uiSchema: {
         title: {
           type: 'string',
@@ -92,9 +97,15 @@ PageModel.registerFlow({
           'x-component': 'Switch',
         },
       },
+      defaultParams(ctx) {
+        return {
+          title: 'Page title',
+          enableTabs: false,
+        };
+      },
       async handler(ctx, params) {
-        ctx.model.setProps('enableTabs', params.enableTabs || false);
-        console.log('PageModel step1 handler', ctx.model.props.enableTabs);
+        ctx.model.setProps('title', params.title);
+        ctx.model.setProps('enableTabs', params.enableTabs);
       },
     },
   },

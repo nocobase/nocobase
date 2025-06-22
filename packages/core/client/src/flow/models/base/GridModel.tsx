@@ -8,7 +8,6 @@
  */
 
 import { AddBlockButton, FlowModel, FlowModelRenderer } from '@nocobase/flow-engine';
-import { Button, Card, Dropdown } from 'antd';
 import _ from 'lodash';
 import React from 'react';
 import { BlockModel } from './BlockModel';
@@ -19,7 +18,7 @@ function Grid({ items }) {
       {items.map((item) => {
         return (
           <div key={item.uid} style={{ marginBottom: 16 }}>
-            <FlowModelRenderer model={item} key={item.uid} showFlowSettings />
+            <FlowModelRenderer model={item} key={item.uid} showFlowSettings={{ showBackground: false }} />
           </div>
         );
       })}

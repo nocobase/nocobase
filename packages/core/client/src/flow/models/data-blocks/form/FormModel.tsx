@@ -27,7 +27,11 @@ export class FormModel extends DataBlockModel {
         <FormProvider form={this.form}>
           <FormLayout layout={'vertical'}>
             {this.mapSubModels('fields', (field) => (
-              <FlowModelRenderer model={field} showFlowSettings sharedContext={{ currentBlockModel: this }} />
+              <FlowModelRenderer
+                model={field}
+                showFlowSettings={{ showBorder: false }}
+                sharedContext={{ currentBlockModel: this }}
+              />
             ))}
           </FormLayout>
           <AddFieldButton
@@ -57,9 +61,13 @@ export class FormModel extends DataBlockModel {
             collection={this.collection}
             subModelBaseClass="FormFieldModel"
           />
-          <FormButtonGroup>
+          <FormButtonGroup style={{ marginTop: 16 }}>
             {this.mapSubModels('actions', (action) => (
-              <FlowModelRenderer model={action} showFlowSettings sharedContext={{ currentBlockModel: this }} />
+              <FlowModelRenderer
+                model={action}
+                showFlowSettings={{ showBackground: false, showBorder: false }}
+                sharedContext={{ currentBlockModel: this }}
+              />
             ))}
             <AddActionButton model={this} subModelBaseClass="FormActionModel" />
           </FormButtonGroup>

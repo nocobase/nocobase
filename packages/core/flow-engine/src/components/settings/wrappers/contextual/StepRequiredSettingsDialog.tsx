@@ -12,6 +12,7 @@ import { message, Button } from 'antd';
 import React from 'react';
 import { ActionStepDefinition } from '../../../../types';
 import { resolveDefaultParams } from '../../../../utils';
+import { StepSettingContextProvider, StepSettingContextType, useStepSettingContext } from './StepSettingContext';
 
 /**
  * 检查步骤是否已经有了所需的配置值
@@ -34,6 +35,66 @@ function hasRequiredParams(uiSchema: Record<string, any>, currentParams: Record<
 }
 
 const SchemaField = createSchemaField();
+
+/**
+ * 多步骤上下文提供器 - 为每个步骤提供相应的上下文信息
+ * 能够根据当前步骤动态切换上下文
+ */
+interface MultiStepContextProviderProps {
+  model: any;
+  requiredSteps: Array<{
+    flowKey: string;
+    stepKey: string;
+    step: ActionStepDefinition;
+    uiSchema: Record<string, any>;
+    title: string;
+    flowTitle: string;
+  }>;
+  formStep: any; // FormStep实例，用于获取当前步骤
+  children: React.ReactNode;
+}
+
+const MultiStepContextProvider: React.FC<MultiStepContextProviderProps> = ({
+  model,
+  requiredSteps,
+  formStep,
+  children,
+}) => {
+  // 获取当前步骤索引
+  const currentStepIndex = formStep?.current ?? 0;
+  const currentStepInfo = requiredSteps[currentStepIndex];
+
+  // 根据当前步骤创建上下文
+  const contextValue: StepSettingContextType = React.useMemo(() => {
+    if (!currentStepInfo) {
+      // 如果没有当前步骤信息，返回基础上下文
+      return {
+        model,
+        globals: model.flowEngine?.context || {},
+        app: model.flowEngine,
+        step: null,
+        flow: null,
+        flowKey: '',
+        stepKey: '',
+      };
+    }
+
+    const { flowKey, stepKey, step } = currentStepInfo;
+    const flow = model.getFlow(flowKey);
+
+    return {
+      model,
+      globals: model.flowEngine?.context || {},
+      app: model.flowEngine,
+      step,
+      flow,
+      flowKey,
+      stepKey,
+    };
+  }, [model, currentStepInfo, currentStepIndex]);
+
+  return <StepSettingContextProvider value={contextValue}>{children}</StepSettingContextProvider>;
+};
 
 /**
  * 分步表单对话框的属性接口
@@ -277,33 +338,37 @@ const openRequiredParamsStepFormDialog = async ({
 
             return (
               <>
-                <SchemaField
-                  schema={formSchema}
-                  components={{
-                    FormStep,
-                    ...flowEngine.flowSettings?.components,
-                  }}
-                  scope={{
-                    formStep,
-                    totalSteps: requiredSteps.length,
-                    closeDialog: handleClose,
-                    handleNext: () => {
-                      // 验证当前步骤的表单
-                      form
-                        .validate()
-                        .then(() => {
-                          if (formStep) {
-                            formStep.next();
-                          }
-                        })
-                        .catch((errors: any) => {
-                          console.log('表单验证失败:', errors);
-                          // 可以在这里添加更详细的错误处理
-                        });
-                    },
-                    ...flowEngine.flowSettings?.scopes,
-                  }}
-                />
+                <MultiStepContextProvider model={model} requiredSteps={requiredSteps} formStep={formStep}>
+                  <SchemaField
+                    schema={formSchema}
+                    components={{
+                      FormStep,
+                      ...flowEngine.flowSettings?.components,
+                    }}
+                    scope={{
+                      formStep,
+                      totalSteps: requiredSteps.length,
+                      requiredSteps,
+                      useStepSettingContext,
+                      closeDialog: handleClose,
+                      handleNext: () => {
+                        // 验证当前步骤的表单
+                        form
+                          .validate()
+                          .then(() => {
+                            if (formStep) {
+                              formStep.next();
+                            }
+                          })
+                          .catch((errors: any) => {
+                            console.log('表单验证失败:', errors);
+                            // 可以在这里添加更详细的错误处理
+                          });
+                      },
+                      ...flowEngine.flowSettings?.scopes,
+                    }}
+                  />
+                </MultiStepContextProvider>
                 <FormConsumer>
                   {() => (
                     <div
@@ -389,4 +454,4 @@ const openRequiredParamsStepFormDialog = async ({
   });
 };
 
-export { openRequiredParamsStepFormDialog };
+export { openRequiredParamsStepFormDialog, useStepSettingContext };

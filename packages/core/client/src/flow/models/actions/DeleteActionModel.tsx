@@ -9,8 +9,6 @@
 
 import { MultiRecordResource } from '@nocobase/flow-engine';
 import type { ButtonProps } from 'antd/es/button';
-import { refreshOnCompleteAction } from '../../actions/refreshOnCompleteAction';
-import { secondaryConfirmationAction } from '../../actions/secondaryConfirmationAction';
 import { RecordActionModel } from '../base/ActionModel';
 
 export class DeleteActionModel extends RecordActionModel {

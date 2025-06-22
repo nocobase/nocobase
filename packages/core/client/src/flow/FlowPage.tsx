@@ -10,12 +10,19 @@
 import { FlowModelRenderer, useFlowEngine, useFlowModel } from '@nocobase/flow-engine';
 import { useRequest } from 'ahooks';
 import { Spin } from 'antd';
-import React, { useMemo } from 'react';
+import React from 'react';
 import { useParams } from 'react-router-dom';
 
 function InternalFlowPage({ uid, sharedContext }) {
   const model = useFlowModel(uid);
-  return <FlowModelRenderer model={model} sharedContext={sharedContext} showFlowSettings hideRemoveInSettings />;
+  return (
+    <FlowModelRenderer
+      model={model}
+      sharedContext={sharedContext}
+      showFlowSettings={{ showBackground: false, showBorder: false }}
+      hideRemoveInSettings
+    />
+  );
 }
 
 export const FlowRoute = () => {

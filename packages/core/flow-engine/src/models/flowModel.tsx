@@ -64,6 +64,11 @@ export class FlowModel<Structure extends { parent?: any; subModels?: any } = Def
    */
   private _sharedContext: Record<string, any> = {};
 
+  /**
+   * 上一次 applyAutoFlows 的执行参数
+   */
+  private _lastAutoRunParams: any[] | null = null;
+
   constructor(options: FlowModelOptions<Structure>) {
     if (options?.flowEngine?.getModel(options.uid)) {
       // 此时 new FlowModel 并不创建新实例，而是返回已存在的实例，避免重复创建同一个model实例
@@ -100,6 +105,10 @@ export class FlowModel<Structure extends { parent?: any; subModels?: any } = Def
 
   get async() {
     return this._options.async || false;
+  }
+
+  get reactView() {
+    return this.flowEngine.reactView;
   }
 
   static get meta() {
@@ -325,6 +334,7 @@ export class FlowModel<Structure extends { parent?: any; subModels?: any } = Def
         }
       }
     }
+    this._rerunLastAutoRun();
   }
 
   getStepParams(flowKey: string, stepKey: string): any | undefined;
@@ -377,6 +387,7 @@ export class FlowModel<Structure extends { parent?: any; subModels?: any } = Def
         error: createLogger('ERROR'),
         debug: createLogger('DEBUG'),
       },
+      reactView: this.reactView,
       stepResults,
       shared: this.getSharedContext(),
       globals: globalContexts,
@@ -516,11 +527,33 @@ export class FlowModel<Structure extends { parent?: any; subModels?: any } = Def
   }
 
   /**
+   * 重新执行上一次的 applyAutoFlows，保持参数一致
+   * 如果之前没有执行过，则直接跳过
+   * 使用 lodash debounce 避免频繁调用
+   */
+  private _rerunLastAutoRun = _.debounce(async () => {
+    if (this._lastAutoRunParams) {
+      try {
+        await this.applyAutoFlows(...this._lastAutoRunParams);
+      } catch (error) {
+        console.error('FlowModel._rerunLastAutoRun: Error during rerun:', error);
+      }
+    }
+  }, 100);
+
+  /**
    * 执行所有自动应用流程
    * @param {FlowExtraContext} [extra] 可选的额外上下文
+   * @param {boolean} [useCache=true] 是否使用缓存机制，默认为 true
    * @returns {Promise<any[]>} 所有自动应用流程的执行结果数组
    */
-  async applyAutoFlows(extra?: FlowExtraContext): Promise<any[]> {
+  async applyAutoFlows(extra?: FlowExtraContext, useCache?: boolean): Promise<any[]>;
+  async applyAutoFlows(...args: any[]): Promise<any[]> {
+    // 存储本次执行的参数，用于后续重新执行
+    this._lastAutoRunParams = args;
+
+    const [extra, useCache = true] = args;
+
     const autoApplyFlows = this.getAutoFlows();
 
     if (autoApplyFlows.length === 0) {
@@ -528,18 +561,65 @@ export class FlowModel<Structure extends { parent?: any; subModels?: any } = Def
       return [];
     }
 
-    const results: any[] = [];
-    for (const flow of autoApplyFlows) {
-      try {
-        const result = await this.applyFlow(flow.key, extra);
-        results.push(result);
-      } catch (error) {
-        console.error(`FlowModel.applyAutoFlows: Error executing auto-apply flow '${flow.key}':`, error);
-        throw error;
+    // 生成缓存键，包含 stepParams 的序列化版本以确保参数变化时重新执行
+    const cacheKey = useCache
+      ? FlowEngine.generateApplyFlowCacheKey(this['forkId'] ?? 'autoFlow', 'all', this.uid, this.stepParams)
+      : null;
+
+    // 检查缓存
+    if (cacheKey && this.flowEngine) {
+      const cachedEntry = this.flowEngine.applyFlowCache.get(cacheKey);
+      if (cachedEntry) {
+        if (cachedEntry.status === 'resolved') {
+          console.log(`[FlowEngine.applyAutoFlows] Using cached result for model: ${this.uid}`);
+          return cachedEntry.data;
+        }
+        if (cachedEntry.status === 'rejected') throw cachedEntry.error;
+        if (cachedEntry.status === 'pending') return await cachedEntry.promise;
       }
     }
 
-    return results;
+    // 执行 autoFlows
+    const executeAutoFlows = async (): Promise<any[]> => {
+      const results: any[] = [];
+      for (const flow of autoApplyFlows) {
+        try {
+          const result = await this.applyFlow(flow.key, extra);
+          results.push(result);
+        } catch (error) {
+          console.error(`FlowModel.applyAutoFlows: Error executing auto-apply flow '${flow.key}':`, error);
+          throw error;
+        }
+      }
+      return results;
+    };
+
+    // 如果不使用缓存，直接执行
+    if (!cacheKey || !this.flowEngine) {
+      return await executeAutoFlows();
+    }
+
+    // 使用缓存机制
+    const promise = executeAutoFlows()
+      .then((result) => {
+        this.flowEngine.applyFlowCache.set(cacheKey, {
+          status: 'resolved',
+          data: result,
+          promise: Promise.resolve(result),
+        });
+        return result;
+      })
+      .catch((err) => {
+        this.flowEngine.applyFlowCache.set(cacheKey, {
+          status: 'rejected',
+          error: err,
+          promise: Promise.reject(err),
+        });
+        throw err;
+      });
+
+    this.flowEngine.applyFlowCache.set(cacheKey, { status: 'pending', promise });
+    return await promise;
   }
 
   /**
@@ -638,9 +718,9 @@ export class FlowModel<Structure extends { parent?: any; subModels?: any } = Def
     shared?: Record<string, any>,
   ) {
     await Promise.all(
-      this.mapSubModels(subKey, async (column) => {
-        column.setSharedContext(shared);
-        await column.applyAutoFlows(extra);
+      this.mapSubModels(subKey, async (sub) => {
+        sub.setSharedContext(shared);
+        await sub.applyAutoFlows(extra);
       }),
     );
   }

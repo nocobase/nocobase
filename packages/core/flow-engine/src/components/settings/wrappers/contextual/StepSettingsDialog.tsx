@@ -12,6 +12,7 @@ import { message } from 'antd';
 import React from 'react';
 import { ActionStepDefinition, StepSettingsDialogProps } from '../../../../types';
 import { resolveDefaultParams } from '../../../../utils';
+import { StepSettingContextProvider, StepSettingContextType, useStepSettingContext } from './StepSettingContext';
 
 const SchemaField = createSchemaField();
 
@@ -133,16 +134,30 @@ const openStepSettingsDialog = async ({
     (form) => {
       const flowEngine = model.flowEngine || {};
 
+      // 创建上下文值
+      const contextValue: StepSettingContextType = {
+        model,
+        globals: model.flowEngine?.context || {},
+        app: model.flowEngine,
+        step,
+        flow,
+        flowKey,
+        stepKey,
+      };
+
       return (
-        <SchemaField
-          schema={formSchema}
-          components={{
-            ...flowEngine.flowSettings?.components,
-          }}
-          scope={{
-            ...flowEngine.flowSettings?.scopes,
-          }}
-        />
+        <StepSettingContextProvider value={contextValue}>
+          <SchemaField
+            schema={formSchema}
+            components={{
+              ...flowEngine.flowSettings?.components,
+            }}
+            scope={{
+              useStepSettingContext,
+              ...flowEngine.flowSettings?.scopes,
+            }}
+          />
+        </StepSettingContextProvider>
       );
     },
   );
@@ -171,4 +186,4 @@ const openStepSettingsDialog = async ({
   });
 };
 
-export { openStepSettingsDialog };
+export { openStepSettingsDialog, useStepSettingContext };

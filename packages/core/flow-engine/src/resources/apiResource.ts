@@ -38,6 +38,14 @@ export class APIResource<TData = any> extends FlowResource<TData> {
     return this;
   }
 
+  get loading() {
+    return this.getMeta('loading') || false;
+  }
+
+  set loading(value: boolean) {
+    this.setMeta({ loading: value });
+  }
+
   setRequestMethod(method: string) {
     this.request.method = method;
     return this;

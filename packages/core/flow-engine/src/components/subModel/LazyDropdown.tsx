@@ -7,15 +7,16 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Dropdown, DropdownProps, Input, Menu, Spin, Empty } from 'antd';
-import React, { useEffect, useState, useMemo, useRef } from 'react';
+import { Dropdown, DropdownProps, Input, Menu, Spin, Empty, InputProps } from 'antd';
+import React, { useEffect, useState, useMemo, useRef, FC } from 'react';
 
-const useAutoPlacement = (visible: boolean) => {
+/**
+ * 通过鼠标的位置计算出最佳的 dropdown 的高度，以尽量避免出现滚动条
+ * @param deps 类似于 useEffect 的第二个参数，如果不传则默认为 []
+ */
+const useNiceDropdownMaxHeight = (deps: any[] = []) => {
   const heightRef = useRef(0);
-  const [placement, setPlacement] = useState<'bottom' | 'top'>('bottom');
-  const [placementReady, setPlacementReady] = useState(false);
 
-  // 动态高度计算
   useEffect(() => {
     const handler = (e: MouseEvent) => {
       const { clientY } = e;
@@ -30,53 +31,27 @@ const useAutoPlacement = (visible: boolean) => {
     };
   }, []);
 
-  // 智能位置计算
+  return useMemo(() => heightRef.current - 40, deps);
+};
+
+/**
+ * 使搜索输入框在显示下拉菜单时自动聚焦，提高用户体验。
+ *
+ * 注意：Input 组件的 autofocus 属性只会在第一次显示下拉菜单时有效，所以这里没有使用它。
+ * @param props
+ * @returns
+ */
+const SearchInputWithAutoFocus: FC<InputProps & { visible: boolean }> = (props) => {
+  const inputRef = useRef<any>(null);
+
   useEffect(() => {
-    if (!visible) {
-      setPlacementReady(false);
-      return;
+    if (inputRef.current && props.visible) {
+      console.log('Focus input:', inputRef.current.input);
+      inputRef.current.input.focus();
     }
+  }, [props.visible]);
 
-    const updatePlacement = (e: MouseEvent) => {
-      const { clientY } = e;
-      const availableSpaceBelow = window.innerHeight - clientY;
-      const availableSpaceAbove = clientY;
-
-      // 如果下方空间不足，且上方空间更大，则向上显示
-      if (availableSpaceBelow < 300 && availableSpaceAbove > availableSpaceBelow) {
-        setPlacement('top');
-      } else {
-        setPlacement('bottom');
-      }
-
-      setPlacementReady(true);
-
-      // 只计算一次
-      window.removeEventListener('mousemove', updatePlacement);
-    };
-
-    window.addEventListener('mousemove', updatePlacement);
-
-    // 兜底：如果没有鼠标移动事件，使用默认位置
-    const fallbackTimer = setTimeout(() => {
-      window.removeEventListener('mousemove', updatePlacement);
-      setPlacement('bottom');
-      setPlacementReady(true);
-    }, 50);
-
-    return () => {
-      window.removeEventListener('mousemove', updatePlacement);
-      clearTimeout(fallbackTimer);
-    };
-  }, [visible]);
-
-  const maxHeight = useMemo(() => heightRef.current - 40, [visible]);
-
-  return {
-    maxHeight,
-    placement,
-    placementReady,
-  };
+  return <Input ref={inputRef} {...props} />;
 };
 
 // 菜单项类型定义
@@ -104,8 +79,18 @@ const LazyDropdown: React.FC<Omit<DropdownProps, 'menu'> & { menu: LazyDropdownM
   const [rootItems, setRootItems] = useState<Item[]>([]);
   const [rootLoading, setRootLoading] = useState(false);
   const [searchValues, setSearchValues] = useState<Record<string, string>>({});
+  const dropdownMaxHeight = useNiceDropdownMaxHeight([menuVisible]);
+  const [isSearching, setIsSearching] = useState(false);
+  const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  const { maxHeight: dropdownMaxHeight, placement, placementReady } = useAutoPlacement(menuVisible);
+  // 清理定时器，避免内存泄露
+  useEffect(() => {
+    return () => {
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const getKeyPath = (path: string[], key: string) => [...path, key].join('/');
 
@@ -234,17 +219,25 @@ const LazyDropdown: React.FC<Omit<DropdownProps, 'menu'> & { menu: LazyDropdownM
             key: `${item.key}-search`,
             label: (
               <div>
-                <Input
+                <SearchInputWithAutoFocus
+                  visible={menuVisible}
                   variant="borderless"
                   allowClear
                   placeholder={item.searchPlaceholder || 'search'}
                   value={currentSearchValue}
                   onChange={(e) => {
                     e.stopPropagation();
+                    setIsSearching(true);
                     setSearchValues((prev) => ({
                       ...prev,
                       [searchKey]: e.target.value,
                     }));
+                    // 清理之前的定时器
+                    if (searchTimeoutRef.current) {
+                      clearTimeout(searchTimeoutRef.current);
+                    }
+                    // 搜索完成后重置搜索状态
+                    searchTimeoutRef.current = setTimeout(() => setIsSearching(false), 300);
                   }}
                   onClick={(e) => e.stopPropagation()}
                   size="small"
@@ -322,8 +315,8 @@ const LazyDropdown: React.FC<Omit<DropdownProps, 'menu'> & { menu: LazyDropdownM
   return (
     <Dropdown
       {...props}
-      placement={placement}
-      open={menuVisible && placementReady}
+      open={menuVisible}
+      destroyPopupOnHide // 去掉的话会导致搜索框自动聚焦功能失效
       dropdownRender={() =>
         rootLoading && rootItems.length === 0 ? (
           <Menu
@@ -352,7 +345,13 @@ const LazyDropdown: React.FC<Omit<DropdownProps, 'menu'> & { menu: LazyDropdownM
           />
         )
       }
-      onOpenChange={(visible) => setMenuVisible(visible)}
+      onOpenChange={(visible) => {
+        // 如果正在搜索且菜单要关闭，阻止关闭
+        if (!visible && isSearching) {
+          return;
+        }
+        setMenuVisible(visible);
+      }}
     >
       {props.children}
     </Dropdown>

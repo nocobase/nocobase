@@ -18,11 +18,16 @@ import { TableColumnModel } from './TableColumnModel';
 
 const Columns = observer<any>(({ record, model, index }) => {
   return (
-    <Space>
+    <Space size="middle">
       {model.mapSubModels('actions', (action: ActionModel) => {
         const fork = action.createFork({}, `${index}`);
         return (
-          <FlowModelRenderer showFlowSettings key={fork.uid} model={fork} extraContext={{ currentRecord: record }} />
+          <FlowModelRenderer
+            showFlowSettings={{ showBorder: false }}
+            key={fork.uid}
+            model={fork}
+            extraContext={{ currentRecord: record }}
+          />
         );
       })}
     </Space>
@@ -36,6 +41,7 @@ export class TableActionsColumnModel extends TableColumnModel {
     return {
       // title: 'Actions',
       ...this.props,
+      width: 100,
       title: (
         <FlowsFloatContextMenu
           model={this}
