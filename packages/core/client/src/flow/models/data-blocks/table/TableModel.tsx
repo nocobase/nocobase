@@ -68,6 +68,11 @@ export class TableModel extends DataBlockModel<S> {
             onModelAdded={async (model: TableColumnModel) => {
               model.setSharedContext({ currentBlockModel: this });
               await model.applyAutoFlows();
+              const targetCollectionField = model.collectionField.options;
+              if (['belongsToMany', 'belongsTo', 'hasMany', 'hasOne'].includes(targetCollectionField.type)) {
+                this.resource.addAppends(targetCollectionField.name);
+                this.resource.refresh();
+              }
             }}
           />
         ),

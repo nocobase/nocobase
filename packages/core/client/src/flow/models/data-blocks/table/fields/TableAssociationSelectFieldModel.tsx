@@ -51,11 +51,10 @@ export class TableAssociationSelectFieldModel extends TableFieldModel {
           {value.map((v, idx) => {
             const mol = model.createFork({}, { index: idx });
             return (
-              <FlowModelRenderer
-                key={idx}
-                model={mol}
-                sharedContext={{ ...this.ctx.shared, value: v?.[fieldNames.label] }}
-              />
+              <React.Fragment key={idx}>
+                {idx > 0 && <span>,</span>}
+                <FlowModelRenderer model={mol} sharedContext={{ ...this.ctx.shared, value: v?.[fieldNames.label] }} />
+              </React.Fragment>
             );
           })}
         </>
