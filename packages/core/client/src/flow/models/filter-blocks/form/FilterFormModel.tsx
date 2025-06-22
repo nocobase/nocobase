@@ -54,7 +54,7 @@ export class FilterFormModel extends FilterBlockModel {
             subModelKey="fields"
             model={this}
             collection={this.collection}
-            subModelBaseClass="FilterFormFieldModel"
+            subModelBaseClass="FormFieldModel"
           />
           <FormButtonGroup>
             {this.mapSubModels('actions', (action) => (
