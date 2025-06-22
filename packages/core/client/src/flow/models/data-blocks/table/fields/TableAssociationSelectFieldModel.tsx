@@ -34,7 +34,7 @@ export class TableAssociationSelectFieldModel extends TableFieldModel {
     const fieldClasses = Array.from(this.flowEngine.filterModelClassByParent('TableFieldModel').values())?.sort(
       (a, b) => (a.meta?.sort || 0) - (b.meta?.sort || 0),
     );
-    const fieldInterfaceName = targetLabelField.options?.interface;
+    const fieldInterfaceName = targetLabelField?.options?.interface;
     const fieldClass = fieldClasses.find((fieldClass) => {
       return fieldClass.supportedFieldInterfaces?.includes(fieldInterfaceName);
     });
@@ -47,12 +47,11 @@ export class TableAssociationSelectFieldModel extends TableFieldModel {
         <>
           {value.map((v, idx) => {
             const mol = model.createFork({}, { index: idx });
-            console.log(v?.[fieldNames.value]);
             return (
               <FlowModelRenderer
                 key={idx}
                 model={mol}
-                sharedContext={{ ...this.ctx.shared, value: v?.[fieldNames.value] }}
+                sharedContext={{ ...this.ctx.shared, value: v?.[fieldNames.label] }}
               />
             );
           })}
@@ -95,24 +94,11 @@ TableAssociationSelectFieldModel.registerFlow({
           dataSourceManager: ctx.app.dataSourceManager,
         });
         const filterKey = getUniqueKeyFromCollection(targetCollection.options as any);
-        const targetLabelField = targetCollection.getField(
-          params.label || targetCollection.options.titleField || filterKey,
-        );
         const newFieldNames = {
           value: filterKey,
           label: params.label || targetCollection.options.titleField || filterKey,
         };
         ctx.model.setProps({ fieldNames: newFieldNames });
-        // const fieldClasses = Array.from(ctx.model.flowEngine.filterModelClassByParent('TableFieldModel'));
-        // const fieldInterfaceName = targetLabelField.options?.interface;
-        // const fieldClass = fieldClasses.find((fieldClass) => {
-        //   return (
-        //     fieldClass[1].supportedFieldInterfaces?.includes(fieldInterfaceName) ||
-        //     fieldClass[1].supportedFieldInterfaces === '*'
-        //   );
-        // });
-        // console.log(fieldClass[1])
-        ctx.model.setSharedContext({ titleFieldModel: 888 });
       },
     },
   },

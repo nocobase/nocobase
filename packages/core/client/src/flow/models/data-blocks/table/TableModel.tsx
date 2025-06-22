@@ -78,6 +78,11 @@ export class TableModel extends DataBlockModel<S> {
           onModelAdded={async (model: TableColumnModel) => {
             model.setSharedContext({ currentBlockModel: this });
             await model.applyAutoFlows();
+            const targetCollectionField = model.collectionField.options;
+            if (['belongsToMany', 'belongsTo', 'hasMany', 'hasOne'].includes(targetCollectionField.type)) {
+              this.resource.addAppends(targetCollectionField.name);
+              this.resource.refresh();
+            }
           }}
         />
       ),
@@ -143,9 +148,6 @@ export class TableModel extends DataBlockModel<S> {
             this.resource.setPage(pagination.current);
             this.resource.setPageSize(pagination.pageSize);
             this.resource.refresh();
-          }}
-          scroll={{
-            x: 'max-content',
           }}
         />
       </Card>
