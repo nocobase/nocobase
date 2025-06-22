@@ -27,6 +27,9 @@ export class TableAssociationSelectFieldModel extends TableFieldModel {
   public render() {
     const { fieldNames } = this.props;
     const value = this.getValue();
+    if (!this.collectionField) {
+      return null;
+    }
     const { target } = this.collectionField.options;
     const collectionManager = this.collectionField.collection.collectionManager;
     const targetCollection = collectionManager.getCollection(target);
