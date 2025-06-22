@@ -35,7 +35,7 @@ const useNiceDropdownMaxHeight = (deps: any[] = []) => {
 };
 
 /**
- * 使搜索输入框再显示下拉菜单时自动聚焦，提高用户体验。
+ * 使搜索输入框在显示下拉菜单时自动聚焦，提高用户体验。
  *
  * 注意：Input 组件的 autofocus 属性只会在第一次显示下拉菜单时有效，所以这里没有使用它。
  * @param props
