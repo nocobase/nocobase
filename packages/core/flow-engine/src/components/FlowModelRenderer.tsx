@@ -42,6 +42,7 @@ import { useApplyAutoFlows, useFlowExtraContext } from '../hooks';
 import { FlowModel } from '../models';
 import { FlowsContextMenu } from './settings/wrappers/contextual/FlowsContextMenu';
 import { FlowsFloatContextMenu } from './settings/wrappers/contextual/FlowsFloatContextMenu';
+import _ from 'lodash';
 
 interface FlowModelRendererProps {
   model?: FlowModel;
@@ -50,7 +51,7 @@ interface FlowModelRendererProps {
   fallback?: React.ReactNode; // 渲染失败时的回退内容
 
   /** 是否显示流程设置入口（如按钮、菜单等） */
-  showFlowSettings?: boolean; // 默认 false
+  showFlowSettings?: boolean | { showBackground?: boolean; showBorder?: boolean }; // 默认 false
 
   /** 流程设置的交互风格 */
   flowSettingsVariant?: 'dropdown' | 'contextMenu' | 'modal' | 'drawer'; // 默认 'dropdown'
@@ -111,7 +112,7 @@ const FlowModelRendererWithAutoFlows: React.FC<{
  */
 const FlowModelRendererWithoutAutoFlows: React.FC<{
   model: FlowModel;
-  showFlowSettings: boolean;
+  showFlowSettings: boolean | { showBackground?: boolean; showBorder?: boolean };
   flowSettingsVariant: string;
   hideRemoveInSettings: boolean;
   sharedContext?: Record<string, any>;
@@ -131,7 +132,7 @@ const FlowModelRendererWithoutAutoFlows: React.FC<{
  */
 const FlowModelRendererCore: React.FC<{
   model: FlowModel;
-  showFlowSettings: boolean;
+  showFlowSettings: boolean | { showBackground?: boolean; showBorder?: boolean };
   flowSettingsVariant: string;
   hideRemoveInSettings: boolean;
 }> = observer(({ model, showFlowSettings, flowSettingsVariant, hideRemoveInSettings }) => {
@@ -147,7 +148,12 @@ const FlowModelRendererCore: React.FC<{
   switch (flowSettingsVariant) {
     case 'dropdown':
       return (
-        <FlowsFloatContextMenu model={model} showDeleteButton={!hideRemoveInSettings}>
+        <FlowsFloatContextMenu
+          model={model}
+          showDeleteButton={!hideRemoveInSettings}
+          showBackground={_.isObject(showFlowSettings) ? showFlowSettings.showBackground : undefined}
+          showBorder={_.isObject(showFlowSettings) ? showFlowSettings.showBorder : undefined}
+        >
           {modelContent}
         </FlowsFloatContextMenu>
       );
@@ -172,7 +178,12 @@ const FlowModelRendererCore: React.FC<{
     default:
       console.warn(`FlowModelRenderer: Unknown flowSettingsVariant '${flowSettingsVariant}', falling back to dropdown`);
       return (
-        <FlowsFloatContextMenu model={model} showDeleteButton={!hideRemoveInSettings}>
+        <FlowsFloatContextMenu
+          model={model}
+          showDeleteButton={!hideRemoveInSettings}
+          showBackground={_.isObject(showFlowSettings) ? showFlowSettings.showBackground : undefined}
+          showBorder={_.isObject(showFlowSettings) ? showFlowSettings.showBorder : undefined}
+        >
           {modelContent}
         </FlowsFloatContextMenu>
       );

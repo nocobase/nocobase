@@ -36,7 +36,7 @@ const detectButtonInDOM = (container: HTMLElement): boolean => {
 };
 
 // 使用与 NocoBase 一致的悬浮工具栏样式
-const floatContainerStyles = css`
+const floatContainerStyles = ({ showBackground, showBorder }) => css`
   position: relative;
   display: inline;
 
@@ -63,8 +63,8 @@ const floatContainerStyles = css`
     left: 0;
     right: 0;
     display: none;
-    background: var(--colorBgSettingsHover);
-    border: 2px solid var(--colorBorderSettingsHover);
+    background: ${showBackground ? 'var(--colorBgSettingsHover)' : ''};
+    border: ${showBorder ? '2px solid var(--colorBorderSettingsHover)' : ''};
     pointer-events: none;
 
     &.nb-in-template {
@@ -101,6 +101,14 @@ interface ModelProvidedProps {
   showDeleteButton?: boolean;
   containerStyle?: React.CSSProperties;
   className?: string;
+  /**
+   * @default true
+   */
+  showBorder?: boolean;
+  /**
+   * @default true
+   */
+  showBackground?: boolean;
 }
 
 interface ModelByIdProps {
@@ -111,6 +119,14 @@ interface ModelByIdProps {
   showDeleteButton?: boolean;
   containerStyle?: React.CSSProperties;
   className?: string;
+  /**
+   * @default true
+   */
+  showBorder?: boolean;
+  /**
+   * @default true
+   */
+  showBackground?: boolean;
 }
 
 type FlowsFloatContextMenuProps = ModelProvidedProps | ModelByIdProps;
@@ -151,7 +167,16 @@ const FlowsFloatContextMenu: React.FC<FlowsFloatContextMenuProps> = (props) => {
 
 // 使用传入的model
 const FlowsFloatContextMenuWithModel: React.FC<ModelProvidedProps> = observer(
-  ({ model, children, enabled = true, showDeleteButton = true, containerStyle, className }) => {
+  ({
+    model,
+    children,
+    enabled = true,
+    showDeleteButton = true,
+    containerStyle,
+    className,
+    showBackground = true,
+    showBorder = true,
+  }) => {
     const [hideMenu, setHideMenu] = useState<boolean>(false);
     const [hasButton, setHasButton] = useState<boolean>(false);
     const containerRef = useRef<HTMLDivElement>(null);
@@ -365,7 +390,7 @@ const FlowsFloatContextMenuWithModel: React.FC<ModelProvidedProps> = observer(
     return (
       <div
         ref={containerRef}
-        className={`${floatContainerStyles} ${hideMenu ? 'hide-parent-menu' : ''} ${
+        className={`${floatContainerStyles({ showBackground, showBorder })} ${hideMenu ? 'hide-parent-menu' : ''} ${
           hasButton ? 'has-button-child' : ''
         } ${className || ''}`}
         style={containerStyle}

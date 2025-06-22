@@ -9,9 +9,8 @@
 
 import { EditOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
-import { observer } from '@formily/react';
-import { CollectionField, FlowEngineProvider, FlowModelRenderer, FlowsFloatContextMenu } from '@nocobase/flow-engine';
-import { Skeleton, Space, TableColumnProps, Tooltip } from 'antd';
+import { CollectionField, FlowEngineProvider, FlowsFloatContextMenu } from '@nocobase/flow-engine';
+import { TableColumnProps } from 'antd';
 import React from 'react';
 import { FieldModel } from '../../base/FieldModel';
 import { QuickEditForm } from '../form/QuickEditForm';
@@ -27,6 +26,7 @@ export class TableColumnModel extends FieldModel {
         <FlowsFloatContextMenu
           model={this}
           containerStyle={{ display: 'block', padding: '11px 8px', margin: '-11px -8px' }}
+          showBorder={false}
         >
           {this.props.title}
         </FlowsFloatContextMenu>

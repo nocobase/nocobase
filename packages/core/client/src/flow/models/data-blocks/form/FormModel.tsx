@@ -27,7 +27,11 @@ export class FormModel extends DataBlockModel {
         <FormProvider form={this.form}>
           <FormLayout layout={'vertical'}>
             {this.mapSubModels('fields', (field) => (
-              <FlowModelRenderer model={field} showFlowSettings sharedContext={{ currentBlockModel: this }} />
+              <FlowModelRenderer
+                model={field}
+                showFlowSettings={{ showBorder: false }}
+                sharedContext={{ currentBlockModel: this }}
+              />
             ))}
           </FormLayout>
           <AddFieldButton
