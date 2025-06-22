@@ -20,6 +20,7 @@ const { Header, Content } = Layout;
 import { ConversationsProps } from '@ant-design/x';
 import { useForm } from '@formily/react';
 import { useAIEmployeesContext } from '../AIEmployeesProvider';
+import { uid } from '@formily/shared';
 
 const useCloseActionProps = () => {
   const { setVisible } = useActionContext();
@@ -32,16 +33,16 @@ const useCloseActionProps = () => {
   };
 };
 
-const useSubmitActionProps = () => {
+const useSubmitActionProps = (conversationKey: string) => {
   const { setVisible } = useActionContext();
   const api = useAPIClient();
   const form = useForm();
-  const { currentConversation, conversationsService } = useChatConversations();
+  const { conversationsService } = useChatConversations();
   return {
     onClick: async () => {
       await form.submit();
       await api.resource('aiConversations').update({
-        filterByTk: currentConversation,
+        filterByTk: conversationKey,
         values: {
           title: form.values.title,
         },
@@ -53,11 +54,16 @@ const useSubmitActionProps = () => {
   };
 };
 
-const Rename: React.FC = () => {
+const Rename: React.FC<{
+  conversation: {
+    key: string;
+    title?: string;
+  };
+}> = ({ conversation }) => {
   const t = useT();
   return (
     <SchemaComponent
-      scope={{ useCloseActionProps, useSubmitActionProps }}
+      scope={{ useCloseActionProps, useSubmitActionProps: () => useSubmitActionProps(conversation.key) }}
       schema={{
         name: 'rename',
         type: 'void',
@@ -67,7 +73,7 @@ const Rename: React.FC = () => {
         },
         title: t('Rename'),
         properties: {
-          drawer: {
+          [uid()]: {
             type: 'void',
             'x-component': 'Action.Modal',
             'x-component-props': {
@@ -89,6 +95,7 @@ const Rename: React.FC = () => {
                 required: true,
                 'x-decorator': 'FormItem',
                 'x-component': 'Input',
+                default: conversation.title || '',
               },
               footer: {
                 type: 'void',
@@ -146,6 +153,7 @@ export const Conversations: React.FC = memo(() => {
       const title = item.title || t('New conversation');
       return {
         key: item.sessionId,
+        title,
         timestamp: new Date(item.updatedAt).getTime(),
         label: index === conversations.length - 1 ? <div ref={lastConversationRef}>{title}</div> : title,
       };
@@ -234,7 +242,8 @@ export const Conversations: React.FC = memo(() => {
             menu={(conversation) => ({
               items: [
                 {
-                  label: <Rename />,
+                  // @ts-ignore
+                  label: <Rename conversation={conversation} />,
                   key: 'rename',
                   icon: <EditOutlined />,
                 },

@@ -48,6 +48,7 @@ export type Message = Omit<BubbleProps, 'content'> & {
     type?: MessageType;
     content: any;
     attachments?: Attachment[];
+    workContext?: ContextItem[];
   };
 };
 export type Action = {
@@ -102,13 +103,28 @@ export type Tool = {
 
 export type Attachment = any;
 
+type ActionParams = {
+  item: ContextItem;
+  message: Message;
+  value?: string;
+};
+
+export type ActionOptions = {
+  icon?: React.ReactNode;
+  title?: React.ReactNode;
+  Component?: ComponentType<ActionParams>;
+  onClick?: (params: ActionParams) => void;
+  // 'text' or other programing language
+  responseType: 'text' | string;
+};
+
 export type WorkContextOptions = {
   name?: string;
   menu: {
     icon?: React.ReactNode;
     label?: React.ReactNode;
     Component?: ComponentType<{
-      addContextItem: (item: Omit<ContextItem, 'type'>) => void;
+      onAdd: (item: Omit<ContextItem, 'type'>) => void;
     }>;
   };
   tag?: {
@@ -116,6 +132,6 @@ export type WorkContextOptions = {
       item: ContextItem;
     }>;
   };
-  actions?: {};
+  actions?: ActionOptions[];
   children?: Record<string, Omit<WorkContextOptions, 'children'>>;
 };

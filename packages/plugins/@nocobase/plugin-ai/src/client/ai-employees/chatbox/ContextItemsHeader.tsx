@@ -13,7 +13,7 @@ import { css } from '@emotion/css';
 import { ContextItem } from './ContextItem';
 
 export const ContextItemsHeader: React.FC = () => {
-  const { contextItems } = useChatMessages();
+  const { contextItems, removeContextItem } = useChatMessages();
   if (!contextItems?.length) {
     return null;
   }
@@ -28,7 +28,7 @@ export const ContextItemsHeader: React.FC = () => {
       `}
     >
       {contextItems.map((item) => (
-        <ContextItem key={`${item.type}:${item.uid}`} item={item} closable={true} />
+        <ContextItem key={`${item.type}:${item.uid}`} item={item} closable={true} onRemove={removeContextItem} />
       ))}
     </div>
   );

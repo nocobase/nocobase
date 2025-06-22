@@ -235,6 +235,9 @@ export const useSetChatBoxContext = () => {
         if (attachments) {
           setAttachments(attachments);
         }
+        if (workContext) {
+          setContextItems(workContext);
+        }
         if (systemMessage) {
           setSystemMessage(systemMessage);
         }

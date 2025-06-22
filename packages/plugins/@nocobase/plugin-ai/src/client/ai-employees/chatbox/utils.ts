@@ -8,6 +8,7 @@
  */
 
 import { useLocalVariables, useVariables } from '@nocobase/client';
+import { ContextItem } from '../types';
 
 async function replaceVariables(template, variables, localVariables = {}) {
   const regex = /\{\{\s*(.*?)\s*\}\}/g;
@@ -57,6 +58,7 @@ export const parseTask = async (
       user?: string;
       system?: string;
       attachments?: any[];
+      workContext?: ContextItem[];
     };
   },
   variables: Record<string, any>,
@@ -95,7 +97,7 @@ export const parseTask = async (
       }
     }
   }
-  return { userMessage, systemMessage, attachments, workContext: [] };
+  return { userMessage, systemMessage, attachments, workContext: message.workContext };
 };
 
 const publicPath = window['__nocobase_dev_public_path__'] || window['__nocobase_public_path__'] || '/';

@@ -63,4 +63,16 @@ export class AIManager {
       ...options,
     });
   }
+
+  getWorkContext(name: string): WorkContextOptions {
+    const [rootKey, childKey] = name.split('.');
+    if (childKey) {
+      const root = this.workContext.get(rootKey);
+      if (!root?.children) {
+        return null;
+      }
+      return root.children[childKey];
+    }
+    return this.workContext.get(name);
+  }
 }

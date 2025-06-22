@@ -143,13 +143,13 @@ export const AIVariableRawTextArea: React.FC = connect((props) => {
         inputRef={inputRef}
         {...rest}
       />
-      <div
-        style={{
-          marginTop: 8,
-        }}
-      >
-        <UISchemaSelector onSelect={(v) => onInsert(v)} currentSchema={currentSchema} />
-      </div>
+      {/* <div */}
+      {/*   style={{ */}
+      {/*     marginTop: 8, */}
+      {/*   }} */}
+      {/* > */}
+      {/*   <UISchemaSelector onSelect={(v) => onInsert(v)} currentSchema={currentSchema} /> */}
+      {/* </div> */}
     </div>
   );
 });

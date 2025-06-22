@@ -125,8 +125,8 @@ export class AIEmployee {
 
     this.plugin.aiEmployeesManager.conversationController.delete(this.sessionId);
 
-    const message = gathered.content;
-    const toolCalls = gathered.tool_calls;
+    const message = gathered?.content;
+    const toolCalls = gathered?.tool_calls;
     if (!message && !toolCalls?.length && !signal.aborted && !allowEmpty) {
       this.ctx.res.write(`data: ${JSON.stringify({ type: 'error', body: 'No content' })}\n\n`);
       this.ctx.res.end();

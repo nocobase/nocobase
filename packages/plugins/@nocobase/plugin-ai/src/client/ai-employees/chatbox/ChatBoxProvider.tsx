@@ -49,7 +49,9 @@ html body {
 .ant-dropdown-menu-submenu-placement-rightTop {
   transform: translateX(450px) !important;
 }
-
+.ant-dropdown-menu-submenu-placement-rightBottom {
+  transform: translateX(450px) !important;
+}
 `}
           </style>
         </Helmet>

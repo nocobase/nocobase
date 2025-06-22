@@ -18,9 +18,9 @@ const { Paragraph } = Typography;
 export const ContextItem: React.FC<{
   item: ContextItemType;
   closable?: boolean;
-}> = ({ item, closable }) => {
+  onRemove?: (type: string, uid: string) => void;
+}> = ({ item, closable, onRemove }) => {
   const [showContent, setShowContent] = React.useState(false);
-  const { removeContextItem } = useChatMessages();
   const plugin = usePlugin('ai') as PluginAIClient;
   const workContext = plugin.aiManager.workContext;
   const C = useMemo(() => {
@@ -40,7 +40,7 @@ export const ContextItem: React.FC<{
         onClick={() => setShowContent(true)}
         closable={closable}
         onClose={() => {
-          removeContextItem(item.type, item.uid);
+          onRemove(item.type, item.uid);
         }}
         style={{
           cursor: 'pointer',
@@ -49,7 +49,11 @@ export const ContextItem: React.FC<{
         {C ? <C item={item} /> : item.title}
       </Tag>
       <Modal open={showContent} onCancel={() => setShowContent(false)} footer={null} width="50%">
-        <Paragraph>
+        <Paragraph
+          copyable={{
+            text: item.content,
+          }}
+        >
           <pre
             style={{
               maxHeight: '70vh',

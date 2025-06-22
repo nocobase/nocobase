@@ -9,20 +9,20 @@
 
 import React, { useMemo } from 'react';
 import { Button, Dropdown } from 'antd';
-import { useT } from '../../locale';
-import { useChatBoxContext } from './ChatBoxContext';
+import { useT } from '../locale';
 import { AppstoreAddOutlined } from '@ant-design/icons';
 import { Schema } from '@formily/react';
 import { usePlugin } from '@nocobase/client';
-import PluginAIClient from '../..';
-import { useChatMessages } from './ChatMessagesProvider';
+import PluginAIClient from '../';
+import { ContextItem } from './types';
 
-export const AddContextButton: React.FC = () => {
+export const AddContextButton: React.FC<{
+  onAdd: (item: ContextItem) => void;
+  disabled?: boolean;
+}> = ({ onAdd, disabled }) => {
   const t = useT();
-  const currentEmployee = useChatBoxContext('currentEmployee');
   const plugin = usePlugin('ai') as PluginAIClient;
   const workContext = plugin.aiManager.workContext;
-  const { addContextItems } = useChatMessages();
 
   const items = useMemo(() => {
     const context = workContext.getValues();
@@ -35,8 +35,8 @@ export const AddContextButton: React.FC = () => {
         key: cur.name,
         label: C ? (
           <C
-            addContextItem={(contextItem) =>
-              addContextItems({
+            onAdd={(contextItem) =>
+              onAdd({
                 type: cur.name,
                 ...contextItem,
               })
@@ -62,8 +62,8 @@ export const AddContextButton: React.FC = () => {
             key,
             label: C ? (
               <C
-                addContextItem={(contextItem) =>
-                  addContextItems({
+                onAdd={(contextItem) =>
+                  onAdd({
                     type: key,
                     ...contextItem,
                   })
@@ -88,8 +88,8 @@ export const AddContextButton: React.FC = () => {
   }, [workContext]);
 
   return (
-    <Dropdown menu={{ items }} placement="topLeft" disabled={!currentEmployee}>
-      <Button variant="dashed" color="default" size="small" icon={<AppstoreAddOutlined />} disabled={!currentEmployee}>
+    <Dropdown menu={{ items }} placement="topLeft" disabled={disabled}>
+      <Button variant="dashed" color="default" size="small" icon={<AppstoreAddOutlined />} disabled={disabled}>
         {t('Add work context')}
       </Button>
     </Dropdown>

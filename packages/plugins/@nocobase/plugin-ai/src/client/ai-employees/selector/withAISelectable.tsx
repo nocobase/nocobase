@@ -7,12 +7,12 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { createStyles, useCollection } from '@nocobase/client';
+import { createStyles, useCollection, withDynamicSchemaProps } from '@nocobase/client';
 import React, { ComponentType, useEffect } from 'react';
 import { useAISelectionContext } from './AISelectorProvider';
-import { useFieldSchema, useField } from '@formily/react';
+import { useFieldSchema, useField, useForm } from '@formily/react';
 
-type SelectType = 'blocks' | 'fields';
+type SelectType = 'block' | 'field' | 'form';
 
 const useStyles = createStyles(({ token, css }) => {
   return {
@@ -73,15 +73,14 @@ function addListenerToFormV2(schema) {
 const useCollectContext = (selectType: SelectType) => {
   const { collect } = useAISelectionContext();
   const fieldSchema = useFieldSchema();
-  if (selectType === 'blocks') {
+  if (selectType === 'block') {
     addListenerToFormV2(fieldSchema);
   }
-  const collection = useCollection();
   useEffect(() => {
-    if (selectType === 'blocks') {
-      collect(fieldSchema['x-uid'], 'collection', collection);
+    if (selectType === 'block') {
+      collect(fieldSchema['x-uid'], 'fieldSchema', fieldSchema);
     }
-  }, [collection, fieldSchema]);
+  }, [fieldSchema]);
 };
 
 export function withAISelectable<T = any>(
@@ -96,6 +95,7 @@ export function withAISelectable<T = any>(
     const { selectable, selector, stopSelect } = useAISelectionContext();
     const fieldSchema = useFieldSchema();
     const field = useField() as any;
+    const collection = useCollection();
 
     useCollectContext(selectType);
 
@@ -107,6 +107,7 @@ export function withAISelectable<T = any>(
         uid: fieldSchema['x-uid'],
         fieldSchema,
         value: field?.value,
+        collection,
       });
       stopSelect();
     };
@@ -117,5 +118,5 @@ export function withAISelectable<T = any>(
       </div>
     );
   };
-  return SelectableComponent;
+  return withDynamicSchemaProps(SelectableComponent);
 }

@@ -16,7 +16,7 @@ import { useChatMessages } from './ChatMessagesProvider';
 import { useChatBoxContext } from './ChatBoxContext';
 import { useChatConversations } from './ChatConversationsProvider';
 import { usePlugin, useToken } from '@nocobase/client';
-import { Markdown } from './Markdown';
+import { Markdown } from './markdown/Markdown';
 import { ToolCard } from './ToolCard';
 import PluginAIClient from '../..';
 import { cx, css } from '@emotion/css';
@@ -55,7 +55,7 @@ const AITextMessageRenderer: React.FC<{
           gap: 16,
         }}
       >
-        {typeof msg.content === 'string' && <Markdown markdown={msg.content} />}
+        {typeof msg.content === 'string' && <Markdown message={msg} />}
         {msg.tool_calls?.length ? (
           <ToolCard tools={msg.tool_calls} messageId={msg.messageId} autoCall={msg.metadata?.autoCallTool} />
         ) : null}

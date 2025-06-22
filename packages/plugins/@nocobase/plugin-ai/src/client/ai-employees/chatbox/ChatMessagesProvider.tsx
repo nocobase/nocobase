@@ -32,6 +32,7 @@ interface ChatMessagesContextValue {
   resendMessages: (options: ResendOptions) => void;
   cancelRequest: () => void;
   callTool: (options: { sessionId: string; messageId: string; aiEmployee: AIEmployee }) => void;
+  updateMessage: (options: { sessionId: string; messageId: string; content: any }) => Promise<void>;
   messagesService: any;
   lastMessageRef: (node: HTMLElement | null) => void;
   attachments: Attachment[];
@@ -438,6 +439,18 @@ export const ChatMessagesProvider: React.FC<{ children: React.ReactNode }> = ({ 
   }, [currentConversation]);
   const { ref: lastMessageRef } = useLoadMoreObserver({ loadMore: loadMoreMessages });
 
+  const updateMessage = useCallback(async ({ sessionId, messageId, content }) => {
+    const messagesService = messagesServiceRef.current;
+    await api.resource('aiConversations').updateMessage({
+      values: {
+        sessionId,
+        messageId,
+        content,
+      },
+    });
+    messagesService.run(sessionId);
+  }, []);
+
   useEffect(() => {
     ctxRef.current = ctx;
   }, [ctx]);
@@ -454,6 +467,7 @@ export const ChatMessagesProvider: React.FC<{ children: React.ReactNode }> = ({ 
         resendMessages,
         cancelRequest,
         callTool,
+        updateMessage,
         messagesService,
         lastMessageRef,
         attachments,

@@ -171,6 +171,40 @@ export default {
       await next();
     },
 
+    async updateMessage(ctx: Context, next: Next) {
+      const userId = ctx.auth?.user.id;
+      if (!userId) {
+        return ctx.throw(403);
+      }
+
+      const { sessionId, messageId, content } = ctx.action.params.values || {};
+      if (!sessionId) {
+        ctx.throw(400);
+      }
+
+      const conversation = await ctx.db.getRepository('aiConversations').findOne({
+        filter: {
+          sessionId,
+          userId,
+        },
+      });
+
+      if (!conversation) {
+        ctx.throw(400);
+      }
+
+      const messageRepository = ctx.db.getRepository('aiConversations.messages', sessionId);
+      await messageRepository.update({
+        filter: {
+          messageId,
+        },
+        values: {
+          content,
+        },
+      });
+      await next();
+    },
+
     async sendMessages(ctx: Context, next: Next) {
       const plugin = ctx.app.pm.get('ai') as PluginAIServer;
 

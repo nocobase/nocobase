@@ -9,7 +9,7 @@
 
 import PluginACLClient from '@nocobase/plugin-acl/client';
 import PluginWorkflowClient from '@nocobase/plugin-workflow/client';
-import { CardItem, CollectionField, Plugin, lazy } from '@nocobase/client';
+import { CardItem, CollectionField, FormV2, Plugin, lazy } from '@nocobase/client';
 import { AIManager } from './manager/ai-manager';
 import { openaiProviderOptions } from './llm-providers/openai';
 import { deepseekProviderOptions } from './llm-providers/deepseek';
@@ -55,10 +55,10 @@ export class PluginAIClient extends Plugin {
       AIEmployeeButton,
       AIFormContextCollector,
       CardItem: withAISelectable(CardItem, {
-        selectType: 'blocks',
+        selectType: 'block',
       }),
       CollectionField: withAISelectable(CollectionField, {
-        selectType: 'fields',
+        selectType: 'field',
       }),
     });
     this.app.pluginSettingsManager.add('ai', {
