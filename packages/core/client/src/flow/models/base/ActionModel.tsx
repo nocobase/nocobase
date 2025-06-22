@@ -24,10 +24,11 @@ export class ActionModel extends FlowModel {
 
   render() {
     const props = { ...this.defaultProps, ...this.props };
-    const icon = <Icon type={props.icon as any} />;
+    const icon = props.icon ? <Icon type={props.icon as any} /> : undefined;
+    const linkStyle = props.type === 'link' ? { paddingLeft: 0, paddingRight: 0 } : {};
 
     return (
-      <Button {...props} icon={icon}>
+      <Button {...props} icon={icon} style={{ ...linkStyle, ...props.style }}>
         {props.children || props.title}
       </Button>
     );

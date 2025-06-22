@@ -7,10 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { SettingOutlined } from '@ant-design/icons';
-import { css } from '@emotion/css';
 import { AddActionButton, AddFieldButton, FlowModelRenderer, MultiRecordResource } from '@nocobase/flow-engine';
-import { Button, Card, Space, Spin, Table } from 'antd';
+import { Card, Space, Spin, Table } from 'antd';
 import React from 'react';
 import { ActionModel } from '../../base/ActionModel';
 import { DataBlockModel } from '../../base/BlockModel';
