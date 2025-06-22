@@ -254,6 +254,16 @@ TableModel.registerFlow({
         resource.setPageSize(200);
         ctx.model.resource = resource;
         await ctx.model.applySubModelsAutoFlows('columns', null, { currentBlockModel: ctx.model });
+        ctx.model.mapSubModels('columns', (f) => {
+          const { fieldPath } = f.getStepParams('default', 'step1') || {};
+          if (!fieldPath) {
+            return;
+          }
+          const targetCollectionField = ctx.globals.dataSourceManager.getCollectionField(fieldPath);
+          if (['belongsToMany', 'belongsTo', 'hasMany', 'hasOne'].includes(targetCollectionField.type)) {
+            resource.addAppends(targetCollectionField.name);
+          }
+        });
         await resource.refresh();
       },
     },
