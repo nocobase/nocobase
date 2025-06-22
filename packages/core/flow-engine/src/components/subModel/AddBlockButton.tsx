@@ -13,6 +13,8 @@ import { FlowModel } from '../../models/flowModel';
 import { ModelConstructor } from '../../types';
 import { AddSubModelButton, SubModelItemsType, mergeSubModelItems } from './AddSubModelButton';
 import { createBlockItems } from './blockItems';
+import { PlusOutlined } from '@ant-design/icons';
+import { CommonAddButton } from '../common/CommonAddButton';
 
 interface AddBlockButtonProps {
   /**
@@ -77,7 +79,7 @@ export const AddBlockButton: React.FC<AddBlockButtonProps> = ({
   model,
   subModelBaseClass = 'BlockModel',
   subModelKey = 'blocks',
-  children = <Button>Add block</Button>,
+  children = <CommonAddButton>Add block</CommonAddButton>,
   subModelType = 'array',
   items,
   filter: filterBlocks,
