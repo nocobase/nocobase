@@ -309,4 +309,13 @@ export class FlowEngine {
     }
     return modelClasses;
   }
+
+  static generateApplyFlowCacheKey(
+    prefix: string,
+    flowKey: string,
+    modelUid: string,
+    params: Record<string, any>,
+  ): string {
+    return `${prefix}:${flowKey}:${modelUid}:${JSON.stringify(params)}`;
+  }
 }
