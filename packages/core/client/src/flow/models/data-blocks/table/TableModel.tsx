@@ -82,7 +82,11 @@ export class TableModel extends DataBlockModel<S> {
         <Spin spinning={this.resource.loading}>
           <Space style={{ marginBottom: 16 }}>
             {this.mapSubModels('actions', (action) => (
-              <FlowModelRenderer model={action} showFlowSettings sharedContext={{ currentBlockModel: this }} />
+              <FlowModelRenderer
+                model={action}
+                showFlowSettings={{ showBackground: false, showBorder: false }}
+                sharedContext={{ currentBlockModel: this }}
+              />
             ))}
             <AddActionButton model={this} subModelBaseClass="GlobalActionModel" subModelKey="actions" />
             {/* <AddActionModel
