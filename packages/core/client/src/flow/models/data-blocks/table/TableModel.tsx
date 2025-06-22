@@ -12,6 +12,7 @@ import { css } from '@emotion/css';
 import { observer } from '@formily/reactive-react';
 import { AddActionButton, AddFieldButton, FlowModelRenderer, MultiRecordResource } from '@nocobase/flow-engine';
 import { Card, Space, Spin, Table } from 'antd';
+import classNames from 'classnames';
 import _ from 'lodash';
 import React, { useRef } from 'react';
 import { ActionModel } from '../../base/ActionModel';
@@ -89,31 +90,34 @@ export class TableModel extends DataBlockModel<S> {
   };
 
   EditableCell = observer<any>((props) => {
-    const { title, editable, width, record, dataIndex, children, ...restProps } = props;
+    const { className, title, editable, width, record, dataIndex, children, ...restProps } = props;
     const ref = useRef(null);
     if (editable) {
       return (
         <td
           ref={ref}
           {...restProps}
-          className={css`
-            .edit-icon {
-              position: absolute;
-              display: none;
-              color: #1890ff;
-              margin-left: 8px;
-              cursor: pointer;
-              top: 50%;
-              right: 8px;
-              transform: translateY(-50%);
-            }
-            &:hover {
-              background: rgba(24, 144, 255, 0.1) !important;
-            }
-            &:hover .edit-icon {
-              display: inline-flex;
-            }
-          `}
+          className={classNames(
+            className,
+            css`
+              .edit-icon {
+                position: absolute;
+                display: none;
+                color: #1890ff;
+                margin-left: 8px;
+                cursor: pointer;
+                top: 50%;
+                right: 8px;
+                transform: translateY(-50%);
+              }
+              &:hover {
+                background: rgba(24, 144, 255, 0.1) !important;
+              }
+              &:hover .edit-icon {
+                display: inline-flex;
+              }
+            `,
+          )}
         >
           <EditOutlined
             className="edit-icon"
@@ -142,7 +146,7 @@ export class TableModel extends DataBlockModel<S> {
       );
     }
     return (
-      <td {...restProps}>
+      <td className={classNames(className)} {...restProps}>
         <div
           className={css`
             overflow: hidden;
