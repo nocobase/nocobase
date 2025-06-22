@@ -15,3 +15,4 @@ export * from './TableCheckboxFieldModel';
 export * from './TablePercentFieldModel';
 export * from './TableNumberFieldModel';
 export * from './TableAssociationSelectFieldModel';
+export * from './TableRichTextFieldModel';
