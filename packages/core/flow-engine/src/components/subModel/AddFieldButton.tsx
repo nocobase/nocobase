@@ -12,7 +12,8 @@ import { AddSubModelButton, SubModelItemsType, mergeSubModelItems } from './AddS
 import { Collection } from '../../data-source';
 import { FlowModel } from '../../models';
 import { ModelConstructor } from '../../types';
-import { Button } from 'antd';
+import { getCommonAddButton } from '../common/CommonAddButton';
+import { SettingOutlined } from '@ant-design/icons';
 
 export interface AddFieldButtonProps {
   /**
@@ -63,7 +64,10 @@ export const AddFieldButton: React.FC<AddFieldButtonProps> = ({
   model,
   subModelBaseClass = 'FieldFlowModel',
   subModelKey = 'fields',
-  children = <Button>Configure fields</Button>,
+  children = getCommonAddButton({
+    icon: <SettingOutlined />,
+    children: 'Configure fields',
+  }),
   subModelType = 'array',
   collection,
   buildCreateModelOptions,
