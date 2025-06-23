@@ -32,17 +32,24 @@ TableFieldModel.registerFlow({
   steps: {
     step1: {
       handler(ctx) {
-        if (!ctx.model.parent) {
-          throw new Error('TableFieldModel must have a parent model');
+        if (ctx.extra.collectionField) {
+          const collectionField = ctx.extra.collectionField;
+          ctx.model.fieldPath = ctx.extra.fieldPath;
+          ctx.model.collectionField = collectionField;
+          ctx.model.setProps(collectionField.getComponentProps());
+        } else {
+          if (!ctx.model.parent) {
+            throw new Error('TableFieldModel must have a parent model');
+          }
+          if (!ctx.shared.currentBlockModel) {
+            throw new Error('TableFieldModel must have a currentBlockModel in shared context');
+          }
+          const collectionField = ctx.model.parent.collectionField;
+          ctx.model.fieldPath = ctx.model.parent.fieldPath;
+          ctx.model.collectionField = collectionField;
+          ctx.model.setProps(collectionField.getComponentProps());
+          ctx.shared.currentBlockModel.addAppends(ctx.model.parent.fieldPath);
         }
-        if (!ctx.shared.currentBlockModel) {
-          throw new Error('TableFieldModel must have a currentBlockModel in shared context');
-        }
-        const collectionField = ctx.model.parent.collectionField;
-        ctx.model.fieldPath = ctx.model.parent.fieldPath;
-        ctx.model.collectionField = collectionField;
-        ctx.model.setProps(collectionField.getComponentProps());
-        ctx.shared.currentBlockModel.addAppends(ctx.model.parent.fieldPath);
       },
     },
   },
