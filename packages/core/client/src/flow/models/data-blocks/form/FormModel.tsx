@@ -40,7 +40,7 @@ export class FormModel extends DataBlockModel {
               stepParams: {
                 default: {
                   step1: {
-                    fieldPath: `${field.collection.dataSource.name}.${field.collection.name}.${field.name}`,
+                    fieldPath: `${field.collection.dataSource.key}.${field.collection.name}.${field.name}`,
                   },
                 },
               },

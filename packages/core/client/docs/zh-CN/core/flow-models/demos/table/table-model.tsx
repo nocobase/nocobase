@@ -39,7 +39,7 @@ export class TableModel extends FlowModel<S> {
             },
             items: this.collection.mapFields((field) => {
               return {
-                key: `${this.collection.dataSource.name}.${this.collection.name}.${field.name}`,
+                key: `${this.collection.dataSource.key}.${this.collection.name}.${field.name}`,
                 label: field.title,
               };
             }),

@@ -7,10 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { Collection, DataSource, DataSourceManager } from '../../data-source';
 import { FlowModel } from '../../models/flowModel';
 import { ModelConstructor } from '../../types';
 import { SubModelItem, SubModelItemsType } from './AddSubModelButton';
-import { DataSource, DataSourceManager, Collection } from '../../data-source';
 
 export interface BlockItemsOptions {
   /**
@@ -47,8 +47,8 @@ async function getDataSourcesWithCollections(model: FlowModel) {
 
     // 转换为我们需要的格式
     return allDataSources.map((dataSource: DataSource) => {
-      const key = dataSource.name;
-      const displayName = dataSource.options.displayName || dataSource.name;
+      const key = dataSource.key;
+      const displayName = dataSource.options.displayName || dataSource.key;
 
       // 从 collectionManager 获取 collections
       const collections: Collection[] = dataSource.getCollections();

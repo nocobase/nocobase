@@ -50,7 +50,7 @@ export class QuickEditForm extends FlowModel {
     collectionField: CollectionField;
   }) {
     await this.applyFlow('initial', {
-      dataSourceKey: collectionField.collection.dataSource.name,
+      dataSourceKey: collectionField.collection.dataSource.key,
       collectionName: collectionField.collection.name,
       filterByTk,
       collectionField,
