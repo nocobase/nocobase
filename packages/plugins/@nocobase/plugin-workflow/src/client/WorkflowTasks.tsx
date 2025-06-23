@@ -12,7 +12,7 @@ import { Badge, Button, Flex, Layout, Menu, Popover, Segmented, Tabs, theme, Too
 import classnames from 'classnames';
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
-import { Toast } from 'antd-mobile';
+import { NavBar, Toast } from 'antd-mobile';
 import { observer } from '@formily/react';
 
 import {
@@ -129,8 +129,9 @@ function StatusTabs() {
     },
     [navigate, taskType, mobilePage],
   );
+  const isMobile = mobilePage || isMobileLayout;
   const { Actions } = type;
-  return isMobileLayout ? (
+  return isMobile ? (
     <Flex justify="space-between">
       <Segmented
         defaultValue={status}
@@ -150,7 +151,7 @@ function StatusTabs() {
         ]}
         onChange={onSwitchTab}
       />
-      <Actions onlyIcon={isMobileLayout} />
+      <Actions onlyIcon={isMobile} />
     </Flex>
   ) : (
     <Tabs
@@ -313,6 +314,8 @@ function TaskPageContent() {
 
   const { isMobileLayout } = useMobileLayout();
 
+  const isMobile = mobilePage || isMobileLayout;
+
   const contentClass = css`
     height: 100%;
     overflow: hidden;
@@ -343,7 +346,7 @@ function TaskPageContent() {
               .ant-spin-container {
                 height: 100%;
                 overflow: auto;
-                padding: ${isMobileLayout ? '0.5em' : `${token.paddingContentHorizontalLG}px`};
+                padding: ${isMobile ? '0.5em' : `${token.paddingContentHorizontalLG}px`};
               }
             }
 
@@ -354,7 +357,7 @@ function TaskPageContent() {
 
           .ant-list-pagination {
             margin-top: 0;
-            padding: ${isMobileLayout ? '0.5em' : `${token.paddingContentHorizontalLG}px`};
+            padding: ${isMobile ? '0.5em' : `${token.paddingContentHorizontalLG}px`};
             border-top: 1px solid ${token.colorBorderSecondary};
           }
         }
@@ -405,12 +408,12 @@ function TaskPageContent() {
                   style: {
                     position: 'sticky',
                     background: token.colorBgContainer,
-                    padding: isMobileLayout
+                    padding: isMobile
                       ? '8px'
                       : `${token.paddingContentVertical}px ${token.paddingContentHorizontalLG}px 0 ${token.paddingContentHorizontalLG}px`,
-                    borderBottom: isMobileLayout ? `1px solid ${token.colorBorderSecondary}` : null,
+                    borderBottom: isMobile ? `1px solid ${token.colorBorderSecondary}` : null,
                   },
-                  title: isMobileLayout ? null : title,
+                  title: isMobile ? null : title,
                 },
                 properties: {
                   tabs: {
@@ -704,16 +707,15 @@ export const MobileTabBarWorkflowTasksItem = observer(
 
 export function WorkflowTasksMobile() {
   const items = useTaskTypeItems();
-  const { setIsMobileLayout } = useMobileLayout();
   const { token } = useToken();
-  useEffect(() => {
-    setIsMobileLayout(true);
-  }, [setIsMobileLayout]);
+  const navigate = useNavigate();
 
   return (
     <MobilePageProvider>
       <MobilePageHeader>
-        <MobilePageNavigationBar />
+        <NavBar className="nb-workflow-tasks-back-action" onBack={() => navigate(-1)}>
+          {lang('Workflow tasks')}
+        </NavBar>
         <Tabs
           className={css({
             padding: `0 ${token.paddingPageHorizontal}px`,

@@ -42,6 +42,7 @@ import {
   WorkflowTasksMobile,
 } from './WorkflowTasks';
 import { WorkflowCollectionsProvider } from './WorkflowCollectionsProvider';
+import { observer } from '@formily/react';
 
 const workflowConfigSettings = {
   Component: BindWorkflowConfig,
@@ -159,7 +160,7 @@ export default class PluginWorkflowClient extends Plugin {
       });
       mobileManager.mobileRouter.add('mobile.page.workflow.tasks', {
         path: '/page/workflow/tasks/:taskType/:status/:popupId?',
-        Component: WorkflowTasksMobile,
+        Component: observer(WorkflowTasksMobile, { displayName: 'WorkflowTasksMobile' }),
       });
     }
 
