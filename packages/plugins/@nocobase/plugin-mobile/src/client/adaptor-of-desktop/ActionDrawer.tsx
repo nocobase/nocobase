@@ -85,6 +85,7 @@ export const ActionDrawerUsedInMobile: any = observer((props: { footerNodeName?:
           bodyClassName="nb-mobile-action-drawer-body"
           bodyStyle={zIndexStyle}
           maskStyle={zIndexStyle}
+          style={zIndexStyle}
           destroyOnClose
         >
           <div className="nb-mobile-action-drawer-header">
