@@ -420,6 +420,215 @@ element.querySelectorAll('.stat-box').forEach(box => {
 });
 ```
 
+### 7. Tabulator Data Table with NocoBase API
+
+**Execution Code**:
+```javascript
+// Load Tabulator library with proper scoping
+await loadCSS('https://unpkg.com/tabulator-tables@5.5.0/dist/css/tabulator_simple.min.css');
+
+requirejs.config({
+  paths: {
+    'tabulator': 'https://unpkg.com/tabulator-tables@5.5.0/dist/js/tabulator.min'
+  }
+});
+
+const Tabulator = await requireAsync('tabulator');
+
+// Generate unique IDs to avoid conflicts
+const containerId = `users-container-${Date.now()}`;
+const tableId = `users-table-${Date.now()}`;
+const searchId = `search-${Date.now()}`;
+const clearId = `clear-${Date.now()}`;
+const exportId = `export-${Date.now()}`;
+
+// Show loading state
+element.innerHTML = '<div style="text-align: center; padding: 20px;">Loading users data...</div>';
+
+try {
+  // Request users data from NocoBase API
+  const response = await ctx.globals.api.request({
+    url: 'users:list',
+    method: 'GET',
+    params: {
+      pageSize: 100,
+      sort: ['-createdAt'],
+      fields: ['id', 'username', 'email', 'nickname', 'createdAt', 'updatedAt']
+    }
+  });
+
+  const users = response.data?.data || [];
+  const recentUsers = users.filter(user => {
+    const createdAt = new Date(user.createdAt);
+    const weekAgo = new Date();
+    weekAgo.setDate(weekAgo.getDate() - 7);
+    return createdAt > weekAgo;
+  });
+
+  // Create scoped container
+  element.innerHTML = `
+    <div id="${containerId}" style="padding: 20px; background: #f5f5f5; border-radius: 8px;">
+      <h2 style="margin-bottom: 20px; color: #333;">Users Management</h2>
+      
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px;">
+        <div style="background: white; padding: 15px; border-radius: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+          <h4 style="margin: 0; color: #666;">Total Users</h4>
+          <p style="margin: 5px 0 0 0; font-size: 24px; font-weight: bold; color: #1890ff;">${users.length}</p>
+        </div>
+        <div style="background: white; padding: 15px; border-radius: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+          <h4 style="margin: 0; color: #666;">Recent Signups</h4>
+          <p style="margin: 5px 0 0 0; font-size: 24px; font-weight: bold; color: #52c41a;">${recentUsers.length}</p>
+        </div>
+      </div>
+      
+      <div style="margin-bottom: 15px; display: flex; gap: 10px; align-items: center;">
+        <input type="text" id="${searchId}" placeholder="Search users..." 
+               style="flex: 1; padding: 8px 12px; border: 1px solid #d9d9d9; border-radius: 4px; font-size: 14px;">
+        <button id="${clearId}" style="padding: 8px 16px; background: #f5f5f5; border: 1px solid #d9d9d9; border-radius: 4px; cursor: pointer;">Clear</button>
+        <button id="${exportId}" style="padding: 8px 16px; background: #1890ff; color: white; border: none; border-radius: 4px; cursor: pointer;">Export CSV</button>
+      </div>
+      
+      <div id="${tableId}" style="background: white; border-radius: 6px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1);"></div>
+    </div>
+  `;
+
+  // Initialize Tabulator with scoped element reference
+  const tableElement = element.querySelector(`#${tableId}`);
+  const table = new Tabulator(tableElement, {
+    data: users,
+    layout: "fitColumns",
+    responsiveLayout: "hide",
+    pagination: "local",
+    paginationSize: 10,
+    paginationSizeSelector: [5, 10, 20, 50],
+    movableColumns: true,
+    resizableRows: true,
+    initialSort: [{ column: "createdAt", dir: "desc" }],
+    columns: [
+      {
+        title: "ID", 
+        field: "id", 
+        width: 80,
+        headerFilter: "input",
+        formatter: function(cell) {
+          return `<span style="font-family: monospace; color: #666;">#${cell.getValue()}</span>`;
+        }
+      },
+      {
+        title: "Username", 
+        field: "username", 
+        headerFilter: "input",
+        formatter: function(cell) {
+          const value = cell.getValue();
+          return value ? `<strong style="color: #1890ff;">${value}</strong>` : '<span style="color: #ccc;">-</span>';
+        }
+      },
+      {
+        title: "Nickname", 
+        field: "nickname", 
+        headerFilter: "input",
+        formatter: function(cell) {
+          return cell.getValue() || '-';
+        }
+      },
+      {
+        title: "Email", 
+        field: "email", 
+        headerFilter: "input",
+        formatter: function(cell) {
+          const email = cell.getValue();
+          return email ? `<a href="mailto:${email}" style="color: #1890ff; text-decoration: none;">${email}</a>` : '-';
+        }
+      },
+      {
+        title: "Created", 
+        field: "createdAt", 
+        width: 150,
+        sorter: "datetime",
+        formatter: function(cell) {
+          const date = new Date(cell.getValue());
+          return date.toLocaleString();
+        }
+      },
+      {
+        title: "Updated", 
+        field: "updatedAt", 
+        width: 150,
+        sorter: "datetime",
+        formatter: function(cell) {
+          const date = new Date(cell.getValue());
+          return date.toLocaleString();
+        }
+      },
+      {
+        title: "Actions",
+        width: 120,
+        headerSort: false,
+        formatter: function() {
+          return `<button class="view-btn" style="padding: 4px 8px; background: #1890ff; color: white; border: none; border-radius: 3px; cursor: pointer; font-size: 12px; margin-right: 5px;">View</button>
+                  <button class="edit-btn" style="padding: 4px 8px; background: #52c41a; color: white; border: none; border-radius: 3px; cursor: pointer; font-size: 12px;">Edit</button>`;
+        },
+        cellClick: function(e, cell) {
+          const userData = cell.getRow().getData();
+          if (e.target.classList.contains('view-btn')) {
+            alert('Viewing user: ' + (userData.username || userData.email || userData.id));
+          } else if (e.target.classList.contains('edit-btn')) {
+            alert('Editing user: ' + (userData.username || userData.email || userData.id));
+          }
+        }
+      }
+    ],
+    rowClick: function(e, row) {
+      // Use scoped selection
+      const container = element.querySelector(`#${containerId}`);
+      container.querySelectorAll('.tabulator-row').forEach(r => r.style.backgroundColor = '');
+      row.getElement().style.backgroundColor = '#e6f7ff';
+    }
+  });
+
+  // Scoped event handlers
+  const searchInput = element.querySelector(`#${searchId}`);
+  const clearBtn = element.querySelector(`#${clearId}`);
+  const exportBtn = element.querySelector(`#${exportId}`);
+
+  searchInput.addEventListener('input', function(e) {
+    const value = e.target.value;
+    if (value) {
+      table.setFilter([
+        [
+          { field: "username", type: "like", value: value },
+          { field: "email", type: "like", value: value },
+          { field: "nickname", type: "like", value: value }
+        ]
+      ]);
+    } else {
+      table.clearFilter();
+    }
+  });
+
+  clearBtn.addEventListener('click', function() {
+    searchInput.value = '';
+    table.clearFilter();
+  });
+
+  exportBtn.addEventListener('click', function() {
+    table.download("csv", "users_export.csv");
+  });
+
+} catch (error) {
+  console.error('Failed to load users data:', error);
+  element.innerHTML = `
+    <div style="text-align: center; padding: 40px; color: #ff4d4f;">
+      <h3>Failed to load users data</h3>
+      <p>Error: ${error.message}</p>
+      <button onclick="window.location.reload()" style="padding: 8px 16px; background: #1890ff; color: white; border: none; border-radius: 4px; cursor: pointer;">
+        Retry
+      </button>
+    </div>
+  `;
+}
+```
+
 ## Installation
 
 1. Place the plugin in `packages/plugins/@nocobase/plugin-block-cloud/`

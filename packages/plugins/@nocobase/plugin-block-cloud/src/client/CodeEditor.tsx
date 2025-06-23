@@ -62,6 +62,20 @@ const createCustomCompletion = () => {
       detail: '(url: string) => Promise<void>',
       boost: 94,
     },
+    {
+      label: 'ctx.globals.api',
+      type: 'variable',
+      info: 'NocoBase API client for making requests',
+      detail: 'APIClient',
+      boost: 93,
+    },
+    {
+      label: 'ctx.globals.api.request',
+      type: 'method',
+      info: 'Make API request to NocoBase backend',
+      detail: '(options: RequestOptions) => Promise<Response>',
+      boost: 92,
+    },
   ];
 
   // 常用的 DOM 操作和 JS API
@@ -150,6 +164,28 @@ await new Promise(resolve => setTimeout(resolve, 1000));
 
 element.innerHTML = '<h3>Content Loaded!</h3>';`,
     },
+    {
+      label: 'nocobase-api-request',
+      type: 'snippet',
+      info: 'Request data from NocoBase API',
+      detail: 'Template',
+      boost: 76,
+      apply: `try {
+  const response = await ctx.globals.api.request({
+    url: 'collection:list',
+    method: 'GET',
+    params: {
+      pageSize: 20,
+      sort: ['-createdAt']
+    }
+  });
+  
+  const data = response.data?.data || [];
+  element.innerHTML = \`<pre>\${JSON.stringify(data, null, 2)}</pre>\`;
+} catch (error) {
+  element.innerHTML = \`<div style="color: red;">Error: \${error.message}</div>\`;
+}`,
+    },
   ];
 
   return (context: CompletionContext): CompletionResult | null => {
@@ -160,7 +196,7 @@ element.innerHTML = '<h3>Content Loaded!</h3>';`,
     const to = word.to;
 
     // 合并所有的补全选项
-    const allCompletions = [...contextVariables, ...commonAPIs, ...codeSnippets];
+    const allCompletions: any[] = [...contextVariables, ...commonAPIs, ...codeSnippets];
 
     // 过滤匹配的选项
     const options = allCompletions
