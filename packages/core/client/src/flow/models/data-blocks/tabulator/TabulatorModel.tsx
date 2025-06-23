@@ -23,6 +23,7 @@ import {
 } from '@nocobase/flow-engine';
 import { Button, Card, ConfigProvider, Pagination, Skeleton, Space, theme } from 'antd';
 import _, { delay, head } from 'lodash';
+import collection from 'packages/core/server/src/plugin-manager/options/collection';
 import React from 'react';
 import ReactDOM, { createRoot } from 'react-dom/client';
 import { ColumnDefinition, TabulatorFull as Tabulator } from 'tabulator-tables';
@@ -168,18 +169,30 @@ export class TabulatorModel extends DataBlockModel<S> {
             model={this}
             subModelKey={'columns'}
             subModelBaseClass="TableFieldModel"
-            buildCreateModelOptions={(field, fieldClass) => ({
+            buildCreateModelOptions={({ defaultOptions, fieldPath }) => ({
               use: 'TabulatorColumnModel',
               stepParams: {
                 default: {
                   step1: {
-                    fieldPath: field.fullpath,
+                    collectionName: this.collection.name,
+                    dataSourceKey: this.collection.dataSourceKey,
+                    fieldPath,
                   },
                 },
               },
               subModels: {
                 field: {
-                  use: fieldClass.name,
+                  // @ts-ignore
+                  use: defaultOptions.use,
+                  stepParams: {
+                    default: {
+                      step1: {
+                        collectionName: this.collection.name,
+                        dataSourceKey: this.collection.dataSourceKey,
+                        fieldPath,
+                      },
+                    },
+                  },
                 },
               },
             })}

@@ -12,6 +12,7 @@ import { createForm, Form } from '@formily/core';
 import { FormProvider } from '@formily/react';
 import { AddActionButton, AddFieldButton, FlowModelRenderer, SingleRecordResource } from '@nocobase/flow-engine';
 import { Card } from 'antd';
+import dataSource from 'packages/core/client/docs/zh-CN/core/flow-models/demos/data-source';
 import React from 'react';
 import { DataBlockModel } from '../../base/BlockModel';
 import { FormFieldModel } from './fields/FormFieldModel';
@@ -19,7 +20,6 @@ import { FormFieldModel } from './fields/FormFieldModel';
 export class FormModel extends DataBlockModel {
   form: Form;
   declare resource: SingleRecordResource;
-  // collection: Collection;
 
   render() {
     return (
@@ -30,32 +30,23 @@ export class FormModel extends DataBlockModel {
               <FlowModelRenderer
                 model={field}
                 showFlowSettings={{ showBorder: false }}
-                sharedContext={{ currentBlockModel: this }}
+                // sharedContext={{ currentBlockModel: this }}
               />
             ))}
           </FormLayout>
           <AddFieldButton
-            buildCreateModelOptions={(field, fieldClass) => ({
-              use: fieldClass.name,
+            buildCreateModelOptions={({ defaultOptions, fieldPath }) => ({
+              use: defaultOptions.use,
               stepParams: {
                 default: {
                   step1: {
-                    fieldPath: `${field.collection.dataSource.key}.${field.collection.name}.${field.name}`,
+                    dataSourceKey: this.collection.dataSourceKey,
+                    collectionName: this.collection.name,
+                    fieldPath,
                   },
                 },
               },
             })}
-            onModelCreated={async (fieldModel: FormFieldModel) => {
-              const fieldInfo = fieldModel.stepParams?.field;
-              if (fieldInfo && typeof fieldInfo.name === 'string') {
-                // 如果需要设置 collectionField，可以从 collection 中获取
-                const fields = this.collection.getFields();
-                const field = fields.find((f) => f.name === fieldInfo.name);
-                if (field) {
-                  fieldModel.collectionField = field;
-                }
-              }
-            }}
             subModelKey="fields"
             model={this}
             collection={this.collection}
@@ -66,7 +57,7 @@ export class FormModel extends DataBlockModel {
               <FlowModelRenderer
                 model={action}
                 showFlowSettings={{ showBackground: false, showBorder: false }}
-                sharedContext={{ currentBlockModel: this }}
+                // sharedContext={{ currentBlockModel: this }}
               />
             ))}
             <AddActionButton model={this} subModelBaseClass="FormActionModel" />

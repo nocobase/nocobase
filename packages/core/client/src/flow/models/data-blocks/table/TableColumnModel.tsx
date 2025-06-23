@@ -78,13 +78,22 @@ TableColumnModel.registerFlow({
   steps: {
     step1: {
       async handler(ctx, params) {
-        if (!params.fieldPath) {
-          return;
+        if (!params.dataSourceKey || !params.collectionName || !params.fieldPath) {
+          throw new Error('dataSourceKey, collectionName and fieldPath are required parameters');
+        }
+        if (!ctx.shared.currentBlockModel) {
+          throw new Error('Current block model is not set in shared context');
         }
         if (ctx.model.collectionField) {
           return;
         }
-        const field = ctx.globals.dataSourceManager.getCollectionField(params.fieldPath);
+        const { dataSourceKey, collectionName, fieldPath } = params;
+        const field = ctx.globals.dataSourceManager.getCollectionField(
+          `${dataSourceKey}.${collectionName}.${fieldPath}`,
+        );
+        if (!field) {
+          throw new Error(`Collection field not found: ${dataSourceKey}.${collectionName}.${fieldPath}`);
+        }
         ctx.model.collectionField = field;
         ctx.model.fieldPath = params.fieldPath;
         ctx.model.setProps('title', field.title);

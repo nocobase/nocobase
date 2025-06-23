@@ -235,6 +235,10 @@ export class Collection {
     return this.options.filterTargetKey;
   }
 
+  get dataSourceKey() {
+    return this.dataSource.key;
+  }
+
   get name() {
     return this.options.name;
   }
@@ -365,6 +369,10 @@ export class CollectionField {
 
   get type() {
     return this.options.type;
+  }
+
+  get target() {
+    return this.options.target;
   }
 
   get title() {

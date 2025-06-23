@@ -9,9 +9,9 @@
 
 import React, { useMemo } from 'react';
 import { FlowModel } from '../../models';
-import LazyDropdown, { Item, ItemsType } from './LazyDropdown';
 import { ModelConstructor } from '../../types';
 import { withFlowDesignMode } from '../common/withFlowDesignMode';
+import LazyDropdown, { Item, ItemsType } from './LazyDropdown';
 
 export interface AddSubModelContext {
   model: FlowModel;
@@ -274,9 +274,12 @@ const AddSubModelButtonCore = function AddSubModelButton({
     try {
       addedModel = model.flowEngine.createModel({
         ...createOpts,
+        parentId: model.uid,
         subKey: subModelKey,
         subType: subModelType,
       });
+
+      addedModel.setParent(model);
 
       await addedModel.configureRequiredSteps();
 

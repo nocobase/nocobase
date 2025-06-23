@@ -7,14 +7,21 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { SettingOutlined } from '@ant-design/icons';
 import React, { useMemo } from 'react';
-import { AddSubModelButton, SubModelItemsType, mergeSubModelItems } from './AddSubModelButton';
-import { Collection } from '../../data-source';
+import { Collection, CollectionField } from '../../data-source';
 import { FlowModel } from '../../models';
-import { ModelConstructor } from '../../types';
+import { FlowModelOptions, ModelConstructor } from '../../types';
 import { getCommonAddButton } from '../common/CommonAddButton';
 import { withFlowDesignMode } from '../common/withFlowDesignMode';
-import { SettingOutlined } from '@ant-design/icons';
+import { AddSubModelButton, SubModelItemsType, mergeSubModelItems } from './AddSubModelButton';
+
+export type BuildCreateModelOptionsType = {
+  defaultOptions: FlowModelOptions;
+  collectionField: CollectionField;
+  fieldPath: string;
+  fieldModelClass: ModelConstructor;
+};
 
 export interface AddFieldButtonProps {
   /**
@@ -31,7 +38,7 @@ export interface AddFieldButtonProps {
   /**
    * 自定义 createModelOptions 构建函数
    */
-  buildCreateModelOptions?: (field: any, fieldClass: any) => { use: string; stepParams?: Record<string, any> };
+  buildCreateModelOptions?: (options: BuildCreateModelOptionsType) => FlowModelOptions;
   /**
    * 追加的固定 items，会添加到字段 items 之后
    */
@@ -52,6 +59,10 @@ export interface AddFieldButtonProps {
    * 自定义 items（如果提供，将覆盖默认的字段菜单）
    */
   items?: SubModelItemsType;
+}
+
+function defaultBuildCreateModelOptions({ defaultOptions }: BuildCreateModelOptionsType) {
+  return defaultOptions;
 }
 
 /**
@@ -75,7 +86,7 @@ const AddFieldButtonCore: React.FC<AddFieldButtonProps> = ({
   }),
   subModelType = 'array',
   collection,
-  buildCreateModelOptions,
+  buildCreateModelOptions = defaultBuildCreateModelOptions,
   items,
   appendItems,
   onModelCreated,
@@ -104,16 +115,20 @@ const AddFieldButtonCore: React.FC<AddFieldButtonProps> = ({
             return fieldClass.supportedFieldInterfaces?.includes(fieldInterfaceName);
           }) || defaultFieldClasses;
         if (fieldClass && fieldInterfaceName) {
+          const defaultOptions = {
+            ...fieldClass.meta?.defaultOptions,
+            use: fieldClass.name,
+          };
           const fieldItem = {
             key: field.name,
             label: field.title,
             icon: fieldClass.meta?.icon,
-            createModelOptions: buildCreateModelOptions
-              ? buildCreateModelOptions(field, fieldClass)
-              : {
-                  ...fieldClass.meta?.defaultOptions,
-                  use: fieldClass.name,
-                },
+            createModelOptions: buildCreateModelOptions({
+              defaultOptions,
+              collectionField: field,
+              fieldPath: field.name,
+              fieldModelClass: fieldClass,
+            }),
           };
           allFields.push(fieldItem);
         }
