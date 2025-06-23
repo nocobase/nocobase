@@ -111,7 +111,7 @@ LowcodeBlockFlowModel.registerFlow({
           title: 'Execution Code',
           'x-component': 'CodeEditor',
           'x-component-props': {
-            height: '400px',
+            minHeight: '400px',
             theme: 'light',
             enableLinter: true,
             placeholder: `// Welcome to the lowcode block
@@ -174,6 +174,7 @@ element.innerHTML = \`
 \`;
         `.trim(),
       },
+      settingMode: 'drawer',
       async handler(ctx: any, params: any) {
         ctx.model.setProps('loading', true);
         ctx.model.setProps('error', null);

@@ -186,4 +186,4 @@ const openStepSettingsDialog = async ({
   });
 };
 
-export { openStepSettingsDialog, useStepSettingContext };
+export { openStepSettingsDialog };

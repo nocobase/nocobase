@@ -13,7 +13,7 @@ import { SettingOutlined, DownOutlined } from '@ant-design/icons';
 import { FlowModel } from '../../../../models';
 import { useFlowModelById } from '../../../../hooks';
 import { observer } from '@formily/react';
-import { openStepSettingsDialog } from '../../wrappers/contextual';
+import { openStepSettings } from '../../wrappers/contextual';
 
 // 支持两种使用方式的接口定义
 interface ModelProvidedProps {
@@ -92,7 +92,7 @@ const FlowsDropdownButtonWithModel: React.FC<ModelProvidedProps> = observer(
         const [flowKey, stepKey] = key.split(':');
 
         try {
-          openStepSettingsDialog({
+          openStepSettings({
             model,
             flowKey,
             stepKey,
