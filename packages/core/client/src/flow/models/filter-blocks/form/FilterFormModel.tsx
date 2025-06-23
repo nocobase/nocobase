@@ -26,7 +26,11 @@ export class FilterFormModel extends FilterBlockModel {
         <FormProvider form={this.form}>
           <FormLayout layout={'vertical'}>
             {this.mapSubModels('fields', (field) => (
-              <FlowModelRenderer model={field} showFlowSettings sharedContext={{ currentBlockModel: this }} />
+              <FlowModelRenderer
+                model={field}
+                showFlowSettings={{ showBorder: false }}
+                sharedContext={{ currentBlockModel: this }}
+              />
             ))}
           </FormLayout>
           <AddFieldButton
@@ -58,7 +62,11 @@ export class FilterFormModel extends FilterBlockModel {
           />
           <FormButtonGroup>
             {this.mapSubModels('actions', (action) => (
-              <FlowModelRenderer model={action} showFlowSettings sharedContext={{ currentBlockModel: this }} />
+              <FlowModelRenderer
+                model={action}
+                showFlowSettings={{ showBorder: false }}
+                sharedContext={{ currentBlockModel: this }}
+              />
             ))}
             <AddActionButton model={this} subModelBaseClass="FilterFormActionModel" />
           </FormButtonGroup>

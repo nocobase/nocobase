@@ -13,6 +13,7 @@ import { BaseRecordResource } from './baseRecordResource';
 
 export class MultiRecordResource<TDataItem = any> extends BaseRecordResource<TDataItem[]> {
   protected _data = observable.ref<TDataItem[]>([]);
+  protected _meta = observable.ref<Record<string, any>>({});
 
   // 请求配置 - 与 APIClient 接口保持一致
   protected request = {
@@ -43,19 +44,21 @@ export class MultiRecordResource<TDataItem = any> extends BaseRecordResource<TDa
   }
 
   setPage(page: number) {
-    return this.addRequestParameter('page', page);
+    this.addRequestParameter('page', page);
+    return this.setMeta({ page });
   }
 
   getPage(): number {
-    return this.request.params.page;
+    return this.getMeta('page');
   }
 
   setPageSize(pageSize: number) {
-    return this.addRequestParameter('pageSize', pageSize);
+    this.addRequestParameter('pageSize', pageSize);
+    return this.setMeta({ pageSize });
   }
 
   getPageSize(): number {
-    return this.request.params.pageSize;
+    return this.getMeta('pageSize');
   }
 
   getCell(rowIndex: number, columnKey: string): TDataItem | undefined {

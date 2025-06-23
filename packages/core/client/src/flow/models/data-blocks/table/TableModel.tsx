@@ -14,6 +14,7 @@ import { AddActionButton, AddFieldButton, FlowModelRenderer, MultiRecordResource
 import { Card, Space, Spin, Table } from 'antd';
 import classNames from 'classnames';
 import _ from 'lodash';
+import refresh from 'packages/core/server/src/commands/refresh';
 import React, { useRef } from 'react';
 import { ActionModel } from '../../base/ActionModel';
 import { DataBlockModel } from '../../base/BlockModel';
@@ -171,6 +172,7 @@ export class TableModel extends DataBlockModel<S> {
   render() {
     return (
       <Card>
+        {this.resource.getMeta('pageSize')}
         <Spin spinning={this.resource.loading}>
           <Space style={{ marginBottom: 16 }}>
             {this.mapSubModels('actions', (action) => (
@@ -197,8 +199,8 @@ export class TableModel extends DataBlockModel<S> {
             dataSource={this.resource.getData()}
             columns={this.getColumns()}
             pagination={{
-              defaultCurrent: this.resource.getMeta('page'),
-              defaultPageSize: this.resource.getMeta('pageSize'),
+              current: this.resource.getPage(),
+              pageSize: this.resource.getPageSize(),
               total: this.resource.getMeta('count'),
             }}
             onChange={(pagination) => {
@@ -245,13 +247,16 @@ TableModel.registerFlow({
         dataSourceKey: 'main',
       },
       handler: async (ctx, params) => {
+        if (ctx.model.resource) {
+          return;
+        }
         const collection = ctx.globals.dataSourceManager.getCollection(params.dataSourceKey, params.collectionName);
         ctx.model.collection = collection;
         const resource = new MultiRecordResource();
         resource.setDataSourceKey(params.dataSourceKey);
         resource.setResourceName(params.collectionName);
         resource.setAPIClient(ctx.globals.api);
-        resource.setPageSize(200);
+        resource.setPageSize(20);
         ctx.model.resource = resource;
         await ctx.model.applySubModelsAutoFlows('columns', null, { currentBlockModel: ctx.model });
         ctx.model.mapSubModels('columns', (f) => {
@@ -264,7 +269,36 @@ TableModel.registerFlow({
             resource.addAppends(targetCollectionField.name);
           }
         });
-        await resource.refresh();
+      },
+    },
+    editPageSize: {
+      title: 'Edit page size',
+      uiSchema: {
+        pageSize: {
+          'x-component': 'Select',
+          'x-decorator': 'FormItem',
+          enum: [
+            { label: '10', value: 10 },
+            { label: '20', value: 20 },
+            { label: '50', value: 50 },
+            { label: '100', value: 100 },
+            { label: '200', value: 200 },
+          ],
+        },
+      },
+      defaultParams: (ctx) => {
+        return {
+          pageSize: ctx.model.resource.getPageSize(),
+        };
+      },
+      handler(ctx, params) {
+        console.log('editPageSize', params);
+        ctx.model.resource.setPageSize(params.pageSize || ctx.model.resource.getPageSize());
+      },
+    },
+    refresh: {
+      async handler(ctx, params) {
+        await ctx.model.resource.refresh();
       },
     },
   },

@@ -15,7 +15,7 @@ import { FieldModel } from '../../base/FieldModel';
 import { TableFieldModel } from './fields/TableFieldModel';
 
 export class TableColumnModel extends FieldModel {
-  getColumnProps(): TableColumnProps & { editable?: boolean } {
+  getColumnProps(): TableColumnProps {
     const titleContent = (
       <FlowsFloatContextMenu
         model={this}
@@ -27,7 +27,6 @@ export class TableColumnModel extends FieldModel {
     );
     return {
       width: 100,
-      editable: true,
       ...this.props,
       ellipsis: true,
       title: this.props.tooltip ? (
@@ -43,7 +42,7 @@ export class TableColumnModel extends FieldModel {
       onCell: (record) => ({
         record,
         width: this.props.width,
-        editable: this.props.editable || true,
+        editable: this.props.editable || false,
         dataIndex: this.props.dataIndex,
         title: this.props.title,
         // handleSave,
@@ -142,6 +141,21 @@ TableColumnModel.registerFlow({
       },
       handler(ctx, params) {
         ctx.model.setProps('width', params.width);
+      },
+    },
+    enableEditable: {
+      title: 'Editable',
+      uiSchema: {
+        editable: {
+          'x-component': 'Switch',
+          'x-decorator': 'FormItem',
+        },
+      },
+      defaultParams: {
+        editable: false,
+      },
+      handler(ctx, params) {
+        ctx.model.setProps('editable', params.editable);
       },
     },
   },
