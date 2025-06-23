@@ -158,7 +158,7 @@ export const DateTimeFormat = {
     ctx.model.setProps({ ...params });
   },
   defaultParams: (ctx) => {
-    const { showTime, dateFormat, timeFormat, picker } = ctx.model.field.componentProps || {};
+    const { showTime, dateFormat, timeFormat, picker } = ctx.model.field.props || {};
     return {
       picker: picker || 'date',
       dateFormat: dateFormat || 'YYYY-MM-DD',

@@ -55,31 +55,31 @@ TableFieldModel.registerFlow({
   },
 });
 
-TableFieldModel.registerFlow({
-  key: 'default2',
-  auto: true,
-  steps: {
-    step2: {
-      title: 'Edit Title',
-      uiSchema: {
-        prefix: {
-          'x-component': 'Input',
-          'x-decorator': 'FormItem',
-          'x-component-props': {
-            placeholder: 'Prefix',
-          },
-        },
-        suffix: {
-          'x-component': 'Input',
-          'x-decorator': 'FormItem',
-          'x-component-props': {
-            placeholder: 'Suffix',
-          },
-        },
-      },
-      handler(ctx, params) {
-        ctx.model.setProps(params);
-      },
-    },
-  },
-});
+// TableFieldModel.registerFlow({
+//   key: 'default2',
+//   auto: true,
+//   steps: {
+//     step2: {
+//       title: 'Edit Title',
+//       uiSchema: {
+//         prefix: {
+//           'x-component': 'Input',
+//           'x-decorator': 'FormItem',
+//           'x-component-props': {
+//             placeholder: 'Prefix',
+//           },
+//         },
+//         suffix: {
+//           'x-component': 'Input',
+//           'x-decorator': 'FormItem',
+//           'x-component-props': {
+//             placeholder: 'Suffix',
+//           },
+//         },
+//       },
+//       handler(ctx, params) {
+//         // ctx.model.setProps(params);
+//       },
+//     },
+//   },
+// });
