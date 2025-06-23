@@ -8,9 +8,15 @@
  */
 
 import React, { useState, useCallback, useRef, useEffect } from 'react';
-import { Alert, Modal, Space, Dropdown, Button } from 'antd';
+import { Alert, Modal, Space, Dropdown, App } from 'antd';
 import type { MenuProps } from 'antd';
-import { SettingOutlined, DeleteOutlined, ExclamationCircleOutlined, MenuOutlined } from '@ant-design/icons';
+import {
+  SettingOutlined,
+  DeleteOutlined,
+  ExclamationCircleOutlined,
+  MenuOutlined,
+  CopyOutlined,
+} from '@ant-design/icons';
 import { observer } from '@formily/react';
 import { css } from '@emotion/css';
 import { FlowModel } from '../../../../models';
@@ -100,6 +106,7 @@ interface ModelProvidedProps {
   children?: React.ReactNode;
   enabled?: boolean;
   showDeleteButton?: boolean;
+  showCopyUidButton?: boolean;
   containerStyle?: React.CSSProperties;
   className?: string;
   /**
@@ -118,6 +125,7 @@ interface ModelByIdProps {
   children?: React.ReactNode;
   enabled?: boolean;
   showDeleteButton?: boolean;
+  showCopyUidButton?: boolean;
   containerStyle?: React.CSSProperties;
   className?: string;
   /**
@@ -155,6 +163,7 @@ const isModelByIdProps = (props: FlowsFloatContextMenuProps): props is ModelById
  * @param props.children 子组件，必须提供
  * @param props.enabled 是否启用悬浮菜单，默认为true
  * @param props.showDeleteButton 是否显示删除按钮，默认为true
+ * @param props.showCopyUidButton 是否显示复制UID按钮，默认为true
  * @param props.containerStyle 容器自定义样式
  * @param props.className 容器自定义类名
  */
@@ -178,6 +187,7 @@ const FlowsFloatContextMenuWithModel: React.FC<ModelProvidedProps> = observer(
     children,
     enabled = true,
     showDeleteButton = true,
+    showCopyUidButton = true,
     containerStyle,
     className,
     showBackground = true,
@@ -186,6 +196,7 @@ const FlowsFloatContextMenuWithModel: React.FC<ModelProvidedProps> = observer(
     const [hideMenu, setHideMenu] = useState<boolean>(false);
     const [hasButton, setHasButton] = useState<boolean>(false);
     const containerRef = useRef<HTMLDivElement>(null);
+    const { message } = App.useApp();
 
     // 检测DOM中是否包含button元素
     useEffect(() => {
@@ -232,7 +243,18 @@ const FlowsFloatContextMenuWithModel: React.FC<ModelProvidedProps> = observer(
 
     const handleMenuClick = useCallback(
       ({ key }: { key: string }) => {
-        if (key === 'delete') {
+        if (key === 'copy-uid') {
+          // 处理复制 uid 操作
+          navigator.clipboard
+            .writeText(model.uid)
+            .then(() => {
+              message.success('UID 已复制到剪贴板');
+            })
+            .catch((error) => {
+              console.error('复制失败:', error);
+              message.error('复制失败，请重试');
+            });
+        } else if (key === 'delete') {
           // 处理删除操作
           Modal.confirm({
             title: '确认删除',
@@ -268,7 +290,7 @@ const FlowsFloatContextMenuWithModel: React.FC<ModelProvidedProps> = observer(
           }
         }
       },
-      [model],
+      [model, message],
     );
 
     if (!model) {
@@ -348,8 +370,8 @@ const FlowsFloatContextMenuWithModel: React.FC<ModelProvidedProps> = observer(
 
     const configurableFlowsAndSteps = getConfigurableFlowsAndSteps();
 
-    // 如果没有可配置的flows且不显示删除按钮，直接返回children
-    if (configurableFlowsAndSteps.length === 0 && !showDeleteButton) {
+    // 如果没有可配置的flows且不显示删除按钮和复制UID按钮，直接返回children
+    if (configurableFlowsAndSteps.length === 0 && !showDeleteButton && !showCopyUidButton) {
       return <>{children}</>;
     }
 
@@ -376,8 +398,8 @@ const FlowsFloatContextMenuWithModel: React.FC<ModelProvidedProps> = observer(
       });
     }
 
-    // 添加分割线和删除按钮
-    if (showDeleteButton) {
+    // 添加分割线、复制 uid 和删除按钮
+    if (showCopyUidButton || showDeleteButton) {
       // 如果有flows配置项，添加分割线
       if (configurableFlowsAndSteps.length > 0) {
         menuItems.push({
@@ -385,12 +407,23 @@ const FlowsFloatContextMenuWithModel: React.FC<ModelProvidedProps> = observer(
         });
       }
 
+      // 添加复制 uid 按钮
+      if (showCopyUidButton) {
+        menuItems.push({
+          key: 'copy-uid',
+          icon: <CopyOutlined />,
+          label: '复制 UID',
+        });
+      }
+
       // 添加删除按钮
-      menuItems.push({
-        key: 'delete',
-        icon: <DeleteOutlined />,
-        label: '删除',
-      });
+      if (showDeleteButton) {
+        menuItems.push({
+          key: 'delete',
+          icon: <DeleteOutlined />,
+          label: '删除',
+        });
+      }
     }
 
     return (
@@ -429,7 +462,16 @@ const FlowsFloatContextMenuWithModel: React.FC<ModelProvidedProps> = observer(
 
 // 通过useModelById hook获取model
 const FlowsFloatContextMenuWithModelById: React.FC<ModelByIdProps> = observer(
-  ({ uid, modelClassName, children, enabled = true, showDeleteButton = true, containerStyle, className }) => {
+  ({
+    uid,
+    modelClassName,
+    children,
+    enabled = true,
+    showDeleteButton = true,
+    showCopyUidButton = true,
+    containerStyle,
+    className,
+  }) => {
     const model = useFlowModel(uid, modelClassName);
 
     if (!model) {
@@ -441,6 +483,7 @@ const FlowsFloatContextMenuWithModelById: React.FC<ModelByIdProps> = observer(
         model={model}
         enabled={enabled}
         showDeleteButton={showDeleteButton}
+        showCopyUidButton={showCopyUidButton}
         containerStyle={containerStyle}
         className={className}
       >
