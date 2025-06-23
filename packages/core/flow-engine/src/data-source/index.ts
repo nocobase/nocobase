@@ -87,6 +87,10 @@ export class DataSource {
     return this.options.key;
   }
 
+  get name() {
+    return this.options.key;
+  }
+
   getCollections(): Collection[] {
     return this.collectionManager.getCollections();
   }
