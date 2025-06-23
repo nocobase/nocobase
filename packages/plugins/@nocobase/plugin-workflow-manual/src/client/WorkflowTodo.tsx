@@ -40,6 +40,7 @@ import {
   ActionContextProvider,
   useRequest,
   CollectionRecordProvider,
+  useMobileLayout,
 } from '@nocobase/client';
 import WorkflowPlugin, {
   DetailsBlockProvider,
@@ -390,7 +391,7 @@ function FlowContextProvider(props) {
         }}
         schema={{
           type: 'void',
-          name: 'tabs',
+          name: `manual-${id}}`,
           'x-component': 'Tabs',
           properties: node.config?.schema,
         }}
@@ -429,13 +430,15 @@ function useDetailsBlockProps() {
 }
 
 function FooterStatus() {
+  const { isMobileLayout } = useMobileLayout();
   const compile = useCompile();
   const { status, updatedAt } = useCollectionRecordData() || {};
   const statusOption = TaskStatusOptionsMap[status];
   return status ? (
     <Space
       className={css`
-        margin-bottom: 1em;
+        padding: ${isMobileLayout ? '1em' : '0'};
+        margin-bottom: ${isMobileLayout ? '0' : '1em'};
         time {
           margin-right: 0.5em;
         }
