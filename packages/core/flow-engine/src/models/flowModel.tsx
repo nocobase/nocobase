@@ -791,6 +791,7 @@ export class FlowModel<Structure extends { parent?: any; subModels?: any } = Def
     if (!this.flowEngine) {
       throw new Error('FlowEngine is not set on this model. Please set flowEngine before saving.');
     }
+    this.observerDispose();
     return this.flowEngine.removeModel(this.uid);
   }
 
@@ -798,7 +799,6 @@ export class FlowModel<Structure extends { parent?: any; subModels?: any } = Def
     if (!this.flowEngine) {
       throw new Error('FlowEngine is not set on this model. Please set flowEngine before saving.');
     }
-    this.observerDispose();
     return this.flowEngine.saveModel(this);
   }
 
