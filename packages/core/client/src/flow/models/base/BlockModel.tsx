@@ -19,6 +19,7 @@ export class DataBlockModel<T = DefaultStructure> extends BlockModel<T> {
     this.setSharedContext({
       currentBlockModel: this,
     });
+    console.log('DataBlockModel onInit', this);
   }
 
   addAppends(fieldPath: string, refresh = false) {

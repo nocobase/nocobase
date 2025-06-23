@@ -84,7 +84,6 @@ export class TableModel extends DataBlockModel<S> {
               },
             ]}
             onModelCreated={async (model: TableColumnModel) => {
-              console.log(model.parent, model.getSharedContext());
               // model.setSharedContext({ currentBlockModel: this });
               await model.applyAutoFlows();
             }}

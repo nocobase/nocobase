@@ -64,7 +64,7 @@ export class FlowModel<Structure extends { parent?: any; subModels?: any } = Def
   /**
    * model 树的共享运行上下文
    */
-  private _sharedContext: Record<string, any> = {};
+  protected _sharedContext: Record<string, any> = {};
 
   /**
    * 上一次 applyAutoFlows 的执行参数
@@ -851,7 +851,8 @@ export class FlowModel<Structure extends { parent?: any; subModels?: any } = Def
   }
 
   public setSharedContext(ctx: Record<string, any>) {
-    this._sharedContext = { ...this._sharedContext, ...ctx };
+    this._sharedContext = ctx;
+    // this._sharedContext = { ...this._sharedContext, ...ctx };
   }
 
   public getSharedContext() {
