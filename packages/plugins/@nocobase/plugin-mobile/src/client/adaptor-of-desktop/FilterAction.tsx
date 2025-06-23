@@ -80,6 +80,7 @@ export const FilterAction = withDynamicSchemaProps((props) => {
               getContainer={getContainer}
               bodyStyle={bodyStyle}
               maskStyle={zIndexStyle}
+              style={zIndexStyle}
               closeOnSwipe
             >
               <div className="nb-mobile-action-drawer-header">
