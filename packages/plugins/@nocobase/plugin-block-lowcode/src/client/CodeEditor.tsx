@@ -225,6 +225,7 @@ interface CodeEditorProps {
   onChange?: (value: string) => void;
   placeholder?: string;
   height?: string | number;
+  minHeight?: string | number;
   theme?: 'light' | 'dark';
   readonly?: boolean;
   enableLinter?: boolean;
@@ -235,6 +236,7 @@ const CodeEditorComponent: React.FC<CodeEditorProps> = ({
   onChange,
   placeholder = '',
   height = '300px',
+  minHeight,
   theme = 'light',
   readonly = false,
   enableLinter = false,
@@ -263,7 +265,14 @@ const CodeEditorComponent: React.FC<CodeEditorProps> = ({
       }),
       EditorView.theme({
         '&': {
-          height: typeof height === 'string' ? height : `${height}px`,
+          // 如果设置了 minHeight，则使用 minHeight，否则使用 height
+          ...(minHeight
+            ? {
+                minHeight: typeof minHeight === 'string' ? minHeight : `${minHeight}px`,
+              }
+            : {
+                height: typeof height === 'string' ? height : `${height}px`,
+              }),
         },
         '.cm-editor': {
           height: '100%',
@@ -354,7 +363,7 @@ const CodeEditorComponent: React.FC<CodeEditorProps> = ({
       view.destroy();
       viewRef.current = null;
     };
-  }, [theme, height, placeholder, readonly, enableLinter]);
+  }, [theme, height, minHeight, placeholder, readonly, enableLinter]);
 
   // Update editor content when value prop changes
   useEffect(() => {
@@ -407,6 +416,7 @@ export const CodeEditor = connect(
       onChange: props.onChange,
       placeholder: props.placeholder,
       height: props.height,
+      minHeight: props.minHeight,
       theme: props.theme,
     };
   }),
