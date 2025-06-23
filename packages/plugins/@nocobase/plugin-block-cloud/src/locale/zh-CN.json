@@ -1,17 +1,9 @@
 {
   "Cloud Component": "云组件",
   "Cloud Block": "云组件区块",
-  "JS CDN URL": "JS CDN 地址",
-  "CSS URL": "CSS 地址",
-  "Library Name": "库名称",
-  "Adapter Code": "适配器代码",
-  "Load Library": "加载库",
-  "Setup Component": "设置组件",
-  "Enter the CDN URL for the JavaScript library": "输入 JavaScript 库的 CDN 地址",
-  "Enter the CSS URL (optional)": "输入 CSS 地址（可选）",
-  "Enter the global library name": "输入全局库名称",
-  "Enter the adapter code to initialize the component": "输入适配器代码来初始化组件",
-  "Failed to load library": "加载库失败",
-  "Failed to initialize component": "初始化组件失败",
-  "Component loaded successfully": "组件加载成功"
+  "Execution Code": "执行代码",
+  "Execution Step": "执行步骤",
+  "Enter the execution code to render the component": "输入执行代码来渲染组件",
+  "Failed to execute code": "执行代码失败",
+  "Component executed successfully": "组件执行成功"
 }

@@ -9,9 +9,15 @@
 
 import { Plugin } from '@nocobase/client';
 import { CloudBlockFlowModel } from './CloudBlockFlowModel';
+import { CodeEditor } from './CodeEditor';
 
 export class PluginBlockCloudClient extends Plugin {
   async load() {
+    // Register CodeEditor component to flowSettings
+    this.flowEngine.flowSettings.registerComponents({
+      CodeEditor,
+    });
+
     // Register the CloudBlockFlowModel
     this.flowEngine.registerModels({ CloudBlockFlowModel });
 

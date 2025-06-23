@@ -9,7 +9,8 @@
 
 import { Card, Spin } from 'antd';
 import React, { createRef } from 'react';
-import { BlockFlowModel } from '@nocobase/client';
+import { BlockModel } from '@nocobase/client';
+import { CodeEditor } from './CodeEditor';
 
 function waitForRefCallback<T extends HTMLElement>(ref: React.RefObject<T>, cb: (el: T) => void, timeout = 3000) {
   const start = Date.now();
@@ -21,7 +22,7 @@ function waitForRefCallback<T extends HTMLElement>(ref: React.RefObject<T>, cb: 
   check();
 }
 
-export class CloudBlockFlowModel extends BlockFlowModel {
+export class CloudBlockFlowModel extends BlockModel {
   ref = createRef<HTMLDivElement>();
 
   render() {
@@ -49,6 +50,9 @@ export class CloudBlockFlowModel extends BlockFlowModel {
   }
 }
 
+// Export CodeEditor for external use
+export { CodeEditor };
+
 CloudBlockFlowModel.define({
   title: 'Cloud Component',
   group: 'Content',
@@ -57,27 +61,10 @@ CloudBlockFlowModel.define({
     use: 'CloudBlockFlowModel',
     stepParams: {
       default: {
-        loadLibrary: {
-          jsUrl: 'https://cdn.jsdelivr.net/npm/echarts@5.4.2/dist/echarts.min.js',
-          cssUrl: '',
-          libraryName: 'echarts',
-        },
-        setupComponent: {
-          adapterCode: `
-// Example adapter code for ECharts
-const chart = echarts.init(element);
-const option = {
-  title: { text: 'Cloud Component Demo' },
-  tooltip: {},
-  xAxis: { data: ['A', 'B', 'C', 'D', 'E'] },
-  yAxis: {},
-  series: [{
-    name: 'Demo',
-    type: 'bar',
-    data: [5, 20, 36, 10, 10]
-  }]
-};
-chart.setOption(option);
+        executionStep: {
+          code: `
+// Example execution code
+element.innerHTML = '<h3>Cloud Component Demo</h3><p>This is a simplified cloud component.</p>';
           `.trim(),
         },
       },
@@ -89,137 +76,102 @@ CloudBlockFlowModel.registerFlow({
   key: 'default',
   auto: true,
   steps: {
-    loadLibrary: {
+    executionStep: {
       uiSchema: {
-        jsUrl: {
+        code: {
           type: 'string',
-          title: 'JS CDN URL',
-          'x-component': 'Input',
+          title: 'Execution Code',
+          'x-component': 'CodeEditor',
           'x-component-props': {
-            placeholder: 'https://cdn.jsdelivr.net/npm/library@version/dist/library.min.js',
-          },
-        },
-        cssUrl: {
-          type: 'string',
-          title: 'CSS URL (Optional)',
-          'x-component': 'Input',
-          'x-component-props': {
-            placeholder: 'https://cdn.jsdelivr.net/npm/library@version/dist/library.min.css',
-          },
-        },
-        libraryName: {
-          type: 'string',
-          title: 'Library Name',
-          'x-component': 'Input',
-          'x-component-props': {
-            placeholder: 'echarts',
+            height: '400px',
+            theme: 'light',
+            placeholder: `// Write your execution code here
+// Available variables:
+// - element: The DOM element to render into
+// - ctx: Flow context
+// - model: Current model instance
+// - requirejs: Function to load external JavaScript libraries (callback style)
+// - requireAsync: Function to load external JavaScript libraries (async/await style)
+// - loadCSS: Function to load external CSS files
+
+element.innerHTML = '<h3>Hello World</h3><p>This is a cloud component.</p>';`,
           },
         },
       },
       defaultParams: {
-        jsUrl: 'https://cdn.jsdelivr.net/npm/echarts@5.4.2/dist/echarts.min.js',
-        cssUrl: '',
-        libraryName: 'echarts',
+        code: `
+// Example execution code
+element.innerHTML = '<h3>Cloud Component Demo</h3><p>This is a simplified cloud component.</p>';
+
+// You can also use async/await
+// await new Promise(resolve => setTimeout(resolve, 1000));
+// element.innerHTML += '<br>Async operation completed!';
+        `.trim(),
       },
       async handler(ctx: any, params: any) {
         ctx.model.setProps('loading', true);
         ctx.model.setProps('error', null);
 
-        try {
-          // Configure requirejs paths
-          const paths: Record<string, string> = {};
-          paths[params.libraryName] = params.jsUrl.replace(/\.js$/, '');
-
-          // Load CSS if provided
-          if (params.cssUrl) {
-            const link = document.createElement('link');
-            link.rel = 'stylesheet';
-            link.href = params.cssUrl;
-            document.head.appendChild(link);
-          }
-
-          // Configure requirejs
-          // const requireAsync = async (mod: string): Promise<any> => {
-          //   return new Promise((resolve, reject) => {
-          //     ctx.app.requirejs.requirejs([mod], (arg: any) => resolve(arg), reject);
-          //   });
-          // };
-
-          ctx.app.requirejs.requirejs.config({ paths });
-          await ctx.globals.requireAsync(params.libraryName);
-
-          // Return the library name for the next step
-          return { libraryName: params.libraryName };
-        } catch (error: any) {
-          ctx.model.setProps('error', error.message);
-          ctx.model.setProps('loading', false);
-          throw error;
-        }
-      },
-    },
-    setupComponent: {
-      uiSchema: {
-        adapterCode: {
-          type: 'string',
-          title: 'Adapter Code',
-          'x-component': 'Input.TextArea',
-          'x-component-props': {
-            autoSize: { minRows: 10, maxRows: 20 },
-            placeholder: `// Write your adapter code here
-// Available variables:
-// - element: The DOM element to render into
-// - library: The loaded library (e.g., echarts)
-// - ctx: Flow context
-// - model: Current model instance
-
-const chart = library.init(element);
-chart.setOption({
-  // your chart configuration
-});`,
-          },
-        },
-      },
-      defaultParams: {
-        adapterCode: `
-// Example adapter code for ECharts
-const chart = echarts.init(element);
-const option = {
-  title: { text: 'Cloud Component Demo' },
-  tooltip: {},
-  xAxis: { data: ['A', 'B', 'C', 'D', 'E'] },
-  yAxis: {},
-  series: [{
-    name: 'Demo',
-    type: 'bar',
-    data: [5, 20, 36, 10, 10]
-  }]
-};
-chart.setOption(option);
-        `.trim(),
-      },
-      async handler(ctx: any, params: any) {
-        const { libraryName } = ctx.stepResults.loadLibrary || {};
-
-        if (!libraryName) {
-          ctx.model.setProps('error', 'Library name not found');
-          ctx.model.setProps('loading', false);
-          return;
-        }
-
         waitForRefCallback(ctx.model.ref, async (element: HTMLElement) => {
           try {
-            // Load the library
-            const library = await ctx.globals.requireAsync(libraryName);
+            // Get requirejs from app context
+            const requirejs = ctx.app?.requirejs?.requirejs;
 
-            // Create a safe execution context for the adapter code
-            const adapterFunction = new Function('element', 'library', libraryName, 'ctx', 'model', params.adapterCode);
+            // Helper function to load CSS
+            const loadCSS = (url: string): Promise<void> => {
+              return new Promise((resolve, reject) => {
+                // Check if CSS is already loaded
+                const existingLink = document.querySelector(`link[href="${url}"]`);
+                if (existingLink) {
+                  resolve();
+                  return;
+                }
 
-            // Execute the adapter code
-            await adapterFunction(element, library, library, ctx, ctx.model);
+                const link = document.createElement('link');
+                link.rel = 'stylesheet';
+                link.href = url;
+                link.onload = () => resolve();
+                link.onerror = () => reject(new Error(`Failed to load CSS: ${url}`));
+                document.head.appendChild(link);
+              });
+            };
+
+            // Helper function for async requirejs
+            const requireAsync = (modules: string | string[]): Promise<any> => {
+              return new Promise((resolve, reject) => {
+                if (!requirejs) {
+                  reject(new Error('requirejs is not available'));
+                  return;
+                }
+
+                const moduleList = Array.isArray(modules) ? modules : [modules];
+                requirejs(
+                  moduleList,
+                  (...args: any[]) => {
+                    // If single module, return the module directly
+                    // If multiple modules, return array
+                    resolve(moduleList.length === 1 ? args[0] : args);
+                  },
+                  reject,
+                );
+              });
+            };
+
+            // Create a safe execution context for the code (as async function)
+            // Wrap user code in an async function
+            const wrappedCode = `
+              return (async function(element, ctx, model, requirejs, requireAsync, loadCSS) {
+                ${params.code}
+              }).apply(this, arguments);
+            `;
+            const executionFunction = new Function(wrappedCode);
+
+            // Execute the code
+            await executionFunction(element, ctx, ctx.model, requirejs, requireAsync, loadCSS);
 
             ctx.model.setProps('loading', false);
           } catch (error: any) {
-            console.error('Cloud component adapter error:', error);
+            console.error('Cloud component execution error:', error);
             ctx.model.setProps('error', error.message);
             ctx.model.setProps('loading', false);
           }
