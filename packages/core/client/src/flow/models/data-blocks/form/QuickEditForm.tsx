@@ -11,6 +11,7 @@ import { FormButtonGroup, FormDialog, FormLayout, Submit } from '@formily/antd-v
 import { createForm, Form } from '@formily/core';
 import { FormProvider } from '@formily/react';
 import {
+  BaseRecordResource,
   Collection,
   CollectionField,
   FlowEngine,
@@ -27,6 +28,29 @@ export class QuickEditForm extends FlowModel {
   form: Form;
   declare resource: SingleRecordResource;
   declare collection: Collection;
+
+  onInit() {
+    this.setSharedContext({
+      currentBlockModel: this,
+    });
+  }
+
+  addAppends(fieldPath: string, refresh = false) {
+    const field = this.ctx.globals.dataSourceManager.getCollectionField(
+      `${this.collection.dataSourceKey}.${this.collection.name}.${fieldPath}`,
+    );
+    if (!field) {
+      throw new Error(
+        `Collection field not found: ${this.collection.dataSourceKey}.${this.collection.name}.${fieldPath}`,
+      );
+    }
+    if (['belongsToMany', 'belongsTo', 'hasMany', 'hasOne'].includes(field.type)) {
+      (this.resource as BaseRecordResource).addAppends(field.name);
+      if (refresh) {
+        this.resource.refresh();
+      }
+    }
+  }
 
   static async open(options: {
     target: any;
@@ -74,13 +98,9 @@ export class QuickEditForm extends FlowModel {
             <FlowEngineProvider engine={this.flowEngine}>
               <FormProvider form={this.form}>
                 <FormLayout layout={'vertical'}>
-                  {this.mapSubModels('fields', (field) => (
-                    <FlowModelRenderer
-                      model={field}
-                      fallback={<Skeleton paragraph={{ rows: 2 }} />}
-                      sharedContext={{ currentBlockModel: this }}
-                    />
-                  ))}
+                  {this.mapSubModels('fields', (field) => {
+                    return <FlowModelRenderer model={field} fallback={<Skeleton paragraph={{ rows: 2 }} />} />;
+                  })}
                 </FormLayout>
                 <FormButtonGroup>
                   <Submit

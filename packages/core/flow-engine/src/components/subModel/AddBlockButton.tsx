@@ -83,7 +83,7 @@ const AddBlockButtonCore: React.FC<AddBlockButtonProps> = ({
   model,
   subModelBaseClass = 'BlockModel',
   subModelKey = 'blocks',
-  children = <FlowSettingsButton icon={<PlusOutlined />}>{'Configure fields'}</FlowSettingsButton>,
+  children = <FlowSettingsButton icon={<PlusOutlined />}>{'Add block'}</FlowSettingsButton>,
   subModelType = 'array',
   items,
   filter: filterBlocks,
