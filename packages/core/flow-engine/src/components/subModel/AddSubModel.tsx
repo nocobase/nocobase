@@ -11,6 +11,7 @@ import { Collection, FlowModel } from '@nocobase/flow-engine';
 import { Button, MenuProps } from 'antd';
 import React from 'react';
 import LazyDropdown, { Item, ItemsType } from './LazyDropdown';
+import { withFlowDesignMode } from '../common/withFlowDesignMode';
 
 interface SubModelItem {
   key?: string;
@@ -34,7 +35,7 @@ interface AddSubModelButtonProps {
   children?: React.ReactNode; // ✅ 支持自定义按钮文本
 }
 
-export function AddSubModel({
+const AddSubModelCore = function AddSubModel({
   model,
   subModelKey,
   subModelType = 'array',
@@ -72,26 +73,34 @@ export function AddSubModel({
   };
 
   return <LazyDropdown menu={{ items, onClick }}>{children}</LazyDropdown>;
-}
+};
+
+export const AddSubModel = withFlowDesignMode(AddSubModelCore);
 
 interface AddBlockButtonProps extends AddSubModelButtonProps {
   collection: Collection;
 }
 
-export function AddBlockModel(props: AddBlockButtonProps) {
+const AddBlockModelCore = function AddBlockModel(props: AddBlockButtonProps) {
   return <AddSubModel {...props}>Add block</AddSubModel>;
-}
+};
+
+export const AddBlockModel = withFlowDesignMode(AddBlockModelCore);
 
 interface AddFieldButtonProps extends AddSubModelButtonProps {
   collection: Collection;
 }
 
-export function AddFieldModel(props: AddFieldButtonProps) {
+const AddFieldModelCore = function AddFieldModel(props: AddFieldButtonProps) {
   return <AddSubModel {...props}>{props.children || <Button>Configure fields</Button>}</AddSubModel>;
-}
+};
+
+export const AddFieldModel = withFlowDesignMode(AddFieldModelCore);
 
 type AddActionButtonProps = AddSubModelButtonProps;
 
-export function AddActionModel(props: AddActionButtonProps) {
+const AddActionModelCore = function AddActionModel(props: AddActionButtonProps) {
   return <AddSubModel {...props}>{props.children || 'Configure actions'}</AddSubModel>;
-}
+};
+
+export const AddActionModel = withFlowDesignMode(AddActionModelCore);

@@ -13,6 +13,7 @@ import { ModelConstructor } from '../../types';
 import { AddSubModelButton, SubModelItemsType, mergeSubModelItems } from './AddSubModelButton';
 import { createBlockItems } from './blockItems';
 import { getCommonAddButton } from '../common/CommonAddButton';
+import { withFlowDesignMode } from '../common/withFlowDesignMode';
 
 interface AddBlockButtonProps {
   /**
@@ -73,7 +74,7 @@ interface AddBlockButtonProps {
  * />
  * ```
  */
-export const AddBlockButton: React.FC<AddBlockButtonProps> = ({
+const AddBlockButtonCore: React.FC<AddBlockButtonProps> = ({
   model,
   subModelBaseClass = 'BlockModel',
   subModelKey = 'blocks',
@@ -114,5 +115,8 @@ export const AddBlockButton: React.FC<AddBlockButtonProps> = ({
     </AddSubModelButton>
   );
 };
+
+// 使用高阶组件包装，优化性能
+export const AddBlockButton = withFlowDesignMode(AddBlockButtonCore);
 
 AddBlockButton.displayName = 'AddBlockButton';

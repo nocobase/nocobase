@@ -7,6 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { define, observable } from '@formily/reactive';
 import { openStepSettingsDialog } from './components/settings/wrappers/contextual/StepSettingsDialog';
 import { StepSettingsDialogProps } from './types';
 
@@ -14,6 +15,16 @@ export class FlowSettings {
   public components: Record<string, any> = {};
   public scopes: Record<string, any> = {};
   private antdComponentsLoaded = false;
+  public enabled: boolean;
+
+  constructor() {
+    // 初始默认为 false，由 SchemaComponentProvider 根据实际设计模式状态同步设置
+    this.enabled = false;
+
+    define(this, {
+      enabled: observable,
+    });
+  }
 
   /**
    * 加载 FlowSettings 所需的资源。
@@ -162,6 +173,24 @@ export class FlowSettings {
       }
       this.scopes[name] = scopes[name];
     });
+  }
+
+  /**
+   * 启用流程设置组件的显示
+   * @example
+   * flowSettings.enable();
+   */
+  public enable(): void {
+    this.enabled = true;
+  }
+
+  /**
+   * 禁用流程设置组件的显示
+   * @example
+   * flowSettings.disable();
+   */
+  public disable(): void {
+    this.enabled = false;
   }
 
   /**

@@ -12,6 +12,7 @@ import { AddSubModelButton, SubModelItemsType } from './AddSubModelButton';
 import { FlowModel } from '../../models/flowModel';
 import { ModelConstructor } from '../../types';
 import { getCommonAddButton } from '../common/CommonAddButton';
+import { withFlowDesignMode } from '../common/withFlowDesignMode';
 import { SettingOutlined } from '@ant-design/icons';
 
 interface AddActionButtonProps {
@@ -54,7 +55,7 @@ interface AddActionButtonProps {
  * />
  * ```
  */
-export const AddActionButton: React.FC<AddActionButtonProps> = ({
+const AddActionButtonCore: React.FC<AddActionButtonProps> = ({
   model,
   subModelBaseClass = 'ActionFlowModel',
   subModelKey = 'actions',
@@ -100,5 +101,7 @@ export const AddActionButton: React.FC<AddActionButtonProps> = ({
     </AddSubModelButton>
   );
 };
+
+export const AddActionButton = withFlowDesignMode(AddActionButtonCore);
 
 AddActionButton.displayName = 'AddActionButton';

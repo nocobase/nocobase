@@ -11,6 +11,7 @@ import React, { useMemo } from 'react';
 import { FlowModel } from '../../models';
 import LazyDropdown, { Item, ItemsType } from './LazyDropdown';
 import { ModelConstructor } from '../../types';
+import { withFlowDesignMode } from '../common/withFlowDesignMode';
 
 export interface AddSubModelContext {
   model: FlowModel;
@@ -229,7 +230,7 @@ const transformItems = (items: SubModelItemsType, context: AddSubModelContext): 
  * - 支持从 flowEngine 全局上下文获取服务
  *
  */
-export function AddSubModelButton({
+const AddSubModelButtonCore = function AddSubModelButton({
   model,
   items,
   subModelBaseClass,
@@ -291,4 +292,6 @@ export function AddSubModelButton({
   };
 
   return <LazyDropdown menu={{ items: transformItems(items, buildContext), onClick }}>{children}</LazyDropdown>;
-}
+};
+
+export const AddSubModelButton = withFlowDesignMode(AddSubModelButtonCore);

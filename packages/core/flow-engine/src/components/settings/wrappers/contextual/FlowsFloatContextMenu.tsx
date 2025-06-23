@@ -16,6 +16,7 @@ import { css } from '@emotion/css';
 import { FlowModel } from '../../../../models';
 import { ActionStepDefinition } from '../../../../types';
 import { useFlowModel } from '../../../../hooks';
+import { useFlowEngine } from '../../../../provider';
 import { openStepSettingsDialog } from './StepSettingsDialog';
 
 // 检测DOM中直接子元素是否包含button元素的辅助函数
@@ -157,13 +158,18 @@ const isModelByIdProps = (props: FlowsFloatContextMenuProps): props is ModelById
  * @param props.containerStyle 容器自定义样式
  * @param props.className 容器自定义类名
  */
-const FlowsFloatContextMenu: React.FC<FlowsFloatContextMenuProps> = (props) => {
+const FlowsFloatContextMenu: React.FC<FlowsFloatContextMenuProps> = observer((props) => {
+  const flowEngine = useFlowEngine();
+  // Only render if flowSettings is enabled
+  if (!flowEngine.flowSettings?.enabled) {
+    return <>{props.children}</>;
+  }
   if (isModelByIdProps(props)) {
     return <FlowsFloatContextMenuWithModelById {...props} />;
   } else {
     return <FlowsFloatContextMenuWithModel {...props} />;
   }
-};
+});
 
 // 使用传入的model
 const FlowsFloatContextMenuWithModel: React.FC<ModelProvidedProps> = observer(

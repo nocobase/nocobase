@@ -13,6 +13,7 @@ import { Collection } from '../../data-source';
 import { FlowModel } from '../../models';
 import { ModelConstructor } from '../../types';
 import { getCommonAddButton } from '../common/CommonAddButton';
+import { withFlowDesignMode } from '../common/withFlowDesignMode';
 import { SettingOutlined } from '@ant-design/icons';
 
 export interface AddFieldButtonProps {
@@ -60,7 +61,7 @@ export interface AddFieldButtonProps {
  * />
  * ```
  */
-export const AddFieldButton: React.FC<AddFieldButtonProps> = ({
+const AddFieldButtonCore: React.FC<AddFieldButtonProps> = ({
   model,
   subModelBaseClass = 'FieldFlowModel',
   subModelKey = 'fields',
@@ -142,5 +143,8 @@ export const AddFieldButton: React.FC<AddFieldButtonProps> = ({
     </AddSubModelButton>
   );
 };
+
+// 使用高阶组件包装，优化性能
+export const AddFieldButton = withFlowDesignMode(AddFieldButtonCore);
 
 AddFieldButton.displayName = 'AddFieldButton';
