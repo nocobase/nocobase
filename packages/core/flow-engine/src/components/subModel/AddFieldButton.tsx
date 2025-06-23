@@ -103,7 +103,7 @@ const AddFieldButtonCore: React.FC<AddFieldButtonProps> = ({
           fieldClasses.find((fieldClass) => {
             return fieldClass.supportedFieldInterfaces?.includes(fieldInterfaceName);
           }) || defaultFieldClasses;
-        if (fieldClass) {
+        if (fieldClass && fieldInterfaceName) {
           const fieldItem = {
             key: field.name,
             label: field.title,
