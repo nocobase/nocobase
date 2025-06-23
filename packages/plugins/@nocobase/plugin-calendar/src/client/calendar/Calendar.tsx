@@ -47,8 +47,9 @@ import useStyle from './style';
 import type { ToolbarProps } from './types';
 import { formatDate } from './utils';
 import updateLocale from 'dayjs/plugin/updateLocale';
-
-dayjs.extend(updateLocale);
+import { dateFnsLocalizer } from 'react-big-calendar';
+import { format, parse, startOfWeek, getDay } from 'date-fns';
+import enUS from 'date-fns/locale/en-US';
 
 interface Event {
   id: string;
@@ -268,12 +269,16 @@ export const Calendar: any = withDynamicSchemaProps(
       );
 
       const localizer = useMemo(() => {
-        dayjs.updateLocale('en', {
-          weekStart: props.weekStart ?? '1',
+        return dateFnsLocalizer({
+          format,
+          parse,
+          startOfWeek: (date) => {
+            return startOfWeek(date, { locale: { options: { weekStartsOn: props.weekStart } } });
+          },
+          getDay,
+          locales: { 'en-US': enUS },
         });
-        return reactBigCalendar.dayjsLocalizer(dayjs);
-      }, [reactBigCalendar]);
-
+      }, [props.weekStart]);
       // 新版 UISchema（1.0 之后）中已经废弃了 useProps，这里之所以继续保留是为了兼容旧版的 UISchema
       const { dataSource, fieldNames, showLunar, getFontColor, getBackgroundColor, enableQuickCreateEvent } =
         useProps(props);
@@ -455,14 +460,14 @@ export const Calendar: any = withDynamicSchemaProps(
                 });
               }}
               formats={{
-                monthHeaderFormat: 'YYYY-M',
-                agendaDateFormat: 'M-DD',
-                dayHeaderFormat: 'YYYY-M-DD',
+                monthHeaderFormat: 'yyyy-M',
+                agendaDateFormat: 'M-dd',
+                dayHeaderFormat: 'yyyy-M-dd',
                 dayRangeHeaderFormat: ({ start, end }, culture, local) => {
                   if (eq(start, end, 'month')) {
-                    return local.format(start, 'YYYY-M', culture);
+                    return local.format(start, 'yyyy-M', culture);
                   }
-                  return `${local.format(start, 'YYYY-M', culture)} - ${local.format(end, 'YYYY-M', culture)}`;
+                  return `${local.format(start, 'yyyy-M', culture)} - ${local.format(end, 'yyyy-M', culture)}`;
                 },
               }}
               components={components}
