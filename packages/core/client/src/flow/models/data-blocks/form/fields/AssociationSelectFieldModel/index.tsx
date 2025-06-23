@@ -10,12 +10,11 @@ import { connect, mapProps, mapReadPretty } from '@formily/react';
 import { Select } from 'antd';
 import React from 'react';
 import { omit } from 'lodash';
-import { FlowEngineProvider, useFlowModel } from '@nocobase/flow-engine';
+import { FlowEngineProvider } from '@nocobase/flow-engine';
 import { FormFieldModel } from '../FormFieldModel';
-import { loadTitleFieldOptions } from '../../../../common/utils';
 import { getUniqueKeyFromCollection } from '../../../../../../collection-manager/interfaces/utils';
 
-function toValue(value, fieldNames, multiple, options) {
+function toValue(value, fieldNames, multiple, options = []) {
   if (!value) return multiple ? [] : undefined;
   const matchOption = (val) => options.find((opt) => opt[fieldNames.value] === val);
 

@@ -51,6 +51,10 @@ export class FormModel extends DataBlockModel {
             model={this}
             collection={this.collection}
             subModelBaseClass="FormFieldModel"
+            onSubModelAdded={async (model: FormFieldModel) => {
+              console.log(model);
+              this.addAppends(model.collectionField.name, true);
+            }}
           />
           <FormButtonGroup style={{ marginTop: 16 }}>
             {this.mapSubModels('actions', (action) => (
@@ -111,6 +115,7 @@ FormModel.registerFlow({
           resource.setAPIClient(ctx.globals.api);
           ctx.model.resource = resource;
         }
+        await ctx.model.applySubModelsAutoFlows('fields');
         if (ctx.shared.parentRecord) {
           ctx.model.resource.setFilterByTk(ctx.shared.parentRecord.id);
           await ctx.model.resource.refresh();
