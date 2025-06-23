@@ -121,7 +121,7 @@ export class ForkFlowModel<TMaster extends FlowModel = FlowModel> {
   }
 
   public setSharedContext(ctx: Record<string, any>) {
-    this['_sharedContext'] = ctx;
+    this['_sharedContext'] = { ...this['_sharedContext'], ...ctx };
   }
 
   public getSharedContext() {

@@ -851,8 +851,7 @@ export class FlowModel<Structure extends { parent?: any; subModels?: any } = Def
   }
 
   public setSharedContext(ctx: Record<string, any>) {
-    this._sharedContext = ctx;
-    // this._sharedContext = { ...this._sharedContext, ...ctx };
+    this._sharedContext = { ...this._sharedContext, ...ctx };
   }
 
   public getSharedContext() {
