@@ -7,12 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { PlusOutlined } from '@ant-design/icons';
+import { PageHeader } from '@ant-design/pro-layout';
 import { uid } from '@formily/shared';
-import { FlowModel, FlowModelRenderer, getCommonAddButton } from '@nocobase/flow-engine';
-import { Button, Tabs } from 'antd';
+import { FlowModel, FlowModelRenderer, FlowSettingsButton } from '@nocobase/flow-engine';
+import { Tabs } from 'antd';
 import _ from 'lodash';
 import React from 'react';
-import { PageHeader } from '@ant-design/pro-layout';
 
 type PageModelStructure = {
   subModels: {
@@ -46,19 +47,25 @@ export class PageModel extends FlowModel<PageModelStructure> {
         tabBarStyle={{ backgroundColor: '#fff', paddingInline: 16, marginBottom: 0 }}
         items={this.getItems()}
         // destroyInactiveTabPane
-        tabBarExtraContent={getCommonAddButton({
-          children: 'Add Tab',
-          onClick: () =>
-            this.addTab({
-              use: 'PageTabModel',
-              props: { key: uid(), label: `Tab - ${uid()}` },
-              subModels: {
-                grid: {
-                  use: 'BlockGridModel',
+        tabBarExtraContent={
+          <FlowSettingsButton
+            icon={<PlusOutlined />}
+            style={{ marginRight: 8 }}
+            onClick={() => {
+              this.addTab({
+                use: 'PageTabModel',
+                props: { key: uid(), label: `Tab - ${uid()}` },
+                subModels: {
+                  grid: {
+                    use: 'BlockGridModel',
+                  },
                 },
-              },
-            }),
-        })}
+              });
+            }}
+          >
+            Add tab
+          </FlowSettingsButton>
+        }
       />
     );
   }

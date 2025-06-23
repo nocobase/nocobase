@@ -20,14 +20,14 @@ import { DataBlockModel } from '../../base/BlockModel';
 import { QuickEditForm } from '../form/QuickEditForm';
 import { TableColumnModel } from './TableColumnModel';
 
-type S = {
+type TableModelStructure = {
   subModels: {
     columns: TableColumnModel[];
     actions: ActionModel[];
   };
 };
 
-export class TableModel extends DataBlockModel<S> {
+export class TableModel extends DataBlockModel<TableModelStructure> {
   declare resource: MultiRecordResource;
 
   getColumns() {
