@@ -13,6 +13,7 @@ export enum NocoBaseDesktopRouteType {
   flowRoute = 'flowRoute',
   link = 'link',
   tabs = 'tabs',
+  flowPage = 'flowPage',
 }
 
 /**

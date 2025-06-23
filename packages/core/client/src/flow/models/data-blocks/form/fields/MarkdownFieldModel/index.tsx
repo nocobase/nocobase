@@ -44,7 +44,7 @@ const MarkdownReadPretty = (props) => {
   );
 };
 
-export const Markdown: any = connect(
+const Markdown: any = connect(
   Input.TextArea,
 
   mapReadPretty((props) => <MarkdownReadPretty {...props} />),

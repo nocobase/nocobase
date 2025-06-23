@@ -49,7 +49,7 @@ function LazySelect(props) {
   );
 }
 
-export const AssociationSelect = connect(
+const AssociationSelect = connect(
   (props: any) => {
     return <LazySelect {...props} />;
   },

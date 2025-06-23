@@ -12,10 +12,8 @@ import { createForm, Form } from '@formily/core';
 import { FormProvider } from '@formily/react';
 import { AddActionButton, AddFieldButton, FlowModelRenderer, SingleRecordResource } from '@nocobase/flow-engine';
 import { Card } from 'antd';
-import dataSource from 'packages/core/client/docs/zh-CN/core/flow-models/demos/data-source';
 import React from 'react';
 import { DataBlockModel } from '../../base/BlockModel';
-import { FormFieldModel } from './fields/FormFieldModel';
 
 export class FormModel extends DataBlockModel {
   form: Form;
