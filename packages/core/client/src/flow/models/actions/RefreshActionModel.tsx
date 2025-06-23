@@ -31,6 +31,7 @@ RefreshActionModel.registerFlow({
           ctx.globals.message.error('No resource selected for refresh.');
           return;
         }
+        currentResource.loading = true;
         await currentResource.refresh();
       },
     },

@@ -34,25 +34,12 @@ export class PluginFlowEngine extends Plugin {
     this.flowEngine.context['app'] = this.app;
     this.flowEngine.context['api'] = this.app.apiClient;
     this.flowEngine.context['dataSourceManager'] = dataSourceManager;
-    try {
-      const response = await this.app.apiClient.request<any>({
-        url: '/collections:listMeta',
-      });
-      const mainDataSource = new DataSource({
-        name: 'main',
-        displayName: 'Main',
-      });
-      dataSourceManager.addDataSource(mainDataSource);
-      const collections = response.data?.data || [];
-      collections.forEach((collection) => {
-        mainDataSource.addCollection(collection);
-      });
-    } catch (error) {
-      console.error('Failed to load collections:', error);
-      // Optionally, you can throw an error or handle it as needed
-    }
+    const mainDataSource = new DataSource({
+      key: 'main',
+      displayName: 'Main',
+    });
+    dataSourceManager.addDataSource(mainDataSource);
     this.app.addProvider(FlowEngineRunner, {});
-
     // 注册通用 flow
     this.flowEngine.registerAction(DateTimeFormat);
   }
