@@ -14,7 +14,6 @@ import { AddActionButton, AddFieldButton, FlowModelRenderer, MultiRecordResource
 import { Card, Space, Spin, Table } from 'antd';
 import classNames from 'classnames';
 import _ from 'lodash';
-import refresh from 'packages/core/server/src/commands/refresh';
 import React, { useRef } from 'react';
 import { ActionModel } from '../../base/ActionModel';
 import { DataBlockModel } from '../../base/BlockModel';
@@ -172,7 +171,6 @@ export class TableModel extends DataBlockModel<S> {
   render() {
     return (
       <Card>
-        {this.resource.getMeta('pageSize')}
         <Spin spinning={this.resource.loading}>
           <Space style={{ marginBottom: 16 }}>
             {this.mapSubModels('actions', (action) => (
