@@ -286,14 +286,12 @@ TableModel.registerFlow({
           ],
         },
       },
-      defaultParams: (ctx) => {
-        return {
-          pageSize: ctx.model.resource.getPageSize(),
-        };
+      defaultParams: {
+        pageSize: 20,
       },
       handler(ctx, params) {
-        console.log('editPageSize', params);
-        ctx.model.resource.setPageSize(params.pageSize || ctx.model.resource.getPageSize());
+        ctx.model.resource.loading = true;
+        ctx.model.resource.setPageSize(params.pageSize);
       },
     },
     refresh: {
