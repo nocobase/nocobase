@@ -14,6 +14,7 @@ import { setTimeout as delay } from 'node:timers/promises';
 
 import { MockServer, createMockServer, sleep } from '@nocobase/test';
 import { Plugin } from '../plugin';
+import { QUEUE_PRIORITY } from '../event-queue';
 
 class MockPlugin extends Plugin {
   idle = true;
@@ -294,6 +295,27 @@ describe('memory queue adapter', () => {
       await sleep(600);
 
       expect(mockPlugin.processedMessages).toHaveLength(1);
+    });
+  });
+
+  describe('priority', () => {
+    test('publish with priority', async () => {
+      const mockListener = vi.fn();
+      await app.eventQueue.subscribe('test1', {
+        idle: () => true,
+        process: mockListener,
+      });
+      await app.eventQueue.connect();
+
+      await app.eventQueue.publish('test1', 'message1');
+      await app.eventQueue.publish('test1', 'message2', { priority: QUEUE_PRIORITY.LOW });
+      await app.eventQueue.publish('test1', 'message3', { priority: QUEUE_PRIORITY.HIGH });
+
+      await sleep(1000);
+      expect(mockListener).toBeCalledTimes(3);
+      expect(mockListener.mock.calls[0][0]).toBe('message3');
+      expect(mockListener.mock.calls[1][0]).toBe('message1');
+      expect(mockListener.mock.calls[2][0]).toBe('message2');
     });
   });
 

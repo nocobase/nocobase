@@ -15,11 +15,17 @@ import fs from 'fs/promises';
 import Application from './application';
 import { sleep } from '@nocobase/utils';
 
-export enum EventPriority {
-  HIGH = 'high',
-  NORMAL = 'normal',
-  LOW = 'low',
+export enum QUEUE_PRIORITY {
+  // Higt priority, suitable for quick jobs.
+  HIGH = 2,
+  // Normal priority, suitable for most business jobs.
+  NORMAL = 1,
+  // Low priority, suitable for jobs that can be delayed. Such as sending emails, notifications, logs etc.
+  LOW = 0,
 }
+export const QUEUE_DEFAULT_INTERVAL = 100;
+export const QUEUE_DEFAULT_CONCURRENCY = 1;
+export const QUEUE_DEFAULT_ACK_TIMEOUT = 15_000;
 
 export type QueueCallbackOptions = {
   id?: string;
@@ -37,7 +43,7 @@ export type QueueEventOptions = {
 };
 
 export type QueueMessageOptions = {
-  priority?: EventPriority;
+  priority?: QUEUE_PRIORITY;
   timeout?: number;
   maxRetries?: number;
   retried?: number;
@@ -56,10 +62,6 @@ export interface IEventQueueAdapter {
 export interface EventQueueOptions {
   channelPrefix?: string;
 }
-
-export const QUEUE_DEFAULT_INTERVAL = 100;
-export const QUEUE_DEFAULT_CONCURRENCY = 1;
-export const QUEUE_DEFAULT_ACK_TIMEOUT = 15_000;
 
 export class MemoryEventQueueAdapter implements IEventQueueAdapter {
   private connected = false;
@@ -230,7 +232,13 @@ export class MemoryEventQueueAdapter implements IEventQueueAdapter {
       this.queues.set(channel, []);
     }
     const queue = this.queues.get(channel);
-    queue.push({ id: randomUUID(), content, options });
+    const index = queue.findIndex((item) => item.options.priority < options.priority);
+    const message = { id: randomUUID(), content, options };
+    if (index === -1) {
+      queue.push(message);
+    } else {
+      queue.splice(index, 0, message);
+    }
     console.debug(`memory queue (${channel}) published message`, content);
 
     setImmediate(() => {
@@ -386,7 +394,12 @@ export class EventQueue {
     }
     const c = this.getFullChannel(channel);
     this.app.logger.debug('event queue publishing:', { channel: c, message });
-    await this.adapter.publish(c, message, { timeout: QUEUE_DEFAULT_ACK_TIMEOUT, ...options, timestamp: Date.now() });
+    await this.adapter.publish(c, message, {
+      timeout: QUEUE_DEFAULT_ACK_TIMEOUT,
+      priority: QUEUE_PRIORITY.NORMAL,
+      ...options,
+      timestamp: Date.now(),
+    });
   }
 }
 
