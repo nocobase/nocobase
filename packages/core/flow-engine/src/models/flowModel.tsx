@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { action, define, observable } from '@formily/reactive';
+import { action, autorun, define, observable, observe } from '@formily/reactive';
 import _ from 'lodash';
 import React from 'react';
 import { uid } from 'uid/secure';
@@ -68,6 +68,7 @@ export class FlowModel<Structure extends { parent?: any; subModels?: any } = Def
    * 上一次 applyAutoFlows 的执行参数
    */
   private _lastAutoRunParams: any[] | null = null;
+  private observerDispose: () => void;
 
   constructor(options: FlowModelOptions<Structure>) {
     if (options?.flowEngine?.getModel(options.uid)) {
@@ -99,6 +100,13 @@ export class FlowModel<Structure extends { parent?: any; subModels?: any } = Def
     //   this.onInit(options);
     // });
     this.createSubModels(options.subModels);
+
+    this.observerDispose = observe(this.stepParams, () => {
+      if (this.flowEngine) {
+        this.clearAutoFlowCache();
+      }
+      this._rerunLastAutoRun();
+    });
   }
 
   onInit(options): void {}
@@ -127,6 +135,17 @@ export class FlowModel<Structure extends { parent?: any; subModels?: any } = Def
         this.setSubModel(key, value);
       }
     });
+  }
+
+  private clearAutoFlowCache() {
+    if (this.flowEngine) {
+      const cacheKey = FlowEngine.generateApplyFlowCacheKey('autoFlow', 'all', this.uid);
+      this.flowEngine.applyFlowCache.delete(cacheKey);
+      this.forks.forEach((fork) => {
+        const forkCacheKey = FlowEngine.generateApplyFlowCacheKey(`${fork['forkId']}`, 'all', this.uid);
+        this.flowEngine.applyFlowCache.delete(forkCacheKey);
+      });
+    }
   }
 
   /**
@@ -334,7 +353,6 @@ export class FlowModel<Structure extends { parent?: any; subModels?: any } = Def
         }
       }
     }
-    this._rerunLastAutoRun();
   }
 
   getStepParams(flowKey: string, stepKey: string): any | undefined;
@@ -549,10 +567,18 @@ export class FlowModel<Structure extends { parent?: any; subModels?: any } = Def
    */
   async applyAutoFlows(extra?: FlowExtraContext, useCache?: boolean): Promise<any[]>;
   async applyAutoFlows(...args: any[]): Promise<any[]> {
+    const [extra, useCache = true] = args;
+    // 生成缓存键，包含 stepParams 的序列化版本以确保参数变化时重新执行
+    const cacheKey = useCache
+      ? FlowEngine.generateApplyFlowCacheKey(this['forkId'] ?? 'autoFlow', 'all', this.uid)
+      : null;
+
+    if (_.isEqual(extra, this._lastAutoRunParams?.[0]) && cacheKey) {
+      this.flowEngine.applyFlowCache.delete(cacheKey);
+    }
+
     // 存储本次执行的参数，用于后续重新执行
     this._lastAutoRunParams = args;
-
-    const [extra, useCache = true] = args;
 
     const autoApplyFlows = this.getAutoFlows();
 
@@ -560,11 +586,6 @@ export class FlowModel<Structure extends { parent?: any; subModels?: any } = Def
       console.warn(`FlowModel: No auto-apply flows found for model '${this.uid}'`);
       return [];
     }
-
-    // 生成缓存键，包含 stepParams 的序列化版本以确保参数变化时重新执行
-    const cacheKey = useCache
-      ? FlowEngine.generateApplyFlowCacheKey(this['forkId'] ?? 'autoFlow', 'all', this.uid, this.stepParams)
-      : null;
 
     // 检查缓存
     if (cacheKey && this.flowEngine) {
@@ -777,6 +798,7 @@ export class FlowModel<Structure extends { parent?: any; subModels?: any } = Def
     if (!this.flowEngine) {
       throw new Error('FlowEngine is not set on this model. Please set flowEngine before saving.');
     }
+    this.observerDispose();
     return this.flowEngine.saveModel(this);
   }
 
@@ -784,6 +806,7 @@ export class FlowModel<Structure extends { parent?: any; subModels?: any } = Def
     if (!this.flowEngine) {
       throw new Error('FlowEngine is not set on this model. Please set flowEngine before deleting.');
     }
+    this.observerDispose();
     // 从 FlowEngine 中销毁模型
     return this.flowEngine.destroyModel(this.uid);
   }
