@@ -26,7 +26,6 @@ export class TableColumnModel extends FieldModel {
       </FlowsFloatContextMenu>
     );
     return {
-      width: 100,
       ...this.props,
       ellipsis: true,
       title: this.props.tooltip ? (
@@ -137,7 +136,7 @@ TableColumnModel.registerFlow({
         },
       },
       defaultParams: {
-        width: '200',
+        width: 100,
       },
       handler(ctx, params) {
         ctx.model.setProps('width', params.width);
