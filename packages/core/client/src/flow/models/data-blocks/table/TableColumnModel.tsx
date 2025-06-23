@@ -81,6 +81,9 @@ TableColumnModel.registerFlow({
         if (!params.dataSourceKey || !params.collectionName || !params.fieldPath) {
           throw new Error('dataSourceKey, collectionName and fieldPath are required parameters');
         }
+        if (!ctx.shared.currentBlockModel) {
+          throw new Error('Current block model is not set in shared context');
+        }
         if (ctx.model.collectionField) {
           return;
         }

@@ -20,7 +20,6 @@ import { FormFieldModel } from './fields/FormFieldModel';
 export class FormModel extends DataBlockModel {
   form: Form;
   declare resource: SingleRecordResource;
-  // collection: Collection;
 
   render() {
     return (
@@ -31,7 +30,7 @@ export class FormModel extends DataBlockModel {
               <FlowModelRenderer
                 model={field}
                 showFlowSettings={{ showBorder: false }}
-                sharedContext={{ currentBlockModel: this }}
+                // sharedContext={{ currentBlockModel: this }}
               />
             ))}
           </FormLayout>
@@ -58,7 +57,7 @@ export class FormModel extends DataBlockModel {
               <FlowModelRenderer
                 model={action}
                 showFlowSettings={{ showBackground: false, showBorder: false }}
-                sharedContext={{ currentBlockModel: this }}
+                // sharedContext={{ currentBlockModel: this }}
               />
             ))}
             <AddActionButton model={this} subModelBaseClass="FormActionModel" />

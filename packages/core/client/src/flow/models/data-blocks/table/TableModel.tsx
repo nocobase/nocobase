@@ -84,7 +84,8 @@ export class TableModel extends DataBlockModel<S> {
               },
             ]}
             onModelCreated={async (model: TableColumnModel) => {
-              model.setSharedContext({ currentBlockModel: this });
+              console.log(model.parent, model.getSharedContext());
+              // model.setSharedContext({ currentBlockModel: this });
               await model.applyAutoFlows();
             }}
             onSubModelAdded={async (model: TableColumnModel) => {
@@ -268,7 +269,7 @@ TableModel.registerFlow({
         resource.setAPIClient(ctx.globals.api);
         resource.setPageSize(20);
         ctx.model.resource = resource;
-        await ctx.model.applySubModelsAutoFlows('columns', null, { currentBlockModel: ctx.model });
+        await ctx.model.applySubModelsAutoFlows('columns');
       },
     },
     editPageSize: {

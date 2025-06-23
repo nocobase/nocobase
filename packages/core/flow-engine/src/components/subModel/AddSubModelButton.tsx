@@ -274,9 +274,12 @@ const AddSubModelButtonCore = function AddSubModelButton({
     try {
       addedModel = model.flowEngine.createModel({
         ...createOpts,
+        parentId: model.uid,
         subKey: subModelKey,
         subType: subModelType,
       });
+
+      addedModel.setParent(model);
 
       await addedModel.configureRequiredSteps();
 

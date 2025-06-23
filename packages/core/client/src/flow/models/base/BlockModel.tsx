@@ -15,6 +15,12 @@ export class DataBlockModel<T = DefaultStructure> extends BlockModel<T> {
   resource: APIResource;
   collection: Collection;
 
+  onInit() {
+    this.setSharedContext({
+      currentBlockModel: this,
+    });
+  }
+
   addAppends(fieldPath: string, refresh = false) {
     const field = this.ctx.globals.dataSourceManager.getCollectionField(
       `${this.collection.dataSourceKey}.${this.collection.name}.${fieldPath}`,
