@@ -8,20 +8,20 @@
  */
 
 import { Plugin } from '@nocobase/client';
-import { CloudBlockFlowModel } from './CloudBlockFlowModel';
+import { LowcodeBlockFlowModel } from './LowcodeBlockFlowModel';
 import { CodeEditor } from './CodeEditor';
 
-export class PluginBlockCloudClient extends Plugin {
+export class PluginBlockLowcodeClient extends Plugin {
   async load() {
     // Register CodeEditor component to flowSettings
     this.flowEngine.flowSettings.registerComponents({
       CodeEditor,
     });
 
-    // Register the CloudBlockFlowModel
-    this.flowEngine.registerModels({ CloudBlockFlowModel });
+    // Register the LowcodeBlockFlowModel
+    this.flowEngine.registerModels({ LowcodeBlockFlowModel });
 
-    // Set up requirejs context for cloud components
+    // Set up requirejs context for lowcode components
     const existingContext = this.flowEngine.getContext() || {};
     this.flowEngine.setContext({
       ...existingContext,
@@ -35,4 +35,4 @@ export class PluginBlockCloudClient extends Plugin {
   }
 }
 
-export default PluginBlockCloudClient;
+export default PluginBlockLowcodeClient;

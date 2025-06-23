@@ -1,6 +1,6 @@
-# Cloud Component Block Plugin
+# Lowcode Block Plugin
 
-A simplified NocoBase plugin that enables creating cloud component blocks using custom JavaScript execution code.
+A simplified NocoBase plugin that enables creating lowcode blocks using custom JavaScript execution code.
 
 ## Features
 
@@ -16,7 +16,7 @@ A simplified NocoBase plugin that enables creating cloud component blocks using 
 
 ## Configuration
 
-Each cloud component block has one main configuration:
+Each lowcode component block has one main configuration:
 
 1. **Execution Code**: Custom JavaScript code that will be executed to render the component
 
@@ -631,7 +631,7 @@ try {
 
 ## Installation
 
-1. Place the plugin in `packages/plugins/@nocobase/plugin-block-cloud/`
+1. Place the plugin in `packages/plugins/@nocobase/plugin-block-lowcode/`
 2. Install dependencies: `npm install`
 3. Build the plugin: `npm run build`
 4. Enable the plugin in NocoBase admin panel
@@ -642,7 +642,7 @@ The plugin follows the standard NocoBase plugin structure:
 
 - `src/server/`: Server-side plugin code
 - `src/client/`: Client-side plugin code
-- `src/client/CloudBlockFlowModel.tsx`: Main flow model implementation
+- `src/client/LowcodeBlockFlowModel.tsx`: Main flow model implementation
 
 ## Architecture
 

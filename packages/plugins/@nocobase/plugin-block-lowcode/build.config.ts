@@ -7,13 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export default {
-  info: {
-    title: 'NocoBase API - Block Cloud Plugin',
+import { defineConfig } from '@nocobase/build';
+
+export default defineConfig({
+  afterBuild: (log) => {
+    log('Custom build step for plugin-block-lowcode');
   },
-  tags: [],
-  paths: {},
-  components: {
-    schemas: {},
-  },
-};
+});

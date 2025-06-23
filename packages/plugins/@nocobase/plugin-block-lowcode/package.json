@@ -1,9 +1,9 @@
 {
-  "name": "@nocobase/plugin-block-cloud",
-  "displayName": "Block: Cloud Component",
-  "displayName.zh-CN": "区块：云组件",
-  "description": "Create cloud component blocks that execute custom JavaScript code with external library loading support.",
-  "description.zh-CN": "创建云组件区块，通过执行自定义JavaScript代码进行渲染，支持加载外部库。",
+  "name": "@nocobase/plugin-block-lowcode",
+  "displayName": "Block: Lowcode",
+  "displayName.zh-CN": "区块：低代码",
+  "description": "Create lowcode blocks that execute custom JavaScript code with external library loading support.",
+  "description.zh-CN": "创建低代码区块，通过执行自定义JavaScript代码进行渲染，支持加载外部库。",
   "version": "1.8.0-beta.4",
   "license": "AGPL-3.0",
   "main": "./dist/server/index.js",
@@ -30,7 +30,7 @@
     "nocobase",
     "plugin",
     "block",
-    "cloud",
+    "lowcode",
     "component"
   ]
 }

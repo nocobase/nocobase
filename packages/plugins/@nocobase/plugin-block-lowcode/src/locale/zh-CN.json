@@ -1,8 +1,8 @@
 {
-  "Cloud Component": "云组件",
-  "Cloud Block": "云组件区块",
-  "Execution Code": "执行代码",
-  "Execution Step": "执行步骤",
+  "Lowcode": "低代码",
+  "Lowcode block": "低代码区块",
+  "Execution code": "执行代码",
+  "Execution step": "执行步骤",
   "Enter the execution code to render the component": "输入执行代码来渲染组件",
   "Failed to execute code": "执行代码失败",
   "Component executed successfully": "组件执行成功"

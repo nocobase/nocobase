@@ -22,7 +22,7 @@ function waitForRefCallback<T extends HTMLElement>(ref: React.RefObject<T>, cb: 
   check();
 }
 
-export class CloudBlockFlowModel extends BlockModel {
+export class LowcodeBlockFlowModel extends BlockModel {
   ref = createRef<HTMLDivElement>();
 
   render() {
@@ -31,7 +31,7 @@ export class CloudBlockFlowModel extends BlockModel {
     if (error) {
       return (
         <Card>
-          <div style={{ color: 'red', padding: '16px' }}>Error loading cloud component: {error}</div>
+          <div style={{ color: 'red', padding: '16px' }}>Error loading lowcode component: {error}</div>
         </Card>
       );
     }
@@ -41,7 +41,7 @@ export class CloudBlockFlowModel extends BlockModel {
         {loading && (
           <div style={{ textAlign: 'center', padding: '20px' }}>
             <Spin />
-            <div style={{ marginTop: '8px' }}>Loading cloud component...</div>
+            <div style={{ marginTop: '8px' }}>Loading lowcode component...</div>
           </div>
         )}
         <div ref={this.ref} style={{ width: '100%', minHeight: '200px' }} />
@@ -53,18 +53,46 @@ export class CloudBlockFlowModel extends BlockModel {
 // Export CodeEditor for external use
 export { CodeEditor };
 
-CloudBlockFlowModel.define({
-  title: 'Cloud Component',
+LowcodeBlockFlowModel.define({
+  title: 'Lowcode',
   group: 'Content',
   icon: 'CloudOutlined',
   defaultOptions: {
-    use: 'CloudBlockFlowModel',
+    use: 'LowcodeBlockFlowModel',
     stepParams: {
       default: {
         executionStep: {
           code: `
-// Example execution code
-element.innerHTML = '<h3>Cloud Component Demo</h3><p>This is a simplified cloud component.</p>';
+// Welcome to the lowcode block
+// Create powerful interactive components with JavaScript
+element.innerHTML = \`
+  <div style="padding: 24px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; max-width: 600px;">
+    <h2 style="color: #1890ff; margin: 0 0 20px 0; font-size: 24px; font-weight: 600;">
+      🚀 Welcome to Lowcode Block
+    </h2>
+    
+    <p style="color: #666; margin-bottom: 24px; font-size: 16px;">
+      Build interactive components with JavaScript and external libraries
+    </p>
+    
+    <div style="background: #f8f9fa; border-radius: 8px; padding: 20px; margin-bottom: 20px;">
+      <h3 style="color: #333; margin: 0 0 16px 0; font-size: 18px;">✨ Key Features</h3>
+      <ul style="margin: 0; padding-left: 20px; color: #555;">
+        <li style="margin-bottom: 8px;">🎨 <strong>Custom JavaScript execution</strong> - Full programming capabilities</li>
+        <li style="margin-bottom: 8px;">📚 <strong>External library support</strong> - Load any npm package or CDN library</li>
+        <li style="margin-bottom: 8px;">🔗 <strong>NocoBase API integration</strong> - Access your data and collections</li>
+        <li style="margin-bottom: 8px;">💡 <strong>Async/await support</strong> - Handle asynchronous operations</li>
+        <li style="margin-bottom: 8px;">🎯 <strong>Direct DOM manipulation</strong> - Full control over rendering</li>
+      </ul>
+    </div>
+    
+    <div style="background: #e6f7ff; border-left: 4px solid #1890ff; padding: 16px; border-radius: 4px;">
+      <p style="margin: 0; color: #333; font-size: 14px;">
+        💡 <strong>Ready to start?</strong> Replace this code with your custom JavaScript to build amazing components!
+      </p>
+    </div>
+  </div>
+\`;
           `.trim(),
         },
       },
@@ -72,7 +100,7 @@ element.innerHTML = '<h3>Cloud Component Demo</h3><p>This is a simplified cloud 
   },
 });
 
-CloudBlockFlowModel.registerFlow({
+LowcodeBlockFlowModel.registerFlow({
   key: 'default',
   auto: true,
   steps: {
@@ -85,27 +113,64 @@ CloudBlockFlowModel.registerFlow({
           'x-component-props': {
             height: '400px',
             theme: 'light',
-            placeholder: `// Write your execution code here
+            placeholder: `// Welcome to the lowcode block
+// Build interactive components with JavaScript and external libraries
+
 // Available variables:
 // - element: The DOM element to render into
-// - ctx: Flow context
+// - ctx: Flow context with globals (ctx.globals.api for NocoBase API)
 // - model: Current model instance
 // - requirejs: Function to load external JavaScript libraries (callback style)
 // - requireAsync: Function to load external JavaScript libraries (async/await style)
 // - loadCSS: Function to load external CSS files
 
-element.innerHTML = '<h3>Hello World</h3><p>This is a cloud component.</p>';`,
+// Example: Basic HTML content
+// Create beautiful, interactive components
+element.innerHTML = \`
+  <div style="padding: 20px; text-align: center; font-family: system-ui;">
+    <h3 style="color: #1890ff;">🚀 Welcome to Lowcode Block</h3>
+    <p>Start building your custom component here!</p>
+  </div>
+\`;
+
+// Example: Load external library
+// const echarts = await requireAsync('echarts');
+// const chart = echarts.init(element);`,
           },
         },
       },
       defaultParams: {
         code: `
-// Example execution code
-element.innerHTML = '<h3>Cloud Component Demo</h3><p>This is a simplified cloud component.</p>';
-
-// You can also use async/await
-// await new Promise(resolve => setTimeout(resolve, 1000));
-// element.innerHTML += '<br>Async operation completed!';
+// Welcome to the lowcode block
+// Create powerful interactive components with JavaScript
+element.innerHTML = \`
+  <div style="padding: 24px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; max-width: 600px;">
+    <h2 style="color: #1890ff; margin: 0 0 20px 0; font-size: 24px; font-weight: 600;">
+      🚀 Welcome to Lowcode Block
+    </h2>
+    
+    <p style="color: #666; margin-bottom: 24px; font-size: 16px;">
+      Build interactive components with JavaScript and external libraries
+    </p>
+    
+    <div style="background: #f8f9fa; border-radius: 8px; padding: 20px; margin-bottom: 20px;">
+      <h3 style="color: #333; margin: 0 0 16px 0; font-size: 18px;">✨ Key Features</h3>
+      <ul style="margin: 0; padding-left: 20px; color: #555;">
+        <li style="margin-bottom: 8px;">🎨 <strong>Custom JavaScript execution</strong> - Full programming capabilities</li>
+        <li style="margin-bottom: 8px;">📚 <strong>External library support</strong> - Load any npm package or CDN library</li>
+        <li style="margin-bottom: 8px;">🔗 <strong>NocoBase API integration</strong> - Access your data and collections</li>
+        <li style="margin-bottom: 8px;">💡 <strong>Async/await support</strong> - Handle asynchronous operations</li>
+        <li style="margin-bottom: 8px;">🎯 <strong>Direct DOM manipulation</strong> - Full control over rendering</li>
+      </ul>
+    </div>
+    
+    <div style="background: #e6f7ff; border-left: 4px solid #1890ff; padding: 16px; border-radius: 4px;">
+      <p style="margin: 0; color: #333; font-size: 14px;">
+        💡 <strong>Ready to start?</strong> Replace this code with your custom JavaScript to build amazing components!
+      </p>
+    </div>
+  </div>
+\`;
         `.trim(),
       },
       async handler(ctx: any, params: any) {
@@ -171,7 +236,7 @@ element.innerHTML = '<h3>Cloud Component Demo</h3><p>This is a simplified cloud 
 
             ctx.model.setProps('loading', false);
           } catch (error: any) {
-            console.error('Cloud component execution error:', error);
+            console.error('Lowcode component execution error:', error);
             ctx.model.setProps('error', error.message);
             ctx.model.setProps('loading', false);
           }

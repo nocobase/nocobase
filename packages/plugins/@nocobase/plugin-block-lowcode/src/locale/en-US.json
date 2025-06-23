@@ -1,8 +1,8 @@
 {
-  "Cloud Component": "Cloud Component",
-  "Cloud Block": "Cloud Block",
-  "Execution Code": "Execution Code",
-  "Execution Step": "Execution Step",
+  "Lowcode": "Lowcode",
+  "Lowcode block": "Lowcode block",
+  "Execution code": "Execution code",
+  "Execution step": "Execution step",
   "Enter the execution code to render the component": "Enter the execution code to render the component",
   "Failed to execute code": "Failed to execute code",
   "Component executed successfully": "Component executed successfully"
