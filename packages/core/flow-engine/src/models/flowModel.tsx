@@ -13,6 +13,7 @@ import React from 'react';
 import { uid } from 'uid/secure';
 import { openRequiredParamsStepFormDialog as openRequiredParamsStepFormDialogFn } from '../components/settings/wrappers/contextual/StepRequiredSettingsDialog';
 import { openStepSettingsDialog as openStepSettingsDialogFn } from '../components/settings/wrappers/contextual/StepSettingsDialog';
+import { Emitter } from '../emitter';
 import { FlowEngine } from '../flowEngine';
 import type {
   ActionStepDefinition,
@@ -53,6 +54,7 @@ export class FlowModel<Structure extends { parent?: any; subModels?: any } = Def
    * 使用 Set 便于在销毁时主动遍历并调用 dispose，避免悬挂引用。
    */
   public forks: Set<ForkFlowModel<any>> = new Set();
+  public emitter: Emitter = new Emitter();
 
   /**
    * 基于 key 的 fork 实例缓存，用于复用 fork 实例
@@ -109,7 +111,7 @@ export class FlowModel<Structure extends { parent?: any; subModels?: any } = Def
     });
   }
 
-  onInit(options): void {}
+  onInit(options) {}
 
   get async() {
     return this._options.async || false;

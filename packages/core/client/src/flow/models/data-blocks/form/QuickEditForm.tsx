@@ -20,6 +20,7 @@ import {
   SingleRecordResource,
 } from '@nocobase/flow-engine';
 import { InputRef, Skeleton } from 'antd';
+import data from 'packages/plugins/@nocobase/plugin-calendar/src/client/calendar/demos/data';
 import React, { createRef } from 'react';
 
 export class QuickEditForm extends FlowModel {
@@ -30,33 +31,30 @@ export class QuickEditForm extends FlowModel {
   static async open(options: {
     target: any;
     flowEngine: FlowEngine;
-    collectionField: CollectionField;
+    dataSourceKey: string;
+    collectionName: string;
+    fieldPath: string;
     filterByTk: string;
   }) {
-    const model = options.flowEngine.createModel({
+    const { flowEngine, dataSourceKey, collectionName, fieldPath, target, filterByTk } = options;
+    const model = flowEngine.createModel({
       use: 'QuickEditForm',
+      stepParams: {
+        initial: {
+          step1: {
+            dataSourceKey,
+            collectionName,
+            fieldPath,
+          },
+        },
+      },
     }) as QuickEditForm;
-    await model.open(options);
+    await model.open({ target, filterByTk });
     options.flowEngine.removeModel(model.uid);
   }
 
-  async open({
-    target,
-    collectionField,
-    filterByTk,
-  }: {
-    target: any;
-    filterByTk: string;
-    collectionField: CollectionField;
-  }) {
-    await this.applyFlow('initial', {
-      dataSourceKey: collectionField.collection.dataSource.key,
-      collectionName: collectionField.collection.name,
-      filterByTk,
-      collectionField,
-      fieldPath: collectionField.fullpath,
-    });
-
+  async open({ target, filterByTk }: { target: any; filterByTk: string }) {
+    await this.applyFlow('initial', { filterByTk });
     return new Promise((resolve) => {
       const inputRef = createRef<InputRef>();
       const popover = this.ctx.globals.popover.open({
@@ -77,7 +75,11 @@ export class QuickEditForm extends FlowModel {
               <FormProvider form={this.form}>
                 <FormLayout layout={'vertical'}>
                   {this.mapSubModels('fields', (field) => (
-                    <FlowModelRenderer model={field} fallback={<Skeleton paragraph={{ rows: 2 }} />} />
+                    <FlowModelRenderer
+                      model={field}
+                      fallback={<Skeleton paragraph={{ rows: 2 }} />}
+                      sharedContext={{ currentBlockModel: this }}
+                    />
                   ))}
                 </FormLayout>
                 <FormButtonGroup>
@@ -116,15 +118,16 @@ QuickEditForm.registerFlow({
   key: 'initial',
   steps: {
     step1: {
-      async handler(ctx) {
+      async handler(ctx, params) {
+        const { dataSourceKey, collectionName, fieldPath } = params;
+        if (!dataSourceKey || !collectionName || !fieldPath) {
+          throw new Error('dataSourceKey, collectionName and fieldPath are required parameters');
+        }
+        ctx.model.collection = ctx.globals.dataSourceManager.getCollection(dataSourceKey, collectionName);
         ctx.model.form = createForm();
-        ctx.model.collection = ctx.globals.dataSourceManager.getCollection(
-          ctx.extra.dataSourceKey,
-          ctx.extra.collectionName,
-        );
         const resource = new SingleRecordResource();
-        resource.setDataSourceKey(ctx.extra.dataSourceKey);
-        resource.setResourceName(ctx.extra.collectionName);
+        resource.setDataSourceKey(dataSourceKey);
+        resource.setResourceName(collectionName);
         resource.setAPIClient(ctx.globals.api);
         ctx.model.resource = resource;
         if (ctx.extra.filterByTk) {
@@ -132,21 +135,22 @@ QuickEditForm.registerFlow({
           await resource.refresh();
           ctx.model.form.setInitialValues(resource.getData());
         }
-        if (ctx.extra.collectionField) {
+        const collectionField = ctx.model.collection.getField(fieldPath) as CollectionField;
+        if (collectionField) {
           let use = 'FormFieldModel';
-          if (ctx.extra.collectionField.interface === 'number') {
+          if (collectionField.interface === 'number') {
             use = 'InputNumberFieldModel';
           }
-          if (ctx.extra.collectionField.interface === 'integer') {
+          if (collectionField.interface === 'integer') {
             use = 'InputNumberFieldModel';
           }
-          if (ctx.extra.collectionField.interface === 'select') {
+          if (collectionField.interface === 'select') {
             use = 'SelectFieldModel';
           }
-          if (ctx.extra.collectionField.interface === 'textarea') {
+          if (collectionField.interface === 'textarea') {
             use = 'TextareaFieldModel';
           }
-          if (ctx.extra.collectionField.interface === 'datetime') {
+          if (collectionField.interface === 'datetime') {
             use = 'DateTimeFieldModel';
           }
           ctx.model.addSubModel('fields', {
@@ -154,7 +158,9 @@ QuickEditForm.registerFlow({
             stepParams: {
               default: {
                 step1: {
-                  fieldPath: ctx.extra.fieldPath,
+                  dataSourceKey,
+                  collectionName,
+                  fieldPath,
                 },
               },
             },

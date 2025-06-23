@@ -9,12 +9,11 @@
 
 import { SettingOutlined } from '@ant-design/icons';
 import { observer } from '@formily/reactive-react';
-import { AddActionButton, FlowModelRenderer, FlowsFloatContextMenu } from '@nocobase/flow-engine';
+import { AddActionButton, FlowModel, FlowModelRenderer, FlowsFloatContextMenu } from '@nocobase/flow-engine';
 import { Skeleton, Space } from 'antd';
 import React from 'react';
 import { ActionModel } from '../../base/ActionModel';
 import { SupportedFieldInterfaces } from '../../base/FieldModel';
-import { TableColumnModel } from './TableColumnModel';
 
 const Columns = observer<any>(({ record, model, index }) => {
   return (
@@ -35,7 +34,7 @@ const Columns = observer<any>(({ record, model, index }) => {
   );
 });
 
-export class TableActionsColumnModel extends TableColumnModel {
+export class TableActionsColumnModel extends FlowModel {
   static readonly supportedFieldInterfaces: SupportedFieldInterfaces = null;
 
   getColumnProps() {

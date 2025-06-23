@@ -34,27 +34,18 @@ export class FilterFormModel extends FilterBlockModel {
             ))}
           </FormLayout>
           <AddFieldButton
-            buildCreateModelOptions={(field, fieldClass) => ({
-              use: fieldClass.name,
+            buildCreateModelOptions={({ defaultOptions, fieldPath }) => ({
+              use: defaultOptions.use,
               stepParams: {
                 default: {
                   step1: {
-                    fieldPath: `${field.collection.dataSource.key}.${field.collection.name}.${field.name}`,
+                    collectionName: this.collection.name,
+                    dataSourceKey: this.collection.dataSourceKey,
+                    fieldPath,
                   },
                 },
               },
             })}
-            onModelCreated={async (fieldModel: FilterFormFieldModel) => {
-              const fieldInfo = fieldModel.stepParams?.field;
-              if (fieldInfo && typeof fieldInfo.name === 'string') {
-                // 如果需要设置 collectionField，可以从 collection 中获取
-                const fields = this.collection.getFields();
-                const field = fields.find((f) => f.name === fieldInfo.name);
-                if (field) {
-                  fieldModel.collectionField = field;
-                }
-              }
-            }}
             subModelKey="fields"
             model={this}
             collection={this.collection}

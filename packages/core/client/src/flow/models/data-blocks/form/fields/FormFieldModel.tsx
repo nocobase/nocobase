@@ -14,6 +14,7 @@ import { FieldContext } from '@formily/react';
 import { CollectionField, FlowModel } from '@nocobase/flow-engine';
 import React from 'react';
 import { ReactiveField } from '../../../../formily/ReactiveField';
+import { DataBlockModel } from '../../../base/BlockModel';
 
 type FieldComponentTuple = [component: React.ElementType, props: Record<string, any>] | any[];
 
@@ -108,7 +109,25 @@ FormFieldModel.registerFlow({
   steps: {
     step1: {
       handler(ctx, params) {
-        const collectionField = ctx.globals.dataSourceManager.getCollectionField(params.fieldPath) as CollectionField;
+        // if (ctx.model.field) {
+        //   return;
+        // }
+        if (!ctx.shared.currentBlockModel) {
+          throw new Error('Current block model is not set in shared context');
+        }
+        const { dataSourceKey, collectionName, fieldPath } = params;
+        if (!dataSourceKey || !collectionName || !fieldPath) {
+          throw new Error('dataSourceKey, collectionName, and fieldPath are required parameters');
+        }
+        if (!ctx.model.parent) {
+          throw new Error('FormFieldModel must have a parent model');
+        }
+        const collectionField = ctx.globals.dataSourceManager.getCollectionField(
+          `${dataSourceKey}.${collectionName}.${fieldPath}`,
+        ) as CollectionField;
+        if (!collectionField) {
+          throw new Error(`Collection field not found for path: ${params.fieldPath}`);
+        }
         ctx.model.collectionField = collectionField;
         ctx.model.field = ctx.model.createField();
         ctx.model.setComponentProps(collectionField.getComponentProps());
@@ -119,6 +138,7 @@ FormFieldModel.registerFlow({
         if (validator) {
           ctx.model.setValidator(validator);
         }
+        ctx.shared.currentBlockModel.addAppends(fieldPath);
       },
     },
     editTitle: {

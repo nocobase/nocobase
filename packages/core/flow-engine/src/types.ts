@@ -288,12 +288,13 @@ export interface DefaultStructure {
  * Options for FlowModel constructor
  */
 export interface FlowModelOptions<Structure extends { parent?: any; subModels?: any } = DefaultStructure> {
-  uid: string;
+  uid?: string;
+  use?: string;
   async?: boolean; // 是否异步加载模型
   props?: IModelComponentProps;
   stepParams?: Record<string, any>;
   subModels?: Structure['subModels'];
-  flowEngine: FlowEngine;
+  flowEngine?: FlowEngine;
   parentId?: string;
   subKey?: string;
   subType?: 'object' | 'array';

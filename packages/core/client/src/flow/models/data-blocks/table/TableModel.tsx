@@ -47,18 +47,30 @@ export class TableModel extends DataBlockModel<S> {
             model={this}
             subModelKey={'columns'}
             subModelBaseClass="TableFieldModel"
-            buildCreateModelOptions={(field, fieldClass) => ({
+            buildCreateModelOptions={({ defaultOptions, fieldPath }) => ({
               use: 'TableColumnModel',
               stepParams: {
                 default: {
                   step1: {
-                    fieldPath: field.fullpath,
+                    dataSourceKey: this.collection.dataSourceKey,
+                    collectionName: this.collection.name,
+                    fieldPath,
                   },
                 },
               },
               subModels: {
                 field: {
-                  use: fieldClass.name,
+                  // @ts-ignore
+                  use: defaultOptions.use as any,
+                  stepParams: {
+                    default: {
+                      step1: {
+                        dataSourceKey: this.collection.dataSourceKey,
+                        collectionName: this.collection.name,
+                        fieldPath,
+                      },
+                    },
+                  },
                 },
               },
             })}
@@ -74,11 +86,9 @@ export class TableModel extends DataBlockModel<S> {
             onModelCreated={async (model: TableColumnModel) => {
               model.setSharedContext({ currentBlockModel: this });
               await model.applyAutoFlows();
-              const targetCollectionField = model.collectionField.options;
-              if (['belongsToMany', 'belongsTo', 'hasMany', 'hasOne'].includes(targetCollectionField.type)) {
-                this.resource.addAppends(targetCollectionField.name);
-                this.resource.refresh();
-              }
+            }}
+            onSubModelAdded={async (model: TableColumnModel) => {
+              this.addAppends(model.fieldPath, true);
             }}
           />
         ),
@@ -125,7 +135,9 @@ export class TableModel extends DataBlockModel<S> {
               await QuickEditForm.open({
                 target: ref.current,
                 flowEngine: this.flowEngine,
-                collectionField: this.collection.getField(dataIndex),
+                dataSourceKey: this.collection.dataSourceKey,
+                collectionName: this.collection.name,
+                fieldPath: dataIndex,
                 filterByTk: record.id,
               });
               await this.resource.refresh();
@@ -257,16 +269,6 @@ TableModel.registerFlow({
         resource.setPageSize(20);
         ctx.model.resource = resource;
         await ctx.model.applySubModelsAutoFlows('columns', null, { currentBlockModel: ctx.model });
-        ctx.model.mapSubModels('columns', (f) => {
-          const { fieldPath } = f.getStepParams('default', 'step1') || {};
-          if (!fieldPath) {
-            return;
-          }
-          const targetCollectionField = ctx.globals.dataSourceManager.getCollectionField(fieldPath);
-          if (['belongsToMany', 'belongsTo', 'hasMany', 'hasOne'].includes(targetCollectionField.type)) {
-            resource.addAppends(targetCollectionField.name);
-          }
-        });
       },
     },
     editPageSize: {
