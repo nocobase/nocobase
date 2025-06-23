@@ -9,7 +9,9 @@
 
 import { Plugin } from '../application/Plugin';
 
-import { InheritanceCollectionMixin } from './mixins/InheritanceCollectionMixin';
+import { name } from 'packages/core/database/src/__tests__/fixtures/collections/tags';
+import { DataSource } from '../data-source/data-source/DataSource';
+import { DEFAULT_DATA_SOURCE_KEY, DEFAULT_DATA_SOURCE_TITLE } from '../data-source/data-source/DataSourceManager';
 import {
   CheckboxFieldInterface,
   CheckboxGroupFieldInterface,
@@ -53,14 +55,13 @@ import {
   UrlFieldInterface,
   UUIDFieldInterface,
 } from './interfaces';
+import { InheritanceCollectionMixin } from './mixins/InheritanceCollectionMixin';
 import {
   GeneralCollectionTemplate,
   SqlCollectionTemplate,
   TreeCollectionTemplate,
   ViewCollectionTemplate,
 } from './templates';
-import { DEFAULT_DATA_SOURCE_KEY, DEFAULT_DATA_SOURCE_TITLE } from '../data-source/data-source/DataSourceManager';
-import { DataSource } from '../data-source/data-source/DataSource';
 
 class MainDataSource extends DataSource {
   async getDataSource() {
@@ -72,6 +73,7 @@ class MainDataSource extends DataSource {
     const collections = service?.data?.data || [];
 
     return {
+      key: 'main',
       collections,
     };
   }
