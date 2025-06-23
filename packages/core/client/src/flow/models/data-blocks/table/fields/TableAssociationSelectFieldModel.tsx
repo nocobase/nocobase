@@ -45,7 +45,12 @@ export class TableAssociationSelectFieldModel extends TableFieldModel {
       use: fieldClass?.name || 'TableFieldModel',
     });
     model.collectionField = targetLabelField;
-    model.setParent(this.parent);
+    model.fieldPath = targetLabelField.name;
+    model.setSharedContext({
+      ...this.getSharedContext(),
+      value: value?.[fieldNames.label],
+    });
+    model.applyAutoFlows({ collectionField: targetLabelField, fieldPath: fieldNames.label });
     if (Array.isArray(value)) {
       return (
         <>

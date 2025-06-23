@@ -51,10 +51,6 @@ export class FormModel extends DataBlockModel {
             model={this}
             collection={this.collection}
             subModelBaseClass="FormFieldModel"
-            onSubModelAdded={async (model: FormFieldModel) => {
-              console.log(model);
-              this.addAppends(model.collectionField.name, true);
-            }}
           />
           <FormButtonGroup style={{ marginTop: 16 }}>
             {this.mapSubModels('actions', (action) => (
