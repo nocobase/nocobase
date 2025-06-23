@@ -256,7 +256,7 @@ function TaskPageContent() {
   const mobilePage = useMobilePage();
   const [currentRecord, setCurrentRecord] = useState<any>(null);
 
-  const { token } = useToken();
+  const { token } = theme.useToken();
   const items = useTaskTypeItems();
   const { title, collection, action = 'list', useActionParams, Item, Detail, getPopupRecord } = useCurrentTaskType();
   const params = useActionParams(status);
@@ -343,7 +343,7 @@ function TaskPageContent() {
               .ant-spin-container {
                 height: 100%;
                 overflow: auto;
-                padding: ${isMobileLayout ? '0.5em' : '1em'};
+                padding: ${isMobileLayout ? '0.5em' : `${token.paddingContentHorizontalLG}px`};
               }
             }
 
@@ -354,7 +354,7 @@ function TaskPageContent() {
 
           .ant-list-pagination {
             margin-top: 0;
-            padding: ${isMobileLayout ? '0.5em' : '1em'};
+            padding: ${isMobileLayout ? '0.5em' : `${token.paddingContentHorizontalLG}px`};
             border-top: 1px solid ${token.colorBorderSecondary};
           }
         }
@@ -394,11 +394,20 @@ function TaskPageContent() {
                 type: 'void',
                 'x-component': 'PageHeader',
                 'x-component-props': {
-                  className: classnames('pageHeaderCss'),
+                  className: classnames(
+                    'pageHeaderCss',
+                    css`
+                      .ant-page-header-content {
+                        padding-top: 0;
+                      }
+                    `,
+                  ),
                   style: {
                     position: 'sticky',
                     background: token.colorBgContainer,
-                    padding: isMobileLayout ? '0 8px 8px 8px' : '12px 24px 0 24px',
+                    padding: isMobileLayout
+                      ? '8px'
+                      : `${token.paddingContentVertical}px ${token.paddingContentHorizontalLG}px 0 ${token.paddingContentHorizontalLG}px`,
                     borderBottom: isMobileLayout ? `1px solid ${token.colorBorderSecondary}` : null,
                   },
                   title: isMobileLayout ? null : title,
