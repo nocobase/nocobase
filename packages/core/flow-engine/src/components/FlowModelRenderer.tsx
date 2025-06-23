@@ -39,7 +39,7 @@ import { observer } from '@formily/reactive-react';
 import { Spin } from 'antd';
 import _ from 'lodash';
 import React, { Suspense, useEffect } from 'react';
-import { useApplyAutoFlows, useFlowExtraContext } from '../hooks';
+import { useApplyAutoFlows, useFlowExtraContext, FlowModelProvider } from '../hooks';
 import { FlowModel } from '../models';
 import { FlowsContextMenu } from './settings/wrappers/contextual/FlowsContextMenu';
 import { FlowsFloatContextMenu } from './settings/wrappers/contextual/FlowsFloatContextMenu';
@@ -97,12 +97,14 @@ const FlowModelRendererWithAutoFlows: React.FC<{
     useApplyAutoFlows(model, extraContext || defaultExtraContext, !independentAutoFlowExecution);
 
     return (
-      <FlowModelRendererCore
-        model={model}
-        showFlowSettings={showFlowSettings}
-        flowSettingsVariant={flowSettingsVariant}
-        hideRemoveInSettings={hideRemoveInSettings}
-      />
+      <FlowModelProvider model={model}>
+        <FlowModelRendererCore
+          model={model}
+          showFlowSettings={showFlowSettings}
+          flowSettingsVariant={flowSettingsVariant}
+          hideRemoveInSettings={hideRemoveInSettings}
+        />
+      </FlowModelProvider>
     );
   },
 );
@@ -118,12 +120,14 @@ const FlowModelRendererWithoutAutoFlows: React.FC<{
   sharedContext?: Record<string, any>;
 }> = observer(({ model, showFlowSettings, flowSettingsVariant, hideRemoveInSettings, sharedContext }) => {
   return (
-    <FlowModelRendererCore
-      model={model}
-      showFlowSettings={showFlowSettings}
-      flowSettingsVariant={flowSettingsVariant}
-      hideRemoveInSettings={hideRemoveInSettings}
-    />
+    <FlowModelProvider model={model}>
+      <FlowModelRendererCore
+        model={model}
+        showFlowSettings={showFlowSettings}
+        flowSettingsVariant={flowSettingsVariant}
+        hideRemoveInSettings={hideRemoveInSettings}
+      />
+    </FlowModelProvider>
   );
 });
 
