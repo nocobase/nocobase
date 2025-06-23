@@ -173,8 +173,8 @@ AssociationSelectFieldModel.registerFlow({
           },
         });
         const { data } = response.data;
-        const data1 = await ctx.model.transformDataSource(data);
-        ctx.model.setDataSource(data1);
+        const result = await ctx.model.transformDataSource(data);
+        ctx.model.setDataSource(result);
       },
     },
   },
@@ -215,8 +215,9 @@ AssociationSelectFieldModel.registerFlow({
           const { data } = response.data;
 
           const currentDataSource = ctx.model.getDataSource() || [];
-          ctx.model.setDataSource([...currentDataSource, ...data]);
+          const result = await ctx.model.transformDataSource(data);
 
+          ctx.model.setDataSource([...currentDataSource, ...result]);
           if (data.length < paginationState.pageSize) {
             paginationState.hasMore = false;
           } else {
@@ -268,7 +269,8 @@ AssociationSelectFieldModel.registerFlow({
           });
 
           const { data } = response.data;
-          ctx.model.setDataSource(data);
+          const result = await ctx.model.transformDataSource(data);
+          ctx.model.setDataSource(result);
         } catch (error) {
           console.error('AssociationSelectField search flow error:', error);
           // 出错时也可以选择清空数据源或者显示错误提示
