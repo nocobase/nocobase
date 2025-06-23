@@ -16,6 +16,8 @@ import { javascript } from '@codemirror/lang-javascript';
 import { oneDark } from '@codemirror/theme-one-dark';
 import { EditorState } from '@codemirror/state';
 import { autocompletion, CompletionContext, CompletionResult } from '@codemirror/autocomplete';
+import { lintGutter } from '@codemirror/lint';
+import { createJavaScriptLinter } from './linter';
 
 // 自定义自动补全函数
 const createCustomCompletion = () => {
@@ -225,6 +227,7 @@ interface CodeEditorProps {
   height?: string | number;
   theme?: 'light' | 'dark';
   readonly?: boolean;
+  enableLinter?: boolean;
 }
 
 const CodeEditorComponent: React.FC<CodeEditorProps> = ({
@@ -234,6 +237,7 @@ const CodeEditorComponent: React.FC<CodeEditorProps> = ({
   height = '300px',
   theme = 'light',
   readonly = false,
+  enableLinter = false,
 }) => {
   const editorRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
@@ -249,6 +253,8 @@ const CodeEditorComponent: React.FC<CodeEditorProps> = ({
         closeOnBlur: false,
         activateOnTyping: true,
       }),
+      // 条件性添加语法检查和错误提示
+      ...(enableLinter ? [lintGutter(), createJavaScriptLinter()] : []),
       EditorView.updateListener.of((update) => {
         if (update.docChanged && onChange && !readonly) {
           const newValue = update.state.doc.toString();
@@ -269,6 +275,46 @@ const CodeEditorComponent: React.FC<CodeEditorProps> = ({
           border: '1px solid #d9d9d9',
           borderRadius: '4px',
           boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+        },
+        // 语法错误提示样式
+        '.cm-diagnostic': {
+          padding: '4px 8px',
+          borderRadius: '4px',
+          border: '1px solid #d9d9d9',
+          backgroundColor: '#fff',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+          fontSize: '12px',
+          maxWidth: '300px',
+        },
+        '.cm-diagnostic-error': {
+          borderLeftColor: '#ff4d4f',
+          borderLeftWidth: '3px',
+        },
+        '.cm-diagnostic-warning': {
+          borderLeftColor: '#faad14',
+          borderLeftWidth: '3px',
+        },
+        '.cm-diagnostic-info': {
+          borderLeftColor: '#1890ff',
+          borderLeftWidth: '3px',
+        },
+        '.cm-lintRange-error': {
+          backgroundImage:
+            'url("data:image/svg+xml;charset=utf8,<svg xmlns=\\"http://www.w3.org/2000/svg\\" width=\\"6\\" height=\\"3\\"><path d=\\"m0 3 l2 -2 l1 0 l2 2 l1 0\\" stroke=\\"%23ff4d4f\\" fill=\\"none\\" stroke-width=\\".7\\"/></svg>")',
+          backgroundRepeat: 'repeat-x',
+          backgroundPosition: 'left bottom',
+        },
+        '.cm-lintRange-warning': {
+          backgroundImage:
+            'url("data:image/svg+xml;charset=utf8,<svg xmlns=\\"http://www.w3.org/2000/svg\\" width=\\"6\\" height=\\"3\\"><path d=\\"m0 3 l2 -2 l1 0 l2 2 l1 0\\" stroke=\\"%23faad14\\" fill=\\"none\\" stroke-width=\\".7\\"/></svg>")',
+          backgroundRepeat: 'repeat-x',
+          backgroundPosition: 'left bottom',
+        },
+        '.cm-lintRange-info': {
+          backgroundImage:
+            'url("data:image/svg+xml;charset=utf8,<svg xmlns=\\"http://www.w3.org/2000/svg\\" width=\\"6\\" height=\\"3\\"><path d=\\"m0 3 l2 -2 l1 0 l2 2 l1 0\\" stroke=\\"%231890ff\\" fill=\\"none\\" stroke-width=\\".7\\"/></svg>")',
+          backgroundRepeat: 'repeat-x',
+          backgroundPosition: 'left bottom',
         },
       }),
     ];
@@ -308,7 +354,7 @@ const CodeEditorComponent: React.FC<CodeEditorProps> = ({
       view.destroy();
       viewRef.current = null;
     };
-  }, [theme, height, placeholder, readonly]);
+  }, [theme, height, placeholder, readonly, enableLinter]);
 
   // Update editor content when value prop changes
   useEffect(() => {
@@ -353,9 +399,16 @@ const CodeEditorComponent: React.FC<CodeEditorProps> = ({
 // Connect with Formily
 export const CodeEditor = connect(
   CodeEditorComponent,
-  mapProps({
-    value: 'value',
-    readOnly: 'readonly',
+  mapProps((props, field) => {
+    return {
+      value: props.value,
+      readonly: props.readonly,
+      enableLinter: props.enableLinter,
+      onChange: props.onChange,
+      placeholder: props.placeholder,
+      height: props.height,
+      theme: props.theme,
+    };
   }),
 );
 

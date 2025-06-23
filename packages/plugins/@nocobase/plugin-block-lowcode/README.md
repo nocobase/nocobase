@@ -10,6 +10,7 @@ A simplified NocoBase plugin that enables creating lowcode blocks using custom J
 - **DOM Manipulation**: Direct access to the component's DOM element for rendering
 - **Flow Page Integration**: Automatically appears in the "Add Block" dropdown in flow pages
 - **CodeMirror Editor**: Advanced code editor with syntax highlighting, smart auto-completion, and JavaScript language support
+- **Real-time Syntax Checking**: Instant error detection and helpful warnings for common programming issues
 - **Context-Aware Autocomplete**: Intelligent suggestions for available variables (element, ctx, model, requirejs, requireAsync, loadCSS)
 - **Code Snippets**: Pre-built templates for common operations like loading libraries, creating elements, and async operations
 - **Simple Configuration**: Single-step configuration with execution code
@@ -19,6 +20,23 @@ A simplified NocoBase plugin that enables creating lowcode blocks using custom J
 Each lowcode component block has one main configuration:
 
 1. **Execution Code**: Custom JavaScript code that will be executed to render the component
+
+## Code Editor Features
+
+The built-in CodeMirror editor provides enhanced development experience:
+
+### ✅ Real-time Syntax Checking
+- **Syntax Errors**: Instant detection of JavaScript syntax errors using Acorn parser
+- **Undefined Variables**: Precise detection of undefined variable usage
+- **Scope Analysis**: Intelligent variable scope tracking across functions and blocks
+- **Context Awareness**: Recognizes lowcode environment variables (element, ctx, model, etc.)
+
+### 🎯 Visual Error Indicators
+- **Error Underlines**: Red wavy underlines for syntax errors
+- **Warning Underlines**: Yellow wavy underlines for potential issues  
+- **Info Underlines**: Blue wavy underlines for optimization suggestions
+- **Gutter Icons**: Error/warning indicators in the editor gutter
+- **Hover Tooltips**: Detailed error descriptions on hover
 
 ## Example Usage
 

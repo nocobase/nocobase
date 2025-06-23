@@ -113,6 +113,7 @@ LowcodeBlockFlowModel.registerFlow({
           'x-component-props': {
             height: '400px',
             theme: 'light',
+            enableLinter: true,
             placeholder: `// Welcome to the lowcode block
 // Build interactive components with JavaScript and external libraries
 
