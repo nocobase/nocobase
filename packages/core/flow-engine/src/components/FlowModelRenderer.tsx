@@ -37,12 +37,12 @@
 
 import { observer } from '@formily/reactive-react';
 import { Spin } from 'antd';
+import _ from 'lodash';
 import React, { Suspense, useEffect } from 'react';
 import { useApplyAutoFlows, useFlowExtraContext } from '../hooks';
 import { FlowModel } from '../models';
 import { FlowsContextMenu } from './settings/wrappers/contextual/FlowsContextMenu';
 import { FlowsFloatContextMenu } from './settings/wrappers/contextual/FlowsFloatContextMenu';
-import _ from 'lodash';
 
 interface FlowModelRendererProps {
   model?: FlowModel;
@@ -77,7 +77,7 @@ interface FlowModelRendererProps {
  */
 const FlowModelRendererWithAutoFlows: React.FC<{
   model: FlowModel;
-  showFlowSettings: boolean;
+  showFlowSettings: boolean | { showBackground?: boolean; showBorder?: boolean };
   flowSettingsVariant: string;
   hideRemoveInSettings: boolean;
   extraContext?: Record<string, any>;

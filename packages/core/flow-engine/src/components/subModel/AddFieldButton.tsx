@@ -12,7 +12,7 @@ import React, { useMemo } from 'react';
 import { Collection, CollectionField } from '../../data-source';
 import { FlowModel } from '../../models';
 import { FlowModelOptions, ModelConstructor } from '../../types';
-import { getCommonAddButton } from '../common/CommonAddButton';
+import { FlowSettingsButton } from '../common/FlowSettingsButton';
 import { withFlowDesignMode } from '../common/withFlowDesignMode';
 import { AddSubModelButton, SubModelItemsType, mergeSubModelItems } from './AddSubModelButton';
 
@@ -80,10 +80,7 @@ const AddFieldButtonCore: React.FC<AddFieldButtonProps> = ({
   model,
   subModelBaseClass = 'FieldFlowModel',
   subModelKey = 'fields',
-  children = getCommonAddButton({
-    icon: <SettingOutlined />,
-    children: 'Configure fields',
-  }),
+  children = <FlowSettingsButton icon={<SettingOutlined />}>{'Configure fields'}</FlowSettingsButton>,
   subModelType = 'array',
   collection,
   buildCreateModelOptions = defaultBuildCreateModelOptions,

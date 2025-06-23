@@ -7,13 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { SettingOutlined } from '@ant-design/icons';
 import React, { useMemo } from 'react';
-import { AddSubModelButton, SubModelItemsType } from './AddSubModelButton';
 import { FlowModel } from '../../models/flowModel';
 import { ModelConstructor } from '../../types';
-import { getCommonAddButton } from '../common/CommonAddButton';
+import { FlowSettingsButton } from '../common/FlowSettingsButton';
 import { withFlowDesignMode } from '../common/withFlowDesignMode';
-import { SettingOutlined } from '@ant-design/icons';
+import { AddSubModelButton, SubModelItemsType } from './AddSubModelButton';
 
 interface AddActionButtonProps {
   /**
@@ -63,10 +63,7 @@ const AddActionButtonCore: React.FC<AddActionButtonProps> = ({
   model,
   subModelBaseClass = 'ActionFlowModel',
   subModelKey = 'actions',
-  children = getCommonAddButton({
-    icon: <SettingOutlined />,
-    children: 'Configure actions',
-  }),
+  children = <FlowSettingsButton icon={<SettingOutlined />}>{'Configure actions'}</FlowSettingsButton>,
   subModelType = 'array',
   items,
   filter,

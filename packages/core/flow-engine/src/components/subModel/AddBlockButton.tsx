@@ -7,13 +7,14 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { PlusOutlined } from '@ant-design/icons';
 import React, { useMemo } from 'react';
 import { FlowModel } from '../../models/flowModel';
 import { ModelConstructor } from '../../types';
+import { FlowSettingsButton } from '../common/FlowSettingsButton';
+import { withFlowDesignMode } from '../common/withFlowDesignMode';
 import { AddSubModelButton, SubModelItemsType, mergeSubModelItems } from './AddSubModelButton';
 import { createBlockItems } from './blockItems';
-import { getCommonAddButton } from '../common/CommonAddButton';
-import { withFlowDesignMode } from '../common/withFlowDesignMode';
 
 interface AddBlockButtonProps {
   /**
@@ -82,9 +83,7 @@ const AddBlockButtonCore: React.FC<AddBlockButtonProps> = ({
   model,
   subModelBaseClass = 'BlockModel',
   subModelKey = 'blocks',
-  children = getCommonAddButton({
-    children: 'Add block',
-  }),
+  children = <FlowSettingsButton icon={<PlusOutlined />}>{'Configure fields'}</FlowSettingsButton>,
   subModelType = 'array',
   items,
   filter: filterBlocks,

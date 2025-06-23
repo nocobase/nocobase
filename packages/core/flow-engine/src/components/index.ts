@@ -7,7 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+export * from './common';
 export * from './FlowModelRenderer';
 export * from './settings';
 export * from './subModel';
-export * from './common';
+//
