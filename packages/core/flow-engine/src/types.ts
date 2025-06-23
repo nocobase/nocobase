@@ -110,14 +110,16 @@ export type CreateSubModelOptions = CreateModelOptions | FlowModel;
 /**
  * Constructor for model classes.
  */
-export type ModelConstructor<T extends FlowModel = FlowModel> = new (options: {
-  uid: string;
-  props?: IModelComponentProps;
-  stepParams?: StepParams;
-  meta?: FlowModelMeta;
-  subModels?: Record<string, CreateSubModelOptions | CreateSubModelOptions[]>;
-  [key: string]: any; // Allow additional options
-}) => T;
+export type ModelConstructor<T extends FlowModel = FlowModel> = new (
+  options: FlowModelOptions & {
+    uid: string;
+    props?: IModelComponentProps;
+    stepParams?: StepParams;
+    meta?: FlowModelMeta;
+    subModels?: Record<string, CreateSubModelOptions | CreateSubModelOptions[]>;
+    [key: string]: any; // Allow additional options
+  },
+) => T;
 
 /**
  * Defines a reusable action with generic model type support.
@@ -292,7 +294,7 @@ export interface FlowModelOptions<Structure extends { parent?: any; subModels?: 
   use?: string;
   async?: boolean; // 是否异步加载模型
   props?: IModelComponentProps;
-  stepParams?: Record<string, any>;
+  stepParams?: StepParams;
   subModels?: Structure['subModels'];
   flowEngine?: FlowEngine;
   parentId?: string;
