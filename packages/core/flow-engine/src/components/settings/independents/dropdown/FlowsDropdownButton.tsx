@@ -11,7 +11,7 @@ import React, { useCallback } from 'react';
 import { Button, Space, Dropdown, Alert } from 'antd';
 import { SettingOutlined, DownOutlined } from '@ant-design/icons';
 import { FlowModel } from '../../../../models';
-import { useFlowModel } from '../../../../hooks';
+import { useFlowModelById } from '../../../../hooks';
 import { observer } from '@formily/react';
 import { openStepSettingsDialog } from '../../wrappers/contextual';
 
@@ -86,21 +86,24 @@ const FlowsDropdownButtonWithModel: React.FC<ModelProvidedProps> = observer(
       onClick?.();
     };
 
-    const handleMenuClick = useCallback(({ key }: { key: string }) => {
-      // key格式为 "flowKey:stepKey"
-      const [flowKey, stepKey] = key.split(':');
-      
-      try {
-        openStepSettingsDialog({
-          model,
-          flowKey,
-          stepKey,
-        });
-      } catch (error) {
-        // 用户取消或出错
-        console.log('配置弹窗已取消或出错:', error);
-      }
-    }, [model]);
+    const handleMenuClick = useCallback(
+      ({ key }: { key: string }) => {
+        // key格式为 "flowKey:stepKey"
+        const [flowKey, stepKey] = key.split(':');
+
+        try {
+          openStepSettingsDialog({
+            model,
+            flowKey,
+            stepKey,
+          });
+        } catch (error) {
+          // 用户取消或出错
+          console.log('配置弹窗已取消或出错:', error);
+        }
+      },
+      [model],
+    );
 
     if (!model) {
       return <Alert message="提供的模型无效" type="error" />;
@@ -239,7 +242,7 @@ const FlowsDropdownButtonWithModel: React.FC<ModelProvidedProps> = observer(
   },
 );
 
-// 通过useFlowModel hook获取model
+// 通过useFlowModelById hook获取model
 const FlowsDropdownButtonWithModelById: React.FC<ModelByIdProps> = observer(
   ({
     uid,
@@ -254,7 +257,7 @@ const FlowsDropdownButtonWithModelById: React.FC<ModelByIdProps> = observer(
     style,
     className,
   }) => {
-    const model = useFlowModel(uid, modelClassName);
+    const model = useFlowModelById(uid, modelClassName);
 
     if (!model) {
       return <Alert message={`未找到ID为 ${uid} 的模型`} type="error" />;

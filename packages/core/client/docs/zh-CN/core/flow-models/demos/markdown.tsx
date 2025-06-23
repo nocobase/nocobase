@@ -1,12 +1,12 @@
 import React from 'react';
 import { Application, Plugin } from '@nocobase/client';
-import { useFlowModel, FlowContext, FlowModel, withFlowModel, FlowsSettings } from '@nocobase/flow-engine';
+import { useFlowModelById, FlowContext, FlowModel, withFlowModel, FlowsSettings } from '@nocobase/flow-engine';
 import MarkdownIt from 'markdown-it';
 import Handlebars from 'handlebars';
 
 const Demo = () => {
   const uid = 'markdown-block';
-  const model = useFlowModel<FlowModel>(uid, 'MarkdownModel');
+  const model = useFlowModelById<FlowModel>(uid, 'MarkdownModel');
   return (
     <div style={{ padding: 24, background: '#f5f5f5', borderRadius: 8 }}>
       <MarkdownBlock model={model} />

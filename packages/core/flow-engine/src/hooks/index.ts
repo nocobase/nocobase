@@ -8,6 +8,6 @@
  */
 
 export * from './useFlowExtraContext';
-export * from './useFlowModel';
+export * from './useFlowModelById';
 export * from './useApplyFlow';
 export * from './useDispatchEvent';

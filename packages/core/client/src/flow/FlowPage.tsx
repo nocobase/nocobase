@@ -7,14 +7,14 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { FlowModelRenderer, useFlowEngine, useFlowModel } from '@nocobase/flow-engine';
+import { FlowModelRenderer, useFlowEngine, useFlowModelById } from '@nocobase/flow-engine';
 import { useRequest } from 'ahooks';
 import { Spin } from 'antd';
 import React from 'react';
 import { useParams } from 'react-router-dom';
 
 function InternalFlowPage({ uid, sharedContext }) {
-  const model = useFlowModel(uid);
+  const model = useFlowModelById(uid);
   return (
     <FlowModelRenderer
       model={model}

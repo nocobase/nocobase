@@ -11,7 +11,7 @@ import React, { useCallback, useEffect } from 'react';
 import { Alert, Input, InputNumber, Select, Switch, Form } from 'antd';
 // TODO: ISchema may need to be imported from a different package or refactored.
 import { ActionStepDefinition } from '../../../../types';
-import { useFlowModel } from '../../../../hooks';
+import { useFlowModelById } from '../../../../hooks';
 import { FlowModel } from '../../../../models';
 import { observer } from '@formily/react';
 import { resolveDefaultParams } from '../../../../utils';
@@ -67,7 +67,7 @@ const FlowSettingsWithModel: React.FC<ModelProvidedProps> = observer(({ model, f
 
 // 通过useModelById hook获取model
 const FlowSettingsWithModelById: React.FC<ModelByIdProps> = observer(({ uid, flowKey, modelClassName }) => {
-  const model = useFlowModel(uid, modelClassName);
+  const model = useFlowModelById(uid, modelClassName);
 
   if (!model) {
     return <Alert message={`未找到ID为 ${uid} 的模型`} type="error" />;

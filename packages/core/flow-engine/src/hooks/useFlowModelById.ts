@@ -13,7 +13,7 @@ import { FlowModel } from '../models';
 import { useFlowEngine } from '../provider';
 import { StepParams } from '../types';
 
-export function useFlowModel<T extends FlowModel = FlowModel>(
+export function useFlowModelById<T extends FlowModel = FlowModel>(
   uid: string,
   modelClassName?: string,
   stepParams?: StepParams,

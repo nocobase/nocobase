@@ -21,7 +21,7 @@ import { observer } from '@formily/react';
 import { css } from '@emotion/css';
 import { FlowModel } from '../../../../models';
 import { ActionStepDefinition } from '../../../../types';
-import { useFlowModel } from '../../../../hooks';
+import { useFlowModelById } from '../../../../hooks';
 import { useFlowEngine } from '../../../../provider';
 import { openStepSettingsDialog } from './StepSettingsDialog';
 
@@ -472,7 +472,7 @@ const FlowsFloatContextMenuWithModelById: React.FC<ModelByIdProps> = observer(
     containerStyle,
     className,
   }) => {
-    const model = useFlowModel(uid, modelClassName);
+    const model = useFlowModelById(uid, modelClassName);
 
     if (!model) {
       return <Alert message={`未找到ID为 ${uid} 的模型`} type="error" />;
