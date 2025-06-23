@@ -47,6 +47,7 @@ export class TableActionsColumnModel extends TableColumnModel {
         <FlowsFloatContextMenu
           model={this}
           containerStyle={{ display: 'block', padding: '11px 8px', margin: '-11px -8px' }}
+          showBorder={false}
         >
           <Space>
             {this.props.title || 'Actions'}
