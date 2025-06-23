@@ -22,7 +22,7 @@ const CollectionsTable = observer((tableProps: any) => {
   const [selectAllForCurrentView, setSelectAllForCurrentView] = useState(false);
   const searchTimeoutRef = useRef<NodeJS.Timeout>();
 
-  const MAX_SELECTION_LIMIT = 5000;
+  const MAX_SELECTION_LIMIT = 100;
 
   const { NAMESPACE, t } = tableProps;
   const defaultAddAllCollections =
@@ -76,7 +76,7 @@ const CollectionsTable = observer((tableProps: any) => {
     (checked: boolean) => {
       setaddAllCollections(checked);
       if (tableProps.formSetValues) {
-        tableProps.formSetValues('options?.addAllCollections', checked);
+        tableProps.formSetValues('options.addAllCollections', checked);
       }
     },
     [tableProps.formSetValues],
