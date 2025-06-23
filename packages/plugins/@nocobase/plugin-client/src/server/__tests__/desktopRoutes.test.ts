@@ -167,6 +167,103 @@ describe('desktopRoutes:listAccessible', () => {
     expect(response.body.data[0].title).toBe('page4');
     expect(response.body.data[0].children.length).toBe(2);
   });
+
+  it.only('should test role permissions and route visibility with group and tabs', async () => {
+    // 1. 定义一个表
+    await db.getCollection('collections').repository.create({
+      values: {
+        name: 'testTable',
+        title: 'Test Table',
+        fields: [
+          {
+            type: 'string',
+            name: 'name',
+            interface: 'input',
+          },
+        ],
+      },
+    });
+
+    // 2. 定义一个角色
+    const customRole = await db.getRepository('roles').create({
+      values: { name: 'customRole', title: 'Custom Role' },
+    });
+
+    // 3. 给该角色设置主数据源 action 权限所有人可见
+    await db.getRepository('rolesResourcesActions').create({
+      values: {
+        roleName: customRole.name,
+        resourceName: 'testTable',
+        actionName: '*',
+        strategy: {
+          actions: ['create', 'view', 'update', 'destroy'],
+        },
+      },
+    });
+
+    // 4. 添加1个分组和2个子tab路由a,b
+    const groupRoute = await db.getRepository('desktopRoutes').create({
+      values: {
+        type: 'group',
+        title: 'testGroup',
+      },
+    });
+
+    const [routeA, routeB] = await db.getRepository('desktopRoutes').create({
+      values: [
+        { type: 'tab', title: 'routeA', parentId: groupRoute.id },
+        { type: 'tab', title: 'routeB', parentId: groupRoute.id },
+      ],
+    });
+
+    // 使用 root 角色配置权限
+    const rootUser = await db.getRepository('users').create({
+      values: { roles: ['root'] },
+    });
+    const rootAgent = await app.agent().login(rootUser);
+
+    // 清除默认权限
+    await rootAgent.resource('roles.desktopRoutes', customRole.name).remove({
+      values: [1, 2, 3, 4, 5, 6, groupRoute.id, routeA.id, routeB.id],
+    });
+
+    // 5. 设置其中一个路由a可见
+    await rootAgent.resource('roles.desktopRoutes', customRole.name).add({
+      values: [groupRoute.id, routeA.id],
+    });
+
+    // 创建测试用户
+    const testUser = await db.getRepository('users').create({
+      values: { roles: [customRole.name] },
+    });
+    const testAgent = await app.agent().login(testUser);
+
+    // 验证只有routeA可见
+    let response = await testAgent.resource('desktopRoutes').listAccessible();
+    expect(response.status).toBe(200);
+    expect(response.body.data.length).toBe(1);
+    expect(response.body.data[0].title).toBe('testGroup');
+    expect(response.body.data[0].children.length).toBe(1);
+    expect(response.body.data[0].children[0].title).toBe('routeA');
+
+    // 6. 设置所有路由可见
+    await rootAgent.resource('roles.desktopRoutes', customRole.name).add({
+      values: [routeB.id],
+    });
+
+    // 7. 访问desktopRoutes:listAccessible API
+    response = await testAgent.resource('desktopRoutes').listAccessible();
+
+    // 8. 断言API结果，a,b都有children
+    expect(response.status).toBe(200);
+    expect(response.body.data.length).toBe(1);
+    expect(response.body.data[0].title).toBe('testGroup');
+    expect(response.body.data[0].children.length).toBe(2);
+    
+    const childTitles = response.body.data[0].children.map(child => child.title);
+    expect(childTitles).toContain('routeA');
+    expect(childTitles).toContain('routeB');
+  });
 });
 
 describe('desktopRoutes', async () => {
