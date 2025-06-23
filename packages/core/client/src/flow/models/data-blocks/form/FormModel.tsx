@@ -45,7 +45,7 @@ export class FormModel extends DataBlockModel {
                 },
               },
             })}
-            onModelAdded={async (fieldModel: FormFieldModel) => {
+            onModelCreated={async (fieldModel: FormFieldModel) => {
               const fieldInfo = fieldModel.stepParams?.field;
               if (fieldInfo && typeof fieldInfo.name === 'string') {
                 // 如果需要设置 collectionField，可以从 collection 中获取

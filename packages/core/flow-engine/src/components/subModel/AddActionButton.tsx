@@ -27,9 +27,13 @@ interface AddActionButtonProps {
   subModelKey?: string;
   subModelType?: 'object' | 'array';
   /**
-   * 点击后的回调函数
+   * 创建后的回调函数
    */
-  onModelAdded?: (subModel: FlowModel) => Promise<void>;
+  onModelCreated?: (subModel: FlowModel) => Promise<void>;
+  /**
+   * 添加到父模型后的回调函数
+   */
+  onSubModelAdded?: (subModel: FlowModel) => Promise<void>;
   /**
    * 按钮文本
    */
@@ -66,7 +70,8 @@ const AddActionButtonCore: React.FC<AddActionButtonProps> = ({
   subModelType = 'array',
   items,
   filter,
-  onModelAdded,
+  onModelCreated,
+  onSubModelAdded,
 }) => {
   const allActionsItems = useMemo(() => {
     const actionClasses = model.flowEngine.filterModelClassByParent(subModelBaseClass);
@@ -95,7 +100,8 @@ const AddActionButtonCore: React.FC<AddActionButtonProps> = ({
       subModelKey={subModelKey}
       subModelType={subModelType}
       items={items ?? allActionsItems}
-      onModelAdded={onModelAdded}
+      onModelCreated={onModelCreated}
+      onSubModelAdded={onSubModelAdded}
     >
       {children}
     </AddSubModelButton>

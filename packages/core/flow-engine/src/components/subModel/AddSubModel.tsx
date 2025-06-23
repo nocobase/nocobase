@@ -30,7 +30,8 @@ interface AddSubModelButtonProps {
   subModelKey: string;
   subModelType?: 'object' | 'array';
   subModelBaseClass?: string | typeof FlowModel;
-  onModelAdded?: (addedModel: FlowModel) => Promise<void>;
+  onModelCreated?: (addedModel: FlowModel) => Promise<void>;
+  onSubModelAdded?: (addedModel: FlowModel) => Promise<void>;
   items: SubModelItem[] | (() => SubModelItem[] | Promise<SubModelItem[]>);
   children?: React.ReactNode; // ✅ 支持自定义按钮文本
 }
@@ -40,7 +41,8 @@ const AddSubModelCore = function AddSubModel({
   subModelKey,
   subModelType = 'array',
   items,
-  onModelAdded,
+  onModelCreated,
+  onSubModelAdded,
   children,
 }: AddSubModelButtonProps) {
   const onClick = async (info) => {
@@ -53,14 +55,18 @@ const AddSubModelCore = function AddSubModel({
     try {
       await addedModel.configureRequiredSteps();
 
-      if (onModelAdded) {
-        await onModelAdded(addedModel);
+      if (onModelCreated) {
+        await onModelCreated(addedModel);
       }
 
       if (subModelType === 'array') {
         model.addSubModel(subModelKey, addedModel);
       } else {
         model.setSubModel(subModelKey, addedModel);
+      }
+
+      if (onSubModelAdded) {
+        await onSubModelAdded(addedModel);
       }
 
       await addedModel.save();

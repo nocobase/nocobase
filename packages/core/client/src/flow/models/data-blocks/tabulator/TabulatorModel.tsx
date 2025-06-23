@@ -192,7 +192,7 @@ export class TabulatorModel extends DataBlockModel<S> {
                 },
               },
             ]}
-            onModelAdded={async (model: TabulatorColumnModel) => {
+            onModelCreated={async (model: TabulatorColumnModel) => {
               model.setSharedContext({ currentBlockModel: this });
               await model.applyAutoFlows();
               this.initTabulator();

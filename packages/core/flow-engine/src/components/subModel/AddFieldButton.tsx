@@ -37,9 +37,13 @@ export interface AddFieldButtonProps {
    */
   appendItems?: SubModelItemsType;
   /**
-   * 添加后的回调函数
+   * 创建后的回调函数
    */
-  onModelAdded?: (subModel: FlowModel) => Promise<void>;
+  onModelCreated?: (subModel: FlowModel) => Promise<void>;
+  /**
+   * 添加到父模型后的回调函数
+   */
+  onSubModelAdded?: (subModel: FlowModel) => Promise<void>;
   /**
    * 显示的UI组件
    */
@@ -74,7 +78,8 @@ const AddFieldButtonCore: React.FC<AddFieldButtonProps> = ({
   buildCreateModelOptions,
   items,
   appendItems,
-  onModelAdded,
+  onModelCreated,
+  onSubModelAdded,
 }) => {
   const fields = collection.getFields();
 
@@ -137,7 +142,8 @@ const AddFieldButtonCore: React.FC<AddFieldButtonProps> = ({
       subModelKey={subModelKey}
       subModelType={subModelType}
       items={items ?? fieldItems}
-      onModelAdded={onModelAdded}
+      onModelCreated={onModelCreated}
+      onSubModelAdded={onSubModelAdded}
     >
       {children}
     </AddSubModelButton>

@@ -44,7 +44,7 @@ export class FilterFormModel extends FilterBlockModel {
                 },
               },
             })}
-            onModelAdded={async (fieldModel: FilterFormFieldModel) => {
+            onModelCreated={async (fieldModel: FilterFormFieldModel) => {
               const fieldInfo = fieldModel.stepParams?.field;
               if (fieldInfo && typeof fieldInfo.name === 'string') {
                 // 如果需要设置 collectionField，可以从 collection 中获取

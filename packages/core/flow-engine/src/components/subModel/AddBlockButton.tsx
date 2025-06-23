@@ -27,9 +27,13 @@ interface AddBlockButtonProps {
   subModelKey?: string;
   subModelType?: 'object' | 'array';
   /**
-   * 点击后的回调函数
+   * 创建后的回调函数
    */
-  onModelAdded?: (subModel: FlowModel) => Promise<void>;
+  onModelCreated?: (subModel: FlowModel) => Promise<void>;
+  /**
+   * 添加到父模型后的回调函数
+   */
+  onSubModelAdded?: (subModel: FlowModel) => Promise<void>;
   /**
    * 按钮文本
    */
@@ -85,7 +89,8 @@ const AddBlockButtonCore: React.FC<AddBlockButtonProps> = ({
   items,
   filter: filterBlocks,
   appendItems,
-  onModelAdded,
+  onModelCreated,
+  onSubModelAdded,
 }) => {
   // 确定最终使用的 items
   const finalItems = useMemo(() => {
@@ -109,7 +114,8 @@ const AddBlockButtonCore: React.FC<AddBlockButtonProps> = ({
       subModelKey={subModelKey}
       subModelType={subModelType}
       items={finalItems}
-      onModelAdded={onModelAdded}
+      onModelCreated={onModelCreated}
+      onSubModelAdded={onSubModelAdded}
     >
       {children}
     </AddSubModelButton>

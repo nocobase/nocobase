@@ -147,9 +147,13 @@ interface AddSubModelButtonProps {
   subModelKey: string;
 
   /**
-   * 点击后的回调函数
+   * 创建后的回调函数
    */
-  onModelAdded?: (subModel: FlowModel) => Promise<void>;
+  onModelCreated?: (subModel: FlowModel) => Promise<void>;
+  /**
+   * 添加到父模型后的回调函数
+   */
+  onSubModelAdded?: (subModel: FlowModel) => Promise<void>;
 
   /**
    * 按钮文本，默认为 "Add"
@@ -236,7 +240,8 @@ const AddSubModelButtonCore = function AddSubModelButton({
   subModelBaseClass,
   subModelType = 'array',
   subModelKey,
-  onModelAdded,
+  onModelCreated,
+  onSubModelAdded,
   children = 'Add',
 }: AddSubModelButtonProps) {
   // 构建上下文对象，从 flowEngine 的全局上下文中获取服务
@@ -275,14 +280,18 @@ const AddSubModelButtonCore = function AddSubModelButton({
 
       await addedModel.configureRequiredSteps();
 
-      if (onModelAdded) {
-        await onModelAdded(addedModel);
+      if (onModelCreated) {
+        await onModelCreated(addedModel);
       }
 
       if (subModelType === 'array') {
         model.addSubModel(subModelKey, addedModel);
       } else {
         model.setSubModel(subModelKey, addedModel);
+      }
+
+      if (onSubModelAdded) {
+        await onSubModelAdded(addedModel);
       }
 
       await addedModel.save();
