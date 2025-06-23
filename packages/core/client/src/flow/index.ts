@@ -12,7 +12,7 @@ import _ from 'lodash';
 import { Plugin } from '../application/Plugin';
 import * as actions from './actions';
 import { FlowEngineRunner } from './FlowEngineRunner';
-import { MockFlowModelRepository } from './FlowModelRepository';
+import { FlowModelRepository, MockFlowModelRepository } from './FlowModelRepository';
 import { FlowRoute } from './FlowPage';
 import { DateTimeFormat } from './flowSetting/DateTimeFormat';
 import * as models from './models';
@@ -20,7 +20,8 @@ import * as models from './models';
 export class PluginFlowEngine extends Plugin {
   async load() {
     this.app.addComponents({ FlowRoute });
-    this.app.flowEngine.setModelRepository(new MockFlowModelRepository());
+    // this.app.flowEngine.setModelRepository(new MockFlowModelRepository());
+    this.app.flowEngine.setModelRepository(new FlowModelRepository(this.app));
     const filteredModels = Object.fromEntries(
       Object.entries(models).filter(
         ([, ModelClass]) => typeof ModelClass === 'function' && ModelClass.prototype instanceof FlowModel,

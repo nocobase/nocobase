@@ -8,10 +8,9 @@
  */
 
 import { MagicAttributeModel } from '@nocobase/database';
-import { Plugin } from '@nocobase/server';
 import PluginLocalizationServer from '@nocobase/plugin-localization';
-import { tval } from '@nocobase/utils';
-import { uid } from '@nocobase/utils';
+import { Plugin } from '@nocobase/server';
+import { tval, uid } from '@nocobase/utils';
 import path, { resolve } from 'path';
 import { uiSchemaActions } from './actions/ui-schema-action';
 import { UiSchemaModel } from './model';
@@ -71,6 +70,11 @@ export class PluginUISchemaStorageServer extends Plugin {
       actions: ['uiSchemas:*', 'uiSchemas.roles:list', 'uiSchemas.roles:set'],
     });
 
+    this.app.acl.registerSnippet({
+      name: 'ui.flowModels',
+      actions: ['flowModels:*'],
+    });
+
     db.on('uiSchemas.beforeCreate', function setUid(model) {
       if (!model.get('name')) {
         model.set('name', uid());
@@ -114,10 +118,43 @@ export class PluginUISchemaStorageServer extends Plugin {
       });
     });
 
-    this.app.resourcer.define({
+    this.app.resourceManager.define({
       name: 'uiSchemas',
       actions: uiSchemaActions,
     });
+
+    this.app.resourceManager.define({
+      name: 'flowModels',
+      actions: {
+        findOne: async (ctx, next) => {
+          const { uid, parentId } = ctx.action.params;
+          const repository = ctx.db.getRepository('uiSchemas') as UiSchemaRepository;
+          if (uid) {
+            ctx.body = await repository.findModelById(uid);
+          } else if (parentId) {
+            ctx.body = await repository.findModelByParentId(parentId);
+          }
+          await next();
+        },
+        save: async (ctx, next) => {
+          const { values } = ctx.action.params;
+          const repository = ctx.db.getRepository('uiSchemas') as UiSchemaRepository;
+          const uid = await repository.upsertModel(values);
+          ctx.body = uid;
+          // ctx.body = await repository.findModelById(uid);
+          await next();
+        },
+        destroy: async (ctx, next) => {
+          const { filterByTk } = ctx.action.params;
+          const repository = ctx.db.getRepository('uiSchemas') as UiSchemaRepository;
+          await repository.remove(filterByTk);
+          ctx.body = 'ok';
+          await next();
+        },
+      },
+    });
+
+    this.app.acl.allow('flowModels', ['findOne'], 'loggedIn');
 
     this.app.acl.allow(
       'uiSchemas',
