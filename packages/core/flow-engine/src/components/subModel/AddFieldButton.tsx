@@ -94,12 +94,18 @@ const AddFieldButtonCore: React.FC<AddFieldButtonProps> = ({
   // 构建字段 items 的函数
   const buildFieldItems = useMemo<SubModelItemsType>(() => {
     return () => {
-      const fieldClasses = Array.from(model.flowEngine.filterModelClassByParent(subModelBaseClass).values())?.sort(
+      const fieldClassesMap = model.flowEngine.filterModelClassByParent(subModelBaseClass);
+      const fieldClasses = Array.from(fieldClassesMap.values())?.sort(
         (a, b) => (a.meta?.sort || 0) - (b.meta?.sort || 0),
       );
 
       if (fieldClasses.length === 0) {
         return [];
+      }
+
+      const fieldClassToNameMap = new Map();
+      for (const [name, ModelClass] of fieldClassesMap) {
+        fieldClassToNameMap.set(ModelClass, name);
       }
 
       const allFields = [];
@@ -114,8 +120,7 @@ const AddFieldButtonCore: React.FC<AddFieldButtonProps> = ({
         if (fieldClass && fieldInterfaceName) {
           const defaultOptions = {
             ...fieldClass.meta?.defaultOptions,
-            use:
-              model.flowEngine.findModelClass((name, ModelClass) => ModelClass === fieldClass)?.[0] || fieldClass.name,
+            use: fieldClassToNameMap.get(fieldClass) || fieldClass.name,
           };
           const fieldItem = {
             key: field.name,
