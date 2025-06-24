@@ -18,7 +18,12 @@ function Grid({ items }) {
       {items.map((item) => {
         return (
           <div key={item.uid} style={{ marginBottom: 16 }}>
-            <FlowModelRenderer model={item} key={item.uid} showFlowSettings={{ showBackground: false }} />
+            <FlowModelRenderer
+              model={item}
+              key={item.uid}
+              showFlowSettings={{ showBackground: false }}
+              showErrorFallback
+            />
           </div>
         );
       })}

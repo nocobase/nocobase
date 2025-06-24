@@ -9,8 +9,6 @@
 
 import { Collection, Database } from '@nocobase/database';
 import { MockServer, createMockServer } from '@nocobase/test';
-import subModel from 'packages/core/client/docs/zh-CN/core/flow-models/demos/sub-model';
-import { SchemaNode } from '../dao/ui_schema_node_dao';
 import UiSchemaRepository from '../repository';
 
 describe('ui_schema repository', () => {

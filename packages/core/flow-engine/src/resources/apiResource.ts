@@ -46,6 +46,16 @@ export class APIResource<TData = any> extends FlowResource<TData> {
     this.setMeta({ loading: value });
   }
 
+  clearRequestParameters() {
+    this.request.params = {};
+    return this;
+  }
+
+  setRequestParameters(params: Record<string, any>) {
+    this.request.params = { ...this.request.params, ...params };
+    return this;
+  }
+
   setRequestMethod(method: string) {
     this.request.method = method;
     return this;
@@ -59,11 +69,32 @@ export class APIResource<TData = any> extends FlowResource<TData> {
     return this;
   }
 
+  removeRequestHeader(key: string) {
+    if (this.request.headers && key in this.request.headers) {
+      delete this.request.headers[key];
+    }
+    return this;
+  }
+
   addRequestParameter(key: string, value: any) {
     if (!this.request.params) {
       this.request.params = {};
     }
     this.request.params[key] = value;
+    return this;
+  }
+
+  getRequestParameter(key: string) {
+    if (this.request.params && key in this.request.params) {
+      return this.request.params[key];
+    }
+    return null;
+  }
+
+  removeRequestParameter(key: string) {
+    if (this.request.params && key in this.request.params) {
+      delete this.request.params[key];
+    }
     return this;
   }
 
@@ -85,7 +116,7 @@ export class APIResource<TData = any> extends FlowResource<TData> {
       url: this.getURL(),
       ...this.getRefreshRequestOptions(),
     });
-    this.setData(data?.data);
+    this.setData(data);
   }
 
   protected getRefreshRequestOptions() {

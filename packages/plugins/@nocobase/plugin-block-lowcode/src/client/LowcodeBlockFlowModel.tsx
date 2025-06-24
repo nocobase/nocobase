@@ -7,23 +7,15 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Card, Spin } from 'antd';
-import React, { createRef } from 'react';
 import { BlockModel } from '@nocobase/client';
+import { APIResource } from '@nocobase/flow-engine';
+import { Card, Skeleton, Spin } from 'antd';
+import React, { createRef } from 'react';
 import { CodeEditor } from './CodeEditor';
-
-function waitForRefCallback<T extends HTMLElement>(ref: React.RefObject<T>, cb: (el: T) => void, timeout = 3000) {
-  const start = Date.now();
-  function check() {
-    if (ref.current) return cb(ref.current);
-    if (Date.now() - start > timeout) return;
-    setTimeout(check, 30);
-  }
-  check();
-}
 
 export class LowcodeBlockFlowModel extends BlockModel {
   ref = createRef<HTMLDivElement>();
+  declare resource: APIResource;
 
   render() {
     const { loading, error } = this.props;
@@ -37,14 +29,10 @@ export class LowcodeBlockFlowModel extends BlockModel {
     }
 
     return (
-      <Card>
-        {loading && (
-          <div style={{ textAlign: 'center', padding: '20px' }}>
-            <Spin />
-            <div style={{ marginTop: '8px' }}>Loading lowcode component...</div>
-          </div>
-        )}
-        <div ref={this.ref} style={{ width: '100%', minHeight: '200px' }} />
+      <Card id={`model-${this.uid}`} className="lowcode-block">
+        <Spin spinning={loading} tip="Loading lowcode component...">
+          <div ref={this.ref} style={{ width: '100%' }} />
+        </Spin>
       </Card>
     );
   }
@@ -104,6 +92,15 @@ LowcodeBlockFlowModel.registerFlow({
   key: 'default',
   auto: true,
   steps: {
+    setMainResource: {
+      handler(ctx) {
+        if (ctx.model.resource) {
+          return;
+        }
+        ctx.model.resource = new APIResource();
+        ctx.model.resource.setAPIClient(ctx.globals.api);
+      },
+    },
     executionStep: {
       uiSchema: {
         code: {
@@ -114,29 +111,6 @@ LowcodeBlockFlowModel.registerFlow({
             minHeight: '400px',
             theme: 'light',
             enableLinter: true,
-            placeholder: `// Welcome to the lowcode block
-// Build interactive components with JavaScript and external libraries
-
-// Available variables:
-// - element: The DOM element to render into
-// - ctx: Flow context with globals (ctx.globals.api for NocoBase API)
-// - model: Current model instance
-// - requirejs: Function to load external JavaScript libraries (callback style)
-// - requireAsync: Function to load external JavaScript libraries (async/await style)
-// - loadCSS: Function to load external CSS files
-
-// Example: Basic HTML content
-// Create beautiful, interactive components
-element.innerHTML = \`
-  <div style="padding: 20px; text-align: center; font-family: system-ui;">
-    <h3 style="color: #1890ff;">🚀 Welcome to Lowcode Block</h3>
-    <p>Start building your custom component here!</p>
-  </div>
-\`;
-
-// Example: Load external library
-// const echarts = await requireAsync('echarts');
-// const chart = echarts.init(element);`,
           },
         },
       },
@@ -175,11 +149,11 @@ element.innerHTML = \`
         `.trim(),
       },
       settingMode: 'drawer',
-      async handler(ctx: any, params: any) {
+      title: 'Code',
+      async handler(ctx, params: any) {
         ctx.model.setProps('loading', true);
         ctx.model.setProps('error', null);
-
-        waitForRefCallback(ctx.model.ref, async (element: HTMLElement) => {
+        ctx.reactView.onRefReady(ctx.model.ref, async (element: HTMLElement) => {
           try {
             // Get requirejs from app context
             const requirejs = ctx.app?.requirejs?.requirejs;
@@ -224,17 +198,33 @@ element.innerHTML = \`
               });
             };
 
+            const getModelById = (uid: string) => {
+              return ctx.globals.flowEngine.getModel(uid);
+            };
+
+            const request = ctx.globals.api.request.bind(ctx.globals.api);
+
             // Create a safe execution context for the code (as async function)
             // Wrap user code in an async function
             const wrappedCode = `
-              return (async function(element, ctx, model, requirejs, requireAsync, loadCSS) {
+              return (async function(element, ctx, model, resource, requirejs, requireAsync, loadCSS, getModelById, request) {
                 ${params.code}
               }).apply(this, arguments);
             `;
             const executionFunction = new Function(wrappedCode);
 
             // Execute the code
-            await executionFunction(element, ctx, ctx.model, requirejs, requireAsync, loadCSS);
+            await executionFunction(
+              element,
+              ctx,
+              ctx.model,
+              ctx.model.resource,
+              requirejs,
+              requireAsync,
+              loadCSS,
+              getModelById,
+              request,
+            );
 
             ctx.model.setProps('loading', false);
           } catch (error: any) {

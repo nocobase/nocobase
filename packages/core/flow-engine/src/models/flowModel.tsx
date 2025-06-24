@@ -575,7 +575,7 @@ export class FlowModel<Structure extends { parent?: any; subModels?: any } = Def
       ? FlowEngine.generateApplyFlowCacheKey(this['forkId'] ?? 'autoFlow', 'all', this.uid)
       : null;
 
-    if (_.isEqual(extra, this._lastAutoRunParams?.[0]) && cacheKey) {
+    if (!_.isEqual(extra, this._lastAutoRunParams?.[0]) && cacheKey) {
       this.flowEngine.applyFlowCache.delete(cacheKey);
     }
 
@@ -653,6 +653,10 @@ export class FlowModel<Structure extends { parent?: any; subModels?: any } = Def
     // console.warn('FlowModel.render() not implemented. Override in subclass for FlowModelRenderer.');
     // 默认返回一个空的div，子类可以覆盖这个方法来实现具体的渲染逻辑
     return <div {...this.props}></div>;
+  }
+
+  async rerender() {
+    await this.applyAutoFlows(this._lastAutoRunParams?.[0], false);
   }
 
   setParent(parent: FlowModel): void {

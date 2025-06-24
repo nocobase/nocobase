@@ -39,10 +39,12 @@ import { observer } from '@formily/reactive-react';
 import { Spin } from 'antd';
 import _ from 'lodash';
 import React, { Suspense, useEffect } from 'react';
+import { ErrorBoundary } from 'react-error-boundary';
 import { useApplyAutoFlows, useFlowExtraContext, FlowModelProvider } from '../hooks';
 import { FlowModel } from '../models';
 import { FlowsContextMenu } from './settings/wrappers/contextual/FlowsContextMenu';
 import { FlowsFloatContextMenu } from './settings/wrappers/contextual/FlowsFloatContextMenu';
+import { FlowErrorFallback } from './FlowErrorFallback';
 
 interface FlowModelRendererProps {
   model?: FlowModel;
@@ -70,6 +72,9 @@ interface FlowModelRendererProps {
 
   /** 是否为每个组件独立执行 auto flow，默认 false */
   independentAutoFlowExecution?: boolean; // 默认 false
+
+  /** 是否在最外层包装 FlowErrorFallback 组件，默认 false */
+  showErrorFallback?: boolean; // 默认 false
 }
 
 /**
@@ -83,6 +88,7 @@ const FlowModelRendererWithAutoFlows: React.FC<{
   extraContext?: Record<string, any>;
   sharedContext?: Record<string, any>;
   independentAutoFlowExecution?: boolean;
+  showErrorFallback?: boolean;
 }> = observer(
   ({
     model,
@@ -92,6 +98,7 @@ const FlowModelRendererWithAutoFlows: React.FC<{
     extraContext,
     sharedContext,
     independentAutoFlowExecution,
+    showErrorFallback,
   }) => {
     const defaultExtraContext = useFlowExtraContext();
     useApplyAutoFlows(model, extraContext || defaultExtraContext, !independentAutoFlowExecution);
@@ -103,6 +110,7 @@ const FlowModelRendererWithAutoFlows: React.FC<{
           showFlowSettings={showFlowSettings}
           flowSettingsVariant={flowSettingsVariant}
           hideRemoveInSettings={hideRemoveInSettings}
+          showErrorFallback={showErrorFallback}
         />
       </FlowModelProvider>
     );
@@ -118,18 +126,22 @@ const FlowModelRendererWithoutAutoFlows: React.FC<{
   flowSettingsVariant: string;
   hideRemoveInSettings: boolean;
   sharedContext?: Record<string, any>;
-}> = observer(({ model, showFlowSettings, flowSettingsVariant, hideRemoveInSettings, sharedContext }) => {
-  return (
-    <FlowModelProvider model={model}>
-      <FlowModelRendererCore
-        model={model}
-        showFlowSettings={showFlowSettings}
-        flowSettingsVariant={flowSettingsVariant}
-        hideRemoveInSettings={hideRemoveInSettings}
-      />
-    </FlowModelProvider>
-  );
-});
+  showErrorFallback?: boolean;
+}> = observer(
+  ({ model, showFlowSettings, flowSettingsVariant, hideRemoveInSettings, sharedContext, showErrorFallback }) => {
+    return (
+      <FlowModelProvider model={model}>
+        <FlowModelRendererCore
+          model={model}
+          showFlowSettings={showFlowSettings}
+          flowSettingsVariant={flowSettingsVariant}
+          hideRemoveInSettings={hideRemoveInSettings}
+          showErrorFallback={showErrorFallback}
+        />
+      </FlowModelProvider>
+    );
+  },
+);
 
 /**
  * 核心渲染逻辑组件
@@ -139,13 +151,22 @@ const FlowModelRendererCore: React.FC<{
   showFlowSettings: boolean | { showBackground?: boolean; showBorder?: boolean };
   flowSettingsVariant: string;
   hideRemoveInSettings: boolean;
-}> = observer(({ model, showFlowSettings, flowSettingsVariant, hideRemoveInSettings }) => {
+  showErrorFallback?: boolean;
+}> = observer(({ model, showFlowSettings, flowSettingsVariant, hideRemoveInSettings, showErrorFallback }) => {
   // 渲染模型内容
   const modelContent = model.render();
 
-  // 如果不显示流程设置，直接返回模型内容
+  // 包装 ErrorBoundary 的辅助函数
+  const wrapWithErrorBoundary = (children: React.ReactNode) => {
+    if (showErrorFallback) {
+      return <ErrorBoundary FallbackComponent={FlowErrorFallback}>{children}</ErrorBoundary>;
+    }
+    return children;
+  };
+
+  // 如果不显示流程设置，直接返回模型内容（可能包装 ErrorBoundary）
   if (!showFlowSettings) {
-    return modelContent;
+    return wrapWithErrorBoundary(modelContent);
   }
 
   // 根据 flowSettingsVariant 包装相应的设置组件
@@ -158,26 +179,26 @@ const FlowModelRendererCore: React.FC<{
           showBackground={_.isObject(showFlowSettings) ? showFlowSettings.showBackground : undefined}
           showBorder={_.isObject(showFlowSettings) ? showFlowSettings.showBorder : undefined}
         >
-          {modelContent}
+          {wrapWithErrorBoundary(modelContent)}
         </FlowsFloatContextMenu>
       );
 
     case 'contextMenu':
       return (
         <FlowsContextMenu model={model} showDeleteButton={!hideRemoveInSettings}>
-          {modelContent}
+          {wrapWithErrorBoundary(modelContent)}
         </FlowsContextMenu>
       );
 
     case 'modal':
       // TODO: 实现 modal 模式的流程设置
       console.warn('FlowModelRenderer: modal variant is not implemented yet');
-      return modelContent;
+      return wrapWithErrorBoundary(modelContent);
 
     case 'drawer':
       // TODO: 实现 drawer 模式的流程设置
       console.warn('FlowModelRenderer: drawer variant is not implemented yet');
-      return modelContent;
+      return wrapWithErrorBoundary(modelContent);
 
     default:
       console.warn(`FlowModelRenderer: Unknown flowSettingsVariant '${flowSettingsVariant}', falling back to dropdown`);
@@ -188,7 +209,7 @@ const FlowModelRendererCore: React.FC<{
           showBackground={_.isObject(showFlowSettings) ? showFlowSettings.showBackground : undefined}
           showBorder={_.isObject(showFlowSettings) ? showFlowSettings.showBorder : undefined}
         >
-          {modelContent}
+          {wrapWithErrorBoundary(modelContent)}
         </FlowsFloatContextMenu>
       );
   }
@@ -221,6 +242,7 @@ export const FlowModelRenderer: React.FC<FlowModelRendererProps> = observer(
     extraContext,
     sharedContext,
     independentAutoFlowExecution = false,
+    showErrorFallback = false,
   }) => {
     if (!model || typeof model.render !== 'function') {
       // 可以选择渲染 null 或者一个错误/提示信息
@@ -242,6 +264,7 @@ export const FlowModelRenderer: React.FC<FlowModelRendererProps> = observer(
             flowSettingsVariant={flowSettingsVariant}
             hideRemoveInSettings={hideRemoveInSettings}
             sharedContext={sharedContext}
+            showErrorFallback={showErrorFallback}
           />
         </Suspense>
       );
@@ -256,6 +279,7 @@ export const FlowModelRenderer: React.FC<FlowModelRendererProps> = observer(
             extraContext={extraContext}
             sharedContext={sharedContext}
             independentAutoFlowExecution={independentAutoFlowExecution}
+            showErrorFallback={showErrorFallback}
           />
         </Suspense>
       );

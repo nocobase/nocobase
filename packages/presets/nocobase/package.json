@@ -140,8 +140,7 @@
     "@nocobase/plugin-workflow-sql",
     "@nocobase/plugin-workflow-notification",
     "@nocobase/plugin-theme-editor",
-    "@nocobase/plugin-block-template",
-    "@nocobase/plugin-block-lowcode"
+    "@nocobase/plugin-block-template"
   ],
   "repository": {
     "type": "git",
