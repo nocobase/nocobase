@@ -238,11 +238,12 @@ function PopupContext(props: any) {
   if (!popupId) {
     return null;
   }
-  return (
+
+  return record ? (
     <ActionContextProvider visible={Boolean(popupId)} setVisible={setVisible} openMode="modal" openSize="large">
       <CollectionRecordProvider record={record}>{props.children}</CollectionRecordProvider>
     </ActionContextProvider>
-  );
+  ) : null;
 }
 
 const PopupRecordContext = createContext<any>({ record: null, setRecord: (record) => {} });
@@ -281,9 +282,10 @@ function TaskPageContent() {
     if (popupId && !currentRecord) {
       let load;
       if (getPopupRecord) {
-        load = getPopupRecord(apiClient, { params: { filterByTk: popupId } });
+        load = getPopupRecord(apiClient, { params: { ...params, filterByTk: popupId } });
       } else {
         load = apiClient.resource(collection).get({
+          ...params,
           filterByTk: popupId,
         });
       }

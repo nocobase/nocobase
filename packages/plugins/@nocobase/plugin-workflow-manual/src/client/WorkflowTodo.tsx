@@ -57,6 +57,7 @@ import { NAMESPACE, useLang } from '../locale';
 import { FormBlockProvider } from './instruction/FormBlockProvider';
 import { ManualFormType, manualFormTypes } from './instruction/SchemaConfig';
 import { TaskStatusOptionsMap, TASK_STATUS } from '../common/constants';
+import { useMobilePage } from '@nocobase/plugin-mobile/client';
 
 function TaskStatusColumn(props) {
   const recordData = useCollectionRecordData();
@@ -431,16 +432,21 @@ function useDetailsBlockProps() {
 
 function FooterStatus() {
   const { isMobileLayout } = useMobileLayout();
+  const mobilePage = useMobilePage();
   const compile = useCompile();
   const { status, updatedAt } = useCollectionRecordData() || {};
   const statusOption = TaskStatusOptionsMap[status];
+  const isMobile = Boolean(mobilePage || isMobileLayout);
   return status ? (
     <Space
       className={css`
-        padding: ${isMobileLayout ? '1em' : '0'};
-        margin-bottom: ${isMobileLayout ? '0' : '1em'};
+        padding: ${isMobileLayout ? '0 1em' : '0'};
+        margin-bottom: ${isMobile ? '0' : '1em'};
         time {
           margin-right: 0.5em;
+        }
+        .ant-tag {
+          margin-right: 0;
         }
       `}
     >
@@ -452,9 +458,10 @@ function FooterStatus() {
 
 function Drawer() {
   const ctx = useContext(SchemaComponentContext);
-  const { id, node, workflow, status } = useCollectionRecordData() || {};
+  const record = useCollectionRecordData();
+  const { id, node, workflow, status } = record || {};
 
-  return (
+  return record ? (
     <SchemaComponentContext.Provider value={{ ...ctx, reset() {}, designable: false }}>
       <SchemaComponent
         components={{
@@ -463,7 +470,7 @@ function Drawer() {
         }}
         schema={{
           type: 'void',
-          name: `drawer-${id}-${status}`,
+          name: `manual-detail-drawer-${id}-${status}`,
           'x-component': 'Action.Container',
           'x-component-props': {
             className: 'nb-action-popup',
@@ -488,7 +495,7 @@ function Drawer() {
         }}
       />
     </SchemaComponentContext.Provider>
-  );
+  ) : null;
 }
 
 function Decorator(props) {
@@ -670,6 +677,8 @@ function useTodoActionParams(status) {
   return {
     filter,
     appends: [
+      'node.id',
+      'node.title',
       'job.id',
       'job.status',
       'job.result',
@@ -679,6 +688,7 @@ function useTodoActionParams(status) {
       'execution.id',
       'execution.status',
     ],
+    except: ['node.config', 'workflow.config', 'workflow.options'],
   };
 }
 
