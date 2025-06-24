@@ -29,7 +29,7 @@ export class LowcodeBlockFlowModel extends BlockModel {
     }
 
     return (
-      <Card>
+      <Card id={`model-${this.uid}`} className="lowcode-block">
         <Spin spinning={loading} tip="Loading lowcode component...">
           <div ref={this.ref} style={{ width: '100%' }} />
         </Spin>
