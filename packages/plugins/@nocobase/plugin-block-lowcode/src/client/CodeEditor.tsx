@@ -23,21 +23,21 @@ import { createJavaScriptLinter } from './linter';
 const createCustomCompletion = () => {
   const contextVariables = [
     {
-      label: 'request',
+      label: 'ctx.request',
       type: 'function',
       info: 'Make an API request to NocoBase backend',
       detail: '(options: RequestOptions) => Promise<Response>',
       boost: 102,
     },
     {
-      label: 'getModelById',
+      label: 'ctx.getModelById',
       type: 'function',
       info: 'Get a model instance by its UID',
       detail: '(uid: string) => FlowModel | null',
       boost: 101,
     },
     {
-      label: 'element',
+      label: 'ctx.element',
       type: 'variable',
       info: 'The DOM element to render into',
       detail: 'HTMLElement',
@@ -46,86 +46,72 @@ const createCustomCompletion = () => {
     {
       label: 'ctx',
       type: 'variable',
-      info: 'Flow context object',
-      detail: 'FlowContext',
+      info: 'Running context',
+      detail: 'Context',
       boost: 99,
     },
     {
-      label: 'model',
+      label: 'ctx.model',
       type: 'variable',
       info: 'Current model instance',
       detail: 'FlowModel',
       boost: 98,
     },
     {
-      label: 'resource',
+      label: 'ctx.resource',
       type: 'variable',
       info: 'Current resource instance',
       detail: 'APIResource',
       boost: 97,
     },
     {
-      label: 'requirejs',
+      label: 'ctx.requirejs',
       type: 'function',
       info: 'Function to load external JavaScript libraries (callback style)',
       detail: '(modules: string[], callback: Function) => void',
       boost: 96,
     },
     {
-      label: 'requireAsync',
+      label: 'ctx.requireAsync',
       type: 'function',
       info: 'Function to load external JavaScript libraries (async/await style)',
       detail: '(modules: string | string[]) => Promise<any>',
       boost: 95,
     },
     {
-      label: 'loadCSS',
+      label: 'ctx.loadCSS',
       type: 'function',
       info: 'Function to load external CSS files',
       detail: '(url: string) => Promise<void>',
       boost: 94,
-    },
-    {
-      label: 'ctx.globals.api',
-      type: 'variable',
-      info: 'NocoBase API client for making requests',
-      detail: 'APIClient',
-      boost: 93,
-    },
-    {
-      label: 'ctx.globals.api.request',
-      type: 'method',
-      info: 'Make API request to NocoBase backend',
-      detail: '(options: RequestOptions) => Promise<Response>',
-      boost: 92,
     },
   ];
 
   // 常用的 DOM 操作和 JS API
   const commonAPIs = [
     {
-      label: 'element.innerHTML',
+      label: 'ctx.element.innerHTML',
       type: 'property',
       info: 'Set or get the HTML content inside the element',
       detail: 'string',
       boost: 90,
     },
     {
-      label: 'element.textContent',
+      label: 'ctx.element.textContent',
       type: 'property',
       info: 'Set or get the text content of the element',
       detail: 'string',
       boost: 89,
     },
     {
-      label: 'element.appendChild',
+      label: 'ctx.element.appendChild',
       type: 'method',
       info: 'Append a child node to the element',
       detail: '(node: Node) => Node',
       boost: 88,
     },
     {
-      label: 'element.setAttribute',
+      label: 'ctx.element.setAttribute',
       type: 'method',
       info: 'Set an attribute on the element',
       detail: '(name: string, value: string) => void',
@@ -148,7 +134,7 @@ const createCustomCompletion = () => {
       info: 'Load external library using requireAsync',
       detail: 'Template',
       boost: 80,
-      apply: `requirejs.config({
+      apply: `ctx.requirejs.config({
   paths: {
     'libraryName': 'https://cdn.jsdelivr.net/npm/library@version/dist/library.min'
   }
@@ -162,7 +148,7 @@ const library = await requireAsync('libraryName');`,
       info: 'Load external CSS file',
       detail: 'Template',
       boost: 79,
-      apply: `await loadCSS('https://example.com/styles.css');`,
+      apply: `await ctx.loadCSS('https://example.com/styles.css');`,
     },
     {
       label: 'create-element',
@@ -194,7 +180,7 @@ element.innerHTML = '<h3>Content Loaded!</h3>';`,
       detail: 'Template',
       boost: 76,
       apply: `try {
-  const response = await ctx.globals.api.request({
+  const response = await ctx.request({
     url: 'collection:list',
     method: 'GET',
     params: {

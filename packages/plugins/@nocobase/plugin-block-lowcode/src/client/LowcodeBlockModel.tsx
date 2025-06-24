@@ -53,7 +53,7 @@ LowcodeBlockModel.define({
           code: `
 // Welcome to the lowcode block
 // Create powerful interactive components with JavaScript
-element.innerHTML = \`
+ctx.element.innerHTML = \`
   <div style="padding: 24px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; max-width: 600px;">
     <h2 style="color: #1890ff; margin: 0 0 20px 0; font-size: 24px; font-weight: 600;">
       🚀 Welcome to Lowcode Block
@@ -118,7 +118,7 @@ LowcodeBlockModel.registerFlow({
         code: `
 // Welcome to the lowcode block
 // Create powerful interactive components with JavaScript
-element.innerHTML = \`
+ctx.element.innerHTML = \`
   <div style="padding: 24px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; max-width: 600px;">
     <h2 style="color: #1890ff; margin: 0 0 20px 0; font-size: 24px; font-weight: 600;">
       🚀 Welcome to Lowcode Block
@@ -150,13 +150,13 @@ element.innerHTML = \`
       },
       settingMode: 'drawer',
       title: 'Code',
-      async handler(ctx, params: any) {
-        ctx.model.setProps('loading', true);
-        ctx.model.setProps('error', null);
-        ctx.reactView.onRefReady(ctx.model.ref, async (element: HTMLElement) => {
+      async handler(flowContext, params: any) {
+        flowContext.model.setProps('loading', true);
+        flowContext.model.setProps('error', null);
+        flowContext.reactView.onRefReady(flowContext.model.ref, async (element: HTMLElement) => {
           try {
             // Get requirejs from app context
-            const requirejs = ctx.app?.requirejs?.requirejs;
+            const requirejs = flowContext.app?.requirejs?.requirejs;
 
             // Helper function to load CSS
             const loadCSS = (url: string): Promise<void> => {
@@ -199,38 +199,38 @@ element.innerHTML = \`
             };
 
             const getModelById = (uid: string) => {
-              return ctx.globals.flowEngine.getModel(uid);
+              return flowContext.globals.flowEngine.getModel(uid);
             };
 
-            const request = ctx.globals.api.request.bind(ctx.globals.api);
+            const request = flowContext.globals.api.request.bind(flowContext.globals.api);
 
             // Create a safe execution context for the code (as async function)
             // Wrap user code in an async function
             const wrappedCode = `
-              return (async function(element, ctx, model, resource, requirejs, requireAsync, loadCSS, getModelById, request) {
+              return (async function(ctx) {
                 ${params.code}
               }).apply(this, arguments);
             `;
             const executionFunction = new Function(wrappedCode);
 
-            // Execute the code
-            await executionFunction(
+            const ctx = {
               element,
-              ctx,
-              ctx.model,
-              ctx.model.resource,
+              model: flowContext.model,
+              resource: flowContext.model.resource,
               requirejs,
               requireAsync,
               loadCSS,
               getModelById,
               request,
-            );
+            };
+            // Execute the code
+            await executionFunction(ctx);
 
-            ctx.model.setProps('loading', false);
+            flowContext.model.setProps('loading', false);
           } catch (error: any) {
             console.error('Lowcode component execution error:', error);
-            ctx.model.setProps('error', error.message);
-            ctx.model.setProps('loading', false);
+            flowContext.model.setProps('error', error.message);
+            flowContext.model.setProps('loading', false);
           }
         });
       },
