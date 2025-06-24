@@ -45,6 +45,7 @@ export class TableAssociationSelectFieldModel extends TableFieldModel {
       use: fieldClass?.name || 'TableFieldModel',
     });
     model.collectionField = targetLabelField;
+    model.setParent(this.parent);
     if (Array.isArray(value)) {
       return (
         <>

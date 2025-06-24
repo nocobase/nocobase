@@ -109,6 +109,7 @@ FormModel.registerFlow({
           resource.setAPIClient(ctx.globals.api);
           ctx.model.resource = resource;
         }
+        await ctx.model.applySubModelsAutoFlows('fields');
         if (ctx.shared.parentRecord) {
           ctx.model.resource.setFilterByTk(ctx.shared.parentRecord.id);
           await ctx.model.resource.refresh();
