@@ -10,25 +10,28 @@
   "types": "./dist/index.d.ts",
   "devDependencies": {
     "@ant-design/icons": "5.x",
+    "@codemirror/autocomplete": "^6.18.6",
     "@codemirror/lang-javascript": "^6.0.1",
+    "@codemirror/language": "^6.11.1",
+    "@codemirror/lint": "^6.8.3",
     "@codemirror/state": "^6.0.1",
     "@codemirror/theme-one-dark": "^6.0.1",
+    "@codemirror/view": "^6.37.2",
     "@formily/react": "2.x",
     "@formily/shared": "2.x",
+    "@types/acorn": "^4.0.6",
+    "acorn": "^8.15.0",
+    "acorn-walk": "^8.3.2",
     "antd": "5.x",
     "codemirror": "^6.0.1",
     "react": "^18.2.0",
-    "react-i18next": "^11.15.1",
-    "@codemirror/autocomplete": "^6.18.6",
-    "@codemirror/view": "^6.37.2",
-    "@codemirror/lint": "^6.8.3",
-    "@codemirror/language": "^6.11.1",
-    "acorn": "^8.15.0",
-    "acorn-walk": "^8.3.2"
+    "react-i18next": "^11.15.1"
   },
   "peerDependencies": {
-    "@nocobase/client": "workspace:*",
-    "@nocobase/server": "workspace:*"
+    "@nocobase/client": "1.x",
+    "@nocobase/flow-engine": "1.x",
+    "@nocobase/server": "1.x",
+    "@nocobase/test": "1.x"
   },
   "keywords": [
     "nocobase",
