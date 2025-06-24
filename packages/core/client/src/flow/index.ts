@@ -26,7 +26,7 @@ export class PluginFlowEngine extends Plugin {
       Object.entries(models).filter(
         ([, ModelClass]) => typeof ModelClass === 'function' && ModelClass.prototype instanceof FlowModel,
       ),
-    );
+    ) as Record<string, typeof FlowModel>;
     // console.log('Registering flow models:', Object.keys(filteredModels));
     this.flowEngine.registerModels(filteredModels);
     this.flowEngine.registerActions(actions);
