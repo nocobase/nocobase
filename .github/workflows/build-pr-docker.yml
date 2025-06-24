@@ -49,6 +49,7 @@ jobs:
         with:
           context: .
           file: Dockerfile
+          network: host
           build-args: |
             VERDACCIO_URL=http://localhost:4873/
             COMMIT_HASH=${GITHUB_SHA}
