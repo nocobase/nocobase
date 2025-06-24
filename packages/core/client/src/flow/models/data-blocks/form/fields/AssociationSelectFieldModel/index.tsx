@@ -7,9 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 import { connect, mapProps, mapReadPretty } from '@formily/react';
-import { isValid, toArr } from '@formily/shared';
 import { Select } from 'antd';
-import React, { useMemo } from 'react';
+import React from 'react';
+import { getUniqueKeyFromCollection } from '../../../../../../collection-manager/interfaces/utils';
 import { FormFieldModel } from '../FormFieldModel';
 
 function toValue(record: any | any[], fieldNames, multiple = false) {
@@ -35,6 +35,7 @@ function toValue(record: any | any[], fieldNames, multiple = false) {
 
 function LazySelect(props) {
   const { fieldNames, value, multiple } = props;
+  console.log(fieldNames, props);
   return (
     <Select
       showSearch
@@ -71,7 +72,6 @@ const AssociationSelect = connect(
 export class AssociationSelectFieldModel extends FormFieldModel {
   static supportedFieldInterfaces = ['m2m', 'm2o', 'o2o', 'o2m', 'oho', 'obo', 'updatedBy', 'createdBy'];
   dataSource;
-  fieldNames: { label: string; value: string; color?: string; icon?: any };
 
   set onPopupScroll(fn) {
     this.field.setComponentProps({ onPopupScroll: fn });
@@ -87,9 +87,6 @@ export class AssociationSelectFieldModel extends FormFieldModel {
   }
   getDataSource() {
     return this.field.dataSource;
-  }
-  setFieldNames(fieldNames) {
-    this.fieldNames = fieldNames;
   }
   get component() {
     return [AssociationSelect, {}];
@@ -251,6 +248,45 @@ AssociationSelectFieldModel.registerFlow({
           // 出错时也可以选择清空数据源或者显示错误提示
           ctx.model.setDataSource([]);
         }
+      },
+    },
+  },
+});
+
+AssociationSelectFieldModel.registerFlow({
+  key: 'fieldNames',
+  auto: true,
+  sort: 200,
+  title: 'Specific properties',
+  steps: {
+    fieldNames: {
+      title: 'Title field',
+      uiSchema: {
+        label: {
+          'x-component': 'Select',
+          'x-decorator': 'FormItem',
+        },
+      },
+      defaultParams: (ctx) => {
+        const { target } = ctx.model.collectionField.options;
+        const collectionManager = ctx.model.collectionField.collection.collectionManager;
+        const targetCollection = collectionManager.getCollection(target);
+        const filterKey = getUniqueKeyFromCollection(targetCollection.options as any);
+        return {
+          label: ctx.model.props.fieldNames?.label || targetCollection.options.titleField || filterKey,
+        };
+      },
+      handler(ctx, params) {
+        const { target } = ctx.model.collectionField.options;
+        const collectionManager = ctx.model.collectionField.collection.collectionManager;
+        ctx.model.setStepParams;
+        const targetCollection = collectionManager.getCollection(target);
+        const filterKey = getUniqueKeyFromCollection(targetCollection.options as any);
+        const newFieldNames = {
+          value: filterKey,
+          label: params.label || targetCollection.options.titleField || filterKey,
+        };
+        ctx.model.setComponentProps({ fieldNames: newFieldNames });
       },
     },
   },
