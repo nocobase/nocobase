@@ -23,67 +23,109 @@ import { createJavaScriptLinter } from './linter';
 const createCustomCompletion = () => {
   const contextVariables = [
     {
-      label: 'ctx.request',
-      type: 'function',
-      info: 'Make an API request to NocoBase backend',
-      detail: '(options: RequestOptions) => Promise<Response>',
-      boost: 102,
-    },
-    {
-      label: 'ctx.getModelById',
-      type: 'function',
-      info: 'Get a model instance by its UID',
-      detail: '(uid: string) => FlowModel | null',
-      boost: 101,
+      label: 'ctx',
+      type: 'variable',
+      info: 'Running context with all available APIs and utilities',
+      detail: 'LowcodeContext',
+      boost: 110,
     },
     {
       label: 'ctx.element',
       type: 'variable',
       info: 'The DOM element to render into',
       detail: 'HTMLElement',
-      boost: 100,
-    },
-    {
-      label: 'ctx',
-      type: 'variable',
-      info: 'Running context',
-      detail: 'Context',
-      boost: 99,
+      boost: 109,
     },
     {
       label: 'ctx.model',
       type: 'variable',
-      info: 'Current model instance',
-      detail: 'FlowModel',
-      boost: 98,
-    },
-    {
-      label: 'ctx.resource',
-      type: 'variable',
-      info: 'Current resource instance',
-      detail: 'APIResource',
-      boost: 97,
+      info: 'Current LowcodeBlockModel instance',
+      detail: 'LowcodeBlockModel',
+      boost: 108,
     },
     {
       label: 'ctx.requirejs',
       type: 'function',
       info: 'Function to load external JavaScript libraries (callback style)',
       detail: '(modules: string[], callback: Function) => void',
-      boost: 96,
+      boost: 107,
     },
     {
       label: 'ctx.requireAsync',
       type: 'function',
       info: 'Function to load external JavaScript libraries (async/await style)',
       detail: '(modules: string | string[]) => Promise<any>',
-      boost: 95,
+      boost: 106,
     },
     {
       label: 'ctx.loadCSS',
       type: 'function',
       info: 'Function to load external CSS files',
       detail: '(url: string) => Promise<void>',
-      boost: 94,
+      boost: 105,
+    },
+    {
+      label: 'ctx.getModelById',
+      type: 'function',
+      info: 'Get a model instance by its UID',
+      detail: '(uid: string) => FlowModel | null',
+      boost: 104,
+    },
+    {
+      label: 'ctx.request',
+      type: 'function',
+      info: 'Make an API request to NocoBase backend',
+      detail: '(options: RequestOptions) => Promise<Response>',
+      boost: 103,
+    },
+    {
+      label: 'ctx.i18n',
+      type: 'variable',
+      info: 'Internationalization object for translations',
+      detail: 'I18n',
+      boost: 102,
+    },
+    {
+      label: 'ctx.router',
+      type: 'variable',
+      info: 'Router instance for navigation',
+      detail: 'Router',
+      boost: 101,
+    },
+    {
+      label: 'ctx.initResource',
+      type: 'function',
+      info: 'Initialize a resource instance with API client',
+      detail: '(use: typeof APIResource, options?: any) => APIResource',
+      boost: 100,
+    },
+    {
+      label: 'ctx.Resources',
+      type: 'variable',
+      info: 'Available resource classes',
+      detail: '{ APIResource, BaseRecordResource, SingleRecordResource, MultiRecordResource }',
+      boost: 99,
+    },
+    {
+      label: 'ctx.React',
+      type: 'variable',
+      info: 'React library for creating components',
+      detail: 'React',
+      boost: 98,
+    },
+    {
+      label: 'ctx.ReactDOM',
+      type: 'variable',
+      info: 'ReactDOM library for rendering React components',
+      detail: 'ReactDOM',
+      boost: 97,
+    },
+    {
+      label: 'ctx.Components',
+      type: 'variable',
+      info: 'Available UI component libraries',
+      detail: '{ antd }',
+      boost: 96,
     },
   ];
 
@@ -118,81 +160,312 @@ const createCustomCompletion = () => {
       boost: 87,
     },
     {
+      label: 'ctx.i18n.t',
+      type: 'method',
+      info: 'Translate text using i18n',
+      detail: '(key: string, options?: any) => string',
+      boost: 86,
+    },
+    {
+      label: 'ctx.router.push',
+      type: 'method',
+      info: 'Navigate to a new route',
+      detail: '(path: string) => void',
+      boost: 85,
+    },
+    {
+      label: 'ctx.Resources.APIResource',
+      type: 'class',
+      info: 'Base API resource class',
+      detail: 'class APIResource',
+      boost: 84,
+    },
+    {
+      label: 'ctx.Resources.BaseRecordResource',
+      type: 'class',
+      info: 'Base record resource class',
+      detail: 'class BaseRecordResource',
+      boost: 83,
+    },
+    {
+      label: 'ctx.Resources.SingleRecordResource',
+      type: 'class',
+      info: 'Single record resource class',
+      detail: 'class SingleRecordResource',
+      boost: 82,
+    },
+    {
+      label: 'ctx.Resources.MultiRecordResource',
+      type: 'class',
+      info: 'Multi record resource class',
+      detail: 'class MultiRecordResource',
+      boost: 81,
+    },
+    {
+      label: 'ctx.Components.antd',
+      type: 'variable',
+      info: 'Ant Design component library',
+      detail: 'AntDesign',
+      boost: 80,
+    },
+    {
+      label: 'ctx.Components.antd.Button',
+      type: 'class',
+      info: 'Ant Design Button component',
+      detail: 'React.Component',
+      boost: 79,
+    },
+    {
+      label: 'ctx.Components.antd.Card',
+      type: 'class',
+      info: 'Ant Design Card component',
+      detail: 'React.Component',
+      boost: 78,
+    },
+    {
+      label: 'ctx.Components.antd.Input',
+      type: 'class',
+      info: 'Ant Design Input component',
+      detail: 'React.Component',
+      boost: 77,
+    },
+    {
+      label: 'ctx.Components.antd.Table',
+      type: 'class',
+      info: 'Ant Design Table component',
+      detail: 'React.Component',
+      boost: 76,
+    },
+    {
+      label: 'ctx.React.createElement',
+      type: 'method',
+      info: 'Create a React element',
+      detail: '(type: string | Component, props?: object, ...children: any[]) => ReactElement',
+      boost: 75,
+    },
+    {
+      label: 'ctx.React.useState',
+      type: 'method',
+      info: 'React useState hook',
+      detail: '(initialState: any) => [state, setState]',
+      boost: 74,
+    },
+    {
+      label: 'ctx.React.useEffect',
+      type: 'method',
+      info: 'React useEffect hook',
+      detail: '(effect: () => void, deps?: any[]) => void',
+      boost: 73,
+    },
+    {
+      label: 'ctx.ReactDOM.createRoot',
+      type: 'method',
+      info: 'Create a React root for rendering',
+      detail: '(container: Element) => Root',
+      boost: 72,
+    },
+    {
       label: 'document.createElement',
       type: 'method',
       info: 'Create a new HTML element',
       detail: '(tagName: string) => HTMLElement',
-      boost: 85,
+      boost: 71,
     },
   ];
 
   // 代码片段模板
   const codeSnippets = [
     {
-      label: 'load-library-async',
+      label: 'basic-html',
       type: 'snippet',
-      info: 'Load external library using requireAsync',
+      info: 'Basic HTML content template',
       detail: 'Template',
-      boost: 80,
-      apply: `ctx.requirejs.config({
-  paths: {
-    'libraryName': 'https://cdn.jsdelivr.net/npm/library@version/dist/library.min'
-  }
-});
-
-const library = await requireAsync('libraryName');`,
+      boost: 85,
+      apply: `ctx.element.innerHTML = \`
+  <div style="padding: 20px;">
+    <h2>Hello World</h2>
+    <p>This is a basic HTML template.</p>
+  </div>
+\`;`,
     },
     {
-      label: 'load-css',
+      label: 'react-component',
+      type: 'snippet',
+      info: 'Create and render a React component',
+      detail: 'Template',
+      boost: 84,
+      apply: `const { React, ReactDOM } = ctx;
+const { Button, Card } = ctx.Components.antd;
+
+const MyComponent = () => {
+  const [count, setCount] = React.useState(0);
+
+  return React.createElement(Card, {
+    title: 'React Component',
+    style: { width: 300 }
+  }, [
+    React.createElement('p', { key: 'text' }, \`Count: \${count}\`),
+    React.createElement(Button, {
+      key: 'button',
+      type: 'primary',
+      onClick: () => setCount(count + 1)
+    }, 'Increment')
+  ]);
+};
+
+const root = ReactDOM.createRoot(ctx.element);
+root.render(React.createElement(MyComponent));`,
+    },
+    {
+      label: 'i18n-translation',
+      type: 'snippet',
+      info: 'Use internationalization for text translation',
+      detail: 'Template',
+      boost: 83,
+      apply: `ctx.element.innerHTML = \`
+  <div style="padding: 20px;">
+    <h2>\${ctx.i18n.t('Welcome')}</h2>
+    <p>\${ctx.i18n.t('This is a translated message')}</p>
+    <button onclick="alert('\${ctx.i18n.t('Button clicked')}')">\${ctx.i18n.t('Click me')}</button>
+  </div>
+\`;`,
+    },
+    {
+      label: 'resource-api',
+      type: 'snippet',
+      info: 'Use resource API for data operations',
+      detail: 'Template',
+      boost: 82,
+      apply: `const resource = ctx.initResource(ctx.Resources.MultiRecordResource, {
+  collection: 'users'
+});
+
+try {
+  const data = await resource.list({
+    pageSize: 10,
+    sort: ['-createdAt']
+  });
+
+  ctx.element.innerHTML = \`
+    <div style="padding: 20px;">
+      <h3>Users (\${data.meta?.count || 0})</h3>
+      <ul>
+        \${data.data.map(user => \`<li>\${user.nickname || user.email}</li>\`).join('')}
+      </ul>
+    </div>
+  \`;
+} catch (error) {
+  ctx.element.innerHTML = \`<div style="color: red;">Error: \${error.message}</div>\`;
+}`,
+    },
+    {
+      label: 'async-library-load',
+      type: 'snippet',
+      info: 'Load external library asynchronously',
+      detail: 'Template',
+      boost: 81,
+      apply: `try {
+  // Load external library
+  const library = await ctx.requireAsync('https://cdn.jsdelivr.net/npm/lodash@4.17.21/lodash.min.js');
+
+  // Use the library
+  const data = library.range(1, 10);
+  ctx.element.innerHTML = \`<pre>\${JSON.stringify(data, null, 2)}</pre>\`;
+} catch (error) {
+  ctx.element.innerHTML = \`<div style="color: red;">Error loading library: \${error.message}</div>\`;
+}`,
+    },
+    {
+      label: 'css-load',
       type: 'snippet',
       info: 'Load external CSS file',
       detail: 'Template',
-      boost: 79,
-      apply: `await ctx.loadCSS('https://example.com/styles.css');`,
+      boost: 80,
+      apply: `try {
+  // Load external CSS
+  await ctx.loadCSS('https://cdn.jsdelivr.net/npm/animate.css@4.1.1/animate.min.css');
+
+  // Apply animation
+  ctx.element.innerHTML = \`
+    <div class="animate__animated animate__bounce" style="padding: 20px; text-align: center;">
+      <h3>Content Loaded!</h3>
+    </div>
+  \`;
+} catch (error) {
+  ctx.element.innerHTML = \`<div style="color: red;">Error loading CSS: \${error.message}</div>\`;
+}`,
     },
     {
-      label: 'create-element',
+      label: 'model-communication',
       type: 'snippet',
-      info: 'Create and append HTML element',
+      info: 'Communicate with other models',
+      detail: 'Template',
+      boost: 79,
+      apply: `// Get another model by ID
+const otherModel = ctx.getModelById('some-model-id');
+
+if (otherModel) {
+  // Access other model's data
+  const otherData = otherModel.getProps();
+
+  ctx.element.innerHTML = \`
+    <div style="padding: 20px;">
+      <h3>Model Communication</h3>
+      <p>Current model ID: \${ctx.model.uid}</p>
+      <p>Other model data: \${JSON.stringify(otherData)}</p>
+    </div>
+  \`;
+} else {
+  ctx.element.innerHTML = \`
+    <div style="padding: 20px; color: orange;">
+      <p>Other model not found</p>
+    </div>
+  \`;
+}`,
+    },
+    {
+      label: 'navigation',
+      type: 'snippet',
+      info: 'Navigate to different routes',
       detail: 'Template',
       boost: 78,
-      apply: `const newElement = document.createElement('div');
-newElement.innerHTML = 'Hello World';
-element.appendChild(newElement);`,
-    },
-    {
-      label: 'async-example',
-      type: 'snippet',
-      info: 'Async operation with loading state',
-      detail: 'Template',
-      boost: 77,
-      apply: `element.innerHTML = '<div>Loading...</div>';
+      apply: `ctx.element.innerHTML = \`
+  <div style="padding: 20px;">
+    <h3>Navigation Example</h3>
+    <button id="nav-home">Go to Home</button>
+    <button id="nav-admin" style="margin-left: 10px;">Go to Admin</button>
+  </div>
+\`;
 
-// Simulate async operation
-await new Promise(resolve => setTimeout(resolve, 1000));
+// Add event listeners
+ctx.element.querySelector('#nav-home').addEventListener('click', () => {
+  ctx.router.push('/');
+});
 
-element.innerHTML = '<h3>Content Loaded!</h3>';`,
+ctx.element.querySelector('#nav-admin').addEventListener('click', () => {
+  ctx.router.push('/admin');
+});`,
     },
     {
       label: 'nocobase-api-request',
       type: 'snippet',
       info: 'Request data from NocoBase API',
       detail: 'Template',
-      boost: 76,
+      boost: 77,
       apply: `try {
   const response = await ctx.request({
-    url: 'collection:list',
+    url: 'collections:list',
     method: 'GET',
     params: {
       pageSize: 20,
       sort: ['-createdAt']
     }
   });
-  
+
   const data = response.data?.data || [];
-  element.innerHTML = \`<pre>\${JSON.stringify(data, null, 2)}</pre>\`;
+  ctx.element.innerHTML = \`<pre>\${JSON.stringify(data, null, 2)}</pre>\`;
 } catch (error) {
-  element.innerHTML = \`<div style="color: red;">Error: \${error.message}</div>\`;
+  ctx.element.innerHTML = \`<div style="color: red;">Error: \${error.message}</div>\`;
 }`,
     },
   ];
