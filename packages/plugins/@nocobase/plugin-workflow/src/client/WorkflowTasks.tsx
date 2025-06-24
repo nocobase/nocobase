@@ -6,12 +6,14 @@
  * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
-import { CheckCircleOutlined } from '@ant-design/icons';
+import { CheckCircleOutlined, EllipsisOutlined } from '@ant-design/icons';
 import { PageHeader } from '@ant-design/pro-layout';
-import { Badge, Button, Layout, Menu, Tabs, Tooltip } from 'antd';
+import { Badge, Button, Flex, Layout, Menu, Popover, Segmented, Tabs, theme, Tooltip } from 'antd';
 import classnames from 'classnames';
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
+import { NavBar, Toast } from 'antd-mobile';
+import { observer } from '@formily/react';
 
 import {
   ActionContextProvider,
@@ -26,10 +28,24 @@ import {
   useCompile,
   useDocumentTitle,
   useIsLoggedIn,
+  useMobileLayout,
   usePlugin,
   useRequest,
   useToken,
+  SchemaInitializerItemType,
+  APIClient,
 } from '@nocobase/client';
+
+import {
+  MobilePageContentContainer,
+  MobilePageHeader,
+  MobilePageNavigationBar,
+  MobilePageProvider,
+  MobileRouteItem,
+  MobileTabBarItem,
+  useMobilePage,
+  useMobileRoutes,
+} from '@nocobase/plugin-mobile/client';
 
 import PluginWorkflowClient from '.';
 import { lang, NAMESPACE } from './locale';
@@ -37,11 +53,6 @@ import { lang, NAMESPACE } from './locale';
 const layoutClass = css`
   height: 100%;
   overflow: hidden;
-`;
-
-const contentClass = css`
-  min-height: 280px;
-  overflow: auto;
 `;
 
 export interface TaskTypeOptions {
@@ -52,6 +63,7 @@ export interface TaskTypeOptions {
   Actions?: React.ComponentType;
   Item: React.ComponentType;
   Detail: React.ComponentType;
+  getPopupRecord?: (apiClient: APIClient, { params }: { params: any }) => Promise<any>;
   // children?: TaskTypeOptions[];
   alwaysShow?: boolean;
 }
@@ -70,12 +82,18 @@ function MenuLink({ type }: any) {
   const { title } = workflowPlugin.taskTypes.get(type);
   const { counts } = useContext(TasksCountsContext);
   const typeTitle = compile(title);
+  const mobilePage = useMobilePage();
 
   return (
     <Link
-      to={`/admin/workflow/tasks/${type}/${TASK_STATUS.PENDING}`}
+      to={
+        mobilePage
+          ? `/page/workflow/tasks/${type}/${TASK_STATUS.PENDING}`
+          : `/admin/workflow/tasks/${type}/${TASK_STATUS.PENDING}`
+      }
       className={css`
         display: flex;
+        gap: 0.5em;
         align-items: center;
         justify-content: space-between;
         width: 100%;
@@ -103,13 +121,42 @@ function StatusTabs() {
   const navigate = useNavigate();
   const { taskType, status = TASK_STATUS.PENDING } = useParams();
   const type = useCurrentTaskType();
+  const { isMobileLayout } = useMobileLayout();
+  const mobilePage = useMobilePage();
+  const onSwitchTab = useCallback(
+    (key: string) => {
+      navigate(mobilePage ? `/page/workflow/tasks/${taskType}/${key}` : `/admin/workflow/tasks/${taskType}/${key}`);
+    },
+    [navigate, taskType, mobilePage],
+  );
+  const isMobile = Boolean(mobilePage || isMobileLayout);
   const { Actions } = type;
-  return (
+  return isMobile ? (
+    <Flex justify="space-between">
+      <Segmented
+        defaultValue={status}
+        options={[
+          {
+            value: TASK_STATUS.PENDING,
+            label: lang('Pending'),
+          },
+          {
+            value: TASK_STATUS.COMPLETED,
+            label: lang('Completed'),
+          },
+          {
+            value: TASK_STATUS.ALL,
+            label: lang('All'),
+          },
+        ]}
+        onChange={onSwitchTab}
+      />
+      <Actions onlyIcon={isMobile} />
+    </Flex>
+  ) : (
     <Tabs
       activeKey={status}
-      onChange={(activeKey) => {
-        navigate(`/admin/workflow/tasks/${taskType}/${activeKey}`);
-      }}
+      onChange={onSwitchTab}
       className={css`
         &.ant-tabs-top > .ant-tabs-nav {
           margin-bottom: 0;
@@ -142,8 +189,8 @@ function StatusTabs() {
 
 function useTaskTypeItems() {
   const workflowPlugin = usePlugin(PluginWorkflowClient);
-  const { counts } = useContext(TasksCountsContext);
   const types = workflowPlugin.taskTypes.getKeys();
+  const { counts } = useContext(TasksCountsContext);
 
   return useMemo(
     () =>
@@ -173,26 +220,30 @@ function PopupContext(props: any) {
   const { taskType, status = TASK_STATUS.PENDING, popupId } = useParams();
   const { record } = usePopupRecordContext();
   const navigate = useNavigate();
+  const mobilePage = useMobilePage();
+  const setVisible = useCallback(
+    (visible: boolean) => {
+      if (!visible) {
+        if (window.history.state.idx) {
+          navigate(-1);
+        } else {
+          navigate(
+            mobilePage ? `/page/workflow/tasks/${taskType}/${status}` : `/admin/workflow/tasks/${taskType}/${status}`,
+          );
+        }
+      }
+    },
+    [mobilePage, navigate, status, taskType],
+  );
   if (!popupId) {
     return null;
   }
-  return (
-    <ActionContextProvider
-      visible={Boolean(popupId)}
-      setVisible={(visible) => {
-        if (!visible) {
-          if (window.history.state.idx) {
-            navigate(-1);
-          } else {
-            navigate(`/admin/workflow/tasks/${taskType}/${status}`);
-          }
-        }
-      }}
-      openMode="modal"
-    >
+
+  return record ? (
+    <ActionContextProvider visible={Boolean(popupId)} setVisible={setVisible} openMode="modal" openSize="large">
       <CollectionRecordProvider record={record}>{props.children}</CollectionRecordProvider>
     </ActionContextProvider>
-  );
+  ) : null;
 }
 
 const PopupRecordContext = createContext<any>({ record: null, setRecord: (record) => {} });
@@ -200,18 +251,229 @@ export function usePopupRecordContext() {
   return useContext(PopupRecordContext);
 }
 
+function TaskPageContent() {
+  const navigate = useNavigate();
+  const apiClient = useAPIClient();
+  const { taskType, status = TASK_STATUS.PENDING, popupId } = useParams();
+  const mobilePage = useMobilePage();
+  const [currentRecord, setCurrentRecord] = useState<any>(null);
+
+  const { token } = theme.useToken();
+  const items = useTaskTypeItems();
+  const { title, collection, action = 'list', useActionParams, Item, Detail, getPopupRecord } = useCurrentTaskType();
+  const params = useActionParams(status);
+
+  // useEffect(() => {
+  //   setTitle?.(`${lang('Workflow todos')}${title ? `: ${compile(title)}` : ''}`);
+  // }, [taskType, status, setTitle, title, compile]);
+
+  useEffect(() => {
+    if (!taskType) {
+      navigate(
+        mobilePage
+          ? `/page/workflow/tasks/${items[0].key}/${status}`
+          : `/admin/workflow/tasks/${items[0].key}/${status}`,
+        { replace: true },
+      );
+    }
+  }, [items, mobilePage, navigate, status, taskType]);
+
+  useEffect(() => {
+    if (popupId && !currentRecord) {
+      let load;
+      if (getPopupRecord) {
+        load = getPopupRecord(apiClient, { params: { ...params, filterByTk: popupId } });
+      } else {
+        load = apiClient.resource(collection).get({
+          ...params,
+          filterByTk: popupId,
+        });
+      }
+      load
+        .then((res) => {
+          if (res.data?.data) {
+            setCurrentRecord(res.data.data);
+          }
+        })
+        .catch((err) => {
+          console.error(err);
+        });
+    }
+  }, [popupId, collection, currentRecord, apiClient, getPopupRecord]);
+
+  useEffect(() => {
+    if (!taskType) {
+      navigate(
+        mobilePage
+          ? `/page/workflow/tasks/${items[0].key}/${status}`
+          : `/admin/workflow/tasks/${items[0].key}/${status}`,
+        { replace: true },
+      );
+    }
+  }, [items, mobilePage, navigate, status, taskType]);
+
+  const typeKey = taskType ?? items[0].key;
+
+  const { isMobileLayout } = useMobileLayout();
+
+  const isMobile = mobilePage || isMobileLayout;
+
+  const contentClass = css`
+    height: 100%;
+    overflow: hidden;
+    padding: 0;
+
+    .nb-list {
+      height: 100%;
+      overflow: hidden;
+
+      .nb-list-container {
+        height: 100%;
+        overflow: hidden;
+
+        .ant-formily-layout {
+          height: 100%;
+          overflow: hidden;
+
+          .ant-list {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            overflow: hidden;
+
+            .ant-spin-nested-loading {
+              flex-grow: 1;
+              overflow: hidden;
+
+              .ant-spin-container {
+                height: 100%;
+                overflow: auto;
+                padding: ${isMobile ? '0.5em' : `${token.paddingContentHorizontalLG}px`};
+              }
+            }
+
+            .itemCss:not(:last-child) {
+              border-bottom: none;
+            }
+          }
+
+          .ant-list-pagination {
+            margin-top: 0;
+            padding: ${isMobile
+              ? '0.5em'
+              : `${token.paddingContentHorizontal}px ${token.paddingContentHorizontalLG}px`};
+            border-top: 1px solid ${token.colorBorderSecondary};
+          }
+        }
+      }
+    }
+  `;
+
+  return (
+    <PopupRecordContext.Provider
+      value={{
+        record: currentRecord,
+        setRecord: setCurrentRecord,
+      }}
+    >
+      <SchemaComponentContext.Provider value={{ designable: false }}>
+        <SchemaComponent
+          components={{
+            Layout,
+            PageHeader,
+            StatusTabs,
+          }}
+          schema={{
+            name: `${taskType}-${status}`,
+            type: 'void',
+            'x-decorator': 'List.Decorator',
+            'x-decorator-props': {
+              collection,
+              action,
+              params: {
+                pageSize: 20,
+                sort: ['-createdAt'],
+                ...params,
+              },
+            },
+            properties: {
+              header: {
+                type: 'void',
+                'x-component': 'PageHeader',
+                'x-component-props': {
+                  className: classnames(
+                    'pageHeaderCss',
+                    css`
+                      .ant-page-header-content {
+                        padding-top: 0;
+                      }
+                    `,
+                  ),
+                  style: {
+                    position: 'sticky',
+                    background: token.colorBgContainer,
+                    padding: isMobile
+                      ? '8px'
+                      : `${token.paddingContentVertical}px ${token.paddingContentHorizontalLG}px 0 ${token.paddingContentHorizontalLG}px`,
+                    borderBottom: isMobile ? `1px solid ${token.colorBorderSecondary}` : null,
+                  },
+                  title: isMobile ? null : title,
+                },
+                properties: {
+                  tabs: {
+                    type: 'void',
+                    'x-component': 'StatusTabs',
+                  },
+                },
+              },
+              content: {
+                type: 'void',
+                'x-component': 'Layout.Content',
+                'x-component-props': {
+                  className: contentClass,
+                },
+                properties: {
+                  list: {
+                    type: 'array',
+                    'x-component': 'List',
+                    'x-component-props': {
+                      locale: {
+                        emptyText: `{{ t("No data yet", { ns: "${NAMESPACE}" }) }}`,
+                      },
+                    },
+                    properties: {
+                      item: {
+                        type: 'object',
+                        'x-decorator': 'List.Item',
+                        'x-component': Item,
+                        'x-read-pretty': true,
+                      },
+                    },
+                  },
+                },
+              },
+              popup: {
+                type: 'void',
+                'x-decorator': PopupContext,
+                'x-component': Detail,
+              },
+            },
+          }}
+        />
+      </SchemaComponentContext.Provider>
+    </PopupRecordContext.Provider>
+  );
+}
+
 export function WorkflowTasks() {
   const compile = useCompile();
   const { setTitle } = useDocumentTitle();
   const navigate = useNavigate();
-  const { taskType, status = TASK_STATUS.PENDING, popupId } = useParams();
+  const { taskType, status = TASK_STATUS.PENDING } = useParams();
   const { token } = useToken();
-  const [currentRecord, setCurrentRecord] = useState<any>(null);
   const items = useTaskTypeItems();
 
-  const { title, collection, action = 'list', useActionParams, Item, Detail } = useCurrentTaskType();
-
-  const params = useActionParams(status);
+  const { title } = useCurrentTaskType();
 
   useEffect(() => {
     setTitle?.(`${lang('Workflow todos')}${title ? `: ${compile(title)}` : ''}`);
@@ -223,19 +485,21 @@ export function WorkflowTasks() {
     }
   }, [items, navigate, status, taskType]);
 
-  useEffect(() => {
-    if (popupId && !currentRecord) {
-      setCurrentRecord({ id: popupId });
-    }
-  }, [popupId, currentRecord]);
-
   const typeKey = taskType ?? items[0].key;
+
+  const { isMobileLayout } = useMobileLayout();
 
   return (
     <Layout className={layoutClass}>
-      <Layout.Sider theme="light" breakpoint="md" collapsedWidth="0" zeroWidthTriggerStyle={{ top: 24 }}>
-        <Menu mode="inline" selectedKeys={[typeKey]} items={items} style={{ height: '100%' }} />
-      </Layout.Sider>
+      {isMobileLayout ? (
+        <Layout.Header style={{ background: token.colorBgContainer, padding: 0, height: '3em', lineHeight: '3em' }}>
+          <Menu mode="horizontal" selectedKeys={[typeKey]} items={items} />
+        </Layout.Header>
+      ) : (
+        <Layout.Sider theme="light" breakpoint="md" collapsedWidth="0" zeroWidthTriggerStyle={{ top: 24 }}>
+          <Menu mode="inline" selectedKeys={[typeKey]} items={items} style={{ height: '100%' }} />
+        </Layout.Sider>
+      )}
       <Layout
         className={css`
           > div {
@@ -254,95 +518,7 @@ export function WorkflowTasks() {
           }
         `}
       >
-        <PopupRecordContext.Provider
-          value={{
-            record: currentRecord,
-            setRecord: setCurrentRecord,
-          }}
-        >
-          <SchemaComponentContext.Provider value={{ designable: false }}>
-            <SchemaComponent
-              components={{
-                Layout,
-                PageHeader,
-                StatusTabs,
-              }}
-              schema={{
-                name: `${taskType}-${status}`,
-                type: 'void',
-                'x-decorator': 'List.Decorator',
-                'x-decorator-props': {
-                  collection,
-                  action,
-                  params: {
-                    pageSize: 20,
-                    sort: ['-createdAt'],
-                    ...params,
-                  },
-                },
-                properties: {
-                  header: {
-                    type: 'void',
-                    'x-component': 'PageHeader',
-                    'x-component-props': {
-                      className: classnames('pageHeaderCss'),
-                      style: {
-                        background: token.colorBgContainer,
-                        padding: '12px 24px 0 24px',
-                      },
-                      title,
-                    },
-                    properties: {
-                      tabs: {
-                        type: 'void',
-                        'x-component': 'StatusTabs',
-                      },
-                    },
-                  },
-                  content: {
-                    type: 'void',
-                    'x-component': 'Layout.Content',
-                    'x-component-props': {
-                      className: contentClass,
-                      style: {
-                        padding: `${token.paddingPageVertical}px ${token.paddingPageHorizontal}px`,
-                      },
-                    },
-                    properties: {
-                      list: {
-                        type: 'array',
-                        'x-component': 'List',
-                        'x-component-props': {
-                          className: css`
-                            > .itemCss:not(:last-child) {
-                              border-bottom: none;
-                            }
-                          `,
-                          locale: {
-                            emptyText: `{{ t("No data yet", { ns: "${NAMESPACE}" }) }}`,
-                          },
-                        },
-                        properties: {
-                          item: {
-                            type: 'object',
-                            'x-decorator': 'List.Item',
-                            'x-component': Item,
-                            'x-read-pretty': true,
-                          },
-                        },
-                      },
-                    },
-                  },
-                  popup: {
-                    type: 'void',
-                    'x-decorator': PopupContext,
-                    'x-component': Detail,
-                  },
-                },
-              }}
-            />
-          </SchemaComponentContext.Provider>
-        </PopupRecordContext.Provider>
+        <TaskPageContent />
       </Layout>
     </Layout>
   );
@@ -438,4 +614,169 @@ export function TasksProvider(props: any) {
   );
 
   return isLoggedIn ? <TasksCountsProvider>{content}</TasksCountsProvider> : content;
+}
+
+export const tasksSchemaInitializerItem: SchemaInitializerItemType = {
+  name: 'workflow-tasks-center',
+  type: 'item',
+  useComponentProps() {
+    const { resource, refresh, schemaResource } = useMobileRoutes();
+    const items = useTaskTypeItems();
+    return {
+      isItem: true,
+      title: lang('Workflow Tasks'),
+      badge: 10,
+      async onClick(values) {
+        const res = await resource.list();
+        if (Array.isArray(res?.data?.data)) {
+          const findIndex = res?.data?.data.findIndex((route) => route?.options?.url === `/page/workflow/tasks`);
+          if (findIndex > -1) {
+            Toast.show({
+              icon: 'fail',
+              content: lang('The workflow tasks page has already been created.'),
+            });
+            return;
+          }
+        }
+        const { data } = await resource.create({
+          values: {
+            type: 'page',
+            title: lang('Workflow Tasks'),
+            icon: 'CheckCircleOutlined',
+            schemaUid: 'workflow/tasks',
+            options: {
+              url: `/page/workflow/tasks`,
+              schema: {
+                'x-component': 'MobileTabBarWorkflowTasksItem',
+              },
+            },
+            // children: [
+            //   {
+            //     type: 'page',
+            //     title: lang('Workflow tasks'),
+            //     icon: 'CheckCircleOutlined',
+            //     schemaUid: 'workflow-tasks',
+            //     options: {
+            //       url: `/page/workflow/tasks`,
+            //       itemSchema: {
+            //         name: uid(),
+            //         'x-decorator': 'BlockItem',
+            //         'x-settings': `mobile:tab-bar:page`,
+            //         'x-component': 'MobileTabBarWorkflowTasksItem',
+            //         'x-toolbar-props': {
+            //           showBorder: false,
+            //           showBackground: true,
+            //         },
+            //       },
+            //     },
+            //   },
+            // ],
+          } as MobileRouteItem,
+        });
+        // const parentId = data.data.id;
+        refresh();
+      },
+    };
+  },
+};
+
+export const MobileTabBarWorkflowTasksItem = observer(
+  (props: any) => {
+    const navigate = useNavigate();
+    const location = useLocation();
+    const items = useTaskTypeItems();
+    const onClick = useCallback(() => {
+      navigate(`/page/workflow/tasks/${items[0].key}/${TASK_STATUS.PENDING}`);
+    }, [items, navigate]);
+    const { total } = useContext(TasksCountsContext);
+
+    const selected = props.url && location.pathname.startsWith(props.url);
+
+    return (
+      <MobileTabBarItem
+        {...{
+          ...props,
+          onClick,
+          badge: total > 0 ? total : undefined,
+          selected,
+        }}
+      />
+    );
+  },
+  {
+    displayName: 'MobileTabBarWorkflowTasksItem',
+  },
+);
+
+export function WorkflowTasksMobile() {
+  const items = useTaskTypeItems();
+  const { token } = useToken();
+  const navigate = useNavigate();
+
+  return (
+    <MobilePageProvider>
+      <MobilePageHeader>
+        <NavBar className="nb-workflow-tasks-back-action" onBack={() => navigate(-1)}>
+          {lang('Workflow tasks')}
+        </NavBar>
+        <Tabs
+          className={css({
+            padding: `0 ${token.paddingPageHorizontal}px`,
+            '.adm-tabs-header': {
+              borderBottomWidth: 0,
+            },
+            '.adm-tabs-tab': {
+              height: 49,
+              padding: '10px 0 10px',
+            },
+            '> .ant-tabs-nav': {
+              marginBottom: 0,
+              '&::before': {
+                borderBottom: 'none',
+              },
+            },
+
+            '.ant-tabs-tab+.ant-tabs-tab': {
+              marginLeft: '2em',
+            },
+          })}
+          items={items}
+        />
+      </MobilePageHeader>
+      <MobilePageContentContainer
+        className={css`
+          padding: 0 !important;
+          > div {
+            height: 100%;
+            overflow: hidden;
+
+            > .ant-formily-layout {
+              height: 100%;
+              overflow: hidden;
+
+              > div {
+                display: flex;
+                flex-direction: column;
+                height: 100%;
+                overflow: hidden;
+              }
+            }
+          }
+
+          .ant-nb-list {
+            .itemCss:not(:last-child) {
+              padding-bottom: 0;
+              margin-bottom: 0.5em;
+            }
+            .itemCss:not(:first-child) {
+              padding-top: 0;
+              margin-top: 0.5em;
+            }
+          }
+        `}
+      >
+        <TaskPageContent />
+      </MobilePageContentContainer>
+    </MobilePageProvider>
+  );
 }
