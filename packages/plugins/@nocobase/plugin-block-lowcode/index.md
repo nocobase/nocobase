@@ -168,7 +168,7 @@ ctx.element.innerHTML = ctx.i18n.t('welcome_user', { user: 'Tom', ns: 'ns1' });
 
 * **类型**：`{ APIResource, SingleRecordResource, MultiRecordResource, ... }`
 * **说明**：包含所有可用的资源类型构造函数。你可以通过 `ctx.Resources` 获取并传递给 `initResource` 的 `use` 字段，灵活创建不同类型的资源实例。常用的有：
-  - `APIResource`：标准的 RESTful 资源，适合列表、分页、筛选等场景。
+  - `APIResource`：简单的数据请求场景。
   - `SingleRecordResource`：单条数据资源，适合详情页、个人信息等场景。
   - `MultiRecordResource`：多条数据资源，适合批量操作、复杂数据结构等场景。
 * **使用场景**：需要根据业务需求选择不同的数据交互模式时，通过 `ctx.Resources` 获取对应的资源类型。
@@ -275,12 +275,206 @@ interface IMultiRecordResource<TDataItem = any> extends IBaseRecordResource<TDat
 
 * **示例**：
 
-```js
-const { APIResource, SingleRecordResource, MultiRecordResource } = ctx.Resources;
+自定义详情区块（使用 SingleRecordResource）
 
-ctx.initResource(APIResource, options);
-ctx.initResource(SingleRecordResource, options);
-ctx.initResource(MultiRecordResource, options);
+```ts
+// 初始化资源，仅需调用一次
+ctx.initResource(ctx.Resources.SingleRecordResource);
+
+const resource = ctx.model.resource;
+resource.setDataSourceKey('main');
+resource.setResourceName('users');
+
+// 表单 HTML 片段
+const renderFilterForm = () => `
+  <form id="userFilterForm" style="margin-bottom:16px;">
+    <input type="text" id="userIdInput" placeholder="用户ID" style="margin-right:8px;" />
+    <button type="submit">筛选</button>
+  </form>
+  <div id="tableContainer"></div>
+`;
+
+// 绑定筛选表单事件
+function bindFilterFormSubmit() {
+  const form = document.getElementById('userFilterForm');
+  const input = document.getElementById('userIdInput');
+  if (!form || !input) return;
+
+  form.onsubmit = async (e) => {
+    
+    e.preventDefault();
+    const id = input.value.trim();
+    const model = ctx.model;
+    if (id && model?.resource?.setFilterByTk) {
+      model.resource.setFilterByTk(id);
+      model.rerender();
+    }
+  };
+}
+
+// 渲染用户详情
+async function renderUserView() {
+  // 若未指定筛选条件，则提示用户先筛选
+  if (!resource.getFilterByTk()) {
+    ctx.element.innerHTML = `
+      ${renderFilterForm()}
+      <div style="padding:24px;color:#999;text-align:center;">
+        <span>请先输入用户 ID 后查看详情</span>
+      </div>
+    `;
+    bindFilterFormSubmit();
+    return;
+  }
+
+  await resource.refresh();
+  const data = resource.getData();
+  if (!data) {
+    ctx.element.innerHTML = `${renderFilterForm()}<div style="padding:24px;color:#f00;">未找到用户数据。</div>`;
+    bindFilterFormSubmit();
+    return;
+  }
+
+  ctx.element.innerHTML = `
+    ${renderFilterForm()}
+    <div style="padding:24px;max-width:480px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+      <h2 style="color:#1890ff;margin-bottom:20px;">用户详情</h2>
+      <table style="width:100%;border-collapse:collapse;">
+        <tr><td style="font-weight:bold;width:120px;">ID</td><td>${data.id ?? ''}</td></tr>
+        <tr><td style="font-weight:bold;">昵称</td><td>${data.nickname ?? ''}</td></tr>
+        <tr><td style="font-weight:bold;">用户名</td><td>${data.username ?? ''}</td></tr>
+        <tr><td style="font-weight:bold;">邮箱</td><td>${data.email ?? ''}</td></tr>
+        <tr><td style="font-weight:bold;">手机号</td><td>${data.phone ?? ''}</td></tr>
+        <tr><td style="font-weight:bold;">注册时间</td><td>${data.createdAt ? new Date(data.createdAt).toLocaleString() : ''}</td></tr>
+        <tr><td style="font-weight:bold;">最后修改</td><td>${data.updatedAt ? new Date(data.updatedAt).toLocaleString() : ''}</td></tr>
+      </table>
+    </div>
+  `;
+
+  bindFilterFormSubmit();
+}
+
+// 初次渲染
+await renderUserView();
+```
+
+自定义的快捷编辑表格区块（使用 MultiRecordResource）
+
+```ts
+// 初始化资源，只需调用一次
+ctx.initResource(ctx.Resources.MultiRecordResource);
+
+const resource = ctx.model.resource;
+resource.setDataSourceKey('main');
+resource.setResourceName('users');
+resource.setPageSize(10);
+resource.setSort('-createdAt');
+
+async function renderTable({ page }) {
+  resource.setPage(page);
+  await resource.refresh();
+  const data = resource.getData() || [];
+  const pageSize = resource.getPageSize();
+  const meta = resource.getMeta() || {};
+  const total = meta.count || data.length;
+
+  ctx.element.innerHTML = `
+    <div style="margin-bottom:16px;">
+      <form id="addUserForm_demo11" style="display:inline-block;margin-right:16px;">
+        <input type="text" id="nicknameInput_demo11" placeholder="昵称" style="width:100px;margin-right:8px;" />
+        <input type="text" id="usernameInput_demo11" placeholder="用户名" style="width:100px;margin-right:8px;" />
+        <button type="submit">新增</button>
+      </form>
+    </div>
+    <table border="1" cellpadding="6" style="border-collapse:collapse;width:100%;margin-bottom:12px;">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>昵称</th>
+          <th>用户名</th>
+          <th>邮箱</th>
+          <th>注册时间</th>
+          <th>操作</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${data.map(item => `
+          <tr>
+            <td>${item.id}</td>
+            <td>
+              <input type="text" value="${item.nickname ?? ''}" style="width:80px;" data-id="${item.id}" class="edit-nickname" />
+            </td>
+            <td>
+              <input type="text" value="${item.username ?? ''}" style="width:80px;" data-id="${item.id}" class="edit-username" />
+            </td>
+            <td>${item.email ?? ''}</td>
+            <td>${item.createdAt ? new Date(item.createdAt).toLocaleString() : ''}</td>
+            <td>
+              <button data-id="${item.id}" class="saveBtn_demo11">保存</button>
+              <button data-id="${item.id}" class="deleteBtn_demo11" style="color:#f00;">删除</button>
+            </td>
+          </tr>
+        `).join('')}
+      </tbody>
+    </table>
+    <div style="margin-bottom:16px;">
+      共 ${total} 条，每页 ${pageSize} 条，当前第 ${page} 页
+      <button id="prevPage_demo11" ${page <= 1 ? 'disabled' : ''}>上一页</button>
+      <button id="nextPage_demo11" ${(page * pageSize >= total) ? 'disabled' : ''}>下一页</button>
+    </div>
+  `;
+
+  // 分页
+  document.getElementById('prevPage_demo11').onclick = () => {
+    console.log('prevPage');
+    if (page > 1) {
+      renderTable({ page: page - 1 });
+    }
+  };
+  document.getElementById('nextPage_demo11').onclick = () => {
+    console.log('nextPage');
+    if (page * pageSize < total) {
+      renderTable({ page: page + 1 });
+    }
+  };
+
+  // 新增
+  document.getElementById('addUserForm_demo11').onsubmit = async (e) => {
+    e.preventDefault();
+    const nickname = document.getElementById('nicknameInput_demo11').value.trim();
+    const username = document.getElementById('usernameInput_demo11').value.trim();
+    if (!nickname || !username) {
+      alert('昵称和用户名不能为空');
+      return;
+    }
+    await resource.create({ nickname, username });
+    renderTable({ page });
+  };
+
+  // 保存（编辑）
+  Array.from(document.getElementsByClassName('saveBtn_demo11')).forEach(btn => {
+    btn.onclick = async (e) => {
+      const id = btn.getAttribute('data-id');
+      const nickname = document.querySelector(`.edit-nickname[data-id="${id}"]`).value.trim();
+      const username = document.querySelector(`.edit-username[data-id="${id}"]`).value.trim();
+      await resource.update(id, { nickname, username });
+      renderTable({ page });
+    };
+  });
+
+  // 删除
+  Array.from(document.getElementsByClassName('deleteBtn_demo11')).forEach(btn => {
+    btn.onclick = async (e) => {
+      const id = btn.getAttribute('data-id');
+      if (confirm('确定要删除该用户吗？')) {
+        await resource.destroy(id);
+        renderTable({ page });
+      }
+    };
+  });
+}
+
+// 首次渲染
+await renderTable({ page: 1 });
 ```
 
 ### `ctx.router`
