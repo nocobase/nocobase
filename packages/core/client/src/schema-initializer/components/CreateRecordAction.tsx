@@ -244,7 +244,7 @@ function FinallyButton({
   inheritsCollections,
   linkageFromForm,
   allowAddToCurrent,
-  props,
+  props: { onlyIcon, ...props },
   componentType,
   menu,
   onClick,
@@ -362,7 +362,7 @@ function FinallyButton({
         ...buttonStyle,
       }}
     >
-      {props.onlyIcon ? props?.children?.[1] : props?.children}
+      {onlyIcon ? props?.children?.[1] : props?.children}
     </Button>
   );
 }
