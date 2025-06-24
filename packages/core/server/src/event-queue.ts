@@ -36,6 +36,9 @@ export type QueueCallbackOptions = {
 export type QueueCallback = (message: any, options: QueueCallbackOptions) => Promise<void> | void;
 
 export type QueueEventOptions = {
+  /**
+   * @experimental
+   */
   interval?: number;
   concurrency?: number;
   idle(): boolean;
@@ -61,6 +64,7 @@ export interface IEventQueueAdapter {
 
 export interface EventQueueOptions {
   channelPrefix?: string;
+  priorities?: QUEUE_PRIORITY[];
 }
 
 export class MemoryEventQueueAdapter implements IEventQueueAdapter {
@@ -310,6 +314,8 @@ export class MemoryEventQueueAdapter implements IEventQueueAdapter {
 }
 
 export class EventQueue {
+  static QUEUE_PRIORITY = QUEUE_PRIORITY;
+
   protected adapter: IEventQueueAdapter;
   protected events: Map<string, QueueEventOptions> = new Map();
 
@@ -317,11 +323,17 @@ export class EventQueue {
     return this.options?.channelPrefix;
   }
 
+  get priorities() {
+    return this.options?.priorities;
+  }
+
   constructor(
     protected app: Application,
     protected options: EventQueueOptions = {},
   ) {
-    this.events = new Map();
+    if (!options.priorities) {
+      options.priorities = [QUEUE_PRIORITY.HIGH, QUEUE_PRIORITY.NORMAL, QUEUE_PRIORITY.LOW];
+    }
 
     this.setAdapter(new MemoryEventQueueAdapter({ appName: this.app.name }));
 

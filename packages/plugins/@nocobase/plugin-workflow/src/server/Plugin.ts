@@ -15,7 +15,7 @@ import { Transaction, Transactionable } from 'sequelize';
 import LRUCache from 'lru-cache';
 
 import { FindOptions, Op } from '@nocobase/database';
-import { Plugin } from '@nocobase/server';
+import { Plugin, QueueEventOptions } from '@nocobase/server';
 import { Registry, uid } from '@nocobase/utils';
 import { SequelizeCollectionManager } from '@nocobase/data-source-manager';
 import { Logger, LoggerOptions } from '@nocobase/logger';
@@ -73,7 +73,7 @@ export default class PluginWorkflowServer extends Plugin {
   private meter = null;
   private checker: NodeJS.Timeout = null;
 
-  private onQueueExecution = async (event) => {
+  private onQueueExecution: QueueEventOptions['process'] = async (event) => {
     const ExecutionRepo = this.db.getRepository('executions');
     const execution = await ExecutionRepo.findOne({
       filterByTk: event.executionId,
@@ -341,7 +341,7 @@ export default class PluginWorkflowServer extends Plugin {
       custom_epoch: pluginRecord?.createdAt.getTime(),
     });
 
-    this.app.eventQueue.subscribe(`${this.name}.pendingExecution`, {
+    this.app.backgroundJobManager.subscribe(`${this.name}.pendingExecution`, {
       idle: () => !this.executing && !this.pending.length && !this.events.length,
       process: this.onQueueExecution,
     });
@@ -662,7 +662,7 @@ export default class PluginWorkflowServer extends Plugin {
           this.pending.push([execution]);
         } else {
           logger.info(`local pending list is not empty, sending execution (${execution.id}) to queue`);
-          this.app.eventQueue.publish(`${this.name}.pendingExecution`, { executionId: execution.id });
+          this.app.backgroundJobManager.publish(`${this.name}.pendingExecution`, { executionId: execution.id });
         }
       }
     } catch (error) {

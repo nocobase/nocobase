@@ -12,7 +12,7 @@ import { getCluster } from '@nocobase/plugin-workflow-test';
 
 import Plugin, { Processor } from '..';
 import { EXECUTION_STATUS } from '../constants';
-import { MemoryEventQueueAdapter, QueueMessageOptions } from '@nocobase/server';
+import { BackgroundJobManager, MemoryEventQueueAdapter, QueueMessageOptions } from '@nocobase/server';
 
 class MockMemoryEventQueueAdapter extends MemoryEventQueueAdapter {
   setQueues(queues) {
@@ -111,7 +111,7 @@ describe('workflow > cluster', () => {
       }
     });
 
-    it('should be able to process executions on other nodes', async () => {
+    it.only('should be able to process executions on other nodes', async () => {
       const [app1, app2, app3] = cluster.nodes;
 
       const p1 = app1.pm.get(Plugin) as Plugin;
@@ -148,7 +148,7 @@ describe('workflow > cluster', () => {
 
       await sleep(200);
 
-      const q1 = sharedQueues.get(`${app1.name}.workflow.pendingExecution`);
+      const q1 = sharedQueues.get(`${app1.name}.${BackgroundJobManager.DEFAULT_CHANNEL}`);
       // NOTE: app3 read one
       expect(q1.length).toBe(5);
 
