@@ -357,7 +357,9 @@ function TaskPageContent() {
 
           .ant-list-pagination {
             margin-top: 0;
-            padding: ${isMobile ? '0.5em' : `${token.paddingContentHorizontalLG}px`};
+            padding: ${isMobile
+              ? '0.5em'
+              : `${token.paddingContentHorizontal}px ${token.paddingContentHorizontalLG}px`};
             border-top: 1px solid ${token.colorBorderSecondary};
           }
         }
