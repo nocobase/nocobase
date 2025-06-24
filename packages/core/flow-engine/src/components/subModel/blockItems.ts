@@ -49,7 +49,7 @@ async function getDataSourcesWithCollections(model: FlowModel) {
     // 转换为我们需要的格式
     return allDataSources.map((dataSource: DataSource) => {
       const key = dataSource.key;
-      const displayName = dataSource.options.displayName || dataSource.key;
+      const displayName = dataSource.displayName || dataSource.key;
 
       // 从 collectionManager 获取 collections
       const collections: Collection[] = dataSource.getCollections();

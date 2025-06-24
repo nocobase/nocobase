@@ -32,8 +32,6 @@ export class PluginFlowEngine extends Plugin {
     this.flowEngine.registerActions(actions);
     const dataSourceManager = new DataSourceManager();
     this.flowEngine.context['flowEngine'] = this.flowEngine;
-    this.flowEngine.context['app'] = this.app;
-    this.flowEngine.context['api'] = this.app.apiClient;
     this.flowEngine.context['dataSourceManager'] = dataSourceManager;
     const mainDataSource = new DataSource({
       key: 'main',

@@ -83,10 +83,10 @@ export class RecordActionModel extends ActionModel {
 
   render() {
     const props = { ...this.defaultProps, ...this.props };
-    const icon = <Icon type={props.icon as any} />;
+    const icon = props.icon ? <Icon type={props.icon as any} /> : undefined;
 
     return (
-      <Button style={{ padding: 0, height: 'auto', gap: 0 }} {...props} icon={icon}>
+      <Button style={{ padding: 0, height: 'auto' }} {...props} icon={icon}>
         {props.children || props.title}
       </Button>
     );

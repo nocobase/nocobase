@@ -83,6 +83,14 @@ export class DataSource {
     this.collectionManager = new CollectionManager(this);
   }
 
+  get displayName() {
+    return this.options.displayName
+      ? Schema.compile(this.options.displayName, {
+          t: (text) => text,
+        })
+      : this.key;
+  }
+
   get key() {
     return this.options.key;
   }
@@ -244,7 +252,11 @@ export class Collection {
   }
 
   get title() {
-    return this.options.title || this.name;
+    return this.options.title
+      ? Schema.compile(this.options.title, {
+          t: (text) => text,
+        })
+      : this.name;
   }
 
   initInherits() {
