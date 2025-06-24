@@ -7,40 +7,54 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useRef, useEffect } from 'react';
 import { connect, mapProps } from '@formily/react';
+import React, { useEffect, useRef } from 'react';
 
 // CodeMirror imports
-import { EditorView, basicSetup } from 'codemirror';
-import { javascript } from '@codemirror/lang-javascript';
-import { oneDark } from '@codemirror/theme-one-dark';
-import { EditorState } from '@codemirror/state';
 import { autocompletion, CompletionContext, CompletionResult } from '@codemirror/autocomplete';
+import { javascript } from '@codemirror/lang-javascript';
 import { lintGutter } from '@codemirror/lint';
+import { EditorState } from '@codemirror/state';
+import { oneDark } from '@codemirror/theme-one-dark';
+import { basicSetup, EditorView } from 'codemirror';
 import { createJavaScriptLinter } from './linter';
 
 // 自定义自动补全函数
 const createCustomCompletion = () => {
   const contextVariables = [
     {
+      label: 'getModelById',
+      type: 'function',
+      info: 'Get a model instance by its UID',
+      detail: '(uid: string) => FlowModel | null',
+      boost: 101,
+    },
+    {
       label: 'element',
       type: 'variable',
       info: 'The DOM element to render into',
       detail: 'HTMLElement',
-      boost: 99,
+      boost: 100,
     },
     {
       label: 'ctx',
       type: 'variable',
       info: 'Flow context object',
       detail: 'FlowContext',
-      boost: 98,
+      boost: 99,
     },
     {
       label: 'model',
       type: 'variable',
       info: 'Current model instance',
       detail: 'FlowModel',
+      boost: 98,
+    },
+    {
+      label: 'resource',
+      type: 'variable',
+      info: 'Current resource instance',
+      detail: 'APIResource',
       boost: 97,
     },
     {

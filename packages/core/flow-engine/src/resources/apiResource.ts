@@ -85,7 +85,7 @@ export class APIResource<TData = any> extends FlowResource<TData> {
       url: this.getURL(),
       ...this.getRefreshRequestOptions(),
     });
-    this.setData(data?.data);
+    this.setData(data);
   }
 
   protected getRefreshRequestOptions() {

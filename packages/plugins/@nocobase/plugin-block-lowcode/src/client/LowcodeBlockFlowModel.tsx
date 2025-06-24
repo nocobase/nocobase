@@ -9,7 +9,7 @@
 
 import { BlockModel } from '@nocobase/client';
 import { APIResource } from '@nocobase/flow-engine';
-import { Card, Spin } from 'antd';
+import { Card, Skeleton, Spin } from 'antd';
 import React, { createRef } from 'react';
 import { CodeEditor } from './CodeEditor';
 
@@ -30,13 +30,9 @@ export class LowcodeBlockFlowModel extends BlockModel {
 
     return (
       <Card>
-        {loading && (
-          <div style={{ textAlign: 'center', padding: '20px' }}>
-            <Spin />
-            <div style={{ marginTop: '8px' }}>Loading lowcode component...</div>
-          </div>
-        )}
-        <div ref={this.ref} style={{ width: '100%' }} />
+        <Spin spinning={loading} tip="Loading lowcode component...">
+          <div ref={this.ref} style={{ width: '100%' }} />
+        </Spin>
       </Card>
     );
   }
@@ -98,6 +94,9 @@ LowcodeBlockFlowModel.registerFlow({
   steps: {
     setMainResource: {
       handler(ctx) {
+        if (ctx.model.resource) {
+          return;
+        }
         ctx.model.resource = new APIResource();
         ctx.model.resource.setAPIClient(ctx.globals.api);
       },
@@ -199,17 +198,30 @@ element.innerHTML = \`
               });
             };
 
+            const getModelById = (uid: string) => {
+              return ctx.globals.flowEngine.getModel(uid);
+            };
+
             // Create a safe execution context for the code (as async function)
             // Wrap user code in an async function
             const wrappedCode = `
-              return (async function(element, ctx, model, requirejs, requireAsync, loadCSS) {
+              return (async function(element, ctx, model, resource, requirejs, requireAsync, loadCSS, getModelById) {
                 ${params.code}
               }).apply(this, arguments);
             `;
             const executionFunction = new Function(wrappedCode);
 
             // Execute the code
-            await executionFunction(element, ctx, ctx.model, requirejs, requireAsync, loadCSS);
+            await executionFunction(
+              element,
+              ctx,
+              ctx.model,
+              ctx.model.resource,
+              requirejs,
+              requireAsync,
+              loadCSS,
+              getModelById,
+            );
 
             ctx.model.setProps('loading', false);
           } catch (error: any) {
