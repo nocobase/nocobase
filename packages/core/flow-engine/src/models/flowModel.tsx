@@ -655,6 +655,10 @@ export class FlowModel<Structure extends { parent?: any; subModels?: any } = Def
     return <div {...this.props}></div>;
   }
 
+  async rerender() {
+    await this.applyAutoFlows(this._lastAutoRunParams?.[0], false);
+  }
+
   setParent(parent: FlowModel): void {
     if (!parent || !(parent instanceof FlowModel)) {
       throw new Error('Parent must be an instance of FlowModel.');
