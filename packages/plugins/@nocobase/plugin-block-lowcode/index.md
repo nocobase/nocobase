@@ -1,12 +1,12 @@
 # 低代码区块文档
 
-让用户用纯 JavaScript 动态创建和运行自定义的交互式前端组件。
+低代码区块让用户能够用纯 JavaScript 动态创建和运行自定义的交互式前端组件。
 
 ---
 
 ## 全局上下文对象 `ctx`
 
-低代码区块为用户代码提供了统一的全局上下文对象 `ctx`。你可以通过解构方式快速访问常用的变量和方法：
+低代码区块为用户代码提供了统一的全局上下文对象 `ctx`。你可以通过解构的方式，快速访问常用变量和方法：
 
 ```js
 type LowcodeCtx = {
@@ -43,8 +43,8 @@ declare const ctx: LowcodeCtx;
 ### `ctx.element`
 
 * **类型**：`HTMLElement`
-* **说明**：当前组件的根 DOM 元素。每个低代码区块都会被渲染到一个独立的 DOM 元素中，`element` 即为该元素的引用。你可以通过它进行内容渲染、事件绑定、集成第三方前端库等操作。该元素的生命周期与区块一致，区块销毁时会自动清理。
-* **使用场景**：适用于需要自定义渲染、挂载第三方库、绑定事件监听等场景。
+* **说明**：当前组件的根 DOM 元素。每个低代码区块会被渲染到一个独立的 DOM 元素中，`element` 即为该元素的引用。你可以通过它进行内容渲染、事件绑定、集成第三方前端库等操作。该元素的生命周期与区块一致，区块销毁时会自动清理。
+* **使用场景**：适用于自定义渲染、挂载第三方库、绑定事件监听等。
 * **注意事项**：
   - 请勿直接替换 `element` 节点本身（如通过 `replaceWith` 或重新赋值），否则会导致区块生命周期异常。
   - 推荐只操作 `element` 的内容或子节点，例如通过 `element.innerHTML`、`appendChild`、`addEventListener` 等方式进行 DOM 操作。
@@ -175,6 +175,103 @@ ctx.element.innerHTML = ctx.i18n.t('welcome_user', { user: 'Tom', ns: 'ns1' });
 * **注意事项**：
   - 推荐始终通过 `ctx.Resources` 获取资源类型，避免直接从全局导入，确保兼容性和可维护性。
   - 可扩展：如有自定义资源类型，也可通过插件机制扩展到 `ctx.Resources`。
+
+Resource 相关类的接口说明，更多说明参考 [FlowResource 及资源体系
+](https://pr-7056.client.docs-cn.nocobase.com/core/flow-engine/flow-resource)
+
+```ts
+// FlowResource interface
+interface IFlowResource<TData = any> {
+  getData(): TData;
+  setData(value: TData): this;
+  getMeta(metaKey?: string): any;
+  setMeta(meta: Record<string, any>): this;
+}
+
+// APIResource interface
+interface IAPIResource<TData = any> extends IFlowResource<TData> {
+  loading: boolean;
+
+  setAPIClient(api: APIClient): this;
+  getURL(): string;
+  setURL(value: string): this;
+
+  clearRequestParameters(): this;
+  setRequestParameters(params: Record<string, any>): this;
+  setRequestMethod(method: string): this;
+
+  addRequestHeader(key: string, value: string): this;
+  removeRequestHeader(key: string): this;
+
+  addRequestParameter(key: string, value: any): this;
+  getRequestParameter(key: string): any | null;
+  removeRequestParameter(key: string): this;
+
+  setRequestBody(data: any): this;
+  setRequestOptions(key: string, value: any): this;
+
+  refresh(): Promise<void>;
+}
+
+// BaseRecordResource interface
+interface IBaseRecordResource<TData = any> extends IAPIResource<TData> {
+  setResourceName(resourceName: string): this;
+  getResourceName(): string;
+  setSourceId(sourceId: string | number): this;
+  getSourceId(): string | number;
+  setDataSourceKey(dataSourceKey: string): this;
+  getDataSourceKey(): string;
+  setFilter(filter: Record<string, any>): this;
+  getFilter(): Record<string, any>;
+  resetFilter(): void;
+  addFilterGroup(key: string, filter: any): void;
+  removeFilterGroup(key: string): void;
+  setAppends(appends: string[]): this;
+  getAppends(): string[];
+  addAppends(appends: string | string[]): this;
+  removeAppends(appends: string | string[]): this;
+  setFilterByTk(filterByTk: string | number | string[] | number[]): this;
+  getFilterByTk(): string | number | string[] | number[];
+  setFields(fields: string[] | string): this;
+  getFields(): string[];
+  setSort(sort: string | string[]): this;
+  getSort(): string[];
+  setExcept(except: string | string[]): this;
+  getExcept(): string[];
+  setWhitelist(whitelist: string | string[]): this;
+  getWhitelist(): string[];
+  setBlacklist(blacklist: string | string[]): this;
+  getBlacklist(): string[];
+  refresh(): Promise<void>;
+}
+
+// SingleRecordResource interface
+interface ISingleRecordResource<TData = any> extends IBaseRecordResource<TData> {
+  setFilterByTk(filterByTk: string | number): this;
+  save(data: TData): Promise<void>;
+  destroy(): Promise<void>;
+  refresh(): Promise<void>;
+}
+
+// MultiRecordResource interface
+interface IMultiRecordResource<TDataItem = any> extends IBaseRecordResource<TDataItem[]> {
+  setSelectedRows(selectedRows: TDataItem[]): this;
+  getSelectedRows(): TDataItem[];
+  setPage(page: number): this;
+  getPage(): number;
+  setPageSize(pageSize: number): this;
+  getPageSize(): number;
+  getCell(rowIndex: number, columnKey: string): TDataItem | undefined;
+  next(): Promise<void>;
+  previous(): Promise<void>;
+  goto(page: number): Promise<void>;
+  create(data: TDataItem): Promise<void>;
+  update(filterByTk: string | number, data: Partial<TDataItem>): Promise<void>;
+  destroySelectedRows(): Promise<void>;
+  destroy(filterByTk: string | number | string[] | number[] | TDataItem | TDataItem[]): Promise<void>;
+  refresh(): Promise<void>;
+}
+```
 
 * **示例**：
 
