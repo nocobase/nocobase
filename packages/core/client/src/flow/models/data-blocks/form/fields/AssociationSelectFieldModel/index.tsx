@@ -125,11 +125,8 @@ AssociationSelectFieldModel.registerFlow({
   steps: {
     step1: {
       handler(ctx, params) {
-        let initialized = false;
         ctx.model.onDropdownVisibleChange = (open) => {
-          if (open && !initialized) {
-            initialized = true;
-
+          if (open) {
             ctx.model.dispatchEvent('dropdownOpen', {
               apiClient: ctx.app.apiClient,
               field: ctx.model.field,
@@ -174,6 +171,7 @@ AssociationSelectFieldModel.registerFlow({
         });
         const { data } = response.data;
         const result = await ctx.model.transformDataSource(data);
+        console.log(result);
         ctx.model.setDataSource(result);
       },
     },
