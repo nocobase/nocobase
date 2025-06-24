@@ -15,7 +15,7 @@ import { ICollection, parseCollectionName, SequelizeCollectionManager } from '@n
 import Trigger from '.';
 import { toJSON } from '../utils';
 import type { WorkflowModel } from '../types';
-import type { EventOptions } from '../Plugin';
+import Plugin, { EventOptions } from '../Plugin';
 import { Context } from '@nocobase/actions';
 
 export interface CollectionChangeTriggerConfig {
@@ -49,7 +49,28 @@ function getFieldRawName(collection: ICollection, name: string) {
 }
 
 export default class CollectionTrigger extends Trigger {
+  static TYPE = 'collection';
+
   events = new Map();
+
+  constructor(workflow: Plugin) {
+    super(workflow);
+
+    workflow.app.dataSourceManager.beforeAddDataSource((dataSource) => {
+      if (dataSource.collectionManager instanceof SequelizeCollectionManager) {
+        const workflowPlugin = workflow.app.pm.get(Plugin) as Plugin;
+        const workflows = workflowPlugin.enabledCache.values();
+        for (const item of workflows) {
+          const [dataSourceName, collectionName] = parseCollectionName(item.config.collection);
+          if (item.type !== CollectionTrigger.TYPE || dataSourceName !== dataSource.name) {
+            continue;
+          }
+          this.off(item);
+          this.on(item);
+        }
+      }
+    });
+  }
 
   // async function, should return promise
   private static async handler(this: CollectionTrigger, workflowId: number, eventType: string, data: Model, options) {

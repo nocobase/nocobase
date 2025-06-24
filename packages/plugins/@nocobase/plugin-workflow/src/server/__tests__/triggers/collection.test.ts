@@ -1231,7 +1231,7 @@ describe('workflow > triggers > collection', () => {
       expect(e3s.length).toBe(1);
     });
 
-    it.skip('sync event on another', async () => {
+    it('sync event on another', async () => {
       const workflow = await WorkflowModel.create({
         enabled: true,
         type: 'collection',
@@ -1260,6 +1260,37 @@ describe('workflow > triggers > collection', () => {
 
       const p2s = await AnotherPostRepo.find();
       expect(p2s.length).toBe(1);
+    });
+
+    it.only('trigger event after data source reload', async () => {
+      const w1 = await WorkflowModel.create({
+        enabled: true,
+        sync: true,
+        type: 'collection',
+        config: {
+          mode: 1,
+          collection: 'another:posts',
+        },
+      });
+
+      const AnotherPostRepo = anotherDB.getRepository('posts');
+      const p1 = await AnotherPostRepo.create({ values: { title: 't2' } });
+
+      const e1s = await w1.getExecutions();
+      expect(e1s.length).toBe(1);
+
+      const res1 = await agent.resource('dataSources').refresh({
+        filterByTk: 'another',
+        clientStatus: 'loaded',
+      });
+      expect(res1.status).toBe(200);
+
+      await sleep(1000);
+
+      const p2 = await AnotherPostRepo.create({ values: { title: 't2' } });
+
+      const e2s = await w1.getExecutions();
+      expect(e2s.length).toBe(2);
     });
   });
 });

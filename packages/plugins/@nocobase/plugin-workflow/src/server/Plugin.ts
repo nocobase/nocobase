@@ -294,7 +294,7 @@ export default class PluginWorkflowServer extends Plugin {
   }
 
   private initTriggers<T extends Trigger>(more: { [key: string]: T | { new (p: Plugin): T } } = {}) {
-    this.registerTrigger('collection', CollectionTrigger);
+    this.registerTrigger(CollectionTrigger.TYPE, CollectionTrigger);
     this.registerTrigger('schedule', ScheduleTrigger);
 
     for (const [name, trigger] of Object.entries(more)) {
