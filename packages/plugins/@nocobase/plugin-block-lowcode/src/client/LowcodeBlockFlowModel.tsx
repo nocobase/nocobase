@@ -112,29 +112,6 @@ LowcodeBlockFlowModel.registerFlow({
             minHeight: '400px',
             theme: 'light',
             enableLinter: true,
-            placeholder: `// Welcome to the lowcode block
-// Build interactive components with JavaScript and external libraries
-
-// Available variables:
-// - element: The DOM element to render into
-// - ctx: Flow context with globals (ctx.globals.api for NocoBase API)
-// - model: Current model instance
-// - requirejs: Function to load external JavaScript libraries (callback style)
-// - requireAsync: Function to load external JavaScript libraries (async/await style)
-// - loadCSS: Function to load external CSS files
-
-// Example: Basic HTML content
-// Create beautiful, interactive components
-element.innerHTML = \`
-  <div style="padding: 20px; text-align: center; font-family: system-ui;">
-    <h3 style="color: #1890ff;">🚀 Welcome to Lowcode Block</h3>
-    <p>Start building your custom component here!</p>
-  </div>
-\`;
-
-// Example: Load external library
-// const echarts = await requireAsync('echarts');
-// const chart = echarts.init(element);`,
           },
         },
       },
