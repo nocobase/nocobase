@@ -7,9 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Plugin } from '@nocobase/client';
-import { CodeEditor } from './CodeEditor';
+import { lazy, Plugin } from '@nocobase/client';
 import { LowcodeBlockModel } from './LowcodeBlockModel';
+
+const { CodeEditor } = lazy(() => import('./CodeEditor'), 'CodeEditor');
 
 export class PluginBlockLowcodeClient extends Plugin {
   async load() {

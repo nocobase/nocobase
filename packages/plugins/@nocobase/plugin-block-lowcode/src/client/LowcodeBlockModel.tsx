@@ -9,9 +9,8 @@
 
 import { BlockModel } from '@nocobase/client';
 import { APIResource } from '@nocobase/flow-engine';
-import { Card, Skeleton, Spin } from 'antd';
+import { Card, Spin } from 'antd';
 import React, { createRef } from 'react';
-import { CodeEditor } from './CodeEditor';
 
 export class LowcodeBlockModel extends BlockModel {
   ref = createRef<HTMLDivElement>();
@@ -37,9 +36,6 @@ export class LowcodeBlockModel extends BlockModel {
     );
   }
 }
-
-// Export CodeEditor for external use
-export { CodeEditor };
 
 LowcodeBlockModel.define({
   title: 'Lowcode',
