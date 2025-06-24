@@ -13,7 +13,7 @@ import { Card, Skeleton, Spin } from 'antd';
 import React, { createRef } from 'react';
 import { CodeEditor } from './CodeEditor';
 
-export class LowcodeBlockFlowModel extends BlockModel {
+export class LowcodeBlockModel extends BlockModel {
   ref = createRef<HTMLDivElement>();
   declare resource: APIResource;
 
@@ -41,12 +41,12 @@ export class LowcodeBlockFlowModel extends BlockModel {
 // Export CodeEditor for external use
 export { CodeEditor };
 
-LowcodeBlockFlowModel.define({
+LowcodeBlockModel.define({
   title: 'Lowcode',
   group: 'Content',
   icon: 'CloudOutlined',
   defaultOptions: {
-    use: 'LowcodeBlockFlowModel',
+    use: 'LowcodeBlockModel',
     stepParams: {
       default: {
         executionStep: {
@@ -88,7 +88,7 @@ element.innerHTML = \`
   },
 });
 
-LowcodeBlockFlowModel.registerFlow({
+LowcodeBlockModel.registerFlow({
   key: 'default',
   auto: true,
   steps: {
