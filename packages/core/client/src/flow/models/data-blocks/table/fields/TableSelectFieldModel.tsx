@@ -7,11 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import dayjs from 'dayjs';
 import React from 'react';
 import { Tag } from 'antd';
 import { TableFieldModel } from './TableFieldModel';
-import { getCurrentOptions } from '../utils/utils';
+import { getCurrentOptions } from '../../../common/utils';
 
 const fieldNames = {
   label: 'label',

@@ -7,8 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { connect, mapReadPretty } from '@formily/react';
-import { InputNumber as AntdInputNumber, InputNumberProps as AntdInputNumberProps } from 'antd';
+import { connect } from '@formily/react';
+import { NumberPicker } from '@formily/antd-v5';
+import { InputNumberProps as AntdInputNumberProps } from 'antd';
 import BigNumber from 'bignumber.js';
 import { omit } from 'lodash';
 import React from 'react';
@@ -44,7 +45,7 @@ const InputNumber: ComposedInputNumber = connect((props: AntdInputNumberProps) =
   if (others['formatStyle']) {
     inputNumberProps = omit(inputNumberProps, ['addonAfter', 'addonBefore']);
   }
-  return <AntdInputNumber {...inputNumberProps} />;
+  return <NumberPicker {...inputNumberProps} />;
 });
 export class InputNumberFieldModel extends FormFieldModel {
   static supportedFieldInterfaces = ['number', 'integer', 'id'];

@@ -8,13 +8,13 @@
  */
 
 import { FormItem, Input } from '@formily/antd-v5';
+import { uid } from '@formily/shared';
 import type { FieldPatternTypes, FieldValidator } from '@formily/core';
 import { Field, Form } from '@formily/core';
 import { FieldContext } from '@formily/react';
 import { CollectionField, FlowModel } from '@nocobase/flow-engine';
 import React from 'react';
 import { ReactiveField } from '../../../../formily/ReactiveField';
-import { DataBlockModel } from '../../../base/BlockModel';
 
 type FieldComponentTuple = [component: React.ElementType, props: Record<string, any>] | any[];
 
@@ -22,11 +22,16 @@ export class FormFieldModel extends FlowModel {
   collectionField: CollectionField;
   field: Field;
 
+  get displayOnly() {
+    return this.props.displayOnly;
+  }
+
   get form() {
     return this.parent.form as Form;
   }
 
   get decorator() {
+    if (this.displayOnly) return null;
     return [FormItem, {}];
   }
 
@@ -85,12 +90,16 @@ export class FormFieldModel extends FlowModel {
     });
   }
   createField() {
-    return this.form.createField({
-      name: this.collectionField.name,
+    const field = this.form.createField({
+      name: this.displayOnly ? uid() : this.collectionField.name,
       ...this.props,
-      decorator: this.decorator,
+      decorator: this.decorator ?? undefined,
       component: this.component,
     });
+    if (this.displayOnly) {
+      field.pattern = 'readPretty';
+    }
+    return field;
   }
 
   render() {
@@ -112,14 +121,15 @@ FormFieldModel.registerFlow({
         // if (ctx.model.field) {
         //   return;
         // }
-        if (!ctx.shared.currentBlockModel) {
+        const { displayOnly } = ctx.model.props;
+        if (!ctx.shared.currentBlockModel && !displayOnly) {
           throw new Error('Current block model is not set in shared context');
         }
         const { dataSourceKey, collectionName, fieldPath } = params;
         if (!dataSourceKey || !collectionName || !fieldPath) {
           throw new Error('dataSourceKey, collectionName, and fieldPath are required parameters');
         }
-        if (!ctx.model.parent) {
+        if (!ctx.model.parent && !displayOnly) {
           throw new Error('FormFieldModel must have a parent model');
         }
         const collectionField = ctx.globals.dataSourceManager.getCollectionField(
@@ -138,7 +148,7 @@ FormFieldModel.registerFlow({
         if (validator) {
           ctx.model.setValidator(validator);
         }
-        ctx.shared.currentBlockModel.addAppends(fieldPath);
+        !displayOnly && ctx.shared.currentBlockModel.addAppends(fieldPath);
       },
     },
     editTitle: {
