@@ -267,7 +267,6 @@ ctx.element.innerHTML = \`
             const lowcodeContext = {
               element,
               model: flowContext.model,
-              resource: flowContext.model.resource,
               requirejs,
               requireAsync,
               loadCSS,

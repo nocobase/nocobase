@@ -12,12 +12,12 @@
 type LowcodeCtx = {
   element: HTMLElement;
   model: FlowModel;
-  resource: FlowResource;
   i18n: I18next;
   requirejs: (modules: string[], callback: Function) => void;
   requireAsync: (modules: string | string[]) => Promise<any>;
   loadCSS: (url: string) => Promise<void>;
   getModelById: (uid: string) => FlowModel | null;
+  initResource(typeof APIResource, options: AxiosRequestConfig): APIResource;
   request: (options: AxiosRequestConfig) => Promise<any>;
   router: RemixRouter;
   Resources: {
@@ -353,8 +353,9 @@ root.render(React.createElement(App));
 * **返回**：对应类型的资源实例。
 * **使用场景**：需要自定义资源类型、管理多种数据结构或特殊数据交互场景。
 * **注意事项**：
-  - ctx.resource 推荐始终通过 `ctx.initResource` 创建和获取资源实例，便于后续扩展和维护。
-  - 该方法只会初始化一次。
+  - 推荐始终通过 `ctx.initResource` 创建和获取资源实例，便于后续扩展和维护。
+  - 该方法只会初始化一次，区块重渲染也不会重建。
+  - 一个 Model 组件只有一个 resource 示例，不同的组件，可以通过 model.resource 操作目前资源。
 * **示例**
 
 自定义表格区块
@@ -414,7 +415,7 @@ async function rerender({ page }) {
 rerender(1);
 ```
 
-通过筛选区块筛选上面的表格
+通过筛选区块筛选上面的表格，不同的组件，可以通过 model.resource 操作目前资源。
 
 ```ts
 ctx.element.innerHTML = `
