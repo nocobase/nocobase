@@ -14,7 +14,7 @@ import { Database } from '@nocobase/database';
 import { concat } from '@langchain/core/utils/stream';
 import PluginAIServer from '../plugin';
 import { parseVariables } from '../utils';
-import { getDataSourcesMetadata, getSystemMessage } from './prompts';
+import { getSystemPrompt } from './prompts';
 
 export class AIEmployee {
   private employee: Model;
@@ -125,8 +125,8 @@ export class AIEmployee {
 
     this.plugin.aiEmployeesManager.conversationController.delete(this.sessionId);
 
-    const message = gathered.content;
-    const toolCalls = gathered.tool_calls;
+    const message = gathered?.content;
+    const toolCalls = gathered?.tool_calls;
     if (!message && !toolCalls?.length && !signal.aborted && !allowEmpty) {
       this.ctx.res.write(`data: ${JSON.stringify({ type: 'error', body: 'No content' })}\n\n`);
       this.ctx.res.end();
@@ -220,9 +220,14 @@ export class AIEmployee {
 
     for (const msg of messages) {
       const attachments = msg.attachments;
+      const workContext = msg.workContext;
       let content = msg.content.content;
       if (typeof content === 'string') {
-        content = await this.parseUISchema(content);
+        content = `<user_query>${content}</user_query>`;
+        if (workContext?.length) {
+          content = `<work_context>${JSON.stringify(workContext)}</work_context>
+${content}`;
+        }
       }
       if (!content && !attachments && !msg.toolCalls?.length) {
         continue;
@@ -337,7 +342,7 @@ export class AIEmployee {
       }
     }
 
-    return getDataSourcesMetadata(message);
+    return message;
   }
 
   async getHistoryMessages(messageId?: string) {
@@ -355,16 +360,29 @@ export class AIEmployee {
       systemMessage = `${systemMessage}\n${dataSourceMessage}`;
     }
 
+    let background = '';
     if (this.systemMessage) {
-      const parsedSystemMessage = await parseVariables(this.ctx, this.systemMessage);
-      systemMessage = `${systemMessage}\n${parsedSystemMessage}`;
+      background = await parseVariables(this.ctx, this.systemMessage);
     }
     const historyMessages = [
       {
         role: 'system',
-        content: getSystemMessage(systemMessage),
+        content: getSystemPrompt({
+          aiEmployee: {
+            nickname: this.employee.nickname,
+            about: this.employee.about,
+          },
+          task: {
+            background,
+          },
+          personal: userConfig?.prompt,
+          dataSources: dataSourceMessage,
+          environment: {
+            database: this.db.sequelize.getDialect(),
+            locale: this.ctx.getCurrentLocale() || 'en-US',
+          },
+        }),
       },
-      ...(userConfig?.prompt ? [{ role: 'user', content: userConfig.prompt }] : []),
       ...history,
     ];
 

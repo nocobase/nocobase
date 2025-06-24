@@ -113,7 +113,7 @@ export const useSetChatBoxContext = () => {
   const [expanded, setExpanded] = useState(false);
   const [showConversations, setShowConversations] = useState(false);
   const [currentEmployee, setCurrentEmployee] = useState<AIEmployee>(null);
-  const { setMessages, sendMessages, setAttachments, setSystemMessage } = useChatMessages();
+  const { setMessages, sendMessages, setAttachments, setSystemMessage, setContextItems } = useChatMessages();
   const { currentConversation, setCurrentConversation, conversationsService } = useChatConversations();
   const [senderValue, setSenderValue] = useState<string>('');
   const [senderPlaceholder, setSenderPlaceholder] = useState<string>('');
@@ -129,6 +129,7 @@ export const useSetChatBoxContext = () => {
     setSenderValue('');
     setSystemMessage('');
     setAttachments([]);
+    setContextItems([]);
     setTaskVariables({});
   };
 
@@ -221,7 +222,11 @@ export const useSetChatBoxContext = () => {
       if (tasks.length === 1) {
         setMessages(msgs);
         const task = tasks[0];
-        const { userMessage, systemMessage, attachments } = await parseTask(task, variables, localVariables);
+        const { userMessage, systemMessage, attachments, workContext } = await parseTask(
+          task,
+          variables,
+          localVariables,
+        );
         if (userMessage && userMessage.type === 'text') {
           setSenderValue(userMessage.content);
         } else {
@@ -229,6 +234,9 @@ export const useSetChatBoxContext = () => {
         }
         if (attachments) {
           setAttachments(attachments);
+        }
+        if (workContext) {
+          setContextItems(workContext);
         }
         if (systemMessage) {
           setSystemMessage(systemMessage);
@@ -239,6 +247,7 @@ export const useSetChatBoxContext = () => {
             systemMessage,
             messages: [userMessage],
             attachments,
+            workContext,
           });
         }
         return;

@@ -8,6 +8,7 @@
  */
 
 import type { BubbleProps } from '@ant-design/x';
+import { ComponentType } from 'react';
 
 export type Selector = {
   onSelect?: (ctx: any) => void;
@@ -32,12 +33,11 @@ export type Conversation = {
   aiEmployee: AIEmployee;
 };
 
-export type AttachmentType = 'image' | 'uiSchema';
-export type AttachmentProps = {
-  type: AttachmentType;
+export type ContextItem = {
+  type: string;
+  uid: string;
   title: string;
   content: string;
-  description?: string;
 };
 
 export type MessageType = 'text' | 'greeting';
@@ -48,6 +48,7 @@ export type Message = Omit<BubbleProps, 'content'> & {
     type?: MessageType;
     content: any;
     attachments?: Attachment[];
+    workContext?: ContextItem[];
   };
 };
 export type Action = {
@@ -65,6 +66,7 @@ export type SendOptions = {
     content: string;
   }[];
   attachments?: Attachment[];
+  workContext: ContextItem[];
 };
 
 export type ResendOptions = {
@@ -100,3 +102,36 @@ export type Tool = {
 };
 
 export type Attachment = any;
+
+type ActionParams = {
+  item: ContextItem;
+  message: Message;
+  value?: string;
+};
+
+export type ActionOptions = {
+  icon?: React.ReactNode;
+  title?: React.ReactNode;
+  Component?: ComponentType<ActionParams>;
+  onClick?: (params: ActionParams) => void;
+  // 'text' or other programing language
+  responseType: 'text' | string;
+};
+
+export type WorkContextOptions = {
+  name?: string;
+  menu: {
+    icon?: React.ReactNode;
+    label?: React.ReactNode;
+    Component?: ComponentType<{
+      onAdd: (item: Omit<ContextItem, 'type'>) => void;
+    }>;
+  };
+  tag?: {
+    Component: ComponentType<{
+      item: ContextItem;
+    }>;
+  };
+  actions?: ActionOptions[];
+  children?: Record<string, Omit<WorkContextOptions, 'children'>>;
+};
