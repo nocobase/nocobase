@@ -285,23 +285,24 @@ const resource = ctx.model.resource;
 resource.setDataSourceKey('main');
 resource.setResourceName('users');
 
+const uid = ctx.model.uid; // 统一使用 model.uid 作为唯一标识
+
 // 表单 HTML 片段
 const renderFilterForm = () => `
-  <form id="userFilterForm" style="margin-bottom:16px;">
-    <input type="text" id="userIdInput" placeholder="用户ID" style="margin-right:8px;" />
+  <form id="userFilterForm_${uid}" style="margin-bottom:16px;">
+    <input type="text" id="userIdInput_${uid}" placeholder="用户ID" style="margin-right:8px;" />
     <button type="submit">筛选</button>
   </form>
-  <div id="tableContainer"></div>
+  <div id="tableContainer_${uid}"></div>
 `;
 
 // 绑定筛选表单事件
 function bindFilterFormSubmit() {
-  const form = document.getElementById('userFilterForm');
-  const input = document.getElementById('userIdInput');
+  const form = document.getElementById(`userFilterForm_${uid}`);
+  const input = document.getElementById(`userIdInput_${uid}`);
   if (!form || !input) return;
 
   form.onsubmit = async (e) => {
-    
     e.preventDefault();
     const id = input.value.trim();
     const model = ctx.model;
@@ -369,6 +370,8 @@ resource.setResourceName('users');
 resource.setPageSize(10);
 resource.setSort('-createdAt');
 
+const uid = ctx.model.uid; // 统一用 model.uid 作为唯一标识
+
 async function renderTable({ page }) {
   resource.setPage(page);
   await resource.refresh();
@@ -379,9 +382,9 @@ async function renderTable({ page }) {
 
   ctx.element.innerHTML = `
     <div style="margin-bottom:16px;">
-      <form id="addUserForm_demo11" style="display:inline-block;margin-right:16px;">
-        <input type="text" id="nicknameInput_demo11" placeholder="昵称" style="width:100px;margin-right:8px;" />
-        <input type="text" id="usernameInput_demo11" placeholder="用户名" style="width:100px;margin-right:8px;" />
+      <form id="addUserForm_${uid}" style="display:inline-block;margin-right:16px;">
+        <input type="text" id="nicknameInput_${uid}" placeholder="昵称" style="width:100px;margin-right:8px;" />
+        <input type="text" id="usernameInput_${uid}" placeholder="用户名" style="width:100px;margin-right:8px;" />
         <button type="submit">新增</button>
       </form>
     </div>
@@ -401,16 +404,16 @@ async function renderTable({ page }) {
           <tr>
             <td>${item.id}</td>
             <td>
-              <input type="text" value="${item.nickname ?? ''}" style="width:80px;" data-id="${item.id}" class="edit-nickname" />
+              <input type="text" value="${item.nickname ?? ''}" style="width:80px;" data-id="${item.id}" class="edit-nickname-${uid}" />
             </td>
             <td>
-              <input type="text" value="${item.username ?? ''}" style="width:80px;" data-id="${item.id}" class="edit-username" />
+              <input type="text" value="${item.username ?? ''}" style="width:80px;" data-id="${item.id}" class="edit-username-${uid}" />
             </td>
             <td>${item.email ?? ''}</td>
             <td>${item.createdAt ? new Date(item.createdAt).toLocaleString() : ''}</td>
             <td>
-              <button data-id="${item.id}" class="saveBtn_demo11">保存</button>
-              <button data-id="${item.id}" class="deleteBtn_demo11" style="color:#f00;">删除</button>
+              <button data-id="${item.id}" class="saveBtn_${uid}">保存</button>
+              <button data-id="${item.id}" class="deleteBtn_${uid}" style="color:#f00;">删除</button>
             </td>
           </tr>
         `).join('')}
@@ -418,30 +421,28 @@ async function renderTable({ page }) {
     </table>
     <div style="margin-bottom:16px;">
       共 ${total} 条，每页 ${pageSize} 条，当前第 ${page} 页
-      <button id="prevPage_demo11" ${page <= 1 ? 'disabled' : ''}>上一页</button>
-      <button id="nextPage_demo11" ${(page * pageSize >= total) ? 'disabled' : ''}>下一页</button>
+      <button id="prevPage_${uid}" ${page <= 1 ? 'disabled' : ''}>上一页</button>
+      <button id="nextPage_${uid}" ${(page * pageSize >= total) ? 'disabled' : ''}>下一页</button>
     </div>
   `;
 
   // 分页
-  document.getElementById('prevPage_demo11').onclick = () => {
-    console.log('prevPage');
+  document.getElementById(`prevPage_${uid}`).onclick = () => {
     if (page > 1) {
       renderTable({ page: page - 1 });
     }
   };
-  document.getElementById('nextPage_demo11').onclick = () => {
-    console.log('nextPage');
+  document.getElementById(`nextPage_${uid}`).onclick = () => {
     if (page * pageSize < total) {
       renderTable({ page: page + 1 });
     }
   };
 
   // 新增
-  document.getElementById('addUserForm_demo11').onsubmit = async (e) => {
+  document.getElementById(`addUserForm_${uid}`).onsubmit = async (e) => {
     e.preventDefault();
-    const nickname = document.getElementById('nicknameInput_demo11').value.trim();
-    const username = document.getElementById('usernameInput_demo11').value.trim();
+    const nickname = document.getElementById(`nicknameInput_${uid}`).value.trim();
+    const username = document.getElementById(`usernameInput_${uid}`).value.trim();
     if (!nickname || !username) {
       alert('昵称和用户名不能为空');
       return;
@@ -451,18 +452,18 @@ async function renderTable({ page }) {
   };
 
   // 保存（编辑）
-  Array.from(document.getElementsByClassName('saveBtn_demo11')).forEach(btn => {
+  Array.from(document.getElementsByClassName(`saveBtn_${uid}`)).forEach(btn => {
     btn.onclick = async (e) => {
       const id = btn.getAttribute('data-id');
-      const nickname = document.querySelector(`.edit-nickname[data-id="${id}"]`).value.trim();
-      const username = document.querySelector(`.edit-username[data-id="${id}"]`).value.trim();
+      const nickname = document.querySelector(`.edit-nickname-${uid}[data-id="${id}"]`).value.trim();
+      const username = document.querySelector(`.edit-username-${uid}[data-id="${id}"]`).value.trim();
       await resource.update(id, { nickname, username });
       renderTable({ page });
     };
   });
 
   // 删除
-  Array.from(document.getElementsByClassName('deleteBtn_demo11')).forEach(btn => {
+  Array.from(document.getElementsByClassName(`deleteBtn_${uid}`)).forEach(btn => {
     btn.onclick = async (e) => {
       const id = btn.getAttribute('data-id');
       if (confirm('确定要删除该用户吗？')) {
@@ -488,13 +489,15 @@ await renderTable({ page: 1 });
 * **示例**：
 
 ```js
+const uid = ctx.model.uid;
+
 ctx.element.innerHTML = `
-  <button id="gotoAdminBtn" style="padding: 8px 16px; font-size: 16px;">
+  <button id="gotoAdminBtn_${uid}" style="padding: 8px 16px; font-size: 16px;">
     跳转到后台管理首页
   </button>
 `;
 
-document.getElementById('gotoAdminBtn').onclick = () => {
+document.getElementById(`gotoAdminBtn_${uid}`).onclick = () => {
   ctx.router.navigate('/admin/');
 };
 ```
@@ -552,19 +555,38 @@ root.render(React.createElement(App));
   - 一个 Model 组件只有一个 resource 示例，不同的组件，可以通过 model.resource 操作目前资源。
 * **示例**
 
-自定义表格区块
+自定义表格区块，基于 MultiRecordResource 实现表格数据展示，带分页，支持筛选
 
 ```ts
-const { APIResource } = ctx.Resources;
-const resource = ctx.initResource(APIResource);
-resource.setURL('users:list');
+ctx.initResource(ctx.Resources.MultiRecordResource);
+const resource = ctx.model.resource;
+resource.setDataSourceKey('main');
+resource.setResourceName('users');
+resource.setPageSize(10);
+resource.setSort('-createdAt');
 
-async function rerender({ page }) {
-  resource.addRequestParameter('page', page);
+const uid = ctx.model.uid; // 统一用 model.uid 作为唯一标识
+
+// 渲染筛选表单和表格
+async function renderTable({ page = 1, nickname = '' } = {}) {
+  resource.setPage(page);
+  if (nickname) {
+    resource.addFilterGroup(uid, { 'nickname.$includes': nickname });
+  } else {
+    resource.removeFilterGroup(uid);
+  }
   await resource.refresh();
-  const { data, meta } = resource.getData();
+  const data = resource.getData() || [];
+  const meta = resource.getMeta() || {};
+  const pageSize = resource.getPageSize();
+  const total = meta.count || data.length;
+
   ctx.element.innerHTML = `
-    <table border="1" cellpadding="6" style="border-collapse:collapse;margin-bottom:12px;">
+    <form id="filterForm_${uid}" style="margin-bottom:16px;">
+      <input type="text" id="nicknameInput_${uid}" placeholder="昵称" style="margin-right:8px;" value="${nickname}" />
+      <button type="submit">筛选</button>
+    </form>
+    <table border="1" cellpadding="6" style="border-collapse:collapse;width:100%;margin-bottom:12px;">
       <thead>
         <tr>
           <th>ID</th>
@@ -587,49 +609,86 @@ async function rerender({ page }) {
       </tbody>
     </table>
     <div>
-      共 ${meta.count} 条，每页 ${meta.pageSize} 条，当前第 ${meta.page} 页
-      <button id="prevPage" ${meta.page <= 1 ? 'disabled' : ''}>上一页</button>
-      <button id="nextPage" ${meta.page * meta.pageSize >= meta.count ? 'disabled' : ''}>下一页</button>
+      共 ${total} 条，每页 ${pageSize} 条，当前第 ${meta.page || page} 页
+      <button id="prevPage_${uid}" ${meta.page <= 1 ? 'disabled' : ''}>上一页</button>
+      <button id="nextPage_${uid}" ${(meta.page * pageSize >= total) ? 'disabled' : ''}>下一页</button>
     </div>
   `;
 
-  // 分页按钮事件
-  document.getElementById('prevPage').onclick = async () => {
+  // 筛选事件
+  document.getElementById(`filterForm_${uid}`).onsubmit = async (e) => {
+    e.preventDefault();
+    const nickname = document.getElementById(`nicknameInput_${uid}`).value.trim();
+    // nickname 存于 meta 中，避免重渲染时筛选被清空
+    resource.setMeta({ nickname });
+    renderTable({ page: 1, nickname });
+  };
+
+  // 分页事件
+  document.getElementById(`prevPage_${uid}`).onclick = () => {
     if (meta.page > 1) {
-      rerender({ page: meta.page - 1 })
+      renderTable({ page: meta.page - 1, filter });
     }
   };
-  document.getElementById('nextPage').onclick = async () => {
-    if (meta.page * meta.pageSize < meta.count) {
-      rerender({ page: meta.page + 1 })
+  document.getElementById(`nextPage_${uid}`).onclick = () => {
+    if (meta.page * pageSize < total) {
+      renderTable({ page: meta.page + 1, filter });
     }
   };
 }
 
-rerender(1);
+// 从 meta 获取 nickname，避免重渲染时筛选被清空
+await renderTable({ nickname: resource.getMeta('nickname') });
 ```
 
-通过筛选区块筛选上面的表格，不同的组件，可以通过 model.resource 操作目前资源。
+多来源筛选，新增一个筛选区块，示例的 targetUid 替换为目标表格区块的 model uid。
 
 ```ts
+const uid = ctx.model.uid;
+const targetUid = '6ddac206c67'; // 替换为表格区块的 model uid
+
+// 多来源筛选表单示例
 ctx.element.innerHTML = `
-  <form id="filterForm" style="margin-bottom:16px;">
-    <input type="text" id="usernameInput" placeholder="用户名" style="margin-right:8px;" />
+  <form id="filterForm_${uid}" style="margin-bottom:16px;">
+    <input type="text" id="nicknameInput_${uid}" placeholder="昵称" style="margin-right:8px;" />
+    <input type="text" id="usernameInput_${uid}" placeholder="用户名" style="margin-right:8px;" />
     <button type="submit">筛选</button>
+    <button id="resetBtn_${uid}" type="button" style="margin-left:8px;">重置</button>
   </form>
 `;
 
+
+
 // 筛选表单事件
-document.getElementById('filterForm').onsubmit = async (e) => {
+document.getElementById(`filterForm_${uid}`).onsubmit = async (e) => {
   e.preventDefault();
-  const username = document.getElementById('usernameInput').value.trim();
-  const model = ctx.getModelById('6ddac206c67'); // id 为上面表格区块的 model uid
-  if (username) {
-    model.resource.addRequestParameter('filter[nickname.$includes]', username);
+  const nickname = document.getElementById(`nicknameInput_${uid}`).value.trim();
+  const username = document.getElementById(`usernameInput_${uid}`).value.trim();
+  const model = ctx.getModelById(targetUid);
+  if (!model) return;
+
+  // 使用 addFilterGroup 组合多条件筛选
+  const filterGroup = {};
+  if (nickname) filterGroup['nickname.$includes'] = nickname;
+  if (username) filterGroup['username.$includes'] = username;
+
+  if (Object.keys(filterGroup).length) {
+    model.resource.addFilterGroup(uid, filterGroup);
   } else {
-    model.resource.removeRequestParameter('filter[nickname.$includes]');
+    model.resource.removeFilterGroup(uid);
   }
   model.rerender();
+};
+
+// 重置按钮事件
+document.getElementById(`resetBtn_${uid}`).onclick = () => {
+  document.getElementById(`nicknameInput_${uid}`).value = '';
+  document.getElementById(`usernameInput_${uid}`).value = '';
+  const model = ctx.getModelById(targetUid);
+  if (model) {
+    model.resource.removeFilterGroup(uid);
+    model.rerender();
+  }
 };
 ```
 
@@ -647,6 +706,8 @@ document.getElementById('filterForm').onsubmit = async (e) => {
 使用 ctx.requirejs 加载 lodash CDN 并结合 ctx.element 渲染
 
 ```js
+const uid = ctx.model.uid;
+
 ctx.requirejs(['https://cdn.jsdelivr.net/npm/lodash@4/lodash.min.js'], function(_) {
   const arr = [1, 2, 3, 4, 5];
   const shuffled = _.shuffle(arr);
@@ -654,14 +715,14 @@ ctx.requirejs(['https://cdn.jsdelivr.net/npm/lodash@4/lodash.min.js'], function(
   ctx.element.innerHTML = `
     <div>
       <div>原数组: ${JSON.stringify(arr)}</div>
-      <div id="shuffleResult">乱序后: ${JSON.stringify(shuffled)}</div>
-      <button id="reshuffleBtn">重新乱序</button>
+      <div id="shuffleResult_${uid}">乱序后: ${JSON.stringify(shuffled)}</div>
+      <button id="reshuffleBtn_${uid}">重新乱序</button>
     </div>
   `;
 
-  document.getElementById('reshuffleBtn').onclick = () => {
+  document.getElementById(`reshuffleBtn_${uid}`).onclick = () => {
     const newShuffled = _.shuffle(arr);
-    document.getElementById('shuffleResult').innerText = `乱序后: ${JSON.stringify(newShuffled)}`;
+    document.getElementById(`shuffleResult_${uid}`).innerText = `乱序后: ${JSON.stringify(newShuffled)}`;
   };
 });
 ```
@@ -682,6 +743,8 @@ ctx.requirejs(['https://cdn.jsdelivr.net/npm/lodash@4/lodash.min.js'], function(
 使用 ctx.requireAsync 异步加载 lodash CDN 并结合 ctx.element 渲染
 
 ```js
+const uid = ctx.model.uid;
+
 const _ = await ctx.requireAsync('https://cdn.jsdelivr.net/npm/lodash@4/lodash.min.js');
 const arr = [1, 2, 3, 4, 5];
 const shuffled = _.shuffle(arr);
@@ -689,14 +752,14 @@ const shuffled = _.shuffle(arr);
 ctx.element.innerHTML = `
   <div>
     <div>原数组: ${JSON.stringify(arr)}</div>
-    <div id="shuffleResult">乱序后: ${JSON.stringify(shuffled)}</div>
-    <button id="reshuffleBtn">重新乱序</button>
+    <div id="shuffleResult_${uid}">乱序后: ${JSON.stringify(shuffled)}</div>
+    <button id="reshuffleBtn_${uid}">重新乱序</button>
   </div>
 `;
 
-document.getElementById('reshuffleBtn').onclick = () => {
+document.getElementById(`reshuffleBtn_${uid}`).onclick = () => {
   const newShuffled = _.shuffle(arr);
-  document.getElementById('shuffleResult').innerText = `乱序后: ${JSON.stringify(newShuffled)}`;
+  document.getElementById(`shuffleResult_${uid}`).innerText = `乱序后: ${JSON.stringify(newShuffled)}`;
 };
 ```
 
@@ -767,13 +830,15 @@ ctx.model.on('destroy', () => {
 获取图表区块，并重渲染。
 
 ```ts
+const uid = ctx.model.uid;
+
 ctx.element.innerHTML = `
-  <button id="rerenderBtn">
+  <button id="rerenderBtn_${uid}">
     重新渲染 ECharts 图表
   </button>
 `;
 
-document.getElementById('rerenderBtn').onclick = () => {
+document.getElementById(`rerenderBtn_${uid}`).onclick = () => {
   const model = ctx.getModelById('33c11bb4298'); // 33c11bb4298 为上文 echarts 图表
   if (model) {
     model.rerender();
@@ -785,21 +850,30 @@ document.getElementById('rerenderBtn').onclick = () => {
 
 ### `ctx.request(options: AxiosRequestConfig): Promise<Response>`
 
-* **说明**：发起 API 请求，基于 NocoBase 内置的 APIClient 封装。该方法兼容 [Axios](https://axios-http.com/) 的配置格式，支持 RESTful、GraphQL 等多种请求方式。它会自动处理鉴权、错误提示、全局 loading 等，返回的数据结构与后端接口一致。
-* **参数**：
+* **类型**：`(options: AxiosRequestConfig) => Promise<Response>`
+* **说明**：  
+  `ctx.request` 是基于 [axios](https://axios-http.com/) 的请求方法，自动集成了 NocoBase 的鉴权机制。你可以像使用 axios 一样发起任意 HTTP 请求，支持所有 axios 的配置参数（如 `url`、`method`、`params`、`data`、`headers` 等）。适用于需要自定义接口调用、一次性数据请求或不适合用 resource 管理的场景。
 
-  * `options`：请求配置对象，包含 `url`、`method`、`params`、`data`、`headers` 等，格式与 [AxiosRequestConfig](https://axios-http.com/zh/docs/req_config) 一致。
-* **返回**：
+* **使用场景**：
+  - 直接调用后端 API，获取或提交数据。
+  - 需要自定义请求参数、请求头或特殊接口调用。
+  - 适合一次性请求或不需要响应式联动的场景。
 
-  * 返回一个 Promise，resolve 为服务器响应数据。
-* **使用场景**：需要与后端 API 通信、获取或提交数据。
-* **注意事项**：建议使用 async/await 并做好错误处理。
+* **注意事项**：
+  - 如果是 NocoBase 的数据源的数据表管理，推荐使用 `ctx.model.resource` 操作数据，只有在特殊或自定义接口场景下才使用 `ctx.request`。
+  - 返回值为 Promise，resolve 为服务器响应数据，reject 为请求异常。
+  - 已自动带上当前用户的鉴权信息，无需手动处理 token。
+
 * **示例**：
 
 ```js
 try {
-  const data = await request({ url: '/api/users', method: 'get' });
-  console.log(data);
+  const res = await ctx.request({
+    url: '/users',
+    method: 'get',
+    params: { page: 1, pageSize: 10 }
+  });
+  console.log('用户列表', res);
 } catch (error) {
   console.error('请求失败', error);
 }
@@ -809,13 +883,25 @@ try {
 
 ## 常见问题解答（FAQ）
 
-**Q: 如何实现区块间数据联动？**
+**Q: 多个区块之间 getElementById 冲突怎么办？**  
+A: 建议都加上 model.uid 后缀。
+
+```ts
+const uid = ctx.model.uid;
+ctx.element.innerHTML = `
+  <button id="rerenderBtn_${uid}">
+    重新渲染 ECharts 图表
+  </button>
+`;
+```
+
+**Q: 如何实现区块间数据联动？**  
 A: 通过 `getModelById` 获取其他区块的 model 实例，监听其数据变化或调用其方法。
 
-**Q: ctx.request 和 ctx.resource 的区别？**  
+**Q: ctx.request 和 ctx.model.resource 的区别？**  
 A:  
 - `ctx.request` 是底层的 HTTP 请求方法，直接发起 API 调用，适合简单、一次性的接口请求，返回原始响应数据，需要手动处理数据结构、状态和错误。
-- `ctx.resource` 是基于资源模型的高级数据操作对象，封装了常用的增删改查（CRUD）、分页、筛选、缓存等能力，并自动与区块的 model 联动，适合需要和后端数据表/资源持续交互、响应式更新的场景。  
+- `ctx.model.resource` 是基于资源模型的高级数据操作对象，封装了常用的增删改查（CRUD）、分页、筛选、缓存等能力，并自动与区块的 model 联动，适合需要和后端数据表/资源持续交互、响应式更新的场景。  
 一般推荐优先使用 `ctx.resource` 管理数据，只有在特殊或自定义接口场景下才使用 `ctx.request`。
 
 **Q: ctx.requireAsync 和 ctx.requirejs 的区别？**  
