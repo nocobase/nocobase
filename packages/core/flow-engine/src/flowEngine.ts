@@ -333,7 +333,7 @@ export class FlowEngine {
     }
     const modelClasses = new Map<string, ModelConstructor>();
     for (const [className, ModelClass] of this.modelClasses) {
-      if (isInheritedFrom(ModelClass, parentModelClass) || ModelClass === parentModelClass) {
+      if (isInheritedFrom(ModelClass, parentModelClass)) {
         modelClasses.set(className, ModelClass);
       }
     }
