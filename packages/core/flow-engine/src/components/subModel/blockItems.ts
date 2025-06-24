@@ -7,6 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import _ from 'lodash';
 import { Collection, DataSource, DataSourceManager } from '../../data-source';
 import { FlowModel } from '../../models/flowModel';
 import { ModelConstructor } from '../../types';
@@ -76,7 +77,7 @@ async function getDataSourcesWithCollections(model: FlowModel) {
  *
  * 根据继承关系动态生成区块菜单结构：
  * - 数据区块：继承自 DataBlockModel 的区块，区块类型 → 数据源 → 数据表的层级结构
- * - 筛选区块：继承自 FilterBlockModel 的区块，平铺的区块列表
+ * - 筛选区块：继承自 FilterBlockModel 的区块，区块类型 → 数据源 → 数据表的层级结构
  * - 其他区块：其他类型的区块，平铺的区块列表
  *
  * @param model FlowModel 实例
@@ -153,7 +154,7 @@ export function createBlockItems(model: FlowModel, options: BlockItemsOptions = 
                 key: `${className}.${dataSource.key}.${collection.name}`,
                 label: collection.title || collection.name,
                 createModelOptions: {
-                  ...meta?.defaultOptions,
+                  ..._.cloneDeep(meta?.defaultOptions),
                   use: className,
                   stepParams: {
                     default: {
@@ -174,24 +175,45 @@ export function createBlockItems(model: FlowModel, options: BlockItemsOptions = 
 
   // 筛选区块分组
   if (filterBlocks.length > 0) {
-    const filterBlockItems = filterBlocks.map(({ className, ModelClass }) => {
-      const meta = (ModelClass as any).meta;
-      return {
-        key: className,
-        label: meta?.title || className,
-        icon: meta?.icon,
-        createModelOptions: {
-          ...meta?.defaultOptions,
-          use: className,
-        },
-      };
-    });
-
     result.push({
       key: 'filterBlocks',
       label: 'Filter blocks',
       type: 'group',
-      children: filterBlockItems,
+      children: async () => {
+        const dataSources = await getDataSourcesWithCollections(model);
+
+        // 按区块类型组织菜单：区块 → 数据源 → 数据表
+        return filterBlocks.map(({ className, ModelClass }) => {
+          const meta = (ModelClass as any).meta;
+          return {
+            key: className,
+            label: meta?.title || className,
+            icon: meta?.icon,
+            children: dataSources.map((dataSource) => ({
+              key: `${className}.${dataSource.key}`,
+              label: dataSource.displayName,
+              children: dataSource.collections.map((collection) => ({
+                key: `${className}.${dataSource.key}.${collection.name}`,
+                label: collection.title || collection.name,
+                createModelOptions: {
+                  ..._.cloneDeep(meta?.defaultOptions),
+                  use: className,
+                  stepParams: {
+                    ..._.cloneDeep(meta?.defaultOptions?.stepParams),
+                    default: {
+                      ..._.cloneDeep(meta?.defaultOptions?.stepParams?.default),
+                      step1: {
+                        dataSourceKey: dataSource.key,
+                        collectionName: collection.name,
+                      },
+                    },
+                  },
+                },
+              })),
+            })),
+          };
+        });
+      },
     });
   }
 
@@ -205,7 +227,7 @@ export function createBlockItems(model: FlowModel, options: BlockItemsOptions = 
           label: meta?.title || className,
           icon: meta?.icon,
           createModelOptions: {
-            ...meta?.defaultOptions,
+            ..._.cloneDeep(meta?.defaultOptions),
             use: className,
           },
         };
