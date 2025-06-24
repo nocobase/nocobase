@@ -172,7 +172,7 @@ export abstract class BaseRecordResource<TData = any> extends APIResource<TData>
   }
 
   setSort(sort: string | string[]) {
-    return this.addRequestParameter('fields', this.splitValue(sort));
+    return this.addRequestParameter('sort', this.splitValue(sort));
   }
 
   getSort(): string[] {
