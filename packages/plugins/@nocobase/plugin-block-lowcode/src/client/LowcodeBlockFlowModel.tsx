@@ -7,23 +7,15 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { BlockModel } from '@nocobase/client';
+import { APIResource } from '@nocobase/flow-engine';
 import { Card, Spin } from 'antd';
 import React, { createRef } from 'react';
-import { BlockModel } from '@nocobase/client';
 import { CodeEditor } from './CodeEditor';
-
-function waitForRefCallback<T extends HTMLElement>(ref: React.RefObject<T>, cb: (el: T) => void, timeout = 3000) {
-  const start = Date.now();
-  function check() {
-    if (ref.current) return cb(ref.current);
-    if (Date.now() - start > timeout) return;
-    setTimeout(check, 30);
-  }
-  check();
-}
 
 export class LowcodeBlockFlowModel extends BlockModel {
   ref = createRef<HTMLDivElement>();
+  declare resource: APIResource;
 
   render() {
     const { loading, error } = this.props;
@@ -44,7 +36,7 @@ export class LowcodeBlockFlowModel extends BlockModel {
             <div style={{ marginTop: '8px' }}>Loading lowcode component...</div>
           </div>
         )}
-        <div ref={this.ref} style={{ width: '100%', minHeight: '200px' }} />
+        <div ref={this.ref} style={{ width: '100%' }} />
       </Card>
     );
   }
@@ -104,6 +96,12 @@ LowcodeBlockFlowModel.registerFlow({
   key: 'default',
   auto: true,
   steps: {
+    setMainResource: {
+      handler(ctx) {
+        ctx.model.resource = new APIResource();
+        ctx.model.resource.setAPIClient(ctx.globals.api);
+      },
+    },
     executionStep: {
       uiSchema: {
         code: {
@@ -175,11 +173,11 @@ element.innerHTML = \`
         `.trim(),
       },
       settingMode: 'drawer',
-      async handler(ctx: any, params: any) {
+      title: 'Code',
+      async handler(ctx, params: any) {
         ctx.model.setProps('loading', true);
         ctx.model.setProps('error', null);
-
-        waitForRefCallback(ctx.model.ref, async (element: HTMLElement) => {
+        ctx.reactView.onRefReady(ctx.model.ref, async (element: HTMLElement) => {
           try {
             // Get requirejs from app context
             const requirejs = ctx.app?.requirejs?.requirejs;
