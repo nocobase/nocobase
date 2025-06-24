@@ -23,6 +23,13 @@ import { createJavaScriptLinter } from './linter';
 const createCustomCompletion = () => {
   const contextVariables = [
     {
+      label: 'request',
+      type: 'function',
+      info: 'Make an API request to NocoBase backend',
+      detail: '(options: RequestOptions) => Promise<Response>',
+      boost: 102,
+    },
+    {
       label: 'getModelById',
       type: 'function',
       info: 'Get a model instance by its UID',

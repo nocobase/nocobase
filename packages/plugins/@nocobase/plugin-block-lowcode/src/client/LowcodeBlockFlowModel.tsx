@@ -29,7 +29,7 @@ export class LowcodeBlockFlowModel extends BlockModel {
     }
 
     return (
-      <Card>
+      <Card id={`model-${this.uid}`} className="lowcode-block">
         <Spin spinning={loading} tip="Loading lowcode component...">
           <div ref={this.ref} style={{ width: '100%' }} />
         </Spin>
@@ -202,10 +202,12 @@ element.innerHTML = \`
               return ctx.globals.flowEngine.getModel(uid);
             };
 
+            const request = ctx.globals.api.request.bind(ctx.globals.api);
+
             // Create a safe execution context for the code (as async function)
             // Wrap user code in an async function
             const wrappedCode = `
-              return (async function(element, ctx, model, resource, requirejs, requireAsync, loadCSS, getModelById) {
+              return (async function(element, ctx, model, resource, requirejs, requireAsync, loadCSS, getModelById, request) {
                 ${params.code}
               }).apply(this, arguments);
             `;
@@ -221,6 +223,7 @@ element.innerHTML = \`
               requireAsync,
               loadCSS,
               getModelById,
+              request,
             );
 
             ctx.model.setProps('loading', false);
