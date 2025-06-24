@@ -5,5 +5,22 @@
   "Execution step": "Execution step",
   "Enter the execution code to render the component": "Enter the execution code to render the component",
   "Failed to execute code": "Failed to execute code",
-  "Component executed successfully": "Component executed successfully"
+  "Component executed successfully": "Component executed successfully",
+  "Configuration": "Configuration",
+  "Code": "Code",
+  "Welcome to Lowcode Block": "Welcome to Lowcode Block",
+  "Build interactive components with JavaScript and external libraries": "Build interactive components with JavaScript and external libraries",
+  "Key Features": "Key Features",
+  "Custom JavaScript execution": "Custom JavaScript execution",
+  "Full programming capabilities": "Full programming capabilities",
+  "External library support": "External library support",
+  "Load any npm package or CDN library": "Load any npm package or CDN library",
+  "NocoBase API integration": "NocoBase API integration",
+  "Access your data and collections": "Access your data and collections",
+  "Async/await support": "Async/await support",
+  "Handle asynchronous operations": "Handle asynchronous operations",
+  "Direct DOM manipulation": "Direct DOM manipulation",
+  "Full control over rendering": "Full control over rendering",
+  "Ready to start?": "Ready to start?",
+  "Replace this code with your custom JavaScript to build amazing components!": "Replace this code with your custom JavaScript to build amazing components!"
 }

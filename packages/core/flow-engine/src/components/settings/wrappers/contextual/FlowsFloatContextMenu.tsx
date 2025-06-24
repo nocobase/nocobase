@@ -102,7 +102,7 @@ const floatContainerStyles = ({ showBackground, showBorder }) => css`
 
 // 悬浮右键菜单组件接口
 interface ModelProvidedProps {
-  model: any;
+  model: FlowModel;
   children?: React.ReactNode;
   enabled?: boolean;
   showDeleteButton?: boolean;
@@ -192,7 +192,7 @@ const FlowsFloatContextMenuWithModel: React.FC<ModelProvidedProps> = observer(
     className,
     showBackground = true,
     showBorder = true,
-  }) => {
+  }: ModelProvidedProps) => {
     const [hideMenu, setHideMenu] = useState<boolean>(false);
     const [hasButton, setHasButton] = useState<boolean>(false);
     const containerRef = useRef<HTMLDivElement>(null);
