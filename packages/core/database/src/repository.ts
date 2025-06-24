@@ -26,7 +26,10 @@ import {
   WhereOperators,
 } from 'sequelize';
 
+import _ from 'lodash';
+import { BelongsToArrayRepository } from './belongs-to-array/belongs-to-array-repository';
 import { Collection } from './collection';
+import { SmartCursorBuilder } from './cursor-builder';
 import { Database } from './database';
 import mustHaveFilter from './decorators/must-have-filter-decorator';
 import injectTargetCollection from './decorators/target-collection-decorator';
@@ -38,7 +41,6 @@ import FilterParser from './filter-parser';
 import { Model } from './model';
 import operators from './operators';
 import { OptionsParser } from './options-parser';
-import { BelongsToArrayRepository } from './belongs-to-array/belongs-to-array-repository';
 import { BelongsToManyRepository } from './relation-repository/belongs-to-many-repository';
 import { BelongsToRepository } from './relation-repository/belongs-to-repository';
 import { HasManyRepository } from './relation-repository/hasmany-repository';
@@ -47,8 +49,6 @@ import { RelationRepository } from './relation-repository/relation-repository';
 import { updateAssociations, updateModelByValues } from './update-associations';
 import { UpdateGuard } from './update-guard';
 import { valuesToFilter } from './utils/filter-utils';
-import _ from 'lodash';
-import { SmartCursorBuilder } from './cursor-builder';
 
 const debug = require('debug')('noco-database');
 
@@ -242,6 +242,7 @@ export interface FirstOrCreateOptions extends Transactionable {
   values?: Values;
   hooks?: boolean;
   context?: any;
+  updateAssociationValues?: AssociationKeysToBeUpdate;
 }
 
 export class Repository<TModelAttributes extends {} = any, TCreationAttributes extends {} = TModelAttributes> {
@@ -521,7 +522,7 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
    * Get the first record matching the attributes or create it.
    */
   async firstOrCreate(options: FirstOrCreateOptions) {
-    const { filterKeys, values, transaction, hooks, context } = options;
+    const { filterKeys, values, transaction, context, ...rest } = options;
     const filter = Repository.valuesToFilter(values, filterKeys);
 
     const instance = await this.findOne({ filter, transaction, context });
@@ -530,11 +531,12 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
       return instance;
     }
 
-    return this.create({ values, transaction, hooks, context });
+    return this.create({ values, transaction, context, ...rest });
   }
 
   async updateOrCreate(options: FirstOrCreateOptions) {
-    const { filterKeys, values, transaction, hooks, context } = options;
+    const { filterKeys, values, transaction, context, ...rest } = options;
+
     const filter = Repository.valuesToFilter(values, filterKeys);
 
     const instance = await this.findOne({ filter, transaction, context });
@@ -544,12 +546,12 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
         filterByTk: instance.get(this.collection.filterTargetKey || this.collection.model.primaryKeyAttribute),
         values,
         transaction,
-        hooks,
         context,
+        ...rest,
       });
     }
 
-    return this.create({ values, transaction, hooks, context });
+    return this.create({ values, transaction, context, ...rest });
   }
 
   /**

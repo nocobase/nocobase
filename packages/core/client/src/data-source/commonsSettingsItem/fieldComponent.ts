@@ -58,9 +58,13 @@ export const fieldComponentSettingsItem: SchemaSettingsItemType = {
       value: fieldSchema['x-component-props']?.['component'] || options[0]?.value,
       onChange(component) {
         const componentOptions = options.find((item) => item.value === component);
+        const baseProps = componentOptions?.useProps?.() || {};
         const componentProps = {
           component,
-          ...(componentOptions?.useProps?.() || {}),
+          ...baseProps,
+          ...(component === collectionField['uiSchema']['x-component']
+            ? collectionField['uiSchema']['x-component-props']
+            : {}),
         };
         _.set(fieldSchema, 'x-component-props', componentProps);
         field.componentProps = componentProps;

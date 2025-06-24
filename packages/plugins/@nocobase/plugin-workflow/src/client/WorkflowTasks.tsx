@@ -469,7 +469,6 @@ export function WorkflowTasks() {
   const navigate = useNavigate();
   const { taskType, status = TASK_STATUS.PENDING } = useParams();
   const { token } = useToken();
-
   const items = useTaskTypeItems();
 
   const { title } = useCurrentTaskType();
