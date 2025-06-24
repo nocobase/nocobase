@@ -129,7 +129,7 @@ function StatusTabs() {
     },
     [navigate, taskType, mobilePage],
   );
-  const isMobile = mobilePage || isMobileLayout;
+  const isMobile = Boolean(mobilePage || isMobileLayout);
   const { Actions } = type;
   return isMobile ? (
     <Flex justify="space-between">
