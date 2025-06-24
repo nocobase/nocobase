@@ -8,11 +8,12 @@
  */
 
 import { BlockModel } from '@nocobase/client';
-import { APIResource } from '@nocobase/flow-engine';
+import { APIResource, BaseRecordResource, MultiRecordResource, SingleRecordResource } from '@nocobase/flow-engine';
+import * as antd from 'antd';
 import { Card, Spin } from 'antd';
 import React, { createRef } from 'react';
+import ReactDOM from 'react-dom/client';
 import { NAMESPACE } from './locale';
-
 export class LowcodeBlockModel extends BlockModel {
   ref = createRef<HTMLDivElement>();
   declare resource: APIResource;
@@ -121,15 +122,6 @@ LowcodeBlockModel.registerFlow({
   title: 'Configuration',
   auto: true,
   steps: {
-    setMainResource: {
-      handler(ctx) {
-        if (ctx.model.resource) {
-          return;
-        }
-        ctx.model.resource = new APIResource();
-        ctx.model.resource.setAPIClient(ctx.globals.api);
-      },
-    },
     executionStep: {
       title: 'Code',
       uiSchema: {
@@ -272,8 +264,7 @@ ctx.element.innerHTML = \`
               }).apply(this, arguments);
             `;
             const executionFunction = new Function(wrappedCode);
-
-            const ctx = {
+            const lowcodeContext = {
               element,
               model: flowContext.model,
               resource: flowContext.model.resource,
@@ -283,9 +274,30 @@ ctx.element.innerHTML = \`
               getModelById,
               request,
               i18n: flowContext.app.i18n,
+              router: flowContext.app.router.router,
+              initResource(use: typeof APIResource, options?: any) {
+                if (flowContext.model.resource) {
+                  return flowContext.model.resource;
+                }
+                const resource = new use() as APIResource;
+                resource.setAPIClient(flowContext.globals.api);
+                if (options && typeof options === 'object') {
+                  Object.entries(options).forEach(([key, value]) => {
+                    resource.setRequestOptions(key, value);
+                  });
+                }
+                flowContext.model.resource = resource;
+                return resource;
+              },
+              Resources: { APIResource, BaseRecordResource, SingleRecordResource, MultiRecordResource },
+              React,
+              ReactDOM,
+              Components: {
+                antd,
+              },
             };
             // Execute the code
-            await executionFunction(ctx);
+            await executionFunction(lowcodeContext);
 
             flowContext.model.setProps('loading', false);
           } catch (error: any) {

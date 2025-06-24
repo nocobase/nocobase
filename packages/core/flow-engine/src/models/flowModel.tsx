@@ -111,6 +111,10 @@ export class FlowModel<Structure extends { parent?: any; subModels?: any } = Def
     });
   }
 
+  on(eventName: string, listener: (...args: any[]) => void) {
+    this.emitter.on(eventName, listener);
+  }
+
   onInit(options) {}
 
   get async() {

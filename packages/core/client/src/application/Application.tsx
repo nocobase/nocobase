@@ -273,10 +273,12 @@ export class Application {
     this.use(AntdAppProvider);
     this.use(DataSourceApplicationProvider, { dataSourceManager: this.dataSourceManager });
     this.use(OpenModeProvider);
-    this.flowEngine.context['app'] = this;
-    this.flowEngine.context['api'] = this.apiClient;
-    this.flowEngine.context['i18n'] = this.i18n;
-    this.flowEngine.context['t'] = this.i18n.t.bind(this.i18n);
+    this.flowEngine.setContext({
+      app: this,
+      api: this.apiClient,
+      i18n: this.i18n,
+      router: this.router.router,
+    });
     this.use(FlowEngineProvider, { engine: this.flowEngine });
     this.use(FlowEngineGlobalsContextProvider);
   }
