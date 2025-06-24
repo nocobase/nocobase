@@ -53,13 +53,13 @@ function parseDateTimezone(ctx) {
     return ctx.db.options.timezone;
   }
 
-  if (field.constructor.name === 'DatetimeNoTzField') {
-    return '+00:00';
-  }
+  // if (field.constructor.name === 'DatetimeNoTzField') {
+  //   return '+00:00';
+  // }
 
-  if (field.constructor.name === 'DateOnlyField') {
-    return '+00:00';
-  }
+  // if (field.constructor.name === 'DateOnlyField') {
+  //   return '+00:00';
+  // }
 
   return ctx.db.options.timezone;
 }
