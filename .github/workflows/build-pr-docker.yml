@@ -53,4 +53,4 @@ jobs:
             VERDACCIO_URL=http://localhost:4873/
             COMMIT_HASH=${GITHUB_SHA}
           push: true
-          tags: ${{ secrets.ALI_DOCKER_PUBLIC_REGISTRY }}/${{ steps.meta.outputs.tags }}-alpha
+          tags: ${{ secrets.ALI_DOCKER_PUBLIC_REGISTRY }}/nocobase/nocobase:2.0.0-alpha
