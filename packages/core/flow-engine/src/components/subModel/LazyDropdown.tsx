@@ -307,7 +307,22 @@ const LazyDropdown: React.FC<Omit<DropdownProps, 'menu'> & { menu: LazyDropdownM
             return next;
           });
         },
-        children: children && children.length > 0 ? resolveItems(children, [...path, item.key]) : undefined,
+        children:
+          children && children.length > 0
+            ? resolveItems(children, [...path, item.key])
+            : children && children.length === 0
+              ? [
+                  {
+                    key: `${keyPath}-empty`,
+                    label: (
+                      <div style={{ padding: '16px', textAlign: 'center' as const }}>
+                        <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="No Data" style={{ margin: 0 }} />
+                      </div>
+                    ),
+                    disabled: true,
+                  },
+                ]
+              : undefined,
       };
     });
   };
