@@ -114,7 +114,8 @@ const AddFieldButtonCore: React.FC<AddFieldButtonProps> = ({
         if (fieldClass && fieldInterfaceName) {
           const defaultOptions = {
             ...fieldClass.meta?.defaultOptions,
-            use: fieldClass.name,
+            use:
+              model.flowEngine.findModelClass((name, ModelClass) => ModelClass === fieldClass)?.[0] || fieldClass.name,
           };
           const fieldItem = {
             key: field.name,
