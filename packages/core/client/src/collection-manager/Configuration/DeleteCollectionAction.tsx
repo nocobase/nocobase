@@ -120,11 +120,15 @@ export const DeleteCollectionAction = (props) => {
     <RecordProvider record={record}>
       <ActionContextProvider value={{ visible, setVisible }}>
         {isBulk ? (
-          <Button icon={<DeleteOutlined />} onClick={() => setVisible(true)}>
+          <Button icon={<DeleteOutlined />} onClick={() => setVisible(true)} disabled={record.deletable === false}>
             {children || t('Delete')}
           </Button>
         ) : (
-          <a onClick={() => setVisible(true)} {...otherProps}>
+          <a
+            onClick={record.deletable === false ? null : () => setVisible(true)}
+            {...otherProps}
+            style={record.deletable === false ? { color: 'rgba(0, 0, 0, 0.25)', cursor: 'not-allowed' } : {}}
+          >
             {children || t('Delete')}
           </a>
         )}

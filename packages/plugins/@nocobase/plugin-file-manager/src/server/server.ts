@@ -163,6 +163,11 @@ export class PluginFileManagerServer extends Plugin {
   }
 
   async install() {
+    const collectionRepo = this.db.getRepository<any>('collections');
+    if (collectionRepo) {
+      await collectionRepo.db2cm('attachments');
+    }
+
     const defaultStorageType = this.storageTypes.get(DEFAULT_STORAGE_TYPE);
 
     if (defaultStorageType) {
