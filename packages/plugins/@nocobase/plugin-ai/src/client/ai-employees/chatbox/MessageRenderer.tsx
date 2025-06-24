@@ -16,12 +16,13 @@ import { useChatMessages } from './ChatMessagesProvider';
 import { useChatBoxContext } from './ChatBoxContext';
 import { useChatConversations } from './ChatConversationsProvider';
 import { usePlugin, useToken } from '@nocobase/client';
-import { Markdown } from './Markdown';
+import { Markdown } from './markdown/Markdown';
 import { ToolCard } from './ToolCard';
 import PluginAIClient from '../..';
-import { useRenderUISchemaTag } from './useRenderUISchemaTag';
 import { cx, css } from '@emotion/css';
 import { Task } from '../types';
+import { Attachment } from './Attachment';
+import { ContextItem } from './ContextItem';
 
 const MessageWrapper = React.forwardRef<
   HTMLDivElement,
@@ -54,7 +55,7 @@ const AITextMessageRenderer: React.FC<{
           gap: 16,
         }}
       >
-        {typeof msg.content === 'string' && <Markdown markdown={msg.content} />}
+        {typeof msg.content === 'string' && <Markdown message={msg} />}
         {msg.tool_calls?.length ? (
           <ToolCard tools={msg.tool_calls} messageId={msg.messageId} autoCall={msg.metadata?.autoCallTool} />
         ) : null}
@@ -177,11 +178,6 @@ export const UserMessage: React.FC<{
     navigator.clipboard.writeText(msg.content);
     message.success(t('Copied'));
   };
-  const {
-    html,
-    styles: { hashId, wrapSSR, componentCls },
-    handleClick,
-  } = useRenderUISchemaTag(msg.content);
   const items = msg.attachments?.map((item, index) => ({
     uid: index.toString(),
     name: item.filename,
@@ -192,18 +188,14 @@ export const UserMessage: React.FC<{
     ...item,
   }));
 
-  return wrapSSR(
+  return (
     <MessageWrapper
       ref={msg.ref}
-      className={cx(
-        hashId,
-        componentCls,
-        css`
-          display: flex;
-          flex-direction: column;
-          align-items: flex-end;
-        `,
-      )}
+      className={cx(css`
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+      `)}
       footer={
         <Space>
           <Button
@@ -225,20 +217,30 @@ export const UserMessage: React.FC<{
         </Space>
       }
     >
-      {items?.length ? (
-        <Attachments
-          styles={{
-            list: {
-              paddingInline: 0,
-              justifyContent: 'end',
-            },
+      {msg.workContext?.length ? (
+        <div
+          style={{
+            marginBottom: '4px',
           }}
-          items={items}
-          disabled={true}
-        />
+        >
+          {msg.workContext.map((item: any) => (
+            <ContextItem item={item} key={`${item.type}:${item.uid}`} />
+          ))}
+        </div>
       ) : null}
-      <Bubble onClick={handleClick} content={<div dangerouslySetInnerHTML={{ __html: html }} />} />
-    </MessageWrapper>,
+      {items?.length ? (
+        <div
+          style={{
+            marginBottom: '4px',
+          }}
+        >
+          {items.map((item) => (
+            <Attachment file={item} key={item.filename} />
+          ))}
+        </div>
+      ) : null}
+      <Bubble content={msg.content} />
+    </MessageWrapper>
   );
 });
 

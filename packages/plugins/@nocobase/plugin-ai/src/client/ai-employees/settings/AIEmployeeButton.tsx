@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { memo, useMemo, useState } from 'react';
+import React, { memo, useEffect, useMemo, useState } from 'react';
 import {
   SchemaComponent,
   SchemaSettings,
@@ -25,11 +25,38 @@ const { Meta } = Card;
 import { createForm } from '@formily/core';
 import { uid } from '@formily/shared';
 import { useAISelectionContext } from '../selector/AISelectorProvider';
-import { AIEmployee } from '../types';
+import { AIEmployee, ContextItem as ContextItemType } from '../types';
 import { AIVariableRawTextArea } from './AIVariableRawTextArea';
 import { useFieldSchema } from '@formily/react';
 import { useAIEmployeesContext } from '../AIEmployeesProvider';
 import { useAIEmployeeButtonVariableOptions } from './useVariableOptions';
+import { AddContextButton } from '../AddContextButton';
+import { useField } from '@formily/react';
+import { ArrayField } from '@formily/core';
+import { ContextItem } from '../chatbox/ContextItem';
+
+const WorkContext: React.FC = () => {
+  const field = useField<ArrayField>();
+  const onAdd = (contextItem: ContextItemType) => {
+    const exists = field.value.some((item) => item.type === contextItem.type && item.uid === contextItem.uid);
+    if (!exists) {
+      field.value = [...field.value, contextItem];
+    }
+  };
+  const onRemove = (type: string, uid: string) => {
+    field.value = field.value.filter((item) => !(item.type === type && item.uid === uid));
+  };
+  return (
+    <>
+      <div>
+        {field.value.map((item) => (
+          <ContextItem key={`${item.type}:${item.uid}`} item={item} closable={true} onRemove={onRemove} />
+        ))}
+      </div>
+      <AddContextButton onAdd={onAdd} />
+    </>
+  );
+};
 
 const SettingsForm: React.FC<{
   form: any;
@@ -44,7 +71,7 @@ const SettingsForm: React.FC<{
 
   return (
     <SchemaComponent
-      components={{ AIVariableRawTextArea, ArrayTabs }}
+      components={{ AIVariableRawTextArea, ArrayTabs, AddContextButton, WorkContext }}
       schema={{
         type: 'void',
         properties: {
@@ -147,6 +174,12 @@ const SettingsForm: React.FC<{
                           'x-component-props': {
                             currentSchema,
                           },
+                        },
+                        workContext: {
+                          title: t('Work context'),
+                          type: 'array',
+                          'x-decorator': 'FormItem',
+                          'x-component': 'WorkContext',
                         },
                         attachments: {
                           title: t('Files'),

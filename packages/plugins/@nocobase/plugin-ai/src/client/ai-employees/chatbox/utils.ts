@@ -8,6 +8,7 @@
  */
 
 import { useLocalVariables, useVariables } from '@nocobase/client';
+import { ContextItem } from '../types';
 
 async function replaceVariables(template, variables, localVariables = {}) {
   const regex = /\{\{\s*(.*?)\s*\}\}/g;
@@ -57,6 +58,7 @@ export const parseTask = async (
       user?: string;
       system?: string;
       attachments?: any[];
+      workContext?: ContextItem[];
     };
   },
   variables: Record<string, any>,
@@ -95,5 +97,33 @@ export const parseTask = async (
       }
     }
   }
-  return { userMessage, systemMessage, attachments };
+  return { userMessage, systemMessage, attachments, workContext: message.workContext };
 };
+
+const publicPath = window['__nocobase_dev_public_path__'] || window['__nocobase_public_path__'] || '/';
+const PLACEHOLDER_MAP = [
+  { ext: /\.docx?$/i, icon: 'docx-200-200.png' },
+  { ext: /\.pptx?$/i, icon: 'pptx-200-200.png' },
+  { ext: /\.jpe?g$/i, icon: 'jpeg-200-200.png' },
+  { ext: /\.pdf$/i, icon: 'pdf-200-200.png' },
+  { ext: /\.png$/i, icon: 'png-200-200.png' },
+  { ext: /\.eps$/i, icon: 'eps-200-200.png' },
+  { ext: /\.ai$/i, icon: 'ai-200-200.png' },
+  { ext: /\.gif$/i, icon: 'gif-200-200.png' },
+  { ext: /\.svg$/i, icon: 'svg-200-200.png' },
+  { ext: /\.xlsx?$/i, icon: 'xlsx-200-200.png' },
+  { ext: /\.psd?$/i, icon: 'psd-200-200.png' },
+  { ext: /\.(wav|aif|aiff|au|mp1|mp2|mp3|ra|rm|ram|mid|rmi)$/i, icon: 'audio-200-200.png' },
+  { ext: /\.(avi|wmv|mpg|mpeg|vob|dat|3gp|mp4|mkv|rm|rmvb|mov|flv)$/i, icon: 'video-200-200.png' },
+  { ext: /\.(zip|rar|arj|z|gz|iso|jar|ace|tar|uue|dmg|pkg|lzh|cab)$/i, icon: 'zip-200-200.png' },
+];
+export const UNKNOWN_FILE_ICON = publicPath + 'file-placeholder/unknown-200-200.png';
+
+export function getFileIconByExt(fileName: string): string {
+  for (const item of PLACEHOLDER_MAP) {
+    if (item.ext.test(fileName)) {
+      return publicPath + 'file-placeholder/' + item.icon;
+    }
+  }
+  return UNKNOWN_FILE_ICON;
+}

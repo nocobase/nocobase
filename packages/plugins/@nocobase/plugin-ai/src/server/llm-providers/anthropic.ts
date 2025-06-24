@@ -70,12 +70,13 @@ export class AnthropicProvider extends LLMProvider {
   }
 
   parseResponseMessage(message: Model) {
-    const { content: rawContent, messageId, metadata, role, toolCalls, attachments } = message;
+    const { content: rawContent, messageId, metadata, role, toolCalls, attachments, workContext } = message;
     const content = {
       ...rawContent,
       messageId,
       metadata,
       attachments,
+      workContext,
     };
 
     if (toolCalls) {
