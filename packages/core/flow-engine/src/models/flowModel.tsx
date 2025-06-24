@@ -575,7 +575,7 @@ export class FlowModel<Structure extends { parent?: any; subModels?: any } = Def
       ? FlowEngine.generateApplyFlowCacheKey(this['forkId'] ?? 'autoFlow', 'all', this.uid)
       : null;
 
-    if (_.isEqual(extra, this._lastAutoRunParams?.[0]) && cacheKey) {
+    if (!_.isEqual(extra, this._lastAutoRunParams?.[0]) && cacheKey) {
       this.flowEngine.applyFlowCache.delete(cacheKey);
     }
 
