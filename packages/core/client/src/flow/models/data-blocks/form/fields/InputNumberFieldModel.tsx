@@ -28,7 +28,7 @@ function toSafeNumber(value) {
   }
 }
 
-export const InputNumber: ComposedInputNumber = connect((props: AntdInputNumberProps) => {
+const InputNumber: ComposedInputNumber = connect((props: AntdInputNumberProps) => {
   const { onChange, ...others } = props;
   const handleChange = (v) => {
     if (Number.isNaN(v)) {

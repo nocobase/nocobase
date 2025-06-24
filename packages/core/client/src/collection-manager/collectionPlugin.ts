@@ -9,7 +9,6 @@
 
 import { Plugin } from '../application/Plugin';
 
-import { name } from 'packages/core/database/src/__tests__/fixtures/collections/tags';
 import { DataSource } from '../data-source/data-source/DataSource';
 import { DEFAULT_DATA_SOURCE_KEY, DEFAULT_DATA_SOURCE_TITLE } from '../data-source/data-source/DataSourceManager';
 import {

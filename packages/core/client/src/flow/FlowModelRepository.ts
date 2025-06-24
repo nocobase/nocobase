@@ -9,6 +9,7 @@
 
 import { FlowModel, IFlowModelRepository } from '@nocobase/flow-engine';
 import _ from 'lodash';
+import { Application } from '../application';
 
 export class MockFlowModelRepository implements IFlowModelRepository<FlowModel> {
   get models() {
@@ -96,6 +97,35 @@ export class MockFlowModelRepository implements IFlowModelRepository<FlowModel> 
   // 从本地存储中删除模型数据
   async destroy(uid: string) {
     localStorage.removeItem(`flow-model:${uid}`);
+    return true;
+  }
+}
+
+export class FlowModelRepository implements IFlowModelRepository<FlowModel> {
+  constructor(private app: Application) {}
+  async findOne(query) {
+    const response = await this.app.apiClient.request({
+      url: 'flowModels:findOne',
+      params: _.pick(query, ['uid', 'parentId']),
+    });
+    return response.data?.data;
+  }
+
+  async save(model: FlowModel) {
+    const response = await this.app.apiClient.request({
+      method: 'POST',
+      url: 'flowModels:save',
+      data: model.serialize(),
+    });
+    return response.data?.data;
+  }
+
+  async destroy(uid: string) {
+    await this.app.apiClient.request({
+      method: 'POST',
+      url: 'flowModels:destroy',
+      params: { filterByTk: uid },
+    });
     return true;
   }
 }

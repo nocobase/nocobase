@@ -153,6 +153,7 @@ export interface ActionStepDefinition<TModel extends FlowModel = FlowModel> exte
     | ((ctx: ParamsContext<TModel>) => Record<string, any> | Promise<Record<string, any>>); // Optional: overrides/extends defaultParams from ActionDefinition
   paramsRequired?: boolean; // Optional: whether the step params are required, will open the config dialog before adding the model
   hideInSettings?: boolean; // Optional: whether to hide the step in the settings menu
+  settingMode?: 'dialog' | 'drawer'; // Optional: whether to open settings in dialog or drawer mode, defaults to 'dialog'
   // Cannot have its own handler
   handler?: undefined;
 }
@@ -168,6 +169,7 @@ export interface InlineStepDefinition<TModel extends FlowModel = FlowModel> exte
     | ((ctx: ParamsContext<TModel>) => Record<string, any> | Promise<Record<string, any>>); // Optional: defaultParams for this inline step
   paramsRequired?: boolean; // Optional: whether the step params are required, will open the config dialog before adding the model
   hideInSettings?: boolean; // Optional: whether to hide the step in the settings menu
+  settingMode?: 'dialog' | 'drawer'; // Optional: whether to open settings in dialog or drawer mode, defaults to 'dialog'
   // Cannot use a registered action
   use?: undefined;
 }
@@ -188,8 +190,8 @@ export type FlowExtraContext = Record<string, any>;
 export interface ParamsContext<TModel extends FlowModel = FlowModel> {
   model: TModel;
   globals: Record<string, any>;
-  shared: Record<string, any>;
-  extra: Record<string, any>; // Extra context passed to applyFlow
+  shared?: Record<string, any>;
+  extra?: Record<string, any>; // Extra context passed to applyFlow
   app: any;
 }
 
@@ -268,6 +270,28 @@ export interface StepSettingsDialogProps {
   stepKey: string;
   dialogWidth?: number | string;
   dialogTitle?: string;
+}
+
+/**
+ * 步骤设置抽屉的属性接口
+ */
+export interface StepSettingsDrawerProps {
+  model: any;
+  flowKey: string;
+  stepKey: string;
+  drawerWidth?: number | string;
+  drawerTitle?: string;
+}
+
+/**
+ * 统一的步骤设置属性接口
+ */
+export interface StepSettingsProps {
+  model: any;
+  flowKey: string;
+  stepKey: string;
+  width?: number | string;
+  title?: string;
 }
 
 /**

@@ -27,7 +27,7 @@ function InternalFlowPage({ uid, sharedContext }) {
 
 export const FlowRoute = () => {
   const params = useParams();
-  return <FlowPage uid={params.name} />;
+  return <FlowPage uid={`r_${params.name}`} />;
 };
 
 export const FlowPage = (props) => {

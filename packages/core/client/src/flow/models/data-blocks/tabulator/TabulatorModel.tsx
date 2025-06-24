@@ -13,19 +13,14 @@ import {
   AddActionButton,
   AddFieldButton,
   CollectionField,
-  FlowEngineProvider,
   FlowModel,
   FlowModelRenderer,
   FlowsFloatContextMenu,
   MultiRecordResource,
-  useApplyAutoFlows,
-  useFlowEngine,
 } from '@nocobase/flow-engine';
-import { Button, Card, ConfigProvider, Pagination, Skeleton, Space, theme } from 'antd';
-import _, { delay, head } from 'lodash';
-import collection from 'packages/core/server/src/plugin-manager/options/collection';
+import { Button, Card, Pagination, Skeleton, Space } from 'antd';
+import _ from 'lodash';
 import React from 'react';
-import ReactDOM, { createRoot } from 'react-dom/client';
 import { ColumnDefinition, TabulatorFull as Tabulator } from 'tabulator-tables';
 import { ActionModel } from '../../base/ActionModel';
 import { DataBlockModel } from '../../base/BlockModel';

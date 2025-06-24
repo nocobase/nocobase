@@ -39,7 +39,7 @@ interface InsertAdjacentOptions extends removeParentOptions {
 
 const nodeKeys = ['properties', 'definitions', 'patternProperties', 'additionalProperties', 'items'];
 
-function transaction(transactionAbleArgPosition?: number) {
+export function transaction(transactionAbleArgPosition?: number) {
   return (target: any, propertyKey: string, descriptor: PropertyDescriptor) => {
     const originalMethod = descriptor.value;
 
@@ -1112,7 +1112,7 @@ WHERE TreeTable.depth = 1 AND  TreeTable.ancestor = :ancestor and TreeTable.sort
     return lodash.pick(schema, ['type', 'properties']);
   }
 
-  private async doGetJsonSchema(uid: string, options?: GetJsonSchemaOptions) {
+  async findNodesById(uid: string, options?: GetJsonSchemaOptions) {
     const db = this.database;
 
     const treeTable = this.uiSchemaTreePathTableName;
@@ -1138,10 +1138,15 @@ WHERE TreeTable.depth = 1 AND  TreeTable.ancestor = :ancestor and TreeTable.sort
     });
 
     if (nodes[0].length == 0) {
-      return {};
+      return [];
     }
 
-    return this.nodesToSchema(nodes[0], uid);
+    return nodes[0];
+  }
+
+  private async doGetJsonSchema(uid: string, options?: GetJsonSchemaOptions) {
+    const nodes = await this.findNodesById(uid, options);
+    return this.nodesToSchema(nodes, uid);
   }
 
   private ignoreSchemaProperties(schemaProperties) {
@@ -1222,6 +1227,173 @@ WHERE TreeTable.depth = 1 AND  TreeTable.ancestor = :ancestor and TreeTable.sort
     delete schema['childOptions'];
 
     return { uid, name, async, childOptions };
+  }
+
+  static modelToSingleNodes(model, parentChildOptions = null): SchemaNode[] {
+    const { uid: oldUid, async, subModels, ...rest } = _.cloneDeep(model);
+    const currentUid = oldUid || uid();
+    const node = {
+      'x-uid': currentUid,
+      'x-async': async || false,
+      name: currentUid,
+      ...rest,
+    };
+    if (parentChildOptions) {
+      node.childOptions = parentChildOptions;
+    }
+    const nodes = [node];
+    if (Object.keys(subModels || {}).length > 0) {
+      for (const [subKey, subItems] of Object.entries(subModels)) {
+        const items = _.castArray<any>(subItems);
+        let sort = 0;
+        for (const item of items) {
+          item.subKey = subKey;
+          item.subType = Array.isArray(subItems) ? 'array' : 'object';
+          const childOptions = {
+            parentUid: currentUid,
+            parentPath: [currentUid, ...(parentChildOptions?.parentPath || [])].filter(Boolean),
+            type: 'properties',
+            sort: ++sort,
+          };
+          const children = this.modelToSingleNodes(item, childOptions);
+          nodes.push(...children);
+        }
+      }
+    }
+    return nodes;
+  }
+
+  static nodeToModel(node) {
+    const { 'x-uid': uid, name, schema } = node;
+    const model = {
+      uid,
+      ...schema,
+    };
+    return model;
+  }
+
+  static nodesToModel(nodes: any[], rootUid: string) {
+    // 1. 建立 uid 到 node 的映射
+    const nodeMap = new Map<string, any>();
+    for (const node of nodes) {
+      nodeMap.set(node['x-uid'], node);
+    }
+
+    // 2. 找到 root 节点
+    const rootNode = nodeMap.get(rootUid);
+    if (!rootNode) return null;
+
+    // 3. 找到所有子节点
+    const children = nodes.filter((n) => n.parent === rootUid);
+
+    // 4. 按 subKey 分组并递归
+    const subModels: Record<string, any> = {};
+
+    for (const child of children) {
+      const { subKey, subType } = child.schema;
+      if (!subKey) continue;
+      // 递归处理子节点
+      const model = UiSchemaRepository.nodesToModel(nodes, child['x-uid']) || {
+        uid: child['x-uid'],
+        ...child.schema,
+        sortIndex: child.sort,
+      };
+      // 保证 sortIndex
+      model.sortIndex = child.sort;
+      if (subType === 'array') {
+        if (!subModels[subKey]) subModels[subKey] = [];
+        subModels[subKey].push(model);
+      } else {
+        subModels[subKey] = model;
+      }
+    }
+
+    // 5. 对数组类型的 subModels 排序
+    for (const key in subModels) {
+      if (Array.isArray(subModels[key])) {
+        subModels[key].sort((a, b) => (a.sortIndex ?? 0) - (b.sortIndex ?? 0));
+      }
+    }
+
+    // 6. 过滤掉空对象 subModels
+    const filteredSubModels: Record<string, any> = {};
+    for (const key in subModels) {
+      const value = subModels[key];
+      if (Array.isArray(value) && value.length === 0) continue;
+      if (!Array.isArray(value) && typeof value === 'object' && value !== null && Object.keys(value).length === 0)
+        continue;
+      filteredSubModels[key] = value;
+    }
+
+    // 7. 返回最终 model
+    return {
+      uid: rootNode['x-uid'],
+      ...rootNode.schema,
+      ...(Object.keys(filteredSubModels).length > 0 ? { subModels: filteredSubModels } : {}),
+    };
+  }
+
+  @transaction()
+  async insertModel(model: any, options?: Transactionable) {
+    const nodes = UiSchemaRepository.modelToSingleNodes(model);
+    const rootUid = nodes[0]['x-uid'];
+    await this.insertNodes(nodes, options);
+    return await this.findModelById(rootUid, options);
+  }
+
+  @transaction()
+  async updateSingleNode(node: SchemaNode, options?: Transactionable) {
+    const instance = await this.model.findByPk(node['x-uid'], {
+      transaction: options?.transaction,
+    });
+    if (instance) {
+      // @ts-ignore
+      await instance.update(
+        {
+          schema: {
+            ...(instance.get('schema') as any),
+            ...lodash.omit(node, ['x-async', 'name', 'x-uid', 'childOptions']),
+          },
+        },
+        {
+          hooks: false,
+          transaction: options?.transaction,
+        },
+      );
+      return true;
+    }
+    return false;
+  }
+
+  @transaction()
+  async upsertModel(model: any, options?: Transactionable) {
+    let childOptions: ChildOptions = null;
+    if (model.parentId) {
+      childOptions = {
+        parentUid: model.parentId,
+        type: 'properties',
+        position: 'last',
+      };
+    }
+    const nodes = UiSchemaRepository.modelToSingleNodes(model, childOptions);
+    const rootUid = nodes[0]['x-uid'];
+    for (const node of nodes) {
+      const exists = await this.updateSingleNode(node, options);
+      if (!exists) {
+        await this.insertSingleNode(node, options);
+      }
+    }
+    return rootUid;
+  }
+
+  async findModelById(uid: string, options?: GetJsonSchemaOptions) {
+    const nodes = await this.findNodesById(uid, options);
+    return UiSchemaRepository.nodesToModel(nodes, uid);
+  }
+
+  async findModelByParentId(parentUid: string, options?: GetJsonSchemaOptions) {
+    const model = await this.findModelById(parentUid, options);
+    return Object.values(model.subModels || {}).shift();
   }
 }
 

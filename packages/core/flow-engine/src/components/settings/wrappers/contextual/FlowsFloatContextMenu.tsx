@@ -23,7 +23,7 @@ import { FlowModel } from '../../../../models';
 import { ActionStepDefinition } from '../../../../types';
 import { useFlowModelById } from '../../../../hooks';
 import { useFlowEngine } from '../../../../provider';
-import { openStepSettingsDialog } from './StepSettingsDialog';
+import { openStepSettings } from './StepSettings';
 
 // 检测DOM中直接子元素是否包含button元素的辅助函数
 const detectButtonInDOM = (container: HTMLElement): boolean => {
@@ -279,7 +279,7 @@ const FlowsFloatContextMenuWithModel: React.FC<ModelProvidedProps> = observer(
           // 处理step配置，key格式为 "flowKey:stepKey"
           const [flowKey, stepKey] = key.split(':');
           try {
-            openStepSettingsDialog({
+            openStepSettings({
               model,
               flowKey,
               stepKey,

@@ -9,13 +9,22 @@
 
 import { DownOutlined, PlusOutlined } from '@ant-design/icons';
 import { uid } from '@formily/shared';
-import { ActionContext, SchemaComponent, useAPIClient, useCompile, usePlugin } from '@nocobase/client';
+import {
+  ActionContext,
+  SchemaComponent,
+  useAPIClient,
+  useCompile,
+  usePlugin,
+  useResourceContext,
+  useActionContext,
+} from '@nocobase/client';
 import { Button, Dropdown, Empty } from 'antd';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import PluginDatabaseConnectionsClient from '../';
-import { useTestConnectionAction } from '../hooks';
+import { useLoadCollections, useTestConnectionAction } from '../hooks';
 import { NAMESPACE } from '../locale';
+import { CollectionsTableField } from './CollectionsTableField';
 
 export const CreateDatabaseConnectAction = () => {
   const [schema, setSchema] = useState({});
@@ -25,6 +34,8 @@ export const CreateDatabaseConnectAction = () => {
   const { t } = useTranslation();
   const [dialect, setDialect] = useState(null);
   const api = useAPIClient();
+  const loadCollections = useLoadCollections();
+
   const useDialectDataSource = (field) => {
     const options = [...plugin.types.keys()].map((key) => {
       const type = plugin.types.get(key);
@@ -53,6 +64,9 @@ export const CreateDatabaseConnectAction = () => {
                   [uid()]: {
                     type: 'void',
                     'x-component': 'Action.Drawer',
+                    'x-component-props': {
+                      width: 650,
+                    },
                     'x-decorator': 'Form',
                     'x-decorator-props': {
                       initialValue: {
@@ -64,7 +78,11 @@ export const CreateDatabaseConnectAction = () => {
                     properties: {
                       body: {
                         type: 'void',
-                        'x-component': type.DataSourceSettingsForm,
+                        'x-component': type.DataSourceSettingsForm.bind(null, {
+                          CollectionsTableField,
+                          loadCollections,
+                          from: 'create',
+                        }),
                       },
                       footer: {
                         type: 'void',
@@ -147,7 +165,12 @@ export const CreateDatabaseConnectAction = () => {
           </Button>
         </Dropdown>
         <SchemaComponent
-          scope={{ createOnly: false, useTestConnectionAction, dialect, useDialectDataSource }}
+          scope={{
+            createOnly: false,
+            useTestConnectionAction,
+            dialect,
+            useDialectDataSource,
+          }}
           schema={schema}
         />
       </ActionContext.Provider>

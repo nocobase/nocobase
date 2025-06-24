@@ -10,6 +10,7 @@
 import { Collection, DataSource, DataSourceManager } from '../../data-source';
 import { FlowModel } from '../../models/flowModel';
 import { ModelConstructor } from '../../types';
+import { isInheritedFrom } from '../../utils';
 import { SubModelItem, SubModelItemsType } from './AddSubModelButton';
 
 export interface BlockItemsOptions {
@@ -48,7 +49,7 @@ async function getDataSourcesWithCollections(model: FlowModel) {
     // 转换为我们需要的格式
     return allDataSources.map((dataSource: DataSource) => {
       const key = dataSource.key;
-      const displayName = dataSource.options.displayName || dataSource.key;
+      const displayName = dataSource.displayName || dataSource.key;
 
       // 从 collectionManager 获取 collections
       const collections: Collection[] = dataSource.getCollections();
@@ -73,43 +74,55 @@ async function getDataSourcesWithCollections(model: FlowModel) {
 /**
  * 创建区块菜单项的工具函数
  *
- * 生成包含数据区块和其他区块的完整菜单结构：
- * - 数据区块：区块类型 → 数据源 → 数据表的层级结构
- * - 其他区块：平铺的区块列表
+ * 根据继承关系动态生成区块菜单结构：
+ * - 数据区块：继承自 DataBlockModel 的区块，区块类型 → 数据源 → 数据表的层级结构
+ * - 筛选区块：继承自 FilterBlockModel 的区块，平铺的区块列表
+ * - 其他区块：其他类型的区块，平铺的区块列表
  *
  * @param model FlowModel 实例
  * @param options 配置选项
  * @returns SubModelItemsType 格式的菜单项
  */
 export function createBlockItems(model: FlowModel, options: BlockItemsOptions = {}): SubModelItemsType {
-  const { subModelBaseClass = 'BlockFlowModel', filterBlocks, customBlocks = [] } = options;
+  const { subModelBaseClass = 'BlockFlowModel', filterBlocks: filterFn, customBlocks = [] } = options;
 
   // 获取所有注册的区块类
   const blockClasses = model.flowEngine.filterModelClassByParent(subModelBaseClass);
 
-  // 分类区块：数据区块 vs 其他区块
+  // 获取基础类用于继承检查
+  const DataBlockModelClass = model.flowEngine.getModelClass('DataBlockModel');
+  const FilterBlockModelClass = model.flowEngine.getModelClass('FilterBlockModel');
+
+  // 分类区块：数据区块, 筛选区块, 其他区块
   const dataBlocks: Array<{ className: string; ModelClass: ModelConstructor }> = [];
+  const filterBlocks: Array<{ className: string; ModelClass: ModelConstructor }> = [];
   const otherBlocks: Array<{ className: string; ModelClass: ModelConstructor }> = [];
 
   for (const [className, ModelClass] of blockClasses) {
     // 应用过滤器
-    if (filterBlocks && !filterBlocks(ModelClass, className)) {
+    if (filterFn && !filterFn(ModelClass, className)) {
       continue;
     }
 
-    // 判断是否为数据区块
-    const meta = (ModelClass as any).meta;
-    const isDataBlock =
-      meta?.category === 'data' ||
-      meta?.requiresDataSource === true ||
-      className.toLowerCase().includes('table') ||
-      className.toLowerCase().includes('form') ||
-      className.toLowerCase().includes('details') ||
-      className.toLowerCase().includes('list') ||
-      className.toLowerCase().includes('grid');
+    // 排除基类本身
+    if (className === 'DataBlockModel' || className === 'FilterBlockModel') {
+      continue;
+    }
+
+    // 使用继承关系判断区块类型
+    let isDataBlock = false;
+    let isFilterBlock = false;
+
+    if (DataBlockModelClass && isInheritedFrom(ModelClass, DataBlockModelClass)) {
+      isDataBlock = true;
+    } else if (FilterBlockModelClass && isInheritedFrom(ModelClass, FilterBlockModelClass)) {
+      isFilterBlock = true;
+    }
 
     if (isDataBlock) {
       dataBlocks.push({ className, ModelClass });
+    } else if (isFilterBlock) {
+      filterBlocks.push({ className, ModelClass });
     } else {
       otherBlocks.push({ className, ModelClass });
     }
@@ -156,6 +169,29 @@ export function createBlockItems(model: FlowModel, options: BlockItemsOptions = 
           };
         });
       },
+    });
+  }
+
+  // 筛选区块分组
+  if (filterBlocks.length > 0) {
+    const filterBlockItems = filterBlocks.map(({ className, ModelClass }) => {
+      const meta = (ModelClass as any).meta;
+      return {
+        key: className,
+        label: meta?.title || className,
+        icon: meta?.icon,
+        createModelOptions: {
+          ...meta?.defaultOptions,
+          use: className,
+        },
+      };
+    });
+
+    result.push({
+      key: 'filterBlocks',
+      label: 'Filter blocks',
+      type: 'group',
+      children: filterBlockItems,
     });
   }
 
