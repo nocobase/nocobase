@@ -8,8 +8,8 @@
  */
 
 import { Plugin } from '@nocobase/client';
-import { LowcodeBlockFlowModel } from './LowcodeBlockFlowModel';
 import { CodeEditor } from './CodeEditor';
+import { LowcodeBlockModel } from './LowcodeBlockModel';
 
 export class PluginBlockLowcodeClient extends Plugin {
   async load() {
@@ -19,7 +19,7 @@ export class PluginBlockLowcodeClient extends Plugin {
     });
 
     // Register the LowcodeBlockFlowModel
-    this.flowEngine.registerModels({ LowcodeBlockFlowModel });
+    this.flowEngine.registerModels({ LowcodeBlockModel });
 
     // Set up requirejs context for lowcode components
     const existingContext = this.flowEngine.getContext() || {};

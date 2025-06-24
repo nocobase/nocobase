@@ -55,7 +55,7 @@ export class FlowEngine {
   }
 
   setContext(context: any) {
-    this.context = context;
+    this.context = { ...this.context, ...context };
   }
 
   getContext() {
