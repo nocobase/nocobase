@@ -1392,8 +1392,19 @@ WHERE TreeTable.depth = 1 AND  TreeTable.ancestor = :ancestor and TreeTable.sort
   }
 
   async findModelByParentId(parentUid: string, options?: GetJsonSchemaOptions) {
-    const model = await this.findModelById(parentUid, options);
-    return Object.values(model.subModels || {}).shift();
+    const r = this.database.getRepository('uiSchemaTreePath');
+    const treePath = await r.model.findOne({
+      where: {
+        ancestor: parentUid,
+        depth: 1,
+      },
+      transaction: options?.transaction,
+    });
+    if (treePath?.['descendant']) {
+      // if parentUid is a leaf node, return the first child
+      return this.findModelById(treePath['descendant'], options);
+    }
+    return null;
   }
 }
 

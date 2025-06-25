@@ -66,7 +66,7 @@ export const popup = defineAction({
     };
 
     currentDrawer = ctx.globals[params.mode || 'drawer'].open({
-      title: '命令式 Drawer',
+      // title: '命令式 Drawer',
       width: sizeToWidthMap[params.size || 'medium'],
       content: <DrawerContent />,
     });

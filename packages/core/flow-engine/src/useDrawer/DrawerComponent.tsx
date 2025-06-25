@@ -27,6 +27,8 @@ const DrawerComponent = forwardRef<unknown, DrawerComponentProps>(({ afterClose,
 
   return (
     <Drawer
+      closable={false}
+      closeIcon={null}
       {...config}
       open={visible}
       onClose={(e) => {

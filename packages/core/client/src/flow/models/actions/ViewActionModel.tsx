@@ -29,7 +29,7 @@ ViewActionModel.registerFlow({
       defaultParams(ctx) {
         return {
           sharedContext: {
-            parentRecord: ctx.extra.currentRecord,
+            parentRecord: ctx.extra?.currentRecord,
             parentBlockModel: ctx.shared?.currentBlockModel,
           },
         };

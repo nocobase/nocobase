@@ -8,7 +8,13 @@
  */
 
 import { BlockModel } from '@nocobase/client';
-import { APIResource, BaseRecordResource, MultiRecordResource, SingleRecordResource } from '@nocobase/flow-engine';
+import {
+  APIResource,
+  BaseRecordResource,
+  FlowEngine,
+  MultiRecordResource,
+  SingleRecordResource,
+} from '@nocobase/flow-engine';
 import * as antd from 'antd';
 import { Card, Spin } from 'antd';
 import React, { createRef } from 'react';
@@ -254,6 +260,8 @@ ctx.element.innerHTML = \`
               return flowContext.globals.flowEngine.getModel(uid);
             };
 
+            const flowEngine = flowContext.globals.flowEngine as FlowEngine;
+
             const request = flowContext.globals.api.request.bind(flowContext.globals.api);
 
             // Create a safe execution context for the code (as async function)
@@ -291,6 +299,7 @@ ctx.element.innerHTML = \`
               Resources: { APIResource, BaseRecordResource, SingleRecordResource, MultiRecordResource },
               React,
               ReactDOM,
+              flowEngine,
               Components: {
                 antd,
               },
