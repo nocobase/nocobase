@@ -40,6 +40,7 @@ const renderToolbarItems = (
   showDeleteButton: boolean,
   showCopyUidButton: boolean,
   flowEngine: FlowEngine,
+  settingsMenuLevel?: number,
 ) => {
   const toolbarItems = flowEngine?.flowSettings?.getToolbarItems?.() || [];
 
@@ -60,6 +61,7 @@ const renderToolbarItems = (
             model={model}
             showDeleteButton={showDeleteButton}
             showCopyUidButton={showCopyUidButton}
+            menuLevels={settingsMenuLevel}
           />
         );
       }
@@ -144,6 +146,10 @@ interface ModelProvidedProps {
    * @default true
    */
   showBackground?: boolean;
+  /**
+   * Settings menu levels: 1=current model only (default), 2=include sub-models
+   */
+  settingsMenuLevel?: number;
 }
 
 interface ModelByIdProps {
@@ -163,6 +169,10 @@ interface ModelByIdProps {
    * @default true
    */
   showBackground?: boolean;
+  /**
+   * Settings menu levels: 1=current model only (default), 2=include sub-models
+   */
+  settingsMenuLevel?: number;
 }
 
 type FlowsFloatContextMenuProps = ModelProvidedProps | ModelByIdProps;
@@ -193,6 +203,7 @@ const isModelByIdProps = (props: FlowsFloatContextMenuProps): props is ModelById
  * @param props.showCopyUidButton 是否显示复制UID按钮，默认为true
  * @param props.containerStyle 容器自定义样式
  * @param props.className 容器自定义类名
+ * @param props.settingsMenuLevel 设置菜单层级：1=仅当前模型(默认)，2=包含子模型
  */
 const FlowsFloatContextMenu: React.FC<FlowsFloatContextMenuProps> = observer((props) => {
   const flowEngine = useFlowEngine();
@@ -219,6 +230,7 @@ const FlowsFloatContextMenuWithModel: React.FC<ModelProvidedProps> = observer(
     className,
     showBackground = true,
     showBorder = true,
+    settingsMenuLevel,
   }: ModelProvidedProps) => {
     const [hideMenu, setHideMenu] = useState<boolean>(false);
     const [hasButton, setHasButton] = useState<boolean>(false);
@@ -293,7 +305,7 @@ const FlowsFloatContextMenuWithModel: React.FC<ModelProvidedProps> = observer(
         <div className="general-schema-designer">
           <div className="general-schema-designer-icons">
             <Space size={3} align="center">
-              {renderToolbarItems(model, showDeleteButton, showCopyUidButton, flowEngine)}
+              {renderToolbarItems(model, showDeleteButton, showCopyUidButton, flowEngine, settingsMenuLevel)}
             </Space>
           </div>
         </div>
@@ -313,6 +325,7 @@ const FlowsFloatContextMenuWithModelById: React.FC<ModelByIdProps> = observer(
     showCopyUidButton = true,
     containerStyle,
     className,
+    settingsMenuLevel,
   }) => {
     const model = useFlowModelById(uid, modelClassName);
 
@@ -328,6 +341,7 @@ const FlowsFloatContextMenuWithModelById: React.FC<ModelByIdProps> = observer(
         showCopyUidButton={showCopyUidButton}
         containerStyle={containerStyle}
         className={className}
+        settingsMenuLevel={settingsMenuLevel}
       >
         {children}
       </FlowsFloatContextMenuWithModel>

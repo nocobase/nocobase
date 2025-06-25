@@ -106,7 +106,7 @@ PageModel.registerFlow({
       },
       defaultParams(ctx) {
         return {
-          title: 'Page title',
+          // title: 'Page title',
           enableTabs: false,
         };
       },

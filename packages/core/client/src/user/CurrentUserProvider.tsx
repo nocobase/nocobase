@@ -10,7 +10,7 @@
 import React, { createContext, useContext, useMemo } from 'react';
 import { useACLRoleContext } from '../acl';
 import { ReturnTypeOfUseRequest, useAPIClient, useRequest } from '../api-client';
-import { useAppSpin } from '../application';
+import { useApp, useAppSpin } from '../application';
 import { useCompile } from '../schema-component';
 
 export const CurrentUserContext = createContext<ReturnTypeOfUseRequest>(null);
@@ -44,6 +44,7 @@ export const useCurrentRoles = () => {
 
 export const CurrentUserProvider = (props) => {
   const api = useAPIClient();
+  const app = useApp();
   const result = useRequest<any>(() =>
     api
       .request({
@@ -51,7 +52,12 @@ export const CurrentUserProvider = (props) => {
         skipNotify: true,
         skipAuth: true,
       })
-      .then((res) => res?.data),
+      .then((res) => {
+        app.flowEngine.setContext({
+          user: res?.data?.data,
+        });
+        return res?.data;
+      }),
   );
 
   const { render } = useAppSpin();
