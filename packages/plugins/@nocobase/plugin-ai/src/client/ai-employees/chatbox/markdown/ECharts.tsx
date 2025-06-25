@@ -31,7 +31,6 @@ export function replaceTagBlockByIndex(
   indexToReplace: number,
   newInnerStr: string,
 ): string {
-  console.log(input, tagName, indexToReplace, newInnerStr);
   const regex = new RegExp(`<${tagName}>([\\s\\S]*?)<\\/${tagName}>`, 'gi');
   let currentIndex = 0;
   return input.replace(regex, (match, inner) => {
@@ -100,9 +99,7 @@ const EditModal: React.FC<{
         form.reset();
       }}
       onOk={async () => {
-        console.log(option);
         const content = replaceTagBlockByIndex(message.content, 'echarts', index, JSON.stringify(option));
-        console.log(content);
         await updateMessage({
           sessionId: currentConversation,
           messageId: message.messageId,
@@ -128,7 +125,7 @@ const EditModal: React.FC<{
           marginTop: '16px',
         }}
       >
-        <Col span={12}>
+        <Col span={8}>
           <SchemaComponent
             schema={{
               type: 'void',
@@ -158,7 +155,7 @@ const EditModal: React.FC<{
             }}
           />
         </Col>
-        <Col span={12}>
+        <Col span={16}>
           {option ? (
             <Card size="small">
               <ReactECharts

@@ -21,6 +21,7 @@ export class TableColumnModel extends FieldModel {
         model={this}
         containerStyle={{ display: 'block', padding: '11px 8px', margin: '-11px -8px' }}
         showBorder={false}
+        settingsMenuLevel={2}
       >
         {this.props.title}
       </FlowsFloatContextMenu>

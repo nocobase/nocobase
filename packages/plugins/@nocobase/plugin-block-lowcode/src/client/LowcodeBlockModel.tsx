@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { BlockModel } from '@nocobase/client';
+import { APIClient, BlockModel } from '@nocobase/client';
 import {
   APIResource,
   BaseRecordResource,
@@ -209,6 +209,12 @@ ctx.element.innerHTML = \`
       },
       settingMode: 'drawer',
       async handler(flowContext, params: any) {
+        // Check if URL ends with skip_nocobase_lowcode=true and return early if so
+        // Giving a way to avoid some bad js code (or breaking changes in future versions) break the page and can't recover from ui
+        if (window.location.href.endsWith('skip_nocobase_lowcode=true')) {
+          return;
+        }
+
         flowContext.model.setProps('loading', true);
         flowContext.model.setProps('error', null);
         flowContext.reactView.onRefReady(flowContext.model.ref, async (element: HTMLElement) => {
@@ -263,6 +269,7 @@ ctx.element.innerHTML = \`
             const flowEngine = flowContext.globals.flowEngine as FlowEngine;
 
             const request = flowContext.globals.api.request.bind(flowContext.globals.api);
+            const api = flowContext.app.apiClient as APIClient;
 
             // Create a safe execution context for the code (as async function)
             // Wrap user code in an async function
@@ -273,15 +280,20 @@ ctx.element.innerHTML = \`
             `;
             const executionFunction = new Function(wrappedCode);
             const lowcodeContext = {
+              Components: { antd },
+              Resources: { APIResource, BaseRecordResource, SingleRecordResource, MultiRecordResource },
+              React,
+              ReactDOM,
+              flowEngine,
               element,
               model: flowContext.model,
+              router: flowContext.app.router.router,
+              i18n: flowContext.app.i18n,
+              request,
               requirejs,
               requireAsync,
               loadCSS,
               getModelById,
-              request,
-              i18n: flowContext.app.i18n,
-              router: flowContext.app.router.router,
               initResource(use: typeof APIResource, options?: any) {
                 if (flowContext.model.resource) {
                   return flowContext.model.resource;
@@ -296,12 +308,12 @@ ctx.element.innerHTML = \`
                 flowContext.model.resource = resource;
                 return resource;
               },
-              Resources: { APIResource, BaseRecordResource, SingleRecordResource, MultiRecordResource },
-              React,
-              ReactDOM,
-              flowEngine,
-              Components: {
-                antd,
+              flowContext,
+              auth: {
+                role: api.auth.role,
+                locale: api.auth.locale,
+                token: api.auth.token,
+                user: flowContext.globals.user,
               },
             };
             // Execute the code

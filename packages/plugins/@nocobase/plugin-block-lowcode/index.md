@@ -9,7 +9,7 @@
 低代码区块为用户代码提供了统一的全局上下文对象 `ctx`。你可以通过解构的方式，快速访问常用变量和方法：
 
 ```js
-type LowcodeCtx = {
+type LowcodeContext = {
   element: HTMLElement;
   model: FlowModel;
   i18n: I18next;
@@ -20,6 +20,12 @@ type LowcodeCtx = {
   initResource(typeof APIResource, options: AxiosRequestConfig): APIResource;
   request: (options: AxiosRequestConfig) => Promise<any>;
   router: RemixRouter;
+  auth: {
+    role: string;
+    locale: string;
+    token: string;
+    user: any;
+  };
   Resources: {
     APIResource: typeof APIResource;
     SingleRecordResource: typeof SingleRecordResource;
@@ -31,9 +37,17 @@ type LowcodeCtx = {
     antd: typeof import('antd');
     // 可扩展更多组件库
   };
+  flowEngine: FlowEngine;
+  flowContext: FlowContext;
+  auth: {
+    role?: string;
+    locale?: string;
+    token?: string;
+    user?: User;
+  };
 };
 
-declare const ctx: LowcodeCtx;
+declare const ctx: LowcodeContext;
 ```
 
 ---
@@ -502,6 +516,29 @@ document.getElementById(`gotoAdminBtn_${uid}`).onclick = () => {
 };
 ```
 
+### `ctx.auth`
+
+* **类型**：`{ role: string, locale: string, token: string, user: any }`
+* **说明**：当前用户的认证信息上下文，包含用户角色、语言设置、认证令牌和用户详细信息。通过此对象可以获取当前登录用户的基本信息，用于实现基于用户身份的个性化功能或权限控制。
+* **使用场景**：需要根据用户身份显示不同内容、实现权限控制、个性化展示等。
+* **属性说明**：
+  - `ctx.auth.role`：当前用户的角色信息
+  - `ctx.auth.locale`：当前用户的语言环境设置
+  - `ctx.auth.token`：当前用户的认证令牌
+  - `ctx.auth.user`：当前用户的详细信息对象
+* **示例**：
+
+```js
+ctx.element.innerHTML = `
+  <div style="padding: 20px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+    <h3>用户信息</h3>
+    <p><strong>用户：</strong>${ctx.auth.user?.nickname || ctx.auth.user?.email || '游客'}</p>
+    <p><strong>角色：</strong>${ctx.auth.role || '未设置'}</p>
+    <p><strong>语言：</strong>${ctx.auth.locale || '未设置'}</p>
+  </div>
+`;
+```
+
 ---
 
 ### `ctx.React`
@@ -910,3 +947,6 @@ A:
 - `ctx.requireAsync` 是基于 requirejs 封装的 Promise 风格异步方法，支持 `async/await`，推荐用于现代 JavaScript 开发。加载失败会抛出异常，代码更简洁，易于错误处理。
 
 **推荐优先使用 `ctx.requireAsync`，只有在必须兼容 requirejs 回调风格时才考虑 `ctx.requirejs`。**
+
+**Q: 如果低代码区块的 JavaScript 代码有问题导致页面崩溃无法打开怎么办？**
+A: 可以在 URL 末尾添加 `skip_nocobase_lowcode=true` 参数来跳过低代码区块的执行。例如：`http://localhost:3000/admin?skip_nocobase_lowcode=true`。这样可以避免有问题的 JavaScript 代码（或未来版本的破坏性变更）导致页面崩溃而无法从 UI 界面恢复。进入页面后可以修复或删除有问题的低代码区块，然后移除该 URL 参数恢复正常使用。

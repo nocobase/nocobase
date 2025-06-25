@@ -17,6 +17,7 @@ import { Message } from '../../types';
 import { Code } from './Code';
 import { Echarts } from './ECharts';
 import { Form } from './Form';
+import { Collections } from '../../data-modeling/Collections';
 
 export const Markdown: React.FC<{
   message: Message;
@@ -43,6 +44,9 @@ export const Markdown: React.FC<{
           echarts: (props) => {
             return <Echarts {...props} index={getIndex('echarts')} message={message} />;
           },
+          collections: (props) => {
+            return <Collections {...props} message={message} />;
+          },
         }}
         rehypePlugins={[
           rehypeRaw,
@@ -50,7 +54,7 @@ export const Markdown: React.FC<{
             rehypeSanitize,
             {
               ...defaultSchema,
-              tagNames: [...defaultSchema.tagNames, 'echarts', 'form'],
+              tagNames: [...defaultSchema.tagNames, 'echarts', 'form', 'collections'],
               attributes: {
                 ...defaultSchema.attributes,
                 form: ['uid', 'datasource', 'collection'],

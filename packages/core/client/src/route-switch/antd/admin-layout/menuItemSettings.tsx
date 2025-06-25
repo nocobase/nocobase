@@ -32,8 +32,8 @@ import {
 } from '../../..';
 import { getPageMenuSchema } from '../../../';
 import { SchemaSettings } from '../../../application/schema-settings/SchemaSettings';
-import { useInsertPageSchema } from '../../../modules/menu/PageMenuItem';
 import { getFlowPageMenuSchema } from '../../../modules/menu/FlowPageMenuItem';
+import { useInsertPageSchema } from '../../../modules/menu/PageMenuItem';
 import { SchemaToolbar } from '../../../schema-settings/GeneralSchemaDesigner';
 import {
   SchemaSettingsItem,
@@ -224,11 +224,11 @@ const InsertMenuItems = (props) => {
 
       <SchemaSettingsModalItem
         eventKey={`${insertPosition}page`}
-        title={t('Page')}
+        title={t('Classic page')}
         schema={
           {
             type: 'object',
-            title: t('Add page'),
+            title: t('Add classic page'),
             properties: {
               title: {
                 'x-decorator': 'FormItem',
@@ -288,11 +288,11 @@ const InsertMenuItems = (props) => {
       />
       <SchemaSettingsModalItem
         eventKey={`${insertPosition}flowPage`}
-        title={t('Flow Page')}
+        title={t('Modern page')}
         schema={
           {
             type: 'object',
-            title: t('Add flow page'),
+            title: t('Add modern page'),
             properties: {
               title: {
                 'x-decorator': 'FormItem',
