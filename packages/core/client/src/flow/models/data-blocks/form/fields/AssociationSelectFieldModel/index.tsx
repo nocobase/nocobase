@@ -9,8 +9,11 @@
 import { connect, mapProps, mapReadPretty } from '@formily/react';
 import { Select } from 'antd';
 import React from 'react';
+import { useStepSettingContext } from '@nocobase/flow-engine';
+import { useCompile } from '../../../../../../schema-component';
 import { getUniqueKeyFromCollection } from '../../../../../../collection-manager/interfaces/utils';
 import { FormFieldModel } from '../FormFieldModel';
+import { isTitleField } from '../../../../../../data-source';
 
 function toValue(record: any | any[], fieldNames, multiple = false) {
   if (!record) return multiple ? [] : undefined;
@@ -253,6 +256,27 @@ AssociationSelectFieldModel.registerFlow({
   },
 });
 
+const SelectOptions = (props) => {
+  const {
+    model: { collectionField },
+    app,
+  } = useStepSettingContext();
+  const compile = useCompile();
+  const collectionManager = collectionField?.collection?.collectionManager;
+  const dataSourceManager = app.dataSourceManager;
+  const target = collectionField?.options?.target;
+  if (!collectionManager || !target) return;
+  const targetCollection = collectionManager.getCollection(target);
+  const targetFields = targetCollection?.getFields?.() ?? [];
+  const options = targetFields
+    .filter((field) => isTitleField(dataSourceManager, field.options))
+    .map((field) => ({
+      value: field.name,
+      label: compile(field.options.uiSchema?.title) || field.name,
+    }));
+  return <Select {...props} options={options} />;
+};
+
 AssociationSelectFieldModel.registerFlow({
   key: 'fieldNames',
   auto: true,
@@ -263,7 +287,7 @@ AssociationSelectFieldModel.registerFlow({
       title: 'Title field',
       uiSchema: {
         label: {
-          'x-component': 'Select',
+          'x-component': SelectOptions,
           'x-decorator': 'FormItem',
         },
       },
