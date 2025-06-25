@@ -16,7 +16,7 @@ import { cloneDeep } from 'lodash';
 import React, { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useRequest } from '../../api-client';
-import { CollectionFieldInterface } from '../../data-source';
+import { CollectionFieldInterface, useDataSourceManager } from '../../data-source';
 import { RecordProvider, useRecord } from '../../record-provider';
 import { ActionContextProvider, SchemaComponent, useActionContext, useCompile } from '../../schema-component';
 import { useResourceActionContext, useResourceContext } from '../ResourceActionProvider';
@@ -27,7 +27,7 @@ import * as components from './components';
 import { useFieldInterfaceOptions } from './interfaces';
 import { ItemType, MenuItemType } from 'antd/es/menu/interface';
 
-const getSchema = (schema: CollectionFieldInterface, record: any, compile) => {
+const getSchema = (schema: CollectionFieldInterface, record: any, compile, fieldTypeOptions) => {
   if (!schema) {
     return;
   }
@@ -42,6 +42,31 @@ const getSchema = (schema: CollectionFieldInterface, record: any, compile) => {
   if (initialValue.reverseField) {
     initialValue.reverseField.name = `f_${uid()}`;
   }
+
+  // 设置 fieldType 默认值为第一组的最深层级路径
+  if (fieldTypeOptions && fieldTypeOptions.length > 0) {
+    const getFirstLeafPath = (options) => {
+      const path = [];
+      let current = options[0];
+
+      while (current) {
+        path.push(current.value);
+        if (current.children && current.children.length > 0) {
+          current = current.children[0];
+        } else {
+          break;
+        }
+      }
+
+      return path;
+    };
+
+    const defaultPath = getFirstLeafPath(fieldTypeOptions);
+    if (defaultPath.length > 0) {
+      initialValue.fieldType = defaultPath;
+    }
+  }
+
   // initialValue.uiSchema.title = schema.title;
   return {
     type: 'object',
@@ -182,6 +207,53 @@ export const AddFieldAction = (props) => {
       };
     });
   }, []);
+  const dm = useDataSourceManager();
+  const interfaces = dm.collectionFieldInterfaceManager.getFieldInterfaces();
+
+  const fieldTypeOptions = useMemo(() => {
+    const { availableFieldInterfaces } = getTemplate(record.template) || {};
+    const { exclude, include } = (availableFieldInterfaces || {}) as any;
+
+    // 根据 fieldType 分组 interfaces
+    const fieldTypeGroups = {};
+
+    interfaces.forEach((fieldInterface) => {
+      // 检查是否符合模板限制
+      if (include?.length && !include.includes(fieldInterface.name)) {
+        return;
+      }
+      if (exclude?.length && exclude.includes(fieldInterface.name)) {
+        return;
+      }
+
+      const fieldType = fieldInterface.default?.type;
+      const availableFieldTypes = fieldInterface.availableFieldTypes || [];
+
+      if (fieldType && availableFieldTypes.length > 0) {
+        if (!fieldTypeGroups[fieldType]) {
+          fieldTypeGroups[fieldType] = [];
+        }
+
+        // 为每个 availableFieldType 创建选项
+        availableFieldTypes.forEach((availableType) => {
+          if (!fieldTypeGroups[fieldType].find((item) => item.value === availableType)) {
+            fieldTypeGroups[fieldType].push({
+              label: availableType,
+              value: availableType,
+            });
+          }
+        });
+      }
+    });
+
+    // 转换为 antd 级联组件需要的数据结构
+    return Object.keys(fieldTypeGroups).map((fieldType) => ({
+      label: fieldType,
+      value: fieldType,
+      children: fieldTypeGroups[fieldType],
+    }));
+  }, [interfaces, getTemplate, record, compile]);
+
   const getFieldOptions = useCallback(() => {
     const { availableFieldInterfaces } = getTemplate(record.template) || {};
     const { exclude, include } = (availableFieldInterfaces || {}) as any;
@@ -283,7 +355,7 @@ export const AddFieldAction = (props) => {
         //@ts-ignore
         const targetScope = e.item.props['data-targetScope'];
         targetScope && setTargetScope(targetScope);
-        const schema = getSchema(getInterface(e.key), record, compile);
+        const schema = getSchema(getInterface(e.key), record, compile, fieldTypeOptions);
         if (schema) {
           setSchema(schema);
           setVisible(true);
@@ -335,6 +407,7 @@ export const AddFieldAction = (props) => {
               scopeKeyOptions,
               createMainOnly: true,
               editMainOnly: true,
+              fieldTypeOptions,
               ...scope,
             }}
           />

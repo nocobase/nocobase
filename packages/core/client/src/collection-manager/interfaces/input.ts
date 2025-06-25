@@ -58,7 +58,9 @@ export class InputFieldInterface extends CollectionFieldInterface {
       'x-component': 'Input',
     },
   };
-  availableTypes = ['string', 'uid'];
+  fieldType = 'string';
+  availableFieldTypes = ['varchar', 'char'];
+  availableTypes = ['varchar', 'char'];
   hasDefaultValue = true;
   properties = {
     ...defaultProps,

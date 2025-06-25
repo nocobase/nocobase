@@ -24,6 +24,8 @@ export interface CollectionFieldInterfaceComponentOption {
   useProps?: () => any;
 }
 
+export type AvailableFieldTypes = string[];
+
 export abstract class CollectionFieldInterface {
   constructor(public collectionFieldInterfaceManager: CollectionFieldInterfaceManager) {}
   name: string;
@@ -31,6 +33,7 @@ export abstract class CollectionFieldInterface {
   title?: string;
   description?: string;
   order?: number;
+  availableFieldTypes?: AvailableFieldTypes;
   default?: {
     type: string;
     uiSchema?: ISchema;
