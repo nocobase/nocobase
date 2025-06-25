@@ -61,7 +61,7 @@ export const useCollectionState = (currentCollectionName: string, displayType = 
         if (!field.interface) {
           return;
         }
-        if (['sort', 'password', 'sequence'].includes(field.type)) {
+        if (['password', 'sequence'].includes(field.type)) {
           return;
         }
         if (filterFields && filterFields(field)) {
