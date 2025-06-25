@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { BlockModel } from '@nocobase/client';
+import { APIClient, BlockModel } from '@nocobase/client';
 import {
   APIResource,
   BaseRecordResource,
@@ -263,6 +263,7 @@ ctx.element.innerHTML = \`
             const flowEngine = flowContext.globals.flowEngine as FlowEngine;
 
             const request = flowContext.globals.api.request.bind(flowContext.globals.api);
+            const api = flowContext.app.apiClient as APIClient;
 
             // Create a safe execution context for the code (as async function)
             // Wrap user code in an async function
@@ -300,6 +301,12 @@ ctx.element.innerHTML = \`
               React,
               ReactDOM,
               flowEngine,
+              auth: {
+                role: api.auth.role,
+                locale: api.auth.locale,
+                token: api.auth.token,
+                user: flowContext.globals.user,
+              },
               Components: {
                 antd,
               },
