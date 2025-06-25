@@ -17,13 +17,17 @@ import { observer } from '@formily/reactive-react';
  * ```tsx
  * export class MyModel extends FlowModel {
  *   @reactive
- *   public render() {
+ *   public render(): React.ReactNode {
  *     return <div>{this.someReactiveProperty}</div>;
  *   }
  * }
  * ```
  */
-export function reactive(target: any, propertyKey: string, descriptor: PropertyDescriptor) {
+export function reactive<T extends (...args: any[]) => React.ReactNode>(
+  target: any,
+  propertyKey: string,
+  descriptor: TypedPropertyDescriptor<T>,
+): TypedPropertyDescriptor<T> | void {
   const originalMethod = descriptor.value;
 
   if (typeof originalMethod !== 'function') {
@@ -39,16 +43,7 @@ export function reactive(target: any, propertyKey: string, descriptor: PropertyD
 
     // 返回响应式组件
     return React.createElement(ReactiveWrapper);
-  };
+  } as T;
 
   return descriptor;
 }
-
-/**
- * 响应式方法装饰器的TypeScript类型定义
- */
-export type ReactiveMethod = <T extends (...args: any[]) => React.ReactNode>(
-  target: any,
-  propertyKey: string,
-  descriptor: TypedPropertyDescriptor<T>,
-) => TypedPropertyDescriptor<T> | void;
