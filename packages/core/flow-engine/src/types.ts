@@ -361,3 +361,17 @@ export interface FieldFlowModelMeta extends FlowModelMeta {
 }
 
 export type { ForkFlowModel } from './models';
+
+/**
+ * 工具栏项目配置接口
+ */
+export interface ToolbarItemConfig {
+  /** 项目的唯一标识 */
+  key: string;
+  /** 项目组件，接收 model 作为 props，内部处理所有逻辑 */
+  component: React.ComponentType<{ model: FlowModel; [key: string]: any }>;
+  /** 是否显示项目的条件函数 */
+  visible?: (model: FlowModel) => boolean;
+  /** 排序权重，数字越小越靠右（先添加的在右边） */
+  sort?: number;
+}
