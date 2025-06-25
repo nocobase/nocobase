@@ -142,7 +142,7 @@ const FlowSettingsContent: React.FC<FlowSettingsContentProps> = observer(({ mode
     const paramsContext = {
       model,
       globals: model.flowEngine?.context || {},
-      app: model.flowEngine,
+      app: model.flowEngine?.context?.app,
     };
 
     // 从model中获取每个步骤的参数，如果为空则使用默认参数

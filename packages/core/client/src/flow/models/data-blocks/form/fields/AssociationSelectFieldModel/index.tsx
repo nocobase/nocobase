@@ -9,9 +9,11 @@
 import { connect, mapProps, mapReadPretty } from '@formily/react';
 import { Select } from 'antd';
 import React from 'react';
-import { FlowModelRenderer, useFlowModel, useFlowEngine } from '@nocobase/flow-engine';
-import { FormFieldModel } from '../FormFieldModel';
+import { useStepSettingContext } from '@nocobase/flow-engine';
+import { useCompile } from '../../../../../../schema-component';
 import { getUniqueKeyFromCollection } from '../../../../../../collection-manager/interfaces/utils';
+import { FormFieldModel } from '../FormFieldModel';
+import { isTitleField } from '../../../../../../data-source';
 
 function toValue(record: any | any[], fieldNames, multiple = false) {
   if (!record) return multiple ? [] : undefined;
@@ -83,6 +85,7 @@ function LabelByField(props) {
 
 function LazySelect(props) {
   const { fieldNames, value, multiple } = props;
+  console.log(fieldNames, props);
   return (
     <Select
       showSearch
@@ -122,6 +125,7 @@ const AssociationSelect = connect(
 export class AssociationSelectFieldModel extends FormFieldModel {
   static supportedFieldInterfaces = ['m2m', 'm2o', 'o2o', 'o2m', 'oho', 'obo', 'updatedBy', 'createdBy'];
   dataSource;
+
   set onPopupScroll(fn) {
     this.field.setComponentProps({ onPopupScroll: fn });
   }
@@ -306,7 +310,27 @@ AssociationSelectFieldModel.registerFlow({
   },
 });
 
-// 标题字段
+const SelectOptions = (props) => {
+  const {
+    model: { collectionField },
+    app,
+  } = useStepSettingContext();
+  const compile = useCompile();
+  const collectionManager = collectionField?.collection?.collectionManager;
+  const dataSourceManager = app.dataSourceManager;
+  const target = collectionField?.options?.target;
+  if (!collectionManager || !target) return;
+  const targetCollection = collectionManager.getCollection(target);
+  const targetFields = targetCollection?.getFields?.() ?? [];
+  const options = targetFields
+    .filter((field) => isTitleField(dataSourceManager, field.options))
+    .map((field) => ({
+      value: field.name,
+      label: compile(field.options.uiSchema?.title) || field.name,
+    }));
+  return <Select {...props} options={options} />;
+};
+
 AssociationSelectFieldModel.registerFlow({
   key: 'fieldNames',
   auto: true,
@@ -317,7 +341,7 @@ AssociationSelectFieldModel.registerFlow({
       title: 'Title field',
       uiSchema: {
         label: {
-          'x-component': 'Select',
+          'x-component': SelectOptions,
           'x-decorator': 'FormItem',
         },
       },

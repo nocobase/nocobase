@@ -12,7 +12,6 @@ import { autorun, toJS } from '@formily/reactive';
 import { FlowModel } from '../models';
 import { useFlowEngine } from '../provider';
 import { FlowExtraContext } from '../types';
-import { uid } from 'uid/secure';
 import { FlowEngine } from '../flowEngine';
 
 /**

@@ -85,6 +85,77 @@
 - **flowSettings.openRequiredParamsStepFormDialog(props: StepFormDialogProps)**  
   显示多个需要配置参数的步骤的分步表单界面。
 
+#### 工具栏扩展 (Toolbar Extensions)
+
+FlowSettings 支持在右上角悬浮工具栏中添加自定义项目组件：
+
+- **flowSettings.addToolbarItem(config: ToolbarItemConfig): void**  
+  添加单个工具栏项目。
+
+- **flowSettings.addToolbarItems(configs: ToolbarItemConfig[]): void**  
+  批量添加工具栏项目。
+
+- **flowSettings.removeToolbarItem(key: string): void**  
+  移除指定的工具栏项目。
+
+- **flowSettings.getToolbarItems(): ToolbarItemConfig[]**  
+  获取所有工具栏项目。
+
+- **flowSettings.clearToolbarItems(): void**  
+  清空所有工具栏项目。
+
+**ToolbarItemConfig 接口：**
+```typescript
+interface ToolbarItemConfig {
+  key: string;                                     // 项目唯一标识
+  component: React.ComponentType<{ model: FlowModel }>; // 项目组件
+  visible?: (model: FlowModel) => boolean;         // 显示条件函数
+  sort?: number;                                   // 排序权重，数字越小或越晚添加的越靠右
+}
+```
+
+**使用示例：**
+```typescript
+import { useFlowEngine } from '@nocobase/flow-engine';
+import { CopyOutlined } from '@ant-design/icons';
+import { Tooltip, message } from 'antd';
+
+const CopyIcon: React.FC<{ model: FlowModel }> = ({ model }) => {
+  const handleCopy = () => {
+    navigator.clipboard.writeText(model.uid);
+    message.success('UID 已复制');
+  };
+
+  return (
+    <Tooltip title="复制 UID">
+      <CopyOutlined 
+        onClick={handleCopy} 
+        style={{ cursor: 'pointer', fontSize: 12 }} 
+      />
+    </Tooltip>
+  );
+};
+
+// 注册工具栏项目
+const MyComponent = () => {
+  const flowEngine = useFlowEngine();
+  
+  useEffect(() => {
+    flowEngine.flowSettings.addToolbarItem({
+      key: 'copy',
+      component: CopyIcon,
+      sort: 10
+    });
+  }, [flowEngine]);
+
+  return <div>My Component</div>;
+};
+```
+
+**注意事项：**
+- 工具栏项目组件内部需要处理所有逻辑（点击、菜单、状态等）
+- 使用 Tooltip 提供操作说明，提升用户体验
+
 #### 步骤上下文 (Step Context)
 
 FlowSettings 为配置组件提供了上下文功能，使组件能够访问当前步骤的相关信息：
