@@ -10,7 +10,7 @@
 import React from 'react';
 import { AssociationReadPrettyFieldModel } from './AssociationReadPrettyFieldModel';
 import { Select } from 'antd';
-import { FlowModelRenderer, FlowEngineProvider, useStepSettingContext } from '@nocobase/flow-engine';
+import { FlowModelRenderer, FlowEngineProvider, useStepSettingContext, reactive } from '@nocobase/flow-engine';
 import { useCompile } from '../../../../../schema-component';
 import { getUniqueKeyFromCollection } from '../../../../../collection-manager/interfaces/utils';
 import { isTitleField } from '../../../../../data-source';
@@ -26,6 +26,7 @@ export class AssociationSelectReadPrettyFieldModel extends AssociationReadPretty
     'updatedBy',
     'createdBy',
   ];
+  @reactive
   public render() {
     const { fieldNames } = this.props;
     const value = this.getValue();

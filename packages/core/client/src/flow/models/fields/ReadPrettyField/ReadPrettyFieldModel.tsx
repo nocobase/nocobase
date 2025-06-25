@@ -8,13 +8,14 @@
  */
 
 import React from 'react';
+import { reactive } from '@nocobase/flow-engine';
 import { FieldModel } from '../../base/FieldModel';
 
 export class ReadPrettyFieldModel extends FieldModel {
   getValue() {
     return this.ctx.shared.value;
   }
-
+  @reactive
   public render() {
     return (
       <span>
