@@ -280,15 +280,20 @@ ctx.element.innerHTML = \`
             `;
             const executionFunction = new Function(wrappedCode);
             const lowcodeContext = {
+              Components: { antd },
+              Resources: { APIResource, BaseRecordResource, SingleRecordResource, MultiRecordResource },
+              React,
+              ReactDOM,
+              flowEngine,
               element,
               model: flowContext.model,
+              router: flowContext.app.router.router,
+              i18n: flowContext.app.i18n,
+              request,
               requirejs,
               requireAsync,
               loadCSS,
               getModelById,
-              request,
-              i18n: flowContext.app.i18n,
-              router: flowContext.app.router.router,
               initResource(use: typeof APIResource, options?: any) {
                 if (flowContext.model.resource) {
                   return flowContext.model.resource;
@@ -303,18 +308,12 @@ ctx.element.innerHTML = \`
                 flowContext.model.resource = resource;
                 return resource;
               },
-              Resources: { APIResource, BaseRecordResource, SingleRecordResource, MultiRecordResource },
-              React,
-              ReactDOM,
-              flowEngine,
+              flowContext,
               auth: {
                 role: api.auth.role,
                 locale: api.auth.locale,
                 token: api.auth.token,
                 user: flowContext.globals.user,
-              },
-              Components: {
-                antd,
               },
             };
             // Execute the code

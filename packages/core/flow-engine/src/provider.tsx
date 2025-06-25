@@ -36,12 +36,14 @@ export const FlowEngineGlobalsContextProvider: React.FC<{ children: React.ReactN
   const config = useContext(ConfigProvider.ConfigContext);
 
   useEffect(() => {
-    engine.context['antdConfig'] = config;
-    engine.context['drawer'] = drawer;
-    engine.context['modal'] = modal;
-    engine.context['message'] = message;
-    engine.context['notification'] = notification;
-    engine.context['popover'] = popover;
+    engine.setContext({
+      antdConfig: config,
+      drawer,
+      modal,
+      message,
+      notification,
+      popover,
+    });
   }, [engine, drawer, modal, message, notification, config, popover]);
 
   return (

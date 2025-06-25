@@ -9,7 +9,7 @@
 低代码区块为用户代码提供了统一的全局上下文对象 `ctx`。你可以通过解构的方式，快速访问常用变量和方法：
 
 ```js
-type LowcodeCtx = {
+type LowcodeContext = {
   element: HTMLElement;
   model: FlowModel;
   i18n: I18next;
@@ -37,9 +37,17 @@ type LowcodeCtx = {
     antd: typeof import('antd');
     // 可扩展更多组件库
   };
+  flowEngine: FlowEngine;
+  flowContext: FlowContext;
+  auth: {
+    role?: string;
+    locale?: string;
+    token?: string;
+    user?: User;
+  };
 };
 
-declare const ctx: LowcodeCtx;
+declare const ctx: LowcodeContext;
 ```
 
 ---
