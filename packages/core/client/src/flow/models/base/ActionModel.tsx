@@ -61,7 +61,8 @@ ActionModel.registerFlow({
         };
       },
       handler(ctx, params) {
-        ctx.model.setProps(params);
+        ctx.model.setProps('title', params.title);
+        ctx.model.setProps('icon', params.icon);
         ctx.model.setProps('onClick', (event) => {
           ctx.model.dispatchEvent('click', {
             ...ctx.extra,
