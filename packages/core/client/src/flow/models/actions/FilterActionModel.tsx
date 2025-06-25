@@ -9,16 +9,18 @@
 
 import { Button, ButtonProps, Input, Popover } from 'antd';
 import _ from 'lodash';
-import React, { FC } from 'react';
+import React, { FC, useContext } from 'react';
 import { GlobalActionModel } from '../base/ActionModel';
 import { useToken } from '../../../style/useToken';
 import { CloseCircleOutlined } from '@ant-design/icons';
 import { Trans, useTranslation } from 'react-i18next';
 import { Cascader, Select, Space } from 'antd';
 import { css } from '@emotion/css';
-import { useApp } from '../../../application/hooks/useApp';
 import { observer } from '@formily/reactive-react';
 import { useFlowModel, useStepSettingContext } from '@nocobase/flow-engine';
+
+// TODO: 需要重构，使用新的方式获取组件实例
+const AppContext = React.createContext(null);
 
 const findOperator = (obj) => {
   let current = obj;
@@ -166,7 +168,7 @@ const getOptions = (fields, depth, nonfilterable, dataSourceManager) => {
 const FieldComponent: FC<{ component: string; value: any; onChange: any; [key: string]: any }> = (props) => {
   const { component, ...others } = props;
 
-  const app = useApp();
+  const app = useContext(AppContext);
   const Component = app.getComponent(component);
 
   if (!Component) {
@@ -298,6 +300,7 @@ const FilterItem: FC<{
 const FilterGroup: FC<{
   value: any;
   options: any[];
+  app: any;
   showBorder?: boolean;
   onRemove?: () => void;
   onChange?: (value: any) => void;
@@ -342,68 +345,71 @@ const FilterGroup: FC<{
     };
 
     return (
-      <div style={style}>
-        {props.showBorder && (
-          <a role="button" aria-label="icon-close">
-            <CloseCircleOutlined
-              style={{
-                position: 'absolute',
-                right: 10,
-                top: 10,
-                color: '#bfbfbf',
-              }}
-              onClick={props.onRemove}
-            />
-          </a>
-        )}
-        <div style={{ marginBottom: 8, color: token.colorText }}>
-          <Trans>
-            {'Meet '}
-            <Select
-              // @ts-ignore
-              role="button"
-              data-testid="filter-select-all-or-any"
-              style={{ width: 'auto' }}
-              value={logic}
-              onChange={onChangeLogic}
-            >
-              <Select.Option value={'$and'}>All</Select.Option>
-              <Select.Option value={'$or'}>Any</Select.Option>
-            </Select>
-            {' conditions in the group'}
-          </Trans>
-        </div>
-        <div>
-          {items.map((item, index) =>
-            item.$and || item.$or ? (
-              <FilterGroup
-                key={index}
-                value={item}
-                showBorder
-                options={props.options}
-                onRemove={() => {
-                  items.splice(index, 1);
+      <AppContext.Provider value={props.app}>
+        <div style={style}>
+          {props.showBorder && (
+            <a role="button" aria-label="icon-close">
+              <CloseCircleOutlined
+                style={{
+                  position: 'absolute',
+                  right: 10,
+                  top: 10,
+                  color: '#bfbfbf',
                 }}
-                onChange={props.onChange}
+                onClick={props.onRemove}
               />
-            ) : (
-              <FilterItem
-                key={index}
-                value={item}
-                options={props.options}
-                onRemove={() => {
-                  items.splice(index, 1);
-                }}
-                onChange={props.onChange}
-              />
-            ),
+            </a>
           )}
+          <div style={{ marginBottom: 8, color: token.colorText }}>
+            <Trans>
+              {'Meet '}
+              <Select
+                // @ts-ignore
+                role="button"
+                data-testid="filter-select-all-or-any"
+                style={{ width: 'auto' }}
+                value={logic}
+                onChange={onChangeLogic}
+              >
+                <Select.Option value={'$and'}>All</Select.Option>
+                <Select.Option value={'$or'}>Any</Select.Option>
+              </Select>
+              {' conditions in the group'}
+            </Trans>
+          </div>
+          <div>
+            {items.map((item, index) =>
+              item.$and || item.$or ? (
+                <FilterGroup
+                  key={index}
+                  value={item}
+                  showBorder
+                  options={props.options}
+                  onRemove={() => {
+                    items.splice(index, 1);
+                  }}
+                  onChange={props.onChange}
+                  app={props.app}
+                />
+              ) : (
+                <FilterItem
+                  key={index}
+                  value={item}
+                  options={props.options}
+                  onRemove={() => {
+                    items.splice(index, 1);
+                  }}
+                  onChange={props.onChange}
+                />
+              ),
+            )}
+          </div>
+          <Space size={16} style={{ marginTop: 8, marginBottom: 8 }}>
+            <a onClick={onAddCondition}>{t('Add condition')}</a>
+            <a onClick={onAddConditionGroup}>{t('Add condition group')}</a>
+          </Space>
         </div>
-        <Space size={16} style={{ marginTop: 8, marginBottom: 8 }}>
-          <a onClick={onAddCondition}>{t('Add condition')}</a>
-          <a onClick={onAddConditionGroup}>{t('Add condition group')}</a>
-        </Space>
-      </div>
+      </AppContext.Provider>
     );
   },
   {
@@ -422,7 +428,7 @@ const FilterContent: FC<{ value: any }> = (props) => {
 
   return (
     <>
-      <FilterGroup value={props.value} options={options} />
+      <FilterGroup value={props.value} options={options} app={modelInstance.ctx.globals.app} />
       <Space style={{ width: '100%', display: 'flex', justifyContent: 'flex-end' }}>
         <Button onClick={() => modelInstance.dispatchEvent('reset')}>Reset</Button>
         <Button type="primary" onClick={() => modelInstance.dispatchEvent('submit')}>
@@ -516,7 +522,7 @@ FilterActionModel.registerFlow({
               currentBlockModel.ctx.globals.app.dataSourceManager,
             ).filter(Boolean);
 
-            return <FilterGroup value={props.value} options={options} />;
+            return <FilterGroup value={props.value} options={options} app={modelInstance.ctx.globals.app} />;
           },
         },
       },
