@@ -25,3 +25,17 @@ export class ReadPrettyFieldModel extends FieldModel {
     );
   }
 }
+ReadPrettyFieldModel.registerFlow({
+  key: 'ReadPrettyFieldDefault',
+  auto: true,
+  title: 'Basic',
+  sort: 100,
+  steps: {
+    step1: {
+      handler(ctx, params) {
+        const { collectionField } = ctx.model;
+        ctx.model.setProps(collectionField.getComponentProps());
+      },
+    },
+  },
+});
