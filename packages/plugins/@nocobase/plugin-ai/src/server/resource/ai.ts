@@ -9,6 +9,7 @@
 
 import { ResourceOptions } from '@nocobase/resourcer';
 import { PluginAIServer } from '../plugin';
+import _ from 'lodash';
 
 const aiResource: ResourceOptions = {
   name: 'ai',
@@ -46,6 +47,84 @@ const aiResource: ResourceOptions = {
       }
       ctx.body = res.models || [];
       return next();
+    },
+
+    defineCollections: async (ctx, next) => {
+      const { collections } = ctx.action.params.values || {};
+      const id = {
+        name: 'id',
+        type: 'bigInt',
+        autoIncrement: true,
+        primaryKey: true,
+        allowNull: false,
+        uiSchema: {
+          type: 'number',
+          title: '{{t("ID")}}',
+          'x-component': 'InputNumber',
+          'x-read-pretty': true,
+        },
+        interface: 'integer',
+      };
+      const createdAt = {
+        name: 'createdAt',
+        interface: 'createdAt',
+        type: 'date',
+        field: 'createdAt',
+        uiSchema: {
+          type: 'datetime',
+          title: '{{t("Created at")}}',
+          'x-component': 'DatePicker',
+          'x-component-props': {},
+          'x-read-pretty': true,
+        },
+      };
+      const updatedAt = {
+        type: 'date',
+        field: 'updatedAt',
+        name: 'updatedAt',
+        interface: 'updatedAt',
+        uiSchema: {
+          type: 'datetime',
+          title: '{{t("Last updated at")}}',
+          'x-component': 'DatePicker',
+          'x-component-props': {},
+          'x-read-pretty': true,
+        },
+      };
+      for (const options of collections) {
+        if (options.name === 'users') {
+          continue;
+        }
+        if (options.autoGenId !== false) {
+          options.autoGenId = false;
+          options.fields.unshift(id);
+        }
+        if (options.createdAt !== false) {
+          options.fields.push(createdAt);
+        }
+        if (options.updatedAt !== false) {
+          options.fields.push(updatedAt);
+        }
+        const primaryKey = options.fields.find((field: any) => field.primaryKey);
+        if (!options.filterTargetKey) {
+          options.filterTargetKey = primaryKey?.name || 'id';
+        }
+        // omit defaultValue
+        options.fields = options.fields.map((field: any) => {
+          return _.omit(field, ['defaultValue']);
+        });
+        ctx.db.collection(options);
+      }
+      for (const options of collections) {
+        const collection = ctx.db.getCollection(options.name);
+        await collection.sync();
+      }
+      const repo = ctx.db.getRepository('collections');
+      for (const options of collections) {
+        await repo.db2cm(options.name);
+      }
+
+      await next();
     },
   },
 };
