@@ -70,9 +70,6 @@ interface FlowModelRendererProps {
   /** Model 共享运行上下文，会沿着 model 树向下传递 */
   sharedContext?: Record<string, any>;
 
-  /** 是否为每个组件独立执行 auto flow，默认 false */
-  independentAutoFlowExecution?: boolean; // 默认 false
-
   /** 是否在最外层包装 FlowErrorFallback 组件，默认 false */
   showErrorFallback?: boolean; // 默认 false
 
@@ -90,7 +87,6 @@ const FlowModelRendererWithAutoFlows: React.FC<{
   hideRemoveInSettings: boolean;
   extraContext?: Record<string, any>;
   sharedContext?: Record<string, any>;
-  independentAutoFlowExecution?: boolean;
   showErrorFallback?: boolean;
   settingsMenuLevel?: number;
 }> = observer(
@@ -101,11 +97,10 @@ const FlowModelRendererWithAutoFlows: React.FC<{
     hideRemoveInSettings,
     extraContext,
     sharedContext,
-    independentAutoFlowExecution,
     showErrorFallback,
     settingsMenuLevel,
   }) => {
-    useApplyAutoFlows(model, extraContext, !independentAutoFlowExecution);
+    useApplyAutoFlows(model, extraContext);
 
     return (
       <FlowModelProvider model={model}>
@@ -250,7 +245,6 @@ const FlowModelRendererCore: React.FC<{
  * @param {boolean} props.skipApplyAutoFlows - Whether to skip applying auto flows.
  * @param {any} props.extraContext - Extra context to pass to useApplyAutoFlows when skipApplyAutoFlows is false.
  * @param {any} props.sharedContext - Shared context to pass to the model.
- * @param {boolean} props.independentAutoFlowExecution - Whether each component has independent auto flow execution.
  * @param {number} props.settingsMenuLevel - Settings menu levels: 1=current model only (default), 2=include sub-models.
  * @returns {React.ReactNode | null} The rendered output of the model, or null if the model or its render method is invalid.
  */
@@ -264,7 +258,6 @@ export const FlowModelRenderer: React.FC<FlowModelRendererProps> = observer(
     skipApplyAutoFlows = false,
     extraContext,
     sharedContext,
-    independentAutoFlowExecution = false,
     showErrorFallback = false,
     settingsMenuLevel,
   }) => {
@@ -303,7 +296,6 @@ export const FlowModelRenderer: React.FC<FlowModelRendererProps> = observer(
             hideRemoveInSettings={hideRemoveInSettings}
             extraContext={extraContext}
             sharedContext={sharedContext}
-            independentAutoFlowExecution={independentAutoFlowExecution}
             showErrorFallback={showErrorFallback}
             settingsMenuLevel={settingsMenuLevel}
           />

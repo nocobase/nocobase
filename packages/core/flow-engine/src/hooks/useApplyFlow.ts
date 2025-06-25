@@ -138,11 +138,7 @@ export function useApplyFlow<TModel extends FlowModel = FlowModel>(
  * @param context Optional user context
  * @returns The results of all auto-apply flows execution
  */
-export function useApplyAutoFlows(
-  modelOrUid: FlowModel | string,
-  context?: FlowExtraContext,
-  independentAutoFlowExecution?: boolean,
-): any[] {
+export function useApplyAutoFlows(modelOrUid: FlowModel | string, context?: FlowExtraContext): any[] {
   const flowEngine = useFlowEngine();
   const model = useMemo(() => {
     if (typeof modelOrUid === 'string') {
@@ -151,17 +147,9 @@ export function useApplyAutoFlows(
     return modelOrUid;
   }, [modelOrUid, flowEngine]);
 
-  // const runId = useMemo(() => {
-  //   if (independentAutoFlowExecution) {
-  //     return `autoFlow:${uid()}`;
-  //   }
-  //   return 'autoFlow';
-  // }, [independentAutoFlowExecution]);
-
   const executor = useCallback((ctx?: FlowExtraContext) => model.applyAutoFlows(ctx), [model]);
 
   return useFlowExecutor(
-    // runId,
     'autoFlow',
     'all',
     model,
