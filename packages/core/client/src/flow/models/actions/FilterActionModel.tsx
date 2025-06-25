@@ -443,6 +443,7 @@ export class FilterActionModel extends GlobalActionModel {
   declare props: ButtonProps & {
     filterValue?: any;
     ignoreFieldsNames?: string[];
+    open?: boolean;
   };
 
   defaultProps: any = {
@@ -456,6 +457,7 @@ export class FilterActionModel extends GlobalActionModel {
   render() {
     return (
       <Popover
+        open={this.props.open}
         content={<FilterContent value={this.props.filterValue || this.defaultProps.filterValue} />}
         trigger="click"
         placement="bottomLeft"
@@ -553,6 +555,43 @@ FilterActionModel.registerFlow({
         }
         resource.addFilterGroup(ctx.model.uid, ctx.model.props.filterValue);
         resource.refresh();
+        ctx.model.setProps('open', false);
+      },
+    },
+  },
+});
+
+FilterActionModel.registerFlow({
+  key: 'handleReset',
+  title: '重置',
+  on: {
+    eventName: 'reset',
+  },
+  steps: {
+    submit: {
+      handler(ctx, params) {
+        const resource = ctx.shared?.currentBlockModel?.resource as MultiRecordResource;
+        if (!resource) {
+          return;
+        }
+        resource.removeFilterGroup(ctx.model.uid);
+        resource.refresh();
+        ctx.model.setProps('open', false);
+      },
+    },
+  },
+});
+
+FilterActionModel.registerFlow({
+  key: 'handleClick',
+  title: '点击事件',
+  on: {
+    eventName: 'click',
+  },
+  steps: {
+    open: {
+      handler(ctx, params) {
+        ctx.model.setProps('open', !ctx.model.props.open);
       },
     },
   },
