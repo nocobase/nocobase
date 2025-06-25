@@ -35,7 +35,7 @@ import {
   useResourceContext,
   ViewCollectionField,
 } from '@nocobase/client';
-import { message, Space, Switch, Table, TableColumnProps, Tag, Tooltip } from 'antd';
+import { Cascader, message, Select, Space, Switch, Table, TableColumnProps, Tag, Tooltip } from 'antd';
 import React, { createContext, useContext, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -76,27 +76,85 @@ const tableContainer = css`
   }
   td,
   th {
-    flex: 2.3;
+    flex: 1.5;
     width: 0;
+    &:nth-child(4) {
+      flex: 1.8; /* Field interface column */
+    }
     &:nth-child(5) {
-      flex: 1.2;
+      flex: 1.8; /* Field type column */
+    }
+    &:nth-child(6) {
+      flex: 1.2; /* Title field column */
+    }
+    &:nth-child(7) {
+      flex: 2; /* Description column */
     }
     &:last-child {
-      flex: 1.5;
+      flex: 1.5; /* Actions column */
     }
   }
-  .ant-table-selection-column,
-  .ant-table-row-expand-icon-cell {
-    flex-basis: 50px !important;
+  .ant-table-selection-column {
     min-width: 50px;
+    flex-basis: 50px !important;
     flex: 0;
+  }
+
+  .ant-table-row-expand-icon-cell {
+    flex: 0;
+    flex-basis: 30px !important;
   }
 `;
 
 const titlePrompt = 'Default title for each record';
+
+const convertFieldTypeToOptions = (fieldType: string[]) => {
+  if (!fieldType || !Array.isArray(fieldType) || fieldType.length === 0) {
+    return [];
+  }
+
+  const fieldTypeHierarchy = {
+    string: [
+      { label: 'varchar', value: 'varchar' },
+      { label: 'char', value: 'char' },
+      { label: 'text', value: 'text' },
+    ],
+    integer: [
+      { label: 'int', value: 'int' },
+      { label: 'bigint', value: 'bigint' },
+      { label: 'smallint', value: 'smallint' },
+    ],
+    float: [
+      { label: 'decimal', value: 'decimal' },
+      { label: 'double', value: 'double' },
+    ],
+    boolean: [{ label: 'boolean', value: 'boolean' }],
+    date: [
+      { label: 'date', value: 'date' },
+      { label: 'datetime', value: 'datetime' },
+      { label: 'timestamp', value: 'timestamp' },
+    ],
+  };
+
+  if (fieldType.length >= 1) {
+    const firstLevel = fieldType[0];
+    const children = fieldTypeHierarchy[firstLevel] || [];
+
+    return [
+      {
+        label: firstLevel,
+        value: firstLevel,
+        children: children.length > 0 ? children : undefined,
+      },
+    ];
+  }
+
+  return [];
+};
+
 const CurrentFields = (props) => {
   const compile = useCompile();
-  const { getInterface } = useCollectionManager_deprecated();
+  const { getInterface, interfaces } = useCollectionManager_deprecated();
   const { t } = useTranslation();
   const { setState } = useResourceActionContext();
   const { targetKey } = props.collectionResource || {};
@@ -120,7 +178,87 @@ const CurrentFields = (props) => {
     {
       dataIndex: 'interface',
       title: t('Field interface'),
-      render: (value) => <Tag>{compile(getInterface(value)?.title)}</Tag>,
+      render: (value, record) => {
+        const handleChange = async (selectedInterface) => {
+          try {
+            await api.request({
+              url: `collections.fields:update?filterByTk=${record.name}&associatedIndex=${filterByTk}`,
+              method: 'post',
+              data: { interface: selectedInterface },
+            });
+            ctx?.refresh?.();
+            await props.refreshAsync();
+            refreshCM();
+            message.success(t('Saved successfully'));
+          } catch (error) {
+            console.error('Failed to update field interface:', error);
+            message.error(t('Save failed'));
+          }
+        };
+
+        return (
+          <Select
+            value={value}
+            onChange={handleChange}
+            placeholder={t('Select field interface')}
+            size="small"
+            style={{ width: '100%', minWidth: 120 }}
+            disabled={targetTemplate?.forbidDeletion}
+            showSearch
+            filterOption={(input, option) => {
+              const label = option?.children || '';
+              return String(label).toLowerCase().includes(input.toLowerCase());
+            }}
+          >
+            {Object.keys(interfaces).map((interfaceKey) => {
+              const interfaceItem = interfaces[interfaceKey];
+              return (
+                <Select.Option key={interfaceKey} value={interfaceKey}>
+                  {compile(interfaceItem.title)}
+                </Select.Option>
+              );
+            })}
+          </Select>
+        );
+      },
+    },
+    {
+      dataIndex: 'fieldType',
+      title: t('Field type'),
+      render: (value, record) => {
+        const handleChange = async (selectedValues) => {
+          try {
+            // await api.request({
+            //   url: `collections.fields:update?filterByTk=${record.name}&associatedIndex=${filterByTk}`,
+            //   method: 'post',
+            //   data: { fieldType: selectedValues },
+            // });
+            ctx?.refresh?.();
+            await props.refreshAsync();
+            refreshCM();
+            message.success(t('Saved successfully'));
+          } catch (error) {
+            console.error('Failed to update field type:', error);
+            message.error(t('Save failed'));
+          }
+        };
+
+        return value && Array.isArray(value) && value.length > 0 ? (
+          <Cascader
+            value={value}
+            options={convertFieldTypeToOptions(value)}
+            onChange={handleChange}
+            placeholder={t('Select field type')}
+            expandTrigger="hover"
+            changeOnSelect={true}
+            size="small"
+            style={{ width: '100%', minWidth: 120 }}
+            disabled={targetTemplate?.forbidDeletion}
+          />
+        ) : (
+          <span style={{ color: '#ccc' }}>-</span>
+        );
+      },
     },
     {
       dataIndex: 'titleField',
@@ -239,6 +377,27 @@ const InheritFields = (props) => {
       render: (value) => <Tag>{compile(getInterface(value)?.title)}</Tag>,
     },
     {
+      dataIndex: 'fieldType',
+      title: t('Field type'),
+      render: (value) => {
+        return value && Array.isArray(value) && value.length > 0 ? (
+          <Cascader
+            value={value}
+            options={convertFieldTypeToOptions(value)}
+            placeholder={t('Select field type')}
+            expandTrigger="hover"
+            changeOnSelect={true}
+            size="small"
+            style={{ width: '100%', minWidth: 120 }}
+            disabled={true}
+            open={false}
+          />
+        ) : (
+          <span style={{ color: '#ccc' }}>-</span>
+        );
+      },
+    },
+    {
       dataIndex: 'titleField',
       title: t('Title field'),
       render(_, record) {
@@ -344,6 +503,10 @@ const CollectionFieldsInternal = () => {
       title: t('Field interface'),
     },
     {
+      dataIndex: 'fieldType',
+      title: t('Field type'),
+    },
+    {
       dataIndex: 'titleField',
       title: t('Title field'),
     },
@@ -358,10 +521,8 @@ const CollectionFieldsInternal = () => {
   ];
   const fields = data?.data || [];
 
-  // 创建数据源，当前集合字段直接显示，只有继承字段分组
   const dataSource = [];
 
-  // 添加继承字段分组
   dataSource.push(
     ...inherits
       .map((key) => {
@@ -420,7 +581,6 @@ const CollectionFieldsInternal = () => {
           <AddCollectionField {...addProps} />
         </Space>
 
-        {/* 当前集合字段直接显示，显示表头 */}
         {fields.length > 0 && (
           <CurrentFields
             fields={fields}
@@ -431,14 +591,13 @@ const CollectionFieldsInternal = () => {
           />
         )}
 
-        {/* 继承字段分组显示 */}
         {dataSource.length > 0 && (
           <Table
             rowKey={'key'}
             columns={columns}
             dataSource={dataSource}
             pagination={false}
-            showHeader={fields.length === 0} // 只有在没有当前字段时才显示表头
+            showHeader={fields.length === 0}
             className={tableContainer}
             expandable={{
               defaultExpandAllRows: true,
