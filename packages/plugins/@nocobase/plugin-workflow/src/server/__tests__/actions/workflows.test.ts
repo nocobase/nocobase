@@ -19,6 +19,7 @@ describe('workflow > actions > workflows', () => {
   let PostModel;
   let PostRepo;
   let WorkflowModel;
+  let WorkflowRepo;
   let ExecutionModel;
   let WorkflowStatsRepo;
   let WorkflowVersionStatsRepo;
@@ -28,6 +29,7 @@ describe('workflow > actions > workflows', () => {
     agent = app.agent();
     db = app.db;
     WorkflowModel = db.getCollection('workflows').model;
+    WorkflowRepo = db.getCollection('workflows').repository;
     ExecutionModel = db.getCollection('executions').model;
     WorkflowStatsRepo = db.getCollection('workflowStats').repository;
     WorkflowVersionStatsRepo = db.getCollection('workflowVersionStats').repository;
@@ -248,6 +250,60 @@ describe('workflow > actions > workflows', () => {
       expect(statsCount).toBe(0);
       const versionStatsCount = await WorkflowVersionStatsRepo.count();
       expect(versionStatsCount).toBe(0);
+    });
+
+    it('destroy current version should delete stats record too', async () => {
+      const w1 = await WorkflowModel.create({
+        enabled: true,
+        type: 'collection',
+        config: {
+          mode: 1,
+          collection: 'posts',
+        },
+      });
+
+      const s1 = await WorkflowStatsRepo.find();
+      expect(s1.length).toBe(1);
+      expect(s1[0].key).toBe(w1.key);
+
+      await agent.resource(`workflows`).destroy({
+        filterByTk: w1.id,
+      });
+
+      const statsCount = await WorkflowStatsRepo.count();
+      expect(statsCount).toBe(0);
+    });
+
+    it('destroy non-current version should not delete stats record', async () => {
+      const w1 = await WorkflowModel.create({
+        enabled: true,
+        type: 'collection',
+        config: {
+          mode: 1,
+          collection: 'posts',
+        },
+      });
+
+      const s1 = await WorkflowStatsRepo.find();
+      expect(s1.length).toBe(1);
+      expect(s1[0].key).toBe(w1.key);
+
+      const w2 = await WorkflowRepo.revision({
+        filterByTk: w1.id,
+        filter: {
+          key: w1.key,
+        },
+        context: {
+          app,
+        },
+      });
+
+      await agent.resource(`workflows`).destroy({
+        filterByTk: w2.id,
+      });
+
+      const statsCount = await WorkflowStatsRepo.count();
+      expect(statsCount).toBe(1);
     });
   });
 
@@ -545,6 +601,88 @@ describe('workflow > actions > workflows', () => {
       const [e2] = await w2next.getExecutions();
       expect(e1.key).not.toBe(e2.key);
       expect(e2.workflowId).toBe(w2.id);
+    });
+
+    it('revision with categories', async () => {
+      const CategoryRepo = db.getRepository('workflowCategories');
+      const categories = await CategoryRepo.create({
+        values: [{ title: 'c1' }, { title: 'c2' }, { title: 'c3' }],
+      });
+      const w1 = await WorkflowRepo.create({
+        values: {
+          enabled: true,
+          type: 'collection',
+          config: {
+            mode: 1,
+            collection: 'posts',
+          },
+          options: {
+            stackLimit: 2,
+          },
+          categories: categories.map((item) => item.id),
+        },
+      });
+      await w1.reload({
+        include: ['categories'],
+      });
+      expect(w1.categories.length).toBe(categories.length);
+
+      const { body, status } = await agent.resource(`workflows`).revision({
+        filterByTk: w1.id,
+        filter: {
+          key: w1.key,
+        },
+      });
+
+      expect(status).toBe(200);
+
+      const w2 = await WorkflowModel.findOne({
+        where: {
+          id: body.data.id,
+        },
+        include: ['stats', 'versionStats', 'categories'],
+      });
+      expect(w2.categories.length).toBe(categories.length);
+    });
+
+    it('duplicate with categories', async () => {
+      const CategoryRepo = db.getRepository('workflowCategories');
+      const categories = await CategoryRepo.create({
+        values: [{ title: 'c1' }, { title: 'c2' }, { title: 'c3' }],
+      });
+      const w1 = await WorkflowRepo.create({
+        values: {
+          enabled: true,
+          type: 'collection',
+          config: {
+            mode: 1,
+            collection: 'posts',
+          },
+          options: {
+            stackLimit: 2,
+          },
+          categories: categories.map((item) => item.id),
+        },
+      });
+      await w1.reload({
+        include: ['categories'],
+      });
+      expect(w1.categories.length).toBe(categories.length);
+
+      const { body, status } = await agent.resource(`workflows`).revision({
+        filterByTk: w1.id,
+      });
+
+      expect(status).toBe(200);
+
+      const w2 = await WorkflowModel.findOne({
+        where: {
+          id: body.data.id,
+        },
+        include: ['stats', 'versionStats', 'categories'],
+      });
+      expect(w2.categories.length).toBe(categories.length);
+      expect(w2.key).not.toBe(w1.key);
     });
   });
 });

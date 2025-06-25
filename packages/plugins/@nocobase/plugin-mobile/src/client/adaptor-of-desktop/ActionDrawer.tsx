@@ -85,7 +85,8 @@ export const ActionDrawerUsedInMobile: any = observer((props: { footerNodeName?:
           bodyClassName="nb-mobile-action-drawer-body"
           bodyStyle={zIndexStyle}
           maskStyle={zIndexStyle}
-          closeOnSwipe
+          style={zIndexStyle}
+          destroyOnClose
         >
           <div className="nb-mobile-action-drawer-header">
             {/* used to make the title center */}
@@ -142,6 +143,9 @@ const originalActionDrawer = Action.Drawer;
  */
 export const useToAdaptActionDrawerToMobile = () => {
   Action.Drawer = ActionDrawerUsedInMobile;
+  Action.Drawer.FootBar = (props) => {
+    return <div style={{ display: 'flex', justifyContent: 'end', gap: 8 }}>{props.children}</div>;
+  };
 
   useEffect(() => {
     return () => {

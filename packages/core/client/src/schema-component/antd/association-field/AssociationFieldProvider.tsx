@@ -8,9 +8,9 @@
  */
 
 import { Field } from '@formily/core';
-import { observer, useField, useFieldSchema } from '@formily/react';
+import { observer, useField, useFieldSchema, SchemaOptionsContext } from '@formily/react';
 import _ from 'lodash';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState, useRef } from 'react';
 import { useAPIClient, useRequest } from '../../../api-client';
 import { useCollectionManager } from '../../../data-source/collection';
 import { markRecordAsNew } from '../../../data-source/collection-record/isNewRecord';
@@ -18,6 +18,7 @@ import { getDataSourceHeaders } from '../../../data-source/utils';
 import { useKeepAlive } from '../../../route-switch/antd/admin-layout/KeepAlive';
 import { useSchemaComponentContext } from '../../hooks';
 import { AssociationFieldContext } from './context';
+import { FormItem, useSchemaOptionsContext } from '../../../schema-component';
 
 export const AssociationFieldProvider = observer(
   (props) => {
@@ -25,6 +26,8 @@ export const AssociationFieldProvider = observer(
     const cm = useCollectionManager();
     const fieldSchema = useFieldSchema();
     const api = useAPIClient();
+    const option = useSchemaOptionsContext();
+    const rootRef = useRef<HTMLDivElement>(null);
 
     // 这里有点奇怪，在 Table 切换显示的组件时，这个组件并不会触发重新渲染，所以增加这个 Hooks 让其重新渲染
     useSchemaComponentContext();
@@ -151,13 +154,34 @@ export const AssociationFieldProvider = observer(
     if (loading || rLoading) {
       return null;
     }
-
+    const components = {
+      ...option.components,
+      FormItem: (props) => {
+        return (
+          <FormItem
+            {...props}
+            getPopupContainer={(triggerNode) => {
+              return rootRef.current || document.body;
+            }}
+          />
+        );
+      },
+    };
     return collectionField ? (
-      <AssociationFieldContext.Provider
-        value={{ options: collectionField, field, fieldSchema, allowMultiple, allowDissociate, currentMode }}
-      >
-        {props.children}
-      </AssociationFieldContext.Provider>
+      <div ref={rootRef}>
+        <AssociationFieldContext.Provider
+          value={{ options: collectionField, field, fieldSchema, allowMultiple, allowDissociate, currentMode }}
+        >
+          <SchemaOptionsContext.Provider
+            value={{
+              components,
+              scope: option.scope,
+            }}
+          >
+            {props.children}
+          </SchemaOptionsContext.Provider>
+        </AssociationFieldContext.Provider>
+      </div>
     ) : null;
   },
   { displayName: 'AssociationFieldProvider' },

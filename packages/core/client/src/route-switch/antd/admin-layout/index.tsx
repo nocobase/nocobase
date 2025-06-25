@@ -36,6 +36,7 @@ import {
   useSchemaInitializerRender,
   useSystemSettings,
   useToken,
+  useRouterBasename,
 } from '../../../';
 import {
   CurrentPageUidContext,
@@ -54,6 +55,8 @@ import { KeepAlive, useKeepAlive } from './KeepAlive';
 import { NocoBaseDesktopRoute, NocoBaseDesktopRouteType } from './convertRoutesToSchema';
 import { MenuSchemaToolbar, ResetThemeTokenAndKeepAlgorithm } from './menuItemSettings';
 import { userCenterSettings } from './userCenterSettings';
+import { navigateWithinSelf } from '../../../block-provider/hooks';
+import { useNavigateNoUpdate } from '../../../application/CustomRouterContextProvider';
 import { createStyles } from 'antd-style';
 
 export { KeepAlive, NocoBaseDesktopRouteType, useKeepAlive };
@@ -174,7 +177,6 @@ const layoutContentClass = css`
 `;
 
 const className1 = css`
-  width: 168px;
   height: var(--nb-header-height);
   margin-right: 4px;
   display: inline-flex;
@@ -182,6 +184,15 @@ const className1 = css`
   color: #fff;
   padding: 0;
   align-items: center;
+`;
+const className1WithFixedWidth = css`
+  ${className1}
+  width: 168px;
+`;
+const className1WithAutoWidth = css`
+  ${className1}
+  width: auto;
+  min-width: 168px;
 `;
 const className2 = css`
   object-fit: contain;
@@ -260,7 +271,8 @@ const NocoBaseLogo = () => {
   const { token } = useToken();
   const fontSizeStyle = useMemo(() => ({ fontSize: token.fontSizeHeading3 }), [token.fontSizeHeading3]);
 
-  const logo = result?.data?.data?.logo?.url ? (
+  const hasLogo = result?.data?.data?.logo?.url;
+  const logo = hasLogo ? (
     <img className={className2} src={result?.data?.data?.logo?.url} />
   ) : (
     <span style={fontSizeStyle} className={className3}>
@@ -268,7 +280,9 @@ const NocoBaseLogo = () => {
     </span>
   );
 
-  return <div className={className1}>{result?.loading ? null : logo}</div>;
+  return (
+    <div className={hasLogo ? className1WithFixedWidth : className1WithAutoWidth}>{result?.loading ? null : logo}</div>
+  );
 };
 
 /**
@@ -333,6 +347,8 @@ const MenuItem: FC<{ item: any; options: { isMobile: boolean; collapsed: boolean
   const { parseURLAndParams } = useParseURLAndParams();
   const divRef = useRef(null);
   const location = useLocation();
+  const navigate = useNavigateNoUpdate();
+  const basenameOfCurrentRouter = useRouterBasename();
 
   useEffect(() => {
     if (divRef.current) {
@@ -348,13 +364,19 @@ const MenuItem: FC<{ item: any; options: { isMobile: boolean; collapsed: boolean
     async (event: React.MouseEvent) => {
       const href = item._route.options?.href;
       const params = item._route.options?.params;
+      const openInNewWindow = item._route.options?.openInNewWindow;
 
       event.preventDefault();
       event.stopPropagation();
 
       try {
         const url = await parseURLAndParams(href, params || []);
-        window.open(url, '_blank');
+
+        if (openInNewWindow !== false) {
+          window.open(url, '_blank');
+        } else {
+          navigateWithinSelf(href, navigate, window.location.origin + basenameOfCurrentRouter);
+        }
       } catch (err) {
         console.error(err);
         window.open(href, '_blank');

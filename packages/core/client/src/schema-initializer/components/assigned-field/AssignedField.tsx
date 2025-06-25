@@ -10,8 +10,9 @@
 import { Field } from '@formily/core';
 import { useField, useFieldSchema } from '@formily/react';
 import { merge } from '@formily/shared';
-import _ from 'lodash';
-import React, { useCallback, useEffect, useMemo } from 'react';
+import _, { cloneDeepWith } from 'lodash';
+import React, { isValidElement, useCallback, useEffect, useMemo } from 'react';
+import { useBlockContext } from '../../../block-provider';
 import { useFormBlockContext } from '../../../block-provider/FormBlockProvider';
 import {
   useCollectionField_deprecated,
@@ -20,14 +21,13 @@ import {
   useCollection_deprecated,
 } from '../../../collection-manager';
 import { CollectionFieldProvider } from '../../../data-source';
+import { FlagProvider } from '../../../flag-provider';
 import { useRecord } from '../../../record-provider';
 import { useCompile, useComponent } from '../../../schema-component';
 import { VariableInput, getShouldChange } from '../../../schema-settings/VariableInput/VariableInput';
 import { Option } from '../../../schema-settings/VariableInput/type';
 import { formatVariableScop } from '../../../schema-settings/VariableInput/utils/formatVariableScop';
 import { useLocalVariables, useVariables } from '../../../variables';
-import { useBlockContext } from '../../../block-provider';
-import { FlagProvider } from '../../../flag-provider';
 interface AssignedFieldProps {
   value: any;
   onChange: (value: any) => void;
@@ -100,6 +100,7 @@ export const AssignedFieldInner = (props: AssignedFieldProps) => {
   const collection = useCollection_deprecated();
   const { form } = useFormBlockContext();
   const fieldSchema = useFieldSchema();
+  const field: any = useField<Field>();
   const record = useRecord();
   const variables = useVariables();
   const localVariables = useLocalVariables();
@@ -107,6 +108,7 @@ export const AssignedFieldInner = (props: AssignedFieldProps) => {
 
   const { name, getField } = collection;
   const collectionField = getField(fieldSchema.name);
+  const { uiSchema } = useCollectionField_deprecated();
 
   const shouldChange = useMemo(
     () => getShouldChange({ collectionField, variables, localVariables, getAllCollectionsInheritChain }),
@@ -124,7 +126,14 @@ export const AssignedFieldInner = (props: AssignedFieldProps) => {
         currentForm.children = formatVariableScop(currentFormFields);
       }
 
-      return scope;
+      return cloneDeepWith(scope, (value) => {
+        // 不对 `ReactElement` 进行深拷贝，因为会报错
+        if (isValidElement(value)) {
+          return value;
+        }
+        // 对于其他类型的对象，继续正常的深拷贝
+        return undefined;
+      });
     },
     [currentFormFields, name],
   );
@@ -135,6 +144,13 @@ export const AssignedFieldInner = (props: AssignedFieldProps) => {
     },
     [JSON.stringify(_.omit(props, 'value'))],
   );
+
+  useEffect(() => {
+    if (!uiSchema) {
+      return;
+    }
+    field.title = typeof field.title === 'undefined' ? uiSchema?.title || field.name : field.title;
+  }, [JSON.stringify(uiSchema)]);
   return (
     <FlagProvider collectionField={collectionField}>
       <VariableInput

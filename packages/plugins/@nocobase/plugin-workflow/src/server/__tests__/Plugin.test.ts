@@ -575,4 +575,60 @@ describe('workflow > Plugin', () => {
       expect(processor.execution.status).toBe(executions[0].status);
     });
   });
+
+  describe('stats', () => {
+    it('stats record should be created after start', async () => {
+      const app1 = await getApp({
+        skipStart: true,
+        name: 'abc',
+      });
+
+      const WModel = app1.db.getCollection('workflows').model;
+
+      const w1 = await WModel.create(
+        {
+          enabled: true,
+          type: 'syncTrigger',
+          key: 'abc',
+          current: true,
+        },
+        {
+          hooks: false,
+        },
+      );
+
+      const s1 = await w1.getStats();
+      const vs1 = await w1.getVersionStats();
+      expect(s1).toBeNull();
+      expect(vs1).toBeNull();
+
+      await app1.start();
+
+      const s2 = await w1.getStats();
+      const vs2 = await w1.getVersionStats();
+      expect(s2.executed).toBe(0);
+      expect(vs2.executed).toBe(0);
+    });
+
+    it.skipIf(process.env.DB_DIALECT === 'sqlite')('bigint stats', async () => {
+      const WorkflowRepo = app.db.getRepository('workflows');
+
+      const w1 = await WorkflowRepo.create({
+        values: {
+          enabled: true,
+          type: 'syncTrigger',
+          key: 'abc',
+          current: true,
+        },
+        hooks: false,
+      });
+      await w1.createStats({ executed: '10000000000000001' });
+      await w1.createVersionStats({ executed: '10000000000000001' });
+
+      const s1 = await w1.getStats();
+      const vs1 = await w1.getVersionStats();
+      expect(s1.executed).toBe('10000000000000001');
+      expect(vs1.executed).toBe('10000000000000001');
+    });
+  });
 });

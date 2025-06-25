@@ -36,7 +36,21 @@ export const FilterItem = observer(
       setValue,
       collectionField,
     } = useValues();
-    const fields = useMemo(() => sortTree(_fields, 'children', 'children', false), [_fields]);
+    const fields = useMemo(
+      () =>
+        sortTree(
+          _fields,
+          (node) => {
+            if (node.children?.length) {
+              return 0;
+            }
+            return 1;
+          },
+          'children',
+          false,
+        ),
+      [_fields],
+    );
     const [options, setOptions] = useState(() => compile(fields));
     const style = useMemo(() => ({ marginBottom: 8 }), []);
     const fieldNames = useMemo(

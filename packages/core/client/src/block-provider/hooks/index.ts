@@ -36,6 +36,7 @@ import { useAPIClient, useRequest } from '../../api-client';
 import { useNavigateNoUpdate } from '../../application/CustomRouterContextProvider';
 import { useFormBlockContext } from '../../block-provider/FormBlockProvider';
 import { CollectionOptions, useCollectionManager_deprecated, useCollection_deprecated } from '../../collection-manager';
+import { getVariableValue } from '../../common/getVariableValue';
 import { DataBlock, useFilterBlock } from '../../filter-provider/FilterProvider';
 import { mergeFilter, transformToFilter } from '../../filter-provider/utils';
 import { useTreeParentRecord } from '../../modules/blocks/data-blocks/table/TreeRecordProvider';
@@ -52,7 +53,6 @@ import { useBlockRequestContext, useFilterByTk, useParamsFromRecord } from '../B
 import { useOperators } from '../CollectOperators';
 import { useDetailsBlockContext } from '../DetailsBlockProvider';
 import { TableFieldResource } from '../TableFieldProvider';
-import { getVariableValue } from '../../common/getVariableValue';
 
 export * from './useBlockHeightProps';
 export * from './useDataBlockParentRecord';
@@ -197,9 +197,7 @@ export function useCollectValuesToSubmit() {
 
       if (isVariable(value)) {
         const { value: parsedValue } = (await variables?.parseVariable(value, localVariables)) || {};
-        if (parsedValue !== null && parsedValue !== undefined) {
-          assignedValues[key] = transformVariableValue(parsedValue, { targetCollectionField: collectionField });
-        }
+        assignedValues[key] = transformVariableValue(parsedValue, { targetCollectionField: collectionField });
       } else if (value !== '') {
         assignedValues[key] = value;
       }
@@ -385,9 +383,7 @@ export const useAssociationCreateActionProps = () => {
 
         if (isVariable(value)) {
           const { value: parsedValue } = (await variables?.parseVariable(value, localVariables)) || {};
-          if (parsedValue) {
-            assignedValues[key] = transformVariableValue(parsedValue, { targetCollectionField: collectionField });
-          }
+          assignedValues[key] = transformVariableValue(parsedValue, { targetCollectionField: collectionField });
         } else if (value !== '') {
           assignedValues[key] = value;
         }
@@ -527,6 +523,9 @@ const useDoFilter = () => {
             if (block.dataLoadingMode === 'manual' && _.isEmpty(storedFilter[uid])) {
               return block.clearData();
             }
+
+            // 存储当前的筛选条件，供其它筛选区块使用
+            _.set(block.service.params, '1.filters', storedFilter);
             return block.doFilter(
               {
                 ...param,
@@ -550,8 +549,8 @@ const useDoFilter = () => {
     // 另外，如果不加 100 毫秒的延迟，会导致数据区块列表更新后，不触发筛选操作的问题。
     setTimeout(() => {
       doFilter({ doNothingWhenFilterIsEmpty: true });
-    }, 100);
-  }, [getDataBlocks().length]);
+    }, 500);
+  }, [doFilter]);
 
   return {
     /**
@@ -569,11 +568,9 @@ export const useFilterBlockActionProps = () => {
   const { doFilter } = useDoFilter();
   const actionField = useField();
   actionField.data = actionField.data || {};
-  const form = useForm();
 
   return {
     async onClick() {
-      await form.submit();
       actionField.data.loading = true;
       await doFilter();
       actionField.data.loading = false;
@@ -657,9 +654,7 @@ export const useCustomizeUpdateActionProps = () => {
 
         if (isVariable(value)) {
           const { value: parsedValue } = (await variables?.parseVariable(value, localVariables)) || {};
-          if (parsedValue) {
-            assignedValues[key] = transformVariableValue(parsedValue, { targetCollectionField: collectionField });
-          }
+          assignedValues[key] = transformVariableValue(parsedValue, { targetCollectionField: collectionField });
         } else if (value !== '') {
           assignedValues[key] = value;
         }
@@ -770,9 +765,7 @@ export const useCustomizeBulkUpdateActionProps = () => {
 
         if (isVariable(value)) {
           const { value: parsedValue } = (await variables?.parseVariable(value, localVariables)) || {};
-          if (parsedValue) {
-            assignedValues[key] = transformVariableValue(parsedValue, { targetCollectionField: collectionField });
-          }
+          assignedValues[key] = transformVariableValue(parsedValue, { targetCollectionField: collectionField });
         } else if (value !== '') {
           assignedValues[key] = value;
         }
@@ -998,9 +991,7 @@ export const useUpdateActionProps = () => {
 
         if (isVariable(value)) {
           const { value: parsedValue } = (await variables?.parseVariable(value, localVariables)) || {};
-          if (parsedValue) {
-            assignedValues[key] = transformVariableValue(parsedValue, { targetCollectionField: collectionField });
-          }
+          assignedValues[key] = transformVariableValue(parsedValue, { targetCollectionField: collectionField });
         } else if (value !== '') {
           assignedValues[key] = value;
         }

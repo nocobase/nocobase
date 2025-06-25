@@ -84,8 +84,8 @@ export const actionDesignerCss = css`
 `;
 
 export const DuplicateAction = observer(
-  (props: any) => {
-    const { children, onlyIcon, icon, title, ...others } = props;
+  ({ onlyIcon, ...props }: any) => {
+    const { children, icon, title, ...others } = props;
     const { message } = App.useApp();
     const field = useField();
     const fieldSchema = useFieldSchema();
@@ -94,6 +94,7 @@ export const DuplicateAction = observer(
     const { designable } = useDesignable();
     const [visible, setVisible] = useState(false);
     const [loading, setLoading] = useState(false);
+    const [formValueChanged, setFormValueChanged] = useState(false);
     const { service, __parent, block, resource } = useBlockRequestContext();
     const { duplicateFields, duplicateMode = 'quickDulicate', duplicateCollection } = fieldSchema['x-component-props'];
     const record = useRecord();
@@ -229,9 +230,7 @@ export const DuplicateAction = observer(
               <CollectionProvider_deprecated name={duplicateCollection || name}>
                 {/* 这里的 record 就是弹窗中创建表单的 sourceRecord */}
                 <RecordProvider record={{ ...parentRecordData, __collection: duplicateCollection || __collection }}>
-                  <ActionContextProvider
-                    value={{ visible, setVisible, openMode: ctx.openMode, openSize: ctx.openSize }}
-                  >
+                  <ActionContextProvider value={{ ...ctx, visible, setVisible, formValueChanged, setFormValueChanged }}>
                     <PopupSettingsProvider enableURL={false}>
                       <RefreshComponentProvider refresh={_.noop}>
                         <NocoBaseRecursionField schema={fieldSchema} basePath={field.address} onlyRenderProperties />

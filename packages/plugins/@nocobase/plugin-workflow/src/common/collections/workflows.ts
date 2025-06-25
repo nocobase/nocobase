@@ -44,7 +44,6 @@ export default {
           { label: `{{t("Off", { ns: "${NAMESPACE}" })}}`, value: false },
         ],
         'x-component': 'Radio.Group',
-        'x-decorator': 'FormItem',
         default: false,
       },
     },
@@ -66,14 +65,8 @@ export default {
       uiSchema: {
         title: `{{t("Trigger type", { ns: "${NAMESPACE}" })}}`,
         type: 'string',
-        'x-decorator': 'FormItem',
         'x-component': 'Select',
         enum: '{{useTriggersOptions()}}',
-        'x-component-props': {
-          optionRender: '{{TriggerOptionRender}}',
-          popupMatchSelectWidth: true,
-          listHeight: 300,
-        },
         required: true,
       },
     },
@@ -119,7 +112,6 @@ export default {
       uiSchema: {
         title: `{{t("Mode", { ns: "${NAMESPACE}" })}}`,
         type: 'boolean',
-        'x-decorator': 'FormItem',
         'x-component': 'Radio.Group',
         enum: [
           {
@@ -158,19 +150,18 @@ export default {
       foreignKey: 'key',
       sourceKey: 'key',
       constraints: false,
-      onDelete: 'CASCADE',
-      interface: 'oho',
-      uiSchema: {
-        type: 'object',
-        'x-component': 'AssociationField',
-        'x-component-props': {
-          fieldNames: {
-            label: 'executed',
-            value: 'key',
-          },
-        },
-        'x-read-pretty': true,
-      },
+      // interface: 'oho',
+      // uiSchema: {
+      //   type: 'object',
+      //   'x-component': 'AssociationSelect',
+      //   'x-component-props': {
+      //     fieldNames: {
+      //       label: 'executed',
+      //       value: 'key',
+      //     },
+      //   },
+      //   'x-read-pretty': true,
+      // },
     },
     {
       type: 'hasOne',
@@ -180,15 +171,42 @@ export default {
       sourceKey: 'id',
       constraints: false,
       onDelete: 'CASCADE',
-      interface: 'oho',
+      // interface: 'oho',
+      // uiSchema: {
+      //   type: 'object',
+      //   'x-component': 'AssociationSelect',
+      //   'x-component-props': {
+      //     fieldNames: {
+      //       label: 'executed',
+      //       value: 'id',
+      //     },
+      //   },
+      //   'x-read-pretty': true,
+      // },
+    },
+    {
+      type: 'belongsToMany',
+      name: 'categories',
+      target: 'workflowCategories',
+      through: 'workflowCategoryRelations',
+      foreignKey: 'workflowId',
+      otherKey: 'categoryId',
+      sourceKey: 'id',
+      constraints: false,
+      interface: 'm2m',
       uiSchema: {
-        type: 'object',
+        type: 'array',
+        title: `{{t("Category", { ns: "${NAMESPACE}" })}}`,
         'x-component': 'AssociationField',
         'x-component-props': {
+          multiple: true,
+          // objectValue: false,
           fieldNames: {
-            label: 'executed',
+            label: 'title',
             value: 'id',
+            color: 'color',
           },
+          mode: 'Tag',
         },
         'x-read-pretty': true,
       },

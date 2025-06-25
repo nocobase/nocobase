@@ -202,7 +202,7 @@ export abstract class MultipleRelationRepository extends RelationRepository {
     return filterResult.include && filterResult.include.length > 0;
   }
 
-  protected accessors() {
+  public accessors() {
     return <MultiAssociationAccessors>super.accessors();
   }
 

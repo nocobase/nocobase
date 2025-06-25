@@ -1,0 +1,28 @@
+{
+  "name": "@nocobase/plugin-text-copy",
+  "version": "1.8.0-beta.10",
+  "main": "./dist/server/index.js",
+  "displayName": "Text copy",
+  "displayName.zh-CN": "文本复制",
+  "description": "Add copy button to text fields",
+  "description.zh-CN": "为文本字段添加复制按钮",
+  "license": "AGPL-3.0",
+  "homepage": "https://www.nocobase.com",
+  "devDependencies": {
+    "@ant-design/icons": "5.x",
+    "@formily/react": "2.x",
+    "antd": "5.x",
+    "react": "^18.2.0",
+    "react-i18next": "^11.15.1"
+  },
+  "peerDependencies": {
+    "@nocobase/client": "1.x",
+    "@nocobase/server": "1.x",
+    "@nocobase/test": "1.x"
+  },
+  "keywords": [
+    "Clipboard",
+    "Copy"
+  ],
+  "gitHead": "d0b4efe4be55f8c79a98a331d99d9f8cf99021a1"
+}

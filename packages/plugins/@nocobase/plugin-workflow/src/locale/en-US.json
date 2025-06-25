@@ -10,6 +10,10 @@
   "Status": "Status",
   "On": "On",
   "Off": "Off",
+  "Category": "Category",
+  "Add category": "Add category",
+  "Edit category": "Edit category",
+  "Delete category": "Delete category",
   "Version": "Version",
   "Copy to new version": "Copy to new version",
   "Duplicate": "Duplicate",
@@ -31,6 +35,8 @@
   "Auto delete history when execution is on end status": "Auto delete history when execution is on end status",
   "Maximum number of cycling triggers": "Maximum number of cycling triggers",
   "The triggers of same workflow by some node (create, update and sub-flow etc.) more than this number will be ignored. Large number may cause performance issues. Please use with caution.": "The triggers of same workflow by some node (create, update and sub-flow etc.) more than this number will be ignored. Large number may cause performance issues. Please use with caution.",
+  "Continue when disabled or upgraded": "Continue when disabled or upgraded",
+  "If checked, all nodes in-progress could continue to be processed in execution of disabled workflow. Otherwise, all nodes in-progress will be aborted automatically.": "If checked, all nodes in-progress could continue to be processed in execution of disabled workflow. Otherwise, all nodes in-progress will be aborted automatically.",
   "Trigger": "Trigger",
   "Unknown trigger": "Unknown trigger",
   "Workflow with unknown type will cause error. Please delete it or check plugin which provide this type.": "Workflow with unknown type will cause error. Please delete it or check plugin which provide this type.",
@@ -203,5 +209,5 @@
   "Inside of branch": "Inside of branch",
   "Workflow todos": "Workflow todos",
   "New version enabled": "New version enabled",
-  "a": "a"
+  "Workflow is not exists": "Workflow is not exists"
 }

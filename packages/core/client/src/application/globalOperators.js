@@ -14,7 +14,7 @@ Using a Universal Module Loader that should be browser, require, and AMD friendl
 http://ricostacruz.com/cheatsheets/umdjs.html
 */
 
-const { getDayRangeByParams } = require('@nocobase/utils/client');
+import { getDayRangeByParams } from '@nocobase/utils/client';
 
 export function getOperators() {
   'use strict';
@@ -136,13 +136,12 @@ export function getOperators() {
       return a.some((element) => b.includes(element));
     },
     $noneOf: function (a, b) {
-      if (!a || a?.length === 0) {
-        return true;
-      }
-      if (Array.isArray(a) && Array.isArray(b) && a.some((element) => Array.isArray(element))) {
-        return a.some((subArray) => subArray.every((element) => !b.some((bElement) => element.includes(bElement))));
-      }
-      return b.some((item) => !a.includes(item));
+      if (!a || a.length === 0) return true;
+      if (!b || b.length === 0) return true;
+
+      if (!Array.isArray(a)) a = [a];
+      if (!Array.isArray(b)) b = [b];
+      return !b.some((item) => a.includes(item));
     },
     $notMatch: function (a, b) {
       if (a.length !== b.length) {
@@ -255,10 +254,9 @@ export function getOperators() {
       if (b.type) {
         b = getDayRangeByParams(b);
       }
-      const dateA = parseFullDate(a);
+      const dateA = parseDate(a);
       const dateBStart = parseFullDate(b[0]);
       const dateBEnd = parseFullDate(b[1]);
-
       if (!dateA || !dateBStart || !dateBEnd) {
         throw new Error('Invalid date format');
       }
@@ -680,7 +678,18 @@ export function getOperators() {
 }
 
 function parseFullDate(dateStr) {
-  return new Date(dateStr);
+  if (dateStr.includes('T') && dateStr.endsWith('Z')) {
+    // ISO 格式，包含时区（如 '2025-06-05T16:00:00.000Z'）
+    return new Date(dateStr);
+  }
+
+  if (dateStr.includes(' ')) {
+    // 有日期+时间（如 '2025-06-06 23:59:59'）
+    return new Date(dateStr.replace(' ', 'T'));
+  }
+
+  // 只有日期（如 '2025-06-06'）
+  return new Date(`${dateStr}T00:00:00`);
 }
 
 function parseMonth(dateStr) {

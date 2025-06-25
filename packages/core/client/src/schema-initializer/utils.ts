@@ -110,6 +110,7 @@ const quickEditField = [
   'circle',
   'point',
   'lineString',
+  'vditor',
 ];
 
 export function useTableColumnInitializerFields() {
@@ -734,7 +735,6 @@ export const useCustomFormItemInitializerFields = (options?: any) => {
       const schema = {
         type: 'string',
         name: field.name,
-        title: field?.uiSchema?.title || field.name,
         // 'x-designer': 'FormItem.Designer',
         'x-toolbar': 'FormItemSchemaToolbar',
         'x-settings': 'fieldSettings:FormItem',
