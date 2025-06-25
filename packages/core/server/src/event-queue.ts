@@ -23,7 +23,7 @@ export enum QUEUE_PRIORITY {
   // Low priority, suitable for jobs that can be delayed. Such as sending emails, notifications, logs etc.
   LOW = 0,
 }
-export const QUEUE_DEFAULT_INTERVAL = 100;
+const QUEUE_DEFAULT_INTERVAL = 500;
 export const QUEUE_DEFAULT_CONCURRENCY = 1;
 export const QUEUE_DEFAULT_ACK_TIMEOUT = 15_000;
 
@@ -341,7 +341,7 @@ export class EventQueue {
       await this.connect();
     });
     app.on('beforeStop', async () => {
-      app.logger.info('[queue] gracefully shuting down...');
+      app.logger.info('[queue] gracefully shutting down...');
       await this.close();
     });
   }
