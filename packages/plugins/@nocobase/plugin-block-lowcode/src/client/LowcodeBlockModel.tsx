@@ -209,6 +209,12 @@ ctx.element.innerHTML = \`
       },
       settingMode: 'drawer',
       async handler(flowContext, params: any) {
+        // Check if URL ends with skip_nocobase_lowcode=true and return early if so
+        // Giving a way to avoid some bad js code (or breaking changes in future versions) break the page and can't recover from ui
+        if (window.location.href.endsWith('skip_nocobase_lowcode=true')) {
+          return;
+        }
+
         flowContext.model.setProps('loading', true);
         flowContext.model.setProps('error', null);
         flowContext.reactView.onRefReady(flowContext.model.ref, async (element: HTMLElement) => {

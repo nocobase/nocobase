@@ -939,3 +939,6 @@ A:
 - `ctx.requireAsync` 是基于 requirejs 封装的 Promise 风格异步方法，支持 `async/await`，推荐用于现代 JavaScript 开发。加载失败会抛出异常，代码更简洁，易于错误处理。
 
 **推荐优先使用 `ctx.requireAsync`，只有在必须兼容 requirejs 回调风格时才考虑 `ctx.requirejs`。**
+
+**Q: 如果低代码区块的 JavaScript 代码有问题导致页面崩溃无法打开怎么办？**
+A: 可以在 URL 末尾添加 `skip_nocobase_lowcode=true` 参数来跳过低代码区块的执行。例如：`http://localhost:3000/admin?skip_nocobase_lowcode=true`。这样可以避免有问题的 JavaScript 代码（或未来版本的破坏性变更）导致页面崩溃而无法从 UI 界面恢复。进入页面后可以修复或删除有问题的低代码区块，然后移除该 URL 参数恢复正常使用。
