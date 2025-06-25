@@ -95,7 +95,7 @@ const aiResource: ResourceOptions = {
         if (options.name === 'users') {
           continue;
         }
-        if (options.autoGenId !== false) {
+        if (options.autoGenId !== false && !options.isThrough) {
           options.autoGenId = false;
           options.fields.unshift(id);
         }
@@ -113,15 +113,46 @@ const aiResource: ResourceOptions = {
         options.fields = options.fields.map((field: any) => {
           return _.omit(field, ['defaultValue']);
         });
-        ctx.db.collection(options);
-      }
-      for (const options of collections) {
-        const collection = ctx.db.getCollection(options.name);
-        await collection.sync();
-      }
-      const repo = ctx.db.getRepository('collections');
-      for (const options of collections) {
-        await repo.db2cm(options.name);
+        const transaction = await ctx.app.db.sequelize.transaction();
+        try {
+          const repo = ctx.db.getRepository('collections');
+          const collection = await repo.findOne({
+            filter: {
+              name: options.name,
+            },
+            transaction,
+          });
+          if (!collection) {
+            const collection = await repo.create({
+              values: options,
+              transaction,
+              context: ctx,
+            });
+            // await collection.load({ transaction });
+            await transaction.commit();
+            continue;
+          }
+          await repo.update({
+            filterByTk: collection.name,
+            values: {
+              ...options,
+              fields: options.fields?.map((f: any) => {
+                delete f.key;
+                return f;
+              }),
+            },
+            updateAssociationValues: ['fields'],
+            transaction,
+          });
+          await collection.loadFields({
+            transaction,
+          });
+          await collection.load({ transaction, resetFields: true });
+          await transaction.commit();
+        } catch (e) {
+          await transaction.rollback();
+          throw e;
+        }
       }
 
       await next();

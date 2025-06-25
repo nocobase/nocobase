@@ -311,7 +311,7 @@ ${content}`;
     let message = '';
 
     for (const name of names) {
-      let [dataSourceName, collectionName] = name.split('.');
+      let [dataSourceName, collectionName] = name.split(':');
       let db: Database;
       if (!collectionName) {
         collectionName = dataSourceName;

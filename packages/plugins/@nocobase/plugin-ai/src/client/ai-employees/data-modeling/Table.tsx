@@ -99,15 +99,18 @@ const useExpandColumns = () => {
     {
       title: t('Field display name'),
       dataIndex: 'title',
+      width: 150,
       key: 'title',
     },
     {
       title: t('Field name'),
       dataIndex: 'name',
       key: 'name',
+      width: 100,
     },
     {
       title: t('Field interface'),
+      width: 150,
       dataIndex: 'interface',
       key: 'interface',
       render: (value) => {
@@ -119,6 +122,7 @@ const useExpandColumns = () => {
       title: t('Description'),
       dataIndex: 'description',
       key: 'description',
+      width: 200,
     },
     {
       title: t('Options'),

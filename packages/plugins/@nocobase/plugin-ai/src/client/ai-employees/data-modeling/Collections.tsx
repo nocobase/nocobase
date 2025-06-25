@@ -7,10 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useMemo, useRef } from 'react';
 import { Generating } from '../chatbox/markdown/Generating';
 import { useChatMessages } from '../chatbox/ChatMessagesProvider';
-import mermaid from 'mermaid';
 import { Card, Modal, Tabs } from 'antd';
 import { DatabaseOutlined, FileTextOutlined, NodeIndexOutlined } from '@ant-design/icons';
 import { useT } from '../../locale';
@@ -19,30 +18,9 @@ import { Diagram } from './Diagram';
 import { Table } from './Table';
 import { useAPIClient, useApp } from '@nocobase/client';
 
-mermaid.initialize({
-  startOnLoad: true,
-});
-
-const Mermaid: React.FC<{ diagram: string }> = ({ diagram }) => {
-  const ref = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    if (ref.current) {
-      try {
-        const id = 'mermaid-' + Math.random().toString(36).slice(2);
-        mermaid.render(id, diagram, (svgCode) => {
-          ref.current!.innerHTML = svgCode;
-        });
-      } catch (err) {
-        console.error(err);
-        console.log(diagram);
-      }
-    }
-  }, [diagram]);
-
-  return <div ref={ref} className="mermaid" />;
-};
-
-const TabPane: React.FC = ({ children }) => {
+const TabPane: React.FC<{
+  children: React.ReactNode;
+}> = ({ children }) => {
   return (
     <div
       style={{
@@ -102,31 +80,6 @@ export const DataModelingModal: React.FC<{
       }}
       okText={t('Finish review and apply')}
       onOk={async () => {
-        const result = [];
-        for (const collection of collections) {
-          const fields = collection.fields.map((field: any) => {
-            const fieldInterface = fim.getFieldInterface(field.interface);
-            if (fieldInterface) {
-              field.type = fieldInterface.default?.type || field.type;
-              field.uiSchema = fieldInterface.default?.uiSchema || field.uiSchema;
-            }
-            field.uiSchema = {
-              ...field.uiSchema,
-              title: field.title,
-            };
-            if (field.enum) {
-              field.uiSchema = {
-                ...field.uiSchema,
-                enum: field.enum,
-              };
-            }
-            return field;
-          });
-          result.push({
-            ...collection,
-            fields,
-          });
-        }
         await api.resource('ai').defineCollections({
           values: {
             collections,
@@ -140,18 +93,56 @@ export const DataModelingModal: React.FC<{
   );
 };
 
+const useCollections = (collectionsStr: string) => {
+  const app = useApp();
+  const fim = app.dataSourceManager.collectionFieldInterfaceManager;
+  return useMemo(() => {
+    const result = [];
+    let collections = [];
+    try {
+      collections = JSON.parse(collectionsStr);
+    } catch (e) {
+      return [];
+    }
+    for (const collection of collections) {
+      const fields = collection.fields.map((field: any) => {
+        const fieldInterface = fim.getFieldInterface(field.interface);
+        if (fieldInterface) {
+          field.type = fieldInterface.default?.type || field.type;
+          field.uiSchema = fieldInterface.default?.uiSchema || field.uiSchema;
+        }
+        field.uiSchema = {
+          ...field.uiSchema,
+          title: field.title,
+        };
+        if (field.enum) {
+          field.uiSchema = {
+            ...field.uiSchema,
+            enum: field.enum,
+          };
+        }
+        return field;
+      });
+      result.push({
+        ...collection,
+        fields,
+      });
+    }
+    return result;
+  }, [collectionsStr]);
+};
+
 export const Collections = (props: any) => {
   const t = useT();
   const [open, setOpen] = React.useState(false);
   const { children, className, message, index, ...rest } = props;
   const { responseLoading } = useChatMessages();
+  const collectionsStr = String(children).replace(/\n$/, '');
+  const collections = useCollections(collectionsStr);
 
   if (responseLoading && !message.messageId) {
     return <Generating />;
   }
-
-  const collectionsStr = String(children).replace(/\n$/, '');
-  const collections = JSON.parse(collectionsStr);
 
   return (
     <>
