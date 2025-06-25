@@ -49,7 +49,7 @@
     "@nocobase/plugin-locale-tester": "1.8.0-alpha.10",
     "@nocobase/plugin-localization": "1.8.0-alpha.10",
     "@nocobase/plugin-logger": "1.8.0-alpha.10",
-    "@nocobase/plugin-block-lowcode": "1.8.0-beta.9",
+    "@nocobase/plugin-block-lowcode": "1.8.0-beta.10",
     "@nocobase/plugin-map": "1.8.0-alpha.10",
     "@nocobase/plugin-mobile": "1.8.0-alpha.10",
     "@nocobase/plugin-mobile-client": "1.8.0-alpha.10",

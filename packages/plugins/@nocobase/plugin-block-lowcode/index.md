@@ -20,6 +20,12 @@ type LowcodeCtx = {
   initResource(typeof APIResource, options: AxiosRequestConfig): APIResource;
   request: (options: AxiosRequestConfig) => Promise<any>;
   router: RemixRouter;
+  auth: {
+    role: string;
+    locale: string;
+    token: string;
+    user: any;
+  };
   Resources: {
     APIResource: typeof APIResource;
     SingleRecordResource: typeof SingleRecordResource;
@@ -500,6 +506,29 @@ ctx.element.innerHTML = `
 document.getElementById(`gotoAdminBtn_${uid}`).onclick = () => {
   ctx.router.navigate('/admin/');
 };
+```
+
+### `ctx.auth`
+
+* **类型**：`{ role: string, locale: string, token: string, user: any }`
+* **说明**：当前用户的认证信息上下文，包含用户角色、语言设置、认证令牌和用户详细信息。通过此对象可以获取当前登录用户的基本信息，用于实现基于用户身份的个性化功能或权限控制。
+* **使用场景**：需要根据用户身份显示不同内容、实现权限控制、个性化展示等。
+* **属性说明**：
+  - `ctx.auth.role`：当前用户的角色信息
+  - `ctx.auth.locale`：当前用户的语言环境设置
+  - `ctx.auth.token`：当前用户的认证令牌
+  - `ctx.auth.user`：当前用户的详细信息对象
+* **示例**：
+
+```js
+ctx.element.innerHTML = `
+  <div style="padding: 20px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+    <h3>用户信息</h3>
+    <p><strong>用户：</strong>${ctx.auth.user?.nickname || ctx.auth.user?.email || '游客'}</p>
+    <p><strong>角色：</strong>${ctx.auth.role || '未设置'}</p>
+    <p><strong>语言：</strong>${ctx.auth.locale || '未设置'}</p>
+  </div>
+`;
 ```
 
 ---
