@@ -29,6 +29,8 @@ PopupRecordActionModel.registerFlow({
       defaultParams(ctx) {
         return {
           sharedContext: {
+            parentExtra: ctx.extra,
+            parentShared: ctx.shared,
             parentRecord: ctx.extra?.currentRecord,
             parentBlockModel: ctx.shared?.currentBlockModel,
           },
