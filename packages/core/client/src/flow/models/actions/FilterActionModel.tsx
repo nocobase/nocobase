@@ -17,7 +17,7 @@ import { Trans, useTranslation } from 'react-i18next';
 import { Cascader, Select, Space } from 'antd';
 import { css } from '@emotion/css';
 import { observer } from '@formily/reactive-react';
-import { useFlowModel, useStepSettingContext } from '@nocobase/flow-engine';
+import { MultiRecordResource, useFlowModel, useStepSettingContext } from '@nocobase/flow-engine';
 
 // TODO: 需要重构，使用新的方式获取组件实例
 const AppContext = React.createContext(null);
@@ -533,6 +533,26 @@ FilterActionModel.registerFlow({
       },
       handler(ctx, params) {
         ctx.model.setProps('filterValue', params.filterValue);
+      },
+    },
+  },
+});
+
+FilterActionModel.registerFlow({
+  key: 'handleSubmit',
+  title: '提交',
+  on: {
+    eventName: 'submit',
+  },
+  steps: {
+    submit: {
+      handler(ctx, params) {
+        const resource = ctx.shared?.currentBlockModel?.resource as MultiRecordResource;
+        if (!resource) {
+          return;
+        }
+        resource.addFilterGroup(ctx.model.uid, ctx.model.props.filterValue);
+        resource.refresh();
       },
     },
   },
