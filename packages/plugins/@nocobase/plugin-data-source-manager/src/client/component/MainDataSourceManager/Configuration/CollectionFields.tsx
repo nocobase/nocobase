@@ -70,11 +70,6 @@ const CollectionFieldsProvider = (props) => {
   );
 };
 
-const indentStyle = css`
-  .ant-table {
-    margin-left: -16px !important;
-  }
-`;
 const tableContainer = css`
   tr {
     display: flex;
@@ -192,7 +187,7 @@ const CurrentFields = (props) => {
     <Table
       rowKey={'name'}
       columns={columns}
-      showHeader={false}
+      showHeader={props.showHeader !== false}
       pagination={false}
       dataSource={props.fields}
       rowSelection={{
@@ -212,7 +207,6 @@ const CurrentFields = (props) => {
           });
         },
       }}
-      className={indentStyle}
     />
   );
 };
@@ -363,50 +357,11 @@ const CollectionFieldsInternal = () => {
     },
   ];
   const fields = data?.data || [];
-  const groups = {
-    pf: [],
-    association: [],
-    general: [],
-    system: [],
-  };
 
-  fields.forEach((field) => {
-    if (field.primaryKey || field.isForeignKey) {
-      groups.pf.push(field);
-    } else if (field.interface) {
-      const conf = getInterface(field.interface);
-      if (conf?.group === 'systemInfo') {
-        groups.system.push(field);
-      } else if (conf?.group === 'relation') {
-        groups.association.push(field);
-      } else {
-        groups.general.push(field);
-      }
-    }
-  });
+  // 创建数据源，当前集合字段直接显示，只有继承字段分组
+  const dataSource = [];
 
-  const dataSource = [
-    {
-      key: 'pf',
-      title: t('PK & FK fields'),
-      fields: groups.pf,
-    },
-    {
-      key: 'association',
-      title: t('Association fields'),
-      fields: groups.association,
-    },
-    {
-      key: 'general',
-      title: t('General fields'),
-      fields: groups.general,
-    },
-    {
-      key: 'system',
-      title: t('System fields'),
-      fields: groups.system,
-    },
-  ];
+  // 添加继承字段分组
   dataSource.push(
     ...inherits
       .map((key) => {
@@ -464,32 +419,40 @@ const CollectionFieldsInternal = () => {
           />
           <AddCollectionField {...addProps} />
         </Space>
-        <Table
-          rowKey={'key'}
-          columns={columns}
-          dataSource={dataSource.filter((d) => d.fields.length)}
-          pagination={false}
-          className={tableContainer}
-          expandable={{
-            defaultExpandAllRows: true,
-            defaultExpandedRowKeys: dataSource.map((d) => d.key),
-            expandedRowRender: (record) =>
-              record.inherit ? (
+
+        {/* 当前集合字段直接显示，显示表头 */}
+        {fields.length > 0 && (
+          <CurrentFields
+            fields={fields}
+            collectionResource={collectionResource}
+            refreshAsync={refreshAsync}
+            type="current"
+            showHeader={true}
+          />
+        )}
+
+        {/* 继承字段分组显示 */}
+        {dataSource.length > 0 && (
+          <Table
+            rowKey={'key'}
+            columns={columns}
+            dataSource={dataSource}
+            pagination={false}
+            showHeader={fields.length === 0} // 只有在没有当前字段时才显示表头
+            className={tableContainer}
+            expandable={{
+              defaultExpandAllRows: true,
+              defaultExpandedRowKeys: dataSource.map((d) => d.key),
+              expandedRowRender: (record) => (
                 <InheritFields
                   fields={record.fields}
                   collectionResource={collectionResource}
                   refreshAsync={refreshAsync}
                 />
-              ) : (
-                <CurrentFields
-                  fields={record.fields}
-                  collectionResource={collectionResource}
-                  refreshAsync={refreshAsync}
-                  type={record.key}
-                />
               ),
-          }}
-        />
+            }}
+          />
+        )}
       </FieldContext.Provider>
     </FormContext.Provider>
   );
