@@ -42,6 +42,7 @@ FieldModel.registerFlow({
           throw new Error(`Collection field not found for path: ${params.fieldPath}`);
         }
         ctx.model.collectionField = collectionField;
+        ctx.model.fieldPath = fieldPath;
         ctx.shared.currentBlockModel.addAppends(fieldPath);
       },
     },

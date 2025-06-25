@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import React from 'react';
 import { AssociationReadPrettyFieldModel } from './AssociationReadPrettyFieldModel';
 import { Select } from 'antd';
@@ -46,7 +55,6 @@ export class AssociationSelectReadPrettyFieldModel extends AssociationReadPretty
         },
       },
     });
-    model.collectionField = targetLabelField;
     model.setParent(this.parent);
     if (Array.isArray(value)) {
       return (
@@ -87,6 +95,7 @@ const SelectOptions = (props) => {
       value: field.name,
       label: compile(field.options.uiSchema?.title) || field.name,
     }));
+
   return <Select {...props} options={options} />;
 };
 
