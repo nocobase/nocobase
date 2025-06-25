@@ -46,6 +46,11 @@ import { addNew } from './schema';
 import useStyle from './style';
 import type { ToolbarProps } from './types';
 import { formatDate } from './utils';
+import updateLocale from 'dayjs/plugin/updateLocale';
+import { dateFnsLocalizer } from 'react-big-calendar';
+import { format, parse, startOfWeek, getDay } from 'date-fns';
+import enUS from 'date-fns/locale/en-US';
+
 interface Event {
   id: string;
   colorFieldValue: string;
@@ -55,24 +60,6 @@ interface Event {
 }
 
 const Weeks = ['month', 'week', 'day'] as View[];
-
-const getColorString = (
-  colorFieldValue: string,
-  enumList: {
-    color: string;
-    label: string;
-    value: string;
-    rawLabel: string;
-  }[],
-) => {
-  for (const item of enumList) {
-    if (item.value === colorFieldValue) {
-      return item.color;
-    }
-  }
-
-  return '';
-};
 
 export const DeleteEventContext = React.createContext({
   close: () => {},
@@ -282,19 +269,19 @@ export const Calendar: any = withDynamicSchemaProps(
       );
 
       const localizer = useMemo(() => {
-        return reactBigCalendar.dayjsLocalizer(dayjs);
-      }, [reactBigCalendar]);
-
+        return dateFnsLocalizer({
+          format,
+          parse,
+          startOfWeek: (date) => {
+            return startOfWeek(date, { locale: { options: { weekStartsOn: props.weekStart } } });
+          },
+          getDay,
+          locales: { 'en-US': enUS },
+        });
+      }, [props.weekStart]);
       // 新版 UISchema（1.0 之后）中已经废弃了 useProps，这里之所以继续保留是为了兼容旧版的 UISchema
-      const {
-        dataSource,
-        fieldNames,
-        showLunar,
-        defaultView,
-        getFontColor,
-        getBackgroundColor,
-        enableQuickCreateEvent,
-      } = useProps(props);
+      const { dataSource, fieldNames, showLunar, getFontColor, getBackgroundColor, enableQuickCreateEvent } =
+        useProps(props);
       const height = useCalenderHeight();
       const [date, setDate] = useState<Date>(new Date());
       const [view, setView] = useState<View>(props.defaultView || 'month');
@@ -473,14 +460,14 @@ export const Calendar: any = withDynamicSchemaProps(
                 });
               }}
               formats={{
-                monthHeaderFormat: 'YYYY-M',
-                agendaDateFormat: 'M-DD',
-                dayHeaderFormat: 'YYYY-M-DD',
+                monthHeaderFormat: 'yyyy-M',
+                agendaDateFormat: 'M-dd',
+                dayHeaderFormat: 'yyyy-M-dd',
                 dayRangeHeaderFormat: ({ start, end }, culture, local) => {
                   if (eq(start, end, 'month')) {
-                    return local.format(start, 'YYYY-M', culture);
+                    return local.format(start, 'yyyy-M', culture);
                   }
-                  return `${local.format(start, 'YYYY-M', culture)} - ${local.format(end, 'YYYY-M', culture)}`;
+                  return `${local.format(start, 'yyyy-M', culture)} - ${local.format(end, 'yyyy-M', culture)}`;
                 },
               }}
               components={components}

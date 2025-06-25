@@ -243,8 +243,12 @@ const TabBadge: FC<{ tabRoute: NocoBaseDesktopRoute; style?: React.CSSProperties
 
   if (badgeCount == null) return null;
 
-  return <Badge {...props.tabRoute.options?.badge} count={badgeCount} style={props.style}>{props.children}</Badge>
-}
+  return (
+    <Badge {...props.tabRoute.options?.badge} count={badgeCount} style={props.style} dot={false}>
+      {props.children}
+    </Badge>
+  );
+};
 
 const NocoBasePageHeaderTabs: FC<{ className: string; activeKey: string }> = ({ className, activeKey }) => {
   const fieldSchema = useFieldSchema();

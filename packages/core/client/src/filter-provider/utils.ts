@@ -118,11 +118,17 @@ export const transformToFilter = (
       ) {
         return true;
       }
-      if (value?.type) {
+
+      const collectionField = getCollectionJoinField(`${collectionName}.${path}`);
+
+      if (
+        ['datetime', 'datetimeNoTz', 'date', 'unixTimestamp', 'createdAt', 'updatedAt'].includes(
+          collectionField?.interface,
+        )
+      ) {
         return true;
       }
 
-      const collectionField = getCollectionJoinField(`${collectionName}.${path}`);
       if (collectionField?.target) {
         if (Array.isArray(value)) {
           return true;

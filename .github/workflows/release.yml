@@ -152,6 +152,46 @@ jobs:
             type=ref,event=pr
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
+      - name: Prepare all tags
+        id: prepare-tags
+        run: |
+          DEFAULT_TAG=${{ steps.get-info.outputs.defaultTag }}
+          META_TAGS="${{ steps.meta.outputs.tags }}"
+          ALI_REG="${{ secrets.ALI_DOCKER_PUBLIC_REGISTRY }}"
+
+          TAGS=()
+          
+          TAGS+=("nocobase/nocobase:$DEFAULT_TAG")
+          TAGS+=("$ALI_REG/nocobase/nocobase:$DEFAULT_TAG")
+
+          IFS=',' read -ra TAG_ARRAY <<< "$META_TAGS"
+          for TAG in "${TAG_ARRAY[@]}"; do
+            TAGS+=("$TAG")
+            TAGS+=("$ALI_REG/$TAG")
+          done
+
+          ALL_TAGS=$(IFS=, ; echo "${TAGS[*]}")
+          echo "ALL_TAGS=$ALL_TAGS" >> $GITHUB_ENV
+      - name: Prepare all full tags
+        id: prepare-full-tags
+        run: |
+          DEFAULT_TAG=${{ steps.get-info.outputs.defaultTag }}
+          META_TAGS="${{ steps.meta.outputs.tags }}"
+          ALI_REG="${{ secrets.ALI_DOCKER_PUBLIC_REGISTRY }}"
+
+          TAGS=()
+          
+          TAGS+=("nocobase/nocobase:$DEFAULT_TAG-full")
+          TAGS+=("$ALI_REG/nocobase/nocobase:$DEFAULT_TAG-full")
+
+          IFS=',' read -ra TAG_ARRAY <<< "$META_TAGS"
+          for TAG in "${TAG_ARRAY[@]}"; do
+            TAGS+=("$TAG-full")
+            TAGS+=("$ALI_REG/$TAG-full")
+          done
+
+          ALL_TAGS=$(IFS=, ; echo "${TAGS[*]}")
+          echo "ALL_FULL_TAGS=$ALL_TAGS" >> $GITHUB_ENV
       - name: Login to Docker Hub
         uses: docker/login-action@v2
         with:
@@ -171,14 +211,14 @@ jobs:
             CNA_VERSION=${{ steps.get-info.outputs.defaultTag }}
           platforms: linux/amd64,linux/arm64
           push: true
-          tags: nocobase/nocobase:${{ steps.get-info.outputs.defaultTag }},${{ steps.meta.outputs.tags }},${{ secrets.ALI_DOCKER_PUBLIC_REGISTRY }}/nocobase/nocobase:${{ steps.get-info.outputs.defaultTag }},${{ secrets.ALI_DOCKER_PUBLIC_REGISTRY }}/${{ steps.meta.outputs.tags }}
+          tags: ${{ env.ALL_TAGS }}
       - name: Build and push (Full)
         uses: docker/build-push-action@v3
         with:
           context: ./docker/nocobase
-          file: ./docker/nocobase/Dockerfile-cn
+          file: ./docker/nocobase/Dockerfile-full
           build-args: |
             CNA_VERSION=${{ steps.get-info.outputs.defaultTag }}
           platforms: linux/amd64,linux/arm64
           push: true
-          tags: nocobase/nocobase:${{ steps.get-info.outputs.defaultTag }}-full,${{ steps.meta.outputs.tags }}-full,${{ secrets.ALI_DOCKER_PUBLIC_REGISTRY }}/nocobase/nocobase:${{ steps.get-info.outputs.defaultTag }}-full,${{ secrets.ALI_DOCKER_PUBLIC_REGISTRY }}/${{ steps.meta.outputs.tags }}-full
+          tags: ${{ env.ALL_FULL_TAGS }}

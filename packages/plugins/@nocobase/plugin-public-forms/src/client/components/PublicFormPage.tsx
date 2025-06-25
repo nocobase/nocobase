@@ -12,7 +12,6 @@ import { useField } from '@formily/react';
 import {
   ACLCustomContext,
   Action,
-  APIClient,
   APIClientProvider,
   AssociationField,
   CollectionManager,
@@ -24,23 +23,20 @@ import {
   PoweredBy,
   SchemaComponent,
   SchemaComponentContext,
-  useAPIClient,
   useApp,
+  useCompile,
   useRequest,
   VariablesProvider,
-  useCompile,
 } from '@nocobase/client';
 import { Input, Modal, Spin } from 'antd';
-import { useTranslation } from 'react-i18next';
+import { Button as MobileButton, Dialog as MobileDialog } from 'antd-mobile';
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { isDesktop, isMobile } from 'react-device-detect';
 import { useParams } from 'react-router';
 import { usePublicSubmitActionProps } from '../hooks';
-import { UnEnabledFormPlaceholder, UnFoundFormPlaceholder } from './UnEnabledFormPlaceholder';
-import { Button as MobileButton, Dialog as MobileDialog } from 'antd-mobile';
 import { MobileDateTimePicker } from './components/MobileDatePicker';
 import { MobilePicker } from './components/MobilePicker';
-import { usePublicFormTranslation } from '../locale';
+import { UnEnabledFormPlaceholder, UnFoundFormPlaceholder } from './UnEnabledFormPlaceholder';
 
 class PublicDataSource extends DataSource {
   async getDataSource() {
@@ -164,7 +160,6 @@ const mobileComponents = {
 };
 function InternalPublicForm() {
   const params = useParams();
-  const apiClient = useAPIClient();
   const { error, data, loading, run } = useRequest<any>(
     {
       url: `publicForms:getMeta/${params.name}`,
@@ -173,12 +168,6 @@ function InternalPublicForm() {
     {
       onSuccess(data) {
         localStorage.setItem('NOCOBASE_FORM_TOKEN', data?.data?.token);
-        apiClient.axios.interceptors.request.use((config) => {
-          if (config.headers) {
-            config.headers['X-Form-Token'] = data?.data?.token || '';
-          }
-          return config;
-        });
       },
     },
   );

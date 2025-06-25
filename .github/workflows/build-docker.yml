@@ -36,7 +36,7 @@ jobs:
         uses: docker/build-push-action@v3
         with:
           context: ./docker/nocobase
-          file: ./docker/nocobase/Dockerfile-cn
+          file: ./docker/nocobase/Dockerfile-full
           build-args: |
             CNA_VERSION=${{ inputs.tag_name }}
           platforms: linux/amd64,linux/arm64

@@ -515,6 +515,7 @@ const InternalBodyCellComponent = (props) => {
 const displayNone = { display: 'none' };
 const BodyCellComponent = ({ columnHidden, ...props }) => {
   const { designable } = useDesignable();
+  const collection = useCollection();
 
   if (columnHidden) {
     return (
@@ -524,7 +525,11 @@ const BodyCellComponent = ({ columnHidden, ...props }) => {
     );
   }
 
-  return <InternalBodyCellComponent {...props} />;
+  return (
+    <SubFormProvider value={{ value: props?.record, collection, fieldSchema: props.schema }}>
+      <InternalBodyCellComponent {...props} />{' '}
+    </SubFormProvider>
+  );
 };
 
 interface TableProps {
@@ -673,7 +678,7 @@ export const Table: any = withDynamicSchemaProps(
       onExpand,
       loading,
       onClickRow,
-      enableIndexÏColumn,
+      enableIndexColumn,
       ...others
     } = { ...others1, ...others2 } as any;
     const field = useArrayField(others);
@@ -826,7 +831,7 @@ export const Table: any = withDynamicSchemaProps(
 
     const restProps = useMemo(
       () => ({
-        rowSelection: enableIndexÏColumn
+        rowSelection: enableIndexColumn
           ? memoizedRowSelection
             ? {
                 type: 'checkbox',
@@ -900,7 +905,7 @@ export const Table: any = withDynamicSchemaProps(
         isRowSelect,
         memoizedRowSelection,
         paginationProps,
-        enableIndexÏColumn,
+        enableIndexColumn,
       ],
     );
 

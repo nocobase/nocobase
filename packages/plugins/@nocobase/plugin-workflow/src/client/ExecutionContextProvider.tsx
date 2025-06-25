@@ -8,14 +8,23 @@
  */
 
 import React from 'react';
+import { Result } from 'antd';
 
 import { SchemaComponentOptions, usePlugin } from '@nocobase/client';
 
 import PluginWorkflowClient, { FlowContext } from '.';
+import { lang } from './locale';
 
 export function ExecutionContextProvider({ children, workflow, execution, nodes }) {
   const workflowPlugin = usePlugin(PluginWorkflowClient);
-  const triggerComponents = workflowPlugin.triggers.get(workflow.type).components;
+
+  if (!workflow?.type) {
+    return <Result status="warning" title={lang('Workflow is not exists')} />;
+  }
+
+  const trigger = workflowPlugin.triggers.get(workflow.type);
+
+  const triggerComponents = trigger.components;
   const nodeComponents = nodes.reduce(
     (components, { type }) => Object.assign(components, workflowPlugin.instructions.get(type).components),
     {},

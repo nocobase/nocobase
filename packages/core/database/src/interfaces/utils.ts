@@ -16,6 +16,7 @@ import {
   MultipleSelectInterface,
   PercentInterface,
   SelectInterface,
+  TextareaInterface,
   TimeInterface,
 } from './index';
 import { ManyToOneInterface } from './many-to-one-interface';
@@ -54,6 +55,7 @@ const interfaces = {
   m2m: ManyToManyInterface,
   time: TimeInterface,
   input: InputInterface,
+  textarea: TextareaInterface,
 };
 
 export function registerInterfaces(db: Database) {

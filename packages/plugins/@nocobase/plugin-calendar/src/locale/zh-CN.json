@@ -51,5 +51,6 @@
   "Not selected": "未选择",
   "Default view": "默认视图",
   "Event open mode": "事项打开方式",
-  "Quick create event": "快速创建事项"
+  "Quick create event": "快速创建事项",
+  "Week start day":"周起始日"
 }
