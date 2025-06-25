@@ -25,4 +25,5 @@ export * from './withFlowModel';
 
 export * from './components';
 export * from './data-source';
+export * from './decorators';
 //

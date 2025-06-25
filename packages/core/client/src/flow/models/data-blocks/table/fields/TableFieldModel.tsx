@@ -9,12 +9,14 @@
 
 import React from 'react';
 import { FieldModel } from '../../../base/FieldModel';
+import { reactive } from '@nocobase/flow-engine';
 
 export class TableFieldModel extends FieldModel {
   getValue() {
     return this.ctx.shared.value;
   }
 
+  @reactive
   public render() {
     return (
       <span>
