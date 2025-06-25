@@ -80,6 +80,7 @@
     "@nocobase/plugin-workflow-request": "1.8.0-alpha.9",
     "@nocobase/plugin-workflow-response-message": "1.8.0-alpha.9",
     "@nocobase/plugin-workflow-sql": "1.8.0-alpha.9",
+    "@nocobase/plugin-license": "1.8.0-alpha.9",
     "@nocobase/server": "1.8.0-alpha.9",
     "cronstrue": "^2.11.0",
     "fs-extra": "^11.1.1"
