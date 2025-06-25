@@ -48,7 +48,7 @@ export class FormModel extends DataBlockModel {
             subModelKey="fields"
             model={this}
             collection={this.collection}
-            subModelBaseClass="FormFieldModel"
+            subModelBaseClass="EditableFieldModel"
           />
           <FormButtonGroup style={{ marginTop: 16 }}>
             {this.mapSubModels('actions', (action) => (

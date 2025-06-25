@@ -6,7 +6,8 @@
  * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
+import { DateTimeFieldModel } from './DateTimeFieldModel';
 
-import { EditableFieldModel } from '../../fields/EditableField/EditableFieldModel';
-
-export class FilterFormFieldModel extends EditableFieldModel {}
+export class UnixTimestampEditableFieldModel extends DateTimeFieldModel {
+  static supportedFieldInterfaces = ['unixTimestamp'];
+}

@@ -46,7 +46,7 @@ export class TableModel extends DataBlockModel<TableModelStructure> {
             collection={this.collection}
             model={this}
             subModelKey={'columns'}
-            subModelBaseClass="TableFieldModel"
+            subModelBaseClass="ReadPrettyFieldModel"
             buildCreateModelOptions={({ defaultOptions, fieldPath }) => ({
               use: 'TableColumnModel',
               stepParams: {

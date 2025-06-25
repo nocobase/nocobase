@@ -7,6 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { EditableFieldModel } from '../../fields/EditableField/EditableFieldModel';
+import { Select } from '@formily/antd-v5';
+import { EditableFieldModel } from './EditableFieldModel';
 
-export class FilterFormFieldModel extends EditableFieldModel {}
+export class SelectEditableFieldModel extends EditableFieldModel {
+  static supportedFieldInterfaces = ['select', 'multipleSelect'];
+
+  get component() {
+    return [Select, {}];
+  }
+}

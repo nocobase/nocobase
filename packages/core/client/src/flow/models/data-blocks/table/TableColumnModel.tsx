@@ -12,7 +12,7 @@ import { FlowEngineProvider, FlowsFloatContextMenu } from '@nocobase/flow-engine
 import { TableColumnProps, Tooltip } from 'antd';
 import React from 'react';
 import { FieldModel } from '../../base/FieldModel';
-import { TableFieldModel } from './fields/TableFieldModel';
+import { ReadPrettyFieldModel } from '../../fields/ReadPrettyField/ReadPrettyFieldModel';
 
 export class TableColumnModel extends FieldModel {
   getColumnProps(): TableColumnProps {
@@ -53,7 +53,7 @@ export class TableColumnModel extends FieldModel {
   render() {
     return (value, record, index) => (
       <>
-        {this.mapSubModels('field', (action: TableFieldModel) => {
+        {this.mapSubModels('field', (action: ReadPrettyFieldModel) => {
           const fork = action.createFork({}, `index`);
           fork.setSharedContext({ index, value, record });
           return <FlowEngineProvider engine={this.flowEngine}>{fork.render()}</FlowEngineProvider>;
