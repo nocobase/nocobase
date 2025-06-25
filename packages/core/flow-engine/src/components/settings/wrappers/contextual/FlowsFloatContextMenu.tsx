@@ -8,15 +8,14 @@
  */
 
 import React, { useState, useCallback, useRef, useEffect } from 'react';
-import { Alert, Modal, Space, Dropdown, Button } from 'antd';
-import type { MenuProps } from 'antd';
-import { SettingOutlined, DeleteOutlined, ExclamationCircleOutlined, MenuOutlined } from '@ant-design/icons';
+import { Alert, Space } from 'antd';
 import { observer } from '@formily/react';
 import { css } from '@emotion/css';
 import { FlowModel } from '../../../../models';
-import { ActionStepDefinition } from '../../../../types';
-import { useFlowModel } from '../../../../hooks';
-import { openStepSettingsDialog } from './StepSettingsDialog';
+import { ToolbarItemConfig } from '../../../../types';
+import { useFlowModelById } from '../../../../hooks';
+import { useFlowEngine } from '../../../../provider';
+import { FlowEngine } from '../../../../flowEngine';
 
 // 检测DOM中直接子元素是否包含button元素的辅助函数
 const detectButtonInDOM = (container: HTMLElement): boolean => {
@@ -35,8 +34,43 @@ const detectButtonInDOM = (container: HTMLElement): boolean => {
   return false;
 };
 
+// 渲染工具栏项目的辅助函数
+const renderToolbarItems = (
+  model: FlowModel,
+  showDeleteButton: boolean,
+  showCopyUidButton: boolean,
+  flowEngine: FlowEngine,
+) => {
+  const toolbarItems = flowEngine?.flowSettings?.getToolbarItems?.() || [];
+
+  return toolbarItems
+    .filter((itemConfig: ToolbarItemConfig) => {
+      // 检查项目是否应该显示
+      return itemConfig.visible ? itemConfig.visible(model) : true;
+    })
+    .map((itemConfig: ToolbarItemConfig) => {
+      // 渲染项目组件
+      const ItemComponent = itemConfig.component;
+
+      // 对于默认设置项目，传递额外的 props
+      if (itemConfig.key === 'settings-menu') {
+        return (
+          <ItemComponent
+            key={itemConfig.key}
+            model={model}
+            showDeleteButton={showDeleteButton}
+            showCopyUidButton={showCopyUidButton}
+          />
+        );
+      }
+
+      // 其他项目只传递 model
+      return <ItemComponent key={itemConfig.key} model={model} />;
+    });
+};
+
 // 使用与 NocoBase 一致的悬浮工具栏样式
-const floatContainerStyles = css`
+const floatContainerStyles = ({ showBackground, showBorder }) => css`
   position: relative;
   display: inline;
 
@@ -63,8 +97,8 @@ const floatContainerStyles = css`
     left: 0;
     right: 0;
     display: none;
-    background: var(--colorBgSettingsHover);
-    border: 2px solid var(--colorBorderSettingsHover);
+    background: ${showBackground ? 'var(--colorBgSettingsHover)' : ''};
+    border: ${showBorder ? '2px solid var(--colorBorderSettingsHover)' : ''};
     pointer-events: none;
 
     &.nb-in-template {
@@ -95,12 +129,21 @@ const floatContainerStyles = css`
 
 // 悬浮右键菜单组件接口
 interface ModelProvidedProps {
-  model: any;
+  model: FlowModel;
   children?: React.ReactNode;
   enabled?: boolean;
   showDeleteButton?: boolean;
+  showCopyUidButton?: boolean;
   containerStyle?: React.CSSProperties;
   className?: string;
+  /**
+   * @default true
+   */
+  showBorder?: boolean;
+  /**
+   * @default true
+   */
+  showBackground?: boolean;
 }
 
 interface ModelByIdProps {
@@ -109,8 +152,17 @@ interface ModelByIdProps {
   children?: React.ReactNode;
   enabled?: boolean;
   showDeleteButton?: boolean;
+  showCopyUidButton?: boolean;
   containerStyle?: React.CSSProperties;
   className?: string;
+  /**
+   * @default true
+   */
+  showBorder?: boolean;
+  /**
+   * @default true
+   */
+  showBackground?: boolean;
 }
 
 type FlowsFloatContextMenuProps = ModelProvidedProps | ModelByIdProps;
@@ -138,23 +190,40 @@ const isModelByIdProps = (props: FlowsFloatContextMenuProps): props is ModelById
  * @param props.children 子组件，必须提供
  * @param props.enabled 是否启用悬浮菜单，默认为true
  * @param props.showDeleteButton 是否显示删除按钮，默认为true
+ * @param props.showCopyUidButton 是否显示复制UID按钮，默认为true
  * @param props.containerStyle 容器自定义样式
  * @param props.className 容器自定义类名
  */
-const FlowsFloatContextMenu: React.FC<FlowsFloatContextMenuProps> = (props) => {
+const FlowsFloatContextMenu: React.FC<FlowsFloatContextMenuProps> = observer((props) => {
+  const flowEngine = useFlowEngine();
+  // Only render if flowSettings is enabled
+  if (!flowEngine.flowSettings?.enabled) {
+    return <>{props.children}</>;
+  }
   if (isModelByIdProps(props)) {
     return <FlowsFloatContextMenuWithModelById {...props} />;
   } else {
     return <FlowsFloatContextMenuWithModel {...props} />;
   }
-};
+});
 
 // 使用传入的model
 const FlowsFloatContextMenuWithModel: React.FC<ModelProvidedProps> = observer(
-  ({ model, children, enabled = true, showDeleteButton = true, containerStyle, className }) => {
+  ({
+    model,
+    children,
+    enabled = true,
+    showDeleteButton = true,
+    showCopyUidButton = true,
+    containerStyle,
+    className,
+    showBackground = true,
+    showBorder = true,
+  }: ModelProvidedProps) => {
     const [hideMenu, setHideMenu] = useState<boolean>(false);
     const [hasButton, setHasButton] = useState<boolean>(false);
     const containerRef = useRef<HTMLDivElement>(null);
+    const flowEngine = useFlowEngine();
 
     // 检测DOM中是否包含button元素
     useEffect(() => {
@@ -199,47 +268,6 @@ const FlowsFloatContextMenuWithModel: React.FC<ModelProvidedProps> = observer(
       }
     }, []);
 
-    const handleMenuClick = useCallback(
-      ({ key }: { key: string }) => {
-        if (key === 'delete') {
-          // 处理删除操作
-          Modal.confirm({
-            title: '确认删除',
-            icon: <ExclamationCircleOutlined />,
-            content: '确定要删除此项吗？此操作不可撤销。',
-            okText: '确认删除',
-            okType: 'primary',
-            cancelText: '取消',
-            async onOk() {
-              try {
-                await model.destroy();
-              } catch (error) {
-                console.error('删除操作失败:', error);
-                Modal.error({
-                  title: '删除失败',
-                  content: '删除操作失败，请检查控制台获取详细信息。',
-                });
-              }
-            },
-          });
-        } else {
-          // 处理step配置，key格式为 "flowKey:stepKey"
-          const [flowKey, stepKey] = key.split(':');
-          try {
-            openStepSettingsDialog({
-              model,
-              flowKey,
-              stepKey,
-            });
-          } catch (error) {
-            // 用户取消或出错，静默处理
-            console.log('配置弹窗已取消或出错:', error);
-          }
-        }
-      },
-      [model],
-    );
-
     if (!model) {
       return <Alert message="提供的模型无效" type="error" />;
     }
@@ -249,159 +277,44 @@ const FlowsFloatContextMenuWithModel: React.FC<ModelProvidedProps> = observer(
       return <>{children}</>;
     }
 
-    // 获取可配置的flows和steps
-    const getConfigurableFlowsAndSteps = useCallback(() => {
-      try {
-        const ModelClass = model.constructor as typeof FlowModel;
-        const flows = ModelClass.getFlows();
-
-        const flowsArray = Array.from(flows.values());
-
-        return flowsArray
-          .map((flow) => {
-            const configurableSteps = Object.entries(flow.steps)
-              .map(([stepKey, stepDefinition]) => {
-                const actionStep = stepDefinition as ActionStepDefinition;
-
-                // 如果步骤设置了 hideInSettings: true，则跳过此步骤
-                if (actionStep.hideInSettings) {
-                  return null;
-                }
-
-                // 从step获取uiSchema（如果存在）
-                const stepUiSchema = actionStep.uiSchema || {};
-
-                // 如果step使用了action，也获取action的uiSchema
-                let actionUiSchema = {};
-                if (actionStep.use) {
-                  const action = model.flowEngine?.getAction?.(actionStep.use);
-                  if (action && action.uiSchema) {
-                    actionUiSchema = action.uiSchema;
-                  }
-                }
-
-                // 合并uiSchema，确保step的uiSchema优先级更高
-                const mergedUiSchema = { ...actionUiSchema };
-
-                // 将stepUiSchema中的字段合并到mergedUiSchema
-                Object.entries(stepUiSchema).forEach(([fieldKey, schema]) => {
-                  if (mergedUiSchema[fieldKey]) {
-                    mergedUiSchema[fieldKey] = { ...mergedUiSchema[fieldKey], ...schema };
-                  } else {
-                    mergedUiSchema[fieldKey] = schema;
-                  }
-                });
-
-                // 如果没有可配置的UI Schema，返回null
-                if (Object.keys(mergedUiSchema).length === 0) {
-                  return null;
-                }
-
-                return {
-                  stepKey,
-                  step: actionStep,
-                  uiSchema: mergedUiSchema,
-                  title: actionStep.title || stepKey,
-                };
-              })
-              .filter(Boolean);
-
-            return configurableSteps.length > 0 ? { flow, steps: configurableSteps } : null;
-          })
-          .filter(Boolean);
-      } catch (error) {
-        console.warn('[FlowsFloatContextMenu] 获取可配置flows失败:', error);
-        return [];
-      }
-    }, [model]);
-
-    const configurableFlowsAndSteps = getConfigurableFlowsAndSteps();
-
-    // 如果没有可配置的flows且不显示删除按钮，直接返回children
-    if (configurableFlowsAndSteps.length === 0 && !showDeleteButton) {
-      return <>{children}</>;
-    }
-
-    // 构建菜单项 - 使用与 FlowsContextMenu 相同的逻辑
-    const menuItems: MenuProps['items'] = [];
-
-    // 添加flows和steps配置项
-    if (configurableFlowsAndSteps.length > 0) {
-      configurableFlowsAndSteps.forEach(({ flow, steps }) => {
-        // 始终按flow分组显示
-        menuItems.push({
-          key: `flow-group-${flow.key}`,
-          label: flow.title || flow.key,
-          type: 'group',
-        });
-
-        steps.forEach((stepInfo) => {
-          menuItems.push({
-            key: `${flow.key}:${stepInfo.stepKey}`,
-            icon: <SettingOutlined />,
-            label: stepInfo.title,
-          });
-        });
-      });
-    }
-
-    // 添加分割线和删除按钮
-    if (showDeleteButton) {
-      // 如果有flows配置项，添加分割线
-      if (configurableFlowsAndSteps.length > 0) {
-        menuItems.push({
-          type: 'divider' as const,
-        });
-      }
-
-      // 添加删除按钮
-      menuItems.push({
-        key: 'delete',
-        icon: <DeleteOutlined />,
-        label: '删除',
-      });
-    }
-
     return (
-      <>
-        <div
-          ref={containerRef}
-          className={`${floatContainerStyles} ${hideMenu ? 'hide-parent-menu' : ''} ${
-            hasButton ? 'has-button-child' : ''
-          } ${className || ''}`}
-          style={containerStyle}
-          data-has-float-menu="true"
-          onMouseMove={handleChildHover}
-        >
-          {children}
+      <div
+        ref={containerRef}
+        className={`${floatContainerStyles({ showBackground, showBorder })} ${hideMenu ? 'hide-parent-menu' : ''} ${
+          hasButton ? 'has-button-child' : ''
+        } ${className || ''}`}
+        style={containerStyle}
+        data-has-float-menu="true"
+        onMouseMove={handleChildHover}
+      >
+        {children}
 
-          {/* 悬浮工具栏 - 使用与 NocoBase 一致的结构 */}
-          <div className="general-schema-designer">
-            <div className="general-schema-designer-icons">
-              <Space size={3} align="center">
-                <Dropdown
-                  menu={{
-                    items: menuItems,
-                    onClick: handleMenuClick,
-                  }}
-                  trigger={['hover']}
-                  placement="bottomRight"
-                >
-                  <MenuOutlined role="button" aria-label="flows-settings" style={{ cursor: 'pointer', fontSize: 12 }} />
-                </Dropdown>
-              </Space>
-            </div>
+        {/* 悬浮工具栏 - 使用与 NocoBase 一致的结构 */}
+        <div className="general-schema-designer">
+          <div className="general-schema-designer-icons">
+            <Space size={3} align="center">
+              {renderToolbarItems(model, showDeleteButton, showCopyUidButton, flowEngine)}
+            </Space>
           </div>
         </div>
-      </>
+      </div>
     );
   },
 );
 
 // 通过useModelById hook获取model
 const FlowsFloatContextMenuWithModelById: React.FC<ModelByIdProps> = observer(
-  ({ uid, modelClassName, children, enabled = true, showDeleteButton = true, containerStyle, className }) => {
-    const model = useFlowModel(uid, modelClassName);
+  ({
+    uid,
+    modelClassName,
+    children,
+    enabled = true,
+    showDeleteButton = true,
+    showCopyUidButton = true,
+    containerStyle,
+    className,
+  }) => {
+    const model = useFlowModelById(uid, modelClassName);
 
     if (!model) {
       return <Alert message={`未找到ID为 ${uid} 的模型`} type="error" />;
@@ -412,6 +325,7 @@ const FlowsFloatContextMenuWithModelById: React.FC<ModelByIdProps> = observer(
         model={model}
         enabled={enabled}
         showDeleteButton={showDeleteButton}
+        showCopyUidButton={showCopyUidButton}
         containerStyle={containerStyle}
         className={className}
       >

@@ -23,8 +23,12 @@ export default (app: Application) => {
       const Collection = app.db.getCollection('collections');
       if (Collection) {
         // @ts-ignore
+        await Collection.repository.setApp(app);
+        // @ts-ignore
         await Collection.repository.load();
       }
+
+      app.log.info('syncing database...');
 
       const force = false;
       await app.db.sync({

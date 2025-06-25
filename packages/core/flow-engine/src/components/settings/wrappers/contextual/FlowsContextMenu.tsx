@@ -14,7 +14,7 @@ import { SettingOutlined, DeleteOutlined, ExclamationCircleOutlined } from '@ant
 import { observer } from '@formily/react';
 import { FlowModel } from '../../../../models';
 import { ActionStepDefinition } from '../../../../types';
-import { useFlowModel } from '../../../../hooks';
+import { useFlowModelById } from '../../../../hooks';
 import { openStepSettingsDialog } from './StepSettingsDialog';
 
 // 右键菜单组件接口
@@ -254,7 +254,7 @@ const FlowsContextMenuWithModel: React.FC<ModelProvidedProps> = observer(
 // 通过useModelById hook获取model
 const FlowsContextMenuWithModelById: React.FC<ModelByIdProps> = observer(
   ({ uid, modelClassName, children, enabled = true, position = 'right', showDeleteButton = true }) => {
-    const model = useFlowModel(uid, modelClassName);
+    const model = useFlowModelById(uid, modelClassName);
 
     if (!model) {
       return <Alert message={`未找到ID为 ${uid} 的模型`} type="error" />;

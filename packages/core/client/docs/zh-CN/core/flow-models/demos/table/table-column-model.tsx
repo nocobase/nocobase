@@ -1,13 +1,13 @@
 import { EditOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
-import { Field, FlowModel, FlowModelRenderer } from '@nocobase/flow-engine';
+import { CollectionField, FlowModel, FlowModelRenderer } from '@nocobase/flow-engine';
 import { Space } from 'antd';
 import React from 'react';
 import { FormModel } from '../form/form-model';
 import { ActionModel } from './action-model';
 
 export class TableColumnModel extends FlowModel {
-  field: Field;
+  field: CollectionField;
   fieldPath: string;
 
   getColumnProps() {
@@ -75,7 +75,12 @@ export class TableColumnActionsModel extends TableColumnModel {
     return (value, record, index) => (
       <Space>
         {this.mapSubModels('actions', (action: ActionModel) => (
-          <FlowModelRenderer key={action.uid} model={action} extraContext={{ record }} />
+          <FlowModelRenderer
+            key={action.uid}
+            model={action.createFork({}, `${record.id || index}`)}
+            showFlowSettings
+            extraContext={{ record }}
+          />
         ))}
       </Space>
     );

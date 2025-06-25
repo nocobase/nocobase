@@ -20,6 +20,10 @@
 
 <code src="./demos/register-flow.tsx"></code>
 
+## 动态默认配置参数
+
+<code src="./demos/dynamic-default-params.tsx"></code>
+
 ## table block
 
 <code src="./demos/table-block.tsx"></code>
@@ -84,3 +88,6 @@
 
 <code src="./demos/open-required-step-params-dialog.tsx"></code>
 
+## fork 模型共享示例
+
+<code src="./demos/fork-flow-model.tsx"></code>

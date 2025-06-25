@@ -1,11 +1,18 @@
 import { Application, Plugin } from '@nocobase/client';
-import { Collection, DataSource, DataSourceManager, Field, FlowModel, FlowModelRenderer } from '@nocobase/flow-engine';
+import {
+  Collection,
+  CollectionField,
+  DataSource,
+  DataSourceManager,
+  FlowModel,
+  FlowModelRenderer,
+} from '@nocobase/flow-engine';
 import { Button, Dropdown, Input } from 'antd';
 import React from 'react';
 
 const dsm = new DataSourceManager();
 const ds = new DataSource({
-  name: 'main',
+  key: 'main',
   displayName: 'Main',
   description: 'This is the main data source',
 });
@@ -47,7 +54,7 @@ ds.addCollection({
 });
 
 class FieldModel extends FlowModel {
-  field: Field;
+  field: CollectionField;
   render() {
     return (
       <div>
@@ -94,7 +101,7 @@ class ConfigureFieldsFlowModel extends FlowModel<S> {
   getFieldMenuItems() {
     return this.collection.mapFields((field) => {
       return {
-        key: `${this.collection.dataSource.name}.${this.collection.name}.${field.name}`,
+        key: `${this.collection.dataSource.key}.${this.collection.name}.${field.name}`,
         label: field.title,
       };
     });

@@ -12,78 +12,7 @@ import { autorun, toJS } from '@formily/reactive';
 import { FlowModel } from '../models';
 import { useFlowEngine } from '../provider';
 import { FlowExtraContext } from '../types';
-import { uid } from 'uid/secure';
-
-// 生成稳定的缓存键
-function generateCacheKey(prefix: string, flowKey: string, modelUid: string): string {
-  return `${prefix}:${flowKey}:${modelUid}`;
-}
-
-// 安全序列化对象的函数
-function safeStringify(obj: any, visited = new Set(), depth = 0, maxDepth = 5): string {
-  // 深度限制，防止过深递归
-  if (depth > maxDepth) {
-    return '[MaxDepthExceeded]';
-  }
-
-  // 处理基本类型
-  if (obj === null || obj === undefined) {
-    return String(obj);
-  }
-
-  if (typeof obj !== 'object' && typeof obj !== 'function') {
-    return String(obj);
-  }
-
-  // 处理函数
-  if (typeof obj === 'function') {
-    // 对于函数，可以使用函数名或为匿名函数生成一个标识符
-    return `function:${obj.name || 'anonymous'}`;
-  }
-
-  // 处理循环引用
-  if (visited.has(obj)) {
-    return '[Circular]';
-  }
-
-  // 添加到已访问集合
-  visited.add(obj);
-
-  // 处理数组
-  if (Array.isArray(obj)) {
-    try {
-      // 限制处理的数组元素数量
-      const maxItems = 100;
-      const items = obj.slice(0, maxItems);
-      const result =
-        '[' +
-        items.map((item) => safeStringify(item, visited, depth + 1, maxDepth)).join(',') +
-        (obj.length > maxItems ? ',...' : '') +
-        ']';
-      return result;
-    } catch (e) {
-      return '[Array]';
-    }
-  }
-
-  // 处理普通对象
-  try {
-    const keys = Object.keys(obj).sort(); // 排序确保稳定性
-    // 限制处理的属性数量
-    const maxKeys = 50;
-    const limitedKeys = keys.slice(0, maxKeys);
-
-    const pairs = limitedKeys.map((key) => {
-      const value = obj[key];
-      return `${key}:${safeStringify(value, visited, depth + 1, maxDepth)}`;
-    });
-
-    return '{' + pairs.join(',') + (keys.length > maxKeys ? ',...' : '') + '}';
-  } catch (e) {
-    // 如果无法序列化，返回一个简单的标识
-    return '[Object]';
-  }
-}
+import { FlowEngine } from '../flowEngine';
 
 /**
  * 通用的流程执行 Hook
@@ -105,8 +34,8 @@ function useFlowExecutor<T, TModel extends FlowModel = FlowModel>(
 ): T {
   const engine = useFlowEngine();
   const cacheKey = useMemo(
-    () => generateCacheKey(cacheKeyPrefix, flowKey, model.uid),
-    [cacheKeyPrefix, flowKey, model.uid],
+    () => FlowEngine.generateApplyFlowCacheKey(model['forkId'] ?? cacheKeyPrefix, flowKey, model.uid),
+    [cacheKeyPrefix, flowKey, model.uid, model['forkId']],
   );
   const [, forceUpdate] = useState({});
   const isMounted = useRef(false);
@@ -124,7 +53,7 @@ function useFlowExecutor<T, TModel extends FlowModel = FlowModel>(
     let isInitialAutorunForEffect = true;
 
     const disposeAutorun = autorun(() => {
-      // 只监听 stepParams 的变化，移除对 props 的监听以避免循环触发
+      // 监听 stepParams 的变化来触发 auto flows 重新执行
       JSON.stringify(toJS(model.stepParams));
 
       if (isInitialAutorunForEffect) {
@@ -209,7 +138,11 @@ export function useApplyFlow<TModel extends FlowModel = FlowModel>(
  * @param context Optional user context
  * @returns The results of all auto-apply flows execution
  */
-export function useApplyAutoFlows(modelOrUid: FlowModel | string, context?: FlowExtraContext, independentAutoFlowExecution?: boolean): any[] {
+export function useApplyAutoFlows(
+  modelOrUid: FlowModel | string,
+  context?: FlowExtraContext,
+  independentAutoFlowExecution?: boolean,
+): any[] {
   const flowEngine = useFlowEngine();
   const model = useMemo(() => {
     if (typeof modelOrUid === 'string') {
@@ -224,7 +157,7 @@ export function useApplyAutoFlows(modelOrUid: FlowModel | string, context?: Flow
   //   }
   //   return 'autoFlow';
   // }, [independentAutoFlowExecution]);
-  
+
   const executor = useCallback((ctx?: FlowExtraContext) => model.applyAutoFlows(ctx), [model]);
 
   return useFlowExecutor(

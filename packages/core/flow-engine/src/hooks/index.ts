@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export * from './useFlowExtraContext';
+export * from './useFlowModelById';
 export * from './useFlowModel';
 export * from './useApplyFlow';
 export * from './useDispatchEvent';

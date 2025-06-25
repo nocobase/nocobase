@@ -9,6 +9,7 @@
 import { observable } from '@formily/reactive';
 import { FlowSettings } from './flowSettings';
 import { FlowModel } from './models';
+import { ReactView } from './ReactView';
 import {
   ActionDefinition,
   ActionOptions,
@@ -39,6 +40,13 @@ export class FlowEngine {
   private modelRepository: IFlowModelRepository | null = null;
   private _applyFlowCache = new Map<string, ApplyFlowCacheEntry>();
 
+  reactView: ReactView;
+
+  constructor() {
+    this.reactView = new ReactView(this);
+  }
+  // 注册默认的 FlowModel
+
   setModelRepository(modelRepository: IFlowModelRepository) {
     if (this.modelRepository) {
       console.warn('FlowEngine: Model repository is already set and will be overwritten.');
@@ -47,7 +55,7 @@ export class FlowEngine {
   }
 
   setContext(context: any) {
-    this.context = context;
+    this.context = { ...this.context, ...context };
   }
 
   getContext() {
@@ -56,6 +64,12 @@ export class FlowEngine {
 
   get applyFlowCache() {
     return this._applyFlowCache;
+  }
+
+  registerActions(actions: Record<string, ActionDefinition>): void {
+    for (const [, definition] of Object.entries(actions)) {
+      this.registerAction(definition);
+    }
   }
 
   /**
@@ -144,6 +158,22 @@ export class FlowEngine {
   }
 
   /**
+   * 根据条件查找已注册的 Model 类。
+   * @param predicate 回调函数，参数为 (name, ModelClass)，返回 true 时即为命中。
+   * @returns [name, ModelConstructor] | undefined
+   */
+  public findModelClass(
+    predicate: (name: string, ModelClass: ModelConstructor) => boolean,
+  ): [string, ModelConstructor] | undefined {
+    for (const [name, ModelClass] of this.modelClasses) {
+      if (predicate(name, ModelClass)) {
+        return [name, ModelClass];
+      }
+    }
+    return undefined;
+  }
+
+  /**
    * 创建并注册一个 Model 实例。
    * 如果具有相同 UID 的实例已存在，则返回现有实例。
    * @template T FlowModel 的子类型，默认为 FlowModel。
@@ -184,6 +214,10 @@ export class FlowEngine {
     return this.modelInstances.get(uid) as T | undefined;
   }
 
+  forEachModel<T extends FlowModel = FlowModel>(callback: (model: T) => void): void {
+    this.modelInstances.forEach(callback);
+  }
+
   /**
    * 移除一个本地模型实例。
    * @param {string} uid 要销毁的 Model 实例的唯一标识符。
@@ -195,6 +229,7 @@ export class FlowEngine {
       return false;
     }
     const modelInstance = this.modelInstances.get(uid);
+    modelInstance.clearForks();
     // 从父模型中移除当前模型的引用
     if (modelInstance.parent?.subModels) {
       for (const subKey in modelInstance.parent.subModels) {
@@ -226,13 +261,13 @@ export class FlowEngine {
 
   async loadModel<T extends FlowModel = FlowModel>(uid: string): Promise<T | null> {
     if (!this.ensureModelRepository()) return;
-    const data = await this.modelRepository.load(uid);
+    const data = await this.modelRepository.findOne({ uid });
     return data?.uid ? this.createModel<T>(data as any) : null;
   }
 
   async loadOrCreateModel<T extends FlowModel = FlowModel>(options): Promise<T | null> {
     if (!this.ensureModelRepository()) return;
-    const data = await this.modelRepository.load(options.uid);
+    const data = await this.modelRepository.findOne(options);
     if (data?.uid) {
       return this.createModel<T>(data as any);
     } else {
@@ -303,5 +338,9 @@ export class FlowEngine {
       }
     }
     return modelClasses;
+  }
+
+  static generateApplyFlowCacheKey(prefix: string, flowKey: string, modelUid: string): string {
+    return `${prefix}:${flowKey}:${modelUid}`;
   }
 }

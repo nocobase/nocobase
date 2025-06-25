@@ -7,49 +7,65 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { FlowModelRenderer, useFlowEngine, useFlowModel } from '@nocobase/flow-engine';
+import { FlowModelRenderer, useFlowEngine, useFlowModelById } from '@nocobase/flow-engine';
 import { useRequest } from 'ahooks';
 import { Spin } from 'antd';
 import React from 'react';
 import { useParams } from 'react-router-dom';
 
-function InternalFlowPage({ uid }) {
-  const model = useFlowModel(uid);
-  return <FlowModelRenderer model={model} showFlowSettings hideRemoveInSettings />;
+function InternalFlowPage({ uid, sharedContext }) {
+  const model = useFlowModelById(uid);
+  return (
+    <FlowModelRenderer
+      model={model}
+      sharedContext={sharedContext}
+      showFlowSettings={{ showBackground: false, showBorder: false }}
+      hideRemoveInSettings
+    />
+  );
 }
 
-export const FlowPage = () => {
+export const FlowRoute = () => {
   const params = useParams();
-  return <FlowPageComponent uid={params.name} />;
+  return <FlowPage uid={`r_${params.name}`} />;
 };
 
-export const FlowPageComponent = ({ uid }) => {
+export const FlowPage = (props) => {
+  const { uid, parentId, sharedContext } = props;
   const flowEngine = useFlowEngine();
-  const { loading } = useRequest(
-    () => {
-      return flowEngine.loadOrCreateModel({
-        uid: uid,
-        use: 'PageFlowModel',
+  const { loading, data } = useRequest(
+    async () => {
+      const options = {
+        uid,
+        use: 'PageModel',
         subModels: {
           tabs: [
             {
-              use: 'PageTabFlowModel',
+              use: 'PageTabModel',
               subModels: {
                 grid: {
-                  use: 'BlockGridFlowModel',
+                  use: 'BlockGridModel',
                 },
               },
             },
           ],
         },
-      });
+      };
+      if (!uid && parentId) {
+        options['async'] = true;
+        options['parentId'] = parentId;
+        options['subKey'] = 'page';
+        options['subType'] = 'object';
+      }
+      const data = await flowEngine.loadOrCreateModel(options);
+      return data;
     },
     {
-      refreshDeps: [uid],
+      refreshDeps: [uid || parentId],
     },
   );
-  if (loading) {
+  if (loading || !data?.uid) {
     return <Spin />;
   }
-  return <InternalFlowPage uid={uid} />;
+  return <InternalFlowPage uid={data.uid} sharedContext={sharedContext} />;
 };

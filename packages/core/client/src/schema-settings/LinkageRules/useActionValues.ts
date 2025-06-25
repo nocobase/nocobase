@@ -34,7 +34,8 @@ export function useSatisfiedActionValues({
   const variables = useVariables();
   const localVariables = useLocalVariables({ currentForm: { values: formValues } as any });
   const localSchema = schema ?? fieldSchema;
-  const styleRules = rules ?? localSchema[LinkageRuleDataKeyMap[category]];
+  const styleRules =
+    rules ?? (localSchema[LinkageRuleDataKeyMap[category]] || localSchema?.parent[LinkageRuleDataKeyMap[category]]);
   const app = useApp();
 
   const compute = useCallback(() => {
@@ -65,7 +66,7 @@ export function useSatisfiedActionValues({
         form.removeEffects(id);
       };
     }
-  }, [form, compute]);
+  }, [form, compute, formValues]);
 
   return { valueMap };
 }

@@ -1,6 +1,15 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import React from 'react';
 import { Alert } from 'antd';
-import { useFlowModel } from '../../../../hooks';
+import { useFlowModelById } from '../../../../hooks';
 import { observer } from '@formily/react';
 import FlowsSettingsContent from './FlowsSettingsContent';
 
@@ -76,7 +85,7 @@ const FlowsSettingsWithModel: React.FC<ModelProvidedProps> = observer(({ model, 
 // 通过useModelById hook获取model
 const FlowsSettingsWithModelById: React.FC<ModelByIdProps> = observer(
   ({ uid, modelClassName, expandAll = false, children }) => {
-    const model = useFlowModel(uid, modelClassName);
+    const model = useFlowModelById(uid, modelClassName);
 
     if (!model) {
       return <Alert message={`未找到ID为 ${uid} 的模型`} type="error" />;

@@ -9,6 +9,7 @@
 
 import { FlowModel, IFlowModelRepository } from '@nocobase/flow-engine';
 import _ from 'lodash';
+import { Application } from '../application';
 
 export class MockFlowModelRepository implements IFlowModelRepository<FlowModel> {
   get models() {
@@ -24,6 +25,26 @@ export class MockFlowModelRepository implements IFlowModelRepository<FlowModel> 
       }
     }
     return models;
+  }
+
+  async findOne(query) {
+    const { uid, parentId } = query;
+    if (uid) {
+      return this.load(uid);
+    } else if (parentId) {
+      return this.loadByParentId(parentId);
+    }
+    return null;
+  }
+
+  async loadByParentId(parentId: string) {
+    for (const model of this.models.values()) {
+      if (model.parentId == parentId) {
+        console.log('Loading model by parentId:', parentId, model);
+        return this.load(model.uid);
+      }
+    }
+    return null;
   }
 
   // 从本地存储加载模型数据
@@ -43,7 +64,9 @@ export class MockFlowModelRepository implements IFlowModelRepository<FlowModel> 
           json.subModels[model.subKey].push(subModel);
         } else if (model.subType === 'object') {
           const subModel = await this.load(model.uid);
-          json.subModels[model.subKey] = subModel;
+          if (subModel) {
+            json.subModels[model.subKey] = subModel;
+          }
         }
       }
     }
@@ -74,6 +97,35 @@ export class MockFlowModelRepository implements IFlowModelRepository<FlowModel> 
   // 从本地存储中删除模型数据
   async destroy(uid: string) {
     localStorage.removeItem(`flow-model:${uid}`);
+    return true;
+  }
+}
+
+export class FlowModelRepository implements IFlowModelRepository<FlowModel> {
+  constructor(private app: Application) {}
+  async findOne(query) {
+    const response = await this.app.apiClient.request({
+      url: 'flowModels:findOne',
+      params: _.pick(query, ['uid', 'parentId']),
+    });
+    return response.data?.data;
+  }
+
+  async save(model: FlowModel) {
+    const response = await this.app.apiClient.request({
+      method: 'POST',
+      url: 'flowModels:save',
+      data: model.serialize(),
+    });
+    return response.data?.data;
+  }
+
+  async destroy(uid: string) {
+    await this.app.apiClient.request({
+      method: 'POST',
+      url: 'flowModels:destroy',
+      params: { filterByTk: uid },
+    });
     return true;
   }
 }

@@ -11,6 +11,8 @@ import { createSchemaField, ISchema } from '@formily/react';
 import { message } from 'antd';
 import React from 'react';
 import { ActionStepDefinition, StepSettingsDialogProps } from '../../../../types';
+import { resolveDefaultParams } from '../../../../utils';
+import { StepSettingContextProvider, StepSettingContextType, useStepSettingContext } from './StepSettingContext';
 
 const SchemaField = createSchemaField();
 
@@ -54,6 +56,7 @@ const openStepSettingsDialog = async ({
   // 获取可配置的步骤信息
   const stepDefinition = step as ActionStepDefinition;
   const stepUiSchema = stepDefinition.uiSchema || {};
+  let actionDefaultParams = {};
 
   // 如果step使用了action，也获取action的uiSchema
   let actionUiSchema = {};
@@ -62,6 +65,7 @@ const openStepSettingsDialog = async ({
     if (action && action.uiSchema) {
       actionUiSchema = action.uiSchema;
     }
+    actionDefaultParams = action.defaultParams || {};
   }
 
   // 合并uiSchema，确保step的uiSchema优先级更高
@@ -82,8 +86,18 @@ const openStepSettingsDialog = async ({
 
   // 获取初始值
   const stepParams = model.getStepParams(flowKey, stepKey) || {};
-  const defaultParams = stepDefinition.defaultParams || {};
-  const initialValues = { ...defaultParams, ...stepParams };
+
+  // 创建参数解析上下文
+  const paramsContext = {
+    model,
+    globals: model.flowEngine?.context || {},
+    app: model.flowEngine?.context?.app,
+  };
+
+  // 解析 defaultParams
+  const resolvedDefaultParams = await resolveDefaultParams(stepDefinition.defaultParams, paramsContext);
+  const resolveActionDefaultParams = await resolveDefaultParams(actionDefaultParams, paramsContext);
+  const initialValues = { ...resolveActionDefaultParams, ...resolvedDefaultParams, ...stepParams };
 
   // 构建表单Schema
   const formSchema: ISchema = {
@@ -120,16 +134,30 @@ const openStepSettingsDialog = async ({
     (form) => {
       const flowEngine = model.flowEngine || {};
 
+      // 创建上下文值
+      const contextValue: StepSettingContextType = {
+        model,
+        globals: model.flowEngine?.context || {},
+        app: model.flowEngine?.context?.app,
+        step,
+        flow,
+        flowKey,
+        stepKey,
+      };
+
       return (
-        <SchemaField
-          schema={formSchema}
-          components={{
-            ...flowEngine.flowSettings?.components,
-          }}
-          scope={{
-            ...flowEngine.flowSettings?.scopes,
-          }}
-        />
+        <StepSettingContextProvider value={contextValue}>
+          <SchemaField
+            schema={formSchema}
+            components={{
+              ...flowEngine.flowSettings?.components,
+            }}
+            scope={{
+              useStepSettingContext,
+              ...flowEngine.flowSettings?.scopes,
+            }}
+          />
+        </StepSettingContextProvider>
       );
     },
   );

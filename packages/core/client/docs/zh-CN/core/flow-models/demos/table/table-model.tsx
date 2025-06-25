@@ -1,12 +1,15 @@
-import { Collection, FlowModel, MultiRecordResource } from '@nocobase/flow-engine';
-import { Button, Dropdown, Table } from 'antd';
+import { SettingOutlined } from '@ant-design/icons';
+import { AddActionModel, Collection, FlowModel, FlowModelRenderer, MultiRecordResource } from '@nocobase/flow-engine';
+import { Button, Dropdown, Space, Table } from 'antd';
 import React from 'react';
+import { ActionModel } from './action-model';
 import { api } from './api';
 import { TableColumnModel } from './table-column-model';
 
 type S = {
   subModels: {
     columns: TableColumnModel[];
+    actions: ActionModel[];
   };
 };
 
@@ -36,7 +39,7 @@ export class TableModel extends FlowModel<S> {
             },
             items: this.collection.mapFields((field) => {
               return {
-                key: `${this.collection.dataSource.name}.${this.collection.name}.${field.name}`,
+                key: `${this.collection.dataSource.key}.${this.collection.name}.${field.name}`,
                 label: field.title,
               };
             }),
@@ -51,10 +54,43 @@ export class TableModel extends FlowModel<S> {
   render() {
     return (
       <div>
+        <Space style={{ marginBottom: 16 }}>
+          {this.mapSubModels('actions', (action) => (
+            <FlowModelRenderer
+              model={action}
+              showFlowSettings
+              extraContext={{ currentModel: this, currentResource: this.resource }}
+            />
+          ))}
+          <AddActionModel
+            model={this}
+            subModelKey={'actions'}
+            items={() => [
+              {
+                key: 'action1',
+                label: 'Delete',
+                createModelOptions: {
+                  use: 'DeleteActionModel',
+                },
+              },
+            ]}
+          >
+            <Button type="primary" icon={<SettingOutlined />}>
+              Configure actions
+            </Button>
+          </AddActionModel>
+        </Space>
         <Table
           rowKey="id"
           dataSource={this.resource.getData()}
           columns={this.getColumns()}
+          rowSelection={{
+            type: 'checkbox',
+            onChange: (_, selectedRows) => {
+              this.resource.setSelectedRows(selectedRows);
+            },
+            selectedRowKeys: this.resource.getSelectedRows().map((row) => row.id),
+          }}
           pagination={{
             current: this.resource.getMeta('page'),
             pageSize: this.resource.getMeta('pageSize'),

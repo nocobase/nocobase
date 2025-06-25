@@ -20,8 +20,7 @@ export async function create(context: Context, next) {
   context.body = await db.sequelize.transaction(async (transaction) => {
     const workflow = (await repository.getSourceModel(transaction)) as WorkflowModel;
     workflow.versionStats = await workflow.getVersionStats({ transaction });
-    const { executed } = workflow.versionStats;
-    if (executed) {
+    if (workflow.versionStats.executed > 0) {
       context.throw(400, 'Node could not be created in executed workflow');
     }
 
@@ -130,7 +129,7 @@ export async function destroy(context: Context, next) {
     fields: [...fields, 'workflowId'],
     appends: ['upstream', 'downstream', 'workflow.versionStats.executed'],
   });
-  if (instance.workflow.versionStats.executed) {
+  if (instance.workflow.versionStats.executed > 0) {
     context.throw(400, 'Nodes in executed workflow could not be deleted');
   }
 
@@ -204,7 +203,7 @@ export async function update(context: Context, next) {
       appends: ['workflow.versionStats.executed'],
       transaction,
     });
-    if (workflow.versionStats.executed) {
+    if (workflow.versionStats.executed > 0) {
       context.throw(400, 'Nodes in executed workflow could not be reconfigured');
     }
 

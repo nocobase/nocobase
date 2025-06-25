@@ -30,4 +30,18 @@ export class FlowResource<TData = any> {
     this._meta.value = { ...this._meta.value, ...meta };
     return this;
   }
+
+  private events: Record<string, Array<(...args: any[]) => void>> = {};
+
+  on(event: string, callback: (...args: any[]) => void) {
+    (this.events[event] ||= []).push(callback);
+  }
+
+  off(event: string, callback: (...args: any[]) => void) {
+    this.events[event] = (this.events[event] || []).filter((fn) => fn !== callback);
+  }
+
+  emit(event: string, ...args: any[]) {
+    (this.events[event] || []).forEach((fn) => fn(...args));
+  }
 }

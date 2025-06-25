@@ -7,19 +7,45 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { observer } from '@formily/reactive-react';
+import { SettingOutlined } from '@ant-design/icons';
 import React, { useMemo } from 'react';
-import { AddSubModelButton, AddSubModelButtonProps } from './AddSubModelButton';
 import { FlowModel } from '../../models/flowModel';
 import { ModelConstructor } from '../../types';
+import { FlowSettingsButton } from '../common/FlowSettingsButton';
+import { withFlowDesignMode } from '../common/withFlowDesignMode';
+import { AddSubModelButton, SubModelItemsType } from './AddSubModelButton';
 
-interface AddActionButtonProps extends Omit<AddSubModelButtonProps, 'subModelType' | 'subModelKey' | 'items'> {
+interface AddActionButtonProps {
   /**
-   * 父模型类名，用于确定支持的 Actions 类型
+   * 父模型实例
    */
-  ParentModelClass?: string | ModelConstructor;
+  model: FlowModel;
+  /**
+   * 子模型基类，用于确定支持的 Actions 类型
+   */
+  subModelBaseClass?: string | ModelConstructor;
   subModelKey?: string;
   subModelType?: 'object' | 'array';
+  /**
+   * 创建后的回调函数
+   */
+  onModelCreated?: (subModel: FlowModel) => Promise<void>;
+  /**
+   * 添加到父模型后的回调函数
+   */
+  onSubModelAdded?: (subModel: FlowModel) => Promise<void>;
+  /**
+   * 按钮文本
+   */
+  children?: React.ReactNode;
+  /**
+   * 过滤Model菜单的函数
+   */
+  filter?: (blockClass: ModelConstructor, className: string) => boolean;
+  /**
+   * 自定义 items（如果提供，将覆盖默认的action菜单）
+   */
+  items?: SubModelItemsType;
 }
 
 /**
@@ -29,51 +55,56 @@ interface AddActionButtonProps extends Omit<AddSubModelButtonProps, 'subModelTyp
  * ```tsx
  * <AddActionButton
  *   model={parentModel}
- *   ParentModelClass={'ActionFlowModel'}
+ *   subModelBaseClass={'ActionFlowModel'}
  * />
  * ```
  */
-export const AddActionButton: React.FC<AddActionButtonProps> = observer(
-  ({
-    ParentModelClass = 'ActionFlowModel',
-    subModelKey = 'actions',
-    children = 'Add action',
-    subModelType = 'array',
-    ...props
-  }) => {
-    const items = useMemo<
-      {
-        key: string;
-        label: string;
-        icon?: React.ReactNode;
-        item: typeof FlowModel;
-        unique?: boolean;
-        use: string;
-      }[]
-    >(() => {
-      const blockClasses = props.model.flowEngine.filterModelClassByParent(ParentModelClass);
-      const registeredBlocks = [];
-      for (const [className, ModelClass] of blockClasses) {
-        const item = {
-          key: className,
-          label: ModelClass.meta?.title || className,
-          icon: ModelClass.meta?.icon,
-          item: ModelClass,
-          use: className,
-          // unique: ModelClass.meta?.uniqueSub,
-          // added: null,
-        };
-        registeredBlocks.push(item);
+const AddActionButtonCore: React.FC<AddActionButtonProps> = ({
+  model,
+  subModelBaseClass = 'ActionFlowModel',
+  subModelKey = 'actions',
+  children = <FlowSettingsButton icon={<SettingOutlined />}>{'Configure actions'}</FlowSettingsButton>,
+  subModelType = 'array',
+  items,
+  filter,
+  onModelCreated,
+  onSubModelAdded,
+}) => {
+  const allActionsItems = useMemo(() => {
+    const actionClasses = model.flowEngine.filterModelClassByParent(subModelBaseClass);
+    const registeredBlocks = [];
+    for (const [className, ModelClass] of actionClasses) {
+      if (filter && !filter(ModelClass, className)) {
+        continue;
       }
-      return registeredBlocks;
-    }, [props.model, ParentModelClass]);
+      const item = {
+        key: className,
+        label: ModelClass.meta?.title || className,
+        icon: ModelClass.meta?.icon,
+        createModelOptions: {
+          ...ModelClass.meta?.defaultOptions,
+          use: className,
+        },
+      };
+      registeredBlocks.push(item);
+    }
+    return registeredBlocks;
+  }, [model, subModelBaseClass]);
 
-    return (
-      <AddSubModelButton {...props} subModelKey={subModelKey} subModelType={subModelType} items={items}>
-        {children}
-      </AddSubModelButton>
-    );
-  },
-);
+  return (
+    <AddSubModelButton
+      model={model}
+      subModelKey={subModelKey}
+      subModelType={subModelType}
+      items={items ?? allActionsItems}
+      onModelCreated={onModelCreated}
+      onSubModelAdded={onSubModelAdded}
+    >
+      {children}
+    </AddSubModelButton>
+  );
+};
+
+export const AddActionButton = withFlowDesignMode(AddActionButtonCore);
 
 AddActionButton.displayName = 'AddActionButton';

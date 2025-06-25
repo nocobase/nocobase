@@ -1,10 +1,20 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import React, { useCallback, useEffect } from 'react';
 import { Alert, Input, InputNumber, Select, Switch, Form } from 'antd';
 // TODO: ISchema may need to be imported from a different package or refactored.
 import { ActionStepDefinition } from '../../../../types';
-import { useFlowModel } from '../../../../hooks';
+import { useFlowModelById } from '../../../../hooks';
 import { FlowModel } from '../../../../models';
 import { observer } from '@formily/react';
+import { resolveDefaultParams } from '../../../../utils';
 
 const { Item: FormItem } = Form;
 
@@ -57,7 +67,7 @@ const FlowSettingsWithModel: React.FC<ModelProvidedProps> = observer(({ model, f
 
 // 通过useModelById hook获取model
 const FlowSettingsWithModelById: React.FC<ModelByIdProps> = observer(({ uid, flowKey, modelClassName }) => {
-  const model = useFlowModel(uid, modelClassName);
+  const model = useFlowModelById(uid, modelClassName);
 
   if (!model) {
     return <Alert message={`未找到ID为 ${uid} 的模型`} type="error" />;
@@ -124,29 +134,47 @@ const FlowSettingsContent: React.FC<FlowSettingsContentProps> = observer(({ mode
     .filter(Boolean);
 
   // 获取当前流程的参数 - 从model中获取实际参数
-  const getCurrentParams = useCallback(() => {
+  const getCurrentParams = useCallback(async () => {
     const params = {};
 
+    // 创建参数解析上下文用于解析函数形式的 defaultParams
+    // 在 settings 中，我们只有基本的上下文信息
+    const paramsContext = {
+      model,
+      globals: model.flowEngine?.context || {},
+      app: model.flowEngine?.context?.app,
+    };
+
     // 从model中获取每个步骤的参数，如果为空则使用默认参数
-    configurableSteps.forEach(({ stepKey, step }) => {
+    for (const { stepKey, step } of configurableSteps) {
       const stepParams = model.getStepParams(flowKey, stepKey) || {};
-      const defaultParams = step.defaultParams || {};
+
+      // 解析 defaultParams
+      const resolvedDefaultParams = await resolveDefaultParams(step.defaultParams, paramsContext);
 
       // 合并默认参数和当前参数，当前参数优先
-      const mergedParams = { ...defaultParams, ...stepParams };
+      const mergedParams = { ...resolvedDefaultParams, ...stepParams };
 
       if (Object.keys(mergedParams).length > 0) {
         params[stepKey] = mergedParams;
       }
-    });
+    }
 
     return params;
   }, [model, flowKey, configurableSteps]);
 
   // 初始化表单值
   useEffect(() => {
-    const currentParams = getCurrentParams();
-    form.setFieldsValue(currentParams);
+    const loadParams = async () => {
+      try {
+        const currentParams = await getCurrentParams();
+        form.setFieldsValue(currentParams);
+      } catch (error) {
+        console.error('Error loading default params:', error);
+      }
+    };
+
+    loadParams();
   }, [flowKey, form, getCurrentParams]);
 
   // 处理表单值变化 - 实时保存

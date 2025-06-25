@@ -7,13 +7,42 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { define, observable } from '@formily/reactive';
 import { openStepSettingsDialog } from './components/settings/wrappers/contextual/StepSettingsDialog';
-import { StepSettingsDialogProps } from './types';
+import { StepSettingsDialogProps, ToolbarItemConfig } from './types';
+import { DefaultSettingsIcon } from './components/settings/wrappers/contextual/DefaultSettingsIcon';
 
 export class FlowSettings {
   public components: Record<string, any> = {};
   public scopes: Record<string, any> = {};
   private antdComponentsLoaded = false;
+  public enabled: boolean;
+  public toolbarItems: ToolbarItemConfig[] = [];
+
+  constructor() {
+    // 初始默认为 false，由 SchemaComponentProvider 根据实际设计模式状态同步设置
+    this.enabled = false;
+
+    // 添加默认的配置项目
+    this.addDefaultToolbarItems();
+
+    define(this, {
+      enabled: observable,
+    });
+  }
+
+  /**
+   * 添加默认的工具栏项目
+   * @private
+   */
+  private addDefaultToolbarItems(): void {
+    // 添加基础的配置菜单项目（原有的菜单功能）
+    this.toolbarItems.push({
+      key: 'settings-menu',
+      component: DefaultSettingsIcon,
+      sort: 0, // 默认为0，作为第一个添加的项目
+    });
+  }
 
   /**
    * 加载 FlowSettings 所需的资源。
@@ -162,6 +191,123 @@ export class FlowSettings {
       }
       this.scopes[name] = scopes[name];
     });
+  }
+
+  /**
+   * 启用流程设置组件的显示
+   * @example
+   * flowSettings.enable();
+   */
+  public enable(): void {
+    this.enabled = true;
+  }
+
+  /**
+   * 禁用流程设置组件的显示
+   * @example
+   * flowSettings.disable();
+   */
+  public disable(): void {
+    this.enabled = false;
+  }
+
+  /**
+   * 添加扩展工具栏项目
+   * @param {ToolbarItemConfig} config 项目配置
+   * @example
+   * // 添加一个复制图标组件
+   * const CopyIcon = ({ model }) => {
+   *   const handleCopy = () => {
+   *     navigator.clipboard.writeText(model.uid);
+   *   };
+   *   return (
+   *     <Tooltip title="复制">
+   *       <CopyOutlined onClick={handleCopy} style={{ cursor: 'pointer', fontSize: 12 }} />
+   *     </Tooltip>
+   *   );
+   * };
+   *
+   * flowSettings.addToolbarItem({
+   *   key: 'copy',
+   *   component: CopyIcon,
+   *   sort: 10 // 数字越小越靠右
+   * });
+   *
+   * // 添加下拉菜单项目组件
+   * const MoreActionsIcon = ({ model }) => {
+   *   const menuItems = [
+   *     { key: 'action1', label: '操作1', onClick: () => console.log('操作1', model) },
+   *     { key: 'action2', label: '操作2', onClick: () => console.log('操作2', model) }
+   *   ];
+   *   return (
+   *     <Dropdown menu={{ items: menuItems }} trigger={['hover']}>
+   *       <MoreOutlined style={{ cursor: 'pointer', fontSize: 12 }} />
+   *     </Dropdown>
+   *   );
+   * };
+   *
+   * flowSettings.addToolbarItem({
+   *   key: 'more-actions',
+   *   component: MoreActionsIcon,
+   *   visible: (model) => model.someCondition,
+   *   sort: 20 // 数字越大越靠左
+   * });
+   */
+  public addToolbarItem(config: ToolbarItemConfig): void {
+    // 检查是否已存在相同 key 的项目
+    const existingIndex = this.toolbarItems.findIndex((item) => item.key === config.key);
+    if (existingIndex !== -1) {
+      console.warn(`FlowSettings: Toolbar item with key '${config.key}' already exists and will be replaced.`);
+      this.toolbarItems[existingIndex] = config;
+    } else {
+      this.toolbarItems.push(config);
+    }
+
+    // 按 sort 字段反向排序，sort 越小越靠右（先添加的在右边）
+    this.toolbarItems.sort((a, b) => (b.sort || 0) - (a.sort || 0));
+  }
+
+  /**
+   * 批量添加工具栏项目
+   * @param {ToolbarItemConfig[]} configs 项目配置数组
+   * @example
+   * flowSettings.addToolbarItems([
+   *   { key: 'copy', component: CopyIcon, sort: 10 },
+   *   { key: 'edit', component: EditIcon, sort: 20 }
+   * ]);
+   */
+  public addToolbarItems(configs: ToolbarItemConfig[]): void {
+    configs.forEach((config) => this.addToolbarItem(config));
+  }
+
+  /**
+   * 移除工具栏项目
+   * @param {string} key 项目的唯一标识
+   * @example
+   * flowSettings.removeToolbarItem('copy');
+   */
+  public removeToolbarItem(key: string): void {
+    const index = this.toolbarItems.findIndex((item) => item.key === key);
+    if (index !== -1) {
+      this.toolbarItems.splice(index, 1);
+    }
+  }
+
+  /**
+   * 获取所有工具栏项目配置
+   * @returns {ToolbarItemConfig[]} 所有项目配置
+   */
+  public getToolbarItems(): ToolbarItemConfig[] {
+    return [...this.toolbarItems];
+  }
+
+  /**
+   * 清空所有工具栏项目
+   * @example
+   * flowSettings.clearToolbarItems();
+   */
+  public clearToolbarItems(): void {
+    this.toolbarItems = [];
   }
 
   /**

@@ -70,7 +70,7 @@ class ConfigureFieldsFlowModel extends FlowModel {
           <Button
             onClick={() => {
               dsm.addDataSource({
-                name: `ds-${uid()}`,
+                key: `ds-${uid()}`,
                 displayName: `ds-${uid()}`,
               });
             }}

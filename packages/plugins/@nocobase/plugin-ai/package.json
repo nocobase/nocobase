@@ -4,7 +4,7 @@
   "displayName.zh-CN": "AI 员工",
   "description": "Support configuring AI employees for different roles. Empowered by LLMs and workflows to assist with daily business tasks.",
   "description.zh-CN": "支持配置不同岗位的 AI 员工，结合大语言模型 (LLM) 和工作流，辅助用户完成日常业务工作。",
-  "version": "1.8.0-alpha.5",
+  "version": "1.8.0-alpha.9",
   "main": "dist/server/index.js",
   "peerDependencies": {
     "@nocobase/client": "1.x",

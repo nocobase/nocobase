@@ -3,7 +3,7 @@ import { DataSource, DataSourceManager } from '@nocobase/flow-engine';
 export const dsm = new DataSourceManager();
 
 const ds = new DataSource({
-  name: 'main',
+  key: 'main',
   displayName: 'Main',
   description: 'This is the main data source',
 });

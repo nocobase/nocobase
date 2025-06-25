@@ -6,7 +6,9 @@ import { Button, Tabs } from 'antd';
 import _ from 'lodash';
 import React from 'react';
 
-class FlowModelRepository implements IFlowModelRepository<FlowModel<{parent: never, subModels: { tabs: TabFlowModel[] } }>> {
+class FlowModelRepository
+  implements IFlowModelRepository<FlowModel<{ parent: never; subModels: { tabs: TabFlowModel[] } }>>
+{
   get models() {
     const models = new Map();
     for (let i = 0; i < localStorage.length; i++) {
@@ -22,8 +24,12 @@ class FlowModelRepository implements IFlowModelRepository<FlowModel<{parent: nev
     return models;
   }
 
+  async findOne(query) {
+    return this.load(query.uid);
+  }
+
   // 从本地存储加载模型数据
-  async load(uid: string) {
+  async load({ uid }) {
     const data = localStorage.getItem(`flow-model:${uid}`);
     if (!data) return null;
     const json: FlowModel = JSON.parse(data);
@@ -57,7 +63,10 @@ class FlowModelRepository implements IFlowModelRepository<FlowModel<{parent: nev
           localStorage.setItem(`flow-model:${subModel.uid}`, JSON.stringify(subModel.serialize()));
         });
       } else if (model.subModels[subModelKey] instanceof FlowModel) {
-        localStorage.setItem(`flow-model:${model.subModels[subModelKey].uid}`, JSON.stringify(model.subModels[subModelKey].serialize()));
+        localStorage.setItem(
+          `flow-model:${model.subModels[subModelKey].uid}`,
+          JSON.stringify(model.subModels[subModelKey].serialize()),
+        );
       }
     }
     return data;
@@ -72,8 +81,7 @@ class FlowModelRepository implements IFlowModelRepository<FlowModel<{parent: nev
 
 class TabFlowModel extends FlowModel {}
 
-class HelloFlowModel extends FlowModel<{parent: never, subModels: { tabs: TabFlowModel[] } }> {
-
+class HelloFlowModel extends FlowModel<{ parent: never; subModels: { tabs: TabFlowModel[] } }> {
   addTab(tab: any) {
     // 使用新的 addSubModel API 添加子模型
     const model = this.addSubModel('tabs', tab);
@@ -88,7 +96,7 @@ class HelloFlowModel extends FlowModel<{parent: never, subModels: { tabs: TabFlo
           items={this.subModels.tabs?.map((tab) => ({
             key: tab.getProps().key,
             label: tab.getProps().label,
-            children: tab.render()
+            children: tab.render(),
           }))}
           tabBarExtraContent={
             <Button
@@ -98,7 +106,7 @@ class HelloFlowModel extends FlowModel<{parent: never, subModels: { tabs: TabFlo
                   use: 'TabFlowModel',
                   uid: tabId,
                   props: { key: tabId, label: `Tab - ${tabId}` },
-                })
+                });
               }}
             >
               Add Tab
@@ -134,7 +142,7 @@ class PluginHelloModel extends Plugin {
             props: { key: 'tab-2', label: 'Tab 2' },
           },
         ],
-      }
+      },
     });
     this.router.add('root', { path: '/', element: <FlowModelRenderer model={model} /> });
   }

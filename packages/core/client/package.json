@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/client",
-  "version": "1.8.0-alpha.5",
+  "version": "1.8.0-alpha.9",
   "license": "AGPL-3.0",
   "main": "lib/index.js",
   "module": "es/index.mjs",
@@ -26,9 +26,9 @@
     "@formily/reactive-react": "^2.2.27",
     "@formily/shared": "^2.2.27",
     "@formily/validator": "^2.2.27",
-    "@nocobase/evaluators": "1.8.0-alpha.5",
-    "@nocobase/sdk": "1.8.0-alpha.5",
-    "@nocobase/utils": "1.8.0-alpha.5",
+    "@nocobase/evaluators": "1.8.0-alpha.9",
+    "@nocobase/sdk": "1.8.0-alpha.9",
+    "@nocobase/utils": "1.8.0-alpha.9",
     "ahooks": "^3.7.2",
     "antd": "5.24.2",
     "antd-style": "3.7.1",
@@ -65,6 +65,8 @@
     "react-router-dom": "^6.11.2",
     "react-to-print": "^2.14.7",
     "sanitize-html": "2.13.0",
+    "tabulator-tables": "^6.3.1",
+    "@types/tabulator-tables": "^6.2.6",
     "use-deep-compare-effect": "^1.8.1"
   },
   "peerDependencies": {

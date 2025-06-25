@@ -11,8 +11,7 @@ import React from 'react';
 import { observer } from '@formily/react';
 import { FlowModel } from './models';
 import { useApplyAutoFlows } from './hooks/useApplyFlow';
-import { useFlowExtraContext } from './hooks/useFlowExtraContext';
-import { useFlowModel } from './hooks/useFlowModel';
+import { useFlowModelById } from './hooks/useFlowModelById';
 
 // 基础组件props类型
 type BaseFlowModelRendererProps<P extends React.ComponentProps<any>> = {
@@ -83,10 +82,8 @@ function WithExistingModel<P extends object>({
   WrappedComponent: React.ComponentType<P>;
   options?: WithFlowModelOptions;
 } & P) {
-  const extraContext = useFlowExtraContext();
-
   // 始终应用默认流程
-  useApplyAutoFlows(model, extraContext);
+  useApplyAutoFlows(model);
 
   const modelProps = model?.getProps();
   const combinedProps = { ...restProps, ...modelProps } as unknown as P;
@@ -122,13 +119,11 @@ function WithCreatedModel<P extends object>({
   WrappedComponent: React.ComponentType<P>;
   options?: WithFlowModelOptions;
 } & P) {
-  const extraContext = useFlowExtraContext();
-
-  // 使用 useFlowModel 创建模型
-  const model = useFlowModel(uid, use);
+  // 使用 useFlowModelById 创建模型
+  const model = useFlowModelById(uid, use);
 
   // 始终应用默认流程
-  useApplyAutoFlows(model, extraContext);
+  useApplyAutoFlows(model);
 
   const modelProps = model?.getProps();
   const combinedProps = { ...restProps, ...modelProps } as unknown as P;

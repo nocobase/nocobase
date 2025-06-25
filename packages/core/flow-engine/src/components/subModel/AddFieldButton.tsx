@@ -7,28 +7,62 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { observer } from '@formily/reactive-react';
+import { SettingOutlined } from '@ant-design/icons';
 import React, { useMemo } from 'react';
-import { AddSubModelButton, AddSubModelButtonProps, AddSubModelMenuItem } from './AddSubModelButton';
 import { Collection, CollectionField } from '../../data-source';
 import { FlowModel } from '../../models';
-import { CreateModelOptions, ModelConstructor } from '../../types';
+import { FlowModelOptions, ModelConstructor } from '../../types';
+import { FlowSettingsButton } from '../common/FlowSettingsButton';
+import { withFlowDesignMode } from '../common/withFlowDesignMode';
+import { AddSubModelButton, SubModelItemsType, mergeSubModelItems } from './AddSubModelButton';
 
-export interface AddFieldButtonProps
-  extends Omit<AddSubModelButtonProps, 'subModelType' | 'subModelKey' | 'items' | 'buildSubModelParams'> {
+export type BuildCreateModelOptionsType = {
+  defaultOptions: FlowModelOptions;
+  collectionField: CollectionField;
+  fieldPath: string;
+  fieldModelClass: ModelConstructor;
+};
+
+export interface AddFieldButtonProps {
   /**
-   * 父模型类名，用于确定支持的字段类型
+   * 父模型实例
    */
-  ParentModelClass?: string | ModelConstructor;
+  model: FlowModel;
+  /**
+   * 子模型基类，用于确定支持的字段类型
+   */
+  subModelBaseClass?: string | ModelConstructor;
   subModelKey?: string;
   subModelType?: 'object' | 'array';
   collection: Collection;
-  buildSubModelParams?: (item: AddFieldMenuItem) => CreateModelOptions | FlowModel;
-  onModelAdded?: (subModel: FlowModel, item: AddFieldMenuItem) => Promise<void>;
+  /**
+   * 自定义 createModelOptions 构建函数
+   */
+  buildCreateModelOptions?: (options: BuildCreateModelOptionsType) => FlowModelOptions;
+  /**
+   * 追加的固定 items，会添加到字段 items 之后
+   */
+  appendItems?: SubModelItemsType;
+  /**
+   * 创建后的回调函数
+   */
+  onModelCreated?: (subModel: FlowModel) => Promise<void>;
+  /**
+   * 添加到父模型后的回调函数
+   */
+  onSubModelAdded?: (subModel: FlowModel) => Promise<void>;
+  /**
+   * 显示的UI组件
+   */
+  children?: React.ReactNode;
+  /**
+   * 自定义 items（如果提供，将覆盖默认的字段菜单）
+   */
+  items?: SubModelItemsType;
 }
 
-export interface AddFieldMenuItem extends AddSubModelMenuItem {
-  field: CollectionField;
+function defaultBuildCreateModelOptions({ defaultOptions }: BuildCreateModelOptionsType) {
+  return defaultOptions;
 }
 
 /**
@@ -38,21 +72,30 @@ export interface AddFieldMenuItem extends AddSubModelMenuItem {
  * ```tsx
  * <AddFieldButton
  *   model={parentModel}
- *   ParentModelClass={'TableColumnModel'}
+ *   subModelBaseClass={'TableColumnModel'}
  * />
  * ```
  */
-export const AddFieldButton: React.FC<AddFieldButtonProps> = observer(
-  ({
-    ParentModelClass = 'FieldFlowModel',
-    subModelKey = 'fields',
-    children = 'Add field',
-    subModelType = 'array',
-    ...props
-  }) => {
-    const fields = props.collection.getFields();
-    const items = useMemo<AddFieldMenuItem[]>(() => {
-      const fieldClasses = Array.from(props.model.flowEngine.filterModelClassByParent(ParentModelClass).values())?.sort(
+const AddFieldButtonCore: React.FC<AddFieldButtonProps> = ({
+  model,
+  subModelBaseClass = 'FieldFlowModel',
+  subModelKey = 'fields',
+  children = <FlowSettingsButton icon={<SettingOutlined />}>{'Configure fields'}</FlowSettingsButton>,
+  subModelType = 'array',
+  collection,
+  buildCreateModelOptions = defaultBuildCreateModelOptions,
+  items,
+  appendItems,
+  onModelCreated,
+  onSubModelAdded,
+}) => {
+  const fields = collection.getFields();
+
+  // 构建字段 items 的函数
+  const buildFieldItems = useMemo<SubModelItemsType>(() => {
+    return () => {
+      const fieldClassesMap = model.flowEngine.filterModelClassByParent(subModelBaseClass);
+      const fieldClasses = Array.from(fieldClassesMap.values())?.sort(
         (a, b) => (a.meta?.sort || 0) - (b.meta?.sort || 0),
       );
 
@@ -60,46 +103,72 @@ export const AddFieldButton: React.FC<AddFieldButtonProps> = observer(
         return [];
       }
 
-      const allFields = [];
+      const fieldClassToNameMap = new Map();
+      for (const [name, ModelClass] of fieldClassesMap) {
+        fieldClassToNameMap.set(ModelClass, name);
+      }
 
-      const defaultFieldClasses = fieldClasses.filter(
-        (fieldClass) => !fieldClass.meta?.supportedInterfaces && !fieldClass.meta?.supportedInterfaceGroups,
-      );
+      const allFields = [];
+      const defaultFieldClasses = fieldClasses.find((fieldClass) => fieldClass.supportedFieldInterfaces === '*');
 
       for (const field of fields) {
         const fieldInterfaceName = field.options?.interface;
-        if (fieldInterfaceName) {
-          const fieldClass = fieldClasses.find(
-            (fieldClass) => fieldClass.meta?.supportedInterfaces?.includes(fieldInterfaceName),
-          );
-          if (fieldClass) {
-            allFields.push({
-              key: field.name,
-              label: field.title,
-              item: fieldClass,
-              use: fieldClass.name,
-              field,
-            });
-          } else if (defaultFieldClasses) {
-            allFields.push({
-              key: field.name,
-              label: field.title,
-              item: defaultFieldClasses[0],
-              use: defaultFieldClasses[0]?.name,
-              field,
-            });
-          }
+        const fieldClass =
+          fieldClasses.find((fieldClass) => {
+            return fieldClass.supportedFieldInterfaces?.includes(fieldInterfaceName);
+          }) || defaultFieldClasses;
+        if (fieldClass && fieldInterfaceName) {
+          const defaultOptions = {
+            ...fieldClass.meta?.defaultOptions,
+            use: fieldClassToNameMap.get(fieldClass) || fieldClass.name,
+          };
+          const fieldItem = {
+            key: field.name,
+            label: field.title,
+            icon: fieldClass.meta?.icon,
+            createModelOptions: buildCreateModelOptions({
+              defaultOptions,
+              collectionField: field,
+              fieldPath: field.name,
+              fieldModelClass: fieldClass,
+            }),
+          };
+          allFields.push(fieldItem);
         }
       }
-      return allFields;
-    }, [props.model, ParentModelClass, fields]);
 
-    return (
-      <AddSubModelButton {...props} subModelKey={subModelKey} subModelType={subModelType} items={items}>
-        {children}
-      </AddSubModelButton>
-    );
-  },
-);
+      return [
+        {
+          key: 'addField',
+          label: 'Collection fields',
+          type: 'group' as const,
+          searchable: true,
+          searchPlaceholder: 'Search fields',
+          children: allFields,
+        },
+      ];
+    };
+  }, [model, subModelBaseClass, fields, buildCreateModelOptions]);
+
+  const fieldItems = useMemo(() => {
+    return mergeSubModelItems([buildFieldItems, appendItems], { addDividers: true });
+  }, [buildFieldItems, appendItems]);
+
+  return (
+    <AddSubModelButton
+      model={model}
+      subModelKey={subModelKey}
+      subModelType={subModelType}
+      items={items ?? fieldItems}
+      onModelCreated={onModelCreated}
+      onSubModelAdded={onSubModelAdded}
+    >
+      {children}
+    </AddSubModelButton>
+  );
+};
+
+// 使用高阶组件包装，优化性能
+export const AddFieldButton = withFlowDesignMode(AddFieldButtonCore);
 
 AddFieldButton.displayName = 'AddFieldButton';

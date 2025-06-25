@@ -52,6 +52,7 @@ test.describe('where table block can be added', () => {
     await page.getByLabel('schema-initializer-Grid-popup').hover();
     await page.getByRole('menuitem', { name: 'Associated records right' }).waitFor({ state: 'detached' });
     await page.getByRole('menuitem', { name: 'Table right' }).hover();
+    await page.waitForTimeout(300);
     await page.getByRole('menuitem', { name: 'Associated records right' }).hover();
     await page.getByRole('menuitem', { name: 'parentAssociationField' }).click();
     await page.getByLabel('schema-initializer-TableV2-table:configureColumns-parentTargetCollection').hover();

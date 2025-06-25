@@ -4,7 +4,7 @@
   "displayName.zh-CN": "工作流：HTTP 请求节点",
   "description": "Send HTTP requests to any HTTP service for data interaction in workflow.",
   "description.zh-CN": "可用于在工作流中向任意 HTTP 服务发送请求，进行数据交互。",
-  "version": "1.8.0-alpha.5",
+  "version": "1.8.0-alpha.9",
   "license": "AGPL-3.0",
   "main": "./dist/server/index.js",
   "homepage": "https://docs.nocobase.com/handbook/workflow-request",
@@ -19,6 +19,7 @@
     "@nocobase/client": "1.x",
     "@nocobase/database": "1.x",
     "@nocobase/plugin-workflow": ">=0.17.0-alpha.3",
+    "@nocobase/plugin-file-manager": "1.x",
     "@nocobase/server": "1.x",
     "@nocobase/test": "1.x"
   },

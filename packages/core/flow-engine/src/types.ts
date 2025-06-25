@@ -10,6 +10,7 @@
 import { ISchema } from '@formily/json-schema';
 import type { FlowEngine } from './flowEngine';
 import type { FlowModel } from './models';
+import { ReactView } from './ReactView';
 
 /**
  * 工具类型：如果 T 是数组类型，则提取数组元素类型；否则返回 T 本身
@@ -95,6 +96,7 @@ export interface FlowContext<TModel extends FlowModel = FlowModel> {
     error: (message: string, meta?: any) => void;
     debug: (message: string, meta?: any) => void;
   };
+  reactView: ReactView;
   stepResults: Record<string, any>; // Results from previous steps
   shared: Record<string, any>; // Shared data within the flow (read/write)
   globals: Record<string, any>; // Global context data (read-only)
@@ -108,14 +110,16 @@ export type CreateSubModelOptions = CreateModelOptions | FlowModel;
 /**
  * Constructor for model classes.
  */
-export type ModelConstructor<T extends FlowModel = FlowModel> = new (options: {
-  uid: string;
-  props?: IModelComponentProps;
-  stepParams?: StepParams;
-  meta?: FlowModelMeta;
-  subModels?: Record<string, CreateSubModelOptions | CreateSubModelOptions[]>;
-  [key: string]: any; // Allow additional options
-}) => T;
+export type ModelConstructor<T extends FlowModel = FlowModel> = new (
+  options: FlowModelOptions & {
+    uid: string;
+    props?: IModelComponentProps;
+    stepParams?: StepParams;
+    meta?: FlowModelMeta;
+    subModels?: Record<string, CreateSubModelOptions | CreateSubModelOptions[]>;
+    [key: string]: any; // Allow additional options
+  },
+) => T;
 
 /**
  * Defines a reusable action with generic model type support.
@@ -125,7 +129,9 @@ export interface ActionDefinition<TModel extends FlowModel = FlowModel> {
   title?: string;
   handler: (ctx: FlowContext<TModel>, params: any) => Promise<any> | any;
   uiSchema?: Record<string, ISchema>;
-  defaultParams?: Record<string, any>;
+  defaultParams?:
+    | Record<string, any>
+    | ((ctx: ParamsContext<TModel>) => Record<string, any> | Promise<Record<string, any>>);
 }
 
 /**
@@ -142,9 +148,12 @@ interface BaseStepDefinition<TModel extends FlowModel = FlowModel> {
 export interface ActionStepDefinition<TModel extends FlowModel = FlowModel> extends BaseStepDefinition<TModel> {
   use: string; // Name of the registered ActionDefinition
   uiSchema?: Record<string, ISchema>; // Optional: overrides uiSchema from ActionDefinition
-  defaultParams?: Record<string, any>; // Optional: overrides/extends defaultParams from ActionDefinition
+  defaultParams?:
+    | Record<string, any>
+    | ((ctx: ParamsContext<TModel>) => Record<string, any> | Promise<Record<string, any>>); // Optional: overrides/extends defaultParams from ActionDefinition
   paramsRequired?: boolean; // Optional: whether the step params are required, will open the config dialog before adding the model
   hideInSettings?: boolean; // Optional: whether to hide the step in the settings menu
+  settingMode?: 'dialog' | 'drawer'; // Optional: whether to open settings in dialog or drawer mode, defaults to 'dialog'
   // Cannot have its own handler
   handler?: undefined;
 }
@@ -155,9 +164,12 @@ export interface ActionStepDefinition<TModel extends FlowModel = FlowModel> exte
 export interface InlineStepDefinition<TModel extends FlowModel = FlowModel> extends BaseStepDefinition<TModel> {
   handler: (ctx: FlowContext<TModel>, params: any) => Promise<any> | any;
   uiSchema?: Record<string, ISchema>; // Optional: uiSchema for this inline step
-  defaultParams?: Record<string, any>; // Optional: defaultParams for this inline step
+  defaultParams?:
+    | Record<string, any>
+    | ((ctx: ParamsContext<TModel>) => Record<string, any> | Promise<Record<string, any>>); // Optional: defaultParams for this inline step
   paramsRequired?: boolean; // Optional: whether the step params are required, will open the config dialog before adding the model
   hideInSettings?: boolean; // Optional: whether to hide the step in the settings menu
+  settingMode?: 'dialog' | 'drawer'; // Optional: whether to open settings in dialog or drawer mode, defaults to 'dialog'
   // Cannot use a registered action
   use?: undefined;
 }
@@ -173,12 +185,23 @@ export type StepDefinition<TModel extends FlowModel = FlowModel> =
 export type FlowExtraContext = Record<string, any>;
 
 /**
+ * 参数解析上下文类型，用于 settings 等场景
+ */
+export interface ParamsContext<TModel extends FlowModel = FlowModel> {
+  model: TModel;
+  globals: Record<string, any>;
+  shared?: Record<string, any>;
+  extra?: Record<string, any>; // Extra context passed to applyFlow
+  app: any;
+}
+
+/**
  * Action options for registering actions with generic model type support
  */
 export interface ActionOptions<TModel extends FlowModel = FlowModel, P = any, R = any> {
   handler: (ctx: FlowContext<TModel>, params: P) => Promise<R> | R;
   uiSchema?: Record<string, any>;
-  defaultParams?: Partial<P>;
+  defaultParams?: Partial<P> | ((ctx: ParamsContext<TModel>) => Partial<P> | Promise<Partial<P>>);
 }
 
 /**
@@ -233,7 +256,7 @@ export interface CreateModelOptions {
   [key: string]: any; // 允许额外的自定义选项
 }
 export interface IFlowModelRepository<T extends FlowModel = FlowModel> {
-  load(uid: string): Promise<Record<string, any> | null>;
+  findOne(query: Record<string, any>): Promise<Record<string, any> | null>;
   save(model: T): Promise<Record<string, any>>;
   destroy(uid: string): Promise<boolean>;
 }
@@ -247,6 +270,28 @@ export interface StepSettingsDialogProps {
   stepKey: string;
   dialogWidth?: number | string;
   dialogTitle?: string;
+}
+
+/**
+ * 步骤设置抽屉的属性接口
+ */
+export interface StepSettingsDrawerProps {
+  model: any;
+  flowKey: string;
+  stepKey: string;
+  drawerWidth?: number | string;
+  drawerTitle?: string;
+}
+
+/**
+ * 统一的步骤设置属性接口
+ */
+export interface StepSettingsProps {
+  model: any;
+  flowKey: string;
+  stepKey: string;
+  width?: number | string;
+  title?: string;
 }
 
 /**
@@ -269,11 +314,13 @@ export interface DefaultStructure {
  * Options for FlowModel constructor
  */
 export interface FlowModelOptions<Structure extends { parent?: any; subModels?: any } = DefaultStructure> {
-  uid: string;
+  uid?: string;
+  use?: string;
+  async?: boolean; // 是否异步加载模型
   props?: IModelComponentProps;
-  stepParams?: Record<string, any>;
+  stepParams?: StepParams;
   subModels?: Structure['subModels'];
-  flowEngine: FlowEngine;
+  flowEngine?: FlowEngine;
   parentId?: string;
   subKey?: string;
   subType?: 'object' | 'array';
@@ -283,6 +330,7 @@ export interface FlowModelOptions<Structure extends { parent?: any; subModels?: 
 export interface FlowModelMeta {
   title: string;
   group?: string;
+  requiresDataSource?: boolean; // 是否需要数据源
   defaultOptions?: Record<string, any>;
   icon?: string;
   // uniqueSub?: boolean;
@@ -310,4 +358,20 @@ export interface FieldFlowModelMeta extends FlowModelMeta {
    * 如：['input', 'textarea', 'select'] 等
    */
   supportedInterfaces?: string[];
+}
+
+export type { ForkFlowModel } from './models';
+
+/**
+ * 工具栏项目配置接口
+ */
+export interface ToolbarItemConfig {
+  /** 项目的唯一标识 */
+  key: string;
+  /** 项目组件，接收 model 作为 props，内部处理所有逻辑 */
+  component: React.ComponentType<{ model: FlowModel; [key: string]: any }>;
+  /** 是否显示项目的条件函数 */
+  visible?: (model: FlowModel) => boolean;
+  /** 排序权重，数字越小越靠右（先添加的在右边） */
+  sort?: number;
 }

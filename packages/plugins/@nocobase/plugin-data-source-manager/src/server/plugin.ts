@@ -17,13 +17,14 @@ import rolesConnectionResourcesResourcer from './resourcers/data-sources-resourc
 import databaseConnectionsRolesResourcer from './resourcers/data-sources-roles';
 import { rolesRemoteCollectionsResourcer } from './resourcers/roles-data-sources-collections';
 
-import { LoadingProgress } from '@nocobase/data-source-manager';
+import { DataSourceManager, LoadingProgress } from '@nocobase/data-source-manager';
 import lodash from 'lodash';
 import { DataSourcesRolesResourcesModel } from './models/connections-roles-resources';
 import { DataSourcesRolesResourcesActionModel } from './models/connections-roles-resources-action';
 import { DataSourceModel } from './models/data-source';
 import { DataSourcesRolesModel } from './models/data-sources-roles-model';
 import { mergeRole } from '@nocobase/acl';
+import { ALLOW_MAX_COLLECTIONS_COUNT } from './constants';
 
 type DataSourceState = 'loading' | 'loaded' | 'loading-failed' | 'reloading' | 'reloading-failed';
 
@@ -203,6 +204,7 @@ export class PluginDataSourceManagerServer extends Plugin {
       if (model.changed('options') && !model.isMainRecord()) {
         model.loadIntoApplication({
           app: this.app,
+          refresh: true,
         });
 
         this.sendSyncMessage(
@@ -352,6 +354,44 @@ export class PluginDataSourceManagerServer extends Plugin {
         }
       }
 
+      await next();
+    });
+
+    this.app.resourceManager.use(async function verifyDatasourceCollectionsCount(ctx, next) {
+      if (!ctx.action) {
+        await next();
+        return;
+      }
+
+      const { actionName, resourceName, params } = ctx.action;
+      if (resourceName === 'dataSources' && (actionName === 'add' || actionName === 'update')) {
+        const { values, filterByTk: dataSourceKey } = params;
+        if (values.options?.addAllCollections) {
+          let introspector: { getCollections: () => Promise<string[]> } = null;
+          const dataSourceManager = ctx.app['dataSourceManager'] as DataSourceManager;
+
+          if (actionName === 'add') {
+            const klass = dataSourceManager.factory.getClass(values.options.type);
+            // @ts-ignore
+            const dataSource = new klass(dbOptions);
+            introspector = dataSource.collectionManager.dataSource.createDatabaseIntrospector(
+              dataSource.collectionManager.db,
+            );
+          } else {
+            const dataSource = dataSourceManager.dataSources.get(dataSourceKey);
+            if (!dataSource) {
+              throw new Error(`dataSource ${dataSourceKey} not found`);
+            }
+            introspector = dataSource['introspector'];
+          }
+          const allCollections = await introspector.getCollections();
+          if (allCollections.length > ALLOW_MAX_COLLECTIONS_COUNT) {
+            throw new Error(
+              `The number of collections exceeds the limit of ${ALLOW_MAX_COLLECTIONS_COUNT}. Please remove some collections before adding new ones.`,
+            );
+          }
+        }
+      }
       await next();
     });
 
@@ -592,6 +632,31 @@ export class PluginDataSourceManagerServer extends Plugin {
         );
       },
     );
+
+    this.app.db.on('dataSourcesRolesResourcesScopes.afterSaveWithAssociations', async (model, options) => {
+      const { transaction } = options;
+      const dataSourcesRolesResourcesActions: DataSourcesRolesResourcesActionModel[] = await this.app.db
+        .getRepository('dataSourcesRolesResourcesActions')
+        .find({
+          filter: { scopeId: model.get('id') },
+          transaction,
+        });
+      const rolesRolesResourceIds = dataSourcesRolesResourcesActions.map((x) => x.get('rolesResourceId'));
+      const dataSourcesRolesResources: DataSourcesRolesResourcesModel[] = await this.app.db
+        .getRepository('dataSourcesRolesResources')
+        .find({
+          filter: {
+            id: rolesRolesResourceIds,
+          },
+          transaction,
+        });
+      for (const instance of dataSourcesRolesResources) {
+        await this.app.db.emitAsync(`dataSourcesRolesResources.afterSaveWithAssociations`, instance, {
+          ...options,
+          transaction,
+        });
+      }
+    });
 
     this.app.db.on(
       'dataSourcesRolesResourcesActions.afterUpdateWithAssociations',

@@ -11,8 +11,7 @@ import { Schema } from '@formily/json-schema';
 import { observable } from '@formily/reactive';
 
 export interface DataSourceOptions extends Record<string, any> {
-  name: string;
-  use?: typeof DataSource;
+  key: string;
   displayName?: string;
   description?: string;
   [key: string]: any;
@@ -25,20 +24,28 @@ export class DataSourceManager {
     this.dataSources = observable.shallow<Map<string, DataSource>>(new Map());
   }
 
-  addDataSource(ds: DataSource | DataSourceOptions) {
-    if (this.dataSources.has(ds.name)) {
-      throw new Error(`DataSource with name ${ds.name} already exists`);
+  addDataSource(ds: DataSource | DataSourceOptions, options: Record<string, any> = {}) {
+    if (this.dataSources.has(ds.key)) {
+      throw new Error(`DataSource with name ${ds.key} already exists`);
     }
     if (ds instanceof DataSource) {
-      this.dataSources.set(ds.name, ds);
+      this.dataSources.set(ds.key, ds);
     } else {
       const clz = ds.use || DataSource;
-      this.dataSources.set(ds.name, new clz(ds));
+      this.dataSources.set(ds.key, new clz(ds));
     }
   }
 
-  removeDataSource(name: string) {
-    this.dataSources.delete(name);
+  upsertDataSource(ds: DataSource | DataSourceOptions) {
+    if (this.dataSources.has(ds.key)) {
+      this.dataSources.get(ds.key)?.setOptions(ds);
+    } else {
+      this.addDataSource(ds);
+    }
+  }
+
+  removeDataSource(key: string) {
+    this.dataSources.delete(key);
   }
 
   clearDataSources() {
@@ -49,19 +56,19 @@ export class DataSourceManager {
     return Array.from(this.dataSources.values());
   }
 
-  getDataSource(name: string): DataSource | undefined {
-    return this.dataSources.get(name);
+  getDataSource(key: string): DataSource | undefined {
+    return this.dataSources.get(key);
   }
 
-  getCollection(dataSourceName: string, collectionName: string): Collection | undefined {
-    const ds = this.getDataSource(dataSourceName);
+  getCollection(dataSourceKey: string, collectionName: string): Collection | undefined {
+    const ds = this.getDataSource(dataSourceKey);
     if (!ds) return undefined;
     return ds.collectionManager.getCollection(collectionName);
   }
 
   getCollectionField(fieldPathWithDataSource: string) {
-    const [dataSourceName, ...otherKeys] = fieldPathWithDataSource.split('.');
-    const ds = this.getDataSource(dataSourceName);
+    const [dataSourceKey, ...otherKeys] = fieldPathWithDataSource.split('.');
+    const ds = this.getDataSource(dataSourceKey);
     if (!ds) return undefined;
     return ds.getCollectionField(otherKeys.join('.'));
   }
@@ -76,8 +83,20 @@ export class DataSource {
     this.collectionManager = new CollectionManager(this);
   }
 
+  get displayName() {
+    return this.options.displayName
+      ? Schema.compile(this.options.displayName, {
+          t: (text) => text,
+        })
+      : this.key;
+  }
+
+  get key() {
+    return this.options.key;
+  }
+
   get name() {
-    return this.options.name;
+    return this.options.key;
   }
 
   getCollections(): Collection[] {
@@ -94,6 +113,14 @@ export class DataSource {
 
   updateCollection(newOptions: CollectionOptions) {
     return this.collectionManager.updateCollection(newOptions);
+  }
+
+  upsertCollection(options: CollectionOptions) {
+    return this.collectionManager.upsertCollection(options);
+  }
+
+  upsertCollections(collections: CollectionOptions[]) {
+    return this.collectionManager.upsertCollections(collections);
   }
 
   removeCollection(name: string) {
@@ -114,17 +141,13 @@ export class DataSource {
     const fieldName = otherKeys.join('.');
     const collection = this.getCollection(collectionName);
     if (!collection) {
-      throw new Error(`Collection ${collectionName} not found in data source ${this.name}`);
+      throw new Error(`Collection ${collectionName} not found in data source ${this.key}`);
     }
     const field = collection.getField(fieldName);
     if (!field) {
       throw new Error(`Field ${fieldName} not found in collection ${collectionName}`);
     }
     return field;
-  }
-
-  refresh() {
-    // 刷新数据源
   }
 }
 
@@ -166,6 +189,25 @@ export class CollectionManager {
     collection.setOptions(newOptions);
   }
 
+  upsertCollection(options: CollectionOptions) {
+    if (this.collections.has(options.name)) {
+      this.updateCollection(options);
+    } else {
+      this.addCollection(options);
+    }
+    return this.getCollection(options.name);
+  }
+
+  upsertCollections(collections: CollectionOptions[]) {
+    for (const collection of collections) {
+      if (this.collections.has(collection.name)) {
+        this.updateCollection(collection);
+      } else {
+        this.addCollection(collection);
+      }
+    }
+  }
+
   getCollection(name: string): Collection | undefined {
     return this.collections.get(name);
   }
@@ -197,12 +239,24 @@ export class Collection {
     return this.dataSource.collectionManager;
   }
 
+  get filterTargetKey() {
+    return this.options.filterTargetKey;
+  }
+
+  get dataSourceKey() {
+    return this.dataSource.key;
+  }
+
   get name() {
     return this.options.name;
   }
 
   get title() {
-    return this.options.title || this.name;
+    return this.options.title
+      ? Schema.compile(this.options.title, {
+          t: (text) => text,
+        })
+      : this.name;
   }
 
   initInherits() {
@@ -224,6 +278,7 @@ export class Collection {
     Object.keys(this.options).forEach((key) => delete this.options[key]);
     Object.assign(this.options, newOptions);
     this.initInherits();
+    this.upsertFields(this.options.fields || []);
   }
 
   getFields(): CollectionField[] {
@@ -254,12 +309,22 @@ export class Collection {
     }
   }
 
+  upsertFields(fields: Record<string, any>[] = []) {
+    for (const field of fields) {
+      if (this.fields.has(field.name)) {
+        this.fields.get(field.name).setOptions(field);
+      } else {
+        this.addField(field);
+      }
+    }
+  }
+
   getField(fieldName: string): CollectionField | undefined {
     return this.fields.get(fieldName);
   }
 
   getFullFieldPath(name: string): string {
-    return this.dataSource.name + '.' + this.name + '.' + name;
+    return this.dataSource.key + '.' + this.name + '.' + name;
   }
 
   addField(field: CollectionField | Record<string, any>) {
@@ -307,7 +372,7 @@ export class CollectionField {
   }
 
   get fullpath() {
-    return this.collection.dataSource.name + '.' + this.collection.name + '.' + this.name;
+    return this.collection.dataSource.key + '.' + this.collection.name + '.' + this.name;
   }
 
   get name() {
@@ -318,6 +383,10 @@ export class CollectionField {
     return this.options.type;
   }
 
+  get target() {
+    return this.options.target;
+  }
+
   get title() {
     return Schema.compile(this.options?.title || this.options?.uiSchema?.title || this.options.name, {
       t: (text) => text,
@@ -326,6 +395,18 @@ export class CollectionField {
 
   set title(value: string) {
     this.options.title = value;
+  }
+
+  get enum(): any[] {
+    return this.options.uiSchema?.enum || [];
+  }
+
+  get interface() {
+    return this.options.interface || 'input';
+  }
+
+  getComponentProps() {
+    return this.options.uiSchema?.['x-component-props'] || {};
   }
 
   getFields(): CollectionField[] {

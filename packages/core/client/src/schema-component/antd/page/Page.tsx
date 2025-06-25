@@ -20,7 +20,7 @@ import React, { FC, memo, useCallback, useContext, useEffect, useMemo, useRef, u
 import { ErrorBoundary } from 'react-error-boundary';
 import { useTranslation } from 'react-i18next';
 import { NavigateFunction, Outlet, useOutletContext } from 'react-router-dom';
-import { FormDialog, Variable, withSearchParams } from '..';
+import { FormDialog, withSearchParams } from '..';
 import { antTableCell } from '../../../acl/style';
 import {
   CurrentTabUidContext,
@@ -244,7 +244,7 @@ const TabBadge: FC<{ tabRoute: NocoBaseDesktopRoute; style?: React.CSSProperties
   if (badgeCount == null) return null;
 
   return (
-    <Badge {...props.tabRoute.options?.badge} count={badgeCount} style={props.style}>
+    <Badge {...props.tabRoute.options?.badge} count={badgeCount} style={props.style} dot={false}>
       {props.children}
     </Badge>
   );

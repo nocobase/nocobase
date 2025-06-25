@@ -7,12 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import _ from 'lodash';
+import type { FlowModel } from './models';
+import { ActionDefinition, DeepPartial, FlowContext, FlowDefinition, ModelConstructor, ParamsContext } from './types';
+
 export function generateUid(): string {
   return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
 }
-import type { FlowDefinition } from './types';
-import _ from 'lodash';
-import { DeepPartial, ModelConstructor } from './types';
 
 /**
  * 合并两个流程定义
@@ -56,12 +57,12 @@ export function isInheritedFrom(childClass: ModelConstructor, parentClass: Model
   if (childClass === parentClass) {
     return false;
   }
-  
+
   // 检查直接继承
   if (childClass.prototype instanceof parentClass) {
     return true;
   }
-  
+
   // 递归检查原型链
   let currentProto = Object.getPrototypeOf(childClass.prototype);
   while (currentProto && currentProto !== Object.prototype) {
@@ -70,6 +71,54 @@ export function isInheritedFrom(childClass: ModelConstructor, parentClass: Model
     }
     currentProto = Object.getPrototypeOf(currentProto);
   }
-  
+
   return false;
+}
+
+/**
+ * 解析 defaultParams，支持静态值和函数形式
+ * 函数可以接收 ParamsContext（在 settings 中）或 FlowContext（在 applyFlow 中）
+ * @param {Record<string, any> | ((ctx: any) => Record<string, any> | Promise<Record<string, any>>)} defaultParams 默认参数
+ * @param {ParamsContext<TModel>} ctx 上下文
+ * @returns {Promise<Record<string, any>>} 解析后的参数对象
+ */
+export async function resolveDefaultParams<TModel extends FlowModel = FlowModel>(
+  defaultParams: Record<string, any> | ((ctx: any) => Record<string, any> | Promise<Record<string, any>>) | undefined,
+  ctx: ParamsContext<TModel>,
+): Promise<Record<string, any>> {
+  if (!defaultParams) {
+    return {};
+  }
+
+  if (typeof defaultParams === 'function') {
+    try {
+      const result = await defaultParams(ctx);
+      return result || {};
+    } catch (error) {
+      console.error('Error resolving defaultParams function:', error);
+      return {};
+    }
+  }
+
+  return defaultParams;
+}
+
+/**
+ * 流程正常退出异常类
+ * 用于标识通过 ctx.exit() 正常退出的情况
+ */
+export class FlowExitException extends Error {
+  public readonly flowKey: string;
+  public readonly modelUid: string;
+
+  constructor(flowKey: string, modelUid: string, message?: string) {
+    super(message || `Flow '${flowKey}' on model '${modelUid}' exited via ctx.exit().`);
+    this.name = 'FlowExitException';
+    this.flowKey = flowKey;
+    this.modelUid = modelUid;
+  }
+}
+
+export function defineAction(options: ActionDefinition) {
+  return options;
 }

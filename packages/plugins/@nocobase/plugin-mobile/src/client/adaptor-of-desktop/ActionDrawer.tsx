@@ -78,6 +78,7 @@ export const MobilePopup: FC<MobilePopupProps> = (props) => {
           bodyClassName="nb-mobile-action-drawer-body"
           bodyStyle={zIndexStyle}
           maskStyle={zIndexStyle}
+          style={zIndexStyle}
           destroyOnClose
         >
           <div className="nb-mobile-action-drawer-header">
