@@ -40,7 +40,7 @@ import { Spin } from 'antd';
 import _ from 'lodash';
 import React, { Suspense, useEffect } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
-import { useApplyAutoFlows, useFlowExtraContext, FlowModelProvider } from '../hooks';
+import { useApplyAutoFlows, FlowModelProvider } from '../hooks';
 import { FlowModel } from '../models';
 import { FlowsContextMenu } from './settings/wrappers/contextual/FlowsContextMenu';
 import { FlowsFloatContextMenu } from './settings/wrappers/contextual/FlowsFloatContextMenu';
@@ -100,8 +100,7 @@ const FlowModelRendererWithAutoFlows: React.FC<{
     independentAutoFlowExecution,
     showErrorFallback,
   }) => {
-    const defaultExtraContext = useFlowExtraContext();
-    useApplyAutoFlows(model, extraContext || defaultExtraContext, !independentAutoFlowExecution);
+    useApplyAutoFlows(model, extraContext, !independentAutoFlowExecution);
 
     return (
       <FlowModelProvider model={model}>
