@@ -99,16 +99,19 @@ const TextArea = (props) => {
 
   if (isExists) {
     return (
-      <Button
-        onClick={() => {
-          setIsExists(false);
-          ctx.form?.setFieldState('footer', (state) => {
-            state.visible = true;
-          });
-        }}
-      >
-        {t('Change key')}
-      </Button>
+      <>
+        {t('License key has been set')}&nbsp;
+        <Button
+          onClick={() => {
+            setIsExists(false);
+            ctx.form?.setFieldState('footer', (state) => {
+              state.visible = true;
+            });
+          }}
+        >
+          {t('Change key')}
+        </Button>
+      </>
     );
   }
   return <Input.TextArea rows={4} {...props} />;
