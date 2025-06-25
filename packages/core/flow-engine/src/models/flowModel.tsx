@@ -377,9 +377,7 @@ export class FlowModel<Structure extends { parent?: any; subModels?: any } = Def
   async applyFlow(flowKey: string, extra?: FlowExtraContext): Promise<any> {
     const currentFlowEngine = this.flowEngine;
     if (!currentFlowEngine) {
-      console.warn(
-        'FlowEngine not available on this model for applyFlow. Check model.app and model.app.flowEngine setup.',
-      );
+      console.warn('FlowEngine not available on this model for applyFlow. Check and model.flowEngine setup.');
       return Promise.reject(new Error('FlowEngine not available for applyFlow. Please set flowEngine on the model.'));
     }
 

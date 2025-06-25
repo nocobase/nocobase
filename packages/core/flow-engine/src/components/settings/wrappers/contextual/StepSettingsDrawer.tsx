@@ -91,7 +91,7 @@ const openStepSettingsDrawer = async ({
   const paramsContext = {
     model,
     globals: model.flowEngine?.context || {},
-    app: model.flowEngine,
+    app: model.flowEngine?.context?.app,
   };
 
   // 解析 defaultParams
@@ -180,7 +180,7 @@ const openStepSettingsDrawer = async ({
       const contextValue: StepSettingContextType = {
         model,
         globals: model.flowEngine?.context || {},
-        app: model.flowEngine,
+        app: model.flowEngine?.context?.app,
         step,
         flow,
         flowKey,

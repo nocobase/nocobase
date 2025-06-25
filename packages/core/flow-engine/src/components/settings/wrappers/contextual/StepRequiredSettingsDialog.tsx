@@ -71,7 +71,7 @@ const MultiStepContextProvider: React.FC<MultiStepContextProviderProps> = ({
       return {
         model,
         globals: model.flowEngine?.context || {},
-        app: model.flowEngine,
+        app: model.flowEngine?.context?.app,
         step: null,
         flow: null,
         flowKey: '',
@@ -85,7 +85,7 @@ const MultiStepContextProvider: React.FC<MultiStepContextProviderProps> = ({
     return {
       model,
       globals: model.flowEngine?.context || {},
-      app: model.flowEngine,
+      app: model.flowEngine?.context?.app,
       step,
       flow,
       flowKey,
@@ -206,7 +206,7 @@ const openRequiredParamsStepFormDialog = async ({
         const paramsContext = {
           model,
           globals: model.flowEngine?.context || {},
-          app: model.flowEngine,
+          app: model.flowEngine?.context?.app,
         };
 
         for (const { flowKey, stepKey, step } of requiredSteps) {
@@ -454,4 +454,4 @@ const openRequiredParamsStepFormDialog = async ({
   });
 };
 
-export { openRequiredParamsStepFormDialog, useStepSettingContext };
+export { openRequiredParamsStepFormDialog };
