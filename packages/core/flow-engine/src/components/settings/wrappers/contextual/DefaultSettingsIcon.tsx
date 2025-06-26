@@ -18,13 +18,13 @@ import {
   CopyOutlined,
 } from '@ant-design/icons';
 import { FlowModel } from '../../../../models';
-import { ActionStepDefinition } from '../../../../types';
+import { StepDefinition } from '../../../../types';
 import { openStepSettings } from './StepSettings';
 
 // Type definitions for better type safety
 interface StepInfo {
   stepKey: string;
-  step: ActionStepDefinition;
+  step: StepDefinition;
   uiSchema: Record<string, any>;
   title: string;
   modelKey?: string;
@@ -219,7 +219,7 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
         .map((flow) => {
           const configurableSteps = Object.entries(flow.steps)
             .map(([stepKey, stepDefinition]) => {
-              const actionStep = stepDefinition as ActionStepDefinition;
+              const actionStep = stepDefinition;
 
               // 如果步骤设置了 hideInSettings: true，则跳过此步骤
               if (actionStep.hideInSettings) {

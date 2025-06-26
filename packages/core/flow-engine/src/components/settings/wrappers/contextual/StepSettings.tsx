@@ -8,9 +8,10 @@
  */
 
 import { message } from 'antd';
-import { ActionStepDefinition, InlineStepDefinition, StepSettingsProps } from '../../../../types';
+import { StepSettingsProps } from '../../../../types';
 import { openStepSettingsDialog } from './StepSettingsDialog';
 import { openStepSettingsDrawer } from './StepSettingsDrawer';
+import { FlowModel } from '../../../../models';
 
 /**
  * 统一的步骤设置入口函数
@@ -42,11 +43,8 @@ const openStepSettings = async ({ model, flowKey, stepKey, width = 600, title }:
     throw new Error(`未找到Key为 ${stepKey} 的步骤`);
   }
 
-  // 获取步骤定义
-  const stepDefinition = step as ActionStepDefinition | InlineStepDefinition;
-
   // 检查步骤的 settingMode 配置，默认为 'dialog'
-  const settingMode = stepDefinition.settingMode || 'dialog';
+  const settingMode = step.settingMode || 'dialog';
 
   // 根据 settingMode 选择相应的打开方式
   if (settingMode === 'drawer') {
@@ -75,7 +73,7 @@ const openStepSettings = async ({ model, flowKey, stepKey, width = 600, title }:
  * @param stepKey 步骤Key
  * @returns boolean 是否使用抽屉模式
  */
-const isStepUsingDrawerMode = (model: any, flowKey: string, stepKey: string): boolean => {
+const isStepUsingDrawerMode = (model: FlowModel, flowKey: string, stepKey: string): boolean => {
   try {
     const flow = model.getFlow(flowKey);
     const step = flow?.steps?.[stepKey];
@@ -84,8 +82,7 @@ const isStepUsingDrawerMode = (model: any, flowKey: string, stepKey: string): bo
       return false;
     }
 
-    const stepDefinition = step as ActionStepDefinition | InlineStepDefinition;
-    return stepDefinition.settingMode === 'drawer';
+    return step.settingMode === 'drawer';
   } catch (error) {
     console.warn('检查步骤设置模式时出错:', error);
     return false;
@@ -99,7 +96,7 @@ const isStepUsingDrawerMode = (model: any, flowKey: string, stepKey: string): bo
  * @param stepKey 步骤Key
  * @returns 'dialog' | 'drawer' | null 设置模式，如果步骤不存在则返回null
  */
-const getStepSettingMode = (model: any, flowKey: string, stepKey: string): 'dialog' | 'drawer' | null => {
+const getStepSettingMode = (model: FlowModel, flowKey: string, stepKey: string): 'dialog' | 'drawer' | null => {
   try {
     const flow = model.getFlow(flowKey);
     const step = flow?.steps?.[stepKey];
@@ -108,8 +105,7 @@ const getStepSettingMode = (model: any, flowKey: string, stepKey: string): 'dial
       return null;
     }
 
-    const stepDefinition = step as ActionStepDefinition | InlineStepDefinition;
-    return stepDefinition.settingMode || 'dialog';
+    return step.settingMode || 'dialog';
   } catch (error) {
     console.warn('获取步骤设置模式时出错:', error);
     return null;

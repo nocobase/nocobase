@@ -10,7 +10,7 @@
 import React, { useCallback, useEffect } from 'react';
 import { Alert, Input, InputNumber, Select, Switch, Form } from 'antd';
 // TODO: ISchema may need to be imported from a different package or refactored.
-import { ActionStepDefinition } from '../../../../types';
+import { StepDefinition } from '../../../../types';
 import { useFlowModelById } from '../../../../hooks';
 import { FlowModel } from '../../../../models';
 import { observer } from '@formily/react';
@@ -20,7 +20,7 @@ const { Item: FormItem } = Form;
 
 // 创建两个组件版本，一个使用props传递的model，一个使用hook获取model
 interface ModelProvidedProps {
-  model: any;
+  model: FlowModel;
   flowKey: string;
 }
 
@@ -92,9 +92,7 @@ const FlowSettingsContent: React.FC<FlowSettingsContentProps> = observer(({ mode
 
   // 获取可配置的步骤
   const configurableSteps = Object.entries(flow?.steps || {})
-    .map(([stepKey, stepDefinition]) => {
-      const actionStep = stepDefinition as ActionStepDefinition;
-
+    .map(([stepKey, actionStep]) => {
       // 如果步骤设置了 hideInSettings: true，则跳过此步骤
       if (actionStep.hideInSettings) {
         return null;
