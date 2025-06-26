@@ -10,7 +10,8 @@
 import { createSchemaField, ISchema, FormConsumer } from '@formily/react';
 import { message, Button } from 'antd';
 import React from 'react';
-import { ActionStepDefinition } from '../../../../types';
+import { FlowModel } from '../../../../models';
+import { StepDefinition } from '../../../../types';
 import { resolveDefaultParams } from '../../../../utils';
 import { StepSettingContextProvider, StepSettingContextType, useStepSettingContext } from './StepSettingContext';
 
@@ -45,7 +46,7 @@ interface MultiStepContextProviderProps {
   requiredSteps: Array<{
     flowKey: string;
     stepKey: string;
-    step: ActionStepDefinition;
+    step: StepDefinition;
     uiSchema: Record<string, any>;
     title: string;
     flowTitle: string;
@@ -127,14 +128,14 @@ const openRequiredParamsStepFormDialog = async ({
     (async () => {
       try {
         // 获取所有流程
-        const constructor = model.constructor as typeof model.constructor;
+        const constructor = model.constructor as typeof FlowModel;
         const allFlows = constructor.getFlows();
 
         // 收集所有需要配置参数的步骤
         const requiredSteps: Array<{
           flowKey: string;
           stepKey: string;
-          step: ActionStepDefinition;
+          step: StepDefinition;
           uiSchema: Record<string, any>;
           title: string;
           flowTitle: string;
@@ -142,7 +143,7 @@ const openRequiredParamsStepFormDialog = async ({
 
         for (const [flowKey, flow] of allFlows) {
           for (const stepKey in flow.steps) {
-            const step = flow.steps[stepKey] as ActionStepDefinition;
+            const step = flow.steps[stepKey];
 
             // 只处理 paramsRequired 为 true 的步骤
             if (step.paramsRequired) {

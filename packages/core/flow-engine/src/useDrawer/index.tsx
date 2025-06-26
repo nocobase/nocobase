@@ -22,6 +22,12 @@ function useDrawer() {
 
     // eslint-disable-next-line prefer-const
     let closeFunc: (() => void) | undefined;
+
+    let resolvePromise: (value?: any) => void;
+    const promise = new Promise((resolve) => {
+      resolvePromise = resolve;
+    });
+
     const drawer = (
       <DrawerComponent
         key={`drawer-${uuid}`}
@@ -30,15 +36,16 @@ function useDrawer() {
         afterClose={() => {
           closeFunc?.();
           config.onClose?.();
+          resolvePromise?.(config.result); // 支持 config 传递关闭结果
         }}
       />
     );
     closeFunc = holderRef.current?.patchElement(drawer);
 
-    return {
+    return Object.assign(promise, {
       destroy: () => drawerRef.current?.destroy(),
       update: (newConfig) => drawerRef.current?.update(newConfig),
-    };
+    });
   };
 
   const api = React.useMemo(() => ({ open }), []);

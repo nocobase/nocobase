@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import React from 'react';
 import { Tag } from 'antd';
 import { reactive } from '@nocobase/flow-engine';
@@ -56,17 +65,3 @@ export class SelectReadPrettyFieldModel extends ReadPrettyFieldModel {
     );
   }
 }
-
-SelectReadPrettyFieldModel.registerFlow({
-  key: 'selectOptions',
-  auto: true,
-  sort: 200,
-  steps: {
-    step1: {
-      handler(ctx) {
-        const collectionField = ctx.model.collectionField;
-        ctx.model.setProps({ dataSource: collectionField.enum });
-      },
-    },
-  },
-});

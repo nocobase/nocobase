@@ -13,7 +13,6 @@ import type { MenuProps } from 'antd';
 import { SettingOutlined, DeleteOutlined, ExclamationCircleOutlined } from '@ant-design/icons';
 import { observer } from '@formily/react';
 import { FlowModel } from '../../../../models';
-import { ActionStepDefinition } from '../../../../types';
 import { useFlowModelById } from '../../../../hooks';
 import { openStepSettingsDialog } from './StepSettingsDialog';
 
@@ -133,7 +132,7 @@ const FlowsContextMenuWithModel: React.FC<ModelProvidedProps> = observer(
           .map((flow) => {
             const configurableSteps = Object.entries(flow.steps)
               .map(([stepKey, stepDefinition]) => {
-                const actionStep = stepDefinition as ActionStepDefinition;
+                const actionStep = stepDefinition;
 
                 // 如果步骤设置了 hideInSettings: true，则跳过此步骤
                 if (actionStep.hideInSettings) {

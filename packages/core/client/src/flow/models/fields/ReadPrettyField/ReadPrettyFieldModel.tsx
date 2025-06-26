@@ -36,6 +36,9 @@ ReadPrettyFieldModel.registerFlow({
       handler(ctx, params) {
         const { collectionField } = ctx.model;
         ctx.model.setProps(collectionField.getComponentProps());
+        if (collectionField.enum.length) {
+          ctx.model.setProps({ dataSource: collectionField.enum });
+        }
       },
     },
   },
