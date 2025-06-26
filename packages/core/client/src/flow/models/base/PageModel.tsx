@@ -44,7 +44,7 @@ export class PageModel extends FlowModel<PageModelStructure> {
   renderTabs() {
     return (
       <Tabs
-        tabBarStyle={{ backgroundColor: '#fff', paddingInline: 16, marginBottom: 0 }}
+        tabBarStyle={this.props.tabBarStyle}
         items={this.getItems()}
         // destroyInactiveTabPane
         tabBarExtraContent={
@@ -73,7 +73,7 @@ export class PageModel extends FlowModel<PageModelStructure> {
   render() {
     return (
       <>
-        {this.props.title && <PageHeader title={this.props.title} style={{ backgroundColor: '#fff' }} />}
+        {this.props.title && <PageHeader title={this.props.title} style={this.props.headerStyle} />}
         {this.props.enableTabs ? this.renderTabs() : this.renderFirstTab()}
       </>
     );
@@ -107,12 +107,32 @@ PageModel.registerFlow({
       defaultParams(ctx) {
         return {
           // title: 'Page title',
-          enableTabs: false,
+          enableTabs: !!ctx.shared.currentDrawer,
         };
       },
       async handler(ctx, params) {
         ctx.model.setProps('title', params.title);
         ctx.model.setProps('enableTabs', params.enableTabs);
+
+        if (ctx.shared.currentDrawer) {
+          ctx.model.setProps('headerStyle', {
+            backgroundColor: ctx.globals.themeToken.colorBgLayout,
+          });
+          ctx.model.setProps('tabBarStyle', {
+            backgroundColor: ctx.globals.themeToken.colorBgLayout,
+            paddingInline: 16,
+            marginBottom: 0,
+          });
+        } else {
+          ctx.model.setProps('headerStyle', {
+            backgroundColor: ctx.globals.themeToken.colorBgContainer,
+          });
+          ctx.model.setProps('tabBarStyle', {
+            backgroundColor: ctx.globals.themeToken.colorBgContainer,
+            paddingInline: 16,
+            marginBottom: 0,
+          });
+        }
       },
     },
   },

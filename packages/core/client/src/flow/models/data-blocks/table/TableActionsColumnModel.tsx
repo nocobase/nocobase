@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { SettingOutlined } from '@ant-design/icons';
+import { PlusOutlined } from '@ant-design/icons';
 import { observer } from '@formily/reactive-react';
 import { AddActionButton, FlowModel, FlowModelRenderer, FlowsFloatContextMenu } from '@nocobase/flow-engine';
 import { Skeleton, Space } from 'antd';
@@ -34,6 +34,14 @@ const Columns = observer<any>(({ record, model, index }) => {
   );
 });
 
+const AddActionToolbarComponent = ({ model }) => {
+  return (
+    <AddActionButton model={model} subModelBaseClass="RecordActionModel" subModelKey="actions">
+      <PlusOutlined />
+    </AddActionButton>
+  );
+};
+
 export class TableActionsColumnModel extends FlowModel {
   static readonly supportedFieldInterfaces: SupportedFieldInterfaces = null;
 
@@ -47,13 +55,14 @@ export class TableActionsColumnModel extends FlowModel {
           model={this}
           containerStyle={{ display: 'block', padding: '11px 8px', margin: '-11px -8px' }}
           showBorder={false}
+          extralToolbarItems={[
+            {
+              key: 'add-record-action',
+              component: AddActionToolbarComponent,
+            },
+          ]}
         >
-          <Space>
-            {this.props.title || 'Actions'}
-            <AddActionButton model={this} subModelBaseClass="RecordActionModel" subModelKey="actions">
-              <SettingOutlined />
-            </AddActionButton>
-          </Space>
+          <Space>{this.props.title || 'Actions'}</Space>
         </FlowsFloatContextMenu>
       ),
       render: this.render(),

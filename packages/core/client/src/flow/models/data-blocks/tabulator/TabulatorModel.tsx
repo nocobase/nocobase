@@ -24,7 +24,7 @@ import React from 'react';
 import { ColumnDefinition, TabulatorFull as Tabulator } from 'tabulator-tables';
 import { ActionModel } from '../../base/ActionModel';
 import { DataBlockModel } from '../../base/BlockModel';
-import { TableFieldModel } from '../table/fields';
+import { ReadPrettyFieldModel } from '../../fields/ReadPrettyField/ReadPrettyFieldModel';
 import { AntdInputEditor } from './AntdInputEditor';
 import './tabulator.css';
 
@@ -58,7 +58,7 @@ export class TabulatorColumnModel extends FlowModel {
       formatter: (cell) => {
         return this.reactView.render(
           <span>
-            {this.mapSubModels('field', (action: TableFieldModel) => {
+            {this.mapSubModels('field', (action: ReadPrettyFieldModel) => {
               const fork = action.createFork({}, `${cell.getRow().getIndex()}`);
               fork.setSharedContext({ index: cell.getRow().getIndex(), value: cell.getValue() });
               return fork.render();
@@ -163,7 +163,7 @@ export class TabulatorModel extends DataBlockModel<S> {
             collection={this.collection}
             model={this}
             subModelKey={'columns'}
-            subModelBaseClass="TableFieldModel"
+            subModelBaseClass="ReadPrettyFieldModel"
             buildCreateModelOptions={({ defaultOptions, fieldPath }) => ({
               use: 'TabulatorColumnModel',
               stepParams: {

@@ -26,9 +26,7 @@ export class DataBlockModel<T = DefaultStructure> extends BlockModel<T> {
       `${this.collection.dataSourceKey}.${this.collection.name}.${fieldPath}`,
     );
     if (!field) {
-      throw new Error(
-        `Collection field not found: ${this.collection.dataSourceKey}.${this.collection.name}.${fieldPath}`,
-      );
+      return;
     }
     if (['belongsToMany', 'belongsTo', 'hasMany', 'hasOne'].includes(field.type)) {
       (this.resource as BaseRecordResource).addAppends(field.name);

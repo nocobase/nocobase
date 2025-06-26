@@ -47,15 +47,13 @@ export const popup = defineAction({
 
     function DrawerContent() {
       return (
-        <div>
-          <FlowPage
-            parentId={ctx.model.uid}
-            sharedContext={{
-              ...params.sharedContext,
-              currentDrawer,
-            }}
-          />
-        </div>
+        <FlowPage
+          parentId={ctx.model.uid}
+          sharedContext={{
+            ...params.sharedContext,
+            currentDrawer,
+          }}
+        />
       );
     }
 
@@ -69,6 +67,12 @@ export const popup = defineAction({
       // title: '命令式 Drawer',
       width: sizeToWidthMap[params.size || 'medium'],
       content: <DrawerContent />,
+      style: {
+        backgroundColor: 'var(--nb-box-bg)',
+      },
+      bodyStyle: {
+        padding: 0,
+      },
     });
   },
 });

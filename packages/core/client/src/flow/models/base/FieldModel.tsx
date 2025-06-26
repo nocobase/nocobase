@@ -17,3 +17,34 @@ export class FieldModel extends FlowModel {
   fieldPath: string;
   public static readonly supportedFieldInterfaces: SupportedFieldInterfaces = null;
 }
+
+FieldModel.registerFlow({
+  key: 'default',
+  auto: true,
+  title: 'Basic',
+  steps: {
+    step1: {
+      handler(ctx, params) {
+        if (!ctx.shared.currentBlockModel) {
+          throw new Error('Current block model is not set in shared context');
+        }
+        const { dataSourceKey, collectionName, fieldPath } = params;
+        if (!dataSourceKey || !collectionName || !fieldPath) {
+          throw new Error('dataSourceKey, collectionName, and fieldPath are required parameters');
+        }
+        if (!ctx.model.parent) {
+          throw new Error('FieldModel must have a parent model');
+        }
+        const collectionField = ctx.globals.dataSourceManager.getCollectionField(
+          `${dataSourceKey}.${collectionName}.${fieldPath}`,
+        ) as CollectionField;
+        if (!collectionField) {
+          throw new Error(`Collection field not found for path: ${params.fieldPath}`);
+        }
+        ctx.model.collectionField = collectionField;
+        ctx.model.fieldPath = fieldPath;
+        ctx.shared.currentBlockModel.addAppends(fieldPath);
+      },
+    },
+  },
+});

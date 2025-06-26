@@ -156,7 +156,7 @@ QuickEditForm.registerFlow({
         }
         const collectionField = ctx.model.collection.getField(fieldPath) as CollectionField;
         if (collectionField) {
-          let use = 'FormFieldModel';
+          let use = 'EditableFieldModel';
           if (collectionField.interface === 'number') {
             use = 'InputNumberFieldModel';
           }

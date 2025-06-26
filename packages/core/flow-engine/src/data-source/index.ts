@@ -145,7 +145,7 @@ export class DataSource {
     }
     const field = collection.getField(fieldName);
     if (!field) {
-      throw new Error(`Field ${fieldName} not found in collection ${collectionName}`);
+      return;
     }
     return field;
   }
