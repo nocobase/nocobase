@@ -55,7 +55,7 @@ export class TableColumnModel extends FieldModel {
     return (value, record, index) => (
       <>
         {this.mapSubModels('field', (action: TableFieldModel) => {
-          const fork = action.createFork({}, `index`);
+          const fork = action.createFork({}, `${index}`);
           fork.setSharedContext({ index, value, record });
           return <FlowEngineProvider engine={this.flowEngine}>{fork.render()}</FlowEngineProvider>;
         })}
