@@ -12,9 +12,9 @@ import type { IModelComponentProps } from '../types';
 import { FlowModel } from './flowModel';
 
 /**
- * ForkFlowModel 作为 FlowModel 的轻量代理实例：
- *  - 共享 master（原始 FlowModel）上的所有业务数据与方法
- *  - 仅在 props 层面拥有本地覆盖(localProps)，其余字段全部透传到 master
+ * ForkFlowModel 作为 FlowModel 的独立实例：
+ *  - 大部分属性在 fork 本地存储，实现真正的实例隔离
+ *  - 只有特定的共享属性（如 stepParams、sortIndex）会同步到 master
  *  - 透传的函数中 this 指向 fork 实例，而非 master，确保正确的上下文
  *  - 使用 Object.create 创建临时上下文，确保 this.constructor 指向正确的类（避免异步竞态条件）
  *  - setter 方法中的 this 也指向 fork 实例，保持一致的上下文行为
@@ -38,10 +38,35 @@ export class ForkFlowModel<TMaster extends FlowModel = FlowModel> {
   /** fork 在 master.forks 中的索引 */
   public readonly forkId: number;
 
+  /** 需要与 master 共享的属性列表 */
+  private static readonly SHARED_PROPERTIES = ['stepParams', 'sortIndex'];
+
+  /**
+   * 配置需要与 master 共享的属性列表
+   * @param properties 共享属性名称数组
+   */
+  public static setSharedProperties(properties: string[]): void {
+    (this as any).SHARED_PROPERTIES = [...properties];
+  }
+
+  /**
+   * 获取当前配置的共享属性列表
+   */
+  public static getSharedProperties(): string[] {
+    return [...this.SHARED_PROPERTIES];
+  }
+
+  /**
+   * fork 本地存储的属性，除了共享属性外的所有属性都存储在这里
+   * 注意：此属性通过 Proxy 在 get/set 陷阱中被动态访问，IDE 可能无法检测到使用, 切勿删除！
+   */
+  private localProperties: Record<string, any> = {};
+
   /** 用于共享上下文的对象，存储跨 fork 的共享数据 */
   // private _sharedContext: Record<string, any> = {};
 
   constructor(master: TMaster, initialProps: IModelComponentProps = {}, forkId = 0) {
+    void this.localProperties; // 避免 IDE 提示 unused
     this.master = master;
     this.uid = master.uid;
     this.localProps = { ...initialProps };
@@ -71,6 +96,11 @@ export class ForkFlowModel<TMaster extends FlowModel = FlowModel> {
           return Reflect.get(target, prop, receiver);
         }
 
+        // 检查是否在本地属性中
+        if (Object.prototype.hasOwnProperty.call(target.localProperties, prop)) {
+          return target.localProperties[prop];
+        }
+
         // 默认取 master 上的值
         const value = (target.master as any)[prop];
 
@@ -98,22 +128,30 @@ export class ForkFlowModel<TMaster extends FlowModel = FlowModel> {
           return true;
         }
 
-        // 如果 fork 自带字段，则写到自身（例如 localProps）
+        // 如果 fork 自带字段，则写到自身（例如 localProps、localProperties 等）
         if (prop in target) {
           return Reflect.set(target, prop, value, receiver);
         }
 
-        // 其余写入 master，但需要确保 setter 中的 this 指向 fork
-        // 检查 master 上是否有对应的 setter
-        const descriptor = this.getPropertyDescriptor(target.master, prop);
-        if (descriptor && descriptor.set) {
-          // 如果有 setter，直接用 receiver（fork 实例）作为 this 调用
-          // 这样 setter 中的 this 就指向 fork，可以正确调用 fork 的方法
-          descriptor.set.call(receiver, value);
-          return true;
+        // 检查是否为需要与 master 共享的属性
+        const propString = String(prop);
+        const isSharedProperty = ForkFlowModel.SHARED_PROPERTIES.includes(propString);
+
+        if (isSharedProperty) {
+          // 共享属性：写入 master，但需要确保 setter 中的 this 指向 fork
+          const descriptor = this.getPropertyDescriptor(target.master, prop);
+          if (descriptor && descriptor.set) {
+            // 如果有 setter，直接用 receiver（fork 实例）作为 this 调用
+            descriptor.set.call(receiver, value);
+            return true;
+          } else {
+            // 没有 setter，直接赋值到 master
+            (target.master as any)[prop] = value;
+            return true;
+          }
         } else {
-          // 没有 setter，直接赋值到 master
-          (target.master as any)[prop] = value;
+          // 非共享属性：写入 fork 的本地属性存储
+          target.localProperties[prop] = value;
           return true;
         }
       },
@@ -214,6 +252,13 @@ export class ForkFlowModel<TMaster extends FlowModel = FlowModel> {
    */
   getProps(): IModelComponentProps {
     return { ...this.master.getProps(), ...this.localProps };
+  }
+
+  /**
+   * 检查属性是否为共享属性
+   */
+  private isSharedProperty(prop: string): boolean {
+    return ForkFlowModel.SHARED_PROPERTIES.includes(prop);
   }
 }
 
