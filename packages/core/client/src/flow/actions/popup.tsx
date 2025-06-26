@@ -41,7 +41,7 @@ export const popup = defineAction({
     mode: 'drawer',
     size: 'medium',
   },
-  handler(ctx, params) {
+  async handler(ctx, params) {
     // eslint-disable-next-line prefer-const
     let currentDrawer: any;
 
@@ -65,7 +65,7 @@ export const popup = defineAction({
       large: 1200,
     };
 
-    currentDrawer = ctx.globals[params.mode || 'drawer'].open({
+    currentDrawer = await ctx.globals[params.mode || 'drawer'].open({
       // title: '命令式 Drawer',
       width: sizeToWidthMap[params.size || 'medium'],
       content: <DrawerContent />,
