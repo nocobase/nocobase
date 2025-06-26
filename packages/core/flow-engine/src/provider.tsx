@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { App, ConfigProvider } from 'antd';
+import { App, ConfigProvider, theme } from 'antd';
 import React, { createContext, useContext, useEffect } from 'react';
 import { FlowEngine } from './flowEngine';
 import useDrawer from './useDrawer';
@@ -34,17 +34,19 @@ export const FlowEngineGlobalsContextProvider: React.FC<{ children: React.ReactN
   const [popover, popoverContextHolder] = usePopover();
   const engine = useFlowEngine();
   const config = useContext(ConfigProvider.ConfigContext);
+  const { token } = theme.useToken();
 
   useEffect(() => {
     engine.setContext({
       antdConfig: config,
+      themeToken: token,
       drawer,
       modal,
       message,
       notification,
       popover,
     });
-  }, [engine, drawer, modal, message, notification, config, popover]);
+  }, [engine, drawer, modal, message, notification, config, popover, token]);
 
   return (
     <>
