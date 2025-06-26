@@ -23,7 +23,7 @@ export enum QUEUE_PRIORITY {
   // Low priority, suitable for jobs that can be delayed. Such as sending emails, notifications, logs etc.
   LOW = 0,
 }
-const QUEUE_DEFAULT_INTERVAL = 500;
+const QUEUE_DEFAULT_INTERVAL = 250;
 export const QUEUE_DEFAULT_CONCURRENCY = 1;
 export const QUEUE_DEFAULT_ACK_TIMEOUT = 15_000;
 
@@ -285,7 +285,7 @@ export class MemoryEventQueueAdapter implements IEventQueueAdapter {
     this.reading.delete(channel);
   }
 
-  async process(channel, { id, message }) {
+  async process(channel: string, { id, message }) {
     const event = this.events.get(channel);
     const { content, options: { timeout = QUEUE_DEFAULT_ACK_TIMEOUT, maxRetries = 0, retried = 0 } = {} } = message;
     try {

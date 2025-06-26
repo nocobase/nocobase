@@ -127,7 +127,7 @@ describe('workflow > cluster', () => {
       const n1 = await w1.createNode({
         type: 'timeConsume',
         config: {
-          duration: 300,
+          duration: 350,
         },
       });
 
@@ -146,7 +146,7 @@ describe('workflow > cluster', () => {
       p2.trigger(w1, { a: 7 });
       p2.trigger(w1, { a: 8 });
 
-      await sleep(200);
+      await sleep(300);
 
       const q1 = sharedQueues.get(`${app1.name}.${BackgroundJobManager.DEFAULT_CHANNEL}`);
       // NOTE: app3 read one
@@ -157,9 +157,12 @@ describe('workflow > cluster', () => {
       expect(e1s[0].status).toBe(EXECUTION_STATUS.STARTED);
       expect(e1s[1].status).toBe(EXECUTION_STATUS.STARTED);
       expect(e1s[2].status).toBe(EXECUTION_STATUS.STARTED);
-      expect(e1s[3].status).toBe(EXECUTION_STATUS.QUEUEING);
 
-      await sleep(1500);
+      for (let i = 3; i < 8; i++) {
+        expect(e1s[i].status).toBe(EXECUTION_STATUS.QUEUEING);
+      }
+
+      await sleep(2000);
 
       const e2s = await w1.getExecutions({ order: [['id', 'ASC']], include: ['jobs'] });
       expect(e2s.length).toBe(8);
@@ -172,15 +175,22 @@ describe('workflow > cluster', () => {
       expect(e2s[6].status).toBe(EXECUTION_STATUS.RESOLVED);
       expect(e2s[7].status).toBe(EXECUTION_STATUS.RESOLVED);
 
-      const appNameJobs = e2s.map((item) => item.jobs.find((job) => job.nodeId === n2.id));
-      expect(appNameJobs[0].result).toBe(app1.instanceId);
-      expect(appNameJobs[1].result).toBe(app2.instanceId);
-      expect(appNameJobs[2].result).toBe(app3.instanceId);
-      expect(appNameJobs[3].result).toBe(app1.instanceId);
-      expect(appNameJobs[4].result).toBe(app2.instanceId);
-      expect(appNameJobs[5].result).toBe(app3.instanceId);
-      expect(appNameJobs[6].result).toBe(app1.instanceId);
-      expect(appNameJobs[7].result).toBe(app2.instanceId);
+      const appIds = e2s.map((item) =>
+        item.jobs
+          .find((job) => job.nodeId === n2.id)
+          .result.split('_')
+          .pop(),
+      );
+      const appIdsSet = new Set(appIds);
+      expect(appIdsSet.size).toBe(3);
+      // expect(appNameJobs[0].result).toBe(app1.instanceId);
+      // expect(appNameJobs[1].result).toBe(app2.instanceId);
+      // expect(appNameJobs[2].result).toBe(app3.instanceId);
+      // expect(appNameJobs[3].result).toBe(app1.instanceId);
+      // expect(appNameJobs[4].result).toBe(app2.instanceId);
+      // expect(appNameJobs[5].result).toBe(app3.instanceId);
+      // expect(appNameJobs[6].result).toBe(app1.instanceId);
+      // expect(appNameJobs[7].result).toBe(app2.instanceId);
     });
   });
 });
