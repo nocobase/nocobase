@@ -30,14 +30,14 @@ export class LowcodeBlockModel extends BlockModel {
     if (error) {
       return (
         <Card>
-          <div style={{ color: 'red', padding: '16px' }}>Error loading lowcode component: {error}</div>
+          <div style={{ color: 'red', padding: '16px' }}>Error loading code component: {error}</div>
         </Card>
       );
     }
 
     return (
-      <Card id={`model-${this.uid}`} className="lowcode-block">
-        <Spin spinning={loading} tip="Loading lowcode component...">
+      <Card id={`model-${this.uid}`} className="code-block">
+        <Spin spinning={loading} tip="Loading code component...">
           <div ref={this.ref} style={{ width: '100%' }} />
         </Spin>
       </Card>
@@ -46,7 +46,7 @@ export class LowcodeBlockModel extends BlockModel {
 }
 
 LowcodeBlockModel.define({
-  title: 'Lowcode',
+  title: 'Code',
   group: 'Content',
   icon: 'CloudOutlined',
   defaultOptions: {
@@ -61,7 +61,7 @@ LowcodeBlockModel.define({
 ctx.element.innerHTML = \`
   <div style="padding: 24px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; max-width: 600px;">
     <h2 style="color: #1890ff; margin: 0 0 20px 0; font-size: 24px; font-weight: 600;">
-      🚀 \${ctx.i18n.t('Welcome to Lowcode Block', { ns: '` +
+      🚀 \${ctx.i18n.t('Welcome to code block', { ns: '` +
             NAMESPACE +
             `' })}
     </h2>
@@ -145,12 +145,12 @@ LowcodeBlockModel.registerFlow({
       defaultParams: {
         code:
           `
-// Welcome to the lowcode block
+// Welcome to the code block
 // Create powerful interactive components with JavaScript
 ctx.element.innerHTML = \`
   <div style="padding: 24px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; max-width: 600px;">
     <h2 style="color: #1890ff; margin: 0 0 20px 0; font-size: 24px; font-weight: 600;">
-      🚀 \${ctx.i18n.t('Welcome to Lowcode Block', { ns: '` +
+      🚀 \${ctx.i18n.t('Welcome to code block', { ns: '` +
           NAMESPACE +
           `' })}
     </h2>
@@ -321,7 +321,7 @@ ctx.element.innerHTML = \`
 
             flowContext.model.setProps('loading', false);
           } catch (error: any) {
-            console.error('Lowcode component execution error:', error);
+            console.error('Code component execution error:', error);
             flowContext.model.setProps('error', error.message);
             flowContext.model.setProps('loading', false);
           }

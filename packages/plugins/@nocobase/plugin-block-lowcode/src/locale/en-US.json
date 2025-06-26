@@ -1,6 +1,6 @@
 {
   "Lowcode": "Lowcode",
-  "Lowcode block": "Lowcode block",
+  "Code block": "Code block",
   "Execution code": "Execution code",
   "Execution step": "Execution step",
   "Enter the execution code to render the component": "Enter the execution code to render the component",
@@ -8,7 +8,7 @@
   "Component executed successfully": "Component executed successfully",
   "Configuration": "Configuration",
   "Code": "Code",
-  "Welcome to Lowcode Block": "Welcome to Lowcode Block",
+  "Welcome to code block": "Welcome to code block",
   "Build interactive components with JavaScript and external libraries": "Build interactive components with JavaScript and external libraries",
   "Key Features": "Key Features",
   "Custom JavaScript execution": "Custom JavaScript execution",
