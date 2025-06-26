@@ -16,7 +16,6 @@ import { openStepSettingsDialog as openStepSettingsDialogFn } from '../component
 import { Emitter } from '../emitter';
 import { FlowEngine } from '../flowEngine';
 import type {
-  ActionStepDefinition,
   ArrayElementType,
   CreateModelOptions,
   CreateSubModelOptions,
@@ -25,7 +24,6 @@ import type {
   FlowDefinition,
   FlowModelMeta,
   FlowModelOptions,
-  InlineStepDefinition,
   StepDefinition,
   StepParams,
 } from '../types';
@@ -425,24 +423,26 @@ export class FlowModel<Structure extends { parent?: any; subModels?: any } = Def
         let combinedParams: Record<string, any> = {};
         let actionDefinition;
 
-        if ((step as ActionStepDefinition).use) {
-          const actionStep = step as ActionStepDefinition;
-          actionDefinition = currentFlowEngine.getAction(actionStep.use);
+        if (step.use) {
+          // Step references a registered action
+          actionDefinition = currentFlowEngine.getAction(step.use);
           if (!actionDefinition) {
             console.error(
-              `BaseModel.applyFlow: Action '${actionStep.use}' not found for step '${stepKey}' in flow '${flowKey}'. Skipping.`,
+              `BaseModel.applyFlow: Action '${step.use}' not found for step '${stepKey}' in flow '${flowKey}'. Skipping.`,
             );
             continue;
           }
-          handler = actionDefinition.handler;
+          // Use step's handler if provided, otherwise use action's handler
+          handler = step.handler || actionDefinition.handler;
+          // Merge default params: action defaults first, then step defaults
           const actionDefaultParams = await resolveDefaultParams(actionDefinition.defaultParams, flowContext);
-          const stepDefaultParams = await resolveDefaultParams(actionStep.defaultParams, flowContext);
+          const stepDefaultParams = await resolveDefaultParams(step.defaultParams, flowContext);
           combinedParams = { ...actionDefaultParams, ...stepDefaultParams };
-        } else if ((step as InlineStepDefinition).handler) {
-          const inlineStep = step as InlineStepDefinition;
-          handler = inlineStep.handler;
-          const inlineDefaultParams = await resolveDefaultParams(inlineStep.defaultParams, flowContext);
-          combinedParams = { ...inlineDefaultParams };
+        } else if (step.handler) {
+          // Step defines its own inline handler
+          handler = step.handler;
+          const stepDefaultParams = await resolveDefaultParams(step.defaultParams, flowContext);
+          combinedParams = { ...stepDefaultParams };
         } else {
           console.error(
             `BaseModel.applyFlow: Step '${stepKey}' in flow '${flowKey}' has neither 'use' nor 'handler'. Skipping.`,

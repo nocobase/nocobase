@@ -9,7 +9,7 @@
 
 import React from 'react';
 import { Card, Empty, Collapse } from 'antd';
-import { ActionStepDefinition } from '../../../../types';
+import { StepDefinition } from '../../../../types';
 import { FlowModel } from '../../../../models';
 import { observer } from '@formily/react';
 import { FlowSettings } from './FlowSettings';
@@ -29,9 +29,7 @@ const FlowsSettingsContent: React.FC<FlowsSettingsContentProps> = observer(({ mo
 
   const filterFlows = Array.from(flows.values()).filter((flow) => {
     const configurableSteps = Object.entries(flow.steps)
-      .map(([stepKey, stepDefinition]) => {
-        const actionStep = stepDefinition as ActionStepDefinition;
-
+      .map(([stepKey, actionStep]) => {
         // 如果步骤设置了 hideInSettings: true，则跳过此步骤
         if (actionStep.hideInSettings) {
           return null;
