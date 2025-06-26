@@ -22,6 +22,10 @@ export class CustomRequestRecordActionModel extends RecordActionModel {
   };
 }
 
+CustomRequestRecordActionModel.define({
+  title: 'Custom request',
+});
+
 const fieldNames = {
   value: 'value',
   label: 'label',

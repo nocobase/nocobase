@@ -18,6 +18,10 @@ export class DeleteActionModel extends RecordActionModel {
   };
 }
 
+DeleteActionModel.define({
+  title: 'Delete',
+});
+
 DeleteActionModel.registerFlow({
   key: 'handleClick',
   title: '点击事件',

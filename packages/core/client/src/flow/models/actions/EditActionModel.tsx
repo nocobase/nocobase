@@ -18,6 +18,10 @@ export class EditActionModel extends RecordActionModel {
   };
 }
 
+EditActionModel.define({
+  title: 'Edit',
+});
+
 EditActionModel.registerFlow({
   key: 'handleClick',
   title: '点击事件',

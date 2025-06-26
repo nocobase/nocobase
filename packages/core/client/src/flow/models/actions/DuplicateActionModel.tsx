@@ -18,6 +18,10 @@ export class DuplicateActionModel extends RecordActionModel {
   };
 }
 
+DuplicateActionModel.define({
+  title: 'Duplicate',
+});
+
 DuplicateActionModel.registerFlow({
   key: 'handleClick',
   title: '点击事件',

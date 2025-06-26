@@ -20,6 +20,10 @@ export class BulkDeleteActionModel extends GlobalActionModel {
   };
 }
 
+BulkDeleteActionModel.define({
+  title: 'Delete',
+});
+
 BulkDeleteActionModel.registerFlow({
   key: 'handleClick',
   title: '点击事件',

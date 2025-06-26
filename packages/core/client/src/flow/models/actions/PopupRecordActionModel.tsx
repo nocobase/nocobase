@@ -17,6 +17,10 @@ export class PopupRecordActionModel extends RecordActionModel {
   };
 }
 
+PopupRecordActionModel.define({
+  title: 'Popup',
+});
+
 PopupRecordActionModel.registerFlow({
   key: 'handleClick',
   title: '点击事件',

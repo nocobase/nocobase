@@ -18,6 +18,10 @@ export class LinkRecordActionModel extends RecordActionModel {
   };
 }
 
+LinkRecordActionModel.define({
+  title: 'Link',
+});
+
 LinkRecordActionModel.registerFlow({
   key: 'handleClick',
   title: '点击事件',

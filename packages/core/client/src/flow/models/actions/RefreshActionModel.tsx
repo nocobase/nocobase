@@ -17,6 +17,10 @@ export class RefreshActionModel extends GlobalActionModel {
   };
 }
 
+RefreshActionModel.define({
+  title: 'Refresh',
+});
+
 RefreshActionModel.registerFlow({
   key: 'handleClick',
   title: '点击事件',

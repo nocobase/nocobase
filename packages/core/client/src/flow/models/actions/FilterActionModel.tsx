@@ -61,6 +61,10 @@ export class FilterActionModel extends GlobalActionModel {
   }
 }
 
+FilterActionModel.define({
+  title: 'Filter',
+});
+
 FilterActionModel.registerFlow({
   key: 'filterSettings',
   title: '筛选配置',

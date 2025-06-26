@@ -17,6 +17,10 @@ export class ViewActionModel extends RecordActionModel {
   };
 }
 
+ViewActionModel.define({
+  title: 'View',
+});
+
 ViewActionModel.registerFlow({
   key: 'handleClick',
   title: '点击事件',

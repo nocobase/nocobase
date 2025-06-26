@@ -17,6 +17,10 @@ export class LinkGlobalActionModel extends GlobalActionModel {
   };
 }
 
+LinkGlobalActionModel.define({
+  title: 'Link',
+});
+
 LinkGlobalActionModel.registerFlow({
   key: 'handleClick',
   title: '点击事件',

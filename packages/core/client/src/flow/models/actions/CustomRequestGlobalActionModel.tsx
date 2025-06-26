@@ -21,6 +21,10 @@ export class CustomRequestGlobalActionModel extends GlobalActionModel {
   };
 }
 
+CustomRequestGlobalActionModel.define({
+  title: 'Custom request',
+});
+
 const fieldNames = {
   value: 'value',
   label: 'label',

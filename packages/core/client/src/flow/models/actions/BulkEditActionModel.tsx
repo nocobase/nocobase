@@ -19,6 +19,10 @@ export class BulkEditActionModel extends GlobalActionModel {
   };
 }
 
+BulkEditActionModel.define({
+  title: 'Bulk edit',
+});
+
 BulkEditActionModel.registerFlow({
   key: 'handleClick',
   title: '点击事件',

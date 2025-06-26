@@ -20,6 +20,10 @@ export class UpdateRecordActionModel extends RecordActionModel {
   };
 }
 
+UpdateRecordActionModel.define({
+  title: 'Update record',
+});
+
 UpdateRecordActionModel.registerFlow({
   key: 'handleClick',
   title: '点击事件',

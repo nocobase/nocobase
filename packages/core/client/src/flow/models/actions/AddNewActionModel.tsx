@@ -18,6 +18,10 @@ export class AddNewActionModel extends GlobalActionModel {
   };
 }
 
+AddNewActionModel.define({
+  title: 'Add new',
+});
+
 AddNewActionModel.registerFlow({
   sort: 200,
   title: '点击事件',
