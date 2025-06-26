@@ -111,7 +111,7 @@ describe('workflow > cluster', () => {
       }
     });
 
-    it.only('should be able to process executions on other nodes', async () => {
+    it('should be able to process executions on other nodes', async () => {
       const [app1, app2, app3] = cluster.nodes;
 
       const p1 = app1.pm.get(Plugin) as Plugin;
