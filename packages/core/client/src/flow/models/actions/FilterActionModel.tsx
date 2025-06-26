@@ -8,15 +8,15 @@
  */
 
 import { MultiRecordResource, useFlowModel, useStepSettingContext } from '@nocobase/flow-engine';
+import { Button, ButtonProps, Popover, Select, Space } from 'antd';
 import React, { FC } from 'react';
 import { FilterGroup } from '../../components/FilterGroup';
-import { Button, ButtonProps, Popover, Select, Space } from 'antd';
 import { GlobalActionModel } from '../base/ActionModel';
 
 const FilterContent: FC<{ value: any }> = (props) => {
   const modelInstance = useFlowModel();
   const currentBlockModel = modelInstance.ctx.shared.currentBlockModel;
-  const fields = currentBlockModel.collection.options.fields;
+  const fields = currentBlockModel.collection.getFields();
   const ignoreFieldsNames = modelInstance.props.ignoreFieldsNames || [];
 
   return (
@@ -79,9 +79,9 @@ FilterActionModel.registerFlow({
           'x-component': (props) => {
             // eslint-disable-next-line react-hooks/rules-of-hooks
             const { model } = useStepSettingContext();
-            const options = model.ctx.shared.currentBlockModel.collection.options.fields.map((field) => {
+            const options = model.ctx.shared.currentBlockModel.collection.getFields().map((field) => {
               return {
-                label: field.uiSchema?.title || field.name,
+                label: field.title,
                 value: field.name,
               };
             });
@@ -112,12 +112,12 @@ FilterActionModel.registerFlow({
             // eslint-disable-next-line react-hooks/rules-of-hooks
             const { model: modelInstance } = useStepSettingContext();
             const currentBlockModel = modelInstance.ctx.shared.currentBlockModel;
-            const fields = currentBlockModel.collection.options.fields;
+            const fields = currentBlockModel.collection.getFields();
             const ignoreFieldsNames = modelInstance.props.ignoreFieldsNames || [];
 
             return (
               <FilterGroup
-                value={props.value}
+                value={props.value || {}}
                 fields={fields}
                 ignoreFieldsNames={ignoreFieldsNames}
                 ctx={modelInstance.ctx}

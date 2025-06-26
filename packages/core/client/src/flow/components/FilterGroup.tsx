@@ -7,14 +7,14 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Input, theme } from 'antd';
-import _ from 'lodash';
-import React, { FC, useContext } from 'react';
 import { CloseCircleOutlined } from '@ant-design/icons';
-import { Trans, useTranslation } from 'react-i18next';
-import { Cascader, Select, Space } from 'antd';
 import { css } from '@emotion/css';
 import { observer } from '@formily/reactive-react';
+import { CollectionField } from '@nocobase/flow-engine';
+import { Cascader, Input, Select, Space, theme } from 'antd';
+import _ from 'lodash';
+import React, { FC, useContext } from 'react';
+import { Trans, useTranslation } from 'react-i18next';
 
 // TODO: 需要重构，使用新的方式获取组件实例
 const AppContext = React.createContext(null);
@@ -105,7 +105,7 @@ function findFieldInOptions(options, fieldNames) {
   }, options);
 }
 
-const field2option = (field, depth, nonfilterable, dataSourceManager) => {
+const field2option = (field: CollectionField, depth, nonfilterable, dataSourceManager) => {
   if (nonfilterable.length && depth === 1 && nonfilterable.includes(field.name)) {
     return;
   }
@@ -115,7 +115,7 @@ const field2option = (field, depth, nonfilterable, dataSourceManager) => {
   if (field.filterable === false) {
     return;
   }
-  const fieldInterface = dataSourceManager?.collectionFieldInterfaceManager.getFieldInterface(field.interface);
+  const fieldInterface = field.getInterfaceOptions();
   if (!fieldInterface?.filterable) {
     return;
   }
@@ -124,7 +124,7 @@ const field2option = (field, depth, nonfilterable, dataSourceManager) => {
     name: field.name,
     type: field.type,
     target: field.target,
-    title: field?.uiSchema?.title || field.name,
+    title: field.title,
     schema: field?.uiSchema,
     operators:
       operators?.filter?.((operator) => {
@@ -141,9 +141,7 @@ const field2option = (field, depth, nonfilterable, dataSourceManager) => {
     option['children'] = children;
   }
   if (nested) {
-    const targetFields = dataSourceManager
-      .getDataSource(field.dataSourceKey)
-      .collectionManager.getCollectionFields(field.target);
+    const targetFields = field.getFields();
     const options = getOptions(targetFields, depth + 1, nonfilterable, dataSourceManager).filter(Boolean);
     option['children'] = option['children'] || [];
     option['children'].push(...options);
@@ -296,7 +294,7 @@ const FilterItem: FC<{
 
 export const FilterGroup: FC<{
   value: any;
-  fields: any[];
+  fields: CollectionField[];
   ctx: any;
   ignoreFieldsNames?: string[];
   showBorder?: boolean;
@@ -308,12 +306,9 @@ export const FilterGroup: FC<{
     const { t } = useTranslation();
     const logic = Object.keys(props.value).includes('$or') ? '$or' : '$and';
     const items = props.value[logic] || [];
-    const options = getOptions(
-      props.fields,
-      1,
-      props.ignoreFieldsNames,
-      props.ctx.globals.app.dataSourceManager,
-    ).filter(Boolean);
+    const options = getOptions(props.fields, 1, props.ignoreFieldsNames, props.ctx.globals.dataSourceManager).filter(
+      Boolean,
+    );
     const style: React.CSSProperties = props.showBorder
       ? {
           position: 'relative',

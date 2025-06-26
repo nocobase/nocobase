@@ -9,6 +9,7 @@
 
 import { Schema } from '@formily/json-schema';
 import { observable } from '@formily/reactive';
+import { FlowEngine } from '../flowEngine';
 
 export interface DataSourceOptions extends Record<string, any> {
   key: string;
@@ -19,9 +20,14 @@ export interface DataSourceOptions extends Record<string, any> {
 
 export class DataSourceManager {
   dataSources: Map<string, DataSource>;
+  flowEngine: FlowEngine;
 
   constructor() {
     this.dataSources = observable.shallow<Map<string, DataSource>>(new Map());
+  }
+
+  setFlowEngine(flowEngine: FlowEngine) {
+    this.flowEngine = flowEngine;
   }
 
   addDataSource(ds: DataSource | DataSourceOptions, options: Record<string, any> = {}) {
@@ -32,8 +38,10 @@ export class DataSourceManager {
       this.dataSources.set(ds.key, ds);
     } else {
       const clz = ds.use || DataSource;
-      this.dataSources.set(ds.key, new clz(ds));
+      ds = new clz(ds);
+      this.dataSources.set(ds.key, ds as DataSource);
     }
+    ds.setDataSourceManager(this);
   }
 
   upsertDataSource(ds: DataSource | DataSourceOptions) {
@@ -75,12 +83,17 @@ export class DataSourceManager {
 }
 
 export class DataSource {
+  dataSourceManager: DataSourceManager;
   collectionManager: CollectionManager;
   options: Record<string, any>;
 
   constructor(options: Record<string, any> = {}) {
     this.options = observable({ ...options });
     this.collectionManager = new CollectionManager(this);
+  }
+
+  get flowEngine() {
+    return this.dataSourceManager.flowEngine;
   }
 
   get displayName() {
@@ -97,6 +110,10 @@ export class DataSource {
 
   get name() {
     return this.options.key;
+  }
+
+  setDataSourceManager(dataSourceManager: DataSourceManager) {
+    this.dataSourceManager = dataSourceManager;
   }
 
   getCollections(): Collection[] {
@@ -161,8 +178,12 @@ export interface CollectionOptions {
 export class CollectionManager {
   collections: Map<string, Collection>;
 
-  constructor(protected dataSource: DataSource) {
+  constructor(public dataSource: DataSource) {
     this.collections = observable.shallow<Map<string, Collection>>(new Map());
+  }
+
+  get flowEngine() {
+    return this.dataSource.flowEngine;
   }
 
   addCollection(collection: Collection | CollectionOptions) {
@@ -233,6 +254,10 @@ export class Collection {
     this.fields = observable.shallow<Map<string, CollectionField>>(new Map());
     this.inherits = observable.shallow<Map<string, Collection>>(new Map());
     this.setFields(options.fields || []);
+  }
+
+  get flowEngine() {
+    return this.dataSource.flowEngine;
   }
 
   get collectionManager() {
@@ -371,6 +396,14 @@ export class CollectionField {
     this.collection = collection;
   }
 
+  get flowEngine() {
+    return this.collection.flowEngine;
+  }
+
+  get dataSourceKey() {
+    return this.collection.dataSourceKey;
+  }
+
   get fullpath() {
     return this.collection.dataSource.key + '.' + this.collection.name + '.' + this.name;
   }
@@ -405,6 +438,14 @@ export class CollectionField {
     return this.options.interface || 'input';
   }
 
+  get filterable() {
+    return this.options.filterable;
+  }
+
+  get uiSchema() {
+    return this.options.uiSchema || {};
+  }
+
   getComponentProps() {
     return this.options.uiSchema?.['x-component-props'] || {};
   }
@@ -418,5 +459,10 @@ export class CollectionField {
       throw new Error(`Target collection ${this.options.target} not found for field ${this.name}`);
     }
     return targetCollection.getFields();
+  }
+
+  getInterfaceOptions() {
+    const app = this.flowEngine.context.app;
+    return app.dataSourceManager.collectionFieldInterfaceManager.getFieldInterface(this.interface);
   }
 }

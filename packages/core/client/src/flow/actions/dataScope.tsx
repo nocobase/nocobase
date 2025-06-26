@@ -8,8 +8,8 @@
  */
 
 import { defineAction, MultiRecordResource, useStepSettingContext } from '@nocobase/flow-engine';
-import { FilterGroup } from '../components/FilterGroup';
 import React from 'react';
+import { FilterGroup } from '../components/FilterGroup';
 
 export const dataScope = defineAction({
   name: 'dataScope',
@@ -22,7 +22,7 @@ export const dataScope = defineAction({
         // eslint-disable-next-line react-hooks/rules-of-hooks
         const { model: modelInstance } = useStepSettingContext();
         const currentBlockModel = modelInstance.ctx.shared.currentBlockModel;
-        const fields = currentBlockModel.collection.options.fields;
+        const fields = currentBlockModel.collection.getFields();
         const ignoreFieldsNames = modelInstance.props.ignoreFieldsNames || [];
 
         return (
