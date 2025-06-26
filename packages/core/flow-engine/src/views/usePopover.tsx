@@ -9,11 +9,11 @@
 
 import { Popover } from 'antd';
 import * as React from 'react';
-import usePatchElement from '../useDrawer/usePatchElement';
+import usePatchElement from './usePatchElement';
 
 let uuid = 0;
 
-function usePopover() {
+export function usePopover() {
   const holderRef = React.useRef(null);
 
   const open = (config) => {
@@ -77,5 +77,3 @@ function usePopover() {
 
   return [api, <ElementsHolder key="popover-holder" ref={holderRef} />];
 }
-
-export default usePopover;

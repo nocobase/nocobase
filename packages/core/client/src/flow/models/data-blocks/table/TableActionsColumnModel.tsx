@@ -20,13 +20,14 @@ const Columns = observer<any>(({ record, model, index }) => {
     <Space size={'middle'}>
       {model.mapSubModels('actions', (action: ActionModel) => {
         const fork = action.createFork({}, `${index}`);
+        fork.setSharedContext({ index, currentRecord: record });
         return (
           <FlowModelRenderer
             showFlowSettings={{ showBorder: false }}
             key={fork.uid}
             model={fork}
             fallback={<Skeleton.Button size="small" />}
-            extraContext={{ currentRecord: record }}
+            sharedContext={{ currentRecord: record }}
           />
         );
       })}

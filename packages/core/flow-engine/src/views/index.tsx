@@ -7,7 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export * from './confirm';
-export * from './dataScope';
-export * from './openView';
+export { useDialog } from './useDialog';
+export { useDrawer } from './useDrawer';
+export { usePage } from './usePage';
+export { usePopover } from './usePopover';
 //

@@ -25,6 +25,8 @@ EditActionModel.registerFlow({
     eventName: 'click',
   },
   steps: {
-    open: openModeAction,
+    openView: {
+      use: 'openView',
+    },
   },
 });

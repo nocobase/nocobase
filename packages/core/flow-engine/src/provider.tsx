@@ -10,8 +10,7 @@
 import { App, ConfigProvider, theme } from 'antd';
 import React, { createContext, useContext, useEffect } from 'react';
 import { FlowEngine } from './flowEngine';
-import useDrawer from './useDrawer';
-import usePopover from './usePopover';
+import { useDialog, useDrawer, usePage, usePopover } from './views';
 
 interface FlowEngineProviderProps {
   engine: FlowEngine;
@@ -31,7 +30,9 @@ export const FlowEngineProvider: React.FC<FlowEngineProviderProps> = (props) => 
 export const FlowEngineGlobalsContextProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { modal, message, notification } = App.useApp();
   const [drawer, contextHolder] = useDrawer();
+  const [page, pageContextHolder] = usePage();
   const [popover, popoverContextHolder] = usePopover();
+  const [dialog, dialogContextHolder] = useDialog();
   const engine = useFlowEngine();
   const config = useContext(ConfigProvider.ConfigContext);
   const { token } = theme.useToken();
@@ -40,19 +41,24 @@ export const FlowEngineGlobalsContextProvider: React.FC<{ children: React.ReactN
     engine.setContext({
       antdConfig: config,
       themeToken: token,
-      drawer,
       modal,
       message,
       notification,
+      drawer,
       popover,
+      dialog,
+      page,
     });
-  }, [engine, drawer, modal, message, notification, config, popover, token]);
+  }, [engine, drawer, modal, message, notification, config, popover, token, dialog, page]);
 
   return (
     <>
       {children}
       {contextHolder as any}
       {popoverContextHolder as any}
+      {pageContextHolder as any}
+      {dialogContextHolder as any}
+      {/* The modal context is provided by App.useApp() */}
     </>
   );
 };

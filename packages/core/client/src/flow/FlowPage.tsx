@@ -9,9 +9,11 @@
 
 import { FlowModelRenderer, useFlowEngine, useFlowModelById } from '@nocobase/flow-engine';
 import { useRequest } from 'ahooks';
-import { Spin } from 'antd';
-import React from 'react';
+import { Card, Skeleton, Spin } from 'antd';
+import React, { useEffect, useMemo, useRef } from 'react';
 import { useParams } from 'react-router-dom';
+import { useKeepAlive } from '../route-switch';
+import { SkeletonFallback } from './components/SkeletonFallback';
 
 function InternalFlowPage({ uid, sharedContext }) {
   const model = useFlowModelById(uid);
@@ -19,6 +21,7 @@ function InternalFlowPage({ uid, sharedContext }) {
     <FlowModelRenderer
       model={model}
       sharedContext={sharedContext}
+      fallback={<SkeletonFallback />}
       showFlowSettings={{ showBackground: false, showBorder: false }}
       hideRemoveInSettings
     />
@@ -26,17 +29,41 @@ function InternalFlowPage({ uid, sharedContext }) {
 }
 
 export const FlowRoute = () => {
+  const layoutContentRef = useRef(null);
+  const flowEngine = useFlowEngine();
   const params = useParams();
-  return <FlowPage uid={`r_${params.name}`} />;
+  // const { active } = useKeepAlive();
+  const model = useMemo(() => {
+    return flowEngine.createModel({
+      uid: params.name,
+      use: 'RouteModel',
+    });
+  }, [params.name, flowEngine]);
+  useEffect(() => {
+    // if (!active) {
+    //   return;
+    // }
+    if (!layoutContentRef.current) {
+      return;
+    }
+    model.setSharedContext({
+      layoutContentElement: layoutContentRef.current,
+    });
+    model.dispatchEvent('click', { target: layoutContentRef.current });
+  }, [model, params.name]);
+  return <div ref={layoutContentRef} />;
 };
 
 export const FlowPage = (props) => {
-  const { uid, parentId, sharedContext } = props;
+  const { parentId, sharedContext } = props;
   const flowEngine = useFlowEngine();
   const { loading, data } = useRequest(
     async () => {
       const options = {
-        uid,
+        async: true,
+        parentId,
+        subKey: 'page',
+        subType: 'object',
         use: 'PageModel',
         subModels: {
           tabs: [
@@ -51,21 +78,15 @@ export const FlowPage = (props) => {
           ],
         },
       };
-      if (!uid && parentId) {
-        options['async'] = true;
-        options['parentId'] = parentId;
-        options['subKey'] = 'page';
-        options['subType'] = 'object';
-      }
       const data = await flowEngine.loadOrCreateModel(options);
       return data;
     },
     {
-      refreshDeps: [uid || parentId],
+      refreshDeps: [parentId],
     },
   );
   if (loading || !data?.uid) {
-    return <Spin />;
+    return <SkeletonFallback />;
   }
   return <InternalFlowPage uid={data.uid} sharedContext={sharedContext} />;
 };

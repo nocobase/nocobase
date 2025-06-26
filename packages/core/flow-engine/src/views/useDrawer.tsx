@@ -13,7 +13,7 @@ import usePatchElement from './usePatchElement';
 
 let uuid = 0;
 
-function useDrawer() {
+export function useDrawer() {
   const holderRef = React.useRef(null);
 
   const open = (config) => {
@@ -22,11 +22,25 @@ function useDrawer() {
 
     // eslint-disable-next-line prefer-const
     let closeFunc: (() => void) | undefined;
-
     let resolvePromise: (value?: any) => void;
     const promise = new Promise((resolve) => {
       resolvePromise = resolve;
     });
+
+    // 构造 currentDrawer 实例
+    const currentDrawer = {
+      destroy: () => drawerRef.current?.destroy(),
+      update: (newConfig) => drawerRef.current?.update(newConfig),
+      close: (result?: any) => {
+        resolvePromise?.(result);
+        drawerRef.current?.destroy();
+      },
+    };
+
+    // 支持 content 为函数，传递 currentDrawer
+    const content = typeof config.content === 'function' ? config.content(currentDrawer) : config.content;
+
+    console.log('useDrawer open', config, content);
 
     const drawer = (
       <DrawerComponent
@@ -36,16 +50,15 @@ function useDrawer() {
         afterClose={() => {
           closeFunc?.();
           config.onClose?.();
-          resolvePromise?.(config.result); // 支持 config 传递关闭结果
+          resolvePromise?.(config.result);
         }}
-      />
+      >
+        {content}
+      </DrawerComponent>
     );
     closeFunc = holderRef.current?.patchElement(drawer);
 
-    return Object.assign(promise, {
-      destroy: () => drawerRef.current?.destroy(),
-      update: (newConfig) => drawerRef.current?.update(newConfig),
-    });
+    return Object.assign(promise, currentDrawer);
   };
 
   const api = React.useMemo(() => ({ open }), []);
@@ -59,5 +72,3 @@ function useDrawer() {
 
   return [api, <ElementsHolder key="drawer-holder" ref={holderRef} />];
 }
-
-export default useDrawer;

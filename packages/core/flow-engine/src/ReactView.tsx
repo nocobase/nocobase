@@ -7,22 +7,40 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { ConfigProvider } from 'antd';
+import { App, ConfigProvider } from 'antd';
 import React from 'react';
-import { Root, createRoot } from 'react-dom/client';
+import { Root, RootOptions, createRoot } from 'react-dom/client';
 import { FlowEngine } from './flowEngine';
 import { FlowEngineProvider } from './provider';
 
 function Provider({ config, engine, children }) {
   return (
     <FlowEngineProvider engine={engine}>
-      <ConfigProvider {...config}>{children}</ConfigProvider>
+      <ConfigProvider {...config}>
+        <App>{children}</App>
+      </ConfigProvider>
     </FlowEngineProvider>
   );
 }
 
 export class ReactView {
   constructor(private flowEngine: FlowEngine) {}
+
+  createRoot(container: HTMLElement, options: RootOptions = {}): Root {
+    const root = createRoot(container, options);
+    return {
+      render: (children: React.ReactNode) => {
+        root.render(
+          <Provider engine={this.flowEngine} config={this.flowEngine.context['antdConfig']}>
+            {children}
+          </Provider>,
+        );
+      },
+      unmount: () => {
+        root.unmount();
+      },
+    };
+  }
 
   render(children: React.ReactNode | ((root: Root) => React.ReactNode), options: any = {}) {
     const container = document.createElement('span');

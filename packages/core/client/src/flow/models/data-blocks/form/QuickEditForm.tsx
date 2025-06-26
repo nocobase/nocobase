@@ -98,7 +98,13 @@ export class QuickEditForm extends FlowModel {
               <FormProvider form={this.form}>
                 <FormLayout layout={'vertical'}>
                   {this.mapSubModels('fields', (field) => {
-                    return <FlowModelRenderer model={field} fallback={<Skeleton paragraph={{ rows: 2 }} />} />;
+                    return (
+                      <FlowModelRenderer
+                        model={field}
+                        sharedContext={{ currentRecord: this.resource.getData() }}
+                        fallback={<Skeleton paragraph={{ rows: 2 }} />}
+                      />
+                    );
                   })}
                 </FormLayout>
                 <FormButtonGroup>

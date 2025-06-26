@@ -27,13 +27,9 @@ AddNewActionModel.registerFlow({
   },
   steps: {
     popup: {
-      use: 'popup',
+      use: 'openView',
       defaultParams(ctx) {
-        return {
-          sharedContext: {
-            parentBlockModel: ctx.shared?.currentBlockModel,
-          },
-        };
+        return {};
       },
     },
   },

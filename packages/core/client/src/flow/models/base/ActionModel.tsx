@@ -65,7 +65,6 @@ ActionModel.registerFlow({
         ctx.model.setProps('icon', params.icon);
         ctx.model.setProps('onClick', (event) => {
           ctx.model.dispatchEvent('click', {
-            ...ctx.extra,
             event,
           });
         });
@@ -93,3 +92,49 @@ export class RecordActionModel extends ActionModel {
     );
   }
 }
+
+RecordActionModel.registerFlow({
+  key: 'default',
+  title: '通用配置',
+  auto: true,
+  steps: {
+    buttonProps: {
+      title: '编辑按钮',
+      uiSchema: {
+        title: {
+          'x-decorator': 'FormItem',
+          'x-component': 'Input',
+          title: 'Button title',
+        },
+        icon: {
+          'x-decorator': 'FormItem',
+          'x-component': IconPicker,
+          title: 'Button icon',
+        },
+      },
+      defaultParams(ctx) {
+        return {
+          title: ctx.model.defaultProps.title,
+          icon: ctx.model.defaultProps.icon,
+        };
+      },
+      handler(ctx, params) {
+        const { currentRecord, currentBlockModel } = ctx.shared;
+        if (!currentRecord) {
+          throw new Error('Current record is not set in shared context');
+        }
+        if (!currentBlockModel) {
+          throw new Error('Current block model is not set in shared context');
+        }
+        ctx.model.setProps('title', params.title);
+        ctx.model.setProps('icon', params.icon);
+        ctx.model.setProps('onClick', (event) => {
+          ctx.model.dispatchEvent('click', {
+            event,
+            filterByTk: currentRecord[currentBlockModel.collection.filterTargetKey],
+          });
+        });
+      },
+    },
+  },
+});

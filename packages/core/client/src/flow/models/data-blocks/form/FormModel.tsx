@@ -29,7 +29,7 @@ export class FormModel extends DataBlockModel {
               <FlowModelRenderer
                 model={field}
                 showFlowSettings={{ showBorder: false }}
-                // sharedContext={{ currentBlockModel: this }}
+                sharedContext={{ currentRecord: this.resource.getData() }}
               />
             ))}
           </FormLayout>
@@ -59,7 +59,7 @@ export class FormModel extends DataBlockModel {
               <FlowModelRenderer
                 model={action}
                 showFlowSettings={{ showBackground: false, showBorder: false }}
-                // sharedContext={{ currentBlockModel: this }}
+                sharedContext={{ currentRecord: this.resource.getData() }}
               />
             ))}
             <AddActionButton model={this} subModelBaseClass="FormActionModel" />
@@ -114,8 +114,9 @@ FormModel.registerFlow({
           ctx.model.resource = resource;
         }
         await ctx.model.applySubModelsAutoFlows('fields');
-        if (ctx.shared.parentRecord) {
-          ctx.model.resource.setFilterByTk(ctx.shared.parentRecord.id);
+        const filterByTk = ctx.shared?.currentFlow?.extra?.filterByTk;
+        if (filterByTk) {
+          ctx.model.resource.setFilterByTk(filterByTk);
           await ctx.model.resource.refresh();
           ctx.model.form.setInitialValues(ctx.model.resource.getData());
         }

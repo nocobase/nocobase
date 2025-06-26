@@ -7,19 +7,12 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import type { ButtonProps } from 'antd/es/button';
-import { RecordActionModel } from '../base/ActionModel';
+import { DefaultStructure, FlowModel } from '@nocobase/flow-engine';
 
-export class ViewActionModel extends RecordActionModel {
-  defaultProps: ButtonProps = {
-    type: 'link',
-    title: 'View',
-  };
-}
+export class RouteModel<T = DefaultStructure> extends FlowModel<T> {}
 
-ViewActionModel.registerFlow({
+RouteModel.registerFlow({
   key: 'handleClick',
-  title: '点击事件',
   on: {
     eventName: 'click',
   },
@@ -27,7 +20,10 @@ ViewActionModel.registerFlow({
     openView: {
       use: 'openView',
       defaultParams(ctx) {
-        return {};
+        return {
+          mode: 'page',
+          sharedContext: {},
+        };
       },
     },
   },

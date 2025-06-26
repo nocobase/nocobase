@@ -56,8 +56,8 @@ export class TableColumnModel extends FieldModel {
       <>
         {this.mapSubModels('field', (action: ReadPrettyFieldModel) => {
           const fork = action.createFork({}, `${index}`);
-          fork.setSharedContext({ index, value, record });
-          return <FlowEngineProvider engine={this.flowEngine}>{fork.render()}</FlowEngineProvider>;
+          fork.setSharedContext({ index, value, currentRecord: record });
+          return fork.render();
         })}
       </>
     );

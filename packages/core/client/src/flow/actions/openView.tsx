@@ -11,16 +11,17 @@ import { defineAction } from '@nocobase/flow-engine';
 import React from 'react';
 import { FlowPage } from '../FlowPage';
 
-export const popup = defineAction({
-  name: 'popup',
-  title: '弹窗配置',
+export const openView = defineAction({
+  name: 'openView',
+  title: '打开方式配置',
   uiSchema: {
     mode: {
       type: 'string',
       title: '打开方式',
       enum: [
         { label: 'Drawer', value: 'drawer' },
-        { label: 'Modal', value: 'modal' },
+        { label: 'Dialog', value: 'dialog' },
+        { label: 'Page', value: 'page' },
       ],
       'x-decorator': 'FormItem',
       'x-component': 'Radio.Group',
@@ -43,19 +44,6 @@ export const popup = defineAction({
   },
   async handler(ctx, params) {
     // eslint-disable-next-line prefer-const
-    let currentDrawer: any;
-
-    function DrawerContent() {
-      return (
-        <FlowPage
-          parentId={ctx.model.uid}
-          sharedContext={{
-            ...params.sharedContext,
-            currentDrawer,
-          }}
-        />
-      );
-    }
 
     const sizeToWidthMap: Record<string, number> = {
       small: 480,
@@ -63,12 +51,25 @@ export const popup = defineAction({
       large: 1200,
     };
 
-    currentDrawer = await ctx.globals[params.mode || 'drawer'].open({
-      // title: '命令式 Drawer',
+    await ctx.globals[ctx.extra.mode || params.mode || 'drawer'].open({
+      target: ctx.extra.target || ctx.shared.layoutContentElement,
       width: sizeToWidthMap[params.size || 'medium'],
-      content: <DrawerContent />,
-      style: {
-        backgroundColor: 'var(--nb-box-bg)',
+      content: (currentView) => {
+        return (
+          <FlowPage
+            parentId={ctx.model.uid}
+            sharedContext={{
+              currentFlow: ctx,
+              currentView: currentView,
+            }}
+          />
+        );
+      },
+      styles: {
+        content: {
+          background: 'var(--nb-box-bg)',
+          padding: 0,
+        },
       },
       bodyStyle: {
         padding: 0,

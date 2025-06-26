@@ -25,16 +25,9 @@ PopupRecordActionModel.registerFlow({
   },
   steps: {
     popup: {
-      use: 'popup',
+      use: 'openView',
       defaultParams(ctx) {
-        return {
-          sharedContext: {
-            parentExtra: ctx.extra,
-            parentShared: ctx.shared,
-            parentRecord: ctx.extra?.currentRecord,
-            parentBlockModel: ctx.shared?.currentBlockModel,
-          },
-        };
+        return {};
       },
     },
   },

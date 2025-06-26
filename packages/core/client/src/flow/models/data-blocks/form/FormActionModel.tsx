@@ -39,12 +39,12 @@ FormSubmitActionModel.registerFlow({
         const values = currentBlockModel.form.values;
         await currentBlockModel.resource.save(values);
         await currentBlockModel.form.reset();
-        const parentBlockModel = ctx.shared.parentBlockModel as DataBlockModel;
+        const parentBlockModel = ctx.shared?.currentFlow?.shared?.currentBlockModel as DataBlockModel;
         if (parentBlockModel) {
           parentBlockModel.resource.refresh();
         }
-        if (ctx.shared.currentDrawer) {
-          ctx.shared.currentDrawer.destroy();
+        if (ctx.shared.currentView) {
+          ctx.shared.currentView.destroy();
         }
       },
     },
