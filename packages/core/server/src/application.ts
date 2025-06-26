@@ -455,6 +455,32 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   }
 
   /**
+   * Check if the application is serving as a specific worker.
+   * @experimental
+   */
+  public serving(key?: string): boolean {
+    const { WORKER_MODE = '' } = process.env;
+    if (!WORKER_MODE) {
+      return true;
+    }
+    const topics = WORKER_MODE.trim().split(',');
+    if (key) {
+      if (WORKER_MODE === '*') {
+        return true;
+      }
+      if (topics.includes(key)) {
+        return true;
+      }
+      return false;
+    } else {
+      if (topics.includes('!')) {
+        return true;
+      }
+      return false;
+    }
+  }
+
+  /**
    * @internal
    */
   getMaintaining() {
