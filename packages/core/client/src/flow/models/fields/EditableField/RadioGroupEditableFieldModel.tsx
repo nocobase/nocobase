@@ -7,6 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { EditableFieldModel } from '../../fields/EditableField/EditableFieldModel';
+import { Radio } from '@formily/antd-v5';
+import { EditableFieldModel } from './EditableFieldModel';
 
-export class FilterFormFieldModel extends EditableFieldModel {}
+export class RadioGroupEditableFieldModel extends EditableFieldModel {
+  static supportedFieldInterfaces = ['radioGroup'];
+
+  get component() {
+    return [Radio.Group, {}];
+  }
+}

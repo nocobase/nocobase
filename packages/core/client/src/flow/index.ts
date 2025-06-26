@@ -14,7 +14,7 @@ import * as actions from './actions';
 import { FlowEngineRunner } from './FlowEngineRunner';
 import { FlowModelRepository, MockFlowModelRepository } from './FlowModelRepository';
 import { FlowRoute } from './FlowPage';
-import { DateTimeFormat } from './flowSetting/DateTimeFormat';
+import { dateTimeFormat } from './flowSetting/DateTimeFormat';
 import * as models from './models';
 
 export class PluginFlowEngine extends Plugin {
@@ -40,7 +40,7 @@ export class PluginFlowEngine extends Plugin {
     dataSourceManager.addDataSource(mainDataSource);
     this.app.addProvider(FlowEngineRunner, {});
     // 注册通用 flow
-    this.flowEngine.registerAction(DateTimeFormat);
+    this.flowEngine.registerAction(dateTimeFormat);
   }
 }
 

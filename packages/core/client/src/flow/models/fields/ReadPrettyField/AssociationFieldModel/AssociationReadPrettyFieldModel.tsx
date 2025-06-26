@@ -7,6 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { EditableFieldModel } from '../../fields/EditableField/EditableFieldModel';
+import React from 'react';
+import { ReadPrettyFieldModel } from '../ReadPrettyFieldModel';
 
-export class FilterFormFieldModel extends EditableFieldModel {}
+export class AssociationReadPrettyFieldModel extends ReadPrettyFieldModel {
+  resource;
+  targetCollection;
+}

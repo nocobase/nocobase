@@ -14,6 +14,7 @@ import { AddActionButton, AddFieldButton, FlowModelRenderer, SingleRecordResourc
 import { Card } from 'antd';
 import React from 'react';
 import { DataBlockModel } from '../../base/BlockModel';
+import { EditableFieldModel } from '../../fields/EditableField/EditableFieldModel';
 
 export class FormModel extends DataBlockModel {
   form: Form;
@@ -48,7 +49,10 @@ export class FormModel extends DataBlockModel {
             subModelKey="fields"
             model={this}
             collection={this.collection}
-            subModelBaseClass="FormFieldModel"
+            subModelBaseClass="EditableFieldModel"
+            onSubModelAdded={async (model: EditableFieldModel) => {
+              this.addAppends(model.fieldPath, true);
+            }}
           />
           <FormButtonGroup style={{ marginTop: 16 }}>
             {this.mapSubModels('actions', (action) => (

@@ -7,6 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { EditableFieldModel } from '../../fields/EditableField/EditableFieldModel';
+import { Checkbox } from '@formily/antd-v5';
+import { EditableFieldModel } from './EditableFieldModel';
 
-export class FilterFormFieldModel extends EditableFieldModel {}
+export class CheckboxGroupEditableFieldModel extends EditableFieldModel {
+  static supportedFieldInterfaces = ['checkboxGroup'];
+
+  get component() {
+    return [Checkbox.Group, {}];
+  }
+}

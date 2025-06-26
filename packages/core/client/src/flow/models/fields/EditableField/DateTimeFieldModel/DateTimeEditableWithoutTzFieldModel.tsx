@@ -7,6 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { EditableFieldModel } from '../../fields/EditableField/EditableFieldModel';
+import { DateTimeFieldModel } from './DateTimeFieldModel';
 
-export class FilterFormFieldModel extends EditableFieldModel {}
+export class DateTimeEditableWithoutTzFieldModel extends DateTimeFieldModel {
+  static supportedFieldInterfaces = ['datetimeNoTz'];
+}
