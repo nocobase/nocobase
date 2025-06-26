@@ -299,6 +299,10 @@ TableModel.registerFlow({
         await ctx.model.resource.refresh();
       },
     },
+    dataScope: {
+      use: 'dataScope',
+      title: '设置数据范围',
+    },
   },
 });
 
