@@ -122,6 +122,11 @@
 - **setParent(parent: FlowModel): void**  
   设置父模型。
 
+- **moveTo(targetModel: FlowModel): boolean**  
+  将当前模型移动到目标模型的位置。要求两个模型有相同的父模型且都在数组类型的子模型集合中。
+  - 返回 `true` 表示移动成功
+  - 返回 `false` 表示移动失败（会输出错误日志）
+
 - **createRootModel(options): FlowModel**  
   通过 flowEngine 创建根模型。
 
