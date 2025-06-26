@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { FormItem, Input } from '@formily/antd-v5';
 import type { FieldPatternTypes, FieldValidator } from '@formily/core';
 import { Field, Form } from '@formily/core';
@@ -5,10 +14,15 @@ import { FieldContext } from '@formily/react';
 import React from 'react';
 import { FieldModel } from '../../base/FieldModel';
 import { ReactiveField } from '../../../formily/ReactiveField';
+import { FormModel } from '../..';
 
 type FieldComponentTuple = [component: React.ElementType, props: Record<string, any>] | any[];
 
-export class EditableFieldModel extends FieldModel {
+type Structure = {
+  parent: FormModel;
+};
+
+export class EditableFieldModel extends FieldModel<Structure> {
   field: Field;
   get form() {
     return this.parent.form as Form;
