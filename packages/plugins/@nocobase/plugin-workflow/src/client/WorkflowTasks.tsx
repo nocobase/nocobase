@@ -282,7 +282,7 @@ function TaskPageContent() {
     if (popupId && !currentRecord) {
       let load;
       if (getPopupRecord) {
-        load = getPopupRecord(apiClient, { params: { ...params, filterByTk: popupId } });
+        load = getPopupRecord(apiClient, { params: { filterByTk: popupId } });
       } else {
         load = apiClient.resource(collection).get({
           ...params,
@@ -299,7 +299,7 @@ function TaskPageContent() {
           console.error(err);
         });
     }
-  }, [popupId, collection, currentRecord, apiClient, getPopupRecord]);
+  }, [popupId, collection, currentRecord, apiClient, getPopupRecord, params]);
 
   useEffect(() => {
     if (!taskType) {
