@@ -41,10 +41,17 @@ const renderToolbarItems = (
   showCopyUidButton: boolean,
   flowEngine: FlowEngine,
   settingsMenuLevel?: number,
+  extralToolbarItems?: ToolbarItemConfig[],
 ) => {
   const toolbarItems = flowEngine?.flowSettings?.getToolbarItems?.() || [];
 
-  return toolbarItems
+  // 合并额外的工具栏项目
+  const allToolbarItems = [...toolbarItems, ...(extralToolbarItems || [])];
+
+  // 按 sort 字段排序
+  allToolbarItems.sort((a, b) => (a.sort || 0) - (b.sort || 0)).reverse();
+
+  return allToolbarItems
     .filter((itemConfig: ToolbarItemConfig) => {
       // 检查项目是否应该显示
       return itemConfig.visible ? itemConfig.visible(model) : true;
@@ -150,6 +157,10 @@ interface ModelProvidedProps {
    * Settings menu levels: 1=current model only (default), 2=include sub-models
    */
   settingsMenuLevel?: number;
+  /**
+   * Extra toolbar items to add to this context menu instance
+   */
+  extralToolbarItems?: ToolbarItemConfig[];
 }
 
 interface ModelByIdProps {
@@ -173,6 +184,10 @@ interface ModelByIdProps {
    * Settings menu levels: 1=current model only (default), 2=include sub-models
    */
   settingsMenuLevel?: number;
+  /**
+   * Extra toolbar items to add to this context menu instance
+   */
+  extralToolbarItems?: ToolbarItemConfig[];
 }
 
 type FlowsFloatContextMenuProps = ModelProvidedProps | ModelByIdProps;
@@ -204,6 +219,7 @@ const isModelByIdProps = (props: FlowsFloatContextMenuProps): props is ModelById
  * @param props.containerStyle 容器自定义样式
  * @param props.className 容器自定义类名
  * @param props.settingsMenuLevel 设置菜单层级：1=仅当前模型(默认)，2=包含子模型
+ * @param props.extralToolbarItems 额外的工具栏项目，仅应用于此实例
  */
 const FlowsFloatContextMenu: React.FC<FlowsFloatContextMenuProps> = observer((props) => {
   const flowEngine = useFlowEngine();
@@ -231,6 +247,7 @@ const FlowsFloatContextMenuWithModel: React.FC<ModelProvidedProps> = observer(
     showBackground = true,
     showBorder = true,
     settingsMenuLevel,
+    extralToolbarItems,
   }: ModelProvidedProps) => {
     const [hideMenu, setHideMenu] = useState<boolean>(false);
     const [hasButton, setHasButton] = useState<boolean>(false);
@@ -305,7 +322,14 @@ const FlowsFloatContextMenuWithModel: React.FC<ModelProvidedProps> = observer(
         <div className="general-schema-designer">
           <div className="general-schema-designer-icons">
             <Space size={3} align="center">
-              {renderToolbarItems(model, showDeleteButton, showCopyUidButton, flowEngine, settingsMenuLevel)}
+              {renderToolbarItems(
+                model,
+                showDeleteButton,
+                showCopyUidButton,
+                flowEngine,
+                settingsMenuLevel,
+                extralToolbarItems,
+              )}
             </Space>
           </div>
         </div>
@@ -326,6 +350,7 @@ const FlowsFloatContextMenuWithModelById: React.FC<ModelByIdProps> = observer(
     containerStyle,
     className,
     settingsMenuLevel,
+    extralToolbarItems,
   }) => {
     const model = useFlowModelById(uid, modelClassName);
 
@@ -342,6 +367,7 @@ const FlowsFloatContextMenuWithModelById: React.FC<ModelByIdProps> = observer(
         containerStyle={containerStyle}
         className={className}
         settingsMenuLevel={settingsMenuLevel}
+        extralToolbarItems={extralToolbarItems}
       >
         {children}
       </FlowsFloatContextMenuWithModel>

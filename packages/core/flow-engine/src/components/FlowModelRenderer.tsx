@@ -42,6 +42,7 @@ import React, { Suspense, useEffect } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 import { useApplyAutoFlows, FlowModelProvider } from '../hooks';
 import { FlowModel } from '../models';
+import { ToolbarItemConfig } from '../types';
 import { FlowsContextMenu } from './settings/wrappers/contextual/FlowsContextMenu';
 import { FlowsFloatContextMenu } from './settings/wrappers/contextual/FlowsFloatContextMenu';
 import { FlowErrorFallback } from './FlowErrorFallback';
@@ -75,6 +76,9 @@ interface FlowModelRendererProps {
 
   /** 设置菜单层级：1=仅当前模型(默认)，2=包含子模型 */
   settingsMenuLevel?: number;
+
+  /** 额外的工具栏项目，仅应用于此实例 */
+  extralToolbarItems?: ToolbarItemConfig[];
 }
 
 /**
@@ -89,6 +93,7 @@ const FlowModelRendererWithAutoFlows: React.FC<{
   sharedContext?: Record<string, any>;
   showErrorFallback?: boolean;
   settingsMenuLevel?: number;
+  extralToolbarItems?: ToolbarItemConfig[];
 }> = observer(
   ({
     model,
@@ -99,6 +104,7 @@ const FlowModelRendererWithAutoFlows: React.FC<{
     sharedContext,
     showErrorFallback,
     settingsMenuLevel,
+    extralToolbarItems,
   }) => {
     useApplyAutoFlows(model, extraContext);
 
@@ -111,6 +117,7 @@ const FlowModelRendererWithAutoFlows: React.FC<{
           hideRemoveInSettings={hideRemoveInSettings}
           showErrorFallback={showErrorFallback}
           settingsMenuLevel={settingsMenuLevel}
+          extralToolbarItems={extralToolbarItems}
         />
       </FlowModelProvider>
     );
@@ -128,6 +135,7 @@ const FlowModelRendererWithoutAutoFlows: React.FC<{
   sharedContext?: Record<string, any>;
   showErrorFallback?: boolean;
   settingsMenuLevel?: number;
+  extralToolbarItems?: ToolbarItemConfig[];
 }> = observer(
   ({
     model,
@@ -137,6 +145,7 @@ const FlowModelRendererWithoutAutoFlows: React.FC<{
     sharedContext,
     showErrorFallback,
     settingsMenuLevel,
+    extralToolbarItems,
   }) => {
     return (
       <FlowModelProvider model={model}>
@@ -147,6 +156,7 @@ const FlowModelRendererWithoutAutoFlows: React.FC<{
           hideRemoveInSettings={hideRemoveInSettings}
           showErrorFallback={showErrorFallback}
           settingsMenuLevel={settingsMenuLevel}
+          extralToolbarItems={extralToolbarItems}
         />
       </FlowModelProvider>
     );
@@ -163,8 +173,17 @@ const FlowModelRendererCore: React.FC<{
   hideRemoveInSettings: boolean;
   showErrorFallback?: boolean;
   settingsMenuLevel?: number;
+  extralToolbarItems?: ToolbarItemConfig[];
 }> = observer(
-  ({ model, showFlowSettings, flowSettingsVariant, hideRemoveInSettings, showErrorFallback, settingsMenuLevel }) => {
+  ({
+    model,
+    showFlowSettings,
+    flowSettingsVariant,
+    hideRemoveInSettings,
+    showErrorFallback,
+    settingsMenuLevel,
+    extralToolbarItems,
+  }) => {
     // 渲染模型内容
     const modelContent = model.render();
 
@@ -191,6 +210,7 @@ const FlowModelRendererCore: React.FC<{
             showBackground={_.isObject(showFlowSettings) ? showFlowSettings.showBackground : undefined}
             showBorder={_.isObject(showFlowSettings) ? showFlowSettings.showBorder : undefined}
             settingsMenuLevel={settingsMenuLevel}
+            extralToolbarItems={extralToolbarItems}
           >
             {wrapWithErrorBoundary(modelContent)}
           </FlowsFloatContextMenu>
@@ -224,6 +244,7 @@ const FlowModelRendererCore: React.FC<{
             showBackground={_.isObject(showFlowSettings) ? showFlowSettings.showBackground : undefined}
             showBorder={_.isObject(showFlowSettings) ? showFlowSettings.showBorder : undefined}
             settingsMenuLevel={settingsMenuLevel}
+            extralToolbarItems={extralToolbarItems}
           >
             {wrapWithErrorBoundary(modelContent)}
           </FlowsFloatContextMenu>
@@ -246,6 +267,7 @@ const FlowModelRendererCore: React.FC<{
  * @param {any} props.extraContext - Extra context to pass to useApplyAutoFlows when skipApplyAutoFlows is false.
  * @param {any} props.sharedContext - Shared context to pass to the model.
  * @param {number} props.settingsMenuLevel - Settings menu levels: 1=current model only (default), 2=include sub-models.
+ * @param {ToolbarItemConfig[]} props.extralToolbarItems - Extra toolbar items to add to this renderer instance.
  * @returns {React.ReactNode | null} The rendered output of the model, or null if the model or its render method is invalid.
  */
 export const FlowModelRenderer: React.FC<FlowModelRendererProps> = observer(
@@ -260,6 +282,7 @@ export const FlowModelRenderer: React.FC<FlowModelRendererProps> = observer(
     sharedContext,
     showErrorFallback = false,
     settingsMenuLevel,
+    extralToolbarItems,
   }) => {
     if (!model || typeof model.render !== 'function') {
       // 可以选择渲染 null 或者一个错误/提示信息
@@ -283,6 +306,7 @@ export const FlowModelRenderer: React.FC<FlowModelRendererProps> = observer(
             sharedContext={sharedContext}
             showErrorFallback={showErrorFallback}
             settingsMenuLevel={settingsMenuLevel}
+            extralToolbarItems={extralToolbarItems}
           />
         </Suspense>
       );
@@ -298,6 +322,7 @@ export const FlowModelRenderer: React.FC<FlowModelRendererProps> = observer(
             sharedContext={sharedContext}
             showErrorFallback={showErrorFallback}
             settingsMenuLevel={settingsMenuLevel}
+            extralToolbarItems={extralToolbarItems}
           />
         </Suspense>
       );
