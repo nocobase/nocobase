@@ -10,7 +10,7 @@
 import { createSchemaField, ISchema } from '@formily/react';
 import { message } from 'antd';
 import React from 'react';
-import { ActionStepDefinition, StepSettingsDialogProps } from '../../../../types';
+import { StepSettingsDialogProps } from '../../../../types';
 import { resolveDefaultParams } from '../../../../utils';
 import { StepSettingContextProvider, StepSettingContextType, useStepSettingContext } from './StepSettingContext';
 
@@ -54,14 +54,13 @@ const openStepSettingsDialog = async ({
   const title = dialogTitle || (step ? `${step.title || stepKey} - 配置` : `步骤配置 - ${stepKey}`);
 
   // 获取可配置的步骤信息
-  const stepDefinition = step as ActionStepDefinition;
-  const stepUiSchema = stepDefinition.uiSchema || {};
+  const stepUiSchema = step.uiSchema || {};
   let actionDefaultParams = {};
 
   // 如果step使用了action，也获取action的uiSchema
   let actionUiSchema = {};
-  if (stepDefinition.use) {
-    const action = model.flowEngine?.getAction?.(stepDefinition.use);
+  if (step.use) {
+    const action = model.flowEngine?.getAction?.(step.use);
     if (action && action.uiSchema) {
       actionUiSchema = action.uiSchema;
     }
@@ -95,7 +94,7 @@ const openStepSettingsDialog = async ({
   };
 
   // 解析 defaultParams
-  const resolvedDefaultParams = await resolveDefaultParams(stepDefinition.defaultParams, paramsContext);
+  const resolvedDefaultParams = await resolveDefaultParams(step.defaultParams, paramsContext);
   const resolveActionDefaultParams = await resolveDefaultParams(actionDefaultParams, paramsContext);
   const initialValues = { ...resolveActionDefaultParams, ...resolvedDefaultParams, ...stepParams };
 
@@ -132,7 +131,7 @@ const openStepSettingsDialog = async ({
       destroyOnClose: true,
     },
     (form) => {
-      const flowEngine = model.flowEngine || {};
+      const flowEngine = model.flowEngine;
 
       // 创建上下文值
       const contextValue: StepSettingContextType = {
