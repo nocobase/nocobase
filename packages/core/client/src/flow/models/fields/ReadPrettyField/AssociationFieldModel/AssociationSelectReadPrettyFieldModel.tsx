@@ -64,14 +64,16 @@ export class AssociationSelectReadPrettyFieldModel extends AssociationReadPretty
     model.setParent(this.parent);
     if (Array.isArray(value)) {
       return (
-        <div style={{ display: 'flex', flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
           {value.map((v, idx) => {
             const mol = model.createFork({}, `${idx}`);
             mol.setSharedContext({ index: idx, value: v?.[fieldNames.label], record: this.ctx.shared.record });
             return (
               <React.Fragment key={idx}>
                 {idx > 0 && <span style={{ color: 'rgb(170, 170, 170)' }}>,</span>}
-                <FlowEngineProvider engine={this.flowEngine}>{mol.render()}</FlowEngineProvider>
+                <FlowEngineProvider engine={this.flowEngine}>
+                  {v?.[fieldNames.label] ? mol.render() : 'N/A'}
+                </FlowEngineProvider>
               </React.Fragment>
             );
           })}

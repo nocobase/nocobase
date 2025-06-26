@@ -47,21 +47,15 @@ export class SelectReadPrettyFieldModel extends ReadPrettyFieldModel {
   @reactive
   public render() {
     const value = this.getValue();
-    const { prefix = '', suffix = '', dataSource = [] } = this.props;
+    const { dataSource = [] } = this.props;
     const currentOptions = getCurrentOptions(value, dataSource, fieldNames);
-    const content =
+    const content: any =
       value &&
       currentOptions.map((option, index) => (
         <Tag key={option[fieldNames.value]} color={option[fieldNames.color]}>
           {option[fieldNames.label]}
         </Tag>
       ));
-    return (
-      <div>
-        {prefix}
-        {content}
-        {suffix}
-      </div>
-    );
+    return content;
   }
 }
