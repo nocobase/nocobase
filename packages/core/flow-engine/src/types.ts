@@ -292,6 +292,11 @@ export interface DefaultStructure {
 }
 
 /**
+ * 提取Structure中parent的类型，如果没有定义则使用FlowModel | null
+ */
+export type ParentFlowModel<Structure> = Structure extends { parent: infer P } ? P : FlowModel | null;
+
+/**
  * Options for FlowModel constructor
  */
 export interface FlowModelOptions<Structure extends { parent?: FlowModel; subModels?: any } = DefaultStructure> {
@@ -321,6 +326,11 @@ export interface FlowModelMeta {
    * @default 0
    */
   sort?: number;
+  /**
+   * 是否在菜单中隐藏该模型类
+   * @default false
+   */
+  hide?: boolean;
 }
 
 /**

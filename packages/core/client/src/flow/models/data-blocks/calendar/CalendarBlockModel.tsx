@@ -49,6 +49,7 @@ export class CalendarBlockModel extends DataBlockModel {
 CalendarBlockModel.define({
   title: 'Calendar',
   group: 'Content',
+  hide: true,
   defaultOptions: {
     use: 'CalendarBlockModel',
   },

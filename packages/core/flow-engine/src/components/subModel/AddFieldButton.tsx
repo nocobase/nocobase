@@ -95,9 +95,9 @@ const AddFieldButtonCore: React.FC<AddFieldButtonProps> = ({
   const buildFieldItems = useMemo<SubModelItemsType>(() => {
     return () => {
       const fieldClassesMap = model.flowEngine.filterModelClassByParent(subModelBaseClass);
-      const fieldClasses = Array.from(fieldClassesMap.values())?.sort(
-        (a, b) => (a.meta?.sort || 0) - (b.meta?.sort || 0),
-      );
+      const fieldClasses = Array.from(fieldClassesMap.values())
+        ?.filter((ModelClass) => !ModelClass.meta?.hide)
+        ?.sort((a, b) => (a.meta?.sort || 0) - (b.meta?.sort || 0));
 
       if (fieldClasses.length === 0) {
         return [];
@@ -109,13 +109,13 @@ const AddFieldButtonCore: React.FC<AddFieldButtonProps> = ({
       }
 
       const allFields = [];
-      const defaultFieldClasses = fieldClasses.find((fieldClass) => fieldClass.supportedFieldInterfaces === '*');
+      const defaultFieldClasses = fieldClasses.find((fieldClass) => fieldClass['supportedFieldInterfaces'] === '*');
 
       for (const field of fields) {
         const fieldInterfaceName = field.options?.interface;
         const fieldClass =
           fieldClasses.find((fieldClass) => {
-            return fieldClass.supportedFieldInterfaces?.includes(fieldInterfaceName);
+            return fieldClass['supportedFieldInterfaces']?.includes(fieldInterfaceName);
           }) || defaultFieldClasses;
         if (fieldClass && fieldInterfaceName) {
           const defaultOptions = {

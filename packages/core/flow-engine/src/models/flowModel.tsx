@@ -24,6 +24,7 @@ import type {
   FlowDefinition,
   FlowModelMeta,
   FlowModelOptions,
+  ParentFlowModel,
   StepDefinition,
   StepParams,
 } from '../types';
@@ -43,7 +44,7 @@ export class FlowModel<Structure extends { parent?: any; subModels?: any } = Def
   public props: IModelComponentProps = {};
   public stepParams: StepParams = {};
   public flowEngine: FlowEngine;
-  public parent: Structure['parent'];
+  public parent: ParentFlowModel<Structure>;
   public subModels: Structure['subModels'];
   private _options: FlowModelOptions<Structure>;
 
@@ -665,7 +666,7 @@ export class FlowModel<Structure extends { parent?: any; subModels?: any } = Def
     if (!parent || !(parent instanceof FlowModel)) {
       throw new Error('Parent must be an instance of FlowModel.');
     }
-    this.parent = parent;
+    this.parent = parent as ParentFlowModel<Structure>;
     this._options.parentId = parent.uid;
   }
 

@@ -36,6 +36,7 @@ export class HtmlBlockModel extends BlockModel {
 HtmlBlockModel.define({
   title: 'HTML',
   group: 'Content',
+  hide: true,
   defaultOptions: {
     use: 'HtmlBlockModel',
     stepParams: {

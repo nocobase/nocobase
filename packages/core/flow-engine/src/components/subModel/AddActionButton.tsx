@@ -77,6 +77,9 @@ const AddActionButtonCore: React.FC<AddActionButtonProps> = ({
       if (filter && !filter(ModelClass, className)) {
         continue;
       }
+      if (ModelClass.meta?.hide) {
+        continue;
+      }
       const item = {
         key: className,
         label: ModelClass.meta?.title || className,
