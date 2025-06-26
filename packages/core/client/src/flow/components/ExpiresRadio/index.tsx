@@ -51,7 +51,6 @@ const DateTimeFormatPreview = ({ content }) => {
 };
 
 const InternalExpiresRadio = (props) => {
-  console.log(props);
   const { onChange, defaultValue, formats, picker } = props;
   const [isCustom, { setFalse, setTrue }] = useBoolean(props.value && !formats.includes(props.value));
   const [targetValue, setTargetValue] = useState(

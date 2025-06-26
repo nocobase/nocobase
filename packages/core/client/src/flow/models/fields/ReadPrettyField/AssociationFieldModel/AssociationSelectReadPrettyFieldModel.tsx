@@ -26,7 +26,7 @@ export class AssociationSelectReadPrettyFieldModel extends AssociationReadPretty
     'updatedBy',
     'createdBy',
   ];
-
+  @reactive
   public render() {
     const { fieldNames } = this.props;
     const value = this.getValue();

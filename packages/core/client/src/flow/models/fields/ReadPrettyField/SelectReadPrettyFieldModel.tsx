@@ -1,5 +1,6 @@
 import React from 'react';
 import { Tag } from 'antd';
+import { reactive } from '@nocobase/flow-engine';
 import { ReadPrettyFieldModel } from './ReadPrettyFieldModel';
 
 interface FieldNames {
@@ -34,6 +35,7 @@ const fieldNames = {
 export class SelectReadPrettyFieldModel extends ReadPrettyFieldModel {
   public static readonly supportedFieldInterfaces = ['select', 'multipleSelect', 'radioGroup', 'checkboxGroup'];
 
+  @reactive
   public render() {
     const value = this.getValue();
     const { prefix = '', suffix = '', dataSource = [] } = this.props;

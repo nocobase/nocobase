@@ -8,10 +8,11 @@
  */
 
 import { css } from '@emotion/css';
+import { defineAction } from '@nocobase/flow-engine';
 import { getPickerFormat } from '@nocobase/utils/client';
 import { ExpiresRadio, DateFormatCom } from '../components';
 
-export const DateTimeFormat = {
+export const dateTimeFormat = defineAction({
   title: 'Date display format',
   name: 'dateDisplayFormat',
   uiSchema: {
@@ -151,13 +152,14 @@ export const DateTimeFormat = {
       ],
     },
   },
-  handler(ctx, params) {
+  handler(ctx: any, params) {
     ctx.model.flowEngine.flowSettings.registerScopes({
       collectionField: ctx.model.collectionField,
     });
-    ctx.model.setProps({ ...params });
+    ctx.model.setProps?.({ ...params });
+    ctx.model.setComponentProps?.({ ...params });
   },
-  defaultParams: (ctx) => {
+  defaultParams: (ctx: any) => {
     const { showTime, dateFormat, timeFormat, picker } = ctx.model.field.componentProps || {};
     return {
       picker: picker || 'date',
@@ -166,4 +168,4 @@ export const DateTimeFormat = {
       showTime,
     };
   },
-};
+});

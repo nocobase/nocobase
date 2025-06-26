@@ -1,5 +1,6 @@
 import React from 'react';
 import dayjs from 'dayjs';
+import { reactive } from '@nocobase/flow-engine';
 import { ReadPrettyFieldModel } from './ReadPrettyFieldModel';
 
 export class DateTimeReadPrettyFieldModel extends ReadPrettyFieldModel {
@@ -11,6 +12,7 @@ export class DateTimeReadPrettyFieldModel extends ReadPrettyFieldModel {
     'updatedAt',
     'unixTimestamp',
   ];
+  @reactive
   public render() {
     const {
       format,
