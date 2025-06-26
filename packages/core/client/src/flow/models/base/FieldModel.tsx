@@ -7,12 +7,12 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { CollectionField, FlowModel } from '@nocobase/flow-engine';
+import { CollectionField, DefaultStructure, FlowModel } from '@nocobase/flow-engine';
 
 // null 表示不支持任何字段接口，* 表示支持所有字段接口
 export type SupportedFieldInterfaces = string[] | '*' | null;
 
-export class FieldModel extends FlowModel {
+export class FieldModel<T = DefaultStructure> extends FlowModel<T> {
   collectionField: CollectionField;
   fieldPath: string;
   public static readonly supportedFieldInterfaces: SupportedFieldInterfaces = null;

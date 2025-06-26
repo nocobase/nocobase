@@ -46,11 +46,11 @@ export interface AddFieldButtonProps {
   /**
    * 创建后的回调函数
    */
-  onModelCreated?: (subModel: FlowModel) => Promise<void>;
+  onModelCreated?: (subModel: FlowModel<any>) => Promise<void>;
   /**
    * 添加到父模型后的回调函数
    */
-  onSubModelAdded?: (subModel: FlowModel) => Promise<void>;
+  onSubModelAdded?: (subModel: FlowModel<any>) => Promise<void>;
   /**
    * 显示的UI组件
    */
