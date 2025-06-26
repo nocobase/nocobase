@@ -11,7 +11,7 @@ import { Input } from '@formily/antd-v5';
 import { EditableFieldModel } from './EditableFieldModel';
 
 export class TextareaEditableFieldModel extends EditableFieldModel {
-  static supportedFieldInterfaces = ['textarea'];
+  static supportedFieldInterfaces = ['textarea', 'markdown'];
 
   setComponentProps(componentProps) {
     super.setComponentProps({

@@ -9,7 +9,7 @@
 import { connect, mapProps, mapReadPretty } from '@formily/react';
 import { Select } from 'antd';
 import React from 'react';
-import { useStepSettingContext, FlowModelRenderer, useFlowEngine, useFlowModel } from '@nocobase/flow-engine';
+import { useStepSettingContext, FlowModelRenderer, useFlowEngine, useFlowModel, reactive } from '@nocobase/flow-engine';
 import { useCompile } from '../../../../../schema-component';
 import { getUniqueKeyFromCollection } from '../../../../../collection-manager/interfaces/utils';
 import { AssociationFieldEditableFieldModel } from './AssociationFieldEditableFieldModel';
@@ -23,7 +23,7 @@ function toValue(record: any | any[], fieldNames, multiple = false) {
   const convert = (item: any) => {
     if (typeof item !== 'object' || item === null) return undefined;
     return {
-      label: item[labelKey],
+      label: <LabelByField option={item} fieldNames={fieldNames} />,
       value: item[valueKey],
     };
   };

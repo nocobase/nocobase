@@ -44,7 +44,7 @@ export class AssociationSelectReadPrettyFieldModel extends AssociationReadPretty
     const fieldClass = fieldClasses.find((fieldClass) => {
       return fieldClass.supportedFieldInterfaces?.includes(fieldInterfaceName);
     });
-    const model: any = this.flowEngine.createModel({
+    const model = this.flowEngine.createModel({
       use: fieldClass?.name || 'ReadPrettyFieldModel',
       stepParams: {
         default: {
@@ -55,26 +55,32 @@ export class AssociationSelectReadPrettyFieldModel extends AssociationReadPretty
           },
         },
       },
+      props: {
+        dataSource: targetLabelField.enum,
+        ...targetLabelField.getComponentProps(),
+      },
     });
+    model.setSharedContext({ ...this.ctx.shared, value: value?.[fieldNames.label] });
     model.setParent(this.parent);
     if (Array.isArray(value)) {
       return (
-        <>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
           {value.map((v, idx) => {
-            const mol = model.createFork({}, { index: idx });
+            const mol = model.createFork({}, `${idx}`);
             mol.setSharedContext({ index: idx, value: v?.[fieldNames.label], record: this.ctx.shared.record });
-            mol.collectionField = targetLabelField;
             return (
               <React.Fragment key={idx}>
-                {idx > 0 && <span>,</span>}
-                <FlowEngineProvider engine={this.flowEngine}>{mol.render()}</FlowEngineProvider>
+                {idx > 0 && <span style={{ color: 'rgb(170, 170, 170)' }}>,</span>}
+                <FlowEngineProvider engine={this.flowEngine}>
+                  {v?.[fieldNames.label] ? mol.render() : 'N/A'}
+                </FlowEngineProvider>
               </React.Fragment>
             );
           })}
-        </>
+        </div>
       );
     }
-    return <FlowModelRenderer model={model} sharedContext={{ ...this.ctx.shared, value: value?.[fieldNames.label] }} />;
+    return <FlowEngineProvider engine={this.flowEngine}>{model.render()}</FlowEngineProvider>;
   }
 }
 

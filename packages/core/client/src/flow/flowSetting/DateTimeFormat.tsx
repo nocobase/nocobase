@@ -156,7 +156,6 @@ export const dateTimeFormat = defineAction({
     ctx.model.flowEngine.flowSettings.registerScopes({
       collectionField: ctx.model.collectionField,
     });
-    ctx.model.setProps?.({ ...params });
     ctx.model.setComponentProps?.({ ...params });
   },
   defaultParams: (ctx: any) => {
