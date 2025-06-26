@@ -17,7 +17,7 @@ import { TreeNode } from '../TreeLabel';
 // 过滤掉系统字段
 export const systemKeys = [
   // 'id',
-  'sort',
+  // 'sort',
   'createdById',
   'createdBy',
   'createdAt',
