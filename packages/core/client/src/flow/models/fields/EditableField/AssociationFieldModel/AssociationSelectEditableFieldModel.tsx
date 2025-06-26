@@ -23,7 +23,7 @@ function toValue(record: any | any[], fieldNames, multiple = false) {
   const convert = (item: any) => {
     if (typeof item !== 'object' || item === null) return undefined;
     return {
-      label: <LabelByField option={record} fieldNames={fieldNames} />,
+      label: <LabelByField option={item} fieldNames={fieldNames} />,
       value: item[valueKey],
     };
   };
