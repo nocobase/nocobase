@@ -13,6 +13,8 @@ import type { CollectionFieldOptions } from '../collection';
 import { CollectionFieldInterfaceManager } from './CollectionFieldInterfaceManager';
 import { defaultProps } from '../../collection-manager/interfaces/properties';
 import { tval } from '@nocobase/utils/client';
+import type { DefaultOptionType as CascaderOptionType } from 'antd/lib/cascader';
+import _ from 'lodash';
 export type CollectionFieldInterfaceFactory = new (
   collectionFieldInterfaceManager: CollectionFieldInterfaceManager,
 ) => CollectionFieldInterface;
@@ -24,7 +26,23 @@ export interface CollectionFieldInterfaceComponentOption {
   useProps?: () => any;
 }
 
-export type AvailableFieldTypes = string[];
+type FieldInterfaceName = string;
+type FieldTypeName = string;
+type FieldDataType = string;
+export interface AvailableFieldOptions {
+  all: {
+    [key: FieldInterfaceName]: {
+      [key: FieldTypeName]: FieldDataType[];
+    };
+  };
+  available: {
+    [key: FieldInterfaceName]: {
+      [key: FieldTypeName]: {
+        [key: FieldDataType]: FieldDataType[];
+      };
+    };
+  };
+}
 
 export abstract class CollectionFieldInterface {
   constructor(public collectionFieldInterfaceManager: CollectionFieldInterfaceManager) {}
@@ -33,7 +51,7 @@ export abstract class CollectionFieldInterface {
   title?: string;
   description?: string;
   order?: number;
-  availableFieldTypes?: AvailableFieldTypes;
+  availableOptions?: AvailableFieldOptions;
   default?: {
     type: string;
     uiSchema?: ISchema;
@@ -173,5 +191,100 @@ export abstract class CollectionFieldInterface {
     }
 
     this.filterable.operators.push(operatorOption);
+  }
+
+  getAllAvailableTypes(): string[] {
+    if (!this.availableOptions?.all || !this.name) {
+      return [];
+    }
+
+    const interfaceOptions = this.availableOptions.all[this.name];
+    if (!interfaceOptions) {
+      return [];
+    }
+
+    const allTypes: string[] = [];
+    Object.values(interfaceOptions).forEach((typeArray) => {
+      if (Array.isArray(typeArray)) {
+        allTypes.push(...typeArray);
+      }
+    });
+
+    return [...new Set(allTypes)];
+  }
+
+  getAvailableOptions(options: {
+    currentValue: [FieldInterfaceName, ...FieldTypeName[], FieldDataType];
+    interfaces: Record<string, CollectionFieldInterface>;
+    compile: (v: string) => string;
+  }): CascaderOptionType[] {
+    const { currentValue, interfaces, compile } = options;
+    const dataType = currentValue[currentValue.length - 1];
+    const allAvailableOptions = this.availableOptions?.all || {};
+    const availableOptions = this.availableOptions?.available || {};
+
+    const result = this.buildTree({
+      all: allAvailableOptions,
+      available: availableOptions,
+      dataType,
+      interfaceMap: interfaces,
+      compile,
+    });
+    return result;
+  }
+
+  private buildTree(options: {
+    all;
+    available;
+    dataType;
+    compile: (v: string) => string;
+    interfaceMap?: Record<string, CollectionFieldInterface>;
+  }) {
+    const { all, available, dataType, compile, interfaceMap } = options;
+    if (Array.isArray(all)) {
+      const allowed = Array.isArray(available?.[dataType]) ? available[dataType] : [];
+      return all.map((item) => ({
+        label: item,
+        value: item,
+        disabled: !allowed.includes(item),
+      }));
+    }
+
+    return Object.entries(all).map(([key, value]) => {
+      const next = available?.[key];
+      const children = this.buildTree({ all: value, available: next, dataType, compile });
+      const disabled = Array.isArray(value) ? children.every((child) => child.disabled) : !next;
+      const label = interfaceMap ? compile(interfaceMap[key]?.title) : key;
+      return {
+        label,
+        value: key,
+        disabled,
+        children,
+      };
+    });
+  }
+
+  // validateFieldType<T extends AvailableFieldOptions>(value: string): keyof T {
+  //   const fieldTypes = this.availableOptions[this.name];
+  //   if (!(value in Object.keys(fieldTypes))) {
+  //     throw new Error(`Field type "${value}" is not supported by interface "${this.name}".`);
+  //   }
+
+  //   return value;
+  // }
+
+  validateFieldDataType(fieldType: string, value: string) {
+    const fieldTypes = this.availableOptions[this.name];
+    if (!fieldTypes || !Array.isArray(fieldTypes)) {
+      throw new Error(`Field type "${value}" is not supported by interface "${this.name}".`);
+    }
+    const dataTypes = Object.keys(fieldTypes).find((x) => x === fieldType);
+    if (!dataTypes || !Array.isArray(dataTypes)) {
+      throw new Error(`Field type "${dataTypes}" is not supported by interface "${this.name}".`);
+    }
+    const newValue = dataTypes.find((x) => x === value);
+    newValue;
+
+    return value;
   }
 }

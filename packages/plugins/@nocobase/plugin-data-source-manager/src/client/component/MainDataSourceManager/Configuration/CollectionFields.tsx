@@ -13,6 +13,7 @@ import { FieldContext, FormContext, useField } from '@formily/react';
 import {
   Action,
   AddCollectionField,
+  CollectionFieldInterface,
   EditCollectionField,
   Input,
   isDeleteButtonDisabled,
@@ -79,15 +80,12 @@ const tableContainer = css`
     flex: 1.5;
     width: 0;
     &:nth-child(4) {
-      flex: 1.8; /* Field interface column */
+      flex: 2.5; /* Combined Field interface + type column */
     }
     &:nth-child(5) {
-      flex: 1.8; /* Field type column */
-    }
-    &:nth-child(6) {
       flex: 1.2; /* Title field column */
     }
-    &:nth-child(7) {
+    &:nth-child(6) {
       flex: 2; /* Description column */
     }
     &:last-child {
@@ -108,48 +106,17 @@ const tableContainer = css`
 
 const titlePrompt = 'Default title for each record';
 
-const convertFieldTypeToOptions = (fieldType: string[]) => {
-  if (!fieldType || !Array.isArray(fieldType) || fieldType.length === 0) {
-    return [];
-  }
-
-  const fieldTypeHierarchy = {
-    string: [
-      { label: 'varchar', value: 'varchar' },
-      { label: 'char', value: 'char' },
-      { label: 'text', value: 'text' },
-    ],
-    integer: [
-      { label: 'int', value: 'int' },
-      { label: 'bigint', value: 'bigint' },
-      { label: 'smallint', value: 'smallint' },
-    ],
-    float: [
-      { label: 'decimal', value: 'decimal' },
-      { label: 'double', value: 'double' },
-    ],
-    boolean: [{ label: 'boolean', value: 'boolean' }],
-    date: [
-      { label: 'date', value: 'date' },
-      { label: 'datetime', value: 'datetime' },
-      { label: 'timestamp', value: 'timestamp' },
-    ],
-  };
-
-  if (fieldType.length >= 1) {
-    const firstLevel = fieldType[0];
-    const children = fieldTypeHierarchy[firstLevel] || [];
-
-    return [
-      {
-        label: firstLevel,
-        value: firstLevel,
-        children: children.length > 0 ? children : undefined,
-      },
-    ];
-  }
-
-  return [];
+// Field Interface -> Field Type -> Data Type
+const createFieldTypeOptions = (
+  currentValue: [string, ...string[], string],
+  getInterface: (name: string) => CollectionFieldInterface,
+  interfaces: Record<string, CollectionFieldInterface>,
+  compile,
+) => {
+  const [interfaceName] = currentValue;
+  const currentInterface = getInterface(interfaceName);
+  const options = currentInterface.getAvailableOptions({ currentValue, interfaces, compile });
+  return options;
 };
 
 const CurrentFields = (props) => {
@@ -179,59 +146,22 @@ const CurrentFields = (props) => {
       dataIndex: 'interface',
       title: t('Field interface'),
       render: (value, record) => {
-        const handleChange = async (selectedInterface) => {
-          try {
-            await api.request({
-              url: `collections.fields:update?filterByTk=${record.name}&associatedIndex=${filterByTk}`,
-              method: 'post',
-              data: { interface: selectedInterface },
-            });
-            ctx?.refresh?.();
-            await props.refreshAsync();
-            refreshCM();
-            message.success(t('Saved successfully'));
-          } catch (error) {
-            console.error('Failed to update field interface:', error);
-            message.error(t('Save failed'));
-          }
-        };
-
-        return (
-          <Select
-            value={value}
-            onChange={handleChange}
-            placeholder={t('Select field interface')}
-            size="small"
-            style={{ width: '100%', minWidth: 120 }}
-            disabled={targetTemplate?.forbidDeletion}
-            showSearch
-            filterOption={(input, option) => {
-              const label = option?.children || '';
-              return String(label).toLowerCase().includes(input.toLowerCase());
-            }}
-          >
-            {Object.keys(interfaces).map((interfaceKey) => {
-              const interfaceItem = interfaces[interfaceKey];
-              return (
-                <Select.Option key={interfaceKey} value={interfaceKey}>
-                  {compile(interfaceItem.title)}
-                </Select.Option>
-              );
-            })}
-          </Select>
-        );
-      },
-    },
-    {
-      dataIndex: 'fieldType',
-      title: t('Field type'),
-      render: (value, record) => {
         const handleChange = async (selectedValues) => {
           try {
+            const [interfaceValue, fieldTypeValue, dataTypeValue] = selectedValues || [];
+
+            const updateData: any = {};
+            if (interfaceValue) {
+              updateData.interface = interfaceValue;
+            }
+            if (fieldTypeValue || dataTypeValue) {
+              updateData.fieldType = selectedValues;
+            }
+
             // await api.request({
             //   url: `collections.fields:update?filterByTk=${record.name}&associatedIndex=${filterByTk}`,
             //   method: 'post',
-            //   data: { fieldType: selectedValues },
+            //   data: updateData,
             // });
             ctx?.refresh?.();
             await props.refreshAsync();
@@ -243,20 +173,26 @@ const CurrentFields = (props) => {
           }
         };
 
-        return value && Array.isArray(value) && value.length > 0 ? (
+        const currentValue: any = []; // [interface, fieldType, dataType]
+        if (value) {
+          currentValue.push(value);
+          if (record.fieldType && Array.isArray(record.fieldType) && record.fieldType.length > 0) {
+            currentValue.push(...record.fieldType);
+          }
+        }
+
+        return (
           <Cascader
-            value={value}
-            options={convertFieldTypeToOptions(value)}
+            value={currentValue.length > 0 ? currentValue : undefined}
+            options={createFieldTypeOptions(currentValue, getInterface, interfaces, compile)}
             onChange={handleChange}
             placeholder={t('Select field type')}
             expandTrigger="hover"
-            changeOnSelect={true}
-            size="small"
-            style={{ width: '100%', minWidth: 120 }}
+            changeOnSelect={false}
+            style={{ width: '100%', minWidth: 100 }}
             disabled={targetTemplate?.forbidDeletion}
+            showSearch
           />
-        ) : (
-          <span style={{ color: '#ccc' }}>-</span>
         );
       },
     },
@@ -351,7 +287,7 @@ const CurrentFields = (props) => {
 
 const InheritFields = (props) => {
   const compile = useCompile();
-  const { getInterface } = useCollectionManager_deprecated();
+  const { getInterface, interfaces } = useCollectionManager_deprecated();
   const { targetKey } = props.collectionResource || {};
   const parentRecord = useRecord();
   const [loadingRecord, setLoadingRecord] = React.useState(null);
@@ -372,28 +308,28 @@ const InheritFields = (props) => {
       title: t('Field name'),
     },
     {
-      dataIndex: 'interface',
-      title: t('Field interface'),
-      render: (value) => <Tag>{compile(getInterface(value)?.title)}</Tag>,
-    },
-    {
       dataIndex: 'fieldType',
       title: t('Field type'),
-      render: (value) => {
-        return value && Array.isArray(value) && value.length > 0 ? (
+      render: (value, record) => {
+        const currentValue: any = []; // [interface, fieldType, dataType]
+        if (record.interface) {
+          currentValue.push(record.interface);
+          if (value && Array.isArray(value) && value.length > 0) {
+            currentValue.push(...value);
+          }
+        }
+        return (
           <Cascader
-            value={value}
-            options={convertFieldTypeToOptions(value)}
+            value={currentValue.length > 0 ? currentValue : undefined}
+            options={createFieldTypeOptions(currentValue, getInterface, interfaces, compile)}
             placeholder={t('Select field type')}
             expandTrigger="hover"
-            changeOnSelect={true}
+            changeOnSelect={false}
             size="small"
-            style={{ width: '100%', minWidth: 120 }}
+            style={{ width: '100%', minWidth: 150 }}
             disabled={true}
             open={false}
           />
-        ) : (
-          <span style={{ color: '#ccc' }}>-</span>
         );
       },
     },
@@ -497,10 +433,6 @@ const CollectionFieldsInternal = () => {
     {
       dataIndex: 'name',
       title: t('Field name'),
-    },
-    {
-      dataIndex: 'interface',
-      title: t('Field interface'),
     },
     {
       dataIndex: 'fieldType',

@@ -27,7 +27,7 @@ import * as components from './components';
 import { useFieldInterfaceOptions } from './interfaces';
 import { ItemType, MenuItemType } from 'antd/es/menu/interface';
 
-const getSchema = (schema: CollectionFieldInterface, record: any, compile, fieldTypeOptions) => {
+const getSchema = (schema: CollectionFieldInterface, record: any, compile) => {
   if (!schema) {
     return;
   }
@@ -41,6 +41,22 @@ const getSchema = (schema: CollectionFieldInterface, record: any, compile, field
   };
   if (initialValue.reverseField) {
     initialValue.reverseField.name = `f_${uid()}`;
+  }
+
+  // 基于当前选中的 fieldInterface 构建 fieldType 选项
+  const fieldTypeOptions = [];
+  const fieldType = schema.default?.type;
+  const availableFieldTypes = schema.availableOptions?.all[schema.name][fieldType] || [];
+
+  if (fieldType && availableFieldTypes.length > 0) {
+    fieldTypeOptions.push({
+      label: fieldType,
+      value: fieldType,
+      children: availableFieldTypes.map((availableType) => ({
+        label: availableType,
+        value: availableType,
+      })),
+    });
   }
 
   // 设置 fieldType 默认值为第一组的最深层级路径
@@ -69,60 +85,62 @@ const getSchema = (schema: CollectionFieldInterface, record: any, compile, field
 
   // initialValue.uiSchema.title = schema.title;
   return {
-    type: 'object',
-    properties: {
-      [uid()]: {
-        type: 'void',
-        'x-component': 'Action.Drawer',
-        'x-component-props': {
-          getContainer: '{{ getContainer }}',
-        },
-        'x-decorator': 'Form',
-        'x-decorator-props': {
-          useValues(options) {
-            return useRequest(
-              () =>
-                Promise.resolve({
-                  data: initialValue,
-                }),
-              options,
-            );
+    schema: {
+      type: 'object',
+      properties: {
+        [uid()]: {
+          type: 'void',
+          'x-component': 'Action.Drawer',
+          'x-component-props': {
+            getContainer: '{{ getContainer }}',
           },
-        },
-        title: `${compile(record.title)} - ${compile('{{ t("Add field") }}')}`,
-        properties: {
-          summary: {
-            type: 'void',
-            'x-component': 'FieldSummary',
-            'x-component-props': {
-              schemaKey: schema.name,
+          'x-decorator': 'Form',
+          'x-decorator-props': {
+            useValues(options) {
+              return useRequest(
+                () =>
+                  Promise.resolve({
+                    data: initialValue,
+                  }),
+                options,
+              );
             },
           },
-          // @ts-ignore
-          ...properties,
-          description: {
-            type: 'string',
-            title: '{{t("Description")}}',
-            'x-decorator': 'FormItem',
-            'x-component': 'Input.TextArea',
-          },
-          footer: {
-            type: 'void',
-            'x-component': 'Action.Drawer.Footer',
-            properties: {
-              action1: {
-                title: '{{ t("Cancel") }}',
-                'x-component': 'Action',
-                'x-component-props': {
-                  useAction: '{{ useCancelAction }}',
-                },
+          title: `${compile(record.title)} - ${compile('{{ t("Add field") }}')}`,
+          properties: {
+            summary: {
+              type: 'void',
+              'x-component': 'FieldSummary',
+              'x-component-props': {
+                schemaKey: schema.name,
               },
-              action2: {
-                title: '{{ t("Submit") }}',
-                'x-component': 'Action',
-                'x-component-props': {
-                  type: 'primary',
-                  useAction: '{{ useCreateCollectionField }}',
+            },
+            // @ts-ignore
+            ...properties,
+            description: {
+              type: 'string',
+              title: '{{t("Description")}}',
+              'x-decorator': 'FormItem',
+              'x-component': 'Input.TextArea',
+            },
+            footer: {
+              type: 'void',
+              'x-component': 'Action.Drawer.Footer',
+              properties: {
+                action1: {
+                  title: '{{ t("Cancel") }}',
+                  'x-component': 'Action',
+                  'x-component-props': {
+                    useAction: '{{ useCancelAction }}',
+                  },
+                },
+                action2: {
+                  title: '{{ t("Submit") }}',
+                  'x-component': 'Action',
+                  'x-component-props': {
+                    type: 'primary',
+                    useAction: '{{ useCreateCollectionField }}',
+                  },
                 },
               },
             },
@@ -130,6 +148,7 @@ const getSchema = (schema: CollectionFieldInterface, record: any, compile, field
         },
       },
     },
+    fieldTypeOptions,
   };
 };
 
@@ -193,6 +212,7 @@ export const AddFieldAction = (props) => {
   const [visible, setVisible] = useState(false);
   const [targetScope, setTargetScope] = useState();
   const [schema, setSchema] = useState({});
+  const [fieldTypeOptions, setFieldTypeOptions] = useState([]);
   const compile = useCompile();
   const { t } = useTranslation();
   const { isDialect } = useDialect();
@@ -209,50 +229,6 @@ export const AddFieldAction = (props) => {
   }, []);
   const dm = useDataSourceManager();
   const interfaces = dm.collectionFieldInterfaceManager.getFieldInterfaces();
-
-  const fieldTypeOptions = useMemo(() => {
-    const { availableFieldInterfaces } = getTemplate(record.template) || {};
-    const { exclude, include } = (availableFieldInterfaces || {}) as any;
-
-    // 根据 fieldType 分组 interfaces
-    const fieldTypeGroups = {};
-
-    interfaces.forEach((fieldInterface) => {
-      // 检查是否符合模板限制
-      if (include?.length && !include.includes(fieldInterface.name)) {
-        return;
-      }
-      if (exclude?.length && exclude.includes(fieldInterface.name)) {
-        return;
-      }
-
-      const fieldType = fieldInterface.default?.type;
-      const availableFieldTypes = fieldInterface.availableFieldTypes || [];
-
-      if (fieldType && availableFieldTypes.length > 0) {
-        if (!fieldTypeGroups[fieldType]) {
-          fieldTypeGroups[fieldType] = [];
-        }
-
-        // 为每个 availableFieldType 创建选项
-        availableFieldTypes.forEach((availableType) => {
-          if (!fieldTypeGroups[fieldType].find((item) => item.value === availableType)) {
-            fieldTypeGroups[fieldType].push({
-              label: availableType,
-              value: availableType,
-            });
-          }
-        });
-      }
-    });
-
-    // 转换为 antd 级联组件需要的数据结构
-    return Object.keys(fieldTypeGroups).map((fieldType) => ({
-      label: fieldType,
-      value: fieldType,
-      children: fieldTypeGroups[fieldType],
-    }));
-  }, [interfaces, getTemplate, record, compile]);
 
   const getFieldOptions = useCallback(() => {
     const { availableFieldInterfaces } = getTemplate(record.template) || {};
@@ -355,9 +331,10 @@ export const AddFieldAction = (props) => {
         //@ts-ignore
         const targetScope = e.item.props['data-targetScope'];
         targetScope && setTargetScope(targetScope);
-        const schema = getSchema(getInterface(e.key), record, compile, fieldTypeOptions);
-        if (schema) {
-          setSchema(schema);
+        const result = getSchema(getInterface(e.key), record, compile);
+        if (result) {
+          setSchema(result.schema);
+          setFieldTypeOptions(result.fieldTypeOptions);
           setVisible(true);
         }
       },

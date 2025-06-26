@@ -10,7 +10,10 @@
 import { registerValidateFormats } from '@formily/core';
 import { i18n } from '../../i18n';
 import { defaultProps, operators, unique, autoIncrement, primaryKey } from './properties';
-import { CollectionFieldInterface } from '../../data-source/collection-field-interface/CollectionFieldInterface';
+import {
+  AvailableFieldOptions,
+  CollectionFieldInterface,
+} from '../../data-source/collection-field-interface/CollectionFieldInterface';
 
 registerValidateFormats({
   odd: /^-?\d*[13579]$/,
@@ -37,6 +40,35 @@ export class IntegerFieldInterface extends CollectionFieldInterface {
     },
   };
   availableTypes = ['bigInt', 'integer', 'sort'];
+  availableOptions: AvailableFieldOptions = {
+    all: {
+      integer: {
+        bigInt: ['bigInt', 'tinyint', 'integer'],
+      },
+      number: {
+        double: ['double', 'float', 'decimal'],
+      },
+      input: {
+        string: ['varchar', 'char'],
+      },
+      textarea: {
+        text: ['text'],
+      },
+    },
+    available: {
+      input: {
+        string: {
+          varchar: ['varchar'],
+          char: ['varchar', 'char'],
+        },
+      },
+      textarea: {
+        text: {
+          text: ['text'],
+        },
+      },
+    },
+  };
   hasDefaultValue = true;
   properties = {
     ...defaultProps,

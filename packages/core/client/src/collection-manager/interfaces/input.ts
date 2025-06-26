@@ -10,7 +10,10 @@
 import { ISchema } from '@formily/react';
 import { isArr, isEmpty, isValid } from '@formily/shared';
 import { registerValidateRules } from '@formily/validator';
-import { CollectionFieldInterface } from '../../data-source/collection-field-interface/CollectionFieldInterface';
+import {
+  AvailableFieldOptions,
+  CollectionFieldInterface,
+} from '../../data-source/collection-field-interface/CollectionFieldInterface';
 import { i18n } from '../../i18n';
 import { defaultProps, operators, primaryKey, unique } from './properties';
 
@@ -59,7 +62,29 @@ export class InputFieldInterface extends CollectionFieldInterface {
     },
   };
   fieldType = 'string';
-  availableFieldTypes = ['varchar', 'char'];
+  availableOptions: AvailableFieldOptions = {
+    all: {
+      input: {
+        string: ['varchar', 'char'],
+      },
+      textarea: {
+        text: ['text'],
+      },
+    },
+    available: {
+      input: {
+        string: {
+          varchar: ['varchar'],
+          char: ['varchar', 'char'],
+        },
+      },
+      textarea: {
+        text: {
+          text: ['text'],
+        },
+      },
+    },
+  };
   availableTypes = ['varchar', 'char'];
   hasDefaultValue = true;
   properties = {
