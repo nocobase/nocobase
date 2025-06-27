@@ -268,7 +268,7 @@ export class FlowEngine {
       console.warn(`FlowEngine: Model with UID '${uid}' does not exist.`);
       return false;
     }
-    const modelInstance = this.modelInstances.get(uid);
+    const modelInstance = this.modelInstances.get(uid) as FlowModel;
     modelInstance.clearForks();
     // 从父模型中移除当前模型的引用
     if (modelInstance.parent?.subModels) {
@@ -287,6 +287,8 @@ export class FlowEngine {
         }
       }
     }
+    console.log(`FlowEngine: removing model with UID '${uid}'`, modelInstance['onRemove']);
+    modelInstance['onRemove']?.();
     this.modelInstances.delete(uid);
     return false;
   }

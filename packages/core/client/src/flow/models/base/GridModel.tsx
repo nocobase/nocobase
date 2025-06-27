@@ -34,10 +34,15 @@ type GridModelStructure = {
 export class GridModel extends FlowModel<GridModelStructure> {
   subModelBaseClass = 'BlockModel';
 
+  onRemove() {
+    console.warn('GridModel onRemove');
+  }
+
   mergeRowsWithItems(rows: Record<string, string[][]>) {
     const items = this.subModels.items || [];
+    console.log('mergeRowsWithItems', rows, items);
     if (!items || items.length === 0) {
-      return rows; // 如果没有 items，直接返回原始 rows
+      return {}; // 如果没有 items，直接返回原始 rows
     }
     // 1. 收集所有 items 里的 uid
     const allUids = new Set(items.map((item) => item.uid));
@@ -48,7 +53,7 @@ export class GridModel extends FlowModel<GridModelStructure> {
     // 3. 过滤 rows 里不存在于 items 的 uid
     for (const [rowKey, cells] of Object.entries(rows)) {
       const filteredCells = cells
-        .map((cell) => cell.filter((uid) => allUids.has(uid)))
+        .map((cell) => _.castArray(cell).filter((uid) => allUids.has(uid)))
         .filter((cell) => cell.length > 0);
       if (filteredCells.length > 0) {
         newRows[rowKey] = filteredCells;
@@ -71,6 +76,7 @@ export class GridModel extends FlowModel<GridModelStructure> {
   resetRows(syncProps = false) {
     const params = this.getStepParams('defaultFlow', 'grid') || {};
     const mergedRows = this.mergeRowsWithItems(params.rows || {});
+    console.log('resetRows', mergedRows, this.subModels.items);
     this.setStepParams('defaultFlow', 'grid', {
       rows: mergedRows,
       sizes: params.sizes || {},
