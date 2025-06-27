@@ -64,7 +64,7 @@ export const SchemaSettingsDefaultValue = function DefaultValueConfigure(props: 
   const localVariables = useLocalVariables();
   const collection = useCollection_deprecated();
   const record = useRecord();
-  const { form } = useFormBlockContext();
+  const { form, type } = useFormBlockContext();
   const { getFields } = useCollectionFilterOptionsV2(collection);
   const { isInSubForm, isInSubTable } = useFlag() || {};
 
@@ -219,7 +219,6 @@ export const SchemaSettingsDefaultValue = function DefaultValueConfigure(props: 
     targetField,
     variables,
   ]);
-
   const handleSubmit: (values: any) => void = useCallback(
     (v) => {
       const schema: ISchema = {
@@ -227,7 +226,7 @@ export const SchemaSettingsDefaultValue = function DefaultValueConfigure(props: 
       };
       fieldSchema.default = v.default ?? null;
       if (!isVariable(v.default)) {
-        !field.initialValue && field.setInitialValue?.(v.default);
+        (record.__isNewRecord__ || type === 'create') && field.setInitialValue?.(v.default);
       }
       schema.default = v.default ?? null;
       dn.emit('patch', {
