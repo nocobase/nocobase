@@ -97,9 +97,13 @@ export class GridModel extends FlowModel<GridModelStructure> {
           >
             <FlowSettingsButton icon={<PlusOutlined />}>{'Add block'}</FlowSettingsButton>
           </AddBlockButton>
-          <FlowsFloatContextMenu showBorder={false} showDeleteButton={false} model={this}>
-            <FlowSettingsButton>Configure rows</FlowSettingsButton>
-          </FlowsFloatContextMenu>
+          <FlowSettingsButton
+            onClick={() => {
+              this.openStepSettingsDialog('defaultFlow', 'grid');
+            }}
+          >
+            Configure rows
+          </FlowSettingsButton>
         </Space>
       </div>
     );
