@@ -22,6 +22,7 @@ import { Alert, Space } from 'antd';
 import _ from 'lodash';
 import React, { useState } from 'react';
 import { Grid } from '../../components/Grid';
+import JsonEditor from '../../components/JsonEditor';
 import { BlockModel } from './BlockModel';
 
 type GridModelStructure = {
@@ -67,89 +68,79 @@ export class GridModel extends FlowModel<GridModelStructure> {
     return newRows;
   }
 
+  resetRows(syncProps = false) {
+    const params = this.getStepParams('defaultFlow', 'grid') || {};
+    const mergedRows = this.mergeRowsWithItems(params.rows || {});
+    this.setStepParams('defaultFlow', 'grid', {
+      rows: mergedRows,
+      sizes: params.sizes || {},
+    });
+
+    if (syncProps) {
+      this.setProps('rows', mergedRows);
+      this.setProps('sizes', params.sizes || {});
+    }
+  }
+
   render() {
-    console.log('GridModel render', JSON.stringify(this.props.rows, null, 2), this.props.sizes);
     return (
       <div style={{ padding: 16 }}>
-        <Grid
-          rows={this.props.rows || {}}
-          sizes={this.props.sizes || {}}
-          renderItem={(uid) => {
-            const item = this.flowEngine.getModel(uid);
-            return (
-              <FlowModelRenderer
-                model={item}
-                key={item.uid}
-                showFlowSettings={{ showBackground: false }}
-                showErrorFallback
-              />
-            );
-          }}
-        />
-        <Space style={{ marginTop: 16 }}>
-          <AddBlockButton
-            model={this}
-            subModelKey="items"
-            subModelBaseClass={this.subModelBaseClass}
-            onSubModelAdded={async (model) => {
-              this.props.rows = { ...this.props.rows, [uid()]: [[model.uid]] };
+        <Space direction={'vertical'} style={{ width: '100%' }} size={16}>
+          <Grid
+            rows={this.props.rows || {}}
+            sizes={this.props.sizes || {}}
+            renderItem={(uid) => {
+              const item = this.flowEngine.getModel(uid);
+              return (
+                <FlowModelRenderer
+                  model={item}
+                  key={item.uid}
+                  showFlowSettings={{ showBackground: false }}
+                  showErrorFallback
+                />
+              );
             }}
-          >
-            <FlowSettingsButton icon={<PlusOutlined />}>{'Add block'}</FlowSettingsButton>
-          </AddBlockButton>
-          <FlowSettingsButton
-            onClick={() => {
-              this.openStepSettingsDialog('defaultFlow', 'grid');
-            }}
-          >
-            Configure rows
-          </FlowSettingsButton>
+          />
+          <Space>
+            <AddBlockButton
+              model={this}
+              subModelKey="items"
+              subModelBaseClass={this.subModelBaseClass}
+              onSubModelAdded={async (model) => {
+                this.resetRows(true);
+              }}
+            >
+              <FlowSettingsButton icon={<PlusOutlined />}>{'Add block'}</FlowSettingsButton>
+            </AddBlockButton>
+            <FlowSettingsButton
+              onClick={() => {
+                this.openStepSettingsDialog('defaultFlow', 'grid');
+              }}
+            >
+              Configure rows
+            </FlowSettingsButton>
+          </Space>
         </Space>
       </div>
     );
   }
 }
 
-function JsonEditor({ value, onChange, rows = 10 }) {
-  const [text, setText] = useState(() => JSON.stringify(value, null, 2));
-  const [error, setError] = useState<string | null>(null);
-
-  const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    const val = e.target.value;
-    setText(val);
-    try {
-      const json = JSON.parse(val);
-      setError(null);
-      onChange(json);
-    } catch (err: any) {
-      setError(err.message);
-    }
-  };
-
-  return (
-    <div>
-      <Input.TextArea value={text} autoSize={{ minRows: rows, maxRows: rows + 10 }} onChange={handleChange} />
-      {error && <Alert type="error" message={error} showIcon style={{ marginTop: 8 }} />}
-    </div>
-  );
-}
-
 GridModel.registerFlow({
   key: 'defaultFlow',
   auto: true,
   steps: {
+    step1: {
+      handler(ctx) {
+        ctx.model.resetRows();
+      },
+    },
     grid: {
       uiSchema: {
         rows: {
           title: 'Rows',
           'x-decorator': 'FormItem',
-          'x-component': ({ value, onChange }) => {
-            // eslint-disable-next-line react-hooks/rules-of-hooks
-            const ctx = useStepSettingContext();
-            const params = ctx.model.getStepParams('defaultFlow', 'grid');
-            const mergedRows = ctx.model.mergeRowsWithItems(params?.rows || {});
-            return <JsonEditor value={mergedRows} onChange={onChange} rows={10} />;
-          },
+          'x-component': JsonEditor,
           'x-component-props': {
             autoSize: { minRows: 10, maxRows: 20 },
             description: 'Configure the rows and columns of the grid.',
@@ -167,7 +158,6 @@ GridModel.registerFlow({
         },
       },
       async handler(ctx, params) {
-        console.log('GridModel defaultFlow grid handler', params);
         const mergedRows = ctx.model.mergeRowsWithItems(params.rows || {});
         ctx.model.setProps('rows', mergedRows);
         ctx.model.setProps('sizes', params.sizes || {});

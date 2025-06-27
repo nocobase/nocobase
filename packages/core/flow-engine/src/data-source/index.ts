@@ -7,7 +7,6 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Schema } from '@formily/json-schema';
 import { observable } from '@formily/reactive';
 import { FlowEngine } from '../flowEngine';
 
@@ -30,7 +29,7 @@ export class DataSourceManager {
     this.flowEngine = flowEngine;
   }
 
-  addDataSource(ds: DataSource | DataSourceOptions, options: Record<string, any> = {}) {
+  addDataSource(ds: DataSource | DataSourceOptions) {
     if (this.dataSources.has(ds.key)) {
       throw new Error(`DataSource with name ${ds.key} already exists`);
     }
@@ -97,11 +96,7 @@ export class DataSource {
   }
 
   get displayName() {
-    return this.options.displayName
-      ? Schema.compile(this.options.displayName, {
-          t: (text) => text,
-        })
-      : this.key;
+    return this.options.displayName ? this.flowEngine?.t(this.options.displayName) : this.key;
   }
 
   get key() {
@@ -277,11 +272,7 @@ export class Collection {
   }
 
   get title() {
-    return this.options.title
-      ? Schema.compile(this.options.title, {
-          t: (text) => text,
-        })
-      : this.name;
+    return this.options.title ? this.flowEngine?.t(this.options.title) : this.name;
   }
 
   initInherits() {
@@ -421,9 +412,8 @@ export class CollectionField {
   }
 
   get title() {
-    return Schema.compile(this.options?.title || this.options?.uiSchema?.title || this.options.name, {
-      t: (text) => text,
-    });
+    const titleValue = this.options?.title || this.options?.uiSchema?.title || this.options.name;
+    return this.flowEngine?.t(titleValue);
   }
 
   set title(value: string) {

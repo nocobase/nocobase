@@ -17,6 +17,10 @@ export function Grid(props: {
 }) {
   const { rows, sizes = {}, renderItem } = props;
 
+  if (Object.keys(rows || {}).length === 0) {
+    return null;
+  }
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
       {Object.entries(rows).map(([rowKey, cells]) => {
