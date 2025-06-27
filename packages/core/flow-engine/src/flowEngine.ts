@@ -18,7 +18,7 @@ import {
   IFlowModelRepository,
   ModelConstructor,
 } from './types';
-import { isInheritedFrom } from './utils';
+import { isInheritedFrom, TranslationUtil } from './utils';
 
 interface ApplyFlowCacheEntry {
   status: 'pending' | 'resolved' | 'rejected';
@@ -39,6 +39,8 @@ export class FlowEngine {
   context: Record<string, any> = {};
   private modelRepository: IFlowModelRepository | null = null;
   private _applyFlowCache = new Map<string, ApplyFlowCacheEntry>();
+  /** @private Translation utility for template compilation and caching */
+  private _translationUtil = new TranslationUtil();
 
   reactView: ReactView;
 
@@ -60,6 +62,44 @@ export class FlowEngine {
 
   getContext() {
     return this.context;
+  }
+
+  /**
+   * 翻译函数，支持简单翻译和模板编译
+   * @param keyOrTemplate 翻译键或包含 {{t('key', options)}} 的模板字符串
+   * @param options 翻译选项（如命名空间、参数等）
+   * @returns 翻译后的文本
+   *
+   * @example
+   * // 简单翻译
+   * flowEngine.t('Hello World')
+   * flowEngine.t('Hello {name}', { name: 'John' })
+   *
+   * // 模板编译
+   * flowEngine.t("{{t('Hello World')}}")
+   * flowEngine.t("{{ t( 'User Name' ) }}")
+   * flowEngine.t("{{  t  (  'Email'  ,  { ns: 'fields' }  )  }}")
+   * flowEngine.t("前缀 {{ t('User Name') }} 后缀")
+   * flowEngine.t("{{t('Hello {name}', {name: 'John'})}}")
+   */
+  public t(keyOrTemplate: string, options?: any): string {
+    return this._translationUtil.translate(
+      keyOrTemplate,
+      (key: string, opts?: any) => this.translateKey(key, opts),
+      options,
+    );
+  }
+
+  /**
+   * 内部翻译方法
+   * @private
+   */
+  private translateKey(key: string, options?: any): string {
+    if (this.context?.i18n?.t) {
+      return this.context.i18n.t(key, options);
+    }
+    // 如果没有翻译函数，返回原始键值
+    return key;
   }
 
   get applyFlowCache() {
