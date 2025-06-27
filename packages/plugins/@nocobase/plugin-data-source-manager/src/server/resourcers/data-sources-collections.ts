@@ -171,7 +171,9 @@ export default {
         return;
       }
       if (collections.length > ALLOW_MAX_COLLECTIONS_COUNT) {
-        throw new Error(`The number of collections exceeds the limit of ${ALLOW_MAX_COLLECTIONS_COUNT}. Please remove some collections before adding new ones.`);
+        throw new Error(
+          `The number of collections exceeds the limit of ${ALLOW_MAX_COLLECTIONS_COUNT}. Please remove some collections before adding new ones.`,
+        );
       }
       const transaction = await ctx.db.sequelize.transaction();
       const repo = ctx.db.getRepository('dataSourcesCollections');

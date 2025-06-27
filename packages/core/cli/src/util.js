@@ -18,7 +18,8 @@ const dotenv = require('dotenv');
 const fs = require('fs-extra');
 const os = require('os');
 const moment = require('moment-timezone');
-const { keyDecrypt } = require('@nocobase/license-kit');
+const { keyDecrypt, getEnvAsync } = require('@nocobase/license-kit');
+const _ = require('lodash');
 
 exports.isPackageValid = (pkg) => {
   try {
@@ -490,20 +491,75 @@ exports.generatePlugins = function () {
   }
 };
 
-exports.getAccessKeyPair = function () {
+exports.getAccessKeyPair = async function () {
   const keyFile = resolve(process.cwd(), 'storage/.license/license-key');
   if (!fs.existsSync(keyFile)) {
-    console.log(chalk.yellow('license-key file not found', keyFile));
+    // showLicenseInfo(LicenseKeyError.notExist);
     return {};
   }
+
+  let keyData = {};
   try {
     const str = fs.readFileSync(keyFile, 'utf-8');
     const keyDataStr = keyDecrypt(str);
-    const keyData = JSON.parse(keyDataStr);
-    const { accessKeyId, accessKeySecret } = keyData;
-    return { accessKeyId, accessKeySecret };
+    keyData = JSON.parse(keyDataStr);
   } catch (error) {
-    console.log(chalk.yellow('Key parse failed, please check your key'));
+    showLicenseInfo(LicenseKeyError.parseFailed);
     return {};
   }
+
+  const currentEnv = await getEnvAsync();
+  if (!_.isEqual(_.omit(keyData?.instanceData, ['timestamp']), _.omit(currentEnv, ['timestamp']))) {
+    showLicenseInfo(LicenseKeyError.notMatch);
+    return {};
+  }
+
+  const { accessKeyId, accessKeySecret } = keyData;
+  return { accessKeyId, accessKeySecret };
 };
+
+const LicenseKeyError = {
+  notExist: {
+    title: 'License key not exist',
+    content:
+      'Please go to the license settings page to obtain the Instance ID for the current environment, and then generate the license key on the service platform.',
+  },
+  parseFailed: {
+    title: 'License key parse failed',
+    content: 'Please check your license key, or regenerate the license key on the service platform.',
+  },
+  notMatch: {
+    title: 'License key not matched',
+    content:
+      'Please go to the license settings page to obtain the Instance ID for the current environment, and then regenerate the license key on the service platform.',
+  },
+  notValid: {
+    title: 'License key not valid',
+    content:
+      'Please go to the license settings page to obtain the Instance ID for the current environment, and then regenerate the license key on the service platform.',
+  },
+};
+
+exports.LicenseKeyError = LicenseKeyError;
+
+function showLicenseInfo({ title, content }) {
+  const rows = [];
+  const length = 80;
+  let row = '';
+  content.split(' ').forEach((word) => {
+    if (row.length + word.length > length) {
+      rows.push(row);
+      row = '';
+    }
+    row += word + ' ';
+  });
+  if (row) {
+    rows.push(row);
+  }
+  console.log(Array(length).fill('-').join(''));
+  console.log(chalk.yellow(title));
+  console.log(chalk.yellow(rows.join('\n')));
+  console.log(Array(length).fill('-').join(''));
+}
+
+exports.showLicenseInfo = showLicenseInfo;

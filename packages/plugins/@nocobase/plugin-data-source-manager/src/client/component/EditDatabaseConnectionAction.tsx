@@ -56,7 +56,10 @@ export const EditDatabaseConnectionAction = () => {
           await resource.update({ filterByTk, values: _.omit(form.values, 'collections') });
           const toBeAddedCollections = form.values.collections || [];
           if (!form.values.addAllCollections) {
-            await addDatasourceCollections(api, filterByTk, { collections: toBeAddedCollections, dbOptions: form.values.options });
+            await addDatasourceCollections(api, filterByTk, {
+              collections: toBeAddedCollections,
+              dbOptions: form.values.options,
+            });
           }
           delete form.values.collections;
           ctx.setVisible(false);
