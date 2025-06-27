@@ -19,6 +19,7 @@ import { useKeepAlive } from '../../../route-switch/antd/admin-layout/KeepAlive'
 import { useSchemaComponentContext } from '../../hooks';
 import { AssociationFieldContext } from './context';
 import { FormItem, useSchemaOptionsContext } from '../../../schema-component';
+import { useCollectionRecord } from '../../../data-source';
 
 export const AssociationFieldProvider = observer(
   (props) => {
@@ -28,6 +29,7 @@ export const AssociationFieldProvider = observer(
     const api = useAPIClient();
     const option = useSchemaOptionsContext();
     const rootRef = useRef<HTMLDivElement>(null);
+    const record = useCollectionRecord();
 
     // 这里有点奇怪，在 Table 切换显示的组件时，这个组件并不会触发重新渲染，所以增加这个 Hooks 让其重新渲染
     useSchemaComponentContext();
@@ -71,7 +73,9 @@ export const AssociationFieldProvider = observer(
         if (_.isUndefined(ids) || _.isNil(ids) || _.isNaN(ids)) {
           return Promise.reject(null);
         }
-
+        if (record && !record.isNew) {
+          return Promise.reject(null);
+        }
         return api.request({
           resource: collectionField.target,
           action: Array.isArray(ids) ? 'list' : 'get',
