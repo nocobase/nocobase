@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Model, Transaction } from '@nocobase/database';
+import { Model, MultipleRelationRepository, Transaction } from '@nocobase/database';
 import PluginLocalizationServer from '@nocobase/plugin-localization';
 import { Plugin } from '@nocobase/server';
 import { tval } from '@nocobase/utils';
@@ -216,7 +216,7 @@ export class PluginClientServer extends Plugin {
       const tabIds = tabs.map((x) => x.get('id'));
       const where = { desktopRouteId: tabIds, roleName };
       if (action === 'create') {
-        const exists = await repository.find({ where });
+        const exists = await repository.find({ where, transaction });
         const modelsByRouteId = _.keyBy(exists, (x) => x.get('desktopRouteId'));
         const createModels = tabs
           .map((x) => !modelsByRouteId[x.get('id')] && { desktopRouteId: x.get('id'), roleName })
@@ -280,6 +280,24 @@ export class PluginClientServer extends Plugin {
         ctx.body = result;
       }
 
+      await next();
+    });
+
+    this.app.resourceManager.registerActionHandler('roles.desktopRoutes:set', async (ctx, next) => {
+      let { values } = ctx.action.params;
+      if (values.length) {
+        const instances = await this.app.db.getRepository('desktopRoutes').find({
+          filter: {
+            $or: [{ id: { $in: values } }, { parentId: { $in: values } }],
+          },
+        });
+        values = instances.map((instance) => instance.get('id'));
+      }
+      const { resourceName, sourceId } = ctx.action;
+      const repository = this.app.db.getRepository<MultipleRelationRepository>(resourceName, sourceId);
+      await repository['set'](values);
+
+      ctx.status = 200;
       await next();
     });
   }
