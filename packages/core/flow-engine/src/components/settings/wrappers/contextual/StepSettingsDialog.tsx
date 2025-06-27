@@ -11,7 +11,7 @@ import { createSchemaField, ISchema } from '@formily/react';
 import { message } from 'antd';
 import React from 'react';
 import { StepSettingsDialogProps } from '../../../../types';
-import { resolveDefaultParams, resolveUiSchema } from '../../../../utils';
+import { resolveDefaultParams, resolveUiSchema, compileUiSchema } from '../../../../utils';
 import { StepSettingContextProvider, StepSettingContextType, useStepSettingContext } from './StepSettingContext';
 
 const SchemaField = createSchemaField();
@@ -148,17 +148,22 @@ const openStepSettingsDialog = async ({
         stepKey,
       };
 
+      const scopes = {
+        useStepSettingContext,
+        ...flowEngine.flowSettings?.scopes,
+      };
+
+      // 编译 formSchema 中的表达式
+      const compiledFormSchema = compileUiSchema(scopes, formSchema);
+
       return (
         <StepSettingContextProvider value={contextValue}>
           <SchemaField
-            schema={formSchema}
+            schema={compiledFormSchema}
             components={{
               ...flowEngine.flowSettings?.components,
             }}
-            scope={{
-              useStepSettingContext,
-              ...flowEngine.flowSettings?.scopes,
-            }}
+            scope={scopes}
           />
         </StepSettingContextProvider>
       );

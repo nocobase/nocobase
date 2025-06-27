@@ -46,6 +46,7 @@ export class FlowEngine {
 
   constructor() {
     this.reactView = new ReactView(this);
+    this.flowSettings.registerScopes({ t: this.t.bind(this) });
   }
   // 注册默认的 FlowModel
 

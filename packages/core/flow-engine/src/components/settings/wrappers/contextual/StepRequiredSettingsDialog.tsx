@@ -12,7 +12,7 @@ import { message, Button } from 'antd';
 import React from 'react';
 import { FlowModel } from '../../../../models';
 import { StepDefinition } from '../../../../types';
-import { resolveDefaultParams, resolveUiSchema } from '../../../../utils';
+import { resolveDefaultParams, resolveUiSchema, compileUiSchema } from '../../../../utils';
 import { StepSettingContextProvider, StepSettingContextType, useStepSettingContext } from './StepSettingContext';
 
 /**
@@ -340,37 +340,42 @@ const openRequiredParamsStepFormDialog = async ({
               resolve({});
             };
 
+            const scopes = {
+              formStep,
+              totalSteps: requiredSteps.length,
+              requiredSteps,
+              useStepSettingContext,
+              closeDialog: handleClose,
+              handleNext: () => {
+                // 验证当前步骤的表单
+                form
+                  .validate()
+                  .then(() => {
+                    if (formStep) {
+                      formStep.next();
+                    }
+                  })
+                  .catch((errors: any) => {
+                    console.log('表单验证失败:', errors);
+                    // 可以在这里添加更详细的错误处理
+                  });
+              },
+              ...flowEngine.flowSettings?.scopes,
+            };
+
+            // 编译 formSchema 中的表达式
+            const compiledFormSchema = compileUiSchema(scopes, formSchema);
+
             return (
               <>
                 <MultiStepContextProvider model={model} requiredSteps={requiredSteps} formStep={formStep}>
                   <SchemaField
-                    schema={formSchema}
+                    schema={compiledFormSchema}
                     components={{
                       FormStep,
                       ...flowEngine.flowSettings?.components,
                     }}
-                    scope={{
-                      formStep,
-                      totalSteps: requiredSteps.length,
-                      requiredSteps,
-                      useStepSettingContext,
-                      closeDialog: handleClose,
-                      handleNext: () => {
-                        // 验证当前步骤的表单
-                        form
-                          .validate()
-                          .then(() => {
-                            if (formStep) {
-                              formStep.next();
-                            }
-                          })
-                          .catch((errors: any) => {
-                            console.log('表单验证失败:', errors);
-                            // 可以在这里添加更详细的错误处理
-                          });
-                      },
-                      ...flowEngine.flowSettings?.scopes,
-                    }}
+                    scope={scopes}
                   />
                 </MultiStepContextProvider>
                 <FormConsumer>
