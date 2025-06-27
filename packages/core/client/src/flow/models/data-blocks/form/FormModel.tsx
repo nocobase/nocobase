@@ -109,7 +109,7 @@ FormModel.registerFlow({
           );
           const resource = new SingleRecordResource();
           resource.setDataSourceKey(params.dataSourceKey);
-          resource.setResourceName(params.collectionName);
+          resource.setResourceName(ctx.shared?.currentFlow?.extra?.collectionName || params.collectionName);
           resource.setAPIClient(ctx.globals.api);
           ctx.model.resource = resource;
         }

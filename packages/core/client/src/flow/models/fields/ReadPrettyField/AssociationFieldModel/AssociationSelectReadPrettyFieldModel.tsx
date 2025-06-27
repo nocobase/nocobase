@@ -13,6 +13,23 @@ import { FlowEngineProvider, reactive } from '@nocobase/flow-engine';
 import { getUniqueKeyFromCollection } from '../../../../../collection-manager/interfaces/utils';
 import { Button } from 'antd';
 
+const LinkToggleWrapper = ({ enableLink, children, currentRecord, ...props }) => {
+  return enableLink ? (
+    <Button
+      style={{ padding: 0, height: 'auto' }}
+      type="link"
+      {...props}
+      onClick={(e) => {
+        props.onClick(e, currentRecord);
+      }}
+    >
+      {children}
+    </Button>
+  ) : (
+    children
+  );
+};
+
 export class AssociationSelectReadPrettyFieldModel extends AssociationReadPrettyFieldModel {
   public static readonly supportedFieldInterfaces = [
     'm2m',
@@ -30,7 +47,7 @@ export class AssociationSelectReadPrettyFieldModel extends AssociationReadPretty
   }
   @reactive
   public render() {
-    const { fieldNames } = this.props;
+    const { fieldNames, enableLink = true } = this.props;
     const value = this.getValue();
     if (!this.collectionField || !value) {
       return;
@@ -77,9 +94,11 @@ export class AssociationSelectReadPrettyFieldModel extends AssociationReadPretty
             return (
               <React.Fragment key={idx}>
                 {idx > 0 && <span style={{ color: 'rgb(170, 170, 170)' }}>,</span>}
-                <FlowEngineProvider engine={this.flowEngine}>
-                  {v?.[fieldNames.label] ? mol.render() : 'N/A'}
-                </FlowEngineProvider>
+                <LinkToggleWrapper enableLink={enableLink} {...this.props} currentRecord={v}>
+                  <FlowEngineProvider engine={this.flowEngine}>
+                    {v?.[fieldNames.label] ? mol.render() : 'N/A'}
+                  </FlowEngineProvider>
+                </LinkToggleWrapper>
               </React.Fragment>
             );
           })}
@@ -87,9 +106,9 @@ export class AssociationSelectReadPrettyFieldModel extends AssociationReadPretty
       );
     }
     return (
-      <Button style={{ padding: 0, height: 'auto' }} {...this.props} type="link">
+      <LinkToggleWrapper enableLink={enableLink} {...this.props} currentRecord={value}>
         <FlowEngineProvider engine={this.flowEngine}>{model.render()}</FlowEngineProvider>
-      </Button>
+      </LinkToggleWrapper>
     );
   }
 }
@@ -123,15 +142,16 @@ AssociationSelectReadPrettyFieldModel.registerFlow({
           'x-decorator': 'FormItem',
         },
       },
+      defaultParams: {
+        enableLink: true,
+      },
       handler(ctx, params) {
-        console.log(ctx);
-        ctx.model.onClick = (e) => {
-          if (open) {
-            ctx.model.dispatchEvent('click', {
-              event: e,
-              filterByTk: ctx.model.targetCollection.filterTargetKey,
-            });
-          }
+        ctx.model.onClick = (e, currentRecord) => {
+          ctx.model.dispatchEvent('click', {
+            event: e,
+            filterByTk: currentRecord[ctx.model.targetCollection.filterTargetKey],
+            collectionName: ctx.model.targetCollection.name,
+          });
         };
         ctx.model.setProps('enableLink', params.enableLink);
       },
