@@ -41,7 +41,7 @@ function LabelByField(props) {
   const currentModel: any = useFlowModel();
   const flowEngine = useFlowEngine();
   if (modelCache.has(cacheKey)) {
-    return <FlowModelRenderer model={modelCache.get(cacheKey)} />;
+    return option[fieldNames.label] ? <FlowModelRenderer model={modelCache.get(cacheKey)} /> : 'N/A';
   }
   const collectionManager = currentModel.collectionField.collection.collectionManager;
   const target = currentModel.collectionField?.options?.target;
@@ -76,7 +76,7 @@ function LabelByField(props) {
 
   return (
     <span key={option[fieldNames.value]}>
-      <FlowModelRenderer model={model} uid={option[fieldNames.value]} />
+      {option[fieldNames.label] ? <FlowModelRenderer model={model} uid={option[fieldNames.value]} /> : 'N/A'}
     </span>
   );
 }
