@@ -685,6 +685,7 @@ export class FlowModel<Structure extends { parent?: any; subModels?: any } = Def
     const maxSortIndex = Math.max(...this.subModels[subKey].map((item) => item.sortIndex || 0), 0);
     model.sortIndex = maxSortIndex + 1;
     this.subModels[subKey].push(model);
+    this.emitter.emit('onSubModelAdded', model);
     return model;
   }
 
@@ -700,6 +701,7 @@ export class FlowModel<Structure extends { parent?: any; subModels?: any } = Def
     }
     model.setParent(this);
     this.subModels[subKey] = model;
+    this.emitter.emit('onSubModelAdded', model);
     return model;
   }
 

@@ -34,8 +34,13 @@ type GridModelStructure = {
 export class GridModel extends FlowModel<GridModelStructure> {
   subModelBaseClass = 'BlockModel';
 
-  onRemove() {
-    console.warn('GridModel onRemove');
+  onInit(options: any): void {
+    this.emitter.on('onSubModelAdded', () => {
+      this.resetRows(true);
+    });
+    this.emitter.on('onSubModelRemoved', () => {
+      this.resetRows(true);
+    });
   }
 
   mergeRowsWithItems(rows: Record<string, string[][]>) {
@@ -108,14 +113,7 @@ export class GridModel extends FlowModel<GridModelStructure> {
             }}
           />
           <Space>
-            <AddBlockButton
-              model={this}
-              subModelKey="items"
-              subModelBaseClass={this.subModelBaseClass}
-              onSubModelAdded={async (model) => {
-                this.resetRows(true);
-              }}
-            >
+            <AddBlockButton model={this} subModelKey="items" subModelBaseClass={this.subModelBaseClass}>
               <FlowSettingsButton icon={<PlusOutlined />}>{'Add block'}</FlowSettingsButton>
             </AddBlockButton>
             <FlowSettingsButton

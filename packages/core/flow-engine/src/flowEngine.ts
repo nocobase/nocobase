@@ -279,15 +279,16 @@ export class FlowEngine {
           const index = subModelValue.indexOf(modelInstance);
           if (index !== -1) {
             subModelValue.splice(index, 1);
+            modelInstance.parent.emitter.emit('onSubModelRemoved', modelInstance);
             break;
           }
         } else if (subModelValue === modelInstance) {
           delete modelInstance.parent.subModels[subKey];
+          modelInstance.parent.emitter.emit('onSubModelRemoved', modelInstance);
           break;
         }
       }
     }
-    console.log(`FlowEngine: removing model with UID '${uid}'`, modelInstance['onRemove']);
     modelInstance['onRemove']?.();
     this.modelInstances.delete(uid);
     return false;
