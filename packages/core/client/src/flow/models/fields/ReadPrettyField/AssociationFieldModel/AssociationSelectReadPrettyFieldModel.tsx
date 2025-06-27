@@ -11,8 +11,7 @@ import React from 'react';
 import { AssociationReadPrettyFieldModel } from './AssociationReadPrettyFieldModel';
 import { FlowEngineProvider, reactive } from '@nocobase/flow-engine';
 import { getUniqueKeyFromCollection } from '../../../../../collection-manager/interfaces/utils';
-import { useCompile } from '../../../../../schema-component';
-import { isTitleField } from '../../../../../data-source';
+import { Button } from 'antd';
 
 export class AssociationSelectReadPrettyFieldModel extends AssociationReadPrettyFieldModel {
   public static readonly supportedFieldInterfaces = [
@@ -25,6 +24,10 @@ export class AssociationSelectReadPrettyFieldModel extends AssociationReadPretty
     'updatedBy',
     'createdBy',
   ];
+
+  set onClick(fn) {
+    this.setProps({ ...this.props, onClick: fn });
+  }
   @reactive
   public render() {
     const { fieldNames } = this.props;
@@ -59,14 +62,18 @@ export class AssociationSelectReadPrettyFieldModel extends AssociationReadPretty
         ...targetLabelField.getComponentProps(),
       },
     });
-    model.setSharedContext({ ...this.ctx.shared, value: value?.[fieldNames.label] });
+    model.setSharedContext({
+      ...this.ctx.shared,
+      value: value?.[fieldNames.label],
+      currentRecord: value,
+    });
     model.setParent(this.parent);
     if (Array.isArray(value)) {
       return (
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
           {value.map((v, idx) => {
             const mol = model.createFork({}, `${idx}`);
-            mol.setSharedContext({ index: idx, value: v?.[fieldNames.label], record: this.ctx.shared.record });
+            mol.setSharedContext({ ...this.ctx.shared, index: idx, value: v?.[fieldNames.label], currentRecord: v });
             return (
               <React.Fragment key={idx}>
                 {idx > 0 && <span style={{ color: 'rgb(170, 170, 170)' }}>,</span>}
@@ -79,7 +86,11 @@ export class AssociationSelectReadPrettyFieldModel extends AssociationReadPretty
         </div>
       );
     }
-    return <FlowEngineProvider engine={this.flowEngine}>{model.render()}</FlowEngineProvider>;
+    return (
+      <Button style={{ padding: 0, height: 'auto' }} {...this.props} type="link">
+        <FlowEngineProvider engine={this.flowEngine}>{model.render()}</FlowEngineProvider>
+      </Button>
+    );
   }
 }
 
@@ -102,6 +113,43 @@ AssociationSelectReadPrettyFieldModel.registerFlow({
           label: params.label || targetCollection.options.titleField || filterKey,
         };
         ctx.model.setProps({ fieldNames: newFieldNames });
+      },
+    },
+    enableLink: {
+      title: 'Enable link',
+      uiSchema: {
+        enableLink: {
+          'x-component': 'Switch',
+          'x-decorator': 'FormItem',
+        },
+      },
+      handler(ctx, params) {
+        console.log(ctx);
+        ctx.model.onClick = (e) => {
+          if (open) {
+            ctx.model.dispatchEvent('click', {
+              event: e,
+              filterByTk: ctx.model.targetCollection.filterTargetKey,
+            });
+          }
+        };
+        ctx.model.setProps('enableLink', params.enableLink);
+      },
+    },
+  },
+});
+
+AssociationSelectReadPrettyFieldModel.registerFlow({
+  key: 'handleClick',
+  title: 'Open mode',
+  on: {
+    eventName: 'click',
+  },
+  steps: {
+    openView: {
+      use: 'openView',
+      defaultParams(ctx) {
+        return {};
       },
     },
   },
