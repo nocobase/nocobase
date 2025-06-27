@@ -18,9 +18,10 @@ import {
   FlowsFloatContextMenu,
   useStepSettingContext,
 } from '@nocobase/flow-engine';
-import { Alert, Card, Space } from 'antd';
+import { Alert, Space } from 'antd';
 import _ from 'lodash';
 import React, { useState } from 'react';
+import { Grid } from '../../components/Grid';
 import { BlockModel } from './BlockModel';
 
 type GridModelStructure = {
@@ -29,89 +30,45 @@ type GridModelStructure = {
   };
 };
 
-function Grid(props: {
-  rows: Record<string, string[][]>;
-  sizes?: Record<string, number[]>;
-  renderItem: (uid: string) => React.ReactNode;
-}) {
-  const { rows, sizes = {}, renderItem } = props;
-
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-      {Object.entries(rows).map(([rowKey, cells]) => {
-        const colCount = cells.length;
-        const rowSizes = sizes[rowKey] || [];
-        const hasAnySize = rowSizes.some((v) => v != null && v !== undefined);
-
-        return (
-          <div key={rowKey} style={{ display: 'flex', flexDirection: 'row', gap: 16 }}>
-            {cells.map((cell, cellIdx) => {
-              const style: React.CSSProperties = {};
-              if (hasAnySize) {
-                // 兼容部分有 size 部分没有 size 的情况
-                const assigned = rowSizes.reduce((sum, v) => sum + (v || 0), 0);
-                const unassignedCount = colCount - rowSizes.filter(Boolean).length;
-                const autoSize = unassignedCount > 0 ? (24 - assigned) / unassignedCount : 0;
-                const width = rowSizes[cellIdx] ?? autoSize;
-                const totalGap = (colCount - 1) * 16;
-                const availableWidth = `calc((100% - ${totalGap}px) * ${width / 24})`;
-                style.flex = `0 0 ${availableWidth}`;
-              } else {
-                // 没有 sizes，等分
-                const percent = 100 / colCount;
-                style.flex = `0 0 calc((100% - ${(colCount - 1) * 16}px) * ${percent / 100})`;
-              }
-              return (
-                <div key={cellIdx} style={style}>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                    {cell.map((uid) => (
-                      <div key={uid}>{renderItem(uid)}</div>
-                    ))}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        );
-      })}
-    </div>
-  );
-}
-
-function mergeRowsWithItems(rows: Record<string, string[][]>, items: BlockModel[]) {
-  if (!items || items.length === 0) {
-    return rows; // 如果没有 items，直接返回原始 rows
-  }
-  // 1. 收集所有 items 里的 uid
-  const allUids = new Set(items.map((item) => item.uid));
-  // 2. 收集 rows 里已用到的 uid
-  const usedUids = new Set<string>();
-  const newRows: Record<string, string[][]> = {};
-
-  // 3. 过滤 rows 里不存在于 items 的 uid
-  for (const [rowKey, cells] of Object.entries(rows)) {
-    const filteredCells = cells.map((cell) => cell.filter((uid) => allUids.has(uid))).filter((cell) => cell.length > 0);
-    if (filteredCells.length > 0) {
-      newRows[rowKey] = filteredCells;
-      filteredCells.forEach((cell) => cell.forEach((uid) => usedUids.add(uid)));
-    }
-  }
-
-  // 4. 只把不在 rows 里的 item.uid 作为新行加到 rows 后面
-  const allRowUids = new Set<string>();
-  Object.values(newRows).forEach((cells) => cells.forEach((cell) => cell.forEach((uid) => allRowUids.add(uid))));
-  for (const item of items) {
-    if (!allRowUids.has(item.uid)) {
-      newRows[uid()] = [[item.uid]];
-    }
-  }
-
-  return newRows;
-}
-
 export class GridModel extends FlowModel<GridModelStructure> {
   subModelBaseClass = 'BlockModel';
+
+  mergeRowsWithItems(rows: Record<string, string[][]>) {
+    const items = this.subModels.items || [];
+    if (!items || items.length === 0) {
+      return rows; // 如果没有 items，直接返回原始 rows
+    }
+    // 1. 收集所有 items 里的 uid
+    const allUids = new Set(items.map((item) => item.uid));
+    // 2. 收集 rows 里已用到的 uid
+    const usedUids = new Set<string>();
+    const newRows: Record<string, string[][]> = {};
+
+    // 3. 过滤 rows 里不存在于 items 的 uid
+    for (const [rowKey, cells] of Object.entries(rows)) {
+      const filteredCells = cells
+        .map((cell) => cell.filter((uid) => allUids.has(uid)))
+        .filter((cell) => cell.length > 0);
+      if (filteredCells.length > 0) {
+        newRows[rowKey] = filteredCells;
+        filteredCells.forEach((cell) => cell.forEach((uid) => usedUids.add(uid)));
+      }
+    }
+
+    // 4. 只把不在 rows 里的 item.uid 作为新行加到 rows 后面
+    const allRowUids = new Set<string>();
+    Object.values(newRows).forEach((cells) => cells.forEach((cell) => cell.forEach((uid) => allRowUids.add(uid))));
+    for (const item of items) {
+      if (!allRowUids.has(item.uid)) {
+        newRows[uid()] = [[item.uid]];
+      }
+    }
+
+    return newRows;
+  }
+
   render() {
+    console.log('GridModel render', JSON.stringify(this.props.rows, null, 2), this.props.sizes);
     return (
       <div style={{ padding: 16 }}>
         <Grid
@@ -186,7 +143,7 @@ GridModel.registerFlow({
             // eslint-disable-next-line react-hooks/rules-of-hooks
             const ctx = useStepSettingContext();
             const params = ctx.model.getStepParams('defaultFlow', 'grid');
-            const mergedRows = mergeRowsWithItems(params?.rows || {}, ctx.model.subModels.items || []);
+            const mergedRows = ctx.model.mergeRowsWithItems(params?.rows || {});
             return <JsonEditor value={mergedRows} onChange={onChange} rows={10} />;
           },
           'x-component-props': {
@@ -206,7 +163,8 @@ GridModel.registerFlow({
         },
       },
       async handler(ctx, params) {
-        const mergedRows = mergeRowsWithItems(params.rows || {}, ctx.model.subModels.items);
+        console.log('GridModel defaultFlow grid handler', params);
+        const mergedRows = ctx.model.mergeRowsWithItems(params.rows || {});
         ctx.model.setProps('rows', mergedRows);
         ctx.model.setProps('sizes', params.sizes || {});
       },
