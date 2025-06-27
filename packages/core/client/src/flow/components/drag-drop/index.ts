@@ -7,6 +7,5 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export * from './EllipsisWithTooltip';
-export * from './ExpiresRadio';
-export * from './drag-drop';
+export * from './Sortable';
+export * from './SortableItem';
