@@ -226,44 +226,28 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
                 return null;
               }
 
-              // 从step获取uiSchema（如果存在）
-              const stepUiSchema = actionStep.uiSchema || {};
+              // 检查是否有uiSchema（静态或动态）
+              const hasStepUiSchema = actionStep.uiSchema != null;
 
-              // 如果step使用了action，也获取action的uiSchema
-              let actionUiSchema = {};
+              // 如果step使用了action，检查action是否有uiSchema
+              let hasActionUiSchema = false;
               if (actionStep.use) {
                 try {
                   const action = targetModel.flowEngine?.getAction?.(actionStep.use);
-                  if (action && action.uiSchema) {
-                    actionUiSchema = action.uiSchema;
-                  }
+                  hasActionUiSchema = action && action.uiSchema != null;
                 } catch (error) {
                   console.warn(`获取action '${actionStep.use}' 失败:`, error);
                 }
               }
 
-              // 合并uiSchema，确保step的uiSchema优先级更高
-              const mergedUiSchema = { ...actionUiSchema };
-
-              // 将stepUiSchema中的字段合并到mergedUiSchema
-              try {
-                Object.entries(stepUiSchema).forEach(([fieldKey, schema]) => {
-                  if (typeof fieldKey === 'string' && schema) {
-                    if (mergedUiSchema[fieldKey]) {
-                      mergedUiSchema[fieldKey] = { ...mergedUiSchema[fieldKey], ...schema };
-                    } else {
-                      mergedUiSchema[fieldKey] = schema;
-                    }
-                  }
-                });
-              } catch (error) {
-                console.warn(`合并步骤 '${stepKey}' 的uiSchema时出错:`, error);
-              }
-
-              // 如果没有可配置的UI Schema，返回null
-              if (Object.keys(mergedUiSchema).length === 0) {
+              // 如果都没有uiSchema（静态或动态），返回null
+              if (!hasStepUiSchema && !hasActionUiSchema) {
                 return null;
               }
+
+              // 对于动态uiSchema，我们假设它总是有内容
+              // 实际的解析在设置对话框中进行
+              const mergedUiSchema = { placeholder: true };
 
               return {
                 stepKey,

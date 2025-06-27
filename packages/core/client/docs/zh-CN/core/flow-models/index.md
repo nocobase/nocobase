@@ -24,6 +24,10 @@
 
 <code src="./demos/dynamic-default-params.tsx"></code>
 
+## 动态UI配置界面
+
+<code src="./demos/dynamic-ui-schema.tsx"></code>
+
 ## table block
 
 <code src="./demos/table-block.tsx"></code>

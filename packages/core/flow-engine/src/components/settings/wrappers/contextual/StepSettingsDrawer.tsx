@@ -11,7 +11,7 @@ import { createSchemaField, ISchema } from '@formily/react';
 import { message, Button, Space } from 'antd';
 import React, { useState } from 'react';
 import { StepDefinition, StepSettingsDrawerProps } from '../../../../types';
-import { resolveDefaultParams } from '../../../../utils';
+import { resolveDefaultParams, resolveUiSchema } from '../../../../utils';
 import { StepSettingContextProvider, StepSettingContextType, useStepSettingContext } from './StepSettingContext';
 
 const SchemaField = createSchemaField();
@@ -52,6 +52,14 @@ const openStepSettingsDrawer = async ({
   }
 
   const title = drawerTitle || (step ? `${step.title || stepKey} - 配置` : `步骤配置 - ${stepKey}`);
+
+  // 创建参数解析上下文
+  const paramsContext = {
+    model,
+    globals: model.flowEngine?.context || {},
+    app: model.flowEngine?.context?.app,
+  };
+
   const stepUiSchema = step.uiSchema || {};
   let actionDefaultParams = {};
 
@@ -65,9 +73,13 @@ const openStepSettingsDrawer = async ({
     actionDefaultParams = action.defaultParams || {};
   }
 
+  // 解析动态 uiSchema
+  const resolvedActionUiSchema = await resolveUiSchema(actionUiSchema, paramsContext);
+  const resolvedStepUiSchema = await resolveUiSchema(stepUiSchema, paramsContext);
+
   // 合并uiSchema，确保step的uiSchema优先级更高
-  const mergedUiSchema = { ...actionUiSchema };
-  Object.entries(stepUiSchema).forEach(([fieldKey, schema]) => {
+  const mergedUiSchema = { ...resolvedActionUiSchema };
+  Object.entries(resolvedStepUiSchema).forEach(([fieldKey, schema]) => {
     if (mergedUiSchema[fieldKey]) {
       mergedUiSchema[fieldKey] = { ...mergedUiSchema[fieldKey], ...schema };
     } else {
@@ -83,13 +95,6 @@ const openStepSettingsDrawer = async ({
 
   // 获取初始值
   const stepParams = model.getStepParams(flowKey, stepKey) || {};
-
-  // 创建参数解析上下文
-  const paramsContext = {
-    model,
-    globals: model.flowEngine?.context || {},
-    app: model.flowEngine?.context?.app,
-  };
 
   // 解析 defaultParams
   const resolvedDefaultParams = await resolveDefaultParams(step.defaultParams, paramsContext);

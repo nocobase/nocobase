@@ -12,7 +12,7 @@ import { message, Button } from 'antd';
 import React from 'react';
 import { FlowModel } from '../../../../models';
 import { StepDefinition } from '../../../../types';
-import { resolveDefaultParams } from '../../../../utils';
+import { resolveDefaultParams, resolveUiSchema } from '../../../../utils';
 import { StepSettingContextProvider, StepSettingContextType, useStepSettingContext } from './StepSettingContext';
 
 /**
@@ -141,6 +141,13 @@ const openRequiredParamsStepFormDialog = async ({
           flowTitle: string;
         }> = [];
 
+        // 创建参数解析上下文用于解析动态 uiSchema
+        const paramsContext = {
+          model,
+          globals: model.flowEngine?.context || {},
+          app: model.flowEngine?.context?.app,
+        };
+
         for (const [flowKey, flow] of allFlows) {
           for (const stepKey in flow.steps) {
             const step = flow.steps[stepKey];
@@ -159,9 +166,13 @@ const openRequiredParamsStepFormDialog = async ({
                 }
               }
 
+              // 解析动态 uiSchema
+              const resolvedActionUiSchema = await resolveUiSchema(actionUiSchema, paramsContext);
+              const resolvedStepUiSchema = await resolveUiSchema(stepUiSchema, paramsContext);
+
               // 合并uiSchema，确保step的uiSchema优先级更高
-              const mergedUiSchema = { ...actionUiSchema };
-              Object.entries(stepUiSchema).forEach(([fieldKey, schema]) => {
+              const mergedUiSchema = { ...resolvedActionUiSchema };
+              Object.entries(resolvedStepUiSchema).forEach(([fieldKey, schema]) => {
                 if (mergedUiSchema[fieldKey]) {
                   mergedUiSchema[fieldKey] = { ...mergedUiSchema[fieldKey], ...schema };
                 } else {
@@ -201,14 +212,6 @@ const openRequiredParamsStepFormDialog = async ({
 
         // 获取所有步骤的初始值
         const initialValues: Record<string, any> = {};
-
-        // 创建参数解析上下文用于解析函数形式的 defaultParams
-        // 在 settings 中，我们只有基本的上下文信息
-        const paramsContext = {
-          model,
-          globals: model.flowEngine?.context || {},
-          app: model.flowEngine?.context?.app,
-        };
 
         for (const { flowKey, stepKey, step } of requiredSteps) {
           const stepParams = model.getStepParams(flowKey, stepKey) || {};

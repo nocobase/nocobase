@@ -8,6 +8,7 @@
  */
 
 import _ from 'lodash';
+import type { ISchema } from '@formily/json-schema';
 import type { FlowModel } from './models';
 import { ActionDefinition, DeepPartial, FlowContext, FlowDefinition, ModelConstructor, ParamsContext } from './types';
 
@@ -101,6 +102,37 @@ export async function resolveDefaultParams<TModel extends FlowModel = FlowModel>
   }
 
   return defaultParams;
+}
+
+/**
+ * 解析 uiSchema，支持静态值和函数形式
+ * 函数可以接收 ParamsContext（在 settings 中）
+ * @param {Record<string, ISchema> | ((ctx: ParamsContext<TModel>) => Record<string, ISchema> | Promise<Record<string, ISchema>>)} uiSchema UI Schema 定义
+ * @param {ParamsContext<TModel>} ctx 上下文
+ * @returns {Promise<Record<string, ISchema>>} 解析后的 UI Schema 对象
+ */
+export async function resolveUiSchema<TModel extends FlowModel = FlowModel>(
+  uiSchema:
+    | Record<string, ISchema>
+    | ((ctx: ParamsContext<TModel>) => Record<string, ISchema> | Promise<Record<string, ISchema>>)
+    | undefined,
+  ctx: ParamsContext<TModel>,
+): Promise<Record<string, ISchema>> {
+  if (!uiSchema) {
+    return {};
+  }
+
+  if (typeof uiSchema === 'function') {
+    try {
+      const result = await uiSchema(ctx);
+      return result || {};
+    } catch (error) {
+      console.error('Error resolving uiSchema function:', error);
+      return {};
+    }
+  }
+
+  return uiSchema;
 }
 
 /**

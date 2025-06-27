@@ -128,7 +128,9 @@ export interface ActionDefinition<TModel extends FlowModel = FlowModel> {
   name: string; // Unique identifier for the action
   title?: string;
   handler: (ctx: FlowContext<TModel>, params: any) => Promise<any> | any;
-  uiSchema?: Record<string, ISchema>;
+  uiSchema?:
+    | Record<string, ISchema>
+    | ((ctx: ParamsContext<TModel>) => Record<string, ISchema> | Promise<Record<string, ISchema>>);
   defaultParams?:
     | Record<string, any>
     | ((ctx: ParamsContext<TModel>) => Record<string, any> | Promise<Record<string, any>>);
@@ -148,7 +150,9 @@ export interface StepDefinition<TModel extends FlowModel = FlowModel> {
   handler?: (ctx: FlowContext<TModel>, params: any) => Promise<any> | any;
 
   // UI and params configuration
-  uiSchema?: Record<string, ISchema>; // Optional: overrides uiSchema from ActionDefinition if 'use' is provided
+  uiSchema?:
+    | Record<string, ISchema>
+    | ((ctx: ParamsContext<TModel>) => Record<string, ISchema> | Promise<Record<string, ISchema>>); // Optional: overrides uiSchema from ActionDefinition if 'use' is provided
   defaultParams?:
     | Record<string, any>
     | ((ctx: ParamsContext<TModel>) => Record<string, any> | Promise<Record<string, any>>); // Optional: overrides/extends defaultParams from ActionDefinition if 'use' is provided
@@ -181,7 +185,9 @@ export interface ParamsContext<TModel extends FlowModel = FlowModel> {
  */
 export interface ActionOptions<TModel extends FlowModel = FlowModel, P = any, R = any> {
   handler: (ctx: FlowContext<TModel>, params: P) => Promise<R> | R;
-  uiSchema?: Record<string, any>;
+  uiSchema?:
+    | Record<string, ISchema>
+    | ((ctx: ParamsContext<TModel>) => Record<string, ISchema> | Promise<Record<string, ISchema>>);
   defaultParams?: Partial<P> | ((ctx: ParamsContext<TModel>) => Partial<P> | Promise<Partial<P>>);
 }
 

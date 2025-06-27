@@ -34,11 +34,13 @@ SimpleProductModel.registerFlow('configFlow', {
           type: 'string',
           title: '产品名称',
           'x-component': Input,
+          'x-decorator': 'FormItem',
         },
         category: {
           type: 'string',
           title: '分类',
           'x-component': Select,
+          'x-decorator': 'FormItem',
           enum: [
             { label: '电子产品', value: 'electronics' },
             { label: '服装', value: 'fashion' },
@@ -66,6 +68,7 @@ SimpleProductModel.registerFlow('configFlow', {
           type: 'number',
           title: '价格',
           'x-component': 'Input',
+          'x-decorator': 'FormItem',
           'x-component-props': {
             min: 0,
           },
@@ -117,9 +120,7 @@ class PluginDynamicDefaultParams extends Plugin {
           </p>
 
           <div style={{ marginTop: 20 }}>
-            <FlowsFloatContextMenu model={model}>
-              <FlowModelRenderer model={model} />
-            </FlowsFloatContextMenu>
+            <FlowModelRenderer model={model} showFlowSettings />
           </div>
 
           <Card>
