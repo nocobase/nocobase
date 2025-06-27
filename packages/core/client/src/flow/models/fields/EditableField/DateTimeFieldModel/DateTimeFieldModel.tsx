@@ -40,15 +40,6 @@ DateTimeFieldModel.registerFlow({
     dateFormat: {
       use: 'dateDisplayFormat',
       title: 'Date display format',
-      defaultParams: (ctx) => {
-        const { showTime, dateFormat, timeFormat, picker } = ctx.model.props;
-        return {
-          picker: picker || 'date',
-          dateFormat: dateFormat || 'YYYY-MM-DD',
-          timeFormat: timeFormat,
-          showTime,
-        };
-      },
     },
   },
 });

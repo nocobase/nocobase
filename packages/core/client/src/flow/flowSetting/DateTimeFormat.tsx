@@ -152,12 +152,6 @@ export const dateTimeFormat = defineAction({
       ],
     },
   },
-  handler(ctx: any, params) {
-    ctx.model.flowEngine.flowSettings.registerScopes({
-      collectionField: ctx.model.collectionField,
-    });
-    ctx.model.setComponentProps?.({ ...params });
-  },
   defaultParams: (ctx: any) => {
     const { showTime, dateFormat, timeFormat, picker } = ctx.model.field.componentProps || {};
     return {
@@ -166,5 +160,11 @@ export const dateTimeFormat = defineAction({
       timeFormat: timeFormat,
       showTime,
     };
+  },
+  handler(ctx: any, params) {
+    ctx.model.flowEngine.flowSettings.registerScopes({
+      collectionField: ctx.model.collectionField,
+    });
+    ctx.model.setComponentProps?.({ ...params });
   },
 });
