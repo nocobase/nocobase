@@ -8,8 +8,8 @@
  */
 
 import type { ButtonProps } from 'antd';
-import { RecordActionModel } from '../base/ActionModel';
 import { openLinkAction } from '../../actions/openLinkAction';
+import { RecordActionModel } from '../base/ActionModel';
 
 export class LinkRecordActionModel extends RecordActionModel {
   defaultProps: ButtonProps = {
@@ -20,6 +20,7 @@ export class LinkRecordActionModel extends RecordActionModel {
 
 LinkRecordActionModel.define({
   title: 'Link',
+  hide: true,
 });
 
 LinkRecordActionModel.registerFlow({

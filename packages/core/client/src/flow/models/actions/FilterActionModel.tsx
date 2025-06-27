@@ -12,10 +12,11 @@ import { Button, ButtonProps, Popover, Select, Space } from 'antd';
 import React, { FC } from 'react';
 import { FilterGroup } from '../../components/FilterGroup';
 import { GlobalActionModel } from '../base/ActionModel';
+import { DataBlockModel } from '../base/BlockModel';
 
 const FilterContent: FC<{ value: any }> = (props) => {
   const modelInstance = useFlowModel();
-  const currentBlockModel = modelInstance.ctx.shared.currentBlockModel;
+  const currentBlockModel = modelInstance.ctx.shared.currentBlockModel as DataBlockModel;
   const fields = currentBlockModel.collection.getFields();
   const ignoreFieldsNames = modelInstance.props.ignoreFieldsNames || [];
 

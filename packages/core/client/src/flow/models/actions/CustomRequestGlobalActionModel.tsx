@@ -23,6 +23,7 @@ export class CustomRequestGlobalActionModel extends GlobalActionModel {
 
 CustomRequestGlobalActionModel.define({
   title: 'Custom request',
+  hide: true,
 });
 
 const fieldNames = {

@@ -22,6 +22,7 @@ export class UpdateRecordActionModel extends RecordActionModel {
 
 UpdateRecordActionModel.define({
   title: 'Update record',
+  hide: true,
 });
 
 UpdateRecordActionModel.registerFlow({

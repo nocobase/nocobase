@@ -24,6 +24,7 @@ export class CustomRequestRecordActionModel extends RecordActionModel {
 
 CustomRequestRecordActionModel.define({
   title: 'Custom request',
+  hide: true,
 });
 
 const fieldNames = {

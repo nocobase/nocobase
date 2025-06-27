@@ -9,8 +9,8 @@
 
 import { MultiRecordResource } from '@nocobase/flow-engine';
 import { ButtonProps } from 'antd';
-import { GlobalActionModel } from '../base/ActionModel';
 import { openModeAction } from '../../actions/openModeAction';
+import { GlobalActionModel } from '../base/ActionModel';
 
 export class BulkEditActionModel extends GlobalActionModel {
   defaultProps: ButtonProps = {
@@ -21,6 +21,7 @@ export class BulkEditActionModel extends GlobalActionModel {
 
 BulkEditActionModel.define({
   title: 'Bulk edit',
+  hide: true,
 });
 
 BulkEditActionModel.registerFlow({

@@ -20,6 +20,7 @@ export class DuplicateActionModel extends RecordActionModel {
 
 DuplicateActionModel.define({
   title: 'Duplicate',
+  hide: true,
 });
 
 DuplicateActionModel.registerFlow({

@@ -67,6 +67,11 @@ export class FilterFormModel extends FilterBlockModel {
   }
 }
 
+FilterFormModel.define({
+  hide: true,
+  title: 'Form',
+});
+
 FilterFormModel.registerFlow({
   key: 'default',
   auto: true,

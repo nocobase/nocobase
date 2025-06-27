@@ -22,6 +22,10 @@ export class FormSubmitActionModel extends FormActionModel {
   };
 }
 
+FormSubmitActionModel.define({
+  title: 'Submit',
+});
+
 FormSubmitActionModel.registerFlow({
   key: 'event1',
   on: {

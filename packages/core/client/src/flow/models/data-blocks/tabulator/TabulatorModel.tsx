@@ -345,6 +345,7 @@ TabulatorModel.define({
   title: 'Tabulator',
   group: 'Content',
   requiresDataSource: true,
+  hide: true,
   defaultOptions: {
     use: 'TabulatorModel',
   },
