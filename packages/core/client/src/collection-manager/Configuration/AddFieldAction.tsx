@@ -43,23 +43,7 @@ const getSchema = (schema: CollectionFieldInterface, record: any, compile) => {
     initialValue.reverseField.name = `f_${uid()}`;
   }
 
-  // 基于当前选中的 fieldInterface 构建 fieldType 选项
-  const fieldTypeOptions = [];
-  const fieldType = schema.default?.type;
-  const availableFieldTypes = schema.availableOptions?.all[schema.name][fieldType] || [];
-
-  if (fieldType && availableFieldTypes.length > 0) {
-    fieldTypeOptions.push({
-      label: fieldType,
-      value: fieldType,
-      children: availableFieldTypes.map((availableType) => ({
-        label: availableType,
-        value: availableType,
-      })),
-    });
-  }
-
-  // 设置 fieldType 默认值为第一组的最深层级路径
+  const fieldTypeOptions = schema.getSecondaryDataTypeOptions();
   if (fieldTypeOptions && fieldTypeOptions.length > 0) {
     const getFirstLeafPath = (options) => {
       const path = [];

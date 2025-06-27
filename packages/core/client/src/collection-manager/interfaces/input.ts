@@ -11,7 +11,7 @@ import { ISchema } from '@formily/react';
 import { isArr, isEmpty, isValid } from '@formily/shared';
 import { registerValidateRules } from '@formily/validator';
 import {
-  AvailableFieldOptions,
+  AllowedFieldOptions,
   CollectionFieldInterface,
 } from '../../data-source/collection-field-interface/CollectionFieldInterface';
 import { i18n } from '../../i18n';
@@ -62,28 +62,10 @@ export class InputFieldInterface extends CollectionFieldInterface {
     },
   };
   fieldType = 'string';
-  availableOptions: AvailableFieldOptions = {
-    all: {
-      input: {
-        string: ['varchar', 'char'],
-      },
-      textarea: {
-        text: ['text'],
-      },
-    },
-    available: {
-      input: {
-        string: {
-          varchar: ['varchar'],
-          char: ['varchar', 'char'],
-        },
-      },
-      textarea: {
-        text: {
-          text: ['text'],
-        },
-      },
-    },
+  allowedOptions: AllowedFieldOptions = {
+    interfaces: ['textarea'],
+    types: ['string'],
+    dataTypes: ['varchar', 'char'],
   };
   availableTypes = ['varchar', 'char'];
   hasDefaultValue = true;
@@ -244,5 +226,15 @@ export class InputFieldInterface extends CollectionFieldInterface {
         },
       },
     };
+  }
+
+  getAllowDataTypesBySelected(selectedValue: string): string[] {
+    if (selectedValue === 'varchar') {
+      return ['varchar'];
+    }
+    if (selectedValue === 'char') {
+      return ['varchar', 'char'];
+    }
+    return [];
   }
 }

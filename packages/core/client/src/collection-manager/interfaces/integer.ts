@@ -11,7 +11,7 @@ import { registerValidateFormats } from '@formily/core';
 import { i18n } from '../../i18n';
 import { defaultProps, operators, unique, autoIncrement, primaryKey } from './properties';
 import {
-  AvailableFieldOptions,
+  AllowedFieldOptions,
   CollectionFieldInterface,
 } from '../../data-source/collection-field-interface/CollectionFieldInterface';
 
@@ -40,34 +40,10 @@ export class IntegerFieldInterface extends CollectionFieldInterface {
     },
   };
   availableTypes = ['bigInt', 'integer', 'sort'];
-  availableOptions: AvailableFieldOptions = {
-    all: {
-      integer: {
-        bigInt: ['bigInt', 'tinyint', 'integer'],
-      },
-      number: {
-        double: ['double', 'float', 'decimal'],
-      },
-      input: {
-        string: ['varchar', 'char'],
-      },
-      textarea: {
-        text: ['text'],
-      },
-    },
-    available: {
-      input: {
-        string: {
-          varchar: ['varchar'],
-          char: ['varchar', 'char'],
-        },
-      },
-      textarea: {
-        text: {
-          text: ['text'],
-        },
-      },
-    },
+  allowedOptions: AllowedFieldOptions = {
+    interfaces: ['number', 'input'],
+    types: ['bigInt'],
+    dataTypes: ['bigInt', 'integer', 'tinyint', 'sort'],
   };
   hasDefaultValue = true;
   properties = {
@@ -161,4 +137,19 @@ export class IntegerFieldInterface extends CollectionFieldInterface {
       },
     };
   };
+  getAllowDataTypesBySelected(selectedValue: string): string[] {
+    if (selectedValue === 'bigInt') {
+      return ['bigInt', 'sort'];
+    }
+    if (selectedValue === 'integer') {
+      return ['bigInt', 'integer', 'sort'];
+    }
+    if (selectedValue === 'sort') {
+      return ['bigInt', 'integer', 'tinyint', 'sort'];
+    }
+    if (selectedValue === 'tinyint') {
+      return ['bigInt', 'integer', 'tinyint', 'sort'];
+    }
+    return [selectedValue];
+  }
 }

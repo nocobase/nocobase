@@ -108,14 +108,12 @@ const titlePrompt = 'Default title for each record';
 
 // Field Interface -> Field Type -> Data Type
 const createFieldTypeOptions = (
-  currentValue: [string, ...string[], string],
-  getInterface: (name: string) => CollectionFieldInterface,
+  dataType: string,
+  currentInterface: CollectionFieldInterface,
   interfaces: Record<string, CollectionFieldInterface>,
   compile,
 ) => {
-  const [interfaceName] = currentValue;
-  const currentInterface = getInterface(interfaceName);
-  const options = currentInterface.getAvailableOptions({ currentValue, interfaces, compile });
+  const options = currentInterface.getCascaderOptionType({ dataType, interfaces, compile });
   return options;
 };
 
@@ -174,6 +172,7 @@ const CurrentFields = (props) => {
         };
 
         const currentValue: any = []; // [interface, fieldType, dataType]
+        const currentInterface = getInterface(value);
         if (value) {
           currentValue.push(value);
           if (record.fieldType && Array.isArray(record.fieldType) && record.fieldType.length > 0) {
@@ -184,9 +183,9 @@ const CurrentFields = (props) => {
         return (
           <Cascader
             value={currentValue.length > 0 ? currentValue : undefined}
-            options={createFieldTypeOptions(currentValue, getInterface, interfaces, compile)}
+            options={createFieldTypeOptions(currentValue[2], currentInterface, interfaces, compile)}
             onChange={handleChange}
-            placeholder={t('Select field type')}
+            placeholder={t('Select field interface')}
             expandTrigger="hover"
             changeOnSelect={false}
             style={{ width: '100%', minWidth: 100 }}
@@ -308,20 +307,21 @@ const InheritFields = (props) => {
       title: t('Field name'),
     },
     {
-      dataIndex: 'fieldType',
-      title: t('Field type'),
+      dataIndex: 'interface',
+      title: t('Field interface'),
       render: (value, record) => {
         const currentValue: any = []; // [interface, fieldType, dataType]
-        if (record.interface) {
-          currentValue.push(record.interface);
-          if (value && Array.isArray(value) && value.length > 0) {
-            currentValue.push(...value);
+        const currentInterface = getInterface(value);
+        if (value) {
+          currentValue.push(value);
+          if (value && Array.isArray(record.fieldType) && value.length > 0) {
+            currentValue.push(...record.fieldType);
           }
         }
         return (
           <Cascader
             value={currentValue.length > 0 ? currentValue : undefined}
-            options={createFieldTypeOptions(currentValue, getInterface, interfaces, compile)}
+            options={createFieldTypeOptions(currentValue[2], currentInterface, interfaces, compile)}
             placeholder={t('Select field type')}
             expandTrigger="hover"
             changeOnSelect={false}

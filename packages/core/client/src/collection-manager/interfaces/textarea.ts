@@ -11,7 +11,7 @@ import { ISchema } from '@formily/react';
 import { i18n } from '../../i18n';
 import { defaultProps, operators } from './properties';
 import {
-  AvailableFieldOptions,
+  AllowedFieldOptions,
   CollectionFieldInterface,
 } from '../../data-source/collection-field-interface/CollectionFieldInterface';
 
@@ -30,19 +30,10 @@ export class TextareaFieldInterface extends CollectionFieldInterface {
     },
   };
   availableTypes = ['text', 'json', 'string'];
-  availableOptions: AvailableFieldOptions = {
-    all: {
-      textarea: {
-        text: ['text'],
-      },
-    },
-    available: {
-      textarea: {
-        text: {
-          text: ['text'],
-        },
-      },
-    },
+  allowedOptions: AllowedFieldOptions = {
+    interfaces: ['textarea'],
+    types: ['text'],
+    dataTypes: ['text'],
   };
   hasDefaultValue = true;
   titleUsable = true;
@@ -105,4 +96,7 @@ export class TextareaFieldInterface extends CollectionFieldInterface {
   filterable = {
     operators: operators.string,
   };
+  getAllowDataTypesBySelected(selectedValue: string): string[] {
+    return ['text'];
+  }
 }
