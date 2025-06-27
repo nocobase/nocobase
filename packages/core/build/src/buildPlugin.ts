@@ -371,12 +371,12 @@ export async function buildProPluginServer(cwd: string, userConfig: UserConfig, 
   if (!cwd.includes(PLUGIN_COMMERCIAL)) {
     externalOptions.external = [/^[./]/];
     externalOptions.noExternal = [entryFile, /@nocobase\/plugin-commercial\/server/, /dist\/server\/index\.js/];
-    // externalOptions.onSuccess = async () => {
-    //   const serverFiles = [path.join(cwd, target_dir, 'server', 'index.js')];
-    //   serverFiles.forEach((file) => {
-    //     obfuscate(file);
-    //   });
-    // };
+    externalOptions.onSuccess = async () => {
+      const serverFiles = [path.join(cwd, target_dir, 'server', 'index.js')];
+      serverFiles.forEach((file) => {
+        obfuscate(file);
+      });
+    };
     externalOptions.esbuildPlugins = [pluginEsbuildCommercialInject];
   }
 
