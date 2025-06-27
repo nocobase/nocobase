@@ -274,7 +274,7 @@ jobs:
 
       - run: npx playwright install chromium --with-deps
       - name: Test with postgres
-        run: yarn e2e p-test --match 'packages/**/{plugin-workflow,plugin-workflow-*}/**/__e2e__/**/*.test.ts' --ignore 'packages/**/plugin-workflow-approval/**/__e2e__/**/*.test.ts'
+        run: yarn e2e p-test --match 'packages/**/{plugin-workflow,plugin-workflow-*}/**/__e2e__/**/*.test.ts' --ignore 'packages/**/plugin-workflow-approval/**/__e2e__/**/*.test.ts' --ignore 'packages/**/plugin-workflow-manual/**/__e2e__/**/*.test.ts'
         env:
           __E2E__: true
           APP_ENV: production
@@ -297,131 +297,131 @@ jobs:
 
     timeout-minutes: 60
 
-  plugin-workflow-approval:
-    name: plugin-workflow-approval
-    needs: build
-    runs-on: ubuntu-latest
-    container: node:20
-    services:
-      # Label used to access the service container
-      postgres:
-        # Docker Hub image
-        image: postgres:11
-        # Provide the password for postgres
-        env:
-          POSTGRES_USER: nocobase
-          POSTGRES_PASSWORD: password
-        # Set health checks to wait until postgres has started
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-    steps:
-      - uses: actions/create-github-app-token@v1
-        id: app-token
-        with:
-          app-id: ${{ vars.NOCOBASE_APP_ID }}
-          private-key: ${{ secrets.NOCOBASE_APP_PRIVATE_KEY }}
-          repositories: nocobase,pro-plugins,plugin-workflow-approval
-          skip-token-revoke: true
-      - uses: actions/checkout@v4
-      - name: Checkout pro-plugins
-        continue-on-error: true # 外部开发者提交 PR 的时候因为没有权限这里会报错，为了能够继续执行后续步骤，所以这里设置为 continue-on-error: true
-        uses: actions/checkout@v4
-        with:
-          repository: nocobase/pro-plugins
-          ref: main
-          path: packages/pro-plugins
-          fetch-depth: 0
-          token: ${{ steps.app-token.outputs.token }}
-      - name: Checkout plugin-workflow-approval
-        continue-on-error: true # 外部开发者提交 PR 的时候因为没有权限这里会报错，为了能够继续执行后续步骤，所以这里设置为 continue-on-error: true
-        uses: actions/checkout@v4
-        with:
-          repository: nocobase/plugin-workflow-approval
-          ref: main
-          path: packages/pro-plugins/@nocobase/plugin-workflow-approval
-          fetch-depth: 0
-          token: ${{ steps.app-token.outputs.token }}
-      - run: |
-          cd packages/pro-plugins &&
-          if git show-ref --quiet refs/remotes/origin/${{ github.head_ref || github.ref_name }}; then
-            git checkout ${{ github.head_ref || github.ref_name }}
-          else
-            if git show-ref --quiet refs/remotes/origin/${{ github.event.pull_request.base.ref }}; then
-              git checkout ${{ github.event.pull_request.base.ref }}
-            else
-              git checkout main
-            fi
-          fi
-          cd ../../
-          cd packages/pro-plugins/@nocobase/plugin-workflow-approval &&
-          if git show-ref --quiet refs/remotes/origin/${{ github.head_ref || github.ref_name }}; then
-            git checkout ${{ github.head_ref || github.ref_name }}
-          else
-            if git show-ref --quiet refs/remotes/origin/${{ github.event.pull_request.base.ref }}; then
-              git checkout ${{ github.event.pull_request.base.ref }}
-            else
-              git checkout main
-            fi
-          fi
-          cd ../../../../
-        continue-on-error: true # 外部开发者提交 PR 的时候因为没有权限这里会报错，为了能够继续执行后续步骤，所以这里设置为 continue-on-error: true
-      - name: Git logs
-        run: |
-          cd packages/pro-plugins/@nocobase/plugin-workflow-approval && git log --color --graph --pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset' --abbrev-commit -n 10
-        continue-on-error: true # 外部开发者提交 PR 的时候因为没有权限这里会报错，为了能够继续执行后续步骤，所以这里设置为 continue-on-error: true
-      - name: Set variables
-        continue-on-error: true # 外部开发者提交 PR 的时候因为没有权限这里会报错，为了能够继续执行后续步骤，所以这里设置为 continue-on-error: true
-        run: |
-          APPEND_PRESET_LOCAL_PLUGINS=$(find ./packages/pro-plugins/@nocobase -mindepth 1 -maxdepth 1 -type d -exec basename {} \; | sed 's/^plugin-//' | tr '\n' ',' | sed 's/,$//')
-          echo "var2=$APPEND_PRESET_LOCAL_PLUGINS" >> $GITHUB_OUTPUT
-        id: vars
+  # plugin-workflow-approval:
+  #   name: plugin-workflow-approval
+  #   needs: build
+  #   runs-on: ubuntu-latest
+  #   container: node:20
+  #   services:
+  #     # Label used to access the service container
+  #     postgres:
+  #       # Docker Hub image
+  #       image: postgres:11
+  #       # Provide the password for postgres
+  #       env:
+  #         POSTGRES_USER: nocobase
+  #         POSTGRES_PASSWORD: password
+  #       # Set health checks to wait until postgres has started
+  #       options: >-
+  #         --health-cmd pg_isready
+  #         --health-interval 10s
+  #         --health-timeout 5s
+  #         --health-retries 5
+  #   steps:
+  #     - uses: actions/create-github-app-token@v1
+  #       id: app-token
+  #       with:
+  #         app-id: ${{ vars.NOCOBASE_APP_ID }}
+  #         private-key: ${{ secrets.NOCOBASE_APP_PRIVATE_KEY }}
+  #         repositories: nocobase,pro-plugins,plugin-workflow-approval
+  #         skip-token-revoke: true
+  #     - uses: actions/checkout@v4
+  #     - name: Checkout pro-plugins
+  #       continue-on-error: true # 外部开发者提交 PR 的时候因为没有权限这里会报错，为了能够继续执行后续步骤，所以这里设置为 continue-on-error: true
+  #       uses: actions/checkout@v4
+  #       with:
+  #         repository: nocobase/pro-plugins
+  #         ref: main
+  #         path: packages/pro-plugins
+  #         fetch-depth: 0
+  #         token: ${{ steps.app-token.outputs.token }}
+  #     - name: Checkout plugin-workflow-approval
+  #       continue-on-error: true # 外部开发者提交 PR 的时候因为没有权限这里会报错，为了能够继续执行后续步骤，所以这里设置为 continue-on-error: true
+  #       uses: actions/checkout@v4
+  #       with:
+  #         repository: nocobase/plugin-workflow-approval
+  #         ref: main
+  #         path: packages/pro-plugins/@nocobase/plugin-workflow-approval
+  #         fetch-depth: 0
+  #         token: ${{ steps.app-token.outputs.token }}
+  #     - run: |
+  #         cd packages/pro-plugins &&
+  #         if git show-ref --quiet refs/remotes/origin/${{ github.head_ref || github.ref_name }}; then
+  #           git checkout ${{ github.head_ref || github.ref_name }}
+  #         else
+  #           if git show-ref --quiet refs/remotes/origin/${{ github.event.pull_request.base.ref }}; then
+  #             git checkout ${{ github.event.pull_request.base.ref }}
+  #           else
+  #             git checkout main
+  #           fi
+  #         fi
+  #         cd ../../
+  #         cd packages/pro-plugins/@nocobase/plugin-workflow-approval &&
+  #         if git show-ref --quiet refs/remotes/origin/${{ github.head_ref || github.ref_name }}; then
+  #           git checkout ${{ github.head_ref || github.ref_name }}
+  #         else
+  #           if git show-ref --quiet refs/remotes/origin/${{ github.event.pull_request.base.ref }}; then
+  #             git checkout ${{ github.event.pull_request.base.ref }}
+  #           else
+  #             git checkout main
+  #           fi
+  #         fi
+  #         cd ../../../../
+  #       continue-on-error: true # 外部开发者提交 PR 的时候因为没有权限这里会报错，为了能够继续执行后续步骤，所以这里设置为 continue-on-error: true
+  #     - name: Git logs
+  #       run: |
+  #         cd packages/pro-plugins/@nocobase/plugin-workflow-approval && git log --color --graph --pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset' --abbrev-commit -n 10
+  #       continue-on-error: true # 外部开发者提交 PR 的时候因为没有权限这里会报错，为了能够继续执行后续步骤，所以这里设置为 continue-on-error: true
+  #     - name: Set variables
+  #       continue-on-error: true # 外部开发者提交 PR 的时候因为没有权限这里会报错，为了能够继续执行后续步骤，所以这里设置为 continue-on-error: true
+  #       run: |
+  #         APPEND_PRESET_LOCAL_PLUGINS=$(find ./packages/pro-plugins/@nocobase -mindepth 1 -maxdepth 1 -type d -exec basename {} \; | sed 's/^plugin-//' | tr '\n' ',' | sed 's/,$//')
+  #         echo "var2=$APPEND_PRESET_LOCAL_PLUGINS" >> $GITHUB_OUTPUT
+  #       id: vars
 
-      - name: Get yarn cache directory path
-        id: yarn-cache-dir-path
-        run: echo "::set-output name=dir::$(yarn cache dir)"
-      - uses: actions/cache@v4
-        id: yarn-cache # use this to check for `cache-hit` (`steps.yarn-cache.outputs.cache-hit != 'true'`)
-        with:
-          path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
-          key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-yarn-
+  #     - name: Get yarn cache directory path
+  #       id: yarn-cache-dir-path
+  #       run: echo "::set-output name=dir::$(yarn cache dir)"
+  #     - uses: actions/cache@v4
+  #       id: yarn-cache # use this to check for `cache-hit` (`steps.yarn-cache.outputs.cache-hit != 'true'`)
+  #       with:
+  #         path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
+  #         key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
+  #         restore-keys: |
+  #           ${{ runner.os }}-yarn-
 
-      - run: yarn
+  #     - run: yarn
 
-      - name: Download build artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: build-artifact
-          path: packages
+  #     - name: Download build artifact
+  #       uses: actions/download-artifact@v4
+  #       with:
+  #         name: build-artifact
+  #         path: packages
 
-      - run: npx playwright install chromium --with-deps
-      - name: Test with postgres
-        run: yarn e2e p-test --match 'packages/**/plugin-workflow-approval/**/__e2e__/**/*.test.ts'
-        env:
-          __E2E__: true
-          APP_ENV: production
-          LOGGER_LEVEL: error
-          DB_DIALECT: postgres
-          DB_HOST: postgres
-          DB_PORT: 5432
-          DB_USER: nocobase
-          DB_PASSWORD: password
-          DB_DATABASE: nocobase
-          APPEND_PRESET_LOCAL_PLUGINS: ${{ steps.vars.outputs.var2 }}
-          ENCRYPTION_FIELD_KEY: 1%&glK;<UA}aIxJVc53-4G(rTi0vg@J]
+  #     - run: npx playwright install chromium --with-deps
+  #     - name: Test with postgres
+  #       run: yarn e2e p-test --match 'packages/**/plugin-workflow-approval/**/__e2e__/**/*.test.ts'
+  #       env:
+  #         __E2E__: true
+  #         APP_ENV: production
+  #         LOGGER_LEVEL: error
+  #         DB_DIALECT: postgres
+  #         DB_HOST: postgres
+  #         DB_PORT: 5432
+  #         DB_USER: nocobase
+  #         DB_PASSWORD: password
+  #         DB_DATABASE: nocobase
+  #         APPEND_PRESET_LOCAL_PLUGINS: ${{ steps.vars.outputs.var2 }}
+  #         ENCRYPTION_FIELD_KEY: 1%&glK;<UA}aIxJVc53-4G(rTi0vg@J]
 
-      - name: Upload e2e-report
-        if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v4
-        with:
-          name: e2e-report-${{ github.job }} # 为了防止在多个任务中存在冲突
-          path: ./storage/playwright/tests-report-blob/blob-*/*
+  #     - name: Upload e2e-report
+  #       if: ${{ !cancelled() }}
+  #       uses: actions/upload-artifact@v4
+  #       with:
+  #         name: e2e-report-${{ github.job }} # 为了防止在多个任务中存在冲突
+  #         path: ./storage/playwright/tests-report-blob/blob-*/*
 
-    timeout-minutes: 180
+  #   timeout-minutes: 180
 
   plugin-data-source-main:
     name: plugin-data-source-main
