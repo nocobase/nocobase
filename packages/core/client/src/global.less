@@ -6,34 +6,84 @@
 
   /* Track */
   ::-webkit-scrollbar-track {
-    background: var(--colorBgScrollTrack);
+    background: transparent;
   }
 
   /* Handle */
   ::-webkit-scrollbar-thumb {
     background: var(--colorBgScrollBar);
     border-radius: 4px;
+    opacity: 0;
+    transition: opacity 0.3s ease-in-out;
   }
 
   /* Handle on hover */
   ::-webkit-scrollbar-thumb:hover {
     background: var(--colorBgScrollBarHover);
+    opacity: 1;
   }
 
   ::-webkit-scrollbar-thumb:active {
     background: var(--colorBgScrollBarActive);
+    opacity: 1;
+  }
+
+  /* Show scrollbar when scrolling */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: transparent transparent;
+  }
+
+  *:hover {
+    scrollbar-color: var(--colorBgScrollBar) transparent;
+  }
+
+  /* Auto-hide scrollbar using CSS animations */
+  @keyframes showScrollbar {
+    0% { opacity: 0; }
+    100% { opacity: 1; }
+  }
+
+  @keyframes hideScrollbar {
+    0% { opacity: 1; }
+    100% { opacity: 0; }
+  }
+
+  body::-webkit-scrollbar-thumb,
+  *::-webkit-scrollbar-thumb {
+    animation: hideScrollbar 0.3s ease-out 2s forwards;
+  }
+
+  body:hover::-webkit-scrollbar-thumb,
+  *:hover::-webkit-scrollbar-thumb {
+    opacity: 1;
+    animation: showScrollbar 0.3s ease-in;
   }
 
   .rc-virtual-list-scrollbar-thumb {
     background: var(--colorBgScrollBar) !important;
+    opacity: 0 !important;
+    transition: opacity 0.3s ease-in-out !important;
   }
 
   .rc-virtual-list-scrollbar-thumb:hover {
     background: var(--colorBgScrollBarHover) !important;
+    opacity: 1 !important;
   }
 
   .rc-virtual-list-scrollbar-thumb:active {
     background: var(--colorBgScrollBarActive) !important;
+    opacity: 1 !important;
+  }
+
+  /* Auto-hide for rc-virtual-list scrollbars */
+  .rc-virtual-list:hover .rc-virtual-list-scrollbar-thumb {
+    opacity: 1 !important;
+    animation: showScrollbar 0.3s ease-in !important;
+  }
+
+  .rc-virtual-list .rc-virtual-list-scrollbar-thumb {
+    animation: hideScrollbar 0.3s ease-out 2s forwards !important;
   }
 
   // Fix the style of the top collapsed menu button dropdown
