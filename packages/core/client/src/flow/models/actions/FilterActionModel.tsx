@@ -40,6 +40,7 @@ export class FilterActionModel extends GlobalActionModel {
     filterValue?: any;
     ignoreFieldsNames?: string[];
     open?: boolean;
+    position: 'left';
   };
 
   defaultProps: any = {
@@ -73,6 +74,13 @@ FilterActionModel.registerFlow({
   title: tval('Filter configuration'),
   auto: true,
   steps: {
+    position: {
+      title: '位置',
+      uiSchema: {},
+      handler(ctx, params) {
+        ctx.model.setProps('position', 'left');
+      },
+    },
     ignoreFieldsNames: {
       title: tval('Filterable fields'),
       uiSchema: {
