@@ -162,22 +162,9 @@ QuickEditForm.registerFlow({
         }
         const collectionField = ctx.model.collection.getField(fieldPath) as CollectionField;
         if (collectionField) {
-          let use = 'EditableFieldModel';
-          if (collectionField.interface === 'number') {
-            use = 'InputNumberFieldModel';
-          }
-          if (collectionField.interface === 'integer') {
-            use = 'InputNumberFieldModel';
-          }
-          if (collectionField.interface === 'select') {
-            use = 'SelectFieldModel';
-          }
-          if (collectionField.interface === 'textarea') {
-            use = 'TextareaFieldModel';
-          }
-          if (collectionField.interface === 'datetime') {
-            use = 'DateTimeFieldModel';
-          }
+          const FieldModels = collectionField.getMatchFieldModelsByBaseClass('EditableFieldModel');
+          const use = [...FieldModels.keys()].shift() || 'EditableFieldModel';
+          console.log('getMatchFieldModelsByBaseClass', FieldModels);
           ctx.model.addSubModel('fields', {
             use,
             stepParams: {

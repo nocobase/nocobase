@@ -214,6 +214,29 @@ export class FlowEngine {
   }
 
   /**
+   * 根据父类过滤模型类（支持多层继承），可选自定义过滤器
+   * @param {string | ModelConstructor} baseClass 父类名称或构造函数
+   * @param {(ModelClass: ModelConstructor, className: string) => boolean} [filter] 过滤函数
+   * @returns {Map<string, ModelConstructor>} 继承自指定父类且通过过滤的模型类映射
+   */
+  public findModelsByBaseClass(
+    baseClass: string | ModelConstructor,
+    filter?: (ModelClass: ModelConstructor, className: string) => boolean,
+  ): Map<string, ModelConstructor> {
+    const parentModelClass = typeof baseClass === 'string' ? this.getModelClass(baseClass) : baseClass;
+    const result = new Map<string, ModelConstructor>();
+    if (!parentModelClass) return result;
+    for (const [className, ModelClass] of this.modelClasses) {
+      if (isInheritedFrom(ModelClass, parentModelClass)) {
+        if (!filter || filter(ModelClass, className)) {
+          result.set(className, ModelClass);
+        }
+      }
+    }
+    return result;
+  }
+
+  /**
    * 创建并注册一个 Model 实例。
    * 如果具有相同 UID 的实例已存在，则返回现有实例。
    * @template T FlowModel 的子类型，默认为 FlowModel。
