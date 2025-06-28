@@ -9,6 +9,7 @@
 
 import { Dropdown, DropdownProps, Input, Menu, Spin, Empty, InputProps } from 'antd';
 import React, { useEffect, useState, useMemo, useRef, FC } from 'react';
+import { useFlowModel } from '../../hooks';
 
 /**
  * 通过鼠标的位置计算出最佳的 dropdown 的高度，以尽量避免出现滚动条
@@ -72,6 +73,7 @@ interface LazyDropdownMenuProps extends Omit<DropdownProps['menu'], 'items'> {
 }
 
 const LazyDropdown: React.FC<Omit<DropdownProps, 'menu'> & { menu: LazyDropdownMenuProps }> = ({ menu, ...props }) => {
+  const model = useFlowModel();
   const [loadedChildren, setLoadedChildren] = useState<Record<string, Item[]>>({});
   const [loadingKeys, setLoadingKeys] = useState<Set<string>>(new Set());
   const [menuVisible, setMenuVisible] = useState(false);
@@ -82,6 +84,7 @@ const LazyDropdown: React.FC<Omit<DropdownProps, 'menu'> & { menu: LazyDropdownM
   const dropdownMaxHeight = useNiceDropdownMaxHeight([menuVisible]);
   const [isSearching, setIsSearching] = useState(false);
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const t = model.flowEngine.translate.bind(model.flowEngine);
 
   // 清理定时器，避免内存泄露
   useEffect(() => {
@@ -223,7 +226,7 @@ const LazyDropdown: React.FC<Omit<DropdownProps, 'menu'> & { menu: LazyDropdownM
                   visible={menuVisible}
                   variant="borderless"
                   allowClear
-                  placeholder={item.searchPlaceholder || 'search'}
+                  placeholder={t(item.searchPlaceholder || 'Search')}
                   value={currentSearchValue}
                   onChange={(e) => {
                     e.stopPropagation();
@@ -264,7 +267,7 @@ const LazyDropdown: React.FC<Omit<DropdownProps, 'menu'> & { menu: LazyDropdownM
               key: `${item.key}-empty`,
               label: (
                 <div style={{ padding: '16px', textAlign: 'center' as const }}>
-                  <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="No Data" style={{ margin: 0 }} />
+                  <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={t('No data')} style={{ margin: 0 }} />
                 </div>
               ),
               disabled: true,
@@ -278,7 +281,7 @@ const LazyDropdown: React.FC<Omit<DropdownProps, 'menu'> & { menu: LazyDropdownM
         return {
           type: 'group',
           key: item.key,
-          label: item.label,
+          label: typeof item.label === 'string' ? t(item.label) : item.label,
           children: groupChildren,
         };
       }
@@ -289,7 +292,7 @@ const LazyDropdown: React.FC<Omit<DropdownProps, 'menu'> & { menu: LazyDropdownM
 
       return {
         key: item.key,
-        label: item.label,
+        label: typeof item.label === 'string' ? t(item.label) : item.label,
         onClick: (info) => {
           if (children) {
             return;
@@ -316,7 +319,7 @@ const LazyDropdown: React.FC<Omit<DropdownProps, 'menu'> & { menu: LazyDropdownM
                     key: `${keyPath}-empty`,
                     label: (
                       <div style={{ padding: '16px', textAlign: 'center' as const }}>
-                        <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="No Data" style={{ margin: 0 }} />
+                        <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={t('No data')} style={{ margin: 0 }} />
                       </div>
                     ),
                     disabled: true,
