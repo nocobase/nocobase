@@ -101,10 +101,16 @@ const openStepSettingsDrawer = async ({
   // 获取初始值
   const stepParams = model.getStepParams(flowKey, stepKey) || {};
 
+  const flowEngine = model.flowEngine;
+  const scopes = {
+    useStepSettingContext,
+    ...flowEngine.flowSettings?.scopes,
+  };
+
   // 解析 defaultParams
   const resolvedDefaultParams = await resolveDefaultParams(step.defaultParams, paramsContext);
   const resolveActionDefaultParams = await resolveDefaultParams(actionDefaultParams, paramsContext);
-  const initialValues = { ...resolveActionDefaultParams, ...resolvedDefaultParams, ...stepParams };
+  const initialValues = { ...toJS(resolveActionDefaultParams), ...toJS(resolvedDefaultParams), ...toJS(stepParams) };
 
   // 构建表单Schema
   const formSchema: ISchema = {
@@ -142,7 +148,7 @@ const openStepSettingsDrawer = async ({
 
     // 创建表单实例
     const form = createForm({
-      initialValues,
+      initialValues: compileUiSchema(scopes, initialValues),
     });
 
     // 创建抽屉内容组件
@@ -182,8 +188,6 @@ const openStepSettingsDrawer = async ({
         drawerRef.destroy();
       };
 
-      const flowEngine = model.flowEngine;
-
       // 创建上下文值
       const contextValue: StepSettingContextType = {
         model,
@@ -193,11 +197,6 @@ const openStepSettingsDrawer = async ({
         flow,
         flowKey,
         stepKey,
-      };
-
-      const scopes = {
-        useStepSettingContext,
-        ...flowEngine.flowSettings?.scopes,
       };
 
       // 编译 formSchema 中的表达式

@@ -43,8 +43,8 @@ export const confirm = defineAction({
   async handler(ctx, params) {
     if (params.enable) {
       const confirmed = await ctx.globals.modal.confirm({
-        title: ctx.globals.flowEngine.translate(params.title),
-        content: params.content,
+        title: ctx.model.translate(params.title),
+        content: ctx.model.translate(params.content),
       });
 
       if (!confirmed) {

@@ -14,6 +14,7 @@ import { ModelConstructor } from '../../types';
 import { FlowSettingsButton } from '../common/FlowSettingsButton';
 import { withFlowDesignMode } from '../common/withFlowDesignMode';
 import { AddSubModelButton, SubModelItemsType } from './AddSubModelButton';
+import { useTranslation } from 'react-i18next';
 
 interface AddActionButtonProps {
   /**
@@ -48,6 +49,11 @@ interface AddActionButtonProps {
   items?: SubModelItemsType;
 }
 
+const DefaultBtn = () => {
+  const { t } = useTranslation();
+  return <FlowSettingsButton icon={<SettingOutlined />}>{t('Configure actions')}</FlowSettingsButton>;
+};
+
 /**
  * 专门用于添加动作模型的按钮组件
  *
@@ -63,7 +69,7 @@ const AddActionButtonCore: React.FC<AddActionButtonProps> = ({
   model,
   subModelBaseClass = 'ActionFlowModel',
   subModelKey = 'actions',
-  children = <FlowSettingsButton icon={<SettingOutlined />}>{'Configure actions'}</FlowSettingsButton>,
+  children = <DefaultBtn />,
   subModelType = 'array',
   items,
   filter,

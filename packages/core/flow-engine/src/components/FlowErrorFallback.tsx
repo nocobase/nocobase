@@ -11,6 +11,7 @@ import { Button, Result, Typography } from 'antd';
 import React, { FC, useState } from 'react';
 import { FallbackProps } from 'react-error-boundary';
 import { useFlowModel } from '../hooks/useFlowModel';
+import { getT } from '../utils';
 
 const { Paragraph, Text } = Typography;
 
@@ -20,6 +21,7 @@ const { Paragraph, Text } = Typography;
 const FlowErrorFallbackInner: FC<FallbackProps> = ({ error, resetErrorBoundary }) => {
   const [loading, setLoading] = useState(false);
   const model = useFlowModel(); // 在这里安全地使用 Hook
+  const t = getT(model);
 
   const handleCopyError = async () => {
     setLoading(true);
@@ -104,9 +106,9 @@ const FlowErrorFallbackInner: FC<FallbackProps> = ({ error, resetErrorBoundary }
 
   const subTitle = (
     <span>
-      {'This is likely a NocoBase internals bug. Please open an issue at '}
+      {t('This is likely a NocoBase internals bug. Please open an issue at')}{' '}
       <a href="https://github.com/nocobase/nocobase/issues" target="_blank" rel="noopener noreferrer">
-        here
+        {t('here')}
       </a>
       {model && (
         <div style={{ marginTop: '8px', fontSize: '12px', color: '#999' }}>
@@ -121,23 +123,23 @@ const FlowErrorFallbackInner: FC<FallbackProps> = ({ error, resetErrorBoundary }
       <Result
         style={{ maxWidth: '60vw', margin: 'auto' }}
         status="error"
-        title="Render Failed"
+        title={t('Render failed')}
         subTitle={subTitle}
         extra={[
           <Button type="primary" key="feedback" href="https://github.com/nocobase/nocobase/issues" target="_blank">
-            Feedback
+            {t('Feedback')}
           </Button>,
           canDownloadLogs && (
             <Button key="log" loading={loading} onClick={handleDownloadLogs}>
-              Download logs
+              {t('Download logs')}
             </Button>
           ),
           <Button key="copy" loading={loading} onClick={handleCopyError}>
-            Copy Error Info
+            {t('Copy error info')}
           </Button>,
           resetErrorBoundary && (
             <Button key="retry" danger onClick={resetErrorBoundary}>
-              Try Again
+              {t('Try again')}
             </Button>
           ),
         ].filter(Boolean)}
@@ -197,18 +199,18 @@ export const FlowErrorFallback: FC<FallbackProps> & {
         <Result
           style={{ maxWidth: '60vw', margin: 'auto' }}
           status="error"
-          title="Render Failed"
+          title="Render failed"
           subTitle={subTitle}
           extra={[
             <Button type="primary" key="feedback" href="https://github.com/nocobase/nocobase/issues" target="_blank">
               Feedback
             </Button>,
             <Button key="copy" loading={loading} onClick={handleCopyError}>
-              Copy Error Info
+              Copy error info
             </Button>,
             resetErrorBoundary && (
               <Button key="retry" danger onClick={resetErrorBoundary}>
-                Try Again
+                Try again
               </Button>
             ),
           ].filter(Boolean)}

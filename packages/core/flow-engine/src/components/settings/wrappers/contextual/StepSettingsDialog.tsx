@@ -98,13 +98,19 @@ const openStepSettingsDialog = async ({
     return {};
   }
 
+  const flowEngine = model.flowEngine;
+  const scopes = {
+    useStepSettingContext,
+    ...flowEngine.flowSettings?.scopes,
+  };
+
   // 获取初始值
   const stepParams = model.getStepParams(flowKey, stepKey) || {};
 
   // 解析 defaultParams
   const resolvedDefaultParams = await resolveDefaultParams(step.defaultParams, paramsContext);
   const resolveActionDefaultParams = await resolveDefaultParams(actionDefaultParams, paramsContext);
-  const initialValues = { ...resolveActionDefaultParams, ...resolvedDefaultParams, ...stepParams };
+  const initialValues = { ...toJS(resolveActionDefaultParams), ...toJS(resolvedDefaultParams), ...toJS(stepParams) };
 
   // 构建表单Schema
   const formSchema: ISchema = {
@@ -139,8 +145,6 @@ const openStepSettingsDialog = async ({
       destroyOnClose: true,
     },
     (form) => {
-      const flowEngine = model.flowEngine;
-
       // 创建上下文值
       const contextValue: StepSettingContextType = {
         model,
@@ -150,11 +154,6 @@ const openStepSettingsDialog = async ({
         flow,
         flowKey,
         stepKey,
-      };
-
-      const scopes = {
-        useStepSettingContext,
-        ...flowEngine.flowSettings?.scopes,
       };
 
       // 编译 formSchema 中的表达式
@@ -194,7 +193,7 @@ const openStepSettingsDialog = async ({
 
   // 打开对话框
   return formDialog.open({
-    initialValues,
+    initialValues: compileUiSchema(scopes, initialValues),
   });
 };
 

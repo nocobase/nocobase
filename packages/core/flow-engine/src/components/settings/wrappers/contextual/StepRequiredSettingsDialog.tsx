@@ -120,7 +120,7 @@ const openRequiredParamsStepFormDialog = async ({
   dialogTitle,
 }: StepFormDialogProps): Promise<any> => {
   const t = getT(model);
-  const defaultTitle = dialogTitle || t('Step Parameter Configuration');
+  const defaultTitle = dialogTitle || t('Step parameter configuration');
 
   if (!model) {
     message.error(t('Invalid model provided'));
@@ -228,7 +228,11 @@ const openRequiredParamsStepFormDialog = async ({
           // 解析 defaultParams
           const resolvedActionDefaultParams = await resolveDefaultParams(actionDefaultParams, paramsContext);
           const resolvedDefaultParams = await resolveDefaultParams(step.defaultParams, paramsContext);
-          const mergedParams = { ...resolvedActionDefaultParams, ...resolvedDefaultParams, ...stepParams };
+          const mergedParams = {
+            ...toJS(resolvedActionDefaultParams),
+            ...toJS(resolvedDefaultParams),
+            ...toJS(stepParams),
+          };
 
           if (Object.keys(mergedParams).length > 0) {
             if (!initialValues[flowKey]) {
@@ -304,17 +308,24 @@ const openRequiredParamsStepFormDialog = async ({
         // 创建分步表单实例（只有多个步骤时才需要）
         const formStep = requiredSteps.length > 1 ? FormStep.createFormStep(0) : null;
 
+        const flowEngine = model.flowEngine || {};
+        const scopes = {
+          formStep,
+          totalSteps: requiredSteps.length,
+          requiredSteps,
+          useStepSettingContext,
+          ...flowEngine.flowSettings?.scopes,
+        };
+
         // 创建FormDialog
         const formDialog = FormDialog(
           {
-            title: dialogTitle || t('Step Parameter Configuration'),
+            title: dialogTitle || t('Step parameter configuration'),
             width: dialogWidth,
             footer: null, // 移除默认的底部按钮，使用自定义的导航按钮
             destroyOnClose: true,
           },
           (form) => {
-            const flowEngine = model.flowEngine || {};
-
             const handleSubmit = async () => {
               try {
                 await form.submit();
@@ -344,11 +355,8 @@ const openRequiredParamsStepFormDialog = async ({
               resolve({});
             };
 
-            const scopes = {
-              formStep,
-              totalSteps: requiredSteps.length,
-              requiredSteps,
-              useStepSettingContext,
+            const dialogScopes = {
+              ...scopes,
               closeDialog: handleClose,
               handleNext: () => {
                 // 验证当前步骤的表单
@@ -364,11 +372,10 @@ const openRequiredParamsStepFormDialog = async ({
                     // 可以在这里添加更详细的错误处理
                   });
               },
-              ...flowEngine.flowSettings?.scopes,
             };
 
             // 编译 formSchema 中的表达式
-            const compiledFormSchema = compileUiSchema(scopes, formSchema);
+            const compiledFormSchema = compileUiSchema(dialogScopes, formSchema);
 
             return (
               <>
@@ -379,7 +386,7 @@ const openRequiredParamsStepFormDialog = async ({
                       FormStep,
                       ...flowEngine.flowSettings?.components,
                     }}
-                    scope={scopes}
+                    scope={dialogScopes}
                   />
                 </MultiStepContextProvider>
                 <FormConsumer>
@@ -397,7 +404,7 @@ const openRequiredParamsStepFormDialog = async ({
                       {/* 只有一个步骤时，只显示完成按钮 */}
                       {requiredSteps.length === 1 ? (
                         <Button type="primary" onClick={handleSubmit}>
-                          {t('Complete Configuration')}
+                          {t('Complete configuration')}
                         </Button>
                       ) : (
                         <>
@@ -409,7 +416,7 @@ const openRequiredParamsStepFormDialog = async ({
                               }
                             }}
                           >
-                            {t('Previous Step')}
+                            {t('Previous step')}
                           </Button>
                           <Button
                             disabled={!formStep?.allowNext}
@@ -432,7 +439,7 @@ const openRequiredParamsStepFormDialog = async ({
                               display: (formStep?.current ?? 0) < requiredSteps.length - 1 ? 'inline-block' : 'none',
                             }}
                           >
-                            {t('Next Step')}
+                            {t('Next step')}
                           </Button>
                           <Button
                             disabled={formStep?.allowNext}
@@ -442,7 +449,7 @@ const openRequiredParamsStepFormDialog = async ({
                               display: (formStep?.current ?? 0) >= requiredSteps.length - 1 ? 'inline-block' : 'none',
                             }}
                           >
-                            {t('Complete Configuration')}
+                            {t('Complete configuration')}
                           </Button>
                         </>
                       )}
@@ -456,7 +463,7 @@ const openRequiredParamsStepFormDialog = async ({
 
         // 打开对话框
         formDialog.open({
-          initialValues,
+          initialValues: compileUiSchema(scopes, initialValues),
         });
       } catch (error) {
         reject(new Error(`${t('Failed to import FormDialog or FormStep')}: ${error.message}`));

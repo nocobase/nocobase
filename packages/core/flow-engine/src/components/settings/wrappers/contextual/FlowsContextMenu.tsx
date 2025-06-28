@@ -77,7 +77,7 @@ const FlowsContextMenuWithModel: React.FC<ModelProvidedProps> = observer(
         if (key === 'delete') {
           // 处理删除操作
           Modal.confirm({
-            title: t('Confirm Delete'),
+            title: t('Confirm delete'),
             icon: <ExclamationCircleOutlined />,
             content: t('Are you sure you want to delete this item? This action cannot be undone.'),
             okText: t('Confirm Delete'),
@@ -89,7 +89,7 @@ const FlowsContextMenuWithModel: React.FC<ModelProvidedProps> = observer(
               } catch (error) {
                 console.error(t('Delete operation failed'), ':', error);
                 Modal.error({
-                  title: t('Delete Failed'),
+                  title: t('Delete failed'),
                   content: t('Delete operation failed, please check the console for details.'),
                 });
               }

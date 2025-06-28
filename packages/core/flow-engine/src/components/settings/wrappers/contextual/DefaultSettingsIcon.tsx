@@ -126,7 +126,7 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
 
   const handleDelete = useCallback(() => {
     Modal.confirm({
-      title: t('Confirm Delete'),
+      title: t('Confirm delete'),
       icon: <ExclamationCircleOutlined />,
       content: t('Are you sure you want to delete this item? This action cannot be undone.'),
       okText: t('Confirm'),
@@ -138,7 +138,7 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
         } catch (error) {
           console.error(t('Delete operation failed'), ':', error);
           Modal.error({
-            title: t('Delete Failed'),
+            title: t('Delete failed'),
             content: t('Delete operation failed, please check the console for details.'),
           });
         }
