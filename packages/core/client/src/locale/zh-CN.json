@@ -1187,5 +1187,10 @@
   "Display label": "显示标签",
   "ReadOnly": "只读",
   "ReadPretty": "美观只读",
-  "Modal": "对话框"
+  "Modal": "对话框",
+  "Rows": "行",
+  "Configure rows": "配置行",
+  "Sizes": "尺寸",
+  "Configure the rows and columns of the grid.": "配置网格的行和列。",
+  "Configure the sizes of each row. The value is an array of numbers representing the width of each column in the row.": "配置每行的尺寸。该值是一个数字数组，表示行中每列的宽度。"
 }

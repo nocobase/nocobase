@@ -21,6 +21,7 @@ import {
 import { Alert, Space } from 'antd';
 import _ from 'lodash';
 import React, { useState } from 'react';
+import { tval } from '@nocobase/utils/client';
 import { Grid } from '../../components/Grid';
 import { BlockModel } from './BlockModel';
 
@@ -68,6 +69,7 @@ export class GridModel extends FlowModel<GridModelStructure> {
   }
 
   render() {
+    const t = this.flowEngine.translate;
     console.log('GridModel render', JSON.stringify(this.props.rows, null, 2), this.props.sizes);
     return (
       <div style={{ padding: 16 }}>
@@ -95,14 +97,14 @@ export class GridModel extends FlowModel<GridModelStructure> {
               this.props.rows = { ...this.props.rows, [uid()]: [[model.uid]] };
             }}
           >
-            <FlowSettingsButton icon={<PlusOutlined />}>{'Add block'}</FlowSettingsButton>
+            <FlowSettingsButton icon={<PlusOutlined />}>{t('Add block')}</FlowSettingsButton>
           </AddBlockButton>
           <FlowSettingsButton
             onClick={() => {
               this.openStepSettingsDialog('defaultFlow', 'grid');
             }}
           >
-            Configure rows
+            {t('Configure rows')}
           </FlowSettingsButton>
         </Space>
       </div>
@@ -141,7 +143,7 @@ GridModel.registerFlow({
     grid: {
       uiSchema: {
         rows: {
-          title: 'Rows',
+          title: tval('Rows'),
           'x-decorator': 'FormItem',
           'x-component': ({ value, onChange }) => {
             // eslint-disable-next-line react-hooks/rules-of-hooks
@@ -152,18 +154,19 @@ GridModel.registerFlow({
           },
           'x-component-props': {
             autoSize: { minRows: 10, maxRows: 20 },
-            description: 'Configure the rows and columns of the grid.',
+            description: tval('Configure the rows and columns of the grid.'),
           },
         },
         sizes: {
-          title: 'Sizes',
+          title: tval('Sizes'),
           'x-decorator': 'FormItem',
           'x-component': JsonEditor,
           'x-component-props': {
             rows: 5,
           },
-          description:
+          description: tval(
             'Configure the sizes of each row. The value is an array of numbers representing the width of each column in the row.',
+          ),
         },
       },
       async handler(ctx, params) {

@@ -954,5 +954,10 @@
   "Display label": "Display label",
   "ReadOnly": "ReadOnly",
   "ReadPretty": "ReadPretty",
-  "Modal": "Modal"
+  "Modal": "Modal",
+  "Rows": "Rows",
+  "Configure rows": "Configure rows",
+  "Sizes": "Sizes",
+  "Configure the rows and columns of the grid.": "Configure the rows and columns of the grid.",
+  "Configure the sizes of each row. The value is an array of numbers representing the width of each column in the row.": "Configure the sizes of each row. The value is an array of numbers representing the width of each column in the row."
 }

@@ -64,7 +64,7 @@ export class PageModel extends FlowModel<PageModelStructure> {
               });
             }}
           >
-            Add tab
+            {this.flowEngine.translate('Add tab')}
           </FlowSettingsButton>
         }
       />
