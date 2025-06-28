@@ -332,6 +332,61 @@ export class FlowEngine {
     return this.removeModel(uid);
   }
 
+  async moveModel(sourceId: string, targetId: string): Promise<void> {
+    const sourceModel = this.getModel(sourceId);
+    const targetModel = this.getModel(targetId);
+    if (!sourceModel || !targetModel) {
+      console.warn(`FlowEngine: Cannot move model. Source or target model not found.`);
+      return;
+    }
+    const move = (sourceModel: FlowModel, targetModel: FlowModel) => {
+      if (!sourceModel.parent || !targetModel.parent || sourceModel.parent !== targetModel.parent) {
+        console.error('FlowModel.moveTo: Both models must have the same parent to perform move operation.');
+        return false;
+      }
+
+      const subModels = sourceModel.parent.subModels[sourceModel.subKey];
+
+      if (!subModels || !Array.isArray(subModels)) {
+        console.error('FlowModel.moveTo: Parent subModels must be an array to perform move operation.');
+        return false;
+      }
+
+      const findIndex = (model: FlowModel) => subModels.findIndex((item) => item.uid === model.uid);
+
+      const currentIndex = findIndex(sourceModel);
+      const targetIndex = findIndex(targetModel);
+
+      if (currentIndex === -1 || targetIndex === -1) {
+        console.error('FlowModel.moveTo: Current or target model not found in parent subModels.');
+        return false;
+      }
+
+      if (currentIndex === targetIndex) {
+        console.warn('FlowModel.moveTo: Current model is already at the target position. No action taken.');
+        return false;
+      }
+
+      // 使用splice直接移动数组元素（O(n)比排序O(n log n)更快）
+      const [movedModel] = subModels.splice(currentIndex, 1);
+      subModels.splice(targetIndex, 0, movedModel);
+
+      // 重新分配连续的sortIndex
+      subModels.forEach((model, index) => {
+        model.sortIndex = index;
+      });
+
+      return true;
+    };
+    move(sourceModel, targetModel);
+    if (this.ensureModelRepository()) {
+      const position = sourceModel.sortIndex - targetModel.sortIndex > 0 ? 'before' : 'after';
+      await this.modelRepository.move(sourceId, targetId, position);
+    }
+    // 触发事件以通知其他部分模型已移动
+    sourceModel.parent.emitter.emit('onSubModelMoved', { source: sourceModel, target: targetModel });
+  }
+
   /**
    * 注册一个流程 (Flow)。支持泛型以确保正确的模型类型推导。
    * 流程是一系列步骤的定义，可以由事件触发或手动应用。

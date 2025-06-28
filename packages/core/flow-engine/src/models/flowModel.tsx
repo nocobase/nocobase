@@ -120,6 +120,10 @@ export class FlowModel<Structure extends { parent?: any; subModels?: any } = Def
     return this._options.async || false;
   }
 
+  get subKey() {
+    return this._options.subKey;
+  }
+
   get reactView() {
     return this.flowEngine.reactView;
   }
@@ -803,44 +807,11 @@ export class FlowModel<Structure extends { parent?: any; subModels?: any } = Def
    * @param {FlowModel} targetModel 目标模型
    * @returns {boolean} 是否成功移动
    */
-  moveTo(targetModel: FlowModel): boolean {
-    if (!this.parent || !targetModel.parent || this.parent !== targetModel.parent) {
-      console.error('FlowModel.moveTo: Both models must have the same parent to perform move operation.');
-      return false;
+  moveTo(targetModel: FlowModel) {
+    if (!this.flowEngine) {
+      throw new Error('FlowEngine is not set on this model. Please set flowEngine before saving.');
     }
-
-    const subModels: FlowModel[] | null = this.parent.subModels[this._options.subKey];
-
-    if (!subModels || !Array.isArray(subModels)) {
-      console.error('FlowModel.moveTo: Parent subModels must be an array to perform move operation.');
-      return false;
-    }
-
-    const findIndex = (model: FlowModel) => subModels.findIndex((item) => item.uid === model.uid);
-
-    const currentIndex = findIndex(this);
-    const targetIndex = findIndex(targetModel);
-
-    if (currentIndex === -1 || targetIndex === -1) {
-      console.error('FlowModel.moveTo: Current or target model not found in parent subModels.');
-      return false;
-    }
-
-    if (currentIndex === targetIndex) {
-      console.warn('FlowModel.moveTo: Current model is already at the target position. No action taken.');
-      return false;
-    }
-
-    // 使用splice直接移动数组元素（O(n)比排序O(n log n)更快）
-    const [movedModel] = subModels.splice(currentIndex, 1);
-    subModels.splice(targetIndex, 0, movedModel);
-
-    // 重新分配连续的sortIndex
-    subModels.forEach((model, index) => {
-      model.sortIndex = index;
-    });
-
-    return true;
+    return this.flowEngine.moveModel(this.uid, targetModel.uid);
   }
 
   remove() {

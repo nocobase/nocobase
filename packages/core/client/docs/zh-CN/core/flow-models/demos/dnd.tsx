@@ -2,17 +2,24 @@ import { Application, Plugin } from '@nocobase/client';
 import { DndProvider, DragHandler, Droppable, FlowModel, FlowModelRenderer } from '@nocobase/flow-engine';
 import React from 'react';
 
+function DemoBlock({ model }: { model: FlowModel }) {
+  console.log('Rendering DemoBlock with model:', model.uid);
+  return (
+    <div style={{ display: 'flex', alignItems: 'center' }}>
+      <DragHandler id={model.uid} />
+      <div>
+        <h3 style={{ margin: 0 }}>Demo Block - #{model.uid}</h3>
+        <p style={{ margin: 0 }}>This is a demo block content.</p>
+      </div>
+    </div>
+  );
+}
+
 class DemoBlockModel extends FlowModel {
   render() {
     return (
       <Droppable id={this.uid}>
-        <div style={{ display: 'flex', alignItems: 'center' }}>
-          <DragHandler id={this.uid} />
-          <div>
-            <h3 style={{ margin: 0 }}>Demo Block - #{this.uid}</h3>
-            <p style={{ margin: 0 }}>This is a demo block content.</p>
-          </div>
-        </div>
+        <DemoBlock model={this} />
       </Droppable>
     );
   }

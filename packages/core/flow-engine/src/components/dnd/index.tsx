@@ -35,7 +35,9 @@ export function DragHandler({ id }: { id: string }) {
 
 // 通用 Droppable 组件
 export function Droppable({ id, children }: { id: string; children: React.ReactNode }) {
-  const { setNodeRef, isOver } = useDroppable({ id });
+  const { setNodeRef, isOver, active } = useDroppable({ id });
+  const isActiveDroppable = active?.id === id;
+  console.log('Droppable id:', id);
   return (
     <div
       ref={setNodeRef}
@@ -45,6 +47,7 @@ export function Droppable({ id, children }: { id: string; children: React.ReactN
         transition: 'all 0.2s',
         marginBottom: 8,
         padding: 8,
+        opacity: isActiveDroppable ? 0.3 : 1,
       }}
     >
       {children}

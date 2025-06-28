@@ -7,11 +7,11 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { FC } from 'react';
 import { closestCenter, DndContext, DragEndEvent, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
+import { restrictToHorizontalAxis } from '@dnd-kit/modifiers';
 import { SortableContext } from '@dnd-kit/sortable';
 import { useFlowEngine, useFlowModel } from '@nocobase/flow-engine';
-import { restrictToHorizontalAxis } from '@dnd-kit/modifiers';
+import React, { FC } from 'react';
 
 export const Sortable: FC<{ targetModelKey: string }> = (props) => {
   const model = useFlowModel();
@@ -28,9 +28,9 @@ export const Sortable: FC<{ targetModelKey: string }> = (props) => {
   );
 
   const onDragEnd = ({ active, over }: DragEndEvent) => {
+    console.log('onDragEnd', active, over);
     if (active.id && over?.id && active.id !== over.id) {
       engine.getModel(active.id as string).moveTo(engine.getModel(over.id as string));
-      model.save();
     }
   };
 
