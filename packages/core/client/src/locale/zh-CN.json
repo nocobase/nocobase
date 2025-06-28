@@ -1202,5 +1202,11 @@
   "Start accessor": "开始访问器",
   "Enter start accessor": "输入开始访问器",
   "End accessor": "结束访问器",
-  "Enter end accessor": "输入结束访问器"
+  "Enter end accessor": "输入结束访问器",
+  "Recommended": "推荐",
+  "Password Options": "密码选项",
+  "Placeholder": "占位符",
+  "Enter placeholder text": "输入占位符文本",
+  "Check strength": "检查强度",
+  "N/A": "不适用"
 }

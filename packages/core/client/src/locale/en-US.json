@@ -969,5 +969,11 @@
   "Start accessor": "Start accessor",
   "Enter start accessor": "Enter start accessor",
   "End accessor": "End accessor",
-  "Enter end accessor": "Enter end accessor"
+  "Enter end accessor": "Enter end accessor",
+  "Recommended": "Recommended",
+  "Password Options": "Password Options",
+  "Placeholder": "Placeholder",
+  "Enter placeholder text": "Enter placeholder text",
+  "Check strength": "Check strength",
+  "N/A": "N/A"
 }
