@@ -13,6 +13,7 @@ import { FormProvider } from '@formily/react';
 import { AddActionButton, AddFieldButton, Collection, FlowModelRenderer } from '@nocobase/flow-engine';
 import { Card } from 'antd';
 import React from 'react';
+import { tval } from '@nocobase/utils/client';
 import { FilterBlockModel } from '../../base/BlockModel';
 import { FilterFormFieldModel } from './FilterFormFieldModel';
 
@@ -69,7 +70,7 @@ export class FilterFormModel extends FilterBlockModel {
 
 FilterFormModel.define({
   hide: true,
-  title: 'Form',
+  title: tval('Form'),
 });
 
 FilterFormModel.registerFlow({
@@ -82,20 +83,20 @@ FilterFormModel.registerFlow({
       uiSchema: {
         dataSourceKey: {
           type: 'string',
-          title: 'Data Source Key',
+          title: tval('Data Source Key'),
           'x-decorator': 'FormItem',
           'x-component': 'Input',
           'x-component-props': {
-            placeholder: 'Enter data source key',
+            placeholder: tval('Enter data source key'),
           },
         },
         collectionName: {
           type: 'string',
-          title: 'Collection Name',
+          title: tval('Collection Name'),
           'x-decorator': 'FormItem',
           'x-component': 'Input',
           'x-component-props': {
-            placeholder: 'Enter collection name',
+            placeholder: tval('Enter collection name'),
           },
         },
       },

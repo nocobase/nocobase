@@ -975,5 +975,7 @@
   "Placeholder": "Placeholder",
   "Enter placeholder text": "Enter placeholder text",
   "Check strength": "Check strength",
-  "N/A": "N/A"
+  "N/A": "N/A",
+  "No form available for reset.": "No form available for reset.",
+  "No form available for submission.": "No form available for submission."
 }

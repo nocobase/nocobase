@@ -1208,5 +1208,7 @@
   "Placeholder": "占位符",
   "Enter placeholder text": "输入占位符文本",
   "Check strength": "检查强度",
-  "N/A": "不适用"
+  "N/A": "不适用",
+  "No form available for reset.": "没有可用的表单进行重置。",
+  "No form available for submission.": "没有可用的表单进行提交。"
 }

@@ -9,12 +9,13 @@
 
 import { FlowEngine, MultiRecordResource } from '@nocobase/flow-engine';
 import { ButtonProps } from 'antd';
+import { tval } from '@nocobase/utils/client';
 import { DataBlockModel } from '../../base/BlockModel';
 import { FilterFormActionModel } from './FilterFormActionModel';
 
 export class FilterFormResetActionModel extends FilterFormActionModel {
   defaultProps: ButtonProps = {
-    children: 'Reset',
+    children: tval('Reset'),
   };
 }
 
@@ -27,7 +28,7 @@ FilterFormResetActionModel.registerFlow({
     step1: {
       async handler(ctx, params) {
         if (!ctx.shared?.currentBlockModel?.form) {
-          ctx.globals.message.error('No form available for reset.');
+          ctx.globals.message.error(ctx.globals.flowEngine.translate('No form available for reset.'));
           return;
         }
         const currentBlockModel = ctx.shared.currentBlockModel;

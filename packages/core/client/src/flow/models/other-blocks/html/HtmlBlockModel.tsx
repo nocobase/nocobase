@@ -36,7 +36,7 @@ export class HtmlBlockModel extends BlockModel {
 
 HtmlBlockModel.define({
   title: tval('HTML'),
-  group: 'Content',
+  group: tval('Content'),
   hide: true,
   defaultOptions: {
     use: 'HtmlBlockModel',
