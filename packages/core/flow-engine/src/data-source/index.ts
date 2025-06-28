@@ -461,6 +461,11 @@ export class CollectionField {
       return isFieldInterfaceMatch(M['supportedFieldInterfaces'], this.interface);
     });
   }
+
+  getFirstSubclassNameOf(baseClass: string) {
+    const subclasses = this.getSubclassesOf(baseClass);
+    return subclasses.keys().next().value;
+  }
 }
 
 /**
