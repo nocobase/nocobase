@@ -332,7 +332,7 @@ export class FlowEngine {
     return this.removeModel(uid);
   }
 
-  async moveModel(sourceId: string, targetId: string): Promise<void> {
+  async moveModel(sourceId: any, targetId: any): Promise<void> {
     const sourceModel = this.getModel(sourceId);
     const targetModel = this.getModel(targetId);
     if (!sourceModel || !targetModel) {

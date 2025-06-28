@@ -26,28 +26,23 @@ class DemoBlockModel extends FlowModel {
 }
 
 class HelloModel extends FlowModel {
-  moveItem(sourceId: any, targetId: any) {
-    const source = this.flowEngine.getModel(sourceId);
-    const target = this.flowEngine.getModel(targetId);
-    if (source && target) {
-      source.moveTo(target);
-    }
-  }
   render() {
     return (
-      <DndProvider
-        onDragEnd={({ active, over }) => {
-          if (over) {
-            this.moveItem(active.id, over.id);
-          }
-        }}
-      >
-        <div style={{ gap: 16, display: 'flex', flexDirection: 'column' }}>
-          {this.mapSubModels('blocks', (block) => {
-            return <FlowModelRenderer key={block.uid} model={block} />;
-          })}
-        </div>
-      </DndProvider>
+      <div>
+        <DndProvider
+          onDragEnd={({ active, over }) => {
+            if (over) {
+              this.flowEngine.moveModel(active.id, over.id);
+            }
+          }}
+        >
+          <div style={{ gap: 16, display: 'flex', flexDirection: 'column' }}>
+            {this.mapSubModels('blocks', (block) => {
+              return <FlowModelRenderer key={block.uid} model={block} />;
+            })}
+          </div>
+        </DndProvider>
+      </div>
     );
   }
 }
