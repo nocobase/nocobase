@@ -456,13 +456,9 @@ export class CollectionField {
     return app.dataSourceManager.collectionFieldInterfaceManager.getFieldInterface(this.interface);
   }
 
-  getMatchFieldModelsByBaseClass(baseClass: string) {
-    return this.flowEngine.findModelsByBaseClass(baseClass, (M, name) => {
-      console.log('getMatchFieldModelsByBaseClass', name, M['supportedFieldInterfaces'], this.interface);
-      if (isFieldInterfaceMatch(M['supportedFieldInterfaces'], this.interface)) {
-        return true;
-      }
-      return false;
+  getSubclassesOf(baseClass: string) {
+    return this.flowEngine.getSubclassesOf(baseClass, (M, name) => {
+      return isFieldInterfaceMatch(M['supportedFieldInterfaces'], this.interface);
     });
   }
 }

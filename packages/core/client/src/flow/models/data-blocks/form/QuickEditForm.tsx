@@ -162,8 +162,8 @@ QuickEditForm.registerFlow({
         }
         const collectionField = ctx.model.collection.getField(fieldPath) as CollectionField;
         if (collectionField) {
-          const FieldModels = collectionField.getMatchFieldModelsByBaseClass('EditableFieldModel');
-          const use = [...FieldModels.keys()].shift() || 'EditableFieldModel';
+          const FieldModels = collectionField.getSubclassesOf('EditableFieldModel');
+          const use = FieldModels.keys().next().value || 'EditableFieldModel';
           ctx.model.addSubModel('fields', {
             use,
             stepParams: {

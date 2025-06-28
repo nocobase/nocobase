@@ -35,16 +35,16 @@ describe('FlowEngine', () => {
     expect(engine.getModelClass('NotExist')).toBeUndefined();
   });
 
-  it('findModelsByBaseClass should return all subclasses', () => {
-    const result = engine.findModelsByBaseClass(BaseModel);
+  it('getSubclassesOf should return all subclasses', () => {
+    const result = engine.getSubclassesOf(BaseModel);
     expect(result.has('BaseModel')).toBe(false);
     expect(result.has('SubModelA')).toBe(true);
     expect(result.has('SubModelB')).toBe(true);
     expect(result.has('SubModelC')).toBe(true);
   });
 
-  it('findModelsByBaseClass should support filter', () => {
-    const result = engine.findModelsByBaseClass(BaseModel, (ModelClass, name) => name.startsWith('SubModel'));
+  it('getSubclassesOf should support filter', () => {
+    const result = engine.getSubclassesOf(BaseModel, (ModelClass, name) => name.startsWith('SubModel'));
     expect(result.has('BaseModel')).toBe(false);
     expect(result.has('SubModelA')).toBe(true);
     expect(result.has('SubModelB')).toBe(true);

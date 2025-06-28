@@ -219,7 +219,7 @@ export class FlowEngine {
    * @param {(ModelClass: ModelConstructor, className: string) => boolean} [filter] 过滤函数
    * @returns {Map<string, ModelConstructor>} 继承自指定父类且通过过滤的模型类映射
    */
-  public findModelsByBaseClass(
+  public getSubclassesOf(
     baseClass: string | ModelConstructor,
     filter?: (ModelClass: ModelConstructor, className: string) => boolean,
   ): Map<string, ModelConstructor> {
