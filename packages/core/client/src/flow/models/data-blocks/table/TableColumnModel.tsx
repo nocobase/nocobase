@@ -11,6 +11,7 @@ import { QuestionCircleOutlined } from '@ant-design/icons';
 import { FlowEngineProvider, FlowsFloatContextMenu } from '@nocobase/flow-engine';
 import { TableColumnProps, Tooltip } from 'antd';
 import React from 'react';
+import { tval } from '@nocobase/utils/client';
 import { FieldModel } from '../../base/FieldModel';
 import { ReadPrettyFieldModel } from '../../fields/ReadPrettyField/ReadPrettyFieldModel';
 
@@ -65,7 +66,7 @@ export class TableColumnModel extends FieldModel {
 }
 
 TableColumnModel.define({
-  title: 'Table Column',
+  title: tval('Table column'),
   icon: 'TableColumn',
   defaultOptions: {
     use: 'TableColumnModel',
@@ -103,13 +104,13 @@ TableColumnModel.registerFlow({
       },
     },
     editColumTitle: {
-      title: 'Column title',
+      title: tval('Column title'),
       uiSchema: {
         title: {
           'x-component': 'Input',
           'x-decorator': 'FormItem',
           'x-component-props': {
-            placeholder: 'Column title',
+            placeholder: tval('Column title'),
           },
         },
       },
@@ -124,13 +125,13 @@ TableColumnModel.registerFlow({
       },
     },
     editTooltip: {
-      title: 'Edit tooltip',
+      title: tval('Edit tooltip'),
       uiSchema: {
         tooltip: {
           'x-component': 'Input.TextArea',
           'x-decorator': 'FormItem',
           'x-component-props': {
-            placeholder: 'Edit tooltip',
+            placeholder: tval('Edit tooltip'),
           },
         },
       },
@@ -139,7 +140,7 @@ TableColumnModel.registerFlow({
       },
     },
     editColumnWidth: {
-      title: 'Column width',
+      title: tval('Column width'),
       uiSchema: {
         width: {
           'x-component': 'NumberPicker',
@@ -154,7 +155,7 @@ TableColumnModel.registerFlow({
       },
     },
     enableEditable: {
-      title: 'Editable',
+      title: tval('Editable'),
       uiSchema: {
         editable: {
           'x-component': 'Switch',

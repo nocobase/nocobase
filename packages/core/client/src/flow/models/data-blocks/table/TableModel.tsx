@@ -309,7 +309,7 @@ TableModel.registerFlow({
 
 TableModel.define({
   title: tval('Table'),
-  group: 'Content',
+  group: tval('Content'),
   defaultOptions: {
     use: 'TableModel',
     subModels: {

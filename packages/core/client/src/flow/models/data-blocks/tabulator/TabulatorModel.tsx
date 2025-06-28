@@ -21,6 +21,7 @@ import {
 import { Button, Card, Pagination, Skeleton, Space } from 'antd';
 import _ from 'lodash';
 import React from 'react';
+import { tval } from '@nocobase/utils/client';
 import { ColumnDefinition, TabulatorFull as Tabulator } from 'tabulator-tables';
 import { ActionModel } from '../../base/ActionModel';
 import { DataBlockModel } from '../../base/BlockModel';
@@ -41,7 +42,7 @@ export class TabulatorColumnModel extends FlowModel {
 
   getColumnProps(): ColumnDefinition {
     return {
-      title: 'abcd',
+      title: tval('abcd'),
       width: 100,
       headerSort: false,
       editable: true,
@@ -126,7 +127,7 @@ export class TabulatorTableActionsColumnModel extends TabulatorColumnModel {
             containerStyle={{ display: 'block', padding: '11px 8px', margin: '-11px -8px' }}
           >
             <Space>
-              {this.props.title || 'Actions'}
+              {this.props.title || tval('Actions')}
               <AddActionButton model={this} subModelBaseClass="RecordActionModel" subModelKey="actions">
                 <SettingOutlined />
               </AddActionButton>
@@ -194,7 +195,7 @@ export class TabulatorModel extends DataBlockModel<S> {
             appendItems={[
               {
                 key: 'actions',
-                label: 'Actions column',
+                label: tval('Actions column'),
                 createModelOptions: {
                   use: 'TabulatorTableActionsColumnModel',
                 },
@@ -260,7 +261,7 @@ export class TabulatorModel extends DataBlockModel<S> {
             <FlowModelRenderer model={action} showFlowSettings sharedContext={{ currentBlockModel: this }} />
           ))}
           <AddActionButton model={this} subModelBaseClass="GlobalActionModel" subModelKey="actions">
-            <Button icon={<SettingOutlined />}>Configure actions</Button>
+            <Button icon={<SettingOutlined />}>{this.ctx.globals.translate('Configure actions')}</Button>
           </AddActionButton>
         </Space>
         <div ref={this.tabulatorRef} />
@@ -292,20 +293,20 @@ TabulatorModel.registerFlow({
       uiSchema: {
         dataSourceKey: {
           type: 'string',
-          title: 'Data Source Key',
+          title: tval('Data Source Key'),
           'x-decorator': 'FormItem',
           'x-component': 'Input',
           'x-component-props': {
-            placeholder: 'Enter data source key',
+            placeholder: tval('Enter data source key'),
           },
         },
         collectionName: {
           type: 'string',
-          title: 'Collection Name',
+          title: tval('Collection Name'),
           'x-decorator': 'FormItem',
           'x-component': 'Input',
           'x-component-props': {
-            placeholder: 'Enter collection name',
+            placeholder: tval('Enter collection name'),
           },
         },
       },
@@ -342,8 +343,8 @@ TabulatorModel.registerFlow({
 });
 
 TabulatorModel.define({
-  title: 'Tabulator',
-  group: 'Content',
+  title: tval('Tabulator'),
+  group: tval('Content'),
   requiresDataSource: true,
   hide: true,
   defaultOptions: {

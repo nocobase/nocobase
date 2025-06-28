@@ -116,7 +116,7 @@ export class QuickEditForm extends FlowModel {
                       resolve(this.form.values); // 在 close 之后 resolve
                     }}
                   >
-                    Submit
+                    {this.ctx.globals.flowEngine.translate('Submit')}
                   </Submit>
                 </FormButtonGroup>
               </FormProvider>

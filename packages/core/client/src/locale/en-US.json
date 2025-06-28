@@ -959,5 +959,15 @@
   "Configure rows": "Configure rows",
   "Sizes": "Sizes",
   "Configure the rows and columns of the grid.": "Configure the rows and columns of the grid.",
-  "Configure the sizes of each row. The value is an array of numbers representing the width of each column in the row.": "Configure the sizes of each row. The value is an array of numbers representing the width of each column in the row."
+  "Configure the sizes of each row. The value is an array of numbers representing the width of each column in the row.": "Configure the sizes of each row. The value is an array of numbers representing the width of each column in the row.",
+  "Event selected": "Event selected",
+  "Double click": "Double click",
+  "Start": "Start",
+  "End": "End",
+  "Title accessor": "Title accessor",
+  "Enter title accessor": "Enter title accessor",
+  "Start accessor": "Start accessor",
+  "Enter start accessor": "Enter start accessor",
+  "End accessor": "End accessor",
+  "Enter end accessor": "Enter end accessor"
 }

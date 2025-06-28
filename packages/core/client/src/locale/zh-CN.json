@@ -1192,5 +1192,15 @@
   "Configure rows": "配置行",
   "Sizes": "尺寸",
   "Configure the rows and columns of the grid.": "配置网格的行和列。",
-  "Configure the sizes of each row. The value is an array of numbers representing the width of each column in the row.": "配置每行的尺寸。该值是一个数字数组，表示行中每列的宽度。"
+  "Configure the sizes of each row. The value is an array of numbers representing the width of each column in the row.": "配置每行的尺寸。该值是一个数字数组，表示行中每列的宽度。",
+  "Event selected": "已选择事件",
+  "Double click": "双击",
+  "Start": "开始",
+  "End": "结束",
+  "Title accessor": "标题访问器",
+  "Enter title accessor": "输入标题访问器",
+  "Start accessor": "开始访问器",
+  "Enter start accessor": "输入开始访问器",
+  "End accessor": "结束访问器",
+  "Enter end accessor": "输入结束访问器"
 }

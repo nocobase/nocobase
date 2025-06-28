@@ -36,7 +36,7 @@ FormSubmitActionModel.registerFlow({
     step1: {
       async handler(ctx, params) {
         if (!ctx.shared?.currentBlockModel?.resource) {
-          ctx.globals.message.error('No resource selected for submission.');
+          ctx.globals.message.error(ctx.model.flowEngine.translate('No resource selected for submission.'));
           return;
         }
         const currentBlockModel = ctx.shared.currentBlockModel as FormModel;
