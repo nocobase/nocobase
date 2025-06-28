@@ -16,6 +16,7 @@ import { ToolbarItemConfig } from '../../../../types';
 import { useFlowModelById } from '../../../../hooks';
 import { useFlowEngine } from '../../../../provider';
 import { FlowEngine } from '../../../../flowEngine';
+import { getT } from '../../../../utils';
 
 // 检测DOM中直接子元素是否包含button元素的辅助函数
 const detectButtonInDOM = (container: HTMLElement): boolean => {
@@ -298,7 +299,8 @@ const FlowsFloatContextMenuWithModel: React.FC<ModelProvidedProps> = observer(
     }, []);
 
     if (!model) {
-      return <Alert message="提供的模型无效" type="error" />;
+      const t = getT(model || ({} as FlowModel));
+      return <Alert message={t('Invalid model provided')} type="error" />;
     }
 
     // 如果未启用或没有children，直接返回children
@@ -355,7 +357,10 @@ const FlowsFloatContextMenuWithModelById: React.FC<ModelByIdProps> = observer(
     const model = useFlowModelById(uid, modelClassName);
 
     if (!model) {
-      return <Alert message={`未找到ID为 ${uid} 的模型`} type="error" />;
+      // 创建一个临时的 FlowModel 实例用于翻译
+      const tempModel = { flowEngine: { t: (key: string) => key } } as FlowModel;
+      const t = getT(tempModel);
+      return <Alert message={t('Model with ID {{uid}} not found', { uid })} type="error" />;
     }
 
     return (

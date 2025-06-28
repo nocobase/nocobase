@@ -53,5 +53,7 @@
   "createModelOptions must specify use property": "createModelOptions 必须指定 \"use\" 属性",
   "Failed to add sub model": "添加子模型失败",
   "Failed to destroy model after creation error": "创建错误后销毁模型失败",
-  "Add": "添加"
+  "Add": "添加",
+  "Name": "名称",
+  "Model with ID {{uid}} not found": "未找到ID为 {{uid}} 的模型"
 }

@@ -19,7 +19,7 @@ import * as antd from 'antd';
 import { Card, Spin } from 'antd';
 import React, { createRef } from 'react';
 import ReactDOM from 'react-dom/client';
-import { NAMESPACE } from './locale';
+import { NAMESPACE, tStr } from './locale';
 export class LowcodeBlockModel extends BlockModel {
   ref = createRef<HTMLDivElement>();
   declare resource: APIResource;
@@ -125,15 +125,15 @@ ctx.element.innerHTML = \`
 
 LowcodeBlockModel.registerFlow({
   key: 'default',
-  title: 'Configuration',
+  title: tStr('Configuration'),
   auto: true,
   steps: {
     executionStep: {
-      title: 'Code',
+      title: tStr('Code'),
       uiSchema: {
         code: {
           type: 'string',
-          title: 'Execution Code',
+          title: tStr('Execution Code'),
           'x-component': 'CodeEditor',
           'x-component-props': {
             minHeight: '400px',

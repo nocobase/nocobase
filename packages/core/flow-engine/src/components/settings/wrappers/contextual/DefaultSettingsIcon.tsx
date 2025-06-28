@@ -255,7 +255,7 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
                 stepKey,
                 step: actionStep,
                 uiSchema: mergedUiSchema,
-                title: actionStep.title || stepKey,
+                title: t(actionStep.title) || stepKey,
                 modelKey, // 添加模型标识
               };
             })
@@ -344,7 +344,7 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
           // 在平铺模式下始终按流程分组
           items.push({
             key: groupKey,
-            label: flow.title || flow.key,
+            label: t(flow.title) || flow.key,
             type: 'group',
           });
 
@@ -359,7 +359,7 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
             items.push({
               key: uniqueKey,
               icon: <SettingOutlined />,
-              label: stepInfo.title,
+              label: t(stepInfo.title),
             });
           });
         });
@@ -388,7 +388,7 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
 
               items.push({
                 key: groupKey,
-                label: flow.title || flow.key,
+                label: t(flow.title) || flow.key,
                 type: 'group',
               });
 
@@ -398,7 +398,7 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
                 items.push({
                   key: uniqueKey,
                   icon: <SettingOutlined />,
-                  label: stepInfo.title,
+                  label: t(stepInfo.title),
                 });
               });
             });
@@ -414,7 +414,7 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
                 subMenuChildren.push({
                   key: uniqueKey,
                   icon: <SettingOutlined />,
-                  label: stepInfo.title,
+                  label: t(stepInfo.title),
                 });
               });
             });

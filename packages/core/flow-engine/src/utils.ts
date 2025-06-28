@@ -25,7 +25,7 @@ export function getT(model: FlowModel): (key: string, options?: any) => string {
   if (model.flowEngine?.t) {
     return (key: string, options?: any) => {
       // 自动添加 flow-engine 命名空间
-      return model.flowEngine.t(key, { ...options, ns: FLOW_ENGINE_NAMESPACE });
+      return model.flowEngine.t(key, { ns: FLOW_ENGINE_NAMESPACE, ...options });
     };
   }
   // 回退到原始键值
@@ -236,10 +236,10 @@ export class TranslationUtil {
           if (optionsStr) {
             optionsStr = optionsStr.trim();
             if (optionsStr.startsWith('{') && optionsStr.endsWith('}')) {
+              // 使用受限的 Function 构造器解析
               try {
-                templateOptions = JSON.parse(optionsStr);
-              } catch (jsonError) {
-                // JSON 解析失败，返回原始匹配字符串
+                templateOptions = new Function('$root', `with($root) { return (${optionsStr}); }`)({});
+              } catch (parseError) {
                 return match;
               }
             }

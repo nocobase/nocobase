@@ -53,5 +53,7 @@
   "createModelOptions must specify use property": "createModelOptions must specify \"use\" property",
   "Failed to add sub model": "Failed to add sub model",
   "Failed to destroy model after creation error": "Failed to destroy model after creation error",
-  "Add": "Add"
+  "Add": "Add",
+  "Name": "Name",
+  "Model with ID {{uid}} not found": "Model with ID {{uid}} not found"
 }
