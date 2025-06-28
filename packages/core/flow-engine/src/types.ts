@@ -246,6 +246,7 @@ export interface IFlowModelRepository<T extends FlowModel = FlowModel> {
   findOne(query: Record<string, any>): Promise<Record<string, any> | null>;
   save(model: T): Promise<Record<string, any>>;
   destroy(uid: string): Promise<boolean>;
+  move(sourceId: string, targetId: string, position: 'before' | 'after'): Promise<void>;
 }
 
 /**

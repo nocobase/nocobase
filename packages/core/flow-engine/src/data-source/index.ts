@@ -455,4 +455,33 @@ export class CollectionField {
     const app = this.flowEngine.context.app;
     return app.dataSourceManager.collectionFieldInterfaceManager.getFieldInterface(this.interface);
   }
+
+  getSubclassesOf(baseClass: string) {
+    return this.flowEngine.getSubclassesOf(baseClass, (M, name) => {
+      return isFieldInterfaceMatch(M['supportedFieldInterfaces'], this.interface);
+    });
+  }
+
+  getFirstSubclassNameOf(baseClass: string) {
+    const subclasses = this.getSubclassesOf(baseClass);
+    return subclasses.keys().next().value;
+  }
+}
+
+/**
+ * 判断 fieldInterfaces 是否匹配 targetInterface
+ * @param fieldInterfaces string | string[] | null
+ * @param targetInterface string
+ */
+export function isFieldInterfaceMatch(
+  fieldInterfaces: string | string[] | null | undefined,
+  targetInterface: string,
+): boolean {
+  if (!fieldInterfaces) return false;
+  if (fieldInterfaces === '*') return true;
+  if (typeof fieldInterfaces === 'string') return fieldInterfaces === targetInterface;
+  if (Array.isArray(fieldInterfaces)) {
+    return fieldInterfaces.includes('*') || fieldInterfaces.includes(targetInterface);
+  }
+  return false;
 }

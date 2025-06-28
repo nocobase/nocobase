@@ -120,6 +120,10 @@ export class FlowModel<Structure extends { parent?: any; subModels?: any } = Def
     return this._options.async || false;
   }
 
+  get subKey() {
+    return this._options.subKey;
+  }
+
   get reactView() {
     return this.flowEngine.reactView;
   }
@@ -685,6 +689,7 @@ export class FlowModel<Structure extends { parent?: any; subModels?: any } = Def
     const maxSortIndex = Math.max(...this.subModels[subKey].map((item) => item.sortIndex || 0), 0);
     model.sortIndex = maxSortIndex + 1;
     this.subModels[subKey].push(model);
+    this.emitter.emit('onSubModelAdded', model);
     return model;
   }
 
@@ -700,6 +705,7 @@ export class FlowModel<Structure extends { parent?: any; subModels?: any } = Def
     }
     model.setParent(this);
     this.subModels[subKey] = model;
+    this.emitter.emit('onSubModelAdded', model);
     return model;
   }
 
@@ -801,44 +807,11 @@ export class FlowModel<Structure extends { parent?: any; subModels?: any } = Def
    * @param {FlowModel} targetModel 目标模型
    * @returns {boolean} 是否成功移动
    */
-  moveTo(targetModel: FlowModel): boolean {
-    if (!this.parent || !targetModel.parent || this.parent !== targetModel.parent) {
-      console.error('FlowModel.moveTo: Both models must have the same parent to perform move operation.');
-      return false;
+  moveTo(targetModel: FlowModel) {
+    if (!this.flowEngine) {
+      throw new Error('FlowEngine is not set on this model. Please set flowEngine before saving.');
     }
-
-    // 查找当前模型所在的数组类型子集合
-    let subModels: FlowModel[] | null = null;
-
-    for (const subModel of Object.values(this.parent.subModels)) {
-      if (Array.isArray(subModel) && subModel.includes(this)) {
-        subModels = subModel;
-        break;
-      }
-    }
-
-    if (!subModels || !subModels.includes(targetModel)) {
-      console.error(
-        'FlowModel.moveTo: Both models must be in the same array-type subModel collection to perform move operation.',
-      );
-      return false;
-    }
-
-    const currentIndex = subModels.indexOf(this);
-    const targetIndex = subModels.indexOf(targetModel);
-
-    if (currentIndex === -1 || targetIndex === -1 || currentIndex === targetIndex) return false;
-
-    // 使用splice直接移动数组元素（O(n)比排序O(n log n)更快）
-    const [movedModel] = subModels.splice(currentIndex, 1);
-    subModels.splice(targetIndex, 0, movedModel);
-
-    // 重新分配连续的sortIndex
-    subModels.forEach((model, index) => {
-      model.sortIndex = index;
-    });
-
-    return true;
+    return this.flowEngine.moveModel(this.uid, targetModel.uid);
   }
 
   remove() {

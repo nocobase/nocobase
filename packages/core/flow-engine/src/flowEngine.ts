@@ -214,6 +214,29 @@ export class FlowEngine {
   }
 
   /**
+   * 根据父类过滤模型类（支持多层继承），可选自定义过滤器
+   * @param {string | ModelConstructor} baseClass 父类名称或构造函数
+   * @param {(ModelClass: ModelConstructor, className: string) => boolean} [filter] 过滤函数
+   * @returns {Map<string, ModelConstructor>} 继承自指定父类且通过过滤的模型类映射
+   */
+  public getSubclassesOf(
+    baseClass: string | ModelConstructor,
+    filter?: (ModelClass: ModelConstructor, className: string) => boolean,
+  ): Map<string, ModelConstructor> {
+    const parentModelClass = typeof baseClass === 'string' ? this.getModelClass(baseClass) : baseClass;
+    const result = new Map<string, ModelConstructor>();
+    if (!parentModelClass) return result;
+    for (const [className, ModelClass] of this.modelClasses) {
+      if (isInheritedFrom(ModelClass, parentModelClass)) {
+        if (!filter || filter(ModelClass, className)) {
+          result.set(className, ModelClass);
+        }
+      }
+    }
+    return result;
+  }
+
+  /**
    * 创建并注册一个 Model 实例。
    * 如果具有相同 UID 的实例已存在，则返回现有实例。
    * @template T FlowModel 的子类型，默认为 FlowModel。
@@ -268,7 +291,7 @@ export class FlowEngine {
       console.warn(`FlowEngine: Model with UID '${uid}' does not exist.`);
       return false;
     }
-    const modelInstance = this.modelInstances.get(uid);
+    const modelInstance = this.modelInstances.get(uid) as FlowModel;
     modelInstance.clearForks();
     // 从父模型中移除当前模型的引用
     if (modelInstance.parent?.subModels) {
@@ -279,14 +302,17 @@ export class FlowEngine {
           const index = subModelValue.indexOf(modelInstance);
           if (index !== -1) {
             subModelValue.splice(index, 1);
+            modelInstance.parent.emitter.emit('onSubModelRemoved', modelInstance);
             break;
           }
         } else if (subModelValue === modelInstance) {
           delete modelInstance.parent.subModels[subKey];
+          modelInstance.parent.emitter.emit('onSubModelRemoved', modelInstance);
           break;
         }
       }
     }
+    modelInstance['onRemove']?.();
     this.modelInstances.delete(uid);
     return false;
   }
@@ -327,6 +353,61 @@ export class FlowEngine {
       await this.modelRepository.destroy(uid);
     }
     return this.removeModel(uid);
+  }
+
+  async moveModel(sourceId: any, targetId: any): Promise<void> {
+    const sourceModel = this.getModel(sourceId);
+    const targetModel = this.getModel(targetId);
+    if (!sourceModel || !targetModel) {
+      console.warn(`FlowEngine: Cannot move model. Source or target model not found.`);
+      return;
+    }
+    const move = (sourceModel: FlowModel, targetModel: FlowModel) => {
+      if (!sourceModel.parent || !targetModel.parent || sourceModel.parent !== targetModel.parent) {
+        console.error('FlowModel.moveTo: Both models must have the same parent to perform move operation.');
+        return false;
+      }
+
+      const subModels = sourceModel.parent.subModels[sourceModel.subKey];
+
+      if (!subModels || !Array.isArray(subModels)) {
+        console.error('FlowModel.moveTo: Parent subModels must be an array to perform move operation.');
+        return false;
+      }
+
+      const findIndex = (model: FlowModel) => subModels.findIndex((item) => item.uid === model.uid);
+
+      const currentIndex = findIndex(sourceModel);
+      const targetIndex = findIndex(targetModel);
+
+      if (currentIndex === -1 || targetIndex === -1) {
+        console.error('FlowModel.moveTo: Current or target model not found in parent subModels.');
+        return false;
+      }
+
+      if (currentIndex === targetIndex) {
+        console.warn('FlowModel.moveTo: Current model is already at the target position. No action taken.');
+        return false;
+      }
+
+      // 使用splice直接移动数组元素（O(n)比排序O(n log n)更快）
+      const [movedModel] = subModels.splice(currentIndex, 1);
+      subModels.splice(targetIndex, 0, movedModel);
+
+      // 重新分配连续的sortIndex
+      subModels.forEach((model, index) => {
+        model.sortIndex = index;
+      });
+
+      return true;
+    };
+    move(sourceModel, targetModel);
+    if (this.ensureModelRepository()) {
+      const position = sourceModel.sortIndex - targetModel.sortIndex > 0 ? 'before' : 'after';
+      await this.modelRepository.move(sourceId, targetId, position);
+    }
+    // 触发事件以通知其他部分模型已移动
+    sourceModel.parent.emitter.emit('onSubModelMoved', { source: sourceModel, target: targetModel });
   }
 
   /**

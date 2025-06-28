@@ -99,6 +99,10 @@ export class MockFlowModelRepository implements IFlowModelRepository<FlowModel> 
     localStorage.removeItem(`flow-model:${uid}`);
     return true;
   }
+
+  async move(sourceId: string, targetId: string, position: 'before' | 'after' = 'after') {
+    // TODO
+  }
 }
 
 export class FlowModelRepository implements IFlowModelRepository<FlowModel> {
@@ -127,5 +131,14 @@ export class FlowModelRepository implements IFlowModelRepository<FlowModel> {
       params: { filterByTk: uid },
     });
     return true;
+  }
+
+  async move(sourceId: string, targetId: string, position: 'before' | 'after' = 'after') {
+    const response = await this.app.apiClient.request({
+      method: 'POST',
+      url: 'flowModels:move',
+      params: { sourceId, targetId, position },
+    });
+    return response.data?.data;
   }
 }
