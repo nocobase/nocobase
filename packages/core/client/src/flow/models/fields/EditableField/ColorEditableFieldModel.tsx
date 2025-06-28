@@ -9,6 +9,7 @@
 
 import { connect, mapProps } from '@formily/react';
 import { ColorPicker as AntdColorPicker } from 'antd';
+import { tval } from '@nocobase/utils/client';
 import { EditableFieldModel } from './EditableFieldModel';
 
 const ColorPicker = connect(
@@ -23,7 +24,7 @@ const ColorPicker = connect(
       },
       presets: [
         {
-          label: 'Recommended',
+          label: tval('Recommended'),
           colors: [
             '#8BBB11',
             '#52C41A',

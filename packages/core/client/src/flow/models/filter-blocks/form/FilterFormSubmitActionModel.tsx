@@ -9,13 +9,14 @@
 
 import { FlowEngine, MultiRecordResource } from '@nocobase/flow-engine';
 import type { ButtonProps, ButtonType } from 'antd/es/button';
+import { tval } from '@nocobase/utils/client';
 import { ActionModel } from '../../base/ActionModel';
 import { DataBlockModel } from '../../base/BlockModel';
 import { FilterFormActionModel } from './FilterFormActionModel';
 
 export class FilterFormSubmitActionModel extends FilterFormActionModel {
   defaultProps: ButtonProps = {
-    children: 'Filter',
+    title: tval('Filter'),
     type: 'primary',
   };
 }
@@ -29,7 +30,7 @@ FilterFormSubmitActionModel.registerFlow({
     step1: {
       async handler(ctx, params) {
         if (!ctx.shared?.currentBlockModel?.form) {
-          ctx.globals.message.error('No form available for submission.');
+          ctx.globals.message.error(ctx.globals.flowEngine.translate('No form available for submission.'));
           return;
         }
         const currentBlockModel = ctx.shared.currentBlockModel;

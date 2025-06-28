@@ -8,6 +8,7 @@
  */
 
 import { ButtonProps } from 'antd';
+import { tval } from '@nocobase/utils/client';
 import { ActionModel } from '../../base/ActionModel';
 import { DataBlockModel } from '../../base/BlockModel';
 import { FormModel } from './FormModel';
@@ -16,14 +17,14 @@ export class FormActionModel extends ActionModel {}
 
 export class FormSubmitActionModel extends FormActionModel {
   defaultProps: ButtonProps = {
-    children: 'Submit',
+    title: tval('Submit'),
     type: 'primary',
     htmlType: 'submit',
   };
 }
 
 FormSubmitActionModel.define({
-  title: 'Submit',
+  title: tval('Submit'),
 });
 
 FormSubmitActionModel.registerFlow({
@@ -35,7 +36,7 @@ FormSubmitActionModel.registerFlow({
     step1: {
       async handler(ctx, params) {
         if (!ctx.shared?.currentBlockModel?.resource) {
-          ctx.globals.message.error('No resource selected for submission.');
+          ctx.globals.message.error(ctx.model.flowEngine.translate('No resource selected for submission.'));
           return;
         }
         const currentBlockModel = ctx.shared.currentBlockModel as FormModel;

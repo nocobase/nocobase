@@ -12,6 +12,7 @@ import { StepSettingsProps } from '../../../../types';
 import { openStepSettingsDialog } from './StepSettingsDialog';
 import { openStepSettingsDrawer } from './StepSettingsDrawer';
 import { FlowModel } from '../../../../models';
+import { getT } from '../../../../utils';
 
 /**
  * 统一的步骤设置入口函数
@@ -24,9 +25,11 @@ import { FlowModel } from '../../../../models';
  * @returns Promise<any> 返回表单提交的值
  */
 const openStepSettings = async ({ model, flowKey, stepKey, width = 600, title }: StepSettingsProps): Promise<any> => {
+  const t = getT(model);
+
   if (!model) {
-    message.error('提供的模型无效');
-    throw new Error('提供的模型无效');
+    message.error(t('Invalid model provided'));
+    throw new Error(t('Invalid model provided'));
   }
 
   // 获取流程和步骤信息
@@ -34,13 +37,13 @@ const openStepSettings = async ({ model, flowKey, stepKey, width = 600, title }:
   const step = flow?.steps?.[stepKey];
 
   if (!flow) {
-    message.error(`未找到Key为 ${flowKey} 的流程`);
-    throw new Error(`未找到Key为 ${flowKey} 的流程`);
+    message.error(t('Flow with key {{flowKey}} not found', { flowKey }));
+    throw new Error(t('Flow with key {{flowKey}} not found', { flowKey }));
   }
 
   if (!step) {
-    message.error(`未找到Key为 ${stepKey} 的步骤`);
-    throw new Error(`未找到Key为 ${stepKey} 的步骤`);
+    message.error(t('Step with key {{stepKey}} not found', { stepKey }));
+    throw new Error(t('Step with key {{stepKey}} not found', { stepKey }));
   }
 
   // 检查步骤的 settingMode 配置，默认为 'dialog'
@@ -84,7 +87,7 @@ const isStepUsingDrawerMode = (model: FlowModel, flowKey: string, stepKey: strin
 
     return step.settingMode === 'drawer';
   } catch (error) {
-    console.warn('检查步骤设置模式时出错:', error);
+    console.warn('Error checking step setting mode:', error);
     return false;
   }
 };
@@ -107,7 +110,7 @@ const getStepSettingMode = (model: FlowModel, flowKey: string, stepKey: string):
 
     return step.settingMode || 'dialog';
   } catch (error) {
-    console.warn('获取步骤设置模式时出错:', error);
+    console.warn('Error getting step setting mode:', error);
     return null;
   }
 };

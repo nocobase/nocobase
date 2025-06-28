@@ -10,6 +10,7 @@
 import { defineAction, useStepSettingContext } from '@nocobase/flow-engine';
 import { Select } from 'antd';
 import React from 'react';
+import { tval } from '@nocobase/utils/client';
 import { useCompile } from '../../schema-component';
 import { getUniqueKeyFromCollection } from '../../collection-manager/interfaces/utils';
 import { isTitleField } from '../../data-source';
@@ -37,7 +38,7 @@ const SelectOptions = (props) => {
 
 export const titleField = defineAction({
   name: 'titleField',
-  title: 'Title field',
+  title: tval('Title field'),
   uiSchema: {
     label: {
       'x-component': SelectOptions,

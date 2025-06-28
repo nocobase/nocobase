@@ -8,24 +8,25 @@
  */
 
 import type { ButtonProps } from 'antd';
+import { tval } from '@nocobase/utils/client';
 import { openLinkAction } from '../../actions/openLinkAction';
 import { RecordActionModel } from '../base/ActionModel';
 
 export class LinkRecordActionModel extends RecordActionModel {
   defaultProps: ButtonProps = {
     type: 'link',
-    children: 'Link',
+    children: tval('Link'),
   };
 }
 
 LinkRecordActionModel.define({
-  title: 'Link',
+  title: tval('Link'),
   hide: true,
 });
 
 LinkRecordActionModel.registerFlow({
   key: 'handleClick',
-  title: '点击事件',
+  title: tval('Click event'),
   on: {
     eventName: 'click',
   },

@@ -9,11 +9,11 @@
 
 import { css } from '@emotion/css';
 import { defineAction } from '@nocobase/flow-engine';
-import { getPickerFormat } from '@nocobase/utils/client';
+import { getPickerFormat, tval } from '@nocobase/utils/client';
 import { ExpiresRadio, DateFormatCom } from '../components';
 
 export const dateTimeFormat = defineAction({
-  title: 'Date display format',
+  title: tval('Date display format'),
   name: 'dateDisplayFormat',
   uiSchema: {
     picker: {
@@ -80,7 +80,7 @@ export const dateTimeFormat = defineAction({
           value: 'DD/MM/YYYY',
         },
         {
-          label: 'custom',
+          label: tval('Custom'),
           value: 'custom',
         },
       ],
@@ -146,7 +146,7 @@ export const dateTimeFormat = defineAction({
           value: 'HH:mm:ss',
         },
         {
-          label: 'custom',
+          label: tval('Custom'),
           value: 'custom',
         },
       ],

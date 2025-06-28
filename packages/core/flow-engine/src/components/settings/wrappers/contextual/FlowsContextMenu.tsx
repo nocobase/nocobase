@@ -15,6 +15,7 @@ import { observer } from '@formily/react';
 import { FlowModel } from '../../../../models';
 import { useFlowModelById } from '../../../../hooks';
 import { openStepSettingsDialog } from './StepSettingsDialog';
+import { getT } from '../../../../utils';
 
 // 右键菜单组件接口
 interface ModelProvidedProps {
@@ -70,25 +71,26 @@ const FlowsContextMenu: React.FC<FlowsContextMenuProps> = (props) => {
 // 使用传入的model
 const FlowsContextMenuWithModel: React.FC<ModelProvidedProps> = observer(
   ({ model, children, enabled = true, position = 'right', showDeleteButton = true }) => {
+    const t = getT(model);
     const handleMenuClick = useCallback(
       ({ key }: { key: string }) => {
         if (key === 'delete') {
           // 处理删除操作
           Modal.confirm({
-            title: '确认删除',
+            title: t('Confirm delete'),
             icon: <ExclamationCircleOutlined />,
-            content: '确定要删除此项吗？此操作不可撤销。',
-            okText: '确认删除',
+            content: t('Are you sure you want to delete this item? This action cannot be undone.'),
+            okText: t('Confirm Delete'),
             okType: 'danger',
-            cancelText: '取消',
+            cancelText: t('Cancel'),
             onOk() {
               try {
                 model.dispatchEvent('remove');
               } catch (error) {
-                console.error('删除操作失败:', error);
+                console.error(t('Delete operation failed'), ':', error);
                 Modal.error({
-                  title: '删除失败',
-                  content: '删除操作失败，请检查控制台获取详细信息。',
+                  title: t('Delete failed'),
+                  content: t('Delete operation failed, please check the console for details.'),
                 });
               }
             },

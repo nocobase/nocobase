@@ -15,6 +15,7 @@ import { FlowModelOptions, ModelConstructor } from '../../types';
 import { FlowSettingsButton } from '../common/FlowSettingsButton';
 import { withFlowDesignMode } from '../common/withFlowDesignMode';
 import { AddSubModelButton, SubModelItemsType, mergeSubModelItems } from './AddSubModelButton';
+import { useTranslation } from 'react-i18next';
 
 export type BuildCreateModelOptionsType = {
   defaultOptions: FlowModelOptions;
@@ -65,6 +66,11 @@ function defaultBuildCreateModelOptions({ defaultOptions }: BuildCreateModelOpti
   return defaultOptions;
 }
 
+const DefaultBtn = () => {
+  const { t } = useTranslation();
+  return <FlowSettingsButton icon={<SettingOutlined />}>{t('Configure fields')}</FlowSettingsButton>;
+};
+
 /**
  * 专门用于添加字段模型的按钮组件
  *
@@ -80,7 +86,7 @@ const AddFieldButtonCore: React.FC<AddFieldButtonProps> = ({
   model,
   subModelBaseClass = 'FieldFlowModel',
   subModelKey = 'fields',
-  children = <FlowSettingsButton icon={<SettingOutlined />}>{'Configure fields'}</FlowSettingsButton>,
+  children = <DefaultBtn />,
   subModelType = 'array',
   collection,
   buildCreateModelOptions = defaultBuildCreateModelOptions,

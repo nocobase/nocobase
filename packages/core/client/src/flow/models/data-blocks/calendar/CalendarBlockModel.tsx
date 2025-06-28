@@ -12,6 +12,7 @@ import { Card, Modal } from 'antd';
 import moment from 'moment';
 import React from 'react';
 import { Calendar, momentLocalizer } from 'react-big-calendar';
+import { tval } from '@nocobase/utils/client';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import { DataBlockModel } from '../../base/BlockModel';
 
@@ -47,7 +48,7 @@ export class CalendarBlockModel extends DataBlockModel {
 }
 
 CalendarBlockModel.define({
-  title: 'Calendar',
+  title: tval('Calendar'),
   group: 'Content',
   hide: true,
   defaultOptions: {
@@ -64,13 +65,20 @@ CalendarBlockModel.registerFlow({
     step1: {
       handler(ctx, params) {
         console.log('ctx.extra.event', ctx.extra.event);
+        const t = ctx.model.translate;
         Modal.info({
-          title: 'Event Selected',
+          title: t('Event selected'),
           content: (
             <div>
-              <p>Title: {ctx.extra.event.nickname}</p>
-              <p>Start: {moment(ctx.extra.event.createdAt).format('YYYY-MM-DD HH:mm:ss')}</p>
-              <p>End: {moment(ctx.extra.event.createdAt).format('YYYY-MM-DD HH:mm:ss')}</p>
+              <p>
+                {t('Title')}: {ctx.extra.event.nickname}
+              </p>
+              <p>
+                {t('Start')}: {moment(ctx.extra.event.createdAt).format('YYYY-MM-DD HH:mm:ss')}
+              </p>
+              <p>
+                {t('End')}: {moment(ctx.extra.event.createdAt).format('YYYY-MM-DD HH:mm:ss')}
+              </p>
             </div>
           ),
         });
@@ -88,13 +96,20 @@ CalendarBlockModel.registerFlow({
     step1: {
       handler(ctx, params) {
         console.log('ctx.extra.event', ctx.extra.event);
+        const t = ctx.model.translate;
         Modal.info({
-          title: 'Double Click',
+          title: t('Double click'),
           content: (
             <div>
-              <p>Title: {ctx.extra.event.nickname}</p>
-              <p>Start: {moment(ctx.extra.event.createdAt).format('YYYY-MM-DD HH:mm:ss')}</p>
-              <p>End: {moment(ctx.extra.event.createdAt).format('YYYY-MM-DD HH:mm:ss')}</p>
+              <p>
+                {t('Title')}: {ctx.extra.event.nickname}
+              </p>
+              <p>
+                {t('Start')}: {moment(ctx.extra.event.createdAt).format('YYYY-MM-DD HH:mm:ss')}
+              </p>
+              <p>
+                {t('End')}: {moment(ctx.extra.event.createdAt).format('YYYY-MM-DD HH:mm:ss')}
+              </p>
             </div>
           ),
         });
@@ -113,20 +128,20 @@ CalendarBlockModel.registerFlow({
       uiSchema: {
         dataSourceKey: {
           type: 'string',
-          title: 'Data Source Key',
+          title: tval('Data Source Key'),
           'x-decorator': 'FormItem',
           'x-component': 'Input',
           'x-component-props': {
-            placeholder: 'Enter data source key',
+            placeholder: tval('Enter data source key'),
           },
         },
         collectionName: {
           type: 'string',
-          title: 'Collection Name',
+          title: tval('Collection Name'),
           'x-decorator': 'FormItem',
           'x-component': 'Input',
           'x-component-props': {
-            placeholder: 'Enter collection name',
+            placeholder: tval('Enter collection name'),
           },
         },
       },
@@ -149,29 +164,29 @@ CalendarBlockModel.registerFlow({
       uiSchema: {
         titleAccessor: {
           type: 'string',
-          title: 'Title accessor',
+          title: tval('Title accessor'),
           'x-decorator': 'FormItem',
           'x-component': 'Input',
           'x-component-props': {
-            placeholder: 'Enter title accessor',
+            placeholder: tval('Enter title accessor'),
           },
         },
         startAccessor: {
           type: 'string',
-          title: 'Start accessor',
+          title: tval('Start accessor'),
           'x-decorator': 'FormItem',
           'x-component': 'Input',
           'x-component-props': {
-            placeholder: 'Enter start accessor',
+            placeholder: tval('Enter start accessor'),
           },
         },
         endAccessor: {
           type: 'string',
-          title: 'End accessor',
+          title: tval('End accessor'),
           'x-decorator': 'FormItem',
           'x-component': 'Input',
           'x-component-props': {
-            placeholder: 'Enter end accessor',
+            placeholder: tval('Enter end accessor'),
           },
         },
       },

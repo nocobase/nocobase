@@ -8,31 +8,32 @@
  */
 
 import type { ButtonProps } from 'antd/es/button';
+import { tval } from '@nocobase/utils/client';
 import { openModeAction } from '../../actions/openModeAction';
 import { RecordActionModel } from '../base/ActionModel';
 
 export class DuplicateActionModel extends RecordActionModel {
   defaultProps: ButtonProps = {
     type: 'link',
-    title: 'Duplicate',
+    title: tval('Duplicate'),
   };
 }
 
 DuplicateActionModel.define({
-  title: 'Duplicate',
+  title: tval('Duplicate'),
   hide: true,
 });
 
 DuplicateActionModel.registerFlow({
   key: 'handleClick',
-  title: '点击事件',
+  title: tval('Click event'),
   on: {
     eventName: 'click',
   },
   steps: {
     open: openModeAction,
     duplicateMode: {
-      title: '复制方式',
+      title: tval('Duplicate mode'),
       uiSchema: {
         // TODO
         duplicateMode: {
@@ -40,15 +41,15 @@ DuplicateActionModel.registerFlow({
           'x-component': 'Select',
           enum: [
             {
-              label: '快速复制',
+              label: tval('Quick duplicate'),
               value: 'quickDuplicate',
             },
             {
-              label: '表单复制',
+              label: tval('Form duplicate'),
               value: 'formDuplicate',
             },
           ],
-          title: '复制方式',
+          title: tval('Duplicate mode'),
         },
       },
       defaultParams(ctx) {

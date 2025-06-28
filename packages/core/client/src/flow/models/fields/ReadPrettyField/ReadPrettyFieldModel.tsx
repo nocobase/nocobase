@@ -9,6 +9,7 @@
 
 import React from 'react';
 import { reactive } from '@nocobase/flow-engine';
+import { tval } from '@nocobase/utils/client';
 import { FieldModel } from '../../base/FieldModel';
 
 export class ReadPrettyFieldModel extends FieldModel {
@@ -29,7 +30,7 @@ export class ReadPrettyFieldModel extends FieldModel {
 ReadPrettyFieldModel.registerFlow({
   key: 'ReadPrettyFieldDefault',
   auto: true,
-  title: 'Basic',
+  title: tval('Basic'),
   sort: 100,
   steps: {
     step1: {

@@ -14,6 +14,7 @@ import { FlowModel, FlowModelRenderer, FlowSettingsButton } from '@nocobase/flow
 import { Tabs } from 'antd';
 import _ from 'lodash';
 import React from 'react';
+import { tval } from '@nocobase/utils/client';
 
 type PageModelStructure = {
   subModels: {
@@ -63,7 +64,7 @@ export class PageModel extends FlowModel<PageModelStructure> {
               });
             }}
           >
-            Add tab
+            {this.flowEngine.translate('Add tab')}
           </FlowSettingsButton>
         }
       />
@@ -82,24 +83,24 @@ export class PageModel extends FlowModel<PageModelStructure> {
 
 PageModel.registerFlow({
   key: 'default',
-  title: '基础配置',
+  title: tval('Basic configuration'),
   auto: true,
   steps: {
     settings: {
-      title: '配置页面',
+      title: tval('Configure page'),
       uiSchema: {
         title: {
           type: 'string',
-          title: 'Page Title',
+          title: tval('Page Title'),
           'x-decorator': 'FormItem',
           'x-component': 'Input',
           'x-component-props': {
-            placeholder: 'Enter page title',
+            placeholder: tval('Enter page title'),
           },
         },
         enableTabs: {
           type: 'boolean',
-          title: 'Enable tabs',
+          title: tval('Enable tabs'),
           'x-decorator': 'FormItem',
           'x-component': 'Switch',
         },
@@ -111,7 +112,7 @@ PageModel.registerFlow({
         };
       },
       async handler(ctx, params) {
-        ctx.model.setProps('title', params.title);
+        ctx.model.setProps('title', ctx.globals.flowEngine.translate(params.title));
         ctx.model.setProps('enableTabs', params.enableTabs);
 
         if (ctx.shared.currentDrawer) {

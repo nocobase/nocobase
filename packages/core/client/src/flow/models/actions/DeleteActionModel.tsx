@@ -9,22 +9,23 @@
 
 import { MultiRecordResource } from '@nocobase/flow-engine';
 import type { ButtonProps } from 'antd/es/button';
+import { tval } from '@nocobase/utils/client';
 import { RecordActionModel } from '../base/ActionModel';
 
 export class DeleteActionModel extends RecordActionModel {
   defaultProps: ButtonProps = {
     type: 'link',
-    title: 'Delete',
+    title: tval('Delete'),
   };
 }
 
 DeleteActionModel.define({
-  title: 'Delete',
+  title: tval('Delete'),
 });
 
 DeleteActionModel.registerFlow({
   key: 'handleClick',
-  title: '点击事件',
+  title: tval('Click event'),
   on: {
     eventName: 'click',
   },
@@ -34,17 +35,18 @@ DeleteActionModel.registerFlow({
     },
     delete: {
       async handler(ctx, params) {
+        const t = ctx.model.translate;
         if (!ctx.shared?.currentBlockModel?.resource) {
-          ctx.globals.message.error('No resource selected for deletion.');
+          ctx.globals.message.error(t('No resource selected for deletion'));
           return;
         }
         if (!ctx.shared.currentRecord) {
-          ctx.globals.message.error('No resource or record selected for deletion.');
+          ctx.globals.message.error(t('No resource or record selected for deletion'));
           return;
         }
         const resource = ctx.shared.currentBlockModel.resource as MultiRecordResource;
         await resource.destroy(ctx.shared.currentRecord);
-        ctx.globals.message.success('Record deleted successfully.');
+        ctx.globals.message.success(t('Record deleted successfully'));
       },
     },
   },

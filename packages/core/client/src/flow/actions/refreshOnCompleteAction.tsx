@@ -1,9 +1,20 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
+import { tval } from '@nocobase/utils/client';
+
 export const refreshOnCompleteAction = {
-  title: '执行后刷新数据',
+  title: tval('Refresh data after execution'),
   uiSchema: {
     enable: {
       type: 'boolean',
-      title: 'Enable refresh',
+      title: tval('Enable refresh'),
       'x-decorator': 'FormItem',
       'x-component': 'Checkbox',
     },
@@ -16,7 +27,7 @@ export const refreshOnCompleteAction = {
   async handler(ctx, params) {
     if (params.enable) {
       await ctx.extra.currentResource.refresh();
-      ctx.globals.message.success('Data refreshed successfully.');
+      ctx.globals.message.success(ctx.model.translate('Data refreshed successfully'));
     }
   },
 };

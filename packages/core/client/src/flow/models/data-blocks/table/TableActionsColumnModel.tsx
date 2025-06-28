@@ -12,6 +12,7 @@ import { observer } from '@formily/reactive-react';
 import { AddActionButton, FlowModel, FlowModelRenderer, FlowsFloatContextMenu } from '@nocobase/flow-engine';
 import { Skeleton, Space } from 'antd';
 import React from 'react';
+import { tval } from '@nocobase/utils/client';
 import { ActionModel } from '../../base/ActionModel';
 import { SupportedFieldInterfaces } from '../../base/FieldModel';
 
@@ -63,7 +64,7 @@ export class TableActionsColumnModel extends FlowModel {
             },
           ]}
         >
-          <Space>{this.props.title || 'Actions'}</Space>
+          <Space>{this.props.title || this.flowEngine.translate('Actions')}</Space>
         </FlowsFloatContextMenu>
       ),
       render: this.render(),

@@ -11,8 +11,7 @@ import React from 'react';
 import { AssociationReadPrettyFieldModel } from './AssociationReadPrettyFieldModel';
 import { FlowEngineProvider, reactive } from '@nocobase/flow-engine';
 import { getUniqueKeyFromCollection } from '../../../../../collection-manager/interfaces/utils';
-import { useCompile } from '../../../../../schema-component';
-import { isTitleField } from '../../../../../data-source';
+import { tval } from '@nocobase/utils/client';
 
 export class AssociationSelectReadPrettyFieldModel extends AssociationReadPrettyFieldModel {
   public static readonly supportedFieldInterfaces = [
@@ -71,7 +70,7 @@ export class AssociationSelectReadPrettyFieldModel extends AssociationReadPretty
               <React.Fragment key={idx}>
                 {idx > 0 && <span style={{ color: 'rgb(170, 170, 170)' }}>,</span>}
                 <FlowEngineProvider engine={this.flowEngine}>
-                  {v?.[fieldNames.label] ? mol.render() : 'N/A'}
+                  {v?.[fieldNames.label] ? mol.render() : this.flowEngine.translate('N/A')}
                 </FlowEngineProvider>
               </React.Fragment>
             );
@@ -85,13 +84,13 @@ export class AssociationSelectReadPrettyFieldModel extends AssociationReadPretty
 
 AssociationSelectReadPrettyFieldModel.registerFlow({
   key: 'fieldNames',
-  title: 'Specific properties',
+  title: tval('Specific properties'),
   auto: true,
   sort: 200,
   steps: {
     fieldNames: {
       use: 'titleField',
-      title: 'Title field',
+      title: tval('Title field'),
       handler(ctx, params) {
         const { target } = ctx.model.collectionField.options;
         const collectionManager = ctx.model.collectionField.collection.collectionManager;

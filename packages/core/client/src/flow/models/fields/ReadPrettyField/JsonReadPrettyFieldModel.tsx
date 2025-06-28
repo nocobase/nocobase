@@ -28,7 +28,7 @@ export class JsonReadPrettyFieldModel extends ReadPrettyFieldModel {
       try {
         content = JSON.stringify(value, null, space ?? 2);
       } catch (error) {
-        content = '[Invalid JSON]';
+        content = this.flowEngine.translate('Invalid JSON format');
       }
     }
 

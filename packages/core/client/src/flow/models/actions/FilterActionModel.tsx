@@ -10,6 +10,7 @@
 import { MultiRecordResource, useFlowModel, useStepSettingContext } from '@nocobase/flow-engine';
 import { Button, ButtonProps, Popover, Select, Space } from 'antd';
 import React, { FC } from 'react';
+import { tval } from '@nocobase/utils/client';
 import { FilterGroup } from '../../components/FilterGroup';
 import { GlobalActionModel } from '../base/ActionModel';
 import { DataBlockModel } from '../base/BlockModel';
@@ -19,14 +20,15 @@ const FilterContent: FC<{ value: any }> = (props) => {
   const currentBlockModel = modelInstance.ctx.shared.currentBlockModel as DataBlockModel;
   const fields = currentBlockModel.collection.getFields();
   const ignoreFieldsNames = modelInstance.props.ignoreFieldsNames || [];
+  const t = modelInstance.translate;
 
   return (
     <>
       <FilterGroup value={props.value} fields={fields} ignoreFieldsNames={ignoreFieldsNames} ctx={modelInstance.ctx} />
       <Space style={{ width: '100%', display: 'flex', justifyContent: 'flex-end' }}>
-        <Button onClick={() => modelInstance.dispatchEvent('reset')}>Reset</Button>
+        <Button onClick={() => modelInstance.dispatchEvent('reset')}>{t('Reset')}</Button>
         <Button type="primary" onClick={() => modelInstance.dispatchEvent('submit')}>
-          Submit
+          {t('Submit')}
         </Button>
       </Space>
     </>
@@ -42,7 +44,7 @@ export class FilterActionModel extends GlobalActionModel {
 
   defaultProps: any = {
     type: 'default',
-    children: 'Filter',
+    title: tval('Filter'),
     icon: 'FilterOutlined',
     filterValue: { $and: [] },
     ignoreFieldsNames: [],
@@ -63,16 +65,16 @@ export class FilterActionModel extends GlobalActionModel {
 }
 
 FilterActionModel.define({
-  title: 'Filter',
+  title: tval('Filter'),
 });
 
 FilterActionModel.registerFlow({
   key: 'filterSettings',
-  title: '筛选配置',
+  title: tval('Filter configuration'),
   auto: true,
   steps: {
     ignoreFieldsNames: {
-      title: '可筛选字段',
+      title: tval('Filterable fields'),
       uiSchema: {
         ignoreFieldsNames: {
           type: 'array',
@@ -90,7 +92,7 @@ FilterActionModel.registerFlow({
           },
           'x-component-props': {
             mode: 'multiple',
-            placeholder: '请选择不可筛选的字段',
+            placeholder: tval('Please select non-filterable fields'),
           },
         },
       },
@@ -104,7 +106,7 @@ FilterActionModel.registerFlow({
       },
     },
     defaultValue: {
-      title: '默认筛选条件',
+      title: tval('Default filter conditions'),
       uiSchema: {
         filter: {
           type: 'object',
@@ -141,7 +143,7 @@ FilterActionModel.registerFlow({
 
 FilterActionModel.registerFlow({
   key: 'handleSubmit',
-  title: '提交',
+  title: tval('Submit'),
   on: {
     eventName: 'submit',
   },
@@ -162,7 +164,7 @@ FilterActionModel.registerFlow({
 
 FilterActionModel.registerFlow({
   key: 'handleReset',
-  title: '重置',
+  title: tval('Reset'),
   on: {
     eventName: 'reset',
   },
@@ -183,7 +185,7 @@ FilterActionModel.registerFlow({
 
 FilterActionModel.registerFlow({
   key: 'handleClick',
-  title: '点击事件',
+  title: tval('Click event'),
   on: {
     eventName: 'click',
   },

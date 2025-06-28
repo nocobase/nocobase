@@ -9,6 +9,7 @@
 
 import { FlowModel } from '@nocobase/flow-engine';
 import { Button } from 'antd';
+import { tval } from '@nocobase/utils/client';
 import type { ButtonProps } from 'antd/es/button';
 import React from 'react';
 import { Icon } from '../../../icon/Icon';
@@ -19,7 +20,7 @@ export class ActionModel extends FlowModel {
 
   defaultProps: ButtonProps = {
     type: 'default',
-    title: 'Action',
+    title: tval('Action'),
   };
 
   render() {
@@ -37,21 +38,21 @@ export class ActionModel extends FlowModel {
 
 ActionModel.registerFlow({
   key: 'default',
-  title: '通用配置',
+  title: tval('General configuration'),
   auto: true,
   steps: {
     buttonProps: {
-      title: '编辑按钮',
+      title: tval('Edit button'),
       uiSchema: {
         title: {
           'x-decorator': 'FormItem',
           'x-component': 'Input',
-          title: 'Button title',
+          title: tval('Button title'),
         },
         icon: {
           'x-decorator': 'FormItem',
           'x-component': IconPicker,
-          title: 'Button icon',
+          title: tval('Button icon'),
         },
       },
       defaultParams(ctx) {
@@ -61,7 +62,7 @@ ActionModel.registerFlow({
         };
       },
       handler(ctx, params) {
-        ctx.model.setProps('title', params.title);
+        ctx.model.setProps('title', ctx.globals.flowEngine.translate(params.title));
         ctx.model.setProps('icon', params.icon);
         ctx.model.setProps('onClick', (event) => {
           ctx.model.dispatchEvent('click', {
@@ -78,7 +79,7 @@ export class GlobalActionModel extends ActionModel {}
 export class RecordActionModel extends ActionModel {
   defaultProps: ButtonProps = {
     type: 'link',
-    children: 'Action',
+    children: tval('Action'),
   };
 
   render() {
@@ -95,21 +96,21 @@ export class RecordActionModel extends ActionModel {
 
 RecordActionModel.registerFlow({
   key: 'default',
-  title: '通用配置',
+  title: tval('General configuration'),
   auto: true,
   steps: {
     buttonProps: {
-      title: '编辑按钮',
+      title: tval('Edit button'),
       uiSchema: {
         title: {
           'x-decorator': 'FormItem',
           'x-component': 'Input',
-          title: 'Button title',
+          title: tval('Button title'),
         },
         icon: {
           'x-decorator': 'FormItem',
           'x-component': IconPicker,
-          title: 'Button icon',
+          title: tval('Button icon'),
         },
       },
       defaultParams(ctx) {
@@ -126,7 +127,7 @@ RecordActionModel.registerFlow({
         if (!currentBlockModel) {
           throw new Error('Current block model is not set in shared context');
         }
-        ctx.model.setProps('title', params.title);
+        ctx.model.setProps('title', ctx.globals.flowEngine.translate(params.title));
         ctx.model.setProps('icon', params.icon);
         ctx.model.setProps('onClick', (event) => {
           ctx.model.dispatchEvent('click', {

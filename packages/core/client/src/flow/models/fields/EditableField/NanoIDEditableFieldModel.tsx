@@ -29,11 +29,11 @@ NanoIDEditableFieldModel.registerFlow({
         const { size, customAlphabet } = ctx.model.collectionField.options || { size: 21 };
         function isValidNanoid(value) {
           if (value?.length !== size) {
-            return 'Field value size is' + ` ${size || 21}`;
+            return ctx.globals.flowEngine.translate('Field value size is') + ` ${size || 21}`;
           }
           for (let i = 0; i < value.length; i++) {
             if (customAlphabet?.indexOf(value[i]) === -1) {
-              return `Field value do not meet the requirements`;
+              return ctx.globals.flowEngine.translate('Field value do not meet the requirements');
             }
           }
         }
