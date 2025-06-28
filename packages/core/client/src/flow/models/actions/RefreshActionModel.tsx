@@ -31,7 +31,7 @@ RefreshActionModel.registerFlow({
   steps: {
     refresh: {
       async handler(ctx, params) {
-        const t = ctx.globals.flowEngine.translate;
+        const t = ctx.model.translate;
         const currentResource = ctx.shared?.currentBlockModel?.resource;
         if (!currentResource) {
           ctx.globals.message.error(t('No resource selected for refresh'));

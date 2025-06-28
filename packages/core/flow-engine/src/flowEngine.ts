@@ -14,6 +14,7 @@ import {
   ActionDefinition,
   ActionOptions,
   CreateModelOptions,
+  FlowContext,
   FlowDefinition,
   IFlowModelRepository,
   ModelConstructor,
@@ -37,7 +38,7 @@ export class FlowEngine {
   private modelInstances: Map<string, any> = new Map();
   /** @public Stores flow settings including components and scopes for formily settings. */
   public flowSettings: FlowSettings = new FlowSettings();
-  context: Record<string, any> = {};
+  context: FlowContext['globals'] = {} as FlowContext['globals'];
   private modelRepository: IFlowModelRepository | null = null;
   private _applyFlowCache = new Map<string, ApplyFlowCacheEntry>();
 

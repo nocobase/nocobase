@@ -84,7 +84,7 @@ const LazyDropdown: React.FC<Omit<DropdownProps, 'menu'> & { menu: LazyDropdownM
   const dropdownMaxHeight = useNiceDropdownMaxHeight([menuVisible]);
   const [isSearching, setIsSearching] = useState(false);
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const t = model.flowEngine.translate.bind(model.flowEngine);
+  const t = model.translate;
 
   // 清理定时器，避免内存泄露
   useEffect(() => {

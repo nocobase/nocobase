@@ -65,7 +65,7 @@ CalendarBlockModel.registerFlow({
     step1: {
       handler(ctx, params) {
         console.log('ctx.extra.event', ctx.extra.event);
-        const t = ctx.model.flowEngine.translate;
+        const t = ctx.model.translate;
         Modal.info({
           title: t('Event selected'),
           content: (
@@ -96,7 +96,7 @@ CalendarBlockModel.registerFlow({
     step1: {
       handler(ctx, params) {
         console.log('ctx.extra.event', ctx.extra.event);
-        const t = ctx.model.flowEngine.translate;
+        const t = ctx.model.translate;
         Modal.info({
           title: t('Double click'),
           content: (

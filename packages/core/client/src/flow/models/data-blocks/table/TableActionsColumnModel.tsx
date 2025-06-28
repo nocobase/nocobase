@@ -64,7 +64,7 @@ export class TableActionsColumnModel extends FlowModel {
             },
           ]}
         >
-          <Space>{this.props.title || tval('Actions')}</Space>
+          <Space>{this.props.title || this.flowEngine.translate('Actions')}</Space>
         </FlowsFloatContextMenu>
       ),
       render: this.render(),

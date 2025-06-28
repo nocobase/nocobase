@@ -261,7 +261,7 @@ export class TabulatorModel extends DataBlockModel<S> {
             <FlowModelRenderer model={action} showFlowSettings sharedContext={{ currentBlockModel: this }} />
           ))}
           <AddActionButton model={this} subModelBaseClass="GlobalActionModel" subModelKey="actions">
-            <Button icon={<SettingOutlined />}>{this.ctx.globals.translate('Configure actions')}</Button>
+            <Button icon={<SettingOutlined />}>{this.translate('Configure actions')}</Button>
           </AddActionButton>
         </Space>
         <div ref={this.tabulatorRef} />

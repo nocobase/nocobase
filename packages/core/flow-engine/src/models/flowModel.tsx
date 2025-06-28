@@ -397,7 +397,7 @@ export class FlowModel<Structure extends { parent?: any; subModels?: any } = Def
       console[level.toLowerCase()](logMessage, logMeta);
     };
 
-    const globalContexts = currentFlowEngine.getContext() || {};
+    const globalContexts = currentFlowEngine.getContext();
     const flowContext: FlowContext<this> = {
       exit: () => {
         throw new FlowExitException(flowKey, this.uid);
@@ -900,6 +900,10 @@ export class FlowModel<Structure extends { parent?: any; subModels?: any } = Def
       globals: this.flowEngine.getContext(),
       shared: this.getSharedContext(),
     };
+  }
+
+  get translate() {
+    return this.flowEngine.translate.bind(this.flowEngine);
   }
 
   public setSharedContext(ctx: Record<string, any>) {

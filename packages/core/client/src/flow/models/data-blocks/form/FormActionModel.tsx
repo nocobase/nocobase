@@ -17,7 +17,7 @@ export class FormActionModel extends ActionModel {}
 
 export class FormSubmitActionModel extends FormActionModel {
   defaultProps: ButtonProps = {
-    children: tval('Submit'),
+    title: tval('Submit'),
     type: 'primary',
     htmlType: 'submit',
   };

@@ -20,7 +20,7 @@ const FilterContent: FC<{ value: any }> = (props) => {
   const currentBlockModel = modelInstance.ctx.shared.currentBlockModel as DataBlockModel;
   const fields = currentBlockModel.collection.getFields();
   const ignoreFieldsNames = modelInstance.props.ignoreFieldsNames || [];
-  const t = modelInstance.flowEngine.translate;
+  const t = modelInstance.translate;
 
   return (
     <>
@@ -44,7 +44,7 @@ export class FilterActionModel extends GlobalActionModel {
 
   defaultProps: any = {
     type: 'default',
-    children: tval('Filter'),
+    title: tval('Filter'),
     icon: 'FilterOutlined',
     filterValue: { $and: [] },
     ignoreFieldsNames: [],

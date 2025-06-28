@@ -306,7 +306,7 @@ const openRequiredParamsStepFormDialog = async ({
         // 创建FormDialog
         const formDialog = FormDialog(
           {
-            title: dialogTitle,
+            title: dialogTitle || t('Step Parameter Configuration'),
             width: dialogWidth,
             footer: null, // 移除默认的底部按钮，使用自定义的导航按钮
             destroyOnClose: true,

@@ -233,10 +233,12 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
 
               // 如果step使用了action，检查action是否有uiSchema
               let hasActionUiSchema = false;
+              let stepTitle = actionStep.title;
               if (actionStep.use) {
                 try {
                   const action = targetModel.flowEngine?.getAction?.(actionStep.use);
                   hasActionUiSchema = action && action.uiSchema != null;
+                  stepTitle = stepTitle || action.title;
                 } catch (error) {
                   console.warn(t('Failed to get action {{action}}', { action: actionStep.use }), ':', error);
                 }
@@ -255,7 +257,7 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
                 stepKey,
                 step: actionStep,
                 uiSchema: mergedUiSchema,
-                title: t(actionStep.title) || stepKey,
+                title: t(stepTitle) || stepKey,
                 modelKey, // 添加模型标识
               };
             })

@@ -53,9 +53,7 @@ const openStepSettingsDialog = async ({
     throw new Error(t('Step with key {{stepKey}} not found', { stepKey }));
   }
 
-  const title =
-    dialogTitle ||
-    (step ? `${step.title || stepKey} - ${t('Configuration')}` : `${t('Step Configuration')} - ${stepKey}`);
+  let title = step.title;
 
   // 创建参数解析上下文
   const paramsContext = {
@@ -76,6 +74,7 @@ const openStepSettingsDialog = async ({
       actionUiSchema = action.uiSchema;
     }
     actionDefaultParams = action.defaultParams || {};
+    title = title || action.title;
   }
 
   // 解析动态 uiSchema
@@ -132,7 +131,7 @@ const openStepSettingsDialog = async ({
   // 创建FormDialog
   const formDialog = FormDialog(
     {
-      title,
+      title: dialogTitle || `${t(title)} - ${t('Configuration')}`,
       width: dialogWidth,
       okText: t('OK'),
       cancelText: t('Cancel'),

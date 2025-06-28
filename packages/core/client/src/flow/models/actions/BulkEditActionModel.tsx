@@ -52,7 +52,7 @@ BulkEditActionModel.registerFlow({
         };
       },
       async handler(ctx, params) {
-        const t = ctx.globals.flowEngine.translate;
+        const t = ctx.model.translate;
         if (!ctx.shared?.currentBlockModel?.resource) {
           ctx.globals.message.error(t('No resource selected for bulk edit'));
           return;

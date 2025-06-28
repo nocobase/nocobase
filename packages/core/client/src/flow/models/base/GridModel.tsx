@@ -69,7 +69,7 @@ export class GridModel extends FlowModel<GridModelStructure> {
   }
 
   render() {
-    const t = this.flowEngine.translate.bind(this.flowEngine);
+    const t = this.translate;
     console.log('GridModel render', JSON.stringify(this.props.rows, null, 2), this.props.sizes);
     return (
       <div style={{ padding: 16 }}>

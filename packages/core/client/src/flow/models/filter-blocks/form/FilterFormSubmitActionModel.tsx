@@ -16,7 +16,7 @@ import { FilterFormActionModel } from './FilterFormActionModel';
 
 export class FilterFormSubmitActionModel extends FilterFormActionModel {
   defaultProps: ButtonProps = {
-    children: tval('Filter'),
+    title: tval('Filter'),
     type: 'primary',
   };
 }

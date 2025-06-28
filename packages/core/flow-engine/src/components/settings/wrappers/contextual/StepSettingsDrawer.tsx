@@ -54,9 +54,7 @@ const openStepSettingsDrawer = async ({
     throw new Error(t('Step with key {{stepKey}} not found', { stepKey }));
   }
 
-  const title =
-    drawerTitle ||
-    (step ? `${step.title || stepKey} - ${t('Configuration')}` : `${t('Step Configuration')} - ${stepKey}`);
+  let title = step.title;
 
   // 创建参数解析上下文
   const paramsContext = {
@@ -76,6 +74,7 @@ const openStepSettingsDrawer = async ({
       actionUiSchema = action.uiSchema;
     }
     actionDefaultParams = action.defaultParams || {};
+    title = title || action.title;
   }
 
   // 解析动态 uiSchema
@@ -240,7 +239,7 @@ const openStepSettingsDrawer = async ({
 
     // 打开抽屉
     const drawerRef = drawer.open({
-      title,
+      title: drawerTitle || `${t(title)} - ${t('Configuration')}`,
       width: drawerWidth,
       content: <DrawerContent />,
       onClose: () => {
