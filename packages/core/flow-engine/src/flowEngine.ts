@@ -18,7 +18,7 @@ import {
   IFlowModelRepository,
   ModelConstructor,
 } from './types';
-import { isInheritedFrom, TranslationUtil } from './utils';
+import { isInheritedFrom } from './utils';
 import { initFlowEngineLocale } from './locale';
 
 interface ApplyFlowCacheEntry {
@@ -40,8 +40,6 @@ export class FlowEngine {
   context: Record<string, any> = {};
   private modelRepository: IFlowModelRepository | null = null;
   private _applyFlowCache = new Map<string, ApplyFlowCacheEntry>();
-  /** @private Translation utility for template compilation and caching */
-  private _translationUtil = new TranslationUtil();
 
   reactView: ReactView;
 
@@ -88,11 +86,19 @@ export class FlowEngine {
    * flowEngine.t("{{t('Hello {name}', {name: 'John'})}}")
    */
   public translate(keyOrTemplate: string, options?: any): string {
-    return this._translationUtil.translate(
-      keyOrTemplate,
-      (key: string, opts?: any) => this.translateKey(key, opts),
-      options,
-    );
+    if (!keyOrTemplate || typeof keyOrTemplate !== 'string') {
+      return keyOrTemplate;
+    }
+
+    // 先尝试一次翻译
+    let result = this.translateKey(keyOrTemplate, options);
+
+    // 检查翻译结果是否包含模板语法，如果有则进行模板编译
+    if (this.isTemplate(result)) {
+      result = this.compileTemplate(result);
+    }
+
+    return result;
   }
 
   /**
@@ -105,6 +111,44 @@ export class FlowEngine {
     }
     // 如果没有翻译函数，返回原始键值
     return key;
+  }
+
+  /**
+   * 检查字符串是否包含模板语法
+   * @private
+   */
+  private isTemplate(str: string): boolean {
+    return /\{\{\s*t\s*\(\s*["'`].*?["'`]\s*(?:,\s*.*?)?\s*\)\s*\}\}/g.test(str);
+  }
+
+  /**
+   * 编译模板字符串
+   * @private
+   */
+  private compileTemplate(template: string): string {
+    return template.replace(
+      /\{\{\s*t\s*\(\s*["'`](.*?)["'`]\s*(?:,\s*((?:[^{}]|\{[^}]*\})*?))?\s*\)\s*\}\}/g,
+      (match, key, optionsStr) => {
+        try {
+          let templateOptions = {};
+          if (optionsStr) {
+            optionsStr = optionsStr.trim();
+            if (optionsStr.startsWith('{') && optionsStr.endsWith('}')) {
+              // 使用受限的 Function 构造器解析
+              try {
+                templateOptions = new Function('$root', `with($root) { return (${optionsStr}); }`)({});
+              } catch (parseError) {
+                return match;
+              }
+            }
+          }
+          return this.translateKey(key, templateOptions);
+        } catch (error) {
+          console.warn(`FlowEngine: Failed to compile template "${match}":`, error);
+          return match;
+        }
+      },
+    );
   }
 
   get applyFlowCache() {
