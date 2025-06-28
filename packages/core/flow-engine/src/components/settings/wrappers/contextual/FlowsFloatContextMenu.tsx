@@ -41,12 +41,12 @@ const renderToolbarItems = (
   showCopyUidButton: boolean,
   flowEngine: FlowEngine,
   settingsMenuLevel?: number,
-  extralToolbarItems?: ToolbarItemConfig[],
+  extraToolbarItems?: ToolbarItemConfig[],
 ) => {
   const toolbarItems = flowEngine?.flowSettings?.getToolbarItems?.() || [];
 
   // 合并额外的工具栏项目
-  const allToolbarItems = [...toolbarItems, ...(extralToolbarItems || [])];
+  const allToolbarItems = [...toolbarItems, ...(extraToolbarItems || [])];
 
   // 按 sort 字段排序
   allToolbarItems.sort((a, b) => (a.sort || 0) - (b.sort || 0)).reverse();
@@ -160,7 +160,7 @@ interface ModelProvidedProps {
   /**
    * Extra toolbar items to add to this context menu instance
    */
-  extralToolbarItems?: ToolbarItemConfig[];
+  extraToolbarItems?: ToolbarItemConfig[];
 }
 
 interface ModelByIdProps {
@@ -187,7 +187,7 @@ interface ModelByIdProps {
   /**
    * Extra toolbar items to add to this context menu instance
    */
-  extralToolbarItems?: ToolbarItemConfig[];
+  extraToolbarItems?: ToolbarItemConfig[];
 }
 
 type FlowsFloatContextMenuProps = ModelProvidedProps | ModelByIdProps;
@@ -219,7 +219,7 @@ const isModelByIdProps = (props: FlowsFloatContextMenuProps): props is ModelById
  * @param props.containerStyle 容器自定义样式
  * @param props.className 容器自定义类名
  * @param props.settingsMenuLevel 设置菜单层级：1=仅当前模型(默认)，2=包含子模型
- * @param props.extralToolbarItems 额外的工具栏项目，仅应用于此实例
+ * @param props.extraToolbarItems 额外的工具栏项目，仅应用于此实例
  */
 const FlowsFloatContextMenu: React.FC<FlowsFloatContextMenuProps> = observer((props) => {
   const flowEngine = useFlowEngine();
@@ -247,7 +247,7 @@ const FlowsFloatContextMenuWithModel: React.FC<ModelProvidedProps> = observer(
     showBackground = true,
     showBorder = true,
     settingsMenuLevel,
-    extralToolbarItems,
+    extraToolbarItems,
   }: ModelProvidedProps) => {
     const [hideMenu, setHideMenu] = useState<boolean>(false);
     const [hasButton, setHasButton] = useState<boolean>(false);
@@ -328,7 +328,7 @@ const FlowsFloatContextMenuWithModel: React.FC<ModelProvidedProps> = observer(
                 showCopyUidButton,
                 flowEngine,
                 settingsMenuLevel,
-                extralToolbarItems,
+                extraToolbarItems,
               )}
             </Space>
           </div>
@@ -350,7 +350,7 @@ const FlowsFloatContextMenuWithModelById: React.FC<ModelByIdProps> = observer(
     containerStyle,
     className,
     settingsMenuLevel,
-    extralToolbarItems,
+    extraToolbarItems: extraToolbarItems,
   }) => {
     const model = useFlowModelById(uid, modelClassName);
 
@@ -367,7 +367,7 @@ const FlowsFloatContextMenuWithModelById: React.FC<ModelByIdProps> = observer(
         containerStyle={containerStyle}
         className={className}
         settingsMenuLevel={settingsMenuLevel}
-        extralToolbarItems={extralToolbarItems}
+        extraToolbarItems={extraToolbarItems}
       >
         {children}
       </FlowsFloatContextMenuWithModel>

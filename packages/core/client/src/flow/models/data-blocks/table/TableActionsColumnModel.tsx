@@ -56,7 +56,7 @@ export class TableActionsColumnModel extends FlowModel {
           model={this}
           containerStyle={{ display: 'block', padding: '11px 8px', margin: '-11px -8px' }}
           showBorder={false}
-          extralToolbarItems={[
+          extraToolbarItems={[
             {
               key: 'add-record-action',
               component: AddActionToolbarComponent,

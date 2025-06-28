@@ -23,7 +23,7 @@ export class TableColumnModel extends FieldModel {
         containerStyle={{ display: 'block', padding: '11px 8px', margin: '-11px -8px' }}
         showBorder={false}
         settingsMenuLevel={2}
-        extralToolbarItems={[
+        extraToolbarItems={[
           {
             key: 'drag',
             component: ({ model }) => {
