@@ -67,7 +67,7 @@ export const DndProvider: FC<DndContextProps> = ({ children, ...restProps }) => 
       {...restProps}
     >
       {children}
-      <DragOverlay>
+      <DragOverlay dropAnimation={null}>
         {activeId && (
           <span
             style={{
