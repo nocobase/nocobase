@@ -14,6 +14,7 @@ import { FlowModel } from '../../../../models';
 import { StepDefinition } from '../../../../types';
 import { resolveDefaultParams, resolveUiSchema, compileUiSchema, getT } from '../../../../utils';
 import { StepSettingContextProvider, StepSettingContextType, useStepSettingContext } from './StepSettingContext';
+import { toJS } from '@formily/reactive';
 
 /**
  * 检查步骤是否已经有了所需的配置值
@@ -174,8 +175,8 @@ const openRequiredParamsStepFormDialog = async ({
               const resolvedStepUiSchema = await resolveUiSchema(stepUiSchema, paramsContext);
 
               // 合并uiSchema，确保step的uiSchema优先级更高
-              const mergedUiSchema = { ...resolvedActionUiSchema };
-              Object.entries(resolvedStepUiSchema).forEach(([fieldKey, schema]) => {
+              const mergedUiSchema = { ...toJS(resolvedActionUiSchema) };
+              Object.entries(toJS(resolvedStepUiSchema)).forEach(([fieldKey, schema]) => {
                 if (mergedUiSchema[fieldKey]) {
                   mergedUiSchema[fieldKey] = { ...mergedUiSchema[fieldKey], ...schema };
                 } else {

@@ -129,7 +129,7 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
       title: t('Confirm Delete'),
       icon: <ExclamationCircleOutlined />,
       content: t('Are you sure you want to delete this item? This action cannot be undone.'),
-      okText: t('Confirm Delete'),
+      okText: t('Confirm'),
       okType: 'primary',
       cancelText: t('Cancel'),
       async onOk() {

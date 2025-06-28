@@ -13,6 +13,7 @@ import React from 'react';
 import { StepSettingsDialogProps } from '../../../../types';
 import { resolveDefaultParams, resolveUiSchema, compileUiSchema, getT } from '../../../../utils';
 import { StepSettingContextProvider, StepSettingContextType, useStepSettingContext } from './StepSettingContext';
+import { toJS } from '@formily/reactive';
 
 const SchemaField = createSchemaField();
 
@@ -82,8 +83,8 @@ const openStepSettingsDialog = async ({
   const resolvedStepUiSchema = await resolveUiSchema(stepUiSchema, paramsContext);
 
   // 合并uiSchema，确保step的uiSchema优先级更高
-  const mergedUiSchema = { ...resolvedActionUiSchema };
-  Object.entries(resolvedStepUiSchema).forEach(([fieldKey, schema]) => {
+  const mergedUiSchema = { ...toJS(resolvedActionUiSchema) };
+  Object.entries(toJS(resolvedStepUiSchema)).forEach(([fieldKey, schema]) => {
     if (mergedUiSchema[fieldKey]) {
       mergedUiSchema[fieldKey] = { ...mergedUiSchema[fieldKey], ...schema };
     } else {
