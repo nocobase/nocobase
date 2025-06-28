@@ -25,7 +25,7 @@ export function getT(model: FlowModel): (key: string, options?: any) => string {
   if (model.flowEngine?.translate) {
     return (key: string, options?: any) => {
       // 自动添加 flow-engine 命名空间
-      return model.flowEngine.translate(key, { ns: FLOW_ENGINE_NAMESPACE, ...options });
+      return model.flowEngine.translate(key, { ns: [FLOW_ENGINE_NAMESPACE, 'client'], nsMode: 'fallback', ...options });
     };
   }
   // 回退到原始键值
