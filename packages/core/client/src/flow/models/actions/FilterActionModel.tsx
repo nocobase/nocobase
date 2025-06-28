@@ -20,14 +20,15 @@ const FilterContent: FC<{ value: any }> = (props) => {
   const currentBlockModel = modelInstance.ctx.shared.currentBlockModel as DataBlockModel;
   const fields = currentBlockModel.collection.getFields();
   const ignoreFieldsNames = modelInstance.props.ignoreFieldsNames || [];
+  const t = modelInstance.flowEngine.translate;
 
   return (
     <>
       <FilterGroup value={props.value} fields={fields} ignoreFieldsNames={ignoreFieldsNames} ctx={modelInstance.ctx} />
       <Space style={{ width: '100%', display: 'flex', justifyContent: 'flex-end' }}>
-        <Button onClick={() => modelInstance.dispatchEvent('reset')}>Reset</Button>
+        <Button onClick={() => modelInstance.dispatchEvent('reset')}>{t('Reset')}</Button>
         <Button type="primary" onClick={() => modelInstance.dispatchEvent('submit')}>
-          Submit
+          {t('Submit')}
         </Button>
       </Space>
     </>

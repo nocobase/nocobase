@@ -24,7 +24,7 @@ export class CustomRequestRecordActionModel extends RecordActionModel {
 }
 
 CustomRequestRecordActionModel.define({
-  title: 'Custom request',
+  title: tval('Custom request'),
   hide: true,
 });
 
@@ -185,7 +185,7 @@ CustomRequestRecordActionModel.registerFlow({
             scope: '{{useCustomRequestVariableOptions}}',
             fieldNames: {
               value: 'name',
-              label: 'title',
+              label: tval('title'),
             },
             changeOnSelect: true,
             autoSize: {

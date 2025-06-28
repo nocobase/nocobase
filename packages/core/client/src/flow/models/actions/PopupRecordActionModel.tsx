@@ -8,22 +8,23 @@
  */
 
 import type { ButtonProps } from 'antd/es/button';
+import { tval } from '@nocobase/utils/client';
 import { openModeAction } from '../../actions/openModeAction';
 import { RecordActionModel } from '../base/ActionModel';
 
 export class PopupRecordActionModel extends RecordActionModel {
   defaultProps: ButtonProps = {
-    title: 'Popup',
+    title: tval('Popup'),
   };
 }
 
 PopupRecordActionModel.define({
-  title: 'Popup',
+  title: tval('Popup'),
 });
 
 PopupRecordActionModel.registerFlow({
   key: 'handleClick',
-  title: '点击事件',
+  title: tval('Click event'),
   on: {
     eventName: 'click',
   },

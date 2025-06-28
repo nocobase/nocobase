@@ -15,13 +15,13 @@ import { GlobalActionModel } from '../base/ActionModel';
 
 export class BulkEditActionModel extends GlobalActionModel {
   defaultProps: ButtonProps = {
-    title: 'Bulk edit',
+    title: tval('Bulk edit'),
     icon: 'EditOutlined',
   };
 }
 
 BulkEditActionModel.define({
-  title: 'Bulk edit',
+  title: tval('Bulk edit'),
   hide: true,
 });
 
