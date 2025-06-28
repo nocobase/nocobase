@@ -809,27 +809,27 @@ export class FlowModel<Structure extends { parent?: any; subModels?: any } = Def
       return false;
     }
 
-    // 查找当前模型所在的数组类型子集合
-    let subModels: FlowModel[] | null = null;
+    const subModels: FlowModel[] | null = this.parent.subModels[this._options.subKey];
 
-    for (const subModel of Object.values(this.parent.subModels)) {
-      if (Array.isArray(subModel) && subModel.includes(this)) {
-        subModels = subModel;
-        break;
-      }
-    }
-
-    if (!subModels || !subModels.includes(targetModel)) {
-      console.error(
-        'FlowModel.moveTo: Both models must be in the same array-type subModel collection to perform move operation.',
-      );
+    if (!subModels || !Array.isArray(subModels)) {
+      console.error('FlowModel.moveTo: Parent subModels must be an array to perform move operation.');
       return false;
     }
 
-    const currentIndex = subModels.indexOf(this);
-    const targetIndex = subModels.indexOf(targetModel);
+    const findIndex = (model: FlowModel) => subModels.findIndex((item) => item.uid === model.uid);
 
-    if (currentIndex === -1 || targetIndex === -1 || currentIndex === targetIndex) return false;
+    const currentIndex = findIndex(this);
+    const targetIndex = findIndex(targetModel);
+
+    if (currentIndex === -1 || targetIndex === -1) {
+      console.error('FlowModel.moveTo: Current or target model not found in parent subModels.');
+      return false;
+    }
+
+    if (currentIndex === targetIndex) {
+      console.warn('FlowModel.moveTo: Current model is already at the target position. No action taken.');
+      return false;
+    }
 
     // 使用splice直接移动数组元素（O(n)比排序O(n log n)更快）
     const [movedModel] = subModels.splice(currentIndex, 1);
