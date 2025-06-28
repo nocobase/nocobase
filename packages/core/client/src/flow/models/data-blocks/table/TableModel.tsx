@@ -10,7 +10,14 @@
 import { EditOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
 import { observer } from '@formily/reactive-react';
-import { AddActionButton, AddFieldButton, FlowModelRenderer, MultiRecordResource } from '@nocobase/flow-engine';
+import {
+  AddActionButton,
+  AddFieldButton,
+  DndProvider,
+  FlowModelRenderer,
+  MultiRecordResource,
+  useFlowEngine,
+} from '@nocobase/flow-engine';
 import { Card, Space, Spin, Table } from 'antd';
 import classNames from 'classnames';
 import _ from 'lodash';
@@ -19,7 +26,7 @@ import { ActionModel } from '../../base/ActionModel';
 import { DataBlockModel } from '../../base/BlockModel';
 import { QuickEditForm } from '../form/QuickEditForm';
 import { TableColumnModel } from './TableColumnModel';
-import { Sortable } from '../../../components';
+import { DragEndEvent } from '@dnd-kit/core';
 
 type TableModelStructure = {
   subModels: {
@@ -27,6 +34,22 @@ type TableModelStructure = {
     actions: ActionModel[];
   };
 };
+
+const HeaderWrapperComponent = React.memo((props) => {
+  const engine = useFlowEngine();
+
+  const onDragEnd = ({ active, over }: DragEndEvent) => {
+    if (active.id && over?.id && active.id !== over.id) {
+      engine.moveModel(active.id as string, over.id as string);
+    }
+  };
+
+  return (
+    <DndProvider onDragEnd={onDragEnd}>
+      <thead {...props} />
+    </DndProvider>
+  );
+});
 
 export class TableModel extends DataBlockModel<TableModelStructure> {
   declare resource: MultiRecordResource;
@@ -175,6 +198,9 @@ export class TableModel extends DataBlockModel<TableModelStructure> {
   });
 
   components = {
+    header: {
+      wrapper: HeaderWrapperComponent,
+    },
     body: {
       // row: this.EditableRow,
       cell: this.EditableCell,
@@ -195,34 +221,32 @@ export class TableModel extends DataBlockModel<TableModelStructure> {
             ))}
             <AddActionButton model={this} subModelBaseClass="GlobalActionModel" subModelKey="actions" />
           </Space>
-          <Sortable targetModelKey="columns">
-            <Table
-              components={this.components}
-              tableLayout="fixed"
-              rowKey={this.collection.filterTargetKey}
-              rowSelection={{
-                type: 'checkbox',
-                onChange: (_, selectedRows) => {
-                  this.resource.setSelectedRows(selectedRows);
-                },
-                selectedRowKeys: this.resource.getSelectedRows().map((row) => row.id),
-              }}
-              scroll={{ x: 'max-content', y: 'calc(100vh - 300px)' }}
-              dataSource={this.resource.getData()}
-              columns={this.getColumns()}
-              pagination={{
-                current: this.resource.getPage(),
-                pageSize: this.resource.getPageSize(),
-                total: this.resource.getMeta('count'),
-              }}
-              onChange={(pagination) => {
-                this.resource.setPage(pagination.current);
-                this.resource.setPageSize(pagination.pageSize);
-                this.resource.loading = true;
-                this.resource.refresh();
-              }}
-            />
-          </Sortable>
+          <Table
+            components={this.components}
+            tableLayout="fixed"
+            rowKey={this.collection.filterTargetKey}
+            rowSelection={{
+              type: 'checkbox',
+              onChange: (_, selectedRows) => {
+                this.resource.setSelectedRows(selectedRows);
+              },
+              selectedRowKeys: this.resource.getSelectedRows().map((row) => row.id),
+            }}
+            scroll={{ x: 'max-content', y: 'calc(100vh - 300px)' }}
+            dataSource={this.resource.getData()}
+            columns={this.getColumns()}
+            pagination={{
+              current: this.resource.getPage(),
+              pageSize: this.resource.getPageSize(),
+              total: this.resource.getMeta('count'),
+            }}
+            onChange={(pagination) => {
+              this.resource.setPage(pagination.current);
+              this.resource.setPageSize(pagination.pageSize);
+              this.resource.loading = true;
+              this.resource.refresh();
+            }}
+          />
         </Spin>
       </Card>
     );

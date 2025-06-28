@@ -7,13 +7,12 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { DragOutlined, QuestionCircleOutlined } from '@ant-design/icons';
+import { QuestionCircleOutlined } from '@ant-design/icons';
 import { FlowsFloatContextMenu } from '@nocobase/flow-engine';
 import { TableColumnProps, Tooltip } from 'antd';
 import React from 'react';
 import { FieldModel } from '../../base/FieldModel';
 import { ReadPrettyFieldModel } from '../../fields/ReadPrettyField/ReadPrettyFieldModel';
-import { SortableItem } from '../../../components';
 
 export class TableColumnModel extends FieldModel {
   getColumnProps(): TableColumnProps {
@@ -23,18 +22,6 @@ export class TableColumnModel extends FieldModel {
         containerStyle={{ display: 'block', padding: '11px 8px', margin: '-11px -8px' }}
         showBorder={false}
         settingsMenuLevel={2}
-        extraToolbarItems={[
-          {
-            key: 'drag',
-            component: ({ model }) => {
-              return (
-                <SortableItem model={model}>
-                  <DragOutlined />
-                </SortableItem>
-              );
-            },
-          },
-        ]}
       >
         {this.props.title}
       </FlowsFloatContextMenu>

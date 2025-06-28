@@ -16,6 +16,7 @@ import { ToolbarItemConfig } from '../../../../types';
 import { useFlowModelById } from '../../../../hooks';
 import { useFlowEngine } from '../../../../provider';
 import { FlowEngine } from '../../../../flowEngine';
+import { Droppable } from '../../../dnd';
 
 // 检测DOM中直接子元素是否包含button元素的辅助函数
 const detectButtonInDOM = (container: HTMLElement): boolean => {
@@ -66,6 +67,7 @@ const renderToolbarItems = (
           <ItemComponent
             key={itemConfig.key}
             model={model}
+            id={model.uid} // 用于拖拽的 id
             showDeleteButton={showDeleteButton}
             showCopyUidButton={showCopyUidButton}
             menuLevels={settingsMenuLevel}
@@ -307,33 +309,35 @@ const FlowsFloatContextMenuWithModel: React.FC<ModelProvidedProps> = observer(
     }
 
     return (
-      <div
-        ref={containerRef}
-        className={`${floatContainerStyles({ showBackground, showBorder })} ${hideMenu ? 'hide-parent-menu' : ''} ${
-          hasButton ? 'has-button-child' : ''
-        } ${className || ''}`}
-        style={containerStyle}
-        data-has-float-menu="true"
-        onMouseMove={handleChildHover}
-      >
-        {children}
+      <Droppable model={model}>
+        <div
+          ref={containerRef}
+          className={`${floatContainerStyles({ showBackground, showBorder })} ${hideMenu ? 'hide-parent-menu' : ''} ${
+            hasButton ? 'has-button-child' : ''
+          } ${className || ''}`}
+          style={containerStyle}
+          data-has-float-menu="true"
+          onMouseMove={handleChildHover}
+        >
+          {children}
 
-        {/* 悬浮工具栏 - 使用与 NocoBase 一致的结构 */}
-        <div className="general-schema-designer">
-          <div className="general-schema-designer-icons">
-            <Space size={3} align="center">
-              {renderToolbarItems(
-                model,
-                showDeleteButton,
-                showCopyUidButton,
-                flowEngine,
-                settingsMenuLevel,
-                extraToolbarItems,
-              )}
-            </Space>
+          {/* 悬浮工具栏 - 使用与 NocoBase 一致的结构 */}
+          <div className="general-schema-designer">
+            <div className="general-schema-designer-icons">
+              <Space size={3} align="center">
+                {renderToolbarItems(
+                  model,
+                  showDeleteButton,
+                  showCopyUidButton,
+                  flowEngine,
+                  settingsMenuLevel,
+                  extraToolbarItems,
+                )}
+              </Space>
+            </div>
           </div>
         </div>
-      </div>
+      </Droppable>
     );
   },
 );
