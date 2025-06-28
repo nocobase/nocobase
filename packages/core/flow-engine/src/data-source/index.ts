@@ -96,7 +96,7 @@ export class DataSource {
   }
 
   get displayName() {
-    return this.options.displayName ? this.flowEngine?.t(this.options.displayName) : this.key;
+    return this.options.displayName ? this.flowEngine?.translate(this.options.displayName) : this.key;
   }
 
   get key() {
@@ -272,7 +272,7 @@ export class Collection {
   }
 
   get title() {
-    return this.options.title ? this.flowEngine?.t(this.options.title) : this.name;
+    return this.options.title ? this.flowEngine?.translate(this.options.title) : this.name;
   }
 
   initInherits() {
@@ -413,7 +413,7 @@ export class CollectionField {
 
   get title() {
     const titleValue = this.options?.title || this.options?.uiSchema?.title || this.options.name;
-    return this.flowEngine?.t(titleValue);
+    return this.flowEngine?.translate(titleValue);
   }
 
   set title(value: string) {

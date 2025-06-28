@@ -12,29 +12,30 @@ import { afterSuccessAction } from '../../actions/afterSuccessAction';
 import { refreshOnCompleteAction } from '../../actions/refreshOnCompleteAction';
 import { secondaryConfirmationAction } from '../../actions/secondaryConfirmationAction';
 import { RecordActionModel } from '../base/ActionModel';
+import { tval } from '@nocobase/utils/client';
 
 export class UpdateRecordActionModel extends RecordActionModel {
   defaultProps: ButtonProps = {
     type: 'link',
-    title: 'Update record',
+    title: tval('Update record'),
   };
 }
 
 UpdateRecordActionModel.define({
-  title: 'Update record',
+  title: tval('Update record action'),
   hide: true,
 });
 
 UpdateRecordActionModel.registerFlow({
   key: 'handleClick',
-  title: '点击事件',
+  title: tval('Click event'),
   on: {
     eventName: 'click',
   },
   steps: {
     secondaryConfirmation: secondaryConfirmationAction,
     update: {
-      title: '字段赋值',
+      title: tval('Assign field values'),
       handler: async (ctx, params) => {},
     },
     afterSuccess: afterSuccessAction,

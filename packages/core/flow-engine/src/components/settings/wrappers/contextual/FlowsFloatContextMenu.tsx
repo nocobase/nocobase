@@ -355,12 +355,10 @@ const FlowsFloatContextMenuWithModelById: React.FC<ModelByIdProps> = observer(
     extralToolbarItems,
   }) => {
     const model = useFlowModelById(uid, modelClassName);
+    const flowEngine = useFlowEngine();
 
     if (!model) {
-      // 创建一个临时的 FlowModel 实例用于翻译
-      const tempModel = { flowEngine: { t: (key: string) => key } } as FlowModel;
-      const t = getT(tempModel);
-      return <Alert message={t('Model with ID {{uid}} not found', { uid })} type="error" />;
+      return <Alert message={flowEngine.translate('Model with ID {{uid}} not found', { uid })} type="error" />;
     }
 
     return (

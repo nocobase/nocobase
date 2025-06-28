@@ -8,6 +8,7 @@
  */
 
 import { ButtonProps } from 'antd';
+import { tval } from '@nocobase/utils/client';
 import { ActionModel } from '../../base/ActionModel';
 import { DataBlockModel } from '../../base/BlockModel';
 import { FormModel } from './FormModel';
@@ -16,14 +17,14 @@ export class FormActionModel extends ActionModel {}
 
 export class FormSubmitActionModel extends FormActionModel {
   defaultProps: ButtonProps = {
-    children: 'Submit',
+    children: tval('Submit'),
     type: 'primary',
     htmlType: 'submit',
   };
 }
 
 FormSubmitActionModel.define({
-  title: 'Submit',
+  title: tval('Submit'),
 });
 
 FormSubmitActionModel.registerFlow({

@@ -9,6 +9,7 @@
 
 import { MultiRecordResource } from '@nocobase/flow-engine';
 import { ButtonProps } from 'antd';
+import { tval } from '@nocobase/utils/client';
 import { openModeAction } from '../../actions/openModeAction';
 import { GlobalActionModel } from '../base/ActionModel';
 
@@ -26,21 +27,21 @@ BulkEditActionModel.define({
 
 BulkEditActionModel.registerFlow({
   key: 'handleClick',
-  title: '点击事件',
+  title: tval('Click event'),
   on: {
     eventName: 'click',
   },
   steps: {
     openModeAction,
     bulkEdit: {
-      title: '更新的数据',
+      title: tval('Data will be updated'),
       uiSchema: {
         updateMode: {
           'x-component': 'Radio.Group',
           'x-component-props': {
             options: [
-              { label: '更新选中行', value: 'selected' },
-              { label: '更新所有行', value: 'all' },
+              { label: tval('Update selected data?'), value: 'selected' },
+              { label: tval('Update all data?'), value: 'all' },
             ],
           },
         },
@@ -51,17 +52,18 @@ BulkEditActionModel.registerFlow({
         };
       },
       async handler(ctx, params) {
+        const t = ctx.globals.flowEngine.translate;
         if (!ctx.shared?.currentBlockModel?.resource) {
-          ctx.globals.message.error('No resource selected for bulk edit.');
+          ctx.globals.message.error(t('No resource selected for bulk edit'));
           return;
         }
         const resource = ctx.shared.currentBlockModel.resource as MultiRecordResource;
         if (resource.getSelectedRows().length === 0) {
-          ctx.globals.message.warning('No records selected for bulk edit.');
+          ctx.globals.message.warning(t('No records selected for bulk edit'));
           return;
         }
-        await resource.destroySelectedRows();
-        ctx.globals.message.success('Successfully.');
+        //TODO: await resource.updateSelectedRows(params);
+        ctx.globals.message.success(t('updateSelectedRows not implemented!'));
       },
     },
   },

@@ -9,6 +9,7 @@
 
 import { Card } from 'antd';
 import React, { createRef } from 'react';
+import { tval } from '@nocobase/utils/client';
 import { BlockModel } from '../../base/BlockModel';
 
 function waitForRefCallback<T extends HTMLElement>(ref: React.RefObject<T>, cb: (el: T) => void, timeout = 3000) {
@@ -34,7 +35,7 @@ export class HtmlBlockModel extends BlockModel {
 }
 
 HtmlBlockModel.define({
-  title: 'HTML',
+  title: tval('HTML'),
   group: 'Content',
   hide: true,
   defaultOptions: {
@@ -58,7 +59,7 @@ HtmlBlockModel.registerFlow({
       uiSchema: {
         html: {
           type: 'string',
-          title: 'HTML 内容',
+          title: tval('HTML content'),
           'x-component': 'Input.TextArea',
           'x-component-props': {
             autoSize: true,

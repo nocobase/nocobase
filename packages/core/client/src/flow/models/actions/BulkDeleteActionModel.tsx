@@ -9,24 +9,23 @@
 
 import { MultiRecordResource } from '@nocobase/flow-engine';
 import { ButtonProps } from 'antd';
-import { refreshOnCompleteAction } from '../../actions/refreshOnCompleteAction';
-import { secondaryConfirmationAction } from '../../actions/secondaryConfirmationAction';
+import { tval } from '@nocobase/utils/client';
 import { GlobalActionModel } from '../base/ActionModel';
 
 export class BulkDeleteActionModel extends GlobalActionModel {
   defaultProps: ButtonProps = {
-    title: 'Delete',
+    title: tval('Delete'),
     icon: 'DeleteOutlined',
   };
 }
 
 BulkDeleteActionModel.define({
-  title: 'Delete',
+  title: tval('Delete'),
 });
 
 BulkDeleteActionModel.registerFlow({
   key: 'handleClick',
-  title: '点击事件',
+  title: tval('Click event'),
   on: {
     eventName: 'click',
   },
@@ -36,17 +35,18 @@ BulkDeleteActionModel.registerFlow({
     },
     delete: {
       async handler(ctx, params) {
+        const t = ctx.globals.flowEngine.translate;
         if (!ctx.shared?.currentBlockModel?.resource) {
-          ctx.globals.message.error('No resource selected for deletion.');
+          ctx.globals.message.error(t('No resource selected for deletion'));
           return;
         }
         const resource = ctx.shared.currentBlockModel.resource as MultiRecordResource;
         if (resource.getSelectedRows().length === 0) {
-          ctx.globals.message.warning('No records selected for deletion.');
+          ctx.globals.message.warning(t('No records selected for deletion'));
           return;
         }
         await resource.destroySelectedRows();
-        ctx.globals.message.success('Selected records deleted successfully.');
+        ctx.globals.message.success(t('Selected records deleted successfully'));
       },
     },
   },

@@ -8,23 +8,24 @@
  */
 
 import type { ButtonProps } from 'antd/es/button';
+import { tval } from '@nocobase/utils/client';
 import { openModeAction } from '../../actions/openModeAction';
 import { RecordActionModel } from '../base/ActionModel';
 
 export class EditActionModel extends RecordActionModel {
   defaultProps: ButtonProps = {
     type: 'link',
-    title: 'Edit',
+    title: tval('Edit'),
   };
 }
 
 EditActionModel.define({
-  title: 'Edit',
+  title: tval('Edit'),
 });
 
 EditActionModel.registerFlow({
   key: 'handleClick',
-  title: '点击事件',
+  title: tval('Click event'),
   on: {
     eventName: 'click',
   },

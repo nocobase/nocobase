@@ -8,31 +8,33 @@
  */
 
 import { ButtonProps } from 'antd';
+import { tval } from '@nocobase/utils/client';
 import { GlobalActionModel } from '../base/ActionModel';
 
 export class RefreshActionModel extends GlobalActionModel {
   defaultProps: ButtonProps = {
-    title: 'Refresh',
+    title: tval('Refresh'),
     icon: 'ReloadOutlined',
   };
 }
 
 RefreshActionModel.define({
-  title: 'Refresh',
+  title: tval('Refresh'),
 });
 
 RefreshActionModel.registerFlow({
   key: 'handleClick',
-  title: '点击事件',
+  title: tval('Click event'),
   on: {
     eventName: 'click',
   },
   steps: {
     refresh: {
       async handler(ctx, params) {
+        const t = ctx.globals.flowEngine.translate;
         const currentResource = ctx.shared?.currentBlockModel?.resource;
         if (!currentResource) {
-          ctx.globals.message.error('No resource selected for refresh.');
+          ctx.globals.message.error(t('No resource selected for refresh'));
           return;
         }
         currentResource.loading = true;

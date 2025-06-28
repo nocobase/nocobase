@@ -47,7 +47,7 @@ export class FlowEngine {
 
   constructor() {
     this.reactView = new ReactView(this);
-    this.flowSettings.registerScopes({ t: this.t.bind(this) });
+    this.flowSettings.registerScopes({ t: this.translate.bind(this) });
   }
   // 注册默认的 FlowModel
 
@@ -87,7 +87,7 @@ export class FlowEngine {
    * flowEngine.t("前缀 {{ t('User Name') }} 后缀")
    * flowEngine.t("{{t('Hello {name}', {name: 'John'})}}")
    */
-  public t(keyOrTemplate: string, options?: any): string {
+  public translate(keyOrTemplate: string, options?: any): string {
     return this._translationUtil.translate(
       keyOrTemplate,
       (key: string, opts?: any) => this.translateKey(key, opts),

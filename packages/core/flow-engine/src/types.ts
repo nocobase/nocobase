@@ -11,6 +11,7 @@ import { ISchema } from '@formily/json-schema';
 import type { FlowEngine } from './flowEngine';
 import type { FlowModel } from './models';
 import { ReactView } from './ReactView';
+import { APIClient } from '@nocobase/sdk';
 
 /**
  * 工具类型：如果 T 是数组类型，则提取数组元素类型；否则返回 T 本身
@@ -99,7 +100,11 @@ export interface FlowContext<TModel extends FlowModel = FlowModel> {
   reactView: ReactView;
   stepResults: Record<string, any>; // Results from previous steps
   shared: Record<string, any>; // Shared data within the flow (read/write)
-  globals: Record<string, any>; // Global context data (read-only)
+  globals: Record<string, any> & {
+    flowEngine: FlowEngine;
+    app: any;
+    api: APIClient;
+  };
   extra: Record<string, any>; // Extra context passed to applyFlow (read-only)
   model: TModel; // Current model instance with specific type
   app: any; // Application instance (required)
