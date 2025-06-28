@@ -11,25 +11,25 @@ import { defineAction } from '@nocobase/flow-engine';
 
 export const confirm = defineAction({
   name: 'confirm',
-  title: '二次确认',
+  title: '{{t("Secondary confirmation")}}',
   uiSchema: {
     enable: {
       type: 'boolean',
-      title: 'Enable secondary confirmation',
+      title: '{{t("Enable secondary confirmation")}}',
       'x-decorator': 'FormItem',
       'x-component': 'Checkbox',
     },
     title: {
       type: 'string',
-      title: 'Title',
-      default: 'Delete record',
+      title: '{{t("Title")}}',
+      default: '{{t("Delete record")}}',
       'x-decorator': 'FormItem',
       'x-component': 'Input.TextArea',
     },
     content: {
       type: 'string',
-      title: 'Content',
-      default: 'Are you sure you want to delete it?',
+      title: '{{t("Content")}}',
+      default: '{{t("Are you sure you want to delete it?")}}',
       'x-decorator': 'FormItem',
       'x-component': 'Input.TextArea',
     },

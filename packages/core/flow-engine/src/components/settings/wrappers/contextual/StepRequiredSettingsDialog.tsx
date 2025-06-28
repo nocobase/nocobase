@@ -12,7 +12,7 @@ import { message, Button } from 'antd';
 import React from 'react';
 import { FlowModel } from '../../../../models';
 import { StepDefinition } from '../../../../types';
-import { resolveDefaultParams, resolveUiSchema, compileUiSchema } from '../../../../utils';
+import { resolveDefaultParams, resolveUiSchema, compileUiSchema, getT } from '../../../../utils';
 import { StepSettingContextProvider, StepSettingContextType, useStepSettingContext } from './StepSettingContext';
 
 /**
@@ -116,11 +116,14 @@ export interface StepFormDialogProps {
 const openRequiredParamsStepFormDialog = async ({
   model,
   dialogWidth = 800,
-  dialogTitle = '步骤参数配置',
+  dialogTitle,
 }: StepFormDialogProps): Promise<any> => {
+  const t = getT(model);
+  const defaultTitle = dialogTitle || t('Step Parameter Configuration');
+
   if (!model) {
-    message.error('提供的模型无效');
-    throw new Error('提供的模型无效');
+    message.error(t('Invalid model provided'));
+    throw new Error(t('Invalid model provided'));
   }
 
   // 创建一个Promise, 并最终返回，当此弹窗关闭时此promise resolve或者reject
@@ -329,7 +332,7 @@ const openRequiredParamsStepFormDialog = async ({
                 resolve(currentValues);
                 formDialog.close();
               } catch (error) {
-                console.error('提交表单时出错:', error);
+                console.error(t('Error submitting form'), ':', error);
                 // reject(error);
                 // 这里不需要reject，因为forConfirm会处理
               }
@@ -356,7 +359,7 @@ const openRequiredParamsStepFormDialog = async ({
                     }
                   })
                   .catch((errors: any) => {
-                    console.log('表单验证失败:', errors);
+                    console.log(t('Form validation failed'), ':', errors);
                     // 可以在这里添加更详细的错误处理
                   });
               },
@@ -393,7 +396,7 @@ const openRequiredParamsStepFormDialog = async ({
                       {/* 只有一个步骤时，只显示完成按钮 */}
                       {requiredSteps.length === 1 ? (
                         <Button type="primary" onClick={handleSubmit}>
-                          完成配置
+                          {t('Complete Configuration')}
                         </Button>
                       ) : (
                         <>
@@ -405,7 +408,7 @@ const openRequiredParamsStepFormDialog = async ({
                               }
                             }}
                           >
-                            上一步
+                            {t('Previous Step')}
                           </Button>
                           <Button
                             disabled={!formStep?.allowNext}
@@ -420,7 +423,7 @@ const openRequiredParamsStepFormDialog = async ({
                                   }
                                 })
                                 .catch((errors: any) => {
-                                  console.log('表单验证失败:', errors);
+                                  console.log(t('Form validation failed'), ':', errors);
                                   // 可以在这里添加更详细的错误处理
                                 });
                             }}
@@ -428,7 +431,7 @@ const openRequiredParamsStepFormDialog = async ({
                               display: (formStep?.current ?? 0) < requiredSteps.length - 1 ? 'inline-block' : 'none',
                             }}
                           >
-                            下一步
+                            {t('Next Step')}
                           </Button>
                           <Button
                             disabled={formStep?.allowNext}
@@ -438,7 +441,7 @@ const openRequiredParamsStepFormDialog = async ({
                               display: (formStep?.current ?? 0) >= requiredSteps.length - 1 ? 'inline-block' : 'none',
                             }}
                           >
-                            完成配置
+                            {t('Complete Configuration')}
                           </Button>
                         </>
                       )}
@@ -455,7 +458,7 @@ const openRequiredParamsStepFormDialog = async ({
           initialValues,
         });
       } catch (error) {
-        reject(new Error(`导入 FormDialog 或 FormStep 失败: ${error.message}`));
+        reject(new Error(`${t('Failed to import FormDialog or FormStep')}: ${error.message}`));
       }
     })();
   }).catch((e) => {

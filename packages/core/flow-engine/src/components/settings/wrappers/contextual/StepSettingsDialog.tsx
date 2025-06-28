@@ -11,7 +11,7 @@ import { createSchemaField, ISchema } from '@formily/react';
 import { message } from 'antd';
 import React from 'react';
 import { StepSettingsDialogProps } from '../../../../types';
-import { resolveDefaultParams, resolveUiSchema, compileUiSchema } from '../../../../utils';
+import { resolveDefaultParams, resolveUiSchema, compileUiSchema, getT } from '../../../../utils';
 import { StepSettingContextProvider, StepSettingContextType, useStepSettingContext } from './StepSettingContext';
 
 const SchemaField = createSchemaField();
@@ -32,9 +32,11 @@ const openStepSettingsDialog = async ({
   dialogWidth = 600,
   dialogTitle,
 }: StepSettingsDialogProps): Promise<any> => {
+  const t = getT(model);
+
   if (!model) {
-    message.error('提供的模型无效');
-    throw new Error('提供的模型无效');
+    message.error(t('Invalid model provided'));
+    throw new Error(t('Invalid model provided'));
   }
 
   // 获取流程和步骤信息
@@ -42,16 +44,18 @@ const openStepSettingsDialog = async ({
   const step = flow?.steps?.[stepKey];
 
   if (!flow) {
-    message.error(`未找到Key为 ${flowKey} 的流程`);
-    throw new Error(`未找到Key为 ${flowKey} 的流程`);
+    message.error(t('Flow with key {{flowKey}} not found', { flowKey }));
+    throw new Error(t('Flow with key {{flowKey}} not found', { flowKey }));
   }
 
   if (!step) {
-    message.error(`未找到Key为 ${stepKey} 的步骤`);
-    throw new Error(`未找到Key为 ${stepKey} 的步骤`);
+    message.error(t('Step with key {{stepKey}} not found', { stepKey }));
+    throw new Error(t('Step with key {{stepKey}} not found', { stepKey }));
   }
 
-  const title = dialogTitle || (step ? `${step.title || stepKey} - 配置` : `步骤配置 - ${stepKey}`);
+  const title =
+    dialogTitle ||
+    (step ? `${step.title || stepKey} - ${t('Configuration')}` : `${t('Step Configuration')} - ${stepKey}`);
 
   // 创建参数解析上下文
   const paramsContext = {
@@ -90,7 +94,7 @@ const openStepSettingsDialog = async ({
 
   // 如果没有可配置的UI Schema，显示提示
   if (Object.keys(mergedUiSchema).length === 0) {
-    message.info('此步骤没有可配置的参数');
+    message.info(t('This step has no configurable parameters'));
     return {};
   }
 
@@ -122,7 +126,7 @@ const openStepSettingsDialog = async ({
   try {
     ({ FormDialog } = await import('@formily/antd-v5'));
   } catch (error) {
-    throw new Error(`导入 FormDialog 失败: ${error.message}`);
+    throw new Error(`${t('Failed to import FormDialog')}: ${error.message}`);
   }
 
   // 创建FormDialog
@@ -130,8 +134,8 @@ const openStepSettingsDialog = async ({
     {
       title,
       width: dialogWidth,
-      okText: '确认',
-      cancelText: '取消',
+      okText: t('OK'),
+      cancelText: t('Cancel'),
       destroyOnClose: true,
     },
     (form) => {
@@ -177,11 +181,11 @@ const openStepSettingsDialog = async ({
       const currentValues = payload.values;
       model.setStepParams(flowKey, stepKey, currentValues);
       await model.save();
-      message.success('配置已保存');
+      message.success(t('Configuration saved'));
       next(payload);
     } catch (error) {
-      console.error('保存配置时出错:', error);
-      message.error('保存配置时出错，请检查控制台');
+      console.error(t('Error saving configuration'), ':', error);
+      message.error(t('Error saving configuration, please check console'));
       throw error;
     }
   });

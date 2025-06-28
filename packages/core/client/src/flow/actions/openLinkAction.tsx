@@ -11,7 +11,7 @@ import { css } from '@emotion/css';
 import { Variable } from '../../schema-component/antd/variable/Variable';
 
 export const openLinkAction = {
-  title: '编辑链接',
+  title: '{{t("Edit link")}}',
   uiSchema: {
     url: {
       title: 'URL',
@@ -23,7 +23,7 @@ export const openLinkAction = {
       type: 'array',
       'x-component': 'ArrayItems',
       'x-decorator': 'FormItem',
-      title: `Search parameters`,
+      title: `{{t("Search parameters")}}`,
       items: {
         type: 'object',
         properties: {
@@ -73,14 +73,14 @@ export const openLinkAction = {
       properties: {
         add: {
           type: 'void',
-          title: 'Add parameter',
+          title: '{{t("Add parameter")}}',
           'x-component': 'ArrayItems.Addition',
         },
       },
     },
     openInNewWindow: {
       type: 'boolean',
-      'x-content': 'Open in new window',
+      'x-content': '{{t("Open in new window")}}',
       'x-decorator': 'FormItem',
       'x-component': 'Checkbox',
     },

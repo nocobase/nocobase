@@ -20,6 +20,7 @@ import {
 import { FlowModel } from '../../../../models';
 import { StepDefinition } from '../../../../types';
 import { openStepSettings } from './StepSettings';
+import { getT } from '../../../../utils';
 
 // Type definitions for better type safety
 interface StepInfo {
@@ -110,34 +111,35 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
   flattenSubMenus = true,
 }) => {
   const { message } = App.useApp();
+  const t = getT(model);
 
   // 分离处理函数以便更好的代码组织
   const handleCopyUid = useCallback(async () => {
     try {
       await navigator.clipboard.writeText(model.uid);
-      message.success('UID 已复制到剪贴板');
+      message.success(t('UID copied to clipboard'));
     } catch (error) {
-      console.error('复制失败:', error);
-      message.error('复制失败，请重试');
+      console.error(t('Copy failed'), ':', error);
+      message.error(t('Copy failed, please try again'));
     }
   }, [model.uid, message]);
 
   const handleDelete = useCallback(() => {
     Modal.confirm({
-      title: '确认删除',
+      title: t('Confirm Delete'),
       icon: <ExclamationCircleOutlined />,
-      content: '确定要删除此项吗？此操作不可撤销。',
-      okText: '确认删除',
+      content: t('Are you sure you want to delete this item? This action cannot be undone.'),
+      okText: t('Confirm Delete'),
       okType: 'primary',
-      cancelText: '取消',
+      cancelText: t('Cancel'),
       async onOk() {
         try {
           await model.destroy();
         } catch (error) {
-          console.error('删除操作失败:', error);
+          console.error(t('Delete operation failed'), ':', error);
           Modal.error({
-            title: '删除失败',
-            content: '删除操作失败，请检查控制台获取详细信息。',
+            title: t('Delete Failed'),
+            content: t('Delete operation failed, please check the console for details.'),
           });
         }
       },
@@ -181,7 +183,7 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
           stepKey,
         });
       } catch (error) {
-        console.log('配置弹窗已取消或出错:', error);
+        console.log(t('Configuration popup cancelled or error'), ':', error);
       }
     },
     [model],
@@ -236,7 +238,7 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
                   const action = targetModel.flowEngine?.getAction?.(actionStep.use);
                   hasActionUiSchema = action && action.uiSchema != null;
                 } catch (error) {
-                  console.warn(`获取action '${actionStep.use}' 失败:`, error);
+                  console.warn(t('Failed to get action {{action}}', { action: actionStep.use }), ':', error);
                 }
               }
 
@@ -263,7 +265,11 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
         })
         .filter(Boolean);
     } catch (error) {
-      console.error(`获取模型 '${targetModel?.uid || 'unknown'}' 的可配置flows失败:`, error);
+      console.error(
+        t('Failed to get configurable flows for model {{model}}', { model: targetModel?.uid || 'unknown' }),
+        ':',
+        error,
+      );
       return [];
     }
   }, []);
@@ -443,7 +449,7 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
         items.push({
           key: 'copy-uid',
           icon: <CopyOutlined />,
-          label: '复制 UID',
+          label: t('Copy UID'),
         });
       }
 
@@ -452,7 +458,7 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
         items.push({
           key: 'delete',
           icon: <DeleteOutlined />,
-          label: '删除',
+          label: t('Delete'),
         });
       }
     }
@@ -467,7 +473,7 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
 
   // 渲染前验证模型
   if (!model || !model.uid) {
-    console.warn('提供的模型无效');
+    console.warn(t('Invalid model provided'));
     return null;
   }
 

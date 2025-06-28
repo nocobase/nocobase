@@ -1139,5 +1139,6 @@
   "Calendar Month":"日历月",
   "Calendar Year":"日历年",
   "Scan to input":"扫码录入",
-  "Disable manual input":"禁止手动输入"
+  "Disable manual input":"禁止手动输入",
+  "Imperative Drawer": "命令式抽屉"
 }

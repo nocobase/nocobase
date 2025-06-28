@@ -13,7 +13,7 @@ import { FilterGroup } from '../components/FilterGroup';
 
 export const dataScope = defineAction({
   name: 'dataScope',
-  title: '数据范围',
+  title: '{{t("Data scope")}}',
   uiSchema: {
     filter: {
       type: 'object',

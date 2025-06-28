@@ -19,6 +19,7 @@ import {
   ModelConstructor,
 } from './types';
 import { isInheritedFrom, TranslationUtil } from './utils';
+import { initFlowEngineLocale } from './locale';
 
 interface ApplyFlowCacheEntry {
   status: 'pending' | 'resolved' | 'rejected';
@@ -59,6 +60,9 @@ export class FlowEngine {
 
   setContext(context: any) {
     this.context = { ...this.context, ...context };
+    if (this.context.i18n) {
+      initFlowEngineLocale(this.context.i18n);
+    }
   }
 
   getContext() {

@@ -13,6 +13,25 @@ import { Schema } from '@formily/json-schema';
 import type { FlowModel } from './models';
 import { ActionDefinition, DeepPartial, FlowContext, FlowDefinition, ModelConstructor, ParamsContext } from './types';
 
+// Flow Engine 命名空间常量
+export const FLOW_ENGINE_NAMESPACE = 'flow-engine';
+
+/**
+ * 获取带有 flow-engine 命名空间的翻译函数
+ * @param model FlowModel 实例
+ * @returns 翻译函数，自动使用 flow-engine 命名空间
+ */
+export function getT(model: FlowModel): (key: string, options?: any) => string {
+  if (model.flowEngine?.t) {
+    return (key: string, options?: any) => {
+      // 自动添加 flow-engine 命名空间
+      return model.flowEngine.t(key, { ...options, ns: FLOW_ENGINE_NAMESPACE });
+    };
+  }
+  // 回退到原始键值
+  return (key: string) => key;
+}
+
 export function generateUid(): string {
   return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
 }

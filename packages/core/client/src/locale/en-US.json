@@ -895,5 +895,6 @@
   "Refresh data blocks": "Refresh data blocks",
   "Select data blocks to refresh": "Select data blocks to refresh",
   "After successful submission, the selected data blocks will be automatically refreshed.": "After successful submission, the selected data blocks will be automatically refreshed.",
-  "Reset link expiration": "Reset link expiration"
+  "Reset link expiration": "Reset link expiration",
+  "Imperative Drawer": "Imperative Drawer"
 }
