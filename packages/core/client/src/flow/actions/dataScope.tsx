@@ -9,11 +9,12 @@
 
 import { defineAction, MultiRecordResource, useStepSettingContext } from '@nocobase/flow-engine';
 import React from 'react';
+import { tval } from '@nocobase/utils/client';
 import { FilterGroup } from '../components/FilterGroup';
 
 export const dataScope = defineAction({
   name: 'dataScope',
-  title: '{{t("Data scope")}}',
+  title: tval('Data scope'),
   uiSchema: {
     filter: {
       type: 'object',

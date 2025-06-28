@@ -12,6 +12,7 @@ import type { FieldPatternTypes, FieldValidator } from '@formily/core';
 import { Field, Form } from '@formily/core';
 import { FieldContext } from '@formily/react';
 import React from 'react';
+import { tval } from '@nocobase/utils/client';
 import { FieldModel } from '../../base/FieldModel';
 import { ReactiveField } from '../../../formily/ReactiveField';
 import { FormModel } from '../..';
@@ -107,7 +108,7 @@ export class EditableFieldModel extends FieldModel<Structure> {
 EditableFieldModel.registerFlow({
   key: 'init',
   auto: true,
-  title: 'Basic',
+  title: tval('Basic'),
   sort: 150,
   steps: {
     createField: {
@@ -125,13 +126,13 @@ EditableFieldModel.registerFlow({
       },
     },
     editTitle: {
-      title: 'Edit Title',
+      title: tval('Edit Title'),
       uiSchema: {
         title: {
           'x-component': 'Input',
           'x-decorator': 'FormItem',
           'x-component-props': {
-            placeholder: 'Enter field title',
+            placeholder: tval('Enter field title'),
           },
         },
       },
@@ -145,7 +146,7 @@ EditableFieldModel.registerFlow({
       },
     },
     initialValue: {
-      title: 'Set default value',
+      title: tval('Set default value'),
       uiSchema: {
         defaultValue: {
           'x-component': 'Input',
@@ -158,14 +159,14 @@ EditableFieldModel.registerFlow({
       },
     },
     required: {
-      title: 'Required',
+      title: tval('Required'),
       uiSchema: {
         required: {
           'x-component': 'Switch',
           'x-decorator': 'FormItem',
           'x-component-props': {
-            checkedChildren: 'Yes',
-            unCheckedChildren: 'No',
+            checkedChildren: tval('Yes'),
+            unCheckedChildren: tval('No'),
           },
         },
       },
@@ -174,14 +175,14 @@ EditableFieldModel.registerFlow({
       },
     },
     displayLabel: {
-      title: 'Display label',
+      title: tval('Display label'),
       uiSchema: {
         displayLabel: {
           'x-component': 'Switch',
           'x-decorator': 'FormItem',
           'x-component-props': {
-            checkedChildren: 'Yes',
-            unCheckedChildren: 'No',
+            checkedChildren: tval('Yes'),
+            unCheckedChildren: tval('No'),
           },
         },
       },
@@ -193,7 +194,7 @@ EditableFieldModel.registerFlow({
       },
     },
     editDescription: {
-      title: 'Edit description',
+      title: tval('Edit description'),
       uiSchema: {
         description: {
           'x-component': 'Input.TextArea',
@@ -205,7 +206,7 @@ EditableFieldModel.registerFlow({
       },
     },
     editTooltip: {
-      title: 'Edit tooltip',
+      title: tval('Edit tooltip'),
       uiSchema: {
         tooltip: {
           'x-component': 'Input.TextArea',
@@ -217,7 +218,7 @@ EditableFieldModel.registerFlow({
       },
     },
     pattern: {
-      title: 'Pattern',
+      title: tval('Pattern'),
       uiSchema: {
         pattern: {
           'x-component': 'Select',
@@ -225,19 +226,19 @@ EditableFieldModel.registerFlow({
           enum: [
             {
               value: 'editable',
-              label: 'Editable',
+              label: tval('Editable'),
             },
             {
               value: 'disabled',
-              label: 'Disabled',
+              label: tval('Disabled'),
             },
             {
               value: 'readOnly',
-              label: 'ReadOnly',
+              label: tval('ReadOnly'),
             },
             {
               value: 'readPretty',
-              label: 'ReadPretty',
+              label: tval('ReadPretty'),
             },
           ],
         },

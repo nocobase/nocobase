@@ -8,22 +8,23 @@
  */
 
 import { css } from '@emotion/css';
+import { tval } from '@nocobase/utils/client';
 import { Variable } from '../../schema-component/antd/variable/Variable';
 
 export const openLinkAction = {
-  title: '{{t("Edit link")}}',
+  title: tval('Edit link'),
   uiSchema: {
     url: {
-      title: 'URL',
+      title: tval('URL'),
       'x-decorator': 'FormItem',
       'x-component': Variable.TextArea,
-      description: 'Do not concatenate search params in the URL',
+      description: tval('Do not concatenate search params in the URL'),
     },
     params: {
       type: 'array',
       'x-component': 'ArrayItems',
       'x-decorator': 'FormItem',
-      title: `{{t("Search parameters")}}`,
+      title: tval('Search parameters'),
       items: {
         type: 'object',
         properties: {
@@ -48,7 +49,7 @@ export const openLinkAction = {
                 'x-decorator': 'FormItem',
                 'x-component': 'Input',
                 'x-component-props': {
-                  placeholder: `{{t("Name")}}`,
+                  placeholder: tval('Name'),
                 },
               },
               value: {
@@ -56,7 +57,7 @@ export const openLinkAction = {
                 'x-decorator': 'FormItem',
                 'x-component': Variable.TextArea,
                 'x-component-props': {
-                  placeholder: `{{t("Value")}}`,
+                  placeholder: tval('Value'),
                   useTypedConstant: true,
                   changeOnSelect: true,
                 },
@@ -73,14 +74,14 @@ export const openLinkAction = {
       properties: {
         add: {
           type: 'void',
-          title: '{{t("Add parameter")}}',
+          title: tval('Add parameter'),
           'x-component': 'ArrayItems.Addition',
         },
       },
     },
     openInNewWindow: {
       type: 'boolean',
-      'x-content': '{{t("Open in new window")}}',
+      'x-content': tval('Open in new window'),
       'x-decorator': 'FormItem',
       'x-component': 'Checkbox',
     },

@@ -112,7 +112,7 @@ PageModel.registerFlow({
         };
       },
       async handler(ctx, params) {
-        ctx.model.setProps('title', params.title);
+        ctx.model.setProps('title', ctx.globals.flowEngine.translate(params.title));
         ctx.model.setProps('enableTabs', params.enableTabs);
 
         if (ctx.shared.currentDrawer) {

@@ -8,28 +8,29 @@
  */
 
 import React from 'react';
+import { tval } from '@nocobase/utils/client';
 import { FlowPage } from '../FlowPage';
 
 export const openModeAction = {
-  title: '{{t("Open mode")}}',
+  title: tval('Open mode'),
   uiSchema: {
     mode: {
       type: 'string',
-      title: '{{t("Open mode")}}',
+      title: tval('Open mode'),
       enum: [
-        { label: '{{t("Drawer")}}', value: 'drawer' },
-        { label: '{{t("Modal")}}', value: 'modal' },
+        { label: tval('Drawer'), value: 'drawer' },
+        { label: tval('Modal'), value: 'modal' },
       ],
       'x-decorator': 'FormItem',
       'x-component': 'Radio.Group',
     },
     size: {
       type: 'string',
-      title: '{{t("Popup size")}}',
+      title: tval('Popup size'),
       enum: [
-        { label: '{{t("Small")}}', value: 'small' },
-        { label: '{{t("Medium")}}', value: 'medium' },
-        { label: '{{t("Large")}}', value: 'large' },
+        { label: tval('Small'), value: 'small' },
+        { label: tval('Medium'), value: 'medium' },
+        { label: tval('Large'), value: 'large' },
       ],
       'x-decorator': 'FormItem',
       'x-component': 'Radio.Group',
@@ -66,7 +67,7 @@ export const openModeAction = {
     };
 
     currentDrawer = ctx.globals[params.mode].open({
-      title: '{{t("Imperative Drawer")}}',
+      title: tval('Imperative Drawer'),
       width: sizeToWidthMap[params.size],
       content: <DrawerContent />,
     });

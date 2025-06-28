@@ -8,31 +8,32 @@
  */
 
 import { defineAction } from '@nocobase/flow-engine';
+import { tval } from '@nocobase/utils/client';
 import React from 'react';
 import { FlowPage } from '../FlowPage';
 
 export const openView = defineAction({
   name: 'openView',
-  title: '打开方式配置',
+  title: tval('Open mode configuration'),
   uiSchema: {
     mode: {
       type: 'string',
-      title: '打开方式',
+      title: tval('Open mode'),
       enum: [
-        { label: 'Drawer', value: 'drawer' },
-        { label: 'Dialog', value: 'dialog' },
-        { label: 'Page', value: 'page' },
+        { label: tval('Drawer'), value: 'drawer' },
+        { label: tval('Dialog'), value: 'dialog' },
+        { label: tval('Page'), value: 'page' },
       ],
       'x-decorator': 'FormItem',
       'x-component': 'Radio.Group',
     },
     size: {
       type: 'string',
-      title: '弹窗尺寸',
+      title: tval('Popup size'),
       enum: [
-        { label: '小', value: 'small' },
-        { label: '中', value: 'medium' },
-        { label: '大', value: 'large' },
+        { label: tval('Small'), value: 'small' },
+        { label: tval('Medium'), value: 'medium' },
+        { label: tval('Large'), value: 'large' },
       ],
       'x-decorator': 'FormItem',
       'x-component': 'Radio.Group',

@@ -15,6 +15,7 @@ import { Card, Space, Spin, Table } from 'antd';
 import classNames from 'classnames';
 import _ from 'lodash';
 import React, { useRef } from 'react';
+import { tval } from '@nocobase/utils/client';
 import { ActionModel } from '../../base/ActionModel';
 import { DataBlockModel } from '../../base/BlockModel';
 import { QuickEditForm } from '../form/QuickEditForm';
@@ -77,7 +78,7 @@ export class TableModel extends DataBlockModel<TableModelStructure> {
             appendItems={[
               {
                 key: 'actions',
-                label: 'Actions column',
+                label: tval('Actions column'),
                 createModelOptions: {
                   use: 'TableActionsColumnModel',
                 },
@@ -236,20 +237,20 @@ TableModel.registerFlow({
       uiSchema: {
         dataSourceKey: {
           type: 'string',
-          title: 'Data Source Key',
+          title: tval('Data Source Key'),
           'x-decorator': 'FormItem',
           'x-component': 'Input',
           'x-component-props': {
-            placeholder: 'Enter data source key',
+            placeholder: tval('Enter data source key'),
           },
         },
         collectionName: {
           type: 'string',
-          title: 'Collection Name',
+          title: tval('Collection Name'),
           'x-decorator': 'FormItem',
           'x-component': 'Input',
           'x-component-props': {
-            placeholder: 'Enter collection name',
+            placeholder: tval('Enter collection name'),
           },
         },
       },
@@ -272,7 +273,7 @@ TableModel.registerFlow({
       },
     },
     editPageSize: {
-      title: 'Edit page size',
+      title: tval('Edit page size'),
       uiSchema: {
         pageSize: {
           'x-component': 'Select',
@@ -301,13 +302,13 @@ TableModel.registerFlow({
     },
     dataScope: {
       use: 'dataScope',
-      title: '设置数据范围',
+      title: tval('Set data scope'),
     },
   },
 });
 
 TableModel.define({
-  title: 'Table',
+  title: tval('Table'),
   group: 'Content',
   defaultOptions: {
     use: 'TableModel',

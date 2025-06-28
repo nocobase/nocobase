@@ -119,7 +119,8 @@ TableColumnModel.registerFlow({
         };
       },
       handler(ctx, params) {
-        ctx.model.setProps('title', params.title || ctx.model.collectionField?.title);
+        const title = ctx.globals.flowEngine.translate(params.title || ctx.model.collectionField?.title);
+        ctx.model.setProps('title', title);
       },
     },
     editTooltip: {

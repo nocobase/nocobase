@@ -127,7 +127,7 @@ RecordActionModel.registerFlow({
         if (!currentBlockModel) {
           throw new Error('Current block model is not set in shared context');
         }
-        ctx.model.setProps('title', params.title);
+        ctx.model.setProps('title', ctx.globals.flowEngine.translate(params.title));
         ctx.model.setProps('icon', params.icon);
         ctx.model.setProps('onClick', (event) => {
           ctx.model.dispatchEvent('click', {
