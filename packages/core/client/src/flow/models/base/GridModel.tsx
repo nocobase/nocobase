@@ -41,6 +41,9 @@ export class GridModel extends FlowModel<GridModelStructure> {
     this.emitter.on('onSubModelRemoved', () => {
       this.resetRows(true);
     });
+    this.emitter.on('onSubModelMoved', () => {
+      this.resetRows(true);
+    });
   }
 
   mergeRowsWithItems(rows: Record<string, string[][]>) {
