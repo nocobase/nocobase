@@ -8,11 +8,11 @@
  */
 
 import { DragOutlined } from '@ant-design/icons';
-import { DndContext, DndContextProps, DragEndEvent, DragOverlay, useDraggable, useDroppable } from '@dnd-kit/core';
-import React, { useState } from 'react';
+import { DndContext, DndContextProps, DragOverlay, useDraggable, useDroppable } from '@dnd-kit/core';
+import React, { FC, useState } from 'react';
 
 // 可拖拽图标组件
-export function DragHandler({ id }: { id: string }) {
+export const DragHandler: FC<{ id: string }> = ({ id }) => {
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id });
   return (
     <span
@@ -31,10 +31,10 @@ export function DragHandler({ id }: { id: string }) {
       <DragOutlined />
     </span>
   );
-}
+};
 
 // 通用 Droppable 组件
-export function Droppable({ id, children }: { id: string; children: React.ReactNode }) {
+export const Droppable: FC<{ id: string; children: React.ReactNode }> = ({ id, children }) => {
   const { setNodeRef, isOver, active } = useDroppable({ id });
   const isActiveDroppable = active?.id === id;
   console.log('Droppable id:', id);
@@ -53,10 +53,10 @@ export function Droppable({ id, children }: { id: string; children: React.ReactN
       {children}
     </div>
   );
-}
+};
 
 // 提供一个封装了 DragOverlay 的 DndProvider 组件，继承 DndContext 的所有 props
-export function DndProvider({ children, ...restProps }: DndContextProps & { children: React.ReactNode }) {
+export const DndProvider: FC<DndContextProps> = ({ children, ...restProps }) => {
   const [activeId, setActiveId] = useState<string | null>(null);
   console.log('DndProvider activeId:', activeId);
 
@@ -96,4 +96,4 @@ export function DndProvider({ children, ...restProps }: DndContextProps & { chil
       </DragOverlay>
     </DndContext>
   );
-}
+};
