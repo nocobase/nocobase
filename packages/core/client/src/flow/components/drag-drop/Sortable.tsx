@@ -8,7 +8,6 @@
  */
 
 import { closestCenter, DndContext, DragEndEvent, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
-import { restrictToHorizontalAxis } from '@dnd-kit/modifiers';
 import { SortableContext } from '@dnd-kit/sortable';
 import { useFlowEngine, useFlowModel } from '@nocobase/flow-engine';
 import React, { FC } from 'react';
@@ -41,7 +40,6 @@ export const Sortable: FC<{ targetModelKey: string }> = (props) => {
       // 使用 closestCenter 进行碰撞检测
       collisionDetection={closestCenter}
       // 限定只能在水平方向拖拽
-      modifiers={[restrictToHorizontalAxis]}
       onDragEnd={onDragEnd}
     >
       <SortableContext items={items}>{props.children}</SortableContext>
