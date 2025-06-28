@@ -38,6 +38,7 @@ export class FilterActionModel extends GlobalActionModel {
     filterValue?: any;
     ignoreFieldsNames?: string[];
     open?: boolean;
+    position: 'left';
   };
 
   defaultProps: any = {
@@ -71,6 +72,13 @@ FilterActionModel.registerFlow({
   title: '筛选配置',
   auto: true,
   steps: {
+    position: {
+      title: '位置',
+      uiSchema: {},
+      handler(ctx, params) {
+        ctx.model.setProps('position', 'left');
+      },
+    },
     ignoreFieldsNames: {
       title: '可筛选字段',
       uiSchema: {

@@ -211,16 +211,49 @@ export class TableModel extends DataBlockModel<TableModelStructure> {
     return (
       <Card>
         <Spin spinning={this.resource.loading}>
-          <Space style={{ marginBottom: 16 }}>
-            {this.mapSubModels('actions', (action) => (
-              <FlowModelRenderer
-                model={action}
-                showFlowSettings={{ showBackground: false, showBorder: false }}
-                sharedContext={{ currentBlockModel: this }}
-              />
-            ))}
-            <AddActionButton model={this} subModelBaseClass="GlobalActionModel" subModelKey="actions" />
-          </Space>
+          <DndProvider
+            onDragEnd={({ active, over }) => {
+              if (active.id && over?.id && active.id !== over.id) {
+                this.flowEngine.moveModel(active.id as string, over.id as string);
+              }
+            }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+              <Space>
+                {this.mapSubModels('actions', (action) => {
+                  // @ts-ignore
+                  if (action.props.position === 'left') {
+                    return (
+                      <FlowModelRenderer
+                        model={action}
+                        showFlowSettings={{ showBackground: false, showBorder: false }}
+                        sharedContext={{ currentBlockModel: this }}
+                      />
+                    );
+                  }
+
+                  return null;
+                })}
+              </Space>
+              <Space>
+                {this.mapSubModels('actions', (action) => {
+                  // @ts-ignore
+                  if (action.props.position !== 'left') {
+                    return (
+                      <FlowModelRenderer
+                        model={action}
+                        showFlowSettings={{ showBackground: false, showBorder: false }}
+                        sharedContext={{ currentBlockModel: this }}
+                      />
+                    );
+                  }
+
+                  return null;
+                })}
+                <AddActionButton model={this} subModelBaseClass="GlobalActionModel" subModelKey="actions" />
+              </Space>
+            </div>
+          </DndProvider>
           <Table
             components={this.components}
             tableLayout="fixed"

@@ -37,15 +37,22 @@ export const Droppable: FC<{ model: FlowModel; children: React.ReactNode }> = ({
     <div
       ref={setNodeRef}
       style={{
-        background: isOver ? '#e6f7ff' : 'transparent',
-        borderRadius: 4,
-        transition: 'all 0.2s',
-        marginBottom: 8,
-        padding: 8,
+        position: 'relative',
         opacity: isActiveDroppable ? 0.3 : 1,
       }}
     >
       {children}
+      <div
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: isOver ? 'var(--colorBgSettingsHover)' : 'transparent',
+          pointerEvents: 'none',
+        }}
+      ></div>
     </div>
   );
 };
