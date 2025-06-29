@@ -329,7 +329,7 @@ export class FlowModel<Structure extends { parent?: any; subModels?: any } = Def
     if (typeof props === 'string') {
       this.props[props] = value;
     } else {
-      this.props = { ...props };
+      this.props = { ...this.props, ...props };
     }
   }
 
@@ -351,7 +351,10 @@ export class FlowModel<Structure extends { parent?: any; subModels?: any } = Def
         if (!this.stepParams[flowKey]) {
           this.stepParams[flowKey] = {};
         }
-        this.stepParams[flowKey][stepKeyOrStepsParams] = params;
+        this.stepParams[flowKey][stepKeyOrStepsParams] = {
+          ...this.stepParams[flowKey][stepKeyOrStepsParams],
+          ...params,
+        };
       } else if (typeof stepKeyOrStepsParams === 'object' && stepKeyOrStepsParams !== null) {
         this.stepParams[flowKey] = { ...(this.stepParams[flowKey] || {}), ...stepKeyOrStepsParams };
       }
