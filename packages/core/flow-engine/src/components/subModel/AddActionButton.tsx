@@ -72,7 +72,7 @@ const AddActionButtonCore: React.FC<AddActionButtonProps> = ({
   onSubModelAdded,
 }) => {
   const defaultChildren = useMemo(() => {
-    return <FlowSettingsButton icon={<SettingOutlined />}>{model.translate('Configure fields')}</FlowSettingsButton>;
+    return <FlowSettingsButton icon={<SettingOutlined />}>{model.translate('Configure actions')}</FlowSettingsButton>;
   }, [model]);
 
   const allActionsItems = useMemo(() => {
