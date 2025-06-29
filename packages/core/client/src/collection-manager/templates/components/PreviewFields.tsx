@@ -227,7 +227,7 @@ const PreviewCom = (props) => {
             defaultValue={item?.uiSchema?.title || text}
             onChange={(e) =>
               handleFieldChange(
-                { ...item, title1: e.target.value, uiSchema: { ...omit(item?.uiSchema, 'rawTitle'), title: e.target.value } },
+                { ...item, uiSchema: { ...omit(item?.uiSchema, 'rawTitle'), title: e.target.value } },
                 index,
               )
             }
