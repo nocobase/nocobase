@@ -49,11 +49,6 @@ interface AddActionButtonProps {
   items?: SubModelItemsType;
 }
 
-const DefaultBtn = () => {
-  const { t } = useTranslation();
-  return <FlowSettingsButton icon={<SettingOutlined />}>{t('Configure actions')}</FlowSettingsButton>;
-};
-
 /**
  * 专门用于添加动作模型的按钮组件
  *
@@ -69,13 +64,17 @@ const AddActionButtonCore: React.FC<AddActionButtonProps> = ({
   model,
   subModelBaseClass = 'ActionFlowModel',
   subModelKey = 'actions',
-  children = <DefaultBtn />,
+  children,
   subModelType = 'array',
   items,
   filter,
   onModelCreated,
   onSubModelAdded,
 }) => {
+  const defaultChildren = useMemo(() => {
+    return <FlowSettingsButton icon={<SettingOutlined />}>{model.translate('Configure fields')}</FlowSettingsButton>;
+  }, [model]);
+
   const allActionsItems = useMemo(() => {
     const actionClasses = model.flowEngine.filterModelClassByParent(subModelBaseClass);
     const registeredBlocks = [];
@@ -109,7 +108,7 @@ const AddActionButtonCore: React.FC<AddActionButtonProps> = ({
       onModelCreated={onModelCreated}
       onSubModelAdded={onSubModelAdded}
     >
-      {children}
+      {children || defaultChildren}
     </AddSubModelButton>
   );
 };

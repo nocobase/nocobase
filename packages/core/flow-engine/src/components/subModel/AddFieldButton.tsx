@@ -15,7 +15,6 @@ import { FlowModelOptions, ModelConstructor } from '../../types';
 import { FlowSettingsButton } from '../common/FlowSettingsButton';
 import { withFlowDesignMode } from '../common/withFlowDesignMode';
 import { AddSubModelButton, SubModelItemsType, mergeSubModelItems } from './AddSubModelButton';
-import { useTranslation } from 'react-i18next';
 
 export type BuildCreateModelOptionsType = {
   defaultOptions: FlowModelOptions;
@@ -66,11 +65,6 @@ function defaultBuildCreateModelOptions({ defaultOptions }: BuildCreateModelOpti
   return defaultOptions;
 }
 
-const DefaultBtn = () => {
-  const { t } = useTranslation();
-  return <FlowSettingsButton icon={<SettingOutlined />}>{t('Configure fields')}</FlowSettingsButton>;
-};
-
 /**
  * 专门用于添加字段模型的按钮组件
  *
@@ -86,7 +80,7 @@ const AddFieldButtonCore: React.FC<AddFieldButtonProps> = ({
   model,
   subModelBaseClass = 'FieldFlowModel',
   subModelKey = 'fields',
-  children = <DefaultBtn />,
+  children,
   subModelType = 'array',
   collection,
   buildCreateModelOptions = defaultBuildCreateModelOptions,
@@ -96,6 +90,9 @@ const AddFieldButtonCore: React.FC<AddFieldButtonProps> = ({
   onSubModelAdded,
 }) => {
   const fields = collection.getFields();
+  const defaultChildren = useMemo(() => {
+    return <FlowSettingsButton icon={<SettingOutlined />}>{model.translate('Configure fields')}</FlowSettingsButton>;
+  }, [model]);
 
   // 构建字段 items 的函数
   const buildFieldItems = useMemo<SubModelItemsType>(() => {
@@ -169,7 +166,7 @@ const AddFieldButtonCore: React.FC<AddFieldButtonProps> = ({
       onModelCreated={onModelCreated}
       onSubModelAdded={onSubModelAdded}
     >
-      {children}
+      {children || defaultChildren}
     </AddSubModelButton>
   );
 };
