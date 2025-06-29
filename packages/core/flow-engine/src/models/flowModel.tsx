@@ -38,7 +38,7 @@ const modelMetas = new WeakMap<typeof FlowModel, FlowModelMeta>();
 // 使用WeakMap存储每个类的flows
 const modelFlows = new WeakMap<typeof FlowModel, Map<string, FlowDefinition>>();
 
-export class FlowModel<Structure extends { parent?: any; subModels?: any } = DefaultStructure> {
+export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
   public readonly uid: string;
   public sortIndex: number;
   public props: IModelComponentProps = {};
@@ -688,10 +688,13 @@ export class FlowModel<Structure extends { parent?: any; subModels?: any } = Def
       model = this.flowEngine.createModel({ ...options, subKey, subType: 'array' });
     }
     model.setParent(this);
-    Array.isArray(this.subModels[subKey]) || (this.subModels[subKey] = []);
-    const maxSortIndex = Math.max(...this.subModels[subKey].map((item) => item.sortIndex || 0), 0);
+    const subModels = this.subModels as {
+      [subKey: string]: FlowModel[];
+    };
+    Array.isArray(subModels[subKey]) || (subModels[subKey] = []);
+    const maxSortIndex = Math.max(...(subModels[subKey] as FlowModel[]).map((item) => item.sortIndex || 0), 0);
     model.sortIndex = maxSortIndex + 1;
-    this.subModels[subKey].push(model);
+    subModels[subKey].push(model);
     this.emitter.emit('onSubModelAdded', model);
     return model;
   }
@@ -707,7 +710,7 @@ export class FlowModel<Structure extends { parent?: any; subModels?: any } = Def
       model = this.flowEngine.createModel({ ...options, parentId: this.uid, subKey, subType: 'object' });
     }
     model.setParent(this);
-    this.subModels[subKey] = model;
+    (this.subModels as any)[subKey] = model;
     this.emitter.emit('onSubModelAdded', model);
     return model;
   }
@@ -716,7 +719,7 @@ export class FlowModel<Structure extends { parent?: any; subModels?: any } = Def
     subKey: K,
     callback: (model: ArrayElementType<Structure['subModels'][K]>, index: number) => R,
   ): R[] {
-    const model = this.subModels[subKey];
+    const model = (this.subModels as any)[subKey as string];
 
     if (!model) {
       return [];
@@ -735,23 +738,25 @@ export class FlowModel<Structure extends { parent?: any; subModels?: any } = Def
   findSubModel<K extends keyof Structure['subModels'], R>(
     subKey: K,
     callback: (model: ArrayElementType<Structure['subModels'][K]>) => R,
-  ): R | null {
-    const model = this.subModels[subKey];
+  ): ArrayElementType<Structure['subModels'][K]> | null {
+    const model = (this.subModels as any)[subKey as string];
 
     if (!model) {
       return null;
     }
 
-    return _.castArray(model).find((item) => {
-      return (callback as (model: any) => R)(item);
-    });
+    return (
+      (_.castArray(model).find((item) => {
+        return (callback as (model: any) => R)(item);
+      }) as ArrayElementType<Structure['subModels'][K]> | undefined) || null
+    );
   }
 
   createRootModel(options) {
     return this.flowEngine.createModel(options);
   }
 
-  async applySubModelsAutoFlows<K extends keyof Structure['subModels'], R>(
+  async applySubModelsAutoFlows<K extends keyof Structure['subModels']>(
     subKey: K,
     extra?: Record<string, any>,
     shared?: Record<string, any>,
@@ -905,15 +910,18 @@ export class FlowModel<Structure extends { parent?: any; subModels?: any } = Def
       stepParams: this.stepParams,
       sortIndex: this.sortIndex,
     };
-    for (const subModelKey in this.subModels) {
+    const subModels = this.subModels as {
+      [key: string]: FlowModel | FlowModel[];
+    };
+    for (const subModelKey in subModels) {
       data.subModels = data.subModels || {};
-      if (Array.isArray(this.subModels[subModelKey])) {
-        data.subModels[subModelKey] = this.subModels[subModelKey].map((model: FlowModel, index) => ({
+      if (Array.isArray(subModels[subModelKey])) {
+        (data.subModels as any)[subModelKey] = (subModels[subModelKey] as FlowModel[]).map((model, index) => ({
           ...model.serialize(),
           sortIndex: index,
         }));
-      } else if ((this.subModels[subModelKey] as any) instanceof FlowModel) {
-        data.subModels[subModelKey] = this.subModels[subModelKey].serialize();
+      } else if (subModels[subModelKey] instanceof FlowModel) {
+        (data.subModels as any)[subModelKey] = (subModels[subModelKey] as FlowModel).serialize();
       }
     }
     return data;
