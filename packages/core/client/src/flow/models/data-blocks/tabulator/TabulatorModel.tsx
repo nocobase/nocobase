@@ -20,7 +20,7 @@ import {
   MultiRecordResource,
 } from '@nocobase/flow-engine';
 import { tval } from '@nocobase/utils/client';
-import { Button, Card, Pagination, Skeleton, Space } from 'antd';
+import { Button, Card, Pagination, Skeleton, Space, Spin } from 'antd';
 import _ from 'lodash';
 import React from 'react';
 import { ColumnDefinition, TabulatorFull as Tabulator } from 'tabulator-tables';
@@ -262,51 +262,60 @@ export class TabulatorModel extends DataBlockModel<S> {
   render() {
     return (
       <Card>
-        <DndProvider>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-            <Space>
-              {this.mapSubModels('actions', (action) => {
-                // @ts-ignore
-                if (action.props.position === 'left') {
-                  return (
-                    <FlowModelRenderer model={action} showFlowSettings={{ showBackground: false, showBorder: false }} />
-                  );
-                }
+        <Spin spinning={this.resource.loading}>
+          <DndProvider>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+              <Space>
+                {this.mapSubModels('actions', (action) => {
+                  // @ts-ignore
+                  if (action.props.position === 'left') {
+                    return (
+                      <FlowModelRenderer
+                        model={action}
+                        showFlowSettings={{ showBackground: false, showBorder: false }}
+                      />
+                    );
+                  }
 
-                return null;
-              })}
-              {/* 占位 */}
-              <span></span>
-            </Space>
-            <Space>
-              {this.mapSubModels('actions', (action) => {
-                // @ts-ignore
-                if (action.props.position !== 'left') {
-                  return (
-                    <FlowModelRenderer model={action} showFlowSettings={{ showBackground: false, showBorder: false }} />
-                  );
-                }
+                  return null;
+                })}
+                {/* 占位 */}
+                <span></span>
+              </Space>
+              <Space>
+                {this.mapSubModels('actions', (action) => {
+                  // @ts-ignore
+                  if (action.props.position !== 'left') {
+                    return (
+                      <FlowModelRenderer
+                        model={action}
+                        showFlowSettings={{ showBackground: false, showBorder: false }}
+                      />
+                    );
+                  }
 
-                return null;
-              })}
-              <AddActionButton model={this} subModelBaseClass="GlobalActionModel" subModelKey="actions" />
-            </Space>
-          </div>
-        </DndProvider>
-        <div ref={this.tabulatorRef} />
-        <Pagination
-          style={{ marginTop: 16 }}
-          align="end"
-          defaultCurrent={this.resource.getMeta('page')}
-          defaultPageSize={this.resource.getMeta('pageSize')}
-          total={this.resource.getMeta('count')}
-          showSizeChanger
-          onChange={async (page, pageSize) => {
-            this.resource.setPage(page);
-            this.resource.setPageSize(pageSize);
-            await this.resource.refresh();
-          }}
-        />
+                  return null;
+                })}
+                <AddActionButton model={this} subModelBaseClass="GlobalActionModel" subModelKey="actions" />
+              </Space>
+            </div>
+          </DndProvider>
+          <div ref={this.tabulatorRef} />
+          <Pagination
+            style={{ marginTop: 16 }}
+            align="end"
+            defaultCurrent={this.resource.getMeta('page')}
+            defaultPageSize={this.resource.getMeta('pageSize')}
+            total={this.resource.getMeta('count')}
+            showSizeChanger
+            onChange={async (page, pageSize) => {
+              this.resource.loading = true;
+              this.resource.setPage(page);
+              this.resource.setPageSize(pageSize);
+              await this.resource.refresh();
+            }}
+          />
+        </Spin>
       </Card>
     );
   }
