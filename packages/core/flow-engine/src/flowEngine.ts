@@ -8,6 +8,7 @@
  */
 import { observable } from '@formily/reactive';
 import { FlowSettings } from './flowSettings';
+import { initFlowEngineLocale } from './locale';
 import { FlowModel } from './models';
 import { ReactView } from './ReactView';
 import {
@@ -20,7 +21,6 @@ import {
   ModelConstructor,
 } from './types';
 import { isInheritedFrom } from './utils';
-import { initFlowEngineLocale } from './locale';
 
 interface ApplyFlowCacheEntry {
   status: 'pending' | 'resolved' | 'rejected';
@@ -42,14 +42,26 @@ export class FlowEngine {
   private modelRepository: IFlowModelRepository | null = null;
   private _applyFlowCache = new Map<string, ApplyFlowCacheEntry>();
 
-  reactView: ReactView;
+  /**
+   * 实验性 API：用于在 FlowEngine 中集成 React 视图渲染能力。
+   * 该属性未来可能发生重大变更或被移除，请谨慎依赖。
+   * @experimental
+   */
+  public reactView: ReactView;
 
   constructor() {
     this.reactView = new ReactView(this);
     this.flowSettings.registerScopes({ t: this.translate.bind(this) });
   }
-  // 注册默认的 FlowModel
 
+  /**
+   * 设置模型仓库，用于持久化和查询模型实例。
+   * 如果之前已设置过模型仓库，将会覆盖原有设置，并输出警告。
+   *
+   * @param modelRepository 要设置的模型仓库实例，实现 IFlowModelRepository 接口。
+   * @example
+   * flowEngine.setModelRepository(new MyFlowModelRepository());
+   */
   setModelRepository(modelRepository: IFlowModelRepository) {
     if (this.modelRepository) {
       console.warn('FlowEngine: Model repository is already set and will be overwritten.');
@@ -375,9 +387,9 @@ export class FlowEngine {
     return true;
   }
 
-  async loadModel<T extends FlowModel = FlowModel>(uid: string): Promise<T | null> {
+  async loadModel<T extends FlowModel = FlowModel>(options): Promise<T | null> {
     if (!this.ensureModelRepository()) return;
-    const data = await this.modelRepository.findOne({ uid });
+    const data = await this.modelRepository.findOne(options);
     return data?.uid ? this.createModel<T>(data as any) : null;
   }
 

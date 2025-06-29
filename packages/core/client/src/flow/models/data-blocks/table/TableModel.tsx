@@ -109,7 +109,6 @@ export class TableModel extends DataBlockModel<TableModelStructure> {
               },
             ]}
             onModelCreated={async (model: TableColumnModel) => {
-              // model.setSharedContext({ currentBlockModel: this });
               await model.applyAutoFlows();
             }}
             onSubModelAdded={async (model: TableColumnModel) => {
@@ -222,7 +221,6 @@ export class TableModel extends DataBlockModel<TableModelStructure> {
                       <FlowModelRenderer
                         model={action}
                         showFlowSettings={{ showBackground: false, showBorder: false }}
-                        sharedContext={{ currentBlockModel: this }}
                       />
                     );
                   }
@@ -240,7 +238,6 @@ export class TableModel extends DataBlockModel<TableModelStructure> {
                       <FlowModelRenderer
                         model={action}
                         showFlowSettings={{ showBackground: false, showBorder: false }}
-                        sharedContext={{ currentBlockModel: this }}
                       />
                     );
                   }
@@ -287,6 +284,22 @@ TableModel.registerFlow({
   key: 'default',
   auto: true,
   steps: {
+    enableEditable: {
+      title: tval('Editable'),
+      uiSchema: {
+        editable: {
+          'x-component': 'Switch',
+          'x-decorator': 'FormItem',
+        },
+      },
+      defaultParams: {
+        editable: false,
+      },
+      handler(ctx, params) {
+        console.log('enableEditable params:', params);
+        ctx.model.setProps('editable', params.editable);
+      },
+    },
     step1: {
       paramsRequired: true,
       hideInSettings: true,

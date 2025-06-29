@@ -901,7 +901,7 @@ export class FlowModel<Structure extends { parent?: any; subModels?: any } = Def
     const data = {
       uid: this.uid,
       ..._.omit(this._options, ['flowEngine']),
-      props: this.props,
+      // props: this.props,
       stepParams: this.stepParams,
       sortIndex: this.sortIndex,
     };

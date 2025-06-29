@@ -9,6 +9,7 @@
 
 import { FlowModel, FlowModelRenderer } from '@nocobase/flow-engine';
 import React from 'react';
+import { RemoteFlowModelRenderer } from '../../FlowPage';
 import { BlockGridModel } from './GridModel';
 
 export class PageTabModel extends FlowModel<{
@@ -17,10 +18,9 @@ export class PageTabModel extends FlowModel<{
   };
 }> {
   render() {
-    console.log('TabFlowModel render', this.uid);
     return (
       <div>
-        <FlowModelRenderer model={this.subModels.grid} />
+        <RemoteFlowModelRenderer parentId={this.uid} showFlowSettings={false} />
       </div>
     );
   }

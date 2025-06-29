@@ -11,10 +11,10 @@ import { PlusOutlined } from '@ant-design/icons';
 import { PageHeader } from '@ant-design/pro-layout';
 import { uid } from '@formily/shared';
 import { FlowModel, FlowModelRenderer, FlowSettingsButton } from '@nocobase/flow-engine';
+import { tval } from '@nocobase/utils/client';
 import { Tabs } from 'antd';
 import _ from 'lodash';
 import React from 'react';
-import { tval } from '@nocobase/utils/client';
 
 type PageModelStructure = {
   subModels: {
@@ -29,7 +29,7 @@ export class PageModel extends FlowModel<PageModelStructure> {
   }
 
   getItems() {
-    return this.subModels.tabs?.map((tab) => {
+    return this.mapSubModels('tabs', (tab) => {
       return {
         key: tab.uid,
         label: tab.props.label || 'Unnamed',

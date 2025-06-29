@@ -8,10 +8,11 @@
  */
 
 import { QuestionCircleOutlined } from '@ant-design/icons';
+import { css } from '@emotion/css';
 import { FlowsFloatContextMenu } from '@nocobase/flow-engine';
+import { tval } from '@nocobase/utils/client';
 import { TableColumnProps, Tooltip } from 'antd';
 import React from 'react';
-import { tval } from '@nocobase/utils/client';
 import { FieldModel } from '../../base/FieldModel';
 import { ReadPrettyFieldModel } from '../../fields/ReadPrettyField/ReadPrettyFieldModel';
 
@@ -24,9 +25,19 @@ export class TableColumnModel extends FieldModel {
         showBorder={false}
         settingsMenuLevel={2}
       >
-        {this.props.title}
+        <div
+          className={css`
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            width: calc(${this.props.width}px - 16px);
+          `}
+        >
+          {this.props.title}
+        </div>
       </FlowsFloatContextMenu>
     );
+    console.log('TableColumnModel props:', this.props);
     return {
       ...this.props,
       ellipsis: true,
@@ -43,7 +54,7 @@ export class TableColumnModel extends FieldModel {
       onCell: (record) => ({
         record,
         width: this.props.width,
-        editable: this.props.editable || false,
+        editable: this.props.editable,
         dataIndex: this.props.dataIndex,
         title: this.props.title,
         // handleSave,
@@ -120,6 +131,7 @@ TableColumnModel.registerFlow({
         };
       },
       handler(ctx, params) {
+        console.log('editColumTitle params:', params);
         const title = ctx.globals.flowEngine.translate(params.title || ctx.model.collectionField?.title);
         ctx.model.setProps('title', title);
       },
@@ -162,8 +174,10 @@ TableColumnModel.registerFlow({
           'x-decorator': 'FormItem',
         },
       },
-      defaultParams: {
-        editable: false,
+      defaultParams(ctx) {
+        return {
+          editable: ctx.model.parent.props.editable || false,
+        };
       },
       handler(ctx, params) {
         ctx.model.setProps('editable', params.editable);
