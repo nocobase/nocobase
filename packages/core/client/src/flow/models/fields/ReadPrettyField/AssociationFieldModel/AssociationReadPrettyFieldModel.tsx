@@ -11,6 +11,22 @@ import React from 'react';
 import { ReadPrettyFieldModel } from '../ReadPrettyFieldModel';
 
 export class AssociationReadPrettyFieldModel extends ReadPrettyFieldModel {
-  resource;
   targetCollection;
 }
+
+AssociationReadPrettyFieldModel.registerFlow({
+  key: 'AssociationReadPrettyFieldDefault',
+  auto: true,
+  sort: 150,
+  steps: {
+    step1: {
+      handler(ctx, params) {
+        const { collectionField } = ctx.model;
+        const { target } = collectionField?.options || {};
+        const collectionManager = collectionField.collection.collectionManager;
+        const targetCollection = collectionManager.getCollection(target);
+        ctx.model.targetCollection = targetCollection;
+      },
+    },
+  },
+});
