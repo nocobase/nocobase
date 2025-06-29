@@ -111,7 +111,7 @@ FormModel.registerFlow({
           );
           const resource = new SingleRecordResource();
           resource.setDataSourceKey(params.dataSourceKey);
-          resource.setResourceName(ctx.shared?.currentFlow?.extra?.collectionName || params.collectionName);
+          resource.setResourceName(params.collectionName);
           resource.setAPIClient(ctx.globals.api);
           ctx.model.resource = resource;
           ctx.model.resource.on('refresh', () => {

@@ -153,6 +153,9 @@ AssociationSelectReadPrettyFieldModel.registerFlow({
             filterByTk: currentRecord[ctx.model.targetCollection.filterTargetKey],
             collectionName: ctx.model.targetCollection.name,
           });
+          ctx.model.setStepParams('FormModel.default', 'step1', {
+            collectionName: ctx.model.targetCollection.name,
+          });
         };
         ctx.model.setProps('enableLink', params.enableLink);
       },
