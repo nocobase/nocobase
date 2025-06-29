@@ -162,7 +162,7 @@ AssociationSelectReadPrettyFieldModel.registerFlow({
 
 AssociationSelectReadPrettyFieldModel.registerFlow({
   key: 'handleClick',
-  title: 'Open mode',
+  title: tval('Click event'),
   on: {
     eventName: 'click',
   },
