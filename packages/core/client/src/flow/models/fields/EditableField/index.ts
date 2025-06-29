@@ -25,3 +25,4 @@ export * from './SelectEditableFieldModel';
 export * from './SingleTextEditableFieldModel';
 export * from './TextareaEditableFieldModel';
 export * from './TimeEditableFieldModel';
+export * from './MarkdownEditableFieldModel';
