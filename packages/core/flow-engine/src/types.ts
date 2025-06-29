@@ -8,10 +8,10 @@
  */
 
 import { ISchema } from '@formily/json-schema';
+import { APIClient } from '@nocobase/sdk';
 import type { FlowEngine } from './flowEngine';
 import type { FlowModel } from './models';
 import { ReactView } from './ReactView';
-import { APIClient } from '@nocobase/sdk';
 
 /**
  * 工具类型：如果 T 是数组类型，则提取数组元素类型；否则返回 T 本身
@@ -326,7 +326,7 @@ export interface FlowModelOptions<Structure extends { parent?: FlowModel; subMod
 }
 
 export interface FlowModelMeta {
-  title: string;
+  title?: string;
   group?: string;
   requiresDataSource?: boolean; // 是否需要数据源
   defaultOptions?: Record<string, any>;

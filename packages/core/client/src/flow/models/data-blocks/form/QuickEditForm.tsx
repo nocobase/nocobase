@@ -159,3 +159,7 @@ QuickEditForm.registerFlow({
     },
   },
 });
+
+QuickEditForm.define({
+  hide: true,
+});

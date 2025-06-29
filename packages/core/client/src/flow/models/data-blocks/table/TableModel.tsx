@@ -212,13 +212,7 @@ export class TableModel extends DataBlockModel<TableModelStructure> {
     return (
       <Card>
         <Spin spinning={this.resource.loading}>
-          <DndProvider
-            onDragEnd={({ active, over }) => {
-              if (active.id && over?.id && active.id !== over.id) {
-                this.flowEngine.moveModel(active.id as string, over.id as string);
-              }
-            }}
-          >
+          <DndProvider>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
               <Space>
                 {this.mapSubModels('actions', (action) => {
@@ -235,6 +229,8 @@ export class TableModel extends DataBlockModel<TableModelStructure> {
 
                   return null;
                 })}
+                {/* 占位 */}
+                <span></span>
               </Space>
               <Space>
                 {this.mapSubModels('actions', (action) => {
