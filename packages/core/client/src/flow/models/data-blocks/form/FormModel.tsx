@@ -11,6 +11,7 @@ import { FormButtonGroup, FormLayout } from '@formily/antd-v5';
 import { createForm, Form } from '@formily/core';
 import { FormProvider } from '@formily/react';
 import { AddActionButton, AddFieldButton, FlowModelRenderer, SingleRecordResource } from '@nocobase/flow-engine';
+import { tval } from '@nocobase/utils/client';
 import { Card } from 'antd';
 import React from 'react';
 import { DataBlockModel } from '../../base/BlockModel';
@@ -51,7 +52,8 @@ export class FormModel extends DataBlockModel {
             collection={this.collection}
             subModelBaseClass="EditableFieldModel"
             onSubModelAdded={async (model: EditableFieldModel) => {
-              this.addAppends(model.fieldPath, true);
+              const params = model.getStepParams('default', 'step1');
+              this.addAppends(params?.fieldPath, true);
             }}
           />
           <FormButtonGroup style={{ marginTop: 16 }}>
@@ -80,20 +82,20 @@ FormModel.registerFlow({
       uiSchema: {
         dataSourceKey: {
           type: 'string',
-          title: 'Data Source Key',
+          title: tval('Data Source Key'),
           'x-decorator': 'FormItem',
           'x-component': 'Input',
           'x-component-props': {
-            placeholder: 'Enter data source key',
+            placeholder: tval('Enter data source key'),
           },
         },
         collectionName: {
           type: 'string',
-          title: 'Collection Name',
+          title: tval('Collection Name'),
           'x-decorator': 'FormItem',
           'x-component': 'Input',
           'x-component-props': {
-            placeholder: 'Enter collection name',
+            placeholder: tval('Enter collection name'),
           },
         },
       },
@@ -112,6 +114,9 @@ FormModel.registerFlow({
           resource.setResourceName(ctx.shared?.currentFlow?.extra?.collectionName || params.collectionName);
           resource.setAPIClient(ctx.globals.api);
           ctx.model.resource = resource;
+          ctx.model.resource.on('refresh', () => {
+            ctx.model.form.setInitialValues(ctx.model.resource.getData());
+          });
         }
         await ctx.model.applySubModelsAutoFlows('fields');
         const filterByTk = ctx.shared?.currentFlow?.extra?.filterByTk;
@@ -126,7 +131,7 @@ FormModel.registerFlow({
 });
 
 FormModel.define({
-  title: 'Form',
+  title: tval('Form'),
   group: 'Content',
   defaultOptions: {
     use: 'FormModel',

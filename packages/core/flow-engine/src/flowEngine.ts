@@ -8,17 +8,19 @@
  */
 import { observable } from '@formily/reactive';
 import { FlowSettings } from './flowSettings';
+import { initFlowEngineLocale } from './locale';
 import { FlowModel } from './models';
 import { ReactView } from './ReactView';
 import {
   ActionDefinition,
   ActionOptions,
   CreateModelOptions,
+  FlowContext,
   FlowDefinition,
   IFlowModelRepository,
   ModelConstructor,
 } from './types';
-import { isInheritedFrom, TranslationUtil } from './utils';
+import { isInheritedFrom } from './utils';
 
 interface ApplyFlowCacheEntry {
   status: 'pending' | 'resolved' | 'rejected';
@@ -36,19 +38,30 @@ export class FlowEngine {
   private modelInstances: Map<string, any> = new Map();
   /** @public Stores flow settings including components and scopes for formily settings. */
   public flowSettings: FlowSettings = new FlowSettings();
-  context: Record<string, any> = {};
+  context: FlowContext['globals'] = {} as FlowContext['globals'];
   private modelRepository: IFlowModelRepository | null = null;
   private _applyFlowCache = new Map<string, ApplyFlowCacheEntry>();
-  /** @private Translation utility for template compilation and caching */
-  private _translationUtil = new TranslationUtil();
 
-  reactView: ReactView;
+  /**
+   * 实验性 API：用于在 FlowEngine 中集成 React 视图渲染能力。
+   * 该属性未来可能发生重大变更或被移除，请谨慎依赖。
+   * @experimental
+   */
+  public reactView: ReactView;
 
   constructor() {
     this.reactView = new ReactView(this);
+    this.flowSettings.registerScopes({ t: this.translate.bind(this) });
   }
-  // 注册默认的 FlowModel
 
+  /**
+   * 设置模型仓库，用于持久化和查询模型实例。
+   * 如果之前已设置过模型仓库，将会覆盖原有设置，并输出警告。
+   *
+   * @param modelRepository 要设置的模型仓库实例，实现 IFlowModelRepository 接口。
+   * @example
+   * flowEngine.setModelRepository(new MyFlowModelRepository());
+   */
   setModelRepository(modelRepository: IFlowModelRepository) {
     if (this.modelRepository) {
       console.warn('FlowEngine: Model repository is already set and will be overwritten.');
@@ -58,6 +71,9 @@ export class FlowEngine {
 
   setContext(context: any) {
     this.context = { ...this.context, ...context };
+    if (this.context.i18n) {
+      initFlowEngineLocale(this.context.i18n);
+    }
   }
 
   getContext() {
@@ -82,12 +98,20 @@ export class FlowEngine {
    * flowEngine.t("前缀 {{ t('User Name') }} 后缀")
    * flowEngine.t("{{t('Hello {name}', {name: 'John'})}}")
    */
-  public t(keyOrTemplate: string, options?: any): string {
-    return this._translationUtil.translate(
-      keyOrTemplate,
-      (key: string, opts?: any) => this.translateKey(key, opts),
-      options,
-    );
+  public translate(keyOrTemplate: string, options?: any): string {
+    if (!keyOrTemplate || typeof keyOrTemplate !== 'string') {
+      return keyOrTemplate;
+    }
+
+    // 先尝试一次翻译
+    let result = this.translateKey(keyOrTemplate, options);
+
+    // 检查翻译结果是否包含模板语法，如果有则进行模板编译
+    if (this.isTemplate(result)) {
+      result = this.compileTemplate(result);
+    }
+
+    return result;
   }
 
   /**
@@ -100,6 +124,44 @@ export class FlowEngine {
     }
     // 如果没有翻译函数，返回原始键值
     return key;
+  }
+
+  /**
+   * 检查字符串是否包含模板语法
+   * @private
+   */
+  private isTemplate(str: string): boolean {
+    return /\{\{\s*t\s*\(\s*["'`].*?["'`]\s*(?:,\s*.*?)?\s*\)\s*\}\}/g.test(str);
+  }
+
+  /**
+   * 编译模板字符串
+   * @private
+   */
+  private compileTemplate(template: string): string {
+    return template.replace(
+      /\{\{\s*t\s*\(\s*["'`](.*?)["'`]\s*(?:,\s*((?:[^{}]|\{[^}]*\})*?))?\s*\)\s*\}\}/g,
+      (match, key, optionsStr) => {
+        try {
+          let templateOptions = {};
+          if (optionsStr) {
+            optionsStr = optionsStr.trim();
+            if (optionsStr.startsWith('{') && optionsStr.endsWith('}')) {
+              // 使用受限的 Function 构造器解析
+              try {
+                templateOptions = new Function('$root', `with($root) { return (${optionsStr}); }`)({});
+              } catch (parseError) {
+                return match;
+              }
+            }
+          }
+          return this.translateKey(key, templateOptions);
+        } catch (error) {
+          console.warn(`FlowEngine: Failed to compile template "${match}":`, error);
+          return match;
+        }
+      },
+    );
   }
 
   get applyFlowCache() {
@@ -325,9 +387,9 @@ export class FlowEngine {
     return true;
   }
 
-  async loadModel<T extends FlowModel = FlowModel>(uid: string): Promise<T | null> {
+  async loadModel<T extends FlowModel = FlowModel>(options): Promise<T | null> {
     if (!this.ensureModelRepository()) return;
-    const data = await this.modelRepository.findOne({ uid });
+    const data = await this.modelRepository.findOne(options);
     return data?.uid ? this.createModel<T>(data as any) : null;
   }
 

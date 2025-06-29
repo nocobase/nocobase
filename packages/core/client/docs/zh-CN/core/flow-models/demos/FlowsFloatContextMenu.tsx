@@ -18,7 +18,7 @@ HelloFlowModel.registerFlow('defaultFlow', {
       uiSchema: {
         name: {
           type: 'string',
-          title: 'Name',
+          title: "{{t('Name')}}",
           'x-component': Input,
         },
       },

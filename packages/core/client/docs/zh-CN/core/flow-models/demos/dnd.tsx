@@ -6,7 +6,7 @@ function DemoBlock({ model }: { model: FlowModel }) {
   console.log('Rendering DemoBlock with model:', model.uid);
   return (
     <div style={{ display: 'flex', alignItems: 'center' }}>
-      <DragHandler id={model.uid} />
+      <DragHandler model={model} />
       <div>
         <h3 style={{ margin: 0 }}>Demo Block - #{model.uid}</h3>
         <p style={{ margin: 0 }}>This is a demo block content.</p>
@@ -18,7 +18,7 @@ function DemoBlock({ model }: { model: FlowModel }) {
 class DemoBlockModel extends FlowModel {
   render() {
     return (
-      <Droppable id={this.uid}>
+      <Droppable model={this}>
         <DemoBlock model={this} />
       </Droppable>
     );

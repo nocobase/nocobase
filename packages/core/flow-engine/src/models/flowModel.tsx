@@ -329,7 +329,7 @@ export class FlowModel<Structure extends { parent?: any; subModels?: any } = Def
     if (typeof props === 'string') {
       this.props[props] = value;
     } else {
-      this.props = { ...props };
+      this.props = { ...this.props, ...props };
     }
   }
 
@@ -351,7 +351,10 @@ export class FlowModel<Structure extends { parent?: any; subModels?: any } = Def
         if (!this.stepParams[flowKey]) {
           this.stepParams[flowKey] = {};
         }
-        this.stepParams[flowKey][stepKeyOrStepsParams] = params;
+        this.stepParams[flowKey][stepKeyOrStepsParams] = {
+          ...this.stepParams[flowKey][stepKeyOrStepsParams],
+          ...params,
+        };
       } else if (typeof stepKeyOrStepsParams === 'object' && stepKeyOrStepsParams !== null) {
         this.stepParams[flowKey] = { ...(this.stepParams[flowKey] || {}), ...stepKeyOrStepsParams };
       }
@@ -401,7 +404,7 @@ export class FlowModel<Structure extends { parent?: any; subModels?: any } = Def
       console[level.toLowerCase()](logMessage, logMeta);
     };
 
-    const globalContexts = currentFlowEngine.getContext() || {};
+    const globalContexts = currentFlowEngine.getContext();
     const flowContext: FlowContext<this> = {
       exit: () => {
         throw new FlowExitException(flowKey, this.uid);
@@ -875,6 +878,10 @@ export class FlowModel<Structure extends { parent?: any; subModels?: any } = Def
     };
   }
 
+  get translate() {
+    return this.flowEngine.translate.bind(this.flowEngine);
+  }
+
   public setSharedContext(ctx: Record<string, any>) {
     this._sharedContext = { ...this._sharedContext, ...ctx };
   }
@@ -894,7 +901,7 @@ export class FlowModel<Structure extends { parent?: any; subModels?: any } = Def
     const data = {
       uid: this.uid,
       ..._.omit(this._options, ['flowEngine']),
-      props: this.props,
+      // props: this.props,
       stepParams: this.stepParams,
       sortIndex: this.sortIndex,
     };

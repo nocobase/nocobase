@@ -15,15 +15,15 @@ import { useParams } from 'react-router-dom';
 import { useKeepAlive } from '../route-switch';
 import { SkeletonFallback } from './components/SkeletonFallback';
 
-function InternalFlowPage({ uid, sharedContext }) {
+function InternalFlowPage({ uid, ...props }) {
   const model = useFlowModelById(uid);
   return (
     <FlowModelRenderer
       model={model}
-      sharedContext={sharedContext}
       fallback={<SkeletonFallback />}
-      showFlowSettings={{ showBackground: false, showBorder: false }}
       hideRemoveInSettings
+      showFlowSettings={{ showBackground: false, showBorder: false }}
+      {...props}
     />
   );
 }
@@ -32,6 +32,7 @@ export const FlowRoute = () => {
   const layoutContentRef = useRef(null);
   const flowEngine = useFlowEngine();
   const params = useParams();
+  // console.log('FlowRoute params:', params);
   // const { active } = useKeepAlive();
   const model = useMemo(() => {
     return flowEngine.createModel({
@@ -49,13 +50,13 @@ export const FlowRoute = () => {
     model.setSharedContext({
       layoutContentElement: layoutContentRef.current,
     });
-    model.dispatchEvent('click', { target: layoutContentRef.current });
-  }, [model, params.name]);
+    model.dispatchEvent('click', { target: layoutContentRef.current, activeTab: params.tabUid });
+  }, [model, params.name, params.tabUid]);
   return <div ref={layoutContentRef} />;
 };
 
 export const FlowPage = (props) => {
-  const { parentId, sharedContext } = props;
+  const { parentId, ...rest } = props;
   const flowEngine = useFlowEngine();
   const { loading, data } = useRequest(
     async () => {
@@ -71,6 +72,7 @@ export const FlowPage = (props) => {
               use: 'PageTabModel',
               subModels: {
                 grid: {
+                  async: true,
                   use: 'BlockGridModel',
                 },
               },
@@ -88,5 +90,23 @@ export const FlowPage = (props) => {
   if (loading || !data?.uid) {
     return <SkeletonFallback />;
   }
-  return <InternalFlowPage uid={data.uid} sharedContext={sharedContext} />;
+  return <InternalFlowPage uid={data.uid} {...rest} />;
+};
+
+export const RemoteFlowModelRenderer = (props) => {
+  const { uid, parentId, ...rest } = props;
+  const flowEngine = useFlowEngine();
+  const { loading, data } = useRequest(
+    async () => {
+      const data = await flowEngine.loadModel({ uid, parentId });
+      return data;
+    },
+    {
+      refreshDeps: [uid, parentId],
+    },
+  );
+  if (loading || !data?.uid) {
+    return <SkeletonFallback />;
+  }
+  return <InternalFlowPage uid={data.uid} {...rest} />;
 };

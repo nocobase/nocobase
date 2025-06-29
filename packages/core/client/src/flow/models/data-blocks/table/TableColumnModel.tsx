@@ -7,13 +7,14 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { DragOutlined, QuestionCircleOutlined } from '@ant-design/icons';
+import { QuestionCircleOutlined } from '@ant-design/icons';
+import { css } from '@emotion/css';
 import { FlowsFloatContextMenu } from '@nocobase/flow-engine';
+import { tval } from '@nocobase/utils/client';
 import { TableColumnProps, Tooltip } from 'antd';
 import React from 'react';
 import { FieldModel } from '../../base/FieldModel';
 import { ReadPrettyFieldModel } from '../../fields/ReadPrettyField/ReadPrettyFieldModel';
-import { SortableItem } from '../../../components';
 
 export class TableColumnModel extends FieldModel {
   getColumnProps(): TableColumnProps {
@@ -23,22 +24,20 @@ export class TableColumnModel extends FieldModel {
         containerStyle={{ display: 'block', padding: '11px 8px', margin: '-11px -8px' }}
         showBorder={false}
         settingsMenuLevel={2}
-        extralToolbarItems={[
-          {
-            key: 'drag',
-            component: ({ model }) => {
-              return (
-                <SortableItem model={model}>
-                  <DragOutlined />
-                </SortableItem>
-              );
-            },
-          },
-        ]}
       >
-        {this.props.title}
+        <div
+          className={css`
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            width: calc(${this.props.width}px - 16px);
+          `}
+        >
+          {this.props.title}
+        </div>
       </FlowsFloatContextMenu>
     );
+    console.log('TableColumnModel props:', this.props);
     return {
       ...this.props,
       ellipsis: true,
@@ -55,7 +54,7 @@ export class TableColumnModel extends FieldModel {
       onCell: (record) => ({
         record,
         width: this.props.width,
-        editable: this.props.editable || false,
+        editable: this.props.editable,
         dataIndex: this.props.dataIndex,
         title: this.props.title,
         // handleSave,
@@ -78,7 +77,7 @@ export class TableColumnModel extends FieldModel {
 }
 
 TableColumnModel.define({
-  title: 'Table Column',
+  title: tval('Table column'),
   icon: 'TableColumn',
   defaultOptions: {
     use: 'TableColumnModel',
@@ -116,13 +115,13 @@ TableColumnModel.registerFlow({
       },
     },
     editColumTitle: {
-      title: 'Column title',
+      title: tval('Column title'),
       uiSchema: {
         title: {
           'x-component': 'Input',
           'x-decorator': 'FormItem',
           'x-component-props': {
-            placeholder: 'Column title',
+            placeholder: tval('Column title'),
           },
         },
       },
@@ -132,17 +131,19 @@ TableColumnModel.registerFlow({
         };
       },
       handler(ctx, params) {
-        ctx.model.setProps('title', params.title || ctx.model.collectionField?.title);
+        console.log('editColumTitle params:', params);
+        const title = ctx.globals.flowEngine.translate(params.title || ctx.model.collectionField?.title);
+        ctx.model.setProps('title', title);
       },
     },
     editTooltip: {
-      title: 'Edit tooltip',
+      title: tval('Edit tooltip'),
       uiSchema: {
         tooltip: {
           'x-component': 'Input.TextArea',
           'x-decorator': 'FormItem',
           'x-component-props': {
-            placeholder: 'Edit tooltip',
+            placeholder: tval('Edit tooltip'),
           },
         },
       },
@@ -151,7 +152,7 @@ TableColumnModel.registerFlow({
       },
     },
     editColumnWidth: {
-      title: 'Column width',
+      title: tval('Column width'),
       uiSchema: {
         width: {
           'x-component': 'NumberPicker',
@@ -166,15 +167,17 @@ TableColumnModel.registerFlow({
       },
     },
     enableEditable: {
-      title: 'Editable',
+      title: tval('Editable'),
       uiSchema: {
         editable: {
           'x-component': 'Switch',
           'x-decorator': 'FormItem',
         },
       },
-      defaultParams: {
-        editable: false,
+      defaultParams(ctx) {
+        return {
+          editable: ctx.model.parent.props.editable || false,
+        };
       },
       handler(ctx, params) {
         ctx.model.setProps('editable', params.editable);

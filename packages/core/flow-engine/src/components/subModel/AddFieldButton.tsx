@@ -80,7 +80,7 @@ const AddFieldButtonCore: React.FC<AddFieldButtonProps> = ({
   model,
   subModelBaseClass = 'FieldFlowModel',
   subModelKey = 'fields',
-  children = <FlowSettingsButton icon={<SettingOutlined />}>{'Configure fields'}</FlowSettingsButton>,
+  children,
   subModelType = 'array',
   collection,
   buildCreateModelOptions = defaultBuildCreateModelOptions,
@@ -90,6 +90,9 @@ const AddFieldButtonCore: React.FC<AddFieldButtonProps> = ({
   onSubModelAdded,
 }) => {
   const fields = collection.getFields();
+  const defaultChildren = useMemo(() => {
+    return <FlowSettingsButton icon={<SettingOutlined />}>{model.translate('Configure fields')}</FlowSettingsButton>;
+  }, [model]);
 
   // 构建字段 items 的函数
   const buildFieldItems = useMemo<SubModelItemsType>(() => {
@@ -163,7 +166,7 @@ const AddFieldButtonCore: React.FC<AddFieldButtonProps> = ({
       onModelCreated={onModelCreated}
       onSubModelAdded={onSubModelAdded}
     >
-      {children}
+      {children || defaultChildren}
     </AddSubModelButton>
   );
 };

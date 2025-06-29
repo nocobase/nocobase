@@ -11,6 +11,7 @@ import { define, observable } from '@formily/reactive';
 import { openStepSettingsDialog } from './components/settings/wrappers/contextual/StepSettingsDialog';
 import { StepSettingsDialogProps, ToolbarItemConfig } from './types';
 import { DefaultSettingsIcon } from './components/settings/wrappers/contextual/DefaultSettingsIcon';
+import { DragHandler } from './components/dnd';
 
 export class FlowSettings {
   public components: Record<string, any> = {};
@@ -37,11 +38,18 @@ export class FlowSettings {
    */
   private addDefaultToolbarItems(): void {
     // 添加基础的配置菜单项目（原有的菜单功能）
-    this.toolbarItems.push({
-      key: 'settings-menu',
-      component: DefaultSettingsIcon,
-      sort: 0, // 默认为0，作为第一个添加的项目
-    });
+    this.toolbarItems.push(
+      {
+        key: 'settings-menu',
+        component: DefaultSettingsIcon,
+        sort: 0, // 默认为0，作为第一个添加的项目
+      },
+      {
+        key: 'drag-handler',
+        component: DragHandler,
+        sort: 1,
+      },
+    );
   }
 
   /**

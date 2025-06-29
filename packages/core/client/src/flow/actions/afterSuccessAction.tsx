@@ -1,3 +1,13 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
+import { tval } from '@nocobase/utils/client';
 import { useGlobalVariable } from '../../application/hooks/useGlobalVariable';
 import { BlocksSelector } from '../../schema-component/antd/action/Action.Designer';
 import { useAfterSuccessOptions } from '../../schema-component/antd/action/hooks/useGetAfterSuccessVariablesOptions';
@@ -16,30 +26,30 @@ const useVariableProps = () => {
 };
 
 export const afterSuccessAction = {
-  title: '提交成功后',
+  title: tval('After successful submission'),
   uiSchema: {
     successMessage: {
-      title: 'Popup message',
+      title: tval('Popup message'),
       'x-decorator': 'FormItem',
       'x-component': 'Input.TextArea',
       'x-component-props': {},
     },
     manualClose: {
-      title: 'Message popup close method',
+      title: tval('Message popup close method'),
       enum: [
-        { label: 'Automatic close', value: false },
-        { label: 'Manually close', value: true },
+        { label: tval('Automatic close'), value: false },
+        { label: tval('Manually close'), value: true },
       ],
       'x-decorator': 'FormItem',
       'x-component': 'Radio.Group',
       'x-component-props': {},
     },
     redirecting: {
-      title: 'Then',
+      title: tval('Then'),
       'x-hidden': true,
       enum: [
-        { label: 'Stay on current page', value: false },
-        { label: 'Redirect to', value: true },
+        { label: tval('Stay on current page'), value: false },
+        { label: tval('Redirect to'), value: true },
       ],
       'x-decorator': 'FormItem',
       'x-component': 'Radio.Group',
@@ -54,11 +64,11 @@ export const afterSuccessAction = {
       },
     },
     actionAfterSuccess: {
-      title: 'Action after successful submission',
+      title: tval('Action after successful submission'),
       enum: [
-        { label: 'Stay on the current popup or page', value: 'stay' },
-        { label: 'Return to the previous popup or page', value: 'previous' },
-        { label: 'Redirect to', value: 'redirect' },
+        { label: tval('Stay on the current popup or page'), value: 'stay' },
+        { label: tval('Return to the previous popup or page'), value: 'previous' },
+        { label: tval('Redirect to'), value: 'redirect' },
       ],
       'x-decorator': 'FormItem',
       'x-component': 'Radio.Group',
@@ -73,7 +83,7 @@ export const afterSuccessAction = {
       },
     },
     redirectTo: {
-      title: 'Link',
+      title: tval('Link'),
       'x-decorator': 'FormItem',
       'x-component': 'Variable.TextArea',
       // eslint-disable-next-line react-hooks/rules-of-hooks
@@ -81,11 +91,11 @@ export const afterSuccessAction = {
     },
     blocksToRefresh: {
       type: 'array',
-      title: 'Refresh data blocks',
+      title: tval('Refresh data blocks'),
       'x-decorator': 'FormItem',
       'x-use-decorator-props': () => {
         return {
-          tooltip: 'After successful submission, the selected data blocks will be automatically refreshed.',
+          tooltip: tval('After successful submission, the selected data blocks will be automatically refreshed.'),
         };
       },
       'x-component': BlocksSelector,

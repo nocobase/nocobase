@@ -9,8 +9,28 @@
 
 import _ from 'lodash';
 import type { ISchema } from '@formily/json-schema';
+import { Schema } from '@formily/json-schema';
 import type { FlowModel } from './models';
 import { ActionDefinition, DeepPartial, FlowContext, FlowDefinition, ModelConstructor, ParamsContext } from './types';
+
+// Flow Engine 命名空间常量
+export const FLOW_ENGINE_NAMESPACE = 'flow-engine';
+
+/**
+ * 获取带有 flow-engine 命名空间的翻译函数
+ * @param model FlowModel 实例
+ * @returns 翻译函数，自动使用 flow-engine 命名空间
+ */
+export function getT(model: FlowModel): (key: string, options?: any) => string {
+  if (model.flowEngine?.translate) {
+    return (key: string, options?: any) => {
+      // 自动添加 flow-engine 命名空间
+      return model.flowEngine.translate(key, { ns: [FLOW_ENGINE_NAMESPACE, 'client'], nsMode: 'fallback', ...options });
+    };
+  }
+  // 回退到原始键值
+  return (key: string) => key;
+}
 
 export function generateUid(): string {
   return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
@@ -155,95 +175,87 @@ export function defineAction(options: ActionDefinition) {
   return options;
 }
 
+// 模块级全局缓存，与 useCompile 保持一致
+const compileCache = {};
+
 /**
- * 翻译工具类，负责模板编译和缓存管理
+ * 编译 UI Schema 中的表达式
+ *
+ * @param scope 编译作用域，包含可用的变量和函数（如 t, randomString 等）
+ * @param uiSchema 待编译的 UI Schema
+ * @param options 编译选项
+ * @returns 编译后的 UI Schema
  */
-export class TranslationUtil {
-  /** @private Simple template cache - template string -> compiled result */
-  private _templateCache = new Map<string, string>();
+export function compileUiSchema(scope: Record<string, any>, uiSchema: any, options: { noCache?: boolean } = {}): any {
+  const { noCache = false } = options;
 
-  /**
-   * 翻译函数，支持简单翻译和模板编译
-   * @param keyOrTemplate 翻译键或包含 {{t('key', options)}} 的模板字符串
-   * @param translator 翻译函数，通常是 i18n.t
-   * @param options 翻译选项（如命名空间、参数等）
-   * @returns 翻译后的文本
-   */
-  public translate(keyOrTemplate: string, translator: (key: string, options?: any) => string, options?: any): string {
-    if (!keyOrTemplate || typeof keyOrTemplate !== 'string') {
-      return keyOrTemplate;
+  const hasVariable = (source: string): boolean => {
+    const reg = /\{\{.*?\}\}/g;
+    return reg.test(source);
+  };
+
+  const compile = (source: any): any => {
+    let shouldCompile = false;
+    let cacheKey: string;
+
+    // source is expression, for example: {{ t('Add new') }}
+    if (typeof source === 'string' && source.startsWith('{{')) {
+      shouldCompile = true;
+      cacheKey = source;
     }
 
-    // 检查是否包含模板语法 {{t('...')}}
-    const hasTemplate = this.isTemplate(keyOrTemplate);
-
-    if (hasTemplate) {
-      // 模板编译模式 - 简单缓存
-      if (this._templateCache.has(keyOrTemplate)) {
-        return this._templateCache.get(keyOrTemplate)!;
+    // source is Component Object, for example: { 'x-component': "Cascader", type: "array", title: "所属地区(行政区划)" }
+    if (source && typeof source === 'object' && !Array.isArray(source)) {
+      try {
+        cacheKey = JSON.stringify(source);
+      } catch (e) {
+        console.warn('Failed to stringify:', e);
+        return source;
       }
-
-      // 解析模板
-      const result = this.compileTemplate(keyOrTemplate, translator);
-
-      // 简单缓存：直接存储
-      this._templateCache.set(keyOrTemplate, result);
-      return result;
-    } else {
-      // 简单翻译模式 - 直接调用翻译函数
-      return translator(keyOrTemplate, options);
+      if (compileCache[cacheKey]) return compileCache[cacheKey];
+      shouldCompile = hasVariable(cacheKey);
     }
-  }
 
-  /**
-   * 检查字符串是否包含模板语法
-   * @private
-   */
-  private isTemplate(str: string): boolean {
-    return /\{\{\s*t\s*\(\s*["'`].*?["'`]\s*(?:,\s*.*?)?\s*\)\s*\}\}/g.test(str);
-  }
+    // source is Array, for example: [{ 'title': "{{ t('Admin') }}", name: 'admin' }, { 'title': "{{ t('Root') }}", name: 'root' }]
+    if (Array.isArray(source)) {
+      try {
+        cacheKey = JSON.stringify(source);
+      } catch (e) {
+        console.warn('Failed to stringify:', e);
+        return source;
+      }
+      if (compileCache[cacheKey]) return compileCache[cacheKey];
+      shouldCompile = hasVariable(cacheKey);
+    }
 
-  /**
-   * 编译模板字符串
-   * @private
-   */
-  private compileTemplate(template: string, translator: (key: string, options?: any) => string): string {
-    return template.replace(
-      /\{\{\s*t\s*\(\s*["'`](.*?)["'`]\s*(?:,\s*((?:[^{}]|\{[^}]*\})*))?\s*\)\s*\}\}/g,
-      (match, key, optionsStr) => {
+    if (shouldCompile) {
+      if (!cacheKey) {
         try {
-          let templateOptions = {};
-          if (optionsStr) {
-            optionsStr = optionsStr.trim();
-            if (optionsStr.startsWith('{') && optionsStr.endsWith('}')) {
-              try {
-                templateOptions = JSON.parse(optionsStr);
-              } catch (jsonError) {
-                // JSON 解析失败，返回原始匹配字符串
-                return match;
-              }
-            }
-          }
-          return translator(key, templateOptions);
+          return Schema.compile(source, scope);
         } catch (error) {
-          console.warn(`TranslationUtil: Failed to compile template "${match}":`, error);
-          return match;
+          console.warn('Failed to compile with Formily Schema.compile:', error);
+          return source;
         }
-      },
-    );
-  }
+      }
+      try {
+        if (noCache) {
+          return Schema.compile(source, scope);
+        }
+        compileCache[cacheKey] = compileCache[cacheKey] || Schema.compile(source, scope);
+        return compileCache[cacheKey];
+      } catch (e) {
+        console.log('compileUiSchema error', source, e);
+        try {
+          return Schema.compile(source, scope);
+        } catch (error) {
+          return source;
+        }
+      }
+    }
 
-  /**
-   * 清空模板缓存
-   */
-  public clearCache(): void {
-    this._templateCache.clear();
-  }
+    // source is: plain object、string、number、boolean、undefined、null
+    return source;
+  };
 
-  /**
-   * 获取缓存大小
-   */
-  public getCacheSize(): number {
-    return this._templateCache.size;
-  }
+  return compile(uiSchema);
 }

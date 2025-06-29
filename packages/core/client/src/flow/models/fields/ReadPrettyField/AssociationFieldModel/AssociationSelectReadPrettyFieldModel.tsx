@@ -96,7 +96,7 @@ export class AssociationSelectReadPrettyFieldModel extends AssociationReadPretty
                 {idx > 0 && <span style={{ color: 'rgb(170, 170, 170)' }}>,</span>}
                 <LinkToggleWrapper enableLink={enableLink} {...this.props} currentRecord={v}>
                   <FlowEngineProvider engine={this.flowEngine}>
-                    {v?.[fieldNames.label] ? mol.render() : 'N/A'}
+                    {v?.[fieldNames.label] ? mol.render() : this.flowEngine.translate('N/A')}
                   </FlowEngineProvider>
                 </LinkToggleWrapper>
               </React.Fragment>
@@ -115,13 +115,13 @@ export class AssociationSelectReadPrettyFieldModel extends AssociationReadPretty
 
 AssociationSelectReadPrettyFieldModel.registerFlow({
   key: 'fieldNames',
-  title: 'Specific properties',
+  title: tval('Specific properties'),
   auto: true,
   sort: 200,
   steps: {
     fieldNames: {
       use: 'titleField',
-      title: 'Title field',
+      title: tval('Title field'),
       handler(ctx, params) {
         const { target } = ctx.model.collectionField.options;
         const collectionManager = ctx.model.collectionField.collection.collectionManager;

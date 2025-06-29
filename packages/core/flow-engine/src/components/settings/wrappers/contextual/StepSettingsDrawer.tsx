@@ -10,9 +10,11 @@
 import { createSchemaField, ISchema } from '@formily/react';
 import { message, Button, Space } from 'antd';
 import React, { useState } from 'react';
-import { StepDefinition, StepSettingsDrawerProps } from '../../../../types';
-import { resolveDefaultParams, resolveUiSchema } from '../../../../utils';
+import { useTranslation } from 'react-i18next';
+import { StepSettingsDrawerProps } from '../../../../types';
+import { resolveDefaultParams, resolveUiSchema, compileUiSchema, getT } from '../../../../utils';
 import { StepSettingContextProvider, StepSettingContextType, useStepSettingContext } from './StepSettingContext';
+import { toJS } from '@formily/reactive';
 
 const SchemaField = createSchemaField();
 
@@ -32,9 +34,11 @@ const openStepSettingsDrawer = async ({
   drawerWidth = 600,
   drawerTitle,
 }: StepSettingsDrawerProps): Promise<any> => {
+  const t = getT(model);
+
   if (!model) {
-    message.error('提供的模型无效');
-    throw new Error('提供的模型无效');
+    message.error(t('Invalid model provided'));
+    throw new Error(t('Invalid model provided'));
   }
 
   // 获取流程和步骤信息
@@ -42,16 +46,16 @@ const openStepSettingsDrawer = async ({
   const step = flow?.steps?.[stepKey];
 
   if (!flow) {
-    message.error(`未找到Key为 ${flowKey} 的流程`);
-    throw new Error(`未找到Key为 ${flowKey} 的流程`);
+    message.error(t('Flow with key {{flowKey}} not found', { flowKey }));
+    throw new Error(t('Flow with key {{flowKey}} not found', { flowKey }));
   }
 
   if (!step) {
-    message.error(`未找到Key为 ${stepKey} 的步骤`);
-    throw new Error(`未找到Key为 ${stepKey} 的步骤`);
+    message.error(t('Step with key {{stepKey}} not found', { stepKey }));
+    throw new Error(t('Step with key {{stepKey}} not found', { stepKey }));
   }
 
-  const title = drawerTitle || (step ? `${step.title || stepKey} - 配置` : `步骤配置 - ${stepKey}`);
+  let title = step.title;
 
   // 创建参数解析上下文
   const paramsContext = {
@@ -71,6 +75,7 @@ const openStepSettingsDrawer = async ({
       actionUiSchema = action.uiSchema;
     }
     actionDefaultParams = action.defaultParams || {};
+    title = title || action.title;
   }
 
   // 解析动态 uiSchema
@@ -78,8 +83,8 @@ const openStepSettingsDrawer = async ({
   const resolvedStepUiSchema = await resolveUiSchema(stepUiSchema, paramsContext);
 
   // 合并uiSchema，确保step的uiSchema优先级更高
-  const mergedUiSchema = { ...resolvedActionUiSchema };
-  Object.entries(resolvedStepUiSchema).forEach(([fieldKey, schema]) => {
+  const mergedUiSchema = { ...toJS(resolvedActionUiSchema) };
+  Object.entries(toJS(resolvedStepUiSchema)).forEach(([fieldKey, schema]) => {
     if (mergedUiSchema[fieldKey]) {
       mergedUiSchema[fieldKey] = { ...mergedUiSchema[fieldKey], ...schema };
     } else {
@@ -89,17 +94,23 @@ const openStepSettingsDrawer = async ({
 
   // 如果没有可配置的UI Schema，显示提示
   if (Object.keys(mergedUiSchema).length === 0) {
-    message.info('此步骤没有可配置的参数');
+    message.info(t('This step has no configurable parameters'));
     return {};
   }
 
   // 获取初始值
   const stepParams = model.getStepParams(flowKey, stepKey) || {};
 
+  const flowEngine = model.flowEngine;
+  const scopes = {
+    useStepSettingContext,
+    ...flowEngine.flowSettings?.scopes,
+  };
+
   // 解析 defaultParams
   const resolvedDefaultParams = await resolveDefaultParams(step.defaultParams, paramsContext);
   const resolveActionDefaultParams = await resolveDefaultParams(actionDefaultParams, paramsContext);
-  const initialValues = { ...resolveActionDefaultParams, ...resolvedDefaultParams, ...stepParams };
+  const initialValues = { ...toJS(resolveActionDefaultParams), ...toJS(resolvedDefaultParams), ...toJS(stepParams) };
 
   // 构建表单Schema
   const formSchema: ISchema = {
@@ -122,13 +133,13 @@ const openStepSettingsDrawer = async ({
     ({ Form } = await import('@formily/antd-v5'));
     ({ createForm } = await import('@formily/core'));
   } catch (error) {
-    throw new Error(`导入 Formily 组件失败: ${error.message}`);
+    throw new Error(`${t('Failed to import Formily components')}: ${error.message}`);
   }
 
   // 获取drawer API
   const drawer = model.flowEngine?.context?.drawer;
   if (!drawer) {
-    throw new Error('Drawer API 不可用，请确保在 FlowEngineGlobalsContextProvider 内使用');
+    throw new Error(t('Drawer API is not available, please ensure it is used within FlowEngineGlobalsContextProvider'));
   }
 
   return new Promise((resolve) => {
@@ -137,11 +148,12 @@ const openStepSettingsDrawer = async ({
 
     // 创建表单实例
     const form = createForm({
-      initialValues,
+      initialValues: compileUiSchema(scopes, initialValues),
     });
 
     // 创建抽屉内容组件
     const DrawerContent: React.FC = () => {
+      const { t } = useTranslation();
       const [loading, setLoading] = useState(false);
 
       const handleSubmit = async () => {
@@ -156,13 +168,13 @@ const openStepSettingsDrawer = async ({
           model.setStepParams(flowKey, stepKey, currentValues);
           await model.save();
 
-          message.success('配置已保存');
+          message.success(t('Configuration saved'));
           isResolved = true;
           drawerRef.destroy();
           resolve(currentValues);
         } catch (error) {
-          console.error('保存配置时出错:', error);
-          message.error('保存配置时出错，请检查控制台');
+          console.error(t('Error saving configuration'), ':', error);
+          message.error(t('Error saving configuration, please check console'));
         } finally {
           setLoading(false);
         }
@@ -176,8 +188,6 @@ const openStepSettingsDrawer = async ({
         drawerRef.destroy();
       };
 
-      const flowEngine = model.flowEngine;
-
       // 创建上下文值
       const contextValue: StepSettingContextType = {
         model,
@@ -189,20 +199,20 @@ const openStepSettingsDrawer = async ({
         stepKey,
       };
 
+      // 编译 formSchema 中的表达式
+      const compiledFormSchema = compileUiSchema(scopes, formSchema);
+
       return (
         <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
           <div style={{ flex: 1, overflow: 'auto', padding: '16px' }}>
             <Form form={form} layout="vertical">
               <StepSettingContextProvider value={contextValue}>
                 <SchemaField
-                  schema={formSchema}
+                  schema={compiledFormSchema}
                   components={{
                     ...flowEngine.flowSettings?.components,
                   }}
-                  scope={{
-                    useStepSettingContext,
-                    ...flowEngine.flowSettings?.scopes,
-                  }}
+                  scope={scopes}
                 />
               </StepSettingContextProvider>
             </Form>
@@ -217,9 +227,9 @@ const openStepSettingsDrawer = async ({
             }}
           >
             <Space>
-              <Button onClick={handleCancel}>取消</Button>
+              <Button onClick={handleCancel}>{t('Cancel')}</Button>
               <Button type="primary" loading={loading} onClick={handleSubmit}>
-                确认
+                {t('OK')}
               </Button>
             </Space>
           </div>
@@ -229,7 +239,7 @@ const openStepSettingsDrawer = async ({
 
     // 打开抽屉
     const drawerRef = drawer.open({
-      title,
+      title: drawerTitle || `${t(title)} - ${t('Configuration')}`,
       width: drawerWidth,
       content: <DrawerContent />,
       onClose: () => {

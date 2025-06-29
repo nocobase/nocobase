@@ -10,10 +10,12 @@
 import { DragOutlined } from '@ant-design/icons';
 import { DndContext, DndContextProps, DragOverlay, useDraggable, useDroppable } from '@dnd-kit/core';
 import React, { FC, useState } from 'react';
+import { FlowModel } from '../../models';
+import { useFlowEngine } from '../../provider';
 
 // 可拖拽图标组件
-export const DragHandler: FC<{ id: string }> = ({ id }) => {
-  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id });
+export const DragHandler: FC<{ model: FlowModel }> = ({ model, children = <DragOutlined /> }) => {
+  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id: model.uid });
   return (
     <span
       ref={setNodeRef}
@@ -21,45 +23,45 @@ export const DragHandler: FC<{ id: string }> = ({ id }) => {
       {...attributes}
       style={{
         cursor: 'grab',
-        opacity: isDragging ? 0.4 : 1,
-        marginRight: 8,
-        color: '#1890ff',
-        fontSize: 18,
-        verticalAlign: 'middle',
       }}
     >
-      <DragOutlined />
+      {children}
     </span>
   );
 };
 
 // 通用 Droppable 组件
-export const Droppable: FC<{ id: string; children: React.ReactNode }> = ({ id, children }) => {
-  const { setNodeRef, isOver, active } = useDroppable({ id });
-  const isActiveDroppable = active?.id === id;
-  console.log('Droppable id:', id);
+export const Droppable: FC<{ model: FlowModel; children: React.ReactNode }> = ({ model, children }) => {
+  const { setNodeRef, isOver, active } = useDroppable({ id: model.uid });
+  const isActiveDroppable = active?.id === model.uid;
   return (
     <div
       ref={setNodeRef}
       style={{
-        background: isOver ? '#e6f7ff' : '#f9f9f9',
-        borderRadius: 4,
-        transition: 'all 0.2s',
-        marginBottom: 8,
-        padding: 8,
+        position: 'relative',
         opacity: isActiveDroppable ? 0.3 : 1,
       }}
     >
       {children}
+      <div
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: isOver ? 'var(--colorBgSettingsHover)' : 'transparent',
+          pointerEvents: 'none',
+        }}
+      ></div>
     </div>
   );
 };
 
 // 提供一个封装了 DragOverlay 的 DndProvider 组件，继承 DndContext 的所有 props
-export const DndProvider: FC<DndContextProps> = ({ children, ...restProps }) => {
+export const DndProvider: FC<DndContextProps> = ({ children, onDragEnd, ...restProps }) => {
   const [activeId, setActiveId] = useState<string | null>(null);
-  console.log('DndProvider activeId:', activeId);
-
+  const flowEngine = useFlowEngine();
   return (
     <DndContext
       onDragStart={(event) => {
@@ -68,12 +70,20 @@ export const DndProvider: FC<DndContextProps> = ({ children, ...restProps }) => 
       }}
       onDragEnd={(event) => {
         setActiveId(null);
-        restProps.onDragEnd?.(event);
+        // 如果没有 onDragEnd 回调，则默认调用 flowEngine 的 moveModel 方法
+        if (!onDragEnd) {
+          if (event.over) {
+            flowEngine.moveModel(event.active.id, event.over.id);
+          }
+        } else {
+          // 如果有 onDragEnd 回调，则调用它
+          onDragEnd(event);
+        }
       }}
       {...restProps}
     >
       {children}
-      <DragOverlay>
+      <DragOverlay dropAnimation={null}>
         {activeId && (
           <span
             style={{
@@ -87,10 +97,9 @@ export const DndProvider: FC<DndContextProps> = ({ children, ...restProps }) => 
               color: '#1890ff',
               // fontSize: 18,
               boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
-              minWidth: 120,
             }}
           >
-            拖拽中: {activeId}
+            拖拽中
           </span>
         )}
       </DragOverlay>

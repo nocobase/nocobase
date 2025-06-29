@@ -8,9 +8,18 @@
  */
 
 import { EditOutlined } from '@ant-design/icons';
+import { DragEndEvent } from '@dnd-kit/core';
 import { css } from '@emotion/css';
 import { observer } from '@formily/reactive-react';
-import { AddActionButton, AddFieldButton, FlowModelRenderer, MultiRecordResource } from '@nocobase/flow-engine';
+import {
+  AddActionButton,
+  AddFieldButton,
+  DndProvider,
+  FlowModelRenderer,
+  MultiRecordResource,
+  useFlowEngine,
+} from '@nocobase/flow-engine';
+import { tval } from '@nocobase/utils/client';
 import { Card, Space, Spin, Table } from 'antd';
 import classNames from 'classnames';
 import _ from 'lodash';
@@ -19,7 +28,6 @@ import { ActionModel } from '../../base/ActionModel';
 import { DataBlockModel } from '../../base/BlockModel';
 import { QuickEditForm } from '../form/QuickEditForm';
 import { TableColumnModel } from './TableColumnModel';
-import { Sortable } from '../../../components';
 
 type TableModelStructure = {
   subModels: {
@@ -27,6 +35,22 @@ type TableModelStructure = {
     actions: ActionModel[];
   };
 };
+
+const HeaderWrapperComponent = React.memo((props) => {
+  const engine = useFlowEngine();
+
+  const onDragEnd = ({ active, over }: DragEndEvent) => {
+    if (active.id && over?.id && active.id !== over.id) {
+      engine.moveModel(active.id as string, over.id as string);
+    }
+  };
+
+  return (
+    <DndProvider onDragEnd={onDragEnd}>
+      <thead {...props} />
+    </DndProvider>
+  );
+});
 
 export class TableModel extends DataBlockModel<TableModelStructure> {
   declare resource: MultiRecordResource;
@@ -78,14 +102,13 @@ export class TableModel extends DataBlockModel<TableModelStructure> {
             appendItems={[
               {
                 key: 'actions',
-                label: 'Actions column',
+                label: tval('Actions column'),
                 createModelOptions: {
                   use: 'TableActionsColumnModel',
                 },
               },
             ]}
             onModelCreated={async (model: TableColumnModel) => {
-              // model.setSharedContext({ currentBlockModel: this });
               await model.applyAutoFlows();
             }}
             onSubModelAdded={async (model: TableColumnModel) => {
@@ -133,15 +156,19 @@ export class TableModel extends DataBlockModel<TableModelStructure> {
           <EditOutlined
             className="edit-icon"
             onClick={async (e) => {
-              await QuickEditForm.open({
-                target: ref.current,
-                flowEngine: this.flowEngine,
-                dataSourceKey: this.collection.dataSourceKey,
-                collectionName: this.collection.name,
-                fieldPath: dataIndex,
-                filterByTk: record.id,
-              });
-              await this.resource.refresh();
+              try {
+                await QuickEditForm.open({
+                  target: ref.current,
+                  flowEngine: this.flowEngine,
+                  dataSourceKey: this.collection.dataSourceKey,
+                  collectionName: this.collection.name,
+                  fieldPath: dataIndex,
+                  filterByTk: record.id,
+                });
+                await this.resource.refresh();
+              } catch (error) {
+                // console.error('Error stopping event propagation:', error);
+              }
             }}
           />
           <div
@@ -175,6 +202,9 @@ export class TableModel extends DataBlockModel<TableModelStructure> {
   });
 
   components = {
+    header: {
+      wrapper: HeaderWrapperComponent,
+    },
     body: {
       // row: this.EditableRow,
       cell: this.EditableCell,
@@ -185,44 +215,69 @@ export class TableModel extends DataBlockModel<TableModelStructure> {
     return (
       <Card>
         <Spin spinning={this.resource.loading}>
-          <Space style={{ marginBottom: 16 }}>
-            {this.mapSubModels('actions', (action) => (
-              <FlowModelRenderer
-                model={action}
-                showFlowSettings={{ showBackground: false, showBorder: false }}
-                sharedContext={{ currentBlockModel: this }}
-              />
-            ))}
-            <AddActionButton model={this} subModelBaseClass="GlobalActionModel" subModelKey="actions" />
-          </Space>
-          <Sortable targetModelKey="columns">
-            <Table
-              components={this.components}
-              tableLayout="fixed"
-              rowKey={this.collection.filterTargetKey}
-              rowSelection={{
-                type: 'checkbox',
-                onChange: (_, selectedRows) => {
-                  this.resource.setSelectedRows(selectedRows);
-                },
-                selectedRowKeys: this.resource.getSelectedRows().map((row) => row.id),
-              }}
-              scroll={{ x: 'max-content', y: 'calc(100vh - 300px)' }}
-              dataSource={this.resource.getData()}
-              columns={this.getColumns()}
-              pagination={{
-                current: this.resource.getPage(),
-                pageSize: this.resource.getPageSize(),
-                total: this.resource.getMeta('count'),
-              }}
-              onChange={(pagination) => {
-                this.resource.setPage(pagination.current);
-                this.resource.setPageSize(pagination.pageSize);
-                this.resource.loading = true;
-                this.resource.refresh();
-              }}
-            />
-          </Sortable>
+          <DndProvider>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+              <Space>
+                {this.mapSubModels('actions', (action) => {
+                  // @ts-ignore
+                  if (action.props.position === 'left') {
+                    return (
+                      <FlowModelRenderer
+                        model={action}
+                        showFlowSettings={{ showBackground: false, showBorder: false }}
+                      />
+                    );
+                  }
+
+                  return null;
+                })}
+                {/* 占位 */}
+                <span></span>
+              </Space>
+              <Space>
+                {this.mapSubModels('actions', (action) => {
+                  // @ts-ignore
+                  if (action.props.position !== 'left') {
+                    return (
+                      <FlowModelRenderer
+                        model={action}
+                        showFlowSettings={{ showBackground: false, showBorder: false }}
+                      />
+                    );
+                  }
+
+                  return null;
+                })}
+                <AddActionButton model={this} subModelBaseClass="GlobalActionModel" subModelKey="actions" />
+              </Space>
+            </div>
+          </DndProvider>
+          <Table
+            components={this.components}
+            tableLayout="fixed"
+            rowKey={this.collection.filterTargetKey}
+            rowSelection={{
+              type: 'checkbox',
+              onChange: (_, selectedRows) => {
+                this.resource.setSelectedRows(selectedRows);
+              },
+              selectedRowKeys: this.resource.getSelectedRows().map((row) => row.id),
+            }}
+            scroll={{ x: 'max-content', y: 'calc(100vh - 300px)' }}
+            dataSource={this.resource.getData()}
+            columns={this.getColumns()}
+            pagination={{
+              current: this.resource.getPage(),
+              pageSize: this.resource.getPageSize(),
+              total: this.resource.getMeta('count'),
+            }}
+            onChange={(pagination) => {
+              this.resource.setPage(pagination.current);
+              this.resource.setPageSize(pagination.pageSize);
+              this.resource.loading = true;
+              this.resource.refresh();
+            }}
+          />
         </Spin>
       </Card>
     );
@@ -233,26 +288,42 @@ TableModel.registerFlow({
   key: 'default',
   auto: true,
   steps: {
+    enableEditable: {
+      title: tval('Editable'),
+      uiSchema: {
+        editable: {
+          'x-component': 'Switch',
+          'x-decorator': 'FormItem',
+        },
+      },
+      defaultParams: {
+        editable: false,
+      },
+      handler(ctx, params) {
+        console.log('enableEditable params:', params);
+        ctx.model.setProps('editable', params.editable);
+      },
+    },
     step1: {
       paramsRequired: true,
       hideInSettings: true,
       uiSchema: {
         dataSourceKey: {
           type: 'string',
-          title: 'Data Source Key',
+          title: tval('Data Source Key'),
           'x-decorator': 'FormItem',
           'x-component': 'Input',
           'x-component-props': {
-            placeholder: 'Enter data source key',
+            placeholder: tval('Enter data source key'),
           },
         },
         collectionName: {
           type: 'string',
-          title: 'Collection Name',
+          title: tval('Collection Name'),
           'x-decorator': 'FormItem',
           'x-component': 'Input',
           'x-component-props': {
-            placeholder: 'Enter collection name',
+            placeholder: tval('Enter collection name'),
           },
         },
       },
@@ -275,7 +346,7 @@ TableModel.registerFlow({
       },
     },
     editPageSize: {
-      title: 'Edit page size',
+      title: tval('Edit page size'),
       uiSchema: {
         pageSize: {
           'x-component': 'Select',
@@ -297,21 +368,21 @@ TableModel.registerFlow({
         ctx.model.resource.setPageSize(params.pageSize);
       },
     },
+    dataScope: {
+      use: 'dataScope',
+      title: tval('Set data scope'),
+    },
     refresh: {
       async handler(ctx, params) {
         await ctx.model.resource.refresh();
       },
     },
-    dataScope: {
-      use: 'dataScope',
-      title: '设置数据范围',
-    },
   },
 });
 
 TableModel.define({
-  title: 'Table',
-  group: 'Content',
+  title: tval('Table'),
+  group: tval('Content'),
   defaultOptions: {
     use: 'TableModel',
     subModels: {

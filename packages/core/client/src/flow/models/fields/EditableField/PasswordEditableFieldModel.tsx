@@ -8,6 +8,7 @@
  */
 
 import { Password } from '@formily/antd-v5';
+import { tval } from '@nocobase/utils/client';
 import { EditableFieldModel } from './EditableFieldModel';
 
 export class PasswordEditableFieldModel extends EditableFieldModel {
@@ -21,14 +22,17 @@ PasswordEditableFieldModel.registerFlow({
   key: 'key3',
   auto: true,
   sort: 1000,
-  title: 'Group3',
+  title: tval('Password Options'),
   steps: {
     placeholder: {
-      title: 'Placeholder',
+      title: tval('Placeholder'),
       uiSchema: {
-        checkStrength: {
+        placeholder: {
           'x-component': 'Input',
           'x-decorator': 'FormItem',
+          'x-component-props': {
+            placeholder: tval('Enter placeholder text'),
+          },
         },
       },
       handler(ctx, params) {
@@ -36,14 +40,14 @@ PasswordEditableFieldModel.registerFlow({
       },
     },
     checkStrength: {
-      title: 'Check strength',
+      title: tval('Check strength'),
       uiSchema: {
         checkStrength: {
           'x-component': 'Switch',
           'x-decorator': 'FormItem',
           'x-component-props': {
-            checkedChildren: 'Yes',
-            unCheckedChildren: 'No',
+            checkedChildren: tval('Yes'),
+            unCheckedChildren: tval('No'),
           },
         },
       },

@@ -28,7 +28,7 @@ interface FlowModelRendererProps {
   settingsMenuLevel?: number; // 默认 1
 
   /** 额外的工具栏项目，仅应用于此实例 */
-  extralToolbarItems?: ToolbarItemConfig[];
+  extraToolbarItems?: ToolbarItemConfig[];
 }
 ```
 
@@ -48,7 +48,7 @@ interface FlowModelRendererProps {
 - **settingsMenuLevel**: 设置菜单层级，控制设置菜单的显示范围
   - `1`: 仅显示当前模型的设置（默认）
   - `2`: 包含子模型的设置
-- **extralToolbarItems**: 额外的工具栏项目，仅应用于此实例
+- **extraToolbarItems**: 额外的工具栏项目，仅应用于此实例
 
 ## 主要示例
 

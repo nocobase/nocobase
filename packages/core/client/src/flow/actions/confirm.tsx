@@ -8,42 +8,43 @@
  */
 
 import { defineAction } from '@nocobase/flow-engine';
+import { tval } from '@nocobase/utils/client';
 
 export const confirm = defineAction({
   name: 'confirm',
-  title: '二次确认',
+  title: tval('Secondary confirmation'),
   uiSchema: {
     enable: {
       type: 'boolean',
-      title: 'Enable secondary confirmation',
+      title: tval('Enable secondary confirmation'),
       'x-decorator': 'FormItem',
       'x-component': 'Checkbox',
     },
     title: {
       type: 'string',
-      title: 'Title',
-      default: 'Delete record',
+      title: tval('Title'),
+      default: tval('Delete record'),
       'x-decorator': 'FormItem',
       'x-component': 'Input.TextArea',
     },
     content: {
       type: 'string',
-      title: 'Content',
-      default: 'Are you sure you want to delete it?',
+      title: tval('Content'),
+      default: tval('Are you sure you want to delete it?'),
       'x-decorator': 'FormItem',
       'x-component': 'Input.TextArea',
     },
   },
   defaultParams: {
     enable: true,
-    title: 'Delete record',
-    content: 'Are you sure you want to delete it?',
+    title: tval('Delete record'),
+    content: tval('Are you sure you want to delete it?'),
   },
   async handler(ctx, params) {
     if (params.enable) {
       const confirmed = await ctx.globals.modal.confirm({
-        title: params.title,
-        content: params.content,
+        title: ctx.model.translate(params.title),
+        content: ctx.model.translate(params.content),
       });
 
       if (!confirmed) {

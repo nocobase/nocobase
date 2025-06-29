@@ -11,6 +11,7 @@ import { Select } from 'antd';
 import React from 'react';
 import { FlowModelRenderer, useFlowEngine, useFlowModel, reactive } from '@nocobase/flow-engine';
 import { useCompile } from '../../../../../schema-component';
+import { tval } from '@nocobase/utils/client';
 import { AssociationFieldEditableFieldModel } from './AssociationFieldEditableFieldModel';
 
 function toValue(record: any | any[], fieldNames, multiple = false) {
@@ -41,7 +42,7 @@ function LabelByField(props) {
   const currentModel: any = useFlowModel();
   const flowEngine = useFlowEngine();
   if (modelCache.has(cacheKey)) {
-    return option[fieldNames.label] ? <FlowModelRenderer model={modelCache.get(cacheKey)} /> : 'N/A';
+    return option[fieldNames.label] ? <FlowModelRenderer model={modelCache.get(cacheKey)} /> : tval('N/A');
   }
   const collectionManager = currentModel.collectionField.collection.collectionManager;
   const target = currentModel.collectionField?.options?.target;
@@ -76,7 +77,7 @@ function LabelByField(props) {
 
   return (
     <span key={option[fieldNames.value]}>
-      {option[fieldNames.label] ? <FlowModelRenderer model={model} uid={option[fieldNames.value]} /> : 'N/A'}
+      {option[fieldNames.label] ? <FlowModelRenderer model={model} uid={option[fieldNames.value]} /> : tval('N/A')}
     </span>
   );
 }
@@ -258,7 +259,7 @@ AssociationSelectEditableFieldModel.registerFlow({
             paginationState.page++;
           }
         } catch (error) {
-          console.error('滚动分页请求失败:', error);
+          console.error('Scroll pagination request failed:', error);
         } finally {
           paginationState.loading = false;
         }
@@ -316,13 +317,13 @@ AssociationSelectEditableFieldModel.registerFlow({
 
 AssociationSelectEditableFieldModel.registerFlow({
   key: 'fieldNames',
-  title: 'Specific properties',
+  title: tval('Specific properties'),
   auto: true,
   sort: 200,
   steps: {
     fieldNames: {
       use: 'titleField',
-      title: 'Title field',
+      title: tval('Title field'),
     },
   },
 });

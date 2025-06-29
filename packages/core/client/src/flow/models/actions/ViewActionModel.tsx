@@ -8,22 +8,23 @@
  */
 
 import type { ButtonProps } from 'antd/es/button';
+import { tval } from '@nocobase/utils/client';
 import { RecordActionModel } from '../base/ActionModel';
 
 export class ViewActionModel extends RecordActionModel {
   defaultProps: ButtonProps = {
     type: 'link',
-    title: 'View',
+    title: tval('View'),
   };
 }
 
 ViewActionModel.define({
-  title: 'View',
+  title: tval('View'),
 });
 
 ViewActionModel.registerFlow({
   key: 'handleClick',
-  title: '点击事件',
+  title: tval('Click event'),
   on: {
     eventName: 'click',
   },

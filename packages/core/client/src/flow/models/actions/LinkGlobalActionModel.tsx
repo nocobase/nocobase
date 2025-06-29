@@ -8,22 +8,23 @@
  */
 
 import type { ButtonProps } from 'antd';
+import { tval } from '@nocobase/utils/client';
 import { GlobalActionModel } from '../base/ActionModel';
 import { openLinkAction } from '../../actions/openLinkAction';
 
 export class LinkGlobalActionModel extends GlobalActionModel {
   defaultProps: ButtonProps = {
-    title: 'Link',
+    title: tval('Link'),
   };
 }
 
 LinkGlobalActionModel.define({
-  title: 'Link',
+  title: tval('Link'),
 });
 
 LinkGlobalActionModel.registerFlow({
   key: 'handleClick',
-  title: '点击事件',
+  title: tval('Click event'),
   on: {
     eventName: 'click',
   },
