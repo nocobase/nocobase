@@ -18,12 +18,13 @@ import {
   FlowsFloatContextMenu,
   useStepSettingContext,
 } from '@nocobase/flow-engine';
+import { tval } from '@nocobase/utils/client';
 import { Alert, Space } from 'antd';
 import _ from 'lodash';
 import React, { useState } from 'react';
-import { tval } from '@nocobase/utils/client';
 import { Grid } from '../../components/Grid';
 import JsonEditor from '../../components/JsonEditor';
+import { SkeletonFallback } from '../../components/SkeletonFallback';
 import { BlockModel } from './BlockModel';
 
 type GridModelStructure = {
@@ -111,6 +112,7 @@ export class GridModel extends FlowModel<GridModelStructure> {
                 <FlowModelRenderer
                   model={item}
                   key={item.uid}
+                  fallback={<SkeletonFallback />}
                   showFlowSettings={{ showBackground: false }}
                   showErrorFallback
                 />

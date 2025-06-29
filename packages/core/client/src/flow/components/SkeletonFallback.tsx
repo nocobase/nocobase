@@ -10,9 +10,9 @@
 import { Card, Skeleton, Spin } from 'antd';
 import React from 'react';
 
-export function SkeletonFallback() {
+export function SkeletonFallback(props) {
   return (
-    <Card style={{ margin: 16 }}>
+    <Card {...props}>
       <Skeleton paragraph={{ rows: 3 }} />
     </Card>
   );

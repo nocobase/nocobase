@@ -22,6 +22,7 @@ import {
 import { tval } from '@nocobase/utils/client';
 import { Card, Space, Spin, Table } from 'antd';
 import classNames from 'classnames';
+import { t } from 'i18next';
 import _ from 'lodash';
 import React, { useRef } from 'react';
 import { ActionModel } from '../../base/ActionModel';
@@ -257,13 +258,15 @@ export class TableModel extends DataBlockModel<TableModelStructure> {
             tableLayout="fixed"
             rowKey={this.collection.filterTargetKey}
             rowSelection={{
+              columnWidth: 50,
               type: 'checkbox',
               onChange: (_, selectedRows) => {
                 this.resource.setSelectedRows(selectedRows);
               },
               selectedRowKeys: this.resource.getSelectedRows().map((row) => row.id),
             }}
-            scroll={{ x: 'max-content', y: 'calc(100vh - 300px)' }}
+            virtual={this.props.virtual}
+            scroll={{ x: 'max-content', y: 'calc(100vh - 200px)' }}
             dataSource={this.resource.getData()}
             columns={this.getColumns()}
             pagination={{
@@ -272,6 +275,7 @@ export class TableModel extends DataBlockModel<TableModelStructure> {
               total: this.resource.getMeta('count'),
             }}
             onChange={(pagination) => {
+              console.log('onChange pagination:', pagination);
               this.resource.setPage(pagination.current);
               this.resource.setPageSize(pagination.pageSize);
               this.resource.loading = true;
@@ -288,6 +292,21 @@ TableModel.registerFlow({
   key: 'default',
   auto: true,
   steps: {
+    virtual: {
+      title: tval('Virtual'),
+      uiSchema: {
+        virtual: {
+          'x-component': 'Switch',
+          'x-decorator': 'FormItem',
+        },
+      },
+      defaultParams: {
+        virtual: false,
+      },
+      handler(ctx, params) {
+        ctx.model.setProps('virtual', params.virtual);
+      },
+    },
     enableEditable: {
       title: tval('Editable'),
       uiSchema: {

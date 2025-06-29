@@ -20,7 +20,7 @@ function InternalFlowPage({ uid, ...props }) {
   return (
     <FlowModelRenderer
       model={model}
-      fallback={<SkeletonFallback />}
+      fallback={<SkeletonFallback style={{ margin: 16 }} />}
       hideRemoveInSettings
       showFlowSettings={{ showBackground: false, showBorder: false }}
       {...props}
@@ -106,7 +106,7 @@ export const RemoteFlowModelRenderer = (props) => {
     },
   );
   if (loading || !data?.uid) {
-    return <SkeletonFallback />;
+    return <SkeletonFallback style={{ margin: 16 }} />;
   }
   return <InternalFlowPage uid={data.uid} {...rest} />;
 };
