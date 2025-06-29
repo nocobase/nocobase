@@ -13,6 +13,7 @@ import {
   AddActionButton,
   AddFieldButton,
   CollectionField,
+  DndProvider,
   FlowModel,
   FlowModelRenderer,
   FlowsFloatContextMenu,
@@ -261,14 +262,37 @@ export class TabulatorModel extends DataBlockModel<S> {
   render() {
     return (
       <Card>
-        {/* <Space style={{ marginBottom: 16 }}>
-          {this.mapSubModels('actions', (action) => (
-            <FlowModelRenderer model={action} showFlowSettings sharedContext={{ currentBlockModel: this }} />
-          ))}
-          <AddActionButton model={this} subModelBaseClass="GlobalActionModel" subModelKey="actions">
-            <Button icon={<SettingOutlined />}>{this.translate('Configure actions')}</Button>
-          </AddActionButton>
-        </Space> */}
+        <DndProvider>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+            <Space>
+              {this.mapSubModels('actions', (action) => {
+                // @ts-ignore
+                if (action.props.position === 'left') {
+                  return (
+                    <FlowModelRenderer model={action} showFlowSettings={{ showBackground: false, showBorder: false }} />
+                  );
+                }
+
+                return null;
+              })}
+              {/* 占位 */}
+              <span></span>
+            </Space>
+            <Space>
+              {this.mapSubModels('actions', (action) => {
+                // @ts-ignore
+                if (action.props.position !== 'left') {
+                  return (
+                    <FlowModelRenderer model={action} showFlowSettings={{ showBackground: false, showBorder: false }} />
+                  );
+                }
+
+                return null;
+              })}
+              <AddActionButton model={this} subModelBaseClass="GlobalActionModel" subModelKey="actions" />
+            </Space>
+          </div>
+        </DndProvider>
         <div ref={this.tabulatorRef} />
         <Pagination
           style={{ marginTop: 16 }}
