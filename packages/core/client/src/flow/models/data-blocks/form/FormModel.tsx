@@ -23,7 +23,7 @@ export class FormModel extends DataBlockModel {
 
   render() {
     return (
-      <Card>
+      <Card {...this.props}>
         <FormProvider form={this.form}>
           <FormLayout layout={'vertical'}>
             {this.mapSubModels('fields', (field) => (
@@ -104,6 +104,7 @@ FormModel.registerFlow({
       },
       async handler(ctx, params) {
         ctx.model.form = ctx.extra.form || createForm();
+        console.log(params, ctx.model.collection);
         if (!ctx.model.collection) {
           ctx.model.collection = ctx.globals.dataSourceManager.getCollection(
             params.dataSourceKey,
@@ -120,6 +121,7 @@ FormModel.registerFlow({
         }
         await ctx.model.applySubModelsAutoFlows('fields');
         const filterByTk = ctx.shared?.currentFlow?.extra?.filterByTk;
+        console.log(filterByTk, params);
         if (filterByTk) {
           ctx.model.resource.setFilterByTk(filterByTk);
           await ctx.model.resource.refresh();
