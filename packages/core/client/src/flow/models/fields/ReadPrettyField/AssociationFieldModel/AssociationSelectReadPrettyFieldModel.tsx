@@ -8,10 +8,11 @@
  */
 
 import React from 'react';
+import { Button } from 'antd';
+import { tval } from '@nocobase/utils/client';
 import { AssociationReadPrettyFieldModel } from './AssociationReadPrettyFieldModel';
 import { FlowEngineProvider, reactive } from '@nocobase/flow-engine';
 import { getUniqueKeyFromCollection } from '../../../../../collection-manager/interfaces/utils';
-import { Button } from 'antd';
 
 const LinkToggleWrapper = ({ enableLink, children, currentRecord, ...props }) => {
   return enableLink ? (
