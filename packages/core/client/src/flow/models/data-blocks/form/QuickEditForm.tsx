@@ -22,34 +22,12 @@ import {
 } from '@nocobase/flow-engine';
 import { InputRef, Skeleton } from 'antd';
 import React, { createRef } from 'react';
+import { DataBlockModel } from '../../base/BlockModel';
 
-export class QuickEditForm extends FlowModel {
+export class QuickEditForm extends DataBlockModel {
   form: Form;
   declare resource: SingleRecordResource;
   declare collection: Collection;
-
-  onInit() {
-    this.setSharedContext({
-      currentBlockModel: this,
-    });
-  }
-
-  addAppends(fieldPath: string, refresh = false) {
-    const field = this.ctx.globals.dataSourceManager.getCollectionField(
-      `${this.collection.dataSourceKey}.${this.collection.name}.${fieldPath}`,
-    );
-    if (!field) {
-      throw new Error(
-        `Collection field not found: ${this.collection.dataSourceKey}.${this.collection.name}.${fieldPath}`,
-      );
-    }
-    if (['belongsToMany', 'belongsTo', 'hasMany', 'hasOne'].includes(field.type)) {
-      (this.resource as BaseRecordResource).addAppends(field.name);
-      if (refresh) {
-        this.resource.refresh();
-      }
-    }
-  }
 
   static async open(options: {
     target: any;
@@ -155,11 +133,6 @@ QuickEditForm.registerFlow({
         resource.setResourceName(collectionName);
         resource.setAPIClient(ctx.globals.api);
         ctx.model.resource = resource;
-        if (ctx.extra.filterByTk) {
-          resource.setFilterByTk(ctx.extra.filterByTk);
-          await resource.refresh();
-          ctx.model.form.setInitialValues(resource.getData());
-        }
         const collectionField = ctx.model.collection.getField(fieldPath) as CollectionField;
         if (collectionField) {
           const use = collectionField.getFirstSubclassNameOf('EditableFieldModel') || 'EditableFieldModel';
@@ -175,6 +148,12 @@ QuickEditForm.registerFlow({
               },
             },
           });
+          ctx.model.addAppends(fieldPath);
+        }
+        if (ctx.extra.filterByTk) {
+          resource.setFilterByTk(ctx.extra.filterByTk);
+          await resource.refresh();
+          ctx.model.form.setInitialValues(resource.getData());
         }
       },
     },

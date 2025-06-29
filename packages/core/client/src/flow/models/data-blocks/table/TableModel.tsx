@@ -8,6 +8,7 @@
  */
 
 import { EditOutlined } from '@ant-design/icons';
+import { DragEndEvent } from '@dnd-kit/core';
 import { css } from '@emotion/css';
 import { observer } from '@formily/reactive-react';
 import {
@@ -18,16 +19,15 @@ import {
   MultiRecordResource,
   useFlowEngine,
 } from '@nocobase/flow-engine';
+import { tval } from '@nocobase/utils/client';
 import { Card, Space, Spin, Table } from 'antd';
 import classNames from 'classnames';
 import _ from 'lodash';
 import React, { useRef } from 'react';
-import { tval } from '@nocobase/utils/client';
 import { ActionModel } from '../../base/ActionModel';
 import { DataBlockModel } from '../../base/BlockModel';
 import { QuickEditForm } from '../form/QuickEditForm';
 import { TableColumnModel } from './TableColumnModel';
-import { DragEndEvent } from '@dnd-kit/core';
 
 type TableModelStructure = {
   subModels: {
@@ -355,14 +355,14 @@ TableModel.registerFlow({
         ctx.model.resource.setPageSize(params.pageSize);
       },
     },
+    dataScope: {
+      use: 'dataScope',
+      title: tval('Set data scope'),
+    },
     refresh: {
       async handler(ctx, params) {
         await ctx.model.resource.refresh();
       },
-    },
-    dataScope: {
-      use: 'dataScope',
-      title: tval('Set data scope'),
     },
   },
 });

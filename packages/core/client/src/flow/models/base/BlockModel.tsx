@@ -15,7 +15,7 @@ export class DataBlockModel<T = DefaultStructure> extends BlockModel<T> {
   resource: APIResource;
   collection: Collection;
 
-  onInit() {
+  onInit(options) {
     this.setSharedContext({
       currentBlockModel: this,
     });

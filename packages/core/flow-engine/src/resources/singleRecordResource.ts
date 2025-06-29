@@ -52,5 +52,6 @@ export class SingleRecordResource<TData = any> extends BaseRecordResource<TData>
       ...this.getRefreshRequestOptions(),
     });
     this.setData(data).setMeta(meta);
+    this.emit('refresh');
   }
 }

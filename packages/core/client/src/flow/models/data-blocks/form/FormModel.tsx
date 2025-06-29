@@ -11,9 +11,9 @@ import { FormButtonGroup, FormLayout } from '@formily/antd-v5';
 import { createForm, Form } from '@formily/core';
 import { FormProvider } from '@formily/react';
 import { AddActionButton, AddFieldButton, FlowModelRenderer, SingleRecordResource } from '@nocobase/flow-engine';
+import { tval } from '@nocobase/utils/client';
 import { Card } from 'antd';
 import React from 'react';
-import { tval } from '@nocobase/utils/client';
 import { DataBlockModel } from '../../base/BlockModel';
 import { EditableFieldModel } from '../../fields/EditableField/EditableFieldModel';
 
@@ -52,7 +52,8 @@ export class FormModel extends DataBlockModel {
             collection={this.collection}
             subModelBaseClass="EditableFieldModel"
             onSubModelAdded={async (model: EditableFieldModel) => {
-              this.addAppends(model.fieldPath, true);
+              const params = model.getStepParams('default', 'step1');
+              this.addAppends(params?.fieldPath, true);
             }}
           />
           <FormButtonGroup style={{ marginTop: 16 }}>
@@ -113,6 +114,9 @@ FormModel.registerFlow({
           resource.setResourceName(params.collectionName);
           resource.setAPIClient(ctx.globals.api);
           ctx.model.resource = resource;
+          ctx.model.resource.on('refresh', () => {
+            ctx.model.form.setInitialValues(ctx.model.resource.getData());
+          });
         }
         await ctx.model.applySubModelsAutoFlows('fields');
         const filterByTk = ctx.shared?.currentFlow?.extra?.filterByTk;
