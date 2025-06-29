@@ -21,7 +21,6 @@ AssociationReadPrettyFieldModel.registerFlow({
   steps: {
     step1: {
       handler(ctx, params) {
-        console.log(ctx);
         const { collectionField } = ctx.model;
         const { target } = collectionField?.options || {};
         const collectionManager = collectionField.collection.collectionManager;
