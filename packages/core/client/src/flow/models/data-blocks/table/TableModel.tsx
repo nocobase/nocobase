@@ -156,15 +156,19 @@ export class TableModel extends DataBlockModel<TableModelStructure> {
           <EditOutlined
             className="edit-icon"
             onClick={async (e) => {
-              await QuickEditForm.open({
-                target: ref.current,
-                flowEngine: this.flowEngine,
-                dataSourceKey: this.collection.dataSourceKey,
-                collectionName: this.collection.name,
-                fieldPath: dataIndex,
-                filterByTk: record.id,
-              });
-              await this.resource.refresh();
+              try {
+                await QuickEditForm.open({
+                  target: ref.current,
+                  flowEngine: this.flowEngine,
+                  dataSourceKey: this.collection.dataSourceKey,
+                  collectionName: this.collection.name,
+                  fieldPath: dataIndex,
+                  filterByTk: record.id,
+                });
+                await this.resource.refresh();
+              } catch (error) {
+                // console.error('Error stopping event propagation:', error);
+              }
             }}
           />
           <div
