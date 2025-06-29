@@ -7,10 +7,11 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Dropdown, DropdownProps, Input, Spin, Empty, InputProps } from 'antd';
-import React, { useEffect, useState, useMemo, useRef, FC } from 'react';
 import { css } from '@emotion/css';
+import { Dropdown, DropdownProps, Empty, Input, InputProps, Spin } from 'antd';
+import React, { FC, useEffect, useMemo, useRef, useState } from 'react';
 import { useFlowModel } from '../../hooks';
+import { useFlowEngine } from '../../provider';
 
 // ==================== Types ====================
 
@@ -257,13 +258,13 @@ const createEmptyItem = (itemKey: string, t: (key: string) => string) => ({
 // ==================== Main Component ====================
 
 const LazyDropdown: React.FC<Omit<DropdownProps, 'menu'> & { menu: LazyDropdownMenuProps }> = ({ menu, ...props }) => {
-  const model = useFlowModel();
+  const engine = useFlowEngine();
   const [menuVisible, setMenuVisible] = useState(false);
   const [openKeys, setOpenKeys] = useState<Set<string>>(new Set());
   const [rootItems, setRootItems] = useState<Item[]>([]);
   const [rootLoading, setRootLoading] = useState(false);
   const dropdownMaxHeight = useNiceDropdownMaxHeight();
-  const t = model.translate;
+  const t = engine.translate.bind(engine);
 
   // 使用自定义 hooks
   const { loadedChildren, loadingKeys, handleLoadChildren } = useAsyncMenuItems(menuVisible, rootItems);
