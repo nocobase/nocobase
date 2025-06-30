@@ -139,6 +139,13 @@ export class MultiRecordResource<TDataItem = any> extends BaseRecordResource<TDa
     await this.refresh();
   }
 
+  setItem(index: number, newDataItem: TDataItem) {
+    const oldData = this.getData();
+    const newData = oldData.slice(); // 浅拷贝
+    newData[index] = { ...newDataItem };
+    this.setData(newData);
+  }
+
   async refresh(): Promise<void> {
     const { data, meta } = await this.runAction<TDataItem[], any>('list', {
       method: 'get',

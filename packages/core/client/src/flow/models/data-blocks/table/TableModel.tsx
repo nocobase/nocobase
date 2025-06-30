@@ -170,13 +170,10 @@ export class TableModel extends DataBlockModel<TableModelStructure> {
                   fieldPath: dataIndex,
                   filterByTk: record.id,
                   onSuccess: (values) => {
-                    const oldData = this.resource.getData();
-                    const newData = oldData.slice(); // 浅拷贝
-                    newData[recordIndex] = {
+                    this.resource.setItem(recordIndex, {
                       ...record,
                       ...values,
-                    };
-                    this.resource.setData(newData);
+                    });
                   },
                 });
                 // await this.resource.refresh();
