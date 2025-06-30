@@ -10,7 +10,10 @@
 import { registerValidateFormats } from '@formily/core';
 import { i18n } from '../../i18n';
 import { defaultProps, operators, unique, autoIncrement, primaryKey } from './properties';
-import { CollectionFieldInterface } from '../../data-source/collection-field-interface/CollectionFieldInterface';
+import {
+  AllowedFieldOptions,
+  CollectionFieldInterface,
+} from '../../data-source/collection-field-interface/CollectionFieldInterface';
 
 registerValidateFormats({
   odd: /^-?\d*[13579]$/,
@@ -37,6 +40,11 @@ export class IntegerFieldInterface extends CollectionFieldInterface {
     },
   };
   availableTypes = ['bigInt', 'integer', 'sort'];
+  allowedOptions: AllowedFieldOptions = {
+    interfaces: ['number', 'input'],
+    types: ['bigInt'],
+    dataTypes: ['bigInt', 'integer', 'tinyint', 'sort'],
+  };
   hasDefaultValue = true;
   properties = {
     ...defaultProps,
@@ -129,4 +137,19 @@ export class IntegerFieldInterface extends CollectionFieldInterface {
       },
     };
   };
+  getAllowDataTypesBySelected(selectedValue: string): string[] {
+    if (selectedValue === 'bigInt') {
+      return ['bigInt', 'sort'];
+    }
+    if (selectedValue === 'integer') {
+      return ['bigInt', 'integer', 'sort'];
+    }
+    if (selectedValue === 'sort') {
+      return ['bigInt', 'integer', 'tinyint', 'sort'];
+    }
+    if (selectedValue === 'tinyint') {
+      return ['bigInt', 'integer', 'tinyint', 'sort'];
+    }
+    return [selectedValue];
+  }
 }

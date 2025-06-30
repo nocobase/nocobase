@@ -10,7 +10,10 @@
 import { ISchema } from '@formily/react';
 import { i18n } from '../../i18n';
 import { defaultProps, operators } from './properties';
-import { CollectionFieldInterface } from '../../data-source/collection-field-interface/CollectionFieldInterface';
+import {
+  AllowedFieldOptions,
+  CollectionFieldInterface,
+} from '../../data-source/collection-field-interface/CollectionFieldInterface';
 
 export class TextareaFieldInterface extends CollectionFieldInterface {
   name = 'textarea';
@@ -27,6 +30,11 @@ export class TextareaFieldInterface extends CollectionFieldInterface {
     },
   };
   availableTypes = ['text', 'json', 'string'];
+  allowedOptions: AllowedFieldOptions = {
+    interfaces: ['textarea'],
+    types: ['text'],
+    dataTypes: ['text'],
+  };
   hasDefaultValue = true;
   titleUsable = true;
   properties = {
@@ -88,4 +96,7 @@ export class TextareaFieldInterface extends CollectionFieldInterface {
   filterable = {
     operators: operators.string,
   };
+  getAllowDataTypesBySelected(selectedValue: string): string[] {
+    return ['text'];
+  }
 }

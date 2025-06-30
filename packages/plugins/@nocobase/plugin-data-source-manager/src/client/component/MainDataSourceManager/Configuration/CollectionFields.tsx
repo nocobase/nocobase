@@ -13,6 +13,7 @@ import { FieldContext, FormContext, useField } from '@formily/react';
 import {
   Action,
   AddCollectionField,
+  CollectionFieldInterface,
   EditCollectionField,
   Input,
   isDeleteButtonDisabled,
@@ -35,7 +36,7 @@ import {
   useResourceContext,
   ViewCollectionField,
 } from '@nocobase/client';
-import { message, Space, Switch, Table, TableColumnProps, Tag, Tooltip } from 'antd';
+import { Cascader, message, Select, Space, Switch, Table, TableColumnProps, Tag, Tooltip } from 'antd';
 import React, { createContext, useContext, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -70,38 +71,55 @@ const CollectionFieldsProvider = (props) => {
   );
 };
 
-const indentStyle = css`
-  .ant-table {
-    margin-left: -16px !important;
-  }
-`;
 const tableContainer = css`
   tr {
     display: flex;
   }
   td,
   th {
-    flex: 2.3;
+    flex: 1.5;
     width: 0;
+    &:nth-child(4) {
+      flex: 2.5; /* Combined Field interface + type column */
+    }
     &:nth-child(5) {
-      flex: 1.2;
+      flex: 1.2; /* Title field column */
+    }
+    &:nth-child(6) {
+      flex: 2; /* Description column */
     }
     &:last-child {
-      flex: 1.5;
+      flex: 1.5; /* Actions column */
     }
   }
-  .ant-table-selection-column,
-  .ant-table-row-expand-icon-cell {
-    flex-basis: 50px !important;
+  .ant-table-selection-column {
     min-width: 50px;
+    flex-basis: 50px !important;
     flex: 0;
+  }
+
+  .ant-table-row-expand-icon-cell {
+    flex: 0;
+    flex-basis: 30px !important;
   }
 `;
 
 const titlePrompt = 'Default title for each record';
+
+// Field Interface -> Field Type -> Data Type
+const createFieldTypeOptions = (
+  dataType: string,
+  currentInterface: CollectionFieldInterface,
+  interfaces: Record<string, CollectionFieldInterface>,
+  compile,
+) => {
+  const options = currentInterface.getCascaderOptionType({ dataType, interfaces, compile });
+  return options;
+};
+
 const CurrentFields = (props) => {
   const compile = useCompile();
-  const { getInterface } = useCollectionManager_deprecated();
+  const { getInterface, interfaces } = useCollectionManager_deprecated();
   const { t } = useTranslation();
   const { setState } = useResourceActionContext();
   const { targetKey } = props.collectionResource || {};
@@ -125,7 +143,57 @@ const CurrentFields = (props) => {
     {
       dataIndex: 'interface',
       title: t('Field interface'),
-      render: (value) => <Tag>{compile(getInterface(value)?.title)}</Tag>,
+      render: (value, record) => {
+        const handleChange = async (selectedValues) => {
+          try {
+            const [interfaceValue, fieldTypeValue, dataTypeValue] = selectedValues || [];
+
+            const updateData: any = {};
+            if (interfaceValue) {
+              updateData.interface = interfaceValue;
+            }
+            if (fieldTypeValue || dataTypeValue) {
+              updateData.fieldType = selectedValues;
+            }
+
+            // await api.request({
+            //   url: `collections.fields:update?filterByTk=${record.name}&associatedIndex=${filterByTk}`,
+            //   method: 'post',
+            //   data: updateData,
+            // });
+            ctx?.refresh?.();
+            await props.refreshAsync();
+            refreshCM();
+            message.success(t('Saved successfully'));
+          } catch (error) {
+            console.error('Failed to update field type:', error);
+            message.error(t('Save failed'));
+          }
+        };
+
+        const currentValue: any = []; // [interface, fieldType, dataType]
+        const currentInterface = getInterface(value);
+        if (value) {
+          currentValue.push(value);
+          if (record.fieldType && Array.isArray(record.fieldType) && record.fieldType.length > 0) {
+            currentValue.push(...record.fieldType);
+          }
+        }
+
+        return (
+          <Cascader
+            value={currentValue.length > 0 ? currentValue : undefined}
+            options={createFieldTypeOptions(currentValue[2], currentInterface, interfaces, compile)}
+            onChange={handleChange}
+            placeholder={t('Select field interface')}
+            expandTrigger="hover"
+            changeOnSelect={false}
+            style={{ width: '100%', minWidth: 100 }}
+            disabled={targetTemplate?.forbidDeletion}
+            showSearch
+          />
+        );
+      },
     },
     {
       dataIndex: 'titleField',
@@ -192,7 +260,7 @@ const CurrentFields = (props) => {
     <Table
       rowKey={'name'}
       columns={columns}
-      showHeader={false}
+      showHeader={props.showHeader !== false}
       pagination={false}
       dataSource={props.fields}
       rowSelection={{
@@ -212,14 +280,13 @@ const CurrentFields = (props) => {
           });
         },
       }}
-      className={indentStyle}
     />
   );
 };
 
 const InheritFields = (props) => {
   const compile = useCompile();
-  const { getInterface } = useCollectionManager_deprecated();
+  const { getInterface, interfaces } = useCollectionManager_deprecated();
   const { targetKey } = props.collectionResource || {};
   const parentRecord = useRecord();
   const [loadingRecord, setLoadingRecord] = React.useState(null);
@@ -242,7 +309,29 @@ const InheritFields = (props) => {
     {
       dataIndex: 'interface',
       title: t('Field interface'),
-      render: (value) => <Tag>{compile(getInterface(value)?.title)}</Tag>,
+      render: (value, record) => {
+        const currentValue: any = []; // [interface, fieldType, dataType]
+        const currentInterface = getInterface(value);
+        if (value) {
+          currentValue.push(value);
+          if (value && Array.isArray(record.fieldType) && value.length > 0) {
+            currentValue.push(...record.fieldType);
+          }
+        }
+        return (
+          <Cascader
+            value={currentValue.length > 0 ? currentValue : undefined}
+            options={createFieldTypeOptions(currentValue[2], currentInterface, interfaces, compile)}
+            placeholder={t('Select field type')}
+            expandTrigger="hover"
+            changeOnSelect={false}
+            size="small"
+            style={{ width: '100%', minWidth: 150 }}
+            disabled={true}
+            open={false}
+          />
+        );
+      },
     },
     {
       dataIndex: 'titleField',
@@ -346,8 +435,8 @@ const CollectionFieldsInternal = () => {
       title: t('Field name'),
     },
     {
-      dataIndex: 'interface',
-      title: t('Field interface'),
+      dataIndex: 'fieldType',
+      title: t('Field type'),
     },
     {
       dataIndex: 'titleField',
@@ -363,50 +452,9 @@ const CollectionFieldsInternal = () => {
     },
   ];
   const fields = data?.data || [];
-  const groups = {
-    pf: [],
-    association: [],
-    general: [],
-    system: [],
-  };
 
-  fields.forEach((field) => {
-    if (field.primaryKey || field.isForeignKey) {
-      groups.pf.push(field);
-    } else if (field.interface) {
-      const conf = getInterface(field.interface);
-      if (conf?.group === 'systemInfo') {
-        groups.system.push(field);
-      } else if (conf?.group === 'relation') {
-        groups.association.push(field);
-      } else {
-        groups.general.push(field);
-      }
-    }
-  });
+  const dataSource = [];
 
-  const dataSource = [
-    {
-      key: 'pf',
-      title: t('PK & FK fields'),
-      fields: groups.pf,
-    },
-    {
-      key: 'association',
-      title: t('Association fields'),
-      fields: groups.association,
-    },
-    {
-      key: 'general',
-      title: t('General fields'),
-      fields: groups.general,
-    },
-    {
-      key: 'system',
-      title: t('System fields'),
-      fields: groups.system,
-    },
-  ];
   dataSource.push(
     ...inherits
       .map((key) => {
@@ -464,32 +512,38 @@ const CollectionFieldsInternal = () => {
           />
           <AddCollectionField {...addProps} />
         </Space>
-        <Table
-          rowKey={'key'}
-          columns={columns}
-          dataSource={dataSource.filter((d) => d.fields.length)}
-          pagination={false}
-          className={tableContainer}
-          expandable={{
-            defaultExpandAllRows: true,
-            defaultExpandedRowKeys: dataSource.map((d) => d.key),
-            expandedRowRender: (record) =>
-              record.inherit ? (
+
+        {fields.length > 0 && (
+          <CurrentFields
+            fields={fields}
+            collectionResource={collectionResource}
+            refreshAsync={refreshAsync}
+            type="current"
+            showHeader={true}
+          />
+        )}
+
+        {dataSource.length > 0 && (
+          <Table
+            rowKey={'key'}
+            columns={columns}
+            dataSource={dataSource}
+            pagination={false}
+            showHeader={fields.length === 0}
+            className={tableContainer}
+            expandable={{
+              defaultExpandAllRows: true,
+              defaultExpandedRowKeys: dataSource.map((d) => d.key),
+              expandedRowRender: (record) => (
                 <InheritFields
                   fields={record.fields}
                   collectionResource={collectionResource}
                   refreshAsync={refreshAsync}
                 />
-              ) : (
-                <CurrentFields
-                  fields={record.fields}
-                  collectionResource={collectionResource}
-                  refreshAsync={refreshAsync}
-                  type={record.key}
-                />
               ),
-          }}
-        />
+            }}
+          />
+        )}
       </FieldContext.Provider>
     </FormContext.Provider>
   );

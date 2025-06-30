@@ -13,6 +13,8 @@ import type { CollectionFieldOptions } from '../collection';
 import { CollectionFieldInterfaceManager } from './CollectionFieldInterfaceManager';
 import { defaultProps } from '../../collection-manager/interfaces/properties';
 import { tval } from '@nocobase/utils/client';
+import type { DefaultOptionType as CascaderOptionType } from 'antd/lib/cascader';
+import _ from 'lodash';
 export type CollectionFieldInterfaceFactory = new (
   collectionFieldInterfaceManager: CollectionFieldInterfaceManager,
 ) => CollectionFieldInterface;
@@ -24,6 +26,15 @@ export interface CollectionFieldInterfaceComponentOption {
   useProps?: () => any;
 }
 
+type FieldInterfaceName = string;
+type FieldTypeName = string;
+type FieldDataType = string;
+export interface AllowedFieldOptions {
+  interfaces?: FieldInterfaceName[];
+  types: FieldTypeName[];
+  dataTypes: FieldDataType[];
+}
+
 export abstract class CollectionFieldInterface {
   constructor(public collectionFieldInterfaceManager: CollectionFieldInterfaceManager) {}
   name: string;
@@ -31,6 +42,7 @@ export abstract class CollectionFieldInterface {
   title?: string;
   description?: string;
   order?: number;
+  abstract allowedOptions: AllowedFieldOptions;
   default?: {
     type: string;
     uiSchema?: ISchema;
@@ -170,5 +182,79 @@ export abstract class CollectionFieldInterface {
     }
 
     this.filterable.operators.push(operatorOption);
+  }
+
+  getAllowDataTypesBySelected(selectedValue: FieldDataType) {
+    return this.allowedOptions?.dataTypes || [];
+  }
+
+  getSecondaryDataTypeOptions(): CascaderOptionType[] {
+    return (this.allowedOptions?.types || []).map((type) => {
+      return {
+        label: type,
+        value: type,
+        disabled: false,
+        children: this.allowedOptions.dataTypes.map((dataType) => {
+          return {
+            label: dataType,
+            value: dataType,
+            disabled: false,
+          };
+        }),
+      };
+    });
+  }
+
+  getCascaderOptionType(options: {
+    dataType: string;
+    interfaces: Record<string, CollectionFieldInterface>;
+    compile: (value: string) => string;
+  }): CascaderOptionType[] {
+    const { dataType: selectedDataType = this.allowedOptions?.dataTypes[0], interfaces, compile } = options;
+    const allowedDataTypes = this.getAllowDataTypesBySelected(selectedDataType);
+    const otherOptionTypes = (this.allowedOptions?.interfaces || []).map((allowedInterface) => {
+      const newInterface = interfaces[allowedInterface];
+      return {
+        label: compile(newInterface.title),
+        value: newInterface.name,
+        disabled: false,
+        children: (newInterface.allowedOptions?.types || []).map((type) => {
+          return {
+            label: type,
+            value: type,
+            disabled: false,
+            children: (newInterface.allowedOptions?.dataTypes || []).map((dataType) => {
+              return {
+                label: dataType,
+                value: dataType,
+                disabled: false,
+              };
+            }),
+          };
+        }),
+      };
+    });
+    return [
+      {
+        label: compile(this.title),
+        value: this.name,
+        disabled: false,
+        children: (this.allowedOptions?.types || []).map((type) => {
+          return {
+            label: type,
+            value: type,
+            disabled: false,
+            children: (this.allowedOptions?.dataTypes || []).map((dataType) => {
+              return {
+                label: dataType,
+                value: dataType,
+                disabled: !allowedDataTypes.includes(dataType),
+              };
+            }),
+          };
+        }),
+      },
+      ...otherOptionTypes,
+    ];
   }
 }

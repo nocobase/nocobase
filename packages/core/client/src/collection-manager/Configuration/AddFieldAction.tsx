@@ -16,7 +16,7 @@ import { cloneDeep } from 'lodash';
 import React, { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useRequest } from '../../api-client';
-import { CollectionFieldInterface } from '../../data-source';
+import { CollectionFieldInterface, useDataSourceManager } from '../../data-source';
 import { RecordProvider, useRecord } from '../../record-provider';
 import { ActionContextProvider, SchemaComponent, useActionContext, useCompile } from '../../schema-component';
 import { useResourceActionContext, useResourceContext } from '../ResourceActionProvider';
@@ -42,62 +42,89 @@ const getSchema = (schema: CollectionFieldInterface, record: any, compile) => {
   if (initialValue.reverseField) {
     initialValue.reverseField.name = `f_${uid()}`;
   }
+
+  const fieldTypeOptions = schema.getSecondaryDataTypeOptions();
+  if (fieldTypeOptions && fieldTypeOptions.length > 0) {
+    const getFirstLeafPath = (options) => {
+      const path = [];
+      let current = options[0];
+
+      while (current) {
+        path.push(current.value);
+        if (current.children && current.children.length > 0) {
+          current = current.children[0];
+        } else {
+          break;
+        }
+      }
+
+      return path;
+    };
+
+    const defaultPath = getFirstLeafPath(fieldTypeOptions);
+    if (defaultPath.length > 0) {
+      initialValue.fieldType = defaultPath;
+    }
+  }
+
   // initialValue.uiSchema.title = schema.title;
   return {
-    type: 'object',
-    properties: {
-      [uid()]: {
-        type: 'void',
-        'x-component': 'Action.Drawer',
-        'x-component-props': {
-          getContainer: '{{ getContainer }}',
-        },
-        'x-decorator': 'Form',
-        'x-decorator-props': {
-          useValues(options) {
-            return useRequest(
-              () =>
-                Promise.resolve({
-                  data: initialValue,
-                }),
-              options,
-            );
+    schema: {
+      type: 'object',
+      properties: {
+        [uid()]: {
+          type: 'void',
+          'x-component': 'Action.Drawer',
+          'x-component-props': {
+            getContainer: '{{ getContainer }}',
           },
-        },
-        title: `${compile(record.title)} - ${compile('{{ t("Add field") }}')}`,
-        properties: {
-          summary: {
-            type: 'void',
-            'x-component': 'FieldSummary',
-            'x-component-props': {
-              schemaKey: schema.name,
+          'x-decorator': 'Form',
+          'x-decorator-props': {
+            useValues(options) {
+              return useRequest(
+                () =>
+                  Promise.resolve({
+                    data: initialValue,
+                  }),
+                options,
+              );
             },
           },
-          // @ts-ignore
-          ...properties,
-          description: {
-            type: 'string',
-            title: '{{t("Description")}}',
-            'x-decorator': 'FormItem',
-            'x-component': 'Input.TextArea',
-          },
-          footer: {
-            type: 'void',
-            'x-component': 'Action.Drawer.Footer',
-            properties: {
-              action1: {
-                title: '{{ t("Cancel") }}',
-                'x-component': 'Action',
-                'x-component-props': {
-                  useAction: '{{ useCancelAction }}',
-                },
+          title: `${compile(record.title)} - ${compile('{{ t("Add field") }}')}`,
+          properties: {
+            summary: {
+              type: 'void',
+              'x-component': 'FieldSummary',
+              'x-component-props': {
+                schemaKey: schema.name,
               },
-              action2: {
-                title: '{{ t("Submit") }}',
-                'x-component': 'Action',
-                'x-component-props': {
-                  type: 'primary',
-                  useAction: '{{ useCreateCollectionField }}',
+            },
+            // @ts-ignore
+            ...properties,
+            description: {
+              type: 'string',
+              title: '{{t("Description")}}',
+              'x-decorator': 'FormItem',
+              'x-component': 'Input.TextArea',
+            },
+            footer: {
+              type: 'void',
+              'x-component': 'Action.Drawer.Footer',
+              properties: {
+                action1: {
+                  title: '{{ t("Cancel") }}',
+                  'x-component': 'Action',
+                  'x-component-props': {
+                    useAction: '{{ useCancelAction }}',
+                  },
+                },
+                action2: {
+                  title: '{{ t("Submit") }}',
+                  'x-component': 'Action',
+                  'x-component-props': {
+                    type: 'primary',
+                    useAction: '{{ useCreateCollectionField }}',
+                  },
                 },
               },
             },
@@ -105,6 +132,7 @@ const getSchema = (schema: CollectionFieldInterface, record: any, compile) => {
         },
       },
     },
+    fieldTypeOptions,
   };
 };
 
@@ -168,6 +196,7 @@ export const AddFieldAction = (props) => {
   const [visible, setVisible] = useState(false);
   const [targetScope, setTargetScope] = useState();
   const [schema, setSchema] = useState({});
+  const [fieldTypeOptions, setFieldTypeOptions] = useState([]);
   const compile = useCompile();
   const { t } = useTranslation();
   const { isDialect } = useDialect();
@@ -182,6 +211,9 @@ export const AddFieldAction = (props) => {
       };
     });
   }, []);
+  const dm = useDataSourceManager();
+  const interfaces = dm.collectionFieldInterfaceManager.getFieldInterfaces();
+
   const getFieldOptions = useCallback(() => {
     const { availableFieldInterfaces } = getTemplate(record.template) || {};
     const { exclude, include } = (availableFieldInterfaces || {}) as any;
@@ -283,9 +315,10 @@ export const AddFieldAction = (props) => {
         //@ts-ignore
         const targetScope = e.item.props['data-targetScope'];
         targetScope && setTargetScope(targetScope);
-        const schema = getSchema(getInterface(e.key), record, compile);
-        if (schema) {
-          setSchema(schema);
+        const result = getSchema(getInterface(e.key), record, compile);
+        if (result) {
+          setSchema(result.schema);
+          setFieldTypeOptions(result.fieldTypeOptions);
           setVisible(true);
         }
       },
@@ -335,6 +368,7 @@ export const AddFieldAction = (props) => {
               scopeKeyOptions,
               createMainOnly: true,
               editMainOnly: true,
+              fieldTypeOptions,
               ...scope,
             }}
           />

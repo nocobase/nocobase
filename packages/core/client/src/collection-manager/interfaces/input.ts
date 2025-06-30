@@ -10,7 +10,10 @@
 import { ISchema } from '@formily/react';
 import { isArr, isEmpty, isValid } from '@formily/shared';
 import { registerValidateRules } from '@formily/validator';
-import { CollectionFieldInterface } from '../../data-source/collection-field-interface/CollectionFieldInterface';
+import {
+  AllowedFieldOptions,
+  CollectionFieldInterface,
+} from '../../data-source/collection-field-interface/CollectionFieldInterface';
 import { i18n } from '../../i18n';
 import { defaultProps, operators, primaryKey, unique } from './properties';
 
@@ -58,7 +61,13 @@ export class InputFieldInterface extends CollectionFieldInterface {
       'x-component': 'Input',
     },
   };
-  availableTypes = ['string', 'uid'];
+  fieldType = 'string';
+  allowedOptions: AllowedFieldOptions = {
+    interfaces: ['textarea'],
+    types: ['string'],
+    dataTypes: ['varchar', 'char'],
+  };
+  availableTypes = ['varchar', 'char'];
   hasDefaultValue = true;
   properties = {
     ...defaultProps,
@@ -217,5 +226,15 @@ export class InputFieldInterface extends CollectionFieldInterface {
         },
       },
     };
+  }
+
+  getAllowDataTypesBySelected(selectedValue: string): string[] {
+    if (selectedValue === 'varchar') {
+      return ['varchar'];
+    }
+    if (selectedValue === 'char') {
+      return ['varchar', 'char'];
+    }
+    return [];
   }
 }

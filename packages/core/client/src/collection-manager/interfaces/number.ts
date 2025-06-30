@@ -7,7 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { CollectionFieldInterface } from '../../data-source/collection-field-interface/CollectionFieldInterface';
+import {
+  AllowedFieldOptions,
+  CollectionFieldInterface,
+} from '../../data-source/collection-field-interface/CollectionFieldInterface';
 import { i18n } from '../../i18n';
 import { defaultProps, operators, unique } from './properties';
 
@@ -30,6 +33,10 @@ export class NumberFieldInterface extends CollectionFieldInterface {
     },
   };
   availableTypes = ['double', 'float', 'decimal'];
+  allowedOptions: AllowedFieldOptions = {
+    types: ['double'],
+    dataTypes: ['double', 'float', 'decimal'],
+  };
   hasDefaultValue = true;
   properties = {
     ...defaultProps,
