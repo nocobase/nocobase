@@ -1259,7 +1259,9 @@ describe('FlowModel', () => {
           group: 'test',
         });
 
-        const mockTranslate = vi.fn().mockReturnValue('Translated Title');
+        const mockTranslate = vi.fn((v) => {
+          if (v) return 'Translated Title';
+        });
         const mockFlowEngine = {
           ...flowEngine,
           translate: mockTranslate,
@@ -1271,7 +1273,7 @@ describe('FlowModel', () => {
 
         const title = modelWithTranslate.title;
 
-        expect(mockTranslate).toHaveBeenCalledWith('model.title.key');
+        expect(mockTranslate).toHaveBeenLastCalledWith('model.title.key');
         expect(title).toBe('Translated Title');
       });
 
@@ -1443,7 +1445,9 @@ describe('FlowModel', () => {
 
     describe('title with translation', () => {
       test('should call translate method for meta title', () => {
-        const mockTranslate = vi.fn().mockReturnValue('Translated Meta Title');
+        const mockTranslate = vi.fn((v) => {
+          if (v) return 'Translated Meta Title';
+        });
 
         TestFlowModel.define({
           title: 'meta.title.key',
@@ -1461,7 +1465,7 @@ describe('FlowModel', () => {
 
         const title = modelWithTranslate.title;
 
-        expect(mockTranslate).toHaveBeenCalledWith('meta.title.key');
+        expect(mockTranslate).toHaveBeenLastCalledWith('meta.title.key');
         expect(title).toBe('Translated Meta Title');
       });
     });
