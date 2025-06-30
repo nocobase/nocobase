@@ -13,8 +13,22 @@
     "@nocobase/test": "1.x"
   },
   "devDependencies": {
-    "@langchain/core": "^0.3.39",
+    "@ant-design/x": "^1.1.0",
+    "@langchain/core": "^0.3.55",
     "@langchain/deepseek": "^0.0.1",
-    "@langchain/openai": "^0.4.3"
+    "@langchain/openai": "^0.4.3",
+    "nodejs-snowflake": "^2.0.1",
+    "use-context-selector": "^2.0.0",
+    "react-markdown": "^10.1.0",
+    "react-syntax-highlighter": "^15.6.1",
+    "@langchain/google-genai": "^0.2.5",
+    "@langchain/anthropic": "^0.3.20",
+    "echarts": "^5.5.0",
+    "echarts-for-react": "3.0.2",
+    "rehype-raw": "^7.0.0",
+    "rehype-sanitize": "^6.0.0",
+    "remark-gfm": "^4.0.1",
+    "@xyflow/react": "^12.7.0",
+    "elkjs": "^0.10.0"
   }
 }

@@ -83,8 +83,18 @@ export abstract class DataSource {
 
   abstract getDataSource(): Promise<Omit<Partial<DataSourceOptions>, 'key'>> | Omit<Partial<DataSourceOptions>, 'key'>;
 
+  get flowEngineDataSourceManager() {
+    return this.app.flowEngine?.context?.dataSourceManager;
+  }
+
   async reload() {
     const dataSource = await this.getDataSource();
+    const flowEngineDataSourceManager = this.flowEngineDataSourceManager;
+    if (flowEngineDataSourceManager) {
+      flowEngineDataSourceManager.upsertDataSource(this.options);
+      const ds = flowEngineDataSourceManager.getDataSource(this.key);
+      ds.upsertCollections(dataSource.collections || []);
+    }
     this.setOptions(dataSource);
     this.collectionManager.setCollections(dataSource.collections || []);
     this.reloadCallbacks.forEach((callback) => callback(dataSource.collections));

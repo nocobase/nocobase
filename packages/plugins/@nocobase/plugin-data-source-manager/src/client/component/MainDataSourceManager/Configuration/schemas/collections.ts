@@ -152,6 +152,36 @@ export const collectionTableSchema: ISchema = {
           },
           'x-align': 'left',
         },
+        aiEmployee: {
+          type: 'void',
+          'x-component': 'AIEmployeeButton',
+          'x-toolbar': 'ActionSchemaToolbar',
+          'x-settings': 'aiEmployees:button',
+          'x-component-props': {
+            username: 'orin',
+            tasks: [
+              {
+                message: {
+                  workContext: [],
+                  attachments: [],
+                  user: 'Create a todo list application with support for multiple lists, due dates, priorities, and task categories. Include tables for users, lists, tasks, and categories.',
+                },
+                title: 'Create a todo list application',
+                autoSend: true,
+              },
+              {
+                message: {
+                  workContext: [],
+                  attachments: [],
+                  user: 'Create a CRM application that includes the following modules: Leads, Customers, Orders, Products, Tickets',
+                },
+                title: 'Create a CRM application',
+                autoSend: true,
+              },
+            ],
+          },
+        },
+
         delete: {
           type: 'void',
           title: '{{ t("Delete") }}',

@@ -13,9 +13,9 @@ import { useApp } from '@nocobase/client';
 
 export const namespace = pkg.name;
 
-export function useT() {
+export function useT(): any {
   const app = useApp();
-  return (str: string) => app.i18n.t(str, { ns: [pkg.name, 'client'] });
+  return (str: string, options?: any) => app.i18n.t(str, { ns: [pkg.name, 'client'], ...options });
 }
 
 export function tStr(key: string) {

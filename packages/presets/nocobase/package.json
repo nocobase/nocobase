@@ -22,6 +22,7 @@
     "@nocobase/plugin-auth-sms": "1.8.0-alpha.11",
     "@nocobase/plugin-backup-restore": "1.8.0-alpha.11",
     "@nocobase/plugin-block-iframe": "1.8.0-alpha.11",
+    "@nocobase/plugin-block-lowcode": "1.8.0-alpha.11",
     "@nocobase/plugin-block-template": "1.8.0-alpha.11",
     "@nocobase/plugin-block-workbench": "1.8.0-alpha.11",
     "@nocobase/plugin-calendar": "1.8.0-alpha.11",
