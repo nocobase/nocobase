@@ -120,7 +120,7 @@ export type ActionOptions = {
 
 export type WorkContextOptions = {
   name?: string;
-  menu: {
+  menu?: {
     icon?: React.ReactNode;
     label?: React.ReactNode;
     Component?: ComponentType<{
