@@ -203,6 +203,18 @@ export class TabulatorModel extends DataBlockModel<S> {
                 createModelOptions: {
                   use: 'TabulatorTableActionsColumnModel',
                 },
+                toggleDetector: (ctx) => {
+                  // 检测是否已存在操作列
+                  const subModels = ctx.model.subModels.columns;
+                  const modelClass = ctx.model.flowEngine.getModelClass('TabulatorTableActionsColumnModel');
+                  if (Array.isArray(subModels)) {
+                    return subModels.some((subModel) => {
+                      // 使用 flowEngine 的模型注册信息进行检测
+                      return subModel instanceof modelClass;
+                    });
+                  }
+                  return false;
+                },
               },
             ]}
             onModelCreated={async (model: TabulatorColumnModel) => {

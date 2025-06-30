@@ -40,7 +40,6 @@ export interface SubModelItem {
   searchable?: boolean;
   searchPlaceholder?: string;
   keepDropdownOpen?: boolean;
-  unique?: boolean;
   toggleDetector?: (ctx: AddSubModelContext) => boolean | Promise<boolean>;
   removeModelOptions?: {
     customRemove?: (ctx: AddSubModelContext, item: SubModelItem) => Promise<void>;
@@ -182,10 +181,10 @@ const createSwitchLabel = (originalLabel: string, isToggled: boolean) => (
 );
 
 /**
- * 检查是否包含 unique 项
+ * 检查是否包含可切换项
  */
-const hasUniqueItems = (items: SubModelItem[]): boolean => {
-  return items.some((item) => item.unique && item.toggleDetector && !item.children);
+const hasToggleItems = (items: SubModelItem[]): boolean => {
+  return items.some((item) => item.toggleDetector && !item.children);
 };
 
 /**
@@ -194,20 +193,20 @@ const hasUniqueItems = (items: SubModelItem[]): boolean => {
 const transformSubModelItems = async (items: SubModelItem[], context: AddSubModelContext): Promise<Item[]> => {
   if (items.length === 0) return [];
 
-  // 批量收集需要异步检测的 unique 项
-  const uniqueItems: Array<{ item: SubModelItem; index: number }> = [];
+  // 批量收集需要异步检测的可切换项
+  const toggleItems: Array<{ item: SubModelItem; index: number }> = [];
   for (let i = 0; i < items.length; i++) {
     const item = items[i];
-    if (item.unique && item.toggleDetector && !item.children) {
-      uniqueItems.push({ item, index: i });
+    if (item.toggleDetector && !item.children) {
+      toggleItems.push({ item, index: i });
     }
   }
 
   // 批量执行 toggleDetector
-  const toggleResults = await Promise.allSettled(uniqueItems.map(({ item }) => item.toggleDetector!(context)));
+  const toggleResults = await Promise.allSettled(toggleItems.map(({ item }) => item.toggleDetector!(context)));
 
   const toggleMap = new Map<number, boolean>();
-  uniqueItems.forEach(({ index }, i) => {
+  toggleItems.forEach(({ index }, i) => {
     const result = toggleResults[i];
     toggleMap.set(index, result.status === 'fulfilled' ? result.value : false);
   });
@@ -240,12 +239,11 @@ const transformSubModelItems = async (items: SubModelItem[], context: AddSubMode
     }
 
     // 处理开关式菜单项
-    if (item.unique && item.toggleDetector && !item.children) {
+    if (item.toggleDetector && !item.children) {
       const isToggled = toggleMap.get(index) || false;
       const originalLabel = item.label || '';
       transformedItem.label = createSwitchLabel(originalLabel, isToggled);
       transformedItem.isToggled = isToggled;
-      transformedItem.unique = true;
     }
 
     return transformedItem;
@@ -265,8 +263,8 @@ const transformItems = (items: SubModelItemsType, context: AddSubModelContext): 
     };
   }
 
-  const hasUnique = hasUniqueItems(items as SubModelItem[]);
-  if (hasUnique) {
+  const hasToggle = hasToggleItems(items as SubModelItem[]);
+  if (hasToggle) {
     return () => transformSubModelItems(items as SubModelItem[], context);
   } else {
     let cachedResult: Item[] | null = null;
@@ -321,13 +319,23 @@ const createDefaultRemoveHandler = (config: {
         const createOpts = getCreateModelOptions(item);
         const targetModel = subModels.find((subModel) => {
           if (item.key && findFieldInStepParams(subModel, item.key)) return true;
-          return (
-            (subModel as any).constructor.name === createOpts?.use || (subModel as any).uid.includes(createOpts?.use)
-          );
+
+          if (createOpts?.use) {
+            try {
+              const modelClass = config.model.flowEngine.getModelClass(createOpts.use);
+              if (modelClass && subModel instanceof modelClass) {
+                return true;
+              }
+            } catch (error) {
+              // 如果获取模型类失败，继续使用 uid 匹配
+            }
+            return (subModel as any).uid.includes(createOpts.use);
+          }
+          return false;
         });
 
         if (targetModel) {
-          targetModel.remove();
+          await targetModel.destroy();
           const index = subModels.indexOf(targetModel);
           if (index > -1) subModels.splice(index, 1);
         }
@@ -335,7 +343,7 @@ const createDefaultRemoveHandler = (config: {
     } else {
       const subModel = (model.subModels as any)[subModelKey] as FlowModel;
       if (subModel) {
-        subModel.remove();
+        await subModel.destroy();
         (model.subModels as any)[subModelKey] = undefined;
       }
     }
@@ -388,10 +396,9 @@ const AddSubModelButtonCore = function AddSubModelButton({
     const clickedItem = info.originalItem || info;
     const item = clickedItem.originalItem || (clickedItem as SubModelItem);
     const isToggled = clickedItem.isToggled;
-    const isUnique = clickedItem.unique || item.unique;
 
-    // 处理 unique 菜单项的开关操作
-    if (isUnique && item.toggleDetector && isToggled) {
+    // 处理可切换菜单项的开关操作
+    if (item.toggleDetector && isToggled) {
       try {
         if (item.removeModelOptions?.customRemove) {
           await item.removeModelOptions.customRemove(buildContext, item);

@@ -129,7 +129,6 @@ const AddFieldButtonCore: React.FC<AddFieldButtonProps> = ({
             key: field.name,
             label: field.title,
             icon: fieldClass.meta?.icon,
-            unique: true,
             createModelOptions: buildCreateModelOptions({
               defaultOptions,
               collectionField: field,

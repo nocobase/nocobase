@@ -104,9 +104,20 @@ export class TableModel extends DataBlockModel<TableModelStructure> {
             appendItems={[
               {
                 key: 'actions',
-                label: tval('Actions column'),
+                label: this.translate('Actions column'),
                 createModelOptions: {
                   use: 'TableActionsColumnModel',
+                },
+                toggleDetector: (ctx) => {
+                  // 检测是否已存在操作列
+                  const subModels = ctx.model.subModels.columns;
+                  const modelClass = ctx.model.flowEngine.getModelClass('TableActionsColumnModel');
+                  if (Array.isArray(subModels)) {
+                    return subModels.some((subModel) => {
+                      return subModel instanceof modelClass;
+                    });
+                  }
+                  return false;
                 },
               },
             ]}
