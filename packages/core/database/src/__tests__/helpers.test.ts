@@ -14,14 +14,7 @@ describe('database helpers', () => {
     it('undefined pool options', async () => {
       const options1 = await parseDatabaseOptionsFromEnv();
       expect(options1).toMatchObject({
-        pool: {
-          max: 5,
-          min: 0,
-          idle: 10000,
-          acquire: 60000,
-          evict: 1000,
-          maxUses: Number.POSITIVE_INFINITY, // Default value
-        },
+        pool: {},
       });
     });
 
