@@ -7,8 +7,6 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 import { tval } from '@nocobase/utils/client';
-import { Card } from 'antd';
-import React from 'react';
 import { APIResource, BaseRecordResource, Collection, DefaultStructure, FlowModel } from '@nocobase/flow-engine';
 
 export class BlockModel<T = DefaultStructure> extends FlowModel<T> {}

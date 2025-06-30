@@ -14,7 +14,7 @@ import { EditableFieldModel } from '../EditableFieldModel';
 import { useParseMarkdown } from './util';
 import { useMarkdownStyles } from './style';
 
-const MarkdownReadPretty = (props) => {
+export const MarkdownReadPretty = (props) => {
   const markdownClass = useMarkdownStyles();
   const { html = '' } = useParseMarkdown(props.value);
 
@@ -22,6 +22,7 @@ const MarkdownReadPretty = (props) => {
     <div
       className={` ${markdownClass} nb-markdown nb-markdown-default nb-markdown-table`}
       dangerouslySetInnerHTML={{ __html: html }}
+      style={props.style}
     />
   );
 

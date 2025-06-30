@@ -12,7 +12,7 @@ import { createForm, Form } from '@formily/core';
 import { FormProvider } from '@formily/react';
 import { AddActionButton, AddFieldButton, FlowModelRenderer, SingleRecordResource } from '@nocobase/flow-engine';
 import { tval } from '@nocobase/utils/client';
-import { Card } from 'antd';
+import { BlockItemCard } from '../../common/BlockItemCard';
 import React from 'react';
 import { DataBlockModel } from '../../base/BlockModel';
 import { EditableFieldModel } from '../../fields/EditableField/EditableFieldModel';
@@ -23,7 +23,7 @@ export class FormModel extends DataBlockModel {
 
   render() {
     return (
-      <Card {...this.props}>
+      <BlockItemCard {...this.props}>
         <FormProvider form={this.form}>
           <FormLayout layout={'vertical'}>
             {this.mapSubModels('fields', (field) => (
@@ -67,7 +67,7 @@ export class FormModel extends DataBlockModel {
             <AddActionButton model={this} subModelBaseClass="FormActionModel" />
           </FormButtonGroup>
         </FormProvider>
-      </Card>
+      </BlockItemCard>
     );
   }
 }
@@ -104,7 +104,6 @@ FormModel.registerFlow({
       },
       async handler(ctx, params) {
         ctx.model.form = ctx.extra.form || createForm();
-        console.log(params, ctx.model.collection);
         if (!ctx.model.collection) {
           ctx.model.collection = ctx.globals.dataSourceManager.getCollection(
             params.dataSourceKey,
@@ -121,7 +120,6 @@ FormModel.registerFlow({
         }
         await ctx.model.applySubModelsAutoFlows('fields');
         const filterByTk = ctx.shared?.currentFlow?.extra?.filterByTk;
-        console.log(filterByTk, params);
         if (filterByTk) {
           ctx.model.resource.setFilterByTk(filterByTk);
           await ctx.model.resource.refresh();
