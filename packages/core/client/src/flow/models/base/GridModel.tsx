@@ -8,20 +8,12 @@
  */
 
 import { PlusOutlined } from '@ant-design/icons';
-import { Input } from '@formily/antd-v5';
 import { uid } from '@formily/shared';
-import {
-  AddBlockButton,
-  FlowModel,
-  FlowModelRenderer,
-  FlowSettingsButton,
-  FlowsFloatContextMenu,
-  useStepSettingContext,
-} from '@nocobase/flow-engine';
+import { AddBlockButton, FlowModel, FlowModelRenderer, FlowSettingsButton } from '@nocobase/flow-engine';
 import { tval } from '@nocobase/utils/client';
-import { Alert, Space } from 'antd';
+import { Space } from 'antd';
 import _ from 'lodash';
-import React, { useState } from 'react';
+import React from 'react';
 import { Grid } from '../../components/Grid';
 import JsonEditor from '../../components/JsonEditor';
 import { SkeletonFallback } from '../../components/SkeletonFallback';

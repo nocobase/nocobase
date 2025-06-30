@@ -20,11 +20,11 @@ import {
   useFlowEngine,
 } from '@nocobase/flow-engine';
 import { tval } from '@nocobase/utils/client';
-import { Card, Space, Spin, Table } from 'antd';
+import { Space, Spin, Table } from 'antd';
 import classNames from 'classnames';
-import { t } from 'i18next';
 import _ from 'lodash';
 import React, { useRef } from 'react';
+import { BlockItemCard } from '../../common/BlockItemCard';
 import { ActionModel } from '../../base/ActionModel';
 import { DataBlockModel } from '../../base/BlockModel';
 import { QuickEditForm } from '../form/QuickEditForm';

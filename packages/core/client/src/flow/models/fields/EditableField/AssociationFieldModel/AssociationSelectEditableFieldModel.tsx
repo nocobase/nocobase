@@ -9,6 +9,7 @@
 import { connect, mapProps, mapReadPretty } from '@formily/react';
 import { Select } from 'antd';
 import React from 'react';
+import { castArray } from 'lodash';
 import { useFlowModel, FlowModel } from '@nocobase/flow-engine';
 import { tval } from '@nocobase/utils/client';
 import { AssociationFieldEditableFieldModel } from './AssociationFieldEditableFieldModel';
@@ -82,7 +83,42 @@ const AssociationSelect = connect(
     },
   ),
   mapReadPretty((props) => {
-    return props.value;
+    const currentModel: any = useFlowModel();
+
+    const { fieldNames, value } = props;
+    if (!value) {
+      return;
+    }
+    const field = currentModel.subModels.field as FlowModel;
+    const key = value?.[fieldNames.value];
+    const fieldModel = field.createFork({}, key);
+    fieldModel.setSharedContext({
+      value: value?.[fieldNames.label],
+      currentRecord: value,
+    });
+    const arrayValue = castArray(value);
+
+    return (
+      <>
+        {arrayValue.map((v, index) => {
+          const key = `${index}`;
+          const fieldModel = field.createFork({}, key);
+          fieldModel.setSharedContext({
+            index,
+            value: v?.[fieldNames.label],
+            currentRecord: v,
+          });
+
+          const content = v?.[fieldNames.label] ? fieldModel.render() : tval('N/A');
+          return (
+            <React.Fragment key={index}>
+              {index > 0 && ', '}
+              {content}
+            </React.Fragment>
+          );
+        })}
+      </>
+    );
   }),
 );
 
@@ -160,7 +196,7 @@ AssociationSelectEditableFieldModel.registerFlow({
   steps: {
     step1: {
       async handler(ctx, params) {
-        const { target } = ctx.model.collectionField.options;
+        const { target } = ctx.model.collectionField;
         const apiClient = ctx.app.apiClient;
         const response = await apiClient.request({
           url: `/${target}:list`,
@@ -244,9 +280,7 @@ AssociationSelectEditableFieldModel.registerFlow({
       async handler(ctx, params) {
         try {
           const collectionField = ctx.model.collectionField;
-          const collectionManager = collectionField.collection.collectionManager;
-          const targetCollection = collectionManager.getCollection(collectionField.options.target);
-
+          const targetCollection = ctx.model.collectionField.targetCollection;
           const labelFieldName = ctx.model.field.componentProps.fieldNames.label;
           const targetLabelField = targetCollection.getField(labelFieldName);
 
