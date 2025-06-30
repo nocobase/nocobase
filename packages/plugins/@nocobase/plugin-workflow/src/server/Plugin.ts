@@ -14,7 +14,7 @@ import { Snowflake } from 'nodejs-snowflake';
 import { Transaction, Transactionable } from 'sequelize';
 import LRUCache from 'lru-cache';
 
-import { FindOptions, Op } from '@nocobase/database';
+import { Op } from '@nocobase/database';
 import { Plugin, QueueEventOptions } from '@nocobase/server';
 import { Registry, uid } from '@nocobase/utils';
 import { SequelizeCollectionManager } from '@nocobase/data-source-manager';
@@ -56,7 +56,7 @@ export type EventOptions = {
 
 type CachedEvent = [WorkflowModel, any, EventOptions];
 
-const WORKER_MODE_WORKFLOW_PROCESS = 'workflow:process';
+const WORKER_JOB_WORKFLOW_PROCESS = 'workflow:process';
 
 export default class PluginWorkflowServer extends Plugin {
   instructions: Registry<InstructionInterface> = new Registry();
@@ -349,7 +349,7 @@ export default class PluginWorkflowServer extends Plugin {
       custom_epoch: pluginRecord?.createdAt.getTime(),
     });
 
-    if (this.app.serving(WORKER_MODE_WORKFLOW_PROCESS)) {
+    if (this.app.serving(WORKER_JOB_WORKFLOW_PROCESS)) {
       this.app.backgroundJobManager.subscribe(`${this.name}.pendingExecution`, {
         idle: () => !this.executing && !this.pending.length && !this.events.length,
         process: this.onQueueExecution,
@@ -707,9 +707,9 @@ export default class PluginWorkflowServer extends Plugin {
       return;
     }
 
-    if (!this.app.serving(WORKER_MODE_WORKFLOW_PROCESS)) {
+    if (!this.app.serving(WORKER_JOB_WORKFLOW_PROCESS)) {
       this.getLogger('dispatcher').warn(
-        `${WORKER_MODE_WORKFLOW_PROCESS} is not serving, new dispatching will be ignored`,
+        `${WORKER_JOB_WORKFLOW_PROCESS} is not serving, new dispatching will be ignored`,
       );
       return;
     }
