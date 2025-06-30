@@ -17,7 +17,6 @@ import { UserAddOutlined, CloseCircleOutlined } from '@ant-design/icons';
 import { AIEmployeeListItem } from '../AIEmployeeListItem';
 import { avatars } from '../avatars';
 import { ProfileCard } from '../ProfileCard';
-import { AddContextButton } from './AddContextButton';
 import { AttachmentsHeader } from './AttachmentsHeader';
 import { ContextItemsHeader } from './ContextItemsHeader';
 

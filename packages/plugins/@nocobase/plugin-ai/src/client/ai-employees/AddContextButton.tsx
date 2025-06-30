@@ -7,13 +7,14 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+// @ts-nocheck
 import React, { useMemo } from 'react';
 import { Button, Dropdown } from 'antd';
 import { useT } from '../locale';
 import { AppstoreAddOutlined } from '@ant-design/icons';
 import { Schema } from '@formily/react';
 import { usePlugin } from '@nocobase/client';
-import PluginAIClient from '../';
+import PluginAIClient from '..';
 import { ContextItem } from './types';
 
 export const AddContextButton: React.FC<{
