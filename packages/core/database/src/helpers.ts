@@ -94,6 +94,7 @@ export async function parseDatabaseOptionsFromEnv(): Promise<IDatabaseOptions> {
       acquire: process.env.DB_POOL_ACQUIRE ? Number.parseInt(process.env.DB_POOL_ACQUIRE, 10) : 60_000,
       evict: process.env.DB_POOL_EVICT ? Number.parseInt(process.env.DB_POOL_EVICT, 10) : 1000,
       maxUses: process.env.DB_POOL_MAX_USES
+        // If DB_POOL_MAX_USES is '0', it is treated as falsy and defaults to Number.POSITIVE_INFINITY.
         ? Number.parseInt(process.env.DB_POOL_MAX_USES, 10) || Number.POSITIVE_INFINITY
         : Number.POSITIVE_INFINITY,
     },
