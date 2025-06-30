@@ -22,6 +22,7 @@ export class FormModel extends DataBlockModel {
   declare resource: SingleRecordResource;
 
   render() {
+    console.log(this);
     return (
       <Card>
         <FormProvider form={this.form}>
@@ -53,7 +54,7 @@ export class FormModel extends DataBlockModel {
             subModelBaseClass="EditableFieldModel"
             onSubModelAdded={async (model: EditableFieldModel) => {
               const params = model.getStepParams('default', 'step1');
-              this.addAppends(params?.fieldPath, true);
+              this.addAppends(params?.fieldPath, !!this.ctx.shared?.currentFlow?.extra?.filterByTk);
             }}
           />
           <FormButtonGroup style={{ marginTop: 16 }}>

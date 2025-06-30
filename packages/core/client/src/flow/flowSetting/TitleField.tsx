@@ -46,7 +46,7 @@ export const titleField = defineAction({
     },
   },
   defaultParams: (ctx: any) => {
-    const targetCollection = ctx.model.targetCollection;
+    const targetCollection = ctx.model.collectionField.targetCollection;
     const filterKey = getUniqueKeyFromCollection(targetCollection.options as any);
     return {
       label: ctx.model.props.fieldNames?.label || targetCollection.options.titleField || filterKey,
@@ -55,7 +55,6 @@ export const titleField = defineAction({
   async handler(ctx: any, params) {
     const target = ctx.model.collectionField.target;
     const targetCollection = ctx.model.collectionField.targetCollection;
-    console.log(ctx.model.collectionField);
     const filterKey = getUniqueKeyFromCollection(targetCollection.options as any);
     const label = params.label || targetCollection.options.titleField || filterKey;
     const newFieldNames = {
