@@ -169,7 +169,7 @@ AssociationSelectEditableFieldModel.registerFlow({
   steps: {
     step1: {
       async handler(ctx, params) {
-        const { target } = ctx.model.collectionField.options;
+        const { target } = ctx.model.collectionField;
         const apiClient = ctx.app.apiClient;
         const response = await apiClient.request({
           url: `/${target}:list`,
@@ -253,9 +253,7 @@ AssociationSelectEditableFieldModel.registerFlow({
       async handler(ctx, params) {
         try {
           const collectionField = ctx.model.collectionField;
-          const collectionManager = collectionField.collection.collectionManager;
-          const targetCollection = collectionManager.getCollection(collectionField.options.target);
-
+          const targetCollection = ctx.model.collectionField.targetCollection;
           const labelFieldName = ctx.model.field.componentProps.fieldNames.label;
           const targetLabelField = targetCollection.getField(labelFieldName);
 

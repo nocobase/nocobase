@@ -119,7 +119,7 @@ EditableFieldModel.registerFlow({
         if (collectionField.enum.length) {
           ctx.model.setDataSource(collectionField.enum);
         }
-        const validator = collectionField.options.uiSchema?.['x-validator'];
+        const validator = collectionField.uiSchema?.['x-validator'];
         if (validator) {
           ctx.model.setValidator(validator);
         }
