@@ -38,8 +38,8 @@ export class DataBlockModel<T = DefaultStructure> extends BlockModel<T> {
     return (
       this._title ||
       `
-    ${this.collection.title} -> 
-    ${this.collection.dataSource.displayName} -> 
+    ${this.collection.title} > 
+    ${this.collection.dataSource.displayName} > 
     ${this.translate(this.constructor['meta']?.title || this.constructor.name)}`
     );
   }

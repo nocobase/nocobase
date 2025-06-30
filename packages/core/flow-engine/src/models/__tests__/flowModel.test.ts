@@ -1265,6 +1265,282 @@ describe('FlowModel', () => {
     });
   });
 
+  // ==================== TITLE MANAGEMENT ====================
+  describe('Title Management', () => {
+    let model: FlowModel;
+    let TestFlowModel: any;
+
+    beforeEach(() => {
+      TestFlowModel = class extends FlowModel {
+        static name = `TestModel_${Math.random().toString(36).substring(2, 11)}`;
+      };
+      model = new TestFlowModel(modelOptions);
+    });
+
+    describe('title getter', () => {
+      test('should return undefined when no title is set', () => {
+        expect(model.title).toBeUndefined();
+      });
+
+      test('should return meta title when defined', () => {
+        TestFlowModel.define({
+          title: 'Test Model Title',
+          group: 'test',
+        });
+
+        const modelWithMeta = new TestFlowModel(modelOptions);
+        expect(modelWithMeta.title).toBe('Test Model Title');
+      });
+
+      test('should translate meta title using translate method', () => {
+        TestFlowModel.define({
+          title: 'model.title.key',
+          group: 'test',
+        });
+
+        const mockTranslate = vi.fn().mockReturnValue('Translated Title');
+        const mockFlowEngine = {
+          ...flowEngine,
+          translate: mockTranslate,
+        };
+        const modelWithTranslate = new TestFlowModel({
+          ...modelOptions,
+          flowEngine: mockFlowEngine,
+        });
+
+        const title = modelWithTranslate.title;
+
+        expect(mockTranslate).toHaveBeenCalledWith('model.title.key');
+        expect(title).toBe('Translated Title');
+      });
+
+      test('should return instance title when set via setTitle', () => {
+        TestFlowModel.define({
+          title: 'Meta Title',
+          group: 'test',
+        });
+
+        const modelWithBoth = new TestFlowModel(modelOptions);
+        modelWithBoth.setTitle('Instance Title');
+
+        expect(modelWithBoth.title).toBe('Instance Title');
+      });
+
+      test('should prioritize instance title over meta title', () => {
+        TestFlowModel.define({
+          title: 'Meta Title',
+          group: 'test',
+        });
+
+        const modelWithBoth = new TestFlowModel(modelOptions);
+        modelWithBoth.setTitle('Instance Title');
+
+        // Instance title should have higher priority
+        expect(modelWithBoth.title).toBe('Instance Title');
+        expect(modelWithBoth.title).not.toBe('Meta Title');
+      });
+
+      test('should fall back to meta title when instance title is cleared', () => {
+        TestFlowModel.define({
+          title: 'Meta Title',
+          group: 'test',
+        });
+
+        const modelWithBoth = new TestFlowModel(modelOptions);
+        modelWithBoth.setTitle('Instance Title');
+        expect(modelWithBoth.title).toBe('Instance Title');
+
+        // Clear instance title
+        modelWithBoth.setTitle('');
+        expect(modelWithBoth.title).toBe('Meta Title');
+      });
+
+      test('should handle null and undefined instance titles', () => {
+        TestFlowModel.define({
+          title: 'Meta Title',
+          group: 'test',
+        });
+
+        const modelWithMeta = new TestFlowModel(modelOptions);
+
+        // Test with null
+        modelWithMeta.setTitle(null as any);
+        expect(modelWithMeta.title).toBe('Meta Title');
+
+        // Test with undefined
+        modelWithMeta.setTitle(undefined as any);
+        expect(modelWithMeta.title).toBe('Meta Title');
+      });
+    });
+
+    describe('setTitle method', () => {
+      test('should set instance title correctly', () => {
+        model.setTitle('Custom Title');
+        expect(model.title).toBe('Custom Title');
+      });
+
+      test('should update title when called multiple times', () => {
+        model.setTitle('First Title');
+        expect(model.title).toBe('First Title');
+
+        model.setTitle('Second Title');
+        expect(model.title).toBe('Second Title');
+      });
+
+      test('should handle empty string title', () => {
+        TestFlowModel.define({
+          title: 'Meta Title',
+          group: 'test',
+        });
+
+        const modelWithMeta = new TestFlowModel(modelOptions);
+        modelWithMeta.setTitle('Initial Title');
+        expect(modelWithMeta.title).toBe('Initial Title');
+
+        // Empty string is falsy, so it falls back to meta title
+        modelWithMeta.setTitle('');
+        expect(modelWithMeta.title).toBe('Meta Title');
+      });
+
+      test('should handle special characters in title', () => {
+        const specialTitle = 'Title with 特殊字符 & symbols!@#$%^&*()';
+        model.setTitle(specialTitle);
+        expect(model.title).toBe(specialTitle);
+      });
+    });
+
+    describe('title inheritance', () => {
+      test('should not inherit meta title from parent class by default', () => {
+        const ParentModel = class extends FlowModel {
+          static name = 'ParentModel';
+        };
+        ParentModel.define({
+          title: 'Parent Title',
+          group: 'parent',
+        });
+
+        const ChildModel = class extends ParentModel {
+          static name = 'ChildModel';
+        };
+
+        const parentInstance = new ParentModel(modelOptions);
+        const childInstance = new ChildModel(modelOptions);
+
+        expect(parentInstance.title).toBe('Parent Title');
+        // Child class doesn't inherit parent meta by default
+        expect(childInstance.title).toBeUndefined();
+      });
+
+      test('should override parent meta title with child meta title', () => {
+        const ParentModel = class extends FlowModel {
+          static name = 'ParentModel';
+        };
+        ParentModel.define({
+          title: 'Parent Title',
+          group: 'parent',
+        });
+
+        const ChildModel = class extends ParentModel {
+          static name = 'ChildModel';
+        };
+        ChildModel.define({
+          title: 'Child Title',
+          group: 'child',
+        });
+
+        const parentInstance = new ParentModel(modelOptions);
+        const childInstance = new ChildModel(modelOptions);
+
+        expect(parentInstance.title).toBe('Parent Title');
+        expect(childInstance.title).toBe('Child Title');
+      });
+
+      test('should allow instance title to override meta title', () => {
+        const ParentModel = class extends FlowModel {
+          static name = 'ParentModel';
+        };
+        ParentModel.define({
+          title: 'Parent Title',
+          group: 'parent',
+        });
+
+        const ChildModel = class extends ParentModel {
+          static name = 'ChildModel';
+        };
+        ChildModel.define({
+          title: 'Child Title',
+          group: 'child',
+        });
+
+        const childInstance = new ChildModel(modelOptions);
+        expect(childInstance.title).toBe('Child Title');
+
+        childInstance.setTitle('Instance Override');
+        expect(childInstance.title).toBe('Instance Override');
+      });
+    });
+
+    describe('title with translation', () => {
+      test('should call translate method for meta title', () => {
+        const mockTranslate = vi.fn().mockReturnValue('Translated Meta Title');
+
+        TestFlowModel.define({
+          title: 'meta.title.key',
+          group: 'test',
+        });
+
+        const mockFlowEngine = {
+          ...flowEngine,
+          translate: mockTranslate,
+        };
+        const modelWithTranslate = new TestFlowModel({
+          ...modelOptions,
+          flowEngine: mockFlowEngine,
+        });
+
+        const title = modelWithTranslate.title;
+
+        expect(mockTranslate).toHaveBeenCalledWith('meta.title.key');
+        expect(title).toBe('Translated Meta Title');
+      });
+    });
+
+    describe('title serialization', () => {
+      test('should not include instance title in serialization by default', () => {
+        model.setTitle('Instance Title');
+        const serialized = model.serialize();
+
+        // Instance title should not be included in serialization
+        expect(serialized).not.toHaveProperty('title');
+        expect(serialized).not.toHaveProperty('_title');
+      });
+
+      // this means after deserialization, should set title in some flow step
+      test('should maintain title after serialization/deserialization cycle', () => {
+        TestFlowModel.define({
+          title: 'Meta Title',
+          group: 'test',
+        });
+
+        const originalModel = new TestFlowModel(modelOptions);
+        originalModel.setTitle('Instance Title');
+
+        const serialized = originalModel.serialize();
+        const newModel = new TestFlowModel({
+          ...serialized,
+          flowEngine,
+        });
+
+        // Meta title should be available
+        expect(newModel.title).toBe('Meta Title');
+
+        // Instance title needs to be set again
+        newModel.setTitle('Instance Title');
+        expect(newModel.title).toBe('Instance Title');
+      });
+    });
+  });
+
   // ==================== EDGE CASES ====================
   describe('Edge Cases & Error Handling', () => {
     test('should handle model destruction gracefully', () => {
