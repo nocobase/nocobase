@@ -8,10 +8,11 @@
  */
 
 import React from 'react';
+import { castArray } from 'lodash';
 import { Button } from 'antd';
 import { tval } from '@nocobase/utils/client';
 import { AssociationReadPrettyFieldModel } from './AssociationReadPrettyFieldModel';
-import { FlowEngineProvider, reactive } from '@nocobase/flow-engine';
+import { reactive, FlowModel } from '@nocobase/flow-engine';
 import { getUniqueKeyFromCollection } from '../../../../../collection-manager/interfaces/utils';
 
 const LinkToggleWrapper = ({ enableLink, children, currentRecord, ...props }) => {
@@ -46,70 +47,43 @@ export class AssociationSelectReadPrettyFieldModel extends AssociationReadPretty
   set onClick(fn) {
     this.setProps({ ...this.props, onClick: fn });
   }
+  private fieldModelCache: Record<string, FlowModel> = {};
   @reactive
   public render() {
     const { fieldNames, enableLink = true } = this.props;
     const value = this.getValue();
-    if (!this.collectionField || !value) {
-      return;
-    }
-    const { target } = this.collectionField?.options || {};
-    const collectionManager = this.collectionField.collection.collectionManager;
-    const targetCollection = collectionManager.getCollection(target);
-    const targetLabelField = targetCollection.getField(fieldNames.label);
-    const fieldClasses = Array.from(this.flowEngine.filterModelClassByParent('ReadPrettyFieldModel').values())?.sort(
-      (a, b) => (a.meta?.sort || 0) - (b.meta?.sort || 0),
-    );
-    const fieldInterfaceName = targetLabelField?.options?.interface;
-    const fieldClass = fieldClasses.find((fieldClass) => {
-      return fieldClass.supportedFieldInterfaces?.includes(fieldInterfaceName);
-    });
-    const model = this.flowEngine.createModel({
-      use: fieldClass?.name || 'ReadPrettyFieldModel',
-      stepParams: {
-        default: {
-          step1: {
-            dataSourceKey: this.collectionField.collection.dataSourceKey,
-            collectionName: target,
-            fieldPath: fieldNames.label,
-          },
-        },
-      },
-      props: {
-        dataSource: targetLabelField.enum,
-        ...targetLabelField.getComponentProps(),
-      },
-    });
-    model.setSharedContext({
-      ...this.ctx.shared,
-      value: value?.[fieldNames.label],
-      currentRecord: value,
-    });
-    model.setParent(this.parent);
-    if (Array.isArray(value)) {
-      return (
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
-          {value.map((v, idx) => {
-            const mol = model.createFork({}, `${idx}`);
-            mol.setSharedContext({ ...this.ctx.shared, index: idx, value: v?.[fieldNames.label], currentRecord: v });
-            return (
-              <React.Fragment key={idx}>
-                {idx > 0 && <span style={{ color: 'rgb(170, 170, 170)' }}>,</span>}
-                <LinkToggleWrapper enableLink={enableLink} {...this.props} currentRecord={v}>
-                  <FlowEngineProvider engine={this.flowEngine}>
-                    {v?.[fieldNames.label] ? mol.render() : this.flowEngine.translate('N/A')}
-                  </FlowEngineProvider>
-                </LinkToggleWrapper>
-              </React.Fragment>
-            );
-          })}
-        </div>
-      );
-    }
+    if (!value) return null;
+
+    const arrayValue = castArray(value);
+    const field = this.subModels.field as FlowModel;
     return (
-      <LinkToggleWrapper enableLink={enableLink} {...this.props} currentRecord={value}>
-        <FlowEngineProvider engine={this.flowEngine}>{model.render()}</FlowEngineProvider>
-      </LinkToggleWrapper>
+      <>
+        {arrayValue.map((v, index) => {
+          const key = `${index}`;
+          let fieldModel = this.fieldModelCache[v?.[fieldNames.label]];
+
+          if (!fieldModel) {
+            fieldModel = field.createFork({}, key);
+            fieldModel.setSharedContext({
+              index,
+              value: v?.[fieldNames.label],
+              currentRecord: v,
+            });
+            this.fieldModelCache[v?.[fieldNames.label]] = fieldModel;
+          }
+
+          const content = v?.[fieldNames.label] ? fieldModel.render() : this.flowEngine.translate('N/A');
+
+          return (
+            <React.Fragment key={index}>
+              {index > 0 && ', '}
+              <LinkToggleWrapper enableLink={enableLink} {...this.props} currentRecord={v}>
+                {content}
+              </LinkToggleWrapper>
+            </React.Fragment>
+          );
+        })}
+      </>
     );
   }
 }
@@ -123,16 +97,32 @@ AssociationSelectReadPrettyFieldModel.registerFlow({
     fieldNames: {
       use: 'titleField',
       title: tval('Title field'),
-      handler(ctx, params) {
-        const { target } = ctx.model.collectionField.options;
+      async handler(ctx, params) {
+        const { target } = ctx.model.collectionField;
         const collectionManager = ctx.model.collectionField.collection.collectionManager;
         const targetCollection = collectionManager.getCollection(target);
         const filterKey = getUniqueKeyFromCollection(targetCollection.options as any);
+        const label = params.label || targetCollection.options.titleField || filterKey;
         const newFieldNames = {
           value: filterKey,
-          label: params.label || targetCollection.options.titleField || filterKey,
+          label,
         };
+        const targetCollectionField = targetCollection.getField(label);
+        const use = targetCollectionField.getFirstSubclassNameOf('ReadPrettyFieldModel') || 'ReadPrettyFieldModel';
         ctx.model.setProps({ fieldNames: newFieldNames });
+        const model = ctx.model.setSubModel('field', {
+          use,
+          stepParams: {
+            default: {
+              step1: {
+                dataSourceKey: ctx.model.collectionField.dataSourceKey,
+                collectionName: target,
+                fieldPath: newFieldNames.label,
+              },
+            },
+          },
+        });
+        await model.applyAutoFlows();
       },
     },
     enableLink: {
