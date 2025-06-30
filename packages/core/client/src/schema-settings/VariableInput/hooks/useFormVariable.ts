@@ -13,7 +13,7 @@ import { useTranslation } from 'react-i18next';
 import { useBlockContext } from '../../../block-provider';
 import { useFormBlockContext } from '../../../block-provider/FormBlockProvider';
 import { CollectionFieldOptions_deprecated } from '../../../collection-manager';
-import { useDataBlockRequestData, useDataSource } from '../../../data-source';
+import { useCollection, useDataSource } from '../../../data-source';
 import { useFlag } from '../../../flag-provider/hooks/useFlag';
 import { useBaseVariable } from './useBaseVariable';
 
@@ -100,6 +100,7 @@ export const useCurrentFormVariable = ({
   const { currentFormCtx, shouldDisplayCurrentForm } = useCurrentFormContext({ form: _form });
   const { t } = useTranslation();
   const { collectionName } = useFormBlockContext();
+  const collection = useCollection();
   const dataSource = useDataSource();
   const currentFormSettings = useBaseVariable({
     collectionField,
@@ -108,7 +109,7 @@ export const useCurrentFormVariable = ({
     maxDepth: 4,
     name: '$nForm',
     title: t('Current form'),
-    collectionName: collectionName,
+    collectionName: collectionName || collection?.name,
     noDisabled,
     dataSource: dataSource?.key,
     returnFields: (fields, option) => {
