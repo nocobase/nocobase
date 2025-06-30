@@ -8,31 +8,22 @@
  */
 
 import React from 'react';
-import { tval } from '@nocobase/utils/client';
 import { reactive } from '@nocobase/flow-engine';
+import { tval } from '@nocobase/utils/client';
 import { ReadPrettyFieldModel } from './ReadPrettyFieldModel';
+import { MarkdownReadPretty } from '../EditableField/MarkdownEditableFieldModel/index';
 
-const lineHeight142 = { lineHeight: '1.42' };
-
-export class RichTextReadPrettyFieldModel extends ReadPrettyFieldModel {
-  public static readonly supportedFieldInterfaces = ['richText'];
+export class MarkdownReadPrettyFieldModel extends ReadPrettyFieldModel {
+  public static readonly supportedFieldInterfaces = ['markdown'];
   @reactive
   public render() {
+    const { textOnly = true } = this.props;
     const value = this.getValue();
-    const html = (
-      <div
-        style={lineHeight142}
-        dangerouslySetInnerHTML={{
-          __html: value,
-        }}
-      />
-    );
-
-    return <div>{html}</div>;
+    return <MarkdownReadPretty textOnly={textOnly} value={value} />;
   }
 }
 
-RichTextReadPrettyFieldModel.registerFlow({
+MarkdownReadPrettyFieldModel.registerFlow({
   key: 'displayMode',
   title: tval('Specific properties'),
   auto: true,

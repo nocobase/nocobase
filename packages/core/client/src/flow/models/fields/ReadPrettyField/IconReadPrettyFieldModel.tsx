@@ -8,11 +8,13 @@
  */
 
 import React from 'react';
+import { reactive } from '@nocobase/flow-engine';
 import { ReadPrettyFieldModel } from './ReadPrettyFieldModel';
 import { Icon } from '../../../../icon';
 
 export class IconReadPrettyFieldModel extends ReadPrettyFieldModel {
   public static readonly supportedFieldInterfaces = ['icon'];
+  @reactive
   public render() {
     const value = this.getValue();
 
