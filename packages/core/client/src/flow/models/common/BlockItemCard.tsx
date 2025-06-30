@@ -48,7 +48,11 @@ export const BlockItemCard = (props) => {
     </div>
   );
   return (
-    <Card title={title} style={{ width: '100%' }}>
+    <Card
+      title={title}
+      style={{ display: 'flex', flexDirection: 'column', height: '100%' }}
+      bodyStyle={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}
+    >
       {children}
     </Card>
   );

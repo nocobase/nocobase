@@ -11,6 +11,11 @@ import { APIResource, BaseRecordResource, Collection, DefaultStructure, FlowMode
 
 export class BlockModel<T = DefaultStructure> extends FlowModel<T> {}
 
+export const HeightMode = {
+  DEFAULT: 'defaultHeight',
+  SPECIFY_VALUE: 'specifyValue',
+  FULL_HEIGHT: 'fullHeight',
+};
 BlockModel.registerFlow({
   key: 'blockProps',
   title: tval('Basic configuration'),
@@ -35,6 +40,55 @@ BlockModel.registerFlow({
         const description = ctx.globals.flowEngine.translate(params.description);
         ctx.model.setProps('title', title);
         ctx.model.setProps('description', description);
+      },
+    },
+    setBlockHeight: {
+      title: tval('Set block height'),
+      uiSchema: {
+        heightMode: {
+          type: 'string',
+          enum: [
+            { label: tval('Default'), value: HeightMode.DEFAULT },
+            { label: tval('Specify height'), value: HeightMode.SPECIFY_VALUE },
+            { label: tval('Full height'), value: HeightMode.FULL_HEIGHT },
+          ],
+          required: true,
+          'x-decorator': 'FormItem',
+          'x-component': 'Radio.Group',
+        },
+        height: {
+          title: tval('Height'),
+          type: 'string',
+          required: true,
+          'x-decorator': 'FormItem',
+          'x-component': 'NumberPicker',
+          'x-component-props': {
+            addonAfter: 'px',
+          },
+          'x-validator': [
+            {
+              minimum: 40,
+            },
+          ],
+          'x-reactions': {
+            dependencies: ['heightMode'],
+            fulfill: {
+              state: {
+                hidden: '{{ $deps[0]==="fullHeight"||$deps[0]==="defaultHeight"}}',
+                value: '{{$deps[0]!=="specifyValue"?null:$self.value}}',
+              },
+            },
+          },
+        },
+      },
+      defaultParams: () => {
+        return {
+          heightMode: HeightMode.DEFAULT,
+        };
+      },
+      handler(ctx, params) {
+        ctx.model.setProps('heightMode', params.heightMode);
+        ctx.model.setProps('height', params.height);
       },
     },
   },
