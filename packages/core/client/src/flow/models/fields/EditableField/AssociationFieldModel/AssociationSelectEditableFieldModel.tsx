@@ -50,14 +50,19 @@ function LabelByField(props) {
 }
 
 function LazySelect(props) {
-  const { fieldNames, value, multiple } = props;
+  const { fieldNames, value, multiple, options, ...others } = props;
+  const realOptions =
+    options && options.length ? options : multiple ? (Array.isArray(value) ? value : []) : value ? [value] : [];
+
   return (
     <Select
+      {...others}
       showSearch
       labelInValue
-      {...props}
+      fieldNames={fieldNames}
+      options={realOptions}
       value={toValue(value, fieldNames, multiple)}
-      mode={multiple && 'multiple'}
+      mode={multiple ? 'multiple' : undefined}
       onChange={(value, option) => {
         props.onChange(option);
       }}
