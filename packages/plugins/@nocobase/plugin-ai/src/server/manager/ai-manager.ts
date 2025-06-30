@@ -81,7 +81,13 @@ export class AIManager {
 
     const processSchema = (schema: any) => {
       if (!schema) return undefined;
-      return schema instanceof ZodObject && raw ? zodToJsonSchema(schema) : schema;
+      try {
+        // Use type assertion to break the recursive type checking
+        return (schema as any) instanceof ZodObject && raw ? zodToJsonSchema(schema as any) : schema;
+      } catch (error) {
+        // Fallback if zodToJsonSchema fails
+        return schema;
+      }
     };
 
     if (tool.type === 'group' && child) {

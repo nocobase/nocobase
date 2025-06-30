@@ -55,19 +55,22 @@ const layoutElements = async (nodes: Node[], edges: Edge[]) => {
     edges: edges,
   };
 
-  return elk
-    .layout(graph)
-    .then((layoutedGraph) => ({
-      nodes: layoutedGraph.children.map((node) => ({
-        ...node,
-        // React Flow expects a position property on the node instead of `x`
-        // and `y` fields.
-        position: { x: node.x, y: node.y },
-      })),
+  return (
+    elk
+      // @ts-ignore
+      .layout(graph)
+      .then((layoutedGraph) => ({
+        nodes: layoutedGraph.children.map((node) => ({
+          ...node,
+          // React Flow expects a position property on the node instead of `x`
+          // and `y` fields.
+          position: { x: node.x, y: node.y },
+        })),
 
-      edges: layoutedGraph.edges,
-    }))
-    .catch(console.error);
+        edges: layoutedGraph.edges,
+      }))
+      .catch(console.error)
+  );
 };
 
 const getDiagramData = (collections: any[]) => {
@@ -226,6 +229,7 @@ export const Diagram: React.FC<{
 
   useEffect(() => {
     getDiagramData(collections)
+      // @ts-ignore
       .then(({ nodes, edges }) => {
         setNodes(nodes);
         setEdges(edges);
