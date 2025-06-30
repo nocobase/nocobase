@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { evaluators } from '@nocobase/evaluators';
+import { Evaluator, evaluators } from '@nocobase/evaluators';
 import { Instruction } from '.';
 import type Processor from '../Processor';
 import { JOB_STATUS } from '../constants';
@@ -79,6 +79,22 @@ export class ConditionInstruction extends Instruction {
 
     // pass control to upper scope by ending current scope
     return processor.exit(branchJob.status);
+  }
+
+  async test({ engine, calculation, expression = '' }) {
+    const evaluator = <Evaluator | undefined>evaluators.get(engine);
+    try {
+      const result = evaluator ? evaluator(expression) : logicCalculate(calculation);
+      return {
+        result,
+        status: JOB_STATUS.RESOLVED,
+      };
+    } catch (e) {
+      return {
+        result: e.toString(),
+        status: JOB_STATUS.ERROR,
+      };
+    }
   }
 }
 
