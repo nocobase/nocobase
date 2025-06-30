@@ -116,7 +116,29 @@ const AssociationSelect = connect(
     },
   ),
   mapReadPretty((props) => {
-    return props.value;
+    const flowEngine = useFlowEngine();
+    const currentModel: any = useFlowModel();
+    const model = flowEngine.createModel({
+      use: 'AssociationSelectReadPrettyFieldModel',
+      stepParams: {
+        default: {
+          step1: {
+            dataSourceKey: currentModel.collectionField.collection.dataSourceKey,
+            collectionName: currentModel.collectionField.collection.name,
+            fieldPath: currentModel.fieldPath,
+          },
+        },
+      },
+    });
+    model.setSharedContext({
+      ...currentModel.getSharedContext(),
+      value: props.value,
+    });
+    model.setParent(currentModel.parent);
+    model.setProps({
+      ...props,
+    });
+    return <FlowModelRenderer model={model} showFlowSettings={{ showBackground: false }} showErrorFallback />;
   }),
 );
 
