@@ -7,8 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { ButtonProps } from 'antd';
 import { tval } from '@nocobase/utils/client';
+import { ButtonProps } from 'antd';
 import { ActionModel } from '../../base/ActionModel';
 import { DataBlockModel } from '../../base/BlockModel';
 import { FormModel } from './FormModel';
@@ -49,7 +49,7 @@ FormSubmitActionModel.registerFlow({
           parentBlockModel.resource.refresh();
         }
         if (ctx.shared.currentView) {
-          ctx.shared.currentView.destroy();
+          ctx.shared.currentView.close();
         }
       },
     },
