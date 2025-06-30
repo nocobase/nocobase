@@ -23,6 +23,7 @@ export const MarkdownReadPretty = (props) => {
     <div
       className={` ${markdownClass} nb-markdown nb-markdown-default nb-markdown-table`}
       dangerouslySetInnerHTML={{ __html: html }}
+      style={props.style}
     />
   );
 

@@ -12,7 +12,7 @@ import { customAlphabet as Alphabet } from 'nanoid';
 import { EditableFieldModel } from './EditableFieldModel';
 
 export class NanoIDEditableFieldModel extends EditableFieldModel {
-  static supportedFieldInterfaces = ['nanoID'];
+  static supportedFieldInterfaces = ['nanoid'];
 
   get component() {
     return [Input, {}];
@@ -22,7 +22,7 @@ export class NanoIDEditableFieldModel extends EditableFieldModel {
 NanoIDEditableFieldModel.registerFlow({
   key: 'initialValue',
   auto: true,
-  sort: 5,
+  sort: 1000,
   steps: {
     initialValue: {
       handler(ctx, params) {
