@@ -436,6 +436,10 @@ export class CollectionField {
     return this.options.uiSchema || {};
   }
 
+  get targetCollection() {
+    return this.collection.collectionManager.getCollection(this.options.target);
+  }
+
   getComponentProps() {
     return this.options.uiSchema?.['x-component-props'] || {};
   }
@@ -444,11 +448,10 @@ export class CollectionField {
     if (!this.options.target) {
       return [];
     }
-    const targetCollection = this.collection.collectionManager.getCollection(this.options.target);
-    if (!targetCollection) {
+    if (!this.targetCollection) {
       throw new Error(`Target collection ${this.options.target} not found for field ${this.name}`);
     }
-    return targetCollection.getFields();
+    return this.targetCollection.getFields();
   }
 
   getInterfaceOptions() {
