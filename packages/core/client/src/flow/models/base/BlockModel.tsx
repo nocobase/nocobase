@@ -34,6 +34,16 @@ export class DataBlockModel<T = DefaultStructure> extends BlockModel<T> {
     });
   }
 
+  get title() {
+    return (
+      this._title ||
+      `
+    ${this.collection.title} -> 
+    ${this.collection.dataSource.displayName} -> 
+    ${this.translate(this.constructor['meta']?.title || this.constructor.name)}`
+    );
+  }
+
   addAppends(fieldPath: string, refresh = false) {
     const field = this.ctx.globals.dataSourceManager.getCollectionField(
       `${this.collection.dataSourceKey}.${this.collection.name}.${fieldPath}`,

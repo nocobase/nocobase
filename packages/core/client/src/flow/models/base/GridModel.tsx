@@ -115,6 +115,7 @@ export class GridModel extends FlowModel<GridModelStructure> {
                   fallback={<SkeletonFallback />}
                   showFlowSettings={{ showBackground: false }}
                   showErrorFallback
+                  showTitle
                 />
               );
             }}

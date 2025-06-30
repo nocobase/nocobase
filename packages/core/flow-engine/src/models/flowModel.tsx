@@ -47,6 +47,7 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
   public parent: ParentFlowModel<Structure>;
   public subModels: Structure['subModels'];
   private _options: FlowModelOptions<Structure>;
+  protected _title: string;
 
   /**
    * 所有 fork 实例的引用集合。
@@ -133,6 +134,15 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
 
   static get meta() {
     return modelMetas.get(this);
+  }
+
+  get title() {
+    // model 可以通过 setTitle 来自定义title， 具有更高的优先级
+    return this._title || this.translate(this.constructor['meta']?.title);
+  }
+
+  setTitle(value: string) {
+    this._title = value;
   }
 
   private createSubModels(subModels: Record<string, CreateSubModelOptions | CreateSubModelOptions[]>) {
