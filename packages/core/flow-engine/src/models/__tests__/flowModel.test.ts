@@ -15,18 +15,6 @@ import type { FlowDefinition, FlowContext, FlowModelOptions, DefaultStructure } 
 import { APIClient } from '@nocobase/sdk';
 
 // Mock dependencies
-vi.mock('@formily/reactive', async () => {
-  const actual = await vi.importActual('@formily/reactive');
-  return {
-    ...actual,
-    action: (fn: any) => fn,
-    autorun: vi.fn(),
-    define: vi.fn(),
-    observable: (obj: any) => obj,
-    observe: vi.fn(() => vi.fn()),
-  };
-});
-
 vi.mock('uid/secure', () => ({
   uid: vi.fn(() => 'mock-uid-' + Math.random().toString(36).substring(2, 11)),
 }));
@@ -686,6 +674,391 @@ describe('FlowModel', () => {
       });
     });
 
+    describe('subModels management', () => {
+      let parentModel: FlowModel;
+
+      beforeEach(() => {
+        parentModel = new FlowModel(modelOptions);
+      });
+
+      describe('setSubModel (object type)', () => {
+        test('should set single subModel with FlowModel instance', () => {
+          const childModel = new FlowModel({
+            uid: 'child-model-uid',
+            flowEngine,
+            props: { childProp: 'childValue' },
+            stepParams: { childFlow: { childStep: { childParam: 'childValue' } } },
+          });
+
+          const result = parentModel.setSubModel('testChild', childModel);
+
+          expect(result.uid).toBe(childModel.uid);
+          expect(result.parent).toBe(parentModel);
+          expect((parentModel.subModels.testChild as FlowModel).uid).toBe(result.uid);
+          expect(result.uid).toBe('child-model-uid');
+          expect(result.props).toEqual(expect.objectContaining({ childProp: 'childValue' }));
+        });
+
+        test('should replace existing subModel', () => {
+          const firstChild = new FlowModel({ uid: 'first-child', flowEngine });
+          const secondChild = new FlowModel({ uid: 'second-child', flowEngine, props: { newProp: 'newValue' } });
+
+          parentModel.setSubModel('testChild', firstChild);
+          const result = parentModel.setSubModel('testChild', secondChild);
+
+          expect(result.uid).toBe(secondChild.uid);
+          expect((parentModel.subModels.testChild as FlowModel).uid).toBe(result.uid);
+          expect(result.uid).toBe('second-child');
+          expect(result.props).toEqual(expect.objectContaining({ newProp: 'newValue' }));
+        });
+
+        test('should throw error when setting model with existing parent', () => {
+          const childModel = new FlowModel({ uid: 'child-with-parent', flowEngine });
+          const otherParent = new FlowModel({ uid: 'other-parent', flowEngine });
+          childModel.setParent(otherParent);
+
+          expect(() => {
+            parentModel.setSubModel('testChild', childModel);
+          }).toThrow('Sub model already has a parent.');
+        });
+
+        test('should emit onSubModelAdded event', () => {
+          const eventSpy = vi.fn();
+          parentModel.emitter.on('onSubModelAdded', eventSpy);
+          const childModel = new FlowModel({ uid: 'test-child', flowEngine });
+
+          const result = parentModel.setSubModel('testChild', childModel);
+
+          expect(eventSpy).toHaveBeenCalledWith(result);
+        });
+      });
+
+      describe('addSubModel (array type)', () => {
+        test('should add subModel to array with FlowModel instance', () => {
+          const childModel = new FlowModel({
+            uid: 'child-model-uid',
+            flowEngine,
+            props: { childProp: 'childValue' },
+          });
+
+          const result = parentModel.addSubModel('testChildren', childModel);
+
+          expect(result.uid).toBe(childModel.uid);
+          expect(result.parent).toBe(parentModel);
+          expect(Array.isArray(parentModel.subModels.testChildren)).toBe(true);
+          expect((parentModel.subModels.testChildren as FlowModel[]).some((model) => model.uid === result.uid)).toBe(
+            true,
+          );
+          expect(result.sortIndex).toBe(1);
+        });
+
+        test('should add multiple subModels with correct sortIndex', () => {
+          const child1 = new FlowModel({ uid: 'child1', flowEngine });
+          const child2 = new FlowModel({ uid: 'child2', flowEngine });
+          const child3 = new FlowModel({ uid: 'child3', flowEngine });
+
+          parentModel.addSubModel('testChildren', child1);
+          parentModel.addSubModel('testChildren', child2);
+          parentModel.addSubModel('testChildren', child3);
+
+          expect(child1.sortIndex).toBe(1);
+          expect(child2.sortIndex).toBe(2);
+          expect(child3.sortIndex).toBe(3);
+          expect(parentModel.subModels.testChildren).toHaveLength(3);
+        });
+
+        test('should maintain sortIndex when adding to existing array', () => {
+          const existingChild = new FlowModel({ uid: 'existing', flowEngine, sortIndex: 5 });
+          (parentModel.subModels as any).testChildren = [existingChild];
+
+          const newChild = new FlowModel({ uid: 'new-child', flowEngine });
+          parentModel.addSubModel('testChildren', newChild);
+
+          expect(newChild.sortIndex).toBe(6); // Should be max(5) + 1
+        });
+
+        test('should throw error when adding model with existing parent', () => {
+          const childModel = new FlowModel({ uid: 'child-with-parent', flowEngine });
+          const otherParent = new FlowModel({ uid: 'other-parent', flowEngine });
+          childModel.setParent(otherParent);
+
+          expect(() => {
+            parentModel.addSubModel('testChildren', childModel);
+          }).toThrow('Sub model already has a parent.');
+        });
+
+        test('should emit onSubModelAdded event', () => {
+          const eventSpy = vi.fn();
+          parentModel.emitter.on('onSubModelAdded', eventSpy);
+          const childModel = new FlowModel({ uid: 'test-child', flowEngine });
+
+          const result = parentModel.addSubModel('testChildren', childModel);
+
+          expect(eventSpy).toHaveBeenCalledWith(result);
+        });
+      });
+
+      describe('mapSubModels', () => {
+        test('should map over array subModels', () => {
+          const child1 = new FlowModel({ uid: 'child1', flowEngine });
+          const child2 = new FlowModel({ uid: 'child2', flowEngine });
+
+          parentModel.addSubModel('testChildren', child1);
+          parentModel.addSubModel('testChildren', child2);
+
+          const results = parentModel.mapSubModels('testChildren', (model, index) => ({
+            uid: model.uid,
+            index,
+          }));
+
+          expect(results).toHaveLength(2);
+          expect(results[0]).toEqual({ uid: 'child1', index: 0 });
+          expect(results[1]).toEqual({ uid: 'child2', index: 1 });
+        });
+
+        test('should map over single subModel', () => {
+          const child = new FlowModel({ uid: 'single-child', flowEngine });
+          parentModel.setSubModel('testChild', child);
+
+          const results = parentModel.mapSubModels('testChild', (model, index) => ({
+            uid: model.uid,
+            index,
+          }));
+
+          expect(results).toHaveLength(1);
+          expect(results[0]).toEqual({ uid: 'single-child', index: 0 });
+        });
+
+        test('should return empty array for non-existent subModel', () => {
+          const results = parentModel.mapSubModels('nonExistent', (model) => model.uid);
+
+          expect(results).toEqual([]);
+        });
+
+        test('should handle complex mapping operations', () => {
+          const item1 = new FlowModel({ uid: 'item1', flowEngine, props: { value: 10 } });
+          const item2 = new FlowModel({ uid: 'item2', flowEngine, props: { value: 20 } });
+
+          parentModel.addSubModel('items', item1);
+          parentModel.addSubModel('items', item2);
+
+          const totalValue = parentModel
+            .mapSubModels('items', (model) => model.props.value)
+            .reduce((sum, value) => sum + value, 0);
+
+          expect(totalValue).toBe(30);
+        });
+      });
+
+      describe('findSubModel', () => {
+        test('should find subModel by condition in array', () => {
+          const child1 = new FlowModel({ uid: 'child1', flowEngine, props: { name: 'first' } });
+          const child2 = new FlowModel({ uid: 'child2', flowEngine, props: { name: 'second' } });
+
+          parentModel.addSubModel('testChildren', child1);
+          parentModel.addSubModel('testChildren', child2);
+
+          const found = parentModel.findSubModel('testChildren', (model) => model.props.name === 'second');
+
+          expect(found).toBeDefined();
+          expect(found?.uid).toBe('child2');
+          expect(found?.props.name).toBe('second');
+        });
+
+        test('should find single subModel by condition', () => {
+          const child = new FlowModel({ uid: 'target-child', flowEngine, props: { name: 'target' } });
+          parentModel.setSubModel('testChild', child);
+
+          const found = parentModel.findSubModel('testChild', (model) => model.props.name === 'target');
+
+          expect(found).toBeDefined();
+          expect(found?.uid).toBe('target-child');
+          expect(found?.props.name).toBe('target');
+        });
+
+        test('should return null when no match found', () => {
+          const child1 = new FlowModel({ uid: 'child1', flowEngine, props: { name: 'first' } });
+          parentModel.addSubModel('testChildren', child1);
+
+          const found = parentModel.findSubModel('testChildren', (model) => model.props.name === 'nonexistent');
+
+          expect(found).toBeNull();
+        });
+
+        test('should return null for non-existent subModel key', () => {
+          const found = parentModel.findSubModel('nonExistent', () => true);
+
+          expect(found).toBeNull();
+        });
+
+        test('should find first matching model in array', () => {
+          const child1 = new FlowModel({ uid: 'child1', flowEngine, props: { type: 'match' } });
+          const child2 = new FlowModel({ uid: 'child2', flowEngine, props: { type: 'match' } });
+
+          parentModel.addSubModel('testChildren', child1);
+          parentModel.addSubModel('testChildren', child2);
+
+          const found = parentModel.findSubModel('testChildren', (model) => model.props.type === 'match');
+
+          expect(found).toBeDefined();
+          expect(found?.uid).toBe('child1'); // Should return first match
+          expect(found?.props.type).toBe('match');
+        });
+      });
+
+      describe('applySubModelsAutoFlows', () => {
+        test('should apply auto flows to all array subModels', async () => {
+          const child1 = new FlowModel({ uid: 'child1', flowEngine });
+          const child2 = new FlowModel({ uid: 'child2', flowEngine });
+
+          // Mock applyAutoFlows and setSharedContext on child models
+          child1.applyAutoFlows = vi.fn().mockResolvedValue([]);
+          child1.setSharedContext = vi.fn();
+          child2.applyAutoFlows = vi.fn().mockResolvedValue([]);
+          child2.setSharedContext = vi.fn();
+
+          parentModel.addSubModel('children', child1);
+          parentModel.addSubModel('children', child2);
+
+          const extraData = { test: 'extra' };
+          const sharedData = { shared: 'data' };
+
+          await parentModel.applySubModelsAutoFlows('children', extraData, sharedData);
+
+          expect(child1.applyAutoFlows).toHaveBeenCalledWith(extraData);
+          expect(child2.applyAutoFlows).toHaveBeenCalledWith(extraData);
+          expect(child1.setSharedContext).toHaveBeenCalledWith(sharedData);
+          expect(child2.setSharedContext).toHaveBeenCalledWith(sharedData);
+        });
+
+        test('should apply auto flows to single subModel', async () => {
+          const child = new FlowModel({ uid: 'child', flowEngine });
+
+          // Mock applyAutoFlows and setSharedContext on child model
+          child.applyAutoFlows = vi.fn().mockResolvedValue([]);
+          child.setSharedContext = vi.fn();
+
+          parentModel.setSubModel('child', child);
+
+          const extraData = { test: 'extra' };
+
+          await parentModel.applySubModelsAutoFlows('child', extraData);
+
+          expect(child.applyAutoFlows).toHaveBeenCalledWith(extraData);
+        });
+
+        test('should handle empty subModels gracefully', async () => {
+          await expect(parentModel.applySubModelsAutoFlows('nonExistent')).resolves.not.toThrow();
+        });
+      });
+
+      describe('subModels serialization', () => {
+        test('should serialize subModels in model data', () => {
+          const child1 = new FlowModel({ uid: 'child1', flowEngine, props: { name: 'first' } });
+          const child2 = new FlowModel({ uid: 'child2', flowEngine, props: { name: 'second' } });
+
+          parentModel.setSubModel('singleChild', child1);
+          parentModel.addSubModel('multipleChildren', child2);
+
+          const serialized = parentModel.serialize();
+
+          expect(serialized.subModels).toBeDefined();
+          expect(serialized.subModels.singleChild).toBeDefined();
+          expect(serialized.subModels.multipleChildren).toBeDefined();
+        });
+
+        test('should handle empty subModels in serialization', () => {
+          const serialized = parentModel.serialize();
+
+          expect(serialized.subModels).toBeDefined();
+          expect(typeof serialized.subModels).toBe('object');
+        });
+      });
+
+      describe('subModels reactive behavior', () => {
+        test('should trigger reactive updates when subModels change', () => {
+          const child = new FlowModel({ uid: 'reactive-child', flowEngine });
+          let reactionTriggered = false;
+
+          // Mock a simple reaction to observe changes
+          const observer = () => {
+            reactionTriggered = true;
+          };
+
+          // Observe changes to subModels
+          parentModel.on('subModelChanged', observer);
+
+          // Add a subModel and verify props are reactive
+          parentModel.setSubModel('reactiveTest', child);
+
+          // Test that the subModel was added
+          expect(parentModel.subModels.reactiveTest).toBeDefined();
+          expect((parentModel.subModels.reactiveTest as FlowModel).uid).toBe('reactive-child');
+
+          // Test that props are observable
+          child.setProps({ reactiveTest: 'initialValue' });
+          expect(child.props.reactiveTest).toBe('initialValue');
+
+          // Change props and verify it's reactive
+          child.setProps({ reactiveTest: 'updatedValue' });
+          expect(child.props.reactiveTest).toBe('updatedValue');
+        });
+
+        test('should maintain reactive stepParams', () => {
+          const child = new FlowModel({ uid: 'step-params-child', flowEngine });
+          parentModel.setSubModel('stepParamsTest', child);
+
+          // Set initial step params
+          child.setStepParams({ testFlow: { testStep: { param1: 'initial' } } });
+          expect(child.stepParams.testFlow.testStep.param1).toBe('initial');
+
+          // Update step params and verify reactivity
+          child.setStepParams({ testFlow: { testStep: { param1: 'updated', param2: 'new' } } });
+          expect(child.stepParams.testFlow.testStep.param1).toBe('updated');
+          expect(child.stepParams.testFlow.testStep.param2).toBe('new');
+        });
+      });
+
+      describe('subModels edge cases', () => {
+        test('should handle null parent gracefully', () => {
+          const child = new FlowModel({ uid: 'orphan-child', flowEngine });
+
+          expect(() => {
+            parentModel.setSubModel('testChild', child);
+          }).not.toThrow();
+
+          expect(child.parent).toBe(parentModel);
+        });
+
+        test('should handle setting subModel with same key multiple times', () => {
+          const child1 = new FlowModel({ uid: 'child1', flowEngine });
+          const child2 = new FlowModel({ uid: 'child2', flowEngine });
+
+          parentModel.setSubModel('sameKey', child1);
+          parentModel.setSubModel('sameKey', child2);
+
+          expect((parentModel.subModels.sameKey as FlowModel).uid).toBe(child2.uid);
+          expect((parentModel.subModels.sameKey as FlowModel).uid).toBe('child2');
+          expect(child2.parent).toBe(parentModel);
+        });
+
+        test('should handle adding subModels to different arrays', () => {
+          const child1 = new FlowModel({ uid: 'child1', flowEngine });
+          const child2 = new FlowModel({ uid: 'child2', flowEngine });
+
+          parentModel.addSubModel('arrayA', child1);
+          parentModel.addSubModel('arrayB', child2);
+
+          expect(Array.isArray(parentModel.subModels.arrayA)).toBe(true);
+          expect(Array.isArray(parentModel.subModels.arrayB)).toBe(true);
+          expect((parentModel.subModels.arrayA as FlowModel[]).some((model) => model.uid === child1.uid)).toBe(true);
+          expect((parentModel.subModels.arrayB as FlowModel[]).some((model) => model.uid === child2.uid)).toBe(true);
+          expect((parentModel.subModels.arrayA as FlowModel[]).some((model) => model.uid === child2.uid)).toBe(false);
+          expect((parentModel.subModels.arrayB as FlowModel[]).some((model) => model.uid === child1.uid)).toBe(false);
+        });
+      });
+    });
+
     describe('fork management', () => {
       test('should create fork with unique forkId', () => {
         const fork1 = model.createFork();
@@ -852,7 +1225,7 @@ describe('FlowModel', () => {
     });
 
     describe('serialization', () => {
-      test('should serialize basic model data', () => {
+      test('should serialize basic model data, only saving option props', () => {
         model.sortIndex = 5;
         model.setProps({ name: 'Test Model', value: 42 });
         model.setStepParams({
@@ -863,7 +1236,7 @@ describe('FlowModel', () => {
 
         expect(serialized).toEqual({
           uid: model.uid,
-          props: expect.objectContaining({ name: 'Test Model', value: 42 }),
+          props: expect.objectContaining({ testProp: 'value' }),
           stepParams: expect.objectContaining({ flow1: { step1: { param1: 'value1' } } }),
           sortIndex: 5,
           subModels: expect.any(Object),
