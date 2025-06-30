@@ -88,7 +88,7 @@ export const FlowPage = (props) => {
     },
   );
   if (loading || !data?.uid) {
-    return <SkeletonFallback />;
+    return <SkeletonFallback style={{ margin: 16 }} />;
   }
   return <InternalFlowPage uid={data.uid} {...rest} />;
 };

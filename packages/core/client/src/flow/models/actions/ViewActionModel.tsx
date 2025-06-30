@@ -7,8 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import type { ButtonProps } from 'antd/es/button';
 import { tval } from '@nocobase/utils/client';
+import type { ButtonProps } from 'antd/es/button';
 import { RecordActionModel } from '../base/ActionModel';
 
 export class ViewActionModel extends RecordActionModel {

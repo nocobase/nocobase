@@ -910,7 +910,7 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
   serialize(): Record<string, any> {
     const data = {
       uid: this.uid,
-      ..._.omit(this._options, ['flowEngine']),
+      ..._.omit(this._options, ['props', 'flowEngine']),
       // props: this.props,
       stepParams: this.stepParams,
       sortIndex: this.sortIndex,
