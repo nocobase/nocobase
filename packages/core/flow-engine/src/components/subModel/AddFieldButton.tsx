@@ -14,7 +14,7 @@ import { FlowModel } from '../../models';
 import { FlowModelOptions, ModelConstructor } from '../../types';
 import { FlowSettingsButton } from '../common/FlowSettingsButton';
 import { withFlowDesignMode } from '../common/withFlowDesignMode';
-import { AddSubModelButton, SubModelItemsType, mergeSubModelItems } from './AddSubModelButton';
+import { AddSubModelButton, SubModelItemsType, mergeSubModelItems, AddSubModelContext } from './AddSubModelButton';
 
 export type BuildCreateModelOptionsType = {
   defaultOptions: FlowModelOptions;
@@ -129,12 +129,47 @@ const AddFieldButtonCore: React.FC<AddFieldButtonProps> = ({
             key: field.name,
             label: field.title,
             icon: fieldClass.meta?.icon,
+            unique: true,
             createModelOptions: buildCreateModelOptions({
               defaultOptions,
               collectionField: field,
               fieldPath: field.name,
               fieldModelClass: fieldClass,
             }),
+            toggleDetector: (ctx: AddSubModelContext) => {
+              // 检测是否已存在该字段的子模型
+              const subModels = ctx.model.subModels[subModelKey];
+
+              const checkFieldInStepParams = (subModel: FlowModel): boolean => {
+                const stepParams = subModel.stepParams;
+
+                // 快速检查：如果 stepParams 为空，直接返回 false
+                if (!stepParams || Object.keys(stepParams).length === 0) {
+                  return false;
+                }
+
+                // 遍历所有 flow 和 step 来查找 fieldPath 或 field 参数
+                for (const flowKey in stepParams) {
+                  const flowSteps = stepParams[flowKey];
+                  if (!flowSteps) continue;
+
+                  for (const stepKey in flowSteps) {
+                    const stepData = flowSteps[stepKey];
+                    if (stepData?.fieldPath === field.name || stepData?.field === field.name) {
+                      return true; // 找到匹配，立即返回
+                    }
+                  }
+                }
+                return false;
+              };
+
+              if (Array.isArray(subModels)) {
+                return subModels.some(checkFieldInStepParams);
+              } else if (subModels) {
+                return checkFieldInStepParams(subModels);
+              }
+              return false;
+            },
           };
           allFields.push(fieldItem);
         }
@@ -151,7 +186,7 @@ const AddFieldButtonCore: React.FC<AddFieldButtonProps> = ({
         },
       ];
     };
-  }, [model, subModelBaseClass, fields, buildCreateModelOptions]);
+  }, [model, subModelBaseClass, fields, buildCreateModelOptions, subModelKey]);
 
   const fieldItems = useMemo(() => {
     return mergeSubModelItems([buildFieldItems, appendItems], { addDividers: true });

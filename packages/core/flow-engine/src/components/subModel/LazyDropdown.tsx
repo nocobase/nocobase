@@ -22,6 +22,18 @@ export type Item = {
   searchable?: boolean;
   searchPlaceholder?: string;
   keepDropdownOpen?: boolean;
+  /**
+   * 开关状态标记（内部使用）
+   */
+  isToggled?: boolean;
+  /**
+   * 原始菜单项数据（内部使用）
+   */
+  originalItem?: any;
+  /**
+   * 是否为唯一项标记（内部使用）
+   */
+  unique?: boolean;
   [key: string]: any;
 };
 
