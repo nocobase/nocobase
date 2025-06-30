@@ -40,8 +40,9 @@ export class QuickEditForm extends DataBlockModel {
     collectionName: string;
     fieldPath: string;
     filterByTk: string;
+    onSuccess?: (values: any) => void;
   }) {
-    const { flowEngine, target, dataSourceKey, collectionName, fieldPath, filterByTk } = options;
+    const { flowEngine, target, dataSourceKey, collectionName, fieldPath, filterByTk, onSuccess } = options;
     const model = flowEngine.createModel({
       use: 'QuickEditForm',
       stepParams: {
@@ -63,7 +64,7 @@ export class QuickEditForm extends DataBlockModel {
           <FlowModelRenderer
             fallback={<Skeleton.Input size="small" />}
             model={model}
-            sharedContext={{ currentView: popover }}
+            sharedContext={{ currentView: popover, __onSubmitSuccess: onSuccess }}
             extraContext={{ filterByTk }}
           />
         );
@@ -85,6 +86,9 @@ export class QuickEditForm extends DataBlockModel {
             },
             { refresh: false },
           );
+          this.ctx.shared.__onSubmitSuccess?.({
+            [this.fieldPath]: this.form.values[this.fieldPath],
+          });
           this.ctx.shared.currentView.close();
         }}
       >

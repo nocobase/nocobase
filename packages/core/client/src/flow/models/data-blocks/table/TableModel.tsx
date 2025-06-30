@@ -125,7 +125,7 @@ export class TableModel extends DataBlockModel<TableModelStructure> {
   };
 
   EditableCell = observer<any>((props) => {
-    const { className, title, editable, width, record, dataIndex, children, ...restProps } = props;
+    const { className, title, editable, width, record, recordIndex, dataIndex, children, ...restProps } = props;
     const ref = useRef(null);
     if (editable) {
       return (
@@ -169,8 +169,17 @@ export class TableModel extends DataBlockModel<TableModelStructure> {
                   collectionName: this.collection.name,
                   fieldPath: dataIndex,
                   filterByTk: record.id,
+                  onSuccess: (values) => {
+                    const oldData = this.resource.getData();
+                    const newData = oldData.slice(); // 浅拷贝
+                    newData[recordIndex] = {
+                      ...record,
+                      ...values,
+                    };
+                    this.resource.setData(newData);
+                  },
                 });
-                await this.resource.refresh();
+                // await this.resource.refresh();
               } catch (error) {
                 // console.error('Error stopping event propagation:', error);
               }

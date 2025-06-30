@@ -7,10 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import type { ButtonProps } from 'antd';
 import { tval } from '@nocobase/utils/client';
-import { GlobalActionModel } from '../base/ActionModel';
+import type { ButtonProps } from 'antd';
 import { openLinkAction } from '../../actions/openLinkAction';
+import { GlobalActionModel } from '../base/ActionModel';
 
 export class LinkGlobalActionModel extends GlobalActionModel {
   defaultProps: ButtonProps = {
@@ -20,6 +20,7 @@ export class LinkGlobalActionModel extends GlobalActionModel {
 
 LinkGlobalActionModel.define({
   title: tval('Link'),
+  hide: true,
 });
 
 LinkGlobalActionModel.registerFlow({

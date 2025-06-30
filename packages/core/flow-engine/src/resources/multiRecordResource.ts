@@ -92,12 +92,23 @@ export class MultiRecordResource<TDataItem = any> extends BaseRecordResource<TDa
     await this.refresh();
   }
 
+  async get(filterByTk: any): Promise<TDataItem | undefined> {
+    const options = {
+      params: {
+        filterByTk,
+      },
+    };
+    const { data } = await this.runAction<TDataItem, any>('get', {
+      ...options,
+    });
+    return data;
+  }
+
   async update(filterByTk: string | number, data: Partial<TDataItem>): Promise<void> {
     const options = {
       params: {
         filterByTk,
       },
-      headers: this.request.headers,
     };
     await this.runAction('update', {
       ...options,
@@ -121,7 +132,6 @@ export class MultiRecordResource<TDataItem = any> extends BaseRecordResource<TDa
           return typeof item === 'object' ? item['id'] : item; // TODO: ID 字段还需要根据实际情况更改
         }),
       },
-      headers: this.request.headers,
     };
     await this.runAction('destroy', {
       ...options,

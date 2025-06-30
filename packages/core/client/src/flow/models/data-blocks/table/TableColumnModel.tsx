@@ -37,7 +37,6 @@ export class TableColumnModel extends FieldModel {
         </div>
       </FlowsFloatContextMenu>
     );
-    console.log('TableColumnModel props:', this.props);
     return {
       ...this.props,
       ellipsis: true,
@@ -51,8 +50,9 @@ export class TableColumnModel extends FieldModel {
       ) : (
         titleContent
       ),
-      onCell: (record) => ({
+      onCell: (record, recordIndex) => ({
         record,
+        recordIndex,
         width: this.props.width,
         editable: this.props.editable,
         dataIndex: this.props.dataIndex,
