@@ -437,7 +437,7 @@ export class CollectionField {
   }
 
   get targetCollection() {
-    return this.collection.collectionManager.getCollection(this.options.target);
+    return this.collection.collectionManager.getCollection(this.target);
   }
 
   getComponentProps() {

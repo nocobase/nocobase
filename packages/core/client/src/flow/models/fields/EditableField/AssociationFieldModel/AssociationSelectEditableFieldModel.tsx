@@ -9,8 +9,7 @@
 import { connect, mapProps, mapReadPretty } from '@formily/react';
 import { Select } from 'antd';
 import React from 'react';
-import { FlowModelRenderer, useFlowEngine, useFlowModel, reactive } from '@nocobase/flow-engine';
-import { useCompile } from '../../../../../schema-component';
+import { useFlowModel, FlowModel } from '@nocobase/flow-engine';
 import { tval } from '@nocobase/utils/client';
 import { AssociationFieldEditableFieldModel } from './AssociationFieldEditableFieldModel';
 
@@ -34,52 +33,19 @@ function toValue(record: any | any[], fieldNames, multiple = false) {
 
   return convert(record);
 }
-const modelCache = new Map<string, any>();
 
 function LabelByField(props) {
   const { option, fieldNames } = props;
-  const cacheKey = option[fieldNames.value] + option[fieldNames.label];
-  const currentModel: any = useFlowModel();
-  const flowEngine = useFlowEngine();
-  if (modelCache.has(cacheKey)) {
-    return option[fieldNames.label] ? <FlowModelRenderer model={modelCache.get(cacheKey)} /> : tval('N/A');
-  }
-  const collectionManager = currentModel.collectionField.collection.collectionManager;
-  const target = currentModel.collectionField?.options?.target;
-  const targetCollection = collectionManager.getCollection(target);
-  const targetLabelField = targetCollection.getField(fieldNames.label);
-  const fieldClasses = Array.from(flowEngine.filterModelClassByParent('ReadPrettyFieldModel').values()).sort(
-    (a, b) => (a.meta?.sort || 0) - (b.meta?.sort || 0),
-  );
-
-  const fieldClass = fieldClasses.find(
-    (cls) => cls.supportedFieldInterfaces?.includes(targetLabelField?.options?.interface),
-  );
-  const model = flowEngine.createModel({
-    use: fieldClass?.name || 'ReadPrettyFieldModel',
-    stepParams: {
-      default: {
-        step1: {
-          dataSourceKey: currentModel.collectionField.collection.dataSourceKey,
-          collectionName: target,
-          fieldPath: fieldNames.label,
-        },
-      },
-    },
-  });
-  model.setSharedContext({
-    ...currentModel.getSharedContext(),
-    value: option[fieldNames.label],
+  const currentModel = useFlowModel();
+  const field = currentModel.subModels.field as FlowModel;
+  const key = option[fieldNames.value];
+  const fieldModel = field.createFork({}, key);
+  fieldModel.setSharedContext({
+    value: option?.[fieldNames.label],
+    currentRecord: option,
   });
 
-  model.setParent(currentModel.parent);
-  modelCache.set(cacheKey, model);
-
-  return (
-    <span key={option[fieldNames.value]}>
-      {option[fieldNames.label] ? <FlowModelRenderer model={model} uid={option[fieldNames.value]} /> : tval('N/A')}
-    </span>
-  );
+  return <span key={option[fieldNames.value]}>{option[fieldNames.label] ? fieldModel.render() : tval('N/A')}</span>;
 }
 
 function LazySelect(props) {
