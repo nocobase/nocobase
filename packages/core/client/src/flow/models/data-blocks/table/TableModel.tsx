@@ -163,6 +163,7 @@ export class TableModel extends DataBlockModel<TableModelStructure> {
               // 阻止事件冒泡，避免触发行选中
               try {
                 await QuickEditForm.open({
+                  flowEngine: this.flowEngine,
                   target: ref.current,
                   dataSourceKey: this.collection.dataSourceKey,
                   collectionName: this.collection.name,

@@ -317,7 +317,7 @@ export class FlowEngine {
     if (uid && this.modelInstances.has(uid)) {
       return this.modelInstances.get(uid) as T;
     }
-    const modelInstance = new (ModelClass as ModelConstructor<T>)({ ...options } as any);
+    const modelInstance = new (ModelClass as ModelConstructor<T>)({ ...options, flowEngine: this } as any);
 
     modelInstance.onInit(options);
 

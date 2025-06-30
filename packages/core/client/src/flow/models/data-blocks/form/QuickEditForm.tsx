@@ -34,14 +34,15 @@ export class QuickEditForm extends DataBlockModel {
   declare collection: Collection;
 
   static async open(options: {
+    flowEngine: FlowEngine;
     target: any;
     dataSourceKey: string;
     collectionName: string;
     fieldPath: string;
     filterByTk: string;
   }) {
-    const { target, dataSourceKey, collectionName, fieldPath, filterByTk } = options;
-    const model = this.flowEngine.createModel({
+    const { flowEngine, target, dataSourceKey, collectionName, fieldPath, filterByTk } = options;
+    const model = flowEngine.createModel({
       use: 'QuickEditForm',
       stepParams: {
         propsFlow: {
@@ -54,7 +55,7 @@ export class QuickEditForm extends DataBlockModel {
       },
     }) as QuickEditForm;
 
-    await this.flowEngine.context.popover.open({
+    await flowEngine.context.popover.open({
       target,
       placement: 'rightTop',
       content: (popover) => {
@@ -87,33 +88,31 @@ export class QuickEditForm extends DataBlockModel {
           this.ctx.shared.currentView.close();
         }}
       >
-        <FlowEngineProvider engine={this.flowEngine}>
-          <FormProvider form={this.form}>
-            <FormLayout layout={'vertical'}>
-              {this.mapSubModels('fields', (field) => {
-                return (
-                  <FlowModelRenderer
-                    model={field}
-                    sharedContext={{ currentRecord: this.resource.getData() }}
-                    fallback={<Skeleton paragraph={{ rows: 2 }} />}
-                  />
-                );
-              })}
-            </FormLayout>
-            <FormButtonGroup align="right">
-              <Button
-                onClick={() => {
-                  this.ctx.shared.currentView.close();
-                }}
-              >
-                {this.translate('Cancel')}
-              </Button>
-              <Button type="primary" htmlType="submit">
-                {this.translate('Submit')}
-              </Button>
-            </FormButtonGroup>
-          </FormProvider>
-        </FlowEngineProvider>
+        <FormProvider form={this.form}>
+          <FormLayout layout={'vertical'}>
+            {this.mapSubModels('fields', (field) => {
+              return (
+                <FlowModelRenderer
+                  model={field}
+                  sharedContext={{ currentRecord: this.resource.getData() }}
+                  fallback={<Skeleton paragraph={{ rows: 2 }} />}
+                />
+              );
+            })}
+          </FormLayout>
+          <FormButtonGroup align="right">
+            <Button
+              onClick={() => {
+                this.ctx.shared.currentView.close();
+              }}
+            >
+              {this.translate('Cancel')}
+            </Button>
+            <Button type="primary" htmlType="submit">
+              {this.translate('Submit')}
+            </Button>
+          </FormButtonGroup>
+        </FormProvider>
       </form>
     );
   }

@@ -39,13 +39,11 @@ const modelMetas = new WeakMap<typeof FlowModel, FlowModelMeta>();
 const modelFlows = new WeakMap<typeof FlowModel, Map<string, FlowDefinition>>();
 
 export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
-  public static flowEngine: FlowEngine;
-
   public readonly uid: string;
   public sortIndex: number;
   public props: IModelComponentProps = {};
   public stepParams: StepParams = {};
-  // public flowEngine: FlowEngine;
+  public flowEngine: FlowEngine;
   public parent: ParentFlowModel<Structure>;
   public subModels: Structure['subModels'];
   private _options: FlowModelOptions<Structure>;
@@ -74,9 +72,10 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
   private observerDispose: () => void;
 
   constructor(options: FlowModelOptions<Structure>) {
-    if (!this.flowEngine) {
+    if (!options.flowEngine) {
       throw new Error('FlowModel must be initialized with a FlowEngine instance.');
     }
+    this.flowEngine = options.flowEngine;
     if (this.flowEngine.getModel(options.uid)) {
       // 此时 new FlowModel 并不创建新实例，而是返回已存在的实例，避免重复创建同一个model实例
       return this.flowEngine.getModel(options.uid);
@@ -134,11 +133,6 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
 
   static get meta() {
     return modelMetas.get(this);
-  }
-
-  get flowEngine() {
-    // 取静态属性 flowEngine
-    return (this.constructor as typeof FlowModel).flowEngine;
   }
 
   private createSubModels(subModels: Record<string, CreateSubModelOptions | CreateSubModelOptions[]>) {
