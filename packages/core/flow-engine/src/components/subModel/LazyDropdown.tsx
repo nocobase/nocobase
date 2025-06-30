@@ -9,8 +9,7 @@
 
 import { css } from '@emotion/css';
 import { Dropdown, DropdownProps, Empty, Input, InputProps, Spin } from 'antd';
-import React, { FC, useEffect, useMemo, useRef, useState } from 'react';
-import { useFlowModel } from '../../hooks';
+import React, { FC, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useFlowEngine } from '../../provider';
 
 // ==================== Types ====================
@@ -22,6 +21,7 @@ export type Item = {
   children?: Item[] | (() => Item[] | Promise<Item[]>);
   searchable?: boolean;
   searchPlaceholder?: string;
+  keepDropdownOpen?: boolean;
   [key: string]: any;
 };
 
@@ -29,6 +29,16 @@ export type ItemsType = Item[] | (() => Item[] | Promise<Item[]>);
 
 interface LazyDropdownMenuProps extends Omit<DropdownProps['menu'], 'items'> {
   items: ItemsType;
+  keepDropdownOpen?: boolean;
+}
+
+interface ExtendedMenuInfo {
+  key: string;
+  keyPath: string[];
+  item: any;
+  domEvent: React.MouseEvent<HTMLElement> | React.KeyboardEvent<HTMLElement>;
+  originalItem: Item;
+  keepDropdownOpen: boolean;
 }
 
 // ==================== Custom Hooks ====================
@@ -99,6 +109,34 @@ const useAsyncMenuItems = (menuVisible: boolean, rootItems: Item[]) => {
     loadedChildren,
     loadingKeys,
     handleLoadChildren,
+  };
+};
+
+/**
+ * 处理保持下拉菜单打开状态的逻辑
+ */
+const useKeepDropdownOpen = () => {
+  const shouldKeepOpenRef = useRef(false);
+  const [forceKeepOpen, setForceKeepOpen] = useState(false);
+
+  const requestKeepOpen = useCallback(() => {
+    shouldKeepOpenRef.current = true;
+    setForceKeepOpen(true);
+
+    // 使用 requestAnimationFrame 来确保在下一个渲染周期后重置
+    requestAnimationFrame(() => {
+      shouldKeepOpenRef.current = false;
+      setForceKeepOpen(false);
+    });
+  }, []);
+
+  const shouldPreventClose = useCallback(() => {
+    return shouldKeepOpenRef.current || forceKeepOpen;
+  }, [forceKeepOpen]);
+
+  return {
+    requestKeepOpen,
+    shouldPreventClose,
   };
 };
 
@@ -269,6 +307,7 @@ const LazyDropdown: React.FC<Omit<DropdownProps, 'menu'> & { menu: LazyDropdownM
   // 使用自定义 hooks
   const { loadedChildren, loadingKeys, handleLoadChildren } = useAsyncMenuItems(menuVisible, rootItems);
   const { searchValues, isSearching, updateSearchValue } = useMenuSearch();
+  const { requestKeepOpen, shouldPreventClose } = useKeepDropdownOpen();
   useSubmenuStyles(menuVisible, dropdownMaxHeight);
 
   // 加载根 items，支持同步/异步函数
@@ -376,10 +415,23 @@ const LazyDropdown: React.FC<Omit<DropdownProps, 'menu'> & { menu: LazyDropdownM
           if (children) {
             return;
           }
-          menu.onClick?.({
+
+          // 检查是否应该保持下拉菜单打开
+          const itemShouldKeepOpen = item.keepDropdownOpen ?? menu.keepDropdownOpen ?? false;
+
+          // 如果需要保持菜单打开，请求保持打开状态
+          if (itemShouldKeepOpen) {
+            requestKeepOpen();
+          }
+
+          const extendedInfo: ExtendedMenuInfo = {
             ...info,
+            item: info.item || item,
             originalItem: item,
-          } as any);
+            keepDropdownOpen: itemShouldKeepOpen,
+          };
+
+          menu.onClick?.(extendedInfo);
         },
         onMouseEnter: () => {
           setOpenKeys((prev) => {
@@ -461,9 +513,16 @@ const LazyDropdown: React.FC<Omit<DropdownProps, 'menu'> & { menu: LazyDropdownM
         },
       }}
       onOpenChange={(visible) => {
+        // 阻止在搜索时关闭菜单
         if (!visible && isSearching) {
           return;
         }
+
+        // 阻止在需要保持打开时关闭菜单
+        if (!visible && shouldPreventClose()) {
+          return;
+        }
+
         setMenuVisible(visible);
       }}
     >

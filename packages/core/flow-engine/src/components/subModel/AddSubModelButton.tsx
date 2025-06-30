@@ -119,6 +119,10 @@ export interface SubModelItem {
    * 搜索占位符文本（仅对启用搜索的 group 有效）
    */
   searchPlaceholder?: string;
+  /**
+   * 点击后是否保持下拉菜单打开状态
+   */
+  keepDropdownOpen?: boolean;
 }
 
 interface AddSubModelButtonProps {
@@ -160,6 +164,13 @@ interface AddSubModelButtonProps {
    * 按钮文本，默认为 "Add"
    */
   children?: React.ReactNode;
+
+  /**
+   * 全局设置：点击菜单项后是否保持下拉菜单打开状态
+   * 如果设置为 true，所有菜单项点击后都不会关闭下拉菜单
+   * 单个菜单项的 keepDropdownOpen 属性会覆盖此全局设置
+   */
+  keepDropdownOpen?: boolean;
 }
 
 /**
@@ -244,6 +255,7 @@ const AddSubModelButtonCore = function AddSubModelButton({
   onModelCreated,
   onSubModelAdded,
   children = 'Add',
+  keepDropdownOpen = false,
 }: AddSubModelButtonProps) {
   // 构建上下文对象，从 flowEngine 的全局上下文中获取服务
   const buildContext = useMemo((): AddSubModelContext => {
@@ -304,7 +316,17 @@ const AddSubModelButtonCore = function AddSubModelButton({
     }
   };
 
-  return <LazyDropdown menu={{ items: transformItems(items, buildContext), onClick }}>{children}</LazyDropdown>;
+  return (
+    <LazyDropdown
+      menu={{
+        items: transformItems(items, buildContext),
+        onClick,
+        keepDropdownOpen,
+      }}
+    >
+      {children}
+    </LazyDropdown>
+  );
 };
 
 export const AddSubModelButton = withFlowDesignMode(AddSubModelButtonCore);
