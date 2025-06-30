@@ -11,24 +11,15 @@ import React from 'react';
 import { tval } from '@nocobase/utils/client';
 import { reactive } from '@nocobase/flow-engine';
 import { ReadPrettyFieldModel } from './ReadPrettyFieldModel';
-
-const lineHeight142 = { lineHeight: '1.42' };
+import { MarkdownReadPretty } from '../EditableField/MarkdownEditableFieldModel/index';
 
 export class RichTextReadPrettyFieldModel extends ReadPrettyFieldModel {
   public static readonly supportedFieldInterfaces = ['richText'];
   @reactive
   public render() {
+    const { textOnly = true } = this.props;
     const value = this.getValue();
-    const html = (
-      <div
-        style={lineHeight142}
-        dangerouslySetInnerHTML={{
-          __html: value,
-        }}
-      />
-    );
-
-    return <div>{html}</div>;
+    return <MarkdownReadPretty textOnly={textOnly} value={value} />;
   }
 }
 
