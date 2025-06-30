@@ -40,8 +40,6 @@ export function useDrawer() {
     // 支持 content 为函数，传递 currentDrawer
     const content = typeof config.content === 'function' ? config.content(currentDrawer) : config.content;
 
-    console.log('useDrawer open', config, content);
-
     const drawer = (
       <DrawerComponent
         key={`drawer-${uuid}`}
