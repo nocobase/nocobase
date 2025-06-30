@@ -143,6 +143,17 @@ class Package {
       });
       console.log(chalk.greenBright(`Downloaded: ${this.packageName}@${version}`));
     } catch (error) {
+      if (error.response.data && typeof error.response.data.pipe === 'function') {
+        let errorMessageBuffer = '';
+        error.response.data.on('data', (chunk) => {
+          errorMessageBuffer += chunk.toString('utf8'); // 收集错误信息
+        });
+        error.response.data.on('end', () => {
+          if (error.response.status === 403) {
+            console.error(chalk.redBright('You do not have permission to download this package version.'));
+          }
+        });
+      }
       console.log(chalk.redBright(`Download failed: ${this.packageName}`));
     }
   }
@@ -252,7 +263,13 @@ module.exports = (cli) => {
         NOCOBASE_PKG_USERNAME,
         NOCOBASE_PKG_PASSWORD,
       } = process.env;
-      const { accessKeyId, accessKeySecret } = await getAccessKeyPair();
+      let accessKeyId;
+      let accessKeySecret;
+      try {
+        ({ accessKeyId, accessKeySecret } = await getAccessKeyPair());
+      } catch (e) {
+        return;
+      }
       if (!(NOCOBASE_PKG_USERNAME && NOCOBASE_PKG_PASSWORD) && !(accessKeyId && accessKeySecret)) {
         return;
       }
