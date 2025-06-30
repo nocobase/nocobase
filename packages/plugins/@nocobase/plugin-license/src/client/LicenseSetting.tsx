@@ -63,7 +63,7 @@ const useSubmitProps = () => {
         },
       });
       setLoading(false);
-      message.success(t('License key saved successfully, please restart the server'));
+      message.success(t('License key saved successfully, please re-run the plugin installation.'));
     } catch (e) {
       setLoading(false);
     }

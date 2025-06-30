@@ -19,7 +19,7 @@ const fs = require('fs-extra');
 const os = require('os');
 const moment = require('moment-timezone');
 const { keyDecrypt, getEnvAsync } = require('@nocobase/license-kit');
-const _ = require('lodash');
+const omit = require('lodash/omit');
 
 exports.isPackageValid = (pkg) => {
   try {
@@ -491,10 +491,20 @@ exports.generatePlugins = function () {
   }
 };
 
+async function isEnvMatch(keyData) {
+  const env = await getEnvAsync();
+  if (env?.container?.id && keyData?.instanceData?.container?.id) {
+    return (
+      JSON.stringify(omit(env, ['timestamp', 'container', 'hostname'])) ===
+      JSON.stringify(omit(keyData?.instanceData, ['timestamp', 'container', 'hostname']))
+    );
+  }
+  return JSON.stringify(omit(env, ['timestamp'])) === JSON.stringify(omit(keyData?.instanceData, ['timestamp']));
+}
+
 exports.getAccessKeyPair = async function () {
   const keyFile = resolve(process.cwd(), 'storage/.license/license-key');
   if (!fs.existsSync(keyFile)) {
-    // showLicenseInfo(LicenseKeyError.notExist);
     return {};
   }
 
@@ -505,13 +515,13 @@ exports.getAccessKeyPair = async function () {
     keyData = JSON.parse(keyDataStr);
   } catch (error) {
     showLicenseInfo(LicenseKeyError.parseFailed);
-    return {};
+    throw new Error(LicenseKeyError.parseFailed.title);
   }
 
-  const currentEnv = await getEnvAsync();
-  if (!_.isEqual(_.omit(keyData?.instanceData, ['timestamp']), _.omit(currentEnv, ['timestamp']))) {
+  const isEnvMatched = await isEnvMatch(keyData);
+  if (!isEnvMatched) {
     showLicenseInfo(LicenseKeyError.notMatch);
-    return {};
+    throw new Error(LicenseKeyError.notMatch.title);
   }
 
   const { accessKeyId, accessKeySecret } = keyData;
@@ -520,21 +530,21 @@ exports.getAccessKeyPair = async function () {
 
 const LicenseKeyError = {
   notExist: {
-    title: 'License key not exist',
+    title: 'License key not found',
     content:
       'Please go to the license settings page to obtain the Instance ID for the current environment, and then generate the license key on the service platform.',
   },
   parseFailed: {
-    title: 'License key parse failed',
+    title: 'Invalid license key format',
     content: 'Please check your license key, or regenerate the license key on the service platform.',
   },
   notMatch: {
-    title: 'License key not matched',
+    title: 'License key mismatch',
     content:
       'Please go to the license settings page to obtain the Instance ID for the current environment, and then regenerate the license key on the service platform.',
   },
   notValid: {
-    title: 'License key not valid',
+    title: 'Invalid license key',
     content:
       'Please go to the license settings page to obtain the Instance ID for the current environment, and then regenerate the license key on the service platform.',
   },
