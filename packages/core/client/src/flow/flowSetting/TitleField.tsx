@@ -46,24 +46,37 @@ export const titleField = defineAction({
     },
   },
   defaultParams: (ctx: any) => {
-    const { target } = ctx.model.collectionField.options;
-    const collectionManager = ctx.model.collectionField.collection.collectionManager;
-    const targetCollection = collectionManager.getCollection(target);
+    const targetCollection = ctx.model.targetCollection;
     const filterKey = getUniqueKeyFromCollection(targetCollection.options as any);
     return {
       label: ctx.model.props.fieldNames?.label || targetCollection.options.titleField || filterKey,
     };
   },
-  handler(ctx: any, params) {
-    const { target } = ctx.model.collectionField.options;
-    const collectionManager = ctx.model.collectionField.collection.collectionManager;
-    ctx.model.setStepParams;
-    const targetCollection = collectionManager.getCollection(target);
+  async handler(ctx: any, params) {
+    const target = ctx.model.collectionField.target;
+    const targetCollection = ctx.model.collectionField.targetCollection;
+    console.log(ctx.model.collectionField);
     const filterKey = getUniqueKeyFromCollection(targetCollection.options as any);
+    const label = params.label || targetCollection.options.titleField || filterKey;
     const newFieldNames = {
       value: filterKey,
-      label: params.label || targetCollection.options.titleField || filterKey,
+      label,
     };
     ctx.model.setComponentProps({ fieldNames: newFieldNames });
+    const targetCollectionField = targetCollection.getField(label);
+    const use = targetCollectionField.getFirstSubclassNameOf('ReadPrettyFieldModel') || 'ReadPrettyFieldModel';
+    const model = ctx.model.setSubModel('field', {
+      use,
+      stepParams: {
+        default: {
+          step1: {
+            dataSourceKey: ctx.model.collectionField.dataSourceKey,
+            collectionName: target,
+            fieldPath: newFieldNames.label,
+          },
+        },
+      },
+    });
+    await model.applyAutoFlows();
   },
 });

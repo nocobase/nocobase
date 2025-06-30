@@ -7,7 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useMemo } from 'react';
+import React from 'react';
+import { reactive } from '@nocobase/flow-engine';
 import { cx, css } from '@emotion/css';
 import { ReadPrettyFieldModel } from './ReadPrettyFieldModel';
 
@@ -19,6 +20,7 @@ const JSONClassName = css`
 
 export class JsonReadPrettyFieldModel extends ReadPrettyFieldModel {
   public static readonly supportedFieldInterfaces = ['json'];
+  @reactive
   public render() {
     const value = this.getValue();
     const { space, style, className } = this.props;

@@ -8,13 +8,13 @@
  */
 
 import React from 'react';
-import { tval } from '@nocobase/utils/client';
 import { reactive } from '@nocobase/flow-engine';
+import { tval } from '@nocobase/utils/client';
 import { ReadPrettyFieldModel } from './ReadPrettyFieldModel';
 import { MarkdownReadPretty } from '../EditableField/MarkdownEditableFieldModel/index';
 
-export class RichTextReadPrettyFieldModel extends ReadPrettyFieldModel {
-  public static readonly supportedFieldInterfaces = ['richText'];
+export class MarkdownReadPrettyFieldModel extends ReadPrettyFieldModel {
+  public static readonly supportedFieldInterfaces = ['markdown'];
   @reactive
   public render() {
     const { textOnly = true } = this.props;
@@ -23,7 +23,7 @@ export class RichTextReadPrettyFieldModel extends ReadPrettyFieldModel {
   }
 }
 
-RichTextReadPrettyFieldModel.registerFlow({
+MarkdownReadPrettyFieldModel.registerFlow({
   key: 'displayMode',
   title: tval('Specific properties'),
   auto: true,
