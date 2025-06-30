@@ -9,7 +9,7 @@
 
 import { QuestionCircleOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
-import { FlowsFloatContextMenu } from '@nocobase/flow-engine';
+import { DragHandler, FlowsFloatContextMenu } from '@nocobase/flow-engine';
 import { tval } from '@nocobase/utils/client';
 import { TableColumnProps, Tooltip } from 'antd';
 import React from 'react';
@@ -24,6 +24,13 @@ export class TableColumnModel extends FieldModel {
         containerStyle={{ display: 'block', padding: '11px 8px', margin: '-11px -8px' }}
         showBorder={false}
         settingsMenuLevel={2}
+        extraToolbarItems={[
+          {
+            key: 'drag-handler',
+            component: DragHandler,
+            sort: 1,
+          },
+        ]}
       >
         <div
           className={css`
