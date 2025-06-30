@@ -23,27 +23,28 @@ import {
 import { Button, InputRef, Skeleton } from 'antd';
 import _ from 'lodash';
 import React, { createRef } from 'react';
+import { SkeletonFallback } from '../../../components/SkeletonFallback';
 import { DataBlockModel } from '../../base/BlockModel';
 
 export class QuickEditForm extends DataBlockModel {
   form: Form;
   fieldPath: string;
+
   declare resource: SingleRecordResource;
   declare collection: Collection;
 
   static async open(options: {
     target: any;
-    flowEngine: FlowEngine;
     dataSourceKey: string;
     collectionName: string;
     fieldPath: string;
     filterByTk: string;
   }) {
-    const { flowEngine, dataSourceKey, collectionName, fieldPath, target, filterByTk } = options;
-    const model = flowEngine.createModel({
+    const { target, dataSourceKey, collectionName, fieldPath, filterByTk } = options;
+    const model = this.flowEngine.createModel({
       use: 'QuickEditForm',
       stepParams: {
-        initial: {
+        propsFlow: {
           step1: {
             dataSourceKey,
             collectionName,
@@ -52,81 +53,75 @@ export class QuickEditForm extends DataBlockModel {
         },
       },
     }) as QuickEditForm;
-    await model.open({ target, filterByTk });
-    options.flowEngine.removeModel(model.uid);
+
+    await this.flowEngine.context.popover.open({
+      target,
+      placement: 'rightTop',
+      content: (popover) => {
+        return (
+          <FlowModelRenderer
+            fallback={<Skeleton.Input size="small" />}
+            model={model}
+            sharedContext={{ currentView: popover }}
+            extraContext={{ filterByTk }}
+          />
+        );
+      },
+    });
   }
 
-  async open({ target, filterByTk }: { target: any; filterByTk: string }) {
-    await this.applyFlow('initial', { filterByTk });
-    return new Promise((resolve, reject) => {
-      const inputRef = createRef<InputRef>();
-      const popover = this.ctx.globals.popover.open({
-        target,
-        content: (
-          <form
-            style={{ minWidth: '200px' }}
-            className="quick-edit-form"
-            onSubmit={async (e) => {
-              e.preventDefault();
-              await this.form.submit();
-              await this.resource.save(
-                {
-                  [this.fieldPath]: this.form.values[this.fieldPath],
-                },
-                { refresh: false },
-              );
-              popover.destroy();
-              resolve(this.form.values);
-            }}
-          >
-            <FlowEngineProvider engine={this.flowEngine}>
-              <FormProvider form={this.form}>
-                <FormLayout layout={'vertical'}>
-                  {this.mapSubModels('fields', (field) => {
-                    return (
-                      <FlowModelRenderer
-                        model={field}
-                        sharedContext={{ currentRecord: this.resource.getData() }}
-                        fallback={<Skeleton paragraph={{ rows: 2 }} />}
-                      />
-                    );
-                  })}
-                </FormLayout>
-                <FormButtonGroup align="right">
-                  <Button
-                    onClick={() => {
-                      popover.destroy();
-                      reject(null); // 在 close 之后 resolve
-                    }}
-                  >
-                    {this.translate('Cancel')}
-                  </Button>
-                  <Button type="primary" htmlType="submit">
-                    {this.translate('Submit')}
-                  </Button>
-                </FormButtonGroup>
-              </FormProvider>
-            </FlowEngineProvider>
-          </form>
-        ),
-        onRendered: () => {
-          setTimeout(() => {
-            // 聚焦 Popover 内第一个 input 或 textarea
-            const el = document.querySelector(
-              '.quick-edit-form input, .quick-edit-form textarea, .quick-edit-form select',
-            ) as HTMLInputElement | HTMLTextAreaElement | null;
-            el?.focus();
-          }, 200);
-          // inputRef.current.focus();
-        },
-        placement: 'rightTop',
-      });
-    });
+  render() {
+    return (
+      <form
+        style={{ minWidth: '200px' }}
+        className="quick-edit-form"
+        onSubmit={async (e) => {
+          e.preventDefault();
+          await this.form.submit();
+          await this.resource.save(
+            {
+              [this.fieldPath]: this.form.values[this.fieldPath],
+            },
+            { refresh: false },
+          );
+          this.ctx.shared.currentView.close();
+        }}
+      >
+        <FlowEngineProvider engine={this.flowEngine}>
+          <FormProvider form={this.form}>
+            <FormLayout layout={'vertical'}>
+              {this.mapSubModels('fields', (field) => {
+                return (
+                  <FlowModelRenderer
+                    model={field}
+                    sharedContext={{ currentRecord: this.resource.getData() }}
+                    fallback={<Skeleton paragraph={{ rows: 2 }} />}
+                  />
+                );
+              })}
+            </FormLayout>
+            <FormButtonGroup align="right">
+              <Button
+                onClick={() => {
+                  this.ctx.shared.currentView.close();
+                }}
+              >
+                {this.translate('Cancel')}
+              </Button>
+              <Button type="primary" htmlType="submit">
+                {this.translate('Submit')}
+              </Button>
+            </FormButtonGroup>
+          </FormProvider>
+        </FlowEngineProvider>
+      </form>
+    );
   }
 }
 
 QuickEditForm.registerFlow({
-  key: 'initial',
+  key: 'propsFlow',
+  auto: true,
   steps: {
     step1: {
       async handler(ctx, params) {

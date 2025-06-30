@@ -226,6 +226,7 @@ export class FlowEngine {
     if (this.modelClasses.has(name)) {
       console.warn(`FlowEngine: Model class with name '${name}' is already registered and will be overwritten.`);
     }
+    (modelClass as typeof FlowModel).flowEngine = this; // 绑定 FlowEngine 实例到 Model 类
     this.modelClasses.set(name, modelClass);
   }
 
@@ -316,7 +317,7 @@ export class FlowEngine {
     if (uid && this.modelInstances.has(uid)) {
       return this.modelInstances.get(uid) as T;
     }
-    const modelInstance = new (ModelClass as ModelConstructor<T>)({ ...options, flowEngine: this } as any);
+    const modelInstance = new (ModelClass as ModelConstructor<T>)({ ...options } as any);
 
     modelInstance.onInit(options);
 

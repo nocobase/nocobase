@@ -164,7 +164,6 @@ export class TableModel extends DataBlockModel<TableModelStructure> {
               try {
                 await QuickEditForm.open({
                   target: ref.current,
-                  flowEngine: this.flowEngine,
                   dataSourceKey: this.collection.dataSourceKey,
                   collectionName: this.collection.name,
                   fieldPath: dataIndex,
