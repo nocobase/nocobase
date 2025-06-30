@@ -165,6 +165,7 @@ const AddFieldButtonCore: React.FC<AddFieldButtonProps> = ({
       items={items ?? fieldItems}
       onModelCreated={onModelCreated}
       onSubModelAdded={onSubModelAdded}
+      keepDropdownOpen
     >
       {children || defaultChildren}
     </AddSubModelButton>
