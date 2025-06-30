@@ -47,7 +47,7 @@ export function Grid(props: {
               <Col key={cellIdx} span={spans[cellIdx]}>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                   {cell.map((uid) => (
-                    <div key={uid}>{renderItem(uid)}</div>
+                    <React.Fragment key={uid}>{renderItem(uid)}</React.Fragment>
                   ))}
                 </div>
               </Col>
