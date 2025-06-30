@@ -20,6 +20,7 @@ export const FlowSettingsButton: FC<ButtonProps> = (props) => {
         ...props.style,
         borderColor: 'var(--colorSettings)',
         color: 'var(--colorSettings)',
+        alignSelf: 'flex-start',
       }}
     />
   );

@@ -39,7 +39,9 @@ export const BlockItemCard = (props) => {
     <Card
       title={title}
       style={{ display: 'flex', flexDirection: 'column', height: '100%' }}
-      bodyStyle={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}
+      styles={{
+        body: { flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' },
+      }}
     >
       {children}
     </Card>
