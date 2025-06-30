@@ -95,7 +95,7 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
 
     define(this, {
       props: observable,
-      subModels: observable,
+      subModels: observable.shallow,
       stepParams: observable,
       setProps: action,
       setStepParams: action,
@@ -700,7 +700,9 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     const subModels = this.subModels as {
       [subKey: string]: FlowModel[];
     };
-    Array.isArray(subModels[subKey]) || (subModels[subKey] = []);
+    if (!Array.isArray(subModels[subKey])) {
+      subModels[subKey] = observable.shallow([]);
+    }
     const maxSortIndex = Math.max(...(subModels[subKey] as FlowModel[]).map((item) => item.sortIndex || 0), 0);
     model.sortIndex = maxSortIndex + 1;
     subModels[subKey].push(model);
