@@ -33,7 +33,7 @@ const toDate = (date, options: any = {}) => {
   }
 
   if (field.constructor.name === 'DateOnlyField') {
-    val = moment(val).format('YYYY-MM-DD HH:mm:ss');
+    val = moment.utc(val).format('YYYY-MM-DD HH:mm:ss');
   }
 
   const eventObj = {
@@ -69,7 +69,6 @@ export default {
     const r = parseDate(value, {
       timezone: parseDateTimezone(ctx),
     });
-
     if (typeof r === 'string') {
       return {
         [Op.eq]: toDate(r, { ctx }),
@@ -77,6 +76,9 @@ export default {
     }
 
     if (Array.isArray(r)) {
+      console.log(11111111, {
+        [Op.and]: [{ [Op.gte]: toDate(r[0], { ctx }) }, { [Op.lt]: toDate(r[1], { ctx }) }],
+      });
       return {
         [Op.and]: [{ [Op.gte]: toDate(r[0], { ctx }) }, { [Op.lt]: toDate(r[1], { ctx }) }],
       };

@@ -188,9 +188,11 @@ export const parseFilter = async (filter: any, opts: ParseFilterOptions = {}) =>
         const field = getField?.(path);
 
         if (field?.constructor.name === 'DateOnlyField' || field?.constructor.name === 'DatetimeNoTzField') {
+          if (value.type) {
+            return getDayRangeByParams({ ...value, timezone: field?.timezone || timezone });
+          }
           return value;
         }
-
         return dateValueWrapper(value, field?.timezone || timezone);
       }
       return value;
