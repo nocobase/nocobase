@@ -87,6 +87,16 @@ export async function parseDatabaseOptionsFromEnv(): Promise<IDatabaseOptions> {
     tablePrefix: process.env.DB_TABLE_PREFIX,
     schema: process.env.DB_SCHEMA,
     underscored: process.env.DB_UNDERSCORED === 'true',
+    pool: {
+      max: process.env.DB_POOL_MAX ? Number.parseInt(process.env.DB_POOL_MAX, 10) : 5,
+      min: process.env.DB_POOL_MIN ? Number.parseInt(process.env.DB_POOL_MIN, 10) : 0,
+      idle: process.env.DB_POOL_IDLE ? Number.parseInt(process.env.DB_POOL_IDLE, 10) : 10_000,
+      acquire: process.env.DB_POOL_ACQUIRE ? Number.parseInt(process.env.DB_POOL_ACQUIRE, 10) : 60_000,
+      evict: process.env.DB_POOL_EVICT ? Number.parseInt(process.env.DB_POOL_EVICT, 10) : 1000,
+      maxUses: process.env.DB_POOL_MAX_USES
+        ? Number.parseInt(process.env.DB_POOL_MAX_USES, 10) || Number.POSITIVE_INFINITY
+        : Number.POSITIVE_INFINITY,
+    },
   };
 
   const sslOptions = await extractSSLOptionsFromEnv();
