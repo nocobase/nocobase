@@ -135,7 +135,6 @@ beforeEach(() => {
   modelOptions = {
     uid: 'test-model-uid',
     flowEngine,
-    props: { testProp: 'value' },
     stepParams: { testFlow: { step1: { param1: 'value1' } } },
     sortIndex: 0,
     subModels: {},
@@ -150,7 +149,6 @@ describe('FlowModel', () => {
       const model = new FlowModel(modelOptions);
 
       expect(model.uid).toBe(modelOptions.uid);
-      expect(model.props).toEqual(expect.objectContaining(modelOptions.props));
       expect(model.stepParams).toEqual(expect.objectContaining(modelOptions.stepParams));
       expect(model.flowEngine).toBe(modelOptions.flowEngine);
       expect(model.sortIndex).toBe(modelOptions.sortIndex);
@@ -682,7 +680,6 @@ describe('FlowModel', () => {
           const childModel = new FlowModel({
             uid: 'child-model-uid',
             flowEngine,
-            props: { childProp: 'childValue' },
             stepParams: { childFlow: { childStep: { childParam: 'childValue' } } },
           });
 
@@ -692,12 +689,11 @@ describe('FlowModel', () => {
           expect(result.parent).toBe(parentModel);
           expect((parentModel.subModels.testChild as FlowModel).uid).toBe(result.uid);
           expect(result.uid).toBe('child-model-uid');
-          expect(result.props).toEqual(expect.objectContaining({ childProp: 'childValue' }));
         });
 
         test('should replace existing subModel', () => {
           const firstChild = new FlowModel({ uid: 'first-child', flowEngine });
-          const secondChild = new FlowModel({ uid: 'second-child', flowEngine, props: { newProp: 'newValue' } });
+          const secondChild = new FlowModel({ uid: 'second-child', flowEngine });
 
           parentModel.setSubModel('testChild', firstChild);
           const result = parentModel.setSubModel('testChild', secondChild);
@@ -705,7 +701,6 @@ describe('FlowModel', () => {
           expect(result.uid).toBe(secondChild.uid);
           expect((parentModel.subModels.testChild as FlowModel).uid).toBe(result.uid);
           expect(result.uid).toBe('second-child');
-          expect(result.props).toEqual(expect.objectContaining({ newProp: 'newValue' }));
         });
 
         test('should throw error when setting model with existing parent', () => {
@@ -734,7 +729,6 @@ describe('FlowModel', () => {
           const childModel = new FlowModel({
             uid: 'child-model-uid',
             flowEngine,
-            props: { childProp: 'childValue' },
           });
 
           const result = parentModel.addSubModel('testChildren', childModel);
@@ -830,53 +824,35 @@ describe('FlowModel', () => {
 
           expect(results).toEqual([]);
         });
-
-        test('should handle complex mapping operations', () => {
-          const item1 = new FlowModel({ uid: 'item1', flowEngine, props: { value: 10 } });
-          const item2 = new FlowModel({ uid: 'item2', flowEngine, props: { value: 20 } });
-
-          parentModel.addSubModel('items', item1);
-          parentModel.addSubModel('items', item2);
-
-          const totalValue = parentModel
-            .mapSubModels('items', (model) => model.props.value)
-            .reduce((sum, value) => sum + value, 0);
-
-          expect(totalValue).toBe(30);
-        });
       });
 
       describe('findSubModel', () => {
         test('should find subModel by condition in array', () => {
-          const child1 = new FlowModel({ uid: 'child1', flowEngine, props: { name: 'first' } });
-          const child2 = new FlowModel({ uid: 'child2', flowEngine, props: { name: 'second' } });
+          const child1 = new FlowModel({ uid: 'child1', flowEngine });
+          const child2 = new FlowModel({ uid: 'child2', flowEngine });
 
           parentModel.addSubModel('testChildren', child1);
           parentModel.addSubModel('testChildren', child2);
 
-          const found = parentModel.findSubModel('testChildren', (model) => model.props.name === 'second');
+          const found = parentModel.findSubModel('testChildren', (model) => model.uid === 'child2');
 
           expect(found).toBeDefined();
-          expect(found?.uid).toBe('child2');
-          expect(found?.props.name).toBe('second');
         });
 
         test('should find single subModel by condition', () => {
-          const child = new FlowModel({ uid: 'target-child', flowEngine, props: { name: 'target' } });
+          const child = new FlowModel({ uid: 'target-child', flowEngine });
           parentModel.setSubModel('testChild', child);
 
-          const found = parentModel.findSubModel('testChild', (model) => model.props.name === 'target');
+          const found = parentModel.findSubModel('testChild', (model) => model.uid === 'target-child');
 
           expect(found).toBeDefined();
-          expect(found?.uid).toBe('target-child');
-          expect(found?.props.name).toBe('target');
         });
 
         test('should return null when no match found', () => {
-          const child1 = new FlowModel({ uid: 'child1', flowEngine, props: { name: 'first' } });
+          const child1 = new FlowModel({ uid: 'child1', flowEngine });
           parentModel.addSubModel('testChildren', child1);
 
-          const found = parentModel.findSubModel('testChildren', (model) => model.props.name === 'nonexistent');
+          const found = parentModel.findSubModel('testChildren', (model) => model.uid === 'nonexistent');
 
           expect(found).toBeNull();
         });
@@ -885,20 +861,6 @@ describe('FlowModel', () => {
           const found = parentModel.findSubModel('nonExistent', () => true);
 
           expect(found).toBeNull();
-        });
-
-        test('should find first matching model in array', () => {
-          const child1 = new FlowModel({ uid: 'child1', flowEngine, props: { type: 'match' } });
-          const child2 = new FlowModel({ uid: 'child2', flowEngine, props: { type: 'match' } });
-
-          parentModel.addSubModel('testChildren', child1);
-          parentModel.addSubModel('testChildren', child2);
-
-          const found = parentModel.findSubModel('testChildren', (model) => model.props.type === 'match');
-
-          expect(found).toBeDefined();
-          expect(found?.uid).toBe('child1'); // Should return first match
-          expect(found?.props.type).toBe('match');
         });
       });
 
@@ -1245,7 +1207,6 @@ describe('FlowModel', () => {
         const emptyModel = new FlowModel({
           uid: 'empty-model',
           flowEngine,
-          props: {},
           stepParams: {},
           subModels: {},
         });

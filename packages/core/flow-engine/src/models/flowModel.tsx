@@ -87,7 +87,7 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     }
 
     this.uid = options.uid;
-    this.props = options.props || {};
+    this.props = {};
     this.stepParams = options.stepParams || {};
     this.subModels = {};
     this.sortIndex = options.sortIndex || 0;
