@@ -37,7 +37,6 @@ export class TableColumnModel extends FieldModel {
         </div>
       </FlowsFloatContextMenu>
     );
-    console.log('TableColumnModel props:', this.props);
     return {
       ...this.props,
       ellipsis: true,

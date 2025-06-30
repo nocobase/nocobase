@@ -8,14 +8,31 @@
  */
 import { tval } from '@nocobase/utils/client';
 import { APIResource, BaseRecordResource, Collection, DefaultStructure, FlowModel } from '@nocobase/flow-engine';
+import React from 'react';
+import { BlockItemCard } from '../common/BlockItemCard';
 
-export class BlockModel<T = DefaultStructure> extends FlowModel<T> {}
+export class BlockModel<T = DefaultStructure> extends FlowModel<T> {
+  decoratorProps: Record<string, any> = {};
+  setDecoratorProps(props) {
+    this.decoratorProps = { ...this.decoratorProps, ...props };
+  }
+
+  renderComponent() {
+    throw new Error('renderComponent method must be implemented in subclasses of BlockModel');
+    return null;
+  }
+
+  render() {
+    return <BlockItemCard {...this.decoratorProps}>{this.renderComponent()}</BlockItemCard>;
+  }
+}
 
 export const HeightMode = {
   DEFAULT: 'defaultHeight',
   SPECIFY_VALUE: 'specifyValue',
   FULL_HEIGHT: 'fullHeight',
 };
+
 BlockModel.registerFlow({
   key: 'blockProps',
   title: tval('Basic configuration'),
@@ -38,8 +55,7 @@ BlockModel.registerFlow({
       handler(ctx, params) {
         const title = ctx.globals.flowEngine.translate(params.title);
         const description = ctx.globals.flowEngine.translate(params.description);
-        ctx.model.setProps('title', title);
-        ctx.model.setProps('description', description);
+        ctx.model.setDecoratorProps({ title: title, description: description });
       },
     },
     setBlockHeight: {
@@ -101,6 +117,16 @@ export class DataBlockModel<T = DefaultStructure> extends BlockModel<T> {
     this.setSharedContext({
       currentBlockModel: this,
     });
+  }
+
+  get title() {
+    return (
+      this._title ||
+      `
+    ${this.collection.title} > 
+    ${this.collection.dataSource.displayName} > 
+    ${this.translate(this.constructor['meta']?.title || this.constructor.name)}`
+    );
   }
 
   addAppends(fieldPath: string, refresh = false) {

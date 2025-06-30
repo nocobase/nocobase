@@ -26,6 +26,13 @@
  *   hideRemoveInSettings={true}
  * />
  *
+ * // 显示设置和title
+ * <FlowModelRenderer
+ *   model={myModel}
+ *   showFlowSettings={true}
+ *   showTitle={true}
+ * />
+ *
  * // 使用右键菜单模式并隐藏删除按钮
  * <FlowModelRenderer
  *   model={myModel}
@@ -62,6 +69,9 @@ interface FlowModelRendererProps {
   /** 是否在设置中隐藏移除按钮 */
   hideRemoveInSettings?: boolean; // 默认 false
 
+  /** 是否在边框左上角显示模型title，默认 false */
+  showTitle?: boolean; // 默认 false
+
   /** 是否跳过自动应用流程，默认 false */
   skipApplyAutoFlows?: boolean; // 默认 false
 
@@ -89,6 +99,7 @@ const FlowModelRendererWithAutoFlows: React.FC<{
   showFlowSettings: boolean | { showBackground?: boolean; showBorder?: boolean };
   flowSettingsVariant: string;
   hideRemoveInSettings: boolean;
+  showTitle: boolean;
   extraContext?: Record<string, any>;
   sharedContext?: Record<string, any>;
   showErrorFallback?: boolean;
@@ -100,6 +111,7 @@ const FlowModelRendererWithAutoFlows: React.FC<{
     showFlowSettings,
     flowSettingsVariant,
     hideRemoveInSettings,
+    showTitle,
     extraContext,
     sharedContext,
     showErrorFallback,
@@ -115,6 +127,7 @@ const FlowModelRendererWithAutoFlows: React.FC<{
           showFlowSettings={showFlowSettings}
           flowSettingsVariant={flowSettingsVariant}
           hideRemoveInSettings={hideRemoveInSettings}
+          showTitle={showTitle}
           showErrorFallback={showErrorFallback}
           settingsMenuLevel={settingsMenuLevel}
           extraToolbarItems={extraToolbarItems}
@@ -132,6 +145,7 @@ const FlowModelRendererWithoutAutoFlows: React.FC<{
   showFlowSettings: boolean | { showBackground?: boolean; showBorder?: boolean };
   flowSettingsVariant: string;
   hideRemoveInSettings: boolean;
+  showTitle: boolean;
   sharedContext?: Record<string, any>;
   showErrorFallback?: boolean;
   settingsMenuLevel?: number;
@@ -142,6 +156,7 @@ const FlowModelRendererWithoutAutoFlows: React.FC<{
     showFlowSettings,
     flowSettingsVariant,
     hideRemoveInSettings,
+    showTitle,
     sharedContext,
     showErrorFallback,
     settingsMenuLevel,
@@ -154,6 +169,7 @@ const FlowModelRendererWithoutAutoFlows: React.FC<{
           showFlowSettings={showFlowSettings}
           flowSettingsVariant={flowSettingsVariant}
           hideRemoveInSettings={hideRemoveInSettings}
+          showTitle={showTitle}
           showErrorFallback={showErrorFallback}
           settingsMenuLevel={settingsMenuLevel}
           extraToolbarItems={extraToolbarItems}
@@ -171,6 +187,7 @@ const FlowModelRendererCore: React.FC<{
   showFlowSettings: boolean | { showBackground?: boolean; showBorder?: boolean };
   flowSettingsVariant: string;
   hideRemoveInSettings: boolean;
+  showTitle: boolean;
   showErrorFallback?: boolean;
   settingsMenuLevel?: number;
   extraToolbarItems?: ToolbarItemConfig[];
@@ -180,6 +197,7 @@ const FlowModelRendererCore: React.FC<{
     showFlowSettings,
     flowSettingsVariant,
     hideRemoveInSettings,
+    showTitle,
     showErrorFallback,
     settingsMenuLevel,
     extraToolbarItems,
@@ -205,6 +223,7 @@ const FlowModelRendererCore: React.FC<{
       case 'dropdown':
         return (
           <FlowsFloatContextMenu
+            showTitle={showTitle}
             model={model}
             showDeleteButton={!hideRemoveInSettings}
             showBackground={_.isObject(showFlowSettings) ? showFlowSettings.showBackground : undefined}
@@ -239,6 +258,7 @@ const FlowModelRendererCore: React.FC<{
         );
         return (
           <FlowsFloatContextMenu
+            showTitle={showTitle}
             model={model}
             showDeleteButton={!hideRemoveInSettings}
             showBackground={_.isObject(showFlowSettings) ? showFlowSettings.showBackground : undefined}
@@ -263,6 +283,7 @@ const FlowModelRendererCore: React.FC<{
  * @param {boolean} props.showFlowSettings - Whether to show flow settings entry (buttons, menus, etc.).
  * @param {string} props.flowSettingsVariant - The interaction style for flow settings.
  * @param {boolean} props.hideRemoveInSettings - Whether to hide remove button in settings.
+ * @param {boolean} props.showTitle - Whether to show model title in the top-left corner of the border.
  * @param {boolean} props.skipApplyAutoFlows - Whether to skip applying auto flows.
  * @param {any} props.extraContext - Extra context to pass to useApplyAutoFlows when skipApplyAutoFlows is false.
  * @param {any} props.sharedContext - Shared context to pass to the model.
@@ -277,6 +298,7 @@ export const FlowModelRenderer: React.FC<FlowModelRendererProps> = observer(
     showFlowSettings = false,
     flowSettingsVariant = 'dropdown',
     hideRemoveInSettings = false,
+    showTitle = false,
     skipApplyAutoFlows = false,
     extraContext,
     sharedContext,
@@ -303,6 +325,7 @@ export const FlowModelRenderer: React.FC<FlowModelRendererProps> = observer(
             showFlowSettings={showFlowSettings}
             flowSettingsVariant={flowSettingsVariant}
             hideRemoveInSettings={hideRemoveInSettings}
+            showTitle={showTitle}
             sharedContext={sharedContext}
             showErrorFallback={showErrorFallback}
             settingsMenuLevel={settingsMenuLevel}
@@ -318,6 +341,7 @@ export const FlowModelRenderer: React.FC<FlowModelRendererProps> = observer(
             showFlowSettings={showFlowSettings}
             flowSettingsVariant={flowSettingsVariant}
             hideRemoveInSettings={hideRemoveInSettings}
+            showTitle={showTitle}
             extraContext={extraContext}
             sharedContext={sharedContext}
             showErrorFallback={showErrorFallback}

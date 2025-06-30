@@ -12,6 +12,9 @@
 - **sortIndex: number**  
   排序索引。
 
+- **title: string**  
+  模型标题，用于界面展示，例如区块标题。
+
 - **props: IModelComponentProps**  
   组件属性，支持响应式。
 
@@ -58,6 +61,9 @@
 
 - **getStepParams(...)**  
   支持多种重载，获取流步骤参数。
+
+- **setTitle(value: string)**  
+  设置模型标题，能够为各个模型设置不同的标题。
 
 ---
 

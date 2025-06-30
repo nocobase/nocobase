@@ -315,7 +315,6 @@ export interface FlowModelOptions<Structure extends { parent?: FlowModel; subMod
   uid?: string;
   use?: string;
   async?: boolean; // 是否异步加载模型
-  props?: IModelComponentProps;
   stepParams?: StepParams;
   subModels?: Structure['subModels'];
   flowEngine?: FlowEngine;

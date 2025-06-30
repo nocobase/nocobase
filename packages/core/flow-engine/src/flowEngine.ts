@@ -226,7 +226,6 @@ export class FlowEngine {
     if (this.modelClasses.has(name)) {
       console.warn(`FlowEngine: Model class with name '${name}' is already registered and will be overwritten.`);
     }
-    (modelClass as typeof FlowModel).flowEngine = this; // 绑定 FlowEngine 实例到 Model 类
     this.modelClasses.set(name, modelClass);
   }
 
@@ -317,7 +316,7 @@ export class FlowEngine {
     if (uid && this.modelInstances.has(uid)) {
       return this.modelInstances.get(uid) as T;
     }
-    const modelInstance = new (ModelClass as ModelConstructor<T>)({ ...options } as any);
+    const modelInstance = new (ModelClass as ModelConstructor<T>)({ ...options, flowEngine: this } as any);
 
     modelInstance.onInit(options);
 
@@ -362,13 +361,13 @@ export class FlowEngine {
         const subModelValue = modelInstance.parent.subModels[subKey];
 
         if (Array.isArray(subModelValue)) {
-          const index = subModelValue.findIndex((subModel) => subModel.uid === modelInstance.uid);
+          const index = subModelValue.findIndex((subModel) => subModel == modelInstance);
           if (index !== -1) {
             subModelValue.splice(index, 1);
             modelInstance.parent.emitter.emit('onSubModelRemoved', modelInstance);
             break;
           }
-        } else if (subModelValue && subModelValue.uid === modelInstance.uid) {
+        } else if (subModelValue && subModelValue === modelInstance) {
           delete modelInstance.parent.subModels[subKey];
           modelInstance.parent.emitter.emit('onSubModelRemoved', modelInstance);
           break;

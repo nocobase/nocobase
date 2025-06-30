@@ -1,12 +1,23 @@
-import React from 'react';
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { useForm } from '@formily/react';
+import { reactive } from '@nocobase/flow-engine';
 import { Select } from 'antd';
+import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { ReadPrettyFieldModel } from './ReadPrettyFieldModel';
 import { InputNumberReadPretty } from '../../../components/InputNumberReadPretty';
+import { ReadPrettyFieldModel } from './ReadPrettyFieldModel';
 
 export class NumberReadPrettyFieldModel extends ReadPrettyFieldModel {
   public static readonly supportedFieldInterfaces = ['number', 'integer'];
+  @reactive
   public render() {
     const value = this.getValue();
     return (

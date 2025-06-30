@@ -10,10 +10,12 @@
 import React from 'react';
 import { ColorPicker } from 'antd';
 import { css } from '@emotion/css';
+import { reactive } from '@nocobase/flow-engine';
 import { ReadPrettyFieldModel } from './ReadPrettyFieldModel';
 
 export class ColorReadPrettyFieldModel extends ReadPrettyFieldModel {
   public static readonly supportedFieldInterfaces = ['color'];
+  @reactive
   public render() {
     const value = this.getValue();
 

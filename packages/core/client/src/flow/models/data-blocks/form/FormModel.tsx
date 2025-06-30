@@ -12,7 +12,6 @@ import { createForm, Form } from '@formily/core';
 import { FormProvider } from '@formily/react';
 import { AddActionButton, AddFieldButton, FlowModelRenderer, SingleRecordResource } from '@nocobase/flow-engine';
 import { tval } from '@nocobase/utils/client';
-import { BlockItemCard } from '../../common/BlockItemCard';
 import React from 'react';
 import { DataBlockModel } from '../../base/BlockModel';
 import { EditableFieldModel } from '../../fields/EditableField/EditableFieldModel';
@@ -21,53 +20,51 @@ export class FormModel extends DataBlockModel {
   form: Form;
   declare resource: SingleRecordResource;
 
-  render() {
+  renderComponent() {
     return (
-      <BlockItemCard {...this.props}>
-        <FormProvider form={this.form}>
-          <FormLayout layout={'vertical'}>
-            {this.mapSubModels('fields', (field) => (
-              <FlowModelRenderer
-                model={field}
-                showFlowSettings={{ showBorder: false }}
-                sharedContext={{ currentRecord: this.resource.getData() }}
-              />
-            ))}
-          </FormLayout>
-          <AddFieldButton
-            buildCreateModelOptions={({ defaultOptions, fieldPath }) => ({
-              use: defaultOptions.use,
-              stepParams: {
-                default: {
-                  step1: {
-                    dataSourceKey: this.collection.dataSourceKey,
-                    collectionName: this.collection.name,
-                    fieldPath,
-                  },
+      <FormProvider form={this.form}>
+        <FormLayout layout={'vertical'}>
+          {this.mapSubModels('fields', (field) => (
+            <FlowModelRenderer
+              model={field}
+              showFlowSettings={{ showBorder: false }}
+              sharedContext={{ currentRecord: this.resource.getData() }}
+            />
+          ))}
+        </FormLayout>
+        <AddFieldButton
+          buildCreateModelOptions={({ defaultOptions, fieldPath }) => ({
+            use: defaultOptions.use,
+            stepParams: {
+              default: {
+                step1: {
+                  dataSourceKey: this.collection.dataSourceKey,
+                  collectionName: this.collection.name,
+                  fieldPath,
                 },
               },
-            })}
-            subModelKey="fields"
-            model={this}
-            collection={this.collection}
-            subModelBaseClass="EditableFieldModel"
-            onSubModelAdded={async (model: EditableFieldModel) => {
-              const params = model.getStepParams('default', 'step1');
-              this.addAppends(params?.fieldPath, true);
-            }}
-          />
-          <FormButtonGroup style={{ marginTop: 16 }}>
-            {this.mapSubModels('actions', (action) => (
-              <FlowModelRenderer
-                model={action}
-                showFlowSettings={{ showBackground: false, showBorder: false }}
-                sharedContext={{ currentRecord: this.resource.getData() }}
-              />
-            ))}
-            <AddActionButton model={this} subModelBaseClass="FormActionModel" />
-          </FormButtonGroup>
-        </FormProvider>
-      </BlockItemCard>
+            },
+          })}
+          subModelKey="fields"
+          model={this}
+          collection={this.collection}
+          subModelBaseClass="EditableFieldModel"
+          onSubModelAdded={async (model: EditableFieldModel) => {
+            const params = model.getStepParams('default', 'step1');
+            this.addAppends(params?.fieldPath, !!this.ctx.shared?.currentFlow?.extra?.filterByTk);
+          }}
+        />
+        <FormButtonGroup style={{ marginTop: 16 }}>
+          {this.mapSubModels('actions', (action) => (
+            <FlowModelRenderer
+              model={action}
+              showFlowSettings={{ showBackground: false, showBorder: false }}
+              sharedContext={{ currentRecord: this.resource.getData() }}
+            />
+          ))}
+          <AddActionButton model={this} subModelBaseClass="FormActionModel" />
+        </FormButtonGroup>
+      </FormProvider>
     );
   }
 }

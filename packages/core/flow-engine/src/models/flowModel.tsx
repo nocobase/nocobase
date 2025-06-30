@@ -39,16 +39,15 @@ const modelMetas = new WeakMap<typeof FlowModel, FlowModelMeta>();
 const modelFlows = new WeakMap<typeof FlowModel, Map<string, FlowDefinition>>();
 
 export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
-  public static flowEngine: FlowEngine;
-
   public readonly uid: string;
   public sortIndex: number;
   public props: IModelComponentProps = {};
   public stepParams: StepParams = {};
-  // public flowEngine: FlowEngine;
+  public flowEngine: FlowEngine;
   public parent: ParentFlowModel<Structure>;
   public subModels: Structure['subModels'];
   private _options: FlowModelOptions<Structure>;
+  protected _title: string;
 
   /**
    * 所有 fork 实例的引用集合。
@@ -74,9 +73,10 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
   private observerDispose: () => void;
 
   constructor(options: FlowModelOptions<Structure>) {
-    if (!this.flowEngine) {
+    if (!options.flowEngine) {
       throw new Error('FlowModel must be initialized with a FlowEngine instance.');
     }
+    this.flowEngine = options.flowEngine;
     if (this.flowEngine.getModel(options.uid)) {
       // 此时 new FlowModel 并不创建新实例，而是返回已存在的实例，避免重复创建同一个model实例
       return this.flowEngine.getModel(options.uid);
@@ -87,7 +87,7 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     }
 
     this.uid = options.uid;
-    this.props = options.props || {};
+    this.props = {};
     this.stepParams = options.stepParams || {};
     this.subModels = {};
     this.sortIndex = options.sortIndex || 0;
@@ -95,7 +95,7 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
 
     define(this, {
       props: observable,
-      subModels: observable,
+      subModels: observable.shallow,
       stepParams: observable,
       setProps: action,
       setStepParams: action,
@@ -136,9 +136,13 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     return modelMetas.get(this);
   }
 
-  get flowEngine() {
-    // 取静态属性 flowEngine
-    return (this.constructor as typeof FlowModel).flowEngine;
+  get title() {
+    // model 可以通过 setTitle 来自定义title， 具有更高的优先级
+    return this._title || this.translate(this.constructor['meta']?.title);
+  }
+
+  setTitle(value: string) {
+    this._title = value;
   }
 
   private createSubModels(subModels: Record<string, CreateSubModelOptions | CreateSubModelOptions[]>) {
@@ -700,7 +704,9 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     const subModels = this.subModels as {
       [subKey: string]: FlowModel[];
     };
-    Array.isArray(subModels[subKey]) || (subModels[subKey] = []);
+    if (!Array.isArray(subModels[subKey])) {
+      subModels[subKey] = observable.shallow([]);
+    }
     const maxSortIndex = Math.max(...(subModels[subKey] as FlowModel[]).map((item) => item.sortIndex || 0), 0);
     model.sortIndex = maxSortIndex + 1;
     subModels[subKey].push(model);
@@ -914,7 +920,7 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
   serialize(): Record<string, any> {
     const data = {
       uid: this.uid,
-      ..._.omit(this._options, ['flowEngine']),
+      ..._.omit(this._options, ['props', 'flowEngine']),
       // props: this.props,
       stepParams: this.stepParams,
       sortIndex: this.sortIndex,

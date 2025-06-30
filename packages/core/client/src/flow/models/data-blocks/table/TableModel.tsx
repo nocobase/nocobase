@@ -163,6 +163,7 @@ export class TableModel extends DataBlockModel<TableModelStructure> {
               // 阻止事件冒泡，避免触发行选中
               try {
                 await QuickEditForm.open({
+                  flowEngine: this.flowEngine,
                   target: ref.current,
                   dataSourceKey: this.collection.dataSourceKey,
                   collectionName: this.collection.name,
@@ -215,78 +216,70 @@ export class TableModel extends DataBlockModel<TableModelStructure> {
     },
   };
 
-  render() {
+  renderComponent() {
     return (
-      <BlockItemCard {...this.props}>
-        <Spin spinning={this.resource.loading}>
-          <DndProvider>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-              <Space>
-                {this.mapSubModels('actions', (action) => {
-                  // @ts-ignore
-                  if (action.props.position === 'left') {
-                    return (
-                      <FlowModelRenderer
-                        model={action}
-                        showFlowSettings={{ showBackground: false, showBorder: false }}
-                      />
-                    );
-                  }
+      <Spin spinning={this.resource.loading}>
+        <DndProvider>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+            <Space>
+              {this.mapSubModels('actions', (action) => {
+                // @ts-ignore
+                if (action.props.position === 'left') {
+                  return (
+                    <FlowModelRenderer model={action} showFlowSettings={{ showBackground: false, showBorder: false }} />
+                  );
+                }
 
-                  return null;
-                })}
-                {/* 占位 */}
-                <span></span>
-              </Space>
-              <Space>
-                {this.mapSubModels('actions', (action) => {
-                  // @ts-ignore
-                  if (action.props.position !== 'left') {
-                    return (
-                      <FlowModelRenderer
-                        model={action}
-                        showFlowSettings={{ showBackground: false, showBorder: false }}
-                      />
-                    );
-                  }
+                return null;
+              })}
+              {/* 占位 */}
+              <span></span>
+            </Space>
+            <Space>
+              {this.mapSubModels('actions', (action) => {
+                // @ts-ignore
+                if (action.props.position !== 'left') {
+                  return (
+                    <FlowModelRenderer model={action} showFlowSettings={{ showBackground: false, showBorder: false }} />
+                  );
+                }
 
-                  return null;
-                })}
-                <AddActionButton model={this} subModelBaseClass="GlobalActionModel" subModelKey="actions" />
-              </Space>
-            </div>
-          </DndProvider>
-          <Table
-            components={this.components}
-            tableLayout="fixed"
-            rowKey={this.collection.filterTargetKey}
-            rowSelection={{
-              columnWidth: 50,
-              type: 'checkbox',
-              onChange: (_, selectedRows) => {
-                this.resource.setSelectedRows(selectedRows);
-              },
-              selectedRowKeys: this.resource.getSelectedRows().map((row) => row.id),
-            }}
-            virtual={this.props.virtual}
-            scroll={{ x: 'max-content', y: 600 }}
-            dataSource={this.resource.getData()}
-            columns={this.getColumns()}
-            pagination={{
-              current: this.resource.getPage(),
-              pageSize: this.resource.getPageSize(),
-              total: this.resource.getMeta('count'),
-            }}
-            onChange={(pagination) => {
-              console.log('onChange pagination:', pagination);
-              this.resource.loading = true;
-              this.resource.setPage(pagination.current);
-              this.resource.setPageSize(pagination.pageSize);
-              this.resource.refresh();
-            }}
-          />
-        </Spin>
-      </BlockItemCard>
+                return null;
+              })}
+              <AddActionButton model={this} subModelBaseClass="GlobalActionModel" subModelKey="actions" />
+            </Space>
+          </div>
+        </DndProvider>
+        <Table
+          components={this.components}
+          tableLayout="fixed"
+          rowKey={this.collection.filterTargetKey}
+          rowSelection={{
+            columnWidth: 50,
+            type: 'checkbox',
+            onChange: (_, selectedRows) => {
+              this.resource.setSelectedRows(selectedRows);
+            },
+            selectedRowKeys: this.resource.getSelectedRows().map((row) => row.id),
+          }}
+          virtual={this.props.virtual}
+          scroll={{ x: 'max-content', y: 600 }}
+          dataSource={this.resource.getData()}
+          columns={this.getColumns()}
+          pagination={{
+            current: this.resource.getPage(),
+            pageSize: this.resource.getPageSize(),
+            total: this.resource.getMeta('count'),
+          }}
+          onChange={(pagination) => {
+            console.log('onChange pagination:', pagination);
+            this.resource.loading = true;
+            this.resource.setPage(pagination.current);
+            this.resource.setPageSize(pagination.pageSize);
+            this.resource.refresh();
+          }}
+        />
+      </Spin>
     );
   }
 }

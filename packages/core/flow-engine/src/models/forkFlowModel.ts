@@ -125,6 +125,7 @@ export class ForkFlowModel<TMaster extends FlowModel = FlowModel> {
       },
       set: (target: any, prop: PropertyKey, value: any, receiver: any) => {
         if (prop === 'props') {
+          // fork 中不允许直接设置props
           return true;
         }
 
