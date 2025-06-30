@@ -36,7 +36,7 @@ export class DataBlockModel<T = DefaultStructure> extends BlockModel<T> {
 
   get title() {
     return (
-      this._title ||
+      this.translate(this._title) ||
       `
     ${this.collection.title} > 
     ${this.collection.dataSource.displayName} > 
