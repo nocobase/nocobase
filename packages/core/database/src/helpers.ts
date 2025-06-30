@@ -15,6 +15,7 @@ import { MysqlDialect } from './dialects/mysql-dialect';
 import { SqliteDialect } from './dialects/sqlite-dialect';
 import { MariadbDialect } from './dialects/mariadb-dialect';
 import { PostgresDialect } from './dialects/postgres-dialect';
+import { PoolOptions } from 'sequelize';
 
 function getEnvValue(key, defaultValue?) {
   return process.env[key] || defaultValue;
@@ -73,6 +74,29 @@ function extractSSLOptionsFromEnv() {
   });
 }
 
+function getPoolOptions(): PoolOptions {
+  const options: PoolOptions = {};
+  if (process.env.DB_POOL_MAX) {
+    options.max = Number.parseInt(process.env.DB_POOL_MAX, 10);
+  }
+  if (process.env.DB_POOL_MIN) {
+    options.min = Number.parseInt(process.env.DB_POOL_MIN, 10);
+  }
+  if (process.env.DB_POOL_IDLE) {
+    options.idle = Number.parseInt(process.env.DB_POOL_IDLE, 10);
+  }
+  if (process.env.DB_POOL_ACQUIRE) {
+    options.acquire = Number.parseInt(process.env.DB_POOL_ACQUIRE, 10);
+  }
+  if (process.env.DB_POOL_EVICT) {
+    options.evict = Number.parseInt(process.env.DB_POOL_EVICT, 10);
+  }
+  if (process.env.DB_POOL_MAX_USES) {
+    options.maxUses = Number.parseInt(process.env.DB_POOL_MAX_USES, 10) || Number.POSITIVE_INFINITY;
+  }
+  return options;
+}
+
 export async function parseDatabaseOptionsFromEnv(): Promise<IDatabaseOptions> {
   const databaseOptions: IDatabaseOptions = {
     logging: process.env.DB_LOGGING == 'on' ? customLogger : false,
@@ -87,6 +111,7 @@ export async function parseDatabaseOptionsFromEnv(): Promise<IDatabaseOptions> {
     tablePrefix: process.env.DB_TABLE_PREFIX,
     schema: process.env.DB_SCHEMA,
     underscored: process.env.DB_UNDERSCORED === 'true',
+    pool: getPoolOptions(),
   };
 
   const sslOptions = await extractSSLOptionsFromEnv();
