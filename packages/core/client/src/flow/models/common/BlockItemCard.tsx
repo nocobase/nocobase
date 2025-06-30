@@ -7,18 +7,6 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { PlusOutlined } from '@ant-design/icons';
-import { Input } from '@formily/antd-v5';
-import { uid } from '@formily/shared';
-import {
-  AddBlockButton,
-  FlowModel,
-  FlowModelRenderer,
-  FlowSettingsButton,
-  FlowsFloatContextMenu,
-  useStepSettingContext,
-} from '@nocobase/flow-engine';
-import { tval } from '@nocobase/utils/client';
 import { theme, Card } from 'antd';
 import _ from 'lodash';
 import React from 'react';

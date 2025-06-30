@@ -9,7 +9,8 @@
 import { connect, mapProps, mapReadPretty } from '@formily/react';
 import { Select } from 'antd';
 import React from 'react';
-import { useFlowModel, FlowModel, useFlowEngine, FlowModelRenderer } from '@nocobase/flow-engine';
+import { castArray } from 'lodash';
+import { useFlowModel, FlowModel } from '@nocobase/flow-engine';
 import { tval } from '@nocobase/utils/client';
 import { AssociationFieldEditableFieldModel } from './AssociationFieldEditableFieldModel';
 
@@ -83,15 +84,41 @@ const AssociationSelect = connect(
   ),
   mapReadPretty((props) => {
     const currentModel: any = useFlowModel();
-    const { option, fieldNames } = props;
+
+    const { fieldNames, value } = props;
+    if (!value) {
+      return;
+    }
     const field = currentModel.subModels.field as FlowModel;
-    const key = option[fieldNames.value];
+    const key = value?.[fieldNames.value];
     const fieldModel = field.createFork({}, key);
     fieldModel.setSharedContext({
-      value: option?.[fieldNames.label],
-      currentRecord: option,
+      value: value?.[fieldNames.label],
+      currentRecord: value,
     });
-    return option[fieldNames.label] ? fieldModel.render() : tval('N/A');
+    const arrayValue = castArray(value);
+
+    return (
+      <>
+        {arrayValue.map((v, index) => {
+          const key = `${index}`;
+          const fieldModel = field.createFork({}, key);
+          fieldModel.setSharedContext({
+            index,
+            value: v?.[fieldNames.label],
+            currentRecord: v,
+          });
+
+          const content = v?.[fieldNames.label] ? fieldModel.render() : tval('N/A');
+          return (
+            <React.Fragment key={index}>
+              {index > 0 && ', '}
+              {content}
+            </React.Fragment>
+          );
+        })}
+      </>
+    );
   }),
 );
 
