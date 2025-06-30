@@ -252,7 +252,13 @@ module.exports = (cli) => {
         NOCOBASE_PKG_USERNAME,
         NOCOBASE_PKG_PASSWORD,
       } = process.env;
-      const { accessKeyId, accessKeySecret } = await getAccessKeyPair();
+      let accessKeyId;
+      let accessKeySecret;
+      try {
+        ({ accessKeyId, accessKeySecret } = await getAccessKeyPair());
+      } catch (e) {
+        return;
+      }
       if (!(NOCOBASE_PKG_USERNAME && NOCOBASE_PKG_PASSWORD) && !(accessKeyId && accessKeySecret)) {
         return;
       }
