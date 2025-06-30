@@ -185,13 +185,10 @@ describe('FlowModel', () => {
       expect(model.forks.size).toBe(0);
     });
 
-    test('should handle missing flowEngine gracefully', () => {
+    test('should throw error when flowEngine is missing', () => {
       expect(() => {
         new FlowModel({} as any);
-      }).not.toThrow();
-
-      const model = new FlowModel({} as any);
-      expect(model.flowEngine).toBeUndefined();
+      }).toThrow('FlowModel must be initialized with a FlowEngine instance.');
     });
 
     test('should initialize emitter', () => {
@@ -426,11 +423,10 @@ describe('FlowModel', () => {
       });
 
       test('should throw error when FlowEngine not available', async () => {
-        const modelWithoutEngine = new TestFlowModel({ uid: 'test' } as any);
-        const flow = createBasicFlowDefinition();
-        TestFlowModel.registerFlow(flow);
-
-        await expect(modelWithoutEngine.applyFlow(flow.key)).rejects.toThrow('FlowEngine not available');
+        // Since FlowModel constructor now requires flowEngine, we test the error at construction time
+        expect(() => {
+          new TestFlowModel({ uid: 'test' } as any);
+        }).toThrow('FlowModel must be initialized with a FlowEngine instance.');
       });
 
       test('should handle FlowExitException correctly', async () => {
@@ -1145,11 +1141,10 @@ describe('FlowModel', () => {
       });
 
       test('should throw error when FlowEngine not set', async () => {
-        const modelWithoutEngine = new FlowModel({ uid: 'test' } as any);
-
-        await expect(modelWithoutEngine.save()).rejects.toThrow(
-          'FlowEngine is not set on this model. Please set flowEngine before saving',
-        );
+        // Since FlowModel constructor now requires flowEngine, we test the error at construction time
+        expect(() => {
+          new FlowModel({ uid: 'test' } as any);
+        }).toThrow('FlowModel must be initialized with a FlowEngine instance.');
       });
 
       test('should handle save operation failures', async () => {
@@ -1172,9 +1167,10 @@ describe('FlowModel', () => {
       });
 
       test('should throw error when FlowEngine not available for destroy', async () => {
-        const modelWithoutEngine = new FlowModel({ uid: 'test' } as any);
-
-        await expect(modelWithoutEngine.destroy()).rejects.toThrow('FlowEngine is not set on this model');
+        // Since FlowModel constructor now requires flowEngine, we test the error at construction time
+        expect(() => {
+          new FlowModel({ uid: 'test' } as any);
+        }).toThrow('FlowModel must be initialized with a FlowEngine instance.');
       });
 
       test('should clean up resources on remove', () => {
@@ -1225,7 +1221,7 @@ describe('FlowModel', () => {
     });
 
     describe('serialization', () => {
-      test('should serialize basic model data, only saving option props', () => {
+      test('should serialize basic model data, excluding props and flowEngine', () => {
         model.sortIndex = 5;
         model.setProps({ name: 'Test Model', value: 42 });
         model.setStepParams({
@@ -1236,11 +1232,13 @@ describe('FlowModel', () => {
 
         expect(serialized).toEqual({
           uid: model.uid,
-          props: expect.objectContaining({ testProp: 'value' }),
           stepParams: expect.objectContaining({ flow1: { step1: { param1: 'value1' } } }),
           sortIndex: 5,
           subModels: expect.any(Object),
         });
+        // props should be excluded from serialization
+        expect(serialized.props).toBeUndefined();
+        expect(serialized.flowEngine).toBeUndefined();
       });
 
       test('should serialize empty model correctly', () => {
@@ -1256,11 +1254,13 @@ describe('FlowModel', () => {
 
         expect(serialized).toEqual({
           uid: 'empty-model',
-          props: expect.any(Object),
           stepParams: expect.any(Object),
           sortIndex: expect.any(Number),
           subModels: expect.any(Object),
         });
+        // props should be excluded from serialization
+        expect(serialized.props).toBeUndefined();
+        expect(serialized.flowEngine).toBeUndefined();
       });
     });
   });
