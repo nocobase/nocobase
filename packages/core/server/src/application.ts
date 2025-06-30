@@ -1294,7 +1294,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   protected createMainDataSource(options: ApplicationOptions) {
     const mainDataSourceInstance = new MainDataSource({
       name: 'main',
-      database: this.createDatabase(options.database),
+      database: this.createDatabase(options),
       acl: createACL(),
       resourceManager: createResourcer(options),
       useACL: options.acl,
@@ -1309,7 +1309,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     this.dataSourceManager.dataSources.set('main', mainDataSourceInstance);
   }
 
-  protected createDatabase(options: IDatabaseOptions | Database): Database {
+  protected createDatabase(options: ApplicationOptions) {
     const logging = (...args) => {
       let msg = args[0];
 
@@ -1330,7 +1330,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
       this._sqlLogger.debug(content);
     };
 
-    const dbOptions = options instanceof Database ? options.options : options;
+    const dbOptions = options.database instanceof Database ? options.database.options : options.database;
     const db = new Database({
       ...dbOptions,
       logging: dbOptions.logging ? logging : false,
