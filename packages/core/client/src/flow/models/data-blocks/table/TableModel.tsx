@@ -141,6 +141,7 @@ export class TableModel extends DataBlockModel<TableModelStructure> {
                 color: #1890ff;
                 margin-left: 8px;
                 cursor: pointer;
+                z-index: 100;
                 top: 50%;
                 right: 8px;
                 transform: translateY(-50%);
@@ -157,6 +158,9 @@ export class TableModel extends DataBlockModel<TableModelStructure> {
           <EditOutlined
             className="edit-icon"
             onClick={async (e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              // 阻止事件冒泡，避免触发行选中
               try {
                 await QuickEditForm.open({
                   target: ref.current,
@@ -266,7 +270,7 @@ export class TableModel extends DataBlockModel<TableModelStructure> {
               selectedRowKeys: this.resource.getSelectedRows().map((row) => row.id),
             }}
             virtual={this.props.virtual}
-            scroll={{ x: 'max-content', y: 'calc(100vh - 200px)' }}
+            scroll={{ x: 'max-content', y: 600 }}
             dataSource={this.resource.getData()}
             columns={this.getColumns()}
             pagination={{
@@ -276,9 +280,9 @@ export class TableModel extends DataBlockModel<TableModelStructure> {
             }}
             onChange={(pagination) => {
               console.log('onChange pagination:', pagination);
+              this.resource.loading = true;
               this.resource.setPage(pagination.current);
               this.resource.setPageSize(pagination.pageSize);
-              this.resource.loading = true;
               this.resource.refresh();
             }}
           />

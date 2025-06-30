@@ -361,20 +361,19 @@ export class FlowEngine {
         const subModelValue = modelInstance.parent.subModels[subKey];
 
         if (Array.isArray(subModelValue)) {
-          const index = subModelValue.indexOf(modelInstance);
+          const index = subModelValue.findIndex((subModel) => subModel.uid === modelInstance.uid);
           if (index !== -1) {
             subModelValue.splice(index, 1);
             modelInstance.parent.emitter.emit('onSubModelRemoved', modelInstance);
             break;
           }
-        } else if (subModelValue === modelInstance) {
+        } else if (subModelValue && subModelValue.uid === modelInstance.uid) {
           delete modelInstance.parent.subModels[subKey];
           modelInstance.parent.emitter.emit('onSubModelRemoved', modelInstance);
           break;
         }
       }
     }
-    modelInstance['onRemove']?.();
     this.modelInstances.delete(uid);
     return false;
   }
