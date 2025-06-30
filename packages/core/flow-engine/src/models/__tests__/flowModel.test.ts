@@ -912,8 +912,8 @@ describe('FlowModel', () => {
 
       describe('subModels serialization', () => {
         test('should serialize subModels in model data', () => {
-          const child1 = new FlowModel({ uid: 'child1', flowEngine, props: { name: 'first' } });
-          const child2 = new FlowModel({ uid: 'child2', flowEngine, props: { name: 'second' } });
+          const child1 = new FlowModel({ uid: 'child1', flowEngine });
+          const child2 = new FlowModel({ uid: 'child2', flowEngine });
 
           parentModel.setSubModel('singleChild', child1);
           parentModel.addSubModel('multipleChildren', child2);
