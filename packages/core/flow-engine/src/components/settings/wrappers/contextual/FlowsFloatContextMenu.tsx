@@ -117,6 +117,27 @@ const floatContainerStyles = ({ showBackground, showBorder }) => css`
       background: var(--colorTemplateBgSettingsHover);
     }
 
+    > .general-schema-designer-title {
+      pointer-events: none;
+      position: absolute;
+      font-size: 12px;
+      padding: 0;
+      line-height: 16px;
+      height: 16px;
+      border-bottom-right-radius: 2px;
+      border-radius: 2px;
+      top: 2px;
+      left: 2px;
+
+      .title-tag {
+        padding: 0 3px;
+        border-radius: 2px;
+        background: var(--colorSettings);
+        color: #fff;
+        display: block;
+      }
+    }
+
     > .general-schema-designer-icons {
       position: absolute;
       right: 2px;
@@ -157,6 +178,10 @@ interface ModelProvidedProps {
    */
   showBackground?: boolean;
   /**
+   * @default false
+   */
+  showTitle?: boolean;
+  /**
    * Settings menu levels: 1=current model only (default), 2=include sub-models
    */
   settingsMenuLevel?: number;
@@ -183,6 +208,10 @@ interface ModelByIdProps {
    * @default true
    */
   showBackground?: boolean;
+  /**
+   * @default false
+   */
+  showTitle?: boolean;
   /**
    * Settings menu levels: 1=current model only (default), 2=include sub-models
    */
@@ -221,6 +250,7 @@ const isModelByIdProps = (props: FlowsFloatContextMenuProps): props is ModelById
  * @param props.showCopyUidButton 是否显示复制UID按钮，默认为true
  * @param props.containerStyle 容器自定义样式
  * @param props.className 容器自定义类名
+ * @param props.showTitle 是否在边框左上角显示模型title，默认为false
  * @param props.settingsMenuLevel 设置菜单层级：1=仅当前模型(默认)，2=包含子模型
  * @param props.extraToolbarItems 额外的工具栏项目，仅应用于此实例
  */
@@ -249,6 +279,7 @@ const FlowsFloatContextMenuWithModel: React.FC<ModelProvidedProps> = observer(
     className,
     showBackground = true,
     showBorder = true,
+    showTitle = false,
     settingsMenuLevel,
     extraToolbarItems,
   }: ModelProvidedProps) => {
@@ -325,6 +356,11 @@ const FlowsFloatContextMenuWithModel: React.FC<ModelProvidedProps> = observer(
 
           {/* 悬浮工具栏 - 使用与 NocoBase 一致的结构 */}
           <div className="general-schema-designer">
+            {showTitle && model.title && (
+              <div className="general-schema-designer-title">
+                <span className="title-tag">{model.title}</span>
+              </div>
+            )}
             <div className="general-schema-designer-icons">
               <Space size={3} align="center">
                 {renderToolbarItems(
@@ -355,6 +391,7 @@ const FlowsFloatContextMenuWithModelById: React.FC<ModelByIdProps> = observer(
     showCopyUidButton = true,
     containerStyle,
     className,
+    showTitle = false,
     settingsMenuLevel,
     extraToolbarItems: extraToolbarItems,
   }) => {
@@ -373,6 +410,7 @@ const FlowsFloatContextMenuWithModelById: React.FC<ModelByIdProps> = observer(
         showCopyUidButton={showCopyUidButton}
         containerStyle={containerStyle}
         className={className}
+        showTitle={showTitle}
         settingsMenuLevel={settingsMenuLevel}
         extraToolbarItems={extraToolbarItems}
       >

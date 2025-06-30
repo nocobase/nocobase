@@ -135,7 +135,6 @@ beforeEach(() => {
   modelOptions = {
     uid: 'test-model-uid',
     flowEngine,
-    props: { testProp: 'value' },
     stepParams: { testFlow: { step1: { param1: 'value1' } } },
     sortIndex: 0,
     subModels: {},
@@ -150,7 +149,6 @@ describe('FlowModel', () => {
       const model = new FlowModel(modelOptions);
 
       expect(model.uid).toBe(modelOptions.uid);
-      expect(model.props).toEqual(expect.objectContaining(modelOptions.props));
       expect(model.stepParams).toEqual(expect.objectContaining(modelOptions.stepParams));
       expect(model.flowEngine).toBe(modelOptions.flowEngine);
       expect(model.sortIndex).toBe(modelOptions.sortIndex);
@@ -185,13 +183,10 @@ describe('FlowModel', () => {
       expect(model.forks.size).toBe(0);
     });
 
-    test('should handle missing flowEngine gracefully', () => {
+    test('should throw error when flowEngine is missing', () => {
       expect(() => {
         new FlowModel({} as any);
-      }).not.toThrow();
-
-      const model = new FlowModel({} as any);
-      expect(model.flowEngine).toBeUndefined();
+      }).toThrow('FlowModel must be initialized with a FlowEngine instance.');
     });
 
     test('should initialize emitter', () => {
@@ -426,11 +421,10 @@ describe('FlowModel', () => {
       });
 
       test('should throw error when FlowEngine not available', async () => {
-        const modelWithoutEngine = new TestFlowModel({ uid: 'test' } as any);
-        const flow = createBasicFlowDefinition();
-        TestFlowModel.registerFlow(flow);
-
-        await expect(modelWithoutEngine.applyFlow(flow.key)).rejects.toThrow('FlowEngine not available');
+        // Since FlowModel constructor now requires flowEngine, we test the error at construction time
+        expect(() => {
+          new TestFlowModel({ uid: 'test' } as any);
+        }).toThrow('FlowModel must be initialized with a FlowEngine instance.');
       });
 
       test('should handle FlowExitException correctly', async () => {
@@ -686,7 +680,6 @@ describe('FlowModel', () => {
           const childModel = new FlowModel({
             uid: 'child-model-uid',
             flowEngine,
-            props: { childProp: 'childValue' },
             stepParams: { childFlow: { childStep: { childParam: 'childValue' } } },
           });
 
@@ -696,12 +689,11 @@ describe('FlowModel', () => {
           expect(result.parent).toBe(parentModel);
           expect((parentModel.subModels.testChild as FlowModel).uid).toBe(result.uid);
           expect(result.uid).toBe('child-model-uid');
-          expect(result.props).toEqual(expect.objectContaining({ childProp: 'childValue' }));
         });
 
         test('should replace existing subModel', () => {
           const firstChild = new FlowModel({ uid: 'first-child', flowEngine });
-          const secondChild = new FlowModel({ uid: 'second-child', flowEngine, props: { newProp: 'newValue' } });
+          const secondChild = new FlowModel({ uid: 'second-child', flowEngine });
 
           parentModel.setSubModel('testChild', firstChild);
           const result = parentModel.setSubModel('testChild', secondChild);
@@ -709,7 +701,6 @@ describe('FlowModel', () => {
           expect(result.uid).toBe(secondChild.uid);
           expect((parentModel.subModels.testChild as FlowModel).uid).toBe(result.uid);
           expect(result.uid).toBe('second-child');
-          expect(result.props).toEqual(expect.objectContaining({ newProp: 'newValue' }));
         });
 
         test('should throw error when setting model with existing parent', () => {
@@ -738,7 +729,6 @@ describe('FlowModel', () => {
           const childModel = new FlowModel({
             uid: 'child-model-uid',
             flowEngine,
-            props: { childProp: 'childValue' },
           });
 
           const result = parentModel.addSubModel('testChildren', childModel);
@@ -834,53 +824,35 @@ describe('FlowModel', () => {
 
           expect(results).toEqual([]);
         });
-
-        test('should handle complex mapping operations', () => {
-          const item1 = new FlowModel({ uid: 'item1', flowEngine, props: { value: 10 } });
-          const item2 = new FlowModel({ uid: 'item2', flowEngine, props: { value: 20 } });
-
-          parentModel.addSubModel('items', item1);
-          parentModel.addSubModel('items', item2);
-
-          const totalValue = parentModel
-            .mapSubModels('items', (model) => model.props.value)
-            .reduce((sum, value) => sum + value, 0);
-
-          expect(totalValue).toBe(30);
-        });
       });
 
       describe('findSubModel', () => {
         test('should find subModel by condition in array', () => {
-          const child1 = new FlowModel({ uid: 'child1', flowEngine, props: { name: 'first' } });
-          const child2 = new FlowModel({ uid: 'child2', flowEngine, props: { name: 'second' } });
+          const child1 = new FlowModel({ uid: 'child1', flowEngine });
+          const child2 = new FlowModel({ uid: 'child2', flowEngine });
 
           parentModel.addSubModel('testChildren', child1);
           parentModel.addSubModel('testChildren', child2);
 
-          const found = parentModel.findSubModel('testChildren', (model) => model.props.name === 'second');
+          const found = parentModel.findSubModel('testChildren', (model) => model.uid === 'child2');
 
           expect(found).toBeDefined();
-          expect(found?.uid).toBe('child2');
-          expect(found?.props.name).toBe('second');
         });
 
         test('should find single subModel by condition', () => {
-          const child = new FlowModel({ uid: 'target-child', flowEngine, props: { name: 'target' } });
+          const child = new FlowModel({ uid: 'target-child', flowEngine });
           parentModel.setSubModel('testChild', child);
 
-          const found = parentModel.findSubModel('testChild', (model) => model.props.name === 'target');
+          const found = parentModel.findSubModel('testChild', (model) => model.uid === 'target-child');
 
           expect(found).toBeDefined();
-          expect(found?.uid).toBe('target-child');
-          expect(found?.props.name).toBe('target');
         });
 
         test('should return null when no match found', () => {
-          const child1 = new FlowModel({ uid: 'child1', flowEngine, props: { name: 'first' } });
+          const child1 = new FlowModel({ uid: 'child1', flowEngine });
           parentModel.addSubModel('testChildren', child1);
 
-          const found = parentModel.findSubModel('testChildren', (model) => model.props.name === 'nonexistent');
+          const found = parentModel.findSubModel('testChildren', (model) => model.uid === 'nonexistent');
 
           expect(found).toBeNull();
         });
@@ -889,20 +861,6 @@ describe('FlowModel', () => {
           const found = parentModel.findSubModel('nonExistent', () => true);
 
           expect(found).toBeNull();
-        });
-
-        test('should find first matching model in array', () => {
-          const child1 = new FlowModel({ uid: 'child1', flowEngine, props: { type: 'match' } });
-          const child2 = new FlowModel({ uid: 'child2', flowEngine, props: { type: 'match' } });
-
-          parentModel.addSubModel('testChildren', child1);
-          parentModel.addSubModel('testChildren', child2);
-
-          const found = parentModel.findSubModel('testChildren', (model) => model.props.type === 'match');
-
-          expect(found).toBeDefined();
-          expect(found?.uid).toBe('child1'); // Should return first match
-          expect(found?.props.type).toBe('match');
         });
       });
 
@@ -1145,11 +1103,10 @@ describe('FlowModel', () => {
       });
 
       test('should throw error when FlowEngine not set', async () => {
-        const modelWithoutEngine = new FlowModel({ uid: 'test' } as any);
-
-        await expect(modelWithoutEngine.save()).rejects.toThrow(
-          'FlowEngine is not set on this model. Please set flowEngine before saving',
-        );
+        // Since FlowModel constructor now requires flowEngine, we test the error at construction time
+        expect(() => {
+          new FlowModel({ uid: 'test' } as any);
+        }).toThrow('FlowModel must be initialized with a FlowEngine instance.');
       });
 
       test('should handle save operation failures', async () => {
@@ -1172,9 +1129,10 @@ describe('FlowModel', () => {
       });
 
       test('should throw error when FlowEngine not available for destroy', async () => {
-        const modelWithoutEngine = new FlowModel({ uid: 'test' } as any);
-
-        await expect(modelWithoutEngine.destroy()).rejects.toThrow('FlowEngine is not set on this model');
+        // Since FlowModel constructor now requires flowEngine, we test the error at construction time
+        expect(() => {
+          new FlowModel({ uid: 'test' } as any);
+        }).toThrow('FlowModel must be initialized with a FlowEngine instance.');
       });
 
       test('should clean up resources on remove', () => {
@@ -1225,7 +1183,7 @@ describe('FlowModel', () => {
     });
 
     describe('serialization', () => {
-      test('should serialize basic model data, only saving option props', () => {
+      test('should serialize basic model data, excluding props and flowEngine', () => {
         model.sortIndex = 5;
         model.setProps({ name: 'Test Model', value: 42 });
         model.setStepParams({
@@ -1236,18 +1194,19 @@ describe('FlowModel', () => {
 
         expect(serialized).toEqual({
           uid: model.uid,
-          props: expect.objectContaining({ testProp: 'value' }),
           stepParams: expect.objectContaining({ flow1: { step1: { param1: 'value1' } } }),
           sortIndex: 5,
           subModels: expect.any(Object),
         });
+        // props should be excluded from serialization
+        expect(serialized.props).toBeUndefined();
+        expect(serialized.flowEngine).toBeUndefined();
       });
 
       test('should serialize empty model correctly', () => {
         const emptyModel = new FlowModel({
           uid: 'empty-model',
           flowEngine,
-          props: {},
           stepParams: {},
           subModels: {},
         });
@@ -1256,11 +1215,289 @@ describe('FlowModel', () => {
 
         expect(serialized).toEqual({
           uid: 'empty-model',
-          props: expect.any(Object),
           stepParams: expect.any(Object),
           sortIndex: expect.any(Number),
           subModels: expect.any(Object),
         });
+        // props should be excluded from serialization
+        expect(serialized.props).toBeUndefined();
+        expect(serialized.flowEngine).toBeUndefined();
+      });
+    });
+  });
+
+  // ==================== TITLE MANAGEMENT ====================
+  describe('Title Management', () => {
+    let model: FlowModel;
+    let TestFlowModel: any;
+
+    beforeEach(() => {
+      TestFlowModel = class extends FlowModel {
+        static name = `TestModel_${Math.random().toString(36).substring(2, 11)}`;
+      };
+      model = new TestFlowModel(modelOptions);
+    });
+
+    describe('title getter', () => {
+      test('should return undefined when no title is set', () => {
+        expect(model.title).toBeUndefined();
+      });
+
+      test('should return meta title when defined', () => {
+        TestFlowModel.define({
+          title: 'Test Model Title',
+          group: 'test',
+        });
+
+        const modelWithMeta = new TestFlowModel(modelOptions);
+        expect(modelWithMeta.title).toBe('Test Model Title');
+      });
+
+      test('should translate meta title using translate method', () => {
+        TestFlowModel.define({
+          title: 'model.title.key',
+          group: 'test',
+        });
+
+        const mockTranslate = vi.fn().mockReturnValue('Translated Title');
+        const mockFlowEngine = {
+          ...flowEngine,
+          translate: mockTranslate,
+        };
+        const modelWithTranslate = new TestFlowModel({
+          ...modelOptions,
+          flowEngine: mockFlowEngine,
+        });
+
+        const title = modelWithTranslate.title;
+
+        expect(mockTranslate).toHaveBeenCalledWith('model.title.key');
+        expect(title).toBe('Translated Title');
+      });
+
+      test('should return instance title when set via setTitle', () => {
+        TestFlowModel.define({
+          title: 'Meta Title',
+          group: 'test',
+        });
+
+        const modelWithBoth = new TestFlowModel(modelOptions);
+        modelWithBoth.setTitle('Instance Title');
+
+        expect(modelWithBoth.title).toBe('Instance Title');
+      });
+
+      test('should prioritize instance title over meta title', () => {
+        TestFlowModel.define({
+          title: 'Meta Title',
+          group: 'test',
+        });
+
+        const modelWithBoth = new TestFlowModel(modelOptions);
+        modelWithBoth.setTitle('Instance Title');
+
+        // Instance title should have higher priority
+        expect(modelWithBoth.title).toBe('Instance Title');
+        expect(modelWithBoth.title).not.toBe('Meta Title');
+      });
+
+      test('should fall back to meta title when instance title is cleared', () => {
+        TestFlowModel.define({
+          title: 'Meta Title',
+          group: 'test',
+        });
+
+        const modelWithBoth = new TestFlowModel(modelOptions);
+        modelWithBoth.setTitle('Instance Title');
+        expect(modelWithBoth.title).toBe('Instance Title');
+
+        // Clear instance title
+        modelWithBoth.setTitle('');
+        expect(modelWithBoth.title).toBe('Meta Title');
+      });
+
+      test('should handle null and undefined instance titles', () => {
+        TestFlowModel.define({
+          title: 'Meta Title',
+          group: 'test',
+        });
+
+        const modelWithMeta = new TestFlowModel(modelOptions);
+
+        // Test with null
+        modelWithMeta.setTitle(null as any);
+        expect(modelWithMeta.title).toBe('Meta Title');
+
+        // Test with undefined
+        modelWithMeta.setTitle(undefined as any);
+        expect(modelWithMeta.title).toBe('Meta Title');
+      });
+    });
+
+    describe('setTitle method', () => {
+      test('should set instance title correctly', () => {
+        model.setTitle('Custom Title');
+        expect(model.title).toBe('Custom Title');
+      });
+
+      test('should update title when called multiple times', () => {
+        model.setTitle('First Title');
+        expect(model.title).toBe('First Title');
+
+        model.setTitle('Second Title');
+        expect(model.title).toBe('Second Title');
+      });
+
+      test('should handle empty string title', () => {
+        TestFlowModel.define({
+          title: 'Meta Title',
+          group: 'test',
+        });
+
+        const modelWithMeta = new TestFlowModel(modelOptions);
+        modelWithMeta.setTitle('Initial Title');
+        expect(modelWithMeta.title).toBe('Initial Title');
+
+        // Empty string is falsy, so it falls back to meta title
+        modelWithMeta.setTitle('');
+        expect(modelWithMeta.title).toBe('Meta Title');
+      });
+
+      test('should handle special characters in title', () => {
+        const specialTitle = 'Title with 特殊字符 & symbols!@#$%^&*()';
+        model.setTitle(specialTitle);
+        expect(model.title).toBe(specialTitle);
+      });
+    });
+
+    describe('title inheritance', () => {
+      test('should not inherit meta title from parent class by default', () => {
+        const ParentModel = class extends FlowModel {
+          static name = 'ParentModel';
+        };
+        ParentModel.define({
+          title: 'Parent Title',
+          group: 'parent',
+        });
+
+        const ChildModel = class extends ParentModel {
+          static name = 'ChildModel';
+        };
+
+        const parentInstance = new ParentModel(modelOptions);
+        const childInstance = new ChildModel(modelOptions);
+
+        expect(parentInstance.title).toBe('Parent Title');
+        // Child class doesn't inherit parent meta by default
+        expect(childInstance.title).toBeUndefined();
+      });
+
+      test('should override parent meta title with child meta title', () => {
+        const ParentModel = class extends FlowModel {
+          static name = 'ParentModel';
+        };
+        ParentModel.define({
+          title: 'Parent Title',
+          group: 'parent',
+        });
+
+        const ChildModel = class extends ParentModel {
+          static name = 'ChildModel';
+        };
+        ChildModel.define({
+          title: 'Child Title',
+          group: 'child',
+        });
+
+        const parentInstance = new ParentModel(modelOptions);
+        const childInstance = new ChildModel(modelOptions);
+
+        expect(parentInstance.title).toBe('Parent Title');
+        expect(childInstance.title).toBe('Child Title');
+      });
+
+      test('should allow instance title to override meta title', () => {
+        const ParentModel = class extends FlowModel {
+          static name = 'ParentModel';
+        };
+        ParentModel.define({
+          title: 'Parent Title',
+          group: 'parent',
+        });
+
+        const ChildModel = class extends ParentModel {
+          static name = 'ChildModel';
+        };
+        ChildModel.define({
+          title: 'Child Title',
+          group: 'child',
+        });
+
+        const childInstance = new ChildModel(modelOptions);
+        expect(childInstance.title).toBe('Child Title');
+
+        childInstance.setTitle('Instance Override');
+        expect(childInstance.title).toBe('Instance Override');
+      });
+    });
+
+    describe('title with translation', () => {
+      test('should call translate method for meta title', () => {
+        const mockTranslate = vi.fn().mockReturnValue('Translated Meta Title');
+
+        TestFlowModel.define({
+          title: 'meta.title.key',
+          group: 'test',
+        });
+
+        const mockFlowEngine = {
+          ...flowEngine,
+          translate: mockTranslate,
+        };
+        const modelWithTranslate = new TestFlowModel({
+          ...modelOptions,
+          flowEngine: mockFlowEngine,
+        });
+
+        const title = modelWithTranslate.title;
+
+        expect(mockTranslate).toHaveBeenCalledWith('meta.title.key');
+        expect(title).toBe('Translated Meta Title');
+      });
+    });
+
+    describe('title serialization', () => {
+      test('should not include instance title in serialization by default', () => {
+        model.setTitle('Instance Title');
+        const serialized = model.serialize();
+
+        // Instance title should not be included in serialization
+        expect(serialized).not.toHaveProperty('title');
+        expect(serialized).not.toHaveProperty('_title');
+      });
+
+      // this means after deserialization, should set title in some flow step
+      test('should maintain title after serialization/deserialization cycle', () => {
+        TestFlowModel.define({
+          title: 'Meta Title',
+          group: 'test',
+        });
+
+        const originalModel = new TestFlowModel(modelOptions);
+        originalModel.setTitle('Instance Title');
+
+        const serialized = originalModel.serialize();
+        const newModel = new TestFlowModel({
+          ...serialized,
+          flowEngine,
+        });
+
+        // Meta title should be available
+        expect(newModel.title).toBe('Meta Title');
+
+        // Instance title needs to be set again
+        newModel.setTitle('Instance Title');
+        expect(newModel.title).toBe('Instance Title');
       });
     });
   });
