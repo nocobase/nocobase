@@ -13,9 +13,8 @@ import { observer } from '@formily/reactive-react';
 import { AddFieldButton, FlowModel, MultiRecordResource } from '@nocobase/flow-engine';
 import { tval } from '@nocobase/utils/client';
 import { createColumnHelper, flexRender, getCoreRowModel, useReactTable } from '@tanstack/react-table';
-import { Pagination, Spin } from 'antd';
+import { Pagination, Spin, Tooltip } from 'antd';
 import _ from 'lodash';
-import id from 'packages/plugins/@nocobase/plugin-mock-collections/dist/server/field-interfaces/id';
 import React, { useRef } from 'react';
 import { ActionModel } from '../../base/ActionModel';
 import { DataBlockModel } from '../../base/BlockModel';
@@ -33,7 +32,7 @@ const CustomTd = ({ children, model, recordIndex, record, dataIndex }) => {
         position: relative;
         .edit-icon {
           position: absolute;
-          display: none;
+          opacity: 0;
           color: #1890ff;
           margin-left: 8px;
           cursor: pointer;
@@ -46,6 +45,7 @@ const CustomTd = ({ children, model, recordIndex, record, dataIndex }) => {
           background: rgba(24, 144, 255, 0.1) !important;
         }
         &:hover .edit-icon {
+          opacity: 1;
           display: inline-flex;
         }
       `}
@@ -112,15 +112,15 @@ const TanstackTable = observer(({ model }: { model: TanstackTableModel }) => {
             }
           `}
         >
-          {table.getRowModel().rows.map((row) => (
+          {table.getRowModel().rows.map((row, i) => (
             <tr key={row.id}>
-              {row.getVisibleCells().map((cell) => (
+              {row.getVisibleCells().map((cell, j) => (
                 <CustomTd
+                  key={`${i}-${j}`} // 推荐这样
                   dataIndex={cell.column.id}
                   model={model}
                   recordIndex={row.index}
                   record={row.original}
-                  key={cell.id}
                 >
                   {flexRender(cell.column.columnDef.cell, cell.getContext())}
                 </CustomTd>
@@ -128,7 +128,7 @@ const TanstackTable = observer(({ model }: { model: TanstackTableModel }) => {
             </tr>
           ))}
         </tbody>
-        <tfoot>
+        {/* <tfoot>
           {table.getFooterGroups().map((footerGroup) => (
             <tr key={footerGroup.id}>
               {footerGroup.headers.map((header) => (
@@ -138,12 +138,8 @@ const TanstackTable = observer(({ model }: { model: TanstackTableModel }) => {
               ))}
             </tr>
           ))}
-        </tfoot>
+        </tfoot> */}
       </table>
-      <div className="h-4" />
-      <button onClick={() => rerender()} className="border p-2">
-        Rerender
-      </button>
     </div>
   );
 });
@@ -151,6 +147,7 @@ const TanstackTable = observer(({ model }: { model: TanstackTableModel }) => {
 export class TanstackTableTableColumnModel extends FieldModel {
   getColumnProps() {
     return {
+      id: this.fieldPath,
       header: (info) => <span>{this.collectionField.title}</span>,
       cell: (info) => {
         return (
