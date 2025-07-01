@@ -365,6 +365,7 @@ export class TableModel extends DataBlockModel<TableModelStructure> {
         <Table
           components={this.components}
           tableLayout="fixed"
+          size={this.props.size}
           rowKey={this.collection.filterTargetKey}
           rowSelection={
             this.props.showIndex && {
@@ -519,6 +520,26 @@ TableModel.registerFlow({
       },
       handler(ctx, params) {
         ctx.model.setProps('showIndex', params.showIndex);
+      },
+    },
+    tableSize: {
+      title: tval('Table size'),
+      uiSchema: {
+        size: {
+          'x-component': 'Select',
+          'x-decorator': 'FormItem',
+          enum: [
+            { label: tval('Large'), value: 'large' },
+            { label: tval('Middle'), value: 'middle' },
+            { label: tval('Small'), value: 'small' },
+          ],
+        },
+      },
+      defaultParams: {
+        size: 'small',
+      },
+      handler(ctx, params) {
+        ctx.model.setProps('size', params.size);
       },
     },
     refresh: {
