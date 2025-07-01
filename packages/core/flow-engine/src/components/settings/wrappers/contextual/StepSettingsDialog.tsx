@@ -7,13 +7,15 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { createSchemaField, ISchema } from '@formily/react';
-import { message } from 'antd';
+import { FormButtonGroup } from '@formily/antd-v5';
+import { createForm } from '@formily/core';
+import { createSchemaField, FormProvider, ISchema } from '@formily/react';
+import { toJS } from '@formily/reactive';
+import { Button, message, Space } from 'antd';
 import React from 'react';
 import { StepSettingsDialogProps } from '../../../../types';
-import { resolveDefaultParams, resolveUiSchema, compileUiSchema, getT } from '../../../../utils';
+import { compileUiSchema, getT, resolveDefaultParams, resolveUiSchema } from '../../../../utils';
 import { StepSettingContextProvider, StepSettingContextType, useStepSettingContext } from './StepSettingContext';
-import { toJS } from '@formily/reactive';
 
 const SchemaField = createSchemaField();
 
@@ -32,8 +34,10 @@ const openStepSettingsDialog = async ({
   stepKey,
   dialogWidth = 600,
   dialogTitle,
+  mode = 'dialog',
 }: StepSettingsDialogProps): Promise<any> => {
   const t = getT(model);
+  const message = model.flowEngine.context.message;
 
   if (!model) {
     message.error(t('Invalid model provided'));
@@ -127,25 +131,47 @@ const openStepSettingsDialog = async ({
     },
   };
 
-  // 动态导入FormDialog
-  let FormDialog;
-  try {
-    ({ FormDialog } = await import('@formily/antd-v5'));
-  } catch (error) {
-    throw new Error(`${t('Failed to import FormDialog')}: ${error.message}`);
-  }
+  const view = model.flowEngine.context[mode];
 
-  // 创建FormDialog
-  const formDialog = FormDialog(
-    {
-      title: dialogTitle || `${t(title)} - ${t('Configuration')}`,
-      width: dialogWidth,
-      okText: t('OK'),
-      cancelText: t('Cancel'),
-      destroyOnClose: true,
-    },
-    (form) => {
-      // 创建上下文值
+  const form = createForm({
+    initialValues: compileUiSchema(scopes, initialValues),
+  });
+
+  const currentDialog = view.open({
+    title: dialogTitle || t(title),
+    width: dialogWidth,
+    destroyOnClose: true,
+    footer: (
+      <Space align="end">
+        <Button
+          type="default"
+          onClick={() => {
+            currentDialog.close();
+          }}
+        >
+          {t('Cancel')}
+        </Button>
+        <Button
+          type="primary"
+          onClick={async () => {
+            try {
+              await form.submit();
+              const currentValues = form.values;
+              model.setStepParams(flowKey, stepKey, currentValues);
+              await model.save();
+              message.success(t('Configuration saved'));
+              currentDialog.close();
+            } catch (error) {
+              console.error(t('Error saving configuration'), ':', error);
+              message.error(t('Error saving configuration, please check console'));
+            }
+          }}
+        >
+          {t('OK')}
+        </Button>
+      </Space>
+    ),
+    content: (currentDialog) => {
       const contextValue: StepSettingContextType = {
         model,
         globals: model.flowEngine?.context || {},
@@ -155,45 +181,22 @@ const openStepSettingsDialog = async ({
         flowKey,
         stepKey,
       };
-
       // 编译 formSchema 中的表达式
       const compiledFormSchema = compileUiSchema(scopes, formSchema);
-
       return (
-        <StepSettingContextProvider value={contextValue}>
-          <SchemaField
-            schema={compiledFormSchema}
-            components={{
-              ...flowEngine.flowSettings?.components,
-            }}
-            scope={scopes}
-          />
-        </StepSettingContextProvider>
+        <FormProvider form={form}>
+          <StepSettingContextProvider value={contextValue}>
+            <SchemaField
+              schema={compiledFormSchema}
+              components={{
+                ...flowEngine.flowSettings?.components,
+              }}
+              scope={scopes}
+            />
+          </StepSettingContextProvider>
+        </FormProvider>
       );
     },
-  );
-
-  // 设置保存回调
-  formDialog.forConfirm(async (payload, next) => {
-    try {
-      // 获取表单当前值
-      const currentValues = payload.values;
-      model.setStepParams(flowKey, stepKey, currentValues);
-      await model.save();
-      message.success(t('Configuration saved'));
-      next(payload);
-    } catch (error) {
-      console.error(t('Error saving configuration'), ':', error);
-      message.error(t('Error saving configuration, please check console'));
-      throw error;
-    }
-  });
-
-  formDialog.forCancel(async (payload, next) => next(payload));
-
-  // 打开对话框
-  return formDialog.open({
-    initialValues: compileUiSchema(scopes, initialValues),
   });
 };
 

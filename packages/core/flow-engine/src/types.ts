@@ -263,6 +263,7 @@ export interface StepSettingsDialogProps {
   stepKey: string;
   dialogWidth?: number | string;
   dialogTitle?: string;
+  mode?: 'dialog' | 'drawer'; // 设置模式，默认为'dialog'
 }
 
 /**

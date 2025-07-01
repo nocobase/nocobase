@@ -34,6 +34,13 @@ const DrawerComponent = forwardRef<unknown, DrawerComponentProps>(({ afterClose,
         setVisible(false);
         config.onClose?.(e);
       }}
+      styles={{
+        ...config?.styles,
+        footer: {
+          textAlign: 'end',
+          ...config?.styles?.footer,
+        },
+      }}
       afterOpenChange={(open) => {
         if (!open) {
           afterClose?.();
