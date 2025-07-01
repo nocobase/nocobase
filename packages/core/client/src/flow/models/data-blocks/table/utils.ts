@@ -7,3 +7,12 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+export function extractIndex(str) {
+  const numbers = [];
+  str?.split('.').forEach(function (element) {
+    if (!isNaN(element)) {
+      numbers.push(String(Number(element) + 1));
+    }
+  });
+  return numbers.join('.');
+}

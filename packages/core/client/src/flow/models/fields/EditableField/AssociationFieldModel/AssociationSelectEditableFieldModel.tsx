@@ -10,7 +10,7 @@ import { connect, mapProps, mapReadPretty } from '@formily/react';
 import { Select } from 'antd';
 import React from 'react';
 import { castArray } from 'lodash';
-import { useFlowModel, FlowModel } from '@nocobase/flow-engine';
+import { useFlowModel, FlowModel, MultiRecordResource } from '@nocobase/flow-engine';
 import { tval } from '@nocobase/utils/client';
 import { AssociationFieldEditableFieldModel } from './AssociationFieldEditableFieldModel';
 
@@ -130,6 +130,7 @@ const AssociationSelect = connect(
 export class AssociationSelectEditableFieldModel extends AssociationFieldEditableFieldModel {
   static supportedFieldInterfaces = ['m2m', 'm2o', 'o2o', 'o2m', 'oho', 'obo', 'updatedBy', 'createdBy'];
   dataSource;
+  declare resource: MultiRecordResource;
 
   set onPopupScroll(fn) {
     this.field.setComponentProps({ onPopupScroll: fn });
@@ -151,6 +152,14 @@ export class AssociationSelectEditableFieldModel extends AssociationFieldEditabl
   }
 }
 
+const paginationState = {
+  page: 1,
+  pageSize: 40,
+  loading: false,
+  hasMore: true,
+};
+
+// 事件绑定
 AssociationSelectEditableFieldModel.registerFlow({
   key: 'associationSelectInit',
   auto: true,
@@ -158,6 +167,14 @@ AssociationSelectEditableFieldModel.registerFlow({
   steps: {
     bindEvent: {
       handler(ctx, params) {
+        const resource = new MultiRecordResource();
+        const { target, dataSourceKey } = ctx.model.collectionField;
+        resource.setDataSourceKey(dataSourceKey);
+        resource.setResourceName(target);
+        resource.setAPIClient(ctx.globals.api);
+        resource.setPageSize(paginationState.pageSize);
+        ctx.model.resource = resource;
+
         ctx.model.onDropdownVisibleChange = (open) => {
           if (open) {
             ctx.model.dispatchEvent('dropdownOpen', {
@@ -186,13 +203,7 @@ AssociationSelectEditableFieldModel.registerFlow({
   },
 });
 
-const paginationState = {
-  page: 1,
-  pageSize: 40,
-  loading: false,
-  hasMore: true,
-};
-
+//点击打开下拉时加载数据
 AssociationSelectEditableFieldModel.registerFlow({
   key: 'event1',
   on: {
@@ -201,16 +212,8 @@ AssociationSelectEditableFieldModel.registerFlow({
   steps: {
     step1: {
       async handler(ctx, params) {
-        const { target } = ctx.model.collectionField;
-        const apiClient = ctx.app.apiClient;
-        const response = await apiClient.request({
-          url: `/${target}:list`,
-          params: {
-            pageSize: paginationState.pageSize,
-            page: 1,
-          },
-        });
-        const { data } = response.data;
+        await ctx.model.resource.refresh();
+        const data = ctx.model.resource.getData();
         ctx.model.setDataSource(data);
         if (data.length < paginationState.pageSize) {
           paginationState.hasMore = false;
@@ -223,6 +226,7 @@ AssociationSelectEditableFieldModel.registerFlow({
   },
 });
 
+//鼠标滚动后分页加载数据
 AssociationSelectEditableFieldModel.registerFlow({
   key: 'event2',
   on: {
@@ -243,22 +247,12 @@ AssociationSelectEditableFieldModel.registerFlow({
         paginationState.loading = true;
 
         try {
-          const { target } = ctx.model.collectionField.options;
-          const apiClient = ctx.app.apiClient;
-
-          const response = await apiClient.request({
-            url: `/${target}:list`,
-            params: {
-              page: paginationState.page,
-              pageSize: paginationState.pageSize,
-            },
-          });
-
-          const { data } = response.data;
-
+          const resource = ctx.model.resource;
+          resource.setPage(paginationState.page);
+          await resource.refresh();
+          const data = resource.getData();
           const currentDataSource = ctx.model.getDataSource() || [];
           ctx.model.setDataSource([...currentDataSource, ...data]);
-
           if (data.length < paginationState.pageSize) {
             paginationState.hasMore = false;
             paginationState.page = 1;
@@ -274,7 +268,7 @@ AssociationSelectEditableFieldModel.registerFlow({
     },
   },
 });
-
+// 模糊搜索
 AssociationSelectEditableFieldModel.registerFlow({
   key: 'event3',
   on: {
@@ -284,7 +278,6 @@ AssociationSelectEditableFieldModel.registerFlow({
     step1: {
       async handler(ctx, params) {
         try {
-          const collectionField = ctx.model.collectionField;
           const targetCollection = ctx.model.collectionField.targetCollection;
           const labelFieldName = ctx.model.field.componentProps.fieldNames.label;
           const targetLabelField = targetCollection.getField(labelFieldName);
@@ -296,19 +289,18 @@ AssociationSelectEditableFieldModel.registerFlow({
 
           const searchText = ctx.extra.searchText?.trim();
 
-          const apiClient = ctx.app.apiClient;
-          const response = await apiClient.request({
-            url: `/${collectionField.options.target}:list`,
-            params: {
-              filter: {
-                [labelFieldName]: {
-                  [operator]: searchText,
-                },
+          const resource = ctx.model.resource;
+          if (searchText === '') {
+            resource.removeFilterGroup(labelFieldName);
+          } else {
+            resource.setFilter({
+              [labelFieldName]: {
+                [operator]: searchText,
               },
-            },
-          });
-
-          const { data } = response.data;
+            });
+          }
+          await resource.refresh();
+          const data = resource.getData();
           ctx.model.setDataSource(data);
         } catch (error) {
           console.error('AssociationSelectField search flow error:', error);
@@ -320,8 +312,9 @@ AssociationSelectEditableFieldModel.registerFlow({
   },
 });
 
+//专有配置项
 AssociationSelectEditableFieldModel.registerFlow({
-  key: 'fieldNames',
+  key: 'associationSelectSpecific',
   title: tval('Specific properties'),
   auto: true,
   sort: 200,
@@ -329,6 +322,13 @@ AssociationSelectEditableFieldModel.registerFlow({
     fieldNames: {
       use: 'titleField',
       title: tval('Title field'),
+    },
+    dataScope: {
+      use: 'dataScope',
+      title: tval('Set data scope'),
+      handler: (ctx) => {
+        console.log(ctx);
+      },
     },
   },
 });
