@@ -21,28 +21,30 @@ import {
   SingleRecordResource,
   useApplyAutoFlows,
 } from '@nocobase/flow-engine';
+import { useRequest } from 'ahooks';
 import { Button, InputRef, Skeleton } from 'antd';
 import _ from 'lodash';
-import React, { createRef, Suspense, useEffect } from 'react';
+import React, { createRef, Suspense, useEffect, useState } from 'react';
 import { SkeletonFallback } from '../../../components/SkeletonFallback';
 import { DataBlockModel } from '../../base/BlockModel';
 
-function InternalFlowModelRenderer({ model, sharedContext, extraContext }) {
-  useApplyAutoFlows(model, extraContext);
-  model.setSharedContext(sharedContext);
-  // useEffect(() => {
-
-  // }, [model, sharedContext]);
-  return model.render();
-}
-
 function SimpleFlowModelRenderer(props) {
   const { fallback, model, sharedContext, extraContext } = props;
-  return (
-    <Suspense fallback={fallback}>
-      <InternalFlowModelRenderer model={model} sharedContext={sharedContext} extraContext={extraContext} />
-    </Suspense>
+  const { loading } = useRequest(
+    async () => {
+      await model.applyAutoFlows(extraContext);
+      model.setSharedContext(sharedContext);
+    },
+    {
+      refreshDeps: [model, sharedContext, extraContext],
+    },
   );
+
+  if (loading) {
+    return <>{fallback}</>;
+  }
+
+  return model.render();
 }
 
 export class QuickEditForm extends DataBlockModel {
