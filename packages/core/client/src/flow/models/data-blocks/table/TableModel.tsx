@@ -502,6 +502,10 @@ TableModel.registerFlow({
       use: 'dataScope',
       title: tval('Set data scope'),
     },
+    sortingRule: {
+      use: 'sortingRule',
+      title: tval('Set default sorting rules'),
+    },
     enabledIndexColumn: {
       title: tval('Enable index column'),
       uiSchema: {

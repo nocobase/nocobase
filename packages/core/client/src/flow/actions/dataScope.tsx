@@ -49,6 +49,6 @@ export const dataScope = defineAction({
       return;
     }
     resource.addFilterGroup(ctx.model.uid, params.filter);
-    resource.refresh();
+    // resource.refresh();
   },
 });
