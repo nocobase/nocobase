@@ -8,8 +8,9 @@
  */
 
 export * from './common/FlowSettingsButton';
+export * from './dnd';
+export * from './FlowErrorFallback';
 export * from './FlowModelRenderer';
 export * from './settings';
 export * from './subModel';
-export * from './FlowErrorFallback';
 //

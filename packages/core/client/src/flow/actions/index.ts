@@ -8,5 +8,6 @@
  */
 
 export * from './confirm';
-export * from './popup';
+export * from './dataScope';
+export * from './openView';
 //

@@ -7,19 +7,25 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { tval } from '@nocobase/utils/client';
 import type { ButtonProps } from 'antd';
-import { GlobalActionModel } from '../base/ActionModel';
 import { openLinkAction } from '../../actions/openLinkAction';
+import { GlobalActionModel } from '../base/ActionModel';
 
 export class LinkGlobalActionModel extends GlobalActionModel {
   defaultProps: ButtonProps = {
-    title: 'Link',
+    title: tval('Link'),
   };
 }
 
+LinkGlobalActionModel.define({
+  title: tval('Link'),
+  hide: true,
+});
+
 LinkGlobalActionModel.registerFlow({
   key: 'handleClick',
-  title: '点击事件',
+  title: tval('Click event'),
   on: {
     eventName: 'click',
   },

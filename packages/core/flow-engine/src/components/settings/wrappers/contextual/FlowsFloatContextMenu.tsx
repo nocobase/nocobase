@@ -16,6 +16,8 @@ import { ToolbarItemConfig } from '../../../../types';
 import { useFlowModelById } from '../../../../hooks';
 import { useFlowEngine } from '../../../../provider';
 import { FlowEngine } from '../../../../flowEngine';
+import { getT } from '../../../../utils';
+import { Droppable } from '../../../dnd';
 
 // 检测DOM中直接子元素是否包含button元素的辅助函数
 const detectButtonInDOM = (container: HTMLElement): boolean => {
@@ -41,10 +43,17 @@ const renderToolbarItems = (
   showCopyUidButton: boolean,
   flowEngine: FlowEngine,
   settingsMenuLevel?: number,
+  extraToolbarItems?: ToolbarItemConfig[],
 ) => {
   const toolbarItems = flowEngine?.flowSettings?.getToolbarItems?.() || [];
 
-  return toolbarItems
+  // 合并额外的工具栏项目
+  const allToolbarItems = [...toolbarItems, ...(extraToolbarItems || [])];
+
+  // 按 sort 字段排序
+  allToolbarItems.sort((a, b) => (a.sort || 0) - (b.sort || 0)).reverse();
+
+  return allToolbarItems
     .filter((itemConfig: ToolbarItemConfig) => {
       // 检查项目是否应该显示
       return itemConfig.visible ? itemConfig.visible(model) : true;
@@ -59,6 +68,7 @@ const renderToolbarItems = (
           <ItemComponent
             key={itemConfig.key}
             model={model}
+            id={model.uid} // 用于拖拽的 id
             showDeleteButton={showDeleteButton}
             showCopyUidButton={showCopyUidButton}
             menuLevels={settingsMenuLevel}
@@ -107,6 +117,27 @@ const floatContainerStyles = ({ showBackground, showBorder }) => css`
       background: var(--colorTemplateBgSettingsHover);
     }
 
+    > .general-schema-designer-title {
+      pointer-events: none;
+      position: absolute;
+      font-size: 12px;
+      padding: 0;
+      line-height: 16px;
+      height: 16px;
+      border-bottom-right-radius: 2px;
+      border-radius: 2px;
+      top: 2px;
+      left: 2px;
+
+      .title-tag {
+        padding: 0 3px;
+        border-radius: 2px;
+        background: var(--colorSettings);
+        color: #fff;
+        display: block;
+      }
+    }
+
     > .general-schema-designer-icons {
       position: absolute;
       right: 2px;
@@ -147,9 +178,17 @@ interface ModelProvidedProps {
    */
   showBackground?: boolean;
   /**
+   * @default false
+   */
+  showTitle?: boolean;
+  /**
    * Settings menu levels: 1=current model only (default), 2=include sub-models
    */
   settingsMenuLevel?: number;
+  /**
+   * Extra toolbar items to add to this context menu instance
+   */
+  extraToolbarItems?: ToolbarItemConfig[];
 }
 
 interface ModelByIdProps {
@@ -170,9 +209,17 @@ interface ModelByIdProps {
    */
   showBackground?: boolean;
   /**
+   * @default false
+   */
+  showTitle?: boolean;
+  /**
    * Settings menu levels: 1=current model only (default), 2=include sub-models
    */
   settingsMenuLevel?: number;
+  /**
+   * Extra toolbar items to add to this context menu instance
+   */
+  extraToolbarItems?: ToolbarItemConfig[];
 }
 
 type FlowsFloatContextMenuProps = ModelProvidedProps | ModelByIdProps;
@@ -203,7 +250,9 @@ const isModelByIdProps = (props: FlowsFloatContextMenuProps): props is ModelById
  * @param props.showCopyUidButton 是否显示复制UID按钮，默认为true
  * @param props.containerStyle 容器自定义样式
  * @param props.className 容器自定义类名
+ * @param props.showTitle 是否在边框左上角显示模型title，默认为false
  * @param props.settingsMenuLevel 设置菜单层级：1=仅当前模型(默认)，2=包含子模型
+ * @param props.extraToolbarItems 额外的工具栏项目，仅应用于此实例
  */
 const FlowsFloatContextMenu: React.FC<FlowsFloatContextMenuProps> = observer((props) => {
   const flowEngine = useFlowEngine();
@@ -230,7 +279,9 @@ const FlowsFloatContextMenuWithModel: React.FC<ModelProvidedProps> = observer(
     className,
     showBackground = true,
     showBorder = true,
+    showTitle = false,
     settingsMenuLevel,
+    extraToolbarItems,
   }: ModelProvidedProps) => {
     const [hideMenu, setHideMenu] = useState<boolean>(false);
     const [hasButton, setHasButton] = useState<boolean>(false);
@@ -281,7 +332,8 @@ const FlowsFloatContextMenuWithModel: React.FC<ModelProvidedProps> = observer(
     }, []);
 
     if (!model) {
-      return <Alert message="提供的模型无效" type="error" />;
+      const t = getT(model || ({} as FlowModel));
+      return <Alert message={t('Invalid model provided')} type="error" />;
     }
 
     // 如果未启用或没有children，直接返回children
@@ -290,26 +342,40 @@ const FlowsFloatContextMenuWithModel: React.FC<ModelProvidedProps> = observer(
     }
 
     return (
-      <div
-        ref={containerRef}
-        className={`${floatContainerStyles({ showBackground, showBorder })} ${hideMenu ? 'hide-parent-menu' : ''} ${
-          hasButton ? 'has-button-child' : ''
-        } ${className || ''}`}
-        style={containerStyle}
-        data-has-float-menu="true"
-        onMouseMove={handleChildHover}
-      >
-        {children}
+      <Droppable model={model}>
+        <div
+          ref={containerRef}
+          className={`${floatContainerStyles({ showBackground, showBorder })} ${hideMenu ? 'hide-parent-menu' : ''} ${
+            hasButton ? 'has-button-child' : ''
+          } ${className || ''}`}
+          style={containerStyle}
+          data-has-float-menu="true"
+          onMouseMove={handleChildHover}
+        >
+          {children}
 
-        {/* 悬浮工具栏 - 使用与 NocoBase 一致的结构 */}
-        <div className="general-schema-designer">
-          <div className="general-schema-designer-icons">
-            <Space size={3} align="center">
-              {renderToolbarItems(model, showDeleteButton, showCopyUidButton, flowEngine, settingsMenuLevel)}
-            </Space>
+          {/* 悬浮工具栏 - 使用与 NocoBase 一致的结构 */}
+          <div className="general-schema-designer">
+            {showTitle && model.title && (
+              <div className="general-schema-designer-title">
+                <span className="title-tag">{model.title}</span>
+              </div>
+            )}
+            <div className="general-schema-designer-icons">
+              <Space size={3} align="center">
+                {renderToolbarItems(
+                  model,
+                  showDeleteButton,
+                  showCopyUidButton,
+                  flowEngine,
+                  settingsMenuLevel,
+                  extraToolbarItems,
+                )}
+              </Space>
+            </div>
           </div>
         </div>
-      </div>
+      </Droppable>
     );
   },
 );
@@ -325,12 +391,15 @@ const FlowsFloatContextMenuWithModelById: React.FC<ModelByIdProps> = observer(
     showCopyUidButton = true,
     containerStyle,
     className,
+    showTitle = false,
     settingsMenuLevel,
+    extraToolbarItems: extraToolbarItems,
   }) => {
     const model = useFlowModelById(uid, modelClassName);
+    const flowEngine = useFlowEngine();
 
     if (!model) {
-      return <Alert message={`未找到ID为 ${uid} 的模型`} type="error" />;
+      return <Alert message={flowEngine.translate('Model with ID {{uid}} not found', { uid })} type="error" />;
     }
 
     return (
@@ -341,7 +410,9 @@ const FlowsFloatContextMenuWithModelById: React.FC<ModelByIdProps> = observer(
         showCopyUidButton={showCopyUidButton}
         containerStyle={containerStyle}
         className={className}
+        showTitle={showTitle}
         settingsMenuLevel={settingsMenuLevel}
+        extraToolbarItems={extraToolbarItems}
       >
         {children}
       </FlowsFloatContextMenuWithModel>

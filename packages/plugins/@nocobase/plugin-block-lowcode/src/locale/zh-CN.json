@@ -1,6 +1,6 @@
 {
   "Lowcode": "低代码",
-  "Lowcode block": "低代码区块",
+  "Code block": "代码区块",
   "Execution code": "执行代码",
   "Execution step": "执行步骤",
   "Enter the execution code to render the component": "输入执行代码来渲染组件",
@@ -8,7 +8,7 @@
   "Component executed successfully": "组件执行成功",
   "Configuration": "配置",
   "Code": "代码",
-  "Welcome to Lowcode Block": "欢迎使用低代码区块",
+  "Welcome to code block": "欢迎使用代码区块",
   "Build interactive components with JavaScript and external libraries": "使用 JavaScript 和外部库构建交互式组件",
   "Key Features": "核心功能",
   "Custom JavaScript execution": "自定义 JavaScript 执行",

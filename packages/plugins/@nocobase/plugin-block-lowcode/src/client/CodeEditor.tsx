@@ -127,10 +127,45 @@ const createCustomCompletion = () => {
       detail: '{ antd }',
       boost: 96,
     },
+    {
+      label: 'ctx.auth',
+      type: 'variable',
+      info: 'Authentication context with user information',
+      detail: '{ role, locale, token, user }',
+      boost: 95,
+    },
   ];
 
   // 常用的 DOM 操作和 JS API
   const commonAPIs = [
+    {
+      label: 'ctx.auth.locale',
+      type: 'property',
+      info: 'Current user locale setting',
+      detail: 'string',
+      boost: 94,
+    },
+    {
+      label: 'ctx.auth.token',
+      type: 'property',
+      info: 'Current authentication token',
+      detail: 'string',
+      boost: 93,
+    },
+    {
+      label: 'ctx.auth.user',
+      type: 'property',
+      info: 'Current user information object',
+      detail: 'User',
+      boost: 92,
+    },
+    {
+      label: 'ctx.auth.role',
+      type: 'property',
+      info: 'Current user role information',
+      detail: 'string',
+      boost: 91,
+    },
     {
       label: 'ctx.element.innerHTML',
       type: 'property',
@@ -467,6 +502,24 @@ ctx.element.querySelector('#nav-admin').addEventListener('click', () => {
 } catch (error) {
   ctx.element.innerHTML = \`<div style="color: red;">Error: \${error.message}</div>\`;
 }`,
+    },
+    {
+      label: 'auth-context',
+      type: 'snippet',
+      info: 'Display current user authentication information',
+      detail: 'Template',
+      boost: 76,
+      apply: `ctx.element.innerHTML = \`
+  <div style="padding: 20px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+    <h3>Authentication Information</h3>
+    <div style="background: #f5f5f5; padding: 15px; border-radius: 8px; margin-top: 15px;">
+      <p><strong>User:</strong> \${ctx.auth.user?.nickname || ctx.auth.user?.email || 'Guest'}</p>
+      <p><strong>Role:</strong> \${ctx.auth.role || 'N/A'}</p>
+      <p><strong>Locale:</strong> \${ctx.auth.locale || 'N/A'}</p>
+      <p><strong>Token:</strong> \${ctx.auth.token ? '***' + ctx.auth.token.slice(-8) : 'No token'}</p>
+    </div>
+  </div>
+\`;`,
     },
   ];
 

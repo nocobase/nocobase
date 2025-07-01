@@ -8,12 +8,14 @@
  */
 import { observable } from '@formily/reactive';
 import { FlowSettings } from './flowSettings';
+import { initFlowEngineLocale } from './locale';
 import { FlowModel } from './models';
 import { ReactView } from './ReactView';
 import {
   ActionDefinition,
   ActionOptions,
   CreateModelOptions,
+  FlowContext,
   FlowDefinition,
   IFlowModelRepository,
   ModelConstructor,
@@ -36,17 +38,30 @@ export class FlowEngine {
   private modelInstances: Map<string, any> = new Map();
   /** @public Stores flow settings including components and scopes for formily settings. */
   public flowSettings: FlowSettings = new FlowSettings();
-  context: Record<string, any> = {};
+  context: FlowContext['globals'] = {} as FlowContext['globals'];
   private modelRepository: IFlowModelRepository | null = null;
   private _applyFlowCache = new Map<string, ApplyFlowCacheEntry>();
 
-  reactView: ReactView;
+  /**
+   * 实验性 API：用于在 FlowEngine 中集成 React 视图渲染能力。
+   * 该属性未来可能发生重大变更或被移除，请谨慎依赖。
+   * @experimental
+   */
+  public reactView: ReactView;
 
   constructor() {
     this.reactView = new ReactView(this);
+    this.flowSettings.registerScopes({ t: this.translate.bind(this) });
   }
-  // 注册默认的 FlowModel
 
+  /**
+   * 设置模型仓库，用于持久化和查询模型实例。
+   * 如果之前已设置过模型仓库，将会覆盖原有设置，并输出警告。
+   *
+   * @param modelRepository 要设置的模型仓库实例，实现 IFlowModelRepository 接口。
+   * @example
+   * flowEngine.setModelRepository(new MyFlowModelRepository());
+   */
   setModelRepository(modelRepository: IFlowModelRepository) {
     if (this.modelRepository) {
       console.warn('FlowEngine: Model repository is already set and will be overwritten.');
@@ -56,10 +71,97 @@ export class FlowEngine {
 
   setContext(context: any) {
     this.context = { ...this.context, ...context };
+    if (this.context.i18n) {
+      initFlowEngineLocale(this.context.i18n);
+    }
   }
 
   getContext() {
     return this.context;
+  }
+
+  /**
+   * 翻译函数，支持简单翻译和模板编译
+   * @param keyOrTemplate 翻译键或包含 {{t('key', options)}} 的模板字符串
+   * @param options 翻译选项（如命名空间、参数等）
+   * @returns 翻译后的文本
+   *
+   * @example
+   * // 简单翻译
+   * flowEngine.t('Hello World')
+   * flowEngine.t('Hello {name}', { name: 'John' })
+   *
+   * // 模板编译
+   * flowEngine.t("{{t('Hello World')}}")
+   * flowEngine.t("{{ t( 'User Name' ) }}")
+   * flowEngine.t("{{  t  (  'Email'  ,  { ns: 'fields' }  )  }}")
+   * flowEngine.t("前缀 {{ t('User Name') }} 后缀")
+   * flowEngine.t("{{t('Hello {name}', {name: 'John'})}}")
+   */
+  public translate(keyOrTemplate: string, options?: any): string {
+    if (!keyOrTemplate || typeof keyOrTemplate !== 'string') {
+      return keyOrTemplate;
+    }
+
+    // 先尝试一次翻译
+    let result = this.translateKey(keyOrTemplate, options);
+
+    // 检查翻译结果是否包含模板语法，如果有则进行模板编译
+    if (this.isTemplate(result)) {
+      result = this.compileTemplate(result);
+    }
+
+    return result;
+  }
+
+  /**
+   * 内部翻译方法
+   * @private
+   */
+  private translateKey(key: string, options?: any): string {
+    if (this.context?.i18n?.t) {
+      return this.context.i18n.t(key, options);
+    }
+    // 如果没有翻译函数，返回原始键值
+    return key;
+  }
+
+  /**
+   * 检查字符串是否包含模板语法
+   * @private
+   */
+  private isTemplate(str: string): boolean {
+    return /\{\{\s*t\s*\(\s*["'`].*?["'`]\s*(?:,\s*.*?)?\s*\)\s*\}\}/g.test(str);
+  }
+
+  /**
+   * 编译模板字符串
+   * @private
+   */
+  private compileTemplate(template: string): string {
+    return template.replace(
+      /\{\{\s*t\s*\(\s*["'`](.*?)["'`]\s*(?:,\s*((?:[^{}]|\{[^}]*\})*?))?\s*\)\s*\}\}/g,
+      (match, key, optionsStr) => {
+        try {
+          let templateOptions = {};
+          if (optionsStr) {
+            optionsStr = optionsStr.trim();
+            if (optionsStr.startsWith('{') && optionsStr.endsWith('}')) {
+              // 使用受限的 Function 构造器解析
+              try {
+                templateOptions = new Function('$root', `with($root) { return (${optionsStr}); }`)({});
+              } catch (parseError) {
+                return match;
+              }
+            }
+          }
+          return this.translateKey(key, templateOptions);
+        } catch (error) {
+          console.warn(`FlowEngine: Failed to compile template "${match}":`, error);
+          return match;
+        }
+      },
+    );
   }
 
   get applyFlowCache() {
@@ -174,6 +276,29 @@ export class FlowEngine {
   }
 
   /**
+   * 根据父类过滤模型类（支持多层继承），可选自定义过滤器
+   * @param {string | ModelConstructor} baseClass 父类名称或构造函数
+   * @param {(ModelClass: ModelConstructor, className: string) => boolean} [filter] 过滤函数
+   * @returns {Map<string, ModelConstructor>} 继承自指定父类且通过过滤的模型类映射
+   */
+  public getSubclassesOf(
+    baseClass: string | ModelConstructor,
+    filter?: (ModelClass: ModelConstructor, className: string) => boolean,
+  ): Map<string, ModelConstructor> {
+    const parentModelClass = typeof baseClass === 'string' ? this.getModelClass(baseClass) : baseClass;
+    const result = new Map<string, ModelConstructor>();
+    if (!parentModelClass) return result;
+    for (const [className, ModelClass] of this.modelClasses) {
+      if (isInheritedFrom(ModelClass, parentModelClass)) {
+        if (!filter || filter(ModelClass, className)) {
+          result.set(className, ModelClass);
+        }
+      }
+    }
+    return result;
+  }
+
+  /**
    * 创建并注册一个 Model 实例。
    * 如果具有相同 UID 的实例已存在，则返回现有实例。
    * @template T FlowModel 的子类型，默认为 FlowModel。
@@ -228,7 +353,7 @@ export class FlowEngine {
       console.warn(`FlowEngine: Model with UID '${uid}' does not exist.`);
       return false;
     }
-    const modelInstance = this.modelInstances.get(uid);
+    const modelInstance = this.modelInstances.get(uid) as FlowModel;
     modelInstance.clearForks();
     // 从父模型中移除当前模型的引用
     if (modelInstance.parent?.subModels) {
@@ -236,13 +361,15 @@ export class FlowEngine {
         const subModelValue = modelInstance.parent.subModels[subKey];
 
         if (Array.isArray(subModelValue)) {
-          const index = subModelValue.indexOf(modelInstance);
+          const index = subModelValue.findIndex((subModel) => subModel == modelInstance);
           if (index !== -1) {
             subModelValue.splice(index, 1);
+            modelInstance.parent.emitter.emit('onSubModelRemoved', modelInstance);
             break;
           }
-        } else if (subModelValue === modelInstance) {
+        } else if (subModelValue && subModelValue === modelInstance) {
           delete modelInstance.parent.subModels[subKey];
+          modelInstance.parent.emitter.emit('onSubModelRemoved', modelInstance);
           break;
         }
       }
@@ -259,9 +386,9 @@ export class FlowEngine {
     return true;
   }
 
-  async loadModel<T extends FlowModel = FlowModel>(uid: string): Promise<T | null> {
+  async loadModel<T extends FlowModel = FlowModel>(options): Promise<T | null> {
     if (!this.ensureModelRepository()) return;
-    const data = await this.modelRepository.findOne({ uid });
+    const data = await this.modelRepository.findOne(options);
     return data?.uid ? this.createModel<T>(data as any) : null;
   }
 
@@ -287,6 +414,61 @@ export class FlowEngine {
       await this.modelRepository.destroy(uid);
     }
     return this.removeModel(uid);
+  }
+
+  async moveModel(sourceId: any, targetId: any): Promise<void> {
+    const sourceModel = this.getModel(sourceId);
+    const targetModel = this.getModel(targetId);
+    if (!sourceModel || !targetModel) {
+      console.warn(`FlowEngine: Cannot move model. Source or target model not found.`);
+      return;
+    }
+    const move = (sourceModel: FlowModel, targetModel: FlowModel) => {
+      if (!sourceModel.parent || !targetModel.parent || sourceModel.parent !== targetModel.parent) {
+        console.error('FlowModel.moveTo: Both models must have the same parent to perform move operation.');
+        return false;
+      }
+
+      const subModels = sourceModel.parent.subModels[sourceModel.subKey];
+
+      if (!subModels || !Array.isArray(subModels)) {
+        console.error('FlowModel.moveTo: Parent subModels must be an array to perform move operation.');
+        return false;
+      }
+
+      const findIndex = (model: FlowModel) => subModels.findIndex((item) => item.uid === model.uid);
+
+      const currentIndex = findIndex(sourceModel);
+      const targetIndex = findIndex(targetModel);
+
+      if (currentIndex === -1 || targetIndex === -1) {
+        console.error('FlowModel.moveTo: Current or target model not found in parent subModels.');
+        return false;
+      }
+
+      if (currentIndex === targetIndex) {
+        console.warn('FlowModel.moveTo: Current model is already at the target position. No action taken.');
+        return false;
+      }
+
+      // 使用splice直接移动数组元素（O(n)比排序O(n log n)更快）
+      const [movedModel] = subModels.splice(currentIndex, 1);
+      subModels.splice(targetIndex, 0, movedModel);
+
+      // 重新分配连续的sortIndex
+      subModels.forEach((model, index) => {
+        model.sortIndex = index;
+      });
+
+      return true;
+    };
+    move(sourceModel, targetModel);
+    if (this.ensureModelRepository()) {
+      const position = sourceModel.sortIndex - targetModel.sortIndex > 0 ? 'before' : 'after';
+      await this.modelRepository.move(sourceId, targetId, position);
+    }
+    // 触发事件以通知其他部分模型已移动
+    sourceModel.parent.emitter.emit('onSubModelMoved', { source: sourceModel, target: targetModel });
   }
 
   /**

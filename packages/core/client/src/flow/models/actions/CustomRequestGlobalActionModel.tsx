@@ -8,6 +8,7 @@
  */
 
 import type { ButtonProps } from 'antd/es/button';
+import { tval } from '@nocobase/utils/client';
 import { useGlobalVariable } from '../../../application/hooks/useGlobalVariable';
 import { BlocksSelector } from '../../../schema-component/antd/action/Action.Designer';
 import { useAfterSuccessOptions } from '../../../schema-component/antd/action/hooks/useGetAfterSuccessVariablesOptions';
@@ -17,9 +18,14 @@ import { GlobalActionModel } from '../base/ActionModel';
 
 export class CustomRequestGlobalActionModel extends GlobalActionModel {
   defaultProps: ButtonProps = {
-    title: 'Custom request',
+    title: tval('Custom request'),
   };
 }
+
+CustomRequestGlobalActionModel.define({
+  title: tval('Custom request'),
+  hide: true,
+});
 
 const fieldNames = {
   value: 'value',
@@ -36,22 +42,23 @@ const useVariableProps = () => {
 
 CustomRequestGlobalActionModel.registerFlow({
   key: 'handleClick',
-  title: '点击事件',
+  title: tval('Click event'),
   on: {
     eventName: 'click',
   },
   steps: {
     secondaryConfirmation: secondaryConfirmationAction,
     request: {
-      title: '请求设置',
+      title: tval('Request settings'),
       uiSchema: {
         method: {
           type: 'string',
           required: true,
-          title: 'HTTP method',
+          title: tval('HTTP method'),
           'x-decorator-props': {
-            tooltip:
+            tooltip: tval(
               'When the HTTP method is Post, Put or Patch, and this custom request inside the form, the request body will be automatically filled in with the form data',
+            ),
           },
           'x-decorator': 'FormItem',
           'x-component': 'Select',
@@ -72,20 +79,20 @@ CustomRequestGlobalActionModel.registerFlow({
         url: {
           type: 'string',
           required: true,
-          title: 'URL',
+          title: tval('URL'),
           'x-decorator': 'FormItem',
           'x-component': 'Variable.TextArea',
           'x-use-component-props': useVariableProps,
           'x-component-props': {
-            placeholder: 'https://www.nocobase.com',
+            placeholder: tval('https://www.nocobase.com'),
           },
         },
         headers: {
           type: 'array',
           'x-component': 'ArrayItems',
           'x-decorator': 'FormItem',
-          title: 'Headers',
-          description: '"Content-Type" only support "application/json", and no need to specify',
+          title: tval('Headers'),
+          description: tval('"Content-Type" only support "application/json", and no need to specify'),
           items: {
             type: 'object',
             properties: {
@@ -98,7 +105,7 @@ CustomRequestGlobalActionModel.registerFlow({
                     'x-decorator': 'FormItem',
                     'x-component': 'Input',
                     'x-component-props': {
-                      placeholder: 'Name',
+                      placeholder: tval('Name'),
                     },
                   },
                   value: {
@@ -119,7 +126,7 @@ CustomRequestGlobalActionModel.registerFlow({
           properties: {
             add: {
               type: 'void',
-              title: 'Add request header',
+              title: tval('Add request header'),
               'x-component': 'ArrayItems.Addition',
             },
           },
@@ -128,7 +135,7 @@ CustomRequestGlobalActionModel.registerFlow({
           type: 'array',
           'x-component': 'ArrayItems',
           'x-decorator': 'FormItem',
-          title: 'Parameters',
+          title: tval('Parameters'),
           items: {
             type: 'object',
             properties: {
@@ -141,7 +148,7 @@ CustomRequestGlobalActionModel.registerFlow({
                     'x-decorator': 'FormItem',
                     'x-component': 'Input',
                     'x-component-props': {
-                      placeholder: 'Name',
+                      placeholder: tval('Name'),
                     },
                   },
                   value: {
@@ -162,14 +169,14 @@ CustomRequestGlobalActionModel.registerFlow({
           properties: {
             add: {
               type: 'void',
-              title: 'Add parameter',
+              title: tval('Add parameter'),
               'x-component': 'ArrayItems.Addition',
             },
           },
         },
         data: {
           type: 'string',
-          title: 'Body',
+          title: tval('Body'),
           'x-decorator': 'FormItem',
           'x-decorator-props': {},
           'x-component': 'Variable.JSON',
@@ -183,13 +190,13 @@ CustomRequestGlobalActionModel.registerFlow({
             autoSize: {
               minRows: 10,
             },
-            placeholder: 'Input request data',
+            placeholder: tval('Input request data'),
           },
-          description: 'Only support standard JSON data',
+          description: tval('Only support standard JSON data'),
         },
         timeout: {
           type: 'number',
-          title: 'Timeout config',
+          title: tval('Timeout config'),
           'x-decorator': 'FormItem',
           'x-decorator-props': {},
           'x-component': 'InputNumber',
@@ -202,7 +209,7 @@ CustomRequestGlobalActionModel.registerFlow({
         },
         responseType: {
           type: 'string',
-          title: 'Response type',
+          title: tval('Response type'),
           'x-decorator': 'FormItem',
           'x-decorator-props': {},
           'x-component': 'Select',
@@ -215,35 +222,35 @@ CustomRequestGlobalActionModel.registerFlow({
       },
       async handler(ctx, params) {
         ctx.globals.modal({
-          title: 'TODO: Custom request action handler',
+          title: tval('TODO: Custom request action handler'),
         });
       },
     },
     afterSuccess: {
-      title: '提交成功后',
+      title: tval('After successful submission'),
       uiSchema: {
         successMessage: {
-          title: 'Popup message',
+          title: tval('Popup message'),
           'x-decorator': 'FormItem',
           'x-component': 'Input.TextArea',
           'x-component-props': {},
         },
         manualClose: {
-          title: 'Message popup close method',
+          title: tval('Message popup close method'),
           enum: [
-            { label: 'Automatic close', value: false },
-            { label: 'Manually close', value: true },
+            { label: tval('Automatic close'), value: false },
+            { label: tval('Manually close'), value: true },
           ],
           'x-decorator': 'FormItem',
           'x-component': 'Radio.Group',
           'x-component-props': {},
         },
         redirecting: {
-          title: 'Then',
+          title: tval('Then'),
           'x-hidden': true,
           enum: [
-            { label: 'Stay on current page', value: false },
-            { label: 'Redirect to', value: true },
+            { label: tval('Stay on current page'), value: false },
+            { label: tval('Redirect to'), value: true },
           ],
           'x-decorator': 'FormItem',
           'x-component': 'Radio.Group',
@@ -258,11 +265,11 @@ CustomRequestGlobalActionModel.registerFlow({
           },
         },
         actionAfterSuccess: {
-          title: 'Action after successful submission',
+          title: tval('Action after successful submission'),
           enum: [
-            { label: 'Stay on the current popup or page', value: 'stay' },
-            { label: 'Return to the previous popup or page', value: 'previous' },
-            { label: 'Redirect to', value: 'redirect' },
+            { label: tval('Stay on the current popup or page'), value: 'stay' },
+            { label: tval('Return to the previous popup or page'), value: 'previous' },
+            { label: tval('Redirect to'), value: 'redirect' },
           ],
           'x-decorator': 'FormItem',
           'x-component': 'Radio.Group',
@@ -277,7 +284,7 @@ CustomRequestGlobalActionModel.registerFlow({
           },
         },
         redirectTo: {
-          title: 'Link',
+          title: tval('Link'),
           'x-decorator': 'FormItem',
           'x-component': 'Variable.TextArea',
           // eslint-disable-next-line react-hooks/rules-of-hooks
@@ -285,11 +292,11 @@ CustomRequestGlobalActionModel.registerFlow({
         },
         blocksToRefresh: {
           type: 'array',
-          title: 'Refresh data blocks',
+          title: tval('Refresh data blocks'),
           'x-decorator': 'FormItem',
           'x-use-decorator-props': () => {
             return {
-              tooltip: 'After successful submission, the selected data blocks will be automatically refreshed.',
+              tooltip: tval('After successful submission, the selected data blocks will be automatically refreshed.'),
             };
           },
           'x-component': BlocksSelector,

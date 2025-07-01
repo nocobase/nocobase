@@ -215,8 +215,8 @@ export const createRoutesTableSchema = (collectionName: string, basename: string
                           return (
                             <Radio.Group {...props}>
                               {!isMobile && <Radio value={NocoBaseDesktopRouteType.group}>{t('Group')}</Radio>}
-                              <Radio value={NocoBaseDesktopRouteType.page}>{t('Page')}</Radio>
-                              <Radio value={NocoBaseDesktopRouteType.flowPage}>{t('Flow Page')}</Radio>
+                              <Radio value={NocoBaseDesktopRouteType.page}>{t('Classic page')}</Radio>
+                              <Radio value={NocoBaseDesktopRouteType.flowPage}>{t('Modern page')}</Radio>
                               <Radio value={NocoBaseDesktopRouteType.link}>{t('Link')}</Radio>
                             </Radio.Group>
                           );

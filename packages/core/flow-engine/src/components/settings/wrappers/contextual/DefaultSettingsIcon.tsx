@@ -18,13 +18,14 @@ import {
   CopyOutlined,
 } from '@ant-design/icons';
 import { FlowModel } from '../../../../models';
-import { ActionStepDefinition } from '../../../../types';
+import { StepDefinition } from '../../../../types';
 import { openStepSettings } from './StepSettings';
+import { getT } from '../../../../utils';
 
 // Type definitions for better type safety
 interface StepInfo {
   stepKey: string;
-  step: ActionStepDefinition;
+  step: StepDefinition;
   uiSchema: Record<string, any>;
   title: string;
   modelKey?: string;
@@ -110,34 +111,35 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
   flattenSubMenus = true,
 }) => {
   const { message } = App.useApp();
+  const t = getT(model);
 
   // 分离处理函数以便更好的代码组织
   const handleCopyUid = useCallback(async () => {
     try {
       await navigator.clipboard.writeText(model.uid);
-      message.success('UID 已复制到剪贴板');
+      message.success(t('UID copied to clipboard'));
     } catch (error) {
-      console.error('复制失败:', error);
-      message.error('复制失败，请重试');
+      console.error(t('Copy failed'), ':', error);
+      message.error(t('Copy failed, please try again'));
     }
   }, [model.uid, message]);
 
   const handleDelete = useCallback(() => {
     Modal.confirm({
-      title: '确认删除',
+      title: t('Confirm delete'),
       icon: <ExclamationCircleOutlined />,
-      content: '确定要删除此项吗？此操作不可撤销。',
-      okText: '确认删除',
+      content: t('Are you sure you want to delete this item? This action cannot be undone.'),
+      okText: t('Confirm'),
       okType: 'primary',
-      cancelText: '取消',
+      cancelText: t('Cancel'),
       async onOk() {
         try {
           await model.destroy();
         } catch (error) {
-          console.error('删除操作失败:', error);
+          console.error(t('Delete operation failed'), ':', error);
           Modal.error({
-            title: '删除失败',
-            content: '删除操作失败，请检查控制台获取详细信息。',
+            title: t('Delete failed'),
+            content: t('Delete operation failed, please check the console for details.'),
           });
         }
       },
@@ -181,7 +183,7 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
           stepKey,
         });
       } catch (error) {
-        console.log('配置弹窗已取消或出错:', error);
+        console.log(t('Configuration popup cancelled or error'), ':', error);
       }
     },
     [model],
@@ -219,57 +221,43 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
         .map((flow) => {
           const configurableSteps = Object.entries(flow.steps)
             .map(([stepKey, stepDefinition]) => {
-              const actionStep = stepDefinition as ActionStepDefinition;
+              const actionStep = stepDefinition;
 
               // 如果步骤设置了 hideInSettings: true，则跳过此步骤
               if (actionStep.hideInSettings) {
                 return null;
               }
 
-              // 从step获取uiSchema（如果存在）
-              const stepUiSchema = actionStep.uiSchema || {};
+              // 检查是否有uiSchema（静态或动态）
+              const hasStepUiSchema = actionStep.uiSchema != null;
 
-              // 如果step使用了action，也获取action的uiSchema
-              let actionUiSchema = {};
+              // 如果step使用了action，检查action是否有uiSchema
+              let hasActionUiSchema = false;
+              let stepTitle = actionStep.title;
               if (actionStep.use) {
                 try {
                   const action = targetModel.flowEngine?.getAction?.(actionStep.use);
-                  if (action && action.uiSchema) {
-                    actionUiSchema = action.uiSchema;
-                  }
+                  hasActionUiSchema = action && action.uiSchema != null;
+                  stepTitle = stepTitle || action.title;
                 } catch (error) {
-                  console.warn(`获取action '${actionStep.use}' 失败:`, error);
+                  console.warn(t('Failed to get action {{action}}', { action: actionStep.use }), ':', error);
                 }
               }
 
-              // 合并uiSchema，确保step的uiSchema优先级更高
-              const mergedUiSchema = { ...actionUiSchema };
-
-              // 将stepUiSchema中的字段合并到mergedUiSchema
-              try {
-                Object.entries(stepUiSchema).forEach(([fieldKey, schema]) => {
-                  if (typeof fieldKey === 'string' && schema) {
-                    if (mergedUiSchema[fieldKey]) {
-                      mergedUiSchema[fieldKey] = { ...mergedUiSchema[fieldKey], ...schema };
-                    } else {
-                      mergedUiSchema[fieldKey] = schema;
-                    }
-                  }
-                });
-              } catch (error) {
-                console.warn(`合并步骤 '${stepKey}' 的uiSchema时出错:`, error);
-              }
-
-              // 如果没有可配置的UI Schema，返回null
-              if (Object.keys(mergedUiSchema).length === 0) {
+              // 如果都没有uiSchema（静态或动态），返回null
+              if (!hasStepUiSchema && !hasActionUiSchema) {
                 return null;
               }
+
+              // 对于动态uiSchema，我们假设它总是有内容
+              // 实际的解析在设置对话框中进行
+              const mergedUiSchema = { placeholder: true };
 
               return {
                 stepKey,
                 step: actionStep,
                 uiSchema: mergedUiSchema,
-                title: actionStep.title || stepKey,
+                title: t(stepTitle) || stepKey,
                 modelKey, // 添加模型标识
               };
             })
@@ -279,7 +267,11 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
         })
         .filter(Boolean);
     } catch (error) {
-      console.error(`获取模型 '${targetModel?.uid || 'unknown'}' 的可配置flows失败:`, error);
+      console.error(
+        t('Failed to get configurable flows for model {{model}}', { model: targetModel?.uid || 'unknown' }),
+        ':',
+        error,
+      );
       return [];
     }
   }, []);
@@ -354,7 +346,7 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
           // 在平铺模式下始终按流程分组
           items.push({
             key: groupKey,
-            label: flow.title || flow.key,
+            label: t(flow.title) || flow.key,
             type: 'group',
           });
 
@@ -369,7 +361,7 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
             items.push({
               key: uniqueKey,
               icon: <SettingOutlined />,
-              label: stepInfo.title,
+              label: t(stepInfo.title),
             });
           });
         });
@@ -398,7 +390,7 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
 
               items.push({
                 key: groupKey,
-                label: flow.title || flow.key,
+                label: t(flow.title) || flow.key,
                 type: 'group',
               });
 
@@ -408,7 +400,7 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
                 items.push({
                   key: uniqueKey,
                   icon: <SettingOutlined />,
-                  label: stepInfo.title,
+                  label: t(stepInfo.title),
                 });
               });
             });
@@ -424,7 +416,7 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
                 subMenuChildren.push({
                   key: uniqueKey,
                   icon: <SettingOutlined />,
-                  label: stepInfo.title,
+                  label: t(stepInfo.title),
                 });
               });
             });
@@ -459,7 +451,7 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
         items.push({
           key: 'copy-uid',
           icon: <CopyOutlined />,
-          label: '复制 UID',
+          label: t('Copy UID'),
         });
       }
 
@@ -468,7 +460,7 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
         items.push({
           key: 'delete',
           icon: <DeleteOutlined />,
-          label: '删除',
+          label: t('Delete'),
         });
       }
     }
@@ -483,7 +475,7 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
 
   // 渲染前验证模型
   if (!model || !model.uid) {
-    console.warn('提供的模型无效');
+    console.warn(t('Invalid model provided'));
     return null;
   }
 

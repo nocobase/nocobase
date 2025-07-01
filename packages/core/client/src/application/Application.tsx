@@ -278,6 +278,7 @@ export class Application {
       api: this.apiClient,
       i18n: this.i18n,
       router: this.router.router,
+      flowEngine: this.flowEngine,
     });
     this.use(FlowEngineProvider, { engine: this.flowEngine });
     this.use(FlowEngineGlobalsContextProvider);

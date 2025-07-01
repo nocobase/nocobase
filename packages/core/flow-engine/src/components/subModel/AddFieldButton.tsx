@@ -14,7 +14,13 @@ import { FlowModel } from '../../models';
 import { FlowModelOptions, ModelConstructor } from '../../types';
 import { FlowSettingsButton } from '../common/FlowSettingsButton';
 import { withFlowDesignMode } from '../common/withFlowDesignMode';
-import { AddSubModelButton, SubModelItemsType, mergeSubModelItems } from './AddSubModelButton';
+import {
+  AddSubModelButton,
+  SubModelItemsType,
+  mergeSubModelItems,
+  AddSubModelContext,
+  SubModelItem,
+} from './AddSubModelButton';
 
 export type BuildCreateModelOptionsType = {
   defaultOptions: FlowModelOptions;
@@ -46,11 +52,11 @@ export interface AddFieldButtonProps {
   /**
    * 创建后的回调函数
    */
-  onModelCreated?: (subModel: FlowModel) => Promise<void>;
+  onModelCreated?: (subModel: FlowModel<any>) => Promise<void>;
   /**
    * 添加到父模型后的回调函数
    */
-  onSubModelAdded?: (subModel: FlowModel) => Promise<void>;
+  onSubModelAdded?: (subModel: FlowModel<any>) => Promise<void>;
   /**
    * 显示的UI组件
    */
@@ -80,7 +86,7 @@ const AddFieldButtonCore: React.FC<AddFieldButtonProps> = ({
   model,
   subModelBaseClass = 'FieldFlowModel',
   subModelKey = 'fields',
-  children = <FlowSettingsButton icon={<SettingOutlined />}>{'Configure fields'}</FlowSettingsButton>,
+  children,
   subModelType = 'array',
   collection,
   buildCreateModelOptions = defaultBuildCreateModelOptions,
@@ -90,14 +96,17 @@ const AddFieldButtonCore: React.FC<AddFieldButtonProps> = ({
   onSubModelAdded,
 }) => {
   const fields = collection.getFields();
+  const defaultChildren = useMemo(() => {
+    return <FlowSettingsButton icon={<SettingOutlined />}>{model.translate('Configure fields')}</FlowSettingsButton>;
+  }, [model]);
 
   // 构建字段 items 的函数
   const buildFieldItems = useMemo<SubModelItemsType>(() => {
     return () => {
       const fieldClassesMap = model.flowEngine.filterModelClassByParent(subModelBaseClass);
-      const fieldClasses = Array.from(fieldClassesMap.values())?.sort(
-        (a, b) => (a.meta?.sort || 0) - (b.meta?.sort || 0),
-      );
+      const fieldClasses = Array.from(fieldClassesMap.values())
+        ?.filter((ModelClass) => !ModelClass.meta?.hide)
+        ?.sort((a, b) => (a.meta?.sort || 0) - (b.meta?.sort || 0));
 
       if (fieldClasses.length === 0) {
         return [];
@@ -109,19 +118,44 @@ const AddFieldButtonCore: React.FC<AddFieldButtonProps> = ({
       }
 
       const allFields = [];
-      const defaultFieldClasses = fieldClasses.find((fieldClass) => fieldClass.supportedFieldInterfaces === '*');
+      const defaultFieldClasses = fieldClasses.find((fieldClass) => fieldClass['supportedFieldInterfaces'] === '*');
 
       for (const field of fields) {
         const fieldInterfaceName = field.options?.interface;
         const fieldClass =
           fieldClasses.find((fieldClass) => {
-            return fieldClass.supportedFieldInterfaces?.includes(fieldInterfaceName);
+            return fieldClass['supportedFieldInterfaces']?.includes(fieldInterfaceName);
           }) || defaultFieldClasses;
         if (fieldClass && fieldInterfaceName) {
           const defaultOptions = {
             ...fieldClass.meta?.defaultOptions,
             use: fieldClassToNameMap.get(fieldClass) || fieldClass.name,
           };
+
+          // 字段检测函数，检查 stepParams 中是否包含当前字段
+          const checkFieldInStepParams = (subModel: FlowModel): boolean => {
+            const stepParams = subModel.stepParams;
+
+            // 快速检查：如果 stepParams 为空，直接返回 false
+            if (!stepParams || Object.keys(stepParams).length === 0) {
+              return false;
+            }
+
+            // 遍历所有 flow 和 step 来查找 fieldPath 或 field 参数
+            for (const flowKey in stepParams) {
+              const flowSteps = stepParams[flowKey];
+              if (!flowSteps) continue;
+
+              for (const stepKey in flowSteps) {
+                const stepData = flowSteps[stepKey];
+                if (stepData?.fieldPath === field.name || stepData?.field === field.name) {
+                  return true; // 找到匹配，立即返回
+                }
+              }
+            }
+            return false;
+          };
+
           const fieldItem = {
             key: field.name,
             label: field.title,
@@ -132,6 +166,34 @@ const AddFieldButtonCore: React.FC<AddFieldButtonProps> = ({
               fieldPath: field.name,
               fieldModelClass: fieldClass,
             }),
+            toggleDetector: (ctx: AddSubModelContext) => {
+              // 检测是否已存在该字段的子模型
+              const subModels = ctx.model.subModels[subModelKey];
+
+              if (Array.isArray(subModels)) {
+                return subModels.some(checkFieldInStepParams);
+              } else if (subModels) {
+                return checkFieldInStepParams(subModels);
+              }
+              return false;
+            },
+            removeModelOptions: {
+              customRemove: async (ctx: AddSubModelContext, _item: SubModelItem) => {
+                const subModels = ctx.model.subModels[subModelKey];
+
+                if (Array.isArray(subModels)) {
+                  const targetModel = subModels.find(checkFieldInStepParams);
+                  if (targetModel) {
+                    await targetModel.destroy();
+                    const index = subModels.indexOf(targetModel);
+                    if (index > -1) subModels.splice(index, 1);
+                  }
+                } else if (subModels && checkFieldInStepParams(subModels)) {
+                  await subModels.destroy();
+                  (ctx.model.subModels as any)[subModelKey] = undefined;
+                }
+              },
+            },
           };
           allFields.push(fieldItem);
         }
@@ -148,7 +210,7 @@ const AddFieldButtonCore: React.FC<AddFieldButtonProps> = ({
         },
       ];
     };
-  }, [model, subModelBaseClass, fields, buildCreateModelOptions]);
+  }, [model, subModelBaseClass, fields, buildCreateModelOptions, subModelKey]);
 
   const fieldItems = useMemo(() => {
     return mergeSubModelItems([buildFieldItems, appendItems], { addDividers: true });
@@ -162,8 +224,9 @@ const AddFieldButtonCore: React.FC<AddFieldButtonProps> = ({
       items={items ?? fieldItems}
       onModelCreated={onModelCreated}
       onSubModelAdded={onSubModelAdded}
+      keepDropdownOpen
     >
-      {children}
+      {children || defaultChildren}
     </AddSubModelButton>
   );
 };

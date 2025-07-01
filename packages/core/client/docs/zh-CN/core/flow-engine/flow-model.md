@@ -12,6 +12,9 @@
 - **sortIndex: number**  
   排序索引。
 
+- **title: string**  
+  模型标题，用于界面展示，例如区块标题。
+
 - **props: IModelComponentProps**  
   组件属性，支持响应式。
 
@@ -58,6 +61,9 @@
 
 - **getStepParams(...)**  
   支持多种重载，获取流步骤参数。
+
+- **setTitle(value: string)**  
+  设置模型标题，能够为各个模型设置不同的标题。
 
 ---
 
@@ -121,6 +127,11 @@
 
 - **setParent(parent: FlowModel): void**  
   设置父模型。
+
+- **moveTo(targetModel: FlowModel): boolean**  
+  将当前模型移动到目标模型的位置。要求两个模型有相同的父模型且都在数组类型的子模型集合中。
+  - 返回 `true` 表示移动成功
+  - 返回 `false` 表示移动失败（会输出错误日志）
 
 - **createRootModel(options): FlowModel**  
   通过 flowEngine 创建根模型。

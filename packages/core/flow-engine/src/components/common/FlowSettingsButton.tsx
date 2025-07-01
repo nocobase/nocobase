@@ -17,8 +17,10 @@ export const FlowSettingsButton: FC<ButtonProps> = (props) => {
       {...props}
       type="dashed"
       style={{
+        ...props.style,
         borderColor: 'var(--colorSettings)',
         color: 'var(--colorSettings)',
+        alignSelf: 'flex-start',
       }}
     />
   );

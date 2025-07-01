@@ -15,7 +15,7 @@ const tar = require('tar');
 const path = require('path');
 const { createStoragePluginsSymlink } = require('@nocobase/utils/plugin-symlink');
 const chalk = require('chalk');
-const { getAccessKeyPair } = require('../util');
+const { getAccessKeyPair, showLicenseInfo, LicenseKeyError } = require('../util');
 
 class Package {
   data;
@@ -143,6 +143,17 @@ class Package {
       });
       console.log(chalk.greenBright(`Downloaded: ${this.packageName}@${version}`));
     } catch (error) {
+      if (error.response.data && typeof error.response.data.pipe === 'function') {
+        let errorMessageBuffer = '';
+        error.response.data.on('data', (chunk) => {
+          errorMessageBuffer += chunk.toString('utf8'); // 收集错误信息
+        });
+        error.response.data.on('end', () => {
+          if (error.response.status === 403) {
+            console.error(chalk.redBright('You do not have permission to download this package version.'));
+          }
+        });
+      }
       console.log(chalk.redBright(`Download failed: ${this.packageName}`));
     }
   }
@@ -175,6 +186,9 @@ class PackageManager {
       });
       this.token = res1.data.token;
     } catch (error) {
+      if (error?.response?.data?.error === 'license not valid') {
+        showLicenseInfo(LicenseKeyError.notValid);
+      }
       console.error(chalk.redBright(`Login failed: ${this.baseURL}`));
     }
   }
@@ -249,7 +263,13 @@ module.exports = (cli) => {
         NOCOBASE_PKG_USERNAME,
         NOCOBASE_PKG_PASSWORD,
       } = process.env;
-      const { accessKeyId, accessKeySecret } = getAccessKeyPair();
+      let accessKeyId;
+      let accessKeySecret;
+      try {
+        ({ accessKeyId, accessKeySecret } = await getAccessKeyPair());
+      } catch (e) {
+        return;
+      }
       if (!(NOCOBASE_PKG_USERNAME && NOCOBASE_PKG_PASSWORD) && !(accessKeyId && accessKeySecret)) {
         return;
       }

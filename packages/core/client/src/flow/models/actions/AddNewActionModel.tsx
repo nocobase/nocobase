@@ -8,32 +8,33 @@
  */
 
 import { ButtonProps } from 'antd';
+import { tval } from '@nocobase/utils/client';
 import { GlobalActionModel } from '../base/ActionModel';
 
 export class AddNewActionModel extends GlobalActionModel {
   defaultProps: ButtonProps = {
     type: 'primary',
-    title: 'Add new',
+    title: tval('Add new'),
     icon: 'PlusOutlined',
   };
 }
 
+AddNewActionModel.define({
+  title: tval('Add new'),
+});
+
 AddNewActionModel.registerFlow({
   sort: 200,
-  title: '点击事件',
+  title: tval('Click event'),
   key: 'handleClick',
   on: {
     eventName: 'click',
   },
   steps: {
     popup: {
-      use: 'popup',
+      use: 'openView',
       defaultParams(ctx) {
-        return {
-          sharedContext: {
-            parentBlockModel: ctx.shared?.currentBlockModel,
-          },
-        };
+        return {};
       },
     },
   },

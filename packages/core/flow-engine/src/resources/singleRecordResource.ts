@@ -15,7 +15,7 @@ export class SingleRecordResource<TData = any> extends BaseRecordResource<TData>
     return this;
   }
 
-  async save(data: TData): Promise<void> {
+  async save(data: TData, config: { refresh?: boolean } = {}): Promise<void> {
     const options: any = {
       headers: this.request.headers,
       params: {},
@@ -29,7 +29,7 @@ export class SingleRecordResource<TData = any> extends BaseRecordResource<TData>
       ...options,
       data,
     });
-    if (this.request.params.filterByTk) {
+    if (config.refresh !== false && this.request.params.filterByTk) {
       await this.refresh();
     }
   }
@@ -52,5 +52,6 @@ export class SingleRecordResource<TData = any> extends BaseRecordResource<TData>
       ...this.getRefreshRequestOptions(),
     });
     this.setData(data).setMeta(meta);
+    this.emit('refresh');
   }
 }

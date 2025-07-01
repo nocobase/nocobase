@@ -100,4 +100,5 @@ export default class extends Instruction {
       resultTitle: lang('Calculation result'),
     };
   }
+  testable = true;
 }

@@ -19,7 +19,7 @@ import * as antd from 'antd';
 import { Card, Spin } from 'antd';
 import React, { createRef } from 'react';
 import ReactDOM from 'react-dom/client';
-import { NAMESPACE } from './locale';
+import { NAMESPACE, tStr } from './locale';
 export class LowcodeBlockModel extends BlockModel {
   ref = createRef<HTMLDivElement>();
   declare resource: APIResource;
@@ -30,14 +30,14 @@ export class LowcodeBlockModel extends BlockModel {
     if (error) {
       return (
         <Card>
-          <div style={{ color: 'red', padding: '16px' }}>Error loading lowcode component: {error}</div>
+          <div style={{ color: 'red', padding: '16px' }}>Error loading code component: {error}</div>
         </Card>
       );
     }
 
     return (
-      <Card id={`model-${this.uid}`} className="lowcode-block">
-        <Spin spinning={loading} tip="Loading lowcode component...">
+      <Card id={`model-${this.uid}`} className="code-block">
+        <Spin spinning={loading} tip="Loading code component...">
           <div ref={this.ref} style={{ width: '100%' }} />
         </Spin>
       </Card>
@@ -46,7 +46,7 @@ export class LowcodeBlockModel extends BlockModel {
 }
 
 LowcodeBlockModel.define({
-  title: 'Lowcode',
+  title: 'Code',
   group: 'Content',
   icon: 'CloudOutlined',
   defaultOptions: {
@@ -61,7 +61,7 @@ LowcodeBlockModel.define({
 ctx.element.innerHTML = \`
   <div style="padding: 24px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; max-width: 600px;">
     <h2 style="color: #1890ff; margin: 0 0 20px 0; font-size: 24px; font-weight: 600;">
-      🚀 \${ctx.i18n.t('Welcome to Lowcode Block', { ns: '` +
+      🚀 \${ctx.i18n.t('Welcome to code block', { ns: '` +
             NAMESPACE +
             `' })}
     </h2>
@@ -125,15 +125,15 @@ ctx.element.innerHTML = \`
 
 LowcodeBlockModel.registerFlow({
   key: 'default',
-  title: 'Configuration',
+  title: tStr('Configuration'),
   auto: true,
   steps: {
     executionStep: {
-      title: 'Code',
+      title: tStr('Code'),
       uiSchema: {
         code: {
           type: 'string',
-          title: 'Execution Code',
+          title: tStr('Execution Code'),
           'x-component': 'CodeEditor',
           'x-component-props': {
             minHeight: '400px',
@@ -145,12 +145,12 @@ LowcodeBlockModel.registerFlow({
       defaultParams: {
         code:
           `
-// Welcome to the lowcode block
+// Welcome to the code block
 // Create powerful interactive components with JavaScript
 ctx.element.innerHTML = \`
   <div style="padding: 24px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; max-width: 600px;">
     <h2 style="color: #1890ff; margin: 0 0 20px 0; font-size: 24px; font-weight: 600;">
-      🚀 \${ctx.i18n.t('Welcome to Lowcode Block', { ns: '` +
+      🚀 \${ctx.i18n.t('Welcome to code block', { ns: '` +
           NAMESPACE +
           `' })}
     </h2>
@@ -209,6 +209,12 @@ ctx.element.innerHTML = \`
       },
       settingMode: 'drawer',
       async handler(flowContext, params: any) {
+        // Check if URL ends with skip_nocobase_lowcode=true and return early if so
+        // Giving a way to avoid some bad js code (or breaking changes in future versions) break the page and can't recover from ui
+        if (window.location.href.endsWith('skip_nocobase_lowcode=true')) {
+          return;
+        }
+
         flowContext.model.setProps('loading', true);
         flowContext.model.setProps('error', null);
         flowContext.reactView.onRefReady(flowContext.model.ref, async (element: HTMLElement) => {
@@ -274,15 +280,20 @@ ctx.element.innerHTML = \`
             `;
             const executionFunction = new Function(wrappedCode);
             const lowcodeContext = {
+              Components: { antd },
+              Resources: { APIResource, BaseRecordResource, SingleRecordResource, MultiRecordResource },
+              React,
+              ReactDOM,
+              flowEngine,
               element,
               model: flowContext.model,
+              router: flowContext.app.router.router,
+              i18n: flowContext.app.i18n,
+              request,
               requirejs,
               requireAsync,
               loadCSS,
               getModelById,
-              request,
-              i18n: flowContext.app.i18n,
-              router: flowContext.app.router.router,
               initResource(use: typeof APIResource, options?: any) {
                 if (flowContext.model.resource) {
                   return flowContext.model.resource;
@@ -297,18 +308,12 @@ ctx.element.innerHTML = \`
                 flowContext.model.resource = resource;
                 return resource;
               },
-              Resources: { APIResource, BaseRecordResource, SingleRecordResource, MultiRecordResource },
-              React,
-              ReactDOM,
-              flowEngine,
+              flowContext,
               auth: {
                 role: api.auth.role,
                 locale: api.auth.locale,
                 token: api.auth.token,
                 user: flowContext.globals.user,
-              },
-              Components: {
-                antd,
               },
             };
             // Execute the code
@@ -316,7 +321,7 @@ ctx.element.innerHTML = \`
 
             flowContext.model.setProps('loading', false);
           } catch (error: any) {
-            console.error('Lowcode component execution error:', error);
+            console.error('Code component execution error:', error);
             flowContext.model.setProps('error', error.message);
             flowContext.model.setProps('loading', false);
           }

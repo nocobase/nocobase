@@ -14,6 +14,7 @@ import { ModelConstructor } from '../../types';
 import { FlowSettingsButton } from '../common/FlowSettingsButton';
 import { withFlowDesignMode } from '../common/withFlowDesignMode';
 import { AddSubModelButton, SubModelItemsType } from './AddSubModelButton';
+import { useTranslation } from 'react-i18next';
 
 interface AddActionButtonProps {
   /**
@@ -63,18 +64,25 @@ const AddActionButtonCore: React.FC<AddActionButtonProps> = ({
   model,
   subModelBaseClass = 'ActionFlowModel',
   subModelKey = 'actions',
-  children = <FlowSettingsButton icon={<SettingOutlined />}>{'Configure actions'}</FlowSettingsButton>,
+  children,
   subModelType = 'array',
   items,
   filter,
   onModelCreated,
   onSubModelAdded,
 }) => {
+  const defaultChildren = useMemo(() => {
+    return <FlowSettingsButton icon={<SettingOutlined />}>{model.translate('Configure actions')}</FlowSettingsButton>;
+  }, [model]);
+
   const allActionsItems = useMemo(() => {
     const actionClasses = model.flowEngine.filterModelClassByParent(subModelBaseClass);
     const registeredBlocks = [];
     for (const [className, ModelClass] of actionClasses) {
       if (filter && !filter(ModelClass, className)) {
+        continue;
+      }
+      if (ModelClass.meta?.hide) {
         continue;
       }
       const item = {
@@ -100,7 +108,7 @@ const AddActionButtonCore: React.FC<AddActionButtonProps> = ({
       onModelCreated={onModelCreated}
       onSubModelAdded={onSubModelAdded}
     >
-      {children}
+      {children || defaultChildren}
     </AddSubModelButton>
   );
 };

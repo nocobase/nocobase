@@ -7,11 +7,14 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { createSchemaField, ISchema } from '@formily/react';
-import { message } from 'antd';
+import { FormButtonGroup } from '@formily/antd-v5';
+import { createForm } from '@formily/core';
+import { createSchemaField, FormProvider, ISchema } from '@formily/react';
+import { toJS } from '@formily/reactive';
+import { Button, message, Space } from 'antd';
 import React from 'react';
-import { ActionStepDefinition, StepSettingsDialogProps } from '../../../../types';
-import { resolveDefaultParams } from '../../../../utils';
+import { StepSettingsDialogProps } from '../../../../types';
+import { compileUiSchema, getT, resolveDefaultParams, resolveUiSchema } from '../../../../utils';
 import { StepSettingContextProvider, StepSettingContextType, useStepSettingContext } from './StepSettingContext';
 
 const SchemaField = createSchemaField();
@@ -31,10 +34,14 @@ const openStepSettingsDialog = async ({
   stepKey,
   dialogWidth = 600,
   dialogTitle,
+  mode = 'dialog',
 }: StepSettingsDialogProps): Promise<any> => {
+  const t = getT(model);
+  const message = model.flowEngine.context.message;
+
   if (!model) {
-    message.error('提供的模型无效');
-    throw new Error('提供的模型无效');
+    message.error(t('Invalid model provided'));
+    throw new Error(t('Invalid model provided'));
   }
 
   // 获取流程和步骤信息
@@ -42,35 +49,46 @@ const openStepSettingsDialog = async ({
   const step = flow?.steps?.[stepKey];
 
   if (!flow) {
-    message.error(`未找到Key为 ${flowKey} 的流程`);
-    throw new Error(`未找到Key为 ${flowKey} 的流程`);
+    message.error(t('Flow with key {{flowKey}} not found', { flowKey }));
+    throw new Error(t('Flow with key {{flowKey}} not found', { flowKey }));
   }
 
   if (!step) {
-    message.error(`未找到Key为 ${stepKey} 的步骤`);
-    throw new Error(`未找到Key为 ${stepKey} 的步骤`);
+    message.error(t('Step with key {{stepKey}} not found', { stepKey }));
+    throw new Error(t('Step with key {{stepKey}} not found', { stepKey }));
   }
 
-  const title = dialogTitle || (step ? `${step.title || stepKey} - 配置` : `步骤配置 - ${stepKey}`);
+  let title = step.title;
+
+  // 创建参数解析上下文
+  const paramsContext = {
+    model,
+    globals: model.flowEngine?.context || {},
+    app: model.flowEngine?.context?.app,
+  };
 
   // 获取可配置的步骤信息
-  const stepDefinition = step as ActionStepDefinition;
-  const stepUiSchema = stepDefinition.uiSchema || {};
+  const stepUiSchema = step.uiSchema || {};
   let actionDefaultParams = {};
 
   // 如果step使用了action，也获取action的uiSchema
   let actionUiSchema = {};
-  if (stepDefinition.use) {
-    const action = model.flowEngine?.getAction?.(stepDefinition.use);
+  if (step.use) {
+    const action = model.flowEngine?.getAction?.(step.use);
     if (action && action.uiSchema) {
       actionUiSchema = action.uiSchema;
     }
     actionDefaultParams = action.defaultParams || {};
+    title = title || action.title;
   }
 
+  // 解析动态 uiSchema
+  const resolvedActionUiSchema = await resolveUiSchema(actionUiSchema, paramsContext);
+  const resolvedStepUiSchema = await resolveUiSchema(stepUiSchema, paramsContext);
+
   // 合并uiSchema，确保step的uiSchema优先级更高
-  const mergedUiSchema = { ...actionUiSchema };
-  Object.entries(stepUiSchema).forEach(([fieldKey, schema]) => {
+  const mergedUiSchema = { ...toJS(resolvedActionUiSchema) };
+  Object.entries(toJS(resolvedStepUiSchema)).forEach(([fieldKey, schema]) => {
     if (mergedUiSchema[fieldKey]) {
       mergedUiSchema[fieldKey] = { ...mergedUiSchema[fieldKey], ...schema };
     } else {
@@ -80,24 +98,23 @@ const openStepSettingsDialog = async ({
 
   // 如果没有可配置的UI Schema，显示提示
   if (Object.keys(mergedUiSchema).length === 0) {
-    message.info('此步骤没有可配置的参数');
+    message.info(t('This step has no configurable parameters'));
     return {};
   }
+
+  const flowEngine = model.flowEngine;
+  const scopes = {
+    useStepSettingContext,
+    ...flowEngine.flowSettings?.scopes,
+  };
 
   // 获取初始值
   const stepParams = model.getStepParams(flowKey, stepKey) || {};
 
-  // 创建参数解析上下文
-  const paramsContext = {
-    model,
-    globals: model.flowEngine?.context || {},
-    app: model.flowEngine?.context?.app,
-  };
-
   // 解析 defaultParams
-  const resolvedDefaultParams = await resolveDefaultParams(stepDefinition.defaultParams, paramsContext);
+  const resolvedDefaultParams = await resolveDefaultParams(step.defaultParams, paramsContext);
   const resolveActionDefaultParams = await resolveDefaultParams(actionDefaultParams, paramsContext);
-  const initialValues = { ...resolveActionDefaultParams, ...resolvedDefaultParams, ...stepParams };
+  const initialValues = { ...toJS(resolveActionDefaultParams), ...toJS(resolvedDefaultParams), ...toJS(stepParams) };
 
   // 构建表单Schema
   const formSchema: ISchema = {
@@ -114,27 +131,53 @@ const openStepSettingsDialog = async ({
     },
   };
 
-  // 动态导入FormDialog
-  let FormDialog;
-  try {
-    ({ FormDialog } = await import('@formily/antd-v5'));
-  } catch (error) {
-    throw new Error(`导入 FormDialog 失败: ${error.message}`);
-  }
+  const view = model.flowEngine.context[mode];
 
-  // 创建FormDialog
-  const formDialog = FormDialog(
-    {
-      title,
-      width: dialogWidth,
-      okText: '确认',
-      cancelText: '取消',
-      destroyOnClose: true,
-    },
-    (form) => {
-      const flowEngine = model.flowEngine || {};
+  const form = createForm({
+    initialValues: compileUiSchema(scopes, initialValues),
+  });
 
-      // 创建上下文值
+  const currentDialog = view.open({
+    title: dialogTitle || t(title),
+    width: dialogWidth,
+    destroyOnClose: true,
+    footer: (
+      <Space align="end">
+        <Button
+          type="default"
+          onClick={() => {
+            currentDialog.close();
+          }}
+        >
+          {t('Cancel')}
+        </Button>
+        <Button
+          type="primary"
+          onClick={async () => {
+            try {
+              await form.submit();
+              const currentValues = form.values;
+              model.setStepParams(flowKey, stepKey, currentValues);
+              currentDialog.close();
+              model
+                .save()
+                .then(() => {
+                  message.success(t('Configuration saved'));
+                })
+                .catch((_error) => {
+                  message.error(t('Error saving configuration, please check console'));
+                });
+            } catch (error) {
+              console.error(t('Error saving configuration'), ':', error);
+              message.error(t('Error saving configuration, please check console'));
+            }
+          }}
+        >
+          {t('OK')}
+        </Button>
+      </Space>
+    ),
+    content: (currentDialog) => {
       const contextValue: StepSettingContextType = {
         model,
         globals: model.flowEngine?.context || {},
@@ -144,45 +187,22 @@ const openStepSettingsDialog = async ({
         flowKey,
         stepKey,
       };
-
+      // 编译 formSchema 中的表达式
+      const compiledFormSchema = compileUiSchema(scopes, formSchema);
       return (
-        <StepSettingContextProvider value={contextValue}>
-          <SchemaField
-            schema={formSchema}
-            components={{
-              ...flowEngine.flowSettings?.components,
-            }}
-            scope={{
-              useStepSettingContext,
-              ...flowEngine.flowSettings?.scopes,
-            }}
-          />
-        </StepSettingContextProvider>
+        <FormProvider form={form}>
+          <StepSettingContextProvider value={contextValue}>
+            <SchemaField
+              schema={compiledFormSchema}
+              components={{
+                ...flowEngine.flowSettings?.components,
+              }}
+              scope={scopes}
+            />
+          </StepSettingContextProvider>
+        </FormProvider>
       );
     },
-  );
-
-  // 设置保存回调
-  formDialog.forConfirm(async (payload, next) => {
-    try {
-      // 获取表单当前值
-      const currentValues = payload.values;
-      model.setStepParams(flowKey, stepKey, currentValues);
-      await model.save();
-      message.success('配置已保存');
-      next(payload);
-    } catch (error) {
-      console.error('保存配置时出错:', error);
-      message.error('保存配置时出错，请检查控制台');
-      throw error;
-    }
-  });
-
-  formDialog.forCancel(async (payload, next) => next(payload));
-
-  // 打开对话框
-  return formDialog.open({
-    initialValues,
   });
 };
 

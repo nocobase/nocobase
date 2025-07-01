@@ -28,7 +28,7 @@ SubModel1.registerFlow({
         },
       },
       handler(ctx, params) {
-        ctx.model.setProps('children', params.title);
+        ctx.model.setProps('children', ctx.globals.flowEngine.translate(params.title));
       },
     },
   },

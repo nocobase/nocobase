@@ -1,26 +1,36 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import React from 'react';
+import { tval } from '@nocobase/utils/client';
 import { FlowPage } from '../FlowPage';
 
 export const openModeAction = {
-  title: '打开方式',
+  title: tval('Open mode'),
   uiSchema: {
     mode: {
       type: 'string',
-      title: '打开方式',
+      title: tval('Open mode'),
       enum: [
-        { label: 'Drawer', value: 'drawer' },
-        { label: 'Modal', value: 'modal' },
+        { label: tval('Drawer'), value: 'drawer' },
+        { label: tval('Modal'), value: 'modal' },
       ],
       'x-decorator': 'FormItem',
       'x-component': 'Radio.Group',
     },
     size: {
       type: 'string',
-      title: '弹窗尺寸',
+      title: tval('Popup size'),
       enum: [
-        { label: '小', value: 'small' },
-        { label: '中', value: 'medium' },
-        { label: '大', value: 'large' },
+        { label: tval('Small'), value: 'small' },
+        { label: tval('Medium'), value: 'medium' },
+        { label: tval('Large'), value: 'large' },
       ],
       'x-decorator': 'FormItem',
       'x-component': 'Radio.Group',
@@ -57,7 +67,7 @@ export const openModeAction = {
     };
 
     currentDrawer = ctx.globals[params.mode].open({
-      title: '命令式 Drawer',
+      title: tval('Imperative Drawer'),
       width: sizeToWidthMap[params.size],
       content: <DrawerContent />,
     });

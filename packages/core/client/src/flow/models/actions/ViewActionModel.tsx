@@ -7,34 +7,32 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { tval } from '@nocobase/utils/client';
 import type { ButtonProps } from 'antd/es/button';
 import { RecordActionModel } from '../base/ActionModel';
 
 export class ViewActionModel extends RecordActionModel {
   defaultProps: ButtonProps = {
     type: 'link',
-    title: 'View',
+    title: tval('View'),
   };
 }
 
+ViewActionModel.define({
+  title: tval('View'),
+});
+
 ViewActionModel.registerFlow({
   key: 'handleClick',
-  title: '点击事件',
+  title: tval('Click event'),
   on: {
     eventName: 'click',
   },
   steps: {
-    popup: {
-      use: 'popup',
+    openView: {
+      use: 'openView',
       defaultParams(ctx) {
-        return {
-          sharedContext: {
-            parentExtra: ctx.extra,
-            parentShared: ctx.shared,
-            parentRecord: ctx.extra?.currentRecord,
-            parentBlockModel: ctx.shared?.currentBlockModel,
-          },
-        };
+        return {};
       },
     },
   },

@@ -10,6 +10,7 @@
 import { getDefaultFormat, str2moment, toGmt, toLocal, getPickerFormat } from '@nocobase/utils/client';
 import type { Dayjs } from 'dayjs';
 import dayjs from 'dayjs';
+import { dayjsable, formatDayjsValue } from '@formily/antd-v5/esm/__builtins__';
 
 const toStringByPicker = (value, picker = 'date', timezone: 'gmt' | 'local') => {
   if (!dayjs.isDayjs(value)) return value;
@@ -89,7 +90,7 @@ export const handleDateChangeOnForm = (value, dateOnly, utc, picker, showTime, g
     return value;
   }
   if (dateOnly) {
-    return dayjs(value).startOf(picker).format('YYYY-MM-DD');
+    return formatDayjsValue(value, 'YYYY-MM-DD');
   }
   if (utc) {
     if (gmt) {
@@ -114,6 +115,7 @@ export const mapDatePicker = function () {
     const { dateOnly, showTime, picker = 'date', utc, gmt, underFilter } = props;
     const format = getDefaultFormat(props);
     const onChange = props.onChange;
+
     return {
       ...props,
       inputReadOnly: isMobileMedia,

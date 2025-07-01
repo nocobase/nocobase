@@ -13,18 +13,20 @@ import {
   AddActionButton,
   AddFieldButton,
   CollectionField,
+  DndProvider,
   FlowModel,
   FlowModelRenderer,
   FlowsFloatContextMenu,
   MultiRecordResource,
 } from '@nocobase/flow-engine';
-import { Button, Card, Pagination, Skeleton, Space } from 'antd';
+import { tval } from '@nocobase/utils/client';
+import { Button, Card, Pagination, Skeleton, Space, Spin } from 'antd';
 import _ from 'lodash';
 import React from 'react';
 import { ColumnDefinition, TabulatorFull as Tabulator } from 'tabulator-tables';
 import { ActionModel } from '../../base/ActionModel';
 import { DataBlockModel } from '../../base/BlockModel';
-import { TableFieldModel } from '../table/fields';
+import { ReadPrettyFieldModel } from '../../fields/ReadPrettyField/ReadPrettyFieldModel';
 import { AntdInputEditor } from './AntdInputEditor';
 import './tabulator.css';
 
@@ -41,7 +43,7 @@ export class TabulatorColumnModel extends FlowModel {
 
   getColumnProps(): ColumnDefinition {
     return {
-      title: 'abcd',
+      title: tval('abcd'),
       width: 100,
       headerSort: false,
       editable: true,
@@ -58,7 +60,7 @@ export class TabulatorColumnModel extends FlowModel {
       formatter: (cell) => {
         return this.reactView.render(
           <span>
-            {this.mapSubModels('field', (action: TableFieldModel) => {
+            {this.mapSubModels('field', (action: ReadPrettyFieldModel) => {
               const fork = action.createFork({}, `${cell.getRow().getIndex()}`);
               fork.setSharedContext({ index: cell.getRow().getIndex(), value: cell.getValue() });
               return fork.render();
@@ -76,13 +78,22 @@ TabulatorColumnModel.registerFlow({
   steps: {
     step1: {
       async handler(ctx, params) {
-        if (!params.fieldPath) {
-          return;
+        if (!params.dataSourceKey || !params.collectionName || !params.fieldPath) {
+          throw new Error('dataSourceKey, collectionName and fieldPath are required parameters');
+        }
+        if (!ctx.shared.currentBlockModel) {
+          throw new Error('Current block model is not set in shared context');
         }
         if (ctx.model.collectionField) {
           return;
         }
-        const field = ctx.globals.dataSourceManager.getCollectionField(params.fieldPath);
+        const { dataSourceKey, collectionName, fieldPath } = params;
+        const field = ctx.globals.dataSourceManager.getCollectionField(
+          `${dataSourceKey}.${collectionName}.${fieldPath}`,
+        );
+        if (!field) {
+          throw new Error(`Collection field not found: ${dataSourceKey}.${collectionName}.${fieldPath}`);
+        }
         ctx.model.collectionField = field;
         ctx.model.fieldPath = params.fieldPath;
         ctx.model.setProps('title', field.title);
@@ -99,13 +110,7 @@ const Columns = observer<any>(({ record, model, index }) => {
       {model.mapSubModels('actions', (action: ActionModel) => {
         const fork = action.createFork({}, `${index}`);
         return (
-          <FlowModelRenderer
-            fallback={<Skeleton.Button size="small" />}
-            showFlowSettings
-            key={fork.uid}
-            model={fork}
-            extraContext={{ currentRecord: record }}
-          />
+          <FlowModelRenderer fallback={<Skeleton.Button size="small" />} showFlowSettings key={fork.uid} model={fork} />
         );
       })}
     </Space>
@@ -126,7 +131,7 @@ export class TabulatorTableActionsColumnModel extends TabulatorColumnModel {
             containerStyle={{ display: 'block', padding: '11px 8px', margin: '-11px -8px' }}
           >
             <Space>
-              {this.props.title || 'Actions'}
+              {this.props.title || tval('Actions')}
               <AddActionButton model={this} subModelBaseClass="RecordActionModel" subModelKey="actions">
                 <SettingOutlined />
               </AddActionButton>
@@ -163,14 +168,14 @@ export class TabulatorModel extends DataBlockModel<S> {
             collection={this.collection}
             model={this}
             subModelKey={'columns'}
-            subModelBaseClass="TableFieldModel"
+            subModelBaseClass="ReadPrettyFieldModel"
             buildCreateModelOptions={({ defaultOptions, fieldPath }) => ({
               use: 'TabulatorColumnModel',
               stepParams: {
                 default: {
                   step1: {
-                    collectionName: this.collection.name,
                     dataSourceKey: this.collection.dataSourceKey,
+                    collectionName: this.collection.name,
                     fieldPath,
                   },
                 },
@@ -178,12 +183,12 @@ export class TabulatorModel extends DataBlockModel<S> {
               subModels: {
                 field: {
                   // @ts-ignore
-                  use: defaultOptions.use,
+                  use: defaultOptions.use as any,
                   stepParams: {
                     default: {
                       step1: {
-                        collectionName: this.collection.name,
                         dataSourceKey: this.collection.dataSourceKey,
+                        collectionName: this.collection.name,
                         fieldPath,
                       },
                     },
@@ -194,15 +199,29 @@ export class TabulatorModel extends DataBlockModel<S> {
             appendItems={[
               {
                 key: 'actions',
-                label: 'Actions column',
+                label: tval('Actions column'),
                 createModelOptions: {
                   use: 'TabulatorTableActionsColumnModel',
+                },
+                toggleDetector: (ctx) => {
+                  // 检测是否已存在操作列
+                  const subModels = ctx.model.subModels.columns;
+                  const modelClass = ctx.model.flowEngine.getModelClass('TabulatorTableActionsColumnModel');
+                  if (Array.isArray(subModels)) {
+                    return subModels.some((subModel) => {
+                      // 使用 flowEngine 的模型注册信息进行检测
+                      return subModel instanceof modelClass;
+                    });
+                  }
+                  return false;
                 },
               },
             ]}
             onModelCreated={async (model: TabulatorColumnModel) => {
-              model.setSharedContext({ currentBlockModel: this });
               await model.applyAutoFlows();
+            }}
+            onSubModelAdded={async (model: TabulatorColumnModel) => {
+              this.addAppends(model.fieldPath, true);
               this.initTabulator();
             }}
           />,
@@ -223,7 +242,7 @@ export class TabulatorModel extends DataBlockModel<S> {
     });
     this.tabulator = new Tabulator(this.tabulatorRef.current, {
       layout: 'fitColumns', // fit columns to width of table (optional)
-      // height: '75vh',
+      height: '75vh',
       renderHorizontal: 'virtual',
       movableColumns: true,
       movableRows: true,
@@ -255,28 +274,60 @@ export class TabulatorModel extends DataBlockModel<S> {
   render() {
     return (
       <Card>
-        <Space style={{ marginBottom: 16 }}>
-          {this.mapSubModels('actions', (action) => (
-            <FlowModelRenderer model={action} showFlowSettings sharedContext={{ currentBlockModel: this }} />
-          ))}
-          <AddActionButton model={this} subModelBaseClass="GlobalActionModel" subModelKey="actions">
-            <Button icon={<SettingOutlined />}>Configure actions</Button>
-          </AddActionButton>
-        </Space>
-        <div ref={this.tabulatorRef} />
-        <Pagination
-          style={{ marginTop: 16 }}
-          align="end"
-          defaultCurrent={this.resource.getMeta('page')}
-          defaultPageSize={this.resource.getMeta('pageSize')}
-          total={this.resource.getMeta('count')}
-          showSizeChanger
-          onChange={async (page, pageSize) => {
-            this.resource.setPage(page);
-            this.resource.setPageSize(pageSize);
-            await this.resource.refresh();
-          }}
-        />
+        <Spin spinning={this.resource.loading}>
+          <DndProvider>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+              <Space>
+                {this.mapSubModels('actions', (action) => {
+                  // @ts-ignore
+                  if (action.props.position === 'left') {
+                    return (
+                      <FlowModelRenderer
+                        model={action}
+                        showFlowSettings={{ showBackground: false, showBorder: false }}
+                      />
+                    );
+                  }
+
+                  return null;
+                })}
+                {/* 占位 */}
+                <span></span>
+              </Space>
+              <Space>
+                {this.mapSubModels('actions', (action) => {
+                  // @ts-ignore
+                  if (action.props.position !== 'left') {
+                    return (
+                      <FlowModelRenderer
+                        model={action}
+                        showFlowSettings={{ showBackground: false, showBorder: false }}
+                      />
+                    );
+                  }
+
+                  return null;
+                })}
+                <AddActionButton model={this} subModelBaseClass="GlobalActionModel" subModelKey="actions" />
+              </Space>
+            </div>
+          </DndProvider>
+          <div ref={this.tabulatorRef} />
+          <Pagination
+            style={{ marginTop: 16 }}
+            align="end"
+            defaultCurrent={this.resource.getMeta('page')}
+            defaultPageSize={this.resource.getMeta('pageSize')}
+            total={this.resource.getMeta('count')}
+            showSizeChanger
+            onChange={async (page, pageSize) => {
+              this.resource.loading = true;
+              this.resource.setPage(page);
+              this.resource.setPageSize(pageSize);
+              await this.resource.refresh();
+            }}
+          />
+        </Spin>
       </Card>
     );
   }
@@ -292,20 +343,20 @@ TabulatorModel.registerFlow({
       uiSchema: {
         dataSourceKey: {
           type: 'string',
-          title: 'Data Source Key',
+          title: tval('Data Source Key'),
           'x-decorator': 'FormItem',
           'x-component': 'Input',
           'x-component-props': {
-            placeholder: 'Enter data source key',
+            placeholder: tval('Enter data source key'),
           },
         },
         collectionName: {
           type: 'string',
-          title: 'Collection Name',
+          title: tval('Collection Name'),
           'x-decorator': 'FormItem',
           'x-component': 'Input',
           'x-component-props': {
-            placeholder: 'Enter collection name',
+            placeholder: tval('Enter collection name'),
           },
         },
       },
@@ -322,13 +373,36 @@ TabulatorModel.registerFlow({
         resource.setPageSize(20);
         ctx.model.resource = resource;
         await ctx.model.applySubModelsAutoFlows('columns', null, { currentBlockModel: ctx.model });
-        await resource.refresh();
+        // await resource.refresh();
         resource.on('refresh', async () => {
           if (ctx.model.tabulator) {
             ctx.model.initTabulator();
             // await ctx.model.tabulator.setData(resource.getData()); // 深拷贝数据，避免 Tabulator 内部引用问题
           }
         });
+      },
+    },
+    editPageSize: {
+      title: tval('Edit page size'),
+      uiSchema: {
+        pageSize: {
+          'x-component': 'Select',
+          'x-decorator': 'FormItem',
+          enum: [
+            { label: '10', value: 10 },
+            { label: '20', value: 20 },
+            { label: '50', value: 50 },
+            { label: '100', value: 100 },
+            { label: '200', value: 200 },
+          ],
+        },
+      },
+      defaultParams: {
+        pageSize: 20,
+      },
+      handler(ctx, params) {
+        ctx.model.resource.loading = true;
+        ctx.model.resource.setPageSize(params.pageSize);
       },
     },
     step2: {
@@ -338,13 +412,19 @@ TabulatorModel.registerFlow({
         });
       },
     },
+    refresh: {
+      async handler(ctx, params) {
+        await ctx.model.resource.refresh();
+      },
+    },
   },
 });
 
 TabulatorModel.define({
-  title: 'Tabulator',
-  group: 'Content',
+  title: tval('Tabulator'),
+  group: tval('Content'),
   requiresDataSource: true,
+  // hide: true,
   defaultOptions: {
     use: 'TabulatorModel',
   },

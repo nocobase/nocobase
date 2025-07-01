@@ -20,50 +20,33 @@ import {
   FlowModelRenderer,
   SingleRecordResource,
 } from '@nocobase/flow-engine';
-import { InputRef, Skeleton } from 'antd';
+import { Button, InputRef, Skeleton } from 'antd';
+import _ from 'lodash';
 import React, { createRef } from 'react';
+import { SkeletonFallback } from '../../../components/SkeletonFallback';
+import { DataBlockModel } from '../../base/BlockModel';
 
-export class QuickEditForm extends FlowModel {
+export class QuickEditForm extends DataBlockModel {
   form: Form;
+  fieldPath: string;
+
   declare resource: SingleRecordResource;
   declare collection: Collection;
 
-  onInit() {
-    this.setSharedContext({
-      currentBlockModel: this,
-    });
-  }
-
-  addAppends(fieldPath: string, refresh = false) {
-    const field = this.ctx.globals.dataSourceManager.getCollectionField(
-      `${this.collection.dataSourceKey}.${this.collection.name}.${fieldPath}`,
-    );
-    if (!field) {
-      throw new Error(
-        `Collection field not found: ${this.collection.dataSourceKey}.${this.collection.name}.${fieldPath}`,
-      );
-    }
-    if (['belongsToMany', 'belongsTo', 'hasMany', 'hasOne'].includes(field.type)) {
-      (this.resource as BaseRecordResource).addAppends(field.name);
-      if (refresh) {
-        this.resource.refresh();
-      }
-    }
-  }
-
   static async open(options: {
-    target: any;
     flowEngine: FlowEngine;
+    target: any;
     dataSourceKey: string;
     collectionName: string;
     fieldPath: string;
     filterByTk: string;
+    onSuccess?: (values: any) => void;
   }) {
-    const { flowEngine, dataSourceKey, collectionName, fieldPath, target, filterByTk } = options;
+    const { flowEngine, target, dataSourceKey, collectionName, fieldPath, filterByTk, onSuccess } = options;
     const model = flowEngine.createModel({
       use: 'QuickEditForm',
       stepParams: {
-        initial: {
+        propsFlow: {
           step1: {
             dataSourceKey,
             collectionName,
@@ -72,69 +55,76 @@ export class QuickEditForm extends FlowModel {
         },
       },
     }) as QuickEditForm;
-    await model.open({ target, filterByTk });
-    options.flowEngine.removeModel(model.uid);
+
+    await flowEngine.context.popover.open({
+      target,
+      placement: 'rightTop',
+      content: (popover) => {
+        return (
+          <FlowModelRenderer
+            fallback={<Skeleton.Input size="small" />}
+            model={model}
+            sharedContext={{ currentView: popover, __onSubmitSuccess: onSuccess }}
+            extraContext={{ filterByTk }}
+          />
+        );
+      },
+    });
   }
 
-  async open({ target, filterByTk }: { target: any; filterByTk: string }) {
-    await this.applyFlow('initial', { filterByTk });
-    return new Promise((resolve) => {
-      const inputRef = createRef<InputRef>();
-      const popover = this.ctx.globals.popover.open({
-        target,
-        content: (
-          <form
-            style={{ minWidth: '200px' }}
-            className="quick-edit-form"
-            onSubmit={async (e) => {
-              e.preventDefault();
-              await this.form.submit();
-              await this.resource.save(this.form.values);
-              popover.destroy();
-              resolve(this.form.values);
-            }}
-          >
-            <FlowEngineProvider engine={this.flowEngine}>
-              <FormProvider form={this.form}>
-                <FormLayout layout={'vertical'}>
-                  {this.mapSubModels('fields', (field) => {
-                    return <FlowModelRenderer model={field} fallback={<Skeleton paragraph={{ rows: 2 }} />} />;
-                  })}
-                </FormLayout>
-                <FormButtonGroup>
-                  <Submit
-                    htmlType="submit"
-                    onClick={async () => {
-                      await this.resource.save(this.form.values);
-                      popover.destroy();
-                      resolve(this.form.values); // 在 close 之后 resolve
-                    }}
-                  >
-                    Submit
-                  </Submit>
-                </FormButtonGroup>
-              </FormProvider>
-            </FlowEngineProvider>
-          </form>
-        ),
-        onRendered: () => {
-          setTimeout(() => {
-            // 聚焦 Popover 内第一个 input 或 textarea
-            const el = document.querySelector(
-              '.quick-edit-form input, .quick-edit-form textarea, .quick-edit-form select',
-            ) as HTMLInputElement | HTMLTextAreaElement | null;
-            el?.focus();
-          }, 200);
-          // inputRef.current.focus();
-        },
-        placement: 'rightTop',
-      });
-    });
+  render() {
+    return (
+      <form
+        style={{ minWidth: '200px' }}
+        className="quick-edit-form"
+        onSubmit={async (e) => {
+          e.preventDefault();
+          await this.form.submit();
+          await this.resource.save(
+            {
+              [this.fieldPath]: this.form.values[this.fieldPath],
+            },
+            { refresh: false },
+          );
+          this.ctx.shared.__onSubmitSuccess?.({
+            [this.fieldPath]: this.form.values[this.fieldPath],
+          });
+          this.ctx.shared.currentView.close();
+        }}
+      >
+        <FormProvider form={this.form}>
+          <FormLayout layout={'vertical'}>
+            {this.mapSubModels('fields', (field) => {
+              return (
+                <FlowModelRenderer
+                  model={field}
+                  sharedContext={{ currentRecord: this.resource.getData() }}
+                  fallback={<Skeleton paragraph={{ rows: 2 }} />}
+                />
+              );
+            })}
+          </FormLayout>
+          <FormButtonGroup align="right">
+            <Button
+              onClick={() => {
+                this.ctx.shared.currentView.close();
+              }}
+            >
+              {this.translate('Cancel')}
+            </Button>
+            <Button type="primary" htmlType="submit">
+              {this.translate('Submit')}
+            </Button>
+          </FormButtonGroup>
+        </FormProvider>
+      </form>
+    );
   }
 }
 
 QuickEditForm.registerFlow({
-  key: 'initial',
+  key: 'propsFlow',
+  auto: true,
   steps: {
     step1: {
       async handler(ctx, params) {
@@ -142,6 +132,7 @@ QuickEditForm.registerFlow({
         if (!dataSourceKey || !collectionName || !fieldPath) {
           throw new Error('dataSourceKey, collectionName and fieldPath are required parameters');
         }
+        ctx.model.fieldPath = fieldPath;
         ctx.model.collection = ctx.globals.dataSourceManager.getCollection(dataSourceKey, collectionName);
         ctx.model.form = createForm();
         const resource = new SingleRecordResource();
@@ -149,29 +140,9 @@ QuickEditForm.registerFlow({
         resource.setResourceName(collectionName);
         resource.setAPIClient(ctx.globals.api);
         ctx.model.resource = resource;
-        if (ctx.extra.filterByTk) {
-          resource.setFilterByTk(ctx.extra.filterByTk);
-          await resource.refresh();
-          ctx.model.form.setInitialValues(resource.getData());
-        }
         const collectionField = ctx.model.collection.getField(fieldPath) as CollectionField;
         if (collectionField) {
-          let use = 'FormFieldModel';
-          if (collectionField.interface === 'number') {
-            use = 'InputNumberFieldModel';
-          }
-          if (collectionField.interface === 'integer') {
-            use = 'InputNumberFieldModel';
-          }
-          if (collectionField.interface === 'select') {
-            use = 'SelectFieldModel';
-          }
-          if (collectionField.interface === 'textarea') {
-            use = 'TextareaFieldModel';
-          }
-          if (collectionField.interface === 'datetime') {
-            use = 'DateTimeFieldModel';
-          }
+          const use = collectionField.getFirstSubclassNameOf('EditableFieldModel') || 'EditableFieldModel';
           ctx.model.addSubModel('fields', {
             use,
             stepParams: {
@@ -184,8 +155,18 @@ QuickEditForm.registerFlow({
               },
             },
           });
+          ctx.model.addAppends(fieldPath);
+        }
+        if (ctx.extra.filterByTk) {
+          resource.setFilterByTk(ctx.extra.filterByTk);
+          await resource.refresh();
+          ctx.model.form.setInitialValues(resource.getData());
         }
       },
     },
   },
+});
+
+QuickEditForm.define({
+  hide: true,
 });

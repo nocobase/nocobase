@@ -105,6 +105,11 @@ export function createBlockItems(model: FlowModel, options: BlockItemsOptions = 
       continue;
     }
 
+    // 排除被隐藏的模型
+    if (ModelClass.meta?.hide) {
+      continue;
+    }
+
     // 排除基类本身
     if (className === 'DataBlockModel' || className === 'FilterBlockModel') {
       continue;

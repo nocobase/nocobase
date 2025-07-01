@@ -22,7 +22,7 @@ interface ActionStepDefinition<TModel extends FlowModel = FlowModel> {
   title?: string; // 可选：步骤显示名称
   isAwait?: boolean; // 可选：是否等待步骤执行完成，默认为 true
   defaultParams?: Record<string, any> | ((ctx: ParamsContext<TModel>) => Record<string, any> | Promise<Record<string, any>>); // 可选：默认参数，支持静态对象或动态函数
-  uiSchema?: Record<string, ISchema>; // 可选：用于 FlowSettings 配置界面
+  uiSchema?: Record<string, ISchema> | ((ctx: ParamsContext<TModel>) => Record<string, ISchema> | Promise<Record<string, ISchema>>); // 可选：用于 FlowSettings 配置界面，支持静态对象或动态函数
   paramsRequired?: boolean; // 可选：是否需要参数配置，为 true 时添加模型前会打开配置对话框
   hideInSettings?: boolean; // 可选：是否在设置菜单中隐藏该步骤
 }
@@ -32,7 +32,7 @@ interface InlineStepDefinition<TModel extends FlowModel = FlowModel> {
   title?: string; // 可选：步骤显示名称
   isAwait?: boolean; // 可选：是否等待步骤执行完成，默认为 true
   defaultParams?: Record<string, any> | ((ctx: ParamsContext<TModel>) => Record<string, any> | Promise<Record<string, any>>); // 可选：默认参数，支持静态对象或动态函数
-  uiSchema?: Record<string, ISchema>; // 可选：用于 FlowSettings 配置界面
+  uiSchema?: Record<string, ISchema> | ((ctx: ParamsContext<TModel>) => Record<string, ISchema> | Promise<Record<string, ISchema>>); // 可选：用于 FlowSettings 配置界面，支持静态对象或动态函数
   paramsRequired?: boolean; // 可选：是否需要参数配置，为 true 时添加模型前会打开配置对话框
   hideInSettings?: boolean; // 可选：是否在设置菜单中隐藏该步骤
 }
@@ -73,13 +73,26 @@ const myFlow = defineFlow<MyFlowSteps>({
     },
     step2: {
       title: '步骤2',
-      uiSchema: {
+      // 动态 uiSchema - 根据模型状态生成界面配置
+      uiSchema: (ctx) => ({
         age: {
           type: 'number',
           title: '年龄',
           'x-component': 'InputNumber',
-        }
-      }, // 可用于 UI 配置
+          'x-component-props': {
+            min: ctx.model.props.minAge || 0,
+            max: ctx.model.props.maxAge || 100,
+          }
+        },
+        // 根据条件动态显示字段
+        ...(ctx.model.props.showAdvanced && {
+          advanced: {
+            type: 'string',
+            title: '高级设置',
+            'x-component': 'Input.TextArea',
+          }
+        })
+      }),
       // 动态默认参数 - 根据模型状态生成
       defaultParams: (ctx) => ({
         name: ctx.model.name,
@@ -223,7 +236,7 @@ await myModel.applyAutoFlows(); // 执行所有 auto=true 的流，按 sort 排�
 | `title`         | `string`                               | （可选）步骤显示名称                            |
 | `isAwait`       | `boolean`                              | （可选）是否等待步骤执行完成，默认为 true             |
 | `defaultParams` | `Record<string, any>` \| `(ctx: ParamsContext) => Record<string, any> \| Promise<Record<string, any>>` | （可选）步骤的默认参数，支持静态对象或动态函数                               |
-| `uiSchema`      | `any`                                  | （可选）用于 FlowSettings UI 渲染             |
+| `uiSchema`      | `Record<string, ISchema>` \| `(ctx: ParamsContext) => Record<string, ISchema> \| Promise<Record<string, ISchema>>` | （可选）用于 FlowSettings UI 渲染，支持静态对象或动态函数             |
 | `paramsRequired`| `boolean`                              | （可选）是否需要参数配置，为 true 时添加模型前会打开配置对话框 |
 | `hideInSettings`| `boolean`                              | （可选）是否在设置菜单中隐藏该步骤                   |
 | `handler`       | `(ctx, params) => Promise<any>` | （可选）步骤执行逻辑，若未定义则使用 `use` 指定的全局 Action |

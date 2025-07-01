@@ -26,6 +26,13 @@
  *   hideRemoveInSettings={true}
  * />
  *
+ * // 显示设置和title
+ * <FlowModelRenderer
+ *   model={myModel}
+ *   showFlowSettings={true}
+ *   showTitle={true}
+ * />
+ *
  * // 使用右键菜单模式并隐藏删除按钮
  * <FlowModelRenderer
  *   model={myModel}
@@ -42,6 +49,7 @@ import React, { Suspense, useEffect } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 import { useApplyAutoFlows, FlowModelProvider } from '../hooks';
 import { FlowModel } from '../models';
+import { ToolbarItemConfig } from '../types';
 import { FlowsContextMenu } from './settings/wrappers/contextual/FlowsContextMenu';
 import { FlowsFloatContextMenu } from './settings/wrappers/contextual/FlowsFloatContextMenu';
 import { FlowErrorFallback } from './FlowErrorFallback';
@@ -61,6 +69,9 @@ interface FlowModelRendererProps {
   /** 是否在设置中隐藏移除按钮 */
   hideRemoveInSettings?: boolean; // 默认 false
 
+  /** 是否在边框左上角显示模型title，默认 false */
+  showTitle?: boolean; // 默认 false
+
   /** 是否跳过自动应用流程，默认 false */
   skipApplyAutoFlows?: boolean; // 默认 false
 
@@ -75,6 +86,9 @@ interface FlowModelRendererProps {
 
   /** 设置菜单层级：1=仅当前模型(默认)，2=包含子模型 */
   settingsMenuLevel?: number;
+
+  /** 额外的工具栏项目，仅应用于此实例 */
+  extraToolbarItems?: ToolbarItemConfig[];
 }
 
 /**
@@ -85,20 +99,24 @@ const FlowModelRendererWithAutoFlows: React.FC<{
   showFlowSettings: boolean | { showBackground?: boolean; showBorder?: boolean };
   flowSettingsVariant: string;
   hideRemoveInSettings: boolean;
+  showTitle: boolean;
   extraContext?: Record<string, any>;
   sharedContext?: Record<string, any>;
   showErrorFallback?: boolean;
   settingsMenuLevel?: number;
+  extraToolbarItems?: ToolbarItemConfig[];
 }> = observer(
   ({
     model,
     showFlowSettings,
     flowSettingsVariant,
     hideRemoveInSettings,
+    showTitle,
     extraContext,
     sharedContext,
     showErrorFallback,
     settingsMenuLevel,
+    extraToolbarItems,
   }) => {
     useApplyAutoFlows(model, extraContext);
 
@@ -109,8 +127,10 @@ const FlowModelRendererWithAutoFlows: React.FC<{
           showFlowSettings={showFlowSettings}
           flowSettingsVariant={flowSettingsVariant}
           hideRemoveInSettings={hideRemoveInSettings}
+          showTitle={showTitle}
           showErrorFallback={showErrorFallback}
           settingsMenuLevel={settingsMenuLevel}
+          extraToolbarItems={extraToolbarItems}
         />
       </FlowModelProvider>
     );
@@ -125,18 +145,22 @@ const FlowModelRendererWithoutAutoFlows: React.FC<{
   showFlowSettings: boolean | { showBackground?: boolean; showBorder?: boolean };
   flowSettingsVariant: string;
   hideRemoveInSettings: boolean;
+  showTitle: boolean;
   sharedContext?: Record<string, any>;
   showErrorFallback?: boolean;
   settingsMenuLevel?: number;
+  extraToolbarItems?: ToolbarItemConfig[];
 }> = observer(
   ({
     model,
     showFlowSettings,
     flowSettingsVariant,
     hideRemoveInSettings,
+    showTitle,
     sharedContext,
     showErrorFallback,
     settingsMenuLevel,
+    extraToolbarItems,
   }) => {
     return (
       <FlowModelProvider model={model}>
@@ -145,8 +169,10 @@ const FlowModelRendererWithoutAutoFlows: React.FC<{
           showFlowSettings={showFlowSettings}
           flowSettingsVariant={flowSettingsVariant}
           hideRemoveInSettings={hideRemoveInSettings}
+          showTitle={showTitle}
           showErrorFallback={showErrorFallback}
           settingsMenuLevel={settingsMenuLevel}
+          extraToolbarItems={extraToolbarItems}
         />
       </FlowModelProvider>
     );
@@ -161,10 +187,21 @@ const FlowModelRendererCore: React.FC<{
   showFlowSettings: boolean | { showBackground?: boolean; showBorder?: boolean };
   flowSettingsVariant: string;
   hideRemoveInSettings: boolean;
+  showTitle: boolean;
   showErrorFallback?: boolean;
   settingsMenuLevel?: number;
+  extraToolbarItems?: ToolbarItemConfig[];
 }> = observer(
-  ({ model, showFlowSettings, flowSettingsVariant, hideRemoveInSettings, showErrorFallback, settingsMenuLevel }) => {
+  ({
+    model,
+    showFlowSettings,
+    flowSettingsVariant,
+    hideRemoveInSettings,
+    showTitle,
+    showErrorFallback,
+    settingsMenuLevel,
+    extraToolbarItems,
+  }) => {
     // 渲染模型内容
     const modelContent = model.render();
 
@@ -186,11 +223,13 @@ const FlowModelRendererCore: React.FC<{
       case 'dropdown':
         return (
           <FlowsFloatContextMenu
+            showTitle={showTitle}
             model={model}
             showDeleteButton={!hideRemoveInSettings}
             showBackground={_.isObject(showFlowSettings) ? showFlowSettings.showBackground : undefined}
             showBorder={_.isObject(showFlowSettings) ? showFlowSettings.showBorder : undefined}
             settingsMenuLevel={settingsMenuLevel}
+            extraToolbarItems={extraToolbarItems}
           >
             {wrapWithErrorBoundary(modelContent)}
           </FlowsFloatContextMenu>
@@ -219,11 +258,13 @@ const FlowModelRendererCore: React.FC<{
         );
         return (
           <FlowsFloatContextMenu
+            showTitle={showTitle}
             model={model}
             showDeleteButton={!hideRemoveInSettings}
             showBackground={_.isObject(showFlowSettings) ? showFlowSettings.showBackground : undefined}
             showBorder={_.isObject(showFlowSettings) ? showFlowSettings.showBorder : undefined}
             settingsMenuLevel={settingsMenuLevel}
+            extraToolbarItems={extraToolbarItems}
           >
             {wrapWithErrorBoundary(modelContent)}
           </FlowsFloatContextMenu>
@@ -242,10 +283,12 @@ const FlowModelRendererCore: React.FC<{
  * @param {boolean} props.showFlowSettings - Whether to show flow settings entry (buttons, menus, etc.).
  * @param {string} props.flowSettingsVariant - The interaction style for flow settings.
  * @param {boolean} props.hideRemoveInSettings - Whether to hide remove button in settings.
+ * @param {boolean} props.showTitle - Whether to show model title in the top-left corner of the border.
  * @param {boolean} props.skipApplyAutoFlows - Whether to skip applying auto flows.
  * @param {any} props.extraContext - Extra context to pass to useApplyAutoFlows when skipApplyAutoFlows is false.
  * @param {any} props.sharedContext - Shared context to pass to the model.
  * @param {number} props.settingsMenuLevel - Settings menu levels: 1=current model only (default), 2=include sub-models.
+ * @param {ToolbarItemConfig[]} props.extraToolbarItems - Extra toolbar items to add to this renderer instance.
  * @returns {React.ReactNode | null} The rendered output of the model, or null if the model or its render method is invalid.
  */
 export const FlowModelRenderer: React.FC<FlowModelRendererProps> = observer(
@@ -255,11 +298,13 @@ export const FlowModelRenderer: React.FC<FlowModelRendererProps> = observer(
     showFlowSettings = false,
     flowSettingsVariant = 'dropdown',
     hideRemoveInSettings = false,
+    showTitle = false,
     skipApplyAutoFlows = false,
     extraContext,
     sharedContext,
     showErrorFallback = false,
     settingsMenuLevel,
+    extraToolbarItems,
   }) => {
     if (!model || typeof model.render !== 'function') {
       // 可以选择渲染 null 或者一个错误/提示信息
@@ -280,9 +325,11 @@ export const FlowModelRenderer: React.FC<FlowModelRendererProps> = observer(
             showFlowSettings={showFlowSettings}
             flowSettingsVariant={flowSettingsVariant}
             hideRemoveInSettings={hideRemoveInSettings}
+            showTitle={showTitle}
             sharedContext={sharedContext}
             showErrorFallback={showErrorFallback}
             settingsMenuLevel={settingsMenuLevel}
+            extraToolbarItems={extraToolbarItems}
           />
         </Suspense>
       );
@@ -294,10 +341,12 @@ export const FlowModelRenderer: React.FC<FlowModelRendererProps> = observer(
             showFlowSettings={showFlowSettings}
             flowSettingsVariant={flowSettingsVariant}
             hideRemoveInSettings={hideRemoveInSettings}
+            showTitle={showTitle}
             extraContext={extraContext}
             sharedContext={sharedContext}
             showErrorFallback={showErrorFallback}
             settingsMenuLevel={settingsMenuLevel}
+            extraToolbarItems={extraToolbarItems}
           />
         </Suspense>
       );

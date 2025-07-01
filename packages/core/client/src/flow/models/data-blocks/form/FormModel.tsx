@@ -11,57 +11,60 @@ import { FormButtonGroup, FormLayout } from '@formily/antd-v5';
 import { createForm, Form } from '@formily/core';
 import { FormProvider } from '@formily/react';
 import { AddActionButton, AddFieldButton, FlowModelRenderer, SingleRecordResource } from '@nocobase/flow-engine';
-import { Card } from 'antd';
+import { tval } from '@nocobase/utils/client';
 import React from 'react';
 import { DataBlockModel } from '../../base/BlockModel';
+import { EditableFieldModel } from '../../fields/EditableField/EditableFieldModel';
 
 export class FormModel extends DataBlockModel {
   form: Form;
   declare resource: SingleRecordResource;
 
-  render() {
+  renderComponent() {
     return (
-      <Card>
-        <FormProvider form={this.form}>
-          <FormLayout layout={'vertical'}>
-            {this.mapSubModels('fields', (field) => (
-              <FlowModelRenderer
-                model={field}
-                showFlowSettings={{ showBorder: false }}
-                // sharedContext={{ currentBlockModel: this }}
-              />
-            ))}
-          </FormLayout>
-          <AddFieldButton
-            buildCreateModelOptions={({ defaultOptions, fieldPath }) => ({
-              use: defaultOptions.use,
-              stepParams: {
-                default: {
-                  step1: {
-                    dataSourceKey: this.collection.dataSourceKey,
-                    collectionName: this.collection.name,
-                    fieldPath,
-                  },
+      <FormProvider form={this.form}>
+        <FormLayout layout={'vertical'}>
+          {this.mapSubModels('fields', (field) => (
+            <FlowModelRenderer
+              model={field}
+              showFlowSettings={{ showBorder: false }}
+              sharedContext={{ currentRecord: this.resource.getData() }}
+            />
+          ))}
+        </FormLayout>
+        <AddFieldButton
+          buildCreateModelOptions={({ defaultOptions, fieldPath }) => ({
+            use: defaultOptions.use,
+            stepParams: {
+              default: {
+                step1: {
+                  dataSourceKey: this.collection.dataSourceKey,
+                  collectionName: this.collection.name,
+                  fieldPath,
                 },
               },
-            })}
-            subModelKey="fields"
-            model={this}
-            collection={this.collection}
-            subModelBaseClass="FormFieldModel"
-          />
-          <FormButtonGroup style={{ marginTop: 16 }}>
-            {this.mapSubModels('actions', (action) => (
-              <FlowModelRenderer
-                model={action}
-                showFlowSettings={{ showBackground: false, showBorder: false }}
-                // sharedContext={{ currentBlockModel: this }}
-              />
-            ))}
-            <AddActionButton model={this} subModelBaseClass="FormActionModel" />
-          </FormButtonGroup>
-        </FormProvider>
-      </Card>
+            },
+          })}
+          subModelKey="fields"
+          model={this}
+          collection={this.collection}
+          subModelBaseClass="EditableFieldModel"
+          onSubModelAdded={async (model: EditableFieldModel) => {
+            const params = model.getStepParams('default', 'step1');
+            this.addAppends(params?.fieldPath, !!this.ctx.shared?.currentFlow?.extra?.filterByTk);
+          }}
+        />
+        <FormButtonGroup style={{ marginTop: 16 }}>
+          {this.mapSubModels('actions', (action) => (
+            <FlowModelRenderer
+              model={action}
+              showFlowSettings={{ showBackground: false, showBorder: false }}
+              sharedContext={{ currentRecord: this.resource.getData() }}
+            />
+          ))}
+          <AddActionButton model={this} subModelBaseClass="FormActionModel" />
+        </FormButtonGroup>
+      </FormProvider>
     );
   }
 }
@@ -76,20 +79,20 @@ FormModel.registerFlow({
       uiSchema: {
         dataSourceKey: {
           type: 'string',
-          title: 'Data Source Key',
+          title: tval('Data Source Key'),
           'x-decorator': 'FormItem',
           'x-component': 'Input',
           'x-component-props': {
-            placeholder: 'Enter data source key',
+            placeholder: tval('Enter data source key'),
           },
         },
         collectionName: {
           type: 'string',
-          title: 'Collection Name',
+          title: tval('Collection Name'),
           'x-decorator': 'FormItem',
           'x-component': 'Input',
           'x-component-props': {
-            placeholder: 'Enter collection name',
+            placeholder: tval('Enter collection name'),
           },
         },
       },
@@ -108,10 +111,14 @@ FormModel.registerFlow({
           resource.setResourceName(params.collectionName);
           resource.setAPIClient(ctx.globals.api);
           ctx.model.resource = resource;
+          ctx.model.resource.on('refresh', () => {
+            ctx.model.form.setInitialValues(ctx.model.resource.getData());
+          });
         }
         await ctx.model.applySubModelsAutoFlows('fields');
-        if (ctx.shared.parentRecord) {
-          ctx.model.resource.setFilterByTk(ctx.shared.parentRecord.id);
+        const filterByTk = ctx.shared?.currentFlow?.extra?.filterByTk;
+        if (filterByTk) {
+          ctx.model.resource.setFilterByTk(filterByTk);
           await ctx.model.resource.refresh();
           ctx.model.form.setInitialValues(ctx.model.resource.getData());
         }
@@ -121,7 +128,7 @@ FormModel.registerFlow({
 });
 
 FormModel.define({
-  title: 'Form',
+  title: tval('Form'),
   group: 'Content',
   defaultOptions: {
     use: 'FormModel',

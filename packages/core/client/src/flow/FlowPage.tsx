@@ -9,34 +9,62 @@
 
 import { FlowModelRenderer, useFlowEngine, useFlowModelById } from '@nocobase/flow-engine';
 import { useRequest } from 'ahooks';
-import { Spin } from 'antd';
-import React from 'react';
+import { Card, Skeleton, Spin } from 'antd';
+import React, { useEffect, useMemo, useRef } from 'react';
 import { useParams } from 'react-router-dom';
+import { useKeepAlive } from '../route-switch';
+import { SkeletonFallback } from './components/SkeletonFallback';
 
-function InternalFlowPage({ uid, sharedContext }) {
+function InternalFlowPage({ uid, ...props }) {
   const model = useFlowModelById(uid);
   return (
     <FlowModelRenderer
       model={model}
-      sharedContext={sharedContext}
-      showFlowSettings={{ showBackground: false, showBorder: false }}
+      fallback={<SkeletonFallback style={{ margin: 16 }} />}
       hideRemoveInSettings
+      showFlowSettings={{ showBackground: false, showBorder: false }}
+      {...props}
     />
   );
 }
 
 export const FlowRoute = () => {
+  const layoutContentRef = useRef(null);
+  const flowEngine = useFlowEngine();
   const params = useParams();
-  return <FlowPage uid={`r_${params.name}`} />;
+  // console.log('FlowRoute params:', params);
+  // const { active } = useKeepAlive();
+  const model = useMemo(() => {
+    return flowEngine.createModel({
+      uid: params.name,
+      use: 'RouteModel',
+    });
+  }, [params.name, flowEngine]);
+  useEffect(() => {
+    // if (!active) {
+    //   return;
+    // }
+    if (!layoutContentRef.current) {
+      return;
+    }
+    model.setSharedContext({
+      layoutContentElement: layoutContentRef.current,
+    });
+    model.dispatchEvent('click', { target: layoutContentRef.current, activeTab: params.tabUid });
+  }, [model, params.name, params.tabUid]);
+  return <div ref={layoutContentRef} />;
 };
 
 export const FlowPage = (props) => {
-  const { uid, parentId, sharedContext } = props;
+  const { parentId, ...rest } = props;
   const flowEngine = useFlowEngine();
   const { loading, data } = useRequest(
     async () => {
       const options = {
-        uid,
+        async: true,
+        parentId,
+        subKey: 'page',
+        subType: 'object',
         use: 'PageModel',
         subModels: {
           tabs: [
@@ -44,6 +72,7 @@ export const FlowPage = (props) => {
               use: 'PageTabModel',
               subModels: {
                 grid: {
+                  async: true,
                   use: 'BlockGridModel',
                 },
               },
@@ -51,21 +80,33 @@ export const FlowPage = (props) => {
           ],
         },
       };
-      if (!uid && parentId) {
-        options['async'] = true;
-        options['parentId'] = parentId;
-        options['subKey'] = 'page';
-        options['subType'] = 'object';
-      }
       const data = await flowEngine.loadOrCreateModel(options);
       return data;
     },
     {
-      refreshDeps: [uid || parentId],
+      refreshDeps: [parentId],
     },
   );
   if (loading || !data?.uid) {
-    return <Spin />;
+    return <SkeletonFallback style={{ margin: 16 }} />;
   }
-  return <InternalFlowPage uid={data.uid} sharedContext={sharedContext} />;
+  return <InternalFlowPage uid={data.uid} {...rest} />;
+};
+
+export const RemoteFlowModelRenderer = (props) => {
+  const { uid, parentId, ...rest } = props;
+  const flowEngine = useFlowEngine();
+  const { loading, data } = useRequest(
+    async () => {
+      const data = await flowEngine.loadModel({ uid, parentId });
+      return data;
+    },
+    {
+      refreshDeps: [uid, parentId],
+    },
+  );
+  if (loading || !data?.uid) {
+    return <SkeletonFallback style={{ margin: 16 }} />;
+  }
+  return <InternalFlowPage uid={data.uid} {...rest} />;
 };

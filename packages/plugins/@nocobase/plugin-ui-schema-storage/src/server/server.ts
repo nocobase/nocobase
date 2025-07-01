@@ -136,6 +136,15 @@ export class PluginUISchemaStorageServer extends Plugin {
           }
           await next();
         },
+        move: async (ctx, next) => {
+          const { sourceId, targetId, position } = ctx.action.params;
+          const repository = ctx.db.getRepository('uiSchemas') as UiSchemaRepository;
+          await repository.insertAdjacent(position === 'after' ? 'afterEnd' : 'beforeBegin', sourceId, {
+            ['x-uid']: targetId,
+          });
+          ctx.body = 'ok';
+          await next();
+        },
         save: async (ctx, next) => {
           const { values } = ctx.action.params;
           const repository = ctx.db.getRepository('uiSchemas') as UiSchemaRepository;

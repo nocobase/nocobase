@@ -18,7 +18,8 @@ const dotenv = require('dotenv');
 const fs = require('fs-extra');
 const os = require('os');
 const moment = require('moment-timezone');
-const { keyDecrypt } = require('@nocobase/license-kit');
+const { keyDecrypt, getEnvAsync } = require('@nocobase/license-kit');
+const omit = require('lodash/omit');
 
 exports.isPackageValid = (pkg) => {
   try {
@@ -490,20 +491,85 @@ exports.generatePlugins = function () {
   }
 };
 
-exports.getAccessKeyPair = function () {
+async function isEnvMatch(keyData) {
+  const env = await getEnvAsync();
+  if (env?.container?.id && keyData?.instanceData?.container?.id) {
+    return (
+      JSON.stringify(omit(env, ['timestamp', 'container', 'hostname'])) ===
+      JSON.stringify(omit(keyData?.instanceData, ['timestamp', 'container', 'hostname']))
+    );
+  }
+  return JSON.stringify(omit(env, ['timestamp'])) === JSON.stringify(omit(keyData?.instanceData, ['timestamp']));
+}
+
+exports.getAccessKeyPair = async function () {
   const keyFile = resolve(process.cwd(), 'storage/.license/license-key');
   if (!fs.existsSync(keyFile)) {
-    console.log(chalk.yellow('license-key file not found', keyFile));
     return {};
   }
+
+  let keyData = {};
   try {
     const str = fs.readFileSync(keyFile, 'utf-8');
     const keyDataStr = keyDecrypt(str);
-    const keyData = JSON.parse(keyDataStr);
-    const { accessKeyId, accessKeySecret } = keyData;
-    return { accessKeyId, accessKeySecret };
+    keyData = JSON.parse(keyDataStr);
   } catch (error) {
-    console.log(chalk.yellow('Key parse failed, please check your key'));
-    return {};
+    showLicenseInfo(LicenseKeyError.parseFailed);
+    throw new Error(LicenseKeyError.parseFailed.title);
   }
+
+  const isEnvMatched = await isEnvMatch(keyData);
+  if (!isEnvMatched) {
+    showLicenseInfo(LicenseKeyError.notMatch);
+    throw new Error(LicenseKeyError.notMatch.title);
+  }
+
+  const { accessKeyId, accessKeySecret } = keyData;
+  return { accessKeyId, accessKeySecret };
 };
+
+const LicenseKeyError = {
+  notExist: {
+    title: 'License key not found',
+    content:
+      'Please go to the license settings page to obtain the Instance ID for the current environment, and then generate the license key on the service platform.',
+  },
+  parseFailed: {
+    title: 'Invalid license key format',
+    content: 'Please check your license key, or regenerate the license key on the service platform.',
+  },
+  notMatch: {
+    title: 'License key mismatch',
+    content:
+      'Please go to the license settings page to obtain the Instance ID for the current environment, and then regenerate the license key on the service platform.',
+  },
+  notValid: {
+    title: 'Invalid license key',
+    content:
+      'Please go to the license settings page to obtain the Instance ID for the current environment, and then regenerate the license key on the service platform.',
+  },
+};
+
+exports.LicenseKeyError = LicenseKeyError;
+
+function showLicenseInfo({ title, content }) {
+  const rows = [];
+  const length = 80;
+  let row = '';
+  content.split(' ').forEach((word) => {
+    if (row.length + word.length > length) {
+      rows.push(row);
+      row = '';
+    }
+    row += word + ' ';
+  });
+  if (row) {
+    rows.push(row);
+  }
+  console.log(Array(length).fill('-').join(''));
+  console.log(chalk.yellow(title));
+  console.log(chalk.yellow(rows.join('\n')));
+  console.log(Array(length).fill('-').join(''));
+}
+
+exports.showLicenseInfo = showLicenseInfo;

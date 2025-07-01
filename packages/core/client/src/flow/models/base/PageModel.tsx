@@ -11,6 +11,7 @@ import { PlusOutlined } from '@ant-design/icons';
 import { PageHeader } from '@ant-design/pro-layout';
 import { uid } from '@formily/shared';
 import { FlowModel, FlowModelRenderer, FlowSettingsButton } from '@nocobase/flow-engine';
+import { tval } from '@nocobase/utils/client';
 import { Tabs } from 'antd';
 import _ from 'lodash';
 import React from 'react';
@@ -28,7 +29,7 @@ export class PageModel extends FlowModel<PageModelStructure> {
   }
 
   getItems() {
-    return this.subModels.tabs?.map((tab) => {
+    return this.mapSubModels('tabs', (tab) => {
       return {
         key: tab.uid,
         label: tab.props.label || 'Unnamed',
@@ -44,7 +45,7 @@ export class PageModel extends FlowModel<PageModelStructure> {
   renderTabs() {
     return (
       <Tabs
-        tabBarStyle={{ backgroundColor: '#fff', paddingInline: 16, marginBottom: 0 }}
+        tabBarStyle={this.props.tabBarStyle}
         items={this.getItems()}
         // destroyInactiveTabPane
         tabBarExtraContent={
@@ -63,7 +64,7 @@ export class PageModel extends FlowModel<PageModelStructure> {
               });
             }}
           >
-            Add tab
+            {this.flowEngine.translate('Add tab')}
           </FlowSettingsButton>
         }
       />
@@ -73,7 +74,7 @@ export class PageModel extends FlowModel<PageModelStructure> {
   render() {
     return (
       <>
-        {this.props.title && <PageHeader title={this.props.title} style={{ backgroundColor: '#fff' }} />}
+        {this.props.title && <PageHeader title={this.props.title} style={this.props.headerStyle} />}
         {this.props.enableTabs ? this.renderTabs() : this.renderFirstTab()}
       </>
     );
@@ -82,24 +83,24 @@ export class PageModel extends FlowModel<PageModelStructure> {
 
 PageModel.registerFlow({
   key: 'default',
-  title: '基础配置',
+  title: tval('Basic configuration'),
   auto: true,
   steps: {
     settings: {
-      title: '配置页面',
+      title: tval('Configure page'),
       uiSchema: {
         title: {
           type: 'string',
-          title: 'Page Title',
+          title: tval('Page Title'),
           'x-decorator': 'FormItem',
           'x-component': 'Input',
           'x-component-props': {
-            placeholder: 'Enter page title',
+            placeholder: tval('Enter page title'),
           },
         },
         enableTabs: {
           type: 'boolean',
-          title: 'Enable tabs',
+          title: tval('Enable tabs'),
           'x-decorator': 'FormItem',
           'x-component': 'Switch',
         },
@@ -107,12 +108,32 @@ PageModel.registerFlow({
       defaultParams(ctx) {
         return {
           // title: 'Page title',
-          enableTabs: false,
+          enableTabs: !!ctx.shared.currentDrawer,
         };
       },
       async handler(ctx, params) {
-        ctx.model.setProps('title', params.title);
+        ctx.model.setProps('title', ctx.globals.flowEngine.translate(params.title));
         ctx.model.setProps('enableTabs', params.enableTabs);
+
+        if (ctx.shared.currentDrawer) {
+          ctx.model.setProps('headerStyle', {
+            backgroundColor: ctx.globals.themeToken.colorBgLayout,
+          });
+          ctx.model.setProps('tabBarStyle', {
+            backgroundColor: ctx.globals.themeToken.colorBgLayout,
+            paddingInline: 16,
+            marginBottom: 0,
+          });
+        } else {
+          ctx.model.setProps('headerStyle', {
+            backgroundColor: ctx.globals.themeToken.colorBgContainer,
+          });
+          ctx.model.setProps('tabBarStyle', {
+            backgroundColor: ctx.globals.themeToken.colorBgContainer,
+            paddingInline: 16,
+            marginBottom: 0,
+          });
+        }
       },
     },
   },

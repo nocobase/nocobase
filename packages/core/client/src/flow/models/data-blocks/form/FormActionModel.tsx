@@ -7,6 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { tval } from '@nocobase/utils/client';
 import { ButtonProps } from 'antd';
 import { ActionModel } from '../../base/ActionModel';
 import { DataBlockModel } from '../../base/BlockModel';
@@ -16,11 +17,15 @@ export class FormActionModel extends ActionModel {}
 
 export class FormSubmitActionModel extends FormActionModel {
   defaultProps: ButtonProps = {
-    children: 'Submit',
+    title: tval('Submit'),
     type: 'primary',
     htmlType: 'submit',
   };
 }
+
+FormSubmitActionModel.define({
+  title: tval('Submit'),
+});
 
 FormSubmitActionModel.registerFlow({
   key: 'event1',
@@ -31,7 +36,7 @@ FormSubmitActionModel.registerFlow({
     step1: {
       async handler(ctx, params) {
         if (!ctx.shared?.currentBlockModel?.resource) {
-          ctx.globals.message.error('No resource selected for submission.');
+          ctx.globals.message.error(ctx.model.flowEngine.translate('No resource selected for submission.'));
           return;
         }
         const currentBlockModel = ctx.shared.currentBlockModel as FormModel;
@@ -39,12 +44,12 @@ FormSubmitActionModel.registerFlow({
         const values = currentBlockModel.form.values;
         await currentBlockModel.resource.save(values);
         await currentBlockModel.form.reset();
-        const parentBlockModel = ctx.shared.parentBlockModel as DataBlockModel;
+        const parentBlockModel = ctx.shared?.currentFlow?.shared?.currentBlockModel as DataBlockModel;
         if (parentBlockModel) {
           parentBlockModel.resource.refresh();
         }
-        if (ctx.shared.currentDrawer) {
-          ctx.shared.currentDrawer.destroy();
+        if (ctx.shared.currentView) {
+          ctx.shared.currentView.close();
         }
       },
     },

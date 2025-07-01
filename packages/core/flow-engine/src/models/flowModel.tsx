@@ -16,7 +16,6 @@ import { openStepSettingsDialog as openStepSettingsDialogFn } from '../component
 import { Emitter } from '../emitter';
 import { FlowEngine } from '../flowEngine';
 import type {
-  ActionStepDefinition,
   ArrayElementType,
   CreateModelOptions,
   CreateSubModelOptions,
@@ -25,7 +24,7 @@ import type {
   FlowDefinition,
   FlowModelMeta,
   FlowModelOptions,
-  InlineStepDefinition,
+  ParentFlowModel,
   StepDefinition,
   StepParams,
 } from '../types';
@@ -39,15 +38,16 @@ const modelMetas = new WeakMap<typeof FlowModel, FlowModelMeta>();
 // 使用WeakMap存储每个类的flows
 const modelFlows = new WeakMap<typeof FlowModel, Map<string, FlowDefinition>>();
 
-export class FlowModel<Structure extends { parent?: any; subModels?: any } = DefaultStructure> {
+export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
   public readonly uid: string;
   public sortIndex: number;
   public props: IModelComponentProps = {};
   public stepParams: StepParams = {};
   public flowEngine: FlowEngine;
-  public parent: Structure['parent'];
+  public parent: ParentFlowModel<Structure>;
   public subModels: Structure['subModels'];
   private _options: FlowModelOptions<Structure>;
+  protected _title: string;
 
   /**
    * 所有 fork 实例的引用集合。
@@ -73,9 +73,13 @@ export class FlowModel<Structure extends { parent?: any; subModels?: any } = Def
   private observerDispose: () => void;
 
   constructor(options: FlowModelOptions<Structure>) {
-    if (options?.flowEngine?.getModel(options.uid)) {
+    if (!options.flowEngine) {
+      throw new Error('FlowModel must be initialized with a FlowEngine instance.');
+    }
+    this.flowEngine = options.flowEngine;
+    if (this.flowEngine.getModel(options.uid)) {
       // 此时 new FlowModel 并不创建新实例，而是返回已存在的实例，避免重复创建同一个model实例
-      return options.flowEngine.getModel(options.uid);
+      return this.flowEngine.getModel(options.uid);
     }
 
     if (!options.uid) {
@@ -83,16 +87,15 @@ export class FlowModel<Structure extends { parent?: any; subModels?: any } = Def
     }
 
     this.uid = options.uid;
-    this.props = options.props || {};
+    this.props = {};
     this.stepParams = options.stepParams || {};
     this.subModels = {};
-    this.flowEngine = options.flowEngine;
     this.sortIndex = options.sortIndex || 0;
     this._options = options;
 
     define(this, {
       props: observable,
-      subModels: observable,
+      subModels: observable.shallow,
       stepParams: observable,
       setProps: action,
       setStepParams: action,
@@ -121,12 +124,25 @@ export class FlowModel<Structure extends { parent?: any; subModels?: any } = Def
     return this._options.async || false;
   }
 
+  get subKey() {
+    return this._options.subKey;
+  }
+
   get reactView() {
     return this.flowEngine.reactView;
   }
 
   static get meta() {
     return modelMetas.get(this);
+  }
+
+  get title() {
+    // model 可以通过 setTitle 来自定义title， 具有更高的优先级
+    return this.translate(this._title) || this.translate(this.constructor['meta']?.title);
+  }
+
+  setTitle(value: string) {
+    this._title = value;
   }
 
   private createSubModels(subModels: Record<string, CreateSubModelOptions | CreateSubModelOptions[]>) {
@@ -159,7 +175,7 @@ export class FlowModel<Structure extends { parent?: any; subModels?: any } = Def
    * @param {FlowEngine} flowEngine FlowEngine实例
    */
   setFlowEngine(flowEngine: FlowEngine): void {
-    this.flowEngine = flowEngine;
+    // this.flowEngine = flowEngine;
   }
 
   static define(meta: FlowModelMeta) {
@@ -326,7 +342,7 @@ export class FlowModel<Structure extends { parent?: any; subModels?: any } = Def
     if (typeof props === 'string') {
       this.props[props] = value;
     } else {
-      this.props = { ...props };
+      this.props = { ...this.props, ...props };
     }
   }
 
@@ -348,7 +364,10 @@ export class FlowModel<Structure extends { parent?: any; subModels?: any } = Def
         if (!this.stepParams[flowKey]) {
           this.stepParams[flowKey] = {};
         }
-        this.stepParams[flowKey][stepKeyOrStepsParams] = params;
+        this.stepParams[flowKey][stepKeyOrStepsParams] = {
+          ...this.stepParams[flowKey][stepKeyOrStepsParams],
+          ...params,
+        };
       } else if (typeof stepKeyOrStepsParams === 'object' && stepKeyOrStepsParams !== null) {
         this.stepParams[flowKey] = { ...(this.stepParams[flowKey] || {}), ...stepKeyOrStepsParams };
       }
@@ -398,7 +417,7 @@ export class FlowModel<Structure extends { parent?: any; subModels?: any } = Def
       console[level.toLowerCase()](logMessage, logMeta);
     };
 
-    const globalContexts = currentFlowEngine.getContext() || {};
+    const globalContexts = currentFlowEngine.getContext();
     const flowContext: FlowContext<this> = {
       exit: () => {
         throw new FlowExitException(flowKey, this.uid);
@@ -425,24 +444,26 @@ export class FlowModel<Structure extends { parent?: any; subModels?: any } = Def
         let combinedParams: Record<string, any> = {};
         let actionDefinition;
 
-        if ((step as ActionStepDefinition).use) {
-          const actionStep = step as ActionStepDefinition;
-          actionDefinition = currentFlowEngine.getAction(actionStep.use);
+        if (step.use) {
+          // Step references a registered action
+          actionDefinition = currentFlowEngine.getAction(step.use);
           if (!actionDefinition) {
             console.error(
-              `BaseModel.applyFlow: Action '${actionStep.use}' not found for step '${stepKey}' in flow '${flowKey}'. Skipping.`,
+              `BaseModel.applyFlow: Action '${step.use}' not found for step '${stepKey}' in flow '${flowKey}'. Skipping.`,
             );
             continue;
           }
-          handler = actionDefinition.handler;
+          // Use step's handler if provided, otherwise use action's handler
+          handler = step.handler || actionDefinition.handler;
+          // Merge default params: action defaults first, then step defaults
           const actionDefaultParams = await resolveDefaultParams(actionDefinition.defaultParams, flowContext);
-          const stepDefaultParams = await resolveDefaultParams(actionStep.defaultParams, flowContext);
+          const stepDefaultParams = await resolveDefaultParams(step.defaultParams, flowContext);
           combinedParams = { ...actionDefaultParams, ...stepDefaultParams };
-        } else if ((step as InlineStepDefinition).handler) {
-          const inlineStep = step as InlineStepDefinition;
-          handler = inlineStep.handler;
-          const inlineDefaultParams = await resolveDefaultParams(inlineStep.defaultParams, flowContext);
-          combinedParams = { ...inlineDefaultParams };
+        } else if (step.handler) {
+          // Step defines its own inline handler
+          handler = step.handler;
+          const stepDefaultParams = await resolveDefaultParams(step.defaultParams, flowContext);
+          combinedParams = { ...stepDefaultParams };
         } else {
           console.error(
             `BaseModel.applyFlow: Step '${stepKey}' in flow '${flowKey}' has neither 'use' nor 'handler'. Skipping.`,
@@ -665,7 +686,7 @@ export class FlowModel<Structure extends { parent?: any; subModels?: any } = Def
     if (!parent || !(parent instanceof FlowModel)) {
       throw new Error('Parent must be an instance of FlowModel.');
     }
-    this.parent = parent;
+    this.parent = parent as ParentFlowModel<Structure>;
     this._options.parentId = parent.uid;
   }
 
@@ -680,10 +701,16 @@ export class FlowModel<Structure extends { parent?: any; subModels?: any } = Def
       model = this.flowEngine.createModel({ ...options, subKey, subType: 'array' });
     }
     model.setParent(this);
-    Array.isArray(this.subModels[subKey]) || (this.subModels[subKey] = []);
-    const maxSortIndex = Math.max(...this.subModels[subKey].map((item) => item.sortIndex || 0), 0);
+    const subModels = this.subModels as {
+      [subKey: string]: FlowModel[];
+    };
+    if (!Array.isArray(subModels[subKey])) {
+      subModels[subKey] = observable.shallow([]);
+    }
+    const maxSortIndex = Math.max(...(subModels[subKey] as FlowModel[]).map((item) => item.sortIndex || 0), 0);
     model.sortIndex = maxSortIndex + 1;
-    this.subModels[subKey].push(model);
+    subModels[subKey].push(model);
+    this.emitter.emit('onSubModelAdded', model);
     return model;
   }
 
@@ -698,7 +725,8 @@ export class FlowModel<Structure extends { parent?: any; subModels?: any } = Def
       model = this.flowEngine.createModel({ ...options, parentId: this.uid, subKey, subType: 'object' });
     }
     model.setParent(this);
-    this.subModels[subKey] = model;
+    (this.subModels as any)[subKey] = model;
+    this.emitter.emit('onSubModelAdded', model);
     return model;
   }
 
@@ -706,7 +734,7 @@ export class FlowModel<Structure extends { parent?: any; subModels?: any } = Def
     subKey: K,
     callback: (model: ArrayElementType<Structure['subModels'][K]>, index: number) => R,
   ): R[] {
-    const model = this.subModels[subKey];
+    const model = (this.subModels as any)[subKey as string];
 
     if (!model) {
       return [];
@@ -725,23 +753,25 @@ export class FlowModel<Structure extends { parent?: any; subModels?: any } = Def
   findSubModel<K extends keyof Structure['subModels'], R>(
     subKey: K,
     callback: (model: ArrayElementType<Structure['subModels'][K]>) => R,
-  ): R | null {
-    const model = this.subModels[subKey];
+  ): ArrayElementType<Structure['subModels'][K]> | null {
+    const model = (this.subModels as any)[subKey as string];
 
     if (!model) {
       return null;
     }
 
-    return _.castArray(model).find((item) => {
-      return (callback as (model: any) => R)(item);
-    });
+    return (
+      (_.castArray(model).find((item) => {
+        return (callback as (model: any) => R)(item);
+      }) as ArrayElementType<Structure['subModels'][K]> | undefined) || null
+    );
   }
 
   createRootModel(options) {
     return this.flowEngine.createModel(options);
   }
 
-  async applySubModelsAutoFlows<K extends keyof Structure['subModels'], R>(
+  async applySubModelsAutoFlows<K extends keyof Structure['subModels']>(
     subKey: K,
     extra?: Record<string, any>,
     shared?: Record<string, any>,
@@ -793,6 +823,18 @@ export class FlowModel<Structure extends { parent?: any; subModels?: any } = Def
     }
     // 清理 fork 缓存
     this.forkCache.clear();
+  }
+
+  /**
+   * 移动当前模型到目标模型的位置
+   * @param {FlowModel} targetModel 目标模型
+   * @returns {boolean} 是否成功移动
+   */
+  moveTo(targetModel: FlowModel) {
+    if (!this.flowEngine) {
+      throw new Error('FlowEngine is not set on this model. Please set flowEngine before saving.');
+    }
+    return this.flowEngine.moveModel(this.uid, targetModel.uid);
   }
 
   remove() {
@@ -856,6 +898,10 @@ export class FlowModel<Structure extends { parent?: any; subModels?: any } = Def
     };
   }
 
+  get translate() {
+    return this.flowEngine.translate.bind(this.flowEngine);
+  }
+
   public setSharedContext(ctx: Record<string, any>) {
     this._sharedContext = { ...this._sharedContext, ...ctx };
   }
@@ -874,20 +920,23 @@ export class FlowModel<Structure extends { parent?: any; subModels?: any } = Def
   serialize(): Record<string, any> {
     const data = {
       uid: this.uid,
-      ..._.omit(this._options, ['flowEngine']),
-      props: this.props,
+      ..._.omit(this._options, ['props', 'flowEngine']),
+      // props: this.props,
       stepParams: this.stepParams,
       sortIndex: this.sortIndex,
     };
-    for (const subModelKey in this.subModels) {
+    const subModels = this.subModels as {
+      [key: string]: FlowModel | FlowModel[];
+    };
+    for (const subModelKey in subModels) {
       data.subModels = data.subModels || {};
-      if (Array.isArray(this.subModels[subModelKey])) {
-        data.subModels[subModelKey] = this.subModels[subModelKey].map((model: FlowModel, index) => ({
+      if (Array.isArray(subModels[subModelKey])) {
+        (data.subModels as any)[subModelKey] = (subModels[subModelKey] as FlowModel[]).map((model, index) => ({
           ...model.serialize(),
           sortIndex: index,
         }));
-      } else if ((this.subModels[subModelKey] as any) instanceof FlowModel) {
-        data.subModels[subModelKey] = this.subModels[subModelKey].serialize();
+      } else if (subModels[subModelKey] instanceof FlowModel) {
+        (data.subModels as any)[subModelKey] = (subModels[subModelKey] as FlowModel).serialize();
       }
     }
     return data;
