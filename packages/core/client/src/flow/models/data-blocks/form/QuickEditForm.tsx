@@ -9,7 +9,7 @@
 
 import { FormButtonGroup, FormLayout, Submit } from '@formily/antd-v5';
 import { createForm, Form } from '@formily/core';
-import { FormProvider } from '@formily/react';
+import { FormProvider, observer } from '@formily/react';
 import {
   BaseRecordResource,
   Collection,
@@ -28,7 +28,7 @@ import React, { createRef, Suspense, useEffect, useState } from 'react';
 import { SkeletonFallback } from '../../../components/SkeletonFallback';
 import { DataBlockModel } from '../../base/BlockModel';
 
-function SimpleFlowModelRenderer(props) {
+const SimpleFlowModelRenderer = observer((props: any) => {
   const { fallback, model, sharedContext, extraContext } = props;
   const { loading } = useRequest(
     async () => {
@@ -45,7 +45,7 @@ function SimpleFlowModelRenderer(props) {
   }
 
   return model.render();
-}
+});
 
 export class QuickEditForm extends DataBlockModel {
   form: Form;
