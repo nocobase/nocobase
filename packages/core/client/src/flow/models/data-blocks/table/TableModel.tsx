@@ -16,6 +16,7 @@ import {
   AddFieldButton,
   DndProvider,
   DragHandler,
+  Droppable,
   FlowModelRenderer,
   MultiRecordResource,
   useFlowEngine,
@@ -342,17 +343,19 @@ export class TableModel extends DataBlockModel<TableModelStructure> {
                 // @ts-ignore
                 if (action.props.position !== 'left') {
                   return (
-                    <FlowModelRenderer
-                      model={action}
-                      showFlowSettings={{ showBackground: false, showBorder: false }}
-                      extraToolbarItems={[
-                        {
-                          key: 'drag-handler',
-                          component: DragHandler,
-                          sort: 1,
-                        },
-                      ]}
-                    />
+                    <Droppable model={action}>
+                      <FlowModelRenderer
+                        model={action}
+                        showFlowSettings={{ showBackground: false, showBorder: false }}
+                        extraToolbarItems={[
+                          {
+                            key: 'drag-handler',
+                            component: DragHandler,
+                            sort: 1,
+                          },
+                        ]}
+                      />
+                    </Droppable>
                   );
                 }
 

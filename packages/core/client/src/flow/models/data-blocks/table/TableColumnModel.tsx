@@ -9,7 +9,7 @@
 
 import { QuestionCircleOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
-import { DragHandler, FlowsFloatContextMenu } from '@nocobase/flow-engine';
+import { DragHandler, Droppable, FlowsFloatContextMenu } from '@nocobase/flow-engine';
 import { tval } from '@nocobase/utils/client';
 import { TableColumnProps, Tooltip } from 'antd';
 import React from 'react';
@@ -19,30 +19,32 @@ import { ReadPrettyFieldModel } from '../../fields/ReadPrettyField/ReadPrettyFie
 export class TableColumnModel extends FieldModel {
   getColumnProps(): TableColumnProps {
     const titleContent = (
-      <FlowsFloatContextMenu
-        model={this}
-        containerStyle={{ display: 'block', padding: '11px 8px', margin: '-11px -8px' }}
-        showBorder={false}
-        settingsMenuLevel={2}
-        extraToolbarItems={[
-          {
-            key: 'drag-handler',
-            component: DragHandler,
-            sort: 1,
-          },
-        ]}
-      >
-        <div
-          className={css`
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-            width: calc(${this.props.width}px - 16px);
-          `}
+      <Droppable model={this}>
+        <FlowsFloatContextMenu
+          model={this}
+          containerStyle={{ display: 'block', padding: '11px 8px', margin: '-11px -8px' }}
+          showBorder={false}
+          settingsMenuLevel={2}
+          extraToolbarItems={[
+            {
+              key: 'drag-handler',
+              component: DragHandler,
+              sort: 1,
+            },
+          ]}
         >
-          {this.props.title}
-        </div>
-      </FlowsFloatContextMenu>
+          <div
+            className={css`
+              overflow: hidden;
+              text-overflow: ellipsis;
+              white-space: nowrap;
+              width: calc(${this.props.width}px - 16px);
+            `}
+          >
+            {this.props.title}
+          </div>
+        </FlowsFloatContextMenu>
+      </Droppable>
     );
     return {
       ...this.props,
