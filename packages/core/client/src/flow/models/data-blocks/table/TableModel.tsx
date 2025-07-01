@@ -320,7 +320,7 @@ export class TableModel extends DataBlockModel<TableModelStructure> {
 
   renderComponent() {
     return (
-      <Spin spinning={this.resource.loading}>
+      <>
         <DndProvider>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
             <Space>
@@ -378,6 +378,7 @@ export class TableModel extends DataBlockModel<TableModelStructure> {
               renderCell: this.renderCell,
             }
           }
+          loading={this.resource.loading}
           virtual={this.props.virtual}
           scroll={{ x: 'max-content', y: '100%' }}
           dataSource={this.resource.getData()}
@@ -395,7 +396,7 @@ export class TableModel extends DataBlockModel<TableModelStructure> {
             this.resource.refresh();
           }}
         />
-      </Spin>
+      </>
     );
   }
 }
