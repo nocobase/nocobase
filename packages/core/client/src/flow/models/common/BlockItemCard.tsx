@@ -14,10 +14,18 @@ import { useTranslation } from 'react-i18next';
 import { NAMESPACE_UI_SCHEMA } from '../../../i18n/constant';
 import { MarkdownReadPretty } from '../fields/EditableField/MarkdownEditableFieldModel';
 
+const useBlockHeight = ({ height, heightMode }) => {
+  if (heightMode !== 'specifyValue') {
+    return null;
+  }
+  return height;
+};
+
 export const BlockItemCard = (props) => {
   const { t } = useTranslation();
   const { token } = theme.useToken();
   const { title: blockTitle, description, children } = props;
+  const height = useBlockHeight(props);
   const title = (blockTitle || description) && (
     <div style={{ padding: '8px 0px 8px' }}>
       <span> {t(blockTitle, { ns: NAMESPACE_UI_SCHEMA })}</span>
@@ -38,9 +46,9 @@ export const BlockItemCard = (props) => {
   return (
     <Card
       title={title}
-      style={{ display: 'flex', flexDirection: 'column', height: '100%' }}
+      style={{ display: 'flex', flexDirection: 'column', height: height }}
       styles={{
-        body: { flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' },
+        body: { flex: 1, display: 'flex', flexDirection: 'column', overflow: 'auto' },
       }}
     >
       {children}
