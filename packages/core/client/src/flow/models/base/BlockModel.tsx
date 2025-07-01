@@ -103,8 +103,7 @@ BlockModel.registerFlow({
         };
       },
       handler(ctx, params) {
-        ctx.model.setProps('heightMode', params.heightMode);
-        ctx.model.setProps('height', params.height);
+        ctx.model.setDecoratorProps({ heightMode: params.heightMode, height: params.height });
       },
     },
   },
