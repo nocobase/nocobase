@@ -291,7 +291,7 @@ export class TableModel extends DataBlockModel<TableModelStructure> {
             selectedRowKeys: this.resource.getSelectedRows().map((row) => row.id),
           }}
           virtual={this.props.virtual}
-          scroll={{ x: 'max-content', y: 600 }}
+          scroll={{ x: 'max-content', y: '100%' }}
           dataSource={this.resource.getData()}
           columns={this.getColumns()}
           pagination={{
