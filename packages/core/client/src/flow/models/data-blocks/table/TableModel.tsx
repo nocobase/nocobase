@@ -29,7 +29,7 @@ import { ActionModel } from '../../base/ActionModel';
 import { DataBlockModel } from '../../base/BlockModel';
 import { QuickEditForm } from '../form/QuickEditForm';
 import { TableColumnModel } from './TableColumnModel';
-// import { extractIndex } from './utils';
+import { extractIndex } from './utils';
 
 type TableModelStructure = {
   subModels: {
@@ -296,9 +296,9 @@ export class TableModel extends DataBlockModel<TableModelStructure> {
     } else {
       index = index + 1;
     }
-    // if (record.__index) {
-    //   index = extractIndex(record.__index);
-    // }
+    if (record.__index) {
+      index = extractIndex(record.__index);
+    }
     return (
       <div
         role="button"
