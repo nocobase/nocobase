@@ -8,18 +8,34 @@
  */
 
 import React from 'react';
-import { Table as AntdTable, Checkbox, Tag } from 'antd';
+import { Table as AntdTable, Checkbox, Tag, Select, Input } from 'antd';
 import type { TableColumnsType } from 'antd';
 import { useT } from '../../locale';
-import { useApp } from '@nocobase/client';
+import { useApp, useToken } from '@nocobase/client';
 import { Schema } from '@formily/react';
 import lodash from 'lodash';
 
 const useColumns = () => {
   const t = useT();
   const columns: TableColumnsType = [
-    { title: t('Collection display name'), dataIndex: 'title', key: 'title', width: 200 },
-    { title: t('Collection name'), dataIndex: 'name', key: 'name', width: 150 },
+    {
+      title: t('Collection display name'),
+      dataIndex: 'title',
+      key: 'title',
+      width: 200,
+      render: (value) => {
+        return <Input value={value} />;
+      },
+    },
+    {
+      title: t('Collection name'),
+      dataIndex: 'name',
+      key: 'name',
+      width: 150,
+      render: (value) => {
+        return <Input value={value} />;
+      },
+    },
     {
       title: t('Collection template'),
       dataIndex: 'template',
@@ -29,12 +45,6 @@ const useColumns = () => {
         const template = value.charAt(0).toUpperCase() + value.slice(1);
         return <Tag>{t(`${template} collection`)}</Tag>;
       },
-    },
-    {
-      title: t('Description'),
-      dataIndex: 'description',
-      key: 'description',
-      width: 350,
     },
     {
       title: t('Preset fields'),
@@ -87,6 +97,12 @@ const useColumns = () => {
         );
       },
     },
+    {
+      title: t('Description'),
+      dataIndex: 'description',
+      key: 'description',
+      width: 350,
+    },
   ];
   return columns;
 };
@@ -96,17 +112,24 @@ const useExpandColumns = () => {
   const app = useApp();
   const fim = app.dataSourceManager.collectionFieldInterfaceManager;
   const columns = [
+    AntdTable.EXPAND_COLUMN,
     {
       title: t('Field display name'),
       dataIndex: 'title',
       width: 150,
       key: 'title',
+      render: (value) => {
+        return <Input value={value} />;
+      },
     },
     {
       title: t('Field name'),
       dataIndex: 'name',
       key: 'name',
       width: 100,
+      render: (value) => {
+        return <Input value={value} />;
+      },
     },
     {
       title: t('Field interface'),
@@ -115,20 +138,7 @@ const useExpandColumns = () => {
       key: 'interface',
       render: (value) => {
         const fieldInterface = fim.getFieldInterface(value);
-        return <Tag>{fieldInterface ? Schema.compile(fieldInterface.title, { t }) : value}</Tag>;
-      },
-    },
-    {
-      title: t('Description'),
-      dataIndex: 'description',
-      key: 'description',
-      width: 200,
-    },
-    {
-      title: t('Options'),
-      key: 'options',
-      render: (_, record) => {
-        return JSON.stringify(lodash.omit(record, ['title', 'name', 'interface', 'description']), null, 2);
+        return <Select defaultValue={fieldInterface ? Schema.compile(fieldInterface.title, { t }) : value} />;
       },
     },
   ];
@@ -137,7 +147,52 @@ const useExpandColumns = () => {
 
 const ExpandedRowRender = (record) => {
   const expandColumns = useExpandColumns();
-  return <AntdTable rowKey="name" columns={expandColumns} dataSource={record.fields} pagination={false} />;
+  return (
+    <AntdTable
+      rowKey="name"
+      columns={expandColumns}
+      dataSource={record.fields}
+      pagination={false}
+      expandable={{
+        expandedRowRender: (record) => {
+          return (
+            <>
+              <div>
+                <span
+                  style={{
+                    color: '#999',
+                    marginRight: '8px',
+                    marginLeft: '48px',
+                  }}
+                >
+                  Description:
+                </span>
+                {record.description || '-'}
+              </div>
+              <div>
+                <span
+                  style={{
+                    color: '#999',
+                    marginRight: '8px',
+                    marginLeft: '48px',
+                  }}
+                >
+                  Enumurations:
+                </span>
+                {record.enum
+                  ? record.enum.map((item) => (
+                      <Tag key={item.value}>
+                        {item.label} ({item.value})
+                      </Tag>
+                    ))
+                  : null}
+              </div>
+            </>
+          );
+        },
+      }}
+    />
+  );
 };
 
 export const Table: React.FC<{

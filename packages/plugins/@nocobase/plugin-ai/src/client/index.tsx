@@ -25,6 +25,7 @@ import { AIEmployeeTrigger } from './workflow/triggers/ai-employee';
 import { PermissionsTab } from './ai-employees/permissions/PermissionsTab';
 import { anthropicProviderOptions } from './llm-providers/anthropic';
 import { ClassicPagesContext } from './ai-employees/context/classic-pages';
+import { CollectionDefinitionsContext } from './ai-employees/context/data-modeling';
 const { AIEmployeesProvider } = lazy(() => import('./ai-employees/AIEmployeesProvider'), 'AIEmployeesProvider');
 const { Employees } = lazy(() => import('./ai-employees/manager/Employees'), 'Employees');
 const { LLMServices } = lazy(() => import('./llm-services/LLMServices'), 'LLMServices');
@@ -122,6 +123,7 @@ export class PluginAIClient extends Plugin {
       Component: MessagesSettings,
     });
     this.aiManager.registerWorkContext('classic-pages', ClassicPagesContext);
+    this.aiManager.registerWorkContext('collection-definitions', CollectionDefinitionsContext);
     this.aiManager.registerTool('formFiller', {
       invoke: (ctx, params) => {
         const { form: uid, data } = params;
