@@ -6,6 +6,7 @@
   "module": "es/index.mjs",
   "types": "es/index.d.ts",
   "dependencies": {
+    "@tanstack/react-table": "^8.21.3",
     "@ahooksjs/use-url-state": "3.5.1",
     "@ant-design/cssinjs": "^1.11.1",
     "@ant-design/icons": "^5.6.1",
