@@ -14,7 +14,13 @@ import { FlowModel } from '../../models';
 import { FlowModelOptions, ModelConstructor } from '../../types';
 import { FlowSettingsButton } from '../common/FlowSettingsButton';
 import { withFlowDesignMode } from '../common/withFlowDesignMode';
-import { AddSubModelButton, SubModelItemsType, mergeSubModelItems, AddSubModelContext } from './AddSubModelButton';
+import {
+  AddSubModelButton,
+  SubModelItemsType,
+  mergeSubModelItems,
+  AddSubModelContext,
+  SubModelItem,
+} from './AddSubModelButton';
 
 export type BuildCreateModelOptionsType = {
   defaultOptions: FlowModelOptions;
@@ -125,6 +131,31 @@ const AddFieldButtonCore: React.FC<AddFieldButtonProps> = ({
             ...fieldClass.meta?.defaultOptions,
             use: fieldClassToNameMap.get(fieldClass) || fieldClass.name,
           };
+
+          // 字段检测函数，检查 stepParams 中是否包含当前字段
+          const checkFieldInStepParams = (subModel: FlowModel): boolean => {
+            const stepParams = subModel.stepParams;
+
+            // 快速检查：如果 stepParams 为空，直接返回 false
+            if (!stepParams || Object.keys(stepParams).length === 0) {
+              return false;
+            }
+
+            // 遍历所有 flow 和 step 来查找 fieldPath 或 field 参数
+            for (const flowKey in stepParams) {
+              const flowSteps = stepParams[flowKey];
+              if (!flowSteps) continue;
+
+              for (const stepKey in flowSteps) {
+                const stepData = flowSteps[stepKey];
+                if (stepData?.fieldPath === field.name || stepData?.field === field.name) {
+                  return true; // 找到匹配，立即返回
+                }
+              }
+            }
+            return false;
+          };
+
           const fieldItem = {
             key: field.name,
             label: field.title,
@@ -139,35 +170,29 @@ const AddFieldButtonCore: React.FC<AddFieldButtonProps> = ({
               // 检测是否已存在该字段的子模型
               const subModels = ctx.model.subModels[subModelKey];
 
-              const checkFieldInStepParams = (subModel: FlowModel): boolean => {
-                const stepParams = subModel.stepParams;
-
-                // 快速检查：如果 stepParams 为空，直接返回 false
-                if (!stepParams || Object.keys(stepParams).length === 0) {
-                  return false;
-                }
-
-                // 遍历所有 flow 和 step 来查找 fieldPath 或 field 参数
-                for (const flowKey in stepParams) {
-                  const flowSteps = stepParams[flowKey];
-                  if (!flowSteps) continue;
-
-                  for (const stepKey in flowSteps) {
-                    const stepData = flowSteps[stepKey];
-                    if (stepData?.fieldPath === field.name || stepData?.field === field.name) {
-                      return true; // 找到匹配，立即返回
-                    }
-                  }
-                }
-                return false;
-              };
-
               if (Array.isArray(subModels)) {
                 return subModels.some(checkFieldInStepParams);
               } else if (subModels) {
                 return checkFieldInStepParams(subModels);
               }
               return false;
+            },
+            removeModelOptions: {
+              customRemove: async (ctx: AddSubModelContext, _item: SubModelItem) => {
+                const subModels = ctx.model.subModels[subModelKey];
+
+                if (Array.isArray(subModels)) {
+                  const targetModel = subModels.find(checkFieldInStepParams);
+                  if (targetModel) {
+                    await targetModel.destroy();
+                    const index = subModels.indexOf(targetModel);
+                    if (index > -1) subModels.splice(index, 1);
+                  }
+                } else if (subModels && checkFieldInStepParams(subModels)) {
+                  await subModels.destroy();
+                  (ctx.model.subModels as any)[subModelKey] = undefined;
+                }
+              },
             },
           };
           allFields.push(fieldItem);

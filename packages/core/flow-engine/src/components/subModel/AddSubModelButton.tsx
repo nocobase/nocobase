@@ -282,27 +282,6 @@ const transformItems = (items: SubModelItemsType, context: AddSubModelContext): 
 // ============================================================================
 
 /**
- * 从 stepParams 中查找字段路径匹配
- */
-const findFieldInStepParams = (subModel: FlowModel, fieldKey: string): boolean => {
-  const stepParams = subModel.stepParams;
-  if (!stepParams || Object.keys(stepParams).length === 0) return false;
-
-  for (const flowKey in stepParams) {
-    const flowSteps = stepParams[flowKey];
-    if (!flowSteps) continue;
-
-    for (const stepKey in flowSteps) {
-      const stepData = flowSteps[stepKey];
-      if (stepData?.fieldPath === fieldKey || stepData?.field === fieldKey) {
-        return true;
-      }
-    }
-  }
-  return false;
-};
-
-/**
  * 创建默认删除处理器
  */
 const createDefaultRemoveHandler = (config: {
@@ -318,8 +297,6 @@ const createDefaultRemoveHandler = (config: {
       if (Array.isArray(subModels)) {
         const createOpts = getCreateModelOptions(item);
         const targetModel = subModels.find((subModel) => {
-          if (item.key && findFieldInStepParams(subModel, item.key)) return true;
-
           if (createOpts?.use) {
             try {
               const modelClass = config.model.flowEngine.getModelClass(createOpts.use);
