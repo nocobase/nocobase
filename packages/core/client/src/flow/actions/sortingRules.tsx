@@ -17,15 +17,12 @@ import { useSortFields } from '../../';
 const SelectOptions = (props) => {
   const {
     model: { resource },
-    app,
   } = useStepSettingContext();
   const compile = useCompile();
   const sortFields = useSortFields(resource?.resourceName);
-  console.log(sortFields);
-  return <Select {...props} options={sortFields} />;
+  return <Select {...props} options={compile(sortFields)} />;
 };
-const isArrayEqualIgnoreOrder = (a: string[], b: string[]) =>
-  a.length === b.length && [...a].sort().every((v, i) => v === [...b].sort()[i]);
+
 export const sortingRule = defineAction({
   name: 'sortingRule',
   title: tval('Set default sorting rules'),
