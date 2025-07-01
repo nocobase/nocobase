@@ -7,33 +7,22 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { FormButtonGroup, FormLayout, Submit } from '@formily/antd-v5';
+import { FormButtonGroup, FormLayout } from '@formily/antd-v5';
 import { createForm, Form } from '@formily/core';
 import { FormProvider, observer } from '@formily/react';
-import {
-  BaseRecordResource,
-  Collection,
-  CollectionField,
-  FlowEngine,
-  FlowEngineProvider,
-  FlowModel,
-  FlowModelRenderer,
-  SingleRecordResource,
-  useApplyAutoFlows,
-} from '@nocobase/flow-engine';
+import { Collection, CollectionField, FlowEngine, SingleRecordResource } from '@nocobase/flow-engine';
 import { useRequest } from 'ahooks';
-import { Button, InputRef, Skeleton } from 'antd';
+import { Button, Skeleton } from 'antd';
 import _ from 'lodash';
-import React, { createRef, Suspense, useEffect, useState } from 'react';
-import { SkeletonFallback } from '../../../components/SkeletonFallback';
+import React from 'react';
 import { DataBlockModel } from '../../base/BlockModel';
 
 const SimpleFlowModelRenderer = observer((props: any) => {
   const { fallback, model, sharedContext, extraContext } = props;
   const { loading } = useRequest(
     async () => {
-      await model.applyAutoFlows(extraContext);
       model.setSharedContext(sharedContext);
+      await model.applyAutoFlows(extraContext);
     },
     {
       refreshDeps: [model, sharedContext, extraContext],
