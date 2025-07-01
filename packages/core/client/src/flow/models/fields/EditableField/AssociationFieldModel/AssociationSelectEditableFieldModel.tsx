@@ -53,11 +53,11 @@ function LazySelect(props) {
   const { fieldNames, value, multiple, options, ...others } = props;
   const realOptions =
     options && options.length ? options : multiple ? (Array.isArray(value) ? value : []) : value ? [value] : [];
-
   return (
     <Select
       {...others}
       showSearch
+      filterOption={false}
       labelInValue
       fieldNames={fieldNames}
       options={realOptions}
@@ -290,13 +290,13 @@ AssociationSelectEditableFieldModel.registerFlow({
           const searchText = ctx.extra.searchText?.trim();
 
           const resource = ctx.model.resource;
+          const key = `${labelFieldName}.${operator}`;
           if (searchText === '') {
             resource.removeFilterGroup(labelFieldName);
           } else {
-            resource.setFilter({
-              [labelFieldName]: {
-                [operator]: searchText,
-              },
+            resource.setPage(1);
+            resource.addFilterGroup(labelFieldName, {
+              [key]: searchText,
             });
           }
           await resource.refresh();
@@ -326,9 +326,6 @@ AssociationSelectEditableFieldModel.registerFlow({
     dataScope: {
       use: 'dataScope',
       title: tval('Set data scope'),
-      handler: (ctx) => {
-        console.log(ctx);
-      },
     },
   },
 });
