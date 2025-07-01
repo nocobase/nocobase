@@ -290,7 +290,7 @@ export const TaskMessage: React.FC<{
   const currentEmployee = useChatBoxContext('currentEmployee');
 
   return (
-    <Flex align="flex-start" gap="small" vertical>
+    <Flex align="flex-start" gap="middle" wrap={true}>
       {tasks.map((task, index) => (
         <Button
           key={index}
@@ -298,9 +298,9 @@ export const TaskMessage: React.FC<{
             whiteSpace: 'normal',
             textAlign: 'left',
             height: 'auto',
+            width: '180px',
           }}
-          type="primary"
-          ghost
+          variant="outlined"
           onClick={() =>
             triggerTask({
               aiEmployee: currentEmployee,
@@ -309,7 +309,7 @@ export const TaskMessage: React.FC<{
             })
           }
         >
-          {task.title || `${t('Task')} ${index + 1}`}
+          <div>{task.title || `${t('Task')} ${index + 1}`}</div>
         </Button>
       ))}
     </Flex>

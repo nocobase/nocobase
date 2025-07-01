@@ -152,36 +152,6 @@ export const collectionTableSchema: ISchema = {
           },
           'x-align': 'left',
         },
-        aiEmployee: {
-          type: 'void',
-          'x-component': 'AIEmployeeButton',
-          'x-toolbar': 'ActionSchemaToolbar',
-          'x-settings': 'aiEmployees:button',
-          'x-component-props': {
-            username: 'orin',
-            tasks: [
-              {
-                message: {
-                  workContext: [],
-                  attachments: [],
-                  user: 'Create a todo list application with support for multiple lists, due dates, priorities, and task categories. Include tables for users, lists, tasks, and categories.',
-                },
-                title: 'Create a todo list application',
-                autoSend: true,
-              },
-              {
-                message: {
-                  workContext: [],
-                  attachments: [],
-                  user: 'Create a CRM application that includes the following modules: Leads, Customers, Orders, Products, Tickets',
-                },
-                title: 'Create a CRM application',
-                autoSend: true,
-              },
-            ],
-          },
-        },
-
         delete: {
           type: 'void',
           title: '{{ t("Delete") }}',
@@ -197,6 +167,82 @@ export const collectionTableSchema: ISchema = {
           'x-component': 'AddCollection',
           'x-component-props': {
             type: 'primary',
+          },
+        },
+        aiEmployee: {
+          type: 'void',
+          'x-component': 'AIEmployeeButton',
+          'x-toolbar': 'ActionSchemaToolbar',
+          'x-settings': 'aiEmployees:button',
+          'x-component-props': {
+            username: 'orin',
+            tasks: [
+              {
+                message: {
+                  workContext: [],
+                  attachments: [],
+                  system: `## Task: Create new schema from scenario
+
+The user will describe a business scenario. Your task is to define the full schema from scratch.
+
+- Confirm all entities and required fields
+- Clarify the relationships between entities
+- Normalize the structure
+- Output a complete <collections> block
+
+Avoid defining system fields already provided by templates.`,
+                  user: 'Start from a business scenario and generate normalized collections',
+                },
+                title: 'Start from a business scenario and generate normalized collections',
+                autoSend: true,
+              },
+              {
+                message: {
+                  workContext: [],
+                  attachments: [],
+                  user: 'Add or adjust fields and relationships in your current database',
+                  system: `## Task: Modify or expand existing collections
+
+The user provides part of the data model and wants to modify it.
+
+- Ask what changes they want: add tables, add fields, update relations, rename, etc.
+- Only return the changed parts – do not repeat existing schema
+- Wrap new/updated collections in <collections> tags
+- Do not remove or rename unless explicitly instructed
+
+Example: Add a new relation to "projects" and a new table:
+
+<collections>
+[
+  {
+    name: "projects",
+    fields: [
+      {
+        name: "ownerId",
+        title: "Owner",
+        type: "belongsTo",
+        interface: "m2o",
+        target: "users",
+        foreignKey: "ownerId",
+        targetKey: "id"
+      }
+    ]
+  },
+  {
+    name: "project_tags",
+    title: "Project Tags",
+    template: "general",
+    fields: [
+      { name: "name", title: "Name", type: "string", interface: "input" }
+    ]
+  }
+]
+</collections>`,
+                },
+                title: 'Add or adjust fields and relationships in your current database',
+                autoSend: true,
+              },
+            ],
           },
         },
       },
