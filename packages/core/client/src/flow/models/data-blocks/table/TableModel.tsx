@@ -236,7 +236,7 @@ export class TableModel extends DataBlockModel<TableModelStructure> {
 
   renderComponent() {
     return (
-      <Spin spinning={this.resource.loading}>
+      <>
         <DndProvider>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
             <Space>
@@ -290,6 +290,7 @@ export class TableModel extends DataBlockModel<TableModelStructure> {
             },
             selectedRowKeys: this.resource.getSelectedRows().map((row) => row.id),
           }}
+          loading={this.resource.loading}
           virtual={this.props.virtual}
           scroll={{ x: 'max-content', y: 600 }}
           dataSource={this.resource.getData()}
@@ -307,7 +308,7 @@ export class TableModel extends DataBlockModel<TableModelStructure> {
             this.resource.refresh();
           }}
         />
-      </Spin>
+      </>
     );
   }
 }
