@@ -158,9 +158,15 @@ const openStepSettingsDialog = async ({
               await form.submit();
               const currentValues = form.values;
               model.setStepParams(flowKey, stepKey, currentValues);
-              await model.save();
-              message.success(t('Configuration saved'));
               currentDialog.close();
+              model
+                .save()
+                .then(() => {
+                  message.success(t('Configuration saved'));
+                })
+                .catch((_error) => {
+                  message.error(t('Error saving configuration, please check console'));
+                });
             } catch (error) {
               console.error(t('Error saving configuration'), ':', error);
               message.error(t('Error saving configuration, please check console'));
