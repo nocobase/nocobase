@@ -507,6 +507,10 @@ TableModel.registerFlow({
       use: 'sortingRule',
       title: tval('Set default sorting rules'),
     },
+    dataLoadingMode: {
+      use: 'dataLoadingMode',
+      title: tval('Set data loading mode'),
+    },
     enabledIndexColumn: {
       title: tval('Enable index column'),
       uiSchema: {
@@ -544,7 +548,12 @@ TableModel.registerFlow({
     },
     refresh: {
       async handler(ctx, params) {
-        await ctx.model.resource.refresh();
+        const { dataLoadingMode } = ctx.model.props;
+        if (dataLoadingMode === 'auto') {
+          await ctx.model.resource.refresh();
+        } else {
+          ctx.model.resource.loading = false;
+        }
       },
     },
   },
