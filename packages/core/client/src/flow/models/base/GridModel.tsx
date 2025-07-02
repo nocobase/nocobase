@@ -8,6 +8,7 @@
  */
 
 import { PlusOutlined } from '@ant-design/icons';
+import { DragMoveEvent } from '@dnd-kit/core';
 import { uid } from '@formily/shared';
 import {
   AddBlockButton,
@@ -29,7 +30,6 @@ import { Grid } from '../../components/Grid';
 import JsonEditor from '../../components/JsonEditor';
 import { SkeletonFallback } from '../../components/SkeletonFallback';
 import { BlockModel } from './BlockModel';
-import { DragMoveEvent } from '@dnd-kit/core';
 
 type GridModelStructure = {
   subModels: {
@@ -160,34 +160,36 @@ export class GridModel extends FlowModel<GridModelStructure> {
     return (
       <div style={{ padding: 16 }}>
         <Space direction={'vertical'} style={{ width: '100%' }} size={16}>
-          <DndProvider onDragMove={this.handleDragMove.bind(this)} onDragEnd={this.handleDragEnd.bind(this)}>
-            <Grid
-              rows={this.props.rows || {}}
-              sizes={this.props.sizes || {}}
-              renderItem={(uid) => {
-                const item = this.flowEngine.getModel(uid);
-                return (
-                  <Droppable model={item}>
-                    <FlowModelRenderer
-                      model={item}
-                      key={item.uid}
-                      fallback={<SkeletonFallback />}
-                      showFlowSettings={{ showBackground: false }}
-                      showErrorFallback
-                      showTitle
-                      extraToolbarItems={[
-                        {
-                          key: 'drag-handler',
-                          component: DragHandler,
-                          sort: 1,
-                        },
-                      ]}
-                    />
-                  </Droppable>
-                );
-              }}
-            />
-          </DndProvider>
+          {this.subModels.items?.length > 0 && (
+            <DndProvider onDragMove={this.handleDragMove.bind(this)} onDragEnd={this.handleDragEnd.bind(this)}>
+              <Grid
+                rows={this.props.rows || {}}
+                sizes={this.props.sizes || {}}
+                renderItem={(uid) => {
+                  const item = this.flowEngine.getModel(uid);
+                  return (
+                    <Droppable model={item}>
+                      <FlowModelRenderer
+                        model={item}
+                        key={item.uid}
+                        fallback={<SkeletonFallback />}
+                        showFlowSettings={{ showBackground: false }}
+                        showErrorFallback
+                        showTitle
+                        extraToolbarItems={[
+                          {
+                            key: 'drag-handler',
+                            component: DragHandler,
+                            sort: 1,
+                          },
+                        ]}
+                      />
+                    </Droppable>
+                  );
+                }}
+              />
+            </DndProvider>
+          )}
           <Space>
             <AddBlockButton model={this} subModelKey="items" subModelBaseClass={this.subModelBaseClass}>
               <FlowSettingsButton icon={<PlusOutlined />}>{t('Add block')}</FlowSettingsButton>
