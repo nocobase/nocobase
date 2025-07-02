@@ -10,11 +10,13 @@ import { tval } from '@nocobase/utils/client';
 import { APIResource, BaseRecordResource, Collection, DefaultStructure, FlowModel } from '@nocobase/flow-engine';
 import React from 'react';
 import { BlockItemCard } from '../common/BlockItemCard';
+import { observable } from '@formily/reactive';
+import { Observer } from '@formily/reactive-react';
 
 export class BlockModel<T = DefaultStructure> extends FlowModel<T> {
-  decoratorProps: Record<string, any> = {};
+  decoratorProps: Record<string, any> = observable({});
   setDecoratorProps(props) {
-    this.decoratorProps = { ...this.decoratorProps, ...props };
+    Object.assign(this.decoratorProps, props);
   }
 
   renderComponent() {
@@ -23,7 +25,15 @@ export class BlockModel<T = DefaultStructure> extends FlowModel<T> {
   }
 
   render() {
-    return <BlockItemCard {...this.decoratorProps}>{this.renderComponent()}</BlockItemCard>;
+    return (
+      <BlockItemCard {...this.decoratorProps}>
+        <Observer>
+          {() => {
+            return this.renderComponent();
+          }}
+        </Observer>
+      </BlockItemCard>
+    );
   }
 }
 
