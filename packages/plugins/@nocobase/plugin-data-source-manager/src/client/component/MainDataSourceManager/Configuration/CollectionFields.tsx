@@ -352,7 +352,7 @@ const FieldInterfaceRenderer = ({ value, record, updateFieldHandler }) => {
 
 const FieldTypeRenderer = ({ value, record, updateFieldHandler }) => {
   const item = omit(record, ['__parent', '__collectionName']);
-  return !item?.possibleTypes ? (
+  return !Array.isArray(item?.possibleTypes) ? (
     <Tag>{value}</Tag>
   ) : (
     <Select
