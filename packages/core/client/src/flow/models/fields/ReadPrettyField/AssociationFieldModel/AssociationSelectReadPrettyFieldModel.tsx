@@ -11,8 +11,9 @@ import React from 'react';
 import { castArray } from 'lodash';
 import { Button } from 'antd';
 import { tval } from '@nocobase/utils/client';
-import { AssociationReadPrettyFieldModel } from './AssociationReadPrettyFieldModel';
 import { reactive, FlowModel } from '@nocobase/flow-engine';
+import { FlowPage } from '../../../../FlowPage';
+import { AssociationReadPrettyFieldModel } from './AssociationReadPrettyFieldModel';
 import { getUniqueKeyFromCollection } from '../../../../../collection-manager/interfaces/utils';
 
 const LinkToggleWrapper = ({ enableLink, children, currentRecord, ...props }) => {
@@ -165,6 +166,38 @@ AssociationSelectReadPrettyFieldModel.registerFlow({
       use: 'openView',
       defaultParams(ctx) {
         return {};
+      },
+      async handler(ctx, params) {
+        const sizeToWidthMap: Record<string, number> = {
+          small: 480,
+          medium: 800,
+          large: 1200,
+        };
+
+        await ctx.globals[ctx.extra.mode || params.mode || 'drawer'].open({
+          target: ctx.extra.target || ctx.shared.layoutContentElement,
+          width: sizeToWidthMap[params.size || 'medium'],
+          content: (currentView) => {
+            return (
+              <FlowPage
+                parentId={`${ctx.model.uid}${ctx.model.collectionField.name}`}
+                sharedContext={{
+                  currentFlow: ctx,
+                  currentView: currentView,
+                }}
+              />
+            );
+          },
+          styles: {
+            content: {
+              background: 'var(--nb-box-bg)',
+              padding: 0,
+            },
+          },
+          bodyStyle: {
+            padding: 0,
+          },
+        });
       },
     },
   },
