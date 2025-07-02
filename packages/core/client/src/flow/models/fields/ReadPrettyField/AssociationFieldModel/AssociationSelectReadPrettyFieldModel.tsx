@@ -138,13 +138,14 @@ AssociationSelectReadPrettyFieldModel.registerFlow({
       },
       handler(ctx, params) {
         ctx.model.onClick = (e, currentRecord) => {
+          const targetCollection = ctx.model.collectionField.targetCollection;
           ctx.model.dispatchEvent('click', {
             event: e,
-            filterByTk: currentRecord[ctx.model.targetCollection.filterTargetKey],
-            collectionName: ctx.model.targetCollection.name,
+            filterByTk: currentRecord[targetCollection.filterTargetKey],
+            collectionName: targetCollection.name,
           });
           ctx.model.setStepParams('FormModel.default', 'step1', {
-            collectionName: ctx.model.targetCollection.name,
+            collectionName: targetCollection.name,
           });
         };
         ctx.model.setProps('enableLink', params.enableLink);

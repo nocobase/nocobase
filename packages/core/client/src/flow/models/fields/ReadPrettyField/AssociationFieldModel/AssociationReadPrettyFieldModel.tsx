@@ -10,6 +10,4 @@
 import React from 'react';
 import { ReadPrettyFieldModel } from '../ReadPrettyFieldModel';
 
-export class AssociationReadPrettyFieldModel extends ReadPrettyFieldModel {
-  targetCollection;
-}
+export class AssociationReadPrettyFieldModel extends ReadPrettyFieldModel {}
