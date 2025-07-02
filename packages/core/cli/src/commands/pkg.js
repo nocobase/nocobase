@@ -143,12 +143,12 @@ class Package {
       });
       console.log(chalk.greenBright(`Downloaded: ${this.packageName}@${version}`));
     } catch (error) {
-      if (error.response.data && typeof error.response.data.pipe === 'function') {
+      if (error?.response?.data && typeof error?.response?.data?.pipe === 'function') {
         let errorMessageBuffer = '';
-        error.response.data.on('data', (chunk) => {
+        error.response.data.on?.('data', (chunk) => {
           errorMessageBuffer += chunk.toString('utf8'); // 收集错误信息
         });
-        error.response.data.on('end', () => {
+        error.response.data.on?.('end', () => {
           if (error.response.status === 403) {
             console.error(chalk.redBright('You do not have permission to download this package version.'));
           }
