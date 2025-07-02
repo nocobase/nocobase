@@ -94,15 +94,15 @@ export const FlowPage = (props) => {
 };
 
 export const RemoteFlowModelRenderer = (props) => {
-  const { uid, parentId, ...rest } = props;
+  const { uid, parentId, subKey, ...rest } = props;
   const flowEngine = useFlowEngine();
   const { loading, data } = useRequest(
     async () => {
-      const data = await flowEngine.loadModel({ uid, parentId });
+      const data = await flowEngine.loadModel({ uid, parentId, subKey });
       return data;
     },
     {
-      refreshDeps: [uid, parentId],
+      refreshDeps: [uid, parentId, subKey],
     },
   );
   if (loading || !data?.uid) {
