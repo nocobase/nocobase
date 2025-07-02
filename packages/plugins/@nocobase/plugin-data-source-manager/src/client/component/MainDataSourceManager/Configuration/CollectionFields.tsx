@@ -70,11 +70,6 @@ const CollectionFieldsProvider = (props) => {
   );
 };
 
-const indentStyle = css`
-  .ant-table {
-    margin-left: -16px !important;
-  }
-`;
 const tableContainer = css`
   tr {
     display: flex;
@@ -83,6 +78,33 @@ const tableContainer = css`
   th {
     flex: 2.3;
     width: 0;
+    &:nth-child(5) {
+      flex: 1.2;
+    }
+    &:last-child {
+      flex: 1.5;
+    }
+  }
+  .ant-table-selection-column,
+  .ant-table-row-expand-icon-cell {
+    flex-basis: 50px !important;
+    min-width: 50px;
+    flex: 0;
+  }
+`;
+
+const groupTableContainer = css`
+  tr {
+    display: flex;
+  }
+  td,
+  th {
+    flex: 2.3;
+    width: 0;
+    &:nth-child(2) {
+      flex: 4 !important;
+      white-space: nowrap;
+    }
     &:nth-child(5) {
       flex: 1.2;
     }
@@ -160,7 +182,7 @@ const CurrentFields = (props) => {
     },
     {
       dataIndex: 'description',
-      title: t('Descriptio '),
+      title: t('Description'),
       render: (value) => <Input.ReadPretty value={value} ellipsis={true} />,
     },
     {
@@ -192,9 +214,10 @@ const CurrentFields = (props) => {
     <Table
       rowKey={'name'}
       columns={columns}
-      showHeader={false}
+      showHeader={true}
       pagination={false}
       dataSource={props.fields}
+      className={tableContainer}
       rowSelection={{
         type: 'checkbox',
         // @ts-ignore
@@ -212,7 +235,6 @@ const CurrentFields = (props) => {
           });
         },
       }}
-      className={indentStyle}
     />
   );
 };
@@ -241,7 +263,7 @@ const InheritFields = (props) => {
     },
     {
       dataIndex: 'interface',
-      title: t('Field interface123'),
+      title: t('Field interface'),
       render: (value) => <Tag>{compile(getInterface(value)?.title)}</Tag>,
     },
     {
@@ -276,6 +298,11 @@ const InheritFields = (props) => {
       },
     },
     {
+      dataIndex: 'description',
+      title: t('Description'),
+      render: (value) => <Input.ReadPretty value={value} ellipsis={true} />,
+    },
+    {
       dataIndex: 'actions',
       title: t('Actions'),
       render: function Render(_, record) {
@@ -305,6 +332,7 @@ const InheritFields = (props) => {
       showHeader={false}
       pagination={false}
       dataSource={props.fields.filter((field) => field.interface)}
+      className={tableContainer}
     />
   );
 };
@@ -335,6 +363,8 @@ const CollectionFieldsInternal = () => {
         <div
           className={css`
             font-weight: 500;
+            white-space: nowrap;
+            min-width: 300px;
           `}
         >
           {value}
@@ -363,50 +393,10 @@ const CollectionFieldsInternal = () => {
     },
   ];
   const fields = data?.data || [];
-  const groups = {
-    pf: [],
-    association: [],
-    general: [],
-    system: [],
-  };
+  const allCurrentFields = fields.filter((field) => field.interface || field.primaryKey || field.isForeignKey);
 
-  fields.forEach((field) => {
-    if (field.primaryKey || field.isForeignKey) {
-      groups.pf.push(field);
-    } else if (field.interface) {
-      const conf = getInterface(field.interface);
-      if (conf?.group === 'systemInfo') {
-        groups.system.push(field);
-      } else if (conf?.group === 'relation') {
-        groups.association.push(field);
-      } else {
-        groups.general.push(field);
-      }
-    }
-  });
+  const dataSource = [];
 
-  const dataSource = [
-    {
-      key: 'pf',
-      title: t('PK & FK fields'),
-      fields: groups.pf,
-    },
-    {
-      key: 'association',
-      title: t('Association fields'),
-      fields: groups.association,
-    },
-    {
-      key: 'general',
-      title: t('General fields'),
-      fields: groups.general,
-    },
-    {
-      key: 'system',
-      title: t('System fields'),
-      fields: groups.system,
-    },
-  ];
   dataSource.push(
     ...inherits
       .map((key) => {
@@ -464,30 +454,33 @@ const CollectionFieldsInternal = () => {
           />
           <AddCollectionField {...addProps} />
         </Space>
+        {allCurrentFields.length > 0 && (
+          <div>
+            <CurrentFields
+              fields={allCurrentFields}
+              collectionResource={collectionResource}
+              refreshAsync={refreshAsync}
+              type="all"
+            />
+          </div>
+        )}
         <Table
           rowKey={'key'}
           columns={columns}
           dataSource={dataSource.filter((d) => d.fields.length)}
           pagination={false}
-          className={tableContainer}
+          showHeader={false}
+          className={groupTableContainer}
           expandable={{
             defaultExpandAllRows: true,
             defaultExpandedRowKeys: dataSource.map((d) => d.key),
-            expandedRowRender: (record) =>
-              record.inherit ? (
-                <InheritFields
-                  fields={record.fields}
-                  collectionResource={collectionResource}
-                  refreshAsync={refreshAsync}
-                />
-              ) : (
-                <CurrentFields
-                  fields={record.fields}
-                  collectionResource={collectionResource}
-                  refreshAsync={refreshAsync}
-                  type={record.key}
-                />
-              ),
+            expandedRowRender: (record) => (
+              <InheritFields
+                fields={record.fields}
+                collectionResource={collectionResource}
+                refreshAsync={refreshAsync}
+              />
+            ),
           }}
         />
       </FieldContext.Provider>
