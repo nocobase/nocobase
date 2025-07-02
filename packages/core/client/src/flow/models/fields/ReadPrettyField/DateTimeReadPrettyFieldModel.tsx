@@ -70,9 +70,6 @@ DateTimeReadPrettyFieldModel.registerFlow({
         };
       },
       handler(ctx: any, params) {
-        ctx.model.flowEngine.flowSettings.registerScopes({
-          collectionField: ctx.model.collectionField,
-        });
         ctx.model.setProps?.({ ...params });
       },
     },
