@@ -180,7 +180,7 @@ AssociationSelectReadPrettyFieldModel.registerFlow({
           content: (currentView) => {
             return (
               <FlowPage
-                parentId={`${ctx.model.uid}${ctx.model.collectionField.name}`}
+                parentId={ctx.model.uid}
                 sharedContext={{
                   currentFlow: ctx,
                   currentView: currentView,
