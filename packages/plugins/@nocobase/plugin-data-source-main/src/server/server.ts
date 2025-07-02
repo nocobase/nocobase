@@ -512,9 +512,11 @@ export class PluginDataSourceMainServer extends Plugin {
         const fieldTypes = fieldTypeMap[this.db.options.dialect];
         if (rawFields && fieldTypes) {
           const rawField = rawFields[field.get('name')];
-          const mappedType = extractTypeFromDefinition(rawField.type);
-          const possibleTypes = fieldTypes[mappedType];
-          field.set('possibleTypes', possibleTypes);
+          if (rawField) {
+            const mappedType = extractTypeFromDefinition(rawField.type);
+            const possibleTypes = fieldTypes[mappedType];
+            field.set('possibleTypes', possibleTypes);
+          }
         }
       }
     };

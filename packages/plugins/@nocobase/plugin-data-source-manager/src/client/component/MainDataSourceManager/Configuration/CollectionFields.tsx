@@ -34,9 +34,10 @@ import {
   useResourceActionContext,
   useResourceContext,
   ViewCollectionField,
+  useFieldInterfaceOptions,
 } from '@nocobase/client';
 import { message, Select, Space, Switch, Table, TableColumnProps, Tag, Tooltip } from 'antd';
-import React, { createContext, useContext, useMemo } from 'react';
+import React, { createContext, useContext, useMemo, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { omit } from 'lodash';
 
@@ -79,15 +80,48 @@ const tableContainer = css`
   th {
     flex: 2;
     width: 0;
-    &:nth-child(4),
-    &:nth-child(5) {
-      flex: 1.5;
+    min-width: 120px;
+
+    /* Field display name */
+    &:nth-child(2) {
+      flex: 2.5;
+      min-width: 150px;
     }
+
+    /* Field name */
+    &:nth-child(3) {
+      flex: 2;
+      min-width: 120px;
+    }
+
+    /* Field interface - 需要更多空间 */
+    &:nth-child(4) {
+      flex: 2.5;
+      min-width: 180px;
+    }
+
+    /* Field type */
+    &:nth-child(5) {
+      flex: 1.8;
+      min-width: 120px;
+    }
+
+    /* Title field */
     &:nth-child(6) {
       flex: 1.2;
+      min-width: 100px;
     }
+
+    /* Description */
+    &:nth-child(7) {
+      flex: 2;
+      min-width: 120px;
+    }
+
+    /* Actions */
     &:last-child {
       flex: 1.5;
+      min-width: 120px;
     }
   }
   .ant-table-selection-column,
@@ -106,19 +140,49 @@ const groupTableContainer = css`
   th {
     flex: 2;
     width: 0;
+    min-width: 120px;
+
+    /* Title column for inherited fields - 需要更多空间显示完整标题 */
     &:nth-child(2) {
-      flex: 4 !important;
+      flex: 4;
+      min-width: 300px;
       white-space: nowrap;
     }
-    &:nth-child(4),
+
+    /* Field display name */
+    &:nth-child(3) {
+      flex: 2.5;
+      min-width: 150px;
+    }
+
+    /* Field name */
+    &:nth-child(4) {
+      flex: 2;
+      min-width: 120px;
+    }
+
+    /* Field interface */
     &:nth-child(5) {
-      flex: 1.5;
+      flex: 2.5;
+      min-width: 180px;
     }
+
+    /* Field type */
     &:nth-child(6) {
-      flex: 1.2;
+      flex: 1.8;
+      min-width: 120px;
     }
+
+    /* Title field */
+    &:nth-child(7) {
+      flex: 1.2;
+      min-width: 100px;
+    }
+
+    /* Actions */
     &:last-child {
       flex: 1.5;
+      min-width: 120px;
     }
   }
   .ant-table-selection-column,
@@ -129,7 +193,162 @@ const groupTableContainer = css`
   }
 `;
 
+const inheritFieldsContainer = css`
+  tr {
+    display: flex;
+  }
+  td,
+  th {
+    flex: 2;
+    width: 0;
+    min-width: 100px;
+
+    /* Field display name */
+    &:nth-child(1) {
+      flex: 2.5;
+      min-width: 150px;
+    }
+
+    /* Field name - 减少宽度 */
+    &:nth-child(2) {
+      flex: 1.5;
+      min-width: 100px;
+    }
+
+    /* Field interface */
+    &:nth-child(3) {
+      flex: 2;
+      min-width: 150px;
+    }
+
+    /* Field type */
+    &:nth-child(4) {
+      flex: 1.5;
+      min-width: 100px;
+    }
+
+    /* Title field */
+    &:nth-child(5) {
+      flex: 1.2;
+      min-width: 80px;
+    }
+
+    /* Description */
+    &:nth-child(6) {
+      flex: 2;
+      min-width: 120px;
+    }
+
+    /* Actions */
+    &:last-child {
+      flex: 1.8;
+      min-width: 140px;
+    }
+  }
+`;
+
 const titlePrompt = 'Default title for each record';
+
+const getInterfaceOptions = (data, type) => {
+  const interfaceOptions = [];
+  data.forEach((item) => {
+    const options = item.children.filter((h) => h?.availableTypes?.includes(type));
+    interfaceOptions.push({
+      label: item.label,
+      key: item.key,
+      children: options,
+    });
+  });
+  return interfaceOptions.filter((v) => {
+    if (type === 'sort') {
+      return v.key === 'advanced';
+    }
+    return v.children.length > 0;
+  });
+};
+
+const isValueInOptions = (value, options) => {
+  return options?.some((option) => option.children?.some?.((child) => child.name === value));
+};
+
+const FieldInterfaceRenderer = ({ value, record, updateFieldHandler }) => {
+  const compile = useCompile();
+  const { getInterface } = useCollectionManager_deprecated();
+  const initOptions = useFieldInterfaceOptions();
+  const [selectValue, setSelectValue] = useState(value);
+  const [options, setOptions] = useState([]);
+  const targetType = record.type;
+
+  useEffect(() => {
+    if (record?.possibleTypes || targetType) {
+      const newOptions = getInterfaceOptions(initOptions, targetType);
+      setOptions(newOptions);
+    }
+  }, [targetType, initOptions]);
+
+  useEffect(() => {
+    if (options.length === 1 && options[0]?.children?.length === 1) {
+      const targetValue = options[0]?.children?.[0]?.name;
+      if (targetValue !== selectValue) {
+        const interfaceConfig = getInterface(targetValue);
+        setSelectValue(targetValue);
+        updateFieldHandler(record, {
+          interface: targetValue,
+          uiSchema: { title: record?.uiSchema?.title, ...interfaceConfig?.default?.uiSchema },
+        });
+      }
+    } else if (selectValue && !isValueInOptions(selectValue, options)) {
+      const targetValue = options[0]?.children?.[0]?.name;
+      if (targetValue) {
+        const interfaceConfig = getInterface(targetValue);
+        setSelectValue(targetValue);
+        updateFieldHandler(record, {
+          interface: targetValue,
+          uiSchema: { title: record?.uiSchema?.title, ...interfaceConfig?.default?.uiSchema },
+        });
+      }
+    }
+  }, [options, selectValue]);
+
+  if (['oho', 'obo', 'o2m', 'm2o', 'm2m'].includes(record.interface)) {
+    return (
+      <Tag>
+        {compile(initOptions.find((h) => h.key === 'relation')?.children?.find((v) => v.name === value)?.label)}
+      </Tag>
+    );
+  }
+
+  if (!options.length || options.every((group) => !group.children.length)) {
+    return <Tag>{compile(getInterface(value)?.title)}</Tag>;
+  }
+
+  return (
+    <Select
+      aria-label={`field-interface-${record?.type}`}
+      value={selectValue}
+      style={{ width: '100%' }}
+      popupMatchSelectWidth={false}
+      onChange={async (newValue) => {
+        const interfaceConfig = getInterface(newValue);
+        setSelectValue(newValue);
+        await updateFieldHandler(record, {
+          interface: newValue,
+          uiSchema: { title: record?.uiSchema?.title, ...interfaceConfig?.default?.uiSchema },
+        });
+      }}
+    >
+      {options.map((group) => (
+        <Select.OptGroup key={group.key} label={compile(group.label)}>
+          {group.children.map((item) => (
+            <Select.Option key={item.name} value={item.name}>
+              {compile(item.label)}
+            </Select.Option>
+          ))}
+        </Select.OptGroup>
+      ))}
+    </Select>
+  );
+};
 
 const FieldTypeRenderer = ({ value, record, updateFieldHandler }) => {
   const item = omit(record, ['__parent', '__collectionName']);
@@ -197,7 +416,9 @@ const CurrentFields = (props) => {
     {
       dataIndex: 'interface',
       title: t('Field interface'),
-      render: (value) => <Tag>{compile(getInterface(value)?.title)}</Tag>,
+      render: (value, record) => (
+        <FieldInterfaceRenderer value={value} record={record} updateFieldHandler={updateFieldHandler} />
+      ),
     },
     {
       dataIndex: 'type',
@@ -394,7 +615,7 @@ const InheritFields = (props) => {
       showHeader={false}
       pagination={false}
       dataSource={props.fields.filter((field) => field.interface)}
-      className={tableContainer}
+      className={inheritFieldsContainer}
     />
   );
 };
@@ -448,10 +669,6 @@ const CollectionFieldsInternal = () => {
     {
       dataIndex: 'titleField',
       title: t('Title field'),
-    },
-    {
-      dataIndex: 'description',
-      title: t('Description'),
     },
     {
       dataIndex: 'actions',
@@ -530,25 +747,27 @@ const CollectionFieldsInternal = () => {
             />
           </div>
         )}
-        <Table
-          rowKey={'key'}
-          columns={columns}
-          dataSource={dataSource.filter((d) => d.fields.length)}
-          pagination={false}
-          showHeader={false}
-          className={groupTableContainer}
-          expandable={{
-            defaultExpandAllRows: true,
-            defaultExpandedRowKeys: dataSource.map((d) => d.key),
-            expandedRowRender: (record) => (
-              <InheritFields
-                fields={record.fields}
-                collectionResource={collectionResource}
-                refreshAsync={refreshAsync}
-              />
-            ),
-          }}
-        />
+        {dataSource.filter((d) => d.fields.length).length > 0 && (
+          <Table
+            rowKey={'key'}
+            columns={columns}
+            dataSource={dataSource.filter((d) => d.fields.length)}
+            pagination={false}
+            showHeader={false}
+            className={groupTableContainer}
+            expandable={{
+              defaultExpandAllRows: true,
+              defaultExpandedRowKeys: dataSource.map((d) => d.key),
+              expandedRowRender: (record) => (
+                <InheritFields
+                  fields={record.fields}
+                  collectionResource={collectionResource}
+                  refreshAsync={refreshAsync}
+                />
+              ),
+            }}
+          />
+        )}
       </FieldContext.Provider>
     </FormContext.Provider>
   );
