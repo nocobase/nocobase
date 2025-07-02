@@ -1,11 +1,14 @@
 FROM node:20-bookworm as builder
-ARG VERDACCIO_URL=http://host.docker.internal:10104/
+ARG VERDACCIO_URL=https://registry.npmmirror.com
 ARG COMMIT_HASH
 ARG APPEND_PRESET_LOCAL_PLUGINS
 ARG BEFORE_PACK_NOCOBASE="ls -l"
 ARG PLUGINS_DIRS
 
 ENV PLUGINS_DIRS=${PLUGINS_DIRS}
+
+RUN sed -i 's/deb.debian.org/mirrors.aliyun.com/g' /etc/apt/sources.list.d/debian.sources && \
+    sed -i 's|security.debian.org/debian-security|mirrors.aliyun.com/debian-security|g' /etc/apt/sources.list.d/debian.sources
 
 RUN apt-get update && apt-get install -y jq expect
 
