@@ -9,7 +9,18 @@
 
 import { PlusOutlined } from '@ant-design/icons';
 import { uid } from '@formily/shared';
-import { AddBlockButton, FlowModel, FlowModelRenderer, FlowSettingsButton } from '@nocobase/flow-engine';
+import {
+  AddBlockButton,
+  DndProvider,
+  DragHandler,
+  Droppable,
+  FlowModel,
+  FlowModelRenderer,
+  FlowSettingsButton,
+  getMousePositionOnElement,
+  moveBlock,
+  positionToDirection,
+} from '@nocobase/flow-engine';
 import { tval } from '@nocobase/utils/client';
 import { Space } from 'antd';
 import _ from 'lodash';
@@ -18,6 +29,7 @@ import { Grid } from '../../components/Grid';
 import JsonEditor from '../../components/JsonEditor';
 import { SkeletonFallback } from '../../components/SkeletonFallback';
 import { BlockModel } from './BlockModel';
+import { DragMoveEvent } from '@dnd-kit/core';
 
 type GridModelStructure = {
   subModels: {
@@ -90,28 +102,92 @@ export class GridModel extends FlowModel<GridModelStructure> {
     }
   }
 
+  handleDragMove(event: DragMoveEvent) {
+    const active = event.active;
+    const over = event.over;
+
+    if (active?.id === over?.id) {
+      return;
+    }
+
+    const position = getMousePositionOnElement({
+      initialMousePos: {
+        // @ts-ignore
+        x: event.activatorEvent.x ?? 0,
+        // @ts-ignore
+        y: event.activatorEvent.y ?? 0,
+      },
+      mouseOffset: {
+        x: event.delta.x,
+        y: event.delta.y,
+      },
+      elementBounds: {
+        x: over?.rect.left ?? 0,
+        y: over?.rect.top ?? 0,
+        width: over?.rect.width ?? 0,
+        height: over?.rect.height ?? 0,
+      },
+    });
+
+    const layoutData = {
+      rows: this.props.rows || {},
+      sizes: this.props.sizes || {},
+    };
+
+    const result = moveBlock({
+      sourceUid: active?.id as string,
+      targetUid: over?.id as string,
+      direction: positionToDirection(position),
+      layoutData,
+    });
+
+    if (JSON.stringify(layoutData) !== JSON.stringify(result)) {
+      this.setProps('rows', result.rows);
+      this.setProps('sizes', result.sizes);
+    }
+  }
+
+  handleDragEnd(event: any) {
+    this.setStepParams('defaultFlow', 'grid', {
+      rows: this.props.rows || {},
+      sizes: this.props.sizes || {},
+    });
+    this.save();
+  }
+
   render() {
     const t = this.translate;
     return (
       <div style={{ padding: 16 }}>
         <Space direction={'vertical'} style={{ width: '100%' }} size={16}>
-          <Grid
-            rows={this.props.rows || {}}
-            sizes={this.props.sizes || {}}
-            renderItem={(uid) => {
-              const item = this.flowEngine.getModel(uid);
-              return (
-                <FlowModelRenderer
-                  model={item}
-                  key={item.uid}
-                  fallback={<SkeletonFallback />}
-                  showFlowSettings={{ showBackground: false }}
-                  showErrorFallback
-                  showTitle
-                />
-              );
-            }}
-          />
+          <DndProvider onDragMove={this.handleDragMove.bind(this)} onDragEnd={this.handleDragEnd.bind(this)}>
+            <Grid
+              rows={this.props.rows || {}}
+              sizes={this.props.sizes || {}}
+              renderItem={(uid) => {
+                const item = this.flowEngine.getModel(uid);
+                return (
+                  <Droppable model={item}>
+                    <FlowModelRenderer
+                      model={item}
+                      key={item.uid}
+                      fallback={<SkeletonFallback />}
+                      showFlowSettings={{ showBackground: false }}
+                      showErrorFallback
+                      showTitle
+                      extraToolbarItems={[
+                        {
+                          key: 'drag-handler',
+                          component: DragHandler,
+                          sort: 1,
+                        },
+                      ]}
+                    />
+                  </Droppable>
+                );
+              }}
+            />
+          </DndProvider>
           <Space>
             <AddBlockButton model={this} subModelKey="items" subModelBaseClass={this.subModelBaseClass}>
               <FlowSettingsButton icon={<PlusOutlined />}>{t('Add block')}</FlowSettingsButton>
