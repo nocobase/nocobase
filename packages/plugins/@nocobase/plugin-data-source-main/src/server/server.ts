@@ -7,7 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Filter, InheritedCollection, UniqueConstraintError } from '@nocobase/database';
+import {
+  extractTypeFromDefinition,
+  fieldTypeMap,
+  Filter,
+  InheritedCollection,
+  UniqueConstraintError,
+} from '@nocobase/database';
 import PluginErrorHandler from '@nocobase/plugin-error-handler';
 import { Plugin } from '@nocobase/server';
 import lodash from 'lodash';
@@ -29,6 +35,8 @@ import { beforeDestoryField } from './hooks/beforeDestoryField';
 import { CollectionModel, FieldModel } from './models';
 import collectionActions from './resourcers/collections';
 import viewResourcer from './resourcers/views';
+import { TableInfo } from 'packages/core/database/src/query-interface/query-interface';
+import { ColumnsDescription } from 'sequelize';
 
 export class PluginDataSourceMainServer extends Plugin {
   private loadFilter: Filter = {};
@@ -475,7 +483,7 @@ export class PluginDataSourceMainServer extends Plugin {
     this.app.resource(viewResourcer);
     this.app.actions(collectionActions);
 
-    const handleFieldSource = (fields) => {
+    const handleFieldSource = (fields, rawFields?: ColumnsDescription) => {
       for (const field of lodash.castArray(fields)) {
         if (field.get('source')) {
           const [collectionSource, fieldSource] = field.get('source').split('.');
@@ -501,6 +509,13 @@ export class PluginDataSourceMainServer extends Plugin {
           // set final options
           field.set('options', newOptions);
         }
+        const fieldTypes = fieldTypeMap[this.db.options.dialect];
+        if (rawFields && fieldTypes) {
+          const rawField = rawFields[field.get('name')];
+          const mappedType = extractTypeFromDefinition(rawField.type);
+          const possibleTypes = fieldTypes[mappedType];
+          field.set('possibleTypes', possibleTypes);
+        }
       }
     };
 
@@ -523,7 +538,19 @@ export class PluginDataSourceMainServer extends Plugin {
 
       //handle collections:fields:list
       if (ctx.action.resourceName == 'collections.fields' && ctx.action.actionName == 'list') {
-        handleFieldSource(ctx.action.params?.paginate == 'false' ? ctx.body : ctx.body.rows);
+        const collectionName = ctx.action.params?.associatedIndex;
+        let rawFields: ColumnsDescription = {};
+        if (collectionName) {
+          const tableInfo: TableInfo = {
+            tableName: collectionName,
+          };
+
+          if (ctx.app.db.options.schema) {
+            tableInfo.schema = ctx.app.db.options.schema;
+          }
+          rawFields = await ctx.app.db.queryInterface.sequelizeQueryInterface.describeTable(tableInfo);
+        }
+        handleFieldSource(ctx.action.params?.paginate == 'false' ? ctx.body : ctx.body.rows, rawFields);
       }
 
       if (ctx.action.resourceName == 'collections.fields' && ctx.action.actionName == 'get') {

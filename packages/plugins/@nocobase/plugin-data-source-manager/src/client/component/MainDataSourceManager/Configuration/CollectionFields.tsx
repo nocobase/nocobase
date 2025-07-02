@@ -35,9 +35,10 @@ import {
   useResourceContext,
   ViewCollectionField,
 } from '@nocobase/client';
-import { message, Space, Switch, Table, TableColumnProps, Tag, Tooltip } from 'antd';
+import { message, Select, Space, Switch, Table, TableColumnProps, Tag, Tooltip } from 'antd';
 import React, { createContext, useContext, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
+import { omit } from 'lodash';
 
 import { FilterTargetKeyAlert } from '../../CollectionsManager/FilterTargetKeyAlert';
 import { collection } from './schemas/collectionFields';
@@ -76,9 +77,13 @@ const tableContainer = css`
   }
   td,
   th {
-    flex: 2.3;
+    flex: 2;
     width: 0;
+    &:nth-child(4),
     &:nth-child(5) {
+      flex: 1.5;
+    }
+    &:nth-child(6) {
       flex: 1.2;
     }
     &:last-child {
@@ -99,13 +104,17 @@ const groupTableContainer = css`
   }
   td,
   th {
-    flex: 2.3;
+    flex: 2;
     width: 0;
     &:nth-child(2) {
       flex: 4 !important;
       white-space: nowrap;
     }
+    &:nth-child(4),
     &:nth-child(5) {
+      flex: 1.5;
+    }
+    &:nth-child(6) {
       flex: 1.2;
     }
     &:last-child {
@@ -121,12 +130,35 @@ const groupTableContainer = css`
 `;
 
 const titlePrompt = 'Default title for each record';
+
+const FieldTypeRenderer = ({ value, record, updateFieldHandler }) => {
+  const item = omit(record, ['__parent', '__collectionName']);
+  return !item?.possibleTypes ? (
+    <Tag>{value}</Tag>
+  ) : (
+    <Select
+      aria-label={`field-type-${value}`}
+      defaultValue={value}
+      popupMatchSelectWidth={false}
+      style={{ width: '100%' }}
+      options={
+        item?.possibleTypes.map((v) => {
+          return { label: v, value: v };
+        }) || []
+      }
+      onChange={async (newValue) => {
+        await updateFieldHandler(record, { type: newValue });
+      }}
+    />
+  );
+};
+
 const CurrentFields = (props) => {
   const compile = useCompile();
   const { getInterface } = useCollectionManager_deprecated();
   const { t } = useTranslation();
   const { setState } = useResourceActionContext();
-  const { targetKey } = props.collectionResource || {};
+  const { targetKey, resource } = props.collectionResource || {};
   const parentRecordData = useRecord();
   const [loadingRecord, setLoadingRecord] = React.useState<any>(null);
   const { refreshCM, isTitleField, getTemplate } = useCollectionManager_deprecated();
@@ -134,6 +166,24 @@ const CurrentFields = (props) => {
   const targetTemplate = getTemplate(template);
   const api = useAPIClient();
   const ctx = useContext(CollectionListContext);
+  const updateFieldHandler = async (record, values) => {
+    try {
+      await resource.update({
+        filterByTk: record.name,
+        values: {
+          ...values,
+          collectionName: record.collectionName,
+        },
+      });
+      ctx?.refresh?.();
+      await props.refreshAsync();
+      refreshCM();
+      message.success(t('Saved successfully'));
+    } catch (error) {
+      console.error('Failed to update field type:', error);
+      message.error(t('Save failed'));
+    }
+  };
   const columns: TableColumnProps<any>[] = [
     {
       dataIndex: ['uiSchema', 'title'],
@@ -148,6 +198,13 @@ const CurrentFields = (props) => {
       dataIndex: 'interface',
       title: t('Field interface'),
       render: (value) => <Tag>{compile(getInterface(value)?.title)}</Tag>,
+    },
+    {
+      dataIndex: 'type',
+      title: t('Field type'),
+      render: (value, record) => (
+        <FieldTypeRenderer value={value} record={record} updateFieldHandler={updateFieldHandler} />
+      ),
     },
     {
       dataIndex: 'titleField',
@@ -267,6 +324,11 @@ const InheritFields = (props) => {
       render: (value) => <Tag>{compile(getInterface(value)?.title)}</Tag>,
     },
     {
+      dataIndex: 'type',
+      title: t('Field type'),
+      render: (value, record) => <Tag>{value}</Tag>,
+    },
+    {
       dataIndex: 'titleField',
       title: t('Title field'),
       render(_, record) {
@@ -378,6 +440,10 @@ const CollectionFieldsInternal = () => {
     {
       dataIndex: 'interface',
       title: t('Field interface'),
+    },
+    {
+      dataIndex: 'type',
+      title: t('Field type'),
     },
     {
       dataIndex: 'titleField',
