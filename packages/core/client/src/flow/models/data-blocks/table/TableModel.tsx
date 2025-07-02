@@ -544,7 +544,7 @@ TableModel.registerFlow({
         },
       },
       defaultParams: {
-        size: 'small',
+        size: 'middle',
       },
       handler(ctx, params) {
         ctx.model.setProps('size', params.size);
