@@ -10,8 +10,9 @@
 import React from 'react';
 import { observer } from '@formily/react';
 import { FlowModel } from './models';
-import { useApplyAutoFlows } from './hooks/useApplyFlow';
+import { useApplyAutoFlows } from './hooks/useApplyAutoFlows';
 import { useFlowModelById } from './hooks/useFlowModelById';
+import { Spin } from 'antd';
 
 // 基础组件props类型
 type BaseFlowModelRendererProps<P extends React.ComponentProps<any>> = {
@@ -45,6 +46,7 @@ interface WithFlowModelOptionsBase {
     }>; // 设置组件，作为wrapper
     props?: Record<string, any>; // 传递给设置组件的参数
   };
+  FlowSpinComponent: React.ComponentType;
 }
 
 // 当提供use时，uid可选
@@ -82,8 +84,11 @@ function WithExistingModel<P extends object>({
   WrappedComponent: React.ComponentType<P>;
   options?: WithFlowModelOptions;
 } & P) {
-  // 始终应用默认流程
-  useApplyAutoFlows(model);
+  const pending = useApplyAutoFlows(model);
+
+  if (pending) {
+    return <options.FlowSpinComponent />;
+  }
 
   const modelProps = model?.getProps();
   const combinedProps = { ...restProps, ...modelProps } as unknown as P;
@@ -122,8 +127,11 @@ function WithCreatedModel<P extends object>({
   // 使用 useFlowModelById 创建模型
   const model = useFlowModelById(uid, use);
 
-  // 始终应用默认流程
-  useApplyAutoFlows(model);
+  const pending = useApplyAutoFlows(model);
+
+  if (pending) {
+    return <options.FlowSpinComponent />;
+  }
 
   const modelProps = model?.getProps();
   const combinedProps = { ...restProps, ...modelProps } as unknown as P;
@@ -215,8 +223,13 @@ export function withFlowModel<P extends object>(
   WrappedComponent: React.ComponentType<P>,
   options?: WithFlowModelOptions,
 ) {
+  const opts = {
+    FlowSpinComponent: Spin,
+    ...options,
+  };
+
   const WithFlowModel = observer((props: BaseFlowModelRendererProps<P>) =>
-    WithFlowModelInternal(props, WrappedComponent, options),
+    WithFlowModelInternal(props, WrappedComponent, opts),
   );
 
   WithFlowModel.displayName = `WithFlowModel(${WrappedComponent.displayName || WrappedComponent.name || 'Component'})`;

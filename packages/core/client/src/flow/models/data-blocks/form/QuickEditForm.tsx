@@ -10,7 +10,13 @@
 import { FormButtonGroup, FormLayout } from '@formily/antd-v5';
 import { createForm, Form } from '@formily/core';
 import { FormProvider, observer } from '@formily/react';
-import { Collection, CollectionField, FlowEngine, SingleRecordResource } from '@nocobase/flow-engine';
+import {
+  Collection,
+  CollectionField,
+  FlowEngine,
+  FlowModelRenderer,
+  SingleRecordResource,
+} from '@nocobase/flow-engine';
 import { useRequest } from 'ahooks';
 import { Button, Skeleton } from 'antd';
 import _ from 'lodash';
@@ -78,7 +84,7 @@ export class QuickEditForm extends DataBlockModel {
       content: (popover) => {
         console.log('QuickEditForm.open3', Date.now() - model.now);
         return (
-          <SimpleFlowModelRenderer
+          <FlowModelRenderer
             sharedContext={{
               currentView: popover,
               __onSubmitSuccess: onSuccess,
@@ -118,7 +124,7 @@ export class QuickEditForm extends DataBlockModel {
           <FormLayout layout={'vertical'}>
             {this.mapSubModels('fields', (field) => {
               return (
-                <SimpleFlowModelRenderer
+                <FlowModelRenderer
                   model={field}
                   sharedContext={{ currentRecord: this.resource.getData() }}
                   fallback={<Skeleton.Input size="small" />}

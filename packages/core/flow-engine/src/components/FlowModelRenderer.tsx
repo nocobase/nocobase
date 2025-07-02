@@ -105,6 +105,7 @@ const FlowModelRendererWithAutoFlows: React.FC<{
   showErrorFallback?: boolean;
   settingsMenuLevel?: number;
   extraToolbarItems?: ToolbarItemConfig[];
+  fallback?: React.ReactNode;
 }> = observer(
   ({
     model,
@@ -117,8 +118,13 @@ const FlowModelRendererWithAutoFlows: React.FC<{
     showErrorFallback,
     settingsMenuLevel,
     extraToolbarItems,
+    fallback,
   }) => {
-    useApplyAutoFlows(model, extraContext);
+    const pending = useApplyAutoFlows(model, extraContext);
+
+    if (pending) {
+      return <>{fallback}</>;
+    }
 
     return (
       <FlowModelProvider model={model}>
@@ -319,36 +325,33 @@ export const FlowModelRenderer: React.FC<FlowModelRendererProps> = observer(
     // 根据 skipApplyAutoFlows 选择不同的内部组件
     if (skipApplyAutoFlows) {
       return (
-        <Suspense fallback={<Spin />}>
-          <FlowModelRendererWithoutAutoFlows
-            model={model}
-            showFlowSettings={showFlowSettings}
-            flowSettingsVariant={flowSettingsVariant}
-            hideRemoveInSettings={hideRemoveInSettings}
-            showTitle={showTitle}
-            sharedContext={sharedContext}
-            showErrorFallback={showErrorFallback}
-            settingsMenuLevel={settingsMenuLevel}
-            extraToolbarItems={extraToolbarItems}
-          />
-        </Suspense>
+        <FlowModelRendererWithoutAutoFlows
+          model={model}
+          showFlowSettings={showFlowSettings}
+          flowSettingsVariant={flowSettingsVariant}
+          hideRemoveInSettings={hideRemoveInSettings}
+          showTitle={showTitle}
+          sharedContext={sharedContext}
+          showErrorFallback={showErrorFallback}
+          settingsMenuLevel={settingsMenuLevel}
+          extraToolbarItems={extraToolbarItems}
+        />
       );
     } else {
       return (
-        <Suspense fallback={fallback}>
-          <FlowModelRendererWithAutoFlows
-            model={model}
-            showFlowSettings={showFlowSettings}
-            flowSettingsVariant={flowSettingsVariant}
-            hideRemoveInSettings={hideRemoveInSettings}
-            showTitle={showTitle}
-            extraContext={extraContext}
-            sharedContext={sharedContext}
-            showErrorFallback={showErrorFallback}
-            settingsMenuLevel={settingsMenuLevel}
-            extraToolbarItems={extraToolbarItems}
-          />
-        </Suspense>
+        <FlowModelRendererWithAutoFlows
+          model={model}
+          showFlowSettings={showFlowSettings}
+          flowSettingsVariant={flowSettingsVariant}
+          hideRemoveInSettings={hideRemoveInSettings}
+          showTitle={showTitle}
+          extraContext={extraContext}
+          sharedContext={sharedContext}
+          showErrorFallback={showErrorFallback}
+          settingsMenuLevel={settingsMenuLevel}
+          extraToolbarItems={extraToolbarItems}
+          fallback={fallback}
+        />
       );
     }
   },
