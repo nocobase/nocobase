@@ -31,6 +31,9 @@ import { DataBlockModel } from '../../base/BlockModel';
 import { QuickEditForm } from '../form/QuickEditForm';
 import { TableColumnModel } from './TableColumnModel';
 import { extractIndex } from './utils';
+import { withAutoScrollY } from './withAutoScrollY';
+
+const SmartTable = withAutoScrollY(Table);
 
 type TableModelStructure = {
   subModels: {
@@ -107,6 +110,10 @@ const HeaderWrapperComponent = React.memo((props) => {
 
 export class TableModel extends DataBlockModel<TableModelStructure> {
   declare resource: MultiRecordResource;
+
+  headerButtonRef = React.createRef<HTMLDivElement>();
+  theadRef = React.createRef<HTMLTableSectionElement>();
+  tableContainerRef = React.createRef<HTMLDivElement>();
 
   getColumns() {
     return this.mapSubModels('columns', (column) => {
@@ -323,7 +330,10 @@ export class TableModel extends DataBlockModel<TableModelStructure> {
     return (
       <>
         <DndProvider>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+          <div
+            ref={this.headerButtonRef}
+            style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}
+          >
             <Space>
               {this.mapSubModels('actions', (action) => {
                 // @ts-ignore
@@ -365,40 +375,47 @@ export class TableModel extends DataBlockModel<TableModelStructure> {
             </Space>
           </div>
         </DndProvider>
-        <Table
-          components={this.components}
-          tableLayout="fixed"
-          size={this.props.size}
-          rowKey={this.collection.filterTargetKey}
-          rowSelection={
-            this.props.showIndex && {
-              columnWidth: 50,
-              type: 'checkbox',
-              onChange: (_, selectedRows) => {
-                this.resource.setSelectedRows(selectedRows);
-              },
-              selectedRowKeys: this.resource.getSelectedRows().map((row) => row.id),
-              renderCell: this.renderCell,
+        <div ref={this.tableContainerRef}>
+          <SmartTable
+            components={this.components}
+            tableLayout="fixed"
+            size={this.props.size}
+            rowKey={this.collection.filterTargetKey}
+            rowSelection={
+              this.props.showIndex && {
+                columnWidth: 50,
+                type: 'checkbox',
+                onChange: (_, selectedRows) => {
+                  this.resource.setSelectedRows(selectedRows);
+                },
+                selectedRowKeys: this.resource.getSelectedRows().map((row) => row.id),
+                renderCell: this.renderCell,
+              }
             }
-          }
-          loading={this.resource.loading}
-          virtual={this.props.virtual}
-          scroll={{ x: 'max-content', y: '100%' }}
-          dataSource={this.resource.getData()}
-          columns={this.getColumns()}
-          pagination={{
-            current: this.resource.getPage(),
-            pageSize: this.resource.getPageSize(),
-            total: this.resource.getMeta('count'),
-          }}
-          onChange={(pagination) => {
-            console.log('onChange pagination:', pagination);
-            this.resource.loading = true;
-            this.resource.setPage(pagination.current);
-            this.resource.setPageSize(pagination.pageSize);
-            this.resource.refresh();
-          }}
-        />
+            loading={this.resource.loading}
+            virtual={this.props.virtual}
+            scroll={{ x: 'max-content', y: '100%' }}
+            dataSource={this.resource.getData()}
+            columns={this.getColumns()}
+            pagination={{
+              current: this.resource.getPage(),
+              pageSize: this.resource.getPageSize(),
+              total: this.resource.getMeta('count'),
+            }}
+            onChange={(pagination) => {
+              this.resource.loading = true;
+              this.resource.setPage(pagination.current);
+              this.resource.setPageSize(pagination.pageSize);
+              this.resource.refresh();
+            }}
+            autoScrollRefs={{
+              headerButtonRef: this.headerButtonRef,
+              theadRef: this.theadRef,
+              tableContainerRef: this.tableContainerRef,
+              height: this.decoratorProps.height,
+            }}
+          />
+        </div>
       </>
     );
   }

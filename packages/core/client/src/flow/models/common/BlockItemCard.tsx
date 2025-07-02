@@ -48,7 +48,7 @@ export const BlockItemCard = (props) => {
       title={title}
       style={{ display: 'flex', flexDirection: 'column', height: height }}
       styles={{
-        body: { flex: 1, display: 'flex', flexDirection: 'column', overflow: 'auto' },
+        body: { flex: 1, display: 'flex', flexDirection: 'column' },
       }}
     >
       {children}
