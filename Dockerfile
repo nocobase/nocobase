@@ -8,12 +8,12 @@ ARG PLUGINS_DIRS
 ENV PLUGINS_DIRS=${PLUGINS_DIRS}
 
 RUN sed -i 's/deb.debian.org/mirrors.aliyun.com/g' /etc/apt/sources.list.d/debian.sources && \
-    sed -i 's|security.debian.org/debian-security|mirrors.aliyun.com/debian-security|g' /etc/apt/sources.list.d/debian.sources
+    sed -i 's|deb.debian.org/debian-security|mirrors.aliyun.com/debian-security|g' /etc/apt/sources.list.d/debian.sources
 
 RUN apt-get update && apt-get install -y jq expect
 
 RUN expect <<EOD
-spawn npm adduser --registry $VERDACCIO_URL
+spawn npm adduser --registry https://registry.npmmirror.com
 expect {
   "Username:" {send "test\r"; exp_continue}
   "Password:" {send "test\r"; exp_continue}
@@ -38,9 +38,9 @@ RUN CURRENTVERSION="$(jq -r '.version' lerna.json)" && \
 RUN git config user.email "test@mail.com"  \
     && git config user.name "test" && git add .  \
     && git commit -m "chore(versions): test publish packages"
-RUN yarn release:force --registry $VERDACCIO_URL
+RUN yarn release:force --registry https://registry.npmmirror.com
 
-RUN yarn config set registry $VERDACCIO_URL
+RUN yarn config set registry https://registry.npmmirror.com
 WORKDIR /app
 RUN cd /app \
   && yarn config set network-timeout 600000 -g \
