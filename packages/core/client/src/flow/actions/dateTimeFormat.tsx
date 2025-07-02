@@ -8,7 +8,7 @@
  */
 
 import { css } from '@emotion/css';
-import { defineAction } from '@nocobase/flow-engine';
+import { defineAction, useStepSettingContext } from '@nocobase/flow-engine';
 import { getPickerFormat, tval } from '@nocobase/utils/client';
 import { ExpiresRadio, DateFormatCom } from '../components';
 
@@ -102,9 +102,14 @@ export const dateTimeFormat = defineAction({
           dependencies: ['picker'],
           fulfill: {
             state: {
-              hidden: `{{ $form.values.picker !== 'date' || collectionField.type!== 'date' }}`,
+              hidden: `{{ $form.values.picker !== 'date'  }}`,
             },
           },
+        },
+        (field) => {
+          const { model } = useStepSettingContext();
+          const { collectionField } = model;
+          field.hidden = collectionField.type === 'dateOnly';
         },
       ],
     },
@@ -162,9 +167,6 @@ export const dateTimeFormat = defineAction({
     };
   },
   handler(ctx: any, params) {
-    ctx.model.flowEngine.flowSettings.registerScopes({
-      collectionField: ctx.model.collectionField,
-    });
     ctx.model.setComponentProps?.({ ...params });
   },
 });

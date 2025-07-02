@@ -17,7 +17,6 @@ import { useFlowModelById } from '../../../../hooks';
 import { useFlowEngine } from '../../../../provider';
 import { FlowEngine } from '../../../../flowEngine';
 import { getT } from '../../../../utils';
-import { Droppable } from '../../../dnd';
 
 // 检测DOM中直接子元素是否包含button元素的辅助函数
 const detectButtonInDOM = (container: HTMLElement): boolean => {
@@ -342,40 +341,38 @@ const FlowsFloatContextMenuWithModel: React.FC<ModelProvidedProps> = observer(
     }
 
     return (
-      <Droppable model={model}>
-        <div
-          ref={containerRef}
-          className={`${floatContainerStyles({ showBackground, showBorder })} ${hideMenu ? 'hide-parent-menu' : ''} ${
-            hasButton ? 'has-button-child' : ''
-          } ${className || ''}`}
-          style={containerStyle}
-          data-has-float-menu="true"
-          onMouseMove={handleChildHover}
-        >
-          {children}
+      <div
+        ref={containerRef}
+        className={`${floatContainerStyles({ showBackground, showBorder })} ${hideMenu ? 'hide-parent-menu' : ''} ${
+          hasButton ? 'has-button-child' : ''
+        } ${className || ''}`}
+        style={containerStyle}
+        data-has-float-menu="true"
+        onMouseMove={handleChildHover}
+      >
+        {children}
 
-          {/* 悬浮工具栏 - 使用与 NocoBase 一致的结构 */}
-          <div className="general-schema-designer">
-            {showTitle && model.title && (
-              <div className="general-schema-designer-title">
-                <span className="title-tag">{model.title}</span>
-              </div>
-            )}
-            <div className="general-schema-designer-icons">
-              <Space size={3} align="center">
-                {renderToolbarItems(
-                  model,
-                  showDeleteButton,
-                  showCopyUidButton,
-                  flowEngine,
-                  settingsMenuLevel,
-                  extraToolbarItems,
-                )}
-              </Space>
+        {/* 悬浮工具栏 - 使用与 NocoBase 一致的结构 */}
+        <div className="general-schema-designer">
+          {showTitle && model.title && (
+            <div className="general-schema-designer-title">
+              <span className="title-tag">{model.title}</span>
             </div>
+          )}
+          <div className="general-schema-designer-icons">
+            <Space size={3} align="center">
+              {renderToolbarItems(
+                model,
+                showDeleteButton,
+                showCopyUidButton,
+                flowEngine,
+                settingsMenuLevel,
+                extraToolbarItems,
+              )}
+            </Space>
           </div>
         </div>
-      </Droppable>
+      </div>
     );
   },
 );

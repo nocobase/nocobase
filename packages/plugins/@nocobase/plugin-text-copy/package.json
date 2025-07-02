@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-text-copy",
-  "version": "1.8.0-alpha.11",
+  "version": "1.8.0-alpha.12",
   "main": "./dist/server/index.js",
   "displayName": "Text copy",
   "displayName.zh-CN": "文本复制",

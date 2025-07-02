@@ -9,5 +9,5 @@
 
 export * from './useFlowModelById';
 export * from './useFlowModel';
-export * from './useApplyFlow';
+export * from './useApplyAutoFlows';
 export * from './useDispatchEvent';

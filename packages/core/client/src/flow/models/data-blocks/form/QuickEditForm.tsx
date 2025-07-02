@@ -7,24 +7,40 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { FormButtonGroup, FormLayout, Submit } from '@formily/antd-v5';
+import { FormButtonGroup, FormLayout } from '@formily/antd-v5';
 import { createForm, Form } from '@formily/core';
-import { FormProvider } from '@formily/react';
+import { FormProvider, observer } from '@formily/react';
 import {
-  BaseRecordResource,
   Collection,
   CollectionField,
   FlowEngine,
-  FlowEngineProvider,
-  FlowModel,
   FlowModelRenderer,
   SingleRecordResource,
 } from '@nocobase/flow-engine';
-import { Button, InputRef, Skeleton } from 'antd';
+import { useRequest } from 'ahooks';
+import { Button, Skeleton } from 'antd';
 import _ from 'lodash';
-import React, { createRef } from 'react';
-import { SkeletonFallback } from '../../../components/SkeletonFallback';
+import React from 'react';
 import { DataBlockModel } from '../../base/BlockModel';
+
+const SimpleFlowModelRenderer = observer((props: any) => {
+  const { fallback, model, sharedContext, extraContext } = props;
+  const { loading } = useRequest(
+    async () => {
+      model.setSharedContext(sharedContext);
+      await model.applyAutoFlows(extraContext);
+    },
+    {
+      refreshDeps: [model, sharedContext, extraContext],
+    },
+  );
+
+  if (loading) {
+    return <>{fallback}</>;
+  }
+
+  return model.render();
+});
 
 export class QuickEditForm extends DataBlockModel {
   form: Form;
@@ -32,6 +48,8 @@ export class QuickEditForm extends DataBlockModel {
 
   declare resource: SingleRecordResource;
   declare collection: Collection;
+
+  now: number = Date.now();
 
   static async open(options: {
     flowEngine: FlowEngine;
@@ -42,6 +60,7 @@ export class QuickEditForm extends DataBlockModel {
     filterByTk: string;
     onSuccess?: (values: any) => void;
   }) {
+    // this.now = Date.now();
     const { flowEngine, target, dataSourceKey, collectionName, fieldPath, filterByTk, onSuccess } = options;
     const model = flowEngine.createModel({
       use: 'QuickEditForm',
@@ -56,15 +75,22 @@ export class QuickEditForm extends DataBlockModel {
       },
     }) as QuickEditForm;
 
+    console.log('QuickEditForm.open2', Date.now() - model.now);
+    model.now = Date.now();
+
     await flowEngine.context.popover.open({
       target,
       placement: 'rightTop',
       content: (popover) => {
+        console.log('QuickEditForm.open3', Date.now() - model.now);
         return (
           <FlowModelRenderer
+            sharedContext={{
+              currentView: popover,
+              __onSubmitSuccess: onSuccess,
+            }}
             fallback={<Skeleton.Input size="small" />}
             model={model}
-            sharedContext={{ currentView: popover, __onSubmitSuccess: onSuccess }}
             extraContext={{ filterByTk }}
           />
         );
@@ -73,6 +99,8 @@ export class QuickEditForm extends DataBlockModel {
   }
 
   render() {
+    console.log('QuickEditForm.open4', Date.now() - this.now);
+
     return (
       <form
         style={{ minWidth: '200px' }}
@@ -99,7 +127,7 @@ export class QuickEditForm extends DataBlockModel {
                 <FlowModelRenderer
                   model={field}
                   sharedContext={{ currentRecord: this.resource.getData() }}
-                  fallback={<Skeleton paragraph={{ rows: 2 }} />}
+                  fallback={<Skeleton.Input size="small" />}
                 />
               );
             })}

@@ -14,7 +14,6 @@ import * as actions from './actions';
 import { FlowEngineRunner } from './FlowEngineRunner';
 import { FlowModelRepository, MockFlowModelRepository } from './FlowModelRepository';
 import { FlowRoute } from './FlowPage';
-import * as flowActions from './flowSetting';
 import * as models from './models';
 
 export class PluginFlowEngine extends Plugin {
@@ -40,8 +39,6 @@ export class PluginFlowEngine extends Plugin {
     });
     dataSourceManager.addDataSource(mainDataSource);
     this.app.addProvider(FlowEngineRunner, {});
-    // 注册通用 flow
-    this.flowEngine.registerActions(flowActions);
   }
 }
 

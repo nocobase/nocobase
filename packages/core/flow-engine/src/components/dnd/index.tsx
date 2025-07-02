@@ -13,6 +13,9 @@ import React, { FC, useState } from 'react';
 import { FlowModel } from '../../models';
 import { useFlowEngine } from '../../provider';
 
+export * from './getMousePositionOnElement';
+export * from './moveBlock';
+
 // 可拖拽图标组件
 export const DragHandler: FC<{ model: FlowModel }> = ({ model, children = <DragOutlined /> }) => {
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id: model.uid });

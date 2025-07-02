@@ -11,8 +11,9 @@ import React from 'react';
 import { castArray } from 'lodash';
 import { Button } from 'antd';
 import { tval } from '@nocobase/utils/client';
-import { AssociationReadPrettyFieldModel } from './AssociationReadPrettyFieldModel';
 import { reactive, FlowModel } from '@nocobase/flow-engine';
+import { FlowPage } from '../../../../FlowPage';
+import { AssociationReadPrettyFieldModel } from './AssociationReadPrettyFieldModel';
 import { getUniqueKeyFromCollection } from '../../../../../collection-manager/interfaces/utils';
 
 const LinkToggleWrapper = ({ enableLink, children, currentRecord, ...props }) => {
@@ -138,13 +139,15 @@ AssociationSelectReadPrettyFieldModel.registerFlow({
       },
       handler(ctx, params) {
         ctx.model.onClick = (e, currentRecord) => {
+          const targetCollection = ctx.model.collectionField.targetCollection;
+          console.log(currentRecord[targetCollection.filterTargetKey]);
           ctx.model.dispatchEvent('click', {
             event: e,
-            filterByTk: currentRecord[ctx.model.targetCollection.filterTargetKey],
-            collectionName: ctx.model.targetCollection.name,
+            filterByTk: currentRecord[targetCollection.filterTargetKey],
+            collectionName: targetCollection.name,
           });
           ctx.model.setStepParams('FormModel.default', 'step1', {
-            collectionName: ctx.model.targetCollection.name,
+            collectionName: targetCollection.name,
           });
         };
         ctx.model.setProps('enableLink', params.enableLink);

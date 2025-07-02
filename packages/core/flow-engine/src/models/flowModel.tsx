@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { action, autorun, define, observable, observe } from '@formily/reactive';
+import { batch, define, observable, observe } from '@formily/reactive';
 import _ from 'lodash';
 import React from 'react';
 import { uid } from 'uid/secure';
@@ -97,8 +97,10 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
       props: observable,
       subModels: observable.shallow,
       stepParams: observable,
-      setProps: action,
-      setStepParams: action,
+      // setProps: action,
+      setProps: batch,
+      // setStepParams: action,
+      setStepParams: batch,
     });
     // 保证onInit在所有属性都定义完成后调用
     // queueMicrotask(() => {

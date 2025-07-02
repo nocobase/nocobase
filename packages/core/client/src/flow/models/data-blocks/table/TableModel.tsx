@@ -16,6 +16,7 @@ import {
   AddFieldButton,
   DndProvider,
   DragHandler,
+  Droppable,
   FlowModelRenderer,
   MultiRecordResource,
   useFlowEngine,
@@ -25,11 +26,11 @@ import { Space, Spin, Table } from 'antd';
 import classNames from 'classnames';
 import _ from 'lodash';
 import React, { useRef } from 'react';
-import { BlockItemCard } from '../../common/BlockItemCard';
 import { ActionModel } from '../../base/ActionModel';
 import { DataBlockModel } from '../../base/BlockModel';
 import { QuickEditForm } from '../form/QuickEditForm';
 import { TableColumnModel } from './TableColumnModel';
+import { extractIndex } from './utils';
 
 type TableModelStructure = {
   subModels: {
@@ -38,6 +39,56 @@ type TableModelStructure = {
   };
 };
 
+const TableIndex = (props) => {
+  const { index, ...otherProps } = props;
+  return (
+    <div className={classNames('nb-table-index')} style={{ padding: '0 8px 0 16px' }} {...otherProps}>
+      {index}
+    </div>
+  );
+};
+
+const rowSelectCheckboxWrapperClass = css`
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-evenly;
+  padding-right: 8px;
+  .nb-table-index {
+    opacity: 0;
+  }
+  &:not(.checked) {
+    .nb-table-index {
+      opacity: 1;
+    }
+  }
+`;
+
+const rowSelectCheckboxWrapperClassHover = css`
+  &:hover {
+    .nb-table-index {
+      opacity: 0;
+    }
+    .nb-origin-node {
+      display: block;
+    }
+  }
+`;
+const rowSelectCheckboxContentClass = css`
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-evenly;
+`;
+
+const rowSelectCheckboxCheckedClassHover = css`
+  position: absolute;
+  right: 50%;
+  transform: translateX(50%);
+  &:not(.checked) {
+    display: none;
+  }
+`;
 const HeaderWrapperComponent = React.memo((props) => {
   const engine = useFlowEngine();
 
@@ -234,9 +285,43 @@ export class TableModel extends DataBlockModel<TableModelStructure> {
     },
   };
 
+  renderCell = (checked, record, index, originNode) => {
+    if (!this.props.dragSort && !this.props.showIndex) {
+      return originNode;
+    }
+    const current = this.resource.getPage();
+
+    const pageSize = this.resource.getPageSize() || 20;
+    if (current) {
+      index = index + (current - 1) * pageSize + 1;
+    } else {
+      index = index + 1;
+    }
+    if (record.__index) {
+      index = extractIndex(record.__index);
+    }
+    return (
+      <div
+        role="button"
+        aria-label={`table-index-${index}`}
+        className={classNames(checked ? 'checked' : null, rowSelectCheckboxWrapperClass, {
+          [rowSelectCheckboxWrapperClassHover]: true,
+        })}
+      >
+        <div className={classNames(checked ? 'checked' : null, rowSelectCheckboxContentClass)}>
+          {this.props.showIndex && <TableIndex index={index} />}
+        </div>
+
+        <div className={classNames('nb-origin-node', checked ? 'checked' : null, rowSelectCheckboxCheckedClassHover)}>
+          {originNode}
+        </div>
+      </div>
+    );
+  };
+
   renderComponent() {
     return (
-      <Spin spinning={this.resource.loading}>
+      <>
         <DndProvider>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
             <Space>
@@ -258,17 +343,19 @@ export class TableModel extends DataBlockModel<TableModelStructure> {
                 // @ts-ignore
                 if (action.props.position !== 'left') {
                   return (
-                    <FlowModelRenderer
-                      model={action}
-                      showFlowSettings={{ showBackground: false, showBorder: false }}
-                      extraToolbarItems={[
-                        {
-                          key: 'drag-handler',
-                          component: DragHandler,
-                          sort: 1,
-                        },
-                      ]}
-                    />
+                    <Droppable model={action}>
+                      <FlowModelRenderer
+                        model={action}
+                        showFlowSettings={{ showBackground: false, showBorder: false }}
+                        extraToolbarItems={[
+                          {
+                            key: 'drag-handler',
+                            component: DragHandler,
+                            sort: 1,
+                          },
+                        ]}
+                      />
+                    </Droppable>
                   );
                 }
 
@@ -281,17 +368,22 @@ export class TableModel extends DataBlockModel<TableModelStructure> {
         <Table
           components={this.components}
           tableLayout="fixed"
+          size={this.props.size}
           rowKey={this.collection.filterTargetKey}
-          rowSelection={{
-            columnWidth: 50,
-            type: 'checkbox',
-            onChange: (_, selectedRows) => {
-              this.resource.setSelectedRows(selectedRows);
-            },
-            selectedRowKeys: this.resource.getSelectedRows().map((row) => row.id),
-          }}
+          rowSelection={
+            this.props.showIndex && {
+              columnWidth: 50,
+              type: 'checkbox',
+              onChange: (_, selectedRows) => {
+                this.resource.setSelectedRows(selectedRows);
+              },
+              selectedRowKeys: this.resource.getSelectedRows().map((row) => row.id),
+              renderCell: this.renderCell,
+            }
+          }
+          loading={this.resource.loading}
           virtual={this.props.virtual}
-          scroll={{ x: 'max-content', y: 600 }}
+          scroll={{ x: 'max-content', y: '100%' }}
           dataSource={this.resource.getData()}
           columns={this.getColumns()}
           pagination={{
@@ -307,7 +399,7 @@ export class TableModel extends DataBlockModel<TableModelStructure> {
             this.resource.refresh();
           }}
         />
-      </Spin>
+      </>
     );
   }
 }
@@ -415,9 +507,57 @@ TableModel.registerFlow({
       use: 'dataScope',
       title: tval('Set data scope'),
     },
+    sortingRule: {
+      use: 'sortingRule',
+      title: tval('Set default sorting rules'),
+    },
+    dataLoadingMode: {
+      use: 'dataLoadingMode',
+      title: tval('Set data loading mode'),
+    },
+    enabledIndexColumn: {
+      title: tval('Enable index column'),
+      uiSchema: {
+        showIndex: {
+          'x-component': 'Switch',
+          'x-decorator': 'FormItem',
+        },
+      },
+      defaultParams: {
+        showIndex: true,
+      },
+      handler(ctx, params) {
+        ctx.model.setProps('showIndex', params.showIndex);
+      },
+    },
+    tableSize: {
+      title: tval('Table size'),
+      uiSchema: {
+        size: {
+          'x-component': 'Select',
+          'x-decorator': 'FormItem',
+          enum: [
+            { label: tval('Large'), value: 'large' },
+            { label: tval('Middle'), value: 'middle' },
+            { label: tval('Small'), value: 'small' },
+          ],
+        },
+      },
+      defaultParams: {
+        size: 'middle',
+      },
+      handler(ctx, params) {
+        ctx.model.setProps('size', params.size);
+      },
+    },
     refresh: {
       async handler(ctx, params) {
-        await ctx.model.resource.refresh();
+        const { dataLoadingMode } = ctx.model.props;
+        if (dataLoadingMode === 'auto') {
+          await ctx.model.resource.refresh();
+        } else {
+          ctx.model.resource.loading = false;
+        }
       },
     },
   },

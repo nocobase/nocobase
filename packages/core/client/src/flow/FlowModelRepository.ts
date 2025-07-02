@@ -110,7 +110,7 @@ export class FlowModelRepository implements IFlowModelRepository<FlowModel> {
   async findOne(query) {
     const response = await this.app.apiClient.request({
       url: 'flowModels:findOne',
-      params: _.pick(query, ['uid', 'parentId']),
+      params: _.pick(query, ['uid', 'parentId', 'subKey']),
     });
     return response.data?.data;
   }

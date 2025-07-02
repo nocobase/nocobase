@@ -1252,7 +1252,8 @@ WHERE TreeTable.depth = 1 AND  TreeTable.ancestor = :ancestor and TreeTable.sort
           const childOptions = {
             parentUid: currentUid,
             parentPath: [currentUid, ...(parentChildOptions?.parentPath || [])].filter(Boolean),
-            type: 'properties',
+            type: subKey,
+            // type: 'properties',
             sort: ++sort,
           };
           const children = this.modelToSingleNodes(item, childOptions);
@@ -1371,7 +1372,8 @@ WHERE TreeTable.depth = 1 AND  TreeTable.ancestor = :ancestor and TreeTable.sort
     if (model.parentId) {
       childOptions = {
         parentUid: model.parentId,
-        type: 'properties',
+        type: model.subKey,
+        // type: 'properties',
         position: 'last',
       };
     }
@@ -1391,13 +1393,25 @@ WHERE TreeTable.depth = 1 AND  TreeTable.ancestor = :ancestor and TreeTable.sort
     return UiSchemaRepository.nodesToModel(nodes, uid);
   }
 
-  async findModelByParentId(parentUid: string, options?: GetJsonSchemaOptions) {
+  async findModelByParentId(parentUid: string, options?: GetJsonSchemaOptions & { subKey?: string }) {
     const r = this.database.getRepository('uiSchemaTreePath');
-    const treePath = await r.model.findOne({
+    const treePaths = await r.model.findAll({
       where: {
         ancestor: parentUid,
         depth: 1,
       },
+      transaction: options?.transaction,
+    });
+    const ancestors = treePaths.map((treePath) => treePath['descendant']);
+    const where = {
+      ancestor: ancestors,
+      depth: 0,
+    };
+    if (options?.subKey) {
+      where['type'] = options.subKey;
+    }
+    const treePath = await r.model.findOne({
+      where,
       transaction: options?.transaction,
     });
     if (treePath?.['descendant']) {

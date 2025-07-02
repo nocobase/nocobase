@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { defineAction, MultiRecordResource, useStepSettingContext } from '@nocobase/flow-engine';
+import { defineAction, MultiRecordResource, useFlowModel, useStepSettingContext } from '@nocobase/flow-engine';
 import React from 'react';
 import { tval } from '@nocobase/utils/client';
 import { FilterGroup } from '../components/FilterGroup';
@@ -22,10 +22,15 @@ export const dataScope = defineAction({
       'x-component': (props) => {
         // eslint-disable-next-line react-hooks/rules-of-hooks
         const { model: modelInstance } = useStepSettingContext();
-        const currentBlockModel = modelInstance.ctx.shared.currentBlockModel;
-        const fields = currentBlockModel.collection.getFields();
+        let fields = [];
+        const collectionField = modelInstance.collectionField;
+        if (collectionField) {
+          fields = collectionField.targetCollection.fields;
+        } else {
+          const currentBlockModel = modelInstance.ctx.shared.currentBlockModel;
+          fields = currentBlockModel.collection.getFields();
+        }
         const ignoreFieldsNames = modelInstance.props.ignoreFieldsNames || [];
-
         return (
           <FilterGroup
             value={props.value}
@@ -45,10 +50,11 @@ export const dataScope = defineAction({
   async handler(ctx, params) {
     // @ts-ignore
     const resource = ctx.model?.resource as MultiRecordResource;
+    console.log(ctx.model);
     if (!resource) {
       return;
     }
     resource.addFilterGroup(ctx.model.uid, params.filter);
-    resource.refresh();
+    // resource.refresh();
   },
 });
