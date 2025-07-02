@@ -241,7 +241,7 @@ const InheritFields = (props) => {
     },
     {
       dataIndex: 'interface',
-      title: t('Field interface'),
+      title: t('Field interface123'),
       render: (value) => <Tag>{compile(getInterface(value)?.title)}</Tag>,
     },
     {
