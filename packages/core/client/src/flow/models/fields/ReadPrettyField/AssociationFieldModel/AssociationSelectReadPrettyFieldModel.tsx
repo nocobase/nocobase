@@ -140,6 +140,7 @@ AssociationSelectReadPrettyFieldModel.registerFlow({
       handler(ctx, params) {
         ctx.model.onClick = (e, currentRecord) => {
           const targetCollection = ctx.model.collectionField.targetCollection;
+          console.log(currentRecord[targetCollection.filterTargetKey]);
           ctx.model.dispatchEvent('click', {
             event: e,
             filterByTk: currentRecord[targetCollection.filterTargetKey],
@@ -166,38 +167,6 @@ AssociationSelectReadPrettyFieldModel.registerFlow({
       use: 'openView',
       defaultParams(ctx) {
         return {};
-      },
-      async handler(ctx, params) {
-        const sizeToWidthMap: Record<string, number> = {
-          small: 480,
-          medium: 800,
-          large: 1200,
-        };
-
-        await ctx.globals[ctx.extra.mode || params.mode || 'drawer'].open({
-          target: ctx.extra.target || ctx.shared.layoutContentElement,
-          width: sizeToWidthMap[params.size || 'medium'],
-          content: (currentView) => {
-            return (
-              <FlowPage
-                parentId={ctx.model.uid}
-                sharedContext={{
-                  currentFlow: ctx,
-                  currentView: currentView,
-                }}
-              />
-            );
-          },
-          styles: {
-            content: {
-              background: 'var(--nb-box-bg)',
-              padding: 0,
-            },
-          },
-          bodyStyle: {
-            padding: 0,
-          },
-        });
       },
     },
   },
