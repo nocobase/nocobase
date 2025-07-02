@@ -26,6 +26,7 @@ export class FormModel extends DataBlockModel {
         <FormLayout layout={'vertical'}>
           {this.mapSubModels('fields', (field) => (
             <FlowModelRenderer
+              key={field.uid}
               model={field}
               showFlowSettings={{ showBorder: false }}
               sharedContext={{ currentRecord: this.resource.getData() }}
@@ -57,6 +58,7 @@ export class FormModel extends DataBlockModel {
         <FormButtonGroup style={{ marginTop: 16 }}>
           {this.mapSubModels('actions', (action) => (
             <FlowModelRenderer
+              key={action.uid}
               model={action}
               showFlowSettings={{ showBackground: false, showBorder: false }}
               sharedContext={{ currentRecord: this.resource.getData() }}

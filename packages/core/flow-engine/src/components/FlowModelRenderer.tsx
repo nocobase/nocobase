@@ -60,6 +60,8 @@ interface FlowModelRendererProps {
 
   fallback?: React.ReactNode; // 渲染失败时的回退内容
 
+  key?: React.Key;
+
   /** 是否显示流程设置入口（如按钮、菜单等） */
   showFlowSettings?: boolean | { showBackground?: boolean; showBorder?: boolean }; // 默认 false
 
