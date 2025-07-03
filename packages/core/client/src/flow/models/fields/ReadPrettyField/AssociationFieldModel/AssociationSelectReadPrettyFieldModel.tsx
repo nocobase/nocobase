@@ -60,7 +60,7 @@ export class AssociationSelectReadPrettyFieldModel extends AssociationReadPretty
     return (
       <>
         {arrayValue.map((v, index) => {
-          const key = `${index}`;
+          const key = `${index + this.ctx.shared.index}`;
           let fieldModel = this.fieldModelCache[v?.[fieldNames.label]];
 
           if (!fieldModel) {
@@ -140,7 +140,6 @@ AssociationSelectReadPrettyFieldModel.registerFlow({
       handler(ctx, params) {
         ctx.model.onClick = (e, currentRecord) => {
           const targetCollection = ctx.model.collectionField.targetCollection;
-          console.log(currentRecord[targetCollection.filterTargetKey]);
           ctx.model.dispatchEvent('click', {
             event: e,
             filterByTk: currentRecord[targetCollection.filterTargetKey],

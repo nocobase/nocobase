@@ -781,7 +781,7 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     await Promise.all(
       this.mapSubModels(subKey, async (sub) => {
         sub.setSharedContext(shared);
-        await sub.applyAutoFlows(extra);
+        await sub.applyAutoFlows(extra, false);
       }),
     );
   }
@@ -825,6 +825,10 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     }
     // 清理 fork 缓存
     this.forkCache.clear();
+  }
+
+  getFork(key: string) {
+    return this.forkCache.get(key);
   }
 
   /**

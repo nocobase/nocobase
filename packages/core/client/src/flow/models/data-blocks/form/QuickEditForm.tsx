@@ -58,10 +58,11 @@ export class QuickEditForm extends DataBlockModel {
     collectionName: string;
     fieldPath: string;
     filterByTk: string;
+    record: any;
     onSuccess?: (values: any) => void;
   }) {
     // this.now = Date.now();
-    const { flowEngine, target, dataSourceKey, collectionName, fieldPath, filterByTk, onSuccess } = options;
+    const { flowEngine, target, dataSourceKey, collectionName, fieldPath, filterByTk, record, onSuccess } = options;
     const model = flowEngine.createModel({
       use: 'QuickEditForm',
       stepParams: {
@@ -91,7 +92,7 @@ export class QuickEditForm extends DataBlockModel {
             }}
             fallback={<Skeleton.Input size="small" />}
             model={model}
-            extraContext={{ filterByTk }}
+            extraContext={{ filterByTk, record }}
           />
         );
       },
@@ -108,15 +109,20 @@ export class QuickEditForm extends DataBlockModel {
         onSubmit={async (e) => {
           e.preventDefault();
           await this.form.submit();
-          await this.resource.save(
-            {
-              [this.fieldPath]: this.form.values[this.fieldPath],
-            },
-            { refresh: false },
-          );
-          this.ctx.shared.__onSubmitSuccess?.({
+          const formValues = {
             [this.fieldPath]: this.form.values[this.fieldPath],
+          };
+
+          const originalValues = {
+            [this.fieldPath]: this.resource.getData()?.[this.fieldPath],
+          };
+
+          this.resource.save(formValues, { refresh: false }).catch((error) => {
+            console.error('Failed to save form data:', error);
+            this.ctx.globals.message.error(this.translate('Failed to save form data'));
+            this.ctx.shared.__onSubmitSuccess?.(originalValues);
           });
+          this.ctx.shared.__onSubmitSuccess?.(formValues);
           this.ctx.shared.currentView.close();
         }}
       >
@@ -125,6 +131,7 @@ export class QuickEditForm extends DataBlockModel {
             {this.mapSubModels('fields', (field) => {
               return (
                 <FlowModelRenderer
+                  key={field.uid}
                   model={field}
                   sharedContext={{ currentRecord: this.resource.getData() }}
                   fallback={<Skeleton.Input size="small" />}
@@ -185,9 +192,9 @@ QuickEditForm.registerFlow({
           });
           ctx.model.addAppends(fieldPath);
         }
-        if (ctx.extra.filterByTk) {
+        if (ctx.extra.filterByTk || ctx.extra.record) {
           resource.setFilterByTk(ctx.extra.filterByTk);
-          await resource.refresh();
+          resource.setData(ctx.extra.record);
           ctx.model.form.setInitialValues(resource.getData());
         }
       },

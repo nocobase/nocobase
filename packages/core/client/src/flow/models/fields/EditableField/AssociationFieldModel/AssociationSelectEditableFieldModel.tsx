@@ -56,6 +56,7 @@ function LazySelect(props) {
   return (
     <Select
       {...others}
+      allowClear
       showSearch
       filterOption={false}
       labelInValue
@@ -163,17 +164,11 @@ const paginationState = {
 AssociationSelectEditableFieldModel.registerFlow({
   key: 'associationSelectInit',
   auto: true,
-  sort: 200,
+  sort: 300,
   steps: {
     bindEvent: {
       handler(ctx, params) {
-        const resource = new MultiRecordResource();
-        const { target, dataSourceKey } = ctx.model.collectionField;
-        resource.setDataSourceKey(dataSourceKey);
-        resource.setResourceName(target);
-        resource.setAPIClient(ctx.globals.api);
-        resource.setPageSize(paginationState.pageSize);
-        ctx.model.resource = resource;
+        const labelFieldName = ctx.model.field.componentProps.fieldNames.label;
 
         ctx.model.onDropdownVisibleChange = (open) => {
           if (open) {
@@ -182,6 +177,9 @@ AssociationSelectEditableFieldModel.registerFlow({
               field: ctx.model.field,
               form: ctx.model.form,
             });
+          } else {
+            ctx.model.resource.removeFilterGroup(labelFieldName);
+            paginationState.page = 1;
           }
         };
         ctx.model.onPopupScroll = (e) => {
@@ -212,8 +210,17 @@ AssociationSelectEditableFieldModel.registerFlow({
   steps: {
     step1: {
       async handler(ctx, params) {
-        await ctx.model.resource.refresh();
-        const data = ctx.model.resource.getData();
+        const labelFieldValue = ctx.model.field.componentProps.fieldNames.value;
+        const resource = ctx.model.resource;
+        const dataSource = ctx.model.field.dataSource;
+        resource.setPage(1);
+        await resource.refresh();
+        const { count } = resource.getMeta();
+        const data = resource.getData();
+        //已经全部加载
+        if (dataSource && count === dataSource.length && data[0][labelFieldValue] === dataSource[0][labelFieldValue]) {
+          return;
+        }
         ctx.model.setDataSource(data);
         if (data.length < paginationState.pageSize) {
           paginationState.hasMore = false;
@@ -302,6 +309,12 @@ AssociationSelectEditableFieldModel.registerFlow({
           await resource.refresh();
           const data = resource.getData();
           ctx.model.setDataSource(data);
+          if (data.length < paginationState.pageSize) {
+            paginationState.hasMore = false;
+          } else {
+            paginationState.hasMore = true;
+            paginationState.page++;
+          }
         } catch (error) {
           console.error('AssociationSelectField search flow error:', error);
           // 出错时也可以选择清空数据源或者显示错误提示
@@ -319,6 +332,17 @@ AssociationSelectEditableFieldModel.registerFlow({
   auto: true,
   sort: 200,
   steps: {
+    default: {
+      handler(ctx) {
+        const resource = new MultiRecordResource();
+        const { target, dataSourceKey } = ctx.model.collectionField;
+        resource.setDataSourceKey(dataSourceKey);
+        resource.setResourceName(target);
+        resource.setAPIClient(ctx.globals.api);
+        resource.setPageSize(paginationState.pageSize);
+        ctx.model.resource = resource;
+      },
+    },
     fieldNames: {
       use: 'titleField',
       title: tval('Title field'),
@@ -326,6 +350,10 @@ AssociationSelectEditableFieldModel.registerFlow({
     dataScope: {
       use: 'dataScope',
       title: tval('Set data scope'),
+    },
+    sortingRule: {
+      use: 'sortingRule',
+      title: tval('Set default sorting rules'),
     },
   },
 });

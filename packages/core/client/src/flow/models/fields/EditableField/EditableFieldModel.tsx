@@ -114,7 +114,7 @@ EditableFieldModel.registerFlow({
     createField: {
       handler(ctx, params) {
         const { collectionField } = ctx.model;
-        ctx.model.field = ctx.model.createField();
+        ctx.model.field = ctx.model.field || ctx.model.createField();
         ctx.model.setComponentProps(collectionField.getComponentProps());
         if (collectionField.enum.length) {
           ctx.model.setDataSource(collectionField.enum);
