@@ -545,11 +545,8 @@ export class PluginDataSourceMainServer extends Plugin {
         if (collectionName) {
           const tableInfo: TableInfo = {
             tableName: collectionName,
+            schema: process.env.COLLECTION_MANAGER_SCHEMA || this.app.db.options.schema,
           };
-
-          if (ctx.app.db.options.schema) {
-            tableInfo.schema = ctx.app.db.options.schema;
-          }
           rawFields = await ctx.app.db.queryInterface.sequelizeQueryInterface.describeTable(tableInfo);
         }
         handleFieldSource(ctx.action.params?.paginate == 'false' ? ctx.body : ctx.body.rows, rawFields);
