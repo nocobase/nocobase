@@ -329,7 +329,26 @@ export interface FlowModelMeta {
   title?: string;
   group?: string;
   requiresDataSource?: boolean; // 是否需要数据源
-  defaultOptions?: Record<string, any>;
+  /**
+   * 默认选项配置，支持静态对象或动态函数形式
+   *
+   * 当为静态对象时，将直接使用该配置作为默认值
+   * 当为函数时，将在创建菜单项时调用，可根据父模型动态生成配置
+   *
+   * @example
+   * // 静态配置
+   * defaultOptions: { someProperty: 'value' }
+   *
+   * // 动态配置
+   * defaultOptions: (parentModel) => {
+   *   return {
+   *     someProperty: parentModel.someData ? 'valueA' : 'valueB'
+   *   };
+   * }
+   */
+  defaultOptions?:
+    | Record<string, any>
+    | ((parentModel: FlowModel) => Record<string, any> | Promise<Record<string, any>>);
   icon?: string;
   // uniqueSub?: boolean;
   /**
@@ -343,6 +362,43 @@ export interface FlowModelMeta {
    * @default false
    */
   hide?: boolean;
+  /**
+   * 子菜单项定义，支持创建多层嵌套的层级菜单结构
+   *
+   * 当定义了 children 时，该模型本身不会直接出现在菜单中，
+   * 而是显示为一个包含子菜单项的分组。每个子项都可以再有自己的 children，
+   * 形成无限层级的嵌套结构。
+   *
+   * 对于数据区块类型，系统会自动为每个叶子节点生成数据源和数据表的选择菜单。
+   * 对于普通区块和动作，叶子节点将直接作为可选择的菜单项。
+   *
+   * @example
+   * children: [
+   *   {
+   *     title: 'Basic Blocks',
+   *     children: [
+   *       { title: 'Table', defaultOptions: { use: 'TableModel' } },
+   *       { title: 'Form', defaultOptions: { use: 'FormModel' } }
+   *     ]
+   *   },
+   *   {
+   *     title: 'Advanced Blocks',
+   *     children: [
+   *       { title: 'Chart', defaultOptions: { use: 'ChartModel' } }
+   *     ]
+   *   }
+   * ]
+   */
+  children?: FlowModelMeta[];
+  /**
+   * 切换检测器函数，用于判断该模型是否已存在
+   * 主要用于支持切换式的 UI 交互
+   */
+  toggleDetector?: (model: FlowModel) => boolean | Promise<boolean>;
+  /**
+   * 自定义移除函数，用于处理该项的删除逻辑
+   */
+  customRemove?: (model: FlowModel, item: any) => Promise<void>;
 }
 
 /**

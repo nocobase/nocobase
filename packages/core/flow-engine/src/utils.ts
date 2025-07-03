@@ -409,6 +409,166 @@ export function buildFieldItems(
 }
 
 /**
+ * 解析 FlowModelMeta 中的 defaultOptions，支持静态值和函数形式
+ * @param defaultOptions - 可以是静态对象或返回对象的函数
+ * @param parentModel - 父模型实例，用于传递给函数形式的 defaultOptions
+ * @returns 解析后的选项对象
+ */
+export async function resolveDefaultOptions(
+  defaultOptions:
+    | Record<string, any>
+    | ((parentModel: FlowModel) => Record<string, any> | Promise<Record<string, any>>)
+    | undefined,
+  parentModel: FlowModel,
+): Promise<Record<string, any>> {
+  if (!defaultOptions) {
+    return {};
+  }
+
+  if (typeof defaultOptions === 'function') {
+    try {
+      const result = await defaultOptions(parentModel);
+      return result || {};
+    } catch (error) {
+      console.error('Error resolving defaultOptions function:', error);
+      return {};
+    }
+  }
+
+  return defaultOptions;
+}
+
+/**
+ * 递归处理 FlowModelMeta 的 children，支持多层嵌套和函数形式的 defaultOptions
+ *
+ * 该函数用于处理具有层次结构的菜单项定义，支持：
+ * - 多层嵌套的 children 结构
+ * - 函数形式的 defaultOptions，可根据父模型动态生成配置
+ * - 自动处理菜单项的 key 生成和选项解析
+ *
+ * @param children - FlowModelMeta 中定义的子项数组
+ * @param parentModel - 父模型实例，用于传递给函数形式的 defaultOptions
+ * @param keyPrefix - 菜单项 key 的前缀，用于生成唯一标识
+ * @returns 处理后的菜单项数组
+ */
+export async function processMetaChildren(children: any[], parentModel: FlowModel, keyPrefix = ''): Promise<any[]> {
+  const result = [];
+
+  for (let i = 0; i < children.length; i++) {
+    const child = children[i];
+    const childKey = `${keyPrefix}${child.title || `item-${i}`}`;
+
+    // 如果有嵌套的 children，创建分组
+    if (child.children && child.children.length > 0) {
+      const nestedChildren = await processMetaChildren(child.children, parentModel, `${childKey}.`);
+
+      result.push({
+        key: childKey,
+        label: child.title,
+        icon: child.icon,
+        // type: 'group',
+        children: nestedChildren,
+      });
+    } else {
+      // 叶子节点，处理 defaultOptions
+      const defaultOptions = await resolveDefaultOptions(child.defaultOptions, parentModel);
+
+      result.push({
+        key: childKey,
+        label: child.title,
+        icon: child.icon,
+        createModelOptions: {
+          ...defaultOptions,
+          // 确保 use 指向正确的模型类
+          use:
+            typeof defaultOptions?.use === 'string'
+              ? defaultOptions.use
+              : (defaultOptions?.use as any)?.name || childKey,
+        },
+        toggleDetector: child.toggleDetector,
+        customRemove: child.customRemove,
+      });
+    }
+  }
+
+  return result;
+}
+
+/**
+ * 递归处理数据区块的 children，为每个叶子节点创建数据源菜单
+ *
+ * 用于处理数据区块类型的层次结构，为每个叶子节点自动生成：
+ * - 数据源选择菜单
+ * - 数据表选择菜单
+ * - 相应的 stepParams 配置
+ *
+ * @param children - 数据区块 FlowModelMeta 中定义的子项数组
+ * @param parentModel - 父模型实例
+ * @param dataSources - 可用的数据源列表
+ * @param keyPrefix - 菜单项 key 的前缀
+ * @returns 处理后的包含数据源菜单的菜单项数组
+ */
+async function processDataBlockChildren(
+  children: any[],
+  parentModel: FlowModel,
+  dataSources: any[],
+  keyPrefix = '',
+): Promise<any[]> {
+  const result = [];
+
+  for (let i = 0; i < children.length; i++) {
+    const child = children[i];
+    const childKey = `${keyPrefix}${child.title || `item-${i}`}`;
+
+    // 如果有嵌套的 children，递归处理
+    if (child.children && child.children.length > 0) {
+      const nestedChildren = await processDataBlockChildren(child.children, parentModel, dataSources, `${childKey}.`);
+
+      result.push({
+        key: childKey,
+        label: child.title,
+        icon: child.icon,
+        children: nestedChildren,
+      });
+    } else {
+      // 叶子节点，为其创建数据源菜单
+      const defaultOptions = await resolveDefaultOptions(child.defaultOptions, parentModel);
+
+      result.push({
+        key: childKey,
+        label: child.title,
+        icon: child.icon,
+        children: dataSources.map((dataSource) => ({
+          key: `${childKey}.${dataSource.key}`,
+          label: dataSource.displayName,
+          children: dataSource.collections.map((collection) => ({
+            key: `${childKey}.${dataSource.key}.${collection.name}`,
+            label: collection.title || collection.name,
+            createModelOptions: {
+              ..._.cloneDeep(defaultOptions),
+              use:
+                typeof defaultOptions?.use === 'string'
+                  ? defaultOptions.use
+                  : (defaultOptions?.use as any)?.name || childKey,
+              stepParams: {
+                default: {
+                  step1: {
+                    dataSourceKey: dataSource.key,
+                    collectionName: collection.name,
+                  },
+                },
+              },
+            },
+          })),
+        })),
+      });
+    }
+  }
+
+  return result;
+}
+
+/**
  * 构建动作菜单项的工厂函数
  */
 export function buildActionItems(
@@ -427,22 +587,48 @@ export function buildActionItems(
       continue;
     }
 
-    const item: any = {
-      key: className,
-      label: ModelClass.meta?.title || className,
-      icon: ModelClass.meta?.icon,
-      createModelOptions: {
-        ...ModelClass.meta?.defaultOptions,
-        use: className,
-      },
-    };
+    const meta = ModelClass.meta;
 
-    // 从 meta 中获取 toggleDetector
-    if (ModelClass.meta?.toggleDetector) {
-      item.toggleDetector = ModelClass.meta.toggleDetector;
+    // 如果模型定义了 children，创建包含子菜单的分组项
+    if (meta?.children && meta.children.length > 0) {
+      const item: any = {
+        key: className,
+        label: meta.title || className,
+        icon: meta.icon,
+        type: 'group',
+        children: async () => {
+          return await processMetaChildren(meta.children, model, `${className}.`);
+        },
+      };
+
+      registeredItems.push(item);
+    } else {
+      // 原有的单个菜单项逻辑
+      const item: any = {
+        key: className,
+        label: meta?.title || className,
+        icon: meta?.icon,
+        createModelOptions: async () => {
+          const defaultOptions = await resolveDefaultOptions(meta?.defaultOptions, model);
+
+          return {
+            ...defaultOptions,
+            use: className,
+          };
+        },
+      };
+
+      // 从 meta 中获取 toggleDetector
+      if (meta?.toggleDetector) {
+        item.toggleDetector = meta.toggleDetector;
+      }
+
+      if (meta?.customRemove) {
+        item.customRemove = meta.customRemove;
+      }
+
+      registeredItems.push(item);
     }
-
-    registeredItems.push(item);
   }
 
   return registeredItems;
@@ -558,34 +744,57 @@ export function buildBlockItems(
         const dataSources = await getDataSourcesWithCollections(model);
 
         // 按区块类型组织菜单：区块 → 数据源 → 数据表
-        return dataBlocks.map(({ className, ModelClass }) => {
-          const meta = (ModelClass as any).meta;
-          return {
-            key: className,
-            label: meta?.title || className,
-            icon: meta?.icon,
-            children: dataSources.map((dataSource) => ({
-              key: `${className}.${dataSource.key}`,
-              label: dataSource.displayName,
-              children: dataSource.collections.map((collection) => ({
-                key: `${className}.${dataSource.key}.${collection.name}`,
-                label: collection.title || collection.name,
-                createModelOptions: {
-                  ..._.cloneDeep(meta?.defaultOptions),
-                  use: className,
-                  stepParams: {
-                    default: {
-                      step1: {
-                        dataSourceKey: dataSource.key,
-                        collectionName: collection.name,
+        return await Promise.all(
+          dataBlocks.map(async ({ className, ModelClass }) => {
+            const meta = (ModelClass as any).meta;
+
+            // 如果模型定义了 children，为每个子项创建数据源菜单
+            if (meta?.children && meta.children.length > 0) {
+              const childrenWithDataSources = await processDataBlockChildren(
+                meta.children,
+                model,
+                dataSources,
+                `${className}.`,
+              );
+
+              return {
+                key: className,
+                label: meta.title || className,
+                icon: meta.icon,
+                children: childrenWithDataSources,
+              };
+            } else {
+              // 原有的单个区块逻辑
+              const defaultOptions = await resolveDefaultOptions(meta?.defaultOptions, model);
+
+              return {
+                key: className,
+                label: meta?.title || className,
+                icon: meta?.icon,
+                children: dataSources.map((dataSource) => ({
+                  key: `${className}.${dataSource.key}`,
+                  label: dataSource.displayName,
+                  children: dataSource.collections.map((collection) => ({
+                    key: `${className}.${dataSource.key}.${collection.name}`,
+                    label: collection.title || collection.name,
+                    createModelOptions: {
+                      ..._.cloneDeep(defaultOptions),
+                      use: className,
+                      stepParams: {
+                        default: {
+                          step1: {
+                            dataSourceKey: dataSource.key,
+                            collectionName: collection.name,
+                          },
+                        },
                       },
                     },
-                  },
-                },
-              })),
-            })),
-          };
-        });
+                  })),
+                })),
+              };
+            }
+          }),
+        );
       },
     });
   }
@@ -600,54 +809,110 @@ export function buildBlockItems(
         const dataSources = await getDataSourcesWithCollections(model);
 
         // 按区块类型组织菜单：区块 → 数据源 → 数据表
-        return filterBlocks.map(({ className, ModelClass }) => {
-          const meta = (ModelClass as any).meta;
-          return {
-            key: className,
-            label: meta?.title || className,
-            icon: meta?.icon,
-            children: dataSources.map((dataSource) => ({
-              key: `${className}.${dataSource.key}`,
-              label: dataSource.displayName,
-              children: dataSource.collections.map((collection) => ({
-                key: `${className}.${dataSource.key}.${collection.name}`,
-                label: collection.title || collection.name,
-                createModelOptions: {
-                  ..._.cloneDeep(meta?.defaultOptions),
-                  use: className,
-                  stepParams: {
-                    ..._.cloneDeep(meta?.defaultOptions?.stepParams),
-                    default: {
-                      ..._.cloneDeep(meta?.defaultOptions?.stepParams?.default),
-                      step1: {
-                        dataSourceKey: dataSource.key,
-                        collectionName: collection.name,
+        return await Promise.all(
+          filterBlocks.map(async ({ className, ModelClass }) => {
+            const meta = (ModelClass as any).meta;
+
+            // 如果模型定义了 children，为每个子项创建数据源菜单
+            if (meta?.children && meta.children.length > 0) {
+              const childrenWithDataSources = await processDataBlockChildren(
+                meta.children,
+                model,
+                dataSources,
+                `${className}.`,
+              );
+
+              return {
+                key: className,
+                label: meta.title || className,
+                icon: meta.icon,
+                children: childrenWithDataSources,
+              };
+            } else {
+              // 原有的单个区块逻辑
+              const defaultOptions = await resolveDefaultOptions(meta?.defaultOptions, model);
+
+              return {
+                key: className,
+                label: meta?.title || className,
+                icon: meta?.icon,
+                children: dataSources.map((dataSource) => ({
+                  key: `${className}.${dataSource.key}`,
+                  label: dataSource.displayName,
+                  children: dataSource.collections.map((collection) => ({
+                    key: `${className}.${dataSource.key}.${collection.name}`,
+                    label: collection.title || collection.name,
+                    createModelOptions: {
+                      ..._.cloneDeep(defaultOptions),
+                      use: className,
+                      stepParams: {
+                        ..._.cloneDeep(defaultOptions?.stepParams),
+                        default: {
+                          ..._.cloneDeep(defaultOptions?.stepParams?.default),
+                          step1: {
+                            dataSourceKey: dataSource.key,
+                            collectionName: collection.name,
+                          },
+                        },
                       },
                     },
-                  },
-                },
-              })),
-            })),
-          };
-        });
+                  })),
+                })),
+              };
+            }
+          }),
+        );
       },
     });
   }
 
   // 其他区块分组
   if (otherBlocks.length > 0) {
-    const otherBlockItems = otherBlocks.map(({ className, ModelClass }) => {
+    const otherBlockItems = [];
+
+    for (const { className, ModelClass } of otherBlocks) {
       const meta = (ModelClass as any).meta;
-      return {
-        key: className,
-        label: meta?.title || className,
-        icon: meta?.icon,
-        createModelOptions: {
-          ..._.cloneDeep(meta?.defaultOptions),
-          use: className,
-        },
-      };
-    });
+
+      // 如果模型定义了 children，创建包含子菜单的分组项
+      if (meta?.children && meta.children.length > 0) {
+        const item = {
+          key: className,
+          label: meta.title || className,
+          icon: meta.icon,
+          // type: 'group',
+          children: async () => {
+            return await processMetaChildren(meta.children, model, `${className}.`);
+          },
+        };
+
+        otherBlockItems.push(item);
+      } else {
+        // 原有的单个菜单项逻辑
+        const item: any = {
+          key: className,
+          label: meta?.title || className,
+          icon: meta?.icon,
+          createModelOptions: async () => {
+            const defaultOptions = await resolveDefaultOptions(meta?.defaultOptions, model);
+
+            return {
+              ..._.cloneDeep(defaultOptions),
+              use: className,
+            };
+          },
+        };
+
+        // 从 meta 中获取 toggleDetector 和 customRemove
+        if (meta?.toggleDetector) {
+          item.toggleDetector = meta.toggleDetector;
+        }
+        if (meta?.customRemove) {
+          item.customRemove = meta.customRemove;
+        }
+
+        otherBlockItems.push(item);
+      }
+    }
 
     result.push({
       key: 'otherBlocks',

@@ -11,6 +11,7 @@ import { SettingOutlined } from '@ant-design/icons';
 import React, { useMemo } from 'react';
 import { FlowModel } from '../../models';
 import { ModelConstructor } from '../../types';
+import { processMetaChildren, resolveDefaultOptions } from '../../utils';
 import { FlowSettingsButton } from '../common/FlowSettingsButton';
 import { withFlowDesignMode } from '../common/withFlowDesignMode';
 import { AddSubModelButton, SubModelItem, SubModelItemsType, mergeSubModelItems } from './AddSubModelButton';
@@ -91,22 +92,48 @@ const AddFieldButtonCore: React.FC<AddFieldButtonProps> = ({
         continue;
       }
 
-      const item: SubModelItem = {
-        key: className,
-        label: ModelClass.meta?.title || className,
-        icon: ModelClass.meta?.icon,
-        createModelOptions: {
-          ...ModelClass.meta?.defaultOptions,
-          use: className,
-        },
-      };
+      const meta = ModelClass.meta;
 
-      // 从 meta 中获取 toggleDetector
-      if (ModelClass.meta?.toggleDetector) {
-        item.toggleDetector = ModelClass.meta.toggleDetector;
+      // 如果模型定义了 children，创建包含子菜单的分组项
+      if (meta?.children && meta.children.length > 0) {
+        const item: SubModelItem = {
+          key: className,
+          label: meta.title || className,
+          icon: meta.icon,
+          type: 'group',
+          children: async () => {
+            return await processMetaChildren(meta.children, model, `${className}.`);
+          },
+        };
+
+        registeredItems.push(item);
+      } else {
+        // 原有的单个菜单项逻辑
+        const item: any = {
+          key: className,
+          label: meta?.title || className,
+          icon: meta?.icon,
+          createModelOptions: async () => {
+            const defaultOptions = await resolveDefaultOptions(meta?.defaultOptions, model);
+
+            return {
+              ...defaultOptions,
+              use: className,
+            };
+          },
+        };
+
+        // 从 meta 中获取 toggleDetector
+        if (meta?.toggleDetector) {
+          item.toggleDetector = meta.toggleDetector;
+        }
+
+        if (meta?.customRemove) {
+          item.customRemove = meta.customRemove;
+        }
+
+        registeredItems.push(item);
       }
-
-      registeredItems.push(item);
     }
     return registeredItems;
   }, [model, subModelBaseClass, filter, subModelKey]);

@@ -105,10 +105,10 @@ const handleModelCreationError = async (error: any, addedModel?: FlowModel) => {
 /**
  * 安全地获取菜单项的创建选项
  */
-const getCreateModelOptions = (item: SubModelItem) => {
+const getCreateModelOptions = async (item: SubModelItem) => {
   let createOpts = item.createModelOptions;
   if (typeof createOpts === 'function') {
-    createOpts = createOpts(item);
+    createOpts = await createOpts(item);
   }
   return createOpts;
 };
@@ -270,7 +270,7 @@ const createDefaultRemoveHandler = (config: {
     if (subModelType === 'array') {
       const subModels = (model.subModels as any)[subModelKey] as FlowModel[];
       if (Array.isArray(subModels)) {
-        const createOpts = getCreateModelOptions(item);
+        const createOpts = await getCreateModelOptions(item);
         const targetModel = subModels.find((subModel) => {
           if (createOpts?.use) {
             try {
@@ -358,7 +358,7 @@ const AddSubModelButtonCore = function AddSubModelButton({
     }
 
     // 处理添加操作
-    const createOpts = getCreateModelOptions(item);
+    const createOpts = await getCreateModelOptions(item);
 
     if (!validateCreateModelOptions(createOpts)) {
       return;
