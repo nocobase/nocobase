@@ -12,6 +12,7 @@ import React from 'react';
 import { BlockItemCard } from '../common/BlockItemCard';
 import { observable } from '@formily/reactive';
 import { Observer } from '@formily/reactive-react';
+import { HeightMode } from '../../internal/constants/HeightMode';
 
 export class BlockModel<T = DefaultStructure> extends FlowModel<T> {
   decoratorProps: Record<string, any> = observable({});
