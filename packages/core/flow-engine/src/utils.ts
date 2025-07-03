@@ -13,6 +13,7 @@ import { TFuncKey, TOptions } from 'i18next';
 import _ from 'lodash';
 import type { FlowModel } from './models';
 import { ActionDefinition, DeepPartial, FlowContext, FlowDefinition, ModelConstructor, ParamsContext } from './types';
+import { Collection, DataSource, DataSourceManager } from './data-source';
 
 // Flow Engine 命名空间常量
 export const FLOW_ENGINE_NAMESPACE = 'flow-engine';
@@ -445,4 +446,216 @@ export function buildActionItems(
   }
 
   return registeredItems;
+}
+
+/**
+ * 获取数据源和数据表信息
+ * 从 flowEngine 的全局上下文获取数据源管理器信息
+ */
+async function getDataSourcesWithCollections(model: FlowModel) {
+  try {
+    // 从 flowEngine 的全局上下文获取数据源管理器
+    const globalContext = model.flowEngine.getContext();
+    const dataSourceManager: DataSourceManager = globalContext?.dataSourceManager;
+
+    if (!dataSourceManager) {
+      // 如果没有数据源管理器，返回空数组
+      return [];
+    }
+
+    // 获取所有数据源
+    const allDataSources: DataSource[] = dataSourceManager.getDataSources();
+
+    // 转换为我们需要的格式
+    return allDataSources.map((dataSource: DataSource) => {
+      const key = dataSource.key;
+      const displayName = dataSource.displayName || dataSource.key;
+
+      // 从 collectionManager 获取 collections
+      const collections: Collection[] = dataSource.getCollections();
+
+      return {
+        key,
+        displayName,
+        collections: collections.map((collection: Collection) => ({
+          name: collection.name,
+          title: collection.title,
+          dataSource: key,
+        })),
+      };
+    });
+  } catch (error) {
+    console.warn('Failed to get data sources:', error);
+    // 返回空数组，不提供假数据
+    return [];
+  }
+}
+
+/**
+ * 构建区块菜单项的工厂函数
+ * 固定使用 BlockModel 作为基类进行过滤
+ */
+export function buildBlockItems(
+  model: FlowModel,
+  filter?: (blockClass: ModelConstructor, className: string) => boolean,
+) {
+  // 获取所有注册的区块类，固定使用 BlockModel 作为基类
+  const blockClasses = model.flowEngine.filterModelClassByParent('BlockModel');
+
+  // 获取基础类用于继承检查
+  const DataBlockModelClass = model.flowEngine.getModelClass('DataBlockModel');
+  const FilterBlockModelClass = model.flowEngine.getModelClass('FilterBlockModel');
+
+  // 分类区块：数据区块, 筛选区块, 其他区块
+  const dataBlocks: Array<{ className: string; ModelClass: ModelConstructor }> = [];
+  const filterBlocks: Array<{ className: string; ModelClass: ModelConstructor }> = [];
+  const otherBlocks: Array<{ className: string; ModelClass: ModelConstructor }> = [];
+
+  for (const [className, ModelClass] of blockClasses) {
+    // 应用过滤器
+    if (filter && !filter(ModelClass, className)) {
+      continue;
+    }
+
+    // 排除被隐藏的模型
+    if (ModelClass.meta?.hide) {
+      continue;
+    }
+
+    // 排除基类本身
+    if (className === 'DataBlockModel' || className === 'FilterBlockModel') {
+      continue;
+    }
+
+    // 使用继承关系判断区块类型
+    let isDataBlock = false;
+    let isFilterBlock = false;
+
+    if (DataBlockModelClass && isInheritedFrom(ModelClass, DataBlockModelClass)) {
+      isDataBlock = true;
+    } else if (FilterBlockModelClass && isInheritedFrom(ModelClass, FilterBlockModelClass)) {
+      isFilterBlock = true;
+    }
+
+    if (isDataBlock) {
+      dataBlocks.push({ className, ModelClass });
+    } else if (isFilterBlock) {
+      filterBlocks.push({ className, ModelClass });
+    } else {
+      otherBlocks.push({ className, ModelClass });
+    }
+  }
+
+  const result: any[] = [];
+
+  // 数据区块分组
+  if (dataBlocks.length > 0) {
+    result.push({
+      key: 'dataBlocks',
+      label: 'Data blocks',
+      type: 'group',
+      children: async () => {
+        const dataSources = await getDataSourcesWithCollections(model);
+
+        // 按区块类型组织菜单：区块 → 数据源 → 数据表
+        return dataBlocks.map(({ className, ModelClass }) => {
+          const meta = (ModelClass as any).meta;
+          return {
+            key: className,
+            label: meta?.title || className,
+            icon: meta?.icon,
+            children: dataSources.map((dataSource) => ({
+              key: `${className}.${dataSource.key}`,
+              label: dataSource.displayName,
+              children: dataSource.collections.map((collection) => ({
+                key: `${className}.${dataSource.key}.${collection.name}`,
+                label: collection.title || collection.name,
+                createModelOptions: {
+                  ..._.cloneDeep(meta?.defaultOptions),
+                  use: className,
+                  stepParams: {
+                    default: {
+                      step1: {
+                        dataSourceKey: dataSource.key,
+                        collectionName: collection.name,
+                      },
+                    },
+                  },
+                },
+              })),
+            })),
+          };
+        });
+      },
+    });
+  }
+
+  // 筛选区块分组
+  if (filterBlocks.length > 0) {
+    result.push({
+      key: 'filterBlocks',
+      label: 'Filter blocks',
+      type: 'group',
+      children: async () => {
+        const dataSources = await getDataSourcesWithCollections(model);
+
+        // 按区块类型组织菜单：区块 → 数据源 → 数据表
+        return filterBlocks.map(({ className, ModelClass }) => {
+          const meta = (ModelClass as any).meta;
+          return {
+            key: className,
+            label: meta?.title || className,
+            icon: meta?.icon,
+            children: dataSources.map((dataSource) => ({
+              key: `${className}.${dataSource.key}`,
+              label: dataSource.displayName,
+              children: dataSource.collections.map((collection) => ({
+                key: `${className}.${dataSource.key}.${collection.name}`,
+                label: collection.title || collection.name,
+                createModelOptions: {
+                  ..._.cloneDeep(meta?.defaultOptions),
+                  use: className,
+                  stepParams: {
+                    ..._.cloneDeep(meta?.defaultOptions?.stepParams),
+                    default: {
+                      ..._.cloneDeep(meta?.defaultOptions?.stepParams?.default),
+                      step1: {
+                        dataSourceKey: dataSource.key,
+                        collectionName: collection.name,
+                      },
+                    },
+                  },
+                },
+              })),
+            })),
+          };
+        });
+      },
+    });
+  }
+
+  // 其他区块分组
+  if (otherBlocks.length > 0) {
+    const otherBlockItems = otherBlocks.map(({ className, ModelClass }) => {
+      const meta = (ModelClass as any).meta;
+      return {
+        key: className,
+        label: meta?.title || className,
+        icon: meta?.icon,
+        createModelOptions: {
+          ..._.cloneDeep(meta?.defaultOptions),
+          use: className,
+        },
+      };
+    });
+
+    result.push({
+      key: 'otherBlocks',
+      label: 'Other blocks',
+      type: 'group',
+      children: otherBlockItems,
+    });
+  }
+
+  return result;
 }

@@ -112,6 +112,9 @@ BlockModel.registerFlow({
     // },
   },
 });
+
+BlockModel.define({ hide: true });
+
 export class DataBlockModel<T = DefaultStructure> extends BlockModel<T> {
   resource: APIResource;
   collection: Collection;
@@ -148,4 +151,8 @@ export class DataBlockModel<T = DefaultStructure> extends BlockModel<T> {
   }
 }
 
+DataBlockModel.define({ hide: true });
+
 export class FilterBlockModel<T = DefaultStructure> extends BlockModel<T> {}
+
+FilterBlockModel.define({ hide: true });

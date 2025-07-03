@@ -23,6 +23,7 @@ import {
   getMousePositionOnElement,
   moveBlock,
   positionToDirection,
+  buildBlockItems,
 } from '@nocobase/flow-engine';
 import { tval } from '@nocobase/utils/client';
 import { Space } from 'antd';
@@ -288,7 +289,7 @@ export class GridModel extends FlowModel<GridModelStructure> {
             </DndProvider>
           )}
           <Space>
-            <AddBlockButton model={this} subModelKey="items" subModelBaseClass={this.subModelBaseClass}>
+            <AddBlockButton model={this} items={buildBlockItems(this)} subModelKey="items">
               <FlowSettingsButton icon={<PlusOutlined />}>{t('Add block')}</FlowSettingsButton>
             </AddBlockButton>
             <FlowSettingsButton

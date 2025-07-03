@@ -11,5 +11,4 @@ export * from './AddActionButton';
 export * from './AddBlockButton';
 export * from './AddFieldButton';
 export * from './AddSubModelButton';
-export * from './blockItems';
 //
