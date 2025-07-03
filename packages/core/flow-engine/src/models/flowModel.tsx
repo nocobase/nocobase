@@ -827,6 +827,10 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     this.forkCache.clear();
   }
 
+  getFork(key: string) {
+    return this.forkCache.get(key);
+  }
+
   /**
    * 移动当前模型到目标模型的位置
    * @param {FlowModel} targetModel 目标模型

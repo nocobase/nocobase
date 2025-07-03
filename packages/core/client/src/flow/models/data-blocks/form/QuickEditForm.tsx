@@ -130,6 +130,7 @@ export class QuickEditForm extends DataBlockModel {
             {this.mapSubModels('fields', (field) => {
               return (
                 <FlowModelRenderer
+                  key={field.uid}
                   model={field}
                   sharedContext={{ currentRecord: this.resource.getData() }}
                   fallback={<Skeleton.Input size="small" />}
