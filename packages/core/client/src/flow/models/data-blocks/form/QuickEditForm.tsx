@@ -108,15 +108,20 @@ export class QuickEditForm extends DataBlockModel {
         onSubmit={async (e) => {
           e.preventDefault();
           await this.form.submit();
-          await this.resource.save(
-            {
-              [this.fieldPath]: this.form.values[this.fieldPath],
-            },
-            { refresh: false },
-          );
-          this.ctx.shared.__onSubmitSuccess?.({
+          const formValues = {
             [this.fieldPath]: this.form.values[this.fieldPath],
+          };
+
+          const originalValues = {
+            [this.fieldPath]: this.resource.getData()?.[this.fieldPath],
+          };
+
+          this.resource.save(formValues, { refresh: false }).catch((error) => {
+            console.error('Failed to save form data:', error);
+            this.ctx.globals.message.error(this.translate('Failed to save form data'));
+            this.ctx.shared.__onSubmitSuccess?.(originalValues);
           });
+          this.ctx.shared.__onSubmitSuccess?.(formValues);
           this.ctx.shared.currentView.close();
         }}
       >
