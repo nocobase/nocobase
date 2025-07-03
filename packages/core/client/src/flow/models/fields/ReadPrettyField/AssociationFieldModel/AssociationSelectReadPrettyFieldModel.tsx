@@ -48,7 +48,6 @@ export class AssociationSelectReadPrettyFieldModel extends AssociationReadPretty
   set onClick(fn) {
     this.setProps({ ...this.props, onClick: fn });
   }
-  private fieldModelCache: Record<string, FlowModel> = {};
   @reactive
   public render() {
     const { fieldNames, enableLink = true } = this.props;
@@ -60,19 +59,13 @@ export class AssociationSelectReadPrettyFieldModel extends AssociationReadPretty
     return (
       <>
         {arrayValue.map((v, index) => {
-          const key = `${index}`;
-          let fieldModel = this.fieldModelCache[v?.[fieldNames.label]];
-
-          if (!fieldModel) {
-            fieldModel = field.createFork({}, key);
-            fieldModel.setSharedContext({
-              index,
-              value: v?.[fieldNames.label],
-              currentRecord: v,
-            });
-            this.fieldModelCache[v?.[fieldNames.label]] = fieldModel;
-          }
-
+          const key = `${index + this.ctx.shared.index}`;
+          const fieldModel = field.createFork({}, key);
+          fieldModel.setSharedContext({
+            index,
+            value: v?.[fieldNames.label],
+            currentRecord: v,
+          });
           const content = v?.[fieldNames.label] ? fieldModel.render() : this.flowEngine.translate('N/A');
 
           return (
