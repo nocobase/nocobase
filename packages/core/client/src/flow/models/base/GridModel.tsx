@@ -68,13 +68,17 @@ export class GridModel extends FlowModel<GridModelStructure> {
 
       // 1. 获取当前 modelUid 所在的位置
       const position = findModelUidPosition(modelUid, this.props.rows || {});
-      // 2. 根据位置清空 sizes 中对应的值
+
+      // 2. 重置 rows
+      this.resetRows(true);
+
+      // 3. 根据位置清空 sizes 中对应的值
       if (position) {
         const rows = this.props.rows || {};
         const newSizes = _.cloneDeep(this.props.sizes || {});
 
         // 如果列变空了，移除该列
-        if (rows[position.rowId][position.columnIndex] === undefined) {
+        if (rows[position.rowId]?.[position.columnIndex] === undefined) {
           newSizes[position.rowId]?.splice(position.columnIndex, 1);
         }
 
@@ -90,8 +94,6 @@ export class GridModel extends FlowModel<GridModelStructure> {
 
         this.setProps('sizes', newSizes);
       }
-
-      this.resetRows(true);
     });
     this.emitter.on('onSubModelMoved', () => {
       this.resetRows(true);
