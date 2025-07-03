@@ -94,6 +94,8 @@ export class GridModel extends FlowModel<GridModelStructure> {
 
         this.setProps('sizes', newSizes);
       }
+
+      this.save();
     });
     this.emitter.on('onSubModelMoved', () => {
       this.resetRows(true);
