@@ -7,9 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import _ from 'lodash';
 import type { ISchema } from '@formily/json-schema';
 import { Schema } from '@formily/json-schema';
+import { TFuncKey, TOptions } from 'i18next';
+import _ from 'lodash';
 import type { FlowModel } from './models';
 import { ActionDefinition, DeepPartial, FlowContext, FlowDefinition, ModelConstructor, ParamsContext } from './types';
 
@@ -258,4 +259,11 @@ export function compileUiSchema(scope: Record<string, any>, uiSchema: any, optio
   };
 
   return compile(uiSchema);
+}
+
+export function escapeT(text: TFuncKey | TFuncKey[], options?: TOptions) {
+  if (options) {
+    return `{{t(${JSON.stringify(text)}, ${JSON.stringify(options)})}}`;
+  }
+  return `{{t(${JSON.stringify(text)})}}`;
 }

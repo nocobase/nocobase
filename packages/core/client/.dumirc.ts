@@ -40,7 +40,7 @@ export default defineConfig({
     nav: [
       {
         title: 'API',
-        link: '/core/application/application',
+        link: '/core/flow-models/quickstart',
       },
       // {
       //   title: 'Components',
@@ -129,7 +129,28 @@ export default defineConfig({
             },
             {
               title: 'FlowContext',
-              link: '/core/flow-engine/flow-context',
+              children: [
+                {
+                  title: 'Overview',
+                  link: '/core/flow-engine/flow-context',
+                },
+                {
+                  title: 'FlowEngineContext',
+                  link: '/core/flow-engine/flow-context/flow-engine-context',
+                },
+                {
+                  title: 'FlowModelContext',
+                  link: '/core/flow-engine/flow-context/flow-model-context',
+                },
+                {
+                  title: 'FlowRuntimeContext',
+                  link: '/core/flow-engine/flow-context/flow-runtime-context',
+                },
+                {
+                  title: 'FlowStepContext',
+                  link: '/core/flow-engine/flow-context/flow-step-context',
+                },
+              ],
             },
             {
               title: 'FlowAction',
