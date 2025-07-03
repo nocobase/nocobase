@@ -62,8 +62,6 @@ export class GridModel extends FlowModel<GridModelStructure> {
 
         this.setProps('sizes', newSizes);
       }
-
-      this.save();
     });
     this.emitter.on('onSubModelRemoved', (model: FlowModel) => {
       const modelUid = model.uid;
@@ -388,6 +386,10 @@ function recalculateGridSizes({
 
   if (currentMoveDistance === prevMoveDistance) {
     return { newRows, newSizes, moveDistance: currentMoveDistance };
+  }
+
+  if (newSizes[position.rowId] === undefined) {
+    newSizes[position.rowId] = [columnCount];
   }
 
   newSizes[position.rowId][position.columnIndex] += currentMoveDistance - prevMoveDistance;
