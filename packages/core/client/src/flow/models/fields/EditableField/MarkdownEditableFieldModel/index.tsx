@@ -11,24 +11,7 @@ import { Input } from '@formily/antd-v5';
 import React from 'react';
 import { connect, mapProps, mapReadPretty } from '@formily/react';
 import { EditableFieldModel } from '../EditableFieldModel';
-import { useParseMarkdown, convertToText } from './util';
-import { useMarkdownStyles } from './style';
-
-export const MarkdownReadPretty = (props) => {
-  const { textOnly } = props;
-  const markdownClass = useMarkdownStyles();
-  const { html = '' } = useParseMarkdown(props.value);
-  const text = convertToText(html);
-  const value = (
-    <div
-      className={` ${markdownClass} nb-markdown nb-markdown-default nb-markdown-table`}
-      dangerouslySetInnerHTML={{ __html: html }}
-      style={props.style}
-    />
-  );
-
-  return <>{textOnly ? text : value}</>;
-};
+import { MarkdownReadPretty } from '../../../../internal/components/MarkdownReadPretty';
 
 const Markdown: any = connect(
   Input.TextArea,

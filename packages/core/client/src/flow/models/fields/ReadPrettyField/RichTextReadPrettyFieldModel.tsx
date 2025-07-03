@@ -11,7 +11,7 @@ import React from 'react';
 import { tval } from '@nocobase/utils/client';
 import { reactive } from '@nocobase/flow-engine';
 import { ReadPrettyFieldModel } from './ReadPrettyFieldModel';
-import { MarkdownReadPretty } from '../EditableField/MarkdownEditableFieldModel/index';
+import { MarkdownReadPretty } from '../../../internal/components/MarkdownReadPretty';
 
 export class RichTextReadPrettyFieldModel extends ReadPrettyFieldModel {
   public static readonly supportedFieldInterfaces = ['richText'];

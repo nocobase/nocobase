@@ -12,7 +12,7 @@ import _ from 'lodash';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { NAMESPACE_UI_SCHEMA } from '../../../i18n/constant';
-import { MarkdownReadPretty } from '../fields/EditableField/MarkdownEditableFieldModel';
+import { MarkdownReadPretty } from '../../internal/components/MarkdownReadPretty';
 
 const useBlockHeight = ({ height, heightMode }) => {
   if (heightMode !== 'specifyValue') {
