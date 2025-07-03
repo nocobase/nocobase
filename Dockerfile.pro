@@ -1,5 +1,5 @@
 FROM node:20.13-bullseye as builder
-ARG VERDACCIO_URL=http://host.docker.internal:10104/
+ARG VERDACCIO_URL=http://192.168.123.123:4873/
 ARG COMMIT_HASH
 ARG APPEND_PRESET_LOCAL_PLUGINS
 ARG BEFORE_PACK_NOCOBASE="ls -l"
@@ -8,8 +8,9 @@ ARG PLUGINS_DIRS
 ENV PLUGINS_DIRS=${PLUGINS_DIRS}
 
 
-RUN npx npm-cli-adduser --username test --password test -e test@nocobase.com -r $VERDACCIO_URL
-
+# RUN npx npm-cli-adduser --username test --password test -e test@nocobase.com -r $VERDACCIO_URL
+RUN sed -i 's/deb.debian.org/mirrors.aliyun.com/g' /etc/apt/sources.list && \
+    sed -i 's|deb.debian.org/debian-security|mirrors.aliyun.com/debian-security|g' /etc/apt/sources.list
 RUN apt-get update && apt-get install -y jq
 WORKDIR /tmp
 COPY . /tmp
@@ -44,6 +45,8 @@ RUN echo "${COMMIT_HASH}" > /tmp/commit_hash.txt
 
 
 FROM node:20.13-bullseye-slim
+RUN sed -i 's/deb.debian.org/mirrors.aliyun.com/g' /etc/apt/sources.list && \
+    sed -i 's|deb.debian.org/debian-security|mirrors.aliyun.com/debian-security|g' /etc/apt/sources.list
 RUN apt-get update && apt-get install -y nginx libaio1 \
   && apt-get install -y --no-install-recommends postgresql-common gnupg \
   && /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y \
