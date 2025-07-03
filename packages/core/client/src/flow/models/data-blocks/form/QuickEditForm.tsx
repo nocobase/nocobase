@@ -58,10 +58,11 @@ export class QuickEditForm extends DataBlockModel {
     collectionName: string;
     fieldPath: string;
     filterByTk: string;
+    record: any;
     onSuccess?: (values: any) => void;
   }) {
     // this.now = Date.now();
-    const { flowEngine, target, dataSourceKey, collectionName, fieldPath, filterByTk, onSuccess } = options;
+    const { flowEngine, target, dataSourceKey, collectionName, fieldPath, filterByTk, record, onSuccess } = options;
     const model = flowEngine.createModel({
       use: 'QuickEditForm',
       stepParams: {
@@ -91,7 +92,7 @@ export class QuickEditForm extends DataBlockModel {
             }}
             fallback={<Skeleton.Input size="small" />}
             model={model}
-            extraContext={{ filterByTk }}
+            extraContext={{ filterByTk, record }}
           />
         );
       },
@@ -191,9 +192,9 @@ QuickEditForm.registerFlow({
           });
           ctx.model.addAppends(fieldPath);
         }
-        if (ctx.extra.filterByTk) {
+        if (ctx.extra.filterByTk || ctx.extra.record) {
           resource.setFilterByTk(ctx.extra.filterByTk);
-          await resource.refresh();
+          resource.setData(ctx.extra.record);
           ctx.model.form.setInitialValues(resource.getData());
         }
       },

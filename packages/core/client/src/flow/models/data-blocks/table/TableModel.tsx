@@ -233,6 +233,7 @@ export class TableModel extends DataBlockModel<TableModelStructure> {
                   collectionName: this.collection.name,
                   fieldPath: dataIndex,
                   filterByTk: record.id,
+                  record: record,
                   onSuccess: (values) => {
                     this.resource.getData()[recordIndex][dataIndex] = values[dataIndex];
                     // 仅重渲染单元格
