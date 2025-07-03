@@ -59,6 +59,9 @@ RUN cd /app \
 
 FROM node:20-bookworm-slim
 
+RUN sed -i 's/deb.debian.org/mirrors.aliyun.com/g' /etc/apt/sources.list.d/debian.sources && \
+    sed -i 's|deb.debian.org/debian-security|mirrors.aliyun.com/debian-security|g' /etc/apt/sources.list.d/debian.sources
+
 RUN apt-get update && apt-get install -y --no-install-recommends wget gnupg ca-certificates \
   && rm -rf /var/lib/apt/lists/*
 
