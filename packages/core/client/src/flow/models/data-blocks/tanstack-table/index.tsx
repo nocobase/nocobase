@@ -64,6 +64,7 @@ const CustomTd = ({ children, model, recordIndex, record, dataIndex }) => {
               collectionName: model.collection.name,
               fieldPath: dataIndex,
               filterByTk: record.id,
+              record: record,
               onSuccess: (values) => {
                 model.resource.setItem(recordIndex, {
                   ...record,

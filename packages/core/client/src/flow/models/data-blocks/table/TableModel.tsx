@@ -470,6 +470,7 @@ TableModel.registerFlow({
       },
       handler: async (ctx, params) => {
         if (ctx.model.resource) {
+          ctx.model.applySubModelsAutoFlows('columns');
           return;
         }
         const collection = ctx.globals.dataSourceManager.getCollection(params.dataSourceKey, params.collectionName);
