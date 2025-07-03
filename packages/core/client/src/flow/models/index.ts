@@ -17,6 +17,7 @@ export * from './base/RouteModel';
 export * from './data-blocks/calendar/CalendarBlockModel';
 export * from './data-blocks/form/FormActionModel';
 export * from './data-blocks/form/FormModel';
+export * from './data-blocks/form/FormCustomFormItemModel';
 export * from './data-blocks/form/QuickEditForm';
 export * from './data-blocks/table/TableActionsColumnModel';
 export * from './data-blocks/table/TableColumnModel';

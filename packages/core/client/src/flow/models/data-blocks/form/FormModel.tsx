@@ -21,12 +21,32 @@ import { tval } from '@nocobase/utils/client';
 import React from 'react';
 import { DataBlockModel } from '../../base/BlockModel';
 import { EditableFieldModel } from '../../fields/EditableField/EditableFieldModel';
+import { FormCustomFormItemModel } from './FormCustomFormItemModel';
 
 export class FormModel extends DataBlockModel {
   form: Form;
   declare resource: SingleRecordResource;
 
   renderComponent() {
+    const fieldItems = buildFieldItems(
+      this.collection.getFields(),
+      this,
+      'EditableFieldModel',
+      'fields',
+      ({ defaultOptions, fieldPath }) => ({
+        use: defaultOptions.use,
+        stepParams: {
+          default: {
+            step1: {
+              dataSourceKey: this.collection.dataSourceKey,
+              collectionName: this.collection.name,
+              fieldPath,
+            },
+          },
+        },
+      }),
+    );
+
     return (
       <FormProvider form={this.form}>
         <FormLayout layout={'vertical'}>
@@ -40,27 +60,9 @@ export class FormModel extends DataBlockModel {
           ))}
         </FormLayout>
         <AddFieldButton
-          items={() =>
-            buildFieldItems(
-              this.collection.getFields(),
-              this,
-              'EditableFieldModel',
-              'fields',
-              ({ defaultOptions, fieldPath }) => ({
-                use: defaultOptions.use,
-                stepParams: {
-                  default: {
-                    step1: {
-                      dataSourceKey: this.collection.dataSourceKey,
-                      collectionName: this.collection.name,
-                      fieldPath,
-                    },
-                  },
-                },
-              }),
-            )
-          }
+          items={fieldItems}
           subModelKey="fields"
+          subModelBaseClass={FormCustomFormItemModel}
           model={this}
           onSubModelAdded={async (model: EditableFieldModel) => {
             const params = model.getStepParams('default', 'step1');
