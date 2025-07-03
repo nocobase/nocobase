@@ -146,10 +146,6 @@ export default defineConfig({
                   title: 'FlowRuntimeContext',
                   link: '/core/flow-engine/flow-context/flow-runtime-context',
                 },
-                {
-                  title: 'FlowStepContext',
-                  link: '/core/flow-engine/flow-context/flow-step-context',
-                },
               ],
             },
             {
