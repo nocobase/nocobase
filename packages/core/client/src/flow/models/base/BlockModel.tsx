@@ -37,12 +37,6 @@ export class BlockModel<T = DefaultStructure> extends FlowModel<T> {
   }
 }
 
-export const HeightMode = {
-  DEFAULT: 'defaultHeight',
-  SPECIFY_VALUE: 'specifyValue',
-  FULL_HEIGHT: 'fullHeight',
-};
-
 BlockModel.registerFlow({
   key: 'blockProps',
   title: tval('Basic configuration'),
