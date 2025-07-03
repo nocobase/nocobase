@@ -16,6 +16,8 @@ import { useFlowEngine } from '../../provider';
 export * from './getMousePositionOnElement';
 export * from './moveBlock';
 
+export const EMPTY_COLUMN_UID = 'EMPTY_COLUMN';
+
 // 可拖拽图标组件
 export const DragHandler: FC<{ model: FlowModel }> = ({ model, children = <DragOutlined /> }) => {
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id: model.uid });
