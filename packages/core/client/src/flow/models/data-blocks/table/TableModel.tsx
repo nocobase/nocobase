@@ -21,6 +21,7 @@ import {
   ForkFlowModel,
   MultiRecordResource,
   useFlowEngine,
+  buildFieldItems,
 } from '@nocobase/flow-engine';
 import { tval } from '@nocobase/utils/client';
 import { Space, Spin, Table } from 'antd';
@@ -106,6 +107,56 @@ const HeaderWrapperComponent = React.memo((props) => {
   );
 });
 
+const AddFieldColumn = ({ model }) => {
+  const items = buildFieldItems(
+    model.collection.getFields(),
+    model,
+    'ReadPrettyFieldModel',
+    'columns',
+    ({ defaultOptions, fieldPath }) => ({
+      use: 'TableColumnModel',
+      stepParams: {
+        default: {
+          step1: {
+            dataSourceKey: model.collection.dataSourceKey,
+            collectionName: model.collection.name,
+            fieldPath,
+          },
+        },
+      },
+      subModels: {
+        field: {
+          // @ts-ignore
+          use: defaultOptions.use as any,
+          stepParams: {
+            default: {
+              step1: {
+                dataSourceKey: model.collection.dataSourceKey,
+                collectionName: model.collection.name,
+                fieldPath,
+              },
+            },
+          },
+        },
+      },
+    }),
+  );
+  return (
+    <AddFieldButton
+      model={model}
+      subModelKey={'columns'}
+      subModelBaseClass="TableCustomColumnModel"
+      items={items}
+      onModelCreated={async (column: TableColumnModel) => {
+        await column.applyAutoFlows();
+      }}
+      onSubModelAdded={async (column: TableColumnModel) => {
+        model.addAppends(column.fieldPath, true);
+      }}
+    />
+  );
+};
+
 export class TableModel extends DataBlockModel<TableModelStructure> {
   declare resource: MultiRecordResource;
 
@@ -120,67 +171,7 @@ export class TableModel extends DataBlockModel<TableModelStructure> {
         key: 'addColumn',
         fixed: 'right',
         width: 200,
-        title: (
-          <AddFieldButton
-            collection={this.collection}
-            model={this}
-            subModelKey={'columns'}
-            subModelBaseClass="ReadPrettyFieldModel"
-            buildCreateModelOptions={({ defaultOptions, fieldPath }) => ({
-              use: 'TableColumnModel',
-              stepParams: {
-                default: {
-                  step1: {
-                    dataSourceKey: this.collection.dataSourceKey,
-                    collectionName: this.collection.name,
-                    fieldPath,
-                  },
-                },
-              },
-              subModels: {
-                field: {
-                  // @ts-ignore
-                  use: defaultOptions.use as any,
-                  stepParams: {
-                    default: {
-                      step1: {
-                        dataSourceKey: this.collection.dataSourceKey,
-                        collectionName: this.collection.name,
-                        fieldPath,
-                      },
-                    },
-                  },
-                },
-              },
-            })}
-            appendItems={[
-              {
-                key: 'actions',
-                label: this.translate('Actions column'),
-                createModelOptions: {
-                  use: 'TableActionsColumnModel',
-                },
-                toggleDetector: (ctx) => {
-                  // 检测是否已存在操作列
-                  const subModels = ctx.model.subModels.columns;
-                  const modelClass = ctx.model.flowEngine.getModelClass('TableActionsColumnModel');
-                  if (Array.isArray(subModels)) {
-                    return subModels.some((subModel) => {
-                      return subModel instanceof modelClass;
-                    });
-                  }
-                  return false;
-                },
-              },
-            ]}
-            onModelCreated={async (model: TableColumnModel) => {
-              await model.applyAutoFlows();
-            }}
-            onSubModelAdded={async (model: TableColumnModel) => {
-              this.addAppends(model.fieldPath, true);
-            }}
-          />
-        ),
+        title: <AddFieldColumn model={this} />,
       } as any);
   }
 

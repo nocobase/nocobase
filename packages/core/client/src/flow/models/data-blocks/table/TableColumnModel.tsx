@@ -9,7 +9,7 @@
 
 import { QuestionCircleOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
-import { DragHandler, Droppable, FlowsFloatContextMenu } from '@nocobase/flow-engine';
+import { DragHandler, Droppable, FlowModel, FlowsFloatContextMenu } from '@nocobase/flow-engine';
 import { tval } from '@nocobase/utils/client';
 import { TableColumnProps, Tooltip } from 'antd';
 import React from 'react';
@@ -194,4 +194,73 @@ TableColumnModel.registerFlow({
       },
     },
   },
+});
+
+export class TableCustomColumnModel extends FlowModel {}
+
+TableCustomColumnModel.registerFlow({
+  key: 'default',
+  auto: true,
+  steps: {
+    editColumTitle: {
+      title: tval('Column title'),
+      uiSchema: {
+        title: {
+          'x-component': 'Input',
+          'x-decorator': 'FormItem',
+          'x-component-props': {
+            placeholder: tval('Column title'),
+          },
+        },
+      },
+      defaultParams: (ctx) => {
+        return {
+          title:
+            ctx.model.constructor['meta']?.title ||
+            ctx.model.flowEngine.findModelClass((_, ModelClass) => {
+              return ModelClass === ctx.model.constructor;
+            })?.[0],
+        };
+      },
+      handler(ctx, params) {
+        console.log('editColumTitle params:', params);
+        const title = ctx.globals.flowEngine.translate(params.title);
+        ctx.model.setProps('title', title);
+      },
+    },
+    editTooltip: {
+      title: tval('Edit tooltip'),
+      uiSchema: {
+        tooltip: {
+          'x-component': 'Input.TextArea',
+          'x-decorator': 'FormItem',
+          'x-component-props': {
+            placeholder: tval('Edit tooltip'),
+          },
+        },
+      },
+      handler(ctx, params) {
+        ctx.model.setProps('tooltip', params.tooltip);
+      },
+    },
+    editColumnWidth: {
+      title: tval('Column width'),
+      uiSchema: {
+        width: {
+          'x-component': 'NumberPicker',
+          'x-decorator': 'FormItem',
+        },
+      },
+      defaultParams: {
+        width: 100,
+      },
+      handler(ctx, params) {
+        ctx.model.setProps('width', params.width);
+      },
+    },
+  },
+});
+
+TableCustomColumnModel.define({
+  hide: true,
 });

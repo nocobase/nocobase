@@ -267,3 +267,142 @@ export function escapeT(text: TFuncKey | TFuncKey[], options?: TOptions) {
   }
   return `{{t(${JSON.stringify(text)})}}`;
 }
+
+/**
+ * 检查字段是否在模型的 stepParams 中存在
+ */
+function checkFieldInStepParams(fieldName: string, subModel: FlowModel): boolean {
+  const stepParams = subModel.stepParams;
+
+  if (!stepParams || Object.keys(stepParams).length === 0) {
+    return false;
+  }
+
+  for (const flowKey in stepParams) {
+    const flowSteps = stepParams[flowKey];
+    if (!flowSteps) continue;
+
+    for (const stepKey in flowSteps) {
+      const stepData = flowSteps[stepKey];
+      if (stepData?.fieldPath === fieldName || stepData?.field === fieldName) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+/**
+ * 获取字段支持的模型类
+ */
+function getFieldModelClass(fieldInterface: string, fieldClasses: any[], defaultFieldClass: any) {
+  return (
+    fieldClasses.find((fieldClass) => {
+      return fieldClass['supportedFieldInterfaces']?.includes(fieldInterface);
+    }) || defaultFieldClass
+  );
+}
+
+/**
+ * 创建字段切换检测器
+ */
+function createFieldToggleDetector(fieldName: string, subModelKey: string) {
+  return (model: FlowModel) => {
+    const subModels = model.subModels[subModelKey];
+
+    if (Array.isArray(subModels)) {
+      return subModels.some((subModel) => checkFieldInStepParams(fieldName, subModel));
+    } else if (subModels) {
+      return checkFieldInStepParams(fieldName, subModels);
+    }
+    return false;
+  };
+}
+
+/**
+ * 创建字段自定义移除函数
+ */
+function createFieldCustomRemove(fieldName: string, subModelKey: string) {
+  return async (model: FlowModel, _item: any) => {
+    const subModels = model.subModels[subModelKey];
+
+    if (Array.isArray(subModels)) {
+      const targetModel = subModels.find((subModel) => checkFieldInStepParams(fieldName, subModel));
+      if (targetModel) {
+        await targetModel.destroy();
+        const index = subModels.indexOf(targetModel);
+        if (index > -1) subModels.splice(index, 1);
+      }
+    } else if (subModels && checkFieldInStepParams(fieldName, subModels)) {
+      await subModels.destroy();
+      (model.subModels as any)[subModelKey] = undefined;
+    }
+  };
+}
+
+/**
+ * 构建字段菜单项的工厂函数
+ */
+export function buildFieldItems(
+  fields: any[],
+  model: FlowModel,
+  subModelBaseClass: string | ModelConstructor,
+  subModelKey: string,
+  buildCreateModelOptions: (options: any) => any,
+) {
+  const fieldClassesMap = model.flowEngine.filterModelClassByParent(subModelBaseClass);
+  const fieldClasses = Array.from(fieldClassesMap.values())
+    ?.filter((ModelClass) => !ModelClass.meta?.hide)
+    ?.sort((a, b) => (a.meta?.sort || 0) - (b.meta?.sort || 0));
+
+  if (fieldClasses.length === 0) {
+    return [];
+  }
+
+  const fieldClassToNameMap = new Map();
+  for (const [name, ModelClass] of fieldClassesMap) {
+    fieldClassToNameMap.set(ModelClass, name);
+  }
+
+  const defaultFieldClass = fieldClasses.find((fieldClass) => fieldClass['supportedFieldInterfaces'] === '*');
+
+  const allFields = fields
+    .filter((field) => field.options?.interface)
+    .map((field) => {
+      const fieldInterfaceName = field.options.interface;
+      const fieldClass = getFieldModelClass(fieldInterfaceName, fieldClasses, defaultFieldClass);
+
+      if (!fieldClass) return null;
+
+      const defaultOptions = {
+        ...fieldClass.meta?.defaultOptions,
+        use: fieldClassToNameMap.get(fieldClass) || fieldClass.name,
+      };
+
+      return {
+        key: field.name,
+        label: field.title,
+        icon: fieldClass.meta?.icon,
+        createModelOptions: buildCreateModelOptions({
+          defaultOptions,
+          collectionField: field,
+          fieldPath: field.name,
+          fieldModelClass: fieldClass,
+        }),
+        toggleDetector: createFieldToggleDetector(field.name, subModelKey),
+        customRemove: createFieldCustomRemove(field.name, subModelKey),
+      };
+    })
+    .filter(Boolean);
+
+  return [
+    {
+      key: 'addField',
+      label: 'Collection fields',
+      type: 'group' as const,
+      searchable: true,
+      searchPlaceholder: 'Search fields',
+      children: allFields,
+    },
+  ];
+}

@@ -10,7 +10,13 @@
 import { FormButtonGroup, FormLayout } from '@formily/antd-v5';
 import { createForm, Form } from '@formily/core';
 import { FormProvider } from '@formily/react';
-import { AddActionButton, AddFieldButton, FlowModelRenderer, SingleRecordResource } from '@nocobase/flow-engine';
+import {
+  AddActionButton,
+  AddFieldButton,
+  FlowModelRenderer,
+  SingleRecordResource,
+  buildFieldItems,
+} from '@nocobase/flow-engine';
 import { tval } from '@nocobase/utils/client';
 import React from 'react';
 import { DataBlockModel } from '../../base/BlockModel';
@@ -34,22 +40,28 @@ export class FormModel extends DataBlockModel {
           ))}
         </FormLayout>
         <AddFieldButton
-          buildCreateModelOptions={({ defaultOptions, fieldPath }) => ({
-            use: defaultOptions.use,
-            stepParams: {
-              default: {
-                step1: {
-                  dataSourceKey: this.collection.dataSourceKey,
-                  collectionName: this.collection.name,
-                  fieldPath,
+          items={() =>
+            buildFieldItems(
+              this.collection.getFields(),
+              this,
+              'EditableFieldModel',
+              'fields',
+              ({ defaultOptions, fieldPath }) => ({
+                use: defaultOptions.use,
+                stepParams: {
+                  default: {
+                    step1: {
+                      dataSourceKey: this.collection.dataSourceKey,
+                      collectionName: this.collection.name,
+                      fieldPath,
+                    },
+                  },
                 },
-              },
-            },
-          })}
+              }),
+            )
+          }
           subModelKey="fields"
           model={this}
-          collection={this.collection}
-          subModelBaseClass="EditableFieldModel"
           onSubModelAdded={async (model: EditableFieldModel) => {
             const params = model.getStepParams('default', 'step1');
             this.addAppends(params?.fieldPath, !!this.ctx.shared?.currentFlow?.extra?.filterByTk);

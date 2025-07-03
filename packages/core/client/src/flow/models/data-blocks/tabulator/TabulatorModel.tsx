@@ -18,6 +18,7 @@ import {
   FlowModelRenderer,
   FlowsFloatContextMenu,
   MultiRecordResource,
+  buildFieldItems,
 } from '@nocobase/flow-engine';
 import { tval } from '@nocobase/utils/client';
 import { Button, Card, Pagination, Skeleton, Space, Spin } from 'antd';
@@ -117,7 +118,9 @@ const Columns = observer<any>(({ record, model, index }) => {
   );
 });
 
-export class TabulatorTableActionsColumnModel extends TabulatorColumnModel {
+export class TabulatorCustomColumnModel extends FlowModel {}
+
+export class TabulatorTableActionsColumnModel extends TabulatorCustomColumnModel {
   getColumnProps(): ColumnDefinition {
     return {
       title: 'ID',
@@ -163,60 +166,45 @@ export class TabulatorModel extends DataBlockModel<S> {
       width: 200,
       headerSort: false,
       titleFormatter: (cell) => {
-        return this.reactView.render(
-          <AddFieldButton
-            collection={this.collection}
-            model={this}
-            subModelKey={'columns'}
-            subModelBaseClass="ReadPrettyFieldModel"
-            buildCreateModelOptions={({ defaultOptions, fieldPath }) => ({
-              use: 'TabulatorColumnModel',
-              stepParams: {
-                default: {
-                  step1: {
-                    dataSourceKey: this.collection.dataSourceKey,
-                    collectionName: this.collection.name,
-                    fieldPath,
-                  },
+        const items = buildFieldItems(
+          this.collection.getFields(),
+          this,
+          'ReadPrettyFieldModel',
+          'columns',
+          ({ defaultOptions, fieldPath }) => ({
+            use: 'TabulatorColumnModel',
+            stepParams: {
+              default: {
+                step1: {
+                  dataSourceKey: this.collection.dataSourceKey,
+                  collectionName: this.collection.name,
+                  fieldPath,
                 },
               },
-              subModels: {
-                field: {
-                  // @ts-ignore
-                  use: defaultOptions.use as any,
-                  stepParams: {
-                    default: {
-                      step1: {
-                        dataSourceKey: this.collection.dataSourceKey,
-                        collectionName: this.collection.name,
-                        fieldPath,
-                      },
+            },
+            subModels: {
+              field: {
+                // @ts-ignore
+                use: defaultOptions.use as any,
+                stepParams: {
+                  default: {
+                    step1: {
+                      dataSourceKey: this.collection.dataSourceKey,
+                      collectionName: this.collection.name,
+                      fieldPath,
                     },
                   },
                 },
               },
-            })}
-            appendItems={[
-              {
-                key: 'actions',
-                label: tval('Actions column'),
-                createModelOptions: {
-                  use: 'TabulatorTableActionsColumnModel',
-                },
-                toggleDetector: (ctx) => {
-                  // 检测是否已存在操作列
-                  const subModels = ctx.model.subModels.columns;
-                  const modelClass = ctx.model.flowEngine.getModelClass('TabulatorTableActionsColumnModel');
-                  if (Array.isArray(subModels)) {
-                    return subModels.some((subModel) => {
-                      // 使用 flowEngine 的模型注册信息进行检测
-                      return subModel instanceof modelClass;
-                    });
-                  }
-                  return false;
-                },
-              },
-            ]}
+            },
+          }),
+        );
+        return this.reactView.render(
+          <AddFieldButton
+            model={this}
+            subModelKey={'columns'}
+            subModelBaseClass={TabulatorCustomColumnModel}
+            items={items}
             onModelCreated={async (model: TabulatorColumnModel) => {
               await model.applyAutoFlows();
             }}
