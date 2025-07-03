@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-action-bulk-update",
-  "version": "1.8.0-beta.11",
+  "version": "1.8.0-beta.12",
   "main": "dist/server/index.js",
   "homepage": "https://docs.nocobase.com/handbook/action-bulk-update",
   "homepage.zh-CN": "https://docs-cn.nocobase.com/handbook/action-bulk-update",
