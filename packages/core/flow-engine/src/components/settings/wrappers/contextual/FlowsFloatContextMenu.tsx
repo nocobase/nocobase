@@ -274,7 +274,7 @@ interface ModelProvidedProps {
    */
   showTitle?: boolean;
   /**
-   * @default true
+   * @default false
    */
   showDragHandle?: boolean;
   /**
@@ -474,7 +474,7 @@ const FlowsFloatContextMenuWithModel: React.FC<ModelProvidedProps> = observer(
     showBackground = true,
     showBorder = true,
     showTitle = false,
-    showDragHandle = true,
+    showDragHandle = false,
     settingsMenuLevel,
     extraToolbarItems,
   }: ModelProvidedProps) => {
@@ -569,7 +569,7 @@ const FlowsFloatContextMenuWithModel: React.FC<ModelProvidedProps> = observer(
           </div>
 
           {/* 拖拽把手 */}
-          <ResizeHandles model={model} />
+          {showDragHandle && <ResizeHandles model={model} />}
         </div>
       </div>
     );

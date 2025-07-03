@@ -214,7 +214,7 @@ export class GridModel extends FlowModel<GridModelStructure> {
                         model={item}
                         key={item.uid}
                         fallback={<SkeletonFallback />}
-                        showFlowSettings={{ showBackground: false }}
+                        showFlowSettings={{ showBackground: false, showDragHandle: true }}
                         showErrorFallback
                         showTitle
                         extraToolbarItems={[
