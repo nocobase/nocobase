@@ -15,6 +15,7 @@ import {
   DndProvider,
   DragHandler,
   Droppable,
+  findModelUidPosition,
   FlowModel,
   FlowModelRenderer,
   FlowSettingsButton,
@@ -39,6 +40,8 @@ type GridModelStructure = {
 
 export class GridModel extends FlowModel<GridModelStructure> {
   subModelBaseClass = 'BlockModel';
+  gridContainerRef = React.createRef<HTMLDivElement>();
+  prevMoveDistance = 0;
 
   onInit(options: any): void {
     this.emitter.on('onSubModelAdded', () => {
@@ -50,6 +53,48 @@ export class GridModel extends FlowModel<GridModelStructure> {
     this.emitter.on('onSubModelMoved', () => {
       this.resetRows(true);
     });
+
+    this.emitter.on('onResizeLeft', ({ resizeDistance, model }) => {
+      const position = findModelUidPosition(model.uid, this.props.rows || {});
+      const gridContainerWidth = this.gridContainerRef.current?.clientWidth || 0;
+      const { newSizes, moveDistance } = recalculateGridSizes({
+        position,
+        direction: 'left',
+        resizeDistance,
+        prevMoveDistance: this.prevMoveDistance,
+        oldSizes: this.props.sizes || {},
+        gridContainerWidth,
+      });
+      this.prevMoveDistance = moveDistance;
+      this.setProps('sizes', newSizes);
+    });
+    this.emitter.on('onResizeRight', ({ resizeDistance, model }) => {
+      const position = findModelUidPosition(model.uid, this.props.rows || {});
+      const gridContainerWidth = this.gridContainerRef.current?.clientWidth || 0;
+      const { newSizes, moveDistance } = recalculateGridSizes({
+        position,
+        direction: 'right',
+        resizeDistance,
+        prevMoveDistance: this.prevMoveDistance,
+        oldSizes: this.props.sizes || {},
+        gridContainerWidth,
+      });
+      this.prevMoveDistance = moveDistance;
+      this.setProps('sizes', newSizes);
+    });
+    this.emitter.on('onResizeBottom', ({ resizeDistance, model }) => {});
+    this.emitter.on('onResizeEnd', () => {
+      this.prevMoveDistance = 0;
+      this.saveGridLayout();
+    });
+  }
+
+  saveGridLayout() {
+    this.setStepParams('defaultFlow', 'grid', {
+      rows: this.props.rows || {},
+      sizes: this.props.sizes || {},
+    });
+    this.save();
   }
 
   mergeRowsWithItems(rows: Record<string, string[][]>) {
@@ -148,17 +193,13 @@ export class GridModel extends FlowModel<GridModelStructure> {
   }
 
   handleDragEnd(event: any) {
-    this.setStepParams('defaultFlow', 'grid', {
-      rows: this.props.rows || {},
-      sizes: this.props.sizes || {},
-    });
-    this.save();
+    this.saveGridLayout();
   }
 
   render() {
     const t = this.translate;
     return (
-      <div style={{ padding: 16 }}>
+      <div ref={this.gridContainerRef} style={{ padding: 16 }}>
         <Space direction={'vertical'} style={{ width: '100%' }} size={16}>
           {this.subModels.items?.length > 0 && (
             <DndProvider onDragMove={this.handleDragMove.bind(this)} onDragEnd={this.handleDragEnd.bind(this)}>
@@ -251,4 +292,47 @@ GridModel.registerFlow({
 
 export class BlockGridModel extends GridModel {
   subModelBaseClass = 'BlockModel';
+}
+
+function recalculateGridSizes({
+  position,
+  direction,
+  resizeDistance,
+  prevMoveDistance,
+  oldSizes,
+  gridContainerWidth,
+  columnCount = 24,
+}: {
+  position: {
+    rowId: string;
+    columnIndex: number;
+    itemIndex: number;
+  };
+  direction: 'left' | 'right' | 'bottom' | 'corner';
+  resizeDistance: number;
+  prevMoveDistance: number;
+  oldSizes: Record<string, number[]>;
+  gridContainerWidth: number;
+  columnCount?: number;
+}) {
+  const newSizes = _.cloneDeep(oldSizes);
+
+  // 当前移动的距离占总宽度的多少份
+  const currentMoveDistance = Math.floor((resizeDistance / gridContainerWidth) * columnCount);
+
+  if (currentMoveDistance === prevMoveDistance) {
+    return { newSizes, moveDistance: currentMoveDistance };
+  }
+
+  newSizes[position.rowId][position.columnIndex] += currentMoveDistance - prevMoveDistance;
+
+  if (direction === 'left' && position.columnIndex > 0) {
+    // 如果是左侧拖动，左侧的列宽度需要相应的减少
+    newSizes[position.rowId][position.columnIndex - 1] -= currentMoveDistance - prevMoveDistance;
+  } else if (direction === 'right' && position.columnIndex < newSizes[position.rowId].length - 1) {
+    // 如果是右侧拖动，右侧的列宽度需要相应的减少
+    newSizes[position.rowId][position.columnIndex + 1] -= currentMoveDistance - prevMoveDistance;
+  }
+
+  return { newSizes, moveDistance: currentMoveDistance };
 }

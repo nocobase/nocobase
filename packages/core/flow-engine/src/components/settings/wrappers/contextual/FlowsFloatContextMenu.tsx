@@ -81,7 +81,7 @@ const renderToolbarItems = (
 };
 
 // 使用与 NocoBase 一致的悬浮工具栏样式
-const floatContainerStyles = ({ showBackground, showBorder }) => css`
+const floatContainerStyles = ({ showBackground, showBorder, ctx }) => css`
   position: relative;
   display: inline;
 
@@ -110,6 +110,7 @@ const floatContainerStyles = ({ showBackground, showBorder }) => css`
     display: none;
     background: ${showBackground ? 'var(--colorBgSettingsHover)' : ''};
     border: ${showBorder ? '2px solid var(--colorBorderSettingsHover)' : ''};
+    border-radius: ${ctx.globals.themeToken.borderRadiusLG}px;
     pointer-events: none;
 
     &.nb-in-template {
@@ -154,6 +155,98 @@ const floatContainerStyles = ({ showBackground, showBorder }) => css`
         display: flex;
         align-items: center;
         justify-content: center;
+      }
+    }
+
+    /* 拖拽把手样式 - 参考 AirTable 样式 */
+    > .resize-handle {
+      position: absolute;
+      pointer-events: all;
+      background: var(--colorSettings);
+      opacity: 0.6;
+      transition: opacity 0.2s ease;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+
+      &:hover {
+        opacity: 0.9;
+        background: var(--colorSettingsHover, var(--colorSettings));
+      }
+
+      &::before {
+        content: '';
+        position: absolute;
+        background: rgba(255, 255, 255, 0.9);
+        border-radius: 50%;
+      }
+
+      &::after {
+        content: '';
+        position: absolute;
+        background: rgba(255, 255, 255, 0.9);
+        border-radius: 50%;
+      }
+    }
+
+    > .resize-handle-left {
+      left: -4px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 6px;
+      height: 20px;
+      cursor: ew-resize;
+
+      &::before {
+        width: 2px;
+        height: 2px;
+        top: 6px;
+        left: 50%;
+        transform: translateX(-50%);
+        box-shadow:
+          0 4px 0 rgba(255, 255, 255, 0.9),
+          0 8px 0 rgba(255, 255, 255, 0.9);
+      }
+    }
+
+    > .resize-handle-right {
+      right: -4px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 6px;
+      height: 20px;
+      cursor: ew-resize;
+
+      &::before {
+        width: 2px;
+        height: 2px;
+        top: 6px;
+        left: 50%;
+        transform: translateX(-50%);
+        box-shadow:
+          0 4px 0 rgba(255, 255, 255, 0.9),
+          0 8px 0 rgba(255, 255, 255, 0.9);
+      }
+    }
+
+    > .resize-handle-bottom {
+      bottom: -4px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 20px;
+      height: 6px;
+      cursor: ns-resize;
+
+      &::before {
+        width: 2px;
+        height: 2px;
+        left: 6px;
+        top: 50%;
+        transform: translateY(-50%);
+        box-shadow:
+          4px 0 0 rgba(255, 255, 255, 0.9),
+          8px 0 0 rgba(255, 255, 255, 0.9);
       }
     }
   }
@@ -284,6 +377,9 @@ const FlowsFloatContextMenuWithModel: React.FC<ModelProvidedProps> = observer(
   }: ModelProvidedProps) => {
     const [hideMenu, setHideMenu] = useState<boolean>(false);
     const [hasButton, setHasButton] = useState<boolean>(false);
+    const isDraggingRef = useRef<boolean>(false);
+    const dragTypeRef = useRef<'left' | 'right' | 'bottom' | 'corner' | null>(null);
+    const dragStartPosRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
     const containerRef = useRef<HTMLDivElement>(null);
     const flowEngine = useFlowEngine();
 
@@ -330,6 +426,77 @@ const FlowsFloatContextMenuWithModel: React.FC<ModelProvidedProps> = observer(
       }
     }, []);
 
+    // 拖拽移动处理函数
+    const handleDragMove = useCallback(
+      (e: MouseEvent) => {
+        if (!isDraggingRef.current || !dragTypeRef.current) return;
+
+        const deltaX = e.clientX - dragStartPosRef.current.x;
+        const deltaY = e.clientY - dragStartPosRef.current.y;
+
+        let resizeDistance = 0;
+
+        switch (dragTypeRef.current) {
+          case 'left':
+            // 左侧把手：向左拖为正数，向右拖为负数
+            resizeDistance = -deltaX;
+            model.parent.emitter.emit('onResizeLeft', { resizeDistance, model });
+            break;
+
+          case 'right':
+            // 右侧把手：向右拖为正数，向左拖为负数
+            resizeDistance = deltaX;
+            model.parent.emitter.emit('onResizeRight', { resizeDistance, model });
+            break;
+
+          case 'bottom':
+            // 底部把手：向下拖为正数，向上拖为负数
+            resizeDistance = deltaY;
+            model.parent.emitter.emit('onResizeBottom', { resizeDistance, model });
+            break;
+
+          case 'corner': {
+            // 右下角把手：同时计算宽度和高度变化
+            const widthDelta = deltaX;
+            const heightDelta = deltaY;
+            model.parent.emitter.emit('onResizeCorner', { widthDelta, heightDelta, model });
+            break;
+          }
+        }
+      },
+      [model],
+    );
+
+    // 拖拽结束处理函数
+    const handleDragEnd = useCallback(() => {
+      isDraggingRef.current = false;
+      dragTypeRef.current = null;
+      dragStartPosRef.current = { x: 0, y: 0 };
+
+      // 移除全局事件监听
+      document.removeEventListener('mousemove', handleDragMove);
+      document.removeEventListener('mouseup', handleDragEnd);
+
+      model.parent.emitter.emit('onResizeEnd');
+    }, [handleDragMove, model]);
+
+    // 拖拽开始处理函数
+    const handleDragStart = useCallback(
+      (e: React.MouseEvent, type: 'left' | 'right' | 'bottom' | 'corner') => {
+        e.preventDefault();
+        e.stopPropagation();
+
+        isDraggingRef.current = true;
+        dragTypeRef.current = type;
+        dragStartPosRef.current = { x: e.clientX, y: e.clientY };
+
+        // 添加全局事件监听
+        document.addEventListener('mousemove', handleDragMove);
+        document.addEventListener('mouseup', handleDragEnd);
+      },
+      [handleDragMove, handleDragEnd],
+    );
+
     if (!model) {
       const t = getT(model || ({} as FlowModel));
       return <Alert message={t('Invalid model provided')} type="error" />;
@@ -343,9 +510,9 @@ const FlowsFloatContextMenuWithModel: React.FC<ModelProvidedProps> = observer(
     return (
       <div
         ref={containerRef}
-        className={`${floatContainerStyles({ showBackground, showBorder })} ${hideMenu ? 'hide-parent-menu' : ''} ${
-          hasButton ? 'has-button-child' : ''
-        } ${className || ''}`}
+        className={`${floatContainerStyles({ showBackground, showBorder, ctx: model.ctx })} ${
+          hideMenu ? 'hide-parent-menu' : ''
+        } ${hasButton ? 'has-button-child' : ''} ${className || ''}`}
         style={containerStyle}
         data-has-float-menu="true"
         onMouseMove={handleChildHover}
@@ -371,6 +538,23 @@ const FlowsFloatContextMenuWithModel: React.FC<ModelProvidedProps> = observer(
               )}
             </Space>
           </div>
+
+          {/* 拖拽把手 */}
+          <div
+            className="resize-handle resize-handle-left"
+            title="拖拽调节宽度"
+            onMouseDown={(e) => handleDragStart(e, 'left')}
+          ></div>
+          <div
+            className="resize-handle resize-handle-right"
+            title="拖拽调节宽度"
+            onMouseDown={(e) => handleDragStart(e, 'right')}
+          ></div>
+          {/* <div
+            className="resize-handle resize-handle-bottom"
+            title="拖拽调节高度"
+            onMouseDown={(e) => handleDragStart(e, 'bottom')}
+          ></div> */}
         </div>
       </div>
     );
