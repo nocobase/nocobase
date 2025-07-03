@@ -113,6 +113,38 @@ ctxA.delegate(ctxB);
 console.log(ctxA.version); // 输出 'v1.0'
 ```
 
+## 属性依赖
+
+```ts
+const ctx = new FlowContext();
+
+ctx.setProps({
+  a: (ctx) => {
+    console.log('init a');
+    return 1;
+  },
+  b: (ctx) => {
+    console.log('init b');
+    return ctx.a + 1;
+  },
+  c: async (ctx) => {
+    console.log('init c');
+    return ctx.b * 2;
+  },
+});
+
+(async () => {
+  console.log('read a:', ctx.a); // init a \n read a: 1
+  console.log('read b:', ctx.b); // init b \n read b: 2
+  console.log('read c:', await ctx.c); // init c \n read c: 4
+
+  // 再访问，不会重复初始化
+  console.log('read a again:', ctx.a); // 1
+  console.log('read b again:', ctx.b); // 2
+  console.log('read c again:', await ctx.c); // 4
+})();
+```
+
 ---
 
 ## 🧬 继承结构
