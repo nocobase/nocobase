@@ -27,10 +27,10 @@ export function withAutoScrollY(WrappedTable) {
       padding = 2 * token.paddingLG,
     } = autoScrollRefs || {};
 
-    const [scrollY, setScrollY] = useState(600);
+    const [scrollY, setScrollY] = useState(null);
     useEffect(() => {
       if (!height) {
-        setScrollY(600);
+        setScrollY(null);
         return;
       }
       const update = () => {
