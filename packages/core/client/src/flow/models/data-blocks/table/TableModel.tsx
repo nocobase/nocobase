@@ -332,7 +332,11 @@ export class TableModel extends DataBlockModel<TableModelStructure> {
                 // @ts-ignore
                 if (action.props.position === 'left') {
                   return (
-                    <FlowModelRenderer model={action} showFlowSettings={{ showBackground: false, showBorder: false }} />
+                    <FlowModelRenderer
+                      key={action.uid}
+                      model={action}
+                      showFlowSettings={{ showBackground: false, showBorder: false }}
+                    />
                   );
                 }
 
@@ -346,7 +350,7 @@ export class TableModel extends DataBlockModel<TableModelStructure> {
                 // @ts-ignore
                 if (action.props.position !== 'left') {
                   return (
-                    <Droppable model={action}>
+                    <Droppable model={action} key={action.uid}>
                       <FlowModelRenderer
                         model={action}
                         showFlowSettings={{ showBackground: false, showBorder: false }}
