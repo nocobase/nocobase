@@ -18,6 +18,7 @@ import {
   DragHandler,
   Droppable,
   FlowModelRenderer,
+  ForkFlowModel,
   MultiRecordResource,
   useFlowEngine,
 } from '@nocobase/flow-engine';
@@ -188,7 +189,7 @@ export class TableModel extends DataBlockModel<TableModelStructure> {
   };
 
   EditableCell = observer<any>((props) => {
-    const { className, title, editable, width, record, recordIndex, dataIndex, children, ...restProps } = props;
+    const { className, title, editable, width, record, recordIndex, dataIndex, children, model, ...restProps } = props;
     const ref = useRef(null);
     if (editable) {
       return (
@@ -232,11 +233,13 @@ export class TableModel extends DataBlockModel<TableModelStructure> {
                   collectionName: this.collection.name,
                   fieldPath: dataIndex,
                   filterByTk: record.id,
+                  record: record,
                   onSuccess: (values) => {
-                    this.resource.setItem(recordIndex, {
-                      ...record,
-                      ...values,
-                    });
+                    this.resource.getData()[recordIndex][dataIndex] = values[dataIndex];
+                    // 仅重渲染单元格
+                    const fork: ForkFlowModel = model.subModels.field.getFork(`${recordIndex}`);
+                    fork.setSharedContext({ index: recordIndex, value: values[dataIndex], currentRecord: record });
+                    fork.rerender();
                   },
                 });
                 // await this.resource.refresh();
@@ -329,7 +332,11 @@ export class TableModel extends DataBlockModel<TableModelStructure> {
                 // @ts-ignore
                 if (action.props.position === 'left') {
                   return (
-                    <FlowModelRenderer model={action} showFlowSettings={{ showBackground: false, showBorder: false }} />
+                    <FlowModelRenderer
+                      key={action.uid}
+                      model={action}
+                      showFlowSettings={{ showBackground: false, showBorder: false }}
+                    />
                   );
                 }
 
@@ -343,7 +350,7 @@ export class TableModel extends DataBlockModel<TableModelStructure> {
                 // @ts-ignore
                 if (action.props.position !== 'left') {
                   return (
-                    <Droppable model={action}>
+                    <Droppable model={action} key={action.uid}>
                       <FlowModelRenderer
                         model={action}
                         showFlowSettings={{ showBackground: false, showBorder: false }}
@@ -467,6 +474,7 @@ TableModel.registerFlow({
       },
       handler: async (ctx, params) => {
         if (ctx.model.resource) {
+          ctx.model.applySubModelsAutoFlows('columns');
           return;
         }
         const collection = ctx.globals.dataSourceManager.getCollection(params.dataSourceKey, params.collectionName);
@@ -500,6 +508,7 @@ TableModel.registerFlow({
       },
       handler(ctx, params) {
         ctx.model.resource.loading = true;
+        ctx.model.resource.setPage(1);
         ctx.model.resource.setPageSize(params.pageSize);
       },
     },

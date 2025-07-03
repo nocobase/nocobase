@@ -10,6 +10,7 @@
 import { getDefaultFormat, str2moment, toGmt, toLocal, getPickerFormat } from '@nocobase/utils/client';
 import type { Dayjs } from 'dayjs';
 import dayjs from 'dayjs';
+import { handleDateChangeOnForm } from '../../../../internal/utils/dateTimeUtils';
 
 const toStringByPicker = (value, picker = 'date', timezone: 'gmt' | 'local') => {
   if (!dayjs.isDayjs(value)) return value;
@@ -80,32 +81,6 @@ const handleChangeOnFilter = (value, picker, showTime) => {
     return dayjs(value).format(format);
   }
   return value;
-};
-export const handleDateChangeOnForm = (value, dateOnly, utc, picker, showTime, gmt) => {
-  // @ts-ignore
-  const currentTimeZone = dayjs.tz.guess();
-  const format = showTime ? 'YYYY-MM-DD HH:mm:ss' : 'YYYY-MM-DD';
-  if (!value) {
-    return value;
-  }
-  if (dateOnly) {
-    return dayjs(value).startOf(picker).format('YYYY-MM-DD');
-  }
-  if (utc) {
-    if (gmt) {
-      return toGmt(value);
-    }
-    if (picker !== 'date') {
-      return dayjs(value).startOf(picker).toISOString();
-    }
-    const formattedDate = dayjs(value).format(format);
-    // @ts-ignore
-    return dayjs(formattedDate).tz(currentTimeZone, true).toISOString();
-  }
-  if (showTime) {
-    return dayjs(value).format(format);
-  }
-  return dayjs(value).startOf(picker).format(format);
 };
 
 export const mapDatePicker = function () {

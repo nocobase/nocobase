@@ -66,6 +66,7 @@ export class TableColumnModel extends FieldModel {
         editable: this.props.editable,
         dataIndex: this.props.dataIndex,
         title: this.props.title,
+        model: this,
         // handleSave,
       }),
       render: this.render(),

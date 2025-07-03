@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { uid } from '@nocobase/utils/client';
+import { uid } from '@formily/shared';
 import _ from 'lodash';
 import { ElementPosition } from './getMousePositionOnElement';
 
@@ -23,6 +23,24 @@ interface GridLayoutData {
   rows: Record<string, string[][]>;
   sizes: Record<string, number[]>;
 }
+
+export const findModelUidPosition = (uid: string, rows: Record<string, string[][]>) => {
+  // 找到 sourceUid 和 targetUid 的位置
+  let result: { rowId: string; columnIndex: number; itemIndex: number } | null = null;
+
+  for (const [rowId, columns] of Object.entries(rows)) {
+    for (let columnIndex = 0; columnIndex < columns.length; columnIndex++) {
+      const column = columns[columnIndex];
+      for (let itemIndex = 0; itemIndex < column.length; itemIndex++) {
+        if (column[itemIndex] === uid) {
+          result = { rowId, columnIndex, itemIndex };
+        }
+      }
+    }
+  }
+
+  return result;
+};
 
 export const moveBlock = ({
   sourceUid,

@@ -60,8 +60,10 @@ interface FlowModelRendererProps {
 
   fallback?: React.ReactNode; // 渲染失败时的回退内容
 
+  key?: React.Key;
+
   /** 是否显示流程设置入口（如按钮、菜单等） */
-  showFlowSettings?: boolean | { showBackground?: boolean; showBorder?: boolean }; // 默认 false
+  showFlowSettings?: boolean | { showBackground?: boolean; showBorder?: boolean; showDragHandle?: boolean }; // 默认 false
 
   /** 流程设置的交互风格 */
   flowSettingsVariant?: 'dropdown' | 'contextMenu' | 'modal' | 'drawer'; // 默认 'dropdown'
@@ -190,7 +192,7 @@ const FlowModelRendererWithoutAutoFlows: React.FC<{
  */
 const FlowModelRendererCore: React.FC<{
   model: FlowModel;
-  showFlowSettings: boolean | { showBackground?: boolean; showBorder?: boolean };
+  showFlowSettings: boolean | { showBackground?: boolean; showBorder?: boolean; showDragHandle?: boolean };
   flowSettingsVariant: string;
   hideRemoveInSettings: boolean;
   showTitle: boolean;
@@ -234,6 +236,7 @@ const FlowModelRendererCore: React.FC<{
             showDeleteButton={!hideRemoveInSettings}
             showBackground={_.isObject(showFlowSettings) ? showFlowSettings.showBackground : undefined}
             showBorder={_.isObject(showFlowSettings) ? showFlowSettings.showBorder : undefined}
+            showDragHandle={_.isObject(showFlowSettings) ? showFlowSettings.showDragHandle : undefined}
             settingsMenuLevel={settingsMenuLevel}
             extraToolbarItems={extraToolbarItems}
           >
@@ -269,6 +272,7 @@ const FlowModelRendererCore: React.FC<{
             showDeleteButton={!hideRemoveInSettings}
             showBackground={_.isObject(showFlowSettings) ? showFlowSettings.showBackground : undefined}
             showBorder={_.isObject(showFlowSettings) ? showFlowSettings.showBorder : undefined}
+            showDragHandle={_.isObject(showFlowSettings) ? showFlowSettings.showDragHandle : undefined}
             settingsMenuLevel={settingsMenuLevel}
             extraToolbarItems={extraToolbarItems}
           >

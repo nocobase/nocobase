@@ -50,7 +50,6 @@ export const dataScope = defineAction({
   async handler(ctx, params) {
     // @ts-ignore
     const resource = ctx.model?.resource as MultiRecordResource;
-    console.log(ctx.model);
     if (!resource) {
       return;
     }
