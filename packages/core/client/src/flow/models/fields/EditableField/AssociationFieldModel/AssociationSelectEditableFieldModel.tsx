@@ -182,6 +182,8 @@ AssociationSelectEditableFieldModel.registerFlow({
               field: ctx.model.field,
               form: ctx.model.form,
             });
+          } else {
+            paginationState.page = 1;
           }
         };
         ctx.model.onPopupScroll = (e) => {
@@ -212,8 +214,15 @@ AssociationSelectEditableFieldModel.registerFlow({
   steps: {
     step1: {
       async handler(ctx, params) {
-        await ctx.model.resource.refresh();
-        const data = ctx.model.resource.getData();
+        const resource = ctx.model.resource;
+        const dataSource = ctx.model.field.dataSource;
+        resource.setPage(1);
+        await resource.refresh();
+        const { count } = resource.getMeta();
+        if (dataSource && count === dataSource.length) {
+          return;
+        }
+        const data = resource.getData();
         ctx.model.setDataSource(data);
         if (data.length < paginationState.pageSize) {
           paginationState.hasMore = false;
@@ -302,6 +311,12 @@ AssociationSelectEditableFieldModel.registerFlow({
           await resource.refresh();
           const data = resource.getData();
           ctx.model.setDataSource(data);
+          if (data.length < paginationState.pageSize) {
+            paginationState.hasMore = false;
+          } else {
+            paginationState.hasMore = true;
+            paginationState.page++;
+          }
         } catch (error) {
           console.error('AssociationSelectField search flow error:', error);
           // 出错时也可以选择清空数据源或者显示错误提示
