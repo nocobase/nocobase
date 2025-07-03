@@ -63,6 +63,7 @@ export class GridModel extends FlowModel<GridModelStructure> {
         resizeDistance,
         prevMoveDistance: this.prevMoveDistance,
         oldSizes: this.props.sizes || {},
+        gutter: this.ctx.globals.themeToken.marginBlock,
         gridContainerWidth,
       });
       this.prevMoveDistance = moveDistance;
@@ -77,6 +78,7 @@ export class GridModel extends FlowModel<GridModelStructure> {
         resizeDistance,
         prevMoveDistance: this.prevMoveDistance,
         oldSizes: this.props.sizes || {},
+        gutter: this.ctx.globals.themeToken.marginBlock,
         gridContainerWidth,
       });
       this.prevMoveDistance = moveDistance;
@@ -199,8 +201,13 @@ export class GridModel extends FlowModel<GridModelStructure> {
   render() {
     const t = this.translate;
     return (
-      <div ref={this.gridContainerRef} style={{ padding: 16 }}>
-        <Space direction={'vertical'} style={{ width: '100%' }} size={16}>
+      <div style={{ padding: this.ctx.globals.themeToken.marginBlock }}>
+        <Space
+          ref={this.gridContainerRef}
+          direction={'vertical'}
+          style={{ width: '100%' }}
+          size={this.ctx.globals.themeToken.marginBlock}
+        >
           {this.subModels.items?.length > 0 && (
             <DndProvider onDragMove={this.handleDragMove.bind(this)} onDragEnd={this.handleDragEnd.bind(this)}>
               <Grid
@@ -301,6 +308,7 @@ function recalculateGridSizes({
   prevMoveDistance,
   oldSizes,
   gridContainerWidth,
+  gutter = 16,
   columnCount = 24,
 }: {
   position: {
@@ -313,12 +321,18 @@ function recalculateGridSizes({
   prevMoveDistance: number;
   oldSizes: Record<string, number[]>;
   gridContainerWidth: number;
+  // 栅格间隔
+  gutter?: number;
+  // 栅格列数
+  // 默认是 24 列
   columnCount?: number;
 }) {
   const newSizes = _.cloneDeep(oldSizes);
+  const currentRowSizes = newSizes[position.rowId] || [];
+  const totalGutter = gutter * (currentRowSizes.length - 1);
 
   // 当前移动的距离占总宽度的多少份
-  const currentMoveDistance = Math.floor((resizeDistance / gridContainerWidth) * columnCount);
+  const currentMoveDistance = Math.floor((resizeDistance / (gridContainerWidth - totalGutter)) * columnCount);
 
   if (currentMoveDistance === prevMoveDistance) {
     return { newSizes, moveDistance: currentMoveDistance };
