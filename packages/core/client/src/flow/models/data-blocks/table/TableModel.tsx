@@ -508,6 +508,7 @@ TableModel.registerFlow({
       },
       handler(ctx, params) {
         ctx.model.resource.loading = true;
+        ctx.model.resource.setPage(1);
         ctx.model.resource.setPageSize(params.pageSize);
       },
     },
