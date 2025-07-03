@@ -7,6 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { EMPTY_COLUMN_UID } from '@nocobase/flow-engine';
 import { Col, Row } from 'antd';
 import _ from 'lodash';
 import React from 'react';
@@ -46,9 +47,12 @@ export function Grid(props: {
             {cells.map((cell, cellIdx) => (
               <Col key={cellIdx} span={spans[cellIdx]}>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                  {cell.map((uid) => (
-                    <React.Fragment key={uid}>{renderItem(uid)}</React.Fragment>
-                  ))}
+                  {cell.map((uid) => {
+                    if (uid === EMPTY_COLUMN_UID) {
+                      return null;
+                    }
+                    return <React.Fragment key={uid}>{renderItem(uid)}</React.Fragment>;
+                  })}
                 </div>
               </Col>
             ))}

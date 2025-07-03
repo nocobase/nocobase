@@ -15,6 +15,7 @@ import {
   DndProvider,
   DragHandler,
   Droppable,
+  EMPTY_COLUMN_UID,
   findModelUidPosition,
   FlowModel,
   FlowModelRenderer,
@@ -57,31 +58,35 @@ export class GridModel extends FlowModel<GridModelStructure> {
     this.emitter.on('onResizeLeft', ({ resizeDistance, model }) => {
       const position = findModelUidPosition(model.uid, this.props.rows || {});
       const gridContainerWidth = this.gridContainerRef.current?.clientWidth || 0;
-      const { newSizes, moveDistance } = recalculateGridSizes({
+      const { newRows, newSizes, moveDistance } = recalculateGridSizes({
         position,
         direction: 'left',
         resizeDistance,
         prevMoveDistance: this.prevMoveDistance,
+        oldRows: this.props.rows || {},
         oldSizes: this.props.sizes || {},
         gutter: this.ctx.globals.themeToken.marginBlock,
         gridContainerWidth,
       });
       this.prevMoveDistance = moveDistance;
+      this.setProps('rows', newRows);
       this.setProps('sizes', newSizes);
     });
     this.emitter.on('onResizeRight', ({ resizeDistance, model }) => {
       const position = findModelUidPosition(model.uid, this.props.rows || {});
       const gridContainerWidth = this.gridContainerRef.current?.clientWidth || 0;
-      const { newSizes, moveDistance } = recalculateGridSizes({
+      const { newRows, newSizes, moveDistance } = recalculateGridSizes({
         position,
         direction: 'right',
         resizeDistance,
         prevMoveDistance: this.prevMoveDistance,
+        oldRows: this.props.rows || {},
         oldSizes: this.props.sizes || {},
         gutter: this.ctx.globals.themeToken.marginBlock,
         gridContainerWidth,
       });
       this.prevMoveDistance = moveDistance;
+      this.setProps('rows', newRows);
       this.setProps('sizes', newSizes);
     });
     this.emitter.on('onResizeBottom', ({ resizeDistance, model }) => {});
@@ -107,6 +112,8 @@ export class GridModel extends FlowModel<GridModelStructure> {
     }
     // 1. 收集所有 items 里的 uid
     const allUids = new Set(items.map((item) => item.uid));
+    allUids.add(EMPTY_COLUMN_UID); // 确保空白列的 UID 也被包含
+
     // 2. 收集 rows 里已用到的 uid
     const usedUids = new Set<string>();
     const newRows: Record<string, string[][]> = {};
@@ -307,6 +314,7 @@ function recalculateGridSizes({
   resizeDistance,
   prevMoveDistance,
   oldSizes,
+  oldRows,
   gridContainerWidth,
   gutter = 16,
   columnCount = 24,
@@ -320,6 +328,7 @@ function recalculateGridSizes({
   resizeDistance: number;
   prevMoveDistance: number;
   oldSizes: Record<string, number[]>;
+  oldRows: Record<string, string[][]>;
   gridContainerWidth: number;
   // 栅格间隔
   gutter?: number;
@@ -327,6 +336,7 @@ function recalculateGridSizes({
   // 默认是 24 列
   columnCount?: number;
 }) {
+  const newRows = _.cloneDeep(oldRows);
   const newSizes = _.cloneDeep(oldSizes);
   const currentRowSizes = newSizes[position.rowId] || [];
   const totalGutter = gutter * (currentRowSizes.length - 1);
@@ -335,18 +345,148 @@ function recalculateGridSizes({
   const currentMoveDistance = Math.floor((resizeDistance / (gridContainerWidth - totalGutter)) * columnCount);
 
   if (currentMoveDistance === prevMoveDistance) {
-    return { newSizes, moveDistance: currentMoveDistance };
+    return { newRows, newSizes, moveDistance: currentMoveDistance };
   }
 
   newSizes[position.rowId][position.columnIndex] += currentMoveDistance - prevMoveDistance;
 
   if (direction === 'left' && position.columnIndex > 0) {
-    // 如果是左侧拖动，左侧的列宽度需要相应的减少
+    // 如果是左侧拖动，左侧的列宽度需要相应的减少或增加
     newSizes[position.rowId][position.columnIndex - 1] -= currentMoveDistance - prevMoveDistance;
-  } else if (direction === 'right' && position.columnIndex < newSizes[position.rowId].length - 1) {
-    // 如果是右侧拖动，右侧的列宽度需要相应的减少
-    newSizes[position.rowId][position.columnIndex + 1] -= currentMoveDistance - prevMoveDistance;
+
+    // 如果左侧列的宽度为 0，且是一个空白列，则需要删除该列
+    if (newSizes[position.rowId][position.columnIndex - 1] === 0) {
+      removeEmptyColumnFromRow({
+        rows: newRows,
+        sizes: newSizes,
+        position,
+        direction: 'left',
+      });
+    }
   }
 
-  return { newSizes, moveDistance: currentMoveDistance };
+  // 如果最左侧的列宽度小于其初始的宽度，则需要添加一个空白列，用于显示空白
+  if (direction === 'left' && position.columnIndex === 0) {
+    const otherColumnSize = newSizes[position.rowId].slice(1).reduce((a, b) => a + b, 0);
+    const currentColumnSize = newSizes[position.rowId][0];
+
+    if (currentColumnSize < columnCount - otherColumnSize) {
+      addEmptyColumnToRow({
+        rows: newRows,
+        sizes: newSizes,
+        position,
+        direction: 'left',
+      });
+    }
+  }
+
+  if (direction === 'right' && position.columnIndex < newSizes[position.rowId].length - 1) {
+    // 如果是右侧拖动，右侧的列宽度需要相应的减少或增加
+    newSizes[position.rowId][position.columnIndex + 1] -= currentMoveDistance - prevMoveDistance;
+
+    // 如果右侧列的宽度为 0，且是一个空白列，则需要删除该列
+    if (newSizes[position.rowId][position.columnIndex + 1] === 0) {
+      removeEmptyColumnFromRow({
+        rows: newRows,
+        sizes: newSizes,
+        position,
+        direction: 'right',
+      });
+    }
+  }
+
+  // 如果最右侧的列宽度小于其初始的宽度，则需要添加一个空白列，用于显示空白
+  if (direction === 'right' && position.columnIndex === newSizes[position.rowId].length - 1) {
+    const otherColumnSize = newSizes[position.rowId].slice(0, -1).reduce((a, b) => a + b, 0);
+    const currentColumnSize = newSizes[position.rowId][position.columnIndex];
+
+    if (currentColumnSize < columnCount - otherColumnSize) {
+      addEmptyColumnToRow({
+        rows: newRows,
+        sizes: newSizes,
+        position,
+        direction: 'right',
+      });
+    }
+  }
+
+  return { newRows, newSizes, moveDistance: currentMoveDistance };
+}
+
+// 新增一个空白列
+function addEmptyColumnToRow({
+  rows,
+  sizes,
+  position,
+  direction,
+}: {
+  rows: Record<string, string[][]>;
+  sizes: Record<string, number[]>;
+  position: {
+    rowId: string;
+    columnIndex: number;
+  };
+  direction: 'left' | 'right';
+}) {
+  const currentRow = rows[position.rowId] || [];
+  const currentRowSizes = sizes[position.rowId] || [];
+
+  if (direction === 'left') {
+    const leftColumn = currentRow[position.columnIndex - 1];
+    if (leftColumn && leftColumn.includes(EMPTY_COLUMN_UID)) {
+      // 如果左侧已经有空白列，则不再添加
+      return;
+    }
+    currentRow.splice(position.columnIndex, 0, [EMPTY_COLUMN_UID]);
+    currentRowSizes.splice(position.columnIndex, 0, 1);
+  }
+
+  if (direction === 'right') {
+    const rightColumn = currentRow[position.columnIndex + 1];
+    if (rightColumn && rightColumn.includes(EMPTY_COLUMN_UID)) {
+      // 如果右侧已经有空白列，则不再添加
+      return;
+    }
+    currentRow.splice(position.columnIndex + 1, 0, [EMPTY_COLUMN_UID]);
+    currentRowSizes.splice(position.columnIndex + 1, 0, 1);
+  }
+}
+
+// 删除一个空白列
+function removeEmptyColumnFromRow({
+  rows,
+  sizes,
+  position,
+  direction,
+}: {
+  rows: Record<string, string[][]>;
+  sizes: Record<string, number[]>;
+  position: {
+    rowId: string;
+    columnIndex: number;
+  };
+  direction: 'left' | 'right';
+}) {
+  const currentRow = rows[position.rowId] || [];
+  const currentRowSizes = sizes[position.rowId] || [];
+
+  if (direction === 'left') {
+    const leftColumn = currentRow[position.columnIndex - 1];
+    if (!leftColumn || !leftColumn.includes(EMPTY_COLUMN_UID)) {
+      // 如果左侧没有空白列，则不进行删除
+      return;
+    }
+    currentRow.splice(position.columnIndex - 1, 1);
+    currentRowSizes.splice(position.columnIndex - 1, 1);
+  }
+
+  if (direction === 'right') {
+    const rightColumn = currentRow[position.columnIndex + 1];
+    if (!rightColumn || !rightColumn.includes(EMPTY_COLUMN_UID)) {
+      // 如果右侧没有空白列，则不进行删除
+      return;
+    }
+    currentRow.splice(position.columnIndex + 1, 1);
+    currentRowSizes.splice(position.columnIndex + 1, 1);
+  }
 }
