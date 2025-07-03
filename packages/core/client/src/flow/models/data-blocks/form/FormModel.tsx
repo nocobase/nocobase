@@ -16,6 +16,7 @@ import {
   FlowModelRenderer,
   SingleRecordResource,
   buildFieldItems,
+  buildActionItems,
 } from '@nocobase/flow-engine';
 import { tval } from '@nocobase/utils/client';
 import React from 'react';
@@ -78,7 +79,7 @@ export class FormModel extends DataBlockModel {
               sharedContext={{ currentRecord: this.resource.getData() }}
             />
           ))}
-          <AddActionButton model={this} subModelBaseClass="FormActionModel" />
+          <AddActionButton model={this} items={buildActionItems(this, 'FormActionModel')} />
         </FormButtonGroup>
       </FormProvider>
     );

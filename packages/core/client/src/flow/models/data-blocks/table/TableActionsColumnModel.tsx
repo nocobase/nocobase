@@ -15,6 +15,7 @@ import {
   Droppable,
   FlowModelRenderer,
   FlowsFloatContextMenu,
+  buildActionItems,
 } from '@nocobase/flow-engine';
 import { Skeleton, Space, Tooltip } from 'antd';
 import React from 'react';
@@ -44,7 +45,7 @@ const Columns = observer<any>(({ record, model, index }) => {
 
 const AddActionToolbarComponent = ({ model }) => {
   return (
-    <AddActionButton model={model} subModelBaseClass="RecordActionModel" subModelKey="actions">
+    <AddActionButton model={model} items={buildActionItems(model, 'RecordActionModel')} subModelKey="actions">
       <PlusOutlined />
     </AddActionButton>
   );

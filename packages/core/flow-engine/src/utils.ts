@@ -406,3 +406,43 @@ export function buildFieldItems(
     },
   ];
 }
+
+/**
+ * 构建动作菜单项的工厂函数
+ */
+export function buildActionItems(
+  model: FlowModel,
+  subModelBaseClass: string | ModelConstructor,
+  filter?: (modelClass: ModelConstructor, className: string) => boolean,
+) {
+  const actionClasses = model.flowEngine.filterModelClassByParent(subModelBaseClass);
+  const registeredItems = [];
+
+  for (const [className, ModelClass] of actionClasses) {
+    if (filter && !filter(ModelClass, className)) {
+      continue;
+    }
+    if (ModelClass.meta?.hide) {
+      continue;
+    }
+
+    const item: any = {
+      key: className,
+      label: ModelClass.meta?.title || className,
+      icon: ModelClass.meta?.icon,
+      createModelOptions: {
+        ...ModelClass.meta?.defaultOptions,
+        use: className,
+      },
+    };
+
+    // 从 meta 中获取 toggleDetector
+    if (ModelClass.meta?.toggleDetector) {
+      item.toggleDetector = ModelClass.meta.toggleDetector;
+    }
+
+    registeredItems.push(item);
+  }
+
+  return registeredItems;
+}

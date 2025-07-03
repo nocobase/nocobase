@@ -22,6 +22,7 @@ import {
   MultiRecordResource,
   useFlowEngine,
   buildFieldItems,
+  buildActionItems,
 } from '@nocobase/flow-engine';
 import { tval } from '@nocobase/utils/client';
 import { Space, Spin, Table } from 'antd';
@@ -359,7 +360,7 @@ export class TableModel extends DataBlockModel<TableModelStructure> {
 
                 return null;
               })}
-              <AddActionButton model={this} subModelBaseClass="GlobalActionModel" subModelKey="actions" />
+              <AddActionButton model={this} items={buildActionItems(this, 'GlobalActionModel')} subModelKey="actions" />
             </Space>
           </div>
         </DndProvider>

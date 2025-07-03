@@ -13,20 +13,23 @@ import { FlowModel } from '../../models/flowModel';
 import { ModelConstructor } from '../../types';
 import { FlowSettingsButton } from '../common/FlowSettingsButton';
 import { withFlowDesignMode } from '../common/withFlowDesignMode';
-import { AddSubModelButton, SubModelItemsType } from './AddSubModelButton';
-import { useTranslation } from 'react-i18next';
+import { AddSubModelButton, SubModelItem, SubModelItemsType, mergeSubModelItems } from './AddSubModelButton';
 
-interface AddActionButtonProps {
+export interface AddActionButtonProps {
   /**
    * 父模型实例
    */
   model: FlowModel;
   /**
-   * 子模型基类，用于确定支持的 Actions 类型
+   * 子模型基类，用于动态获取额外的菜单项
    */
   subModelBaseClass?: string | ModelConstructor;
   subModelKey?: string;
   subModelType?: 'object' | 'array';
+  /**
+   * 过滤模型菜单的函数
+   */
+  filter?: (modelClass: ModelConstructor, className: string) => boolean;
   /**
    * 创建后的回调函数
    */
@@ -36,17 +39,13 @@ interface AddActionButtonProps {
    */
   onSubModelAdded?: (subModel: FlowModel) => Promise<void>;
   /**
-   * 按钮文本
+   * 显示的UI组件
    */
   children?: React.ReactNode;
   /**
-   * 过滤Model菜单的函数
+   * 菜单项
    */
-  filter?: (blockClass: ModelConstructor, className: string) => boolean;
-  /**
-   * 自定义 items（如果提供，将覆盖默认的action菜单）
-   */
-  items?: SubModelItemsType;
+  items: SubModelItemsType;
 }
 
 /**
@@ -62,7 +61,7 @@ interface AddActionButtonProps {
  */
 const AddActionButtonCore: React.FC<AddActionButtonProps> = ({
   model,
-  subModelBaseClass = 'ActionFlowModel',
+  subModelBaseClass,
   subModelKey = 'actions',
   children,
   subModelType = 'array',
@@ -75,17 +74,24 @@ const AddActionButtonCore: React.FC<AddActionButtonProps> = ({
     return <FlowSettingsButton icon={<SettingOutlined />}>{model.translate('Configure actions')}</FlowSettingsButton>;
   }, [model]);
 
-  const allActionsItems = useMemo(() => {
-    const actionClasses = model.flowEngine.filterModelClassByParent(subModelBaseClass);
-    const registeredBlocks = [];
-    for (const [className, ModelClass] of actionClasses) {
+  // 动态获取基于 subModelBaseClass 的额外菜单项
+  const appendItems = useMemo(() => {
+    if (!subModelBaseClass) {
+      return [];
+    }
+
+    const modelClasses = model.flowEngine.filterModelClassByParent(subModelBaseClass);
+    const registeredItems = [];
+
+    for (const [className, ModelClass] of modelClasses) {
       if (filter && !filter(ModelClass, className)) {
         continue;
       }
       if (ModelClass.meta?.hide) {
         continue;
       }
-      const item = {
+
+      const item: SubModelItem = {
         key: className,
         label: ModelClass.meta?.title || className,
         icon: ModelClass.meta?.icon,
@@ -94,17 +100,27 @@ const AddActionButtonCore: React.FC<AddActionButtonProps> = ({
           use: className,
         },
       };
-      registeredBlocks.push(item);
+
+      // 从 meta 中获取 toggleDetector
+      if (ModelClass.meta?.toggleDetector) {
+        item.toggleDetector = ModelClass.meta.toggleDetector;
+      }
+
+      registeredItems.push(item);
     }
-    return registeredBlocks;
-  }, [model, subModelBaseClass]);
+    return registeredItems;
+  }, [model, subModelBaseClass, filter]);
+
+  const finalItems = useMemo(() => {
+    return mergeSubModelItems([items, appendItems], { addDividers: true });
+  }, [items, appendItems]);
 
   return (
     <AddSubModelButton
       model={model}
       subModelKey={subModelKey}
       subModelType={subModelType}
-      items={items ?? allActionsItems}
+      items={finalItems}
       onModelCreated={onModelCreated}
       onSubModelAdded={onSubModelAdded}
     >

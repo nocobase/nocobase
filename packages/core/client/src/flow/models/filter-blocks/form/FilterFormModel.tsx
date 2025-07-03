@@ -10,7 +10,13 @@
 import { FormButtonGroup, FormLayout } from '@formily/antd-v5';
 import { createForm, Form } from '@formily/core';
 import { FormProvider } from '@formily/react';
-import { AddActionButton, AddFieldButton, Collection, FlowModelRenderer } from '@nocobase/flow-engine';
+import {
+  AddActionButton,
+  AddFieldButton,
+  Collection,
+  FlowModelRenderer,
+  buildActionItems,
+} from '@nocobase/flow-engine';
 import { Card } from 'antd';
 import React from 'react';
 import { tval } from '@nocobase/utils/client';
@@ -60,7 +66,7 @@ export class FilterFormModel extends FilterBlockModel {
                 sharedContext={{ currentBlockModel: this }}
               />
             ))}
-            <AddActionButton model={this} subModelBaseClass="FilterFormActionModel" />
+            <AddActionButton model={this} items={buildActionItems(this, 'FilterFormActionModel')} />
           </FormButtonGroup>
         </FormProvider>
       </Card>
