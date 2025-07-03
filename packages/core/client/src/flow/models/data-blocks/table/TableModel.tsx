@@ -581,6 +581,9 @@ TableModel.registerFlow({
         }
       },
     },
+    blockHeight: {
+      use: 'blockHeight',
+    },
   },
 });
 

@@ -12,7 +12,6 @@ import React from 'react';
 import { BlockItemCard } from '../common/BlockItemCard';
 import { observable } from '@formily/reactive';
 import { Observer } from '@formily/reactive-react';
-import { HeightMode } from '../../internal/constants/HeightMode';
 
 export class BlockModel<T = DefaultStructure> extends FlowModel<T> {
   decoratorProps: Record<string, any> = observable({});
@@ -61,54 +60,6 @@ BlockModel.registerFlow({
         const title = ctx.globals.flowEngine.translate(params.title);
         const description = ctx.globals.flowEngine.translate(params.description);
         ctx.model.setDecoratorProps({ title: title, description: description });
-      },
-    },
-    setBlockHeight: {
-      title: tval('Set block height'),
-      uiSchema: {
-        heightMode: {
-          type: 'string',
-          enum: [
-            { label: tval('Default'), value: HeightMode.DEFAULT },
-            { label: tval('Specify height'), value: HeightMode.SPECIFY_VALUE },
-            { label: tval('Full height'), value: HeightMode.FULL_HEIGHT },
-          ],
-          required: true,
-          'x-decorator': 'FormItem',
-          'x-component': 'Radio.Group',
-        },
-        height: {
-          title: tval('Height'),
-          type: 'string',
-          required: true,
-          'x-decorator': 'FormItem',
-          'x-component': 'NumberPicker',
-          'x-component-props': {
-            addonAfter: 'px',
-          },
-          'x-validator': [
-            {
-              minimum: 40,
-            },
-          ],
-          'x-reactions': {
-            dependencies: ['heightMode'],
-            fulfill: {
-              state: {
-                hidden: '{{ $deps[0]==="fullHeight"||$deps[0]==="defaultHeight"}}',
-                value: '{{$deps[0]!=="specifyValue"?null:$self.value}}',
-              },
-            },
-          },
-        },
-      },
-      defaultParams: () => {
-        return {
-          heightMode: HeightMode.DEFAULT,
-        };
-      },
-      handler(ctx, params) {
-        ctx.model.setDecoratorProps({ heightMode: params.heightMode, height: params.height });
       },
     },
   },
