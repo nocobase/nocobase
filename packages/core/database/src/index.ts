@@ -60,3 +60,4 @@ export { default as fieldTypeMap } from './view/field-type-map';
 
 export * from './view/view-inference';
 export * from './update-guard';
+export { TableInfo } from './query-interface/query-interface';

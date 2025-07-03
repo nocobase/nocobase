@@ -35,7 +35,7 @@ import { beforeDestoryField } from './hooks/beforeDestoryField';
 import { CollectionModel, FieldModel } from './models';
 import collectionActions from './resourcers/collections';
 import viewResourcer from './resourcers/views';
-import { TableInfo } from 'packages/core/database/src/query-interface/query-interface';
+import { TableInfo } from '@nocobase/database';
 import { ColumnsDescription } from 'sequelize';
 
 export class PluginDataSourceMainServer extends Plugin {
