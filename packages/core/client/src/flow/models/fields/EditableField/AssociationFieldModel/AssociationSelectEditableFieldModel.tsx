@@ -163,10 +163,11 @@ const paginationState = {
 AssociationSelectEditableFieldModel.registerFlow({
   key: 'associationSelectInit',
   auto: true,
-  sort: 200,
+  sort: 300,
   steps: {
     bindEvent: {
       handler(ctx, params) {
+        const labelFieldName = ctx.model.field.componentProps.fieldNames.label;
         const resource = new MultiRecordResource();
         const { target, dataSourceKey } = ctx.model.collectionField;
         resource.setDataSourceKey(dataSourceKey);
@@ -183,6 +184,7 @@ AssociationSelectEditableFieldModel.registerFlow({
               form: ctx.model.form,
             });
           } else {
+            resource.removeFilterGroup(labelFieldName);
             paginationState.page = 1;
           }
         };
