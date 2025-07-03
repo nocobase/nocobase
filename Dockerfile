@@ -1,5 +1,5 @@
 FROM node:20-bookworm as builder
-ARG VERDACCIO_URL=https://registry.npmmirror.com
+ARG VERDACCIO_URL=http://192.168.123.123:4873/
 ARG COMMIT_HASH
 ARG APPEND_PRESET_LOCAL_PLUGINS
 ARG BEFORE_PACK_NOCOBASE="ls -l"
@@ -13,7 +13,7 @@ RUN sed -i 's/deb.debian.org/mirrors.aliyun.com/g' /etc/apt/sources.list.d/debia
 RUN apt-get update && apt-get install -y jq expect
 
 RUN expect <<EOD
-spawn npm adduser --registry https://registry.npmmirror.com
+spawn npm adduser --registry $VERDACCIO_URL
 expect {
   "Username:" {send "test\r"; exp_continue}
   "Password:" {send "test\r"; exp_continue}
@@ -38,9 +38,9 @@ RUN CURRENTVERSION="$(jq -r '.version' lerna.json)" && \
 RUN git config user.email "test@mail.com"  \
     && git config user.name "test" && git add .  \
     && git commit -m "chore(versions): test publish packages"
-RUN yarn release:force --registry https://registry.npmmirror.com
+RUN yarn release:force --registry $VERDACCIO_URL
 
-RUN yarn config set registry https://registry.npmmirror.com
+RUN yarn config set registry $VERDACCIO_URL
 WORKDIR /app
 RUN cd /app \
   && yarn config set network-timeout 600000 -g \
