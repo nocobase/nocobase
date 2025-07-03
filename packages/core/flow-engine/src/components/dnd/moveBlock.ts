@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { uid } from '@nocobase/utils/client';
+import { uid } from '@formily/shared';
 import _ from 'lodash';
 import { ElementPosition } from './getMousePositionOnElement';
 
