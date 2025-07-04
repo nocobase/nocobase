@@ -122,15 +122,19 @@ FormModel.registerFlow({
           const {
             dataSourceKey = params.dataSourceKey, // 兼容一下旧的数据, TODO: remove
             collectionName = params.collectionName, // 兼容一下旧的数据, TODO: remove
-            assocationName,
+            associationName,
             sourceId,
             filterByTk,
           } = ctx.model.props.dataSourceOptions || {};
 
-          ctx.model.collection = ctx.globals.dataSourceManager.getCollection(dataSourceKey, collectionName);
+          ctx.model.collection = ctx.globals.dataSourceManager.getCollection(
+            dataSourceKey,
+            associationName ? associationName.split('.').slice(-1)[0] : collectionName,
+          );
           const resource = new SingleRecordResource();
           resource.setDataSourceKey(dataSourceKey);
-          resource.setResourceName(collectionName);
+          resource.setResourceName(associationName || collectionName);
+          resource.setSourceId(sourceId);
           resource.setAPIClient(ctx.globals.api);
           ctx.model.resource = resource;
           ctx.model.resource.on('refresh', () => {
