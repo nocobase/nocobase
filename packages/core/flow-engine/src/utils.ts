@@ -14,6 +14,7 @@ import _ from 'lodash';
 import type { FlowModel } from './models';
 import { ActionDefinition, DeepPartial, FlowContext, FlowDefinition, ModelConstructor, ParamsContext } from './types';
 import { Collection, DataSource, DataSourceManager } from './data-source';
+import { DataBlockModel } from '@nocobase/client';
 
 // Flow Engine 命名空间常量
 export const FLOW_ENGINE_NAMESPACE = 'flow-engine';
@@ -417,9 +418,10 @@ export function buildFieldItems(
 export async function resolveDefaultOptions(
   defaultOptions:
     | Record<string, any>
-    | ((parentModel: FlowModel) => Record<string, any> | Promise<Record<string, any>>)
+    | ((parentModel: FlowModel, extra?: any) => Record<string, any> | Promise<Record<string, any>>)
     | undefined,
   parentModel: FlowModel,
+  extra?: any,
 ): Promise<Record<string, any>> {
   if (!defaultOptions) {
     return {};
@@ -427,7 +429,7 @@ export async function resolveDefaultOptions(
 
   if (typeof defaultOptions === 'function') {
     try {
-      const result = await defaultOptions(parentModel);
+      const result = await defaultOptions(parentModel, extra);
       return result || {};
     } catch (error) {
       console.error('Error resolving defaultOptions function:', error);
@@ -568,43 +570,51 @@ async function processDataBlockChildren(
       });
     } else {
       // 叶子节点，为其创建数据源菜单
-      const defaultOptions = await resolveDefaultOptions(child.defaultOptions, parentModel);
       let childrenCount = 0;
-      const children = dataSources
-        .filter((d) => {
-          return !child.collection || d.key === child.collection.dataSourceKey;
-        })
-        .map((dataSource) => ({
+      const children = await Promise.all(
+        dataSources.map(async (dataSource) => ({
           key: `${childKey}.${dataSource.key}`,
           label: dataSource.displayName,
-          children: dataSource.collections
-            .filter((c) => {
-              return !child.collection || c.name === child.collection.name;
-            })
-            .map((collection) => {
-              childrenCount++;
-              return {
-                key: `${childKey}.${dataSource.key}.${collection.name}`,
-                label: collection.title || collection.name,
-                createModelOptions: {
-                  ..._.cloneDeep(defaultOptions),
-                  use:
-                    typeof defaultOptions?.use === 'string'
-                      ? defaultOptions.use
-                      : (defaultOptions?.use as any)?.name || childKey,
-                  stepParams: {
-                    dataSource: {
-                      setDs: {
-                        ...defaultOptions?.stepParams?.dataSource?.setDs,
-                        dataSourceKey: dataSource.key,
-                        collectionName: collection.name,
+          children: await Promise.all(
+            dataSource.collections
+              .filter((c) => {
+                return (
+                  !child.collections ||
+                  child.collections.find((col) => {
+                    return col.name === c.name && col.dataSource.key === dataSource.key;
+                  })
+                );
+              })
+              .map(async (collection) => {
+                childrenCount++;
+                const defaultOptions = await resolveDefaultOptions(child.defaultOptions, parentModel, {
+                  dataSourceKey: dataSource.key,
+                  collectionName: collection.name,
+                });
+                return {
+                  key: `${childKey}.${dataSource.key}.${collection.name}`,
+                  label: collection.title || collection.name,
+                  createModelOptions: {
+                    ..._.cloneDeep(defaultOptions),
+                    use:
+                      typeof defaultOptions?.use === 'string'
+                        ? defaultOptions.use
+                        : (defaultOptions?.use as any)?.name || childKey,
+                    stepParams: {
+                      dataSource: {
+                        setDs: {
+                          dataSourceKey: dataSource.key,
+                          collectionName: collection.name,
+                          ...defaultOptions?.stepParams?.dataSource?.setDs,
+                        },
                       },
                     },
                   },
-                },
-              };
-            }),
-        }));
+                };
+              }),
+          ),
+        })),
+      );
 
       let item = {
         key: childKey,
@@ -737,10 +747,6 @@ async function getDataSourcesWithCollections(model: FlowModel) {
   }
 }
 
-/**
- * 构建区块菜单项的工厂函数
- * 固定使用 BlockModel 作为基类进行过滤
- */
 export function buildBlockItems(
   model: FlowModel,
   filter?: (blockClass: ModelConstructor, className: string) => boolean,
@@ -808,7 +814,11 @@ export function buildBlockItems(
           dataBlocks.map(async ({ className, ModelClass }) => {
             const meta = _.cloneDeep((ModelClass as any).meta);
             const currentFlow = model.parent?.getSharedContext()?.currentFlow;
-            if (currentFlow && currentFlow.shared.currentBlockModel) {
+            const collection: Collection = currentFlow.shared.currentBlockModel?.collection;
+            // 检查collection是否有关系字段，可以通过Collection的新方法来判断
+            const relatedCollections = collection?.getRelatedCollections() || [];
+
+            if (currentFlow && collection) {
               if (!currentFlow.runtimeArgs?.filterByTk) {
                 meta.children = [
                   {
@@ -824,16 +834,16 @@ export function buildBlockItems(
                     defaultOptions: {
                       use: className,
                     },
-                    collection: currentFlow.shared.currentBlockModel.collection,
+                    collections: [collection],
                   },
-                ];
+                ].filter(Boolean);
               } else {
                 const children = [
                   ['FormModel', 'DetailsModel'].includes(className) && {
                     // current record
                     key: 'currentRecord',
                     title: escapeT('Current record'),
-                    collection: currentFlow.shared.currentBlockModel.collection,
+                    collections: [collection],
                     defaultOptions: {
                       use: className,
                       stepParams: {
@@ -844,6 +854,26 @@ export function buildBlockItems(
                         },
                       },
                     },
+                  },
+                  relatedCollections.length > 0 && {
+                    key: 'associationRecords',
+                    title: escapeT('Association records'),
+                    defaultOptions: (parentModel: DataBlockModel, extra) => {
+                      return {
+                        use: className,
+                        stepParams: {
+                          dataSource: {
+                            setDs: {
+                              dataSourceKey: extra.dataSourceKey,
+                              collectionName: '',
+                              associationName: collection.name + '.' + extra.collectionName,
+                              sourceId: '{{ctx.shared.currentFlow.runtimeArgs.filterByTk}}',
+                            },
+                          },
+                        },
+                      };
+                    },
+                    collections: relatedCollections,
                   },
                   {
                     // other records
@@ -893,9 +923,9 @@ export function buildBlockItems(
                       stepParams: {
                         dataSource: {
                           setDs: {
-                            ...defaultOptions?.stepParams?.dataSource?.setDs,
                             dataSourceKey: dataSource.key,
                             collectionName: collection.name,
+                            ...defaultOptions?.stepParams?.dataSource?.setDs,
                           },
                         },
                       },
@@ -961,9 +991,9 @@ export function buildBlockItems(
                         dataSource: {
                           ..._.cloneDeep(defaultOptions?.stepParams?.dataSource),
                           setDs: {
-                            ...defaultOptions?.stepParams?.dataSource?.setDs,
                             dataSourceKey: dataSource.key,
                             collectionName: collection.name,
+                            ...defaultOptions?.stepParams?.dataSource?.setDs,
                           },
                         },
                       },

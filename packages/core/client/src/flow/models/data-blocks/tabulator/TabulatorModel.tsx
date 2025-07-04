@@ -355,7 +355,7 @@ TabulatorModel.registerFlow({
         const {
           dataSourceKey = params.dataSourceKey, // 兼容一下旧的数据, TODO: remove
           collectionName = params.collectionName, // 兼容一下旧的数据, TODO: remove
-          assocationName,
+          associationName,
           sourceId,
           filterByTk,
         } = ctx.model.props.dataSourceOptions;

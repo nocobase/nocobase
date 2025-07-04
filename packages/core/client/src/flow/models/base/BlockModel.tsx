@@ -162,7 +162,7 @@ DataBlockModel.registerFlow({
         ctx.model.setProps('dataSourceOptions', {
           dataSourceKey: params.dataSourceKey,
           collectionName: params.collectionName,
-          assocationName: params.assocationName,
+          associationName: params.associationName,
           sourceId: Schema.compile(params.sourceId, { ctx }),
           filterByTk: Schema.compile(params.filterByTk, { ctx }),
         });
