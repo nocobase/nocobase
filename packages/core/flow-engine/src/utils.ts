@@ -792,7 +792,7 @@ export function buildBlockItems(
           dataBlocks.map(async ({ className, ModelClass }) => {
             const meta = _.cloneDeep((ModelClass as any).meta);
             const currentFlow = model.parent?.getSharedContext()?.currentFlow;
-            if (currentFlow && currentFlow.runtimeArgs?.filterByTk) {
+            if (currentFlow && currentFlow.shared.currentBlockModel && !currentFlow.runtimeArgs?.filterByTk) {
               meta.children = [
                 {
                   key: 'otherCollections',
