@@ -545,7 +545,7 @@ export class PluginDataSourceMainServer extends Plugin {
         if (collectionName) {
           const tableInfo: TableInfo = {
             tableName: collectionName,
-            schema: process.env.COLLECTION_MANAGER_SCHEMA || this.app.db.options.schema,
+            schema: process.env.COLLECTION_MANAGER_SCHEMA || ctx.app.db.options.schema,
           };
           rawFields = await ctx.app.db.queryInterface.sequelizeQueryInterface.describeTable(tableInfo);
         }
