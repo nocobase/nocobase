@@ -45,11 +45,57 @@ export class GridModel extends FlowModel<GridModelStructure> {
   prevMoveDistance = 0;
 
   onInit(options: any): void {
-    this.emitter.on('onSubModelAdded', () => {
+    this.emitter.on('onSubModelAdded', (model: FlowModel) => {
       this.resetRows(true);
+
+      // 在 sizes 中新加一行
+      // 1. 获取当前 modelUid 所在的位置
+      const position = findModelUidPosition(model.uid, this.props.rows || {});
+      // 2. 根据位置，在 sizes 中添加一行
+      if (position) {
+        const newSizes = _.cloneDeep(this.props.sizes || {});
+        newSizes[position.rowId] = [24]; // 默认新行宽度为 24
+        this.setStepParams('defaultFlow', 'grid', {
+          rows: this.props.rows || {},
+          sizes: newSizes,
+        });
+
+        this.setProps('sizes', newSizes);
+      }
     });
-    this.emitter.on('onSubModelRemoved', () => {
+    this.emitter.on('onSubModelRemoved', (model: FlowModel) => {
+      const modelUid = model.uid;
+
+      // 1. 获取当前 modelUid 所在的位置
+      const position = findModelUidPosition(modelUid, this.props.rows || {});
+
+      // 2. 重置 rows
       this.resetRows(true);
+
+      // 3. 根据位置清空 sizes 中对应的值
+      if (position) {
+        const rows = this.props.rows || {};
+        const newSizes = _.cloneDeep(this.props.sizes || {});
+
+        // 如果列变空了，移除该列
+        if (rows[position.rowId]?.[position.columnIndex] === undefined) {
+          newSizes[position.rowId]?.splice(position.columnIndex, 1);
+        }
+
+        // 如果行变空了，移除该行
+        if (rows[position.rowId] === undefined) {
+          delete newSizes[position.rowId];
+        }
+
+        this.setStepParams('defaultFlow', 'grid', {
+          rows,
+          sizes: newSizes,
+        });
+
+        this.setProps('sizes', newSizes);
+      }
+
+      this.save();
     });
     this.emitter.on('onSubModelMoved', () => {
       this.resetRows(true);
@@ -144,7 +190,6 @@ export class GridModel extends FlowModel<GridModelStructure> {
   resetRows(syncProps = false) {
     const params = this.getStepParams('defaultFlow', 'grid') || {};
     const mergedRows = this.mergeRowsWithItems(params.rows || {});
-    console.log('resetRows', mergedRows, this.subModels.items);
     this.setStepParams('defaultFlow', 'grid', {
       rows: mergedRows,
       sizes: params.sizes || {},
@@ -152,7 +197,6 @@ export class GridModel extends FlowModel<GridModelStructure> {
 
     if (syncProps) {
       this.setProps('rows', mergedRows);
-      this.setProps('sizes', params.sizes || {});
     }
   }
 
@@ -346,6 +390,10 @@ function recalculateGridSizes({
 
   if (currentMoveDistance === prevMoveDistance) {
     return { newRows, newSizes, moveDistance: currentMoveDistance };
+  }
+
+  if (newSizes[position.rowId] === undefined) {
+    newSizes[position.rowId] = [columnCount];
   }
 
   newSizes[position.rowId][position.columnIndex] += currentMoveDistance - prevMoveDistance;
