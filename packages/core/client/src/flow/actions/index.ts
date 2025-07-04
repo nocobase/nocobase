@@ -14,4 +14,5 @@ export * from './titleField';
 export * from './dateTimeFormat';
 export * from './sortingRules';
 export * from './dataLoadingMode';
+export * from './blockHeight';
 //
