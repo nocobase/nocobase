@@ -67,7 +67,7 @@ export class FormModel extends DataBlockModel {
           model={this}
           onSubModelAdded={async (model: EditableFieldModel) => {
             const params = model.getStepParams('default', 'step1');
-            this.addAppends(params?.fieldPath, !!this.ctx.shared?.currentFlow?.extra?.filterByTk);
+            this.addAppends(params?.fieldPath, !!this.ctx.shared?.currentFlow?.runtimeArgs?.filterByTk);
           }}
         />
         <FormButtonGroup style={{ marginTop: 16 }}>
@@ -117,28 +117,32 @@ FormModel.registerFlow({
         dataSourceKey: 'main',
       },
       async handler(ctx, params) {
-        ctx.model.form = ctx.extra.form || createForm();
+        ctx.model.form = ctx.runtimeArgs.form || createForm();
         if (!ctx.model.collection) {
-          ctx.model.collection = ctx.globals.dataSourceManager.getCollection(
-            params.dataSourceKey,
-            params.collectionName,
-          );
+          const {
+            dataSourceKey = params.dataSourceKey, // 兼容一下旧的数据, TODO: remove
+            collectionName = params.collectionName, // 兼容一下旧的数据, TODO: remove
+            assocationName,
+            sourceId,
+            filterByTk,
+          } = ctx.model.props.dataSourceOptions || {};
+
+          ctx.model.collection = ctx.globals.dataSourceManager.getCollection(dataSourceKey, collectionName);
           const resource = new SingleRecordResource();
-          resource.setDataSourceKey(params.dataSourceKey);
-          resource.setResourceName(params.collectionName);
+          resource.setDataSourceKey(dataSourceKey);
+          resource.setResourceName(collectionName);
           resource.setAPIClient(ctx.globals.api);
           ctx.model.resource = resource;
           ctx.model.resource.on('refresh', () => {
             ctx.model.form.setInitialValues(ctx.model.resource.getData());
           });
+          if (filterByTk) {
+            ctx.model.resource.setFilterByTk(filterByTk);
+            await ctx.model.resource.refresh();
+            ctx.model.form.setInitialValues(ctx.model.resource.getData());
+          }
         }
         await ctx.model.applySubModelsAutoFlows('fields');
-        const filterByTk = ctx.shared?.currentFlow?.extra?.filterByTk;
-        if (filterByTk) {
-          ctx.model.resource.setFilterByTk(filterByTk);
-          await ctx.model.resource.refresh();
-          ctx.model.form.setInitialValues(ctx.model.resource.getData());
-        }
       },
     },
   },

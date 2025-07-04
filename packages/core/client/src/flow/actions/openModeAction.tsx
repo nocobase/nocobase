@@ -52,7 +52,7 @@ export const openModeAction = {
           <FlowPage
             parentId={ctx.model.uid}
             sharedContext={{
-              ...ctx.extra,
+              ...ctx.runtimeArgs,
               currentDrawer,
             }}
           />

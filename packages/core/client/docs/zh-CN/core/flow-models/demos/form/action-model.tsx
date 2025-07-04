@@ -22,7 +22,7 @@ ActionModel.registerFlow({
         ctx.model.onClick = (e) => {
           ctx.model.dispatchEvent('click', {
             event: e,
-            record: ctx.extra.record,
+            record: ctx.runtimeArgs.record,
           });
         };
       },
@@ -39,7 +39,7 @@ ActionModel.registerFlow({
     step1: {
       handler(ctx, params) {
         Modal.confirm({
-          title: `${ctx.extra?.record?.id}`,
+          title: `${ctx.runtimeArgs?.record?.id}`,
           content: 'Are you sure you want to perform this action?',
           onOk: async () => {},
         });

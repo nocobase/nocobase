@@ -52,8 +52,8 @@ export const openView = defineAction({
       large: 1200,
     };
 
-    await ctx.globals[ctx.extra.mode || params.mode || 'drawer'].open({
-      target: ctx.extra.target || ctx.shared.layoutContentElement,
+    await ctx.globals[ctx.runtimeArgs.mode || params.mode || 'drawer'].open({
+      target: ctx.runtimeArgs.target || ctx.shared.layoutContentElement,
       width: sizeToWidthMap[params.size || 'medium'],
       content: (currentView) => {
         return (

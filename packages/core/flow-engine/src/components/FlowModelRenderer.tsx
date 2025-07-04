@@ -78,7 +78,7 @@ interface FlowModelRendererProps {
   skipApplyAutoFlows?: boolean; // 默认 false
 
   /** 当 skipApplyAutoFlows !== false 时，传递给 useApplyAutoFlows 的额外上下文 */
-  extraContext?: Record<string, any>;
+  runtimeArgs?: Record<string, any>;
 
   /** Model 共享运行上下文，会沿着 model 树向下传递 */
   sharedContext?: Record<string, any>;
@@ -102,7 +102,7 @@ const FlowModelRendererWithAutoFlows: React.FC<{
   flowSettingsVariant: string;
   hideRemoveInSettings: boolean;
   showTitle: boolean;
-  extraContext?: Record<string, any>;
+  runtimeArgs?: Record<string, any>;
   sharedContext?: Record<string, any>;
   showErrorFallback?: boolean;
   settingsMenuLevel?: number;
@@ -115,14 +115,14 @@ const FlowModelRendererWithAutoFlows: React.FC<{
     flowSettingsVariant,
     hideRemoveInSettings,
     showTitle,
-    extraContext,
+    runtimeArgs,
     sharedContext,
     showErrorFallback,
     settingsMenuLevel,
     extraToolbarItems,
     fallback,
   }) => {
-    const pending = useApplyAutoFlows(model, extraContext);
+    const pending = useApplyAutoFlows(model, runtimeArgs);
 
     if (pending) {
       return <>{fallback}</>;
@@ -281,6 +281,9 @@ const FlowModelRendererCore: React.FC<{
         );
     }
   },
+  {
+    displayName: 'FlowModelRendererCore',
+  },
 );
 
 /**
@@ -295,7 +298,7 @@ const FlowModelRendererCore: React.FC<{
  * @param {boolean} props.hideRemoveInSettings - Whether to hide remove button in settings.
  * @param {boolean} props.showTitle - Whether to show model title in the top-left corner of the border.
  * @param {boolean} props.skipApplyAutoFlows - Whether to skip applying auto flows.
- * @param {any} props.extraContext - Extra context to pass to useApplyAutoFlows when skipApplyAutoFlows is false.
+ * @param {any} props.runtimeArgs - Runtime arguments to pass to useApplyAutoFlows when skipApplyAutoFlows is false.
  * @param {any} props.sharedContext - Shared context to pass to the model.
  * @param {number} props.settingsMenuLevel - Settings menu levels: 1=current model only (default), 2=include sub-models.
  * @param {ToolbarItemConfig[]} props.extraToolbarItems - Extra toolbar items to add to this renderer instance.
@@ -310,7 +313,7 @@ export const FlowModelRenderer: React.FC<FlowModelRendererProps> = observer(
     hideRemoveInSettings = false,
     showTitle = false,
     skipApplyAutoFlows = false,
-    extraContext,
+    runtimeArgs,
     sharedContext,
     showErrorFallback = false,
     settingsMenuLevel,
@@ -349,7 +352,7 @@ export const FlowModelRenderer: React.FC<FlowModelRendererProps> = observer(
           flowSettingsVariant={flowSettingsVariant}
           hideRemoveInSettings={hideRemoveInSettings}
           showTitle={showTitle}
-          extraContext={extraContext}
+          runtimeArgs={runtimeArgs}
           sharedContext={sharedContext}
           showErrorFallback={showErrorFallback}
           settingsMenuLevel={settingsMenuLevel}

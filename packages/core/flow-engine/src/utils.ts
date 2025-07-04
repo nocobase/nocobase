@@ -569,35 +569,59 @@ async function processDataBlockChildren(
     } else {
       // 叶子节点，为其创建数据源菜单
       const defaultOptions = await resolveDefaultOptions(child.defaultOptions, parentModel);
+      let childrenCount = 0;
+      const children = dataSources
+        .filter((d) => {
+          return !child.collection || d.key === child.collection.dataSourceKey;
+        })
+        .map((dataSource) => ({
+          key: `${childKey}.${dataSource.key}`,
+          label: dataSource.displayName,
+          children: dataSource.collections
+            .filter((c) => {
+              return !child.collection || c.name === child.collection.name;
+            })
+            .map((collection) => {
+              childrenCount++;
+              return {
+                key: `${childKey}.${dataSource.key}.${collection.name}`,
+                label: collection.title || collection.name,
+                createModelOptions: {
+                  ..._.cloneDeep(defaultOptions),
+                  use:
+                    typeof defaultOptions?.use === 'string'
+                      ? defaultOptions.use
+                      : (defaultOptions?.use as any)?.name || childKey,
+                  stepParams: {
+                    dataSource: {
+                      setDs: {
+                        ...defaultOptions?.stepParams?.dataSource?.setDs,
+                        dataSourceKey: dataSource.key,
+                        collectionName: collection.name,
+                      },
+                    },
+                  },
+                },
+              };
+            }),
+        }));
 
-      result.push({
+      let item = {
         key: childKey,
         label: child.title,
         icon: child.icon,
-        children: dataSources.map((dataSource) => ({
-          key: `${childKey}.${dataSource.key}`,
-          label: dataSource.displayName,
-          children: dataSource.collections.map((collection) => ({
-            key: `${childKey}.${dataSource.key}.${collection.name}`,
-            label: collection.title || collection.name,
-            createModelOptions: {
-              ..._.cloneDeep(defaultOptions),
-              use:
-                typeof defaultOptions?.use === 'string'
-                  ? defaultOptions.use
-                  : (defaultOptions?.use as any)?.name || childKey,
-              stepParams: {
-                default: {
-                  step1: {
-                    dataSourceKey: dataSource.key,
-                    collectionName: collection.name,
-                  },
-                },
-              },
-            },
-          })),
-        })),
-      });
+        children,
+      };
+      if (childrenCount === 1) {
+        item = {
+          ...children[0].children[0],
+          key: childKey,
+          label: child.title,
+          icon: child.icon,
+        };
+      }
+
+      result.push(item);
     }
   }
 
@@ -782,7 +806,57 @@ export function buildBlockItems(
         // 按区块类型组织菜单：区块 → 数据源 → 数据表
         return await Promise.all(
           dataBlocks.map(async ({ className, ModelClass }) => {
-            const meta = (ModelClass as any).meta;
+            const meta = _.cloneDeep((ModelClass as any).meta);
+            const currentFlow = model.parent?.getSharedContext()?.currentFlow;
+            if (currentFlow && currentFlow.shared.currentBlockModel) {
+              if (!currentFlow.runtimeArgs?.filterByTk) {
+                meta.children = [
+                  {
+                    key: 'otherCollections',
+                    title: escapeT('Other collections'),
+                    defaultOptions: {
+                      use: className,
+                    },
+                  },
+                  {
+                    key: 'currentCollections',
+                    title: escapeT('Current collections'),
+                    defaultOptions: {
+                      use: className,
+                    },
+                    collection: currentFlow.shared.currentBlockModel.collection,
+                  },
+                ];
+              } else {
+                const children = [
+                  className === 'FormModel' && {
+                    // current record
+                    key: 'currentRecord',
+                    title: escapeT('Current record'),
+                    collection: currentFlow.shared.currentBlockModel.collection,
+                    defaultOptions: {
+                      use: className,
+                      stepParams: {
+                        dataSource: {
+                          setDs: {
+                            filterByTk: '{{ctx.shared.currentFlow.runtimeArgs.filterByTk}}',
+                          },
+                        },
+                      },
+                    },
+                  },
+                  {
+                    // other records
+                    key: 'otherRecords',
+                    title: escapeT('Other records'),
+                    defaultOptions: {
+                      use: className,
+                    },
+                  },
+                ].filter(Boolean);
+                meta.children = children;
+              }
+            }
 
             // 如果模型定义了 children，为每个子项创建数据源菜单
             if (meta?.children) {
@@ -817,8 +891,9 @@ export function buildBlockItems(
                       ..._.cloneDeep(defaultOptions),
                       use: className,
                       stepParams: {
-                        default: {
-                          step1: {
+                        dataSource: {
+                          setDs: {
+                            ...defaultOptions?.stepParams?.dataSource?.setDs,
                             dataSourceKey: dataSource.key,
                             collectionName: collection.name,
                           },
@@ -883,9 +958,10 @@ export function buildBlockItems(
                       use: className,
                       stepParams: {
                         ..._.cloneDeep(defaultOptions?.stepParams),
-                        default: {
-                          ..._.cloneDeep(defaultOptions?.stepParams?.default),
-                          step1: {
+                        dataSource: {
+                          ..._.cloneDeep(defaultOptions?.stepParams?.dataSource),
+                          setDs: {
+                            ...defaultOptions?.stepParams?.dataSource?.setDs,
                             dataSourceKey: dataSource.key,
                             collectionName: collection.name,
                           },

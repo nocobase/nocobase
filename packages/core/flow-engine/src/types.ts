@@ -105,7 +105,7 @@ export interface FlowContext<TModel extends FlowModel = FlowModel> {
     app: any;
     api: APIClient;
   };
-  extra: Record<string, any>; // Extra context passed to applyFlow (read-only)
+  runtimeArgs: Record<string, any>; // Runtime arguments passed to applyFlow (read-only)
   model: TModel; // Current model instance with specific type
   app: any; // Application instance (required)
 }
@@ -169,10 +169,10 @@ export interface StepDefinition<TModel extends FlowModel = FlowModel> {
 }
 
 /**
- * Extra context for flow execution - represents the data that will appear in ctx.extra
- * This is the type for data passed to applyFlow that becomes ctx.extra
+ * Runtime arguments for flow execution - represents the data that will appear in ctx.runtimeArgs
+ * This is the type for data passed to applyFlow that becomes ctx.runtimeArgs
  */
-export type FlowExtraContext = Record<string, any>;
+export type FlowRuntimeArgs = Record<string, any>;
 
 /**
  * 参数解析上下文类型，用于 settings 等场景
@@ -181,7 +181,7 @@ export interface ParamsContext<TModel extends FlowModel = FlowModel> {
   model: TModel;
   globals: Record<string, any>;
   shared?: Record<string, any>;
-  extra?: Record<string, any>; // Extra context passed to applyFlow
+  runtimeArgs?: Record<string, any>; // Runtime arguments passed to applyFlow
   app: any;
 }
 

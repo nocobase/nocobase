@@ -614,7 +614,7 @@ describe('FlowModel', () => {
           expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining("dispatching event 'testEvent'"));
           expect(eventFlow.steps.eventStep.handler).toHaveBeenCalledWith(
             expect.objectContaining({
-              extra: { data: 'payload' },
+              runtimeArgs: { data: 'payload' },
             }),
             expect.any(Object),
           );
@@ -878,13 +878,13 @@ describe('FlowModel', () => {
           parentModel.addSubModel('children', child1);
           parentModel.addSubModel('children', child2);
 
-          const extraData = { test: 'extra' };
+          const runtimeData = { test: 'extra' };
           const sharedData = { shared: 'data' };
 
-          await parentModel.applySubModelsAutoFlows('children', extraData, sharedData);
+          await parentModel.applySubModelsAutoFlows('children', runtimeData, sharedData);
 
-          expect(child1.applyAutoFlows).toHaveBeenCalledWith(extraData);
-          expect(child2.applyAutoFlows).toHaveBeenCalledWith(extraData);
+          expect(child1.applyAutoFlows).toHaveBeenCalledWith(runtimeData);
+          expect(child2.applyAutoFlows).toHaveBeenCalledWith(runtimeData);
           expect(child1.setSharedContext).toHaveBeenCalledWith(sharedData);
           expect(child2.setSharedContext).toHaveBeenCalledWith(sharedData);
         });
@@ -898,11 +898,11 @@ describe('FlowModel', () => {
 
           parentModel.setSubModel('child', child);
 
-          const extraData = { test: 'extra' };
+          const runtimeData = { test: 'extra' };
 
-          await parentModel.applySubModelsAutoFlows('child', extraData);
+          await parentModel.applySubModelsAutoFlows('child', runtimeData);
 
-          expect(child.applyAutoFlows).toHaveBeenCalledWith(extraData);
+          expect(child.applyAutoFlows).toHaveBeenCalledWith(runtimeData);
         });
 
         test('should handle empty subModels gracefully', async () => {

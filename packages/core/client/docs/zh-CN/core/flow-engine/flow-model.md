@@ -72,13 +72,13 @@
 - **static registerFlow\<TModel\>(keyOrDefinition, flowDefinition?)**  
   配置流，支持字符串 key 或完整对象。支持泛型以确保类型安全。
 
-- **applyFlow(flowKey: string, extra?: FlowExtraContext): Promise\<any\>**  
+- **applyFlow(flowKey: string, runtimeArgs?: FlowRuntimeArgs): Promise\<any\>**  
   执行指定流。
 
-- **dispatchEvent(eventName: string, extra?: FlowExtraContext): void**  
+- **dispatchEvent(eventName: string, runtimeArgs?: FlowRuntimeArgs): void**  
   触发事件，自动匹配并执行相关流。
 
-- **applyAutoFlows(extra?: FlowExtraContext): Promise\<any[]\>**  
+- **applyAutoFlows(runtimeArgs?: FlowRuntimeArgs): Promise\<any[]\>**  
   执行所有自动流。
 
 - **applySubModelsAutoFlows(subKey: string, extra?: Record\<string, any\>): Promise\<void\>**  
