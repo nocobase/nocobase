@@ -72,7 +72,7 @@ export const FlowPage = (props) => {
               use: 'PageTabModel',
               subModels: {
                 grid: {
-                  async: true,
+                  // async: true,
                   use: 'BlockGridModel',
                 },
               },

@@ -368,6 +368,57 @@ export class Collection {
   refresh() {
     // 刷新集合
   }
+
+  /**
+   * 获取所有关联字段
+   * @returns 关联字段数组
+   */
+  getRelationshipFields(): CollectionField[] {
+    const relationshipInterfaces = [
+      'o2o',
+      'oho',
+      'obo',
+      'm2o',
+      'createdBy',
+      'updatedBy',
+      'o2m',
+      'm2m',
+      'linkTo',
+      'chinaRegion',
+      'mbm',
+    ];
+    return this.getFields().filter((field) => relationshipInterfaces.includes(field.interface));
+  }
+
+  /**
+   * 获取所有关联的集合
+   * @returns 关联集合数组
+   */
+  getRelatedCollections(): Collection[] {
+    const relationshipFields = this.getRelationshipFields();
+    const relatedCollections: Collection[] = [];
+    const addedCollectionNames = new Set<string>();
+
+    for (const field of relationshipFields) {
+      if (field.target && !addedCollectionNames.has(field.target)) {
+        const targetCollection = this.collectionManager.getCollection(field.target);
+        if (targetCollection && targetCollection.name !== this.name) {
+          relatedCollections.push(targetCollection);
+          addedCollectionNames.add(field.target);
+        }
+      }
+    }
+
+    return relatedCollections;
+  }
+
+  /**
+   * 检查是否有关联字段
+   * @returns 是否有关联字段
+   */
+  hasRelationshipFields(): boolean {
+    return this.getRelationshipFields().length > 0;
+  }
 }
 
 export class CollectionField {
@@ -468,6 +519,27 @@ export class CollectionField {
   getFirstSubclassNameOf(baseClass: string) {
     const subclasses = this.getSubclassesOf(baseClass);
     return subclasses.keys().next().value;
+  }
+
+  /**
+   * 检查字段是否为关联字段
+   * @returns 是否为关联字段
+   */
+  isRelationshipField(): boolean {
+    const relationshipInterfaces = [
+      'o2o',
+      'oho',
+      'obo',
+      'm2o',
+      'createdBy',
+      'updatedBy',
+      'o2m',
+      'm2m',
+      'linkTo',
+      'chinaRegion',
+      'mbm',
+    ];
+    return relationshipInterfaces.includes(this.interface);
   }
 }
 

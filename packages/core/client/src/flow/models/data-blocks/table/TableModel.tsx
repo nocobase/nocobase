@@ -472,7 +472,7 @@ TableModel.registerFlow({
         const {
           dataSourceKey = params.dataSourceKey, // 先兼容一下旧的数据, TODO: remove
           collectionName = params.collectionName, // 先兼容一下旧的数据, TODO: remove
-          assocationName,
+          associationName,
           sourceId,
           filterByTk,
         } = ctx.model.props.dataSourceOptions;
