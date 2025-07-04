@@ -368,7 +368,7 @@ export class TableModel extends DataBlockModel<TableModelStructure> {
           components={this.components}
           tableLayout="fixed"
           size={this.props.size}
-          rowKey={this.collection.filterTargetKey}
+          rowKey="_rowKey"
           rowSelection={
             this.props.showIndex && {
               columnWidth: 50,
@@ -376,14 +376,14 @@ export class TableModel extends DataBlockModel<TableModelStructure> {
               onChange: (_, selectedRows) => {
                 this.resource.setSelectedRows(selectedRows);
               },
-              selectedRowKeys: this.resource.getSelectedRows().map((row) => row.id),
+              selectedRowKeys: this.resource.getSelectedRows().map((row) => row._rowKey),
               renderCell: this.renderCell,
             }
           }
           loading={this.resource.loading}
           virtual={this.props.virtual}
           scroll={{ x: 'max-content', y: '100%' }}
-          dataSource={this.resource.getData()}
+          dataSource={this.resource.getListDataWithRowKey()}
           columns={this.getColumns()}
           pagination={{
             current: this.resource.getPage(),
