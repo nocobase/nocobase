@@ -10,6 +10,7 @@
 import { EditOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
 import { observer } from '@formily/reactive-react';
+import { Observer } from '@formily/reactive-react';
 import { castArray } from 'lodash';
 import {
   MultiRecordResource,

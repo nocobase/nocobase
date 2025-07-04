@@ -9,8 +9,10 @@
 
 import { tval } from '@nocobase/utils/client';
 import { BaseItem } from '@formily/antd-v5';
+import { Observer } from '@formily/reactive-react';
 import React from 'react';
 import { castArray } from 'lodash';
+import { reactive } from '@nocobase/flow-engine';
 import { FieldModel } from '../../base/FieldModel';
 
 export class DetailItemModel extends FieldModel {
@@ -18,6 +20,7 @@ export class DetailItemModel extends FieldModel {
   setDecoratorProps(props) {
     this.decoratorProps = { ...this.decoratorProps, ...props };
   }
+  @reactive
   render() {
     const resource = (this.parent as any).resource;
     const fieldModel = this.subModels.field as any;
@@ -28,7 +31,7 @@ export class DetailItemModel extends FieldModel {
       value,
     });
     return (
-      <BaseItem {...this.decoratorProps} label={this.collectionField.title}>
+      <BaseItem {...this.decoratorProps} extra={this.decoratorProps?.description} label={this.title}>
         {fieldModel.render()}
       </BaseItem>
     );
