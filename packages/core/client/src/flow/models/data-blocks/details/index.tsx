@@ -24,7 +24,7 @@ import { tval } from '@nocobase/utils/client';
 import { FormButtonGroup, FormLayout } from '@formily/antd-v5';
 import { Pagination, theme } from 'antd';
 import _ from 'lodash';
-import React, { useRef } from 'react';
+import React from 'react';
 import { DataBlockModel } from '../../base/BlockModel';
 import { DetailItemModel } from './DetailItemModel';
 
@@ -94,7 +94,7 @@ export class DetailsModel extends DataBlockModel {
     };
     return (
       <>
-        <div style={{ padding: token.padding, textAlign: 'right' }}>
+        {/* <div style={{ padding: token.padding, textAlign: 'right' }}>
           <AddActionButton model={this} items={buildActionItems(this, 'DetailActionModel')} />
         </div>
         <FormButtonGroup style={{ marginTop: 16 }}>
@@ -106,7 +106,7 @@ export class DetailsModel extends DataBlockModel {
               sharedContext={{ record: this.resource.getData() }}
             />
           ))}
-        </FormButtonGroup>
+        </FormButtonGroup> */}
         <FormLayout layout={'vertical'}>
           {this.mapSubModels('detailItem', (field: DetailItemModel) => {
             return <FlowModelRenderer key={field.uid} model={field} showFlowSettings={{ showBorder: false }} />;
