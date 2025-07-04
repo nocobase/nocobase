@@ -31,21 +31,15 @@ const CollectionsTable = observer((tableProps: any) => {
       : tableProps.formValues?.options?.addAllCollections;
   const [addAllCollections, setaddAllCollections] = useState(defaultAddAllCollections);
 
-  const filteredCollections = useMemo(() => {
-    if (!searchText.trim()) {
-      return allCollections;
-    }
-    return allCollections.filter((item: any) => item.name?.toLowerCase().includes(searchText.toLowerCase()));
-  }, [allCollections, searchText]);
-
   const displayCollections = useMemo(() => {
     const baseData = tableProps.value && tableProps.value.length > 0 ? tableProps.value : allCollections;
+    let filteredData = baseData;
 
-    if (!searchText.trim()) {
-      return baseData;
+    if (searchText.trim()) {
+      filteredData = filteredData.filter((item: any) => item.name?.toLowerCase().includes(searchText.toLowerCase()));
     }
 
-    return baseData.filter((item: any) => item.name?.toLowerCase().includes(searchText.toLowerCase()));
+    return filteredData;
   }, [tableProps.value, allCollections, searchText]);
 
   const allData = useMemo(() => {
@@ -53,11 +47,55 @@ const CollectionsTable = observer((tableProps: any) => {
   }, [tableProps.value, allCollections]);
 
   const enrichedDisplayCollections = useMemo(() => {
-    return displayCollections.map((item) => ({
-      ...item,
-      selected: selectedMap.get(item.name) || item.required || selectAllForCurrentView,
-    }));
-  }, [displayCollections, selectedMap, selectAllForCurrentView]);
+    const tablePrefix = tableProps.options?.tablePrefix;
+
+    return displayCollections.map((item) => {
+      let shouldBeSelected = false;
+
+      if (item.required) {
+        shouldBeSelected = true;
+      } else if (selectAllForCurrentView) {
+        shouldBeSelected = true;
+      } else if (selectedMap.get(item.name)) {
+        if (!tablePrefix || !tablePrefix.trim() || item.name?.startsWith(tablePrefix.trim())) {
+          shouldBeSelected = true;
+        }
+      }
+
+      return {
+        ...item,
+        selected: shouldBeSelected,
+      };
+    });
+  }, [displayCollections, selectedMap, selectAllForCurrentView, tableProps.options?.tablePrefix]);
+
+  const previousTablePrefix = useRef(tableProps.options?.tablePrefix);
+  useEffect(() => {
+    const currentTablePrefix = tableProps.options?.tablePrefix;
+
+    if (previousTablePrefix.current !== currentTablePrefix && allCollections.length > 0) {
+      previousTablePrefix.current = currentTablePrefix;
+
+      const updatedData = allCollections.map((item) => {
+        let shouldBeSelected = false;
+
+        if (item.required) {
+          shouldBeSelected = true;
+        } else if (selectedMap.get(item.name)) {
+          if (!currentTablePrefix || !currentTablePrefix.trim() || item.name?.startsWith(currentTablePrefix.trim())) {
+            shouldBeSelected = true;
+          }
+        }
+
+        return {
+          ...item,
+          selected: shouldBeSelected,
+        };
+      });
+
+      tableProps.onChange?.(updatedData);
+    }
+  }, [tableProps.options?.tablePrefix, allCollections.length, selectedMap]);
 
   useEffect(() => {
     if (allData.length > 0) {
@@ -126,16 +164,44 @@ const CollectionsTable = observer((tableProps: any) => {
         params,
       });
       const { data } = response?.data || {};
-      const collectionsData = data || [];
+      const allCollectionsData = data || [];
 
-      setAllCollections(collectionsData);
+      setAllCollections(allCollectionsData);
 
-      if (onChange) {
-        onChange(collectionsData);
+      const isFirstLoad = selectedMap.size === 0 && tableProps.value && tableProps.value.length > 0;
+      let currentSelectedMap = selectedMap;
+
+      if (isFirstLoad) {
+        const newSelectedMap = new Map();
+        tableProps.value.forEach((item: any) => {
+          if (item.selected) {
+            newSelectedMap.set(item.name, true);
+          }
+        });
+        setSelectedMap(newSelectedMap);
+        currentSelectedMap = newSelectedMap;
       }
 
-      if (tableProps.field && tableProps.field.form) {
-        tableProps.field.form.setValuesIn('collections', collectionsData);
+      const tablePrefix = options.tablePrefix;
+      const updatedData = allCollectionsData.map((item) => {
+        let shouldBeSelected = false;
+
+        if (item.required) {
+          shouldBeSelected = true;
+        } else if (currentSelectedMap.get(item.name)) {
+          if (!tablePrefix || !tablePrefix.trim() || item.name?.startsWith(tablePrefix.trim())) {
+            shouldBeSelected = true;
+          }
+        }
+
+        return {
+          ...item,
+          selected: shouldBeSelected,
+        };
+      });
+
+      if (onChange) {
+        onChange(updatedData);
       }
     } catch (error) {
       console.error('Error loading collections:', error);
@@ -143,7 +209,16 @@ const CollectionsTable = observer((tableProps: any) => {
     } finally {
       setLoading(false);
     }
-  }, [tableProps.dataSourceKey, tableProps.formValues, tableProps.options, tableProps.from, api, t, NAMESPACE]);
+  }, [
+    tableProps.dataSourceKey,
+    tableProps.formValues,
+    tableProps.options,
+    tableProps.from,
+    tableProps.tablePrefix,
+    api,
+    t,
+    NAMESPACE,
+  ]);
 
   const debouncedSearch = useCallback((keywords: string) => {
     if (searchTimeoutRef.current) {
@@ -164,9 +239,19 @@ const CollectionsTable = observer((tableProps: any) => {
   }, []);
 
   const { isAllSelected, isIndeterminate, selectedCount, isAtLimit } = useMemo(() => {
-    const totalSelectedCount = allData.filter((item) => selectedMap.get(item.name) || item.required).length;
+    const tablePrefix = tableProps.options?.tablePrefix;
 
-    const atLimit = totalSelectedCount >= MAX_SELECTION_LIMIT;
+    const effectiveSelectedCount = allData.filter((item) => {
+      if (item.required) return true;
+      if (!selectedMap.get(item.name)) return false;
+
+      if (!tablePrefix || !tablePrefix.trim() || item.name?.startsWith(tablePrefix.trim())) {
+        return true;
+      }
+      return false;
+    }).length;
+
+    const atLimit = effectiveSelectedCount >= MAX_SELECTION_LIMIT;
 
     const selectableCollections = enrichedDisplayCollections.filter((item) => !item.required);
     const visibleSelectedCount = enrichedDisplayCollections.filter((item) => item.selected || item.required).length;
@@ -176,25 +261,34 @@ const CollectionsTable = observer((tableProps: any) => {
     return {
       isAllSelected: allSelected,
       isIndeterminate: indeterminate,
-      selectedCount: totalSelectedCount,
+      selectedCount: effectiveSelectedCount,
       isAtLimit: atLimit,
     };
-  }, [enrichedDisplayCollections, allData, selectedMap]);
+  }, [enrichedDisplayCollections, allData, selectedMap, tableProps.options?.tablePrefix]);
 
   const handleSelectAll = useCallback(
     (checked: boolean) => {
+      const tablePrefix = tableProps.options?.tablePrefix;
+
       if (checked) {
-        const currentSelectedCount = allData.filter((item) => selectedMap.get(item.name) || item.required).length;
+        const currentEffectiveSelectedCount = allData.filter((item) => {
+          if (item.required) return true;
+          if (!selectedMap.get(item.name)) return false;
+          if (!tablePrefix || !tablePrefix.trim() || item.name?.startsWith(tablePrefix.trim())) {
+            return true;
+          }
+          return false;
+        }).length;
 
         const selectableInCurrentView = displayCollections.filter(
           (item) => !item.required && !selectedMap.get(item.name),
         ).length;
 
-        if (currentSelectedCount >= MAX_SELECTION_LIMIT) {
+        if (currentEffectiveSelectedCount >= MAX_SELECTION_LIMIT) {
           return;
         }
 
-        const remainingLimit = MAX_SELECTION_LIMIT - currentSelectedCount;
+        const remainingLimit = MAX_SELECTION_LIMIT - currentEffectiveSelectedCount;
 
         if (selectableInCurrentView > remainingLimit) {
           message.warning(
@@ -214,8 +308,17 @@ const CollectionsTable = observer((tableProps: any) => {
       const updateCollections = () => {
         const newSelectedMap = new Map(selectedMap);
         let selectedInThisOperation = 0;
-        const currentSelectedCount = allData.filter((item) => selectedMap.get(item.name) || item.required).length;
-        const remainingLimit = MAX_SELECTION_LIMIT - currentSelectedCount;
+
+        const currentEffectiveSelectedCount = allData.filter((item) => {
+          if (item.required) return true;
+          if (!selectedMap.get(item.name)) return false;
+          if (!tablePrefix || !tablePrefix.trim() || item.name?.startsWith(tablePrefix.trim())) {
+            return true;
+          }
+          return false;
+        }).length;
+
+        const remainingLimit = MAX_SELECTION_LIMIT - currentEffectiveSelectedCount;
 
         displayCollections.forEach((item) => {
           if (!item.required) {
@@ -232,10 +335,22 @@ const CollectionsTable = observer((tableProps: any) => {
 
         setSelectedMap(newSelectedMap);
 
-        const updatedAllData = allData.map((item) => ({
-          ...item,
-          selected: newSelectedMap.get(item.name) || item.required || false,
-        }));
+        const updatedAllData = allData.map((item) => {
+          let shouldBeSelected = false;
+
+          if (item.required) {
+            shouldBeSelected = true;
+          } else if (newSelectedMap.get(item.name)) {
+            if (!tablePrefix || !tablePrefix.trim() || item.name?.startsWith(tablePrefix.trim())) {
+              shouldBeSelected = true;
+            }
+          }
+
+          return {
+            ...item,
+            selected: shouldBeSelected,
+          };
+        });
 
         tableProps.onChange?.(updatedAllData);
 
@@ -250,7 +365,7 @@ const CollectionsTable = observer((tableProps: any) => {
         setTimeout(updateCollections, 0);
       }
     },
-    [displayCollections, allData, selectedMap, tableProps.onChange, t, NAMESPACE],
+    [displayCollections, allData, selectedMap, tableProps.onChange, tableProps.options?.tablePrefix, t, NAMESPACE],
   );
 
   const handleSelectChange = useCallback(
@@ -259,13 +374,22 @@ const CollectionsTable = observer((tableProps: any) => {
       if (!currentItem || currentItem.selected === checked) return;
 
       if (checked) {
-        const currentSelectedCount = allData.filter((item) => selectedMap.get(item.name) || item.required).length;
+        const tablePrefix = tableProps.options?.tablePrefix;
 
-        if (currentSelectedCount >= MAX_SELECTION_LIMIT) {
+        const currentEffectiveSelectedCount = allData.filter((item) => {
+          if (item.required) return true;
+          if (!selectedMap.get(item.name)) return false;
+          if (!tablePrefix || !tablePrefix.trim() || item.name?.startsWith(tablePrefix.trim())) {
+            return true;
+          }
+          return false;
+        }).length;
+
+        if (currentEffectiveSelectedCount >= MAX_SELECTION_LIMIT) {
           return;
         }
 
-        if (currentSelectedCount + 1 === MAX_SELECTION_LIMIT) {
+        if (currentEffectiveSelectedCount + 1 === MAX_SELECTION_LIMIT) {
           message.warning(
             t(
               'Maximum selection limit reached. To ensure system performance, you can select up to {{limit}} collections at once.',
@@ -289,17 +413,39 @@ const CollectionsTable = observer((tableProps: any) => {
       setSelectedMap(newSelectedMap);
 
       const updateCollections = () => {
-        const updatedAllData = allData.map((item) => ({
-          ...item,
-          selected: newSelectedMap.get(item.name) || item.required || false,
-        }));
+        const tablePrefix = tableProps.options?.tablePrefix;
+
+        const updatedAllData = allData.map((item) => {
+          let shouldBeSelected = false;
+
+          if (item.required) {
+            shouldBeSelected = true;
+          } else if (newSelectedMap.get(item.name)) {
+            if (!tablePrefix || !tablePrefix.trim() || item.name?.startsWith(tablePrefix.trim())) {
+              shouldBeSelected = true;
+            }
+          }
+
+          return {
+            ...item,
+            selected: shouldBeSelected,
+          };
+        });
 
         tableProps.onChange?.(updatedAllData);
       };
 
       setTimeout(updateCollections, 0);
     },
-    [enrichedDisplayCollections, allData, selectedMap, tableProps.onChange, t, NAMESPACE],
+    [
+      enrichedDisplayCollections,
+      allData,
+      selectedMap,
+      tableProps.onChange,
+      tableProps.options?.tablePrefix,
+      t,
+      NAMESPACE,
+    ],
   );
 
   const handleSearch = useCallback(
@@ -507,6 +653,14 @@ export const CollectionsTableField = (props: { NAMESPACE: string; t: (key: strin
             'x-component-props.options': '{{$deps[1]}}',
             'x-component-props.addAllCollectionsValue': '{{$deps[2]}}',
           },
+        },
+      },
+      {
+        dependencies: ['..options.tablePrefix'],
+        fulfill: {
+          run: `
+          $self.forceUpdate && $self.forceUpdate();
+        `,
         },
       },
       {
