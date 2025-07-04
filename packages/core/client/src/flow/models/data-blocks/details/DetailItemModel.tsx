@@ -11,14 +11,16 @@ import { tval } from '@nocobase/utils/client';
 import { BaseItem } from '@formily/antd-v5';
 import React from 'react';
 import { castArray } from 'lodash';
+import { observable } from '@formily/reactive';
 import { reactive } from '@nocobase/flow-engine';
 import { FieldModel } from '../../base/FieldModel';
 
 export class DetailItemModel extends FieldModel {
-  decoratorProps;
+  decoratorProps = observable({} as any);
   setDecoratorProps(props) {
-    this.decoratorProps = { ...this.decoratorProps, ...props };
+    Object.assign(this.decoratorProps, props);
   }
+
   @reactive
   render() {
     const resource = (this.parent as any).resource;
@@ -30,7 +32,7 @@ export class DetailItemModel extends FieldModel {
       value,
     });
     return (
-      <BaseItem {...this.decoratorProps} extra={this.decoratorProps?.description} label={this.title}>
+      <BaseItem {...this.decoratorProps} extra={this.decoratorProps?.description} label={this.decoratorProps.title}>
         {fieldModel.render()}
       </BaseItem>
     );
@@ -63,7 +65,7 @@ DetailItemModel.registerFlow({
         },
       },
       handler(ctx, params) {
-        ctx.model.setTitle(params.title);
+        ctx.model.setDecoratorProps({ title: params.title });
       },
       defaultParams: (ctx) => {
         return {
