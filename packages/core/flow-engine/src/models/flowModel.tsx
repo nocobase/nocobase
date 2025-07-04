@@ -514,17 +514,19 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     const constructor = this.constructor as typeof FlowModel;
     const allFlows = constructor.getFlows();
 
-    allFlows.forEach((flow) => {
-      if (flow.on && flow.on.eventName === eventName) {
-        console.log(`BaseModel '${this.uid}' dispatching event '${eventName}' to flow '${flow.key}'.`);
-        this.applyFlow(flow.key, extra).catch((error) => {
-          console.error(
-            `BaseModel.dispatchEvent: Error executing event-triggered flow '${flow.key}' for event '${eventName}':`,
-            error,
-          );
-        });
-      }
-    });
+    Array.from(allFlows.values())
+      .reverse()
+      .forEach((flow) => {
+        if (flow.on && flow.on.eventName === eventName) {
+          console.log(`BaseModel '${this.uid}' dispatching event '${eventName}' to flow '${flow.key}'.`);
+          this.applyFlow(flow.key, extra).catch((error) => {
+            console.error(
+              `BaseModel.dispatchEvent: Error executing event-triggered flow '${flow.key}' for event '${eventName}':`,
+              error,
+            );
+          });
+        }
+      });
   }
 
   /**
@@ -565,6 +567,7 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
 
     // 过滤出自动流程并按 sort 排序
     const autoFlows = Array.from(allFlows.values())
+      .reverse()
       .filter((flow) => flow.auto === true)
       .sort((a, b) => (a.sort || 0) - (b.sort || 0));
 
