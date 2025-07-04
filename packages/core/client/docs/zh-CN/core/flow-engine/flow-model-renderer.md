@@ -21,8 +21,8 @@ interface FlowModelRendererProps {
   /** 是否跳过自动应用流，默认 false */
   skipApplyAutoFlows?: boolean; // 默认 false
 
-  /** 当 skipApplyAutoFlows !== false 时，传递给 useApplyAutoFlows 的额外上下文 */
-  extraContext?: Record<string, any>
+  /** 当 skipApplyAutoFlows !== false 时，传递给 useApplyAutoFlows 的运行时参数 */
+  runtimeArgs?: Record<string, any>
 
   /** 设置菜单层级：1=仅当前模型(默认)，2=包含子模型 */
   settingsMenuLevel?: number; // 默认 1
@@ -44,7 +44,7 @@ interface FlowModelRendererProps {
   - `drawer`: 抽屉形式（待实现）
 - **hideRemoveInSettings**: 是否在设置中隐藏移除按钮，当设为 `true` 时，流设置菜单中不会显示删除/移除选项
 - **skipApplyAutoFlows**: 是否跳过自动应用流。当设为 `true` 时，组件不会调用 `useApplyAutoFlows` hook
-- **extraContext**: 额外的上下文数据，当 `skipApplyAutoFlows` 为 `false` 时传递给 `useApplyAutoFlows` hook
+- **runtimeArgs**: 运行时参数，当 `skipApplyAutoFlows` 为 `false` 时传递给 `useApplyAutoFlows` hook
 - **settingsMenuLevel**: 设置菜单层级，控制设置菜单的显示范围
   - `1`: 仅显示当前模型的设置（默认）
   - `2`: 包含子模型的设置
@@ -79,7 +79,7 @@ interface FlowModelRendererProps {
 // 传递额外上下文
 <FlowModelRenderer 
   model={model} 
-  extraContext={{ customData: 'value' }}
+  runtimeArgs={{ customData: 'value' }}
 />
 
 // 设置菜单层级示例
@@ -98,7 +98,7 @@ interface FlowModelRendererProps {
   hideRemoveInSettings={false}
   skipApplyAutoFlows={false}
   settingsMenuLevel={2}
-  extraContext={{ 
+  runtimeArgs={{ 
     userId: 123,
     permissions: ['read', 'write']
   }}
@@ -152,7 +152,7 @@ interface FlowModelRendererProps {
 ```tsx | pure
 <FlowModelRenderer 
   model={flowModel} 
-  extraContext={{
+  runtimeArgs={{
     currentUser: user,
     formData: formValues,
     permissions: userPermissions

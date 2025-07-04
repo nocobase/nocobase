@@ -59,7 +59,7 @@ class PluginDemo extends Plugin {
     });
     this.router.add('root', {
       path: '/',
-      element: <FlowModelRenderer model={model} extraContext={{ filterByTk: 1 }} />,
+      element: <FlowModelRenderer model={model} runtimeArgs={{ filterByTk: 1 }} />,
     });
   }
 }

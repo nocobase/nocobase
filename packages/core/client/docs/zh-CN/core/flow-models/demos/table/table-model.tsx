@@ -59,7 +59,7 @@ export class TableModel extends FlowModel<S> {
             <FlowModelRenderer
               model={action}
               showFlowSettings
-              extraContext={{ currentModel: this, currentResource: this.resource }}
+              runtimeArgs={{ currentModel: this, currentResource: this.resource }}
             />
           ))}
           <AddActionButton

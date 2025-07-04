@@ -117,7 +117,7 @@ FormModel.registerFlow({
         dataSourceKey: 'main',
       },
       async handler(ctx, params) {
-        ctx.model.form = ctx.extra.form || createForm();
+        ctx.model.form = ctx.runtimeArgs.form || createForm();
         if (!ctx.model.collection) {
           ctx.model.collection = ctx.globals.dataSourceManager.getCollection(
             params.dataSourceKey,

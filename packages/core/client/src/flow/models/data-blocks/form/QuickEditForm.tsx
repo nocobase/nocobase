@@ -24,14 +24,14 @@ import React from 'react';
 import { DataBlockModel } from '../../base/BlockModel';
 
 const SimpleFlowModelRenderer = observer((props: any) => {
-  const { fallback, model, sharedContext, extraContext } = props;
+  const { fallback, model, sharedContext, runtimeArgs } = props;
   const { loading } = useRequest(
     async () => {
       model.setSharedContext(sharedContext);
-      await model.applyAutoFlows(extraContext);
+      await model.applyAutoFlows(runtimeArgs);
     },
     {
-      refreshDeps: [model, sharedContext, extraContext],
+      refreshDeps: [model, sharedContext, runtimeArgs],
     },
   );
 
@@ -92,7 +92,7 @@ export class QuickEditForm extends DataBlockModel {
             }}
             fallback={<Skeleton.Input size="small" />}
             model={model}
-            extraContext={{ filterByTk, record }}
+            runtimeArgs={{ filterByTk, record }}
           />
         );
       },
@@ -192,9 +192,9 @@ QuickEditForm.registerFlow({
           });
           ctx.model.addAppends(fieldPath);
         }
-        if (ctx.extra.filterByTk || ctx.extra.record) {
-          resource.setFilterByTk(ctx.extra.filterByTk);
-          resource.setData(ctx.extra.record);
+        if (ctx.runtimeArgs.filterByTk || ctx.runtimeArgs.record) {
+          resource.setFilterByTk(ctx.runtimeArgs.filterByTk);
+          resource.setData(ctx.runtimeArgs.record);
           ctx.model.form.setInitialValues(resource.getData());
         }
       },

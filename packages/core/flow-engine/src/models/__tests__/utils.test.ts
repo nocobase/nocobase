@@ -520,7 +520,7 @@ describe('Utils', () => {
           app: {},
         },
         app: {} as any,
-        extra: { testExtra: 'value' },
+        runtimeArgs: { testExtra: 'value' },
       };
     });
 
@@ -571,7 +571,7 @@ describe('Utils', () => {
       test('should handle function accessing context properties', async () => {
         const paramsFn = vi.fn((ctx: ParamsContext<FlowModel>) => ({
           modelUid: ctx.model.uid,
-          extraData: ctx.extra.testExtra,
+          extraData: ctx.runtimeArgs.testExtra,
         }));
 
         const result = await resolveDefaultParams(paramsFn, mockContext);
@@ -617,7 +617,7 @@ describe('Utils', () => {
           app: {},
         },
         app: {} as any,
-        extra: { testExtra: 'value' },
+        runtimeArgs: { testExtra: 'value' },
       };
     });
 
@@ -693,7 +693,7 @@ describe('Utils', () => {
           extraInfo: {
             type: 'string',
             title: 'Extra Data',
-            default: ctx.extra.testExtra,
+            default: ctx.runtimeArgs.testExtra,
           },
         }));
 

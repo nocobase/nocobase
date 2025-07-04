@@ -28,7 +28,7 @@ import type {
   StepDefinition,
   StepParams,
 } from '../types';
-import { ExtendedFlowDefinition, FlowExtraContext, IModelComponentProps, ReadonlyModelProps } from '../types';
+import { ExtendedFlowDefinition, FlowRuntimeArgs, IModelComponentProps, ReadonlyModelProps } from '../types';
 import { FlowExitException, generateUid, mergeFlowDefinitions, resolveDefaultParams } from '../utils';
 import { ForkFlowModel } from './forkFlowModel';
 
@@ -314,17 +314,13 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     // 创建一个新的Map来存储所有流程
     const allFlows = new Map<string, FlowDefinition>();
 
-    // 遍历类继承链，收集所有流程
+    // 收集所有类的flows
+    const classFlows: Map<string, FlowDefinition>[] = [];
     let cls: typeof FlowModel | null = this;
     while (cls) {
       const flows = modelFlows.get(cls);
       if (flows) {
-        // 合并流程，但如果已有同名流程则不覆盖
-        for (const [key, flow] of flows.entries()) {
-          if (!allFlows.has(key)) {
-            allFlows.set(key, flow);
-          }
-        }
+        classFlows.push(flows);
       }
 
       // 获取父类
@@ -333,6 +329,16 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
         break;
       }
       cls = proto as typeof FlowModel;
+    }
+
+    // 按照父类优先的顺序合并flows，但每个类内部维持原来的顺序
+    // 从最后一个（最顶层父类）开始合并到第一个（当前类）
+    // 子类的同名flow会覆盖父类的
+    for (let i = classFlows.length - 1; i >= 0; i--) {
+      const flows = classFlows[i];
+      for (const [key, flow] of flows.entries()) {
+        allFlows.set(key, flow);
+      }
     }
 
     return allFlows;
@@ -395,7 +401,7 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     return this.stepParams;
   }
 
-  async applyFlow(flowKey: string, extra?: FlowExtraContext): Promise<any> {
+  async applyFlow(flowKey: string, runtimeArgs?: FlowRuntimeArgs): Promise<any> {
     const currentFlowEngine = this.flowEngine;
     if (!currentFlowEngine) {
       console.warn('FlowEngine not available on this model for applyFlow. Check and model.flowEngine setup.');
@@ -434,7 +440,7 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
       stepResults,
       shared: this.getSharedContext(),
       globals: globalContexts,
-      extra: extra || {},
+      runtimeArgs: runtimeArgs || {},
       model: this,
       app: globalContexts.app || {},
     };
@@ -503,7 +509,7 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     return Promise.resolve(stepResults);
   }
 
-  dispatchEvent(eventName: string, extra?: FlowExtraContext): void {
+  dispatchEvent(eventName: string, runtimeArgs?: FlowRuntimeArgs): void {
     const currentFlowEngine = this.flowEngine;
     if (!currentFlowEngine) {
       console.warn('FlowEngine not available on this model for dispatchEvent. Please set flowEngine on the model.');
@@ -514,19 +520,17 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     const constructor = this.constructor as typeof FlowModel;
     const allFlows = constructor.getFlows();
 
-    Array.from(allFlows.values())
-      .reverse()
-      .forEach((flow) => {
-        if (flow.on && flow.on.eventName === eventName) {
-          console.log(`BaseModel '${this.uid}' dispatching event '${eventName}' to flow '${flow.key}'.`);
-          this.applyFlow(flow.key, extra).catch((error) => {
-            console.error(
-              `BaseModel.dispatchEvent: Error executing event-triggered flow '${flow.key}' for event '${eventName}':`,
-              error,
-            );
-          });
-        }
-      });
+    allFlows.forEach((flow) => {
+      if (flow.on && flow.on.eventName === eventName) {
+        console.log(`BaseModel '${this.uid}' dispatching event '${eventName}' to flow '${flow.key}'.`);
+        this.applyFlow(flow.key, runtimeArgs).catch((error) => {
+          console.error(
+            `BaseModel.dispatchEvent: Error executing event-triggered flow '${flow.key}' for event '${eventName}':`,
+            error,
+          );
+        });
+      }
+    });
   }
 
   /**
@@ -567,7 +571,6 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
 
     // 过滤出自动流程并按 sort 排序
     const autoFlows = Array.from(allFlows.values())
-      .reverse()
       .filter((flow) => flow.auto === true)
       .sort((a, b) => (a.sort || 0) - (b.sort || 0));
 
@@ -591,19 +594,19 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
 
   /**
    * 执行所有自动应用流程
-   * @param {FlowExtraContext} [extra] 可选的额外上下文
+   * @param {FlowRuntimeArgs} [runtimeArgs] 可选的运行时参数
    * @param {boolean} [useCache=true] 是否使用缓存机制，默认为 true
    * @returns {Promise<any[]>} 所有自动应用流程的执行结果数组
    */
-  async applyAutoFlows(extra?: FlowExtraContext, useCache?: boolean): Promise<any[]>;
+  async applyAutoFlows(runtimeArgs?: FlowRuntimeArgs, useCache?: boolean): Promise<any[]>;
   async applyAutoFlows(...args: any[]): Promise<any[]> {
-    const [extra, useCache = true] = args;
+    const [runtimeArgs, useCache = true] = args;
     // 生成缓存键，包含 stepParams 的序列化版本以确保参数变化时重新执行
     const cacheKey = useCache
       ? FlowEngine.generateApplyFlowCacheKey(this['forkId'] ?? 'autoFlow', 'all', this.uid)
       : null;
 
-    if (!_.isEqual(extra, this._lastAutoRunParams?.[0]) && cacheKey) {
+    if (!_.isEqual(runtimeArgs, this._lastAutoRunParams?.[0]) && cacheKey) {
       this.flowEngine.applyFlowCache.delete(cacheKey);
     }
 
@@ -635,7 +638,7 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
       const results: any[] = [];
       for (const flow of autoApplyFlows) {
         try {
-          const result = await this.applyFlow(flow.key, extra);
+          const result = await this.applyFlow(flow.key, runtimeArgs);
           results.push(result);
         } catch (error) {
           console.error(`FlowModel.applyAutoFlows: Error executing auto-apply flow '${flow.key}':`, error);
@@ -778,13 +781,13 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
 
   async applySubModelsAutoFlows<K extends keyof Structure['subModels']>(
     subKey: K,
-    extra?: Record<string, any>,
+    runtimeArgs?: Record<string, any>,
     shared?: Record<string, any>,
   ) {
     await Promise.all(
       this.mapSubModels(subKey, async (sub) => {
         sub.setSharedContext(shared);
-        await sub.applyAutoFlows(extra, false);
+        await sub.applyAutoFlows(runtimeArgs, false);
       }),
     );
   }
