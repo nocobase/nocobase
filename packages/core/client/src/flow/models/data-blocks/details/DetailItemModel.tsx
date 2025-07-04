@@ -9,7 +9,6 @@
 
 import { tval } from '@nocobase/utils/client';
 import { BaseItem } from '@formily/antd-v5';
-import { Observer } from '@formily/reactive-react';
 import React from 'react';
 import { castArray } from 'lodash';
 import { reactive } from '@nocobase/flow-engine';
