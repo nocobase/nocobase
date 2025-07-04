@@ -1,119 +1,116 @@
 # FlowModelContext
 
-`FlowModelContext` 是每个模型实例的专属上下文对象，用于在模型树中共享与模型强相关的服务、配置和临时数据。通过 `model.setContext()` 注册，通过 `model.ctx` 访问。
+> FlowModelContext 继承自 FlowContext，详见 [FlowContext](./flow-context)
+
+`FlowModelContext` 是每个模型实例的专属上下文对象，基于 `FlowContext` 实现。它用于在模型树结构中，通过代理（delegate）机制共享与模型强相关的服务、配置和临时数据，实现模型间的解耦与复用。
 
 ---
 
-## ✨ 设计理念
+## 设计理念
 
-- **解耦与复用**：提供一种机制，在模型树中共享信息，避免层层传参。
-- **自动向下传播**：父模型设置的上下文自动传递给子模型。
-- **局部可覆盖**：子模型可以通过同名属性覆盖父模型提供的上下文值，实现本地控制。
+- **模型树内共享**：父模型通过代理（delegate）机制将上下文能力传递给子模型，子模型可直接访问父模型或全局上下文。
+- **同名覆盖**：子模型注册同名属性时会覆盖父模型的值，仅影响当前模型及其子树。
+- **动态注册**：支持运行时动态注册属性和方法，灵活扩展模型能力。
+- **类型安全**：可结合 TypeScript 泛型提供上下文类型提示。
 
 ---
 
-## 🔧 基本用法
+## 代理（delegate）机制说明
 
-### 设置上下文
+- `FlowModelContext` 通过代理（delegate）机制可访问 `FlowEngineContext` 的属性和方法，实现全局能力共享。
+- 子模型的 `FlowModelContext` 通过代理（delegate）机制可访问父模型的上下文（同步关系），支持同名覆盖。
+- 异步父子模型不会建立代理（delegate）关系，避免状态污染。
+- 代理链可多层嵌套，支持复杂模型树结构下的上下文访问。
+
+---
+
+## 注册与访问
+
+### 注册属性
 
 ```ts
-model.setContext({
+model.ctx.defineProps({
   foo: value,
-  bar: otherValue,
+  bar: () => 'computed',
+  asyncData: async () => fetchData(),
 });
-````
+```
+
+### 注册方法
+
+```ts
+model.ctx.defineMethods({
+  getUser() { /* ... */ },
+  async fetchData() { /* ... */ },
+});
+```
 
 ### 访问上下文
 
 ```ts
-const value = this.ctx.foo;
+const value = model.ctx.foo;
+const data = await model.ctx.asyncData;
+const user = model.ctx.getUser();
 ```
 
 ---
 
-## 📥 向下共享与同名覆盖
+## 典型用法
 
-### 向下共享
-
-父模型设置的上下文会自动传递给子模型，无需显式传参。
+### 1. 父模型向子模型共享自身实例
 
 ```ts
 class TableModel extends FlowModel {
   onInit() {
-    this.setContext({
-      tableModel: this, // 向子模型共享自身实例
+    this.ctx.defineProps({
+      tableModel: this,
     });
-  }
-
-  getName() {
-    return 'users';
   }
 }
 
 class ColumnModel extends FlowModel {
-  getTableNameFromParent() {
+  getTableName() {
     return this.ctx.tableModel?.getName();
   }
 }
 ```
 
-### 同名覆盖
-
-子模型可以通过 `setContext` 注册同名字段，覆盖父模型的值。访问 `this.ctx.xxx` 时会优先使用子模型的上下文。
+### 2. 同名覆盖
 
 ```ts
 class ParentModel extends FlowModel {
   onInit() {
-    this.setContext({
-      formLayout: 'horizontal',
+    this.ctx.defineProps({
+      layout: 'horizontal',
     });
   }
 }
 
 class ChildModel extends FlowModel {
   onInit() {
-    this.setContext({
-      formLayout: 'vertical',
+    this.ctx.defineProps({
+      layout: 'vertical',
     });
   }
-
-  renderForm() {
-    console.log(this.ctx.formLayout); // 输出: 'vertical'
+  getLayout() {
+    return this.ctx.layout; // 'vertical'
   }
 }
 ```
 
-> ✅ 说明：这种“覆盖”仅影响当前模型及其子树的访问，不会影响父模型或兄弟模型。
+---
+
+## 注意事项
+
+- **避免滥用**：仅将需要跨模型共享的服务或配置放入上下文。
+- **命名冲突**：建议使用命名空间方式组织上下文内容，避免污染。
+- **类型提示**：结合 TypeScript 泛型提升开发体验。
+- **代理链可多层嵌套**，但建议保持上下文结构清晰。
 
 ---
 
-## ⚠️ 注意事项
+## 总结
 
-* **避免滥用**：不要将所有数据都放入上下文，只应放置需要跨模型共享的服务或配置。
-* **注意命名冲突**：建议使用命名空间方式组织上下文内容，避免污染。
-* **完善类型提示**：
-
-  ```ts
-  interface MyContext {
-    tableModel?: TableModel;
-    formLayout?: string;
-  }
-
-  class ColumnModel extends FlowModel<MyContext> {
-    get layout() {
-      return this.ctx.formLayout;
-    }
-  }
-  ```
-
----
-
-## 📌 总结
-
-| 特性     | 描述                              |
-| ------ | ------------------------------- |
-| 自动向下共享 | 父模型设置的上下文，子模型可直接访问              |
-| 局部同名覆盖 | 子模型通过 `setContext` 可覆盖父模型同名字段   |
-| 动态注册   | 任意时刻可调用 `setContext()` 注册或修改上下文 |
-| 类型支持   | 可结合 TypeScript 泛型提供上下文类型提示      |
-| 轻量灵活   | 无需依赖注入框架，适合模型树结构下的上下文共享与复用      |
+- `FlowModelContext` 通过代理（delegate）机制实现模型树内上下文共享与复用。
+- 支持同名覆盖、动态注册、类型安全。
+- 适合复杂模型树结构下的服务、配置、数据共享与隔离。

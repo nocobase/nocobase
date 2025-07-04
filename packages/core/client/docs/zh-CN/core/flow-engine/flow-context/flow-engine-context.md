@@ -1,20 +1,43 @@
 # FlowEngineContext
 
-`FlowEngineContext` 是 FlowEngine 的全局上下文对象，用于在所有流和模型中共享应用级别的服务、配置和工具。通过 `flowEngine.setContext()` 进行注册和扩展，所有流执行时都可通过 `engine.ctx` 访问这些全局能力。
+> FlowEngineContext 继承自 FlowContext，详见 [FlowContext](./flow-context)
+
+`FlowEngineContext` 是 FlowEngine 的全局上下文对象，继承自 `FlowContext`。用于在所有流和模型中共享应用级别的服务、配置和工具。通过 `engine.ctx.defineProps()` 和 `engine.ctx.defineMethods()` 进行注册和扩展，所有流执行时都可通过 `engine.ctx` 访问这些全局能力。
+
+---
+
+## 设计说明
+
+- 继承自 `FlowContext`，具备属性/方法动态注册、委托、依赖等机制。
+- 全局唯一，生命周期与 FlowEngine 实例一致。
+- 适合注册全局服务、配置、API、认证、国际化、主题、消息、数据源、路由等。
 
 ---
 
 ## 注册与使用
 
-你可以在应用初始化或 FlowEngine 实例化后，通过 `setContext` 方法注册全局上下文：
+你可以在应用初始化或 FlowEngine 实例化后，通过 `engine.ctx.defineProps()` 和 `engine.ctx.defineMethods()` 注册全局上下文：
 
 ```ts
 const engine = useFlowEngine();
-// 或
-const engine = this.flowEngine;
 
-engine.setContext({
+engine.ctx.defineProps({
+  app,                // 当前应用实例
+  api,                // apiClient
+  auth,               // 认证信息
+  t,                  // 翻译函数
+  i18n,               // 国际化对象
+  dataSourceManager,  // 数据源管理器
+  router,             // 路由对象
+  viewOpener,         // 视图容器/打开器
+  message,            // 消息提示
+  themeToken,         // 主题变量
+  antdConfig,         // antd 配置
   // ...可扩展自定义属性
+});
+
+engine.ctx.defineMethods({
+  // ...自定义全局方法
 });
 ```
 
@@ -45,9 +68,7 @@ engine.setContext({
 const { app, api, t, message, router } = engine.ctx;
 
 // 发送 API 请求
-const result = await api.request({
-  url: '/users:list',
-});
+const result = await api.request({ url: '/users:list' });
 
 // 国际化
 const text = t('hello');
