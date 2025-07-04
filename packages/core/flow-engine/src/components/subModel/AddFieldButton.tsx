@@ -95,7 +95,7 @@ const AddFieldButtonCore: React.FC<AddFieldButtonProps> = ({
       const meta = ModelClass.meta;
 
       // 如果模型定义了 children，创建包含子菜单的分组项
-      if (meta?.children && meta.children.length > 0) {
+      if (meta?.children) {
         const item: SubModelItem = {
           key: className,
           label: meta.title || className,

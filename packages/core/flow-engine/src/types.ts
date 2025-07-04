@@ -372,7 +372,12 @@ export interface FlowModelMeta {
    * 对于数据区块类型，系统会自动为每个叶子节点生成数据源和数据表的选择菜单。
    * 对于普通区块和动作，叶子节点将直接作为可选择的菜单项。
    *
+   * 支持静态数组和函数形式：
+   * - 静态数组：直接定义固定的子项列表
+   * - 函数形式：可根据父模型动态生成子项，支持同步和异步函数
+   *
    * @example
+   * // 静态配置
    * children: [
    *   {
    *     title: 'Basic Blocks',
@@ -380,16 +385,19 @@ export interface FlowModelMeta {
    *       { title: 'Table', defaultOptions: { use: 'TableModel' } },
    *       { title: 'Form', defaultOptions: { use: 'FormModel' } }
    *     ]
-   *   },
-   *   {
-   *     title: 'Advanced Blocks',
-   *     children: [
-   *       { title: 'Chart', defaultOptions: { use: 'ChartModel' } }
-   *     ]
    *   }
    * ]
+   *
+   * // 动态配置
+   * children: (parentModel) => {
+   *   const hasPermission = parentModel.checkPermission('advanced');
+   *   return [
+   *     { title: 'Basic Table', defaultOptions: { use: 'TableModel' } },
+   *     ...(hasPermission ? [{ title: 'Advanced Chart', defaultOptions: { use: 'ChartModel' } }] : [])
+   *   ];
+   * }
    */
-  children?: FlowModelMeta[];
+  children?: FlowModelMeta[] | ((parentModel: FlowModel) => FlowModelMeta[] | Promise<FlowModelMeta[]>);
   /**
    * 切换检测器函数，用于判断该模型是否已存在
    * 主要用于支持切换式的 UI 交互

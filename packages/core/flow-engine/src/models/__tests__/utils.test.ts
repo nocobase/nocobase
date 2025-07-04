@@ -1119,6 +1119,203 @@ describe('Utils', () => {
     });
   });
 
+  // ==================== resolveMetaChildren() FUNCTION ====================
+  describe('resolveMetaChildren()', () => {
+    // Note: resolveMetaChildren is an internal function, but we can test it indirectly through processMetaChildren
+    // However, for completeness, let's add tests for the children function form that was newly added
+
+    describe('function children resolution', () => {
+      test('should process function-based children that return static array', async () => {
+        const childrenFn = vi.fn().mockReturnValue([
+          {
+            title: 'Dynamic Table',
+            defaultOptions: { use: 'DynamicTableModel' },
+          },
+          {
+            title: 'Dynamic Form',
+            defaultOptions: { use: 'DynamicFormModel' },
+          },
+        ]);
+
+        const result = await processMetaChildren(childrenFn, mockModel, 'dynamic.');
+
+        expect(childrenFn).toHaveBeenCalledWith(mockModel);
+        expect(result).toHaveLength(2);
+        expect(result[0]).toEqual({
+          key: 'dynamic.Dynamic Table',
+          label: 'Dynamic Table',
+          icon: undefined,
+          createModelOptions: {
+            use: 'DynamicTableModel',
+          },
+          toggleDetector: undefined,
+          customRemove: undefined,
+        });
+        expect(result[1]).toEqual({
+          key: 'dynamic.Dynamic Form',
+          label: 'Dynamic Form',
+          icon: undefined,
+          createModelOptions: {
+            use: 'DynamicFormModel',
+          },
+          toggleDetector: undefined,
+          customRemove: undefined,
+        });
+      });
+
+      test('should process async function-based children', async () => {
+        const asyncChildrenFn = vi.fn().mockResolvedValue([
+          {
+            title: 'Async Chart',
+            defaultOptions: { use: 'AsyncChartModel' },
+          },
+        ]);
+
+        const result = await processMetaChildren(asyncChildrenFn, mockModel);
+
+        expect(asyncChildrenFn).toHaveBeenCalledWith(mockModel);
+        expect(result).toHaveLength(1);
+        expect(result[0].label).toBe('Async Chart');
+        expect(result[0].createModelOptions.use).toBe('AsyncChartModel');
+      });
+
+      test('should handle function-based children with conditional logic', async () => {
+        // Mock a model method that the function can use for conditional logic
+        mockModel.getUserRole = vi.fn().mockReturnValue('admin');
+
+        const conditionalChildrenFn = vi.fn((parentModel) => {
+          const isAdmin = parentModel.getUserRole() === 'admin';
+          return [
+            {
+              title: 'Basic Table',
+              defaultOptions: { use: 'BasicTableModel' },
+            },
+            ...(isAdmin
+              ? [
+                  {
+                    title: 'Admin Panel',
+                    defaultOptions: { use: 'AdminPanelModel' },
+                  },
+                ]
+              : []),
+          ];
+        });
+
+        const result = await processMetaChildren(conditionalChildrenFn, mockModel);
+
+        expect(conditionalChildrenFn).toHaveBeenCalledWith(mockModel);
+        expect(result).toHaveLength(2);
+        expect(result[0].label).toBe('Basic Table');
+        expect(result[1].label).toBe('Admin Panel');
+      });
+
+      test('should handle function-based children that return empty array', async () => {
+        const emptyChildrenFn = vi.fn().mockReturnValue([]);
+
+        const result = await processMetaChildren(emptyChildrenFn, mockModel);
+
+        expect(emptyChildrenFn).toHaveBeenCalledWith(mockModel);
+        expect(result).toEqual([]);
+      });
+
+      test('should handle function-based children with nested function children', async () => {
+        const parentChildrenFn = vi.fn().mockReturnValue([
+          {
+            title: 'Parent Group',
+            children: vi.fn().mockReturnValue([
+              {
+                title: 'Nested Item',
+                defaultOptions: { use: 'NestedModel' },
+              },
+            ]),
+          },
+        ]);
+
+        const result = await processMetaChildren(parentChildrenFn, mockModel);
+
+        expect(parentChildrenFn).toHaveBeenCalledWith(mockModel);
+        expect(result).toHaveLength(1);
+        expect(result[0].label).toBe('Parent Group');
+        expect(result[0].children).toHaveLength(1);
+        expect(result[0].children[0].label).toBe('Nested Item');
+        expect(result[0].children[0].createModelOptions.use).toBe('NestedModel');
+      });
+    });
+
+    describe('error handling for function children', () => {
+      test('should handle function-based children throwing error and return empty array', async () => {
+        const errorChildrenFn = vi.fn(() => {
+          throw new Error('Children generation error');
+        });
+
+        const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+        const result = await processMetaChildren(errorChildrenFn, mockModel);
+
+        expect(result).toEqual([]);
+        expect(consoleSpy).toHaveBeenCalledWith('Error resolving meta children function:', expect.any(Error));
+
+        consoleSpy.mockRestore();
+      });
+
+      test('should handle async function-based children rejection and return empty array', async () => {
+        const rejectChildrenFn = vi.fn().mockRejectedValue(new Error('Async children error'));
+
+        const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+        const result = await processMetaChildren(rejectChildrenFn, mockModel);
+
+        expect(result).toEqual([]);
+        expect(consoleSpy).toHaveBeenCalledWith('Error resolving meta children function:', expect.any(Error));
+
+        consoleSpy.mockRestore();
+      });
+
+      test('should handle function-based children returning null and convert to empty array', async () => {
+        const nullChildrenFn = vi.fn().mockReturnValue(null);
+
+        const result = await processMetaChildren(nullChildrenFn, mockModel);
+
+        expect(result).toEqual([]);
+      });
+
+      test('should handle function-based children returning undefined and convert to empty array', async () => {
+        const undefinedChildrenFn = vi.fn().mockReturnValue(undefined);
+
+        const result = await processMetaChildren(undefinedChildrenFn, mockModel);
+
+        expect(result).toEqual([]);
+      });
+    });
+
+    describe('mixed static and function children', () => {
+      test('should handle combination of static and function-based defaultOptions within function children', async () => {
+        const mixedChildrenFn = vi.fn().mockReturnValue([
+          {
+            title: 'Static Options Block',
+            defaultOptions: { use: 'StaticModel', config: 'static' },
+          },
+          {
+            title: 'Dynamic Options Block',
+            defaultOptions: vi.fn().mockReturnValue({ use: 'DynamicModel', config: 'dynamic' }),
+          },
+        ]);
+
+        const result = await processMetaChildren(mixedChildrenFn, mockModel);
+
+        expect(result).toHaveLength(2);
+        expect(result[0].createModelOptions).toEqual({
+          use: 'StaticModel',
+          config: 'static',
+        });
+        expect(result[1].createModelOptions).toEqual({
+          use: 'DynamicModel',
+          config: 'dynamic',
+        });
+      });
+    });
+  });
+
   // ==================== processMetaChildren() FUNCTION ====================
   describe('processMetaChildren()', () => {
     describe('flat children processing', () => {

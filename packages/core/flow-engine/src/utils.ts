@@ -439,27 +439,61 @@ export async function resolveDefaultOptions(
 }
 
 /**
- * 递归处理 FlowModelMeta 的 children，支持多层嵌套和函数形式的 defaultOptions
+ * 解析 FlowModelMeta 中的 children，支持静态数组和函数形式
+ * @param children - 可以是静态数组或返回数组的函数
+ * @param parentModel - 父模型实例，用于传递给函数形式的 children
+ * @returns 解析后的子项数组
+ */
+async function resolveMetaChildren(
+  children: any[] | ((parentModel: FlowModel) => any[] | Promise<any[]>) | undefined,
+  parentModel: FlowModel,
+): Promise<any[]> {
+  if (!children) {
+    return [];
+  }
+
+  if (typeof children === 'function') {
+    try {
+      const result = await children(parentModel);
+      return result || [];
+    } catch (error) {
+      console.error('Error resolving meta children function:', error);
+      return [];
+    }
+  }
+
+  return children;
+}
+
+/**
+ * 递归处理 FlowModelMeta 的 children，支持多层嵌套和函数形式的 defaultOptions 和 children
  *
  * 该函数用于处理具有层次结构的菜单项定义，支持：
  * - 多层嵌套的 children 结构
  * - 函数形式的 defaultOptions，可根据父模型动态生成配置
+ * - 函数形式的 children，可根据父模型动态生成子项
  * - 自动处理菜单项的 key 生成和选项解析
  *
- * @param children - FlowModelMeta 中定义的子项数组
- * @param parentModel - 父模型实例，用于传递给函数形式的 defaultOptions
+ * @param children - FlowModelMeta 中定义的子项数组或函数
+ * @param parentModel - 父模型实例，用于传递给函数形式的 defaultOptions 和 children
  * @param keyPrefix - 菜单项 key 的前缀，用于生成唯一标识
  * @returns 处理后的菜单项数组
  */
-export async function processMetaChildren(children: any[], parentModel: FlowModel, keyPrefix = ''): Promise<any[]> {
+export async function processMetaChildren(
+  children: any[] | ((parentModel: FlowModel) => any[] | Promise<any[]>),
+  parentModel: FlowModel,
+  keyPrefix = '',
+): Promise<any[]> {
+  // 解析 children，支持函数形式
+  const resolvedChildren = await resolveMetaChildren(children, parentModel);
   const result = [];
 
-  for (let i = 0; i < children.length; i++) {
-    const child = children[i];
+  for (let i = 0; i < resolvedChildren.length; i++) {
+    const child = resolvedChildren[i];
     const childKey = `${keyPrefix}${child.title || `item-${i}`}`;
 
     // 如果有嵌套的 children，创建分组
-    if (child.children && child.children.length > 0) {
+    if (child.children) {
       const nestedChildren = await processMetaChildren(child.children, parentModel, `${childKey}.`);
 
       result.push({
@@ -502,26 +536,28 @@ export async function processMetaChildren(children: any[], parentModel: FlowMode
  * - 数据表选择菜单
  * - 相应的 stepParams 配置
  *
- * @param children - 数据区块 FlowModelMeta 中定义的子项数组
+ * @param children - 数据区块 FlowModelMeta 中定义的子项数组或函数
  * @param parentModel - 父模型实例
  * @param dataSources - 可用的数据源列表
  * @param keyPrefix - 菜单项 key 的前缀
  * @returns 处理后的包含数据源菜单的菜单项数组
  */
 async function processDataBlockChildren(
-  children: any[],
+  children: any[] | ((parentModel: FlowModel) => any[] | Promise<any[]>),
   parentModel: FlowModel,
   dataSources: any[],
   keyPrefix = '',
 ): Promise<any[]> {
+  // 解析 children，支持函数形式
+  const resolvedChildren = await resolveMetaChildren(children, parentModel);
   const result = [];
 
-  for (let i = 0; i < children.length; i++) {
-    const child = children[i];
+  for (let i = 0; i < resolvedChildren.length; i++) {
+    const child = resolvedChildren[i];
     const childKey = `${keyPrefix}${child.title || `item-${i}`}`;
 
     // 如果有嵌套的 children，递归处理
-    if (child.children && child.children.length > 0) {
+    if (child.children) {
       const nestedChildren = await processDataBlockChildren(child.children, parentModel, dataSources, `${childKey}.`);
 
       result.push({
@@ -590,7 +626,7 @@ export function buildActionItems(
     const meta = ModelClass.meta;
 
     // 如果模型定义了 children，创建包含子菜单的分组项
-    if (meta?.children && meta.children.length > 0) {
+    if (meta?.children) {
       const item: any = {
         key: className,
         label: meta.title || className,
@@ -749,7 +785,7 @@ export function buildBlockItems(
             const meta = (ModelClass as any).meta;
 
             // 如果模型定义了 children，为每个子项创建数据源菜单
-            if (meta?.children && meta.children.length > 0) {
+            if (meta?.children) {
               const childrenWithDataSources = await processDataBlockChildren(
                 meta.children,
                 model,
@@ -814,7 +850,7 @@ export function buildBlockItems(
             const meta = (ModelClass as any).meta;
 
             // 如果模型定义了 children，为每个子项创建数据源菜单
-            if (meta?.children && meta.children.length > 0) {
+            if (meta?.children) {
               const childrenWithDataSources = await processDataBlockChildren(
                 meta.children,
                 model,
@@ -874,7 +910,7 @@ export function buildBlockItems(
       const meta = (ModelClass as any).meta;
 
       // 如果模型定义了 children，创建包含子菜单的分组项
-      if (meta?.children && meta.children.length > 0) {
+      if (meta?.children) {
         const item = {
           key: className,
           label: meta.title || className,
