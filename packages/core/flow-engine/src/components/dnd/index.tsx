@@ -45,6 +45,8 @@ export const Droppable: FC<{ model: FlowModel; children: React.ReactNode }> = ({
       style={{
         position: 'relative',
         opacity: isActiveDroppable ? 0.3 : 1,
+        outline: isActiveDroppable ? '2px solid var(--colorBorderSettingsHover)' : 'none',
+        borderRadius: isActiveDroppable ? model.ctx.globals.themeToken.borderRadiusLG : 'none',
       }}
     >
       {children}
