@@ -574,6 +574,9 @@ const FlowsFloatContextMenuWithModel: React.FC<ModelProvidedProps> = observer(
       </div>
     );
   },
+  {
+    displayName: 'FlowsFloatContextMenuWithModel',
+  },
 );
 
 // 通过useModelById hook获取model
@@ -613,6 +616,9 @@ const FlowsFloatContextMenuWithModelById: React.FC<ModelByIdProps> = observer(
         {children}
       </FlowsFloatContextMenuWithModel>
     );
+  },
+  {
+    displayName: 'FlowsFloatContextMenuWithModelById',
   },
 );
 

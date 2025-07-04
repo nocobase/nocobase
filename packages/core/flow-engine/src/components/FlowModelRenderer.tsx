@@ -281,6 +281,9 @@ const FlowModelRendererCore: React.FC<{
         );
     }
   },
+  {
+    displayName: 'FlowModelRendererCore',
+  },
 );
 
 /**
