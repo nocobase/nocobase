@@ -476,11 +476,15 @@ TableModel.registerFlow({
           sourceId,
           filterByTk,
         } = ctx.model.props.dataSourceOptions;
-        const collection = ctx.globals.dataSourceManager.getCollection(dataSourceKey, collectionName);
+        const collection = ctx.globals.dataSourceManager.getCollection(
+          dataSourceKey,
+          associationName ? associationName.split('.').slice(-1)[0] : collectionName,
+        );
         ctx.model.collection = collection;
         const resource = new MultiRecordResource();
         resource.setDataSourceKey(dataSourceKey);
-        resource.setResourceName(collectionName);
+        resource.setResourceName(associationName || collectionName);
+        resource.setSourceId(sourceId);
         resource.setAPIClient(ctx.globals.api);
         resource.setPageSize(20);
         ctx.model.resource = resource;

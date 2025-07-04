@@ -45,7 +45,7 @@ export interface AddActionButtonProps {
   /**
    * 菜单项
    */
-  items: SubModelItemsType;
+  items?: SubModelItemsType;
 }
 
 /**
@@ -65,7 +65,7 @@ const AddActionButtonCore: React.FC<AddActionButtonProps> = ({
   subModelKey = 'actions',
   children,
   subModelType = 'array',
-  items,
+  items = [],
   filter,
   onModelCreated,
   onSubModelAdded,
