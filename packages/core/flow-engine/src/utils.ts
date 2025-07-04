@@ -569,23 +569,21 @@ async function processDataBlockChildren(
     } else {
       // 叶子节点，为其创建数据源菜单
       const defaultOptions = await resolveDefaultOptions(child.defaultOptions, parentModel);
-
-      result.push({
-        key: childKey,
-        label: child.title,
-        icon: child.icon,
-        children: dataSources
-          .filter((d) => {
-            return !child.collection || d.key === child.collection.dataSourceKey;
-          })
-          .map((dataSource) => ({
-            key: `${childKey}.${dataSource.key}`,
-            label: dataSource.displayName,
-            children: dataSource.collections
-              .filter((c) => {
-                return !child.collection || c.name === child.collection.name;
-              })
-              .map((collection) => ({
+      let childrenCount = 0;
+      const children = dataSources
+        .filter((d) => {
+          return !child.collection || d.key === child.collection.dataSourceKey;
+        })
+        .map((dataSource) => ({
+          key: `${childKey}.${dataSource.key}`,
+          label: dataSource.displayName,
+          children: dataSource.collections
+            .filter((c) => {
+              return !child.collection || c.name === child.collection.name;
+            })
+            .map((collection) => {
+              childrenCount++;
+              return {
                 key: `${childKey}.${dataSource.key}.${collection.name}`,
                 label: collection.title || collection.name,
                 createModelOptions: {
@@ -597,15 +595,33 @@ async function processDataBlockChildren(
                   stepParams: {
                     dataSource: {
                       setDs: {
+                        ...defaultOptions?.stepParams?.dataSource?.setDs,
                         dataSourceKey: dataSource.key,
                         collectionName: collection.name,
                       },
                     },
                   },
                 },
-              })),
-          })),
-      });
+              };
+            }),
+        }));
+
+      let item = {
+        key: childKey,
+        label: child.title,
+        icon: child.icon,
+        children,
+      };
+      if (childrenCount === 1) {
+        item = {
+          ...children[0].children[0],
+          key: childKey,
+          label: child.title,
+          icon: child.icon,
+        };
+      }
+
+      result.push(item);
     }
   }
 
@@ -792,24 +808,54 @@ export function buildBlockItems(
           dataBlocks.map(async ({ className, ModelClass }) => {
             const meta = _.cloneDeep((ModelClass as any).meta);
             const currentFlow = model.parent?.getSharedContext()?.currentFlow;
-            if (currentFlow && currentFlow.shared.currentBlockModel && !currentFlow.runtimeArgs?.filterByTk) {
-              meta.children = [
-                {
-                  key: 'otherCollections',
-                  title: 'Other collections',
-                  defaultOptions: {
-                    use: className,
+            if (currentFlow && currentFlow.shared.currentBlockModel) {
+              if (!currentFlow.runtimeArgs?.filterByTk) {
+                meta.children = [
+                  {
+                    key: 'otherCollections',
+                    title: escapeT('Other collections'),
+                    defaultOptions: {
+                      use: className,
+                    },
                   },
-                },
-                {
-                  key: 'currentCollections',
-                  title: 'Current collections',
-                  defaultOptions: {
-                    use: className,
+                  {
+                    key: 'currentCollections',
+                    title: escapeT('Current collections'),
+                    defaultOptions: {
+                      use: className,
+                    },
+                    collection: currentFlow.shared.currentBlockModel.collection,
                   },
-                  collection: currentFlow.shared.currentBlockModel.collection,
-                },
-              ];
+                ];
+              } else {
+                const children = [
+                  className === 'FormModel' && {
+                    // current record
+                    key: 'currentRecord',
+                    title: escapeT('Current record'),
+                    collection: currentFlow.shared.currentBlockModel.collection,
+                    defaultOptions: {
+                      use: className,
+                      stepParams: {
+                        dataSource: {
+                          setDs: {
+                            filterByTk: '{{ctx.shared.currentFlow.runtimeArgs.filterByTk}}',
+                          },
+                        },
+                      },
+                    },
+                  },
+                  {
+                    // other records
+                    key: 'otherRecords',
+                    title: escapeT('Other records'),
+                    defaultOptions: {
+                      use: className,
+                    },
+                  },
+                ].filter(Boolean);
+                meta.children = children;
+              }
             }
 
             // 如果模型定义了 children，为每个子项创建数据源菜单
@@ -847,6 +893,7 @@ export function buildBlockItems(
                       stepParams: {
                         dataSource: {
                           setDs: {
+                            ...defaultOptions?.stepParams?.dataSource?.setDs,
                             dataSourceKey: dataSource.key,
                             collectionName: collection.name,
                           },
@@ -914,6 +961,7 @@ export function buildBlockItems(
                         dataSource: {
                           ..._.cloneDeep(defaultOptions?.stepParams?.dataSource),
                           setDs: {
+                            ...defaultOptions?.stepParams?.dataSource?.setDs,
                             dataSourceKey: dataSource.key,
                             collectionName: collection.name,
                           },
