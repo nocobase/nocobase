@@ -630,8 +630,9 @@ async function processDataBlockChildren(
           icon: child.icon,
         };
       }
-
-      result.push(item);
+      if (childrenCount > 0) {
+        result.push(item);
+      }
     }
   }
 
@@ -817,7 +818,6 @@ export function buildBlockItems(
             const collection: Collection = currentFlow.shared.currentBlockModel?.collection;
             // 检查collection是否有关系字段，可以通过Collection的新方法来判断
             const relatedCollections = collection?.getRelatedCollections() || [];
-
             if (currentFlow && collection) {
               if (!currentFlow.runtimeArgs?.filterByTk) {
                 meta.children = [
@@ -837,7 +837,10 @@ export function buildBlockItems(
                     collections: [collection],
                   },
                 ].filter(Boolean);
-              } else {
+              } else if (
+                !currentFlow.runtimeArgs.collectionName ||
+                currentFlow.runtimeArgs.collectionName === collection.name
+              ) {
                 const children = [
                   ['FormModel', 'DetailsModel'].includes(className) && {
                     // current record
@@ -874,6 +877,60 @@ export function buildBlockItems(
                       };
                     },
                     collections: relatedCollections,
+                  },
+                  {
+                    // other records
+                    key: 'otherRecords',
+                    title: escapeT('Other records'),
+                    defaultOptions: {
+                      use: className,
+                    },
+                  },
+                ].filter(Boolean);
+                meta.children = children;
+              } else {
+                const children = [
+                  className === 'FormModel' && {
+                    // current record
+                    key: 'currentRecord',
+                    title: escapeT('Current record'),
+                    collections: [collection.dataSource.getCollection(currentFlow.runtimeArgs.collectionName)],
+                    defaultOptions: {
+                      use: className,
+                      stepParams: {
+                        dataSource: {
+                          setDs: {
+                            dataSourceKey: collection.dataSource.key,
+                            collectionName: '',
+                            associationName: `${collection.name}.${currentFlow.runtimeArgs.collectionName}`,
+                            sourceId: '{{ctx.shared.currentFlow.runtimeArgs.sourceId}}',
+                            filterByTk: '{{ctx.shared.currentFlow.runtimeArgs.filterByTk}}',
+                          },
+                        },
+                      },
+                    },
+                  },
+                  {
+                    key: 'associationRecords',
+                    title: escapeT('Association records'),
+                    defaultOptions: (parentModel: DataBlockModel, extra) => {
+                      return {
+                        use: className,
+                        stepParams: {
+                          dataSource: {
+                            setDs: {
+                              dataSourceKey: extra.dataSourceKey,
+                              collectionName: '',
+                              associationName: currentFlow.runtimeArgs.collectionName + '.' + extra.collectionName,
+                              sourceId: '{{ctx.shared.currentFlow.runtimeArgs.filterByTk}}',
+                            },
+                          },
+                        },
+                      };
+                    },
+                    collections: collection.dataSource
+                      .getCollection(currentFlow.runtimeArgs.collectionName)
+                      .getRelatedCollections(),
                   },
                   {
                     // other records

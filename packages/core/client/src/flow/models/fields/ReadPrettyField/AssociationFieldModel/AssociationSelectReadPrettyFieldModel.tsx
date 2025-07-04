@@ -16,14 +16,14 @@ import { FlowPage } from '../../../../FlowPage';
 import { AssociationReadPrettyFieldModel } from './AssociationReadPrettyFieldModel';
 import { getUniqueKeyFromCollection } from '../../../../../collection-manager/interfaces/utils';
 
-const LinkToggleWrapper = ({ enableLink, children, currentRecord, ...props }) => {
+const LinkToggleWrapper = ({ enableLink, children, currentRecord, parentRecord, ...props }) => {
   return enableLink ? (
     <Button
       style={{ padding: 0, height: 'auto' }}
       type="link"
       {...props}
       onClick={(e) => {
-        props.onClick(e, currentRecord);
+        props.onClick(e, currentRecord, parentRecord);
       }}
     >
       {children}
@@ -53,6 +53,7 @@ export class AssociationSelectReadPrettyFieldModel extends AssociationReadPretty
   public render() {
     const { fieldNames, enableLink = true } = this.props;
     const value = this.getValue();
+    const parentRecord = this.getSharedContext()?.currentRecord;
     if (!value || !fieldNames) return null;
     const arrayValue = castArray(value);
     const field = this.subModels.field as FlowModel;
@@ -77,7 +78,7 @@ export class AssociationSelectReadPrettyFieldModel extends AssociationReadPretty
           return (
             <React.Fragment key={index}>
               {index > 0 && ', '}
-              <LinkToggleWrapper enableLink={enableLink} {...this.props} currentRecord={v}>
+              <LinkToggleWrapper enableLink={enableLink} {...this.props} parentRecord={parentRecord} currentRecord={v}>
                 {content}
               </LinkToggleWrapper>
             </React.Fragment>
@@ -137,12 +138,13 @@ AssociationSelectReadPrettyFieldModel.registerFlow({
         enableLink: true,
       },
       handler(ctx, params) {
-        ctx.model.onClick = (e, currentRecord) => {
+        ctx.model.onClick = (e, currentRecord, parentRecord) => {
           const targetCollection = ctx.model.collectionField.targetCollection;
           ctx.model.dispatchEvent('click', {
             event: e,
             filterByTk: currentRecord[targetCollection.filterTargetKey],
             collectionName: targetCollection.name,
+            sourceId: parentRecord[ctx.model.collectionField.collection.filterTargetKey],
           });
           ctx.model.setStepParams('FormModel.default', 'step1', {
             collectionName: targetCollection.name,
