@@ -23,22 +23,22 @@ import {
 import { tval } from '@nocobase/utils/client';
 import { FormProvider } from '@formily/react';
 import { FormButtonGroup, FormLayout } from '@formily/antd-v5';
-import { Pagination } from 'antd';
+import { Pagination, theme } from 'antd';
 import _ from 'lodash';
 import { createForm, Form } from '@formily/core';
 import React, { useRef } from 'react';
 import { ActionModel } from '../../base/ActionModel';
 import { DataBlockModel } from '../../base/BlockModel';
-import { DetailFormItemModel } from './DetailFormItemModel';
+import { DetailItemModel } from './DetailItemModel';
 
 const AddDetailField = ({ model }) => {
   const items = buildFieldItems(
     model.collection.getFields(),
     model,
     'ReadPrettyFieldModel',
-    'detailFormItem',
+    'detailItem',
     ({ defaultOptions, fieldPath }) => ({
-      use: 'DetailFormItemModel',
+      use: 'DetailItemModel',
       stepParams: {
         default: {
           step1: {
@@ -67,16 +67,17 @@ const AddDetailField = ({ model }) => {
   );
   return (
     <AddFieldButton
+      collection={model.resourceName}
       model={model}
-      subModelKey={'detailFormItem'}
+      subModelKey={'detailItem'}
       subModelBaseClass="DetailFormItemModel"
       items={items}
-      onModelCreated={async (item: DetailFormItemModel) => {
-        const field = item.subModels.field;
+      onModelCreated={async (item: DetailItemModel) => {
+        const field: any = item.subModels.field;
         await field.applyAutoFlows();
       }}
-      onSubModelAdded={async (item: DetailFormItemModel) => {
-        const field = item.subModels.field;
+      onSubModelAdded={async (item: DetailItemModel) => {
+        const field: any = item.subModels.field;
         model.addAppends(field.fieldPath, true);
       }}
     />
@@ -84,45 +85,47 @@ const AddDetailField = ({ model }) => {
 };
 
 export class DetailsModel extends DataBlockModel {
-  form: Form;
   declare resource: MultiRecordResource | SingleRecordResource;
 
   renderComponent() {
+    const { token } = theme.useToken();
+
     const resource: any = this.resource;
     const onPageChange = (page) => {
       resource.setPage(page);
       resource.refresh();
     };
-    console.log(this.subModels);
     return (
       <>
-        <FormProvider form={this.form}>
+        <div style={{ padding: token.padding, textAlign: 'right' }}>
           <AddActionButton model={this} items={buildActionItems(this, 'DetailActionModel')} />
-          <FormButtonGroup style={{ marginTop: 16 }}>
-            {this.mapSubModels('actions', (action) => (
-              <FlowModelRenderer
-                key={action.uid}
-                model={action}
-                showFlowSettings={{ showBackground: false, showBorder: false }}
-                sharedContext={{ currentRecord: this.resource.getData() }}
-              />
-            ))}
-          </FormButtonGroup>
-          <FormLayout layout={'vertical'}>
-            {this.mapSubModels('detailFormItem', (field) => (
+        </div>
+        <FormButtonGroup style={{ marginTop: 16 }}>
+          {this.mapSubModels('actions', (action) => (
+            <FlowModelRenderer
+              key={action.uid}
+              model={action}
+              showFlowSettings={{ showBackground: false, showBorder: false }}
+              sharedContext={{ currentRecord: this.resource.getData() }}
+            />
+          ))}
+        </FormButtonGroup>
+        <FormLayout layout={'vertical'}>
+          {this.mapSubModels('detailItem', (field: DetailItemModel) => {
+            return (
               <FlowModelRenderer
                 key={field.uid}
                 model={field}
                 showFlowSettings={{ showBorder: false }}
                 sharedContext={{ currentRecord: this.resource.getData() }}
               />
-            ))}
-          </FormLayout>
-          <AddDetailField model={this} />
-        </FormProvider>
+            );
+          })}
+        </FormLayout>
+        <AddDetailField model={this} />
         <div
           style={{
-            padding: '10px',
+            padding: token.padding,
             textAlign: 'center',
           }}
         >
@@ -171,10 +174,7 @@ DetailsModel.registerFlow({
         dataSourceKey: 'main',
       },
       async handler(ctx, params) {
-        const form = ctx.extra.form || createForm();
-        form.setPattern('readPretty');
         const filterByTk = ctx.shared?.currentFlow?.extra?.filterByTk;
-        ctx.model.form = form;
         if (!filterByTk) {
           ctx.model.collection = ctx.globals.dataSourceManager.getCollection(
             params.dataSourceKey,
@@ -186,9 +186,7 @@ DetailsModel.registerFlow({
           resource.setAPIClient(ctx.globals.api);
           resource.setPageSize(1);
           ctx.model.resource = resource;
-          ctx.model.resource.on('refresh', () => {
-            ctx.model.form.setInitialValues(ctx.model.resource.getData()[0]);
-          });
+
           await ctx.model.applySubModelsAutoFlows('fields');
         } else {
           const resource = new SingleRecordResource();
@@ -197,7 +195,6 @@ DetailsModel.registerFlow({
           resource.setAPIClient(ctx.globals.api);
           ctx.model.resource.setFilterByTk(filterByTk);
           await ctx.model.resource.refresh();
-          ctx.model.form.setInitialValues(ctx.model.resource.getData());
         }
       },
     },
@@ -215,4 +212,5 @@ DetailsModel.define({
   defaultOptions: {
     use: 'DetailModel',
   },
+  sort: 300,
 });

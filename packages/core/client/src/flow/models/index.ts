@@ -25,7 +25,7 @@ export * from './data-blocks/table/TableModel';
 export * from './data-blocks/tabulator/TabulatorModel';
 export * from './data-blocks/tanstack-table';
 export * from './data-blocks/details';
-export * from './data-blocks/details/DetailFormItemModel';
+export * from './data-blocks/details/DetailItemModel';
 export * from './data-blocks/details/DetailActionModel';
 export * from './fields';
 export * from './filter-blocks/form/FilterFormActionModel';
