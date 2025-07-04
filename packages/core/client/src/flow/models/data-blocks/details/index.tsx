@@ -167,21 +167,27 @@ DetailsModel.registerFlow({
         dataSourceKey: 'main',
       },
       async handler(ctx, params) {
-        const { dataSourceKey, collectionName, assocationName, sourceId, filterByTk } =
-          ctx.model.props.dataSourceOptions || {};
+        const {
+          dataSourceKey = params.dataSourceKey, // 兼容一下旧的数据, TODO: remove
+          collectionName = params.collectionName, // 兼容一下旧的数据, TODO: remove
+          associationName,
+          sourceId,
+          filterByTk,
+        } = ctx.model.props.dataSourceOptions || {};
         if (!filterByTk) {
           ctx.model.collection = ctx.globals.dataSourceManager.getCollection(
-            params.dataSourceKey,
-            params.collectionName || 'users',
+            dataSourceKey || params.dataSourceKey,
+            associationName ? associationName.split('.').slice(-1)[0] : collectionName,
           );
           const resource = new MultiRecordResource();
-          resource.setDataSourceKey(params.dataSourceKey);
-          resource.setResourceName(params.collectionName);
+          resource.setDataSourceKey(dataSourceKey);
+          resource.setResourceName(associationName || collectionName);
+          resource.setSourceId(sourceId);
           resource.setAPIClient(ctx.globals.api);
           resource.setPageSize(1);
           ctx.model.resource = resource;
 
-          await ctx.model.applySubModelsAutoFlows('fields');
+          await ctx.model.applySubModelsAutoFlows('detailItem');
         } else {
           if (!ctx.model.collection) {
             ctx.model.collection = ctx.globals.dataSourceManager.getCollection(dataSourceKey, collectionName);
