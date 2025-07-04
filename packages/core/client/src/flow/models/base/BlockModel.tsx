@@ -12,6 +12,7 @@ import React from 'react';
 import { BlockItemCard } from '../common/BlockItemCard';
 import { observable } from '@formily/reactive';
 import { Observer } from '@formily/reactive-react';
+import { Schema } from '@formily/json-schema';
 
 export class BlockModel<T = DefaultStructure> extends FlowModel<T> {
   decoratorProps: Record<string, any> = observable({});
@@ -150,6 +151,25 @@ export class DataBlockModel<T = DefaultStructure> extends BlockModel<T> {
     }
   }
 }
+
+DataBlockModel.registerFlow({
+  key: 'dataSource',
+  auto: true,
+  steps: {
+    setDs: {
+      handler(ctx, params) {
+        ctx.logger.info('params', params);
+        ctx.model.setProps('dataSourceOptions', {
+          dataSourceKey: params.dataSourceKey,
+          collectionName: params.collectionName,
+          assocationName: params.assocationName,
+          sourceId: Schema.compile(params.sourceId, { ctx }),
+          filterByTk: Schema.compile(params.filterByTk, { ctx }),
+        });
+      },
+    },
+  },
+});
 
 DataBlockModel.define({ hide: true });
 

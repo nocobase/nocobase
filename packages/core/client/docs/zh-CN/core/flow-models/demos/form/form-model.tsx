@@ -78,7 +78,7 @@ FormModel.registerFlow({
   steps: {
     step1: {
       async handler(ctx, params) {
-        ctx.model.form = ctx.extra.form || createForm();
+        ctx.model.form = ctx.runtimeArgs.form || createForm();
         if (ctx.model.collection) {
           return;
         }
@@ -88,8 +88,8 @@ FormModel.registerFlow({
         resource.setResourceName(params.collectionName);
         resource.setAPIClient(api);
         ctx.model.resource = resource;
-        if (ctx.extra.filterByTk) {
-          resource.setFilterByTk(ctx.extra.filterByTk);
+        if (ctx.runtimeArgs.filterByTk) {
+          resource.setFilterByTk(ctx.runtimeArgs.filterByTk);
           await resource.refresh();
           ctx.model.form.setInitialValues(resource.getData());
         }

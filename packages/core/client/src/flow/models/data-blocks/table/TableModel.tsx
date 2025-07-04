@@ -469,11 +469,18 @@ TableModel.registerFlow({
           ctx.model.applySubModelsAutoFlows('columns');
           return;
         }
-        const collection = ctx.globals.dataSourceManager.getCollection(params.dataSourceKey, params.collectionName);
+        const {
+          dataSourceKey = params.dataSourceKey, // 先兼容一下旧的数据, TODO: remove
+          collectionName = params.collectionName, // 先兼容一下旧的数据, TODO: remove
+          assocationName,
+          sourceId,
+          filterByTk,
+        } = ctx.model.props.dataSourceOptions;
+        const collection = ctx.globals.dataSourceManager.getCollection(dataSourceKey, collectionName);
         ctx.model.collection = collection;
         const resource = new MultiRecordResource();
-        resource.setDataSourceKey(params.dataSourceKey);
-        resource.setResourceName(params.collectionName);
+        resource.setDataSourceKey(dataSourceKey);
+        resource.setResourceName(collectionName);
         resource.setAPIClient(ctx.globals.api);
         resource.setPageSize(20);
         ctx.model.resource = resource;
