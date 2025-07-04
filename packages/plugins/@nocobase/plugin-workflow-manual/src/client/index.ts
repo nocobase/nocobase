@@ -22,7 +22,7 @@ import {
   addBlockButton_deprecated,
 } from './instruction/SchemaConfig';
 import { addCustomFormField, addCustomFormField_deprecated } from './instruction/forms/custom';
-import { MANUAL_TASK_TYPE } from '../common/constants';
+import { TASK_TYPE_MANUAL } from '../common/constants';
 
 export default class extends Plugin {
   async afterAdd() {
@@ -38,7 +38,7 @@ export default class extends Plugin {
     const workflow = this.app.pm.get('workflow') as WorkflowPlugin;
     workflow.registerInstruction('manual', Manual);
 
-    workflow.registerTaskType(MANUAL_TASK_TYPE, manualTodo);
+    workflow.registerTaskType(TASK_TYPE_MANUAL, manualTodo);
 
     this.app.schemaInitializerManager.add(addBlockButton_deprecated);
     this.app.schemaInitializerManager.add(addBlockButton);
