@@ -11,6 +11,7 @@ import { tval } from '@nocobase/utils/client';
 import { BaseItem } from '@formily/antd-v5';
 import React from 'react';
 import { castArray } from 'lodash';
+import { reactive } from '@nocobase/flow-engine';
 import { FieldModel } from '../../base/FieldModel';
 
 export class DetailItemModel extends FieldModel {
@@ -18,11 +19,11 @@ export class DetailItemModel extends FieldModel {
   setDecoratorProps(props) {
     this.decoratorProps = { ...this.decoratorProps, ...props };
   }
-
   render() {
+    const resource: any = this.parent.resource;
     const fieldModel = this.subModels.field as any;
-    const values = castArray(this.ctx.shared.currentRecord);
-    const value = values[0][this.fieldPath];
+    const values = castArray(resource.getData()).filter(Boolean);
+    const value = values[0] ? values[0][this.fieldPath] : null;
     fieldModel.setSharedContext({
       ...this.ctx.shared,
       value,

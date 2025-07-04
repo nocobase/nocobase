@@ -10,8 +10,8 @@
 import { EditOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
 import { observer } from '@formily/reactive-react';
+import { castArray } from 'lodash';
 import {
-  FlowModel,
   MultiRecordResource,
   AddActionButton,
   AddFieldButton,
@@ -21,13 +21,10 @@ import {
   buildActionItems,
 } from '@nocobase/flow-engine';
 import { tval } from '@nocobase/utils/client';
-import { FormProvider } from '@formily/react';
 import { FormButtonGroup, FormLayout } from '@formily/antd-v5';
 import { Pagination, theme } from 'antd';
 import _ from 'lodash';
-import { createForm, Form } from '@formily/core';
 import React, { useRef } from 'react';
-import { ActionModel } from '../../base/ActionModel';
 import { DataBlockModel } from '../../base/BlockModel';
 import { DetailItemModel } from './DetailItemModel';
 
@@ -89,7 +86,7 @@ export class DetailsModel extends DataBlockModel {
 
   renderComponent() {
     const { token } = theme.useToken();
-
+    const { filterByTk } = this.props.dataSourceOptions;
     const resource: any = this.resource;
     const onPageChange = (page) => {
       resource.setPage(page);
@@ -106,38 +103,33 @@ export class DetailsModel extends DataBlockModel {
               key={action.uid}
               model={action}
               showFlowSettings={{ showBackground: false, showBorder: false }}
-              sharedContext={{ currentRecord: this.resource.getData() }}
+              sharedContext={{ record: this.resource.getData() }}
             />
           ))}
         </FormButtonGroup>
         <FormLayout layout={'vertical'}>
           {this.mapSubModels('detailItem', (field: DetailItemModel) => {
-            return (
-              <FlowModelRenderer
-                key={field.uid}
-                model={field}
-                showFlowSettings={{ showBorder: false }}
-                sharedContext={{ currentRecord: this.resource.getData() }}
-              />
-            );
+            return <FlowModelRenderer key={field.uid} model={field} showFlowSettings={{ showBorder: false }} />;
           })}
         </FormLayout>
         <AddDetailField model={this} />
-        <div
-          style={{
-            padding: token.padding,
-            textAlign: 'center',
-          }}
-        >
-          <Pagination
-            simple
-            pageSize={1}
-            defaultCurrent={resource.getPage()}
-            total={resource.getTotalPage()}
-            onChange={onPageChange}
-            style={{ display: 'inline-block' }}
-          />
-        </div>
+        {!filterByTk && (
+          <div
+            style={{
+              padding: token.padding,
+              textAlign: 'center',
+            }}
+          >
+            <Pagination
+              simple
+              pageSize={1}
+              defaultCurrent={resource.getPage()}
+              total={resource.getTotalPage()}
+              onChange={onPageChange}
+              style={{ display: 'inline-block' }}
+            />
+          </div>
+        )}
       </>
     );
   }
@@ -146,6 +138,7 @@ export class DetailsModel extends DataBlockModel {
 DetailsModel.registerFlow({
   key: 'default',
   auto: true,
+  sort: 150,
   steps: {
     step1: {
       paramsRequired: true,
@@ -174,11 +167,12 @@ DetailsModel.registerFlow({
         dataSourceKey: 'main',
       },
       async handler(ctx, params) {
-        const filterByTk = ctx.shared?.currentFlow?.extra?.filterByTk;
+        const { dataSourceKey, collectionName, assocationName, sourceId, filterByTk } =
+          ctx.model.props.dataSourceOptions || {};
         if (!filterByTk) {
           ctx.model.collection = ctx.globals.dataSourceManager.getCollection(
             params.dataSourceKey,
-            params.collectionName,
+            params.collectionName || 'users',
           );
           const resource = new MultiRecordResource();
           resource.setDataSourceKey(params.dataSourceKey);
@@ -189,12 +183,17 @@ DetailsModel.registerFlow({
 
           await ctx.model.applySubModelsAutoFlows('fields');
         } else {
-          const resource = new SingleRecordResource();
-          resource.setDataSourceKey(params.dataSourceKey);
-          resource.setResourceName(params.collectionName);
-          resource.setAPIClient(ctx.globals.api);
-          ctx.model.resource.setFilterByTk(filterByTk);
-          await ctx.model.resource.refresh();
+          if (!ctx.model.collection) {
+            ctx.model.collection = ctx.globals.dataSourceManager.getCollection(dataSourceKey, collectionName);
+            const resource = new SingleRecordResource();
+            resource.setDataSourceKey(dataSourceKey);
+            resource.setResourceName(collectionName);
+            resource.setAPIClient(ctx.globals.api);
+            ctx.model.resource = resource;
+            if (filterByTk) {
+              ctx.model.resource.setFilterByTk(filterByTk);
+            }
+          }
         }
       },
     },
@@ -210,7 +209,7 @@ DetailsModel.define({
   title: tval('Details'),
   group: 'Content',
   defaultOptions: {
-    use: 'DetailModel',
+    use: 'DetailsModel',
   },
   sort: 300,
 });
