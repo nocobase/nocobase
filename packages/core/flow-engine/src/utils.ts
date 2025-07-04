@@ -860,7 +860,7 @@ export function buildBlockItems(
                   },
                   relatedCollections.length > 0 && {
                     key: 'associationRecords',
-                    title: escapeT('Association records'),
+                    title: escapeT('Associated records'),
                     defaultOptions: (parentModel: DataBlockModel, extra) => {
                       return {
                         use: className,
@@ -912,7 +912,7 @@ export function buildBlockItems(
                   },
                   {
                     key: 'associationRecords',
-                    title: escapeT('Association records'),
+                    title: escapeT('Associated records'),
                     defaultOptions: (parentModel: DataBlockModel, extra) => {
                       return {
                         use: className,
