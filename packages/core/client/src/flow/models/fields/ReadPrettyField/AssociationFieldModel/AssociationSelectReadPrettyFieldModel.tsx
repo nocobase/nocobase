@@ -54,8 +54,7 @@ export class AssociationSelectReadPrettyFieldModel extends AssociationReadPretty
     const { fieldNames, enableLink = true } = this.props;
     const value = this.getValue();
     const parentRecord = this.getSharedContext()?.currentRecord;
-    if (!value) return null;
-
+    if (!value || !fieldNames) return null;
     const arrayValue = castArray(value);
     const field = this.subModels.field as FlowModel;
     return (
