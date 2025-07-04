@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-license",
-  "version": "1.8.0-beta.13",
+  "version": "1.8.0-alpha.14",
   "main": "dist/server/index.js",
   "displayName": "License settings",
   "displayName.zh-CN": "授权设置",
