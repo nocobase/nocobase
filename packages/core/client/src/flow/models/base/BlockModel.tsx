@@ -127,13 +127,20 @@ export class DataBlockModel<T = DefaultStructure> extends BlockModel<T> {
   }
 
   get title() {
-    return (
-      this.translate(this._title) ||
-      `
-    ${this.collection.title} > 
-    ${this.collection.dataSource.displayName} > 
-    ${this.translate(this.constructor['meta']?.title || this.constructor.name)}`
-    );
+    return this.translate(this._title) || this.defaultBlockTitle();
+  }
+
+  protected defaultBlockTitle() {
+    let collectionTitle = this.collection.title;
+    if (this.resource instanceof BaseRecordResource && this.resource.getSourceId()) {
+      const resourceName = this.resource.getResourceName();
+      const collectionNames = resourceName.split('.');
+      const collections = collectionNames.map((name) => this.collection.dataSource.getCollection(name));
+      collectionTitle = collections.map((collection) => `${collection.title}`).join(' > ');
+    }
+    return `
+    ${this.translate(this.constructor['meta']?.title || this.constructor.name)}:
+    ${collectionTitle}`;
   }
 
   addAppends(fieldPath: string, refresh = false) {

@@ -193,6 +193,8 @@ function createCurrentRecordMenuItem(className: string, collection: Collection, 
         dataSource: {
           setDs: {
             filterByTk: '{{ctx.shared.currentFlow.runtimeArgs.filterByTk}}',
+            collectionName: collection.name,
+            dataSourceKey: collection.dataSource.key,
           },
         },
       },

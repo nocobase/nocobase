@@ -853,6 +853,7 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     if (!this.flowEngine) {
       throw new Error('FlowEngine is not set on this model. Please set flowEngine before saving.');
     }
+    this.clearAutoFlowCache();
     this.observerDispose();
     return this.flowEngine.removeModel(this.uid);
   }
@@ -869,6 +870,7 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
       throw new Error('FlowEngine is not set on this model. Please set flowEngine before deleting.');
     }
     this.observerDispose();
+    this.clearAutoFlowCache();
     // 从 FlowEngine 中销毁模型
     return this.flowEngine.destroyModel(this.uid);
   }
