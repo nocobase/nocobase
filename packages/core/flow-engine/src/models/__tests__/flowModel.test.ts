@@ -883,8 +883,8 @@ describe('FlowModel', () => {
 
           await parentModel.applySubModelsAutoFlows('children', runtimeData, sharedData);
 
-          expect(child1.applyAutoFlows).toHaveBeenCalledWith(runtimeData);
-          expect(child2.applyAutoFlows).toHaveBeenCalledWith(runtimeData);
+          expect(child1.applyAutoFlows).toHaveBeenCalledWith(runtimeData, false);
+          expect(child2.applyAutoFlows).toHaveBeenCalledWith(runtimeData, false);
           expect(child1.setSharedContext).toHaveBeenCalledWith(sharedData);
           expect(child2.setSharedContext).toHaveBeenCalledWith(sharedData);
         });
@@ -902,7 +902,7 @@ describe('FlowModel', () => {
 
           await parentModel.applySubModelsAutoFlows('child', runtimeData);
 
-          expect(child.applyAutoFlows).toHaveBeenCalledWith(runtimeData);
+          expect(child.applyAutoFlows).toHaveBeenCalledWith(runtimeData, false);
         });
 
         test('should handle empty subModels gracefully', async () => {

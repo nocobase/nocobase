@@ -115,7 +115,7 @@ export type CreateSubModelOptions = CreateModelOptions | FlowModel;
 /**
  * Constructor for model classes.
  */
-export type ModelConstructor<T extends FlowModel = FlowModel> = new (
+export type ModelConstructor<T extends FlowModel = FlowModel> = (new (
   options: FlowModelOptions & {
     uid: string;
     props?: IModelComponentProps;
@@ -124,7 +124,9 @@ export type ModelConstructor<T extends FlowModel = FlowModel> = new (
     subModels?: Record<string, CreateSubModelOptions | CreateSubModelOptions[]>;
     [key: string]: any; // Allow additional options
   },
-) => T;
+) => T) & {
+  meta?: FlowModelMeta;
+};
 
 /**
  * Defines a reusable action with generic model type support.

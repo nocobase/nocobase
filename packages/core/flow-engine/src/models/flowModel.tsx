@@ -29,7 +29,7 @@ import type {
   StepParams,
 } from '../types';
 import { ExtendedFlowDefinition, FlowRuntimeArgs, IModelComponentProps, ReadonlyModelProps } from '../types';
-import { FlowExitException, generateUid, mergeFlowDefinitions, resolveDefaultParams } from '../utils';
+import { FlowExitException, mergeFlowDefinitions, resolveDefaultParams } from '../utils';
 import { ForkFlowModel } from './forkFlowModel';
 
 // 使用WeakMap存储每个类的meta
@@ -542,7 +542,7 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
   public static extends<T extends typeof FlowModel>(this: T, flows: ExtendedFlowDefinition[] = []): T {
     class CustomFlowModel extends (this as unknown as typeof FlowModel) {
       // @ts-ignore
-      static name = `CustomFlowModel_${generateUid()}`;
+      static name = `CustomFlowModel_${uid()}`;
     }
 
     // 处理流程注册和覆盖
