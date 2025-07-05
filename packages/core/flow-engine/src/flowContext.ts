@@ -1,0 +1,265 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
+import { result } from 'lodash';
+import { FlowEngine } from './flowEngine';
+import { FlowModel } from './models';
+import { FlowExitException } from './utils';
+
+type Getter<T = any> = (ctx: FlowContext) => T | Promise<T>;
+
+interface MetaTreeNode {
+  name: string;
+  title: string;
+  type: string;
+  interface?: string;
+  uiSchema?: any;
+  children?: MetaTreeNode[];
+}
+
+interface PropertyMeta {
+  type: string;
+  title: string;
+  interface?: string;
+  uiSchema?: any;
+  properties?: Record<string, PropertyMeta>;
+}
+
+interface PropertyOptions {
+  value?: any;
+  get?: Getter;
+  cache?: boolean;
+  meta?: PropertyMeta;
+}
+
+export class FlowContext {
+  _props: Record<string, PropertyOptions> = {};
+  _methods: Record<string, (...args: any[]) => any> = {};
+  private _cache: Record<string, any> = {};
+  private _delegates: FlowContext[] = [];
+  [key: string]: any;
+
+  constructor() {
+    return new Proxy(this, {
+      get: (target, key, receiver) => {
+        if (typeof key === 'string') {
+          console.log(`Accessing key: ${key}`, target._props, key);
+          // 1. 优先查找自身 _props
+          if (Object.prototype.hasOwnProperty.call(target._props, key)) {
+            return target._getOwnProperty(key);
+          }
+          // 2. 优先查找自身 _methods
+          if (Object.prototype.hasOwnProperty.call(target._methods, key)) {
+            return target._getOwnMethod(key);
+          }
+          // 3. 再查找委托链（递归）
+          const found = this._findInDelegates(target._delegates, key);
+          if (found !== undefined) return found.result;
+          // 4. 其他情况（如原型方法等）
+          if (Reflect.has(target, key)) {
+            const val = Reflect.get(target, key, receiver);
+            if (typeof val === 'function') return val.bind(target);
+            return val;
+          }
+          return undefined;
+        }
+        return Reflect.get(target, key, receiver);
+      },
+      has: (target, key) => {
+        if (typeof key === 'string') {
+          if (Object.prototype.hasOwnProperty.call(target._props, key)) return true;
+          if (Object.prototype.hasOwnProperty.call(target._methods, key)) return true;
+          if (this._hasInDelegates(target._delegates, key)) return true;
+        }
+        return Reflect.has(target, key);
+      },
+    });
+  }
+
+  defineProperty(key: string, options: PropertyOptions) {
+    this._props[key] = options;
+    delete this._cache[key];
+    // 用 Object.defineProperty 挂载到实例上，便于 ctx.foo 直接访问
+    Object.defineProperty(this, key, {
+      configurable: true,
+      enumerable: true,
+      get: () => this._getOwnProperty(key),
+    });
+  }
+
+  defineMethod(name: string, fn: (...args: any[]) => any) {
+    this._methods[name] = fn;
+    Object.defineProperty(this, name, {
+      configurable: true,
+      enumerable: false,
+      writable: false,
+      value: fn.bind(this),
+    });
+  }
+
+  delegate(ctx: FlowContext) {
+    this._delegates.unshift(ctx);
+  }
+
+  has(key: string) {
+    return !!this._props[key];
+  }
+
+  getPropertyMetaTree(): MetaTreeNode[] {
+    const metaMap = this._getPropertiesMeta();
+    // 递归转换为 MetaTreeNode 结构
+    function toTreeNode(name: string, meta: PropertyMeta): MetaTreeNode {
+      return {
+        name,
+        title: meta.title,
+        type: meta.type,
+        interface: meta.interface,
+        uiSchema: meta.uiSchema,
+        children: meta.properties
+          ? Object.entries(meta.properties).map(([childName, childMeta]) => toTreeNode(childName, childMeta))
+          : undefined,
+      };
+    }
+
+    return Object.entries(metaMap).map(([key, meta]) => toTreeNode(key, meta));
+  }
+
+  _getPropertiesMeta() {
+    // 合并自身和委托链上的所有 meta 属性
+    const metaMap: Record<string, PropertyMeta> = {};
+    // 先加委托链（不覆盖自身）
+    for (const delegate of this._delegates) {
+      const delegateMeta = delegate._getPropertiesMeta();
+      Object.assign(metaMap, delegateMeta); // 合并，后面的覆盖前面的
+    }
+    // 先加自身
+    for (const [key, options] of Object.entries(this._props)) {
+      if (options.meta) {
+        metaMap[key] = options.meta;
+      }
+    }
+    return metaMap;
+  }
+
+  // 只查找自身 _props
+  private _getOwnProperty(key: string): any {
+    const options = this._props[key];
+    if (!options) return undefined;
+
+    // 静态值
+    if ('value' in options) {
+      return options.value;
+    }
+
+    // get 方法
+    if (options.get) {
+      if (options.cache === false) {
+        return options.get(this);
+      }
+      if (!(key in this._cache)) {
+        const result = options.get(this);
+        this._cache[key] = result;
+      }
+      return this._cache[key];
+    }
+
+    return undefined;
+  }
+
+  // 只查找自身 _methods
+  private _getOwnMethod(key: string): any {
+    const fn = this._methods[key];
+    if (typeof fn === 'function') {
+      return fn.bind(this);
+    }
+    return fn;
+  }
+
+  _findPropertyInDelegates(delegates: FlowContext[], key: string): PropertyOptions | undefined {
+    for (const delegate of delegates) {
+      // 1. 查找委托的 _props
+      if (Object.prototype.hasOwnProperty.call(delegate._props, key)) {
+        return delegate._props[key];
+      }
+      // 2. 递归查找更深层的委托链
+      const found = this._findPropertyInDelegates(delegate._delegates, key);
+      if (found !== undefined) return found;
+    }
+    return undefined;
+  }
+
+  _findInDelegates(delegates: FlowContext[], key: string): any {
+    for (const delegate of delegates) {
+      // 1. 查找委托的 _props
+      if (Object.prototype.hasOwnProperty.call(delegate._props, key)) {
+        return {
+          result: delegate._getOwnProperty(key),
+        };
+      }
+      // 2. 查找委托的 _methods
+      if (Object.prototype.hasOwnProperty.call(delegate._methods, key)) {
+        return {
+          result: delegate._getOwnMethod(key),
+        };
+      }
+      // 3. 递归查找更深层的委托链
+      const found = this._findInDelegates(delegate._delegates, key);
+      if (found !== undefined) return found;
+    }
+    return undefined;
+  }
+
+  // 递归查找委托链
+  _hasInDelegates(delegates: FlowContext[], key: string): boolean {
+    for (const delegate of delegates) {
+      if (Object.prototype.hasOwnProperty.call(delegate._props, key)) return true;
+      if (Object.prototype.hasOwnProperty.call(delegate._methods, key)) return true;
+      if (this._hasInDelegates(delegate._delegates, key)) return true;
+    }
+    return false;
+  }
+}
+
+export class FlowEngineContext extends FlowContext {
+  constructor(protected engine: FlowEngine) {
+    if (!(engine instanceof FlowEngine)) {
+      throw new Error('Invalid FlowEngine instance');
+    }
+    super();
+    this.engine = engine;
+  }
+}
+
+export class FlowModelContext extends FlowContext {
+  constructor(protected model: FlowModel) {
+    if (!(model instanceof FlowModel)) {
+      throw new Error('Invalid FlowModel instance');
+    }
+    super();
+    // @ts-ignore
+    this.delegate(this.model.flowEngine.ctx);
+  }
+}
+
+export class FlowRuntimeContext<TModel extends FlowModel> extends FlowContext {
+  stepResults: Record<string, any> = {};
+
+  constructor(
+    public model: TModel,
+    public flowKey: string,
+  ) {
+    super();
+    // @ts-ignore
+    this.delegate(this.model.ctx);
+  }
+
+  exit() {
+    throw new FlowExitException(this.flowKey, this.model.uid);
+  }
+}
