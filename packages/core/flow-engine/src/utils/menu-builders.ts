@@ -232,7 +232,7 @@ function buildCollectionOnlyItems(className: string, collection: Collection): an
   return [
     createBasicMenuItem(MENU_KEYS.OTHER_COLLECTIONS, 'Other collections', className),
     {
-      ...createBasicMenuItem(MENU_KEYS.CURRENT_COLLECTIONS, 'Current collections', className),
+      ...createBasicMenuItem(MENU_KEYS.CURRENT_COLLECTIONS, 'Current collection', className),
       collections: [collection],
     },
   ];
