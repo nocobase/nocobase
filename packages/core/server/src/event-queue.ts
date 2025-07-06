@@ -15,15 +15,7 @@ import fs from 'fs/promises';
 import Application from './application';
 import { sleep } from '@nocobase/utils';
 
-export enum QUEUE_PRIORITY {
-  // Higt priority, suitable for quick jobs.
-  HIGH = 2,
-  // Normal priority, suitable for most business jobs.
-  NORMAL = 1,
-  // Low priority, suitable for jobs that can be delayed. Such as sending emails, notifications, logs etc.
-  LOW = 0,
-}
-const QUEUE_DEFAULT_INTERVAL = 250;
+export const QUEUE_DEFAULT_INTERVAL = 250;
 export const QUEUE_DEFAULT_CONCURRENCY = 1;
 export const QUEUE_DEFAULT_ACK_TIMEOUT = 15_000;
 
@@ -46,7 +38,6 @@ export type QueueEventOptions = {
 };
 
 export type QueueMessageOptions = {
-  priority?: QUEUE_PRIORITY;
   timeout?: number;
   maxRetries?: number;
   retried?: number;
@@ -64,7 +55,6 @@ export interface IEventQueueAdapter {
 
 export interface EventQueueOptions {
   channelPrefix?: string;
-  priorities?: QUEUE_PRIORITY[];
 }
 
 export class MemoryEventQueueAdapter implements IEventQueueAdapter {
@@ -236,13 +226,8 @@ export class MemoryEventQueueAdapter implements IEventQueueAdapter {
       this.queues.set(channel, []);
     }
     const queue = this.queues.get(channel);
-    const index = queue.findIndex((item) => item.options.priority < options.priority);
     const message = { id: randomUUID(), content, options };
-    if (index === -1) {
-      queue.push(message);
-    } else {
-      queue.splice(index, 0, message);
-    }
+    queue.push(message);
     console.debug(`memory queue (${channel}) published message`, content);
 
     setImmediate(() => {
@@ -314,8 +299,6 @@ export class MemoryEventQueueAdapter implements IEventQueueAdapter {
 }
 
 export class EventQueue {
-  static QUEUE_PRIORITY = QUEUE_PRIORITY;
-
   protected adapter: IEventQueueAdapter;
   protected events: Map<string, QueueEventOptions> = new Map();
 
@@ -323,18 +306,10 @@ export class EventQueue {
     return this.options?.channelPrefix;
   }
 
-  get priorities() {
-    return this.options?.priorities;
-  }
-
   constructor(
     protected app: Application,
     protected options: EventQueueOptions = {},
   ) {
-    if (!options.priorities) {
-      options.priorities = [QUEUE_PRIORITY.HIGH, QUEUE_PRIORITY.NORMAL, QUEUE_PRIORITY.LOW];
-    }
-
     this.setAdapter(new MemoryEventQueueAdapter({ appName: this.app.name }));
 
     app.on('afterStart', async () => {
@@ -408,7 +383,6 @@ export class EventQueue {
     this.app.logger.debug('event queue publishing:', { channel: c, message });
     await this.adapter.publish(c, message, {
       timeout: QUEUE_DEFAULT_ACK_TIMEOUT,
-      priority: QUEUE_PRIORITY.NORMAL,
       ...options,
       timestamp: Date.now(),
     });
