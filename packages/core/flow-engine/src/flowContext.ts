@@ -57,23 +57,32 @@ export class FlowContext {
           if (Object.prototype.hasOwnProperty.call(target._methods, key)) {
             return target._getOwnMethod(key);
           }
-          // 3. 再查找委托链（递归）
-          const found = this._findInDelegates(target._delegates, key);
-          if (found !== undefined) return found.result;
-          // 4. 其他情况（如原型方法等）
+
+          // 3. 检查是否为直接属性或方法，如果是则跳过委托链查找
           if (Reflect.has(target, key)) {
             const val = Reflect.get(target, key, receiver);
             if (typeof val === 'function') return val.bind(target);
             return val;
           }
+
+          // 4. 只有在自身没有该属性时才查找委托链
+          const found = this._findInDelegates(target._delegates, key);
+          if (found !== undefined) return found.result;
+
           return undefined;
         }
         return Reflect.get(target, key, receiver);
       },
       has: (target, key) => {
         if (typeof key === 'string') {
+          // 1. 检查 _props 和 _methods
           if (Object.prototype.hasOwnProperty.call(target._props, key)) return true;
           if (Object.prototype.hasOwnProperty.call(target._methods, key)) return true;
+
+          // 2. 检查直接属性
+          if (Reflect.has(target, key)) return true;
+
+          // 3. 检查委托链
           if (this._hasInDelegates(target._delegates, key)) return true;
         }
         return Reflect.has(target, key);
@@ -106,6 +115,13 @@ export class FlowContext {
     if (!(ctx instanceof FlowContext)) {
       throw new Error('Delegate must be an instance of FlowContext');
     }
+
+    // 防止重复委托同一个 context
+    if (this._delegates.includes(ctx)) {
+      console.warn(`[FlowContext] delegate - skip duplicate delegate: ${this._delegates.length}`);
+      return;
+    }
+
     this._delegates.unshift(ctx);
   }
 
