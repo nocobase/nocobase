@@ -63,8 +63,8 @@ const openStepSettingsDialog = async ({
   // 创建参数解析上下文
   const paramsContext = {
     model,
-    globals: model.flowEngine.getContext() || {},
-    app: model.flowEngine.getContext()?.app,
+    globals: model.flowEngine.getContext(),
+    app: model.flowEngine.getContext('app'),
   };
 
   // 获取可配置的步骤信息
@@ -180,8 +180,8 @@ const openStepSettingsDialog = async ({
     content: (currentDialog) => {
       const contextValue: StepSettingContextType = {
         model,
-        globals: model.flowEngine.getContext() || {},
-        app: model.flowEngine.getContext()?.app,
+        globals: model.flowEngine.getContext(),
+        app: model.flowEngine.getContext('app'),
         step,
         flow,
         flowKey,

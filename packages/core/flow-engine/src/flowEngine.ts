@@ -80,7 +80,7 @@ export class FlowEngine {
     if (key) {
       return this._context[key] || null;
     }
-    return this._context;
+    return this._context || {};
   }
 
   /**

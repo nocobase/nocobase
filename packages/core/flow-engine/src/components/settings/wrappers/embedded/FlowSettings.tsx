@@ -139,8 +139,8 @@ const FlowSettingsContent: React.FC<FlowSettingsContentProps> = observer(({ mode
     // 在 settings 中，我们只有基本的上下文信息
     const paramsContext = {
       model,
-      globals: model.flowEngine.getContext() || {},
-      app: model.flowEngine.getContext()?.app,
+      globals: model.flowEngine.getContext(),
+      app: model.flowEngine.getContext('app'),
     };
 
     // 从model中获取每个步骤的参数，如果为空则使用默认参数

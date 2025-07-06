@@ -23,7 +23,7 @@ export class PluginBlockLowcodeClient extends Plugin {
     this.flowEngine.registerModels({ LowcodeBlockModel });
 
     // Set up requirejs context for lowcode components
-    const existingContext = this.flowEngine.getContext() || {};
+    const existingContext = this.flowEngine.getContext();
     this.flowEngine.setContext({
       ...existingContext,
       app: this.app,
