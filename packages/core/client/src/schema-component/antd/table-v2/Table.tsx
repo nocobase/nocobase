@@ -631,7 +631,10 @@ const InternalBodyCellComponent = React.memo<BodyCellComponentProps>((props) => 
   const [dynamicStyle, setDynamicStyle] = useState({});
   const isReadPrettyMode =
     !!schema?.properties && Object.values(schema.properties).some((item) => item['x-read-pretty'] === true);
-  const mergedStyle = useMemo(() => ({ ...props.style, ...dynamicStyle }), [props.style, dynamicStyle]);
+  const mergedStyle = useMemo(
+    () => ({ overflow: 'hidden', ...props.style, ...dynamicStyle }),
+    [props.style, dynamicStyle],
+  );
 
   return (
     <FlagProvider isInTableCell>
@@ -652,11 +655,12 @@ const displayNone = { display: 'none' };
 
 const BodyCellComponent = React.memo<BodyCellComponentProps>((props) => {
   const { designable } = useDesignable();
+  const style = designable ? columnOpacityStyle : columnHiddenStyle;
 
   if (props.columnHidden) {
     return (
       <FlagProvider isInTableCell>
-        <td style={designable ? columnOpacityStyle : columnHiddenStyle}>
+        <td style={{ overflow: 'hidden', ...style }}>
           {designable ? props.children : <span style={displayNone}>{props.children}</span>}
         </td>
       </FlagProvider>
