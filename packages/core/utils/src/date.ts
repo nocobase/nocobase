@@ -15,6 +15,7 @@ export interface Str2momentOptions {
   picker?: 'year' | 'month' | 'week' | 'quarter';
   utcOffset?: number;
   utc?: boolean;
+  dateOnly?: boolean;
 }
 
 export type Str2momentValue = string | string[] | dayjs.Dayjs | dayjs.Dayjs[];
@@ -83,10 +84,14 @@ const toMoment = (val: any, options?: Str2momentOptions) => {
     return;
   }
   const offset = options.utcOffset;
-  const { gmt, picker, utc = true } = options;
+  const { gmt, picker, utc = true, dateOnly } = options;
+
   if (dayjs(val).isValid()) {
+    if (dateOnly) {
+      return dayjs.utc(val, 'YYYY-MM-DD');
+    }
     if (!utc) {
-      return dayjs(val);
+      return dayjs.utc(val);
     }
 
     if (dayjs.isDayjs(val)) {

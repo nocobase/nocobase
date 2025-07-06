@@ -194,4 +194,5 @@ export default class extends Instruction {
       </NodeDefaultView>
     );
   }
+  testable = true;
 }

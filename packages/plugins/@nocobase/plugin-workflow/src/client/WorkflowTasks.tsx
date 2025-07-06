@@ -76,6 +76,10 @@ const TasksCountsContext = createContext<{ reload: () => void; counts: Stats; to
   total: 0,
 });
 
+export function useTasksCountsContext() {
+  return useContext(TasksCountsContext);
+}
+
 function MenuLink({ type }: any) {
   const workflowPlugin = usePlugin(PluginWorkflowClient);
   const compile = useCompile();
@@ -111,7 +115,7 @@ function MenuLink({ type }: any) {
   );
 }
 
-export const TASK_STATUS = {
+const TASK_STATUS = {
   ALL: 'all',
   PENDING: 'pending',
   COMPLETED: 'completed',
@@ -282,7 +286,7 @@ function TaskPageContent() {
     if (popupId && !currentRecord) {
       let load;
       if (getPopupRecord) {
-        load = getPopupRecord(apiClient, { params: { ...params, filterByTk: popupId } });
+        load = getPopupRecord(apiClient, { params: { filterByTk: popupId } });
       } else {
         load = apiClient.resource(collection).get({
           ...params,
@@ -299,18 +303,7 @@ function TaskPageContent() {
           console.error(err);
         });
     }
-  }, [popupId, collection, currentRecord, apiClient, getPopupRecord]);
-
-  useEffect(() => {
-    if (!taskType) {
-      navigate(
-        mobilePage
-          ? `/page/workflow/tasks/${items[0].key}/${status}`
-          : `/admin/workflow/tasks/${items[0].key}/${status}`,
-        { replace: true },
-      );
-    }
-  }, [items, mobilePage, navigate, status, taskType]);
+  }, [popupId, collection, currentRecord, apiClient, getPopupRecord, params]);
 
   const typeKey = taskType ?? items[0].key;
 

@@ -7,11 +7,11 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { CloseOutlined, DeleteOutlined } from '@ant-design/icons';
+import { CaretRightOutlined, CloseOutlined, DeleteOutlined } from '@ant-design/icons';
 import { createForm, Field } from '@formily/core';
 import { toJS } from '@formily/reactive';
 import { ISchema, observer, useField, useForm } from '@formily/react';
-import { Alert, App, Button, Dropdown, Empty, Input, Space, Tag, Tooltip, message } from 'antd';
+import { Alert, App, Button, Collapse, Dropdown, Empty, Input, Space, Tag, Tooltip, message } from 'antd';
 import { cloneDeep, get, set } from 'lodash';
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -26,7 +26,6 @@ import {
   cx,
   useAPIClient,
   useActionContext,
-  useCancelAction,
   useCompile,
   usePlugin,
   useResourceActionContext,
@@ -330,6 +329,7 @@ const useRunAction = () => {
     async run() {
       const template = parse(node.config);
       const config = template(toJS(values.config));
+      const logField = query('log').take() as Field;
       const resultField = query('result').take() as Field;
       resultField.setValue(null);
       resultField.setFeedback({});
@@ -352,6 +352,7 @@ const useRunAction = () => {
           messages: data.status > 0 ? [lang('Resolved')] : [lang('Failed')],
         });
         resultField.setValue(data.result);
+        logField.setValue(data.log || '');
       } catch (err) {
         resultField.setFeedback({
           type: 'error',
@@ -359,7 +360,6 @@ const useRunAction = () => {
         });
       }
       field.data.loading = false;
-      ctx.setFormValueChanged(false);
     },
   };
 };
@@ -397,113 +397,163 @@ function TestFormFieldset({ value, onChange }) {
   );
 }
 
+function LogCollapse({ value }) {
+  return value ? (
+    <Collapse
+      ghost
+      items={[
+        {
+          key: 'log',
+          label: lang('Log'),
+          children: (
+            <Input.TextArea
+              value={value}
+              autoSize={{ minRows: 5, maxRows: 20 }}
+              style={{ whiteSpace: 'pre', cursor: 'text', fontFamily: 'monospace', fontSize: '80%' }}
+              disabled
+            />
+          ),
+        },
+      ]}
+      className={css`
+        .ant-collapse-item > .ant-collapse-header {
+          padding: 0;
+        }
+        .ant-collapse-content > .ant-collapse-content-box {
+          padding: 0;
+        }
+      `}
+    />
+  ) : null;
+}
+
+function useCancelAction() {
+  const form = useForm();
+  const ctx = useActionContext();
+  return {
+    async run() {
+      const resultField = form.query('result').take() as Field;
+      resultField.setFeedback();
+      form.setValues({ result: null, log: null });
+      form.clearFormGraph('*');
+      form.reset();
+      ctx.setVisible(false);
+    },
+  };
+}
+
 function TestButton() {
   const node = useNodeContext();
   const { values } = useForm();
+  const [visible, setVisible] = useState(false);
   const template = parse(values);
   const keys = template.parameters.map((item) => item.key);
   const form = useMemo(() => createForm(), []);
 
+  const onOpen = useCallback(() => {
+    setVisible(true);
+  }, []);
+  const setModalVisible = useCallback(
+    (v: boolean) => {
+      if (v) {
+        setVisible(true);
+        return;
+      }
+      const resultField = form.query('result').take() as Field;
+      resultField?.setFeedback();
+      form.setValues({ result: null, log: null });
+      form.clearFormGraph('*');
+      form.reset();
+      setVisible(false);
+    },
+    [form],
+  );
+
   return (
     <NodeContext.Provider value={{ ...node, config: values }}>
       <VariableKeysContext.Provider value={keys}>
-        <SchemaComponent
-          components={{
-            Alert,
-            TestFormFieldset,
-          }}
-          scope={{
-            useCancelAction,
-            useRunAction,
-          }}
-          schema={{
-            type: 'void',
-            name: 'testButton',
-            title: '{{t("Test run")}}',
-            'x-component': 'Action',
-            'x-component-props': {
-              icon: 'CaretRightOutlined',
-              // openSize: 'small',
-            },
-            properties: {
-              modal: {
-                type: 'void',
-                'x-decorator': 'FormV2',
-                'x-decorator-props': {
-                  form,
+        <ActionContextProvider value={{ visible, setVisible: setModalVisible }}>
+          <Button icon={<CaretRightOutlined />} onClick={onOpen}>
+            {lang('Test run')}
+          </Button>
+          <SchemaComponent
+            components={{
+              Alert,
+              TestFormFieldset,
+              LogCollapse,
+            }}
+            scope={{
+              useCancelAction,
+              useRunAction,
+            }}
+            schema={{
+              type: 'void',
+              name: 'modal',
+              'x-decorator': 'FormV2',
+              'x-decorator-props': {
+                form,
+              },
+              'x-component': 'Action.Modal',
+              title: `{{t("Test run", { ns: "workflow" })}}`,
+              properties: {
+                alert: {
+                  type: 'void',
+                  'x-component': 'Alert',
+                  'x-component-props': {
+                    message: `{{t("Test run will do the actual data manipulating or API calling, please use with caution.", { ns: "workflow" })}}`,
+                    type: 'warning',
+                    showIcon: true,
+                    className: css`
+                      margin-bottom: 1em;
+                    `,
+                  },
                 },
-                'x-component': 'Action.Modal',
-                title: `{{t("Test run", { ns: "workflow" })}}`,
-                properties: {
-                  alert: {
-                    type: 'void',
-                    'x-component': 'Alert',
-                    'x-component-props': {
-                      message: `{{t("Test run will do the actual data manipulating or API calling, please use with caution.", { ns: "workflow" })}}`,
-                      type: 'warning',
-                      showIcon: true,
-                      className: css`
-                        margin-bottom: 1em;
-                      `,
-                    },
-                  },
-                  config: {
-                    type: 'object',
-                    title: '{{t("Replace variables", { ns: "workflow" })}}',
-                    'x-decorator': 'FormItem',
-                    'x-component': 'TestFormFieldset',
-                  },
-                  actions: {
-                    type: 'void',
-                    'x-component': 'ActionBar',
-                    properties: {
-                      submit: {
-                        type: 'void',
-                        title: '{{t("Run")}}',
-                        'x-component': 'Action',
-                        'x-component-props': {
-                          type: 'primary',
-                          useAction: '{{ useRunAction }}',
-                        },
+                config: {
+                  type: 'object',
+                  title: '{{t("Replace variables", { ns: "workflow" })}}',
+                  'x-decorator': 'FormItem',
+                  'x-component': 'TestFormFieldset',
+                },
+                actions: {
+                  type: 'void',
+                  'x-component': 'ActionBar',
+                  properties: {
+                    submit: {
+                      type: 'void',
+                      title: '{{t("Run")}}',
+                      'x-component': 'Action',
+                      'x-component-props': {
+                        type: 'primary',
+                        useAction: '{{ useRunAction }}',
                       },
                     },
                   },
-                  result: {
-                    type: 'string',
-                    title: `{{t("Result", { ns: "workflow" })}}`,
-                    'x-decorator': 'FormItem',
-                    'x-component': 'Input.JSON',
-                    'x-component-props': {
-                      autoSize: {
-                        minRows: 5,
-                        maxRows: 20,
-                      },
-                      style: {
-                        whiteSpace: 'pre',
-                        cursor: 'text',
-                      },
+                },
+                result: {
+                  type: 'string',
+                  title: `{{t("Result", { ns: "workflow" })}}`,
+                  'x-decorator': 'FormItem',
+                  'x-component': 'Input.JSON',
+                  'x-component-props': {
+                    autoSize: {
+                      minRows: 5,
+                      maxRows: 20,
                     },
-                    'x-pattern': 'disabled',
-                  },
-                  footer: {
-                    type: 'void',
-                    'x-component': 'Action.Modal.Footer',
-                    properties: {
-                      cancel: {
-                        type: 'void',
-                        title: '{{t("Close")}}',
-                        'x-component': 'Action',
-                        'x-component-props': {
-                          useAction: '{{ useCancelAction }}',
-                        },
-                      },
+                    style: {
+                      whiteSpace: 'pre',
+                      cursor: 'text',
                     },
                   },
+                  'x-pattern': 'disabled',
+                },
+                log: {
+                  type: 'string',
+                  'x-component': 'LogCollapse',
                 },
               },
-            },
-          }}
-        />
+            }}
+          />
+        </ActionContextProvider>
       </VariableKeysContext.Provider>
     </NodeContext.Provider>
   );
