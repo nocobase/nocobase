@@ -53,6 +53,8 @@ export const openView = defineAction({
     };
 
     const openMode = ctx.runtimeArgs.mode || params.mode || 'drawer';
+    let pageModelUid: string | null = null;
+
     await ctx.globals[openMode].open({
       target: ctx.runtimeArgs.target || ctx.shared.layoutContentElement,
       width: sizeToWidthMap[params.size || 'medium'],
@@ -65,6 +67,9 @@ export const openView = defineAction({
               currentView: currentView,
               closable: openMode !== 'page', // can't close page
             }}
+            onModelLoaded={(uid) => {
+              pageModelUid = uid;
+            }}
           />
         );
       },
@@ -76,6 +81,12 @@ export const openView = defineAction({
       },
       bodyStyle: {
         padding: 0,
+      },
+      onClose: () => {
+        if (pageModelUid) {
+          const pageModel = ctx.model.flowEngine.getModel(pageModelUid);
+          pageModel.invalidateAutoFlowCache(true);
+        }
       },
     });
   },

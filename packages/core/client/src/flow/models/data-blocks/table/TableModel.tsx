@@ -227,7 +227,8 @@ export class TableModel extends DataBlockModel<TableModelStructure> {
                   filterByTk: record.id,
                   record: record,
                   onSuccess: (values) => {
-                    this.resource.getData()[recordIndex][dataIndex] = values[dataIndex];
+                    record[dataIndex] = values[dataIndex];
+                    this.resource.getData()[recordIndex] = record;
                     // 仅重渲染单元格
                     const fork: ForkFlowModel = model.subModels.field.getFork(`${recordIndex}`);
                     fork.setSharedContext({ index: recordIndex, value: values[dataIndex], currentRecord: record });
@@ -465,10 +466,7 @@ TableModel.registerFlow({
         dataSourceKey: 'main',
       },
       handler: async (ctx, params) => {
-        if (ctx.model.resource) {
-          ctx.model.applySubModelsAutoFlows('columns');
-          return;
-        }
+        ctx.model.resource = ctx.model.resource || new MultiRecordResource();
         const {
           dataSourceKey = params.dataSourceKey, // 先兼容一下旧的数据, TODO: remove
           collectionName = params.collectionName, // 先兼容一下旧的数据, TODO: remove
@@ -481,13 +479,11 @@ TableModel.registerFlow({
           associationName ? associationName.split('.').slice(-1)[0] : collectionName,
         );
         ctx.model.collection = collection;
-        const resource = new MultiRecordResource();
-        resource.setDataSourceKey(dataSourceKey);
-        resource.setResourceName(associationName || collectionName);
-        resource.setSourceId(sourceId);
-        resource.setAPIClient(ctx.globals.api);
-        resource.setPageSize(20);
-        ctx.model.resource = resource;
+        ctx.model.resource.setDataSourceKey(dataSourceKey);
+        ctx.model.resource.setResourceName(associationName || collectionName);
+        ctx.model.resource.setSourceId(sourceId);
+        ctx.model.resource.setAPIClient(ctx.globals.api);
+        ctx.model.resource.setPageSize(20);
         await ctx.model.applySubModelsAutoFlows('columns');
       },
     },

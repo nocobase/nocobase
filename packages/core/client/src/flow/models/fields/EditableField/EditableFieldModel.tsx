@@ -114,6 +114,12 @@ EditableFieldModel.registerFlow({
     createField: {
       handler(ctx, params) {
         const { collectionField } = ctx.model;
+
+        // 如果字段已存在但连接有问题，重新创建
+        if (ctx.model.field && (!ctx.model.field.form || ctx.model.field.destroyed)) {
+          ctx.model.field = null;
+        }
+
         ctx.model.field = ctx.model.field || ctx.model.createField();
         ctx.model.setComponentProps(collectionField.getComponentProps());
         if (collectionField.enum.length) {

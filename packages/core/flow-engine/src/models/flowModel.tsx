@@ -30,7 +30,7 @@ import type {
   StepParams,
 } from '../types';
 import { ExtendedFlowDefinition, FlowRuntimeArgs, IModelComponentProps, ReadonlyModelProps } from '../types';
-import { FlowExitException, mergeFlowDefinitions, resolveDefaultParams } from '../utils';
+import { FlowExitException, isInheritedFrom, mergeFlowDefinitions, resolveDefaultParams } from '../utils';
 import { ForkFlowModel } from './forkFlowModel';
 
 // 使用WeakMap存储每个类的meta
@@ -112,7 +112,7 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
 
     this.observerDispose = observe(this.stepParams, () => {
       if (this.flowEngine) {
-        this.clearAutoFlowCache();
+        this.invalidateAutoFlowCache();
       }
       this._rerunLastAutoRun();
     });
@@ -170,7 +170,7 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     });
   }
 
-  private clearAutoFlowCache() {
+  public invalidateAutoFlowCache(deep = false) {
     if (this.flowEngine) {
       const cacheKey = FlowEngine.generateApplyFlowCacheKey('autoFlow', 'all', this.uid);
       this.flowEngine.applyFlowCache.delete(cacheKey);
@@ -178,6 +178,18 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
         const forkCacheKey = FlowEngine.generateApplyFlowCacheKey(`${fork['forkId']}`, 'all', this.uid);
         this.flowEngine.applyFlowCache.delete(forkCacheKey);
       });
+    }
+
+    const subModelKeys = Object.keys(this.subModels);
+    for (const subModelKey of subModelKeys) {
+      const subModelValue = this.subModels[subModelKey];
+      if (Array.isArray(subModelValue)) {
+        for (const subModel of subModelValue) {
+          subModel.invalidateAutoFlowCache(deep);
+        }
+      } else if (subModelValue instanceof FlowModel) {
+        subModelValue.invalidateAutoFlowCache(deep);
+      }
     }
   }
 
@@ -700,7 +712,7 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
   }
 
   setParent(parent: FlowModel): void {
-    if (!parent || !(parent instanceof FlowModel)) {
+    if (!parent || !isInheritedFrom(parent.constructor as any, FlowModel)) {
       throw new Error('Parent must be an instance of FlowModel.');
     }
     this.parent = parent as ParentFlowModel<Structure>;
@@ -865,8 +877,8 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     if (!this.flowEngine) {
       throw new Error('FlowEngine is not set on this model. Please set flowEngine before saving.');
     }
-    this.clearAutoFlowCache();
     this.observerDispose();
+    this.invalidateAutoFlowCache();
     return this.flowEngine.removeModel(this.uid);
   }
 
@@ -882,7 +894,7 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
       throw new Error('FlowEngine is not set on this model. Please set flowEngine before deleting.');
     }
     this.observerDispose();
-    this.clearAutoFlowCache();
+    this.invalidateAutoFlowCache();
     // 从 FlowEngine 中销毁模型
     return this.flowEngine.destroyModel(this.uid);
   }

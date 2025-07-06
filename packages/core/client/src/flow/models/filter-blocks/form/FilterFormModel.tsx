@@ -16,6 +16,7 @@ import {
   Collection,
   FlowModelRenderer,
   buildActionItems,
+  buildFieldItems,
 } from '@nocobase/flow-engine';
 import { Card } from 'antd';
 import React from 'react';
@@ -28,6 +29,24 @@ export class FilterFormModel extends FilterBlockModel {
   collection: Collection;
 
   render() {
+    const fieldItems = buildFieldItems(
+      this.collection.getFields(),
+      this,
+      'EditableFieldModel',
+      'fields',
+      ({ defaultOptions, fieldPath }) => ({
+        use: defaultOptions.use,
+        stepParams: {
+          default: {
+            step1: {
+              dataSourceKey: this.collection.dataSourceKey,
+              collectionName: this.collection.name,
+              fieldPath,
+            },
+          },
+        },
+      }),
+    );
     return (
       <Card>
         <FormProvider form={this.form}>
@@ -40,24 +59,7 @@ export class FilterFormModel extends FilterBlockModel {
               />
             ))}
           </FormLayout>
-          <AddFieldButton
-            buildCreateModelOptions={({ defaultOptions, fieldPath }) => ({
-              use: defaultOptions.use,
-              stepParams: {
-                default: {
-                  step1: {
-                    collectionName: this.collection.name,
-                    dataSourceKey: this.collection.dataSourceKey,
-                    fieldPath,
-                  },
-                },
-              },
-            })}
-            subModelKey="fields"
-            model={this}
-            collection={this.collection}
-            subModelBaseClass="FormFieldModel"
-          />
+          <AddFieldButton items={fieldItems} subModelKey="fields" model={this} />
           <FormButtonGroup>
             {this.mapSubModels('actions', (action) => (
               <FlowModelRenderer
