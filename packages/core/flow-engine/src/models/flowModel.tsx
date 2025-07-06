@@ -14,7 +14,7 @@ import { uid } from 'uid/secure';
 import { openRequiredParamsStepFormDialog as openRequiredParamsStepFormDialogFn } from '../components/settings/wrappers/contextual/StepRequiredSettingsDialog';
 import { openStepSettingsDialog as openStepSettingsDialogFn } from '../components/settings/wrappers/contextual/StepSettingsDialog';
 import { Emitter } from '../emitter';
-import { FlowModelContext } from '../flowContext';
+import { FlowModelContext, FlowRuntimeContext } from '../flowContext';
 import { FlowEngine } from '../flowEngine';
 import type {
   ArrayElementType,
@@ -436,9 +436,6 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
       return Promise.reject(new Error(`Flow '${flowKey}' not found.`));
     }
 
-    let lastResult: any;
-    const stepResults: Record<string, any> = {};
-
     // Create a new FlowContext instance for this flow execution
     const createLogger = (level: string) => (message: string, meta?: any) => {
       const logMessage = `[${level.toUpperCase()}] [Flow: ${flowKey}] [Model: ${this.uid}] ${message}`;
@@ -447,29 +444,36 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     };
 
     const globalContexts = currentFlowEngine.getContext();
-    const flowContext: FlowContext<this> = {
-      exit: () => {
-        throw new FlowExitException(flowKey, this.uid);
-      },
-      logger: {
+    const flowContext = new FlowRuntimeContext(this, flowKey);
+
+    flowContext.defineProperty('logger', {
+      value: {
         info: createLogger('INFO'),
         warn: createLogger('WARN'),
         error: createLogger('ERROR'),
         debug: createLogger('DEBUG'),
       },
-      reactView: this.reactView,
-      stepResults,
-      shared: this.getSharedContext(),
-      globals: globalContexts,
-      runtimeArgs: runtimeArgs || {},
-      model: this,
-      app: globalContexts.app || {},
-    };
+    });
+    flowContext.defineProperty('reactView', {
+      value: this.reactView,
+    });
+    flowContext.defineProperty('shared', {
+      value: this.getSharedContext(),
+    });
+    flowContext.defineProperty('globals', {
+      value: globalContexts,
+    });
+    flowContext.defineProperty('runtimeArgs', {
+      value: runtimeArgs,
+    });
+
+    let lastResult: any;
+    const stepResults: Record<string, any> = flowContext.stepResults;
 
     for (const stepKey in flow.steps) {
       if (Object.prototype.hasOwnProperty.call(flow.steps, stepKey)) {
         const step: StepDefinition = flow.steps[stepKey];
-        let handler: ((ctx: FlowContext<this>, params: any) => Promise<any> | any) | undefined;
+        let handler: ((ctx: FlowRuntimeContext<this>, params: any) => Promise<any> | any) | undefined;
         let combinedParams: Record<string, any> = {};
         let actionDefinition;
 

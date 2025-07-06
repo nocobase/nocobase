@@ -14,6 +14,8 @@ import { observer } from '@formily/reactive-react';
 import {
   AddActionButton,
   AddFieldButton,
+  buildActionItems,
+  buildFieldItems,
   DndProvider,
   DragHandler,
   Droppable,
@@ -21,8 +23,6 @@ import {
   ForkFlowModel,
   MultiRecordResource,
   useFlowEngine,
-  buildFieldItems,
-  buildActionItems,
 } from '@nocobase/flow-engine';
 import { tval } from '@nocobase/utils/client';
 import { Space, Spin, Table } from 'antd';
@@ -474,7 +474,7 @@ TableModel.registerFlow({
           sourceId,
           filterByTk,
         } = ctx.model.props.dataSourceOptions;
-        const collection = ctx.globals.dataSourceManager.getCollection(
+        const collection = ctx.dataSourceManager.getCollection(
           dataSourceKey,
           associationName ? associationName.split('.').slice(-1)[0] : collectionName,
         );
@@ -482,7 +482,7 @@ TableModel.registerFlow({
         ctx.model.resource.setDataSourceKey(dataSourceKey);
         ctx.model.resource.setResourceName(associationName || collectionName);
         ctx.model.resource.setSourceId(sourceId);
-        ctx.model.resource.setAPIClient(ctx.globals.api);
+        ctx.model.resource.setAPIClient(ctx.api);
         ctx.model.resource.setPageSize(20);
         await ctx.model.applySubModelsAutoFlows('columns');
       },

@@ -29,17 +29,10 @@ export class PluginFlowEngine extends Plugin {
     // console.log('Registering flow models:', Object.keys(filteredModels));
     this.flowEngine.registerModels(filteredModels);
     this.flowEngine.registerActions(actions);
-    const dataSourceManager = new DataSourceManager();
-    dataSourceManager.setFlowEngine(this.flowEngine);
     this.flowEngine.setContext({
       flowEngine: this.flowEngine,
-      dataSourceManager,
+      dataSourceManager: this.flowEngine.context.dataSourceManager,
     });
-    const mainDataSource = new DataSource({
-      key: 'main',
-      displayName: 'Main',
-    });
-    dataSourceManager.addDataSource(mainDataSource);
     this.app.addProvider(FlowEngineRunner, {});
   }
 }

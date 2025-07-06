@@ -9,6 +9,7 @@
 
 import { ISchema } from '@formily/json-schema';
 import { APIClient } from '@nocobase/sdk';
+import { FlowRuntimeContext } from './flowContext';
 import type { FlowEngine } from './flowEngine';
 import type { FlowModel } from './models';
 import { ReactView } from './ReactView';
@@ -134,7 +135,7 @@ export type ModelConstructor<T extends FlowModel = FlowModel> = (new (
 export interface ActionDefinition<TModel extends FlowModel = FlowModel> {
   name: string; // Unique identifier for the action
   title?: string;
-  handler: (ctx: FlowContext<TModel>, params: any) => Promise<any> | any;
+  handler: (ctx: FlowRuntimeContext<TModel>, params: any) => Promise<any> | any;
   uiSchema?:
     | Record<string, ISchema>
     | ((ctx: ParamsContext<TModel>) => Record<string, ISchema> | Promise<Record<string, ISchema>>);
@@ -154,7 +155,7 @@ export interface StepDefinition<TModel extends FlowModel = FlowModel> {
   use?: string; // Name of the registered ActionDefinition to use as base
 
   // Handler (optional, but required if 'use' is not provided)
-  handler?: (ctx: FlowContext<TModel>, params: any) => Promise<any> | any;
+  handler?: (ctx: FlowRuntimeContext<TModel>, params: any) => Promise<any> | any;
 
   // UI and params configuration
   uiSchema?:

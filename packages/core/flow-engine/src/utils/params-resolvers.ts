@@ -7,6 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { FlowRuntimeContext } from '../flowContext';
 import type { FlowModel } from '../models';
 import type { ParamsContext } from '../types';
 
@@ -19,7 +20,7 @@ import type { ParamsContext } from '../types';
  */
 export async function resolveDefaultParams<TModel extends FlowModel = FlowModel>(
   defaultParams: Record<string, any> | ((ctx: any) => Record<string, any> | Promise<Record<string, any>>) | undefined,
-  ctx: ParamsContext<TModel>,
+  ctx: FlowRuntimeContext<TModel>,
 ): Promise<Record<string, any>> {
   if (!defaultParams) {
     return {};

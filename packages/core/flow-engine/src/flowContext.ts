@@ -266,19 +266,26 @@ export class FlowContext {
 }
 
 export class FlowEngineContext extends FlowContext {
-  public dataSourceManager: DataSourceManager;
+  // public dataSourceManager: DataSourceManager;
   constructor(public engine: FlowEngine) {
     if (!(engine instanceof FlowEngine)) {
       throw new Error('Invalid FlowEngine instance');
     }
     super();
     this.engine = engine;
-    this.dataSourceManager = new DataSourceManager();
+    const dataSourceManager = new DataSourceManager();
+    dataSourceManager.setFlowEngine(this.engine);
     const mainDataSource = new DataSource({
       key: 'main',
       displayName: 'Main',
     });
-    this.dataSourceManager.addDataSource(mainDataSource);
+    dataSourceManager.addDataSource(mainDataSource);
+    this.defineProperty('engine', {
+      value: this.engine,
+    });
+    this.defineProperty('dataSourceManager', {
+      value: dataSourceManager,
+    });
   }
 }
 

@@ -55,7 +55,8 @@ export const openView = defineAction({
     const openMode = ctx.runtimeArgs.mode || params.mode || 'drawer';
     let pageModelUid: string | null = null;
 
-    await ctx.globals[openMode].open({
+    await ctx.viewOpener.open({
+      mode: openMode,
       target: ctx.runtimeArgs.target || ctx.shared.layoutContentElement,
       width: sizeToWidthMap[params.size || 'medium'],
       content: (currentView) => {

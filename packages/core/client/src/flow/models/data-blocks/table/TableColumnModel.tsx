@@ -111,9 +111,7 @@ TableColumnModel.registerFlow({
           return;
         }
         const { dataSourceKey, collectionName, fieldPath } = params;
-        const field = ctx.globals.dataSourceManager.getCollectionField(
-          `${dataSourceKey}.${collectionName}.${fieldPath}`,
-        );
+        const field = ctx.dataSourceManager.getCollectionField(`${dataSourceKey}.${collectionName}.${fieldPath}`);
         if (!field) {
           throw new Error(`Collection field not found: ${dataSourceKey}.${collectionName}.${fieldPath}`);
         }
@@ -142,7 +140,7 @@ TableColumnModel.registerFlow({
       },
       handler(ctx, params) {
         console.log('editColumTitle params:', params);
-        const title = ctx.globals.flowEngine.translate(params.title || ctx.model.collectionField?.title);
+        const title = ctx.engine.translate(params.title || ctx.model.collectionField?.title);
         ctx.model.setProps('title', title);
       },
     },
@@ -224,7 +222,7 @@ TableCustomColumnModel.registerFlow({
       },
       handler(ctx, params) {
         console.log('editColumTitle params:', params);
-        const title = ctx.globals.flowEngine.translate(params.title);
+        const title = ctx.engine.translate(params.title);
         ctx.model.setProps('title', title);
       },
     },
