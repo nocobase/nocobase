@@ -9,7 +9,7 @@
 
 import { result } from 'lodash';
 import { FlowEngine } from './flowEngine';
-import { FlowModel } from './models';
+import { FlowModel, ForkFlowModel } from './models';
 import { FlowExitException } from './utils';
 
 type Getter<T = any> = (ctx: FlowContext) => T | Promise<T>;
@@ -49,7 +49,6 @@ export class FlowContext {
     return new Proxy(this, {
       get: (target, key, receiver) => {
         if (typeof key === 'string') {
-          console.log(`Accessing key: ${key}`, target._props, key);
           // 1. 优先查找自身 _props
           if (Object.prototype.hasOwnProperty.call(target._props, key)) {
             return target._getOwnProperty(key);
@@ -104,6 +103,9 @@ export class FlowContext {
   }
 
   delegate(ctx: FlowContext) {
+    if (!(ctx instanceof FlowContext)) {
+      throw new Error('Delegate must be an instance of FlowContext');
+    }
     this._delegates.unshift(ctx);
   }
 
@@ -243,7 +245,18 @@ export class FlowModelContext extends FlowContext {
     }
     super();
     // @ts-ignore
-    this.delegate(this.model.flowEngine.ctx);
+    this.delegate(this.model.flowEngine.context);
+  }
+}
+
+export class FlowForkModelContext extends FlowContext {
+  constructor(protected model: FlowModel) {
+    if (!(model instanceof FlowModel)) {
+      throw new Error('Invalid FlowModel instance');
+    }
+    super();
+    // @ts-ignore
+    this.delegate(this.model.context);
   }
 }
 
@@ -256,7 +269,7 @@ export class FlowRuntimeContext<TModel extends FlowModel> extends FlowContext {
   ) {
     super();
     // @ts-ignore
-    this.delegate(this.model.ctx);
+    this.delegate(this.model.context);
   }
 
   exit() {

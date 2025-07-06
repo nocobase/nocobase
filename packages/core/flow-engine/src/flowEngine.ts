@@ -7,6 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 import { observable } from '@formily/reactive';
+import { FlowEngineContext } from './flowContext';
 import { FlowSettings } from './flowSettings';
 import { initFlowEngineLocale } from './locale';
 import { FlowModel } from './models';
@@ -41,6 +42,7 @@ export class FlowEngine {
   _context: FlowContext['globals'] = {} as FlowContext['globals'];
   private modelRepository: IFlowModelRepository | null = null;
   private _applyFlowCache = new Map<string, ApplyFlowCacheEntry>();
+  private _flowContext: FlowEngineContext;
 
   /**
    * 实验性 API：用于在 FlowEngine 中集成 React 视图渲染能力。
@@ -52,6 +54,13 @@ export class FlowEngine {
   constructor() {
     this.reactView = new ReactView(this);
     this.flowSettings.registerScopes({ t: this.translate.bind(this) });
+  }
+
+  get context() {
+    if (!this._flowContext) {
+      this._flowContext = new FlowEngineContext(this);
+    }
+    return this._flowContext;
   }
 
   /**

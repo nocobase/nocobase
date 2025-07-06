@@ -7,11 +7,12 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { FlowEngine, FlowModel, ForkFlowModel } from '@nocobase/flow-engine';
 import { describe, expect, it, vi } from 'vitest';
 import { FlowContext } from '../flowContext';
 
-describe('FlowContext', () => {
-  it('should return static value', () => {
+describe('FlowContext properties and methods', () => {
+  it('should return static property value', () => {
     const ctx = new FlowContext();
     ctx.defineProperty('foo', { value: 123 });
     expect(ctx.foo).toBe(123);
@@ -36,7 +37,7 @@ describe('FlowContext', () => {
     expect(ctx.b).toBe('ab');
   });
 
-  it('should support async context reference', async () => {
+  it('should support async context reference in get', async () => {
     const ctx = new FlowContext();
     ctx.defineProperty('c', { get: async () => 'c' });
     ctx.defineProperty('d', { get: async (ctx) => (await ctx.c) + 'd' });
@@ -53,7 +54,7 @@ describe('FlowContext', () => {
     expect(getter).toHaveBeenCalledTimes(1);
   });
 
-  it('should disable cache when cache=false', async () => {
+  it('should not cache get result when cache=false', async () => {
     const ctx = new FlowContext();
     const getter = vi.fn().mockResolvedValue(101112);
     ctx.defineProperty('noCache', { get: getter, cache: false });
@@ -63,7 +64,7 @@ describe('FlowContext', () => {
     expect(getter).toHaveBeenCalledTimes(2);
   });
 
-  it('should support delegate contexts', () => {
+  it('should support delegate context property', () => {
     const delegate = new FlowContext();
     delegate.defineProperty('shared', { value: 'from delegate' });
 
@@ -72,7 +73,7 @@ describe('FlowContext', () => {
     expect(ctx.shared).toBe('from delegate');
   });
 
-  it('should throw error when get throws', () => {
+  it('should throw sync error in get', () => {
     const ctx = new FlowContext();
     ctx.defineProperty('error', {
       get: () => {
@@ -82,7 +83,7 @@ describe('FlowContext', () => {
     expect(() => ctx.error).toThrow('Oops');
   });
 
-  it('should throw error when async get throws', async () => {
+  it('should throw async error in get', async () => {
     const ctx = new FlowContext();
     ctx.defineProperty('errorAsync', {
       get: async () => {
@@ -92,7 +93,7 @@ describe('FlowContext', () => {
     await expect(ctx.errorAsync).rejects.toThrow('Async Oops');
   });
 
-  it('should fallback to parent delegate chain', () => {
+  it('should find property in multi-level delegate chain', () => {
     const root = new FlowContext();
     root.defineProperty('deep', { value: 42 });
 
@@ -105,7 +106,7 @@ describe('FlowContext', () => {
     expect(ctx.deep).toBe(42);
   });
 
-  it('should allow overriding delegate properties', () => {
+  it('should allow local property to override delegate property', () => {
     const delegate = new FlowContext();
     delegate.defineProperty('foo', { value: 'delegate' });
 
@@ -116,12 +117,12 @@ describe('FlowContext', () => {
     expect(ctx.foo).toBe('local');
   });
 
-  it('should handle accessing undefined properties', () => {
+  it('should return undefined for undefined property', () => {
     const ctx = new FlowContext();
     expect(ctx.nonExistent).toBeUndefined();
   });
 
-  it('should override previously defined property', () => {
+  it('should override property when redefined', () => {
     const ctx = new FlowContext();
     ctx.defineProperty('dup', { value: 1 });
     ctx.defineProperty('dup', { value: 2 });
@@ -129,7 +130,7 @@ describe('FlowContext', () => {
     expect(ctx.dup).toBe(2);
   });
 
-  it('should return property meta tree for flat and nested meta', () => {
+  it('should support flat and nested meta in getPropertyMetaTree', () => {
     const ctx = new FlowContext();
     ctx.defineProperty('foo', {
       meta: { type: 'string', title: 'Foo' },
@@ -182,7 +183,7 @@ describe('FlowContext', () => {
     ]);
   });
 
-  it('should merge meta from delegates and allow override', () => {
+  it('should support delegate meta and local override in getPropertyMetaTree', () => {
     const delegate = new FlowContext();
     delegate.defineProperty('foo', {
       meta: { type: 'string', title: 'Delegate Foo', interface: 'text', uiSchema: { 'ui:widget': 'text' } },
@@ -230,7 +231,7 @@ describe('FlowContext', () => {
       },
     ]);
   });
-  it('should define and call method on context', () => {
+  it('should define and call instance method with defineMethod', () => {
     const ctx = new FlowContext();
     ctx.defineMethod('hello', function (name: string) {
       return `Hello, ${name}!`;
@@ -238,7 +239,7 @@ describe('FlowContext', () => {
     expect(ctx.hello('World')).toBe('Hello, World!');
   });
 
-  it('should support delegate method lookup and binding', () => {
+  it('should support method lookup and this binding in delegate chain', () => {
     const delegate = new FlowContext();
     delegate.defineMethod('add', function (a: number, b: number) {
       // this 指向 delegate
@@ -255,7 +256,7 @@ describe('FlowContext', () => {
     expect(ctx.add(1, 2)).toBe(103);
   });
 
-  it('should allow overriding delegate methods with local defineMethod', () => {
+  it('should allow local defineMethod to override delegate method', () => {
     const delegate = new FlowContext();
     delegate.defineMethod('greet', function (name: string) {
       return `Hello from delegate, ${name}`;
@@ -272,5 +273,79 @@ describe('FlowContext', () => {
     expect(ctx.greet('Copilot')).toBe('Hello from local, Copilot');
     // delegate 仍然保持原方法
     expect(delegate.greet('Copilot')).toBe('Hello from delegate, Copilot');
+  });
+});
+
+describe('FlowEngine context', () => {
+  it('should support defineProperty on FlowEngine.context', () => {
+    const engine = new FlowEngine();
+    engine.context.defineProperty('appName', { value: 'NocoBase' });
+    expect(engine.context.appName).toBe('NocoBase');
+  });
+});
+
+describe('ForkFlowModel context inheritance and isolation', () => {
+  let engine: FlowEngine;
+  class TestModel extends FlowModel {}
+
+  beforeEach(() => {
+    engine = new FlowEngine();
+    engine.registerModels({ TestModel });
+    engine.context.defineProperty('appName', { value: 'NocoBase' });
+  });
+
+  it('should inherit engine.context property in FlowModel.context', () => {
+    const model = engine.createModel({ use: 'TestModel' });
+    expect(model.context.appName).toBe('NocoBase');
+  });
+
+  it('should inherit model.context property in ForkFlowModel.context', () => {
+    const model = engine.createModel({ use: 'TestModel' });
+    const fork = model.createFork();
+    expect(fork.context.appName).toBe('NocoBase');
+  });
+
+  it('should inherit latest value after model.context property changes in fork.context', () => {
+    const model = engine.createModel({ use: 'TestModel' });
+    model.context.defineProperty('appName', { value: 'NocoBase2' });
+    const fork = model.createFork();
+    expect(fork.context.appName).toBe('NocoBase2');
+  });
+
+  it('should not affect model.context when fork.context property changes', () => {
+    const model = engine.createModel({ use: 'TestModel' });
+    model.context.defineProperty('appName', { value: 'NocoBase2' });
+    const fork = model.createFork();
+    fork.context.defineProperty('appName', { value: 'NocoBase3' });
+    expect(fork.context.appName).toBe('NocoBase3');
+  });
+
+  it('should isolate fork.context property changes from subModel.context when subModel delegates to parent', () => {
+    const model = engine.createModel({
+      use: 'TestModel',
+      subModels: {
+        sub: { uid: 'sub1', use: 'TestModel' },
+      },
+    });
+    model.context.defineProperty('appName', { value: 'NocoBase2' });
+    const sub = engine.getModel<TestModel>('sub1');
+    expect(sub.context.appName).toBe('NocoBase2');
+    sub.context.defineProperty('appName', { value: 'NocoBase3' });
+    const fork = sub.createFork();
+    expect(fork.context.appName).toBe('NocoBase3');
+    fork.context.defineProperty('appName', { value: 'NocoBase4' });
+    expect(fork.context.appName).toBe('NocoBase4');
+  });
+
+  it('should not inherit parent context property when subModel disables delegateToParent', () => {
+    const model = engine.createModel({
+      use: 'TestModel',
+      subModels: {
+        sub: { uid: 'sub1', use: 'TestModel', delegateToParent: false },
+      },
+    });
+    model.context.defineProperty('appName', { value: 'NocoBase2' });
+    const sub = engine.getModel<TestModel>('sub1');
+    expect(sub.context.appName).toBe('NocoBase');
   });
 });

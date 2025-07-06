@@ -14,6 +14,7 @@ import { uid } from 'uid/secure';
 import { openRequiredParamsStepFormDialog as openRequiredParamsStepFormDialogFn } from '../components/settings/wrappers/contextual/StepRequiredSettingsDialog';
 import { openStepSettingsDialog as openStepSettingsDialogFn } from '../components/settings/wrappers/contextual/StepSettingsDialog';
 import { Emitter } from '../emitter';
+import { FlowModelContext } from '../flowContext';
 import { FlowEngine } from '../flowEngine';
 import type {
   ArrayElementType,
@@ -71,6 +72,7 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
    */
   private _lastAutoRunParams: any[] | null = null;
   private observerDispose: () => void;
+  private _flowContext: FlowModelContext;
 
   constructor(options: FlowModelOptions<Structure>) {
     if (!options.flowEngine) {
@@ -114,6 +116,13 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
       }
       this._rerunLastAutoRun();
     });
+  }
+
+  get context() {
+    if (!this._flowContext) {
+      this._flowContext = new FlowModelContext(this);
+    }
+    return this._flowContext;
   }
 
   on(eventName: string, listener: (...args: any[]) => void) {
@@ -696,6 +705,9 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     }
     this.parent = parent as ParentFlowModel<Structure>;
     this._options.parentId = parent.uid;
+    if (this._options.delegateToParent !== false) {
+      this.context.delegate(this.parent.context);
+    }
   }
 
   addSubModel(subKey: string, options: CreateModelOptions | FlowModel) {

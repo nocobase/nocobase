@@ -247,6 +247,7 @@ export interface CreateModelOptions {
   subKey?: string;
   subType?: 'object' | 'array';
   sortIndex?: number; // 排序索引
+  delegateToParent?: boolean;
   [key: string]: any; // 允许额外的自定义选项
 }
 export interface IFlowModelRepository<T extends FlowModel = FlowModel> {
@@ -322,6 +323,7 @@ export interface FlowModelOptions<Structure extends { parent?: FlowModel; subMod
   subModels?: Structure['subModels'];
   flowEngine?: FlowEngine;
   parentId?: string;
+  delegateToParent?: boolean;
   subKey?: string;
   subType?: 'object' | 'array';
   sortIndex?: number;
