@@ -8,6 +8,7 @@
  */
 
 import { result } from 'lodash';
+import { DataSource, DataSourceManager } from './data-source';
 import { FlowEngine } from './flowEngine';
 import { FlowModel, ForkFlowModel } from './models';
 import { FlowExitException } from './utils';
@@ -49,20 +50,21 @@ export class FlowContext {
     return new Proxy(this, {
       get: (target, key, receiver) => {
         if (typeof key === 'string') {
-          // 1. 优先查找自身 _props
-          if (Object.prototype.hasOwnProperty.call(target._props, key)) {
-            return target._getOwnProperty(key);
-          }
-          // 2. 优先查找自身 _methods
-          if (Object.prototype.hasOwnProperty.call(target._methods, key)) {
-            return target._getOwnMethod(key);
-          }
-
-          // 3. 检查是否为直接属性或方法，如果是则跳过委托链查找
+          // 1. 检查是否为直接属性或方法，如果是则跳过委托链查找
           if (Reflect.has(target, key)) {
             const val = Reflect.get(target, key, receiver);
             if (typeof val === 'function') return val.bind(target);
             return val;
+          }
+
+          // 2. 优先查找自身 _props
+          if (Object.prototype.hasOwnProperty.call(target._props, key)) {
+            return target._getOwnProperty(key);
+          }
+
+          // 3. 优先查找自身 _methods
+          if (Object.prototype.hasOwnProperty.call(target._methods, key)) {
+            return target._getOwnMethod(key);
           }
 
           // 4. 只有在自身没有该属性时才查找委托链
@@ -75,12 +77,12 @@ export class FlowContext {
       },
       has: (target, key) => {
         if (typeof key === 'string') {
-          // 1. 检查 _props 和 _methods
+          // 1. 检查直接属性
+          if (Reflect.has(target, key)) return true;
+
+          // 2. 检查 _props 和 _methods
           if (Object.prototype.hasOwnProperty.call(target._props, key)) return true;
           if (Object.prototype.hasOwnProperty.call(target._methods, key)) return true;
-
-          // 2. 检查直接属性
-          if (Reflect.has(target, key)) return true;
 
           // 3. 检查委托链
           if (this._hasInDelegates(target._delegates, key)) return true;
@@ -264,12 +266,19 @@ export class FlowContext {
 }
 
 export class FlowEngineContext extends FlowContext {
-  constructor(protected engine: FlowEngine) {
+  public dataSourceManager: DataSourceManager;
+  constructor(public engine: FlowEngine) {
     if (!(engine instanceof FlowEngine)) {
       throw new Error('Invalid FlowEngine instance');
     }
     super();
     this.engine = engine;
+    this.dataSourceManager = new DataSourceManager();
+    const mainDataSource = new DataSource({
+      key: 'main',
+      displayName: 'Main',
+    });
+    this.dataSourceManager.addDataSource(mainDataSource);
   }
 }
 
@@ -279,8 +288,7 @@ export class FlowModelContext extends FlowContext {
       throw new Error('Invalid FlowModel instance');
     }
     super();
-    // @ts-ignore
-    this.delegate(this.model.flowEngine.context);
+    this.addDelegate(this.model.flowEngine.context);
   }
 }
 
@@ -290,8 +298,7 @@ export class FlowForkModelContext extends FlowContext {
       throw new Error('Invalid FlowModel instance');
     }
     super();
-    // @ts-ignore
-    this.delegate(this.model.context);
+    this.addDelegate(this.model.context);
   }
 }
 
@@ -303,8 +310,7 @@ export class FlowRuntimeContext<TModel extends FlowModel> extends FlowContext {
     public flowKey: string,
   ) {
     super();
-    // @ts-ignore
-    this.delegate(this.model.context);
+    this.addDelegate(this.model.context);
   }
 
   exit() {

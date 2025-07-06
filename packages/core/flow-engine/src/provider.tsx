@@ -38,7 +38,7 @@ export const FlowEngineGlobalsContextProvider: React.FC<{ children: React.ReactN
   const { token } = theme.useToken();
 
   useEffect(() => {
-    engine.setContext({
+    const context = {
       antdConfig: config,
       themeToken: token,
       modal,
@@ -48,7 +48,14 @@ export const FlowEngineGlobalsContextProvider: React.FC<{ children: React.ReactN
       popover,
       dialog,
       page,
-    });
+    };
+    for (const item of Object.entries(context)) {
+      const [key, value] = item;
+      if (value) {
+        engine.context.defineProperty(key, { value });
+      }
+    }
+    engine.setContext(context);
   }, [engine, drawer, modal, message, notification, config, popover, token, dialog, page]);
 
   return (
