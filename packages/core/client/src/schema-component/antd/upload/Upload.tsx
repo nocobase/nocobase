@@ -216,6 +216,7 @@ function ReadPretty({ value, onChange, disabled, multiple, size, ...others }: Up
           }
         `,
       )}
+      style={resetStyle}
     >
       <div className={cls(`${prefixCls}-list`, `${prefixCls}-list-picture-card`)} style={resetStyle}>
         <AttachmentList
