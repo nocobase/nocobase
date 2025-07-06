@@ -712,7 +712,10 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
   }
 
   setParent(parent: FlowModel): void {
-    if (!parent || !isInheritedFrom(parent.constructor as any, FlowModel)) {
+    // forkflowModel instanceof FlowModel is false, but fork can be used as parent
+    const isValidParent =
+      parent && (parent.constructor === FlowModel || isInheritedFrom(parent.constructor as any, FlowModel));
+    if (!isValidParent) {
       throw new Error('Parent must be an instance of FlowModel.');
     }
     this.parent = parent as ParentFlowModel<Structure>;

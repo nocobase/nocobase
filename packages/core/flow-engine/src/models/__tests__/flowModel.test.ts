@@ -1511,6 +1511,146 @@ describe('FlowModel', () => {
     });
   });
 
+  // ==================== CACHE INVALIDATION ====================
+  describe('Cache Invalidation', () => {
+    let model: FlowModel;
+    let realFlowEngine: FlowEngine;
+    let deleteSpy: any;
+
+    beforeEach(() => {
+      realFlowEngine = new FlowEngine();
+      deleteSpy = vi.spyOn(realFlowEngine.applyFlowCache, 'delete');
+
+      // Mock generateApplyFlowCacheKey static method
+      vi.spyOn(FlowEngine, 'generateApplyFlowCacheKey').mockImplementation(
+        (prefix: string, type: string, modelUid: string) => `${prefix}-${type}-${modelUid}`,
+      );
+
+      model = new FlowModel({
+        uid: 'test-model-uid',
+        flowEngine: realFlowEngine,
+        stepParams: {},
+        subModels: {},
+      });
+    });
+
+    afterEach(() => {
+      vi.restoreAllMocks();
+    });
+
+    describe('invalidateAutoFlowCache', () => {
+      test('should delete auto flow cache for current model', () => {
+        const expectedCacheKey = 'autoFlow-all-test-model-uid';
+        realFlowEngine.applyFlowCache.set(expectedCacheKey, {
+          status: 'resolved',
+          data: [],
+          promise: Promise.resolve([]),
+        });
+
+        model.invalidateAutoFlowCache();
+
+        expect(deleteSpy).toHaveBeenCalledWith(expectedCacheKey);
+      });
+
+      test('should delete cache entries for all forks', () => {
+        const fork1 = model.createFork();
+        const fork2 = model.createFork();
+
+        const fork1CacheKey = `${fork1.forkId}-all-test-model-uid`;
+        const fork2CacheKey = `${fork2.forkId}-all-test-model-uid`;
+
+        realFlowEngine.applyFlowCache.set(fork1CacheKey, {
+          status: 'resolved',
+          data: [],
+          promise: Promise.resolve([]),
+        });
+        realFlowEngine.applyFlowCache.set(fork2CacheKey, {
+          status: 'resolved',
+          data: [],
+          promise: Promise.resolve([]),
+        });
+
+        model.invalidateAutoFlowCache();
+
+        expect(deleteSpy).toHaveBeenCalledWith(fork1CacheKey);
+        expect(deleteSpy).toHaveBeenCalledWith(fork2CacheKey);
+      });
+
+      test('should recursively invalidate cache for array subModels', () => {
+        const childModel1 = new FlowModel({ uid: 'child1', flowEngine: realFlowEngine });
+        const childModel2 = new FlowModel({ uid: 'child2', flowEngine: realFlowEngine });
+
+        const child1Spy = vi.spyOn(childModel1, 'invalidateAutoFlowCache');
+        const child2Spy = vi.spyOn(childModel2, 'invalidateAutoFlowCache');
+
+        model.addSubModel('children', childModel1);
+        model.addSubModel('children', childModel2);
+
+        model.invalidateAutoFlowCache();
+
+        expect(child1Spy).toHaveBeenCalledWith(false);
+        expect(child2Spy).toHaveBeenCalledWith(false);
+      });
+
+      test('should recursively invalidate cache for object subModels', () => {
+        const childModel = new FlowModel({ uid: 'child', flowEngine: realFlowEngine });
+        const childSpy = vi.spyOn(childModel, 'invalidateAutoFlowCache');
+
+        model.setSubModel('child', childModel);
+
+        model.invalidateAutoFlowCache();
+
+        expect(childSpy).toHaveBeenCalledWith(false);
+      });
+
+      test('should handle mixed array and object subModels', () => {
+        const arrayChild1 = new FlowModel({ uid: 'arrayChild1', flowEngine: realFlowEngine });
+        const arrayChild2 = new FlowModel({ uid: 'arrayChild2', flowEngine: realFlowEngine });
+        const objectChild = new FlowModel({ uid: 'objectChild', flowEngine: realFlowEngine });
+
+        const array1Spy = vi.spyOn(arrayChild1, 'invalidateAutoFlowCache');
+        const array2Spy = vi.spyOn(arrayChild2, 'invalidateAutoFlowCache');
+        const objectSpy = vi.spyOn(objectChild, 'invalidateAutoFlowCache');
+
+        model.addSubModel('arrayChildren', arrayChild1);
+        model.addSubModel('arrayChildren', arrayChild2);
+        model.setSubModel('objectChild', objectChild);
+
+        model.invalidateAutoFlowCache();
+
+        expect(array1Spy).toHaveBeenCalledWith(false);
+        expect(array2Spy).toHaveBeenCalledWith(false);
+        expect(objectSpy).toHaveBeenCalledWith(false);
+      });
+
+      test('should handle empty subModels without error', () => {
+        model.invalidateAutoFlowCache();
+
+        expect(deleteSpy).toHaveBeenCalledWith('autoFlow-all-test-model-uid');
+      });
+
+      test('should handle null flowEngine gracefully', () => {
+        const modelWithValidEngine = new FlowModel({ uid: 'test', flowEngine: realFlowEngine });
+        modelWithValidEngine.flowEngine = null;
+
+        expect(() => {
+          modelWithValidEngine.invalidateAutoFlowCache();
+        }).not.toThrow();
+      });
+
+      test('should pass deep parameter to recursive calls', () => {
+        const childModel = new FlowModel({ uid: 'child', flowEngine: realFlowEngine });
+        const childSpy = vi.spyOn(childModel, 'invalidateAutoFlowCache');
+
+        model.setSubModel('child', childModel);
+
+        model.invalidateAutoFlowCache(true);
+
+        expect(childSpy).toHaveBeenCalledWith(true);
+      });
+    });
+  });
+
   // ==================== EDGE CASES ====================
   describe('Edge Cases & Error Handling', () => {
     test('should handle model destruction gracefully', () => {
