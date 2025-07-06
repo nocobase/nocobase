@@ -38,7 +38,7 @@ export class FlowEngine {
   private modelInstances: Map<string, any> = new Map();
   /** @public Stores flow settings including components and scopes for formily settings. */
   public flowSettings: FlowSettings = new FlowSettings();
-  context: FlowContext['globals'] = {} as FlowContext['globals'];
+  _context: FlowContext['globals'] = {} as FlowContext['globals'];
   private modelRepository: IFlowModelRepository | null = null;
   private _applyFlowCache = new Map<string, ApplyFlowCacheEntry>();
 
@@ -70,14 +70,17 @@ export class FlowEngine {
   }
 
   setContext(context: any) {
-    this.context = { ...this.context, ...context };
-    if (this.context.i18n) {
-      initFlowEngineLocale(this.context.i18n);
+    this._context = { ...this._context, ...context };
+    if (this._context.i18n) {
+      initFlowEngineLocale(this._context.i18n);
     }
   }
 
-  getContext() {
-    return this.context;
+  getContext(key?: string): any {
+    if (key) {
+      return this._context[key] || null;
+    }
+    return this._context;
   }
 
   /**
@@ -119,8 +122,8 @@ export class FlowEngine {
    * @private
    */
   private translateKey(key: string, options?: any): string {
-    if (this.context?.i18n?.t) {
-      return this.context.i18n.t(key, options);
+    if (this._context?.i18n?.t) {
+      return this._context.i18n.t(key, options);
     }
     // 如果没有翻译函数，返回原始键值
     return key;

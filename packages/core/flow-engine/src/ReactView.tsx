@@ -31,7 +31,7 @@ export class ReactView {
     return {
       render: (children: React.ReactNode) => {
         root.render(
-          <Provider engine={this.flowEngine} config={this.flowEngine.context['antdConfig']}>
+          <Provider engine={this.flowEngine} config={this.flowEngine.getContext('antdConfig')}>
             {children}
           </Provider>,
         );
@@ -50,7 +50,7 @@ export class ReactView {
     const renderContent = (root: Root) => {
       const content = typeof children === 'function' ? (children as (root: Root) => React.ReactNode)(root) : children;
       return (
-        <Provider engine={this.flowEngine} config={this.flowEngine.context['antdConfig']}>
+        <Provider engine={this.flowEngine} config={this.flowEngine.getContext('antdConfig')}>
           {content}
         </Provider>
       );

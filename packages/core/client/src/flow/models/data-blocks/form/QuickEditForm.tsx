@@ -79,7 +79,7 @@ export class QuickEditForm extends DataBlockModel {
     console.log('QuickEditForm.open2', Date.now() - model.now);
     model.now = Date.now();
 
-    await flowEngine.context.popover.open({
+    await flowEngine.getContext('popover').open({
       target,
       placement: 'rightTop',
       content: (popover) => {

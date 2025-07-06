@@ -84,7 +84,7 @@ export abstract class DataSource {
   abstract getDataSource(): Promise<Omit<Partial<DataSourceOptions>, 'key'>> | Omit<Partial<DataSourceOptions>, 'key'>;
 
   get flowEngineDataSourceManager() {
-    return this.app.flowEngine?.context?.dataSourceManager;
+    return this.app.flowEngine?.getContext?.('dataSourceManager');
   }
 
   async reload() {

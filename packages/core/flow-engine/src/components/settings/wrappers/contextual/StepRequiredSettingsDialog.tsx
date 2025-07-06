@@ -7,14 +7,14 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { createSchemaField, ISchema, FormConsumer } from '@formily/react';
-import { message, Button } from 'antd';
+import { createSchemaField, FormConsumer, ISchema } from '@formily/react';
+import { toJS } from '@formily/reactive';
+import { Button, message } from 'antd';
 import React from 'react';
 import { FlowModel } from '../../../../models';
 import { StepDefinition } from '../../../../types';
-import { resolveDefaultParams, resolveUiSchema, compileUiSchema, getT } from '../../../../utils';
+import { compileUiSchema, getT, resolveDefaultParams, resolveUiSchema } from '../../../../utils';
 import { StepSettingContextProvider, StepSettingContextType, useStepSettingContext } from './StepSettingContext';
-import { toJS } from '@formily/reactive';
 
 /**
  * 检查步骤是否已经有了所需的配置值
@@ -72,8 +72,8 @@ const MultiStepContextProvider: React.FC<MultiStepContextProviderProps> = ({
       // 如果没有当前步骤信息，返回基础上下文
       return {
         model,
-        globals: model.flowEngine?.context || {},
-        app: model.flowEngine?.context?.app,
+        globals: model.flowEngine.getContext() || {},
+        app: model.flowEngine.getContext()?.app,
         step: null,
         flow: null,
         flowKey: '',
@@ -86,8 +86,8 @@ const MultiStepContextProvider: React.FC<MultiStepContextProviderProps> = ({
 
     return {
       model,
-      globals: model.flowEngine?.context || {},
-      app: model.flowEngine?.context?.app,
+      globals: model.flowEngine.getContext() || {},
+      app: model.flowEngine.getContext()?.app,
       step,
       flow,
       flowKey,
@@ -148,8 +148,8 @@ const openRequiredParamsStepFormDialog = async ({
         // 创建参数解析上下文用于解析动态 uiSchema
         const paramsContext = {
           model,
-          globals: model.flowEngine?.context || {},
-          app: model.flowEngine?.context?.app,
+          globals: model.flowEngine.getContext() || {},
+          app: model.flowEngine.getContext()?.app,
         };
 
         for (const [flowKey, flow] of allFlows) {

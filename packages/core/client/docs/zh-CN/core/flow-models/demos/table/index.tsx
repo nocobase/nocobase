@@ -13,7 +13,7 @@ import { TableModel } from './table-model';
 
 class PluginDemo extends Plugin {
   async load() {
-    this.flowEngine.context.dsm = dsm;
+    this.flowEngine.setContext({ dsm });
     this.flowEngine.registerModels({
       DeleteActionModel,
       LinkActionModel,

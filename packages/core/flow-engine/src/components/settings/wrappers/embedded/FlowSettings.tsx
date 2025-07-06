@@ -7,13 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { Alert, Form, Input, InputNumber, Select, Switch } from 'antd';
 import React, { useCallback, useEffect } from 'react';
-import { Alert, Input, InputNumber, Select, Switch, Form } from 'antd';
 // TODO: ISchema may need to be imported from a different package or refactored.
-import { StepDefinition } from '../../../../types';
+import { observer } from '@formily/react';
 import { useFlowModelById } from '../../../../hooks';
 import { FlowModel } from '../../../../models';
-import { observer } from '@formily/react';
+import { StepDefinition } from '../../../../types';
 import { resolveDefaultParams } from '../../../../utils';
 
 const { Item: FormItem } = Form;
@@ -139,8 +139,8 @@ const FlowSettingsContent: React.FC<FlowSettingsContentProps> = observer(({ mode
     // 在 settings 中，我们只有基本的上下文信息
     const paramsContext = {
       model,
-      globals: model.flowEngine?.context || {},
-      app: model.flowEngine?.context?.app,
+      globals: model.flowEngine.getContext() || {},
+      app: model.flowEngine.getContext()?.app,
     };
 
     // 从model中获取每个步骤的参数，如果为空则使用默认参数

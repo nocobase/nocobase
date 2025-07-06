@@ -506,7 +506,7 @@ export class CollectionField {
   }
 
   getInterfaceOptions() {
-    const app = this.flowEngine.context.app;
+    const app = this.flowEngine.getContext('app');
     return app.dataSourceManager.collectionFieldInterfaceManager.getFieldInterface(this.interface);
   }
 

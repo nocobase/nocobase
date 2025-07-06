@@ -37,7 +37,7 @@ const openStepSettingsDialog = async ({
   mode = 'dialog',
 }: StepSettingsDialogProps): Promise<any> => {
   const t = getT(model);
-  const message = model.flowEngine.context.message;
+  const message = model.flowEngine.getContext('message');
 
   if (!model) {
     message.error(t('Invalid model provided'));
@@ -63,8 +63,8 @@ const openStepSettingsDialog = async ({
   // 创建参数解析上下文
   const paramsContext = {
     model,
-    globals: model.flowEngine?.context || {},
-    app: model.flowEngine?.context?.app,
+    globals: model.flowEngine.getContext() || {},
+    app: model.flowEngine.getContext()?.app,
   };
 
   // 获取可配置的步骤信息
@@ -131,7 +131,7 @@ const openStepSettingsDialog = async ({
     },
   };
 
-  const view = model.flowEngine.context[mode];
+  const view = model.flowEngine.getContext(mode);
 
   const form = createForm({
     initialValues: compileUiSchema(scopes, initialValues),
@@ -180,8 +180,8 @@ const openStepSettingsDialog = async ({
     content: (currentDialog) => {
       const contextValue: StepSettingContextType = {
         model,
-        globals: model.flowEngine?.context || {},
-        app: model.flowEngine?.context?.app,
+        globals: model.flowEngine.getContext() || {},
+        app: model.flowEngine.getContext()?.app,
         step,
         flow,
         flowKey,
