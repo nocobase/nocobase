@@ -303,8 +303,8 @@ export const usePopupUtils = (
       return setVisibleFromAction?.(false);
     }
 
-    // 1. 如果路由栈中存在上一级的路由，则直接返回上一级
-    // 2. 如果弹窗是通过 URL 直接打开的，路由栈中没有上一级的路由，做需要跳转到上一级弹窗的路由
+    // 1. If there is a previous route in the route stack, navigate back to the previous route.
+    // 2. If the popup was opened directly via a URL and there is no previous route in the stack, navigate to the route of the previous popup.
     if (getPopupLayerState(currentLevel)) {
       navigate(-1);
     } else {
