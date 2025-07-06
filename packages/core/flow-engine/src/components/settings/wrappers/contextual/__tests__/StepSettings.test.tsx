@@ -7,6 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { FlowEngine } from '@nocobase/flow-engine';
 import { FlowModel } from '../../../../../models';
 import { getStepSettingMode, isStepUsingDrawerMode } from '../StepSettings';
 
@@ -74,7 +75,9 @@ describe('StepSettings', () => {
   let testModel: TestModel;
 
   beforeEach(() => {
-    testModel = new TestModel({ uid: 'test-model' });
+    const flowEngine = new FlowEngine();
+    flowEngine.registerModels({ TestModel });
+    testModel = flowEngine.createModel({ use: 'TestModel', uid: 'test-model' });
   });
 
   describe('getStepSettingMode', () => {

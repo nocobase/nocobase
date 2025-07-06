@@ -7,51 +7,52 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { vi } from 'vitest';
-import { FlowModel, defineFlow } from '../flowModel';
-import { FlowEngine } from '../../flowEngine';
-import { ForkFlowModel } from '../forkFlowModel';
-import type { FlowDefinition, FlowContext, FlowModelOptions, DefaultStructure } from '../../types';
 import { APIClient } from '@nocobase/sdk';
+import { vi } from 'vitest';
+import { FlowEngine } from '../../flowEngine';
+import type { DefaultStructure, FlowContext, FlowDefinition, FlowModelOptions } from '../../types';
+import { FlowModel, defineFlow } from '../flowModel';
+import { ForkFlowModel } from '../forkFlowModel';
 
-// Mock dependencies
-vi.mock('uid/secure', () => ({
-  uid: vi.fn(() => 'mock-uid-' + Math.random().toString(36).substring(2, 11)),
-}));
+// // Mock dependencies
+// vi.mock('uid/secure', () => ({
+//   uid: vi.fn(() => 'mock-uid-' + Math.random().toString(36).substring(2, 11)),
+// }));
 
-vi.mock('../forkFlowModel', () => ({
-  ForkFlowModel: vi.fn().mockImplementation(function (master: any, localProps: any, forkId: number) {
-    const instance = {
-      master,
-      localProps,
-      forkId,
-      setProps: vi.fn(),
-      dispose: vi.fn(),
-      disposed: false,
-    };
-    Object.setPrototypeOf(instance, ForkFlowModel.prototype);
-    return instance;
-  }),
-}));
+// vi.mock('../forkFlowModel', () => ({
+//   ForkFlowModel: vi.fn().mockImplementation(function (master: any, localProps: any, forkId: number) {
+//     const instance = {
+//       master,
+//       localProps,
+//       forkId,
+//       setProps: vi.fn(),
+//       dispose: vi.fn(),
+//       disposed: false,
+//     };
+//     Object.setPrototypeOf(instance, ForkFlowModel.prototype);
+//     return instance;
+//   }),
+// }));
 
-vi.mock('../../components/settings/wrappers/contextual/StepSettingsDialog', () => ({
-  openStepSettingsDialog: vi.fn(),
-}));
+// vi.mock('../../components/settings/wrappers/contextual/StepSettingsDialog', () => ({
+//   openStepSettingsDialog: vi.fn(),
+// }));
 
-vi.mock('../../components/settings/wrappers/contextual/StepRequiredSettingsDialog', () => ({
-  openRequiredParamsStepFormDialog: vi.fn(),
-}));
+// vi.mock('../../components/settings/wrappers/contextual/StepRequiredSettingsDialog', () => ({
+//   openRequiredParamsStepFormDialog: vi.fn(),
+// }));
 
-vi.mock('lodash', async () => {
-  const actual = await vi.importActual('lodash');
-  return {
-    ...actual,
-    debounce: vi.fn((fn) => fn),
-  };
-});
+// vi.mock('lodash', async () => {
+//   const actual = await vi.importActual('lodash');
+//   return {
+//     ...actual,
+//     debounce: vi.fn((fn) => fn),
+//   };
+// });
 
 // Helper functions
 const createMockFlowEngine = (): FlowEngine => {
+  return new FlowEngine();
   const applyFlowCache = new Map();
   const mockEngine = {
     getModel: vi.fn(),
@@ -1057,6 +1058,11 @@ describe('FlowModel', () => {
       test('should dispose all forks when clearing', () => {
         const fork1 = model.createFork();
         const fork2 = model.createFork();
+
+        // 手动 mock dispose 方法为 spy
+        fork1.dispose = vi.fn();
+        fork2.dispose = vi.fn();
+
         const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
 
         try {
@@ -1262,13 +1268,13 @@ describe('FlowModel', () => {
         const mockTranslate = vi.fn((v) => {
           if (v) return 'Translated Title';
         });
-        const mockFlowEngine = {
-          ...flowEngine,
-          translate: mockTranslate,
-        };
+
+        const flowEngine = new FlowEngine();
+        flowEngine.translate = mockTranslate;
+
         const modelWithTranslate = new TestFlowModel({
           ...modelOptions,
-          flowEngine: mockFlowEngine,
+          flowEngine,
         });
 
         const title = modelWithTranslate.title;
@@ -1454,13 +1460,12 @@ describe('FlowModel', () => {
           group: 'test',
         });
 
-        const mockFlowEngine = {
-          ...flowEngine,
-          translate: mockTranslate,
-        };
+        const flowEngine = new FlowEngine();
+        flowEngine.translate = mockTranslate;
+
         const modelWithTranslate = new TestFlowModel({
           ...modelOptions,
-          flowEngine: mockFlowEngine,
+          flowEngine,
         });
 
         const title = modelWithTranslate.title;
