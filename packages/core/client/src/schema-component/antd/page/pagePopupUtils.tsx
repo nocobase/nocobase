@@ -265,6 +265,7 @@ export const usePopupUtils = (
       if (schema.properties) {
         const nextLevel = currentLevel + 1;
 
+        // Prevent route confusion caused by repeated clicks
         if (getPopupLayerState(nextLevel)) {
           return;
         }
@@ -302,7 +303,13 @@ export const usePopupUtils = (
       return setVisibleFromAction?.(false);
     }
 
-    navigate(withSearchParams(removeLastPopupPath(location.pathname)), { replace: true });
+    // 1. 如果路由栈中存在上一级的路由，则直接返回上一级
+    // 2. 如果弹窗是通过 URL 直接打开的，路由栈中没有上一级的路由，做需要跳转到上一级弹窗的路由
+    if (getPopupLayerState(currentLevel)) {
+      navigate(-1);
+    } else {
+      navigate(withSearchParams(removeLastPopupPath(location.pathname)), { replace: true });
+    }
     removePopupLayerState(currentLevel);
     popupParams?.popupuid && deletePopupContext(popupParams.popupuid);
   }, [
