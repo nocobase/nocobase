@@ -21,7 +21,7 @@ export class ReadPrettyFieldModel extends FieldModel {
     return (
       <span>
         {this.props.prefix}
-        {this.getValue()}
+        {this.translate(this.getValue())}
         {this.props.suffix}
       </span>
     );
