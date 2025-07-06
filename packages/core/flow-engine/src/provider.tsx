@@ -67,6 +67,8 @@ export const FlowEngineGlobalsContextProvider: React.FC<{ children: React.ReactN
       }
     }
     engine.setContext(context);
+
+    engine.reactView.refresh();
   }, [engine, drawer, modal, message, notification, config, popover, token, dialog, page]);
 
   return (
