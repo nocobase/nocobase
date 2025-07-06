@@ -69,7 +69,7 @@ describe('FlowContext properties and methods', () => {
     delegate.defineProperty('shared', { value: 'from delegate' });
 
     const ctx = new FlowContext();
-    ctx.delegate(delegate);
+    ctx.addDelegate(delegate);
     expect(ctx.shared).toBe('from delegate');
   });
 
@@ -98,10 +98,10 @@ describe('FlowContext properties and methods', () => {
     root.defineProperty('deep', { value: 42 });
 
     const mid = new FlowContext();
-    mid.delegate(root);
+    mid.addDelegate(root);
 
     const ctx = new FlowContext();
-    ctx.delegate(mid);
+    ctx.addDelegate(mid);
 
     expect(ctx.deep).toBe(42);
   });
@@ -111,7 +111,7 @@ describe('FlowContext properties and methods', () => {
     delegate.defineProperty('foo', { value: 'delegate' });
 
     const ctx = new FlowContext();
-    ctx.delegate(delegate);
+    ctx.addDelegate(delegate);
     ctx.defineProperty('foo', { value: 'local' });
 
     expect(ctx.foo).toBe('local');
@@ -192,7 +192,7 @@ describe('FlowContext properties and methods', () => {
       meta: { type: 'number', title: 'Delegate Bar', interface: 'number', uiSchema: { 'ui:widget': 'number' } },
     });
     const ctx = new FlowContext();
-    ctx.delegate(delegate);
+    ctx.addDelegate(delegate);
     ctx.defineProperty('bar', {
       meta: {
         type: 'object',
@@ -248,7 +248,7 @@ describe('FlowContext properties and methods', () => {
     delegate.extra = 10;
 
     const ctx = new FlowContext();
-    ctx.delegate(delegate);
+    ctx.addDelegate(delegate);
 
     expect(ctx.add(1, 2)).toBe(13); // 1 + 2 + 10
     // 确认 this 绑定到 delegate
@@ -263,7 +263,7 @@ describe('FlowContext properties and methods', () => {
     });
 
     const ctx = new FlowContext();
-    ctx.delegate(delegate);
+    ctx.addDelegate(delegate);
 
     // 覆盖 delegate 的 greet 方法
     ctx.defineMethod('greet', function (name: string) {
@@ -273,6 +273,59 @@ describe('FlowContext properties and methods', () => {
     expect(ctx.greet('Copilot')).toBe('Hello from local, Copilot');
     // delegate 仍然保持原方法
     expect(delegate.greet('Copilot')).toBe('Hello from delegate, Copilot');
+  });
+
+  it('should support addDelegate and removeDelegate for multiple delegates', () => {
+    const d1 = new FlowContext();
+    d1.defineProperty('foo', { value: 'from d1' });
+
+    const d2 = new FlowContext();
+    d2.defineProperty('bar', { value: 'from d2' });
+
+    const ctx = new FlowContext();
+    ctx.addDelegate(d1);
+    ctx.addDelegate(d2);
+
+    // 能查到 d1 和 d2 的属性
+    expect(ctx.foo).toBe('from d1');
+    expect(ctx.bar).toBe('from d2');
+
+    // 移除 d1 后，foo 查不到
+    ctx.removeDelegate(d1);
+    expect(ctx.foo).toBeUndefined();
+    expect(ctx.bar).toBe('from d2');
+
+    // 移除 d2 后，bar 也查不到
+    ctx.removeDelegate(d2);
+    expect(ctx.bar).toBeUndefined();
+  });
+
+  it('should respect delegate priority: later addDelegate has higher priority', () => {
+    const d1 = new FlowContext();
+    d1.defineProperty('foo', { value: 'from d1' });
+
+    const d2 = new FlowContext();
+    d2.defineProperty('foo', { value: 'from d2' });
+
+    const ctx = new FlowContext();
+    ctx.addDelegate(d1);
+    ctx.addDelegate(d2);
+
+    // d2 优先
+    expect(ctx.foo).toBe('from d2');
+
+    // 移除 d2 后，d1 生效
+    ctx.removeDelegate(d2);
+    expect(ctx.foo).toBe('from d1');
+
+    // 再移除 d1，查不到
+    ctx.removeDelegate(d1);
+    expect(ctx.foo).toBeUndefined();
+
+    // 重新添加 d2，再添加 d1，d1 优先
+    ctx.addDelegate(d2);
+    ctx.addDelegate(d1);
+    expect(ctx.foo).toBe('from d1');
   });
 });
 

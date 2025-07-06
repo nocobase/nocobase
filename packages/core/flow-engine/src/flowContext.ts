@@ -125,6 +125,25 @@ export class FlowContext {
     this._delegates.unshift(ctx);
   }
 
+  addDelegate(ctx: FlowContext) {
+    if (!(ctx instanceof FlowContext)) {
+      throw new Error('Delegate must be an instance of FlowContext');
+    }
+    if (!this._delegates.includes(ctx)) {
+      this._delegates.unshift(ctx);
+    }
+  }
+
+  removeDelegate(ctx: FlowContext) {
+    if (!(ctx instanceof FlowContext)) {
+      throw new Error('Delegate must be an instance of FlowContext');
+    }
+    const index = this._delegates.indexOf(ctx);
+    if (index !== -1) {
+      this._delegates.splice(index, 1);
+    }
+  }
+
   has(key: string) {
     return !!this._props[key];
   }

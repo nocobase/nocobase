@@ -706,7 +706,7 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     this.parent = parent as ParentFlowModel<Structure>;
     this._options.parentId = parent.uid;
     if (this._options.delegateToParent !== false) {
-      this.context.delegate(this.parent.context);
+      this.context.addDelegate(this.parent.context);
     }
   }
 
