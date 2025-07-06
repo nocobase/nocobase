@@ -6,13 +6,20 @@
  * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
-import { tval } from '@nocobase/utils/client';
-import { APIResource, BaseRecordResource, Collection, DefaultStructure, FlowModel } from '@nocobase/flow-engine';
-import React from 'react';
-import { BlockItemCard } from '../common/BlockItemCard';
+import { Schema } from '@formily/json-schema';
 import { observable } from '@formily/reactive';
 import { Observer } from '@formily/reactive-react';
-import { Schema } from '@formily/json-schema';
+import {
+  APIResource,
+  BaseRecordResource,
+  Collection,
+  DefaultStructure,
+  escapeT,
+  FlowModel,
+} from '@nocobase/flow-engine';
+import { tval } from '@nocobase/utils/client';
+import React from 'react';
+import { BlockItemCard } from '../common/BlockItemCard';
 
 export class BlockModel<T = DefaultStructure> extends FlowModel<T> {
   decoratorProps: Record<string, any> = observable({});
@@ -40,21 +47,21 @@ export class BlockModel<T = DefaultStructure> extends FlowModel<T> {
 
 BlockModel.registerFlow({
   key: 'blockProps',
-  title: tval('Basic configuration'),
+  title: escapeT('Card settings'),
   auto: true,
   steps: {
     editBlockTitleAndDescription: {
-      title: tval('Edit block title & description'),
+      title: escapeT('Edit block title & description'),
       uiSchema: {
         title: {
           'x-component': 'Input',
           'x-decorator': 'FormItem',
-          title: tval('Title'),
+          title: escapeT('Title'),
         },
         description: {
           'x-component': 'Input.TextArea',
           'x-decorator': 'FormItem',
-          title: tval('Description'),
+          title: escapeT('Description'),
         },
       },
       handler(ctx, params) {

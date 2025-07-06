@@ -11,11 +11,11 @@ import { FormItem, Input } from '@formily/antd-v5';
 import type { FieldPatternTypes, FieldValidator } from '@formily/core';
 import { Field, Form } from '@formily/core';
 import { FieldContext } from '@formily/react';
-import React from 'react';
 import { tval } from '@nocobase/utils/client';
-import { FieldModel } from '../../base/FieldModel';
-import { ReactiveField } from '../../../formily/ReactiveField';
+import React from 'react';
 import { FormModel } from '../..';
+import { ReactiveField } from '../../../formily/ReactiveField';
+import { FieldModel } from '../../base/FieldModel';
 
 type FieldComponentTuple = [component: React.ElementType, props: Record<string, any>] | any[];
 
@@ -108,7 +108,7 @@ export class EditableFieldModel extends FieldModel<Structure> {
 EditableFieldModel.registerFlow({
   key: 'init',
   auto: true,
-  title: tval('Basic'),
+  title: tval('Form item settings'),
   sort: 150,
   steps: {
     createField: {

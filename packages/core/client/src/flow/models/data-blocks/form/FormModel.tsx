@@ -13,10 +13,10 @@ import { FormProvider } from '@formily/react';
 import {
   AddActionButton,
   AddFieldButton,
+  buildActionItems,
+  buildFieldItems,
   FlowModelRenderer,
   SingleRecordResource,
-  buildFieldItems,
-  buildActionItems,
 } from '@nocobase/flow-engine';
 import { tval } from '@nocobase/utils/client';
 import React from 'react';
@@ -89,6 +89,7 @@ export class FormModel extends DataBlockModel {
 FormModel.registerFlow({
   key: 'default',
   auto: true,
+  title: tval('Form settings'),
   steps: {
     step1: {
       paramsRequired: true,

@@ -7,9 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React from 'react';
 import { reactive } from '@nocobase/flow-engine';
 import { tval } from '@nocobase/utils/client';
+import React from 'react';
 import { FieldModel } from '../../base/FieldModel';
 
 export class ReadPrettyFieldModel extends FieldModel {

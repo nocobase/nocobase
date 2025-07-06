@@ -19,6 +19,7 @@ import {
   DndProvider,
   DragHandler,
   Droppable,
+  escapeT,
   FlowModelRenderer,
   ForkFlowModel,
   MultiRecordResource,
@@ -407,6 +408,7 @@ export class TableModel extends DataBlockModel<TableModelStructure> {
 TableModel.registerFlow({
   key: 'default',
   auto: true,
+  title: escapeT('Table settings'),
   steps: {
     virtual: {
       title: tval('Virtual'),
