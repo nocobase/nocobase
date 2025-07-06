@@ -296,6 +296,7 @@ export class TanstackTableModel extends DataBlockModel<TanstackTableModelStructu
 TanstackTableModel.define({
   title: tval('Tanstack Table'),
   group: tval('Content'),
+  hide: true,
   defaultOptions: {
     use: 'TanstackTableModel',
     subModels: {},

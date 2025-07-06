@@ -7,25 +7,25 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import type { ButtonProps } from 'antd/es/button';
+import { escapeT } from '@nocobase/flow-engine';
 import { tval } from '@nocobase/utils/client';
-import { openModeAction } from '../../actions/openModeAction';
+import type { ButtonProps } from 'antd/es/button';
 import { RecordActionModel } from '../base/ActionModel';
 
 export class EditActionModel extends RecordActionModel {
   defaultProps: ButtonProps = {
     type: 'link',
-    title: tval('Edit'),
+    title: escapeT('Edit'),
   };
 }
 
 EditActionModel.define({
-  title: tval('Edit'),
+  title: escapeT('Edit'),
 });
 
 EditActionModel.registerFlow({
-  key: 'handleClick',
-  title: tval('Click event'),
+  key: 'clickOpenView',
+  title: escapeT('Popup settings'),
   on: {
     eventName: 'click',
   },

@@ -286,6 +286,9 @@ export class FlowEngineContext extends FlowContext {
     this.defineProperty('dataSourceManager', {
       value: dataSourceManager,
     });
+    this.defineMethod('t', (keyOrTemplate: string, options?: any) => {
+      return this.engine.translate(keyOrTemplate, options);
+    });
   }
 }
 
