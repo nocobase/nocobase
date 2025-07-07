@@ -40,14 +40,16 @@ const MobileDateTimePicker = connect(
       ...rest
     } = props;
     const [visible, setVisible] = useState(false);
-    console.log(getPrecision(timeFormat));
-
     // 性能优化：使用 useCallback 缓存函数
     const handleConfirm = useCallback(
-      (value) => {
+      (val) => {
         setVisible(false);
-        const selectedDateTime = new Date(value);
-        onChange(selectedDateTime);
+        const selectedDateTime = new Date(val);
+        if (props.dateOnly) {
+          onChange(dayjs(val));
+        } else {
+          onChange(selectedDateTime);
+        }
       },
       [showTime, onChange],
     );
