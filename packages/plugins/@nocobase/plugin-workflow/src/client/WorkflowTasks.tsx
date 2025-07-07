@@ -6,23 +6,25 @@
  * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
-import { CheckCircleOutlined, EllipsisOutlined } from '@ant-design/icons';
+import { CheckCircleOutlined } from '@ant-design/icons';
 import { PageHeader } from '@ant-design/pro-layout';
-import { Badge, Button, Flex, Layout, Menu, Popover, Segmented, Tabs, theme, Tooltip } from 'antd';
+import { observer } from '@formily/react';
+import { Badge, Button, Flex, Layout, Menu, Segmented, Tabs, theme, Tooltip } from 'antd';
+import { NavBar, Toast } from 'antd-mobile';
 import classnames from 'classnames';
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
-import { NavBar, Toast } from 'antd-mobile';
-import { observer } from '@formily/react';
 
 import {
   ActionContextProvider,
+  APIClient,
   CollectionRecordProvider,
   css,
   PinnedPluginListProvider,
   SchemaComponent,
   SchemaComponentContext,
   SchemaComponentOptions,
+  SchemaInitializerItemType,
   useAPIClient,
   useApp,
   useCompile,
@@ -32,14 +34,11 @@ import {
   usePlugin,
   useRequest,
   useToken,
-  SchemaInitializerItemType,
-  APIClient,
 } from '@nocobase/client';
 
 import {
   MobilePageContentContainer,
   MobilePageHeader,
-  MobilePageNavigationBar,
   MobilePageProvider,
   MobileRouteItem,
   MobileTabBarItem,
@@ -90,6 +89,7 @@ function MenuLink({ type }: any) {
 
   return (
     <Link
+      replace
       to={
         mobilePage
           ? `/page/workflow/tasks/${type}/${TASK_STATUS.PENDING}`
