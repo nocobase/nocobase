@@ -9,6 +9,7 @@
 
 import { ISchema } from '@formily/json-schema';
 import { APIClient } from '@nocobase/sdk';
+import { FlowRuntimeContext } from './flowContext';
 import type { FlowEngine } from './flowEngine';
 import type { FlowModel } from './models';
 import { ReactView } from './ReactView';
@@ -115,7 +116,7 @@ export type CreateSubModelOptions = CreateModelOptions | FlowModel;
 /**
  * Constructor for model classes.
  */
-export type ModelConstructor<T extends FlowModel = FlowModel> = new (
+export type ModelConstructor<T extends FlowModel = FlowModel> = (new (
   options: FlowModelOptions & {
     uid: string;
     props?: IModelComponentProps;
@@ -124,7 +125,9 @@ export type ModelConstructor<T extends FlowModel = FlowModel> = new (
     subModels?: Record<string, CreateSubModelOptions | CreateSubModelOptions[]>;
     [key: string]: any; // Allow additional options
   },
-) => T;
+) => T) & {
+  meta?: FlowModelMeta;
+};
 
 /**
  * Defines a reusable action with generic model type support.
@@ -132,7 +135,7 @@ export type ModelConstructor<T extends FlowModel = FlowModel> = new (
 export interface ActionDefinition<TModel extends FlowModel = FlowModel> {
   name: string; // Unique identifier for the action
   title?: string;
-  handler: (ctx: FlowContext<TModel>, params: any) => Promise<any> | any;
+  handler: (ctx: FlowRuntimeContext<TModel>, params: any) => Promise<any> | any;
   uiSchema?:
     | Record<string, ISchema>
     | ((ctx: ParamsContext<TModel>) => Record<string, ISchema> | Promise<Record<string, ISchema>>);
@@ -152,7 +155,7 @@ export interface StepDefinition<TModel extends FlowModel = FlowModel> {
   use?: string; // Name of the registered ActionDefinition to use as base
 
   // Handler (optional, but required if 'use' is not provided)
-  handler?: (ctx: FlowContext<TModel>, params: any) => Promise<any> | any;
+  handler?: (ctx: FlowRuntimeContext<TModel>, params: any) => Promise<any> | any;
 
   // UI and params configuration
   uiSchema?:
@@ -245,6 +248,7 @@ export interface CreateModelOptions {
   subKey?: string;
   subType?: 'object' | 'array';
   sortIndex?: number; // 排序索引
+  delegateToParent?: boolean;
   [key: string]: any; // 允许额外的自定义选项
 }
 export interface IFlowModelRepository<T extends FlowModel = FlowModel> {
@@ -320,6 +324,7 @@ export interface FlowModelOptions<Structure extends { parent?: FlowModel; subMod
   subModels?: Structure['subModels'];
   flowEngine?: FlowEngine;
   parentId?: string;
+  delegateToParent?: boolean;
   subKey?: string;
   subType?: 'object' | 'array';
   sortIndex?: number;

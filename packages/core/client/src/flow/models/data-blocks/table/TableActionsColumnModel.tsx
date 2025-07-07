@@ -8,6 +8,7 @@
  */
 
 import { PlusOutlined, QuestionCircleOutlined } from '@ant-design/icons';
+import { css } from '@emotion/css';
 import { observer } from '@formily/reactive-react';
 import {
   AddActionButton,
@@ -21,7 +22,6 @@ import { Skeleton, Space, Tooltip } from 'antd';
 import React from 'react';
 import { ActionModel } from '../../base/ActionModel';
 import { TableCustomColumnModel } from './TableColumnModel';
-import { css } from '@emotion/css';
 
 const Columns = observer<any>(({ record, model, index }) => {
   return (
@@ -107,7 +107,7 @@ export class TableActionsColumnModel extends TableCustomColumnModel {
 }
 
 TableActionsColumnModel.define({
-  title: '{{t("Action column")}}',
+  title: '{{t("Actions")}}',
   defaultOptions: {
     stepParams: {
       default: {

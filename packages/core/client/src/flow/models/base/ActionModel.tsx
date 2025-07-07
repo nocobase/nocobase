@@ -7,9 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { FlowModel } from '@nocobase/flow-engine';
-import { Button } from 'antd';
+import { FlowModel, escapeT } from '@nocobase/flow-engine';
 import { tval } from '@nocobase/utils/client';
+import { Button } from 'antd';
 import type { ButtonProps } from 'antd/es/button';
 import React from 'react';
 import { Icon } from '../../../icon/Icon';
@@ -20,7 +20,7 @@ export class ActionModel extends FlowModel {
 
   defaultProps: ButtonProps = {
     type: 'default',
-    title: tval('Action'),
+    title: escapeT('Action'),
   };
 
   render() {
@@ -37,22 +37,22 @@ export class ActionModel extends FlowModel {
 }
 
 ActionModel.registerFlow({
-  key: 'default',
-  title: tval('General configuration'),
+  key: 'defaultPropsFlow',
+  title: escapeT('Button settings'),
   auto: true,
   steps: {
     buttonProps: {
-      title: tval('Edit button'),
+      title: escapeT('Edit button'),
       uiSchema: {
         title: {
           'x-decorator': 'FormItem',
           'x-component': 'Input',
-          title: tval('Button title'),
+          title: escapeT('Button title'),
         },
         icon: {
           'x-decorator': 'FormItem',
           'x-component': IconPicker,
-          title: tval('Button icon'),
+          title: escapeT('Button icon'),
         },
       },
       defaultParams(ctx) {
@@ -62,7 +62,7 @@ ActionModel.registerFlow({
         };
       },
       handler(ctx, params) {
-        ctx.model.setProps('title', ctx.globals.flowEngine.translate(params.title));
+        ctx.model.setProps('title', ctx.t(params.title));
         ctx.model.setProps('icon', params.icon);
         ctx.model.setProps('onClick', (event) => {
           ctx.model.dispatchEvent('click', {
@@ -95,30 +95,10 @@ export class RecordActionModel extends ActionModel {
 }
 
 RecordActionModel.registerFlow({
-  key: 'default',
-  title: tval('General configuration'),
+  key: 'recordActionPropsFlow',
   auto: true,
   steps: {
     buttonProps: {
-      title: tval('Edit button'),
-      uiSchema: {
-        title: {
-          'x-decorator': 'FormItem',
-          'x-component': 'Input',
-          title: tval('Button title'),
-        },
-        icon: {
-          'x-decorator': 'FormItem',
-          'x-component': IconPicker,
-          title: tval('Button icon'),
-        },
-      },
-      defaultParams(ctx) {
-        return {
-          title: ctx.model.defaultProps.title,
-          icon: ctx.model.defaultProps.icon,
-        };
-      },
       handler(ctx, params) {
         const { currentRecord, currentBlockModel } = ctx.shared;
         if (!currentRecord) {
@@ -127,8 +107,6 @@ RecordActionModel.registerFlow({
         if (!currentBlockModel) {
           throw new Error('Current block model is not set in shared context');
         }
-        ctx.model.setProps('title', ctx.globals.flowEngine.translate(params.title));
-        ctx.model.setProps('icon', params.icon);
         ctx.model.setProps('onClick', (event) => {
           ctx.model.dispatchEvent('click', {
             event,

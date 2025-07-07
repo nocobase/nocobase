@@ -11,7 +11,7 @@ import React, { createContext, useContext } from 'react';
 import { FlowModel } from '../models';
 
 // 创建 FlowModel 上下文
-const FlowModelContext = createContext<FlowModel | null>(null);
+const FlowModelReactContext = createContext<FlowModel | null>(null);
 
 // FlowModelProvider 组件的 props 类型
 export interface FlowModelProviderProps {
@@ -27,7 +27,7 @@ export const FlowModelProvider: React.FC<FlowModelProviderProps> = ({ model, chi
   if (!model) {
     throw new Error('FlowModelProvider must be supplied with a model.');
   }
-  return <FlowModelContext.Provider value={model}>{children}</FlowModelContext.Provider>;
+  return <FlowModelReactContext.Provider value={model}>{children}</FlowModelReactContext.Provider>;
 };
 
 /**
@@ -38,7 +38,7 @@ export const FlowModelProvider: React.FC<FlowModelProviderProps> = ({ model, chi
  * @throws {Error} 如果在 FlowModelProvider 外部使用或未提供 model
  */
 export function useFlowModel<T extends FlowModel = FlowModel>(): T {
-  const model = useContext(FlowModelContext);
+  const model = useContext(FlowModelReactContext);
 
   if (!model) {
     throw new Error('useFlowModel must be used within a FlowModelProvider');

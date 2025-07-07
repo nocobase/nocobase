@@ -48,8 +48,7 @@ const AddDetailField = ({ model }) => {
       },
       subModels: {
         field: {
-          // @ts-ignore
-          use: defaultOptions.use as any,
+          use: defaultOptions.use,
           stepParams: {
             default: {
               step1: {
@@ -65,7 +64,6 @@ const AddDetailField = ({ model }) => {
   );
   return (
     <AddFieldButton
-      collection={model.resourceName}
       model={model}
       subModelKey={'detailItem'}
       subModelBaseClass="DetailFormItemModel"
@@ -175,37 +173,24 @@ DetailsModel.registerFlow({
           sourceId,
           filterByTk,
         } = ctx.model.props.dataSourceOptions || {};
-        if (!filterByTk) {
+        if (!ctx.model.collection) {
           ctx.model.collection = ctx.globals.dataSourceManager.getCollection(
             dataSourceKey || params.dataSourceKey,
             associationName ? associationName.split('.').slice(-1)[0] : collectionName,
           );
-          const resource = new MultiRecordResource();
-          resource.setDataSourceKey(dataSourceKey);
-          resource.setResourceName(associationName || collectionName);
-          resource.setSourceId(sourceId);
-          resource.setAPIClient(ctx.globals.api);
-          resource.setPageSize(1);
-          ctx.model.resource = resource;
-
-          await ctx.model.applySubModelsAutoFlows('detailItem');
-        } else {
-          if (!ctx.model.collection) {
-            ctx.model.collection = ctx.globals.dataSourceManager.getCollection(
-              dataSourceKey || params.dataSourceKey,
-              associationName ? associationName.split('.').slice(-1)[0] : collectionName,
-            );
-            const resource = new SingleRecordResource();
-            resource.setDataSourceKey(dataSourceKey);
-            resource.setResourceName(associationName || collectionName);
-            resource.setSourceId(sourceId);
-            resource.setAPIClient(ctx.globals.api);
-            ctx.model.resource = resource;
-            if (filterByTk) {
-              ctx.model.resource.setFilterByTk(filterByTk);
-            }
-          }
         }
+        if (!ctx.model.resource) {
+          ctx.model.resource = filterByTk ? new SingleRecordResource() : new MultiRecordResource();
+        }
+        if (ctx.model.resource instanceof MultiRecordResource) {
+          ctx.model.resource.setPageSize(1);
+        }
+        ctx.model.resource.setDataSourceKey(dataSourceKey);
+        ctx.model.resource.setResourceName(associationName || collectionName);
+        ctx.model.resource.setSourceId(sourceId);
+        ctx.model.resource.setAPIClient(ctx.globals.api);
+        ctx.model.resource.setFilterByTk(filterByTk);
+        await ctx.model.applySubModelsAutoFlows('detailItem');
       },
     },
     refresh: {

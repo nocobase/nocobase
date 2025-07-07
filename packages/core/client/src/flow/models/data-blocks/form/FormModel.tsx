@@ -13,10 +13,10 @@ import { FormProvider } from '@formily/react';
 import {
   AddActionButton,
   AddFieldButton,
+  buildActionItems,
+  buildFieldItems,
   FlowModelRenderer,
   SingleRecordResource,
-  buildFieldItems,
-  buildActionItems,
 } from '@nocobase/flow-engine';
 import { tval } from '@nocobase/utils/client';
 import React from 'react';
@@ -89,6 +89,7 @@ export class FormModel extends DataBlockModel {
 FormModel.registerFlow({
   key: 'default',
   auto: true,
+  title: tval('Form settings'),
   steps: {
     step1: {
       paramsRequired: true,
@@ -117,34 +118,35 @@ FormModel.registerFlow({
         dataSourceKey: 'main',
       },
       async handler(ctx, params) {
-        ctx.model.form = ctx.runtimeArgs.form || createForm();
+        ctx.model.form = ctx.model.form || createForm();
+        const {
+          dataSourceKey = params.dataSourceKey, // 兼容一下旧的数据, TODO: remove
+          collectionName = params.collectionName, // 兼容一下旧的数据, TODO: remove
+          associationName,
+          sourceId,
+          filterByTk,
+        } = ctx.model.props.dataSourceOptions || {};
         if (!ctx.model.collection) {
-          const {
-            dataSourceKey = params.dataSourceKey, // 兼容一下旧的数据, TODO: remove
-            collectionName = params.collectionName, // 兼容一下旧的数据, TODO: remove
-            associationName,
-            sourceId,
-            filterByTk,
-          } = ctx.model.props.dataSourceOptions || {};
-
           ctx.model.collection = ctx.globals.dataSourceManager.getCollection(
             dataSourceKey,
             associationName ? associationName.split('.').slice(-1)[0] : collectionName,
           );
-          const resource = new SingleRecordResource();
-          resource.setDataSourceKey(dataSourceKey);
-          resource.setResourceName(associationName || collectionName);
-          resource.setSourceId(sourceId);
-          resource.setAPIClient(ctx.globals.api);
-          ctx.model.resource = resource;
+        }
+
+        if (!ctx.model.resource) {
+          ctx.model.resource = new SingleRecordResource();
           ctx.model.resource.on('refresh', () => {
-            ctx.model.form.setInitialValues(ctx.model.resource.getData());
+            ctx.model.form.setValues(ctx.model.resource.getData());
           });
-          if (filterByTk) {
-            ctx.model.resource.setFilterByTk(filterByTk);
-            await ctx.model.resource.refresh();
-            ctx.model.form.setInitialValues(ctx.model.resource.getData());
-          }
+        }
+
+        ctx.model.resource.setDataSourceKey(dataSourceKey);
+        ctx.model.resource.setResourceName(associationName || collectionName);
+        ctx.model.resource.setSourceId(sourceId);
+        ctx.model.resource.setAPIClient(ctx.globals.api);
+        if (filterByTk) {
+          ctx.model.resource.setFilterByTk(filterByTk);
+          await ctx.model.resource.refresh();
         }
         await ctx.model.applySubModelsAutoFlows('fields');
       },

@@ -11,11 +11,11 @@ import { FormItem, Input } from '@formily/antd-v5';
 import type { FieldPatternTypes, FieldValidator } from '@formily/core';
 import { Field, Form } from '@formily/core';
 import { FieldContext } from '@formily/react';
-import React from 'react';
 import { tval } from '@nocobase/utils/client';
-import { FieldModel } from '../../base/FieldModel';
-import { ReactiveField } from '../../../formily/ReactiveField';
+import React from 'react';
 import { FormModel } from '../..';
+import { ReactiveField } from '../../../formily/ReactiveField';
+import { FieldModel } from '../../base/FieldModel';
 
 type FieldComponentTuple = [component: React.ElementType, props: Record<string, any>] | any[];
 
@@ -108,12 +108,18 @@ export class EditableFieldModel extends FieldModel<Structure> {
 EditableFieldModel.registerFlow({
   key: 'init',
   auto: true,
-  title: tval('Basic'),
+  title: tval('Form item settings'),
   sort: 150,
   steps: {
     createField: {
       handler(ctx, params) {
         const { collectionField } = ctx.model;
+
+        // 如果字段已存在但连接有问题，重新创建
+        if (ctx.model.field && (!ctx.model.field.form || ctx.model.field.destroyed)) {
+          ctx.model.field = null;
+        }
+
         ctx.model.field = ctx.model.field || ctx.model.createField();
         ctx.model.setComponentProps(collectionField.getComponentProps());
         if (collectionField.enum.length) {

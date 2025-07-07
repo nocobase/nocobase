@@ -7,14 +7,14 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React from 'react';
-import { castArray } from 'lodash';
-import { Button } from 'antd';
+import { FlowModel, reactive } from '@nocobase/flow-engine';
 import { tval } from '@nocobase/utils/client';
-import { reactive, FlowModel } from '@nocobase/flow-engine';
+import { Button } from 'antd';
+import { castArray } from 'lodash';
+import React from 'react';
+import { getUniqueKeyFromCollection } from '../../../../../collection-manager/interfaces/utils';
 import { FlowPage } from '../../../../FlowPage';
 import { AssociationReadPrettyFieldModel } from './AssociationReadPrettyFieldModel';
-import { getUniqueKeyFromCollection } from '../../../../../collection-manager/interfaces/utils';
 
 const LinkToggleWrapper = ({ enableLink, children, currentRecord, parentRecord, ...props }) => {
   return enableLink ? (
@@ -91,7 +91,7 @@ export class AssociationSelectReadPrettyFieldModel extends AssociationReadPretty
 
 AssociationSelectReadPrettyFieldModel.registerFlow({
   key: 'fieldNames',
-  title: tval('Specific properties'),
+  title: tval('Association field settings'),
   auto: true,
   sort: 200,
   steps: {
@@ -158,7 +158,7 @@ AssociationSelectReadPrettyFieldModel.registerFlow({
 
 AssociationSelectReadPrettyFieldModel.registerFlow({
   key: 'handleClick',
-  title: tval('Click event'),
+  title: tval('Popup settings'),
   on: {
     eventName: 'click',
   },

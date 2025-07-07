@@ -79,7 +79,8 @@ export class QuickEditForm extends DataBlockModel {
     console.log('QuickEditForm.open2', Date.now() - model.now);
     model.now = Date.now();
 
-    await flowEngine.context.popover.open({
+    await flowEngine.context.viewOpener.open({
+      mode: 'popover',
       target,
       placement: 'rightTop',
       content: (popover) => {
@@ -119,7 +120,7 @@ export class QuickEditForm extends DataBlockModel {
 
           this.resource.save(formValues, { refresh: false }).catch((error) => {
             console.error('Failed to save form data:', error);
-            this.ctx.globals.message.error(this.translate('Failed to save form data'));
+            this.context.message.error(this.translate('Failed to save form data'));
             this.ctx.shared.__onSubmitSuccess?.(originalValues);
           });
           this.ctx.shared.__onSubmitSuccess?.(formValues);

@@ -14,15 +14,16 @@ import { observer } from '@formily/reactive-react';
 import {
   AddActionButton,
   AddFieldButton,
+  buildActionItems,
+  buildFieldItems,
   DndProvider,
   DragHandler,
   Droppable,
+  escapeT,
   FlowModelRenderer,
   ForkFlowModel,
   MultiRecordResource,
   useFlowEngine,
-  buildFieldItems,
-  buildActionItems,
 } from '@nocobase/flow-engine';
 import { tval } from '@nocobase/utils/client';
 import { Space, Spin, Table } from 'antd';
@@ -227,7 +228,8 @@ export class TableModel extends DataBlockModel<TableModelStructure> {
                   filterByTk: record.id,
                   record: record,
                   onSuccess: (values) => {
-                    this.resource.getData()[recordIndex][dataIndex] = values[dataIndex];
+                    record[dataIndex] = values[dataIndex];
+                    this.resource.getData()[recordIndex] = record;
                     // 仅重渲染单元格
                     const fork: ForkFlowModel = model.subModels.field.getFork(`${recordIndex}`);
                     fork.setSharedContext({ index: recordIndex, value: values[dataIndex], currentRecord: record });
@@ -406,6 +408,7 @@ export class TableModel extends DataBlockModel<TableModelStructure> {
 TableModel.registerFlow({
   key: 'default',
   auto: true,
+  title: escapeT('Table settings'),
   steps: {
     virtual: {
       title: tval('Virtual'),
@@ -465,10 +468,7 @@ TableModel.registerFlow({
         dataSourceKey: 'main',
       },
       handler: async (ctx, params) => {
-        if (ctx.model.resource) {
-          ctx.model.applySubModelsAutoFlows('columns');
-          return;
-        }
+        ctx.model.resource = ctx.model.resource || new MultiRecordResource();
         const {
           dataSourceKey = params.dataSourceKey, // 先兼容一下旧的数据, TODO: remove
           collectionName = params.collectionName, // 先兼容一下旧的数据, TODO: remove
@@ -476,18 +476,16 @@ TableModel.registerFlow({
           sourceId,
           filterByTk,
         } = ctx.model.props.dataSourceOptions;
-        const collection = ctx.globals.dataSourceManager.getCollection(
+        const collection = ctx.dataSourceManager.getCollection(
           dataSourceKey,
           associationName ? associationName.split('.').slice(-1)[0] : collectionName,
         );
         ctx.model.collection = collection;
-        const resource = new MultiRecordResource();
-        resource.setDataSourceKey(dataSourceKey);
-        resource.setResourceName(associationName || collectionName);
-        resource.setSourceId(sourceId);
-        resource.setAPIClient(ctx.globals.api);
-        resource.setPageSize(20);
-        ctx.model.resource = resource;
+        ctx.model.resource.setDataSourceKey(dataSourceKey);
+        ctx.model.resource.setResourceName(associationName || collectionName);
+        ctx.model.resource.setSourceId(sourceId);
+        ctx.model.resource.setAPIClient(ctx.api);
+        ctx.model.resource.setPageSize(20);
         await ctx.model.applySubModelsAutoFlows('columns');
       },
     },

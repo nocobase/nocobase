@@ -14,6 +14,7 @@ import { uid } from 'uid/secure';
 import { openRequiredParamsStepFormDialog as openRequiredParamsStepFormDialogFn } from '../components/settings/wrappers/contextual/StepRequiredSettingsDialog';
 import { openStepSettingsDialog as openStepSettingsDialogFn } from '../components/settings/wrappers/contextual/StepSettingsDialog';
 import { Emitter } from '../emitter';
+import { FlowModelContext, FlowRuntimeContext } from '../flowContext';
 import { FlowEngine } from '../flowEngine';
 import type {
   ArrayElementType,
@@ -29,7 +30,7 @@ import type {
   StepParams,
 } from '../types';
 import { ExtendedFlowDefinition, FlowRuntimeArgs, IModelComponentProps, ReadonlyModelProps } from '../types';
-import { FlowExitException, generateUid, mergeFlowDefinitions, resolveDefaultParams } from '../utils';
+import { FlowExitException, isInheritedFrom, mergeFlowDefinitions, resolveDefaultParams } from '../utils';
 import { ForkFlowModel } from './forkFlowModel';
 
 // 使用WeakMap存储每个类的meta
@@ -71,6 +72,7 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
    */
   private _lastAutoRunParams: any[] | null = null;
   private observerDispose: () => void;
+  private _flowContext: FlowModelContext;
 
   constructor(options: FlowModelOptions<Structure>) {
     if (!options.flowEngine) {
@@ -110,10 +112,17 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
 
     this.observerDispose = observe(this.stepParams, () => {
       if (this.flowEngine) {
-        this.clearAutoFlowCache();
+        this.invalidateAutoFlowCache();
       }
       this._rerunLastAutoRun();
     });
+  }
+
+  get context() {
+    if (!this._flowContext) {
+      this._flowContext = new FlowModelContext(this);
+    }
+    return this._flowContext;
   }
 
   on(eventName: string, listener: (...args: any[]) => void) {
@@ -161,7 +170,7 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     });
   }
 
-  private clearAutoFlowCache() {
+  public invalidateAutoFlowCache(deep = false) {
     if (this.flowEngine) {
       const cacheKey = FlowEngine.generateApplyFlowCacheKey('autoFlow', 'all', this.uid);
       this.flowEngine.applyFlowCache.delete(cacheKey);
@@ -169,6 +178,18 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
         const forkCacheKey = FlowEngine.generateApplyFlowCacheKey(`${fork['forkId']}`, 'all', this.uid);
         this.flowEngine.applyFlowCache.delete(forkCacheKey);
       });
+    }
+
+    const subModelKeys = Object.keys(this.subModels);
+    for (const subModelKey of subModelKeys) {
+      const subModelValue = this.subModels[subModelKey];
+      if (Array.isArray(subModelValue)) {
+        for (const subModel of subModelValue) {
+          subModel.invalidateAutoFlowCache(deep);
+        }
+      } else if (subModelValue instanceof FlowModel) {
+        subModelValue.invalidateAutoFlowCache(deep);
+      }
     }
   }
 
@@ -415,9 +436,6 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
       return Promise.reject(new Error(`Flow '${flowKey}' not found.`));
     }
 
-    let lastResult: any;
-    const stepResults: Record<string, any> = {};
-
     // Create a new FlowContext instance for this flow execution
     const createLogger = (level: string) => (message: string, meta?: any) => {
       const logMessage = `[${level.toUpperCase()}] [Flow: ${flowKey}] [Model: ${this.uid}] ${message}`;
@@ -426,29 +444,36 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     };
 
     const globalContexts = currentFlowEngine.getContext();
-    const flowContext: FlowContext<this> = {
-      exit: () => {
-        throw new FlowExitException(flowKey, this.uid);
-      },
-      logger: {
+    const flowContext = new FlowRuntimeContext(this, flowKey);
+
+    flowContext.defineProperty('logger', {
+      value: {
         info: createLogger('INFO'),
         warn: createLogger('WARN'),
         error: createLogger('ERROR'),
         debug: createLogger('DEBUG'),
       },
-      reactView: this.reactView,
-      stepResults,
-      shared: this.getSharedContext(),
-      globals: globalContexts,
-      runtimeArgs: runtimeArgs || {},
-      model: this,
-      app: globalContexts.app || {},
-    };
+    });
+    flowContext.defineProperty('reactView', {
+      value: this.reactView,
+    });
+    flowContext.defineProperty('shared', {
+      value: this.getSharedContext(),
+    });
+    flowContext.defineProperty('globals', {
+      value: globalContexts,
+    });
+    flowContext.defineProperty('runtimeArgs', {
+      value: runtimeArgs,
+    });
+
+    let lastResult: any;
+    const stepResults: Record<string, any> = flowContext.stepResults;
 
     for (const stepKey in flow.steps) {
       if (Object.prototype.hasOwnProperty.call(flow.steps, stepKey)) {
         const step: StepDefinition = flow.steps[stepKey];
-        let handler: ((ctx: FlowContext<this>, params: any) => Promise<any> | any) | undefined;
+        let handler: ((ctx: FlowRuntimeContext<this>, params: any) => Promise<any> | any) | undefined;
         let combinedParams: Record<string, any> = {};
         let actionDefinition;
 
@@ -542,7 +567,7 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
   public static extends<T extends typeof FlowModel>(this: T, flows: ExtendedFlowDefinition[] = []): T {
     class CustomFlowModel extends (this as unknown as typeof FlowModel) {
       // @ts-ignore
-      static name = `CustomFlowModel_${generateUid()}`;
+      static name = `CustomFlowModel_${uid()}`;
     }
 
     // 处理流程注册和覆盖
@@ -691,11 +716,17 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
   }
 
   setParent(parent: FlowModel): void {
-    if (!parent || !(parent instanceof FlowModel)) {
+    // forkflowModel instanceof FlowModel is false, but fork can be used as parent
+    const isValidParent =
+      parent && (parent.constructor === FlowModel || isInheritedFrom(parent.constructor as any, FlowModel));
+    if (!isValidParent) {
       throw new Error('Parent must be an instance of FlowModel.');
     }
     this.parent = parent as ParentFlowModel<Structure>;
     this._options.parentId = parent.uid;
+    if (this._options.delegateToParent !== false) {
+      this.context.addDelegate(this.parent.context);
+    }
   }
 
   addSubModel(subKey: string, options: CreateModelOptions | FlowModel) {
@@ -854,6 +885,7 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
       throw new Error('FlowEngine is not set on this model. Please set flowEngine before saving.');
     }
     this.observerDispose();
+    this.invalidateAutoFlowCache();
     return this.flowEngine.removeModel(this.uid);
   }
 
@@ -869,6 +901,7 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
       throw new Error('FlowEngine is not set on this model. Please set flowEngine before deleting.');
     }
     this.observerDispose();
+    this.invalidateAutoFlowCache();
     // 从 FlowEngine 中销毁模型
     return this.flowEngine.destroyModel(this.uid);
   }

@@ -7,12 +7,11 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { tval } from '@nocobase/utils/client';
 import { BaseItem } from '@formily/antd-v5';
-import React from 'react';
-import { castArray } from 'lodash';
 import { observable } from '@formily/reactive';
-import { reactive } from '@nocobase/flow-engine';
+import { escapeT, reactive } from '@nocobase/flow-engine';
+import { castArray } from 'lodash';
+import React from 'react';
 import { FieldModel } from '../../base/FieldModel';
 
 export class DetailItemModel extends FieldModel {
@@ -40,7 +39,7 @@ export class DetailItemModel extends FieldModel {
 }
 
 DetailItemModel.define({
-  title: tval('Detail Item'),
+  title: escapeT('Detail item'),
   icon: 'DetailFormItem',
   defaultOptions: {
     use: 'DetailItemModel',
@@ -52,15 +51,16 @@ DetailItemModel.registerFlow({
   key: 'detailFieldDefault',
   auto: true,
   sort: 300,
+  title: escapeT('Detail item settings'),
   steps: {
     editTitle: {
-      title: tval('Edit Title'),
+      title: escapeT('Edit title'),
       uiSchema: {
         title: {
           'x-component': 'Input',
           'x-decorator': 'FormItem',
           'x-component-props': {
-            placeholder: tval('Enter field title'),
+            placeholder: escapeT('Enter field title'),
           },
         },
       },
@@ -74,14 +74,14 @@ DetailItemModel.registerFlow({
       },
     },
     displayLabel: {
-      title: tval('Display label'),
+      title: escapeT('Display label'),
       uiSchema: {
         displayLabel: {
           'x-component': 'Switch',
           'x-decorator': 'FormItem',
           'x-component-props': {
-            checkedChildren: tval('Yes'),
-            unCheckedChildren: tval('No'),
+            checkedChildren: escapeT('Yes'),
+            unCheckedChildren: escapeT('No'),
           },
         },
       },
@@ -93,7 +93,7 @@ DetailItemModel.registerFlow({
       },
     },
     editDescription: {
-      title: tval('Edit description'),
+      title: escapeT('Edit description'),
       uiSchema: {
         description: {
           'x-component': 'Input.TextArea',
@@ -105,7 +105,7 @@ DetailItemModel.registerFlow({
       },
     },
     editTooltip: {
-      title: tval('Edit tooltip'),
+      title: escapeT('Edit tooltip'),
       uiSchema: {
         tooltip: {
           'x-component': 'Input.TextArea',

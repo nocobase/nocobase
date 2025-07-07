@@ -7,11 +7,11 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React from 'react';
-import { tval } from '@nocobase/utils/client';
 import { reactive } from '@nocobase/flow-engine';
-import { ReadPrettyFieldModel } from './ReadPrettyFieldModel';
+import { tval } from '@nocobase/utils/client';
+import React from 'react';
 import { MarkdownReadPretty } from '../../../internal/components/MarkdownReadPretty';
+import { ReadPrettyFieldModel } from './ReadPrettyFieldModel';
 
 export class RichTextReadPrettyFieldModel extends ReadPrettyFieldModel {
   public static readonly supportedFieldInterfaces = ['richText'];
@@ -25,7 +25,7 @@ export class RichTextReadPrettyFieldModel extends ReadPrettyFieldModel {
 
 RichTextReadPrettyFieldModel.registerFlow({
   key: 'displayMode',
-  title: tval('Specific properties'),
+  title: tval('Rich text settings'),
   auto: true,
   sort: 200,
   steps: {

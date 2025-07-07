@@ -8,6 +8,7 @@
  */
 
 import { action, define, observable } from '@formily/reactive';
+import { FlowForkModelContext, FlowModelContext } from '../flowContext';
 import type { IModelComponentProps } from '../types';
 import { FlowModel } from './flowModel';
 
@@ -64,6 +65,8 @@ export class ForkFlowModel<TMaster extends FlowModel = FlowModel> {
 
   /** 用于共享上下文的对象，存储跨 fork 的共享数据 */
   // private _sharedContext: Record<string, any> = {};
+  // 不需要定义自己的属性了，现在是SHARED_PROPERTIES中指定的少数几个属性，所有属性设置时会自动添加自己的fork内的独有属性
+  // private _flowContext: FlowModelContext;
 
   constructor(master: TMaster, initialProps: IModelComponentProps = {}, forkId = 0) {
     void this.localProperties; // 避免 IDE 提示 unused
@@ -157,6 +160,13 @@ export class ForkFlowModel<TMaster extends FlowModel = FlowModel> {
         }
       },
     });
+  }
+
+  get context() {
+    if (!this['_flowContext']) {
+      this['_flowContext'] = new FlowForkModelContext(this.master) as unknown as FlowModelContext;
+    }
+    return this['_flowContext'] as unknown as FlowModelContext;
   }
 
   public setSharedContext(ctx: Record<string, any>) {

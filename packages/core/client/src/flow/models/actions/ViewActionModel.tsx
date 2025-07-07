@@ -7,6 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { escapeT } from '@nocobase/flow-engine';
 import { tval } from '@nocobase/utils/client';
 import type { ButtonProps } from 'antd/es/button';
 import { RecordActionModel } from '../base/ActionModel';
@@ -14,17 +15,17 @@ import { RecordActionModel } from '../base/ActionModel';
 export class ViewActionModel extends RecordActionModel {
   defaultProps: ButtonProps = {
     type: 'link',
-    title: tval('View'),
+    title: escapeT('View'),
   };
 }
 
 ViewActionModel.define({
-  title: tval('View'),
+  title: escapeT('View'),
 });
 
 ViewActionModel.registerFlow({
-  key: 'handleClick',
-  title: tval('Click event'),
+  key: 'clickOpenView',
+  title: escapeT('Popup settings'),
   on: {
     eventName: 'click',
   },

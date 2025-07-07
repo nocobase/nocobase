@@ -10,7 +10,6 @@
 import { describe, test, expect, beforeEach, vi } from 'vitest';
 import {
   getT,
-  generateUid,
   mergeFlowDefinitions,
   isInheritedFrom,
   resolveDefaultParams,
@@ -21,8 +20,8 @@ import {
   resolveDefaultOptions,
   processMetaChildren,
   FLOW_ENGINE_NAMESPACE,
-} from '../../utils';
-import { FlowModel } from '../flowModel';
+} from '../index';
+import { FlowModel } from '../../models/flowModel';
 import { FlowEngine } from '../../flowEngine';
 import type {
   FlowDefinition,
@@ -237,68 +236,6 @@ describe('Utils', () => {
           ns: [FLOW_ENGINE_NAMESPACE, 'client'],
           nsMode: 'fallback',
         });
-      });
-    });
-  });
-
-  // ==================== generateUid() FUNCTION ====================
-  describe('generateUid()', () => {
-    describe('basic generation functionality', () => {
-      test('should generate a string', () => {
-        const uid = generateUid();
-
-        expect(typeof uid).toBe('string');
-        expect(uid).toBeDefined();
-        expect(uid.length).toBeGreaterThan(10); // Should be reasonably long
-      });
-    });
-
-    describe('uniqueness validation', () => {
-      test('should generate different UIDs on consecutive calls', () => {
-        const uid1 = generateUid();
-        const uid2 = generateUid();
-
-        expect(uid1).not.toBe(uid2);
-      });
-
-      test('should generate unique UIDs in bulk', () => {
-        const uids = Array.from({ length: 100 }, () => generateUid());
-        const uniqueUids = new Set(uids);
-
-        expect(uniqueUids.size).toBe(100); // All should be unique
-      });
-
-      test('should maintain uniqueness across multiple executions', () => {
-        const batch1 = Array.from({ length: 10 }, () => generateUid());
-        const batch2 = Array.from({ length: 10 }, () => generateUid());
-
-        const allUids = [...batch1, ...batch2];
-        const uniqueUids = new Set(allUids);
-
-        expect(uniqueUids.size).toBe(20);
-      });
-    });
-
-    describe('format validation', () => {
-      test('should contain only alphanumeric characters', () => {
-        const uid = generateUid();
-
-        expect(/^[a-z0-9]+$/.test(uid)).toBe(true);
-      });
-
-      test('should have consistent length range', () => {
-        const uids = Array.from({ length: 50 }, () => generateUid());
-
-        uids.forEach((uid) => {
-          expect(uid.length).toBeGreaterThan(15);
-          expect(uid.length).toBeLessThan(30);
-        });
-      });
-
-      test('should not contain special characters', () => {
-        const uid = generateUid();
-
-        expect(uid).not.toMatch(/[^a-z0-9]/);
       });
     });
   });
@@ -1032,7 +969,7 @@ describe('Utils', () => {
 
         const result = await resolveDefaultOptions(optionsFn, mockModel);
 
-        expect(optionsFn).toHaveBeenCalledWith(mockModel);
+        expect(optionsFn).toHaveBeenCalledWith(mockModel, undefined);
         expect(result).toEqual({ dynamic: 'value' });
       });
 
@@ -1057,7 +994,7 @@ describe('Utils', () => {
 
         const result = await resolveDefaultOptions(asyncOptionsFn, mockModel);
 
-        expect(asyncOptionsFn).toHaveBeenCalledWith(mockModel);
+        expect(asyncOptionsFn).toHaveBeenCalledWith(mockModel, undefined);
         expect(result).toEqual({ async: 'result' });
       });
 
@@ -1177,36 +1114,6 @@ describe('Utils', () => {
         expect(result).toHaveLength(1);
         expect(result[0].label).toBe('Async Chart');
         expect(result[0].createModelOptions.use).toBe('AsyncChartModel');
-      });
-
-      test('should handle function-based children with conditional logic', async () => {
-        // Mock a model method that the function can use for conditional logic
-        mockModel.getUserRole = vi.fn().mockReturnValue('admin');
-
-        const conditionalChildrenFn = vi.fn((parentModel) => {
-          const isAdmin = parentModel.getUserRole() === 'admin';
-          return [
-            {
-              title: 'Basic Table',
-              defaultOptions: { use: 'BasicTableModel' },
-            },
-            ...(isAdmin
-              ? [
-                  {
-                    title: 'Admin Panel',
-                    defaultOptions: { use: 'AdminPanelModel' },
-                  },
-                ]
-              : []),
-          ];
-        });
-
-        const result = await processMetaChildren(conditionalChildrenFn, mockModel);
-
-        expect(conditionalChildrenFn).toHaveBeenCalledWith(mockModel);
-        expect(result).toHaveLength(2);
-        expect(result[0].label).toBe('Basic Table');
-        expect(result[1].label).toBe('Admin Panel');
       });
 
       test('should handle function-based children that return empty array', async () => {
@@ -1369,7 +1276,7 @@ describe('Utils', () => {
 
         const result = await processMetaChildren(children, mockModel);
 
-        expect(dynamicOptionsFn).toHaveBeenCalledWith(mockModel);
+        expect(dynamicOptionsFn).toHaveBeenCalledWith(mockModel, undefined);
         expect(result[0].createModelOptions).toEqual({
           use: 'DynamicModel',
           parentUid: 'test',

@@ -21,4 +21,5 @@ export class AIFormItem extends FormCustomFormItemModel {
 
 AIFormItem.define({
   title: 'AI Employee',
+  hide: true,
 });

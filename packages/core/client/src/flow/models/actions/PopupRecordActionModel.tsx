@@ -7,24 +7,24 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { escapeT } from '@nocobase/flow-engine';
 import type { ButtonProps } from 'antd/es/button';
-import { tval } from '@nocobase/utils/client';
-import { openModeAction } from '../../actions/openModeAction';
 import { RecordActionModel } from '../base/ActionModel';
 
 export class PopupRecordActionModel extends RecordActionModel {
   defaultProps: ButtonProps = {
-    title: tval('Popup'),
+    title: escapeT('Popup'),
+    type: 'link',
   };
 }
 
 PopupRecordActionModel.define({
-  title: tval('Popup'),
+  title: escapeT('Popup'),
 });
 
 PopupRecordActionModel.registerFlow({
-  key: 'handleClick',
-  title: tval('Click event'),
+  key: 'clickOpenView',
+  title: escapeT('Popup settings'),
   on: {
     eventName: 'click',
   },

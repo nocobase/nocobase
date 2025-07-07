@@ -7,6 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 import { observable } from '@formily/reactive';
+import { FlowEngineContext } from './flowContext';
 import { FlowSettings } from './flowSettings';
 import { initFlowEngineLocale } from './locale';
 import { FlowModel } from './models';
@@ -38,9 +39,10 @@ export class FlowEngine {
   private modelInstances: Map<string, any> = new Map();
   /** @public Stores flow settings including components and scopes for formily settings. */
   public flowSettings: FlowSettings = new FlowSettings();
-  context: FlowContext['globals'] = {} as FlowContext['globals'];
+  _context: FlowContext['globals'] = {} as FlowContext['globals'];
   private modelRepository: IFlowModelRepository | null = null;
   private _applyFlowCache = new Map<string, ApplyFlowCacheEntry>();
+  private _flowContext: FlowEngineContext;
 
   /**
    * 实验性 API：用于在 FlowEngine 中集成 React 视图渲染能力。
@@ -52,6 +54,13 @@ export class FlowEngine {
   constructor() {
     this.reactView = new ReactView(this);
     this.flowSettings.registerScopes({ t: this.translate.bind(this) });
+  }
+
+  get context() {
+    if (!this._flowContext) {
+      this._flowContext = new FlowEngineContext(this);
+    }
+    return this._flowContext;
   }
 
   /**
@@ -70,14 +79,17 @@ export class FlowEngine {
   }
 
   setContext(context: any) {
-    this.context = { ...this.context, ...context };
-    if (this.context.i18n) {
-      initFlowEngineLocale(this.context.i18n);
+    this._context = { ...this._context, ...context };
+    if (this._context.i18n) {
+      initFlowEngineLocale(this._context.i18n);
     }
   }
 
-  getContext() {
-    return this.context;
+  getContext(key?: string): any {
+    if (key) {
+      return this._context[key] || null;
+    }
+    return this._context || {};
   }
 
   /**
@@ -119,8 +131,8 @@ export class FlowEngine {
    * @private
    */
   private translateKey(key: string, options?: any): string {
-    if (this.context?.i18n?.t) {
-      return this.context.i18n.t(key, options);
+    if (this._context?.i18n?.t) {
+      return this._context.i18n.t(key, options);
     }
     // 如果没有翻译函数，返回原始键值
     return key;

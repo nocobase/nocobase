@@ -24,22 +24,43 @@ function Provider({ config, engine, children }) {
 }
 
 export class ReactView {
+  private refreshCallback: (() => void) | null = null;
+
   constructor(private flowEngine: FlowEngine) {}
 
   createRoot(container: HTMLElement, options: RootOptions = {}): Root {
     const root = createRoot(container, options);
-    return {
+    let currentChildren: React.ReactNode;
+
+    const doRender = () => {
+      root.render(
+        <Provider engine={this.flowEngine} config={this.flowEngine.getContext('antdConfig')}>
+          {currentChildren}
+        </Provider>,
+      );
+    };
+
+    const flowRoot = {
       render: (children: React.ReactNode) => {
-        root.render(
-          <Provider engine={this.flowEngine} config={this.flowEngine.context['antdConfig']}>
-            {children}
-          </Provider>,
-        );
+        currentChildren = children;
+        this.refreshCallback = doRender;
+        doRender();
       },
       unmount: () => {
+        this.refreshCallback = null;
+        currentChildren = null;
         root.unmount();
       },
     };
+
+    return flowRoot;
+  }
+
+  // 重新渲染当前根
+  refresh() {
+    if (this.refreshCallback) {
+      this.refreshCallback();
+    }
   }
 
   render(children: React.ReactNode | ((root: Root) => React.ReactNode), options: any = {}) {
@@ -50,7 +71,7 @@ export class ReactView {
     const renderContent = (root: Root) => {
       const content = typeof children === 'function' ? (children as (root: Root) => React.ReactNode)(root) : children;
       return (
-        <Provider engine={this.flowEngine} config={this.flowEngine.context['antdConfig']}>
+        <Provider engine={this.flowEngine} config={this.flowEngine.getContext('antdConfig')}>
           {content}
         </Provider>
       );

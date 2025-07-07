@@ -7,51 +7,52 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { vi } from 'vitest';
-import { FlowModel, defineFlow } from '../flowModel';
-import { FlowEngine } from '../../flowEngine';
-import { ForkFlowModel } from '../forkFlowModel';
-import type { FlowDefinition, FlowContext, FlowModelOptions, DefaultStructure } from '../../types';
 import { APIClient } from '@nocobase/sdk';
+import { vi } from 'vitest';
+import { FlowEngine } from '../../flowEngine';
+import type { DefaultStructure, FlowContext, FlowDefinition, FlowModelOptions } from '../../types';
+import { FlowModel, defineFlow } from '../flowModel';
+import { ForkFlowModel } from '../forkFlowModel';
 
-// Mock dependencies
-vi.mock('uid/secure', () => ({
-  uid: vi.fn(() => 'mock-uid-' + Math.random().toString(36).substring(2, 11)),
-}));
+// // Mock dependencies
+// vi.mock('uid/secure', () => ({
+//   uid: vi.fn(() => 'mock-uid-' + Math.random().toString(36).substring(2, 11)),
+// }));
 
-vi.mock('../forkFlowModel', () => ({
-  ForkFlowModel: vi.fn().mockImplementation(function (master: any, localProps: any, forkId: number) {
-    const instance = {
-      master,
-      localProps,
-      forkId,
-      setProps: vi.fn(),
-      dispose: vi.fn(),
-      disposed: false,
-    };
-    Object.setPrototypeOf(instance, ForkFlowModel.prototype);
-    return instance;
-  }),
-}));
+// vi.mock('../forkFlowModel', () => ({
+//   ForkFlowModel: vi.fn().mockImplementation(function (master: any, localProps: any, forkId: number) {
+//     const instance = {
+//       master,
+//       localProps,
+//       forkId,
+//       setProps: vi.fn(),
+//       dispose: vi.fn(),
+//       disposed: false,
+//     };
+//     Object.setPrototypeOf(instance, ForkFlowModel.prototype);
+//     return instance;
+//   }),
+// }));
 
-vi.mock('../../components/settings/wrappers/contextual/StepSettingsDialog', () => ({
-  openStepSettingsDialog: vi.fn(),
-}));
+// vi.mock('../../components/settings/wrappers/contextual/StepSettingsDialog', () => ({
+//   openStepSettingsDialog: vi.fn(),
+// }));
 
-vi.mock('../../components/settings/wrappers/contextual/StepRequiredSettingsDialog', () => ({
-  openRequiredParamsStepFormDialog: vi.fn(),
-}));
+// vi.mock('../../components/settings/wrappers/contextual/StepRequiredSettingsDialog', () => ({
+//   openRequiredParamsStepFormDialog: vi.fn(),
+// }));
 
-vi.mock('lodash', async () => {
-  const actual = await vi.importActual('lodash');
-  return {
-    ...actual,
-    debounce: vi.fn((fn) => fn),
-  };
-});
+// vi.mock('lodash', async () => {
+//   const actual = await vi.importActual('lodash');
+//   return {
+//     ...actual,
+//     debounce: vi.fn((fn) => fn),
+//   };
+// });
 
 // Helper functions
 const createMockFlowEngine = (): FlowEngine => {
+  return new FlowEngine();
   const applyFlowCache = new Map();
   const mockEngine = {
     getModel: vi.fn(),
@@ -883,8 +884,8 @@ describe('FlowModel', () => {
 
           await parentModel.applySubModelsAutoFlows('children', runtimeData, sharedData);
 
-          expect(child1.applyAutoFlows).toHaveBeenCalledWith(runtimeData);
-          expect(child2.applyAutoFlows).toHaveBeenCalledWith(runtimeData);
+          expect(child1.applyAutoFlows).toHaveBeenCalledWith(runtimeData, false);
+          expect(child2.applyAutoFlows).toHaveBeenCalledWith(runtimeData, false);
           expect(child1.setSharedContext).toHaveBeenCalledWith(sharedData);
           expect(child2.setSharedContext).toHaveBeenCalledWith(sharedData);
         });
@@ -902,7 +903,7 @@ describe('FlowModel', () => {
 
           await parentModel.applySubModelsAutoFlows('child', runtimeData);
 
-          expect(child.applyAutoFlows).toHaveBeenCalledWith(runtimeData);
+          expect(child.applyAutoFlows).toHaveBeenCalledWith(runtimeData, false);
         });
 
         test('should handle empty subModels gracefully', async () => {
@@ -1057,6 +1058,11 @@ describe('FlowModel', () => {
       test('should dispose all forks when clearing', () => {
         const fork1 = model.createFork();
         const fork2 = model.createFork();
+
+        // 手动 mock dispose 方法为 spy
+        fork1.dispose = vi.fn();
+        fork2.dispose = vi.fn();
+
         const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
 
         try {
@@ -1262,13 +1268,13 @@ describe('FlowModel', () => {
         const mockTranslate = vi.fn((v) => {
           if (v) return 'Translated Title';
         });
-        const mockFlowEngine = {
-          ...flowEngine,
-          translate: mockTranslate,
-        };
+
+        const flowEngine = new FlowEngine();
+        flowEngine.translate = mockTranslate;
+
         const modelWithTranslate = new TestFlowModel({
           ...modelOptions,
-          flowEngine: mockFlowEngine,
+          flowEngine,
         });
 
         const title = modelWithTranslate.title;
@@ -1454,13 +1460,12 @@ describe('FlowModel', () => {
           group: 'test',
         });
 
-        const mockFlowEngine = {
-          ...flowEngine,
-          translate: mockTranslate,
-        };
+        const flowEngine = new FlowEngine();
+        flowEngine.translate = mockTranslate;
+
         const modelWithTranslate = new TestFlowModel({
           ...modelOptions,
-          flowEngine: mockFlowEngine,
+          flowEngine,
         });
 
         const title = modelWithTranslate.title;
@@ -1502,6 +1507,146 @@ describe('FlowModel', () => {
         // Instance title needs to be set again
         newModel.setTitle('Instance Title');
         expect(newModel.title).toBe('Instance Title');
+      });
+    });
+  });
+
+  // ==================== CACHE INVALIDATION ====================
+  describe('Cache Invalidation', () => {
+    let model: FlowModel;
+    let realFlowEngine: FlowEngine;
+    let deleteSpy: any;
+
+    beforeEach(() => {
+      realFlowEngine = new FlowEngine();
+      deleteSpy = vi.spyOn(realFlowEngine.applyFlowCache, 'delete');
+
+      // Mock generateApplyFlowCacheKey static method
+      vi.spyOn(FlowEngine, 'generateApplyFlowCacheKey').mockImplementation(
+        (prefix: string, type: string, modelUid: string) => `${prefix}-${type}-${modelUid}`,
+      );
+
+      model = new FlowModel({
+        uid: 'test-model-uid',
+        flowEngine: realFlowEngine,
+        stepParams: {},
+        subModels: {},
+      });
+    });
+
+    afterEach(() => {
+      vi.restoreAllMocks();
+    });
+
+    describe('invalidateAutoFlowCache', () => {
+      test('should delete auto flow cache for current model', () => {
+        const expectedCacheKey = 'autoFlow-all-test-model-uid';
+        realFlowEngine.applyFlowCache.set(expectedCacheKey, {
+          status: 'resolved',
+          data: [],
+          promise: Promise.resolve([]),
+        });
+
+        model.invalidateAutoFlowCache();
+
+        expect(deleteSpy).toHaveBeenCalledWith(expectedCacheKey);
+      });
+
+      test('should delete cache entries for all forks', () => {
+        const fork1 = model.createFork();
+        const fork2 = model.createFork();
+
+        const fork1CacheKey = `${fork1.forkId}-all-test-model-uid`;
+        const fork2CacheKey = `${fork2.forkId}-all-test-model-uid`;
+
+        realFlowEngine.applyFlowCache.set(fork1CacheKey, {
+          status: 'resolved',
+          data: [],
+          promise: Promise.resolve([]),
+        });
+        realFlowEngine.applyFlowCache.set(fork2CacheKey, {
+          status: 'resolved',
+          data: [],
+          promise: Promise.resolve([]),
+        });
+
+        model.invalidateAutoFlowCache();
+
+        expect(deleteSpy).toHaveBeenCalledWith(fork1CacheKey);
+        expect(deleteSpy).toHaveBeenCalledWith(fork2CacheKey);
+      });
+
+      test('should recursively invalidate cache for array subModels', () => {
+        const childModel1 = new FlowModel({ uid: 'child1', flowEngine: realFlowEngine });
+        const childModel2 = new FlowModel({ uid: 'child2', flowEngine: realFlowEngine });
+
+        const child1Spy = vi.spyOn(childModel1, 'invalidateAutoFlowCache');
+        const child2Spy = vi.spyOn(childModel2, 'invalidateAutoFlowCache');
+
+        model.addSubModel('children', childModel1);
+        model.addSubModel('children', childModel2);
+
+        model.invalidateAutoFlowCache();
+
+        expect(child1Spy).toHaveBeenCalledWith(false);
+        expect(child2Spy).toHaveBeenCalledWith(false);
+      });
+
+      test('should recursively invalidate cache for object subModels', () => {
+        const childModel = new FlowModel({ uid: 'child', flowEngine: realFlowEngine });
+        const childSpy = vi.spyOn(childModel, 'invalidateAutoFlowCache');
+
+        model.setSubModel('child', childModel);
+
+        model.invalidateAutoFlowCache();
+
+        expect(childSpy).toHaveBeenCalledWith(false);
+      });
+
+      test('should handle mixed array and object subModels', () => {
+        const arrayChild1 = new FlowModel({ uid: 'arrayChild1', flowEngine: realFlowEngine });
+        const arrayChild2 = new FlowModel({ uid: 'arrayChild2', flowEngine: realFlowEngine });
+        const objectChild = new FlowModel({ uid: 'objectChild', flowEngine: realFlowEngine });
+
+        const array1Spy = vi.spyOn(arrayChild1, 'invalidateAutoFlowCache');
+        const array2Spy = vi.spyOn(arrayChild2, 'invalidateAutoFlowCache');
+        const objectSpy = vi.spyOn(objectChild, 'invalidateAutoFlowCache');
+
+        model.addSubModel('arrayChildren', arrayChild1);
+        model.addSubModel('arrayChildren', arrayChild2);
+        model.setSubModel('objectChild', objectChild);
+
+        model.invalidateAutoFlowCache();
+
+        expect(array1Spy).toHaveBeenCalledWith(false);
+        expect(array2Spy).toHaveBeenCalledWith(false);
+        expect(objectSpy).toHaveBeenCalledWith(false);
+      });
+
+      test('should handle empty subModels without error', () => {
+        model.invalidateAutoFlowCache();
+
+        expect(deleteSpy).toHaveBeenCalledWith('autoFlow-all-test-model-uid');
+      });
+
+      test('should handle null flowEngine gracefully', () => {
+        const modelWithValidEngine = new FlowModel({ uid: 'test', flowEngine: realFlowEngine });
+        modelWithValidEngine.flowEngine = null;
+
+        expect(() => {
+          modelWithValidEngine.invalidateAutoFlowCache();
+        }).not.toThrow();
+      });
+
+      test('should pass deep parameter to recursive calls', () => {
+        const childModel = new FlowModel({ uid: 'child', flowEngine: realFlowEngine });
+        const childSpy = vi.spyOn(childModel, 'invalidateAutoFlowCache');
+
+        model.setSubModel('child', childModel);
+
+        model.invalidateAutoFlowCache(true);
+
+        expect(childSpy).toHaveBeenCalledWith(true);
       });
     });
   });

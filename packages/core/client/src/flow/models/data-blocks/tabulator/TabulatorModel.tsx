@@ -420,7 +420,7 @@ TabulatorModel.define({
   title: tval('Tabulator'),
   group: tval('Content'),
   requiresDataSource: true,
-  // hide: true,
+  hide: true,
   defaultOptions: {
     use: 'TabulatorModel',
   },

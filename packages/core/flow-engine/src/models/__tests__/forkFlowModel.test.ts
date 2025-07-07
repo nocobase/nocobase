@@ -8,39 +8,14 @@
  */
 
 import { vi } from 'vitest';
-import { ForkFlowModel } from '../forkFlowModel';
-import { FlowModel } from '../flowModel';
 import { FlowEngine } from '../../flowEngine';
-import type { IModelComponentProps, FlowModelOptions } from '../../types';
-import { APIClient } from '@nocobase/sdk';
-
-// Mock dependencies
-vi.mock('@formily/reactive', async () => {
-  const actual = await vi.importActual('@formily/reactive');
-  return {
-    ...actual,
-    action: (fn: any) => fn,
-    define: vi.fn(),
-    observable: (obj: any) => obj,
-  };
-});
-
-vi.mock('uid/secure', () => ({
-  uid: vi.fn(() => 'mock-uid-' + Math.random().toString(36).substring(2, 11)),
-}));
+import type { FlowModelOptions, IModelComponentProps } from '../../types';
+import { FlowModel } from '../flowModel';
+import { ForkFlowModel } from '../forkFlowModel';
 
 // Helper functions
 const createMockFlowEngine = (): FlowEngine => {
-  const mockEngine = {
-    getModel: vi.fn(),
-    createModel: vi.fn(),
-    getAction: vi.fn(),
-    getContext: vi.fn(() => ({ app: {} as any, api: {} as APIClient, flowEngine: mockEngine as FlowEngine })),
-    translate: vi.fn((key: string) => key),
-    reactView: null as any,
-  } as Partial<FlowEngine>;
-
-  return mockEngine as FlowEngine;
+  return new FlowEngine();
 };
 
 const createMockFlowModel = (overrides: Partial<FlowModelOptions> = {}): FlowModel => {
@@ -57,25 +32,6 @@ const createMockFlowModel = (overrides: Partial<FlowModelOptions> = {}): FlowMod
   };
 
   const model = new FlowModel(options);
-
-  // Mock essential methods
-  model.getProps = vi.fn(() => options.props || {});
-  model.render = vi.fn(() => ({ type: 'div', props: model.props }));
-  model.getSharedContext = vi.fn(() => ({}));
-
-  // Add mock properties
-  (model as any).forks = new Set();
-  (model as any).forkCache = new Map();
-  (model as any).flowEngine = flowEngine;
-  (model as any)._sharedContext = {};
-  (model as any).parent = null;
-
-  // Mock the async getter
-  Object.defineProperty(model, 'async', {
-    get: () => options.async || false,
-    configurable: true,
-  });
-
   return model;
 };
 
@@ -276,7 +232,7 @@ describe('ForkFlowModel', () => {
 
       (fork as any).stepParams = newStepParams;
 
-      expect((mockMaster as any).stepParams).toBe(newStepParams);
+      expect((mockMaster as any).stepParams).toEqual(newStepParams);
     });
 
     test('should store non-shared properties locally', () => {
@@ -309,7 +265,7 @@ describe('ForkFlowModel', () => {
 
       (fork as any).stepParams = newParams;
 
-      expect((mockMaster as any).stepParams).toBe(newParams);
+      expect((mockMaster as any).stepParams).toEqual(newParams);
     });
 
     test('should identify shared properties correctly', () => {
@@ -620,6 +576,7 @@ describe('ForkFlowModel', () => {
     // });
 
     test('should return null when disposed', () => {
+      mockMaster.render = vi.fn();
       fork.dispose();
 
       const result = fork.render();

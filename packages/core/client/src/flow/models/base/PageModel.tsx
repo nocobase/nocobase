@@ -10,8 +10,7 @@
 import { PlusOutlined } from '@ant-design/icons';
 import { PageHeader } from '@ant-design/pro-layout';
 import { uid } from '@formily/shared';
-import { FlowModel, FlowModelRenderer, FlowSettingsButton } from '@nocobase/flow-engine';
-import { tval } from '@nocobase/utils/client';
+import { FlowModel, FlowModelRenderer, FlowSettingsButton, escapeT } from '@nocobase/flow-engine';
 import { Tabs } from 'antd';
 import _ from 'lodash';
 import React from 'react';
@@ -82,25 +81,25 @@ export class PageModel extends FlowModel<PageModelStructure> {
 }
 
 PageModel.registerFlow({
-  key: 'default',
-  title: tval('Basic configuration'),
+  key: 'defaultPropsFlow',
+  title: escapeT('Page settings'),
   auto: true,
   steps: {
     settings: {
-      title: tval('Configure page'),
+      title: escapeT('Edit page'),
       uiSchema: {
         title: {
           type: 'string',
-          title: tval('Page Title'),
+          title: escapeT('Page Title'),
           'x-decorator': 'FormItem',
           'x-component': 'Input',
           'x-component-props': {
-            placeholder: tval('Enter page title'),
+            placeholder: escapeT('Enter page title'),
           },
         },
         enableTabs: {
           type: 'boolean',
-          title: tval('Enable tabs'),
+          title: escapeT('Enable tabs'),
           'x-decorator': 'FormItem',
           'x-component': 'Switch',
         },
@@ -112,24 +111,24 @@ PageModel.registerFlow({
         };
       },
       async handler(ctx, params) {
-        ctx.model.setProps('title', ctx.globals.flowEngine.translate(params.title));
+        ctx.model.setProps('title', ctx.t(params.title));
         ctx.model.setProps('enableTabs', params.enableTabs);
 
         if (ctx.shared.currentDrawer) {
           ctx.model.setProps('headerStyle', {
-            backgroundColor: ctx.globals.themeToken.colorBgLayout,
+            backgroundColor: ctx.themeToken.colorBgLayout,
           });
           ctx.model.setProps('tabBarStyle', {
-            backgroundColor: ctx.globals.themeToken.colorBgLayout,
+            backgroundColor: ctx.themeToken.colorBgLayout,
             paddingInline: 16,
             marginBottom: 0,
           });
         } else {
           ctx.model.setProps('headerStyle', {
-            backgroundColor: ctx.globals.themeToken.colorBgContainer,
+            backgroundColor: ctx.themeToken.colorBgContainer,
           });
           ctx.model.setProps('tabBarStyle', {
-            backgroundColor: ctx.globals.themeToken.colorBgContainer,
+            backgroundColor: ctx.themeToken.colorBgContainer,
             paddingInline: 16,
             marginBottom: 0,
           });
