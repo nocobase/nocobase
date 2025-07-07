@@ -73,7 +73,7 @@ export class PageModel extends FlowModel<PageModelStructure> {
   render() {
     return (
       <>
-        {this.props.title && <PageHeader title={this.props.title} style={this.props.headerStyle} />}
+        {this.props.displayTitle && <PageHeader title={this.props.title} style={this.props.headerStyle} />}
         {this.props.enableTabs ? this.renderTabs() : this.renderFirstTab()}
       </>
     );
@@ -88,6 +88,12 @@ PageModel.registerFlow({
     settings: {
       title: escapeT('Edit page'),
       uiSchema: {
+        displayTitle: {
+          type: 'boolean',
+          title: escapeT('Display page title'),
+          'x-decorator': 'FormItem',
+          'x-component': 'Switch',
+        },
         title: {
           type: 'string',
           title: escapeT('Page Title'),
@@ -95,6 +101,14 @@ PageModel.registerFlow({
           'x-component': 'Input',
           'x-component-props': {
             placeholder: escapeT('Enter page title'),
+          },
+          'x-reactions': {
+            dependencies: ['displayTitle'],
+            fulfill: {
+              state: {
+                visible: '{{$deps[0]}}',
+              },
+            },
           },
         },
         // enableTabs: {
@@ -106,12 +120,13 @@ PageModel.registerFlow({
       },
       defaultParams(ctx) {
         return {
-          // title: 'Page title',
-          enableTabs: !!ctx.shared.currentDrawer,
+          displayTitle: true,
+          enableTabs: false,
         };
       },
       async handler(ctx, params) {
-        ctx.model.setProps('title', ctx.t(params.title));
+        ctx.model.setProps('displayTitle', params.displayTitle);
+        ctx.model.setProps('title', ctx.t(params.title || ctx.shared.currentRoute?.title));
         ctx.model.setProps('enableTabs', params.enableTabs);
 
         if (ctx.shared.currentDrawer) {

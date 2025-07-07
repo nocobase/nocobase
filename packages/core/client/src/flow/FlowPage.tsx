@@ -12,7 +12,7 @@ import { useRequest } from 'ahooks';
 import { Card, Skeleton, Spin } from 'antd';
 import React, { useEffect, useMemo, useRef } from 'react';
 import { useParams } from 'react-router-dom';
-import { useKeepAlive } from '../route-switch';
+import { useCurrentRoute, useKeepAlive } from '../route-switch';
 import { SkeletonFallback } from './components/SkeletonFallback';
 
 function InternalFlowPage({ uid, ...props }) {
@@ -32,6 +32,7 @@ export const FlowRoute = () => {
   const layoutContentRef = useRef(null);
   const flowEngine = useFlowEngine();
   const params = useParams();
+  const currentRoute = useCurrentRoute();
   // console.log('FlowRoute params:', params);
   // const { active } = useKeepAlive();
   const model = useMemo(() => {
@@ -49,9 +50,10 @@ export const FlowRoute = () => {
     }
     model.setSharedContext({
       layoutContentElement: layoutContentRef.current,
+      currentRoute,
     });
     model.dispatchEvent('click', { target: layoutContentRef.current, activeTab: params.tabUid });
-  }, [model, params.name, params.tabUid]);
+  }, [model, params.name, params.tabUid, currentRoute]);
   return <div ref={layoutContentRef} />;
 };
 
