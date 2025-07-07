@@ -26,7 +26,7 @@ export class FormFieldGridModel extends GridModel<{
       formModelInstance.collection.getFields(),
       formModelInstance,
       'EditableFieldModel',
-      'fields',
+      'items',
       ({ defaultOptions, fieldPath }) => ({
         use: defaultOptions.use,
         stepParams: {

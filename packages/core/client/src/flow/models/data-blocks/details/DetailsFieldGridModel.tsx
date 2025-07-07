@@ -21,7 +21,7 @@ const AddDetailField = ({ model }) => {
     detailsModelInstance.collection.getFields(),
     detailsModelInstance,
     'ReadPrettyFieldModel',
-    'detailItem',
+    'items',
     ({ defaultOptions, fieldPath }) => ({
       use: 'DetailItemModel',
       stepParams: {
