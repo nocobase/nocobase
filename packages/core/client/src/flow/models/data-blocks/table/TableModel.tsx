@@ -463,7 +463,6 @@ TableModel.registerFlow({
         ctx.model.resource.setSourceId(sourceId);
         ctx.model.resource.setAPIClient(ctx.api);
         ctx.model.resource.setPageSize(20);
-        await ctx.model.applySubModelsAutoFlows('columns');
       },
     },
     virtual: {
@@ -576,6 +575,7 @@ TableModel.registerFlow({
         } else {
           ctx.model.resource.loading = false;
         }
+        await ctx.model.applySubModelsAutoFlows('columns');
       },
     },
   },
