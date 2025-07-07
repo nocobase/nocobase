@@ -215,13 +215,62 @@ export class CollectionManager {
   }
 
   upsertCollections(collections: CollectionOptions[]) {
-    for (const collection of collections) {
+    for (const collection of this.sortCollectionsByInherits(collections)) {
       if (this.collections.has(collection.name)) {
         this.updateCollection(collection);
       } else {
         this.addCollection(collection);
       }
     }
+  }
+
+  sortCollectionsByInherits(collections: CollectionOptions[]): CollectionOptions[] {
+    // 1. 构建 name -> CollectionOptions 映射
+    const map = new Map<string, CollectionOptions>();
+    for (const col of collections) {
+      map.set(col.name, col);
+    }
+
+    // 2. 构建依赖图和入度表
+    const graph: Record<string, Set<string>> = {};
+    const inDegree: Record<string, number> = {};
+    for (const col of collections) {
+      graph[col.name] = new Set();
+      inDegree[col.name] = 0;
+    }
+    for (const col of collections) {
+      const inherits = col.inherits || [];
+      for (const parent of inherits) {
+        if (!graph[parent]) graph[parent] = new Set();
+        graph[parent].add(col.name);
+        inDegree[col.name] = (inDegree[col.name] || 0) + 1;
+      }
+    }
+
+    // 3. Kahn 算法拓扑排序
+    const queue: string[] = [];
+    for (const name in inDegree) {
+      if (inDegree[name] === 0) queue.push(name);
+    }
+
+    const result: CollectionOptions[] = [];
+    while (queue.length) {
+      const curr = queue.shift();
+      if (map.has(curr)) {
+        result.push(map.get(curr));
+      }
+      for (const child of graph[curr] || []) {
+        inDegree[child]--;
+        if (inDegree[child] === 0) queue.push(child);
+      }
+    }
+
+    // 4. 检查是否有环
+    if (result.length !== collections.length) {
+      throw new Error('Collection inherits has circular dependency!');
+    }
+
+    return result;
   }
 
   getCollection(name: string): Collection | undefined {
