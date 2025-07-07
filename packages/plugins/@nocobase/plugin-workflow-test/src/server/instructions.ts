@@ -119,11 +119,11 @@ export default {
     },
   },
 
-  recordAppName: {
+  recordAppId: {
     run(node, input, processor) {
       return {
         status: 1,
-        result: processor.options.plugin.app.name,
+        result: processor.options.plugin.app.instanceId,
       };
     },
   },

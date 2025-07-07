@@ -1210,5 +1210,6 @@
   "Check strength": "检查强度",
   "N/A": "不适用",
   "No form available for reset.": "没有可用的表单进行重置。",
-  "No form available for submission.": "没有可用的表单进行提交。"
+  "No form available for submission.": "没有可用的表单进行提交。",
+  "Enable Scan":"启用扫码录入"
 }

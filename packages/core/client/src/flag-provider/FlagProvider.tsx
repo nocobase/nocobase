@@ -42,6 +42,7 @@ export interface FlagProviderProps {
    * 是否存在于 `筛选表单区块` 中
    */
   isInFilterFormBlock?: boolean;
+  isInTableCell?: boolean;
   /**
    * 是否存在于变量选择器中
    */

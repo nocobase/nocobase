@@ -80,6 +80,7 @@ import { AuditManager } from './audit-manager';
 import { Environment } from './environment';
 import { ServiceContainer } from './service-container';
 import { EventQueue, EventQueueOptions } from './event-queue';
+import { BackgroundJobManager, BackgroundJobManagerOptions } from './background-job-manager';
 
 export type PluginType = string | typeof Plugin;
 export type PluginConfiguration = PluginType | [PluginType, any];
@@ -135,6 +136,7 @@ export interface ApplicationOptions {
   auditManager?: AuditManager;
   lockManager?: LockManagerOptions;
   eventQueue?: EventQueueOptions;
+  backgroundJobManager?: BackgroundJobManagerOptions;
 
   /**
    * @internal
@@ -256,6 +258,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   public container = new ServiceContainer();
   public lockManager: LockManager;
   public eventQueue: EventQueue;
+  public backgroundJobManager: BackgroundJobManager;
 
   constructor(public options: ApplicationOptions) {
     super();
@@ -449,6 +452,32 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
   get aesEncryptor() {
     return this._aesEncryptor;
+  }
+
+  /**
+   * Check if the application is serving as a specific worker.
+   * @experimental
+   */
+  public serving(key?: string): boolean {
+    const { WORKER_MODE = '' } = process.env;
+    if (!WORKER_MODE) {
+      return true;
+    }
+    const topics = WORKER_MODE.trim().split(',');
+    if (key) {
+      if (WORKER_MODE === '*') {
+        return true;
+      }
+      if (topics.includes(key)) {
+        return true;
+      }
+      return false;
+    } else {
+      if (topics.includes('!')) {
+        return true;
+      }
+      return false;
+    }
   }
 
   /**
@@ -1218,6 +1247,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     this.pubSubManager = createPubSubManager(this, options.pubSubManager);
     this.syncMessageManager = new SyncMessageManager(this, options.syncMessageManager);
     this.eventQueue = new EventQueue(this, options.eventQueue);
+    this.backgroundJobManager = new BackgroundJobManager(this, options.backgroundJobManager);
     this.lockManager = new LockManager({
       defaultAdapter: process.env.LOCK_ADAPTER_DEFAULT,
       ...options.lockManager,
