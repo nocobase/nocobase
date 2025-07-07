@@ -32,18 +32,18 @@ import React from 'react';
 import { Grid } from '../../components/Grid';
 import JsonEditor from '../../components/JsonEditor';
 import { SkeletonFallback } from '../../components/SkeletonFallback';
-import { BlockModel } from './BlockModel';
 
-type GridModelStructure = {
+export const GRID_FLOW_KEY = 'gridSettings';
+export const GRID_STEP = 'grid';
+
+interface DefaultStructure {
+  parent?: FlowModel;
   subModels: {
-    items: BlockModel[];
+    items: FlowModel[];
   };
-};
+}
 
-const GRID_FLOW_KEY = 'gridSettings';
-const GRID_STEP = 'grid';
-
-export class GridModel extends FlowModel<GridModelStructure> {
+export class GridModel<T extends { subModels: { items: FlowModel[] } } = DefaultStructure> extends FlowModel<T> {
   subModelBaseClass = 'BlockModel';
   gridContainerRef = React.createRef<HTMLDivElement>();
   prevMoveDistance = 0;
@@ -253,60 +253,50 @@ export class GridModel extends FlowModel<GridModelStructure> {
     this.saveGridLayout();
   }
 
+  renderAddSubModelButton(): JSX.Element {
+    throw new Error('renderAddSubModelButton method must be implemented in subclasses of GridModel');
+  }
+
   render() {
-    const t = this.translate;
+    console.log('rowGap', this.props.rowGap);
+    console.log('colGap', this.props.colGap);
+
     return (
-      <div style={{ padding: this.ctx.globals.themeToken.marginBlock }}>
-        <Space
-          ref={this.gridContainerRef}
-          direction={'vertical'}
-          style={{ width: '100%' }}
-          size={this.ctx.globals.themeToken.marginBlock}
-        >
-          {this.subModels.items?.length > 0 && (
-            <DndProvider onDragMove={this.handleDragMove.bind(this)} onDragEnd={this.handleDragEnd.bind(this)}>
-              <Grid
-                rows={this.props.rows || {}}
-                sizes={this.props.sizes || {}}
-                renderItem={(uid) => {
-                  const item = this.flowEngine.getModel(uid);
-                  return (
-                    <Droppable model={item}>
-                      <FlowModelRenderer
-                        model={item}
-                        key={item.uid}
-                        fallback={<SkeletonFallback />}
-                        showFlowSettings={{ showBackground: false, showDragHandle: true }}
-                        showErrorFallback
-                        showTitle
-                        extraToolbarItems={[
-                          {
-                            key: 'drag-handler',
-                            component: DragHandler,
-                            sort: 1,
-                          },
-                        ]}
-                      />
-                    </Droppable>
-                  );
-                }}
-              />
-            </DndProvider>
-          )}
-          <Space>
-            <AddBlockButton model={this} items={buildBlockItems(this)} subModelKey="items">
-              <FlowSettingsButton icon={<PlusOutlined />}>{t('Add block')}</FlowSettingsButton>
-            </AddBlockButton>
-            <FlowSettingsButton
-              onClick={() => {
-                this.openStepSettingsDialog(GRID_FLOW_KEY, GRID_STEP);
+      <Space ref={this.gridContainerRef} direction={'vertical'} style={{ width: '100%' }} size={this.props.rowGap}>
+        {this.subModels.items?.length > 0 && (
+          <DndProvider onDragMove={this.handleDragMove.bind(this)} onDragEnd={this.handleDragEnd.bind(this)}>
+            <Grid
+              rowGap={this.props.rowGap}
+              colGap={this.props.colGap}
+              rows={this.props.rows || {}}
+              sizes={this.props.sizes || {}}
+              renderItem={(uid) => {
+                const item = this.flowEngine.getModel(uid);
+                return (
+                  <Droppable model={item}>
+                    <FlowModelRenderer
+                      model={item}
+                      key={item.uid}
+                      fallback={<SkeletonFallback />}
+                      showFlowSettings={{ showBackground: false, showDragHandle: true }}
+                      showErrorFallback
+                      showTitle
+                      extraToolbarItems={[
+                        {
+                          key: 'drag-handler',
+                          component: DragHandler,
+                          sort: 1,
+                        },
+                      ]}
+                    />
+                  </Droppable>
+                );
               }}
-            >
-              {t('Configure rows')}
-            </FlowSettingsButton>
-          </Space>
-        </Space>
-      </div>
+            />
+          </DndProvider>
+        )}
+        <Space>{this.renderAddSubModelButton()}</Space>
+      </Space>
     );
   }
 }
@@ -354,7 +344,42 @@ GridModel.registerFlow({
 
 export class BlockGridModel extends GridModel {
   subModelBaseClass = 'BlockModel';
+
+  renderAddSubModelButton() {
+    const t = this.translate;
+    return (
+      <>
+        <AddBlockButton model={this} items={buildBlockItems(this)} subModelKey="items">
+          <FlowSettingsButton icon={<PlusOutlined />}>{t('Add block')}</FlowSettingsButton>
+        </AddBlockButton>
+        <FlowSettingsButton
+          onClick={() => {
+            this.openStepSettingsDialog(GRID_FLOW_KEY, GRID_STEP);
+          }}
+        >
+          {t('Configure rows')}
+        </FlowSettingsButton>
+      </>
+    );
+  }
+
+  render() {
+    return <div style={{ padding: this.ctx.globals.themeToken.marginBlock }}>{super.render()}</div>;
+  }
 }
+
+BlockGridModel.registerFlow({
+  key: 'blockGridSettings',
+  auto: true,
+  steps: {
+    grid: {
+      handler(ctx, params) {
+        ctx.model.setProps('rowGap', 16);
+        ctx.model.setProps('colGap', 16);
+      },
+    },
+  },
+});
 
 function recalculateGridSizes({
   position,

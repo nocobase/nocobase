@@ -16,15 +16,17 @@ export function Grid(props: {
   rows: Record<string, string[][]>;
   sizes?: Record<string, number[]>;
   renderItem: (uid: string) => React.ReactNode;
+  rowGap?: number;
+  colGap?: number;
 }) {
-  const { rows, sizes = {}, renderItem } = props;
+  const { rows, sizes = {}, renderItem, rowGap = 16, colGap = 16 } = props;
 
   if (Object.keys(rows || {}).length === 0) {
     return null;
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: rowGap }}>
       {Object.entries(rows).map(([rowKey, cells]) => {
         const colCount = cells.length;
         const rowSizes = sizes[rowKey] || [];
@@ -43,10 +45,10 @@ export function Grid(props: {
         });
 
         return (
-          <Row key={rowKey} gutter={16}>
+          <Row key={rowKey} gutter={colGap}>
             {cells.map((cell, cellIdx) => (
               <Col key={cellIdx} span={spans[cellIdx]}>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: rowGap }}>
                   {cell.map((uid) => {
                     if (uid === EMPTY_COLUMN_UID) {
                       return null;

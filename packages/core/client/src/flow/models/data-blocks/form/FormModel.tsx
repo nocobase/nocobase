@@ -12,7 +12,6 @@ import { createForm, Form } from '@formily/core';
 import { FormProvider } from '@formily/react';
 import {
   AddActionButton,
-  AddFieldButton,
   buildActionItems,
   buildFieldItems,
   FlowModelRenderer,
@@ -21,10 +20,14 @@ import {
 import { tval } from '@nocobase/utils/client';
 import React from 'react';
 import { DataBlockModel } from '../../base/BlockModel';
-import { EditableFieldModel } from '../../fields/EditableField/EditableFieldModel';
-import { FormCustomFormItemModel } from './FormCustomFormItemModel';
+import { BlockGridModel } from '../../base/GridModel';
+import { FormFieldGridModel } from './FormFieldGridModel';
+import { FormActionModel } from './FormActionModel';
 
-export class FormModel extends DataBlockModel {
+export class FormModel extends DataBlockModel<{
+  parent?: BlockGridModel;
+  subModels?: { grid: FormFieldGridModel; actions?: FormActionModel[] };
+}> {
   form: Form;
   declare resource: SingleRecordResource;
 
@@ -55,25 +58,8 @@ export class FormModel extends DataBlockModel {
     return (
       <FormProvider form={this.form}>
         <FormLayout layout={'vertical'}>
-          {this.mapSubModels('fields', (field) => (
-            <FlowModelRenderer
-              key={field.uid}
-              model={field}
-              showFlowSettings={{ showBorder: false }}
-              sharedContext={{ currentRecord: this.resource.getData() }}
-            />
-          ))}
+          <FlowModelRenderer model={this.subModels.grid} showFlowSettings={false} />
         </FormLayout>
-        <AddFieldButton
-          items={fieldItems}
-          subModelKey="fields"
-          subModelBaseClass={FormCustomFormItemModel}
-          model={this}
-          onSubModelAdded={async (model: EditableFieldModel) => {
-            const params = model.getStepParams('default', 'step1');
-            this.addAppends(params?.fieldPath, !!this.ctx.shared?.currentFlow?.runtimeArgs?.filterByTk);
-          }}
-        />
         <FormButtonGroup style={{ marginTop: 16 }}>
           {this.mapSubModels('actions', (action) => (
             <FlowModelRenderer
@@ -137,5 +123,10 @@ FormModel.define({
   group: 'Content',
   defaultOptions: {
     use: 'FormModel',
+    subModels: {
+      grid: {
+        use: 'FormFieldGridModel',
+      },
+    },
   },
 });

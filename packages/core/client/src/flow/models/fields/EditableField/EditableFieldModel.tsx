@@ -13,20 +13,20 @@ import { Field, Form } from '@formily/core';
 import { FieldContext } from '@formily/react';
 import { tval } from '@nocobase/utils/client';
 import React from 'react';
-import { FormModel } from '../..';
+import { FormFieldGridModel } from '../..';
 import { ReactiveField } from '../../../formily/ReactiveField';
 import { FieldModel } from '../../base/FieldModel';
 
 type FieldComponentTuple = [component: React.ElementType, props: Record<string, any>] | any[];
 
 type Structure = {
-  parent: FormModel;
+  parent: FormFieldGridModel;
 };
 
 export class EditableFieldModel extends FieldModel<Structure> {
   field: Field;
   get form() {
-    return this.parent.form as Form;
+    return this.parent.parent.form as Form;
   }
 
   get decorator() {

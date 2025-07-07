@@ -20,6 +20,7 @@ export * from './data-blocks/details/DetailsModel';
 export * from './data-blocks/form/FormActionModel';
 export * from './data-blocks/form/FormCustomFormItemModel';
 export * from './data-blocks/form/FormModel';
+export * from './data-blocks/form/FormFieldGridModel';
 export * from './data-blocks/form/QuickEditForm';
 export * from './data-blocks/table/TableActionsColumnModel';
 export * from './data-blocks/table/TableColumnModel';

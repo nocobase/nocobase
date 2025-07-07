@@ -1,0 +1,79 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
+import { AddFieldButton, buildFieldItems, FlowSettingsButton } from '@nocobase/flow-engine';
+import { GRID_FLOW_KEY, GRID_STEP, GridModel } from '../../base/GridModel';
+import React from 'react';
+import { FormCustomFormItemModel } from './FormCustomFormItemModel';
+import { EditableFieldModel } from '../../fields';
+import { FormModel } from './FormModel';
+import { FieldModel } from '../../base/FieldModel';
+
+export class FormFieldGridModel extends GridModel<{
+  parent: FormModel;
+  subModels: { items: FieldModel[] };
+}> {
+  renderAddSubModelButton() {
+    const t = this.translate;
+    const formModelInstance = this.parent as FormModel;
+    const fieldItems = buildFieldItems(
+      formModelInstance.collection.getFields(),
+      formModelInstance,
+      'EditableFieldModel',
+      'fields',
+      ({ defaultOptions, fieldPath }) => ({
+        use: defaultOptions.use,
+        stepParams: {
+          fieldSettings: {
+            init: {
+              dataSourceKey: formModelInstance.collection.dataSourceKey,
+              collectionName: formModelInstance.collection.name,
+              fieldPath,
+            },
+          },
+        },
+      }),
+    );
+
+    return (
+      <>
+        <AddFieldButton
+          items={fieldItems}
+          subModelKey="items"
+          subModelBaseClass={FormCustomFormItemModel}
+          model={this}
+          onSubModelAdded={async (model: EditableFieldModel) => {
+            const params = model.getStepParams('default', 'step1');
+            formModelInstance.addAppends(params?.fieldPath, !!this.ctx.shared?.currentFlow?.runtimeArgs?.filterByTk);
+          }}
+        />
+        <FlowSettingsButton
+          onClick={() => {
+            this.openStepSettingsDialog(GRID_FLOW_KEY, GRID_STEP);
+          }}
+        >
+          {t('Configure rows')}
+        </FlowSettingsButton>
+      </>
+    );
+  }
+}
+
+FormFieldGridModel.registerFlow({
+  key: 'formFieldGridSettings',
+  auto: true,
+  steps: {
+    grid: {
+      handler(ctx, params) {
+        ctx.model.setProps('rowGap', 0);
+        ctx.model.setProps('colGap', 16);
+      },
+    },
+  },
+});
