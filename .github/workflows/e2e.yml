@@ -527,7 +527,7 @@ jobs:
     needs:
       - core-and-plugins
       - plugin-workflow
-      - plugin-workflow-approval
+      # - plugin-workflow-approval
       - plugin-data-source-main
     permissions:
       pull-requests: write
