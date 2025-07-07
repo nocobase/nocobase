@@ -105,19 +105,6 @@ FormModel.registerFlow({
   },
 });
 
-FormModel.registerFlow({
-  key: 'formSettings',
-  auto: true,
-  title: tval('Form settings'),
-  steps: {
-    init: {
-      async handler(ctx, params) {
-        await ctx.model.applySubModelsAutoFlows('fields');
-      },
-    },
-  },
-});
-
 FormModel.define({
   title: tval('Form'),
   group: 'Content',

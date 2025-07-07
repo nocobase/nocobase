@@ -69,6 +69,11 @@ FormFieldGridModel.registerFlow({
   key: 'formFieldGridSettings',
   auto: true,
   steps: {
+    init: {
+      async handler(ctx, params) {
+        await ctx.model.applySubModelsAutoFlows('items');
+      },
+    },
     grid: {
       handler(ctx, params) {
         ctx.model.setProps('rowGap', 0);
