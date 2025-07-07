@@ -1,13 +1,13 @@
 {
   "name": "@nocobase/evaluators",
-  "version": "1.7.19",
+  "version": "1.7.20",
   "description": "",
   "main": "./lib/index.js",
   "types": "./lib/index.d.ts",
   "license": "AGPL-3.0",
   "dependencies": {
     "@formulajs/formulajs": "4.4.9",
-    "@nocobase/utils": "1.7.19",
+    "@nocobase/utils": "1.7.20",
     "mathjs": "^10.6.0"
   },
   "repository": {
