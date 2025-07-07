@@ -189,7 +189,6 @@ export class TableModel extends DataBlockModel<TableModelStructure> {
   EditableCell = observer<any>((props) => {
     const { className, title, editable, width, record, recordIndex, dataIndex, children, model, ...restProps } = props;
     const ref = useRef(null);
-    console.log('EditableCell props:', props);
     if (editable) {
       return (
         <td
@@ -233,6 +232,7 @@ export class TableModel extends DataBlockModel<TableModelStructure> {
                   fieldPath: dataIndex,
                   filterByTk: record.id,
                   record: record,
+                  fieldProps: model.subModels.field.props,
                   onSuccess: (values) => {
                     record[dataIndex] = values[dataIndex];
                     this.resource.getData()[recordIndex] = record;

@@ -23,7 +23,6 @@ import { useRequest } from 'ahooks';
 import { Button, Skeleton } from 'antd';
 import _ from 'lodash';
 import React from 'react';
-import { DataBlockModel } from '../../base/BlockModel';
 
 export class QuickEditForm extends FlowModel {
   form: Form;
@@ -43,9 +42,11 @@ export class QuickEditForm extends FlowModel {
     filterByTk: string;
     record: any;
     onSuccess?: (values: any) => void;
+    fieldProps?: any;
   }) {
     // this.now = Date.now();
-    const { flowEngine, target, dataSourceKey, collectionName, fieldPath, filterByTk, record, onSuccess } = options;
+    const { flowEngine, target, dataSourceKey, collectionName, fieldPath, filterByTk, record, onSuccess, fieldProps } =
+      options;
     const model = flowEngine.createModel({
       use: 'QuickEditForm',
       stepParams: {
@@ -54,6 +55,7 @@ export class QuickEditForm extends FlowModel {
             dataSourceKey,
             collectionName,
             fieldPath,
+            fieldProps,
           },
         },
       },
@@ -174,7 +176,7 @@ QuickEditForm.registerFlow({
   steps: {
     init: {
       async handler(ctx, params) {
-        const { dataSourceKey, collectionName, fieldPath } = params;
+        const { dataSourceKey, collectionName, fieldPath, fieldProps } = params;
         if (!dataSourceKey || !collectionName || !fieldPath) {
           throw new Error('dataSourceKey, collectionName and fieldPath are required parameters');
         }
@@ -189,7 +191,7 @@ QuickEditForm.registerFlow({
         const collectionField = ctx.model.collection.getField(fieldPath) as CollectionField;
         if (collectionField) {
           const use = collectionField.getFirstSubclassNameOf('EditableFieldModel') || 'EditableFieldModel';
-          ctx.model.addSubModel('fields', {
+          const fieldModel = ctx.model.addSubModel('fields', {
             use,
             stepParams: {
               fieldSettings: {
@@ -201,6 +203,8 @@ QuickEditForm.registerFlow({
               },
             },
           });
+          await fieldModel.applyAutoFlows();
+          fieldModel.setComponentProps(fieldProps);
           ctx.model.addAppends(fieldPath);
         }
         if (ctx.runtimeArgs.filterByTk || ctx.runtimeArgs.record) {
