@@ -1,155 +1,244 @@
 # FlowContext
 
-`FlowContext` 是 NocoBase 流引擎上下文体系的基础类。所有的 `FlowEngineContext`（全局上下文）、`FlowModelContext`（模型上下文）、`FlowRuntimeContext`（流运行时上下文）等，都是 `FlowContext` 的子类或实例。
-
-它支持灵活注册属性和方法，满足不同层级、不同场景下的上下文扩展需求。
+`FlowContext` 是 NocoBase 流引擎上下文体系的基础类，负责属性、方法的动态注册与访问代理。所有流引擎相关的上下文（如 `FlowEngineContext`、`FlowModelContext`、`FlowRuntimeContext` 等）都继承自该类。
 
 ---
 
-## 🎯 设计理念
+## ✨ 设计理念
 
-- **统一上下文基类**：所有流相关上下文都基于 `FlowContext`，便于扩展和类型统一。
-- **属性/方法动态注册机制**：
-  - 支持同步属性、同步函数属性、异步函数属性（惰性初始化，仅初始化一次并缓存）；
-  - 支持同步方法、异步方法（每次调用都会重新执行）。
-- **适用于全局、模型、流运行时等多种上下文场景**，支持灵活组合与继承。
+- **统一上下文基类**：所有流相关上下文均继承自 `FlowContext`，便于扩展和类型统一。
+- **动态属性/方法注册**：支持同步/异步属性、方法的动态注册，满足多样化扩展需求。
+- **代理链机制**：支持多层上下文代理，实现属性/方法的链式查找和复用。
 
 ---
 
 ## 🧩 核心 API
 
-### `defineProps(props: Record<string, any | (() => any) | (() => Promise<any>)>): void`
+### 属性注册
 
-注册属性。支持：
+#### `defineProperty(key: string, options: PropertyOptions): void`
 
-- **同步属性**：直接赋值；
-- **同步工厂属性**：通过普通 `function` 或 `() => any` 提供，首次访问时执行并缓存结果，后续访问直接返回缓存值；
-- **异步属性**：通过 `async function` 或 `() => Promise<any>` 提供，首次访问时异步初始化并缓存，后续访问直接返回缓存值。
+注册属性，支持静态值、同步/异步 getter、缓存等。
 
-> ⚠️ 工厂属性（无论同步还是异步）均为惰性初始化，首次访问时执行，后续访问直接返回缓存值。
+- **静态属性**：`{ value: any }`
+- **同步 getter**：`{ get: (ctx) => any }`
+- **异步 getter**：`{ get: async (ctx) => any }`
+- **缓存控制**：`cache: true`（默认）或 `false`（每次访问都执行 getter）
+- **元信息**：`meta` 参数可用于描述属性结构
 
-### `defineMethods(methods: Record<string, Function>): void`
+#### `has(key: string): boolean`
 
-注册方法。支持同步和异步函数。
-- 每次调用都会重新执行；
-- 可用于注册服务方法、数据访问方法等。
+判断当前上下文是否有某个属性。
 
-### `delegate(otherContext: FlowContext): void`
+---
 
-将当前上下文的属性和方法访问委托给另一个上下文。
-- 支持多层委托链（A → B → C）；
-- 不修改当前上下文和被委托上下文的数据；
-- 当前上下文已有的属性会优先生效，不被覆盖；
-- 实时代理，无需初始化或缓存。
+### 方法注册
+
+#### `defineMethod(name: string, fn: Function): void`
+
+注册方法（同步或异步均可）。
+
+---
+
+### 代理机制
+
+#### `addDelegate(ctx: FlowContext): void`
+
+将当前上下文的属性和方法访问代理给另一个上下文（插入代理链头部）。
+
+#### `removeDelegate(ctx: FlowContext): void`
+
+从代理链中移除指定上下文。
+
+---
+
+### 属性/方法访问
+
+- 通过 `ctx.foo` 直接访问属性或方法，自动查找自身及代理链。
+- 支持链式代理（A → B → C），自身优先，代理链次之。
+- 方法自动绑定上下文。
+
+---
+
+### 属性元信息
+
+#### `getPropertyMetaTree(): MetaTreeNode[]`
+
+获取当前上下文及代理链上的所有属性元信息（可用于 UI 变量的级联选择等）。
 
 ---
 
 ## 🚀 用法示例
 
-### 注册属性和方法
+### 属性注册与访问
 
 ```ts
 const ctx = new FlowContext();
+ctx.defineProperty('foo', { value: 123 });
+console.log(ctx.foo); // 123
 
-ctx.defineProps({
-  // 1. 同步属性值
-  prop1: 'hello',
+ctx.defineProperty('bar', { get: () => 456 });
+console.log(ctx.bar); // 456
 
-  // 2. 同步函数属性（惰性执行一次）
-  prop2: () => {
-    console.log('init prop2');
-    return 'value';
-  },
-
-  // 3. 异步函数属性（惰性执行一次）
-  prop3: async () => {
-    console.log('init prop3');
-    await new Promise((r) => setTimeout(r, 100));
-    return 'async value';
-  },
-});
-
-ctx.defineMethods({
-  fn1: () => {
-    return 'fn1 called';
-  },
-  fn2: async () => {
-    return 'fn2 called';
-  },
-});
-
-(async () => {
-  console.log(ctx.prop1); // hello
-  console.log(ctx.prop2); // init prop2\nvalue
-  console.log(ctx.prop2); // value（缓存返回）
-  console.log(await ctx.prop3); // init prop3\nasync value
-  console.log(await ctx.prop3); // async value（缓存返回）
-  console.log(ctx.fn1()); // fn1 called
-  console.log(await ctx.fn2()); // fn2 called
-})();
+ctx.defineProperty('baz', { get: async () => 'hello' });
+console.log(await ctx.baz); // 'hello'
 ```
 
-### 委托访问示例（继承）
-
-```ts
-const ctxA = new FlowContext();
-const ctxB = new FlowContext();
-
-ctxB.defineProps({
-  version: 'v1.0',
-});
-
-ctxA.delegate(ctxB);
-
-console.log(ctxA.version); // 输出 'v1.0'
-```
-
-### 属性依赖
+### 属性依赖与上下文引用
 
 ```ts
 const ctx = new FlowContext();
+ctx.defineProperty('a', { get: () => 'a' });
+ctx.defineProperty('b', { get: (ctx) => ctx.a + 'b' });
+console.log(ctx.b); // 'ab'
 
-ctx.defineProps({
-  a: (ctx) => {
-    console.log('init a');
-    return 1;
-  },
-  b: (ctx) => {
-    console.log('init b');
-    return ctx.a + 1;
-  },
-  c: async (ctx) => {
-    console.log('init c');
-    return ctx.b * 2;
+ctx.defineProperty('c', { get: async () => 'c' });
+ctx.defineProperty('d', { get: async (ctx) => (await ctx.c) + 'd' });
+console.log(await ctx.d); // 'cd'
+```
+
+### 属性缓存控制
+
+```ts
+const ctx = new FlowContext();
+let count = 0;
+ctx.defineProperty('cached', { get: () => ++count });
+console.log(ctx.cached); // 1
+console.log(ctx.cached); // 1（默认缓存）
+
+let count2 = 0;
+ctx.defineProperty('noCache', { get: () => ++count2, cache: false });
+console.log(ctx.noCache); // 1
+console.log(ctx.noCache); // 2（不缓存）
+```
+
+### 代理链（多级代理）
+
+```ts
+const root = new FlowContext();
+root.defineProperty('deep', { value: 42 });
+
+const mid = new FlowContext();
+mid.addDelegate(root);
+
+const ctx = new FlowContext();
+ctx.addDelegate(mid);
+
+console.log(ctx.deep); // 42
+```
+
+### 本地属性覆盖代理属性
+
+```ts
+const delegate = new FlowContext();
+delegate.defineProperty('foo', { value: 'delegate' });
+
+const ctx = new FlowContext();
+ctx.addDelegate(delegate);
+ctx.defineProperty('foo', { value: 'local' });
+
+console.log(ctx.foo); // 'local'
+```
+
+### 方法注册与调用
+
+```ts
+const ctx = new FlowContext();
+ctx.defineMethod('hello', function (name: string) {
+  return `Hello, ${name}!`;
+});
+console.log(ctx.hello('World')); // 'Hello, World!'
+```
+
+### 代理链中的方法查找与 this 绑定
+
+```ts
+const delegate = new FlowContext();
+delegate.defineMethod('add', function (a: number, b: number) {
+  return a + b + (this.extra || 0);
+});
+delegate.extra = 10;
+
+const ctx = new FlowContext();
+ctx.addDelegate(delegate);
+
+console.log(ctx.add(1, 2)); // 13
+delegate.extra = 100;
+console.log(ctx.add(1, 2)); // 103
+```
+
+### 属性元信息树
+
+```ts
+const ctx = new FlowContext();
+ctx.defineProperty('foo', {
+  meta: { type: 'string', title: 'Foo' },
+});
+ctx.defineProperty('bar', {
+  meta: {
+    type: 'object',
+    title: 'Bar',
+    properties: {
+      baz: { type: 'number', title: 'Baz' },
+      qux: { type: 'string', title: 'Qux' },
+    },
   },
 });
 
-(async () => {
-  console.log('read a:', ctx.a); // init a \n read a: 1
-  console.log('read b:', ctx.b); // init b \n read b: 2
-  console.log('read c:', await ctx.c); // init c \n read c: 4
+const delegate = new FlowContext();
+delegate.defineProperty('hello', {
+  meta: { type: 'string', title: 'Hello' },
+});
+ctx.addDelegate(delegate);
 
-  // 再访问，不会重复初始化
-  console.log('read a again:', ctx.a); // 1
-  console.log('read b again:', ctx.b); // 2
-  console.log('read c again:', await ctx.c); // 4
-})();
+console.log(JSON.stringify(ctx.getPropertyMetaTree(), null, 2));
+/*
+[
+  {
+    "name": "foo",
+    "title": "Foo",
+    "type": "string"
+  },
+  {
+    "name": "bar",
+    "title": "Bar",
+    "type": "object",
+    "children": [
+      {
+        "name": "baz",
+        "title": "Baz",
+        "type": "number"
+      },
+      {
+        "name": "qux",
+        "title": "Qux",
+        "type": "string"
+      }
+    ]
+  },
+  {
+    "name": "hello",
+    "title": "Hello",
+    "type": "string"
+  }
+]
+*/
 ```
 
----
-
-## 🧬 继承结构
+### 代理优先级与移除
 
 ```ts
-class FlowEngineContext extends FlowContext {
-  // 全局作用域
-}
+const d1 = new FlowContext();
+d1.defineProperty('foo', { value: 'from d1' });
 
-class FlowModelContext extends FlowContext {
-  // 单个模型或模型树作用域
-}
+const d2 = new FlowContext();
+d2.defineProperty('foo', { value: 'from d2' });
 
-class FlowRuntimeContext extends FlowContext {
-  // 单次流运行作用域
-}
+const ctx = new FlowContext();
+ctx.addDelegate(d1);
+ctx.addDelegate(d2);
+
+console.log(ctx.foo); // 'from d2'（后添加的优先）
+ctx.removeDelegate(d2);
+console.log(ctx.foo); // 'from d1'（d2 被移除后，d1 成为代理链顶端）
 ```
