@@ -11,9 +11,11 @@ import { FormButtonGroup, FormLayout } from '@formily/antd-v5';
 import { createForm, Form } from '@formily/core';
 import { FormProvider, observer } from '@formily/react';
 import {
+  BaseRecordResource,
   Collection,
   CollectionField,
   FlowEngine,
+  FlowModel,
   FlowModelRenderer,
   SingleRecordResource,
 } from '@nocobase/flow-engine';
@@ -23,7 +25,7 @@ import _ from 'lodash';
 import React from 'react';
 import { DataBlockModel } from '../../base/BlockModel';
 
-export class QuickEditForm extends DataBlockModel {
+export class QuickEditForm extends FlowModel {
   form: Form;
   fieldPath: string;
 
@@ -79,6 +81,27 @@ export class QuickEditForm extends DataBlockModel {
         );
       },
     });
+  }
+
+  onInit(options) {
+    this.setSharedContext({
+      currentBlockModel: this,
+    });
+  }
+
+  addAppends(fieldPath: string, refresh = false) {
+    const field = this.ctx.globals.dataSourceManager.getCollectionField(
+      `${this.collection.dataSourceKey}.${this.collection.name}.${fieldPath}`,
+    );
+    if (!field) {
+      return;
+    }
+    if (['belongsToMany', 'belongsTo', 'hasMany', 'hasOne'].includes(field.type)) {
+      (this.resource as BaseRecordResource).addAppends(field.name);
+      if (refresh) {
+        this.resource.refresh();
+      }
+    }
   }
 
   render() {
@@ -142,6 +165,7 @@ export class QuickEditForm extends DataBlockModel {
 QuickEditForm.registerFlow({
   key: 'quickEditFormSettings',
   auto: true,
+  sort: 100,
   steps: {
     init: {
       async handler(ctx, params) {
