@@ -77,13 +77,13 @@ export class DetailsFieldGridModel extends GridModel<{
     return (
       <>
         <AddDetailField model={this} />
-        <FlowSettingsButton
+        {/* <FlowSettingsButton
           onClick={() => {
             this.openStepSettingsDialog(GRID_FLOW_KEY, GRID_STEP);
           }}
         >
           {t('Configure rows')}
-        </FlowSettingsButton>
+        </FlowSettingsButton> */}
       </>
     );
   }

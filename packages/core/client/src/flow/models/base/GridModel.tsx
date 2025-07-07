@@ -262,41 +262,45 @@ export class GridModel<T extends { subModels: { items: FlowModel[] } } = Default
     console.log('colGap', this.props.colGap);
 
     return (
-      <Space ref={this.gridContainerRef} direction={'vertical'} style={{ width: '100%' }} size={this.props.rowGap}>
-        {this.subModels.items?.length > 0 && (
-          <DndProvider onDragMove={this.handleDragMove.bind(this)} onDragEnd={this.handleDragEnd.bind(this)}>
-            <Grid
-              rowGap={this.props.rowGap}
-              colGap={this.props.colGap}
-              rows={this.props.rows || {}}
-              sizes={this.props.sizes || {}}
-              renderItem={(uid) => {
-                const item = this.flowEngine.getModel(uid);
-                return (
-                  <Droppable model={item}>
-                    <FlowModelRenderer
-                      model={item}
-                      key={item.uid}
-                      fallback={<SkeletonFallback />}
-                      showFlowSettings={{ showBackground: false, showDragHandle: true }}
-                      showErrorFallback
-                      showTitle
-                      extraToolbarItems={[
-                        {
-                          key: 'drag-handler',
-                          component: DragHandler,
-                          sort: 1,
-                        },
-                      ]}
-                    />
-                  </Droppable>
-                );
-              }}
-            />
-          </DndProvider>
+      <>
+        <Space ref={this.gridContainerRef} direction={'vertical'} style={{ width: '100%' }} size={this.props.rowGap}>
+          {this.subModels.items?.length > 0 && (
+            <DndProvider onDragMove={this.handleDragMove.bind(this)} onDragEnd={this.handleDragEnd.bind(this)}>
+              <Grid
+                rowGap={this.props.rowGap}
+                colGap={this.props.colGap}
+                rows={this.props.rows || {}}
+                sizes={this.props.sizes || {}}
+                renderItem={(uid) => {
+                  const item = this.flowEngine.getModel(uid);
+                  return (
+                    <Droppable model={item}>
+                      <FlowModelRenderer
+                        model={item}
+                        key={item.uid}
+                        fallback={<SkeletonFallback />}
+                        showFlowSettings={{ showBackground: false, showDragHandle: true }}
+                        showErrorFallback
+                        showTitle
+                        extraToolbarItems={[
+                          {
+                            key: 'drag-handler',
+                            component: DragHandler,
+                            sort: 1,
+                          },
+                        ]}
+                      />
+                    </Droppable>
+                  );
+                }}
+              />
+            </DndProvider>
+          )}
+        </Space>
+        {this.flowEngine.flowSettings.enabled && (
+          <div style={{ margin: '16px 0' }}>{this.renderAddSubModelButton()}</div>
         )}
-        <Space>{this.renderAddSubModelButton()}</Space>
-      </Space>
+      </>
     );
   }
 }
@@ -352,13 +356,13 @@ export class BlockGridModel extends GridModel {
         <AddBlockButton model={this} items={buildBlockItems(this)} subModelKey="items">
           <FlowSettingsButton icon={<PlusOutlined />}>{t('Add block')}</FlowSettingsButton>
         </AddBlockButton>
-        <FlowSettingsButton
+        {/* <FlowSettingsButton
           onClick={() => {
             this.openStepSettingsDialog(GRID_FLOW_KEY, GRID_STEP);
           }}
         >
           {t('Configure rows')}
-        </FlowSettingsButton>
+        </FlowSettingsButton> */}
       </>
     );
   }
@@ -374,8 +378,8 @@ BlockGridModel.registerFlow({
   steps: {
     grid: {
       handler(ctx, params) {
-        ctx.model.setProps('rowGap', 16);
-        ctx.model.setProps('colGap', 16);
+        ctx.model.setProps('rowGap', ctx.globals.themeToken.marginBlock);
+        ctx.model.setProps('colGap', ctx.globals.themeToken.marginBlock);
       },
     },
   },

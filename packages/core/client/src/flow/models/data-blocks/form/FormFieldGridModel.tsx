@@ -53,13 +53,13 @@ export class FormFieldGridModel extends GridModel<{
             formModelInstance.addAppends(params?.fieldPath, !!this.ctx.shared?.currentFlow?.runtimeArgs?.filterByTk);
           }}
         />
-        <FlowSettingsButton
+        {/* <FlowSettingsButton
           onClick={() => {
             this.openStepSettingsDialog(GRID_FLOW_KEY, GRID_STEP);
           }}
         >
           {t('Configure rows')}
-        </FlowSettingsButton>
+        </FlowSettingsButton> */}
       </>
     );
   }

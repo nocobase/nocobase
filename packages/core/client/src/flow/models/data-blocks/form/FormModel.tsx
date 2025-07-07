@@ -44,7 +44,7 @@ export class FormModel extends DataBlockModel<{
           <FlowModelRenderer model={this.subModels.grid} showFlowSettings={false} />
         </FormLayout>
         <DndProvider>
-          <FormButtonGroup style={{ marginTop: 16 }}>
+          <FormButtonGroup>
             {this.mapSubModels('actions', (action) => (
               <Droppable model={action} key={action.uid}>
                 <FlowModelRenderer
