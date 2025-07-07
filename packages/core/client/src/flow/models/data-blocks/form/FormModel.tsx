@@ -10,7 +10,15 @@
 import { FormButtonGroup, FormLayout } from '@formily/antd-v5';
 import { createForm, Form } from '@formily/core';
 import { FormProvider } from '@formily/react';
-import { AddActionButton, buildActionItems, FlowModelRenderer, SingleRecordResource } from '@nocobase/flow-engine';
+import {
+  AddActionButton,
+  buildActionItems,
+  DndProvider,
+  DragHandler,
+  Droppable,
+  FlowModelRenderer,
+  SingleRecordResource,
+} from '@nocobase/flow-engine';
 import { tval } from '@nocobase/utils/client';
 import React from 'react';
 import { DataBlockModel } from '../../base/BlockModel';
@@ -35,17 +43,28 @@ export class FormModel extends DataBlockModel<{
         <FormLayout layout={'vertical'}>
           <FlowModelRenderer model={this.subModels.grid} showFlowSettings={false} />
         </FormLayout>
-        <FormButtonGroup style={{ marginTop: 16 }}>
-          {this.mapSubModels('actions', (action) => (
-            <FlowModelRenderer
-              key={action.uid}
-              model={action}
-              showFlowSettings={{ showBackground: false, showBorder: false }}
-              sharedContext={{ currentRecord: this.resource.getData() }}
-            />
-          ))}
-          <AddActionButton model={this} items={buildActionItems(this, 'FormActionModel')} />
-        </FormButtonGroup>
+        <DndProvider>
+          <FormButtonGroup style={{ marginTop: 16 }}>
+            {this.mapSubModels('actions', (action) => (
+              <Droppable model={action} key={action.uid}>
+                <FlowModelRenderer
+                  key={action.uid}
+                  model={action}
+                  showFlowSettings={{ showBackground: false, showBorder: false }}
+                  sharedContext={{ currentRecord: this.resource.getData() }}
+                  extraToolbarItems={[
+                    {
+                      key: 'drag-handler',
+                      component: DragHandler,
+                      sort: 1,
+                    },
+                  ]}
+                />
+              </Droppable>
+            ))}
+            <AddActionButton model={this} items={buildActionItems(this, 'FormActionModel')} />
+          </FormButtonGroup>
+        </DndProvider>
       </FormProvider>
     );
   }
