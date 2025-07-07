@@ -16,7 +16,7 @@ let uuid = 0;
 // 独立 PopoverComponent，参考 DrawerComponent 实现
 const PopoverComponent = React.forwardRef<any, any>(({ afterClose, content, placement, rect, ...props }, ref) => {
   const [visible, setVisible] = React.useState(true);
-  const [config, setConfig] = React.useState({ content, placement, rect, ...props });
+  const [config, setConfig] = React.useState<any>({ content, placement, rect, ...props });
 
   React.useImperativeHandle(ref, () => ({
     destroy: () => setVisible(false),
