@@ -87,7 +87,7 @@ export class FormModel extends DataBlockModel {
 }
 
 FormModel.registerFlow({
-  key: 'resourceSettings',
+  key: 'resourceSettings2',
   auto: true,
   title: tval('Resource settings'),
   steps: {

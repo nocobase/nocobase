@@ -406,11 +406,11 @@ export class TableModel extends DataBlockModel<TableModelStructure> {
   }
 }
 
-// TableModel.registerFlow({
-//   key: 'resourceSettings',
-//   auto: true,
-//   steps: {},
-// });
+TableModel.registerFlow({
+  key: 'resourceSettings2',
+  auto: true,
+  steps: {},
+});
 
 TableModel.registerFlow({
   key: 'tableSettings',
