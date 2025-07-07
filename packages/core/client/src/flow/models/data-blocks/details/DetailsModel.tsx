@@ -86,6 +86,10 @@ export class DetailsModel extends DataBlockModel {
     return resource;
   }
 
+  isMultiRecordResource() {
+    return this.resource instanceof MultiRecordResource;
+  }
+
   renderComponent() {
     const filterByTk = this.resource.getFilterByTk();
     const resource = this.resource as MultiRecordResource;
@@ -114,7 +118,7 @@ export class DetailsModel extends DataBlockModel {
           })}
         </FormLayout>
         <AddDetailField model={this} />
-        {this.resource.hasData() && (
+        {this.isMultiRecordResource() && (
           <div
             style={{
               padding: this.context.themeToken.padding,
