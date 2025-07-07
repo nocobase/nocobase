@@ -21,3 +21,4 @@ export * from './JsonReadPrettyFieldModel';
 export * from './AssociationFieldModel';
 export * from './MarkdownReadPrettyFieldModel';
 export * from './URLReadPrettyFieldModel';
+export * from './PasswordReadPrettyFieldModel';
