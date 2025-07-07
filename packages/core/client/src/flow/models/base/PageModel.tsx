@@ -97,12 +97,12 @@ PageModel.registerFlow({
             placeholder: escapeT('Enter page title'),
           },
         },
-        enableTabs: {
-          type: 'boolean',
-          title: escapeT('Enable tabs'),
-          'x-decorator': 'FormItem',
-          'x-component': 'Switch',
-        },
+        // enableTabs: {
+        //   type: 'boolean',
+        //   title: escapeT('Enable tabs'),
+        //   'x-decorator': 'FormItem',
+        //   'x-component': 'Switch',
+        // },
       },
       defaultParams(ctx) {
         return {
