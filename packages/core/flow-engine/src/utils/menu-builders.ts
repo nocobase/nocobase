@@ -218,7 +218,7 @@ function createAssociationRecordsMenuItem(
         resourceSettings: {
           init: {
             dataSourceKey: extra.dataSourceKey,
-            collectionName: '',
+            collectionName: extra.collectionName,
             associationName: baseCollectionName + '.' + extra.collectionName,
             sourceId,
           },
@@ -280,7 +280,7 @@ function buildOtherCollectionItems(
         resourceSettings: {
           init: {
             dataSourceKey: collection.dataSource.key,
-            collectionName: '',
+            collectionName: currentFlow.runtimeArgs!.collectionName,
             associationName: `${collection.name}.${currentFlow.runtimeArgs!.collectionName}`,
             sourceId: '{{ctx.shared.currentFlow.runtimeArgs.sourceId}}',
             filterByTk: '{{ctx.shared.currentFlow.runtimeArgs.filterByTk}}',
