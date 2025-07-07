@@ -526,13 +526,13 @@ TableModel.registerFlow({
     },
     refresh: {
       async handler(ctx, params) {
+        await ctx.model.applySubModelsAutoFlows('columns');
         const { dataLoadingMode } = ctx.model.props;
         if (dataLoadingMode === 'auto') {
           await ctx.model.resource.refresh();
         } else {
           ctx.model.resource.loading = false;
         }
-        await ctx.model.applySubModelsAutoFlows('columns');
       },
     },
   },
