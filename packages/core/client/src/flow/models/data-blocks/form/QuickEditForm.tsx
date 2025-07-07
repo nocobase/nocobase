@@ -66,6 +66,11 @@ export class QuickEditForm extends FlowModel {
       mode: 'popover',
       target,
       placement: 'rightTop',
+      styles: {
+        body: {
+          maxWidth: 400,
+        },
+      },
       content: (popover) => {
         console.log('QuickEditForm.open3', Date.now() - model.now);
         return (

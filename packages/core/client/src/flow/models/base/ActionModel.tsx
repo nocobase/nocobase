@@ -8,12 +8,10 @@
  */
 
 import { FlowModel, escapeT } from '@nocobase/flow-engine';
-import { tval } from '@nocobase/utils/client';
 import { Button } from 'antd';
 import type { ButtonProps } from 'antd/es/button';
 import React from 'react';
 import { Icon } from '../../../icon/Icon';
-import IconPicker from '../../../schema-component/antd/icon-picker/IconPicker';
 
 export class ActionModel extends FlowModel {
   declare props: ButtonProps;
@@ -50,7 +48,7 @@ ActionModel.registerFlow({
         },
         icon: {
           'x-decorator': 'FormItem',
-          'x-component': IconPicker,
+          'x-component': 'IconPicker',
           title: escapeT('Button icon'),
         },
         type: {
@@ -97,7 +95,7 @@ export class GlobalActionModel extends ActionModel {}
 export class RecordActionModel extends ActionModel {
   defaultProps: ButtonProps = {
     type: 'link',
-    children: tval('Action'),
+    children: escapeT('Action'),
   };
 
   render() {
