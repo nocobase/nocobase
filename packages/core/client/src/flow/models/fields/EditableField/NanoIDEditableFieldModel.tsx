@@ -37,7 +37,7 @@ NanoIDEditableFieldModel.registerFlow({
             }
           }
         }
-        if (!ctx.model.field.initialValue && customAlphabet) {
+        if (!ctx.model.field.value && customAlphabet) {
           ctx.model.field.setInitialValue(Alphabet(customAlphabet, size)());
         }
         ctx.model.field.validator = isValidNanoid;
