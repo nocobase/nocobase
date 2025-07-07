@@ -33,15 +33,6 @@ export class FlowResource<TData = any> {
     return false;
   }
 
-  getListDataWithRowKey(): TDataItemWithKey[] {
-    const data = this.getData();
-    if (!Array.isArray(data)) return [];
-    return data.map((item, index) => ({
-      ...item,
-      _rowKey: `${item.id}_${index}`,
-    }));
-  }
-
   setData(value: TData) {
     this._data.value = value;
     return this;

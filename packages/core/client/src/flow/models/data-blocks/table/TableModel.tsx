@@ -376,7 +376,7 @@ export class TableModel extends DataBlockModel<TableModelStructure> {
           components={this.components}
           tableLayout="fixed"
           size={this.props.size}
-          rowKey="_rowKey"
+          rowKey={this.collection.filterTargetKey}
           rowSelection={
             this.props.showIndex && {
               columnWidth: 50,
@@ -391,7 +391,7 @@ export class TableModel extends DataBlockModel<TableModelStructure> {
           loading={this.resource.loading}
           virtual={this.props.virtual}
           scroll={{ x: 'max-content', y: '100%' }}
-          dataSource={this.resource.getListDataWithRowKey()}
+          dataSource={this.resource.getData()}
           columns={this.getColumns()}
           pagination={{
             current: this.resource.getPage(),
