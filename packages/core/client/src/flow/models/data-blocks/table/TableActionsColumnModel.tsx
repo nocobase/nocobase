@@ -45,7 +45,15 @@ const Columns = observer<any>(({ record, model, index }) => {
 
 const AddActionToolbarComponent = ({ model }) => {
   return (
-    <AddActionButton model={model} items={buildActionItems(model, 'RecordActionModel')} subModelKey="actions">
+    <AddActionButton
+      model={model}
+      items={buildActionItems(model, 'RecordActionModel')}
+      subModelKey="actions"
+      onModelCreated={async (actionModel) => {
+        actionModel.setStepParams('buttonSettings', 'buttonProps', { type: 'link' });
+        await actionModel.applyFlow('buttonSettings');
+      }}
+    >
       <PlusOutlined />
     </AddActionButton>
   );

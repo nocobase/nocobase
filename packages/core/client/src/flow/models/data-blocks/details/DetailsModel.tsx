@@ -16,13 +16,15 @@ import {
   buildActionItems,
   buildFieldItems,
   escapeT,
+  AddActionButton,
 } from '@nocobase/flow-engine';
 import { tval } from '@nocobase/utils/client';
-import { Pagination, theme } from 'antd';
+import { Pagination, Space } from 'antd';
 import _ from 'lodash';
 import React from 'react';
 import { DataBlockModel } from '../../base/BlockModel';
 import { DetailItemModel } from './DetailItemModel';
+
 const AddDetailField = ({ model }) => {
   const items = buildFieldItems(
     model.collection.getFields(),
@@ -91,7 +93,6 @@ export class DetailsModel extends DataBlockModel {
   }
 
   renderComponent() {
-    const filterByTk = this.resource.getFilterByTk();
     const resource = this.resource as MultiRecordResource;
     const onPageChange = (page) => {
       resource.setPage(page);
@@ -99,19 +100,38 @@ export class DetailsModel extends DataBlockModel {
     };
     return (
       <>
-        {/* <div style={{ padding: token.padding, textAlign: 'right' }}>
-          <AddActionButton model={this} items={buildActionItems(this, 'DetailActionModel')} />
-        </div>
-        <FormButtonGroup style={{ marginTop: 16 }}>
-          {this.mapSubModels('actions', (action) => (
-            <FlowModelRenderer
-              key={action.uid}
-              model={action}
-              showFlowSettings={{ showBackground: false, showBorder: false }}
-              sharedContext={{ record: this.resource.getData() }}
+        <div style={{ padding: this.context.themeToken.padding, textAlign: 'right' }}>
+          <Space>
+            {this.mapSubModels('actions', (action) => {
+              const data = this.resource.getData();
+              const currentRecord = Array.isArray(data) ? data[0] : data;
+
+              return (
+                <FlowModelRenderer
+                  key={action.uid}
+                  model={action}
+                  showFlowSettings={{ showBackground: false, showBorder: false }}
+                  sharedContext={{ currentRecord: currentRecord }}
+                />
+              );
+            })}
+
+            <AddActionButton
+              model={this}
+              items={buildActionItems(this, 'RecordActionModel')}
+              onModelCreated={async (actionModel) => {
+                const data = this.resource.getData();
+                const currentRecord = Array.isArray(data) ? data[0] : data;
+                actionModel.setSharedContext({
+                  currentRecord,
+                });
+                actionModel.setStepParams('buttonSettings', 'buttonProps', { type: 'default' });
+                await actionModel.applyFlow('buttonSettings');
+              }}
             />
-          ))}
-        </FormButtonGroup> */}
+          </Space>
+        </div>
+
         <FormLayout layout={'vertical'}>
           {this.mapSubModels('detailItem', (field: DetailItemModel) => {
             return <FlowModelRenderer key={field.uid} model={field} showFlowSettings={{ showBorder: false }} />;
