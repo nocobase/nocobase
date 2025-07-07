@@ -890,7 +890,7 @@ export function buildBlockItems(
                 meta.children = children;
               } else {
                 const children = [
-                  className === 'FormModel' && {
+                  ['FormModel', 'DetailsModel'].includes(className) && {
                     // current record
                     key: 'currentRecord',
                     title: escapeT('Current record'),

@@ -191,10 +191,14 @@ DetailsModel.registerFlow({
           await ctx.model.applySubModelsAutoFlows('detailItem');
         } else {
           if (!ctx.model.collection) {
-            ctx.model.collection = ctx.globals.dataSourceManager.getCollection(dataSourceKey, collectionName);
+            ctx.model.collection = ctx.globals.dataSourceManager.getCollection(
+              dataSourceKey || params.dataSourceKey,
+              associationName ? associationName.split('.').slice(-1)[0] : collectionName,
+            );
             const resource = new SingleRecordResource();
             resource.setDataSourceKey(dataSourceKey);
-            resource.setResourceName(collectionName);
+            resource.setResourceName(associationName || collectionName);
+            resource.setSourceId(sourceId);
             resource.setAPIClient(ctx.globals.api);
             ctx.model.resource = resource;
             if (filterByTk) {
