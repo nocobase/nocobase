@@ -15,7 +15,6 @@ export * from './base/PageModel';
 export * from './base/PageTabModel';
 export * from './base/RouteModel';
 // export * from './data-blocks/calendar/CalendarBlockModel';
-export * from './data-blocks/details/DetailActionModel';
 export * from './data-blocks/details/DetailItemModel';
 export * from './data-blocks/details/DetailsModel';
 export * from './data-blocks/form/FormActionModel';

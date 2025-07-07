@@ -25,7 +25,6 @@ export class ActionModel extends FlowModel {
     const props = { ...this.defaultProps, ...this.props };
     const icon = props.icon ? <Icon type={props.icon as any} /> : undefined;
     const linkStyle = props.type === 'link' ? { paddingLeft: 0, paddingRight: 0 } : {};
-
     return (
       <Button {...props} icon={icon} style={{ ...linkStyle, ...props.style }}>
         {props.children || props.title}
@@ -52,20 +51,39 @@ ActionModel.registerFlow({
           'x-component': 'IconPicker',
           title: escapeT('Button icon'),
         },
+        type: {
+          'x-decorator': 'FormItem',
+          'x-component': 'Radio.Group',
+          title: escapeT('Button background color'),
+          enum: [
+            { value: 'default', label: '{{t("Default")}}' },
+            { value: 'primary', label: '{{t("Highlight")}}' },
+            { value: 'danger', label: '{{t("Danger red")}}' },
+          ],
+          'x-reactions': [
+            (field) => {
+              field.hidden = field.value === 'link';
+            },
+          ],
+        },
       },
       defaultParams(ctx) {
         return {
           title: ctx.model.defaultProps.title,
           icon: ctx.model.defaultProps.icon,
+          type: ctx.model.props.type || ctx.model.defaultProps.type,
         };
       },
       handler(ctx, params) {
-        ctx.model.setProps('title', ctx.t(params.title));
-        ctx.model.setProps('icon', params.icon);
-        ctx.model.setProps('onClick', (event) => {
-          ctx.model.dispatchEvent('click', {
-            event,
-          });
+        const { title, icon, type } = params;
+        ctx.model.setProps({
+          title: ctx.t(title),
+          icon,
+          type: type === 'danger' ? 'primary' : type,
+          danger: type === 'danger',
+          onClick: (event) => {
+            ctx.model.dispatchEvent('click', { event });
+          },
         });
       },
     },
@@ -82,10 +100,10 @@ export class RecordActionModel extends ActionModel {
 
   render() {
     const props = { ...this.defaultProps, ...this.props };
+    const isLink = props.type === 'link';
     const icon = props.icon ? <Icon type={props.icon as any} /> : undefined;
-
     return (
-      <Button style={{ padding: 0, height: 'auto' }} {...props} icon={icon}>
+      <Button style={isLink ? { padding: 0, height: 'auto' } : undefined} {...props} icon={icon}>
         {props.children || props.title}
       </Button>
     );
