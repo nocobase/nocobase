@@ -13,8 +13,12 @@ import { useChatBoxContext } from './ChatBoxContext';
 import emptyIcon from '../empty-icon.svg';
 import { Spin, Layout } from 'antd';
 import { useChatMessages } from './ChatMessagesProvider';
+import { useT } from '../../locale';
+import { useToken } from '@nocobase/client';
 
 export const Messages: React.FC = () => {
+  const t = useT();
+  const { token } = useToken();
   const { messages, messagesService, lastMessageRef } = useChatMessages();
   const roles = useChatBoxContext('roles');
   const containerRef = useRef(null);
@@ -70,13 +74,13 @@ export const Messages: React.FC = () => {
         <div
           style={{
             position: 'absolute',
-            width: '64px',
             top: '50%',
             left: '50%',
             transform: 'translate(-50%, -50%)',
+            color: token.colorTextDescription,
           }}
         >
-          <img src={emptyIcon} />
+          {t('Work with your AI crew')}
         </div>
       )}
     </Layout.Content>

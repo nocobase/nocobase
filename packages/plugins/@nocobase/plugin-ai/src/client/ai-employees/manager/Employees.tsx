@@ -72,7 +72,7 @@ const Avatar: React.FC = (props) => {
   if (!field.value) {
     return null;
   }
-  return <AntdAvatar {...props} src={avatars(field.value)} />;
+  return <AntdAvatar shape="square" size="large" {...props} src={avatars(field.value)} />;
 };
 
 export const Employees: React.FC = () => {

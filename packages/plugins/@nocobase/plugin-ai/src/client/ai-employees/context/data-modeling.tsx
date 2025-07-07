@@ -9,7 +9,7 @@
 
 import React from 'react';
 import { WorkContextOptions } from '../types';
-import { BuildOutlined, SelectOutlined, DatabaseOutlined } from '@ant-design/icons';
+import { BuildOutlined, StarOutlined, SelectOutlined, DatabaseOutlined } from '@ant-design/icons';
 import { tval } from '@nocobase/utils/client';
 // @ts-ignore
 import pkg from '../../../../package.json';
@@ -22,8 +22,8 @@ import { Checkbox } from 'antd';
 
 export const CollectionDefinitionsContext: WorkContextOptions = {
   menu: {
-    icon: <DatabaseOutlined />,
-    label: tval('Collection definitions', { ns: pkg.name }),
+    icon: <StarOutlined />,
+    label: tval('Modern pages', { ns: pkg.name }),
   },
   children: {
     // form: {
@@ -105,7 +105,7 @@ export const CollectionDefinitionsContext: WorkContextOptions = {
           const t = useT();
           const { t: collectionT } = useTranslation('lm-collections');
           const { startSelect } = useAISelectionContext();
-          return <Checkbox>{t('Users')}</Checkbox>;
+          return <Checkbox>{t('Users #f61f6cda073')}</Checkbox>;
         },
       },
       tag: {
@@ -125,7 +125,7 @@ export const CollectionDefinitionsContext: WorkContextOptions = {
           const { startSelect } = useAISelectionContext();
           const { addAttachments } = useChatMessages();
 
-          return <Checkbox>{t('Roles')}</Checkbox>;
+          return <Checkbox>{t('Roles #4cb2eb66a99')}</Checkbox>;
         },
       },
     },
