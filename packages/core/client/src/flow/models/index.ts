@@ -17,6 +17,7 @@ export * from './base/RouteModel';
 // export * from './data-blocks/calendar/CalendarBlockModel';
 export * from './data-blocks/details/DetailItemModel';
 export * from './data-blocks/details/DetailsModel';
+export * from './data-blocks/details/DetailsFieldGridModel';
 export * from './data-blocks/form/FormActionModel';
 export * from './data-blocks/form/FormCustomFormItemModel';
 export * from './data-blocks/form/FormModel';
