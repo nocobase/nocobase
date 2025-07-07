@@ -24,14 +24,14 @@ import React from 'react';
 import { DataBlockModel } from '../../base/BlockModel';
 
 const SimpleFlowModelRenderer = observer((props: any) => {
-  const { fallback, model, sharedContext, extraContext } = props;
+  const { fallback, model, sharedContext, runtimeArgs } = props;
   const { loading } = useRequest(
     async () => {
       model.setSharedContext(sharedContext);
-      await model.applyAutoFlows(extraContext);
+      await model.applyAutoFlows(runtimeArgs);
     },
     {
-      refreshDeps: [model, sharedContext, extraContext],
+      refreshDeps: [model, sharedContext, runtimeArgs],
     },
   );
 
@@ -79,7 +79,8 @@ export class QuickEditForm extends DataBlockModel {
     console.log('QuickEditForm.open2', Date.now() - model.now);
     model.now = Date.now();
 
-    await flowEngine.context.popover.open({
+    await flowEngine.context.viewOpener.open({
+      mode: 'popover',
       target,
       placement: 'rightTop',
       content: (popover) => {
@@ -92,7 +93,7 @@ export class QuickEditForm extends DataBlockModel {
             }}
             fallback={<Skeleton.Input size="small" />}
             model={model}
-            extraContext={{ filterByTk, record }}
+            runtimeArgs={{ filterByTk, record }}
           />
         );
       },
@@ -119,7 +120,7 @@ export class QuickEditForm extends DataBlockModel {
 
           this.resource.save(formValues, { refresh: false }).catch((error) => {
             console.error('Failed to save form data:', error);
-            this.ctx.globals.message.error(this.translate('Failed to save form data'));
+            this.context.message.error(this.translate('Failed to save form data'));
             this.ctx.shared.__onSubmitSuccess?.(originalValues);
           });
           this.ctx.shared.__onSubmitSuccess?.(formValues);
@@ -192,9 +193,9 @@ QuickEditForm.registerFlow({
           });
           ctx.model.addAppends(fieldPath);
         }
-        if (ctx.extra.filterByTk || ctx.extra.record) {
-          resource.setFilterByTk(ctx.extra.filterByTk);
-          resource.setData(ctx.extra.record);
+        if (ctx.runtimeArgs.filterByTk || ctx.runtimeArgs.record) {
+          resource.setFilterByTk(ctx.runtimeArgs.filterByTk);
+          resource.setData(ctx.runtimeArgs.record);
           ctx.model.form.setInitialValues(resource.getData());
         }
       },

@@ -9,7 +9,7 @@
 
 import { QuestionCircleOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
-import { DragHandler, Droppable, FlowsFloatContextMenu } from '@nocobase/flow-engine';
+import { DragHandler, Droppable, escapeT, FlowModel, FlowsFloatContextMenu } from '@nocobase/flow-engine';
 import { tval } from '@nocobase/utils/client';
 import { TableColumnProps, Tooltip } from 'antd';
 import React from 'react';
@@ -87,7 +87,7 @@ export class TableColumnModel extends FieldModel {
 }
 
 TableColumnModel.define({
-  title: tval('Table column'),
+  title: escapeT('Table column'),
   icon: 'TableColumn',
   defaultOptions: {
     use: 'TableColumnModel',
@@ -98,6 +98,7 @@ TableColumnModel.define({
 TableColumnModel.registerFlow({
   key: 'default',
   auto: true,
+  title: escapeT('Table column settings'),
   steps: {
     step1: {
       async handler(ctx, params) {
@@ -111,9 +112,7 @@ TableColumnModel.registerFlow({
           return;
         }
         const { dataSourceKey, collectionName, fieldPath } = params;
-        const field = ctx.globals.dataSourceManager.getCollectionField(
-          `${dataSourceKey}.${collectionName}.${fieldPath}`,
-        );
+        const field = ctx.dataSourceManager.getCollectionField(`${dataSourceKey}.${collectionName}.${fieldPath}`);
         if (!field) {
           throw new Error(`Collection field not found: ${dataSourceKey}.${collectionName}.${fieldPath}`);
         }
@@ -124,6 +123,85 @@ TableColumnModel.registerFlow({
         await ctx.model.applySubModelsAutoFlows('field');
       },
     },
+    editColumTitle: {
+      title: escapeT('Column title'),
+      uiSchema: {
+        title: {
+          'x-component': 'Input',
+          'x-decorator': 'FormItem',
+          'x-component-props': {
+            placeholder: escapeT('Column title'),
+          },
+        },
+      },
+      defaultParams: (ctx) => {
+        return {
+          title: ctx.model.collectionField?.title,
+        };
+      },
+      handler(ctx, params) {
+        console.log('editColumTitle params:', params);
+        const title = ctx.engine.translate(params.title || ctx.model.collectionField?.title);
+        ctx.model.setProps('title', title);
+      },
+    },
+    editTooltip: {
+      title: escapeT('Edit tooltip'),
+      uiSchema: {
+        tooltip: {
+          'x-component': 'Input.TextArea',
+          'x-decorator': 'FormItem',
+          'x-component-props': {
+            placeholder: escapeT('Edit tooltip'),
+          },
+        },
+      },
+      handler(ctx, params) {
+        ctx.model.setProps('tooltip', params.tooltip);
+      },
+    },
+    editColumnWidth: {
+      title: escapeT('Column width'),
+      uiSchema: {
+        width: {
+          'x-component': 'NumberPicker',
+          'x-decorator': 'FormItem',
+        },
+      },
+      defaultParams: {
+        width: 100,
+      },
+      handler(ctx, params) {
+        ctx.model.setProps('width', params.width);
+      },
+    },
+    enableEditable: {
+      title: tval('Editable'),
+      uiSchema: {
+        editable: {
+          'x-component': 'Switch',
+          'x-decorator': 'FormItem',
+        },
+      },
+      defaultParams(ctx) {
+        return {
+          editable: ctx.model.parent.props.editable || false,
+        };
+      },
+      handler(ctx, params) {
+        ctx.model.setProps('editable', params.editable);
+      },
+    },
+  },
+});
+
+export class TableCustomColumnModel extends FlowModel {}
+
+TableCustomColumnModel.registerFlow({
+  key: 'default',
+  auto: true,
+  title: escapeT('Table column settings'),
+  steps: {
     editColumTitle: {
       title: tval('Column title'),
       uiSchema: {
@@ -137,12 +215,16 @@ TableColumnModel.registerFlow({
       },
       defaultParams: (ctx) => {
         return {
-          title: ctx.model.collectionField?.title,
+          title:
+            ctx.model.constructor['meta']?.title ||
+            ctx.model.flowEngine.findModelClass((_, ModelClass) => {
+              return ModelClass === ctx.model.constructor;
+            })?.[0],
         };
       },
       handler(ctx, params) {
         console.log('editColumTitle params:', params);
-        const title = ctx.globals.flowEngine.translate(params.title || ctx.model.collectionField?.title);
+        const title = ctx.engine.translate(params.title);
         ctx.model.setProps('title', title);
       },
     },
@@ -176,22 +258,9 @@ TableColumnModel.registerFlow({
         ctx.model.setProps('width', params.width);
       },
     },
-    enableEditable: {
-      title: tval('Editable'),
-      uiSchema: {
-        editable: {
-          'x-component': 'Switch',
-          'x-decorator': 'FormItem',
-        },
-      },
-      defaultParams(ctx) {
-        return {
-          editable: ctx.model.parent.props.editable || false,
-        };
-      },
-      handler(ctx, params) {
-        ctx.model.setProps('editable', params.editable);
-      },
-    },
   },
+});
+
+TableCustomColumnModel.define({
+  hide: true,
 });

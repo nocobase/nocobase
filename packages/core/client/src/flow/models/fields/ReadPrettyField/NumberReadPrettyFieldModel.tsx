@@ -48,7 +48,7 @@ const UnitConversion = () => {
 NumberReadPrettyFieldModel.registerFlow({
   key: 'numberFormat',
   sort: 100,
-  title: 'Specific properties',
+  title: 'Number settings',
   auto: true,
   steps: {
     step1: {

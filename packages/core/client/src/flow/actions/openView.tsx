@@ -7,33 +7,32 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { defineAction } from '@nocobase/flow-engine';
-import { tval } from '@nocobase/utils/client';
+import { defineAction, escapeT } from '@nocobase/flow-engine';
 import React from 'react';
 import { FlowPage } from '../FlowPage';
 
 export const openView = defineAction({
   name: 'openView',
-  title: tval('Open mode configuration'),
+  title: escapeT('Edit popup'),
   uiSchema: {
     mode: {
       type: 'string',
-      title: tval('Open mode'),
+      title: escapeT('Open mode'),
       enum: [
-        { label: tval('Drawer'), value: 'drawer' },
-        { label: tval('Dialog'), value: 'dialog' },
-        { label: tval('Page'), value: 'page' },
+        { label: escapeT('Drawer'), value: 'drawer' },
+        { label: escapeT('Dialog'), value: 'dialog' },
+        { label: escapeT('Page'), value: 'page' },
       ],
       'x-decorator': 'FormItem',
       'x-component': 'Radio.Group',
     },
     size: {
       type: 'string',
-      title: tval('Popup size'),
+      title: escapeT('Popup size'),
       enum: [
-        { label: tval('Small'), value: 'small' },
-        { label: tval('Medium'), value: 'medium' },
-        { label: tval('Large'), value: 'large' },
+        { label: escapeT('Small'), value: 'small' },
+        { label: escapeT('Medium'), value: 'medium' },
+        { label: escapeT('Large'), value: 'large' },
       ],
       'x-decorator': 'FormItem',
       'x-component': 'Radio.Group',
@@ -52,8 +51,12 @@ export const openView = defineAction({
       large: 1200,
     };
 
-    await ctx.globals[ctx.extra.mode || params.mode || 'drawer'].open({
-      target: ctx.extra.target || ctx.shared.layoutContentElement,
+    const openMode = ctx.runtimeArgs.mode || params.mode || 'drawer';
+    let pageModelUid: string | null = null;
+
+    await ctx.viewOpener.open({
+      mode: openMode,
+      target: ctx.runtimeArgs.target || ctx.shared.layoutContentElement,
       width: sizeToWidthMap[params.size || 'medium'],
       content: (currentView) => {
         return (
@@ -62,6 +65,10 @@ export const openView = defineAction({
             sharedContext={{
               currentFlow: ctx,
               currentView: currentView,
+              closable: openMode !== 'page', // can't close page
+            }}
+            onModelLoaded={(uid) => {
+              pageModelUid = uid;
             }}
           />
         );
@@ -74,6 +81,12 @@ export const openView = defineAction({
       },
       bodyStyle: {
         padding: 0,
+      },
+      onClose: () => {
+        if (pageModelUid) {
+          const pageModel = ctx.model.flowEngine.getModel(pageModelUid);
+          pageModel.invalidateAutoFlowCache(true);
+        }
       },
     });
   },

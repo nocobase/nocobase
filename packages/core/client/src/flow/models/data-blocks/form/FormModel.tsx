@@ -10,17 +10,44 @@
 import { FormButtonGroup, FormLayout } from '@formily/antd-v5';
 import { createForm, Form } from '@formily/core';
 import { FormProvider } from '@formily/react';
-import { AddActionButton, AddFieldButton, FlowModelRenderer, SingleRecordResource } from '@nocobase/flow-engine';
+import {
+  AddActionButton,
+  AddFieldButton,
+  buildActionItems,
+  buildFieldItems,
+  FlowModelRenderer,
+  SingleRecordResource,
+} from '@nocobase/flow-engine';
 import { tval } from '@nocobase/utils/client';
 import React from 'react';
 import { DataBlockModel } from '../../base/BlockModel';
 import { EditableFieldModel } from '../../fields/EditableField/EditableFieldModel';
+import { FormCustomFormItemModel } from './FormCustomFormItemModel';
 
 export class FormModel extends DataBlockModel {
   form: Form;
   declare resource: SingleRecordResource;
 
   renderComponent() {
+    const fieldItems = buildFieldItems(
+      this.collection.getFields(),
+      this,
+      'EditableFieldModel',
+      'fields',
+      ({ defaultOptions, fieldPath }) => ({
+        use: defaultOptions.use,
+        stepParams: {
+          default: {
+            step1: {
+              dataSourceKey: this.collection.dataSourceKey,
+              collectionName: this.collection.name,
+              fieldPath,
+            },
+          },
+        },
+      }),
+    );
+
     return (
       <FormProvider form={this.form}>
         <FormLayout layout={'vertical'}>
@@ -34,25 +61,13 @@ export class FormModel extends DataBlockModel {
           ))}
         </FormLayout>
         <AddFieldButton
-          buildCreateModelOptions={({ defaultOptions, fieldPath }) => ({
-            use: defaultOptions.use,
-            stepParams: {
-              default: {
-                step1: {
-                  dataSourceKey: this.collection.dataSourceKey,
-                  collectionName: this.collection.name,
-                  fieldPath,
-                },
-              },
-            },
-          })}
+          items={fieldItems}
           subModelKey="fields"
+          subModelBaseClass={FormCustomFormItemModel}
           model={this}
-          collection={this.collection}
-          subModelBaseClass="EditableFieldModel"
           onSubModelAdded={async (model: EditableFieldModel) => {
             const params = model.getStepParams('default', 'step1');
-            this.addAppends(params?.fieldPath, !!this.ctx.shared?.currentFlow?.extra?.filterByTk);
+            this.addAppends(params?.fieldPath, !!this.ctx.shared?.currentFlow?.runtimeArgs?.filterByTk);
           }}
         />
         <FormButtonGroup style={{ marginTop: 16 }}>
@@ -64,7 +79,7 @@ export class FormModel extends DataBlockModel {
               sharedContext={{ currentRecord: this.resource.getData() }}
             />
           ))}
-          <AddActionButton model={this} subModelBaseClass="FormActionModel" />
+          <AddActionButton model={this} items={buildActionItems(this, 'FormActionModel')} />
         </FormButtonGroup>
       </FormProvider>
     );
@@ -74,6 +89,7 @@ export class FormModel extends DataBlockModel {
 FormModel.registerFlow({
   key: 'default',
   auto: true,
+  title: tval('Form settings'),
   steps: {
     step1: {
       paramsRequired: true,
@@ -102,28 +118,37 @@ FormModel.registerFlow({
         dataSourceKey: 'main',
       },
       async handler(ctx, params) {
-        ctx.model.form = ctx.extra.form || createForm();
+        ctx.model.form = ctx.model.form || createForm();
+        const {
+          dataSourceKey = params.dataSourceKey, // 兼容一下旧的数据, TODO: remove
+          collectionName = params.collectionName, // 兼容一下旧的数据, TODO: remove
+          associationName,
+          sourceId,
+          filterByTk,
+        } = ctx.model.props.dataSourceOptions || {};
         if (!ctx.model.collection) {
           ctx.model.collection = ctx.globals.dataSourceManager.getCollection(
-            params.dataSourceKey,
-            params.collectionName,
+            dataSourceKey,
+            associationName ? associationName.split('.').slice(-1)[0] : collectionName,
           );
-          const resource = new SingleRecordResource();
-          resource.setDataSourceKey(params.dataSourceKey);
-          resource.setResourceName(params.collectionName);
-          resource.setAPIClient(ctx.globals.api);
-          ctx.model.resource = resource;
+        }
+
+        if (!ctx.model.resource) {
+          ctx.model.resource = new SingleRecordResource();
           ctx.model.resource.on('refresh', () => {
-            ctx.model.form.setInitialValues(ctx.model.resource.getData());
+            ctx.model.form.setValues(ctx.model.resource.getData());
           });
         }
-        await ctx.model.applySubModelsAutoFlows('fields');
-        const filterByTk = ctx.shared?.currentFlow?.extra?.filterByTk;
+
+        ctx.model.resource.setDataSourceKey(dataSourceKey);
+        ctx.model.resource.setResourceName(associationName || collectionName);
+        ctx.model.resource.setSourceId(sourceId);
+        ctx.model.resource.setAPIClient(ctx.globals.api);
         if (filterByTk) {
           ctx.model.resource.setFilterByTk(filterByTk);
           await ctx.model.resource.refresh();
-          ctx.model.form.setInitialValues(ctx.model.resource.getData());
         }
+        await ctx.model.applySubModelsAutoFlows('fields');
       },
     },
   },

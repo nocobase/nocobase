@@ -48,7 +48,7 @@ FormSubmitActionModel.registerFlow({
         if (parentBlockModel) {
           parentBlockModel.resource.refresh();
         }
-        if (ctx.shared.currentView) {
+        if (ctx.shared.currentView && ctx.shared.closable) {
           ctx.shared.currentView.close();
         }
       },

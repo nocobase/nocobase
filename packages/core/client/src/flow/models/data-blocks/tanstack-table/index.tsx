@@ -10,7 +10,7 @@
 import { EditOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
 import { observer } from '@formily/reactive-react';
-import { AddFieldButton, FlowModel, MultiRecordResource } from '@nocobase/flow-engine';
+import { AddFieldButton, FlowModel, MultiRecordResource, buildFieldItems } from '@nocobase/flow-engine';
 import { tval } from '@nocobase/utils/client';
 import { createColumnHelper, flexRender, getCoreRowModel, useReactTable } from '@tanstack/react-table';
 import { Pagination, Spin, Tooltip } from 'antd';
@@ -211,43 +211,49 @@ export class TanstackTableModel extends DataBlockModel<TanstackTableModelStructu
   columnHelper = createColumnHelper();
 
   get columns() {
+    const items = buildFieldItems(
+      this.collection.getFields(),
+      this,
+      'ReadPrettyFieldModel',
+      'columns',
+      ({ defaultOptions, fieldPath }) => ({
+        use: 'TanstackTableTableColumnModel',
+        stepParams: {
+          default: {
+            step1: {
+              dataSourceKey: this.collection.dataSourceKey,
+              collectionName: this.collection.name,
+              fieldPath,
+            },
+          },
+        },
+        subModels: {
+          field: {
+            // @ts-ignore
+            use: defaultOptions.use as any,
+            stepParams: {
+              default: {
+                step1: {
+                  dataSourceKey: this.collection.dataSourceKey,
+                  collectionName: this.collection.name,
+                  fieldPath,
+                },
+              },
+            },
+          },
+        },
+      }),
+    );
+
     return this.mapSubModels('columns', (column) => {
       return this.columnHelper.accessor(column.fieldPath, column.getColumnProps());
     }).concat([
       this.columnHelper.accessor('id', {
         header: (info) => (
           <AddFieldButton
-            collection={this.collection}
             model={this}
             subModelKey={'columns'}
-            subModelBaseClass="ReadPrettyFieldModel"
-            buildCreateModelOptions={({ defaultOptions, fieldPath }) => ({
-              use: 'TanstackTableTableColumnModel',
-              stepParams: {
-                default: {
-                  step1: {
-                    dataSourceKey: this.collection.dataSourceKey,
-                    collectionName: this.collection.name,
-                    fieldPath,
-                  },
-                },
-              },
-              subModels: {
-                field: {
-                  // @ts-ignore
-                  use: defaultOptions.use as any,
-                  stepParams: {
-                    default: {
-                      step1: {
-                        dataSourceKey: this.collection.dataSourceKey,
-                        collectionName: this.collection.name,
-                        fieldPath,
-                      },
-                    },
-                  },
-                },
-              },
-            })}
+            items={items}
             onModelCreated={async (model: TanstackTableTableColumnModel) => {
               await model.applyAutoFlows();
             }}
@@ -290,6 +296,7 @@ export class TanstackTableModel extends DataBlockModel<TanstackTableModelStructu
 TanstackTableModel.define({
   title: tval('Tanstack Table'),
   group: tval('Content'),
+  hide: true,
   defaultOptions: {
     use: 'TanstackTableModel',
     subModels: {},
@@ -346,11 +353,19 @@ TanstackTableModel.registerFlow({
         if (ctx.model.resource) {
           return;
         }
-        const collection = ctx.globals.dataSourceManager.getCollection(params.dataSourceKey, params.collectionName);
+        const {
+          dataSourceKey = params.dataSourceKey, // 兼容一下旧的数据, TODO: remove
+          collectionName = params.collectionName, // 兼容一下旧的数据, TODO: remove
+          associationName,
+          sourceId,
+          filterByTk,
+        } = ctx.model.props.dataSourceOptions;
+
+        const collection = ctx.globals.dataSourceManager.getCollection(dataSourceKey, collectionName);
         ctx.model.collection = collection;
         const resource = new MultiRecordResource();
-        resource.setDataSourceKey(params.dataSourceKey);
-        resource.setResourceName(params.collectionName);
+        resource.setDataSourceKey(dataSourceKey);
+        resource.setResourceName(collectionName);
         resource.setAPIClient(ctx.globals.api);
         resource.setPageSize(20);
         ctx.model.resource = resource;

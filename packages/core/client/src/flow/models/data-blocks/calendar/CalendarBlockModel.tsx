@@ -64,20 +64,20 @@ CalendarBlockModel.registerFlow({
   steps: {
     step1: {
       handler(ctx, params) {
-        console.log('ctx.extra.event', ctx.extra.event);
+        console.log('ctx.runtimeArgs.event', ctx.runtimeArgs.event);
         const t = ctx.model.translate;
         Modal.info({
           title: t('Event selected'),
           content: (
             <div>
               <p>
-                {t('Title')}: {ctx.extra.event.nickname}
+                {t('Title')}: {ctx.runtimeArgs.event.nickname}
               </p>
               <p>
-                {t('Start')}: {moment(ctx.extra.event.createdAt).format('YYYY-MM-DD HH:mm:ss')}
+                {t('Start')}: {moment(ctx.runtimeArgs.event.createdAt).format('YYYY-MM-DD HH:mm:ss')}
               </p>
               <p>
-                {t('End')}: {moment(ctx.extra.event.createdAt).format('YYYY-MM-DD HH:mm:ss')}
+                {t('End')}: {moment(ctx.runtimeArgs.event.createdAt).format('YYYY-MM-DD HH:mm:ss')}
               </p>
             </div>
           ),
@@ -95,20 +95,20 @@ CalendarBlockModel.registerFlow({
   steps: {
     step1: {
       handler(ctx, params) {
-        console.log('ctx.extra.event', ctx.extra.event);
+        console.log('ctx.runtimeArgs.event', ctx.runtimeArgs.event);
         const t = ctx.model.translate;
         Modal.info({
           title: t('Double click'),
           content: (
             <div>
               <p>
-                {t('Title')}: {ctx.extra.event.nickname}
+                {t('Title')}: {ctx.runtimeArgs.event.nickname}
               </p>
               <p>
-                {t('Start')}: {moment(ctx.extra.event.createdAt).format('YYYY-MM-DD HH:mm:ss')}
+                {t('Start')}: {moment(ctx.runtimeArgs.event.createdAt).format('YYYY-MM-DD HH:mm:ss')}
               </p>
               <p>
-                {t('End')}: {moment(ctx.extra.event.createdAt).format('YYYY-MM-DD HH:mm:ss')}
+                {t('End')}: {moment(ctx.runtimeArgs.event.createdAt).format('YYYY-MM-DD HH:mm:ss')}
               </p>
             </div>
           ),

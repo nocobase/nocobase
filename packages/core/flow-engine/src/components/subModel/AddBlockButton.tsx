@@ -13,20 +13,23 @@ import { FlowModel } from '../../models/flowModel';
 import { ModelConstructor } from '../../types';
 import { FlowSettingsButton } from '../common/FlowSettingsButton';
 import { withFlowDesignMode } from '../common/withFlowDesignMode';
-import { AddSubModelButton, SubModelItemsType, mergeSubModelItems } from './AddSubModelButton';
-import { createBlockItems } from './blockItems';
+import { AddSubModelButton, SubModelItem, SubModelItemsType, mergeSubModelItems } from './AddSubModelButton';
 
-interface AddBlockButtonProps {
+export interface AddBlockButtonProps {
   /**
    * 父模型实例
    */
   model: FlowModel;
   /**
-   * 子模型基类，用于确定支持的区块类型
+   * 子模型基类，用于动态获取额外的菜单项
    */
   subModelBaseClass?: string | ModelConstructor;
   subModelKey?: string;
   subModelType?: 'object' | 'array';
+  /**
+   * 过滤模型菜单的函数
+   */
+  filter?: (modelClass: ModelConstructor, className: string) => boolean;
   /**
    * 创建后的回调函数
    */
@@ -36,21 +39,13 @@ interface AddBlockButtonProps {
    */
   onSubModelAdded?: (subModel: FlowModel) => Promise<void>;
   /**
-   * 按钮文本
+   * 显示的UI组件
    */
   children?: React.ReactNode;
   /**
-   * 自定义 items（如果提供，将覆盖默认的区块菜单）
+   * 菜单项
    */
-  items?: SubModelItemsType;
-  /**
-   * 过滤Model菜单的函数
-   */
-  filter?: (blockClass: ModelConstructor, className: string) => boolean;
-  /**
-   * 追加额外的菜单项到默认菜单中
-   */
-  appendItems?: SubModelItemsType;
+  items: SubModelItemsType;
 }
 
 /**
@@ -81,31 +76,59 @@ interface AddBlockButtonProps {
  */
 const AddBlockButtonCore: React.FC<AddBlockButtonProps> = ({
   model,
-  subModelBaseClass = 'BlockModel',
+  subModelBaseClass,
   subModelKey = 'blocks',
-  children = <FlowSettingsButton icon={<PlusOutlined />}>{'Add block'}</FlowSettingsButton>,
+  children,
   subModelType = 'array',
   items,
-  filter: filterBlocks,
-  appendItems,
+  filter,
   onModelCreated,
   onSubModelAdded,
 }) => {
-  // 确定最终使用的 items
-  const finalItems = useMemo(() => {
-    if (items) {
-      // 如果明确提供了 items，直接使用
-      return items;
+  const defaultChildren = useMemo(() => {
+    return <FlowSettingsButton icon={<PlusOutlined />}>{model.translate('Add block')}</FlowSettingsButton>;
+  }, [model]);
+
+  // 动态获取基于 subModelBaseClass 的额外菜单项
+  const appendItems = useMemo(() => {
+    if (!subModelBaseClass) {
+      return [];
     }
 
-    // 创建区块菜单项，并合并追加的 items
-    const blockItems = createBlockItems(model, {
-      subModelBaseClass,
-      filterBlocks,
-    });
+    const modelClasses = model.flowEngine.filterModelClassByParent(subModelBaseClass);
+    const registeredItems = [];
 
-    return mergeSubModelItems([blockItems, appendItems]);
-  }, [items, model, subModelBaseClass, filterBlocks, appendItems]);
+    for (const [className, ModelClass] of modelClasses) {
+      if (filter && !filter(ModelClass, className)) {
+        continue;
+      }
+      if (ModelClass.meta?.hide) {
+        continue;
+      }
+
+      const item: SubModelItem = {
+        key: className,
+        label: ModelClass.meta?.title || className,
+        icon: ModelClass.meta?.icon,
+        createModelOptions: {
+          ...ModelClass.meta?.defaultOptions,
+          use: className,
+        },
+      };
+
+      // 从 meta 中获取 toggleDetector
+      if (ModelClass.meta?.toggleDetector) {
+        item.toggleDetector = ModelClass.meta.toggleDetector;
+      }
+
+      registeredItems.push(item);
+    }
+    return registeredItems;
+  }, [model, subModelBaseClass, filter]);
+
+  const finalItems = useMemo(() => {
+    return mergeSubModelItems([items, appendItems], { addDividers: true });
+  }, [items, appendItems]);
 
   return (
     <AddSubModelButton
@@ -116,7 +139,7 @@ const AddBlockButtonCore: React.FC<AddBlockButtonProps> = ({
       onModelCreated={onModelCreated}
       onSubModelAdded={onSubModelAdded}
     >
-      {children}
+      {children || defaultChildren}
     </AddSubModelButton>
   );
 };

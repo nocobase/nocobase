@@ -242,7 +242,7 @@ AssociationSelectEditableFieldModel.registerFlow({
   steps: {
     step1: {
       async handler(ctx, params) {
-        const event = ctx.extra?.event;
+        const event = ctx.runtimeArgs?.event;
         const { scrollTop, scrollHeight, clientHeight } = event.target;
         // 只在接近底部时才触发加载
         if (scrollTop + clientHeight < scrollHeight - 20) {
@@ -294,7 +294,7 @@ AssociationSelectEditableFieldModel.registerFlow({
           );
           const operator = targetInterface?.filterable?.operators?.[0]?.value || '$includes';
 
-          const searchText = ctx.extra.searchText?.trim();
+          const searchText = ctx.runtimeArgs.searchText?.trim();
 
           const resource = ctx.model.resource;
           const key = `${labelFieldName}.${operator}`;

@@ -7,10 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React from 'react';
-import dayjs from 'dayjs';
 import { reactive } from '@nocobase/flow-engine';
 import { tval } from '@nocobase/utils/client';
+import dayjs from 'dayjs';
+import React from 'react';
 import { ReadPrettyFieldModel } from './ReadPrettyFieldModel';
 
 export class DateTimeReadPrettyFieldModel extends ReadPrettyFieldModel {
@@ -55,7 +55,7 @@ DateTimeReadPrettyFieldModel.registerFlow({
   key: 'key3',
   auto: true,
   sort: 1000,
-  title: tval('Specific properties'),
+  title: tval('Datetime settings'),
   steps: {
     dateFormat: {
       use: 'dateDisplayFormat',

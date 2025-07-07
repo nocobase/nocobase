@@ -9,6 +9,7 @@
 
 import { ISchema } from '@formily/json-schema';
 import { APIClient } from '@nocobase/sdk';
+import { FlowRuntimeContext } from './flowContext';
 import type { FlowEngine } from './flowEngine';
 import type { FlowModel } from './models';
 import { ReactView } from './ReactView';
@@ -105,7 +106,7 @@ export interface FlowContext<TModel extends FlowModel = FlowModel> {
     app: any;
     api: APIClient;
   };
-  extra: Record<string, any>; // Extra context passed to applyFlow (read-only)
+  runtimeArgs: Record<string, any>; // Runtime arguments passed to applyFlow (read-only)
   model: TModel; // Current model instance with specific type
   app: any; // Application instance (required)
 }
@@ -115,7 +116,7 @@ export type CreateSubModelOptions = CreateModelOptions | FlowModel;
 /**
  * Constructor for model classes.
  */
-export type ModelConstructor<T extends FlowModel = FlowModel> = new (
+export type ModelConstructor<T extends FlowModel = FlowModel> = (new (
   options: FlowModelOptions & {
     uid: string;
     props?: IModelComponentProps;
@@ -124,7 +125,9 @@ export type ModelConstructor<T extends FlowModel = FlowModel> = new (
     subModels?: Record<string, CreateSubModelOptions | CreateSubModelOptions[]>;
     [key: string]: any; // Allow additional options
   },
-) => T;
+) => T) & {
+  meta?: FlowModelMeta;
+};
 
 /**
  * Defines a reusable action with generic model type support.
@@ -132,7 +135,7 @@ export type ModelConstructor<T extends FlowModel = FlowModel> = new (
 export interface ActionDefinition<TModel extends FlowModel = FlowModel> {
   name: string; // Unique identifier for the action
   title?: string;
-  handler: (ctx: FlowContext<TModel>, params: any) => Promise<any> | any;
+  handler: (ctx: FlowRuntimeContext<TModel>, params: any) => Promise<any> | any;
   uiSchema?:
     | Record<string, ISchema>
     | ((ctx: ParamsContext<TModel>) => Record<string, ISchema> | Promise<Record<string, ISchema>>);
@@ -152,7 +155,7 @@ export interface StepDefinition<TModel extends FlowModel = FlowModel> {
   use?: string; // Name of the registered ActionDefinition to use as base
 
   // Handler (optional, but required if 'use' is not provided)
-  handler?: (ctx: FlowContext<TModel>, params: any) => Promise<any> | any;
+  handler?: (ctx: FlowRuntimeContext<TModel>, params: any) => Promise<any> | any;
 
   // UI and params configuration
   uiSchema?:
@@ -169,10 +172,10 @@ export interface StepDefinition<TModel extends FlowModel = FlowModel> {
 }
 
 /**
- * Extra context for flow execution - represents the data that will appear in ctx.extra
- * This is the type for data passed to applyFlow that becomes ctx.extra
+ * Runtime arguments for flow execution - represents the data that will appear in ctx.runtimeArgs
+ * This is the type for data passed to applyFlow that becomes ctx.runtimeArgs
  */
-export type FlowExtraContext = Record<string, any>;
+export type FlowRuntimeArgs = Record<string, any>;
 
 /**
  * 参数解析上下文类型，用于 settings 等场景
@@ -181,7 +184,7 @@ export interface ParamsContext<TModel extends FlowModel = FlowModel> {
   model: TModel;
   globals: Record<string, any>;
   shared?: Record<string, any>;
-  extra?: Record<string, any>; // Extra context passed to applyFlow
+  runtimeArgs?: Record<string, any>; // Runtime arguments passed to applyFlow
   app: any;
 }
 
@@ -245,6 +248,7 @@ export interface CreateModelOptions {
   subKey?: string;
   subType?: 'object' | 'array';
   sortIndex?: number; // 排序索引
+  delegateToParent?: boolean;
   [key: string]: any; // 允许额外的自定义选项
 }
 export interface IFlowModelRepository<T extends FlowModel = FlowModel> {
@@ -320,6 +324,7 @@ export interface FlowModelOptions<Structure extends { parent?: FlowModel; subMod
   subModels?: Structure['subModels'];
   flowEngine?: FlowEngine;
   parentId?: string;
+  delegateToParent?: boolean;
   subKey?: string;
   subType?: 'object' | 'array';
   sortIndex?: number;
@@ -329,7 +334,26 @@ export interface FlowModelMeta {
   title?: string;
   group?: string;
   requiresDataSource?: boolean; // 是否需要数据源
-  defaultOptions?: Record<string, any>;
+  /**
+   * 默认选项配置，支持静态对象或动态函数形式
+   *
+   * 当为静态对象时，将直接使用该配置作为默认值
+   * 当为函数时，将在创建菜单项时调用，可根据父模型动态生成配置
+   *
+   * @example
+   * // 静态配置
+   * defaultOptions: { someProperty: 'value' }
+   *
+   * // 动态配置
+   * defaultOptions: (parentModel) => {
+   *   return {
+   *     someProperty: parentModel.someData ? 'valueA' : 'valueB'
+   *   };
+   * }
+   */
+  defaultOptions?:
+    | Record<string, any>
+    | ((parentModel: FlowModel) => Record<string, any> | Promise<Record<string, any>>);
   icon?: string;
   // uniqueSub?: boolean;
   /**
@@ -343,6 +367,51 @@ export interface FlowModelMeta {
    * @default false
    */
   hide?: boolean;
+  /**
+   * 子菜单项定义，支持创建多层嵌套的层级菜单结构
+   *
+   * 当定义了 children 时，该模型本身不会直接出现在菜单中，
+   * 而是显示为一个包含子菜单项的分组。每个子项都可以再有自己的 children，
+   * 形成无限层级的嵌套结构。
+   *
+   * 对于数据区块类型，系统会自动为每个叶子节点生成数据源和数据表的选择菜单。
+   * 对于普通区块和动作，叶子节点将直接作为可选择的菜单项。
+   *
+   * 支持静态数组和函数形式：
+   * - 静态数组：直接定义固定的子项列表
+   * - 函数形式：可根据父模型动态生成子项，支持同步和异步函数
+   *
+   * @example
+   * // 静态配置
+   * children: [
+   *   {
+   *     title: 'Basic Blocks',
+   *     children: [
+   *       { title: 'Table', defaultOptions: { use: 'TableModel' } },
+   *       { title: 'Form', defaultOptions: { use: 'FormModel' } }
+   *     ]
+   *   }
+   * ]
+   *
+   * // 动态配置
+   * children: (parentModel) => {
+   *   const hasPermission = parentModel.checkPermission('advanced');
+   *   return [
+   *     { title: 'Basic Table', defaultOptions: { use: 'TableModel' } },
+   *     ...(hasPermission ? [{ title: 'Advanced Chart', defaultOptions: { use: 'ChartModel' } }] : [])
+   *   ];
+   * }
+   */
+  children?: FlowModelMeta[] | ((parentModel: FlowModel) => FlowModelMeta[] | Promise<FlowModelMeta[]>);
+  /**
+   * 切换检测器函数，用于判断该模型是否已存在
+   * 主要用于支持切换式的 UI 交互
+   */
+  toggleDetector?: (model: FlowModel) => boolean | Promise<boolean>;
+  /**
+   * 自定义移除函数，用于处理该项的删除逻辑
+   */
+  customRemove?: (model: FlowModel, item: any) => Promise<void>;
 }
 
 /**

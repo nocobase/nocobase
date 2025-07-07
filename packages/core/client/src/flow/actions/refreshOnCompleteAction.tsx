@@ -26,7 +26,7 @@ export const refreshOnCompleteAction = {
   },
   async handler(ctx, params) {
     if (params.enable) {
-      await ctx.extra.currentResource.refresh();
+      await ctx.runtimeArgs.currentResource.refresh();
       ctx.globals.message.success(ctx.model.translate('Data refreshed successfully'));
     }
   },

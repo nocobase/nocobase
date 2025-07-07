@@ -20,3 +20,4 @@ export * from './IconReadPrettyFieldModel';
 export * from './JsonReadPrettyFieldModel';
 export * from './AssociationFieldModel';
 export * from './MarkdownReadPrettyFieldModel';
+export * from './URLReadPrettyFieldModel';

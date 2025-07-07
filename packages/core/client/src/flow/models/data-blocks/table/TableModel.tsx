@@ -14,9 +14,12 @@ import { observer } from '@formily/reactive-react';
 import {
   AddActionButton,
   AddFieldButton,
+  buildActionItems,
+  buildFieldItems,
   DndProvider,
   DragHandler,
   Droppable,
+  escapeT,
   FlowModelRenderer,
   ForkFlowModel,
   MultiRecordResource,
@@ -106,6 +109,56 @@ const HeaderWrapperComponent = React.memo((props) => {
   );
 });
 
+const AddFieldColumn = ({ model }) => {
+  const items = buildFieldItems(
+    model.collection.getFields(),
+    model,
+    'ReadPrettyFieldModel',
+    'columns',
+    ({ defaultOptions, fieldPath }) => ({
+      use: 'TableColumnModel',
+      stepParams: {
+        default: {
+          step1: {
+            dataSourceKey: model.collection.dataSourceKey,
+            collectionName: model.collection.name,
+            fieldPath,
+          },
+        },
+      },
+      subModels: {
+        field: {
+          // @ts-ignore
+          use: defaultOptions.use as any,
+          stepParams: {
+            default: {
+              step1: {
+                dataSourceKey: model.collection.dataSourceKey,
+                collectionName: model.collection.name,
+                fieldPath,
+              },
+            },
+          },
+        },
+      },
+    }),
+  );
+  return (
+    <AddFieldButton
+      model={model}
+      subModelKey={'columns'}
+      subModelBaseClass="TableCustomColumnModel"
+      items={items}
+      onModelCreated={async (column: TableColumnModel) => {
+        await column.applyAutoFlows();
+      }}
+      onSubModelAdded={async (column: TableColumnModel) => {
+        model.addAppends(column.fieldPath, true);
+      }}
+    />
+  );
+};
+
 export class TableModel extends DataBlockModel<TableModelStructure> {
   declare resource: MultiRecordResource;
 
@@ -120,67 +173,7 @@ export class TableModel extends DataBlockModel<TableModelStructure> {
         key: 'addColumn',
         fixed: 'right',
         width: 200,
-        title: (
-          <AddFieldButton
-            collection={this.collection}
-            model={this}
-            subModelKey={'columns'}
-            subModelBaseClass="ReadPrettyFieldModel"
-            buildCreateModelOptions={({ defaultOptions, fieldPath }) => ({
-              use: 'TableColumnModel',
-              stepParams: {
-                default: {
-                  step1: {
-                    dataSourceKey: this.collection.dataSourceKey,
-                    collectionName: this.collection.name,
-                    fieldPath,
-                  },
-                },
-              },
-              subModels: {
-                field: {
-                  // @ts-ignore
-                  use: defaultOptions.use as any,
-                  stepParams: {
-                    default: {
-                      step1: {
-                        dataSourceKey: this.collection.dataSourceKey,
-                        collectionName: this.collection.name,
-                        fieldPath,
-                      },
-                    },
-                  },
-                },
-              },
-            })}
-            appendItems={[
-              {
-                key: 'actions',
-                label: this.translate('Actions column'),
-                createModelOptions: {
-                  use: 'TableActionsColumnModel',
-                },
-                toggleDetector: (ctx) => {
-                  // 检测是否已存在操作列
-                  const subModels = ctx.model.subModels.columns;
-                  const modelClass = ctx.model.flowEngine.getModelClass('TableActionsColumnModel');
-                  if (Array.isArray(subModels)) {
-                    return subModels.some((subModel) => {
-                      return subModel instanceof modelClass;
-                    });
-                  }
-                  return false;
-                },
-              },
-            ]}
-            onModelCreated={async (model: TableColumnModel) => {
-              await model.applyAutoFlows();
-            }}
-            onSubModelAdded={async (model: TableColumnModel) => {
-              this.addAppends(model.fieldPath, true);
-            }}
-          />
-        ),
+        title: <AddFieldColumn model={this} />,
       } as any);
   }
 
@@ -235,7 +228,8 @@ export class TableModel extends DataBlockModel<TableModelStructure> {
                   filterByTk: record.id,
                   record: record,
                   onSuccess: (values) => {
-                    this.resource.getData()[recordIndex][dataIndex] = values[dataIndex];
+                    record[dataIndex] = values[dataIndex];
+                    this.resource.getData()[recordIndex] = record;
                     // 仅重渲染单元格
                     const fork: ForkFlowModel = model.subModels.field.getFork(`${recordIndex}`);
                     fork.setSharedContext({ index: recordIndex, value: values[dataIndex], currentRecord: record });
@@ -368,7 +362,7 @@ export class TableModel extends DataBlockModel<TableModelStructure> {
 
                 return null;
               })}
-              <AddActionButton model={this} subModelBaseClass="GlobalActionModel" subModelKey="actions" />
+              <AddActionButton model={this} items={buildActionItems(this, 'GlobalActionModel')} subModelKey="actions" />
             </Space>
           </div>
         </DndProvider>
@@ -376,7 +370,7 @@ export class TableModel extends DataBlockModel<TableModelStructure> {
           components={this.components}
           tableLayout="fixed"
           size={this.props.size}
-          rowKey={this.collection.filterTargetKey}
+          rowKey="_rowKey"
           rowSelection={
             this.props.showIndex && {
               columnWidth: 50,
@@ -384,14 +378,14 @@ export class TableModel extends DataBlockModel<TableModelStructure> {
               onChange: (_, selectedRows) => {
                 this.resource.setSelectedRows(selectedRows);
               },
-              selectedRowKeys: this.resource.getSelectedRows().map((row) => row.id),
+              selectedRowKeys: this.resource.getSelectedRows().map((row) => row._rowKey),
               renderCell: this.renderCell,
             }
           }
           loading={this.resource.loading}
           virtual={this.props.virtual}
           scroll={{ x: 'max-content', y: '100%' }}
-          dataSource={this.resource.getData()}
+          dataSource={this.resource.getListDataWithRowKey()}
           columns={this.getColumns()}
           pagination={{
             current: this.resource.getPage(),
@@ -414,6 +408,7 @@ export class TableModel extends DataBlockModel<TableModelStructure> {
 TableModel.registerFlow({
   key: 'default',
   auto: true,
+  title: escapeT('Table settings'),
   steps: {
     virtual: {
       title: tval('Virtual'),
@@ -473,18 +468,24 @@ TableModel.registerFlow({
         dataSourceKey: 'main',
       },
       handler: async (ctx, params) => {
-        if (ctx.model.resource) {
-          ctx.model.applySubModelsAutoFlows('columns');
-          return;
-        }
-        const collection = ctx.globals.dataSourceManager.getCollection(params.dataSourceKey, params.collectionName);
+        ctx.model.resource = ctx.model.resource || new MultiRecordResource();
+        const {
+          dataSourceKey = params.dataSourceKey, // 先兼容一下旧的数据, TODO: remove
+          collectionName = params.collectionName, // 先兼容一下旧的数据, TODO: remove
+          associationName,
+          sourceId,
+          filterByTk,
+        } = ctx.model.props.dataSourceOptions;
+        const collection = ctx.dataSourceManager.getCollection(
+          dataSourceKey,
+          associationName ? associationName.split('.').slice(-1)[0] : collectionName,
+        );
         ctx.model.collection = collection;
-        const resource = new MultiRecordResource();
-        resource.setDataSourceKey(params.dataSourceKey);
-        resource.setResourceName(params.collectionName);
-        resource.setAPIClient(ctx.globals.api);
-        resource.setPageSize(20);
-        ctx.model.resource = resource;
+        ctx.model.resource.setDataSourceKey(dataSourceKey);
+        ctx.model.resource.setResourceName(associationName || collectionName);
+        ctx.model.resource.setSourceId(sourceId);
+        ctx.model.resource.setAPIClient(ctx.api);
+        ctx.model.resource.setPageSize(20);
         await ctx.model.applySubModelsAutoFlows('columns');
       },
     },

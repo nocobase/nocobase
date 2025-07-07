@@ -43,6 +43,9 @@ export class MultiRecordResource<TDataItem = any> extends BaseRecordResource<TDa
     return this.getMeta('selectedRows') || [];
   }
 
+  getCount(): number {
+    return this.getMeta('count');
+  }
   setPage(page: number) {
     this.addRequestParameter('page', page);
     return this.setMeta({ page });
@@ -61,6 +64,9 @@ export class MultiRecordResource<TDataItem = any> extends BaseRecordResource<TDa
     return this.getMeta('pageSize');
   }
 
+  getTotalPage(): number {
+    return this.getMeta('totalPage');
+  }
   getCell(rowIndex: number, columnKey: string): TDataItem | undefined {
     const data = this.getData();
     return data?.[rowIndex]?.[columnKey];

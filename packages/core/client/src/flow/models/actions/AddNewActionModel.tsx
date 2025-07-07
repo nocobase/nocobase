@@ -7,26 +7,26 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { escapeT } from '@nocobase/flow-engine';
 import { ButtonProps } from 'antd';
-import { tval } from '@nocobase/utils/client';
 import { GlobalActionModel } from '../base/ActionModel';
 
 export class AddNewActionModel extends GlobalActionModel {
   defaultProps: ButtonProps = {
     type: 'primary',
-    title: tval('Add new'),
+    title: escapeT('Add new'),
     icon: 'PlusOutlined',
   };
 }
 
 AddNewActionModel.define({
-  title: tval('Add new'),
+  title: escapeT('Add new'),
 });
 
 AddNewActionModel.registerFlow({
+  key: 'clickOpenView',
   sort: 200,
-  title: tval('Click event'),
-  key: 'handleClick',
+  title: escapeT('Popup settings'),
   on: {
     eventName: 'click',
   },

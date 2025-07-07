@@ -7,14 +7,21 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { PlusOutlined } from '@ant-design/icons';
+import { PlusOutlined, QuestionCircleOutlined } from '@ant-design/icons';
+import { css } from '@emotion/css';
 import { observer } from '@formily/reactive-react';
-import { AddActionButton, FlowModel, FlowModelRenderer, FlowsFloatContextMenu } from '@nocobase/flow-engine';
-import { Skeleton, Space } from 'antd';
+import {
+  AddActionButton,
+  DragHandler,
+  Droppable,
+  FlowModelRenderer,
+  FlowsFloatContextMenu,
+  buildActionItems,
+} from '@nocobase/flow-engine';
+import { Skeleton, Space, Tooltip } from 'antd';
 import React from 'react';
-import { tval } from '@nocobase/utils/client';
 import { ActionModel } from '../../base/ActionModel';
-import { SupportedFieldInterfaces } from '../../base/FieldModel';
+import { TableCustomColumnModel } from './TableColumnModel';
 
 const Columns = observer<any>(({ record, model, index }) => {
   return (
@@ -38,21 +45,16 @@ const Columns = observer<any>(({ record, model, index }) => {
 
 const AddActionToolbarComponent = ({ model }) => {
   return (
-    <AddActionButton model={model} subModelBaseClass="RecordActionModel" subModelKey="actions">
+    <AddActionButton model={model} items={buildActionItems(model, 'RecordActionModel')} subModelKey="actions">
       <PlusOutlined />
     </AddActionButton>
   );
 };
 
-export class TableActionsColumnModel extends FlowModel {
-  static readonly supportedFieldInterfaces: SupportedFieldInterfaces = null;
-
+export class TableActionsColumnModel extends TableCustomColumnModel {
   getColumnProps() {
-    return {
-      // title: 'Actions',
-      ...this.props,
-      width: 100,
-      title: (
+    const titleContent = (
+      <Droppable model={this}>
         <FlowsFloatContextMenu
           model={this}
           containerStyle={{ display: 'block', padding: '11px 8px', margin: '-11px -8px' }}
@@ -62,10 +64,38 @@ export class TableActionsColumnModel extends FlowModel {
               key: 'add-record-action',
               component: AddActionToolbarComponent,
             },
+            {
+              key: 'drag-handler',
+              component: DragHandler,
+              sort: 1,
+            },
           ]}
         >
-          <Space>{this.props.title || this.flowEngine.translate('Actions')}</Space>
+          <div
+            className={css`
+              overflow: hidden;
+              text-overflow: ellipsis;
+              white-space: nowrap;
+              width: calc(${this.props.width}px - 16px);
+            `}
+          >
+            {this.props.title}
+          </div>
         </FlowsFloatContextMenu>
+      </Droppable>
+    );
+    return {
+      ...this.props,
+      width: 100,
+      title: this.props.tooltip ? (
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+          {titleContent}
+          <Tooltip title={this.props.tooltip}>
+            <QuestionCircleOutlined style={{ cursor: 'pointer' }} />
+          </Tooltip>
+        </span>
+      ) : (
+        titleContent
       ),
       render: this.render(),
     };
@@ -75,3 +105,16 @@ export class TableActionsColumnModel extends FlowModel {
     return (value, record, index) => <Columns record={record} model={this} index={index} />;
   }
 }
+
+TableActionsColumnModel.define({
+  title: '{{t("Actions")}}',
+  defaultOptions: {
+    stepParams: {
+      default: {
+        editColumTitle: {
+          title: '{{t("Actions")}}',
+        },
+      },
+    },
+  },
+});

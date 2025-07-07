@@ -9,25 +9,12 @@
 
 import { SettingOutlined } from '@ant-design/icons';
 import React, { useMemo } from 'react';
-import { Collection, CollectionField } from '../../data-source';
 import { FlowModel } from '../../models';
-import { FlowModelOptions, ModelConstructor } from '../../types';
+import { ModelConstructor } from '../../types';
+import { processMetaChildren, resolveDefaultOptions } from '../../utils';
 import { FlowSettingsButton } from '../common/FlowSettingsButton';
 import { withFlowDesignMode } from '../common/withFlowDesignMode';
-import {
-  AddSubModelButton,
-  SubModelItemsType,
-  mergeSubModelItems,
-  AddSubModelContext,
-  SubModelItem,
-} from './AddSubModelButton';
-
-export type BuildCreateModelOptionsType = {
-  defaultOptions: FlowModelOptions;
-  collectionField: CollectionField;
-  fieldPath: string;
-  fieldModelClass: ModelConstructor;
-};
+import { AddSubModelButton, SubModelItem, SubModelItemsType, mergeSubModelItems } from './AddSubModelButton';
 
 export interface AddFieldButtonProps {
   /**
@@ -35,20 +22,15 @@ export interface AddFieldButtonProps {
    */
   model: FlowModel;
   /**
-   * 子模型基类，用于确定支持的字段类型
+   * 子模型基类，用于动态获取额外的菜单项
    */
   subModelBaseClass?: string | ModelConstructor;
   subModelKey?: string;
   subModelType?: 'object' | 'array';
-  collection: Collection;
   /**
-   * 自定义 createModelOptions 构建函数
+   * 过滤模型菜单的函数
    */
-  buildCreateModelOptions?: (options: BuildCreateModelOptionsType) => FlowModelOptions;
-  /**
-   * 追加的固定 items，会添加到字段 items 之后
-   */
-  appendItems?: SubModelItemsType;
+  filter?: (modelClass: ModelConstructor, className: string) => boolean;
   /**
    * 创建后的回调函数
    */
@@ -62,13 +44,9 @@ export interface AddFieldButtonProps {
    */
   children?: React.ReactNode;
   /**
-   * 自定义 items（如果提供，将覆盖默认的字段菜单）
+   * 菜单项
    */
-  items?: SubModelItemsType;
-}
-
-function defaultBuildCreateModelOptions({ defaultOptions }: BuildCreateModelOptionsType) {
-  return defaultOptions;
+  items: SubModelItemsType;
 }
 
 /**
@@ -84,144 +62,92 @@ function defaultBuildCreateModelOptions({ defaultOptions }: BuildCreateModelOpti
  */
 const AddFieldButtonCore: React.FC<AddFieldButtonProps> = ({
   model,
-  subModelBaseClass = 'FieldFlowModel',
+  subModelBaseClass,
   subModelKey = 'fields',
   children,
   subModelType = 'array',
-  collection,
-  buildCreateModelOptions = defaultBuildCreateModelOptions,
   items,
-  appendItems,
+  filter,
   onModelCreated,
   onSubModelAdded,
 }) => {
-  const fields = collection.getFields();
   const defaultChildren = useMemo(() => {
     return <FlowSettingsButton icon={<SettingOutlined />}>{model.translate('Configure fields')}</FlowSettingsButton>;
   }, [model]);
 
-  // 构建字段 items 的函数
-  const buildFieldItems = useMemo<SubModelItemsType>(() => {
-    return () => {
-      const fieldClassesMap = model.flowEngine.filterModelClassByParent(subModelBaseClass);
-      const fieldClasses = Array.from(fieldClassesMap.values())
-        ?.filter((ModelClass) => !ModelClass.meta?.hide)
-        ?.sort((a, b) => (a.meta?.sort || 0) - (b.meta?.sort || 0));
+  // 动态获取基于 subModelBaseClass 的额外菜单项
+  const appendItems = useMemo(() => {
+    if (!subModelBaseClass) {
+      return [];
+    }
 
-      if (fieldClasses.length === 0) {
-        return [];
+    const modelClasses = model.flowEngine.filterModelClassByParent(subModelBaseClass);
+    const registeredItems = [];
+
+    for (const [className, ModelClass] of modelClasses) {
+      if (filter && !filter(ModelClass, className)) {
+        continue;
+      }
+      if (ModelClass.meta?.hide) {
+        continue;
       }
 
-      const fieldClassToNameMap = new Map();
-      for (const [name, ModelClass] of fieldClassesMap) {
-        fieldClassToNameMap.set(ModelClass, name);
-      }
+      const meta = ModelClass.meta;
 
-      const allFields = [];
-      const defaultFieldClasses = fieldClasses.find((fieldClass) => fieldClass['supportedFieldInterfaces'] === '*');
+      // 如果模型定义了 children，创建包含子菜单的分组项
+      if (meta?.children) {
+        const item: SubModelItem = {
+          key: className,
+          label: meta.title || className,
+          icon: meta.icon,
+          type: 'group',
+          children: async () => {
+            return await processMetaChildren(meta.children, model, `${className}.`);
+          },
+        };
 
-      for (const field of fields) {
-        const fieldInterfaceName = field.options?.interface;
-        const fieldClass =
-          fieldClasses.find((fieldClass) => {
-            return fieldClass['supportedFieldInterfaces']?.includes(fieldInterfaceName);
-          }) || defaultFieldClasses;
-        if (fieldClass && fieldInterfaceName) {
-          const defaultOptions = {
-            ...fieldClass.meta?.defaultOptions,
-            use: fieldClassToNameMap.get(fieldClass) || fieldClass.name,
-          };
+        registeredItems.push(item);
+      } else {
+        // 原有的单个菜单项逻辑
+        const item: any = {
+          key: className,
+          label: meta?.title || className,
+          icon: meta?.icon,
+          createModelOptions: async () => {
+            const defaultOptions = await resolveDefaultOptions(meta?.defaultOptions, model);
 
-          // 字段检测函数，检查 stepParams 中是否包含当前字段
-          const checkFieldInStepParams = (subModel: FlowModel): boolean => {
-            const stepParams = subModel.stepParams;
+            return {
+              ...defaultOptions,
+              use: className,
+            };
+          },
+        };
 
-            // 快速检查：如果 stepParams 为空，直接返回 false
-            if (!stepParams || Object.keys(stepParams).length === 0) {
-              return false;
-            }
-
-            // 遍历所有 flow 和 step 来查找 fieldPath 或 field 参数
-            for (const flowKey in stepParams) {
-              const flowSteps = stepParams[flowKey];
-              if (!flowSteps) continue;
-
-              for (const stepKey in flowSteps) {
-                const stepData = flowSteps[stepKey];
-                if (stepData?.fieldPath === field.name || stepData?.field === field.name) {
-                  return true; // 找到匹配，立即返回
-                }
-              }
-            }
-            return false;
-          };
-
-          const fieldItem = {
-            key: field.name,
-            label: field.title,
-            icon: fieldClass.meta?.icon,
-            createModelOptions: buildCreateModelOptions({
-              defaultOptions,
-              collectionField: field,
-              fieldPath: field.name,
-              fieldModelClass: fieldClass,
-            }),
-            toggleDetector: (ctx: AddSubModelContext) => {
-              // 检测是否已存在该字段的子模型
-              const subModels = ctx.model.subModels[subModelKey];
-
-              if (Array.isArray(subModels)) {
-                return subModels.some(checkFieldInStepParams);
-              } else if (subModels) {
-                return checkFieldInStepParams(subModels);
-              }
-              return false;
-            },
-            removeModelOptions: {
-              customRemove: async (ctx: AddSubModelContext, _item: SubModelItem) => {
-                const subModels = ctx.model.subModels[subModelKey];
-
-                if (Array.isArray(subModels)) {
-                  const targetModel = subModels.find(checkFieldInStepParams);
-                  if (targetModel) {
-                    await targetModel.destroy();
-                    const index = subModels.indexOf(targetModel);
-                    if (index > -1) subModels.splice(index, 1);
-                  }
-                } else if (subModels && checkFieldInStepParams(subModels)) {
-                  await subModels.destroy();
-                  (ctx.model.subModels as any)[subModelKey] = undefined;
-                }
-              },
-            },
-          };
-          allFields.push(fieldItem);
+        // 从 meta 中获取 toggleDetector
+        if (meta?.toggleDetector) {
+          item.toggleDetector = meta.toggleDetector;
         }
+
+        if (meta?.customRemove) {
+          item.customRemove = meta.customRemove;
+        }
+
+        registeredItems.push(item);
       }
+    }
+    return registeredItems;
+  }, [model, subModelBaseClass, filter, subModelKey]);
 
-      return [
-        {
-          key: 'addField',
-          label: 'Collection fields',
-          type: 'group' as const,
-          searchable: true,
-          searchPlaceholder: 'Search fields',
-          children: allFields,
-        },
-      ];
-    };
-  }, [model, subModelBaseClass, fields, buildCreateModelOptions, subModelKey]);
-
-  const fieldItems = useMemo(() => {
-    return mergeSubModelItems([buildFieldItems, appendItems], { addDividers: true });
-  }, [buildFieldItems, appendItems]);
+  const finalItems = useMemo(() => {
+    return mergeSubModelItems([items, appendItems], { addDividers: true });
+  }, [items, appendItems]);
 
   return (
     <AddSubModelButton
       model={model}
       subModelKey={subModelKey}
       subModelType={subModelType}
-      items={items ?? fieldItems}
+      items={finalItems}
       onModelCreated={onModelCreated}
       onSubModelAdded={onSubModelAdded}
       keepDropdownOpen

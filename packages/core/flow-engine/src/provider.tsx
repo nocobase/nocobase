@@ -38,7 +38,7 @@ export const FlowEngineGlobalsContextProvider: React.FC<{ children: React.ReactN
   const { token } = theme.useToken();
 
   useEffect(() => {
-    engine.setContext({
+    const context = {
       antdConfig: config,
       themeToken: token,
       modal,
@@ -48,7 +48,27 @@ export const FlowEngineGlobalsContextProvider: React.FC<{ children: React.ReactN
       popover,
       dialog,
       page,
+    };
+    engine.context.defineProperty('viewOpener', {
+      value: {
+        open: ({ mode, ...others }: { mode: 'drawer' | 'popover' | 'dialog' | 'page'; [key: string]: any }) => {
+          if (context[mode]) {
+            return context[mode]['open'](others);
+          } else {
+            throw new Error(`Unknown viewOpener mode: ${mode}`);
+          }
+        },
+      },
     });
+    for (const item of Object.entries(context)) {
+      const [key, value] = item;
+      if (value) {
+        engine.context.defineProperty(key, { value });
+      }
+    }
+    engine.setContext(context);
+
+    engine.reactView.refresh();
   }, [engine, drawer, modal, message, notification, config, popover, token, dialog, page]);
 
   return (

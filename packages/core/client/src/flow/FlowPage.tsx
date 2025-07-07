@@ -56,7 +56,7 @@ export const FlowRoute = () => {
 };
 
 export const FlowPage = (props) => {
-  const { parentId, ...rest } = props;
+  const { parentId, onModelLoaded, ...rest } = props;
   const flowEngine = useFlowEngine();
   const { loading, data } = useRequest(
     async () => {
@@ -72,7 +72,7 @@ export const FlowPage = (props) => {
               use: 'PageTabModel',
               subModels: {
                 grid: {
-                  async: true,
+                  // async: true,
                   use: 'BlockGridModel',
                 },
               },
@@ -81,6 +81,9 @@ export const FlowPage = (props) => {
         },
       };
       const data = await flowEngine.loadOrCreateModel(options);
+      if (data?.uid && onModelLoaded) {
+        onModelLoaded(data.uid);
+      }
       return data;
     },
     {

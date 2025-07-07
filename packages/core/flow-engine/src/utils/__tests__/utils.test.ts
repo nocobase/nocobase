@@ -10,7 +10,6 @@
 import { describe, test, expect, beforeEach, vi } from 'vitest';
 import {
   getT,
-  generateUid,
   mergeFlowDefinitions,
   isInheritedFrom,
   resolveDefaultParams,
@@ -18,9 +17,11 @@ import {
   FlowExitException,
   defineAction,
   compileUiSchema,
+  resolveDefaultOptions,
+  processMetaChildren,
   FLOW_ENGINE_NAMESPACE,
-} from '../../utils';
-import { FlowModel } from '../flowModel';
+} from '../index';
+import { FlowModel } from '../../models/flowModel';
 import { FlowEngine } from '../../flowEngine';
 import type {
   FlowDefinition,
@@ -235,68 +236,6 @@ describe('Utils', () => {
           ns: [FLOW_ENGINE_NAMESPACE, 'client'],
           nsMode: 'fallback',
         });
-      });
-    });
-  });
-
-  // ==================== generateUid() FUNCTION ====================
-  describe('generateUid()', () => {
-    describe('basic generation functionality', () => {
-      test('should generate a string', () => {
-        const uid = generateUid();
-
-        expect(typeof uid).toBe('string');
-        expect(uid).toBeDefined();
-        expect(uid.length).toBeGreaterThan(10); // Should be reasonably long
-      });
-    });
-
-    describe('uniqueness validation', () => {
-      test('should generate different UIDs on consecutive calls', () => {
-        const uid1 = generateUid();
-        const uid2 = generateUid();
-
-        expect(uid1).not.toBe(uid2);
-      });
-
-      test('should generate unique UIDs in bulk', () => {
-        const uids = Array.from({ length: 100 }, () => generateUid());
-        const uniqueUids = new Set(uids);
-
-        expect(uniqueUids.size).toBe(100); // All should be unique
-      });
-
-      test('should maintain uniqueness across multiple executions', () => {
-        const batch1 = Array.from({ length: 10 }, () => generateUid());
-        const batch2 = Array.from({ length: 10 }, () => generateUid());
-
-        const allUids = [...batch1, ...batch2];
-        const uniqueUids = new Set(allUids);
-
-        expect(uniqueUids.size).toBe(20);
-      });
-    });
-
-    describe('format validation', () => {
-      test('should contain only alphanumeric characters', () => {
-        const uid = generateUid();
-
-        expect(/^[a-z0-9]+$/.test(uid)).toBe(true);
-      });
-
-      test('should have consistent length range', () => {
-        const uids = Array.from({ length: 50 }, () => generateUid());
-
-        uids.forEach((uid) => {
-          expect(uid.length).toBeGreaterThan(15);
-          expect(uid.length).toBeLessThan(30);
-        });
-      });
-
-      test('should not contain special characters', () => {
-        const uid = generateUid();
-
-        expect(uid).not.toMatch(/[^a-z0-9]/);
       });
     });
   });
@@ -518,7 +457,7 @@ describe('Utils', () => {
           app: {},
         },
         app: {} as any,
-        extra: { testExtra: 'value' },
+        runtimeArgs: { testExtra: 'value' },
       };
     });
 
@@ -569,7 +508,7 @@ describe('Utils', () => {
       test('should handle function accessing context properties', async () => {
         const paramsFn = vi.fn((ctx: ParamsContext<FlowModel>) => ({
           modelUid: ctx.model.uid,
-          extraData: ctx.extra.testExtra,
+          extraData: ctx.runtimeArgs.testExtra,
         }));
 
         const result = await resolveDefaultParams(paramsFn, mockContext);
@@ -615,7 +554,7 @@ describe('Utils', () => {
           app: {},
         },
         app: {} as any,
-        extra: { testExtra: 'value' },
+        runtimeArgs: { testExtra: 'value' },
       };
     });
 
@@ -691,7 +630,7 @@ describe('Utils', () => {
           extraInfo: {
             type: 'string',
             title: 'Extra Data',
-            default: ctx.extra.testExtra,
+            default: ctx.runtimeArgs.testExtra,
           },
         }));
 
@@ -977,6 +916,612 @@ describe('Utils', () => {
         expect(result.properties.name.type).toBe('string');
         expect(typeof result.properties.name.title).toBe('string');
         expect(result.properties.name.maxLength).toBe(100);
+      });
+    });
+  });
+
+  // ==================== resolveDefaultOptions() FUNCTION ====================
+  describe('resolveDefaultOptions()', () => {
+    describe('static options resolution', () => {
+      test('should return static object directly', async () => {
+        const staticOptions = { option1: 'value1', option2: 'value2' };
+
+        const result = await resolveDefaultOptions(staticOptions, mockModel);
+
+        expect(result).toEqual(staticOptions);
+      });
+
+      test('should return empty object for undefined options', async () => {
+        const result = await resolveDefaultOptions(undefined, mockModel);
+
+        expect(result).toEqual({});
+      });
+
+      test('should return empty object for null options', async () => {
+        const result = await resolveDefaultOptions(null, mockModel);
+
+        expect(result).toEqual({});
+      });
+
+      test('should handle complex static objects', async () => {
+        const complexOptions = {
+          use: 'TableModel',
+          config: {
+            columns: ['id', 'name'],
+            pagination: true,
+          },
+          stepParams: {
+            default: {
+              step1: { dataSourceKey: 'main' },
+            },
+          },
+        };
+
+        const result = await resolveDefaultOptions(complexOptions, mockModel);
+
+        expect(result).toEqual(complexOptions);
+      });
+    });
+
+    describe('function options resolution', () => {
+      test('should call function with parent model and return result', async () => {
+        const optionsFn = vi.fn().mockReturnValue({ dynamic: 'value' });
+
+        const result = await resolveDefaultOptions(optionsFn, mockModel);
+
+        expect(optionsFn).toHaveBeenCalledWith(mockModel, undefined);
+        expect(result).toEqual({ dynamic: 'value' });
+      });
+
+      test('should handle function accessing model properties', async () => {
+        const optionsFn = vi.fn((parentModel: FlowModel) => ({
+          use: 'DynamicModel',
+          parentUid: parentModel.uid,
+          sortIndex: parentModel.sortIndex || 0,
+        }));
+
+        const result = await resolveDefaultOptions(optionsFn, mockModel);
+
+        expect(result).toEqual({
+          use: 'DynamicModel',
+          parentUid: mockModel.uid,
+          sortIndex: 0,
+        });
+      });
+
+      test('should handle async function correctly', async () => {
+        const asyncOptionsFn = vi.fn().mockResolvedValue({ async: 'result' });
+
+        const result = await resolveDefaultOptions(asyncOptionsFn, mockModel);
+
+        expect(asyncOptionsFn).toHaveBeenCalledWith(mockModel, undefined);
+        expect(result).toEqual({ async: 'result' });
+      });
+
+      test('should handle async function with delay', async () => {
+        const asyncOptionsFn = vi.fn(
+          () => new Promise((resolve) => setTimeout(() => resolve({ delayed: 'value' }), 10)),
+        );
+
+        const result = await resolveDefaultOptions(asyncOptionsFn, mockModel);
+
+        expect(result).toEqual({ delayed: 'value' });
+      });
+    });
+
+    describe('error handling', () => {
+      test('should handle function throwing errors and return empty object', async () => {
+        const errorFn = vi.fn(() => {
+          throw new Error('Options generation error');
+        });
+
+        const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+        const result = await resolveDefaultOptions(errorFn, mockModel);
+
+        expect(result).toEqual({});
+        expect(consoleSpy).toHaveBeenCalledWith('Error resolving defaultOptions function:', expect.any(Error));
+
+        consoleSpy.mockRestore();
+      });
+
+      test('should handle async function rejection and return empty object', async () => {
+        const rejectFn = vi.fn().mockRejectedValue(new Error('Async error'));
+
+        const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+        const result = await resolveDefaultOptions(rejectFn, mockModel);
+
+        expect(result).toEqual({});
+        expect(consoleSpy).toHaveBeenCalledWith('Error resolving defaultOptions function:', expect.any(Error));
+
+        consoleSpy.mockRestore();
+      });
+
+      test('should handle function returning null and convert to empty object', async () => {
+        const nullFn = vi.fn().mockReturnValue(null);
+
+        const result = await resolveDefaultOptions(nullFn, mockModel);
+
+        expect(result).toEqual({});
+      });
+
+      test('should handle function returning undefined and convert to empty object', async () => {
+        const undefinedFn = vi.fn().mockReturnValue(undefined);
+
+        const result = await resolveDefaultOptions(undefinedFn, mockModel);
+
+        expect(result).toEqual({});
+      });
+    });
+  });
+
+  // ==================== resolveMetaChildren() FUNCTION ====================
+  describe('resolveMetaChildren()', () => {
+    // Note: resolveMetaChildren is an internal function, but we can test it indirectly through processMetaChildren
+    // However, for completeness, let's add tests for the children function form that was newly added
+
+    describe('function children resolution', () => {
+      test('should process function-based children that return static array', async () => {
+        const childrenFn = vi.fn().mockReturnValue([
+          {
+            title: 'Dynamic Table',
+            defaultOptions: { use: 'DynamicTableModel' },
+          },
+          {
+            title: 'Dynamic Form',
+            defaultOptions: { use: 'DynamicFormModel' },
+          },
+        ]);
+
+        const result = await processMetaChildren(childrenFn, mockModel, 'dynamic.');
+
+        expect(childrenFn).toHaveBeenCalledWith(mockModel);
+        expect(result).toHaveLength(2);
+        expect(result[0]).toEqual({
+          key: 'dynamic.Dynamic Table',
+          label: 'Dynamic Table',
+          icon: undefined,
+          createModelOptions: {
+            use: 'DynamicTableModel',
+          },
+          toggleDetector: undefined,
+          customRemove: undefined,
+        });
+        expect(result[1]).toEqual({
+          key: 'dynamic.Dynamic Form',
+          label: 'Dynamic Form',
+          icon: undefined,
+          createModelOptions: {
+            use: 'DynamicFormModel',
+          },
+          toggleDetector: undefined,
+          customRemove: undefined,
+        });
+      });
+
+      test('should process async function-based children', async () => {
+        const asyncChildrenFn = vi.fn().mockResolvedValue([
+          {
+            title: 'Async Chart',
+            defaultOptions: { use: 'AsyncChartModel' },
+          },
+        ]);
+
+        const result = await processMetaChildren(asyncChildrenFn, mockModel);
+
+        expect(asyncChildrenFn).toHaveBeenCalledWith(mockModel);
+        expect(result).toHaveLength(1);
+        expect(result[0].label).toBe('Async Chart');
+        expect(result[0].createModelOptions.use).toBe('AsyncChartModel');
+      });
+
+      test('should handle function-based children that return empty array', async () => {
+        const emptyChildrenFn = vi.fn().mockReturnValue([]);
+
+        const result = await processMetaChildren(emptyChildrenFn, mockModel);
+
+        expect(emptyChildrenFn).toHaveBeenCalledWith(mockModel);
+        expect(result).toEqual([]);
+      });
+
+      test('should handle function-based children with nested function children', async () => {
+        const parentChildrenFn = vi.fn().mockReturnValue([
+          {
+            title: 'Parent Group',
+            children: vi.fn().mockReturnValue([
+              {
+                title: 'Nested Item',
+                defaultOptions: { use: 'NestedModel' },
+              },
+            ]),
+          },
+        ]);
+
+        const result = await processMetaChildren(parentChildrenFn, mockModel);
+
+        expect(parentChildrenFn).toHaveBeenCalledWith(mockModel);
+        expect(result).toHaveLength(1);
+        expect(result[0].label).toBe('Parent Group');
+        expect(result[0].children).toHaveLength(1);
+        expect(result[0].children[0].label).toBe('Nested Item');
+        expect(result[0].children[0].createModelOptions.use).toBe('NestedModel');
+      });
+    });
+
+    describe('error handling for function children', () => {
+      test('should handle function-based children throwing error and return empty array', async () => {
+        const errorChildrenFn = vi.fn(() => {
+          throw new Error('Children generation error');
+        });
+
+        const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+        const result = await processMetaChildren(errorChildrenFn, mockModel);
+
+        expect(result).toEqual([]);
+        expect(consoleSpy).toHaveBeenCalledWith('Error resolving meta children function:', expect.any(Error));
+
+        consoleSpy.mockRestore();
+      });
+
+      test('should handle async function-based children rejection and return empty array', async () => {
+        const rejectChildrenFn = vi.fn().mockRejectedValue(new Error('Async children error'));
+
+        const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+        const result = await processMetaChildren(rejectChildrenFn, mockModel);
+
+        expect(result).toEqual([]);
+        expect(consoleSpy).toHaveBeenCalledWith('Error resolving meta children function:', expect.any(Error));
+
+        consoleSpy.mockRestore();
+      });
+
+      test('should handle function-based children returning null and convert to empty array', async () => {
+        const nullChildrenFn = vi.fn().mockReturnValue(null);
+
+        const result = await processMetaChildren(nullChildrenFn, mockModel);
+
+        expect(result).toEqual([]);
+      });
+
+      test('should handle function-based children returning undefined and convert to empty array', async () => {
+        const undefinedChildrenFn = vi.fn().mockReturnValue(undefined);
+
+        const result = await processMetaChildren(undefinedChildrenFn, mockModel);
+
+        expect(result).toEqual([]);
+      });
+    });
+
+    describe('mixed static and function children', () => {
+      test('should handle combination of static and function-based defaultOptions within function children', async () => {
+        const mixedChildrenFn = vi.fn().mockReturnValue([
+          {
+            title: 'Static Options Block',
+            defaultOptions: { use: 'StaticModel', config: 'static' },
+          },
+          {
+            title: 'Dynamic Options Block',
+            defaultOptions: vi.fn().mockReturnValue({ use: 'DynamicModel', config: 'dynamic' }),
+          },
+        ]);
+
+        const result = await processMetaChildren(mixedChildrenFn, mockModel);
+
+        expect(result).toHaveLength(2);
+        expect(result[0].createModelOptions).toEqual({
+          use: 'StaticModel',
+          config: 'static',
+        });
+        expect(result[1].createModelOptions).toEqual({
+          use: 'DynamicModel',
+          config: 'dynamic',
+        });
+      });
+    });
+  });
+
+  // ==================== processMetaChildren() FUNCTION ====================
+  describe('processMetaChildren()', () => {
+    describe('flat children processing', () => {
+      test('should process simple children array', async () => {
+        const children = [
+          {
+            title: 'Table',
+            icon: 'table',
+            defaultOptions: { use: 'TableModel' },
+          },
+          {
+            title: 'Form',
+            icon: 'form',
+            defaultOptions: { use: 'FormModel' },
+          },
+        ];
+
+        const result = await processMetaChildren(children, mockModel, 'prefix.');
+
+        expect(result).toHaveLength(2);
+        expect(result[0]).toEqual({
+          key: 'prefix.Table',
+          label: 'Table',
+          icon: 'table',
+          createModelOptions: {
+            use: 'TableModel',
+          },
+          toggleDetector: undefined,
+          customRemove: undefined,
+        });
+        expect(result[1]).toEqual({
+          key: 'prefix.Form',
+          label: 'Form',
+          icon: 'form',
+          createModelOptions: {
+            use: 'FormModel',
+          },
+          toggleDetector: undefined,
+          customRemove: undefined,
+        });
+      });
+
+      test('should handle children with function defaultOptions', async () => {
+        const dynamicOptionsFn = vi.fn().mockReturnValue({ use: 'DynamicModel', parentUid: 'test' });
+        const children = [
+          {
+            title: 'Dynamic Block',
+            defaultOptions: dynamicOptionsFn,
+          },
+        ];
+
+        const result = await processMetaChildren(children, mockModel);
+
+        expect(dynamicOptionsFn).toHaveBeenCalledWith(mockModel, undefined);
+        expect(result[0].createModelOptions).toEqual({
+          use: 'DynamicModel',
+          parentUid: 'test',
+        });
+      });
+
+      test('should handle children with toggleDetector and customRemove', async () => {
+        const toggleDetector = vi.fn().mockReturnValue(true);
+        const customRemove = vi.fn().mockResolvedValue(undefined);
+        const children = [
+          {
+            title: 'Advanced Block',
+            defaultOptions: { use: 'AdvancedModel' },
+            toggleDetector,
+            customRemove,
+          },
+        ];
+
+        const result = await processMetaChildren(children, mockModel);
+
+        expect(result[0].toggleDetector).toBe(toggleDetector);
+        expect(result[0].customRemove).toBe(customRemove);
+      });
+    });
+
+    describe('nested children processing', () => {
+      test('should process nested children structure', async () => {
+        const children = [
+          {
+            title: 'Basic Blocks',
+            icon: 'blocks',
+            children: [
+              {
+                title: 'Table',
+                defaultOptions: { use: 'TableModel' },
+              },
+              {
+                title: 'Form',
+                defaultOptions: { use: 'FormModel' },
+              },
+            ],
+          },
+          {
+            title: 'Advanced Blocks',
+            children: [
+              {
+                title: 'Chart',
+                defaultOptions: { use: 'ChartModel' },
+              },
+            ],
+          },
+        ];
+
+        const result = await processMetaChildren(children, mockModel, 'test.');
+
+        expect(result).toHaveLength(2);
+
+        // First group - Basic Blocks
+        expect(result[0]).toEqual({
+          key: 'test.Basic Blocks',
+          label: 'Basic Blocks',
+          icon: 'blocks',
+          children: [
+            {
+              key: 'test.Basic Blocks.Table',
+              label: 'Table',
+              icon: undefined,
+              createModelOptions: {
+                use: 'TableModel',
+              },
+              toggleDetector: undefined,
+              customRemove: undefined,
+            },
+            {
+              key: 'test.Basic Blocks.Form',
+              label: 'Form',
+              icon: undefined,
+              createModelOptions: {
+                use: 'FormModel',
+              },
+              toggleDetector: undefined,
+              customRemove: undefined,
+            },
+          ],
+        });
+
+        // Second group - Advanced Blocks
+        expect(result[1]).toEqual({
+          key: 'test.Advanced Blocks',
+          label: 'Advanced Blocks',
+          icon: undefined,
+          children: [
+            {
+              key: 'test.Advanced Blocks.Chart',
+              label: 'Chart',
+              icon: undefined,
+              createModelOptions: {
+                use: 'ChartModel',
+              },
+              toggleDetector: undefined,
+              customRemove: undefined,
+            },
+          ],
+        });
+      });
+
+      test('should handle deep nesting (3+ levels)', async () => {
+        const children = [
+          {
+            title: 'Category A',
+            children: [
+              {
+                title: 'Subcategory A1',
+                children: [
+                  {
+                    title: 'Item A1a',
+                    defaultOptions: { use: 'ItemA1aModel' },
+                  },
+                  {
+                    title: 'Item A1b',
+                    defaultOptions: { use: 'ItemA1bModel' },
+                  },
+                ],
+              },
+            ],
+          },
+        ];
+
+        const result = await processMetaChildren(children, mockModel);
+
+        expect(result).toHaveLength(1);
+        expect(result[0].key).toBe('Category A');
+        expect(result[0].children).toHaveLength(1);
+        expect(result[0].children[0].key).toBe('Category A.Subcategory A1');
+        expect(result[0].children[0].children).toHaveLength(2);
+        expect(result[0].children[0].children[0].key).toBe('Category A.Subcategory A1.Item A1a');
+        expect(result[0].children[0].children[0].createModelOptions.use).toBe('ItemA1aModel');
+      });
+    });
+
+    describe('key generation', () => {
+      test('should generate keys with custom prefix', async () => {
+        const children = [
+          { title: 'Block1', defaultOptions: { use: 'Model1' } },
+          { title: 'Block2', defaultOptions: { use: 'Model2' } },
+        ];
+
+        const result = await processMetaChildren(children, mockModel, 'custom.');
+
+        expect(result[0].key).toBe('custom.Block1');
+        expect(result[1].key).toBe('custom.Block2');
+      });
+
+      test('should generate keys without prefix when not provided', async () => {
+        const children = [{ title: 'Block1', defaultOptions: { use: 'Model1' } }];
+
+        const result = await processMetaChildren(children, mockModel);
+
+        expect(result[0].key).toBe('Block1');
+      });
+
+      test('should handle missing title by generating item keys', async () => {
+        const children = [{ defaultOptions: { use: 'Model1' } }, { defaultOptions: { use: 'Model2' } }];
+
+        const result = await processMetaChildren(children, mockModel, 'test.');
+
+        expect(result[0].key).toBe('test.item-0');
+        expect(result[1].key).toBe('test.item-1');
+      });
+    });
+
+    describe('use property handling', () => {
+      test('should preserve string use property', async () => {
+        const children = [
+          {
+            title: 'Block',
+            defaultOptions: { use: 'TableModel', config: { test: true } },
+          },
+        ];
+
+        const result = await processMetaChildren(children, mockModel);
+
+        expect(result[0].createModelOptions.use).toBe('TableModel');
+        expect(result[0].createModelOptions.config).toEqual({ test: true });
+      });
+
+      test('should fallback to key when use is not resolvable', async () => {
+        const children = [
+          {
+            title: 'Block',
+            defaultOptions: { someOtherProp: 'value' },
+          },
+        ];
+
+        const result = await processMetaChildren(children, mockModel);
+
+        expect(result[0].createModelOptions.use).toBe('Block');
+      });
+    });
+
+    describe('error handling', () => {
+      test('should handle defaultOptions function errors gracefully', async () => {
+        const errorFn = vi.fn(() => {
+          throw new Error('Options error');
+        });
+
+        const children = [
+          {
+            title: 'Error Block',
+            defaultOptions: errorFn,
+          },
+        ];
+
+        const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+        const result = await processMetaChildren(children, mockModel);
+
+        expect(result[0].createModelOptions).toEqual({
+          use: 'Error Block',
+        });
+        expect(consoleSpy).toHaveBeenCalledWith('Error resolving defaultOptions function:', expect.any(Error));
+
+        consoleSpy.mockRestore();
+      });
+
+      test('should handle empty children array', async () => {
+        const result = await processMetaChildren([], mockModel);
+
+        expect(result).toEqual([]);
+      });
+
+      test('should handle null/undefined children items', async () => {
+        const children = [
+          null,
+          {
+            title: 'Valid Block',
+            defaultOptions: { use: 'ValidModel' },
+          },
+          undefined,
+        ].filter(Boolean); // Filter out null/undefined for realistic test
+
+        const result = await processMetaChildren(children, mockModel);
+
+        expect(result).toHaveLength(1);
+        expect(result[0].label).toBe('Valid Block');
       });
     });
   });

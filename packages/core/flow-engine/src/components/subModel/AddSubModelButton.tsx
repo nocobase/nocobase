@@ -19,14 +19,6 @@ import _ from 'lodash';
 // 类型定义
 // ============================================================================
 
-export interface AddSubModelContext {
-  model: FlowModel;
-  globals: Record<string, any>;
-  app?: any;
-  extra?: Record<string, any>;
-  subModelBaseClass?: ModelConstructor;
-}
-
 export interface SubModelItem {
   key?: string;
   label?: string;
@@ -40,15 +32,11 @@ export interface SubModelItem {
   searchable?: boolean;
   searchPlaceholder?: string;
   keepDropdownOpen?: boolean;
-  toggleDetector?: (ctx: AddSubModelContext) => boolean | Promise<boolean>;
-  removeModelOptions?: {
-    customRemove?: (ctx: AddSubModelContext, item: SubModelItem) => Promise<void>;
-  };
+  toggleDetector?: (model: FlowModel) => boolean | Promise<boolean>;
+  customRemove?: (model: FlowModel, item: SubModelItem) => Promise<void>;
 }
 
-export type SubModelItemsType =
-  | SubModelItem[]
-  | ((ctx: AddSubModelContext) => SubModelItem[] | Promise<SubModelItem[]>);
+export type SubModelItemsType = SubModelItem[] | ((model: FlowModel) => SubModelItem[] | Promise<SubModelItem[]>);
 
 export interface MergeSubModelItemsOptions {
   addDividers?: boolean;
@@ -117,25 +105,12 @@ const handleModelCreationError = async (error: any, addedModel?: FlowModel) => {
 /**
  * 安全地获取菜单项的创建选项
  */
-const getCreateModelOptions = (item: SubModelItem) => {
+const getCreateModelOptions = async (item: SubModelItem) => {
   let createOpts = item.createModelOptions;
   if (typeof createOpts === 'function') {
-    createOpts = createOpts(item);
+    createOpts = await createOpts(item);
   }
   return createOpts;
-};
-
-/**
- * 创建构建上下文的工厂函数
- */
-const createBuildContext = (model: FlowModel, subModelBaseClass?: string | ModelConstructor): AddSubModelContext => {
-  const globalContext = model.flowEngine.getContext();
-  return {
-    model,
-    globals: globalContext,
-    subModelBaseClass:
-      typeof subModelBaseClass === 'string' ? model.flowEngine.getModelClass(subModelBaseClass) : subModelBaseClass,
-  };
 };
 
 /**
@@ -151,11 +126,11 @@ export function mergeSubModelItems(
   if (validSources.length === 0) return [];
   if (validSources.length === 1) return validSources[0];
 
-  return async (ctx: AddSubModelContext) => {
+  return async (model: FlowModel) => {
     const result: SubModelItem[] = [];
     for (let i = 0; i < validSources.length; i++) {
       const source = validSources[i];
-      const items: SubModelItem[] = Array.isArray(source) ? source : await source(ctx);
+      const items: SubModelItem[] = Array.isArray(source) ? source : await source(model);
 
       if (i > 0 && addDividers && items.length > 0) {
         result.push({ key: `divider-${i}`, type: 'divider' } as SubModelItem);
@@ -190,7 +165,7 @@ const hasToggleItems = (items: SubModelItem[]): boolean => {
 /**
  * 递归转换 SubModelItem 数组为 LazyDropdown 的 Item 格式
  */
-const transformSubModelItems = async (items: SubModelItem[], context: AddSubModelContext): Promise<Item[]> => {
+const transformSubModelItems = async (items: SubModelItem[], model: FlowModel): Promise<Item[]> => {
   if (items.length === 0) return [];
 
   // 批量收集需要异步检测的可切换项
@@ -203,7 +178,7 @@ const transformSubModelItems = async (items: SubModelItem[], context: AddSubMode
   }
 
   // 批量执行 toggleDetector
-  const toggleResults = await Promise.allSettled(toggleItems.map(({ item }) => item.toggleDetector!(context)));
+  const toggleResults = await Promise.allSettled(toggleItems.map(({ item }) => item.toggleDetector!(model)));
 
   const toggleMap = new Map<number, boolean>();
   toggleItems.forEach(({ index }, i) => {
@@ -229,12 +204,12 @@ const transformSubModelItems = async (items: SubModelItem[], context: AddSubMode
     if (item.children) {
       if (typeof item.children === 'function') {
         transformedItem.children = async () => {
-          const childrenFn = item.children as (ctx: AddSubModelContext) => SubModelItem[] | Promise<SubModelItem[]>;
-          const childrenResult = await childrenFn(context);
-          return transformSubModelItems(childrenResult, context);
+          const childrenFn = item.children as (model: FlowModel) => SubModelItem[] | Promise<SubModelItem[]>;
+          const childrenResult = await childrenFn(model);
+          return transformSubModelItems(childrenResult, model);
         };
       } else {
-        transformedItem.children = await transformSubModelItems(item.children as SubModelItem[], context);
+        transformedItem.children = await transformSubModelItems(item.children as SubModelItem[], model);
       }
     }
 
@@ -255,22 +230,22 @@ const transformSubModelItems = async (items: SubModelItem[], context: AddSubMode
 /**
  * 转换 SubModelItemsType 到 LazyDropdown 的 ItemsType 格式
  */
-const transformItems = (items: SubModelItemsType, context: AddSubModelContext): ItemsType => {
+const transformItems = (items: SubModelItemsType, model: FlowModel): ItemsType => {
   if (typeof items === 'function') {
     return async () => {
-      const result = await items(context);
-      return transformSubModelItems(result, context);
+      const result = await items(model);
+      return transformSubModelItems(result, model);
     };
   }
 
   const hasToggle = hasToggleItems(items as SubModelItem[]);
   if (hasToggle) {
-    return () => transformSubModelItems(items as SubModelItem[], context);
+    return () => transformSubModelItems(items as SubModelItem[], model);
   } else {
     let cachedResult: Item[] | null = null;
     return async () => {
       if (!cachedResult) {
-        cachedResult = await transformSubModelItems(items as SubModelItem[], context);
+        cachedResult = await transformSubModelItems(items as SubModelItem[], model);
       }
       return cachedResult;
     };
@@ -289,13 +264,13 @@ const createDefaultRemoveHandler = (config: {
   subModelKey: string;
   subModelType: 'object' | 'array';
 }) => {
-  return async (item: SubModelItem, _context: AddSubModelContext): Promise<void> => {
+  return async (item: SubModelItem, parentModel: FlowModel): Promise<void> => {
     const { model, subModelKey, subModelType } = config;
 
     if (subModelType === 'array') {
       const subModels = (model.subModels as any)[subModelKey] as FlowModel[];
       if (Array.isArray(subModels)) {
-        const createOpts = getCreateModelOptions(item);
+        const createOpts = await getCreateModelOptions(item);
         const targetModel = subModels.find((subModel) => {
           if (createOpts?.use) {
             try {
@@ -351,12 +326,6 @@ const AddSubModelButtonCore = function AddSubModelButton({
   children = 'Add',
   keepDropdownOpen = false,
 }: AddSubModelButtonProps) {
-  // 构建上下文对象
-  const buildContext = useMemo(
-    () => createBuildContext(model, subModelBaseClass),
-    [model, model.flowEngine, subModelBaseClass],
-  );
-
   // 创建删除处理器
   const removeHandler = useMemo(
     () =>
@@ -377,10 +346,10 @@ const AddSubModelButtonCore = function AddSubModelButton({
     // 处理可切换菜单项的开关操作
     if (item.toggleDetector && isToggled) {
       try {
-        if (item.removeModelOptions?.customRemove) {
-          await item.removeModelOptions.customRemove(buildContext, item);
+        if (item.customRemove) {
+          await item.customRemove(model, item);
         } else {
-          await removeHandler(item, buildContext);
+          await removeHandler(item, model);
         }
       } catch (error) {
         console.error('Failed to remove sub model:', error);
@@ -389,7 +358,7 @@ const AddSubModelButtonCore = function AddSubModelButton({
     }
 
     // 处理添加操作
-    const createOpts = getCreateModelOptions(item);
+    const createOpts = await getCreateModelOptions(item);
 
     if (!validateCreateModelOptions(createOpts)) {
       return;
@@ -431,7 +400,7 @@ const AddSubModelButtonCore = function AddSubModelButton({
   return (
     <LazyDropdown
       menu={{
-        items: transformItems(items, buildContext),
+        items: transformItems(items, model),
         onClick,
         keepDropdownOpen,
       }}

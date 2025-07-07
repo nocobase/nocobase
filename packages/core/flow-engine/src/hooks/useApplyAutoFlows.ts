@@ -10,7 +10,7 @@
 import { useMemo } from 'react';
 import { FlowModel } from '../models';
 import { useFlowEngine } from '../provider';
-import { FlowExtraContext } from '../types';
+import { FlowRuntimeArgs } from '../types';
 import { useRequest } from 'ahooks';
 
 /**
@@ -19,7 +19,7 @@ import { useRequest } from 'ahooks';
  * @param context Optional user context
  * @returns true if the request is pending
  */
-export function useApplyAutoFlows(modelOrUid: FlowModel | string, extra?: FlowExtraContext) {
+export function useApplyAutoFlows(modelOrUid: FlowModel | string, runtimeArgs?: FlowRuntimeArgs) {
   const flowEngine = useFlowEngine();
   const model = useMemo(() => {
     if (typeof modelOrUid === 'string') {
@@ -30,10 +30,10 @@ export function useApplyAutoFlows(modelOrUid: FlowModel | string, extra?: FlowEx
 
   const { loading } = useRequest(
     async () => {
-      await model.applyAutoFlows(extra);
+      await model.applyAutoFlows(runtimeArgs);
     },
     {
-      refreshDeps: [model, extra],
+      refreshDeps: [model, runtimeArgs],
     },
   );
 
