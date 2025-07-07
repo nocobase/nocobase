@@ -8,13 +8,13 @@
  */
 
 import _ from 'lodash';
+import { Collection, DataSource, DataSourceManager } from '../data-source';
 import type { FlowModel } from '../models';
 import type { ModelConstructor } from '../types';
-import { Collection, DataSource, DataSourceManager } from '../data-source';
+import { BLOCK_GROUP_CONFIGS, MENU_KEYS, SHOW_CURRENT_MODELS } from './constants';
 import { isInheritedFrom } from './inheritance';
 import { resolveDefaultOptions } from './params-resolvers';
 import { escapeT } from './translation';
-import { BLOCK_GROUP_CONFIGS, MENU_KEYS, SHOW_CURRENT_MODELS } from './constants';
 // ==================== 类型定义 ====================
 
 interface MenuItemBase {
@@ -98,8 +98,8 @@ function getDataSourcesWithCollections(model: FlowModel): DataSourceInfo[] {
 // 创建带数据源参数的默认选项
 function createDataSourceStepParams(dataSourceKey: string, collectionName: string, extra?: any) {
   return {
-    dataSource: {
-      setDs: {
+    resourceSettings: {
+      init: {
         dataSourceKey,
         collectionName,
         ...extra,
@@ -190,8 +190,8 @@ function createCurrentRecordMenuItem(className: string, collection: Collection, 
     defaultOptions: {
       use: className,
       stepParams: stepParams || {
-        dataSource: {
-          setDs: {
+        resourceSettings: {
+          init: {
             filterByTk: '{{ctx.shared.currentFlow.runtimeArgs.filterByTk}}',
             collectionName: collection.name,
             dataSourceKey: collection.dataSource.key,
@@ -215,8 +215,8 @@ function createAssociationRecordsMenuItem(
     defaultOptions: (_parentModel: any, extra: any) => ({
       use: className,
       stepParams: {
-        dataSource: {
-          setDs: {
+        resourceSettings: {
+          init: {
             dataSourceKey: extra.dataSourceKey,
             collectionName: '',
             associationName: baseCollectionName + '.' + extra.collectionName,
@@ -277,8 +277,8 @@ function buildOtherCollectionItems(
     const targetCollection = collection.dataSource.getCollection(currentFlow.runtimeArgs!.collectionName!);
     if (targetCollection) {
       const customStepParams = {
-        dataSource: {
-          setDs: {
+        resourceSettings: {
+          init: {
             dataSourceKey: collection.dataSource.key,
             collectionName: '',
             associationName: `${collection.name}.${currentFlow.runtimeArgs!.collectionName}`,
@@ -722,7 +722,7 @@ async function buildDataSourceBlockItems(
                 ...createDataSourceStepParams(
                   dataSource.key,
                   collection.name,
-                  defaultOptions?.stepParams?.dataSource?.setDs,
+                  defaultOptions?.stepParams?.resourceSettings?.init,
                 ),
               },
             },

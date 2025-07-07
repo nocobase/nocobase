@@ -12,6 +12,7 @@ import { DragMoveEvent } from '@dnd-kit/core';
 import { uid } from '@formily/shared';
 import {
   AddBlockButton,
+  buildBlockItems,
   DndProvider,
   DragHandler,
   Droppable,
@@ -23,7 +24,6 @@ import {
   getMousePositionOnElement,
   moveBlock,
   positionToDirection,
-  buildBlockItems,
 } from '@nocobase/flow-engine';
 import { tval } from '@nocobase/utils/client';
 import { Space } from 'antd';
@@ -39,6 +39,9 @@ type GridModelStructure = {
     items: BlockModel[];
   };
 };
+
+const GRID_FLOW_KEY = 'gridSettings';
+const GRID_STEP = 'grid';
 
 export class GridModel extends FlowModel<GridModelStructure> {
   subModelBaseClass = 'BlockModel';
@@ -56,7 +59,7 @@ export class GridModel extends FlowModel<GridModelStructure> {
       if (position) {
         const newSizes = _.cloneDeep(this.props.sizes || {});
         newSizes[position.rowId] = [24]; // 默认新行宽度为 24
-        this.setStepParams('defaultFlow', 'grid', {
+        this.setStepParams(GRID_FLOW_KEY, GRID_STEP, {
           rows: this.props.rows || {},
           sizes: newSizes,
         });
@@ -88,7 +91,7 @@ export class GridModel extends FlowModel<GridModelStructure> {
           delete newSizes[position.rowId];
         }
 
-        this.setStepParams('defaultFlow', 'grid', {
+        this.setStepParams(GRID_FLOW_KEY, GRID_STEP, {
           rows,
           sizes: newSizes,
         });
@@ -144,7 +147,7 @@ export class GridModel extends FlowModel<GridModelStructure> {
   }
 
   saveGridLayout() {
-    this.setStepParams('defaultFlow', 'grid', {
+    this.setStepParams(GRID_FLOW_KEY, GRID_STEP, {
       rows: this.props.rows || {},
       sizes: this.props.sizes || {},
     });
@@ -189,9 +192,9 @@ export class GridModel extends FlowModel<GridModelStructure> {
   }
 
   resetRows(syncProps = false) {
-    const params = this.getStepParams('defaultFlow', 'grid') || {};
+    const params = this.getStepParams(GRID_FLOW_KEY, GRID_STEP) || {};
     const mergedRows = this.mergeRowsWithItems(params.rows || {});
-    this.setStepParams('defaultFlow', 'grid', {
+    this.setStepParams(GRID_FLOW_KEY, GRID_STEP, {
       rows: mergedRows,
       sizes: params.sizes || {},
     });
@@ -296,7 +299,7 @@ export class GridModel extends FlowModel<GridModelStructure> {
             </AddBlockButton>
             <FlowSettingsButton
               onClick={() => {
-                this.openStepSettingsDialog('defaultFlow', 'grid');
+                this.openStepSettingsDialog(GRID_FLOW_KEY, GRID_STEP);
               }}
             >
               {t('Configure rows')}
@@ -309,10 +312,10 @@ export class GridModel extends FlowModel<GridModelStructure> {
 }
 
 GridModel.registerFlow({
-  key: 'defaultFlow',
+  key: GRID_FLOW_KEY,
   auto: true,
   steps: {
-    step1: {
+    resetRows: {
       handler(ctx) {
         ctx.model.resetRows();
       },

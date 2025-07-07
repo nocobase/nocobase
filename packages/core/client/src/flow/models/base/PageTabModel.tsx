@@ -27,7 +27,7 @@ export class PageTabModel extends FlowModel<{
 }
 
 PageTabModel.registerFlow({
-  key: 'defaultPropsFlow',
+  key: 'pageTabSettings',
   auto: true,
   steps: {
     step1: {

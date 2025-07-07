@@ -7,10 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { MultiRecordResource, useFlowModel, useStepSettingContext } from '@nocobase/flow-engine';
+import { escapeT, MultiRecordResource, useFlowModel, useStepSettingContext } from '@nocobase/flow-engine';
 import { Button, ButtonProps, Popover, Select, Space } from 'antd';
 import React, { FC } from 'react';
-import { tval } from '@nocobase/utils/client';
 import { FilterGroup } from '../../components/FilterGroup';
 import { GlobalActionModel } from '../base/ActionModel';
 import { DataBlockModel } from '../base/BlockModel';
@@ -45,7 +44,7 @@ export class FilterActionModel extends GlobalActionModel {
 
   defaultProps: any = {
     type: 'default',
-    title: tval('Filter'),
+    title: escapeT('Filter'),
     icon: 'FilterOutlined',
     filterValue: { $and: [] },
     ignoreFieldsNames: [],
@@ -66,23 +65,21 @@ export class FilterActionModel extends GlobalActionModel {
 }
 
 FilterActionModel.define({
-  title: tval('Filter'),
+  title: escapeT('Filter'),
 });
 
 FilterActionModel.registerFlow({
   key: 'filterSettings',
-  title: tval('Filter configuration'),
+  title: escapeT('Filter settings'),
   auto: true,
   steps: {
     position: {
-      title: '位置',
-      uiSchema: {},
       handler(ctx, params) {
-        ctx.model.setProps('position', 'left');
+        ctx.model.setProps('position', params.position || 'left');
       },
     },
     ignoreFieldsNames: {
-      title: tval('Filterable fields'),
+      title: escapeT('Filterable fields'),
       uiSchema: {
         ignoreFieldsNames: {
           type: 'array',
@@ -100,7 +97,7 @@ FilterActionModel.registerFlow({
           },
           'x-component-props': {
             mode: 'multiple',
-            placeholder: tval('Please select non-filterable fields'),
+            placeholder: escapeT('Please select non-filterable fields'),
           },
         },
       },
@@ -113,10 +110,10 @@ FilterActionModel.registerFlow({
         ctx.model.setProps('ignoreFieldsNames', params.ignoreFieldsNames);
       },
     },
-    defaultValue: {
-      title: tval('Default filter conditions'),
+    defaultFilter: {
+      title: escapeT('Default filter conditions'),
       uiSchema: {
-        filter: {
+        defaultFilter: {
           type: 'object',
           'x-decorator': 'FormItem',
           'x-component': (props) => {
@@ -143,18 +140,15 @@ FilterActionModel.registerFlow({
         };
       },
       handler(ctx, params) {
-        ctx.model.setProps('filterValue', params.filterValue);
+        ctx.model.setProps('filterValue', params.defaultFilter);
       },
     },
   },
 });
 
 FilterActionModel.registerFlow({
-  key: 'handleSubmit',
-  title: tval('Submit'),
-  on: {
-    eventName: 'submit',
-  },
+  key: 'submitSettings',
+  on: 'submit',
   steps: {
     submit: {
       handler(ctx, params) {
@@ -171,11 +165,9 @@ FilterActionModel.registerFlow({
 });
 
 FilterActionModel.registerFlow({
-  key: 'handleReset',
-  title: tval('Reset'),
-  on: {
-    eventName: 'reset',
-  },
+  key: 'resetSettings',
+  title: escapeT('Reset'),
+  on: 'reset',
   steps: {
     submit: {
       handler(ctx, params) {
@@ -192,11 +184,8 @@ FilterActionModel.registerFlow({
 });
 
 FilterActionModel.registerFlow({
-  key: 'handleClick',
-  title: tval('Click event'),
-  on: {
-    eventName: 'click',
-  },
+  key: 'openSettings',
+  on: 'click',
   steps: {
     open: {
       handler(ctx, params) {

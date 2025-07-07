@@ -52,7 +52,7 @@ export class DateTimeReadPrettyFieldModel extends ReadPrettyFieldModel {
 }
 
 DateTimeReadPrettyFieldModel.registerFlow({
-  key: 'key3',
+  key: 'datetimeSettings',
   auto: true,
   sort: 1000,
   title: tval('Datetime settings'),

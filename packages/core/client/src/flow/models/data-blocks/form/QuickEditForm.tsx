@@ -23,25 +23,6 @@ import _ from 'lodash';
 import React from 'react';
 import { DataBlockModel } from '../../base/BlockModel';
 
-const SimpleFlowModelRenderer = observer((props: any) => {
-  const { fallback, model, sharedContext, runtimeArgs } = props;
-  const { loading } = useRequest(
-    async () => {
-      model.setSharedContext(sharedContext);
-      await model.applyAutoFlows(runtimeArgs);
-    },
-    {
-      refreshDeps: [model, sharedContext, runtimeArgs],
-    },
-  );
-
-  if (loading) {
-    return <>{fallback}</>;
-  }
-
-  return model.render();
-});
-
 export class QuickEditForm extends DataBlockModel {
   form: Form;
   fieldPath: string;
@@ -66,8 +47,8 @@ export class QuickEditForm extends DataBlockModel {
     const model = flowEngine.createModel({
       use: 'QuickEditForm',
       stepParams: {
-        propsFlow: {
-          step1: {
+        quickEditFormSettings: {
+          init: {
             dataSourceKey,
             collectionName,
             fieldPath,
@@ -159,10 +140,10 @@ export class QuickEditForm extends DataBlockModel {
 }
 
 QuickEditForm.registerFlow({
-  key: 'propsFlow',
+  key: 'quickEditFormSettings',
   auto: true,
   steps: {
-    step1: {
+    init: {
       async handler(ctx, params) {
         const { dataSourceKey, collectionName, fieldPath } = params;
         if (!dataSourceKey || !collectionName || !fieldPath) {
@@ -182,8 +163,8 @@ QuickEditForm.registerFlow({
           ctx.model.addSubModel('fields', {
             use,
             stepParams: {
-              default: {
-                step1: {
+              fieldSettings: {
+                init: {
                   dataSourceKey,
                   collectionName,
                   fieldPath,

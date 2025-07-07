@@ -118,8 +118,8 @@ const AddFieldColumn = ({ model }) => {
     ({ defaultOptions, fieldPath }) => ({
       use: 'TableColumnModel',
       stepParams: {
-        default: {
-          step1: {
+        fieldSettings: {
+          init: {
             dataSourceKey: model.collection.dataSourceKey,
             collectionName: model.collection.name,
             fieldPath,
@@ -131,8 +131,8 @@ const AddFieldColumn = ({ model }) => {
           // @ts-ignore
           use: defaultOptions.use as any,
           stepParams: {
-            default: {
-              step1: {
+            fieldSettings: {
+              init: {
                 dataSourceKey: model.collection.dataSourceKey,
                 collectionName: model.collection.name,
                 fieldPath,
@@ -184,6 +184,7 @@ export class TableModel extends DataBlockModel<TableModelStructure> {
   EditableCell = observer<any>((props) => {
     const { className, title, editable, width, record, recordIndex, dataIndex, children, model, ...restProps } = props;
     const ref = useRef(null);
+    console.log('EditableCell props:', props);
     if (editable) {
       return (
         <td
@@ -405,43 +406,19 @@ export class TableModel extends DataBlockModel<TableModelStructure> {
   }
 }
 
+// TableModel.registerFlow({
+//   key: 'resourceSettings',
+//   auto: true,
+//   steps: {},
+// });
+
 TableModel.registerFlow({
-  key: 'default',
+  key: 'tableSettings',
   auto: true,
+  sort: 500,
   title: escapeT('Table settings'),
   steps: {
-    virtual: {
-      title: tval('Virtual'),
-      uiSchema: {
-        virtual: {
-          'x-component': 'Switch',
-          'x-decorator': 'FormItem',
-        },
-      },
-      defaultParams: {
-        virtual: false,
-      },
-      handler(ctx, params) {
-        ctx.model.setProps('virtual', params.virtual);
-      },
-    },
-    enableEditable: {
-      title: tval('Editable'),
-      uiSchema: {
-        editable: {
-          'x-component': 'Switch',
-          'x-decorator': 'FormItem',
-        },
-      },
-      defaultParams: {
-        editable: false,
-      },
-      handler(ctx, params) {
-        console.log('enableEditable params:', params);
-        ctx.model.setProps('editable', params.editable);
-      },
-    },
-    step1: {
+    init: {
       paramsRequired: true,
       hideInSettings: true,
       uiSchema: {
@@ -487,6 +464,37 @@ TableModel.registerFlow({
         ctx.model.resource.setAPIClient(ctx.api);
         ctx.model.resource.setPageSize(20);
         await ctx.model.applySubModelsAutoFlows('columns');
+      },
+    },
+    virtual: {
+      title: tval('Virtual'),
+      uiSchema: {
+        virtual: {
+          'x-component': 'Switch',
+          'x-decorator': 'FormItem',
+        },
+      },
+      defaultParams: {
+        virtual: false,
+      },
+      handler(ctx, params) {
+        ctx.model.setProps('virtual', params.virtual);
+      },
+    },
+    enableEditable: {
+      title: tval('Editable'),
+      uiSchema: {
+        editable: {
+          'x-component': 'Switch',
+          'x-decorator': 'FormItem',
+        },
+      },
+      defaultParams: {
+        editable: false,
+      },
+      handler(ctx, params) {
+        console.log('enableEditable params:', params);
+        ctx.model.setProps('editable', params.editable);
       },
     },
     editPageSize: {

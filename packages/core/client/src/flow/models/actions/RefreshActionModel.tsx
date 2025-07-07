@@ -7,34 +7,31 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { escapeT } from '@nocobase/flow-engine';
 import { ButtonProps } from 'antd';
-import { tval } from '@nocobase/utils/client';
 import { GlobalActionModel } from '../base/ActionModel';
 
 export class RefreshActionModel extends GlobalActionModel {
   defaultProps: ButtonProps = {
-    title: tval('Refresh'),
+    title: escapeT('Refresh'),
     icon: 'ReloadOutlined',
   };
 }
 
 RefreshActionModel.define({
-  title: tval('Refresh'),
+  title: escapeT('Refresh'),
 });
 
 RefreshActionModel.registerFlow({
-  key: 'handleClick',
-  title: tval('Click event'),
-  on: {
-    eventName: 'click',
-  },
+  key: 'refreshSettings',
+  title: escapeT('Refresh settings'),
+  on: 'click',
   steps: {
     refresh: {
       async handler(ctx, params) {
-        const t = ctx.model.translate;
         const currentResource = ctx.shared?.currentBlockModel?.resource;
         if (!currentResource) {
-          ctx.globals.message.error(t('No resource selected for refresh'));
+          ctx.message.error(ctx.t('No resource selected for refresh'));
           return;
         }
         currentResource.loading = true;

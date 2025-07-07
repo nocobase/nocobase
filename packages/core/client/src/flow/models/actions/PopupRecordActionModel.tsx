@@ -23,7 +23,7 @@ PopupRecordActionModel.define({
 });
 
 PopupRecordActionModel.registerFlow({
-  key: 'clickOpenView',
+  key: 'popupSettings',
   title: escapeT('Popup settings'),
   on: {
     eventName: 'click',

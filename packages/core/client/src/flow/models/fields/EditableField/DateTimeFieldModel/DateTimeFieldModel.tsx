@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 import { DatePicker } from '@formily/antd-v5';
-import { tval } from '@nocobase/utils/client';
+import { escapeT } from '@nocobase/flow-engine';
 import { EditableFieldModel } from '../EditableFieldModel';
 
 export class DateTimeFieldModel extends EditableFieldModel {
@@ -33,14 +33,14 @@ export class DateTimeFieldModel extends EditableFieldModel {
 }
 
 DateTimeFieldModel.registerFlow({
-  key: 'key3',
+  key: 'datetimeSettings',
   auto: true,
   sort: 1000,
-  title: tval('Specific properties'),
+  title: escapeT('Datetime settings'),
   steps: {
     dateFormat: {
       use: 'dateDisplayFormat',
-      title: tval('Date display format'),
+      title: escapeT('Date display format'),
     },
   },
 });

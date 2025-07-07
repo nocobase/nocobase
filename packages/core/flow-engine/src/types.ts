@@ -42,23 +42,89 @@ export type DeepPartial<T> = {
  * Defines a flow with generic model type support.
  */
 export interface FlowDefinition<TModel extends FlowModel = FlowModel> {
-  key: string; // Unique identifier for the flow
+  /**
+   * Unique identifier for the flow.
+   * 建议采用统一的 xxxSettings 风格命名，例如：
+   * - pageSettings
+   * - tableSettings
+   * - cardSettings
+   * - formSettings
+   * - detailsSettings
+   * - buttonSettings
+   * - popupSettings
+   * - deleteSettings
+   * - datetimeSettings
+   * - numberSettings
+   * 这样命名便于识别和维护，建议全局统一。
+   * @example
+   * 'pageSettings'
+   * 'tableSettings'
+   * 'deleteSettings'
+   */
+  key: string;
+
+  /**
+   * 人类可读的流标题，建议与 key 保持一致风格，采用 Xxx settings 命名，例如：
+   * - Page settings
+   * - Table settings
+   * - Card settings
+   * - Form settings
+   * - Details settings
+   * - Button settings
+   * - Popup settings
+   * - Delete settings
+   * - Datetime settings
+   * - Number settings
+   * 这样命名更清晰易懂，便于界面展示和团队协作。
+   * @example
+   * 'Page settings'
+   * 'Table settings'
+   * 'Delete settings'
+   */
   title?: string;
+
   /**
    * Whether this flow is a default flow that should be automatically executed
    */
   auto?: boolean;
+
   /**
    * Sort order for flow execution, lower numbers execute first
    * Defaults to 0, can be negative
    */
   sort?: number;
+
   /**
-   * Optional configuration to allow this flow to be triggered by `dispatchEvent`.
+   * Optional configuration to allow this flow to be triggered by `dispatchEvent`。
+   * 支持字符串或对象形式：
+   * - 字符串：直接指定事件名（如 'click'、'submit' 等），推荐与主流事件命名保持一致。
+   * - 对象：可扩展更多事件配置，目前支持 { eventName, handler }
+   *   - eventName: 事件名，推荐使用 'click' | 'submit' | 'change' | 'delete' | 'open' | 'close' 等主流命名
+   *   - handler: 事件触发时的自定义处理函数（可选，若不指定则默认执行 flow 的 steps）
+   *
+   * @example
+   * // 字符串形式，仅指定事件名
+   * on: 'click'
+   *
+   * // 对象形式，指定事件名和自定义处理函数
+   * on: {
+   *   eventName: 'click',
+   *   handler: (ctx, params) => {
+   *     // 自定义事件处理逻辑
+   *     ctx.logger.info('Custom click event triggered');
+   *   }
+   * }
+   *
+   * // 推荐事件名
+   * 'click' | 'submit' | 'change' | 'delete' | 'open' | 'close' 等
    */
-  on?: {
-    eventName: string;
-  };
+  on?:
+    | string
+    | {
+        eventName: string;
+        handler?: (ctx: FlowRuntimeContext<TModel>, params: Record<string, any>) => void | Promise<void>;
+      };
+
   steps: Record<string, StepDefinition<TModel>>;
 }
 

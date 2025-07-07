@@ -46,7 +46,7 @@ export class BlockModel<T = DefaultStructure> extends FlowModel<T> {
 }
 
 BlockModel.registerFlow({
-  key: 'blockProps',
+  key: 'cardSettings',
   title: escapeT('Card settings'),
   auto: true,
   steps: {
@@ -167,10 +167,10 @@ export class DataBlockModel<T = DefaultStructure> extends BlockModel<T> {
 }
 
 DataBlockModel.registerFlow({
-  key: 'dataSource',
+  key: 'resourceSettings',
   auto: true,
   steps: {
-    setDs: {
+    init: {
       handler(ctx, params) {
         ctx.logger.info('params', params);
         ctx.model.setProps('dataSourceOptions', {

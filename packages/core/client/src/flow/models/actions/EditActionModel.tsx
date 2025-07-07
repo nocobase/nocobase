@@ -8,7 +8,6 @@
  */
 
 import { escapeT } from '@nocobase/flow-engine';
-import { tval } from '@nocobase/utils/client';
 import type { ButtonProps } from 'antd/es/button';
 import { RecordActionModel } from '../base/ActionModel';
 
@@ -24,11 +23,9 @@ EditActionModel.define({
 });
 
 EditActionModel.registerFlow({
-  key: 'clickOpenView',
+  key: 'popupSettings',
   title: escapeT('Popup settings'),
-  on: {
-    eventName: 'click',
-  },
+  on: 'click',
   steps: {
     openView: {
       use: 'openView',

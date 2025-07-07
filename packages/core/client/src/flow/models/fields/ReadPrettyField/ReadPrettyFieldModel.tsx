@@ -27,13 +27,14 @@ export class ReadPrettyFieldModel extends FieldModel {
     );
   }
 }
+
 ReadPrettyFieldModel.registerFlow({
-  key: 'ReadPrettyFieldDefault',
+  key: 'readPrettyFieldSettings',
   auto: true,
-  title: tval('Basic'),
+  title: tval('Read pretty field settings'),
   sort: 100,
   steps: {
-    step1: {
+    init: {
       handler(ctx, params) {
         const { collectionField } = ctx.model;
         ctx.model.setProps(collectionField.getComponentProps());

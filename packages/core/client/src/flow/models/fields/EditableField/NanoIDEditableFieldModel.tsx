@@ -20,7 +20,7 @@ export class NanoIDEditableFieldModel extends EditableFieldModel {
 }
 
 NanoIDEditableFieldModel.registerFlow({
-  key: 'initialValue',
+  key: 'nanoidSettings',
   auto: true,
   sort: 1000,
   steps: {
