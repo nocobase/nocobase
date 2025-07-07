@@ -26,7 +26,7 @@ type Structure = {
 export class EditableFieldModel extends FieldModel<Structure> {
   field: Field;
   get form() {
-    return this.parent.parent.form as Form;
+    return (this.parent.form as Form) || (this.parent.parent.form as Form);
   }
 
   get decorator() {
