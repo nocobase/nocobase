@@ -190,6 +190,9 @@ DataBlockModel.registerFlow({
           ctx.model.resource.setAPIClient(ctx.api);
           ctx.model.resource.setDataSourceKey(params.dataSourceKey);
           ctx.model.resource.setResourceName(params.associationName || params.collectionName);
+          ctx.model.resource.on('refresh', () => {
+            ctx.model.invalidateAutoFlowCache();
+          });
         }
         if (Object.keys(params).includes('sourceId')) {
           ctx.model.resource.setSourceId(Schema.compile(params.sourceId, { ctx }));
