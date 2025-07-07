@@ -89,7 +89,7 @@ const aiEmployeeRole = (aiEmployee: AIEmployee) => ({
   placement: 'start',
   avatar: aiEmployee.avatar ? (
     <Popover content={<ProfileCard aiEmployee={aiEmployee} />} placement="leftTop">
-      <Avatar src={avatars(aiEmployee.avatar)} />
+      <Avatar shape="square" size="large" src={avatars(aiEmployee.avatar)} />
     </Popover>
   ) : null,
   typing: { step: 5, interval: 20 },

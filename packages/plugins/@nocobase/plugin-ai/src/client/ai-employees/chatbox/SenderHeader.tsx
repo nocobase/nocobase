@@ -8,7 +8,7 @@
  */
 
 import React, { useMemo } from 'react';
-import { Button, Dropdown, Tag, Avatar, Popover } from 'antd';
+import { Button, Dropdown, Tag, Avatar, Popover, Flex } from 'antd';
 import { useAIEmployeesContext } from '../AIEmployeesProvider';
 import { useT } from '../../locale';
 import { useChatBoxContext } from './ChatBoxContext';
@@ -19,6 +19,7 @@ import { avatars } from '../avatars';
 import { ProfileCard } from '../ProfileCard';
 import { AttachmentsHeader } from './AttachmentsHeader';
 import { ContextItemsHeader } from './ContextItemsHeader';
+import { useChatMessages } from './ChatMessagesProvider';
 
 export const SenderHeader: React.FC = () => {
   const {
@@ -29,6 +30,7 @@ export const SenderHeader: React.FC = () => {
   const t = useT();
   const switchAIEmployee = useChatBoxContext('switchAIEmployee');
   const currentEmployee = useChatBoxContext('currentEmployee');
+  const { responseLoading } = useChatMessages();
   const items = useMemo(() => {
     return aiEmployees?.map((employee) => ({
       key: employee.username,
@@ -42,6 +44,20 @@ export const SenderHeader: React.FC = () => {
       ),
     }));
   }, [aiEmployees]);
+
+  const avatar = useMemo(() => {
+    if (!currentEmployee) {
+      return null;
+    }
+    return !responseLoading
+      ? avatars(currentEmployee.avatar)
+      : avatars(currentEmployee.avatar, {
+          brows: ['variant10'],
+          gesture: ['pointLongArm'],
+          gestureProbability: 100,
+          translateX: -15,
+        });
+  }, [responseLoading, currentEmployee]);
 
   return (
     <div
@@ -66,7 +82,17 @@ export const SenderHeader: React.FC = () => {
           </Button>
         ) : (
           <Tag
-            closeIcon={<CloseCircleOutlined />}
+            closeIcon={
+              <div
+                style={{
+                  position: 'absolute',
+                  top: 0,
+                  right: '4px',
+                }}
+              >
+                <CloseCircleOutlined />
+              </div>
+            }
             onClose={() => {
               switchAIEmployee(null);
             }}
@@ -76,34 +102,29 @@ export const SenderHeader: React.FC = () => {
               background: token.colorBgContainer,
             }}
           >
-            <Popover content={<ProfileCard aiEmployee={currentEmployee} />} placement="leftTop">
-              <Avatar
-                src={avatars(currentEmployee.avatar)}
-                size={21}
-                shape="circle"
-                style={{
-                  boxShadow: token.boxShadowSecondary,
-                  margin: '2px 0',
-                }}
-              />
-            </Popover>
-            <span
-              style={{
-                fontSize: token.fontSize,
-                margin: '0 4px',
-              }}
-            >
-              {currentEmployee.nickname}
-            </span>
-            {currentEmployee.position ? (
-              <span
-                style={{
-                  color: token.colorTextDescription,
-                }}
-              >
-                {currentEmployee.position}
-              </span>
-            ) : null}
+            <Flex align="center">
+              <Popover content={<ProfileCard aiEmployee={currentEmployee} />} placement="leftTop">
+                <Avatar
+                  style={{
+                    margin: '4px 8px 4px 0',
+                  }}
+                  shape="square"
+                  size={48}
+                  src={avatar}
+                />
+              </Popover>
+              <Flex vertical={true}>
+                <div>{currentEmployee.nickname}</div>
+                <div
+                  style={{
+                    fontSize: token.fontSizeSM,
+                    color: token.colorTextSecondary,
+                  }}
+                >
+                  {currentEmployee.position}
+                </div>
+              </Flex>
+            </Flex>
           </Tag>
         )}
       </div>

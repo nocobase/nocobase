@@ -9,7 +9,7 @@
 
 import React, { useMemo } from 'react';
 import { FloatButton, Avatar, Dropdown } from 'antd';
-import icon from '../icon.svg';
+import icon from '../icon.png';
 import { css } from '@emotion/css';
 import { useChatBoxContext } from './ChatBoxContext';
 import { useAIEmployeesContext } from '../AIEmployeesProvider';
@@ -47,32 +47,30 @@ export const ChatButton: React.FC = () => {
     <div
       className={css`
         .ant-float-btn {
-          width: 40px;
+          width: 60px;
+          height: 60px;
         }
         .ant-float-btn .ant-float-btn-body .ant-float-btn-content {
           padding: 0;
         }
         .ant-float-btn .ant-float-btn-body .ant-float-btn-content .ant-float-btn-icon {
-          width: 36px;
+          width: 56px;
+          height: 56px;
+          opacity: 0.8;
+          transition: opacity 0.1s;
+        }
+        .ant-float-btn .ant-float-btn-body .ant-float-btn-content .ant-float-btn-icon:hover {
+          opacity: 1;
         }
       `}
     >
       {!selectable ? (
         <Dropdown menu={{ items }} placement="topRight">
           <FloatButton
-            icon={
-              <Avatar
-                src={icon}
-                size={36}
-                style={{
-                  marginBottom: '4px',
-                }}
-              />
-            }
+            icon={<Avatar src={icon} size={56} />}
             onClick={() => {
               setOpen(!open);
             }}
-            shape="square"
           />
         </Dropdown>
       ) : (
@@ -87,7 +85,6 @@ export const ChatButton: React.FC = () => {
           onClick={() => {
             stopSelect();
           }}
-          shape="square"
         />
       )}
     </div>

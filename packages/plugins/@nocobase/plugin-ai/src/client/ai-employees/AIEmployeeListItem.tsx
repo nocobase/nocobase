@@ -27,6 +27,8 @@ export const AIEmployeeListItem: React.FC<{
           style={{
             marginRight: '8px',
           }}
+          shape="square"
+          size="large"
           src={avatars(aiEmployee.avatar)}
         />
         <Flex vertical={true}>

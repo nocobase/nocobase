@@ -7,13 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import cls from 'classnames';
 import { useToken, useUploadStyles } from '@nocobase/client';
 import { css } from '@emotion/css';
 import { useField } from '@formily/react';
 import { Field } from '@formily/core';
-import { avatars } from '../avatars';
+import { avatars, avatarsMap } from '../avatars';
 import { List, Avatar as AntdAvatar } from 'antd';
 
 export const Avatar: React.FC<{
@@ -25,6 +25,7 @@ export const Avatar: React.FC<{
 }> = ({ srcs, size = 'large', selectable, highlightItem, onClick }) => {
   const { token } = useToken();
   const { wrapSSR, hashId, componentCls: prefixCls } = useUploadStyles();
+  console.log(srcs);
 
   const list =
     srcs?.map(([src, name], index) => (
@@ -66,7 +67,7 @@ export const Avatar: React.FC<{
       renderItem={([src, name]) => {
         return (
           <AntdAvatar
-            size={size === 'small' ? 32 : 80}
+            size={size === 'small' ? 40 : 80}
             className={cls(
               css`
                 margin: 2px;
@@ -114,13 +115,14 @@ export const Avatar: React.FC<{
 
 export const AvatarSelect: React.FC = () => {
   const field = useField<Field>();
-  const [current, setCurrent] = React.useState(avatars?.keys()[0]);
+  const defaultAvatar = Object.keys(avatarsMap)[0];
+  const [current, setCurrent] = React.useState(defaultAvatar);
 
   useEffect(() => {
     if (field.value) {
       return;
     }
-    field.setInitialValue(avatars?.keys()[0]);
+    field.setInitialValue(defaultAvatar);
   }, [field]);
 
   useEffect(() => {
@@ -130,13 +132,22 @@ export const AvatarSelect: React.FC = () => {
     setCurrent(field.value);
   }, [field.value]);
 
+  const avatarList = useMemo(() => {
+    return Object.keys(avatarsMap).map((seed) => {
+      return {
+        seed,
+        uri: avatars(seed),
+      };
+    });
+  }, []);
+
   return (
     <>
       <div style={{ marginBottom: '16px' }}>
         <Avatar srcs={current ? [[avatars(current), current]] : []} />
       </div>
       <Avatar
-        srcs={avatars?.keys().map((a) => [avatars(a), a])}
+        srcs={avatarList.map((a) => [a.uri, a.seed])}
         size="small"
         selectable
         highlightItem={current}
