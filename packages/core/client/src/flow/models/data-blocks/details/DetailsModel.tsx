@@ -15,6 +15,9 @@ import {
   buildActionItems,
   escapeT,
   AddActionButton,
+  DndProvider,
+  Droppable,
+  DragHandler,
 } from '@nocobase/flow-engine';
 import { tval } from '@nocobase/utils/client';
 import { Pagination, Space } from 'antd';
@@ -52,37 +55,48 @@ export class DetailsModel extends DataBlockModel<{
     };
     return (
       <>
-        <div style={{ padding: this.context.themeToken.padding, textAlign: 'right' }}>
-          <Space>
-            {this.mapSubModels('actions', (action) => {
-              const data = this.resource.getData();
-              const currentRecord = Array.isArray(data) ? data[0] : data;
-
-              return (
-                <FlowModelRenderer
-                  key={action.uid}
-                  model={action}
-                  showFlowSettings={{ showBackground: false, showBorder: false }}
-                  sharedContext={{ currentRecord: currentRecord }}
-                />
-              );
-            })}
-
-            <AddActionButton
-              model={this}
-              items={buildActionItems(this, 'RecordActionModel')}
-              onModelCreated={async (actionModel) => {
+        <DndProvider>
+          <div style={{ padding: this.context.themeToken.padding, textAlign: 'right' }}>
+            <Space>
+              {this.mapSubModels('actions', (action) => {
                 const data = this.resource.getData();
                 const currentRecord = Array.isArray(data) ? data[0] : data;
-                actionModel.setSharedContext({
-                  currentRecord,
-                });
-                actionModel.setStepParams('buttonSettings', 'buttonProps', { type: 'default' });
-                await actionModel.applyFlow('buttonSettings');
-              }}
-            />
-          </Space>
-        </div>
+
+                return (
+                  <Droppable model={action} key={action.uid}>
+                    <FlowModelRenderer
+                      key={action.uid}
+                      model={action}
+                      showFlowSettings={{ showBackground: false, showBorder: false }}
+                      sharedContext={{ currentRecord: currentRecord }}
+                      extraToolbarItems={[
+                        {
+                          key: 'drag-handler',
+                          component: DragHandler,
+                          sort: 1,
+                        },
+                      ]}
+                    />
+                  </Droppable>
+                );
+              })}
+
+              <AddActionButton
+                model={this}
+                items={buildActionItems(this, 'RecordActionModel')}
+                onModelCreated={async (actionModel) => {
+                  const data = this.resource.getData();
+                  const currentRecord = Array.isArray(data) ? data[0] : data;
+                  actionModel.setSharedContext({
+                    currentRecord,
+                  });
+                  actionModel.setStepParams('buttonSettings', 'buttonProps', { type: 'default' });
+                  await actionModel.applyFlow('buttonSettings');
+                }}
+              />
+            </Space>
+          </div>
+        </DndProvider>
 
         <FormLayout layout={'vertical'}>
           <FlowModelRenderer model={this.subModels.grid} showFlowSettings={false} />
