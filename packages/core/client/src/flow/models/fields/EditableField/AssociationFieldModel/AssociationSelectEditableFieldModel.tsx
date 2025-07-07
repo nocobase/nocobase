@@ -7,11 +7,11 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 import { connect, mapProps, mapReadPretty } from '@formily/react';
-import { Select } from 'antd';
-import React from 'react';
-import { castArray } from 'lodash';
-import { useFlowModel, FlowModel, MultiRecordResource } from '@nocobase/flow-engine';
+import { escapeT, FlowModel, MultiRecordResource, useFlowModel } from '@nocobase/flow-engine';
 import { tval } from '@nocobase/utils/client';
+import { Select } from 'antd';
+import { castArray } from 'lodash';
+import React from 'react';
 import { AssociationFieldEditableFieldModel } from './AssociationFieldEditableFieldModel';
 
 function toValue(record: any | any[], fieldNames, multiple = false) {
@@ -162,7 +162,7 @@ const paginationState = {
 
 // 事件绑定
 AssociationSelectEditableFieldModel.registerFlow({
-  key: 'associationSelectInit',
+  key: 'eventSettings',
   auto: true,
   sort: 300,
   steps: {
@@ -203,12 +203,10 @@ AssociationSelectEditableFieldModel.registerFlow({
 
 //点击打开下拉时加载数据
 AssociationSelectEditableFieldModel.registerFlow({
-  key: 'event1',
-  on: {
-    eventName: 'dropdownOpen',
-  },
+  key: 'dropdownOpenSettings',
+  on: 'dropdownOpen',
   steps: {
-    step1: {
+    setScope: {
       async handler(ctx, params) {
         const labelFieldValue = ctx.model.field.componentProps.fieldNames.value;
         const resource = ctx.model.resource;
@@ -235,10 +233,8 @@ AssociationSelectEditableFieldModel.registerFlow({
 
 //鼠标滚动后分页加载数据
 AssociationSelectEditableFieldModel.registerFlow({
-  key: 'event2',
-  on: {
-    eventName: 'popupScroll',
-  },
+  key: 'popupScrollSettings',
+  on: 'popupScroll',
   steps: {
     step1: {
       async handler(ctx, params) {
@@ -277,10 +273,8 @@ AssociationSelectEditableFieldModel.registerFlow({
 });
 // 模糊搜索
 AssociationSelectEditableFieldModel.registerFlow({
-  key: 'event3',
-  on: {
-    eventName: 'search',
-  },
+  key: 'searchSettings',
+  on: 'search',
   steps: {
     step1: {
       async handler(ctx, params) {
@@ -327,12 +321,12 @@ AssociationSelectEditableFieldModel.registerFlow({
 
 //专有配置项
 AssociationSelectEditableFieldModel.registerFlow({
-  key: 'associationSelectSpecific',
-  title: tval('Specific properties'),
+  key: 'associationFieldSettings',
+  title: escapeT('Association field settings'),
   auto: true,
   sort: 200,
   steps: {
-    default: {
+    init: {
       handler(ctx) {
         const resource = new MultiRecordResource();
         const { target, dataSourceKey } = ctx.model.collectionField;

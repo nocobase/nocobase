@@ -37,8 +37,8 @@ export class FormModel extends DataBlockModel {
       ({ defaultOptions, fieldPath }) => ({
         use: defaultOptions.use,
         stepParams: {
-          default: {
-            step1: {
+          fieldSettings: {
+            init: {
               dataSourceKey: this.collection.dataSourceKey,
               collectionName: this.collection.name,
               fieldPath,
@@ -87,33 +87,13 @@ export class FormModel extends DataBlockModel {
 }
 
 FormModel.registerFlow({
-  key: 'default',
+  key: 'resourceSettings2',
   auto: true,
-  title: tval('Form settings'),
+  title: tval('Resource settings'),
   steps: {
-    step1: {
+    init: {
       paramsRequired: true,
       hideInSettings: true,
-      uiSchema: {
-        dataSourceKey: {
-          type: 'string',
-          title: tval('Data Source Key'),
-          'x-decorator': 'FormItem',
-          'x-component': 'Input',
-          'x-component-props': {
-            placeholder: tval('Enter data source key'),
-          },
-        },
-        collectionName: {
-          type: 'string',
-          title: tval('Collection Name'),
-          'x-decorator': 'FormItem',
-          'x-component': 'Input',
-          'x-component-props': {
-            placeholder: tval('Enter collection name'),
-          },
-        },
-      },
       defaultParams: {
         dataSourceKey: 'main',
       },
@@ -148,6 +128,18 @@ FormModel.registerFlow({
           ctx.model.resource.setFilterByTk(filterByTk);
           await ctx.model.resource.refresh();
         }
+      },
+    },
+  },
+});
+
+FormModel.registerFlow({
+  key: 'formSettings',
+  auto: true,
+  title: tval('Form settings'),
+  steps: {
+    init: {
+      async handler(ctx, params) {
         await ctx.model.applySubModelsAutoFlows('fields');
       },
     },

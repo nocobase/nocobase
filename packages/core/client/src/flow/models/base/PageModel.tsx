@@ -81,7 +81,7 @@ export class PageModel extends FlowModel<PageModelStructure> {
 }
 
 PageModel.registerFlow({
-  key: 'defaultPropsFlow',
+  key: 'pageSettings',
   title: escapeT('Page settings'),
   auto: true,
   steps: {

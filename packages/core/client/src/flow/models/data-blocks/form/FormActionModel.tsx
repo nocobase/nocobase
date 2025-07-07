@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { tval } from '@nocobase/utils/client';
+import { escapeT } from '@nocobase/flow-engine';
 import { ButtonProps } from 'antd';
 import { ActionModel } from '../../base/ActionModel';
 import { DataBlockModel } from '../../base/BlockModel';
@@ -17,21 +17,19 @@ export class FormActionModel extends ActionModel {}
 
 export class FormSubmitActionModel extends FormActionModel {
   defaultProps: ButtonProps = {
-    title: tval('Submit'),
+    title: escapeT('Submit'),
     type: 'primary',
     htmlType: 'submit',
   };
 }
 
 FormSubmitActionModel.define({
-  title: tval('Submit'),
+  title: escapeT('Submit'),
 });
 
 FormSubmitActionModel.registerFlow({
-  key: 'event1',
-  on: {
-    eventName: 'click',
-  },
+  key: 'submitSettings',
+  on: 'click',
   steps: {
     step1: {
       async handler(ctx, params) {

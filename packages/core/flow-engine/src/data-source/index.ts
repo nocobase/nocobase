@@ -518,7 +518,12 @@ export class CollectionField {
 
   getFirstSubclassNameOf(baseClass: string) {
     const subclasses = this.getSubclassesOf(baseClass);
-    return subclasses.keys().next().value;
+    for (const [name, M] of subclasses) {
+      if (M['supportedFieldInterfaces'] !== '*') {
+        return name;
+      }
+    }
+    return undefined;
   }
 
   /**

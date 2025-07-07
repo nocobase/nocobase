@@ -46,12 +46,12 @@ const UnitConversion = () => {
   );
 };
 NumberReadPrettyFieldModel.registerFlow({
-  key: 'numberFormat',
+  key: 'numberSettings',
   sort: 100,
   title: 'Number settings',
   auto: true,
   steps: {
-    step1: {
+    format: {
       title: 'Format',
       uiSchema: {
         formatStyle: {

@@ -106,7 +106,7 @@ export class EditableFieldModel extends FieldModel<Structure> {
 }
 
 EditableFieldModel.registerFlow({
-  key: 'init',
+  key: 'formItemSettings',
   auto: true,
   title: tval('Form item settings'),
   sort: 150,

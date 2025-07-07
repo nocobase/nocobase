@@ -8,12 +8,12 @@
  */
 
 import { defineAction, useStepSettingContext } from '@nocobase/flow-engine';
+import { tval } from '@nocobase/utils/client';
 import { Select } from 'antd';
 import React from 'react';
-import { tval } from '@nocobase/utils/client';
-import { useCompile } from '../../schema-component';
 import { getUniqueKeyFromCollection } from '../../collection-manager/interfaces/utils';
 import { isTitleField } from '../../data-source';
+import { useCompile } from '../../schema-component';
 
 const SelectOptions = (props) => {
   const {
@@ -67,8 +67,8 @@ export const titleField = defineAction({
     const model = ctx.model.setSubModel('field', {
       use,
       stepParams: {
-        default: {
-          step1: {
+        fieldSettings: {
+          init: {
             dataSourceKey: ctx.model.collectionField.dataSourceKey,
             collectionName: target,
             fieldPath: newFieldNames.label,

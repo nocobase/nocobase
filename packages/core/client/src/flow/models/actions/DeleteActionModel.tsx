@@ -7,28 +7,26 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { MultiRecordResource } from '@nocobase/flow-engine';
-import type { ButtonProps } from 'antd/es/button';
+import { escapeT, MultiRecordResource } from '@nocobase/flow-engine';
 import { tval } from '@nocobase/utils/client';
+import type { ButtonProps } from 'antd/es/button';
 import { RecordActionModel } from '../base/ActionModel';
 
 export class DeleteActionModel extends RecordActionModel {
   defaultProps: ButtonProps = {
     type: 'link',
-    title: tval('Delete'),
+    title: escapeT('Delete'),
   };
 }
 
 DeleteActionModel.define({
-  title: tval('Delete'),
+  title: escapeT('Delete'),
 });
 
 DeleteActionModel.registerFlow({
-  key: 'handleClick',
-  title: tval('Click event'),
-  on: {
-    eventName: 'click',
-  },
+  key: 'deleteSettings',
+  title: escapeT('Delete settings'),
+  on: 'click',
   steps: {
     confirm: {
       use: 'confirm',

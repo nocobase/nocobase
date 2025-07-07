@@ -24,7 +24,7 @@ export class RichTextReadPrettyFieldModel extends ReadPrettyFieldModel {
 }
 
 RichTextReadPrettyFieldModel.registerFlow({
-  key: 'displayMode',
+  key: 'richTextSettings',
   title: tval('Rich text settings'),
   auto: true,
   sort: 200,

@@ -7,46 +7,42 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { MultiRecordResource } from '@nocobase/flow-engine';
+import { escapeT, MultiRecordResource } from '@nocobase/flow-engine';
 import { ButtonProps } from 'antd';
-import { tval } from '@nocobase/utils/client';
 import { GlobalActionModel } from '../base/ActionModel';
 
 export class BulkDeleteActionModel extends GlobalActionModel {
   defaultProps: ButtonProps = {
-    title: tval('Delete'),
+    title: escapeT('Delete'),
     icon: 'DeleteOutlined',
   };
 }
 
 BulkDeleteActionModel.define({
-  title: tval('Delete'),
+  title: escapeT('Delete'),
 });
 
 BulkDeleteActionModel.registerFlow({
-  key: 'handleClick',
-  title: tval('Click event'),
-  on: {
-    eventName: 'click',
-  },
+  key: 'deleteSettings',
+  title: escapeT('Delete settings'),
+  on: 'click',
   steps: {
     confirm: {
       use: 'confirm',
     },
     delete: {
       async handler(ctx, params) {
-        const t = ctx.model.translate;
         if (!ctx.shared?.currentBlockModel?.resource) {
-          ctx.globals.message.error(t('No resource selected for deletion'));
+          ctx.message.error(ctx.t('No resource selected for deletion'));
           return;
         }
         const resource = ctx.shared.currentBlockModel.resource as MultiRecordResource;
         if (resource.getSelectedRows().length === 0) {
-          ctx.globals.message.warning(t('No records selected for deletion'));
+          ctx.message.warning(ctx.t('No records selected for deletion'));
           return;
         }
         await resource.destroySelectedRows();
-        ctx.globals.message.success(t('Selected records deleted successfully'));
+        ctx.message.success(ctx.t('Selected records deleted successfully'));
       },
     },
   },

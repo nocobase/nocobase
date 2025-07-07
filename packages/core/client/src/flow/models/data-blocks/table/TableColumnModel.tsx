@@ -46,6 +46,12 @@ export class TableColumnModel extends FieldModel {
         </FlowsFloatContextMenu>
       </Droppable>
     );
+    console.log(
+      'TableColumnModel getColumnProps',
+      this.props.dataIndex,
+      this.props.editable,
+      this.parent.props.editable,
+    );
     return {
       ...this.props,
       ellipsis: true,
@@ -96,28 +102,14 @@ TableColumnModel.define({
 });
 
 TableColumnModel.registerFlow({
-  key: 'default',
+  key: 'tableColumnSettings',
   auto: true,
+  sort: 500,
   title: escapeT('Table column settings'),
   steps: {
-    step1: {
+    init: {
       async handler(ctx, params) {
-        if (!params.dataSourceKey || !params.collectionName || !params.fieldPath) {
-          throw new Error('dataSourceKey, collectionName and fieldPath are required parameters');
-        }
-        if (!ctx.shared.currentBlockModel) {
-          throw new Error('Current block model is not set in shared context');
-        }
-        if (ctx.model.collectionField) {
-          return;
-        }
-        const { dataSourceKey, collectionName, fieldPath } = params;
-        const field = ctx.dataSourceManager.getCollectionField(`${dataSourceKey}.${collectionName}.${fieldPath}`);
-        if (!field) {
-          throw new Error(`Collection field not found: ${dataSourceKey}.${collectionName}.${fieldPath}`);
-        }
-        ctx.model.collectionField = field;
-        ctx.model.fieldPath = params.fieldPath;
+        const field = ctx.model.collectionField;
         ctx.model.setProps('title', field.title);
         ctx.model.setProps('dataIndex', field.name);
         await ctx.model.applySubModelsAutoFlows('field');
@@ -184,11 +176,13 @@ TableColumnModel.registerFlow({
         },
       },
       defaultParams(ctx) {
+        console.log('enableEditable11 params:', ctx.model.parent.props.editable || false);
         return {
           editable: ctx.model.parent.props.editable || false,
         };
       },
       handler(ctx, params) {
+        console.log('enableEditable1 params:', params);
         ctx.model.setProps('editable', params.editable);
       },
     },
@@ -198,7 +192,7 @@ TableColumnModel.registerFlow({
 export class TableCustomColumnModel extends FlowModel {}
 
 TableCustomColumnModel.registerFlow({
-  key: 'default',
+  key: 'tableColumnSettings',
   auto: true,
   title: escapeT('Table column settings'),
   steps: {

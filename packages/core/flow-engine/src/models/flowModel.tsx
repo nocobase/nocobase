@@ -546,7 +546,16 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     const allFlows = constructor.getFlows();
 
     allFlows.forEach((flow) => {
-      if (flow.on && flow.on.eventName === eventName) {
+      if (flow.on) {
+        let flowEvent = '';
+        if (typeof flow.on === 'string') {
+          flowEvent = flow.on;
+        } else if (flow.on?.eventName) {
+          flowEvent = flow.on.eventName;
+        }
+        if (flowEvent !== eventName) {
+          return; // 只处理匹配的事件
+        }
         console.log(`BaseModel '${this.uid}' dispatching event '${eventName}' to flow '${flow.key}'.`);
         this.applyFlow(flow.key, runtimeArgs).catch((error) => {
           console.error(

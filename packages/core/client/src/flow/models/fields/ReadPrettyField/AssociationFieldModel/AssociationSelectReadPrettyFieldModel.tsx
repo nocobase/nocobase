@@ -7,13 +7,11 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { FlowModel, reactive } from '@nocobase/flow-engine';
-import { tval } from '@nocobase/utils/client';
+import { escapeT, FlowModel, reactive } from '@nocobase/flow-engine';
 import { Button } from 'antd';
 import { castArray } from 'lodash';
 import React from 'react';
 import { getUniqueKeyFromCollection } from '../../../../../collection-manager/interfaces/utils';
-import { FlowPage } from '../../../../FlowPage';
 import { AssociationReadPrettyFieldModel } from './AssociationReadPrettyFieldModel';
 
 const LinkToggleWrapper = ({ enableLink, children, currentRecord, parentRecord, ...props }) => {
@@ -90,14 +88,14 @@ export class AssociationSelectReadPrettyFieldModel extends AssociationReadPretty
 }
 
 AssociationSelectReadPrettyFieldModel.registerFlow({
-  key: 'fieldNames',
-  title: tval('Association field settings'),
+  key: 'associationFieldSettings',
+  title: escapeT('Association field settings'),
   auto: true,
   sort: 200,
   steps: {
     fieldNames: {
       use: 'titleField',
-      title: tval('Title field'),
+      title: escapeT('Title field'),
       async handler(ctx, params) {
         const { target } = ctx.model.collectionField;
         const collectionManager = ctx.model.collectionField.collection.collectionManager;
@@ -114,8 +112,8 @@ AssociationSelectReadPrettyFieldModel.registerFlow({
         const model = ctx.model.setSubModel('field', {
           use,
           stepParams: {
-            default: {
-              step1: {
+            fieldSettings: {
+              init: {
                 dataSourceKey: ctx.model.collectionField.dataSourceKey,
                 collectionName: target,
                 fieldPath: newFieldNames.label,
@@ -157,11 +155,9 @@ AssociationSelectReadPrettyFieldModel.registerFlow({
 });
 
 AssociationSelectReadPrettyFieldModel.registerFlow({
-  key: 'handleClick',
-  title: tval('Popup settings'),
-  on: {
-    eventName: 'click',
-  },
+  key: 'popupSettings',
+  title: escapeT('Popup settings'),
+  on: 'click',
   steps: {
     openView: {
       use: 'openView',

@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { CollectionField, DefaultStructure, FlowModel } from '@nocobase/flow-engine';
+import { CollectionField, DefaultStructure, escapeT, FlowModel } from '@nocobase/flow-engine';
 
 // null 表示不支持任何字段接口，* 表示支持所有字段接口
 export type SupportedFieldInterfaces = string[] | '*' | null;
@@ -19,11 +19,11 @@ export class FieldModel<T = DefaultStructure> extends FlowModel<T> {
 }
 
 FieldModel.registerFlow({
-  key: 'default',
+  key: 'fieldSettings',
   auto: true,
-  title: 'Basic',
+  title: escapeT('Field settings'),
   steps: {
-    step1: {
+    init: {
       handler(ctx, params) {
         if (!ctx.shared.currentBlockModel) {
           throw new Error('Current block model is not set in shared context');

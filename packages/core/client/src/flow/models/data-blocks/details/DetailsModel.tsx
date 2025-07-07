@@ -7,28 +7,21 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { EditOutlined } from '@ant-design/icons';
-import { css } from '@emotion/css';
-import { observer } from '@formily/reactive-react';
-import { Observer } from '@formily/reactive-react';
-import { castArray } from 'lodash';
+import { FormLayout } from '@formily/antd-v5';
 import {
-  MultiRecordResource,
-  AddActionButton,
   AddFieldButton,
   FlowModelRenderer,
+  MultiRecordResource,
   SingleRecordResource,
-  buildFieldItems,
   buildActionItems,
+  buildFieldItems,
 } from '@nocobase/flow-engine';
 import { tval } from '@nocobase/utils/client';
-import { FormButtonGroup, FormLayout } from '@formily/antd-v5';
 import { Pagination, theme } from 'antd';
 import _ from 'lodash';
 import React from 'react';
 import { DataBlockModel } from '../../base/BlockModel';
 import { DetailItemModel } from './DetailItemModel';
-
 const AddDetailField = ({ model }) => {
   const items = buildFieldItems(
     model.collection.getFields(),
@@ -38,8 +31,8 @@ const AddDetailField = ({ model }) => {
     ({ defaultOptions, fieldPath }) => ({
       use: 'DetailItemModel',
       stepParams: {
-        default: {
-          step1: {
+        fieldSettings: {
+          init: {
             dataSourceKey: model.collection.dataSourceKey,
             collectionName: model.collection.name,
             fieldPath,
@@ -50,8 +43,8 @@ const AddDetailField = ({ model }) => {
         field: {
           use: defaultOptions.use,
           stepParams: {
-            default: {
-              step1: {
+            fieldSettings: {
+              init: {
                 dataSourceKey: model.collection.dataSourceKey,
                 collectionName: model.collection.name,
                 fieldPath,
@@ -135,7 +128,7 @@ export class DetailsModel extends DataBlockModel {
 }
 
 DetailsModel.registerFlow({
-  key: 'default',
+  key: 'detailsSettings',
   auto: true,
   sort: 150,
   steps: {

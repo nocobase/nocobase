@@ -37,7 +37,7 @@ export class ActionModel extends FlowModel {
 }
 
 ActionModel.registerFlow({
-  key: 'defaultPropsFlow',
+  key: 'buttonSettings',
   title: escapeT('Button settings'),
   auto: true,
   steps: {
@@ -95,7 +95,7 @@ export class RecordActionModel extends ActionModel {
 }
 
 RecordActionModel.registerFlow({
-  key: 'recordActionPropsFlow',
+  key: 'recordActionSettings',
   auto: true,
   steps: {
     buttonProps: {

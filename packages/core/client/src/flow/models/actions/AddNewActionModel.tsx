@@ -24,12 +24,10 @@ AddNewActionModel.define({
 });
 
 AddNewActionModel.registerFlow({
-  key: 'clickOpenView',
+  key: 'popupSettings',
   sort: 200,
   title: escapeT('Popup settings'),
-  on: {
-    eventName: 'click',
-  },
+  on: 'click',
   steps: {
     popup: {
       use: 'openView',

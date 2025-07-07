@@ -7,9 +7,6 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { tval } from '@nocobase/utils/client';
-import { ButtonProps } from 'antd';
 import { ActionModel } from '../../base/ActionModel';
-import { DataBlockModel } from '../../base/BlockModel';
 
 export class DetailActionModel extends ActionModel {}

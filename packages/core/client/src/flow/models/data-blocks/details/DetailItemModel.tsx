@@ -48,7 +48,7 @@ DetailItemModel.define({
 });
 
 DetailItemModel.registerFlow({
-  key: 'detailFieldDefault',
+  key: 'detailItemSettings',
   auto: true,
   sort: 300,
   title: escapeT('Detail item settings'),

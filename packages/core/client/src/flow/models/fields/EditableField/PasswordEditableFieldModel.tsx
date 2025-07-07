@@ -19,10 +19,10 @@ export class PasswordEditableFieldModel extends EditableFieldModel {
 }
 
 PasswordEditableFieldModel.registerFlow({
-  key: 'key3',
+  key: 'passwordSettings',
   auto: true,
   sort: 1000,
-  title: tval('Password Options'),
+  title: tval('Password settings'),
   steps: {
     placeholder: {
       title: tval('Placeholder'),
