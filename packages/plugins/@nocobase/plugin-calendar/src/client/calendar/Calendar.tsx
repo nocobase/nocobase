@@ -273,7 +273,7 @@ export const Calendar: any = withDynamicSchemaProps(
           format,
           parse,
           startOfWeek: (date) => {
-            return startOfWeek(date, { locale: { options: { weekStartsOn: props.weekStart } } });
+            return startOfWeek(date, { locale: { options: { weekStartsOn: props.weekStart || '1' } } });
           },
           getDay,
           locales: { 'en-US': enUS },
