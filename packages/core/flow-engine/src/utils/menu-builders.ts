@@ -423,8 +423,15 @@ async function processDataBlockChildren(
         children: nestedChildren,
       });
     } else {
+      // 对于关联记录，只显示与当前collection相同数据源的数据
+      let filteredDataSources = dataSources;
+      if (child.key === MENU_KEYS.ASSOCIATION_RECORDS && child.collections && child.collections.length > 0) {
+        const currentDataSource = child.collections[0].dataSource;
+        filteredDataSources = dataSources.filter((ds) => ds.key === currentDataSource.key);
+      }
+
       const menuItems = await Promise.all(
-        dataSources.map(async (dataSource) => ({
+        filteredDataSources.map(async (dataSource) => ({
           key: `${childKey}.${dataSource.key}`,
           label: dataSource.displayName,
           children: await Promise.all(
@@ -460,9 +467,9 @@ async function processDataBlockChildren(
         })),
       );
 
-      // 如果只有一个集合，扁平化结构
+      // 对于关联记录，即使只有一个选项也不要隐藏collection选择
       const totalCollections = menuItems.reduce((sum, item) => sum + item.children.length, 0);
-      if (totalCollections === 1) {
+      if (totalCollections === 1 && child.key !== MENU_KEYS.ASSOCIATION_RECORDS) {
         const singleItem = menuItems[0].children[0];
         result.push({
           key: childKey,
@@ -471,12 +478,22 @@ async function processDataBlockChildren(
           createModelOptions: singleItem.createModelOptions,
         });
       } else if (totalCollections > 0) {
-        result.push({
-          key: childKey,
-          label: child.title,
-          icon: child.icon,
-          children: menuItems,
-        });
+        // 如果只有一个数据源，直接显示collections，隐藏数据源层
+        if (menuItems.length === 1) {
+          result.push({
+            key: childKey,
+            label: child.title,
+            icon: child.icon,
+            children: menuItems[0].children,
+          });
+        } else {
+          result.push({
+            key: childKey,
+            label: child.title,
+            icon: child.icon,
+            children: menuItems,
+          });
+        }
       }
     }
   }
@@ -704,30 +721,35 @@ async function buildDataSourceBlockItems(
 
       // 简单区块处理
       const defaultOptions = await resolveDefaultOptions(meta?.defaultOptions, model);
+      const dataSourceMenuItems = dataSources.map((dataSource) => ({
+        key: `${className}.${dataSource.key}`,
+        label: dataSource.displayName,
+        children: dataSource.collections.map((collection) => ({
+          key: `${className}.${dataSource.key}.${collection.name}`,
+          label: collection.title || collection.name,
+          createModelOptions: {
+            ..._.cloneDeep(defaultOptions),
+            use: className,
+            stepParams: {
+              ..._.cloneDeep(defaultOptions?.stepParams),
+              ...createDataSourceStepParams(
+                dataSource.key,
+                collection.name,
+                defaultOptions?.stepParams?.resourceSettings?.init,
+              ),
+            },
+          },
+        })),
+      }));
+
+      // 如果只有一个数据源，直接显示collections，隐藏数据源层
+      const children = dataSourceMenuItems.length === 1 ? dataSourceMenuItems[0].children : dataSourceMenuItems;
+
       return {
         key: className,
         label: meta?.title || className,
         icon: meta?.icon,
-        children: dataSources.map((dataSource) => ({
-          key: `${className}.${dataSource.key}`,
-          label: dataSource.displayName,
-          children: dataSource.collections.map((collection) => ({
-            key: `${className}.${dataSource.key}.${collection.name}`,
-            label: collection.title || collection.name,
-            createModelOptions: {
-              ..._.cloneDeep(defaultOptions),
-              use: className,
-              stepParams: {
-                ..._.cloneDeep(defaultOptions?.stepParams),
-                ...createDataSourceStepParams(
-                  dataSource.key,
-                  collection.name,
-                  defaultOptions?.stepParams?.resourceSettings?.init,
-                ),
-              },
-            },
-          })),
-        })),
+        children,
       };
     }),
   );
