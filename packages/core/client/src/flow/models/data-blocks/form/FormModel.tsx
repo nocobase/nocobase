@@ -28,6 +28,10 @@ export class FormModel extends DataBlockModel {
   form: Form;
   declare resource: SingleRecordResource;
 
+  createResource(ctx, params) {
+    return new SingleRecordResource();
+  }
+
   renderComponent() {
     const fieldItems = buildFieldItems(
       this.collection.getFields(),
@@ -91,41 +95,23 @@ FormModel.registerFlow({
   auto: true,
   title: tval('Resource settings'),
   steps: {
-    init: {
-      paramsRequired: true,
-      hideInSettings: true,
-      defaultParams: {
-        dataSourceKey: 'main',
-      },
+    initForm: {
       async handler(ctx, params) {
-        ctx.model.form = ctx.model.form || createForm();
-        const {
-          dataSourceKey = params.dataSourceKey, // 兼容一下旧的数据, TODO: remove
-          collectionName = params.collectionName, // 兼容一下旧的数据, TODO: remove
-          associationName,
-          sourceId,
-          filterByTk,
-        } = ctx.model.props.dataSourceOptions || {};
-        if (!ctx.model.collection) {
-          ctx.model.collection = ctx.globals.dataSourceManager.getCollection(
-            dataSourceKey,
-            associationName ? associationName.split('.').slice(-1)[0] : collectionName,
-          );
+        if (ctx.model.form) {
+          return;
         }
-
+        ctx.model.form = createForm();
+        ctx.model.resource.on('refresh', () => {
+          ctx.model.form.setValues(ctx.model.resource.getData());
+        });
+      },
+    },
+    refresh: {
+      async handler(ctx, params) {
         if (!ctx.model.resource) {
-          ctx.model.resource = new SingleRecordResource();
-          ctx.model.resource.on('refresh', () => {
-            ctx.model.form.setValues(ctx.model.resource.getData());
-          });
+          throw new Error('Resource is not initialized');
         }
-
-        ctx.model.resource.setDataSourceKey(dataSourceKey);
-        ctx.model.resource.setResourceName(associationName || collectionName);
-        ctx.model.resource.setSourceId(sourceId);
-        ctx.model.resource.setAPIClient(ctx.globals.api);
-        if (filterByTk) {
-          ctx.model.resource.setFilterByTk(filterByTk);
+        if (ctx.model.resource.getFilterByTk()) {
           await ctx.model.resource.refresh();
         }
       },

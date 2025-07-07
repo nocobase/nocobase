@@ -15,6 +15,7 @@ import {
   SingleRecordResource,
   buildActionItems,
   buildFieldItems,
+  escapeT,
 } from '@nocobase/flow-engine';
 import { tval } from '@nocobase/utils/client';
 import { Pagination, theme } from 'antd';
@@ -76,10 +77,18 @@ const AddDetailField = ({ model }) => {
 export class DetailsModel extends DataBlockModel {
   declare resource: MultiRecordResource | SingleRecordResource;
 
+  createResource(ctx, params) {
+    if (Object.keys(params).includes('filterByTk')) {
+      return new SingleRecordResource();
+    }
+    const resource = new MultiRecordResource();
+    resource.setPageSize(1);
+    return resource;
+  }
+
   renderComponent() {
-    const { token } = theme.useToken();
-    const { filterByTk } = this.props.dataSourceOptions;
-    const resource: any = this.resource;
+    const filterByTk = this.resource.getFilterByTk();
+    const resource = this.resource as MultiRecordResource;
     const onPageChange = (page) => {
       resource.setPage(page);
       resource.refresh();
@@ -105,10 +114,10 @@ export class DetailsModel extends DataBlockModel {
           })}
         </FormLayout>
         <AddDetailField model={this} />
-        {!filterByTk && (
+        {this.resource.hasData() && (
           <div
             style={{
-              padding: token.padding,
+              padding: this.context.themeToken.padding,
               textAlign: 'center',
             }}
           >
@@ -129,66 +138,21 @@ export class DetailsModel extends DataBlockModel {
 
 DetailsModel.registerFlow({
   key: 'detailsSettings',
+  title: escapeT('Details settings'),
   auto: true,
   sort: 150,
   steps: {
-    step1: {
-      paramsRequired: true,
-      hideInSettings: true,
-      uiSchema: {
-        dataSourceKey: {
-          type: 'string',
-          title: tval('Data Source Key'),
-          'x-decorator': 'FormItem',
-          'x-component': 'Input',
-          'x-component-props': {
-            placeholder: tval('Enter data source key'),
-          },
-        },
-        collectionName: {
-          type: 'string',
-          title: tval('Collection Name'),
-          'x-decorator': 'FormItem',
-          'x-component': 'Input',
-          'x-component-props': {
-            placeholder: tval('Enter collection name'),
-          },
-        },
-      },
-      defaultParams: {
-        dataSourceKey: 'main',
-      },
-      async handler(ctx, params) {
-        const {
-          dataSourceKey = params.dataSourceKey, // 兼容一下旧的数据, TODO: remove
-          collectionName = params.collectionName, // 兼容一下旧的数据, TODO: remove
-          associationName,
-          sourceId,
-          filterByTk,
-        } = ctx.model.props.dataSourceOptions || {};
-        if (!ctx.model.collection) {
-          ctx.model.collection = ctx.globals.dataSourceManager.getCollection(
-            dataSourceKey || params.dataSourceKey,
-            associationName ? associationName.split('.').slice(-1)[0] : collectionName,
-          );
-        }
-        if (!ctx.model.resource) {
-          ctx.model.resource = filterByTk ? new SingleRecordResource() : new MultiRecordResource();
-        }
-        if (ctx.model.resource instanceof MultiRecordResource) {
-          ctx.model.resource.setPageSize(1);
-        }
-        ctx.model.resource.setDataSourceKey(dataSourceKey);
-        ctx.model.resource.setResourceName(associationName || collectionName);
-        ctx.model.resource.setSourceId(sourceId);
-        ctx.model.resource.setAPIClient(ctx.globals.api);
-        ctx.model.resource.setFilterByTk(filterByTk);
-        await ctx.model.applySubModelsAutoFlows('detailItem');
-      },
+    dataLoadingMode: {
+      use: 'dataLoadingMode',
     },
     refresh: {
       async handler(ctx, params) {
-        await ctx.model.resource.refresh();
+        const { dataLoadingMode } = ctx.model.props;
+        if (dataLoadingMode === 'auto') {
+          await ctx.model.resource.refresh();
+        } else {
+          ctx.model.resource.loading = false;
+        }
       },
     },
   },

@@ -23,6 +23,16 @@ export class FlowResource<TData = any> {
     return this._data.value;
   }
 
+  hasData(): boolean {
+    const data = this.getData();
+    if (Array.isArray(data)) {
+      return data.length > 0;
+    } else if (data && typeof data === 'object') {
+      return Object.keys(data).length > 0;
+    }
+    return false;
+  }
+
   getListDataWithRowKey(): TDataItemWithKey[] {
     const data = this.getData();
     if (!Array.isArray(data)) return [];

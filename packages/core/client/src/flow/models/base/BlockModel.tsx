@@ -16,6 +16,8 @@ import {
   DefaultStructure,
   escapeT,
   FlowModel,
+  MultiRecordResource,
+  SingleRecordResource,
 } from '@nocobase/flow-engine';
 import { tval } from '@nocobase/utils/client';
 import React from 'react';
@@ -124,7 +126,7 @@ BlockModel.registerFlow({
 BlockModel.define({ hide: true });
 
 export class DataBlockModel<T = DefaultStructure> extends BlockModel<T> {
-  resource: APIResource;
+  resource: BaseRecordResource;
   collection: Collection;
 
   onInit(options) {
@@ -133,12 +135,17 @@ export class DataBlockModel<T = DefaultStructure> extends BlockModel<T> {
     });
   }
 
+  createResource(ctx, params): SingleRecordResource | MultiRecordResource {
+    throw new Error('createResource method must be implemented in subclasses of DataBlockModel');
+    return new MultiRecordResource();
+  }
+
   get title() {
     return this.translate(this._title) || this.defaultBlockTitle();
   }
 
   protected defaultBlockTitle() {
-    let collectionTitle = this.collection.title;
+    let collectionTitle = this.collection?.title;
     if (this.resource instanceof BaseRecordResource && this.resource.getSourceId()) {
       const resourceName = this.resource.getResourceName();
       const collectionNames = resourceName.split('.');
@@ -172,14 +179,28 @@ DataBlockModel.registerFlow({
   steps: {
     init: {
       handler(ctx, params) {
+        if (!params.dataSourceKey) {
+          throw new Error('dataSourceKey is required');
+        }
+        if (!params.collectionName) {
+          throw new Error('collectionName is required');
+        }
+        if (!ctx.model.resource) {
+          ctx.model.resource = ctx.model.createResource(ctx, params);
+          ctx.model.resource.setAPIClient(ctx.api);
+          ctx.model.resource.setDataSourceKey(params.dataSourceKey);
+          ctx.model.resource.setResourceName(params.associationName || params.collectionName);
+        }
+        if (Object.keys(params).includes('sourceId')) {
+          ctx.model.resource.setSourceId(Schema.compile(params.sourceId, { ctx }));
+        }
+        if (Object.keys(params).includes('filterByTk')) {
+          ctx.model.resource.setFilterByTk(Schema.compile(params.filterByTk, { ctx }));
+        }
+        if (!ctx.model.collection) {
+          ctx.model.collection = ctx.dataSourceManager.getCollection(params.dataSourceKey, params.collectionName);
+        }
         ctx.logger.info('params', params);
-        ctx.model.setProps('dataSourceOptions', {
-          dataSourceKey: params.dataSourceKey,
-          collectionName: params.collectionName,
-          associationName: params.associationName,
-          sourceId: Schema.compile(params.sourceId, { ctx }),
-          filterByTk: Schema.compile(params.filterByTk, { ctx }),
-        });
       },
     },
   },

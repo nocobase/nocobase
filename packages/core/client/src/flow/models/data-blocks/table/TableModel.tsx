@@ -25,6 +25,7 @@ import {
   MultiRecordResource,
   useFlowEngine,
 } from '@nocobase/flow-engine';
+import { Resource } from '@nocobase/resourcer';
 import { tval } from '@nocobase/utils/client';
 import { Space, Spin, Table } from 'antd';
 import classNames from 'classnames';
@@ -161,6 +162,10 @@ const AddFieldColumn = ({ model }) => {
 
 export class TableModel extends DataBlockModel<TableModelStructure> {
   declare resource: MultiRecordResource;
+
+  createResource(ctx, params) {
+    return new MultiRecordResource();
+  }
 
   getColumns() {
     return this.mapSubModels('columns', (column) => {
@@ -418,53 +423,6 @@ TableModel.registerFlow({
   sort: 500,
   title: escapeT('Table settings'),
   steps: {
-    init: {
-      paramsRequired: true,
-      hideInSettings: true,
-      uiSchema: {
-        dataSourceKey: {
-          type: 'string',
-          title: tval('Data Source Key'),
-          'x-decorator': 'FormItem',
-          'x-component': 'Input',
-          'x-component-props': {
-            placeholder: tval('Enter data source key'),
-          },
-        },
-        collectionName: {
-          type: 'string',
-          title: tval('Collection Name'),
-          'x-decorator': 'FormItem',
-          'x-component': 'Input',
-          'x-component-props': {
-            placeholder: tval('Enter collection name'),
-          },
-        },
-      },
-      defaultParams: {
-        dataSourceKey: 'main',
-      },
-      handler: async (ctx, params) => {
-        ctx.model.resource = ctx.model.resource || new MultiRecordResource();
-        const {
-          dataSourceKey = params.dataSourceKey, // 先兼容一下旧的数据, TODO: remove
-          collectionName = params.collectionName, // 先兼容一下旧的数据, TODO: remove
-          associationName,
-          sourceId,
-          filterByTk,
-        } = ctx.model.props.dataSourceOptions;
-        const collection = ctx.dataSourceManager.getCollection(
-          dataSourceKey,
-          associationName ? associationName.split('.').slice(-1)[0] : collectionName,
-        );
-        ctx.model.collection = collection;
-        ctx.model.resource.setDataSourceKey(dataSourceKey);
-        ctx.model.resource.setResourceName(associationName || collectionName);
-        ctx.model.resource.setSourceId(sourceId);
-        ctx.model.resource.setAPIClient(ctx.api);
-        ctx.model.resource.setPageSize(20);
-      },
-    },
     virtual: {
       title: tval('Virtual'),
       uiSchema: {
@@ -530,7 +488,6 @@ TableModel.registerFlow({
     },
     dataLoadingMode: {
       use: 'dataLoadingMode',
-      title: tval('Set data loading mode'),
     },
     enabledIndexColumn: {
       title: tval('Enable index column'),
