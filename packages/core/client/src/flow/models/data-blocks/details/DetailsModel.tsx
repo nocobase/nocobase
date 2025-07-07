@@ -9,12 +9,10 @@
 
 import { FormLayout } from '@formily/antd-v5';
 import {
-  AddFieldButton,
   FlowModelRenderer,
   MultiRecordResource,
   SingleRecordResource,
   buildActionItems,
-  buildFieldItems,
   escapeT,
   AddActionButton,
 } from '@nocobase/flow-engine';
@@ -23,60 +21,14 @@ import { Pagination, Space } from 'antd';
 import _ from 'lodash';
 import React from 'react';
 import { DataBlockModel } from '../../base/BlockModel';
-import { DetailItemModel } from './DetailItemModel';
+import { BlockGridModel } from '../../base/GridModel';
+import { DetailsFieldGridModel } from './DetailsFieldGridModel';
+import { RecordActionModel } from '../../base/ActionModel';
 
-const AddDetailField = ({ model }) => {
-  const items = buildFieldItems(
-    model.collection.getFields(),
-    model,
-    'ReadPrettyFieldModel',
-    'detailItem',
-    ({ defaultOptions, fieldPath }) => ({
-      use: 'DetailItemModel',
-      stepParams: {
-        fieldSettings: {
-          init: {
-            dataSourceKey: model.collection.dataSourceKey,
-            collectionName: model.collection.name,
-            fieldPath,
-          },
-        },
-      },
-      subModels: {
-        field: {
-          use: defaultOptions.use,
-          stepParams: {
-            fieldSettings: {
-              init: {
-                dataSourceKey: model.collection.dataSourceKey,
-                collectionName: model.collection.name,
-                fieldPath,
-              },
-            },
-          },
-        },
-      },
-    }),
-  );
-  return (
-    <AddFieldButton
-      model={model}
-      subModelKey={'detailItem'}
-      subModelBaseClass="DetailFormItemModel"
-      items={items}
-      onModelCreated={async (item: DetailItemModel) => {
-        const field: any = item.subModels.field;
-        await field.applyAutoFlows();
-      }}
-      onSubModelAdded={async (item: DetailItemModel) => {
-        const field: any = item.subModels.field;
-        model.addAppends(field.fieldPath, true);
-      }}
-    />
-  );
-};
-
-export class DetailsModel extends DataBlockModel {
+export class DetailsModel extends DataBlockModel<{
+  parent?: BlockGridModel;
+  subModels?: { grid: DetailsFieldGridModel; actions?: RecordActionModel[] };
+}> {
   declare resource: MultiRecordResource | SingleRecordResource;
 
   createResource(ctx, params) {
@@ -133,11 +85,8 @@ export class DetailsModel extends DataBlockModel {
         </div>
 
         <FormLayout layout={'vertical'}>
-          {this.mapSubModels('detailItem', (field: DetailItemModel) => {
-            return <FlowModelRenderer key={field.uid} model={field} showFlowSettings={{ showBorder: false }} />;
-          })}
+          <FlowModelRenderer model={this.subModels.grid} showFlowSettings={false} />
         </FormLayout>
-        <AddDetailField model={this} />
         {this.isMultiRecordResource() && (
           <div
             style={{
@@ -187,6 +136,11 @@ DetailsModel.define({
   group: 'Content',
   defaultOptions: {
     use: 'DetailsModel',
+    subModels: {
+      grid: {
+        use: 'DetailsFieldGridModel',
+      },
+    },
   },
   sort: 300,
 });

@@ -10,13 +10,7 @@
 import { FormButtonGroup, FormLayout } from '@formily/antd-v5';
 import { createForm, Form } from '@formily/core';
 import { FormProvider } from '@formily/react';
-import {
-  AddActionButton,
-  buildActionItems,
-  buildFieldItems,
-  FlowModelRenderer,
-  SingleRecordResource,
-} from '@nocobase/flow-engine';
+import { AddActionButton, buildActionItems, FlowModelRenderer, SingleRecordResource } from '@nocobase/flow-engine';
 import { tval } from '@nocobase/utils/client';
 import React from 'react';
 import { DataBlockModel } from '../../base/BlockModel';
@@ -36,25 +30,6 @@ export class FormModel extends DataBlockModel<{
   }
 
   renderComponent() {
-    const fieldItems = buildFieldItems(
-      this.collection.getFields(),
-      this,
-      'EditableFieldModel',
-      'fields',
-      ({ defaultOptions, fieldPath }) => ({
-        use: defaultOptions.use,
-        stepParams: {
-          fieldSettings: {
-            init: {
-              dataSourceKey: this.collection.dataSourceKey,
-              collectionName: this.collection.name,
-              fieldPath,
-            },
-          },
-        },
-      }),
-    );
-
     return (
       <FormProvider form={this.form}>
         <FormLayout layout={'vertical'}>

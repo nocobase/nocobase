@@ -13,8 +13,12 @@ import { escapeT, reactive } from '@nocobase/flow-engine';
 import { castArray } from 'lodash';
 import React from 'react';
 import { FieldModel } from '../../base/FieldModel';
+import { DetailsFieldGridModel } from './DetailsFieldGridModel';
 
-export class DetailItemModel extends FieldModel {
+export class DetailItemModel extends FieldModel<{
+  parent: DetailsFieldGridModel;
+  subModels: { field: FieldModel };
+}> {
   decoratorProps = observable({} as any);
   setDecoratorProps(props) {
     Object.assign(this.decoratorProps, props);
@@ -22,7 +26,7 @@ export class DetailItemModel extends FieldModel {
 
   @reactive
   render() {
-    const resource = (this.parent as any).resource;
+    const resource = this.parent.parent.resource;
     const fieldModel = this.subModels.field as any;
     const values = castArray(resource.getData()).filter(Boolean);
     const value = values[0] ? values[0][this.fieldPath] : null;
@@ -39,7 +43,6 @@ export class DetailItemModel extends FieldModel {
 }
 
 DetailItemModel.define({
-  title: escapeT('Detail item'),
   icon: 'DetailFormItem',
   defaultOptions: {
     use: 'DetailItemModel',
