@@ -8,7 +8,6 @@
  */
 
 import { PassThrough } from 'stream';
-import { fileTypeFromBuffer } from 'file-type';
 import match from 'mime-match';
 import mime from 'mime-types';
 
@@ -80,6 +79,7 @@ function makeMulterStorage(storage: StorageType) {
 
       const validate = async (header) => {
         try {
+          const { fileTypeFromBuffer } = await import('file-type');
           const type = await fileTypeFromBuffer(new Uint8Array(header));
 
           if (type) {
