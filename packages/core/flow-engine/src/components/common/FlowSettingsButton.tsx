@@ -7,11 +7,11 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { PlusOutlined } from '@ant-design/icons';
 import { Button, ButtonProps } from 'antd';
 import React, { FC } from 'react';
+import { withFlowDesignMode } from './withFlowDesignMode';
 
-export const FlowSettingsButton: FC<ButtonProps> = (props) => {
+const FlowSettingsButtonCore: FC<ButtonProps> = (props) => {
   return (
     <Button
       {...props}
@@ -25,3 +25,6 @@ export const FlowSettingsButton: FC<ButtonProps> = (props) => {
     />
   );
 };
+
+export const FlowSettingsButton = withFlowDesignMode(FlowSettingsButtonCore);
+FlowSettingsButton.displayName = 'FlowSettingsButton';
