@@ -26,6 +26,7 @@ type ComposedInput = React.FC<NocoBaseInputProps> & {
 
 export type NocoBaseInputProps = InputProps & {
   trim?: boolean;
+  allowClear?: boolean;
 };
 
 function InputInner(props: NocoBaseInputProps) {
