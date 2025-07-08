@@ -155,3 +155,34 @@ function MyComponent() {
 - 这种机制适用于所有 ctx 变量（如 `ctx.steps.step1.result`、`ctx.inputArgs.xxx` 等），便于在表单、参数、联动等场景下灵活引用流程上下文数据。
 
 > 提示：`{{ctx.xxx}}` 在 uiSchema（settings 模式）中仅作为变量占位符，实际数据会在 handler（runtime 模式）中自动解析和注入。
+
+
+### 7. 自定义 FlowRuntimeContext
+
+```ts
+class MyModel extends FlowModel {
+  createRuntimeContext({ model, flowKey }) {
+    return new FlowRuntimeContext(this, { mode, flowKey });
+  }
+
+  applyFlow(flowKey, runtimeArgs) {
+    const ctx = this.createRuntimeContext({ mode: 'runtime', flowKey });
+  }
+}
+```
+
+uiSchema 里使用
+
+```ts
+function useFlowSettingsContext() {
+  // ...coding
+  return model.createRuntimeContext({ mode: 'settings', flowKey });
+}
+
+function MyComponent() {
+  const ctx = useFlowSettingsContext();
+  ctx.getPropertyMetaTree();
+
+  console.log(ctx.runId); // '{{ ctx.runId }}'
+}
+```
