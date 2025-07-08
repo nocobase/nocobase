@@ -14,22 +14,28 @@ import { FieldContext } from '@formily/react';
 import { escapeT } from '@nocobase/flow-engine';
 import { tval } from '@nocobase/utils/client';
 import React from 'react';
-import { FormFieldGridModel } from '../..';
+import { FormFieldGridModel, FormModel } from '../..';
 import { ReactiveField } from '../../../formily/ReactiveField';
 import { FieldModel } from '../../base/FieldModel';
 import { JsonInput } from '../../common/JsonInput';
+import { DefaultStructure } from '@nocobase/flow-engine';
 
 type FieldComponentTuple = [component: React.ElementType, props: Record<string, any>] | any[];
 
 type Structure = {
-  parent: FormFieldGridModel;
+  parent: FormFieldGridModel | FormModel;
 };
 
-export class EditableFieldModel extends FieldModel<Structure> {
+export class EditableFieldModel<T extends DefaultStructure = DefaultStructure> extends FieldModel<T> {
   static supportedFieldInterfaces = '*' as any;
   field: Field;
   get form() {
-    return (this.ctx.shared.currentBlockModel.form as Form) || (this.parent.parent.form as Form);
+    if (this.parent instanceof FormModel) {
+      return this.parent.form;
+    }
+    if (this.parent.parent instanceof FormModel) {
+      return this.parent.parent.form;
+    }
   }
 
   get decorator() {

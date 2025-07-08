@@ -741,15 +741,15 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     }
   }
 
-  addSubModel(subKey: string, options: CreateModelOptions | FlowModel) {
-    let model: FlowModel;
+  addSubModel<T extends FlowModel>(subKey: string, options: CreateModelOptions | T) {
+    let model: T;
     if (options instanceof FlowModel) {
       if (options.parent && options.parent !== this) {
         throw new Error('Sub model already has a parent.');
       }
       model = options;
     } else {
-      model = this.flowEngine.createModel({ ...options, subKey, subType: 'array' });
+      model = this.flowEngine.createModel<T>({ ...options, subKey, subType: 'array' });
     }
     model.setParent(this);
     const subModels = this.subModels as {

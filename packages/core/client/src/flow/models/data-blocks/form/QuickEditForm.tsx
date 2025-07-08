@@ -23,8 +23,11 @@ import { useRequest } from 'ahooks';
 import { Button, Skeleton } from 'antd';
 import _ from 'lodash';
 import React from 'react';
+import { EditableFieldModel } from '../../fields/EditableField';
 
-export class QuickEditForm extends FlowModel {
+export class QuickEditForm extends FlowModel<{
+  subModels: { fields: EditableFieldModel[] };
+}> {
   form: Form;
   fieldPath: string;
 
@@ -191,7 +194,7 @@ QuickEditForm.registerFlow({
         const collectionField = ctx.model.collection.getField(fieldPath) as CollectionField;
         if (collectionField) {
           const use = collectionField.getFirstSubclassNameOf('EditableFieldModel') || 'EditableFieldModel';
-          const fieldModel = ctx.model.addSubModel('fields', {
+          const fieldModel = ctx.model.addSubModel<EditableFieldModel>('fields', {
             use,
             stepParams: {
               fieldSettings: {
