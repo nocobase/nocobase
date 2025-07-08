@@ -9,7 +9,7 @@
   },
   "dependencies": {
     "@nocobase/app": "1.8.0",
-    "@nocobase/license-kit": "^0.2.3",
+    "@nocobase/license-kit": "^0.2.12",
     "@types/fs-extra": "^11.0.1",
     "@umijs/utils": "3.5.20",
     "chalk": "^4.1.1",
