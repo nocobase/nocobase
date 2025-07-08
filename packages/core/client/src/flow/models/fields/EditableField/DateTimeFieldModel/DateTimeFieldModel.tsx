@@ -7,8 +7,17 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 import { DatePicker } from '@formily/antd-v5';
+import React from 'react';
 import { escapeT } from '@nocobase/flow-engine';
+import { dayjs } from '@nocobase/utils/client';
 import { EditableFieldModel } from '../EditableFieldModel';
+
+const DatePickerCom = (props) => {
+  const { value, utc, format = 'YYYY-MM-DD HH:mm:ss', ...rest } = props;
+  const parsedValue = value ? (utc ? dayjs.utc(value).local() : dayjs(value)) : null;
+
+  return <DatePicker {...rest} value={parsedValue} format={format} />;
+};
 
 export class DateTimeFieldModel extends EditableFieldModel {
   setComponentProps(componentProps) {
@@ -28,7 +37,8 @@ export class DateTimeFieldModel extends EditableFieldModel {
   }
 
   get component() {
-    return [DatePicker, {}];
+    console.log(this.field?.componentProps);
+    return [DatePickerCom, {}];
   }
 }
 
