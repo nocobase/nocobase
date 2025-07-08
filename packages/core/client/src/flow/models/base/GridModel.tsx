@@ -263,8 +263,13 @@ export class GridModel<T extends { subModels: { items: FlowModel[] } } = Default
 
     return (
       <>
-        <Space ref={this.gridContainerRef} direction={'vertical'} style={{ width: '100%' }} size={this.props.rowGap}>
-          {this.subModels.items?.length > 0 && (
+        {this.subModels.items?.length > 0 && (
+          <Space
+            ref={this.gridContainerRef}
+            direction={'vertical'}
+            style={{ width: '100%', marginBottom: this.props.rowGap }}
+            size={this.props.rowGap}
+          >
             <DndProvider onDragMove={this.handleDragMove.bind(this)} onDragEnd={this.handleDragEnd.bind(this)}>
               <Grid
                 rowGap={this.props.rowGap}
@@ -295,10 +300,10 @@ export class GridModel<T extends { subModels: { items: FlowModel[] } } = Default
                 }}
               />
             </DndProvider>
-          )}
-        </Space>
+          </Space>
+        )}
         {this.flowEngine.flowSettings.enabled && (
-          <div style={{ margin: '16px 0' }}>{this.renderAddSubModelButton()}</div>
+          <div style={{ marginBottom: 16 }}>{this.renderAddSubModelButton()}</div>
         )}
       </>
     );
