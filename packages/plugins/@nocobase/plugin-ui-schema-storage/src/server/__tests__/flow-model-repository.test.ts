@@ -381,4 +381,33 @@ describe('ui_schema repository', () => {
     const model5 = await repository.findModelById('uid1');
     expect(model5.subModels.sub2[1].use).toBe('TestSubModel3_1');
   });
+
+  it('should move model', async () => {
+    const model1 = {
+      uid: 'uid1',
+      use: 'TestModel',
+      subModels: {
+        sub2: [
+          {
+            uid: 'sub2-1',
+            use: 'TestSubModel2',
+          },
+          {
+            uid: 'sub2-2',
+            use: 'TestSubModel3',
+          },
+        ],
+      },
+    };
+    await repository.insertModel(model1);
+    await repository.move({ sourceId: 'sub2-1', targetId: 'sub2-2', position: 'after' });
+    // await repository.insertAdjacent('afterEnd', 'sub2-2', {
+    //   ['x-uid']: 'sub2-1',
+    // });
+    const model2 = await repository.findModelById('uid1');
+    expect(model2.subModels.sub2[0].use).toBe('TestSubModel3');
+    expect(model2.subModels.sub2[1].use).toBe('TestSubModel2');
+    expect(model2.subModels.sub2[0].uid).toBe('sub2-2');
+    expect(model2.subModels.sub2[1].uid).toBe('sub2-1');
+  });
 });

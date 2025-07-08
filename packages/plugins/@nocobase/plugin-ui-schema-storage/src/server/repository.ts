@@ -1420,6 +1420,13 @@ WHERE TreeTable.depth = 1 AND  TreeTable.ancestor = :ancestor and TreeTable.sort
     }
     return null;
   }
+
+  async move(options) {
+    const { sourceId, targetId, position } = options;
+    return await this.insertAdjacent(position === 'after' ? 'afterEnd' : 'beforeBegin', targetId, {
+      ['x-uid']: sourceId,
+    });
+  }
 }
 
 export default UiSchemaRepository;

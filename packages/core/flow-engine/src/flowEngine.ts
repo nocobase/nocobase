@@ -476,7 +476,7 @@ export class FlowEngine {
     };
     move(sourceModel, targetModel);
     if (this.ensureModelRepository()) {
-      const position = sourceModel.sortIndex - targetModel.sortIndex > 0 ? 'before' : 'after';
+      const position = sourceModel.sortIndex - targetModel.sortIndex > 0 ? 'after' : 'before';
       await this.modelRepository.move(sourceId, targetId, position);
     }
     // 触发事件以通知其他部分模型已移动

@@ -790,10 +790,12 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
 
     const results: R[] = [];
 
-    _.castArray(model).forEach((item, index) => {
-      const result = (callback as (model: any, index: number) => R)(item, index);
-      results.push(result);
-    });
+    _.castArray(model)
+      .sort((a, b) => (a.sortIndex || 0) - (b.sortIndex || 0))
+      .forEach((item, index) => {
+        const result = (callback as (model: any, index: number) => R)(item, index);
+        results.push(result);
+      });
 
     return results;
   }
