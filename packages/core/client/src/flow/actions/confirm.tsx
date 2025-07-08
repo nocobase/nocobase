@@ -18,7 +18,7 @@ export const confirm = defineAction({
       type: 'boolean',
       title: tval('Enable secondary confirmation'),
       'x-decorator': 'FormItem',
-      'x-component': 'Checkbox',
+      'x-component': 'Switch',
     },
     title: {
       type: 'string',
