@@ -133,7 +133,8 @@ export const RemoveRoute: FC = () => {
 
             if (
               currentPageUid !== currentRoute?.schemaUid &&
-              !findRouteBySchemaUid(currentPageUid, currentRoute?.children)
+              !findRouteBySchemaUid(currentPageUid, currentRoute?.children) &&
+              currentRoute?.type !== NocoBaseDesktopRouteType.group
             ) {
               return;
             }
@@ -144,8 +145,10 @@ export const RemoveRoute: FC = () => {
             const nextSibling = findNextSibling(allAccessRoutes, currentRoute);
 
             if (prevSibling || nextSibling) {
+              const sibling = prevSibling || nextSibling;
+
               // 如果删除的是当前打开的页面或分组，需要跳转到上一个页面或分组
-              navigate(`/admin/${prevSibling?.schemaUid || nextSibling?.schemaUid}`);
+              navigate(`/admin/${sibling.type === NocoBaseDesktopRouteType.group ? sibling.id : sibling.schemaUid}`);
             } else {
               navigate(`/`);
             }
