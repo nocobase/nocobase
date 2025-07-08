@@ -13,7 +13,6 @@ import React, { FC } from 'react';
 import { FilterGroup } from '../../components/FilterGroup';
 import { GlobalActionModel } from '../base/ActionModel';
 import { DataBlockModel } from '../base/BlockModel';
-import { observable } from '@formily/reactive';
 
 const FilterContent: FC<{ value: any }> = (props) => {
   const modelInstance = useFlowModel();
