@@ -13,6 +13,7 @@ import { SolutionOutlined } from '@ant-design/icons';
 import {
   joinCollectionName,
   SchemaInitializerItemType,
+  useApp,
   useCollectionManager_deprecated,
   useCompile,
   useDataSourceManager,
@@ -42,7 +43,7 @@ const MULTIPLE_ASSIGNED_MODE = {
 
 function useVariables({ key, title, config }, { types, fieldNames = defaultFieldNames }) {
   const compile = useCompile();
-  const { getCollectionFields } = useCollectionManager_deprecated();
+  const app = useApp();
   const formKeys = Object.keys(config.forms ?? {});
   if (!formKeys.length) {
     return null;
@@ -51,13 +52,17 @@ function useVariables({ key, title, config }, { types, fieldNames = defaultField
   const options = formKeys
     .map((formKey) => {
       const form = config.forms[formKey];
+      let collectionManager;
+      if (form.dataSource) {
+        collectionManager = app.dataSourceManager.getDataSource(form.dataSource).collectionManager;
+      }
 
       const fieldsOptions = getCollectionFieldOptions({
         fields: form.collection?.fields,
         collection: form.collection,
         types,
         compile,
-        getCollectionFields,
+        collectionManager,
       });
       const label = compile(form.title) || formKey;
       return fieldsOptions.length
