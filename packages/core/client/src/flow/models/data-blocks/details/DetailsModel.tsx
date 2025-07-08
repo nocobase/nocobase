@@ -9,24 +9,24 @@
 
 import { FormLayout } from '@formily/antd-v5';
 import {
+  AddActionButton,
+  DndProvider,
+  DragHandler,
+  Droppable,
   FlowModelRenderer,
   MultiRecordResource,
   SingleRecordResource,
   buildActionItems,
   escapeT,
-  AddActionButton,
-  DndProvider,
-  Droppable,
-  DragHandler,
 } from '@nocobase/flow-engine';
 import { tval } from '@nocobase/utils/client';
 import { Pagination, Space } from 'antd';
 import _ from 'lodash';
 import React from 'react';
+import { RecordActionModel } from '../../base/ActionModel';
 import { DataBlockModel } from '../../base/BlockModel';
 import { BlockGridModel } from '../../base/GridModel';
 import { DetailsFieldGridModel } from './DetailsFieldGridModel';
-import { RecordActionModel } from '../../base/ActionModel';
 
 export class DetailsModel extends DataBlockModel<{
   parent?: BlockGridModel;

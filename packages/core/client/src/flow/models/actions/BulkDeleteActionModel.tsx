@@ -29,6 +29,11 @@ BulkDeleteActionModel.registerFlow({
   steps: {
     confirm: {
       use: 'confirm',
+      defaultParams: {
+        enable: true,
+        title: escapeT('Delete record'),
+        content: escapeT('Are you sure you want to delete it?'),
+      },
     },
     delete: {
       async handler(ctx, params) {

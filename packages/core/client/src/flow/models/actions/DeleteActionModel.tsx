@@ -8,7 +8,6 @@
  */
 
 import { escapeT, MultiRecordResource } from '@nocobase/flow-engine';
-import { tval } from '@nocobase/utils/client';
 import type { ButtonProps } from 'antd/es/button';
 import { RecordActionModel } from '../base/ActionModel';
 
@@ -30,21 +29,25 @@ DeleteActionModel.registerFlow({
   steps: {
     confirm: {
       use: 'confirm',
+      defaultParams: {
+        enable: true,
+        title: escapeT('Delete record'),
+        content: escapeT('Are you sure you want to delete it?'),
+      },
     },
     delete: {
       async handler(ctx, params) {
-        const t = ctx.model.translate;
         if (!ctx.shared?.currentBlockModel?.resource) {
-          ctx.globals.message.error(t('No resource selected for deletion'));
+          ctx.message.error(ctx.t('No resource selected for deletion'));
           return;
         }
         if (!ctx.shared.currentRecord) {
-          ctx.globals.message.error(t('No resource or record selected for deletion'));
+          ctx.message.error(ctx.t('No resource or record selected for deletion'));
           return;
         }
         const resource = ctx.shared.currentBlockModel.resource as MultiRecordResource;
         await resource.destroy(ctx.shared.currentRecord);
-        ctx.globals.message.success(t('Record deleted successfully'));
+        ctx.message.success(ctx.t('Record deleted successfully'));
       },
     },
   },

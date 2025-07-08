@@ -7,12 +7,11 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { defineAction, MultiRecordResource, useStepSettingContext } from '@nocobase/flow-engine';
-import React from 'react';
+import { defineAction, escapeT, MultiRecordResource, useStepSettingContext } from '@nocobase/flow-engine';
 import { Select } from 'antd';
-import { tval } from '@nocobase/utils/client';
-import { useCompile } from '../../schema-component';
+import React from 'react';
 import { useSortFields } from '../../';
+import { useCompile } from '../../schema-component';
 
 const SelectOptions = (props) => {
   const {
@@ -25,7 +24,7 @@ const SelectOptions = (props) => {
 
 export const sortingRule = defineAction({
   name: 'sortingRule',
-  title: tval('Set default sorting rules'),
+  title: escapeT('Default sorting'),
   uiSchema: {
     sort: {
       type: 'array',
@@ -63,11 +62,11 @@ export const sortingRule = defineAction({
                 },
                 enum: [
                   {
-                    label: tval('ASC'),
+                    label: escapeT('ASC'),
                     value: 'asc',
                   },
                   {
-                    label: tval('DESC'),
+                    label: escapeT('DESC'),
                     value: 'desc',
                   },
                 ],
@@ -84,7 +83,7 @@ export const sortingRule = defineAction({
       properties: {
         add: {
           type: 'void',
-          title: tval('Add sort field'),
+          title: escapeT('Add sort field'),
           'x-component': 'ArrayItems.Addition',
         },
       },
