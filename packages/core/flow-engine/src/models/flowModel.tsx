@@ -115,6 +115,9 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
         this.invalidateAutoFlowCache();
       }
       this._rerunLastAutoRun();
+      this.forks.forEach((fork) => {
+        fork.rerender();
+      });
     });
   }
 
