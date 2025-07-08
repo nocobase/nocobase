@@ -90,7 +90,7 @@ export class DetailsModel extends DataBlockModel<{
                   actionModel.setSharedContext({
                     currentRecord,
                   });
-                  actionModel.setStepParams('buttonSettings', 'buttonProps', { type: 'default' });
+                  actionModel.setStepParams('buttonSettings', 'general', { type: 'default' });
                   await actionModel.applyFlow('buttonSettings');
                 }}
               />

@@ -8,9 +8,9 @@
  */
 
 import { AddFieldButton, buildFieldItems, FlowSettingsButton } from '@nocobase/flow-engine';
-import { GRID_FLOW_KEY, GRID_STEP, GridModel } from '../../base/GridModel';
 import React from 'react';
 import { FieldModel } from '../../base/FieldModel';
+import { GRID_FLOW_KEY, GRID_STEP, GridModel } from '../../base/GridModel';
 import { DetailItemModel } from './DetailItemModel';
 import { DetailsModel } from './DetailsModel';
 
@@ -72,8 +72,6 @@ export class DetailsFieldGridModel extends GridModel<{
   subModels: { items: FieldModel[] };
 }> {
   renderAddSubModelButton() {
-    const t = this.translate;
-
     return (
       <>
         <AddDetailField model={this} />
