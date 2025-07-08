@@ -23,8 +23,8 @@ import { tval } from '@nocobase/utils/client';
 import React from 'react';
 import { DataBlockModel } from '../../base/BlockModel';
 import { BlockGridModel } from '../../base/GridModel';
-import { FormFieldGridModel } from './FormFieldGridModel';
 import { FormActionModel } from './FormActionModel';
+import { FormFieldGridModel } from './FormFieldGridModel';
 
 export class FormModel extends DataBlockModel<{
   parent?: BlockGridModel;
@@ -92,7 +92,11 @@ FormModel.registerFlow({
           throw new Error('Resource is not initialized');
         }
         if (ctx.model.resource.getFilterByTk()) {
+          await ctx.model.applySubModelsAutoFlows('grid');
           await ctx.model.resource.refresh();
+          ctx.model.setSharedContext({
+            currentRecord: ctx.model.resource.getData(),
+          });
         }
       },
     },

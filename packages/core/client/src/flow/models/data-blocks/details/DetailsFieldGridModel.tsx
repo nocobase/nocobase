@@ -91,6 +91,12 @@ DetailsFieldGridModel.registerFlow({
   key: 'detailFieldGridSettings',
   auto: true,
   steps: {
+    init: {
+      async handler(ctx, params) {
+        console.log('init detailFieldGridSettings', ctx.model.subModels.items);
+        await ctx.model.applySubModelsAutoFlows('items');
+      },
+    },
     grid: {
       handler(ctx, params) {
         ctx.model.setProps('rowGap', 0);

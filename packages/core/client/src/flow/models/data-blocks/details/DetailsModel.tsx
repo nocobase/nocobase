@@ -131,14 +131,15 @@ DetailsModel.registerFlow({
       async handler(ctx, params) {
         const { dataLoadingMode } = ctx.model.props;
         if (dataLoadingMode === 'auto') {
+          await ctx.model.applySubModelsAutoFlows('grid');
           await ctx.model.resource.refresh();
+          const data = ctx.model.resource.getData();
+          ctx.model.setSharedContext({
+            currentRecord: Array.isArray(data) ? data[0] : data,
+          });
         } else {
           ctx.model.resource.loading = false;
         }
-        const data = ctx.model.resource.getData();
-        ctx.model.setSharedContext({
-          currentRecord: Array.isArray(data) ? data[0] : data,
-        });
       },
     },
   },
