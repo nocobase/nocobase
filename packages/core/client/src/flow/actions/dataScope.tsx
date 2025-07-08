@@ -36,7 +36,7 @@ export const dataScope = defineAction({
             value={props.value}
             fields={fields}
             ignoreFieldsNames={ignoreFieldsNames}
-            ctx={modelInstance.ctx}
+            model={modelInstance}
           />
         );
       },
