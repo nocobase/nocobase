@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { FormItem, Input } from '@formily/antd-v5';
+import { FormItem } from '@formily/antd-v5';
 import type { FieldPatternTypes, FieldValidator } from '@formily/core';
 import { Field, Form } from '@formily/core';
 import { FieldContext } from '@formily/react';
@@ -16,7 +16,7 @@ import React from 'react';
 import { FormFieldGridModel } from '../..';
 import { ReactiveField } from '../../../formily/ReactiveField';
 import { FieldModel } from '../../base/FieldModel';
-
+import { JsonInput } from '../../common/JsonInput';
 type FieldComponentTuple = [component: React.ElementType, props: Record<string, any>] | any[];
 
 type Structure = {
@@ -24,6 +24,7 @@ type Structure = {
 };
 
 export class EditableFieldModel extends FieldModel<Structure> {
+  static supportedFieldInterfaces = '*' as any;
   field: Field;
   get form() {
     return (this.parent.form as Form) || (this.parent.parent.form as Form);
@@ -34,7 +35,7 @@ export class EditableFieldModel extends FieldModel<Structure> {
   }
 
   get component(): FieldComponentTuple {
-    return [Input, {}];
+    return [JsonInput, {}];
   }
 
   setTitle(title: string) {

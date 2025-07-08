@@ -507,6 +507,10 @@ export class CollectionField {
     return this.options.type;
   }
 
+  get dataType() {
+    return this.options.dataType;
+  }
+
   get target() {
     return this.options.target;
   }

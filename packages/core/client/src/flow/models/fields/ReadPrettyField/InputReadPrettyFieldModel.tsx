@@ -11,5 +11,5 @@ import React from 'react';
 import { ReadPrettyFieldModel } from './ReadPrettyFieldModel';
 
 export class InputReadPrettyFieldModel extends ReadPrettyFieldModel {
-  static readonly supportedFieldInterfaces = '*';
+  static supportedFieldInterfaces = ['input', 'email', 'phone', 'uuid', 'url'] as any;
 }
