@@ -260,6 +260,7 @@ interface ModelProvidedProps {
   showDeleteButton?: boolean;
   showCopyUidButton?: boolean;
   containerStyle?: React.CSSProperties;
+  toolbarStyle?: React.CSSProperties;
   className?: string;
   /**
    * @default true
@@ -477,6 +478,7 @@ const FlowsFloatContextMenuWithModel: React.FC<ModelProvidedProps> = observer(
     showDragHandle = false,
     settingsMenuLevel,
     extraToolbarItems,
+    toolbarStyle,
   }: ModelProvidedProps) => {
     const [hideMenu, setHideMenu] = useState<boolean>(false);
     const [hasButton, setHasButton] = useState<boolean>(false);
@@ -549,7 +551,7 @@ const FlowsFloatContextMenuWithModel: React.FC<ModelProvidedProps> = observer(
         {children}
 
         {/* 悬浮工具栏 - 使用与 NocoBase 一致的结构 */}
-        <div className="general-schema-designer">
+        <div className="general-schema-designer" style={toolbarStyle}>
           {showTitle && model.title && (
             <div className="general-schema-designer-title">
               <span className="title-tag">{model.title}</span>
