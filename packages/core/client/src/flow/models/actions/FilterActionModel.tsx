@@ -47,7 +47,7 @@ export class FilterActionModel extends GlobalActionModel {
     type: 'default',
     title: escapeT('Filter'),
     icon: 'FilterOutlined',
-    filterValue: observable({ $and: [] }),
+    filterValue: { $and: [] },
     ignoreFieldsNames: [],
   };
 
@@ -55,7 +55,7 @@ export class FilterActionModel extends GlobalActionModel {
     return (
       <Popover
         open={this.props.open}
-        content={<FilterContent value={this.props.filterValue || this.defaultProps.filterValue} />}
+        content={<FilterContent value={this.props.filterValue} />}
         trigger="click"
         placement="bottomLeft"
       >
@@ -138,7 +138,7 @@ FilterActionModel.registerFlow({
       },
       defaultParams(ctx) {
         return {
-          filterValue: ctx.model.defaultProps.filterValue,
+          defaultFilter: ctx.model.defaultProps.filterValue,
         };
       },
       handler(ctx, params) {
